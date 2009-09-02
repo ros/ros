@@ -1,0 +1,14 @@
+<package>
+  <description brief="A collection of tools useful for repository maintenance">
+
+     A collection of tools useful for repository maintenance
+
+  </description>
+  <author>Tully Foote</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/repository_maintenance</url>
+
+</package>
+
+

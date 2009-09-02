@@ -1,0 +1,3 @@
+#!/bin/sh
+## Simple script that redirects arguments to octave
+octave $*

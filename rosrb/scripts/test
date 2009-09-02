@@ -1,0 +1,3 @@
+#!/bin/bash
+
+./genmsg `rospack find std_msgs`/msg/Byte.msg

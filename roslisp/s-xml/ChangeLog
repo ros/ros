@@ -1,0 +1,60 @@
+2005-11-20 Sven Van Caekenberghe <svc@mac.com>
+
+	* added xml prefix namespace as per REC-xml-names-19990114 (by Rudi Schlatte)
+
+2005-11-06 Sven Van Caekenberghe <svc@mac.com>
+
+	* removed Debian packaging directory (on Luca's request)
+	* added CDATA support (patch contributed by Peter Van Eynde pvaneynd@mailworks.org)
+
+2005-08-30 Sven Van Caekenberghe <svc@mac.com>
+
+	* added Debian packaging directory (contributed by Luca Capello luca@pca.it)
+	* added experimental XML namespace support 
+
+2005-02-03 Sven Van Caekenberghe <svc@mac.com>
+
+        * release 5 (cvs tag RELEASE_5)
+	* added :start and :end keywords to print-string-xml
+	* fixed a bug: in a tag containing whitespace, like <foo> </foo> the parser collapsed 
+	  and ingnored all whitespace and considered the tag to be empty!
+          this is now fixed and a unit test has been added
+	* cleaned up xml character escaping a bit: single quotes and all normal whitespace  
+	  (newline, return and tab) is preserved a unit test for this has been added
+	* IE doesn't understand the &apos; XML entity, so I've commented that out for now. 
+	  Also, using actual newlines for newlines is probably better than using #xA, 
+	  which won't get any end of line conversion by the server or user agent.
+
+June 2004 Sven Van Caekenberghe <svc@mac.com>
+
+	* release 4
+	* project moved to common-lisp.net, renamed to s-xml, 
+	* added examples counter, tracer and remove-markup, improved documentation
+
+13 Jan 2004 Sven Van Caekenberghe <svc@mac.com>
+	
+	* release 3
+	* added ASDF systems
+	* optimized print-string-xml
+
+10 Jun 2003 Sven Van Caekenberghe <svc@mac.com>
+	
+	* release 2
+	* added echo-xml function: we are no longer taking the car when
+	  the last seed is returned from start-parse-xml
+
+25 May 2003 Sven Van Caekenberghe <svc@mac.com>
+	
+	* release 1
+	* first public release of working code
+	* tested on OpenMCL
+	* rewritten to be event-based, to improve efficiency and 
+	  to optionally use different DOM representations
+	* more documentation
+
+end of 2002 Sven Van Caekenberghe <svc@mac.com>
+	
+	* release 0
+	* as part of an XML-RPC implementation
+
+$Id: ChangeLog,v 1.5 2005/11/20 14:24:33 scaekenberghe Exp $

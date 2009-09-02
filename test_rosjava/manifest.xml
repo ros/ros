@@ -1,0 +1,11 @@
+<package>
+  <description brief="test_rosjava">Tests for rosjava</description>
+  <author>Jason Wolfe (jawolfe@willowgarage.com)</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <depend package="roslib"/>
+  <depend package="rosjava"/>
+  <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+  <url>http://pr.willowgarage.com/wiki/test_rosjava</url>
+</package>

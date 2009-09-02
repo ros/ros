@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if [ -z "$3" ]; then
+    echo "Usage: $0 <classpath> <Main Class> <outputfile> <extra-args*>"
+    exit 1
+fi
+
+ROSJAVA_BASE_DIR=$(rospack find rosjava)
+
+
+cat <<EOF > $3
+#!/bin/bash
+
+LIBJSIG=\`find \$JAVA_HOME/jre/lib/ -maxdepth 2 -name "libjsig.so"\`
+if [ -z "\$LIBJSIG" ]; then
+  echo "Cannot find libjsig ... maybe you need to set JAVA_HOME?"
+  exit 1
+fi
+
+LD_PRELOAD=\$LIBJSIG LD_LIBRARY_PATH=${ROSJAVA_BASE_DIR}/bin java -classpath $1 $2 ${@:4}
+EOF
+
+chmod 755 $3

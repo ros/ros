@@ -1,0 +1,21 @@
+<package>
+  <description brief="A Java ROS client library">
+    <p> 
+        rosjava is a partial implementation of the ROS NodeHandle API for Java. The current implementation works by calling roscpp behind the scenes using JNI, although the intention is to eventually rewrite it in pure Java. The interfaces in the "ros" package are intended to be independent of the implementation, so that this change can be made transparently when the pure Java implementation has been written.
+    </p>
+    <p>
+        rosjava is currently in an early alpha state; the core functionality it provides has been fairly well tested, but many more advanced features are missing. Its API has not yet been reviewed, and is likely to change in the future. 
+    </p>
+  </description>
+
+  <author>Jason Wolfe (jawolfe@willowgarage.com)</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <depend package="roslib"/>
+  <depend package="roscpp"/>
+  <depend package="roslang"/>
+  <export>
+    <roslang cmake="${prefix}/cmake/rosjava.cmake"/>
+  </export>
+  <url>http://ros.org/wiki/rosjava</url>
+</package>

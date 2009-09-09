@@ -67,22 +67,24 @@
      (mapcan #'asdf-paths-to-add (depended-packages path)))))
 
 
+(defun normalize (str)
+  (let* ((pos (position #\Newline str))
+	 (stripped (if pos
+		       (subseq str 0 pos)
+		       str)))
+    (if (eq #\/ (char stripped (1- (length stripped))))
+	stripped
+	(concatenate 'string stripped "/"))))
+
 (defun ros-package-path (p)
-  (let ((str (make-string-output-stream)))
-    (sb-ext:run-program "rospack" (list "find" p) :search t :output str)
-    (let ((result (get-output-stream-string str)))
-      (loop
-	 (if (eql (aref result (1- (length result))) #\Newline)
-	     (setq result (subseq result 0 (1- (length result))))
-	     (return)))
-      (let ((last-newline-pos (position #\Newline result :from-end t)))
-	(when last-newline-pos
-	  (setq result (subseq result (1+ last-newline-pos)))))
-      (unless (eq #\/ (char result (1- (length result))))
-	(setq result (concatenate 'string result "/")))
-      (if (search "[rospack] couldn't find" result)
-	  (progn (warn "Rospack error: ~a" result) nil)
-	  (pathname result)))))
+  (let* ((str (make-string-output-stream))
+	 (error-str (make-string-output-stream))
+	 (proc (sb-ext:run-program "rospack" (list "find" p) :search t :output str :error error-str))
+	 (exit-code (sb-ext:process-exit-code proc)))
+    (if (zerop exit-code)
+	(pathname (normalize (get-output-stream-string str)))
+	(error "rospack find ~a returned ~a with stderr '~a'" 
+	       p exit-code (get-output-stream-string error-str)))))
 
 
 (defun get-asdf-directory (path)

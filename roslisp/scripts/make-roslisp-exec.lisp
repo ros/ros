@@ -1,7 +1,29 @@
 (require :asdf)
+
+(defun normalize (str)
+  (let* ((pos (position #\Newline str))
+	 (stripped (if pos
+		       (subseq str 0 pos)
+		       str)))
+    (if (eq #\/ (char stripped (1- (length stripped))))
+	stripped
+	(concatenate 'string stripped "/"))))
+
+(defun ros-package-path (p)
+  (let* ((str (make-string-output-stream))
+	 (error-str (make-string-output-stream))
+	 (proc (sb-ext:run-program "rospack" (list "find" p) :search t :output str :error error-str))
+	 (exit-code (sb-ext:process-exit-code proc)))
+    (if (zerop exit-code)
+	(pathname (normalize (get-output-stream-string str)))
+	(error "rospack find ~a returned ~a with stderr '~a'" 
+	       p exit-code (get-output-stream-string error-str)))))
+
+
 (let ((p (sb-ext:posix-getenv "ROS_ROOT")))
   (unless p (error "ROS_ROOT not set"))
-  (let ((roslisp-path (pathname (concatenate 'string p "/core/experimental/roslisp/asdf/"))))
+  (let ((roslisp-path (merge-pathnames (make-pathname :directory '(:relative "asdf"))
+                                       (ros-package-path "roslisp"))))
     (pprint '(require :asdf))
     (pprint '(push :roslisp-standalone-executable *features*))
     (pprint '(declaim (sb-ext:muffle-conditions sb-ext:compiler-note)))

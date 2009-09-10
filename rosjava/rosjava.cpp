@@ -325,8 +325,7 @@ JNIEXPORT void JNICALL Java_ros_roscpp_JNI_spinOnce
 JNIEXPORT jboolean JNICALL Java_ros_roscpp_JNI_checkMaster
   (JNIEnv * env, jclass __jni, jlong cppHandle)
 {
-	NodeHandle *handle = (NodeHandle *) cppHandle;
-	return handle->checkMaster();
+       return ros::master::check();
 }
 
 JNIEXPORT jstring JNICALL Java_ros_roscpp_JNI_getMasterHost

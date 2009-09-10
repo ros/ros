@@ -1,5 +1,5 @@
 <launch>
 <master auto="start"/>
-<node pkg="test_rosjava" type="Testee" output="screen"/>
+<node pkg="test_rosjava" type="Testee" name="testee" output="screen"/>
 <test test-name="rosjava-test" pkg="test_rosjava" type="tester"/>
 </launch>

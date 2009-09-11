@@ -48,7 +48,7 @@
 ;   that you want Clojure support for (above and beyond what you
 ;   already get from Java).  In particular, automated conversion
 ;   between Clojure maps and Messages is supported for declared types,
-;   using map-msg and msg-map.   
+;   using map->msg and msg->map.   
 ;   Only top-level messages and services need be declared; others will
 ;   be pulled in as-needed.
 ;
@@ -172,23 +172,23 @@
 (defn msg-list [] @*msgs*)
 
 
-(defmulti msg-map 
+(defmulti msg->map 
   "Convert an instance of ros.communication.Message 
    into a Clojure map (recursively).  If the message is
    already a map, just returns it."
   class)
 
-(defmethod msg-map clojure.lang.IPersistentMap [m] m)
+(defmethod msg->map clojure.lang.IPersistentMap [m] m)
 
 
-(defmulti map-msg* (fn [t m] t))
+(defmulti map->msg* (fn [t m] t))
 
-(defn map-msg 
+(defn map->msg 
   "Convert a Clojure map to a Message (recursively).  The type should
    either be in the :class field, or passed directly.
    If m already a Message, just returns it."
-  ([m] (map-msg* (if (map? m) (:class m) (class m)) m))
-  ([t m] (map-msg* t m)))
+  ([m] (map->msg* (if (map? m) (:class m) (class m)) m))
+  ([t m] (map->msg* t m)))
 
 
 (defmacro defmsg 
@@ -208,7 +208,7 @@
        ~@(for [subtype (message-submessage-types cls)]
 	   `(defmsg ~subtype))
 
-       (defmethod map-msg*  ~cls [_# ~m]
+       (defmethod map->msg*  ~cls [_# ~m]
 	 (if (= (class ~m) ~cls) ~m
   	   (let [~g (new ~cls)]
 	     ~@(for [[elt-str type-str] types
@@ -225,29 +225,29 @@
 				  (if (= i# c#) a#
 				    (do (aset a# i# 
 					 ~(if-let [st (submsg-type at)]
-					      `(map-msg* ~st (first ~val))
+					      `(map->msg* ~st (first ~val))
 					    (if-let [pc (*primitive-coerce-map* at)]
 					        `(~pc (first ~val))
 					      `(first ~val)))) 
 					(recur (inc i#) (next ~val)))))))
 			  (if-let [st (submsg-type type-str)]
-			      `(map-msg* ~st ~val)
+			      `(map->msg* ~st ~val)
 			    (if-let [pc (*primitive-coerce-map* type-str)]
 			       `(~pc ~val)
 			      val))))))
 	     ~g)))
 
-       (defmethod msg-map ~cls [~(with-meta m {:tag cls} )]
+       (defmethod msg->map ~cls [~(with-meta m {:tag cls} )]
 	 (hash-map :class ~cls
 	   ~@(apply concat 
 	      (for [[elt-str type-str] types]
 		[(keyword elt-str) 
 		 (if-let [at (array-type type-str)]
 		     (if-let [st (submsg-type at)]
-		         `(map msg-map (. ~m ~(symbol elt-str)))  
+		         `(map msg->map (. ~m ~(symbol elt-str)))  
 		       `(. ~m ~(symbol elt-str)))
 		   (if-let [st (submsg-type type-str)]
-		       `(msg-map (. ~m ~(symbol elt-str)))
+		       `(msg->map (. ~m ~(symbol elt-str)))
 		     `(. ~m ~(symbol elt-str))))]))))
       
        nil))))
@@ -255,7 +255,7 @@
 ; Special case header, to make seq and stamp optional
 (defmsg ros.pkg.roslib.msg.Header)
 (let [zt (ros.communication.Time. 0 0)]
-  (defmethod map-msg* ros.pkg.roslib.msg.Header [_ m]
+  (defmethod map->msg* ros.pkg.roslib.msg.Header [_ m]
     (if (instance? ros.pkg.roslib.msg.Header m) m
       (let [ret (ros.pkg.roslib.msg.Header.)]
         (set! (.seq ret)      (get m :seq 0))
@@ -384,7 +384,7 @@
    it is optional, and is just used to check that the provided
    messages have the correct type.  In the body of the callback,
    arg will be bound to a Clojure map containing the contents of
-   the received Message (translated by msg-map)"     
+   the received Message (translated by msg->map)"     
   [& args]
   (let [m (gensym)
 	[cls args] (if (not (coll? (first args))) [(first args) (next args)] [nil args])]
@@ -392,7 +392,7 @@
     `(make-subscriber-callback
       (fn [~m]
 	~@(when cls [`(assert-is* (= (class ~m) ~cls))])
-	(let [~(ffirst args) (msg-map ~m)]
+	(let [~(ffirst args) (msg->map ~m)]
 	  ~@(next args))))))
 
 (defmacro srv-cb [srv-type binding-form & body]
@@ -400,17 +400,17 @@
     (srv-cb srv-class [arg] & body)
    srv-class is the class of the service for the callback (required). 
    In the body of the callback, arg will be bound to a Clojure map 
-   containing the contents of the received Request (translated by msg-map).
+   containing the contents of the received Request (translated by msg->map).
    The return value of body will be automatically tranlsated back to a 
-   Java Message using map-msg."
+   Java Message using map->msg."
   (assert-is* (= 1 (count binding-form)))
   `(let [req# (srv-req ~srv-type)
 	 res# (srv-res ~srv-type)]
      (make-service-callback
       (fn [m#] 
 	(assert-is* (= (class m#) req#))
-	(map-msg
-	 (assoc (let [~(first binding-form) (msg-map m#)]	~@body)
+	(map->msg
+	 (assoc (let [~(first binding-form) (msg->map m#)]	~@body)
 	   :class res#))))))
 
 
@@ -470,7 +470,7 @@
        (while (not @result) (.spinOnce nh))
        (let [ret @result]
 	 (reset! result nil)
-	 (msg-map ret))))))
+	 (msg->map ret))))))
 
 
 (defn put-message 
@@ -479,7 +479,7 @@
    before publishing. Returns true if message published, or false if the 
    desired number of subscribers were not obtained within the time limit."
   ([#^NodeHandle nh topic message n-subs]
-      (let [#^Message message (map-msg message)
+      (let [#^Message message (map->msg message)
 	    pub (.advertise nh topic message 1)]
        (if (or (not n-subs) (zero? n-subs) (wait-for-subscribers nh pub n-subs 5.0))
 	   (do (.publish pub message) (.shutdown pub) true)
@@ -493,7 +493,7 @@
   put-message-cached  
   (let [mem (atom {})]
     (fn [#^NodeHandle nh topic message]
-      (let [#^Message message (map-msg message)
+      (let [#^Message message (map->msg message)
 	    #^Publisher pub 
 	      (or (@mem [nh topic])
 		  (let [ret (.advertise nh topic message 10)]
@@ -508,9 +508,9 @@
   "Call service 'name' with the given Request map, and return a Clojure
    map corresponding to the response."
   ([#^NodeHandle nh #^String name request]
-     (let [#^Message request (map-msg request)
+     (let [#^Message request (map->msg request)
 	   srv (.serviceClient nh name #^Service (req-srv request) false)
-	   result (msg-map (.call srv (map-msg request)))]
+	   result (msg->map (.call srv (map->msg request)))]
        (.shutdown srv)
        result)))
 
@@ -521,14 +521,14 @@
   call-service-cached   
   (let [mem (atom {})]
     (fn [#^NodeHandle nh #^String name request]
-      (let [#^Message request (map-msg request)
+      (let [#^Message request (map->msg request)
 	    #^ServiceClient srv 
 	      (or (@mem [nh name])
 		  (let [ret (.serviceClient nh name #^Service 
 					    (req-srv request) true)]
 		    (swap! mem assoc [nh name] ret)
 		    ret))]
-	(msg-map (.call srv (map-msg request)))))))
+	(msg->map (.call srv (map->msg request)))))))
 
 
 

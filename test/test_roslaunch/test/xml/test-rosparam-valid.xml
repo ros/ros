@@ -1,0 +1,15 @@
+<launch>
+
+  <rosparam file="$(find rosparam)/example1.yaml" command="load" />
+  <rosparam file="$(find rosparam)/example2.yaml" command="dump" />
+  
+  <group ns="rosparam">
+    <rosparam file="$(find rosparam)/example3.yaml" command="load" />    
+  </group>
+
+  <node pkg="package" type="test_base" name="node_rosparam">
+    <rosparam file="$(find rosparam)/example4.yaml" command="load" />      
+  </node>
+  
+</launch>
+

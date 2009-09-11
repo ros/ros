@@ -1,0 +1,4 @@
+<package>
+  <!-- Indicated that this package is a client library -->
+  <depend package="roslang"/>
+</package>

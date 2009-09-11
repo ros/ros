@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+require 'rexml/document'
+
+if ARGV.size != 1
+  puts "usage: check_manifest PACKAGE"
+  exit 1
+end
+pkg = ARGV[0]
+pkg_path = `rospack find #{pkg}`.strip
+begin
+  manifest = REXML::Document.new File.new("#{pkg_path}/manifest.xml")
+  puts "successfully parsed #{pkg_path}/manifest.xml"
+  exit 0
+rescue REXML::ParseException => msg
+  puts "error parsing #{pkg_path}/manifest.xml:\n #{msg}"
+  exit 1
+rescue
+  puts "unknown error attempting to parse #{pkg_path}/manifest.xml"
+  exit 1
+end
+

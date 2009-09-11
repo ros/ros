@@ -1,0 +1,5 @@
+#!/bin/bash
+xterm -e "source ~/.bashrc && rosrun roscpp_tutorials talker" &
+xterm -e "source ~/.bashrc && rosrun roscpp_tutorials listener chatter:=chatter_drop" &
+# this will make it drop 2 out of 3 messages
+rosrun topic_tools drop chatter 2 3

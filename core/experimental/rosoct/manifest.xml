@@ -1,0 +1,15 @@
+<package>
+  <description brief="An Octave implementation of ROS using roscpp">Octave implementation for Robot Operating System.</description>
+  <author>Rosen Diankov (rdiankov@cs.cmu.edu)</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <depend package="roslang"/>
+  <depend package="roscpp"/>
+  <depend package="roscpp_sessions"/>
+  <export>
+    <roslang cmake="${prefix}/cmake/rosoct.cmake"/>
+  </export>
+  <url>http://pr.willowgarage.com/wiki/rosoct</url>
+  <rosdep name="octave"/>
+  <rosdep name="ncurses"/>
+</package>

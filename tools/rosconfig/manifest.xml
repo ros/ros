@@ -1,0 +1,19 @@
+<package>
+  <description brief="A configuration tool to set up ROS systems">
+    The motivation for rosconfig is the kernel's "menuconfig" or "xconfig"
+    tools, which set up a build environment for you. The idea is that you can
+    use the rosconfig tool, combined with a YAML description of the system you
+    want, and poof it sets it up for you -- which may entail SVN checkouts, 
+    network-filesystem symlinks, etc. Importantly, rosconfig lets you have
+    various parts of your system "frozen" so that you can set up a stable
+    environment for various people working on various projects, even if you
+    are depending on non-released code. Essentially, it lets you set up your
+    own update schedule, rather than being forced to use other people's release
+    and development schedule.
+  </description>
+  <author>Morgan Quigley mquigley@cs.stanford.edu</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+</package>
+
+

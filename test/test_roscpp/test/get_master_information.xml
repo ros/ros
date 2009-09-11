@@ -1,0 +1,3 @@
+<launch>
+  <test test-name="get_master_information" pkg="test_roscpp" type="get_master_information"/>
+</launch>

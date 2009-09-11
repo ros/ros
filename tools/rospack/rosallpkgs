@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+
+USAGE = 'USAGE: rosallpkgs [pkg1 pkg2...]'
+
+# Taken from
+# http://mail.python.org/pipermail/python-list/2005-November/352658.html
+def remove_dups(L):
+  """Removes duplicate items from list L in place."""
+  # Work backwards from the end of the list.
+  for i in range(len(L)-1, -1, -1):
+      # Check to see if the current item exists elsewhere in 
+      # the list, and if it does, delete it.
+      if L[i] in L[:i]:
+          del L[i]
+
+import os, sys
+
+if len(sys.argv) > 1:
+  pkgs = sys.argv[1:]
+else:
+  pkgs = os.popen('rospack list-names').readlines()
+
+alldeps = []
+for pkg in pkgs:
+  children = os.popen('rospack deps ' + pkg).readlines()
+  alldeps.extend(children)
+  alldeps.extend([pkg])
+
+remove_dups(alldeps)
+
+for d in alldeps:
+  print d.strip()

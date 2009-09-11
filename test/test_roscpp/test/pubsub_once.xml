@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="test_roscpp" type="publish_n_fast" args="1 1 1"/>
+  <test test-name="pubsub_once" pkg="test_roscpp" type="subscribe_n_fast" args="tcp 1 1.0"/>
+</launch>

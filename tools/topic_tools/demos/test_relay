@@ -1,0 +1,6 @@
+#!/bin/bash
+#xterm -e "roscore" &
+#sleep 2
+xterm -e "source ~/.bashrc && roscd roscpp_tutorials/bin; ./talker" &
+xterm -e "source ~/.bashrc && roscd roscpp_tutorials/bin; ./listener chatter:=chatter_relay" &
+./relay chatter

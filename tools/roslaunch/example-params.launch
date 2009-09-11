@@ -1,0 +1,9 @@
+<launch>
+
+  <!-- use rosparam files -->
+  <group ns="rosparam">
+    <rosparam command="load" file="$(find rosparam)/example.yaml" />
+  </group>
+    <rosparam ns="rosparam2" command="load" file="$(find rosparam)/example.yaml" />
+  
+</launch>

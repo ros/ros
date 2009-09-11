@@ -1,0 +1,322 @@
+#! /usr/bin/env python
+
+"""
+usage: %(progname)s [OPTION] [all|pkgs...]
+
+ Make the listed ROS packages in parallel.
+ If the argument is 'all', then compile all packages.
+
+   --jobs=n
+      sets the number of parallel jobs to n.  The default is the number of cpus on the host.
+"""
+
+import os, sys, string, time, getopt
+import subprocess
+import threading
+import select
+import cStringIO 
+import fcntl 
+
+
+class ProcessError(Exception):
+  pass
+
+def num_cpus():
+  n = 0
+  for line in open("/proc/cpuinfo"):
+    if line.startswith("processor"):
+      n = n + 1
+  return n
+
+def spawn(cmd):
+  p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  stdout, stderr = p.communicate()
+  if p.returncode != 0:
+    raise ProcessError, "Error: %s" % stderr
+  return stdout
+
+class CompileThread(threading.Thread):
+  def __init__(self, name, manager):
+    threading.Thread.__init__(self)
+    self.name = name
+    self.manager = manager
+
+  def run(self):
+    while not self.manager.done:
+      try:
+        self.manager.cv.acquire()
+
+        while len(self.manager.queue) == 0:
+          self.manager.cv.wait()
+        if self.manager.done: break
+
+        pkg = self.manager.queue.pop()
+      finally:
+        self.manager.cv.release()
+
+      self.manager.compile(pkg)
+
+
+
+class Package:
+  def __init__(self, pkgname):
+    self.pkgname = pkgname
+    self._deps = None
+    self._path = None
+    self.parents = []
+
+
+  def __repr__(self):
+    return "<" + self.pkgname + ">"
+
+  def getDeps(self):
+    if self._deps is None:
+      deps = spawn(["rospack", "deps1", self.pkgname]).strip()
+      if deps: deps = deps.split("\n")
+      else: deps = []
+      self._deps = deps
+    return self._deps
+
+  def computeDependsOn(self, packageDict):
+    deps = self.getDeps()
+
+    for pkgname in deps:
+      if pkgname not in packageDict:
+        pkg = Package(pkgname)
+        packageDict[pkgname] = pkg
+        pkg.computeDependsOn(packageDict)
+      else:
+        pkg = packageDict[pkgname]
+      pkg.parents.append(self)
+
+  def getPath(self):
+    if self._path is None:
+      self._path = spawn(["rospack", "find", self.pkgname]).strip()
+    return self._path
+
+  def removeDep(self, pkg):
+    self.getDeps().remove(pkg.pkgname)
+
+  def compile(self, manager, cwd):
+    if not os.path.exists(os.path.join(self.getPath(), "Makefile")) or \
+       os.path.exists(os.path.join(self.getPath(), "ROS_NOBUILD"))  or \
+       os.path.exists(os.path.join(self.getPath(), "ROS_BUILD_BLACKLIST")):
+      return
+
+    if self.pkgname in ("roslisp",): return
+
+    print "compile", self.pkgname
+
+    pkgpath = self.getPath()
+
+    fpout = open(os.path.join(cwd, "output", self.pkgname), "w")
+
+    env = os.environ.copy()
+    env['PWD'] = pkgpath
+    if 'ROS_PARALLEL_JOBS' in env: del env['ROS_PARALLEL_JOBS']
+
+    p = subprocess.Popen("make", close_fds=True, cwd=pkgpath, shell=False,
+                         stdin=subprocess.PIPE,
+                         stdout=fpout, stderr=subprocess.PIPE, env=env)
+    try:
+      manager.processes.append(p.pid)
+
+      buffer = cStringIO.StringIO() 
+ 
+      flags = fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) 
+      fcntl.fcntl(p.stderr.fileno(), fcntl.F_SETFL, flags | os.O_NONBLOCK) 
+
+      while 1:  
+        r = select.select([p.stderr.fileno()], [], [], 5)[0] 
+        if r:  
+          c = p.stderr.read()  
+          if not c: break  
+          buffer.write(c) 
+
+          s = buffer.getvalue() 
+
+          if s.endswith("(R)eject, accept (t)emporarily or accept (p)ermanently? "):  
+            p.stdin.write("p\n")  
+          fpout.write(c)  
+
+      sts = os.waitpid(p.pid, 0)[1]
+    finally:
+      if p.pid in manager.processes: manager.processes.remove(p.pid)
+    fpout.close()
+
+    if sts != 0:
+      if 0:
+        body = open(os.path.join(cwd, "output", self.pkgname), "r").read()
+        print ">" * 10 + self.pkgname + ">" * 40
+        print body
+        print "-" * 80
+        print "<" * 10 + self.pkgname + "<" * 40
+      print "!failed %s" % self.pkgname
+      manager.failed.append(self)
+
+
+
+  def compiled(self):
+    for _pkg in self.parents:
+      _pkg.removeDep(self)
+    
+
+
+class CompileTree:
+  def __init__(self):
+    self.packageDict = {}
+    self.queue = []
+    self.numjobs = 2
+
+    self.cv = threading.Condition()
+    self.done = False
+    self.cwd = os.getcwd()
+
+    self.outputdir = os.path.join(self.cwd, "output")
+    if not os.path.exists(self.outputdir):
+      os.makedirs(self.outputdir)
+
+    self.processes = []
+
+    self.failed = []
+
+  def go(self, packages):
+    for pkgname in packages:
+      pkg = Package(pkgname)
+      path = pkg.getPath()
+      if not path:
+        print "could not find package", pkgname
+      else:
+        self.packageDict[pkgname] = pkg
+
+    for pkgname, pkg in self.packageDict.items():
+      pkg.computeDependsOn(self.packageDict)
+
+  def display(self):
+    print "packages:"
+    for pkgname, pkg in self.packageDict.items():
+      #print len(pkg.getDeps()), pkg, len(pkg.parents), pkg.parents
+      print len(pkg.getDeps()), pkg, len(pkg.parents), pkg.getDeps()
+
+  def compile(self, pkg):
+    pkg.compile(self, self.cwd)
+
+    pkg.compiled()
+
+    del self.packageDict[pkg.pkgname]
+
+    if len(self.packageDict) == 0:
+      self.stop()
+      return
+
+    for _pkg in pkg.parents:
+      if len(_pkg.getDeps()) == 0:
+        if _pkg not in self.queue:
+          self.cv.acquire()
+          try:
+            self.queue.insert(0, _pkg)
+            self.cv.notify()
+          finally:
+            self.cv.release()
+
+  def compileManager(self):
+    for pkgname, pkg in self.packageDict.items():
+      if len(pkg.getDeps()) == 0:
+        if pkg not in self.queue:
+          self.queue.insert(0, pkg)
+    #self.queue = []
+    #self.queue.append(self.packageDict["openrave"])
+
+    if len(self.queue) == 0:
+      return
+
+    self.threads = []
+    for i in range(self.numjobs):
+      ct = CompileThread(i, self)
+      self.threads.append(ct)
+      ct.setDaemon(True)
+      ct.start()
+
+    while not self.done:
+      time.sleep(1)
+    #self.stop()
+
+  def stop(self):
+    print "stop!"
+    self.done = True
+    if 0:
+      for thread in self.threads:
+        self.cv.acquire()
+        self.cv.notify()
+        self.cv.release()
+
+  def results(self):
+    print "-" * 70
+    print "%s packages failed" % len(self.failed)
+
+    for pkg in self.failed:
+      print pkg
+    
+def test():
+  pass
+
+def usage(progname):
+  print __doc__ % vars()
+
+def main(argv, stdout, environ):
+  progname = argv[0]
+  optlist, args = getopt.getopt(argv[1:], "", ["help", "test", "debug", "jobs="])
+
+  testflag = 0
+
+  numjobs = num_cpus()
+
+  for (field, val) in optlist:
+    if field == "--help":
+      usage(progname)
+      return
+    elif field == "--debug":
+      debugfull()
+    elif field == "--test":
+      testflag = 1
+    elif field == "--jobs":
+      numjobs = int(val)
+
+  if testflag:
+    test()
+    return
+
+  if not args: 
+    usage(progname)
+    return
+
+  if args[0] == 'all':
+    packages = map(lambda s: s.split(" ")[0], spawn(["rospack", "list"]).strip().split("\n"))
+  else:
+    packages = args
+
+  ct = CompileTree()
+  ct.numjobs = numjobs
+  ct.go(packages)
+  #ct.display()
+
+  try:
+    ct.compileManager()
+  except KeyboardInterrupt:
+    ct.stop()
+
+  ## killing subprocesses
+  print ct.processes
+
+  for pid in ct.processes:
+    os.kill(pid, 9)
+
+  ct.results()
+  print "exiting main"
+  #ct.display()
+
+  
+                   
+
+if __name__ == "__main__":
+  main(sys.argv, sys.stdout, os.environ)

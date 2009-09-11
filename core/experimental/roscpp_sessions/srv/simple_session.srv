@@ -1,0 +1,4 @@
+int32 sessionid
+int32 options
+---
+int32 sessionid

@@ -1,0 +1,70 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosservice is a command-line tool for listing and querying ROS
+services. It implements a variety of commands that let you discover
+which services are currently online from which nodes and further drill
+down to get specific information about a service, such as its type,
+URI, and arguments. You can also call a service directly from the
+command line.
+
+\section commandline Command-line tools
+
+\subsection rosservice rosservice
+
+\subsubsection Usage
+
+To list the services that are currently available:
+
+\verbatim
+$ rosservice list [options] [/node]
+\endverbatim
+
+To include the name of the node that implements the service, use -n:
+
+\verbatim
+$ rosservice list -n
+\endverbatim
+
+To call a service from the command line:
+
+\verbatim
+$ rosservice call /service_name service-args
+\endverbatim
+
+e.g.
+
+\verbatim
+$ rosservice call /add_two_ints 1 2
+\endverbatim
+
+Argument are interpreted using YAML-syntax.
+
+To list the arguments to a service:
+
+\verbatim
+$ rosservice args /service_name 
+\endverbatim
+
+To get the type of a service:
+
+\verbatim
+$ rosservice type /service_name 
+\endverbatim
+
+This is useful in combination with rossrv. For example, to show the .srv file that defines a service:
+
+\verbatim
+$ rossrv show `rosservice type /service_name`
+\endverbatim
+
+To get the URI of a service:
+
+\verbatim
+$ rosservice uri /service_name 
+\endverbatim
+
+
+
+*/

@@ -1,0 +1,69 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosdoc is a tool responsible for all auto-generated ROS
+documentation.  This mainly involves running <a
+href="http://www.stack.nl/~dimitri/doxygen/">doxygen</a> across
+multiple ROS packages and combining that with information parsed from
+ROS manifest files. Nightly updates currently appear at <a href="http://pr.willowgarage.com/pr-docs/ros-packages">http://pr.willowgarage.com/pr-docs/ros-packages</a>.
+
+
+NOTE: ROS/doxygen best practices are <a
+href="http://pr.willowgarage.com/wiki/rosdoc">documented on the
+Wiki</a>.
+
+The steps in the rosdoc process are:
+-# Load manifests for all ROS packages
+-# Generate doxygen for each ROS package, using rosdoc-generated headers and footers to properly link to cross-link dependencies.
+-# Generate indicies for resulting documentation, including packages listed by source tree and packages listed by license.
+
+
+
+\section commandline Command-line tools
+
+\subsection rosdoc rosdoc
+
+\b rosdoc provides a single command-line tool also named \b rosdoc. It
+is primarily meant to be invoked on the documentation Web server, in
+which case it runs using the 'make clean && make upload-local' target,
+but you can also run it locally to test your doxygen markup.
+
+The rosdoc tool outputs all doxygen and related html documentation
+into the local \b doc directory. You can open \b doc/index.html once
+rosdoc is complete the view an index of the generated documentation.
+
+\subsubsection Usage
+
+The rosdoc command-line tool optionally takes in a list of packages,
+in which case it will only generate doxygen for those packages. This
+option is targetted at developers wishing to get a quick look at their
+latest doxygen output for their package -- it should not be used to
+generate online documentation as the indices that are generated are
+invalid.
+
+\verbatim
+$ ./rosdoc [package list...]
+\endverbatim
+
+\par Example
+
+\verbatim
+$ ./rosdoc rospy roslib
+\endverbatim
+
+\section externaldocx Linking to External Documentation
+
+There are packages for which you may wish to link to
+externally-generated code documentation. In particular, running
+doxygen on thirdparty packages is usually time consuming and not
+necessary. In these cases you'll want to include the following
+'export' tag in the manifest.xml file:
+\verbatim
+<export>
+  ... other export tags
+  <doxymaker external="http://external/documentation.html" />
+</export>
+\endverbatim
+
+*/

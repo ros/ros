@@ -1,0 +1,32 @@
+Something is causing the LISP interpreter to invoke the debugger, hanging
+the build:
+
+make[3]: Leaving directory
+`/home/rosbuild/.hudson/jobs/ros-update/workspace/trunk/core/experimental/roslisp_examples/build'
+[ 33%] Built target _roslisp_add-two-ints-server
+make[3]: Entering directory
+`/home/rosbuild/.hudson/jobs/ros-update/workspace/trunk/core/experimental/roslisp_examples/build'
+[ 33%] Generating ../../examples/array-listener
+
+debugger invoked on a SIMPLE-ERROR in thread #<THREAD "initial thread"
+{ADF06A1}>:
+  Error during processing of --eval option (LOAD
+                                            #P"/home/rosbuild/.hudson/jobs/ros-update/workspace/trunk/core/experimental/roslisp_examples/examples/array-listener.lisp"):
+
+  bad place for a wild pathname
+make[3]: Leaving directory
+`/home/rosbuild/.hudson/jobs/ros-update/workspace/trunk/core/experimental/roslisp_examples/build'
+[ 44%] Built target _roslisp_array-listener
+make[3]: Entering directory
+`/home/rosbuild/.hudson/jobs/ros-update/workspace/trunk/core/experimental/roslisp_examples/build'
+[ 44%] Generating ../../examples/array-talker
+
+debugger invoked on a SIMPLE-ERROR in thread #<THREAD "initial thread"
+{ADF0689}>:
+  Error during processing of --eval option (LOAD
+                                            #P"/home/rosbuild/.hudson/jobs/ros-update/workspace/trunk/core/experimental/roslisp_examples/examples/array-talker.lisp"):
+
+  bad place for a wild pathname
+make[3]: Leaving directory
+`/home/rosbuild/.hudson/jobs/ros-update/workspace/trunk/core/experimental/roslisp_examples/build'
+

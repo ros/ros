@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+
+"""
+usage: %(progname)s [args]
+
+runs a ros tool in an default environment
+"""
+
+import os, sys
+
+gDefaultROS_ROOT = "/usr/lib/ros"
+
+def setup_environ(environ):
+  ## set the default configuration
+
+  ## set the defaults
+  if 'ROS_ROOT' not in environ:
+    environ['ROS_ROOT'] = gDefaultROS_ROOT
+  if 'ROS_MASTER_URI' not in environ:
+    environ['ROS_MASTER_URI'] = "http://localhost:%d" % (10000+os.geteuid(),)
+  if 'ROS_LOG_DIR' not in environ:
+    environ['ROS_LOG_DIR'] = os.path.join(environ.get("HOME"), ".ros", "logs")
+
+  ## read the system wide configuration
+  config_file = "/etc/ros/ros.conf"
+  if os.path.exists(config_file):
+    execfile(config_file, globals(), environ)
+
+  ## read the user configuration
+  config_file = os.path.join(environ.get("HOME"), ".rosrc")
+  if os.path.exists(config_file):
+    execfile(config_file, globals(), environ)
+
+  ros_root = environ['ROS_ROOT']
+
+  ## set the configurations that depend on ros_root
+  if 'ROS_PACKAGE_PATH' not in environ:
+    environ['ROS_PACKAGE_PATH'] = os.path.join(ros_root, "pkgs")
+
+  if "PYTHONPATH" in environ:
+    environ['PYTHONPATH'] = environ['PYTHONPATH'] + ":" + os.path.join(ros_root, "python")
+  else:
+    environ['PYTHONPATH'] = os.path.join(ros_root, "python")
+
+  if "LD_LIBRARY_PATH" in environ:
+    environ['LD_LIBRARY_PATH'] = os.path.join(ros_root, "lib") + ":" + environ["LD_LIBRARY_PATH"]
+  else:
+    environ['LD_LIBRARY_PATH'] = os.path.join(ros_root, "lib")
+
+def main(argv, stdout, environ):
+  path, progname = os.path.split(argv[0])
+
+  if progname == "rosbusybox":
+    return
+
+  if 'ROS_ROOT' not in environ or 'ROS_MASTER_URI' not in environ or \
+     'ROS_LOG_DIR' not in environ:
+    setup_environ(environ)
+
+  ros_root = environ['ROS_ROOT']
+
+  fn = os.path.join(ros_root, "bin", progname)
+
+  os.execve(fn, argv, environ)
+
+if __name__ == "__main__":
+  main(sys.argv, sys.stdout, os.environ)

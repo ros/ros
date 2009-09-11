@@ -1,0 +1,55 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosviz is a collection of command-line tools for visualizing ROS system state including rxgraph, rosgraph, and rxplot.
+
+\section commandline Command-line tools
+
+\subsection rxgraph rxgraph
+
+\b rxgraph is a graphical tool that visualizes the connections between ROS nodes and topics.
+
+\verbatim
+$ rxgraph
+\endverbatim
+
+\subsection rosgraph rosgraph
+
+The \b rosgraph command-line tool that displays information about connectivity between ROS nodes.
+
+\subsubsection Usage
+
+\verbatim
+$ rosgraph
+\endverbatim
+
+\subsection rxplot rxplot
+
+The \b rxplot plots data from one or more ROS topic fields using matplotlib.  ROS nodes.
+
+\subsubsection Usage
+
+\verbatim
+$ rxplot /topic1/field1 /topic2/field2
+\endverbatim
+
+To graph the data all on the same plot:
+
+\verbatim
+$ rxplot /topic1/field1,/topic2/field2
+\endverbatim
+
+To graph multiple fields of a message:
+
+\verbatim
+$ rxplot /topic1/field1:field2:field3
+\endverbatim
+
+All of these options can be specified together, e.g.:
+
+\verbatim
+$ rxplot /topic1/field1,/topic2/field2:field3 /topic4/field4
+\endverbatim
+
+*/

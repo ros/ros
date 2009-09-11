@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+
+$: << `rospack find rosrb`.chomp
+require 'ros.rb'
+
+puts "generating #{ARGV[0]}"
+parsed = ROS.parse_msg_path(ARGV[0])
+pkg, msgname = parsed[:pkg], parsed[:name_no_ext]
+pkgpath = ROS.package_path(pkg)
+puts "package = #{pkg}"
+msgpath = pkgpath + '/msg'
+outpath = pkgpath + "/msg/ruby/#{pkg}"
+Dir.mkdir(msgpath) if not File.exist?(msgpath)
+Dir.mkdir(msgpath + '/ruby') if not File.exist?(msgpath + '/ruby')
+Dir.mkdir(outpath) if not File.exist?(outpath)
+msgfn = outpath + "/#{msgname}.rb"
+mf = File.new(msgfn, "w")
+mf.puts "require 'rosrb/msg.rb'"
+mf.puts "module #{ROS.to_camelcase(pkg)}"
+mf.puts "  class #{ROS.to_camelcase(msgname)}"
+mf.puts "  end"
+mf.puts "end"
+mf.close
+

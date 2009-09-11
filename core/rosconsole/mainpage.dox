@@ -1,0 +1,140 @@
+/**
+ * \mainpage
+ *
+ * \htmlinclude manifest.html
+ *
+ * \b rosconsole is a package for console output and logging.  It provides a macro-based interface
+ * which allows both printf- and stream-style output.  It also wraps log4cxx (http://logging.apache.org/log4cxx/index.html),
+ * which supports hierarchical loggers, verbosity levels and configuration-files.
+ *
+ * The requirements for rosconsole are:
+ * - Simple basic interface
+ * - No required explicit initialization step
+ * - Multiple severity level support - - info/error/warning/debug/etc.
+ * - Printf- and stream-style formatting
+ * - Ability to hook all output
+ * - Speed -- With output turned off, it should have minimal impact on runtime performance, preferably without recompilation
+ * - File and line information available per output statement
+ * - External configuration (environment or file based) of what level of output we want
+ * - Thread-safe
+ * - Ability to compile out debugging/low severity messages
+ *
+ * rosconsole provides most of this through log4cxx, and implements a few of them through the macro wrappers.
+ *
+ * rosconsole also provides an assertion/breakpoint library
+ *
+ * \section codeapi CODE API
+ * rosconsole provides four different types of logging statements, at 5 different verbosity levels, with both printf-
+ * and stream-style formatting.
+ *  - \b Base
+ *   - #ROS_DEBUG(...)
+ *   - #ROS_DEBUG_STREAM(args)
+ *   .
+ *  The base versions simply print an output message, ie:
+@verbatim
+ROS_DEBUG("Hello %s\n", "World");
+ROS_DEBUG_STREAM("Hello " << "World" << std::endl);
+@endverbatim
+ * The base versions output to a logger named "ros.<your_package_name>".
+ *  - \b Named
+ *   - #ROS_DEBUG_NAMED(name, ...)
+ *   - #ROS_DEBUG_STREAM_NAMED(name, args)
+ *   .
+ *  The named versions output to a logger that is a child of the default one.  This allows you to configure different
+ *  logging statements to be enabled/disabled based on their name.  For example:
+@verbatim
+ROS_DEBUG_NAMED("test_only", "Hello %s\n", "World");
+ROS_DEBUG_STREAM_NAMED("test_only", "Hello " << "World" << std::endl);
+@endverbatim
+ *  This will output to a logger named "ros.<your_package_name>.test_only".  More information about this is available in the
+ *  configuration file section.
+ *  - \b Conditional
+ *   - #ROS_DEBUG_COND(cond, ...)
+ *   - #ROS_DEBUG_STREAM_COND(cond, args)
+ *   .
+ *  The conditional versions will only output if the condition provided is true.  The condition itself will only be evaluated
+ *  if the logging statement itself is enabled.
+@verbatim
+ROS_DEBUG_COND(x < 0, "Uh oh, x = %d, this is bad\n", x);
+ROS_DEBUG_STREAM_COND(x < 0, "Uh oh, x = " << x << ", this is bad" << std::endl);
+@endverbatim
+ *  - \b Conditional \b named
+ *   - #ROS_DEBUG_COND_NAMED(cond, name, ...)
+ *   - #ROS_DEBUG_STREAM_COND_NAMED(cond, name, args)
+ *   .
+ *  The named conditional versions are just combinations of the above:
+@verbatim
+ROS_DEBUG_COND_NAMED(x < 0, "test_only", "Uh oh, x = %d, this is bad\n", x);
+ROS_DEBUG_STREAM_COND_NAMED(x < 0, "test_only", "Uh oh, x = " << x << ", this is bad" << std::endl);
+@endverbatim
+ *
+ * The five different verbosity levels are, in order:
+ *  - DEBUG
+ *  - INFO
+ *  - WARN
+ *  - ERROR
+ *  - FATAL
+ *
+ * rosconsole also provides assertions:
+ *  - #ROS_ASSERT(cond)
+ *  - #ROS_ASSERT_MSG(cond, ...)
+ *  - #ROS_BREAK()
+ *
+ * See rosassert.h for more information
+ *
+ * \section config CONFIGURATION
+ *
+ * rosconsole will load a config file from $ROS_ROOT/config/rosconsole.config when it initializes.
+ *
+ * rosconsole also lets you define your own configuration file that will be used by log4cxx, defined by the
+ * ROSCONSOLE_CONFIG_FILE environment variable.  Anything defined in this config file with \b override the default
+ * config file.
+ *
+ * A simple example:
+@verbatim
+# Set the default ros output to warning and higher
+log4j.logger.ros=WARN
+# Override my package to output everything
+log4j.logger.ros.my_package_name=DEBUG
+@endverbatim
+ *
+ * You may have noticed that the example says "log4j" not "log4cxx".  This is because log4cxx is directly
+ * compatible with log4j's configuration files.
+ *
+ * ROS output is set to \b info and higher by default.
+ *
+ * For more detailed information on the config file, and log4cxx in general please see:
+ * http://logging.apache.org/log4cxx/index.html
+ *
+ * \section loggerhierarchy ROS LOGGER HIERARCHY
+ * Rosconsole uses the "ros" logger as its root-level logger.  All unnamed logging statements will be output to the
+ * "ros.<package_name>" logger.  The named variations will output to "ros.<package_name>.<name>".  There are a couple of
+ * defines that expose this:
+ *  - #ROSCONSOLE_ROOT_LOGGER_NAME expands to "ros"
+ *  - #ROSCONSOLE_DEFAULT_NAME expands to "ros.<package_name>"
+ *
+ * If you'd like to access one of your named loggers, you can get the name by:
+@verbatim
+const char* logger_name = ROSCONSOLE_DEFAULT_NAME ".<name>"
+@endverbatim
+ *
+ *
+ * \section compiletime COMPILE-TIME LOGGING REMOVAL
+ * rosconsole provides a way to remove logging at compile time, though this should rarely be necessary.
+ * This is accomplished through the ROSCONSOLE_MIN_SEVERITY define.  Statements of a severity level lower
+ * than ROSCONSOLE_MIN_SEVERITY will be compiled out.  The options are:
+ *  - #ROSCONSOLE_SEVERITY_DEBUG
+ *  - #ROSCONSOLE_SEVERITY_INFO
+ *  - #ROSCONSOLE_SEVERITY_WARN
+ *  - #ROSCONSOLE_SEVERITY_ERROR
+ *  - #ROSCONSOLE_SEVERITY_FATAL
+ *  - #ROSCONSOLE_SEVERITY_NONE - no logging will be compiled in
+ *
+ *  \section changingloggerlevels CHANGING LOGGER LEVELS
+ *  If you change one of the log4cxx::Logger's verbosity levels after any logging statements using that logger,
+ *  you \b must call ros::console::notifyLoggerLevelsChanged().  If you do not, logging statements that have already
+ *  been hit once (and therefore initialized) may continue to print when they should not, and vice-versa.
+ *
+ *  For examples of this behavior, please see the examples/example.cpp file.
+ */
+

@@ -1,0 +1,42 @@
+<package>
+  <description brief="System visualization for ROS">
+  
+  Tools for visualization of ROS system statistics including rxgraph, rosgraph, and rxplot. 
+
+  rxgraph uses xdot.py by Jose Fonseca, which is licensed under LGPL:
+
+  http://code.google.com/p/jrfonseca/wiki/XDot
+
+  rxplot requires matplotlib, pylab, numpy
+
+  </description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="API cleared" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/rosviz</url>
+  <depend package="roslib"/>
+  <depend package="rospy"/>
+  <depend package="std_msgs"/>
+  
+  <sysdepend os="ubuntu" version="8.04-hardy" package="python-gtk2" />
+  <sysdepend os="ubuntu" version="8.04-hardy" package="python-matplotlib" />
+  <sysdepend os="ubuntu" version="8.04-hardy" package="graphviz" />      
+
+  <sysdepend os="centos" version="5.2" package="graphviz" />      
+  <sysdepend os="centos" version="5.2" package="pygtk2" />      
+  <sysdepend os="centos" version="5.2" package="python-matplotlib" />
+  
+  <sysdepend os="ubuntu" version="7.10-gutsy" package="python-gtk2" />
+  <sysdepend os="ubuntu" version="7.10-gutsy" package="python-matplotlib" />
+  <sysdepend os="ubuntu" version="7.10-gutsy" package="graphviz" />      
+
+  <sysdepend os="macports" package="graphviz"/>      
+  <sysdepend os="macports" package="py25-gtk"/>      
+  <sysdepend os="macports" package="py25-matplotlib"/>
+
+  <rosdep name="python-gtk2"/>
+  <rosdep name="python-matplotlib"/>
+  <rosdep name="graphviz"/>
+  
+</package>
+

@@ -1,0 +1,5 @@
+#!/bin/bash
+for((i=0;$i<100;i=$(($i+1))));do
+  `rospack find test_roscpp`/bin/dos_botherder &
+done
+rm *.log

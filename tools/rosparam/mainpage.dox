@@ -1,0 +1,121 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosparam is a command-line tool for setting and getting parameter server state using
+YAML-encoded parameter values.
+
+\section commandline Command-line tools
+
+\subsection rosparam rosparam
+
+The \b rosparam tool enables command-line setting and getting of parameters as well as
+loading and dumping parameter server state to a file. The parameter server values
+are encoded using YAML, which is a lightweight markup language that supports all parameter
+value types. For example:
+
+\verbatim
+integer: 1234
+float: 1234.5
+list: [1.0, mixed list]
+dictionary: {a: b, c: d}
+\endverbatim
+
+There are also special converters for angle radian/degree
+representations. Any Python-legal mathematical expression can be used
+with the radian value, with 'pi' used to represent pi.
+
+\verbatim
+angle1: rad(2*pi)
+angle2: deg(180)
+\endverbatim
+
+or,
+
+\verbatim
+angle1: !degrees 181.0
+angle2: !radians 3.14169
+\endverbatim
+
+In either case, the angle value is converted to radians (float).
+
+For more on YAML, see http://yaml.org/spec/1.2/ .
+
+Command-line arguments to rosparam obeys the ROS_NAMESPACE environment variable. Parameter
+names that are not globally specified are resolved with respect to ROS_NAMESPACE.
+
+NOTE: 'get' and 'dump' are essentially the same command, as are 'set' and 'load'. 
+
+\subsubsection Usage
+
+To get a parameter value:
+
+\verbatim
+$ rosparam get parameter_name
+\endverbatim
+
+To set a parameter value:
+
+\verbatim
+$ rosparam set parameter_name value
+\endverbatim
+
+To list parameter names:
+
+\verbatim
+$ rosparam list [namespace]
+\endverbatim
+
+To dump the entire parameter server to a file:
+
+\verbatim
+$ rosparam dump dump.yaml
+\endverbatim
+
+To dump a portion of the parameter server to a file:
+
+\verbatim
+$ rosparam dump dump.yaml /namespace
+\endverbatim
+
+To load the entire parameter server from a file (this will ERASE the current parameter server state!):
+
+\verbatim
+$ rosparam load dump.yaml
+\endverbatim
+
+To load a dump file into a namespace (this will ERASE the contents of that namespace!):
+
+\verbatim
+$ rosparam load dump.yaml /namespace
+\endverbatim
+
+\subsubsection Examples
+
+Setting a list with one as a string, integer, and float:
+
+\verbatim
+$ rosparam set /foo "['1', 1, 1.0]"
+\endverbatim
+
+Setting an entire namespace of parameters using a YAML dictionary (NOTE: this replaces all of /gains):
+
+\verbatim
+$ rosparam set /gains "p: 1.0
+> i: 1.0
+> d: 1.0"
+\endverbatim
+
+Turning on verbose output during a dump to see parameter values:
+
+\verbatim
+$ rosparam dump -v gains.yaml /gains
+dumping namespace [/gains] to file [gains.yaml]
+/gains/i=1.0
+/gains/p=1.0
+/gains/d=1.0
+\endverbatim
+
+
+
+*/

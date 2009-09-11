@@ -1,0 +1,14 @@
+<package>
+  <description brief="rosnode command line tool">
+
+     rosnode is a tools for debugging ROS nodes
+
+  </description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="API cleared" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/rosnode</url>
+  <depend package="roslib"/>
+  <depend package="rospy"/>
+</package>
+

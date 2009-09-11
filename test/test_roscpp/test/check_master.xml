@@ -1,0 +1,7 @@
+<launch>
+  <!-- zenmaster apparently doesn't reply properly to the shutdown request,
+  so we'll do this test with botherder -->
+  <master type="botherder" auto="restart"/>
+  <test test-name="check_master_true" pkg="test_roscpp" type="check_master"/>
+</launch>
+

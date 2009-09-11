@@ -1,0 +1,8 @@
+<package>
+<description brief="Some scripts to ease site-wide ROS installations">
+A few ruby scripts which attempt to simplify creating and maintaining a sitewide install of ROS for a group of users on a shared filesystem such as AFS or NFS.
+</description>
+  <author>Morgan Quigley</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+</package>

@@ -1,0 +1,13 @@
+#!/bin/bash
+if [ $# -lt 2 ]; then
+  echo "Usage:  roslocate QUERY PACKAGE"
+  echo "  where QUERY is one of {repo, svn} "
+  echo "  and PACKAGE is the package you're interested in."
+  exit 1
+fi
+if [[ $1 == 'repo' ]]; then
+  echo `wget -q -O - http://stair.stanford.edu/ros/lookup_repo.php?pkg=$2`
+elif [[ $1 == 'svn' ]]; then
+  echo `wget -q -O - http://stair.stanford.edu/ros/svn_uri.php?pkg=$2`
+fi
+

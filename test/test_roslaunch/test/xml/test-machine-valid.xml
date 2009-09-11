@@ -1,0 +1,11 @@
+<launch>
+  <machine name="machine1" address="address1" default="true" />
+  
+  <!-- verify ros-ip and ros-host-name alias -->
+  
+  <machine name="machine2" address="address2" ros-root="/ros/root" ros-package-path="/ros/package/path" ros-host-name="hostname" />
+  <machine name="machine3" address="address3" ros-ip="hostname" />
+    
+
+</launch>
+

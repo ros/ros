@@ -1,0 +1,47 @@
+/**
+
+\mainpage
+\htmlinclude manifest.html
+
+@b roslaunch is a tool for launching ROS nodes locally and remotely
+via SSH. roslaunch is configured with XML-based config files that end
+with a '.launch' extension.  These config files can include other
+config files, enabling you to easily compose larger roslaunch
+configurations.
+
+roslaunch also has a package dependency tracking tool called
+roslaunch-deps, which can help uncover missing dependencies in
+packages.
+
+\section commandline Command-line tools
+
+\subsection roslaunch roslaunch
+
+@subsubsection usage Usage
+@verbatim
+$ roslaunch config-files...
+@endverbatim
+
+roslaunch uses several command-line options which are for internal use only, including -c, -u, and --core. 
+
+\subsection roslaunch-deps roslaunch-deps
+
+@subsubsection usage Usage
+@verbatim
+$ roslaunch-deps [options] file(s)...
+@endverbatim
+
+To get warnings about dependencies missing in manifest files, run with the -w warn option:
+
+@verbatim
+$ roslaunch-deps -w file.launch
+@endverbatim
+
+To get more verbose output to help track where a dependency is coming from, run with the -v verbose option:
+
+@verbatim
+$ roslaunch-deps -v file.launch
+@endverbatim
+
+
+*/

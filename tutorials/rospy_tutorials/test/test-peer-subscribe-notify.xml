@@ -1,0 +1,5 @@
+<launch>
+  <master auto="restart" />
+  <node pkg="rospy_tutorials" type="listener_subscribe_notify" />
+  <test test-name="listener_subscribe_notify" pkg="rospy_tutorials" type="test_peer_subscribe_notify.py" />
+</launch>

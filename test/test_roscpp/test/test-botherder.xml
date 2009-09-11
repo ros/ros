@@ -1,0 +1,24 @@
+<launch>
+  <master type="botherder" />
+
+  <test test-name="botherder_simple_API" args="--simple" pkg="test_ros" type="test_master_api.py" />
+  <test test-name="botherder_registerService_success" args="--regsrvsuccess" pkg="test_ros" type="test_master_api.py" />
+  <test test-name="botherder_registerPublisher_success" args="--regpubsuccess" pkg="test_ros" type="test_master_api.py" />
+  <test test-name="botherder_registerPublisher_types" args="--regpubtypes" pkg="test_ros" type="test_master_api.py" />
+  <test test-name="botherder_registerSubscriber_simple_success" args="--regsubsimplesuccess" pkg="test_ros" type="test_master_api.py" />
+
+  <test test-name="botherder_unregisterService_success" args="--unregsrvsuccess" pkg="test_ros" type="test_master_api.py" />
+  <test test-name="botherder_unregisterPublisher_success" args="--unregpubsuccess" pkg="test_ros" type="test_master_api.py" />
+  <test test-name="botherder_unregisterSubscriber_success" args="--unregsubsuccess" pkg="test_ros" type="test_master_api.py" />
+
+  <test test-name="botherder_registerService_invalid" args="--regsrvinvalid" pkg="test_ros" type="test_master_api.py" />
+  <test test-name="botherder_registerPublisher_invalid" args="--regpubinvalid" pkg="test_ros" type="test_master_api.py" />
+  <test test-name="botherder_registerSubscriber_invalid" args="--regsubinvalid" pkg="test_ros" type="test_master_api.py" />
+      
+  <test test-name="botherder_unregisterService_invalid" args="--unregsrvinvalid" pkg="test_ros" type="test_master_api.py" />
+  <test test-name="botherder_unregisterPublisher_invalid" args="--unregpubinvalid" pkg="test_ros" type="test_master_api.py" />
+  <test test-name="botherder_unregisterSubscriber_invalid" args="--unregsubinvalid" pkg="test_ros" type="test_master_api.py" />
+      
+                
+</launch>
+

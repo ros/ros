@@ -1,0 +1,13 @@
+echo "cleaning up scratch/"
+rm -f scratch/*.flow
+rm -f scratch/*.py
+rm -f scratch/*.pyc
+
+./test_flowgen.py --generate_flows
+./test_flowgen.py --generate_py
+./test_flowgen.py --testserialize_py
+
+echo "cleaning up scratch/"
+rm scratch/*.flow
+rm scratch/*.py
+rm scratch/*.pyc

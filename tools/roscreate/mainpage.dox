@@ -1,0 +1,38 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b roscreate contains the \b roscreate-pkg tool, which is used for
+quickly creating new ROS packages. 
+
+
+\section commandline Command-line tools
+
+\subsection roscreate-pkg roscreate-pkg
+
+The \b roscreate-pkg command-line tool creates a new ROS package: manifest, CMakeList.txt, mainpage.dox, and Makefile. 
+It addresses the common problem of packages being created using pre-existing packages, which leads to errors in 
+build files and manifests. 
+
+\subsubsection Usage
+
+To create a new package in the current directory
+
+\verbatim
+$ roscreate-pkg pkgname
+\endverbatim
+
+To also specify dependencies of that package
+
+\verbatim
+$ roscreate-pkg pkgname depend1 depend2 depend3
+\endverbatim
+
+e.g.
+
+\verbatim
+$ roscreate-pkg foopkg roslib roscpp std_msgs
+\endverbatim
+
+
+*/

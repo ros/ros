@@ -1,0 +1,21 @@
+<package>
+<description brief="Ros Debian Tools">
+Tools for making debian packages from ROS packages.
+</description>
+  <author>Scott Hassan (hassan-ros@willowgarage.com)</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/rosdeb</url>
+
+  <sysdepend os="ubuntu" version="7.10-gutsy" package="fakeroot" />
+  <sysdepend os="ubuntu" version="7.10-gutsy" package="dpkg-dev" />
+
+  <sysdepend os="ubuntu" version="8.04-hardy" package="fakeroot" />
+  <sysdepend os="ubuntu" version="8.04-hardy" package="dpkg-dev" />
+
+  <sysdepend os="ubuntu" version="8.10-intrepid" package="fakeroot" />
+  <sysdepend os="ubuntu" version="8.10-intrepid" package="dpkg-dev" />
+  <rosdep name="fakeroot"/>
+  <rosdep name="dpkg-dev"/>
+</package>
+

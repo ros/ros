@@ -1,0 +1,422 @@
+sdl:
+  ubuntu: libsdl1.2-dev
+  debian: libsdl1.2-dev
+  fedora: SDL-devel
+  arch: sdl 
+sdl-image:
+  ubuntu: libsdl-image1.2-dev
+  debian: libsdl-image1.2-dev
+  fedora: SDL_image-devel
+  arch: sdl_image
+ruby:
+  ubuntu: ruby
+  debian: ruby
+  arch: ruby
+apr:
+  ubuntu: libapr1-dev libaprutil1-dev
+  debian: libapr1-dev libaprutil1-dev
+  arch: apr apr-util
+  fedora: apr-devel apr-util
+  macports:
+python:
+  ubuntu: python-dev
+  debian: python-dev
+  arch: python
+  fedora: python-devel
+  macports: python25 python_select py25-hashlib
+python-yaml:
+  ubuntu: python-yaml
+  debian: python-yaml
+  fedora: PyYAML
+  centos: PyYAML
+  arch: |
+    if [ ! -f /usr/lib/libyaml.so ] ; then
+      mkdir -p ~/ros/ros-deps
+      cd ~/ros/ros-deps
+      wget --tries=10 http://aur.archlinux.org/packages/libyaml/libyaml.tar.gz
+      tar xzf libyaml.tar.gz
+      cd libyaml
+      makepkg
+      sudo pacman -U libyaml-*.pkg.tar.gz
+      cd ..
+      wget --tries=10 http://aur.archlinux.org/packages/python-yaml/python-yaml.tar.gz
+      tar xzf python-yaml.tar.gz
+      cd python-yaml
+      makepkg
+      sudo pacman -U python-yaml-*.pkg.tar.gz
+    fi
+  macports: py25-yaml
+python-gtk2:
+  ubuntu: python-gtk2
+  arch: pygtk
+  debian: python-gtk2
+python-matplotlib:
+  ubuntu: python-matplotlib
+  arch: python-matplotlib
+  debian: python-matplotlib
+python-imaging:
+  ubuntu: python-imaging
+  debian: python-imaging
+  fedora: python-imaging
+  arch: pil
+python-numpy:
+  ubuntu: python-numpy
+  debian: python-numpy
+  fedora: numpy
+  arch: python-numpy
+python-scipy:
+  ubuntu: python-scipy
+  debian: python-scipy
+  arch: python-scipy
+bzip2:
+  ubuntu: libbz2-dev
+  debian: libbz2-dev
+  fedora: bzip2-devel
+  arch: bzip2
+  macports: bzip2
+boost:
+  ubuntu:
+    9.04: libboost1.37-dev
+    8.10: |
+      if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/boost_1_37_0.tar.gz
+        tar xzf boost_1_37_0.tar.gz
+        cd boost_1_37_0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
+    8.04: |
+      if [ ! -f /opt/ros/lib/libboost_date_time-gcc42-mt*-1_37.a ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/boost_1_37_0.tar.gz
+        tar xzf boost_1_37_0.tar.gz
+        cd boost_1_37_0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
+  debian:
+    squeeze/sid: libboost1.37-dev
+    lenny: |
+      if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/boost_1_37_0.tar.gz
+        tar xzf boost_1_37_0.tar.gz
+        cd boost_1_37_0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
+  fedora: boost-devel
+  arch: boost
+  macports: boost
+zlib:
+  ubuntu: zlib1g-dev
+  debian: zlib1g-dev
+  fedora: zlib-devel
+  arch: zlib
+  macports:  
+graphviz:
+  ubuntu: graphviz
+  debian: graphviz
+  fedora: graphviz
+  arch: graphviz
+fakeroot:
+  ubuntu: fakeroot
+  arch: fakeroot
+  debian: fakeroot
+dpkg-dev:
+  ubuntu: dpkg-dev
+  debian: dpkg-dev
+doxygen:
+  ubuntu: doxygen
+  arch: doxygen
+  debian: doxygen
+wxwidgets:
+  ubuntu: libwxgtk2.8-dev
+  debian: libwxgtk2.8-dev
+  fedora: wxGTK-devel
+  arch: wxgtk
+wxpython:
+  ubuntu: python-wxgtk2.8
+  arch: wxpython
+  centos: wxPython-devel
+  debian: python-wxgtk2.8
+log4cxx:
+  ubuntu:
+    9.04: liblog4cxx10-dev
+    8.10: |
+      if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/apache-log4cxx-0.10.0-wg_patched.tar.gz
+        tar xzf apache-log4cxx-0.10.0-wg_patched.tar.gz
+        cd apache-log4cxx-0.10.0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
+    8.04: |
+      if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/apache-log4cxx-0.10.0-wg_patched.tar.gz
+        tar xzf apache-log4cxx-0.10.0-wg_patched.tar.gz
+        cd apache-log4cxx-0.10.0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
+  debian:
+    squeeze/sid: liblog4cxx10-dev
+    lenny: |
+      if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/apache-log4cxx-0.10.0-wg_patched.tar.gz
+        tar xzf apache-log4cxx-0.10.0-wg_patched.tar.gz
+        cd apache-log4cxx-0.10.0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
+  fedora: log4cxx-devel
+  arch: |
+    if [ ! -f /usr/lib/liblog4cxx.so.10 ] ; then
+      mkdir -p ~/ros/ros-deps
+      cd ~/ros/ros-deps
+      wget --tries=10 http://aur.archlinux.org/packages/log4cxx/log4cxx.tar.gz
+      tar xzf log4cxx.tar.gz
+      cd log4cxx
+      makepkg
+      sudo pacman -U log4cxx-*.pkg.tar.gz
+    fi
+  macports: |
+    if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
+      mkdir -p ~/ros/ros-deps
+      cd ~/ros/ros-deps
+      wget --tries=10 http://pr.willowgarage.com/downloads/apache-log4cxx-0.10.0-wg_patched.tar.gz
+      tar xzf apache-log4cxx-0.10.0-wg_patched.tar.gz
+      cd apache-log4cxx-0.10.0
+      ./configure --prefix=/opt/ros
+      make
+      sudo make install
+    fi
+libxext:
+  ubuntu: libXext-dev
+  debian: libxext-dev
+  fedora: libXext-devel
+  arch: libxext
+glut:
+  ubuntu: libglut3-dev
+  debian: libglut3-dev
+  fedora: freeglut-devel
+  arch: freeglut
+swig:
+  ubuntu: swig
+  debian: swig
+  fedora: swig
+  arch: swig
+zziplib:
+  ubuntu: libzzip-0-13 libzzip-dev
+  debian: libzzip-0-13 libzzip-dev
+  fedora: zziplib-devel
+  arch: zziplib
+libxaw:
+  ubuntu: libxaw7-dev 
+  debian: libxaw7-dev 
+  fedora: libXaw-devel
+  arch: libxaw
+opengl:
+  ubuntu: libgl1-mesa-dev libglu1-mesa-dev
+  debian: libgl1-mesa-dev libglu1-mesa-dev
+  fedora: mesa-libGL-devel mesa-libGLU-devel
+  arch: mesa
+libxxf86vm:
+  ubuntu: libxxf86vm-dev
+  debian: libxxf86vm-dev
+  fedora: libXxf86vm-devel
+  arch: libxxf86vm
+gtk2:
+  ubuntu: libgtk2.0-dev
+  debian: libgtk2.0-dev
+  fedora: gtk2-devel
+  arch: gtk2
+autoconf:
+  ubuntu: autoconf
+  debian: autoconf
+  fedora: autoconf
+  arch: autoconf
+automake:
+  ubuntu: automake
+  debian: automake
+  fedora: automake
+  arch: automake
+libtool:
+  ubuntu: libtool libltdl3-dev
+  debian: libtool libltdl3-dev
+  fedora: libtool libtool-ltdl-devel
+  arch: libtool
+libjpeg:
+  ubuntu: libjpeg62-dev
+  debian: libjpeg62-dev
+  fedora: libjpeg-devel
+  arch: libjpeg
+fltk:
+  ubuntu: libfltk1.1-dev
+  debian: libfltk1.1-dev
+  fedora: fltk-devel
+  arch: fltk
+pkg-config:
+  ubuntu: pkg-config
+  debian: pkg-config
+  fedora: pkgconfig
+  arch: pkgconfig
+  macports: pkgconfig
+octave:
+  ubuntu: octave3.0-headers
+  arch: octave
+  centos: octave-devel
+  debian: octave3.0-headers
+ncurses:
+  ubuntu: libncurses5-dev
+  arch: ncurses
+  centos: ncurses-devel
+  debian: libncurses5-dev
+qt4:
+  ubuntu: libqt4-core libqt4-dev qt4-dev-tools libqt4-opengl-dev
+  debian: libqt4-core libqt4-dev qt4-dev-tools libqt4-opengl-dev
+  arch: qt
+coin:
+  ubuntu: libcoin40-dev
+  debian: libcoin40-dev
+  arch: coin
+curl:
+  ubuntu: libcurl4-openssl-dev
+  debian: libcurl4-openssl-dev
+  arch: curl
+libxml2:
+  ubuntu: libxml2-dev
+  debian: libxml2-dev
+  arch: libxml2
+glew:
+  ubuntu: libglew1.5-dev
+  debian: libglew1.5-dev
+  arch: glew
+qhull:
+  ubuntu: libqhull-dev
+  debian: libqhull-dev
+  arch: qhull
+netpbm:
+  ubuntu: libnetpbm10-dev
+  debian: libnetpbm10-dev
+  arch: netpbm
+  macports: netpbm
+scons:
+  ubuntu: scons
+  debian: scons
+  arch: scons
+atlas:
+  ubuntu: libatlas-base-dev libatlas-cpp-0.6-dev
+  debian: libatlas-base-dev libatlas-cpp-0.6-dev
+  arch: atlas-lapack
+portaudio:
+  ubuntu: portaudio19-dev
+  debian: portaudio19-dev
+  arch: portaudio
+libsndfile:
+  ubuntu: libsndfile1-dev
+  debian: libsndfile1-dev
+  arch: libsndfile
+sbcl:
+  ubuntu: sbcl
+  arch: sbcl
+  debian: sbcl
+jam:
+  ubuntu: jam
+  debian: jam
+  arch: ftjam
+java:
+  ubuntu: sun-java6-jdk
+  debian: sun-java6-jdk
+  arch: openjdk6
+ant:
+  ubuntu: ant
+  debian: ant
+  arch: apache-ant
+libstdc++5:
+  ubuntu: libstdc++5
+  debian: libstdc++5
+cppunit:
+  ubuntu: libcppunit-dev
+  debian: libcppunit-dev
+python-mmpython:
+  ubuntu: python-mmpython
+python-iptcdata:
+  ubuntu: python-iptcdata
+libxv:
+  ubuntu: libxv-dev
+libglade2:
+  ubuntu: libglade2-dev
+libgconf2:
+  ubuntu: libgconf2-dev
+intltool:
+  ubuntu: intltool
+libgstreamer0.10:
+  ubuntu: libgstreamer0.10-dev
+libgstreamer-plugins-base0.10:
+  ubuntu: libgstreamer-plugins-base0.10-dev
+libavcodec:
+  ubuntu: libavcodec-dev
+libavformat:
+  ubuntu: libavformat-dev
+libavutil:
+  ubuntu: libavutil-dev
+libswscale:
+  ubuntu: libswscale-dev
+freeglut3:
+  ubuntu: freeglut3-dev
+libasound2:
+  ubuntu: libasound2-dev
+libxmu:
+  ubuntu: libxmu-dev
+libraw1394:
+  ubuntu: libraw1394-dev
+libxpat:
+  ubuntu: libxpat1-dev
+apcupsd:
+  ubuntu: apcupsd
+python-mechanize:
+  ubuntu: python-mechanize
+ipmitool:
+  ubuntu: ipmitool
+hddtemp:
+  ubuntu: hddtemp
+mayavi2:
+  ubuntu: mayavi2
+libjasper:
+  ubuntu: libjasper-dev
+libgraphicsmagick++:
+  ubuntu: libgraphicsmagick++1-dev
+libreadline:
+  ubuntu: libreadline-dev
+python-simplejson:
+  ubuntu: python-simplejson
+git:
+  ubuntu: git
+libpng:
+  ubuntu: libpng12-dev
+  debian: libpng12-dev
+unzip:
+  ubuntu: unzip
+  debian: unzip
+  arch: unzip
+libpoco:
+  ubuntu: 
+    8.10: libpoco5-dev
+    8.04: libpoco2-dev

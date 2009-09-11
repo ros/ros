@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 2.4.6)
+include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+set(ROS_BUILD_TYPE Debug)
+rospack(rosjava)
+
+#find_package(Java REQUIRED)
+#find_package(JNI REQUIRED)
+rospack_add_library(rosjava rosjava.cpp) 
+#include_directories(${JNI_INCLUDE_DIRS})
+#message("${JNI_INCLUDE_DIRS}")
+#message("${JNI_LIBRARIES}")
+#message("${JAVA_RUNTIME}")
+#message("${JAVA_COMPILE}")
+#message("${JAVA_JVM_LIBRARY}")
+#message("${JAVA_INCLUDE_PATH}")
+#message("${JAVA_INCLUDE_PATH2}")
+#rospack_add_compile_flags(rosjava "-I${JNI_INCLUDE_PATH}" "-I${JNI_INCLUDE_PATH2}")
+rospack_add_compile_flags(rosjava "-I/usr/lib/jvm/java-6-sun/include/" "-I/usr/lib/jvm/java-6-sun/include/linux/")
+set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+
+gensrv()
+genmsg()
+
+#add_subdirectory(test EXCLUDE_FROM_ALL)
+

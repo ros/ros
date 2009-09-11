@@ -1,0 +1,16 @@
+#!/bin/bash
+GENMSG=`rospack find rosrb`/scripts/genmsg
+for i in $*; do
+  PKGDIR_MESSY=`dirname $i`/..
+  PKGDIR=`cd $PKGDIR_MESSY && pwd`
+  PKGNAME=`basename $PKGDIR`
+  MSGNAME=`basename $i .msg`
+  TARGET=$PKGDIR/msg/rb/$PKGNAME/$MSGNAME.h
+  echo Generating $PKGNAME/$MSGNAME
+  $GENMSG $i
+  if [ $? != 0 ]; then
+    echo "Error while generating c++ message"
+    exit 1
+  fi
+done
+

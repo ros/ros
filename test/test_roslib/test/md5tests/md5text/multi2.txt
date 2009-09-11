@@ -1,0 +1,14 @@
+# comment about a
+int32 a
+# comment about log
+roslib/Log log
+# comment about s
+string s
+# comment about time
+roslib/Time time
+# comment about b
+int32 b
+# comment about d
+duration d
+# comment about t
+time t 

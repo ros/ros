@@ -1,0 +1,18 @@
+<package>
+  <description brief="ROS for Python">
+
+     Python implementation of the ROS master/node APIs and client library.
+
+  </description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="API conditionally cleared" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/rospy</url>
+  <logo>http://www.willowgarage.com/files/willowgarage/robot10.jpg</logo>
+  <depend package="roslib"/>
+  <depend package="roslang"/>
+  <export>
+    <roslang cmake="${prefix}/cmake/rospy.cmake"/>
+  </export>
+</package>
+

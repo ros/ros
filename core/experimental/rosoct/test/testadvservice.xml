@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="rosoct" cwd="node" type="runoctave" args="--eval callservice"/>
+  <test test-name="testadvservice" cwd="node" pkg="rosoct" type="testadvservice" args=""/>
+</launch>

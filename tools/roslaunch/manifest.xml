@@ -1,0 +1,27 @@
+<package>
+  <description brief="ROS Process Launcher">
+
+     Local and remote (SSH) process launcher for ROS nodes.
+
+  </description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="API conditionally cleared" notes="01/22/2009"/>
+  <url>http://pr.willowgarage.com/wiki/roslaunch</url>
+  <depend package="roslib"/>
+  <depend package="rospy"/>
+  <depend package="paramiko"/>
+  <depend package="rosout"/>
+
+  <!-- yaml dependencies -->
+  <sysdepend package="python-yaml" os="ubuntu" version="7.04-feisty"/>
+  <sysdepend package="python-yaml" os="ubuntu" version="7.10-gutsy"/>
+  <sysdepend package="python-yaml" os="ubuntu" version="8.04-hardy"/>
+
+  <sysdepend package="py25-yaml" os="macports" />
+
+  <sysdepend package="PyYAML" os="centos" version="5.2"/>
+  <rosdep name="python-yaml"/>
+  
+</package>
+

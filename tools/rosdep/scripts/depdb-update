@@ -1,0 +1,8 @@
+#!/bin/bash
+set -o errexit
+if [ $# -ne 1 ] ; then
+  echo "syntax: depdb-update FILE"
+  exit 1
+fi
+echo "downloading the latest rosdep.yaml from sourceforge..."
+wget -q http://ros.svn.sourceforge.net/svnroot/ros/trunk/tools/rosdep/rosdep.yaml -O $1

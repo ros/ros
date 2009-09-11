@@ -1,0 +1,7 @@
+<launch>
+  <test test-name="test_env" pkg="test_roslaunch" type="test_env.py" >
+    <env name="TEST_ENV" value="test env"/>
+    <env name="TEST_ENV_SUBSTITUTION" value="$(find roslib)/src/"/>    
+  </test>
+  <test test-name="test_noenv" pkg="test_roslaunch" type="test_env.py" args="--noenv" />
+</launch>

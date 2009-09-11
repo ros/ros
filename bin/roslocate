@@ -1,0 +1,128 @@
+#!/usr/bin/env python
+# Copyright Morgan Quigley, bsd license blah blah
+
+"""
+usage: roslocate COMMAND PARAMS
+
+currently supported commands:
+
+  roslocate describe PACKAGE
+  roslocate svn PACKAGE
+  roslocate repo PACKAGE
+  roslocate list
+  roslocate search KEYWORD
+"""
+
+import os
+import sys
+import time
+import datetime
+from xml.dom.minidom import parse
+
+def getText(nodes):
+  s = ""
+  for node in nodes:
+    for n2 in node.childNodes:
+      if n2.nodeType == n2.TEXT_NODE:
+        s = s + n2.data
+  return s
+
+def getCachePath():
+  try:
+    cpath = "%s/.roslocate_megamanifest.xml" % os.environ['ROS_ROOT']
+    f = open(cpath, 'a')
+    f.close()
+    return cpath
+  except IOError:
+    return "%s/.ros/roslocate_megamanifest.xml" % os.environ['HOME']
+
+def download_megamanifest(cpath):
+  #print "downloading megamanifest to %s" % cpath
+  uris = ['http://ros.sourceforge.net/browse/megamanifest.xml',
+          'http://stair.stanford.edu/ros/megamanifest.xml', 
+          'http://pr.willowgarage.com/roslocate/megamanifest.xml']
+  for uri in uris:
+    #print "trying %s" % uri
+    if (os.system("wget %s -q -O %s" % (uri, cpath)) != 0):
+      #print "couldn't download from %s" % uri
+      continue
+    else:
+      os.utime(cpath, None)
+      return True
+  return False
+
+def load_megamanifest():
+  cpath = getCachePath()
+  if not os.path.exists(cpath) or os.path.getsize(cpath) == 0:
+    if not download_megamanifest(cpath):
+      print "couldn't download megamanifest..."
+      exit(1)
+  cache_age = datetime.datetime.now() - \
+              datetime.datetime.fromtimestamp(os.path.getmtime(cpath))
+  cache_age_secs = cache_age.seconds + cache_age.days * 3600 * 24
+  #print "cache is %d seconds old" % cache_age_secs
+  if cache_age_secs > 3600 * 8:
+    download_megamanifest(cpath)
+  return parse(cpath) # megamanifest
+
+def usage():
+  print __doc__ % vars()
+  exit(1)
+
+def describe(pkgs, pkgname):
+  for pkg in pkgs:
+    if pkg.attributes['name'].value == pkgname:
+      print ""
+      #print pkg.getElementsByTagName('description')[0].attributes['brief'].value
+      print "Repository: %s " % pkg.attributes['repo_host'].value
+      print "License: %s" % getText(pkg.getElementsByTagName('license')).strip()
+      print ""
+      print "Author(s): %s" % getText(pkg.getElementsByTagName('author'))
+      print "Description: %s" % getText(pkg.getElementsByTagName('description'))
+      #for dep in pkg.getElementsByTagName('depend'):
+      #  print dep.attributes['package'].value
+      print "ROS dependencies: %s" % (", ".join([dep.attributes['package'].value for dep in pkg.getElementsByTagName('depend')]))
+      print ""
+      return
+  print "No package named %s found in the (known) public ROS repositories" % pkgname
+
+def svn(pkgs, pkgname):
+  for pkg in pkgs:
+    if pkg.attributes['name'].value == pkgname:
+      print "%s%s" % (pkg.attributes['repo'].value, pkg.attributes['path'].value)
+
+def repo(pkgs, pkgname):
+  for pkg in pkgs:
+    if pkg.attributes['name'].value == pkgname:
+      print "%s" % pkg.attributes['repo_host'].value
+
+def list_all(pkgs):
+  for pkg in pkgs:
+    print pkg.attributes['name'].value
+
+def search(pkgs, keyword):
+  for pkg in pkgs:
+    desc = pkg.getElementsByTagName('description')
+    if getText(desc).lower().find(keyword.lower()) > 0:
+      print pkg.attributes['name'].value
+
+def roslocate_main():
+  if len(sys.argv) < 2:
+    usage()
+  mm = load_megamanifest()
+  pkgs = mm.getElementsByTagName('package')
+  if sys.argv[1] == "describe":
+    describe(pkgs, sys.argv[2])
+  elif sys.argv[1] == "svn":
+    svn(pkgs, sys.argv[2])
+  elif sys.argv[1] == "repo":
+    repo(pkgs, sys.argv[2])
+  elif sys.argv[1] == "list":
+    list_all(pkgs)
+  elif sys.argv[1] == "search":
+    search(pkgs, sys.argv[2])
+  else:
+    usage()
+
+roslocate_main()
+

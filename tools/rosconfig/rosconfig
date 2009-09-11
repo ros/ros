@@ -1,0 +1,184 @@
+#!/usr/bin/env python
+
+"""
+usage: rosconfig COMMAND PARAMS
+
+currently supported commands:
+
+  rosconfig install URI PATH
+  rosconfig install CONFIGFILE PATH
+  rosconfig setup PATH
+  rosconfig update PATH
+  rosconfig bootstrap URI PATH [PACKAGE]
+"""
+
+import os
+import subprocess
+import sys
+import xml.dom.minidom #import parse
+import yaml
+from urlparse import urlparse
+import urllib, urllib2
+
+def usage():
+  print __doc__ % vars()
+  exit(1)
+
+def install_svn(svn_uri, version, local_name, base_path):
+  #print "checking out %s version %s into %s" % (svn_uri, local_name, version)
+  #print "version = %s" % version
+  if len(version) > 0 and version[0] == 'r' and version[1:].isdigit():
+    cmd = "svn co -r %s %s %s/%s"%(version[1:], svn_uri, base_path, local_name)
+  else:
+    cmd = "svn co %s %s/%s" % (svn_uri, base_path, local_name)
+  print cmd
+  retcode = subprocess.call(cmd, shell=True)
+  if retcode != 0:
+    print "woah, nonzero return value: %d" % retcode
+    exit(1)
+
+def install_yaml(y, path):
+  for t in y:
+    for k, v in t.items():
+      try:
+        local_name = v['local-name']
+      except KeyError:
+        print "local-name is required on all code trees"
+        exit(1)
+      version = v['version'] if v.has_key('version') else ""
+      if k == 'svn':
+        if not v.has_key('uri'):
+          print "woah! no uri for a svn code tree"
+          exit(1)
+        install_svn(v['uri'], version, local_name, path)
+      else:
+        raise "woah, unknown code installation method %s" % k
+  f = file(path+'/this.rosconfig','w')
+  yaml.dump(y, f, default_flow_style=False)
+
+def install(uri, path):
+  #print "installing rosconfig %s into %s" % (uri, path)
+  u = urlparse(uri)
+  f = 0
+  if u.scheme == '':
+    try:
+      f = open(uri, 'r')
+    except IOError, e:
+      print "error opening file: %s" % e
+  else:
+    try:
+      f = urllib2.urlopen(uri)
+    except IOError, e:
+      print "got an http error: %s" % e
+  if f:
+    try:
+      y = yaml.load(f);
+      install_yaml(y, path)
+    except yaml.YAMLError, e:
+      print "woah, yaml parse error: %s" % e
+
+def setup_string(path):
+  #print "setting up environment for ROS system in %s" % path
+  try:
+    y = yaml.load(open(path + '/this.rosconfig', 'r'))
+  except yaml.YAMLError, e:
+    print "woah, yaml parse error: %s" % e
+    exit(1)
+  rpp = ""
+  s = ""
+  found_ros = False
+  for t in y:
+    for k, v in t.items():
+      try:
+        local_name = v['local-name']
+      except KeyError:
+        print "local-name must be defined on all code trees"
+        exit(1)
+      #print "code tree: %s" % local_name
+      # see if it's a stack
+      tp = path + '/' + local_name
+      if os.path.exists(tp) and os.path.exists(tp+'/stack.xml'):
+        # see if this is the "ros" stack; it's special
+        x = xml.dom.minidom.parse(tp+'/stack.xml')
+        try:
+          stack_name = x.documentElement.attributes['name'].value
+        except KeyError:
+          s += "woah! stack at %s doesn't have a name attribute\n" % tp
+          exit(1)
+        if (stack_name == 'ros'):
+          found_ros = True
+          s += "export ROS_ROOT=%s ; \n" % tp
+          s += "export PATH=%s/bin:${PATH} ; \n" % tp
+          s += "export PYTHONPATH=%s/core/roslib/src:${PYTHONPATH} ; \n" % tp
+          s += "export OCTAVE_PATH=%s/core/experimental/rosoct/octave:${OCTAVE_PATH} ; \n" % tp
+          s += "if [ ! \"$ROS_MASTER_URI\" ] ; then export ROS_MASTER_URI=http://localhost:11311 ; fi ; "
+          terminal = ". %s/tools/rosbash/rosbash \n" % tp
+      else:
+        if len(rpp) > 0:
+          rpp += ':'
+        rpp += tp
+  if not found_ros:
+    print "woah! couldn't find a ROS stack below %s" % path
+    exit(1)
+  s += "export ROS_PACKAGE_PATH=%s ; \n" % rpp
+  s += terminal
+  return s
+
+def setup(path):
+  print setup_string(path)
+
+def update(path):
+  print "updating ROS system in %s" % path
+
+def rosconfig_main():
+  if len(sys.argv) < 2:
+    usage()
+  if sys.argv[1] == "install" and len(sys.argv) == 4:
+    install(sys.argv[2], os.path.abspath(sys.argv[3]))
+  elif sys.argv[1] == "setup" and len(sys.argv) == 3:
+    setup(sys.argv[2])
+  elif sys.argv[1] == "update" and len(sys.argv) == 3:
+    update(sys.argv[2])
+  elif sys.argv[1] == "bootstrap" and len(sys.argv) == 4 or len(sys.argv) == 5:
+    target = os.path.abspath(sys.argv[3])
+    install(sys.argv[2], target)
+    if len(sys.argv) == 4:
+      target_pkg = "roscpp_tutorials" # just to build some stuff
+    else:
+      target_pkg = sys.argv[4]
+    cmd = "eval \"%s\" && roscd && make minimal" % setup_string(target).replace('\n','')
+    print "building rospack and rosdep..."
+    print cmd
+    retcode = subprocess.call(cmd, shell=True, executable="/bin/bash")
+    if retcode != 0:
+      print "woah, nonzero return value: %d" % retcode
+      exit(1)
+    cmd = "eval \"%s\" && rosdep satisfy roslaunch %s > %s" % (setup_string(target).replace('\n',''), target_pkg, target + "/.rosdep_satisfy_script")
+    print "running rosdep..."
+    print cmd
+    retcode = subprocess.call(cmd, shell=True, executable="/bin/bash")
+    if retcode != 0:
+      print "woah, nonzero return value: %d" % retcode
+      exit(1)
+    print target
+    cmd = "eval \"%s\" && cd %s && bash .rosdep_satisfy_script" % (setup_string(target).replace('\n',''), target)
+    print "running rosdep-generated script..."
+    print cmd
+    retcode = subprocess.call(cmd, shell=True, executable="/bin/bash")
+    if retcode != 0:
+      print "woah, nonzero return value: %d" % retcode
+      exit(1)
+
+    cmd = "eval \"%s\" && rosmake roslaunch %s" % (setup_string(target).replace('\n',''), target_pkg)
+    print "running rosmake..."
+    print cmd
+    retcode = subprocess.call(cmd, shell=True, executable="/bin/bash")
+    if retcode != 0:
+      print "woah, nonzero return value: %d" % retcode
+      exit(1)
+    print "\n\ndone!\n\n"
+  else:
+    usage()
+
+rosconfig_main()
+

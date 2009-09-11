@@ -1,0 +1,8 @@
+<launch>
+
+  <node pkg="package" type="test_node_rosparam_load" name="rosparam_load">
+    <rosparam file="load.yaml" command="load" />
+  </node>
+  
+</launch>
+

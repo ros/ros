@@ -1,0 +1,10 @@
+float32 turretAngle
+float32 shoulderLiftAngle
+float32 upperarmRollAngle
+float32 elbowAngle
+float32 forearmRollAngle
+float32 wristPitchAngle
+float32 wristRollAngle
+float32 gripperForceCmd
+float32 gripperGapCmd
+

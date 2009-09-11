@@ -1,0 +1,55 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosnode is a command-line tool for displaying debug information about nodes.
+
+\section commandline Command-line tools
+
+\subsection rosnode rostopic
+
+The \b rosnode command-line tool displays information about ROS nodes.
+
+\subsubsection Usage
+
+\verbatim
+$ rosnode list [options]
+$ rosnode info node1 [node2...]
+$ rosnode ping [options] [node]
+\endverbatim
+
+
+\par Examples
+
+To display a list of current nodes:
+
+\verbatim
+$ rosnode list
+\endverbatim
+
+To display a list of current nodes with their XML-RPC URIs:
+
+\verbatim
+$ rosnode list -a
+\endverbatim
+
+To display information about a node,including publications and subscriptions:
+
+\verbatim
+$ rosnode info /node_name
+\endverbatim
+
+Ping a node repeatedly:
+
+\verbatim
+$ rosnode ping /node_name
+\endverbatim
+
+Ping all nodes:
+
+\verbatim
+$ rosnode ping --all
+\endverbatim
+
+
+*/

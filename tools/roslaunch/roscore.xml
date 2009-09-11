@@ -1,0 +1,11 @@
+<!-- 
+  ROS Core Stack definition
+
+  Before making any modifications to this file, please read:
+  http://pr.willowgarage.com/wiki/roscore
+  -->
+<launch>
+  <master auto="start" />
+  <!-- all the nodes in the core file must have the name attribute specified -->
+  <node pkg="rosout" type="rosout" name="rosout" />
+</launch>

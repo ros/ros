@@ -1,0 +1,127 @@
+#!/bin/bash
+
+nobuildfile=ROS_NOBUILD
+blacklistfile=ROS_BUILD_BLACKLIST
+installedfile=ROS_INSTALLED
+
+Usage() {
+  echo "Usage: rosmake [PKG1] [PKG2]..."
+  echo "  Build all dependencies of the given package(s), then"
+  echo "    build the given package(s)."
+  echo "  If no packge is given, or if it is '.', then the current"
+  echo "    directory must contain a manifest.xml."
+}
+
+# We obey blacklist files if we were invoked as rosautomake, instead of
+# rosmake
+if test "x`basename $0`" = "xrosautomake"; then
+  blacklist=1
+else
+  blacklist=0
+fi
+
+if [ $# = 0 ]; then
+  # If no args given, check whether we're sitting in a package, and if so,
+  # build it
+  if [ -f manifest.xml ]; then
+    PKGS=`basename $PWD`
+  else
+    Usage
+    exit 1
+  fi
+else
+  PKGS=$*
+fi
+
+echo $PKGS
+DEPS=''
+for p in $PKGS; do
+  echo working on $p
+  if test "x$p" = "x."; then
+    p=`basename $PWD`
+  fi
+
+  DEPS+=" `rospack depends $p`"
+  if [ $? != 0 ]; then
+    echo "[rosmake] Couldn't determine dependencies for package $p. Maybe it was a stack?"
+    STACK_PKGS=`rosstack contents $p`
+    if [ $? != 0 ]; then
+      echo "$p was neither a stack nor a package."
+      exit 1
+    fi
+    echo expanding stack $p
+    for q in $STACK_PKGS; do
+      echo working on package $q in stack $p
+      DEPS+=" `rospack depends $q`"
+    done
+  else
+    DEPS+=" $p"
+  fi
+done
+
+# Remove duplicates, preserving order
+DEPS=`echo $DEPS | tr ' ' '\n' | awk '!x[$0]++' | tr '\n' ' '`
+
+declare -i LENGTH
+for i in $DEPS; do
+  echo "[rosmake]     $i"
+  LENGTH+=1
+done
+
+echo "[rosmake]      Building $LENGTH packages."
+
+declare -i COUNTER
+COUNTER=0
+PROFILING='[rosmake] --------------------------'
+
+TOTAL_START=`date +%s`
+for i in $DEPS; do
+  COUNTER+=1
+  echo "[rosmake] ($COUNTER of $LENGTH) Building $i"
+  DIR=`rospack find $i`
+  if [ -f $DIR/Makefile ]; then
+    START=`date +%s`
+    echo "[rosmake] ($COUNTER of $LENGTH) Going to $DIR"
+    pushd $DIR > /dev/null
+    if [ -f $nobuildfile ]; then
+      echo "[rosmake] ($COUNTER of $LENGTH) found file $nobuildfile; skipping build of $i"
+    elif test $blacklist = 1 -a -f $blacklistfile; then
+      echo "[rosmake] ($COUNTER of $LENGTH) found file $blacklistfile; skipping build of $i"
+    elif [ -f $installedfile ]; then
+      echo "[rosmake] ($COUNTER of $LENGTH) found file $installedfile; skipping build of $i"
+    else
+      echo "[rosmake] ($COUNTER of $LENGTH) Running make in $DIR"
+      make
+    fi
+    if [ $? != 0 ]; then
+      echo "[rosmake] ($COUNTER of $LENGTH) error while building $i in $DIR. aborting..."
+      #PROFILING+="\n$(printf '[rosmake] %5d s (%s)' $((`date +%s` - $START)) $i)"
+      echo "[rosmake] The following packages were built successfully:"
+      echo -e "$PROFILING"
+      echo -e '[rosmake] --------------------------'
+      TOTAL=$((`date +%s` - $TOTAL_START))
+      echo -e "$(printf '[rosmake] %5d s (TOTAL)' $TOTAL)"
+      echo -e '[rosmake] --------------------------'
+      echo "[rosmake] Error building $PKGNAME or its dependencies in directory: "
+      echo "[rosmake]      $DIR"
+      echo "[rosmake] Perhaps you're missing some of the system (non-ROS) dependencies."
+      echo "[rosmake] Use the following command to determine system dependencies,"
+      echo "[rosmake] and install any that are missing:"
+      echo "[rosmake]     rospack sysdeps $PKGNAME"
+        popd > /dev/null
+      exit 1
+    fi
+    PROFILING+="\n$(printf '[rosmake] %5d s (%s)' $((`date +%s` - $START)) $i)"
+    popd > /dev/null
+  else
+    PROFILING+="\n$(printf '[rosmake]     0 s (%s)' $i)"
+  fi
+done
+TOTAL=$((`date +%s` - $TOTAL_START))
+
+echo "[rosmake] Elapsed time per package:"
+echo -e "$PROFILING"
+echo -e '[rosmake] --------------------------'
+echo -e "$(printf '[rosmake] %5d s (TOTAL)' $TOTAL)"
+
+echo "[rosmake] ($COUNTER of $LENGTH) Done building $PKGNAME and its dependencies."

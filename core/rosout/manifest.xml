@@ -1,0 +1,13 @@
+<package>
+  <description brief="rosout">
+     System-wide logging mechanism for messages sent to the /rosout topic.
+  </description>
+  <author>Josh Faust/jfaust@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="API cleared" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/rosout</url>
+  <depend package="roscpp"/>
+  <depend package="roslib"/>
+  <depend package="rosconsole"/>
+</package>
+

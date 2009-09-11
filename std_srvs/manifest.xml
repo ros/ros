@@ -1,0 +1,16 @@
+<package>
+  <description brief="Common ROS Services">
+
+    Common service definitions 
+
+  </description>
+  <author>Morgan Quigley/mquigley@cs.stanford.edu</author>
+  <license>BSD</license>
+  <review status="API cleared" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/std_srvs</url>
+  <logo>http://www.willowgarage.com/files/willowgarage/robot10.jpg</logo>
+  <export>
+    <cpp cflags="-I${prefix}/srv/cpp"/>
+  </export>
+</package>
+

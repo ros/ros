@@ -1,0 +1,92 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosdoc is a tool responsible for all auto-generated ROS
+documentation.  This mainly involves running
+<a href="http://www.stack.nl/~dimitri/doxygen/">Doxygen</a> or
+<a href="http://sphinx.pocoo.org/">Sphinx</a>
+across
+multiple ROS packages and combining that with information parsed from
+ROS manifest files. Nightly updates currently appear at <a href="http://pr.willowgarage.com/pr-docs/ros-packages">http://pr.willowgarage.com/pr-docs/ros-packages</a>.
+
+
+NOTE: ROS/doxygen best practices are <a
+href="http://pr.willowgarage.com/wiki/rosdoc">documented on the
+Wiki</a>.
+
+The steps in the rosdoc process are:
+-# Load manifests for all ROS packages
+-# Generate doxygen or sphinx for each ROS package, using rosdoc-generated headers and footers to properly link to cross-link dependencies.
+-# Generate indicies for resulting documentation, including packages listed by source tree and packages listed by license.
+
+
+
+\section commandline Command-line tools
+
+\subsection rosdoc rosdoc
+
+\b rosdoc provides a single command-line tool also named \b rosdoc. It
+is primarily meant to be invoked on the documentation Web server, in
+which case it runs using the 'make clean && make upload-local' target,
+but you can also run it locally to test your doxygen markup.
+
+rosdoc checks each package for the file \b mainpage.dox, and if it is
+present generates the package documentaton with doxygen.  If the package
+contains a file \b index.rst then rosdoc generates the documentation
+using Sphinx.
+
+By default, the rosdoc tool outputs all html documentation
+into the local \b doc directory. You can open \b doc/index.html once
+rosdoc is complete the view an index of the generated documentation.
+
+\subsubsection Usage
+
+The rosdoc command-line tool optionally takes in a list of packages,
+in which case it will only generate doxygen for those packages. Otherwise, it generates documentation for every package that it can find. There are also command-line options, such as --path, to help you produce documentation for subsets of packages. These are documented below.
+
+\verbatim
+Usage: rosdoc [options] [packages...]
+
+Options:
+  -h, --help            show this help message and exit
+  -n NAME, --name=NAME  Name for documentation set
+  --paths=PATHS         package paths to document
+  -o OUTPUT_DIRECTORY   directory to write documentation to
+\endverbatim
+
+\par Examples
+
+Generate documentation for rospy and roslib only:
+
+\verbatim
+$ ./rosdoc rospy roslib
+\endverbatim
+
+Generate documentation for packages in /opt/ros/ros-pkg and /opt/ros/wg-ros-pkg:
+
+\verbatim
+$ ./rosdoc --path /opt/ros/ros-pkg:/opt/ros/wg-ros-pkg
+\endverbatim
+
+Output documentation to doc-0.5 and change the title of the documentation:
+
+\verbatim
+$ ./rosdoc -o doc-0.5 -n "ROS 0.5"
+\endverbatim
+
+\section externaldoc Linking to External Documentation
+
+There are packages for which you may wish to link to
+externally-generated code documentation. In particular, running
+doxygen on thirdparty packages is usually time consuming and not
+necessary. In these cases you'll want to include the following
+'export' tag in the manifest.xml file:
+\verbatim
+<export>
+  ... other export tags
+  <doxymaker external="http://external/documentation.html" />
+</export>
+\endverbatim
+
+*/

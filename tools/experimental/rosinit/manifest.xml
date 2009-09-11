@@ -1,0 +1,18 @@
+<package>
+  <description brief="rosinit">
+
+     rosinit: command-line tool for bringing ROS into a known state.
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/rosinit</url>
+  <depend package="rospy"/>
+  <depend package="roslib"/>
+  <depend package="rosparam"/>
+  <depend package="rosnode"/>
+
+</package>
+
+

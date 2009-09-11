@@ -1,0 +1,18 @@
+/**
+@mainpage roscpp
+
+@htmlinclude manifest.html
+
+\b roscpp is a ROS client implementation in C++.  The main parts of \b roscpp are:
+
+ - \ref ros::init() : A version of ros::init() must be called before using any of the rest of the ROS system.
+ - \ref ros::NodeHandle : Public interface to topics, services, parameters, etc.
+ - \ref ros::master : Contains functions for querying information from the master
+ - \ref ros::this_node : Contains functions for querying information about this process' node
+ - \ref ros::service : Contains functions for querying information about services
+
+@par Examples
+
+Many examples of using ROS can be found <a href="http://pr.willowgarage.com/wiki/ROS/Tutorials">on the wiki</a> and in the <a href="../../roscpp_tutorials/html/index.html">roscpp_tutorials</a> package.
+
+*/

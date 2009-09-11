@@ -1,0 +1,25 @@
+<launch>
+  <node pkg="rospy_demo" type="talker" />
+
+
+  <!--
+
+    Tests are nodes that implement one of the xUnit-style test cases
+    (e.g. googletest, unittest). They must output their results in the
+    xUnit-style XML format.
+
+    You define tests just like a node except you must also specify a
+    test-name and you can't use a respawn attribute
+
+    A roslaunch file may contain multiple tests. They will be run in
+    the order you specify. Between each test, the entire roslaunch
+    will be restarted, including the master (your master 'auto'
+    setting will be overriden during rostest).
+
+   -->
+       
+  <test test-name="listener_test" pkg="test_rospy" type="listener_test" />
+  
+  <!-- tests are run in the order you specify -->
+  <!-- test test-name="listener_test2" pkg="test_rospy" type="listener_test" / -->    
+</launch>

@@ -1,0 +1,23 @@
+<package>
+<description brief="Python Cryptography Toolkit">
+
+  Download-based ROS installer for the Python Cryptography 
+  Toolkit (http://www.amk.ca/files/python/crypto/).
+
+  The Toolkit is a collection of cryptographic algorithms and 
+  protocols, implemented for use from Python. 
+
+  This toolkit is a dependency for the Paramiko SSH library.
+
+  NOTE: pycrypto requires python-dev to build.
+
+</description>
+<author>A.M. Kuchling/www.amk.ca. ROS package maintained by Ken Conley (kwc@willowgarage.com)</author>
+<license>Free</license>
+<review status="3rdparty" notes=""/>
+<url>http://www.amk.ca/python/code/crypto.html</url>
+<export>
+  <rosdoc external="http://www.amk.ca/python/writing/pycrypt/" />
+</export>
+</package>
+

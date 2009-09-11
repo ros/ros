@@ -1,0 +1,11 @@
+<package>
+  <description brief="Googletest unit testing framework for C++"></description>
+  <author>Google</author>
+  <license>BSD</license>
+  <review status="3rdparty" notes=""/>
+  <url>http://code.google.com/p/googletest/</url>
+  <export>
+    <rosdoc external="http://code.google.com/p/googletest/w/list"/>
+  </export>
+</package>
+

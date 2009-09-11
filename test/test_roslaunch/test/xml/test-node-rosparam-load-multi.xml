@@ -1,0 +1,10 @@
+<launch>
+
+  <node pkg="package" type="test_node_rosparam_multi" name="rosparam_multi">
+    <rosparam file="mload.yaml" command="load" />
+    <rosparam file="mdump.yaml" command="dump" />
+    <rosparam ns="msubns" file="mload_ns.yaml" command="load" />
+  </node>
+  
+</launch>
+

@@ -1,0 +1,8 @@
+<package>
+<description brief="Emacs extension for ros">
+Ros tools for those who live in emacs.
+</description>
+  <author>Bhaskara Marthi</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+</package>

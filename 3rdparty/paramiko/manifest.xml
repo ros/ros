@@ -1,0 +1,28 @@
+<package>
+  <description brief="Paramiko SSH library for Python">
+
+  Download-based ROS installer for the Paramiko library by
+  Robey Pointer (http://www.lag.net/paramiko/).
+
+  Paramiko is a library for making SSH2 connections (client or
+  server).  Emphasis is on using SSH2 as an alternative to SSL for
+  making secure connections between python scripts.  All major ciphers
+  and hash methods are supported.  SFTP client and server mode are
+  both supported too.
+        
+  Paramiko is used by the roslaunch tool to enable remote node launching.
+
+  While paramiko is available via package managers, the versions available
+  are grossly out of date.
+
+  </description>
+  <author>Robey Pointer/robey@lag.net. ROS package maintained by Ken Conley (kwc@willowgarage.com).</author>
+  <license>LGPL</license>
+  <review status="3rdparty" notes=""/>
+  <url>http://lag.net/paramiko/</url>
+  <depend package="pycrypto" />
+  <export>
+    <rosdoc external="http://www.lag.net/paramiko/docs/" />
+  </export>
+</package>
+

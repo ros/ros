@@ -1,0 +1,18 @@
+<launch>
+  <node pkg="package" type="test_none" />
+  <env name="ONE" value="one" />
+  <node pkg="package" type="test_one">
+  </node>
+  
+  <env name="TWO" value="two" />
+  <node pkg="package" type="test_one_two_priv">
+    <env name="PRIVATE_TWO" value="private_two" />
+  </node>
+
+  <node pkg="package" type="test_one_two" />
+  
+  <include file="$(find test_roslaunch)/test/xml/test-env-include.xml"> 
+    <env name="INCLUDE" value="include" />
+  </include>
+  
+</launch>

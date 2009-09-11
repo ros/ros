@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 2.4.6)
+include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+rosbuild_init()
+add_subdirectory(yaml-cpp)
+set(EXECUTABLE_OUTPUT_PATH $ENV{ROS_ROOT}/bin)
+include_directories(include ${PROJECT_SOURCE_DIR}/yaml-cpp/include)
+rospack_add_executable(rosdep rosdep.cpp)
+target_link_libraries(rosdep yaml-cpp)

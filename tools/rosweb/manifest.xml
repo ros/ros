@@ -1,0 +1,16 @@
+<package>
+<description brief="ROS Web Server">
+
+Converts ROS topics to JSON for Web requests. rosweb is currently a proof-of-concept and
+should not be used as a platform for reliable Web services.
+
+</description>
+<author>Ken Conley/kwc@willowgarage.com</author>
+<license>BSD</license>
+<review status="experimental" notes=""/>
+<url>http://ros.org/wiki/rosweb</url>
+<depend package="roslib"/>
+<depend package="rospy"/>
+<depend package="rosjson"/>
+</package>
+

@@ -1,0 +1,3 @@
+<launch>
+  <node name="advanced_talker" pkg="rospy_tutorials" type="advanced_publish.py" output="screen"/>
+</launch>

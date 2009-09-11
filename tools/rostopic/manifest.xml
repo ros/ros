@@ -1,0 +1,24 @@
+<package>
+  <description brief="rostopic command line tool">
+
+rostopic is contains the rostopic command-line tool for displaying
+debug information about
+ROS <a href="http://www.ros.org/wiki/Topics">Topics</a>, including
+publishers, subscribers, publishing rate,
+and <a href="http://www.ros.org/wiki/Messages">Messages</a>. It also
+contains an experimental Python library for getting information about
+and interacting with Topics dynamically. This library is for
+internal-use only as its API is not stable.
+
+  </description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="API cleared" notes="01/22/2009"/>
+  <url>http://ros.org/wiki/rostopic</url>
+  <depend package="roslib"/>
+  <depend package="rosmsg"/>
+  <depend package="rospy"/>
+  <depend package="rosrecord"/>
+</package>
+
+

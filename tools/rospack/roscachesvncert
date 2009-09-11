@@ -1,0 +1,18 @@
+#!/bin/bash
+
+pkgs=`rospack list-names`
+
+vcs=
+for p in $pkgs; do
+  vc=`rospack vcs0 $p | sed 's/type: svn.*url: \([ ]*\)/\1/g'`
+  for v in $vc; do
+    vcs+=$v
+    vcs+=' '
+  done
+done
+
+for v in $vcs; do
+  if ! (echo p | svn info $v); then
+    echo "Warning: failed to cache certificate for $v"
+  fi
+done

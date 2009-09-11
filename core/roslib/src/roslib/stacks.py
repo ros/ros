@@ -1,0 +1,132 @@
+#! /usr/bin/env python
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2008, Willow Garage, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above
+#    copyright notice, this list of conditions and the following
+#    disclaimer in the documentation and/or other materials provided
+#    with the distribution.
+#  * Neither the name of Willow Garage, Inc. nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# Revision $Id$
+
+## Python utilities for manipulating ROS Stacks.
+## See: http://pr.willowgarage.com/wiki/Stacks
+##
+## Warning: this API is still fairly experimental and incomplete.
+
+import os
+import sys
+
+import roslib.exceptions
+import roslib.packages
+import roslib.rosenv
+
+STACK_FILE = 'stack.xml'
+ROS_STACK = 'ros'
+
+class ROSStackException(roslib.exceptions.ROSLibException): pass
+class InvalidROSStackException(ROSStackException): pass
+
+## @return str: name of stack that \a pkg is in, or None if \a pkg is not part of a stack
+## @throws roslib.packages.InvalidROSPkgException: if \a pkg cannot be located
+def stack_of(pkg):
+    pkg_dir = roslib.packages.get_pkg_dir(pkg)
+    dir = os.path.dirname(pkg_dir)
+    while dir and os.path.dirname(dir) != dir:
+        stack_file = os.path.join(dir, STACK_FILE)
+        if os.path.exists(stack_file):
+            #TODO: need to resolve issues regarding whether the
+            #stack.xml or the directory defines the stack name
+            return os.path.basename(dir)
+        dir = os.path.dirname(dir)
+        
+## @return [str]: name of packages that are part of \a stack
+## @throws InvalidROSStackException: if \a stack cannot be located
+def packages_of(stack):
+    stack_dir = get_stack_dir(stack)
+    if stack_dir is None:
+        raise InvalidROSStackException(stack)
+
+    packages = []
+    l = [os.path.join(stack_dir, d) for d in os.listdir(stack_dir)]
+    while l:
+        d = l.pop()
+        if os.path.isdir(d):
+            if roslib.packages.is_pkg_dir(d):
+                p = os.path.basename(d)
+                # this is sometimes true if we've descended into a build directory
+                if not p in packages:
+                    packages.append(p)
+            elif os.path.basename(d) not in ['build', '.svn', '.git']: #recurse
+                l.extend([os.path.join(d, e) for e in os.listdir(d)])
+    return packages
+    
+from subprocess import Popen, PIPE
+## @param str stack: name of ROS stack to locate on disk
+## @return str: directory of \a stack, or None
+def get_stack_dir(stack):
+    list_stacks() #update cache
+    return _dir_cache.get(stack, None)
+
+# TODO: consolidate with list_pkgs
+_dir_cache = {}
+_cache_marker = None
+
+## Get list of all ROS stacks. This initializes an internal cache.
+## @return [str]: complete list of stacks names in ROS environment
+def list_stacks(env=os.environ):
+    global _cache_marker
+    # record settings for cache
+    ros_root = env[roslib.rosenv.ROS_ROOT]
+    ros_package_path = env.get(roslib.rosenv.ROS_PACKAGE_PATH, '')
+
+    # validate cache
+    if _cache_marker == (ros_root, ros_package_path):
+        return _dir_cache.keys()
+    else:
+        _dir_cache.clear()
+        _cache_marker = ros_root, ros_package_path
+        
+    pkg_dirs = roslib.packages.get_package_paths(environ=env)
+    stacks = []
+    
+    for pkg_root in pkg_dirs:
+        for dir, dirs, files in os.walk(pkg_root, topdown=True):
+            if STACK_FILE in files:
+                stack = os.path.basename(dir)
+                if stack not in stacks:
+                  stacks.append(stack)
+                  _dir_cache[stack] = dir
+                del dirs[:]
+            elif 'rospack_nosubdirs' in files:
+                del dirs[:]
+            #small optimization
+            elif '.svn' in dirs:
+                dirs.remove('.svn')
+            elif '.git' in dirs:
+                dirs.remove('.git')
+    return stacks

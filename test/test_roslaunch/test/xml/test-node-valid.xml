@@ -1,0 +1,85 @@
+<launch>
+  <node pkg="package" type="test_base" />
+  
+  <node pkg="package" type="test_args" args="args test" />
+  <node pkg="package" type="test_args_empty" args="" />
+  <!-- TODO: more substitution args? -->
+
+  <node pkg="package" type="test_output_screen" output="screen" />
+  <node pkg="package" type="test_output_log" output="log" />
+  
+  <node pkg="package" type="test_machine" machine="machine_test" />
+  
+  <node pkg="package" type="test_ns1" ns="ns_test1" />
+  <node pkg="package" type="test_ns2" ns="ns_test2/child2" />
+  <node pkg="package" type="test_ns3" ns="ns_test3/child3/" />
+  
+  <node pkg="package" type="test_respawn_true" respawn="true" />
+  <node pkg="package" type="test_respawn_TRUE" respawn="TRUE" />
+  <node pkg="package" type="test_respawn_false" respawn="false" />
+  <node pkg="package" type="test_respawn_FALSE" respawn="FALSE" />
+  <node pkg="package" type="test_respawn_none" />          
+
+  <node pkg="package" type="test_env">
+    <env name="env1" value="env1 value1" />
+    <env name="env2" value="env2 value2" />
+  </node>
+
+  <node pkg="package" type="test_fake">
+    <!-- unrecognized tags are ok, but will print warnings to screen -->
+    <fake name="env2" value="env2 value2" />
+  </node>
+  
+  <node pkg="package" type="test_env_empty">
+    <env name="env1" value="" />
+  </node>
+
+  <!-- base test of private parameter -->
+  <node name="test_private_param1" pkg="package" type="test_param">
+    <param name="foo1" value="bar1" />
+  </node>
+
+  <!-- test ns attribute -->
+  <node name="test_private_param2" ns="ns_test" pkg="package" type="test_param">
+    <param name="foo2" value="bar2" />
+  </node>
+
+  <!-- test with noop tilde syntax -->
+  <node name="test_private_param3" pkg="package" type="test_param">
+    <param name="~foo3" value="bar3" />
+  </node>
+
+  <!-- test private params with unnamed nodes -->  
+  <node pkg="package" type="test_param_unnamed1">
+    <param name="baz1" value="blah1" />
+  </node>
+
+  <node pkg="package" type="test_param_unnamed2" args="foo">
+    <param name="baz2" value="blah2" />
+  </node>
+  
+  <node pkg="package" type="test_cwd_1" cwd="ros-root" />
+  <node pkg="package" type="test_cwd_2" cwd="node" />
+      
+
+  <node pkg="package" type="test_node_rosparam_load" name="rosparam_load">
+    <rosparam file="load.yaml" command="load" />
+  </node>
+  <node pkg="package" type="test_node_rosparam_dump" name="rosparam_dump">
+    <rosparam file="dump.yaml" command="dump" />
+  </node>
+  <node pkg="package" type="test_node_rosparam_load_ns" name="load_ns">
+    <rosparam ns="subns" file="load_ns.yaml" command="load" />
+  </node>
+  <node pkg="package" type="test_node_rosparam_multi" name="rosparam_multi">
+    <rosparam file="mload.yaml" command="load" />
+    <rosparam file="mdump.yaml" command="dump" />
+    <rosparam ns="msubns" file="mload_ns.yaml" command="load" />
+  </node>
+  
+  <!-- TODO remap args test -->
+
+  <node pkg="package" type="test_launch_prefix" launch-prefix="xterm -e gdb --args" />
+  
+</launch>
+

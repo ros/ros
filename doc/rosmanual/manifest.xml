@@ -1,0 +1,14 @@
+<package>
+  <description brief="rosmanual">
+
+     The ROS Manual
+
+  </description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/rosmanual</url>
+
+</package>
+
+

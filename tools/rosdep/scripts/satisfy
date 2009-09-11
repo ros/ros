@@ -1,0 +1,16 @@
+#!/bin/bash
+set -o errexit
+if [ $# -lt 1 ] ; then
+  echo "syntax: satisfy PACKAGE[S]"
+  exit 1
+fi
+bash <(rosdep satisfy $*)
+
+#!/bin/bash
+set -o errexit
+if [ $# -lt 1 ] ; then
+  echo "syntax: satisfy PACKAGE[S]"
+  exit 1
+fi
+bash <(rosdep satisfy $*)
+

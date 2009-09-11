@@ -1,0 +1,113 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rostest consists of a tool for writing integration tests as well as a Python
+library that assists in the writing of ROS-based unit tests.
+
+Within ROS, we define three levels of testing:
+- Library unit test
+- ROS node unit test
+- ROS node integration test
+
+rostest is mainly targetted at ROS-node-level tests, though it
+provides support for all three. At the library unit test level,
+rostest provides a simple hook for generating XML output from Python
+unittests. At the ROS-node-level, rostest defines a framework for
+launching collections of nodes and making assertions against them.
+
+This rostest framework enables testing of ROS nodes at the message
+I/O interface. In unit testing parlance, rostest uses roslaunch files
+to define test fixtures. You can think of rostest as a unit test where
+the setup and teardown are implemented via roslaunch. During setup,
+rostest will set all parameters and launch all nodes in the
+roslaunch. During teardown, roslaunch will terminate all nodes and
+restart the master/parameter server.
+
+The main features that rostest provides are:
+
+- easy to setup/teardown test fixtures (i.e. nodes, master, parameter server state) using roslaunch
+- Python: enable easy unit test writing, including ROS-state assertsions
+- aggregate test XML result files for continuous integration servers
+
+rostest is still under development. Some proposed features include:
+
+- manipulate core-level ROS infrastructure like /time
+- hooks into /rosout logging 
+
+
+\section codeapi Code API
+
+rostest exports a small client API containing functions for (1)
+running unit tests and (2) making assertions against the ROS system
+state.
+
+- \ref clientapi 
+
+\section rosapi ROS API
+
+rostest exports no ROS API other than those used internally by roslaunch.
+
+
+\section commandline Command-line tools
+
+rostest has three command-line tools: \b rostest, \b rostest-summary,
+and \b catunit. Only \b rostest should be of particular interest to
+most users as the rest will be used indirectly..
+
+\subsection rostest rostest
+
+rostest runs a rostest XML file as a unit test.  By default, it will
+output its XML results in ROS_ROOT/test/test_results/package_name/.
+You may also pass it a --text option, in which case it will generate
+all of its output to the screen instead.
+
+The ROS CMake macros come with commands that automate the usage of
+rostest.
+
+\subsubsection Usage
+\verbatim
+$ rostest xml-file [--text]
+\endverbatim
+
+\par Example
+
+\verbatim
+$ rostest test/test-foo.xml
+\endverbatim
+
+
+\subsection rostestsummary rostest-summary
+
+\b rostest-summary prints a console summary of the test results for a
+package and packages that depend on it. This tool is meant to be used
+indirectly via build-integration scripts like rosmake.
+
+\subsubsection Usage
+\verbatim
+$ ./bin/rostest-summary package
+\endverbatim
+
+\par Example
+
+\verbatim
+$ bin/rostest-summary rospy
+\endverbatim
+
+\subsection catunit catunit
+
+\b catunit concatenates JUnit-style XML result files in ROS_ROOT/test/test_results into a single XML file.
+This is designed mainly for usage by continuous integration servers. 
+
+\subsubsection Usage
+\verbatim
+$ ./bin/catunit output-file
+\endverbatim
+
+\par Example
+
+\verbatim
+$ bin/catunit test-results.xml
+\endverbatim
+
+*/

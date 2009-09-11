@@ -1,0 +1,8 @@
+<package>
+  <author>Morgan Quigley</author>
+  <license>BSD</license>
+  <review status="API conditionally cleared" notes=""/>
+  <description>
+  Random stuff to help the ROS build process, like cmake macros. 
+  </description>
+</package>

@@ -1,0 +1,47 @@
+/**
+\mainpage
+ 
+\htmlinclude manifest.html
+  
+\b rxtools is two things.  First it is a library of GUI widgets (written in wxWidgets) that can be embedded in other applications.
+Second it is a set of GUI applications that view/manage ROS state.
+
+\b rxtools is fairly small right now.  It contains:
+ - \b Libraries
+  - rxtools::TopicDisplay and rxtools::TopicDisplayDialog -- ways of displaying and selecting the currently advertised topics on the master.
+  - rxtools::RosoutPanel -- A panel that listens to rosout and displays all messages in list form.
+ - \b Applications
+  - rxconsole -- An executable which wraps RosoutPanel for a standalone display
+  - rxplot -- An executable that plots data from ROS Topics.
+
+\section commandline Command-line tools
+
+\subsection rxplot rxplot
+
+The \b rxplot plots data from one or more ROS topic fields using matplotlib.  ROS nodes.
+
+\subsubsection Usage
+
+\verbatim
+$ rxplot /topic1/field1 /topic2/field2
+\endverbatim
+
+To graph the data all on the same plot:
+
+\verbatim
+$ rxplot /topic1/field1,/topic2/field2
+\endverbatim
+
+To graph multiple fields of a message:
+
+\verbatim
+$ rxplot /topic1/field1:field2:field3
+\endverbatim
+
+All of these options can be specified together, e.g.:
+
+\verbatim
+$ rxplot /topic1/field1,/topic2/field2:field3 /topic4/field4
+\endverbatim
+
+*/

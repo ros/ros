@@ -1,0 +1,12 @@
+<package>
+<description brief="Ros Debian Tools">
+Tools for making debian packages from ROS packages.
+</description>
+  <author>Scott Hassan (hassan-ros@willowgarage.com)</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/rosdeb</url>
+  <rosdep name="fakeroot"/>
+  <rosdep name="dpkg-dev"/>
+</package>
+

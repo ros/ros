@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="roscpp_sessions" type="session_adv"/>
+  <test test-name="session_call" pkg="roscpp_sessions" type="session_call" args=""/>
+</launch>

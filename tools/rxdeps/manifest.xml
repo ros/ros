@@ -1,0 +1,13 @@
+<package>
+  <description brief="View ROS Package Dependencies Graphically">
+  
+A quick script to view ROS package dependencies graphically.  
+
+  </description>
+  <author>Stu Glaser/sglaser@willowgarage.com and Tully Foote/tfoote@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="API cleared" notes="1/22/09"/>
+  <logo>http://www.willowgarage.com/files/willowgarage/robot10.jpg</logo>
+  <rosdep name="graphviz"/>
+</package>
+

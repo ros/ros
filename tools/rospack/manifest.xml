@@ -1,0 +1,20 @@
+<package>
+<description brief="C++ implementation of the ROS package manager">
+
+This is a command-line program which provides many of the services of the *NIX
+pkg-config tool. It is used to find packages among the "forest" of code in a
+typical ROS distribution, calculate dependencies, mangle Makefiles, and in
+general promote peace and harmony in a ROS distribution.
+
+rospack uses the TinyXML parser, a zLib-licensed library which is available here:
+
+<a href="http://tinyxml.sourceforge.net">http://tinyxml.sourceforge.net</a>
+
+</description>
+  <author>Morgan Quigley, Brian Gerkey</author>
+  <license>BSD</license>
+  <review status="API cleared" notes="code review in progress (Rob)"/>
+  <export>
+    <cpp cflags="-I${prefix} -I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lrospack -lrosstack"/>
+  </export>
+</package>

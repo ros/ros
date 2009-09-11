@@ -1,0 +1,3 @@
+<launch>
+  <master uri="http://localhost:12345/" />
+</launch>

@@ -1,0 +1,191 @@
+/**
+
+\mainpage
+\htmlinclude manifest.html
+
+@b roslaunch is a tool for launching ROS nodes locally and remotely
+via SSH. roslaunch is configured with XML-based config files that end
+with a '.launch' extension.  These config files can include other
+config files, enabling you to easily compose larger roslaunch
+configurations.
+
+roslaunch also has a package dependency tracking tool called
+roslaunch-deps, which can help uncover missing dependencies in
+packages.
+
+
+\section Roslaunch
+
+Roslaunch launches ROS nodes and also loads ROS parameters via simple
+XML-based .launch files. We use it to quickly load and teardown
+collections of ROS nodes.
+
+Roslaunch was designed to fit the ROS architecture of complexity via
+composition: write a simple system first, then combine it with other
+simple systems to make more complex systems. In roslaunch, this is
+expressed through several mechanisms:
+
+ 1. includes: you can easily include other .launch files and
+ also assign them a namespace so that their names do not confict with
+ yours.
+
+ 2. groups: you can group together a collection of nodes to
+ given them the same name remappings.
+
+ 3. aliased machines: you can separate machine definitions and node
+ definitions into separate .launch files and use aliases to define
+ which machines get used at runtime. This allows you to reuse the same
+ node definitions for multiple robots. For example, iinstead of saying
+ that a point_cloud_assembler runs on 'foo.willowgarage.com', you can
+ say that it runs on the 'tilt-laser' machine. The machine definitions
+ then take care of which host is the 'tilt-laser' machine.
+
+Roslaunch also contains a variety of tools to help you write your
+.launch files as portably as possible. You can use the env tag to
+specify environment variables that need to be set for a particular
+machine or node.  The $(find pkg) syntax let you specify
+file paths relative to a ROS package, instead of specifying their
+location on a particular machine. You can also use the $(env
+ENVIRONMENT_VARIABLE) syntax within include tags to load in
+.launch files based on environment variables (e.g. MACHINE_NAME).
+
+
+\subsection local Local processes
+
+Roslaunch launches local processes using popen and kills them using
+POSIX signals. Roslaunch does not guarantee any particular order to
+the startup of nodes -- although this is a frequently requested
+feature, it is not one that has any particular meaning in the ROS
+architecture as there is no way to tell when a node is initialized.
+
+Roslaunch does not execute processes inside of a shell. In part, this
+is to prevent your shell from overriding some of the settings that
+Roslaunch may be providing. Your nodes will still get non-ROS-related
+environment variables passed to it,
+
+\subsection remote Remote processes
+
+Remote processes are different from local processes in how they are
+treated by Roslaunch, so it is important to understand the differences
+when you are writing your .launch files. Some high-level differences include:
+
+1. Your shell initialization scripts (.bashrc/.tcshrc/etc...) are
+ignored. This decision is intentional: our desire is for Roslaunch
+files to be as portable as possible, which includes being independent
+of a particular shell. Roslaunch files also need to be as complete as
+possible in specifying the configuration of your system.  This
+includes settings like environment variables, which are often hidden
+in shell initialization scripts.
+
+
+2. Remote processes do not forward their stderr/stdout to your local
+console. In general, nodes should be reporting important information
+using ROS' builtin logging mechanisms (i.e. rosconsole for roscpp,
+logout/logerr for rospy, etc...). This allows you to view this
+important information via the rosout tools.
+
+Otherwise, remote launches look very similar to local launches. In
+fact, in order to remotely launch processes, Roslaunch creates a new
+.launch file that contains the nodes you wish to launch on the remote
+machine. It then sshes into the remote machine and launches a
+Roslaunch child process with that new .launch file.
+
+It is highly recommended that you setup your computers to use SSH keys
+so Roslaunch can SSH into machines without having to provide an
+explicit user name and password. 
+
+If you are having trouble launching remote proceses, you should verify
+that you can ssh into each of your remote machines *using the machine
+names that you specified in the launch file*. You should also verify
+that each of the remote machines can ping the original machine using
+its hostname.
+
+
+\section commandline Command-line tools
+
+\subsection roslaunch roslaunch
+
+roslaunch is an important tool in the ROS toolchain as it is how large
+groups of nodes are usually launched and stopped. roslaunch uses XML
+configuration files to determine which files to launch. These 'launch
+files' usually have a .launch extension, although this is not
+required.
+
+@subsubsection usage Usage
+@verbatim
+$ roslaunch [options] launch-files...
+@endverbatim
+
+If you are running the roscore on a different port, i.e. the -p option
+was used, you need to pass in the -p flag to roslaunch as well, e.g.
+
+@verbatim
+$ roslaunch -p 1234 launch-files...
+@endverbatim
+
+To delay the launch until a roscore is detected, use the --wait option:
+
+@verbatim
+$ roslaunch --wait launch-files...
+@endverbatim
+
+To get the command-line arguments for a single (named) node, use the --args option, e.g.
+
+@verbatim
+$ roslaunch --args my_node launch-file
+@endverbatim
+
+This is handy if you just want to launch that particular node for debugging, e.g.
+
+@verbatim
+$ roslaunch --args my_node launch-file | bash
+@endverbatim
+
+To test the launch of the local nodes only, use the --local option, e.g.
+
+@verbatim
+$ roslaunch --local launch-files...
+@endverbatim
+
+roslaunch uses several command-line options which are for internal use
+only, including -c, -u, and --core.
+
+\subsection roslaunch-deps roslaunch-deps
+
+roslaunch-deps reports the packages that a launch file depends on.
+
+@subsubsection usage Usage
+@verbatim
+$ roslaunch-deps [options] file(s)...
+@endverbatim
+
+To get warnings about dependencies missing in manifest files, run with the -w warn option:
+
+@verbatim
+$ roslaunch-deps -w file.launch
+@endverbatim
+
+To get more verbose output to help track where a dependency is coming from, run with the -v verbose option:
+
+@verbatim
+$ roslaunch-deps -v file.launch
+@endverbatim
+
+\subsection roslaunch-logs roslaunch-logs
+
+roslaunch-logs return the directory where log files are being
+stored. In general, logs files are stored in ROS_LOG_DIR/run_id, where
+'run_id' is a unique ID associated with a particular run of a roscore.
+
+@subsubsection usage Usage
+@verbatim
+$ roslaunch-logs
+@endverbatim
+
+roslaunch-logs is meant to be used together with the 'cd' command, e.g.
+
+@verbatim
+$ cd `roslaunch-logs`
+@endverbatim
+
+*/

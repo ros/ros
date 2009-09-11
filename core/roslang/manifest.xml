@@ -1,0 +1,16 @@
+<package>
+  <description brief="ROS client library base">
+
+     A common package for ROS client libraries to depend on.  Mainly used
+     to find client libraries (via 'rospack depends-on1 roslang'), but
+     could come to include common client library code, such as an .msg /
+     .srv parser.
+
+  </description>
+  <author>Brian Gerkey/gerkey@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="n/a" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/roslang</url>
+  <logo>http://www.willowgarage.com/files/willowgarage/robot10.jpg</logo>
+</package>
+

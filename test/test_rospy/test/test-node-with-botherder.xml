@@ -1,0 +1,5 @@
+<!-- same test as test-node.xml, but with botherder -->
+<launch>
+  <master type="botherder" />
+  <include file="$(find test_rospy)/test/test-node.xml" />
+</launch>

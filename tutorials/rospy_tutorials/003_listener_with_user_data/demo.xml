@@ -1,0 +1,7 @@
+<launch>
+  <master auto="restart" />
+  <node pkg="rospy_tutorials" type="listener_with_userdata"/>
+  <node pkg="rospy_demo" type="talker" args="chatter:=chatter1"/>
+  <node pkg="rospy_demo" type="talker" args="chatter:=chatter2"/>
+  <node pkg="rospy_demo" type="talker" args="chatter:=chatter3"/>
+</launch>

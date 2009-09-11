@@ -1,0 +1,7 @@
+<package>
+<export>
+<cpp lflags="-ltest"/>
+</export>
+<versioncontrol type="svn" url="https://ros.svn.sourceforge.net/svnroot/ros/trunk"/>
+<sysdepend os="ubuntu" version="8.04-hardy" package="libwxgtk2.8-dev"/>
+</package>

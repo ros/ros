@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="rosoct" cwd="node" type="runoctave" args="--eval publish"/>
+  <test test-name="testsubscribe" cwd="node" pkg="rosoct" type="testsubscribe" args=""/>
+</launch>

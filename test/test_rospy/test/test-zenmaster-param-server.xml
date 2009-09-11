@@ -1,0 +1,4 @@
+<launch>
+  <master type="zenmaster" />
+  <include file="$(find test_ros)/test/test-param-server.xml" />
+</launch>

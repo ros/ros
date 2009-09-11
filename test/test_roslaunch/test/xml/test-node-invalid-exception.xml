@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="package" type="test_xmlparseexception">
+    <!-- should raise exception for node name not being set -->
+    <param name="name" value="value"/>
+  </node>
+</launch>
+

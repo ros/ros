@@ -1,0 +1,11 @@
+<project name="rospy" default="build">
+
+    <target name="cc-build" depends="build" description="CruiseControl Build">
+        <!-- for now just uses normal build, but keep this stub in case we want special CruiseControl behaviors like XML logs -->
+    </target>
+
+    <target name="build">
+        <echo message="TODO: run rospy PyUnit test suite" />
+    </target>
+
+</project>

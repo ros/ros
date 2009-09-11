@@ -1,0 +1,13 @@
+<package>
+  <description brief="A C++ message generator">
+    This package just has the ROS C++ message generator. This program was
+    formerly inside the roscpp package, but that was causing dependency rules
+    to be somewhat violated. It is now its own package to allow the dependency
+    tree to be honest.
+  </description>
+  <author>Morgan Quigley mquigley@cs.stanford.edu</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/ROS</url>
+</package>
+

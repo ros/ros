@@ -1,0 +1,47 @@
+/** 
+@mainpage 
+
+@htmlinclude manifest.html
+
+@b vizdeps provides a graphical view of the ROS package tree
+
+@section summary Summary
+Vizdeps provides a quick way to visualize package dependencies and status. 
+
+It will generate a colored graph of the packages allowing quick visual inspection
+of an individual package status as well as the statuses of closely related packages.  
+
+Common usages are to find out the status of a specific package and all its dependents 
+use '''./vizdeps -s --target=PACKAGE_NAME''' 
+
+Or if you want to know what licenses a package and it's dependents use.  Use the command 
+'''vizdeps -l --target=PACKAGE_NAME'''
+
+
+The focused view can also be useful when migrating or changing a package to determine 
+how much needs to change and which packages will be effected.  
+
+@section usage Commandline Usage
+
+\verbatim
+Usage: vizdeps [options]
+Options:
+  -h, --help            show this help message and exit
+  -r, --rosmake         color by rosmakeall results
+  -s, --review          color by review status
+  -l, --license         color by license type
+  -v                    don't deduplicate dependencies
+  -q                    quiet (remove links to common packages)
+  --color=FILENAME      use color file
+  --target='PKG NAMES LIST'
+                        target packages
+  --exclude='PKG NAMES LIST'
+                        exclude packages
+\endverbatim
+
+@section Screenshot
+An example view of ROS coloring by package status.
+\image html screenshot_vizdeps.png 
+ */
+
+

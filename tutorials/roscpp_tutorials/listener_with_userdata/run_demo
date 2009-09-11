@@ -1,0 +1,6 @@
+#!/bin/bash
+xterm -e "botherder" &
+xterm -e "cd `rospack find roscpp_tutorials`/listener_with_userdata && ./listener_with_userdata" &
+xterm -e "cd `rospack find roscpp_demo`/src/talker && ./talker __name:=talker1 chatter:=chatter1" &
+xterm -e "cd `rospack find roscpp_demo`/src/talker && ./talker __name:=talker2 chatter:=chatter2" &
+xterm -e "cd `rospack find roscpp_demo`/src/talker && ./talker __name:=talker3 chatter:=chatter3" &

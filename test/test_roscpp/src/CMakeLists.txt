@@ -1,0 +1,6 @@
+rospack_add_executable(dos_botherder dos_botherder/dos_botherder.cpp) 
+rospack_add_executable(dos_subscriber dos_subscriber/dos_subscriber.cpp) 
+rospack_add_executable(argv_shuffling argv_shuffling/argv_shuffling.cpp)
+rospack_add_executable(test_node test_node/test_node.cpp)
+rospack_add_executable(test_time time/test_time.cpp)
+rospack_add_executable(unsubscribe unsubscribe/unsubscribe.cpp)

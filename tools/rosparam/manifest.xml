@@ -1,0 +1,17 @@
+<package>
+  <description brief="YAML-based parameter server initialization">Initialize the parameter server from an yaml-encoded file of parameters</description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <url>http://pr.willowgarage.com/wiki/yamlparam</url>
+  <license>BSD</license>
+  <review status="API cleared" notes="01/22/2009"/>
+  <depend package="roslib"/>
+
+  <sysdepend package="python-yaml" os="ubuntu" version="7.04-feisty"/>
+  <sysdepend package="python-yaml" os="ubuntu" version="7.10-gutsy"/>
+  <sysdepend package="python-yaml" os="ubuntu" version="8.04-hardy"/>
+
+  <sysdepend package="py25-yaml" os="macports" />
+
+  <sysdepend package="PyYAML" os="centos" version="5.2"/>
+
+</package>

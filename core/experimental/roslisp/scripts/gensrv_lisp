@@ -1,0 +1,38 @@
+#!/bin/bash
+# this script generates flows only if necessary
+GENMSGDIR=`rospack find genmsg_cpp`
+GENSRV=$GENMSGDIR/gensrv_lisp
+ROSCPPDIR=`rospack find roslisp`
+if [ ! -e $GENSRV ]; then
+  if ! rosmake genmsg_cpp ; then
+    exit $?
+  fi
+fi
+for i in $*; do
+  PKGDIR_MESSY=`dirname $i`/..
+  PKGDIR=`cd $PKGDIR_MESSY && pwd`
+  PKGNAME=`basename $PKGDIR`
+  SRVNAME=`basename $i .srv`
+  #TARGET=$PKGDIR/srv/cpp/$PKGNAME/$SRVNAME.h
+  # Don't need to do these checks, because the outer build system
+  # (CMake) is keeping track of dependencies from .msg to .h files
+  #
+  #if [ ! -d $DESTDIR ] || [ ! -e $TARGET ] || [ $TARGET -ot $i ] || [ $TARGET -ot $GENSRV ] ; then
+    echo Generating LISP for $PKGNAME/$SRVNAME
+    $GENSRV $i
+    if [ $? != 0 ]; then
+      echo "Error while generating LISP service"
+      exit 1
+    fi
+
+
+  #fi
+  # recursively generate service dependencies (which may lie other packages)
+#  for j in `$GENMSGDIR/submsgs $i`; do
+#    $ROSCPPDIR/scripts/genmsg_cpp $j
+#    if [ $? != 0 ]; then
+#      echo "Error during c++ genmsg"
+#      exit 1
+#    fi
+#  done
+done

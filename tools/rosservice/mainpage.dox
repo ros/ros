@@ -1,0 +1,21 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosservice is a command-line tool for listing and querying ROS services.
+
+\section commandline Command-line tools
+
+\subsection rosservice rosservice
+
+\subsubsection Usage
+\verbatim
+$ rosservice list [options] [/node]
+\endverbatim
+
+To include the name of the node that implements the service, use -n:
+
+\verbatim
+$ rosservice list -n
+\endverbatim
+*/

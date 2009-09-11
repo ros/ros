@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="roscpp_sessions" type="session_call_repeatedly"/>
+  <test test-name="session_adv_test" pkg="roscpp_sessions" type="session_adv_test" args="" time-limit="10000000000"/>
+</launch>

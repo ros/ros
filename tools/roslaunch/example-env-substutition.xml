@@ -1,0 +1,3 @@
+<launch>
+  <param name="example_env_param" value="$(env VALUE)" />
+</launch>

@@ -1,0 +1,6 @@
+<launch>
+<master auto="start"/>
+<node pkg="roslisp_examples" type="talker" output="screen"/>
+<node pkg="roslisp_examples" type="listener-test" output="screen"/>
+<test test-name="cpp-tester" pkg="roslisp_examples" type="cpp-tester"/>
+</launch>

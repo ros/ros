@@ -32,36 +32,39 @@
 
 ;; Since you can always fall back to calling Java, the focus
 ;; is on wrapping things that are especially verbose or would
-;; lead to un-ideomatic code, i.e., proxying callbacks and 
-;; mutable Message types.
+;; lead to un-ideomatic code.
 
 ; Main things you want to call or access here:
 ;
 ; (import-ros) to import ROS Java classes into your namespace
 ;
-; *ros* is the global Ros instance
+; Call Java methods directly to get the global Ros instance and initialize it. 
 ;
-; with-node-handle creates a node handle that is guaranteed 
+; Call Java methods again to create NodeHandles, or use 
+;   with-node-handle to create a node handle that is guaranteed 
 ;   to be destroyed when the scope is exited (exceptionally or normally).
 
 ; defmsgs and defsrvs declare the set of messages and services 
 ;   that you want Clojure support for (above and beyond what you
 ;   already get from Java).  In particular, automated conversion
-;   between Clojure maps and Messages is supported for declared types. 
+;   between Clojure maps and Messages is supported for declared types,
+;   using map-msg and msg-map.   
 ;   Only top-level messages and services need be declared; others will
 ;   be pulled in as-needed.
 ;
 ; import-all-msgs-and-srvs can be used to import all the requisite java
-; classes (e.g., at the repl) for ease of use.
+;   classes (e.g., at the repl) for ease of use.
 ;
 ; sub-cb and srv-cb are convenient wrappers for Subscription and Service
 ;   callbacks.  make-subscriber-callback and make-service-callback are 
 ;   lower-level, if you want to avoid conversion to Clojure maps.
-
-; wait-for-subscribers, get-single-message, put-single-message, and 
-; call-srv do more or less what they say.  
-
-; Finally, test-ros tests and illustrates most of this core functionality
+;
+; wait-for-subscribers, get-message, put-message, and 
+;   call-service do more or less what they say.  The latter three also come
+;   with "cached" versions that transparently keep the corresponding 
+;   Subscribers, Publishers, and ServiceClients alive until the 
+;   NodeHandle is shutdown for comparable speed to what would be achieved
+;   by manually managing these connections.  
 
 
 (ns ros.ros
@@ -99,30 +102,8 @@
   ([form format-str & args]
      `(when-not ~form
 	(throw (Exception. (str (format ~format-str ~@args) 
-				": Got " '~form " as " (cons '~(first form) (list ~@(next form)))))))))
-
-(defn read-reader
-  "Read the complete contents of this reader into a String."
-  [#^java.io.Reader r]
-  (let [sb (StringBuilder.)]
-    (loop []
-      (let [c (.read r)]
-	(if (neg? c)
-	    (str sb)
-	  (do (.append sb (char c))
-	      (recur)))))))
-
-(defn shell 
-  "Call shell command with args, and return a string representation
-   of its standard output."
-  [& args]
-  (read-reader
-   (java.io.BufferedReader.
-    (java.io.InputStreamReader.
-     (.getInputStream
-      (doto (.exec (Runtime/getRuntime) #^"[Ljava.lang.String;" (into-array String (map str args)))
-	(.waitFor)))))))
-
+				": Got " '~form " as " 
+				(cons '~(first form) (list ~@(next form)))))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,21 +122,14 @@
 
 (import-ros)
 
-(defonce #^Ros *ros* (doto (Ros/getInstance) (.init "rosclj")))
-
-(defmacro make-node-handle [& args] `(.createNodeHandle *ros* ~@args))
-
 (defmacro with-node-handle 
   "Create a node handle with arguments provided by args, bind it 
    to nh-var in the execution of body, and destroy it upon exiting
    this form (exceptionally or normally."
   [[nh-var & args] & body]
-  `(let [~nh-var (.createNodeHandle *ros* ~@args)]
+  `(let [~nh-var (.createNodeHandle  ~@args)]
      (Thread/sleep 100) ; Allow time to get time, ect ???
      (try (do ~@body) (finally (.shutdown ~nh-var)))))
-;  nil)
-
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -180,7 +154,7 @@
 		       nil (make-array Object 0)))
 
 (defn message-submessage-types [class-symbol]
-  (map symbol
+ (map symbol
   (.invoke (.getMethod (Class/forName (str class-symbol)) 
 				   "submessageTypes" (make-array Class 0)) 
 		       nil (make-array Object 0))))
@@ -210,22 +184,18 @@
 (defmulti map-msg* (fn [t m] t))
 
 (defn map-msg 
-  "Convert a Clojure map to a message.  The type should
+  "Convert a Clojure map to a Message (recursively).  The type should
    either be in the :class field, or passed directly.
-   If already a message, no work is done."
+   If m already a Message, just returns it."
   ([m] (map-msg* (if (map? m) (:class m) (class m)) m))
   ([t m] (map-msg* t m)))
 
-(defmacro try-import [cls]
-  `(if-let [x# ((ns-map *ns*) '~(symbol (last (.split (name cls) "\\."))))]
-     (when-not (= x# ~cls) 
-       (println "Cannot import" ~cls "due to name conflict."))
-     (import ~cls)))
 
 (defmacro defmsg 
   "Inform Clojure that you intend to use a particular message type.
    cls should name the Class object for the desired message type. 
-   Calling this is a prerequisite for using any of the above convenience methods."
+   Calling this is a prerequisite for using any of the above convenience methods.
+   You probably want to call defmsgs instead."
   [cls]
   (when-not (@*msgs* cls)
     (println "Declaring message type" cls)
@@ -294,6 +264,13 @@
 	ret))))
 
 
+
+(defmacro try-import [cls]
+  `(if-let [x# ((ns-map *ns*) '~(symbol (last (.split (name cls) "\\."))))]
+     (when-not (= x# ~cls) 
+       (println "Cannot import" ~cls "due to name conflict."))
+     (import ~cls)))
+
 (defmacro import-msg [cls]
   `(do (try-import ~cls)
        ~@(for [sub (message-submessage-types cls)]
@@ -302,7 +279,7 @@
 (defmacro defmsgs 
   "Compress a set of calls to defmsg.  Call like 
    (defmsg [pkg msg1 msg2] [pkg msg3] ...).  Also
-   imports all message classes and descendents."
+   imports all Message classes and descendents."
   [& specs]
   `(do ~@(apply concat
 	  (for [[pkg & msgs] specs
@@ -338,7 +315,8 @@
 (defmacro defsrv 
   "Inform Clojure that you intend to use a particular service type.
    cls should name the Class object for the desired service type. 
-   Calling this is a prerequisite for using any of the above convenience methods."
+   Calling this is a prerequisite for using any of the above convenience methods.
+   You probably want to call defsrvs instead."
   [cls]
   (let [req (symbol-cat cls '$Request)
 	res (symbol-cat cls '$Response)]
@@ -360,7 +338,9 @@
 
 (defmacro defsrvs
   "Compress a set of calls to defsrv.  Call like 
-   (defmsg [pkg srv1 srv2] [pkg srv3] ...)"
+   (defmsg [pkg srv1 srv2] [pkg srv3] ...).  Also
+   imports all Request and Response Messages and 
+   descendents."
   [& specs]
   `(do ~@(apply concat
 	  (for [[pkg & srvs] specs
@@ -381,8 +361,6 @@
 
 	
     
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                   Convenience wrappers for callbacks
@@ -455,56 +433,68 @@
 	  (when-not (.hasElapsed start-time dur)
 	    (recur))))))
 
-(defn get-single-message 
-  "Pass a topic string and Message object of the expected type, 
+(defn get-message 
+  "Pass a topic string and Message subclass/instance of the expected type, 
    and get back a translated (Clojure map) message corresponding
-   to the first recieved message on this topic.  Call with an 
-   existing node handle for efficiency, or without one for convenience."
-  ([topic message-template]
-     (with-node-handle [nh] 
-       (get-single-message nh topic message-template)))
-  ([#^NodeHandle nh topic message-template]
+   to the first recieved message on this topic."
+  ([#^NodeHandle nh topic message-type]
 ;     (print "Get single message " topic " took ")
 ;     (time
-     (let [result (atom nil)
+     (let [#^Message message-template (if (instance? Class message-type)
+					  (.newInstance #^Class message-type)
+					message-type)
+	   result (atom nil)
 	   sub (.subscribe nh topic message-template (sub-cb [m] (reset! result m)) 1)]
        (while (not @result) (.spinOnce nh))
        (.shutdown sub)
        @result)))
 
-(def get-single-message-cached
+(def  #^{:doc "Like get-message, but keeps the subscriber open
+               until NodeHandle nh is shutdown, for significant speedups.
+               Uses a queue size of 1."
+	 :arglists '([nh topic message-type])}
+  get-message-cached
   (let [mem (atom {})]
-    (fn [#^NodeHandle nh topic message-template]
-     (let [result 
+    (fn [#^NodeHandle nh topic message-type]
+     (let [#^Message message-template (if (instance? Class message-type)
+					  (.newInstance #^Class message-type)
+					message-type)
+	   result 
 	     (or (@mem [nh topic])
 		 (let [a (atom nil)
-		       sub (.subscribe nh topic message-template (sub-cb [m] (reset! a m)) 1)]
+		       sub (.subscribe nh topic message-template 
+				       (make-subscriber-callback #(reset! a %))
+				       1)]
 		   (swap! mem assoc [nh topic] a)
 		   a))]
        (while (not @result) (.spinOnce nh))
-       @result))))
+       (let [ret @result]
+	 (reset! result nil)
+	 (msg-map ret))))))
 
 
-(defn put-single-message 
-  "Pass a topic string and Message object, which will be published on 
-   the desired topic. By default, waits up to 2 seconds for at least 1 subscriber 
-   before publishing; pass n-subs (nil if desired) to override this behavior."
-  ([topic message] (put-single-message topic message 1))
-  ([topic message n-subs]
-     (with-node-handle [nh] 
-       (put-single-message nh topic message n-subs)))
+(defn put-message 
+  "Pass a topic string and Message object/map, which will be published on 
+   the desired topic.  Waits up to 5 seconds for at least n-subs subscribers
+   before publishing. Returns true if message published, or false if the 
+   desired number of subscribers were not obtained within the time limit."
   ([#^NodeHandle nh topic message n-subs]
-      (let [pub (.advertise nh topic message 1)]
-       (if (or (not n-subs) (zero? n-subs) (time (wait-for-subscribers nh pub n-subs 2.0)))
+      (let [#^Message message (map-msg message)
+	    pub (.advertise nh topic message 1)]
+       (if (or (not n-subs) (zero? n-subs) (wait-for-subscribers nh pub n-subs 5.0))
 	   (do (.publish pub message) (.shutdown pub) true)
 	 (do (println "No subscribers on" topic) (.shutdown pub) false)))))
 
-(def put-single-message-cached  
-;  "Like put-single-message, but caches publishers for big speedups.
-;   Assumes single subscriber, only waits on first pub."
+(def #^{:doc "Like put-message, but keeps the publisher open
+              until NodeHandle nh is shutdown, for significant speedups.
+              Waits for one subscriber on first publication, throwing an
+              exception if not received, and does not wait at all thereafter."
+	 :arglists '([nh topic message])} 
+  put-message-cached  
   (let [mem (atom {})]
-    (fn [#^NodeHandle nh topic #^Message message]
-      (let [#^Publisher pub 
+    (fn [#^NodeHandle nh topic message]
+      (let [#^Message message (map-msg message)
+	    #^Publisher pub 
 	      (or (@mem [nh topic])
 		  (let [ret (.advertise nh topic message 10)]
 		    (assert (wait-for-subscribers nh ret 1 2.0))
@@ -514,74 +504,33 @@
        
   
 
-(defn call-srv 
+(defn call-service 
   "Call service 'name' with the given Request map, and return a Clojure
-   map corresponding to the response.  (TODO: make uniform?)"
-  ([name request]
-     (with-node-handle [nh]
-       (call-srv nh name request)))
-  ([#^NodeHandle nh #^String name #^Message request]
-     (let [srv (.serviceClient nh name #^Service (req-srv request) false)
+   map corresponding to the response."
+  ([#^NodeHandle nh #^String name request]
+     (let [#^Message request (map-msg request)
+	   srv (.serviceClient nh name #^Service (req-srv request) false)
 	   result (msg-map (.call srv (map-msg request)))]
        (.shutdown srv)
        result)))
 
 
-(def call-srv-cached
+(def  #^{:doc "Like call-service, but creates a persistent service that is
+              kept alive until NodeHandle nh is shutdown, for significant speedups."
+	 :arglists '([nh service-name request])} 
+  call-service-cached   
   (let [mem (atom {})]
-    (fn [#^NodeHandle nh #^String topic #^Message request]
-      (let [#^ServiceClient srv 
-	      (or (@mem [nh topic])
-		  (let [ret (.serviceClient nh topic #^Service 
+    (fn [#^NodeHandle nh #^String name request]
+      (let [#^Message request (map-msg request)
+	    #^ServiceClient srv 
+	      (or (@mem [nh name])
+		  (let [ret (.serviceClient nh name #^Service 
 					    (req-srv request) true)]
-		    (swap! mem assoc [nh topic] ret)
+		    (swap! mem assoc [nh name] ret)
 		    ret))]
 	(msg-map (.call srv (map-msg request)))))))
 
 
-
-
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;                  Test/illustrate some of the above features.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(comment
-
-(defn test-ros []
-  (with-node-handle [nh] 
-    (doto nh 
-      (.setParam "testi" 2)
-      (.setParam "testd" 2.1)
-      (.setParam "tests" "2.5"))
-    (println (.getIntParam nh "testi")
-	     (.getDoubleParam nh "testd")
-	     (.getStringParam nh "tests"))
-    (println (.now nh))
-    (let [sc (.serviceClient nh "add_two_ints" (TwoInts.) false)
-	  req (map-msg {:class TwoInts$Request :a 5 :b 7})]
-      (print "expect yes: ") (try (.call sc req) (catch Exception e (println "yes" e)))
-      (let [ss (.advertiseService nh "add_two_ints" (TwoInts.) 
-				  (srv-cb TwoInts [{:keys [a b]}] {:sum (+ a b)}))]
-	(println "5+7=" (:sum (msg-map (.callLocal sc req))))))
-    (let [pub (.advertise nh "/chatter" (mString.) 100)
-	  q (Subscriber$QueueingCallback.)
-	  sub (.subscribe nh "/chatter" (mString.) q 10)
-	  q2  (sub-cb mString [m] (println "direct" (:data m)))
-	  sub2 (.subscribe nh "/chatter" (mString.) q2 10)]
-      (println (.getTopics nh) 
-	       (.getAdvertisedTopics nh) 
-	       (.getSubscribedTopics nh))
-      (dotimes [i 20]
-	(.publish pub (map-msg {:class mString :data (str 'hola i)}))
-	(when (= i 17) (.shutdown sub))
-	(while (not (.isEmpty q)) (println "queued" (:data (msg-map (.pop q)))))
-	(Thread/sleep 100)
-	(.spinOnce nh)))))
-	    
-)
 
 
 

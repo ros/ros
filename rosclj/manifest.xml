@@ -1,16 +1,11 @@
 <package>
   <description brief="Clojure utilities for working with rosjava">
-
 <p>
     rosclj contains Clojure code to assist in writing ROS nodes in Clojure. Since Clojure users can use rosjava directly, the focus is on making certain aspects of interacting with <a href="http://www.ros.org/wiki/rosjava">rosjava</a> more convenient or ideomatic, not duplicating existing functionality.
 </p>
 <p>
-    The bulk of the provided code is related to handling of <a href="http://www.ros.org/wiki/Messages">Messages</a> and <a href="http://www.ros.org/wiki/Services">Services</a>. In particular, a mechanism is provided (as map-msg and msg-map) for translating back and forth between Java Message objects and native Clojure maps, which allows for more convenient and ideomatic manipulation of message data (at greater computational cost). Convenience methods are also provided for managing node handles, publishing and subscribing to topics, calling services, and creating callbacks.
+    The bulk of the provided code is related to handling of <a href="http://www.ros.org/wiki/Messages">Messages</a> and <a href="http://www.ros.org/wiki/Services">Services</a>. In particular, a mechanism is provided (as map-msg and msg-map) for translating back and forth between Java Message objects and native Clojure maps, which allows for more convenient and ideomatic manipulation of message data (at greater computational cost). Convenience functions are also provided for managing node handles, publishing and subscribing to topics, calling services, and creating callbacks.
 </p>
-  <p>
-    This package also contains a preliminary implementation of an action client for Clojure, in ros/actions.clj.
-  </p>
-    
   </description>
   <author>Jason Wolfe (jawolfe@willowgarage.com)</author>
   <license>BSD</license>

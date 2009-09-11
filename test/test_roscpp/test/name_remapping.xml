@@ -1,0 +1,4 @@
+<launch>
+  <param name="test_remap" value="asdf" type="str"/>
+  <test test-name="name_remapping" pkg="test_roscpp" type="name_remapping" args="test:=test_remap __name:=name_remapped"/>
+</launch>

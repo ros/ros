@@ -1,0 +1,107 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosmsg is a command-line tool for displaying information about ROS messages.
+\b rossrv is a command-line tool for displaying information about ROS services.
+
+\section commandline Command-line tools
+
+\subsection rosmsg rosmsg
+
+The \b rosmsg command-line tool displays information about ROS messages. 
+
+\subsubsection Usage
+
+\verbatim
+$ rosmsg show <service type>
+$ rosmsg users <service type>
+$ rosmsg package <package>
+$ rosmsg packages
+\endverbatim
+
+\par Examples
+
+To display the fields in a message:
+
+\verbatim
+$ rosmsg show msg-type
+\endverbatim
+
+e.g.
+
+\verbatim
+$ rosmsg std_msgs/String
+\endverbatim
+
+or, if you don't know the package name:
+
+\verbatim
+$ rosmsg Pose
+\endverbatim
+
+or, in combination with rostopic:
+
+\verbatim
+$ rostopic -t /topic_name | rosmsg 
+\endverbatim
+
+To display a list of all messages in a package:
+
+\verbatim
+$ rosmsg package <package-name>
+\endverbatim
+
+To display a list of all packages with messages:
+
+\verbatim
+$ rosmsg packages
+\endverbatim
+
+\subsection rossrv srv
+
+The \b rossrv command-line tool displays information about ROS services. 
+
+\subsubsection Usage
+
+\verbatim
+$ rossrv show <service type>
+$ rossrv users <service type>
+$ rossrv package <package>
+$ rossrv packages
+\endverbatim
+
+\par Examples
+
+To display the fields in a service:
+
+\verbatim
+$ rossrv show <srv-type>
+\endverbatim
+
+e.g.
+
+\verbatim
+$ rossrv show robot_srvs/SelfTest
+\endverbatim
+
+or if you don't know the package name:
+
+\verbatim
+$ rossrv show String
+\endverbatim
+
+To display a list of all services in a package:
+
+\verbatim
+$ rossrv package <package-name>
+\endverbatim
+
+To display a list of all packages with services:
+
+\verbatim
+$ rossrv packages
+\endverbatim
+
+
+*/

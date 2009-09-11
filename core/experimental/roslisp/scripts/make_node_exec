@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [[ $# == 3 ]]; then
+    pkg=`grep "in-package" $1 | sed 's/[^ ]* *:*\([^)]*\).*/\1/'`
+    sbcl --noinform --core $2 --load $1 --eval "(sb-ext:save-lisp-and-die \"$3\" :executable t :toplevel #'$pkg:MAIN)"
+else
+    echo "Usage: make_node_exec LISPFILE ROSLISP_IMAGE_FILE EXE_NAME"
+    exit 1
+fi

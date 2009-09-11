@@ -1,0 +1,13 @@
+<package>
+  <description brief="A C++ implementation of ROS">This package is a C++ implementation of ROS, the Robot Operating System. It depends on xmlrpc++ for an XML-RPC implementation.</description>
+  <author>Morgan Quigley mquigley@cs.stanford.edu, Josh Faust jfaust@willowgarage.com, Brian Gerkey gerkey@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="API cleared" notes="Current API cleared for 0.4 with a list of things we'd like to fix available on the wiki page"/>
+  <url>http://pr.willowgarage.com/wiki/roscpp</url>
+  <depend package="roslib"/>
+  <depend package="xmlrpc++"/>
+  <depend package="rosconsole"/>
+  <export>
+    <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lros `rosboost-cfg --lflags thread,signals`"/>
+  </export>
+</package>

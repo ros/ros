@@ -1,0 +1,540 @@
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2008, Willow Garage, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above
+#    copyright notice, this list of conditions and the following
+#    disclaimer in the documentation and/or other materials provided
+#    with the distribution.
+#  * Neither the name of Willow Garage, Inc. nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# Revision $Id: msgspec.py 3357 2009-01-13 07:13:05Z jfaustwg $
+# $Author: jfaustwg $
+"""
+ROS Msg Description Language Spec
+"""
+## ROS Msg Description Language Spec
+#  Implements: http://pr.willowgarage.com/wiki/ROS/Message_Description_Language
+
+import cStringIO
+import os
+import itertools
+import sys
+import re
+import string
+
+import roslib.manifest
+import roslib.packages
+import roslib.names
+import roslib.resources
+
+VERBOSE = False
+
+## @return: True if msg-related scripts should print verbose output
+def is_verbose():
+    return VERBOSE
+
+## set whether msg-related scripts should print verbose output
+def set_verbose(v):
+    global VERBOSE
+    VERBOSE = v
+
+EXT = roslib.names.MSG_EXT #alias
+SEP = roslib.names.PRN_SEPARATOR #e.g. std_msgs/String
+## character that designates a constant assignment rather than a field
+CONSTCHAR   = '='
+COMMENTCHAR = '#'
+
+def base_msg_type(x):
+    if x is None:
+        return None
+    return x.split('[')[0]
+
+
+################################################################################
+# name validation ############################################
+
+## @return bool: True if the name is a syntatically legal message type name
+def is_valid_msg_type(x):
+    if not x or len(x) != len(x.strip()):
+        return False
+    base = base_msg_type(x)
+    if not roslib.names.is_valid_local_name(base):
+        return False
+    #parse array indicies
+    x = x[len(base):]
+    state = 0
+    i = 0
+    for c in x:
+        if state == 0:
+            if c != '[':
+                return False
+            state = 1 #open
+        elif state == 1:
+            if c == ']':
+                state = 0 #closed
+            else:
+                try:
+                    string.atoi(c)
+                except:
+                    return False
+    return state == 0
+
+## @return bool: True if the name is a legal constant type. Only simple types are allowed.
+def is_valid_constant_type(x):
+    return x in SIMPLE_TYPES or x == 'string'
+
+## @return bool: True if the name is a syntatically legal message field name
+def is_valid_msg_field_name(x):
+    return roslib.names.is_valid_local_name(x)
+
+# msg spec representation ##########################################
+
+## Container class for holding a Constant declaration
+class Constant(object):
+    __slots__ = ['name', 'type', 'val']
+    
+    ## @param self
+    ## @param type str 
+    ## @param name str
+    ## @param val str 
+    def __init__(self, type, name, val):
+        if type is None or name is None or val is None:
+            raise ValueError('Constant must have non-None parameters')
+        self.type = type
+        self.name = name
+        self.val = val
+
+## Convert spec into a string representation. Helper routine for MsgSpec.
+## @param indent str: internal use only
+## @param buff StringIO: internal use only
+## @return str: string representation of spec
+def _strify_spec(spec, buff=None, indent=''):
+    if buff is None:
+        buff = cStringIO.StringIO()
+    for type, name in zip(spec.types, spec.names):
+        buff.write("%s%s %s\n"%(indent, type, name))
+        t = base_msg_type(type)
+        if not t in BUILTIN_TYPES:
+            subspec = get_registered(t)
+            _strify_spec(subspec, buff, indent + '  ')
+    return buff.getvalue()
+
+## Container class for storing loaded msg description files. Field
+## types and names are stored in separate lists with 1-to-1
+## correspondence. MsgSpec can also return an md5 of the source text.
+class MsgSpec(object):
+
+    ## @param self
+    ## @param types [str]: list of field types, in order of declaration
+    ## @param names [str]: list of field names, in order of declaration    
+    ## @param constants [Constant]: Constant declarations
+    ## @param text str: text of declaration
+    def __init__(self, types, names, constants, text):
+        self.types = types
+        self.names = names
+        self.constants = constants
+        assert len(self.types) == len(self.names), "len(%s) != len(%s)"%(self.types, self.names)
+        #Header.msg support
+        self.header_present = (HEADER, 'header') in zip(self.types, self.names)
+        self.text = text
+        
+    ## @param self
+    ## @return [(str,str),]: zip list of types and names (e.g. [('int32', 'x'), ('int32', 'y')]
+    def fields(self):
+        return zip(self.types, self.names)
+
+    ## @param self
+    ## @return true if msg decription contains a 'Header header'
+    ## declaration at the beginning
+    def has_header(self):
+        return self.header_present
+    def __eq__(self, other):
+        if not other or not isinstance(other, MsgSpec):
+            return False 
+        return self.types == other.types and self.names == other.names and \
+               self.constants == other.constants and self.text == other.text
+    def __ne__(self, other):
+        if not other or not isinstance(other, MsgSpec):
+            return True
+        return not self.__eq__(other)
+
+    def __repr__(self):
+        return "MsgSpec[%s, %s]"%(repr(self.types), repr(self.names))
+
+    def __str__(self):
+        return _strify_spec(self)
+
+    ## Flattens the msg spec so that embedded message types become
+    ## direct references. The resulting MsgSpec isn't a true/legal
+    ## MsgSpec and should only be used for serializer generation
+    def flatten(self):
+        newTypes = []
+        newNames = []
+        for (t, n) in zip(self.types, self.names):
+            #flatten embedded types - note: bug #59
+            if REGISTERED_TYPES.has_key(t):
+                msgSpec = REGISTERED_TYPES[t].flatten()
+                newTypes.extend(msgSpec.types)
+                for n2 in msgSpec.names:
+                    newNames.append(n+'.'+n2)
+            else:
+                #I'm not sure if it's a performance win to flatten fixed-length arrays
+                #as you get n __getitems__ method calls vs. a single *array call
+                newTypes.append(t)
+                newNames.append(n)
+        return MsgSpec(newTypes, newNames, self.constants, self.text)
+    
+# msg spec loading utilities ##########################################
+
+_initialized = False
+def _init():
+    #lazy-init
+    global _initialized
+    if _initialized:
+        return
+
+    fname = '%s%s'%(HEADER, EXT)
+    roslib_dir = roslib.packages.get_pkg_dir('roslib')
+    if roslib_dir is None:
+        raise Exception("Unable to locate roslib: %s files cannot be loaded"%EXT)
+    
+    header = os.path.join(roslib_dir, roslib.packages.MSG_DIR, fname)
+    if not os.path.isfile(header):
+        print >> sys.stderr, "ERROR: cannot locate %s. Excepted to find it at '%s'"%(fname, header)
+        return False
+
+    # register Header under both contexted and de-contexted name
+    _, spec = load_from_file(header, '')
+    register(HEADER, spec)
+    register('roslib/'+HEADER, spec)    
+    for k, spec in EXTENDED_BUILTINS.iteritems():
+        register(k, spec)
+        
+    _initialized = True
+
+# .msg file routines ################################################################    
+
+## @internal
+## predicate for filtering directory list. matches message files
+def _msg_filter(f):
+    return os.path.isfile(f) and f.endswith(EXT)
+
+# also used by doxymaker
+## list all messages in the specified package
+## @param package str: name of package to search
+## @param include_depends bool: if True, will also list messages in package dependencies
+## @return [str]: message type names
+def list_msg_types(package, include_depends):
+    types = roslib.resources.list_package_resources(package, include_depends, roslib.packages.MSG_DIR, _msg_filter)
+    return [x[:-len(EXT)] for x in types]
+
+## Determine the file system path for the specified .msg
+## resource. .msg resource does not have to exist.
+## @param package str: name of package .msg file is in
+## @param type str: type name of message, e.g. 'Point2DFloat32'
+## @return str: file path of .msg file in specified package
+def msg_file(package, type):
+    return roslib.packages.resource_file(package, roslib.packages.MSG_DIR, type+EXT)
+
+## List all messages that a package contains
+## @param depend Depend: manifest.Depend object representing package
+## to load messages from
+## @param name_context str: package prefix for message type names
+## @return [(str,MsgSpec), [str]]: list of message type names and specs for package, as well as a list
+##     of message names that could not be processed. 
+def get_pkg_msg_specs(depend, name_context):
+    _init()
+    types = list_msg_types(depend.package, False)
+    specs = [] #no fancy list comprehension as we want to show errors
+    failures = []
+    for t in types:
+        try: 
+            typespec = load_from_file(msg_file(depend.package, t), name_context)
+            specs.append(typespec)
+        except Exception, e:
+            failures.append(t)
+            print "ERROR: unable to load %s"%t
+    return specs, failures
+
+## Register all messages that the specified package depends on.
+def load_package_dependencies(package):
+    global _loaded_packages
+    _init()    
+    p = roslib.manifest.Depend(package)
+    if VERBOSE:
+        print "Load dependencies for package", p
+        
+    manifest_file = roslib.manifest.manifest_file(package, True)
+    m = roslib.manifest.parse_file(manifest_file)
+    depends = m.depends[:] # #391
+    if not p in depends:
+        depends.append(p)
+    msgs = []
+    failures = []
+    for d in depends:
+        if VERBOSE:
+            print "Load dependency", d
+        #check if already loaded
+        # - we are dependent on manifest.getAll returning first-order dependencies first
+        if d.package in _loaded_packages or d.package == package: 
+            continue
+        _loaded_packages.append(d.package)
+        if d != p:
+            context = d.package
+        else:
+            context = ''
+        specs, failed = get_pkg_msg_specs(d, context)
+        msgs.extend(specs)
+        failures.extend(failed)
+    for key, spec in msgs:
+        register(key, spec)
+
+## Load package into the local registered namespace. All messages found
+#  in the package will be registered if they are successfully
+#  loaded. This should only be done with one package (i.e. the 'main'
+#  package) per Python instance.
+def load_package(package):
+    global _loaded_packages
+    _init()    
+    p = roslib.manifest.Depend(package)
+    if VERBOSE:
+        print "Load package", p
+        
+    #check if already loaded
+    # - we are dependent on manifest.getAll returning first-order dependencies first
+    if package in _loaded_packages:
+        if VERBOSE:
+            print "Package %s is already loaded"%p
+        return
+
+    _loaded_packages.append(package)
+    specs, failed = get_pkg_msg_specs(p, '')
+    if VERBOSE:
+        print "Package contains the following messages: %s"%specs
+    for key, spec in specs:
+        #register spec under both local and fully-qualified key
+        register(key, spec)
+        register(package + roslib.names.PRN_SEPARATOR + key, spec)        
+
+## convert constant value declaration to python value
+def _convert_val(type, val):
+    if type in ['float32','float64']:
+        return float(val)
+    elif type in ['string']:
+        return val.strip() #string constants are always stripped 
+    elif type in ['int8', 'uint8', 'int16','uint16','int32','uint32','int64','uint64', 'char', 'byte']:
+        # bounds checking
+        bits = [('int8', 8), ('uint8', 8), ('int16', 16),('uint16', 16),\
+                ('int32', 32),('uint32', 32), ('int64', 64),('uint64', 64),\
+                ('byte', 8), ('char', 8)]
+        b = [b for t, b in bits if t == type][0]
+        import math
+        if type[0] == 'u' or type == 'char':
+            lower = 0
+            upper = int(math.pow(2, b)-1)
+        else:
+            upper = int(math.pow(2, b-1)-1)   
+            lower = -upper - 1 #two's complement min
+        val = int(val) #python will autocast to long if necessary
+        if val > upper or val < lower:
+            raise Exception("cannot coerce [%s] to %s (out of bounds)"%(val, type))
+        return val 
+    raise Exception("invalid constant type: [%s]"%type)
+        
+## Load message specification for specified type
+#  @param package_context: package name to use for the type name or
+#      '' to use the local (relative) naming convention.
+#  @return (str, L{MsgSpec}): Message type name and message specification
+def load_by_type(msgtype, package_context=''):
+    pkg, basetype = roslib.names.package_resource_name(msgtype)
+    pkg = pkg or package_context # convert '' -> local package 
+    return load_from_file(msg_file(pkg, basetype), pkg)
+
+## Load message specification from a string.
+#  @param text str: .msg text 
+#  @param package_context: package name to use for the type name or
+#      '' to use the local (relative) naming convention.
+#  @return MsgSpec: Message message specification
+#  @throws MsgSpecException: if syntax errors or other problems are detected in file
+def load_from_string(text, package_context=''):
+    types = []
+    names = []
+    constants = []
+    for l in text.split('\n'):
+        l = l.split(COMMENTCHAR)[0].strip() #strip comments
+        if not l:
+            continue #ignore empty lines
+        splits = filter(lambda s: s, [x.strip() for x in l.split(" ")]) #split type/name, filter out empties
+        type = splits[0]
+        if not is_valid_msg_type(type):
+            raise MsgSpecException("%s is not a legal message type"%type)
+        if CONSTCHAR in l:
+            if not is_valid_constant_type(type):
+                raise MsgSpecException("%s is not a legal constant type"%type)
+            splits = [x.strip() for x in ' '.join(splits[1:]).split(CONSTCHAR)] #resplit on '='
+            if len(splits) != 2:
+                raise MsgSpecException("Invalid declaration: %s"%l)
+            name = splits[0]
+            try:
+                val  = _convert_val(type, splits[1])
+            except Exception, e:
+                #traceback.print_exc()
+                raise MsgSpecException("Invalid declaration: %s"%e)
+            constants.append(Constant(type, name, val))
+        else:
+            if len(splits) != 2:
+                raise MsgSpecException("Invalid declaration: %s"%l)
+            name = splits[1]
+            if not is_valid_msg_field_name(name):
+                raise MsgSpecException("%s is not a legal message field name"%name)
+            if package_context and not SEP in type:
+                if not base_msg_type(type) in RESERVED_TYPES:
+                    #print "rewrite", type, "to", "%s/%s"%(package_context, type)
+                    type = "%s/%s"%(package_context, type)
+            types.append(type)
+            names.append(name)
+    return MsgSpec(types, names, constants, text)
+
+## Convert the .msg representation in the file to a MsgSpec instance.
+#  This does *not* register the object.
+#  @param file_path str: path of file to load from
+#  @param package_context str: package name to prepend to type name or
+#    '' to use local (relative) naming convention.
+#  @return (str, L{MsgSpec}): Message type name and message specification
+#  @throws MsgSpecException: if syntax errors or other problems are detected in file
+def load_from_file(file_path, package_context=''):
+    if VERBOSE:
+        if package_context:
+            print "Load spec from", file_path, "into package [%s]"%package_context
+        else:
+            print "Load spec from", file_path
+    fileName = os.path.basename(file_path)
+    type = fileName[:-len(EXT)]
+    # determine the type name
+    if package_context:
+        while package_context.endswith(SEP):
+            package_context = package_context[:-1] #strip message separators
+        type = "%s%s%s"%(package_context, SEP, type)
+    if not roslib.names.is_valid_local_name(type):
+        raise MsgSpecException("%s: %s is not a legal type name"%(file_path, type))
+    
+    f = open(file_path, 'r')
+    try:
+        try:
+            text = f.read()
+            return (type, load_from_string(text, package_context))
+        except MsgSpecException, e:
+            raise MsgSpecException('%s: %s'%(fileName, e))
+    finally:
+        f.close()
+
+# data structures and serialization spec ###########################
+
+class MsgSpecException(Exception): pass
+
+# - simple types have fixed serialization length
+SIMPLE_TYPES_DICT = { #see python module struct
+    'int8': 'b', 
+    'uint8': 'B',
+    'int16' : 'h',
+    'uint16' : 'H',
+    'int32' : 'i',
+    'uint32' : 'I',
+    'int64' : 'q',
+    'uint64' : 'Q',
+    'float32': 'f',
+    'float64': 'd',
+    # deprecated
+    'char' : 'B', #unsigned
+    'byte' : 'b', #signed
+    }
+
+# adjustable constants, in case we change our minds
+HEADER   = 'Header'
+TIME     = 'time'
+DURATION = 'duration'
+
+SIMPLE_TYPES    = SIMPLE_TYPES_DICT.keys()
+
+# time and duration types are represented as aggregate data structures
+# for the purposes of serialization from the perspective of
+# roslib.msgs. genmsg_py will do additional special handling is required
+# to convert them into rospy.msg.Time/Duration instances.
+
+## time is unsigned 
+TIME_MSG     = "uint32 secs\nuint32 nsecs"
+## duration is just like time except signed
+DURATION_MSG = "int32 secs\nint32 nsecs" 
+## extended builtins are builtin types that can be represented as MsgSpec instances
+EXTENDED_BUILTINS = { TIME : load_from_string(TIME_MSG), DURATION: load_from_string(DURATION_MSG) }
+## complex types are any type that require special serialization rules
+COMPLEX_TYPES   = ['string'] + EXTENDED_BUILTINS.keys()
+BUILTIN_TYPES   = SIMPLE_TYPES + COMPLEX_TYPES 
+RESERVED_TYPES  = BUILTIN_TYPES + [HEADER]
+
+## @param msg_type_name str: name of message type
+## @return bool: True if \a msg_type_name is a builtin/primitive type
+def is_builtin_spec(msg_type_name):
+    return msg_type_name in BUILTIN_TYPES
+
+## @return bool: True if type is a 'simple' type, i.e. is of
+## fixed/known serialization length. This is effectively all primitive
+## types except for string"
+def is_simple_spec(type):
+    return type in SIMPLE_TYPES
+
+REGISTERED_TYPES = { } 
+_loaded_packages = [] #keep track of packages so that we only load once (note: bug #59)
+
+## @param msg_type_name str: name of message type
+## @return bool: True if msg spec for specified msg type name is
+## registered. NOTE: builtin types are not registered.
+def is_registered(msg_type_name):
+    return REGISTERED_TYPES.has_key(msg_type_name)
+
+## @param msg_type_name str: name of message type
+## @return MsgSpec: msg spec for msg type name
+def get_registered(msg_type_name):
+    return REGISTERED_TYPES[msg_type_name]
+
+## Load MsgSpec into the type dictionary
+## @param msg_type_name str: name of message type
+## @param msg_spec MsgSpec: spec to load
+def register(msg_type_name, msg_spec):
+    if VERBOSE:
+        print "Register msg %s"%msg_type_name
+    REGISTERED_TYPES[msg_type_name] = msg_spec
+
+## @param [str]: type names
+## @return str: format string for struct if types are all simple. Otherwise, return None
+def get_struct_pattern(types):
+    if not types: #important to filter None and empty first
+        return None
+    try: 
+        return ''.join([SIMPLE_TYPES_DICT[t] for t in types])
+    except:
+        return None
+

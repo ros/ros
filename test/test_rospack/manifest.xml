@@ -1,0 +1,16 @@
+<package>
+  <description brief="rospack unit tests">
+     Unit tests for the rospack tool.  The tests are here, in a separate
+     package, because we need gtest, and rospack itself cannot have any
+     dependencies.
+  </description>
+  <author>
+  Brian Gerkey
+  </author>
+  <license>BSD</license>
+  <review status="na" notes="tests"/>
+  <url>http://pr.willowgarage.com/wiki/rostest</url>
+  <depend package="rospack"/>
+  <depend package="rostest"/>
+</package>
+

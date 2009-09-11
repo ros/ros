@@ -1,0 +1,7 @@
+int32 PING     = 0 # heartbeat routine
+int32 ACTIVE   = 1 # retrieve CSV of active nodes
+int32 ROSAPI   = 2 # retrieve ROS API URI
+int32 SHUTDOWN = 3 # kill the roslaunch and children
+int32 action
+---
+string returnMessage

@@ -1,0 +1,104 @@
+#!/bin/sh
+
+USAGE="USAGE: rosapt-get {all | pkg [pkg2 pkg3...]}"
+
+PKGS=""
+if [ $# -ge 1 ]; then
+  if [ "x$1" = "xall" ]; then
+    PKGS=`rospack list-names`
+  else
+    UPKGS=$*
+    for p in $UPKGS; do
+      tmp=`rospack deps $p`
+      PKGS="$PKGS $p $tmp"
+    done  
+    PKGS="`echo $PKGS | tr ' ' '\n' | sort -u`"
+  fi
+else
+  echo $USAGE
+  exit 1
+fi
+
+OS=`cat /etc/issue | awk {'print $1'} | tr [A-Z] [a-z]`
+#OSVERSION=`cat /etc/issue | awk {'print $2'} | sed 's/\([0-9]*\.[0-9]*\).*/\1/'`
+OSMAJORVERSION=`cat /etc/issue | awk {'print $2'} | sed 's/\([0-9]*\).*/\1/'`
+OSMAJORMINORVERSION=`cat /etc/issue | awk {'print $2'} | sed 's/\([0-9]*\.[0-9]*\).*/\1/'`
+if test "x$OS" != "xubuntu" -o -z $OSMAJORVERSION -o -z $OSMAJORMINORVERSION; then
+  echo "[rosapt-get] I couldn't determine your OS version from /etc/issue."
+  echo "[rosapt-get] This tool only works on Ubuntu systems.  Aborting."
+  exit 1
+fi
+
+echo "[rosapt-get]" 
+echo "[rosapt-get] Detected your system to be $OS/$OSMAJORMINORVERSION"
+
+echo "[rosapt-get]"
+echo "[rosapt-get] Searching for sysdepends in the following ROS packages:"
+echo "[rosapt-get]   \c"
+echo $PKGS
+echo "[rosapt-get]"
+
+APTS=""
+for p in $PKGS; do
+  CAPTS=`rospack sysdeps0 $p | tr '\n' ';'`
+  exactmatch=1
+  if [ `echo $CAPTS | grep -c $OSMAJORMINORVERSION` = 0 ]; then
+   exactmatch=0
+  fi
+  old_IFS=$IFS
+  IFS=\;
+  for c in $CAPTS; do
+    if [ -z "$c" ]; then continue; fi
+    package=`echo $c |  sed 's/.*package: \([^ \t]*\).*/\1/'`
+    if [ -z $package ]; then
+      echo "[rosapt-get] No package found in:"
+      echo "[rosapt-get]\c"
+      echo "$c"
+      continue
+    fi
+    #version=`echo "$c" |  sed 's/.*version: \([^ \t]*\)-.*/\1/'`
+    majorminorversion=`echo "$c" |  sed 's/.*version: \([0-9]*\.[0-9]*\).*-.*/\1/'`
+    majorversion=`echo "$c" |  sed 's/.*version: \([0-9]*\).*-.*/\1/'`
+    if test -z "$majorminorversion" -o -z "$majorversion"; then
+      echo "[rosapt-get] No version found in:"
+      echo "[rosapt-get]\c"
+      echo "$c"
+      continue
+    fi
+    os=`echo "$c" |  sed 's/.*os: \([^ \t]*\).*/\1/'`
+    if [ -z "$os" ]; then
+      echo "[rosapt-get] No os found in:"
+      echo "[rosapt-get]\c"
+      echo "$c"
+      continue
+    fi
+    if test "x$os" = "x$OS" -a \( \( $exactmatch = 1 -a "x$majorminorversion" = "x$OSMAJORMINORVERSION" \) -o \( $exactmatch != 1 -a "x$majorversion" = "x$OSMAJORVERSION" \) \); then
+      echo "[rosapt-get] Adding $package"
+      APTS="$APTS $package"
+    else
+      echo "[rosapt-get] Skipping $package; $os/$majorminorversion doesn't match $OS/$OSMAJORMINORVERSION"
+    fi
+  done
+  IFS=$old_IFS
+done
+
+echo "[rosapt-get]"
+echo "[rosapt-get] Done searching for packages."
+echo "[rosapt-get]"
+
+APTS=`echo $APTS | tr ' ' '\n' | sort -u`
+if [ -z "$APTS" ] ; then
+  echo "[rosapt-get] No packages to install."
+else  
+  echo "[rosapt-get] I'm ready to install, using the following command:"
+  echo "[rosapt-get]   sudo apt-get install \c"
+  echo $APTS
+  echo "[rosapt-get] Shall I proceed (y/n)?"
+  read answer
+  if test "x$answer" = "xy" -o "x$answer" = "xY"; then
+   sudo apt-get install $APTS
+   echo "[rosapt-get] Done."
+  else
+   echo "[rosapt-get] Aborted."
+  fi
+fi

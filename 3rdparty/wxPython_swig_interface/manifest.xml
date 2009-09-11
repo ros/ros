@@ -1,0 +1,19 @@
+<package>
+<description brief="wxPython SWIG interface files">
+Interface files used for 
+
+</description>
+<author>Many</author>
+<license url="http://www.opensource.org/licenses/wxwindows.php">wxWindows</license>
+<review status="3rdparty" notes=""/>
+<url>http://www.wxpython.org/</url>
+<export>
+  <swig flags="-I${prefix}/src"/>
+</export>
+
+<sysdepend package="python-wxgtk2.8" os="ubuntu" version="7.10-gutsy"/>
+<sysdepend package="python-wxgtk2.8" os="ubuntu" version="8.04-hardy"/>
+<sysdepend package="wxPython-devel" os="centos" version="5.2"/>
+
+</package>
+

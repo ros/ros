@@ -1,0 +1,14 @@
+<package>
+  <description brief="roscreate">
+
+     roscreate contains code for the roscreate-pkg tool, which enables
+     quick creation of new packages.
+
+  </description>
+  <author>Ken Conley/kwc</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/roscreate</url>
+</package>
+
+

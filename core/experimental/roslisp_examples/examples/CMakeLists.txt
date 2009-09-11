@@ -1,0 +1,8 @@
+rospack_add_lisp_executable(add-two-ints-client add-two-ints-client.lisp)
+rospack_add_lisp_executable(listener listener.lisp)
+rospack_add_lisp_executable(add-two-ints-server add-two-ints-server.lisp)
+rospack_add_lisp_executable(talker talker.lisp)
+rospack_add_lisp_executable(params params.lisp)
+rospack_add_lisp_executable(array-talker array-talker.lisp)
+rospack_add_lisp_executable(array-listener array-listener.lisp)
+rospack_add_lisp_executable(rosout-example rosout-example.lisp)

@@ -1,0 +1,20 @@
+<!-- an example launch configuration that launches two demo nodes on a remote machine -->
+<launch>
+
+  <!-- 
+  machine-1 is set to be the default, so all nodes without explicit
+  machine assignments will get this machines. If no default machine is
+  specified, unassigned nodes will get whatever machine roslaunch
+  feels like.
+  -->
+  <machine name="machine-1" default="true" address="iad.willowgarage.com" ros-root="/u/kwc/sf/ros/" user="kwc" ssh-port="22" />
+
+  <group>
+    <remap from="chatter" to="chatter-remote" />
+    <node ns="wg" pkg="rospy_tutorials" type="talker" />
+    
+    <!-- the machine=machine-1 is a noop in this example -->
+    <node ns="wg" pkg="roscpp_tutorials" type="listener" machine="machine-1" />
+  </group>
+
+</launch>

@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="test_roscpp" type="pub_sub" args="nothread 1000"/>
+  <test test-name="pingpong_large_nothread" pkg="test_roscpp"
+  type="sub_pub" args="nothread 100 5.0"/>
+</launch>
+

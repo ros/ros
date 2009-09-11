@@ -1,0 +1,23 @@
+<package>
+    <description brief="Collection of ROS GUI tools and libraries">
+    
+      A collection of GUI tools for use with ROS
+    
+    </description>
+    <author>Josh Faust</author>
+    <license>BSD</license>
+    <review status="API cleared" notes=""/>
+    <url>http://pr.willowgarage.com/wiki/ROS</url>
+    <depend package="roscpp"/>
+    <depend package="wxswig"/>
+    <depend package="wxPython_swig_interface"/>
+    <export> 
+        <cpp cflags="-I${prefix}/src/ `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib/ -lrxtools `rosboost-cfg --lflags thread,regex`"/>
+        <python path="${prefix}/lib/"/>
+    </export>
+<sysdepend os="ubuntu" version="7.04-feisty" package="libwxgtk2.8-dev"/>
+<sysdepend os="ubuntu" version="8.04-hardy" package="libwxgtk2.8-dev"/>
+<sysdepend os="macports" package="gtk28"/>
+<sysdepend os="centos" version="5.2" package="wxGTK-devel"/>
+</package>
+

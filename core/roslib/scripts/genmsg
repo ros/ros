@@ -1,0 +1,11 @@
+#!/bin/bash
+
+`rospack find roslib`/scripts/pythontest
+if [ $? -eq 0 ]; then
+  `rospack find roslib`/scripts/genmsg.py $*
+else
+  for i in `rospack langs`; do
+    lang=${i:3}
+    `rospack find $i`/scripts/genmsg_$lang $*
+  done
+fi

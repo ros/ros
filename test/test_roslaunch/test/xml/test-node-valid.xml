@@ -1,0 +1,51 @@
+<launch>
+  <node pkg="package" type="test_base" />
+  
+  <node pkg="package" type="test_args" args="args test" />
+  <node pkg="package" type="test_args_empty" args="" />
+  <!-- TODO: more substitution args? -->
+
+  <node pkg="package" type="test_output_screen" output="screen" />
+  <node pkg="package" type="test_output_log" output="log" />
+  
+  <node pkg="package" type="test_machine" machine="machine_test" />
+  
+  <node pkg="package" type="test_ns1" ns="ns_test1" />
+  <node pkg="package" type="test_ns2" ns="ns_test2/child2" />
+  <node pkg="package" type="test_ns3" ns="ns_test3/child3/" />
+  
+  <node pkg="package" type="test_respawn_true" respawn="true" />
+  <node pkg="package" type="test_respawn_TRUE" respawn="TRUE" />
+  <node pkg="package" type="test_respawn_false" respawn="false" />
+  <node pkg="package" type="test_respawn_FALSE" respawn="FALSE" />
+  <node pkg="package" type="test_respawn_none" />          
+
+  <node pkg="package" type="test_env">
+    <env name="env1" value="env1 value1" />
+    <env name="env2" value="env2 value2" />
+  </node>
+
+  <node pkg="package" type="test_fake">
+    <!-- unrecognized tags are ok, but will print warnings to screen -->
+    <fake name="env2" value="env2 value2" />
+  </node>
+  
+  <node pkg="package" type="test_env_empty">
+    <env name="env1" value="" />
+  </node>
+
+  <node name="test_param_name" pkg="package" type="test_param">
+    <param name="foo" value="bar" />
+  </node>
+
+  <node name="test_param_name_ns" ns="ns_test" pkg="package" type="test_param">
+    <param name="foo2" value="bar2" />
+  </node>
+  
+  <node pkg="package" type="test_cwd_1" cwd="ros-root" />
+  <node pkg="package" type="test_cwd_2" cwd="node" />
+      
+  <!-- TODO remap args test -->
+
+</launch>
+

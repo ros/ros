@@ -1,0 +1,137 @@
+#!/usr/bin/env python
+from __future__ import with_statement
+import os
+import sys
+import time
+
+import roslib.packages 
+import roslib.rosenv
+
+def get_gcov_files(pkg):
+    pkg_dir = roslib.packages.get_pkg_dir(pkg, required=True)
+    gcov_files = []
+    with open(os.path.join(pkg_dir, '.rosgcov_files'), 'r') as f:
+        for l in f.readlines():
+            dir, src_file = l.split(' ')
+            src_full_path = os.path.join(dir, src_file).strip()
+            if not os.path.exists(src_full_path):
+                raise Exception("cannot locate src file [%s]"%src_full_path) 
+                
+            # strip directory information
+            src_file = os.path.basename(src_file).strip()
+
+            # locate associated .gcov file
+            gcov_file = os.path.join(dir, src_file+'.gcov')
+            if not os.path.exists(gcov_file):
+                print >> sys.stderr, "WARNING: no gcov file for [%s]"%src_file
+            else:
+                gcov_files.append((src_full_path, gcov_file))
+    return gcov_files
+
+def parse_gcov(gcov_path):
+    lines = []
+    next_type = 'stmt'
+    print "opening", gcov_path
+    with open(gcov_path, 'r') as f:
+        for l in f.readlines():
+            count = l[:9].strip()
+            if count == '-': #not a line
+                next_type = 'stmt' #reset
+                continue
+            elif l[0].strip(): #branch/call coverage
+                if count.startswith('function'):
+                    next_type = 'method'
+                    print l.strip()
+                continue
+            elif count == '#####':
+                count = '0'
+            loc = l[10:15].strip()
+            lines.append((loc, count, next_type))
+            if next_type == 'method':
+                next_type = 'stmt' #reset
+                print "reset"
+    return lines
+
+def line_tmpl(l):
+    loc, count, ltype = l
+    return '        <line num="%s" count="%s" type="%s"/>\n'%(loc, count, ltype)
+
+def write_clover(pkgs_file_data):
+    ros_root = roslib.rosenv.get_ros_root()
+    clover_file = os.path.join(ros_root, 'clover.xml')
+    
+    with open(clover_file, 'w') as f:
+        print "Writing [%s]"%clover_file
+        f.write("""<?xml version="1.0" encoding="UTF-8"?>
+<clover generated="%d">
+  <project timestamp="%d" name="ROS gcoverage report">
+"""%(time.time(), time.time()))
+
+        # TODO: most of these we can compute
+        # metrics
+        mpackages = len(pkgs_file_data.keys())
+        mfiles = 0
+        
+        mloc = 0
+        mncloc = mloc
+        mmethods = 0
+        mcoveredmethods = 0
+
+        mstatements = 0
+        mcoveredstatements = 0        
+
+        f.write('\n    <!-- most of these metrics are bogus filler to keep hudson happy -->\n')
+        f.write('    <metrics classes="0" methods="%(mmethods)s" conditionals="0" files="%(mfiles)s" packages="%(mpackages)s" coveredstatements="%(mcoveredstatements)s" loc="%(mloc)s" ncloc="%(mncloc)s" coveredmethods="%(mcoveredmethods)s" coveredconditionals="0" statements="%(mstatements)s" coveredelements="0" elements="0"/>\n'%locals())
+        
+        for pkg, file_data in pkgs_file_data.iteritems():
+
+            # metrics
+            mfiles = len(file_data.keys())
+
+            print "... writing data for [%s]"%pkg
+            if not file_data:
+                continue
+            f.write('    <package name="%s">\n\n'%pkg)
+            f.write('      <!-- most of these metrics are bogus filler to keep hudson happy -->\n')
+            f.write('      <metrics conditionals="0" methods="%(mmethods)s" classes="0" files="%(mfiles)s" ncloc="%(mncloc)s" coveredstatements="%(mcoveredstatements)s" coveredmethods="%(mcoveredmethods)s" coveredconditionals="0" statements="%(mstatements)s" loc="%(mloc)s" coveredelements="0" elements="0"/>\n]n'%locals())
+
+            
+            for file_name, lines in file_data.iteritems():
+                f.write('      <file name="%s">\n'%file_name)
+                f.write('        <!-- most of these metrics are bogus filler to keep hudson happy -->\n')
+                f.write('        <metrics conditionals="0" methods="%(mmethods)s" classes="0" ncloc="%(mncloc)s" coveredstatements="%(mcoveredstatements)s" coveredmethods="%(mcoveredmethods)s" coveredconditionals="0" statements="%(mstatements)s" loc="%(mloc)s" coveredelements="0" elements="0"/>\n'%locals())
+                f.write(''.join(line_tmpl(l) for l in lines))
+                f.write('      </file>\n')
+                
+            f.write('    </package>\n')
+
+        f.write("""
+  </project>      
+</clover>""")
+    
+def main():
+    if len(sys.argv) < 3:
+        print """Usage: coverage-to-clover <type> <package>
+\t<type> must be 'gcov' for now"""
+        sys.exit(1)
+    cov_type = sys.argv[1]
+    assert cov_type == 'gcov', "only gcov is supported for now"
+    pkgs = sys.argv[2:]
+
+    pkgs_file_data = {} # { pkg_name : file_data }
+    for pkg in pkgs:
+        gcov_files = get_gcov_files(pkg)
+
+        file_data = {} # { src_file : line_data }
+        for src_path, gcov_path in gcov_files:
+            print "converting", gcov_path
+            try:
+                file_data[src_path] = parse_gcov(gcov_path)
+            except IOError, e:
+                print >> sys.stderr, "warning: no coverage data for %s"%gcov_path
+        pkgs_file_data[pkg] = file_data
+    write_clover(pkgs_file_data)
+    
+if __name__ == '__main__':
+    main()
+

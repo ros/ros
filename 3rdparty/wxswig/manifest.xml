@@ -1,0 +1,20 @@
+<package>
+<description brief="wxPython version of SWIG">
+Generates python bindings for C/C++ code.
+wxPython needs SWIG version 1.3.29 plus some custom patches.  The wxPython version of SWIG is available at:
+
+http://wxpython.wxcommunity.com/tools/
+
+</description>
+<author>Many</author>
+<license url="http://swig.sourceforge.net/copyright.html">BSD</license>
+<review status="3rdparty" notes=""/>
+<url>http://swig.sourceforge.net</url>
+<export>
+  <cpp cflags="-DSWIG_TYPE_TABLE=_wxPython_table -DWXP_USE_THREAD=1"/>
+  <swig flags="-c++ -Wall -python -modern -new_repr -keyword -fastdispatch -fvirtual -fastinit -fastunpack `wx-config --cppflags` -DSWIG_TYPE_TABLE=_wxPython_table -DWXP_USE_THREAD=1"/>
+</export>
+
+<rosdep name="automake"/>
+</package>
+

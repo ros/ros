@@ -1,0 +1,37 @@
+alias roscd 'cd `rospack find \!*; if ($?) echo $ROS_ROOT`' 
+alias rcd roscd
+alias rosls 'ls `rospack find \!*`'
+#alias rosd 'echo "unimplemented"'
+#alias rospd 'echo "unimplemented"'
+#alias rosed 'echo "unimplemented"'
+#alias roscmd 'echo "unimplemented"'
+#alias roscp 'echo "unimplemented"'
+
+complete roscd 'p/1/`rospack list-names`/' 
+complete rosmake 'p/1/`rospack list-names`/' 
+complete rosupdate 'p/1/`rospack list-names`/' 
+complete rosapt-get 'p/*/`rospack list-names`/' 
+complete rosdeb 'p/*/`rospack list-names`/' 
+
+complete rospack \
+   'p/1/(help find list list-names langs deps deps-manifests deps1 deps-indent rosdeps rosdeps0 vcs vcs0 depends-on)/' \
+   'n/(find deps deps-manifests deps1 deps-indent rosdeps rosdeps0 vcs vcs0 depends-on depends-on1 export cflags-only-I cflags-only-other libs-only-L libs-only-l libs-only-other)/`rospack list-names`/' 
+
+complete rostopic \
+   'p/1/(hz echo type list)/' \
+   'n/{echo,hz,type}/`rostopic list | grep " \* " | cut -f 3 -d " " | sort -u`/' 
+
+complete rosmsg \
+   'p/1/(show users package packages)/' \
+   'n@{show,users}@`rostopic list | grep " \* " | cut -f 4 -d " " | grep -v unknown | sed -e "s/[\d93\d91]//g"`@' \
+   'n/{package,packages}/`rospack list-names`/'
+
+complete rosrun \
+   'p/1/`rospack list-names`/' \
+   'p@2@`rospack find $:1 | xargs -I 1 find 1 -perm /a+x -type f -printf "%f\n"`@'
+
+complete roslaunch \
+   'c/--/(port core server_uri child_name)/' \
+   'c/-/(p c u)/' \
+   'p/*/`find . -type f \( -name \*.launch -o -name \*.xml \) -printf "%f\n"  `/'
+

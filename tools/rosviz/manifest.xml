@@ -1,0 +1,15 @@
+<package>
+  <description brief="rosviz">
+
+     This package is deprecated and will be deleted in the ROS 0.8 release. Please see rxtools and rosgraph instead.
+
+  </description>
+  <author>Kenneth Conley</author>
+  <license>BSD</license>
+  <review status="deprecated" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/rosviz</url>
+  <depend package="rosgraph"/>
+
+</package>
+
+

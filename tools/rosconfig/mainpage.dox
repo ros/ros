@@ -1,0 +1,79 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosconfig is a command-line tool for installing, configuring, and
+building a ROS installation.
+
+The motivation for rosconfig is the kernel's "menuconfig" or "xconfig"
+tools, which set up a build environment for you. The idea is that you can
+use the rosconfig tool, combined with a YAML description of the system you
+want, and poof it sets it up for you -- which may entail SVN checkouts, 
+network-filesystem symlinks, etc. Importantly, rosconfig lets you have
+various parts of your system "frozen" so that you can set up a stable
+environment for various people working on various projects, even if you
+are depending on non-released code. Essentially, it lets you set up your
+own update schedule, rather than being forced to use other people's release
+and development schedule.
+
+\section usage Usage
+\verbatim
+rosconfig COMMAND PARAMS
+\endverbatim
+Currently supported commands:
+\verbatim
+  rosconfig install [-f] URI PATH
+  rosconfig install [-f] CONFIGFILE PATH
+  rosconfig setup PATH
+  rosconfig update PATH
+  rosconfig bootstrap [-f] [-s] URI PATH [PACKAGE]
+\endverbatim
+
+\subsection install install
+The \b install command read a YAML description of an installation
+(see below for format) and retrieves the necessary code into \b PATH.
+The YAML file can be either a local \b CONFIGFILE or a remote \b URI.
+
+If the \b -f option is given, and Subversion encounters an error while
+updating an existing working copy, then the working copy will be deleted,
+and a fresh one checked out.  This option is intended for use by automated
+build systems.
+
+\subsection setup setup
+The \b setup command emits a bash fragment that, if sourced by your shell,
+will configure relevant environment variables to use the ROS installation
+at \b PATH.  You might, for example, put the output from this command in
+your .bashrc.  Or you might bring k
+
+\subsection update update
+<b>Not yet implemented.  Use install instead.</b>
+
+\subsection bootstrap bootstrap
+The \b bootstrap command begins with an \b install to \b PATH, then
+proceeds to build everything up to and including \b PACKAGE (if no \b
+PACKAGE is given, \b roscpp_tutorials is used).  
+
+The \b -f option is the same as for the \b install command.
+
+If the \b -s option is given, then prior to the build, a special command
+is executed (rosrun rospack roscachesvncert) to accept and cache all
+the Subversion server certificates that will be needed during the build.
+This option is useful on your first installation, to remove the need to
+occaionally hit 'y' to continue during the build.  You probably don't want
+to use this option all the time, because it takes some time to ping all the
+Subversion servers.
+
+\section yaml YAML format
+\b TODO.
+
+Example:
+\verbatim
+- svn:
+    uri: https://ros.svn.sourceforge.net/svnroot/ros/tags/stable
+    local-name: ros
+- svn:
+    uri: https://personalrobots.svn.sourceforge.net/svnroot/personalrobots/pkg/trunk
+    local-name: ros-pkg
+\endverbatim
+
+*/

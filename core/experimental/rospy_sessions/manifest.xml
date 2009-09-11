@@ -1,0 +1,18 @@
+<package>
+  <description brief="rospy_sessions">
+
+     rospy_sessions: example of sessions using rospy
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/rospy_sessions</url>
+  <depend package="rospy"/>
+
+  <!-- temporary, need this for sample_client -->
+  <depend package="roscpp_sessions"/>  
+
+</package>
+
+

@@ -1,0 +1,225 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[twoside,10pt]{article}
+\usepackage{palatino}
+%\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[pdftex=true,colorlinks=true,linkcolor=blue,citecolor=blue,pdfstartview=FitH,naturalnames]{hyperref}
+
+\newcommand{\clearemptydoublepage}{\newpage{\pagestyle{empty}\cleardoublepage}}
+
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\floatpagefraction}{0.8}
+
+% The margins are set for 10pt font.  
+\setlength{\oddsidemargin}{0.25in}
+\setlength{\evensidemargin}{0.25in}
+\setlength{\textwidth}{6in}
+
+% header
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}  % clear all
+\fancyhead[RE]{\slshape \leftmark}   % slshape = italics
+\fancyhead[LO]{\slshape \rightmark}
+\fancyhead[LE]{\thepage}
+\fancyhead[RO]{\thepage}
+
+\begin{document}
+
+%%% Title Page %%%
+% Display front page
+\input{manual_front_page}
+
+%%% Abstract and Table of Contents %%%
+\pagenumbering{Roman}
+\clearemptydoublepage
+\setcounter{page}{1}
+
+% Display abstract
+\begin{This Manual}
+This manual provides an overview of ROS (Robot Operating System), its tools, and related software.
+\end{This Manual}
+
+% Table of contents 
+\clearemptydoublepage
+\tableofcontents
+
+\clearemptydoublepage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+
+\section{Preface}
+
+This manual was written for ROS version 0.7.
+
+\subsubsection{Contents of this Manual}
+
+\subsubsection{ROS Online Resources}
+
+\subsubsection{Acknowledgements}
+
+
+
+\section{ROS Overview}
+
+\subsection{What is ROS?}
+
+   * Design (peer-to-peer distributed, favors greater computation power over multiple computers)
+   * Not Realtime
+
+\subsubsection{ROS Goals}
+
+   * Important of BSD + Open Source
+
+http://pr.willowgarage.com/wiki/ROS/Overview|h1=Goals
+
+\subsubsection{Key Benefits of ROS}
+
+text from blog post
+   * Comparisons to other frameworks
+   * Compatibility with other frameworks
+
+\subsubsection{Client Libraries}
+
+ref:http://pr.willowgarage.com/wiki/ROS/client_libs|h1=ROS client libraries
+
+
+
+\subsubsection{Concepts}
+
+ * Three levels of ROS: filesystem, computation graph, community
+
+ref:http://pr.willowgarage.com/wiki/ROS/Overview|h1=Concepts
+
+
+\section{ROS Filesystem Level}
+
+\subsection{Packages}
+
+Packages have dependencies
+
+Types of dependencies: dependencies on Packages, dependencies on thirdparty (rosdep).
+
+
+\subsubsection{Manifests}
+
+\subsubsection{Package Tools}
+
+       * rospack
+       * roscreate-pkg
+       * roscd
+
+\subsection{Stacks}
+
+
+\subsubsection{Message definitions}
+
+     * versioning
+   * Service definitions
+     * versioning
+   * Build System
+     * Based on CMake
+       * CMake macros
+       * Exporting cmake macros
+     * Tools
+       * make vs. rosmake
+       
+ * Computation Graph Level
+   * Nodes
+     * Tools
+       * rosnode
+     * client libraries
+       * rospy.init_node()
+       * roscpp node handle
+   * Services
+     * Tools   
+       * rosservice
+     * client libraries
+      * rospy.ServiceProxy
+       * roscpp Service
+   * Topics
+     * Transports
+       * TCPROS
+       * UDPROS
+     * Tools       
+       * rostopic
+       * rxplot
+     * client libraries
+       * Example with roscpp
+       * No example with rospy
+   * Bags
+     * Tools
+       * rosrecord
+       * rosplay
+     * Client libraries
+       * rosrecord.py
+   * The Graph
+     * The ROS Core
+       * Master
+       * Parameter Server
+         * rosparam
+       * rosout
+         * rxconsole
+         * log files
+     * roslaunch
+     * run_id
+
+ * Community Level
+   * Repository
+     * Repos
+       * ROS
+       * ros-pkg
+       * wg-ros-pkg
+     * Tools
+       * roslocate
+   * Mailing lists
+   * ROS Wiki
+   * Bug tracker
+   * Blog
+
+Using ROS
+ * Getting comfortable with the command line
+   * roscreate-pkg foo
+   * create MyMsg.msg
+   * edit CMakeLists.txt file
+   * run rosmake, as well as make
+   * run roscore
+ * Writing Nodes
+   * roscpp example
+     * Simple Talker/Listener
+   * rospy example
+     * Simple Talker/Listener
+   * Wrap up your nodes in roslaunch
+     * Pass in parameter
+   * Services
+     * roscpp
+       * Edit talker to provide a service
+       * Edit listener to call a service     
+     * rospy
+       * Edit talker to provide a service
+       * Edit listener to call a service     
+
+
+\section{Our Solution to the Robot Vision Problem}\label{sec:solution}
+
+
+\subsection{Minor Points}
+
+
+\section{Results}
+
+
+\section{There's More}
+
+The ROS wiki at http://ros.org/wiki is a living document that includes
+many more tutorials and descriptions of additional software you can
+use with ROS.
+
+\clearpage
+
+
+\end{document}
+

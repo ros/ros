@@ -1,0 +1,19 @@
+<package>
+<description brief="Ros Logging Tools">
+This is a set of tools for recording from and playing back to ros
+topics.  It is intended to be high performance and avoids
+deserialization and reserialization of the messages.  
+</description>
+<author>Jeremy Leibs (leibs@willowgarage.com), python code by James Bowman (jamesb@willowgarage.com) and Ken Conley (kwc@willowgarage.com)</author>
+<license>BSD</license>
+<review status="unreviewed" notes=""/>
+<url>http://pr.willowgarage.com</url>
+<depend package="roscpp"/>
+<depend package="rospy"/>
+<depend package="topic_tools"/>
+<export>
+  <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lrosrecorder"/>
+</export>
+<rosdep name="python-imaging"/>
+</package>
+

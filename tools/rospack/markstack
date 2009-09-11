@@ -1,0 +1,120 @@
+#! /usr/bin/env python
+
+# Copyright (c) 2009, Willow Garage, Inc.
+# All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of Willow Garage, Inc. nor the names of its
+#       contributors may be used to endorse or promote products derived from
+#       this software without specific prior written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+# Author Tully Foote tfoote@willowgarage.com
+
+#from __future__ import with_statement
+
+import os
+import re
+import distutils.version
+import sys, string
+import subprocess
+import getopt
+import roslib
+import roslib.scriptutil
+import roslib.rosenv
+
+from math import sqrt
+from optparse import OptionParser
+
+
+def get_all_packages(stack_string):
+
+    try:
+        # Check version, make postscript if too old to make pdf
+        args = ["rosstack", "contents", stack_string]
+        vstr, verr = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+    except subprocess.CalledProcessError:
+        print >> sys.stderr, "failed to call [rosstack contents %s]"%stack_string
+    return vstr.split()
+
+
+def mark_uninstalled(stack_name):
+    print "uninstalling, ", stack_name
+    for p in  get_all_packages(stack_name):
+        filename = os.path.join(roslib.packages.get_pkg_dir(p), "ROS_NOBUILD")
+        subprocess.check_call(["rm", filename])
+
+def mark_installed(stack_name):
+    print "installing ", stack_name
+    for p in  get_all_packages(stack_name):
+        filename = os.path.join(roslib.packages.get_pkg_dir(p), "ROS_NOBUILD")
+        subprocess.check_call(["touch", filename])
+
+def build_stack(stack_name):
+    print "building ", stack_name
+    args = ["rosmake"]
+    args.extend( get_all_packages(stack_name) )
+    subprocess.check_call(args)
+    
+
+
+def vdmain():
+    parser = OptionParser(usage="usage: %prog [options]", prog='rxdeps')
+    parser.add_option("-i", "--installed", dest="installed", default=False,
+                      action="store_true", help="Mark Packages as installed")
+    parser.add_option("-u", "--uninstalled", dest="uninstalled", default=False,
+                      action="store_true", help="Unmark packages as installed")
+    parser.add_option("-b", "--build", dest="build", default=False,
+                      action="store_true", help="Build all packages in stack")
+    parser.add_option("--stack_string", dest="stack_string", default=None,
+                      action="store", help="stack name")
+    parser.add_option("--stack_name", dest="stack_name", default=None,
+                      action="store", help="stack name")
+    parser.add_option("--stack_version", dest="stack_version", default=None,
+                      action="store", help="stack version")
+
+    options, args = parser.parse_args()
+
+    stack_string = ""
+
+    if not options.stack_string:
+        if not options.stack_name:
+            print "Stack name required!"
+        if not options.stack_version:
+            print "Stack version required!"
+        stack_string = options.stack_name + "-" + options.stack_version
+    else:
+        stack_string = options.stack_string
+
+    if options.build:
+        build_stack(stack_string)
+
+    if options.installed:
+        mark_installed(stack_string)
+        
+    elif options.uninstalled:
+        mark_uninstalled(stack_string)
+    else:
+        print "Please enter a valid argument"
+
+    
+if __name__ == '__main__':
+    vdmain()

@@ -1,0 +1,23 @@
+<package>
+  <description brief="rosgraph">
+
+     Graphical and command-line tools for visualizing ROS graph state.
+
+     rxgraph uses xdot.py by Jose Fonseca, which is licensed under LGPL:
+
+     http://code.google.com/p/jrfonseca/wiki/XDot
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="API cleared" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/rosgraph</url>
+  <depend package="rospy"/>
+  <depend package="roslib"/>
+
+  <rosdep name="python-gtk2"/>
+  <rosdep name="wxpython"/>
+  <rosdep name="graphviz"/>
+</package>
+
+

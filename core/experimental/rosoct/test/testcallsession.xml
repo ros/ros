@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="rosoct" cwd="node" type="session_adv" args=""/>
+  <test test-name="testcallsession" cwd="node" pkg="rosoct" type="testcallsession" args=""/>
+</launch>

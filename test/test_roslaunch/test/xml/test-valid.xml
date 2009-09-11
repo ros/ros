@@ -1,0 +1,4 @@
+<launch>
+  <!-- allowed to have new tags, just warns -->
+  <newtag />
+</launch>

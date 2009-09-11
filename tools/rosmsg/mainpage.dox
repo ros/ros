@@ -1,0 +1,85 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosmsg is a command-line tool for displaying information about ROS messages.
+\b rossrv is a command-line tool for displaying information about ROS services.
+
+\section commandline Command-line tools
+
+\subsection rosmsg rosmsg
+
+The \b rosmsg command-line tool displays information about ROS messages. 
+
+\subsubsection Usage
+
+\verbatim
+$ rosmsg show <message type>
+$ rosmsg users <message type>
+$ rosmsg md5 <message type>
+$ rosmsg package <package>
+$ rosmsg packages
+\endverbatim
+
+For &lt;message type&gt; parameters, you may omit the package name of the message type, in which case rosmsg will search for type in all message packages.
+
+\par Examples
+
+To display the fields in a message:
+
+\verbatim
+$ rosmsg show msg-type
+\endverbatim
+
+e.g.
+
+\verbatim
+$ rosmsg show std_msgs/String
+\endverbatim
+
+or, if you don't know the package name:
+
+\verbatim
+$ rosmsg show Pose
+\endverbatim
+
+or, in combination with rostopic:
+
+\verbatim
+$ rostopic type /topic_name | rosmsg show
+\endverbatim
+
+You can also see the raw msg text using the -r flag:
+
+\verbatim
+$ rosmsg show -r robot_msgs/Quaternion
+# xyz - vector rotation axis, w - scalar term (cos(ang/2))
+float64 x
+float64 y
+float64 z
+float64 w
+\endverbatim
+
+To display the md5 sum of a message (and warn if the compiled version doesn't match):
+
+\verbatim
+$ rosmsg md5 msg-type
+\endverbatim
+
+To display a list of all messages in a package:
+
+\verbatim
+$ rosmsg package <package-name>
+\endverbatim
+
+To display a list of all packages with messages:
+
+\verbatim
+$ rosmsg packages
+\endverbatim
+
+\subsection rossrv srv
+
+The \b rossrv command-line tool displays information about ROS services. It has the exact same usage as \b rosmsg.  
+
+*/

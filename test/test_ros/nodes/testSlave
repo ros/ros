@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+PKG = 'test_ros'
+MODULE = 'test_ros.testSlave' #this is the module that will be invoked by python
+
+######################################################
+# BOILERPLATE: Should not have to modify anything
+# below except for very last line
+######################################################
+# Bootstrap ourselves into latest rospy install
+import sys, os
+BOOTSTRAP_VERSION = "0.1"
+
+# Read in ROS_ROOT
+if not os.environ.has_key('ROS_ROOT'):
+  print """\nCannot run ROS: ROS_ROOT is not set.\nPlease set the ROS_ROOT environment variable to the 
+location of your ROS install.\n"""
+  sys.exit(-1)
+rosRoot = os.environ['ROS_ROOT']
+
+# Read in the rospy directory location from the 'rospack latest rospy' command
+rospackLatest = os.popen(os.path.join(rosRoot,'rospack')+' latest rospy', 'r')
+rospyDir = rospackLatest.read()
+rospackLatest.close()
+if rospyDir is None or not os.path.isdir(rospyDir.strip()):
+  print "\nERROR: Cannot locate rospy installation.\n"
+  sys.exit(-1)
+
+# Run launcher bootstrapper
+sys.path.append(os.path.join(rospyDir.strip(),'scripts'))
+import launcher
+
+manifestFile = launcher.getManifestFile(sys.argv[0], PKG)
+launcher.init(BOOTSTRAP_VERSION)
+launchCommand, launchArgs, launchEnv = \
+               launcher.getLaunchCommands(manifestFile, MODULE)
+launcher.ready(launchCommand, launchArgs, launchEnv, BOOTSTRAP_VERSION)
+
+######################################################
+# END BOILERPLATE:
+# You may wish to modify the exec command below to
+# customize the behavior of your node, e.g.:
+#  * env['FOO'] = bar
+#  * launchArgs.append('--test')
+######################################################
+
+os.execvpe(launchCommand, launchArgs, launchEnv)

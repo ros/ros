@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+
+import os
+
+USAGE = 'USAGE: rosalldeps <pkg>'
+
+# Taken from
+# http://mail.python.org/pipermail/python-list/2005-November/352658.html
+def remove_dups(L):
+  """Removes duplicate items from list L in place."""
+  # Work backwards from the end of the list.
+  for i in range(len(L)-1, -1, -1):
+      # Check to see if the current item exists elsewhere in 
+      # the list, and if it does, delete it.
+      if L[i] in L[:i]:
+          del L[i]
+
+import os, sys
+
+if len(sys.argv) != 2:
+  print USAGE
+  sys.exit(-1)
+
+pkg = sys.argv[1]
+
+children = os.popen('rospack deps ' + pkg).readlines()
+parents = os.popen('rospack depends-on ' + pkg).readlines()
+
+siblings = []
+
+for p in parents:
+  siblings.extend(os.popen('rospack deps ' + p))
+
+alldeps = []
+
+alldeps.extend(children)
+alldeps.extend(siblings)
+alldeps.extend([pkg])
+alldeps.extend(parents)
+
+remove_dups(alldeps)
+
+for d in alldeps:
+  dir = os.popen('rospack find ' + d).readlines()[0].strip()
+  if os.path.exists(os.path.join(dir,'ROS_BUILD_BLACKLIST')):
+    continue
+  else:
+    print d.strip()

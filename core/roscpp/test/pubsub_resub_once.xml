@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="roscpp" type="publish_n_fast" args="thread 1 1 1"/>
+  <node pkg="roscpp" type="publish_n_fast" args="thread 1 1 1 __name:=publisher2 roscpp/pubsub_test:=roscpp/pubsub_test2"/>
+  <test test-name="pubsub_once" pkg="roscpp" type="subscribe_resubscribe" args="thread 1 1.0"/>
+</launch>

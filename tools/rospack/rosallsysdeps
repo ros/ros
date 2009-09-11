@@ -1,0 +1,11 @@
+#!/bin/sh
+
+pkgs=`rospack list-names`
+
+for p in $pkgs; do
+  sds=`rospack sysdeps0 $p`
+  if [ -n "$sds" ]; then
+    echo [$p]
+    rospack sysdeps0 $p
+  fi
+done

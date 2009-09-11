@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+
+PKG = 'test_rospy'
+MODULE = 'test_rospy.empty_node' #this is the module that will be invoked by python
+
+######################################################
+# BOILERPLATE: Should not have to modify anything
+# below except for very last line
+######################################################
+BOOTSTRAP_VERSION = "0.1"
+
+import sys, os
+from functools import partial
+
+if not os.environ.has_key('ROS_ROOT'):
+  print """===================================================
+Cannot run ROS: ROS_ROOT is not set.
+
+Please set the ROS_ROOT environment variable to the 
+location of your ros install before running nodes
+==================================================="""
+  sys.exit(-1)
+
+rosRoot = os.environ['ROS_ROOT']
+manifestFile = os.path.join(os.path.join(rosRoot, PKG), 'manifest.xml')
+rosPyDir = os.path.join(rosRoot, 'rospy')
+
+# Run launcher bootstrapper
+sys.path.append(os.path.join(rosPyDir,'scripts'))
+import launcher
+
+launcher.init(BOOTSTRAP_VERSION)
+launchCommand, launchArgs, launchEnv = \
+               launcher.getLaunchCommands(manifestFile, MODULE)
+launcher.ready(launchCommand, launchArgs, launchEnv, BOOTSTRAP_VERSION)
+
+######################################################
+# END BOILERPLATE:
+# You may wish to modify the exec command below to
+# customize the behavior of your node, e.g.:
+#  * env['FOO'] = bar
+#  * launchArgs.append('--test')
+######################################################
+
+os.execvpe(launchCommand, launchArgs, launchEnv)

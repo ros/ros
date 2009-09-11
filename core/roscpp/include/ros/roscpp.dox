@@ -1,0 +1,44 @@
+/**
+@mainpage roscpp
+
+@htmlinclude manifest.html
+
+%roscpp is a C++ implementation of ROS, both master and slave.  The main
+parts of %roscpp are:
+
+- \ref libros : Client library
+  - \ref ros::Node : Use this class when writing a node
+- \ref botherder : Master implementation (used only in testing)
+
+*/
+
+/**
+@defgroup libros libros
+
+@b libros is a C++ client library for ROS.  It provides an API for writing
+ROS nodes in C++.  The main parts of libros are:
+
+- \ref ros::node
+
+
+@par Examples
+
+Many examples of using the \ref ros::node class can be found in the <a
+href="../../roscpp_tutorials/html/index.html">roscpp_tutorials</a> package.
+
+*/
+
+/**
+@defgroup botherder botherder
+
+@b botherder is a C++ implementation of a ROS master.  It is used only in
+testing.  Use @b roscore to start a master.
+
+Usage:
+@verbatim
+botherder [port]
+@endverbatim
+Where @b port is the port on which the master should listen for
+connections.  Default is 11311.
+
+*/

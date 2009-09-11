@@ -1,0 +1,9 @@
+# a list of publicly-viewable ROS subversion repositories
+# if yours isn't here, please suggest it to me.
+# these will be checked out by the generate_megamanifest script and snarfed 
+# for manifests.
+https://ros.svn.sf.net/svnroot/ros/trunk
+https://personalrobots.svn.sf.net/svnroot/personalrobots/pkg/trunk
+https://sail-ros-pkg.svn.sf.net/svnroot/sail-ros-pkg/trunk
+https://cmu-ros-pkg.svn.sf.net/svnroot/cmu-ros-pkg/trunk
+https://tum-ros-pkg.svn.sf.net/svnroot/tum-ros-pkg

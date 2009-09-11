@@ -1,0 +1,28 @@
+<launch>
+
+  <node pkg="package" type="type" name="test_clear_params1" clear_params="true" />
+  <node pkg="package" type="type" name="test_clear_params2" clear_params="True" />
+  <node pkg="package" type="type" name="test_clear_params_ns" ns="clear_params_ns" clear_params="true"/>  
+
+  <node pkg="package" type="type" name="test_clear_params_default" ns="clear_params_default" />   
+  <node pkg="package" type="type" name="test_clear_params_false" ns="clear_params_false" clear_params="False"/>          
+
+  <group ns="group_test" clear_params="true">
+  </group>
+
+  <group ns="group_test_default">
+  </group>
+  
+  <group ns="group_test_false" clear_params="false">
+  </group>
+  
+  <group ns="embed_group_test">
+     <group ns="embedded_group" clear_params="true" />
+  </group>
+    
+  <include ns="include_test" clear_params="true" file="$(find test_roslaunch)/test/xml/test-clear-params-include.xml" />
+
+  <include ns="include_test_false" clear_params="false" file="$(find test_roslaunch)/test/xml/test-clear-params-include.xml" />
+  <include ns="include_test_default" file="$(find test_roslaunch)/test/xml/test-clear-params-include.xml" />
+      
+</launch>

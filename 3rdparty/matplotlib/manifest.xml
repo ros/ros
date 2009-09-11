@@ -1,0 +1,36 @@
+<package>
+    <description brief="Matplotlib">
+        Download-based ROS installer for matplotlib, a python 2D plotting library for
+        use with Numpy.  
+    </description>
+    <author>John Hunter and many others.</author>
+    <license url="http://matplotlib.sourceforge.net/license.html">Python-style</license>
+    <review status="3rdparty" notes=""/>
+    <depend package="numpy" />
+
+    <sysdepend package="python-wxgtk2.8" os="ubuntu" version="7.10-gutsy"/>
+    <sysdepend package="libwxgtk2.8-dev" os="ubuntu" version="7.10-gutsy"/>
+    <sysdepend package="python-gtk2-dev" os="ubuntu" version="7.10-gutsy"/>
+
+    <sysdepend package="python-wxgtk2.8" os="ubuntu" version="8.04-hardy"/>
+    <sysdepend package="libwxgtk2.8-dev" os="ubuntu" version="8.04-hardy"/>
+    <sysdepend package="python-gtk2-dev" os="ubuntu" version="8.04-hardy"/>
+
+    <sysdepend package="python-wxgtk2.8" os="ubuntu" version="8.10-intrepid"/>
+    <sysdepend package="libwxgtk2.8-dev" os="ubuntu" version="8.10-intrepid"/>
+    <sysdepend package="libfreetype6-dev" os="ubuntu" version="8.10-intrepid"/>
+    <sysdepend package="libpng12-dev" os="ubuntu" version="8.10-intrepid"/>
+    <sysdepend package="python-gtk2-dev" os="ubuntu" version="8.10-hardy"/>
+
+    <sysdepend package="freetype-devel" os="centos" version="5.2"/>
+    <sysdepend package="libpng-devel" os="centos" version="5.2"/>
+    <sysdepend package="wxPython-devel" os="centos" version="5.2"/>
+    <sysdepend package="pygtk2-devel" os="centos" version="5.2"/>
+    <sysdepend package="wxGTK-devel" os="centos" version="5.2"/>
+
+    <url>http://matplotlib.sourceforge.net/</url>
+    <export>
+        <doxymaker external="http://matplotlib.sourceforge.net/api.pdf" />
+    </export>
+</package>
+

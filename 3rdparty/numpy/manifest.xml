@@ -1,0 +1,20 @@
+<package>
+<description brief="Numpy">
+
+  Download-based ROS installer for the Numpy Python scientific
+  computing library (http://numpy.scipy.org/). Numpy provides
+  adds a fast and sophisticated array facility to the Python language. 
+
+</description>
+<author>Travis Oliphant and many others. ROS package maintained by Ken Conley (kwc@willowgarage.com)</author>
+<license>BSD</license>
+<review status="3rdparty" notes=""/>
+<url>http://numpy.scipy.org/</url>
+<export>
+  <doxymaker external="http://numpy.scipy.org/#NumPy" />
+</export>
+<sysdepend os="ubuntu" version="7.04-feisty" package="gfortran"/>
+<sysdepend os="ubuntu" version="8.04-hardy" package="gfortran"/>
+<sysdepend os="centos" version="5.2" package="gcc-gfortran"/>
+</package>
+

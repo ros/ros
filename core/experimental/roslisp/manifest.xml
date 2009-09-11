@@ -1,0 +1,20 @@
+<package>
+  <description brief="A LISP implementation of ROS">This package is a LISP implementation of ROS, the Robot Operating System.</description>
+  <author>Bhaskara Marthi, Brian Gerkey</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <depend package="roslib"/>
+  <depend package="roslang"/>
+  <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+  <export>
+    <roslang cmake="${prefix}/cmake/roslisp.cmake"/>
+  </export>
+  <sysdepend os="ubuntu" version="7.04-feisty" package="sbcl"/>
+  <sysdepend os="ubuntu" version="8.04-hardy" package="sbcl"/>
+  <sysdepend os="macports" package="sbcl"/>
+  <sysdepend os="centos" version="5.2" package="sbcl"/>
+  <rosdep name="sbcl"/>
+  <url>http://pr.willowgarage.com/wiki/roslisp</url>
+</package>
+

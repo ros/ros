@@ -1,0 +1,1 @@
+link ../test/roslisp-test.asd

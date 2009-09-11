@@ -1,0 +1,102 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rostopic is a command-line tool for displaying debug information about a topic.
+
+\section commandline Command-line tools
+
+\subsection rostopic rostopic
+
+The \b rostopic command-line tool displays information about ROS topics. Currently
+it can display a list of current topics, the publishers and subscribers of a 
+specific topic, the publishing rate of a topic, and messages published to a topic.
+The display of messages is configurable to output in a plotting-friendly format.
+
+\subsubsection Usage
+
+To display a list of current topics:
+
+\verbatim
+$ rostopic list
+\endverbatim
+
+To display publishers and subscribers of a topic:
+
+\verbatim
+$ rostopic list /topic_name
+\endverbatim
+
+To display the publishing rate of a topic:
+
+\verbatim
+$ rostopic hz /topic_name
+\endverbatim
+
+To display messages published to a topic:
+
+\verbatim
+$ rostopic echo /topic_name
+\endverbatim
+
+To display messages that match a specified Python expression:
+
+\verbatim
+$ rostopic echo --filter "m.data=='foo'"  /topic_name
+\endverbatim
+
+The Python expression can use any Python builtins plus the variable \b m (the message).
+
+To clear the screen after each message is published:
+
+\verbatim
+$ rostopic echo -c /topic_name
+\endverbatim
+
+To display messages in a .bag file:
+
+\verbatim
+$ rostopic echo -b log_file.bag /topic_name
+\endverbatim
+
+To display messages in a matlab/octave-friendly plotting format:
+
+\verbatim
+$ rostopic echo -p /topic_name
+\endverbatim
+
+To exclude string and array fields from the plotting output:
+
+\verbatim
+$ rostopic echo -p --nostr --noarr /topic_name
+\endverbatim
+
+To display specific fields in a message:
+
+\verbatim
+$ rostopic echo /topic_name/field
+\endverbatim
+
+To display topic type of a topic:
+
+\verbatim
+$ rostopic type /topic_name
+\endverbatim
+
+This is useful for piping to other commands, like rosmsg:
+
+\verbatim
+$ rostopic type /topic_name | rosmsg
+\endverbatim
+
+To publish data to a topic:
+\verbatim
+$ rostopic pub /topic_name topic/Type [data...]
+\endverbatim
+
+Data types are be interpreted using YAML-syntax, e.g. 1 is an integer, 1.0 is a float, and foo is a string. For example, 
+
+\verbatim
+$ rostopic pub -r 10 chatter std_msgs/String "hello there"
+\endverbatim
+*/

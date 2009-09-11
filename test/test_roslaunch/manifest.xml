@@ -1,0 +1,17 @@
+<package>
+  <description brief="roslaunch tests">
+
+     roslaunch unit and integration tests. These are in a 
+     separate package to avoid circular dependency with rostest.
+
+  </description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="na" notes="tests"/>
+  <url>http://pr.willowgarage.com/wiki/roslaunch</url>
+  <depend package="roslib"/>
+  <depend package="rospy"/>
+  <depend package="rostest"/>
+  <depend package="roslaunch"/>
+</package>
+

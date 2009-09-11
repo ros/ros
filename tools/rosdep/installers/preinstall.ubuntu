@@ -1,0 +1,6 @@
+#!/bin/bash
+set -o errexit
+set -o verbose
+sudo apt-get update
+sudo apt-get -y install build-essential subversion wget cmake
+

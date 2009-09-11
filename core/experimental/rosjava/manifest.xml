@@ -1,0 +1,14 @@
+<package>
+  <description brief="A Java implementation of ROS using roscpp">Java implementation for Robot Operating System.</description>
+  <author>Jason Wolfe (jawolfe@willowgarage.com)</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <depend package="roslib"/>
+  <depend package="roscpp"/>
+  <depend package="roslang"/>
+  <export>
+    <roslang cmake="${prefix}/cmake/rosjava.cmake"/>
+	<java classpath="${prefix}/msg/java:${prefix}/bin"/>
+  </export>
+  <url>http://pr.willowgarage.com/wiki/rosjava</url>
+</package>

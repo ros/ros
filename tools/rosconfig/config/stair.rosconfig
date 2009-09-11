@@ -1,0 +1,10 @@
+- svn:
+    uri: https://ros.svn.sourceforge.net/svnroot/ros/tags/stable
+    local-name: ros
+- svn:
+    uri: https://personalrobots.svn.sourceforge.net/svnroot/personalrobots/pkg/trunk
+    local-name: ros-pkg
+    version: r16468
+- svn:
+    uri: https://sail-ros-pkg.svn.sourceforge.net/svnroot/sail-ros-pkg/trunk
+    local-name: sail-ros-pkg

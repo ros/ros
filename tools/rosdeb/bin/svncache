@@ -1,0 +1,90 @@
+#! /usr/bin/env python
+
+"""
+usage: %(progname)s url localpath version
+"""
+
+
+import os, sys, string, time, getopt, re
+import urllib
+
+import subprocess
+
+def checkoutHead(url):
+  p = subprocess.Popen(["svn", "info", "--xml", url], stdout=subprocess.PIPE)
+  body = p.stdout.read()
+  pat = re.compile('revision=\"([0-9]+)\"')
+  m = pat.search(body)
+  if m:
+    revision = m.group(1)
+    print revision
+  return revision
+
+def test():
+  pass
+
+def usage(progname):
+  print __doc__ % vars()
+
+def main(argv, stdout, environ):
+  progname = argv[0]
+  
+  cmd = argv[1]
+  cmd_args = argv[2:]
+
+  optlist, args = getopt.getopt(cmd_args, "r:", [])
+
+  revision = None
+
+  for (field, val) in optlist:
+    if field == "-r":
+      revision = val
+
+  if cmd not in ("co", "checkout"):
+    subprocess.call(["svn"] + argv[1:])
+    return
+
+  url = args[0]
+  localpath = args[1]
+
+  svnpath = os.path.join(localpath, ".svn", "entries")
+  if os.path.exists(svnpath):
+    subprocess.call(["svn"] + argv[1:])
+    return
+
+  if revision is None:
+    revision = checkoutHead(url)
+
+  import sha
+  lbase, lpath = os.path.split(localpath)
+  sha1 = sha.sha(url + "/" + revision + "/" + lpath).hexdigest()
+
+  tarfn = "%s_%s_%s.tar.bz2" % (lpath, revision, sha1)
+  cacheurl = "http://pr.willowgarage.com/downloads/packages/%s?url=%s&lpath=%s&revision=%s" % (tarfn, urllib.quote(url), urllib.quote(lpath), revision)
+
+  tarfn = os.path.abspath(tarfn)
+
+  if not os.path.exists(tarfn):
+    ## fetch tarball
+    p = subprocess.Popen(["wget", "-q", "-O", tarfn, cacheurl])
+    pid,sts = os.waitpid(p.pid, 0)
+
+    if sts != 0:
+      try: os.unlink(tarfn)
+      except: pass
+      subprocess.call(["svn"] + argv[1:])
+      return
+
+  if lbase:
+    if not os.path.exists(lbase):  os.makedirs(lbase)
+    os.chdir(lbase)
+
+  ## unpack tarball
+  p = subprocess.Popen(["tar", "xf", tarfn])
+  pid,sts = os.waitpid(p.pid, 0)
+
+  os.unlink(tarfn)
+
+
+if __name__ == "__main__":
+  main(sys.argv, sys.stdout, os.environ)

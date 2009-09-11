@@ -1,0 +1,29 @@
+/**
+@mainpage roscpp
+
+@htmlinclude manifest.html
+
+%roscpp is a C++ implementation of ROS, both master and slave.  The main
+parts of %roscpp are:
+
+- \ref libros : Client library
+  - \ref ros::NodeHandle : Use this class when writing a node
+
+*/
+
+/**
+@defgroup libros libros
+
+@b libros is a C++ client library for ROS.  It provides an API for writing
+ROS nodes in C++.  The main parts of libros are:
+
+- \ref ros::NodeHandle
+
+
+@par Examples
+
+Many examples of using ROS can be found in the <a
+href="../../roscpp_tutorials/html/index.html">roscpp_tutorials</a> package.
+
+*/
+

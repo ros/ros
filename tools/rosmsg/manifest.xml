@@ -1,0 +1,14 @@
+<package>
+  <description brief="rosmsg command line tool">
+
+     rosmsg is a tools for listing information about ROS messages
+
+  </description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="API cleared" notes="01/22/2009"/>
+  <url>http://pr.willowgarage.com/wiki/msg</url>
+  <depend package="roslib"/>
+  <depend package="rospy"/>
+</package>
+

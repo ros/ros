@@ -1,0 +1,101 @@
+<html><head><title>S-XML-RPC</title></head><body><h3>API for package S-XML-RPC</h3>
+<blockquote>An implementation of the standard XML-RPC protocol for both client and server</blockquote>
+<p><b>*xml-rpc-agent*</b>&nbsp;&nbsp;&nbsp;<i>variable</i></p>
+<blockquote>String specifying the default XML-RPC agent to include in server responses</blockquote>
+<blockquote>Initial value: <tt>"LispWorks 4.3.7"</tt></blockquote>
+<p><b>*xml-rpc-authorization*</b>&nbsp;&nbsp;&nbsp;<i>variable</i></p>
+<blockquote>When not null, a string to be used as Authorization header</blockquote>
+<blockquote>Initial value: <tt>NIL</tt></blockquote>
+<p><b>*xml-rpc-call-hook*</b>&nbsp;&nbsp;&nbsp;<i>variable</i></p>
+<blockquote>A function to execute the xml-rpc call and return the result, accepting a method-name string and a optional argument list</blockquote>
+<blockquote>Initial value: <tt>EXECUTE-XML-RPC-CALL</tt></blockquote>
+<p><b>*xml-rpc-debug*</b>&nbsp;&nbsp;&nbsp;<i>variable</i></p>
+<blockquote>When T the XML-RPC client and server part will be more verbose about their protocol</blockquote>
+<blockquote>Initial value: <tt>NIL</tt></blockquote>
+<p><b>*xml-rpc-debug-stream*</b>&nbsp;&nbsp;&nbsp;<i>variable</i></p>
+<blockquote>When not nil it specifies where debugging output should be written to</blockquote>
+<blockquote>Initial value: <tt>NIL</tt></blockquote>
+<p><b>*xml-rpc-host*</b>&nbsp;&nbsp;&nbsp;<i>variable</i></p>
+<blockquote>String naming the default XML-RPC host to use</blockquote>
+<blockquote>Initial value: <tt>"localhost"</tt></blockquote>
+<p><b>*xml-rpc-package*</b>&nbsp;&nbsp;&nbsp;<i>variable</i></p>
+<blockquote>Package for XML-RPC callable functions</blockquote>
+<blockquote>Initial value: <tt>#<The S-XML-RPC-EXPORTS package, 29/64 internal, 0/16 external></tt></blockquote>
+<p><b>*xml-rpc-port*</b>&nbsp;&nbsp;&nbsp;<i>variable</i></p>
+<blockquote>Integer specifying the default XML-RPC port to use</blockquote>
+<blockquote>Initial value: <tt>80</tt></blockquote>
+<p><b>*xml-rpc-proxy-host*</b>&nbsp;&nbsp;&nbsp;<i>variable</i></p>
+<blockquote>When not null, a string naming the XML-RPC proxy host to use</blockquote>
+<blockquote>Initial value: <tt>NIL</tt></blockquote>
+<p><b>*xml-rpc-proxy-port*</b>&nbsp;&nbsp;&nbsp;<i>variable</i></p>
+<blockquote>When not null, an integer specifying the XML-RPC proxy port to use</blockquote>
+<blockquote>Initial value: <tt>NIL</tt></blockquote>
+<p><b>*xml-rpc-url*</b>&nbsp;&nbsp;&nbsp;<i>variable</i></p>
+<blockquote>String specifying the default XML-RPC URL to use</blockquote>
+<blockquote>Initial value: <tt>"/RPC2"</tt></blockquote>
+<p>(<b>call-xml-rpc-server</b> server-keywords name &rest args)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Encode and execute an XML-RPC call with name and args, using the list of server-keywords</blockquote>
+<p>(<b>encode-xml-rpc-call</b> name &rest args)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Encode an XML-RPC call with name and args as an XML string</blockquote>
+<p>(<b>execute-xml-rpc-call</b> method-name &rest arguments)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Execute method METHOD-NAME on ARGUMENTS, or raise an error if
+  no such method exists in *XML-RPC-PACKAGE*</blockquote>
+<p>(<b>get-xml-rpc-struct-member</b> struct member)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Get the value of a specific member of an XML-RPC-STRUCT</blockquote>
+<p>(setf (<b>get-xml-rpc-struct-member</b> struct member) value)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Set the value of a specific member of an XML-RPC-STRUCT</blockquote>
+<p>(<b>start-xml-rpc-server</b> &key (port *xml-rpc-port*) (url *xml-rpc-url*) (agent *xml-rpc-agent*))&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Start an XML-RPC server in a separate process</blockquote>
+<p>(<b>stop-server</b> name)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Kill a server process by name (as started by start-standard-server)</blockquote>
+<p>(<b>system.listmethods</b>)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>List the methods that are available on this server.</blockquote>
+<p>(<b>system.methodhelp</b> method-name)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Returns the function documentation for the given method.</blockquote>
+<p>(<b>system.methodsignature</b> method-name)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Dummy system.methodSignature implementation.  There's no way
+  to get (and no concept of) required argument types in Lisp, so
+  this function always returns nil or errors.</blockquote>
+<p>(<b>system.multicall</b> calls)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Implement system.multicall; see http://www.xmlrpc.com/discuss/msgReader$1208
+  for the specification.</blockquote>
+<p>(<b>xml-rpc-call</b> encoded &key (url *xml-rpc-url*) (agent *xml-rpc-agent*) (host *xml-rpc-host*) (port *xml-rpc-port*) (authorization *xml-rpc-authorization*) (proxy-host *xml-rpc-proxy-host*) (proxy-port *xml-rpc-proxy-port*))&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Execute an already encoded XML-RPC call and return the decoded result</blockquote>
+<p><b>xml-rpc-condition</b>&nbsp;&nbsp;&nbsp;<i>condition</i></p>
+<blockquote>Parent condition for all conditions thrown by the XML-RPC package</blockquote>
+<blockquote>Class precedence list: <tt> xml-rpc-condition error serious-condition condition standard-object t</tt></blockquote>
+<p><b>xml-rpc-error</b>&nbsp;&nbsp;&nbsp;<i>condition</i></p>
+<blockquote>This condition is thrown when an XML-RPC protocol error occurs</blockquote>
+<blockquote>Class precedence list: <tt> xml-rpc-error xml-rpc-condition error serious-condition condition standard-object t</tt></blockquote>
+<blockquote>Class init args: <tt> :data :code</tt></blockquote>
+<p>(<b>xml-rpc-error-data</b> xml-rpc-error)&nbsp;&nbsp;&nbsp;<i>generic-function</i></p>
+<blockquote>Get the data from an XML-RPC error</blockquote>
+<p>(<b>xml-rpc-error-place</b> xml-rpc-error)&nbsp;&nbsp;&nbsp;<i>generic-function</i></p>
+<blockquote>Get the place from an XML-RPC error</blockquote>
+<p><b>xml-rpc-fault</b>&nbsp;&nbsp;&nbsp;<i>condition</i></p>
+<blockquote>This condition is thrown when the XML-RPC server returns a fault</blockquote>
+<blockquote>Class precedence list: <tt> xml-rpc-fault xml-rpc-condition error serious-condition condition standard-object t</tt></blockquote>
+<blockquote>Class init args: <tt> :string :code</tt></blockquote>
+<p>(<b>xml-rpc-fault-code</b> xml-rpc-fault)&nbsp;&nbsp;&nbsp;<i>generic-function</i></p>
+<blockquote>Get the code from an XML-RPC fault</blockquote>
+<p>(<b>xml-rpc-fault-string</b> xml-rpc-fault)&nbsp;&nbsp;&nbsp;<i>generic-function</i></p>
+<blockquote>Get the string from an XML-RPC fault</blockquote>
+<p><b>xml-rpc-struct</b>&nbsp;&nbsp;&nbsp;<i>structure</i></p>
+<blockquote>An XML-RPC-STRUCT is an associative map of member names and values</blockquote>
+<p>(<b>xml-rpc-struct</b> &rest args)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Create a new XML-RPC-STRUCT from the arguments: alternating member names and values</blockquote>
+<p>(<b>xml-rpc-struct-alist</b> object)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Return the alist of member names and values from an XML-RPC struct</blockquote>
+<p>(<b>xml-rpc-struct-equal</b> struct1 struct2)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Compare two XML-RPC-STRUCTs for equality</blockquote>
+<p>(<b>xml-rpc-struct-p</b> object)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Return T when the argument is an XML-RPC struct</blockquote>
+<p><b>xml-rpc-time</b>&nbsp;&nbsp;&nbsp;<i>structure</i></p>
+<blockquote>A wrapper around a Common Lisp universal time to be interpreted as an XML-RPC-TIME</blockquote>
+<p>(<b>xml-rpc-time</b> &optional (universal-time (get-universal-time)))&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Create a new XML-RPC-TIME struct with the universal time specified, defaulting to now</blockquote>
+<p>(<b>xml-rpc-time-p</b> object)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Return T when the argument is an XML-RPC time</blockquote>
+<p>(<b>xml-rpc-time-universal-time</b> object)&nbsp;&nbsp;&nbsp;<i>function</i></p>
+<blockquote>Return the universal time from an XML-RPC time</blockquote>
+<font size=-1><p>Documentation generated by <a href="http://homepage.mac.com/svc/lispdoc/">lispdoc</a> running on LispWorks</p></font></body></html>

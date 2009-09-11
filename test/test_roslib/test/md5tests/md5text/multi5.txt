@@ -1,0 +1,8 @@
+int32  a
+roslib/Log log
+
+string s  
+roslib/Time  time
+int32 b   
+duration  d
+ time t

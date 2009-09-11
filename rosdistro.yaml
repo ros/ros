@@ -1,0 +1,31 @@
+distros:
+- latest: [ros, common, common_msgs, geometry, image_common, joystick_drivers, laser_pipeline,
+    navigation, opencv, robot_model, simulator_stage, slam_gmapping, sound_drivers,
+    visualization_common, visualization]
+stacks:
+  _uri_rules: {dev-svn: 'https://code.ros.org/svn/ros-pkg/stacks/$STACK_NAME/trunk',
+    release-svn: 'https://code.ros.org/svn/ros-pkg/stacks/$STACK_NAME/tags/$STACK_NAME-$STACK_VERSION',
+    source-tarball: 'http://ros.org/download/$STACK_NAME/$STACK_NAME-$STACK_VERSION.tar.bz2'}
+  common: {latest: 0.2.0}
+  common_msgs: {latest: 0.9.2}
+  diagnostics: {latest: 0.1.0}
+  driver_common: {latest: 0.1.0}
+  geometry: {latest: 0.2.0}
+  image_common: {latest: 0.1.0}
+  image_pipeline: {latest: 0.1.0}
+  imu_drivers: {latest: 0.1.0}
+  joystick_drivers: {latest: 0.2.0}
+  laser_drivers: {latest: 0.1.0}
+  laser_pipeline: {latest: 0.2.0}
+  navigation: {latest: 0.2.0}
+  opencv: {latest: 0.1.0}
+  pr2_mechanism: {latest: 0.1.0}
+  robot_model: {latest: 0.2.0}
+  ros:
+    _uri_rules: {dev-svn: 'https://ros.svn.sourceforge.net/svnroot/ros/trunk', release-svn: 'https://ros.svn.sourceforge.net/svnroot/ros/tags/rc'}
+    latest: rc
+  simulator_stage: {latest: 0.1.0}
+  slam_gmapping: {latest: 0.1.1}
+  sound_drivers: {latest: 0.2.0}
+  visualization: {latest: 0.2.0}
+  visualization_common: {latest: 0.9.2}

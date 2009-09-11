@@ -1,0 +1,599 @@
+sdl:
+  ubuntu: libsdl1.2-dev
+  debian: libsdl1.2-dev
+  fedora: SDL-devel
+  arch: sdl 
+  macports: libsdl 
+sdl-image:
+  ubuntu: libsdl-image1.2-dev
+  debian: libsdl-image1.2-dev
+  fedora: SDL_image-devel
+  arch: sdl_image
+  macports: libsdl_image
+  gentoo: sdl-image
+ruby:
+  ubuntu: ruby
+  debian: ruby
+  arch: ruby
+  macports: |
+apr:
+  ubuntu: libapr1-dev libaprutil1-dev
+  debian: libapr1-dev libaprutil1-dev
+  arch: apr apr-util
+  fedora: apr-devel apr-util
+  macports: apr apr-util
+  gentoo: apr
+python:
+  ubuntu: python-dev
+  debian: python-dev
+  arch: python
+  fedora: python-devel
+  macports: python25 python_select py25-hashlib
+  gentoo: python
+python-bluez:
+  ubuntu: python-bluez
+python-clearsilver:
+  ubuntu: python-clearsilver
+  debian: python-clearsilver
+  centos: python-clearsilver
+python-yaml:
+  ubuntu: python-yaml
+  debian: python-yaml
+  fedora: PyYAML
+  centos: PyYAML
+  arch: |
+    if ! pacman -Q libyaml python-yaml; then yaourt -S libyaml python-yaml; fi
+  macports: py25-yaml
+  gentoo: pyyaml
+python-gtk2:
+  ubuntu: python-gtk2
+  arch: pygtk
+  debian: python-gtk2
+  macports: py25-gtk
+  gentoo: pygtk
+python-matplotlib:
+  ubuntu: python-matplotlib
+  arch: python-matplotlib
+  debian: python-matplotlib
+  macports: py25-matplotlib
+  gentoo: matplotlib
+python-imaging:
+  ubuntu: python-imaging
+  debian: python-imaging
+  fedora: python-imaging
+  arch: pil
+  macports: py25-pil
+  gentoo: dev-python/imaging
+python-numpy:
+  ubuntu: python-numpy
+  debian: python-numpy
+  fedora: numpy
+  arch: python-numpy
+  macports: py25-numpy
+  gentoo: numpy
+python-scipy:
+  ubuntu: python-scipy
+  debian: python-scipy
+  arch: python-scipy
+  macports: py25-scipy
+bzip2:
+  ubuntu: libbz2-dev
+  debian: libbz2-dev
+  fedora: bzip2-devel
+  arch: bzip2
+  macports: bzip2
+  gentoo: bzip2
+boost:
+  ubuntu:
+    9.04: libboost1.37-dev
+    8.10: |
+      if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/boost_1_37_0.tar.gz
+        tar xzf boost_1_37_0.tar.gz
+        cd boost_1_37_0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
+    8.04: |
+      if [ ! -f /opt/ros/lib/libboost_date_time-gcc42-mt*-1_37.a ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/boost_1_37_0.tar.gz
+        tar xzf boost_1_37_0.tar.gz
+        cd boost_1_37_0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
+  debian:
+    sid: libboost1.37-dev
+    lenny: |
+      if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/boost_1_37_0.tar.gz
+        tar xzf boost_1_37_0.tar.gz
+        cd boost_1_37_0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
+  fedora: boost-devel
+  arch: boost
+  macports: boost
+  gentoo: "\">=dev-libs/boost-1.37\""
+zlib:
+  ubuntu: zlib1g-dev
+  debian: zlib1g-dev
+  fedora: zlib-devel
+  arch: zlib
+  macports: zlib
+  gentoo: zlib
+graphviz:
+  ubuntu: graphviz
+  debian: graphviz
+  fedora: graphviz
+  arch: graphviz
+  macports: graphviz
+  gentoo: graphviz
+fakeroot:
+  ubuntu: fakeroot
+  arch: fakeroot
+  debian: fakeroot
+  macports: |
+dpkg-dev:
+  ubuntu: dpkg-dev
+  debian: dpkg-dev
+  macports: |
+doxygen:
+  ubuntu: doxygen
+  arch: doxygen
+  debian: doxygen
+  macports: doxygen
+wxwidgets:
+  ubuntu: libwxgtk2.8-dev
+  debian: libwxgtk2.8-dev
+  fedora: wxGTK-devel
+  macports: wxwidgets
+  arch: wxgtk
+  gentoo: wxGTK
+wxpython:
+  ubuntu: python-wxgtk2.8
+  arch: wxpython
+  fedora: wxPython-devel
+  centos: wxPython-devel
+  debian: python-wxgtk2.8
+  macports: py25-wxpython
+  gentoo: wxpython
+log4cxx:
+  ubuntu:
+    9.04: liblog4cxx10-dev
+    8.10: |
+      if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/apache-log4cxx-0.10.0-wg_patched.tar.gz
+        tar xzf apache-log4cxx-0.10.0-wg_patched.tar.gz
+        cd apache-log4cxx-0.10.0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
+    8.04: |
+      if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/apache-log4cxx-0.10.0-wg_patched.tar.gz
+        tar xzf apache-log4cxx-0.10.0-wg_patched.tar.gz
+        cd apache-log4cxx-0.10.0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
+  debian:
+    sid: liblog4cxx10-dev
+    lenny: |
+      if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/apache-log4cxx-0.10.0-wg_patched.tar.gz
+        tar xzf apache-log4cxx-0.10.0-wg_patched.tar.gz
+        cd apache-log4cxx-0.10.0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
+  fedora: log4cxx-devel
+  arch: |
+    if ! pacman -Q log4cxx; then yaourt -S log4cxx; fi
+  macports: log4cxx
+  gentoo: "\">=dev-libs/log4cxx-0.10\""
+libxext:
+  ubuntu: libXext-dev
+  debian: libxext-dev
+  fedora: libXext-devel
+  macports: xorg-libXext
+  arch: libxext
+  gentoo: libXext
+glut:
+  ubuntu: libglut3-dev
+  debian: libglut3-dev
+  fedora: freeglut-devel
+  arch: freeglut
+  macports: glut
+  gentoo: freeglut
+swig:
+  ubuntu: swig
+  debian: swig
+  fedora: swig
+  macports: swig
+  arch: swig
+zziplib:
+  ubuntu: libzzip-0-13 libzzip-dev
+  debian: libzzip-0-13 libzzip-dev
+  fedora: zziplib-devel
+  macports: libzzip
+  arch: zziplib
+  gentoo: zziplib
+libxaw:
+  ubuntu: libxaw7-dev 
+  debian: libxaw7-dev 
+  fedora: libXaw-devel
+  macports: xorg-libXaw
+  arch: libxaw
+  gentoo: libXaw
+opengl:
+  ubuntu: libgl1-mesa-dev libglu1-mesa-dev
+  debian: libgl1-mesa-dev libglu1-mesa-dev
+  fedora: mesa-libGL-devel mesa-libGLU-devel
+  macports: mesa
+  arch: mesa
+  gentoo: mesa
+libxxf86vm:
+  ubuntu: libxxf86vm-dev
+  debian: libxxf86vm-dev
+  fedora: libXxf86vm-devel
+  macports: xorg-libXxf86vm
+  arch: libxxf86vm
+  gentoo: libXxf86vm
+gtk2:
+  ubuntu: libgtk2.0-dev
+  debian: libgtk2.0-dev
+  fedora: gtk2-devel
+  macports: gtk2
+  arch: gtk2
+  gentoo: gtk+
+autoconf:
+  ubuntu: autoconf
+  debian: autoconf
+  fedora: autoconf
+  arch: autoconf
+  macports: autoconf
+  gentoo: autoconf
+automake:
+  ubuntu: automake
+  debian: automake
+  fedora: automake
+  arch: automake
+  macports: automake
+  gentoo: automake
+libtool:
+  ubuntu: libtool libltdl3-dev
+  debian: libtool libltdl3-dev
+  fedora: libtool libtool-ltdl-devel
+  macports: libtool
+  arch: libtool
+  gentoo: libtool
+libjpeg:
+  ubuntu: libjpeg62-dev
+  debian: libjpeg62-dev
+  fedora: libjpeg-devel
+  macports: jpeg
+  arch: libjpeg
+fltk:
+  ubuntu: libfltk1.1-dev
+  debian: libfltk1.1-dev
+  fedora: fltk-devel
+  arch: fltk
+  macports: fltk
+  gentoo: "\"=x11-libs/fltk-1*\""
+pkg-config:
+  ubuntu: pkg-config
+  debian: pkg-config
+  fedora: pkgconfig
+  arch: pkgconfig
+  macports: pkgconfig
+  gentoo: pkgconfig
+octave:
+  ubuntu: octave3.0-headers
+  arch: octave
+  macports: octave
+  centos: octave-devel
+  debian: octave3.0-headers
+ncurses:
+  ubuntu: libncurses5-dev
+  arch: ncurses
+  macports: ncurses
+  centos: ncurses-devel
+  debian: libncurses5-dev
+qt4:
+  ubuntu: libqt4-core libqt4-dev qt4-dev-tools libqt4-opengl-dev
+  debian: libqt4-core libqt4-dev qt4-dev-tools libqt4-opengl-dev
+  arch: qt
+  macports: qt4-mac
+  gentoo: qt-gui
+qt3:
+  ubuntu: libqt3-compat-headers libqt3-headers libqt3-mt libqt3-mt-dev qt3-dev-tools libqt4-qt3support
+coin:
+  ubuntu: libcoin40-dev
+  debian: libcoin40-dev
+  arch: coin
+  macports: coin
+  gentoo: coin
+curl:
+  ubuntu: libcurl4-openssl-dev
+  debian: libcurl4-openssl-dev
+  arch: curl
+  macports: curl
+  gentoo: curl
+libxml2:
+  ubuntu: libxml2-dev
+  debian: libxml2-dev
+  arch: libxml2
+  macports: libxml2
+  gentoo: libxml2
+glew:
+  ubuntu: libglew1.5-dev
+  debian: libglew1.5-dev
+  arch: glew
+  macports: glew
+  gentoo: glew
+qhull:
+  ubuntu: libqhull-dev
+  debian: libqhull-dev
+  arch: qhull
+  macports: qhull
+  gentoo: qhull
+netpbm:
+  ubuntu: libnetpbm10-dev
+  debian: libnetpbm10-dev
+  arch: netpbm
+  macports: netpbm
+  fedora: netpbm
+  gentoo: netpbm
+scons:
+  ubuntu: scons
+  debian: scons
+  arch: scons
+  macports: scons
+  gentoo: scons
+atlas:
+  ubuntu: libatlas-base-dev libatlas-cpp-0.6-dev
+  debian: libatlas-base-dev libatlas-cpp-0.6-dev
+  arch: |
+  macports: atlas
+  gentoo: atlas
+portaudio:
+  ubuntu: portaudio19-dev
+  debian: portaudio19-dev
+  arch: portaudio
+  macports: portaudio
+libsndfile:
+  ubuntu: libsndfile1-dev
+  debian: libsndfile1-dev
+  arch: libsndfile
+  macports: libsndfile
+sbcl:
+  ubuntu: sbcl
+  arch: sbcl
+  debian: sbcl
+  macports: sbcl
+jam:
+  ubuntu: jam
+  debian: jam
+  arch: ftjam
+  macports: jam
+  gentoo: ftjam
+java:
+  ubuntu: sun-java6-jdk
+  debian: sun-java6-jdk
+  arch: openjdk6
+  macports: |
+  gentoo: sun-jdk
+ant:
+  ubuntu: ant
+  debian: ant
+  arch: apache-ant
+  macports: apache-ant
+  gentoo: ant
+libstdc++5:
+  ubuntu: libstdc++5
+  debian: libstdc++5
+cppunit:
+  ubuntu: libcppunit-dev
+  debian: libcppunit-dev
+  fedora: cppunit-devel
+  arch: cppunit
+  macports: cppunit
+  gentoo: cppunit
+python-mmpython:
+  ubuntu: python-mmpython
+python-iptcdata:
+  ubuntu: python-iptcdata
+libxv:
+  ubuntu: libxv-dev
+libglade2:
+  ubuntu: libglade2-dev
+libgconf2:
+  ubuntu: libgconf2-dev
+intltool:
+  ubuntu: intltool
+libgstreamer0.10:
+  ubuntu: libgstreamer0.10-dev
+libgstreamer-plugins-base0.10:
+  ubuntu: libgstreamer-plugins-base0.10-dev
+ffmpeg:
+  ubuntu: libavcodec-dev libavformat-dev libavutil-dev libswscale-dev
+  debian: libavcodec-dev libavformat-dev libavutil-dev libswscale-dev
+  macports: ffmpeg
+  arch: ffmpeg
+  gentoo: ffmpeg
+libavcodec:
+  ubuntu: libavcodec-dev
+  debian: libavcodec-dev
+  macports: ffmpeg
+  arch: ffmpeg
+  gentoo: ffmpeg
+libavformat:
+  ubuntu: libavformat-dev
+  debian: libavformat-dev
+  macports: ffmpeg
+  arch: ffmpeg
+  gentoo: ffmpeg
+libavutil:
+  ubuntu: libavutil-dev
+  arch: ffmpeg
+  gentoo: ffmpeg
+libswscale:
+  ubuntu: libswscale-dev
+  debian: libswscale-dev
+  macports: ffmpeg
+  arch: ffmpeg
+  gentoo: ffmpeg
+freeglut3:
+  ubuntu: freeglut3-dev
+libasound2:
+  ubuntu: libasound2-dev
+libxmu:
+  ubuntu: libxmu-dev
+libraw1394:
+  ubuntu: libraw1394-dev
+libxpat:
+  ubuntu: libxpat1-dev
+apcupsd:
+  ubuntu: apcupsd
+python-mechanize:
+  ubuntu: python-mechanize
+  macports: py25-mechanize
+ipmitool:
+  ubuntu: ipmitool
+hddtemp:
+  ubuntu: hddtemp
+mayavi2:
+  ubuntu: mayavi2
+jasper:
+  ubuntu: libjasper-dev
+  debian: libjasper-dev
+  macports: jasper
+  arch: jasper
+  gentoo: jasper
+libjasper:
+  ubuntu: libjasper-dev
+  debian: libjasper-dev
+  macports: jasper
+  arch: jasper
+  gentoo: jasper
+graphicsmagick:
+  ubuntu: libgraphicsmagick++1-dev
+  debian: libgraphicsmagick++1-dev
+  macports: GraphicsMagick
+  arch: graphicsmagick
+  gentoo: imagemagick
+libgraphicsmagick++:
+  ubuntu: libgraphicsmagick++1-dev
+  debian: libgraphicsmagick++1-dev
+  macports: GraphicsMagick
+  arch: graphicsmagick
+  gentoo: imagemagick
+libreadline:
+  ubuntu: libreadline-dev
+  macports: readline-5
+python-simplejson:
+  ubuntu: python-simplejson
+  macports: py25-simplejson
+git:
+  ubuntu: git
+  macports: git-core
+libpng:
+  ubuntu: libpng12-dev
+  debian: libpng12-dev
+  macports: libpng
+unzip:
+  ubuntu: unzip
+  debian: unzip
+  arch: unzip
+  fedora: unzip
+  macports: unzip
+libpoco:
+  ubuntu:
+    9.04: libpoco-dev 
+    8.10: libpoco5-dev
+    8.04: libpoco-dev
+  macports: poco
+sysstat:
+  ubuntu: sysstat
+libexpat:
+  ubuntu: libexpat1-dev
+  macports: expat
+python-opengl:
+  ubuntu: python-opengl
+libidn:
+  ubuntu: libidn11-dev
+  arch: libidn
+gnutls:
+  ubuntu: libgnutls-dev
+  arch: gnutls
+python-sip4:
+  debian: python-sip4-dev sip4
+  ubuntu: python-sip4-dev sip4
+  macports: py25-sip
+  gentoo: dev-python/sip
+  arch: sip
+bison:
+  ubuntu: bison
+  debian: bison
+  arch: bison
+flex:
+  ubuntu: flex
+  debian: flex
+  arch: flex
+python-pygame:
+  ubuntu: python-pygame
+  debian: python-pygame
+  centos: python-game
+  arch: python-pygame
+  macports: py25-game
+libusb:
+  ubuntu: libusb-dev
+festival:
+  ubuntu: festival festvox-kallpc16k
+  arch: festival festival-kallpc16k
+festvox-kallpc16k:
+  ubuntu: festvox-kallpc16k 
+  arch: festival-kallpc16k
+freeimage:
+  ubuntu: libfreeimage-dev
+  macports: freeimage
+  debian: libfreeimage-dev
+  arch: freeimage
+  gentoo: freeimage
+nvidia-cg:
+  ubuntu: nvidia-cg-toolkit
+  debian: nvidia-cg-toolkit
+  arch: |
+    if ! pacman -Q nvidia-cg-toolkit ; then yaourt -S nvidia-cg-toolkit; fi
+  gentoo: nvidia-cg-toolkit
+  debian: nvidia-cg-toolkit
+  macports: |
+joystick:
+  ubuntu: joystick
+  arch: kernel-headers
+gnuplot:
+  ubuntu: gnuplot-x11
+  arch: gnuplot
+libxrandr:
+  ubuntu: libxrandr-dev
+  macports: xorg-libXrandr

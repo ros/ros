@@ -1,0 +1,9 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rostopic contains the rostopic command-line tool, which displays debug information about a ROS Topic. It also contains an experimental Python library for getting information about and interacting with Topics dynamically. The rostopic Python library is currently for internal-use only as its API is not stable.
+
+Please see the Wiki page for documentation on the rostopic tool.
+
+*/

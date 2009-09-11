@@ -1,0 +1,5 @@
+<launch>
+  <!-- timeout must be non-empty -->
+  <machine timeout="" name="one" address="address1"  />
+</launch>
+

@@ -1,0 +1,24 @@
+<package>
+  <description brief="ROS Test Framework">
+
+<p>
+     Integration test suite based on roslaunch that is compatible with xUnit frameworks.
+</p>     
+<p>
+     rostest uses xmlrunner.py (Public Domain), which was written by
+     Sebastian Rittau (srittau@jroger.in-berlin.de) and Paolo Borelli.
+</p>     
+  </description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <license>BSD</license>
+
+  <export>
+    <cpp cflags="-I${prefix}/include"/>
+  </export>
+
+  <review status="API conditionally cleared" notes="2/5/09"/>
+  <url>http://ros.org/wiki/rostest</url>
+  <depend package="roslaunch"/>
+  <depend package="roslib"/>
+</package>
+

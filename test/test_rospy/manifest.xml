@@ -1,0 +1,16 @@
+<package>
+  <description brief="rospy tests">rospy unit and integration test framework.</description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="na" notes="tests"/>
+  <url>http://pr.willowgarage.com/</url>
+  <depend package="rospy" />
+  <depend package="rostest" />  
+  <depend package="std_msgs" />  
+  <depend package="test_ros" />
+
+  <!-- use some msgs defined here to double up on testing -->
+  <depend package="rospy_tutorials" />
+  
+  <rosdep name="python-numpy" /> <!-- for numpy tests -->
+</package>

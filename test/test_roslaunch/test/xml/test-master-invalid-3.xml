@@ -1,0 +1,3 @@
+<launch>
+  <master auto="start" type="" />
+</launch>

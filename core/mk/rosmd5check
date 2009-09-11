@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+
+USAGE = "USAGE: rosmd5check <digest>"
+
+import md5, sys
+
+if len(sys.argv) != 2:
+  print USAGE
+  sys.exit(-1)
+
+s = open(sys.argv[1]).read()
+digest, filename = s.split()
+m = md5.new()
+m.update(open(filename).read())
+if digest == m.hexdigest():
+  print 'md5 checksum OK'
+else:
+  print 'md5 checksum failed (%s != %s)' % (digest, m.hexdigest())
+sys.exit(digest != m.hexdigest())

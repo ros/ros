@@ -1,0 +1,104 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosrecord contains a collection of command-line tools for recording messages to \b bag files
+and playing them back. 
+
+
+\section Bag files
+
+The bag file contains interlaced, serialized ros messages written as they are received over the wire. This is the most performance and disk-friendly recording format possible. 
+
+\section commandline Command-line tools
+
+\subsection rosrecord rosrecord
+
+\b rosrecord generates a ".bag" file with the contents of all the
+specified topics. If you run rosrecord without passing it any topic
+names, it will attempt to record ALL messages available in the
+system. However, since this information requires polling the master
+periodically, it will likely miss the first several messages published
+on any topic.
+
+NOTE: If you are recording messages at a high-bandwidth, such as from
+cameras, it is strongly recommended you run rosrecord on the same
+machine as the camera, and specify the file destination as being on
+the local machine disk.
+
+\subsubsection Usage
+
+Examples:
+
+\verbatim
+$ rosrecord
+$ rosrecord chatter
+$ rosrecord -f demo_log chatter
+$ rosrecord -f demo_log chatter babble
+\endverbatim
+
+\subsection rosplay rosplay
+
+\b rosplay takes messages from one or more bag file and plays them
+back in a time-synchronized fashion. Time synchronization occurs based
+on the global time-stamps at which messages were received. Playing
+begins immediately and future messages are published according to the
+relative offset times. If two separate bag files are used, they are
+treated as a single bag with interlaced times according to the
+timestamps. This means if you record one bag, wait an hour, and record
+a second bag, when you play them back together you will have an
+hour-long dead period in the middle of your playback.
+
+If you do not want to observe playback timing, the "-a" option will
+playback all messages from the file as fast as possible. Note that for
+large files this will often lead to exceeding your incoming buffers.
+
+Additionally, during playing, you can pause at any time by hitting
+space. When paused, you can step through messages by pressing s.
+
+\subsection Usage
+
+\b rosrebag is a command-line tool for converting bag files using Python
+expressions. The Python expression can access any of the Python
+builtins plus:
+
+ * topic: the topic of the message
+ * m: the message
+ * t: time of message. The time is represented as a rospy Time object (t.secs, t.nsecs)
+
+Examples:
+
+\verbatim
+$ rosrebag chatter.bag rechatter.bag "'1' in m.data"
+$ rosrebag --print "m.data" chatter.bag rechatter.bag "topic=='/chatter'"
+\endverbatim
+
+You can also use the rosrecord Python library for implementing more sophisticated filtering rules:
+
+\verbatim
+from ros import rosrecord
+rosrecord.rebag('input.bag', 'modified.bag', lambda msg, topic, t: True)
+\endverbatim
+
+
+\subsection rosrebag rosrebag
+
+\subsection Usage
+
+\verbatim
+\endverbatim
+
+\subsection bagsort bagsort
+
+\b bagsort is a command-line tool for sorting messages into time-order.
+During recording, rosrecord does not guarantee to place messages in the
+bag in message-time order.  bagsort creates a new bag with the messages
+rearranged so that they are in strict message time order.  Nothing else is
+changed in the bag.  Note that this tool does not use header timestamps.
+
+\subsection Usage
+
+\verbatim
+$ rosrun rosrecord bagsort.py chatter.bag rechatter.bag
+\endverbatim
+*/

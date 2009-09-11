@@ -1,0 +1,6 @@
+<package>
+  <description brief="ROS Makefile Includes">A collection of .mk include files for building ROS architectural elements</description>
+  <author>Morgan Quigley</author>
+  <license>BSD</license>
+  <review status="na" notes=""/>
+</package>

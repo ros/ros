@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+require 'uri/generic.rb'
+require 'rexml/document'
+
+rf = File.open('repos','r')
+reps = [ ]
+while line = rf.gets
+  next if line[0,1] == "#"
+  reps << line.strip
+end
+reps.each do |rep|
+  uri = URI.parse(rep)
+  if !File.exist? "checkouts/#{uri.host}"
+    puts "checking out #{rep}"
+    system("mkdir -p checkouts/#{uri.host}")
+    system("cd checkouts/#{uri.host} && svn co #{rep} .")
+  else
+    puts "updating #{rep}"
+    system("cd checkouts/#{uri.host} && svn up")
+  end
+end
+all_pkgs = { }
+reps.each do |rep|
+  puts "snarfing manifests in local copy of #{rep}"
+  uri = URI.parse(rep)
+  ENV['ROS_PACKAGE_PATH'] = "#{`pwd`.strip}/checkouts/#{uri.host}"
+  ENV['ROS_ROOT'] = "#{`pwd`.strip}/checkouts/ros.svn.sourceforge.net"
+  pkgs = `rospack list`.each do |pkg|
+    puts "#{pkg.split[0]}   #{pkg.split[1]}"
+    in_ros = pkg.split[1].index('ros.svn.sourceforge.net')
+    all_pkgs[pkg.split[0]] = [pkg.split[1], (in_ros ? 'https://ros.svn.sourceforge.net/svnroot/ros/trunk' : rep), (in_ros ? 'ros.svn.sourceforge.net' : uri.host)] # could check for duplicates here
+  end
+end
+megamanifest = REXML::Document.new
+megamanifest << REXML::XMLDecl.new
+pkgs_node = megamanifest.add_element 'pkgs'
+all_pkgs.each do |k, v|
+  begin
+    manifest = REXML::Document.new File.new("#{v[0]}/manifest.xml")
+    manifest.root.add_attribute("name", k)
+    manifest.root.add_attribute("repo", v[1])
+    manifest.root.add_attribute("repo_host", v[2])
+    manifest.root.add_attribute("path", v[0][v[0].index(v[2])+v[2].length,:end])
+    pkgs_node.add(manifest.root)
+  rescue
+    puts "error parsing #{v[0]}/manifest.xml"
+  end
+end
+puts "writing megamanifest..."
+megamanifest.write(File.new("megamanifest.xml",'w')) #, 2)
+

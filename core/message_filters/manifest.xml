@@ -1,0 +1,11 @@
+<package>
+  <description>A set of message filters which take in messages and may output those messages at a later time, based on the conditions that filter needs met.</description>
+  <author>Josh Faust (jfaust@willowgarage.com), Vijay Pradeep (vpradeep@willowgarage.com)</author>
+  <license>BSD</license>
+  <review status="API cleared" notes=""/>
+  <depend package="roscpp" />
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lmessage_filters `rosboost-cfg --lflags thread,signals`" />
+  </export>
+  <url>http://pr.willowgarage.com/wiki/message_filters</url>
+</package>

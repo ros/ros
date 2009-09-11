@@ -1,0 +1,11 @@
+<package>
+  <author>Brian Gerkey, Morgan Quigley</author>
+  <license>BSD</license>
+  <review status="API conditionally cleared" notes=""/>
+  <description>
+
+rosbuild contains script for managing the CMake-based build system for ROS. 
+
+  </description>
+  <url>http://ros.org/wiki/rosbuild</url>
+</package>

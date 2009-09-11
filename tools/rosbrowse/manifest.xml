@@ -1,0 +1,8 @@
+<package>
+  <description brief="Some scripts to automate browsing the ROS universe">
+A few scripts to generate and manipulate lists of all available ROS packages.
+  </description>
+  <author>Morgan Quigley</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+</package>

@@ -1,0 +1,17 @@
+<!-- an example launch configuration that launches two demo nodes on a remote machine -->
+<launch>
+
+  <group ns="local">
+    <node name="talker" pkg="rospy_tutorials" type="talker" />
+    <node name="listener" pkg="roscpp_tutorials" type="listener" />
+  </group>
+
+  <!-- default only affects nodes defined later -->
+  <machine name="machine-1" default="true" address="nxx.willowgarage.com" ros-root="/u/kwc/sf/ros/" user="kwc" ssh-port="22" />
+
+  <group ns="remote">
+    <node name="talker" pkg="rospy_tutorials" type="talker" />
+    <node name="listener" pkg="roscpp_tutorials" type="listener" />
+  </group>
+
+</launch>

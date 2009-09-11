@@ -1,0 +1,53 @@
+Version 0:
+-------------
+topic_name
+md5sum
+datatype
+<repeating N>
+  time.sec
+  time.nsec
+  length
+  MSGDATA
+-------------
+
+Version 1.0:
+-------------
+#ROSLOG V1.0
+quantity
+<repeating quantity>
+  topic_name
+  md5sum
+  datatype
+<repeating N>
+  topic_name
+  time.sec
+  time.nsec
+  length
+  MSGDATA
+-------------
+
+Version 1.1:
+-------------
+#ROSLOG V1.1
+<repeating N>
+  topic_name
+  md5sum
+  datatype
+  time.sec
+  time.nsec
+  length
+  MSGDATA
+-------------
+
+Alternative Version 1.1:
+-------------
+#ROSRECORD V1.1
+<repeating N>
+  topic_name
+  md5sum
+  datatype
+  time.sec
+  time.nsec
+  length
+  MSGDATA
+-------------

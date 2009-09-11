@@ -1,0 +1,36 @@
+#!/bin/bash
+set -x
+
+PORT=12345
+case $1 in
+  ubuntu-09-04 )
+    PORT=3000 ;;
+  ubuntu-08-04 )
+    PORT=3002 ;;
+esac
+
+if [ $PORT -eq 12345 ] ; then
+  echo "woah! I don't know about a VM called $1. goodbye."
+  exit 1
+fi
+
+VBoxManage controlvm $1 poweroff
+sleep 2
+VBoxManage snapshot $1 discardcurrent -state
+sleep 2
+if ! VBoxHeadless -startvm $1 & ; then
+  echo "unable to start VM $1"
+  exit 1
+fi
+while [ `VBoxManage showvminfo $1 | grep -c running` == 0 ]; do
+  echo "waiting for VM $1 to start..."
+  sleep 0.5
+done
+sleep 1
+echo -e "hooray, $1 has started. logging into it...\n\n"
+ 
+ssh -t -p $PORT user@localhost "bash -c 'sudo apt-get -y install build-essential python-yaml cmake subversion && wget http://ros.sf.net/rosconfig -O ~/rosconfig && chmod 755 ~/rosconfig && ~/rosconfig bootstrap -s http://ros.svn.sourceforge.net/viewvc/ros/trunk/tools/rosconfig/config/prdev.rosconfig ~/ros $2'"
+
+echo -e "\n\nnow I will brutally pull the plug on VM $1"
+VBoxManage controlvm $1 poweroff
+echo "done."

@@ -1,0 +1,17 @@
+<package>
+<description brief="wxPython SWIG interface files">
+Interface files used for 
+
+</description>
+<author>Many</author>
+<license url="http://www.opensource.org/licenses/wxwindows.php">wxWindows</license>
+<review status="3rdparty" notes=""/>
+<url>http://www.wxpython.org/</url>
+<export>
+  <swig flags="-I${prefix}/src"/>
+</export>
+
+<rosdep name="wxpython"/>
+
+</package>
+

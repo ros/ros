@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 2.4.6)
+include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+rosbuild_init()
+genmsg()
+gensrv()
+rospack_add_rostest(test/test-add-two-ints.launch)
+rospack_add_rostest(test/test-peer-subscribe-notify.launch)
+rospack_add_rostest(test/test-add-two-ints-with-roscpp-server.launch)
+rospack_add_rostest(test/test-talker-listener.launch)
+rospack_add_rostest(test/test-talker-listener-with-roscpp.launch)
+rospack_add_rostest(test/test-on-shutdown.launch)
+rospack_add_rostest(test/test-connection-header.launch)
+

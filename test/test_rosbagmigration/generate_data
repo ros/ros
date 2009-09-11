@@ -1,0 +1,24 @@
+#!/bin/bash
+
+make clean-msg-only;
+rm -rf msg;
+cp -r msg_gen1 msg;
+make;
+./scripts/generate_data_1.py
+
+make clean-msg-only;
+rm -rf msg;
+cp -r msg_gen2 msg;
+make;
+./scripts/generate_data_2.py
+
+make clean-msg-only;
+rm -rf msg;
+cp -r msg_gen3 msg;
+make;
+./scripts/generate_data_3.py
+
+make clean-msg-only;
+rm -rf msg;
+cp -r msg_current msg;
+make

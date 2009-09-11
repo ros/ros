@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="test_roscpp" type="publish_n_fast" args="nothread 1 1 1"/>
+  <test test-name="pubsub_once_nothread" pkg="test_roscpp" type="subscribe_n_fast" args="nothread 1 1.0"/>
+</launch>

@@ -1,0 +1,15 @@
+<package>
+  <description brief="session_tutorials">
+
+     session_tutorials
+
+  </description>
+  <author>Rosen Diankov / rdiankov at cs.cmu.edu</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/session_tutorials</url>
+  <depend package="roscpp"/>
+  <depend package="roscpp_sessions"/>
+</package>
+
+

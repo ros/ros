@@ -1,0 +1,16 @@
+<package>
+  <description brief="Common ROS Messages">
+
+    Common messages for primitive types (e.g. strings) and constructs (e.g. multiarrays).
+
+  </description>
+  <author>Morgan Quigley/mquigley@cs.stanford.edu, Ken Conley/kwc@willowgarage.com, Jeremy Leibs/leibs@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="api cleared" notes="2009-02-26"/>
+  <url>http://pr.willowgarage.com/wiki/std_msgs</url>
+  <depend package="roslib"/>
+  <export>
+    <cpp cflags="-I${prefix}/msg/cpp"/>
+  </export>
+</package>
+

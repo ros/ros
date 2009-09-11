@@ -1,0 +1,6 @@
+<launch>
+
+  <test test-name="test10" pkg="test_missing_type" />
+
+</launch>
+

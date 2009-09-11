@@ -1,0 +1,68 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\section Overview 
+
+\b roslisp is a library for writing ROS nodes in ANSI Common Lisp.  See the installation guide for how to set up roslisp for standalone compilation of lisp source files and/or interactive use.  The functions in the client API below belong to the Lisp package (namespace) named :roslisp, with the exception of the constructors and field accessors for ROS message data types, which belong to a Lisp package with the same name as the message's ROS package.
+
+Names are handled according to standard ROS conventions.  Command-line arguments to the executable, of the form foo:=bar, where foo is not __name or __ns, are known as command line remappings.  Given such a remapping, any topic, parameter, or service referred to as foo in the node's code would then be replaced by bar.  The node name is given by the argument to start-ros-node or with-ros-node.  It can, however, be overridden by including a command-line argument of the form __name=foo.  The namespace is set as follows: if there is a command-line argument __ns:=foo, the namespace is foo.  If not, and if the environment variable ROS_NAMESPACE is set to bar, the namespace is bar.  If not, the namespace is /.  All commands below that take a name of a topic, service, or parameter can be given an absolute (/foo/bar/baz), relative (baz/qux), or private (~qux) name.
+
+
+\section startstop Starting and stopping a node
+
+
+- start-ros-node NAME &key MASTER-URI.  This starts a node called NAME and sets its state to running.  Additionally, sets the node name, namespace, and name remappings.  MASTER-URI defaults to (make-uri "127.0.0.1" 11311).  The xml-rpc and publication tcp servers will scan for free ports.
+- shutdown-ros-node.  If there is a running ROS node, shuts down all sockets to other nodes and unregisters all publications, subscriptions, and services.
+- with-ros-node (NAME &rest OPTIONS &key (SPIN t)) &rest BODY.  Starts up a ros node using the arguments in the list OPTIONS.  Then runs BODY.  If BODY exits, either programmatically or because of an external interrupt, makes sure to shutdown the node first.  Also, if the :spin keyword argument equals t, views the body as being followed by an indefinite spin loop.  See roslisp_examples/examples/listener.lisp.
+
+\section topic Topics
+
+- advertise TOPIC TYPE.  Inform the master that this node can publish on TOPIC.  TYPE is a string naming a message type (e.g. "std_msgs/Pose3D").  See roslisp_examples/examples/talker.lisp.
+- subscribe TOPIC TYPE CALLBACK &key MAX-QUEUE-LENGTH.  If not already subscribed to TOPIC, set up a subscription to TOPIC, of the given TYPE.  CALLBACK is a function of one argument, namely the received message.  MAX-QUEUE-LENGTH is the maximum length of the queue that stores deserialized messages while waiting for a callback.  If not provided, the queue can be arbitrarily long.  If already subscribed to TOPIC, simply add the new callback.  In this case, MAX-QUEUE-LENGTH is ignored.  See roslisp_examples/examples/listener.lisp.
+- publish-on-topic TOPIC MSG.  Publish message object MSG to topic TOPIC (which must be of the right type --- no type checking is currently done).  See roslisp_examples/examples/talker.lisp.
+
+\section services Services
+
+- call-service NAME SERVICE-TYPE &rest ARGS.  Call service NAME, which is a string naming the service.  SERVICE-TYPE is a symbol naming the service (so for Foo.srv in the bar package, this would be the symbol 'bar:Foo, which can be abbreviated as 'Foo if you're using the bar package).  ARGS are the initialization arguments for creating the request object.  See roslisp_examples/examples/add-two-ints-client.lisp.
+- def-service-callback SERVICE-TYPE (&rest ARGS) &rest BODY.  Like Lisp's defun, except simplified for defining service callbacks, so that you don't have to explicitly deal with request and response objects.  SERVICE-TYPE is as in call-service, except not preceded by a quote since this is a macro.  ARGS is a list of symbols naming fields of the request message.  These can be referred to in the body like regular variables.  Also, in the body, you can call (make-response &rest INITARGS) to create an instance of the service response type with the given initialization arguments (this will usually be the last top-level thing that happens in the callback).  See roslisp_examples/examples/add-two-ints-server.lisp.  
+- register-service SERVICE-NAME SERVICE-TYPE.  Inform master that this node provides the given service and set up the callback function, which will be called on incoming request messages.  SERVICE-TYPE must be the same as the argument to an earlier call to def-service-callback.  See roslisp_examples/examples/add-two-ints-server.lisp.  
+
+\section params Parameters
+
+- get-param KEY.  Get parameter value from parameter server.
+- set-param KEY VAL.  Set the value of parameter KEY to VAL.
+- has-param KEY.  Return true iff parameter server has a value for this parameter.
+- delete-param KEY.  Remove this parameter from the parameter server.
+
+\section rosout Debug messages
+
+- ros-debug CHECK STR &rest ARGS.  If CHECK is true, output the message to standard output, and also publish it over the rosout topic with level DEBUG.  STR is a format string and ARGS are the corresponding arguments.  ARGS are only evaluated if CHECK is true.  See roslisp_examples/examples/array-talker.lisp.
+- ros-info, ros-warn, ros-error, ros-fatal.  Analogous.
+
+\section misc Miscellaneous
+
+- make-uri ADDRESS PORT.  Address is a string (e.g. "127.0.0.1") and port is an integer.
+- fully-qualified-name NAME.  Return the fully qualified version of NAME.
+- loop-at-most-every INC &rest BODY.  Execute the body, with a gap of at least INC seconds between entry into successive iterations, where INC is a positive float.
+
+\section types Message data types
+
+Additionally, each ROS message type has a corresponding Lisp class and operations on it.  A message type foo in ROS package bar corresponds to a Lisp class named <foo> in the bar Lisp package.  If your code will create or operate on objects of this type, it should contain a call of the form (roslisp:load-message-types "bar/foo").  Operations in the message's package:
+
+- An object of type foo in package bar is created using (make-instance 'bar:<foo>).
+- Given a field named baz in an object m of the above message type, it can be accessed (read or written to) using (bar:baz-val m).
+      
+The roslisp Lisp package contains some additional generic operations that work on any message:
+- symbol-code M S.  M is either a message or the name of a message class.  S is a keyword symbol naming a constant declaration in the .msg file.  Returns the value of the constant.  For example, to get the value of the DEBUG constant in roslib/Log.msg, use (symbol-code 'roslib:<Log> :debug) or (symbol-code m :debug) where m is an instance of '<Log>.
+- ros-message-to-list MSG
+- list-to-ros-message L
+- pprint-ros-message STREAM MSG prints the message to the given stream in human-readable format.  This is also set as the default dispatch function for ROS messages in Lisp's pretty printer.  So if you have pretty printing turned on, and call a function from the prompt that returns a ROS message, that return value will be printed human-readably using pprint-ros-message.  Similarly, if your code contains something like (format t "The message is ~a" m), that will DTRT.
+
+\section services Service Data Types
+
+Given a ROS service type qux in the bar ROS package, there are corresponding message types <qux-request> and <qux-response> in the bar Lisp package. Code that uses these should contain a call to
+(roslisp:load-service-types "bar/qux")
+
+The request and response messages can be operated on like any other message.
+*/

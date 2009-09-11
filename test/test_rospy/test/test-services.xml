@@ -1,0 +1,10 @@
+<!-- test rospy services -->
+<launch>
+  <node name="empty" pkg="test_rospy" type="test_empty_service.py" args="--service" />
+  <node name="before" pkg="test_rospy" type="test_service_order.py" args="--before" />
+  <node name="after" pkg="test_rospy" type="test_service_order.py" args="--after" />
+  <node name="basic" pkg="test_rospy" type="test_basic_services.py" args="--service" />
+  <test test-name="rospy_empty_service" pkg="test_rospy" type="test_empty_service.py" />
+  <test test-name="rospy_basic_services" pkg="test_rospy" type="test_basic_services.py" />  
+  <test test-name="rospy_service_decl_order" pkg="test_rospy" type="test_service_order.py" />
+</launch>

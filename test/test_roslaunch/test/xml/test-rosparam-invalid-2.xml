@@ -1,0 +1,4 @@
+<launch>
+  <rosparam file="" command="load" />
+</launch>
+

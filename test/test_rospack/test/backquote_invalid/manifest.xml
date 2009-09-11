@@ -1,0 +1,5 @@
+<package>
+<export>
+<cpp lflags="`/foo/bar/gobbledygook`"/>
+</export>
+</package>

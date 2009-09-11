@@ -1,0 +1,11 @@
+<package>
+  <description>
+  Some wild and crazy messages to test if our message generators are really doing what they claim to do.
+  </description>
+  <author>Morgan Quigley</author>
+  <license>BSD</license>
+  <review status="na" notes="test"/>
+  <depend package="roslib"/>
+  <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+</package>

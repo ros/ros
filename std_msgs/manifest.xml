@@ -1,0 +1,16 @@
+<package>
+  <description brief="Common ROS Messages">
+
+std_msgs contains common message types representing primitive data types and other basic message constructs, such as multiarrays. For common, generic robot-specific message types, please see <a href="http://www.ros.org/wiki/common_msgs">common_msgs</a>. 
+
+  </description>
+  <author>Morgan Quigley/mquigley@cs.stanford.edu, Ken Conley/kwc@willowgarage.com, Jeremy Leibs/leibs@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="api cleared" notes="2009-02-26"/>
+  <url>http://www.ros.org/wiki/std_msgs</url>
+  <depend package="roslib"/>
+  <export>
+    <cpp cflags="-I${prefix}/msg/cpp"/>
+  </export>
+</package>
+

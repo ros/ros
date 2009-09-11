@@ -1,0 +1,43 @@
+#!/bin/bash
+
+USAGE='USAGE: makestackdist <stackdir>'
+
+if [ $# != 1 ]; then
+  echo $USAGE
+  exit 1
+fi
+
+stackdir=$1
+stack=`basename $stackdir`
+
+# Dirty hacks for prototyping a distro system
+
+# We need rospack built to find and clean everything
+cd $ROS_ROOT/tools/rospack && make
+
+# Clean everything; this seems to be the only way to reliably avoid
+# having cpack include build artifacts in the source distro.
+for p in `rosstack contents $stack`; do
+  echo -n "Cleaning $p..."
+  if [ "x$p" != "xrospack" ]; then
+    cd `rospack find $p` && make clean
+    cd `rospack find $p` && make wipe
+  fi
+  echo "...done"
+done
+  
+set -x
+
+if [ "x$stack" == "xros" ]; then
+  # We're done calling rospack now
+  cd $ROS_ROOT/tools/rospack && make clean
+fi
+
+# Make sure the top-level build is clean and create the source tarball
+cd $stackdir/build && make clean
+cd $stackdir/build && make package_source
+
+if [ "x$stack" == "xros" ]; then
+  # For the user's convenience, rebuild rospack
+  cd $ROS_ROOT/tools/rospack && make
+fi

@@ -1,0 +1,6 @@
+- svn:
+    uri: https://ros.svn.sourceforge.net/svnroot/ros/trunk
+    local-name: ros
+- svn:
+    uri: https://personalrobots.svn.sourceforge.net/svnroot/personalrobots/pkg/trunk
+    local-name: ros-pkg

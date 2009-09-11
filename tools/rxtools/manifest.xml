@@ -1,0 +1,30 @@
+<package>
+    <description brief="Collection of ROS GUI tools and libraries">
+    
+rxtools is two things.  First it is a library of GUI widgets (written in wxWidgets) that can be embedded in other applications. Second it is a set of GUI applications that view/manage ROS state. These GUI applications include <tt>rxconsole</tt> and <tt>rxplot</tt>.
+    
+    </description>
+    <author>Josh Faust, Rob Wheeler, Ken Conley</author>
+    <license>BSD</license>
+    <review status="API cleared" notes=""/>
+    <url>http://ros.org/wiki/rxtools</url>
+    <depend package="roscpp"/>
+    <depend package="roslib"/>        
+    <depend package="rospy"/>        
+    <depend package="rostopic"/> 
+    <depend package="wxswig"/>
+    <depend package="wxPython_swig_interface"/>
+    <export> 
+        <cpp cflags="-I${prefix}/src/ `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib/ -lrxtools `rosboost-cfg --lflags thread,regex`"/>
+        <python path="${prefix}/src/:${prefix}/lib/"/>
+    </export>
+
+    <rosdep name="wxwidgets"/>
+
+    <!-- rxplot-specific -->
+    <rosdep name="python-gtk2"/>
+    <rosdep name="python-matplotlib"/>
+    <rosdep name="wxpython"/>
+
+</package>
+

@@ -1,0 +1,10 @@
+<launch>
+  <node name="talker" pkg="rospy_tutorials" type="talker.py" />
+  <group ns="foo">
+    <node name="talker" pkg="rospy_tutorials" type="talker.py" />
+  </group>
+  <group ns="bar">
+    <node name="talker" pkg="rospy_tutorials" type="talker.py" />
+  </group>
+  <test test-name="rosnode_command_line_online" pkg="test_rosnode" type="test_rosnode_command_online.py" />
+</launch>

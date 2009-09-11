@@ -1,0 +1,5 @@
+<launch>
+  <!-- address is required -->
+  <machine name="machine1" />
+</launch>
+

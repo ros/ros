@@ -1,0 +1,3 @@
+<launch>
+  <test test-name="log" pkg="test_roscpp" type="log"/>
+</launch>

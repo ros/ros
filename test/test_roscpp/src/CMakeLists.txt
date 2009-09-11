@@ -1,0 +1,172 @@
+rospack_add_executable(publish_n_fast publish_n_fast.cpp)
+rospack_declare_test(publish_n_fast)
+target_link_libraries(publish_n_fast ros)
+
+rospack_add_executable(old_publish_n_fast old_publish_n_fast.cpp)
+rospack_declare_test(old_publish_n_fast)
+target_link_libraries(old_publish_n_fast ros)
+
+rospack_add_executable(subscribe_self subscribe_self.cpp)
+rospack_add_gtest_build_flags(subscribe_self)
+target_link_libraries(subscribe_self ros)
+
+rospack_add_executable(pub_sub pub_sub.cpp)
+rospack_declare_test(pub_sub)
+target_link_libraries(pub_sub ros)
+
+rospack_add_executable(sub_pub sub_pub.cpp)
+rospack_add_gtest_build_flags(sub_pub)
+target_link_libraries(sub_pub ros)
+
+rospack_add_executable(publish_empty publish_empty.cpp)
+rospack_declare_test(publish_empty)
+target_link_libraries(publish_empty ros)
+
+rospack_add_executable(publish_onsub publish_onsub.cpp)
+rospack_declare_test(publish_onsub)
+target_link_libraries(publish_onsub ros)
+
+rospack_add_executable(subscribe_n_fast subscribe_n_fast.cpp)
+rospack_add_gtest_build_flags(subscribe_n_fast)
+target_link_libraries(subscribe_n_fast ros)
+
+rospack_add_executable(old_subscribe_n_fast old_subscribe_n_fast.cpp)
+rospack_add_gtest_build_flags(old_subscribe_n_fast)
+target_link_libraries(old_subscribe_n_fast ros)
+
+rospack_add_executable(subscribe_empty subscribe_empty.cpp)
+rospack_add_gtest_build_flags(subscribe_empty)
+target_link_libraries(subscribe_empty ros)
+
+rospack_add_executable(subscribe_resubscribe subscribe_resubscribe.cpp)
+rospack_add_gtest_build_flags(subscribe_resubscribe)
+target_link_libraries(subscribe_resubscribe ros)
+
+rospack_add_executable(subscribe_unsubscribe subscribe_unsubscribe.cpp)
+rospack_add_gtest_build_flags(subscribe_unsubscribe)
+target_link_libraries(subscribe_unsubscribe ros)
+
+rospack_add_executable(publish_unadvertise publish_unadvertise.cpp)
+rospack_add_gtest_build_flags(publish_unadvertise)
+target_link_libraries(publish_unadvertise ros)
+
+rospack_add_executable(subscribe_unsubscribe_repeatedly subscribe_unsubscribe_repeatedly.cpp)
+rospack_declare_test(subscribe_unsubscribe_repeatedly)
+target_link_libraries(subscribe_unsubscribe_repeatedly ros)
+
+rospack_add_executable(publish_constantly publish_constantly.cpp)
+rospack_declare_test(publish_constantly)
+target_link_libraries(publish_constantly ros)
+
+rospack_add_executable(param_update_test param_update_test.cpp)
+rospack_declare_test(param_update_test)
+target_link_libraries(param_update_test ros)
+
+ 
+rospack_add_executable(real_time_test real_time_test.cpp)
+rospack_declare_test(real_time_test)
+rospack_add_gtest_build_flags(real_time_test)
+target_link_libraries(real_time_test ros)
+
+rospack_add_executable(sim_time_test sim_time_test.cpp)
+rospack_declare_test(sim_time_test)
+rospack_add_gtest_build_flags(sim_time_test)
+target_link_libraries(sim_time_test ros)
+
+# Call a service
+rospack_add_executable(service_adv service_adv.cpp)
+rospack_declare_test(service_adv)
+target_link_libraries(service_adv ros)
+
+rospack_add_executable(service_adv_unadv service_adv_unadv.cpp)
+rospack_declare_test(service_adv_unadv)
+rospack_add_gtest_build_flags(service_adv_unadv)
+target_link_libraries(service_adv_unadv ros)
+
+rospack_add_executable(service_call service_call.cpp)
+rospack_add_gtest_build_flags(service_call)
+target_link_libraries(service_call ros)
+
+rospack_add_executable(service_call_repeatedly service_call_repeatedly.cpp)
+rospack_declare_test(service_call_repeatedly)
+target_link_libraries(service_call_repeatedly ros)
+
+
+# Repeatedly call ros::init() and ros::fini()
+rospack_add_executable(multiple_init_fini multiple_init_fini.cpp)
+rospack_add_gtest_build_flags(multiple_init_fini)
+target_link_libraries(multiple_init_fini ros)
+
+# Test node inspection functionality
+rospack_add_executable(inspection inspection.cpp)
+rospack_add_gtest_build_flags(inspection)
+target_link_libraries(inspection ros)
+
+# Test logging functionality
+rospack_add_executable(log log.cpp)
+rospack_add_gtest_build_flags(log)
+target_link_libraries(log ros)
+
+# Test that advertising a service multiple times fails
+rospack_add_executable(service_adv_multiple service_adv_multiple.cpp)
+rospack_add_gtest_build_flags(service_adv_multiple)
+target_link_libraries(service_adv_multiple ros)
+
+# Test that the second node to advertise a service "wins"
+rospack_add_executable(service_adv_a service_adv_a.cpp)
+rospack_add_gtest_build_flags(service_adv_a)
+target_link_libraries(service_adv_a ros)
+
+rospack_add_executable(service_wait_a_adv_b service_wait_a_adv_b.cpp)
+rospack_add_gtest_build_flags(service_wait_a_adv_b)
+target_link_libraries(service_wait_a_adv_b ros)
+
+rospack_add_executable(service_call_expect_b service_call_expect_b.cpp)
+rospack_add_gtest_build_flags(service_call_expect_b)
+target_link_libraries(service_call_expect_b ros)
+
+# Test command-line name remapping
+rospack_add_executable(name_remapping name_remapping.cpp)
+rospack_add_gtest_build_flags(name_remapping)
+target_link_libraries(name_remapping ros)
+
+# Test namespaces
+rospack_add_executable(namespaces namespaces.cpp)
+rospack_add_gtest_build_flags(namespaces)
+target_link_libraries(namespaces ros)
+
+# Test params
+rospack_add_executable(params params.cpp)
+rospack_add_gtest_build_flags(params)
+target_link_libraries(params ros)
+
+# Test getting information from the master
+rospack_add_executable(get_master_information get_master_information.cpp)
+rospack_add_gtest_build_flags(get_master_information)
+target_link_libraries(get_master_information ros)
+
+# Test multiple subscriptions
+rospack_add_executable(multiple_subscriptions multiple_subscriptions.cpp)
+rospack_add_gtest_build_flags(multiple_subscriptions)
+target_link_libraries(multiple_subscriptions ros)
+
+
+rospack_add_executable(multiple_subscriptions_standalone multiple_subscriptions_standalone.cpp)
+rospack_declare_test(multiple_subscriptions_standalone)
+target_link_libraries(multiple_subscriptions_standalone ros)
+
+rospack_add_executable(check_master check_master.cpp)
+rospack_add_gtest_build_flags(check_master)
+target_link_libraries(check_master ros)
+
+rospack_add_executable(handles handles.cpp)
+rospack_add_gtest_build_flags(handles)
+target_link_libraries(handles ros)
+
+rospack_add_executable(timer_callbacks timer_callbacks.cpp)
+rospack_add_gtest_build_flags(timer_callbacks)
+target_link_libraries(timer_callbacks ros)
+
+rospack_add_executable(latching_publisher latching_publisher)
+rospack_add_gtest_build_flags(latching_publisher)
+target_link_libraries(latching_publisher ros)

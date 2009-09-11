@@ -1,0 +1,10 @@
+<launch>
+  <node name="a2iserver" pkg="rospy_tutorials" type="add_two_ints_server" />
+  <group ns="foo">
+    <node name="a2iserver" pkg="rospy_tutorials" type="add_two_ints_server" />
+  </group>
+  <group ns="bar">
+    <node name="a2iserver" pkg="rospy_tutorials" type="add_two_ints_server" />
+  </group>
+  <test test-name="rosservice_command_line_online" pkg="test_rosservice" type="test_rosservice_command_line_online.py" />
+</launch>

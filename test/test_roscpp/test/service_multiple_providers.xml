@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="test_roscpp" type="service_adv_a"/>
+  <node pkg="test_roscpp" type="service_wait_a_adv_b"/>
+  <test test-name="service_multiple_providers" pkg="test_roscpp" type="service_call_expect_b"/>
+</launch>
+
+

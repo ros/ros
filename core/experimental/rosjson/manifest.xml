@@ -1,0 +1,17 @@
+<package>
+  <description brief="rosjson">
+
+     rosjson is a Python library for converting ROS messages to JSON
+     (JavaScript Object Notation) representation.
+
+  </description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <url>http://ros.org/wiki/rosjson</url>
+  <depend package="rospy"/>
+  <depend package="roslib"/>
+
+</package>
+
+

@@ -1,0 +1,29 @@
+<package>
+  <description brief="ROS C++ client library">
+
+<p>
+    roscpp is a C++ implementation of ROS. It provides
+    a <a href="http://www.ros.org/wiki/Client%20Libraries">client
+    library</a> that enables C++ programmers to quickly interface with
+    ROS <a href="http://ros.org/wiki/Topics">Topics</a>,
+    <a href="http://ros.org/wiki/Services">Services</a>,
+    and <a href="http://ros.org/wiki/Parameters">Parameters</a>.
+</p>
+<p>
+    roscpp is the most widely used ROS client library and is designed to
+    be the high-performance library for ROS.
+</p>
+  </description>
+  <author>Morgan Quigley mquigley@cs.stanford.edu, Josh Faust jfaust@willowgarage.com, Brian Gerkey gerkey@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="API cleared"/>
+  <url>http://ros.org/wiki/roscpp</url>
+  <depend package="roslang"/>
+  <depend package="roslib"/>
+  <depend package="xmlrpc++"/>
+  <depend package="rosconsole"/>
+  <export>
+    <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags` -I${prefix}/srv/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lros `rosboost-cfg --lflags thread,signals`"/>
+    <roslang cmake="${prefix}/cmake/roscpp.cmake"/>
+  </export>
+</package>

@@ -1,0 +1,13 @@
+<package>
+  <description brief="A small library for ROS sessions">
+    Sessions offer execution synchronization between a persistent set of services. Each session maintains a state on the server side which is independent of the connection. This allows multiple clients to have the option of maintaining an independent workspace on the server side, or potentially to share the same workspace.
+  </description>
+  <author>Rosen Diankov (rdiankov@cs.cmu.edu)</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <depend package="roscpp"/>
+  <export>
+    <cpp cflags="-I${prefix}/include -I${prefix}/srv/cpp `rosboost-cfg --cflags`" lflags="`rosboost-cfg --lflags thread`"/>
+  </export>
+  <url>http://pr.willowgarage.com/wiki/roscpp_sessions</url>
+</package>

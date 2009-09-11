@@ -1,0 +1,66 @@
+<launch>
+  <!-- string parameters -->
+  <param name="stringempty"  value="" />
+  <param name="stringbar"    value="bar" />
+  <param name="str10"        value="10" type="str" />
+  <param name="string10"     value="10" type="string" />  <!-- type alias -->
+  <param name="stringentity" value="&lt;stringentity/&gt;" />  
+  
+  <!-- integer parameters -->
+  <param name="integer0"     value="0" />
+  <param name="integer1"     value="1" />
+  <param name="integernoop1" value="1" />  
+  <param name="integer12345" value="12345" />
+  <param name="integerneg1"  value="-1"/>
+  
+  <!-- float parameters -->
+  <param name="floatpi"     value="3.14159" />  
+  <param name="floatnooppi" value="3.14159" type="double" />  
+  <param name="float3"      value="3.0" />
+  <param name="floatneg1"   value="-1.0" />  
+
+  <!-- boolean parameters -->
+  <param name="true"  value="true" />
+  <param name="false" value="false" />
+  <param name="TRUE"  value="TRUE" />
+  <param name="FALSE" value="FALSE" />
+  <param name="True"  value="True" />          
+  <param name="False" value="False" />          
+    
+  <!-- child namespace parameters -->
+  <param name="wg/childparam" value="wg" />
+  <param name="wg2/childparam" value="wg2" />
+  <param name="wg3/childparam" value="wg3" />
+  <param name="wg/wg4/wg5/childparam" value="wg5" />  
+  <param name="wg/wg4/childparam" value="wg4" />
+
+  <group ns="wga">
+    <param name="wg/childparam" value="wg" />
+    <param name="wg2/childparam" value="wg2" />
+    <param name="wg3/childparam" value="wg3" />
+    <param name="wg/wg4/wg5/childparam" value="wg5" />  
+    <param name="wg/wg4/childparam" value="wg4" />
+
+    <group ns="wgb">
+      <param name="wg/childparam" value="bwg" />
+      <param name="wg2/childparam" value="bwg2" />
+      <param name="wg3/childparam" value="bwg3" />
+      <param name="wg/wg4/wg5/childparam" value="bwg5" />  
+      <param name="wg/wg4/childparam" value="bwg4" />
+    </group>
+  </group>
+
+  <group> <!-- no ns attribute -->
+    <param name="wgc/childparam" value="wg" />
+    <param name="wgc2/childparam" value="wg2" />
+    <param name="wgc3/childparam" value="wg3" />
+    <param name="wgc/wg4/wg5/childparam" value="wg5" />  
+    <param name="wgc/wg4/childparam" value="wg4" />
+  </group>
+  
+  <param name="textfile" textfile="$(find roslaunch)/example.launch" />
+  <param name="binaryfile" binfile="$(find roslaunch)/example.launch" />
+  <param name="commandoutput" command="cat &quot;$(find roslaunch)/example.launch&quot;" />
+
+  <test test-name="test_params_basic" pkg="test_roslaunch" type="test_params_basic.py" />
+</launch>

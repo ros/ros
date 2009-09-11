@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# A little script to set svn:ignore properties.
+USAGE="USAGE: rossvnignore <tree-root>"
+
+if ! [ $# = 1 ]; then
+  echo $USAGE
+  exit 1
+fi
+
+path=$1
+
+tmpfile1=/tmp/rossvnignore-$$-1
+tmpfile2=/tmp/rossvnignore-$$-2
+cd $path
+files=`svn st | grep "^\?" | grep -v nfs | grep -v src | grep -v "^\$" | awk {'print \$2'}`
+#files=`cat ~/before | grep "^\?" | grep -v nfs | grep -v src | grep -v "^\$" | awk {'print \$2'}`
+echo "Files to be ignored: $files"
+for f in $files; do
+  cd $path/`dirname $f`
+  svn propget svn:ignore . | grep -v "^\$" > $tmpfile1
+  echo `basename $f` >> $tmpfile1
+  cat $tmpfile1 | sort -u > $tmpfile2
+  svn propset svn:ignore -F $tmpfile2 .
+done
+rm -f $tmpfile1
+rm -f $tmpfile2

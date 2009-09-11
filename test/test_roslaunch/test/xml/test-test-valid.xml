@@ -1,0 +1,66 @@
+<launch>
+
+  <test test-name="test4" pkg="package" type="test_time_limit_int_1" time-limit="1" />
+  <test test-name="test5" pkg="package" type="test_time_limit_float_10_1" time-limit="10.1" />
+
+  <!-- these are just cut and paste from nodes-valid with test-name attrs added and invalid examples removed -->
+
+  <test test-name="test1" pkg="package" type="test_base" />
+  
+  <test test-name="test2" pkg="package" type="test_args" args="args test" />
+  <test test-name="test3" pkg="package" type="test_args_empty" args="" />
+
+  <test test-name="test6" pkg="package" type="test_machine" machine="machine_test" />
+
+  <test test-name="test7" pkg="package" type="test_ns1" ns="ns_test1" />
+  <test test-name="test8" pkg="package" type="test_ns2" ns="ns_test2/child2" />
+  <test test-name="test9" pkg="package" type="test_ns3" ns="ns_test3/child3/" />
+  
+  <test test-name="test15" pkg="package" type="test_env">
+    <env name="env1" value="env1 value1" />
+    <env name="env2" value="env2 value2" />
+  </test>
+
+  <test test-name="test16" pkg="package" type="test_fake">
+    <!-- unrecognized tags are ok, but will print warnings to screen -->
+    <fake name="env2" value="env2 value2" />
+  </test>
+  
+  <test test-name="test17" pkg="package" type="test_env_empty">
+    <env name="env1" value="" />
+  </test>
+
+  <test test-name="test18" name="test_param_name" pkg="package" type="test_param">
+    <param name="foo" value="bar" />
+  </test>
+
+  <test test-name="test19" name="test_param_name_ns" ns="ns_test" pkg="package" type="test_param">
+    <param name="foo2" value="bar2" />
+  </test>
+  
+  <test test-name="test20" pkg="package" type="test_cwd_1" cwd="ros-root" />
+  <test test-name="test21" pkg="package" type="test_cwd_2" cwd="node" />
+      
+
+  <test test-name="test22" pkg="package" type="test_test_rosparam_load" name="rosparam_load">
+    <rosparam file="load.yaml" command="load" />
+  </test>
+  
+  <test test-name="test23" pkg="package" type="test_test_rosparam_dump" name="rosparam_dump">
+    <rosparam file="dump.yaml" command="dump" />
+  </test>
+  
+  <test test-name="test24" pkg="package" type="test_test_rosparam_load_ns" name="load_ns">
+    <rosparam ns="subns" file="load_ns.yaml" command="load" />
+  </test>
+  
+  <test test-name="test25" pkg="package" type="test_test_rosparam_multi" name="rosparam_multi">
+    <rosparam file="mload.yaml" command="load" />
+    <rosparam file="mdump.yaml" command="dump" />
+    <rosparam ns="msubns" file="mload_ns.yaml" command="load" />
+  </test>
+  
+  <!-- TODO remap args test -->
+
+</launch>
+

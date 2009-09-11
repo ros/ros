@@ -1,0 +1,35 @@
+#!/bin/bash
+if [ $# -lt 2 ]; then
+  echo "Usage: rosrun PACKAGE EXECUTABLE [ARGS]"
+  echo "  rosrun will locate PACKAGE and try to find"
+  echo "  an executable named EXECUTABLE in the PACKAGE tree."
+  echo "  If it finds it, it will run it with ARGS."
+  exit 1
+fi
+pkgdir=`${ROS_ROOT}/bin/rospack find $1` || exit 2
+# The -perm /mode usage is not available in find on the Mac
+#exepathlist=(`find $pkgdir -name $2 -type f -perm /u+x,g+x,o+x`)
+exepathlist=(`find $pkgdir -name $2 -type f  -perm +111`)
+if [[ ${#exepathlist[@]} == 0 ]] ; then
+    echo "[rosrun] Couldn't find executable named $2 below $pkgdir"
+    nonexepathlist=(`find $pkgdir -name $2`)
+    if [[ ${#nonexepathlist[@]} != 0 ]] ; then
+      echo "[rosrun] Found the following, but they're either not files, "
+      echo "[rosrun] or not executable:"
+      for p in ${nonexepathlist[@]}; do
+        echo "[rosrun]   ${p}"
+      done
+    fi
+    exit 3
+elif [[ ${#exepathlist[@]} -gt 1 ]] ; then
+    echo "[rosrun] You have chosen a non-unique executable, please pick one of the following:"
+    select opt in ${exepathlist[@]}; do
+        exepath=$opt
+        break
+    done
+else
+    exepath=${exepathlist[0]}
+fi
+shift
+shift
+$exepath "$@"

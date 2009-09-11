@@ -1,0 +1,9 @@
+<package>
+  <description brief="YAML-based parameter server initialization">Initialize the parameter server from an yaml-encoded file of parameters</description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <url>http://pr.willowgarage.com/wiki/yamlparam</url>
+  <license>BSD</license>
+  <review status="API cleared" notes="01/22/2009"/>
+  <depend package="roslib"/>
+  <rosdep name="python-yaml"/>
+</package>

@@ -32,15 +32,25 @@
 #
 # Revision $Id$
 
-import roslib; roslib.load_manifest('roswtf')
-
 import os
 import socket
 import sys
 import traceback
 
+try:
+    import roslib.msg
+except ImportError:
+    print """ERROR: ROS has not been built. To fix:
+cd $ROS_ROOT
+make
+"""
+    sys.exit(1)
+
+import roslib; roslib.load_manifest('roswtf')
+
 import roslib.packages
 import roslib.scriptutil
+    
 import rospy
 
 def yaml_results(ctx):

@@ -99,6 +99,14 @@
 
 (defun convert-to-keyword (s)
   (declare (symbol s))
+  (let ((name (string-upcase (symbol-name s))))
+    (when (> (length name) 4)
+      (let ((pos (- (length name) 4)))
+	(when (search "-VAL" name :start2 pos)
+	  (let ((new-name (subseq name 0 pos)))
+	    (signal 'compile-warning
+		    :msg (format nil "I'm assuming you're using ~a to refer to ~a (the old form), in a call to with-fields or def-service-callback.  For now, converting automatically.  This usage is deprecated though — switch to just using ~a (cf roslisp_examples/add-two-ints-server.lisp)." name new-name new-name))
+	    (setq s (intern new-name 'keyword)))))))
   (if (keywordp s)
       s
       (intern (symbol-name s) 'keyword)))

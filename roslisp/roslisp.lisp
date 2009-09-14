@@ -63,6 +63,8 @@
    :start-ros-node
    :shutdown-ros-node
    :with-ros-node
+   :def-ros-node 
+
    :print-status
    :make-response
    :defservice
@@ -74,6 +76,7 @@
    :publish-on-topic
    :publish
    :loop-at-most-every
+   :with-parallel-thread
    :store-message-in
 
    :load-message-types
@@ -214,4 +217,7 @@
 	  *ros-node-name* *node-status* *master-uri* *publications* *subscriptions*))
 
 
-
+(define-condition compile-warning (condition)
+  ((msg :initarg :msg)))
+  
+  

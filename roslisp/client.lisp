@@ -300,6 +300,8 @@ Set up things so that publish may now be called with this topic.  Also, returns 
 
 (defmacro register-service (service-name service-type)
   "Register service with the given name SERVICE-NAME (a string) of type service-type (a symbol) with the master."
+  (when (and (listp service-type) (eq 'quote (first service-type)))
+    (setq service-type (second service-type)))
   `(register-service-fn ,service-name #',service-type ',service-type))
 	
 (defmacro def-service-callback (service-type-name (&rest args) &body body)
@@ -309,7 +311,7 @@ Set up things so that publish may now be called with this topic.  Also, returns 
 	(response-type (gensym)))
     `(defun ,service-type-name (,req)
        (let ((,response-type (service-response-type ',service-type-name)))
-	 (with-accessors ,(mapcar #'(lambda (arg) (list arg arg)) args) ,req
+	 (with-fields ,args ,req
 	   (flet ((make-response (&rest ,response-args)
 		    (apply #'make-instance ,response-type ,response-args)))
 	     ,@body))))))
@@ -482,3 +484,18 @@ pp  (with-fully-qualified-name topic
 	  (error "Unknown topic ~a" topic)))))|#
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Experimental
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro def-ros-node (name params (&key spin) &body body)
+  (let ((doc-string (if (stringp (first body)) (first body) ""))
+	(body (if (stringp (first body)) (rest body) body)))
+    `(defun ,name () ,doc-string 
+	    (with-ros-node (,(string-downcase (symbol-name name)) ,@(when spin '(:spin t)))
+	      (let ,(mapcar 
+		      #'(lambda (param)
+			  (let ((param-name (concatenate 'string "~" (string-downcase (symbol-name param)))))
+			    `(,param (get-param ,param-name))))
+		      params)
+		,@body)))))

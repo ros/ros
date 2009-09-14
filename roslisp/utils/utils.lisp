@@ -52,6 +52,7 @@
    unix-time
    loop-at-most-every
    spin-until
+   with-parallel-thread
 
    hash-table-has-key
    pprint-hash
@@ -62,6 +63,7 @@
    serialize-string
    deserialize-string
 
+   filter
 
    intern-compound-symbol
    
@@ -240,7 +242,7 @@ Note that despite the name, this is not like with-accessors or with-slots in tha
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Time
+;; Time, event loops
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun unix-time ()
@@ -278,7 +280,21 @@ Note that despite the name, this is not like with-accessors or with-slots in tha
       (when ,test (return))))
 	  
        
-       
+(defmacro with-parallel-thread ((fn name) &body body)
+  "with-parallel-thread (FN NAME) &body BODY
+
+Start a thread that executes FN, named NAME.  Then, in the current thread, execute BODY.  After BODY exits, terminate the newly started thread as well (typically BODY will be a long-running loop).
+
+If FN is a symbol, it's replaced by (function FN)."
+
+  (let ((thread (gensym))
+	(fn (if (symbolp fn) `#',fn fn)))
+    `(let ((,thread (sb-thread:make-thread ,fn :name ,name)))
+       (unwind-protect
+	    (progn ,@body)
+	 (sb-thread:terminate-thread ,thread)))))
+   
+  
       
   
 
@@ -299,4 +315,5 @@ Note that despite the name, this is not like with-accessors or with-slots in tha
 (defun is-standard-equality-test (f)
   (member f *standard-equality-tests*))
 
-
+(defun filter (f l)
+  (loop for x in l when (funcall f x) collect x))

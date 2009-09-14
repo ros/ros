@@ -43,10 +43,10 @@
   (:export :main))
 (in-package add-two-ints-server)
 
-(def-service-callback AddTwoInts (a-val b-val)
-  (make-response :sum (+ a-val b-val)))
+(def-service-callback AddTwoInts (a b)
+  (make-response :sum (+ a b)))
 
 (defun main ()
   (with-ros-node ("two-ints-server" :spin t)
-    (register-service "add_two_ints" AddTwoInts)))
+    (register-service "add_two_ints" 'AddTwoInts)))
 

@@ -267,15 +267,27 @@ public:
                name.c_str(), name.c_str());
     return string(code);
     */
-    string decl = string("(") + name +
-            string("\n    :accessor ") + name + string("-val") +
-            string("\n    :initarg :") + name +
-            string("\n    :initform #())");
+    ostringstream code;
+    code << "(" << name << "\n    :accessor " << name << string("-val");
+    code << "\n    :initarg :" << name;
+    code << "\n    :initform (make-array " << len << " :initial-element ";
+    if (is_integer(eletype) || eletype=="time" || eletype=="duration")
+      code << "0";
+    else if (is_float(eletype))
+      code << "0.0";
+    else if (eletype=="string")
+      code << "\"\"";
+    else
+      code << "(make-instance '" << lisp_eletype << ")";
+
+    code << "))";
+      
+    
     string export_decl = name + string("-val");
     for(unsigned int i=0;i<export_decl.size();i++)
       export_decl[i] = toupper(export_decl[i]);
     g_accessors.push_back(export_decl);
-    return(decl);
+    return(code.str());
   }
   virtual string test_populate(const string &prefix, int indent = 0)
   {

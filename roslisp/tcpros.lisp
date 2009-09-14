@@ -213,7 +213,8 @@
 	  (serialize msg str)
 
 	  ;; Technically, force-output isn't supposed to be called on binary streams...
-	  (force-output str))
+	  (force-output str)
+	  )
       (error (c)
 	(ros-info (roslisp tcp) "Received error ~a when writing to ~a.  Skipping from now on." c str)
 	(setf (gethash str *broken-socket-streams*) t)))))

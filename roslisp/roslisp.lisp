@@ -53,6 +53,7 @@
   (:export
    :with-fields
    :make-message
+   :make-msg
    :modify-message-copy
    :node-status
    :make-response
@@ -106,6 +107,7 @@
    ;; debug topics
    :roslisp
    :top
+   :tcp
 
    :load-msg ;; todo remove?
    :load-srv ;; todo remove?

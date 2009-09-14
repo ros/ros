@@ -286,7 +286,7 @@ Note that despite the name, this is not like with-accessors or with-slots in tha
 Start a thread that executes FN, named NAME.  Then, in the current thread, execute BODY.  After BODY exits, terminate the newly started thread as well (typically BODY will be a long-running loop).
 
 If FN is a symbol, it's replaced by (function FN)."
-
+  
   (let ((thread (gensym))
 	(fn (if (symbolp fn) `#',fn fn)))
     `(let ((,thread (sb-thread:make-thread ,fn :name ,name)))

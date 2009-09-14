@@ -133,18 +133,16 @@ BINDINGS is an unevaluated list of bindings.  Each binding is like a let binding
 MSG evaluates to a message.
 BODY is the body, surrounded by an implicit progn.
 
-As an example, instead of 
-(let ((foo (pkg:foo-val (pkg:bar-val m)))
+As an example, instead of (let ((foo (pkg:foo-val (pkg:bar-val m)))
       (baz (pkg:baz-val m)))
-  (stuff))
+  (stuff)) 
 
-you can use
-(with-fields ((foo (foo bar))
-	      baz)
-    (stuff))"
+you can use (with-fields ((foo (foo bar)) baz)
+		(stuff))"
 
   (let ((msg-list (gensym)))
     `(let ((,msg-list (ros-message-to-list ,m)))
+       (declare (ignorable ,msg-list))
        (let 
 	   ,(mapcar #'(lambda (binding)
 			(when (symbolp binding) (setq binding (list binding binding)))
@@ -214,5 +212,8 @@ this will create a Pose with the x field of position equal to 42 and the w field
 			 collect (if (evenp i) `',arg arg))))
 			   
 
+(defmacro make-msg (&rest args)
+  "Alias for make-message"
+  `(make-message ,@args))
 
 

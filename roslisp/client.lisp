@@ -305,11 +305,12 @@ Set up things so that publish may now be called with this topic.  Also, returns 
   `(register-service-fn ,service-name #',service-type ',service-type))
 	
 (defmacro def-service-callback (service-type-name (&rest args) &body body)
-  "Define a service callback for service of type SERVICE-TYPE-NAME (a symbol, e.g 'roslisp_examples:AddTwoInts).  ARGS is a list of symbols naming particular fields of the service request object which will be available within the body.  Within the body, make-response will make an instance of the response object."
+  "Define a service callback for service of type SERVICE-TYPE-NAME (a symbol, e.g 'roslisp_examples:AddTwoInts).  ARGS is a list of symbols naming particular fields of the service request object which will be available within the body.  Within the body, you may also call the function make-response.  This will make an instance of the response message type.  E.g., to make a response object with field foo=3, (make-response :foo 3)."
   (let ((req (gensym))
 	(response-args (gensym))
 	(response-type (gensym)))
     `(defun ,service-type-name (,req)
+       (declare (ignorable ,req)) ;; For the case when the request object is empty
        (let ((,response-type (service-response-type ',service-type-name)))
 	 (with-fields ,args ,req
 	   (flet ((make-response (&rest ,response-args)

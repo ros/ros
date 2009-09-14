@@ -92,7 +92,7 @@
 
 
 (defun handle-command-line-arguments (name)
-  "Postcondition: the variables *remapped-names*, *namespace*, and *ros-node-name* are set based on the command line arguments and the environment variable ROS_NAMESPACE as per the ros command line protocol.  Also, arguments of the form foo:=bar are interpreted by setting private parameter foo equal to bar (currently bar is just read using the lisp reader; it should eventually use yaml conventions)"
+  "Postcondition: the variables *remapped-names*, *namespace*, and *ros-node-name* are set based on the command line arguments and the environment variable ROS_NAMESPACE as per the ros command line protocol.  Also, arguments of the form _foo:=bar are interpreted by setting private parameter foo equal to bar (currently bar is just read using the lisp reader; it should eventually use yaml conventions)"
   (let ((remappings
 	 (mapcan #'(lambda (s) (mvbind (lhs rhs) (parse-remapping s) (when lhs (list (list lhs rhs))))) 
 		 (rest sb-ext:*posix-argv*))))

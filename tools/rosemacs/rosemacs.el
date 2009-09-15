@@ -6,13 +6,14 @@
 ;; 2. (Optional) From emacs do M-x byte-compile followed by 
 ;;    this file's full path 
 ;;
-;; 3. Add the following lines to your .emacs:
+;; 3. Add the following lines to your .emacs
+;;    (add-to-list 'load-path "/path/to/rosemacs")
 ;;    (require 'rosemacs)
 ;;    (invoke-rosemacs)
 ;;
 ;; 4. (Optional) Add the following line or equivalent to 
 ;;    .emacs to activate keyboard shortcuts for the added 
-;;    commands:
+;;    commands (\C-x\C-r means control-x control-r):
 ;;    (global-set-key "\C-x\C-r" ros-keymap)
 ;;
 ;; 5. (Optional) Add the following line or equivalent to 
@@ -20,9 +21,11 @@
 ;;    of active ros topics.
 ;;    (set-ros-topic-update-interval 5)
 ;;
-;; 6. Start emacs from a shell in which the standard ROS 
-;;    variables are set, and the variable EMACSLOADPATH is 
-;;    set to include the location of this file
+;; 6. Make sure the standard ROS variables are set in the
+;;    emacs process environment.  If you follow the standard
+;;    ROS installation instructions about sourcing .bashrc.ros
+;;    in your .bashrc, then this will automatically happen
+;;    if you launch emacs from a bash shell.
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -307,7 +310,7 @@
 		      (if (current-word t t)
 			  (format "Enter service name (default %s): " (current-word t t))
 			"Enter service name: ")
-		      service-completor nil nil (current-word t t))))
+		      service-completor nil nil nil nil (current-word t t))))
   (let ((p (ros-service-package service)))
     (if p
 	(let ((dir (ros-package-dir p)))
@@ -338,7 +341,7 @@
 		      (if (current-word t t)
 			  (format "Enter service name (default %s): " (current-word t t))
 			"Enter service name: ")
-		      service-completor nil nil (current-word t t))))
+		      service-completor nil nil nil nil (current-word t t))))
   (let ((p (ros-service-package service)))
     (if p
 	(let ((dir (ros-package-dir p)))

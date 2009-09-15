@@ -667,6 +667,13 @@ private:
           os_ver = os_tokens[2];
           return true;
         }
+        else if (os_tokens[0] == string("Linux") &&
+                 os_tokens[1] == string("Mint"))
+        {
+          os_name = "mint";
+          os_ver = os_tokens[2];
+          return true;
+        }
         else
           throw runtime_error("/etc/issue was neither ubuntu nor debian.\n");
       }

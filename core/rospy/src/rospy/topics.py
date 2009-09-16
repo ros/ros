@@ -239,17 +239,13 @@ class _TopicImpl(object):
     def get_stats(self): # STATS
         raise Exception("subclasses must override")
 
-## \ingroup clientapi Client API
-## Class for registering as a subscriber to a specified topic, where
-#  the messages are of a given type. Client code is not expected to
-#  use this class directly. Instead, this is the base class of
-#  auto-generated FooTypeSub classes from the message generator.
-#  Clients can use these classes as a shortcut for having to come up
-#  with the full type name correctly.
-# 
 #  Implementation note: Subscriber attaches to a _SubscriberImpl
 #  singleton for that topic.  The underlying impl manages the
 #  connections for that publication and enables thread-safe access
+
+## \ingroup clientapi Client API
+## Class for registering as a subscriber to a specified topic, where
+## the messages are of a given type.
 class Subscriber(Topic):
 
     ## Constructor. NOTE: for the \a queue_size and \a buff_size
@@ -425,18 +421,14 @@ class SubscribeListener(object):
         pass
 
 
-## \ingroup clientapi Client API
-## Class for registering as a publisher of a specified topic, where
-#  the messages are of a given type. Client code is not expected to
-#  use this class directly. Instead, this is the base class of
-#  auto-generated FooTypePub classes from the message generator.
-#  Clients can use these classes as a shortcut for having to come up
-#  with the full type name correctly.
-#              
 #  Implementation note: Publisher attaches to a
 #  _PublisherImpl singleton for that topic.  The underlying impl
 #  manages the connections for that publication and enables
 #  thread-safe access
+
+## \ingroup clientapi Client API
+## Class for registering as a publisher of a specified topic, where
+## the messages are of a given type. 
 class Publisher(Topic):
 
     ## Constructor

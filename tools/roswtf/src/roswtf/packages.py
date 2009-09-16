@@ -96,7 +96,7 @@ def manifest_srv_export(ctx):
 #CMake missing genmsg/gensrv
 def _cmake_genmsg_gensrv(ctx, type_):
     missing = []
-    cmd = 'gen%s()'%type_
+    cmds = ['rosbuild_gen%s()'%type_, 'gen%s()'%type_]
     for pkg in ctx.pkgs:
         pkg_dir = roslib.packages.get_pkg_dir(pkg)
         d = os.path.join(pkg_dir, type_)
@@ -109,7 +109,11 @@ def _cmake_genmsg_gensrv(ctx, type_):
                     for l in f:
                         # ignore all whitespace
                         l = l.strip().replace(' ', '')
-                        if l.startswith(cmd):
+                        found_cmd = False
+                        for cmd in cmds:
+                            if l.startswith(cmd):
+                                found_cmd = True
+                        if found_cmd:
                             break
                     else:
                         missing.append(pkg)

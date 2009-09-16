@@ -35,6 +35,8 @@
 #ifndef ROSCPP_POLL_SET_H
 #define ROSCPP_POLL_SET_H
 
+#include <vector>
+
 #include <poll.h>
 
 #include <boost/shared_ptr.hpp>

@@ -83,8 +83,9 @@
 (defvar ros-services nil "Vector of ros services")
 (defvar ros-service-packages nil "Vector of packages corresponding to each service")
 (defvar ros-root (getenv "ROS_ROOT"))
-(defvar ros-topics nil "Vector of current ros topics")
+(defvar ros-topics nil "Vector of current published ros topics")
 (defvar ros-subscribed-topics nil "Subscribed topics")
+(defvar ros-all-topics nil "All topics (generated from published and subscribed)")
 (defvar ros-topic-completions (vector) "Completion table for topics (ros-topics, without the initial /")
 (defvar ros-topic-hertz-processes nil "Alist from topic name to process running rostopic hz on that topic")
 (defvar ros-topic-publication-rates nil "Hash table from topic name to hertz rate of that topic")
@@ -215,7 +216,7 @@
 
 (setq message-completor (dynamic-completion-table (lambda (str) (unless ros-messages (cache-ros-message-locations)) (bsearch-completions str ros-messages))))
 (setq service-completor (dynamic-completion-table (lambda (str) (unless ros-services (cache-ros-service-locations)) (bsearch-completions str ros-services))))
-(setq topic-completor (dynamic-completion-table (lambda (str) (bsearch-completions str ros-topic-completions))))
+(setq topic-completor (dynamic-completion-table (lambda (str) (bsearch-completions str ros-all-topics))))
 (setq ros-package-completor 
       ;; Longer because it has to deal with the case of PACKAGE/PATH-PREFIX in addition to PACKAGE-PREFIX
       (dynamic-completion-table 
@@ -498,6 +499,22 @@
     (ros-topic-echo-mode)
     ))
 
+(defun ros-topic-info (topic)
+  "Print info about topic, using rostopic list"
+  (interactive (list (let ((word (current-word)))
+		       (completing-read
+			(if word
+			 (format "Enter topic name (default %s): " word)
+			 "Enter topic name: ")
+			topic-completor nil nil nil nil word))))
+  (let* ((topic-full-name (if (string-match "^/" topic) topic (concat "/" topic)))
+	 (proc-name (format "*rostopic-list:%s" topic))
+	 (buf (get-buffer-create proc-name)))
+    (start-process proc-name buf "rostopic" "list" topic-full-name)
+    (view-buffer-other-window buf)
+    ))
+    
+    
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -534,6 +551,7 @@ q kills the buffer and process"
 (define-key ros-topic-list-keymap [?\r] 'echo-current-topic)
 (define-key ros-topic-list-keymap [?h] 'hz-current-topic)
 (define-key ros-topic-list-keymap [?H] 'unhz-current-topic)
+(define-key ros-topic-list-keymap [?i] 'ros-topic-info)
 
 (defun hz-current-topic ()
   (interactive)
@@ -596,11 +614,10 @@ q kills buffer"
     (terpri ros-topic-buffer))
 
   (princ (format "\nTopic, #pubs, #subs\n\n") ros-topic-buffer)
-  (let ((topics (sort* (remove-duplicates (vconcat ros-topics ros-subscribed-topics) :test 'equal) 'string<)))
-    (dotimes (i (length topics))
-      (let ((topic (aref topics i)))
-	(princ (format " %s %s %s" topic (gethash topic ros-num-publishers 0) (gethash topic ros-num-subscribers 0)) ros-topic-buffer)
-	(terpri ros-topic-buffer)))))
+  (dotimes (i (length ros-all-topics))
+    (let ((topic (aref ros-all-topics i)))
+      (princ (format " %s %s %s" topic (gethash topic ros-num-publishers 0) (gethash topic ros-num-subscribers 0)) ros-topic-buffer)
+      (terpri ros-topic-buffer))))
 
 
 
@@ -649,6 +666,8 @@ q kills buffer"
     
 
     (lwarn '(rosemacs) :debug "Done parsing rostopic list")
+    (setq ros-all-topics 
+	  (sort* (remove-duplicates (vconcat ros-topics ros-subscribed-topics) :test 'equal) 'string<))
     ;; Start the next round of topic updates
     (when ros-topic-update-interval
       (ros-update-topic-list-internal))
@@ -656,25 +675,11 @@ q kills buffer"
 
 
 
-
-
-
-(defun regenerate-ros-topic-completions ()
-  "Use the current value of ros-topics to regenerate the variable ros-topic-completions."
-  (setq ros-topic-completions 
-	(sort* (vconcat
-		(mapcar (lambda (topic)
-			  (string-match "^/*\\(.*\\)" topic)
-			  (match-string 1 topic))
-			ros-topics))
-		'string<)))
-
 (defun remove-ros-topic (topic)
   "Remove this topic and all associated entries from topic list, completion list, hertz processes, publication rates"
   (message "removing ros topic %s" topic)
   (stop-hz-tracker topic) 
   (setq ros-topics (delete topic ros-topics))
-  (regenerate-ros-topic-completions)
   )
 
 (defun stop-hz-tracker (topic)
@@ -746,7 +751,7 @@ q kills buffer"
     (start-hz-tracker topic))
   (push topic ros-topics)
   (setq ros-topics (sort* ros-topics 'string<))
-  (regenerate-ros-topic-completions)
+  
   )
 
 
@@ -802,7 +807,7 @@ q kills buffer"
   (let ((end (point)))
     (skip-syntax-backward "w_.()")
     (buffer-substring-no-properties (point) end)))
-  
+
 (defvar *ros-commands-starting-with-package* '("roscd" "rosmake" "rosrun" "rospd"))
 
 (defun comint-get-ros-package-prefix ()
@@ -827,7 +832,7 @@ q kills buffer"
 	(when (and (>= start 0) (string-equal "rostopic" (buffer-substring-no-properties start (point))))
 	  arg)))))
 
-      
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Keymap
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -848,6 +853,7 @@ q kills buffer"
 (define-key ros-keymap "t" 'echo-ros-topic)
 (define-key ros-keymap "h" 'add-hz-update)
 (define-key ros-keymap "H" 'remove-hz-update)
+(define-key ros-keymap "T" 'ros-topic-info)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -866,7 +872,7 @@ q kills buffer"
   (set-ros-topic-update-interval 0)
   (run-at-time t ros-topic-display-update-interval 'update-ros-topic-buffer))
 
-    
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -874,28 +880,31 @@ q kills buffer"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-  
+(defun get-comp (completions i)
+  (let ((comp (aref completions i)))
+    (string-match "^/*\\(.*\\)" comp)
+    (match-string 1 comp)))
 
 (defun bsearch-completions (str completions)
   "str is a string, completions is a sorted vector of strings.  Return list of strings in completions that str is a prefix of."
   (let ((num-completions (length completions)))
     (unless (or (= num-completions 0)
-		(string< (aref completions (1- num-completions)) str))
+		(string< (get-comp completions (1- num-completions)) str))
     (let ((i 0)
 	  (j (1- num-completions)))
       (while (< (1+ i) j)
 	(let ((k (floor (+ i j) 2)))
-	  (if (string< str (aref completions k))
+	  (if (string< str (get-comp completions k))
 	      (setq j k)
 	    (setq i k))))
 
-      (when (not (is-prefix str (aref completions i)))
+      (when (not (is-prefix str (get-comp completions i)))
 	(incf i))
       ;; Postcondition: completions of str, if they exist, begin at i
       
       (let ((returned-completions nil))
-	(while (and (< i (length completions)) (is-prefix str (aref completions i)))
-	  (push (aref completions i) returned-completions)
+	(while (and (< i (length completions)) (is-prefix str (get-comp completions i)))
+	  (push (get-comp completions i) returned-completions)
 	  (incf i))
 	returned-completions)))))
 

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-rospack(topic_tools)
-gensrv()
+rosbuild_init()
+rosbuild_gensrv()
 
 rospack_add_library(topic_tools src/shape_shifter.cpp)
 

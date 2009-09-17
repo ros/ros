@@ -124,14 +124,30 @@ def _stderr_handler(msg):
     sys.stderr.write(str(msg)+'\n')
 
 # client logger
-_clogger = logging.getLogger("rospy.rosout")
+_clogger = logging.getLogger("rosout")
+# rospy logger
+_rospy_logger = logging.getLogger("rospy.internal")
 
 _logdebug_handlers = [_clogger.debug]
 _loginfo_handlers = [_clogger.info, _stdout_handler]
-_logwarn_handlers = [_clogger.warn]
+_logwarn_handlers = [_clogger.warn, _stderr_handler]
 _logerr_handlers = [_clogger.error, _stderr_handler]
 _logfatal_handlers = [_clogger.critical, _stderr_handler]
 
+# we keep a separate, non-rosout log file to contain stack traces and
+# other sorts of information that scare users but are essential for
+# debugging
+
+def rospydebug(msg, *args):
+    """Internal rospy client library debug logging"""
+    _rospy_logger.debug(msg, *args)
+def rospyerr(msg, *args):
+    """Internal rospy client library error logging"""
+    _rospy_logger.error(msg, *args)
+def rospywarn(msg, *args):
+    """Internal rospy client library warn logging"""
+    _rospy_logger.warn(msg, *args)
+    
 def add_log_handler(level, h):
     """
     Add handler for specified level

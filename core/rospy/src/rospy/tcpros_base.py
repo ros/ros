@@ -46,7 +46,7 @@ from roslib.network import read_ros_handshake_header, write_ros_handshake_header
 
 # TODO: remove * import from core
 from rospy.core import *
-#from rospy.core import logwarn, loginfo, logerr, logdebug
+from rospy.core import logwarn, loginfo, logerr, logdebug, rospydebug, rospyerr, rospywarn
 from rospy.exceptions import ROSInternalException, TransportException, TransportTerminated, TransportInitError
 from rospy.msg import deserialize_messages, serialize_message
 from rospy.transport import Transport, BIDIRECTIONAL
@@ -111,7 +111,7 @@ class TCPServer:
                 self.inbound_handler(client_sock, client_addr)
             except socket.error, e:
                 if not self.is_shutdown:
-                    logwarn("TCPServer: socket error: %s"%e)
+                    logwarn("Failed to handle inbound connection due to socket error: %s"%e)
         logdebug("TCPServer[%s] shutting down", self.port)
 
     ## @param self
@@ -240,11 +240,15 @@ class TCPROSServer(object):
                 err_msg = 'no topic or service name detected'
             if err_msg:
                 write_ros_handshake_header(sock, {'error' : err_msg})
-                raise TransportInitError(err_msg)
+                raise TransportInitError("Could not process inbound connection: "+err_msg)
         except rospy.exceptions.TransportInitError, e:
-            logwarn("Inbound TCP/IP connected failed: %s", str(e))
+            logwarn(str(e))
+            if sock is not None:
+                sock.close()
         except Exception, e:
-            logerr("Inbound TCP/IP connected failed: %s\n%s", e, traceback.format_exc(e))
+            # collect stack trace separately in local log file
+            logwarn("Inbound TCP/IP connected failed: %s", e)
+            rospyerr("Inbound TCP/IP connected failed:\n%s", traceback.format_exc(e))
             if sock is not None:
                 sock.close()
 
@@ -354,7 +358,8 @@ class TCPROSTransport(Transport):
             self.write_header()
             self.read_header()
         except TransportInitError, tie:
-            logerr("Unable to initiate TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, traceback.format_exc()))
+            logwarn("Unable to initiate TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, tie))
+            rospyerr("Unable to initiate TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, traceback.format_exc()))            
             raise
         except Exception, e:
             self.done = True
@@ -362,7 +367,8 @@ class TCPROSTransport(Transport):
                 self.socket.close()
             self.socket = None
             
-            logerr("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, traceback.format_exc()))
+            logerr("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, str(e)))
+            rospywarn("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, traceback.format_exc()))            
             raise TransportInitError(str(e)) #re-raise i/o error
                 
     ## Validate header and initialize fields accordingly
@@ -418,7 +424,7 @@ class TCPROSTransport(Transport):
     ## @throws TransportTerminated no longer open for publishing
     def write_data(self, data):
         if not self.socket:
-            raise TransportInitError("Cannot publish: TCPROS transport was not successfully initialized")
+            raise TransportInitError("TCPROS transport was not successfully initialized")
         if self.done:
             raise TransportTerminated("connection closed")
         try:
@@ -436,15 +442,16 @@ class TCPROSTransport(Transport):
         except socket.error, (errno, msg):
             #for now, just document common errno's in code
             if errno == 32: #broken pipe
-                logdebug("ERROR: Broken Pipe")
+                logdebug("[%s]: Closing connection [%s] due to broken pipe", self.name, self.endpoint_id)
                 self.close()
                 raise TransportTerminated(msg)
             elif errno == 104: #connection reset by peer
-                logdebug("ERROR: connection reset by peer") 
+                logdebug("[%s]: Peer [%s] has closed connection", self.name, self.endpoint_id) 
                 self.close()
                 raise TransportTerminated(msg)
             else:
-                logdebug("ERROR: %s"%msg) 
+                rospydebug("unknown socket error writing data: %s",traceback.format_exc())
+                logdebug("[%s]: closing connection [%s] due to unknown socket error: %s", self.name, self.endpoint_id, msg) 
                 self.close()
                 raise TransportTerminated(str(errno)+' '+msg)                
         except:
@@ -476,11 +483,13 @@ class TCPROSTransport(Transport):
             return msg_queue
 
         except DeserializationError, e:
-            raise TransportException("receive_once[%s]: DeserializationError %s"%(self.name, traceback.format_exc()))
+            rospyerr(traceback.format_exc())            
+            raise TransportException("receive_once[%s]: DeserializationError %s"%(self.name, str(e)))
         except TransportTerminated, e:
             raise #reraise
         except:
-            raise TransportException("receive_once[%s]: EXCEPTION %s"%(self.name, traceback.format_exc()))
+            rospyerr(traceback.format_exc())
+            raise TransportException("receive_once[%s]: unexpected error %s"%(self.name, str(e)))
         return retval
         
     ## Receive messages until shutdown
@@ -496,16 +505,17 @@ class TCPROSTransport(Transport):
                     if not self.done and not is_shutdown():
                         msgs_callback(msgs)
 
-                logdebug("receive_loop[%s]: done condition met, exited loop"%self.name)
+                rospydebug("receive_loop[%s]: done condition met, exited loop"%self.name)
             except DeserializationError, e:
-                logerr("[%s] error deserializing incoming request: %s"%self.name, traceback.format_exc()) 
+                logerr("[%s] error deserializing incoming request: %s"%self.name, str(e))
+                rospyerr("[%s] error deserializing incoming request: %s"%self.name, traceback.format_exc())                 
             except:
-                # in many cases this will be a normal hangup, but log anyways
+                # in many cases this will be a normal hangup, but log internally
                 try:
                     #1467 sometimes we get exceptions due to
-                    #interpreter shutdow, so blanket ignore those if
+                    #interpreter shutdown, so blanket ignore those if
                     #the reporting fails
-                    logdebug("exception in receive loop for [%s], may be normal. Exception is %s",self.name, traceback.format_exc())
+                    rospydebug("exception in receive loop for [%s], may be normal. Exception is %s",self.name, traceback.format_exc())                    
                 except: pass
         finally:
             if not self.done:

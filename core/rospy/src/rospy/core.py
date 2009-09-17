@@ -64,7 +64,7 @@ def mloginfo(msg, *args):
     Info-level master log statements. These statements may be printed
     to screen so they should be user-readable.
     @param msg: Message string
-    @type msg: str
+    @type  msg: str
     @param args: arguments for msg if msg is a format string
     """
     #mloginfo is in core so that it is accessible to master and masterdata
@@ -79,7 +79,7 @@ def mlogwarn(msg, *args):
     Warn-level master log statements. These statements may be printed
     to screen so they should be user-readable.
     @param msg: Message string
-    @type msg: str    
+    @type  msg: str    
     @param args: arguments for msg if msg is a format string
     """
     #mloginfo is in core so that it is accessible to master and masterdata
@@ -98,7 +98,7 @@ def parse_rosrpc_uri(uri):
     """
     utility function for parsing ROS-RPC URIs
     @param uri: ROSRPC URI
-    @type uri: str
+    @type  uri: str
     @return: address, port
     @rtype: (str, int)
     @raise ParameterInvalid: if uri is not a valid ROSRPC URI
@@ -136,9 +136,9 @@ def add_log_handler(level, h):
     """
     Add handler for specified level
     @param level: log level (use constants from roslib.msg.Log)
-    @type level: int
+    @type  level: int
     @param h: log message handler
-    @type h: fn
+    @type  h: fn
     @raise ROSInternalException: if level is invalid
     """
     if level == roslib.msg.Log.DEBUG:
@@ -251,7 +251,7 @@ def configure_logging(node_name):
     """
     Setup filesystem logging for this node
     @param node_name: Node's name
-    @type node_name str
+    @type  node_name str
     """
     global _log_filename
 
@@ -295,7 +295,7 @@ def set_initialized(initialized):
     """
     set the initialization state of the local node
     @param initialized: True if node initialized
-    @type initialized: bool
+    @type  initialized: bool
     """
     global _client_ready
     _client_ready = initialized
@@ -338,7 +338,7 @@ def add_preshutdown_hook(h):
     Add method to invoke when system shuts down. Unlike X{add_shutdown_hook}, these
     methods will be called before any other shutdown hooks.
     @param h: function that takes in a single string argument (shutdown reason)
-    @type h: fn(str)
+    @type  h: fn(str)
     """
     _add_shutdown_hook(h, _preshutdown_hooks)
 
@@ -352,7 +352,7 @@ def add_shutdown_hook(h):
     register client hooks.
 
     @param h: function that takes in a single string argument (shutdown reason)
-    @type h: fn(str)
+    @type  h: fn(str)
     """
     _add_shutdown_hook(h, _shutdown_hooks)
 
@@ -361,7 +361,7 @@ def signal_shutdown(reason):
     Initiates shutdown process by singaling objects waiting on _shutdown_lock.
     Shutdown and pre-shutdown hooks are invoked.
     @param reason: human-readable shutdown reason, if applicable
-    @type reason: str
+    @type  reason: str
     """
     global _shutdown_flag, _shutdown_lock, _shutdown_hooks
     _logger.info("signal_shutdown [%s]"%reason)

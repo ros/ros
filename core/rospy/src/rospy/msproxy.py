@@ -32,10 +32,11 @@
 #
 # Revision $Id$
 """
-Master/Slave XML-RPC Wrappers
+Master/Slave XML-RPC Wrappers.
 
-Simplifies usage of master/slave APIs by automatically inserting caller ID
-and also adding python dictionary accessors on the parameter server.
+The L{NodeProxy} and L{MasterProxy} simplify usage of master/slave
+APIs by automatically inserting the caller ID and also adding python
+dictionary accessors on the parameter server.
 """
     
 import rospy.core

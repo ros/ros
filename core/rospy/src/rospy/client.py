@@ -71,7 +71,7 @@ def on_shutdown(h):
     Register function to be called on shutdown. This function will be
     called before Node begins teardown.
     @param h: Function with zero args to be called on shutdown.
-    @type h: fn()
+    @type  h: fn()
     """
 
     # wrap function to strip reason argument that gets passed in for internal use
@@ -127,11 +127,11 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     this method are not reversible.
 
     @param name: Node's name
-    @type name: string
+    @type  name: string
     
     @param argv: Command line arguments to this program. ROS reads
     these arguments to find renaming params. Defaults to sys.argv.
-    @type argv: [str]
+    @type  argv: [str]
 
     @param anonymous: if True, a name will be auto-generated for
     the node using name as the base.  This is useful when you wish
@@ -139,23 +139,23 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     their actual names (e.g. tools, guis). name will be used as the
     stem of the auto-generated name. NOTE: you cannot remap the name
     of an anonymous node.
-    @type anonymous: bool
+    @type  anonymous: bool
 
     @param log_level: log level for sending message to /rosout,
     which is INFO by default. For convenience, you may use
     rospy.DEBUG, rospy.INFO, rospy.ERROR, rospy.WARN, rospy.FATAL,
-    @type log_level: int
+    @type  log_level: int
     
     @param disable_signals: If True, rospy will not register its
     own signal handlers. You must set this flag if (a) you are unable
     to call init_node from the main thread and/or you are using rospy
     in an environment where you need to control your own signal
     handling (e.g. WX).
-    @type disable_signals: bool
+    @type  disable_signals: bool
     
     @param disable_rostime: for rostests only, suppresses
     automatic subscription to rostime
-    @type disable_rostime: bool
+    @type  disable_rostime: bool
 
     @raise ROSInitException: if initialization/registration fails
     """
@@ -278,9 +278,9 @@ def wait_for_service(service, timeout=None):
     initialization code if your program depends on a
     service already running.
     @param service: name of service
-    @type service: str
+    @type  service: str
     @param timeout: timeout time in seconds
-    @type timeout: double
+    @type  timeout: double
     @raise ROSException: if specified timeout is exceeded
     """
     def contact_service(service, timeout=10.0):
@@ -351,7 +351,7 @@ def get_param(param_name, default=_unspecified):
     """
     Retrieve a parameter from the param server
     @param default: (optional) default value to return if key is not set
-    @type default: any
+    @type  default: any
     @return: parameter value
     @rtype: XmlRpcLegalValue
     @raise ROSException: if parameter server reports an error
@@ -384,9 +384,9 @@ def set_param(param_name, param_value):
     """
     Set a parameter on the param server
     @param param_name: parameter name
-    @type param_name: str
+    @type  param_name: str
     @param param_value: parameter value
-    @type param_value: XmlRpcLegalValue
+    @type  param_value: XmlRpcLegalValue
     @raise ROSException: if parameter server reports an error
     """
     _init_param_server()
@@ -396,7 +396,7 @@ def search_param(param_name):
     """
     Search for a parameter on the param server
     @param param_name: parameter name
-    @type param_name: str
+    @type  param_name: str
     @raise ROSException: if parameter server reports an error
     """
     _init_param_server()
@@ -406,7 +406,7 @@ def delete_param(param_name):
     """
     Delete a parameter on the param server
     @param param_name: parameter name
-    @type param_name: str
+    @type  param_name: str
     @raise ROSException: if parameter server reports an error
     """    
     _init_param_server()
@@ -416,7 +416,7 @@ def has_param(param_name):
     """
     Test if parameter exists on the param server
     @param param_name: parameter name
-    @type param_name: str
+    @type  param_name: str
     @raise ROSException: if parameter server reports an error
     """
     _init_param_server()
@@ -437,7 +437,7 @@ class Rate(object):
         """
         Constructor.
         @param hz: hz rate to determine sleeping
-        @type hz: int
+        @type  hz: int
         """
         # #1403
         self.last_time = rospy.rostime.get_rostime()
@@ -474,7 +474,7 @@ def sleep(duration):
     is negative, sleep immediately returns.
     
     @param duration: seconds (or rospy.Duration) to sleep
-    @type duration: float or Duration
+    @type  duration: float or Duration
     @raise ROSInterruptException: if ROS time is set backwards or if
     ROS shutdown occurs before sleep completes
     """

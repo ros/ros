@@ -57,7 +57,7 @@ def canonicalize_name(name):
     Put name in canonical form. Double slashes '//' are removed and
     name is returned without any trailing slash, e.g. /foo/bar
     @param name: ROS name
-    @type name: str
+    @type  name: str
     """
     if not name or name == SEP:
         return name
@@ -90,13 +90,13 @@ def resolve_name(name, caller_id=None, remap=True):
     are resolved relative to the node name. 
 
     @param name: name to resolve.
-    @type name: str
+    @type  name: str
     @param caller_id: caller_id to resolve name relative to. To
     resolve to local namespace, omit this parameter (or use None)
-    @type caller_id: str
+    @type  caller_id: str
     @param remap: If False, remapping is turned off. This is mainly
     used to prevent circular remappings.
-    @type remap: bool
+    @type  remap: bool
     @return: Resolved name. If name is empty/None, resolve_name
     returns parent namespace. If namespace is empty/None,
     @rtype: str
@@ -126,7 +126,7 @@ def remap_name(name, caller_id=None):
     resolve_name for APIs in which you don't wish to resolve the name
     unless it is remapped.
     @param name: name to remap
-    @type name: str
+    @type  name: str
     @return: Remapped name
     @rtype: str
     """
@@ -145,9 +145,9 @@ def scoped_name(caller_id, name):
     WARNING: scoped_name does not validate that name is actually within
     the supplied namespace.
     @param caller_id: caller ID, in canonical form
-    @type caller_id: str
+    @type  caller_id: str
     @param name: name to scope
-    @type name: str
+    @type  name: str
     @return: name scoped to the caller_id's namespace. 
     @rtype: str
     """
@@ -199,10 +199,10 @@ def valid_name(param_name, resolve=True):
     """
     Validator that resolves names and also ensures that they are not empty
     @param param_name: name
-    @type param_name: str
+    @type  param_name: str
     @param resolve: if True/omitted, the name will be resolved to
        a global form. Otherwise, no resolution occurs.
-    @type resolve: bool
+    @type  resolve: bool
     @return: resolved parameter value
     @rtype: str
     """
@@ -274,7 +274,7 @@ def _set_caller_id(caller_id):
     The caller_id is important as it is the first parameter to any API
     call on a remote node.  Invoked by ROSNode constructor
     @param caller_id: new caller ID
-    @type caller_id: str
+    @type  caller_id: str
     """    
     global _caller_id, _caller_namespace
     _caller_id = caller_id

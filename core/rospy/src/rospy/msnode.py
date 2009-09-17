@@ -32,7 +32,7 @@
 #
 # Revision $Id$
 
-## ROSNode wraps the master/slave implementations in an XMLRPC API
+"""Internal use: contains the L{ROSNode} wrapper, which provides an unified interface for running an XMLRPC server for the rospy client library."""
 
 import os
 import traceback

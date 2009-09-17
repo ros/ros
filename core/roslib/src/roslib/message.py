@@ -193,8 +193,9 @@ def check_type(field_name, field_type, field_val):
     #        raise SerializationError('field [%s] must be a [%s] instance instead of a %s'%(field_name, field_type, type(field_val)))
         #TODO: dynamically load message class and do instance compare
 
-##Base class of auto-generated message data objects. 
 class Message(object):
+    """Base class of Message data classes auto-generated from msg files. """
+
     # slots is explicitly both for data representation and
     # performance. Higher-level code assumes that there is a 1-to-1
     # mapping between __slots__ and message fields. In terms of
@@ -202,11 +203,14 @@ class Message(object):
     # new-style object.
     __slots__ = ['_connection_header']
     
-    ## Message base constructor. Contains generic initializers for
-    ## args-based and kwds-based initialization of message fields,
-    ## assuming there is a one-to-one mapping between __slots__ and
-    ## message fields.
     def __init__(self, *args, **kwds):
+        """
+        ctor. There are multiple ways of initializing Message
+        instances, either using a 1-to-1 correspondence between
+        constructor arguments and message fields (*args), or using
+        Python "keyword" arguments (**kwds) to initialize named field
+        and leave the rest with default values.
+        """
         if args and kwds:
             raise TypeError("Message constructor may only use args OR keywords, not both")
         if args:
@@ -245,8 +249,18 @@ class Message(object):
             raise SerializationError(str(exc))
 
     def serialize(self, buff):
+        """
+        Serialize data into buffer
+        @param buff: buffer
+        @type buff: StringIO
+        """
         pass
     def deserialize(self, str):
+        """
+        Deserialize data in str into this instance
+        @param str: serialized data
+        @type str: str
+        """
         pass
     def __str__(self):
         return strify_message(self)
@@ -268,12 +282,16 @@ class Message(object):
                 return False
         return True
     
-class ServiceDefinition(object): pass #marker class for auto-generated code
+class ServiceDefinition(object):
+    """Base class of Service classes auto-generated from srv files"""
+    pass
 
-## Message deserialization error
-class DeserializationError(ROSMessageException): pass
-## Message serialization error
-class SerializationError(ROSMessageException): pass
+class DeserializationError(ROSMessageException):
+    """Message deserialization error"""
+    pass
+class SerializationError(ROSMessageException):
+    """Message serialization error"""
+    pass
 
 # Utilities for rostopic/rosservice
 

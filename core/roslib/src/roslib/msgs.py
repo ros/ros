@@ -33,10 +33,10 @@
 # Revision $Id: msgspec.py 3357 2009-01-13 07:13:05Z jfaustwg $
 # $Author: jfaustwg $
 """
-ROS Msg Description Language Spec
+ROS msg library for Python
+
+Implements: U{http://ros.org/wiki/msg}
 """
-## ROS Msg Description Language Spec
-## Implements: http://pr.willowgarage.com/wiki/ROS/Message_Description_Language
 
 import cStringIO
 import os

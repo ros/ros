@@ -32,7 +32,7 @@
 #
 # Revision $Id$
 
-## Support for ROS messages, including network serialization routines
+"""Internal use: Support for ROS messages, including network serialization routines"""
 
 import time
 import struct
@@ -78,11 +78,11 @@ def serialize_message(b, seq, msg):
     """
     Serialize the message to the buffer 
     @param b: buffer to write to. WARNING: buffer will be reset after call
-    @type b: StringIO
+    @type  b: StringIO
     @param msg: message to write
-    @type msg: Msg
+    @type  msg: Msg
     @param seq: current sequence number (for headers)
-    @type seq: int: current sequence number (for headers)
+    @type  seq: int: current sequence number (for headers)
     @raise ROSSerializationException: if unable to serialize
     message. This is usually due to a type error with one of the
     fields.
@@ -127,18 +127,18 @@ def deserialize_messages(b, msg_queue, data_class, queue_size=None, max_msgs=Non
     Read all messages off the buffer 
         
     @param b: buffer to read data from
-    @type b: StringIO
+    @type  b: StringIO
     @param msg_queue: queue to append deserialized data to
-    @type msg_queue: list
+    @type  msg_queue: list
     @param data_class: message deserialization class
-    @type data_class: Message class
+    @type  data_class: Message class
     @param queue_size: message queue size. all but the last 
     queue_size messages are discarded if this parameter is specified.
-    @type queue_size: int
+    @type  queue_size: int
     @param start: starting position to read in b
-    @type start: int
+    @type  start: int
     @param max_msgs int: maximum number of messages to deserialize or None
-    @type max_msgs: int
+    @type  max_msgs: int
     @raise roslib.message.DeserializationError: if an error/exception occurs during deserialization
     """    
     try:

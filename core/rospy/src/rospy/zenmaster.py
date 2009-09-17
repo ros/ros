@@ -33,6 +33,8 @@
 # Copyright (c) 2008, Willow Garage, Inc.
 # Revision $Id$
 
+"""Command-line handler for ROS zenmaster (Python Master)"""
+
 import getopt
 import logging
 import os
@@ -41,8 +43,6 @@ import sys
 import time
 
 import rospy
-
-"""Command-line handler for ROS zenmaster (Python Master)"""
 
 # Environment variables used to configure master/slave
 

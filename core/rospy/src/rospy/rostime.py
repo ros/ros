@@ -32,7 +32,7 @@
 #
 # Revision $Id: client.py 2258 2008-09-30 23:03:06Z sfkwc $
 
-## ROS time and duration representations and API
+"""ROS time and duration representations, as well as internal routines for managing wallclock versus simulated time."""
 
 import threading
 import time
@@ -88,7 +88,7 @@ class Time(roslib.rostime.Time):
         create new Time instance using time.time() value (float
         seconds)
         @param float_secs: time value in time.time() format
-        @type float_secs: float
+        @type  float_secs: float
         @return: Time instance for specified time
         @rtype: L{Time}
         """
@@ -134,7 +134,7 @@ def set_rostime_initialized(val):
     throw exceptions if rostime is being used before the underlying
     system is initialized.
     @param val: value for initialization state
-    @type val: bool
+    @type  val: bool
     """
     global _rostime_initialized
     _rostime_initialized = val

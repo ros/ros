@@ -32,7 +32,7 @@
 #
 # Revision $Id$
 """
-ROSPY initialization 
+Internal use: rospy initialization.
 
 This is mainly routines for initializing the master or slave based on
 the OS environment.
@@ -120,13 +120,13 @@ def start_node(environ, name, master_uri=None, port=None):
     """
     Load ROS slave node, initialize from environment variables
     @param environ: environment variables
-    @type environ: dict
+    @type  environ: dict
     @param name: override ROS_NODE: name of slave node
-    @type name: str
+    @type  name: str
     @param master_uri: override ROS_MASTER_URI: XMlRPC URI of central ROS server
-    @type master_uri: str
+    @type  master_uri: str
     @param port: override ROS_PORT: port of slave xml-rpc node
-    @type port: int
+    @type  port: int
     @return: node proxy instance
     @rtype rospy.msproxy.NodeProxy
     """

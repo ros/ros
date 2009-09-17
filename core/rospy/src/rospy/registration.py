@@ -32,6 +32,8 @@
 #
 # Revision $Id$
 
+"""Internal use: handles maintaining registrations with master via internal listener APIs"""
+
 import socket
 import sys
 import logging
@@ -43,8 +45,6 @@ import traceback
 import rospy.core
 from rospy.core import is_shutdown, xmlrpcapi, logfatal, logwarn, loginfo, logerr, logdebug
 from rospy.names import get_caller_id, get_namespace, resolve_name
-
-"""Internal use: handles maintaining registrations with master via internal listener APIs"""
 
 # topic manager and service manager singletons
 
@@ -77,9 +77,9 @@ class RegistrationListener(object):
         New pub/sub/service declared.
         @param name: topic/service name
         @param data_type_or_uri: topic type or service uri
-        @type data_type_or_uri: str
+        @type  data_type_or_uri: str
         @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
-        @type reg_type: str
+        @type  reg_type: str
         """
         pass
     
@@ -87,11 +87,11 @@ class RegistrationListener(object):
         """
         New pub/sub/service removed.
         @param name: topic/service name
-        @type name: str
+        @type  name: str
         @param data_type_or_uri: topic type or service uri
-        @type data_type_or_uri: str
+        @type  data_type_or_uri: str
         @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
-        @type reg_type: str
+        @type  reg_type: str
         """
         pass
 
@@ -110,7 +110,7 @@ class _RegistrationListeners(object):
         changes. This is an internal API used to notify higher level
         routines when to communicate with the master.
         @param l: listener to subscribe
-        @type l: TopicListener
+        @type  l: TopicListener
         """
         assert isinstance(l, RegistrationListener)
         try:
@@ -122,11 +122,11 @@ class _RegistrationListeners(object):
     def notify_removed(self, name, data_type_or_uri, reg_type):
         """
         @param name: topic/service name
-        @type name: str
+        @type  name: str
         @param data_type_or_uri: topic type or service uri
-        @type data_type_or_uri: str
+        @type  data_type_or_uri: str
         @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
-        @type reg_type: str
+        @type  reg_type: str
         """
         try:
             self.lock.acquire()
@@ -141,11 +141,11 @@ class _RegistrationListeners(object):
     def notify_added(self, name, data_type, reg_type):
         """
         @param name: topic/service name
-        @type name: str
+        @type  name: str
         @param data_type: topic/service type
-        @type data_type: str
+        @type  data_type: str
         @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
-        @type reg_type: str
+        @type  reg_type: str
         """
         try:
             self.lock.acquire()
@@ -189,9 +189,9 @@ class RegManager(RegistrationListener):
         Start the RegManager. This should be passed in as an argument to a thread
         starter as the RegManager is designed to spin in its own thread
         @param uri: URI of local node
-        @type uri: str
+        @type  uri: str
         @param master_uri: Master URI
-        @type master_uri: str
+        @type  master_uri: str
         """
         self.registered = False 
         self.master_uri = master_uri
@@ -315,7 +315,7 @@ class RegManager(RegistrationListener):
         """
         Cleans up registrations with master and releases topic and service resources
         @param reason: human-reasonable debug string
-        @type reason: str
+        @type  reason: str
         """        
         try:
             self.cond.acquire()
@@ -364,11 +364,11 @@ class RegManager(RegistrationListener):
         """
         RegistrationListener callback
         @param name: name of topic or service
-        @type name: str
+        @type  name: str
         @param data_type_or_uri: either the data type (for topic regs) or the service URI (for service regs).
-        @type data_type_or_uri: str
+        @type  data_type_or_uri: str
         @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
-        @type reg_type: str
+        @type  reg_type: str
         """
         master_uri = self.master_uri
         if not master_uri:
@@ -389,11 +389,11 @@ class RegManager(RegistrationListener):
         """
         RegistrationListener callback
         @param name: name of topic or service
-        @type name: str
+        @type  name: str
         @param data_type_or_uri: either the data type (for topic regs) or the service URI (for service regs).
-        @type data_type_or_uri: str
+        @type  data_type_or_uri: str
         @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
-        @type reg_type: str
+        @type  reg_type: str
         """
         #TODO: this needs to be made robust to master outages
         master_uri = self.master_uri
@@ -441,9 +441,9 @@ class RegManager(RegistrationListener):
         will cause L{RegManager} to create a topic connection for all new
         publishers (in a separate thread).
         @param topic: Topic name
-        @type topic: str
+        @type  topic: str
         @param uris: list of all publishers uris for topic
-        @type uris: [str]
+        @type  uris: [str]
         """
         try:
             self.cond.acquire()

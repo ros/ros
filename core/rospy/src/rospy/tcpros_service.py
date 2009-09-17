@@ -32,6 +32,8 @@
 #
 # Revision $Id: service.py 2945 2008-11-26 03:48:27Z sfkwc $
 
+"""Internal use: Service-specific extensions for TCPROS support"""
+
 import cStringIO
 import socket
 import struct
@@ -92,8 +94,10 @@ def service_connection_handler(sock, client_addr, header):
             thread.start_new_thread(service.handle, (transport, header))
                 
         
-## Protocol implementation for Services over TCPROS
 class TCPService(TCPROSTransportProtocol):
+    """
+    Protocol implementation for Services over TCPROS
+    """
 
     ## ctor.
     ## @param self
@@ -110,24 +114,30 @@ class TCPService(TCPROSTransportProtocol):
         return {'service': self.name, 'type': self.service_class._type,
                 'md5sum': self.service_class._md5sum, 'callerid': rospy.names.get_caller_id() }
 
-## Protocol Implementation for Service clients over TCPROS
 class TCPROSServiceClient(TCPROSTransportProtocol):
-
-    ## ctor.
-    ## @param self
-    ## @param name str: name of service
-    ## @param service_class Service: Service data type class
-    ## @param headers dict: identifier for Service session
-    ## @param buff_size int: size of buffer (bytes) for reading responses from Service. 
+    """Protocol Implementation for Service clients over TCPROS"""
+    
     def __init__(self, name, service_class, headers=None, buff_size=DEFAULT_BUFF_SIZE):
+        """
+        ctor.
+        @param name: name of service
+        @type  name: str
+        @param service_class: Service data type class
+        @type  service_class: Service
+        @param headers: identifier for Service session
+        @type  headers: dict
+        @param buff_size: size of buffer (bytes) for reading responses from Service. 
+        @type  buff_size: int
+        """
         super(TCPROSServiceClient, self).__init__(name, service_class._response_class)
         self.service_class = service_class
         self.headers = headers or {}
         self.buff_size = buff_size
         
-    ## TCPROSTransportProtocol API
-    ## @param self
     def get_header_fields(self):
+        """
+        TCPROSTransportProtocol API        
+        """
         headers = {'service': self.name, 'md5sum': self.service_class._md5sum,
                    'callerid': rospy.names.get_caller_id()}
         # The current implementation allows user-supplied headers to
@@ -137,12 +147,15 @@ class TCPROSServiceClient(TCPROSTransportProtocol):
             headers[k] = v
         return headers
     
-    ## utility for reading the OK-byte/error-message header preceding each message
-    ## @param self
-    ## @param sock: socket connection. Will be read from if OK byte is
-    ## false and error message needs to be read
-    ## @param b StringIO: buffer to read from
     def _read_ok_byte(self, b, sock):
+        """
+        Utility for reading the OK-byte/error-message header preceding each message.
+        @param sock: socket connection. Will be read from if OK byte is
+        false and error message needs to be read
+        @type  sock: socket.socket
+        @param b: buffer to read from
+        @type  b: StringIO
+        """
         if b.tell() == 0:
             return
         pos = b.tell()
@@ -153,9 +166,18 @@ class TCPROSServiceClient(TCPROSTransportProtocol):
             str = self._read_service_error(sock, b)
             raise ServiceException("service [%s] responded with an error: %s"%(self.name, str))
         
-    ## In service implementation, reads in OK byte that preceeds each response. The OK byte allows
-    ## for the passing of error messages instead of a response message
     def read_messages(self, b, msg_queue, sock):
+        """
+        In service implementation, reads in OK byte that preceeds each
+        response. The OK byte allows for the passing of error messages
+        instead of a response message
+        @param b: buffer
+        @type  b: StringIO
+        @param msg_queue: Message queue to append to
+        @type  msg_queue: [Message]
+        @param sock: socket to read from
+        @type  sock: socket.socket
+        """
         self._read_ok_byte(b, sock)
         rospy.msg.deserialize_messages(b, msg_queue, self.recv_data_class, queue_size=self.queue_size, max_msgs=1, start=1) #rospy.msg
         #deserialize_messages only resets the buffer to the start
@@ -194,16 +216,16 @@ class ServiceProxy(_Service):
         """
         ctor.
         @param name: name of service to call
-        @type name: str
+        @type  name: str
         @param service_class: auto-generated service class
-        @type service_class: Service class
+        @type  service_class: Service class
         @param persistent: if True, proxy maintains a persistent
         connection to service. While this results in better call
         performance, persistent connections are discouraged as they are
         less resistent to network issues and service restarts.
-        @type persistent: bool
+        @type  persistent: bool
         @param headers: arbitrary headers 
-        @type headers: dict
+        @type  headers: dict
         """
         super(ServiceProxy, self).__init__(name, service_class)
         self.uri = None
@@ -234,9 +256,9 @@ class ServiceProxy(_Service):
         """
         private routine for getting URI of service to call
         @param request: request message
-        @type request: Message
+        @type  request: Message
         @param timeout: timeout in seconds
-        @type timeout: float
+        @type  timeout: float
         """
         if not isinstance(request, rospy.msg.Message):
             raise TypeError("request object is not a valid request message instance")
@@ -268,9 +290,9 @@ class ServiceProxy(_Service):
         """
         Call the service 
         @param request: service request message instance
-        @type request: Messsage
+        @type  request: Messsage
         @param timeout: (keyword arg) number of seconds before request times out
-        @type timeout: float
+        @type  timeout: float
         @raise TypeError: if request is not of the valid type (Message)
         @raise ServiceException: if communication with remote service fails
         @raise ROSSerializationException: If unable to serialize
@@ -328,15 +350,15 @@ class Service(_Service):
         """
         ctor.
         @param name: service name
-        @type name: str
+        @type  name: str
         @param service_class: ServiceDefinition class
-        @type service_class: ServiceDefinition class
+        @type  service_class: ServiceDefinition class
         @param handler: callback function for processing service
         request. Function takes in a ServiceRequest and returns a
         ServiceResponse of the appropriate type.
-        @type handler: fn(req)->resp
+        @type  handler: fn(req)->resp
         @param buff_size: size of buffer for reading incoming requests. Should be at least size of request message
-        @type buff_size: int
+        @type  buff_size: int
         """
         super(Service, self).__init__(name, service_class)
         self.handler = handler
@@ -362,7 +384,7 @@ class Service(_Service):
         """
         Stop this service
         @param reason: human-readable shutdown reason
-        @type reason: str
+        @type  reason: str
         """
         self.done = True
         logdebug('[%s].shutdown: reason [%s]'%(self.name, reason))
@@ -387,9 +409,9 @@ class Service(_Service):
         """
         Send error message to client
         @param transport: transport connection to client 
-        @type transport: Transport
+        @type  transport: Transport
         @param err_msg: error message to send to client
-        @type err_msg: str
+        @type  err_msg: str
         """
         transport.write_data(struct.pack('<BI%ss'%len(err_msg), 0, len(err_msg), err_msg))
         
@@ -397,7 +419,7 @@ class Service(_Service):
         """
         Process a single incoming request.
         @param transport: transport instance
-        @type transport: L{TCPROSTransport}
+        @type  transport: L{TCPROSTransport}
         @param request: Message
         """
         try:
@@ -422,9 +444,9 @@ class Service(_Service):
         own thread. If header['persistent'] is set to 1, method will
         block until connection is broken.
         @param transport: transport instance
-        @type transport: L{TCPROSTransport}
+        @type  transport: L{TCPROSTransport}
         @param header: headers from client
-        @type header: dict
+        @type  header: dict
         """
         if 'persistent' in header and \
                header['persistent'].lower() in ['1', 'true']:

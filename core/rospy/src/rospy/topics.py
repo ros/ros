@@ -32,13 +32,13 @@
 #
 # Revision $Id$
 
-"""rospy implementation of topics.
+"""
+rospy implementation of topics.
 
 Client API
 ==========
 
-L{Publisher} and L{Subscriber} are the client-API facing instantiation
-of topics.
+L{Publisher} and L{Subscriber} are the client API for topics.
 
 Internal Implementation
 =======================
@@ -54,20 +54,13 @@ L{_TopicManager}
 The L{_TopicManager} does the backend topic bookkeeping for the local
 node.  Use L{get_topic_manager()} to access singleton. Actual topic
 implementations are done through the
-L{_TopicImpl}/L{_PublisherImpl}/L{_SubscriberImpl}
-hierarchy. Client code generates instances of type
-L{Publisher}/L{Subscriber}, which enable to client to create
-multiple publishers/subscribers of that topic that get controlled
-access to the underlying share connections.
+L{_TopicImpl}/L{_PublisherImpl}/L{_SubscriberImpl} hierarchy. Client
+code generates instances of type L{Publisher}/L{Subscriber}, which
+enable to client to create multiple publishers/subscribers of that
+topic that get controlled access to the underlying share connections.
 
 Common parent classes for all rospy topics. The rospy topic autogenerators
 create classes that are children of these implementations.
- 
-TopicListener
-=============
- 
-Subscribe to new topics created by the local node. This is mainly
-a hook for creating registration calls to the master.
 """
 
 from __future__ import with_statement
@@ -92,15 +85,20 @@ logger = logging.getLogger('rospy.topics')
 # for interfacing with topics, while _TopicImpl implements the
 # underlying connection details. 
 
-##Base class of client API topic references
 class Topic(object):
+    """Base class of L{Publisher} and L{Subscriber}"""
     
-    ## @param self
-    ## @param name str: graph resource name of topic, e.g. 'laser'. 
-    ## @param data_class Message: message class for serialization
-    ## @param reg_type Registration.PUB or Registration.SUB
-    ## @raise ValueError if parameters are invalid
     def __init__(self, name, data_class, reg_type):
+        """
+        @param name: graph resource name of topic, e.g. 'laser'. 
+        @type  name: str
+        @param data_class: message class for serialization
+        @type  data_class: Message
+        @param reg_type Registration.PUB or Registration.SUB
+        @type  reg_type: str
+        @raise ValueError: if parameters are invalid
+        """
+        
         if not name or not isinstance(name, basestring):
             raise ValueError("topic parameter 'name' is not a non-empty string")
         if data_class is None:
@@ -117,29 +115,39 @@ class Topic(object):
         self.reg_type = reg_type
         self.impl = get_topic_manager().acquire_impl(reg_type, self.name, data_class)
 
-    ## get the number of connections to other ROS nodes for this topic. For a Publisher,
-    ## this corresponds to the number of nodes subscribing. For a Subscriber, the number
-    ## of publishers.
     def get_num_connections(self):
+        """
+        get the number of connections to other ROS nodes for this topic. For a Publisher,
+        this corresponds to the number of nodes subscribing. For a Subscriber, the number
+        of publishers.
+        @return: number of connections
+        @rtype: int
+        """
         return self.impl.get_num_connections()
         
-    ## unpublish/unsubscribe from topic. Topic instance is no longer
-    ## valid after this call.
-    ## @param self
     def unregister(self):
+        """
+        unpublish/unsubscribe from topic. Topic instance is no longer
+        valid after this call.
+        """
         get_topic_manager().release_impl(self.reg_type, self.name)
         self.impl = self.name = self.type = self.md5sum = self.data_class = None
     
-## Base class of internal topic implementations. Each topic has a
-## singleton _TopicImpl implementation for managing the underlying
-## connections.
 class _TopicImpl(object):
+    """
+    Base class of internal topic implementations. Each topic has a
+    singleton _TopicImpl implementation for managing the underlying
+    connections.
+    """
     
-    ## Base constructor
-    ## @param self
-    ## @param name str: graph resource name of topic, e.g. 'laser'. 
-    ## @param data_class Message: message data class 
     def __init__(self, name, data_class):
+        """
+        Base constructor
+        @param name: graph resource name of topic, e.g. 'laser'. 
+        @type  name: str
+        @param data_class Message: message data class 
+        @type  data_class: Message
+        """
         self.name = resolve_name(name) #NOTE: remapping occurs here!
         self.data_class = data_class
         self.type = data_class._type
@@ -160,9 +168,8 @@ class _TopicImpl(object):
         #STATS
         self.dead_connections = [] #for retaining stats on old conns
 
-    ## close I/O
-    ## @param self
     def close(self):
+        """close I/O"""
         self.closed = True
         with self.c_lock:
             for c in self.connections:
@@ -177,11 +184,13 @@ class _TopicImpl(object):
         with self.c_lock:
             return len(self.connections)
     
-    ## Query whether or not a connection with the associated \a
-    ## endpoint has been added to this object.
-    ## @param self
-    ## @param endpoint_id str: endpoint ID associated with connection. 
     def has_connection(self, endpoint_id):
+        """
+        Query whether or not a connection with the associated \a
+        endpoint has been added to this object.
+        @param endpoint_id: endpoint ID associated with connection. 
+        @type  endpoint_id: str
+        """
         # save reference to avoid lock
         conn = self.connections
         for c in conn:
@@ -189,18 +198,24 @@ class _TopicImpl(object):
                 return True
         return False
 
-    ## Check to see if this topic is connected to other publishers/subscribers
-    ## @param self
     def has_connections(self):
+        """
+        Check to see if this topic is connected to other publishers/subscribers 
+        @return: True if topic is connected
+        @rtype: bool
+        """
         if self.connections:
             return True
         return False
 
-    ## Add a connection to this topic. 
-    ## @param self
-    ## @param c Transport: connection instance
-    ## @return bool: True if connection was added
     def add_connection(self, c):
+        """
+        Add a connection to this topic. 
+        @param c: connection instance
+        @type  c: Transport
+        @return: True if connection was added
+        @rtype: bool
+        """
         with self.c_lock:
             # c_lock is to make add_connection thread-safe, but we
             # still make a copy of self.connections so that the rest of the
@@ -214,10 +229,12 @@ class _TopicImpl(object):
             
             return True
 
-    ## Remove connection from topic.
-    ## @param self
-    ## @param c Transport: connection instance to remove
     def remove_connection(self, c):
+        """
+        Remove connection from topic.
+        @param c: connection instance to remove
+        @type  c: Transport
+        """
         try:
             # c_lock is to make remove_connection thread-safe, but we
             # still make a copy of self.connections so that the rest of the
@@ -233,20 +250,21 @@ class _TopicImpl(object):
         finally:
             self.c_lock.release()
 
-    ## Get the stats for this topic
-    ## @param self
-    ## @return list: stats for topic in getBusInfo() format
-    ## ((connection_id, destination_caller_id, direction, transport, topic_name, connected)*)
     def get_stats_info(self): # STATS
+        """
+        Get the stats for this topic
+        @return: stats for topic in getBusInfo() format::
+          ((connection_id, destination_caller_id, direction, transport, topic_name, connected)*)
+        @rtype: list
+        """
         # save referenceto avoid locking
         connections = self.connections
         dead_connections = self.dead_connections
         return [(c.id, c.endpoint_id, c.direction, c.transport_type, self.name, True) for c in connections] + \
                [(c.id, c.endpoint_id, c.direction, c.transport_type, self.name, False) for c in dead_connections]
 
-    ## Get the stats for this topic (API stub)
-    ## @param self
     def get_stats(self): # STATS
+        """Get the stats for this topic (API stub)"""
         raise Exception("subclasses must override")
 
 #  Implementation note: Subscriber attaches to a _SubscriberImpl
@@ -271,20 +289,20 @@ class Subscriber(Topic):
         these parameters differently.
 
         @param name: graph resource name of topic, e.g. 'laser'.
-        @type name: str
+        @type  name: str
         @param data_class: data type class to use for messages,
           e.g. std_msgs.msg.String
-        @type data_class: Message class
+        @type  data_class: Message class
         @param callback: function to call ( fn(data)) when data is
           received. If callback_args is set, the function must accept
           the callback_args as a second argument, i.e. fn(data,
           callback_args).  NOTE: Additional callbacks can be added using
           add_callback().
-        @type callback: str
+        @type  callback: str
         @param callback_args: additional arguments to pass to the
           callback. This is useful when you wish to reuse the same
           callback for multiple subscriptions.
-        @type callback_args: any
+        @type  callback_args: any
         @param queue_size: maximum number of messages to receive at
           a time. This will generally be 1 or None (infinite,
           default). buff_size should be increased if this parameter
@@ -292,19 +310,19 @@ class Subscriber(Topic):
           buffer before being discarded. Setting queue_size
           buff_size to a non-default value affects all subscribers to
           this topic in this process.
-        @type queue_size: int
+        @type  queue_size: int
         @param buff_size: incoming message buffer size in bytes. If
           queue_size is set, this should be set to a number greater
           than the queue_size times the average message size. Setting
           buff_size to a non-default value affects all subscribers to
           this topic in this process.
-        @type buff_size: int
+        @type  buff_size: int
         @param tcp_nodelay: if True, request TCP_NODELAY from
           publisher.  Use of this option is not generally recommended
           in most cases as it is better to rely on timestamps in
           message data. Setting tcp_nodelay to True enables TCP_NODELAY
           for all subscribers in the same python process.
-        @type tcp_nodelay: bool
+        @type  tcp_nodelay: bool
         @raise ROSException: if parameters are invalid
         """
         super(Subscriber, self).__init__(name, data_class, Registration.SUB)
@@ -322,16 +340,19 @@ class Subscriber(Topic):
         if tcp_nodelay:
             self.impl.set_tcp_nodelay(tcp_nodelay)        
 
-## _Topic*Impl classes manage the underlying connections for a given topic. The
-#  separation of the _Topic*Impl classes and the Topic* classes that a client
-#  instantiates allows the client to generate multiple Topic* instances for a given
-#  topic. It also hides the underlying API for managing the connections.
 class _SubscriberImpl(_TopicImpl):
+    """
+    Underyling L{_TopicImpl} implementation for subscriptions.
+    """
 
-    ## @param self    
-    ## @param name str: graph resource name of topic, e.g. 'laser'. 
-    #  @param data_class Message: Message data class
     def __init__(self, name, data_class):
+        """
+        ctor.
+        @param name: graph resource name of topic, e.g. 'laser'.
+        @type  name: str
+        @param data_class: Message data class
+        @type  data_class: Message
+        """
         super(_SubscriberImpl, self).__init__(name, data_class)
         # client-methods to invoke on new messages. should only modify
         # under lock. This is a list of 2-tuples (fn, args), where
@@ -341,17 +362,22 @@ class _SubscriberImpl(_TopicImpl):
         self.buff_size = DEFAULT_BUFF_SIZE
         self.tcp_nodelay = False
 
-    ## Set the value of TCP_NODELAY, which causes the Nagle algorithm
-    ## to be disabled for future topic connections, if the publisher
-    ## supports it.
     def set_tcp_nodelay(self, tcp_nodelay):
+        """
+        Set the value of TCP_NODELAY, which causes the Nagle algorithm
+        to be disabled for future topic connections, if the publisher
+        supports it.
+        """
         self.tcp_nodelay = tcp_nodelay
         
-    ## Set the receive queue size. If more than queue_size messages are waiting to be deserialized,
-    ## they are discarded.
-    ## @param self
-    ## @param queue_size int: incoming queue size. Must be positive integer or None.
     def set_queue_size(self, queue_size):
+        """
+        Set the receive queue size. If more than queue_size messages
+        are waiting to be deserialized, they are discarded.
+        
+        @param queue_size int: incoming queue size. Must be positive integer or None.
+        @type  queue_size: int
+        """
         if queue_size == -1:
             self.queue_size = None
         elif queue_size == 0:
@@ -361,22 +387,28 @@ class _SubscriberImpl(_TopicImpl):
         else:
             self.queue_size = queue_size
 
-    ## Set the receive buffer size. The exact meaning of this is
-    ## transport dependent.
-    ## @param self
-    ## @param buff_size int: receive buffer size
     def set_buff_size(self, buff_size):
+        """
+        Set the receive buffer size. The exact meaning of this is
+        transport dependent.
+        @param buff_size: receive buffer size
+        @type  buff_size: int
+        """
         if type(buff_size) != int:
             raise ROSException("buffer size must be an integer")
         elif buff_size <= 0:
             raise ROSException("buffer size must be a positive integer")
         self.buff_size = buff_size
         
-    ## Get the stats for this topic subscriber
-    ## @param self
-    ## @return list: stats for topic in getBusStats() publisher format (topicName, connStats),
-    ##   where connStats = [connectionId, bytesReceived, numSent, dropEstimate, connected]*
     def get_stats(self): # STATS
+        """
+        Get the stats for this topic subscriber
+        @return: stats for topic in getBusStats() publisher format::
+           (topicName, connStats)
+        where connStats is::
+           [connectionId, bytesReceived, numSent, dropEstimate, connected]*
+        @rtype: list
+        """
         # save reference to avoid locking
         conn = self.connections
         dead_conn = self.dead_connections        
@@ -386,13 +418,16 @@ class _SubscriberImpl(_TopicImpl):
                   for c in chain(conn, dead_conn)] )
         return stats
 
-    ## Register a callback to be invoked whenever a new message is received
-    ## @param self
-    ## @param cb fn(msg): callback function to invoke with message data
-    ##   instance, i.e. fn(data). If callback args is set, they will be passed
-    ##   in as the second argument.
-    ## @param cb_cargs Any: additional arguments to pass to callback
     def add_callback(self, cb, cb_args):
+        """
+        Register a callback to be invoked whenever a new message is received
+        @param cb: callback function to invoke with message data
+          instance, i.e. fn(data). If callback args is set, they will
+          be passed in as the second argument.
+        @type  cb: fn(msg)
+        @param cb_cargs: additional arguments to pass to callback
+        @type  cb_cargs: Any
+        """
         with self.c_lock:
             # we lock in order to serialize calls to add_callback, but
             # we copy self.callbacks so we can it
@@ -400,10 +435,12 @@ class _SubscriberImpl(_TopicImpl):
             new_callbacks.append((cb, cb_args))
             self.callbacks = new_callbacks
         
-    ## Called by underlying connection transport for each new message received
-    ## @param self
-    ## @param msgs [Message]: message data
     def receive_callback(self, msgs):
+        """
+        Called by underlying connection transport for each new message received
+        @param msgs: message data
+        @type msgs: [Message]
+        """
         # save reference to avoid lock
         callbacks = self.callbacks
         for msg in msgs:
@@ -429,13 +466,13 @@ class SubscribeListener(object):
         """
         callback when a peer has subscribed from a topic
         @param topic_name: topic name. NOTE: topic name will be resolved/remapped
-        @type topic_name: str
+        @type  topic_name: str
         @param topic_publish: method to publish message data to all subscribers
-        @type topic_publish: fn(data)
+        @type  topic_publish: fn(data)
         @param peer_publish: method to publish message data to
           new subscriber.  NOTE: behavior for the latter is
           transport-dependent as some transports may be broadcast only.
-        @type peer_publish: fn(data)
+        @type  peer_publish: fn(data)
         """
         pass
 
@@ -443,9 +480,9 @@ class SubscribeListener(object):
         """
         callback when a peer has unsubscribed from a topic
         @param topic_name: topic name. NOTE: topic name will be resolved/remapped
-        @type topic_name: str
+        @type  topic_name: str
         @param num_peers: number of remaining peers subscribed to topic
-        @type num_peers: int
+        @type  num_peers: int
         """
         pass
 
@@ -464,20 +501,20 @@ class Publisher(Topic):
         """
         Constructor
         @param name: resource name of topic, e.g. 'laser'. 
-        @type name: str
+        @type  name: str
         @param data_class: message class for serialization
-        @type data_class: Message class
+        @type  data_class: Message class
         @param subscriber_listener: listener for
           subscription events. May be None.
-        @type subscriber_listener: L{SubscribeListener}
+        @type  subscriber_listener: L{SubscribeListener}
         @param tcp_nodelay: If True, sets TCP_NODELAY on
           publisher's socket (disables Nagle algorithm). This results
           in lower latency publishing at the cost of efficiency.
-        @type tcp_nodelay: bool
+        @type  tcp_nodelay: bool
         @param latch: If True, the last message published is
         'latched', meaning that any future subscribers will be sent
         that message immediately upon connection.
-        @type latch: bool
+        @type  latch: bool
         @raise ROSException: if parameters are invalid     
         """
         super(Publisher, self).__init__(name, data_class, Registration.PUB)
@@ -535,18 +572,15 @@ def args_kwds_to_message(data_class, args, kwds):
 
 class _PublisherImpl(_TopicImpl):
     """
-    _PublisherImpl classes manage the underlying connections for a given topic. The
-    separation of the _PublisherImpl classes and the L{Publisher} class that a client
-    instantiates allows the client to generate multiple L{Publisher} instances for a given
-    topic. It also hides the underlying API for managing the connections.
+    Underyling L{_TopicImpl} implementation for publishers.
     """
     
     def __init__(self, name, data_class):
         """
         @param name: name of topic, e.g. 'laser'. 
-        @type name: str
+        @type  name: str
         @param data_class: Message data class    
-        @type data_class: Message
+        @type  data_class: Message
         """
         super(_PublisherImpl, self).__init__(name, data_class)
         self.buff = cStringIO.StringIO()
@@ -568,7 +602,7 @@ class _PublisherImpl(_TopicImpl):
         Add connection headers to this Topic for future connections.
         @param headers: key/values will be added to current connection
         header set, overriding any existing keys if they conflict.
-        @type headers: dict
+        @type  headers: dict
         """
         self.headers.update(headers)
     
@@ -598,7 +632,7 @@ class _PublisherImpl(_TopicImpl):
         """
         Add a L{SubscribeListener} for subscribe events.
         @param l: listener instance
-        @type l: L{SubscribeListener}
+        @type  l: L{SubscribeListener}
         """
         self.subscriber_listeners.append(l)
         
@@ -616,7 +650,7 @@ class _PublisherImpl(_TopicImpl):
         the latch is enabled, c will be sent a the value of the
         latch.
         @param c: connection instance
-        @type c: L{Transport}
+        @type  c: L{Transport}
         @return: True if connection was added
         @rtype: bool
         """
@@ -634,7 +668,7 @@ class _PublisherImpl(_TopicImpl):
         """
         Remove existing connection from this topic.
         @param c: connection instance to remove
-        @type c: L{Transport}
+        @type  c: L{Transport}
         """
         super(_PublisherImpl, self).remove_connection(c)
         num = len(self.connections)                
@@ -649,9 +683,9 @@ class _PublisherImpl(_TopicImpl):
         ensure proper message publish ordering.
 
         @param message: message data instance to publish
-        @type message: L{Message}
+        @type  message: L{Message}
         @param connection_override: publish to this connection instead of all
-        @type connection_override: L{Transport}
+        @type  connection_override: L{Transport}
         @return: True if the data was published, False otherwise.
         @rtype: bool
         @raise roslib.message.SerializationError: if Message instance is unable to serialize itself
@@ -763,11 +797,11 @@ class _TopicManager(object):
         """
         Add L{_TopicImpl} instance to map
         @param ps: a pub/sub impl instance
-        @type ps: L{_TopicImpl}
+        @type  ps: L{_TopicImpl}
         @param map: { topic: _TopicImpl} map to record instance in
-        @type map: dict
+        @type  map: dict
         @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}
-        @type reg_type: str
+        @type  reg_type: str
         """
         topic = ps.name
         logger.debug("tm._add: %s, %s, %s", topic, ps.type, reg_type)
@@ -791,11 +825,11 @@ class _TopicManager(object):
         """
         Remove L{_TopicImpl} instance from map
         @param ps: a pub/sub impl instance
-        @type ps: L{_TopicImpl}
+        @type  ps: L{_TopicImpl}
         @param map: topic->_TopicImpl map to remove instance in
-        @type map: dict
+        @type  map: dict
         @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}
-        @type reg_type: str
+        @type  reg_type: str
         """
         topic = ps.name
         logger.debug("tm._remove: %s, %s, %s", topic, ps.type, reg_type)
@@ -816,9 +850,9 @@ class _TopicManager(object):
         testing purposes. Unlike acquire_impl, it does not alter the
         ref count.
         @param topic: Topic name
-        @type topic: str
+        @type  topic: str
         @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}
-        @type reg_type: str
+        @type  reg_type: str
         """
         if reg_type == Registration.PUB:
             map = self.pubs
@@ -837,11 +871,11 @@ class _TopicManager(object):
         topic implementation marks that another Topic instance is
         using the TopicImpl.
         @param topic: Topic name
-        @type topic: str
+        @type  topic: str
         @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}
-        @type reg_type: str
+        @type  reg_type: str
         @param data_class: message class for topic
-        @type data_class: Message Class
+        @type  data_class: Message Class
         """
         if reg_type == Registration.PUB:
             map = self.pubs
@@ -873,9 +907,9 @@ class _TopicManager(object):
         TopicImpl.
 
         @param topic: Topic name
-        @type topic: str
+        @type  topic: str
         @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}
-        @type reg_type: str
+        @type  reg_type: str
         """
         if reg_type == Registration.PUB:
             map = self.pubs
@@ -898,7 +932,7 @@ class _TopicManager(object):
     def get_publisher_impl(self, topic):
         """
         @param topic: topic name
-        @type topic: str
+        @type  topic: str
         @return: list of L{_PublisherImpl}s
         @rtype: [L{_PublisherImpl}]
         """
@@ -907,7 +941,7 @@ class _TopicManager(object):
     def get_subscriber_impl(self, topic):
         """
         @param topic: topic name
-        @type topic: str
+        @type  topic: str
         @return: subscriber for the specified topic. 
         @rtype: L{_SubscriberImpl}
         """        
@@ -916,7 +950,7 @@ class _TopicManager(object):
     def has_subscription(self, topic):
         """
         @param topic: topic name
-        @type topic: str
+        @type  topic: str
         @return: True if manager has subscription for specified topic
         @rtype: bool
         """                

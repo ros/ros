@@ -102,7 +102,7 @@ def apivalidate(error_return_value, validators=()):
       arg. None means no validation for the parameter is required. As all
       api methods take caller_id as the first parameter, the validators
       start with the second param.
-    @type validators: sequence
+    @type  validators: sequence
     """
     def check_validates(f):
         assert len(validators) == f.func_code.co_argcount - 2, "%s failed arg check"%f #ignore self and caller_id
@@ -173,11 +173,11 @@ class ROSHandler(XmlRpcHandler):
         """
         Base constructor for ROS nodes/masters
         @param name: ROS name of this node
-        @type name: str
+        @type  name: str
         @param master_uri: URI of master node, or None if this node is the master
-        @type master_uri: str
+        @type  master_uri: str
         @param is_slave: True if this is a slave node, False if master
-        @type is_slave: bool
+        @type  is_slave: bool
         """
         super(ROSHandler, self).__init__()
         self.masterUri = master_uri
@@ -213,7 +213,7 @@ class ROSHandler(XmlRpcHandler):
     def _ready(self, uri):
         """
         @param uri: XML-RPC URI
-        @type uri: str
+        @type  uri: str
         callback from ROSNode to inform handler of correct i/o information
         """
         _logger.info("_ready: %s", uri)
@@ -226,13 +226,13 @@ class ROSHandler(XmlRpcHandler):
         """
         Implements validation rules that require access to internal ROSHandler state.
         @param validation: name of validation rule to use
-        @type validation: str
+        @type  validation: str
         @param param_name: name of parameter being validated
-        @type param_name: str
+        @type  param_name: str
         @param param_value str: value of parameter
-        @type param_value: str
+        @type  param_value: str
         @param caller_id: value of caller_id parameter to API method
-        @type caller_id: str
+        @type  caller_id: str
         @raise ParameterInvalid: if the parameter does not meet validation
         @return: new value for parameter, after validation
         """
@@ -258,7 +258,7 @@ class ROSHandler(XmlRpcHandler):
         """
         @internal
         @param cls: class to register remappings on
-        @type cls: Class: class to register remappings on    
+        @type  cls: Class: class to register remappings on    
         @return: parameters (by pos) that should be remapped because they are names
         @rtype: list
         """
@@ -295,7 +295,7 @@ class ROSHandler(XmlRpcHandler):
         """
         Retrieve transport/topic statistics
         @param caller_id: ROS caller id    
-        @type caller_id: str
+        @type  caller_id: str
         @return: [publishStats, subscribeStats, serviceStats]::
            publishStats: [[topicName, messageDataSent, pubConnectionData]...[topicNameN, messageDataSentN, pubConnectionDataN]]
                pubConnectionData: [connectionId, bytesSent, numSent, connected]* . 
@@ -312,7 +312,7 @@ class ROSHandler(XmlRpcHandler):
         """
         Retrieve transport/topic connection information
         @param caller_id: ROS caller id    
-        @type caller_id: str
+        @type  caller_id: str
         """
         return 1, "bus info", get_topic_manager().get_pub_sub_info()
     
@@ -321,7 +321,7 @@ class ROSHandler(XmlRpcHandler):
         """
         Get the URI of the master node.
         @param caller_id: ROS caller id    
-        @type caller_id: str
+        @type  caller_id: str
         @return: [code, msg, masterUri]
         @rtype: [int, str, str]
         """
@@ -333,7 +333,7 @@ class ROSHandler(XmlRpcHandler):
     def _shutdown(self, reason=''):
         """
         @param reason: human-readable debug string
-        @type reason: str
+        @type  reason: str
         """
         if not self.done:
             self.done = True
@@ -351,9 +351,9 @@ class ROSHandler(XmlRpcHandler):
         """
         Stop this server
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param msg: a message describing why the node is being shutdown.
-        @type msg: str
+        @type  msg: str
         @return: [code, msg, 0]
         @rtype: [int, str, int]
         """
@@ -370,7 +370,7 @@ class ROSHandler(XmlRpcHandler):
         """
         Get the PID of this server
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @return: [1, "", serverProcessPID]
         @rtype: [int, str, int]
         """
@@ -392,7 +392,7 @@ class ROSHandler(XmlRpcHandler):
         """
         Retrieve a list of topics that this node publishes.
         @param caller_id: ROS caller id    
-        @type caller_id: str
+        @type  caller_id: str
         @return: list of topics published by this node
         @rtype: [int, str, [ [topic1, topicType1]...[topicN, topicTypeN]]]
         """
@@ -402,9 +402,9 @@ class ROSHandler(XmlRpcHandler):
         """
         Connect subscriber to topic
         @param topic: topic name to connect 
-        @type topic: str
+        @type  topic: str
         @param pub_uri: API URI of topic publisher
-        @type pub_uri: str
+        @type  pub_uri: str
         @return: [code, msg, numConnects]. numConnects is the number
            of subscribers connected to the topic
         @rtype: [int, str, int]
@@ -458,11 +458,11 @@ class ROSHandler(XmlRpcHandler):
         """
         Callback from master of current publisher list for specified topic.
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param parameter_key str: parameter name, globally resolved
-        @type parameter_key: str
+        @type  parameter_key: str
         @param parameter_value New parameter value
-        @type parameter_value: XMLRPC-legal value
+        @type  parameter_value: XMLRPC-legal value
         @return: [code, status, ignore]. If code is -1 ERROR, the node
         is not subscribed to parameter_key
         @rtype: [int, str, int]
@@ -478,11 +478,11 @@ class ROSHandler(XmlRpcHandler):
         """
         Callback from master of current publisher list for specified topic.
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param topic str: topic name
-        @type topic: str
+        @type  topic: str
         @param publishers: list of current publishers for topic in the form of XMLRPC URIs
-        @type publishers: [str]
+        @type  publishers: [str]
         @return: [code, status, ignore]
         @rtype: [int, str, int]
         """
@@ -503,14 +503,14 @@ class ROSHandler(XmlRpcHandler):
         establishing connection. For example, for a TCP/IP-based connection,
         the source node may return a port number of TCP/IP server. 
         @param caller_id str: ROS caller id    
-        @type caller_id: str
+        @type  caller_id: str
         @param topic: topic name
-        @type topic: str
+        @type  topic: str
         @param protocols: list of desired
          protocols for communication in order of preference. Each
          protocol is a list of the form [ProtocolName,
          ProtocolParam1, ProtocolParam2...N]
-        @type protocols: [[str, XmlRpcLegalValue*]]
+        @type  protocols: [[str, XmlRpcLegalValue*]]
         @return: [code, msg, protocolParams]. protocolParams may be an
         empty list if there are no compatible protocols.
         @rtype: [int, str, [str, XmlRpcLegalValue*]]
@@ -589,7 +589,7 @@ class ROSMasterHandler(ROSHandler):
         """
         Get the URI of the master(this) node.
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @return: [code, msg, masterUri]
         @rtype: [int, str, str]
         """
@@ -619,9 +619,9 @@ class ROSMasterHandler(ROSHandler):
         """
         Parameter Server: delete parameter
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param key: parameter name
-        @type key: str
+        @type  key: str
         @return: [code, msg, 0]
         @rtype: [int, str, int]
         """
@@ -648,11 +648,11 @@ class ROSMasterHandler(ROSHandler):
         parameters individually if you wish to perform a union update.
         
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param key: parameter name
-        @type key: str
+        @type  key: str
         @param value: parameter value.
-        @type value: XMLRPCLegalValue
+        @type  value: XMLRPCLegalValue
         @return: [code, msg, 0]
         @rtype: [int, str, int]
         """
@@ -667,10 +667,10 @@ class ROSMasterHandler(ROSHandler):
         """
         Retrieve parameter value from server.
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param key: parameter to lookup. If key is a namespace,
         getParam() will return a parameter tree.
-        @type key: str
+        @type  key: str
         getParam() will return a parameter tree.
 
         @return: [code, statusMessage, parameterValue]. If code is not
@@ -709,10 +709,10 @@ class ROSMasterHandler(ROSHandler):
         parameter does not exist (yet).
 
         @param caller_id str: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param key: parameter to lookup. If key is a namespace,
         getParam() will return a parameter tree.
-        @type key: str
+        @type  key: str
         @return: [code, statusMessage, foundKey]. If code is not 1, parameterValue should be
             ignored. 
         @rtype: [int, str, str]
@@ -730,11 +730,11 @@ class ROSMasterHandler(ROSHandler):
         Retrieve parameter value from server and subscribe to updates to that param. See
         paramUpdate() in the Node API. 
         @param caller_id str: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param key: parameter to lookup.
-        @type key: str
+        @type  key: str
         @param caller_api: API URI for paramUpdate callbacks.
-        @type caller_api: str
+        @type  caller_api: str
         @return: [code, statusMessage, parameterValue]. If code is not
            1, parameterValue should be ignored. parameterValue is an empty dictionary if the parameter
            has not been set yet.
@@ -757,11 +757,11 @@ class ROSMasterHandler(ROSHandler):
         Retrieve parameter value from server and subscribe to updates to that param. See
         paramUpdate() in the Node API. 
         @param caller_id str: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param key: parameter to lookup.
-        @type key: str
+        @type  key: str
         @param str: API URI for paramUpdate callbacks.
-        @type caller_api: str
+        @type  caller_api: str
         @return: [code, statusMessage, numUnsubscribed]. If code is not
            If numUnsubscribed is zero it means that the caller was not subscribed to the parameter.
         @rtype: [int, str, XMLRPCLegalValue]
@@ -782,9 +782,9 @@ class ROSMasterHandler(ROSHandler):
         """
         Check if parameter is stored on server. 
         @param caller_id str: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param key: parameter to check
-        @type key: str
+        @type  key: str
         @return: [code, statusMessage, hasParam]
         @rtype: [int, str, bool]
         """
@@ -886,7 +886,7 @@ class ROSMasterHandler(ROSHandler):
         """
         Register the caller as a provider of the specified service.
         @param caller_id str: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param service str: Fully-qualified name of service 
         @param service_api str: Service URI 
         @param caller_api str: XML-RPC URI of caller node 
@@ -908,7 +908,7 @@ class ROSMasterHandler(ROSHandler):
         """
         Lookup all provider of a particular service.
         @param caller_id str: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param service: fully-qualified name of service to lookup.
         @type: service: str
         @return (int, str, str): (code, message, serviceUrl). service URL is provides
@@ -930,12 +930,12 @@ class ROSMasterHandler(ROSHandler):
         """
         Unregister the caller as a provider of the specified service.
         @param caller_id str: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param service: Fully-qualified name of service
-        @type service: str
+        @type  service: str
         @param service_api: API URI of service to unregister. Unregistration will only occur if current
            registration matches.
-        @type service_api: str
+        @type  service_api: str
         @return: (code, message, numUnregistered). Number of unregistrations (either 0 or 1).
            If this is zero it means that the caller was not registered as a service provider.
            The call still succeeds as the intended final state is reached.
@@ -962,12 +962,12 @@ class ROSMasterHandler(ROSHandler):
         a list of current publishers, the subscriber will also receive notifications
         of new publishers via the publisherUpdate API.        
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param topic str: Fully-qualified name of topic to subscribe to. 
         @param topic_type: Datatype for topic. Must be a package-resource name, i.e. the .msg name.
-        @type topic_type: str
+        @type  topic_type: str
         @param caller_api: XML-RPC URI of caller node for new publisher notifications
-        @type caller_api: str
+        @type  caller_api: str
         @return: (code, message, publishers). Publishers is a list of XMLRPC API URIs
            for nodes currently publishing the specified topic.
         @rtype: (int, str, list(str))
@@ -988,11 +988,11 @@ class ROSMasterHandler(ROSHandler):
         """
         Unregister the caller as a publisher of the topic.
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param topic: Fully-qualified name of topic to unregister.
-        @type topic: str
+        @type  topic: str
         @param caller_api: API URI of service to unregister. Unregistration will only occur if current
-        @type caller_api: str
+        @type  caller_api: str
            registration matches.    
         @return: (code, statusMessage, numUnsubscribed). 
           If numUnsubscribed is zero it means that the caller was not registered as a subscriber.
@@ -1013,14 +1013,14 @@ class ROSMasterHandler(ROSHandler):
         """
         Register the caller as a publisher the topic.
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param topic: Fully-qualified name of topic to register.
-        @type topic: str
+        @type  topic: str
         @param topic_type: Datatype for topic. Must be a
         package-resource name, i.e. the .msg name.
-        @type topic_type: str
+        @type  topic_type: str
         @param caller_api str: ROS caller XML-RPC API URI
-        @type caller_api: str
+        @type  caller_api: str
         @return: (code, statusMessage, subscriberApis).
         List of current subscribers of topic in the form of XMLRPC URIs.
         @rtype: (int, str, [str])
@@ -1047,13 +1047,13 @@ class ROSMasterHandler(ROSHandler):
         """
         Unregister the caller as a publisher of the topic.
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param topic: Fully-qualified name of topic to unregister.
-        @type topic: str
+        @type  topic: str
         @param caller_api str: API URI of service to
            unregister. Unregistration will only occur if current
            registration matches.
-        @type caller_api: str
+        @type  caller_api: str
         @return: (code, statusMessage, numUnregistered). 
            If numUnregistered is zero it means that the caller was not registered as a publisher.
            The call still succeeds as the intended final state is reached.
@@ -1081,9 +1081,9 @@ class ROSMasterHandler(ROSHandler):
         publishers and subscribers. Use lookupService instead to lookup
         ROS-RPC URIs.
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param node: name of node to lookup
-        @type node: str
+        @type  node: str
         @return: (code, msg, URI)
         @rtype: (int, str, str)
         """
@@ -1105,10 +1105,10 @@ class ROSMasterHandler(ROSHandler):
         Get list of topics that can be subscribed to. This does not return topics that have no publishers.
         See L{getSystemState()} to get more comprehensive list.
         @param caller_id: ROS caller id
-        @type caller_id: str
+        @type  caller_id: str
         @param subgraph: Restrict topic names to match within the specified subgraph. Subgraph namespace
            is resolved relative to the caller's namespace. Use '' to specify all names.
-        @type subgraph: str
+        @type  subgraph: str
         @return: (code, msg, [[topic1, type1]...[topicN, typeN]])
         @rtype: (int, str, [[str, str],])
         """
@@ -1129,7 +1129,7 @@ class ROSMasterHandler(ROSHandler):
         """
         Retrieve list representation of system state (i.e. publishers, subscribers, and services).
         @param caller_id: ROS caller id    
-        @type caller_id: str
+        @type  caller_id: str
         @rtype: (int, str, [[str,[str]], [str,[str]], [str,[str]]])
         @return: (code, statusMessage, systemState).
 

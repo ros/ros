@@ -95,9 +95,9 @@ class ServiceManager(object):
         """
         Register service with ServiceManager and ROS master
         @param service_name: name of service (resolved)
-        @type service_name: str
+        @type  service_name: str
         @param service: Service to register
-        @type service: L{_Service}
+        @type  service: L{_Service}
         """
         err = None
         try:
@@ -119,9 +119,9 @@ class ServiceManager(object):
         """
         Unregister service with L{ServiceManager} and ROS Master
         @param service_name: name of service
-        @type service_name: str
+        @type  service_name: str
         @param service: service implementation
-        @type service: L{_Service}
+        @type  service: L{_Service}
         """        
         try:
             self.lock.acquire()
@@ -137,7 +137,7 @@ class ServiceManager(object):
     def get_service(self, service_name):
         """
         @param service_name: name of service
-        @type service_name: str
+        @type  service_name: str
         @return: service implementation
         @rtype: _Service
         """

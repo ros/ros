@@ -63,6 +63,7 @@ class RosdocContext(object):
         self.stacks = {}        
         self.external_docs = {}
         self.manifests = {}
+        self.builder = {}        
         self.stack_manifests = {}        
 
         self.template_dir = None
@@ -106,6 +107,7 @@ class RosdocContext(object):
         
     ## Crawl manifest.xml dependencies
     def _crawl_deps(self):
+        builder = self.builder
         external_docs = self.external_docs
         manifests = self.manifests
 
@@ -114,14 +116,15 @@ class RosdocContext(object):
         for package, path in self.packages.iteritems():
 
             # find stacks to document on demand
-            stack = roslib.stacks.stack_of(package) or ''
-            if stack and stack not in stacks:
-                print "adding stack [%s] to documentation"%stack
-                p = roslib.stacks.get_stack_dir(stack)
-                if p:
-                    stacks[stack] = p
-                else:
-                    print >> sys.stderr, "cannot locate directory of stack [%s]"%stack
+            if self.should_document(package):
+                stack = roslib.stacks.stack_of(package) or ''
+                if stack and stack not in stacks:
+                    #print "adding stack [%s] to documentation"%stack
+                    p = roslib.stacks.get_stack_dir(stack)
+                    if p:
+                        stacks[stack] = p
+                    else:
+                        print >> sys.stderr, "cannot locate directory of stack [%s]"%stack
                 
             f = os.path.join(path, roslib.manifest.MANIFEST_FILE)
             try:
@@ -135,9 +138,16 @@ class RosdocContext(object):
                     external_docs[package] = e
                 for e in m.get_export('rosdoc', 'external'):
                     external_docs[package] = e
+                    
+                builder[package] = 'doxygen'
+                for e in m.get_export('rosdoc', 'builder'):
+                    builder[package] = e.lower()
+                if builder[package] not in ['epydoc', 'doxygen', 'sphinx']:
+                    print >> sys.stderr, "ERROR: unknown builder [%s]. Using doxygen instead"%builder[package]
+                    builder[package] = 'doxygen'                    
+                    
             except:
                 print >> sys.stderr, "WARN: Package '%s' does not have a valid manifest.xml file, manifest information will not be included in docs"%package
-        
 
         stack_manifests = self.stack_manifests
         for stack, path in stacks.iteritems():

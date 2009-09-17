@@ -35,6 +35,7 @@
 from __future__ import with_statement
 
 import os
+import sys
 from subprocess import Popen, PIPE
 
 ## Main entrypoint into creating Sphinx documentation
@@ -44,6 +45,9 @@ def generate_sphinx(ctx):
     for package, path in ctx.packages.iteritems():
         if package in ctx.doc_packages and ctx.should_document(package):
             try:
+                builder = ctx.builder[package]
+                if builder != 'sphinx':
+                    continue
                 if os.access(os.path.join(path, "index.rst"), os.R_OK):
                     oldcwd = os.getcwd()
                     os.chdir(path)
@@ -54,6 +58,8 @@ def generate_sphinx(ctx):
 
                     os.chdir(oldcwd)
                     success.append(package)
+                else:
+                    print >> sys.stderr, "ERROR: not index.rst for sphinx build of [%s]"%package
             finally:
                 pass
     return success

@@ -68,6 +68,13 @@ def main():
         sys.exit(1)
 
     try:
+        # Generate Epydoc
+        if 1:
+            import epyenator
+            epyenator_success = set(epyenator.generate_epydoc(ctx))
+        else:
+            epyenator_success = set()
+            
         # Generate Sphinx
         if 1:
             import sphinxenator
@@ -78,10 +85,11 @@ def main():
         # Generate Doxygen on remainder
         if 1:
             import doxygenator
-            ctx.packages = dict([(p, ctx.packages[p]) for p in (set(ctx.packages) - sphinx_success)])
-            success = doxygenator.generate_doxygen(ctx, quiet=options.quiet) + list(sphinx_success)
+            ctx.packages = dict([(p, ctx.packages[p]) for p in (set(ctx.packages) - sphinx_success - epyenator_success)])
+            doxy_success = doxygenator.generate_doxygen(ctx, quiet=options.quiet) 
         else:
-            success = list(sphinx_success)
+            doxy_success = []
+        success = list(sphinx_success) + doxy_success + list(epyenator_success)
 
         if 1:
             # Generate yaml data for wiki macros

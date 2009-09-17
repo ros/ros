@@ -187,7 +187,7 @@ def generate_stack_headers(ctx):
     for s in stacks.iterkeys():
         #TODO: this curretly documents all stacks, instead of just ones related to args
         try:
-          print "generating stack wiki files for", s
+          #print "generating stack wiki files for", s
           _generate_stack_headers(ctx, s)
         except Exception, e:
           import traceback

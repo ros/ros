@@ -32,6 +32,8 @@
 #
 # Revision $Id: client.py 2258 2008-09-30 23:03:06Z sfkwc $
 
+## ROS time and duration representations and API
+
 import threading
 import time
 import traceback
@@ -49,16 +51,22 @@ _rostime_initialized = False
 _rostime_current = None
 _rostime_cond = threading.Condition()
 
-# subclass for future-proofing in case we do extend Duration
-class Duration(roslib.rostime.Duration): pass
+# subclass roslib to provide abstraction layer
+class Duration(roslib.rostime.Duration):
+    """Duration class for rospy"""
+    pass
 
-## Time class for rospy. Related to roslib's Time, but has additional
-## now() factory method that can initialize Time to the current ROS time.
 class Time(roslib.rostime.Time):
+    """
+    Time class for rospy. The L{Time.now()} factory method can initialize Time to the current ROS time.
+    """
     
-    ## create new Time instance representing current time
-    ## @return Time instance for current time
     def now():
+        """
+        create new L{Time} instance representing current time
+        @return: L{Time} instance for current time
+        @rtype: L{Time}
+        """
         if not _rostime_initialized:
             raise rospy.exceptions.ROSInitException("time is not initialized. Have you called init_node()?")
         if _rostime_current is not None:
@@ -75,19 +83,23 @@ class Time(roslib.rostime.Time):
 
     # have to reproduce super class implementation to return correct typing
     
-    ## create new Time instance using time.time() value (float
-    ## seconds)
-    ## @param float_secs: time value in time.time() format
-    ## @return Time instance for specified time
     def from_seconds(float_secs):
+        """
+        create new Time instance using time.time() value (float
+        seconds)
+        @param float_secs: time value in time.time() format
+        @type float_secs: float
+        @return: Time instance for specified time
+        @rtype: L{Time}
+        """
         secs = int(float_secs)
         nsecs = int((float_secs - secs) * 1000000000)
         return Time(secs, nsecs)
     
     from_seconds = staticmethod(from_seconds)
     
-## Callback to update ROS time from /time
 def _set_rostime(t):
+    """Callback to update ROS time from a ROS Topic"""
     if isinstance(t, roslib.rostime.Time):
         t = Time(t.secs, t.nsecs)
     elif not isinstance(t, Time):
@@ -100,37 +112,62 @@ def _set_rostime(t):
     finally:
         _rostime_cond.release()
     
-## \ingroup clientapi
-## Get the current time as a Time object    
-## @return Time: current time as a rospy.Time object
 def get_rostime():
+    """
+    Get the current time as a L{Time} object    
+    @return: current time as a L{rospy.Time} object
+    @rtype: L{Time}
+    """
     return Time.now()
 
-## \ingroup clientapi
-## Get the current time as float secs (time.time() format)
-## @return float: time in secs (time.time() format)    
 def get_time():
+    """
+    Get the current time as float secs (time.time() format)
+    @return: time in secs (time.time() format)    
+    @rtype: float
+    """
     return Time.now().to_seconds()
 
-## Mark rostime as initialized. This flag enables other routines to
-## throw exceptions if rostime is being used before the underlying
-## system is initialized.
-## @param val bool: value for initialization state
 def set_rostime_initialized(val):
+    """
+    Mark rostime as initialized. This flag enables other routines to
+    throw exceptions if rostime is being used before the underlying
+    system is initialized.
+    @param val: value for initialization state
+    @type val: bool
+    """
     global _rostime_initialized
     _rostime_initialized = val
 
-## @return True if rostime has been initialized
 def is_rostime_initialized():
+    """
+    Internal use.
+    @return: True if rostime has been initialized
+    @rtype: bool
+    """
     return _rostime_initialized    
 
-## internal API for helper routines that need to wait on time updates
-## @return threading.Cond: rostime conditional var
 def get_rostime_cond():
+    """
+    internal API for helper routines that need to wait on time updates
+    @return: rostime conditional var
+    @rtype: threading.Cond
+    """
     return _rostime_cond
 
-## Switch ROS to wallclock time. This is mainly for testing purposes.
+def is_wallclock():
+    """
+    Internal use for ROS-time routines.
+    @return: True if ROS is currently using wallclock time
+    @rtype: bool
+    """
+    return _rostime_current == None
+    
 def switch_to_wallclock():
+    """
+    Internal use.
+    Switch ROS to wallclock time. This is mainly for testing purposes.
+    """
     global _rostime_current
     _rostime_current = None
     try:

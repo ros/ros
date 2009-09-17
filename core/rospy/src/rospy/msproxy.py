@@ -44,9 +44,11 @@ import rospy.masterslave
 import rospy.names
 import rospy.paramserver
 
-## Convenience wrapper for ROSNode API and XML-RPC implementation.
-#  Eliminates the need to pass in callerId as the first argument.
 class NodeProxy(object):
+    """
+    Convenience wrapper for ROSNode API and XML-RPC implementation.
+    Eliminates the need to pass in callerId as the first argument.
+    """
 
     def __init__(self, uri):
         super(NodeProxy, self).__init__()
@@ -65,17 +67,22 @@ class NodeProxy(object):
             return f(*args, **kwds)
         return wrappedF
     
-## Convenience wrapper for ROS master API and XML-RPC implementation.
-#  Shares same methods as ROSMasterHandler due to method-forwarding.
-#  Also remaps parameter server for python dictionary-like access, e.g.:
-#    
-#    master[key] = value
 class MasterProxy(NodeProxy):
+    """
+    Convenience wrapper for ROS master API and XML-RPC implementation.
+    Shares same methods as ROSMasterHandler due to method-forwarding.
+    Also remaps parameter server for python dictionary-like access, e.g.::
+    
+      master[key] = value
 
-    ## Constructor for wrapping a remote master instance.
-    ## @param self
-    ## @param uri str: XML-RPC URI of master
+    """
+
     def __init__(self, uri):
+        """
+        Constructor for wrapping a remote master instance.
+        @param uri: XML-RPC URI of master
+        @type uri: str
+        """
         super(MasterProxy, self).__init__(uri)
 
     def __getattr__(self, key): #forward api calls to target
@@ -92,9 +99,13 @@ class MasterProxy(NodeProxy):
             return f(*args, **kwds)
         return wrappedF
 
-    ## Fetch item from parameter server and subscribe to future updates so that
-    ## values can be cached.
     def __getitem__(self, key):
+        """
+        Fetch item from parameter server and subscribe to future updates so that
+        values can be cached.
+        @param key: parameter key
+        @type key: str
+        """
         #NOTE: remapping occurs here!
         resolved_key = rospy.names.resolve_name(key)
         if 1: # disable param cache
@@ -116,12 +127,22 @@ class MasterProxy(NodeProxy):
             return value
         
     def __setitem__(self, key, val):
+        """
+        Set parameter value on Parameter Server
+        @param key: parameter key
+        @type key: str
+        @param val: parameter value
+        @type val: XMLRPC legal value
+        """
         self.target.setParam(rospy.names.get_caller_id(), rospy.names.resolve_name(key), val)
         
-    ## Search for a parameter matching \a key on the parameter server
-    ## @return str: found key or None if search did not succeed
-    ## @throws ROSException if parameter server reports an error
     def search_param(self, key):
+        """
+        Search for a parameter matching key on the parameter server
+        @return: found key or None if search did not succeed
+        @rtype: str
+        @raise ROSException: if parameter server reports an error
+        """
         code, msg, val = self.target.searchParam(rospy.names.get_caller_id(), rospy.names.remap_name(key))
         if code == 1:
             return val
@@ -130,9 +151,11 @@ class MasterProxy(NodeProxy):
         else:
             raise rospy.exceptions.ROSException("cannot search for parameter parameter: %s"%msg)
         
-    ## Delete parameter \a key from the parameter server
-    ## @throws ROSException if parameter server reports an error
     def __delitem__(self, key):
+        """
+        Delete parameter key from the parameter server.
+        @raise ROSException: if parameter server reports an error
+        """
         resolved_key = rospy.names.resolve_name(key)
         code, msg, _ = self.target.deleteParam(rospy.names.get_caller_id(), resolved_key)
         if code != 1:
@@ -141,15 +164,22 @@ class MasterProxy(NodeProxy):
             # set the value in the cache so that it's marked as subscribed
             rospy.paramserver.get_param_server_cache().delete(resolved_key)
 
-    ## @throws ROSException if parameter server reports an error
     def __contains__(self, key):
+        """
+        Check if parameter is set on Parameter Server
+        @param key: parameter key
+        @type key: str
+        @raise ROSException: if parameter server reports an error
+        """        
         code, msg, value = self.target.hasParam(rospy.names.get_caller_id(), rospy.names.resolve_name(key))
         if code != 1:
             raise rospy.exceptions.ROSException("cannot check parameter on server: %s"%msg)
         return value
         
-    ## @throws ROSException if parameter server reports an error
     def __iter__(self):
+        """
+        @raise ROSException: if parameter server reports an error
+        """
         code, msg, value = self.target.getParamNames(rospy.names.get_caller_id())
         if code == 1:
             return value.__iter__()

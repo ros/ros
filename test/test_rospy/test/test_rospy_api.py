@@ -49,10 +49,6 @@ class TestRospyApi(unittest.TestCase):
 
         # just a laundry list of API methods to make sure that they still exist
         
-        # deprecated
-        rospy.TopicPub, rospy.TopicSub
-        rospy.ready        
-
         # removed
         try:
             rospy.add_shutdown_hook

@@ -32,6 +32,12 @@
 #
 # Revision $Id$
 
+"""
+Support for ROS Names
+
+See: U{http://www.ros.org/wiki/Names}
+"""
+
 import sys
 import os
 from itertools import ifilter
@@ -46,9 +52,13 @@ from rospy.validators import ParameterInvalid
 TOPIC_ANYTYPE = ANYTYPE #indicates that a subscriber will connect any datatype given to it
 SERVICE_ANYTYPE = ANYTYPE #indicates that a service client does not have a fixed type
 
-## Put name in canonical form. Double slashes '//' are removed and
-## name is returned without any trailing slash, e.g. /foo/bar
 def canonicalize_name(name):
+    """
+    Put name in canonical form. Double slashes '//' are removed and
+    name is returned without any trailing slash, e.g. /foo/bar
+    @param name: ROS name
+    @type name: str
+    """
     if not name or name == SEP:
         return name
     elif name[0] == SEP:
@@ -66,23 +76,31 @@ def canonicalize_name(name):
 # before Topic constructors are invoked.
 _mappings = load_mappings(sys.argv)
 
-## @return dict {name: name} : command-line remappings
 def get_mappings():
+    """
+    @return: command-line remappings {name: name}
+    @rtype: {str: str}
+    """
     return _mappings
 
-## \ingroup clientapi
-## Resolve a ROS name to its global, canonical form. Private ~names
-## are resolved relative to the node name. ^names are left unresolved,
-## unless they match a remapping.
-## @param name str: name to resolve.
-## @param caller_id str: caller_id to resolve \a name relative to. To
-## resolve to local namespace, omit this parameter (or use None)
-## @param remap bool: If False, remapping is turned off. This is mainly
-## used to prevent circular remappings.
-## @return str: Resolved name. If \a name is empty/None, resolve_name
-## returns parent namespace. If \a namespace is empty/None, 
+
 def resolve_name(name, caller_id=None, remap=True):
-    "resolve a ROS name to its global, canonical form"
+    """
+    Resolve a ROS name to its global, canonical form. Private ~names
+    are resolved relative to the node name. 
+
+    @param name: name to resolve.
+    @type name: str
+    @param caller_id: caller_id to resolve name relative to. To
+    resolve to local namespace, omit this parameter (or use None)
+    @type caller_id: str
+    @param remap: If False, remapping is turned off. This is mainly
+    used to prevent circular remappings.
+    @type remap: bool
+    @return: Resolved name. If name is empty/None, resolve_name
+    returns parent namespace. If namespace is empty/None,
+    @rtype: str
+    """
     if not caller_id:
         caller_id = get_caller_id()
     if not name: #empty string resolves to namespace
@@ -102,29 +120,37 @@ def resolve_name(name, caller_id=None, remap=True):
         return ns_join(caller_id, name[1:])
     return namespace(caller_id) + name
 
-## \ingroup clientapi Client API
-## Remap a ROS name. This API should be used to instead of
-## resolve_name for APIs in which you don't wish to resolve the name
-## unless it is remapped.
-## @param name str: name to remap
-## @return str: Remapped name
 def remap_name(name, caller_id=None):
+    """
+    Remap a ROS name. This API should be used to instead of
+    resolve_name for APIs in which you don't wish to resolve the name
+    unless it is remapped.
+    @param name: name to remap
+    @type name: str
+    @return: Remapped name
+    @rtype: str
+    """
     if not caller_id:
         caller_id = get_caller_id()
     if name in _mappings:
         return resolve_name(_mappings[name], caller_id, remap=False)
     return name
 
-## Convert the global \a caller_id to a relative name within the namespace. For example, for
-## namespace '/foo' and name '/foo/bar/name', the return value will
-## be 'bar/name'
-##
-## WARNING: scoped_name does not validate that name is actually within
-## the supplied namespace.
-## @param caller_id str: caller ID, in canonical form
-## @param name str: name to scope
-## @return str: name scoped to the caller_id's namespace. 
 def scoped_name(caller_id, name):
+    """
+    Convert the global caller_id to a relative name within the namespace. For example, for
+    namespace '/foo' and name '/foo/bar/name', the return value will
+    be 'bar/name'
+
+    WARNING: scoped_name does not validate that name is actually within
+    the supplied namespace.
+    @param caller_id: caller ID, in canonical form
+    @type caller_id: str
+    @param name: name to scope
+    @type name: str
+    @return: name scoped to the caller_id's namespace. 
+    @rtype: str
+    """
     if not is_global(caller_id):
         raise ROSException("caller_id must be global")
     return canonicalize_name(name)[len(namespace(caller_id)):]
@@ -136,11 +162,12 @@ def scoped_name(caller_id, name):
 #Technically XMLRPC will never send a None, but I don't want to code masterslave.py to be
 #XML-RPC specific in this way.
 
-## \ingroup validators
-#   Validator that resolves names unless they an empty string is supplied, in which case
-#   an empty string is returned.
 def empty_or_valid_name(param_name):
-    "empty or valid graph resource name"
+    """
+    empty or valid graph resource name.
+    Validator that resolves names unless they an empty string is supplied, in which case
+    an empty string is returned.
+    """
     def validator(param_value, caller_id):
         if not isinstance(param_value, basestring):
             raise ParameterInvalid("ERROR: parameter [%s] must be a string"%param_name)              
@@ -168,24 +195,29 @@ def valid_name_validator_unresolved(param_name, param_value, caller_id):
         raise ParameterInvalid("ERROR: parameter [%s] contains illegal chars"%param_name) 
     return param_value
     
-## \ingroup validators
-## Validator that resolves names and also ensures that they are not empty
-## @param param_name str: name
-## @param resolve bool: if True/omitted, the name will be resolved to
-##    a global form. Otherwise, no resolution occurs.
-## @return str: resolved parameter value
 def valid_name(param_name, resolve=True):
+    """
+    Validator that resolves names and also ensures that they are not empty
+    @param param_name: name
+    @type param_name: str
+    @param resolve: if True/omitted, the name will be resolved to
+       a global form. Otherwise, no resolution occurs.
+    @type resolve: bool
+    @return: resolved parameter value
+    @rtype: str
+    """
     def validator(param_value, caller_id):
         if resolve:
             return valid_name_validator_resolved(param_name, param_value, caller_id)
         return valid_name_validator_unresolved(param_name, param_value, caller_id)        
     return validator
 
-## \ingroup validators
-#  Validator that verifies name is globally referenced
-## @return str: parameter value
 def global_name(param_name):
-    "valid graph resource name"
+    """"
+    Validator that checks for valid, global graph resource name.
+    @return: parameter value
+    @rtype: str
+    """
     def validator(param_value, caller_id):
         if not param_value or not isinstance(param_value, basestring):
             raise ParameterInvalid("ERROR: parameter [%s] must be a non-empty string"%param_name)
@@ -195,10 +227,8 @@ def global_name(param_name):
         return param_value
     return validator
 
-## \ingroup validators
-#  validator that checks the type name is specified correctly
 def valid_type_name(param_name):
-    "valid type name"
+    """validator that checks the type name is specified correctly"""
     def validator(param_value, caller_id):
         if param_value == TOPIC_ANYTYPE:
             return param_value
@@ -218,26 +248,34 @@ def valid_type_name(param_name):
 _caller_namespace = get_ros_namespace()
 _caller_id = _caller_namespace+'unnamed' #default for non-node. 
 
-## \ingroup clientapi Client API
-## Get namespace of local node. 
-## @return str: fully-qualified name of local node or '' if not applicable
 def get_namespace():
+    """
+    Get namespace of local node. 
+    @return: fully-qualified name of local node or '' if not applicable
+    @rtype: str
+    """
     return _caller_namespace
 
-## \ingroup clientapi Client API
-## Get fully resolved name of local node. If this is not a node,
-## use empty string
-## @return str: fully-qualified name of local node or '' if not applicable
 def get_caller_id():
+    """
+    Get fully resolved name of local node. If this is not a node,
+    use empty string
+    @return: fully-qualified name of local node or '' if not applicable
+    @rtype: str
+    """    
     return _caller_id
 
-## Set the global name (i.e. caller_id) and namespace. Methods can
-## check what the name of the current node is by calling get_caller_id.
-##
-## The caller_id is important as it is the first parameter to any API
-## call on a remote node.  Invoked by ROSNode constructor
-## @param caller_id str: new caller ID
 def _set_caller_id(caller_id):
+    """
+    Internal API.
+    Set the global name (i.e. caller_id) and namespace. Methods can
+    check what the name of the current node is by calling get_caller_id.
+
+    The caller_id is important as it is the first parameter to any API
+    call on a remote node.  Invoked by ROSNode constructor
+    @param caller_id: new caller ID
+    @type caller_id: str
+    """    
     global _caller_id, _caller_namespace
     _caller_id = caller_id
     _caller_namespace = namespace(caller_id)

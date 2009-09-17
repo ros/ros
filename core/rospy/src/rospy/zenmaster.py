@@ -42,7 +42,7 @@ import time
 
 import rospy
 
-## Command-line handler for zenmaster
+"""Command-line handler for ROS zenmaster (Python Master)"""
 
 # Environment variables used to configure master/slave
 

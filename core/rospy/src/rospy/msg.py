@@ -42,15 +42,16 @@ import traceback
 import roslib.message
 import rospy.names
 
-Message = roslib.message.Message # define Message in our namespace
+Message = roslib.message.Message
 
 logger = logging.getLogger('rospy.msg')
 
-## \ingroup client-api
-## Message class to use for subscribing to any topic regardless
-## of type. Incoming messages are not deserialized. Instead, the raw
-## serialized data can be accssed via the buff property.
 class AnyMsg(roslib.message.Message):
+    """
+    Message class to use for subscribing to any topic regardless
+    of type. Incoming messages are not deserialized. Instead, the raw
+    serialized data can be accssed via the buff property.
+    """
     _md5sum = rospy.names.TOPIC_ANYTYPE
     _type = rospy.names.TOPIC_ANYTYPE
     _has_header = False
@@ -60,24 +61,32 @@ class AnyMsg(roslib.message.Message):
         if len(args) != 0:
             raise rospy.exceptions.ROSException("AnyMsg does not accept arguments")
         self._buff = None
-    ## AnyMsg provides an implementation so that a node can forward messages w/o (de)serialization
+
     def serialize(self, buff):
+        """AnyMsg provides an implementation so that a node can forward messages w/o (de)serialization"""
         if self._buff is None:
             raise rospy.exceptions("AnyMsg is not initialized")
         else:
             buff.write(self._buff)
+            
     def deserialize(self, str):
+        """Copies raw buffer into self._buff"""
         self._buff = str
         return self
         
-## Serialize the message to the buffer \a b
-## @param b StringIO: buffer to write to. WARNING: buffer will be reset after call
-## @param msg Msg: message to write
-## @param seq int: current sequence number (for headers)
-## @throws ROSSerializationException if unable to serialize
-## message. This is usually due to a type error with one of the
-## fields.
 def serialize_message(b, seq, msg):
+    """
+    Serialize the message to the buffer 
+    @param b: buffer to write to. WARNING: buffer will be reset after call
+    @type b: StringIO
+    @param msg: message to write
+    @type msg: Msg
+    @param seq: current sequence number (for headers)
+    @type seq: int: current sequence number (for headers)
+    @raise ROSSerializationException: if unable to serialize
+    message. This is usually due to a type error with one of the
+    fields.
+    """
     start = b.tell()
     b.seek(start+4) #reserve 4-bytes for length
 
@@ -113,17 +122,25 @@ def serialize_message(b, seq, msg):
     b.write(struct.pack('<I', size))
     b.seek(end)
 
-## Read all messages off the buffer \a b
-##     
-## @param b: buffer to read data from
-## @param msg_queue: queue to append deserialized data to
-## @param data_class: message deserialization class
-## @param queue_size: message queue size. all but the last \a
-## queue_size messages are discarded if this parameter is specified.
-## @param start int: starting position to read in \a b
-## @param max_msgs int: maximum number of messages to deserialize or None
-## @throws roslib.message.DeserializationError: if an error/exception occurs during deserialization
 def deserialize_messages(b, msg_queue, data_class, queue_size=None, max_msgs=None, start=0):
+    """
+    Read all messages off the buffer 
+        
+    @param b: buffer to read data from
+    @type b: StringIO
+    @param msg_queue: queue to append deserialized data to
+    @type msg_queue: list
+    @param data_class: message deserialization class
+    @type data_class: Message class
+    @param queue_size: message queue size. all but the last 
+    queue_size messages are discarded if this parameter is specified.
+    @type queue_size: int
+    @param start: starting position to read in b
+    @type start: int
+    @param max_msgs int: maximum number of messages to deserialize or None
+    @type max_msgs: int
+    @raise roslib.message.DeserializationError: if an error/exception occurs during deserialization
+    """    
     try:
         pos = start
         btell = b.tell()

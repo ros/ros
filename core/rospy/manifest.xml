@@ -31,7 +31,7 @@
   <depend package="roslang"/>
   <export>
     <roslang cmake="${prefix}/cmake/rospy.cmake"/>
-    <doxygen excludes="scripts"/>
+    <rosdoc builder="eepydoc"/>    
   </export>
 </package>
 

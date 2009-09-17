@@ -32,6 +32,8 @@
 #
 # Revision $Id$
 
+"""rospy internal core implementation library"""
+
 import atexit
 import logging
 import os
@@ -57,11 +59,14 @@ from rospy.validators import ParameterInvalid
 _logger = logging.getLogger("rospy.core")
 _mlogger = logging.getLogger("rospy.masterslave")
 
-## Info-level master log statements. These statements may be printed
-## to screen so they should be user-readable.
-## @param msg str
-## @param args arguments for \a msg if \a msg is a format string
 def mloginfo(msg, *args):
+    """
+    Info-level master log statements. These statements may be printed
+    to screen so they should be user-readable.
+    @param msg: Message string
+    @type msg: str
+    @param args: arguments for msg if msg is a format string
+    """
     #mloginfo is in core so that it is accessible to master and masterdata
     _mlogger.info(msg, *args)
     if args:
@@ -69,11 +74,14 @@ def mloginfo(msg, *args):
     else:
         print msg
 
-## Warn-level master log statements. These statements may be printed
-## to screen so they should be user-readable.
-## @param msg str
-## @param args arguments for \a msg if \a msg is a format string
 def mlogwarn(msg, *args):
+    """
+    Warn-level master log statements. These statements may be printed
+    to screen so they should be user-readable.
+    @param msg: Message string
+    @type msg: str    
+    @param args: arguments for msg if msg is a format string
+    """
     #mloginfo is in core so that it is accessible to master and masterdata
     _mlogger.warn(msg, *args)
     if args:
@@ -86,11 +94,15 @@ def mlogwarn(msg, *args):
 
 ROSRPC = "rosrpc://"
 
-## utility function for parsing ROS-RPC URIs
-## @param uri str: ROSRPC URI
-## @return (str, int): address, port
-## @throws ParameterInvalid if \a uri is not a valid ROSRPC URI
 def parse_rosrpc_uri(uri):
+    """
+    utility function for parsing ROS-RPC URIs
+    @param uri: ROSRPC URI
+    @type uri: str
+    @return: address, port
+    @rtype: (str, int)
+    @raise ParameterInvalid: if uri is not a valid ROSRPC URI
+    """
     if uri.startswith(ROSRPC):
         dest_addr = uri[len(ROSRPC):]            
     else:
@@ -111,7 +123,7 @@ def _stdout_handler(msg):
 def _stderr_handler(msg):
     sys.stderr.write(str(msg)+'\n')
 
-## client logger
+# client logger
 _clogger = logging.getLogger("rospy.rosout")
 
 _logdebug_handlers = [_clogger.debug]
@@ -120,11 +132,15 @@ _logwarn_handlers = [_clogger.warn]
 _logerr_handlers = [_clogger.error, _stderr_handler]
 _logfatal_handlers = [_clogger.critical, _stderr_handler]
 
-## Add handler for specified level
-## @param level int: log level (use constants from roslib.msg.Log)
-## @param h fn: log message handler
-## @raise ROSInternalException if \a level is invalid
 def add_log_handler(level, h):
+    """
+    Add handler for specified level
+    @param level: log level (use constants from roslib.msg.Log)
+    @type level: int
+    @param h: log message handler
+    @type h: fn
+    @raise ROSInternalException: if level is invalid
+    """
     if level == roslib.msg.Log.DEBUG:
         _logdebug_handlers.append(h)
     elif level == roslib.msg.Log.INFO:
@@ -138,39 +154,48 @@ def add_log_handler(level, h):
     else:
         raise rospy.exceptions.ROSInternalException("invalid log level: %s"%level)
     
-## \ingroup clientapi Client API
-## Log a debug message to the /rosout topic
 def logdebug(msg, *args):
+    """
+    Log a debug message to the /rosout topic
+    """    
     if args:
         msg = msg%args
     for h in _logdebug_handlers:
         h(msg)
-## \ingroup clientapi Client API
-## Log a warning message to the /rosout topic    
+
 def logwarn(msg, *args):
+    """
+    Log a warning message to the /rosout topic    
+    """    
     if args:
         msg = msg%args
     for h in _logwarn_handlers:
         h(msg)
-## \ingroup clientapi Client API
-## Log an info message to the /rosout topic    
+
 def loginfo(msg, *args):
+    """
+    Log an info message to the /rosout topic    
+    """    
     if args:
         msg = msg%args
     for h in _loginfo_handlers:
         h(msg)
 logout = loginfo # alias deprecated name
-## \ingroup clientapi Client API
-## Log an error message to the /rosout topic    
+
 def logerr(msg, *args):
+    """
+    Log an error message to the /rosout topic    
+    """
     if args:
         msg = msg%args
     for h in _logerr_handlers:
         h(msg)
 logerror = logerr # alias logerr
-## \ingroup clientapi Client API
-## Log an error message to the /rosout topic    
+
 def logfatal(msg, *args):
+    """
+    Log an error message to the /rosout topic    
+    """        
     if args:
         msg = msg%args
     for h in _logfatal_handlers:
@@ -186,8 +211,14 @@ STATUS = 0
 MSG = 1
 VAL = 2
 
-## \ingroup clientapi
 def get_ros_root(env=os.environ, require=False):
+    """
+    Get the value of ROS_ROOT.
+    @param require: if True, fails with ROSException
+    @return: Value of ROS_ROOT environment
+    @rtype: str
+    @raise ROSException: if require is True and ROS_ROOT is not set
+    """
     rosRoot = env.get(roslib.rosenv.ROS_ROOT, None)
     if require and not rosRoot:
         raise rospy.exceptions.ROSException('%s is not set'%roslib.rosenv.ROS_ROOT)
@@ -198,12 +229,17 @@ def get_ros_root(env=os.environ, require=False):
 # API
 
 _uri = None
-## \ingroup clientapi
 def get_node_uri():
+    """
+    Get this Node's URI.
+    @return: this Node's XMLRPC URI
+    @rtype: str
+    """
     return _uri
 
-## set the URI of the local node 
 def set_node_uri(uri):
+    """set the URI of the local node.
+    This is an internal API method, it does not actually affect the XMLRPC URI of the Node."""
     global _uri
     _uri = uri
 
@@ -212,6 +248,11 @@ def set_node_uri(uri):
 
 _log_filename = None
 def configure_logging(node_name):
+    """
+    Setup filesystem logging for this node
+    @param node_name: Node's name
+    @type node_name str
+    """
     global _log_filename
 
     # #988 __log command-line remapping argument
@@ -242,14 +283,20 @@ logging.getLogger('rospy').addHandler(NullHandler())
 _client_ready = False
 
 
-## Get the initialization state of the local node. If True, node has
-## been configured.
-## @return bool True if local node initialized
 def is_initialized():
+    """
+    Get the initialization state of the local node. If True, node has
+    been configured.
+    @return: True if local node initialized
+    @rtype: bool
+    """
     return _client_ready
-## set the initialization state of the local node
-## @param initialized bool: True if node initialized
 def set_initialized(initialized):
+    """
+    set the initialization state of the local node
+    @param initialized: True if node initialized
+    @type initialized: bool
+    """
     global _client_ready
     _client_ready = initialized
 
@@ -260,14 +307,17 @@ _preshutdown_hooks = []
 
 _signalChain = {}
 
-## \ingroup clientapi Client API
-## @return bool: True if shutdown flag has been set
 def is_shutdown():
+    """
+    @return: True if shutdown flag has been set
+    @rtype: bool
+    """
     return _shutdown_flag
 
-## @internal
-## shared implementation of add_shutdown_hook and add_preshutdown_hook
 def _add_shutdown_hook(h, hooks):
+    """
+    shared implementation of add_shutdown_hook and add_preshutdown_hook
+    """
     if type(h) not in [types.FunctionType, types.MethodType]:
         raise TypeError("shutdown hook [%s] must be a function: %s"%(h, type(h)))
     if _shutdown_flag:
@@ -283,26 +333,36 @@ def _add_shutdown_hook(h, hooks):
     finally:
         _shutdown_lock.release()
 
-## @internal
-## Add method to invoke when system shuts down. Unlike add_shutdown_hook, these
-## methods will be called before any other shutdown hooks.
-## @param h fn: function that takes in a single string argument (shutdown reason)
 def add_preshutdown_hook(h):
+    """
+    Add method to invoke when system shuts down. Unlike X{add_shutdown_hook}, these
+    methods will be called before any other shutdown hooks.
+    @param h: function that takes in a single string argument (shutdown reason)
+    @type h: fn(str)
+    """
     _add_shutdown_hook(h, _preshutdown_hooks)
 
-## @internal
-## Add method to invoke when system shuts down. Shutdown hooks are called in the order
-## that they are registered. This is an internal API 
-## method that is used to cleanup. See the client on_shutdown() method if you wish to register a
-## shutdown method.
-## @param h fn: function that takes in a single string argument (shutdown reason)
 def add_shutdown_hook(h):
+    """
+    Add method to invoke when system shuts down.
+
+    Shutdown hooks are called in the order that they are
+    registered. This is an internal API method that is used to
+    cleanup. See the client X{on_shutdown()} method if you wish to
+    register client hooks.
+
+    @param h: function that takes in a single string argument (shutdown reason)
+    @type h: fn(str)
+    """
     _add_shutdown_hook(h, _shutdown_hooks)
 
-## \ingroup clientapi
-## signal objects waiting on _shutdown_lock. Also invoke shutdown hooks
-## @param reason str: human-readable shutdown reason, if applicable
 def signal_shutdown(reason):
+    """
+    Initiates shutdown process by singaling objects waiting on _shutdown_lock.
+    Shutdown and pre-shutdown hooks are invoked.
+    @param reason: human-readable shutdown reason, if applicable
+    @type reason: str
+    """
     global _shutdown_flag, _shutdown_lock, _shutdown_hooks
     _logger.info("signal_shutdown [%s]"%reason)
     if not _shutdown_flag:
@@ -346,18 +406,20 @@ def _ros_atexit():
 atexit.register(_ros_atexit)
 
 # #687
-## register system signal handlers for SIGTERM and SIGINT
 def register_signals():
+    """
+    register system signal handlers for SIGTERM and SIGINT
+    """
     _signalChain[signal.SIGTERM] = signal.signal(signal.SIGTERM, _ros_signal)
     _signalChain[signal.SIGINT]  = signal.signal(signal.SIGINT, _ros_signal)
     
 # Validators ######################################
 
-## \ingroup validators
-## Validator that checks that parameter is a valid API handle
-## (i.e. URI). Both http and rosrpc are allowed schemes.
 def is_api(paramName):
-    "Valid API handle"
+    """
+    Validator that checks that parameter is a valid API handle
+    (i.e. URI). Both http and rosrpc are allowed schemes.
+    """
     def validator(param_value, callerId):
         if not param_value or not isinstance(param_value, basestring):
             raise ParameterInvalid("ERROR: parameter [%s] is not an XMLRPC URI"%paramName)
@@ -367,9 +429,10 @@ def is_api(paramName):
         return param_value
     return validator
 
-## \ingroup validators    
-## Validator that checks that parameter is a valid ROS topic name
 def is_topic(param_name):
+    """
+    Validator that checks that parameter is a valid ROS topic name
+    """    
     def validator(param_value, caller_id):
         v = valid_name_validator_resolved(param_name, param_value, caller_id)
         if param_value == '/':
@@ -377,22 +440,21 @@ def is_topic(param_name):
         return v
     return validator
 
-## \ingroup validators
-## Validator that checks that parameter is a valid ROS service name
 def is_service(param_name):
+    """Validator that checks that parameter is a valid ROS service name"""
     def validator(param_value, caller_id):
         v = valid_name_validator_resolved(param_name, param_value, caller_id)
         if param_value == '/':
             raise ParameterInvalid("ERROR: parameter [%s] cannot be the global namespace"%param_name)            
         return v
     return validator
-
-# XML-RPC stubs ###################################
 
 _proxies = {} #cache ServerProxys
-## @return xmlrpclib.ServerProxy: instance for calling remote server
-## or None if not a valid URI
 def xmlrpcapi(uri):
+    """
+    @return: instance for calling remote server or None if not a valid URI
+    @rtype: xmlrpclib.ServerProxy
+    """
     if uri is None:
         return None
     uriValidate = urlparse.urlparse(uri)

@@ -65,12 +65,19 @@ def get_node_proxy():
 # rospy module lower-level initialization
 
 _local_master_uri = None
-## @return str: URI of master instance if a master is running within this Python interpreter
 def get_local_master_uri():
+    """
+    @return: URI of master instance if a master is running within this Python interpreter
+    @rtype: str
+    """
     return _local_master_uri
 
-## Start a local master instance
 def start_master(environ, port=DEFAULT_MASTER_PORT):
+    """
+    Start a local master instance.
+    @return: Node instance
+    @rtype: rospy.msnode.ROSNode
+    """
     global _local_master_uri
     master = rospy.msnode.ROSNode(rospy.core.MASTER_NAME, port, rospy.masterslave.ROSMasterHandler())
     master.start()
@@ -79,12 +86,17 @@ def start_master(environ, port=DEFAULT_MASTER_PORT):
     _local_master_uri = master.uri
     return master
 
-## URI of master that will be used if master is not otherwise configured.
 def default_master_uri():
+    """
+    @return: URI of master that will be used if master is not otherwise configured.
+    @rtype: str
+    """
     return 'http://localhost:%s/'%DEFAULT_MASTER_PORT
 
-## Subroutine for start_node()
 def _sub_start_node(environ, name, master_uri=None, port=DEFAULT_NODE_PORT):
+    """
+    Subroutine for X{start_node()}
+    """
     if not master_uri:
         master_uri = roslib.rosenv.get_master_uri()
     if not master_uri:
@@ -104,13 +116,20 @@ def _sub_start_node(environ, name, master_uri=None, port=DEFAULT_NODE_PORT):
 
     return rospy.msproxy.NodeProxy(node.uri)
 
-## Load ROS slave node, initialize from environment variables
-## @param environ dict: environment variables
-## @param name str: override ROS_NODE: name of slave node
-## @param master_uri str: override ROS_MASTER_URI: XMlRPC URI of central ROS server
-## @param port int: override ROS_PORT: port of slave xml-rpc node
-## @return rospy.msproxy.NodeProxy: node proxy instance
 def start_node(environ, name, master_uri=None, port=None):
+    """
+    Load ROS slave node, initialize from environment variables
+    @param environ: environment variables
+    @type environ: dict
+    @param name: override ROS_NODE: name of slave node
+    @type name: str
+    @param master_uri: override ROS_MASTER_URI: XMlRPC URI of central ROS server
+    @type master_uri: str
+    @param port: override ROS_PORT: port of slave xml-rpc node
+    @type port: int
+    @return: node proxy instance
+    @rtype rospy.msproxy.NodeProxy
+    """
     global _node
     rospy.tcpros.init_tcpros()
     if _node is not None:

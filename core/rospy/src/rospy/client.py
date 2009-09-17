@@ -32,7 +32,9 @@
 #
 # Revision $Id$
 
-## rospy client API 
+"""
+Additional ROS client API methods.
+"""
 
 import logging
 import os
@@ -64,20 +66,25 @@ WARN = roslib.msg.Log.WARN
 ERROR = roslib.msg.Log.ERROR
 FATAL = roslib.msg.Log.FATAL
 
-## \ingroup clientapi Client API
-## Register function to be called on shutdown. This function will be
-## called before Node begins teardown.
-## @param h fn(): Function with zero args to be called on shutdown.
 def on_shutdown(h):
-    # wrap function to strip \a reason argument that gets passed in for internal use
+    """
+    Register function to be called on shutdown. This function will be
+    called before Node begins teardown.
+    @param h: Function with zero args to be called on shutdown.
+    @type h: fn()
+    """
+
+    # wrap function to strip reason argument that gets passed in for internal use
     def wrapper(reason):
         h()
     rospy.core.add_preshutdown_hook(wrapper)
     
-## \ingroup clientapi Client API
-## blocks until ROS node is shutdown. Yields activity to other threads.
-## @throws ROSInitException if node is not in a properly initialized state
 def spin():
+    """
+    Blocks until ROS node is shutdown. Yields activity to other threads.
+    @raise ROSInitException: if node is not in a properly initialized state
+    """
+    
     if not rospy.core.is_initialized():
         raise rospy.exceptions.ROSInitException("client code must call rospy.init_node() first")
     logdebug("node[%s, %s] entering spin(), pid[%s]", rospy.core.get_caller_id(), rospy.core.get_node_uri(), os.getpid())        
@@ -88,14 +95,20 @@ def spin():
         logdebug("keyboard interrupt, shutting down")
         rospy.core.signal_shutdown('keyboard interrupt')
 
-## \ingroup clientapi
-## @return [str]: copy of sys.argv with ROS remapping arguments removed
 def myargv(argv=sys.argv):
+    """
+    Helper function for using sys.argv is ROS client libraries.
+    @return: copy of sys.argv with ROS remapping arguments removed
+    @rtype: [str]
+    """
     return [a for a in argv if not rospy.names.REMAP in a]
 
-## Uploads private params to the parameter server. Private params are specified
-## via command-line remappings. 
 def _init_node_params(argv, node_name):
+    """
+    Uploads private params to the parameter server. Private params are specified
+    via command-line remappings.
+    """
+
     # #1027: load in param name mappings
     import roslib.params
     params = roslib.params.load_command_line_node_params(argv)
@@ -105,35 +118,48 @@ def _init_node_params(argv, node_name):
 
 _init_node_args = None
 
-## \ingroup clientapi
-## Register client node with the master under the specified name.
-## This should be called after Pub/Sub topics have been declared and
-## it MUST be called from the main Python thread unless \a
-## disable_signals is set to True. Duplicate calls to init_node are
-## only allowed if the arguments are identical as the side-effects of
-## this method are not reversible.
-##
-## @param name
-## @param argv Command line arguments to this program. ROS reads
-## these arguments to find renaming params. Defaults to sys.argv.
-## @param anonymous bool: if True, a name will be auto-generated for
-##   the node using \a name as the base.  This is useful when you
-##   wish to have multiple instances of the same node and don't care
-##   about their actual names (e.g. tools, guis). \a name will be
-##   used as the stem of the auto-generated name. NOTE: you cannot
-##   remap the name of an anonymous node.
-## @param log_level int: log level for sending message to /rosout,
-##   which is INFO by default. For convenience, you may use
-##   rospy.DEBUG, rospy.INFO, rospy.ERROR, rospy.WARN, rospy.FATAL,
-## @param disable_signals bool: If True, rospy will not register its
-##   own signal handlers. You must set this flag if (a) you are unable
-##   to call init_node from the main thread and/or you are using rospy
-##   in an environment where you need to control your own signal
-##   handling (e.g. WX).
-## @param disable_rostime bool: for rostests only, suppresses
-## automatic subscription to rostime
-## @throws ROSInitException if initialization/registration fails
 def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rostime=False, disable_signals=False):
+    """Register client node with the master under the specified name.
+    This should be called after Pub/Sub topics have been declared and
+    it MUST be called from the main Python thread unless
+    disable_signals is set to True. Duplicate calls to init_node are
+    only allowed if the arguments are identical as the side-effects of
+    this method are not reversible.
+
+    @param name: Node's name
+    @type name: string
+    
+    @param argv: Command line arguments to this program. ROS reads
+    these arguments to find renaming params. Defaults to sys.argv.
+    @type argv: [str]
+
+    @param anonymous: if True, a name will be auto-generated for
+    the node using name as the base.  This is useful when you wish
+    to have multiple instances of the same node and don't care about
+    their actual names (e.g. tools, guis). name will be used as the
+    stem of the auto-generated name. NOTE: you cannot remap the name
+    of an anonymous node.
+    @type anonymous: bool
+
+    @param log_level: log level for sending message to /rosout,
+    which is INFO by default. For convenience, you may use
+    rospy.DEBUG, rospy.INFO, rospy.ERROR, rospy.WARN, rospy.FATAL,
+    @type log_level: int
+    
+    @param disable_signals: If True, rospy will not register its
+    own signal handlers. You must set this flag if (a) you are unable
+    to call init_node from the main thread and/or you are using rospy
+    in an environment where you need to control your own signal
+    handling (e.g. WX).
+    @type disable_signals: bool
+    
+    @param disable_rostime: for rostests only, suppresses
+    automatic subscription to rostime
+    @type disable_rostime: bool
+
+    @raise ROSInitException: if initialization/registration fails
+    """
+    
     global _init_node_args
 
     # #972: allow duplicate init_node args if calls are identical
@@ -204,22 +230,20 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     else:
         rospy.rostime.set_rostime_initialized(True)
 
-## #503
-## @deprecated 
-ready = init_node
-
 #_master_proxy is a MasterProxy wrapper
 _master_proxy = None
 
-## \ingroup clientapi 
-# Get a remote handle to the ROS Master. This method can be called
-# independent of running a ROS node, though the ROS_MASTER_URI must be
-# declared in the environment.
-#
-# @return MasterProxy: ROS Master remote object
-# @throws Exception if server cannot be located or system cannot be
-# initalized
 def get_master(env=os.environ):
+    """
+    Get a remote handle to the ROS Master.
+    This method can be called independent of running a ROS node,
+    though the ROS_MASTER_URI must be declared in the environment.
+
+    @return: ROS Master remote object
+    @rtype: L{rospy.msproxy.MasterProxy}
+    @raise Exception: if server cannot be located or system cannot be
+    initialized
+    """
     global _master_proxy
     if _master_proxy is not None:
         return _master_proxy
@@ -232,8 +256,13 @@ def get_master(env=os.environ):
 #########################################################
 # Topic helpers
 
-## \ingroup clientapi 
 def get_published_topics(namespace='/'):
+    """
+    Retrieve list of topics that the master is reporting as being published.
+
+    @return: List of topic names and types: [[topic1, type1]...[topicN, typeN]]
+    @rtype: [[str, str]]
+    """
     code, msg, val = get_master().getPublishedTopics(namespace)
     if code != 1:
         raise rospy.exceptions.ROSException("unable to get published topics: %s"%msg)
@@ -243,14 +272,17 @@ def get_published_topics(namespace='/'):
 #########################################################
 # Service helpers
 
-## \ingroup clientapi 
-## Blocks until service is available. Use this in
-## initialization code if your program depends on a
-## service already running.
-## @param service str: name of service
-## @param timeout double: timeout time in seconds
-## @throws ROSException if specified \a timeout is exceeded
 def wait_for_service(service, timeout=None):
+    """
+    Blocks until service is available. Use this in
+    initialization code if your program depends on a
+    service already running.
+    @param service: name of service
+    @type service: str
+    @param timeout: timeout time in seconds
+    @type timeout: double
+    @raise ROSException: if specified timeout is exceeded
+    """
     def contact_service(service, timeout=10.0):
         code, _, uri = master.lookupService(service)
         if False and code == 1:
@@ -303,9 +335,10 @@ def wait_for_service(service, timeout=None):
 # Param Server Access
 
 _param_server = None
-## @internal
-## Initialize parameter server singleton
 def _init_param_server():
+    """
+    Initialize parameter server singleton
+    """
     global _param_server
     if _param_server is None:
         _param_server = get_master() #in the future param server will be a service
@@ -314,13 +347,16 @@ def _init_param_server():
 class _Unspecified(object): pass
 _unspecified = _Unspecified()
 
-## \ingroup clientapi 
-## Retrieve a parameter from the param server
-## @param default: (optional)default value to return if key is not set
-## @return XmlRpcLegalValue: parameter value
-## @throws ROSException if parameter server reports an error
-## @throws KeyError if value not set and default is not given
 def get_param(param_name, default=_unspecified):
+    """
+    Retrieve a parameter from the param server
+    @param default: (optional) default value to return if key is not set
+    @type default: any
+    @return: parameter value
+    @rtype: XmlRpcLegalValue
+    @raise ROSException: if parameter server reports an error
+    @raise KeyError: if value not set and default is not given
+    """
     try:
         _init_param_server()
         return _param_server[param_name] #MasterProxy does all the magic for us
@@ -330,11 +366,13 @@ def get_param(param_name, default=_unspecified):
         else:
             raise
 
-## \ingroup clientapi 
-## Retrieve list of parameter names
-## @return [str]: parameter names
-## @throws ROSException if parameter server reports an error
 def get_param_names():
+    """
+    Retrieve list of parameter names.
+    @return: parameter names
+    @rtype: [str]
+    @raise ROSException: if parameter server reports an error
+    """
     _init_param_server()
     code, msg, val = _param_server.getParamNames() #MasterProxy does all the magic for us
     if code != 1:
@@ -342,36 +380,45 @@ def get_param_names():
     else:
         return val
 
-## \ingroup clientapi 
-## Set a parameter on the param server
-## @param param_name str: parameter name
-## @param param_value XmlRpcLegalValue: parameter value
-## @throws ROSException if parameter server reports an error
 def set_param(param_name, param_value):
+    """
+    Set a parameter on the param server
+    @param param_name: parameter name
+    @type param_name: str
+    @param param_value: parameter value
+    @type param_value: XmlRpcLegalValue
+    @raise ROSException: if parameter server reports an error
+    """
     _init_param_server()
     _param_server[param_name] = param_value #MasterProxy does all the magic for us
 
-## \ingroup clientapi 
-## Search for a parameter on the param server
-## @param param_name str: parameter name
-## @throws ROSException if parameter server reports an error
 def search_param(param_name):
+    """
+    Search for a parameter on the param server
+    @param param_name: parameter name
+    @type param_name: str
+    @raise ROSException: if parameter server reports an error
+    """
     _init_param_server()
     return _param_server.search_param(param_name)
     
-## \ingroup clientapi 
-## Delete a parameter on the param server
-## @param param_name str: parameter name
-## @throws ROSException if parameter server reports an error
 def delete_param(param_name):
+    """
+    Delete a parameter on the param server
+    @param param_name: parameter name
+    @type param_name: str
+    @raise ROSException: if parameter server reports an error
+    """    
     _init_param_server()
     del _param_server[param_name] #MasterProxy does all the magic for us
 
-## \ingroup clientapi 
-## Test if parameter exists on the param server
-## @param param_name str: parameter name
-## @throws ROSException if parameter server reports an error
 def has_param(param_name):
+    """
+    Test if parameter exists on the param server
+    @param param_name: parameter name
+    @type param_name: str
+    @raise ROSException: if parameter server reports an error
+    """
     _init_param_server()
     return param_name in _param_server #MasterProxy does all the magic for us
 
@@ -380,15 +427,31 @@ def has_param(param_name):
 
 # these cannot go into rostime due to circular deps
 
-## Convenience class for sleeping in a loop at a specified rate
+
 class Rate(object):
-    ## @param hz int: hz rate to determine sleeping
+    """
+    Convenience class for sleeping in a loop at a specified rate
+    """
+    
     def __init__(self, hz):
+        """
+        Constructor.
+        @param hz: hz rate to determine sleeping
+        @type hz: int
+        """
         # #1403
         self.last_time = rospy.rostime.get_rostime()
         self.sleep_dur = rospy.rostime.Duration(0, int(1e9/hz))
 
     def sleep(self):
+        """
+        Attempt sleep at the specified rate. sleep() takes into
+        account the time elapsed since the last successful
+        sleep().
+        
+        @raise ROSInterruptException: if ROS time is set backwards or if
+        ROS shutdown occurs before sleep completes
+        """
         curr_time = rospy.rostime.get_rostime()
         # detect time jumping backwards
         if self.last_time > curr_time:
@@ -405,16 +468,17 @@ class Rate(object):
             self.last_time = curr_time
 
 # TODO: may want more specific exceptions for sleep
-## \ingroup clientapi
-## sleep for the specified \a duration in ROS time. If \a duration
-## is negative, sleep immediately returns.
-## @param duration float or Duration: seconds (or rospy.Duration) to sleep
-## @throws ROSInterruptException if ROS time is set backwards or if
-## ROS shutdown occurs before sleep completes
 def sleep(duration):
-    # make a copy of current rostime
-    initial_rostime = rospy.rostime.get_rostime()
-    if initial_rostime is None:
+    """
+    sleep for the specified duration in ROS time. If duration
+    is negative, sleep immediately returns.
+    
+    @param duration: seconds (or rospy.Duration) to sleep
+    @type duration: float or Duration
+    @raise ROSInterruptException: if ROS time is set backwards or if
+    ROS shutdown occurs before sleep completes
+    """
+    if rospy.rostime.is_wallclock():
         if isinstance(duration, roslib.rostime.Duration):
             duration = duration.to_seconds()
         if duration < 0:
@@ -422,10 +486,11 @@ def sleep(duration):
         else:
             time.sleep(duration)
     else:
+        initial_rostime = rospy.rostime.get_rostime()
         if not isinstance(duration, roslib.rostime.Duration):
             duration = rospy.rostime.Duration.from_seconds(duration)
         sleep_t = initial_rostime + duration
-        
+
         rostime_cond = rospy.rostime.get_rostime_cond()
 
         # break loop if sleep_t is reached, time moves backwards, or
@@ -435,7 +500,7 @@ def sleep(duration):
                   not rospy.core.is_shutdown():
             try:
                 rostime_cond.acquire()
-                rostime_cond.wait(0.001)
+                rostime_cond.wait(0.5)
             finally:
                 rostime_cond.release()
 

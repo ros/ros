@@ -32,6 +32,8 @@
 #
 # Revision $Id: client.py 2258 2008-09-30 23:03:06Z sfkwc $
 
+## Internal use: support for /rosout logging in rospy
+
 import logging
 import sys
 import traceback

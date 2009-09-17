@@ -164,10 +164,10 @@ class TCPROSServiceClient(TCPROSTransportProtocol):
         if b.tell() == 1:
             b.seek(0)
         
-    ## read service error from \a sock 
+    ## read service error from sock 
     ## @param self
     ## @param sock socket: socket to read from
-    ## @param b StringIO: currently read data from \a sock
+    ## @param b StringIO: currently read data from sock
     def _read_service_error(self, sock, b):
         buff_size = 256 #can be small given that we are just reading an error string
         while b.tell() < 5:
@@ -181,24 +181,30 @@ class TCPROSServiceClient(TCPROSTransportProtocol):
 
     
 ## \ingroup clientapi
-## Create a handle to a ROS service for invoking calls.
-##
-## \section serviceproxyusage Service Proxy Usage
-## \verbatim
-## add_two_ints = ServiceProxy('add_two_ints', AddTwoInts)
-## resp = add_two_ints(1, 2)
-## \endverbatim
 class ServiceProxy(_Service):
+    """
+    Create a handle to a ROS service for invoking calls.
+
+    Usage::
+      add_two_ints = ServiceProxy('add_two_ints', AddTwoInts)
+      resp = add_two_ints(1, 2)
+    """
     
-    ## @param self
-    ## @param name str: name of service to call
-    ## @param service_class auto-generated service class
-    ## @param persistent bool: if True, proxy maintains a persistent
-    ## connection to service. While this results in better call
-    ## performance, persistent connections are discouraged as they are
-    ## less resistent to network issues and service restarts.
-    ## @param headers dict: arbitrary headers 
     def __init__(self, name, service_class, persistent=False, headers=None):
+        """
+        ctor.
+        @param name: name of service to call
+        @type name: str
+        @param service_class: auto-generated service class
+        @type service_class: Service class
+        @param persistent: if True, proxy maintains a persistent
+        connection to service. While this results in better call
+        performance, persistent connections are discouraged as they are
+        less resistent to network issues and service restarts.
+        @type persistent: bool
+        @param headers: arbitrary headers 
+        @type headers: dict
+        """
         super(ServiceProxy, self).__init__(name, service_class)
         self.uri = None
         self.seq = 0
@@ -211,23 +217,27 @@ class ServiceProxy(_Service):
         self.protocol = TCPROSServiceClient(self.name, self.service_class, headers=headers)
         self.transport = None #for saving persistent connections
 
-    ## callable-style version of the service api (#425)
-    ## @param self
-    ## @param args arguments to remote service
-    ## @param kwds dict: set timeout=float to override service call timeout
-    ## @throws ROSSerializationException If unable to serialize
-    ## message. This is usually a type error with one of the fields.
     def __call__(self, *args, **kwds):
+        """
+        callable-style version of the service api (#425)
+        @param args: arguments to remote service
+        @param kwds: set timeout=float to override service call timeout
+        @raise ROSSerializationException: If unable to serialize
+        message. This is usually a type error with one of the fields.
+        """
         if len(args) == 1 and self.request_class == args[0].__class__:
             return self.call(args[0], **kwds)
         else:
             return self.call(self.request_class(*args), **kwds)
     
-    ## private routine for getting URI of service to call
-    ## @param self
-    ## @param request Message: request message
-    ## @param timeout float: timeout in seconds
     def _get_service_uri(self, request, timeout):
+        """
+        private routine for getting URI of service to call
+        @param request: request message
+        @type request: Message
+        @param timeout: timeout in seconds
+        @type timeout: float
+        """
         if not isinstance(request, rospy.msg.Message):
             raise TypeError("request object is not a valid request message instance")
         if not self.request_class == request.__class__:
@@ -254,16 +264,19 @@ class ServiceProxy(_Service):
                 logger.error("[%s]: socket error contacting service, master is probably unavailable",self.name)
         return self.uri
 
-    ## Call the service 
-    ## @param self
-    ## @param request Messsage: service request message instance
-    ## @param timeout float: (keyword arg) number of seconds before request times out
-    ## @throws TypeError if request is not of the valid type (Message)
-    ## @throws ServiceException if communication with remote service fails
-    ## @throws ROSSerializationException If unable to serialize
-    ## message. This is usually a type error with one of the fields.
     def call(self, request, timeout=None):
-
+        """
+        Call the service 
+        @param request: service request message instance
+        @type request: Messsage
+        @param timeout: (keyword arg) number of seconds before request times out
+        @type timeout: float
+        @raise TypeError: if request is not of the valid type (Message)
+        @raise ServiceException: if communication with remote service fails
+        @raise ROSSerializationException: If unable to serialize
+        message. This is usually a type error with one of the fields.
+        """
+        
         # initialize transport
         if self.transport is None:
             service_uri = self._get_service_uri(request, timeout)
@@ -295,30 +308,36 @@ class ServiceProxy(_Service):
             self.transport = None
         return responses[0]
 
-    ## Close this ServiceProxy. This only has an effect on persistent ServiceProxy instances.
-    ## @param self
+    
     def close(self):
+        """Close this ServiceProxy. This only has an effect on persistent ServiceProxy instances."""
         if self.transport is not None:
             self.transport.close()
 
-## \ingroup clientapi Client API
-## Declare a ROS service. Service requests are passed to the
-## specified handler. 
-##
-## \section serviceusage Service Usage
-##   
-## Streamlined:
-## \verbatim
-## s = Service('getmapservice', GetMap, get_map_handler)
-## \endverbatim
 class Service(_Service):
+    """
+    Declare a ROS service. Service requests are passed to the
+    specified handler. 
 
-    ## @param self
-    ## @param name str: service name
-    ## @param service_class Class: ServiceDefinition class
-    ## @param handler fn: callback fn(req)->resp for processing service request
-    ## @param buff_size: size of buffer for reading incoming requests. Should be at least size of request message
+    Service Usage::
+      s = Service('getmapservice', GetMap, get_map_handler)
+    \endverbatim
+    """
+
     def __init__(self, name, service_class, handler, buff_size=DEFAULT_BUFF_SIZE):
+        """
+        ctor.
+        @param name: service name
+        @type name: str
+        @param service_class: ServiceDefinition class
+        @type service_class: ServiceDefinition class
+        @param handler: callback function for processing service
+        request. Function takes in a ServiceRequest and returns a
+        ServiceResponse of the appropriate type.
+        @type handler: fn(req)->resp
+        @param buff_size: size of buffer for reading incoming requests. Should be at least size of request message
+        @type buff_size: int
+        """
         super(Service, self).__init__(name, service_class)
         self.handler = handler
         self.registered = False
@@ -337,18 +356,14 @@ class Service(_Service):
         logdebug("[%s]: new Service instance"%self.name)
         get_service_manager().register(name, self)
 
-    ## No longer anything as Service() constructor auto-registers
-    ## @deprecated
-    ## @param self
-    def register(self): 
-        pass
-
     # TODO: should consider renaming to unregister
     
-    ## Stop this service
-    ## @param self
-    ## @param reason str: human-readable shutdown reason
     def shutdown(self, reason=''):
+        """
+        Stop this service
+        @param reason: human-readable shutdown reason
+        @type reason: str
+        """
         self.done = True
         logdebug('[%s].shutdown: reason [%s]'%(self.name, reason))
         try:
@@ -357,28 +372,34 @@ class Service(_Service):
             logerr("Unable to unregister with master: "+traceback.format_exc())
             raise ServiceException("Unable to connect to master: %s"%e)
 
-    ## Let service run and take over thread until shutdown. Use this method to keep
-    ## your scripts from exiting execution.
-    ## @param self
     def spin(self):
+        """
+        Let service run and take over thread until shutdown. Use this method to keep
+        your scripts from exiting execution.
+        """
         try:
             while not rospy.core.is_shutdown() and not self.done:
                 time.sleep(0.5)
         except KeyboardInterrupt:
             logdebug("keyboard interrupt, shutting down")
 
-    ## Send error message to client
-    ## @param self
-    ## @param transport Transport: transport connection to client 
-    ## @param err_msg str: error message to send to client
     def _write_service_error(self, transport, err_msg):
+        """
+        Send error message to client
+        @param transport: transport connection to client 
+        @type transport: Transport
+        @param err_msg: error message to send to client
+        @type err_msg: str
+        """
         transport.write_data(struct.pack('<BI%ss'%len(err_msg), 0, len(err_msg), err_msg))
         
-    ## Process a single incoming \a request.
-    ## @param self
-    ## @param transport TCPROSTransport: transport instance
-    ## @param request Message
     def _handle_request(self, transport, request):
+        """
+        Process a single incoming request.
+        @param transport: transport instance
+        @type transport: L{TCPROSTransport}
+        @param request: Message
+        """
         try:
             response = self.handler(request)
             if response is None:
@@ -395,13 +416,16 @@ class Service(_Service):
             logerr("Error processing request: %s\n%s"%(e,traceback.print_exc()))
             self._write_service_error(transport, "error processing request: %s"%e)
     
-    ## Process incoming \a request. This method should be run in its
-    ## own thread. If header['persistent'] is set to 1, method will
-    ## block until connection is broken.
-    ## @param self
-    ## @param transport TCPROSTransport: transport instance
-    ## @param header dict: headers from client
     def handle(self, transport, header):
+        """
+        Process incoming request. This method should be run in its
+        own thread. If header['persistent'] is set to 1, method will
+        block until connection is broken.
+        @param transport: transport instance
+        @type transport: L{TCPROSTransport}
+        @param header: headers from client
+        @type header: dict
+        """
         if 'persistent' in header and \
                header['persistent'].lower() in ['1', 'true']:
             persistent = True

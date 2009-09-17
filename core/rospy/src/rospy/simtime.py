@@ -32,8 +32,7 @@
 #
 # Revision $Id$
 
-## Time support. This is implemented with a pluggable override in order to support simulated time,
-## which is separately provided by rospy.simtime
+"""Internal-use: Support for simulated clock."""
 
 import logging
 import traceback
@@ -65,9 +64,11 @@ from rospy.rostime import _set_rostime
 def _set_rostime_wrapper(time_msg):
     _set_rostime(time_msg.rostime)
     
-## Initialize the ROS time system by connecting to the /time topic and
-## check the state of the /use_sim_time parameter.
 def init_simtime():
+    """
+    Initialize the ROS time system by connecting to the /time topic and
+    check the state of the /use_sim_time parameter.
+    """    
     logger = logging.getLogger("rospy.simtime")
     try:
         global _rostime_sub

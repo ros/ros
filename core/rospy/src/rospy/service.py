@@ -32,6 +32,9 @@
 #
 # Revision $Id$
 
+"""Base-classes and management of ROS services.
+See L{rospy.tcpros_service} for actual implementation."""
+
 import logging
 import traceback
 
@@ -47,12 +50,12 @@ logger = logging.getLogger('rospy.service')
 import roslib.message
 ServiceDefinition = roslib.message.ServiceDefinition
 
-## \ingroup clientapi
-## Exception class for service errors
-class ServiceException(Exception): pass
+class ServiceException(Exception):
+    """Exception class for service-related errors"""
+    pass
 
-## superclass for storing service information
 class _Service(object):
+    """Internal-use superclass for storing service information"""
     def __init__(self, name, service_class):
         self.name = resolve_name(name) #services remap as well
         self.service_class = service_class
@@ -60,15 +63,18 @@ class _Service(object):
         self.response_class = service_class._response_class
         self.uri = None #initialize attr
 
-## Keeps track of currently registered services in the ROS system
 class ServiceManager(object):
+    """Keeps track of currently registered services in the ROS system"""
     def __init__(self):
+        """ctor"""
         self.map = {} # {name : Service}
         self.lock = threading.RLock()
 
-    ## @param self
-    ## @return [(str, str)]: List of (service_name, service_uri)  for all registered services.
     def get_services(self):
+        """
+        @return: List of (service_name, service_uri)  for all registered services.
+        @rtype: [(str, str)]
+        """
         try:
             self.lock.acquire()
             ret_val = []
@@ -79,16 +85,20 @@ class ServiceManager(object):
             self.lock.release()
         return ret_val
     
-    ## Unregister all registered services
-    ## @param self 
     def unregister_all(self):
+        """
+        Unregister all registered services
+        """
         self.map.clear()
     
-    ## Register service with ServiceManager and ROS master
-    ## @param self
-    ## @param service_name str: name of service (resolved)
-    ## @param service Service        
     def register(self, service_name, service):
+        """
+        Register service with ServiceManager and ROS master
+        @param service_name: name of service (resolved)
+        @type service_name: str
+        @param service: Service to register
+        @type service: L{_Service}
+        """
         err = None
         try:
             self.lock.acquire()
@@ -105,11 +115,14 @@ class ServiceManager(object):
         if err:
             raise ServiceException(err)
         
-    ## Unregister service with ServiceManager and ROS Master
-    ## @param self
-    ## @param service_name str: name of service
-    ## @param service Service: service implementation
     def unregister(self, service_name, service):
+        """
+        Unregister service with L{ServiceManager} and ROS Master
+        @param service_name: name of service
+        @type service_name: str
+        @param service: service implementation
+        @type service: L{_Service}
+        """        
         try:
             self.lock.acquire()
             curr = self.map.get(service_name, None)
@@ -121,10 +134,13 @@ class ServiceManager(object):
         finally:
             self.lock.release()
 
-    ## @param self
-    ## @param service_name str: name of service
-    ## @return Service: service implementation
     def get_service(self, service_name):
+        """
+        @param service_name: name of service
+        @type service_name: str
+        @return: service implementation
+        @rtype: _Service
+        """
         return self.map.get(service_name, None)
 
 set_service_manager(ServiceManager())

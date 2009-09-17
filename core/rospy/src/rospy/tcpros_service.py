@@ -468,6 +468,6 @@ class Service(_Service):
             except rospy.exceptions.TransportTerminated, e:
                 if not persistent:
                     logerr("incoming connection failed: %s"%e)
-                logwarn("service[%s]: transport terminated"%self.name)
+                logdebug("service[%s]: transport terminated"%self.name)
                 handle_done = True
         transport.close()

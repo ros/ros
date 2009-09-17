@@ -557,12 +557,16 @@ class RosMakeAll:
 
         date_time_stamp =  "rosmake_output-" + time.strftime("%Y-%m-%d-%H-%M-%S")
         if options.output_dir:
-            self.log_dir = os.path.join(os.getcwd(), options.output_dir, date_time_stamp);
+            #self.log_dir = os.path.join(os.getcwd(), options.output_dir, date_time_stamp);
+            self.log_dir = os.path.abspath(options.output_dir)
         else:
             self.log_dir = os.path.join(os.path.expanduser("~"), ".ros", date_time_stamp);
 
         self.print_all("Logging to directory")
         self.print_all("%s"%self.log_dir)
+        if os.path.exists (self.log_dir) and not os.path.isdir(self.log_dir):
+            self.print_all( "Log destination %s is a file; please remove it or choose a new destination"%self.log_dir)
+            sys.exit(1)
         if not os.path.exists (self.log_dir):
             os.makedirs (self.log_dir)
 

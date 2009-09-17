@@ -46,7 +46,7 @@ try:
     import gtk
     import gtk.gdk
 except ImportError:
-    print >> sys.stderr, "rxgraph requires GTK in order to run.\nPlease run rosdep to install any missing dependencies of rxgraph."
+    print >> sys.stderr, "rxgraph requires GTK in order to run.\nPlease run\n\trosdep install rosgraph\nto install any missing dependencies of rxgraph."
     sys.exit(1)
 
 import rosgraph.xdot

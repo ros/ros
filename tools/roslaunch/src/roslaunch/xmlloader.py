@@ -72,6 +72,10 @@ def _command_line_param(key, value):
         value = value.encode('UTF-8')
     # strip the yaml encoding as python-yaml adds a newline
     encoded = yaml.dump(value).strip()
+    # #1731 strip the '...' end-of-document indicator as it is not
+    # #required (and confusing to users)
+    if encoded.endswith('\n...'):
+        encoded = encoded[:-4]
     return '_%s:="%s"'%(key, encoded)
 
 # This code has gotten a bit crufty as roslaunch has grown far beyond

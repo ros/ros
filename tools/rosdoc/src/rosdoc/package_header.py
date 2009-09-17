@@ -123,7 +123,7 @@ def generate_package_headers(ctx):
         if not ctx.should_document(p):
             continue
         try:
-          print "generating wiki files for", p
+          #print "generating wiki files for", p
           _generate_package_headers(ctx, p)
         except Exception, e:
           import traceback

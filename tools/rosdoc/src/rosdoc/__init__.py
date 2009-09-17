@@ -70,6 +70,7 @@ def main():
     try:
         # Generate Epydoc
         if 1:
+            print "building epydoc packages"
             import epyenator
             epyenator_success = set(epyenator.generate_epydoc(ctx))
         else:
@@ -77,6 +78,7 @@ def main():
             
         # Generate Sphinx
         if 1:
+            print "building sphinx packages"            
             import sphinxenator
             sphinx_success = set(sphinxenator.generate_sphinx(ctx))
         else:
@@ -84,6 +86,7 @@ def main():
         
         # Generate Doxygen on remainder
         if 1:
+            print "building doxygen packages"
             import doxygenator
             ctx.packages = dict([(p, ctx.packages[p]) for p in (set(ctx.packages) - sphinx_success - epyenator_success)])
             doxy_success = doxygenator.generate_doxygen(ctx, quiet=options.quiet) 

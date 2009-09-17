@@ -16,7 +16,7 @@ stacks:
   imu_drivers: {latest: 0.1.0}
   joystick_drivers: {latest: 0.2.0}
   laser_drivers: {latest: 0.1.0}
-  laser_pipeline: {latest: 0.2.0}
+  laser_pipeline: {latest: 0.3.0}
   navigation: {latest: 0.2.0}
   opencv: {latest: 0.1.0}
   pr2_mechanism: {latest: 0.1.0}

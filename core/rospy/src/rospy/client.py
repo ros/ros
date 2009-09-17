@@ -175,7 +175,7 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
         # NOTE: register_signals must be called from main thread
         rospy.core.register_signals() # add handlers for SIGINT/etc...
     else:
-        logwarn("signal handlers for rospy disabled")
+        logdebug("signal handlers for rospy disabled")
 
     # check for name override
     name_remap = rospy.names.resolve_name('__name', '/')
@@ -183,7 +183,7 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
         # re-resolve, using actual namespace
         name = rospy.names.resolve_name('__name')
         if anonymous:
-            logwarn("[%s] WARNING: due to __name setting, anonymous setting is being changed to false"%name)
+            logdebug("[%s] WARNING: due to __name setting, anonymous setting is being changed to false"%name)
             anonymous = False
         
     if anonymous:

@@ -52,6 +52,7 @@ def stack_link(stack):
 def _generate_package_headers(ctx, p):
   import yaml
   m = ctx.manifests[p]
+  m.description = m.description or ''
   d = {
     'brief': m.brief,
     'description': m.description.strip() or '',

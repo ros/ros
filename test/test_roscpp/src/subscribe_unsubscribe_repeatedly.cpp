@@ -29,32 +29,23 @@
 
 #include <time.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <test_roscpp/TestArray.h>
 
-class Subscriber : public ros::Node
+void callback(const test_roscpp::TestArrayConstPtr& msg)
 {
-public:
-  test_roscpp::TestArray msg;
-  Subscriber() : ros::Node("subscriber")
-  { 
-  }
-  void cb()
-  {
-  }
-};
+}
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv);
-  Subscriber s;
-  struct timespec sleep_time = {0, 100000000};
-  while(s.ok())
+  ros::init(argc, argv, "subscribe_unsubscribe_repeatedly");
+  ros::NodeHandle nh;
+  ros::Duration sleep_time(0, 100000000);
+  while(ros::ok())
   {
-    s.subscribe("test_roscpp/pubsub_test", s.msg, &Subscriber::cb, 1);
-    nanosleep(&sleep_time,NULL);
-    s.unsubscribe("test_roscpp/pubsub_test");
-    nanosleep(&sleep_time,NULL);
+    sleep_time.sleep();
+    ros::Subscriber sub = nh.subscribe("test_roscpp/pubsub_test", 1, callback);
+    sleep_time.sleep();
   }
   
   return 0;

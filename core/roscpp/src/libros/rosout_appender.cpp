@@ -51,7 +51,8 @@ ROSOutAppender::ROSOutAppender()
   AdvertiseOptions ops;
   ops.init<roslib::Log>(names::resolve("/rosout"), 0);
   ops.latch = true;
-  TopicManager::instance()->advertise(ops);
+  SubscriberCallbacksPtr cbs(new SubscriberCallbacks);
+  TopicManager::instance()->advertise(ops, cbs);
 }
 
 ROSOutAppender::~ROSOutAppender()

@@ -43,50 +43,50 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include "test_roscpp/TestEmpty.h"
-
-ros::Node* g_node;
-const char* g_node_name = "test_node";
 
 TEST(masterInfo, getPublishedTopics)
 {
-  typedef std::set<std::string> S_string;
-  S_string advertised_topics_;
-  advertised_topics_.insert( "/test_topic_1" );
-  advertised_topics_.insert( "/test_topic_2" );
-  advertised_topics_.insert( "/test_topic_3" );
-  advertised_topics_.insert( "/test_topic_4" );
-  advertised_topics_.insert( "/test_topic_5" );
-  advertised_topics_.insert( "/test_topic_6" );
-  advertised_topics_.insert( "/test_topic_7" );
-  advertised_topics_.insert( "/test_topic_8" );
+  ros::NodeHandle nh;
 
-  S_string::iterator adv_it = advertised_topics_.begin();
-  S_string::iterator adv_end = advertised_topics_.end();
+  typedef std::set<std::string> S_string;
+  S_string advertised_topics;
+  advertised_topics.insert( "/test_topic_1" );
+  advertised_topics.insert( "/test_topic_2" );
+  advertised_topics.insert( "/test_topic_3" );
+  advertised_topics.insert( "/test_topic_4" );
+  advertised_topics.insert( "/test_topic_5" );
+  advertised_topics.insert( "/test_topic_6" );
+  advertised_topics.insert( "/test_topic_7" );
+  advertised_topics.insert( "/test_topic_8" );
+
+  std::vector<ros::Publisher> pubs;
+
+  S_string::iterator adv_it = advertised_topics.begin();
+  S_string::iterator adv_end = advertised_topics.end();
   for ( ; adv_it != adv_end; ++adv_it )
   {
     const std::string& topic = *adv_it;
-    g_node->advertise<test_roscpp::TestEmpty>( topic, 0 );
+    pubs.push_back(nh.advertise<test_roscpp::TestEmpty>( topic, 0 ));
   }
 
-  typedef std::vector<std::pair<std::string, std::string> > V_TopicAndType;
-  V_TopicAndType master_topics;
-  g_node->getPublishedTopics( &master_topics );
+  ros::master::V_TopicInfo master_topics;
+  ros::master::getTopics(master_topics);
 
-  adv_it = advertised_topics_.begin();
-  adv_end = advertised_topics_.end();
+  adv_it = advertised_topics.begin();
+  adv_end = advertised_topics.end();
   for ( ; adv_it != adv_end; ++adv_it )
   {
     const std::string& topic = *adv_it;
     bool found = false;
 
-    V_TopicAndType::iterator master_it = master_topics.begin();
-    V_TopicAndType::iterator master_end = master_topics.end();
+    ros::master::V_TopicInfo::iterator master_it = master_topics.begin();
+    ros::master::V_TopicInfo::iterator master_end = master_topics.end();
     for ( ; master_it != master_end; ++master_it )
     {
-      const std::string& master_topic = master_it->first;
-      if ( topic == master_topic )
+      const ros::master::TopicInfo& info = *master_it;
+      if ( topic == info.name )
       {
         found = true;
         break;
@@ -102,14 +102,8 @@ int
 main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init( argc, argv );
+  ros::init( argc, argv, "get_master_information" );
+  ros::NodeHandle nh;
 
-  g_node = new ros::Node( g_node_name );
-
-  int ret = RUN_ALL_TESTS();
-  
-
-  delete g_node;
-
-  return ret;
+  return RUN_ALL_TESTS();
 }

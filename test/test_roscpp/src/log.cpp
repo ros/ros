@@ -42,11 +42,9 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "ros/node.h"
+#include <ros/ros.h>
+#include <ros/file_log.h>
 #include <test_roscpp/TestArray.h>
-
-ros::Node* g_node;
-const char* g_node_name = "logTest";
 
 TEST(roscpp, logToFile)
 {
@@ -60,7 +58,7 @@ TEST(roscpp, logToFile)
   logger->setLevel(old_level);
 
   // Open the log file, read, and try to find the log string
-  std::string log_file = g_node->getLogFilePath();
+  std::string log_file = ros::file_log::getLogFilename();
   std::ifstream ifs( log_file.c_str() );
 
   ASSERT_TRUE( ifs.is_open() );
@@ -88,14 +86,8 @@ main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 
-  ros::init( argc, argv );
+  ros::init( argc, argv, "log" );
+  ros::NodeHandle nh;
 
-  g_node = new ros::Node( g_node_name );
-
-  int ret = RUN_ALL_TESTS();
-
-
-  delete g_node;
-
-  return ret;
+  return RUN_ALL_TESTS();
 }

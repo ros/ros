@@ -35,7 +35,6 @@
 #include "ros/service_publication.h"
 #include "ros/service_client_link.h"
 #include "ros/connection.h"
-#include "ros/node.h"
 #include "ros/callback_queue_interface.h"
 
 #include <boost/bind.hpp>
@@ -44,7 +43,7 @@ namespace ros
 {
 
 ServicePublication::ServicePublication(const std::string& name, const std::string &md5sum, const std::string& data_type, const std::string& request_data_type,
-                             const std::string& response_data_type, const ServiceMessageHelperPtr& helper, int thread_pool_size, CallbackQueueInterface* callback_queue,
+                             const std::string& response_data_type, const ServiceMessageHelperPtr& helper, CallbackQueueInterface* callback_queue,
                              const VoidPtr& tracked_object)
 : name_(name)
 , md5sum_(md5sum)
@@ -52,7 +51,6 @@ ServicePublication::ServicePublication(const std::string& name, const std::strin
 , request_data_type_(request_data_type)
 , response_data_type_(response_data_type)
 , helper_(helper)
-, thread_pool_size_(thread_pool_size)
 , dropped_(false)
 , callback_queue_(callback_queue)
 , has_tracked_object_(false)
@@ -61,11 +59,6 @@ ServicePublication::ServicePublication(const std::string& name, const std::strin
   if (tracked_object)
   {
     has_tracked_object_ = true;
-  }
-
-  for (int i = 0; i < thread_pool_size; ++i)
-  {
-    threads_.push_back(thread_group_.create_thread(boost::bind(&ServicePublication::threadFunc, this)));
   }
 }
 
@@ -79,31 +72,11 @@ void ServicePublication::drop()
   // grab a lock here, to ensure that no subscription callback will
   // be invoked after we return
   {
-    boost::mutex::scoped_lock lock(request_queue_mutex_);
+    boost::mutex::scoped_lock lock(client_links_mutex_);
     dropped_ = true;
   }
 
-  new_request_.notify_all();
-
   dropAllConnections();
-
-  bool found_self = false;
-  V_threadpointer::iterator it = threads_.begin();
-  V_threadpointer::iterator end = threads_.end();
-  for (; it != end; ++it)
-  {
-    boost::thread* thread = *it;
-    if (thread->get_id() == boost::this_thread::get_id())
-    {
-      found_self = true;
-      break;
-    }
-  }
-
-  if (!found_self)
-  {
-    thread_group_.join_all();
-  }
 }
 
 class ServiceCallback : public CallbackInterface
@@ -162,75 +135,15 @@ private:
 
 void ServicePublication::processRequest(boost::shared_array<uint8_t> buf, size_t num_bytes, const ServiceClientLinkPtr& link)
 {
-  if (callback_queue_)
-  {
-    CallbackInterfacePtr cb(new ServiceCallback(helper_, buf, num_bytes, link, has_tracked_object_, tracked_object_));
-    callback_queue_->addCallback(cb);
-  }
-  else
-  {
-    if (thread_pool_size_ != 0)
-    {
-      enqueueRequest(buf, num_bytes, link);
-    }
-    else
-    {
-      callCallback(buf, num_bytes, link);
-    }
-  }
-}
-
-void ServicePublication::callCallback(boost::shared_array<uint8_t> buf, size_t num_bytes, const ServiceClientLinkPtr& link)
-{
-  MessagePtr req = helper_->createRequest();
-  MessagePtr resp = helper_->createResponse();
-
-  req->__connection_header = link->getConnection()->getHeader().getValues();
-
-  req->__serialized_length = num_bytes;
-  req->deserialize(buf.get());
-  bool ok = helper_->call(req, resp);
-
-  if (!ok)
-  {
-    resp.reset();
-  }
-
-  link->processResponse(ok, resp);
-}
-
-void ServicePublication::enqueueRequest(boost::shared_array<uint8_t> buf, size_t num_bytes, const ServiceClientLinkPtr& link)
-{
-  RequestInfoPtr info(new RequestInfo);
-  info->buf_ = buf;
-  info->num_bytes_ = num_bytes;
-  info->link_ = link;
-
-  {
-    boost::mutex::scoped_lock lock(request_queue_mutex_);
-    request_queue_.push(info);
-  }
-
-  new_request_.notify_one();
+  CallbackInterfacePtr cb(new ServiceCallback(helper_, buf, num_bytes, link, has_tracked_object_, tracked_object_));
+  callback_queue_->addCallback(cb);
 }
 
 void ServicePublication::addServiceClientLink(const ServiceClientLinkPtr& link)
 {
-  {
-    boost::mutex::scoped_lock lock(client_links_mutex_);
+  boost::mutex::scoped_lock lock(client_links_mutex_);
 
-    client_links_.push_back(link);
-
-    if (thread_pool_size_ == -1)
-    {
-      if (thread_group_.size() < client_links_.size())
-      {
-        threads_.push_back(thread_group_.create_thread(boost::bind(&ServicePublication::threadFunc, this)));
-
-        ROS_ASSERT(thread_group_.size() == client_links_.size());
-      }
-    }
-  }
+  client_links_.push_back(link);
 }
 
 void ServicePublication::removeServiceClientLink(const ServiceClientLinkPtr& link)
@@ -260,53 +173,6 @@ void ServicePublication::dropAllConnections()
            i != local_links.end(); ++i)
   {
     (*i)->getConnection()->drop();
-  }
-}
-
-void ServicePublication::threadFunc()
-{
-  disableAllSignalsInThisThread();
-
-  ServicePublicationPtr self;
-
-  while (!dropped_)
-  {
-    RequestInfoPtr info;
-
-    {
-      boost::mutex::scoped_lock lock(request_queue_mutex_);
-
-      while (!dropped_ && request_queue_.empty())
-      {
-        new_request_.wait(lock);
-      }
-
-      if (dropped_)
-      {
-        break;
-      }
-
-      if (request_queue_.empty())
-      {
-        continue;
-      }
-
-      info = request_queue_.front();
-      request_queue_.pop();
-
-      // Keep a shared pointer to ourselves so we don't get deleted while in a callback
-      // Fixes the case of unadvertising from within a callback
-      if (!self)
-      {
-        self = shared_from_this();
-      }
-    }
-
-    if (!dropped_)
-    {
-      ROS_ASSERT(info);
-      callCallback(info->buf_, info->num_bytes_, info->link_);
-    }
   }
 }
 

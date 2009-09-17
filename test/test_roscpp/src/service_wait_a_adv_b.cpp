@@ -33,34 +33,24 @@
  * Advertise a service
  */
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <test_roscpp/TestStringString.h>
 
-
-class Dummy
+bool srvCallback(test_roscpp::TestStringString::Request  &req,
+                 test_roscpp::TestStringString::Response &res)
 {
-  public:
-    bool srvCallback(test_roscpp::TestStringString::Request  &req,
-                     test_roscpp::TestStringString::Response &res)
-    {
-      res.str = "B";
-      return true;
-    }
-};
+  res.str = "B";
+  return true;
+}
 
-int
-main(int argc, char** argv)
+int main(int argc, char** argv)
 {
-  ros::init(argc, argv);
-  ros::Node n("advertiser_b");
-
-  Dummy d;
+  ros::init(argc, argv, "service_wait_a_adv_b");
+  ros::NodeHandle nh;
 
   ros::service::waitForService("service_adv");
-  n.advertiseService("service_adv", &Dummy::srvCallback, &d);
-  n.setParam("advertisers_ready", 1);
-  n.spin();
-
-  
+  ros::ServiceServer srv = nh.advertiseService("service_adv", srvCallback);
+  nh.setParam("advertisers_ready", 1);
+  ros::spin();
 }
 

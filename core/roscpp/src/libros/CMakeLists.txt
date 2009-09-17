@@ -42,7 +42,6 @@ rospack_add_library(ros
                     service_client_link.cpp
                     service.cpp
                     rosout_appender.cpp
-                    node.cpp
                     callback_queue.cpp
                     spinner.cpp
                     node_handle.cpp

@@ -37,7 +37,7 @@
 
 #include <time.h>
 #include <sys/stat.h>
-#include "ros/node.h"
+#include "ros/ros.h"
 #include "ros/time.h"
 #include <string>
 

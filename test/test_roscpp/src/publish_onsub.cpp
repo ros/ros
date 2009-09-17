@@ -27,10 +27,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* Author: Rob Wheeler */
+/* Author: Brian Gerkey */
 
 /*
- * Publish (only to subscriber) an empty message N times, back to back
+ * Publish an empty message N times, back to back
  */
 
 #include <string>
@@ -38,30 +38,25 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "ros/node.h"
-#include "ros/publisher.h"
+#include "ros/ros.h"
 #include <test_roscpp/TestEmpty.h>
 
-class Publisher : public ros::Node
+int32_t g_msg_count = 0;
+void subscriberCallback(const ros::SingleSubscriberPublisher& pub)
 {
-  public:
-    Publisher(std::string n, int _msg_count, uint32_t options) :
-            ros::Node(n, options), msg_count(_msg_count)  {}
-    void sub_cb(const ros::SingleSubscriberPublisher& pub)
-    {
-      test_roscpp::TestEmpty msg;
-      for(int i=0; i<msg_count; i++)
-        pub.publish(msg);
-    }
-    int msg_count;
-};
+  test_roscpp::TestEmpty msg;
+  for(int i = 0; i < g_msg_count; i++)
+  {
+    pub.publish(msg);
+    ROS_INFO("published message %d", i);
+  }
+}
 
-#define USAGE "USAGE: publish_onsub <count>"
+#define USAGE "USAGE: publish_empty <count>"
 
-int
-main(int argc, char** argv)
+int main(int argc, char** argv)
 {
-  ros::init(argc, argv);
+  ros::init(argc, argv, "publish_onsub");
 
   if(argc != 2)
   {
@@ -69,18 +64,10 @@ main(int argc, char** argv)
     exit(-1);
   }
 
-  int msg_count = atoi(argv[1]);
+  g_msg_count = atoi(argv[1]);
 
-  Publisher* p;
-  p = new Publisher("publisher",msg_count,0);
+  ros::NodeHandle nh;
+  ros::Publisher pub = nh.advertise<test_roscpp::TestEmpty>("test_roscpp/pubsub_test", g_msg_count, boost::bind(subscriberCallback, _1));
 
-
-  test_roscpp::TestEmpty msg;
-  p->advertise("test_roscpp/pubsub_test", msg, &Publisher::sub_cb, msg_count);
-
-  // Loop until Ctrl-C is given (by rostest)
-  p->spin();
-
-
-  delete p;
+  ros::spin();
 }

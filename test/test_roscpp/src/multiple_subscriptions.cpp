@@ -35,7 +35,7 @@
 #include <gtest/gtest.h>
 #include <time.h>
 #include <stdlib.h>
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <test_roscpp/TestArray.h>
 
 int g_argc;
@@ -44,17 +44,19 @@ char** g_argv;
 class MultiSub : public testing::Test
 {
   public:
-    ros::Node *n;
-    test_roscpp::TestArray msg0, msg1, msg2, msg3, msg_dummy;
+    ros::NodeHandle nh_;
     bool got_it[4], should_have_it[4];
+    ros::Subscriber subs_[4];
+    ros::Subscriber verify_sub_;
+    ros::Subscriber reset_sub_;
     bool test_ready;
     int n_test;
 
-    void cb0() { if (!test_ready) return; got_it[0] = true; }
-    void cb1() { if (!test_ready) return; got_it[1] = true; }
-    void cb2() { if (!test_ready) return; got_it[2] = true; }
-    void cb3() { if (!test_ready) return; got_it[3] = true; }
-    void cb_verify()
+    void cb0(const test_roscpp::TestArrayConstPtr&) { if (!test_ready) return; got_it[0] = true; }
+    void cb1(const test_roscpp::TestArrayConstPtr&) { if (!test_ready) return; got_it[1] = true; }
+    void cb2(const test_roscpp::TestArrayConstPtr&) { if (!test_ready) return; got_it[2] = true; }
+    void cb3(const test_roscpp::TestArrayConstPtr&) { if (!test_ready) return; got_it[3] = true; }
+    void cb_verify(const test_roscpp::TestArrayConstPtr&)
     {
       if (!test_ready)
         return;
@@ -66,75 +68,47 @@ class MultiSub : public testing::Test
                    (should_have_it[3] ? got_it[3] : true)));
       */
     }
-    void cb_reset()
+    void cb_reset(const test_roscpp::TestArrayConstPtr&)
     {
       got_it[0] = got_it[1] = got_it[2] = got_it[3] = false; test_ready = true;
     }
 
   protected:
-    MultiSub() {}
-    void SetUp()
-    {
-      ros::init(g_argc, g_argv);
-      n = new ros::Node("subscriber");
-    }
-    void TearDown()
-    {
-      
-      delete n;
-    }
-
     bool sub(int cb_num)
     { 
-      printf("subscribing %d\n", cb_num);
-      switch(cb_num)
+      ROS_INFO("Subscribing %d", cb_num);
+      boost::function<void(const test_roscpp::TestArrayConstPtr&)> funcs[4] =
       {
-        case 0: return n->subscribe("test_roscpp/pubsub_test", msg0, 
-                                    &MultiSub::cb0, this, 10);
-        case 1: return n->subscribe("test_roscpp/pubsub_test", msg1, 
-                                    &MultiSub::cb1, this, 10);
-        case 2: return n->subscribe("test_roscpp/pubsub_test", msg2, 
-                                    &MultiSub::cb2, this, 10);
-        case 3: return n->subscribe("test_roscpp/pubsub_test", msg3, 
-                                    &MultiSub::cb3, this, 10);
-        default: return false;
-      }
+        boost::bind(&MultiSub::cb0, this, _1),
+        boost::bind(&MultiSub::cb1, this, _1),
+        boost::bind(&MultiSub::cb2, this, _1),
+        boost::bind(&MultiSub::cb3, this, _1),
+      };
+
+      subs_[cb_num] = nh_.subscribe("test_roscpp/pubsub_test", 10, funcs[cb_num]);
+
+      return subs_[cb_num];
     }
     bool sub_wrappers()
     {
-      printf("sub_wrappers\n");
-      bool ok = true;
-      ok &= n->subscribe("test_roscpp/pubsub_test", msg_dummy, 
-                         &MultiSub::cb_verify, this, 10);
-      ok &= n->subscribe("test_roscpp/pubsub_test", msg_dummy, 
-                         &MultiSub::cb_reset, this, 10);
-      return ok;
+      ROS_INFO("sub_wrappers");
+      verify_sub_ = nh_.subscribe("test_roscpp/pubsub_test", 10, &MultiSub::cb_verify, this);
+      reset_sub_ = nh_.subscribe("test_roscpp/pubsub_test", 10, &MultiSub::cb_reset, this);
+      return verify_sub_ && reset_sub_;
     }
     bool unsub(int cb_num)
     {
-      printf("unsubscribing %d\n", cb_num);
-      switch(cb_num)
-      {
-        case 0: return n->unsubscribe("test_roscpp/pubsub_test", 
-                                      &MultiSub::cb0, this);
-        case 1: return n->unsubscribe("test_roscpp/pubsub_test", 
-                                      &MultiSub::cb1, this);
-        case 2: return n->unsubscribe("test_roscpp/pubsub_test", 
-                                      &MultiSub::cb2, this);
-        case 3: return n->unsubscribe("test_roscpp/pubsub_test", 
-                                      &MultiSub::cb3, this);
-        default: return false;
-      }
+      ROS_INFO("unsubscribing %d", cb_num);
+      subs_[cb_num].shutdown();
+
+      return true;
     }
     bool unsub_wrappers()
     {
-      printf("unsub wrappers\n");
-      bool ok = true;
-      ok &= n->unsubscribe("test_roscpp/pubsub_test",
-                           &MultiSub::cb_verify, this);
-      ok &= n->unsubscribe("test_roscpp/pubsub_test",
-                           &MultiSub::cb_reset, this);
-      return ok;
+      ROS_INFO("unsub wrappers");
+      verify_sub_.shutdown();
+      reset_sub_.shutdown();
+      return true;
     }
 };
 
@@ -147,7 +121,7 @@ TEST_F(MultiSub, pubSubNFast)
     for (int j = 0; j < 4; j++)
       should_have_it[j] = (i & (1 << j) ? true : false);
 
-    printf(" testing: %d, %d, %d, %d\n",
+    ROS_INFO(" testing: %d, %d, %d, %d\n",
            should_have_it[0],
            should_have_it[1],
            should_have_it[2],
@@ -164,9 +138,10 @@ TEST_F(MultiSub, pubSubNFast)
     {
       static int count = 0;
       if (count++ % 10 == 0)
-        printf("%d/100 tests completed...\n", n_test);
+        ROS_INFO("%d/100 tests completed...\n", n_test);
 
-      ros::Duration(0, 10000000).sleep();
+      ros::spinOnce();
+      ros::Duration(0.01).sleep();
     }
     
     for (int j = 0; j < 4; j++)
@@ -180,6 +155,7 @@ TEST_F(MultiSub, pubSubNFast)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "multiple_subscriptions");
   g_argc = argc;
   g_argv = argv;
   return RUN_ALL_TESTS();

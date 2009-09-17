@@ -31,30 +31,23 @@
 
 #include <time.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include "test_roscpp/TestArray.h"
-
-class Publisher : public ros::Node
-{
-public:
-  Publisher() : ros::Node("publisher")
-  {
-    advertise<test_roscpp::TestArray>("test_roscpp/pubsub_test", 100);
-  }
-};
 
 int main(int argc, char **argv)
 {
+  ros::init(argc, argv, "publish_constantly");
+  ros::NodeHandle nh;
+  ros::Publisher pub = nh.advertise<test_roscpp::TestArray>("test_roscpp/pubsub_test", 100);
+
   test_roscpp::TestArray msg;
   msg.set_float_arr_size(100);
 
-  ros::init(argc, argv);
-  Publisher p;
   ros::WallDuration d(0.01);
-  while(p.ok())
+  while(ros::ok())
   {
     d.sleep();
-    p.publish("test_roscpp/pubsub_test", msg);
+    pub.publish(msg);
   }
 
   return 0;

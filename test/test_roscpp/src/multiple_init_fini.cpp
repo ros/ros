@@ -40,24 +40,17 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <test_roscpp/TestArray.h>
 
 int g_argc;
 char** g_argv;
 
-class FakeObject
+void callback(const test_roscpp::TestArrayConstPtr& msg)
 {
-public:
-  void function()
-  {
+}
 
-  }
-};
-
-FakeObject g_fake_object;
-
-TEST(RosCPP, multipleInitAndFini)
+TEST(roscpp, multipleInitAndFini)
 {
   int try_count = 10;
   if ( g_argc > 1 )
@@ -67,19 +60,16 @@ TEST(RosCPP, multipleInitAndFini)
 
   for ( int i = 0; i < try_count; ++i )
   {
-    ros::init( g_argc, g_argv );
+    ros::init( g_argc, g_argv, "multiple_init_fini" );
+    ros::NodeHandle nh;
 
-    ros::Node* node = new ros::Node( "multipleInitAndFini" );
+    ros::Subscriber sub = nh.subscribe("test", 1, callback);
+    ASSERT_TRUE(sub);
 
-    test_roscpp::TestArray msg;
-    ASSERT_TRUE( node->subscribe( "test", msg, &FakeObject::function, &g_fake_object, 1 ) );
+    ros::Publisher pub = nh.advertise<test_roscpp::TestArray>( "test2", 1 );
+    ASSERT_TRUE(pub);
 
-    ASSERT_TRUE( node->advertise<test_roscpp::TestArray>( "test2", 1 ) );
-
-    node->shutdown();
-    delete node;
-
-
+    ros::shutdown();
   }
 }
 

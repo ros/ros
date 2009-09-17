@@ -42,70 +42,42 @@
 #include <gtest/gtest.h>
 #include <time.h>
 #include <stdlib.h>
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <roslib/Time.h>
 
 int g_argc;
 char** g_argv;
 
 
-class TimeReader : public ros::Node
-{
-  public:
-    ros::Time getTime()
-    {
-      return ros::Time::now();
-    }
-    void setTime(ros::Time t)
-    {
-      roslib::Time message;
-      message.rostime = t;
-      publish("time", message);
-    }
-    void subCB(const ros::SingleSubscriberPublisher &)
-    {
-      has_subscriber_ = true;
-    }
-    TimeReader(std::string name) : ros::Node(name)
-    {
-      has_subscriber_ = false;
-      roslib::Time msg;
-      advertise("time", msg, &TimeReader::subCB, 1);
-      while (!has_subscriber_) {
-          struct timespec sleep_time = {0, 10000000};
-          nanosleep(&sleep_time,NULL);
-      }
-    }
-    bool has_subscriber_;
-};
-
-
 class RosTimeTest : public testing::Test
 {
-  public:
-    TimeReader *n;
+public:
+  void setTime(ros::Time t)
+  {
+    roslib::Time message;
+    message.rostime = t;
+    pub_.publish(message);
+  }
 
-  protected:
-    RosTimeTest()
+protected:
+  RosTimeTest()
+  {
+    pub_ = nh_.advertise<roslib::Time>("/time", 1);
+    while (pub_.getNumSubscribers() == 0)
     {
+      ros::Duration(0.01).sleep();
     }
-    void SetUp()
-    {
-      ros::init(g_argc, g_argv);
-      n = new TimeReader("timereader");
-    }
-    void TearDown()
-    {
+  }
 
-      delete n;
-    }
+  ros::NodeHandle nh_;
+  ros::Publisher pub_;
 
 };
 
 TEST_F(RosTimeTest, RealTimeTest)
 {
   //Get the start time.
-  ros::Time start = n->getTime();
+  ros::Time start = ros::Time::now();
 
   //Checks to see if the time is larger than a thousand seconds
   //this is a good indication that we are getting the system time.
@@ -113,7 +85,7 @@ TEST_F(RosTimeTest, RealTimeTest)
 
   //Wait a second
   ros::Duration wait(1, 0); wait.sleep();
-  ros::Time end = n->getTime();
+  ros::Time end = ros::Time::now();
   ros::Duration d = end - start;
 
   //After waiting one second, see if we really waited on second.
@@ -121,13 +93,14 @@ TEST_F(RosTimeTest, RealTimeTest)
   ASSERT_GT(d.toSec(), 0.9);
 
   //Publish a rostime of 42.
-  n->setTime(ros::Time(42, 0));
+  setTime(ros::Time(42, 0));
 
   //Wait half a second to get the message.
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ros::WallDuration(0.5).sleep();
+  ros::spinOnce();
 
   //Make sure that it is really set
-  ASSERT_EQ(n->getTime().toSec(), 42.0);
+  ASSERT_EQ(ros::Time::now().toSec(), 42.0);
 
 
   SUCCEED();
@@ -137,6 +110,7 @@ TEST_F(RosTimeTest, RealTimeTest)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "real_time_test");
   g_argc = argc;
   g_argv = argv;
   return RUN_ALL_TESTS();

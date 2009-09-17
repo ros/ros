@@ -38,37 +38,29 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <test_roscpp/TestArray.h>
 
-class Publisher : public ros::Node
-{
-  public:
-    Publisher(std::string n, uint32_t options) :
-            ros::Node(n, options), connected(false) {}
-    void sub_cb(const ros::SingleSubscriberPublisher&)
-    {
-      // It would be nice to publish here, but that doesn't seem to work
-      // (causes the program to hang).
-      connected = true;
-    }
-    void cb()
-    {
-      inmsg.counter++;
-      publish("test_roscpp/pubsub_test", inmsg);
-    }
+int32_t g_array_size = 1;
 
-    bool connected;
-    test_roscpp::TestArray outmsg;
-    test_roscpp::TestArray inmsg;
-};
+void messageCallback(const test_roscpp::TestArrayConstPtr& msg, ros::Publisher pub)
+{
+  test_roscpp::TestArray copy = *msg;
+  copy.counter++;
+
+  while (ros::ok() && pub.getNumSubscribers() == 0)
+  {
+    ros::Duration(0.01).sleep();
+  }
+
+  pub.publish(copy);
+}
 
 #define USAGE "USAGE: publish_n_fast <sz>"
 
-int
-main(int argc, char** argv)
+int main(int argc, char** argv)
 {
-  ros::init(argc, argv);
+  ros::init(argc, argv, "pub_sub");
 
   if(argc != 2)
   {
@@ -76,34 +68,12 @@ main(int argc, char** argv)
     exit(-1);
   }
 
-  Publisher* p;
-  p = new Publisher("publisher",0);
+  g_array_size = atoi(argv[1]);
 
-  int sz = atoi(argv[1]);
+  ros::NodeHandle nh;
 
+  ros::Publisher pub = nh.advertise<test_roscpp::TestArray>("test_roscpp/pubsub_test", 1);
+  ros::Subscriber sub = nh.subscribe<test_roscpp::TestArray>("test_roscpp/subpub_test", 1, boost::bind(messageCallback, _1, pub));
 
-  p->subscribe("test_roscpp/subpub_test", p->inmsg, &Publisher::cb, 1);
-  p->advertise("test_roscpp/pubsub_test", p->outmsg, &Publisher::sub_cb, 1);
-
-  bool published = false;
-  // Loop until Ctrl-C is given (by rostest)
-  while(p->ok())
-  {
-    ros::WallDuration(0.01).sleep();
-
-    // Did we get a connection (and is this the first time)?
-    if(p->connected && !published)
-    {
-      p->outmsg.counter=0;
-      p->outmsg.set_float_arr_size(sz);
-      p->publish("test_roscpp/pubsub_test", p->outmsg);
-      published = true;
-
-      // Don't quit here, because the message might not be out of our
-      // outbox yet.  Instead rely on rostest to shut us down.
-    }
-  }
-
-
-  delete p;
+  ros::spin();
 }

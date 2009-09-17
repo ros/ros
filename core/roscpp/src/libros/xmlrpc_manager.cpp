@@ -26,9 +26,10 @@
  */
 
 #include "ros/xmlrpc_manager.h"
-#include "ros/node.h"
 #include "ros/network.h"
 #include "ros/param.h"
+#include "ros/assert.h"
+#include "ros/common.h"
 
 using namespace XmlRpc;
 

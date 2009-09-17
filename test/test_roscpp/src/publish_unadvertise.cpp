@@ -36,89 +36,85 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <test_roscpp/TestArray.h>
 
 static int g_argc;
 static char** g_argv;
 
-static bool failure;
-static bool advertised;
-
-// An auxilliary class created to hold subscriber callback, because there's
-// no way to advertise() with such a callback from outside a ros::Node
-class Dummy : public ros::Node
-{
-  public:
-    test_roscpp::TestArray msg;
-    Dummy(std::string name, uint32_t options) : ros::Node(name,options) {}
-
-    void sub_cb(const ros::SingleSubscriberPublisher&)
-    {
-      puts("sub_cb invoked");
-      if(!advertised)
-        failure = true;
-    }
-
-    bool adv()
-    { return advertise("test_roscpp/pubsub_test", msg, &Dummy::sub_cb, 1); }
-    bool unadv()
-    { return unadvertise("test_roscpp/pubsub_test"); }
-};
+bool failure;
+bool advertised;
 
 class Pub : public testing::Test
 {
-  public:
-    Dummy* n;
-    ros::Duration dt;
+public:
+  ros::NodeHandle nh_;
+  ros::Publisher pub_;
 
-
-  protected:
-    Pub() {}
-    void SetUp()
+  void subscriberCallback(const ros::SingleSubscriberPublisher&)
+  {
+    ROS_INFO("subscriberCallback invoked");
+    if(!advertised)
     {
-      ros::init(g_argc, g_argv);
-      advertised = false;
-      failure = false;
-
-      ASSERT_TRUE(g_argc == 1);
-      n = new Dummy("publisher",0);
+      ROS_INFO("but not advertised");
+      failure = true;
     }
-    void TearDown()
-    {
+  }
 
-      delete n;
-    }
+  bool adv()
+  {
+    pub_ = nh_.advertise<test_roscpp::TestArray>("test_roscpp/pubsub_test", 1, boost::bind(&Pub::subscriberCallback, this, _1));
+    return pub_;
+  }
+
+  void unadv()
+  {
+    pub_.shutdown();
+  }
+
+protected:
+  Pub() {}
+  void SetUp()
+  {
+    advertised = false;
+    failure = false;
+
+    ASSERT_TRUE(g_argc == 1);
+  }
+  void TearDown()
+  {
+  }
 };
 
 TEST_F(Pub, pubUnadvertise)
 {
   advertised = true;
-  puts("advertising");
-  ASSERT_TRUE(n->adv());
-  ASSERT_FALSE(n->adv());
+  ROS_INFO("advertising");
+  ASSERT_TRUE(adv());
   ros::Time t1(ros::Time::now()+ros::Duration(2.0));
 
   while(ros::Time::now() < t1 && !failure)
   {
     ros::WallDuration(0.01).sleep();
+    ros::spinOnce();
   }
 
-  ASSERT_TRUE(n->unadv());
-  ASSERT_FALSE(n->unadv());
-  puts("unadvertised");
+  unadv();
+
+  ROS_INFO("unadvertised");
   advertised = false;
 
   ros::Time t2(ros::Time::now()+ros::Duration(2.0));
   while(ros::Time::now() < t2 && !failure)
   {
     ros::WallDuration(0.01).sleep();
+    ros::spinOnce();
   }
 
   advertised = true;
-  ASSERT_TRUE(n->adv());
-  ASSERT_TRUE(n->unadv());
-  ASSERT_TRUE(n->adv());
+  ASSERT_TRUE(adv());
+  unadv();
+  ASSERT_TRUE(adv());
 
   if(failure)
     FAIL();
@@ -129,6 +125,7 @@ TEST_F(Pub, pubUnadvertise)
 int
 main(int argc, char** argv)
 {
+  ros::init(argc, argv, "publish_unadvertise");
   testing::InitGoogleTest(&argc, argv);
   g_argc = argc;
   g_argv = argv;

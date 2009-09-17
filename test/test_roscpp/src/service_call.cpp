@@ -37,7 +37,7 @@
 
 #include <gtest/gtest.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include "ros/time.h"
 #include "ros/service.h"
 #include "ros/connection.h"
@@ -107,7 +107,8 @@ TEST(SrvCall, callSrvHandle)
   std::map<std::string, std::string> header;
   header["test1"] = "testing 1";
   header["test2"] = "testing 2";
-  ros::ServiceClient handle = ros::service::createClient<test_roscpp::TestStringString>("service_adv", false, header);
+  ros::NodeHandle nh;
+  ros::ServiceClient handle = nh.serviceClient<test_roscpp::TestStringString>("service_adv", false, header);
 
   ros::Time start = ros::Time::now();
 
@@ -135,7 +136,8 @@ TEST(SrvCall, callSrvPersistentHandle)
   std::map<std::string, std::string> header;
   header["test1"] = "testing 1";
   header["test2"] = "testing 2";
-  ros::ServiceClient handle = ros::service::createClient<test_roscpp::TestStringString>("service_adv", true, header);
+  ros::NodeHandle nh;
+  ros::ServiceClient handle = nh.serviceClient<test_roscpp::TestStringString>("service_adv", true, header);
 
   ros::Time start = ros::Time::now();
 
@@ -187,7 +189,8 @@ TEST(SrvCall, handleValid)
   std::map<std::string, std::string> header;
   header["test1"] = "testing 1";
   header["test2"] = "testing 2";
-  ros::ServiceClient handle = ros::service::createClient<test_roscpp::TestStringString>("service_adv", true, header);
+  ros::NodeHandle nh;
+  ros::ServiceClient handle = nh.serviceClient<test_roscpp::TestStringString>("service_adv", true, header);
   ASSERT_TRUE(handle.call(req, res));
   ASSERT_TRUE(handle.isValid());
   handle.shutdown();
@@ -206,8 +209,8 @@ main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 
-  ros::init(argc, argv);
-  ros::Node n("caller");
+  ros::init(argc, argv, "service_call");
+  ros::NodeHandle nh;
 
   int ret = RUN_ALL_TESTS();
 

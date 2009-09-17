@@ -43,7 +43,7 @@
 
 #define USAGE "USAGE: publish_n_fast <count> <min_size> <max_size>"
 
-void connect_cb(const ros::SingleSubscriberPublisher &pub, int msg_count, int min_size, int max_size)
+void connectCallback(const ros::SingleSubscriberPublisher &pub, int msg_count, int min_size, int max_size)
 {
   test_roscpp::TestArray msg;
   for(int i = 0; i < msg_count; i++)
@@ -51,7 +51,7 @@ void connect_cb(const ros::SingleSubscriberPublisher &pub, int msg_count, int mi
     msg.counter = i;
     int j = min_size + (int) ((max_size - min_size) * (rand() / (RAND_MAX + 1.0)));
     msg.set_float_arr_size(j);
-    printf("published message %d (%d bytes)\n",
+    ROS_INFO("published message %d (%d bytes)\n",
            msg.counter, msg.serializationLength());
     pub.publish(msg);
   }
@@ -73,7 +73,7 @@ main(int argc, char** argv)
   int min_size = atoi(argv[2]);
   int max_size = atoi(argv[3]);
 
-  ros::Publisher pub_ = n.advertise<test_roscpp::TestArray>("test_roscpp/pubsub_test", msg_count, boost::bind(&connect_cb, _1, msg_count, min_size, max_size));
+  ros::Publisher pub_ = n.advertise<test_roscpp::TestArray>("test_roscpp/pubsub_test", msg_count, boost::bind(&connectCallback, _1, msg_count, min_size, max_size));
   ros::spin();
 
   return 0;

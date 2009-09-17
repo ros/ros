@@ -43,10 +43,11 @@
 #include <stdlib.h>
 
 #include "ros/ros.h"
-#include "ros/node.h"
 #include "ros/callback_queue.h"
 #include <test_roscpp/TestArray.h>
 #include <test_roscpp/TestStringString.h>
+
+#include <boost/thread.hpp>
 
 using namespace ros;
 using namespace test_roscpp;
@@ -54,37 +55,37 @@ using namespace test_roscpp;
 TEST(RoscppHandles, nodeHandleConstructionDestruction)
 {
   {
-    ASSERT_FALSE(ros::Node::instance());
+    ASSERT_FALSE(ros::isStarted());
 
     ros::NodeHandle n1;
-    ASSERT_TRUE(ros::Node::instance());
+    ASSERT_TRUE(ros::isStarted());
 
     {
       ros::NodeHandle n2;
-      ASSERT_TRUE(ros::Node::instance());
+      ASSERT_TRUE(ros::isStarted());
 
       {
         ros::NodeHandle n3(n2);
-        ASSERT_TRUE(ros::Node::instance());
+        ASSERT_TRUE(ros::isStarted());
 
         {
           ros::NodeHandle n4 = n3;
-          ASSERT_TRUE(ros::Node::instance());
+          ASSERT_TRUE(ros::isStarted());
         }
       }
     }
 
-    ASSERT_TRUE(ros::Node::instance());
+    ASSERT_TRUE(ros::isStarted());
   }
 
-  ASSERT_FALSE(ros::Node::instance());
+  ASSERT_FALSE(ros::isStarted());
 
   {
     ros::NodeHandle n;
-    ASSERT_TRUE(ros::Node::instance());
+    ASSERT_TRUE(ros::isStarted());
   }
 
-  ASSERT_FALSE(ros::Node::instance());
+  ASSERT_FALSE(ros::isStarted());
 }
 
 int32_t g_recv_count = 0;
@@ -185,24 +186,24 @@ TEST(RoscppHandles, subscriberCopy)
         ASSERT_TRUE(sub3 == sub2);
 
         V_string topics;
-        n.getSubscribedTopics(topics);
+        this_node::getSubscribedTopics(topics);
         ASSERT_TRUE(std::find(topics.begin(), topics.end(), "/test") != topics.end());
       }
 
       ASSERT_TRUE(sub2 == sub1);
 
       V_string topics;
-      n.getSubscribedTopics(topics);
+      this_node::getSubscribedTopics(topics);
       ASSERT_TRUE(std::find(topics.begin(), topics.end(), "/test") != topics.end());
     }
 
     V_string topics;
-    n.getSubscribedTopics(topics);
+    this_node::getSubscribedTopics(topics);
     ASSERT_TRUE(std::find(topics.begin(), topics.end(), "/test") != topics.end());
   }
 
   V_string topics;
-  n.getSubscribedTopics(topics);
+  this_node::getSubscribedTopics(topics);
   ASSERT_TRUE(std::find(topics.begin(), topics.end(), "/test") == topics.end());
 }
 
@@ -224,24 +225,24 @@ TEST(RoscppHandles, publisherCopy)
         ASSERT_TRUE(pub3 == pub2);
 
         V_string topics;
-        n.getAdvertisedTopics(topics);
+        this_node::getAdvertisedTopics(topics);
         ASSERT_TRUE(std::find(topics.begin(), topics.end(), "/test") != topics.end());
       }
 
       ASSERT_TRUE(pub2 == pub1);
 
       V_string topics;
-      n.getAdvertisedTopics(topics);
+      this_node::getAdvertisedTopics(topics);
       ASSERT_TRUE(std::find(topics.begin(), topics.end(), "/test") != topics.end());
     }
 
     V_string topics;
-    n.getAdvertisedTopics(topics);
+    this_node::getAdvertisedTopics(topics);
     ASSERT_TRUE(std::find(topics.begin(), topics.end(), "/test") != topics.end());
   }
 
   V_string topics;
-  n.getAdvertisedTopics(topics);
+  this_node::getAdvertisedTopics(topics);
   ASSERT_TRUE(std::find(topics.begin(), topics.end(), "/test") == topics.end());
 }
 
@@ -260,17 +261,17 @@ TEST(RoscppHandles, publisherMultiple)
       ASSERT_TRUE(pub1 != pub2);
 
       V_string topics;
-      n.getAdvertisedTopics(topics);
+      this_node::getAdvertisedTopics(topics);
       ASSERT_TRUE(std::find(topics.begin(), topics.end(), "/test") != topics.end());
     }
 
     V_string topics;
-    n.getAdvertisedTopics(topics);
+    this_node::getAdvertisedTopics(topics);
     ASSERT_TRUE(std::find(topics.begin(), topics.end(), "/test") != topics.end());
   }
 
   V_string topics;
-  n.getAdvertisedTopics(topics);
+  this_node::getAdvertisedTopics(topics);
   ASSERT_TRUE(std::find(topics.begin(), topics.end(), "/test") == topics.end());
 }
 
@@ -513,28 +514,6 @@ TEST(RoscppHandles, nodeHandleShutdown)
   ASSERT_FALSE(pub);
   ASSERT_FALSE(sub);
   ASSERT_FALSE(srv);
-}
-
-TEST(RoscppHandles, deprecatedAPIAutoSpin)
-{
-  new ros::Node("test");
-
-  {
-    ros::NodeHandle n;
-    ros::Subscriber sub = n.subscribe("/test", 0, subscriberCallback);
-    ros::Publisher pub = n.advertise<test_roscpp::TestArray>("/test", 0);
-
-    g_recv_count = 0;
-    test_roscpp::TestArray msg;
-    while (g_recv_count == 0)
-    {
-      pub.publish(msg);
-      ros::Duration d(0.01);
-      d.sleep();
-    }
-  }
-
-  delete ros::Node::instance();
 }
 
 int main(int argc, char** argv)

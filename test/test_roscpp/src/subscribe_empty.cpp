@@ -30,7 +30,7 @@
 /* Author: Brian Gerkey */
 
 /*
- * Subscribe to a topic, expecting to get a single message.
+ * Subscribe to a topic, expecting to get a number of messages based on the first command line argument
  */
 
 #include <string>
@@ -40,7 +40,7 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <test_roscpp/TestEmpty.h>
 
 int g_argc;
@@ -49,8 +49,6 @@ char** g_argv;
 class PubSub : public testing::Test
 {
   public:
-    // A node is needed to make a service call
-    ros::Node* n;
     test_roscpp::TestEmpty msg;
     bool success;
     bool failure;
@@ -58,7 +56,7 @@ class PubSub : public testing::Test
     int msg_i;
     ros::Duration dt;
 
-    void MsgCallback()
+    void messageCallback(const test_roscpp::TestEmptyConstPtr& msg)
     {
       if(failure || success)
         return;
@@ -76,32 +74,29 @@ class PubSub : public testing::Test
     PubSub() {}
     void SetUp()
     {
-      ros::init(g_argc, g_argv);
       success = false;
       failure = false;
 
       msg_i = -1;
       ASSERT_TRUE(g_argc == 3);
-      n = new ros::Node("subscriber");
       msg_count = atoi(g_argv[1]);
       dt.fromSec(atof(g_argv[2]));
     }
     void TearDown()
     {
-      
-      delete n;
     }
 };
 
 TEST_F(PubSub, pubSubNFast)
 {
-  ASSERT_TRUE(n->subscribe("test_roscpp/pubsub_test", msg, &PubSub::MsgCallback,
-                           (PubSub*)this, msg_count));
+  ros::NodeHandle nh;
+  ros::Subscriber sub = nh.subscribe("test_roscpp/pubsub_test", msg_count, &PubSub::messageCallback, (PubSub*)this);
   ros::Time t1(ros::Time::now()+dt);
 
   while(ros::Time::now() < t1 && !success)
   {
     ros::WallDuration(0.01).sleep();
+    ros::spinOnce();
   }
 
   if(success)
@@ -110,9 +105,11 @@ TEST_F(PubSub, pubSubNFast)
     FAIL();
 }
 
-int
-main(int argc, char** argv)
+int main(int argc, char** argv)
 {
+  ros::init(argc, argv, "subscribe_empty");
+  ros::NodeHandle nh;
+
   testing::InitGoogleTest(&argc, argv);
   g_argc = argc;
   g_argv = argv;

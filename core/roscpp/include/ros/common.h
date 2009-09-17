@@ -49,8 +49,6 @@
 
 namespace ros
 {
-class Node;
-extern Node *g_node;
 
 /**
  * \deprecated Use ros::package::getPath() in the roslib package instead
@@ -72,116 +70,6 @@ public:
 
   SerializedMessage(boost::shared_array<uint8_t> buf, size_t num_bytes)
   : buf(buf), num_bytes(num_bytes) { }
-};
-
-class AbstractFunctor
-{
-public:
-  virtual void call() = 0;
-  virtual ~AbstractFunctor() { }
-  virtual bool operator==(const AbstractFunctor &rhs) { return equals(&rhs); }
-private:
-  virtual bool equals(const AbstractFunctor *) = 0;
-};
-
-template<class T>
-class MethodFunctor : public AbstractFunctor
-{
-public:
-  MethodFunctor(T *_obj, void (T::*_mp)())
-  : mp_(_mp)
-  , mp_data_(NULL)
-  , obj_(_obj)
-  , user_data_(NULL)
-  { }
-
-  MethodFunctor(T *_obj, void (T::*_mp_data)(void *), void *_user_data_)
-  : mp_(NULL)
-  , mp_data_(_mp_data)
-  , obj_(_obj)
-  , user_data_(_user_data_)
-  { }
-
-  virtual void call()
-  {
-    if (mp_)
-    {
-      (*obj_.*mp_)();
-    }
-    else if (mp_data_)
-    {
-      (*obj_.*mp_data_)(user_data_);
-    }
-    else
-    {
-      ROS_BREAK();
-      (void)0;
-    }
-  }
-private:
-  void (T::*mp_)();
-  void (T::*mp_data_)(void *);
-  T* obj_;
-
-  void* user_data_;
-
-  virtual bool equals(const AbstractFunctor *_rhs)
-  {
-    const MethodFunctor<T> *rhs = dynamic_cast<const MethodFunctor<T> *>(_rhs);
-    if (!rhs)
-      return false;
-    return rhs->mp_ == mp_ && rhs->mp_data_ == mp_data_ &&
-           rhs->obj_ == obj_ && rhs->user_data_ == user_data_;
-  }
-};
-
-class FunctionFunctor : public AbstractFunctor
-{
-public:
-  FunctionFunctor(void (*_fp)())
-  : fp_(_fp)
-  , fp_data_(NULL)
-  , user_data_(NULL)
-  { }
-
-  FunctionFunctor(void (*_fp_data)(void *), void *_user_data_)
-  : fp_(NULL)
-  , fp_data_(_fp_data)
-  , user_data_(_user_data_)
-  { }
-
-  virtual void call()
-  {
-    if (fp_)
-    {
-      (*fp_)();
-    }
-    else if (fp_data_)
-    {
-      (*fp_data_)(user_data_);
-    }
-    else
-    {
-      ROS_BREAK();
-      (void)0;
-    }
-  }
-private:
-  void (*fp_)();
-  void (*fp_data_)(void *);
-
-  void* user_data_;
-
-  virtual bool equals(const AbstractFunctor *_rhs)
-  {
-    const FunctionFunctor* rhs = dynamic_cast<const FunctionFunctor*>(_rhs);
-    if (!rhs)
-    {
-      return false;
-    }
-
-    return rhs->fp_ == fp_ && rhs->fp_data_ == fp_data_ && rhs->user_data_ == user_data_;
-  }
 };
 
 }

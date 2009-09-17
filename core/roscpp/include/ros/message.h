@@ -32,7 +32,6 @@
 #include "ros/assert.h"
 #include <string>
 #include <string.h>
-#include <boost/thread/mutex.hpp>
 #include <boost/shared_ptr.hpp>
 
 #define ROSCPP_MESSAGE_HAS_DEFINITION
@@ -44,7 +43,6 @@ typedef std::map<std::string, std::string> M_string;
 
 class Message
 {
-  friend class Node;
 public:
   typedef boost::shared_ptr<Message> Ptr;
   typedef boost::shared_ptr<Message const> ConstPtr;
@@ -63,13 +61,9 @@ public:
   virtual uint32_t serializationLength() const = 0;
   virtual uint8_t *serialize(uint8_t *write_ptr, uint32_t seq) const = 0;
   virtual uint8_t *deserialize(uint8_t *read_ptr) = 0;
-  ROSCPP_DEPRECATED void lock()   { __mutex.lock();   }
-  ROSCPP_DEPRECATED void unlock() { __mutex.unlock(); }
   uint32_t __serialized_length;
 
   boost::shared_ptr<M_string> __connection_header;
-private:
-  boost::mutex __mutex;
 };
 
 typedef boost::shared_ptr<Message> MessagePtr;

@@ -32,15 +32,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-// TEMP to remove warnings during build while things internally still use deprecated APIs
-#include "ros/macros.h"
-#undef ROSCPP_DEPRECATED
-#define ROSCPP_DEPRECATED
-// END TEMP
-
 #include "ros/init.h"
 #include "ros/names.h"
-#include "ros/node.h"
 #include "ros/xmlrpc_manager.h"
 #include "ros/poll_manager.h"
 #include "ros/connection_manager.h"
@@ -58,6 +51,9 @@
 
 #include <ros/console.h>
 #include <ros/time.h>
+#include <roslib/Time.h>
+
+#include <signal.h>
 
 namespace ros
 {
@@ -228,6 +224,11 @@ void internalCallbackQueueThreadFunc()
   }
 }
 
+bool isStarted()
+{
+  return g_started;
+}
+
 void start()
 {
   boost::mutex::scoped_lock lock(g_start_mutex);
@@ -268,7 +269,7 @@ void start()
       ros::AdvertiseServiceOptions ops;
       ops.init<roscpp::GetLoggers>(names::resolve("~get_loggers"), getLoggers);
       ops.callback_queue = getInternalCallbackQueue().get();
-      ServiceManager::instance()->advertiseService(ops, 0);
+      ServiceManager::instance()->advertiseService(ops);
     }
 
     if (!g_shutting_down)
@@ -277,7 +278,7 @@ void start()
         ros::AdvertiseServiceOptions ops;
         ops.init<roscpp::SetLoggerLevel>(names::resolve("~set_logger_level"), setLoggerLevel);
         ops.callback_queue = getInternalCallbackQueue().get();
-        ServiceManager::instance()->advertiseService(ops, 0);
+        ServiceManager::instance()->advertiseService(ops);
       }
 
       if (!g_shutting_down)
@@ -295,7 +296,7 @@ void start()
             ros::SubscribeOptions ops;
             ops.init<roslib::Time>("/time", 1, timeCallback);
             ops.callback_queue = getInternalCallbackQueue().get();
-            TopicManager::instance()->subscribe(ops, 0, 0);
+            TopicManager::instance()->subscribe(ops);
           }
 
           g_internal_queue_thread = boost::thread(internalCallbackQueueThreadFunc);
@@ -326,7 +327,6 @@ void init(const M_string& remappings, const std::string& name, uint32_t options)
     file_log::init(remappings);
 
     g_initialized = true;
-    Node::s_initialized_ = true;
   }
 }
 
@@ -437,51 +437,6 @@ void shutdown()
   g_started = false;
   g_ok = false;
   Time::shutdown();
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-// Deprecated init functions
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-void init(int& _argc, char** _argv)
-{
-  Node::s_args_.clear();
-
-  int full_argc = _argc;
-  // now, move the remapping argv's to the end, and decrement argc as needed
-  for (int i = 0; i < _argc; )
-  {
-    std::string arg = _argv[i];
-    size_t pos = arg.find(":=");
-    if (pos != std::string::npos)
-    {
-      std::string local_name = arg.substr(0, pos);
-      std::string external_name = arg.substr(pos + 2);
-
-      Node::s_remappings_.push_back(std::make_pair(local_name, external_name));
-      Node::s_args_.push_back(_argv[i]);
-
-      // shuffle everybody down and stuff this guy at the end of argv
-      char *tmp = _argv[i];
-      for (int j = i; j < full_argc - 1; j++)
-        _argv[j] = _argv[j+1];
-      _argv[_argc-1] = tmp;
-      _argc--;
-    }
-    else
-    {
-      i++; // move on, since we didn't shuffle anybody here to replace it
-    }
-  }
-
-  init(Node::s_remappings_);
-  Node::s_initialized_ = true;
-}
-
-void init(const VP_string& remappings)
-{
-  Node::s_remappings_ = remappings;
-  Node::s_initialized_ = true;
 }
 
 }

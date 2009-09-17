@@ -33,7 +33,7 @@
  * Advertise a service, then run another app that advertises another service
  */
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <test_roscpp/TestStringString.h>
 
 #include <unistd.h>
@@ -43,34 +43,20 @@
 #include <sys/wait.h>
 #include <cstdlib>
 
-
-class Dummy
+bool srvCallback(test_roscpp::TestStringString::Request  &req,
+                 test_roscpp::TestStringString::Response &res)
 {
-  public:
-    bool srvCallback(test_roscpp::TestStringString::Request  &req,
-                     test_roscpp::TestStringString::Response &res)
-    {
-      res.str = "A";
-      return true;
-    }
-};
+  res.str = "A";
+  return true;
+}
 
-ros::Node* g_n;
-
-int
-main(int argc, char** argv)
+int main(int argc, char** argv)
 {
-  ros::init(argc, argv);
-  g_n = new ros::Node("advertiser_a");
+  ros::init(argc, argv, "service_adv_a");
+  ros::NodeHandle nh;
 
-  Dummy d;
+  ros::ServiceServer srv = nh.advertiseService("service_adv", srvCallback);
 
-  g_n->advertiseService("service_adv", &Dummy::srvCallback, &d);
-
-  g_n->spin();
-
-  
-
-  delete g_n;
+  ros::spin();
 }
 

@@ -29,7 +29,7 @@
 
 #include "logger_level_panel.h"
 
-#include <ros/node.h>
+#include <ros/ros.h>
 #include <roscpp/GetLoggers.h>
 #include <roscpp/SetLoggerLevel.h>
 

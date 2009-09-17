@@ -60,7 +60,7 @@ typedef boost::shared_ptr<SubscriptionQueue> SubscriptionQueuePtr;
 class Subscription : public boost::enable_shared_from_this<Subscription>
 {
 public:
-  Subscription(const std::string &name, const std::string& md5sum, const std::string& datatype, bool threaded, int max_queue, const TransportHints& transport_hints);
+  Subscription(const std::string &name, const std::string& md5sum, const std::string& datatype, const TransportHints& transport_hints);
   virtual ~Subscription();
 
   /**
@@ -86,16 +86,6 @@ public:
    * \brief Returns whether this Subscription has been dropped or not
    */
   bool isDropped() { return dropped_; }
-  /**
-   * \brief Adds a Functor/message to our list of callbacks/messages.  Used for multiple subscriptions to the
-   * same topic
-   */
-  bool addFunctorMessagePair(AbstractFunctor* cb, Message* m);
-  /**
-   * \brief Remove a Functor/message from our list of callbacks/messages.Used for multiple subscriptions to the
-   * same topic
-   */
-  void removeFunctorMessagePair(AbstractFunctor* cb);
   XmlRpc::XmlRpcValue getStats();
   void getInfo(XmlRpc::XmlRpcValue& info);
 
@@ -117,17 +107,11 @@ public:
   const std::string md5sum();
 
   /**
-   * \brief Returns true if we update the message pointed to by _msg
-   */
-  bool updatesMessage(const void *_msg);
-  /**
    * \brief Removes a subscriber from our list
    */
   void removePublisherLink(const PublisherLinkPtr& pub_link);
 
   const std::string& getName() { return name_; }
-  int getMaxQueue() { return max_queue_; }
-  void setMaxQueue(int max_queue);
   uint32_t getNumCallbacks() { return callbacks_.size(); }
 
   // We'll keep a list of these objects, representing in-progress XMLRPC 
@@ -196,13 +180,8 @@ private:
 
   void dropAllConnections();
 
-  void subscriptionThreadFunc();
-
   struct CallbackInfo
   {
-    AbstractFunctor* callback_;
-    Message* message_;
-
     CallbackQueueInterface* callback_queue_;
 
     // Only used if callback_queue_ is non-NULL (NodeHandle API)
@@ -227,34 +206,6 @@ private:
   typedef std::set<PendingConnectionPtr> S_PendingConnection;
   S_PendingConnection pending_connections_;
   boost::mutex pending_connections_mutex_;
-
-  // If threaded is true, then we're running a separate thread (identified
-  // by callback_thread_) that pulls message from inbox, and invokes the
-  // callback on each one.
-  //
-  // Otherwise, the callback is invoked in place when the message is
-  // received, and none of this machinery is used.
-  bool threaded_;
-  int max_queue_;
-  boost::thread callback_thread_;
-
-  struct MessageInfo
-  {
-    MessageInfo()
-    {}
-
-    MessageInfo(const SerializedMessage& m, const boost::shared_ptr<M_string>& connection_header)
-    : serialized_message_(m)
-    , connection_header_(connection_header)
-    {}
-
-    SerializedMessage serialized_message_;
-    boost::shared_ptr<M_string> connection_header_;
-  };
-  std::queue<MessageInfo> inbox_;
-  boost::mutex inbox_mutex_;
-  boost::condition_variable inbox_cond_;
-  bool queue_full_;
 
   typedef std::vector<PublisherLinkPtr> V_PublisherLink;
   V_PublisherLink publisher_links_;

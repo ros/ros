@@ -53,7 +53,6 @@
 namespace ros
 {
 
-class Node;
 class NodeHandleBackingCollection;
 
 /**
@@ -85,8 +84,8 @@ public:
   /**
    * \brief Constructor
    *
-   * When a NodeHandle is constructed, it checks to see if the global node state has already been started.  If so, it increments the reference count
-   * on the global Node.  If not, it starts the node and sets the reference count to 1.
+   * When a NodeHandle is constructed, it checks to see if the global node state has already been started.  If so, it increments a global reference count.
+   * If not, it starts the node with ros::start() and sets the reference count to 1.
    *
    * \param ns Namespace for this NodeHandle.  This acts in addition to any namespace assigned to this ROS node.
    *           eg. If the node's namespace is "/a" and the namespace passed in here is "b", all topics/services/parameters
@@ -130,7 +129,7 @@ NodeHandle child(parent.getNamespace() + "/" + ns, remappings);
   /**
    * \brief Destructor
    *
-   * When a NodeHandle is destroyed, it decrements the global Node's reference count by 1, and if the reference count is now 0, shuts down the node.
+   * When a NodeHandle is destroyed, it decrements a global reference count by 1, and if the reference count is now 0, shuts down the node.
    */
   ~NodeHandle();
 
@@ -1039,19 +1038,10 @@ if (handle)
   ROSCPP_DEPRECATED void getSubscribedTopics(V_string& topics) const;
 
   /**
-   * \deprecated Node is going away...
-   */
-  ROSCPP_DEPRECATED Node* getNode() const;
-
-  /**
    * \brief deprecated in favor of ros::this_node::getName()
    */
   ROSCPP_DEPRECATED const std::string& getName() const;
 
-  /**
-   * \deprecated in favor of ros::names::getRemappings()
-   */
-  ROSCPP_DEPRECATED static const V_string& getParsedArgs();
 
   /** \brief Get the hostname where the master runs.
    *

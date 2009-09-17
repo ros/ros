@@ -35,7 +35,7 @@
 
 #include <gtest/gtest.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <test_roscpp/TestStringString.h>
 
 
@@ -45,86 +45,71 @@ static char** g_argv;
 class ServiceAdvertiser : public testing::Test
 {
   public:
-    ros::Node* n;
-    bool advertised;
-    bool failure;
+    ros::NodeHandle nh_;
+    ros::ServiceServer srv_;
+
+    bool advertised_;
+    bool failure_;
 
     bool srvCallback(test_roscpp::TestStringString::Request  &req,
                      test_roscpp::TestStringString::Response &res)
     {
-      puts("in callback");
-      if(!advertised)
+      ROS_INFO("in callback");
+      if(!advertised_)
       {
-        puts("but not advertised!");
-        failure = true;
+        ROS_INFO("but not advertised!");
+        failure_ = true;
       }
-      // Can't do this for now; unadvertise() in service callback and in
-      // other thread causes race conditions
-      /*
-      else
-      {
-        unadv();
-        advertised = false;
-      }
-      */
       return true;
     }
   protected:
     ServiceAdvertiser() {}
     void SetUp()
     {
-      ros::init(g_argc, g_argv);
-      failure = false;
-      advertised = false;
+      failure_ = false;
+      advertised_ = false;
 
       ASSERT_TRUE(g_argc == 1);
-      n = new ros::Node("advertiser" );
-    }
-    void TearDown()
-    {
-      
-      delete n;
     }
 
     bool adv()
     {
-      puts("advertising");
-      bool ret = n->advertiseService("service_adv",
-                                      &ServiceAdvertiser::srvCallback, this);
-      puts("advertised");
-      return ret;
+      ROS_INFO("advertising");
+      srv_ = nh_.advertiseService("service_adv", &ServiceAdvertiser::srvCallback, this);
+      ROS_INFO("advertised");
+      return srv_;
     }
     bool unadv()
     {
-      puts("unadvertising");
-      bool ret = n->unadvertiseService("service_adv");
-      puts("unadvertised");
-      return ret;
+      ROS_INFO("unadvertising");
+      srv_.shutdown();
+      ROS_INFO("unadvertised");
+      return true;
     }
 };
 
 TEST_F(ServiceAdvertiser, advUnadv)
 {
-  advertised = true;
+  advertised_ = true;
   ASSERT_TRUE(adv());
 
   for(int i=0;i<100;i++)
   {
-    if(advertised)
+    if(advertised_)
     {
       ASSERT_TRUE(unadv());
-      advertised = false;
+      advertised_ = false;
     }
     else
     {
-      advertised = true;
+      advertised_ = true;
       ASSERT_TRUE(adv());
     }
 
     ros::WallDuration(0.01).sleep();
   }
 
-  if(failure)
+  if(failure_)
     FAIL();
   else
     SUCCEED();
@@ -133,6 +118,7 @@ TEST_F(ServiceAdvertiser, advUnadv)
 int
 main(int argc, char** argv)
 {
+  ros::init(argc, argv, "service_adv_unadv");
   testing::InitGoogleTest(&argc, argv);
   g_argc = argc;
   g_argv = argv;

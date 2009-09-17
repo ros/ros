@@ -35,7 +35,7 @@
 #ifndef ROSRECORDPLAYER_H
 #define ROSRECORDPLAYER_H
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include "ros/header.h"
 #include "ros/time.h"
 #include "rosrecord/AnyMsg.h"

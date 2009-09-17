@@ -35,7 +35,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <deque>
-#include "ros/node.h"
 #include "topic_tools/shape_shifter.h"
 
 using std::string;

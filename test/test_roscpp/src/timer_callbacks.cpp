@@ -43,7 +43,6 @@
 #include <stdlib.h>
 
 #include "ros/ros.h"
-#include "ros/node.h"
 #include "ros/callback_queue.h"
 #include <test_roscpp/TestArray.h>
 #include <test_roscpp/TestStringString.h>

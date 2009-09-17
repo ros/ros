@@ -39,13 +39,7 @@
 #include <sys/poll.h> // for POLLOUT
 #include <cerrno>
 #include <cstring>
-// TEMP to remove warnings during build while things internally still use deprecated APIs
-#include "ros/macros.h"
-#undef ROSCPP_DEPRECATED
-#define ROSCPP_DEPRECATED
-// END TEMP
 
-#include "ros/node.h"
 #include "ros/common.h"
 #include "ros/subscription.h"
 #include "ros/publisher_link.h"
@@ -65,31 +59,18 @@ using XmlRpc::XmlRpcValue;
 namespace ros
 {
 
-Subscription::Subscription(const std::string &name, const std::string& md5sum, const std::string& datatype, bool threaded, int max_queue, const TransportHints& transport_hints)
+Subscription::Subscription(const std::string &name, const std::string& md5sum, const std::string& datatype, const TransportHints& transport_hints)
 : name_(name)
 , md5sum_(md5sum)
 , datatype_(datatype)
 , dropped_(false)
 , shutting_down_(false)
-, threaded_(threaded)
-, max_queue_(max_queue)
-, queue_full_(false)
 , transport_hints_(transport_hints)
 {
-  if(threaded_)
-  {
-    callback_thread_ = boost::thread(boost::bind(&Subscription::subscriptionThreadFunc, this));
-  }
 }
 
 Subscription::~Subscription()
 {
-  for (V_CallbackInfo::iterator cb = callbacks_.begin();
-       cb != callbacks_.end(); ++cb)
-  {
-    delete (*cb)->callback_;
-  }
-
   pending_connections_.clear();
   callbacks_.clear();
 }
@@ -102,34 +83,6 @@ void Subscription::shutdown()
   }
 
   drop();
-
-  // Set the callback thread free
-
-
-  if (threaded_)
-  {
-    if(callback_thread_.get_id() != boost::this_thread::get_id())
-    {
-      // Grab the callback lock, to ensure that we wait until the callback,
-      // which might be in progress, returns before we join the thread
-      boost::mutex::scoped_lock lock(callbacks_mutex_);
-
-      // We signal the condition, in case the callback thread is waiting on it
-      inbox_cond_.notify_all();
-      callback_thread_.join();
-
-      // Empty the inbox queue.  No locking because the callback thread has already
-      // been joined
-      while(!inbox_.empty())
-      {
-        inbox_.pop();
-      }
-    }
-    else
-    {
-      inbox_cond_.notify_all();
-    }
-  }
 }
 
 XmlRpcValue Subscription::getStats()
@@ -553,121 +506,10 @@ bool Subscription::handleMessage(const boost::shared_array<uint8_t>& buf, size_t
 {
   bool dropped = false;
 
-  if(threaded_)
-  {
-    SerializedMessage m(buf, num_bytes);
-
-    {
-      boost::mutex::scoped_lock lock(inbox_mutex_);
-
-      if((max_queue_ > 0) &&
-         (inbox_.size() >= (unsigned int)max_queue_))
-      {
-        inbox_.pop();
-
-        if (!queue_full_)
-        {
-          ROS_DEBUG("Incoming queue full for topic \"%s\".  "
-                   "Discarding oldest message\n",
-                    name_.c_str());
-        }
-
-        queue_full_ = true;
-        dropped = true;
-      }
-      else
-      {
-        queue_full_ = false;
-      }
-
-      inbox_.push(MessageInfo(m, connection_header));
-    }
-
-    inbox_cond_.notify_all();
-  }
-  else
-  {
-    boost::mutex::scoped_lock lock(callbacks_mutex_);
-
-    invokeCallback(buf, num_bytes, connection_header);
-  }
+  boost::mutex::scoped_lock lock(callbacks_mutex_);
+  invokeCallback(buf, num_bytes, connection_header);
 
   return dropped;
-}
-
-void Subscription::subscriptionThreadFunc()
-{
-  disableAllSignalsInThisThread();
-
-  SubscriptionPtr self;
-
-  // service the incoming message queue, invoking callbacks
-  while(!dropped_ && !shutting_down_)
-  {
-    MessageInfo m;
-
-    {
-      boost::mutex::scoped_lock lock(inbox_mutex_);
-
-      while(inbox_.empty() && !dropped_ && !shutting_down_)
-      {
-        inbox_cond_.wait(lock);
-      }
-
-      if (dropped_ || shutting_down_)
-      {
-        break;
-      }
-
-
-      if (inbox_.size() == 0)
-      {
-        ROS_INFO("incoming queue sem was posted; nothing there.");
-        continue;
-      }
-
-      m = inbox_.front();
-      inbox_.pop();
-    }
-
-    {
-      boost::mutex::scoped_lock lock(callbacks_mutex_);
-
-      if (!dropped_)
-      {
-        // Keep a shared pointer to ourselves so we don't get deleted while in a callback
-        // Fixes the case of unsubscribing from within a callback
-        if (!self)
-        {
-          self = shared_from_this();
-        }
-
-        invokeCallback(m.serialized_message_.buf, m.serialized_message_.num_bytes, m.connection_header_);
-      }
-    }
-  }
-}
-
-bool Subscription::addFunctorMessagePair(AbstractFunctor* cb, Message* m)
-{
-  ROS_ASSERT(m);
-  if (m->__getMD5Sum() != md5sum())
-  {
-    return false;
-  }
-
-  {
-    boost::mutex::scoped_lock lock(callbacks_mutex_);
-
-    CallbackInfoPtr info(new CallbackInfo);
-    info->callback_ = cb;
-    info->message_ = m;
-    info->callback_queue_ = 0;
-
-    callbacks_.push_back(info);
-  }
-
-  return true;
 }
 
 class SubscriptionCallback : public CallbackInterface
@@ -707,8 +549,6 @@ bool Subscription::addCallback(const SubscriptionMessageHelperPtr& helper, Callb
     boost::mutex::scoped_lock lock(callbacks_mutex_);
 
     CallbackInfoPtr info(new CallbackInfo);
-    info->callback_ = 0;
-    info->message_ = 0;
     info->helper_ = helper;
     info->callback_queue_ = queue;
     info->subscription_queue_.reset(new SubscriptionQueue(name_, queue_size));
@@ -751,71 +591,18 @@ void Subscription::invokeCallback(const boost::shared_array<uint8_t>& buffer, si
   {
     const CallbackInfoPtr& info = *cb;
 
-    if (info->callback_queue_)
+    ROS_ASSERT(info->callback_queue_);
+
+    if (!deserializer)
     {
-      if (!deserializer)
-      {
-        deserializer.reset(new MessageDeserializer(info->helper_, buffer, num_bytes, connection_header));
-      }
-
-      uint64_t id = info->subscription_queue_->push(info->helper_, deserializer, info->has_tracked_object_, info->tracked_object_);
-      //ROS_DEBUG_STREAM("Subscription::invokeCallback for " << (*connection_header)["callerid"] << ", pushed buffer " << (uint64_t*)buffer.get() << " seq " << *(uint32_t*)buffer.get());
-      SubscriptionCallbackPtr cb(new SubscriptionCallback(info->subscription_queue_, id));
-      info->callback_queue_->addCallback(cb);
+      deserializer.reset(new MessageDeserializer(info->helper_, buffer, num_bytes, connection_header));
     }
-    else
-    {
-      info->message_->lock();
-      info->message_->__serialized_length = num_bytes;
-      info->message_->__connection_header = connection_header;
-      info->message_->deserialize(buffer.get());
 
-      info->callback_->call();
-
-      info->message_->unlock();
-    }
+    uint64_t id = info->subscription_queue_->push(info->helper_, deserializer, info->has_tracked_object_, info->tracked_object_);
+    //ROS_DEBUG_STREAM("Subscription::invokeCallback for " << (*connection_header)["callerid"] << ", pushed buffer " << (uint64_t*)buffer.get() << " seq " << *(uint32_t*)buffer.get());
+    SubscriptionCallbackPtr cb(new SubscriptionCallback(info->subscription_queue_, id));
+    info->callback_queue_->addCallback(cb);
   }
-}
-
-void Subscription::removeFunctorMessagePair(AbstractFunctor* cb)
-{
-  typedef std::vector<int> V_int;
-  V_int to_delete;
-
-  boost::mutex::scoped_lock cbs_lock(callbacks_mutex_);
-  for (V_CallbackInfo::iterator it = callbacks_.begin();
-       it != callbacks_.end(); ++it)
-  {
-    if ((*it)->callback_ && *(*it)->callback_ == *cb)
-    {
-      delete (*it)->callback_;
-      to_delete.push_back(it - callbacks_.begin());
-    }
-  }
-
-  V_int::iterator it = to_delete.begin();
-  V_int::iterator end = to_delete.end();
-  for (; it != end; ++it)
-  {
-    callbacks_.erase(callbacks_.begin() + *it);
-  }
-}
-bool Subscription::updatesMessage(const void* _msg)
-{
-  bool found = false;
-  boost::mutex::scoped_lock lock(callbacks_mutex_);
-
-  for (V_CallbackInfo::iterator it = callbacks_.begin();
-       !found && it != callbacks_.end(); ++it)
-  {
-    if ((*it)->message_ == _msg)
-    {
-      found = true;
-      break;
-    }
-  }
-
-  return found;
 }
 
 void Subscription::removePublisherLink(const PublisherLinkPtr& pub_link)
@@ -837,14 +624,6 @@ const std::string Subscription::datatype()
 const std::string Subscription::md5sum()
 {
   return md5sum_;
-}
-
-void Subscription::setMaxQueue(int max_queue)
-{
-  {
-    boost::mutex::scoped_lock lock(inbox_mutex_);
-    this->max_queue_ = max_queue;
-  }
 }
 
 }

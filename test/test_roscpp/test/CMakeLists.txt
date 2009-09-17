@@ -3,12 +3,10 @@ rospack_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/sim_time_test.xml)
 
 # Publish one message
 rospack_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_once.xml)
-rospack_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/old_pubsub_once.xml)
 
 # Publish a bunch of messages back to back
 rospack_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_n_fast.xml)
 rospack_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_n_fast_udp.xml)
-rospack_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/old_pubsub_n_fast.xml)
 
 # Publish a bunch of empty messages
 rospack_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_empty.xml)
@@ -18,12 +16,10 @@ rospack_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pub_onsub.xml)
 
 # Publish a bunch of large messages back to back
 rospack_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_n_fast_large_message.xml)
-rospack_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/old_pubsub_n_fast_large_message.xml)
 
 # Subscribe, listen, unsubscribe, re-subscribe to a different topic, listen
 # again
 rospack_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_resub_once.xml)
-rospack_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/old_pubsub_resub_once.xml)
 
 # Subscribe and unsubscribe repeatedly, ensuring that callbacks don't get
 # called when not subscribed.

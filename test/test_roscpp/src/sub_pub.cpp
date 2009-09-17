@@ -40,62 +40,63 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
+#include <ros/callback_queue.h>
 #include <test_roscpp/TestArray.h>
 
 int g_msg_count;
 ros::Duration g_dt;
 uint32_t g_options;
 
-class PubSub : public testing::Test, public ros::Node
+class SubPub : public testing::Test
 {
   public:
-    test_roscpp::TestArray msg;
     bool success;
     bool failure;
     int msg_i;
-    bool connected;
+    ros::Publisher pub_;
 
-    void MsgCallback()
+    void messageCallback(const test_roscpp::TestArrayConstPtr& msg)
     {
       if(failure || success)
         return;
 
       //printf("received message %d\n", msg.counter);
+      if (msg_i == -1)
+      {
+        msg_i = msg->counter - 1;
+      }
+
       msg_i++;
-      if(msg_i != msg.counter)
+      ROS_INFO("msg_i=%d, counter=%d", msg_i, msg->counter);
+      if(msg_i != msg->counter)
       {
         failure = true;
-        puts("failed");
+        ROS_INFO("failed");
       }
       else if(msg_i == (g_msg_count-1))
       {
         success = true;
-        puts("success");
+        ROS_INFO("success");
       }
       else
       {
-        while (!connected)
-        {
-          ros::Duration t(0.01);
-          t.sleep();
-        }
-        publish("test_roscpp/subpub_test", msg);
+        pub_.publish(msg);
       }
     }
 
-    void sub_cb(const ros::SingleSubscriberPublisher&)
+    void subscriberCallback(const ros::SingleSubscriberPublisher&)
     {
-      connected = true;
+      test_roscpp::TestArray msg;
+      msg.counter = 0;
+      pub_.publish(msg);
     }
 
   protected:
-    PubSub() : ros::Node("subscriber") {}
     void SetUp()
     {
       success = false;
       failure = false;
-      connected = false;
 
       msg_i = -1;
     }
@@ -105,16 +106,18 @@ class PubSub : public testing::Test, public ros::Node
     }
 };
 
-TEST_F(PubSub, pubSubNFast)
+TEST_F(SubPub, pubSubNFast)
 {
-  ASSERT_TRUE(subscribe("test_roscpp/pubsub_test", msg, &PubSub::MsgCallback,
-                           (PubSub*)this, 1));
-  ASSERT_TRUE(advertise("test_roscpp/subpub_test", msg, &PubSub::sub_cb, 1));
+  ros::NodeHandle nh;
+  ros::Subscriber sub = nh.subscribe("test_roscpp/pubsub_test", 0, &SubPub::messageCallback, (SubPub*)this);
+  ASSERT_TRUE(sub);
+  pub_ = nh.advertise<test_roscpp::TestArray>("test_roscpp/subpub_test", 0, boost::bind(&SubPub::subscriberCallback, this, _1));
+  ASSERT_TRUE(pub_);
   ros::Time t1(ros::Time::now()+g_dt);
 
   while(ros::Time::now() < t1 && !success && !failure)
   {
-    ros::WallDuration(0.01).sleep();
+    ros::getGlobalCallbackQueue()->callAvailable();
   }
 
   if(success)
@@ -129,7 +132,7 @@ int
 main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv);
+  ros::init(argc, argv, "sub_pub");
 
   if(argc != 3)
   {
@@ -138,6 +141,8 @@ main(int argc, char** argv)
   }
   g_msg_count = atoi(argv[1]);
   g_dt.fromSec(atof(argv[2]));
+
+  ros::NodeHandle nh;
 
   return RUN_ALL_TESTS();
 }

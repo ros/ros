@@ -25,14 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-// TEMP to remove warnings during build while things internally still use deprecated APIs
-#include "ros/macros.h"
-#undef ROSCPP_DEPRECATED
-#define ROSCPP_DEPRECATED
-// END TEMP
-
 #include "ros/node_handle.h"
-#include "ros/node.h"
 #include "ros/this_node.h"
 #include "ros/service.h"
 #include "ros/callback_queue.h"
@@ -54,6 +47,9 @@
 
 namespace ros
 {
+
+boost::mutex g_nh_refcount_mutex_;
+int32_t g_nh_refcount_ = 0;
 
 class NodeHandleBackingCollection
 {
@@ -143,46 +139,27 @@ void NodeHandle::construct()
   namespace_ = names::resolve(namespace_);
   ok_ = true;
 
-  boost::mutex::scoped_lock lock(ros::Node::s_refcount_mutex_);
+  boost::mutex::scoped_lock lock(g_nh_refcount_mutex_);
 
-  if (ros::Node::s_refcount_ == 0)
+  if (g_nh_refcount_ == 0)
   {
-    if (Node::instance())
-    {
-      ros::Node::s_created_by_handle_ = false;
-
-      ROS_WARN("NodeHandle API is being used inside an application started with the old Node API. "
-               "Automatically starting a ros::spin() thread.  Please switch this application to use the NodeHandle API.");
-      // start a thread that automatically calls spin() for us
-      boost::thread t(spinThread);
-      t.detach();
-    }
-    else
-    {
-      ros::Node::s_created_by_handle_ = true;
-      new ros::Node();
-      ros::start();
-    }
+    ros::start();
   }
 
-  ++ros::Node::s_refcount_;
+  ++g_nh_refcount_;
 }
 
 void NodeHandle::destruct()
 {
   delete collection_;
 
-  boost::mutex::scoped_lock lock(ros::Node::s_refcount_mutex_);
+  boost::mutex::scoped_lock lock(g_nh_refcount_mutex_);
 
-  --ros::Node::s_refcount_;
+  --g_nh_refcount_;
 
-  if (ros::Node::s_refcount_ == 0)
+  if (g_nh_refcount_ == 0)
   {
-    if (ros::Node::s_created_by_handle_)
-    {
-      ros::shutdown();
-      delete Node::instance();
-    }
+    ros::shutdown();
   }
 }
 
@@ -204,11 +181,6 @@ void NodeHandle::initRemappings(const M_string& remappings)
 void NodeHandle::setCallbackQueue(CallbackQueueInterface* queue)
 {
   callback_queue_ = queue;
-}
-
-ros::Node* NodeHandle::getNode() const
-{
-  return ros::Node::instance();
 }
 
 std::string NodeHandle::remapName(const std::string& name) const
@@ -253,7 +225,7 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
 
 Publisher NodeHandle::advertise(AdvertiseOptions& ops)
 {
-  SubscriberCallbacksPtr callbacks(new SubscriberCallbacks(ops.connect_cb, ops.disconnect_cb));
+  SubscriberCallbacksPtr callbacks(new SubscriberCallbacks(ops.connect_cb, ops.disconnect_cb, ops.tracked_object));
 
   ops.topic = resolveName(ops.topic);
   if (ops.callback_queue == 0)
@@ -268,7 +240,7 @@ Publisher NodeHandle::advertise(AdvertiseOptions& ops)
     }
   }
 
-  if (TopicManager::instance()->advertise(ops, true))
+  if (TopicManager::instance()->advertise(ops, callbacks))
   {
     Publisher pub(ops.topic, *this, callbacks);
 
@@ -298,7 +270,7 @@ Subscriber NodeHandle::subscribe(SubscribeOptions& ops)
     }
   }
 
-  if (TopicManager::instance()->subscribe(ops, 0, 0))
+  if (TopicManager::instance()->subscribe(ops))
   {
     Subscriber sub(ops.topic, *this, ops.helper);
 
@@ -328,7 +300,7 @@ ServiceServer NodeHandle::advertiseService(AdvertiseServiceOptions& ops)
     }
   }
 
-  if (ServiceManager::instance()->advertiseService(ops, 0))
+  if (ServiceManager::instance()->advertiseService(ops))
   {
     ServiceServer srv(ops.service, *this);
 
@@ -580,11 +552,6 @@ void NodeHandle::getSubscribedTopics(V_string& topics) const
 const std::string& NodeHandle::getName() const
 {
   return this_node::getName();
-}
-
-const V_string& NodeHandle::getParsedArgs()
-{
-  return ros::Node::getParsedArgs();
 }
 
 const std::string& NodeHandle::getMasterHost() const

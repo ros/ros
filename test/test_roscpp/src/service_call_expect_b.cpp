@@ -37,11 +37,9 @@
 
 #include <gtest/gtest.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include "ros/service.h"
 #include <test_roscpp/TestStringString.h>
-
-ros::Node* g_n;
 
 TEST(SrvCall, callSrv)
 {
@@ -49,10 +47,11 @@ TEST(SrvCall, callSrv)
   test_roscpp::TestStringString::Response res;
 
   req.str = "nothing";
+  ros::NodeHandle nh;
 
   int param;
-  while(!g_n->getParam("advertisers_ready", param))
-    usleep(100000);
+  while(!nh.getParam("advertisers_ready", param))
+    ros::Duration(0.01).sleep();
   bool call_result = ros::service::call("service_adv", req, res);
   ASSERT_TRUE(call_result);
 
@@ -64,14 +63,10 @@ main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 
-  ros::init(argc, argv);
-  g_n = new ros::Node("caller");
+  ros::init(argc, argv, "service_call_expect_b");
+  ros::NodeHandle nh;
 
-  int ret = RUN_ALL_TESTS();
-
-  delete g_n;
-
-  return ret;
+  return RUN_ALL_TESTS();
 }
 
 

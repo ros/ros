@@ -42,26 +42,23 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "ros/node.h"
 #include <ros/ros.h>
-
-ros::Node* g_node;
-const char* g_node_name = "test_node";
+#include <ros/param.h>
 
 TEST(namespaces, param)
 {
   std::string param;
-  ASSERT_TRUE( g_node->getParam( "parent", param ) );
+  ASSERT_TRUE( ros::param::get( "parent", param ) );
 }
 
 TEST(namespaces, localParam)
 {
   std::string param;
-  ASSERT_TRUE( g_node->getParam( "~/local", param ) );
+  ASSERT_TRUE( ros::param::get( "~/local", param ) );
 
-  ros::NodeHandle n;
+  ros::NodeHandle n("~");
   std::string param2;
-  n.param<std::string>("~local", param2, param);
+  n.param<std::string>("local", param2, param);
   ASSERT_STREQ(param2.c_str(), param.c_str());
   ASSERT_STREQ(param2.c_str(), "test");
 }
@@ -69,27 +66,20 @@ TEST(namespaces, localParam)
 TEST(namespaces, globalParam)
 {
   std::string param;
-  ASSERT_TRUE( g_node->getParam( "/global", param ) );
+  ASSERT_TRUE( ros::param::get( "/global", param ) );
 }
 
 TEST(namespaces, otherNamespaceParam)
 {
   std::string param;
-  ASSERT_TRUE( g_node->getParam( "/other_namespace/param", param ) );
+  ASSERT_TRUE( ros::param::get( "/other_namespace/param", param ) );
 }
 
 int
 main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init( argc, argv );
+  ros::init( argc, argv, "namespaces" );
 
-  g_node = new ros::Node( g_node_name );
-
-  int ret = RUN_ALL_TESTS();
-
-
-  delete g_node;
-
-  return ret;
+  return RUN_ALL_TESTS();
 }

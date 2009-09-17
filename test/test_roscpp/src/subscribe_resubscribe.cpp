@@ -40,7 +40,7 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <test_roscpp/TestArray.h>
 
 int g_argc;
@@ -49,30 +49,28 @@ char** g_argv;
 class PubSub : public testing::Test
 {
   public:
-    ros::Node* n;
-    test_roscpp::TestArray msg;
     bool success;
     bool failure;
     int msg_count;
     int msg_i;
     ros::Duration dt;
 
-    void MsgCallback()
+    void messageCallback(const test_roscpp::TestArrayConstPtr& msg)
     {
       if(failure || success)
         return;
 
-      printf("received message %d\n", msg.counter);
+      ROS_INFO("received message %d", msg->counter);
       msg_i++;
-      if(msg_i != msg.counter)
+      if(msg_i != msg->counter)
       {
         failure = true;
-        puts("failed");
+        ROS_INFO("failed");
       }
       if(msg_i == (msg_count-1))
       {
         success = true;
-        puts("success");
+        ROS_INFO("success");
       }
     }
 
@@ -80,51 +78,53 @@ class PubSub : public testing::Test
     PubSub() {}
     void SetUp()
     {
-      ros::init(g_argc, g_argv);
       success = false;
       failure = false;
 
       msg_i = -1;
       ASSERT_TRUE(g_argc == 3);
-      n = new ros::Node("subscriber");
       msg_count = atoi(g_argv[1]);
       dt.fromSec(atof(g_argv[2]));
     }
     void TearDown()
     {
-      
-      delete n;
     }
 };
 
 TEST_F(PubSub, pubSubNFast)
 {
-  ASSERT_TRUE(n->subscribe("test_roscpp/pubsub_test", msg, &PubSub::MsgCallback,
-                           (PubSub*)this, 0));
-  ros::Time t1(ros::Time::now()+dt);
+  ros::NodeHandle nh;
 
-  while(ros::Time::now() < t1 && !success)
   {
-    ros::WallDuration(0.01).sleep();
+    ros::Subscriber sub = nh.subscribe("test_roscpp/pubsub_test", 0, &PubSub::messageCallback, (PubSub*)this);
+    ASSERT_TRUE(sub);
+    ros::Time t1(ros::Time::now()+dt);
+
+    while(ros::Time::now() < t1 && !success)
+    {
+      ros::WallDuration(0.01).sleep();
+      ros::spinOnce();
+    }
   }
 
   if(!success)
     FAIL();
   else
   {
-    ASSERT_TRUE(n->unsubscribe("test_roscpp/pubsub_test"));
-
     success = false;
     failure = false;
     msg_i = -1;
 
-    ASSERT_TRUE(n->subscribe("test_roscpp/pubsub_test2", msg, &PubSub::MsgCallback,
-                             (PubSub*)this, 0));
-    ros::Time t1(ros::Time::now()+dt);
-
-    while(ros::Time::now() < t1 && !success)
     {
-      ros::WallDuration(0.01).sleep();
+      ros::Subscriber sub = nh.subscribe("test_roscpp/pubsub_test2", 0, &PubSub::messageCallback, (PubSub*)this);
+      ASSERT_TRUE(sub);
+      ros::Time t1(ros::Time::now()+dt);
+
+      while(ros::Time::now() < t1 && !success)
+      {
+        ros::WallDuration(0.01).sleep();
+        ros::spinOnce();
+      }
     }
 
     if(success)
@@ -137,6 +137,9 @@ TEST_F(PubSub, pubSubNFast)
 int
 main(int argc, char** argv)
 {
+  ros::init(argc, argv, "subscribe_resubscribe");
+  ros::NodeHandle nh;
+
   testing::InitGoogleTest(&argc, argv);
   g_argc = argc;
   g_argv = argv;

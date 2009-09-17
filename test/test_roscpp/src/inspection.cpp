@@ -37,12 +37,12 @@
 
 #include <gtest/gtest.h>
 
-#include "ros/node.h"
+#include <ros/ros.h>
+#include <ros/names.h>
 #include <test_roscpp/TestArray.h>
 #include <test_roscpp/TestStringInt.h>
 #include <test_roscpp/TestEmpty.h>
 
-ros::Node* g_node;
 const char* g_node_name = "inspection_test";
 
 int g_argc;
@@ -50,37 +50,37 @@ char* g_argv[8];
 
 TEST(Inspection, getAdvertisedTopics)
 {
+  ros::NodeHandle nh;
+
   std::vector<std::string> topics;
 
-  g_node->getAdvertisedTopics(topics);
+  ros::this_node::getAdvertisedTopics(topics);
   // Note that it's 1, not 0, because the rosout appender has already snuck
   // in and advertised.
   ASSERT_EQ((int)topics.size(),1);
   ASSERT_EQ(topics[0], "/rosout");
 
-  ASSERT_TRUE(g_node->advertise<test_roscpp::TestArray>("topic",1));
-  ASSERT_TRUE(g_node->advertise<test_roscpp::TestStringInt>("ns/topic",1));
-  ASSERT_TRUE(g_node->advertise<test_roscpp::TestEmpty>("/global/topic",1));
+  {
+    ros::Publisher pub1 = nh.advertise<test_roscpp::TestArray>("topic",1);
+    ros::Publisher pub2 = nh.advertise<test_roscpp::TestArray>("ns/topic",1);
+    ros::Publisher pub3 = nh.advertise<test_roscpp::TestArray>("/global/topic",1);
+
+    topics.clear();
+    ros::this_node::getAdvertisedTopics(topics);
+    // Note that it's 4, not 3, because the rosout appender has already snuck
+    // in and advertised.
+    ASSERT_EQ((int)topics.size(),4);
+
+    // The following tests assume strict ordering of the topics, which is not
+    // guaranteed by the API.
+    ASSERT_EQ(topics[0], "/rosout");
+    ASSERT_EQ(topics[1], "/topic");
+    ASSERT_EQ(topics[2], "/ns/topic");
+    ASSERT_EQ(topics[3], "/global/topic");
+  }
 
   topics.clear();
-  g_node->getAdvertisedTopics(topics);
-  // Note that it's 4, not 3, because the rosout appender has already snuck
-  // in and advertised.
-  ASSERT_EQ((int)topics.size(),4);
-
-  // The following tests assume strict ordering of the topics, which is not
-  // guaranteed by the API.
-  ASSERT_EQ(topics[0], "/rosout");
-  ASSERT_EQ(topics[1], "/topic");
-  ASSERT_EQ(topics[2], "/ns/topic");
-  ASSERT_EQ(topics[3], "/global/topic");
-
-  ASSERT_TRUE(g_node->unadvertise("topic"));
-  ASSERT_TRUE(g_node->unadvertise("ns/topic"));
-  ASSERT_TRUE(g_node->unadvertise("/global/topic"));
-
-  topics.clear();
-  g_node->getAdvertisedTopics(topics);
+  ros::this_node::getAdvertisedTopics(topics);
   // Note that it's 1, not 0, because the rosout appender has already snuck
   // in and advertised.
   ASSERT_EQ((int)topics.size(),1);
@@ -90,11 +90,11 @@ TEST(Inspection, getAdvertisedTopics)
 TEST(Inspection, commandLineParsing)
 {
   ASSERT_EQ(g_argc, 5);
-  const ros::V_string& args = ros::Node::getParsedArgs();
+  ros::M_string remappings = ros::names::getRemappings();
 
-  ASSERT_STREQ(args[0].c_str(), "foo:=bar");
-  ASSERT_STREQ(args[1].c_str(), "baz:=bang");
-  ASSERT_STREQ(args[2].c_str(), "bomb:=barn");
+  ASSERT_STREQ(remappings["foo"].c_str(), "bar");
+  ASSERT_STREQ(remappings["baz"].c_str(), "bang");
+  ASSERT_STREQ(remappings["bomb"].c_str(), "barn");
 }
 
 int
@@ -113,14 +113,8 @@ main(int argc, char** argv)
   g_argv[6] = strdup("bomb:=barn");
   g_argv[7] = strdup("--bangbang");
 
-  ros::init( g_argc, g_argv );
+  ros::init( g_argc, g_argv, "inspection" );
+  ros::NodeHandle nh;
 
-  g_node = new ros::Node( g_node_name );
-
-  int ret = RUN_ALL_TESTS();
-
-
-  delete g_node;
-
-  return ret;
+  return RUN_ALL_TESTS();
 }

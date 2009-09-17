@@ -30,7 +30,6 @@
 
 
 #include <cstdio>
-#include "ros/node.h"
 #include "std_msgs/String.h"
 #include "topic_tools/MuxSelect.h"
 #include "topic_tools/shape_shifter.h"

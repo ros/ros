@@ -1,10 +1,18 @@
+rospack_add_executable(handles handles.cpp)
+rospack_add_gtest_build_flags(handles)
+target_link_libraries(handles ros)
+
+rospack_add_executable(timer_callbacks timer_callbacks.cpp)
+rospack_add_gtest_build_flags(timer_callbacks)
+target_link_libraries(timer_callbacks ros)
+
+rospack_add_executable(latching_publisher latching_publisher)
+rospack_add_gtest_build_flags(latching_publisher)
+target_link_libraries(latching_publisher ros)
+
 rospack_add_executable(publish_n_fast publish_n_fast.cpp)
 rospack_declare_test(publish_n_fast)
 target_link_libraries(publish_n_fast ros)
-
-rospack_add_executable(old_publish_n_fast old_publish_n_fast.cpp)
-rospack_declare_test(old_publish_n_fast)
-target_link_libraries(old_publish_n_fast ros)
 
 rospack_add_executable(subscribe_self subscribe_self.cpp)
 rospack_add_gtest_build_flags(subscribe_self)
@@ -29,10 +37,6 @@ target_link_libraries(publish_onsub ros)
 rospack_add_executable(subscribe_n_fast subscribe_n_fast.cpp)
 rospack_add_gtest_build_flags(subscribe_n_fast)
 target_link_libraries(subscribe_n_fast ros)
-
-rospack_add_executable(old_subscribe_n_fast old_subscribe_n_fast.cpp)
-rospack_add_gtest_build_flags(old_subscribe_n_fast)
-target_link_libraries(old_subscribe_n_fast ros)
 
 rospack_add_executable(subscribe_empty subscribe_empty.cpp)
 rospack_add_gtest_build_flags(subscribe_empty)
@@ -92,7 +96,7 @@ rospack_declare_test(service_call_repeatedly)
 target_link_libraries(service_call_repeatedly ros)
 
 
-# Repeatedly call ros::init() and ros::fini()
+# Repeatedly call ros::init()
 rospack_add_executable(multiple_init_fini multiple_init_fini.cpp)
 rospack_add_gtest_build_flags(multiple_init_fini)
 target_link_libraries(multiple_init_fini ros)
@@ -150,23 +154,7 @@ rospack_add_executable(multiple_subscriptions multiple_subscriptions.cpp)
 rospack_add_gtest_build_flags(multiple_subscriptions)
 target_link_libraries(multiple_subscriptions ros)
 
-
-rospack_add_executable(multiple_subscriptions_standalone multiple_subscriptions_standalone.cpp)
-rospack_declare_test(multiple_subscriptions_standalone)
-target_link_libraries(multiple_subscriptions_standalone ros)
-
 rospack_add_executable(check_master check_master.cpp)
 rospack_add_gtest_build_flags(check_master)
 target_link_libraries(check_master ros)
 
-rospack_add_executable(handles handles.cpp)
-rospack_add_gtest_build_flags(handles)
-target_link_libraries(handles ros)
-
-rospack_add_executable(timer_callbacks timer_callbacks.cpp)
-rospack_add_gtest_build_flags(timer_callbacks)
-target_link_libraries(timer_callbacks ros)
-
-rospack_add_executable(latching_publisher latching_publisher)
-rospack_add_gtest_build_flags(latching_publisher)
-target_link_libraries(latching_publisher ros)

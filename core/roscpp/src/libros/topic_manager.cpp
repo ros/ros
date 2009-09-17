@@ -209,9 +209,7 @@ PublicationPtr TopicManager::lookupPublication(const std::string& topic)
   return lookupPublicationWithoutLock(topic);
 }
 
-bool TopicManager::addSubCallback(const std::string &_topic, Message* m, AbstractFunctor *fp,
-                          const SubscriptionMessageHelperPtr& helper, CallbackQueueInterface* queue, int max_queue,
-                          const VoidPtr& tracked_object)
+bool TopicManager::addSubCallback(const SubscribeOptions& ops)
 {
   // spin through the subscriptions and see if we find a match. if so, use it.
   bool found = false;
@@ -230,23 +228,12 @@ bool TopicManager::addSubCallback(const std::string &_topic, Message* m, Abstrac
          s != subscriptions_.end() && !found; ++s)
     {
       sub = *s;
-      if (!sub->isDropped() && sub->getName() == _topic)
+      if (!sub->isDropped() && sub->getName() == ops.topic)
       {
-        if (helper)
+        if (sub->md5sum() == ops.helper->getMD5Sum())
         {
-          if (sub->md5sum() == helper->getMD5Sum())
-          {
-            found = true;
-            break;
-          }
-        }
-        else
-        {
-          if (sub->md5sum() == m->__getMD5Sum())
-          {
-            found = true;
-            break;
-          }
+          found = true;
+          break;
         }
       }
     }
@@ -254,29 +241,7 @@ bool TopicManager::addSubCallback(const std::string &_topic, Message* m, Abstrac
 
   if (found)
   {
-    bool added = false;
-    if (helper)
-    {
-      added = sub->addCallback(helper, queue, max_queue, tracked_object);
-    }
-    else
-    {
-      added = sub->addFunctorMessagePair(fp, m);
-    }
-
-    if (added)
-    {
-      if (!queue)
-      {
-        if ((sub->getMaxQueue() != 0 && sub->getMaxQueue() < max_queue) || (max_queue == 0 && sub->getMaxQueue() != 0))
-        {
-          ROS_WARN("Changing subscription '%s' max_queue size from %d to %d\n", sub->getName().c_str(), sub->getMaxQueue(), max_queue);
-
-          sub->setMaxQueue(max_queue);
-        }
-      }
-    }
-    else
+    if (!sub->addCallback(ops.helper, ops.callback_queue, ops.queue_size, ops.tracked_object))
     {
       return false;
     }
@@ -286,9 +251,9 @@ bool TopicManager::addSubCallback(const std::string &_topic, Message* m, Abstrac
 }
 
 // this function has the subscription code that doesn't need to be templated.
-bool TopicManager::subscribe(const SubscribeOptions& ops, Message* m, AbstractFunctor *cb)
+bool TopicManager::subscribe(const SubscribeOptions& ops)
 {
-  if (addSubCallback(ops.topic, m, cb, ops.helper, ops.callback_queue, ops.queue_size, ops.tracked_object))
+  if (addSubCallback(ops))
   {
     return true;
   }
@@ -298,32 +263,15 @@ bool TopicManager::subscribe(const SubscribeOptions& ops, Message* m, AbstractFu
 
     if (isShuttingDown())
     {
-      delete cb;
       return false;
     }
   }
 
-  std::string md5sum, datatype;
-  if (ops.helper)
-  {
-    md5sum = ops.helper->getMD5Sum();
-    datatype = ops.helper->getDataType();
-  }
-  else
-  {
-    md5sum = m->__getMD5Sum();
-    datatype = m->__getDataType();
-  }
+  std::string md5sum = ops.helper->getMD5Sum();
+  std::string datatype = ops.helper->getDataType();
 
-  SubscriptionPtr s(new Subscription(ops.topic, md5sum, datatype, ops.callback_queue ? false : true, ops.queue_size, ops.transport_hints));
-  if (ops.helper)
-  {
-    s->addCallback(ops.helper, ops.callback_queue, ops.queue_size, ops.tracked_object);
-  }
-  else
-  {
-    s->addFunctorMessagePair(cb, m);
-  }
+  SubscriptionPtr s(new Subscription(ops.topic, md5sum, datatype, ops.transport_hints));
+  s->addCallback(ops.helper, ops.callback_queue, ops.queue_size, ops.tracked_object);
 
   if (!registerSubscriber(s, ops.datatype))
   {
@@ -340,8 +288,7 @@ bool TopicManager::subscribe(const SubscribeOptions& ops, Message* m, AbstractFu
   return true;
 }
 
-bool TopicManager::advertise(const AdvertiseOptions& ops,
-                      bool allow_multiple)
+bool TopicManager::advertise(const AdvertiseOptions& ops, const SubscriberCallbacksPtr& callbacks)
 {
   if (ops.datatype == "*")
   {
@@ -367,44 +314,23 @@ bool TopicManager::advertise(const AdvertiseOptions& ops,
       pub.reset();
     }
 
-    SubscriberCallbacksPtr callbacks;
-    if (ops.connect_cb || ops.disconnect_cb)
-    {
-      callbacks.reset(new SubscriberCallbacks(ops.connect_cb, ops.disconnect_cb, ops.tracked_object));
-    }
-
     if (pub)
     {
       if (pub->getMD5Sum() != ops.md5sum)
       {
-        ROS_ERROR("Tried to advertise on topic [%s] with md5sum [%s] and datatype[%s], but the topic is already advertised as md5sum [%s] and datatype[%s]",
+        ROS_ERROR("Tried to advertise on topic [%s] with md5sum [%s] and datatype [%s], but the topic is already advertised as md5sum [%s] and datatype [%s]",
                   ops.topic.c_str(), ops.md5sum.c_str(), ops.datatype.c_str(), pub->getMD5Sum().c_str(), pub->getDataType().c_str());
         return false;
       }
 
-      if (allow_multiple)
-      {
-        pub->incrementRefcount();
-        if (callbacks)
-        {
-          pub->addCallbacks(callbacks);
-        }
+      pub->incrementRefcount();
+      pub->addCallbacks(callbacks);
 
-        return true;
-      }
-      else
-      {
-        ROS_DEBUG("Topic [%s] is already advertised", ops.topic.c_str());
-
-        return false;
-      }
+      return true;
     }
 
     pub = PublicationPtr(new Publication(ops.topic, ops.datatype, ops.md5sum, ops.message_definition, ops.queue_size, ops.callback_queue, ops.latch));
-    if (callbacks)
-    {
-      pub->addCallbacks(callbacks);
-    }
+    pub->addCallbacks(callbacks);
     advertised_topics_.push_back(pub);
   }
 
@@ -467,13 +393,9 @@ bool TopicManager::unadvertise(const std::string &topic, const SubscriberCallbac
     {
       PublicationPtr pub = *i;
       pub->decrementRefcount();
+      pub->removeCallbacks(callbacks);
 
-      if (callbacks)
-      {
-        pub->removeCallbacks(callbacks);
-      }
-
-      if (!callbacks || pub->getRefcount() == 0)
+      if (pub->getRefcount() == 0)
       {
         unregisterPublisher(pub->getName());
         pub->drop();
@@ -758,141 +680,6 @@ PublicationPtr TopicManager::lookupPublicationWithoutLock(const string &topic)
   }
 
   return t;
-}
-
-bool TopicManager::unsubscribe(const std::string &topic)
-{
-  SubscriptionPtr sub;
-
-  {
-    boost::mutex::scoped_lock lock(subs_mutex_);
-
-    if (isShuttingDown())
-    {
-      return false;
-    }
-
-    if (!unregisterSubscriber(topic))
-    {
-      ROS_ERROR("couldn't unregister subscriber for topic [%s]", topic.c_str());
-    }
-
-    for (L_Subscription::iterator it = subscriptions_.begin();
-         it != subscriptions_.end() && !sub; ++it)
-    {
-      if ((*it)->getName() == topic)
-      {
-        sub = *it;
-        subscriptions_.erase(it);
-        break;
-      }
-    }
-  }
-
-  if(!sub)
-  {
-    ROS_ERROR( "couldn't find the subscription object in unsubscribe(%s)",
-               topic.c_str());
-    return false;
-  }
-  else
-  {
-    sub->shutdown();
-    return true;
-  }
-}
-
-bool TopicManager::unsubscribe(const Message& _msg)
-{
-  SubscriptionPtr sub;
-
-  {
-    boost::mutex::scoped_lock lock(subs_mutex_);
-
-    if (isShuttingDown())
-    {
-      return false;
-    }
-
-    // dig around to see who is responsible for updating this message
-    for (L_Subscription::iterator it = subscriptions_.begin();
-         it != subscriptions_.end() && !sub; ++it)
-    {
-      if ((*it)->updatesMessage(&_msg))
-      {
-        sub = (*it);
-
-        subscriptions_.erase(it);
-        break;
-      }
-    }
-
-    if (!sub)
-    {
-      ROS_ERROR("Couldn't find subscriber in unsubscribe(Message)");
-      return false;
-    }
-
-    if (!unregisterSubscriber(sub->getName()))
-    {
-      ROS_ERROR("Couldn't unregister subscriber for topic [%s]", sub->getName().c_str());
-    }
-  }
-
-  sub->shutdown();
-  return true;
-}
-
-bool TopicManager::unsubscribe(const std::string &topic, AbstractFunctor *afp)
-{
-  SubscriptionPtr sub;
-  L_Subscription::iterator it;
-
-  {
-    boost::mutex::scoped_lock lock(subs_mutex_);
-
-    if (isShuttingDown())
-    {
-      return false;
-    }
-
-    for (it = subscriptions_.begin();
-         it != subscriptions_.end() && !sub; ++it)
-    {
-      if ((*it)->getName() == topic)
-      {
-        sub = *it;
-        break;
-      }
-    }
-  }
-
-  if (!sub)
-  {
-    return false;
-  }
-
-  sub->removeFunctorMessagePair(afp);
-
-  if (sub->getNumCallbacks() == 0)
-  {
-    // nobody is left. blow away the subscription.
-    {
-      boost::mutex::scoped_lock lock(subs_mutex_);
-
-      subscriptions_.erase(it);
-
-      if (!unregisterSubscriber(topic))
-      {
-        ROS_ERROR("Couldn't unregister subscriber for topic [%s]", topic.c_str());
-      }
-    }
-
-    sub->shutdown();
-    return true;
-  }
-
-  return true;
 }
 
 bool TopicManager::unsubscribe(const std::string &topic, const SubscriptionMessageHelperPtr& helper)

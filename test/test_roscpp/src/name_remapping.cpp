@@ -42,44 +42,36 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "ros/node.h"
-
-ros::Node* g_node;
-const char* g_node_name = "test_node";
-const char* g_expected_name = "/name_remapped";
-const char* g_parameter = "test";
+#include "ros/ros.h"
+#include <ros/param.h>
+#include <ros/names.h>
 
 TEST(roscpp, parameterRemapping)
 {
   std::string param;
-  ASSERT_TRUE(g_node->getParam(g_parameter, param));
+  ASSERT_TRUE(ros::param::get("test", param));
+  ASSERT_STREQ(ros::names::remap("test").c_str(), "test_remap");
 }
 
 TEST(roscpp, nodeNameRemapping)
 {
-  std::string node_name = g_node->getName();
-  ASSERT_STREQ(node_name.c_str(), g_expected_name);
+  std::string node_name = ros::this_node::getName();
+  ASSERT_STREQ(node_name.c_str(), "/name_remapped");
 }
 
 TEST(roscpp, cleanName)
 {
-  ASSERT_STREQ(g_node->cleanName("////asdf///").c_str(), "/asdf");
-  ASSERT_STREQ(g_node->cleanName("////asdf///jioweioj").c_str(), "/asdf/jioweioj");
-  ASSERT_STREQ(g_node->cleanName("////asdf///jioweioj/").c_str(), "/asdf/jioweioj");
+  ASSERT_STREQ(ros::names::clean("////asdf///").c_str(), "/asdf");
+  ASSERT_STREQ(ros::names::clean("////asdf///jioweioj").c_str(), "/asdf/jioweioj");
+  ASSERT_STREQ(ros::names::clean("////asdf///jioweioj/").c_str(), "/asdf/jioweioj");
 }
 
 int
 main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init( argc, argv );
+  ros::init( argc, argv, "name_remapping" );
+  ros::NodeHandle nh;
 
-  g_node = new ros::Node( g_node_name );
-
-  int ret = RUN_ALL_TESTS();
-
-
-  delete g_node;
-
-  return ret;
+  return RUN_ALL_TESTS();
 }

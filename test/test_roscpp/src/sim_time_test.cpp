@@ -42,88 +42,61 @@
 #include <gtest/gtest.h>
 #include <time.h>
 #include <stdlib.h>
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <roslib/Time.h>
 
 int g_argc;
 char** g_argv;
 
 
-class TimeReader : public ros::Node
-{
-  public:
-    ros::Time getTime()
-    {
-      return ros::Time::now();
-    }
-    void setTime(ros::Time t)
-    {
-      roslib::Time message;
-      message.rostime = t;
-      publish("time", message);
-    }
-    void subCB(const ros::SingleSubscriberPublisher &)
-    {
-      has_subscriber_ = true;
-    }
-    TimeReader(std::string name) : ros::Node(name)
-    {
-      has_subscriber_ = false;
-      roslib::Time msg;
-      advertise("time", msg, &TimeReader::subCB, 1);
-      while (!has_subscriber_) {
-        struct timespec sleep_time = {0, 10000000};
-        nanosleep(&sleep_time,NULL);
-      }
-    }
-    bool has_subscriber_;
-};
-
-
 class RosTimeTest : public testing::Test
 {
-  public:
-    TimeReader *n;
+public:
+  void setTime(ros::Time t)
+  {
+    roslib::Time message;
+    message.rostime = t;
+    pub_.publish(message);
+  }
 
-  protected:
-    RosTimeTest()
+protected:
+  RosTimeTest()
+  {
+    pub_ = nh_.advertise<roslib::Time>("/time", 1);
+    while (pub_.getNumSubscribers() == 0)
     {
+      ros::Duration(0.01).sleep();
     }
-    void SetUp()
-    {
-      ros::init(g_argc, g_argv);
-      n = new TimeReader("timereader");
-    }
-    void TearDown()
-    {
+  }
 
-      delete n;
-    }
+  ros::NodeHandle nh_;
+  ros::Publisher pub_;
 
 };
 
 TEST_F(RosTimeTest, SimTimeTest)
 {
   //Get the start time.
-  ros::Time start = n->getTime();
+  ros::Time start = ros::Time::now();
 
   //The start time should be zero before a message is published.
-  ASSERT_EQ(0.0, start.toSec());
+  ASSERT_TRUE(start.isZero());
 
   //Publish a rostime of 42.
-  n->setTime(ros::Time(42, 0));
+  setTime(ros::Time(42, 0));
 
   //Wait half a second to get the message.
-  boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ros::WallDuration(0.5).sleep();
 
   //Make sure that it is really set
-  ASSERT_EQ(42.0, n->getTime().toSec());
+  ASSERT_EQ(42.0, ros::Time::now().toSec());
 }
 
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "sim_time_test");
   g_argc = argc;
   g_argv = argv;
   return RUN_ALL_TESTS();

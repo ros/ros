@@ -68,7 +68,7 @@ class SubPub : public testing::Test
       }
 
       msg_i++;
-      ROS_INFO("msg_i=%d, counter=%d", msg_i, msg->counter);
+      //ROS_INFO("msg_i=%d, counter=%d", msg_i, msg->counter);
       if(msg_i != msg->counter)
       {
         failure = true;

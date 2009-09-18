@@ -483,7 +483,7 @@ class RosMakeAll:
                           action="store_true", help="select all packages")
         parser.add_option("-v", dest="verbose", default=False,
                           action="store_true", help="display errored builds")
-        parser.add_option("-r", "--robust", dest="robust", default=False,
+        parser.add_option("-r","-k", "--robust", dest="robust", default=False,
                            action="store_true", help="do not stop build on error")
         parser.add_option("-V", dest="full_verbose", default=False,
                           action="store_true", help="display all builds")

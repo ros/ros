@@ -62,6 +62,7 @@ class TestRospyApi(unittest.TestCase):
         rospy.FATAL
         
         rospy.get_caller_id
+        rospy.get_name        
         rospy.get_master
         rospy.get_namespace
         rospy.get_published_topics

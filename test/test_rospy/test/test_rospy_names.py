@@ -250,7 +250,21 @@ class TestRospyNames(unittest.TestCase):
             except ParameterInvalid: pass
 
     def test_caller_id(self):
-        from rospy.names import get_caller_id, _set_caller_id, get_namespace
+        from rospy.names import get_caller_id, get_name, _set_caller_id, get_namespace
+        # test get_name, get_caller_id, and _set_caller_id
+        try:
+            self.assertEquals('/unnamed', get_name())
+            self.assertEquals('/', get_namespace())
+            _set_caller_id('/foo')
+            self.assertEquals('/foo', get_name())
+            self.assertEquals('/', get_namespace())
+            _set_caller_id('/foo/bar')
+            self.assertEquals('/foo/bar', get_name())
+            self.assertEquals('/foo/', get_namespace())
+        finally:
+            _set_caller_id('/unnamed')
+
+        # older get_caller_id usage
         try:
             self.assertEquals('/unnamed', get_caller_id())
             self.assertEquals('/', get_namespace())
@@ -262,7 +276,7 @@ class TestRospyNames(unittest.TestCase):
             self.assertEquals('/foo/', get_namespace())
         finally:
             _set_caller_id('/unnamed')
-        
+            
     def test_valid_type_name(self):
         from rospy.names import valid_type_name, ParameterInvalid
         validator = valid_type_name('param_name')

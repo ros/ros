@@ -256,7 +256,7 @@ def get_namespace():
     """
     return _caller_namespace
 
-def get_caller_id():
+def get_name():
     """
     Get fully resolved name of local node. If this is not a node,
     use empty string
@@ -264,6 +264,9 @@ def get_caller_id():
     @rtype: str
     """    
     return _caller_id
+
+# backwards compatibility
+get_caller_id = get_name
 
 def _set_caller_id(caller_id):
     """

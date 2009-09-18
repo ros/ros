@@ -64,7 +64,7 @@ from rospy.core import is_shutdown, signal_shutdown, \
 from rospy.exceptions import *
 from rospy.init import get_node_proxy
 from rospy.msg import AnyMsg, Message
-from rospy.names import get_caller_id, get_namespace, resolve_name, remap_name
+from rospy.names import get_name, get_caller_id, get_namespace, resolve_name, remap_name
 from rospy.rostime import Time, Duration, get_rostime, get_time
 from rospy.service import ServiceException, ServiceDefinition
 # - use tcp ros implementation of services
@@ -114,7 +114,11 @@ __all__ = [
     'TransportInitError',
     'get_node_proxy',
     'AnyMsg', 'Message',
-    'get_caller_id', 'get_namespace', 'resolve_name', 'remap_name',
+    'get_name',
+    'get_caller_id',
+    'get_namespace',
+    'resolve_name',
+    'remap_name',
     'Time', 'Duration', 'get_rostime', 'get_time',
     'ServiceException', 'ServiceDefinition',
     'Service', 'ServiceProxy',

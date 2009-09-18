@@ -82,7 +82,7 @@ class TestRosserviceOffline(unittest.TestCase):
         self.assertEquals(msg, output[1])        
         output = Popen([cmd, 'call', 'add_two_ints', '1', '2'], **kwds).communicate()
         self.assertEquals(msg, output[1])        
-        output = Popen([cmd, 'find', 'rospy_tutorials/AddTwoInts'], **kwds).communicate()
+        output = Popen([cmd, 'find', 'test_ros/AddTwoInts'], **kwds).communicate()
         self.assertEquals(msg, output[1])        
         
 if __name__ == '__main__':

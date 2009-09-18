@@ -71,7 +71,7 @@ class TestRosmsg(unittest.TestCase):
         l1 = [x for x in output1.split() if x]
         l2 = [x.strip() for x in output2.split('\n') if x.strip()]
         self.assertEquals(l1, l2)
-        for p in ['roslib', 'test_rosmsg', 'std_msgs', 'rospy_tutorials']:
+        for p in ['roslib', 'test_rosmsg', 'std_msgs', 'test_ros']:
             self.assert_(p in l1)
         for p in ['std_srvs', 'rospy']:
             self.assert_(p not in l1)
@@ -81,7 +81,7 @@ class TestRosmsg(unittest.TestCase):
         l1 = [x for x in output1.split() if x]
         l2 = [x.strip() for x in output2.split('\n') if x.strip()]
         self.assertEquals(l1, l2)
-        for p in ['test_rosmsg', 'std_srvs', 'rospy_tutorials']:
+        for p in ['test_rosmsg', 'std_srvs', 'test_ros']:
             self.assert_(p in l1)
         for p in ['std_msgs', 'rospy']:
             self.assert_(p not in l1)
@@ -117,7 +117,7 @@ class TestRosmsg(unittest.TestCase):
         self.assertEquals('---', output.strip())
         output = Popen(['rossrv', 'show', 'std_srvs/Empty'], stdout=PIPE).communicate()[0]
         self.assertEquals('---', output.strip())
-        output = Popen(['rossrv', 'show', 'rospy_tutorials/AddTwoInts'], stdout=PIPE).communicate()[0]
+        output = Popen(['rossrv', 'show', 'test_ros/AddTwoInts'], stdout=PIPE).communicate()[0]
         self.assertEquals('int64 a\nint64 b\n---\nint64 sum', output.strip())
 
         # test against test_rosmsg package

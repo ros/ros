@@ -7,14 +7,14 @@
   <author>Ken Conley</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://pr.willowgarage.com/wiki/test_rosmsg</url>
+  <url>http://ros.org/wiki/test_rosmsg</url>
   <depend package="rospy"/>
   <depend package="roslib"/>
   <depend package="rosmsg"/>
   <depend package="rostest"/>
   <depend package="std_msgs"/>
   
-  <depend package="rospy_tutorials"/> <!-- tests depend on existence of this package -->
+  <depend package="test_ros"/> <!-- tests depend on existence of this package -->
 
 </package>
 

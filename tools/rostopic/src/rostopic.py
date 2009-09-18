@@ -271,8 +271,11 @@ def _get_topic_type(topic):
         val = succeed(roslib.scriptutil.get_master().getPublishedTopics('/', '/'))
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
-    
-    matches = [(t, t_type) for t, t_type in val if t == topic or topic.startswith(t+'/')]
+
+    # exact match first, followed by prefix match
+    matches = [(t, t_type) for t, t_type in val if t == topic]
+    if not matches:
+        matches = [(t, t_type) for t, t_type in val if topic.startswith(t+'/')]
     if matches:
         #TODO logic for multiple matches if we are prefix matching
         t, t_type = matches[0]

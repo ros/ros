@@ -354,15 +354,15 @@ class RosMakeAll:
                 buildfail_filename = os.path.join(log_dir, "buildfailures.txt")
                 with open(buildfail_filename, 'w') as bf:
                     bf.write("Build failures:\n")
-                    for key in self.result[None].keys():
-                        if self.result[None][key] == False:
+                    for key in self.build_list:
+                        if key in self.result[None].keys() and self.result[None][key] == False:
                             bf.write("%s\n"%key)
                 if  None in self.output.keys():
                     buildfail_context_filename = os.path.join(log_dir, "buildfailures-with-context.txt")
                     with open(buildfail_context_filename, 'w') as bfwc:
                         bfwc.write("Build failures with context:\n")
-                        for key in self.result[None].keys():
-                            if self.result[None][key] == False:
+                        for key in self.build_list:
+                            if key in self.result[None].keys() and self.result[None][key] == False:
                                 bfwc.write("%s\n"%key)
                                 if key in self.output:
                                     bfwc.write(self.output[key])
@@ -372,16 +372,16 @@ class RosMakeAll:
                 testfail_filename = os.path.join(log_dir, "testfailures.txt")
                 with open(testfail_filename, 'w') as btwc:
                     btwc.write("Test failures:\n")
-                    for key in self.result["test"].keys():
-                        if self.result["test"][key] == False:
+                    for key in self.build_list:
+                        if key in self.result["test"].keys() and self.result["test"][key] == False:
                             btwc.write("%s\n"%key)
 
                 if "test" in self.output.keys():
                     testfail_filename = os.path.join(log_dir, "testfailures-with-context.txt")
                     with open(testfail_filename, 'w') as btwc:
                         btwc.write("Test failures with context:\n")
-                        for key in self.result["test"].keys():
-                            if self.result["test"][key] == False:
+                        for key in self.build_list:
+                            if key in self.result["test"].keys() and self.result["test"][key] == False:
                                 btwc.write("%s\n"%key)
                                 if key in self.output["test"]:
                                     btwc.write(self.output["test"][key])

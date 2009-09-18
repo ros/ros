@@ -33,10 +33,12 @@
 #
 # Revision $Id$
 
-## Python utilities for manipulating ROS Stacks.
-## See: http://pr.willowgarage.com/wiki/Stacks
-##
-## Warning: this API is still fairly experimental and incomplete.
+"""
+Python utilities for manipulating ROS Stacks.
+See: http://ros.org/wiki/Stacks
+
+Warning: this API is still fairly experimental and incomplete.
+"""
 
 import os
 import sys
@@ -51,9 +53,12 @@ ROS_STACK = 'ros'
 class ROSStackException(roslib.exceptions.ROSLibException): pass
 class InvalidROSStackException(ROSStackException): pass
 
-## @return str: name of stack that \a pkg is in, or None if \a pkg is not part of a stack
-## @throws roslib.packages.InvalidROSPkgException: if \a pkg cannot be located
 def stack_of(pkg):
+    """
+    @return: name of stack that pkg is in, or None if pkg is not part of a stack
+    @rtype: str
+    @raise roslib.packages.InvalidROSPkgException: if pkg cannot be located
+    """
     pkg_dir = roslib.packages.get_pkg_dir(pkg)
     dir = os.path.dirname(pkg_dir)
     while dir and os.path.dirname(dir) != dir:
@@ -64,13 +69,22 @@ def stack_of(pkg):
             return os.path.basename(dir)
         dir = os.path.dirname(dir)
         
-## @return [str]: name of packages that are part of \a stack
-## @throws InvalidROSStackException: if \a stack cannot be located
-def packages_of(stack):
+def packages_of(stack, env=os.environ):
+    """
+    @return: name of packages that are part of stack
+    @rtype: [str]
+    @raise InvalidROSStackException: if stack cannot be located
+    @raise ValueError: if stack name is invalid
+    """
+    # record settings for error messages
+    ros_root = env[roslib.rosenv.ROS_ROOT]
+    ros_package_path = env.get(roslib.rosenv.ROS_PACKAGE_PATH, '')
+    
+    if not stack:
+        raise ValueError("stack name not specified")
     stack_dir = get_stack_dir(stack)
     if stack_dir is None:
-        raise InvalidROSStackException(stack)
-
+        raise InvalidROSStackException("Cannot locate installation of stack %s. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(stack, ros_root,ros_package_path))
     packages = []
     l = [os.path.join(stack_dir, d) for d in os.listdir(stack_dir)]
     while l:
@@ -86,9 +100,13 @@ def packages_of(stack):
     return packages
     
 from subprocess import Popen, PIPE
-## @param str stack: name of ROS stack to locate on disk
-## @return str: directory of \a stack, or None
 def get_stack_dir(stack):
+    """
+    @param stack: name of ROS stack to locate on disk
+    @type  stack: str
+    @return: directory of stack, or None
+    @rtype: str
+    """
     list_stacks() #update cache
     return _dir_cache.get(stack, None)
 
@@ -96,9 +114,12 @@ def get_stack_dir(stack):
 _dir_cache = {}
 _cache_marker = None
 
-## Get list of all ROS stacks. This initializes an internal cache.
-## @return [str]: complete list of stacks names in ROS environment
 def list_stacks(env=os.environ):
+    """
+    Get list of all ROS stacks. This initializes an internal cache.
+    @return: complete list of stacks names in ROS environment
+    @rtype: [str]
+    """
     global _cache_marker
     # record settings for cache
     ros_root = env[roslib.rosenv.ROS_ROOT]

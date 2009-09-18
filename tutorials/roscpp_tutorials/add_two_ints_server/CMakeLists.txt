@@ -1,1 +1,0 @@
-rospack_add_executable(add_two_ints_server add_two_ints_server.cpp)

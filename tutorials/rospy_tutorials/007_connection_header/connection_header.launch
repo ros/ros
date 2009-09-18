@@ -1,4 +1,0 @@
-<launch>
-  <node name="listener-ch" pkg="rospy_tutorials" type="listener_connection_header.py" output="screen"/>
-  <node name="talker-ch" pkg="rospy_tutorials" type="talker_connection_header.py" />
-</launch>

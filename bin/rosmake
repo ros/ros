@@ -42,6 +42,7 @@ import getopt
 import roslib
 import roslib.scriptutil
 import roslib.rosenv
+import roslib.stacks
 import threading
 
 from optparse import OptionParser
@@ -572,8 +573,23 @@ class RosMakeAll:
 
 
         counter = 0
-        #generate the list of packages necessary to build(in order of dependencies)
+        verified_packages = []
         for p in packages:
+          try:
+            roslib.packages.get_pkg_dir(p)
+            verified_packages.append(p)
+          except roslib.packages.InvalidROSPkgException, ex:
+            try: 
+              roslib.stacks.get_stack_dir(p)
+              verified_packages.extend(roslib.stacks.packages_of(p))
+            except roslib.stacks.InvalidROSStackException, ex2:
+              self.print_all("Could not resolve %s as a package or as a stack [ %s ] [ %s ]"%(p, ex, ex2))
+            
+
+
+        #generate the list of packages necessary to build(in order of dependencies)
+        for p in verified_packages:
+
             counter = counter + 1
             self.print_verbose( "Processing %s and all dependencies(%d of %d requested)"%(p, counter, len(packages)))
             self.build_or_recurse(p)

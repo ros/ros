@@ -363,7 +363,7 @@ class RosMakeAll:
                         bfwc.write("Build failures with context:\n")
                         for key in self.build_list:
                             if key in self.result[None].keys() and self.result[None][key] == False:
-                                bfwc.write("---------------------")
+                                bfwc.write("---------------------\n")
                                 bfwc.write("%s\n"%key)
                                 if key in self.output[None]:
                                     bfwc.write(self.output[None][key])

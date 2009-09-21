@@ -30,6 +30,7 @@
 
 #include <string>
 #include <set>
+#include <boost/function.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/enable_shared_from_this.hpp>

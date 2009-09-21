@@ -132,6 +132,8 @@ public:
     sub_.shutdown();
   }
 
+  std::string getTopic() { return sub_ ? sub_.getTopic() : ""; }
+
 private:
 
   void cb(const MConstPtr& m)

@@ -555,7 +555,7 @@ class RosMakeAll:
             self.print_all( "Packages requested are: %s"%packages)
                     
 
-        self.check_rosdep(packages)
+
 
         date_time_stamp =  "rosmake_output-" + time.strftime("%Y-%m-%d-%H-%M-%S")
         if options.output_dir:
@@ -586,7 +586,8 @@ class RosMakeAll:
             except roslib.stacks.InvalidROSStackException, ex2:
               self.print_all("Could not resolve %s as a package or as a stack [ %s ] [ %s ]"%(p, ex, ex2))
             
-
+        # make sure all dependencies are satisfied and if not warn
+        self.check_rosdep(verified_packages)
 
         #generate the list of packages necessary to build(in order of dependencies)
         for p in verified_packages:

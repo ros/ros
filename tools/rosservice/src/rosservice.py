@@ -335,8 +335,13 @@ def call_service(service_name, service_args, service_class=None):
     try:
         roslib.message.fill_message_args(request, service_args)
     except roslib.message.ROSMessageException:
-        raise ROSServiceException("Not enough arguments to call service.\n"+\
-                                      "Args are: [%s]"%roslib.message.get_printable_message_args(request))
+        # check to see if we have a single, dictionary argument instead
+        if len(service_args) == 1 and type(service_args[0]) == dict:
+            try:
+                roslib.message.fill_message_args(request, service_args[0])
+            except roslib.message.ROSMessageException:                
+                raise ROSServiceException("Not enough arguments to call service.\n"+\
+                                              "Args are: [%s]"%roslib.message.get_printable_message_args(request))
 
     try:
         return request, rospy.ServiceProxy(service_name, service_class)(request)

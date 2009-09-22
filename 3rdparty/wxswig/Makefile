@@ -5,6 +5,7 @@ TARBALL = build/$(PKGVERSION)-wx.tar.gz
 TARBALL_URL = http://pr.willowgarage.com/downloads/$(PKGVERSION)-wx.tar.gz
 SOURCE_DIR = build/SWIG-1.3.29
 UNPACK_CMD = tar xzf
+MD5SUM_FILE = md5.checksum
 include $(shell rospack find mk)/download_unpack_build.mk
 
 $(VERSION)/Makefile: $(VERSION)/Makefile.in $(VERSION)/configure $(VERSION)/configure.in

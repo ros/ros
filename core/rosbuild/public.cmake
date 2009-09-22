@@ -232,9 +232,12 @@ macro(rosbuild_init)
   # conditional to ignore failures (most often happens when a stale NFS
   # handle lingers in the test results directory), because CMake doesn't
   # seem to be able to do it.
-  add_custom_command(TARGET tests
-                     PRE_BUILD
-                     COMMAND if ! rm -rf $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}\; then echo "WARNING: failed to remove test-results directory"\; fi)
+  add_custom_target(clean-test-results
+                    if ! rm -rf $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}\; then echo "WARNING: failed to remove test-results directory"\; fi)
+  # Make the tests target depend on clean-test-results, which will ensure
+  # that test results are deleted before we try to build tests, and thus
+  # before we try to run tests.
+  add_dependencies(tests clean-test-results)
   # The 'test-future' target runs the future tests
   add_custom_target(test-future)
 
@@ -574,6 +577,10 @@ macro(rosbuild_add_pyunit file)
   # Redeclaration of target is to workaround bug in 2.4.6
   add_custom_target(test)
   add_dependencies(test pyunit_${_testname})
+  # Register check for test output
+  # Can't do this, because the pyunit tests generate their own name
+  # internally. TODO
+  #_rosbuild_check_rostest_xml_result(pyunit_${_testname} $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml)
 endmacro(rosbuild_add_pyunit)
 
 # A helper to run Python unit tests that are expected to fail for the near

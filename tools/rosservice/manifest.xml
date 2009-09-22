@@ -12,6 +12,10 @@ rosservice contains the rosservice command-line tool for listing and querying RO
   <depend package="rosmsg"/>
   <depend package="roslib"/>
 
+  <export>
+    <rosdoc builder="epydoc"/>    
+  </export>
+  
 </package>
 
 

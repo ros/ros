@@ -833,4 +833,31 @@ macro(rosbuild_make_distribution)
   include(CPack)
 endmacro(rosbuild_make_distribution)
 
+# Compute the number of hardware cores on the machine.  Intended to use for
+# gating tests that have heavy processor requirements. It calls out to a
+# helper program that uses boost::thread::hardware_concurrency().
+macro(rosbuild_count_cores num)
+  execute_process(COMMAND $ENV{ROS_ROOT}/core/rosbuild/tests/count_cores
+                  OUTPUT_VARIABLE _cores_out
+                  ERROR_VARIABLE _cores_error
+                  RESULT_VARIABLE _cores_result
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(_cores_result)
+    message(FATAL_ERROR "Failed to run count_cores")
+  endif(_cores_result)
 
+  set(${num} ${_cores_out})
+endmacro(rosbuild_count_cores)
+
+# Check whether we're running as a VM Intended to use for
+# gating tests that have heavy processor requirements.  It checks for
+# /proc/xen
+macro(rosbuild_check_for_vm var)
+  set(_xen_dir _xen_dir-NOTFOUND)
+  find_file(_xen_dir "xen" PATHS "/proc" NO_DEFAULT_PATH)
+  if(_xen_dir)
+    set(${var} 1)
+  else(_xen_dir)
+    set(${var} 0)
+  endif(_xen_dir)
+endmacro(rosbuild_check_for_vm var)

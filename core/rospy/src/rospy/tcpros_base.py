@@ -52,6 +52,7 @@ from rospy.core import logwarn, loginfo, logerr, logdebug, rospydebug, rospyerr,
 from rospy.exceptions import ROSInternalException, TransportException, TransportTerminated, TransportInitError
 from rospy.msg import deserialize_messages, serialize_message
 from rospy.transport import Transport, BIDIRECTIONAL
+from rospy.service import ServiceException
 
 logger = logging.getLogger('rospy.tcpros')
 
@@ -551,6 +552,8 @@ class TCPROSTransport(Transport):
             raise TransportException("receive_once[%s]: DeserializationError %s"%(self.name, str(e)))
         except TransportTerminated, e:
             raise #reraise
+        except ServiceException, e:
+            raise
         except Exception, e:
             rospyerr(traceback.format_exc())
             raise TransportException("receive_once[%s]: unexpected error %s"%(self.name, str(e)))

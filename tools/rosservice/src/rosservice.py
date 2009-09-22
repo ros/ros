@@ -340,6 +340,8 @@ def call_service(service_name, service_args, service_class=None):
 
     try:
         return request, rospy.ServiceProxy(service_name, service_class)(request)
+    except rospy.ServiceException, e:
+        raise ROSServiceException(str(e))
     except rospy.ROSSerializationException, e:
         raise ROSServiceException("Unable to send request. One of the fields has an incorrect type:\n"+\
                                       "  %s\n\nsrv file:\n%s"%(e, rosmsg.get_srv_text(service_class._type)))
@@ -486,6 +488,9 @@ def rosservice_cmd_call(argv):
     # type-case using YAML 
     service_args = []
     for arg in args[1:]:
+        # convert empty args to YAML-empty strings
+        if arg == '':
+            arg = "''" 
         service_args.append(yaml.load(arg))
     if not service_args and has_service_args(service_name, service_class=service_class):
         for service_args in _stdin_yaml_arg():

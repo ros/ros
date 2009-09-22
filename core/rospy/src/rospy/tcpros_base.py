@@ -551,7 +551,7 @@ class TCPROSTransport(Transport):
             raise TransportException("receive_once[%s]: DeserializationError %s"%(self.name, str(e)))
         except TransportTerminated, e:
             raise #reraise
-        except:
+        except Exception, e:
             rospyerr(traceback.format_exc())
             raise TransportException("receive_once[%s]: unexpected error %s"%(self.name, str(e)))
         return retval

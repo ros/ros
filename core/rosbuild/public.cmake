@@ -557,18 +557,6 @@ macro(rosbuild_add_rostest_future file)
   add_dependencies(test-future rostest_${_testname})
 endmacro(rosbuild_add_rostest_future)
 
-# A helper to run rostests that require a graphical display.
-# It generates a command to run rostest on
-# the specified file and makes this target a dependency of test. 
-macro(rosbuild_add_rostest_graphical file)
-  string(REPLACE "/" "_" _testname ${file})
-  _rosbuild_add_rostest(${file} $ENV{ROS_BUILD_XVFB})
-  # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test)
-  add_dependencies(test rostest_${_testname})
-  _rosbuild_check_rostest_result(rostest_${_testname} ${PROJECT_NAME} ${file})
-endmacro(rosbuild_add_rostest_graphical)
-
 # A helper to run Python unit tests. It generates a command to run python
 # the specified file 
 macro(rosbuild_add_pyunit file)
@@ -593,17 +581,6 @@ macro(rosbuild_add_pyunit_future file)
   add_custom_target(test-future)
   add_dependencies(test-future pyunit_${_testname})
 endmacro(rosbuild_add_pyunit_future)
-
-# A helper to run pyunit tests that require a graphical display.
-# It generates a command to run python on
-# the specified file and makes this target a dependency of test. 
-macro(rosbuild_add_pyunit_graphical file)
-  string(REPLACE "/" "_" _testname ${file})
-  _rosbuild_add_pyunit(${file} $ENV{ROS_BUILD_XVFB})
-  # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test)
-  add_dependencies(test pyunit_${_testname})
-endmacro(rosbuild_add_pyunit_graphical)
 
 set(_ROSBUILD_GENERATED_MSG_FILES "")
 macro(rosbuild_add_generated_msgs)

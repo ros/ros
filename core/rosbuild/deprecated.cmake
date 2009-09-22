@@ -76,6 +76,11 @@ macro(rospack_add_rostest_graphical)
   rosbuild_add_rostest_graphical(${ARGV})
 endmacro(rospack_add_rostest_graphical)
 
+macro(rosbuild_add_rostest_graphical)
+  _rosbuild_warn("rosbuild_add_rostest_graphical() is deprecated; use rosbuild_add_rostest() instead")
+  rosbuild_add_rostest(${ARGV})
+endmacro(rosbuild_add_rostest_graphical)
+
 macro(rospack_add_pyunit)
   #_rosbuild_warn_deprecate_rospack_prefix(rospack_add_pyunit)
   rosbuild_add_pyunit(${ARGV})
@@ -90,6 +95,11 @@ macro(rospack_add_pyunit_graphical)
   #_rosbuild_warn_deprecate_rospack_prefix(rospack_add_pyunit_graphical)
   rosbuild_add_pyunit_graphical(${ARGV})
 endmacro(rospack_add_pyunit_graphical)
+
+macro(rosbuild_add_pyunit_graphical)
+  _rosbuild_warn("rosbuild_add_pyunit_graphical() is deprecated; use rosbuild_add_pyunit() instead")
+  rosbuild_add_pyunit(${ARGV})
+endmacro(rosbuild_add_pyunit_graphical)
 
 macro(get_msgs)
   #_rosbuild_warn_deprecate_no_prefix(get_msgs)

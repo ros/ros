@@ -35,6 +35,8 @@ def main():
             #TODO: check for app instead
             raise ReleaseException("cannot locate stack [%s]"%name)
 
+        check_svn_status(source_dir)
+        
         # figure out what we're releasing against
         distro = get_active_distro()
         print "Distribution target is [%s]"%distro
@@ -293,11 +295,21 @@ def detect_os():
       exit(1)
   elif os.path.isfile('/usr/bin/sw_vers'):
     os_name = 'macports' # assume this is the only decent way to get things
-    p = subprocess.Popen(['sw_vers','-productVersion'], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+    p = Popen(['sw_vers','-productVersion'], stdout = PIPE, stderr = PIPE)
     sw_vers_stdout, sw_vers_stderr = p.communicate()
     ver_tokens = sw_vers_stdout.strip().split('.')
     os_ver = ver_tokens[0] + '.' + ver_tokens[1]
   return os_name, os_ver
 
+def check_svn_status(source_dir):
+    """make sure that all outstanding code has been checked in"""
+    cmd = ['svn', 'st', '-q']
+    output = Popen(cmd, stdout=PIPE, stderr=PIPE, cwd=source_dir).communicate()
+    if output[0]:
+        raise ReleaseException("svn status in stack reported uncommitted files:\n%s"%output[0])
+    if output[1]:
+        raise ReleaseException("svn status in [%s] reported errors:\n%s"%(source_dir, output[0]))
+    
+    
 if __name__ == '__main__':
     main()

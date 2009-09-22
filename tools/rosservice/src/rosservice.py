@@ -333,15 +333,19 @@ def call_service(service_name, service_args, service_class=None):
         service_class = get_service_class_by_name(service_name)
     request = service_class._request_class()
     try:
-        roslib.message.fill_message_args(request, service_args)
-    except roslib.message.ROSMessageException:
-        # check to see if we have a single, dictionary argument instead
+        # we either except a list of arguments, or a single
+        # dictionary.  a list of arguments is similar to python's
+        # *args, whereas dictionaries are like **kwds. In the case
+        # that the meaning is ambiguous, the dictionary logic takes
+        # precedence, which means that users may have to add an extra
+        # dictionary wrapper around an argument.
         if len(service_args) == 1 and type(service_args[0]) == dict:
-            try:
-                roslib.message.fill_message_args(request, service_args[0])
-            except roslib.message.ROSMessageException:                
-                raise ROSServiceException("Not enough arguments to call service.\n"+\
-                                              "Args are: [%s]"%roslib.message.get_printable_message_args(request))
+            roslib.message.fill_message_args(request, service_args[0])
+        else:    
+            roslib.message.fill_message_args(request, service_args)
+    except roslib.message.ROSMessageException:
+        raise ROSServiceException("Not enough arguments to call service.\n"+\
+                                      "Args are: [%s]"%roslib.message.get_printable_message_args(request))
 
     try:
         return request, rospy.ServiceProxy(service_name, service_class)(request)

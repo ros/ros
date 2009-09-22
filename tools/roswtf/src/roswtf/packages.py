@@ -88,11 +88,62 @@ def _manifest_msg_srv_export(ctx, type_):
                     missing.append(pkg)
     return missing
     
-def manifest_msg_export(ctx):
-    return _manifest_msg_srv_export(ctx, 'msg')
-def manifest_srv_export(ctx):
-    return _manifest_msg_srv_export(ctx, 'srv')
-    
+def manifest_msg_srv_export(ctx):
+    msgs = set(_manifest_msg_srv_export(ctx, 'msg'))
+    srvs = set(_manifest_msg_srv_export(ctx, 'srv'))
+    errors = []
+
+    for pkg in msgs & srvs:
+        errors.append('%s: -I${prefix}/msg/cpp -I${prefix}/srv/cpp'%pkg)
+    for pkg in msgs - srvs:
+        errors.append('%s: -I${prefix}/msg/cpp'%pkg)
+    for pkg in srvs - msgs:
+        errors.append('%s: -I${prefix}/srv/cpp'%pkg)
+    return errors
+        
+
+def _check_for_rpath_flags(pkg, lflags):
+    if not lflags:
+        return
+    L_arg = '-L'
+    rpath_arg = '-Wl,-rpath,'
+    lflags_args = lflags.split()
+    # Collect the args we care about
+    L_args = []
+    rpath_args = []
+    i = 0
+    while i < len(lflags_args):
+        f = lflags_args[i]
+        if f.startswith(L_arg) and len(f) > len(L_arg):
+            L_args.append(f[len(L_arg):])
+        elif f == L_arg and (i+1) < len(lflags_args):
+            i += 1
+            L_args.append(lflags_args[i])
+        elif f.startswith(rpath_arg) and len(f) > len(rpath_arg):
+            rpath_args.append(f[len(rpath_arg):])
+        i += 1
+    # Check for parallelism; not efficient, but these strings are short
+    for f in L_args:
+        if f not in rpath_args:
+            return '%s: found flag "-L%s", but no matching "-Wl,-rpath,%s"'%(pkg, f,f)
+        for f in rpath_args:
+            if f not in L_args:
+                return '%s: found flag "-Wl,-rpath,%s", but no matching "-L%s"'%(pkg, f,f)
+
+def manifest_rpath_flags(ctx):
+    warn = []
+    for pkg in ctx.pkgs:
+        pkg_dir = roslib.packages.get_pkg_dir(pkg)
+        m_file = roslib.manifest.manifest_file(pkg, True)
+        m = roslib.manifest.parse_file(m_file)
+        # separate rule catches multiple lflags
+        lflags_list = m.get_export('cpp', 'lflags')
+        for lflags in lflags_list:
+            err_msg = _check_for_rpath_flags(pkg, lflags)
+            if err_msg:
+                warn.append(err_msg)
+    return warn
+
 #CMake missing genmsg/gensrv
 def _cmake_genmsg_gensrv(ctx, type_):
     missing = []
@@ -179,21 +230,21 @@ packages_warnings = [
     #(makefile_exists,
     # "The following packages have no Makefile:"),
     (cmakelists_package_valid,
-     "The following packages have incorrect rospack() declarations in CMakeLists.txt:"),
+     "The following packages have incorrect rospack() declarations in CMakeLists.txt.\nPlease switch to using rosbuild_init():"),
     (rospack_time,
      "rospack is running very slowly. Consider running 'rospack profile' to find slow areas of your code tree."),
-    (manifest_msg_export,
-     'The following packages are missing\n<cpp cflags="-I${prefix}/msg/cpp"/> in manifest.xml:'),
-    (manifest_srv_export,
-     'The following packages are missing\n<cpp cflags="-I${prefix}/srv/cpp"/> in manifest.xml:'),
+    
+    (manifest_msg_srv_export,
+     'The following packages are missing msg/srv-related cflags exports\n\t<export>\n\t\t<cpp cflags="..."\n\t</export>:'),
     (cmake_genmsg,
-     'The following packages need genmsg() in CMakeLists.txt:'),
+     'The following packages need rosbuild_genmsg() in CMakeLists.txt:'),
     (cmake_gensrv,     
-     'The following packages need gensrv() in CMakeLists.txt:'),
+     'The following packages need rosbuild_gensrv() in CMakeLists.txt:'),
     ]
 packages_errors = [
     (msgs_built, "Messages have not been built in the following package(s).\nYou can fix this by typing 'rosmake %(pkg)s':"),
     (srvs_built, "Services have not been built in the following package(s).\nYou can fix this by typing 'rosmake %(pkg)s':"),
+    (manifest_rpath_flags, "The following packages have rpath issues in manifest.xml:"),
     ]
 
 def wtf_check_packages(ctx):

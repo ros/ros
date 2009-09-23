@@ -59,4 +59,9 @@ std::string SingleSubscriberPublisher::getSubscriberCallerID() const
   return link_->getDestinationCallerID();
 }
 
+std::string SingleSubscriberPublisher::getSubscriberName() const
+{
+  return link_->getDestinationCallerID();
+}
+
 } // namespace ros

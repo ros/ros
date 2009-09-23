@@ -133,11 +133,10 @@ macro(_rosbuild_add_gtest exe)
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname ${exe})
 
-
   # Create target for this test
   add_custom_target(test_${_testname}
-                    COMMAND ${PROJECT_SOURCE_DIR}/${exe} --gtest_output=xml:$ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml
-                    DEPENDS ${PROJECT_SOURCE_DIR}/${exe}
+                    COMMAND ${EXECUTABLE_OUTPUT_PATH}/${exe} --gtest_output=xml:$ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml
+                    DEPENDS ${EXECUTABLE_OUTPUT_PATH}/${exe}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     VERBATIM)
   # Don't register to check xml output here, because we may have gotten

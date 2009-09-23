@@ -319,13 +319,31 @@ void TimerManager<T, D, E>::remove(int32_t handle)
 template<class T, class D, class E>
 void TimerManager<T, D, E>::threadFunc()
 {
+  T current;
   while (!quit_)
   {
     T sleep_end;
 
     boost::mutex::scoped_lock lock(timers_mutex_);
 
-    T current = T::now();
+    // detect time jumping backwards
+    if (T::now() < current)
+    {
+      ROS_DEBUG("Time jumped backward, resetting timers");
+
+      current = T::now();
+
+      typename V_TimerInfo::iterator it = timers_.begin();
+      typename V_TimerInfo::iterator end = timers_.end();
+      for (; it != end; ++it)
+      {
+        const TimerInfoPtr& info = *it;
+        info->last_expected = current;
+        info->next_expected = current + info->period;
+      }
+    }
+
+    current = T::now();
 
     if (timers_.empty())
     {
@@ -334,14 +352,6 @@ void TimerManager<T, D, E>::threadFunc()
     else
     {
       TimerInfoPtr info = timers_.front();
-
-      // detect time jumping backwards
-      if (current < info->last_expected)
-      {
-        ROS_DEBUG("Time jumped backward, resetting timer");
-        info->last_expected = current;
-        info->next_expected = current + info->period;
-      }
 
       while (info->next_expected <= current)
       {

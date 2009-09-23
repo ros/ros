@@ -512,14 +512,18 @@ macro(rosbuild_add_gtest exe)
   _rosbuild_add_gtest(${ARGV})
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname ${exe})
-
-  # Redeclaration of target is to workaround bug in 2.4.6
   add_custom_target(test)
   add_dependencies(test test_${_testname})
-
   # Register check for test output
   _rosbuild_check_rostest_xml_result(test_${_testname} $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml)
 endmacro(rosbuild_add_gtest)
+
+# A version of add_gtest that checks a label against ROS_BUILD_TEST_LABEL
+macro(rosbuild_add_gtest_labeled label)
+  if("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+    rosbuild_add_gtest(${ARGN})
+  endif("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+endmacro(rosbuild_add_gtest_labeled)
 
 # A helper to create test programs that are expected to fail for the near
 # future.  It calls rosbuild_add_executable() to
@@ -540,11 +544,21 @@ endmacro(rosbuild_add_gtest_future)
 macro(rosbuild_add_rostest file)
   string(REPLACE "/" "_" _testname ${file})
   _rosbuild_add_rostest(${file})
-  # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test)
-  add_dependencies(test rostest_${_testname})
+  # Check for agreement of optional label and environment variable
+  if("${ARGN}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+    # Redeclaration of target is to workaround bug in 2.4.6
+    add_custom_target(test)
+    add_dependencies(test rostest_${_testname})
+  endif("${ARGN}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
   _rosbuild_check_rostest_result(rostest_${_testname} ${PROJECT_NAME} ${file})
 endmacro(rosbuild_add_rostest)
+
+# A version of add_rostest that checks a label against ROS_BUILD_TEST_LABEL
+macro(rosbuild_add_rostest_labeled label)
+  if("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+    rosbuild_add_rostest(${ARGN})
+  endif("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+endmacro(rosbuild_add_rostest_labeled)
 
 # A helper to run rostests that are expected to fail for the near future. 
 # It generates a command to run rostest on
@@ -570,6 +584,13 @@ macro(rosbuild_add_pyunit file)
   # internally. TODO
   #_rosbuild_check_rostest_xml_result(pyunit_${_testname} $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml)
 endmacro(rosbuild_add_pyunit)
+
+# A version of add_pyunit that checks a label against ROS_BUILD_TEST_LABEL
+macro(rosbuild_add_pyunit_labeled label)
+  if("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+    rosbuild_add_pyunit(${ARGN})
+  endif("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+endmacro(rosbuild_add_pyunit_labeled)
 
 # A helper to run Python unit tests that are expected to fail for the near
 # future. It generates a command to run python

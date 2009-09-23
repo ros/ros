@@ -80,24 +80,38 @@ def main():
         if 1:
             print "building sphinx packages"            
             import sphinxenator
-            sphinx_success = set(sphinxenator.generate_sphinx(ctx))
+            try:
+                sphinx_success = set(sphinxenator.generate_sphinx(ctx))
+            except Exception, e:
+                traceback.print_exc()
+                print >> sys.stderr, "sphinxenator failed"
+                sphinx_success = set()            
         else:
             sphinx_success = set()            
         
         # Generate Doxygen 
         if 1:
             print "building doxygen packages"
-            import doxygenator
-            doxy_success = doxygenator.generate_doxygen(ctx, quiet=options.quiet) 
+            try:
+                import doxygenator
+                doxy_success = doxygenator.generate_doxygen(ctx, quiet=options.quiet) 
+            except Exception, e:
+                traceback.print_exc()
+                print >> sys.stderr, "package header generation failed"
+                doxy_success = []                
         else:
             doxy_success = []
         success = list(sphinx_success) + doxy_success + list(epyenator_success)
 
         if 1:
             # Generate yaml data for wiki macros
-            import package_header
-            package_header.generate_package_headers(ctx)
-            package_header.generate_stack_headers(ctx)            
+            try:
+                import package_header
+                package_header.generate_package_headers(ctx)
+                package_header.generate_stack_headers(ctx)
+            except Exception, e:
+                traceback.print_exc()
+                print >> sys.stderr, "package header generation failed"
 
         if 1:
             # Generate msg/srv auto-docs
@@ -111,7 +125,11 @@ def main():
         if 1:
             # Generate landing page
             import landing_page
-            landing_page.generate_landing_page(ctx)
+            try:
+                landing_page.generate_landing_page(ctx)
+            except:
+                traceback.print_exc()
+                print >> sys.stderr, "landing page generator failed"
             
         if 1:
             # Generate Documentation Index

@@ -96,6 +96,7 @@ def generate_landing_page(ctx):
     success = []
     template = load_tmpl('landing.template')    
     for package, path in ctx.packages.iteritems():
+        print "landing page", package
         if package in ctx.doc_packages and ctx.should_document(package) and \
                 package in ctx.rd_configs:
 

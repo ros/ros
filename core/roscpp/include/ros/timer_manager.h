@@ -384,6 +384,16 @@ void TimerManager<T, D, E>::threadFunc()
 
     while (!new_timer_ && T::now() < sleep_end && !quit_)
     {
+      // detect backwards jumps in time
+
+      if (T::now() < current)
+      {
+        ROS_DEBUG("Time jumped backwards, breaking out of sleep");
+        break;
+      }
+
+      current = T::now();
+
       timers_cond_.timed_wait(lock, boost::posix_time::milliseconds(1));
     }
 

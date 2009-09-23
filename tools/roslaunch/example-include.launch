@@ -1,0 +1,17 @@
+<launch>
+  <node name="talker" pkg="rospy_tutorials" type="talker" />
+  <node name="listener" pkg="rospy_tutorials" type="listener" />
+
+  <param name="param1" value="bar" />
+  <param name="param2" value="2"/>
+  
+  <!-- you can set parameters in child namespaces -->
+  <param name="wg2/param3" value="a child namespace parameter" />  
+  
+  <group ns="wg2">
+      <param name="param4" value="4" />
+      <node name="talker" pkg="rospy_tutorials" type="talker" />
+      <node name="listener" pkg="rospy_tutorials" type="listener" />
+  </group> 
+  
+</launch>

@@ -1,0 +1,18 @@
+distros:
+- {latest: null}
+stacks:
+  _uri_rules: {source-svn: 'https://personalrobots.svn.sourceforge.net/svnroot/personalrobots/stacks/$STACK_NAME/tags/$STACK_NAME-$STACK_VERSION',
+    source-tarball: 'http://ros.org/download/$STACK_NAME/$STACK_NAME-$STACK_VERSION.tar.bz2'}
+  common: {latest: 0.1.0}
+  common_msgs: {latest: 0.9.0}
+  geometry: {latest: 0.1.0}
+  imu_drivers: {latest: 0.1.0}
+  joystick_drivers: {latest: 0.1.0}
+  navigation: {latest: 0.1.0}
+  ros:
+    _uri_rules: {source-svn: 'https://ros.svn.sourceforge.net/svnroot/ros/tags/releases/ros-$STACK_VERSION'}
+    latest: 0.7.3
+  simulator_stage: {latest: 0.1.0}
+  slam_gmapping: {latest: 0.1.0}
+  sound_drivers: {latest: 0.1.0}
+  visualization_common: {latest: 0.9.0}

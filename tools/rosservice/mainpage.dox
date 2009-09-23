@@ -1,0 +1,13 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosservice contains the rosservice command-line tool for listing
+and querying ROS services. It also contains a Python library for
+getting information about Services, as well as dynamically invoking
+them without prior information about their type. The rosservice Python
+library is currently for internal-use only as its API is not stable.
+
+Please see the Wiki page for documentation on the rosservice tool.
+
+*/

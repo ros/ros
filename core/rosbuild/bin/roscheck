@@ -1,0 +1,96 @@
+#!/usr/bin/env python
+
+# Copyright (c) 2008, Willow Garage, Inc.
+# All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the Willow Garage, Inc. nor the names of its
+#       contributors may be used to endorse or promote products derived from
+#       this software without specific prior written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+import os
+from optparse import OptionParser
+
+def files(basedir, extensions, excludes):
+    result = []
+    for root, dirs, files in os.walk(basedir):
+        for e in excludes:
+            if e in dirs: dirs.remove(e)
+            #for d in dirs:
+              #if e in d: dirs.remove(d)
+        for file in files:
+            for ext in extensions:
+                if file.endswith(ext):
+                    result.append(os.path.join(root, file))
+    return result
+
+def parse(args):
+    parser = OptionParser()
+    parser.add_option('-l', '--license', action='append')
+    parser.add_option('-e', '--extension', action='append')
+    parser.add_option('-x', '--exclude', default=['.svn'], action='append')
+    return parser.parse_args(args)
+
+def strip(text):
+    table = "".join(chr(x) for x in xrange(256))
+    return text.translate(table, ' /*#\n\r')
+
+def check(filename, licenses):
+    contents = strip(open(filename).read())
+    #print "contents: ", contents
+    #print
+    for license in licenses:
+        #print "license: ", license
+        #print
+        if license in contents:
+            return
+    print filename
+
+def Usage():
+    sys.stderr.write("""
+Usage: roscheck -e <ext> -l <license file> [-x exclude] <dir>
+
+  Search the directory <dir> and its subdirectories for files ending
+  with <ext>.  Check these files to see if they contain the text from
+  the license file.  Multiple extensions and licenses can be given
+""")
+    sys.exit(-1)
+
+def main(args):
+    (options, args) = parse(args)
+    if not options.extension or not options.license or len(args) != 2:
+        Usage()
+    filenames = files(args[1], options.extension, options.exclude)
+    licenses = []
+    for license in options.license:
+        if os.path.isdir(license):
+            for f in os.listdir(license):
+                if os.path.isfile("%s/%s" % (license, f)):
+                    licenses.append(strip(open("%s/%s" % (license, f)).read()))
+        else:
+            licenses.append(strip(open(license).read()))
+    for filename in filenames:
+        check(filename, licenses)
+
+if __name__ == '__main__':
+    import sys
+    main(sys.argv)

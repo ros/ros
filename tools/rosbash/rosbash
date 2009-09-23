@@ -1,0 +1,289 @@
+
+
+function _ros_location_find {
+    homedir=`echo $HOME | sed -e "s/\//\t\//g" -e "s/\t/\\\\\/g"`
+    ROS_LOCATION_KEYS_ARR=(`echo $ROS_LOCATIONS | sed -e 's/\([^:=]*\)=\([^:=]*\)\(:*[^=]\)*\(:\|$\)/\1 /g'`)
+    ROS_LOCATIONS_ARR=(`echo $ROS_LOCATIONS | sed -e 's/\([^:=]*\)=\([^:=]*\)\(:*[^=]\)*\(:\|$\)/\2 /g' -e "s/~/${homedir}/g"`)
+
+    for (( i = 0 ; i < ${#ROS_LOCATION_KEYS_ARR[@]} ; i++ )); do
+        if [[ $1 == ${ROS_LOCATION_KEYS_ARR[$i]} ]]; then
+            echo ${ROS_LOCATIONS_ARR[i]}
+            return 0
+        fi
+    done
+
+    if [[ $1 == log ]]; then
+        echo ${ROS_ROOT}/log
+        return 0
+    elif [[ $1 == test_results ]]; then
+        echo ${ROS_ROOT}/test/test_results
+        return 0
+    fi
+
+    loc=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null`
+    if [[ $? != 0 ]]; then
+        loc=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack find $1 2> /dev/null`
+        if [[ $? != 0 ]]; then
+            return 1
+        fi
+        echo $loc
+        return 0
+    fi
+    echo $loc
+    return 0
+}
+
+function _ros_list_locations {
+    ROS_LOCATION_KEYS=`echo $ROS_LOCATIONS | sed -e 's/\([^:=]*\)=\([^:=]*\)\(:*[^=]\)*\(:\|$\)/\1 /g'`
+    packages=`export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names`
+    stacks=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
+    echo $packages $stacks log test_results $ROS_LOCATION_KEYS | tr ' ' '\n'
+    return 0
+}
+
+function _ros_package_find {
+    loc=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null`
+    if [[ $? != 0 ]]; then
+        return 1
+    fi
+    echo $loc
+    return 0
+}
+
+function _ros_list_packages {
+    packages=`export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names`
+    echo $packages | tr ' ' '\n'
+    return 0
+}
+
+function _ros_decode_path {
+    local rosname rosdir reldir last
+
+    if [[ -z $1 ]]; then
+        return 0
+    fi
+
+    if [[ $1 =~ .+/.* ]]; then
+        rosname=${1%%/*}
+        reldir=/${1#*/}
+        last=${reldir##*/}        
+        reldir=${reldir%/*}/
+    else
+        rosname=$1
+        if [[ -z $2 || $2 != "forceeval" ]]; then
+           rosvals=(${rosname})
+           return 1
+        fi
+    fi
+    
+    rosdir=`_ros_location_find $rosname`
+    if [[ $? != 0 ]]; then
+        rosvals=(${rosname})
+        return 1
+    fi
+
+    rosvals=(${rosname} ${rosdir} ${reldir} ${last})
+}
+
+function rospython {
+  if [[ -z $1 ]]; then
+    if [[ -f ./manifest.xml ]]; then
+      pkgname=`basename \`pwd\``
+      python -i -c "import roslib; roslib.load_manifest('$pkgname')"
+    else
+      python
+    fi
+  else
+    python -i -c "import roslib; roslib.load_manifest('$1')"
+  fi
+}
+
+function roscd {
+    local rosvals
+
+    if [ -z $1 ]; then
+      cd ${ROS_ROOT}
+      return 0
+    fi
+
+    _ros_decode_path $1 forceeval
+    if [ $? != 0 ]; then
+      echo "roscd: No such package '$1'"
+      return 1
+    elif [ -z $rosvals ]; then
+      cd ${ROS_ROOT}
+      return 0
+    else
+      cd ${rosvals[1]}${rosvals[2]}${rosvals[3]}
+      return 0
+    fi
+}
+
+function is_integer {
+    [ "$1" -eq "$1" ] > /dev/null 2>&1
+    return $?
+}
+
+function rosd {
+    let count=0;
+    for items in `dirs`;
+    do
+        echo $count $items;
+        let count=$((count+1));
+    done
+}
+
+function rospd {
+    if is_integer $1; then
+        pushd +$1 > /dev/null ;
+    else
+        local rosvals
+        _ros_decode_path $1 forceeval
+        pushd ${rosvals[1]}${rosvals[2]}${rosvals[3]} > /dev/null ;
+    fi
+    rosd
+}
+
+function rosls {
+    local rosvals
+    _ros_decode_path $1 forceeval
+    ls ${rosvals[1]}${rosvals[2]}${rosvals[3]} $2
+}
+
+function roscmd {
+    local pkgdir exepath opt
+    pkgdir=`_ros_package_find $1`
+    if [[ $? != 0 ]] ; then
+        echo "Couldn't find package [$1]"
+        return 1
+    fi
+    exepath=(`find $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.*`)
+    if [[ ${#exepath[@]} == 0 ]] ; then
+        echo "That file does not exist in that package."
+        return 1
+    elif [[ ${#exepath[@]} -gt 1 ]] ; then
+        echo "You have chosen a non-unique filename, please pick one of the following:"
+        select opt in ${exepath[@]}; do
+            echo $opt
+            break
+        done
+    else
+        opt=${exepath[0]}
+    fi
+    arg=${opt}
+}
+
+function rosed {
+    local arg
+    roscmd ${1} ${2}
+    if [[ -z $EDITOR ]]; then
+        vim ${arg}
+    else
+        $EDITOR ${arg}
+    fi
+}
+
+function roscp {
+    local arg
+    roscmd ${1} ${2}
+    cp ${arg} ${3}
+}
+
+
+
+function _roscomplete {
+    local arg opts
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    opts=`_ros_list_packages`
+    IFS=$'\n'
+    COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
+    unset IFS
+}
+
+function _roscomplete_sub_dir {
+    local arg opts rosvals
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    _ros_decode_path ${arg}
+    if [[ -z ${rosvals[2]} ]]; then
+        opts=`_ros_list_locations`
+        IFS=$'\n'
+        COMPREPLY=($(compgen -W "${opts}" -S / -- ${rosvals[0]}))
+        unset IFS
+    else
+        if [ -e ${rosvals[1]}${rosvals[2]} ]; then
+          opts=`find ${rosvals[1]}${rosvals[2]} -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1\//g"`
+        else
+          opts=''
+        fi
+        IFS=$'\n'
+        COMPREPLY=($(compgen -P ${rosvals[0]}${rosvals[2]} -W "${opts}" -- ${rosvals[3]}))
+        unset IFS
+    fi
+}
+
+function _roscomplete_search_dir {
+    local arg opts pkgdir
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts=`_ros_list_packages`
+        IFS=$'\n'
+        COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
+        unset IFS
+    elif [[ $COMP_CWORD == 2 ]]; then
+        pkgdir=`_ros_package_find ${COMP_WORDS[1]}`
+        if [[ $? == 0 ]]; then
+            opts=`find $pkgdir ${1} ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.*  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+        else
+            opts=""
+        fi
+        IFS=$'\n'
+        COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
+        unset IFS
+    else
+       homedir=`echo $HOME | sed -e "s/\//\t\//g" -e "s/\t/\\\\\/g"`
+       arg=`echo ${arg} | sed -e "s/~/${homedir}/g"`
+        if [[ $arg =~ ^/*.+/.* ]]; then
+           path=${arg%/*}
+        else
+           path=.
+        fi
+        if [[ -e ${path} ]]; then
+           opts=`find -L $path -maxdepth 1 -type d ! -regex ".*/[.].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`$'\n'`find -L $path -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`
+        else
+           opts=""
+        fi
+        IFS=$'\n'
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+        unset IFS
+        if [[ ${#COMPREPLY[*]} = 1 ]]; then
+            newpath=${COMPREPLY[0]%/*}
+            if [[ -d ${newpath} ]]; then
+               opts=`find -L $newpath -maxdepth 1 -type d ! -regex ".*/[.].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`$'\n'`find -L $newpath -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`
+               IFS=$'\n'
+               COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+               unset IFS
+            fi
+        fi
+    fi
+
+}
+
+function _roscomplete_exe {
+    _roscomplete_search_dir "-type f -perm +111"
+}
+
+function _roscomplete_file {
+    _roscomplete_search_dir "-type f ! -regex .*[.][oa]$"
+}
+
+complete -F "_roscomplete_sub_dir" -o "nospace" "roscd"
+complete -F "_roscomplete_sub_dir" -o "nospace" "rospd"
+complete -F "_roscomplete_sub_dir" -o "nospace" "rosls"
+complete -F "_roscomplete" -o "nospace" "rosmake"
+complete -F "_roscomplete_exe" "rosrun"
+complete -F "_roscomplete_file" "rosed"
+complete -F "_roscomplete_file" "roscp"
+complete -F "_roscomplete" -o "nospace" "rosupdate"

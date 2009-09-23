@@ -1,0 +1,37 @@
+<package>
+  <description brief="ROS Python client library">
+
+<p>
+    rospy is a pure Python client library for ROS. The rospy client
+    API enables Python programmers to quickly interface with
+    ROS <a href="http://ros.org/wiki/Topics">Topics</a>, <a href="http://ros.org/wiki/Services">Services</a>,
+    and <a href="http://ros.org/wiki/Parameters">Parameters</a>. The
+    design of rospy favors implementation speed (i.e. developer time)
+    over runtime performance so that algorithms can be quickly
+    prototyped and tested within ROS. It is also ideal for
+    non-critical-path code, such as configuration and initialization
+    code. Many of the ROS tools are written in rospy to take advantage
+    of the type introspection capabilities.
+</p>
+<p>
+    rospy also contains a
+    ROS <a href="http://ros.org/wiki/Master">Master</a>, which is the
+    default Master for ROS. Many of the ROS tools, such
+    as <a href="http://ros.org/wiki/rostopic">rostopic</a>
+    and <a href="http://ros.org/wiki/rosservice">rosservice</a>, are
+    built on top of rospy
+</p>
+
+  </description>
+  <author>Ken Conley/kwc@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="API cleared" notes=""/>
+  <url>http://ros.org/wiki/rospy</url>
+  <depend package="roslib"/>
+  <depend package="roslang"/>
+  <export>
+    <roslang cmake="${prefix}/cmake/rospy.cmake"/>
+    <doxygen excludes="scripts"/>
+  </export>
+</package>
+

@@ -1,0 +1,11 @@
+#!/bin/bash
+set -o errexit
+if [ $# -lt 1 ] ; then
+  echo "syntax: satisfy PACKAGE[S]"
+  exit 1
+fi
+# first, try to generate the bash. see if that craps out.
+rosdep generate_bash $*
+# since that seemed to succeed, try to run it.
+bash <(rosdep generate_bash $*)
+

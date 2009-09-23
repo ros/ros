@@ -1,0 +1,8 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosmanual is the manual for ROS as well as scripts that support the
+production of the manual.
+
+*/

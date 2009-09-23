@@ -1,0 +1,21 @@
+<package>
+  <description brief="test_rosservice">
+
+     Tests for the rosservice tool
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/test_rosservice</url>
+  <depend package="rosservice"/>
+  <depend package="rospy"/>
+  <depend package="roslib"/>
+  <depend package="rostest"/>
+
+  <!-- runtime deps for online tests -->
+  <depend package="rospy_tutorials"/>
+
+</package>
+
+

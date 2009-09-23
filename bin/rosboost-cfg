@@ -1,0 +1,226 @@
+#!/usr/bin/python
+
+import sys
+import os
+import string
+from glob import glob
+import subprocess
+import platform
+from optparse import OptionParser
+
+lib_suffix = "so"
+if (sys.platform == "darwin"):
+  lib_suffix = "dylib"
+
+link_static = 'ROS_BOOST_LINK' in os.environ and os.environ['ROS_BOOST_LINK'] == "static"
+if (link_static):
+  lib_suffix = "a"
+
+def print_usage_and_exit():
+  print >> sys.stderr, "Usage: rosboost-cfg --lflags [thread,regex,graph,...]"
+  print >> sys.stderr, "       rosboost-cfg --cflags"
+  print >> sys.stderr, "       rosboost-cfg --libs [thread,regex,graph,...]"
+  print >> sys.stderr, "       rosboost-cfg --include_dirs"
+  print >> sys.stderr, "       rosboost-cfg --lib_dirs"
+  print >> sys.stderr, "       rosboost-cfg --root"
+  sys.exit(1)
+
+def extract_version(dir):
+  file = os.path.join(dir,"version.hpp") 
+  nested_file = os.path.join(dir,"boost/version.hpp") 
+  ver_string = "" 
+  if (os.path.isfile(file)):  
+    fh = open(file,"r") 
+  elif (os.path.isfile(nested_file)): 
+    fh = open(nested_file,"r") 
+  else:  
+    return ver_string 
+  linelist = fh.readlines() 
+  for line in linelist: 
+    if line.find("#define BOOST_VERSION ") > -1: 
+      def_string = line.split() 
+      ver_string = def_string[2] 
+  return ver_string 
+
+def find_versions(dir):
+  globstr = os.path.join(dir, "boost*") 
+  dirs = glob(globstr) 
+  vers = [extract_version(path) for path in dirs] 
+  return (dirs,vers) 
+  
+def find_highest_version(dir):
+  dirs,vers = find_versions(dir) 
+  highest = None 
+  highest_nums = [0, 0, 0] 
+  index = 0 
+  include_dir = ""
+
+  for ver in vers:
+    if len(ver) == 6: 
+      nums = [ ver[0], ver[1:4], ver[4:] ] 
+      for i in range(0, 3): 
+        if (int(nums[i]) > int(highest_nums[i])): 
+          highest = ver 
+          include_dir = dirs[index] 
+          highest_nums = [int(n) for n in nums] 
+          break 
+    index += 1 
+        
+  if (highest != None and highest_nums[0] < 1 or (highest_nums[0] == 1 and highest_nums[1] < 37)):
+    print >> sys.stderr, "A boost version >= 1.37 is required.  You have version %s"%(".".join([str(num) for num in highest_nums]))
+    sys.exit(1)
+
+  return include_dir, highest
+
+def find_lib(dir, version, name):
+  global lib_suffix
+  global link_static
+  
+  nums = [ version[0], version[1:4], version[4:] ] 
+  globstr = os.path.join(dir, "libboost_%s*%s_%s*.%s"%(name, int(nums[0]), int(nums[1]), lib_suffix )) 
+  libs = glob(globstr)
+
+  if (len(libs) == 0):
+    globstr = os.path.join(dir, "libboost_%s*%s_%s*.a"%(name, int(nums[0]), int(nums[1]) )) 
+    libs = glob(globstr)
+    lib_suffix = "a"
+
+  if (len(libs) == 0): 
+    globstr = os.path.join(dir, "libboost_%s*.%s"%(name, lib_suffix)) 
+    libs = glob(globstr)
+
+  if (len(libs) == 0): 
+    globstr = os.path.join(dir, "libboost_%s*.a"%(name)) 
+    libs = glob(globstr)
+    lib_suffix = "a"
+  
+  if (len(libs) > 0):
+    if (link_static):
+      return libs[0]
+    else:
+      return os.path.basename(libs[0])
+  
+  return None
+
+if (len(sys.argv) < 2):
+  print_usage_and_exit()
+
+lib_dirs = False
+lib_link = False
+include_dirs = False
+cflags = False
+lflags = False
+
+boost_root = ""
+boost_version = ""
+boost_include_dir = ""
+boost_root_from_bindeps = False
+has_boost_root = 'ROS_BOOST_ROOT' in os.environ and os.environ['ROS_BOOST_ROOT'] != ""
+if (has_boost_root):
+  boost_root = os.environ['ROS_BOOST_ROOT']
+
+bindeps_path = '/opt/ros'
+if ('ROS_BINDEPS_PATH' in os.environ and os.environ['ROS_BINDEPS_PATH'] != ""):
+  bindeps_path = os.environ['ROS_BINDEPS_PATH']
+  
+if (not has_boost_root and os.path.exists(bindeps_path) and platform.system() != 'Darwin'):
+  has_boost_root = True
+  boost_root = bindeps_path
+  boost_root_from_bindeps = True
+  
+if (has_boost_root):
+  if ('ROS_BOOST_VERSION' in os.environ and os.environ['ROS_BOOST_VERSION'] != ""):
+    boost_version = os.environ['ROS_BOOST_VERSION']
+    boost_version = boost_version.replace('.', '_')
+  else:
+    boost_include_dir,boost_version = find_highest_version(os.path.join(boost_root, "include"))
+    if (boost_version == None):
+      if (boost_root_from_bindeps):
+        has_boost_root = False
+      else:
+        print >> sys.stderr, "Could not find a boost version in '%s'"%(boost_root)
+        sys.exit(1)
+
+parser = OptionParser()
+parser.add_option("-l", "--libs", dest="libs", type="string", help="")
+parser.add_option("-i", "--include_dirs", dest="include_dirs", action="store_true", default=False, help="")
+parser.add_option("-d", "--lib_dirs", dest="lib_dirs", action="store_true", help="")
+parser.add_option("-c", "--cflags", dest="cflags", action="store_true", default=False, help="")
+parser.add_option("-f", "--lflags", dest="lflags", type="string", help="")
+parser.add_option("-r", "--root", dest="root", action="store_true", default=False, help="")
+
+(options, args) = parser.parse_args()
+
+if (options.libs):
+  lib_link = True
+if (options.include_dirs):
+  include_dirs = True
+if (options.lib_dirs):
+  lib_dirs = True
+if (options.cflags):
+  if (include_dirs):
+    print_usage_and_exit()
+  
+  cflags = True
+  include_dirs = True
+if (options.lflags):
+  if (options.lib_dirs):
+    print_usage_and_exit()
+    
+  lflags = True
+  lib_link = True
+  lib_dirs = True
+if (options.root):
+  print boost_root
+  sys.exit(0)
+  
+if (not lib_link and not include_dirs and not lib_dirs):
+  print >> sys.stderr, "Unknown argument '%s'"%(sys.argv[1])
+  sys.exit(1)
+
+flags = ""
+
+if (include_dirs):
+  if (has_boost_root):
+    if (cflags):
+      flags += " -I%s"%(boost_include_dir)
+    else:
+      flags += " %s"%(boost_include_dir)
+
+if (lib_dirs):
+  if (has_boost_root):
+    lib_dir = os.path.join(boost_root, "lib")
+    if (lflags):
+      flags += " -L%s -Wl,-rpath,%s"%(lib_dir, lib_dir)
+    else:
+      flags += " %s"%(lib_dir)
+
+if (lib_link):
+  if (options.libs):
+    libnames = options.libs.split(',')
+  elif (options.lflags):
+    libnames = options.lflags.split(',')
+  
+  if (has_boost_root):
+    lib_dir = os.path.join(boost_root, "lib")
+    
+    for name in libnames:
+      lib = find_lib(lib_dir, boost_version, name)
+      
+      if (lib == None):
+        sys.exit(1)
+
+      if (link_static):
+        flags += " %s"%(lib)
+      else:
+        # get rid of "lib" from the beginning, and ".so"/".dylib" from the end
+        lib = lib[3:-(len(lib_suffix) + 1)]
+        flags += " -l%s"%(lib)
+
+  else:
+    for name in libnames:
+      flags += " -lboost_%s-mt"%(name)
+    
+flags = flags.strip()
+print flags
+        

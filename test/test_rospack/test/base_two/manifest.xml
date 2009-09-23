@@ -1,0 +1,7 @@
+<package>
+<export>
+<cpp lflags="-lbar"/>
+</export>
+<versioncontrol type="svn" url="https://ros.svn.sourceforge.net/svnroot/ros/branches"/>
+</package>
+

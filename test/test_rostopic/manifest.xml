@@ -1,0 +1,19 @@
+<package>
+  <description brief="test_rostopic">
+
+     Tests for rostopic 
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/rostopic</url>
+  <depend package="rostopic"/>
+  <depend package="roslib"/>
+  <depend package="rospy"/>
+  <depend package="rospy_tutorials"/>
+  <depend package="rostest"/>
+
+</package>
+
+

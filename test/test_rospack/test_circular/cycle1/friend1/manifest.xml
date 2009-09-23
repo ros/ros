@@ -1,0 +1,10 @@
+<package>
+<description>Fake description</description>
+<author>No One</author>
+<license>Fake License</license>
+<export>
+<cpp lflags="-lfoo"/>
+</export>
+<versioncontrol type="svn" url="https://ros.svn.sourceforge.net/svnroot/ros/trunk"/>
+<depend package="friend2" />
+</package>

@@ -1,0 +1,6 @@
+- svn:
+    uri: https://prdev.willowgarage.com/svn/ros/tags/stable
+    local-name: ros
+- svn:
+    uri: https://prdev.willowgarage.com/svn/personalrobots/pkg/trunk
+    local-name: ros-pkg

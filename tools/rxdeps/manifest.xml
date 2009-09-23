@@ -1,0 +1,13 @@
+<package>
+  <description brief="View ROS Package Dependencies Graphically">
+  
+rxdeps is a ROS core tool for viewing ROS package structure and dependencies. It enables you to visualize package dependencies, including hooks to color based on different status types. 
+
+  </description>
+  <author>Stu Glaser/sglaser@willowgarage.com and Tully Foote/tfoote@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="API cleared" notes="1/22/09"/>
+  <url>http://ros.org/wiki/rxdeps</url>
+  <rosdep name="graphviz"/>
+</package>
+

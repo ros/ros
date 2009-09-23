@@ -84,6 +84,33 @@ def checkbag(migrator, inbag):
             
     return migrations
 
+## Check whether a bag file can be played in the current system
+#
+# @param migrator The message migrator to use
+# @param message_list A list of message classes.
+# @returns A list of tuples for each type in the bag file.  The first
+# element of each tuple is the full migration path for the type.  The
+# second element of the tuple is the expanded list of invalid rules
+# for that particular path.
+def checkmessages(migrator, messages):
+    checked = Set()
+    migrations = []
+
+    for msg in messages:
+        key = get_message_key(msg)
+        if key not in checked:
+            target = migrator.find_target(msg)
+            # Even in the case of a zero-length path (matching md5sums), we still want
+            # to migrate in the event of a type change (message move).
+            path = migrator.find_path(msg, target)
+
+            if (path != []):
+                migrations.append((path, [r for r in migrator.expand_rules([sn.rule for sn in path]) if r.valid == False]))
+
+            checked.add(key)
+            
+    return migrations
+
 ## Fix a bag so that it can be played in the current system
 #
 # @param migrator The message migrator to use

@@ -95,8 +95,8 @@ def generate_links(ctx, package, base_dir, rd_configs):
 def generate_landing_page(ctx):
     success = []
     template = load_tmpl('landing.template')
-    print "landing_page: packages are", ctx.packages
-    for package, path in ctx.packages.iteritems():
+    print "landing_page: packages are", ctx.keys()
+    for package in ctx.packages.iterkeys():
         print "landing page", package
         try:
             if package in ctx.doc_packages and ctx.should_document(package) and \

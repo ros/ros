@@ -54,9 +54,6 @@ class SrvGenerationException(roslib.genpy.MsgGenerationException): pass
 
 def srv_generator(package, name, spec):
     req, resp = ["%s%s"%(name, suff) for suff in [REQUEST, RESPONSE]]
-    yield '## \htmlinclude %s%s.html'%(name,roslib.srvs.EXT) #doxygen
-
-    yield ''
 
     fulltype = '%s%s%s'%(package, roslib.srvs.SEP, name)
 

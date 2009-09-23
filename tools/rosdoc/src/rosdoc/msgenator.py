@@ -106,7 +106,7 @@ def _generate_msg_text_from_spec(package, spec, buff=None, indent=0):
     return buff.getvalue()
 
 def _generate_msg_text(package, type_):
-    print "generate", package, type_
+    #print "generate", package, type_
     name, spec = roslib.msgs.load_from_file(msg_file(package, type_))
     return _generate_msg_text_from_spec(package, spec)
 
@@ -207,7 +207,7 @@ def generate_msg_docs(ctx):
                 text = generate_msg_doc('%s/%s'%(p,m))
                 file_p = os.path.join(msg_d, '%s.html'%m)
                 with open(file_p, 'w') as f:
-                    print "writing", file_p
+                    #print "writing", file_p
                     f.write(text)
             except Exception, e:
                 print >> sys.stderr, "FAILED to generate for %s/%s: %s"%(p, m, str(e))
@@ -224,7 +224,7 @@ def generate_msg_docs(ctx):
                 text = generate_srv_doc('%s/%s'%(p,s))
                 file_p = os.path.join(srv_d, '%s.html'%s)
                 with open(file_p, 'w') as f:
-                    print "writing", file_p
+                    #print "writing", file_p
                     f.write(text)
             except Exception, e:
                 print >> sys.stderr, "FAILED to generate for %s/%s: %s"%(p, s, str(e))

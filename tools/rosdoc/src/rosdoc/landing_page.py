@@ -94,14 +94,13 @@ def generate_links(ctx, package, base_dir, rd_configs):
 ## @return [str]: list of packages for which there are landing pages generated
 def generate_landing_page(ctx):
     success = []
-    template = load_tmpl('landing.template')    
+    template = load_tmpl('landing.template')
+    print "landing_page: packages are", ctx.packages
     for package, path in ctx.packages.iteritems():
         print "landing page", package
-        if package in ctx.doc_packages and ctx.should_document(package) and \
+        try:
+            if package in ctx.doc_packages and ctx.should_document(package) and \
                 package in ctx.rd_configs:
-
-            try:
-
                 rd_configs = ctx.rd_configs[package]
                 links = generate_links(ctx, package, ctx.docdir, rd_configs)
                 # if links is empty, it means that the rd_configs builds
@@ -128,6 +127,6 @@ def generate_landing_page(ctx):
                 with open(os.path.join(html_dir, 'index.html'), 'w') as f:
                     f.write(instantiate_template(template, vars))
                 success.append(package)
-            except Exception, e:
-                print >> sys.stderr, "Unable to generate landing_page for [%s]:\n\t%s"%(package, str(e))
+        except Exception, e:
+            print >> sys.stderr, "Unable to generate landing_page for [%s]:\n\t%s"%(package, str(e))
     return success

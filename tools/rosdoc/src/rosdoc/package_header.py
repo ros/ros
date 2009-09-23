@@ -106,7 +106,8 @@ def _generate_package_headers(ctx, p):
   file_p_dir = os.path.dirname(file_p)
   if not os.path.isdir(file_p_dir):
     os.makedirs(file_p_dir)
-  print "writing package properties to", file_p
+  if 0:
+    print "writing package properties to", file_p
   with codecs.open(file_p, mode='w', encoding='utf-8') as f:
     f.write(yaml.dump(d))
   

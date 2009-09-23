@@ -41,13 +41,15 @@ TimePublisher::TimePublisher():
   freeze_time_(true), 
   is_started_(false),
   publish_thread_(NULL),
-  time_scale_factor_(1.0)
+  time_scale_factor_(1.0),
+  continue_(true)
 {}
 
 
 TimePublisher::~TimePublisher()
 {
   if (publish_thread_){
+    continue_ = false;
     publish_thread_->join(); // Wait for the thread to die before I kill the TimePublisher.
     delete publish_thread_;
   }
@@ -151,11 +153,11 @@ ros::Time TimePublisher::getSysTime()
 void TimePublisher::publishTime()
 {
   roslib::Time pub_msg; 
-  while(node_handle.ok()) {  
+  while(node_handle.ok() && continue_) {
     if (is_started_){
       ros::Time now = getSysTime();
       // Are we allowed to publish this time yet?
-      while(((now - getHorizon()) > ros::Duration(0,100000)) && node_handle.ok())
+      while(((now - getHorizon()) > ros::Duration(0,100000)) && node_handle.ok() && continue_)
       {
         usleep(1000);
         now = getSysTime();

@@ -90,6 +90,7 @@ private:
   boost::thread *publish_thread_;
   double time_scale_factor_;
 
+  volatile bool continue_;
 };
 
 #endif

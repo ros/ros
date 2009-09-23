@@ -99,17 +99,20 @@ def generate_landing_page(ctx):
         if package in ctx.doc_packages and ctx.should_document(package) and \
                 package in ctx.rd_configs:
 
-            rd_configs = ctx.rd_configs[package]
-            links = generate_links(ctx, package, ctx.docdir, rd_configs)
-            # if links is empty, it means that the rd_configs builds
-            # to the base directory and no landing page is required
-            # (or it means that the config is corrupt)
-            if not links:
-                print "ignoring landing page for", package
-                return
-
             try:
+
+                rd_configs = ctx.rd_configs[package]
+                links = generate_links(ctx, package, ctx.docdir, rd_configs)
+                # if links is empty, it means that the rd_configs builds
+                # to the base directory and no landing page is required
+                # (or it means that the config is corrupt)
+                if not links:
+                    print "ignoring landing page for", package
+                    return
+
                 html_dir = html_path(package, ctx.docdir)
+                print "generating landing page", html_dir
+
                 if not os.path.isdir(html_dir):
                     os.makedirs(html_dir)
 
@@ -121,7 +124,6 @@ def generate_landing_page(ctx):
                     '$date': date,
                         }
 
-                print "generating landing page", html_dir
                 with open(os.path.join(html_dir, 'index.html'), 'w') as f:
                     f.write(instantiate_template(template, vars))
                 success.append(package)

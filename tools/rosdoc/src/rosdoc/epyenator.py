@@ -37,19 +37,32 @@ from __future__ import with_statement
 import os, sys
 from subprocess import Popen, PIPE
 
-## Main entrypoint into creating Eepydoc documentation
+from rosdoc.rdcore import *
+
+## Main entrypoint into creating Epydoc documentation
 ## @return [str]: list of packages that were successfully generated
 def generate_epydoc(ctx):
     success = []
     for package, path in ctx.packages.iteritems():
-        if package in ctx.doc_packages and ctx.should_document(package):
-            builder = ctx.builder[package]
-            if builder != 'epydoc':
-                continue
+        if package in ctx.doc_packages and ctx.should_document(package) \
+                and ctx.has_builder(package, 'epydoc'):
+
+            # currently only allow one epydoc build per package. This
+            # is not inherent, it just requires rewriting higher-level
+            # logic
+            rd_config = [d for d in ctx.rd_configs[package] if d['builder'] == 'epydoc'][0]
+
+            # Configuration Properties (all optional):
+            #
+            # output_dir: directory_name (default: '.')
+            # name: Documentation Set Name (default: Python API)
             try:
-                html_dir = os.path.join(ctx.docdir, package, 'html')
+                html_dir = html_path(package, ctx.docdir)
+                if 'output_dir' in rd_config:
+                    html_dir = os.path.join(html_dir, rd_config['output_dir'])
                 if not os.path.isdir(html_dir):
                     os.makedirs(html_dir)
+                    
                 command = ['epydoc', '--html', package, '-o', html_dir]
 
                 # determine the python path of the package
@@ -64,5 +77,5 @@ def generate_epydoc(ctx):
                 Popen(command, stdout=PIPE, env=env).communicate()
                 success.append(package)
             except Exception, e:
-                print >> sys.stderr, "Unable to generate eepydoc for [%s]. This is probably because eepydoc is not installed.\nThe exact error is:\n\t%s"%(package, str(e))
+                print >> sys.stderr, "Unable to generate epydoc for [%s]. This is probably because epydoc is not installed.\nThe exact error is:\n\t%s"%(package, str(e))
     return success

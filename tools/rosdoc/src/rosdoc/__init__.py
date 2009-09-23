@@ -84,11 +84,10 @@ def main():
         else:
             sphinx_success = set()            
         
-        # Generate Doxygen on remainder
+        # Generate Doxygen 
         if 1:
             print "building doxygen packages"
             import doxygenator
-            ctx.packages = dict([(p, ctx.packages[p]) for p in (set(ctx.packages) - sphinx_success - epyenator_success)])
             doxy_success = doxygenator.generate_doxygen(ctx, quiet=options.quiet) 
         else:
             doxy_success = []
@@ -110,6 +109,11 @@ def main():
                 print >> sys.stderr, "msgenator failed"
 
         if 1:
+            # Generate landing page
+            import landing_page
+            landing_page.generate_landing_page(ctx)
+            
+        if 1:
             # Generate Documentation Index
             import docindex 
             doc_index = os.path.join(ctx.docdir, 'index.html')
@@ -128,10 +132,5 @@ def main():
             styles_css = os.path.join(ctx.docdir, 'styles.css')
             print "copying",styles_in, "to", styles_css
             shutil.copyfile(styles_in, styles_css)
-            
-            # have to copy doxygen.css for external packages that we fake-doxygenate
-            dstyles_in = os.path.join(ctx.template_dir, 'doxygen.css')
-            dstyles_css = os.path.join(ctx.docdir, 'doxygen.css')
-            shutil.copyfile(dstyles_in, dstyles_css)
     except:
         traceback.print_exc()

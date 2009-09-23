@@ -21,7 +21,7 @@ internal-use only as its API is not stable.
   <depend package="rosrecord"/>
 
   <export>
-    <rosdoc builder="epydoc"/>    
+    <rosdoc config="rosdoc.yaml"/>    
   </export>
 
 </package>

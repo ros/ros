@@ -49,46 +49,6 @@ external_template = load_tmpl('external.html')
 header_template = load_tmpl('header.html')
 footer_template = load_tmpl('footer.html')
 manifest_template = load_tmpl('manifest.html')
-wiki_header_template = load_tmpl('wiki-header.html')
-
-# routines for including links to msgenator files
-def _href(url, text):
-    return '<a href="%(url)s">%(text)s</a>'%locals()
-def msg_link(msg):
-    return _href('msg/%(msg)s.html'%locals(), msg)
-def srv_link(srv):
-    return _href('srv/%(srv)s.html'%locals(), srv)
-
-# table of msgs/srvs provided by package. this is a duplicate of the
-# PackageHeader.py code in the roswiki Moin
-def msgenator_html(msgs, srvs):
-    # include table of msgs/srvs
-    msg_str = ''
-    if msgs or srvs:
-        if msgs and srvs:
-            msg_str += '<h2>ROS Message and Service Types</h2>'
-        elif msgs:
-            msg_str += '<h2>ROS Message Types</h2>\n'
-        elif srvs:
-            msg_str += '<h2>ROS Service Types</h2>\n'
-        msg_str += '<table border="0">\n<tr>\n'
-        if msgs:
-            if srvs:
-                msg_str += '<th>ROS Message Types</th>\n'
-        if srvs:
-            if msgs:
-                msg_str += '<th>ROS Service Types</th>\n'
-        msg_str += '</tr><tr>'
-        if msgs:
-            msg_str += '<td valign="top">\n'+\
-                '<br />\n'.join([msg_link(m) for m in msgs])+\
-                '</td>\n'
-        if srvs:
-            msg_str += '<td valign="top">\n'+\
-                '<br />\n'.join([srv_link(s) for s in srvs])+\
-                '</td>\n'
-        msg_str += '</tr></table>'
-    return msg_str
 
 # other templates
 
@@ -117,14 +77,14 @@ def generate_msg_srv_includes(package, tmp, to_delete):
                     html_file.write(_msg_srv_tmpl(ext, type_, f.read()))
 
 ## @param package str: package name
+## @param rd_config dict: rosdoc configuration parameters for this doxygen build
 ## @param m Manifest : package manifest
-## @param docdir str: directory to store documentation in    
-def create_package_template(package, m, path, docdir, header_filename, footer_filename):
-    #replace vars in the template file to point to package we are documenting
-    if not os.path.exists(docdir):
-        os.mkdir(docdir)
-
-    #TODO: replace with general purpose key/value parser/substitution to enable <export><doxygen key="foo" val="var"></export> feature
+## @param html_dir str: directory to store doxygen files                    
+def create_package_template(package, rd_config, m, path, html_dir,
+                            header_filename, footer_filename):
+    # TODO: allow rd_config to specify excludes and whatnot
+    
+    # TODO: replace with general purpose key/value parser/substitution to enable <export><doxygen key="foo" val="var"></export> feature
 
     # determine the value of overridable keys
     file_patterns = '*.c *.cpp *.h *.cc *.hh *.py *.dox'
@@ -133,16 +93,22 @@ def create_package_template(package, m, path, docdir, header_filename, footer_fi
     for e in m.get_export('doxygen', 'excludes'):
         # prepend the packages path
         excludes = '%s/%s'%(path, e)
+    # rd_config wins
+    if rd_config and 'excludes' in rd_config:
+        excludes = rd_config['excludes']
+
     # last one wins        
     for e in m.get_export('doxygen', 'file-patterns'):
         file_patterns = e
+    # rd_config wins
+    if rd_config and 'file_patterns' in rd_config:
+        file_patterns = rd_config['file_patterns']
         
-    html_output = html_path(package, docdir)
-    
     vars = { '$INPUT':  path, '$PROJECT_NAME': package,
              '$EXCLUDE_PROP': excludes, '$FILE_PATTERNS': file_patterns,
+             '$HTML_OUTPUT': os.path.abspath(html_dir),
              '$HTML_HEADER': header_filename, '$HTML_FOOTER': footer_filename,
-             '$OUTPUT_DIRECTORY': os.path.join(docdir, package), '$HTML_OUTPUT': html_output}
+             '$OUTPUT_DIRECTORY': html_dir}
     return instantiate_template(doxy_template, vars)
 
 ## Processes manifest for package and then generates templates for
@@ -153,7 +119,7 @@ def create_package_template(package, m, path, docdir, header_filename, footer_fi
 ## @return (str, str, str): header, footer, manifest
 def load_manifest_vars(ctx, package, path, docdir, m):
     author = license = dependencies = description = usedby = status = notes = li_vc = li_url = brief = ''
-    wiki_url = 'http://pr.willowgarage.com/wiki/%s'%package
+    wiki_url = 'http://ros.org/wiki/%s'%package
     project_link = '<a href="%s">%s</a>'%(wiki_url, package)
     if m:
         license = m.license or ''
@@ -187,9 +153,6 @@ def load_manifest_vars(ctx, package, path, docdir, m):
     # include links to msgs/srvs
     msgs = roslib.msgs.list_msg_types(package, False)
     srvs = roslib.srvs.list_srv_types(package, False)
-    msgen = msgenator_html(msgs, srvs)
-    if msgen is None:
-      raise Exception('msgen is none')
         
     return {'$package': package,
             '$projectlink': project_link, '$license': license,
@@ -197,7 +160,7 @@ def load_manifest_vars(ctx, package, path, docdir, m):
             '$description': description, '$brief': brief,
             '$author': author, '$status':status, 
             '$notes':notes, '$li_vc': li_vc, '$li_url': li_url,
-            '$msgenator': msgen}
+            }
 
 ## utility to write string data to files and handle unicode 
 def _write_to_file(f, tmpl):
@@ -228,10 +191,10 @@ If you are on Ubuntu/Debian, you can install doxygen by typing:
 """
         sys.exit(1) 
 
-def run_rxdeps(package, dir):
-    if 1: return
+#TODO: move elsewhere
+def run_rxdeps(package, pkg_doc_dir):
     try:
-        command = ['rxdeps', '-s', '--target=%s'%package, '--cluster', '-o', os.path.join(dir, package, 'html', '%s_deps.pdf'%package)]
+        command = ['rxdeps', '-s', '--target=%s'%package, '--cluster', '-o', os.path.join(pkg_doc_dir, '%s_deps.pdf'%package)]
         print "rxdeping %s [%s]"%(package, ' '.join(command))
         Popen(command, stdout=PIPE).communicate()
     except OSError, (errno, strerr):
@@ -242,6 +205,10 @@ Package dependency tree links will not work properly.
 ## Main entrypoint into creating doxygen files
 ## @return [str]: list of packages that were successfully generated
 def generate_doxygen(ctx, quiet=False):
+
+    #TODO: move external generator into its own generator
+    #TODO: move rxdeps into its own generator    
+    
     # setup temp directory
     tmp = 'tmp'
     if not os.path.exists(tmp):
@@ -255,22 +222,47 @@ def generate_doxygen(ctx, quiet=False):
     # list of packages that we are documenting
     doc_packages = ctx.doc_packages
     external_docs = ctx.external_docs
+    rd_configs = ctx.rd_configs
     manifests = ctx.manifests
 
-    tmpls = [header_template, footer_template, manifest_template, wiki_header_template]
+    tmpls = [header_template, footer_template, manifest_template]
     try:
         for package, path in packages.iteritems():
-            if not package in doc_packages:
+            if not package in doc_packages or not ctx.has_builder(package, 'doxygen'):
                 continue
-            html_dir = os.path.join(dir, package, 'html')
-            # have to makedirs for external packages
-            if not os.path.exists(html_dir):
-                os.makedirs(html_dir)
+
+            # the logic for the doxygen builder is different from
+            # others as doxygen is the default builder if no config is
+            # declared
+            rd_config = rd_configs.get(package, None)
+            if rd_config:
+                # currently only allow one doxygen build per package. This is not inherent, it
+                # just requires rewriting higher-level logic
+                rd_config = [d for d in ctx.rd_configs[package] if d['builder'] == 'doxygen'][0]
+
+            # Configuration (all are optional)
+            #
+            # name: Documentation set name (e.g. C++ API)
+            # output_dir: Directory to store files (default '.')
+            # file-patterns: override FILE_PATTERNS
+            # excludes: override EXCLUDES
+            
+            # doxygenator currently does some non-doxygen work.
+            # pkg_doc_dir is the pointer to the directory for these non-doxygen
+            # tools. html_dir is the path for doxygen
+            pkg_doc_dir = html_path(package, ctx.docdir)
                 
+            # compute the html directory for doxygen
+            html_dir = html_path(package, ctx.docdir)
+            if rd_config and 'output_dir' in rd_config:
+                html_dir = os.path.join(html_dir, rd_config['output_dir'])
+
+            # have to makedirs for external packages
+            if not os.path.exists(pkg_doc_dir):
+                os.makedirs(pkg_doc_dir)
+                    
             files = []
             try:
-                #TODO: cleanup the temporary files
-
                 header_file = tempfile.NamedTemporaryFile('w+')
                 footer_file = tempfile.NamedTemporaryFile('w+')
                 doxygen_file = tempfile.NamedTemporaryFile('w+')
@@ -285,11 +277,14 @@ def generate_doxygen(ctx, quiet=False):
                 # - instantiate the templates
                 manifest_ = manifests[package] if package in manifests else None
                 vars = load_manifest_vars(ctx, package, path, dir, manifest_)
-                header, footer, manifest_html, wiki_header = [instantiate_template(t, vars) for t in tmpls]
+                header, footer, manifest_html = [instantiate_template(t, vars) for t in tmpls]
 
-                run_rxdeps(package, dir)
+                run_rxdeps(package, pkg_doc_dir)
                 if package not in external_docs:
-                    doxy = create_package_template(package, manifest_, path, dir, header_file.name, footer_file.name)
+                    doxy = \
+                        create_package_template(package, rd_config, manifest_,
+                                                path, html_dir,
+                                                header_file.name, footer_file.name)
                     for f, tmpl in zip(files, [header, footer, manifest_html, doxy]):
                         _write_to_file(f, tmpl)
                     # doxygenate
@@ -300,18 +295,27 @@ def generate_doxygen(ctx, quiet=False):
                     # it is time consuming for packages that provide their own docs
 
                     external_link = ctx.external_docs[package]
+
+                    # Override mainpage title if 'name' is in config
+                    title = 'Main Page'
+                    if rd_config:
+                        title = rd_config.get('name', title)
                     vars = { '$package': package, '$external_link': external_link,
                              '$header': header, '$footer': footer,
                              '$manifest': manifest_html,
                              # doxygen vars
                              '$relpath$': '../../',
-                             '$title': package+': Main Page',
+                             '$title': package+': '+title,
                              }
-                    with open(os.path.join(html_dir, 'index.html'), 'w') as ext_html_file:
-                        _write_to_file(ext_html_file, instantiate_template(external_template, vars))
 
-                with open(os.path.join(html_dir, 'wiki_header.html'), 'w') as wiki_header_file:
-                    _write_to_file(wiki_header_file, wiki_header)
+                    with open(os.path.join(pkg_doc_dir, 'index.html'), 'w') as ext_html_file:
+                        _write_to_file(ext_html_file, instantiate_template(external_template, vars))
+                        
+                # support files (stylesheets)
+                import shutil
+                dstyles_in = os.path.join(ctx.template_dir, 'doxygen.css')
+                dstyles_css = os.path.join(html_dir, 'doxygen.css')
+                shutil.copyfile(dstyles_in, dstyles_css)
 
                 success.append(package)
             finally:

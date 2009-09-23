@@ -43,11 +43,18 @@ from subprocess import Popen, PIPE
 def generate_sphinx(ctx):
     success = []
     for package, path in ctx.packages.iteritems():
-        if package in ctx.doc_packages and ctx.should_document(package):
+        if package in ctx.doc_packages and ctx.should_document(package) and \
+                ctx.has_builder(package, 'sphinx'):
             try:
-                builder = ctx.builder[package]
-                if builder != 'sphinx':
-                    continue
+                
+                # currently only allow one sphinx build per package. This
+                # is not inherent, it just requires rewriting higher-level
+                # logic
+                rd_config = [d for d in ctx.rd_configs[package] if d['builder'] == 'sphinx'][0]
+            
+                # rd_config is currently a flag. In the future, I imagine it pointing
+                # to the location of index.rst, among other things
+
                 if os.access(os.path.join(path, "index.rst"), os.R_OK):
                     oldcwd = os.getcwd()
                     os.chdir(path)

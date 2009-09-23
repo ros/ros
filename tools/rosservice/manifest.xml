@@ -13,7 +13,7 @@ rosservice contains the rosservice command-line tool for listing and querying RO
   <depend package="roslib"/>
 
   <export>
-    <rosdoc builder="epydoc"/>    
+    <rosdoc config="rosdoc.yaml"/>    
   </export>
   
 </package>

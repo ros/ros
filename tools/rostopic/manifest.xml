@@ -19,6 +19,11 @@ internal-use only as its API is not stable.
   <depend package="rosmsg"/>
   <depend package="rospy"/>
   <depend package="rosrecord"/>
+
+  <export>
+    <rosdoc builder="epydoc"/>    
+  </export>
+
 </package>
 
 

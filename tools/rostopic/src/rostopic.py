@@ -63,8 +63,16 @@ _echo_nostr = False
 ## don't print array fields in message
 _echo_noarr = False
 
-class ROSTopicException(Exception): pass
-class ROSTopicIOException(ROSTopicException): pass
+class ROSTopicException(Exception):
+    """
+    Base exception class of rostopic-related errors
+    """
+    pass
+class ROSTopicIOException(ROSTopicException):
+    """
+    rostopic errors related to network I/O failures
+    """
+    pass
 
 def succeed(args):
     code, msg, val = args
@@ -72,15 +80,20 @@ def succeed(args):
         raise ROSTopicException("remote call failed: %s"%msg)
     return val
 
-## Make sure that master is available
-## @raise ROSTopicException if unable to successfully communicate with master
 def check_master():
+    """
+    Make sure that master is available
+    @raise ROSTopicException: if unable to successfully communicate with master
+    """
     try:
         succeed(roslib.scriptutil.get_master().getPid('/'))
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
     
 class ROSTopicHz(object):
+    """
+    ROSTopicHz receives messages for a topic and computes frequency stats
+    """
     def __init__(self, window_size):
         self.lock = threading.Lock()
         self.last_printed_tn = 0
@@ -93,8 +106,10 @@ class ROSTopicHz(object):
             window_size = 50000
         self.window_size = window_size
                 
-    ## ros sub callback
     def callback_hz(self, data):
+        """
+        ros sub callback
+        """
         try:
             curr_rostime = rospy.get_rostime()
             
@@ -123,9 +138,10 @@ class ROSTopicHz(object):
         finally:
             self.lock.release()
 
-    ## print the average publishing rate to screen
-    ## @param self
     def print_hz(self):
+        """
+        print the average publishing rate to screen
+        """
         if not self.times:
             return
         elif self.msg_tn == self.last_printed_tn:
@@ -160,9 +176,15 @@ class ROSTopicHz(object):
             self.lock.release()
         print "average rate: %.3f\n\tmin: %.3fs max: %.3fs std dev: %.5fs window: %s"%(rate, min_delta, max_delta, std_dev, n+1)
     
-## periodically print the publishing rate of a topic to console until
-## shutdown
 def rostopic_hz(topic, window_size=-1):
+    """
+    periodically print the publishing rate of a topic to console until
+    shutdown
+    @param topic: topic name
+    @type  topic: str
+    @param window_size: number of messages to average over, -1 for infinite
+    @type  window_size: int
+    """
     _, real_topic, _ = get_topic_type(topic) #pause hz until topic is published
     if rospy.is_shutdown():
         return
@@ -184,8 +206,8 @@ class ROSTopicBandwidth(object):
         self.times =[]        
         self.window_size = window_size or 100
                 
-    ## ros sub callback
     def callback(self, data):
+        """ros sub callback"""
         with self.lock:
             try:
                 t = time.time()
@@ -199,9 +221,8 @@ class ROSTopicBandwidth(object):
             except:
                 traceback.print_exc()
 
-    ## print the average publishing rate to screen
-    ## @param self
     def print_bw(self):
+        """print the average publishing rate to screen"""
         if len(self.times) < 2:
             return
         with self.lock:
@@ -229,9 +250,11 @@ class ROSTopicBandwidth(object):
             
         print "average: %s/s\n\tmean: %s min: %s max: %s window: %s"%(bw, mean, min_s, max_s, n)
 
-## periodically print the received bandwidth of a topic to console until
-## shutdown
 def rostopic_bw(topic, window_size=-1):
+    """
+    periodically print the received bandwidth of a topic to console until
+    shutdown
+    """
     check_master()
     _, real_topic, _ = get_topic_type(topic) #pause hz until topic is published
     if rospy.is_shutdown():
@@ -248,10 +271,14 @@ def rostopic_bw(topic, window_size=-1):
 
 # TODO: port to the version I wrote for rxplot instead as it should be more efficient
 
-## generates a function that returns the relevant field (aka 'subtopic') of a Message object
-## @param pattern str: subtopic, e.g. /x. Must have a leading '/' if specified.
-## @return fn(rospy.Message) -> value
 def msgevalgen(pattern):
+    """
+    generates a function that returns the relevant field (aka 'subtopic') of a Message object
+    @param pattern: subtopic, e.g. /x. Must have a leading '/' if specified.
+    @type  pattern: str
+    @return: function that converts a message into the desired value
+    @rtype: fn(rospy.Message) -> value
+    """
     if not pattern or pattern == '/':
         return None
     def msgeval(msg):
@@ -263,10 +290,12 @@ def msgevalgen(pattern):
             return None
     return msgeval
     
-## subroutine for getting the topic type
-## @return str, str, fn: topic type, real topic name and fn to evaluate the message instance
-## if the \a topic points to a field within a topic, e.g. /rosout/msg
 def _get_topic_type(topic):
+    """
+    subroutine for getting the topic type
+    @return str, str, fn: topic type, real topic name and fn to evaluate the message instance
+    if the topic points to a field within a topic, e.g. /rosout/msg
+    """
     try:
         val = succeed(roslib.scriptutil.get_master().getPublishedTopics('/', '/'))
     except socket.error:
@@ -289,11 +318,14 @@ def _get_topic_type(topic):
 
 # NOTE: this is used externally by rxplot
     
-## get the topic type
-## @raise ROSTopicException if master cannot be contacted
-## @return str, str, fn: topic type, real topic name and fn to evaluate the message instance
-## if the \a topic points to a field within a topic, e.g. /rosout/msg
 def get_topic_type(topic):
+    """
+    get the topic type
+    @return: topic type, real topic name and fn to evaluate the message instance
+    if the topic points to a field within a topic, e.g. /rosout/msg
+    @rtype str, str, fn
+    @raise ROSTopicException: if master cannot be contacted
+    """
     topic_type, real_topic, msg_eval = _get_topic_type(topic)
     if topic_type:
         return topic_type, real_topic, msg_eval
@@ -307,12 +339,15 @@ def get_topic_type(topic):
                 time.sleep(0.1)
         return None, None, None
 
-## get the topic message class
-## @raise ROSTopicException if topic type cannot be determined or loaded
-## @return roslib.message.Message, str, str: message class for topic, real topic
-## name, and function for evaluating message objects into the subtopic
-## (or None)
 def get_topic_class(topic):
+    """
+    get the topic message class
+    @return: message class for topic, real topic
+    name, and function for evaluating message objects into the subtopic
+    (or None)
+    @rtype: roslib.message.Message, str, str
+    @raise ROSTopicException: if topic type cannot be determined or loaded
+    """
     topic_type, real_topic, msg_eval = get_topic_type(topic)
     if topic_type is None:
         return None, None, None
@@ -323,15 +358,18 @@ def get_topic_class(topic):
 
 from itertools import izip
 
-## print fields used by _str_plot
-## @param plot bool: if True, print in plotting-friendly format. non-scalar values are excluded
 def _str_plot_fields(val, f):
+    """
+    print fields used by _str_plot
+    @param plot: if True, print in plotting-friendly format. non-scalar values are excluded
+    @type  plot: bool
+    """
     s = _sub_str_plot_fields(val, f)
     if s is not None:
         return "time,"+s
 
-## recursive helper function for _str_plot_fields
 def _sub_str_plot_fields(val, f):
+    """recursive helper function for _str_plot_fields"""
     # CSV
     if type(val) in [int, float] or \
            isinstance(val, rospy.Time) or isinstance(val, rospy.Duration):
@@ -360,10 +398,12 @@ def _sub_str_plot_fields(val, f):
     return None
 
 
-## convert value to matlab/octave-friendly CSV string representation.
-## Reads the state of the _echo_nostrs and _echo_noarr global vars to
-## determine which fields are printed.
 def _str_plot(val, time_offset=None):
+    """
+    convert value to matlab/octave-friendly CSV string representation.
+    Reads the state of the _echo_nostrs and _echo_noarr global vars to
+    determine which fields are printed.
+    """
     s = _sub_str_plot(val, time_offset)
     if s is not None:
         if time_offset is not None:
@@ -377,8 +417,8 @@ def _str_plot(val, time_offset=None):
     
 #TODO: get rid of the ugly use of the _echo_nonostr and _echo_noarr
     
-## Helper routine for _str_plot.
 def _sub_str_plot(val, time_offset):
+    """Helper routine for _str_plot."""
     # CSV
     if type(val) in [int, float] or \
            isinstance(val, rospy.Time) or isinstance(val, rospy.Duration):
@@ -408,16 +448,24 @@ def _sub_str_plot(val, time_offset):
                 return ','.join([s for s in sub])
     return None
         
-## Callback instance that can print callback data in a variety of
-## formats. Used for all variants of rostopic echo
 class CallbackEcho(object):
+    """
+    Callback instance that can print callback data in a variety of
+    formats. Used for all variants of rostopic echo
+    """
 
-    ## @param plot bool: if True, echo in plotting-friendly format
-    ## @param filter_fn fn(topic, msg): function that evaluates to True if message is to be echo'd
-    ## @param echo_all_topics bool: (optional) if True, echo all messages in bag
-    ## @param offset_time bool: (optional) if True, display time as offset from current time
     def __init__(self, topic, msg_eval, plot=False, filter_fn=None,
                  echo_clear=False, echo_all_topics=False, offset_time=False):
+        """
+        @param plot: if True, echo in plotting-friendly format
+        @type  plot: bool
+        @param filter_fn: function that evaluates to True if message is to be echo'd
+        @type  filter_fn: fn(topic, msg)
+        @param echo_all_topics: (optional) if True, echo all messages in bag
+        @type  echo_all_topics: bool
+        @param offset_time: (optional) if True, display time as offset from current time
+        @type  offset_time: bool
+        """
         if topic and topic[-1] == '/':
             topic = topic[:-1]
         self.topic = topic
@@ -444,12 +492,16 @@ class CallbackEcho(object):
         self.last_topic = None
         self.last_msg_eval = None
 
-    ## Callback to pass to rospy.Subscriber or to call
-    ## manually. rospy.Subscriber constructor must also pass in the
-    ## topic name as an additional arg
-    ## @param data Message
-    ## @param topic str
     def callback(self, data, topic):
+        """
+        Callback to pass to rospy.Subscriber or to call
+        manually. rospy.Subscriber constructor must also pass in the
+        topic name as an additional arg
+        @param data: Message
+        @type  data: Message    
+        @param topic: topic name
+        @type  topic: str    
+        """
         if self.filter_fn is not None and not self.filter_fn(data):
             return
         try:
@@ -492,14 +544,21 @@ class CallbackEcho(object):
         except:
             traceback.print_exc()
             
-## Print ROS message type of \a topic to screen
-## @param topic str: topic name
 def rostopic_type(topic):
+    """
+    Print ROS message type of topic to screen
+    @param topic: topic name
+    @type  topic: str
+    """
     print >> sys.stdout, get_topic_type(topic)[0]
 
-## @param topic str: topic name
-## @param bag_file str: name of bag file to echo messages from or None
 def rostopic_echo_bag(callback_echo, bag_file):
+    """
+    @param topic: topic name
+    @type  topic: str
+    @param bag_file: name of bag file to echo messages from or None
+    @type  bag_file: str
+    """
     if not os.path.exists(bag_file):
         raise ROSTopicException("bag file [%s] does not exist"%bag_file)
     first = True
@@ -510,9 +569,13 @@ def rostopic_echo_bag(callback_echo, bag_file):
             t = roslib.scriptutil.script_resolve_name('rostopic', t)
         callback_echo.callback(msg, t)
     
-## @param topic str: topic name
-## @param bag_file str: name of bag file to echo messages from or None
 def rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
+    """
+    @param topic: topic name
+    @type  topic: str
+    @param bag_file str: name of bag file to echo messages from or None
+    @type  bag_file: str
+    """
     # we have to init a node regardless and bag echoing can print timestamps
 
     if bag_file:
@@ -777,10 +840,14 @@ def rostopic_cmd_bw(argv=sys.argv):
     topic = roslib.scriptutil.script_resolve_name('rostopic', args[0])
     rostopic_bw(topic, window_size=window_size)
 
-## Lookup topics by \a topic_type
-## @param topic_type str: type of topic to find
-## @return [str]: list of topic names that use \a topic_type    
 def rostopic_find(topic_type):
+    """
+    Lookup topics by topic_type
+    @param topic_type: type of topic to find
+    @type  topic_type: str
+    @return: list of topic names that use topic_type    
+    @rtype: [str]
+    """
     master = roslib.scriptutil.get_master()
     try:
         t_list = succeed(master.getPublishedTopics('/rostopic', '/'))
@@ -788,9 +855,12 @@ def rostopic_find(topic_type):
         raise ROSTopicIOException("Unable to communicate with master!")
     return [t_name for t_name, t_type in t_list if t_type == topic_type]
     
-## Implements 'rostopic type'
-## @param argv [str]: command-line args
 def rostopic_cmd_find(argv=sys.argv):
+    """
+    Implements 'rostopic type'
+    @param argv [str]: command-line args
+    @type  argv: command-line args    
+    """
     args = argv[2:]
     parser = OptionParser(usage="usage: %prog find msg-type", prog=NAME)
     options, args = parser.parse_args(args)
@@ -801,13 +871,19 @@ def rostopic_cmd_find(argv=sys.argv):
     print '\n'.join(rostopic_find(args[0]))
     
 
-## Create rospy.Publisher instance using specified params. If rate is None, the
-## Publisher will be latching-style.
-## @param topic_name str: name of topic
-## @param topic_type str: name of topic type
-## @param rate int: publishing rate or None to latch value
-## @return rospy.Publisher, rospy.Message.__class__: topic publisher, message class
 def rostopic_pub_init(topic_name, topic_type, rate):
+    """
+    Create rospy.Publisher instance using specified params. If rate is None, the
+    Publisher will be latching-style.
+    @param topic_name: name of topic
+    @type  topic_name: str
+    @param topic_type: name of topic type
+    @type  topic_type: str
+    @param rate: publishing rate or None to latch value
+    @type  rate: int
+    @return: topic publisher, message class
+    @rtype: rospy.Publisher, rospy.Message.__class__
+    """
     topic_name = roslib.scriptutil.script_resolve_name('rostopic', topic_name)
     try:
         msg_class = roslib.message.get_message_class(topic_type)
@@ -822,12 +898,18 @@ def rostopic_pub_init(topic_name, topic_type, rate):
         pub = rospy.Publisher(topic_name, msg_class)        
     return pub, msg_class
 
-## publish message at specified rate
-## @param pub rospy.Publisher: Publisher instance for topic
-## @param msg Message: message instance to publish
-## @param rate int: publishing rate (hz) or None for just once
-## @param verbose bool: If True, print more verbose output to stdout
 def _rostopic_pub_rate(pub, msg, rate, verbose=False):
+    """
+    publish message at specified rate
+    @param pub: Publisher instance for topic
+    @type  pub: rospy.Publisher
+    @param msg: message instance to publish
+    @type  msg: Message
+    @param rate: publishing rate (hz) or None for just once
+    @type  rate: int
+    @param verbose: If True, print more verbose output to stdout
+    @type  verbose: bool
+    """
     try:
         r = rospy.Rate(float(rate))
     except ValueError:
@@ -839,12 +921,14 @@ def _rostopic_pub_rate(pub, msg, rate, verbose=False):
         r.sleep()
 
 _ONCE_DELAY = 3.
-## publish and latch message 
-## @param pub rospy.Publisher: Publisher instance for topic
-## @param msg Message: message instance to publish
-## @param once bool: if True, publish message once and then exit after sleep interval
-## @param verbose bool: If True, print more verbose output to stdout
 def _rostopic_pub_latch(pub, msg, once=False, verbose=False):
+    """
+    publish and latch message 
+    @param pub rospy.Publisher: Publisher instance for topic
+    @param msg Message: message instance to publish
+    @param once bool: if True, publish message once and then exit after sleep interval
+    @param verbose bool: If True, print more verbose output to stdout
+    """
     s = "publishing and latching [%s]"%msg if verbose else "publishing and latching message"
     if once:
         s = s + " for %s seconds"%_ONCE_DELAY
@@ -864,13 +948,15 @@ def _rostopic_pub_latch(pub, msg, once=False, verbose=False):
     else:
         rospy.spin()        
 
-## @param pub rospy.Publisher: Publisher instance for topic
-## @param msg_class Class: Message type
-## @param pub_args [val]: arguments to initialize message
-## @param rate int: publishing rate (hz) or None for just once
-## @param once bool: If True, publish one message and exit. \a rate must be None
-## @param verbose bool: If True, print more verbose output to stdout
 def rostopic_pub(pub, msg_class, pub_args, rate=None, once=False, verbose=False):
+    """
+    @param pub rospy.Publisher: Publisher instance for topic
+    @param msg_class Class: Message type
+    @param pub_args [val]: arguments to initialize message
+    @param rate int: publishing rate (hz) or None for just once
+    @param once bool: If True, publish one message and exit. rate must be None
+    @param verbose bool: If True, print more verbose output to stdout
+    """
     msg = msg_class()
     try:
         roslib.message.fill_message_args(msg, pub_args)
@@ -888,11 +974,14 @@ def rostopic_pub(pub, msg_class, pub_args, rate=None, once=False, verbose=False)
         raise ROSTopicException("Unable to publish message. One of the fields has an incorrect type:\n"+\
                                 "  %s\n\nmsg file:\n%s"%(e, rosmsg.get_msg_text(msg_class._type)))
     
-## Parse 'pub' command arguments and run command. Will cause a system
-## exit if command-line argument parsing fails.
-## @param argv [str]: command-line arguments
-## @throws ROSTopicException if call command cannot be executed
 def rostopic_cmd_pub(argv):
+    """
+    Parse 'pub' command arguments and run command. Will cause a system
+    exit if command-line argument parsing fails.
+    @param argv: command-line arguments
+    @param argv: [str]
+    @raise ROSTopicException: if call command cannot be executed
+    """
     try:
         import yaml
     except ImportError, e:
@@ -951,9 +1040,11 @@ def rostopic_cmd_pub(argv):
             pub_args = pub_args[0]
         rostopic_pub(pub, msg_class, pub_args, options.rate, options.once, verbose=options.verbose)
         
-## @return iterator for next yaml document on stdin
-## @return iterator for next yaml document on stdin
 def _stdin_yaml_arg():
+    """
+    @return: for next yaml document on stdin
+    @rtype: iterator
+    """
     import yaml
     import select
     poll = select.poll()
@@ -976,8 +1067,8 @@ def _stdin_yaml_arg():
     except select.error:
         return # most likely ctrl-c interrupt
     
-## command-line parsing for 'rostopic list' command
 def rostopic_cmd_list():
+    """command-line parsing for 'rostopic list' command"""
     args = sys.argv[2:]
     parser = OptionParser(usage="usage: %prog list [/topic]", prog=NAME)
     parser.add_option("-b", "--bag",

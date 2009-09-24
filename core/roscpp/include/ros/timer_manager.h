@@ -338,8 +338,13 @@ void TimerManager<T, D, E>::threadFunc()
       for (; it != end; ++it)
       {
         const TimerInfoPtr& info = *it;
-        info->last_expected = current;
-        info->next_expected = current + info->period;
+
+        // Timer may have been added after the time jump, so also check if time has jumped past its last call time
+        if (current < info->last_expected)
+        {
+          info->last_expected = current;
+          info->next_expected = current + info->period;
+        }
       }
     }
 

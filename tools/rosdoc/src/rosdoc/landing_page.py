@@ -108,7 +108,7 @@ def generate_landing_page(ctx):
                 # (or it means that the config is corrupt)
                 if not links:
                     print "ignoring landing page for", package
-                    return
+                    continue
 
                 html_dir = html_path(package, ctx.docdir)
                 print "generating landing page", html_dir

@@ -1,5 +1,5 @@
 distros:
-- latest: [ros, common, common_msgs, geometry, image_common, joystick_drivers, laser_pipeline,
+- latest: [ros, common, common_msgs, diagnostics, geometry, image_common, joystick_drivers, laser_pipeline,
     navigation, opencv, robot_model, simulator_stage, slam_gmapping, sound_drivers,
     visualization_common, visualization]
 stacks:
@@ -8,12 +8,13 @@ stacks:
     source-tarball: 'http://ros.org/download/$STACK_NAME/$STACK_NAME-$STACK_VERSION.tar.bz2'}
   common: {latest: 0.3.0}
   common_msgs: {latest: 0.9.3}
+  diagnostics: {latest: 0.2.0}
   geometry: {latest: 0.2.0}
-  image_common: {latest: 0.1.0}
+  image_common: {latest: 0.2.0}
   joystick_drivers: {latest: 0.3.0}
-  laser_pipeline: {latest: 0.3.0}
+  laser_pipeline: {latest: 0.4.0}
   navigation: {latest: 0.2.0}
-  robot_model: {latest: 0.2.0}
+  robot_model: {latest: 0.3.0}
   ros:
     _uri_rules: {dev-svn: 'https://ros.svn.sourceforge.net/svnroot/ros/trunk', release-svn: 'https://ros.svn.sourceforge.net/svnroot/ros/tags/rc'}
     latest: rc

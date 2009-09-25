@@ -244,7 +244,7 @@ def generate_doxygen(ctx, quiet=False):
             #
             # name: Documentation set name (e.g. C++ API)
             # output_dir: Directory to store files (default '.')
-            # file-patterns: override FILE_PATTERNS
+            # file_patterns: override FILE_PATTERNS
             # excludes: override EXCLUDES
             
             # doxygenator currently does some non-doxygen work.

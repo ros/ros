@@ -544,12 +544,9 @@ endmacro(rosbuild_add_gtest_future)
 macro(rosbuild_add_rostest file)
   string(REPLACE "/" "_" _testname ${file})
   _rosbuild_add_rostest(${file})
-  # Check for agreement of optional label and environment variable
-  if("${ARGN}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
-    # Redeclaration of target is to workaround bug in 2.4.6
-    add_custom_target(test)
-    add_dependencies(test rostest_${_testname})
-  endif("${ARGN}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+  # Redeclaration of target is to workaround bug in 2.4.6
+  add_custom_target(test)
+  add_dependencies(test rostest_${_testname})
   _rosbuild_check_rostest_result(rostest_${_testname} ${PROJECT_NAME} ${file})
 endmacro(rosbuild_add_rostest)
 

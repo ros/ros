@@ -215,7 +215,10 @@ class LocalProcess(Process):
             except Exception, e:
                 _logger.error(traceback.format_exc())
                 printerrlog("[%s] ERROR: unable to configure logging [%s]"%(self.name, str(e)))
-                logfileout, logfileerr = None, None
+                # it's not safe to inherit from this process as
+                # rostest changes stdout to a StringIO, which is not a
+                # proper file.
+                logfileout, logfileerr = subprocess.PIPE, subprocess.PIPE
 
             if self.cwd == 'node':
                 cwd = os.path.dirname(self.args[0])

@@ -212,9 +212,10 @@ class LocalProcess(Process):
             # _configure_logging() can mutate self.args
             try:
                 logfileout, logfileerr = self._configure_logging()
-            except:
-                print >> sys.stderr, "[%s] WARNING: unable to configure logging, sending output to console"%self.name
-                logfileout, logfileerr = sys.stdout, sys.stderr
+            except Exception, e:
+                _logger.error(traceback.format_exc())
+                printerrlog("[%s] ERROR: unable to configure logging [%s]"%(self.name, str(e)))
+                logfileout, logfileerr = None, None
 
             if self.cwd == 'node':
                 cwd = os.path.dirname(self.args[0])

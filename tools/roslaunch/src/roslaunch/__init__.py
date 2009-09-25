@@ -100,7 +100,7 @@ def _get_optparse():
                       help="Launch core services only")
     return parser
     
-def _validate_args(options, args):
+def _validate_args(parser, options, args):
     # validate args first so we don't spin up any resources
     if options.child_name:
         if not options.server_uri:
@@ -132,7 +132,7 @@ def main(argv=sys.argv):
         
         (options, args) = parser.parse_args(argv[1:])
         args = roslaunch.rlutil.resolve_launch_arguments(args)
-        _validate_args(options, args)
+        _validate_args(parser, options, args)
 
         # node args doesn't require any roslaunch infrastructure, so process it first
         if options.node_args or options.node_list:

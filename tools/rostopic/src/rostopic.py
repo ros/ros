@@ -323,9 +323,12 @@ def get_topic_class(topic):
 
 from itertools import izip
 
-## print fields used by _str_plot
-## @param plot bool: if True, print in plotting-friendly format. non-scalar values are excluded
 def _str_plot_fields(val, f):
+    """
+    get CSV representation of fields used by _str_plot
+    @return: list of fields as a CSV string
+    @rtype: str
+    """
     s = _sub_str_plot_fields(val, f)
     if s is not None:
         return "time,"+s
@@ -334,7 +337,7 @@ def _str_plot_fields(val, f):
 def _sub_str_plot_fields(val, f):
     # CSV
     if type(val) in [int, float] or \
-           isinstance(val, rospy.Time) or isinstance(val, rospy.Duration):
+           isinstance(val, roslib.rostime.Time) or isinstance(val, roslib.rostime.Duration):
         return f
     elif isinstance(val, rospy.Message):
         sub = [s for s in [_sub_str_plot_fields(getattr(val, a), f+"."+a) for a in val.__slots__] if s]
@@ -360,10 +363,16 @@ def _sub_str_plot_fields(val, f):
     return None
 
 
-## convert value to matlab/octave-friendly CSV string representation.
-## Reads the state of the _echo_nostrs and _echo_noarr global vars to
-## determine which fields are printed.
 def _str_plot(val, time_offset=None):
+    """
+    convert value to matlab/octave-friendly CSV string representation.
+    Reads the state of the _echo_nostrs and _echo_noarr global vars to
+    determine which fields are printed.
+    @param val: message
+    @type  val: Message
+    @return: comma-separated list of field values in val
+    @rtype: str
+    """
     s = _sub_str_plot(val, time_offset)
     if s is not None:
         if time_offset is not None:
@@ -381,8 +390,8 @@ def _str_plot(val, time_offset=None):
 def _sub_str_plot(val, time_offset):
     # CSV
     if type(val) in [int, float] or \
-           isinstance(val, rospy.Time) or isinstance(val, rospy.Duration):
-        if time_offset is not None and isinstance(val, rospy.Time):
+           isinstance(val, roslib.rostime.Time) or isinstance(val, roslib.rostime.Duration):
+        if time_offset is not None and isinstance(val, roslib.rostime.Time):
             return str(val-time_offset)
         else:
             return str(val)    
@@ -478,7 +487,7 @@ class CallbackEcho(object):
                 
                 # print fields header for plot
                 if self.plot and self.first:
-                    sys.stdout.write("%"+_str_plot_fields(data, 'm')+'\n')
+                    sys.stdout.write("%"+_str_plot_fields(data, 'field')+'\n')
                     self.first = False
 
                 if self.offset_time:

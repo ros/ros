@@ -1,4 +1,5 @@
 <launch>
   <!-- $(anon talker) creates an anonymous name for this node -->
   <node name="$(anon talker)" pkg="rospy_tutorials" type="talker" />
+  <param name="foo/$(anon talker)" value="$(anon talker)/bar" />
 </launch>

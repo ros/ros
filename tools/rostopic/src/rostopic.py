@@ -386,7 +386,7 @@ def _sub_str_plot_fields(val, f):
         val0 = val[0]
         # no arrays of arrays
         if type(val0) in [int, float] or \
-               isinstance(val0, rospy.Time) or isinstance(val0, rospy.Duration):
+               isinstance(val0, roslib.rostime.Time) or isinstance(val0, roslib.rostime.Duration):
             return ','.join(["%s%s"%(f,x) for x in xrange(0,len(val))])
         elif not _echo_nostr and isinstance(val0, basestring):
             return ','.join(["%s%s"%(f,x) for x in xrange(0,len(val))])
@@ -442,7 +442,7 @@ def _sub_str_plot(val, time_offset):
         val0 = val[0]
         # no arrays of arrays
         if type(val0) in [int, float] or \
-               isinstance(val0, rospy.Time) or isinstance(val0, rospy.Duration):
+               isinstance(val0, roslib.rostime.Time) or isinstance(val0, roslib.rostime.Duration):
             return ','.join([str(v) for v in val])
         elif not _echo_nostr and isinstance(val0, basestring):
             return ','.join([v for v in val])            

@@ -110,10 +110,11 @@ def resolve_args(arg_str, context={}, resolve_anon=True):
                 raise SubstitutionException("$(anon var) may only specify one name [%s]"%a)
             id = args[0]
             if id in context:
-                resolved = context[id]
+                resolved = resolved.replace("$(%s)"%a, context[id])
             else:
-                resolved = "%s-%s-%s-%s"%(id, socket.gethostname(), os.getpid(), int(time.time()*1000))
-                context[id] = resolved
+                resolve_to = "%s-%s-%s-%s"%(id, socket.gethostname(), os.getpid(), int(time.time()*1000))
+                resolved = resolved.replace("$(%s)"%a, resolve_to)
+                context[id] = resolve_to
             
     return resolved
 

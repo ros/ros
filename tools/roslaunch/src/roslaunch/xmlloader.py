@@ -161,7 +161,7 @@ class XmlLoader(object):
 
     ## wrapper around roslib.substitution_args.resolve_args to set common parameters
     def resolve_args(self, args, context):
-        return roslib.substitution_args.resolve_args(args, context=context, resolve_anon=self.resolve_anon)
+        return roslib.substitution_args.resolve_args(args, context=context.resolve_dict, resolve_anon=self.resolve_anon)
 
     ## helper routine for fetching and resolving optional tag attributes
     ## @param tag DOM tag
@@ -176,14 +176,14 @@ class XmlLoader(object):
                 return tag.getAttribute(a)
             else:
                 return None
-        return [self.resolve_args(tag_value(tag,a), context.resolve_dict) for a in attrs]
+        return [self.resolve_args(tag_value(tag,a), context) for a in attrs]
 
     ## helper routine for fetching and resolving required tag attributes
     ## @param tag DOM tag
     ## @param attrs (str): list of attributes to resolve        
     ## @raise KeyError if required attribute is missing
     def reqd_attrs(self, tag, context, attrs):
-        return [self.resolve_args(tag.attributes[a].value, context.resolve_dict) for a in attrs]
+        return [self.resolve_args(tag.attributes[a].value, context) for a in attrs]
 
     def _check_attrs(self, tag, context, ros_config, attrs):
         tag_attrs = tag.attributes.keys()

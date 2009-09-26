@@ -731,6 +731,24 @@ class TestXmlLoader(unittest.TestCase):
             elif n.type == 'node6':
                 self.assertEquals([['foo', 'far'], ['old1', 'new1'], ['old2', 'new2'], ['old3', 'new3']], n.remap_args)
                  
+    def test_substitution(self):
+        mock = self._load('test/xml/test-substitution.xml')
+        # for now this is mostly a trip wire test due to #1776 
+        for p in mock.params:
+            self.assert_('$' not in p.key)
+            self.assert_('$' not in p.value)            
+        for n in mock.nodes:
+            self.assert_('$' not in n.package)
+            self.assert_('$' not in n.type)
+            for e in n.env_args:
+                self.assert_('$' not in e[0])
+                self.assert_('$' not in e[1])
+            for r in n.remap_args:
+                self.assert_('$' not in r[0])
+                self.assert_('$' not in r[1])
+            for a in n.args:
+                self.assert_('$' not in a)                        
+    
     def test_node_invalid(self):
         tests = ['test-node-invalid-type.xml','test-node-invalid-type-2.xml',
                  'test-node-invalid-pkg.xml','test-node-invalid-pkg-2.xml',

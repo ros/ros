@@ -51,7 +51,7 @@ def resolve_launch_arguments(args):
     if os.path.isfile(top):
         resolved_args = [top] + args[1:]
     elif len(args) == 1:
-        raise roslaunch.core.RLException("please specify a package and launch file [%s]"%top)
+        raise roslaunch.core.RLException("[%s] does not exist. please specify a package and launch file"%(top))
     else:
         try:
             resolved = roslib.packages.find_resource(top, args[1])

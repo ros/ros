@@ -1,0 +1,14 @@
+<launch>
+
+  <env name="$(anon foo)/bar" value="$(anon foo)/baz" />
+  <remap from="$(anon foo)/bar" to="$(anon foo)/baz" />
+  
+  <node pkg="$(optenv FOO foo)" type="$(optenv BAR bar)" args="$(find roslib)">
+    <param name="$(anon foo)/bar" value="$(anon foo)/bar" />
+  </node>
+
+  <node pkg="$(anon foo)" type="$(anon bar)" args="$(anon baz)" />
+  <param name="$(anon foo)/bar" value="$(anon foo)/bar" />
+  
+</launch>
+

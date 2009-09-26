@@ -13,7 +13,7 @@ stacks:
   image_common: {latest: 0.2.0}
   joystick_drivers: {latest: 0.3.0}
   laser_pipeline: {latest: 0.4.0}
-  navigation: {latest: 0.3.0}
+  navigation: {latest: 0.3.1}
   robot_model: {latest: 0.3.0}
   ros:
     _uri_rules: {dev-svn: 'https://ros.svn.sourceforge.net/svnroot/ros/trunk', release-svn: 'https://ros.svn.sourceforge.net/svnroot/ros/tags/rc'}

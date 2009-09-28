@@ -58,12 +58,14 @@ def generate_sphinx(ctx):
                 if os.access(os.path.join(path, "index.rst"), os.R_OK):
                     oldcwd = os.getcwd()
                     os.chdir(path)
-                    html_dir = os.path.join(oldcwd, ctx.docdir, package, 'html')
-                    command = ['sphinx-build', '-b', 'html', '-d', '_build/doctrees', '-D', 'latex_paper_size=letter', '.', html_dir]
-                    print "sphinx-building %s [%s]"%(package, ' '.join(command))
-                    Popen(command, stdout=PIPE).communicate()
-
-                    os.chdir(oldcwd)
+                    try:
+                        html_dir = os.path.join(oldcwd, ctx.docdir, package, 'html')
+                        command = ['sphinx-build', '-b', 'html', '-d', '_build/doctrees', '-D', 'latex_paper_size=letter', '.', html_dir]
+                        print "sphinx-building %s [%s]"%(package, ' '.join(command))
+                        Popen(command, stdout=PIPE).communicate()
+                    finally:
+                        # restore cwd
+                        os.chdir(oldcwd)
                     success.append(package)
                 else:
                     print >> sys.stderr, "ERROR: not index.rst for sphinx build of [%s]"%package

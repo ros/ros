@@ -19,7 +19,7 @@ stacks:
     _uri_rules: {dev-svn: 'https://ros.svn.sourceforge.net/svnroot/ros/trunk', release-svn: 'https://ros.svn.sourceforge.net/svnroot/ros/tags/rc'}
     latest: rc
   simulator_stage: {latest: 0.1.0}
-  slam_gmapping: {latest: 0.9.0}
+  slam_gmapping: {latest: 0.9.1}
   sound_drivers: {latest: 0.3.0}
   visualization: {latest: 0.2.0}
   visualization_common: {latest: 0.9.3}

@@ -12,13 +12,17 @@ complete rosmake 'p/*/`rospack list-names && rosstack list-names`/'
 complete rosupdate 'p/1/`rospack list-names && rosstack list-names`/' 
 complete rosdeb 'p/*/`rospack list-names && rosstack list-names`/' 
 
+complete rosdep \
+   'p/1/(help generate_bash install depdb what_needs check satisfy)/' \
+   'n/{generate_bash,install,depdb,check,satisfy}/`rospack list-names`/' 
+
 complete rospack \
    'p/1/(help find list list-names langs deps deps-manifests deps1 deps-indent rosdeps rosdeps0 vcs vcs0 depends-on)/' \
-   'n/(find deps deps-manifests deps1 deps-indent rosdeps rosdeps0 vcs vcs0 depends-on depends-on1 export cflags-only-I cflags-only-other libs-only-L libs-only-l libs-only-other)/`rospack list-names`/' 
+   'n/{find,deps,deps-manifests,deps1,deps-indent,rosdeps,rosdeps0,vcs,vcs0,depends-on,depends-on1,export,cflags-only-I,cflags-only-other,libs-only-L,libs-only-l,libs-only-other}/`rospack list-names`/' 
 
 complete rosstack \
    'p/1/(help find list list-names langs deps deps-manifests deps1 deps-indent rosdeps rosdeps0 vcs vcs0 depends-on)/' \
-   'n/(find deps deps-manifests deps1 deps-indent rosdeps rosdeps0 vcs vcs0 depends-on depends-on1 export cflags-only-I cflags-only-other libs-only-L libs-only-l libs-only-other)/`rosstack list-names`/' 
+   'n/{find,deps,deps-manifests,deps1,deps-indent,rosdeps,rosdeps0,vcs,vcs0,depends-on,depends-on1,export,cflags-only-I,cflags-only-other,libs-only-L,libs-only-l,libs-only-other}/`rosstack list-names`/' 
 
 complete rostopic \
    'p/1/(hz echo type list)/' \

@@ -74,9 +74,10 @@ def main():
         # Collect all packages that mention rosmake as a builder, and build them first
         to_rosmake = []
         for package in ctx.rd_configs:
-            builders = [d['builder'] for d in ctx.rd_configs[package]]
-            if 'rosmake' in builders:
-                to_rosmake.append(package)
+                if (package in ctx.doc_packages and
+                    ctx.should_document(package) and
+                    ctx.has_builder(package, 'rosmake')):
+                    to_rosmake.append(package)
         if to_rosmake != []:
             command = ['rosmake'] + to_rosmake
             print " ".join(command)

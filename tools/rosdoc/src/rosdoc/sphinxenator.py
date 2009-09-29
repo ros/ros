@@ -55,8 +55,6 @@ def generate_sphinx(ctx):
                 # rd_config is currently a flag. In the future, I imagine it pointing
                 # to the location of index.rst, among other things
 
-                print 'rd_config', rd_config
-
                 if os.access(os.path.join(path, "index.rst"), os.R_OK):
                     oldcwd = os.getcwd()
                     os.chdir(path)
@@ -64,7 +62,11 @@ def generate_sphinx(ctx):
                         html_dir = os.path.join(oldcwd, ctx.docdir, package, 'html', rd_config.get('output_dir', '.'))
                         command = ['sphinx-build', '-b', 'html', '-d', '_build/doctrees', '-D', 'latex_paper_size=letter', '.', html_dir]
                         print "sphinx-building %s [%s]"%(package, ' '.join(command))
-                        Popen(command, stdout=PIPE).communicate()
+                        com = Popen(command, stdout=PIPE).communicate()
+                        print 'stdout:'
+                        print com[0]
+                        print 'stderr'
+                        print com[1]
                     finally:
                         # restore cwd
                         os.chdir(oldcwd)

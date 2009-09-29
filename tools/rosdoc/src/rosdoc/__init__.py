@@ -35,7 +35,9 @@
 
 import sys
 import os
+import time
 import traceback
+from subprocess import Popen, PIPE
 
 NAME='rosdoc'
 
@@ -68,6 +70,23 @@ def main():
         sys.exit(1)
 
     try:
+
+        # Collect all packages that mention rosmake as a builder, and build them first
+        to_rosmake = []
+        for package in ctx.rd_configs:
+            builders = [d['builder'] for d in ctx.rd_configs[package]]
+            if 'rosmake' in builders:
+                to_rosmake.append(package)
+        if to_rosmake != []:
+            command = ['rosmake'] + to_rosmake
+            print " ".join(command)
+            started = time.time()
+            try:
+                Popen(command, stdout=PIPE).communicate()
+            except:
+                print "command failed"
+            print "rosmake took %ds" % (time.time() - started)
+
         # Generate Epydoc
         if 1:
             print "building epydoc packages"

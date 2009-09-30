@@ -12,3 +12,5 @@ uint32[1] u32_1
 uint32[3] u32_3
 string[1] s_1
 string[3] s_3
+bool[1] b_1
+bool[3] b_3

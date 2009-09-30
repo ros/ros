@@ -561,6 +561,11 @@ def array_serializer_generator(package, type_, name, serialize, is_numpy):
                         yield unpack_numpy(var, length, dtype, 'str[start:end]') 
                     else:
                         yield unpack(var, pattern, 'str[start:end]')
+            if not serialize and base_type == 'bool':
+                # convert uint8 to bool
+                if base_type == 'bool':
+                    yield "%s = map(bool, %s)"%(var, var)
+            
         else:
             #generic recursive serializer
             #NOTE: this is functionally equivalent to the is_registered branch of complex_serializer_generator
@@ -647,6 +652,14 @@ def simple_serializer_generator(spec, start, end, serialize): #primitives that c
         yield "start = end"
         yield "end += %s"%struct.calcsize('<%s'%reduce_pattern(pattern))
         yield unpack('(%s,)'%vars_, pattern, 'str[start:end]')
+        
+        # convert uint8 to bool. this doesn't add much value as Python
+        # equality test on a field will return that True == 1, but I
+        # want to be consistent with bool
+        bool_vars = [(f, t) for f, t in zip(spec.names[start:end], spec.types[start:end]) if t == 'bool']
+        for f, t in bool_vars:
+            var = _serial_context+f
+            yield "%s = bool(%s)"%(var, var)
 
 ## Python generator that yields un-indented python code for
 ## (de)serializing MsgSpec. The code this yields is meant to be

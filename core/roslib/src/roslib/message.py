@@ -172,6 +172,9 @@ def check_type(field_name, field_type, field_val):
             maxval = int(math.pow(2, _widths[field_type]))
             if field_val >= maxval:
                 raise SerializationError('field [%s] exceeds specified width [%s]'%(field_name, field_type))
+        elif field_type == 'bool':
+            if field_val not in [True, False, 0, 1]:
+                raise SerializationError('field [%s] is not a bool'%(field_name))
     elif field_type == 'string':
         if type(field_val) != str:
             raise SerializationError('field [%s] must be of type [str]'%field_name)

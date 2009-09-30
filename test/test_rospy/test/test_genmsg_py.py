@@ -132,6 +132,17 @@ class TestGenmsgPy(unittest.TestCase):
         c = TestFixedArray()
         self._test_ser_deser(m, c)
         self.assertEquals(['', 'x', 'xyz'], c.s_3)
+
+        for v in [True, False]:
+            m = TestFixedArray(b_1 = [v])
+            c = TestFixedArray()
+            self._test_ser_deser(m, c)
+            self.assertEquals([v], c.b_1)
+
+        m = TestFixedArray(b_3 = [True, False, True])
+        c = TestFixedArray()
+        self._test_ser_deser(m, c)
+        self.assertEquals([True, False, True], c.b_3)
         
         #TODO: enable tests for auto-convert of uint8[] to string
         
@@ -150,12 +161,46 @@ class TestGenmsgPy(unittest.TestCase):
         self.assertEquals('"#comments" are ignored, and leading and trailing whitespace removed',TestConstants.EXAMPLE)
         self.assertEquals('strip', TestConstants.WHITESPACE)
         self.assertEquals('', TestConstants.EMPTY)
+
+        self.assertEquals(True, TestConstants.TRUE)
+        self.assertEquals(False, TestConstants.FALSE)        
         
     def test_std_msgs_empty(self):
         from std_msgs.msg import Empty
         self.assertEquals(Empty(), Empty())
         self._test_ser_deser(Empty(), Empty())
 
+    def test_std_msgs_Bool(self):
+        from std_msgs.msg import Bool
+        self.assertEquals(Bool(), Bool())
+        self._test_ser_deser(Bool(), Bool())
+        # default value should be False
+        self.assertEquals(False, Bool().data)
+        # test various constructor permutations
+        for v in [True, False]:
+            self.assertEquals(Bool(v), Bool(v))
+            self.assertEquals(Bool(v), Bool(data=v))
+            self.assertEquals(Bool(data=v), Bool(data=v))
+        self.assertNotEquals(Bool(True), Bool(False))            
+
+        self._test_ser_deser(Bool(True), Bool())
+        self._test_ser_deser(Bool(False), Bool())
+
+        # validate type cast to bool
+        blank = Bool()
+        b = StringIO()
+        Bool(True).serialize(b)
+        blank.deserialize(b.getvalue())
+        self.assert_(blank.data)
+        self.assert_(type(blank.data) == bool)        
+
+        b = StringIO()
+        Bool(True).serialize(b)
+        blank.deserialize(b.getvalue())
+        self.assert_(blank.data)
+        self.assert_(type(blank.data) == bool)
+        
+        
     def test_std_msgs_String(self):
         from std_msgs.msg import String
         self.assertEquals(String(), String())

@@ -271,10 +271,14 @@ macro(rosbuild_init)
   separate_arguments(_roslang_LANGS)
   set(genmsg_list "")
   set(gensrv_list "")
-  # Create a target for client libs attach their message-generation output
-  # to
+  # Create targets for client libs attach their message-generation output to
   add_custom_target(rospack_genmsg)
   add_custom_target(rospack_gensrv)
+  # Create targets for library and executable targets to depend on, to
+  # ensure message-generation, if enabled, happens before building
+  # anything.
+  add_custom_target(rospack_genmsg_libexe)
+  add_custom_target(rospack_gensrv_libexe)
   
   # ${gendeps_exe} is a convenience variable that roslang cmake rules
   # must reference as a dependency of msg/srv generation
@@ -437,8 +441,8 @@ macro(rosbuild_add_executable exe)
   rosbuild_add_link_flags(${exe} ${ROS_LINK_FLAGS})
 
   # Make sure that any messages get generated prior to building this target
-  add_dependencies(${exe} rospack_genmsg)
-  add_dependencies(${exe} rospack_gensrv)
+  add_dependencies(${exe} rospack_genmsg_libexe)
+  add_dependencies(${exe} rospack_gensrv_libexe)
 
   # If we're linking boost statically, we have to force allow multiple definitions because
   # rospack does not remove duplicates
@@ -667,6 +671,9 @@ macro(rosbuild_gensrv)
   # target.
   add_custom_target(rospack_gensrv_real ALL)
   add_dependencies(rospack_gensrv_real rospack_gensrv)
+  # Make the libexe target, on which libraries and executables depend,
+  # depend on the message generation.
+  add_dependencies(rospack_gensrv_libexe rospack_gensrv)
   # add in the directory that will contain the auto-generated .h files
   include_directories(${PROJECT_SOURCE_DIR}/srv/cpp)
 endmacro(rosbuild_gensrv)
@@ -678,6 +685,9 @@ macro(rosbuild_genmsg)
   # target.
   add_custom_target(rospack_genmsg_real ALL)
   add_dependencies(rospack_genmsg_real rospack_genmsg)
+  # Make the libexe target, on which libraries and executables depend,
+  # depend on the message generation.
+  add_dependencies(rospack_genmsg_libexe rospack_genmsg)
   # add in the directory that will contain the auto-generated .h files
   include_directories(${PROJECT_SOURCE_DIR}/msg/cpp)
 endmacro(rosbuild_genmsg)

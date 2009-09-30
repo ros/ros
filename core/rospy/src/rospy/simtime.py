@@ -45,9 +45,14 @@ import rospy.core
 import rospy.rostime
 import rospy.topics
 
+# ROS clock topics and parameter config
 _ROSTIME = '/time'
+_ROSCLOCK = '/clock'
 _USE_SIMTIME = '/use_sim_time'
+
+# Subscriber handles for /clock and /time
 _rostime_sub = None
+_rosclock_sub = None
 
 def _is_use_simtime():
     # in order to prevent circular dependencies, this does not use the
@@ -61,7 +66,9 @@ def _is_use_simtime():
     return False
     
 from rospy.rostime import _set_rostime
-def _set_rostime_wrapper(time_msg):
+def _set_rostime_clock_wrapper(time_msg):
+    _set_rostime(time_msg.clock)
+def _set_rostime_time_wrapper(time_msg):
     _set_rostime(time_msg.rostime)
     
 def init_simtime():
@@ -71,10 +78,13 @@ def init_simtime():
     """    
     logger = logging.getLogger("rospy.simtime")
     try:
-        global _rostime_sub
+        global _rostime_sub, _clock_sub
         if _rostime_sub is None:
+            logger.info("initializing %s core topic"%_ROSCLOCK)
+            _clock_sub = rospy.topics.Subscriber(_ROSCLOCK, roslib.msg.Clock, _set_rostime_clock_wrapper)
+            logger.info("connected to core topic %s"%_ROSTIME)
             logger.info("initializing %s core topic"%_ROSTIME)
-            _rostime_sub = rospy.topics.Subscriber(_ROSTIME, roslib.msg.Time, _set_rostime_wrapper)
+            _rostime_sub = rospy.topics.Subscriber(_ROSTIME, roslib.msg.Time, _set_rostime_time_wrapper)
             logger.info("connected to core topic %s"%_ROSTIME)
 
             if _is_use_simtime():
@@ -82,5 +92,5 @@ def init_simtime():
         rospy.rostime.set_rostime_initialized(True)
         return True
     except Exception, e:
-        logger.error("Unable to initialize %s: %s\n%s", _ROSTIME, e, traceback.format_exc())
+        logger.error("Unable to initialize %s: %s\n%s", _ROSCLOCK, e, traceback.format_exc())
         return False

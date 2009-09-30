@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include "ros/ros.h"
 #include <roslib/Time.h>
+#include <roslib/Clock.h>
 
 int g_argc;
 char** g_argv;
@@ -75,6 +76,49 @@ protected:
 };
 
 TEST_F(RosTimeTest, SimTimeTest)
+{
+  //Get the start time.
+  ros::Time start = ros::Time::now();
+
+  //The start time should be zero before a message is published.
+  ASSERT_TRUE(start.isZero());
+
+  //Publish a rostime of 42.
+  setTime(ros::Time(42, 0));
+
+  //Wait half a second to get the message.
+  ros::WallDuration(0.5).sleep();
+
+  //Make sure that it is really set
+  ASSERT_EQ(42.0, ros::Time::now().toSec());
+}
+
+class RosClockTest : public testing::Test
+{
+public:
+  void setTime(ros::Time t)
+  {
+    roslib::Clock message;
+    message.clock = t;
+    pub_.publish(message);
+  }
+
+protected:
+  RosClockTest()
+  {
+    pub_ = nh_.advertise<roslib::Clock>("/clock", 1);
+    while (pub_.getNumSubscribers() == 0)
+    {
+      ros::Duration(0.01).sleep();
+    }
+  }
+
+  ros::NodeHandle nh_;
+  ros::Publisher pub_;
+
+};
+
+TEST_F(RosClockTest, SimClockTest)
 {
   //Get the start time.
   ros::Time start = ros::Time::now();

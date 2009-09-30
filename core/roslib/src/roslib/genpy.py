@@ -159,6 +159,8 @@ def default_value(field_type, default_package):
     elif field_type == 'string':
         # strings, byte[], and uint8s are all optimized to be strings
         return "''"
+    elif field_type == 'bool':
+        return 'False'
     elif field_type.endswith(']'): # array type
         base_type, is_array, array_len = roslib.msgs.parse_type(field_type)
         if base_type in ['byte', 'uint8']:
@@ -378,6 +380,7 @@ def unpack2(var, pattern, buff):
 _NUMPY_DTYPE = {
     'float32': 'numpy.float32',
     'float64': 'numpy.float64',
+    'bool': 'numpy.bool',
     'int8': 'numpy.int8',
     'int16': 'numpy.int16',
     'int32': 'numpy.int32',

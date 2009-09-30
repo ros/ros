@@ -409,7 +409,7 @@ def _convert_val(type_, val):
         if val > upper or val < lower:
             raise MsgSpecException("cannot coerce [%s] to %s (out of bounds)"%(val, type_))
         return val
-    elif type == 'bool':
+    elif type_ == 'bool':
         # TODO: need to nail down constant spec for bool
         return True if eval(val) else False
     raise MsgSpecException("invalid constant type: [%s]"%type_)

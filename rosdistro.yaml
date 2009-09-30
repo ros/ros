@@ -9,10 +9,10 @@ stacks:
   common: {latest: 0.3.0}
   common_msgs: {latest: 0.9.3}
   diagnostics: {latest: 0.2.0}
-  geometry: {latest: 0.2.0}
+  geometry: {latest: 0.3.1}
   image_common: {latest: 0.2.1}
   joystick_drivers: {latest: 0.3.0}
-  laser_pipeline: {latest: 0.4.0}
+  laser_pipeline: {latest: 0.5.0}
   navigation: {latest: 0.4.0}
   robot_model: {latest: 0.3.0}
   ros:

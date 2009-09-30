@@ -52,6 +52,7 @@
 #include <ros/console.h>
 #include <ros/time.h>
 #include <roslib/Time.h>
+#include <roslib/Clock.h>
 
 #include <signal.h>
 
@@ -196,6 +197,11 @@ void timeCallback(const roslib::Time::ConstPtr& msg)
   Time::setNow(msg->rostime);
 }
 
+void clockCallback(const roslib::Clock::ConstPtr& msg)
+{
+  Time::setNow(msg->clock);
+}
+
 CallbackQueuePtr getInternalCallbackQueue()
 {
   static CallbackQueuePtr queue;
@@ -299,11 +305,18 @@ void start()
             TopicManager::instance()->subscribe(ops);
           }
 
+          {
+            ros::SubscribeOptions ops;
+            ops.init<roslib::Clock>("/clock", 1, clockCallback);
+            ops.callback_queue = getInternalCallbackQueue().get();
+            TopicManager::instance()->subscribe(ops);
+          }
+
           g_internal_queue_thread = boost::thread(internalCallbackQueueThreadFunc);
           g_global_queue.enable();
           getGlobalCallbackQueue()->enable();
 
-          ROS_INFO("Started node [%s], pid [%d], bound on [%s], xmlrpc port [%d], tcpros port [%d], logging to [%s], using [%s] time", this_node::getName().c_str(), getpid(), network::getHost().c_str(), XMLRPCManager::instance()->getServerPort(), ConnectionManager::instance()->getTCPPort(), file_log::getLogFilename().c_str(), Time::useSystemTime() ? "real" : "sim");
+          ROS_DEBUG("Started node [%s], pid [%d], bound on [%s], xmlrpc port [%d], tcpros port [%d], logging to [%s], using [%s] time", this_node::getName().c_str(), getpid(), network::getHost().c_str(), XMLRPCManager::instance()->getServerPort(), ConnectionManager::instance()->getTCPPort(), file_log::getLogFilename().c_str(), Time::useSystemTime() ? "real" : "sim");
         }
       }
     }

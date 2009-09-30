@@ -35,6 +35,7 @@
 // author: Rosen Diankov
 #include <gtest/gtest.h>
 
+#include <ros/node.h>
 #include <ros/session.h>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>

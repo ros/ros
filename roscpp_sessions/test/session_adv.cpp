@@ -33,6 +33,7 @@
  */
 
 // author: Rosen Diankov
+#include <ros/node.h>
 #include <ros/session.h>
 #include <boost/thread/mutex.hpp>
 

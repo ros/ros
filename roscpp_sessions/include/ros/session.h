@@ -39,7 +39,7 @@
 #include <sstream>
 #include <map>
 #include <list>
-#include <ros/node.h>
+#include <ros/node_handle.h>
 #include <ros/service.h>
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
@@ -55,7 +55,7 @@ class abstractSession
 public:
     abstractSession(const std::string session_name, int sessionid) : _sessionid(sessionid), bterminated(false) {
         std::stringstream ss; ss << _sessionid;
-        _session_name = ros::Node::instance()->mapName(session_name);
+        _session_name = _nh.resolveName(session_name);
         size_t pos = _session_name.rfind('/');
         if( pos == std::string::npos )
             _session_dir = "/";
@@ -122,9 +122,8 @@ public:
                 global_service_name = _session_dir + service_name;
             else
                 global_service_name = service_name;
-	    ros::NodeHandle nh;
 	    ros::ServiceClientOptions ops(global_service_name, req.__getServerMD5Sum(), true, _sessionheader);
-	    handle = nh.serviceClient(ops);
+	    handle = _nh.serviceClient(ops);
             if( !handle )
                 return false;
             _mapservices[service_name] = handle;
@@ -166,6 +165,7 @@ public:
     virtual bool isterminated() const { return bterminated; }
 
 private:
+    ros::NodeHandle _nh;
     std::string _session_name, _session_dir;
     int _sessionid; ///< unique session id to session_name
     M_string _sessionheader;

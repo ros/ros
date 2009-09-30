@@ -13,10 +13,10 @@ stacks:
   image_common: {latest: 0.2.1}
   joystick_drivers: {latest: 0.3.0}
   laser_pipeline: {latest: 0.4.0}
-  navigation: {latest: 0.3.1}
+  navigation: {latest: 0.4.0}
   robot_model: {latest: 0.3.0}
   ros:
-    _uri_rules: {dev-svn: 'https://ros.svn.sourceforge.net/svnroot/ros/trunk', release-svn: 'https://ros.svn.sourceforge.net/svnroot/ros/tags/rc'}
+    _uri_rules: {dev-svn: 'https://code.ros.org/svn/ros/stacks/trunk', release-svn: 'https://code.ros.org/svn/ros/stacks/ros/tags/rc'}
     latest: rc
   simulator_stage: {latest: 0.9.0}
   slam_gmapping: {latest: 0.9.1}

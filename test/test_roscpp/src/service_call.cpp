@@ -102,13 +102,12 @@ TEST(SrvCall, callSrvHandle)
 
   req.str = std::string("case_FLIP");
 
-  ASSERT_TRUE(ros::service::waitForService("service_adv"));
-
   std::map<std::string, std::string> header;
   header["test1"] = "testing 1";
   header["test2"] = "testing 2";
   ros::NodeHandle nh;
   ros::ServiceClient handle = nh.serviceClient<test_roscpp::TestStringString>("service_adv", false, header);
+  ASSERT_TRUE(handle.waitForExistence());
 
   ros::Time start = ros::Time::now();
 
@@ -201,7 +200,12 @@ TEST(SrvCall, handleValid)
 
 TEST(SrvCall, waitForServiceTimeout)
 {
+  ros::NodeHandle nh;
   ASSERT_FALSE(ros::service::waitForService("iojergoiwjoiewg", 1000));
+  ASSERT_FALSE(ros::service::waitForService("iojergoiwjoiewg", ros::Duration(1)));
+
+  ros::ServiceClient handle = nh.serviceClient<test_roscpp::TestStringString>("migowiowejowieuhwejg", false);
+  ASSERT_FALSE(handle.waitForExistence(ros::Duration(1)));
 }
 
 int

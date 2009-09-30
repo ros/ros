@@ -70,6 +70,9 @@ def main():
         sys.exit(1)
 
     try:
+        import time
+
+        rm_start = time.time()
 
         # Collect all packages that mention rosmake as a builder, and build them first
         to_rosmake = []
@@ -87,7 +90,9 @@ def main():
             except:
                 print "command failed"
             print "rosmake took %ds" % (time.time() - started)
+        rm_end = time.time()
 
+        e_start = time.time()
         # Generate Epydoc
         if 1:
             print "building epydoc packages"
@@ -95,7 +100,10 @@ def main():
             epyenator_success = set(epyenator.generate_epydoc(ctx))
         else:
             epyenator_success = set()
-            
+
+        e_end = time.time()
+
+        s_start = time.time()        
         # Generate Sphinx
         if 1:
             print "building sphinx packages"            
@@ -107,8 +115,11 @@ def main():
                 print >> sys.stderr, "sphinxenator failed"
                 sphinx_success = set()            
         else:
-            sphinx_success = set()            
+            sphinx_success = set()
+        s_end = time.time()                    
         
+
+        d_start = time.time()
         # Generate Doxygen 
         if 1:
             print "building doxygen packages"
@@ -122,7 +133,9 @@ def main():
         else:
             doxy_success = []
         success = list(sphinx_success) + doxy_success + list(epyenator_success)
+        d_end = time.time()
 
+        ph_start = time.time()        
         if 1:
             # Generate yaml data for wiki macros
             try:
@@ -132,7 +145,9 @@ def main():
             except Exception, e:
                 traceback.print_exc()
                 print >> sys.stderr, "package header generation failed"
+        ph_end = time.time()        
 
+        mg_start = time.time()                
         if 1:
             # Generate msg/srv auto-docs
             import msgenator
@@ -141,7 +156,9 @@ def main():
             except Exception, e:
                 traceback.print_exc()
                 print >> sys.stderr, "msgenator failed"
+        mg_end = time.time()
 
+        lp_start = time.time()        
         if 1:
             # Generate landing page
             import landing_page
@@ -150,19 +167,24 @@ def main():
             except:
                 traceback.print_exc()
                 print >> sys.stderr, "landing page generator failed"
-            
+        lp_end = time.time()        
+
+        di_start = time.time()                
         if 1:
             # Generate Documentation Index
             import docindex 
             doc_index = os.path.join(ctx.docdir, 'index.html')
             docindex.generate_doc_index(ctx, success, doc_index)
+        di_end = time.time()                
 
+        li_start = time.time()                
         if 1:
             # Generate License Index
             import licenseindex
             license_index = os.path.join(ctx.docdir, 'licenses.html')
             licenseindex.generate_license_index(ctx, license_index)
-
+        li_end = time.time()
+        sup_start = time.time()                        
         if 1:
             # support files
             import shutil
@@ -170,5 +192,22 @@ def main():
             styles_css = os.path.join(ctx.docdir, 'styles.css')
             print "copying",styles_in, "to", styles_css
             shutil.copyfile(styles_in, styles_css)
+        sup_end = time.time()
+
+        print """Timings
+ * %.2f Rosmake
+ * %.2f Epydoc
+ * %.2f Sphinx
+ * %.2f Doxygen
+ * %.2f Package Header
+ * %.2f Landing Page
+ * %.2f Documentation Index
+ * %.2f License Index
+"""%( (rm_end - rm_start), 
+      (e_end - e_start), (s_end - s_start), (d_end - d_start),
+      (ph_end - ph_start), (lp_end - lp_start),
+      (di_end - di_start), (li_end - li_start),
+      )
+
     except:
         traceback.print_exc()

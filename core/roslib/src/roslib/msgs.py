@@ -408,7 +408,10 @@ def _convert_val(type_, val):
         val = int(val) #python will autocast to long if necessary
         if val > upper or val < lower:
             raise MsgSpecException("cannot coerce [%s] to %s (out of bounds)"%(val, type_))
-        return val 
+        return val
+    else if type == 'bool':
+        # TODO: need to nail down constant spec for bool
+        return True if eval(val) else False
     raise MsgSpecException("invalid constant type: [%s]"%type_)
         
 ## Load message specification for specified type
@@ -536,6 +539,7 @@ EXTENDED_BUILTINS = { TIME : load_from_string(TIME_MSG), DURATION: load_from_str
 ## primitive types are those for which we allow constants, i.e. have  primitive representation
 PRIMITIVE_TYPES = ['int8','uint8','int16','uint16','int32','uint32','int64','uint64','float32','float64',
                    'string',
+                   'bool',
                    # deprecated:
                    'char','byte']
 BUILTIN_TYPES = PRIMITIVE_TYPES + EXTENDED_BUILTINS.keys()

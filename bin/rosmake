@@ -73,6 +73,15 @@ class DependencyTracker:
       self.deps[package] = roslib.scriptutil.rospack_depends(package) 
     return self.deps[package]
 
+""" This class id designed to replace DependencyTracker above and always return no dependencies. 
+This is used in the case that dependencies are not being tracked "--specified-only" option. 
+
+This class must be API compatabile with the DependencyTracker.  """
+class DependencyFaker:
+  def get_deps_1(self, package):
+    return []
+  def get_deps(self, package):
+    return []
 
 
 class CompileThread(threading.Thread):
@@ -242,9 +251,9 @@ class RosMakeAll:
         for ct in cts:
           try:
             ct.join()
-            #print "naturally ended thread"
+            #print "naturally ended thread", ct
           except KeyboardInterrupt:
-            self.print_all( "Caught KeyboardInterupt. Stopping build.")
+            self.print_all( "Caught KeyboardInterrupt. Stopping build.")
             build_queue.stop()
             ct.join()
             pass
@@ -488,6 +497,8 @@ class RosMakeAll:
                            action="store_true", help="do not stop build on error")
         parser.add_option("-V", dest="full_verbose", default=False,
                           action="store_true", help="display all builds")
+        parser.add_option("-s", "--specified-only", dest="specified_only", default=False,
+                          action="store_true", help="only build packages in argument list")
         parser.add_option("--buildtest", dest="buildtest",
                           action="append", help="package to buildtest")
         parser.add_option("--buildtest1", dest="buildtest1",
@@ -558,7 +569,7 @@ class RosMakeAll:
                     
 
 
-
+        # Setup logging
         date_time_stamp =  "rosmake_output-" + time.strftime("%Y-%m-%d-%H-%M-%S")
         if options.output_dir:
             #self.log_dir = os.path.join(os.getcwd(), options.output_dir, date_time_stamp);
@@ -598,6 +609,17 @@ class RosMakeAll:
             self.print_verbose( "Processing %s and all dependencies(%d of %d requested)"%(p, counter, len(packages)))
             self.build_or_recurse(p)
 
+        # remove extra packages if specified-only flag is set
+        if options.specified_only:
+          new_list = []
+          for pkg in self.build_list:
+            if pkg in verified_packages:
+              new_list.append(pkg)
+              self.dependency_tracker = DependencyFaker() # this will always return empty lists
+        
+          self.print_all("specified-only option was used, only building packages %s"%new_list)
+          self.build_list = new_list
+
         if options.pre_clean:
           self.parallel_build_pkgs(self.build_list, "clean", robust_build=True)
 
@@ -618,7 +640,6 @@ class RosMakeAll:
             self.print_all (self.get_profile_string())
 
         return build_passed and tests_passed
-#    subprocess.call(cmd)
 
 
 

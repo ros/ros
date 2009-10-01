@@ -489,9 +489,9 @@ class RosMakeAll:
         parser.add_option("-V", dest="full_verbose", default=False,
                           action="store_true", help="display all builds")
         parser.add_option("--buildtest", dest="buildtest",
-                          action="store", help="package to buildtest")
+                          action="append", help="package to buildtest")
         parser.add_option("--buildtest1", dest="buildtest1",
-                          action="store", help="package to buildtest1")
+                          action="append", help="package to buildtest1")
         parser.add_option("--output", dest="output_dir",
                           action="store", help="where to output results")
         parser.add_option("--pre-clean", dest="pre_clean",
@@ -540,12 +540,14 @@ class RosMakeAll:
             self.print_all( "Building all packages")
         else:      # no need to extend if all already selected   
             if options.buildtest:
-                packages.extend(roslib.scriptutil.rospack_depends_on(options.buildtest)) 
-                self.print_all( "Buildtest requested for package %s adding it and all dependent packages: "%options.buildtest)
+              for p in options.buildtest:
+                packages.extend(roslib.scriptutil.rospack_depends_on(p)) 
+                self.print_all( "Buildtest requested for package %s adding it and all dependent packages: "%p)
 
             if options.buildtest1:
-                packages.extend(roslib.scriptutil.rospack_depends_on_1(options.buildtest1)) 
-                self.print_all( "Buildtest requested for package %s adding it and all depends-on1 packages: "%options.buildtest1)
+              for p in options.buildtest1:
+                packages.extend(roslib.scriptutil.rospack_depends_on_1(p)) 
+                self.print_all( "Buildtest requested for package %s adding it and all depends-on1 packages: "%p)
 
         if len(packages) == 0 and len(args) == 0:
             packages = [os.path.basename(os.path.abspath('.'))]

@@ -85,11 +85,12 @@ def _generate_raw_text(raw_fn, msg):
     raw_text = raw_fn(msg, raw=True)
     s = ''
     for line in raw_text.split('\n'):
+        line = line.replace(' ', '&nbsp;')
         parts = line.split('#')
         if len(parts) > 1:
             s = s + parts[0]+'<font color="blue">#%s</font><br/>'%('#'.join(parts[1:]))
         else:
-            s = s + "%s<br />"%parts[0]
+            s = s + "%s<br/>"%parts[0]
     return s
 
 def _generate_msg_text_from_spec(package, spec, buff=None, indent=0):

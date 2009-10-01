@@ -225,7 +225,7 @@ def cmakelists_package_valid(ctx):
         missing.remove('rospack')
     return missing
 
-packages_warnings = [
+warnings = [
     # disabling as it is too common and regular
     #(makefile_exists,
     # "The following packages have no Makefile:"),
@@ -241,19 +241,19 @@ packages_warnings = [
     (cmake_gensrv,     
      'The following packages need rosbuild_gensrv() in CMakeLists.txt:'),
     ]
-packages_errors = [
+errors = [
     (msgs_built, "Messages have not been built in the following package(s).\nYou can fix this by typing 'rosmake %(pkg)s':"),
     (srvs_built, "Services have not been built in the following package(s).\nYou can fix this by typing 'rosmake %(pkg)s':"),
     (manifest_rpath_flags, "The following packages have rpath issues in manifest.xml:"),
     ]
 
-def wtf_check_packages(ctx):
+def wtf_check(ctx):
     # no package in context to verify
     if not ctx.pkg:
         return
     
-    for r in packages_warnings:
+    for r in warnings:
         warning_rule(r, r[0](ctx), ctx)
-    for r in packages_errors:
+    for r in errors:
         error_rule(r, r[0](ctx), ctx)
 

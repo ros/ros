@@ -58,13 +58,18 @@ PRODUCT = 'ros'
 ## caller ID for master calls where caller ID is not vital
 _GLOBAL_CALLER_ID = '/script'
 
-## Name resolver for scripts. Supports ROS_NAMESPACE.  Does not
-## support remapping arguments.
-## @param name str: name to resolve
-## @param script_name str: name of script. script_name must not
-## contain a namespace.
-## @return str: resolved name
 def script_resolve_name(script_name, name):
+    """
+    Name resolver for scripts. Supports ROS_NAMESPACE.  Does not
+    support remapping arguments.
+    @param name: name to resolve
+    @type  name: str
+    @param script_name: name of script. script_name must not
+    contain a namespace.
+    @type  script_name: str
+    @return: resolved name
+    @rtype: str
+    """
     if not name: #empty string resolves to namespace
         return roslib.names.get_ros_namespace()
     #Check for global name: /foo/name resolves to /foo/name
@@ -75,48 +80,109 @@ def script_resolve_name(script_name, name):
         return ns_join(roslib.names.make_caller_id(script_name), name[1:])
     return roslib.names.get_ros_namespace() + name
 
-## @return str: result of executing command (via subprocess). string will be strip()ed.
 def rospackexec(args):
+    """
+    @return: result of executing rospack command (via subprocess). string will be strip()ed.
+    @rtype: str
+    @raise roslib.exceptions.ROSLibException: if rospack command fails
+    """
+
     val = (subprocess.Popen(['rospack'] + args, stdout=subprocess.PIPE).communicate()[0] or '').strip()
     if val.startswith('rospack:'): #rospack error message
-        raise Exception(val)
+        raise roslib.exceptions.ROSLibException(val)
     return val
 
-## @return list: A list of the names of the packages which depend directly on pkg
 def rospack_depends_on_1(pkg):
+    """
+    @param pkg: package name
+    @type  pkg: str
+    @return list: A list of the names of the packages which depend directly on pkg
+    """
     return rospackexec(['depends-on1', pkg]).split()
 
-## @return list: A list of the names of the packages which depend on pkg
 def rospack_depends_on(pkg):
+    """
+    @param pkg: package name
+    @type  pkg: str
+    @return list: A list of the names of the packages which depend on pkg
+    """
     return rospackexec(['depends-on', pkg]).split()
 
-## @return list: A list of the names of the packages which pkg directly depends on
 def rospack_depends_1(pkg):
+    """
+    @param pkg: package name
+    @type  pkg: str
+    @return list: A list of the names of the packages which pkg directly depends on
+    """
     return rospackexec(['deps1', pkg]).split()
 
-## @return list: A list of the names of the packages which pkg depends on
 def rospack_depends(pkg):
+    """
+    @param pkg: package name
+    @type  pkg: str
+    @return list: A list of the names of the packages which pkg depends on
+    """
     return rospackexec(['deps', pkg]).split()
 
-## @return list: A list of the names of the packages which provide a plugin for pkg
 def rospack_plugins(pkg):
+    """
+    @param pkg: package name
+    @type  pkg: str
+    @return list: A list of the names of the packages which provide a plugin for pkg
+    """
     val = rospackexec(['plugins', '--attrib=plugin', pkg])
     if val:
       return [tuple(x.split(' ')) for x in val.split('\n')]
     else:
       return []
 
-
-## @return str: result of executing command (via subprocess). string will be strip()ed.
 def rosstackexec(args):
+    """
+    @return: result of executing rosstack command (via subprocess). string will be strip()ed.
+    @rtype:  str
+    @raise roslib.exceptions.ROSLibException: if rosstack command fails
+    """
     val = (subprocess.Popen(['rosstack'] + args, stdout=subprocess.PIPE).communicate()[0] or '').strip()
     if val.startswith('rosstack:'): #rospack error message
         raise Exception(val)
     return val
 
-## @return list: A list of the names of the packages which depend directly on pkg
+def rosstack_depends_on(s):
+    """
+    @param s: stack name
+    @type  s: str
+    @return: A list of the names of the stacks which depend on s
+    @rtype: list
+    """
+    return rosstackexec(['depends-on', s]).split()
+
 def rosstack_depends_on_1(s):
+    """
+    @param s: stack name
+    @type  s: str
+    @return: A list of the names of the stacks which depend directly on s
+    @rtype: list
+    """
     return rosstackexec(['depends-on1', s]).split()
+
+def rosstack_depends(s):
+    """
+    @param s: stack name
+    @type  s: str
+    @return: A list of the names of the stacks which s depends on 
+    @rtype: list
+    """
+    return rosstackexec(['depends', s]).split()
+
+def rosstack_depends_1(s):
+    """
+    @param s: stack name
+    @type  s: str
+    @return: A list of the names of the stacks which s depends on directly
+    @rtype: list
+    """
+    print "rossstack", s
+    return rosstackexec(['depends1', s]).split()
 
 ## @return ServerProxy XML-RPC proxy to ROS master
 def get_master():

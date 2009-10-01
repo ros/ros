@@ -134,6 +134,10 @@ def list_stacks(env=os.environ):
         
     pkg_dirs = roslib.packages.get_package_paths(environ=env)
     stacks = []
+    # ros is assumed to be at ROS_ROOT
+    if os.path.exists(os.path.join(ros_root, 'stack.xml')):
+        stacks.append('ros')
+        _dir_cache['ros'] = ros_root
     
     for pkg_root in pkg_dirs:
         for dir, dirs, files in os.walk(pkg_root, topdown=True):

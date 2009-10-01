@@ -295,7 +295,7 @@ static_roslaunch_errors = [
     (roslaunch_load_check, "roslaunch load failed"),
     ]
 
-def wtf_check_roslaunch_static(ctx):
+def wtf_check_static(ctx):
     if not ctx.launch_files:
         return
 
@@ -312,7 +312,7 @@ def wtf_check_roslaunch_static(ctx):
 def _load_online_ctx(ctx):
     ctx.roslaunch_uris = roslaunch.netapi.get_roslaunch_uris()
     
-def wtf_check_roslaunch_online(ctx):
+def wtf_check_online(ctx):
     _load_online_ctx(ctx)
     for r in online_roslaunch_warnings:
         warning_rule(r, r[0](ctx), ctx)

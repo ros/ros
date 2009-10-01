@@ -364,7 +364,7 @@ bool TopicManager::advertise(const AdvertiseOptions& ops, const SubscriberCallba
 
   if(found)
   {
-    sub->negotiateConnection(xmlrpc_manager_->getServerURI(), true);
+    sub->negotiateConnection(xmlrpc_manager_->getServerURI());
   }
 
   XmlRpcValue args, result, payload;
@@ -471,7 +471,7 @@ bool TopicManager::registerSubscriber(const SubscriptionPtr& s, const string &da
   s->pubUpdate(pub_uris);
   if (self_subscribed)
   {
-    s->negotiateConnection(xmlrpc_manager_->getServerURI(), true);
+    s->negotiateConnection(xmlrpc_manager_->getServerURI());
   }
 
   return true;

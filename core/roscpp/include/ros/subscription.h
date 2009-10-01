@@ -79,9 +79,8 @@ public:
   /**
    * \brief Negotiates a connection with a publisher
    * \param xmlrpc_uri The XMLRPC URI to connect to to negotiate the connection
-   * \param block If true, complete the connection negotiation before returning.
    */
-  bool negotiateConnection(const std::string& xmlrpc_uri, bool block);
+  bool negotiateConnection(const std::string& xmlrpc_uri);
   /**
    * \brief Returns whether this Subscription has been dropped or not
    */

@@ -242,7 +242,7 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
     // this function should never negotiate a self-subscription
     if (XMLRPCManager::instance()->getServerURI() != *i)
     {
-      retval &= negotiateConnection(*i, false);
+      retval &= negotiateConnection(*i);
     }
   }
 
@@ -257,8 +257,7 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
   return retval;
 }
 
-bool Subscription::negotiateConnection(const std::string& xmlrpc_uri,
-                                       bool block)
+bool Subscription::negotiateConnection(const std::string& xmlrpc_uri)
 {
   XmlRpcValue tcpros_array, protos_array, params;
   XmlRpcValue udpros_array;
@@ -336,32 +335,11 @@ bool Subscription::negotiateConnection(const std::string& xmlrpc_uri,
   // destruction.
   PendingConnectionPtr conn(new PendingConnection(c, udp_transport, shared_from_this(), xmlrpc_uri));
 
-  // Are we supposed to complete this connection in-place? (used for
-  // self-subscriptions)
-  if(block)
+  XMLRPCManager::instance()->addASyncConnection(conn);
+  // Put this connection on the list that we'll look at later.
   {
-    ROS_DEBUG_NAMED("superdebug", "Making blocking connection to %s",
-                    xmlrpc_uri.c_str());
-    ROS_DEBUG_NAMED("superdebug", "Adding connection to http://%s:%d to server %p 's watch list",
-                    c->getHost().c_str(),
-                    c->getPort(),
-                    &(c->_disp));
-    c->_disp.addSource(c, XmlRpc::XmlRpcDispatch::WritableEvent | XmlRpc::XmlRpcDispatch::Exception);
-    while(!conn->check())
-    {
-      ROS_DEBUG_NAMED("superdebug", "Waiting to complete connection to %s",
-                      xmlrpc_uri.c_str());
-      c->_disp.work(0.01);
-    }
-  }
-  else
-  {
-    XMLRPCManager::instance()->addASyncConnection(conn);
-    // Put this connection on the list that we'll look at later.
-    {
-      boost::mutex::scoped_lock pending_connections_lock(pending_connections_mutex_);
-      pending_connections_.insert(conn);
-    }
+    boost::mutex::scoped_lock pending_connections_lock(pending_connections_mutex_);
+    pending_connections_.insert(conn);
   }
 
   return true;

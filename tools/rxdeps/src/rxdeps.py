@@ -203,10 +203,11 @@ def classify_packages(pkg_dict):
         stack_paths = {}
         for entry in stack_entries:
             if  len(entry.split()) == 2:
-                stacks.append(entry.split()[0])
-                stack_paths[entry.split()[0]] = entry.split()[1]
-            else:
-                print >> sys.stderr, "rosstack list returned wrong number of arguments %d not the expected 2"%len(entry.split())
+                n, p = entry.split()
+                stacks.append(n)
+                stack_paths[n] = p
+            elif entry.strip():
+                print >> sys.stderr, "rosstack list returned wrong number of arguments %d not the expected 2: %s"%len(entry.split(), entry)
         #print stacks, stack_paths
         #sys.exit(-1)
 

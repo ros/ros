@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: doxyutil.py 3727 2009-02-06 22:42:26Z sfkwc $
+# Revision $Id$
 
 from __future__ import with_statement
 

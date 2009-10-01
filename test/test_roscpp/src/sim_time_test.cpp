@@ -66,7 +66,7 @@ protected:
     pub_ = nh_.advertise<roslib::Time>("/time", 1);
     while (pub_.getNumSubscribers() == 0)
     {
-      ros::Duration(0.01).sleep();
+      ros::WallDuration(0.01).sleep();
     }
   }
 
@@ -109,7 +109,7 @@ protected:
     pub_ = nh_.advertise<roslib::Clock>("/clock", 1);
     while (pub_.getNumSubscribers() == 0)
     {
-      ros::Duration(0.01).sleep();
+      ros::WallDuration(0.01).sleep();
     }
   }
 

@@ -498,7 +498,7 @@ class RosMakeAll:
         parser.add_option("-V", dest="full_verbose", default=False,
                           action="store_true", help="display all builds")
         parser.add_option("-s", "--specified-only", dest="specified_only", default=False,
-                          action="store_true", help="only build packages in argument list")
+                          action="store_true", help="only build packages specified on the command line")
         parser.add_option("--buildtest", dest="buildtest",
                           action="append", help="package to buildtest")
         parser.add_option("--buildtest1", dest="buildtest1",

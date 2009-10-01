@@ -7,7 +7,7 @@ stacks:
     release-svn: 'https://code.ros.org/svn/ros-pkg/stacks/$STACK_NAME/tags/$STACK_NAME-$STACK_VERSION',
     source-tarball: 'http://ros.org/download/$STACK_NAME/$STACK_NAME-$STACK_VERSION.tar.bz2'}
   common: {latest: 0.3.0}
-  common_msgs: {latest: 0.9.3}
+  common_msgs: {latest: 0.9.4}
   diagnostics: {latest: 0.2.0}
   geometry: {latest: 0.3.1}
   image_common: {latest: 0.3.0}

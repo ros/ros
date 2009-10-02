@@ -233,7 +233,7 @@ class ROSLaunchConfig(object):
             self.logger.info("addMachine[%s]: remapping localhost address to %s"%(name, address))
         if name in self.machines:
             if m != self.machines[name]:
-                raise RLException("Machine [%s] already added and does not match duplicate entry")
+                raise RLException("Machine [%s] already added and does not match duplicate entry"%name)
             return False
         else:
             self.machines[name] = m

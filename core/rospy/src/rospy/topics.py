@@ -116,8 +116,6 @@ class Topic(object):
             # init_node() has been called, so we can do normal resolution
             self.resolved_name = resolve_name(name)
 
-        print "RESOLVED", name, "to", self.resolved_name
-        
         self.name = self.resolved_name # #1810 for backwards compatibility
 
         self.data_class = data_class

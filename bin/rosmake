@@ -91,6 +91,7 @@ class CompileThread(threading.Thread):
     self.rosmakeall = rosmakeall
     self.argument = argument
     self.name = name
+    self.logging_enabled = True
 
   def run(self):
     #init_total_pkgs = len(self.build_queue.to_build)
@@ -188,7 +189,8 @@ class RosMakeAll:
         self.ros_parallel_jobs = num_cpus()
         self.build_list = []
         self.start_time = time.time()
-        
+        self.log_dir = ""
+        self.logging_enabled = True
 
     def num_packages_built(self):
         return len(self.result[argument].keys())
@@ -349,6 +351,8 @@ class RosMakeAll:
             
 
     def output_to_file(self, package, log_type, stdout, always_print= False):
+        if not self.logging_enabled:
+          return
         package_log_dir = os.path.join(self.log_dir, package)
 
         std_out_filename = os.path.join(package_log_dir, log_type + "_output.log")
@@ -363,6 +367,8 @@ class RosMakeAll:
                 self.print_full_verbose(print_string)
 
     def generate_summary_output(self, log_dir):
+        if not self.logging_enabled:
+          return
 
         if None in self.result.keys():
             if len(self.result[None].keys()) > 0:
@@ -513,6 +519,8 @@ class RosMakeAll:
                           action="store", help="where to output results")
         parser.add_option("--pre-clean", dest="pre_clean",
                           action="store_true", help="run make clean first")
+        parser.add_option("--disable-logging", dest="logging_enabled", default=True,
+                          action="store_false", help="turn off all logs")
         parser.add_option("--target", dest="target",
                           action="store", help="run make with this target")
         parser.add_option("--pjobs", dest="ros_parallel_jobs", type="int",
@@ -545,6 +553,7 @@ class RosMakeAll:
         self.threads = options.threads
         self.skip_blacklist = options.skip_blacklist
         self.skip_blacklist_osx = options.skip_blacklist_osx
+        self.logging_enabled = options.logging_enabled
 
         # pass through verbosity options
         self.full_verbose = options.full_verbose
@@ -576,20 +585,21 @@ class RosMakeAll:
 
 
         # Setup logging
-        date_time_stamp =  "rosmake_output-" + time.strftime("%Y-%m-%d-%H-%M-%S")
-        if options.output_dir:
-            #self.log_dir = os.path.join(os.getcwd(), options.output_dir, date_time_stamp);
-            self.log_dir = os.path.abspath(options.output_dir)
-        else:
-            self.log_dir = os.path.join(os.path.expanduser("~"), ".ros", date_time_stamp);
+        if self.logging_enabled:
+          date_time_stamp =  "rosmake_output-" + time.strftime("%Y-%m-%d-%H-%M-%S")
+          if options.output_dir:
+              #self.log_dir = os.path.join(os.getcwd(), options.output_dir, date_time_stamp);
+              self.log_dir = os.path.abspath(options.output_dir)
+          else:
+              self.log_dir = os.path.join(os.path.expanduser("~"), ".ros", date_time_stamp);
 
-        self.print_all("Logging to directory")
-        self.print_all("%s"%self.log_dir)
-        if os.path.exists (self.log_dir) and not os.path.isdir(self.log_dir):
-            self.print_all( "Log destination %s is a file; please remove it or choose a new destination"%self.log_dir)
-            sys.exit(1)
-        if not os.path.exists (self.log_dir):
-            os.makedirs (self.log_dir)
+          self.print_all("Logging to directory")
+          self.print_all("%s"%self.log_dir)
+          if os.path.exists (self.log_dir) and not os.path.isdir(self.log_dir):
+              self.print_all( "Log destination %s is a file; please remove it or choose a new destination"%self.log_dir)
+              sys.exit(1)
+          if not os.path.exists (self.log_dir):
+              os.makedirs (self.log_dir)
 
 
         counter = 0

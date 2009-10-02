@@ -847,10 +847,11 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
   char *rpp = getenv("ROS_PACKAGE_PATH");
   if (rpp)
     rsp = string(rpp);
-#ifdef VERBOSE_DEBUG
-  printf("seeding crawler with %s\n", rsp.c_str());
-#endif
   string_split(rsp, rspvec, ":");
+#ifdef VERBOSE_DEBUG
+  printf("seeding crawler with [%s], which has %lu entries\n", rsp.c_str(), rspvec.size());
+#endif
+
   for (vector<string>::iterator i = rspvec.begin(); i != rspvec.end(); ++i)
   {
     // Check whether this part of ROS_PACKAGE_PATH is itself a package/stack
@@ -1006,7 +1007,8 @@ void rosstack::string_split(const string &s, vector<string> &t, const string &d)
     t.push_back(s.substr(start, end-start));
     start = end + 1;
   }
-  t.push_back(s.substr(start));
+  if (start != s.length())
+    t.push_back(s.substr(start));
 }
 
 bool rosstack::file_exists(const string &fname)

@@ -126,7 +126,7 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     only allowed if the arguments are identical as the side-effects of
     this method are not reversible.
 
-    @param name: Node's name
+    @param name: Node's name. This parameter cannot contain namespaces (i.e. '/')
     @type  name: string
     
     @param argv: Command line arguments to this program. ROS reads
@@ -158,7 +158,11 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     @type  disable_rostime: bool
 
     @raise ROSInitException: if initialization/registration fails
+    @raise ValueError: if parameters are invalid (e.g. name contains a namespace or is otherwise illegal)
     """
+    # TODO use roslib.names.is_legal_name to really validate
+    if rospy.names.SEP in name:
+        raise ValueError("name cannot contain a namespace")
     
     global _init_node_args
 

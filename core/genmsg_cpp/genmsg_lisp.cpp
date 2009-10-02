@@ -52,6 +52,7 @@ using namespace std;
 static bool is_integer(const string &type);
 // TODO: migrate this into msg_spec
 static bool is_float(const string &type);
+static bool is_bool(const string& type);
 
 void write_depfile( const char *filename, const set<string> &deps );
 set<string> &read_depfile( const char *filename, set<string> &deps );
@@ -275,6 +276,8 @@ public:
       code << "0";
     else if (is_float(eletype))
       code << "0.0";
+    else if (is_bool(eletype))
+      code << "nil";
     else if (eletype=="string")
       code << "\"\"";
     else
@@ -619,6 +622,8 @@ public:
     g_accessors.push_back(export_decl);
     if(is_integer(type))
       decl += string("\n    :initform 0");
+    else if(is_bool(type))
+      decl += string("\n    :initform nil");
     else if(is_float(type))
       decl += string("\n    :initform 0.0");
     else if(type == "string")
@@ -630,7 +635,7 @@ public:
   }
   virtual string cpp_type_name()
   {
-    if (type == "char" || type == "uint8")
+    if (type == "char" || type == "uint8" || type=="bool")
       return "uint8_t";
     else if (type == "byte" || type == "int8")
       return "int8_t";
@@ -662,7 +667,7 @@ public:
   }
   virtual string length_expr()
   {
-    if (type == "byte" || type == "char" || type == "uint8" || type == "int8")
+    if (type == "byte" || type == "char" || type == "uint8" || type == "int8" || type=="bool")
       return "1";
     else if (type == "uint16" || type == "int16")
       return "2";
@@ -720,6 +725,8 @@ public:
         type == "uint16"  || type == "int16" ||
         type == "uint32"  || type == "int32" ||
         type == "uint64"  || type == "int64" ||
+        // type == "bool" || 
+        // Commenting out because I don't think this will actually be called
         type == "float32" || type == "float64")
       return indent_str + prefix + string(".") + name + string(" = rand();\n");
     else if (type == "time" || type == "duration")
@@ -809,6 +816,10 @@ public:
       if (type == "char" || type == "uint8")
         snprintf(code, CODE_LEN, 
                  "  (write-byte (ldb (byte 8 0) %s) ostream)",
+                 name.c_str());
+      else if (type == "bool")
+        snprintf(code, CODE_LEN,
+                 "  (write-byte (ldb (byte 8 0) (if %s 1 0)) ostream)",
                  name.c_str());
       else if (type == "byte" || type == "int8")
         snprintf(code, CODE_LEN, 
@@ -952,6 +963,10 @@ public:
       else if (type == "byte" || type == "int8")
         snprintf(code, CODE_LEN, 
                  "(setf (ldb (byte 8 0) %s) (read-byte istream))",
+                 name.c_str());
+      else if (type == "bool" || type == "bool")
+        snprintf(code, CODE_LEN,
+                 "(setf %s (not (zerop (read-byte istream))))",
                  name.c_str());
       else if (type == "uint16")
         snprintf(code, CODE_LEN,
@@ -1263,6 +1278,12 @@ static bool is_integer(const string &type)
   return false;
 }
 
+static bool is_bool(const string& type)
+{
+  return (type=="bool");
+}    
+  
+
 // TODO: migrate this into msg_spec
 static bool is_float(const string &type)
 {
@@ -1282,6 +1303,7 @@ bool msg_spec::is_primitive(const string &type)
   prims.push_back("char");
   prims.push_back("uint8");
   prims.push_back("int8");
+  prims.push_back("bool");
   prims.push_back("uint16");
   prims.push_back("int16");
   prims.push_back("uint32");

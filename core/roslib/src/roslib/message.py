@@ -49,7 +49,7 @@ class ROSMessageException(roslib.exceptions.ROSLibException): pass
 ## @param type_str str: 'msg' or 'srv'
 ## @param message_type str: type name of message/service
 ## @return Message/Service class for message/service type or None
-## @raise ValueError if \a message_type is invalidly specified
+## @raise ValueError if  message_type is invalidly specified
 def _get_message_or_service_class(type_str, message_type):
     ## parse package and local type name for import
     package, base_type = roslib.names.package_resource_name(message_type)
@@ -75,12 +75,16 @@ def _get_message_or_service_class(type_str, message_type):
 ## cache for get_message_class
 _message_class_cache = {}
 
-## Get the message class. NOTE: this function maintains a
-## local cache of results to improve performance.
-## @param message_type str: type name of message
-## @return Message class for message/service type
-## @raise ValueError if \a message_type is invalidly specified
 def get_message_class(message_type):
+    """
+    Get the message class. NOTE: this function maintains a
+    local cache of results to improve performance.
+    @param message_type: type name of message
+    @type  message_type: str
+    @return: Message class for message/service type
+    @rtype:  Message class
+    @raise ValueError: if  message_type is invalidly specified
+    """
     if message_type in _message_class_cache:
         return _message_class_cache[message_type]
     cls = _get_message_or_service_class('msg', message_type)
@@ -91,12 +95,16 @@ def get_message_class(message_type):
 ## cache for get_service_class
 _service_class_cache = {}
 
-## Get the service class. NOTE: this function maintains a
-## local cache of results to improve performance.
-## @param service_type str: type name of service
-## @return Service class for service type
-## @raise Exception if \a service_type is invalidly specified
 def get_service_class(service_type):
+    """
+    Get the service class. NOTE: this function maintains a
+    local cache of results to improve performance.
+    @param service_type: type name of service
+    @type  service_type: str
+    @return: Service class for service type
+    @rtype: Service class
+    @raise Exception: if service_type is invalidly specified
+    """
     if service_type in _service_class_cache:
         return _service_class_cache[service_type]
     cls = _get_message_or_service_class('srv', service_type)
@@ -105,12 +113,17 @@ def get_service_class(service_type):
 
 # we expose the generic message-strify routine for fn-oriented code like rostopic
 
-## convert value to string representation
-## @param val Value to convert to string representation. Most likely a Message.
-## @param indent str: indentation
-## @param time_offset Time: if not None, time fields will be displayed
-## as deltas from \a time_offset
 def strify_message(val, indent='', time_offset=None):
+    """
+    convert value to string representation
+    @param val: to convert to string representation. Most likely a Message.
+    @type  val: Value
+    @param indent: indentation
+    @type  indent: str
+    @param time_offset: if not None, time fields will be displayed
+    as deltas from  time_offset
+    @type  time_offset: Time
+    """
     if type(val) in [int, long, float, str, bool] or \
             isinstance(val, Time) or isinstance(val, Duration):
         if time_offset is not None and isinstance(val, Time):
@@ -150,14 +163,19 @@ _widths = {
     'int64': 64, 'uint64': 64, 
 }
 
-## Dynamic type checker that maps ROS .msg types to python types and
-## verifies the python value.  check_type() is not designed to be fast
-## and is targeted at error diagnosis.
-## @param field_name str: ROS .msg field name
-## @param field_type str: ROS .msg field type
-## @param field_val Any: field value
-## @throws SerializationError if typecheck fails
 def check_type(field_name, field_type, field_val):
+    """
+    Dynamic type checker that maps ROS .msg types to python types and
+    verifies the python value.  check_type() is not designed to be fast
+    and is targeted at error diagnosis.
+    @param field_name: ROS .msg field name
+    @type  field_name: str
+    @param field_type: ROS .msg field type
+    @type  field_type: str
+    @param field_val: field value
+    @type  field_val: Any
+    @raise SerializationError: if typecheck fails
+    """
     if roslib.genpy.is_simple(field_type):
         # check sign and width
         if field_type in ['byte', 'int8', 'int16', 'int32', 'int64']:
@@ -237,11 +255,14 @@ class Message(object):
 
     def _get_types(self):
         raise Exception("must be overriden")
-    ## Perform dynamic type-checking of Message fields. This is performance intensive
-    ## and is meant for post-error diagnosis
-    ## @param exc Exception: underlying exception that gave cause for type check. 
-    ## @throws roslib.messages.SerializationError if typecheck fails
     def _check_types(self, exc=None):
+        """
+        Perform dynamic type-checking of Message fields. This is performance intensive
+        and is meant for post-error diagnosis
+        @param exc: underlying exception that gave cause for type check. 
+        @type  exc: Exception
+        @raise roslib.messages.SerializationError: if typecheck fails
+        """
         if exc: # if exc is set and check_type could not diagnose, raise wrapped error
             import traceback
             traceback.print_exc(exc)
@@ -298,11 +319,16 @@ class SerializationError(ROSMessageException):
 
 # Utilities for rostopic/rosservice
 
-## Get string representation of msg arguments
-## @param msg Message: msg message to fill
-## @param prefix str: field name prefix (for verbose printing)
-## @return str: printable representation of \a msg args
 def get_printable_message_args(msg, buff=None, prefix=''):
+    """
+    Get string representation of msg arguments
+    @param msg: msg message to fill
+    @type  msg: Message
+    @param prefix: field name prefix (for verbose printing)
+    @type  prefix: str
+    @return: printable representation of  msg args
+    @rtype: str
+    """
     if buff is None:
         buff = cStringIO.StringIO()
     for f in msg.__slots__:
@@ -312,13 +338,19 @@ def get_printable_message_args(msg, buff=None, prefix=''):
             buff.write(prefix+f+' ')
     return buff.getvalue().rstrip()
 
-## Populate message with specified args. 
-## @param msg Message: message to fill
-## @param msg_args [args]: list of arguments to set fields to
-## @param prefix str: field name prefix (for verbose printing)
-## @return [args]: unused/leftover message arguments. 
-## @throws ROSMessageException if not enough message arguments to fill message
 def _fill_message_args(msg, msg_args, prefix=''):
+    """
+    Populate message with specified args. 
+    @param msg: message to fill
+    @type  msg: Message
+    @param msg_args: list of arguments to set fields to
+    @type  msg_args: [args]
+    @param prefix: field name prefix (for verbose printing)
+    @type  prefix: str
+    @return: unused/leftover message arguments. 
+    @rtype: [args]
+    @raise ROSMessageException: if not enough message arguments to fill message
+    """
     if not isinstance(msg, Message) and not isinstance(msg, roslib.rostime._TVal):
         raise ROSMessageException("msg must be a Message instance: %s"%msg)
 
@@ -376,11 +408,15 @@ def _fill_message_args(msg, msg_args, prefix=''):
     else:
         raise ROSMessageException("invalid message_args type: %s"%msg_args)
 
-## Populate message with specified args. 
-## @param msg Message: message to fill
-## @param msg_args [args]: list of arguments to set fields to
-## @throws ROSMessageException if not enough/too many message arguments to fill message
 def fill_message_args(msg, msg_args):
+    """
+    Populate message with specified args. 
+    @param msg: message to fill
+    @type  msg: Message
+    @param msg_args: list of arguments to set fields to
+    @type  msg_args: [args]
+    @raise ROSMessageException: if not enough/too many message arguments to fill message
+    """
     leftovers = _fill_message_args(msg, msg_args, '')
     if leftovers:
         raise ROSMessageException("received too many arguments for message")

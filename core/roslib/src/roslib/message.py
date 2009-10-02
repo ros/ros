@@ -34,6 +34,7 @@
 
 import cStringIO
 import math
+import itertools
 import struct
 import types
 
@@ -338,6 +339,36 @@ def get_printable_message_args(msg, buff=None, prefix=''):
             buff.write(prefix+f+' ')
     return buff.getvalue().rstrip()
 
+def _fill_val(msg, f, v, prefix):
+    if not f in msg.__slots__:
+        raise ROSMessageException("No field name [%s%s]"%(prefix, f))
+    def_val = getattr(msg, f)
+    if isinstance(def_val, Message) or isinstance(def_val, roslib.rostime._TVal):
+        _fill_message_args(def_val, v, prefix=(prefix+f+'.'))
+    elif type(def_val) == list:
+        if not type(v) == list:
+            raise ROSMessageException("Field [%s%s] must be a list instead of: %s"%(prefix, f, v))
+        # determine base_type of field by looking at _slot_types
+        idx = msg.__slots__.index(f)
+        t = msg._slot_types[idx]
+        base_type = roslib.msgs.base_msg_type(t)
+        # - for primitives, we just directly set (we don't
+        #   type-check. we rely on serialization type checker)
+        if base_type in roslib.msgs.PRIMITIVE_TYPES:
+            setattr(msg, f, v)
+
+        # - for complex types, we have to iteratively append to def_val
+        else:
+            list_msg_class = get_message_class(base_type)
+            for el in v:
+                inner_msg = list_msg_class()
+                _fill_message_args(inner_msg, el, prefix)
+                def_val.append(inner_msg)
+    else:
+        #print "SET2", f, v
+        setattr(msg, f, v)
+    
+    
 def _fill_message_args(msg, msg_args, prefix=''):
     """
     Populate message with specified args. 
@@ -355,69 +386,44 @@ def _fill_message_args(msg, msg_args, prefix=''):
         raise ROSMessageException("msg must be a Message instance: %s"%msg)
 
     if type(msg_args) == dict:
+        
         #print "DICT ARGS", msg_args
         #print "ACTIVE SLOTS",msg.__slots__
+        
         for f, v in msg_args.iteritems():
-            if not f in msg.__slots__:
-                raise ROSMessageException("No field name [%s%s]"%(prefix, f))
-            def_val = getattr(msg, f)
-            if isinstance(def_val, Message) or isinstance(def_val, roslib.rostime._TVal):
-                leftovers = _fill_message_args(def_val, v, prefix=(prefix+f+'.'))
-                if leftovers:
-                    raise ROSMessageException("Too many arguments for field [%s%s]: %s"%(prefix, f, v))
-            elif type(def_val) == list:
-                if not type(v) == list:
-                    raise ROSMessageException("Field [%s%s] must be a list instead of: %s"%(prefix, f, v))
-                idx = msg.__slots__.index(f)
-                t = msg._slot_types[idx]
-                base_type = roslib.msgs.base_msg_type(t) 
-                if base_type in roslib.msgs.PRIMITIVE_TYPES:
-                    setattr(msg, f, v)
-                else:
-                    list_msg_class = get_message_class(base_type)
-                    for el in v:
-                        print "EL", el, list_msg_class
-                        inner_msg = list_msg_class()
-                        _fill_message_args(inner_msg, el, prefix)
-                        def_val.append(inner_msg)
-            else:
-                setattr(msg, f, v)
+            _fill_val(msg, f, v, prefix)
     elif type(msg_args) == list:
+        
         #print "LIST ARGS", msg_args
         #print "ACTIVE SLOTS",msg.__slots__
-        for f in msg.__slots__:
-            if not msg_args:
-                raise ROSMessageException("Not enough arguments to fill message, trying to fill %s. Args are %s"%(f, str(msg_args)))
-            def_val = getattr(msg, f)
-            if isinstance(def_val, Message) or isinstance(def_val, roslib.rostime._TVal):
-                # if the next msg_arg is a dictionary, then we can assume the dictionary itself represents the message
-                if type(msg_args[0]) == dict:
-                    next_ = msg_args[0]
-                    msg_args = msg_args[1:]
-                    _fill_message_args(def_val, next_, prefix=(prefix+f+'.'))
-                else:
-                    msg_args = _fill_message_args(def_val, msg_args, prefix=(prefix+f+'.'))
-            else:
-                next_ = msg_args[0]
-                msg_args = msg_args[1:]
-                if type(next_) == dict:
-                    raise ROSMessageException("received dictionary for non-message field[%s%s]: %s"%(prefix, f, next_))
-                else:
-                    setattr(msg, f, next_)
-        return msg_args
+        
+        if len(msg_args) > len(msg.__slots__):
+            raise ROSMessageException("Too many arguments for field [%s %s]: %s"%(prefix, msg, msg_args))
+        elif len(msg_args) < len(msg.__slots__):
+            raise ROSMessageException("Not enough arguments for field [%s %s]: %s"%(prefix, msg, msg_args))
+        
+        for f, v in itertools.izip(msg.__slots__, msg_args):
+            _fill_val(msg, f, v, prefix)
     else:
-        raise ROSMessageException("invalid message_args type: %s"%msg_args)
+        raise ROSMessageException("invalid message_args type: %s"%str(msg_args))
 
 def fill_message_args(msg, msg_args):
     """
-    Populate message with specified args. 
+    Populate message with specified args. Args are assumed to be a
+    list of arguments from a command-line YAML parser. See
+    http://www.ros.org/wiki/ROS/YAMLCommandLine for specification on
+    how messages are filled.
+
     @param msg: message to fill
     @type  msg: Message
     @param msg_args: list of arguments to set fields to
     @type  msg_args: [args]
     @raise ROSMessageException: if not enough/too many message arguments to fill message
     """
-    leftovers = _fill_message_args(msg, msg_args, '')
-    if leftovers:
-        raise ROSMessageException("received too many arguments for message")
+    if len(msg_args) == 1 and type(msg_args[0]) == dict:
+        # according to spec, if we only get one msg_arg and it's a dictionary, we
+        # use it directly
+        _fill_message_args(msg, msg_args[0], '')
+    else:
+        _fill_message_args(msg, msg_args, '')
 

@@ -46,7 +46,7 @@
 using namespace std;
 using namespace ros;
 
-boost::shared_ptr<ros::Node> s_pmasternode;
+boost::shared_ptr<ros::NodeHandle> s_pmasternode;
 
 class SimpleSessionClient
 {
@@ -138,14 +138,14 @@ private:
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv);
+  ros::init(argc, argv,"simple_session_client");
 
-  s_pmasternode.reset(new ros::Node("simple_session_client"));
+  s_pmasternode.reset(new ros::NodeHandle());
   if( !s_pmasternode->checkMaster() )
       return -1;
 
   boost::shared_ptr<SimpleSessionClient> client(new SimpleSessionClient());
-  s_pmasternode->spin();
+  ros::spin();
   client.reset();
   s_pmasternode.reset();
   return 0;

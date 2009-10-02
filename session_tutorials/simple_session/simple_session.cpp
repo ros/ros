@@ -33,6 +33,7 @@
  */
 
 // author: Rosen Diankov
+#include <ros/node.h>
 #include <ros/session.h>
 #include <boost/thread/mutex.hpp>
 
@@ -46,7 +47,7 @@
 using namespace std;
 using namespace ros;
 
-boost::shared_ptr<ros::Node> s_pmasternode;
+boost::shared_ptr<ros::NodeHandle> s_pmasternode;
 
 // keeps track of created variables
 class SimpleSessionInstance
@@ -70,23 +71,28 @@ private:
 class SimpleSession
 {
     string _sessionname;
+    ros::ServiceServer srv_simple_session;
+    ros::ServiceServer srv_set_variable;
+    ros::ServiceServer srv_get_variable;
+    ros::ServiceServer srv_add_variables;
 public:
     SimpleSession()
     {
-        s_pmasternode->advertiseService("simple_session",&SimpleSession::startsession,this,1);
+	srv_simple_session = s_pmasternode->advertiseService("simple_session",&SimpleSession::startsession,this);// ,1);
         _sessionname = s_pmasternode->mapName("simple_session");
 
         // advertise persistent services, the protocol for these differs!
-        s_pmasternode->advertiseService("set_variable",&SimpleSession::set_variable,this,-1);
-        s_pmasternode->advertiseService("get_variable",&SimpleSession::get_variable,this,-1);
-        s_pmasternode->advertiseService("add_variables",&SimpleSession::add_variables,this,-1);
+        srv_set_variable = s_pmasternode->advertiseService("set_variable",&SimpleSession::set_variable,this); //,-1);
+        srv_get_variable = s_pmasternode->advertiseService("get_variable",&SimpleSession::get_variable,this); //,-1);
+        srv_add_variables = s_pmasternode->advertiseService("add_variables",&SimpleSession::add_variables,this); //,-1);
     }
     virtual ~SimpleSession()
     {
-        s_pmasternode->unadvertiseService("set_variable");
-        s_pmasternode->unadvertiseService("get_variable");
-        s_pmasternode->unadvertiseService("add_variable");
-        s_pmasternode->unadvertiseService("simple_session");
+	srv_simple_session.shutdown();
+	srv_set_variable.shutdown();
+	srv_get_variable.shutdown();
+	srv_add_variables.shutdown();
+	
     }
 
     template <class MReq>
@@ -165,14 +171,15 @@ private:
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv);
+  ros::init(argc, argv, "simple_session");
   
-  s_pmasternode.reset(new ros::Node("simple_session"));
+  s_pmasternode.reset(new ros::NodeHandle());
   if( !s_pmasternode->checkMaster() )
       return -1;
   
   boost::shared_ptr<SimpleSession> server(new SimpleSession());
-  s_pmasternode->spin();
+  ros::spin();
+
   server.reset();
   s_pmasternode.reset();  
   return 0;

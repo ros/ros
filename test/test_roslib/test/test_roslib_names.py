@@ -224,19 +224,19 @@ class NamesTest(unittest.TestCase):
 
   def test_is_valid_local_name(self):
     from roslib.names import is_valid_local_name
-    failures = [1, None, '', 'x'*256, 'hello\n', '\t', '#foo', ' name', 'name ', '1name', 'foo\\']
+    failures = [1, None, '', 'x'*256, 'hello\n', '\t', 'foo++', 'foo-bar', '#foo', ' name', 'name ', '1name', 'foo\\']
     for f in failures:
       self.failIf(is_valid_local_name(f), f)
-    tests = ['f', 'foo', 'foo_bar', 'foo++', 'foo-bar', 'foo/bar']
+    tests = ['f', 'foo', 'foo_bar', 'foo/bar']
     for t in tests:
       self.assert_(is_valid_local_name(t), t)
 
   def test_is_legal_resource_name(self):
     from roslib.names import is_legal_resource_name
-    failures = [None, '', 'hello\n', '\t', '#foo', ' name', 'name ', '1name', 'foo\\']
+    failures = [None, '', 'hello\n', '\t', 'foo++', 'foo-bar', '#foo', ' name', 'name ', '1name', 'foo\\']
     for f in failures:
       self.failIf(is_legal_resource_name(f), f)
-    tests = ['f', 'foo', 'foo_bar', 'foo++', 'foo-bar', 'foo/bar']
+    tests = ['f', 'foo', 'foo_bar', 'foo/bar']
     for t in tests:
       self.assert_(is_legal_resource_name(t), t)
     

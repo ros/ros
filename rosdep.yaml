@@ -82,7 +82,7 @@ boost:
         sudo make install
       fi
   debian:
-    sid: libboost1.37-dev
+    sid: libboost1.38-dev
     lenny: |
       if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
         mkdir -p ~/ros/ros-deps

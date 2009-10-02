@@ -186,7 +186,7 @@ bool execute(const std::string& method, const XmlRpc::XmlRpcValue& request, XmlR
 
     if (!b && ok)
     {
-      if (!printed)
+      if (!printed && wait_for_master)
       {
         ROS_ERROR("[%s] Failed to contact master at [%s:%d].  %s", method.c_str(), master_host.c_str(), master_port, wait_for_master ? "Retrying..." : "");
         printed = true;

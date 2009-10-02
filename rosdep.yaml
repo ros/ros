@@ -82,7 +82,7 @@ boost:
         sudo make install
       fi
   debian:
-    sid: libboost1.38-dev
+    squeeze/sid: libboost1.38-dev libboost-regex1.38-dev libboost-thread1.38-dev libboost-signals1.38-dev libboost-filesystem1.38-dev libboost-python1.38-dev 
     lenny: |
       if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
         mkdir -p ~/ros/ros-deps
@@ -162,7 +162,7 @@ log4cxx:
         sudo make install
       fi
   debian:
-    sid: liblog4cxx10-dev
+    squeeze/sid: liblog4cxx10-dev
     lenny: |
       if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
         mkdir -p ~/ros/ros-deps

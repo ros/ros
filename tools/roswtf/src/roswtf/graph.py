@@ -107,7 +107,7 @@ def simtime_check(ctx):
         if code != 1:
             raise WtfException("cannot get published topics from master: %s"%msg)
         for topic, _ in pubtopics:
-            if topic == '/time':
+            if topic in ['/time', '/clock']:
                 return
         return True
     

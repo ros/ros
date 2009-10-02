@@ -60,6 +60,9 @@ class TestRosrecordOffline(unittest.TestCase):
     def test_rosplay_help(self):
         self.do_test_help('rosplay');
 
+    def test_rosrebag_help(self):
+        self.do_test_help('rosrebag');
+
     def test_rosrecord_pkg_help(self):
         self.do_test_help('rosrun rosrecord rosrecord');
 
@@ -69,7 +72,7 @@ class TestRosrecordOffline(unittest.TestCase):
     def do_test_help(self, cmd):
         rosrecord = Popen(cmd.split() + ['-h'], stdout=PIPE, stderr=PIPE)
         output = rosrecord.communicate()
-        self.assert_('USAGE' in output[0] or 'USAGE' in output[1])
+        self.assert_('Usage:' in output[0] or 'Usage:' in output[1])
 
 if __name__ == '__main__':
     rostest.unitrun('rosrecord', NAME, TestRosrecordOffline, sys.argv, coverage_packages=[])

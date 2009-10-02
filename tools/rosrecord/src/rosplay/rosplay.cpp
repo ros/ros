@@ -42,7 +42,7 @@ using namespace ros;
 
 void print_usage() 
 {
-  fprintf (stderr, "USAGE: rosplay [options] BAG1 [BAG2]\n");
+  fprintf (stderr, "Usage: rosplay [options] BAG1 [BAG2]\n");
 }
 
 

@@ -79,12 +79,7 @@ def service_connection_handler(sock, client_addr, header):
         if not service:
             return "[%s] is not a provider of  [%s]"%(rospy.names.get_caller_id(), service_name)
         elif md5sum != rospy.names.SERVICE_ANYTYPE and md5sum != service.service_class._md5sum:
-            #TODO: roserr
-            if 'callerid' in header:
-                who = header['callerid']
-            else:
-                who = "%s:%s"%client_addr
-            return "request from [%s]: md5sums do not match: [%s] vs. [%s]"%(who, md5sum, service.service_class._md5sum)
+            return "request from [%s]: md5sums do not match: [%s] vs. [%s]"%(header['callerid'], md5sum, service.service_class._md5sum)
         else:
             transport = TCPROSTransport(service.protocol, service_name, header=header)
             transport.set_socket(sock, header['callerid'])
@@ -99,29 +94,38 @@ class TCPService(TCPROSTransportProtocol):
     Protocol implementation for Services over TCPROS
     """
 
-    ## ctor.
-    ## @param self
-    ## @param name str: name of service
-    ## @param service_class Service: Service data type class
-    ## @param buff_size int: size of buffer (bytes) to use for reading incoming requests.
-    def __init__(self, name, service_class, buff_size=DEFAULT_BUFF_SIZE):
-        super(TCPService, self).__init__(name, service_class._request_class, buff_size=buff_size)
+    def __init__(self, resolved_name, service_class, buff_size=DEFAULT_BUFF_SIZE):
+        """
+        ctor.
+        @param resolved_name: name of service
+        @type  resolved_name: str
+        @param service_class: Service data type class
+        @type  service_class: Service
+        @param buff_size int: size of buffer (bytes) to use for reading incoming requests.
+        @type  buff_size: int
+        """
+        super(TCPService, self).__init__(resolved_name, service_class._request_class, buff_size=buff_size)
         self.service_class = service_class
 
     ## @param self
-    ## @return dict: header fields 
+
     def get_header_fields(self):
-        return {'service': self.name, 'type': self.service_class._type,
+        """
+        Protocol API
+        @return: header fields
+        @rtype: dict
+        """
+        return {'service': self.resolved_name, 'type': self.service_class._type,
                 'md5sum': self.service_class._md5sum, 'callerid': rospy.names.get_caller_id() }
 
 class TCPROSServiceClient(TCPROSTransportProtocol):
     """Protocol Implementation for Service clients over TCPROS"""
     
-    def __init__(self, name, service_class, headers=None, buff_size=DEFAULT_BUFF_SIZE):
+    def __init__(self, resolved_name, service_class, headers=None, buff_size=DEFAULT_BUFF_SIZE):
         """
         ctor.
-        @param name: name of service
-        @type  name: str
+        @param resolved_name: resolved service name 
+        @type  resolved_name: str
         @param service_class: Service data type class
         @type  service_class: Service
         @param headers: identifier for Service session
@@ -129,7 +133,7 @@ class TCPROSServiceClient(TCPROSTransportProtocol):
         @param buff_size: size of buffer (bytes) for reading responses from Service. 
         @type  buff_size: int
         """
-        super(TCPROSServiceClient, self).__init__(name, service_class._response_class)
+        super(TCPROSServiceClient, self).__init__(resolved_name, service_class._response_class)
         self.service_class = service_class
         self.headers = headers or {}
         self.buff_size = buff_size
@@ -138,7 +142,7 @@ class TCPROSServiceClient(TCPROSTransportProtocol):
         """
         TCPROSTransportProtocol API        
         """
-        headers = {'service': self.name, 'md5sum': self.service_class._md5sum,
+        headers = {'service': self.resolved_name, 'md5sum': self.service_class._md5sum,
                    'callerid': rospy.names.get_caller_id()}
         # The current implementation allows user-supplied headers to
         # override protocol-specific headers.  We may want to
@@ -164,7 +168,7 @@ class TCPROSServiceClient(TCPROSTransportProtocol):
         b.seek(pos)
         if not ok:
             str = self._read_service_error(sock, b)
-            raise ServiceException("service [%s] responded with an error: %s"%(self.name, str))
+            raise ServiceException("service [%s] responded with an error: %s"%(self.resolved_name, str))
         
     def read_messages(self, b, msg_queue, sock):
         """
@@ -236,7 +240,8 @@ class ServiceProxy(_Service):
             if not headers:
                 headers = {}
             headers['persistent'] = '1'
-        self.protocol = TCPROSServiceClient(self.name, self.service_class, headers=headers)
+        self.protocol = TCPROSServiceClient(self.resolved_name,
+                                            self.service_class, headers=headers)
         self.transport = None #for saving persistent connections
 
     def __call__(self, *args, **kwds):
@@ -270,12 +275,12 @@ class ServiceProxy(_Service):
         if 1: #always do lookup for now, in the future we need to optimize
             try:
                 try:
-                    code, msg, self.uri = roslib.scriptutil.get_master().lookupService(rospy.names.get_caller_id(), self.name)
+                    code, msg, self.uri = roslib.scriptutil.get_master().lookupService(rospy.names.get_caller_id(), self.resolved_name)
                 except:
                     raise ServiceException("unable to contact master")
                 if code != 1:
-                    logger.error("[%s]: lookup service failed with message [%s]", self.name, msg)
-                    raise ServiceException("service [%s] unavailable"%self.name)
+                    logger.error("[%s]: lookup service failed with message [%s]", self.resolved_name, msg)
+                    raise ServiceException("service [%s] unavailable"%self.resolved_name)
                 
                 # validate
                 try:
@@ -283,7 +288,7 @@ class ServiceProxy(_Service):
                 except rospy.validators.ParameterInvalid:
                     raise ServiceException("master returned invalid ROSRPC URI: %s"%self.uri)
             except socket.error, e:
-                logger.error("[%s]: socket error contacting service, master is probably unavailable",self.name)
+                logger.error("[%s]: socket error contacting service, master is probably unavailable",self.resolved_name)
         return self.uri
 
     def call(self, request, timeout=None):
@@ -305,7 +310,7 @@ class ServiceProxy(_Service):
             dest_addr, dest_port = rospy.core.parse_rosrpc_uri(service_uri)
 
             # connect to service            
-            transport = TCPROSTransport(self.protocol, self.name)
+            transport = TCPROSTransport(self.protocol, self.resolved_name)
             transport.buff_size = self.buff_size
             try:
                 transport.connect(dest_addr, dest_port, service_uri, timeout=timeout)
@@ -321,9 +326,9 @@ class ServiceProxy(_Service):
         transport.send_message(request, self.seq)
         responses = transport.receive_once()
         if len(responses) == 0:
-            raise ServiceException("service [%s] returned no response"%self.name)
+            raise ServiceException("service [%s] returned no response"%self.resolved_name)
         elif len(responses) > 1:
-            raise ServiceException("service [%s] returned multiple responses: %s"%(self.name, len(responses)))
+            raise ServiceException("service [%s] returned multiple responses: %s"%(self.resolved_name, len(responses)))
         
         if not self.persistent:
             transport.close()
@@ -372,11 +377,10 @@ class Service(_Service):
         self.uri = '%s%s:%s'%(rospy.core.ROSRPC, host, port)
         logdebug("... service URL is %s"%self.uri)
 
-        name = rospy.names.resolve_name(name)
-        self.protocol = TCPService(name, service_class, self.buff_size)
+        self.protocol = TCPService(self.resolved_name, service_class, self.buff_size)
 
-        logdebug("[%s]: new Service instance"%self.name)
-        get_service_manager().register(name, self)
+        logdebug("[%s]: new Service instance"%self.resolved_name)
+        get_service_manager().register(self.resolved_name, self)
 
     # TODO: should consider renaming to unregister
     
@@ -387,9 +391,9 @@ class Service(_Service):
         @type  reason: str
         """
         self.done = True
-        logdebug('[%s].shutdown: reason [%s]'%(self.name, reason))
+        logdebug('[%s].shutdown: reason [%s]'%(self.resolved_name, reason))
         try:
-            get_service_manager().unregister(self.name, self)
+            get_service_manager().unregister(self.resolved_name, self)
         except Exception, e:
             logerr("Unable to unregister with master: "+traceback.format_exc())
             raise ServiceException("Unable to connect to master: %s"%e)
@@ -468,6 +472,6 @@ class Service(_Service):
             except rospy.exceptions.TransportTerminated, e:
                 if not persistent:
                     logerr("incoming connection failed: %s"%e)
-                logdebug("service[%s]: transport terminated"%self.name)
+                logdebug("service[%s]: transport terminated"%self.resolved_name)
                 handle_done = True
         transport.close()

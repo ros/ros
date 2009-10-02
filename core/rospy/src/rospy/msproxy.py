@@ -144,13 +144,17 @@ class MasterProxy(NodeProxy):
         @rtype: str
         @raise ROSException: if parameter server reports an error
         """
-        code, msg, val = self.target.searchParam(rospy.names.get_caller_id(), rospy.names.remap_name(key))
+        # #1810 searchParam has to use unresolved form of mappings
+        mappings = rospy.names.get_mappings()
+        if key in mappings:
+            key = mappings[key]
+        code, msg, val = self.target.searchParam(rospy.names.get_caller_id(), key)
         if code == 1:
             return val
         elif code == -1:
             return None
         else:
-            raise rospy.exceptions.ROSException("cannot search for parameter parameter: %s"%msg)
+            raise rospy.exceptions.ROSException("cannot search for parameter: %s"%msg)
         
     def __delitem__(self, key):
         """

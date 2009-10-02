@@ -93,7 +93,7 @@ def default_master_uri():
     """
     return 'http://localhost:%s/'%DEFAULT_MASTER_PORT
 
-def _sub_start_node(environ, name, master_uri=None, port=DEFAULT_NODE_PORT):
+def _sub_start_node(environ, resolved_name, master_uri=None, port=DEFAULT_NODE_PORT):
     """
     Subroutine for X{start_node()}
     """
@@ -102,9 +102,8 @@ def _sub_start_node(environ, name, master_uri=None, port=DEFAULT_NODE_PORT):
     if not master_uri:
         master_uri = default_master_uri()
 
-    name = rospy.names.resolve_name(name) #remapping occurs here
-    handler = rospy.masterslave.ROSHandler(name, master_uri)
-    node = rospy.msnode.ROSNode(name, port, handler)
+    handler = rospy.masterslave.ROSHandler(resolved_name, master_uri)
+    node = rospy.msnode.ROSNode(resolved_name, port, handler)
     node.start()
     while not node.uri and not rospy.core.is_shutdown():
         time.sleep(0.00001) #poll for XMLRPC init
@@ -116,13 +115,13 @@ def _sub_start_node(environ, name, master_uri=None, port=DEFAULT_NODE_PORT):
 
     return rospy.msproxy.NodeProxy(node.uri)
 
-def start_node(environ, name, master_uri=None, port=None):
+def start_node(environ, resolved_name, master_uri=None, port=None):
     """
     Load ROS slave node, initialize from environment variables
     @param environ: environment variables
     @type  environ: dict
-    @param name: override ROS_NODE: name of slave node
-    @type  name: str
+    @param resolved_name: resolved node name
+    @type  resolved_name: str
     @param master_uri: override ROS_MASTER_URI: XMlRPC URI of central ROS server
     @type  master_uri: str
     @param port: override ROS_PORT: port of slave xml-rpc node
@@ -134,6 +133,6 @@ def start_node(environ, name, master_uri=None, port=None):
     rospy.tcpros.init_tcpros()
     if _node is not None:
         raise Exception("Only one master/slave can be run per instance (multiple calls to start_master/start_node)")
-    _node = _sub_start_node(environ, name, master_uri, port)
+    _node = _sub_start_node(environ, resolved_name, master_uri, port)
     return _node
     

@@ -69,11 +69,47 @@ class TestRospyNames(unittest.TestCase):
                 scoped_name(caller_id, name)
                 self.fail("should have failed on %s, %s"%(caller_id, name))
             except ROSException: pass
-            
-    def test_load_mappings(self):
-        from rospy.names import get_mappings
+
+    def test_mappings(self):
+        import roslib.names
+        import rospy.names
+        from rospy.names import get_mappings, get_resolved_mappings, initialize_mappings
         # get_mappings is initialized statically, so can't test anything other than it is empty
         self.assertEquals({}, get_mappings())
+
+        # resolved mappings should be empty with no initialization
+        self.assertEquals({}, get_resolved_mappings())
+        
+        # now, initialize mappings, shouldn't matter as there are no mappings
+        initialize_mappings('foo')
+        # should be empty now
+        self.assertEquals({}, get_resolved_mappings())
+
+        # manipulate mappings to test
+        rospy.names._mappings = roslib.names.load_mappings(['__name:=newname', '__log:=blah', '_param:=value', 'foo:=bar','/baz:=a/b', '~car:=c/d/e'])
+        # - param mapping should be removed
+        self.assertEquals({'__name': 'newname', '__log': 'blah', 
+                           'foo': 'bar', '/baz': 'a/b', '~car': 'c/d/e'}, get_mappings())
+        # - should be unaltered
+        self.assertEquals({}, get_resolved_mappings())        
+        initialize_mappings('/name')
+
+        # should be unchanged
+        self.assertEquals({'__name': 'newname', '__log': 'blah', 
+                           'foo': 'bar', '/baz': 'a/b', '~car': 'c/d/e'}, get_mappings())
+        # should be remapped
+        self.assertEquals({'__name': 'newname', '__log': 'blah', 
+                           '/foo': '/bar', '/baz': '/a/b', '/name/car':'/c/d/e'},
+                          get_resolved_mappings())
+        
+        # try with namespaced node
+        initialize_mappings('/ns/name')
+        # should be remapped
+        self.assertEquals({'__name': 'newname', '__log': 'blah', 
+                           '/ns/foo': '/ns/bar', '/baz': '/ns/a/b', '/ns/name/car':'/ns/c/d/e'},
+                          get_resolved_mappings())
+                                                           
+        
         
     def test_canonicalize_name(self):
         from rospy.names import canonicalize_name
@@ -106,7 +142,7 @@ class TestRospyNames(unittest.TestCase):
         # TODO: test with remappings
         tests = [
             ('', '/', '/'),
-            ('', None, '/'), #caller_id defaults to /
+            ('', None, '/'), #node_name defaults to /
             ('', '/node', '/'),
             ('', '/ns1/node', '/ns1/'),
 
@@ -139,8 +175,8 @@ class TestRospyNames(unittest.TestCase):
 
             ]
         remap = False
-        for name, caller_id, v in tests:
-            self.assertEquals(v, resolve_name(name, caller_id, remap))
+        for name, node_name, v in tests:
+            self.assertEquals(v, resolve_name(name, node_name, remap))
 
     def test_validators(self):
         from rospy.names import empty_or_valid_name, ParameterInvalid

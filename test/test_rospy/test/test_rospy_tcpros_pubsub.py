@@ -77,7 +77,7 @@ class TestRospyTcprosPubsub(unittest.TestCase):
         name = 'name-%s'%time.time()
         recv_data_class = test_rospy.msg.Val
         s = TCPROSSub(name, recv_data_class)
-        self.assertEquals(name, s.name)
+        self.assertEquals(name, s.resolved_name)
         self.assertEquals(rospy.transport.INBOUND, s.direction)
         self.assertEquals(recv_data_class, s.recv_data_class)
         self.assert_(s.buff_size > -1)
@@ -117,7 +117,7 @@ class TestRospyTcprosPubsub(unittest.TestCase):
         name = 'name-%s'%time.time()
         pub_data_class = test_rospy.msg.Val
         p = TCPROSPub(name, pub_data_class)
-        self.assertEquals(name, p.name)
+        self.assertEquals(name, p.resolved_name)
         self.assertEquals(rospy.transport.OUTBOUND, p.direction)
         self.assertEquals(pub_data_class, p.pub_data_class)
         self.assert_(p.buff_size > -1)
@@ -229,7 +229,7 @@ class TestRospyTcprosPubsub(unittest.TestCase):
         self.failIf(err)
         connection = impl.connections[-1]
         fields = connection.protocol.get_header_fields()
-        self.assertEquals(impl.name, fields['topic'])
+        self.assertEquals(impl.resolved_name, fields['topic'])
         self.assertEquals('fuga', fields['hoge'])
         self.assertEquals('baz', fields['foo'])        
             

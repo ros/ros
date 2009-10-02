@@ -178,10 +178,9 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
         logdebug("signal handlers for rospy disabled")
 
     # check for name override
-    name_remap = rospy.names.resolve_name('__name', '/')
-    if name_remap != '/__name':
-        # re-resolve, using actual namespace
-        name = rospy.names.resolve_name('__name')
+    mappings = rospy.names.get_mappings()
+    if '__name' in mappings:
+        name = rospy.names.resolve_name(mappings['__name'], remap=False)
         if anonymous:
             logdebug("[%s] WARNING: due to __name setting, anonymous setting is being changed to false"%name)
             anonymous = False
@@ -190,13 +189,15 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
         # not as good as a uuid/guid, but more readable
         name = "%s-%s-%s-%s"%(name, socket.gethostname(), os.getpid(), int(time.time()*1000))
 
-    node_name = rospy.names.resolve_name(name)
-    rospy.core.configure_logging(node_name)
+    resolved_node_name = rospy.names.resolve_name(name)
+    rospy.core.configure_logging(resolved_node_name)
+    # #1810
+    rospy.names.initialize_mappings(resolved_node_name)
     
     logger = logging.getLogger("rospy.client")
-    logger.info("init_node, name[%s], pid[%s]", node_name, os.getpid())
+    logger.info("init_node, name[%s], pid[%s]", resolved_node_name, os.getpid())
             
-    node = rospy.init.start_node(os.environ, name=name) #node initialization blocks until registration with master
+    node = rospy.init.start_node(os.environ, resolved_node_name) #node initialization blocks until registration with master
     
     timeout_t = time.time() + TIMEOUT_READY
     code = None
@@ -223,7 +224,7 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
 
     rospy.rosout.load_rosout_handlers(log_level)
     rospy.rosout.init_rosout()
-    logdebug("init_node, name[%s], pid[%s]", node_name, os.getpid())    
+    logdebug("init_node, name[%s], pid[%s]", resolved_node_name, os.getpid())    
     if not disable_rostime:
         if not rospy.simtime.init_simtime():
             raise rospy.exceptions.ROSInitException("Failed to initialize time. Please check logs for additional details")
@@ -283,8 +284,8 @@ def wait_for_service(service, timeout=None):
     @type  timeout: double
     @raise ROSException: if specified timeout is exceeded
     """
-    def contact_service(service, timeout=10.0):
-        code, _, uri = master.lookupService(service)
+    def contact_service(resolved_name, timeout=10.0):
+        code, _, uri = master.lookupService(resolved_name)
         if False and code == 1:
             return True
         elif True and code == 1:
@@ -298,38 +299,38 @@ def wait_for_service(service, timeout=None):
                 s.connect(addr)
                 h = { 'probe' : '1', 'md5sum' : '*',
                       'callerid' : rospy.names.get_caller_id(),
-                      'service': service }
+                      'service': resolved_name }
                 roslib.network.write_ros_handshake_header(s, h)
                 return True
             finally:
                 if s is not None:
                     s.close()
 
-    service = rospy.names.resolve_name(service)
+    resolved_name = rospy.names.resolve_name(service)
     master = get_master()
     first = False
     if timeout:
         timeout_t = time.time() + timeout
         while not rospy.core.is_shutdown() and time.time() < timeout_t:
             try:
-                if contact_service(service, timeout_t-time.time()):
+                if contact_service(resolved_name, timeout_t-time.time()):
                     return
                 time.sleep(0.3)
             except: # service not actually up
                 if first:
                     first = False
-                    rospy.core.logerr("wait_for_service(%s): failed to contact [%s], will keep trying"%(service, uri))
-        raise rospy.exceptions.ROSException("timeout exceeded while waiting for service %s"%service)
+                    rospy.core.logerr("wait_for_service(%s): failed to contact [%s], will keep trying"%(resolved_name, uri))
+        raise rospy.exceptions.ROSException("timeout exceeded while waiting for service %s"%resolved_name)
     else:
         while not rospy.core.is_shutdown():
             try:
-                if contact_service(service):
+                if contact_service(resolved_name):
                     return
                 time.sleep(0.3)
             except: # service not actually up
                 if first:
                     first = False
-                    rospy.core.logerr("wait_for_service(%s): failed to contact [%s], will keep trying"%(service, uri))
+                    rospy.core.logerr("wait_for_service(%s): failed to contact [%s], will keep trying"%(resolved_name, uri))
     
 #########################################################
 # Param Server Access

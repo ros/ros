@@ -292,17 +292,21 @@ class TCPROSTransportProtocol(object):
     well as which fields to send when creating a new connection (get_header_fields()).
     """
 
-    def __init__(self, name, recv_data_class, queue_size=None, buff_size=DEFAULT_BUFF_SIZE):
+    def __init__(self, resolved_name, recv_data_class, queue_size=None, buff_size=DEFAULT_BUFF_SIZE):
         """
         ctor
-        @param name str: service or topic name
-        @param recv_data_class Class: message class for deserializing inbound messages
-        @param queue_size int: maximum number of inbound messages to maintain
-        @param buff_size int: recieve buffer size (in bytes) for reading data from the inbound connection.
+        @param resolved_name: resolved service or topic name
+        @type  resolved_name: str
+        @param recv_data_class: message class for deserializing inbound messages
+        @type  recv_data_class: Class
+        @param queue_size: maximum number of inbound messages to maintain
+        @type  queue_size: int
+        @param buff_size: receive buffer size (in bytes) for reading from the connection.
+        @type  buff_size: int
         """
         if recv_data_class and not issubclass(recv_data_class, Message):
             raise TransportInitError("Unable to initialize transport: data class is not a message data class")
-        self.name = name
+        self.resolved_name = resolved_name
         self.recv_data_class = recv_data_class
         self.queue_size = queue_size
         self.buff_size = buff_size
@@ -349,7 +353,7 @@ class TCPROSTransport(Transport):
     def __init__(self, protocol, name, header=None):
         """
         ctor
-        @param name str: topic or service name    
+        @param name str: identifier
         @param protocol TCPROSTransportProtocol protocol implementation    
         @param header dict: (optional) handshake header if transport handshake header was
         already read off of transport.

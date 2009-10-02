@@ -75,14 +75,67 @@ def canonicalize_name(name):
 # as soon as client API is referenced so that they are initialized
 # before Topic constructors are invoked.
 _mappings = load_mappings(sys.argv)
+_resolved_mappings = {}
+
+# #1810
+def initialize_mappings(node_name):
+    """
+    Initialize the remapping table based on provide node name.
+
+    @param node_name: name of node (caller ID)
+    @type  node_name: str
+    """
+    global _resolved_mappings
+    _resolved_mappings = {}
+    for m,v in _mappings.iteritems():
+        # resolve both parts of the mappings, but make sure not to double-remap
+        if m.startswith('__'): # __name, __log, etc...
+            _resolved_mappings[m] = v
+        else:
+            _resolved_mappings[resolve_name(m, caller_id=node_name, remap=False)] = resolve_name(v, caller_id=node_name, remap=False)
+        
+
+def resolve_name_without_node_name(name):
+    """
+    The need for this function is complicated -- Topics and Services can be created before init_node is called.
+    In general, this is okay, unless the name is a ~name, in which
+    case we have to raise an ValueError
+
+    @raise ValueError: if name is a ~name
+    @raise ROSInitException: if name is remapped to a ~name
+    """
+    if is_private(name):
+        raise ValueError("~name topics cannot be created before init_node() has been called")
+
+    fake_caller_id = ns_join(get_namespace(), 'node')
+    fake_resolved = resolve_name(name, caller_id=fake_caller_id, remap=False)
+
+    for m, v in _mappings.iteritems():
+        if resolve_name(m, caller_id=fake_caller_id, remap=False) == fake_resolved:
+            if is_private(name):
+                raise ROSInitException("due to the way this node is written, %s cannot be remapped to a ~name. \nThe declaration of topics/services must be moved after the call to init_node()"%name)
+            else:
+                return resolve_name(v, caller_id=fake_caller_id, remap=False)
+    return fake_resolved
+    
 
 def get_mappings():
     """
+    Get mapping table with unresolved names
+    
     @return: command-line remappings {name: name}
     @rtype: {str: str}
     """
     return _mappings
 
+def get_resolved_mappings():
+    """
+    Get mapping table with resolved names
+    
+    @return: command-line remappings {name: name}
+    @rtype: {str: str}
+    """
+    return _resolved_mappings
 
 def resolve_name(name, caller_id=None, remap=True):
     """
@@ -91,7 +144,7 @@ def resolve_name(name, caller_id=None, remap=True):
 
     @param name: name to resolve.
     @type  name: str
-    @param caller_id: caller_id to resolve name relative to. To
+    @param caller_id: node name to resolve relative to. To
     resolve to local namespace, omit this parameter (or use None)
     @type  caller_id: str
     @param remap: If False, remapping is turned off. This is mainly
@@ -102,31 +155,38 @@ def resolve_name(name, caller_id=None, remap=True):
     @rtype: str
     """
     if not caller_id:
-        caller_id = get_caller_id()
+        caller_id = get_name()
     if not name: #empty string resolves to namespace
         return namespace(caller_id)
+
+    name = canonicalize_name(name)
+    if name[0] == SEP: #global name
+        resolved_name = name
+    elif is_private(name): #~name
+        resolved_name = ns_join(caller_id, name[1:])
+    else: #relative
+        resolved_name = namespace(caller_id) + name
 
     #Mappings override general namespace-based resolution
     # - do this before canonicalization as remappings are meant to
     #   match the name as specified in the code
-    if remap and name in _mappings:
-        return resolve_name(_mappings[name], caller_id, remap=False)
-    name = canonicalize_name(name)
-    #Check for global name: /foo/name resolves to /foo/name
-    if name[0] == SEP: 
-        return name
-    #Check for private name: ~name resolves to /caller_id/name
-    elif is_private(name):
-        return ns_join(caller_id, name[1:])
-    return namespace(caller_id) + name
+    if remap and resolved_name in _resolved_mappings:
+        return _resolved_mappings[resolved_name]
+    else:
+        return resolved_name
 
-def remap_name(name, caller_id=None):
+
+def remap_name(name, caller_id=None, resolved=True):
     """
     Remap a ROS name. This API should be used to instead of
     resolve_name for APIs in which you don't wish to resolve the name
     unless it is remapped.
     @param name: name to remap
     @type  name: str
+    
+    @param resolved: if True (default), use resolved names in remappings, which is the standard for ROS. 
+    @type  resolved: bool
+    
     @return: Remapped name
     @rtype: str
     """

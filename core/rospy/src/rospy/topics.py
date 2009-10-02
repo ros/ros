@@ -108,12 +108,23 @@ class Topic(object):
         if not issubclass(data_class, Message):
             raise ValueError("data_class [%s] is not a message data class"%data_class.__class__.__name__)
         
-        self.name = resolve_name(name) #NOTE: remapping occurs here!
+        # this is a bit ugly, but necessary due to the fact that we allow
+        # topics and services to be initialized before the node
+        if not rospy.core.is_initialized():
+            self.resolved_name = rospy.names.resolve_name_without_node_name(name)
+        else:
+            # init_node() has been called, so we can do normal resolution
+            self.resolved_name = resolve_name(name)
+
+        print "RESOLVED", name, "to", self.resolved_name
+        
+        self.name = self.resolved_name # #1810 for backwards compatibility
+
         self.data_class = data_class
         self.type = data_class._type
         self.md5sum = data_class._md5sum
         self.reg_type = reg_type
-        self.impl = get_topic_manager().acquire_impl(reg_type, self.name, data_class)
+        self.impl = get_topic_manager().acquire_impl(reg_type, self.resolved_name, data_class)
 
     def get_num_connections(self):
         """
@@ -130,9 +141,9 @@ class Topic(object):
         unpublish/unsubscribe from topic. Topic instance is no longer
         valid after this call.
         """
-        get_topic_manager().release_impl(self.reg_type, self.name)
-        self.impl = self.name = self.type = self.md5sum = self.data_class = None
-    
+        get_topic_manager().release_impl(self.reg_type, self.resolved_name)
+        self.impl = self.resolved_name = self.type = self.md5sum = self.data_class = None
+
 class _TopicImpl(object):
     """
     Base class of internal topic implementations. Each topic has a
@@ -148,7 +159,11 @@ class _TopicImpl(object):
         @param data_class Message: message data class 
         @type  data_class: Message
         """
-        self.name = resolve_name(name) #NOTE: remapping occurs here!
+
+        # #1810 made resolved/unresolved more explicit so we don't accidentally double-resolve
+        self.resolved_name = resolve_name(name) #NOTE: remapping occurs here!
+        self.name = self.resolved_name # for backwards compatibility
+        
         self.data_class = data_class
         self.type = data_class._type
         self.handler = None
@@ -260,8 +275,8 @@ class _TopicImpl(object):
         # save referenceto avoid locking
         connections = self.connections
         dead_connections = self.dead_connections
-        return [(c.id, c.endpoint_id, c.direction, c.transport_type, self.name, True) for c in connections] + \
-               [(c.id, c.endpoint_id, c.direction, c.transport_type, self.name, False) for c in dead_connections]
+        return [(c.id, c.endpoint_id, c.direction, c.transport_type, self.resolved_name, True) for c in connections] + \
+               [(c.id, c.endpoint_id, c.direction, c.transport_type, self.resolved_name, False) for c in dead_connections]
 
     def get_stats(self): # STATS
         """Get the stats for this topic (API stub)"""
@@ -413,7 +428,7 @@ class _SubscriberImpl(_TopicImpl):
         conn = self.connections
         dead_conn = self.dead_connections        
         #for now drop estimate is -1
-        stats = (self.name, 
+        stats = (self.resolved_name, 
                  [(c.id, c.stat_bytes, c.stat_num_msg, -1, not c.done)
                   for c in chain(conn, dead_conn)] )
         return stats
@@ -521,7 +536,7 @@ class Publisher(Topic):
         if subscriber_listener:
             self.impl.add_subscriber_listener(subscriber_listener)
         if tcp_nodelay:
-            get_tcpros_handler().set_tcp_nodelay(name, tcp_nodelay)
+            get_tcpros_handler().set_tcp_nodelay(self.resolved_name, tcp_nodelay)
         if latch:
             self.impl.enable_latch()
         if headers:
@@ -625,7 +640,7 @@ class _PublisherImpl(_TopicImpl):
         # save reference to avoid lock
         conn = self.connections
         dead_conn = self.dead_connections        
-        return (self.name, self.message_data_sent,
+        return (self.resolved_name, self.message_data_sent,
                 [(c.id, c.stat_bytes, c.stat_num_msg, not c.done) for c in chain(conn, dead_conn)] )
 
     def add_subscriber_listener(self, l):
@@ -658,7 +673,7 @@ class _PublisherImpl(_TopicImpl):
         def publish_single(data):
             self.publish(data, connection_override=c)
         for l in self.subscriber_listeners:
-            l.peer_subscribe(self.name, self.publish, publish_single)
+            l.peer_subscribe(self.resolved_name, self.publish, publish_single)
         if self.is_latch and self.latch is not None:
             with self.publock:
                 self.publish(self.latch, connection_override=c)
@@ -673,7 +688,7 @@ class _PublisherImpl(_TopicImpl):
         super(_PublisherImpl, self).remove_connection(c)
         num = len(self.connections)                
         for l in self.subscriber_listeners:
-            l.peer_unsubscribe(self.name, num)
+            l.peer_unsubscribe(self.resolved_name, num)
             
     def publish(self, message, connection_override=None):
         """
@@ -803,23 +818,23 @@ class _TopicManager(object):
         @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}
         @type  reg_type: str
         """
-        topic = ps.name
-        logger.debug("tm._add: %s, %s, %s", topic, ps.type, reg_type)
+        resolved_name = ps.resolved_name
+        logger.debug("tm._add: %s, %s, %s", resolved_name, ps.type, reg_type)
         try:
             self.lock.acquire()
-            map[topic] = ps
-            self.topics.add(topic)
+            map[resolved_name] = ps
+            self.topics.add(resolved_name)
             
             # NOTE: this call can take a lengthy amount of time (at
             # least until its reimplemented to use queues)
-            get_registration_listeners().notify_added(topic, ps.type, reg_type)
+            get_registration_listeners().notify_added(resolved_name, ps.type, reg_type)
         finally:
             self.lock.release()
 
     def _recalculate_topics(self):
         """recalculate self.topics. expensive"""
-        self.topics = set([x.name for x in self.pubs.itervalues()] +
-                          [x.name for x in self.subs.itervalues()])
+        self.topics = set([x.resolved_name for x in self.pubs.itervalues()] +
+                          [x.resolved_name for x in self.subs.itervalues()])
     
     def _remove(self, ps, map, reg_type):
         """
@@ -831,26 +846,26 @@ class _TopicManager(object):
         @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}
         @type  reg_type: str
         """
-        topic = ps.name
-        logger.debug("tm._remove: %s, %s, %s", topic, ps.type, reg_type)
+        resolved_name = ps.resolved_name
+        logger.debug("tm._remove: %s, %s, %s", resolved_name, ps.type, reg_type)
         try:
             self.lock.acquire()
-            del map[topic]
+            del map[resolved_name]
             self. _recalculate_topics()
             
             # NOTE: this call can take a lengthy amount of time (at
             # least until its reimplemented to use queues)
-            get_registration_listeners().notify_removed(topic, ps.type, reg_type)
+            get_registration_listeners().notify_removed(resolved_name, ps.type, reg_type)
         finally:
             self.lock.release()
 
-    def get_impl(self, reg_type, topic):
+    def get_impl(self, reg_type, resolved_name):
         """
         Get the L{_TopicImpl} for the specified topic. This is mainly for
         testing purposes. Unlike acquire_impl, it does not alter the
         ref count.
-        @param topic: Topic name
-        @type  topic: str
+        @param resolved_name: resolved topic name
+        @type  resolved_name: str
         @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}
         @type  reg_type: str
         """
@@ -860,9 +875,9 @@ class _TopicManager(object):
             map = self.subs
         else:
             raise TypeError("invalid reg_type: %s"%s)
-        return map.get(topic, None)
+        return map.get(resolved_name, None)
         
-    def acquire_impl(self, reg_type, topic, data_class):
+    def acquire_impl(self, reg_type, resolved_name, data_class):
         """
         Acquire a L{_TopicImpl} for the specified topic (create one if it
         doesn't exist).  Every L{Topic} instance has a _TopicImpl that
@@ -870,10 +885,13 @@ class _TopicManager(object):
         instances use the same underlying connections. 'Acquiring' a
         topic implementation marks that another Topic instance is
         using the TopicImpl.
-        @param topic: Topic name
-        @type  topic: str
+        
+        @param resolved_name: resolved topic name
+        @type  resolved_name: str
+        
         @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}
         @type  reg_type: str
+        
         @param data_class: message class for topic
         @type  data_class: Message Class
         """
@@ -887,16 +905,16 @@ class _TopicManager(object):
             raise TypeError("invalid reg_type: %s"%s)
         try:
             self.lock.acquire()
-            impl = map.get(topic, None)            
+            impl = map.get(resolved_name, None)            
             if not impl:
-                impl = impl_class(topic, data_class)
+                impl = impl_class(resolved_name, data_class)
                 self._add(impl, map, reg_type)
             impl.ref_count += 1
             return impl
         finally:
             self.lock.release()
 
-    def release_impl(self, reg_type, topic):
+    def release_impl(self, reg_type, resolved_name):
         """
         Release a L_{TopicImpl} for the specified topic.
 
@@ -906,8 +924,8 @@ class _TopicManager(object):
         implementation marks that another Topic instance is using the
         TopicImpl.
 
-        @param topic: Topic name
-        @type  topic: str
+        @param resolved_name: resolved topic name
+        @type  resolved_name: str
         @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}
         @type  reg_type: str
         """
@@ -917,48 +935,53 @@ class _TopicManager(object):
             map = self.subs
         try:
             self.lock.acquire()
-            impl = map.get(topic, None)
+            impl = map.get(resolved_name, None)
             assert impl is not None, "cannot release topic impl as impl does not exist"
             impl.ref_count -= 1
             assert impl.ref_count >= 0, "topic impl's reference count has gone below zero"
             if impl.ref_count == 0:
-                logger.debug("topic impl's ref count is zero, deleting topic %s...", topic)
+                logger.debug("topic impl's ref count is zero, deleting topic %s...", resolved_name)
                 impl.close()
                 self._remove(impl, map, reg_type)
-                logger.debug("... done deletig topic %s", topic)                
+                logger.debug("... done deletig topic %s", resolved_name)
         finally:
             self.lock.release()
 
-    def get_publisher_impl(self, topic):
+    def get_publisher_impl(self, resolved_name):
         """
-        @param topic: topic name
-        @type  topic: str
+        @param resolved_name: resolved topic name
+        @type  resolved_name: str
         @return: list of L{_PublisherImpl}s
         @rtype: [L{_PublisherImpl}]
         """
-        return self.pubs.get(topic, None)
+        return self.pubs.get(resolved_name, None)
 
-    def get_subscriber_impl(self, topic):
+    def get_subscriber_impl(self, resolved_name):
         """
-        @param topic: topic name
-        @type  topic: str
+        @param resolved_name: topic name
+        @type  resolved_name: str
         @return: subscriber for the specified topic. 
         @rtype: L{_SubscriberImpl}
         """        
-        return self.subs.get(topic, None)
+        return self.subs.get(resolved_name, None)
 
-    def has_subscription(self, topic):
+    def has_subscription(self, resolved_name):
         """
-        @param topic: topic name
-        @type  topic: str
+        @param resolved_name: resolved topic name
+        @type  resolved_name: str
         @return: True if manager has subscription for specified topic
         @rtype: bool
         """                
-        return topic in self.subs
+        return resolved_name in self.subs
 
-    ## @return bool: True if manager has publication for specified topic
-    def has_publication(self, topic):
-        return topic in self.pubs
+    def has_publication(self, resolved_name):
+        """
+        @param resolved_name: resolved topic name
+        @type  resolved_name: str
+        @return: True if manager has publication for specified topic
+        @rtype:  bool
+        """
+        return resolved_name in self.pubs
 
     def get_topics(self):
         """

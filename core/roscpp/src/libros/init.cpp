@@ -316,6 +316,12 @@ void start()
       }
     }
   }
+
+  // If we received a shutdown request while initializing, wait until we've shutdown to continue
+  if (g_shutting_down)
+  {
+    boost::mutex::scoped_lock lock(g_shutting_down_mutex);
+  }
 }
 
 void init(const M_string& remappings, const std::string& name, uint32_t options)

@@ -52,6 +52,7 @@ string primitive_type(const string &type) {
 	m["char"] = "byte";
 	m["uint8"] = "byte";
 	m["int8"] = "byte";
+        m["bool"] = "byte";
 	m["uint16"] = "short";
 	m["int16"] = "short";
 	m["uint32"] = "int";
@@ -86,6 +87,7 @@ string primitive_type_cap(const string &type) {
 	m["char"] = "Byte";
 	m["uint8"] = "Byte";
 	m["int8"] = "Byte";
+        m["bool"] = "Byte";
 	m["uint16"] = "Short";
 	m["int16"] = "Short";
 	m["uint32"] = "Int";
@@ -115,6 +117,7 @@ string primitive_type_box(const string &type) {
 	m["char"] = "java.lang.Byte";
 	m["uint8"] = "java.lang.Byte";
 	m["int8"] = "java.lang.Byte";
+        m["bool"] = "java.lang.Byte";
 	m["uint16"] = "java.lang.Short";
 	m["int16"] = "java.lang.Short";
 	m["uint32"] = "java.lang.Integer";
@@ -145,6 +148,7 @@ bool is_number(const std::string &type)
   prims.push_back("char");
   prims.push_back("uint8");
   prims.push_back("int8");
+  prims.push_back("bool");
   prims.push_back("uint16");
   prims.push_back("int16");
   prims.push_back("uint32");
@@ -629,7 +633,7 @@ public:
   }
   virtual string length_expr()
   {
-    if (type == "byte" || type == "char" || type == "uint8" || type == "int8")
+    if (type == "byte" || type == "char" || type == "uint8" || type == "int8" || type == "bool")
       return "1";
     else if (type == "uint16" || type == "int16")
       return "2";
@@ -693,6 +697,7 @@ public:
 
     if (type == "byte"    || type == "char"  ||
         type == "uint8"   || type == "int8"  ||
+        type == "bool" ||
         type == "uint16"  || type == "int16" ||
         type == "uint32"  || type == "int32" ||
         type == "uint64"  || type == "int64" ||
@@ -829,8 +834,8 @@ public:
   virtual string cpp_type_name()
   {
     // this version of the function purposefully does not
-    // include Time or Duration, instead emits a preprocessor error directive
-    if (type == "time" || type == "duration")
+    // include bool or Time or Duration, instead emits a preprocessor error directive
+    if (type == "time" || type == "duration" || type == "bool" )
       return string("\n#error woah! unhandled primitive type ") + type +
              string("\n");
     return primitive_type(type);
@@ -1023,6 +1028,7 @@ bool msg_spec::is_integer(const std::string &type)
   vector<string> prims;
   prims.push_back("byte");
   prims.push_back("char");
+  prims.push_back("bool");
   prims.push_back("uint8");
   prims.push_back("int8");
   prims.push_back("uint16");
@@ -1042,6 +1048,7 @@ bool msg_spec::is_primitive(const string &type)
   vector<string> prims;
   prims.push_back("byte");
   prims.push_back("char");
+  prims.push_back("bool");
   prims.push_back("uint8");
   prims.push_back("int8");
   prims.push_back("uint16");

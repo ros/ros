@@ -78,9 +78,8 @@ boost::condition_variable_any g_queue_condition;
 
 //! Helper function to print executable usage
 void print_usage() {
-  fprintf (stderr, "usage: rosrecord [options] [TOPIC1 TOPIC2...]\n"
-                   "  rosrecord logs ROS message data to a file.  If no TOPICs\n"
-                   "  are specified, all topics are recorded.\n"
+  fprintf (stderr, "usage: rosrecord [options] TOPIC1 [TOPIC2 TOPIC3...]\n"
+                   "  rosrecord logs ROS message data to a file.\n"
                    );
 }
 
@@ -92,6 +91,7 @@ void print_help() {
   fprintf(stderr, " -c <num>    : Only receive <num> messages on each topic\n");
   fprintf(stderr, " -f <prefix> : Prepend file prefix to beginning of bag name (name will always end with date stamp)\n");
   fprintf(stderr, " -F <fname>  : Record to a file named exactly <fname>.bag\n");
+  fprintf(stderr, " -a          : Record all published messages.\n");
   fprintf(stderr, " -v          : Display a message every time a message is received on a topic\n");
   fprintf(stderr, " -h          : Display this help message\n");
 }
@@ -215,13 +215,14 @@ int main(int argc, char **argv)
   // Parse options  
   int option_char;
 
-  while ((option_char = getopt(argc,argv,"f:F:c:hv")) != -1)
+  while ((option_char = getopt(argc,argv,"f:F:c:ahv")) != -1)
   {
     switch (option_char)
     {
     case 'f': strncpy(prefix,optarg,sizeof(prefix)); break;
     case 'F': strncpy(tgt_fname,optarg,sizeof(tgt_fname)); break;
     case 'c': g_count = atoi(optarg); break;
+    case 'a': check_master = true; break;
     case 'v': g_verbose = true; break;
     case 'h': print_help(); return 1;
     case '?': print_usage(); return 1;
@@ -251,14 +252,19 @@ int main(int argc, char **argv)
       fprintf(stderr, "Specifing a count is not valid with automatic topic subscription.\n");
       return 1;
     }
-    check_master = true;
+    if (!check_master)
+    {
+      ROS_WARN("Running rosrecord with no arguments has been deprecated.  Please use 'rosrecord -a' instead\n");
+      check_master = true;
+    }
   }
-
 
   // Get a node_handle
   ros::NodeHandle node_handle;
-  
 
+  // Only set up recording if we actually got a useful nodehandle.
+  if (node_handle.ok())
+  {
   // Open our recorder and add available topics
   if (g_recorder.open(std::string(fname)))
   {
@@ -297,6 +303,7 @@ int main(int argc, char **argv)
 
   // Rename the file to the actual target name
   rename(fname,tgt_fname);
+  }
   
   // Return our exit code
   return exit_code;

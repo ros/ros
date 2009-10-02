@@ -125,14 +125,16 @@ def get_license_color():
     return color_map
 
 status_map = {
-    "cleared": "green",
+    "doc reviewed": "green",
     "api cleared": "dodgerblue",
     "api conditionally cleared": "orange",
     "proposal cleared": "pink",
     "unreviewed": "red",
     "experimental": "yellow",
     "3rdparty": "white",
+    "3rdparty doc reviewed": "green",
     "na": "gray85",
+    "test": "gray85",
     "deprecated": "magenta",        
     "ROS_BUILD_BLACKLIST": "black"
 }

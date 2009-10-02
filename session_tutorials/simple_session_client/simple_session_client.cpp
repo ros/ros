@@ -33,6 +33,8 @@
  */
 
 // author: Rosen Diankov
+#include <ros/node_handle.h>
+#include <ros/master.h>
 #include <ros/session.h>
 #include <boost/thread/mutex.hpp>
 #include <boost/shared_ptr.hpp>
@@ -141,8 +143,8 @@ int main(int argc, char **argv)
   ros::init(argc, argv,"simple_session_client");
 
   s_pmasternode.reset(new ros::NodeHandle());
-  if( !s_pmasternode->checkMaster() )
-      return -1;
+  if( !ros::master::check() )
+      return 1;
 
   boost::shared_ptr<SimpleSessionClient> client(new SimpleSessionClient());
   ros::spin();

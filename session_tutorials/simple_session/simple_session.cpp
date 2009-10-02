@@ -33,8 +33,9 @@
  */
 
 // author: Rosen Diankov
-#include <ros/node.h>
+#include <ros/node_handle.h>
 #include <ros/session.h>
+#include <ros/master.h>
 #include <boost/thread/mutex.hpp>
 
 #include "roscpp_sessions/simple_session.h"
@@ -79,7 +80,7 @@ public:
     SimpleSession()
     {
 	srv_simple_session = s_pmasternode->advertiseService("simple_session",&SimpleSession::startsession,this);// ,1);
-        _sessionname = s_pmasternode->mapName("simple_session");
+        _sessionname = s_pmasternode->resolveName("simple_session");
 
         // advertise persistent services, the protocol for these differs!
         srv_set_variable = s_pmasternode->advertiseService("set_variable",&SimpleSession::set_variable,this); //,-1);
@@ -103,7 +104,7 @@ public:
 
         ros::M_string::const_iterator it = req.__connection_header->find(_sessionname);
         if( it == req.__connection_header->end() ) {
-            ROS_WARN("failed to find header key %s\n",_sessionname.c_str());
+            ROS_WARN("failed to find header key %s",_sessionname.c_str());
             return NULL;
         }
 
@@ -111,7 +112,7 @@ public:
 
         int sessionid = atoi(it->second.c_str());
         if( mapsessions.find(sessionid) == mapsessions.end() ) {
-            ROS_WARN("failed to find session id %d\n", sessionid);
+            ROS_WARN("failed to find session id %d", sessionid);
             return NULL;
         }
         return mapsessions[sessionid].get();
@@ -174,8 +175,8 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "simple_session");
   
   s_pmasternode.reset(new ros::NodeHandle());
-  if( !s_pmasternode->checkMaster() )
-      return -1;
+  if( !ros::master::check() )
+      return 1;
   
   boost::shared_ptr<SimpleSession> server(new SimpleSession());
   ros::spin();

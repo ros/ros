@@ -420,6 +420,15 @@ def fill_message_args(msg, msg_args):
     @type  msg_args: [args]
     @raise ROSMessageException: if not enough/too many message arguments to fill message
     """
+    # a list of arguments is similar to python's
+    # *args, whereas dictionaries are like **kwds. 
+    
+    # msg_args is always a list, due to the fact it is parsed from a
+    # command-line argument list.  We have to special-case handle a
+    # list with a single dictionary, which has precedence over the general
+    # list representation. We offer this precedence as there is no other way to
+    # do kwd assignments into the outer message.
+    
     if len(msg_args) == 1 and type(msg_args[0]) == dict:
         # according to spec, if we only get one msg_arg and it's a dictionary, we
         # use it directly

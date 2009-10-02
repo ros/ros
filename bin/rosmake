@@ -531,10 +531,10 @@ class RosMakeAll:
                           action="store_true", help="print time profile after build")
         parser.add_option("--skip-blacklist", dest="skip_blacklist", 
                           default=False, action="store_true", 
-                          help="skip packages containing a file called ROS_BUILD_BLACKLIST")
+                          help="skip packages containing a file called ROS_BUILD_BLACKLIST (Default behavior will ignore the presence of ROS_BUILD_BLACKLIST)")
         parser.add_option("--skip-blacklist-osx", dest="skip_blacklist_osx", 
                           default=False, action="store_true", 
-                          help="skip packages containing a file called ROS_BUILD_BLACKLIST_OSX")
+                          help="skip packages containing a file called ROS_BUILD_BLACKLIST_OSX (Default behavior will ignore the presence of ROS_BUILD_BLACKLIST_OSX)")
 
         options, args = parser.parse_args()
 

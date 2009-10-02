@@ -1325,6 +1325,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
   {
     vector<string> rppvec;
     string_split(rpp, rppvec, ":");
+    sanitize_rppvec(rppvec);
     for (vector<string>::iterator i = rppvec.begin(); i != rppvec.end(); ++i)
     {
       if(!i->size())
@@ -1606,6 +1607,22 @@ Package *g_get_pkg(const string &name)
 {
   // a hack... but I'm lazy and love single-file programs
   return g_rospack->get_pkg(name);
+}
+
+void ROSPack::sanitize_rppvec(std::vector<std::string> &rppvec)
+{
+  // drop any trailing slashes
+  for (size_t i = 0; i < rppvec.size(); i++)
+  {
+    size_t last_slash_pos = rppvec[i].find_last_of("/");
+    if (last_slash_pos != string::npos &&
+        last_slash_pos == rppvec[i].length()-1)
+    {
+      fprintf(stderr, "[rospack] warning: trailing slash found in "
+                      "ROS_PACKAGE_PATH\n");
+      rppvec[i].erase(last_slash_pos);
+    }
+  }
 }
 
 }

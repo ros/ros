@@ -92,8 +92,14 @@
   msg)
 
 
+(defmethod list-to-ros-message ((l null))
+  ;; Tricky case: nil should be treated as false (i.e. a primitive boolean) rather than the empty list 
+  ;; (since a ros message always has at least one element: the message type)
+  nil)
+
 (defmethod list-to-ros-message ((l list))
   (apply #'make-instance (first l) (mapcan #'(lambda (pair) (list (car pair) (list-to-ros-message (cdr pair)))) (rest l))))
+
 (defmethod list-to-ros-message (msg)
   msg)
 

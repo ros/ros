@@ -5,22 +5,26 @@
 (in-package roslisp-complex-talker-test)
 
 (defun main ()
-  "Periodically print a complex message on the /chatter topic"
   (with-ros-node ("complex_talker")
-    (advertise "complex_chatter" "roslisp/ComplexMessage")
+    (let ((ping-pub (advertise "ping" "roslisp/ComplexMessage"))
+	  (pang-pub (advertise "pang" "roslisp/ComplexMessage")))
+      (subscribe "pong" "roslisp/ComplexMessage" 
+		 #'(lambda (m) (publish pang-pub m)))
       (loop-at-most-every .1
-	 (publish-on-topic 
-	  "complex_chatter"
-	  (make-complex-message)))))
+	 (publish ping-pub (make-complex-message))))))
 
+(defvar *c* 0)
 
 (defun make-complex-message ()
+  (incf *c*)
   (make-instance '<ComplexMessage>
 		 :x #(1.1 2.2 3.3 4.4)
 		 :y (make-foo-array 3)
 		 :z (make-foo-array 2)
+		 :ind (mod *c* (* 2 4))
 		 :w (vector (make-instance '<String> :data "foo")
-			    (make-instance '<String> :data "bar"))))
+			    (make-instance '<String> :data "bar"))
+		 :qux (evenp *c*)))
 
 
 (defun make-foo-array (n)
@@ -35,3 +39,4 @@
   (make-instance '<Bar> :y i))
 
 						      
+

@@ -1,6 +1,7 @@
 <launch>
 <master auto="start"/>
-<node pkg="roslisp" type="talker-test" output="screen"/>
-<node pkg="roslisp" type="listener-test" output="screen"/>
+<node pkg="roslisp" type="talker-test" name="talker-test" output="screen"/>
+<node pkg="roslisp" type="listener-test" name="listener-test" output="screen"/>
+<node pkg="roslisp" type="complex-talker-test" name="complex-talker-test" output="screen"/>
 <test test-name="cpp-tester" pkg="roslisp" type="cpp-tester"/>
 </launch>

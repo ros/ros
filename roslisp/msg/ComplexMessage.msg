@@ -1,4 +1,6 @@
 float32[4] x
 Foo[] y
-Foo[2] z
+Foo[] z
 std_msgs/String[] w
+bool qux
+uint8 ind

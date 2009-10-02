@@ -38,10 +38,16 @@ namespace names
 {
 
 M_string g_remappings;
+M_string g_unresolved_remappings;
 
 const M_string& getRemappings()
 {
   return g_remappings;
+}
+
+const M_string& getUnresolvedRemappings()
+{
+  return g_unresolved_remappings;
 }
 
 std::string clean(const std::string& name)
@@ -70,7 +76,9 @@ std::string append(const std::string& left, const std::string& right)
 
 std::string remap(const std::string& name)
 {
-  M_string::const_iterator it = g_remappings.find(name);
+  std::string resolved = resolve(name, false);
+
+  M_string::const_iterator it = g_remappings.find(resolved);
   if (it != g_remappings.end())
   {
     return it->second;
@@ -103,11 +111,6 @@ std::string resolve(const std::string& ns, const std::string& name, bool _remap)
 
   std::string copy = name;
 
-  if (_remap)
-  {
-    copy = remap(copy);
-  }
-
   if (copy[0] == '~')
   {
     copy = append(this_node::getName(), copy.substr(1));
@@ -119,6 +122,11 @@ std::string resolve(const std::string& ns, const std::string& name, bool _remap)
   }
 
   copy = clean(copy);
+
+  if (_remap)
+  {
+    copy = remap(copy);
+  }
 
   return copy;
 }
@@ -133,7 +141,10 @@ void init(const M_string& remappings)
     const std::string& right = it->second;
     if (!left.empty() && left[0] != '_')
     {
-      g_remappings[left] = right;
+      std::string resolved_left = resolve(left, false);
+      std::string resolved_right = resolve(right, false);
+      g_remappings[resolved_left] = resolved_right;
+      g_unresolved_remappings[left] = right;
     }
   }
 }

@@ -133,6 +133,9 @@ target_link_libraries(service_call_expect_b ros)
 rospack_add_executable(name_remapping name_remapping.cpp)
 rospack_add_gtest_build_flags(name_remapping)
 target_link_libraries(name_remapping ros)
+rospack_add_executable(name_remapping_with_ns name_remapping_with_ns.cpp)
+rospack_add_gtest_build_flags(name_remapping_with_ns)
+target_link_libraries(name_remapping_with_ns ros)
 
 # Test namespaces
 rospack_add_executable(namespaces namespaces.cpp)

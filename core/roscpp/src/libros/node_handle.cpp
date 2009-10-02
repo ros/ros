@@ -173,7 +173,8 @@ void NodeHandle::initRemappings(const M_string& remappings)
       const std::string& from = it->first;
       const std::string& to = it->second;
 
-      remappings_.insert(std::make_pair(from, to));
+      remappings_.insert(std::make_pair(resolveName(from, false), resolveName(to, false)));
+      unresolved_remappings_.insert(std::make_pair(from, to));
     }
   }
 }
@@ -185,15 +186,17 @@ void NodeHandle::setCallbackQueue(CallbackQueueInterface* queue)
 
 std::string NodeHandle::remapName(const std::string& name) const
 {
+  std::string resolved = resolveName(name, false);
+
   // First search any remappings that were passed in specifically for this NodeHandle
-  M_string::const_iterator it = remappings_.find(name);
+  M_string::const_iterator it = remappings_.find(resolved);
   if (it != remappings_.end())
   {
     return it->second;
   }
 
   // If not in our local remappings, perhaps in the global ones
-  return names::remap(name);
+  return names::remap(resolved);
 }
 
 std::string NodeHandle::resolveName(const std::string& name, bool remap) const
@@ -203,7 +206,7 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
     return namespace_;
   }
 
-  std::string final = remap ? remapName(name) : name;
+  std::string final = name;
 
   if (final[0] == '~')
   {
@@ -217,7 +220,14 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
   }
   else if (!namespace_.empty())
   {
-    final = namespace_ + "/" + final;
+    final = names::append(namespace_, final);
+  }
+
+  final = names::clean(final);
+
+  if (remap)
+  {
+    final = remapName(final);
   }
 
   return names::resolve(final, false);
@@ -515,7 +525,28 @@ bool NodeHandle::searchParam(const std::string &key, std::string& result_out) co
 {
   XmlRpc::XmlRpcValue params, result, payload;
   params[0] = resolveName("");
-  params[1] = remapName(key);
+
+  // searchParam needs a separate form of remapping -- remapping on the unresolved name, rather than the
+  // resolved one.
+
+  std::string remapped = key;
+  M_string::const_iterator it = unresolved_remappings_.find(key);
+  // First try our local remappings
+  if (it != unresolved_remappings_.end())
+  {
+    remapped = it->second;
+  }
+  else
+  {
+    // Then try global remappings
+    it = names::getUnresolvedRemappings().find(key);
+    if (it != names::getUnresolvedRemappings().end())
+    {
+      remapped = it->second;
+    }
+  }
+
+  params[1] = remapped;
   // We don't loop here, because validateXmlrpcResponse() returns false
   // both when we can't contact the master and when the master says, "I
   // don't have that param."

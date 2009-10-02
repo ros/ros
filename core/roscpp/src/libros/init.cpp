@@ -64,11 +64,6 @@ namespace master
 void init(const M_string& remappings);
 }
 
-namespace names
-{
-void init(const M_string& remappings);
-}
-
 namespace this_node
 {
 void init(const std::string& names, const M_string& remappings, uint32_t options);
@@ -334,7 +329,7 @@ void init(const M_string& remappings, const std::string& name, uint32_t options)
     ros::Time::init();
     network::init(remappings);
     master::init(remappings);
-    names::init(remappings);
+    // names:: namespace is initialized by this_node
     this_node::init(name, remappings, options);
     param::init(remappings);
     file_log::init(remappings);

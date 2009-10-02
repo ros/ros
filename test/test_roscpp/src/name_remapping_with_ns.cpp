@@ -49,54 +49,32 @@
 TEST(roscpp, parameterRemapping)
 {
   std::string param;
-  ASSERT_TRUE(ros::param::get("test", param));
-  ASSERT_STREQ(ros::names::resolve("test").c_str(), "/test_remap");
+  ASSERT_STREQ(ros::names::resolve("test_full").c_str(), "/b/test_full");
+  ASSERT_TRUE(ros::param::get("test_full", param));
+  ASSERT_STREQ(ros::names::resolve("/a/test_full").c_str(), "/b/test_full");
+  ASSERT_TRUE(ros::param::get("/a/test_full", param));
 
-  ASSERT_TRUE(ros::param::get("/test", param));
-  ASSERT_STREQ(ros::names::resolve("/test").c_str(), "/test_remap");
+  ASSERT_STREQ(ros::names::resolve("test_local").c_str(), "/a/test_local2");
+  ASSERT_TRUE(ros::param::get("test_local", param));
+  ASSERT_STREQ(ros::names::resolve("/a/test_local").c_str(), "/a/test_local2");
+  ASSERT_TRUE(ros::param::get("/a/test_local", param));
+
+  ASSERT_STREQ(ros::names::resolve("test_relative").c_str(), "/b/test_relative");
+  ASSERT_TRUE(ros::param::get("test_relative", param));
+  ASSERT_STREQ(ros::names::resolve("/a/test_relative").c_str(), "/b/test_relative");
+  ASSERT_TRUE(ros::param::get("/a/test_relative", param));
 }
 
 TEST(roscpp, nodeNameRemapping)
 {
   std::string node_name = ros::this_node::getName();
-  ASSERT_STREQ(node_name.c_str(), "/name_remapped");
+  ASSERT_STREQ(node_name.c_str(), "/a/name_remapped_with_ns");
 }
-
-TEST(roscpp, cleanName)
-{
-  ASSERT_STREQ(ros::names::clean("////asdf///").c_str(), "/asdf");
-  ASSERT_STREQ(ros::names::clean("////asdf///jioweioj").c_str(), "/asdf/jioweioj");
-  ASSERT_STREQ(ros::names::clean("////asdf///jioweioj/").c_str(), "/asdf/jioweioj");
-}
-
-TEST(RoscppHandles, nodeHandleNameRemapping)
-{
-  ros::M_string remap;
-  remap["a"] = "b";
-  remap["/a/a"] = "/a/b";
-  remap["c"] = "/a/c";
-  remap["d/d"] = "/c/e";
-  remap["d/e"] = "c/f";
-  ros::NodeHandle n("", remap);
-
-  EXPECT_STREQ(n.resolveName("a").c_str(), "/b");
-  EXPECT_STREQ(n.resolveName("/a/a").c_str(), "/a/b");
-  EXPECT_STREQ(n.resolveName("c").c_str(), "/a/c");
-  EXPECT_STREQ(n.resolveName("d/d").c_str(), "/c/e");
-
-  ros::NodeHandle n2("z", remap);
-  EXPECT_STREQ(n2.resolveName("a").c_str(), "/z/b");
-  EXPECT_STREQ(n2.resolveName("/a/a").c_str(), "/a/b");
-  EXPECT_STREQ(n2.resolveName("c").c_str(), "/a/c");
-  EXPECT_STREQ(n2.resolveName("d/d").c_str(), "/c/e");
-  EXPECT_STREQ(n2.resolveName("d/e").c_str(), "/z/c/f");
-}
-
 int
 main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init( argc, argv, "name_remapping" );
+  ros::init( argc, argv, "name_remapping_with_ns" );
   ros::NodeHandle nh;
 
   return RUN_ALL_TESTS();

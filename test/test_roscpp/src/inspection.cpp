@@ -92,9 +92,9 @@ TEST(Inspection, commandLineParsing)
   ASSERT_EQ(g_argc, 5);
   ros::M_string remappings = ros::names::getRemappings();
 
-  ASSERT_STREQ(remappings["foo"].c_str(), "bar");
-  ASSERT_STREQ(remappings["baz"].c_str(), "bang");
-  ASSERT_STREQ(remappings["bomb"].c_str(), "barn");
+  ASSERT_STREQ(remappings["/foo"].c_str(), "/bar");
+  ASSERT_STREQ(remappings["/baz"].c_str(), "/bang");
+  ASSERT_STREQ(remappings["/bomb"].c_str(), "/barn");
 }
 
 int

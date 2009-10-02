@@ -34,6 +34,11 @@
 namespace ros
 {
 
+namespace names
+{
+void init(const M_string& remappings);
+}
+
 namespace this_node
 {
 
@@ -88,6 +93,10 @@ void init(const std::string& name, const M_string& remappings, uint32_t options)
   {
     g_namespace = "/";
   }
+
+  // names must be initialized here, because it requires the namespace to already be known so that it can properly resolve names.
+  // It must be done before we resolve g_name, because otherwise the name will not get remapped.
+  names::init(remappings);
 
   g_name = names::resolve(g_namespace, g_name);
 

@@ -475,32 +475,6 @@ TEST(RoscppHandles, nodeHandleNames)
   EXPECT_STREQ(n3.resolveName("~blah").c_str(), (ros::this_node::getName() + "/internal_ns/2/blah").c_str());
 }
 
-TEST(RoscppHandles, nodeHandleNameRemapping)
-{
-  M_string remap;
-  remap["a"] = "b";
-  remap["/a/a"] = "/a/b";
-  remap["c"] = "/a/c";
-  remap["d/d"] = "/c/e";
-  remap["d/e"] = "c/f";
-  remap["e"] = "~e";
-  ros::NodeHandle n("", remap);
-
-  EXPECT_STREQ(n.resolveName("a").c_str(), "/b");
-  EXPECT_STREQ(n.resolveName("/a/a").c_str(), "/a/b");
-  EXPECT_STREQ(n.resolveName("c").c_str(), "/a/c");
-  EXPECT_STREQ(n.resolveName("d/d").c_str(), "/c/e");
-  EXPECT_STREQ(n.resolveName("e").c_str(), (ros::this_node::getName() + "/e").c_str());
-
-  ros::NodeHandle n2("z", remap);
-  EXPECT_STREQ(n2.resolveName("a").c_str(), "/z/b");
-  EXPECT_STREQ(n2.resolveName("/a/a").c_str(), "/a/b");
-  EXPECT_STREQ(n2.resolveName("c").c_str(), "/a/c");
-  EXPECT_STREQ(n2.resolveName("d/d").c_str(), "/c/e");
-  EXPECT_STREQ(n2.resolveName("d/e").c_str(), "/z/c/f");
-  EXPECT_STREQ(n2.resolveName("e").c_str(), (ros::this_node::getName() + "/z/e").c_str());
-}
-
 TEST(RoscppHandles, nodeHandleShutdown)
 {
   ros::NodeHandle n;

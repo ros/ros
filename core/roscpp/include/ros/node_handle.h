@@ -1079,6 +1079,7 @@ private:
   std::string namespace_;
   std::string unresolved_namespace_;
   M_string remappings_;
+  M_string unresolved_remappings_;
 
   CallbackQueueInterface* callback_queue_;
 

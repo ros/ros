@@ -151,9 +151,10 @@ ANONYMOUS, if non-nil, causes the current time to be appended to the node name (
     ;; Advertise on global rosout topic for debugging messages
     (advertise "/rosout" "roslib/Log")
 
-    ;; Subscribe to time
+    ;; Subscribe to time and clock (for now, just allow them to overwrite each other)
     (when (member (get-param "use_sim_time" nil) '("true" 1 t) :test #'equal)
       (setq *use-sim-time* t)
+      (subscribe "/clock" "roslib/Clock" (store-message-in *last-clock*))
       (subscribe "/time" "roslib/Time" (store-message-in *last-time*)))))
 
 

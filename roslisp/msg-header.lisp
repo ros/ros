@@ -49,11 +49,12 @@
 ;; Define this here rather than in client.lisp because it's needed by serialize
 (declaim (inline ros-time))
 (defun ros-time ()
-  "If *use-sim-time* is true (which is set upon node startup by looking up the ros /use_sim_time parameter), return the last received time on the /time topic, or 0.0 if no time message received yet. Otherwise, return the unix time (seconds since epoch)."
+  "If *use-sim-time* is true (which is set upon node startup by looking up the ros /use_sim_time parameter), return the last received time on the /time or /clock topics, or 0.0 if no time message received yet. Otherwise, return the unix time (seconds since epoch)."
   (if *use-sim-time*
-      (if *last-time*
-	  (roslib-msg:rostime-val *last-time*)
-	  0.0)
+      (cond
+	(*last-clock* (roslib-msg:clock-val *last-time*))
+	(*last-time* (roslib-msg:rostime-val *last-time*))
+	(t 0.0))
       (unix-time)))
 
 (defvar *serialize-recursion-level* 0

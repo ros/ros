@@ -78,7 +78,7 @@ boost::condition_variable_any g_queue_condition;
 
 //! Helper function to print executable usage
 void print_usage() {
-  fprintf (stderr, "usage: rosrecord [options] TOPIC1 [TOPIC2 TOPIC3...]\n"
+  fprintf (stderr, "USAGE: rosrecord [options] TOPIC1 [TOPIC2 TOPIC3...]\n"
                    "  rosrecord logs ROS message data to a file.\n"
                    );
 }

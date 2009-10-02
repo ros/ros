@@ -65,6 +65,7 @@ void print_help()
 
 
 RosPlay::RosPlay(int i_argc, char **i_argv) : 
+  node_handle(NULL),
   bag_time_initialized_(false),
   at_once_(false), 
   quiet_(false),
@@ -72,7 +73,8 @@ RosPlay::RosPlay(int i_argc, char **i_argv) :
   shifted_(false), 
   bag_time_(false),
   time_scale_(1.0),
-  queue_size_(0)
+  queue_size_(0),
+  bag_time_publisher_(NULL)
 {
   const int fd = fileno(stdin);
   
@@ -129,9 +131,12 @@ RosPlay::RosPlay(int i_argc, char **i_argv) :
     fprintf(stderr, "You can only play one single bag when using bag time [-b].\n");
     print_usage(); ros::shutdown(); return;
   }
+
+  node_handle = new ros::NodeHandle;
+  bag_time_publisher_ = new TimePublisher;
   
   if (bag_time_)
-    bag_time_publisher_.initialize(bag_time_frequency_, time_scale_);
+    bag_time_publisher_->initialize(bag_time_frequency_, time_scale_);
 
   start_time_ = getSysTime();
   requested_start_time_ = start_time_;
@@ -162,6 +167,16 @@ RosPlay::RosPlay(int i_argc, char **i_argv) :
 
 RosPlay::~RosPlay() 
 {
+  if (node_handle)
+  {
+    // This sleep shouldn't be necessary
+    usleep(1000000);
+    delete node_handle;
+  }
+
+  if (bag_time_publisher_)
+    delete bag_time_publisher_;
+
   // Fix terminal settings.
   const int fd = fileno(stdin);
   tcsetattr(fd,TCSANOW,&orig_flags_);
@@ -171,12 +186,12 @@ RosPlay::~RosPlay()
 
 bool RosPlay::spin() 
 {
-  if (node_handle.ok()){
+  if (node_handle && node_handle->ok()){
     if(!quiet_)
       puts("");
     ros::WallTime last_print_time(0.0);
     ros::WallDuration max_print_interval(0.1);
-    while (node_handle.ok()){
+    while (node_handle->ok()){
       if (!player_.nextMsg())
 	break;
       ros::WallTime t = ros::WallTime::now();
@@ -216,17 +231,17 @@ void RosPlay::doPublish(string name, ros::Message* m, ros::Time play_time, ros::
     if (!bag_time_initialized_){
       // starting in paused mode
       if (paused_)
-	bag_time_publisher_.stepTime(record_time);
+	bag_time_publisher_->stepTime(record_time);
       // starting in play mode
       else 
-	bag_time_publisher_.startTime(record_time);
+	bag_time_publisher_->startTime(record_time);
       bag_time_initialized_ = true;
     }
     // at once
     if (at_once_)
-      bag_time_publisher_.startTime(record_time);
+      bag_time_publisher_->startTime(record_time);
     else
-      bag_time_publisher_.setHorizon(play_time);
+      bag_time_publisher_->setHorizon(play_time);
   }
   
 
@@ -238,11 +253,11 @@ void RosPlay::doPublish(string name, ros::Message* m, ros::Time play_time, ros::
   if (pub_token == g_publishers.end())
   {
     AdvertiseOptions opts(name, queue_size_, m->__getMD5Sum(), m->__getDataType(), m->__getMessageDefinition());
-    ros::Publisher pub = node_handle.advertise(opts);
+    ros::Publisher pub = node_handle->advertise(opts);
     g_publishers.insert(g_publishers.begin(), std::pair<std::string, ros::Publisher>(name, pub));
     pub_token = g_publishers.find(name);
 
-    if (bag_time_) bag_time_publisher_.freezeTime();
+    if (bag_time_) bag_time_publisher_->freezeTime();
     Time paused_time_ = getSysTime();
     ROS_INFO("Sleeping %.3f seconds after advertising %s...",
              advertise_sleep_ / 1e6, name.c_str());
@@ -250,7 +265,7 @@ void RosPlay::doPublish(string name, ros::Message* m, ros::Time play_time, ros::
     ROS_INFO("Done sleeping.\n");
     Duration shift = getSysTime() - paused_time_;
     player_.shiftTime(shift);
-    if (bag_time_) bag_time_publisher_.startTime(record_time);
+    if (bag_time_) bag_time_publisher_->startTime(record_time);
   }
   
   if (!at_once_){
@@ -258,10 +273,10 @@ void RosPlay::doPublish(string name, ros::Message* m, ros::Time play_time, ros::
     ros::Time now = getSysTime();
     ros::Duration delta = play_time - getSysTime();
     
-    while ( (paused_ || delta > ros::Duration(0,100000)) && node_handle.ok()){
+    while ( (paused_ || delta > ros::Duration(0,100000)) && node_handle->ok()){
       bool charsleftorpaused = true;
       
-      while (charsleftorpaused && node_handle.ok()){
+      while (charsleftorpaused && node_handle->ok()){
 	//Read from stdin:
         
         char c = EOF;
@@ -288,12 +303,12 @@ void RosPlay::doPublish(string name, ros::Message* m, ros::Time play_time, ros::
 	case ' ':
 	  paused_ = !paused_;
 	  if (paused_) {
-	    if (bag_time_) bag_time_publisher_.freezeTime();
+	    if (bag_time_) bag_time_publisher_->freezeTime();
 	    paused_time_ = getSysTime();
 	    std::cout << std::endl << "Hit space to resume, or 's' to step.";
 	    std::cout.flush();
 	  } else {
-	    if (bag_time_) bag_time_publisher_.startTime(record_time);
+	    if (bag_time_) bag_time_publisher_->startTime(record_time);
 	    ros::Duration shift;
 	    if (shifted_){
 	      shift = getSysTime() - play_time;
@@ -311,7 +326,7 @@ void RosPlay::doPublish(string name, ros::Message* m, ros::Time play_time, ros::
 	case 's':
 	  if (paused_){
 	    shifted_ = true;
-	    if (bag_time_) bag_time_publisher_.stepTime(record_time);
+	    if (bag_time_) bag_time_publisher_->stepTime(record_time);
             (pub_token->second).publish(*m);
 	    return;
 	  }
@@ -329,7 +344,7 @@ void RosPlay::doPublish(string name, ros::Message* m, ros::Time play_time, ros::
       delta = play_time - getSysTime();
     }
     
-    if (!paused_ && delta > ros::Duration(0, 5000) && node_handle.ok())
+    if (!paused_ && delta > ros::Duration(0, 5000) && node_handle->ok())
       usleep(delta.toNSec()/1000 - 5); // Should this be a ros::Duration::Sleep?
   }
   (pub_token->second).publish(*m);
@@ -478,7 +493,6 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  usleep(1000000);
   return 0;
 }
 

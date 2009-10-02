@@ -60,7 +60,9 @@ private:
   ros::Time getSysTime();
   void doPublish(std::string name, ros::Message* m, ros::Time play_time, ros::Time record_time, void* n);
 
-  ros::NodeHandle node_handle;
+  // This is a pointer to allow player to start before node handle
+  // exists since this is where argument parsing happens.
+  ros::NodeHandle* node_handle;
 
   bool bag_time_initialized_, at_once_, quiet_, paused_, shifted_, bag_time_;
   double time_scale_;
@@ -71,7 +73,8 @@ private:
   unsigned int advertise_sleep_;
 
   termios orig_flags_;
-  TimePublisher bag_time_publisher_;
+  // This internall containers a nodehandle so we make a pointer for the same reason
+  TimePublisher* bag_time_publisher_;
   double bag_time_frequency_;
 
   fd_set stdin_fdset_;

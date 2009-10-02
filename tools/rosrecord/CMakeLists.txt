@@ -21,3 +21,4 @@ rospack_add_executable(rosplay src/rosplay/rosplay.cpp src/rosplay/time_publishe
 INSTALL(TARGETS rosrecord rosplay
         RUNTIME DESTINATION $ENV{ROS_ROOT}/bin)
 
+rospack_add_pyunit(test/test_rosrecord_offline.py)

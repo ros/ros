@@ -442,11 +442,14 @@ void shutdown()
   logger->removeAppender(g_rosout_appender);
   g_rosout_appender = 0;
 
-  XMLRPCManager::instance()->shutdown();
-  TopicManager::instance()->shutdown();
-  ServiceManager::instance()->shutdown();
-  ConnectionManager::instance()->shutdown();
-  PollManager::instance()->shutdown();
+  if (g_started)
+  {
+    XMLRPCManager::instance()->shutdown();
+    TopicManager::instance()->shutdown();
+    ServiceManager::instance()->shutdown();
+    ConnectionManager::instance()->shutdown();
+    PollManager::instance()->shutdown();
+  }
 
   g_started = false;
   g_ok = false;

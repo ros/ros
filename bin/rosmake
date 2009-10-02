@@ -114,10 +114,14 @@ class CompileThread(threading.Thread):
       self.rosmakeall.print_all("<<< %s <<< %s"%(pkg, result_string), thread_name= self.name)
       if result or self.rosmakeall.robust_build:
         self.build_queue.return_built(pkg)
+        if result_string.find("[Interrupted]") != -1:
+          self.rosmakeall.print_all("Caught Interruption", thread_name=self.name)
+          self.build_queue.stop()
+          break # unnecessary since build_queue is done now while will quit
       else:
         self.rosmakeall.print_all("Halting due to failure in package %s.\n[ rosmake ] Re-run with -r to ignore failures and keep building."%pkg)
         self.build_queue.stop()
-        break # unnecessary since build_queue is done now
+        break # unnecessary since build_queue is done now, while will quit
 
 class BuildQueue:
   def __init__(self, package_list, dependency_tracker):
@@ -166,6 +170,8 @@ class BuildQueue:
             
 
       self.condition.wait()  # failed to find a package wait for a notify before looping
+      if self.is_done():
+        break
 
     self.condition.release()
     return (None, None, None)
@@ -323,7 +329,7 @@ class RosMakeAll:
                     if no_target:
                         return_string = ( "[SKIP] No rule to make target %s"%( argument))
                     elif interrupt:
-                        return_string = (" [Interrupted]" )
+                        return_string = ("[Interrupted]" )
                     else:
                         return_string = ( "[FAIL] [ %.2f seconds ]"%( self.profile[argument][p]))
                     self.result[argument][p] = no_target

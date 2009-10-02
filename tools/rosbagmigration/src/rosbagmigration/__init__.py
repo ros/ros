@@ -52,7 +52,7 @@ import roslib.scriptutil
 import roslib.message
 
 # Anything outside the scope of these primitives is a submessage
-_PRIMITIVES = ['byte','int8','int16','int32','int64','char','uint8','uint16','uint32','uint64','float32','float64','string','time']
+_PRIMITIVES = ['bool', 'byte','int8','int16','int32','int64','char','uint8','uint16','uint32','uint64','float32','float64','string','time']
 
 class BagMigrationException(Exception):
     pass
@@ -1206,7 +1206,7 @@ class MessageMigrator(object):
         return locals()[name]
 
 def migration_default_value(field_type):
-    if field_type in ['byte', 'int8', 'int16', 'int32', 'int64',\
+    if field_type in ['bool', 'byte', 'int8', 'int16', 'int32', 'int64',\
                           'char', 'uint8', 'uint16', 'uint32', 'uint64']:
         return '0'
     elif field_type in ['float32', 'float64']:

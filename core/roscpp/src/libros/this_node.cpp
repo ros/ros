@@ -98,6 +98,11 @@ void init(const std::string& name, const M_string& remappings, uint32_t options)
   // It must be done before we resolve g_name, because otherwise the name will not get remapped.
   names::init(remappings);
 
+  if (g_name.find("/") != std::string::npos)
+  {
+    throw InvalidNodeNameException(g_name, "node names cannot contain /");
+  }
+
   g_name = names::resolve(g_namespace, g_name);
 
   if (options & init_options::AnonymousName && !disable_anon)

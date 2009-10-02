@@ -33,6 +33,7 @@
 #include <map>
 #include <set>
 #include <list>
+#include <stdexcept>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -162,6 +163,14 @@ class XMLRPCManager;
 typedef boost::shared_ptr<XMLRPCManager> XMLRPCManagerPtr;
 class PollManager;
 typedef boost::shared_ptr<PollManager> PollManagerPtr;
+
+class Exception : public std::runtime_error
+{
+public:
+  Exception(const std::string& what)
+  : std::runtime_error(what)
+  {}
+};
 
 }
 

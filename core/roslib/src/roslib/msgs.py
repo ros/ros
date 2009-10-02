@@ -233,7 +233,10 @@ class MsgSpec(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return "MsgSpec[%s, %s]"%(repr(self.types), repr(self.names))
+        if self.constants:
+            return "MsgSpec[%s, %s, %s]"%(repr(self.constants), repr(self.types), repr(self.names))
+        else:
+            return "MsgSpec[%s, %s]"%(repr(self.types), repr(self.names))        
 
     def __str__(self):
         return _strify_spec(self)

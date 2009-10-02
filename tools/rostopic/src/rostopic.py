@@ -1038,10 +1038,6 @@ def rostopic_cmd_pub(argv):
             if rospy.is_shutdown():
                 break
     else:
-        # if user sent us a dictionary as the only argument, strip the
-        # list container as we are mapping it to the entire message
-        if len(pub_args) == 1 and type(pub_args[0]) == dict:
-            pub_args = pub_args[0]
         rostopic_pub(pub, msg_class, pub_args, options.rate, options.once, verbose=options.verbose)
         
 def _stdin_yaml_arg():

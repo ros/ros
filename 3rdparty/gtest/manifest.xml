@@ -13,7 +13,7 @@
   </description>
   <author>Google</author>
   <license>BSD</license>
-  <review status="3rdparty" notes=""/>
+  <review status="3rdparty doc reviewed" notes="gerkey, 10/2/2009"/>
   <url>http://ros.org/wiki/gtest/</url>
   <export>
     <rosdoc external="http://code.google.com/p/googletest/w/list"/>

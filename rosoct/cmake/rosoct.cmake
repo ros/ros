@@ -2,7 +2,7 @@ rosbuild_find_ros_package(genmsg_cpp)
 
 # Message-generation support.
 macro(genmsg_oct)
-  get_msgs(_msglist)
+  rosbuild_get_msgs(_msglist)
   set(_autogen "")
   foreach(_msg ${_msglist})
     # Construct the path to the .msg file
@@ -34,7 +34,7 @@ genmsg_oct()
 
 # Service-generation support.
 macro(gensrv_oct)
-  get_srvs(_srvlist)
+  rosbuild_get_srvs(_srvlist)
   set(_autogen "")
   foreach(_srv ${_srvlist})
     # Construct the path to the .srv file

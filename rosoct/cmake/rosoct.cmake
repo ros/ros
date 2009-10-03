@@ -8,7 +8,7 @@ macro(genmsg_oct)
     # Construct the path to the .msg file
     set(_input ${PROJECT_SOURCE_DIR}/msg/${_msg})
   
-    gendeps(${PROJECT_NAME} ${_msg})
+    rosbuild_gendeps(${PROJECT_NAME} ${_msg})
   
     set(genmsg_oct_exe ${genmsg_cpp_PACKAGE_PATH}/genmsg_oct)
 
@@ -40,7 +40,7 @@ macro(gensrv_oct)
     # Construct the path to the .srv file
     set(_input ${PROJECT_SOURCE_DIR}/srv/${_srv})
   
-    gendeps(${PROJECT_NAME} ${_srv})
+    rosbuild_gendeps(${PROJECT_NAME} ${_srv})
   
     set(gensrv_oct_exe ${genmsg_cpp_PACKAGE_PATH}/gensrv_oct)
 

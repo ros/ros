@@ -92,7 +92,7 @@ macro(genmsg_java)
     # Construct the path to the .msg file
     set(_input ${PROJECT_SOURCE_DIR}/msg/${_msg})
   
-    gendeps(${PROJECT_NAME} ${_msg})
+    rosbuild_gendeps(${PROJECT_NAME} ${_msg})
   
     set(genmsg_java_exe ${genmsg_cpp_PACKAGE_PATH}/genmsg_java)
   
@@ -126,7 +126,7 @@ macro(gensrv_java)
     # Construct the path to the .srv file
     set(_input ${PROJECT_SOURCE_DIR}/srv/${_srv})
   
-    gendeps(${PROJECT_NAME} ${_srv})
+    rosbuild_gendeps(${PROJECT_NAME} ${_srv})
   
     set(gensrv_java_exe ${genmsg_cpp_PACKAGE_PATH}/gensrv_java)
 

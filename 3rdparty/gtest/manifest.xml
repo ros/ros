@@ -4,7 +4,8 @@
    gtest contains
    the <a href="http://code.google.com/p/googletest/">googletest</a>
    framework for C++, by Google.  gtest is the standard unit test
-   library for <a href="http://www.ros.org/wiki/roscpp">roscpp</a>
+   library for ROS code written in C++, including 
+   <a href="http://www.ros.org/wiki/roscpp">roscpp</a>
    and, as such, is included within the ROS distribution. This package
    wraps version 1.0.1. Our intent is to migrate to OS package manager
    distributions as this library becomes more widely available. 

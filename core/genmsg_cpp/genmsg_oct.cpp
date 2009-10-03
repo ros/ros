@@ -334,7 +334,7 @@ public:
     {
         if (type == "byte" || type == "int8")
             return "int8";
-        else if (type == "char" || type == "uint8")
+        else if (type == "char" || type == "uint8" || type == "bool")
             return "uint8";
         else if (type == "uint16")
             return "uint16";
@@ -364,7 +364,7 @@ public:
     }
     virtual string length_expr(const string& msgname)
     {
-        if (type == "byte" || type == "char" || type == "uint8" || type == "int8")
+        if (type == "byte" || type == "char" || type == "uint8" || type == "int8" || type == "bool")
             return "1";
         else if (type == "uint16" || type == "int16")
             return "2";
@@ -491,7 +491,7 @@ public:
     {
         // this version of the function purposefully does not
         // include Time or Duration, instead emits a preprocessor error directive
-        if (type == "char" || type == "uint8")
+        if (type == "char" || type == "uint8" || type == "bool")
             return "uint8_t";
         else if (type == "byte" || type == "int8")
             return "int8_t";
@@ -661,6 +661,7 @@ bool msg_spec::is_integer(const std::string &type)
     prims.push_back("byte");
     prims.push_back("char");
     prims.push_back("uint8");
+    prims.push_back("bool");
     prims.push_back("int8");
     prims.push_back("uint16");
     prims.push_back("int16");
@@ -680,6 +681,7 @@ bool msg_spec::is_primitive(const string &type)
     prims.push_back("byte");
     prims.push_back("char");
     prims.push_back("uint8");
+    prims.push_back("bool");
     prims.push_back("int8");
     prims.push_back("uint16");
     prims.push_back("int16");

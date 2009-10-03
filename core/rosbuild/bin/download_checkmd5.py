@@ -16,16 +16,33 @@ def main():
   else:
     parser.error("wrong number of arguments")
 
-  urllib.urlretrieve(uri, dest)
+  fresh = False
+  if not os.path.exists(dest):
+    sys.stdout.write('[rosbuild] Downloading %s to %s...'%(uri, dest))
+    sys.stdout.flush()
+    urllib.urlretrieve(uri, dest)
+    sys.stdout.write('Done\n')
+    fresh = True
 
   if md5sum:
     m = md5.new(open(dest).read())
     d = m.hexdigest()
+
+    print '[rosbuild] Checking md5sum on %s'%(dest)
   
     if d != md5sum:
-      print 'md5sum mismatch (%s != %s); removing file %s'%(d, md5sum, dest)
-      os.remove(dest)
-      return 1
+      if not fresh:
+        print '[rosbuild] WARNING: md5sum mismatch (%s != %s); re-downloading file %s'%(d, md5sum, dest)
+        os.remove(dest)
+
+        # Try one more time
+        urllib.urlretrieve(uri, dest)
+        m = md5.new(open(dest).read())
+        d = m.hexdigest()
+    
+      if d != md5sum:
+        print '[rosbuild] ERROR: md5sum mismatch (%s != %s) on %s; aborting'%(d, md5sum, dest)
+        return 1
 
   return 0
 

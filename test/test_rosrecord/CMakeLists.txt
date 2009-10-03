@@ -30,5 +30,5 @@ genmsg()
 #target_link_libraries(example ${PROJECT_NAME})
 
 # unit tests
-rospack_download_test_data(http://pr.willowgarage.com/data/rosrecord/rosrecord_rename_test.bag test/rosrecord_rename_test.bag)
+rospack_download_test_data(http://pr.willowgarage.com/data/rosrecord/rosrecord_rename_test.bag test/rosrecord_rename_test.bag 09c6e106c77b06ed3e836a5280c8a7c2)
 rospack_add_rostest(test/rename_test.xml)

@@ -743,34 +743,35 @@ macro(rosbuild_link_boost target)
 endmacro(rosbuild_link_boost)
 
 # Macro to download data on the tests target
+# The real signature is:
+#macro(rosbuild_download_test_data _url _filename _md5)
 macro(rosbuild_download_test_data _url _filename)
-  find_package(Wget REQUIRED)
-  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_filename}
-                     COMMAND cmake -E echo "[rosbuild] Downloading ${_url} to ${_filename}..."
-                     COMMAND ${WGET_EXECUTABLE} -q ${_url} -O ${PROJECT_SOURCE_DIR}/${_filename}
-                     COMMAND cmake -E echo "[rosbuild] Done."
-                     VERBATIM)
+  if("${ARGN}" STREQUAL "")
+    _rosbuild_warn("The 2-argument rosbuild_download_test_data(url file) is deprecated; please switch to the 3-argument form, supplying an md5sum for the file: rosbuild_download_test_data(url file md5)")
+  endif("${ARGN}" STREQUAL "")
+
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname download_data_${_filename})
   add_custom_target(${_testname}
-                    DEPENDS ${PROJECT_SOURCE_DIR}/${_filename})
+                     COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
+                     VERBATIM)
   # Redeclaration of target is to workaround bug in 2.4.6
   add_custom_target(tests)
   add_dependencies(tests ${_testname})
 endmacro(rosbuild_download_test_data)
 
 # Macro to download data on the all target
+# The real signature is:
+#macro(rosbuild_download_data _url _filename _md5)
 macro(rosbuild_download_data _url _filename)
- find_package(Wget REQUIRED)
- add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_filename}
-                    COMMAND cmake -E echo "[rosbuild] Downloading ${_url} to ${_filename}..."
-                    COMMAND ${WGET_EXECUTABLE} -q ${_url} -O ${PROJECT_SOURCE_DIR}/${_filename}
-                    COMMAND cmake -E echo "[rosbuild] Done."
+  if("${ARGN}" STREQUAL "")
+    _rosbuild_warn("The 2-argument rosbuild_download_data(url file) is deprecated; please switch to the 3-argument form, supplying an md5sum for the file: rosbuild_download_data(url file md5)")
+  endif("${ARGN}" STREQUAL "")
+  # Create a legal target name, in case the target name has slashes in it
+  string(REPLACE "/" "_" _testname download_data_${_filename})
+  add_custom_target(${_testname} ALL
+                    COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
                     VERBATIM)
- # Create a legal target name, in case the target name has slashes in it
- string(REPLACE "/" "_" _testname download_data_${_filename})
- add_custom_target(${_testname} ALL
-                   DEPENDS ${PROJECT_SOURCE_DIR}/${_filename})
 endmacro(rosbuild_download_data)
 
 macro(rosbuild_add_openmp_flags target)

@@ -348,5 +348,54 @@ class MigrationTest(unittest.TestCase):
 
 
 
+
+  def do_test_constants_no_rules(self, N):
+    tmp_rule_files = []
+    rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
+
+    inbag = "%s/test/constants_gen%d.bag"%(self.pkg_dir,N)
+    outbag = "%s/test/constants_gen%d.fixed.bag"%(self.pkg_dir,N)
+
+    mm = rosbagmigration.MessageMigrator(rule_files, False)
+    res = rosbagmigration.checkbag(mm, inbag)
+
+    self.assertTrue(len(res[0][1]) == 1)
+    self.assertTrue(not res[0][1][0].valid)
+    self.assertEqual(res[0][1][0].old_class._md5sum, '06a34bda7d4ea2950ab952e89ca35d7a')
+    self.assertEqual(res[0][1][0].new_class._md5sum, 'b45401c4d442c4da7b0a2a105075fa4a')
+
+
+  def do_test_constants_rules(self, N):
+    tmp_rule_files = ['constants.bmr']
+    rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
+
+    inbag = "%s/test/constants_gen%d.bag"%(self.pkg_dir,N)
+    outbag = "%s/test/constants_gen%d.fixed.bag"%(self.pkg_dir,N)
+
+    mm = rosbagmigration.MessageMigrator(rule_files, False)
+    res = rosbagmigration.checkbag(mm, inbag)
+
+    self.assertTrue(not False in [m[1] == [] for m in res], 'Bag not ready to be migrated')
+    res = rosbagmigration.fixbag(mm, inbag, outbag)
+    self.assertTrue(res, 'Bag not converted successfully')
+
+    msgs = [msg for msg in rosrecord.logplayer(outbag)]
+
+    self.assertTrue(len(msgs) > 0)
+
+    self.assertEqual(msgs[0][1]._type, 'test_rosbagmigration/Constants', 'Type name is wrong')
+    self.assertEqual(msgs[0][1].value, msgs[0][1].CONSTANT)
+
+
+  def test_constants_no_rules_gen1(self):
+    self.do_test_constants_no_rules(1)
+
+  def test_constants_gen1(self):
+    self.do_test_constants_rules(1)
+
+  def test_constants_gen2(self):
+    self.do_test_constants_rules(2)
+
+
 if __name__ == '__main__':
   rostest.unitrun('test_rosbagmigration', 'migration_test', MigrationTest, sys.argv)

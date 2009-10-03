@@ -121,9 +121,6 @@ def fixbag(migrator, inbag, outbag):
     # This checks/builds up rules for the given migrator
     res = checkbag(migrator, inbag)
 
-    if res == []:
-        return True
-
     # Deserializing all messages is inefficient, but we can speed this up later
     if not False in [m[1] == [] for m in res]:
         rebag = rosrecord.Rebagger(outbag)
@@ -1070,6 +1067,14 @@ class MessageMigrator(object):
         migratedefs = "\tmigrated_types = ["
 
         updatedef = "\tdef update(self, old_msg, new_msg):\n"
+
+        old_consts = constants_from_def(old_class._type, old_class._full_text)
+        new_consts = constants_from_def(new_class._type, new_class._full_text)
+
+        if (not new_consts >= old_consts):
+            validdef = "\tvalid = False\n"
+            for c in (old_consts - new_consts):
+                updatedef += "\t\t#Constant '%s' has changed\n"%(c[0],)
         
         old_slots = []
         old_slots.extend(old_class.__slots__)
@@ -1229,3 +1234,21 @@ def migration_default_value(field_type):
             return '[' + ','.join(itertools.repeat(def_val, array_len)) + ']'
     else:
         return "self.get_new_class('%s')()"%field_type
+
+
+def constants_from_def(core_type, msg_def):
+    core_pkg, core_base_type = roslib.names.package_resource_name(core_type)
+
+    splits = msg_def.split('\n'+'='*80+'\n')
+    core_msg = splits[0]
+    deps_msgs = splits[1:]
+
+    # create MsgSpec representations of .msg text
+    specs = { core_type: roslib.msgs.load_from_string(core_msg, core_pkg) }
+    # - dependencies
+#    for dep_msg in deps_msgs:
+#        # dependencies require more handling to determine type name
+#        dep_type, dep_spec = _generate_dynamic_specs(specs, dep_msg)
+#        specs[dep_type] = dep_spec
+
+    return Set([(x.name, x.val, x.type) for x in specs[core_type].constants])

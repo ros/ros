@@ -90,6 +90,11 @@ def generate_data():
     m = Converged([1.2, 3.4, 5.6, 7.8], [SimpleMigrated(11), SimpleMigrated(22), SimpleMigrated(33), SimpleMigrated(44)])
     bag.add("converged", m, roslib.rostime.Time())
     bag.close()
+
+    bag = rosrecord.Rebagger("test/constants_gen1.bag")
+    m = Constants(Constants.CONSTANT)
+    bag.add("constants", m, roslib.rostime.Time())
+    bag.close()
         
 if __name__ == '__main__':
     generate_data()

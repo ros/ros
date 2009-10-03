@@ -9,21 +9,21 @@ rosbuild_init()
 include_directories(include/rosconsole)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-rospack_add_boost_directories()
+rosbuild_add_boost_directories()
 
-rospack_add_library(${PROJECT_NAME} src/rosconsole/rosconsole.cpp)
+rosbuild_add_library(${PROJECT_NAME} src/rosconsole/rosconsole.cpp)
 target_link_libraries(${PROJECT_NAME} log4cxx)
-rospack_link_boost(${PROJECT_NAME} thread)
+rosbuild_link_boost(${PROJECT_NAME} thread)
 
-rospack_add_executable(example examples/example.cpp)
+rosbuild_add_executable(example examples/example.cpp)
 target_link_libraries(example ${PROJECT_NAME})
 set_target_properties(example PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/examples)
 
-rospack_add_gtest(test/utest test/utest.cpp)
+rosbuild_add_gtest(test/utest test/utest.cpp)
 target_link_libraries(test/utest ${PROJECT_NAME})
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
-  rospack_add_gtest(test/assertion_test test/assertion_test.cpp)
+  rosbuild_add_gtest(test/assertion_test test/assertion_test.cpp)
   target_link_libraries(test/assertion_test ${PROJECT_NAME})
 endif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
 

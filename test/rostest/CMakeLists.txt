@@ -8,4 +8,4 @@ rosbuild_init()
 configure_file(bin/rostest $ENV{ROS_ROOT}/bin/rostest COPYONLY)
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES $ENV{ROS_ROOT}/bin/rostest)
 
-rospack_add_gtest(test/test_permuter test/test_permuter.cpp)
+rosbuild_add_gtest(test/test_permuter test/test_permuter.cpp)

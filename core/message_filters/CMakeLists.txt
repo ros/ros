@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-rospack(message_filters)
+rosbuild_init()
 
 include_directories(include/message_filters)
 
-rospack_add_boost_directories()
-rospack_add_library(message_filters src/connection.cpp)
-rospack_link_boost(message_filters thread signals)
+rosbuild_add_boost_directories()
+rosbuild_add_library(message_filters src/connection.cpp)
+rosbuild_link_boost(message_filters thread signals)
 
 #rospack_add_executable(filter_example src/filter_example.cpp)
 #target_link_libraries(filter_example message_filters)

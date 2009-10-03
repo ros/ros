@@ -10,9 +10,9 @@ CHECK_FUNCTION_EXISTS(trunc HAVE_TRUNC)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-rospack_add_boost_directories()
+rosbuild_add_boost_directories()
 
-rospack_add_library(ros 
+rosbuild_add_library(ros 
                     common.cpp 
                     poll_set.cpp 
                     header.cpp
@@ -53,4 +53,4 @@ rospack_add_library(ros
                     timer.cpp
                     wall_timer.cpp
                     )
-rospack_link_boost(ros thread signals)
+rosbuild_link_boost(ros thread signals)

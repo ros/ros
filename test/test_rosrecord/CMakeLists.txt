@@ -17,7 +17,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 #uncomment if you have defined messages
-genmsg()
+rosbuild_genmsg()
 #uncomment if you have defined services
 #gensrv()
 
@@ -30,5 +30,5 @@ genmsg()
 #target_link_libraries(example ${PROJECT_NAME})
 
 # unit tests
-rospack_download_test_data(http://pr.willowgarage.com/data/rosrecord/rosrecord_rename_test.bag test/rosrecord_rename_test.bag 09c6e106c77b06ed3e836a5280c8a7c2)
-rospack_add_rostest(test/rename_test.xml)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/rosrecord/rosrecord_rename_test.bag test/rosrecord_rename_test.bag 09c6e106c77b06ed3e836a5280c8a7c2)
+rosbuild_add_rostest(test/rename_test.xml)

@@ -11,14 +11,14 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 #rospack_add_executable(demo src/demo/demo.cpp)
 
-rospack_add_library(rosrecorder src/rosrecord/recorder.cpp)
+rosbuild_add_library(rosrecorder src/rosrecord/recorder.cpp)
 
-rospack_add_executable(rosrecord src/rosrecord/rosrecord.cpp)
+rosbuild_add_executable(rosrecord src/rosrecord/rosrecord.cpp)
 target_link_libraries(rosrecord rosrecorder)
 
-rospack_add_executable(rosplay src/rosplay/rosplay.cpp src/rosplay/time_publisher.cpp)
+rosbuild_add_executable(rosplay src/rosplay/rosplay.cpp src/rosplay/time_publisher.cpp)
 
 INSTALL(TARGETS rosrecord rosplay
         RUNTIME DESTINATION $ENV{ROS_ROOT}/bin)
 
-rospack_add_pyunit(test/test_rosrecord_offline.py)
+rosbuild_add_pyunit(test/test_rosrecord_offline.py)

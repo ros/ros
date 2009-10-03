@@ -2,13 +2,13 @@ rosbuild_find_ros_package(rospy)
 
 # Message-generation support.
 macro(genmsg_py)
-  get_msgs(_msglist)
+  rosbuild_get_msgs(_msglist)
   set(_autogen "")
   foreach(_msg ${_msglist})
     # Construct the path to the .msg file
     set(_input ${PROJECT_SOURCE_DIR}/msg/${_msg})
   
-    gendeps(${PROJECT_NAME} ${_msg})
+    rosbuild_gendeps(${PROJECT_NAME} ${_msg})
   
     set(genmsg_py_exe ${rospy_PACKAGE_PATH}/scripts/genmsg_py)
 
@@ -40,13 +40,13 @@ genmsg_py()
 
 # Service-generation support.
 macro(gensrv_py)
-  get_srvs(_srvlist)
+  rosbuild_get_srvs(_srvlist)
   set(_autogen "")
   foreach(_srv ${_srvlist})
     # Construct the path to the .srv file
     set(_input ${PROJECT_SOURCE_DIR}/srv/${_srv})
   
-    gendeps(${PROJECT_NAME} ${_srv})
+    rosbuild_gendeps(${PROJECT_NAME} ${_srv})
   
     set(gensrv_py_exe ${rospy_PACKAGE_PATH}/scripts/gensrv_py)
 

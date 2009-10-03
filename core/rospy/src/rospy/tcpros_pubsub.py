@@ -32,6 +32,8 @@
 #
 # Revision $Id: transport.py 2941 2008-11-26 03:19:48Z sfkwc $
 
+"""Internal use: Topic-specific extensions for TCPROS support"""
+
 import logging
 import socket
 import thread
@@ -46,27 +48,44 @@ from rospy.tcpros_base import TCPROSTransport, TCPROSTransportProtocol, \
     get_tcpros_server_address, start_tcpros_server,\
     DEFAULT_BUFF_SIZE, TCPROS
 
-## Subscription transport implementation for receiving topic data via
-## peer-to-peer TCP/IP sockets
 class TCPROSSub(TCPROSTransportProtocol):
-    """Receive topic data via peer-to-peer TCP/IP sockets"""
+    """
+    Subscription transport implementation for receiving topic data via
+    peer-to-peer TCP/IP sockets
+    """
 
-    ## ctor.
-    ## @param recv_data_class Message: class to instantiate to receive
-    ## messages
-    ## @param queue_size int: maximum number of messages to
-    ## deserialize from newly read data off socket
-    ## @param buff_size int: recv buffer size
-    ## @param tcp_nodelay bool: If True, request TCP_NODELAY from publisher
-    def __init__(self, name, recv_data_class, queue_size=None, \
+    def __init__(self, resolved_name, recv_data_class, queue_size=None, \
                      buff_size=DEFAULT_BUFF_SIZE, tcp_nodelay=False):
-        super(TCPROSSub, self).__init__(name, recv_data_class, queue_size, buff_size)
+        """
+        ctor.
+
+        @param resolved_name: resolved subscription name
+        @type  resolved_name: str
+
+        @param recv_data_class: class to instantiate to receive
+        messages
+        @type recv_data_class: L{rospy.Message}
+
+        @param queue_size: maximum number of messages to
+        deserialize from newly read data off socket
+        @type queue_size: int
+
+        @param buff_size: recv buffer size
+        @type buff_size: int
+
+        @param tcp_nodelay: If True, request TCP_NODELAY from publisher
+        @type tcp_nodelay: bool
+        """
+        super(TCPROSSub, self).__init__(resolved_name, recv_data_class, queue_size, buff_size)
         self.direction = rospy.transport.INBOUND
         self.tcp_nodelay = tcp_nodelay
         
-    ## @return d dictionary of subscriber fields
     def get_header_fields(self):
-        return {'topic': self.name,
+        """
+        @return: dictionary of subscriber fields
+        @rtype: dict
+        """
+        return {'topic': self.resolved_name,
                 'message_definition': self.recv_data_class._full_text,
                 'tcp_nodelay': '1' if self.tcp_nodelay else '0',
                 'md5sum': self.recv_data_class._md5sum,
@@ -74,10 +93,14 @@ class TCPROSSub(TCPROSTransportProtocol):
                 'callerid': rospy.names.get_caller_id()}        
 
 # Separate method for easier testing
-## Configure socket options on a new publisher socket.
-## @param sock socket.socket
-## @param is_tcp_nodelay bool: if True, TCP_NODELAY will be set on outgoing socket if available
 def _configure_pub_socket(sock, is_tcp_nodelay):
+    """
+    Configure socket options on a new publisher socket.
+    @param sock: socket.socket
+    @type sock: socket.socket
+    @param is_tcp_nodelay: if True, TCP_NODELAY will be set on outgoing socket if available
+    @param is_tcp_nodelay: bool
+    """
     # #956: low latency, TCP_NODELAY support
     if is_tcp_nodelay:
         if hasattr(socket, 'TCP_NODELAY'):
@@ -87,24 +110,31 @@ def _configure_pub_socket(sock, is_tcp_nodelay):
 
 #TODO:POLLING: TCPROSPub currently doesn't actually do anything -- not until polling is implemented
 
-## Publisher transport implementation for publishing topic data via
-## peer-to-peer TCP/IP sockets. 
 class TCPROSPub(TCPROSTransportProtocol):
-    """Receive topic data via peer-to-peer TCP/IP sockets"""
-
-    ## @param name str: topic name
-    ## @param pub_data_class Message class: class to instance to receive messages
-    ## @param is_latch bool: If True, Publisher is latching
-    def __init__(self, name, pub_data_class, is_latch=False, headers=None):
+    """
+    Publisher transport implementation for publishing topic data via
+    peer-to-peer TCP/IP sockets. 
+    """
+    
+    def __init__(self, resolved_name, pub_data_class, is_latch=False, headers=None):
+        """
+        ctor.
+        @param resolved_name: resolved topic name
+        @type  resolved_name: str
+        @param pub_data_class: class to instance to receive messages
+        @type  pub_data_class: L{rospy.Message} class
+        @param is_latch: If True, Publisher is latching
+        @type  is_latch: bool
+        """
         # very small buffer size for publishers as the messages they receive are very small
-        super(TCPROSPub, self).__init__(name, None, queue_size=None, buff_size=128)
+        super(TCPROSPub, self).__init__(resolved_name, None, queue_size=None, buff_size=128)
         self.pub_data_class = pub_data_class
         self.direction = rospy.transport.OUTBOUND
         self.is_latch = is_latch
         self.headers = headers if headers else {}
         
     def get_header_fields(self):
-        base = {'topic': self.name,
+        base = {'topic': self.resolved_name,
                 'type': self.pub_data_class._type,
                 'latching': '1' if self.is_latch else '0',
                 'message_definition': self.pub_data_class._full_text,
@@ -118,33 +148,48 @@ class TCPROSPub(TCPROSTransportProtocol):
             base.update(self.headers)
         return base
 
-## ROS Protocol handler for TCPROS. Accepts both TCPROS topic
-## connections as well as ROS service connections over TCP. TCP server
-## socket is run once start_server() is called -- this is implicitly
-## called during init_publisher().
 class TCPROSHandler(rospy.transport.ProtocolHandler):
-    ## @param self
+    """
+    ROS Protocol handler for TCPROS. Accepts both TCPROS topic
+    connections as well as ROS service connections over TCP. TCP server
+    socket is run once start_server() is called -- this is implicitly
+    called during init_publisher().
+    """
+
     def __init__(self):
+        """ctor"""
         self.tcp_nodelay_map = {} # { topic : tcp_nodelay}
     
-    ## @param tcp_nodelay bool: If True, sets TCP_NODELAY on
-    ##   publisher's socket (disables Nagle algorithm). This results
-    ##   in lower latency publishing at the cost of efficiency.
-    def set_tcp_nodelay(self, topic, tcp_nodelay):
-        self.tcp_nodelay_map[rospy.names.resolve_name(topic)] = tcp_nodelay
+    def set_tcp_nodelay(self, resolved_name, tcp_nodelay):
+        """
+        @param resolved_name: resolved topic name
+        @type  resolved_name: str
 
-    ## stops the TCP/IP server responsible for receiving inbound connections
-    ## @param self
+        @param tcp_nodelay: If True, sets TCP_NODELAY on publisher's
+        socket (disables Nagle algorithm). This results in lower
+        latency publishing at the cost of efficiency.
+        @type  tcp_nodelay: bool
+        """
+        self.tcp_nodelay_map[resolved_name] = tcp_nodelay
+
     def shutdown(self):
+        """
+        stops the TCP/IP server responsible for receiving inbound connections        
+        """
         pass
 
-    ## Connect to topic \a topic_name on Publisher \a pub_uri using TCPROS.
-    ## @param self
-    ## @param topic_name str: topic name
-    ## @param pub_uri str: XML-RPC URI of publisher 
-    ## @param protocol_params [XmlRpcLegal]: protocol parameters to use for connecting
-    ## @return int, str, int: code, message, debug
-    def create_transport(self, topic_name, pub_uri, protocol_params):
+    def create_transport(self, resolved_name, pub_uri, protocol_params):
+        """
+        Connect to topic resolved_name on Publisher pub_uri using TCPROS.
+        @param resolved_name str: resolved topic name
+        @type  resolved_name: str
+        @param pub_uri: XML-RPC URI of publisher 
+        @type  pub_uri: str
+        @param protocol_params: protocol parameters to use for connecting
+        @type protocol_params: [XmlRpcLegal]
+        @return: code, message, debug
+        @rtype: (int, str, int)
+        """
         
         #Validate protocol params = [TCPROS, address, port]
         if type(protocol_params) != list or len(protocol_params) != 3:
@@ -153,70 +198,87 @@ class TCPROSHandler(rospy.transport.ProtocolHandler):
             return 0, "INTERNAL ERROR: protocol id is not TCPROS: %s"%id, 0
         id, dest_addr, dest_port = protocol_params
 
-        sub = rospy.registration.get_topic_manager().get_subscriber_impl(topic_name)
+        sub = rospy.registration.get_topic_manager().get_subscriber_impl(resolved_name)
 
         #Create connection 
         try:
-            protocol = TCPROSSub(topic_name, sub.data_class, \
+            protocol = TCPROSSub(resolved_name, sub.data_class, \
                                  queue_size=sub.queue_size, buff_size=sub.buff_size,
                                  tcp_nodelay=sub.tcp_nodelay)
-            conn = TCPROSTransport(protocol, topic_name)
+            conn = TCPROSTransport(protocol, resolved_name)
             # timeout is really generous. for now just choosing one that is large but not infinite
             conn.connect(dest_addr, dest_port, pub_uri, timeout=60.)
             thread.start_new_thread(conn.receive_loop, (sub.receive_callback,))
         except rospy.exceptions.TransportInitError, e:
             logerr("unable to create TCPROSSub: %s", e)
-            return 0, "Internal error creating inbound TCP connection for [%s]: %s"%(topic_name, e), -1
+            return 0, "Internal error creating inbound TCP connection for [%s]: %s"%(resolved_name, e), -1
 
         # Attach connection to _SubscriberImpl
         if sub.add_connection(conn): #pass tcp connection to handler
-            return 1, "Connected topic[%s]. Transport impl[%s]"%(topic_name, conn.__class__.__name__), dest_port
+            return 1, "Connected topic[%s]. Transport impl[%s]"%(resolved_name, conn.__class__.__name__), dest_port
         else:
             conn.close()
-            return 0, "ERROR: Race condition failure: duplicate topic subscriber [%s] was created"%(topic_name), 0
+            return 0, "ERROR: Race condition failure: duplicate topic subscriber [%s] was created"%(resolved_name), 0
 
-    ## @param self
-    ## @param protocol str: name of protocol
-    ## @return bool: True if protocol is supported
     def supports(self, protocol):
+        """
+        @param protocol: name of protocol
+        @type protocol: str
+        @return: True if protocol is supported
+        @rtype: bool
+        """
         return protocol == TCPROS
     
-    ## @param self
     def get_supported(self):
+        """
+        Get supported protocols
+        """
         return [[TCPROS]]
         
-    ## Initialize this node to receive an inbound TCP connection,
-    ## i.e. startup a TCP server if one is not already running.
-    ## @param self
-    ## @param topic_name str
-    ## @param protocol [str, value*]: negotiated protocol
-    ## parameters. protocol[0] must be the string 'TCPROS'
-    ## @return (int, str, list): (code, msg, [TCPROS, addr, port])
-    def init_publisher(self, topic_name, protocol): 
+    def init_publisher(self, resolved_name, protocol):
+        """
+        Initialize this node to receive an inbound TCP connection,
+        i.e. startup a TCP server if one is not already running.
+        
+        @param resolved_name: topic name
+        @type  resolved__name: str
+        
+        @param protocol: negotiated protocol
+          parameters. protocol[0] must be the string 'TCPROS'
+        @type  protocol: [str, value*]
+        @return: (code, msg, [TCPROS, addr, port])
+        @rtype: (int, str, list)
+        """
         if protocol[0] != TCPROS:
             return 0, "Internal error: protocol does not match TCPROS: %s"%protocol, []
         start_tcpros_server()
         addr, port = get_tcpros_server_address()
         return 1, "ready on %s:%s"%(addr, port), [TCPROS, addr, port]
 
-    ## Process incoming topic connection. Reads in topic name from
-    ## handshake and creates the appropriate TCPROSPub handler for the
-    ## connection.
-    ## @param sock socket: socket connection
-    ## @param client_addr (str, int): client address
-    ## @param header dict: key/value pairs from handshake header
-    ## @return str: error string or None 
     def topic_connection_handler(self, sock, client_addr, header):
+        """
+        Process incoming topic connection. Reads in topic name from
+        handshake and creates the appropriate L{TCPROSPub} handler for the
+        connection.
+        @param sock: socket connection
+        @type sock: socket.socket
+        @param client_addr: client address
+        @type client_addr: (str, int)
+        @param header: key/value pairs from handshake header
+        @type header: dict
+        @return: error string or None 
+        @rtype: str
+        """
         for required in ['topic', 'md5sum', 'callerid']:
             if not required in header:
                 return "Missing required '%s' field"%required
         else:
-            topic_name = header['topic']
+            resolved_topic_name = header['topic']
             md5sum = header['md5sum']
             tm = rospy.registration.get_topic_manager()
-            topic = tm.get_publisher_impl(topic_name)
+            topic = tm.get_publisher_impl(resolved_topic_name)
             if not topic:
-                return "[%s] is not a publisher of  [%s]. Topics are %s"%(rospy.names.get_caller_id(), topic_name, tm.get_publications())
+                return "[%s] is not a publisher of  [%s]. Topics are %s"%(rospy.names.get_caller_id(), resolved_topic_name, tm.get_publications())
             elif md5sum != rospy.names.TOPIC_ANYTYPE and md5sum != topic.data_class._md5sum:
                 # check to see if subscriber sent 'type' header. If they did, check that
                 # types are same first as this provides a better debugging message
@@ -230,11 +292,11 @@ class TCPROSHandler(rospy.transport.ProtocolHandler):
                 if 'tcp_nodelay' in header:
                     tcp_nodelay = True if header['tcp_nodelay'].strip() == '1' else False
                 else:
-                    tcp_nodelay = self.tcp_nodelay_map.get(topic_name, False)
+                    tcp_nodelay = self.tcp_nodelay_map.get(resolved_topic_name, False)
 
                 _configure_pub_socket(sock, tcp_nodelay)
-                protocol = TCPROSPub(topic_name, topic.data_class, is_latch=topic.is_latch, headers=topic.headers)
-                transport = TCPROSTransport(protocol, topic_name)
+                protocol = TCPROSPub(resolved_topic_name, topic.data_class, is_latch=topic.is_latch, headers=topic.headers)
+                transport = TCPROSTransport(protocol, resolved_topic_name)
                 transport.set_socket(sock, header['callerid'])
                 transport.write_header()
                 topic.add_connection(transport)

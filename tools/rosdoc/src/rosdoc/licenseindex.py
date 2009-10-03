@@ -42,13 +42,16 @@ import roslib.scriptutil
 
 from rosdoc.rdcore import *
 
-bsdstyle = ['bsd', 'bsd-style', 'zlib', 'zlib-style', 'mit', 'wxwindows', 'lgpl', 'free', 'python', 'python-style', 'bsl1.0', 'boost', 'apache', 'bsd/gpl/lgpl']
+bsdstyle = ['bsd', 'bsd-style', 'zlib', 'zlib-style', 'mit', 'wxwindows', 'lgpl', 'free', 'python', 'python-style', 'bsl1.0', 'boost', 'apache', 'bsd/gpl/lgpl', 'boost software license',]
 contaminated = ['gpl', 'creativecommons-by-nc-sa-2.0']
 
 contam_suffix = " (contaminated)"
 
 ## all keys must be lower case
 license_urls = {
+    'boost': 'http://www.boost.org/users/license.html',
+    'bsl1.0': 'http://www.boost.org/LICENSE_1_0.txt',
+    'boost software license': 'http://www.boost.org/users/license.html',
     'mit': 'http://www.opensource.org/licenses/mit-license.php',
     'bsd': 'http://www.opensource.org/licenses/bsd-license.php',
     'zlib': 'http://www.gzip.org/zlib/zlib_license.html',

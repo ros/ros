@@ -30,29 +30,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 /////////////////////////////////////////////////////////////////////////////
 
-/** @defgroup relay relay
-
-relay is a node that subscribes to a topic and republish all incoming
-data to another topic.  It can work with any message type.
-
-<hr>
-
-@section usage Usage
-@verbatim
-relay <intopic> [<outtopic>] [standard ROS arguments] 
-@endverbatim
-Options:
-- @b intopic: Incoming topic to subscribe to
-- @b outtopic: Outgoing topic to publish on (default: intopic_relay)
-
-Example, rename a topic via relay
-@verbatim
-relay base_scan my_base_scan
-@endverbatim
-**/
 
 #include <cstdio>
-#include "ros/node.h"
 #include "topic_tools/shape_shifter.h"
 
 using std::string;

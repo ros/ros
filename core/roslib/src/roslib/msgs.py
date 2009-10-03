@@ -33,10 +33,10 @@
 # Revision $Id: msgspec.py 3357 2009-01-13 07:13:05Z jfaustwg $
 # $Author: jfaustwg $
 """
-ROS Msg Description Language Spec
+ROS msg library for Python
+
+Implements: U{http://ros.org/wiki/msg}
 """
-## ROS Msg Description Language Spec
-## Implements: http://pr.willowgarage.com/wiki/ROS/Message_Description_Language
 
 import cStringIO
 import os
@@ -233,7 +233,10 @@ class MsgSpec(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return "MsgSpec[%s, %s]"%(repr(self.types), repr(self.names))
+        if self.constants:
+            return "MsgSpec[%s, %s, %s]"%(repr(self.constants), repr(self.types), repr(self.names))
+        else:
+            return "MsgSpec[%s, %s]"%(repr(self.types), repr(self.names))        
 
     def __str__(self):
         return _strify_spec(self)
@@ -408,7 +411,10 @@ def _convert_val(type_, val):
         val = int(val) #python will autocast to long if necessary
         if val > upper or val < lower:
             raise MsgSpecException("cannot coerce [%s] to %s (out of bounds)"%(val, type_))
-        return val 
+        return val
+    elif type_ == 'bool':
+        # TODO: need to nail down constant spec for bool
+        return True if eval(val) else False
     raise MsgSpecException("invalid constant type: [%s]"%type_)
         
 ## Load message specification for specified type
@@ -536,6 +542,7 @@ EXTENDED_BUILTINS = { TIME : load_from_string(TIME_MSG), DURATION: load_from_str
 ## primitive types are those for which we allow constants, i.e. have  primitive representation
 PRIMITIVE_TYPES = ['int8','uint8','int16','uint16','int32','uint32','int64','uint64','float32','float64',
                    'string',
+                   'bool',
                    # deprecated:
                    'char','byte']
 BUILTIN_TYPES = PRIMITIVE_TYPES + EXTENDED_BUILTINS.keys()

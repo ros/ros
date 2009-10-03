@@ -82,6 +82,25 @@ macro(_rosbuild_check_pythonpath)
   endif("$ENV{PYTHONPATH}" STREQUAL "")
 endmacro(_rosbuild_check_pythonpath)
 
+# Check validity of manifest.xml, to avoid esoteric build errors
+macro(_rosbuild_check_manifest)
+  execute_process(
+    COMMAND python -c "import roslib.manifest; roslib.manifest.parse_file('manifest.xml')"
+    OUTPUT_VARIABLE _manifest_error
+    ERROR_VARIABLE _manifest_error
+    RESULT_VARIABLE _manifest_failed
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(_manifest_failed)
+    message("[rosbuild] Error from syntax check of ${PROJECT_NAME}/manifest.xml")
+    message("${_manifest_error}")
+    message(FATAL_ERROR "[rosbuild] Syntax check of ${PROJECT_NAME}/manifest.xml failed; aborting")
+  endif(_manifest_failed)
+
+
+endmacro(_rosbuild_check_manifest)
+
 macro(_rosbuild_add_gcov src exe)
   set(_gcov ${exe}_${_src}.gcov)
   string(REPLACE "/" "_" _targetname ${_gcov})
@@ -141,6 +160,7 @@ endmacro(_rosbuild_add_gtest)
 macro(_rosbuild_check_rostest_result test_name test_pkg test_file)
   add_custom_target(${test_name}_result
                     COMMAND ${rostest_path}/bin/rostest-check-results --rostest ${test_pkg} ${test_file}
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 		    VERBATIM)
   # Redeclaration of target is to workaround bug in 2.4.6
   add_custom_target(test-results-run)
@@ -275,8 +295,8 @@ macro(_rosbuild_add_library lib libname type)
   rosbuild_add_link_flags(${lib} ${ROS_LINK_FLAGS})
 
   # Make sure that any messages get generated prior to build this target
-  add_dependencies(${lib} rospack_genmsg)
-  add_dependencies(${lib} rospack_gensrv)
+  add_dependencies(${lib} rospack_genmsg_libexe)
+  add_dependencies(${lib} rospack_gensrv_libexe)
 endmacro(_rosbuild_add_library)
 
 # Internal macros above

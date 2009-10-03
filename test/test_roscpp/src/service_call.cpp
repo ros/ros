@@ -37,7 +37,7 @@
 
 #include <gtest/gtest.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include "ros/time.h"
 #include "ros/service.h"
 #include "ros/connection.h"
@@ -102,12 +102,12 @@ TEST(SrvCall, callSrvHandle)
 
   req.str = std::string("case_FLIP");
 
-  ASSERT_TRUE(ros::service::waitForService("service_adv"));
-
   std::map<std::string, std::string> header;
   header["test1"] = "testing 1";
   header["test2"] = "testing 2";
-  ros::ServiceClient handle = ros::service::createClient<test_roscpp::TestStringString>("service_adv", false, header);
+  ros::NodeHandle nh;
+  ros::ServiceClient handle = nh.serviceClient<test_roscpp::TestStringString>("service_adv", false, header);
+  ASSERT_TRUE(handle.waitForExistence());
 
   ros::Time start = ros::Time::now();
 
@@ -135,7 +135,8 @@ TEST(SrvCall, callSrvPersistentHandle)
   std::map<std::string, std::string> header;
   header["test1"] = "testing 1";
   header["test2"] = "testing 2";
-  ros::ServiceClient handle = ros::service::createClient<test_roscpp::TestStringString>("service_adv", true, header);
+  ros::NodeHandle nh;
+  ros::ServiceClient handle = nh.serviceClient<test_roscpp::TestStringString>("service_adv", true, header);
 
   ros::Time start = ros::Time::now();
 
@@ -187,7 +188,8 @@ TEST(SrvCall, handleValid)
   std::map<std::string, std::string> header;
   header["test1"] = "testing 1";
   header["test2"] = "testing 2";
-  ros::ServiceClient handle = ros::service::createClient<test_roscpp::TestStringString>("service_adv", true, header);
+  ros::NodeHandle nh;
+  ros::ServiceClient handle = nh.serviceClient<test_roscpp::TestStringString>("service_adv", true, header);
   ASSERT_TRUE(handle.call(req, res));
   ASSERT_TRUE(handle.isValid());
   handle.shutdown();
@@ -198,7 +200,12 @@ TEST(SrvCall, handleValid)
 
 TEST(SrvCall, waitForServiceTimeout)
 {
+  ros::NodeHandle nh;
   ASSERT_FALSE(ros::service::waitForService("iojergoiwjoiewg", 1000));
+  ASSERT_FALSE(ros::service::waitForService("iojergoiwjoiewg", ros::Duration(1)));
+
+  ros::ServiceClient handle = nh.serviceClient<test_roscpp::TestStringString>("migowiowejowieuhwejg", false);
+  ASSERT_FALSE(handle.waitForExistence(ros::Duration(1)));
 }
 
 int
@@ -206,8 +213,8 @@ main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 
-  ros::init(argc, argv);
-  ros::Node n("caller");
+  ros::init(argc, argv, "service_call");
+  ros::NodeHandle nh;
 
   int ret = RUN_ALL_TESTS();
 

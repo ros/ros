@@ -6,29 +6,35 @@ rf = File.open('repos','r')
 reps = [ ]
 while line = rf.gets
   next if line[0,1] == "#"
-  reps << line.strip
+  reps << line.strip.split
 end
 reps.each do |rep|
-  uri = URI.parse(rep)
-  if !File.exist? "checkouts/#{uri.host}"
-    puts "checking out #{rep}"
-    system("mkdir -p checkouts/#{uri.host}")
-    system("cd checkouts/#{uri.host} && svn co #{rep} .")
+  friendly = rep[0]
+  uri = URI.parse(rep[1])
+  if !File.exist? "checkouts/#{friendly}"
+    puts "checking out #{friendly} from #{uri.host}"
+    system("mkdir -p checkouts/#{friendly}")
+    system("cd checkouts/#{friendly} && svn co #{rep[1]} .")
   else
-    puts "updating #{rep}"
-    system("cd checkouts/#{uri.host} && svn up")
+    puts "updating #{friendly} from #{uri.host}"
+    system("cd checkouts/#{friendly} && svn up")
   end
 end
 all_pkgs = { }
 reps.each do |rep|
-  puts "snarfing manifests in local copy of #{rep}"
-  uri = URI.parse(rep)
-  ENV['ROS_PACKAGE_PATH'] = "#{`pwd`.strip}/checkouts/#{uri.host}"
-  ENV['ROS_ROOT'] = "#{`pwd`.strip}/checkouts/ros.svn.sourceforge.net"
+  friendly = rep[0]
+  unfriendly = rep[1]
+  puts "snarfing manifests in local copy of #{friendly}"
+  uri = URI.parse(unfriendly)
+  ENV['ROS_PACKAGE_PATH'] = "#{`pwd`.strip}/checkouts/#{friendly}"
+  ENV['ROS_ROOT'] = "#{`pwd`.strip}/checkouts/ros"
   pkgs = `rospack list`.each do |pkg|
-    puts "#{pkg.split[0]}   #{pkg.split[1]}"
-    in_ros = pkg.split[1].index('ros.svn.sourceforge.net')
-    all_pkgs[pkg.split[0]] = [pkg.split[1], (in_ros ? 'https://ros.svn.sourceforge.net/svnroot/ros/trunk' : rep), (in_ros ? 'ros.svn.sourceforge.net' : uri.host)] # could check for duplicates here
+    #puts "#{pkg.split[0]}   #{pkg.split[1]}"
+    if !all_pkgs.has_key?(pkg.split[0])
+      all_pkgs[pkg.split[0]] = [pkg.split[1], friendly, unfriendly]
+    end
+    #in_ros = pkg.split[1].index("#{`pwd`.strip}/checkouts/ros")
+    #all_pkgs[pkg.split[0]] = [pkg.split[1], (in_ros ? 'ros' : friendly), (in_ros ? 'https://code.ros.org/svn/ros/stacks/ros/tags/stable' : unfriendly)]
   end
 end
 megamanifest = REXML::Document.new
@@ -40,10 +46,14 @@ all_pkgs.each do |k, v|
     manifest.root.add_attribute("name", k)
     manifest.root.add_attribute("repo", v[1])
     manifest.root.add_attribute("repo_host", v[2])
-    manifest.root.add_attribute("path", v[0][v[0].index(v[2])+v[2].length,:end])
+    repo_root = `pwd`.strip + '/checkouts/' + v[1]
+    manifest.root.add_attribute("path", v[0][v[0].index(repo_root)+repo_root.length,:end])
     pkgs_node.add(manifest.root)
-  rescue
-    puts "error parsing #{v[0]}/manifest.xml"
+  rescue 
+    puts v.inspect
+    puts "error parsing #{v[0]}/manifest.xml: #{$!}"
+    puts "repo_root = #{repo_root}"
+    exit
   end
 end
 puts "writing megamanifest..."

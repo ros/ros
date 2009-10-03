@@ -27,40 +27,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 /////////////////////////////////////////////////////////////////////////////
 
-/** @defgroup throttle throttle
-
-throttle is a node that can subscribe to a topic and republish incoming
-data to another topic, at a maximum bandwidth, or a maximum message rate.
-It's mainly useful for limiting bandwidth usage, e.g., over a wireless
-link.  It can work with any message type.
-
-<hr>
-
-@section usage Usage
-There are two forms of this command:
-@verbatim
-throttle messages <intopic> <msgs_per_sec> [<outtopic>] [standard ROS arguments] 
-OR
-throttle bytes <intopic> <bytes_per_sec> <window> [<outtopic>] [standard ROS arguments] 
-@endverbatim
-Options:
-- @b intopic: Incoming topic to subscribe to
-For @b rate:
-- @b msgs_per_sec: Maximum messages per second to let through
-For @b bytes:
-- @b bytes_per_sec: Maximum bytes per second to let through
-- @b window: Window (in seconds) over which to sample
-- @b outtopic: Outgoing topic to publish on (default: intopic_throttle)
-
-Example, throttling bandwidth-hogging laser scans to 1Hz:
-@verbatim
-throttle messages base_scan 1.0
-@endverbatim
-Example, throttling bandwidth-hogging laser scans to 1KBps:
-@verbatim
-throttle bytes base_scan 1024 1.0
-@endverbatim
-**/
 
 // this could be made a lot smarter by trying to analyze and predict the
 // message stream density, etc., rather than just being greedy and stuffing
@@ -69,7 +35,6 @@ throttle bytes base_scan 1024 1.0
 #include <cstdio>
 #include <cstdlib>
 #include <deque>
-#include "ros/node.h"
 #include "topic_tools/shape_shifter.h"
 
 using std::string;

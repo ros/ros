@@ -170,6 +170,10 @@ class TestGenpy(unittest.TestCase):
                                   ['dataA.data3.data.data', 'dataA.data4.data.data', 'dataB.data3.data.data', 'dataB.data4.data.data'],
                                   [], 'X'), flatten(b4))
         
+    def test_numpy_dtype(self):
+        for t in roslib.genpy.SIMPLE_TYPES:
+            self.assert_(t in roslib.genpy._NUMPY_DTYPE)
+
     def test_default_value(self):
         from roslib.msgs import register, MsgSpec
         from roslib.genpy import default_value
@@ -177,6 +181,10 @@ class TestGenpy(unittest.TestCase):
         register('fake_msgs/String', MsgSpec(['string'], ['data'], [], 'string data\n'))
         register('fake_msgs/ThreeNums', MsgSpec(['int32', 'int32', 'int32'], ['x', 'y', 'z'], [], 'int32 x\nint32 y\nint32 z\n'))
         
+        # trip-wire: make sure all builtins have a default value
+        for t in roslib.msgs.BUILTIN_TYPES:
+            self.assert_(type(default_value(t, 'roslib')) == str)
+            
         # simple types first
         for t in ['uint8', 'int8', 'uint16', 'int16', 'uint32', 'int32', 'uint64', 'int64', 'byte', 'char']:
             self.assertEquals('0', default_value(t, 'std_msgs'))

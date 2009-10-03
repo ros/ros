@@ -37,6 +37,7 @@ import sys
 
 import roslib.manifest
 import roslib.packages
+import roslib.stacks
 import roslib.rosenv
 import roslib.scriptutil
 import roslib.substitution_args
@@ -51,6 +52,7 @@ class WtfException(Exception): pass
 ## system we are attempting to debug
 class WtfContext(object):
     __slots__ = ['pkg', 'pkg_dir', 'pkgs',
+                 'stack', 'stack_dir', 'stacks',
                  'manifest_file', 'manifest',
                  'env', 'ros_root', 'ros_package_path', 'pythonpath',
                  'ros_master_uri',
@@ -74,8 +76,13 @@ class WtfContext(object):
         # main package we are running 
         self.pkg = None
         self.pkg_dir = None
+        # main stack we are running 
+        self.stack = None
+        
         # - list of all packages involved in this check
         self.pkgs = []
+        # - list of all stacks involved in this check        
+        self.stacks = []        
 
         # manifest location of package that we are running 
         self.manifest_file = None
@@ -126,16 +133,29 @@ class WtfContext(object):
         ctx = WtfContext()
         ctx.launch_files = roslaunch_files
         _load_roslaunch(ctx, roslaunch_files)
-        # ctx.pkg initialized by _load_roslaunch
+        # ctx.pkg and ctx.stack initialized by _load_roslaunch
         _load_pkg(ctx, ctx.pkg)
+        _load_stack(ctx, ctx.stack)        
         _load_env(ctx, env)
         return ctx
-        
+
+    @staticmethod
+    ## @throws WtfException: if context state cannot be initialized
+    def from_stack(stack, env=os.environ):
+        ctx = WtfContext()
+        _load_stack(ctx, stack)
+        ctx.pkgs = roslib.stacks.packages_of(stack)
+        _load_env(ctx, env)
+        return ctx
+    
     @staticmethod
     ## @throws WtfException: if context state cannot be initialized
     def from_package(pkg, env=os.environ):
         ctx = WtfContext()
         _load_pkg(ctx, pkg)
+        stack = roslib.stacks.stack_of(pkg)
+        if stack:
+            _load_stack(ctx, stack)
         _load_env(ctx, env)
         return ctx
 
@@ -165,11 +185,20 @@ def _load_pkg(ctx, pkg):
     ctx.pkgs = [pkg] + roslib.scriptutil.rospack_depends(pkg)
     try:
         ctx.pkg_dir = roslib.packages.get_pkg_dir(pkg)
-        ctx.manifest_file = roslib.manifest.manifest_file(pkg)
-        ctx.manifest_file = roslib.manifest.parse_file(ctx.manifest_file)        
     except roslib.packages.InvalidROSPkgException:
         raise WtfException("Cannot locate manifest file for package [%s]"%pkg)
 
+## utility for initializing WtfContext state
+## @throws WtfException: if context state cannot be initialized
+def _load_stack(ctx, stack):
+    ctx.stack = stack
+    ctx.stacks = [stack] + roslib.scriptutil.rosstack_depends(stack)
+    try:
+        ctx.stack_dir = roslib.stacks.get_stack_dir(stack)
+    except roslib.stacks.InvalidROSStackException:
+        raise WtfException("Cannot locate manifest file for stack [%s]"%stack)
+    
+    
 ## utility for initializing WtfContext state
 ## @throws WtfException: if context state cannot be initialized
 def _load_env(ctx,env):

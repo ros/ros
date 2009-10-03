@@ -45,7 +45,6 @@
 namespace ros
 {
 
-class Node;
 class Publication;
 typedef boost::shared_ptr<Publication> PublicationPtr;
 typedef boost::weak_ptr<Publication> PublicationWPtr;

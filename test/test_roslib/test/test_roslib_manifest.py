@@ -145,7 +145,8 @@ class RoslibManifestTest(unittest.TestCase):
         parse_file(p)
         self.fail("parse should have failed on bad manifest")
       except ManifestException, e:
-        self.assert_(b in str(e), "file name should be in error message [%s]"%str(e))
+        print str(e)
+        self.assert_(b in str(e), "file name should be in error message: %s"%(str(e)))
     
 EXAMPLE1 = """<package>
   <description brief="a brief description">Line 1

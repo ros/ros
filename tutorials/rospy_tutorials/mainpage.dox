@@ -1,2 +1,0 @@
-\mainpage
-\htmlinclude manifest.html

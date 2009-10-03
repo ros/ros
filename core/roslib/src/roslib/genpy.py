@@ -81,6 +81,9 @@ def get_registered_ex(type_):
 SIMPLE_TYPES_DICT = { #see python module struct
     'int8': 'b', 
     'uint8': 'B',
+    # Python 2.6 adds in '?' for C99 _Bool, which appears equivalent to an uint8,
+    # thus, we use uint8
+    'bool': 'B',    
     'int16' : 'h',
     'uint16' : 'H',
     'int32' : 'i',
@@ -156,6 +159,8 @@ def default_value(field_type, default_package):
     elif field_type == 'string':
         # strings, byte[], and uint8s are all optimized to be strings
         return "''"
+    elif field_type == 'bool':
+        return 'False'
     elif field_type.endswith(']'): # array type
         base_type, is_array, array_len = roslib.msgs.parse_type(field_type)
         if base_type in ['byte', 'uint8']:
@@ -375,6 +380,7 @@ def unpack2(var, pattern, buff):
 _NUMPY_DTYPE = {
     'float32': 'numpy.float32',
     'float64': 'numpy.float64',
+    'bool': 'numpy.bool',
     'int8': 'numpy.int8',
     'int16': 'numpy.int16',
     'int32': 'numpy.int32',
@@ -555,6 +561,11 @@ def array_serializer_generator(package, type_, name, serialize, is_numpy):
                         yield unpack_numpy(var, length, dtype, 'str[start:end]') 
                     else:
                         yield unpack(var, pattern, 'str[start:end]')
+            if not serialize and base_type == 'bool':
+                # convert uint8 to bool
+                if base_type == 'bool':
+                    yield "%s = map(bool, %s)"%(var, var)
+            
         else:
             #generic recursive serializer
             #NOTE: this is functionally equivalent to the is_registered branch of complex_serializer_generator
@@ -641,6 +652,14 @@ def simple_serializer_generator(spec, start, end, serialize): #primitives that c
         yield "start = end"
         yield "end += %s"%struct.calcsize('<%s'%reduce_pattern(pattern))
         yield unpack('(%s,)'%vars_, pattern, 'str[start:end]')
+        
+        # convert uint8 to bool. this doesn't add much value as Python
+        # equality test on a field will return that True == 1, but I
+        # want to be consistent with bool
+        bool_vars = [(f, t) for f, t in zip(spec.names[start:end], spec.types[start:end]) if t == 'bool']
+        for f, t in bool_vars:
+            var = _serial_context+f
+            yield "%s = bool(%s)"%(var, var)
 
 ## Python generator that yields un-indented python code for
 ## (de)serializing MsgSpec. The code this yields is meant to be

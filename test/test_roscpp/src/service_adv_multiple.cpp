@@ -37,44 +37,32 @@
 
 #include <gtest/gtest.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include "ros/service.h"
 #include <test_roscpp/TestStringString.h>
 
-class Dummy
+bool srvCallback(test_roscpp::TestStringString::Request  &req,
+                 test_roscpp::TestStringString::Response &res)
 {
-  public:
-    bool srvCallback(test_roscpp::TestStringString::Request  &req,
-                     test_roscpp::TestStringString::Response &res)
-    {
-      return true;
-    }
-};
-
-ros::Node* g_node;
-const char* g_node_name = "serviceAdvertiseMultipleTest";
+  return true;
+}
 
 TEST(SrvCall, advertiseMultiple)
 {
-  Dummy d;
-
-  ASSERT_TRUE( g_node->advertiseService("service_adv", &Dummy::srvCallback, &d) );
-  ASSERT_FALSE( g_node->advertiseService("service_adv", &Dummy::srvCallback, &d) );
+  ros::NodeHandle nh;
+  ros::ServiceServer srv = nh.advertiseService("service_adv", srvCallback);
+  ASSERT_TRUE(srv);
+  ros::ServiceServer srv2 = nh.advertiseService("service_adv", srvCallback);
+  ASSERT_FALSE(srv2);
 }
 
-int
-main(int argc, char** argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "service_adv_multiple");
+  ros::NodeHandle nh;
 
-  ros::init(argc, argv);
-  g_node = new ros::Node( g_node_name );
-
-  int ret = RUN_ALL_TESTS();
-
-  delete g_node;
-
-  return ret;
+  return RUN_ALL_TESTS();
 }
 
 

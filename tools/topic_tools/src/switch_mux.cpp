@@ -27,31 +27,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 /////////////////////////////////////////////////////////////////////////////
 
-/** @defgroup switch_mux switch_mux
-
-switch_mux is a helper for switching which input topic is being output
-from a @ref mux node.  It calls the selection service offered by mux.
-
-<hr>
-
-@section usage Usage
-@verbatim
-switch_mux <outtopic> <intopic> [standard ROS arguments] 
-@endverbatim
-Options:
-- @b outopic: Output topic of the mux
-- @b intopic: Input topic to the mux that is to be selected.
-
-Example, switching to joystick input:
-@verbatim
-mux switched_cmdvel autonomous_cmdvel joystick_cmdvel &
-switch_mux switched_cmdvel joystick_cmdvel
-@endverbatim
-Note that you could instead use @b rosservice:
-@verbatim
-rosservice call switched_cmdvel_select joystick_cmdvel
-@endverbatim
-**/
 
 #include <cstdio>
 #include "ros/ros.h"

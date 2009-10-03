@@ -1,4 +1,0 @@
-<launch>
-  <node name="listener" pkg="rospy_tutorials" type="listener.py" output="screen"/>
-  <node name="publish_on_shutdown" pkg="rospy_tutorials" type="publish_on_shutdown.py" output="screen"/>
-</launch>

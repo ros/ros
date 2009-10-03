@@ -32,6 +32,8 @@
 #
 # Revision $Id$
 
+"""Internal use: handles maintaining registrations with master via internal listener APIs"""
+
 import socket
 import sys
 import logging
@@ -42,9 +44,7 @@ import traceback
 
 import rospy.core
 from rospy.core import is_shutdown, xmlrpcapi, logfatal, logwarn, loginfo, logerr, logdebug
-from rospy.names import get_caller_id, get_namespace, resolve_name
-
-## Module handles maintaining registrations with master via internal listener APIs
+from rospy.names import get_caller_id, get_namespace
 
 # topic manager and service manager singletons
 
@@ -62,47 +62,56 @@ def set_service_manager(sm):
 def get_service_manager():
     return _service_manager
 
-## Registration types
+    
 class Registration(object):
+    """Registration types"""
     PUB = 'pub'
     SUB = 'sub'
     SRV = 'srv'
     
-## Listener API for subscribing to changes in Publisher/Subscriber/Service declarations
 class RegistrationListener(object):
-    """Listener API for subscribing to topic decl changes in the topic manager"""
+    """Listener API for subscribing to changes in Publisher/Subscriber/Service declarations"""
 
-    ## New pub/sub/service declared.
-    ## @param self
-    ## @param name: topic/service name
-    ## @param data_type_or_uri str: topic type or service uri
-    ## @param reg_type {Registration.PUB | Registration.SUB | Registration.SRV}
-    def reg_added(self, name, data_type_or_uri, reg_type): 
+    def reg_added(self, resolved_name, data_type_or_uri, reg_type): 
+        """
+        New pub/sub/service declared.
+        @param resolved_name: resolved topic/service name
+        @param data_type_or_uri: topic type or service uri
+        @type  data_type_or_uri: str
+        @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
+        @type  reg_type: str
+        """
         pass
     
-    ## New pub/sub/service removed.
-    ## @param self
-    ## @param name: topic/service name
-    ## @param data_type_or_uri str: topic type or service uri
-    ## @param reg_type {Registration.PUB | Registration.SUB | Registration.SRV}
-    def reg_removed(self, name, data_type_or_uri, reg_type): 
+    def reg_removed(self, resolved_name, data_type_or_uri, reg_type): 
+        """
+        New pub/sub/service removed.
+        @param resolved_name: topic/service name
+        @type  resolved_name: str
+        @param data_type_or_uri: topic type or service uri
+        @type  data_type_or_uri: str
+        @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
+        @type  reg_type: str
+        """
         pass
 
 class _RegistrationListeners(object):
     
-    ## ctor
-    ## @param self
     def __init__(self):
+        """
+        ctor.
+        """
         self.listeners = []
         self.lock = threading.Lock()
 
-    ## Subscribe to notifications of pub/sub/service registration
-    ## changes. This is an internal API used to notify higher level
-    ## routines when to communicate with the master.
-    ##
-    ## @param self
-    ## @param l TopicListener: listener to subscribe
     def add_listener(self, l):
+        """
+        Subscribe to notifications of pub/sub/service registration
+        changes. This is an internal API used to notify higher level
+        routines when to communicate with the master.
+        @param l: listener to subscribe
+        @type  l: TopicListener
+        """
         assert isinstance(l, RegistrationListener)
         try:
             self.lock.acquire()
@@ -110,31 +119,39 @@ class _RegistrationListeners(object):
         finally:
             self.lock.release()
 
-    ## @param self
-    ## @param name str: topic/service name
-    ## @param data_type_or_uri str: topic type or service uri
-    ## @param reg_type str: {Registration.PUB | Registration.SUB | Registration.SRV}
-    def notify_removed(self, name, data_type_or_uri, reg_type):
+    def notify_removed(self, resolved_name, data_type_or_uri, reg_type):
+        """
+        @param resolved_name: resolved_topic/service name
+        @type  resolved_name: str
+        @param data_type_or_uri: topic type or service uri
+        @type  data_type_or_uri: str
+        @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
+        @type  reg_type: str
+        """
         try:
             self.lock.acquire()
             for l in self.listeners:
                 try:
-                    l.reg_removed(name, data_type_or_uri, reg_type)
+                    l.reg_removed(resolved_name, data_type_or_uri, reg_type)
                 except Exception, e:
                     logerr("error notifying listener of removal: %s"%traceback.format_exc(e))
         finally:
             self.lock.release()
             
-    ## @param self
-    ## @param name str; topic/service name
-    ## @param data_type str: topic/service type
-    ## @param reg_type str: {Registration.PUB | Registration.SUB | Registration.SRV}
-    def notify_added(self, name, data_type, reg_type):
+    def notify_added(self, resolved_name, data_type, reg_type):
+        """
+        @param resolved_name: topic/service name
+        @type  resolved_name: str
+        @param data_type: topic/service type
+        @type  data_type: str
+        @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
+        @type  reg_type: str
+        """
         try:
             self.lock.acquire()
             for l in self.listeners:
                 try:
-                    l.reg_added(name, data_type, reg_type)
+                    l.reg_added(resolved_name, data_type, reg_type)
                 except Exception, e:
                     logerr(traceback.format_exc(e))
         finally:
@@ -146,14 +163,19 @@ def get_registration_listeners():
 
 # RegManager's main purpose is to collect all client->master communication in one place
 
-## Registration manager. Instantiated by slave nodes. Communicates
-## with master to maintain topic registration information. Also
-## responds to publisher updates to create topic connections
 class RegManager(RegistrationListener):
+    """
+    Registration manager used by Node implemenation.
+    Communicates with ROS Master to maintain topic registration
+    information. Also responds to publisher updates to create topic
+    connections
+    """
 
-    ## @param self
-    ## @param handler node API handler
     def __init__(self, handler):
+        """
+        ctor.
+        @param handler: node API handler
+        """
         self.logger = logging.getLogger("rospy.registration")
         self.handler = handler
         self.uri = self.master_uri = None
@@ -162,12 +184,15 @@ class RegManager(RegistrationListener):
         self.registered = False        
         rospy.core.add_shutdown_hook(self.cleanup)
         
-    ## Start the RegManager. This should be passed in as an argument to a thread
-    ## starter as the RegManager is designed to spin in its own thread
-    ## @param self
-    ## @param uri str: URI of local node
-    ## @param master_uri str: Master URI
     def start(self, uri, master_uri):
+        """
+        Start the RegManager. This should be passed in as an argument to a thread
+        starter as the RegManager is designed to spin in its own thread
+        @param uri: URI of local node
+        @type  uri: str
+        @param master_uri: Master URI
+        @type  master_uri: str
+        """
         self.registered = False 
         self.master_uri = master_uri
         self.uri = uri
@@ -192,28 +217,25 @@ class RegManager(RegistrationListener):
                     sm.lock.acquire()                    
 
                     pub, sub, srv = tm.get_publications(), tm.get_subscriptions(), sm.get_services()
-                    for name, data_type in pub:
-                        name = resolve_name(name, caller_id)
-                        self.logger.info("Registering publisher topic [%s] type [%s] with master", name, data_type)
-                        code, msg, val = master.registerPublisher(caller_id, name, data_type, uri)
+                    for resolved_name, data_type in pub:
+                        self.logger.info("Registering publisher topic [%s] type [%s] with master", resolved_name, data_type)
+                        code, msg, val = master.registerPublisher(caller_id, resolved_name, data_type, uri)
                         if code != 1:
-                            logfatal("cannot register publication topic [%s] with master: %s"%(name, msg))
+                            logfatal("cannot register publication topic [%s] with master: %s"%(resolved_name, msg))
                             rospy.core.signal_shutdown("master/node incompatibility with register publisher")
-                    for name, data_type in sub:
-                        name = resolve_name(name, caller_id)
-                        self.logger.info("registering subscriber topic [%s] type [%s] with master", name, data_type)
-                        code, msg, val = master.registerSubscriber(caller_id, name, data_type, uri)
+                    for resolved_name, data_type in sub:
+                        self.logger.info("registering subscriber topic [%s] type [%s] with master", resolved_name, data_type)
+                        code, msg, val = master.registerSubscriber(caller_id, resolved_name, data_type, uri)
                         if code != 1:
-                            logfatal("cannot register subscription topic [%s] with master: %s"%(name, msg))
+                            logfatal("cannot register subscription topic [%s] with master: %s"%(resolved_name, msg))
                             rospy.core.signal_shutdown("master/node incompatibility with register subscriber")                        
                         else:
-                            self.publisher_update(name, val)
-                    for name, service_uri in srv:
-                        name = resolve_name(name, caller_id)
-                        self.logger.info("registering service [%s] uri [%s] with master", name, service_uri)
-                        code, msg, val = master.registerService(caller_id, name, service_uri, uri)
+                            self.publisher_update(resolved_name, val)
+                    for resolved_name, service_uri in srv:
+                        self.logger.info("registering service [%s] uri [%s] with master", resolved_name, service_uri)
+                        code, msg, val = master.registerService(caller_id, resolved_name, service_uri, uri)
                         if code != 1:
-                            logfatal("cannot register service [%s] with master: %s"%(name, msg))
+                            logfatal("cannot register service [%s] with master: %s"%(resolved_name, msg))
                             rospy.core.signal_shutdown("master/node incompatibility with register service")                        
  
                     registered = True
@@ -238,16 +260,20 @@ class RegManager(RegistrationListener):
         self.registered = True
         self.run()
         
-    ## @param self
-    ## @return bool: True if registration has occurred with master
     def is_registered(self):
+        """
+        Check if Node has been registered yet.
+        @return: True if registration has occurred with master
+        @rtype: bool
+        """
         return self.registered 
 
-    ## Main RegManager thread loop. Periodically checks the update
-    ## queue and generates topic connections
-    ## @param self
     def run(self):
-        "Main RegManager thread loop."
+        """
+        Main RegManager thread loop.
+        Periodically checks the update
+        queue and generates topic connections
+        """
         #Connect the topics
         while not self.handler.done and not is_shutdown():
             cond = self.cond
@@ -282,10 +308,12 @@ class RegManager(RegistrationListener):
             if not is_shutdown():
                 logerr("Unable to connect to publisher [%s] for topic [%s]: %s"%(uri, topic, traceback.format_exc()))
         
-    ## Cleans up registrations with master and releases topic and service resources
-    ## @param self
-    ## @param reason str: human-reasonable debug string
     def cleanup(self, reason):
+        """
+        Cleans up registrations with master and releases topic and service resources
+        @param reason: human-reasonable debug string
+        @type  reason: str
+        """        
         try:
             self.cond.acquire()
             self.cond.notifyAll()
@@ -307,14 +335,14 @@ class RegManager(RegistrationListener):
         sm = get_service_manager()
         try:
             if tm is not None:
-                for name, _ in tm.get_subscriptions():
-                    master.unregisterSubscriber(caller_id, name, self.uri)
-                for name, _ in tm.get_publications():
-                    master.unregisterPublisher(caller_id, name, self.uri)
+                for resolved_name, _ in tm.get_subscriptions():
+                    master.unregisterSubscriber(caller_id, resolved_name, self.uri)
+                for resolved_name, _ in tm.get_publications():
+                    master.unregisterPublisher(caller_id, resolved_name, self.uri)
 
             if sm is not None:
-                for name, service_uri in sm.get_services():
-                    master.unregisterService(caller_id, name, service_uri)
+                for resolved_name, service_uri in sm.get_services():
+                    master.unregisterService(caller_id, resolved_name, service_uri)
         except socket.error, (errno, msg):
             if errno == 111 or errno == 61: #can't talk to master, nothing we can do about it
                 self.logger.warn("cannot unregister with master due to network issues")
@@ -329,40 +357,48 @@ class RegManager(RegistrationListener):
         if sm is not None:
             sm.unregister_all()
 
-    ## RegistrationListener callback
-    ## @param self
-    ## @param name str: name of topic or service
-    ## @param data_type_or_uri str: either the data type (for topic regs) or the service URI (for service regs).
-    ## @param reg_type Registration.PUB | Registration.SUB | Registration.SRV
-    def reg_removed(self, name, data_type_or_uri, reg_type):
+    def reg_removed(self, resolved_name, data_type_or_uri, reg_type):
+        """
+        RegistrationListener callback
+        @param resolved_name: resolved name of topic or service
+        @type  resolved_name: str
+        @param data_type_or_uri: either the data type (for topic regs) or the service URI (for service regs).
+        @type  data_type_or_uri: str
+        @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
+        @type  reg_type: str
+        """
         master_uri = self.master_uri
         if not master_uri:
             self.logger.error("Registrar: master_uri is not set yet, cannot inform master of deregistration")
         else:
             master = xmlrpcapi(master_uri)
             if reg_type == Registration.PUB:
-                self.logger.debug("unregisterPublisher(%s, %s)", name, self.uri)
-                master.unregisterPublisher(get_caller_id(), name, self.uri)
+                self.logger.debug("unregisterPublisher(%s, %s)", resolved_name, self.uri)
+                master.unregisterPublisher(get_caller_id(), resolved_name, self.uri)
             elif reg_type == Registration.SUB:            
-                self.logger.debug("unregisterSubscriber(%s, %s)", name, data_type_or_uri)
-                master.unregisterSubscriber(get_caller_id(), name, self.uri)
+                self.logger.debug("unregisterSubscriber(%s, %s)", resolved_name, data_type_or_uri)
+                master.unregisterSubscriber(get_caller_id(), resolved_name, self.uri)
             elif reg_type == Registration.SRV:
-                self.logger.debug("unregisterService(%s, %s)", name, data_type_or_uri)
-                master.unregisterService(get_caller_id(), name, data_type_or_uri)
+                self.logger.debug("unregisterService(%s, %s)", resolved_name, data_type_or_uri)
+                master.unregisterService(get_caller_id(), resolved_name, data_type_or_uri)
     
-    ## RegistrationListener callback
-    ## @param self
-    ## @param name str: name of topic or service
-    ## @param data_type_or_uri str: either the data type (for topic regs) or the service URI (for service regs).
-    ## @param reg_type Registration.PUB | Registration.SUB | Registration.SRV
-    def reg_added(self, name, data_type_or_uri, reg_type):
+    def reg_added(self, resolved_name, data_type_or_uri, reg_type):
+        """
+        RegistrationListener callback
+        @param resolved_name: resolved name of topic or service
+        @type  resolved_name: str
+        @param data_type_or_uri: either the data type (for topic regs) or the service URI (for service regs).
+        @type  data_type_or_uri: str
+        @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
+        @type  reg_type: str
+        """
         #TODO: this needs to be made robust to master outages
         master_uri = self.master_uri
         if not master_uri:
             self.logger.error("Registrar: master_uri is not set yet, cannot inform master of registration")
         else:
             master = xmlrpcapi(master_uri)
-            args = (get_caller_id(), name, data_type_or_uri, self.uri)
+            args = (get_caller_id(), resolved_name, data_type_or_uri, self.uri)
             registered = False
             first = True
             while not registered and not is_shutdown():
@@ -371,21 +407,21 @@ class RegManager(RegistrationListener):
                         self.logger.debug("master.registerPublisher(%s, %s, %s, %s)"%args)
                         code, msg, val = master.registerPublisher(*args)
                         if code != 1:
-                            logfatal("unable to register publication [%s] with master: %s"%(name, msg))
+                            logfatal("unable to register publication [%s] with master: %s"%(resolved_name, msg))
                     elif reg_type == Registration.SUB:
                         self.logger.debug("master.registerSubscriber(%s, %s, %s, %s)"%args)
                         code, msg, val = master.registerSubscriber(*args)
                         if code == 1:
-                            self.publisher_update(name, val)
+                            self.publisher_update(resolved_name, val)
                         else:
                             # this is potentially worth exiting over. in the future may want to add a retry
                             # timer
-                            logfatal("unable to register subscription [%s] with master: %s"%(name, msg))
+                            logfatal("unable to register subscription [%s] with master: %s"%(resolved_name, msg))
                     elif reg_type == Registration.SRV:
                         self.logger.debug("master.registerService(%s, %s, %s, %s)"%args)
                         code, msg, val = master.registerService(*args)
                         if code != 1:
-                            logfatal("unable to register service [%s] with master: %s"%(name, msg))
+                            logfatal("unable to register service [%s] with master: %s"%(resolved_name, msg))
                         
                     registered = True
                 except Exception, e:
@@ -396,17 +432,19 @@ class RegManager(RegistrationListener):
                         first = False
                     time.sleep(0.2)
 
-    ## Inform psmanager of latest publisher list for a topic.  This
-    #  will cause RegManager to create a topic connection for all new
-    #  publishers (in a separate thread).
-    ## @param self
-    #  @param topic Topic name
-    #  @param uris list of all publishers uris for topic
-    def publisher_update(self, topic, uris):
-        "Inform psmanager of latest publisher list for a topic."
+    def publisher_update(self, resolved_name, uris):
+        """
+        Inform psmanager of latest publisher list for a topic.  This
+        will cause L{RegManager} to create a topic connection for all new
+        publishers (in a separate thread).
+        @param resolved_name: resolved topic name
+        @type  resolved_name: str
+        @param uris: list of all publishers uris for topic
+        @type  uris: [str]
+        """
         try:
             self.cond.acquire()
-            self.updates.append((topic, uris))
+            self.updates.append((resolved_name, uris))
             self.cond.notifyAll()              
         finally:
             self.cond.release()

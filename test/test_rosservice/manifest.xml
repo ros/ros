@@ -7,14 +7,14 @@
   <author>Ken Conley</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://pr.willowgarage.com/wiki/test_rosservice</url>
+  <url>http://ros.org/wiki/test_rosservice</url>
   <depend package="rosservice"/>
   <depend package="rospy"/>
   <depend package="roslib"/>
   <depend package="rostest"/>
 
   <!-- runtime deps for online tests -->
-  <depend package="rospy_tutorials"/>
+  <depend package="test_ros" />
 
 </package>
 

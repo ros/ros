@@ -27,33 +27,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 /////////////////////////////////////////////////////////////////////////////
 
-/** @defgroup drop drop
-
-drop is a node that can subscribe to a topic and republish incoming
-data to another topic, dropping X out of every Y incoming messages. It's
-mainly useful for limiting bandwidth usage, e.g., over a wireless link.
-It can work with any message type.
-
-<hr>
-
-@section usage Usage
-@verbatim
-drop <intopic> <X> <Y> [<outtopic>] [standard ROS arguments] 
-@endverbatim
-Options:
-- @b intopic: Incoming topic to subscribe to
-- @b X, @b Y: drop X out of every Y incoming messages
-- @b outtopic: Outgoing topic to publish on (default: intopic_drop)
-
-Example, dropping every other laser_scan:
-@verbatim
-drop base_scan 1 2
-@endverbatim
-**/
-
 #include <cstdlib>
 #include <cstdio>
-#include "ros/node.h"
 #include "topic_tools/shape_shifter.h"
 
 using std::string;

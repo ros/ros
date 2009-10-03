@@ -458,6 +458,7 @@ string ROSStack::lookup_owner(string pkg_name, bool just_owner_name)
   {
     vector<string> rppvec;
     string_split(rpp, rppvec, ":");
+    sanitize_rppvec(rppvec);
     for (vector<string>::iterator i = rppvec.begin(); i != rppvec.end(); ++i)
       bases[*i] = string("");
   }
@@ -847,10 +848,12 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
   char *rpp = getenv("ROS_PACKAGE_PATH");
   if (rpp)
     rsp = string(rpp);
-#ifdef VERBOSE_DEBUG
-  printf("seeding crawler with %s\n", rsp.c_str());
-#endif
   string_split(rsp, rspvec, ":");
+  sanitize_rppvec(rspvec);
+#ifdef VERBOSE_DEBUG
+  printf("seeding crawler with [%s], which has %lu entries\n", rsp.c_str(), rspvec.size());
+#endif
+
   for (vector<string>::iterator i = rspvec.begin(); i != rspvec.end(); ++i)
   {
     // Check whether this part of ROS_PACKAGE_PATH is itself a package/stack
@@ -1006,7 +1009,8 @@ void rosstack::string_split(const string &s, vector<string> &t, const string &d)
     t.push_back(s.substr(start, end-start));
     start = end + 1;
   }
-  t.push_back(s.substr(start));
+  if (start != s.length())
+    t.push_back(s.substr(start));
 }
 
 bool rosstack::file_exists(const string &fname)
@@ -1017,5 +1021,21 @@ bool rosstack::file_exists(const string &fname)
 Stack *rosstack::g_get_stack(const string &name)
 {
   return g_rosstack->get_stack(name);
+}
+
+void ROSStack::sanitize_rppvec(std::vector<std::string> &rppvec)
+{
+  // drop any trailing slashes
+  for (size_t i = 0; i < rppvec.size(); i++)
+  {
+    size_t last_slash_pos = rppvec[i].find_last_of("/");
+    if (last_slash_pos != string::npos &&
+        last_slash_pos == rppvec[i].length()-1)
+    {
+      fprintf(stderr, "[rosstack] warning: trailing slash found in "
+                      "ROS_PACKAGE_PATH\n");
+      rppvec[i].erase(last_slash_pos);
+    }
+  }
 }
 

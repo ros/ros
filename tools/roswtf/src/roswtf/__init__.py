@@ -118,9 +118,9 @@ def _roswtf_main():
     from roswtf.context import WtfContext
     from roswtf.environment import wtf_check_environment, invalid_url
     from roswtf.graph import wtf_check_graph
-    from roswtf.packages import wtf_check_packages
-    from roswtf.roslaunchwtf import wtf_check_roslaunch_static, wtf_check_roslaunch_online
-    
+    import roswtf.packages
+    import roswtf.roslaunchwtf
+    import roswtf.stacks    
     import roswtf.plugins
     static_plugins, online_plugins = roswtf.plugins.load_plugins()
 
@@ -136,14 +136,19 @@ def _roswtf_main():
             print "Package:",curr_package
             ctx = WtfContext.from_package(curr_package)
             #TODO: load all .launch files in package
+        elif os.path.isfile('stack.xml'):
+            curr_stack = os.path.basename(os.path.abspath('.'))
+            print "Stack:",curr_stack            
+            ctx = WtfContext.from_stack(curr_stack)
         else:
             print "No package in context"
             ctx = WtfContext.from_env()
 
     # static checks
     wtf_check_environment(ctx)
-    wtf_check_packages(ctx)
-    wtf_check_roslaunch_static(ctx)
+    roswtf.packages.wtf_check(ctx)
+    roswtf.stacks.wtf_check(ctx)    
+    roswtf.roslaunchwtf.wtf_check_static(ctx)
     for p in static_plugins:
         p(ctx)
 
@@ -185,7 +190,7 @@ def _roswtf_main():
         rospy.init_node('roswtf', anonymous=True)
 
         online_checks = True
-        wtf_check_roslaunch_online(ctx)
+        roswtf.roslaunchwtf.wtf_check_online(ctx)
 
         for p in online_plugins:
             online_checks = True

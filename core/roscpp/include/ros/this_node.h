@@ -33,6 +33,14 @@
 namespace ros
 {
 
+class InvalidNodeNameException : public ros::Exception
+{
+public:
+  InvalidNodeNameException(const std::string& name, const std::string& reason)
+  : Exception("Invalid node name [" + name + "]: " + reason)
+  {}
+};
+
 /**
  * \brief Contains functions which provide information about this process' ROS node
  */

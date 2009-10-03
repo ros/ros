@@ -31,7 +31,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: msg.py 1951 2008-08-22 20:30:15Z sfkwc $
+# Revision $Id$
 
 import roslib; roslib.update_path('rosdoc')
 import rosdoc

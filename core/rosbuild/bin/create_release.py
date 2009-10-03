@@ -35,6 +35,8 @@ def main():
             #TODO: check for app instead
             raise ReleaseException("cannot locate stack [%s]"%name)
 
+        check_svn_status(source_dir)
+        
         # figure out what we're releasing against
         distro = get_active_distro()
         print "Distribution target is [%s]"%distro
@@ -52,7 +54,7 @@ def main():
             raise ReleaseException("version number in CMakeLists.txt appears to be incorrect:\n\n%s"%cmake_version) 
 
         if 1:
-            make_dist(name, version, source_dir, release_props)
+            make_dist(name, version, distro, source_dir, release_props)
 
         if 1:
             tag_url = tag_subversion(name, version, distro, release_props)
@@ -105,34 +107,48 @@ def update_rosdistro_yaml(name, version, distro, distro_file):
 def tag_subversion(name, version, distro, release_props):
     # TODO: delete the old URL first?
 
-    from_url = release_props['source-svn-dev']
-    tag_url = expand_uri(release_props['source-svn'], name, version, distro, \
+    from_url = expand_uri(release_props['dev-svn'], name, version, distro, \
+                             release_props['os_name'], release_props['os_ver'])
+    tag_url = expand_uri(release_props['release-svn'], name, version, distro, \
                              release_props['os_name'], release_props['os_ver'])
         
     release_name = "%s-%s"%(name, version)
 
     cmd = ['svn', 'ls', tag_url]
     output = Popen(cmd, stdout=PIPE, stderr=PIPE).communicate()
+    cmds = [['svn', 'cp', '--parents', '-m', 'Tagging %s release'%release_name, from_url, tag_url]]
     if output[0]:
-        cmd = ['bash', '-c', 'svn rm -m "Deleting old tag" %s && svn cp --parents -m "Tagging %s release" %s %s'%(tag_url, release_name, from_url, tag_url)]
-    else:
-        cmd = ['bash', '-c', 'svn cp --parents -m "Tagging %s release" %s %s'%(release_name, from_url, tag_url)]
-    #cmd_str = 'svn cp --parents -m "Tagging %s release" %s %s'%(release_name, from_url, tag_url)
-    cmd_str = ' '.join(cmd)
-    print "Okay to execute:\n\n%s\n\n(y/n)?"%(cmd_str)
+        cmds = [['svn', 'rm', '-m', 'Deleting old tag', tag_url], 
+                cmds[0]]
+    # Pretty-print a string version of the commands (I'm sure that Ken can
+    # do this in half a line of code)
+    cmd_str = ''
+    for c in cmds:
+        for s in c:
+            if ' ' in s:
+                cmd_str += '"%s" '%s
+            else:
+                cmd_str += '%s '%s
+        cmd_str += '\n'
+    print "Okay to execute:\n\n%s\n(y/n)?"%(cmd_str)
     while 1:
         input = sys.stdin.readline().strip()
         if input in ['y', 'n']:
             break
     if input == 'y':
-        check_call(cmd)
+        for c in cmds:
+            check_call(c)
     else:
         print "create_release will not tag this release in subversion"
     return tag_url
         
 def get_active_distro():
     from subprocess import Popen, PIPE
-    output = Popen(['rosdistro', 'active'], stdout=PIPE, stderr=PIPE).communicate()
+    try:
+        output = Popen(['rosdistro', 'active'], stdout=PIPE, stderr=PIPE).communicate()
+    except:
+        output = [None]
+
     if not output[0]:
         return 'latest'
     else:
@@ -162,18 +178,19 @@ def load_release_props(name, distro, distro_file, stack_dir):
     if not props:
         raise ReleaseException("[%s] is missing _uri_rules. Please consult documentation"%(distro_file))
     
-    for reqd in ['source-svn']:
+    for reqd in ['release-svn']:
         if not reqd in props:
             raise ReleaseException("[%s] is missing required key [%s]"%(distro_file, reqd))
 
     # add in some additional keys
-    from subprocess import Popen, PIPE
-    output = Popen(['svn', 'info'], stdout=PIPE, cwd=stack_dir).communicate()[0]
-    url_line = [l for l in output.split('\n') if l.startswith('URL:')]
-    if url_line:
-        props['source-svn-dev'] = url_line[0][4:].strip()
-    else:
-        raise ReleaseException("cannot determine SVN URL of stack [%s]"%name)
+    if not 'dev-svn' in props:
+        from subprocess import Popen, PIPE
+        output = Popen(['svn', 'info'], stdout=PIPE, cwd=stack_dir).communicate()[0]
+        url_line = [l for l in output.split('\n') if l.startswith('URL:')]
+        if url_line:
+            props['dev-svn'] = url_line[0][4:].strip()
+        else:
+            raise ReleaseException("cannot determine SVN URL of stack [%s]"%name)
     
     os_name, os_ver = detect_os()
     props['os_name'] = os_name
@@ -194,11 +211,14 @@ def checkout_svn(name, uri):
     check_call(cmd)
     return tmp_dir
 
-def make_dist(name, version, source_dir, release_props):
-    tmp_dir = checkout_svn(name, release_props['source-svn-dev'])
+def make_dist(name, version, distro, source_dir, release_props):
+    from_url = expand_uri(release_props['dev-svn'], name, version, distro, \
+                             release_props['os_name'], release_props['os_ver'])
+    
+    tmp_dir = checkout_svn(name, from_url)
     tmp_source_dir = os.path.join(tmp_dir, name)
     print 'Building a distribution for %s in %s'%(name, tmp_source_dir)
-    cmd = ['bash', '-c', 'cd %s && make package_source'%tmp_source_dir]
+    cmd = ['make', 'package_source']
     check_call(cmd, cwd=tmp_source_dir)
     tarball = "%s-%s.tar.bz2"%(name, version)
     import shutil
@@ -275,11 +295,21 @@ def detect_os():
       exit(1)
   elif os.path.isfile('/usr/bin/sw_vers'):
     os_name = 'macports' # assume this is the only decent way to get things
-    p = subprocess.Popen(['sw_vers','-productVersion'], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+    p = Popen(['sw_vers','-productVersion'], stdout = PIPE, stderr = PIPE)
     sw_vers_stdout, sw_vers_stderr = p.communicate()
     ver_tokens = sw_vers_stdout.strip().split('.')
     os_ver = ver_tokens[0] + '.' + ver_tokens[1]
   return os_name, os_ver
 
+def check_svn_status(source_dir):
+    """make sure that all outstanding code has been checked in"""
+    cmd = ['svn', 'st', '-q']
+    output = Popen(cmd, stdout=PIPE, stderr=PIPE, cwd=source_dir).communicate()
+    if output[0]:
+        raise ReleaseException("svn status in stack reported uncommitted files:\n%s"%output[0])
+    if output[1]:
+        raise ReleaseException("svn status in [%s] reported errors:\n%s"%(source_dir, output[0]))
+    
+    
 if __name__ == '__main__':
     main()

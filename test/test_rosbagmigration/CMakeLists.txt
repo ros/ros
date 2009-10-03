@@ -3,11 +3,11 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
 rosbuild_init()
 
-genmsg()
+rosbuild_genmsg()
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-rospack_add_pyunit(test/migrate_test.py)
+rosbuild_add_pyunit(test/migrate_test.py)
 
 

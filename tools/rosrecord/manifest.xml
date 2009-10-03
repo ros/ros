@@ -11,6 +11,7 @@ deserialization and reserialization of the messages.
 <depend package="roscpp"/>
 <depend package="rospy"/>
 <depend package="topic_tools"/>
+<depend package="rostest"/>
 <export>
   <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lrosrecorder"/>
 </export>

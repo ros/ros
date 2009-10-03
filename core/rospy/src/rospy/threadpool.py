@@ -32,12 +32,16 @@
 #
 # Revision $Id$
 
-## Adapted from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/203871
-##
-## Added a 'marker' to tasks so that multiple tasks with the same
-## marker are not executed. As we are using the thread pool for i/o
-## tasks, the marker is set to the i/o name. This prevents a slow i/o
-## for gobbling up all of our threads
+"""
+Internal threadpool library for zenmaster.
+
+Adapted from U{http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/203871}
+
+Added a 'marker' to tasks so that multiple tasks with the same
+marker are not executed. As we are using the thread pool for i/o
+tasks, the marker is set to the i/o name. This prevents a slow i/o
+for gobbling up all of our threads
+"""
 
 import threading, logging, traceback
 from time import sleep

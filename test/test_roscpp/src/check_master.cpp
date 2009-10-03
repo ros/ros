@@ -38,15 +38,11 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "ros/master.h"
-#include "ros/this_node.h"
-#include "ros/node.h"
+#include "ros/ros.h"
 
 #include "XmlRpc.h"
 
 using namespace XmlRpc;
-
-ros::Node* n;
 
 TEST(CheckMaster, checkMaster)
 {
@@ -66,13 +62,8 @@ int
 main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "check_master");
+  ros::NodeHandle nh;
 
-  ros::init(argc, argv);
-  n = new ros::Node("checkMaster");
-
-  int ret = RUN_ALL_TESTS();
-
-  delete n;
-
-  return ret;
+  return RUN_ALL_TESTS();
 }

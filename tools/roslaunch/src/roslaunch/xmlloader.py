@@ -369,6 +369,10 @@ class XmlLoader(object):
                      self.opt_attrs(tag, context, ('machine', 'name', 'args', 'output', 'respawn', 'cwd', 'launch-prefix'))
             if not name and not is_test:
                 ros_config.add_config_error("WARN: un-named nodes in roslaunch are deprecated:\n[%s]: %s"%(context.filename, tag.toxml()))
+                
+            # #1821, namespaces in nodes need to be banned
+            if name and roslib.names.SEP in name:
+                raise XmlParseException("<%s> 'name' cannot contain a namespace"%tag.tagName)
 
             args = args or ''
             child_ns = self._ns_clear_params_attr('node', tag, context, ros_config, node_name=name)

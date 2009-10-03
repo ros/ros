@@ -11,3 +11,5 @@ string MULTIQUOTE="hello" 'goodbye'
 string EXAMPLE="#comments" are ignored, and leading and trailing whitespace removed
 string WHITESPACE= strip  
 string EMPTY= 
+bool TRUE=1
+bool FALSE=0

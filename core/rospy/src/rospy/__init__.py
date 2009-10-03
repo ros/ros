@@ -33,6 +33,12 @@
 # Copyright (c) 2008, Willow Garage, Inc.
 # Revision $Id$
 
+"""
+ROS client library for Python.
+See U{http://ros.org/wiki/rospy}
+@author: Ken Conley (kwc)
+"""
+
 from roslib.rosenv import ROS_ROOT, ROS_MASTER_URI, ROS_HOSTNAME, ROS_NAMESPACE, ROS_PACKAGE_PATH, ROS_LOG_DIR
 
 import rospy.core
@@ -58,17 +64,63 @@ from rospy.core import is_shutdown, signal_shutdown, \
 from rospy.exceptions import *
 from rospy.init import get_node_proxy
 from rospy.msg import AnyMsg, Message
-from rospy.names import get_caller_id, get_namespace, resolve_name, remap_name
+from rospy.names import get_name, get_caller_id, get_namespace, resolve_name, remap_name
 from rospy.rostime import Time, Duration, get_rostime, get_time
 from rospy.service import ServiceException, ServiceDefinition
 # - use tcp ros implementation of services
 from rospy.tcpros_service import Service, ServiceProxy 
 from rospy.topics import SubscribeListener, Publisher, Subscriber
 
-# - deprecated api
-from rospy.client import ready
-from rospy.topics import TopicSub, TopicPub
-
 ## \defgroup validators Validators
 ## \defgroup clientapi Client API
 
+__all__ = [
+    'Header',
+    'spin',
+    'myargv',
+    'init_node',
+    'get_master',
+    'get_published_topics',
+    'wait_for_service',
+    'on_shutdown',
+    'get_param',
+    'get_param_names',
+    'set_param',
+    'delete_param',
+    'has_param',
+    'search_param',
+    'sleep',
+    'Rate',
+    'DEBUG',
+    'INFO',
+    'WARN',
+    'ERROR',
+    'FATAL'
+    'is_shutdown',
+    'signal_shutdown',
+    'get_node_uri',
+    'get_ros_root',
+    'logdebug',
+    'logwarn', 'loginfo',
+    'logout', 'logerr', 'logfatal',
+    'parse_rosrpc_uri',
+    'ROSException',
+    'ROSSerializationException',
+    'ROSInitException',
+    'ROSInterruptException',
+    'ROSInternalException',
+    'TransportException',
+    'TransportTerminated',
+    'TransportInitError',
+    'get_node_proxy',
+    'AnyMsg', 'Message',
+    'get_name',
+    'get_caller_id',
+    'get_namespace',
+    'resolve_name',
+    'remap_name',
+    'Time', 'Duration', 'get_rostime', 'get_time',
+    'ServiceException', 'ServiceDefinition',
+    'Service', 'ServiceProxy',
+    'SubscribeListener', 'Publisher', 'Subscriber',
+    ]

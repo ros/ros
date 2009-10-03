@@ -28,35 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 /////////////////////////////////////////////////////////////////////////////
 
-/** @defgroup mux mux
-
-mux is a node that can subscribe to a set of incoming topics and republish
-incoming data on one of them to another topic.  I.e., it's multiplexer
-that switches an output among 1 of N inputs.  A service is offered to
-switch among input topics.  At startup, the first input topic on the
-command line is selected.
-
-<hr>
-
-@section usage Usage
-@verbatim
-mux <outopic> <intopic1> [<intopic2>...] [standard ROS arguments] 
-@endverbatim
-Options:
-- @b outtopic: Outgoing topic to publish on (default: intopic_drop)
-- @b intopicN: Incoming topic to subscribe to
-
-Example, muxing two command streams into one:
-@verbatim
-mux switched_cmdvel autonomous_cmdvel joystick_cmdvel
-@endverbatim
-
-@section services Services offered
-- @b "intopic_select" topic_tools/MuxSelect : select a new topic; returns the previously selected topic
-**/
 
 #include <cstdio>
-#include "ros/node.h"
 #include "std_msgs/String.h"
 #include "topic_tools/MuxSelect.h"
 #include "topic_tools/shape_shifter.h"

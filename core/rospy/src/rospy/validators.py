@@ -32,27 +32,26 @@
 #
 # Revision $Id$
 
-## \ingroup validators
-#  Exception that is raised when a parameter fails validation checks
+"""Internal-use Python decorators for parameter validation"""
+
 class ParameterInvalid(Exception):
+    """Exception that is raised when a parameter fails validation checks"""
     def __init__(self, message):
         self.message = message
 
     def __str__(self):
         return str(self.message)
 
-## \ingroup validators
-#  Validator that checks that parameter is not empty
 def non_empty(param_name):
+    """Validator that checks that parameter is not empty"""
     def validator(param, context):
         if not param:
             raise ParameterInvalid("ERROR: parameter [%s] must be specified and non-empty"%param_name)
         return param
     return validator
 
-## \ingroup validators
-#  Validator that checks that parameter is a string and non-empty
 def non_empty_str(param_name):
+    """Validator that checks that parameter is a string and non-empty"""
     def validator(param, context):
         if not param:
             raise ParameterInvalid("ERROR: parameter [%s] must be specified and non-empty"%param_name)
@@ -61,9 +60,8 @@ def non_empty_str(param_name):
         return param
     return validator
         
-## \ingroup validators
-#  Validator that checks that parameter is not None
 def not_none(param_name):
+    """Validator that checks that parameter is not None"""
     def validator(param, context):
         if param is None:
             raise ParameterInvalid("ERROR: parameter [%s] must be specified"%param_name)

@@ -30,8 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: msgspec.py 3357 2009-01-13 07:13:05Z jfaustwg $
-# $Author: jfaustwg $
+# Revision $Id$
+# $Author$
 from __future__ import with_statement
 
 import cStringIO
@@ -85,11 +85,12 @@ def _generate_raw_text(raw_fn, msg):
     raw_text = raw_fn(msg, raw=True)
     s = ''
     for line in raw_text.split('\n'):
+        line = line.replace(' ', '&nbsp;')
         parts = line.split('#')
         if len(parts) > 1:
             s = s + parts[0]+'<font color="blue">#%s</font><br/>'%('#'.join(parts[1:]))
         else:
-            s = s + "%s<br />"%parts[0]
+            s = s + "%s<br/>"%parts[0]
     return s
 
 def _generate_msg_text_from_spec(package, spec, buff=None, indent=0):
@@ -106,7 +107,7 @@ def _generate_msg_text_from_spec(package, spec, buff=None, indent=0):
     return buff.getvalue()
 
 def _generate_msg_text(package, type_):
-    print "generate", package, type_
+    #print "generate", package, type_
     name, spec = roslib.msgs.load_from_file(msg_file(package, type_))
     return _generate_msg_text_from_spec(package, spec)
 
@@ -207,7 +208,7 @@ def generate_msg_docs(ctx):
                 text = generate_msg_doc('%s/%s'%(p,m))
                 file_p = os.path.join(msg_d, '%s.html'%m)
                 with open(file_p, 'w') as f:
-                    print "writing", file_p
+                    #print "writing", file_p
                     f.write(text)
             except Exception, e:
                 print >> sys.stderr, "FAILED to generate for %s/%s: %s"%(p, m, str(e))
@@ -224,7 +225,7 @@ def generate_msg_docs(ctx):
                 text = generate_srv_doc('%s/%s'%(p,s))
                 file_p = os.path.join(srv_d, '%s.html'%s)
                 with open(file_p, 'w') as f:
-                    print "writing", file_p
+                    #print "writing", file_p
                     f.write(text)
             except Exception, e:
                 print >> sys.stderr, "FAILED to generate for %s/%s: %s"%(p, s, str(e))

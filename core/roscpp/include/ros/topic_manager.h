@@ -67,14 +67,11 @@ public:
   void start();
   void shutdown();
 
-  bool subscribe(const SubscribeOptions& ops, Message* m, AbstractFunctor *cb);
-  bool unsubscribe(const std::string &topic, AbstractFunctor *afp);
-  bool advertise(const AdvertiseOptions& ops, bool allow_multiple = false);
-  bool unadvertise(const std::string &topic, const SubscriberCallbacksPtr& callbacks = SubscriberCallbacksPtr());
-
-  bool unsubscribe(const std::string &_topic);
-  bool unsubscribe(const Message& _msg);
+  bool subscribe(const SubscribeOptions& ops);
   bool unsubscribe(const std::string &_topic, const SubscriptionMessageHelperPtr& helper);
+
+  bool advertise(const AdvertiseOptions& ops, const SubscriberCallbacksPtr& callbacks);
+  bool unadvertise(const std::string &topic, const SubscriberCallbacksPtr& callbacks);
 
   /** @brief Get the list of topics advertised by this node
    *
@@ -87,15 +84,6 @@ public:
    * @param[out] The subscribed topics
    */
   void getSubscribedTopics(V_string& topics);
-
-  /** if it finds a pre-existing subscription to the same topic and of the
-   *  same message type, it appends the Functor to the callback vector for
-   *  that subscription. otherwise, it returns false, indicating that a new
-   *  subscription needs to be created.
-   */
-  bool addSubCallback(const std::string &_topic, Message* m, AbstractFunctor *fp,
-                      const SubscriptionMessageHelperPtr& helper, CallbackQueueInterface* callback_queue, int max_queue,
-                      const VoidPtr& tracked_object);
 
   /** @brief Lookup an advertised topic.
    *
@@ -140,6 +128,13 @@ public:
   void publish(const PublicationPtr& p, const Message& m);
 
 private:
+  /** if it finds a pre-existing subscription to the same topic and of the
+   *  same message type, it appends the Functor to the callback vector for
+   *  that subscription. otherwise, it returns false, indicating that a new
+   *  subscription needs to be created.
+   */
+  bool addSubCallback(const SubscribeOptions& ops);
+
   /** @brief Request a topic
    *
    * Negotiate a subscriber connection on a topic.

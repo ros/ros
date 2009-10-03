@@ -9,8 +9,5 @@
   <depend package="std_msgs" />  
   <depend package="test_ros" />
 
-  <!-- use some msgs defined here to double up on testing -->
-  <depend package="rospy_tutorials" />
-  
   <rosdep name="python-numpy" /> <!-- for numpy tests -->
 </package>

@@ -1,5 +1,5 @@
 <launch>
   <node pkg="test_roscpp" type="publish_n_fast" args="1 1 1"/>
   <node pkg="test_roscpp" type="publish_n_fast" args="1 1 1 __name:=publisher2 test_roscpp/pubsub_test:=test_roscpp/pubsub_test2"/>
-  <test test-name="pubsub_once" pkg="test_roscpp" type="subscribe_resubscribe" args="1 1.0"/>
+  <test test-name="pubsub_resub_once" pkg="test_roscpp" type="subscribe_resubscribe" args="1 1.0"/>
 </launch>

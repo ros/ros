@@ -40,96 +40,107 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <test_roscpp/TestArray.h>
 
-#include <boost/thread/barrier.hpp>
+#include <boost/thread.hpp>
 
 int g_argc;
 char** g_argv;
 
-ros::Node* g_n;
-
 class Subscriptions : public testing::Test
 {
-  public:
-    test_roscpp::TestArray msg;
-    bool subscribed;
+public:
+  ros::NodeHandle nh_;
+  ros::Subscriber sub_;
 
-    void MsgCallback()
+  void messageCallback(const test_roscpp::TestArrayConstPtr& msg)
+  {
+    ROS_INFO("in callback");
+
+    if(!sub_)
     {
-      puts("in callback");
-
-      if(!subscribed)
-      {
-        puts("but not subscribed!");
-        FAIL();
-      }
+      ROS_INFO("but not subscribed!");
+      FAIL();
     }
+  }
 
-    void AutoUnsubscribeCallback()
-    {
-      puts("in autounsub callback");
-      g_n->unsubscribe("test_roscpp/pubsub_test");
+  void autoUnsubscribeCallback(const test_roscpp::TestArrayConstPtr& msg)
+  {
+    ROS_INFO("in autounsub callback");
+    sub_.shutdown();
+  }
 
-      subscribed = false;
-    }
-
-  protected:
-    Subscriptions() {}
+protected:
+  Subscriptions() {}
 };
 
 TEST_F(Subscriptions, subUnsub)
 {
-  subscribed = false;
+  sub_.shutdown();
+
   for(int i=0;i<100;i++)
   {
-    if(!subscribed)
+    if(!sub_)
     {
-      subscribed = true;
-      ASSERT_TRUE(g_n->subscribe("test_roscpp/pubsub_test", msg, &Subscriptions::MsgCallback, (Subscriptions*)this, 1));
+      sub_ = nh_.subscribe("test_roscpp/pubsub_test", 0, &Subscriptions::messageCallback, (Subscriptions*)this);
+      ASSERT_TRUE(sub_);
     }
     else
     {
-      ASSERT_TRUE(g_n->unsubscribe("test_roscpp/pubsub_test"));
-      subscribed = false;
+      sub_.shutdown();
+      ASSERT_FALSE(sub_);
     }
 
     ros::WallDuration(0.01).sleep();
+    ros::spinOnce();
   }
 }
 
 TEST_F(Subscriptions, unsubInCallback)
 {
-  ASSERT_TRUE(g_n->subscribe("test_roscpp/pubsub_test", msg, &Subscriptions::AutoUnsubscribeCallback, (Subscriptions*)this, 1));
-  subscribed = true;
+  sub_ = nh_.subscribe("test_roscpp/pubsub_test", 0, &Subscriptions::autoUnsubscribeCallback, (Subscriptions*)this);
 
-  while (subscribed && g_n->ok())
+  while (sub_ && ros::ok())
   {
     ros::WallDuration(0.01).sleep();
+    ros::spinOnce();
   }
 }
 
-boost::barrier* g_barrier = NULL;
-void unsubscribeAfterBarrierWait()
+void spinThread(bool volatile* cont)
 {
-  g_barrier->wait();
+  while (*cont)
+  {
+    ros::spinOnce();
+    ros::Duration(0.001).sleep();
+  }
+}
 
-  g_n->unsubscribe("test_roscpp/pubsub_test");
+void unsubscribeAfterBarrierWait(boost::barrier* barrier, ros::Subscriber& sub)
+{
+  barrier->wait();
+
+  sub.shutdown();
 }
 
 TEST_F(Subscriptions, unsubInCallbackAndOtherThread)
 {
+  boost::barrier barrier(2);
   for (int i = 0; i < 100; ++i)
   {
-    g_barrier = new boost::barrier(2);
+    ros::Subscriber sub;
+    sub_ = nh_.subscribe<test_roscpp::TestArray>("test_roscpp/pubsub_test", 1, boost::bind(unsubscribeAfterBarrierWait, &barrier, boost::ref(sub)));
+    sub = sub_;
 
-    ASSERT_TRUE(g_n->subscribe("test_roscpp/pubsub_test", msg, unsubscribeAfterBarrierWait, 1));
-    g_barrier->wait();
+    bool cont = true;
+    boost::thread t(spinThread, &cont);
 
-    g_n->unsubscribe("test_roscpp/pubsub_test");
+    barrier.wait();
 
-    delete g_barrier;
+    sub_.shutdown();
+    cont = false;
+    t.join();
   }
 }
 
@@ -141,7 +152,7 @@ main(int argc, char** argv)
   g_argc = argc;
   g_argv = argv;
 
-  ros::init(g_argc, g_argv);
+  ros::init(g_argc, g_argv, "subscribe_unsubscribe");
 
   if (g_argc != 1)
   {
@@ -149,12 +160,5 @@ main(int argc, char** argv)
     return -1;
   }
 
-  g_n = new ros::Node("subscriber");
-
-  int ret = RUN_ALL_TESTS();
-
-
-  delete g_n;
-
-  return ret;
+  return RUN_ALL_TESTS();
 }

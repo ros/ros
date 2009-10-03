@@ -9,18 +9,18 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 #set(ROS_BUILD_TYPE RelWithDebInfo)
 
-rospack(test_rosmsg)
+rosbuild_init()
 
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-rospack_add_pyunit(test/test_rosmsg_command_line.py)
-rospack_add_pyunit(test/test_rosmsg.py)
+rosbuild_add_pyunit(test/test_rosmsg_command_line.py)
+rosbuild_add_pyunit(test/test_rosmsg.py)
 
 #uncomment if you have defined messages
-genmsg()
+rosbuild_genmsg()
 #uncomment if you have defined services
 #gensrv()
 

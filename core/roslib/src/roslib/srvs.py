@@ -32,9 +32,10 @@
 #
 # Revision $Id: srvspec.py 3357 2009-01-13 07:13:05Z jfaustwg $
 # $Author: jfaustwg $
-"""ROS Service Description Language Spec"""
-## ROS Service Description Language Spec
-#  Implements http://pr.willowgarage.com/wiki/ROS/Message_Description_Language
+"""
+ROS Service Description Language Spec
+Implements U{http://ros.org/wiki/srv}
+"""
 
 import os
 import re

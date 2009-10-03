@@ -9,6 +9,7 @@ SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
 include_directories(include ${PROJECT_SOURCE_DIR})
 
+add_definitions(-DTIXML_USE_STL)
 add_library(rospack SHARED rospack.cpp
                     tinyxml-2.5.3/tinystr.cpp
                     tinyxml-2.5.3/tinyxml.cpp

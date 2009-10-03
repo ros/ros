@@ -407,6 +407,8 @@ private:
   std::string getBinDepPath();
   /** returns true if env[ROS_BINDEPS_PATH] exists or /opt/ros exists */
   bool useBinDepPath();
+  /** remove trailing slashes */
+  void sanitize_rppvec(std::vector<std::string> &rppvec);
 };
 
 }

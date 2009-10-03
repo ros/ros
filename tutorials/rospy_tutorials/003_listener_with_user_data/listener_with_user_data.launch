@@ -1,6 +1,0 @@
-<launch>
-  <node name="listener_with_user_data" pkg="rospy_tutorials" type="listener_with_user_data.py" output="screen" />
-  <node name="talker-1" pkg="rospy_tutorials" type="talker" args="chatter:=chatter1"/>
-  <node name="talker-2" pkg="rospy_tutorials" type="talker" args="chatter:=chatter2"/>
-  <node name="talker-3" pkg="rospy_tutorials" type="talker" args="chatter:=chatter3"/>
-</launch>

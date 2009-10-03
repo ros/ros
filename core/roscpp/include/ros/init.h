@@ -99,17 +99,6 @@ void init(const M_string& remappings, const std::string& name, uint32_t options 
 void init(const VP_string& remapping_args, const std::string& name, uint32_t options = 0);
 
 /**
- * \deprecated Use one of the init() functions that takes a name, and use the NodeHandle API
- *
- */
-ROSCPP_DEPRECATED void init(int &argc, char **argv);
-
-/**
- * \deprecated Use one of the init() functions that takes a name, and use the NodeHandle API
- */
-ROSCPP_DEPRECATED void init(const VP_string& remapping_args);
-
-/**
  * \brief Returns whether or not ros::init() has been called
  */
 bool isInitialized();
@@ -155,8 +144,7 @@ void spinOnce();
 
 /** \brief Check whether it's time to exit.
  *
- * This method checks the value of Node::ok(), to see whether it's yet time
- * to exit.  ok() is false once ros::shutdown() has been called
+ * ok() becomes false once ros::shutdown() has been called and is finished
  *
  * \return true if we're still OK, false if it's time to exit
  */
@@ -177,6 +165,7 @@ void shutdown();
 void requestShutdown();
 
 void start();
+bool isStarted();
 
 /**
  * \brief Returns a pointer to the global default callback queue.

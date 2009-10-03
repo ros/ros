@@ -1,4 +1,0 @@
-<launch>
-  <node name="a2i_server" pkg="roscpp_tutorials" type="add_two_ints_server" />
-  <test time-limit="10" test-name="add_two_ints_with_cpp" pkg="rospy_tutorials" type="test_add_two_ints.py" />
-</launch>

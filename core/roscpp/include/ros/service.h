@@ -90,11 +90,20 @@ bool call(const std::string& service_name, Service& service)
 /**
  * \brief Wait for a service to be advertised and available.  Blocks until it is.
  * \param service_name Name of the service to wait for.
- * \param timeout The amount of time to wait for, in milliseconds.  If timeout is -1 (default),
+ * \param timeout The amount of time to wait for, in milliseconds.  If timeout is -1,
  * waits until the node is shutdown
  * \return true on success, false otherwise
  */
-bool waitForService(const std::string& service_name, int32_t timeout = -1);
+bool waitForService(const std::string& service_name, int32_t timeout);
+
+/**
+ * \brief Wait for a service to be advertised and available.  Blocks until it is.
+ * \param service_name Name of the service to wait for.
+ * \param timeout The amount of time to wait for before timing out.  If timeout is -1 (default),
+ * waits until the node is shutdown
+ * \return true on success, false otherwise
+ */
+bool waitForService(const std::string& service_name, ros::Duration timeout = ros::Duration(-1));
 
 /**
  * \brief Checks if a service is both advertised and available.

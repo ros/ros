@@ -129,6 +129,9 @@ macro(rosbuild_init)
   # Check that PYTHONPATH includes roslib
   _rosbuild_check_pythonpath()
 
+  # Check that manifest.xml is valid
+  _rosbuild_check_manifest()
+
   # If we're making a distribution, then we don't need to assemble build
   # flags and such.  More to the point, this step will likely fail, because
   # it can rely on call foo-config for a 3rdparty package foo that was
@@ -268,10 +271,14 @@ macro(rosbuild_init)
   separate_arguments(_roslang_LANGS)
   set(genmsg_list "")
   set(gensrv_list "")
-  # Create a target for client libs attach their message-generation output
-  # to
+  # Create targets for client libs attach their message-generation output to
   add_custom_target(rospack_genmsg)
   add_custom_target(rospack_gensrv)
+  # Create targets for library and executable targets to depend on, to
+  # ensure message-generation, if enabled, happens before building
+  # anything.
+  add_custom_target(rospack_genmsg_libexe)
+  add_custom_target(rospack_gensrv_libexe)
   
   # ${gendeps_exe} is a convenience variable that roslang cmake rules
   # must reference as a dependency of msg/srv generation
@@ -434,8 +441,8 @@ macro(rosbuild_add_executable exe)
   rosbuild_add_link_flags(${exe} ${ROS_LINK_FLAGS})
 
   # Make sure that any messages get generated prior to building this target
-  add_dependencies(${exe} rospack_genmsg)
-  add_dependencies(${exe} rospack_gensrv)
+  add_dependencies(${exe} rospack_genmsg_libexe)
+  add_dependencies(${exe} rospack_gensrv_libexe)
 
   # If we're linking boost statically, we have to force allow multiple definitions because
   # rospack does not remove duplicates
@@ -509,14 +516,18 @@ macro(rosbuild_add_gtest exe)
   _rosbuild_add_gtest(${ARGV})
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname ${exe})
-
-  # Redeclaration of target is to workaround bug in 2.4.6
   add_custom_target(test)
   add_dependencies(test test_${_testname})
-
   # Register check for test output
   _rosbuild_check_rostest_xml_result(test_${_testname} $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml)
 endmacro(rosbuild_add_gtest)
+
+# A version of add_gtest that checks a label against ROS_BUILD_TEST_LABEL
+macro(rosbuild_add_gtest_labeled label)
+  if("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+    rosbuild_add_gtest(${ARGN})
+  endif("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+endmacro(rosbuild_add_gtest_labeled)
 
 # A helper to create test programs that are expected to fail for the near
 # future.  It calls rosbuild_add_executable() to
@@ -543,6 +554,13 @@ macro(rosbuild_add_rostest file)
   _rosbuild_check_rostest_result(rostest_${_testname} ${PROJECT_NAME} ${file})
 endmacro(rosbuild_add_rostest)
 
+# A version of add_rostest that checks a label against ROS_BUILD_TEST_LABEL
+macro(rosbuild_add_rostest_labeled label)
+  if("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+    rosbuild_add_rostest(${ARGN})
+  endif("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+endmacro(rosbuild_add_rostest_labeled)
+
 # A helper to run rostests that are expected to fail for the near future. 
 # It generates a command to run rostest on
 # the specified file and makes this target a dependency of test. 
@@ -553,18 +571,6 @@ macro(rosbuild_add_rostest_future file)
   add_custom_target(test-future)
   add_dependencies(test-future rostest_${_testname})
 endmacro(rosbuild_add_rostest_future)
-
-# A helper to run rostests that require a graphical display.
-# It generates a command to run rostest on
-# the specified file and makes this target a dependency of test. 
-macro(rosbuild_add_rostest_graphical file)
-  string(REPLACE "/" "_" _testname ${file})
-  _rosbuild_add_rostest(${file} $ENV{ROS_BUILD_XVFB})
-  # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test)
-  add_dependencies(test rostest_${_testname})
-  _rosbuild_check_rostest_result(rostest_${_testname} ${PROJECT_NAME} ${file})
-endmacro(rosbuild_add_rostest_graphical)
 
 # A helper to run Python unit tests. It generates a command to run python
 # the specified file 
@@ -580,6 +586,13 @@ macro(rosbuild_add_pyunit file)
   #_rosbuild_check_rostest_xml_result(pyunit_${_testname} $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml)
 endmacro(rosbuild_add_pyunit)
 
+# A version of add_pyunit that checks a label against ROS_BUILD_TEST_LABEL
+macro(rosbuild_add_pyunit_labeled label)
+  if("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+    rosbuild_add_pyunit(${ARGN})
+  endif("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
+endmacro(rosbuild_add_pyunit_labeled)
+
 # A helper to run Python unit tests that are expected to fail for the near
 # future. It generates a command to run python
 # the specified file 
@@ -590,17 +603,6 @@ macro(rosbuild_add_pyunit_future file)
   add_custom_target(test-future)
   add_dependencies(test-future pyunit_${_testname})
 endmacro(rosbuild_add_pyunit_future)
-
-# A helper to run pyunit tests that require a graphical display.
-# It generates a command to run python on
-# the specified file and makes this target a dependency of test. 
-macro(rosbuild_add_pyunit_graphical file)
-  string(REPLACE "/" "_" _testname ${file})
-  _rosbuild_add_pyunit(${file} $ENV{ROS_BUILD_XVFB})
-  # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test)
-  add_dependencies(test pyunit_${_testname})
-endmacro(rosbuild_add_pyunit_graphical)
 
 set(_ROSBUILD_GENERATED_MSG_FILES "")
 macro(rosbuild_add_generated_msgs)
@@ -669,6 +671,9 @@ macro(rosbuild_gensrv)
   # target.
   add_custom_target(rospack_gensrv_real ALL)
   add_dependencies(rospack_gensrv_real rospack_gensrv)
+  # Make the libexe target, on which libraries and executables depend,
+  # depend on the message generation.
+  add_dependencies(rospack_gensrv_libexe rospack_gensrv)
   # add in the directory that will contain the auto-generated .h files
   include_directories(${PROJECT_SOURCE_DIR}/srv/cpp)
 endmacro(rosbuild_gensrv)
@@ -680,6 +685,9 @@ macro(rosbuild_genmsg)
   # target.
   add_custom_target(rospack_genmsg_real ALL)
   add_dependencies(rospack_genmsg_real rospack_genmsg)
+  # Make the libexe target, on which libraries and executables depend,
+  # depend on the message generation.
+  add_dependencies(rospack_genmsg_libexe rospack_genmsg)
   # add in the directory that will contain the auto-generated .h files
   include_directories(${PROJECT_SOURCE_DIR}/msg/cpp)
 endmacro(rosbuild_genmsg)
@@ -735,34 +743,35 @@ macro(rosbuild_link_boost target)
 endmacro(rosbuild_link_boost)
 
 # Macro to download data on the tests target
+# The real signature is:
+#macro(rosbuild_download_test_data _url _filename _md5)
 macro(rosbuild_download_test_data _url _filename)
-  find_package(Wget REQUIRED)
-  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_filename}
-                     COMMAND cmake -E echo "[rosbuild] Downloading ${_url} to ${_filename}..."
-                     COMMAND ${WGET_EXECUTABLE} -q ${_url} -O ${PROJECT_SOURCE_DIR}/${_filename}
-                     COMMAND cmake -E echo "[rosbuild] Done."
-                     VERBATIM)
+  if("${ARGN}" STREQUAL "")
+    _rosbuild_warn("The 2-argument rosbuild_download_test_data(url file) is deprecated; please switch to the 3-argument form, supplying an md5sum for the file: rosbuild_download_test_data(url file md5)")
+  endif("${ARGN}" STREQUAL "")
+
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname download_data_${_filename})
   add_custom_target(${_testname}
-                    DEPENDS ${PROJECT_SOURCE_DIR}/${_filename})
+                     COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
+                     VERBATIM)
   # Redeclaration of target is to workaround bug in 2.4.6
   add_custom_target(tests)
   add_dependencies(tests ${_testname})
 endmacro(rosbuild_download_test_data)
 
 # Macro to download data on the all target
+# The real signature is:
+#macro(rosbuild_download_data _url _filename _md5)
 macro(rosbuild_download_data _url _filename)
- find_package(Wget REQUIRED)
- add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_filename}
-                    COMMAND cmake -E echo "[rosbuild] Downloading ${_url} to ${_filename}..."
-                    COMMAND ${WGET_EXECUTABLE} -q ${_url} -O ${PROJECT_SOURCE_DIR}/${_filename}
-                    COMMAND cmake -E echo "[rosbuild] Done."
+  if("${ARGN}" STREQUAL "")
+    _rosbuild_warn("The 2-argument rosbuild_download_data(url file) is deprecated; please switch to the 3-argument form, supplying an md5sum for the file: rosbuild_download_data(url file md5)")
+  endif("${ARGN}" STREQUAL "")
+  # Create a legal target name, in case the target name has slashes in it
+  string(REPLACE "/" "_" _testname download_data_${_filename})
+  add_custom_target(${_testname} ALL
+                    COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
                     VERBATIM)
- # Create a legal target name, in case the target name has slashes in it
- string(REPLACE "/" "_" _testname download_data_${_filename})
- add_custom_target(${_testname} ALL
-                   DEPENDS ${PROJECT_SOURCE_DIR}/${_filename})
 endmacro(rosbuild_download_data)
 
 macro(rosbuild_add_openmp_flags target)
@@ -837,4 +846,31 @@ macro(rosbuild_make_distribution)
   include(CPack)
 endmacro(rosbuild_make_distribution)
 
+# Compute the number of hardware cores on the machine.  Intended to use for
+# gating tests that have heavy processor requirements. It calls out to a
+# helper program that uses boost::thread::hardware_concurrency().
+macro(rosbuild_count_cores num)
+  execute_process(COMMAND $ENV{ROS_ROOT}/core/rosbuild/tests/count_cores
+                  OUTPUT_VARIABLE _cores_out
+                  ERROR_VARIABLE _cores_error
+                  RESULT_VARIABLE _cores_result
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(_cores_result)
+    message(FATAL_ERROR "Failed to run count_cores")
+  endif(_cores_result)
 
+  set(${num} ${_cores_out})
+endmacro(rosbuild_count_cores)
+
+# Check whether we're running as a VM Intended to use for
+# gating tests that have heavy processor requirements.  It checks for
+# /proc/xen
+macro(rosbuild_check_for_vm var)
+  set(_xen_dir _xen_dir-NOTFOUND)
+  find_file(_xen_dir "xen" PATHS "/proc" NO_DEFAULT_PATH)
+  if(_xen_dir)
+    set(${var} 1)
+  else(_xen_dir)
+    set(${var} 0)
+  endif(_xen_dir)
+endmacro(rosbuild_check_for_vm var)

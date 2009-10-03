@@ -753,6 +753,7 @@ class TestXmlLoader(unittest.TestCase):
         tests = ['test-node-invalid-type.xml','test-node-invalid-type-2.xml',
                  'test-node-invalid-pkg.xml','test-node-invalid-pkg-2.xml',
                  #'test-node-invalid-name-1.xml',
+                 #'test-node-invalid-name-2.xml',                 
                  'test-node-invalid-machine.xml',
                  'test-node-invalid-respawn.xml',
                  'test-node-invalid-ns.xml','test-node-invalid-ns-2.xml',                 

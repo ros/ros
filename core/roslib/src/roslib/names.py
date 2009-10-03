@@ -201,7 +201,7 @@ def is_valid_local_name(name):
     
 # TODO: redo this, this is very old
 import re
-NAME_LEGAL_CHARS_P = re.compile('^[A-Za-z][\w_\-\+\/]*$') #ascii char followed by (alphanumeric, -, _, +, /)
+NAME_LEGAL_CHARS_P = re.compile('^[A-Za-z][\w_\/]*$') #ascii char followed by (alphanumeric, _, /)
 def is_legal_resource_name(name):
     if not name: #None or empty
         return False

@@ -138,8 +138,6 @@ int RosoutListControl::OnGetItemImage(long item) const
     return fatal_image_id_;
   }
 
-  ROS_BREAK();
-
   return -1;
 }
 

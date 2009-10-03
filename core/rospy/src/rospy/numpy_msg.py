@@ -32,19 +32,45 @@
 #
 # Revision $Id$
 
+"""
+Support for using numpy with rospy messages.
+
+For tutorials, see U{http://www.ros.org/wiki/rospy_tutorials/Tutorials/numpy}
+
+Listener example::
+    from rospy.numpy_msg import numpy_msg
+
+    rospy.init_node('mynode')
+    rospy.Subscriber("mytopic", numpy_msg(TopicType)
+
+Publisher example::
+
+    from rospy.numpy_msg import numpy_msg
+    import numpy
+    
+    pub = rospy.Publisher('mytopic', numpy_msg(TopicType))
+    rospy.init_node('mynode')
+    a = numpy.array([1.0, 2.1, 3.2, 4.3, 5.4, 6.5], dtype=numpy.float32)
+    pub.publish(a)
+"""
+
 import numpy
 
 # TODO: we will need to generate a new type structure with
 # little-endian specified and then pass that type structure into the
 # *_numpy calls.
 
-## wrapper for factory-generated class that passes numpy module into serialize
 def _serialize_numpy(self, buff):
+    """
+    wrapper for factory-generated class that passes numpy module into serialize
+    """
     # pass in numpy module reference to prevent import in auto-generated code
     return self.serialize_numpy(buff, numpy)
 
-## wrapper for factory-generated class that passes numpy module into deserialize
 def _deserialize_numpy(self, str):
+    """
+    wrapper for factory-generated class that passes numpy module into deserialize    
+    """
     # pass in numpy module reference to prevent import in auto-generated code
     return self.deserialize_numpy(str, numpy)
     

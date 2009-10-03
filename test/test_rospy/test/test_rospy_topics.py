@@ -108,7 +108,9 @@ class TestRospyTopics(unittest.TestCase):
 
         # round 1: test basic params
         pub = Publisher(name, data_class)
-        self.assertEquals(rname, pub.name)
+        self.assertEquals(rname, pub.resolved_name)
+        # - pub.name is left in for backwards compatiblity, but resolved_name is preferred
+        self.assertEquals(rname, pub.name)        
         self.assertEquals(data_class, pub.data_class)
         self.assertEquals('test_rospy/Val', pub.type)
         self.assertEquals(data_class._md5sum, pub.md5sum)
@@ -117,7 +119,7 @@ class TestRospyTopics(unittest.TestCase):
         # verify impl as well
         impl = get_topic_manager().get_impl(Registration.PUB, rname)
         self.assert_(impl == pub.impl)
-        self.assertEquals(rname, impl.name)
+        self.assertEquals(rname, impl.resolved_name)
         self.assertEquals(data_class, impl.data_class)                
         self.failIf(impl.is_latch)
         self.assertEquals(None, impl.latch)                
@@ -253,7 +255,7 @@ class TestRospyTopics(unittest.TestCase):
         except ValueError: pass
         
         sub = Subscriber(name, data_class)
-        self.assertEquals(rname, sub.name)
+        self.assertEquals(rname, sub.resolved_name)
         self.assertEquals(data_class, sub.data_class)
         self.assertEquals('test_rospy/Val', sub.type)
         self.assertEquals(data_class._md5sum, sub.md5sum)
@@ -263,7 +265,7 @@ class TestRospyTopics(unittest.TestCase):
         impl = get_topic_manager().get_impl(Registration.SUB, rname)
         self.assert_(impl == sub.impl)
         self.assertEquals([], impl.callbacks)
-        self.assertEquals(rname, impl.name)
+        self.assertEquals(rname, impl.resolved_name)
         self.assertEquals(data_class, impl.data_class)                
         self.assertEquals(None, impl.queue_size)
         self.assertEquals(DEFAULT_BUFF_SIZE, impl.buff_size)
@@ -278,14 +280,16 @@ class TestRospyTopics(unittest.TestCase):
         buff_size = 1
         sub = Subscriber(name, data_class, callback=callback1,
                          queue_size=queue_size, buff_size=buff_size, tcp_nodelay=True)
-        self.assertEquals(rname, sub.name)
+        self.assertEquals(rname, sub.resolved_name)
+        # - sub.name is a backwards-compat field as it is public API
+        self.assertEquals(rname, sub.name)        
         self.assertEquals(data_class, sub.data_class)
 
         # verify impl 
         impl2 = get_topic_manager().get_impl(Registration.SUB, rname)
         self.assert_(impl == impl2) # should be same instance
         self.assertEquals([(callback1, None)], impl.callbacks)
-        self.assertEquals(rname, impl.name)
+        self.assertEquals(rname, impl.resolved_name)
         self.assertEquals(data_class, impl.data_class)                
         self.assertEquals(queue_size, impl.queue_size)
         self.assertEquals(buff_size, impl.buff_size)

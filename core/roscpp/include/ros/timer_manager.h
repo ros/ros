@@ -319,13 +319,36 @@ void TimerManager<T, D, E>::remove(int32_t handle)
 template<class T, class D, class E>
 void TimerManager<T, D, E>::threadFunc()
 {
+  T current;
   while (!quit_)
   {
     T sleep_end;
 
     boost::mutex::scoped_lock lock(timers_mutex_);
 
-    T current = T::now();
+    // detect time jumping backwards
+    if (T::now() < current)
+    {
+      ROS_DEBUG("Time jumped backward, resetting timers");
+
+      current = T::now();
+
+      typename V_TimerInfo::iterator it = timers_.begin();
+      typename V_TimerInfo::iterator end = timers_.end();
+      for (; it != end; ++it)
+      {
+        const TimerInfoPtr& info = *it;
+
+        // Timer may have been added after the time jump, so also check if time has jumped past its last call time
+        if (current < info->last_expected)
+        {
+          info->last_expected = current;
+          info->next_expected = current + info->period;
+        }
+      }
+    }
+
+    current = T::now();
 
     if (timers_.empty())
     {
@@ -334,14 +357,6 @@ void TimerManager<T, D, E>::threadFunc()
     else
     {
       TimerInfoPtr info = timers_.front();
-
-      // detect time jumping backwards
-      if (current < info->last_expected)
-      {
-        ROS_DEBUG("Time jumped backward, resetting timer");
-        info->last_expected = current;
-        info->next_expected = current + info->period;
-      }
 
       while (info->next_expected <= current)
       {
@@ -384,6 +399,16 @@ void TimerManager<T, D, E>::threadFunc()
 
     while (!new_timer_ && T::now() < sleep_end && !quit_)
     {
+      // detect backwards jumps in time
+
+      if (T::now() < current)
+      {
+        ROS_DEBUG("Time jumped backwards, breaking out of sleep");
+        break;
+      }
+
+      current = T::now();
+
       timers_cond_.timed_wait(lock, boost::posix_time::milliseconds(1));
     }
 

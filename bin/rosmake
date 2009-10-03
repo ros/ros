@@ -42,6 +42,7 @@ import getopt
 import roslib
 import roslib.scriptutil
 import roslib.rosenv
+import roslib.stacks
 import threading
 
 from optparse import OptionParser
@@ -72,6 +73,15 @@ class DependencyTracker:
       self.deps[package] = roslib.scriptutil.rospack_depends(package) 
     return self.deps[package]
 
+""" This class id designed to replace DependencyTracker above and always return no dependencies. 
+This is used in the case that dependencies are not being tracked "--specified-only" option. 
+
+This class must be API compatabile with the DependencyTracker.  """
+class DependencyFaker:
+  def get_deps_1(self, package):
+    return []
+  def get_deps(self, package):
+    return []
 
 
 class CompileThread(threading.Thread):
@@ -81,6 +91,7 @@ class CompileThread(threading.Thread):
     self.rosmakeall = rosmakeall
     self.argument = argument
     self.name = name
+    self.logging_enabled = True
 
   def run(self):
     #init_total_pkgs = len(self.build_queue.to_build)
@@ -104,10 +115,14 @@ class CompileThread(threading.Thread):
       self.rosmakeall.print_all("<<< %s <<< %s"%(pkg, result_string), thread_name= self.name)
       if result or self.rosmakeall.robust_build:
         self.build_queue.return_built(pkg)
+        if result_string.find("[Interrupted]") != -1:
+          self.rosmakeall.print_all("Caught Interruption", thread_name=self.name)
+          self.build_queue.stop()
+          break # unnecessary since build_queue is done now while will quit
       else:
         self.rosmakeall.print_all("Halting due to failure in package %s.\n[ rosmake ] Re-run with -r to ignore failures and keep building."%pkg)
         self.build_queue.stop()
-        break # unnecessary since build_queue is done now
+        break # unnecessary since build_queue is done now, while will quit
 
 class BuildQueue:
   def __init__(self, package_list, dependency_tracker):
@@ -156,6 +171,8 @@ class BuildQueue:
             
 
       self.condition.wait()  # failed to find a package wait for a notify before looping
+      if self.is_done():
+        break
 
     self.condition.release()
     return (None, None, None)
@@ -172,7 +189,8 @@ class RosMakeAll:
         self.ros_parallel_jobs = num_cpus()
         self.build_list = []
         self.start_time = time.time()
-        
+        self.log_dir = ""
+        self.logging_enabled = True
 
     def num_packages_built(self):
         return len(self.result[argument].keys())
@@ -241,9 +259,9 @@ class RosMakeAll:
         for ct in cts:
           try:
             ct.join()
-            #print "naturally ended thread"
+            #print "naturally ended thread", ct
           except KeyboardInterrupt:
-            self.print_all( "Caught KeyboardInterupt. Stopping build.")
+            self.print_all( "Caught KeyboardInterrupt. Stopping build.")
             build_queue.stop()
             ct.join()
             pass
@@ -313,7 +331,7 @@ class RosMakeAll:
                     if no_target:
                         return_string = ( "[SKIP] No rule to make target %s"%( argument))
                     elif interrupt:
-                        return_string = (" [Interrupted]" )
+                        return_string = ("[Interrupted]" )
                     else:
                         return_string = ( "[FAIL] [ %.2f seconds ]"%( self.profile[argument][p]))
                     self.result[argument][p] = no_target
@@ -333,6 +351,8 @@ class RosMakeAll:
             
 
     def output_to_file(self, package, log_type, stdout, always_print= False):
+        if not self.logging_enabled:
+          return
         package_log_dir = os.path.join(self.log_dir, package)
 
         std_out_filename = os.path.join(package_log_dir, log_type + "_output.log")
@@ -347,40 +367,43 @@ class RosMakeAll:
                 self.print_full_verbose(print_string)
 
     def generate_summary_output(self, log_dir):
+        if not self.logging_enabled:
+          return
 
         if None in self.result.keys():
             if len(self.result[None].keys()) > 0:
                 buildfail_filename = os.path.join(log_dir, "buildfailures.txt")
                 with open(buildfail_filename, 'w') as bf:
-                    bf.write("Build failures\n")
-                    for key in self.result[None].keys():
-                        if self.result[None][key] == False:
+                    bf.write("Build failures:\n")
+                    for key in self.build_list:
+                        if key in self.result[None].keys() and self.result[None][key] == False:
                             bf.write("%s\n"%key)
                 if  None in self.output.keys():
                     buildfail_context_filename = os.path.join(log_dir, "buildfailures-with-context.txt")
                     with open(buildfail_context_filename, 'w') as bfwc:
-                        bfwc.write("Build failures with context\n")
-                        for key in self.result[None].keys():
-                            if self.result[None][key] == False:
+                        bfwc.write("Build failures with context:\n")
+                        for key in self.build_list:
+                            if key in self.result[None].keys() and self.result[None][key] == False:
+                                bfwc.write("---------------------\n")
                                 bfwc.write("%s\n"%key)
-                                if key in self.output:
-                                    bfwc.write(self.output[key])
+                                if key in self.output[None]:
+                                    bfwc.write(self.output[None][key])
 
         if "test" in self.result.keys():
             if len(self.result["test"].keys()) > 0:
                 testfail_filename = os.path.join(log_dir, "testfailures.txt")
                 with open(testfail_filename, 'w') as btwc:
-                    btwc.write("Test failures\n")
-                    for key in self.result["test"].keys():
-                        if self.result["test"][key] == False:
+                    btwc.write("Test failures:\n")
+                    for key in self.build_list:
+                        if key in self.result["test"].keys() and self.result["test"][key] == False:
                             btwc.write("%s\n"%key)
 
                 if "test" in self.output.keys():
                     testfail_filename = os.path.join(log_dir, "testfailures-with-context.txt")
                     with open(testfail_filename, 'w') as btwc:
-                        btwc.write("Test failures\n")
-                        for key in self.result["test"].keys():
-                            if self.result["test"][key] == False:
+                        btwc.write("Test failures with context:\n")
+                        for key in self.build_list:
+                            if key in self.result["test"].keys() and self.result["test"][key] == False:
                                 btwc.write("%s\n"%key)
                                 if key in self.output["test"]:
                                     btwc.write(self.output["test"][key])
@@ -482,18 +505,22 @@ class RosMakeAll:
                           action="store_true", help="select all packages")
         parser.add_option("-v", dest="verbose", default=False,
                           action="store_true", help="display errored builds")
-        parser.add_option("-r", "--robust", dest="robust", default=False,
+        parser.add_option("-r","-k", "--robust", dest="robust", default=False,
                            action="store_true", help="do not stop build on error")
         parser.add_option("-V", dest="full_verbose", default=False,
                           action="store_true", help="display all builds")
+        parser.add_option("-s", "--specified-only", dest="specified_only", default=False,
+                          action="store_true", help="only build packages specified on the command line")
         parser.add_option("--buildtest", dest="buildtest",
-                          action="store", help="package to buildtest")
+                          action="append", help="package to buildtest")
         parser.add_option("--buildtest1", dest="buildtest1",
-                          action="store", help="package to buildtest1")
+                          action="append", help="package to buildtest1")
         parser.add_option("--output", dest="output_dir",
                           action="store", help="where to output results")
         parser.add_option("--pre-clean", dest="pre_clean",
                           action="store_true", help="run make clean first")
+        parser.add_option("--disable-logging", dest="logging_enabled", default=True,
+                          action="store_false", help="turn off all logs")
         parser.add_option("--target", dest="target",
                           action="store", help="run make with this target")
         parser.add_option("--pjobs", dest="ros_parallel_jobs", type="int",
@@ -504,10 +531,10 @@ class RosMakeAll:
                           action="store_true", help="print time profile after build")
         parser.add_option("--skip-blacklist", dest="skip_blacklist", 
                           default=False, action="store_true", 
-                          help="skip packages containing a file called ROS_BUILD_BLACKLIST")
+                          help="skip packages containing a file called ROS_BUILD_BLACKLIST (Default behavior will ignore the presence of ROS_BUILD_BLACKLIST)")
         parser.add_option("--skip-blacklist-osx", dest="skip_blacklist_osx", 
                           default=False, action="store_true", 
-                          help="skip packages containing a file called ROS_BUILD_BLACKLIST_OSX")
+                          help="skip packages containing a file called ROS_BUILD_BLACKLIST_OSX (Default behavior will ignore the presence of ROS_BUILD_BLACKLIST_OSX)")
 
         options, args = parser.parse_args()
 
@@ -526,6 +553,7 @@ class RosMakeAll:
         self.threads = options.threads
         self.skip_blacklist = options.skip_blacklist
         self.skip_blacklist_osx = options.skip_blacklist_osx
+        self.logging_enabled = options.logging_enabled
 
         # pass through verbosity options
         self.full_verbose = options.full_verbose
@@ -538,12 +566,14 @@ class RosMakeAll:
             self.print_all( "Building all packages")
         else:      # no need to extend if all already selected   
             if options.buildtest:
-                packages.extend(roslib.scriptutil.rospack_depends_on(options.buildtest)) 
-                self.print_all( "Buildtest requested for package %s adding it and all dependent packages: "%options.buildtest)
+              for p in options.buildtest:
+                packages.extend(roslib.scriptutil.rospack_depends_on(p)) 
+                self.print_all( "Buildtest requested for package %s adding it and all dependent packages: "%p)
 
             if options.buildtest1:
-                packages.extend(roslib.scriptutil.rospack_depends_on_1(options.buildtest1)) 
-                self.print_all( "Buildtest requested for package %s adding it and all depends-on1 packages: "%options.buildtest1)
+              for p in options.buildtest1:
+                packages.extend(roslib.scriptutil.rospack_depends_on_1(p)) 
+                self.print_all( "Buildtest requested for package %s adding it and all depends-on1 packages: "%p)
 
         if len(packages) == 0 and len(args) == 0:
             packages = [os.path.basename(os.path.abspath('.'))]
@@ -553,26 +583,58 @@ class RosMakeAll:
             self.print_all( "Packages requested are: %s"%packages)
                     
 
-        self.check_rosdep(packages)
 
-        date_time_stamp =  "rosmake_output-" + time.strftime("%Y-%m-%d-%H-%M-%S")
-        if options.output_dir:
-            self.log_dir = os.path.join(os.getcwd(), options.output_dir, date_time_stamp);
-        else:
-            self.log_dir = os.path.join(os.path.expanduser("~"), ".ros", date_time_stamp);
+        # Setup logging
+        if self.logging_enabled:
+          date_time_stamp =  "rosmake_output-" + time.strftime("%Y-%m-%d-%H-%M-%S")
+          if options.output_dir:
+              #self.log_dir = os.path.join(os.getcwd(), options.output_dir, date_time_stamp);
+              self.log_dir = os.path.abspath(options.output_dir)
+          else:
+              self.log_dir = os.path.join(os.path.expanduser("~"), ".ros", date_time_stamp);
 
-        self.print_all("Logging to directory")
-        self.print_all("%s"%self.log_dir)
-        if not os.path.exists (self.log_dir):
-            os.makedirs (self.log_dir)
+          self.print_all("Logging to directory")
+          self.print_all("%s"%self.log_dir)
+          if os.path.exists (self.log_dir) and not os.path.isdir(self.log_dir):
+              self.print_all( "Log destination %s is a file; please remove it or choose a new destination"%self.log_dir)
+              sys.exit(1)
+          if not os.path.exists (self.log_dir):
+              os.makedirs (self.log_dir)
 
 
         counter = 0
-        #generate the list of packages necessary to build(in order of dependencies)
+        verified_packages = []
         for p in packages:
+          try:
+            roslib.packages.get_pkg_dir(p)
+            verified_packages.append(p)
+          except roslib.packages.InvalidROSPkgException, ex:
+            try: 
+              roslib.stacks.get_stack_dir(p)
+              verified_packages.extend(roslib.stacks.packages_of(p))
+            except roslib.stacks.InvalidROSStackException, ex2:
+              self.print_all("Could not resolve %s as a package or as a stack [ %s ] [ %s ]"%(p, ex, ex2))
+            
+        # make sure all dependencies are satisfied and if not warn
+        self.check_rosdep(verified_packages)
+
+        #generate the list of packages necessary to build(in order of dependencies)
+        for p in verified_packages:
+
             counter = counter + 1
             self.print_verbose( "Processing %s and all dependencies(%d of %d requested)"%(p, counter, len(packages)))
             self.build_or_recurse(p)
+
+        # remove extra packages if specified-only flag is set
+        if options.specified_only:
+          new_list = []
+          for pkg in self.build_list:
+            if pkg in verified_packages:
+              new_list.append(pkg)
+              self.dependency_tracker = DependencyFaker() # this will always return empty lists
+        
+          self.print_all("specified-only option was used, only building packages %s"%new_list)
+          self.build_list = new_list
 
         if options.pre_clean:
           self.parallel_build_pkgs(self.build_list, "clean", robust_build=True)
@@ -594,7 +656,6 @@ class RosMakeAll:
             self.print_all (self.get_profile_string())
 
         return build_passed and tests_passed
-#    subprocess.call(cmd)
 
 
 

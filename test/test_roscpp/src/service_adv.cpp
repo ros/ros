@@ -33,100 +33,57 @@
  * Advertise a service
  */
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include <test_roscpp/TestStringString.h>
 
-ros::Node* g_node = NULL;
-
-class Dummy
-{
-  public:
-    bool srvCallback(test_roscpp::TestStringString::Request  &req,
+bool caseFlip(test_roscpp::TestStringString::Request  &req,
                      test_roscpp::TestStringString::Response &res)
-    {
-      // copy over the request and overwrite the letters with their case-flip
-      res.str = req.str;
-      for (size_t i = 0; i < res.str.length(); i++)
-      {
-        char c = res.str[i];
-        if (islower(c))
-          c = toupper(c);
-        else if (isupper(c))
-          c = tolower(c);
-        res.str[i] = c;
-      }
-      return true;
-    }
-};
-
-class Dummy2
 {
-  public:
-    bool srvCallback(test_roscpp::TestStringString::Request  &req,
+  // copy over the request and overwrite the letters with their case-flip
+  res.str = req.str;
+  for (size_t i = 0; i < res.str.length(); i++)
+  {
+    char c = res.str[i];
+    if (islower(c))
+      c = toupper(c);
+    else if (isupper(c))
+      c = tolower(c);
+    res.str[i] = c;
+  }
+  return true;
+}
+
+bool caseFlipLongRunning(test_roscpp::TestStringString::Request  &req,
                      test_roscpp::TestStringString::Response &res)
-    {
-      // copy over the request and overwrite the letters with their case-flip
-      res.str = req.str;
-      for (size_t i = 0; i < res.str.length(); i++)
-      {
-        char c = res.str[i];
-        if (islower(c))
-          c = toupper(c);
-        else if (isupper(c))
-          c = tolower(c);
-        res.str[i] = c;
-      }
-
-      struct timespec sl = {2, 0};
-      nanosleep(&sl,NULL);
-      return true;
-    }
-};
-
-class Dummy3
 {
-  public:
-    bool srvCallback(test_roscpp::TestStringString::Request  &req,
-                     test_roscpp::TestStringString::Response &res)
-    {
-      // copy over the request and overwrite the letters with their case-flip
-      res.str = req.str;
-      for (size_t i = 0; i < res.str.length(); i++)
-      {
-        char c = res.str[i];
-        if (islower(c))
-          c = toupper(c);
-        else if (isupper(c))
-          c = tolower(c);
-        res.str[i] = c;
-      }
+  caseFlip(req, res);
 
-      g_node->unadvertiseService("service_adv_unadv_in_callback");
+  ros::Duration(2).sleep();
+  return true;
+}
 
-      struct timespec sl = {2, 0};
-      nanosleep(&sl,NULL);
-      return true;
-    }
-};
+bool caseFlipUnadvertise(test_roscpp::TestStringString::Request  &req,
+                     test_roscpp::TestStringString::Response &res, ros::ServiceServer& srv)
+{
+  caseFlip(req, res);
 
+  srv.shutdown();
+
+  ros::Duration(2).sleep();
+  return true;
+}
 
 
 int
 main(int argc, char** argv)
 {
-  ros::init(argc, argv);
-  g_node = new ros::Node("advertiser" );
+  ros::init(argc, argv, "service_adv");
+  ros::NodeHandle nh;
 
-  Dummy d;
-  Dummy2 d2;
-  Dummy3 d3;
-
-  g_node->advertiseService("service_adv", &Dummy::srvCallback, &d, -1);
-  g_node->advertiseService("service_adv_long", &Dummy2::srvCallback, &d2);
-  g_node->advertiseService("service_adv_unadv_in_callback", &Dummy3::srvCallback, &d3);
-  g_node->spin();
-
-  
-  delete g_node;
+  ros::ServiceServer srv1, srv2, srv3;
+  srv1 = nh.advertiseService("service_adv", caseFlip);
+  srv2 = nh.advertiseService("service_adv_long", caseFlipLongRunning);
+  srv3 = nh.advertiseService<test_roscpp::TestStringString::Request, test_roscpp::TestStringString::Response>("service_adv_unadv_in_callback", boost::bind(caseFlipUnadvertise, _1, _2, boost::ref(srv3)));
+  ros::spin();
 }
 

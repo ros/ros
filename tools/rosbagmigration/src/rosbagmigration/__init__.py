@@ -52,7 +52,7 @@ import roslib.scriptutil
 import roslib.message
 
 # Anything outside the scope of these primitives is a submessage
-_PRIMITIVES = ['byte','int8','int16','int32','int64','char','uint8','uint16','uint32','uint64','float32','float64','string','time']
+_PRIMITIVES = ['bool', 'byte','int8','int16','int32','int64','char','uint8','uint16','uint32','uint64','float32','float64','string','time']
 
 class BagMigrationException(Exception):
     pass
@@ -84,6 +84,33 @@ def checkbag(migrator, inbag):
             
     return migrations
 
+## Check whether a bag file can be played in the current system
+#
+# @param migrator The message migrator to use
+# @param message_list A list of message classes.
+# @returns A list of tuples for each type in the bag file.  The first
+# element of each tuple is the full migration path for the type.  The
+# second element of the tuple is the expanded list of invalid rules
+# for that particular path.
+def checkmessages(migrator, messages):
+    checked = Set()
+    migrations = []
+
+    for msg in messages:
+        key = get_message_key(msg)
+        if key not in checked:
+            target = migrator.find_target(msg)
+            # Even in the case of a zero-length path (matching md5sums), we still want
+            # to migrate in the event of a type change (message move).
+            path = migrator.find_path(msg, target)
+
+            if (path != []):
+                migrations.append((path, [r for r in migrator.expand_rules([sn.rule for sn in path]) if r.valid == False]))
+
+            checked.add(key)
+            
+    return migrations
+
 ## Fix a bag so that it can be played in the current system
 #
 # @param migrator The message migrator to use
@@ -93,9 +120,6 @@ def checkbag(migrator, inbag):
 def fixbag(migrator, inbag, outbag):
     # This checks/builds up rules for the given migrator
     res = checkbag(migrator, inbag)
-
-    if res == []:
-        return True
 
     # Deserializing all messages is inefficient, but we can speed this up later
     if not False in [m[1] == [] for m in res]:
@@ -1043,6 +1067,14 @@ class MessageMigrator(object):
         migratedefs = "\tmigrated_types = ["
 
         updatedef = "\tdef update(self, old_msg, new_msg):\n"
+
+        old_consts = constants_from_def(old_class._type, old_class._full_text)
+        new_consts = constants_from_def(new_class._type, new_class._full_text)
+
+        if (not new_consts >= old_consts):
+            validdef = "\tvalid = False\n"
+            for c in (old_consts - new_consts):
+                updatedef += "\t\t#Constant '%s' has changed\n"%(c[0],)
         
         old_slots = []
         old_slots.extend(old_class.__slots__)
@@ -1179,7 +1211,7 @@ class MessageMigrator(object):
         return locals()[name]
 
 def migration_default_value(field_type):
-    if field_type in ['byte', 'int8', 'int16', 'int32', 'int64',\
+    if field_type in ['bool', 'byte', 'int8', 'int16', 'int32', 'int64',\
                           'char', 'uint8', 'uint16', 'uint32', 'uint64']:
         return '0'
     elif field_type in ['float32', 'float64']:
@@ -1202,3 +1234,21 @@ def migration_default_value(field_type):
             return '[' + ','.join(itertools.repeat(def_val, array_len)) + ']'
     else:
         return "self.get_new_class('%s')()"%field_type
+
+
+def constants_from_def(core_type, msg_def):
+    core_pkg, core_base_type = roslib.names.package_resource_name(core_type)
+
+    splits = msg_def.split('\n'+'='*80+'\n')
+    core_msg = splits[0]
+    deps_msgs = splits[1:]
+
+    # create MsgSpec representations of .msg text
+    specs = { core_type: roslib.msgs.load_from_string(core_msg, core_pkg) }
+    # - dependencies
+#    for dep_msg in deps_msgs:
+#        # dependencies require more handling to determine type name
+#        dep_type, dep_spec = _generate_dynamic_specs(specs, dep_msg)
+#        specs[dep_type] = dep_spec
+
+    return Set([(x.name, x.val, x.type) for x in specs[core_type].constants])

@@ -35,6 +35,7 @@
 from __future__ import with_statement
 
 import os
+import sys
 from subprocess import Popen, PIPE
 
 ## Main entrypoint into creating Sphinx documentation
@@ -42,18 +43,36 @@ from subprocess import Popen, PIPE
 def generate_sphinx(ctx):
     success = []
     for package, path in ctx.packages.iteritems():
-        if package in ctx.doc_packages and ctx.should_document(package):
+        if package in ctx.doc_packages and ctx.should_document(package) and \
+                ctx.has_builder(package, 'sphinx'):
             try:
+                
+                # currently only allow one sphinx build per package. This
+                # is not inherent, it just requires rewriting higher-level
+                # logic
+                rd_config = [d for d in ctx.rd_configs[package] if d['builder'] == 'sphinx'][0]
+            
+                # rd_config is currently a flag. In the future, I imagine it pointing
+                # to the location of index.rst, among other things
+
                 if os.access(os.path.join(path, "index.rst"), os.R_OK):
                     oldcwd = os.getcwd()
                     os.chdir(path)
-                    html_dir = os.path.join(oldcwd, ctx.docdir, package, 'html')
-                    command = ['sphinx-build', '-b', 'html', '-d', '_build/doctrees', '-D', 'latex_paper_size=letter', '.', html_dir]
-                    print "sphinx-building %s [%s]"%(package, ' '.join(command))
-                    Popen(command, stdout=PIPE).communicate()
-
-                    os.chdir(oldcwd)
+                    try:
+                        html_dir = os.path.join(oldcwd, ctx.docdir, package, 'html', rd_config.get('output_dir', '.'))
+                        command = ['sphinx-build', '-b', 'html', '-d', '_build/doctrees', '-D', 'latex_paper_size=letter', '.', html_dir]
+                        print "sphinx-building %s [%s]"%(package, ' '.join(command))
+                        com = Popen(command, stdout=PIPE).communicate()
+                        print 'stdout:'
+                        print com[0]
+                        print 'stderr'
+                        print com[1]
+                    finally:
+                        # restore cwd
+                        os.chdir(oldcwd)
                     success.append(package)
+                else:
+                    print >> sys.stderr, "ERROR: no index.rst for sphinx build of [%s]"%package
             finally:
                 pass
     return success

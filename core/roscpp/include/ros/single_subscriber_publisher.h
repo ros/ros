@@ -59,8 +59,20 @@ public:
    */
   void publish(const Message& message) const;
 
+  /**
+   * \brief Returns the topic this publisher publishes on
+   */
   std::string getTopic() const;
-  std::string getSubscriberCallerID() const;
+
+  /**
+   * \deprecated in favor of getSubscriberName()
+   */
+  ROSCPP_DEPRECATED std::string getSubscriberCallerID() const;
+
+  /**
+   * \brief Returns the name of the subscriber node
+   */
+  std::string getSubscriberName() const;
 
 private:
 

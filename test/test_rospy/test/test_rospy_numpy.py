@@ -44,7 +44,7 @@ import time
 import numpy
 
 # this is partially a teste of the rospy/Tutorials/numpy
-from rospy_tutorials.msg import Floats
+from test_rospy.msg import Floats
 
 import cStringIO
 # test rospy.names package

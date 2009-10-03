@@ -32,6 +32,9 @@
 #
 # Revision $Id$
 
+"""Base-classes and management of ROS services.
+See L{rospy.tcpros_service} for actual implementation."""
+
 import logging
 import traceback
 
@@ -47,28 +50,31 @@ logger = logging.getLogger('rospy.service')
 import roslib.message
 ServiceDefinition = roslib.message.ServiceDefinition
 
-## \ingroup clientapi
-## Exception class for service errors
-class ServiceException(Exception): pass
+class ServiceException(Exception):
+    """Exception class for service-related errors"""
+    pass
 
-## superclass for storing service information
 class _Service(object):
+    """Internal-use superclass for storing service information"""
     def __init__(self, name, service_class):
-        self.name = resolve_name(name) #services remap as well
+        self.resolved_name = resolve_name(name) #services remap as well
         self.service_class = service_class
         self.request_class = service_class._request_class
         self.response_class = service_class._response_class
         self.uri = None #initialize attr
 
-## Keeps track of currently registered services in the ROS system
 class ServiceManager(object):
+    """Keeps track of currently registered services in the ROS system"""
     def __init__(self):
+        """ctor"""
         self.map = {} # {name : Service}
         self.lock = threading.RLock()
 
-    ## @param self
-    ## @return [(str, str)]: List of (service_name, service_uri)  for all registered services.
     def get_services(self):
+        """
+        @return: List of (service_name, service_uri)  for all registered services.
+        @rtype: [(str, str)]
+        """
         try:
             self.lock.acquire()
             ret_val = []
@@ -79,52 +85,62 @@ class ServiceManager(object):
             self.lock.release()
         return ret_val
     
-    ## Unregister all registered services
-    ## @param self 
     def unregister_all(self):
+        """
+        Unregister all registered services
+        """
         self.map.clear()
     
-    ## Register service with ServiceManager and ROS master
-    ## @param self
-    ## @param service_name str: name of service (resolved)
-    ## @param service Service        
-    def register(self, service_name, service):
+    def register(self, resolved_service_name, service):
+        """
+        Register service with ServiceManager and ROS master
+        @param resolved_service_name: name of service (resolved)
+        @type  resolved_service_name: str
+        @param service: Service to register
+        @type  service: L{_Service}
+        """
         err = None
         try:
             self.lock.acquire()
-            if service_name in self.map:
-                err = "service [%s] already registered"%service_name
+            if resolved_service_name in self.map:
+                err = "service [%s] already registered"%resolved_service_name
             else:
-                self.map[service_name] = service
+                self.map[resolved_service_name] = service
                 
             # NOTE: this call can potentially take a long time under lock and thus needs to be reimplmented
-            get_registration_listeners().notify_added(service_name, service.uri, Registration.SRV)
+            get_registration_listeners().notify_added(resolved_service_name, service.uri, Registration.SRV)
         finally:
             self.lock.release()
 
         if err:
             raise ServiceException(err)
         
-    ## Unregister service with ServiceManager and ROS Master
-    ## @param self
-    ## @param service_name str: name of service
-    ## @param service Service: service implementation
-    def unregister(self, service_name, service):
+    def unregister(self, resolved_service_name, service):
+        """
+        Unregister service with L{ServiceManager} and ROS Master
+        @param resolved_service_name: name of service
+        @type  resolved_service_name: str
+        @param service: service implementation
+        @type  service: L{_Service}
+        """        
         try:
             self.lock.acquire()
-            curr = self.map.get(service_name, None)
+            curr = self.map.get(resolved_service_name, None)
             if curr == service:
-                del self.map[service_name]
+                del self.map[resolved_service_name]
                 
             # NOTE: this call can potentially take a long time under lock
-            get_registration_listeners().notify_removed(service_name, service.uri, Registration.SRV)                
+            get_registration_listeners().notify_removed(resolved_service_name, service.uri, Registration.SRV)                
         finally:
             self.lock.release()
 
-    ## @param self
-    ## @param service_name str: name of service
-    ## @return Service: service implementation
-    def get_service(self, service_name):
-        return self.map.get(service_name, None)
+    def get_service(self, resolved_service_name):
+        """
+        @param resolved_service_name: name of service
+        @type  resolved_service_name: str
+        @return: service implementation
+        @rtype: _Service
+        """
+        return self.map.get(resolved_service_name, None)
 
 set_service_manager(ServiceManager())

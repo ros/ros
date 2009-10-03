@@ -45,39 +45,39 @@ from math import sqrt
 from optparse import OptionParser
 
 
-def get_all_packages(stack_string):
+def get_all_packages(stack_name):
 
     try:
         # Check version, make postscript if too old to make pdf
-        args = ["rosstack", "contents", stack_string]
+        args = ["rosstack", "contents", stack_name]
         vstr, verr = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     except subprocess.CalledProcessError:
-        print >> sys.stderr, "failed to call [rosstack contents %s]"%stack_string
+        print >> sys.stderr, "failed to call [rosstack contents %s]"%stack_name
     return vstr.split()
 
 
-def mark_uninstalled(stack_name):
-    print "uninstalling, ", stack_name
-    for p in  get_all_packages(stack_name):
+def mark_uninstalled(packages):
+    print "uninstalling, ", packages
+    for p in  packages:
         filename = os.path.join(roslib.packages.get_pkg_dir(p), "ROS_NOBUILD")
         subprocess.check_call(["rm", filename])
 
-def mark_installed(stack_name):
-    print "installing ", stack_name
-    for p in  get_all_packages(stack_name):
+def mark_installed(packages):
+    print "installing ", packages
+    for p in packages:
         filename = os.path.join(roslib.packages.get_pkg_dir(p), "ROS_NOBUILD")
         subprocess.check_call(["touch", filename])
 
-def build_stack(stack_name):
-    print "building ", stack_name
+def build_stack(packages):
+    print "building ", packages
     args = ["rosmake"]
-    args.extend( get_all_packages(stack_name) )
+    args.extend( packages )
     subprocess.check_call(args)
     
 
 
 def vdmain():
-    parser = OptionParser(usage="usage: %prog [options]", prog='rxdeps')
+    parser = OptionParser(usage="usage: %prog [options] [stack1] ... [stackN]", prog='rxdeps')
     parser.add_option("-i", "--installed", dest="installed", default=False,
                       action="store_true", help="Mark Packages as installed")
     parser.add_option("-u", "--uninstalled", dest="uninstalled", default=False,
@@ -85,35 +85,35 @@ def vdmain():
     parser.add_option("-b", "--build", dest="build", default=False,
                       action="store_true", help="Build all packages in stack")
     parser.add_option("--stack_string", dest="stack_string", default=None,
-                      action="store", help="stack name")
+                      action="store", help="stack name (DEPRECATED)")
     parser.add_option("--stack_name", dest="stack_name", default=None,
-                      action="store", help="stack name")
+                      action="store", help="stack name(DEPRECATED)")
     parser.add_option("--stack_version", dest="stack_version", default=None,
-                      action="store", help="stack version")
+                      action="store", help="stack version(DEPRECATED)")
 
     options, args = parser.parse_args()
 
-    stack_string = ""
+    if options.stack_name:
+        args.append(options.stack_name)
+        print "WARNING: --stack_name deprecated use arguments!"
+    if options.stack_string:
+        args.append(options.stack_string)
+        print "WARNING: --stack_string deprecated use arguments!"
+    if options.stack_version:
+        print "WARNING: Stack version not used!"
 
-    if not options.stack_string:
-        if not options.stack_name:
-            print "Stack name required!"
-        if not options.stack_version:
-            print "Stack version required!"
-        stack_string = options.stack_name + "-" + options.stack_version
-    else:
-        stack_string = options.stack_string
+    packages = []
+    for s in args:
+        packages.extend(get_all_packages(s))
 
     if options.build:
-        build_stack(stack_string)
+        build_stack(packages)
 
     if options.installed:
-        mark_installed(stack_string)
+        mark_installed(packages)
         
     elif options.uninstalled:
-        mark_uninstalled(stack_string)
-    else:
-        print "Please enter a valid argument"
+        mark_uninstalled(packages)
 
     
 if __name__ == '__main__':

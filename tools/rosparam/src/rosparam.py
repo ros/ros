@@ -63,9 +63,6 @@ from roslib.scriptutil import get_param_server, script_resolve_name
 class ROSParamException(Exception): pass
 class ROSParamIOException(ROSParamException): pass
 
-## deprecated
-RosParamException = ROSParamException
-
 # pyyaml customizations for binary and angle data
 
 ## adds a pyyaml serializer to handle xmlrpclib.Binary objects

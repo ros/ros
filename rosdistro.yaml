@@ -22,5 +22,5 @@ stacks:
   simulator_stage: {latest: 0.9.0}
   slam_gmapping: {latest: 0.9.1}
   sound_drivers: {latest: 0.9.0}
-  visualization: {latest: 0.2.0}
+  visualization: {latest: 0.2.1}
   visualization_common: {latest: 0.9.3}

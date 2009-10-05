@@ -6,7 +6,7 @@ stacks:
   _uri_rules: {dev-svn: 'https://code.ros.org/svn/ros-pkg/stacks/$STACK_NAME/trunk',
     release-svn: 'https://code.ros.org/svn/ros-pkg/stacks/$STACK_NAME/tags/$STACK_NAME-$STACK_VERSION',
     source-tarball: 'http://ros.org/download/$STACK_NAME/$STACK_NAME-$STACK_VERSION.tar.bz2'}
-  common: {latest: 0.5.0}
+  common: {latest: 0.5.1}
   common_msgs: {latest: 0.9.4}
   diagnostics: {latest: 0.2.1}
   geometry: {latest: 0.3.1}

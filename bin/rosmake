@@ -370,6 +370,10 @@ class RosMakeAll:
         if not self.logging_enabled:
           return
 
+        self.print_all("Summary output to directory")
+        self.print_all("%s"%self.log_dir)
+
+
         if None in self.result.keys():
             if len(self.result[None].keys()) > 0:
                 buildfail_filename = os.path.join(log_dir, "buildfailures.txt")

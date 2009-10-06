@@ -1,0 +1,20 @@
+<package>
+  <description brief="process_info">
+
+     process_info
+
+  </description>
+  <author>Ethan Dreyfuss</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/process_info</url>
+  
+  <rosdep name="libgtop"/>
+
+  <export>
+    <cpp cflags="`pkg-config --cflags libgtop-2.0 glib-2.0` -I${prefix}/include" lflags="`pkg-config --libs libgtop-2.0 glib-2.0`"/>
+  </export>
+
+</package>
+
+

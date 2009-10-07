@@ -37,34 +37,21 @@ import rospy
 import rosrecord
 
 
-def sortbags(inbag, outbag):
+def rename_topic(intopic, inbag, outtopic, outbag):
   rebag = rosrecord.Rebagger(outbag)
 
-  schedule = []
-  for i, (topic, msg, t) in enumerate(rosrecord.logplayer(inbag, raw=True)):
+  for (topic, msg, t) in rosrecord.logplayer(inbag, raw = True):
     if rospy.is_shutdown():
       break
-    schedule.append((t, i))
-  schedule = [ i for (t,i) in sorted(schedule) ]
-  print schedule
-
-  stage = {}
-  for i, (topic, msg, t) in enumerate(rosrecord.logplayer(inbag, raw=True)):
-    if rospy.is_shutdown():
-      break
-    stage[i] = (topic, msg, t)
-    while (schedule != []) and (schedule[0] in stage):
-      (topic, msg, t) = stage[schedule[0]]
+    if topic == intopic:
+      rebag.add(outtopic, msg, t, raw=True)
+    else:
       rebag.add(topic, msg, t, raw=True)
-      del stage[schedule[0]]
-      schedule = schedule[1:]
-  assert schedule == []
-  assert stage == {}
   rebag.close()
 
 if __name__ == '__main__':
   import sys
-  if len(sys.argv) == 3:
-    sortbags(sys.argv[1], sys.argv[2])
+  if len(sys.argv) == 5:
+    rename_topic(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
   else:
-    print "usage: bagsort <inbag> <outbag>"
+    print "usage: topic_renamer <intopic> <inbag> <outtopic> <outbag>"

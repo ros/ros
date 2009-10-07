@@ -58,6 +58,7 @@ bzip2:
   macports: bzip2
 boost:
   ubuntu:
+    9.10: libboost1.38-dev
     9.04: libboost1.37-dev
     8.10: |
       if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
@@ -138,6 +139,7 @@ wxpython:
   macports: py25-wxpython
 log4cxx:
   ubuntu:
+    9.10: liblog4cxx10-dev
     9.04: liblog4cxx10-dev
     8.10: |
       if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then

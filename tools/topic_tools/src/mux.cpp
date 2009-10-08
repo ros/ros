@@ -66,7 +66,7 @@ bool sel_srv_cb( topic_tools::MuxSelect::Request  &req,
     if (g_in_msgs[i]->topic == req.topic)
     {
       g_selected = g_in_msgs[i];
-      printf("mux selected input %d: [%s]\n", i, g_in_msgs[i]->topic.c_str());
+      printf("mux selected input %zu: [%s]\n", i, g_in_msgs[i]->topic.c_str());
       return true;
     }
   }

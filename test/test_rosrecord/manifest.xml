@@ -6,7 +6,7 @@
   </description>
   <author>Jeremy Leibs</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="test" notes=""/>
   <depend package="rospy"/>
   <depend package="rosrecord"/>
   <depend package="rostest"/>

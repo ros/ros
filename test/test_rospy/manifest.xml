@@ -1,9 +1,10 @@
 <package>
-  <description brief="rospy tests">rospy unit and integration test framework.</description>
+  <description brief="rospy tests">
+    rospy unit and integration test framework.
+  </description>
   <author>Ken Conley/kwc@willowgarage.com</author>
   <license>BSD</license>
-  <review status="na" notes="tests"/>
-  <url>http://pr.willowgarage.com/</url>
+  <review status="test" notes=""/>
   <depend package="rospy" />
   <depend package="rostest" />  
   <depend package="std_msgs" />  

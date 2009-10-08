@@ -1,9 +1,10 @@
 <package>
-  <description brief="ROS integration tests">ROS high-level (language-neutral) integration test framework.</description>
+  <description brief="ROS integration tests">
+    ROS high-level (language-neutral) integration test framework.
+  </description>
   <author>Ken Conley/kwc@willowgarage.com</author>
   <license>BSD</license>
-  <review status="na" notes="tests"/>
-  <url>http://pr.willowgarage.com/</url>
+  <review status="test" notes=""/>
   <depend package="rospy" />
   <depend package="roscpp" />
   <depend package="rostest" />

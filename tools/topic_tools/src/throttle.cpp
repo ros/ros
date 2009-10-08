@@ -125,6 +125,11 @@ int main(int argc, char **argv)
     return 1;
   }
 
+  string intopic = string(argv[2]);
+
+  ros::init(argc, argv, intopic + string("_throttle"),
+            ros::init_options::AnonymousName);
+
   if(!strcmp(argv[1], "messages"))
     g_use_messages = true;
   else if(!strcmp(argv[1], "bytes"))
@@ -134,8 +139,6 @@ int main(int argc, char **argv)
     puts(USAGE);
     return 1;
   }
-  
-  string intopic = string(argv[2]);
 
   if(g_use_messages && argc == 5)
     g_output_topic = string(argv[4]);
@@ -159,8 +162,6 @@ int main(int argc, char **argv)
     g_window = atof(argv[4]);
   }
 
-  ros::init(argc, argv, intopic + string("_throttle"),
-            ros::init_options::AnonymousName);
   ros::NodeHandle n;
   g_node = &n;
   ros::Subscriber sub = n.subscribe<ShapeShifter>(intopic, 10, &in_cb);

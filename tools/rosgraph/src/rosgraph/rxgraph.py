@@ -64,7 +64,7 @@ NODE_TOPIC_GRAPH = "node_topic"
 NODE_TOPIC_ALL_GRAPH = "node_topic_all" 
 class RosDotWindow(rosgraph.xdot.DotWindow):
     
-    def __init__(self, output_file=None, quiet=False):
+    def __init__(self, output_file=None, quiet=False, mode=NODE_NODE_GRAPH):
         rosgraph.xdot.DotWindow.__init__(self, (1400, 512)) 
         self.dotcode = self.new_dotcode = None
         # 1hz update loop
@@ -75,7 +75,7 @@ class RosDotWindow(rosgraph.xdot.DotWindow):
         self.orientation = orientations[0]
         self.dirty = True
         #self.graph_mode = NODE_TOPIC_ALL_GRAPH
-        self.graph_mode = NODE_NODE_GRAPH        
+        self.graph_mode = mode
         self.output_file = output_file
         self.quiet = quiet
 
@@ -177,7 +177,7 @@ def generate_dotcode(graph_mode, quiet=False):
             nn_nodes = filter(_quiet_filter, nn_nodes)
             nt_nodes = filter(_quiet_filter, nt_nodes)
         if nn_nodes or nt_nodes:
-            nodes_str = '\n'.join([_generate_node_dotcode(n, g) for n in nn_nodes])
+            nodes_str = '\n'.join([_generate_node_dotcode(n, g, quiet) for n in nn_nodes])
             nodes_str += '\n'.join(['  %s [shape=box,label="%s"];'%(
                 safe_dotcode_name(n), rosgraph.graph.node_topic(n)) for n in nt_nodes]) 
         else:
@@ -236,6 +236,10 @@ def rxgraph_main():
     parser.add_option("-q", "--quiet",
                       dest="quiet", default=False, action="store_true",
                       help="filter out common viewers")
+    parser.add_option("-t", "--topics",
+                      dest="topics", default=False, action="store_true",
+                      help="show all topics")
+
     options, args = parser.parse_args()
     if args:
         parser.error("invalid arguments")
@@ -246,8 +250,13 @@ digraph G { initializing [label="initializing..."]; }
 """
     try:
         # make gtk play nice with Python threads
-        gtk.gdk.threads_init()     
-        window = RosDotWindow(options.output_file, options.quiet)
+        gtk.gdk.threads_init()
+
+        if options.topics:
+            mode = NODE_TOPIC_ALL_GRAPH
+        else:
+            mode = NODE_NODE_GRAPH
+        window = RosDotWindow(options.output_file, options.quiet, mode)
         window.set_dotcode(init_dotcode)
         window.connect('destroy', gtk.main_quit)
 

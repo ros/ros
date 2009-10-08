@@ -67,6 +67,11 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             env_command = "env "+' '.join(["%s=%s"%(k,v) for (k, v) in env.iteritems()])
             command = "%s %s"%(env_command, command)
         try:
+            # as pycrypto 2.0.1 is EOL, disable it's Python 2.6 deprecation warnings
+            import warnings
+            warnings.filterwarnings("ignore", message="the sha module is deprecated; use the hashlib module instead")
+            warnings.filterwarnings("ignore", message="the md5 module is deprecated; use hashlib instead")                                    
+            
             import Crypto
         except ImportError, e:
             _logger.error("cannot use SSH: pycrypto is not installed")

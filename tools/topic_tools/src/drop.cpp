@@ -66,18 +66,24 @@ void in_cb(const boost::shared_ptr<ShapeShifter const>& msg)
     s_count = 0;
 }
 
+#define USAGE "\nusage: drop IN_TOPIC X Y [OUT_TOPIC]\n\n" \
+              " This program will drop X out of every Y messages from IN_TOPIC,\n" \
+              " forwarding the rest to OUT_TOPIC if given, else to a topic \n" \
+              " named IN_TOPIC_drop\n\n"
 int main(int argc, char **argv)
 {
-  if ((argc != 4 && argc != 5) || atoi(argv[2]) < 0 || atoi(argv[3]) < 1)
+  if(argc < 2)
   {
-    printf("\nusage: drop IN_TOPIC X Y [OUT_TOPIC]\n\n"
-           " This program will drop X out of every Y messages from IN_TOPIC,\n"
-           " forwarding the rest to OUT_TOPIC if given, else to a topic \n"
-           " named IN_TOPIC_drop\n\n");
+    puts(USAGE);
     return 1;
   }
   ros::init(argc, argv, string(argv[1]) + string("_drop"),
             ros::init_options::AnonymousName);
+  if ((argc != 4 && argc != 5) || atoi(argv[2]) < 0 || atoi(argv[3]) < 1)
+  {
+    puts(USAGE);
+    return 1;
+  }
   if (argc == 4)
     g_output_topic = string(argv[1]) + string("_drop");
   else // argc == 5

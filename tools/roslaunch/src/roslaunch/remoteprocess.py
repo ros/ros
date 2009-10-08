@@ -62,6 +62,50 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
         # log errors during a stop(). 
         self.is_dead = False
         
+    def _ssh_check_known_hosts(self, ssh, address, port):
+        """
+        Sub-routine for loading the host keys and making sure that they are configured
+        properly for the desired SSH.
+        
+        @return: error message if improperly configured, or None
+        @rtype: str
+        """
+        import paramiko
+        err_msg = None
+        try:
+            ssh.load_system_host_keys() #default location
+        except:
+            _logger.error(traceback.format_exc())
+            # as seen in #767, base64 raises generic Error.
+            #
+            # A corrupt pycrypto build can also cause this, though
+            # the cause of the corrupt builds has been fixed.
+            return "cannot load SSH host keys -- your known_hosts file may be corrupt"
+
+        # #1849: paramiko will raise an SSHException with an 'Unknown
+        # server' message if the address is not in the known_hosts
+        # file. This causes a lot of confusion to users, so we try
+        # and diagnose this in advance and offer better guidance
+
+        # - ssh.get_host_keys() does not return the system host keys
+        hk = ssh._system_host_keys
+        override = os.environ.get('ROSLAUNCH_SSH_UNKNOWN', 0)
+        if override == '1':
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        elif hk.lookup(address) is None:
+            port_str = ''
+            if port != 22:
+                port_str = "-p %s "%port
+            return """%s is not in your SSH known_hosts file.
+
+Please manually:
+  ssh %s%s
+
+then try roslaunching again.
+
+If you wish to configure roslaunch to automatically recognize unknown
+hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, port_str, address)
+        
     def _ssh_exec(self, command, env, address, port, username=None, password=None):
         if env:
             env_command = "env "+' '.join(["%s=%s"%(k,v) for (k, v) in env.iteritems()])
@@ -83,13 +127,8 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             return None, "paramiko is not installed"
         #load ssh client and connect
         ssh = paramiko.SSHClient()
-        err_msg = None
-        try:
-            ssh.load_system_host_keys() #default location
-        except:
-            _logger.error(traceback.format_exc())
-            # as seen in #767, base64 raises generic Error
-            err_msg = "cannot load SSH host keys -- your known_hosts file may be corrupt"
+        err_msg = self._ssh_check_known_hosts(ssh, address, port)
+        
         if not err_msg:
             try:
                 if not password: #use SSH agent
@@ -104,6 +143,8 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
                 err_msg = "Authentication to remote computer[%s:%s] failed"%(address, port)
             except paramiko.SSHException, e:
                 _logger.error(traceback.format_exc())
+                if str(e).startswith("Unknown server"):
+                    pass
                 err_msg = "Unable to establish ssh connection to [%s:%s]: %s"%(address, port, e)
         if err_msg:
             return None, err_msg
@@ -122,7 +163,7 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             _logger.info("remote[%s]: invoking with ssh exec args [%s], env: %s"%(name, ' '.join(self.args), self.env))
             sshvals, msg = self._ssh_exec(' '.join(self.args), self.env, m.address, m.ssh_port, m.user, m.password)
             if sshvals is None:
-                printerrlog("remote[%s]: failed to launch on %s: %s"%(name, m.name, msg))
+                printerrlog("remote[%s]: failed to launch on %s:\n\n%s\n\n"%(name, m.name, msg))
                 return False
             self.ssh, self.sshin, self.sshout, self.ssherr = sshvals
             printlog("remote[%s]: ssh connection created"%name)

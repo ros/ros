@@ -42,7 +42,7 @@ import rospy
 
 class ROSJSONException(rospy.ROSException): pass
 
-_JSON_ESCAPE = ['\\', '"', '\/', '\b', '\f', '\n', '\r', '\t']
+_JSON_ESCAPE = {'\\':r'\\', '"':'\\"', '\b':r'\b', '\f':r'\f', '\n':r'\n', '\r':r'\r', '\t':r'\t'}
 
 ## Convert value to JSON representation
 ## @param v Any: value to convert to JSON. Supported types are Python primitives (str, int, float, long, bool) as well as rospy Message-related types (Message, Time, Duration).
@@ -51,13 +51,15 @@ _JSON_ESCAPE = ['\\', '"', '\/', '\b', '\f', '\n', '\r', '\t']
 def value_to_json(v):
     if type(v) == str:
         buff = cStringIO.StringIO()
+        
         buff.write('"')
         for c in v:
             if c in _JSON_ESCAPE:
-                buff.write('\\'+c)
+                buff.write(_JSON_ESCAPE[c])
             else:
                 buff.write(c)
         buff.write('"')                
+
         return buff.getvalue()
     elif type(v) in (int, float, long):
         return "%s"%v

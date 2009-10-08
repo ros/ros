@@ -32,6 +32,10 @@
 #
 # Revision $Id$
 
+"""
+Data structures and library for representing ROS Computation Graph state.
+"""
+
 import sys
 import time
 import itertools
@@ -47,33 +51,44 @@ logger = logging.getLogger('rosgraph.graph')
 
 _ROS_NAME = '/rosviz'
 
-## In order to prevent topic/node name aliasing, we have to remap
-## topic node names. Currently we just prepend a space, which is
-## an illegal ROS name and thus not aliassed.
-## @return str: topic mapped to a graph node name.
 def topic_node(topic):
+    """
+    In order to prevent topic/node name aliasing, we have to remap
+    topic node names. Currently we just prepend a space, which is
+    an illegal ROS name and thus not aliassed.
+    @return str: topic mapped to a graph node name.
+    """
     return ' ' + topic
-## Inverse of topic_node
-## @return str: undo topic_node() operation
 def node_topic(node):
+    """
+    Inverse of topic_node
+    @return str: undo topic_node() operation
+    """
     return node[1:]
 
-## Data structure for storing info about a 'bad' node
 class BadNode(object):
+    """
+    Data structure for storing info about a 'bad' node
+    """
     
     ## no connectivity
     DEAD = 0
     ## intermittent connectivity
     WONKY = 1
     
-    ## @param type int: DEAD | WONKY
     def __init__(self, name, type, reason):
+        """
+        @param type: DEAD | WONKY
+        @type  type: int
+        """
         self.name =name
         self.reason = reason
         self.type = type
 
-## Data structure for storing Edge instances
 class EdgeList(object):
+    """
+    Data structure for storing Edge instances
+    """
     __slots__ = ['edges_by_start', 'edges_by_end']
     def __init__(self):
         # in order to make it easy to purge edges, we double-index them
@@ -83,15 +98,21 @@ class EdgeList(object):
     def __iter__(self):
         return itertools.chain(*[v for v in self.edges_by_start.itervalues()])
     
-    ## @return bool: True if edge is in edge list
     def has(self, edge):
-        key = edge.start
+        """
+        @return: True if edge is in edge list
+        @rtype: bool
+        """
+        key = edge.key
         return key in self.edges_by_start and \
                edge in self.edges_by_start[key]
         
-    ## Add an edge to our internal representation. not multi-thread safe
-    ## @param edge Edge: edge to add
     def add(self, edge):
+        """
+        Add an edge to our internal representation. not multi-thread safe
+        @param edge: edge to add
+        @type  edge: Edge
+        """
         # see note in __init__
         def update_map(map, key, edge):
             if key in map:
@@ -105,20 +126,25 @@ class EdgeList(object):
                 map[key] = [edge]
                 return True
             
-        updated = update_map(self.edges_by_start, edge.start, edge)
-        updated = update_map(self.edges_by_end, edge.end, edge) or updated
+        updated = update_map(self.edges_by_start, edge.key, edge)
+        updated = update_map(self.edges_by_end, edge.rkey, edge) or updated
         return updated
         
-    ## Create Edge instances for args and add resulting edges to edge
-    ## list. Convenience method to avoid repetitve logging, etc...
-    ## @param edge_list EdgeList: data structure to add edge to
-    ## @param start str: name of start node. If None, warning will be
-    ## logged and no add will occur
-    ## @param dest str: name of start node. If None, warning will be
-    ## logged and no add will occur
-    ## @param direction str: direction string (i/o/b)
-    ## @return bool: True if update occured
     def add_edges(self, start, dest, direction, label=''):
+        """
+        Create Edge instances for args and add resulting edges to edge
+        list. Convenience method to avoid repetitve logging, etc...
+        @param edge_list: data structure to add edge to
+        @type  edge_list: EdgeList
+        @param start: name of start node. If None, warning will be logged and add fails
+        @type  start: str
+        @param dest: name of start node. If None, warning will be logged and add fails
+        @type  dest: str
+        @param direction: direction string (i/o/b)
+        @type  direction: str
+        @return: True if update occured
+        @rtype: bool
+        """
         
         # the warnings should generally be temporary, occuring of the
         # master/node information becomes stale while we are still
@@ -133,12 +159,20 @@ class EdgeList(object):
                 updated = self.add(Edge(*args)) or updated
         return updated
 
-    ## Delete all edges that start or end at node
-    ## @param node str: name of node 
     def delete_all(self, node):
-        edges = self.edges_by_start.get(node, []) + self.edges_by_end.get(node, [])
-        for e in edges:
-            self.delete(e)
+        """
+        Delete all edges that start or end at node
+        @param node: name of node
+        @type  node: str
+        """
+        def matching(map, pref):
+            return [map[k] for k in map.iterkeys() if k.startswith(pref)]
+        
+        pref = node+"|"
+        edge_lists = matching(self.edges_by_start, pref) + matching(self.edges_by_start, pref)
+        for el in edge_lists:
+            for e in el:
+                self.delete(e)
         
     def delete(self, edge):
         # see note in __init__
@@ -148,16 +182,23 @@ class EdgeList(object):
                 if edge in edges:
                     edges.remove(edge)
                     return True
-        update_map(self.edges_by_start, edge.start, edge)
-        update_map(self.edges_by_end, edge.end, edge)
+        update_map(self.edges_by_start, edge.key, edge)
+        update_map(self.edges_by_end, edge.rkey, edge)
     
-## Data structure for representing ROS node graph edge        
 class Edge(object):
-    __slots__ = ['start', 'end', 'label']
+    """
+    Data structure for representing ROS node graph edge
+    """
+    
+    __slots__ = ['start', 'end', 'label', 'key', 'rkey']
     def __init__(self, start, end, label=''):
         self.start = start
         self.end = end
         self.label = label
+        self.key = "%s|%s"%(self.start, self.label)
+        # reverse key, indexed from end
+        self.rkey = "%s|%s"%(self.end, self.label)        
+
     def __ne__(self, other):
         return self.start != other.start or self.end != other.end
     def __str__(self):
@@ -165,11 +206,13 @@ class Edge(object):
     def __eq__(self, other):
         return self.start == other.start and self.end == other.end
 
-## compute argument ordering for Edge constructor based on direction flag
-## @param direction str: 'i', 'o', or 'b' (in/out/bidir) relative to \a start
-## @param start str: name of starting node
-## @param start dest: name of destination node 
 def edge_args(start, dest, direction, label):
+    """
+    compute argument ordering for Edge constructor based on direction flag
+    @param direction str: 'i', 'o', or 'b' (in/out/bidir) relative to \a start
+    @param start str: name of starting node
+    @param start dest: name of destination node 
+    """
     edge_args = []
     if direction in ['o', 'b']:
         edge_args.append((start, dest, label))
@@ -178,9 +221,12 @@ def edge_args(start, dest, direction, label):
     return edge_args
 
 
-## Utility class for polling ROS statistics from running ROS graph.
-## Not multi-thread-safe    
 class Graph(object):
+    """
+    Utility class for polling ROS statistics from running ROS graph.
+    Not multi-thread-safe    
+    """
+    
     def __init__(self):
         self.master = roslib.scriptutil.get_master()
 
@@ -219,16 +265,26 @@ class Graph(object):
         # seconds until node data is considered stale
         self.node_stale = 5.0 #seconds
 
-    ## @param stale_secs double: seconds that data is considered fresh
+
     def set_master_stale(self, stale_secs):
+        """
+        @param stale_secs: seconds that data is considered fresh
+        @type  stale_secs: double
+        """
         self.master_stale = stale_secs
         
-    ## @param stale_secs double: seconds that data is considered fresh
     def set_node_stale(self, stale_secs):
+        """
+        @param stale_secs: seconds that data is considered fresh
+        @type  stale_secs: double
+        """
         self.node_stale = stale_secs
 
-    ## @return bool: True if nodes information was updated
     def _master_refresh(self):
+        """
+        @return: True if nodes information was updated
+        @rtype: bool
+        """
         logger.debug("master refresh: starting")
         updated = False
         #TODO: getSystemState probably needs to return URIs instead
@@ -290,8 +346,10 @@ class Graph(object):
         finally:
             self.bad_nodes_lock.release()
 
-    ## Promotes bad node to 'wonky' status.
     def _unmark_bad_node(self, node, reason):
+        """
+        Promotes bad node to 'wonky' status.
+        """
         try:
             # bad nodes are updated in a separate thread, so lock
             self.bad_nodes_lock.acquire()
@@ -300,12 +358,17 @@ class Graph(object):
         finally:
             self.bad_nodes_lock.release()        
     
-    ## retrieve bus info from the node and update nodes and edges as appropriate
-    ## @param node str: node name
-    ## @param api ServerProxy: XML-RPC proxy
-    ## @param bad_node bool: If True, node has connectivity issues and
-    ## should be treated differently
     def _node_refresh_businfo(self, node, api, bad_node=False):
+        """
+        Retrieve bus info from the node and update nodes and edges as appropriate
+        @param node: node name
+        @type  node: str
+        @param api: XML-RPC proxy
+        @type  api: ServerProxy
+        @param bad_node: If True, node has connectivity issues and
+        should be treated differently
+        @type  bad_node: bool
+        """
         try:
             logger.debug("businfo: contacting node [%s] for bus info", node)
             
@@ -365,11 +428,16 @@ class Graph(object):
                     pass
         return updated
                     
-    ## Contact node for stats/connectivity information
-    ## @param node str: name of node to contact
-    ## @param bad_node bool: if True, node has connectivity issues
-    ## @return bool: True if node was successfully contacted
     def _node_refresh(self, node, bad_node=False):
+        """
+        Contact node for stats/connectivity information
+        @param node: name of node to contact
+        @type  node: str
+        @param bad_node: if True, node has connectivity issues
+        @type  bad_node: bool
+        @return: True if node was successfully contacted
+        @rtype  bool
+        """
         # TODO: I'd like for master to provide this information in
         # getSystemState() instead to prevent the extra connection per node
         updated = False
@@ -399,17 +467,21 @@ class Graph(object):
             self.uri_node_map[uri] = node
             return uri
     
-    ## Build self.node_uri_map and self.uri_node_map using master as a
-    ## lookup service. This will make N requests to the master for N
-    ## nodes, so this should only be used sparingly
     def _node_uri_refresh_all(self):
+        """
+        Build self.node_uri_map and self.uri_node_map using master as a
+        lookup service. This will make N requests to the master for N
+        nodes, so this should only be used sparingly
+        """
         for node in self.nn_nodes:
             self._node_uri_refresh(node)
 
-    ## Update loop for nodes with bad connectivity. We box them separately
-    ## so that we can maintain the good performance of the normal update loop.
-    ## Once a node is on the bad list it stays there.
     def bad_update(self):
+        """
+        Update loop for nodes with bad connectivity. We box them separately
+        so that we can maintain the good performance of the normal update loop.
+        Once a node is on the bad list it stays there.
+        """
         last_node_refresh = self.last_node_refresh
 
         # nodes left to check
@@ -444,9 +516,11 @@ class Graph(object):
         logger.debug("ROS stats (bad nodes) update took %ss"%(end_time-start_time))
         return updated
             
-    ## Update all the stats. This method may take awhile to complete as it will
-    ## communicate with all nodes + master.
     def update(self):
+        """
+        Update all the stats. This method may take awhile to complete as it will
+        communicate with all nodes + master.
+        """
         
         last_node_refresh = self.last_node_refresh
         

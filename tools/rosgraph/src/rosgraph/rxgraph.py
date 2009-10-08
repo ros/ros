@@ -63,6 +63,9 @@ NODE_TOPIC_GRAPH = "node_topic"
 # all node/topic connections, even if no actual network connection
 NODE_TOPIC_ALL_GRAPH = "node_topic_all" 
 class RosDotWindow(rosgraph.xdot.DotWindow):
+    """
+    XDot window with enhancements for rxgraph display
+    """
     
     def __init__(self, output_file=None, quiet=False, mode=NODE_NODE_GRAPH):
         rosgraph.xdot.DotWindow.__init__(self, (1400, 512)) 
@@ -79,18 +82,31 @@ class RosDotWindow(rosgraph.xdot.DotWindow):
         self.output_file = output_file
         self.quiet = quiet
 
+        # check for new dot files at 10hz
+        self.timer = gobject.timeout_add(100, self.timer_callback, self)
+        
+    def timer_callback(self, args):
+        self._update_dot_display()
+
     def on_rotate(self, action):
+        """
+        event handler for rotate button
+        """
         next_idx = (orientations.index(self.orientation) + 1) % len(orientations)
         self.orientation = orientations[next_idx]
         self.repaint_graph()
         
-    ## render the next dotcode if available
     def repaint_graph(self):
+        """
+        render the next dotcode if available
+        """
         self.dirty = True
-        self._update_dot_display()
+        #self._update_dot_display()
         
-    ## render the next dotcode if available
     def _update_dot_display(self):
+        """
+        render the next dotcode if available
+        """
         if not self.dirty:
             # True for gobject timeout keep alive
             return True
@@ -114,12 +130,16 @@ class RosDotWindow(rosgraph.xdot.DotWindow):
 
 _graph = rosgraph.graph.Graph() #singleton
 
-## singleton accessor for ROS graph
 def get_graph():
+    """
+    singleton accessor for ROS graph
+    """
     return _graph
 
-## encode the name for dotcode symbol-safe syntax
 def safe_dotcode_name(name):
+    """
+    encode the name for dotcode symbol-safe syntax    
+    """
     # not terribly efficient or sophisticated 
     ret = name.replace('/', '_')
     ret = ret.replace(' ', '_')
@@ -154,9 +174,13 @@ def _quiet_filter(name):
 def _quiet_filter_edge(edge):
     return _quiet_filter(edge.start) and _quiet_filter(edge.end)
 
-## @param graph_mode str: NODE_NODE_GRAPH | NODE_TOPIC_GRAPH | NODE_TOPIC_ALL_GRAPH
-## @return str: dotcode generated from graph singleton
 def generate_dotcode(graph_mode, quiet=False):
+    """
+    @param graph_mode str: NODE_NODE_GRAPH | NODE_TOPIC_GRAPH | NODE_TOPIC_ALL_GRAPH
+    @type  graph_mode: str
+    @return: dotcode generated from graph singleton
+    @rtype: str
+    """
     #print "generate_dotcode", graph_mode
     g = get_graph()
     
@@ -196,6 +220,8 @@ def generate_dotcode(graph_mode, quiet=False):
     return "digraph G {\n  rankdir=%%s;\n%(nodes_str)s\n%(edges_str)s}\n"%vars()
 
 class DotUpdate(threading.Thread):
+    """Thread to control update of dot file"""
+
     def __init__(self, callback, quiet=False):
         threading.Thread.__init__(self, name="DotUpdate")
         self.callback = callback
@@ -244,7 +270,7 @@ def rxgraph_main():
     if args:
         parser.error("invalid arguments")
 
-    roslib.roslogging.configure_logging('rosviz', logging.DEBUG, additional=['rospy', 'roslib'])
+    roslib.roslogging.configure_logging('rosgraph', logging.DEBUG, additional=['rospy', 'roslib'])
     init_dotcode = """
 digraph G { initializing [label="initializing..."]; }
 """

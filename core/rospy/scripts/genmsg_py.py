@@ -34,7 +34,7 @@
 # Revision $Id$
 
 ## ROS message source code generation for Python
-##
+## 
 ## Converts ROS .msg files in a package into Python source code implementations.
 
 import roslib; roslib.load_manifest('rospy')

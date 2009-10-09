@@ -33,24 +33,14 @@
 # Revision $Id$
 """
 TCPROS connection protocol.
+
+Implements: U{http://ros.org/wiki/ROS/TCPROS}
+
+The rospy tcpros implementation is split into three areas:
+ - L{rospy.tcpros_base}: common TCPROS routines, including header and connection processing
+ - L{rospy.tcpros_pubsub}: Topic-specific capabilities for publishing and subscribing
+ - L{rospy.tcpros_service}: Service-specific capabilities 
 """
-## TCPROS connection protocol.
-#  http://pr.willowgarage.com/wiki/ROS/TCPROS
-# 
-#  TCPROS sets up a TCP/IP server socket on the source machine that
-#  waits for incoming connections. When it receives an incoming
-#  connection, it parses the header sent along the connection to
-#  determine which topic it corresponds to. The format of this header
-#  is:
-# 
-#  HEADER-LENGTH (32-bit int)
-#  TOPIC-NAME (string identifier)
-#  '\n' (newline character)
-#  MSG-MD5SUM
-#
-#  The MSG-MD5SUM is an md5sum of the full text of the .msg file. As
-#  such, it will signal a version change even for compatible changes to
-#  the file.
 
 import rospy.tcpros_base
 import rospy.tcpros_pubsub

@@ -71,10 +71,10 @@ class TestRosserviceOnline(unittest.TestCase):
         for name in names:
             # type
             output = Popen([cmd, 'type', name], stdout=PIPE).communicate()[0]
-            self.assertEquals('rospy_tutorials/AddTwoInts', output.strip())
+            self.assertEquals('test_ros/AddTwoInts', output.strip())
 
             # find
-            output = Popen([cmd, 'find', 'rospy_tutorials/AddTwoInts'], stdout=PIPE).communicate()[0]
+            output = Popen([cmd, 'find', 'test_ros/AddTwoInts'], stdout=PIPE).communicate()[0]
             values = [v.strip() for v in output.split('\n') if v.strip()]
             self.assertEquals(set(values), set(services))
 

@@ -4,11 +4,5 @@
 
 @htmlinclude manifest.html
 
-Tools of interest:
-- \ref mux
-- \ref switch_mux
-- \ref throttle
-- \ref drop
-- \ref relay
 */
 

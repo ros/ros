@@ -93,10 +93,10 @@ if __name__ == '__main__':
         all_rules.extend(m[1])
 
         print_trans(m[0][0].old_class, m[0][-1].new_class, 0)
-        print "    %d rules missing:"%(len(m[1]))
-
-        for r in m[1]:
-          print_trans(r.old_class, r.new_class,1)
+        if len(m[1]) > 0:
+          print "    %d rules missing:"%(len(m[1]))
+          for r in m[1]:
+            print_trans(r.old_class, r.new_class,1)
 
     if options.rulefile is not None:
 
@@ -137,7 +137,7 @@ if __name__ == '__main__':
       print "\nThe necessary rule files have been written to: %s"%(options.rulefile,)
     else:
       if all_rules == []:
-        print "\nAll rules defined.  Bag is ready to migrated"
+        print "\nAll rules defined.  Bag is ready to be migrated"
       else:
         print "\nTo generate rules, please run with -g <rulefile>"
   else:

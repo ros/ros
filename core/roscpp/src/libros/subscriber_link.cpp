@@ -29,7 +29,6 @@
 #include "ros/publication.h"
 #include "ros/header.h"
 #include "ros/connection.h"
-#include "ros/node.h"
 #include "ros/transport/transport.h"
 #include "ros/this_node.h"
 #include "ros/connection_manager.h"

@@ -14,8 +14,16 @@ export ROS_MASTER_URI=http://127.0.0.1:11311
 #  `rospack find rospack`/roscachesvncert
 #fi
 
-# Just the top-level packages that we expect to build on OSX
-PKGS_CMD="cat `rospack find rosbuild`/bin/whitelist_osx"
+# Use rosdep to install prereqs for anything that's not blacklisted
+rosdep update
+rosdep_pkgs=`for p in \`rospack list-names\`; do if test ! -f \`rospack find $p\`/ROS_BUILD_BLACKLIST -a ! -f \`rospack find $p\`/ROS_BUILD_BLACKLIST_OSX; then echo $p; fi; done`
+if ! rosdep satisfy $rosdep_pkgs; then
+  echo "rosdep failed; aborting"
+  exit 1
+fi
+bash <(rosdep satisfy $rosdep_pkgs)
+
+PKGS_CMD=`rospack find rospack`/rosallpkgs
 PKGS=`$PKGS_CMD`
 rm -f $ROS_ROOT/stdout.txt
 rm -f $ROS_ROOT/stderr.txt
@@ -33,7 +41,7 @@ rm -f $ROS_ROOT/rosmakeall-buildfailures-withcontext.txt
 rm -f $ROS_ROOT/rosmakeall-testfailures.txt
 for p in $PKGS; do
   cd `rospack find $p`
-  if test -f Makefile -a ! -f ROS_NOBUILD -a ! -f ROS_BUILD_BLACKLIST; then
+  if test -f Makefile -a ! -f ROS_NOBUILD -a ! -f ROS_BUILD_BLACKLIST -a ! -f ROS_BUILD_BLACKLIST_OSX; then
     # If the target is 'test-only', we don't build
     if [ $targetname != "test-only" ]; then
       s=`date +%s`
@@ -48,7 +56,7 @@ for p in $PKGS; do
         # Are we building packages (as opposed to just ros itself)? If so,
         # then we don't run tests on ros, because they were run elsewhere.
         if [ ! -z $ROS_PACKAGE_PATH ]; then
-          if expr match `rospack find $p` $ROS_ROOT; then
+          if expr match `rospack find $p` $ROS_ROOT/; then
             continue
           fi
         fi
@@ -63,7 +71,7 @@ for p in $PKGS; do
   fi
 done
 
-`rospack find rostest`/bin/catunit $ROS_ROOT/test_results.xml
+`rospack find rostest`/bin/cleanunit
 
 #echo "Coverage summary for $JOB_NAME build" > $ROS_ROOT/rosmakeall-coverage.txt
 #echo `date` >> $ROS_ROOT/rosmakeall-coverage.txt

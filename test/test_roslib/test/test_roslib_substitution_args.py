@@ -44,6 +44,9 @@ class SubArgsTest(unittest.TestCase):
         from roslib.substitution_args import resolve_args, SubstitutionException
         from roslib.packages import get_pkg_dir
         rospy_dir = get_pkg_dir('rospy', required=True)
+
+        context = {'foo': 'bar'}
+        
         tests = [
             ('$(find rospy)', rospy_dir),
             ('hello$(find rospy)', 'hello'+rospy_dir),
@@ -64,11 +67,22 @@ class SubArgsTest(unittest.TestCase):
             ('$(optenv NOT_ROS_ROOT)', ''),
             ('$(optenv NOT_ROS_ROOT)more stuff', 'more stuff'),
             ('$(optenv NOT_ROS_ROOT alternate)', 'alternate'),
-            ('$(optenv NOT_ROS_ROOT alternate text)', 'alternate text'),            
+            ('$(optenv NOT_ROS_ROOT alternate text)', 'alternate text'),
+
+            # #1776
+            ('$(anon foo)', 'bar'),
+            ('$(anon foo)/baz', 'bar/baz'),
+            ('$(anon foo)/baz/$(anon foo)', 'bar/baz/bar'),
             ]
         for arg, val in tests:
-            self.assertEquals(val, resolve_args(arg))
+            self.assertEquals(val, resolve_args(arg, context=context))
 
+        # more #1776
+        r = resolve_args('$(anon foo)/bar')
+        self.assert_('/bar' in r)
+        self.failIf('$(anon foo)' in r)        
+        
+            
         # test against strings that should not match
         noop_tests = [
             '$(find rospy', '$find rospy', '', ' ', 'noop', 'find rospy', 'env ROS_ROOT', '$$', ')', '(', '()',
@@ -82,6 +96,8 @@ class SubArgsTest(unittest.TestCase):
             '$(env)', '$(env ROS_ROOT alternate)',
             '$(env NOT_SET)',
             '$(optenv)',
+            '$(anon)',
+            '$(anon foo bar)',            
             ]
         for f in failures:
             try:

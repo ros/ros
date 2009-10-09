@@ -19,4 +19,4 @@ set(ROSPACK_MAKEDIST true)
 # Ignore the present file
 list(APPEND CPACK_SOURCE_IGNORE_FILES ${PROJECT_SOURCE_DIR}/CMakeLists.txt)
 
-rosbuild_make_distribution(0.8.0)
+rosbuild_make_distribution(0.9.0)

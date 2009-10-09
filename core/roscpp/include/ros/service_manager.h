@@ -114,7 +114,7 @@ public:
    */
   bool unadvertiseService(const std::string& serv_name);
 
-  bool advertiseService(const AdvertiseServiceOptions& ops, int32_t thread_pool_size);
+  bool advertiseService(const AdvertiseServiceOptions& ops);
 
   void start();
   void shutdown();

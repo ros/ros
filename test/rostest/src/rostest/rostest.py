@@ -43,7 +43,7 @@ import roslaunch
 import roslib.packages 
 import roslib.roslogging
 
-from rostestutil import createXMLRunner, printSummary, printRostestSummary, xmlResultsFile, XML_OUTPUT_FLAG
+from rostestutil import createXMLRunner, printSummary, printRostestSummary, xmlResultsFile, XML_OUTPUT_FLAG, rostest_name_from_path
 
 from rostest_parent import ROSTestLaunchParent
 
@@ -278,10 +278,8 @@ def rostestmain():
 
     # compute some common names we'll be using to generate test names and files
     test_file = args[0]
-    _, pkg = roslib.packages.get_dir_pkg(test_file) or 'unknownpkg'
-    outname = os.path.basename(test_file)
-    if '.' in outname:
-        outname = outname[:outname.rfind('.')]
+    pkg_dir, pkg = roslib.packages.get_dir_pkg(test_file) 
+    outname = rostest_name_from_path(pkg_dir, test_file)
 
     # #1140
     if not os.path.isfile(test_file):

@@ -30,7 +30,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: doxyutil.py 3727 2009-02-06 22:42:26Z sfkwc $
+# Revision $Id$
+
+from __future__ import with_statement
 
 import os
 import sys
@@ -63,9 +65,23 @@ class RosdocContext(object):
         self.stacks = {}        
         self.external_docs = {}
         self.manifests = {}
-        self.stack_manifests = {}        
+        self.stack_manifests = {}
+        # advanced per-package config
+        self.rd_configs = {}                
 
         self.template_dir = None
+
+    ## @return: True if package is configured to use builder. NOTE: if
+    ## there is no config, package is assumed to define a doxygen
+    ## builder
+    def has_builder(self, package, builder):
+        rd_config = self.rd_configs.get(package, None)
+        if not rd_config:
+            return builder == 'doxygen'
+        try:
+            return len([d for d in rd_config if d['builder'] == builder]) > 0
+        except KeyError:
+            print >> sys.stderr, "config file for [%s] is invalid, missing required 'builder' key"%package
         
     ## @return bool True if \a package should be document
     def should_document(self, package):
@@ -108,36 +124,52 @@ class RosdocContext(object):
     def _crawl_deps(self):
         external_docs = self.external_docs
         manifests = self.manifests
+        rd_configs = self.rd_configs
 
         stacks = self.stacks = {}
         
         for package, path in self.packages.iteritems():
 
             # find stacks to document on demand
-            stack = roslib.stacks.stack_of(package) or ''
-            if stack and stack not in stacks:
-                print "adding stack [%s] to documentation"%stack
-                p = roslib.stacks.get_stack_dir(stack)
-                if p:
-                    stacks[stack] = p
-                else:
-                    print >> sys.stderr, "cannot locate directory of stack [%s]"%stack
+            if self.should_document(package):
+                stack = roslib.stacks.stack_of(package) or ''
+                if stack and stack not in stacks:
+                    #print "adding stack [%s] to documentation"%stack
+                    p = roslib.stacks.get_stack_dir(stack)
+                    if p:
+                        stacks[stack] = p
+                    else:
+                        print >> sys.stderr, "cannot locate directory of stack [%s]"%stack
                 
             f = os.path.join(path, roslib.manifest.MANIFEST_FILE)
             try:
                 manifests[package] = m = roslib.manifest.parse_file(f)
 
+                #NOTE: the behavior is undefined if the users uses
+                #both config and export properties directly
+
                 # #1650 for backwards compatibility, we ready the old
                 # 'doxymaker' tag, which is deprecated
-
-                # this is a loop but we only accept one value
+                #  - this is a loop but we only accept one value
                 for e in m.get_export('doxymaker', 'external'):
                     external_docs[package] = e
                 for e in m.get_export('rosdoc', 'external'):
                     external_docs[package] = e
+                    
+                # load in any external config files
+                for e in m.get_export('rosdoc', 'config'):
+                    import yaml
+                    try:
+                        e = e.replace('${prefix}', path)
+                        config_p = os.path.join(path, e)
+                        with open(config_p, 'r') as config_f:
+                            rd_configs[package] = yaml.load(config_f)
+                    except Exception, e:
+                        print >> sys.stderr, "ERROR: unable to load rosdoc config file [%s]: %s"%(config_p, str(e))
+                    
+
             except:
                 print >> sys.stderr, "WARN: Package '%s' does not have a valid manifest.xml file, manifest information will not be included in docs"%package
-        
 
         stack_manifests = self.stack_manifests
         for stack, path in stacks.iteritems():

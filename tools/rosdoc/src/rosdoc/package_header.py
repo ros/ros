@@ -30,8 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: msgspec.py 3357 2009-01-13 07:13:05Z jfaustwg $
-# $Author: jfaustwg $
+# Revision $Id$
+# $Author$
 from __future__ import with_statement
 
 import codecs
@@ -52,6 +52,7 @@ def stack_link(stack):
 def _generate_package_headers(ctx, p):
   import yaml
   m = ctx.manifests[p]
+  m.description = m.description or ''
   d = {
     'brief': m.brief,
     'description': m.description.strip() or '',
@@ -83,7 +84,7 @@ def _generate_package_headers(ctx, p):
   d['msgs'] = roslib.msgs.list_msg_types(p, False)
   d['srvs'] = roslib.srvs.list_srv_types(p, False)        
 
-  d['dependency_tree'] = package_link(p) + '%s.pdf'%p
+  d['dependency_tree'] = package_link(p) + '%s_deps.pdf'%p
 
   # encode unicode entries
   d_copy = d.copy()
@@ -105,7 +106,8 @@ def _generate_package_headers(ctx, p):
   file_p_dir = os.path.dirname(file_p)
   if not os.path.isdir(file_p_dir):
     os.makedirs(file_p_dir)
-  print "writing package properties to", file_p
+  if 0:
+    print "writing package properties to", file_p
   with codecs.open(file_p, mode='w', encoding='utf-8') as f:
     f.write(yaml.dump(d))
   
@@ -122,7 +124,7 @@ def generate_package_headers(ctx):
         if not ctx.should_document(p):
             continue
         try:
-          print "generating wiki files for", p
+          #print "generating wiki files for", p
           _generate_package_headers(ctx, p)
         except Exception, e:
           import traceback
@@ -187,7 +189,7 @@ def generate_stack_headers(ctx):
     for s in stacks.iterkeys():
         #TODO: this curretly documents all stacks, instead of just ones related to args
         try:
-          print "generating stack wiki files for", s
+          #print "generating stack wiki files for", s
           _generate_stack_headers(ctx, s)
         except Exception, e:
           import traceback

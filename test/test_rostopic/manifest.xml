@@ -7,13 +7,13 @@
   <author>Ken Conley</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://pr.willowgarage.com/wiki/rostopic</url>
+  <url>http://ros.org/wiki/rostopic</url>
   <depend package="rostopic"/>
   <depend package="roslib"/>
   <depend package="rospy"/>
-  <depend package="rospy_tutorials"/>
   <depend package="rostest"/>
 
+  <depend package="test_ros"/>
 </package>
 
 

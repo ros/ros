@@ -58,11 +58,10 @@ class StackManifest(roslib.manifestlib._Manifest):
         super(StackManifest, self).__init__('stack')
         
 ## @param stack_dir str: path to stack directory
-## @param environ dict: environment dictionary
 ## @param required bool: require that the directory exist
 ## @return str: path to manifest file of stack
 ## @throws InvalidROSPkgException if required is True and manifest file cannot be located
-def _stack_file_by_dir(stack_dir, required=True, environ=os.environ):
+def _stack_file_by_dir(stack_dir, required=True):
     try:
         p = os.path.join(stack_dir, STACK_FILE)
         if not required and not os.path.exists(p):
@@ -77,16 +76,12 @@ Stack '%(stack_dir)s' is improperly configured: no manifest file is present.
             raise
 
 ## @param stack str: stack name
-## @param environ dict: environment dictionary
 ## @param required bool: require that the directory exist
 ## @return str: path to manifest file of stack
 ## @throws InvalidROSPkgException if required is True and manifest file cannot be located
-def stack_file(stack, required=True, environ=os.environ):
-    # ros_root needs to be determined from the environment or else
-    # everything breaks when trying to launch nodes via ssh where the
-    # path isn't setup correctly.
-    d = roslib.stacks.get_stack_dir(stack, required, ros_root=environ[roslib.rosenv.ROS_ROOT]) 
-    return _stack_file_by_dir(d, required, environ)
+def stack_file(stack, required=True):
+    d = roslib.stacks.get_stack_dir(stack)
+    return _stack_file_by_dir(d, required)
         
 ## @internal
 ## Parse stack.xml file

@@ -36,7 +36,7 @@ from rospy.core import xmlrpcapi, mloginfo
 from rospy.names import get_caller_id
 import rospy.exceptions
 
-## Data structures for the Master
+"""Internal-use: data structures for the Master"""
 
 ## Container for node registration information. Used in master's
 ## self.nodes data structure.  This is effectively a reference

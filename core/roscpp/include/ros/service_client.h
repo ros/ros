@@ -112,6 +112,25 @@ public:
    */
   void shutdown();
 
+  /**
+   * \brief Wait for this service to be advertised and available.  Blocks until it is.
+   * \param timeout The amount of time to wait for before timing out.  If timeout is -1 (default),
+   * waits until the node is shutdown
+   * \return true on success, false otherwise
+   */
+  bool waitForExistence(ros::Duration timeout = ros::Duration(-1));
+
+  /**
+   * \brief Checks if this is both advertised and available.
+   * \return true if the service is up and available, false otherwise
+   */
+  bool exists();
+
+  /**
+   * \brief Returns the name of the service this ServiceClient connects to
+   */
+  std::string getService();
+
   operator void*() const { return isValid() ? (void*)1 : (void*)0; }
   bool operator<(const ServiceClient& rhs) const
   {

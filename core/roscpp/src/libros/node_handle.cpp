@@ -25,14 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-// TEMP to remove warnings during build while things internally still use deprecated APIs
-#include "ros/macros.h"
-#undef ROSCPP_DEPRECATED
-#define ROSCPP_DEPRECATED
-// END TEMP
-
 #include "ros/node_handle.h"
-#include "ros/node.h"
 #include "ros/this_node.h"
 #include "ros/service.h"
 #include "ros/callback_queue.h"
@@ -54,6 +47,9 @@
 
 namespace ros
 {
+
+boost::mutex g_nh_refcount_mutex_;
+int32_t g_nh_refcount_ = 0;
 
 class NodeHandleBackingCollection
 {
@@ -143,46 +139,27 @@ void NodeHandle::construct()
   namespace_ = names::resolve(namespace_);
   ok_ = true;
 
-  boost::mutex::scoped_lock lock(ros::Node::s_refcount_mutex_);
+  boost::mutex::scoped_lock lock(g_nh_refcount_mutex_);
 
-  if (ros::Node::s_refcount_ == 0)
+  if (g_nh_refcount_ == 0)
   {
-    if (Node::instance())
-    {
-      ros::Node::s_created_by_handle_ = false;
-
-      ROS_WARN("NodeHandle API is being used inside an application started with the old Node API. "
-               "Automatically starting a ros::spin() thread.  Please switch this application to use the NodeHandle API.");
-      // start a thread that automatically calls spin() for us
-      boost::thread t(spinThread);
-      t.detach();
-    }
-    else
-    {
-      ros::Node::s_created_by_handle_ = true;
-      new ros::Node();
-      ros::start();
-    }
+    ros::start();
   }
 
-  ++ros::Node::s_refcount_;
+  ++g_nh_refcount_;
 }
 
 void NodeHandle::destruct()
 {
   delete collection_;
 
-  boost::mutex::scoped_lock lock(ros::Node::s_refcount_mutex_);
+  boost::mutex::scoped_lock lock(g_nh_refcount_mutex_);
 
-  --ros::Node::s_refcount_;
+  --g_nh_refcount_;
 
-  if (ros::Node::s_refcount_ == 0)
+  if (g_nh_refcount_ == 0)
   {
-    if (ros::Node::s_created_by_handle_)
-    {
-      ros::shutdown();
-      delete Node::instance();
-    }
+    ros::shutdown();
   }
 }
 
@@ -196,7 +173,8 @@ void NodeHandle::initRemappings(const M_string& remappings)
       const std::string& from = it->first;
       const std::string& to = it->second;
 
-      remappings_.insert(std::make_pair(from, to));
+      remappings_.insert(std::make_pair(resolveName(from, false), resolveName(to, false)));
+      unresolved_remappings_.insert(std::make_pair(from, to));
     }
   }
 }
@@ -206,22 +184,19 @@ void NodeHandle::setCallbackQueue(CallbackQueueInterface* queue)
   callback_queue_ = queue;
 }
 
-ros::Node* NodeHandle::getNode() const
-{
-  return ros::Node::instance();
-}
-
 std::string NodeHandle::remapName(const std::string& name) const
 {
+  std::string resolved = resolveName(name, false);
+
   // First search any remappings that were passed in specifically for this NodeHandle
-  M_string::const_iterator it = remappings_.find(name);
+  M_string::const_iterator it = remappings_.find(resolved);
   if (it != remappings_.end())
   {
     return it->second;
   }
 
   // If not in our local remappings, perhaps in the global ones
-  return names::remap(name);
+  return names::remap(resolved);
 }
 
 std::string NodeHandle::resolveName(const std::string& name, bool remap) const
@@ -231,7 +206,7 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
     return namespace_;
   }
 
-  std::string final = remap ? remapName(name) : name;
+  std::string final = name;
 
   if (final[0] == '~')
   {
@@ -245,7 +220,14 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
   }
   else if (!namespace_.empty())
   {
-    final = namespace_ + "/" + final;
+    final = names::append(namespace_, final);
+  }
+
+  final = names::clean(final);
+
+  if (remap)
+  {
+    final = remapName(final);
   }
 
   return names::resolve(final, false);
@@ -253,7 +235,7 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
 
 Publisher NodeHandle::advertise(AdvertiseOptions& ops)
 {
-  SubscriberCallbacksPtr callbacks(new SubscriberCallbacks(ops.connect_cb, ops.disconnect_cb));
+  SubscriberCallbacksPtr callbacks(new SubscriberCallbacks(ops.connect_cb, ops.disconnect_cb, ops.tracked_object));
 
   ops.topic = resolveName(ops.topic);
   if (ops.callback_queue == 0)
@@ -268,7 +250,7 @@ Publisher NodeHandle::advertise(AdvertiseOptions& ops)
     }
   }
 
-  if (TopicManager::instance()->advertise(ops, true))
+  if (TopicManager::instance()->advertise(ops, callbacks))
   {
     Publisher pub(ops.topic, *this, callbacks);
 
@@ -298,7 +280,7 @@ Subscriber NodeHandle::subscribe(SubscribeOptions& ops)
     }
   }
 
-  if (TopicManager::instance()->subscribe(ops, 0, 0))
+  if (TopicManager::instance()->subscribe(ops))
   {
     Subscriber sub(ops.topic, *this, ops.helper);
 
@@ -328,7 +310,7 @@ ServiceServer NodeHandle::advertiseService(AdvertiseServiceOptions& ops)
     }
   }
 
-  if (ServiceManager::instance()->advertiseService(ops, 0))
+  if (ServiceManager::instance()->advertiseService(ops))
   {
     ServiceServer srv(ops.service, *this);
 
@@ -543,7 +525,28 @@ bool NodeHandle::searchParam(const std::string &key, std::string& result_out) co
 {
   XmlRpc::XmlRpcValue params, result, payload;
   params[0] = resolveName("");
-  params[1] = remapName(key);
+
+  // searchParam needs a separate form of remapping -- remapping on the unresolved name, rather than the
+  // resolved one.
+
+  std::string remapped = key;
+  M_string::const_iterator it = unresolved_remappings_.find(key);
+  // First try our local remappings
+  if (it != unresolved_remappings_.end())
+  {
+    remapped = it->second;
+  }
+  else
+  {
+    // Then try global remappings
+    it = names::getUnresolvedRemappings().find(key);
+    if (it != names::getUnresolvedRemappings().end())
+    {
+      remapped = it->second;
+    }
+  }
+
+  params[1] = remapped;
   // We don't loop here, because validateXmlrpcResponse() returns false
   // both when we can't contact the master and when the master says, "I
   // don't have that param."
@@ -580,11 +583,6 @@ void NodeHandle::getSubscribedTopics(V_string& topics) const
 const std::string& NodeHandle::getName() const
 {
   return this_node::getName();
-}
-
-const V_string& NodeHandle::getParsedArgs()
-{
-  return ros::Node::getParsedArgs();
 }
 
 const std::string& NodeHandle::getMasterHost() const

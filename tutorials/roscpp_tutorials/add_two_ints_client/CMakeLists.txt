@@ -1,1 +1,0 @@
-rospack_add_executable(add_two_ints_client add_two_ints_client.cpp)

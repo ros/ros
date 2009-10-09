@@ -27,33 +27,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 /////////////////////////////////////////////////////////////////////////////
 
-/** @defgroup drop drop
-
-drop is a node that can subscribe to a topic and republish incoming
-data to another topic, dropping X out of every Y incoming messages. It's
-mainly useful for limiting bandwidth usage, e.g., over a wireless link.
-It can work with any message type.
-
-<hr>
-
-@section usage Usage
-@verbatim
-drop <intopic> <X> <Y> [<outtopic>] [standard ROS arguments] 
-@endverbatim
-Options:
-- @b intopic: Incoming topic to subscribe to
-- @b X, @b Y: drop X out of every Y incoming messages
-- @b outtopic: Outgoing topic to publish on (default: intopic_drop)
-
-Example, dropping every other laser_scan:
-@verbatim
-drop base_scan 1 2
-@endverbatim
-**/
-
 #include <cstdlib>
 #include <cstdio>
-#include "ros/node.h"
 #include "topic_tools/shape_shifter.h"
 
 using std::string;
@@ -91,18 +66,24 @@ void in_cb(const boost::shared_ptr<ShapeShifter const>& msg)
     s_count = 0;
 }
 
+#define USAGE "\nusage: drop IN_TOPIC X Y [OUT_TOPIC]\n\n" \
+              " This program will drop X out of every Y messages from IN_TOPIC,\n" \
+              " forwarding the rest to OUT_TOPIC if given, else to a topic \n" \
+              " named IN_TOPIC_drop\n\n"
 int main(int argc, char **argv)
 {
-  if ((argc != 4 && argc != 5) || atoi(argv[2]) < 0 || atoi(argv[3]) < 1)
+  if(argc < 2)
   {
-    printf("\nusage: drop IN_TOPIC X Y [OUT_TOPIC]\n\n"
-           " This program will drop X out of every Y messages from IN_TOPIC,\n"
-           " forwarding the rest to OUT_TOPIC if given, else to a topic \n"
-           " named IN_TOPIC_drop\n\n");
+    puts(USAGE);
     return 1;
   }
   ros::init(argc, argv, string(argv[1]) + string("_drop"),
             ros::init_options::AnonymousName);
+  if ((argc != 4 && argc != 5) || atoi(argv[2]) < 0 || atoi(argv[3]) < 1)
+  {
+    puts(USAGE);
+    return 1;
+  }
   if (argc == 4)
     g_output_topic = string(argv[1]) + string("_drop");
   else // argc == 5

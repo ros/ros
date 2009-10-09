@@ -29,6 +29,7 @@
 #include "ros/service_server_link.h"
 #include "ros/connection.h"
 #include "ros/service_manager.h"
+#include "ros/service.h"
 
 namespace ros
 {
@@ -150,6 +151,36 @@ void ServiceClient::shutdown()
   {
     impl_->shutdown();
   }
+}
+
+bool ServiceClient::waitForExistence(ros::Duration timeout)
+{
+  if (impl_)
+  {
+    return service::waitForService(impl_->name_, timeout);
+  }
+
+  return false;
+}
+
+bool ServiceClient::exists()
+{
+  if (impl_)
+  {
+    return service::exists(impl_->name_, false);
+  }
+
+  return false;
+}
+
+std::string ServiceClient::getService()
+{
+  if (impl_)
+  {
+    return impl_->name_;
+  }
+
+  return "";
 }
 
 }

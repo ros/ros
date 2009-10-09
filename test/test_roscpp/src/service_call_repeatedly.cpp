@@ -35,24 +35,23 @@
 
 #include <time.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include "ros/service.h"
 #include <test_roscpp/TestStringString.h>
 
 int
 main(int argc, char** argv)
 {
-  ros::init(argc, argv);
-  ros::Node n("caller");
+  ros::init(argc, argv, "service_call_repeatedly");
+  ros::NodeHandle nh;
 
   test_roscpp::TestStringString::Request req;
   test_roscpp::TestStringString::Response res;
 
-  struct timespec sleep_time = {0, 10000000};
-  while(n.ok())
+  while(ros::ok())
   {
     ros::service::call("service_adv", req, res);
-    nanosleep(&sleep_time,NULL);
+    ros::Duration(0.01).sleep();
   }
 
   

@@ -31,7 +31,7 @@
 
 #include "rxtools/rosout_panel.h"
 
-#include "ros/node.h"
+#include "ros/ros.h"
 
 #ifdef __WXMAC__
 #include <ApplicationServices/ApplicationServices.h>

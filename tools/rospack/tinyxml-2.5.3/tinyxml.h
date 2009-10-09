@@ -43,11 +43,6 @@ distribution.
 #define DEBUG
 #endif
 
-// This line was added because we are using STL in the ROS project.
-// the following line is NOT in the distributed version of TinyXML
-// it is added just so the Windows project files are a bit easier to set up
-#define TIXML_USE_STL  
-
 #ifdef TIXML_USE_STL
 	#include <string>
  	#include <iostream>

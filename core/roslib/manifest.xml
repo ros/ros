@@ -7,9 +7,10 @@
   <author>Ken Conley/kwc@willowgarage.com, Morgan Quigley/mquigley@cs.stanford.edu</author>
   <license>BSD</license>
   <review status="API cleared" notes=""/>
-  <url>http://pr.willowgarage.com/wiki/roslib</url>
+  <url>http://ros.org/wiki/roslib</url>
   <export>
     <cpp cflags="-I${prefix}/msg/cpp -I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lroslib"/>
+    <rosdoc config="${prefix}/rosdoc.yaml" />
   </export>
   <depend package="genmsg_cpp"/>
 

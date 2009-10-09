@@ -151,8 +151,11 @@ class TestRostopicOnline(unittest.TestCase):
             while time.time() < timeout_t and self.vals != all:
                 time.sleep(0.1)
                 
-            # - check published value            
-            msg = self.msgs[key]
+            # - check published value
+            try:
+                msg = self.msgs[key]
+            except KeyError:
+                self.fail("no message received on "+str(key))
             self.assertEquals(s, msg.data)
             
             os.kill(popen.pid, signal.SIGKILL)

@@ -49,6 +49,23 @@ import rospy
 
 class TestRospyClient(unittest.TestCase):
     
+    def test_init_node(self):
+        failed = True
+        try:
+            # #1822
+            rospy.init_node('ns/node')
+        except ValueError:
+            failed = False
+        self.failIf(failed, "init_node allowed '/' in name")
+
+    def test_spin(self):
+        failed = True
+        try:
+            rospy.spin()
+        except rospy.ROSInitException:
+            failed = False
+        self.failIf(failed, "spin() should failed if not initialized")
+        
     def test_myargv(self):
         orig_argv = sys.argv
         try:

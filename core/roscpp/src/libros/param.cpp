@@ -34,6 +34,7 @@
 #include <ros/console.h>
 
 #include <boost/thread/mutex.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace ros
 {

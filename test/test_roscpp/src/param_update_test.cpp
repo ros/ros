@@ -32,37 +32,34 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#include "ros/node.h"
+#include "ros/ros.h"
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv);
-  ros::Node n("param_update_test");
+  ros::init(argc, argv, "param_update_test");
+  ros::NodeHandle nh;
 
-  while (n.ok())
+  while (ros::ok())
   {
     ROS_INFO("getting parameters...");
 
     int i = -1;
-    if (n.getParam("test", i, true))
+    if (nh.getParam("test", i, true))
     {
       ROS_INFO("test=%d", i);
     }
 
-    if (n.getParam("test2", i, true))
+    if (nh.getParam("test2", i, true))
     {
       ROS_INFO("test2=%d", i);
     }
 
-    if (n.getParam("test3", i, true))
+    if (nh.getParam("test3", i, true))
     {
       ROS_INFO("test3=%d", i);
     }
 
-    if (n.ok())
-    {
-      usleep(4000000);
-    }
+    ros::Duration(0.1).sleep();
   }
 
   return 0;

@@ -7,7 +7,7 @@ def usage():
     print >> sys.stderr, """Usage:
 \trostest-check-results test-file.xml
 or
-\trostest-check-results --rostest results-dir test-file.xml
+\trostest-check-results --rostest pkg-name test-file.xml
 """
     print sys.argv
     sys.exit(os.EX_USAGE)
@@ -21,12 +21,14 @@ if __name__ == '__main__':
             usage()
         test_pkg, test_file = [a for a in sys.argv[1:] if a != '--rostest']
         # this logic derives the output filename that rostest uses
-        test_file = os.path.basename(test_file)
-        if '.' in test_file:
-            test_file = test_file[:test_file.rfind('.')]
+
         import roslib; roslib.load_manifest('rostest')
+        import roslib.packages
         import rostest.rostestutil
-        test_file = rostest.rostestutil.xmlResultsFile(test_pkg, test_file, is_rostest=True)            
+        pkg_dir, _ = roslib.packages.get_dir_pkg(test_file) 
+        outname = rostest.rostestutil.rostest_name_from_path(pkg_dir, test_file)
+            
+        test_file = rostest.rostestutil.xmlResultsFile(test_pkg, outname, is_rostest=True)            
     else:
         if len(sys.argv) != 2:
             usage()

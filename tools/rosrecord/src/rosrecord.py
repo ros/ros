@@ -447,7 +447,7 @@ def rebag_main():
       return eval(expr)
     return eval_fn
     
-  parser = optparse.OptionParser(usage="""usage: %prog in.bag out.bag filter-expression
+  parser = optparse.OptionParser(usage="""Usage: %prog in.bag out.bag filter-expression
 
 filter-expression can be any Python-legal expression.
 The following variables are available:

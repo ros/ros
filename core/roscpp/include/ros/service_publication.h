@@ -62,7 +62,7 @@ class ServicePublication : public boost::enable_shared_from_this<ServicePublicat
 {
 public:
   ServicePublication(const std::string& name, const std::string &md5sum, const std::string& data_type, const std::string& request_data_type,
-                const std::string& response_data_type, const ServiceMessageHelperPtr& helper, int thread_pool_size, CallbackQueueInterface* queue,
+                const std::string& response_data_type, const ServiceMessageHelperPtr& helper, CallbackQueueInterface* queue,
                 const VoidPtr& tracked_object);
   ~ServicePublication();
 
@@ -96,17 +96,7 @@ public:
   const std::string& getName() { return name_; }
 
 private:
-  /**
-   * \brief Queues up a request to be serviced by one of our worker threads
-   */
-  void enqueueRequest(boost::shared_array<uint8_t> buf, size_t num_bytes, const ServiceClientLinkPtr& link);
-  /**
-   * \brief Deserializes a request and calls a callback on it, notifying link when it's done
-   */
-  void callCallback(boost::shared_array<uint8_t> buf, size_t num_bytes, const ServiceClientLinkPtr& link);
   void dropAllConnections();
-
-  void threadFunc();
 
   std::string name_;
   std::string md5sum_;
@@ -114,30 +104,11 @@ private:
   std::string request_data_type_;
   std::string response_data_type_;
   ServiceMessageHelperPtr helper_;
-  boost::mutex callback_mutex_;
-  int32_t thread_pool_size_;
 
   V_ServiceClientLink client_links_;
   boost::mutex client_links_mutex_;
 
   bool dropped_;
-
-  boost::thread_group thread_group_;
-  boost::condition_variable new_request_;
-  typedef std::vector<boost::thread*> V_threadpointer;
-  V_threadpointer threads_;
-
-  struct RequestInfo
-  {
-    boost::shared_array<uint8_t> buf_;
-    size_t num_bytes_;
-
-    ServiceClientLinkPtr link_;
-  };
-  typedef boost::shared_ptr<RequestInfo> RequestInfoPtr;
-  typedef std::queue<RequestInfoPtr> Q_RequestInfo;
-  Q_RequestInfo request_queue_;
-  boost::mutex request_queue_mutex_;
 
   CallbackQueueInterface* callback_queue_;
   bool has_tracked_object_;

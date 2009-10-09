@@ -46,6 +46,7 @@ std::string append(const std::string& left, const std::string& right);
 std::string remap(const std::string& name);
 
 const M_string& getRemappings();
+const M_string& getUnresolvedRemappings();
 
 } // namespace names
 

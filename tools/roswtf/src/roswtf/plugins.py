@@ -76,7 +76,7 @@ def load_plugins():
             else:
                 print "Loaded plugin", p_module
 
-        except ImportError:
+        except:
             print >> sys.stderr, "Unable to load plugin [%s] from package [%s]"%(p_module, pkg)
     return static_plugins, online_plugins
 

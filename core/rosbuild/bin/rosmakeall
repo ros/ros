@@ -56,7 +56,7 @@ for p in $PKGS; do
         # Are we building packages (as opposed to just ros itself)? If so,
         # then we don't run tests on ros, because they were run elsewhere.
         if [ ! -z $ROS_PACKAGE_PATH ]; then
-          if expr match `rospack find $p` $ROS_ROOT; then
+          if expr match `rospack find $p` $ROS_ROOT/; then
             continue
           fi
         fi

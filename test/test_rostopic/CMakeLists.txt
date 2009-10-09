@@ -9,12 +9,12 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 #set(ROS_BUILD_TYPE RelWithDebInfo)
 
-rospack(rostopic)
+rosbuild_init()
 
 #uncomment if you have defined messages
 #genmsg()
 #uncomment if you have defined services
 #gensrv()
 
-rospack_add_pyunit(test/test_rostopic_command_line_offline.py)
-rospack_add_rostest(test/rostopic.test)
+rosbuild_add_pyunit(test/test_rostopic_command_line_offline.py)
+rosbuild_add_rostest(test/rostopic.test)

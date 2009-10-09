@@ -40,7 +40,7 @@
 #include <wx/aui/auibook.h>
 #include <wx/richtext/richtextctrl.h>
 
-#include <ros/node.h>
+#include <ros/ros.h>
 
 #include <sstream>
 #include <algorithm>

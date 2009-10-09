@@ -106,7 +106,7 @@ class TestRospyTcprosBase(unittest.TestCase):
         from rospy.transport import BIDIRECTIONAL
         
         p = TCPROSTransportProtocol('Bob', rospy.msg.AnyMsg)
-        self.assertEquals('Bob', p.name)
+        self.assertEquals('Bob', p.resolved_name)
         self.assertEquals(rospy.msg.AnyMsg, p.recv_data_class)
         self.assertEquals(BIDIRECTIONAL, p.direction)
         self.assertEquals({}, p.get_header_fields())

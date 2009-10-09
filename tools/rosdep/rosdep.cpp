@@ -372,8 +372,15 @@ public:
 
     string bash = "#!/usr/bin/bash\n\nset -o errexit\nset -o verbose\n\n";
     string pkg_install_cmd;
+    bool full_auto = false;
+    if (getenv("ROSDEP_YES"))
+      full_auto = (0 == strcmp(getenv("ROSDEP_YES"),"1"));
     if (os_name == "ubuntu" || os_name == "debian")
+    {
       pkg_install_cmd = "sudo apt-get install ";
+      if (full_auto)
+        pkg_install_cmd += "-y ";
+    }
     else if (os_name == "fedora" || os_name == "centos")
       pkg_install_cmd = "sudo yum install ";
     else if (os_name == "arch")
@@ -657,6 +664,13 @@ private:
         else if (os_tokens[0] == string("Debian"))
         {
           os_name = "debian";
+          os_ver = os_tokens[2];
+          return true;
+        }
+        else if (os_tokens[0] == string("Linux") &&
+                 os_tokens[1] == string("Mint"))
+        {
+          os_name = "mint";
           os_ver = os_tokens[2];
           return true;
         }

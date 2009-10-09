@@ -130,7 +130,7 @@ void ServiceManager::shutdown()
 
 }
 
-bool ServiceManager::advertiseService(const AdvertiseServiceOptions& ops, int32_t thread_pool_size)
+bool ServiceManager::advertiseService(const AdvertiseServiceOptions& ops)
 {
   boost::mutex::scoped_lock shutdown_lock(shutting_down_mutex_);
   if (shutting_down_)
@@ -147,7 +147,7 @@ bool ServiceManager::advertiseService(const AdvertiseServiceOptions& ops, int32_
       return false;
     }
 
-    ServicePublicationPtr pub(new ServicePublication(ops.service, ops.md5sum, ops.datatype, ops.req_datatype, ops.res_datatype, ops.helper, thread_pool_size, ops.callback_queue, ops.tracked_object));
+    ServicePublicationPtr pub(new ServicePublication(ops.service, ops.md5sum, ops.datatype, ops.req_datatype, ops.res_datatype, ops.helper, ops.callback_queue, ops.tracked_object));
     service_publications_.push_back(pub);
   }
 

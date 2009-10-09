@@ -1,4 +1,0 @@
-<launch>
-  <node name="talker" pkg="rospy_tutorials" type="talker.py" />
-  <test test-name="talker_listener_test" pkg="rospy_tutorials" type="talker_listener_test.py" />
-</launch>

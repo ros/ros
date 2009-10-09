@@ -1,7 +1,0 @@
-<launch>
-  <node name="talker-notify" pkg="rospy_tutorials" type="listener_subscribe_notify.py" output="screen" />
-  <node name="listener-1" pkg="rospy_tutorials" type="listener.py" output="screen" />
-  <node name="listener-2" pkg="rospy_tutorials" type="listener.py" output="screen" />
-  <node name="listener-3" pkg="rospy_tutorials" type="listener.py" output="screen" />
-  <node name="listener-4" pkg="rospy_tutorials" type="listener.py" output="screen" />
-</launch>

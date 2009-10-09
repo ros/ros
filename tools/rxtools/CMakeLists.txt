@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 rosbuild_init()
 
-rospack_add_boost_directories()
+rosbuild_add_boost_directories()
 
 set(wxWidgets_USE_LIBS base core)
 
@@ -23,7 +23,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
 # shared library (for C++)
-rospack_add_library(${PROJECT_NAME} src/rxtools/topic_display.cpp
+rosbuild_add_library(${PROJECT_NAME} src/rxtools/topic_display.cpp
                                     src/rxtools/topic_display_generated.cpp
         				                    src/rxtools/topic_display_dialog.cpp
         				                    src/rxtools/rosout_generated.cpp 
@@ -33,14 +33,14 @@ rospack_add_library(${PROJECT_NAME} src/rxtools/topic_display.cpp
                                     src/rxtools/logger_level_panel.cpp
                                     src/rxtools/init_roscpp.cpp)
 target_link_libraries(${PROJECT_NAME} ${wxWidgets_LIBRARIES})
-rospack_link_boost(${PROJECT_NAME} thread regex)
+rosbuild_link_boost(${PROJECT_NAME} thread regex)
 
 # Find the combined swig flags for this project
-_rospack_invoke(${PROJECT_NAME} ${PROJECT_NAME} SWIG_FLAGS "export" "--lang=swig" "--attrib=flags")
+rosbuild_invoke_rospack(${PROJECT_NAME} ${PROJECT_NAME} SWIG_FLAGS "export" "--lang=swig" "--attrib=flags")
 set(SWIG_FLAGS ${${PROJECT_NAME}_SWIG_FLAGS})
 
 # Find the wxswig executable
-find_ros_package(wxswig)
+rosbuild_find_ros_package(wxswig)
 set(WXSWIG_EXECUTABLE ${wxswig_PACKAGE_PATH}/bin/swig)
 
 # Add a custom command for generating the swig output files
@@ -70,7 +70,7 @@ add_custom_command(OUTPUT   ${SWIG_OUTPUT_CPP_FILE}
 # workaround for a deficiency in CMake 2.4's handling of generated sources.
 include_directories(${PROJECT_SOURCE_DIR}/src/rxtools)
 # shared library (with SWIG)
-rospack_add_library(python_${PROJECT_NAME} ${SWIG_OUTPUT_CPP_FILE})
+rosbuild_add_library(python_${PROJECT_NAME} ${SWIG_OUTPUT_CPP_FILE})
 target_link_libraries(python_${PROJECT_NAME} ${PROJECT_NAME} ${PYTHON_LIBRARIES})
 
 # swig python needs a shared library named _<modulename>.[so|dll|...]
@@ -80,11 +80,11 @@ set_target_properties(python_${PROJECT_NAME}
                       PREFIX "")
                       
 #rxconsole binary
-rospack_add_executable(rxconsole src/rxconsole/rxconsole.cpp)
+rosbuild_add_executable(rxconsole src/rxconsole/rxconsole.cpp)
 target_link_libraries(rxconsole ${PROJECT_NAME})
 
 #rxloggerlevel binary
-rospack_add_executable(rxloggerlevel src/rxloggerlevel/rxloggerlevel.cpp)
+rosbuild_add_executable(rxloggerlevel src/rxloggerlevel/rxloggerlevel.cpp)
 target_link_libraries(rxloggerlevel ${PROJECT_NAME})
 
 add_subdirectory(src/rxconsole)

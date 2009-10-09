@@ -107,7 +107,7 @@ class TestNodeprocess(unittest.TestCase):
             pass
         
         # have to specify a real node
-        n = Node('rospy_tutorials','talker.py')
+        n = Node('test_ros','talker.py')
 
         n.machine = None
         try: # should fail b/c n.machine is not set
@@ -132,7 +132,7 @@ class TestNodeprocess(unittest.TestCase):
                 self.fail('%s should not be set: %s'%(k,d[k]))
 
         # test package and name
-        self.assertEquals(p.package, 'rospy_tutorials')
+        self.assertEquals(p.package, 'test_ros')
         # - no 'correct' full answer here 
         self.assert_(p.name.startswith('talker'))
 
@@ -162,7 +162,7 @@ class TestNodeprocess(unittest.TestCase):
         n.args = ''
         p = create_node_process(run_id, n, master_uri)
         # - the first arg should be the path to the node executable
-        cmd = roslib.packages.find_node('rospy_tutorials', 'talker.py', ros_root, rpp)
+        cmd = roslib.packages.find_node('test_ros', 'talker.py', ros_root, rpp)
         self.assertEquals(p.args[0], cmd)
 
         # - test basic args
@@ -179,7 +179,7 @@ class TestNodeprocess(unittest.TestCase):
         self.assert_('KEY2:=VAL2' in p.args)
         
         # - test __name
-        n = Node('rospy_tutorials','talker.py')
+        n = Node('test_ros','talker.py')
         n.name = 'fooname'
         n.machine = m
         self.assert_('__name:=fooname' in create_node_process(run_id, n, master_uri).args)

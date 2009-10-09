@@ -73,11 +73,11 @@ bool service::exists(const std::string& service_name, bool print_failure_reason)
   return false;
 }
 
-bool service::waitForService(const std::string& service_name, int32_t timeout)
+bool service::waitForService(const std::string& service_name, ros::Duration timeout)
 {
   std::string mapped_name = names::resolve(service_name);
 
-  WallTime start_time = WallTime::now();
+  Time start_time = Time::now();
 
   bool printed = false;
   bool result = false;
@@ -92,17 +92,17 @@ bool service::waitForService(const std::string& service_name, int32_t timeout)
     {
       printed = true;
 
-      if (timeout >= 0)
+      if (timeout >= Duration(0))
       {
-        WallTime current_time = WallTime::now();
+        Time current_time = Time::now();
 
-        if ((current_time - start_time) >= WallDuration(timeout / 1000.))
+        if ((current_time - start_time) >= timeout)
         {
           return false;
         }
       }
 
-      WallDuration(0.02).sleep();
+      Duration(0.02).sleep();
     }
   }
 
@@ -112,4 +112,9 @@ bool service::waitForService(const std::string& service_name, int32_t timeout)
   }
 
   return result;
+}
+
+bool service::waitForService(const std::string& service_name, int32_t timeout)
+{
+  return waitForService(service_name, ros::Duration(timeout / 1000.0));
 }

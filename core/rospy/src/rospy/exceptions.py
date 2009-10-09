@@ -32,27 +32,55 @@
 #
 # Revision $Id$
 
-#########################################################
-# EXCEPTIONS
+"""rospy exception types"""
 
-## \ingroup clientapi Client API
-## Base exception class for ROS clients
-class ROSException(Exception): pass
+class ROSException(Exception): 
+    """
+    Base exception class for ROS clients
+    """
+    pass    
 
-## Exception for message serialization errors
-class ROSSerializationException(ROSException): pass
-## Exception for errors initializing ROS state
-class ROSInitException(ROSException): pass
-## Exception for operations that interrupted, e.g. due to shutdown
-class ROSInterruptException(ROSException): pass
+class ROSSerializationException(ROSException):
+    """
+    Exception for message serialization errors
+    """    
+    pass
 
-## Base class for exceptions that are internal to the ROS system
-class ROSInternalException(Exception): pass
-## Base class for transport-related exceptions
-class TransportException(ROSInternalException): pass
-## Internal class for representing broken connections
-class TransportTerminated(TransportException): pass
-## Internal exception for representing exceptions that occur
-## establishing transports
-class TransportInitError(TransportException): pass
+class ROSInitException(ROSException):
+    """
+    Exception for errors initializing ROS state
+    """    
+    pass
+
+class ROSInterruptException(ROSException):
+    """
+    Exception for operations that interrupted, e.g. due to shutdown
+
+    """    
+    pass
+
+class ROSInternalException(Exception):
+    """
+    Base class for exceptions that are internal to the ROS system
+    """    
+    pass
+
+class TransportException(ROSInternalException):
+    """
+    Base class for transport-related exceptions
+    """    
+    pass
+
+class TransportTerminated(TransportException):
+    """
+    Internal class for representing broken connections
+    """    
+    pass
+
+class TransportInitError(TransportException):
+    """
+    Internal exception for representing exceptions that occur
+    establishing transports
+    """
+    pass
 

@@ -1,5 +1,0 @@
-# Bad version of AddTwoInts for unit testing
-int64 a
-int32 b
----
-int32 sum

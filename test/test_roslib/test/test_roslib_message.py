@@ -261,6 +261,150 @@ d: 123000000456""", strify_message(M5(Time(987, 654), Duration(123, 456))))
         self.assertEquals(roslib.msg.Header, get_message_class('roslib/Header'))
         self.assertEquals(roslib.msg.Log, get_message_class('roslib/Log'))    
 
+    def test_fill_message_args_embed_time(self):
+        from roslib.rostime import Time, Duration
+        from roslib.message import fill_message_args
+        from test_roslib.msg import FillEmbedTime
+
+        # test fill_message_args with embeds and time vals
+        # time t
+        # duration d
+        # std_msgs/String str_msg
+        # std_msgs/String[] str_msg_array
+        # int32 i32
+
+        tests = [
+            
+        ]
+        m = FillEmbedTime()
+        fill_message_args(m, [{}])
+        self.assertEquals(m.t, Time())
+        self.assertEquals(m.d, Duration())            
+        self.assertEquals(m.str_msg.data, '')
+        self.assertEquals(m.str_msg_array, [])
+        self.assertEquals(m.i32, 0)
+
+        # list tests
+        # - these should be equivalent
+        equiv = [
+            [[10, 20], [30, 40], ['foo'], [['bar'], ['baz']], 32],
+            [{'secs': 10, 'nsecs': 20}, {'secs': 30, 'nsecs': 40}, ['foo'], [['bar'], ['baz']], 32],
+            [[10, 20], [30, 40], {'data': 'foo'}, [['bar'], ['baz']], 32],
+            [[10, 20], [30, 40], ['foo'], [{'data': 'bar'}, {'data': 'baz'}], 32],
+
+            [{'t': [10, 20], 'd': [30, 40], 'str_msg': {'data': 'foo'}, 'str_msg_array': [{'data': 'bar'}, {'data': 'baz'}], 'i32': 32}],            
+            ]
+        for test in equiv:
+            m = FillEmbedTime()            
+            try:
+                fill_message_args(m, test)
+            except Exception, e:
+                import traceback
+                self.fail("failed to fill with : %s\n%s"%(str(test), traceback.format_exc()))
+
+            self.assertEquals(m.t, Time(10, 20))
+            self.assertEquals(m.d, Duration(30, 40))            
+            self.assertEquals(m.str_msg.data, 'foo')
+            self.assertEquals(len(m.str_msg_array), 2, m.str_msg_array)
+            self.assertEquals(m.str_msg_array[0].data, 'bar')
+            self.assertEquals(m.str_msg_array[1].data, 'baz')
+            self.assertEquals(m.i32, 32)
+
+        bad = [
+            # underfill in sub-args
+            [[10, 20], [30, 40], ['foo'], [['bar'], ['baz']]],
+            [[10], [30, 40], ['foo'], [['bar'], ['baz']], 32],
+            [[10, 20], [30], ['foo'], [['bar'], ['baz']], 32],
+            [[10, 20], [30, 40], [], [['bar'], ['baz']], 32],
+            [[10, 20], [30, 40], ['foo'], [['bar'], []], 32],
+
+            # overfill
+            [[10, 20], [30, 40], ['foo'], [['bar'], ['baz']], 32, 64],
+            [[10, 20, 30], [30, 40], ['foo'], [['bar'], ['baz']], 32],
+            [[10, 20], [30, 40, 50], ['foo'], [['bar'], ['baz']], 32],
+            [[10, 20], [30, 40], ['foo', 'bar'], [['bar'], ['baz']], 32],
+            [[10, 20], [30, 40], ['foo'], [['bar', 'baz'], ['baz']], 32],
+            [[10, 20], [30, 40], ['foo'], [['bar'], ['baz', 'car']], 32],                        
+
+            # invalid fields
+            [{'secs': 10, 'nsecs': 20, 'foo': 1}, {'secs': 30, 'nsecs': 40}, ['foo'], [['bar'], ['baz']], 32],
+            [{'secs': 10, 'nsecs': 20}, {'secs': 30, 'nsecs': 40, 'foo': 1}, ['foo'], [['bar'], ['baz']], 32],            
+            [[10, 20], [30, 40], {'data': 'foo', 'fata': 1}, [['bar'], ['baz']], 32],
+            [[10, 20], [30, 40], ['foo'], [{'data': 'bar'}, {'beta': 'baz'}], 32],
+            [{'t': [10, 20], 'd': [30, 40], 'str_msg': {'data': 'foo'}, 'str_msg_array': [{'data': 'bar'}, {'data': 'baz'}], 'i32': 32, 'i64': 64}],            
+
+            ]
+        for b in bad:
+            failed = True
+            try:
+                m = FillEmbedTime()
+                fill_message_args(m, b)
+            except roslib.message.ROSMessageException:
+                failed = False
+            self.failIf(failed, "fill_message_args should have failed: %s"%str(b))
+            
+        
+        
+    def test_fill_message_args_simple(self):
+        from roslib.message import fill_message_args
+        from test_roslib.msg import FillSimple
+        #int32 i32
+        #string str
+        #int32[] i32_array
+        #bool b
+        simple_tests = [
+            [1, 'foo', [], True],
+            [1, 'foo', [1, 2, 3, 4], False],
+        ]
+        for test in simple_tests:
+            m = FillSimple()
+            fill_message_args(m, test)
+            self.assertEquals(m.i32, test[0])
+            self.assertEquals(m.str, test[1])
+            self.assertEquals(m.i32_array, test[2])
+            self.assertEquals(m.b, test[3])            
+
+        # test with dictionaries
+        m = FillSimple()
+        fill_message_args(m, [{}])
+        self.assertEquals(m.i32, 0)
+        self.assertEquals(m.str, '')        
+        self.assertEquals(m.i32_array, [])
+        self.assertEquals(m.b, False)
+
+        m = FillSimple()
+        fill_message_args(m, [{'i32': 10}])
+        self.assertEquals(m.i32, 10)
+        self.assertEquals(m.str, '')        
+        self.assertEquals(m.i32_array, [])
+        self.assertEquals(m.b, False)
+
+        m = FillSimple()
+        fill_message_args(m, [{'str': 'hello', 'i32_array': [1, 2, 3]}])
+        self.assertEquals(m.i32, 0)
+        self.assertEquals(m.str, 'hello')        
+        self.assertEquals(m.i32_array, [1, 2, 3])
+        self.assertEquals(m.b, False)
+
+        # fill_message_args currently does not type check 
+        bad = [
+            # extra key
+            [{'bad': 1, 'str': 'hello', 'i32_array': [1, 2, 3]}],
+            # underfill
+            [1, 'foo', [1, 2, 3]],
+            # overfill
+            [1, 'foo', [1, 2, 3], True, 1],
+            ]
+        for b in bad:
+            failed = True
+            try:
+                m = FillSimple()
+                fill_message_args(m, b)
+            except roslib.message.ROSMessageException:
+                failed = False
+            self.failIf(failed, "fill_message_args should have failed: %s"%str(b))
+        
+            
     def test_get_service_class(self):
         from roslib.message import get_service_class
 

@@ -50,6 +50,18 @@ _errors = None
 def getErrors():
     return _errors
 
+def rostest_name_from_path(pkg_dir, test_file):
+    test_file_abs = os.path.abspath(test_file)
+    if test_file_abs.startswith(pkg_dir):
+        # compute package-relative path
+        test_file = test_file_abs[len(pkg_dir):]
+        if test_file[0] == os.sep:
+            test_file = test_file[1:]
+    outname = test_file.replace(os.sep, '_')
+    if '.' in outname:
+        outname = outname[:outname.rfind('.')]
+    return outname
+
 def printRostestSummary(result, rostest_results):
     # we have two separate result objects, which can be a bit
     # confusing. 'result' counts successful _running_ of tests

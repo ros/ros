@@ -37,6 +37,8 @@
 
 #include "ros/time.h"
 #include "ros/rate.h"
+#include "ros/console.h"
+#include "ros/assert.h"
 
 #include "ros/common.h"
 #include "ros/types.h"

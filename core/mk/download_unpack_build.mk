@@ -21,6 +21,7 @@
 $(TARBALL):
 	-mkdir build
 	wget $(TARBALL_URL) -O $(TARBALL)
+	touch -c $(TARBALL)
 
 download: $(TARBALL)
 

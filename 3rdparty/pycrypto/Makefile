@@ -10,7 +10,7 @@ pycrypto: $(SOURCE_DIR)/unpacked
 	-rm -rf src
 	mkdir -p src
 	cd $(SOURCE_DIR) && python setup.py build 
-	mv $(SOURCE_DIR)/build/lib.*/Crypto src/Crypto
+	mv $(SOURCE_DIR)/build/lib.*/Crypto src
 	touch pycrypto
 clean:
 	rm -rf src pycrypto $(SOURCE_DIR)

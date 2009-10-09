@@ -18,43 +18,60 @@ except ImportError:
     
 class ReleaseException(Exception): pass
 
+def load_sys_args():
+    """
+    @return: name, version, distro_file
+    @rtype: (str, str, str)
+    """
+    from optparse import OptionParser
+    parser = OptionParser(usage="usage: %prog stack-or-app version distro.yaml", prog=NAME)
+    options, args = parser.parse_args()
+    if len(args) != 3:
+        parser.error("you must specify a stack or app name, version, and the location of the distro.yaml for this release")
+    name, version, distro_file = args
+    if not os.path.isfile(distro_file):
+        parser.error("[%s] does not appear to be a valid file"%distro_file)
+    return name, version, distro_file        
+
+def load_and_validate_properties():
+    """
+    @return: name, version, distro_file, source_dir, distro, release_props
+    @rtype: (str, str, str, str, str, dict)
+    """
+    name, version, distro_file = load_sys_args()
+    # for now, we only work with stacks
+    source_dir = roslib.stacks.get_stack_dir(name)
+    if not source_dir:
+            #TODO: check for app instead
+        raise ReleaseException("cannot locate stack [%s]"%name)
+
+    check_svn_status(source_dir)
+    
+    # figure out what we're releasing against
+    distro = get_active_distro()
+    print "Distribution target is [%s]"%distro
+
+    release_props = load_release_props(name, distro, distro_file, source_dir)
+    print_bold("Release Properties")
+    for k, v in release_props.iteritems():
+        print " * %s: %s"%(k, v)
+
+    # brittle test to make sure that user got the args correct
+    if not '.' in version:
+        raise ReleaseException("hmm, [%s] doesn't look like a version number to me"%version)
+    cmake_version = get_version(name, source_dir)
+    if cmake_version != version:
+        raise ReleaseException("version number in CMakeLists.txt appears to be incorrect:\n\n%s"%cmake_version)
+    
+    return name, version, distro_file, source_dir, distro, release_props    
+        
 def main():
     try:
-        from optparse import OptionParser
-        parser = OptionParser(usage="usage: %prog stack-or-app version distro.yaml", prog=NAME)
-        options, args = parser.parse_args()
-        if len(args) != 3:
-            parser.error("you must specify a stack or app name, version, and the location of the distro.yaml for this release")
-        name, version, distro_file = args
-        if not os.path.isfile(distro_file):
-            parser.error("[%s] does not appear to be a valid file"%distro_file)
-            
-        # for now, we only work with stacks
-        source_dir = roslib.stacks.get_stack_dir(name)
-        if not source_dir:
-            #TODO: check for app instead
-            raise ReleaseException("cannot locate stack [%s]"%name)
-
-        check_svn_status(source_dir)
-        
-        # figure out what we're releasing against
-        distro = get_active_distro()
-        print "Distribution target is [%s]"%distro
-
-        release_props = load_release_props(name, distro, distro_file, source_dir)
-        print_bold("Release Properties")
-        for k, v in release_props.iteritems():
-            print " * %s: %s"%(k, v)
-
-        # brittle test to make sure that user got the args correct
-        if not '.' in version:
-            raise ReleaseException("hmm, [%s] doesn't look like a version number to me"%version)
-        cmake_version = get_version(name, source_dir)
-        if cmake_version != version:
-            raise ReleaseException("version number in CMakeLists.txt appears to be incorrect:\n\n%s"%cmake_version) 
+        props = load_and_validate_properties()
+        name, version, distro_file, source_dir, distro, release_props = props[:6]
 
         if 1:
-            make_dist(name, version, distro, source_dir, release_props)
+            dist = make_dist(name, version, distro, source_dir, release_props)
 
         if 1:
             tag_url = tag_subversion(name, version, distro, release_props)
@@ -114,31 +131,10 @@ def tag_subversion(name, version, distro, release_props):
         
     release_name = "%s-%s"%(name, version)
 
-    cmd = ['svn', 'ls', tag_url]
-    output = Popen(cmd, stdout=PIPE, stderr=PIPE).communicate()
-    cmds = [['svn', 'cp', '--parents', '-m', 'Tagging %s release'%release_name, from_url, tag_url]]
-    if output[0]:
-        cmds = [['svn', 'rm', '-m', 'Deleting old tag', tag_url], 
-                cmds[0]]
-    # Pretty-print a string version of the commands (I'm sure that Ken can
-    # do this in half a line of code)
-    cmd_str = ''
-    for c in cmds:
-        for s in c:
-            if ' ' in s:
-                cmd_str += '"%s" '%s
-            else:
-                cmd_str += '%s '%s
-        cmd_str += '\n'
-    print "Okay to execute:\n\n%s\n(y/n)?"%(cmd_str)
-    while 1:
-        input = sys.stdin.readline().strip()
-        if input in ['y', 'n']:
-            break
-    if input == 'y':
-        for c in cmds:
-            check_call(c)
-    else:
+    cmds = []
+    append_rm_if_exists(tag_url, cmds, 'Deleting old tag')
+    cmds.append(['svn', 'cp', '--parents', '-m', 'Tagging %s release'%release_name, from_url, tag_url])
+    if not ask_and_call(cmds):    
         print "create_release will not tag this release in subversion"
     return tag_url
         
@@ -227,6 +223,7 @@ def make_dist(name, version, distro, source_dir, release_props):
     shutil.copyfile(src, dst)
     shutil.rmtree(tmp_dir)
     print_bold("Release should be in %s"%dst)
+    return dst
                 
 # this is copied from rosdistro -- need to change how
 # rosdistro works so that it can be used as a library    
@@ -309,7 +306,29 @@ def check_svn_status(source_dir):
         raise ReleaseException("svn status in stack reported uncommitted files:\n%s"%output[0])
     if output[1]:
         raise ReleaseException("svn status in [%s] reported errors:\n%s"%(source_dir, output[0]))
-    
+
+def append_rm_if_exists(url, cmds, msg):
+    cmd = ['svn', 'ls', url]
+    output = Popen(cmd, stdout=PIPE, stderr=PIPE).communicate()
+    if output[0]:
+        cmds.append(['svn', 'rm', '-m', msg, url]) 
+
+## Pretty print cmds, ask if they should be run, and if so, runs them.
+## Returns true if they were run.
+def ask_and_call(cmds):
+    # Pretty-print a string version of the commands
+    def quote(s):
+        return '"%s"'%s if ' ' in s else s
+    print "Okay to execute:\n\n%s\n(y/n)?"%('\n'.join([' '.join([quote(s) for s in c]) for c in cmds]))
+    while 1:
+        input = sys.stdin.readline().strip()
+        if input in ['y', 'n']:
+            break
+    accepted = input == 'y'
+    if accepted:
+        for c in cmds:
+            check_call(c)
+    return accepted
     
 if __name__ == '__main__':
     main()

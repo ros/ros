@@ -146,6 +146,12 @@ hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, 
                 if str(e).startswith("Unknown server"):
                     pass
                 err_msg = "Unable to establish ssh connection to [%s:%s]: %s"%(address, port, e)
+            except socket.error, e:
+                # #1824
+                if e[0] == 111:
+                    err_msg = "network connection refused by [%s:%s]"%(address, port)
+                else:
+                    err_msg = "network error connecting to [%s:%s]: %s"%(address, port, msg)
         if err_msg:
             return None, err_msg
         else:

@@ -846,21 +846,23 @@ macro(rosbuild_make_distribution)
   include(CPack)
 endmacro(rosbuild_make_distribution)
 
-# Compute the number of hardware cores on the machine.  Intended to use for
-# gating tests that have heavy processor requirements. It calls out to a
-# helper program that uses boost::thread::hardware_concurrency().
-macro(rosbuild_count_cores num)
-  execute_process(COMMAND $ENV{ROS_ROOT}/core/rosbuild/tests/count_cores
-                  OUTPUT_VARIABLE _cores_out
-                  ERROR_VARIABLE _cores_error
-                  RESULT_VARIABLE _cores_result
-                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(_cores_result)
-    message(FATAL_ERROR "Failed to run count_cores")
-  endif(_cores_result)
-
-  set(${num} ${_cores_out})
-endmacro(rosbuild_count_cores)
+# rosbuild_count_cores() disabled until I can figure out how to build it
+# without Boost, which causes bootstrapping problems, #1865
+## Compute the number of hardware cores on the machine.  Intended to use for
+## gating tests that have heavy processor requirements. It calls out to a
+## helper program that uses boost::thread::hardware_concurrency().
+#macro(rosbuild_count_cores num)
+#  execute_process(COMMAND $ENV{ROS_ROOT}/core/rosbuild/tests/count_cores
+#                  OUTPUT_VARIABLE _cores_out
+#                  ERROR_VARIABLE _cores_error
+#                  RESULT_VARIABLE _cores_result
+#                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+#  if(_cores_result)
+#    message(FATAL_ERROR "Failed to run count_cores")
+#  endif(_cores_result)
+#
+#  set(${num} ${_cores_out})
+#endmacro(rosbuild_count_cores)
 
 # Check whether we're running as a VM Intended to use for
 # gating tests that have heavy processor requirements.  It checks for

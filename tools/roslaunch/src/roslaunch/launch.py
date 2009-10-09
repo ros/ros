@@ -49,6 +49,8 @@ from roslaunch.node_args import NodeParamsException, create_local_process_env
 from roslaunch.nodeprocess import create_master_process, create_node_process
 from roslaunch.pmon import start_process_monitor, ProcessListener, FatalProcessLaunch
 
+from roslaunch.rlutil import update_terminal_name
+
 _TIMEOUT_MASTER_START = 10.0 #seconds
 _TIMEOUT_MASTER_STOP  = 10.0 #seconds
 
@@ -283,7 +285,12 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
 
         if not m.is_running():
             raise RLException("ERROR: could not contact master [%s]"%m.uri)
+        
         printlog_bold("ROS_MASTER_URI=%s"%m.uri)
+        # TODO: although this dependency doesn't cause anything bad,
+        # it's still odd for launch to know about console stuff. This
+        # really should be an event.
+        update_terminal_name(m.uri)
 
         # Param Server config params
         param_server = m.get()

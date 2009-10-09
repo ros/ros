@@ -82,16 +82,32 @@ def _wait_for_master():
     else:
         raise RuntimeError("unknown error waiting for master to start")
 
-## use echo (where available) to change the name of the terminal window
-def change_terminal_name(args, is_core):
+_terminal_name = None
+
+def _set_terminal(s):
     import platform
     if platform.system() in ['Linux', 'Darwin', 'Unix']:
         try:
-            if is_core:
-                print '\033]2;roscore\007'
-            else:
-                print '\033]2;'+','.join(args)+'\007'                
-        except: pass
+            print '\033]2;%s\007'%s
+        except:
+            import traceback
+            traceback.print_exc()
+            pass
+    
+def update_terminal_name(ros_master_uri):
+    """
+    append master URI to the terminal name
+    """
+    if _terminal_name:
+        _set_terminal(_terminal_name + ' ' + ros_master_uri)
+
+def change_terminal_name(args, is_core):
+    """
+    use echo (where available) to change the name of the terminal window
+    """
+    global _terminal_name
+    _terminal_name = 'roscore' if is_core else ','.join(args)
+    _set_terminal(_terminal_name)
 
 ## @param options_runid str: run_id value from command-line or None
 ## @param options_wait_for_master bool: the wait_for_master command

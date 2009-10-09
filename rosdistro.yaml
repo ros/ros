@@ -8,7 +8,7 @@ stacks:
     source-tarball: 'http://ros.org/download/$STACK_NAME/$STACK_NAME-$STACK_VERSION.tar.bz2'}
   common: {latest: 0.6.0}
   common_msgs: {latest: 0.9.4}
-  diagnostics: {latest: 0.2.1}
+  diagnostics: {latest: 0.2.2}
   geometry: {latest: 0.4.0}
   image_common: {latest: 0.5.1}
   joystick_drivers: {latest: 0.9.0}

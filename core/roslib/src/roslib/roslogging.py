@@ -33,15 +33,25 @@
 # Revision $Id$
 # $Author$
 
+"""
+Library for configuring python logging to standard ROS locations
+(e.g. ROS_LOG_DIR).
+"""
+
 import os
 import sys
 import logging
 
 from roslib.rosenv import get_ros_root, ROS_LOG_DIR
+import roslib.exceptions
 
-## @param environ dict: environment dictionary (defaults to os.environ)
-## @return str: path to use use for log file directory
 def get_log_dir(environ=os.environ):
+    """
+    @param environ: environment dictionary (defaults to os.environ)
+    @type  environ: dict
+    @return: path to use use for log file directory
+    @rtype: str
+    """
     if ROS_LOG_DIR in environ:
         log_dir = os.environ[ROS_LOG_DIR]
     else:
@@ -53,13 +63,20 @@ def get_log_dir(environ=os.environ):
             log_dir = os.path.join(user_home_dir, '.ros', 'logs')
     return log_dir
     
-## configure Python logging package to send log files to ROS-specific log directory
-## @param logname str: name of logger
-## @param filename str: filename to log to. If not set, a log filename
-## will be generated using \a logname
-## @param additional [str]: additional log names to attach to same log handler
-## @return str: log file name
 def configure_logging(logname, level=logging.INFO, filename=None, additional=None, environ=os.environ):
+    """
+    Configure Python logging package to send log files to ROS-specific log directory
+    @param logname str: name of logger
+    @type  logname: str
+    @param filename: filename to log to. If not set, a log filename
+        will be generated using logname
+    @type filename: str
+    @param additional: additional log names to attach to same log handler
+    @type  additional: [str]
+    @return: log file name
+    @rtype: str
+    @raise roslib.exceptions.ROSLibException: if logging cannot be configured as specified
+    """
     import logging.handlers
     
     logname = logname or 'unknown'
@@ -80,7 +97,7 @@ def configure_logging(logname, level=logging.INFO, filename=None, additional=Non
             print >> sys.stderr, "WARNING: cannot create log directory [%s]. Please set %s to a writable location."%(logfile_dir, ROS_LOG_DIR)
             return None
     elif os.path.isfile(logfile_dir):
-        raise Exception("Cannot save log files: file [%s] is in the way"%logfile_dir)
+        raise roslib.exceptions.ROSLibException("Cannot save log files: file [%s] is in the way"%logfile_dir)
 
     handler = logging.handlers.RotatingFileHandler(
         log_filename, maxBytes=100000000, backupCount=10)
@@ -93,11 +110,14 @@ def configure_logging(logname, level=logging.INFO, filename=None, additional=Non
         logger.addHandler(handler)
     return log_filename
 
-## Create the directory \a p using the permissions of the nearest
-## (existing) parent directory. This is useful for logging, where a
-## root process sometimes has to log in the user's space.
-## @param p str: directory to create
 def makedirs_with_parent_perms(p):
+    """
+    Create the directory using the permissions of the nearest
+    (existing) parent directory. This is useful for logging, where a
+    root process sometimes has to log in the user's space.
+    @param p: directory to create
+    @type  p: str
+    """    
     p = os.path.abspath(p)
     parent = os.path.dirname(p)
     # recurse upwards, checking to make sure we haven't reached the

@@ -33,10 +33,12 @@
 # Revision $Id$
 # $Author$
 
-## Common ros script utilities, such as methods convenience methods
-## for creating master xmlrpc proxies and executing rospack. Use of
-## these utilities is highly encouraged as they will isolate code from
-## future potential architectural reworkings.
+"""
+Common ros script utilities, such as methods convenience methods for
+creating master xmlrpc proxies and executing rospack. This library
+is relatively immature and much of the functionality here will
+likely be moved elsewhere as the API solidifies.
+"""
 
 import itertools
 import os
@@ -96,7 +98,8 @@ def rospack_depends_on_1(pkg):
     """
     @param pkg: package name
     @type  pkg: str
-    @return list: A list of the names of the packages which depend directly on pkg
+    @return: A list of the names of the packages which depend directly on pkg
+    @rtype: list
     """
     return rospackexec(['depends-on1', pkg]).split()
 
@@ -104,7 +107,8 @@ def rospack_depends_on(pkg):
     """
     @param pkg: package name
     @type  pkg: str
-    @return list: A list of the names of the packages which depend on pkg
+    @return: A list of the names of the packages which depend on pkg
+    @rtype: list
     """
     return rospackexec(['depends-on', pkg]).split()
 
@@ -112,7 +116,8 @@ def rospack_depends_1(pkg):
     """
     @param pkg: package name
     @type  pkg: str
-    @return list: A list of the names of the packages which pkg directly depends on
+    @return: A list of the names of the packages which pkg directly depends on
+    @rtype: list    
     """
     return rospackexec(['deps1', pkg]).split()
 
@@ -120,7 +125,8 @@ def rospack_depends(pkg):
     """
     @param pkg: package name
     @type  pkg: str
-    @return list: A list of the names of the packages which pkg depends on
+    @return: A list of the names of the packages which pkg depends on
+    @rtype: list    
     """
     return rospackexec(['deps', pkg]).split()
 
@@ -128,7 +134,8 @@ def rospack_plugins(pkg):
     """
     @param pkg: package name
     @type  pkg: str
-    @return list: A list of the names of the packages which provide a plugin for pkg
+    @return: A list of the names of the packages which provide a plugin for pkg
+    @rtype: list    
     """
     val = rospackexec(['plugins', '--attrib=plugin', pkg])
     if val:
@@ -181,16 +188,22 @@ def rosstack_depends_1(s):
     @return: A list of the names of the stacks which s depends on directly
     @rtype: list
     """
-    print "rossstack", s
     return rosstackexec(['depends1', s]).split()
 
-## @return ServerProxy XML-RPC proxy to ROS master
 def get_master():
+    """
+    @return: XML-RPC proxy to ROS master
+    @rtype: xmlrpclib.ServerProxy
+    """
     import xmlrpclib
     return xmlrpclib.ServerProxy(roslib.rosenv.get_master_uri())
 
-## @return ServerProxy XML-RPC proxy to ROS parameter server
+
 def get_param_server():
+    """
+    @return: ServerProxy XML-RPC proxy to ROS parameter server
+    @rtype: xmlrpclib.ServerProxy
+    """
     return get_master()
 
 ## @deprecated
@@ -199,10 +212,13 @@ get_message_class = roslib.message.get_message_class
 ## @deprecated
 get_service_class = roslib.message.get_service_class
 
-## check whether or not master think subscriber_id subscribes to topic
-## @return bool: True if still register as a subscriber
-## @throws roslib.exceptions.ROSLibException: if communication with master fails
 def is_subscriber(topic, subscriber_id):
+    """
+    Check whether or not master think subscriber_id subscribes to topic
+    @return: True if still register as a subscriber
+    @rtype: bool
+    @raise roslib.exceptions.ROSLibException: if communication with master fails
+    """
     m = get_master()
     code, msg, state = m.getSystemState(_GLOBAL_CALLER_ID)
     if code != 1:
@@ -214,11 +230,14 @@ def is_subscriber(topic, subscriber_id):
     else:
         return False
 
-## predicate to check whether or not master think publisher_id
-## publishes topic
-## @return bool: True if still register as a publisher
-## @throws roslib.exceptions.ROSLibException: if communication with master fails
 def is_publisher(topic, publisher_id):
+    """
+    Predicate to check whether or not master think publisher_id
+    publishes topic
+    @return: True if still register as a publisher
+    @rtype: bool
+    @raise roslib.exceptions.ROSLibException: if communication with master fails
+    """
     m = get_master()
     code, msg, state = m.getSystemState(_GLOBAL_CALLER_ID)
     if code != 1:

@@ -63,6 +63,18 @@ class Duration(roslib.rostime.Duration):
     consists of two integers: seconds and nanoseconds. The Duration
     class allows you to add and subtract Duration instances, including
     adding and subtracting from L{Time} instances.
+
+    Usage::
+      five_seconds = Duration(5)
+      five_nanoseconds = Duration(0, 5)
+
+      print 'Fields are', five_seconds.secs, five_seconds.nsecs
+
+      # Duration arithmetic
+      ten_seconds = five_seconds + five_seconds
+      five_secs_ago = rospy.Time.now() - five_seconds # Time minus Duration is a Time
+
+      true_val = ten_second > five_seconds
     """
     __slots__ = []
 
@@ -96,6 +108,13 @@ class Time(roslib.rostime.Time):
     Usage::
       now = rospy.Time.now()
       zero_time = rospy.Time()
+
+      print 'Fields are', now.secs, now.nsecs
+
+      # Time arithmetic
+      five_secs_ago = now - rospy.Duration(5) # Time minus Duration is a Time
+      five_seconds  = now - five_secs_ago  # Time minus Time is a Duration
+      true_val = now > five_secs_ago
 
       # NOTE: in general, you will want to avoid using time.time() in ROS code
       import time

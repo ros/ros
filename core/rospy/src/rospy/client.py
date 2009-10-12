@@ -255,7 +255,7 @@ def get_master(env=os.environ):
     though the ROS_MASTER_URI must be declared in the environment.
 
     @return: ROS Master remote object
-    @rtype: L{rospy.msproxy.MasterProxy}
+    @rtype: L{rospy.MasterProxy}
     @raise Exception: if server cannot be located or system cannot be
     initialized
     """

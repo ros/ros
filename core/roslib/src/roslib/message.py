@@ -227,10 +227,10 @@ class Message(object):
     
     def __init__(self, *args, **kwds):
         """
-        ctor. There are multiple ways of initializing Message
-        instances, either using a 1-to-1 correspondence between
-        constructor arguments and message fields (*args), or using
-        Python "keyword" arguments (**kwds) to initialize named field
+        Create a new Message instance. There are multiple ways of
+        initializing Message instances, either using a 1-to-1
+        correspondence between constructor arguments and message
+        fields (*args), or using Python "keyword" arguments (**kwds) to initialize named field
         and leave the rest with default values.
         """
         if args and kwds:

@@ -71,12 +71,48 @@ from roslib.message import Message, SerializationError
 
 from rospy.core import *
 from rospy.exceptions import ROSSerializationException, TransportTerminated
-from rospy.msg import serialize_message, AnyMsg
+from rospy.msg import serialize_message
 from rospy.registration import get_topic_manager, set_topic_manager, Registration, get_registration_listeners
 from rospy.tcpros import get_tcpros_handler, DEFAULT_BUFF_SIZE
 from rospy.transport import DeadTransport
 
-logger = logging.getLogger('rospy.topics')
+_logger = logging.getLogger('rospy.topics')
+
+# wrap roslib implementation
+Message = roslib.message.Message
+
+class AnyMsg(Message):
+    """
+    Message class to use for subscribing to any topic regardless
+    of type. Incoming messages are not deserialized. Instead, the raw
+    serialized data can be accssed via the buff property.
+
+    This class is meant to be used by advanced users only.
+    """
+    _md5sum = rospy.names.TOPIC_ANYTYPE
+    _type = rospy.names.TOPIC_ANYTYPE
+    _has_header = False
+    _full_text = ''
+    __slots__ = ['_buff']
+    def __init__(self, *args):
+        """
+        Constructor. Does not accept any arguments.
+        """
+        if len(args) != 0:
+            raise rospy.exceptions.ROSException("AnyMsg does not accept arguments")
+        self._buff = None
+
+    def serialize(self, buff):
+        """AnyMsg provides an implementation so that a node can forward messages w/o (de)serialization"""
+        if self._buff is None:
+            raise rospy.exceptions("AnyMsg is not initialized")
+        else:
+            buff.write(self._buff)
+            
+    def deserialize(self, str):
+        """Copies raw buffer into self._buff"""
+        self._buff = str
+        return self
 
 #######################################################################
 # Base classes for all client-API instantiated pub/sub
@@ -190,7 +226,7 @@ class _TopicImpl(object):
                     c.close()
                 except:
                     # seems more logger.error internal than external logerr
-                    logger.error(traceback.format_exc())
+                    _logger.error(traceback.format_exc())
             del self.connections[:]
 
     def get_num_connections(self):
@@ -467,7 +503,7 @@ class _SubscriberImpl(_TopicImpl):
                     if not is_shutdown():
                         logerr("bad callback: %s\n%s"%(cb, traceback.format_exc()))
                     else:
-                        logger.warn("during shutdown, bad callback: %s\n%s"%(cb, traceback.format_exc()))                        
+                        _logger.warn("during shutdown, bad callback: %s\n%s"%(cb, traceback.format_exc()))                        
 
 class SubscribeListener(object):
     """
@@ -558,19 +594,19 @@ class Publisher(Topic):
         """
         if not is_initialized():
             raise ROSException("ROS node has not been initialized yet. Please call init_node() first")
-        data = args_kwds_to_message(self.data_class, args, kwds)
+        data = _args_kwds_to_message(self.data_class, args, kwds)
         try:
             self.impl.acquire()
             self.impl.publish(data)
         except SerializationError, e:
             # can't go to rospy.logerr(), b/c this could potentially recurse
-            logger.error(traceback.format_exc(e))
+            _logger.error(traceback.format_exc(e))
             print traceback.format_exc(e)
             raise ROSSerializationException(str(e))
         finally:
             self.impl.release()            
 
-def args_kwds_to_message(data_class, args, kwds):
+def _args_kwds_to_message(data_class, args, kwds):
     if args and kwds:
         raise TypeError("publish() can be called with arguments or keywords, but not both.")
     elif kwds:
@@ -765,7 +801,7 @@ class _TopicManager(object):
         self.subs = {} #: { topic: _SubscriberImpl }
         self.topics = set() # [str] list of topic names
         self.lock = threading.Condition()
-        logger.info("topicmanager initialized")
+        _logger.info("topicmanager initialized")
 
     def get_pub_sub_info(self):
         """
@@ -817,7 +853,7 @@ class _TopicManager(object):
         @type  reg_type: str
         """
         resolved_name = ps.resolved_name
-        logger.debug("tm._add: %s, %s, %s", resolved_name, ps.type, reg_type)
+        _logger.debug("tm._add: %s, %s, %s", resolved_name, ps.type, reg_type)
         try:
             self.lock.acquire()
             map[resolved_name] = ps
@@ -845,7 +881,7 @@ class _TopicManager(object):
         @type  reg_type: str
         """
         resolved_name = ps.resolved_name
-        logger.debug("tm._remove: %s, %s, %s", resolved_name, ps.type, reg_type)
+        _logger.debug("tm._remove: %s, %s, %s", resolved_name, ps.type, reg_type)
         try:
             self.lock.acquire()
             del map[resolved_name]
@@ -938,10 +974,10 @@ class _TopicManager(object):
             impl.ref_count -= 1
             assert impl.ref_count >= 0, "topic impl's reference count has gone below zero"
             if impl.ref_count == 0:
-                logger.debug("topic impl's ref count is zero, deleting topic %s...", resolved_name)
+                _logger.debug("topic impl's ref count is zero, deleting topic %s...", resolved_name)
                 impl.close()
                 self._remove(impl, map, reg_type)
-                logger.debug("... done deletig topic %s", resolved_name)
+                _logger.debug("... done deletig topic %s", resolved_name)
         finally:
             self.lock.release()
 
@@ -998,10 +1034,6 @@ class _TopicManager(object):
     ## @return [[str,str],]: list of topics published by this node, [ [topic1, topicType1]...[topicN, topicTypeN]]
     def get_publications(self):
         return self._get_list(self.pubs)
-
-# #519 backwards compatibility
-TopicPub = Publisher
-TopicSub = Subscriber
 
 set_topic_manager(_TopicManager())
 

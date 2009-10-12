@@ -50,9 +50,21 @@ SRC_DIR = 'src'
 ROS_PACKAGE_PATH = roslib.rosenv.ROS_PACKAGE_PATH
 ROS_ROOT = roslib.rosenv.ROS_ROOT
 
-class ROSPkgException(roslib.exceptions.ROSLibException): pass
-class InvalidROSPkgException(ROSPkgException): pass
-class MultipleNodesException(ROSPkgException): pass
+class ROSPkgException(roslib.exceptions.ROSLibException):
+    """
+    Base class of package-related errors.
+    """
+    pass
+class InvalidROSPkgException(ROSPkgException):
+    """
+    Exception that indicates that a ROS package does not exist
+    """
+    pass
+class MultipleNodesException(ROSPkgException):
+    """
+    Exception that indicates that multiple ROS nodes by the same name are in the same package.
+    """
+    pass
 
 # TODO: go through the code and eliminate unused methods -- there's far too many combos here
 
@@ -62,8 +74,13 @@ MANIFEST_FILE = 'manifest.xml'
 # Map package/directory structure
 #
 
-## @return bool True: if \a d is the root directory of a ROS Package
 def is_pkg_dir(d):
+    """
+    @param d: directory location
+    @type  d: str
+    @return: True if d is the root directory of a ROS Package
+    @rtype: bool
+    """
     return os.path.isfile(os.path.join(d, MANIFEST_FILE))
 
 # TODO: really need to rethink this required logic. I think what we
@@ -72,13 +89,18 @@ def is_pkg_dir(d):
 # the 'required' notion seems incorrect. It's really just
 # ros_root_required
 
-## Get the paths to search for packages
-## @param ros_root_required bool: if True, raise exception if
-## environment is invalid (i.e. ROS_ROOT is not set properly)
-## @param environ dict: override os.environ dictionary
-## @throws roslib.rosenv.ROSEnvException if ros_root_required is True
-## and ROS_ROOT is not set
 def get_package_paths(ros_root_required=True, environ=os.environ):
+    """
+    Get the paths to search for packages
+    
+    @param ros_root_required: if True, raise exception if
+    environment is invalid (i.e. ROS_ROOT is not set properly)
+    @type  ros_root_required: bool
+    @param environ: override os.environ dictionary
+    @type  environ: dict
+    @raise roslib.rosenv.ROSEnvException: if ros_root_required is True
+    and ROS_ROOT is not set
+    """
     rpp = roslib.rosenv.get_ros_package_path(False, environ)
     if rpp:
         paths = [x for x in rpp.split(os.pathsep) if x]
@@ -90,14 +112,19 @@ def get_package_paths(ros_root_required=True, environ=os.environ):
     else:
         return paths
 
-## Get the package that the directory is contained within. This is
-## determined by finding the nearest parent manifest.xml file. This
-## isn't 100% reliable, but symlinks can full any heuristic that
-## relies on ROS_ROOT.
-## @param dir str: directory path
-## @param environ dict: override os.environ dictionary
-## @return (str, str): (packageDirectory, package) of the specified directory, or None,None if not in a package
 def get_dir_pkg(dir, environ=os.environ):
+    """
+    Get the package that the directory is contained within. This is
+    determined by finding the nearest parent manifest.xml file. This
+    isn't 100% reliable, but symlinks can full any heuristic that
+    relies on ROS_ROOT.
+    @param dir: directory path
+    @type  dir: str
+    @param environ dict: override os.environ dictionary
+    @type  environ: dict
+    @return: (packageDirectory, package) of the specified directory, or None,None if not in a package
+    @rtype: (str, str)
+    """
     #TODO: the realpath is going to create issues with symlinks, most likely
     pkgDirs = [os.path.realpath(x) for x in get_package_paths(True, environ)]
     for pkgDir in pkgDirs:
@@ -111,18 +138,25 @@ def get_dir_pkg(dir, environ=os.environ):
             return dir, pkg
     return None, None
 
-## @internal
 _pkg_dir_cache = {}
 
-## Locate directory \a package is stored in
-## @param package str: package name
-## @param required bool: if True, an exception will be raised if the
-## package directory cannot be located.
-## @param ros_root str: if specified, override ROS_ROOT
-## @param ros_package_path str: if specified, override ROS_PACKAGE_PATH
-## @return str: directory containing package.
-## @throws InvalidROSPkgException: if required is True and package cannot be located
 def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
+    """
+    Locate directory package is stored in
+    
+    @param package: package name
+    @type  package: str
+    @param required: if True, an exception will be raised if the
+    package directory cannot be located.
+    @type  required: bool
+    @param ros_root: if specified, override ROS_ROOT
+    @type  ros_root: str
+    @param ros_package_path: if specified, override ROS_PACKAGE_PATH
+    @type  ros_package_path: str
+    @return: directory containing package.
+    @rtype: str
+    @raise InvalidROSPkgException: if required is True and package cannot be located
+    """    
     #subprocess is a Python 2.4 module, lazy import here so that roslib.packages constants can be access from Python 2.3
     #UNIXONLY
     #TODO: replace with non-rospack-based solution (e.g. os.walk())
@@ -174,16 +208,23 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
             raise
         return None
 
-## @internal
-## @param required:  if True, will attempt to  create the subdirectory
-## if it does not exist. An exception will be raised  if this fails.
-## @param package_dir str: directory of package
-## @param subdir str: name of subdirectory to locate    
-## @param environ dict: environment dictionary    
-## @param required bool: if True, directory must exist    
-## @return str: Package subdirectory if package exist, otherwise None.
-## @throws InvalidROSPkgException: if required is True and directory does not exist
 def _get_pkg_subdir_by_dir(package_dir, subdir, required=True, environ=os.environ):
+    """
+    @param required: if True, will attempt to  create the subdirectory
+        if it does not exist. An exception will be raised  if this fails.
+    @type  required: bool
+    @param package_dir: directory of package
+    @type  package_dir: str
+    @param subdir: name of subdirectory to locate
+    @type  subdir: str
+    @param environ: environment dictionary    
+    @type  environ: dict
+    @param required: if True, directory must exist    
+    @type  required: bool
+    @return: Package subdirectory if package exist, otherwise None.
+    @rtype: str
+    @raise InvalidROSPkgException: if required is True and directory does not exist
+    """
     try:
         if not package_dir:
             raise Exception("Cannot create a '%(subdir)s' directory in %(package_dir)s: package %(package) cannot be located"%locals())
@@ -205,14 +246,21 @@ Please check permissions and try again.
             raise
         return None
     
-## @param required:  if True, will attempt to  create the subdirectory
-## if it does not exist. An exception will be raised  if this fails.
-## @param package str: name of package
-## @param environ dict: environment dictionary    
-## @param required bool: if True, directory must exist    
-## @return str: Package subdirectory if package exist, otherwise None.
-## @throws InvalidROSPkgException: if required is True and directory does not exist
 def get_pkg_subdir(package, subdir, required=True, environ=os.environ):
+    """
+    @param required: if True, will attempt to create the subdirectory
+        if it does not exist. An exception will be raised  if this fails.
+    @type  required: bool
+    @param package: name of package
+    @type  package: str
+    @param environ: environment dictionary    
+    @type  environ: dict
+    @param required: if True, directory must exist    
+    @type  required: bool
+    @return: Package subdirectory if package exist, otherwise None.
+    @rtype: str
+    @raise InvalidROSPkgException: if required is True and directory does not exist
+    """
     pkg_dir = get_pkg_dir(package, required, ros_root=environ[ROS_ROOT]) 
     return _get_pkg_subdir_by_dir(pkg_dir, subdir, required, environ)
 
@@ -220,12 +268,16 @@ def get_pkg_subdir(package, subdir, required=True, environ=os.environ):
 # Map ROS resources to files
 #
 
-## @param subdir str: name of subdir -- these should be one of the
-## string constants, e.g. MSG_DIR
-## @return str: path to resource in the specified subdirectory of the
-## package, or None if the package does not exists
-## @throws roslib.packages.InvalidROSPkgException If \a package does not exist 
 def resource_file(package, subdir, resource_name):
+    """
+    @param subdir: name of subdir -- these should be one of the
+        string constants, e.g. MSG_DIR
+    @type  subdir: str
+    @return: path to resource in the specified subdirectory of the
+        package, or None if the package does not exists
+    @rtype: str
+    @raise roslib.packages.InvalidROSPkgException: If package does not exist 
+    """
     dir = get_pkg_subdir(package, subdir, False)
     if dir is None:
         raise InvalidROSPkgException(package)
@@ -234,9 +286,13 @@ def resource_file(package, subdir, resource_name):
 
 # TODO: try and read in .rospack_cache
 # TODO: use this to replace get_pkg_dir shelling to rospack
-## @param pkg_dirs [str]: (optional) list of paths to search for packages
-## @return [str]: complete list of package names in ROS environment
 def list_pkgs(pkg_dirs=None):
+    """
+    @param pkg_dirs: (optional) list of paths to search for packages
+    @type  pkg_dirs: [str]
+    @return: complete list of package names in ROS environment
+    @rtype: [str]
+    """
     if pkg_dirs is None:
         pkg_dirs = get_package_paths(True)
     packages = []
@@ -262,13 +318,20 @@ def list_pkgs(pkg_dirs=None):
 
 # TODO: reimplement using find_resource
 
-## Locate the executable that implements the node
-## @param node_type str: type of node
-## @param ros_root str: if specified, override ROS_ROOT
-## @param ros_package_path str: if specified, override ROS_PACKAGE_PATH
-## @return str: path to node or None if node is not in the package
-## @throws roslib.packages.InvalidROSPkgException If package does not exist 
 def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
+    """
+    Locate the executable that implements the node
+    
+    @param node_type: type of node
+    @type  node_type: str
+    @param ros_root: if specified, override ROS_ROOT
+    @type  ros_root: str
+    @param ros_package_path: if specified, override ROS_PACKAGE_PATH
+    @type  ros_package_path: str
+    @return: path to node or None if node is not in the package
+    @rtype: str
+    @raise roslib.packages.InvalidROSPkgException: If package does not exist 
+    """
     dir = get_pkg_dir(pkg, required=True, \
                       ros_root=ros_root, ros_package_path=ros_package_path)
     #UNIXONLY
@@ -284,15 +347,21 @@ def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
         elif '.git' in dirs:
             dirs.remove('.git')
 
-## Locate the file named \a resource_name in package, optionally
-## matching specified \a filter
-## @param filter fn(str): function that takes in a path argument and
-## returns True if the it matches the desired resource
-## @param ros_root str: if specified, override ROS_ROOT
-## @param ros_package_path str: if specified, override ROS_PACKAGE_PATH
-## @return [str]: lists of matching paths for resource
-## @throws roslib.packages.InvalidROSPkgException If package does not exist 
 def find_resource(pkg, resource_name, filter_fn=None, ros_root=None, ros_package_path=None):
+    """
+    Locate the file named resource_name in package, optionally
+    matching specified filter
+    @param filter: function that takes in a path argument and
+        returns True if the it matches the desired resource
+    @type  filter: fn(str)
+    @param ros_root: if specified, override ROS_ROOT
+    @type  ros_root: str
+    @param ros_package_path: if specified, override ROS_PACKAGE_PATH
+    @type  ros_package_path: str
+    @return: lists of matching paths for resource
+    @rtype: [str]
+    @raise roslib.packages.InvalidROSPkgException: If package does not exist 
+    """
     dir = get_pkg_dir(pkg, required=True, \
                       ros_root=ros_root, ros_package_path=ros_package_path)
     #UNIXONLY

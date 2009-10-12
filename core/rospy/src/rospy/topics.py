@@ -67,7 +67,7 @@ from __future__ import with_statement
 import struct, cStringIO, thread, threading, logging, time
 from itertools import chain
 
-from roslib.message import Message, SerializationError
+import roslib.message
 
 from rospy.core import *
 from rospy.exceptions import ROSSerializationException, TransportTerminated
@@ -78,10 +78,10 @@ from rospy.transport import DeadTransport
 
 _logger = logging.getLogger('rospy.topics')
 
-# wrap roslib implementation
+# wrap roslib implementation and map it to rospy namespace
 Message = roslib.message.Message
 
-class AnyMsg(Message):
+class AnyMsg(roslib.message.Message):
     """
     Message class to use for subscribing to any topic regardless
     of type. Incoming messages are not deserialized. Instead, the raw
@@ -129,7 +129,7 @@ class Topic(object):
         @param name: graph resource name of topic, e.g. 'laser'. 
         @type  name: str
         @param data_class: message class for serialization
-        @type  data_class: Message
+        @type  data_class: L{Message}
         @param reg_type Registration.PUB or Registration.SUB
         @type  reg_type: str
         @raise ValueError: if parameters are invalid
@@ -141,7 +141,7 @@ class Topic(object):
             raise ValueError("topic parameter 'data_class' is not initialized")
         if not type(data_class) == type:
             raise ValueError("data_class [%s] is not a class"%data_class) 
-        if not issubclass(data_class, Message):
+        if not issubclass(data_class, roslib.message.Message):
             raise ValueError("data_class [%s] is not a message data class"%data_class.__class__.__name__)
         
         # this is a bit ugly, but necessary due to the fact that we allow
@@ -190,8 +190,8 @@ class _TopicImpl(object):
         Base constructor
         @param name: graph resource name of topic, e.g. 'laser'. 
         @type  name: str
-        @param data_class Message: message data class 
-        @type  data_class: Message
+        @param data_class: message data class 
+        @type  data_class: L{Message}
         """
 
         # #1810 made resolved/unresolved more explicit so we don't accidentally double-resolve
@@ -341,7 +341,7 @@ class Subscriber(Topic):
         @type  name: str
         @param data_class: data type class to use for messages,
           e.g. std_msgs.msg.String
-        @type  data_class: Message class
+        @type  data_class: L{Message} class
         @param callback: function to call ( fn(data)) when data is
           received. If callback_args is set, the function must accept
           the callback_args as a second argument, i.e. fn(data,
@@ -400,7 +400,7 @@ class _SubscriberImpl(_TopicImpl):
         @param name: graph resource name of topic, e.g. 'laser'.
         @type  name: str
         @param data_class: Message data class
-        @type  data_class: Message
+        @type  data_class: L{Message} class
         """
         super(_SubscriberImpl, self).__init__(name, data_class)
         # client-methods to invoke on new messages. should only modify
@@ -488,7 +488,7 @@ class _SubscriberImpl(_TopicImpl):
         """
         Called by underlying connection transport for each new message received
         @param msgs: message data
-        @type msgs: [Message]
+        @type msgs: [L{Message}]
         """
         # save reference to avoid lock
         callbacks = self.callbacks
@@ -552,7 +552,7 @@ class Publisher(Topic):
         @param name: resource name of topic, e.g. 'laser'. 
         @type  name: str
         @param data_class: message class for serialization
-        @type  data_class: Message class
+        @type  data_class: L{Message} class
         @param subscriber_listener: listener for
           subscription events. May be None.
         @type  subscriber_listener: L{SubscribeListener}
@@ -586,7 +586,7 @@ class Publisher(Topic):
           pub.publish(message_field_1, message_field_2...)            
           pub.publish(message_field_1='foo', message_field_2='bar')
     
-        @param args : Message instance, Message arguments, or no args if keyword arguments are used
+        @param args : L{Message} instance, message arguments, or no args if keyword arguments are used
         @param kwds : Message keyword arguments. If kwds are used, args must be unset
         @raise ROSException: If rospy node has not been initialized
         @raise ROSSerializationException: If unable to serialize
@@ -598,7 +598,7 @@ class Publisher(Topic):
         try:
             self.impl.acquire()
             self.impl.publish(data)
-        except SerializationError, e:
+        except roslib.message.SerializationError, e:
             # can't go to rospy.logerr(), b/c this could potentially recurse
             _logger.error(traceback.format_exc(e))
             print traceback.format_exc(e)
@@ -629,7 +629,7 @@ class _PublisherImpl(_TopicImpl):
         @param name: name of topic, e.g. 'laser'. 
         @type  name: str
         @param data_class: Message data class    
-        @type  data_class: Message
+        @type  data_class: L{Message} class
         """
         super(_PublisherImpl, self).__init__(name, data_class)
         self.buff = cStringIO.StringIO()
@@ -737,7 +737,7 @@ class _PublisherImpl(_TopicImpl):
         @type  connection_override: L{Transport}
         @return: True if the data was published, False otherwise.
         @rtype: bool
-        @raise roslib.message.SerializationError: if Message instance is unable to serialize itself
+        @raise roslib.message.SerializationError: if L{Message} instance is unable to serialize itself
         """
         if self.is_latch:
             self.latch = message
@@ -927,7 +927,7 @@ class _TopicManager(object):
         @type  reg_type: str
         
         @param data_class: message class for topic
-        @type  data_class: Message Class
+        @type  data_class: L{Message} class
         """
         if reg_type == Registration.PUB:
             map = self.pubs

@@ -105,26 +105,26 @@ class TestRospyTcprosBase(unittest.TestCase):
         from rospy.tcpros_base import TCPROSTransportProtocol
         from rospy.transport import BIDIRECTIONAL
         
-        p = TCPROSTransportProtocol('Bob', rospy.msg.AnyMsg)
+        p = TCPROSTransportProtocol('Bob', rospy.AnyMsg)
         self.assertEquals('Bob', p.resolved_name)
-        self.assertEquals(rospy.msg.AnyMsg, p.recv_data_class)
+        self.assertEquals(rospy.AnyMsg, p.recv_data_class)
         self.assertEquals(BIDIRECTIONAL, p.direction)
         self.assertEquals({}, p.get_header_fields())
         self.assertEquals(rospy.tcpros_base.DEFAULT_BUFF_SIZE, p.buff_size)
 
         v = random.randint(1, 100)
-        p = TCPROSTransportProtocol('Bob', rospy.msg.AnyMsg, queue_size=v)
+        p = TCPROSTransportProtocol('Bob', rospy.AnyMsg, queue_size=v)
         self.assertEquals(v, p.queue_size)
 
         v = random.randint(1, 100)        
-        p = TCPROSTransportProtocol('Bob', rospy.msg.AnyMsg, buff_size=v)
+        p = TCPROSTransportProtocol('Bob', rospy.AnyMsg, buff_size=v)
         self.assertEquals(v, p.buff_size)
 
     def test_TCPROSTransport(self):
         import rospy.tcpros_base
         from rospy.tcpros_base import TCPROSTransport, TCPROSTransportProtocol
         from rospy.transport import OUTBOUND
-        p = TCPROSTransportProtocol('Bob', rospy.msg.AnyMsg)
+        p = TCPROSTransportProtocol('Bob', rospy.AnyMsg)
         p.direction = OUTBOUND
 
         try:

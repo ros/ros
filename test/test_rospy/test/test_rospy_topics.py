@@ -63,7 +63,7 @@ class TestRospyTopics(unittest.TestCase):
 
     def test_args_kwds_to_message(self):
         import rospy
-        from rospy.topics import args_kwds_to_message
+        from rospy.topics import _args_kwds_to_message as args_kwds_to_message
         from test_rospy.msg import Val
         
         v = Val('hello world-1')

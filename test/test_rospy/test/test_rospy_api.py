@@ -44,6 +44,44 @@ import time
 # test rospy API verifies that the rospy module exports the required symbols
 class TestRospyApi(unittest.TestCase):
 
+    def test_msg(self):
+        # rospy.Message really only exists at the client level, as the internal
+        # implementation is built around the roslib reference, so we put the test here
+
+        import rospy
+        #trip wires against Message API
+        m = rospy.Message()
+        from cStringIO import StringIO
+        buff = StringIO()
+        m.serialize(buff)
+        self.assertEquals(0, buff.tell())
+        m.deserialize('')
+        
+    def test_anymsg(self):
+        # rospy.AnyMsg really only exists at the client level as nothing within
+        # rospy uses its functionality.
+        
+
+        from cStringIO import StringIO
+        import rospy
+        #trip wires against AnyMsg API
+        m = rospy.AnyMsg()
+        try:
+            m.serialize(StringIO())
+            self.fail("AnyMsg should not allow serialization")
+        except:
+            pass
+
+        teststr = 'foostr-%s'%time.time()
+        m.deserialize(teststr)
+        self.assertEquals(teststr, m._buff)
+
+        #test AnyMsg ctor error checking
+        try:
+            m = rospy.AnyMsg('foo')
+            self.fail("AnyMsg ctor should not allow args")
+        except: pass
+
     def test_rospy_api(self):
         import rospy
 
@@ -99,6 +137,8 @@ class TestRospyApi(unittest.TestCase):
         rospy.AnyMsg
         rospy.Duration
         rospy.Header
+        rospy.MasterProxy
+        rospy.NodeProxy        
         rospy.Message
         rospy.Publisher
         rospy.Rate

@@ -265,7 +265,7 @@ class ServiceProxy(_Service):
         @param timeout: timeout in seconds
         @type  timeout: float
         """
-        if not isinstance(request, rospy.msg.Message):
+        if not isinstance(request, roslib.message.Message):
             raise TypeError("request object is not a valid request message instance")
         if not self.request_class == request.__class__:
             raise TypeError("request object type [%s] does not match service type [%s]"%(request.__class__, self.request_class))

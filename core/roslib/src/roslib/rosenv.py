@@ -32,6 +32,10 @@
 #
 # Revision $Id: env.py 3357 2009-01-13 07:13:05Z jfaustwg $
 
+"""
+ROS environment variables.
+"""
+
 import os
 import sys
 
@@ -55,12 +59,17 @@ ROS_NAMESPACE    ="ROS_NAMESPACE"
 ## directory in which log files are written (ROS_ROOT/log by default)
 ROS_LOG_DIR      ="ROS_LOG_DIR"
 
-class ROSEnvException(roslib.exceptions.ROSLibException): pass
+class ROSEnvException(roslib.exceptions.ROSLibException):
+    """Base class of roslib.rosenv errors."""
+    pass
 
-## @param required: if True, ROS_ROOT must be set and point to a valid directory.
-## @throws ROSEnvException if \a required is True and ROS_ROOT is not
-## set validly
 def get_ros_root(required=True, environ=os.environ):
+    """
+    @param required: if True, ROS_ROOT must be set and point to a valid directory.
+    @type  required: bool
+    @raise ROSEnvException: if required is True and ROS_ROOT is not
+    set validly
+    """
     p = None
     try:
         if not environ.has_key(ROS_ROOT):
@@ -93,19 +102,29 @@ Please update your ROS installation before continuing.
             raise
         return p
 
-## @throws ROSEnvException: if ROS_PACKAGE_PATH is not set and \a
-## required is True
 def get_ros_package_path(required=True, environ=os.environ):
+    """
+    @raise ROSEnvException: if ROS_PACKAGE_PATH is not set and \a
+    required is True
+    """
     try:
         return environ[ROS_PACKAGE_PATH]
     except KeyError, e:
         if required:
             raise ROSEnvException("%s has not been configured"%ROS_PACKAGE_PATH)
 
-## Get the ROS_MASTER_URI setting from the command-line args or
-## environment, command-line args takes precedence.
-## @throws ROSEnvException: if ROS_MASTER_URI is not set
 def get_master_uri(required=True, environ=os.environ, argv=sys.argv):
+    """
+    Get the ROS_MASTER_URI setting from the command-line args or
+    environment, command-line args takes precedence.
+    @param required: if True, enables exception raising
+    @type  required: bool
+    @param environ: override environment dictionary
+    @type  environ: dict
+    @param argv: override sys.argv
+    @type  argv: [str]
+    @raise ROSEnvException: if ROS_MASTER_URI is not set
+    """    
     try:
         for arg in argv:
             if arg.startswith('__master:='):
@@ -123,28 +142,38 @@ def get_master_uri(required=True, environ=os.environ, argv=sys.argv):
         if required:
             raise ROSEnvException("%s has not been configured"%ROS_MASTER_URI)
 
-## Catch-all utility routine for fixing ROS environment variables that
-## are a single path (e.g. ROS_ROOT).  Currently this just expands
-## tildes to home directories, but in the future it may encode other
-## behaviors.
 def resolve_path(p):
+    """
+    @param path: path string
+    @type  path: str
+    Catch-all utility routine for fixing ROS environment variables that
+    are a single path (e.g. ROS_ROOT).  Currently this just expands
+    tildes to home directories, but in the future it may encode other
+    behaviors.
+    """
     if p and p[0] == '~':
         return os.path.expanduser(p)
     return p
     
-## Catch-all utility routine for fixing ROS environment variables that
-## are paths (e.g. ROS_PACKAGE_PATH).  Currently this just expands
-## tildes to home directories, but in the future it may encode other
-## behaviors.
 def resolve_paths(paths):
+    """
+    @param paths: path string with OS-defined separator (i.e. ':' for Linux)
+    @type  paths: str
+    Catch-all utility routine for fixing ROS environment variables that
+    are paths (e.g. ROS_PACKAGE_PATH).  Currently this just expands
+    tildes to home directories, but in the future it may encode other
+    behaviors.
+    """
     return os.pathsep.join([resolve_path(p) for p in paths.split(os.pathsep)])
 
 
-## Bootstrap common ROS environment variables. For now, only affects
-## os.environ if the environment has a rosdeb-based installation. It
-## does not check for remapping args that may also affect
-## ROS_MASTER_URI as those have precedence regardless.
 def setup_default_environment():
+  """
+  Bootstrap common ROS environment variables. For now, only affects
+  os.environ if the environment has a rosdeb-based installation. It
+  does not check for remapping args that may also affect
+  ROS_MASTER_URI as those have precedence regardless.
+  """
   default_ros_root = "/usr/lib/ros"
   if os.path.isdir(default_ros_root):
     if 'ROS_ROOT' not in os.environ:

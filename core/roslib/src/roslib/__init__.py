@@ -32,6 +32,21 @@
 #
 # Revision $Id: __init__.py 3528 2009-01-23 22:34:20Z sfkwc $
 
+"""
+roslib has a very important role in all Python code written for ROS:
+it contains the L{load_manifest()} method, which updates the
+PYTHONPATH based on a set of ROS Package manifest.xml files. Because
+of this role, roslib is required to be on the PYTHONPATH of every ROS
+installation.
+
+Beyond the important load_manifest() call, most of the rest of roslib
+consists of low-level libraries that 99% of ROS users need not
+interact with. These libraries are primarily to support higher-level
+ROS Python libraries, such as the rospy client library, as well as
+numerous ROS tools (e.g. rostopic).
+
+"""
+
 from roslib.launcher import load_manifest
 ## backwards compatibility
 update_path = load_manifest

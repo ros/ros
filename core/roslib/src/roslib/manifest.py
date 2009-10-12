@@ -33,9 +33,10 @@
 #
 # Revision $Id: manifest.py 3357 2009-01-13 07:13:05Z jfaustwg $
 # $Author: jfaustwg $
-"""Python parser for rospack manifest.xml files"""
-## Python parser for rospack manifest.xml files
-## See: http://pr.willowgarage.com/wiki/Packages
+
+"""
+Python parser for rospack manifest.xml files. See U{http://ros.org/wiki/Manifest}
+"""
 
 import sys
 import os
@@ -51,22 +52,36 @@ import roslib.manifestlib
 # re-export symbols for backwards compatibility
 from roslib.manifestlib import ManifestException, Depend, Export, ROSDep, VersionControl
 
-## object representation of a ROS manifest file
 class Manifest(roslib.manifestlib._Manifest):
+    """
+    Object representation of a ROS manifest file
+    """
     __slots__ = []
     def __init__(self):
+        """
+        Initialize new empty manifest.
+        """
         super(Manifest, self).__init__('package')
         
-    ## Get exports that match the specified tag and attribute, e.g. 'python', 'path'
     def get_export(self, tag, attr):
+        """
+        @return: exports that match the specified tag and attribute, e.g. 'python', 'path'
+        @rtype: [L{Export}]
+        """
         return [e.get(attr) for e in self.exports if e.tag == tag if e.get(attr) is not None]
 
-## @param package_dir str: path to package directory
-## @param environ dict: environment dictionary
-## @param required bool: require that the directory exist
-## @return str: path to manifest file of package
-## @throws InvalidROSPkgException if required is True and manifest file cannot be located
 def _manifest_file_by_dir(package_dir, required=True, environ=os.environ):
+    """
+    @param package_dir: path to package directory
+    @type  package_dir: str
+    @param environ: environment dictionary
+    @type  environ: dict
+    @param required: require that the directory exist
+    @type  required: bool
+    @return: path to manifest file of package
+    @rtype:  str
+    @raise InvalidROSPkgException: if required is True and manifest file cannot be located
+    """
     try:
         p = os.path.join(package_dir, MANIFEST_FILE)
         if not required and not os.path.exists(p):
@@ -80,26 +95,40 @@ Package '%(package_dir)s' is improperly configured: no manifest file is present.
         if required:
             raise
 
-## @param package str: package name
-## @param environ dict: environment dictionary
-## @param required bool: require that the directory exist
-## @return str: path to manifest file of package
-## @throws InvalidROSPkgException if required is True and manifest file cannot be located
 def manifest_file(package, required=True, environ=os.environ):
+    """
+    @param package str: package name
+    @type  package: str
+    @param environ: environment dictionary
+    @type  environ: dict
+    @param required: require that the directory exist
+    @type  required: bool
+    @return: path to manifest file of package
+    @rtype: str
+    @raise InvalidROSPkgException: if required is True and manifest file cannot be located
+    """
     # ros_root needs to be determined from the environment or else
     # everything breaks when trying to launch nodes via ssh where the
     # path isn't setup correctly.
     d = roslib.packages.get_pkg_dir(package, required, ros_root=environ[roslib.rosenv.ROS_ROOT]) 
     return _manifest_file_by_dir(d, required, environ)
         
-## Parse manifest.xml file
-## @param file str: manifest.xml file path
-## @return Manifest
 def parse_file(file):
+    """
+    Parse manifest.xml file
+    @param file: manifest.xml file path
+    @type  file: str
+    @return: Manifest instance
+    @rtype: L{Manifest}
+    """
     return roslib.manifestlib.parse_file(Manifest(), file)
 
-## Parse manifest.xml string contents
-## @param string str: manifest.xml contents
-## @return Manifest
 def parse(string, filename='string'):
+    """
+    Parse manifest.xml string contents
+    @param string: manifest.xml contents
+    @type  string: str
+    @return: Manifest instance
+    @rtype: L{Manifest}
+    """
     return roslib.manifestlib.parse(Manifest(), string, filename)

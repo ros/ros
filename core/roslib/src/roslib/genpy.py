@@ -32,15 +32,18 @@
 #
 # Revision $Id: genpy.py 3357 2009-01-13 07:13:05Z jfaustwg $
 
-## Library for Python message generators.
-## The structure of the serialization descends several levels of serializers:
-##  - msg_generator: generator for an individual msg file
-##   - serialize_fn_generator: generator for msg.serialize()
-##     - serializer_generator
-##       - field-type-specific serializers
-##   - deserialize_fn_generator: generator for msg.deserialize()
-##     - serializer_generator
-##       - field-type-specific serializers
+"""
+Library for Python message generation.
+
+The structure of the serialization descends several levels of serializers:
+ - msg_generator: generator for an individual msg file
+  - serialize_fn_generator: generator for msg.serialize()
+    - serializer_generator
+      - field-type-specific serializers
+  - deserialize_fn_generator: generator for msg.deserialize()
+    - serializer_generator
+      - field-type-specific serializers
+"""
 
 # NOTE: genpy must be in the roslib package as placing it in rospy
 # creates circular deps

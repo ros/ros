@@ -34,9 +34,11 @@
 # Revision $Id: gentools.py 2843 2008-11-17 20:23:24Z sfkwc $
 # $Author: sfkwc $
 
-## Library for supporting message and service generation for all
-## client libraries. This is mainly responsible for calculating the
-## md5sums and message definitions of classes.
+"""
+Library for supporting message and service generation for all ROS
+client libraries. This is mainly responsible for calculating the
+md5sums and message definitions of classes.
+"""
 
 # NOTE: this should not contain any rospy-specific code. The rospy
 # generator library is rospy.genpy.
@@ -52,13 +54,15 @@ import roslib.srvs
 # name of the Header type as gentools knows it
 _header_type_name = 'roslib/Header'
 
-## @internal
-## Add the list of message types that \a spec depends on to \a
-## depends.
-## @param spec roslib.msgs.MsgSpec/roslib.srvs.SrvSpec: message to compute dependencies for
-## @param deps [str]: list of dependencies. This list will be updated
-## with the dependencies of \a spec when the method completes
 def _add_msgs_depends(spec, deps, package_context):
+    """
+    Add the list of message types that spec depends on to depends.
+    @param spec: message to compute dependencies for
+    @type  spec: roslib.msgs.MsgSpec/roslib.srvs.SrvSpec
+    @param deps [str]: list of dependencies. This list will be updated
+    with the dependencies of spec when the method completes
+    @type  deps: [str]
+    """
     for t in spec.types:
         t = roslib.msgs.base_msg_type(t)
         if not roslib.msgs.is_builtin(t):
@@ -81,12 +85,14 @@ def _add_msgs_depends(spec, deps, package_context):
                 roslib.msgs.register(key, depspec)
             _add_msgs_depends(depspec, deps, package_context)
 
-## Compute the text used for md5 calculation. MD5 spec states that we
-## removes comments and non-meaningful whitespace. We also strip
-## packages names from type names. For convenience sake, constants are
-## reordered ahead of other declarations, in the order that they were
-## originally defined.
 def compute_md5_text(get_deps_dict, spec):
+    """
+    Compute the text used for md5 calculation. MD5 spec states that we
+    removes comments and non-meaningful whitespace. We also strip
+    packages names from type names. For convenience sake, constants are
+    reordered ahead of other declarations, in the order that they were
+    originally defined.
+    """
     uniquedeps = get_deps_dict['uniquedeps']
     package = get_deps_dict['package']
     # #1554: need to suppress computation of files in dynamic generation case
@@ -119,11 +125,14 @@ def compute_md5_text(get_deps_dict, spec):
     
     return buff.getvalue().strip() # remove trailing new line
 
-## @internal
-## subroutine of compute_md5()
-## @param get_deps_dict dict: dictionary returned by get_dependencies call
-## @param hash hash instance            
 def _compute_hash(get_deps_dict, hash):
+    """
+    subroutine of compute_md5()
+    @param get_deps_dict: dictionary returned by get_dependencies call
+    @type  get_deps_dict: dict
+    @param hash: hash instance            
+    @type  hash: hash instance            
+    """
     # accumulate the hash
     # - root file
     from roslib.msgs import MsgSpec
@@ -138,11 +147,14 @@ def _compute_hash(get_deps_dict, hash):
         raise Exception("[%s] is not a message or service"%spec)   
     return hash.hexdigest()
 
-## @internal
-## subroutine of compute_md5_v1()
-## @param get_deps_dict dict: dictionary returned by get_dependencies call
-## @param hash hash instance            
 def _compute_hash_v1(get_deps_dict, hash):
+    """
+    subroutine of compute_md5_v1()
+    @param get_deps_dict: dictionary returned by get_dependencies call
+    @type  get_deps_dict: dict
+    @param hash: hash instance
+    @type  hash: hash instance    
+    """
     uniquedeps = get_deps_dict['uniquedeps']
     spec = get_deps_dict['spec']    
     # accumulate the hash
@@ -153,10 +165,14 @@ def _compute_hash_v1(get_deps_dict, hash):
         hash.update(roslib.msgs.get_registered(d).text)
     return hash.hexdigest()
 
-## Compute original V1 md5 hash for message/service. This was replaced with V2 in ROS 0.6.
-## @param get_deps_dict dict: dictionary returned by get_dependencies call
-## @return str md5 hash
 def compute_md5_v1(get_deps_dict):
+    """
+    Compute original V1 md5 hash for message/service. This was replaced with V2 in ROS 0.6.
+    @param get_deps_dict: dictionary returned by get_dependencies call
+    @type  get_deps_dict: dict
+    @return: md5 hash
+    @rtype: str
+    """
     try:
         # md5 is deprecated in Python 2.6 in favor of hashlib, but hashlib is
         # unavailable in Python 2.4
@@ -166,10 +182,14 @@ def compute_md5_v1(get_deps_dict):
         import md5
         return _compute_hash_v1(get_deps_dict, md5.new())
 
-## Compute md5 hash for message/service
-## @param get_deps_dict dict: dictionary returned by get_dependencies call
-## @return str md5 hash
 def compute_md5(get_deps_dict):
+    """
+    Compute md5 hash for message/service
+    @param get_deps_dict dict: dictionary returned by get_dependencies call
+    @type  get_deps_dict: dict
+    @return: md5 hash
+    @rtype: str
+    """
     try:
         # md5 is deprecated in Python 2.6 in favor of hashlib, but hashlib is
         # unavailable in Python 2.4
@@ -182,14 +202,19 @@ def compute_md5(get_deps_dict):
 ## alias
 compute_md5_v2 = compute_md5
 
-## Compute full text of message/service, including text of embedded
-## types.  The text of the main msg/srv is listed first. Embedded
-## msg/srv files are denoted first by an 80-character '=' separator,
-## followed by a type declaration line,'MSG: pkg/type', followed by
-## the text of the embedded type.
-## @param get_deps_dict dict: dictionary returned by get_dependencies call
-## @return str concatenated text for msg/srv file and embedded msg/srv types.
 def compute_full_text(get_deps_dict):
+    """
+    Compute full text of message/service, including text of embedded
+    types.  The text of the main msg/srv is listed first. Embedded
+    msg/srv files are denoted first by an 80-character '=' separator,
+    followed by a type declaration line,'MSG: pkg/type', followed by
+    the text of the embedded type.
+
+    @param get_deps_dict dict: dictionary returned by get_dependencies call
+    @type  get_deps_dict: dict
+    @return: concatenated text for msg/srv file and embedded msg/srv types.
+    @rtype:  str
+    """
     buff = cStringIO.StringIO()
     sep = '='*80+'\n'
 
@@ -205,14 +230,20 @@ def compute_full_text(get_deps_dict):
     # #1168: remove the trailing \n separator that is added by the concatenation logic
     return buff.getvalue()[:-1]
 
-## Compute dependencies of the specified message/service file
-## @param f str: message or service file to get dependencies for
-## @param stdout pipe: stdout pipe
-## @param stderr pipe: stderr pipe
-## @return dict: 'files': list of files that \a file depends on,
-## 'deps': list of dependencies by type, 'spec': Msgs/Srvs
-## instance.
 def get_file_dependencies(f, stdout=sys.stdout, stderr=sys.stderr):
+    """
+    Compute dependencies of the specified message/service file
+    @param f: message or service file to get dependencies for
+    @type  f: str
+    @param stdout pipe: stdout pipe
+    @type  stdout: file
+    @param stderr pipe: stderr pipe
+    @type  stderr: file
+    @return: 'files': list of files that \a file depends on,
+    'deps': list of dependencies by type, 'spec': Msgs/Srvs
+    instance.
+    @rtype: dict
+    """
     _, package = roslib.packages.get_dir_pkg(f)
     spec = None
     if f.endswith(roslib.msgs.EXT):
@@ -223,20 +254,28 @@ def get_file_dependencies(f, stdout=sys.stdout, stderr=sys.stderr):
         raise Exception("[%s] does not appear to be a message or service"%spec)
     return get_dependencies(spec, package, stdout, stderr)
 
-## Compute dependencies of the specified Msgs/Srvs
-## @param spec roslib.msgs.MsgSpec/roslib.srvs.SrvSpec: message or service instance
-## @param package str: package name
-## @param stdout pipe: (optional) stdout pipe
-## @param stderr pipe: (optional) stderr pipe
-## @param compute_files bool: (optional, default=True) compute file
-## dependencies of message ('files' key in return value)
-## @return dict: 
-##   * 'files': list of files that \a file depends on
-##   * 'deps': list of dependencies by type
-##   * 'spec': Msgs/Srvs instance. 
-##   * 'uniquedeps': list of dependencies with duplicates removed,
-##   * 'package': package that dependencies were generated relative to.
 def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stderr=sys.stderr):
+    """
+    Compute dependencies of the specified Msgs/Srvs
+    @param spec: message or service instance
+    @type  spec: L{roslib.msgs.MsgSpec}/L{roslib.srvs.SrvSpec}
+    @param package: package name
+    @type  package: str
+    @param stdout: (optional) stdout pipe
+    @type  stdout: file
+    @param stderr: (optional) stderr pipe
+    @type  stderr: file
+    @param compute_files: (optional, default=True) compute file
+    dependencies of message ('files' key in return value)
+    @type  compute_files: bool
+    @return: dict: 
+      * 'files': list of files that \a file depends on
+      * 'deps': list of dependencies by type
+      * 'spec': Msgs/Srvs instance. 
+      * 'uniquedeps': list of dependencies with duplicates removed,
+      * 'package': package that dependencies were generated relative to.
+    @rtype: dict    
+    """
 
     # #518: as a performance optimization, we're going to manually control the loading
     # of msgs instead of doing package-wide loads.

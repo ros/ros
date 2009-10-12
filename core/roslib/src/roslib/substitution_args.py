@@ -32,27 +32,43 @@
 #
 # Revision $Id$
 
+"""
+Library for processing XML substitution args. This is currently used
+by roslaunch and xacro, but it is not yet a top-level ROS feature.
+"""
+
 import os
 import cStringIO
 
 import roslib.exceptions
 import roslib.packages
 
-## Base class for exceptions in roslib.substitution_args routines
-class SubstitutionException(roslib.exceptions.ROSLibException): pass
+class SubstitutionException(roslib.exceptions.ROSLibException):
+    """
+    Base class for exceptions in roslib.substitution_args routines
+    """
+    pass
 
-## resolves substitution args (see wiki spec).
-## http://ros.org/wiki/roslaunch
-## @param arg_str str: string to resolve zero or more substitution
-## args in. arg_str may be None, in which case resolve_args will return None
-## @param context dict: dictionary for storing results of the 'anon'
-## substitution arg. multiple calls to resolve_args should use the
-## same context so that 'anon' substitions resolve consistently.
-## @param resolve_anon bool: If True (default), will resolve $(anon foo). If
-## false, will leave these args as-is.
-## @return str: \a arg_str with substitution args resolved
-## @raise SubstitutionException if there is an error resolving substitution args
 def resolve_args(arg_str, context={}, resolve_anon=True):
+    """
+    Resolves substitution args (see wiki spec U{http://ros.org/wiki/roslaunch}).
+
+    @param arg_str: string to resolve zero or more substitution args
+        in. arg_str may be None, in which case resolve_args will
+        return None
+    @type  arg_str: str
+    @param context dict: dictionary for storing results of the 'anon'
+        substitution arg. multiple calls to resolve_args should use
+        the same context so that 'anon' substitions resolve
+        consistently.
+    @type  context: dict
+    @param resolve_anon bool: If True (default), will resolve $(anon
+        foo). If false, will leave these args as-is.
+    @type  resolve_anon: bool
+    @return str: arg_str with substitution args resolved
+    @rtype:  str
+    @raise SubstitutionException: if there is an error resolving substitution args
+    """
     #parse found substitution args
     if not arg_str:
         return arg_str
@@ -122,9 +138,17 @@ _OUT  = 0
 _DOLLAR = 1
 _LP = 2
 _IN = 3
-## state-machine parser for resolve_args. Substitution args are of the form:
-## $(find rospy)/scripts/foo.py $(export some/attribute blar) non-relevant stuff
 def _collect_args(arg_str):
+    """
+    State-machine parser for resolve_args. Substitution args are of the form:
+    $(find rospy)/scripts/foo.py $(export some/attribute blar) non-relevant stuff
+    
+    @param arg_str: argument string to parse args from
+    @type  arg_str: str
+    @raise SubstitutionException: if args are invalidly specified
+    @return: list of arguments
+    @rtype: [str]
+    """
     buff = cStringIO.StringIO()
     args = []
     state = _OUT

@@ -33,6 +33,7 @@
 #include <string>
 #include <string.h>
 #include <boost/shared_ptr.hpp>
+#include <stdint.h>
 
 #define ROSCPP_MESSAGE_HAS_DEFINITION
 

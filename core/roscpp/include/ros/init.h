@@ -87,8 +87,6 @@ void init(int &argc, char **argv, const std::string& name, uint32_t options = 0)
  * \param name Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
  * \param options [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
  *
- * This version of init takes a map<string, string>,
- *
  */
 void init(const M_string& remappings, const std::string& name, uint32_t options = 0);
 

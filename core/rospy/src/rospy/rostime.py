@@ -30,9 +30,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: client.py 2258 2008-09-30 23:03:06Z sfkwc $
+# Revision $Id$
 
-"""ROS time and duration representations, as well as internal routines for managing wallclock versus simulated time."""
+"""
+ROS time and duration representations, as well as internal routines
+for managing wallclock versus a simulated clock.  The important data
+classes are L{Time} and L{Duration}, which represent the ROS 'time'
+and 'duration' primitives, respectively.
+"""
 
 import threading
 import time
@@ -53,17 +58,72 @@ _rostime_cond = threading.Condition()
 
 # subclass roslib to provide abstraction layer
 class Duration(roslib.rostime.Duration):
-    """Duration class for rospy"""
-    pass
+    """
+    Duration represents the ROS 'duration' primitive type, which
+    consists of two integers: seconds and nanoseconds. The Duration
+    class allows you to add and subtract Duration instances, including
+    adding and subtracting from L{Time} instances.
+    """
+    __slots__ = []
+
+    def __init__(self, secs=0, nsecs=0):
+        """
+        Create new Duration instance. secs and nsecs are integers and
+        correspond to the ROS 'duration' primitive type.
+
+        @param secs: seconds
+        @type  secs: int
+        @param nsecs: nanoseconds
+        @type  nsecs: int
+        """
+        super(Duration, self).__init__(secs, nsecs)
 
 class Time(roslib.rostime.Time):
     """
-    Time class for rospy. The L{Time.now()} factory method can initialize Time to the current ROS time.
+    Time represents the ROS 'time' primitive type, which consists of two
+    integers: seconds since epoch and nanoseconds since seconds. Time
+    instances are mutable.
+
+    The L{Time.now()} factory method can initialize Time to the
+    current ROS time and L{from_seconds()} can be used to create a
+    Time instance from the Python's time.time() float seconds
+    representation.
+
+    The Time class allows you to subtract Time instances to compute
+    Durations, as well as add Durations to Time to create new Time
+    instances.
+
+    Usage::
+      now = rospy.Time.now()
+      zero_time = rospy.Time()
+
+      # NOTE: in general, you will want to avoid using time.time() in ROS code
+      import time
+      py_time = rospy.Time.from_seconds(time.time())
     """
-    
+    __slots__ = []    
+
+    def __init__(self, secs=0, nsecs=0):
+        """
+        Constructor: secs and nsecs are integers and correspond to the
+        ROS 'time' primitive type. You may prefer to use the static
+        L{from_seconds()} and L{now()} factory methods instead.
+        
+        @param secs: seconds since epoch
+        @type  secs: int
+        @param nsecs: nanoseconds since seconds (since epoch)
+        @type  nsecs: int
+        """
+        super(Time, self).__init__(secs, nsecs)
+        
     def now():
         """
-        create new L{Time} instance representing current time
+        Create new L{Time} instance representing current time. This
+        can either be wall-clock time or a simulated clock. It is
+        strongly recommended that you use the now() factory to create
+        current time representations instead of reading wall-clock
+        time and create Time instances from it.
+        
         @return: L{Time} instance for current time
         @rtype: L{Time}
         """
@@ -85,8 +145,9 @@ class Time(roslib.rostime.Time):
     
     def from_seconds(float_secs):
         """
-        create new Time instance using time.time() value (float
-        seconds)
+        Create new Time instance from a float seconds representation
+        (e.g. time.time()).
+        
         @param float_secs: time value in time.time() format
         @type  float_secs: float
         @return: Time instance for specified time
@@ -130,6 +191,7 @@ def get_time():
 
 def set_rostime_initialized(val):
     """
+    Internal use.
     Mark rostime as initialized. This flag enables other routines to
     throw exceptions if rostime is being used before the underlying
     system is initialized.

@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: client.py 2258 2008-09-30 23:03:06Z sfkwc $
+# Revision $Id$
 
 """Internal use: support for /rosout logging in rospy"""
 

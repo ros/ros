@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: service.py 2945 2008-11-26 03:48:27Z sfkwc $
+# Revision $Id$
 
 """Internal use: Service-specific extensions for TCPROS support"""
 
@@ -348,7 +348,6 @@ class Service(_Service):
 
     Service Usage::
       s = Service('getmapservice', GetMap, get_map_handler)
-    \endverbatim
     """
 
     def __init__(self, name, service_class, handler, buff_size=DEFAULT_BUFF_SIZE):

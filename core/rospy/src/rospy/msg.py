@@ -44,8 +44,6 @@ import rospy.names
 
 Message = roslib.message.Message
 
-logger = logging.getLogger('rospy.msg')
-
 class AnyMsg(roslib.message.Message):
     """
     Message class to use for subscribing to any topic regardless
@@ -202,6 +200,6 @@ def deserialize_messages(b, msg_queue, data_class, queue_size=None, max_msgs=Non
             else:
                 b.seek(btell)
     except Exception, e:
-        logger.error("cannot deserialize message: EXCEPTION %s", traceback.format_exc())
+        logging.getLogger('rospy.msg').error("cannot deserialize message: EXCEPTION %s", traceback.format_exc())
         raise roslib.message.DeserializationError("cannot deserialize: %s"%str(e))
 

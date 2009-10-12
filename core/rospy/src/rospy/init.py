@@ -55,10 +55,13 @@ DEFAULT_NODE_PORT = 0 #bind to any open port
 DEFAULT_MASTER_PORT=11311 #default port for master's to bind to
 
 _node = None #global var for ros init and easy interpreter access 
-## Retrieve NodeProxy for slave node running on this machine
-##
-## @return rospy.msproxy.NodeProxy: slave node API handle
 def get_node_proxy():
+    """
+    Retrieve L{NodeProxy} for slave node running on this machine.
+
+    @return: slave node API handle
+    @rtype: L{rospy.NodeProxy}
+    """
     return _node
 
 ###################################################

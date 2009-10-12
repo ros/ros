@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: transport.py 2941 2008-11-26 03:19:48Z sfkwc $
+# Revision $Id$
 
 """Internal use: common TCPROS libraries"""
 

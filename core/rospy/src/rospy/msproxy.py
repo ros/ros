@@ -48,7 +48,7 @@ import rospy.paramserver
 class NodeProxy(object):
     """
     Convenience wrapper for ROSNode API and XML-RPC implementation.
-    Eliminates the need to pass in callerId as the first argument.
+    Eliminates the need to pass in node name as the first argument.
     """
 
     def __init__(self, uri):
@@ -82,7 +82,7 @@ class MasterProxy(NodeProxy):
         """
         Constructor for wrapping a remote master instance.
         @param uri: XML-RPC URI of master
-        @type uri: str
+        @type  uri: str
         """
         super(MasterProxy, self).__init__(uri)
 

@@ -53,6 +53,7 @@ from roslib.msg import Header
 
 from rospy.client import spin, myargv, init_node, \
     get_master, get_published_topics, wait_for_service, \
+    get_node_proxy,\
     on_shutdown, \
     get_param, get_param_names, set_param, delete_param, has_param, search_param,\
     sleep, Rate,\
@@ -62,8 +63,8 @@ from rospy.core import is_shutdown, signal_shutdown, \
     logdebug, logwarn, loginfo, logout, logerr, logfatal, \
     parse_rosrpc_uri
 from rospy.exceptions import *
-from rospy.init import get_node_proxy
 from rospy.msg import AnyMsg, Message
+from rospy.msproxy import NodeProxy, MasterProxy
 from rospy.names import get_name, get_caller_id, get_namespace, resolve_name, remap_name
 from rospy.rostime import Time, Duration, get_rostime, get_time
 from rospy.service import ServiceException, ServiceDefinition
@@ -104,6 +105,8 @@ __all__ = [
     'logwarn', 'loginfo',
     'logout', 'logerr', 'logfatal',
     'parse_rosrpc_uri',
+    'MasterProxy',
+    'NodeProxy',    
     'ROSException',
     'ROSSerializationException',
     'ROSInitException',

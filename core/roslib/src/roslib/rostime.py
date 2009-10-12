@@ -32,9 +32,11 @@
 #
 # Revision $Id: rostime.py 3461 2009-01-21 02:12:16Z sfkwc $
 
-import time
+"""
+ROS Time representation, including Duration
+"""
 
-## Time representation
+import time
 
 def _canon(secs, nsecs):
     #canonical form: nsecs is always positive, nsecs < 1 second
@@ -46,13 +48,20 @@ def _canon(secs, nsecs):
         nsecs += 1000000000
     return secs,nsecs
 
-## Base class of Time and Duration representations. Representation
-## is secs+nanoseconds since epoch.
 class _TVal(object):
+    """
+    Base class of L{Time} and L{Duration} representations. Representation
+    is secs+nanoseconds since epoch.
+    """
+
     __slots__ = ['secs', 'nsecs']
-    ## @param secs int/float: seconds. If secs is a float, then nsecs must not be set or 0
-    ## @param nsecs int: nanoseconds
     def __init__(self, secs=0, nsecs=0):
+        """
+        @param secs: seconds. If secs is a float, then nsecs must not be set or 0
+        @type  secs: int/float
+        @param nsecs: nanoseconds
+        @type  nsecs: int
+        """
         if type(secs) != int:
             # float secs constructor
             if nsecs != 0:
@@ -63,24 +72,44 @@ class _TVal(object):
 
         self.secs, self.nsecs = _canon(secs, nsecs)
 
-    ## @return True if time is zero (secs and nsecs are zero)
     def is_zero(self):
+        """
+        @return: True if time is zero (secs and nsecs are zero)
+        @rtype: bool
+        """
         return self.secs == 0 and self.nsecs == 0
     
-    ## set time using separate secs and nsecs values
     def set(self, secs, nsecs):
+        """
+        Set time using separate secs and nsecs values
+        
+        @param secs: seconds since epoch
+        @type  secs: int
+        @param nsecs: nanoseconds since seconds
+        @type  nsecs: int
+        """
         self.secs = secs
         self.nsecs = nsecs
 
-    ## canonicalize the field representation in this instance.  should
-    #  only be used when manually setting secs/nsecs slot values, as
-    #  in deserialization.
     def canon(self):
+        """
+        Canonicalize the field representation in this instance.  should
+        only be used when manually setting secs/nsecs slot values, as
+        in deserialization.
+        """
         self.secs, self.nsecs = _canon(self.secs, self.nsecs)
         
     def to_seconds(self):
+        """
+        @return: time as float seconds (same as time.time() representation)
+        @rtype: float
+        """
         return float(self.secs) + float(self.nsecs) / 1e9
     def tons(self):
+        """
+        @return: time as nanoseconds
+        @rtype: long
+        """
         return self.secs * long(1e9) + self.nsecs
 
     def __str__(self):
@@ -90,24 +119,39 @@ class _TVal(object):
         return "rostime._TVal[%d]"%self.tons()
 
     def __nonzero__(self):
+        """
+        Check if time value is zero
+        """
         return self.secs or self.nsecs
 
     def __lt__(self, other):
+        """
+        < test for time values
+        """
         try:
             return self.__cmp__(other) < 0
         except TypeError:
             return NotImplemented
     def __le__(self, other):
+        """
+        <= test for time values
+        """
         try:
             return self.__cmp__(other) <= 0
         except TypeError:
             return NotImplemented
     def __gt__(self, other):
+        """
+        > test for time values
+        """
         try:
             return self.__cmp__(other) > 0
         except TypeError:
             return NotImplemented
     def __ge__(self, other):
+        """
+        >= test for time values
+        """
         try:
             return self.__cmp__(other) >= 0
         except TypeError:
@@ -139,6 +183,7 @@ class Time(_TVal):
         """
         Constructor: secs and nsecs are integers. You may prefer to use the static L{from_seconds()} factory
         method instead.
+        
         @param secs: seconds since epoch
         @type  secs: int
         @param nsecs: nanoseconds since seconds (since epoch)
@@ -148,31 +193,52 @@ class Time(_TVal):
         if self.secs < 0:
             raise TypeError("time values must be positive")
 
-    ## create new Time instance using time.time() value (float
-    ## seconds)
-    ## @param float_secs: time value in time.time() format
-    ## @return Time instance for specified time
     def from_seconds(float_secs):
+        """
+        Create new Time instance using time.time() value (float
+        seconds)
+        
+        @param float_secs: time value in time.time() format
+        @type  float_secs: float
+        @return: Time instance for specified time
+        @rtype: L{Time}
+        """
         secs = int(float_secs)
         nsecs = int((float_secs - secs) * 1000000000)
         return Time(secs, nsecs)
     
     from_seconds = staticmethod(from_seconds)
 
-    ## get Time in time.time() format. alias of to_seconds()
-    ## @return float: time in floating point secs (time.time() format)
     def to_time(self):
+        """
+        Get Time in time.time() format. alias of to_seconds()
+        
+        @return: time in floating point secs (time.time() format)
+        @rtype: float
+        """
         return self.to_seconds()
 
     def __repr__(self):
         return "rostime.Time[%d]"%self.tons()
 
     def __add__(self, other):
+        """
+        Add duration to this time
+        
+        @param other: duration
+        @type  other: L{Duration}
+        """
         if not isinstance(other, Duration):
             return NotImplemented
         return Time(self.secs + other.secs, self.nsecs + other.nsecs)
 
     def __sub__(self, other):
+        """
+        Subtract time or duration from this time
+        @param other: duration
+        @type  other: L{Duration}/L{Time}
+        @return: L{Duration} if other is a L{Time}, L{Time} if other is a L{Duration}
+        """
         if isinstance(other, Time):
             return Duration(self.secs - other.secs, self.nsecs - other.nsecs)
         elif isinstance(other, Duration):
@@ -180,8 +246,12 @@ class Time(_TVal):
         else:
             return NotImplemented
 
-
     def __cmp__(self, other):
+        """
+        Compare to another time
+        @param other: Time
+        @type  other: L{Time}
+        """
         if not isinstance(other, Time):
             raise TypeError("cannot compare to non-Time")
         nanos = self.tons() - other.tons()
@@ -192,6 +262,13 @@ class Time(_TVal):
         return -1
 
     def __eq__(self, other):
+        """
+        Equals test for Time. Comparison assumes that both time
+        instances are in canonical representationly compares fields.
+        
+        @param other: Time
+        @type  other: L{Time}
+        """
         if not isinstance(other, Time):
             return False
         return self.secs == other.secs and self.nsecs == other.nsecs
@@ -220,7 +297,7 @@ class Duration(_TVal):
 
     def from_seconds(float_seconds):
         """
-        Create new Duration instance from float seconds format
+        Create new Duration instance from float seconds format.
         
         @param float_seconds: time value in specified as float seconds
         @type  float_seconds: float
@@ -234,13 +311,28 @@ class Duration(_TVal):
     from_seconds = staticmethod(from_seconds)
 
     def __neg__(self):
+        """
+        @return: Negative value of this duration
+        @rtype:  L{Duration}
+        """
         return Duration(-self.secs, -self.nsecs)
     def __abs__(self):
+        """
+        Absolute value of this duration
+        @return: positive duration
+        @rtype:  L{Duration}
+        """
         if self.secs > 0:
             return self
         return self.__neg__()
 
     def __add__(self, other):
+        """
+        Add duration to this duration, or this duration to a time, creating a new time value as a result.
+        @param other: duration or time
+        @type  other: L{Duration}/L{Time}
+        @return: L{Duration} if other is a L{Duration}, L{Time} if other is a L{Time}
+        """
         if isinstance(other, Time):
             return other.__add__(self)
         elif isinstance(other, Duration):
@@ -248,11 +340,24 @@ class Duration(_TVal):
         else:
             return NotImplemented
     def __sub__(self, other):
+        """
+        Subtract duration from this duration, returning a new duration
+        @param other: duration
+        @type  other: L{Duration}
+        @return: L{Duration} 
+        """
         if not isinstance(other, Duration):
             return NotImplemented
         return Duration(self.secs-other.secs, self.nsecs-other.nsecs)        
 
     def __mul__(self, val):
+        """
+        Multiply this duration by an integer
+        @param val: multiplication factor
+        @type  val: int
+        @return: Duration multiplied by val
+        @rtype:  L{Duration}
+        """
         if not type(val) == int:
             return NotImplemented
         return Duration(self.secs * val, self.nsecs * val)

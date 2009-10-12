@@ -126,35 +126,35 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     only allowed if the arguments are identical as the side-effects of
     this method are not reversible.
 
-    @param name: Node's name. This parameter cannot contain namespaces (i.e. '/')
+    @param name: Node's name. This parameter must be a base name,
+        meaning that it cannot contain namespaces (i.e. '/')
     @type  name: string
     
     @param argv: Command line arguments to this program. ROS reads
-    these arguments to find renaming params. Defaults to sys.argv.
+        these arguments to find renaming params. Defaults to sys.argv.
     @type  argv: [str]
 
-    @param anonymous: if True, a name will be auto-generated for
-    the node using name as the base.  This is useful when you wish
-    to have multiple instances of the same node and don't care about
-    their actual names (e.g. tools, guis). name will be used as the
-    stem of the auto-generated name. NOTE: you cannot remap the name
-    of an anonymous node.
-    @type  anonymous: bool
+    @param anonymous: if True, a name will be auto-generated for the
+        node using name as the base.  This is useful when you wish to
+        have multiple instances of the same node and don't care about
+        their actual names (e.g. tools, guis). name will be used as
+        the stem of the auto-generated name. NOTE: you cannot remap
+        the name of an anonymous node.  @type anonymous: bool
 
-    @param log_level: log level for sending message to /rosout,
-    which is INFO by default. For convenience, you may use
-    rospy.DEBUG, rospy.INFO, rospy.ERROR, rospy.WARN, rospy.FATAL,
+    @param log_level: log level for sending message to /rosout, which
+        is INFO by default. For convenience, you may use rospy.DEBUG,
+        rospy.INFO, rospy.ERROR, rospy.WARN, rospy.FATAL,
     @type  log_level: int
     
-    @param disable_signals: If True, rospy will not register its
-    own signal handlers. You must set this flag if (a) you are unable
-    to call init_node from the main thread and/or you are using rospy
-    in an environment where you need to control your own signal
-    handling (e.g. WX).
+    @param disable_signals: If True, rospy will not register its own
+        signal handlers. You must set this flag if (a) you are unable
+        to call init_node from the main thread and/or you are using
+        rospy in an environment where you need to control your own
+        signal handling (e.g. WX).
     @type  disable_signals: bool
     
     @param disable_rostime: for rostests only, suppresses
-    automatic subscription to rostime
+        automatic subscription to rostime
     @type  disable_rostime: bool
 
     @raise ROSInitException: if initialization/registration fails

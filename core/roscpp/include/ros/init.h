@@ -74,7 +74,7 @@ typedef init_options::InitOption InitOption;
  *
  * \param argc
  * \param argv
- * \param name Name of this node
+ * \param name Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
  * \param options [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
  *
  */
@@ -83,8 +83,11 @@ void init(int &argc, char **argv, const std::string& name, uint32_t options = 0)
 /**
  * \brief alternate ROS initialization function.
  *
- * This version of init takes a map<string, string>, where each one constitutes
- * a name remapping, or one of the special remappings like __name, __master, __ns, etc.
+ * \param remappings A map<string, string> where each one constitutes a name remapping, or one of the special remappings like __name, __master, __ns, etc.
+ * \param name Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
+ * \param options [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
+ *
+ * This version of init takes a map<string, string>,
  *
  */
 void init(const M_string& remappings, const std::string& name, uint32_t options = 0);
@@ -92,8 +95,9 @@ void init(const M_string& remappings, const std::string& name, uint32_t options 
 /**
  * \brief alternate ROS initialization function.
  *
- * This version of init takes a vector of string pairs, where each one constitutes
- * a name remapping, or one of the special remappings like __name, __master, __ns, etc.
+ * \param remappings A vector<pair<string, string> > where each one constitutes a name remapping, or one of the special remappings like __name, __master, __ns, etc.
+ * \param name Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
+ * \param options [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
  *
  */
 void init(const VP_string& remapping_args, const std::string& name, uint32_t options = 0);

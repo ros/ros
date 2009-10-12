@@ -32,6 +32,17 @@
 #
 # Revision $Id: network.py 3371 2009-01-13 21:53:02Z sfkwc $
 
+"""
+Network APIs for ROS-based systems, including IP address and ROS
+TCP header libraries. Because ROS-based runtimes must respect the
+ROS_IP and ROS_HOSTNAME environment variables, ROS-specific APIs
+are necessary for correctly retrieving local IP address
+information.
+
+roslib.network supports the netifaces library as an optional
+add-on. netifaces improves IP address configuration detection.
+"""
+
 import os
 import socket
 import string
@@ -43,35 +54,31 @@ import urlparse
 import roslib.exceptions
 import roslib.rosenv 
 
-## Network APIs for ROS-based systems, including IP address and ROS
-## TCP header libraries. Because ROS-based runtimes must respect the
-## ROS_IP and ROS_HOSTNAME environment variables, ROS-specific APIs
-## are necessary for correctly retrieving local IP address
-## information.
-
 SIOCGIFCONF=0x8912
 SIOCGIFADDR = 0x8915
 
 try:
     import netifaces
-    ## @internal
     _use_netifaces = True
 except:
     # NOTE: in rare cases, I've seen Python fail to extract the egg
     # cache when launching multiple python nodes.  Thus, we do
     # except-all instead of except ImportError (kwc).
-    ## @internal
     _use_netifaces = False
 
-## convenience routine to handle parsing and validation of HTTP URL
-## port due to the fact that Python only provides easy accessors in
-## Python 2.5 and later. Validation checks that the protocol and host
-## are set.
-## @param url str: URL to parse
-## @return str, int: hostname and port number in URL or 80
-## (default).
-## @throws ValueError if the url does not validate
 def parse_http_host_and_port(url):
+    """
+    Convenience routine to handle parsing and validation of HTTP URL
+    port due to the fact that Python only provides easy accessors in
+    Python 2.5 and later. Validation checks that the protocol and host
+    are set.
+    
+    @param url: URL to parse
+    @type  url: str
+    @return: hostname and port number in URL or 80 (default).
+    @rtype: (str, int)
+    @throws ValueError: if the url does not validate
+    """
     # can't use p.port because that's only available in Python 2.5
     if not url:
         raise ValueError('not a valid URL')        
@@ -85,14 +92,20 @@ def parse_http_host_and_port(url):
         hostname, port = p[1], 80
     return hostname, port
     
-## @internal
 def _is_unix_like_platform():
+    """
+    @return: true if the platform conforms to UNIX/POSIX-style APIs
+    @rtype: bool
+    """
     #return platform.system() in ['Linux', 'Mac OS X', 'Darwin']
     return platform.system() in ['Linux']
 
-## @return str: ROS_IP/ROS_HOSTNAME override or None
-## @throws ValueError if ROS_IP/ROS_HOSTNAME/__ip/__hostname are invalidly specified
 def get_address_override():
+    """
+    @return: ROS_IP/ROS_HOSTNAME override or None
+    @rtype: str
+    @throws ValueError if ROS_IP/ROS_HOSTNAME/__ip/__hostname are invalidly specified
+    """
     # #998: check for command-line remappings first
     for arg in sys.argv:
         if arg.startswith('__hostname:=') or arg.startswith('__ip:='):
@@ -110,8 +123,11 @@ def get_address_override():
         return os.environ[roslib.rosenv.ROS_IP]
     return None
 
-## @return str: default local IP address (e.g. eth0). May be overriden by ROS_IP/ROS_HOSTNAME/__ip/__hostname
 def get_local_address():
+    """
+    @return: default local IP address (e.g. eth0). May be overriden by ROS_IP/ROS_HOSTNAME/__ip/__hostname
+    @rtype: str
+    """
     override = get_address_override()
     if override:
         return override
@@ -125,8 +141,11 @@ def get_local_address():
     else: # loopback 
         return '127.0.0.1'
 
-## @return [str]: known local addresses. Not affected by ROS_IP/ROS_HOSTNAME
 def get_local_addresses():
+    """
+    @return: known local addresses. Not affected by ROS_IP/ROS_HOSTNAME
+    @rtype:  [str]
+    """
     if _use_netifaces:
         # #552: netifaces is a more robust package for looking up
         # #addresses on multiple platforms (OS X, Unix, Windows)
@@ -164,11 +183,15 @@ def get_local_addresses():
         return [socket.gethostbyname(socket.gethostname())]
 
 
-## @param address str: (optional) address to compare against
-## @return address TCP/IP sockets should use for binding. This is
-## generally 0.0.0.0, but if \a address or ROS_IP/ROS_HOSTNAME is set
-## to localhost it will return 127.0.0.1
 def get_bind_address(address=None):
+    """
+    @param address: (optional) address to compare against
+    @type  address: str
+    @return: address TCP/IP sockets should use for binding. This is
+    generally 0.0.0.0, but if \a address or ROS_IP/ROS_HOSTNAME is set
+    to localhost it will return 127.0.0.1
+    @rtype: str
+    """
     if address is None:
         address = get_address_override()
     if address and \
@@ -178,11 +201,14 @@ def get_bind_address(address=None):
     else:
         return '0.0.0.0'
 
+# #528: semi-complicated logic for determining XML-RPC URI
 def get_host_name():
-    ## #528: semi-complicated logic for determining XML-RPC URI
-    ## - if ROS_IP/ROS_HOSTNAME is set, use that address
-    ## - if the hostname returns a non-localhost value, use that
-    ## - use whatever network.get_local_address() returns
+    """
+    Determine host-name for use in host-name-based addressing (e.g. XML-RPC URIs):
+     - if ROS_IP/ROS_HOSTNAME is set, use that address
+     - if the hostname returns a non-localhost value, use that
+     - use whatever L{get_local_address()} returns
+    """
     hostname = get_address_override()
     if not hostname:
         try:
@@ -193,12 +219,18 @@ def get_host_name():
             hostname = network.get_local_address()
     return hostname
 
-## utility routine for determine the XMLRPC URI for local servers. this handles
-## the search logic of checking ROS environment variables, the known hostname, and local
-## interface IP addresses to determine the best possible URI.
-## @param port int: port that server is running on
-## @return str: XMLRPC URI    
 def create_local_xmlrpc_uri(port):
+    """
+    Determine the XMLRPC URI for local servers. This handles the search
+    logic of checking ROS environment variables, the known hostname,
+    and local interface IP addresses to determine the best possible
+    URI.
+    
+    @param port: port that server is running on
+    @type  port: int
+    @return: XMLRPC URI    
+    @rtype: str
+    """
     #TODO: merge logic in roslib.xmlrpc with this routine
     # in the future we may not want to be locked to http protocol nor root path
     return 'http://%s:%s/'%(get_host_name(), port)
@@ -206,20 +238,25 @@ def create_local_xmlrpc_uri(port):
 
 ## handshake utils ###########################################
 
-#TODO: spec is changing so that we can send message definitions
+class ROSHandshakeException(roslib.exceptions.ROSLibException):
+    """
+    Exception to represent errors decoding handshake
+    """
+    pass
 
-## Exception to represent errors decoding handshake
-class ROSHandshakeException(roslib.exceptions.ROSLibException): pass
-
-## Decode serialized ROS handshake header into a Python dictionary
-##
-## header is a list of string key=value pairs, each prefixed by a
-## 4-byte length field. It is preceeded by a 4-bytelength field for
-## the entire header.
-## @param header_str str: encoded header string. May contain extra
-## data at the end.
-## @return dict {str: str} : key value pairs encoded in \a header_str
 def decode_ros_handshake_header(header_str):
+    """
+    Decode serialized ROS handshake header into a Python dictionary
+
+    header is a list of string key=value pairs, each prefixed by a
+    4-byte length field. It is preceeded by a 4-byte length field for
+    the entire header.
+    
+    @param header_str: encoded header string. May contain extra data at the end.
+    @type  header_str: str
+    @return: key value pairs encoded in \a header_str
+    @rtype: {str: str} 
+    """
     (size, ) = struct.unpack('<I', header_str[0:4])
     size += 4 # add in 4 to include size of size field
     header_len = len(header_str)
@@ -244,13 +281,20 @@ def decode_ros_handshake_header(header_str):
         d[key.strip()] = value
     return d
     
-## Read in tcpros header off the socket \a sock using buffer \a b.
-## @param sock socket: socket must be in blocking mode
-## @param b cStringIO: buff to use
-## @param buff_size: incoming buffer size to use
-## @return dict {str: str} : key value pairs encoded in handshake 
-## @throws ROSHandshakeException If header format does not match expected
 def read_ros_handshake_header(sock, b, buff_size):
+    """
+    Read in tcpros header off the socket \a sock using buffer \a b.
+    
+    @param sock: socket must be in blocking mode
+    @type  sock: socket
+    @param b: buffer to use
+    @type  b: cStringIO
+    @param buff_size: incoming buffer size to use
+    @type  buff_size: int
+    @return: key value pairs encoded in handshake
+    @rtype: {str: str}
+    @raise ROSHandshakeException: If header format does not match expected
+    """
     header_str = None
     while not header_str:
         d = sock.recv(buff_size)
@@ -277,28 +321,33 @@ def read_ros_handshake_header(sock, b, buff_size):
     return decode_ros_handshake_header(bval)
 
 def encode_ros_handshake_header(header):
-    s = '\n'.join(["%s=%s"%(k,v) for k,v in header.iteritems()]) + '\n'
-    return struct.pack('<I', len(s)) + s
+    """
+    Encode ROS handshake header as a byte string. Each header
+    field is a string key value pair. The encoded header is
+    prefixed by a length field, as is each field key/value pair.
+    key/value pairs a separated by a '=' equals sign.
 
-## Encode ROS handshake header as a byte string. Each header
-## field is a string key value pair. The encoded header is
-## prefixed by a length field, as is each field key/value pair.
-## key/value pairs a separated by a '=' equals sign.
-##
-## FORMAT: (4-byte length + [4-byte field length + field=value ]*)
-##
-## @param header dict: header field keys/values
-## @return str: header encoded as byte string
-def encode_ros_handshake_header(header):
+    FORMAT: (4-byte length + [4-byte field length + field=value ]*)
+
+    @param header: header field keys/values
+    @type  header: dict
+    @return: header encoded as byte string
+    @rtype: str
+    """    
     fields = ["%s=%s"%(k,v) for k,v in header.iteritems()]
     s = ''.join(["%s%s"%(struct.pack('<I', len(f)), f) for f in fields])
     return struct.pack('<I', len(s)) + s
                                         
-## Write ROS handshake header \a header to socket \a sock
-## @param sock: socket to write to (must be in blocking mode)
-## @param header dict: header field keys/values
-## @return int: Number of bytes sent (for statistics)
 def write_ros_handshake_header(sock, header):
+    """
+    Write ROS handshake header header to socket sock
+    @param sock: socket to write to (must be in blocking mode)
+    @type  sock: socket.socket
+    @param header: header field keys/values
+    @type  header: {str : str}
+    @return: Number of bytes sent (for statistics)
+    @rtype: int
+    """
     s = encode_ros_handshake_header(header)
     sock.sendall(s)
     return len(s) #STATS

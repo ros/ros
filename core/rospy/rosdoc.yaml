@@ -1,1 +1,2 @@
  - builder: epydoc
+   exclude: [rospy.init, rospy.simtime, rospy.masterdata, rospy.masterslave, rospy.msnode, rospy.paramserver, rospy.registration, rospy.rosout, rospy.tcpros, rospy.tcpros_base, rospy.tcpros_pubsub, rospy.threadpool, rospy.udpros, rospy.validators, rospy.zenmaster]

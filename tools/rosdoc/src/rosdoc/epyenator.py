@@ -63,7 +63,10 @@ def generate_epydoc(ctx):
                 if not os.path.isdir(html_dir):
                     os.makedirs(html_dir)
                     
-                command = ['epydoc', '--html', package, '-o', html_dir]
+                command = ['epydoc', '--html', package, '--inheritance', 'included', '--no-private', '-o', html_dir]
+                if 'exclude' in rd_config:
+                    for s in rd_config['exclude']:
+                        command.extend(['--exclude', s])
 
                 # determine the python path of the package
                 import roslib.launcher

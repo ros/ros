@@ -128,13 +128,22 @@ class _TVal(object):
             return False
         return self.tons() == other.tons()
 
-## \ingroup clientapi
-## Time contains the ROS-wide 'time' primitive representation, which
-## consists of two integers: seconds since epoch and nanoseconds since
-## seconds. Time instances are mutable.
 class Time(_TVal):
+    """
+    Time contains the ROS-wide 'time' primitive representation, which
+    consists of two integers: seconds since epoch and nanoseconds since
+    seconds. Time instances are mutable.
+    """
     __slots__ = ['secs', 'nsecs']
     def __init__(self, secs=0, nsecs=0):
+        """
+        Constructor: secs and nsecs are integers. You may prefer to use the static L{from_seconds()} factory
+        method instead.
+        @param secs: seconds since epoch
+        @type  secs: int
+        @param nsecs: nanoseconds since seconds (since epoch)
+        @type  nsecs: int
+        """
         super(Time, self).__init__(secs, nsecs)
         if self.secs < 0:
             raise TypeError("time values must be positive")
@@ -187,20 +196,37 @@ class Time(_TVal):
             return False
         return self.secs == other.secs and self.nsecs == other.nsecs
 
-## \ingroup clientapi
-## representation of ROS 'duration' primitive    
 class Duration(_TVal):
+    """
+    Duration represents the ROS 'duration' primitive, which consists
+    of two integers: seconds and nanoseconds. The Duration class
+    allows you to add and subtract Duration instances, including
+    adding and subtracting from L{Time} instances.
+    """
     __slots__ = ['secs', 'nsecs']
     def __init__(self, secs=0, nsecs=0):
+        """
+        Create new Duration instance. secs and nsecs are integers and correspond to the ROS 'duration' primitive.
+
+        @param secs: seconds
+        @type  secs: int
+        @param nsecs: nanoseconds
+        @type  nsecs: int
+        """
         super(Duration, self).__init__(secs, nsecs)
 
     def __repr__(self):
         return "rostime.Duration[%d]"%self.tons()
 
-    ## create new Duration instance from float seconds format
-    ## @param float_seconds: time value in specified as float seconds
-    ## @return Duration instance for specified float_seconds
     def from_seconds(float_seconds):
+        """
+        Create new Duration instance from float seconds format
+        
+        @param float_seconds: time value in specified as float seconds
+        @type  float_seconds: float
+        @return: Duration instance for specified float_seconds
+        @rtype: Duration
+        """
         secs = int(float_seconds)
         nsecs = int((float_seconds - secs) * 1000000000)
         return Duration(secs, nsecs)

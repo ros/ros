@@ -32,7 +32,13 @@
 #
 # Revision $Id$
 
-## XMLRPC support
+"""
+Common XML-RPC for higher-level libraries running XML-RPC libraries in
+ROS. In particular, this library provides common handling for URI
+calculation based on ROS environment variables.
+
+The common entry point for most libraries is the L{XmlRpcNode} class.
+"""
 
 import logging
 import socket
@@ -42,53 +48,74 @@ import traceback
 from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 import SocketServer
 
-import roslib.network 
+import roslib.network
+import roslib.exceptions
 
 class SilenceableXMLRPCRequestHandler(SimpleXMLRPCRequestHandler):
     def log_message(self, format, *args):
         if DEBUG:
             SimpleXMLRPCRequestHandler.log_message(self, format, *args)
     
-## Adds ThreadingMixin to SimpleXMLRPCServer to support multiple concurrent
-## requests via threading. Also makes logging toggleable.
 class ThreadingXMLRPCServer(SocketServer.ThreadingMixIn, SimpleXMLRPCServer):
+    """
+    Adds ThreadingMixin to SimpleXMLRPCServer to support multiple concurrent
+    requests via threading. Also makes logging toggleable.
+    """
     def __init__(self, addr, log_requests=1):
+        """
+        Overrides SimpleXMLRPCServer to set option to allow_reuse_address.
+        """
         # allow_reuse_address defaults to False in Python 2.4.  We set it 
         # to True to allow quick restart on the same port.  This is equivalent 
         # to calling setsockopt(SOL_SOCKET,SO_REUSEADDR,1)
         self.allow_reuse_address = True
         SimpleXMLRPCServer.__init__(self, addr, SilenceableXMLRPCRequestHandler, log_requests)
 
-    ## override ThreadingMixin, which sends errors to stderr
     def handle_error(self, request, client_address):
+        """
+        override ThreadingMixin, which sends errors to stderr
+        """
         if logging and traceback:
             logger = logging.getLogger('xmlrpc')
             if logger:
                 logger.error(traceback.format_exc())
     
-## Adds ThreadingMixin to SimpleXMLRPCServer to support multiple concurrent
-## requests via forking. Also makes logging toggleable.      
 class ForkingXMLRPCServer(SocketServer.ForkingMixIn, SimpleXMLRPCServer):
+    """
+    Adds ThreadingMixin to SimpleXMLRPCServer to support multiple concurrent
+    requests via forking. Also makes logging toggleable.      
+    """
     def __init__(self, addr, request_handler=SilenceableXMLRPCRequestHandler, log_requests=1):
         SimpleXMLRPCServer.__init__(self, addr, request_handler, log_requests)
     
 
-## Base handler API for handlers used with XmlRpcNode. Public methods will be 
-## exported as XML RPC methods.
 class XmlRpcHandler(object):
-    ## callback into handler to inform it of XML-RPC URI
-    def _ready(self, uri): pass
-    
-## Generic XML-RPC node. Handles the additional complexity of binding
-## an XML-RPC server to an arbitrary port. 
-## XmlRpcNode is initialized when the uri field has a value.
-class XmlRpcNode(object):
+    """
+    Base handler API for handlers used with XmlRpcNode. Public methods will be 
+    exported as XML RPC methods.
+    """
 
-    ## XML RPC Node constructor
-    ## @param self
-    ## @param port int: port to use for starting XML-RPC API. Set to 0 or omit to bind to any available port.
-    ## @param rpc_handler XmlRpcHandler: XML-RPC API handler for node. 
+    def _ready(self, uri):
+        """
+        callback into handler to inform it of XML-RPC URI
+        """
+        pass
+    
+class XmlRpcNode(object):
+    """
+    Generic XML-RPC node. Handles the additional complexity of binding
+    an XML-RPC server to an arbitrary port. 
+    XmlRpcNode is initialized when the uri field has a value.
+    """
+
     def __init__(self, port=0, rpc_handler=None):
+        """
+        XML RPC Node constructor
+        @param port: port to use for starting XML-RPC API. Set to 0 or omit to bind to any available port.
+        @type  port: int
+        @param rpc_handler: XML-RPC API handler for node.
+        @type  rpc_handler: XmlRpcHandler
+        """
         super(XmlRpcNode, self).__init__()
 
         self.handler = rpc_handler
@@ -98,10 +125,12 @@ class XmlRpcNode(object):
             port = string.atoi(port)
         self.port = port
 
-    ## Terminate i/o connections for this server.
-    ## @param self
-    ## @param reason str: human-readable debug string
     def shutdown(self, reason):
+        """
+        Terminate i/o connections for this server.
+        @param reason: human-readable debug string
+        @type  reason: str
+        """
         if self.server:
             server = self.server
             handler = self.handler
@@ -117,23 +146,27 @@ class XmlRpcNode(object):
             #    server.socket.close()
             #    server.server_close()
                 
-    ## Initiate a thread to run the XML RPC server. Uses thread.start_new_thread.
-    ## @param self
     def start(self):
+        """
+        Initiate a thread to run the XML RPC server. Uses thread.start_new_thread.
+        """
         thread.start_new_thread(self.run, ())
 
-    ## Sets the XML-RPC URI. Defined as a separate method as a hood
-    ## for subclasses to bootstrap initialization. Should not be called externally.
-    ## @param self
-    ## @param uri str: XMLRPC URI.         
     def set_uri(self, uri):
+        """
+        Sets the XML-RPC URI. Defined as a separate method as a hood
+        for subclasses to bootstrap initialization. Should not be called externally.
+        @param uri: XMLRPC URI.
+        @type  uri: str
+        """
         self.uri = uri
         
-    ## Main processing thread body.
-    ## @param self
-    ## @throws socket.error If server cannot bind
-    ## @throws Exception If unknown error occurs
     def run(self):
+        """
+        Main processing thread body.
+        @raise socket.error: If server cannot bind
+        @raise roslib.exceptions.ROSLibException: If unknown error occurs
+        """
         logger = logging.getLogger('xmlrpc')            
         try:
             log_requests = 0
@@ -147,12 +180,12 @@ class XmlRpcNode(object):
             if not self.port:
                 self.port = self.server.socket.getsockname()[1] #Python 2.4
             if not self.port:
-                raise Exception("Unable to retrieve local address binding")
+                raise roslib.exceptions.ROSLibException("Unable to retrieve local address binding")
 
-            ## #528: semi-complicated logic for determining XML-RPC URI
-            ## - if ROS_IP/ROS_HOSTNAME is set, use that address
-            ## - if the hostname returns a non-localhost value, use that
-            ## - use whatever roslib.network.get_local_address() returns
+            # #528: semi-complicated logic for determining XML-RPC URI
+            # - if ROS_IP/ROS_HOSTNAME is set, use that address
+            # - if the hostname returns a non-localhost value, use that
+            # - use whatever roslib.network.get_local_address() returns
             uri = None
             override = roslib.network.get_address_override()
             if override:

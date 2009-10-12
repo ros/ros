@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: network.py 3371 2009-01-13 21:53:02Z sfkwc $
+# Revision $Id$
 
 """
 Network APIs for ROS-based systems, including IP address and ROS

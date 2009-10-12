@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: xmlrpc.py 2796 2008-11-13 02:18:31Z gerkey $
+# Revision $Id$
 
 ## XMLRPC support
 

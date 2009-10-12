@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: __init__.py 3528 2009-01-23 22:34:20Z sfkwc $
+# Revision $Id$
 
 """
 roslib has a very important role in all Python code written for ROS:

@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: rostime.py 3461 2009-01-21 02:12:16Z sfkwc $
+# Revision $Id$
 
 """
 ROS Time representation, including Duration

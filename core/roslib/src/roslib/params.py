@@ -30,8 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: params.py 2352 2008-10-07 20:41:05Z sfkwc $
-# $Author: sfkwc $
+# Revision $Id$
+# $Author$
 """
 Utilities for accessing the Parameter Server
 """

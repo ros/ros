@@ -31,8 +31,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: launcher.py 3528 2009-01-23 22:34:20Z sfkwc $
-# $Author: sfkwc $
+# Revision $Id$
+# $Author$
 
 ## Python path loader for python scripts and applications. Requires
 ## use of ROS manifest files.

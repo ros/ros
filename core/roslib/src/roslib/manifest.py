@@ -31,8 +31,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: manifest.py 3357 2009-01-13 07:13:05Z jfaustwg $
-# $Author: jfaustwg $
+# Revision $Id$
+# $Author$
 
 """
 Python parser for rospack manifest.xml files. See U{http://ros.org/wiki/Manifest}

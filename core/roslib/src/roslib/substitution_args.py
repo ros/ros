@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: core.py 3875 2009-02-25 00:30:37Z sfkwc $
+# Revision $Id$
 
 import os
 import cStringIO

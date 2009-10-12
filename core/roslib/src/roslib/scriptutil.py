@@ -30,8 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: scriptutil.py 3544 2009-01-24 00:09:21Z sfkwc $
-# $Author: sfkwc $
+# Revision $Id$
+# $Author$
 
 ## Common ros script utilities, such as methods convenience methods
 ## for creating master xmlrpc proxies and executing rospack. Use of

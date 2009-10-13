@@ -544,17 +544,37 @@ msg_spec::msg_spec(const string &_spec_file, const string &_package,
             throw std::runtime_error("couldn't open spec file");
 
         if (is_root) {
-            // compute md5sum
-            string cmd = string("`rospack find roslib`/scripts/gendeps --md5 ") + spec_file;
-            FILE *md5pipe = popen(cmd.c_str(), "r");
-            if (!md5pipe)
-                throw std::runtime_error("couldn't launch md5sum in genmsg_oct\n");
-            char md5buf[PATH_MAX];
-            if (!fgets(md5buf, PATH_MAX, md5pipe))
-                throw std::runtime_error("couldn't read md5sum pipe in genmsg_oct\n");
-            char *md5str = strtok(md5buf, " \t\n");
-            md5sum = string(md5str);
-            // call pclose sometime
+            {
+                // compute md5sum
+                string cmd = string("`rospack find roslib`/scripts/gendeps --md5 ") + spec_file;
+                FILE *md5pipe = popen(cmd.c_str(), "r");
+                if (!md5pipe)
+                    throw std::runtime_error("couldn't launch gendeps in genmsg_cpp\n");
+                char md5buf[PATH_MAX];
+                if (!fgets(md5buf, PATH_MAX, md5pipe))
+                    throw std::runtime_error("couldn't read md5sum pipe in genmsg_cpp\n");
+                char *md5str = strtok(md5buf, " \t\n");
+                md5sum = string(md5str);
+                // call pclose sometime
+            }
+
+            {
+                std::stringstream ss;
+                // compute concatenated definition
+                string cmd = string("`rospack find roslib`/scripts/gendeps --cat ") + spec_file;
+                FILE *catpipe = popen(cmd.c_str(), "r");
+                if (!catpipe)
+                    throw std::runtime_error("couldn't launch gendeps in genmsg_cpp\n");
+                char buf[1024];
+                while (fgets(buf, 1024, catpipe))
+                    {
+                        std::string str(buf, 1024);
+                        ss << buf;
+                    }
+                // call pclose sometime
+
+                full_definition = ss.str();
+            }
         }
 
         const int LINEBUF_LEN = 1024;
@@ -772,18 +792,53 @@ void msg_spec::emit_cpp_class(FILE *f, bool for_srv, const string &srv_name)
 
     // add the internal functions
     fprintf(f, "msg.md5sum_ = @%s_%s___md5sum;\n", g_pkg.c_str(), g_name.c_str());
-    if (server_md5sum.length())
+    if (server_md5sum.length()) {
         fprintf(f, "msg.server_md5sum_ = @%s_%s___server_md5sum;\n", g_pkg.c_str(), g_name.c_str());
+        fprintf(f, "msg.server_type_ = @%s_%s___server_type;\n", g_pkg.c_str(), g_name.c_str());
+    }
+
     fprintf(f, "msg.type_ = @%s_%s___type;\n", g_pkg.c_str(), g_name.c_str());
     fprintf(f, "msg.serializationLength_ = @%s_%s___serializationLength;\n", g_pkg.c_str(), g_name.c_str());
     fprintf(f, "msg.serialize_ = @%s_%s___serialize;\n", g_pkg.c_str(), g_name.c_str());
     fprintf(f, "msg.deserialize_ = @%s_%s___deserialize;\n", g_pkg.c_str(), g_name.c_str());
+    fprintf(f, "msg.message_definition_ = @%s_%s___message_definition;\n", g_pkg.c_str(), g_name.c_str());
     fprintf(f, "\n");
 
     fprintf(f, "function x = %s_%s___md5sum()\nx = '%s';\n\n", g_pkg.c_str(), g_name.c_str(), md5sum.c_str());
 
-    if (server_md5sum.length())
+    if (server_md5sum.length()) {
         fprintf(f, "function x = %s_%s___server_md5sum()\nx = '%s';\n\n", g_pkg.c_str(), g_name.c_str(), server_md5sum.c_str());
+        fprintf(f, "function x = %s_%s___server_type()\nx = '%s';\n\n", g_pkg.c_str(), g_name.c_str(), service_datatype.c_str());
+    }
+
+
+    {
+        fprintf(f, "function x = %s_%s___message_definition()\nx = [", g_pkg.c_str(), g_name.c_str());
+        
+        vector<string> definition_lines;
+        string_split(full_definition, definition_lines, "\n");
+        vector<string>::iterator it = definition_lines.begin();
+        vector<string>::iterator end = definition_lines.end();
+        for (; it != end; ++it) {
+            std::string& line = *it;
+
+            // Escape bare \ and "
+            size_t pos = line.find("\\");
+            while (pos != std::string::npos) {
+                line.insert(pos, "\\");
+                pos = line.find("\\", pos + 2);
+            }
+
+            pos = line.find("\"");
+            while (pos != std::string::npos) {
+                line.insert(pos, "\\");
+                pos = line.find("\"", pos + 2);
+            }
+
+            fprintf(f, "    '%s\\n' ...\n", line.c_str());
+        }
+        fprintf(f, "];\n\n");
+    }
 
     fprintf(f, "function x = %s_%s___type()\nx = '%s/%s';\n\n",
             g_pkg.c_str(), g_name.c_str(), g_pkg.c_str(),

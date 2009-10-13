@@ -39,7 +39,7 @@ import roslib.manifest
 import roslib.packages
 import roslib.stacks
 import roslib.rosenv
-import roslib.scriptutil
+import roslib.rospack
 import roslib.substitution_args
 
 import roslaunch.depends
@@ -182,7 +182,7 @@ def _load_roslaunch(ctx, roslaunch_files):
 ## @throws WtfException: if context state cannot be initialized
 def _load_pkg(ctx, pkg):
     ctx.pkg = pkg
-    ctx.pkgs = [pkg] + roslib.scriptutil.rospack_depends(pkg)
+    ctx.pkgs = [pkg] + roslib.rospack.rospack_depends(pkg)
     try:
         ctx.pkg_dir = roslib.packages.get_pkg_dir(pkg)
     except roslib.packages.InvalidROSPkgException:
@@ -192,7 +192,7 @@ def _load_pkg(ctx, pkg):
 ## @throws WtfException: if context state cannot be initialized
 def _load_stack(ctx, stack):
     ctx.stack = stack
-    ctx.stacks = [stack] + roslib.scriptutil.rosstack_depends(stack)
+    ctx.stacks = [stack] + roslib.rospack.rosstack_depends(stack)
     try:
         ctx.stack_dir = roslib.stacks.get_stack_dir(stack)
     except roslib.stacks.InvalidROSStackException:

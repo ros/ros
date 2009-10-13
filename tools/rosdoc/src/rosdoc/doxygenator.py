@@ -40,7 +40,7 @@ import tempfile
 
 import roslib.msgs
 import roslib.srvs
-import roslib.scriptutil as scriptutil
+import roslib.rospack 
 
 from rosdoc.rdcore import *
 
@@ -142,7 +142,7 @@ def load_manifest_vars(ctx, package, path, docdir, m):
         else:
             dependencies = "None<br />"
 
-    dependson1 = scriptutil.rospackexec(['depends-on1', package]).split('\n')
+    dependson1 = roslib.rospack.rospackexec(['depends-on1', package]).split('\n')
     # filter depends by what we're actually documenting
     dependson1 = [d for d in dependson1 if d and ctx.should_document(d)]
     if dependson1:

@@ -40,7 +40,7 @@ from roswtf.rules import warning_rule, error_rule
 
 import roslib.msgs
 import roslib.packages
-import roslib.scriptutil
+import roslib.rospack
 import roslib.stacks
 import roslib.stack_manifest
 
@@ -61,7 +61,7 @@ def manifest_depends(ctx):
         s_deps = []
         s_pkgs = _packages_of(s)
         for p in s_pkgs:
-            s_deps.extend(roslib.scriptutil.rospack_depends_1(p))
+            s_deps.extend(roslib.rospack.rospack_depends_1(p))
         pkg_dir = roslib.stacks.get_stack_dir(s)
         m_file = roslib.stack_manifest.stack_file(s, True)
         m = roslib.stack_manifest.parse_file(m_file)

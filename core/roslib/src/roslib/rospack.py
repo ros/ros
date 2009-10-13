@@ -30,8 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: scriptutil.py 6499 2009-10-12 23:44:36Z kwc $
-# $Author: kwc $
+# Revision $Id$
+# $Author$
 
 """
 Wrappers for calling an processing return values from rospack and rosstack

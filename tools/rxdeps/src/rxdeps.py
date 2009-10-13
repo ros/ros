@@ -36,7 +36,7 @@ import sys, string
 import subprocess
 import getopt
 import roslib
-import roslib.scriptutil
+import roslib.rospack
 import roslib.rosenv
 
 from math import sqrt
@@ -55,18 +55,18 @@ def build_dictionary(names, exclude, target1=False):
     else:
         for name in names:
             if target1:
-                pkgs.update(roslib.scriptutil.rospack_depends_1(name))
-                pkgs.update(roslib.scriptutil.rospack_depends_on_1(name))
+                pkgs.update(roslib.rospack.rospack_depends_1(name))
+                pkgs.update(roslib.rospack.rospack_depends_on_1(name))
             else:
-                pkgs.update(roslib.scriptutil.rospack_depends(name))
-                pkgs.update(roslib.scriptutil.rospack_depends_on(name))
+                pkgs.update(roslib.rospack.rospack_depends(name))
+                pkgs.update(roslib.rospack.rospack_depends_on(name))
 
         pkgs.update(names)
     pkgs = [p for p in pkgs if p not in exclude]
     ## Build the dictionary of dependencies
     dict = {}
     for pkg in pkgs:
-        dict[pkg] = [d for d in roslib.scriptutil.rospack_depends_1(pkg) if not d in exclude]
+        dict[pkg] = [d for d in roslib.rospack.rospack_depends_1(pkg) if not d in exclude]
     return dict
 
 ## Get all the dependencies of dependent packages (deduplicated)
@@ -373,7 +373,7 @@ def vdmain():
 
             # Size
             if options.size_by_deps:
-                num_deps = len(roslib.scriptutil.rospack_depends_on(pkg))
+                num_deps = len(roslib.rospack.rospack_depends_on(pkg))
                 node_args.append("width=%s,height=%s"%(.75 + .1 * sqrt(num_deps), .5 + .1* sqrt(num_deps)))
 
             ##Perimeter 
@@ -386,7 +386,7 @@ def vdmain():
               node_args.append('label="%s\\n(%s)"' % (pkg, notes_dict[pkg]))
 
             if options.hide:
-               if len(roslib.scriptutil.rospack_depends_on(pkg)) == 0 and len(roslib.scriptutil.rospack_depends(pkg)) == 0: #TODO: This is pretty slow
+               if len(roslib.rospack.rospack_depends_on(pkg)) == 0 and len(roslib.rospack.rospack_depends(pkg)) == 0: #TODO: This is pretty slow
                   print "Hiding unattached package %s"%pkg
                   continue
 

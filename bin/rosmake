@@ -40,7 +40,7 @@ import subprocess
 import time
 import getopt
 import roslib
-import roslib.scriptutil
+import roslib.rospack
 import roslib.rosenv
 import roslib.stacks
 import threading
@@ -65,12 +65,12 @@ class DependencyTracker:
 
   def get_deps_1(self, package):
     if not package in self.deps:
-      self.deps_1[package] = roslib.scriptutil.rospack_depends_1(package) 
+      self.deps_1[package] = roslib.rospack.rospack_depends_1(package) 
     return self.deps_1[package]
 
   def get_deps(self, package):
     if not package in self.deps:
-      self.deps[package] = roslib.scriptutil.rospack_depends(package) 
+      self.deps[package] = roslib.rospack.rospack_depends(package) 
     return self.deps[package]
 
 """ This class id designed to replace DependencyTracker above and always return no dependencies. 
@@ -571,12 +571,12 @@ class RosMakeAll:
         else:      # no need to extend if all already selected   
             if options.buildtest:
               for p in options.buildtest:
-                packages.extend(roslib.scriptutil.rospack_depends_on(p)) 
+                packages.extend(roslib.rospack.rospack_depends_on(p)) 
                 self.print_all( "Buildtest requested for package %s adding it and all dependent packages: "%p)
 
             if options.buildtest1:
               for p in options.buildtest1:
-                packages.extend(roslib.scriptutil.rospack_depends_on_1(p)) 
+                packages.extend(roslib.rospack.rospack_depends_on_1(p)) 
                 self.print_all( "Buildtest requested for package %s adding it and all depends-on1 packages: "%p)
 
         if len(packages) == 0 and len(args) == 0:

@@ -189,7 +189,7 @@ def makefile_exists(ctx):
 
 def rospack_time(ctx):
     start = time.time()
-    roslib.scriptutil.rospackexec(['deps', 'roslib'])
+    roslib.rospack.rospackexec(['deps', 'roslib'])
     # arbitrarily tuned 
     return (time.time() - start) > 0.5
 

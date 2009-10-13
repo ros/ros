@@ -35,12 +35,12 @@
 import os
 import sys
 
-import roslib.scriptutil
+import roslib.rospack
 
 ## @return [fn], [fn]: list of static roswtf plugins, list of online
 ## roswtf plugins
 def load_plugins():
-    to_check = roslib.scriptutil.rospack_depends_on_1('roswtf')
+    to_check = roslib.rospack.rospack_depends_on_1('roswtf')
     static_plugins = []
     online_plugins = []
     for pkg in to_check:

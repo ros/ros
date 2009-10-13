@@ -48,7 +48,7 @@ import roslib.packages
 def get_manifest_file(package_name):
     """
     @return: name of package to get manifest for
-    @rtype: str: name of package to get manifest for
+    @rtype: str
     @raise InvalidROSPkgException: if required is True and package cannot be located
     """
     return roslib.manifest.manifest_file(package_name, required=True)

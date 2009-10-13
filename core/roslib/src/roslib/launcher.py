@@ -34,8 +34,10 @@
 # Revision $Id$
 # $Author$
 
-## Python path loader for python scripts and applications. Requires
-## use of ROS manifest files.
+"""
+Python path loader for python scripts and applications. Paths are
+derived from dependency structure declared in ROS manifest files.
+"""
 
 import sys
 import os
@@ -43,29 +45,39 @@ import os
 import roslib.manifest
 import roslib.packages
 
-## @return package_name str: name of package to get manifest for
-## @throws InvalidROSPkgException: if required is True and package cannot be located
 def get_manifest_file(package_name):
+    """
+    @return: name of package to get manifest for
+    @rtype: str: name of package to get manifest for
+    @raise InvalidROSPkgException: if required is True and package cannot be located
+    """
     return roslib.manifest.manifest_file(package_name, required=True)
         
-## bootstrapped keeps track of which packages we've loaded so we don't update the path multiple times
-## @internal
+# bootstrapped keeps track of which packages we've loaded so we don't update the path multiple times
 _bootstrapped = []
 
-## update the Python sys.path with package dependencies
-## @param package_name str: name of the package that update_path is being called from.
-## @param bootstrap_version str: (keyword argument) do not use. Soon to be deprecated
 def load_manifest(package_name, bootstrap_version="0.7"):
+    """
+    Update the Python sys.path with package dependencies
+    @param package_name: name of the package that update_path is being called from.
+    @type  package_name: str
+    @param bootstrap_version: (keyword argument) do not use. Soon to be deprecated
+    @type  bootstrap_version: str
+    """
     if package_name in _bootstrapped:
         return
     sys.path = _generate_python_path(package_name, [], os.environ) + sys.path
     
-## @internal
-## added paths for package to \a paths
-## @param manifest_ Manifest: package manifest
-## @param pkg_dir str: package's filesystem directory path
-## @param paths [str]: list of paths
 def _append_package_paths(manifest_, paths, pkg_dir):
+    """
+    Added paths for package to paths
+    @param manifest_: package manifest
+    @type  manifest_: Manifest
+    @param pkg_dir: package's filesystem directory path
+    @type  pkg_dir: str
+    @param paths: list of paths
+    @type  paths: [str]
+    """
     exports = manifest_.get_export('python','path')
     if exports:
         for export in exports:
@@ -79,14 +91,15 @@ def _append_package_paths(manifest_, paths, pkg_dir):
         dirs = [os.path.join(pkg_dir, d) for d in ['src', 'lib']]
         paths.extend(filter(os.path.isdir, dirs))
     
-## @internal
-## recursive subroutine for building dependency list and python path
-## @param manifest_file: manifest to parse for additional dependencies
-## @param depends: current dependency set. Will be modified
-## @return: list of directory paths to add to python path in order to include
-##   package and dependencies described in manifest file.
-## @throws InvalidROSPkgException: if an error occurs while attempting to load package or dependencies
 def _generate_python_path(pkg, depends, env=os.environ):
+    """
+    Recursive subroutine for building dependency list and python path
+    @param manifest_file: manifest to parse for additional dependencies
+    @param depends: current dependency set. Will be modified
+    @return: list of directory paths to add to python path in order to include
+      package and dependencies described in manifest file.
+    @raise InvalidROSPkgException: if an error occurs while attempting to load package or dependencies
+    """
     if pkg in _bootstrapped:
         return []
     manifest_file = roslib.manifest.manifest_file(pkg, True, env)

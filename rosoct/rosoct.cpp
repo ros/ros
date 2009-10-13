@@ -102,9 +102,11 @@ public:
     map<string,FunctionPtr> mapFunctions;
     vector<char*> argv;
     vector<string> vargv;
+    boost::thread rosthread;
 };
 
 static RosoctStaticData s_staticdata;
+static bool s_bInstalled = false;
 
 #define s_listWorkerItems s_staticdata.listWorkerItems
 #define s_mapAdvertised s_staticdata.mapAdvertised
@@ -117,8 +119,7 @@ static RosoctStaticData s_staticdata;
 #define s_mapFunctions s_staticdata.mapFunctions
 #define s_vargv s_staticdata.vargv
 #define s_node s_staticdata.node
-
-
+#define s_rosthread s_staticdata.rosthread
 
 class RoscppWorker : public boost::enable_shared_from_this<RoscppWorker>
 {
@@ -411,7 +412,6 @@ public:
     
     virtual void call(const MessagePtr& msg)
     {
-        ROS_INFO("calling!");
         if( _bDropWork )
             return;
         boost::mutex::scoped_lock lock(_mutex);
@@ -1084,9 +1084,20 @@ static int rosoct_hook(void)
 
 void rosoct_exit()
 {
-    ROS_INFO("exiting rosoct");
-    reset_all();
-    s_node.reset();
+    if( s_bInstalled ) {
+        ROS_INFO("exiting rosoct");
+        ros::shutdown();
+        reset_all();
+        s_node.reset();
+        s_rosthread.join();
+
+        if( octave_rl_event_hook != NULL ) {
+            ROS_INFO("unregistering rosoct hook");
+            octave_rl_set_event_hook(octave_rl_event_hook);
+            octave_rl_event_hook = NULL;
+        }
+        s_bInstalled = false;
+    }
 }
 
 void __rosoct_exit(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
@@ -1164,13 +1175,14 @@ bool install_rosoct(bool bRegisterHook)
     gethostname(strname, sizeof(strname));
     strcat(strname,"_rosoct");
     ros::init(argc,argc > 0 ? &argv[0] : NULL,strname, ros::init_options::NoSigintHandler|ros::init_options::AnonymousName);
+
+    s_rosthread = boost::thread(boost::bind(ros::spin));
     return true;
 }
 
 extern "C"
 void mexFunction(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    static bool s_bInstalled = false;
     bool bRegisterHook = true;
     bool bSuccess = true;
     map<string,FunctionPtr>::iterator itcallfn = s_mapFunctions.end();
@@ -1183,13 +1195,7 @@ void mexFunction(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
             reset_all();
         }
         else if( cmd == "shutdown") {
-            if( octave_rl_event_hook != NULL ) {
-                ROS_INFO("unregistering rosoct hook");
-                octave_rl_set_event_hook(octave_rl_event_hook);
-                octave_rl_event_hook = NULL;
-            }
-            reset_all();
-            s_node.reset();
+            rosoct_exit();
         }
         else if( cmd == "nohook") {
             bRegisterHook = false;

@@ -34,7 +34,7 @@
 
 // author: Rosen Diankov
 #include <gtest/gtest.h>
-#include <ros/node.h>
+#include <ros/node_handle.h>
 #include <cstdlib>
 
 using namespace std;
@@ -59,11 +59,7 @@ int main(int argc, char** argv)
     testing::InitGoogleTest(&argc, argv);
 
     ros::init(argc, argv);
-    ros::Node n("subscribe");
-
-    int ret = RUN_ALL_TESTS();
-
-    
+    int ret = RUN_ALL_TESTS();    
 
     return ret;
 }

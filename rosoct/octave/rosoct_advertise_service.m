@@ -3,7 +3,7 @@
 function varargout = rosoct_advertise_service(servicename,msgfn,callback)
 [req,res] = msgfn();
 varargout = cell(1,nargout);
-[varargout{:}] = rosoct('advertise_service', servicename,req.server_md5sum_(), req.type_(), res.type_(), @(reqdata) rosoct_service_wrapper(reqdata,msgfn, callback));
+[varargout{:}] = rosoct('advertise_service', servicename,req.server_md5sum_(), req.type_(), res.type_(), req.server_type_(), @(reqdata) rosoct_service_wrapper(reqdata,msgfn, callback));
 
 function [success,resdata] = rosoct_service_wrapper(reqdata,msgfn,callback)
 res = callback(msgfn().deserialize_(reqdata));

@@ -53,8 +53,11 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp> 
 
-#include <ros/node.h>
+#include <ros/node_handle.h>
+#include <ros/master.h>
+#include <ros/this_node.h>
 #include <ros/service.h>
 #include <ros/session.h>
 
@@ -72,11 +75,61 @@
 using namespace ros;
 using namespace std;
 
-class RoscppWorker
+typedef void (*FunctionPtr)(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[]);
+class RoscppWorkExecutor;
+class RoscppSubscription;
+class RoscppService;
+
+void reset_all();
+class RosoctStaticData
+{
+public:
+    RosoctStaticData() : nSessionHandleId(1) {}
+    ~RosoctStaticData() {
+        reset_all();
+        mapFunctions.clear();
+    }
+
+    list<boost::shared_ptr<RoscppWorkExecutor> > listWorkerItems;
+    map<string, Publisher > mapAdvertised; ///< advertised topics
+
+    boost::shared_ptr<ros::NodeHandle> node;
+    map<string, boost::shared_ptr<RoscppSubscription> > subscriptions;
+    map<string, boost::shared_ptr<RoscppService> > services;
+    map<int, session::abstractSessionHandle> sessions;
+    int nSessionHandleId; ///< counter of unique session ids to assign
+    boost::mutex mutexWorker, mutexWorking;
+    map<string,FunctionPtr> mapFunctions;
+    vector<char*> argv;
+    vector<string> vargv;
+};
+
+static RosoctStaticData s_staticdata;
+
+#define s_listWorkerItems s_staticdata.listWorkerItems
+#define s_mapAdvertised s_staticdata.mapAdvertised
+#define s_subscriptions s_staticdata.subscriptions
+#define s_services s_staticdata.services
+#define s_sessions s_staticdata.sessions
+#define s_nSessionHandleId s_staticdata.nSessionHandleId
+#define s_mutexWorker s_staticdata.mutexWorker
+#define s_mutexWorking s_staticdata.mutexWorking
+#define s_mapFunctions s_staticdata.mapFunctions
+#define s_vargv s_staticdata.vargv
+#define s_node s_staticdata.node
+
+
+
+class RoscppWorker : public boost::enable_shared_from_this<RoscppWorker>
 {
 public:
     virtual ~RoscppWorker() {}
     virtual void workerthread(void* userdata) = 0;
+    virtual void init() = 0;
+
+    template <class T> boost::shared_ptr<T> as() {
+        return boost::dynamic_pointer_cast<T>(shared_from_this()); 
+    }
 };
 
 // executes a worker
@@ -90,15 +143,8 @@ private:
     void* _userdata;
 };
 
-void reset_all();
 void AddWorker(RoscppWorker* psub, void* userdata);
 void __rosoct_worker(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[]);
-
-ros::Node* check_roscpp_nocreate()
-{
-    ros::Node* pnode = ros::Node::instance();
-    return (pnode && pnode->checkMaster()) ? pnode : NULL;
-}
 
 string GetString(const mxArray* parr)
 {
@@ -321,16 +367,13 @@ public:
     int sessionoffset;
 };
 
-class RoscppSubscription : public RoscppWorker
+class RoscppSubscription : public RoscppWorker, public SubscriptionMessageHelper
 {
 public:
-    RoscppSubscription(Node* pnode, const string& topicname, const string& md5sum, const string& type, const mxArray* pfn, int maxqueue = 1)
+    RoscppSubscription(const string& topicname, const string& md5sum, const string& type, const mxArray* pfn, int maxqueue = 1) : _opts(topicname,maxqueue,md5sum,type)
     {
         _bDropWork = false;
-        _msg._md5sum = md5sum;
-        _msg._type = type;
-        _topicname = topicname;
-        assert( pnode != NULL && pfn != NULL );
+        assert( pfn != NULL );
 
         if(mxGetClassID(pfn) != mxFUNCTION_CLASS) {
             ROS_ERROR("not a function class");
@@ -340,19 +383,19 @@ public:
         ROS_ASSERT(pfn->is_octave_value());
         ovfncallback = mxArray::as_octave_value((mxArray*)pfn);
         ROS_ASSERT(ovfncallback.user_function_value() != NULL);
-
-        if( !pnode->subscribe(_topicname, _msg, &RoscppSubscription::cb, this, maxqueue) )
-            throw;
     }
     virtual ~RoscppSubscription()
     {
-        ros::Node* pnode = check_roscpp_nocreate();
-        if( pnode != NULL ) {
-            if( !pnode->unsubscribe(_topicname) )
-                ROS_WARN("failed to unsubscribe from %s", _topicname.c_str());
-
+        _sub.shutdown();
+        if( !!s_node )
             __rosoct_worker(0,NULL,0,NULL); // flush
-        }
+    }
+
+    virtual void init()
+    {
+        ROS_ASSERT(!!as<SubscriptionMessageHelper>());
+        _opts.helper = as<SubscriptionMessageHelper>();
+        _sub = s_node->subscribe(_opts);
     }
 
     virtual void workerthread(void* userdata)
@@ -362,15 +405,20 @@ public:
         dowork(pmsg.get());
     }
 
-private:
-    void cb()
+    virtual MessagePtr create() { return MessagePtr(new OctaveMsgDeserializer(_opts.md5sum,_opts.datatype)); }
+    virtual std::string getMD5Sum() { return _opts.md5sum; }
+    virtual std::string getDataType() { return _opts.datatype; }
+    
+    virtual void call(const MessagePtr& msg)
     {
+        ROS_INFO("calling!");
         if( _bDropWork )
             return;
         boost::mutex::scoped_lock lock(_mutex);
-        AddWorker(this, new OctaveMsgDeserializer(_msg));
+        AddWorker(this, new OctaveMsgDeserializer(*dynamic_cast<OctaveMsgDeserializer*>(msg.get())));
     }
 
+private:
     virtual void dowork(OctaveMsgDeserializer* pmsg)
     {
         ROS_ASSERT(ovfncallback.user_function_value() != NULL);
@@ -385,23 +433,20 @@ private:
         octave_value_list retval = ovfncallback.user_function_value()->do_multi_index_op(0, args);
     }
 
-    string _topicname;
-    OctaveMsgDeserializer _msg;
     octave_value ovfncallback;
+    SubscribeOptions _opts;
+    ros::Subscriber _sub;
     boost::mutex _mutex;
     bool _bDropWork;
 };
 
-class RoscppService : public RoscppWorker
+class RoscppService : public RoscppWorker, public ServiceMessageHelper
 {
 public:
-    RoscppService(Node* pnode, const string& servicename, const string& md5sum, const string& reqtype, const string& restype, const mxArray* pservicefn)
+    RoscppService(const string& servicename, const string& md5sum, const string& reqtype, const string& restype, const string& datatype, const mxArray* pservicefn)
     {
         _bDropWork = false;
-        preq = NULL;
-        pres = NULL;
-        _servicename = servicename;
-        assert( pnode != NULL && pservicefn != NULL);
+        assert( pservicefn != NULL);
 
         if(mxGetClassID(pservicefn) != mxFUNCTION_CLASS ) {
             ROS_ERROR("not a function class");
@@ -412,22 +457,29 @@ public:
         ovfnservice = mxArray::as_octave_value((mxArray*)pservicefn);
         ROS_ASSERT(ovfnservice.user_function_value() != NULL);
 
-        OctaveMsgDeserializer localreq(md5sum, reqtype);
-        OctaveMsgDeserializer localres(md5sum, restype);
-        if( !pnode->advertiseService(_servicename, &RoscppService::cb, this, localreq, localres, -1) )
-            throw;
-
-        ROS_INFO("advertised service %s", _servicename.c_str());
+        _opts.service = servicename;
+        _opts.md5sum = md5sum;
+        _opts.datatype = datatype;
+        _opts.req_datatype = reqtype;
+        _opts.res_datatype = restype;
     }
     virtual ~RoscppService()
     {
-        ros::Node* pnode = check_roscpp_nocreate();
-        if( pnode != NULL ) {
-            ROS_DEBUG("unadvertising %s", _servicename.c_str());
-            pnode->unadvertiseService(_servicename);
-
+        _service.shutdown();
+        if( !!s_node )
             __rosoct_worker(0,NULL,0,NULL); // flush
-        }
+    }
+
+    virtual void init()
+    {
+        ROS_ASSERT(!!as<ServiceMessageHelper>());
+        _opts.helper = as<ServiceMessageHelper>();
+        _service = s_node->advertiseService(_opts);
+        if( !_service )
+            throw;
+
+        ROS_INFO("advertised service %s", _opts.service.c_str());
+        
     }
 
     virtual void workerthread(void* userdata)
@@ -437,29 +489,33 @@ public:
         _control.notify_all();
     }
 
-private:
+    virtual MessagePtr createRequest() { return MessagePtr(new OctaveMsgDeserializer(_opts.md5sum, _opts.req_datatype)); }
+    virtual MessagePtr createResponse() { return MessagePtr(new OctaveMsgDeserializer(_opts.md5sum, _opts.res_datatype)); }
 
-    // this setup allows only one service to be processed at a time
-    bool cb(OctaveMsgDeserializer& req, OctaveMsgDeserializer& res)
+    virtual bool call(const MessagePtr& req, const MessagePtr& res)
     {
         if( _bDropWork )
             return false;
 
         boost::mutex::scoped_lock lockserv(_mutexService); // lock simultaneous service calls out
         boost::mutex::scoped_lock lock(_mutex);
-        preq = &req;
-        pres = &res;
+        preq = boost::dynamic_pointer_cast<OctaveMsgDeserializer>(req);
+        pres = boost::dynamic_pointer_cast<OctaveMsgDeserializer>(res);
         AddWorker(this, NULL);
         _control.wait(lock);
 
         // done so fill res
-        preq = NULL;
-        pres = NULL;
-        res._md5sum = _md5sum;
-        res._type = _restype;
+        preq.reset();
+        pres.reset();
         return _bSuccess;
     }
 
+    virtual std::string getMD5Sum() { return _opts.md5sum; }
+    virtual std::string getDataType() { return _opts.datatype; }
+    virtual std::string getRequestDataType() { return _opts.req_datatype; }
+    virtual std::string getResponseDataType() { return _opts.res_datatype; }
+
+private:
     virtual void dowork()
     {
         ROS_ASSERT(ovfnservice.user_function_value() != NULL);
@@ -493,52 +549,14 @@ private:
 
     bool _bSuccess; // success of the service call
 
-    string _servicename;
-    string _md5sum, _restype;
-    OctaveMsgDeserializer* preq;
-    OctaveMsgDeserializer* pres;
+    ServiceServer _service;
+    AdvertiseServiceOptions _opts;
+    boost::shared_ptr<OctaveMsgDeserializer> preq, pres;
     octave_value ovfnservice;
     boost::condition _control;
     boost::mutex _mutex, _mutexService;
     bool _bDropWork;
 };
-
-typedef void (*FunctionPtr)(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[]);
-
-class RosoctStaticData
-{
-public:
-    RosoctStaticData() : nSessionHandleId(1) {}
-    ~RosoctStaticData() {
-        reset_all();
-        mapFunctions.clear();
-    }
-
-    list<boost::shared_ptr<RoscppWorkExecutor> > listWorkerItems;
-    map<string, pair<string, string> > mapAdvertised; ///< advertised topics
-
-    map<string, boost::shared_ptr<RoscppSubscription> > subscriptions;
-    map<string, boost::shared_ptr<RoscppService> > services;
-    map<int, session::abstractSessionHandle> sessions;
-    int nSessionHandleId; ///< counter of unique session ids to assign
-    boost::mutex mutexWorker, mutexWorking;
-    map<string,FunctionPtr> mapFunctions;
-    vector<char*> argv;
-    vector<string> vargv;
-};
-
-static RosoctStaticData s_staticdata;
-
-#define s_listWorkerItems s_staticdata.listWorkerItems
-#define s_mapAdvertised s_staticdata.mapAdvertised
-#define s_subscriptions s_staticdata.subscriptions
-#define s_services s_staticdata.services
-#define s_sessions s_staticdata.sessions
-#define s_nSessionHandleId s_staticdata.nSessionHandleId
-#define s_mutexWorker s_staticdata.mutexWorker
-#define s_mutexWorking s_staticdata.mutexWorking
-#define s_mapFunctions s_staticdata.mapFunctions
-#define s_vargv s_staticdata.vargv
 
 void AddWorker(RoscppWorker* psub, void* userdata)
 {
@@ -574,57 +592,9 @@ void __rosoct_worker(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
     listworkers.clear(); // do all the work in the destructors
 }
 
-ros::Node* check_roscpp()
-{
-    // start roscpp
-    ros::Node* pnode = ros::Node::instance();
-
-    if( pnode && !pnode->checkMaster() ) {
-        reset_all();
-
-        delete pnode;
-        return NULL;
-    }
-
-    if (!pnode) {
-        char strname[256] = "nohost";
-        gethostname(strname, sizeof(strname));
-        strcat(strname,"_rosoct");
-
-        int argc = (int)s_vargv.size();
-        vector<string> vargv = s_vargv;
-        vector<char*> argv(vargv.size());
-        for(size_t i = 0; i < argv.size(); ++i)
-            argv[i] = &vargv[i][0];
-        ros::init(argc,argv.size() > 0 ? &argv[0] : NULL);
-
-        pnode = new ros::Node(strname, ros::Node::DONT_HANDLE_SIGINT|ros::Node::ANONYMOUS_NAME|ros::Node::DONT_ADD_ROSOUT_APPENDER);
-
-        bool bCheckMaster = pnode->checkMaster();
-
-        delete pnode;
-
-        if( !bCheckMaster ) {
-            ROS_INFO("ros not present");
-            return NULL;
-        }
-
-        argc = (int)s_vargv.size();
-        vargv = s_vargv;
-        for(size_t i = 0; i < argv.size(); ++i)
-            argv[i] = &vargv[i][0];
-        ros::init(argc,argv.size() > 0 ? &argv[0] : NULL);
-        pnode = new ros::Node(strname, ros::Node::DONT_HANDLE_SIGINT|ros::Node::ANONYMOUS_NAME);
-        ROS_INFO("new roscpp node started");
-    }
-
-    return pnode;
-}
-
 void __rosoct_service_call(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleScalar(0.0);
         return;
@@ -662,8 +632,7 @@ void __rosoct_service_call(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs
 
 void __rosoct_msg_subscribe(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleScalar(0.0);
         return;
@@ -675,7 +644,8 @@ void __rosoct_msg_subscribe(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prh
     string topicname = GetString(prhs[0]);
     int success = 1;
     try {
-        boost::shared_ptr<RoscppSubscription> subs(new RoscppSubscription(pnode, topicname, GetString(prhs[1]), GetString(prhs[2]), prhs[3], (int)mxGetScalar(prhs[4])));
+        boost::shared_ptr<RoscppSubscription> subs(new RoscppSubscription(topicname, GetString(prhs[1]), GetString(prhs[2]), prhs[3], (int)mxGetScalar(prhs[4])));
+        subs->init();
         s_subscriptions[topicname] = subs;
 
         ROS_INFO("subscribed to %s", topicname.c_str());
@@ -691,8 +661,7 @@ void __rosoct_msg_subscribe(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prh
 
 void __rosoct_msg_unsubscribe(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleScalar(0.0);
         return;
@@ -713,8 +682,7 @@ void __rosoct_msg_unsubscribe(int nlhs,mxArray *plhs[],int nrhs,const mxArray *p
 
 void __rosoct_set_param(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleScalar(0.0);
         return;
@@ -725,11 +693,11 @@ void __rosoct_set_param(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 
     string key = GetString(prhs[0]);
     if( mxIsDouble(prhs[1]) )
-        pnode->setParam(key, *(double*)mxGetPr(prhs[1]));
+        s_node->setParam(key, *(double*)mxGetPr(prhs[1]));
     else if( mxIsInt8(prhs[1]) || mxIsInt16(prhs[1]) || mxIsInt32(prhs[1]) )
-        pnode->setParam(key, *(int*)mxGetPr(prhs[1]));
+        s_node->setParam(key, *(int*)mxGetPr(prhs[1]));
     else if( mxIsChar(prhs[1]) )
-        pnode->setParam(key, GetString(prhs[1]));
+        s_node->setParam(key, GetString(prhs[1]));
     else
         mexErrMsgTxt("unsupported key type!");
 
@@ -739,8 +707,7 @@ void __rosoct_set_param(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 
 void __rosoct_get_param(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleMatrix(0,0,mxREAL);
         return;
@@ -755,11 +722,11 @@ void __rosoct_get_param(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
     int i;
 
     if( nlhs > 0 ) {
-        if( pnode->getParam(key,s) )
+        if( s_node->getParam(key,s) )
             plhs[0] = mxCreateString(s.c_str());
-        else if( pnode->getParam(key,d) )
+        else if( s_node->getParam(key,d) )
             plhs[0] = mxCreateDoubleScalar(d);
-        else if( pnode->getParam(key,i) ) {
+        else if( s_node->getParam(key,i) ) {
             plhs[0] = mxCreateNumericMatrix(1,1,mxINT32_CLASS,mxREAL);
             *(int*)mxGetPr(plhs[0]) = i;
         }
@@ -784,24 +751,23 @@ void __rosoct_time_now(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 
 void __rosoct_advertise_service(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleScalar(0.0);
         return;
     }
 
-    if( nrhs < 5 )
+    if( nrhs < 6 )
         mexErrMsgTxt("not enough args to __rosoct_advertise");
 
     string servicename = GetString(prhs[0]);
-
     if( s_services.find(servicename) != s_services.end() )
         mexErrMsgTxt("topic already advertised");
 
     int success = 1;
     try {
-        boost::shared_ptr<RoscppService> serv(new RoscppService(pnode, servicename, GetString(prhs[1]), GetString(prhs[2]), GetString(prhs[3]), prhs[4]));
+        boost::shared_ptr<RoscppService> serv(new RoscppService(servicename, GetString(prhs[1]), GetString(prhs[2]), GetString(prhs[3]), GetString(prhs[4]), prhs[5]));
+        serv->init();
         s_services[servicename] = serv;
     }
     catch(...) {
@@ -815,8 +781,7 @@ void __rosoct_advertise_service(int nlhs,mxArray *plhs[],int nrhs,const mxArray 
 
 void __rosoct_unadvertise_service(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleScalar(0.0);
         return;
@@ -825,29 +790,20 @@ void __rosoct_unadvertise_service(int nlhs,mxArray *plhs[],int nrhs,const mxArra
     if( nrhs < 1 )
         mexErrMsgTxt("not enough args to __rosoct_unadvertise_service");
 
-    string servicename = GetString(prhs[0]);
-    map<string, boost::shared_ptr<RoscppService> >::iterator it = s_services.find(servicename);
-
-    bool bSuccess = pnode->unadvertiseService(servicename);
-
-    if( bSuccess && s_services.find(servicename) == s_services.end() )
-        ROS_WARN("have not advertised %s!", servicename.c_str());
-    s_services.erase(servicename);
-
+    s_services.erase(GetString(prhs[0]));
     if( nlhs > 0 )
-        plhs[0] = mxCreateDoubleScalar((double)bSuccess);
+        plhs[0] = mxCreateDoubleScalar(1);
 }
 
 void __rosoct_advertise(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleScalar(0.0);
         return;
     }
 
-    if( nrhs < 4 )
+    if( nrhs < 5 )
         mexErrMsgTxt("not enough args to __rosoct_advertise");
 
     string topicname = GetString(prhs[0]);
@@ -855,21 +811,19 @@ void __rosoct_advertise(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
     if( s_mapAdvertised.find(topicname) != s_mapAdvertised.end() )
         mexErrMsgTxt("topic already advertised");
 
-    string md5sum = GetString(prhs[1]), type = GetString(prhs[2]);
-    OctaveMsgSerializer msgcloner(md5sum, NULL, 0, type);
-    bool bSuccess = pnode->advertise(topicname, msgcloner, (int)mxGetScalar(prhs[3]));
-
-    if( bSuccess )
-        s_mapAdvertised[topicname] = pair<string,string>(md5sum,type);
+    string md5sum = GetString(prhs[1]), type = GetString(prhs[2]), definition = GetString(prhs[3]);
+    AdvertiseOptions opts(topicname,(int)mxGetScalar(prhs[4]),md5sum, type, definition);
+    Publisher pub = s_node->advertise(opts);
+    if( !!pub )
+        s_mapAdvertised[topicname] = pub;
 
     if( nlhs > 0 )
-        plhs[0] = mxCreateDoubleScalar((double)bSuccess);
+        plhs[0] = mxCreateDoubleScalar((double)!!pub);
 }
 
 void __rosoct_unadvertise(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleScalar(0.0);
         return;
@@ -878,33 +832,28 @@ void __rosoct_unadvertise(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[
     if( nrhs < 1 )
         mexErrMsgTxt("not enough args to __rosoct_unadvertise");
 
-    string topicname = GetString(prhs[0]);
-
-    s_mapAdvertised.erase(topicname);
-    bool bSuccess = pnode->unadvertise(topicname);
-
+    s_mapAdvertised.erase(GetString(prhs[0]));
     if( nlhs > 0 )
-        plhs[0] = mxCreateDoubleScalar((double)bSuccess);
+        plhs[0] = mxCreateDoubleScalar(1);
 }
 
 void __rosoct_publish(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleScalar(0.0);
         return;
     }
 
-    if( nrhs < 3 )
+    if( nrhs < 5 )
         mexErrMsgTxt("not enough args to __rosoct_publish");
 
     bool bSuccess = false;
     string topicname = GetString(prhs[0]);
-    map<string,pair<string,string> >::iterator it = s_mapAdvertised.find(topicname);
+    map<string,Publisher>::iterator it = s_mapAdvertised.find(topicname);
     if( it != s_mapAdvertised.end() ) {
-        OctaveMsgSerializer msgcloner(it->second.first, prhs[1], (uint32_t)mxGetScalar(prhs[2]), it->second.second);
-        pnode->publish(topicname, msgcloner);
+        OctaveMsgSerializer msgcloner(GetString(prhs[1]), prhs[2], (uint32_t)mxGetScalar(prhs[3]), GetString(prhs[4]));
+        it->second.publish(msgcloner);
         bSuccess = true;
     }
 
@@ -914,8 +863,7 @@ void __rosoct_publish(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 
 void __rosoct_create_session(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleScalar(0.0);
         return;
@@ -959,8 +907,7 @@ void __rosoct_create_session(int nlhs,mxArray *plhs[],int nrhs,const mxArray *pr
 
 void __rosoct_terminate_session(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleScalar(0.0);
         return;
@@ -986,8 +933,7 @@ void __rosoct_terminate_session(int nlhs,mxArray *plhs[],int nrhs,const mxArray 
 
 void __rosoct_session_call(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleScalar(0.0);
         return;
@@ -1037,8 +983,7 @@ void __rosoct_session_call(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs
 
 void __rosoct_wait_for_service(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleScalar(0.0);
         return;
@@ -1060,15 +1005,13 @@ void __rosoct_wait_for_service(int nlhs,mxArray *plhs[],int nrhs,const mxArray *
 
 void __rosoct_check_master(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp_nocreate();
     if( nlhs > 0 )
-        plhs[0] = mxCreateDoubleScalar((double)(pnode!=NULL));
+        plhs[0] = mxCreateDoubleScalar((double)ros::master::check());
 }
 
 void __rosoct_get_topics(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
 {
-    ros::Node* pnode = check_roscpp();
-    if( !pnode ) {
+    if( !s_node ) {
         if( nlhs > 0 )
             plhs[0] = mxCreateDoubleMatrix(0,0,mxREAL);
         if( nlhs > 1 )
@@ -1084,14 +1027,19 @@ void __rosoct_get_topics(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[]
         mxGetString(prhs[i],&cmd[0],cmd.size()); cmd.resize(cmd.size()-1);
         if( cmd == "advertised" ) {
             vector<string> vtopics;
-            pnode->getAdvertisedTopics(vtopics);
+            ros::this_node::getAdvertisedTopics(vtopics);
 
             vtopicpairs.clear();
             for(vector<string>::iterator it = vtopics.begin(); it != vtopics.end(); ++it)
-                vtopicpairs.push_back(pair<string,string>(*it,string()));
+                vtopicpairs.push_back(make_pair(*it,string()));
         }
-        else if( cmd == "published" )
-            pnode->getPublishedTopics(&vtopicpairs);
+        else if( cmd == "published" ) {
+            ros::master::V_TopicInfo topicinfo;
+            ros::master::getTopics(topicinfo);
+            vtopicpairs.reserve(topicinfo.size());
+            for(ros::master::V_TopicInfo::iterator it = topicinfo.begin(); it != topicinfo.end(); ++it)
+                vtopicpairs.push_back(make_pair(it->name,it->datatype));
+        }
     }
 
     if( nlhs > 0 ) {
@@ -1116,12 +1064,6 @@ void reset_all()
     s_subscriptions.clear();
     s_services.clear();
     s_sessions.clear();
-
-    ros::Node* pnode = check_roscpp_nocreate();
-    if( pnode != NULL ) {
-        for(map<string, pair<string,string> >::iterator it = s_mapAdvertised.begin(); it != s_mapAdvertised.end(); ++it)
-            pnode->unadvertise(it->first);
-    }
     s_mapAdvertised.clear();
 }
 
@@ -1144,10 +1086,7 @@ void rosoct_exit()
 {
     ROS_INFO("exiting rosoct");
     reset_all();
-    if( ros::Node::instance() ) {
-
-        delete ros::Node::instance();
-    }
+    s_node.reset();
 }
 
 void __rosoct_exit(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
@@ -1216,6 +1155,15 @@ bool install_rosoct(bool bRegisterHook)
     feval("atexit", args);
 #endif
 
+    int argc = s_vargv.size();
+    vector<char*> argv(argc);
+    for(int i = 0; i < argc; ++i)
+        argv[i] = &s_vargv[i][0];
+
+    char strname[256] = "nohost";
+    gethostname(strname, sizeof(strname));
+    strcat(strname,"_rosoct");
+    ros::init(argc,argc > 0 ? &argv[0] : NULL,strname, ros::init_options::NoSigintHandler|ros::init_options::AnonymousName);
     return true;
 }
 
@@ -1241,10 +1189,7 @@ void mexFunction(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
                 octave_rl_event_hook = NULL;
             }
             reset_all();
-            if( ros::Node::instance() ) {
-
-                delete ros::Node::instance();
-            }
+            s_node.reset();
         }
         else if( cmd == "nohook") {
             bRegisterHook = false;
@@ -1264,6 +1209,10 @@ void mexFunction(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
                     s_vargv.push_back(arg);
                 }
             }
+        }
+        else if( cmd == "check_master" ) {
+            if( nlhs > 0 )
+                plhs[0] = mxCreateDoubleScalar((double)ros::master::check());
         }
         else {
             if( !s_bInstalled ) {
@@ -1291,7 +1240,14 @@ void mexFunction(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
     }
 
     if( itcallfn != s_mapFunctions.end() ) {
-        assert(nrhs>=1);
+        ROS_ASSERT(nrhs>=1);
+
+        if( !s_node ) {
+            if( !ros::master::check() )
+                mexErrMsgTxt("ros master not present");
+            s_node.reset(new ros::NodeHandle());
+        }
+
         itcallfn->second(nlhs,plhs,nrhs-1,&prhs[1]);
     }
     else {

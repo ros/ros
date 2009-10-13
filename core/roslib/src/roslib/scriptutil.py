@@ -60,6 +60,21 @@ PRODUCT = 'ros'
 ## caller ID for master calls where caller ID is not vital
 _GLOBAL_CALLER_ID = '/script'
 
+
+import warnings
+def deprecated(func):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emmitted
+    when the function is used."""
+    def newFunc(*args, **kwargs):
+        warnings.warn("Call to deprecated function %s." % func.__name__,
+                      category=DeprecationWarning, stacklevel=2)
+        return func(*args, **kwargs)
+    newFunc.__name__ = func.__name__
+    newFunc.__doc__ = func.__doc__
+    newFunc.__dict__.update(func.__dict__)
+    return newFunc
+
 def script_resolve_name(script_name, name):
     """
     Name resolver for scripts. Supports ROS_NAMESPACE.  Does not
@@ -82,6 +97,7 @@ def script_resolve_name(script_name, name):
         return ns_join(roslib.names.make_caller_id(script_name), name[1:])
     return roslib.names.get_ros_namespace() + name
 
+@deprecated
 def rospackexec(args):
     """
     @return: result of executing rospack command (via subprocess). string will be strip()ed.
@@ -94,6 +110,7 @@ def rospackexec(args):
         raise roslib.exceptions.ROSLibException(val)
     return val
 
+@deprecated
 def rospack_depends_on_1(pkg):
     """
     @param pkg: package name
@@ -103,6 +120,7 @@ def rospack_depends_on_1(pkg):
     """
     return rospackexec(['depends-on1', pkg]).split()
 
+@deprecated
 def rospack_depends_on(pkg):
     """
     @param pkg: package name
@@ -112,6 +130,7 @@ def rospack_depends_on(pkg):
     """
     return rospackexec(['depends-on', pkg]).split()
 
+@deprecated
 def rospack_depends_1(pkg):
     """
     @param pkg: package name
@@ -121,6 +140,7 @@ def rospack_depends_1(pkg):
     """
     return rospackexec(['deps1', pkg]).split()
 
+@deprecated
 def rospack_depends(pkg):
     """
     @param pkg: package name
@@ -130,6 +150,7 @@ def rospack_depends(pkg):
     """
     return rospackexec(['deps', pkg]).split()
 
+@deprecated
 def rospack_plugins(pkg):
     """
     @param pkg: package name
@@ -143,6 +164,7 @@ def rospack_plugins(pkg):
     else:
       return []
 
+@deprecated
 def rosstackexec(args):
     """
     @return: result of executing rosstack command (via subprocess). string will be strip()ed.
@@ -154,6 +176,7 @@ def rosstackexec(args):
         raise Exception(val)
     return val
 
+@deprecated
 def rosstack_depends_on(s):
     """
     @param s: stack name
@@ -163,6 +186,7 @@ def rosstack_depends_on(s):
     """
     return rosstackexec(['depends-on', s]).split()
 
+@deprecated
 def rosstack_depends_on_1(s):
     """
     @param s: stack name
@@ -172,6 +196,7 @@ def rosstack_depends_on_1(s):
     """
     return rosstackexec(['depends-on1', s]).split()
 
+@deprecated
 def rosstack_depends(s):
     """
     @param s: stack name
@@ -181,6 +206,7 @@ def rosstack_depends(s):
     """
     return rosstackexec(['depends', s]).split()
 
+@deprecated
 def rosstack_depends_1(s):
     """
     @param s: stack name

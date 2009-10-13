@@ -32,6 +32,11 @@
 #
 # Revision $Id$
 
+"""
+Top-level implementation of launching processes. Coordinates
+lower-level libraries.
+"""
+
 import os
 import logging
 import socket
@@ -58,70 +63,91 @@ _ID = '/roslaunch'
 
 class RLTestTimeoutException(RLException): pass
 
-## Helper class to manage distributing process events. It functions as
-## a higher level aggregator of events. In particular, events about
-## remote and local processes require different mechanisms for being
-## caught and reported.
 class _ROSLaunchListeners(ProcessListener):
+    """
+    Helper class to manage distributing process events. It functions as
+    a higher level aggregator of events. In particular, events about
+    remote and local processes require different mechanisms for being
+    caught and reported.
+    """
     def __init__(self):
         self.process_listeners = []
 
-    ## Add listener to list of listeners. Not threadsafe.
-    ## @param l ProcessListener
     def add_process_listener(self, l):
+        """
+        Add listener to list of listeners. Not threadsafe.
+        @param l: listener
+        @type  l: L{ProcessListener}
+        """
         self.process_listeners.append(l)
 
-    ## ProcessListener callback
     def process_died(self, process_name, exit_code):
+        """
+        ProcessListener callback
+        """
         for l in self.process_listeners:
             try:
                 l.process_died(process_name, exit_code)
             except Exception, e:
                 logging.getLogger('roslaunch').error(traceback.format_exc())
                 
-## Listener interface for events related to ROSLaunch.
-## ROSLaunchListener is currently identical to the lower-level
-## roslaunch.pmon.ProcessListener interface, but is separate for
-## architectural reasons. The lower-level
-## roslaunch.pmon.ProcessMonitor does not provide events about
-## remotely running processes.
 class ROSLaunchListener(object):
+    """
+    Listener interface for events related to ROSLaunch.
+    ROSLaunchListener is currently identical to the lower-level
+    L{roslaunch.pmon.ProcessListener} interface, but is separate for
+    architectural reasons. The lower-level
+    L{roslaunch.pmon.ProcessMonitor} does not provide events about
+    remotely running processes.
+    """
     
-    ## Notifies listener that process has died. This callback only
-    ## occurs for processes that die during normal process monitor
-    ## execution -- processes that are forcibly killed during
-    ## ProcessMonitor shutdown are not reported.
-    ## @param self
-    ## @param process_name str: name of process
-    ## @param exit_code int: exit code of process. If None, it means
-    ## that ProcessMonitor was unable to determine an exit code.
     def process_died(self, process_name, exit_code):
+        """
+        Notifies listener that process has died. This callback only
+        occurs for processes that die during normal process monitor
+        execution -- processes that are forcibly killed during
+        L{roslaunch.pmon.ProcessMonitor} shutdown are not reported.
+        @param process_name: name of process
+        @type  process_name: str
+        @param exit_code int: exit code of process. If None, it means
+            that L{roslaunch.pmon.ProcessMonitor} was unable to determine an exit code.
+        @type  exit_code: int
+        """
         pass
     
-## Runs a roslaunch. The normal sequence of API calls is launch()
-## followed by spin(). An external thread can call stop(); otherwise
-## the runner will block until an exit signal. Another usage is to
-## call launch() followed by repeated calls to spin_once(). This usage
-## allows the main thread to continue to do work while processes are
-## monitored.
 class ROSLaunchRunner(object):
+    """
+    Runs a roslaunch. The normal sequence of API calls is L{launch()}
+    followed by L{spin()}. An external thread can call L{stop()}; otherwise
+    the runner will block until an exit signal. Another usage is to
+    call L{launch()} followed by repeated calls to L{spin_once()}. This usage
+    allows the main thread to continue to do work while processes are
+    monitored.
+    """
     
-    ## @param self
-    ## @param run_id str: /run_id for this launch. If the core is not
-    ## running, this value will be used to initialize /run_id. If the
-    ## core is already running, this value will be checked against the
-    ## value stored on the core. ROSLaunchRunner will fail during
-    ## launch() if they do not match.
-    ## @param config ROSLaunchConfig: roslauch instance to run
-    ## @param server_uri str: XML-RPC URI of roslaunch server. 
-    ## @param pmon ProcessMonitor: optionally override the process
-    ## monitor the runner uses for starting and tracking processes
-    ## @param is_core bool: if True, this runner is a roscore
-    ## instance. This affects the error behavior if a master is
-    ## already running -- aborts if is_core is True and a core is
-    ## detected.
-    ## @param remote_runner: remote roslaunch process runner
     def __init__(self, run_id, config, server_uri=None, pmon=None, is_core=False, remote_runner=None, is_child=False):
+        """
+        @param run_id: /run_id for this launch. If the core is not
+            running, this value will be used to initialize /run_id. If
+            the core is already running, this value will be checked
+            against the value stored on the core. L{ROSLaunchRunner} will
+            fail during L{launch()} if they do not match.
+        @type  run_id: str            
+        @param config: roslauch instance to run
+        @type  config: L{ROSLaunchConfig}
+        @param server_uri: XML-RPC URI of roslaunch server. 
+        @type  server_uri: str
+        @param pmon: optionally override the process
+            monitor the runner uses for starting and tracking processes
+        @type  pmon: L{ProcessMonitor}
+    
+        @param is_core: if True, this runner is a roscore
+            instance. This affects the error behavior if a master is
+            already running -- aborts if is_core is True and a core is
+            detected.
+        @type  is_core: bool
+        @param remote_runner: remote roslaunch process runner
+        """            
         if run_id is None:
             raise RLException("run_id is None")
         self.run_id = run_id
@@ -145,15 +171,19 @@ class ROSLaunchRunner(object):
         
         self.remote_runner = remote_runner
                 
-    ## Add listener to list of listeners. Not threadsafe. Must be
-    ## called before processes started.
-    ## @param l ProcessListener
     def add_process_listener(self, l):
+        """
+        Add listener to list of listeners. Not threadsafe. Must be
+        called before processes started.
+        @param l: listener
+        @type  l: L{ProcessListener}
+        """
         self.listeners.add_process_listener(l)
 
-    ## Load parameters onto the parameter server
-    ## @param self
     def _load_parameters(self):
+        """
+        Load parameters onto the parameter server
+        """
         self.logger.info("load_parameters starting ...")
         config = self.config
         param_server = config.master.get()
@@ -177,12 +207,14 @@ class ROSLaunchRunner(object):
             raise #re-raise as this is fatal
         self.logger.info("... load_parameters complete")            
 
-    ## Launch all the declared nodes/master
-    ## @param self
-    ## @return [[str], [str]]: two lists of node names where the first
-    ## is the nodes that successfully launched and the second is the
-    ## nodes that failed to launch.
     def _launch_nodes(self):
+        """
+        Launch all the declared nodes/master
+        @return: two lists of node names where the first
+        is the nodes that successfully launched and the second is the
+        nodes that failed to launch.
+        @rtype: [[str], [str]]
+        """        
         config = self.config
         succeeded = []
         failed = []
@@ -208,11 +240,12 @@ class ROSLaunchRunner(object):
         self.logger.info("... launch_nodes complete")
         return succeeded, failed
 
-    ## Validates master configuration and changes the master URI if
-    ## necessary. Also shuts down any existing master.
-    ## @param self
-    ## @throws RLException if existing master cannot be killed
     def _setup_master(self):
+        """
+        Validates master configuration and changes the master URI if
+        necessary. Also shuts down any existing master.
+        @raise RLException: if existing master cannot be killed
+        """
         m = self.config.master
         self.logger.info("initial ROS_MASTER_URI is %s", m.uri)     
         if m.auto in [m.AUTO_START, m.AUTO_RESTART]:
@@ -252,10 +285,11 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
                     self.logger.info("changing ROS_MASTER_URI to [%s] for starting master locally", m.uri)
                     print "changing ROS_MASTER_URI to [%s] for starting master locally"%m.uri
 
-    ## Launches master if requested. Must be run after _setup_master().
-    ## @param self
-    ## @throws RLException if master launch fails
     def _launch_master(self):
+        """
+        Launches master if requested. Must be run after L{_setup_master()}.
+        @raise RLException: if master launch fails
+        """
         m = self.config.master
         auto = m.auto
         is_running = m.is_running()
@@ -305,11 +339,15 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
             self.logger.info("setting /roslaunch/uris/%s:%s' to %s"%(hostname, port, self.server_uri))
             param_server.setParam(_ID, '/roslaunch/uris/%s:%s'%(hostname, port),self.server_uri)
 
-    ## Initialize self.run_id to existing value or setup parameter
-    ## server with /run_id set to \a default_run_id
-    ## @param default_run_id str: run_id to use if value is not set
-    ## @param param_server: parameter server proxy
     def _check_and_set_run_id(self, param_server, run_id):
+        """
+        Initialize self.run_id to existing value or setup parameter
+        server with /run_id set to default_run_id
+        @param default_run_id: run_id to use if value is not set
+        @type  default_run_id: str
+        @param param_server: parameter server proxy
+        @type  param_server: xmlrpclib.ServerProxy
+        """
         code, _, val = param_server.hasParam(_ID, '/run_id')
         if code == 1 and not val:
             printlog_bold("setting /run_id to %s"%run_id)
@@ -326,10 +364,13 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
             #self.run_id = val
             #printlog_bold("/run_id is %s"%self.run_id)            
 
-    ## Launch a single Executable object. Blocks until executable finishes.
-    ## @param e Executable
-    ## @throws RLException if exectuable fails. Failure includes non-zero exit code.
     def _launch_executable(self, e):
+        """
+        Launch a single L{Executable} object. Blocks until executable finishes.
+        @param e: Executable
+        @type  e: L{Executable}
+        @raise RLException: if exectuable fails. Failure includes non-zero exit code.
+        """
         try:
             #kwc: I'm still debating whether shell=True is proper
             cmd = e.command
@@ -347,17 +388,20 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         
     #TODO: _launch_run_executables, _launch_teardown_executables
     #TODO: define and implement behavior for remote launch
-    ## @throws RLException if exectuable fails. Failure includes non-zero exit code.
     def _launch_setup_executables(self):
+        """
+        @raise RLException: if exectuable fails. Failure includes non-zero exit code.
+        """
         exes = [e for e in self.config.executables if e.phase == PHASE_SETUP]
         for e in exes:
             self._launch_executable(e)
     
-    ## launch any core services that are not already running. master must
-    ## be already running
-    ## @param self
-    ## @throws RLException if core launches fail
     def _launch_core_nodes(self):
+        """
+        launch any core services that are not already running. master must
+        be already running
+        @raise RLException: if core launches fail
+        """
         config = self.config
         master = config.master.get()
         tolaunch = []
@@ -380,12 +424,13 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
             else:
                 raise RLException("failed to start core service [%s]"%node_name)
 
-    ## Launch a single node locally. Remote launching is handled separately by the remote module.
-    ## @param self
-    ## @param node Node: node to launch
-    ## @param core bool: if True, core node
-    ## @return str, bool: node process name, successful launch
     def _launch_node(self, node, core=False):
+        """
+        Launch a single node locally. Remote launching is handled separately by the remote module.
+        @param node Node: node to launch
+        @param core bool: if True, core node
+        @return str, bool: node process name, successful launch
+        """
         self.logger.info("... preparing to launch node of type [%s/%s]", node.package, node.type)
         master = self.config.master
         try:
@@ -420,24 +465,29 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
             self.logger.info("... successfully launched [%s]", process.name)
         return process.name, success
         
-    ## Check for running node process.
-    ## @param node Node: node object to check
-    ## @return bool: True if process associated with node is running (launched && !dead)
     def is_node_running(self, node):
+        """
+        Check for running node process.
+        @param node Node: node object to check
+        @return bool: True if process associated with node is running (launched && !dead)
+        """
         #process_name is not set until node is launched.
         return node.process_name and self.pm.has_process(node.process_name)
     
-    ## same as spin() but only does one cycle. must be run from the main thread.
     def spin_once(self):
+        """
+        Same as spin() but only does one cycle. must be run from the main thread.
+        """
         if not self.pm:
             return False
         return self.pm.mainthread_spin_once()
         
-    ## spin() must be run from the main thread. spin() is very
-    ## important for roslaunch as it picks up jobs that the process
-    ## monitor need to be run in the main thread.
-    ## @param self
     def spin(self):
+        """
+        spin() must be run from the main thread. spin() is very
+        important for roslaunch as it picks up jobs that the process
+        monitor need to be run in the main thread.
+        """
         self.logger.info("spin")
 
         # #556: if we're just setting parameters and aren't launching
@@ -452,9 +502,10 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         self.stop()
         printlog_bold("done")
     
-    ## Stop the launch and all associated processes. not thread-safe.
-    ## @param self
     def stop(self):
+        """
+        Stop the launch and all associated processes. not thread-safe.
+        """        
         self.logger.info("runner.stop()")
         if self.pm is not None:
             printlog("shutting down processing monitor...")
@@ -466,10 +517,11 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         else:
             self.logger.info("... roslaunch runner has already been stopped")
 
-    ## setup the state of the ROS network, including the parameter
-    ## server state and core services
-    ## @param self
     def _setup(self):
+        """
+        Setup the state of the ROS network, including the parameter
+        server state and core services
+        """
         # this may have already been done, but do just in case
         self.config.assign_machines()
         
@@ -493,25 +545,29 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         # these exectuables exit.
         self._launch_setup_executables()
         
-    ## Run the launch. Depending on usage, caller should call
-    ## spin_once or spin as appropriate after launch().
-    ## @param self
-    ## @return ([str], [str]): tuple containing list of nodes that
-    ## successfully launches and list of nodes that failed to launch
-    ## @throws RLException if launch fails (e.g. run_id parameter does
-    ## not match ID on parameter server)
     def launch(self):
+        """
+        Run the launch. Depending on usage, caller should call
+        spin_once or spin as appropriate after launch().
+        @return ([str], [str]): tuple containing list of nodes that
+            successfully launches and list of nodes that failed to launch
+        @rtype: ([str], [str])
+        @raise RLException: if launch fails (e.g. run_id parameter does
+        not match ID on parameter server)
+        """        
         self._setup()        
         succeeded, failed = self._launch_nodes()
         # inform process monitor that we are done with process registration
         self.pm.registrations_complete()
         return succeeded, failed 
 
-    ## Run the test node. Blocks until completion or timeout.
-    ## @param self
-    ## @param test Test: test node to run    
-    ## @raise RLTestTimeoutException if test fails to launch or test times out
     def run_test(self, test):
+        """
+        Run the test node. Blocks until completion or timeout.
+        @param test: test node to run
+        @type  test: Test
+        @raise RLTestTimeoutException: if test fails to launch or test times out
+        """
         self.logger.info("... preparing to run test [%s] of type [%s/%s]", test.test_name, test.package, test.type)
         name, success = self._launch_node(test)
         if not success:
@@ -530,20 +586,27 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
 # the runner needs to invoke methods on the remote API, which depends
 # on launch.
 
-## API for remote running
 class ROSRemoteRunnerIF(object):
+    """
+    API for remote running
+    """
     def __init__(self):
         pass
     def setup(self):
         pass
-    ## Listen to events about remote processes dying. Not
-    ## threadsafe. Must be called before processes started.
-    ## @param l ProcessListener
     def add_process_listener(self, l):
+        """
+        Listen to events about remote processes dying. Not
+        threadsafe. Must be called before processes started.
+        @param l: listener
+        @type  l: L{ProcessListener}
+        """
         pass
 
-    ## Contact each child to launch remote nodes
-    ## @param self
-    ## @return [str], [str]: succeeded, failed
     def launch_remote_nodes(self):
+        """
+        Contact each child to launch remote nodes
+        @return: succeeded, failed
+        @rtype: [str], [str]
+        """
         pass

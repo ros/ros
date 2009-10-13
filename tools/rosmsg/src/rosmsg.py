@@ -184,7 +184,7 @@ def rosmsg_users(mode, type_):
 ## @return str: text of .srv file
 def get_srv_text(type_, raw=False):
     package, base_type = roslib.names.package_resource_name(type_)
-    roslib.msgs.load_package_dependencies(package)
+    roslib.msgs.load_package_dependencies(package, load_recursive=True)
     roslib.msgs.load_package(package)
     f = roslib.srvs.srv_file(package, base_type)
     name, spec = roslib.srvs.load_from_file(f)
@@ -199,7 +199,7 @@ def get_srv_text(type_, raw=False):
 ## @return str: text of .msg file
 def get_msg_text(type_, raw=False):
     package, base_type = roslib.names.package_resource_name(type_)
-    roslib.msgs.load_package_dependencies(package)
+    roslib.msgs.load_package_dependencies(package, load_recursive=True)
     roslib.msgs.load_package(package)
     spec = roslib.msgs.get_registered(type_)
     if raw:
@@ -292,7 +292,7 @@ def rosmsg_cmd_show(mode, full):
 
 def rosmsg_md5(mode, type_):
     package, base_type = roslib.names.package_resource_name(type_)
-    roslib.msgs.load_package_dependencies(package)
+    roslib.msgs.load_package_dependencies(package, load_recursive=True)
     roslib.msgs.load_package(package)
     if mode == roslib.msgs.EXT:
         f = roslib.msgs.msg_file(package, base_type)

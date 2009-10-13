@@ -71,7 +71,7 @@ def load_command_line_node_params(argv):
 ## routine results in an actual network call to the parameter server.
 ## Client must be an actual ROS node in order to implement a parameter cache.
 ## @param key str: name of parameter to fetch
-## @throws KeyError if parameter is not set
+## @raise KeyError if parameter is not set
 def get_param(key):
     global _param_server
     if _param_server is None:

@@ -92,6 +92,9 @@ def compute_md5_text(get_deps_dict, spec):
     packages names from type names. For convenience sake, constants are
     reordered ahead of other declarations, in the order that they were
     originally defined.
+
+    @return: text for ROS MD5-processing
+    @rtype: str
     """
     uniquedeps = get_deps_dict['uniquedeps']
     package = get_deps_dict['package']

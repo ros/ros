@@ -103,19 +103,27 @@ SIMPLE_TYPES_DICT = { #see python module struct
 ## Simple types are primitives with fixed-serialization length
 SIMPLE_TYPES = SIMPLE_TYPES_DICT.keys()
 
-## @return bool: True if type is a 'simple' type, i.e. is of
-## fixed/known serialization length. This is effectively all primitive
-## types except for string"
 def is_simple(type_):
+    """
+    @return bool: True if type is a 'simple' type, i.e. is of
+    fixed/known serialization length. This is effectively all primitive
+    types except for string"
+    @rtype: bool
+    """
     return type_ in SIMPLE_TYPES
 
-## @return True if \a type_ is a special type (i.e. builtin represented as a class instead of a primitive)
 def is_special(type_):
+    """
+    @return True if type_ is a special type (i.e. builtin represented as a class instead of a primitive)
+    @rtype: bool
+    """
     return type_ in _SPECIAL_TYPES
 
-## @internal
-## @return Special special type handler for \a type_ or None
 def get_special(type_):
+    """
+    @return: special type handler for type_ or None
+    @rtype: L{Special}
+    """
     return _SPECIAL_TYPES.get(type_, None)
                      
 ################################################################################
@@ -123,18 +131,26 @@ def get_special(type_):
 
 class Special:
 
-    ## @param constructor str: expression to instantiate new type instance for deserialization
-    ## @param post_Deserialize str: format string for expression to evaluate on type instance after deserialization is complete.
-    ##   variable name will be passed in as the single argument to format string.
-    ## @param import_str str: import to include if type is present
     def __init__(self, constructor, post_deserialize, import_str):
+        """
+        @param constructor: expression to instantiate new type instance for deserialization
+        @type  constructor: str
+        @param post_Deserialize: format string for expression to evaluate on type instance after deserialization is complete.
+        @type  post_Deserialize: str
+          variable name will be passed in as the single argument to format string.
+        @param import_str: import to include if type is present
+        @type  import_str: str
+        """
         self.constructor = constructor
         self.post_deserialize = post_deserialize
         self.import_str = import_str
         
-    ## @return Post-deserialization code to executed (unindented) or
-    ## None if no post-deserialization is required
     def get_post_deserialize(self, varname):
+        """
+        @return: Post-deserialization code to executed (unindented) or
+        None if no post-deserialization is required
+        @rtype: str
+        """
         if self.post_deserialize:
             return self.post_deserialize%varname
         else:
@@ -150,10 +166,16 @@ _SPECIAL_TYPES = {
 # utilities
 
 # #671
-## Compute default value for \a field_type
-## @param default_package str: default package
-## @param field_type str: ROS .msg field type
 def default_value(field_type, default_package):
+    """
+    Compute default value for field_type
+    @param default_package: default package
+    @type  default_package: str
+    @param field_type str: ROS .msg field type
+    @type  field_type: ROS .msg field type
+    @return: default value encoded in Python string representation
+    @rtype: str
+    """
     if field_type in ['byte', 'int8', 'int16', 'int32', 'int64',\
                           'char', 'uint8', 'uint16', 'uint32', 'uint64']:
         return '0'
@@ -180,12 +202,16 @@ def default_value(field_type, default_package):
     else:
         return compute_constructor(default_package, field_type)
 
-## Flattens the msg spec so that embedded message fields become
-## direct references. The resulting MsgSpec isn't a true/legal
-## MsgSpec and should only be used for serializer generation
-## @param msg MsgSpec: msg to flatten
-## @return MsgSpec flatten message
 def flatten(msg):
+    """
+    Flattens the msg spec so that embedded message fields become
+    direct references. The resulting MsgSpec isn't a true/legal
+    L{MsgSpec} and should only be used for serializer generation
+    @param msg: msg to flatten
+    @type  msg: L{MsgSpec}
+    @return: flatten message
+    @rtype: L{MsgSpec}
+    """
     new_types = []
     new_names = []
     for t, n in zip(msg.types, msg.names):
@@ -202,16 +228,25 @@ def flatten(msg):
             new_names.append(n)
     return roslib.msgs.MsgSpec(new_types, new_names, msg.constants, msg.text)
 
-## Remap field/constant names in \a spec to avoid collision with Python reserved words. 
-## @param spec MsgSpec: msg spec to map to new, python-safe field names
-## @return MsgSpec: python-safe message specification
 def make_python_safe(spec):
+    """
+    Remap field/constant names in spec to avoid collision with Python reserved words. 
+    @param spec: msg spec to map to new, python-safe field names
+    @type  spec: L{MsgSpec}
+    @return: python-safe message specification
+    @rtype: L{MsgSpec}
+    """
     new_c = [roslib.msgs.Constant(c.type, _remap_reserved(c.name), c.val, c.val_text) for c in spec.constants]
     return roslib.msgs.MsgSpec(spec.types, [_remap_reserved(n) for n in spec.names], new_c, spec.text)
 
-## @internal
-## map \a field_name to a python-safe representation, if necessary
 def _remap_reserved(field_name):
+    """
+    Map field_name to a python-safe representation, if necessary
+    @param field_name: msg field name
+    @type  field_name: str
+    @return: remapped name
+    @rtype: str
+    """
     #doing this lazy saves 0.05s on up-to-date builds
     if not _reserved_words:
         _load_reserved_words()
@@ -220,8 +255,11 @@ def _remap_reserved(field_name):
     return field_name
 
 _reserved_words = []
-## load python reserved words file. these reserved words cannot be field names without being altered first
 def _load_reserved_words():
+    """
+    load python reserved words file into global _reserved_words. these
+    reserved words cannot be field names without being altered first
+    """
     global _reserved_words
     roslib_dir = roslib.packages.get_pkg_dir('roslib')
     reserved_words_file = os.path.join(roslib_dir, 'scripts', 'python-reserved-words.txt')
@@ -238,9 +276,13 @@ def _load_reserved_words():
 ################################################################################
 # (de)serialization routines
 
-## @param [str]: type names
-## @return str: format string for struct if types are all simple. Otherwise, return None
 def compute_struct_pattern(types):
+    """
+    @param types: type names
+    @type  types: [str]
+    @return: format string for struct if types are all simple. Otherwise, return None
+    @rtype: str
+    """
     if not types: #important to filter None and empty first
         return None
     try: 
@@ -248,18 +290,25 @@ def compute_struct_pattern(types):
     except:
         return None
 
-## compute post-deserialization code for \a type_, if necessary
-## @return str: code to execute post-deserialization (unindented), or None if not necessary.
 def compute_post_deserialize(type_, varname):
+    """
+    Compute post-deserialization code for type_, if necessary
+    @return: code to execute post-deserialization (unindented), or None if not necessary.
+    @rtype: str
+    """
     s = get_special(type_)
     if s is not None:
         return s.get_post_deserialize(varname)
 
-## compute python constructor expression for specified message type implementation
-## @param package str: package that type is being imported into. Used
-## to resolve \a type_ if package is not specified.
-## @param type_ str: message type
 def compute_constructor(package, type_):
+    """
+    Compute python constructor expression for specified message type implementation
+    @param package str: package that type is being imported into. Used
+        to resolve type_ if package is not specified.
+    @type  package: str
+    @param type_: message type
+    @type  type_: str
+    """
     if is_special(type_):
         return get_special(type_).constructor
     else:
@@ -269,10 +318,14 @@ def compute_constructor(package, type_):
         else:
             return '%s.msg.%s()'%(base_pkg, base_type_)
 
-## @param package str: package that type is being imported into
-## @param type    str: message type (package resource name)
-## @return (str, str): python package and type name
 def compute_pkg_type(package, type_):
+    """
+    @param package: package that type is being imported into
+    @type  package: str
+    @param type: message type (package resource name)
+    @type  type: str
+    @return (str, str): python package and type name
+    """
     splits = type_.split(roslib.msgs.SEP)
     if len(splits) == 1:
         return package, splits[0]
@@ -281,11 +334,16 @@ def compute_pkg_type(package, type_):
     else:
         raise MsgGenerationException("illegal message type: %s"%type_)
     
-## compute python import statement for specified message type implementation
-## @param package str: package that type is being imported into
-## @param type_ str: message type (package resource name)
-## @return [str]: list of import statements (no newline) required to use \a type_ from \a package
 def compute_import(package, type_):
+    """
+    Compute python import statement for specified message type implementation
+    @param package: package that type is being imported into
+    @type  package: str
+    @param type_: message type (package resource name)
+    @type  type_: str
+    @return: list of import statements (no newline) required to use type_ from package
+    @rtype: [str]
+    """
     # orig_base_type is the unresolved type
     orig_base_type = roslib.msgs.base_msg_type(type_) # strip array-suffix
     # resolve orig_base_type based on the current package context.
@@ -316,16 +374,29 @@ def compute_import(package, type_):
                 retval.extend([x for x in sub if not x in retval])
     return retval
 
-## Same as roslib.gentools.compute_full_text, except that the resulting text is escaped to be safe for """ string quoting
-## @param get_deps_dict dict: dictionary returned by get_dependencies call
-## @return str concatenated text for msg/srv file and embedded msg/srv types. Text will be escaped for """ string quoting
 def compute_full_text_escaped(gen_deps_dict):
+    """
+    Same as roslib.gentools.compute_full_text, except that the
+    resulting text is escaped to be safe for Python's triple-quote string
+    quoting
+
+    @param get_deps_dict: dictionary returned by get_dependencies call
+    @type  get_deps_dict: dict
+    @return: concatenated text for msg/srv file and embedded msg/srv types. Text will be escaped for triple-quote
+    @rtype: str
+    """
     msg_definition = roslib.gentools.compute_full_text(gen_deps_dict)
     msg_definition.replace('"""', r'\"\"\"')
     return msg_definition
 
-## optimize the struct format pattern. 
 def reduce_pattern(pattern):
+    """
+    Optimize the struct format pattern. 
+    @param pattern: struct pattern
+    @type  pattern: str
+    @return: optimized struct pattern
+    @rtype: str
+    """
     if not pattern or len(pattern) == 1 or '%' in pattern:
         return pattern
     prev = pattern[0]
@@ -368,10 +439,15 @@ def unpack(var, pattern, buff):
     """create struct.unpack call for when pattern is a string pattern"""
     return var + " = struct.unpack('<"+reduce_pattern(pattern)+"',"+buff+")"
 def unpack2(var, pattern, buff):
-    """create struct.unpack call for when pattern refers to variable
+    """
+    Create struct.unpack call for when pattern refers to variable
     @param var: variable the stores the result of unpack call
+    @type  var: str
     @param pattern: name of variable that unpack will read from
-    @param buff: buffer that the unpack reads from"""
+    @type  pattern: str
+    @param buff: buffer that the unpack reads from
+    @type  buff: StringIO
+    """
     return "%s = struct.unpack(%s, %s)"%(var, pattern, buff)
 
 ################################################################################
@@ -502,7 +578,7 @@ def string_serializer_generator(package, type_, name, serialize):
         yield unpack2("(%s,)"%var, 'pattern', 'str[start:end]')
         
 ## generator for array types
-## @throws MsgGenerationException: if array spec is invalid
+## @raise MsgGenerationException: if array spec is invalid
 def array_serializer_generator(package, type_, name, serialize, is_numpy):
     base_type, is_array, array_len = roslib.msgs.parse_type(type_)
     if not is_array:
@@ -642,7 +718,7 @@ def complex_serializer_generator(package, type_, name, serialize, is_numpy):
             #Invalid
             raise MsgGenerationException("Unknown type: %s. Package context is %s"%(type_, package))
 
-## Generator (de)serialization code for multiple fields from \a spec
+## Generator (de)serialization code for multiple fields from spec
 ## @param spec MsgSpec
 ## @param start int: first field to serialize
 ## @param end int: last field to serialize
@@ -746,13 +822,19 @@ def deserialize_fn_generator(package, spec, is_numpy=False):
     yield "except struct.error, e:"
     yield "  raise roslib.message.DeserializationError(e) #most likely buffer underfill"
 
-## Python code generator for .msg files. Takes in a package name,
-## message name, and message specification and generates a Python
-## message class.
-## @param package str: name of package for message
-## @param name str: base type name of message, e.g. 'Empty', 'String'
-## @param spec MsgSpec: parsed .msg specification
 def msg_generator(package, name, spec):
+    """
+    Python code generator for .msg files. Takes in a package name,
+    message name, and message specification and generates a Python
+    message class.
+    
+    @param package: name of package for message
+    @type  package: str
+    @param name: base type name of message, e.g. 'Empty', 'String'
+    @type  name: str
+    @param spec: parsed .msg specification
+    @type  spec: L{MsgSpec}
+    """
     spec = make_python_safe(spec) # remap spec names to be Python-safe
     spec_names = spec.names
 
@@ -870,7 +952,7 @@ def msg_generator(package, name, spec):
 
 ## @param dep_msg str: text of dependent .msg definition
 ## @return str, MsgSpec: type name, message spec
-## @throws MsgGenerationException if dep_msg is improperly formatted
+## @raise MsgGenerationException if dep_msg is improperly formatted
 def _generate_dynamic_specs(specs, dep_msg):
     line1 = dep_msg.find('\n')
     msg_line = dep_msg[:line1]
@@ -909,13 +991,15 @@ def _gen_dyn_modify_references(py_text, types):
     py_text = py_text.replace('roslib.msg._Header.Header', _gen_dyn_name('roslib', 'Header'))
     return py_text
 
-## Dymamically generate message classes from \a msg_cat .msg text
-## gendeps dump. This method modifies sys.path to include a temp file
-## directory.
-## @param core_type str: top-level ROS message type of concatenanted .msg text
-## @param msg_cat str: concatenation of full message text (output of gendeps --cat)
-## @throws MsgGenerationException if dep_msg is improperly formatted
 def generate_dynamic(core_type, msg_cat):
+    """
+    Dymamically generate message classes from msg_cat .msg text
+    gendeps dump. This method modifies sys.path to include a temp file
+    directory.
+    @param core_type str: top-level ROS message type of concatenanted .msg text
+    @param msg_cat str: concatenation of full message text (output of gendeps --cat)
+    @raise MsgGenerationException: if dep_msg is improperly formatted
+    """
     core_pkg, core_base_type = roslib.names.package_resource_name(core_type)
     
     # separate msg_cat into the core message and dependencies

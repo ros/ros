@@ -77,7 +77,7 @@ def parse_http_host_and_port(url):
     @type  url: str
     @return: hostname and port number in URL or 80 (default).
     @rtype: (str, int)
-    @throws ValueError: if the url does not validate
+    @raise ValueError: if the url does not validate
     """
     # can't use p.port because that's only available in Python 2.5
     if not url:
@@ -104,7 +104,7 @@ def get_address_override():
     """
     @return: ROS_IP/ROS_HOSTNAME override or None
     @rtype: str
-    @throws ValueError if ROS_IP/ROS_HOSTNAME/__ip/__hostname are invalidly specified
+    @raise ValueError: if ROS_IP/ROS_HOSTNAME/__ip/__hostname are invalidly specified
     """
     # #998: check for command-line remappings first
     for arg in sys.argv:

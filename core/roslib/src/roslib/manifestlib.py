@@ -376,11 +376,11 @@ def parse_file(m, file):
     """
     Parse manifest file (package, stack)
     @param m: field to populate
-    @type  m: _Manifest
+    @type  m: L{_Manifest}
     @param file: manifest.xml file path
     @type  file: str
     @return: return m, populated with parsed fields
-    @rtype: Manifest
+    @rtype: L{_Manifest}
     """
     if not file:
         raise ValueError("Missing manifest file argument")
@@ -402,9 +402,9 @@ def parse(m, string, filename='string'):
     @param string: manifest.xml contents
     @type  string: str
     @param m: field to populate
-    @type  m: _Manifest
+    @type  m: L{_Manifest}
     @return: return m, populated with parsed fields
-    @rtype:  Manifest
+    @rtype: L{_Manifest}
     """
     try:
         d = dom.parseString(string)

@@ -32,6 +32,10 @@
 #
 # Revision $Id$
 
+"""
+Library for manipulating ROS Names. See U{http://ros.org/wiki/Names}.
+"""
+
 import os
 import sys
 
@@ -51,25 +55,42 @@ PRIV_NAME = '~'
 REMAP = ":="
 ANYTYPE = '*'
 
-## Base exception type for errors in roslib.names routines
-class ROSNameException(roslib.exceptions.ROSLibException): pass
+class ROSNameException(roslib.exceptions.ROSLibException):
+    """
+    Base exception type for errors in roslib.names routines
+    """
+    pass
 
-## @return str: ROS namespace of current program
 def get_ros_namespace(environ=os.environ):
+    """
+    @return: ROS namespace of current program
+    @rtype: str
+    """    
     #we force command-line-specified namespaces to be globally scoped 
     return make_global_ns(environ.get(ROS_NAMESPACE, GLOBALNS))
 
-## Resolve a local name to the caller ID based on ROS environment settings (i.e. ROS_NAMESPACE)
-## @param name str: local name to calculate caller ID from, e.g. 'camera', 'node'
-## @return str: caller ID based on supplied local \a name
 def make_caller_id(name):
+    """
+    Resolve a local name to the caller ID based on ROS environment settings (i.e. ROS_NAMESPACE)
+
+    @param name: local name to calculate caller ID from, e.g. 'camera', 'node'
+    @type  name: str
+    @return: caller ID based on supplied local name
+    @rtype: str
+    """    
     return make_global_ns(ns_join(get_ros_namespace(), name))
 
-## @param name str: ROS resource name. Cannot be a ~name.
-## @return str: \a name as a global name, e.g. 'foo' -> '/foo/'.
-## This does NOT resolve a name.
-## @throws ROSNameException if \a name is a ~name
 def make_global_ns(name):
+    """
+    Convert name to a global name with a trailing namespace separator.
+    
+    @param name: ROS resource name. Cannot be a ~name.
+    @type  name: str
+    @return str: name as a global name, e.g. 'foo' -> '/foo/'.
+        This does NOT resolve a name.
+    @rtype: str
+    @raise ROSNameException: if name is a ~name
+    """    
     if is_private(name):
         raise ROSNameException("cannot turn [%s] into a global name"%name)
     if not is_global(name):
@@ -78,26 +99,41 @@ def make_global_ns(name):
         name = name + SEP
     return name
 
-## @param name str: must be a legal name in canonical form
-## @return bool: True if \a name is a globally referenced name (i.e. /ns/name)
 def is_global(name):
+    """
+    Test if name is a global graph resource name.
+    
+    @param name: must be a legal name in canonical form
+    @type  name: str
+    @return: True if name is a globally referenced name (i.e. /ns/name)
+    @rtype: bool
+    """    
     return name and name[0] == SEP
 
-## @param name str: must be a legal name in canonical form
-## @return bool: True if \a name is a privately referenced name (i.e. ~name)
 def is_private(name):
+    """
+    Test if name is a private graph resource name.
+    
+    @param name: must be a legal name in canonical form
+    @type  name: str
+    @return bool: True if name is a privately referenced name (i.e. ~name)
+    """    
     return name and name[0] == PRIV_NAME
 
-## Get the namespace of name. The namespace is returned with a
-## trailing slash in order to favor easy concatenation and easier use
-## within the global context.
-##     
-## @param name str: name to return the namespace of. Must be a legal
-## name. NOTE: an empty name will return the global namespace.
-## @return str: Namespace of name. For example, '/wg/node1' returns '/wg/'. The
-## global namespace is '/'. 
-## @throws ValueError if \a name is invalid
 def namespace(name):
+    """
+    Get the namespace of name. The namespace is returned with a
+    trailing slash in order to favor easy concatenation and easier use
+    within the global context.
+        
+    @param name: name to return the namespace of. Must be a legal
+        name. NOTE: an empty name will return the global namespace.
+    @type  name: str
+    @return str: Namespace of name. For example, '/wg/node1' returns '/wg/'. The
+        global namespace is '/'. 
+    @rtype: str
+    @raise ValueError: if name is invalid
+    """    
     "map name to its namespace"
     if name is None: 
         raise ValueError('name')
@@ -109,14 +145,18 @@ def namespace(name):
         name = name[:-1]
     return name[:name.rfind(SEP)+1] or SEP
 
-## Join a namespace and name. If name is unjoinable (i.e. ~private or
-## /global) it will be returned without joining
-##
-## @param ns str: namespace ('/' and '~' are both legal)
-## @param name str: a legal name
-## @return str: \a name concatenated to \a ns, or \a name if it is
-## unjoinable.
 def ns_join(ns, name):
+    """
+    Join a namespace and name. If name is unjoinable (i.e. ~private or
+    /global) it will be returned without joining
+
+    @param ns: namespace ('/' and '~' are both legal)
+    @type  ns: str
+    @param name str: a legal name
+    @return str: name concatenated to ns, or name if it is
+        unjoinable.
+    @rtype: str
+    """    
     if is_private(name) or is_global(name):
         return name
     if ns == PRIV_NAME:
@@ -125,11 +165,16 @@ def ns_join(ns, name):
         return ns + name
     return ns + SEP + name
 
-## Load name mappings encoded in command-line arguments. This will filter
-## out any parameter assignment mappings (see roslib.param.load_param_mappings()).
-## @param argv [str]: command-line arguments
-## @return dict {str: str}: name->name remappings. 
 def load_mappings(argv):
+    """
+    Load name mappings encoded in command-line arguments. This will filter
+    out any parameter assignment mappings (see roslib.param.load_param_mappings()).
+
+    @param argv: command-line arguments
+    @type  argv: [str]
+    @return: name->name remappings. 
+    @rtype: dict {str: str}
+    """    
     mappings = {}
     for arg in argv:
         if REMAP in arg:
@@ -149,38 +194,62 @@ def load_mappings(argv):
 # RESOURCE NAMES
 # resource names refer to entities in a file system
 
-## Convert package name + resource into a fully qualified resource name
-## @param res_pkg_name str: name of package resource is located in
-## @param name str: resource base name
-## @param my_pkg str: name of package resource is being referred to
-## in. If specified, name will be returned in local form if \a
-## res_pkg_name is \a my_pkg
-## @return str: name for resource 
 def resource_name(res_pkg_name, name, my_pkg=None):
+    """
+    Convert package name + resource into a fully qualified resource name
+
+    @param res_pkg_name: name of package resource is located in
+    @type  res_pkg_name: str
+    @param name: resource base name
+    @type  name: str
+    @param my_pkg: name of package resource is being referred to
+        in. If specified, name will be returned in local form if 
+        res_pkg_name is my_pkg
+    @type  my_pkg: str
+    @return: name for resource 
+    @rtype: str
+    """    
     if res_pkg_name != my_pkg:
         return res_pkg_name+PRN_SEPARATOR+name
     return name
 
-## Convert fully qualified resource name into the package-less resource name
-## @param name str: package resource name, e.g. 'std_msgs/String'
-## @return str: resource name sans package-name scope
 def resource_name_base(name):
-    """pkg/typeName -> typeName, typeName -> typeName"""
+    """
+    pkg/typeName -> typeName, typeName -> typeName
+    
+    Convert fully qualified resource name into the package-less resource name
+    @param name: package resource name, e.g. 'std_msgs/String'
+    @type  name: str
+    @return: resource name sans package-name scope
+    @rtype: str
+    """    
+
     return name[name.rfind(PRN_SEPARATOR)+1:]
 
-## @param name str: package resource name, e.g. 'std_msgs/String'
-## @return str: package name of resource
 def resource_name_package(name):
-    """pkg/typeName -> pkg, typeName -> None"""
+    """
+    pkg/typeName -> pkg, typeName -> None
+    
+    @param name: package resource name, e.g. 'std_msgs/String'
+    @type  name: str
+    @return: package name of resource
+    @rtype: str
+    """    
+
     if not PRN_SEPARATOR in name:
         return None
     return name[:name.find(PRN_SEPARATOR)]
 
-## Split a name into its package and resource name parts, e.g. 'std_msgs/String -> std_msgs, String'
-## @param name str: package resource name, e.g. 'std_msgs/String'
-## @return str: package name, resource name
-## @raise ROSNameException if \a name is invalid
 def package_resource_name(name):
+    """
+    Split a name into its package and resource name parts, e.g. 'std_msgs/String -> std_msgs, String'
+
+    @param name: package resource name, e.g. 'std_msgs/String'
+    @type  name: str
+    @return: package name, resource name
+    @rtype: str
+    @raise ROSNameException: if name is invalid
+    """    
     if PRN_SEPARATOR in name:
         val = tuple(name.split(PRN_SEPARATOR))
         if len(val) != 2:
@@ -197,12 +266,23 @@ def _is_safe_name(name, type_name):
     return is_legal_resource_name(name)
 
 def is_valid_local_name(name):
+    """
+    """    
     return _is_safe_name(name, 'name')
     
 # TODO: redo this, this is very old
 import re
 NAME_LEGAL_CHARS_P = re.compile('^[A-Za-z][\w_\/]*$') #ascii char followed by (alphanumeric, _, /)
 def is_legal_resource_name(name):
+    """
+    Check if name is a legal ROS name (alphabetical character followed
+    by alphanumeric, underscore, or forward slashes). This constraint
+    is currently not being enforced, but may start getting enforced in
+    later versions of ROS.
+
+    @param name: Name
+    @type  name: str
+    """    
     if not name: #None or empty
         return False
     if len(name) != len(name.strip()):

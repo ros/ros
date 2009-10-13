@@ -49,8 +49,10 @@ from roslaunch.xmlloader import XmlLoader, XmlParseException
 
 NAME = 'roslaunch'
 
-## scripts using roslaunch MUST call configure_logging
 def configure_logging(uuid):
+    """
+    scripts using roslaunch MUST call configure_logging
+    """
     try:
         import socket
         logfile_basename = os.path.join(uuid, '%s-%s-%s.log'%(NAME, socket.gethostname(), os.getpid()))

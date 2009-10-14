@@ -259,7 +259,7 @@ ncurses:
   centos: ncurses-devel
   debian: libncurses5-dev
 qt4:
-  ubuntu: libqt4-core libqt4-dev qt4-dev-tools libqt4-opengl-dev
+  ubuntu: libqt4-core libqt4-dev qt4-dev-tools
   debian: libqt4-core libqt4-dev qt4-dev-tools libqt4-opengl-dev
   arch: qt
   macports: qt4-mac

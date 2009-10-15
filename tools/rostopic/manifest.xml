@@ -5,10 +5,12 @@ rostopic is contains the rostopic command-line tool for displaying
 debug information about
 ROS <a href="http://www.ros.org/wiki/Topics">Topics</a>, including
 publishers, subscribers, publishing rate,
-and <a href="http://www.ros.org/wiki/Messages">Messages</a>. It also
+and ROS <a href="http://www.ros.org/wiki/Messages">Messages</a>. It also
 contains an experimental Python library for getting information about
-and interacting with Topics dynamically. This library is for
-internal-use only as its API is not stable.
+and interacting with topics dynamically. This library is for
+internal-use only as its API is not stable, though it does provide
+examples of how to implement dynamic subscription and publication
+behaviors in ROS.
 
   </description>
   <author>Ken Conley/kwc@willowgarage.com</author>

@@ -1,7 +1,7 @@
 distros:
 - latest: [ros, common, common_msgs, diagnostics, geometry, image_common, joystick_drivers,
-    laser_pipeline, navigation, opencv, physics_ode, robot_model, simulator_stage,
-    slam_gmapping, sound_drivers, visualization_common, visualization]
+    laser_pipeline, navigation, physics_ode, robot_model, simulator_stage, slam_gmapping,
+    sound_drivers, vision_opencv, visualization_common, visualization]
 stacks:
   _uri_rules: {dev-svn: 'https://code.ros.org/svn/ros-pkg/stacks/$STACK_NAME/trunk',
     release-svn: 'https://code.ros.org/svn/ros-pkg/stacks/$STACK_NAME/tags/$STACK_NAME-$STACK_VERSION',
@@ -14,7 +14,6 @@ stacks:
   joystick_drivers: {latest: 0.9.0}
   laser_pipeline: {latest: 0.5.0}
   navigation: {latest: 0.5.1}
-  opencv: {latest: 0.2.0}
   physics_ode: {latest: 0.2.0}
   robot_model: {latest: 0.6.0}
   ros:
@@ -23,5 +22,6 @@ stacks:
   simulator_stage: {latest: 0.9.0}
   slam_gmapping: {latest: 0.9.1}
   sound_drivers: {latest: 0.9.0}
+  vision_opencv: {latest: 0.3.0}
   visualization: {latest: 0.3.0}
   visualization_common: {latest: 0.9.4}

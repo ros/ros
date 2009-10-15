@@ -55,12 +55,26 @@ def link_name(rd_config):
         elif rd_config['builder'] in ['epydoc', 'sphinx']:
             return 'Python API'
         else:
-            return builder
+            return rd_config['builder']
     return n
     
 def generate_links(ctx, package, base_dir, rd_configs):
-    # need to generate links for builders that specify an output_dir
-    links = [_href(c['output_dir'], link_name(c)) for c in rd_configs if 'output_dir' in c and c['output_dir'] != '.']
+    # rosmake is the one builder that doesn't have an output_dir
+    # specification, nor output for that matter, so filter it out from
+    # landing page processing
+    configs = [c for c in rd_configs if c['builder'] != 'rosmake']
+    
+    output_dirs = [c.get('output_dir', None) for c in configs]
+    # filter out empties
+    output_dirs = [d for d in output_dirs if d and d != '.']
+    
+    # length check. if these are unequal, cannot generate landing
+    # page. this is often true if the config is merely generating
+    # local. Ignore 'rosmake' builder as it doesn't have output spec
+    if len(output_dirs) != len(configsj):
+        return None
+
+    links = [_href(d, link_name(c)) for c, d in zip(configs, output_dirs)]
         
     msgs = roslib.msgs.list_msg_types(package, False)
     srvs = roslib.srvs.list_srv_types(package, False)
@@ -96,7 +110,7 @@ def generate_landing_page(ctx):
                 # to the base directory and no landing page is required
                 # (or it means that the config is corrupt)
                 if not links:
-                    print "ignoring landing page for", package
+                    #print "ignoring landing page for", package
                     continue
 
                 html_dir = html_path(package, ctx.docdir)

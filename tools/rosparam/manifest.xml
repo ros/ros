@@ -17,4 +17,9 @@ rosparam can be invoked within a <a href="http://www.ros.org/wiki/roslaunch">ros
   <review status="API cleared" notes="01/22/2009"/>
   <depend package="roslib"/>
   <rosdep name="python-yaml"/>
+
+  <export>
+    <rosdoc config="rosdoc.yaml"/>    
+  </export>
+  
 </package>

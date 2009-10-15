@@ -33,6 +33,11 @@
 #
 # Revision $Id$
 
+"""
+rosnode implements the rosnode command-line tool and also provides a
+library for retrieving ROS Node information.
+"""
+
 NAME='rosnode'
 ID = '/rosnode'
 
@@ -47,21 +52,34 @@ from optparse import OptionParser
 import roslib.scriptutil as scriptutil 
 import rospy
 
-class ROSNodeException(Exception): pass
-class ROSNodeIOException(ROSNodeException): pass
+class ROSNodeException(Exception):
+    """
+    rosnode base exception type
+    """
+    pass
+class ROSNodeIOException(ROSNodeException):
+    """
+    Exceptions for communication-related (i/o) errors, generally due to Master or Node network communication issues.
+    """
+    pass
 
-def succeed(args):
+def _succeed(args):
     code, msg, val = args
     if code != 1:
         raise ROSNodeException("remote call failed: %s"%msg)
     return val
         
 _caller_apis = {}
-## @param master xmlrpclib.ServerProxy
-## @param caller_id str: node name
-## @return xmlrpc URI of \a caller_id
-## @throws ROSNodeIOException
 def get_api_uri(master, caller_id):
+    """
+    @param master: XMLRPC handle to ROS Master
+    @type  master: xmlrpclib.ServerProxy
+    @param caller_id: node name
+    @type  caller_id: str
+    @return: xmlrpc URI of caller_id
+    @rtype: str
+    @raise ROSNodeIOException: if unable to communicate with master
+    """
     caller_api = _caller_apis.get(caller_id, None)
     if not caller_api:
         try:
@@ -74,12 +92,15 @@ def get_api_uri(master, caller_id):
             raise ROSNodeIOException("Unable to communicate with master!")
     return caller_api
 
-## @return [str]: list of node caller IDs
-## @throws ROSNodeIOException
 def get_node_names():
+    """
+    @return: list of node caller IDs
+    @rtype: [str]
+    @raise ROSNodeIOException: if unable to communicate with master
+    """
     master = scriptutil.get_master()
     try:
-        state = succeed(master.getSystemState(ID))
+        state = _succeed(master.getSystemState(ID))
     except socket.error:
         raise ROSNodeIOException("Unable to communicate with master!")
     nodes = []
@@ -90,8 +111,11 @@ def get_node_names():
 
     return list(set(nodes))
     
-## @return str: string list of all nodes
 def _sub_rosnode_listnodes(list_uri=False, list_all=False):
+    """
+    @return: string list of all nodes
+    @rtype: str
+    """
     master = scriptutil.get_master()    
     nodes = get_node_names()
     #print '-'*80
@@ -103,15 +127,22 @@ def _sub_rosnode_listnodes(list_uri=False, list_all=False):
     else:
         return '\n'.join(nodes)
     
-## print list of all ROS nodes
 def rosnode_listnodes(list_uri=False, list_all=False):
+    """
+    Print list of all ROS nodes
+    """
     print _sub_rosnode_listnodes(list_uri=list_uri, list_all=list_all)
     
-## Test connectivity to node by calling its XMLRPC API
-## @param node_name str: name of node to ping
-## @param verbose bool: print ping information to screen
-## @return True if node pinged
 def rosnode_ping(node_name, max_count=None, verbose=False):
+    """
+    Test connectivity to node by calling its XMLRPC API
+    @param node_name: name of node to ping
+    @type  node_name: str
+    @param verbose: print ping information to screen
+    @type  verbose: bool
+    @return: True if node pinged
+    @rtype: bool
+    """
     master = scriptutil.get_master()
     node_api = get_api_uri(master,node_name)
     if not node_api:
@@ -130,7 +161,7 @@ def rosnode_ping(node_name, max_count=None, verbose=False):
     while not rospy.is_shutdown():
         try:
             start = time.time()
-            pid = succeed(node.getPid(ID))
+            pid = _succeed(node.getPid(ID))
             end = time.time()
             
             dur = (end-start)*1000.
@@ -151,13 +182,15 @@ def rosnode_ping(node_name, max_count=None, verbose=False):
         print "ping average: %fms"%(acc/count)
     return True
 
-## Ping all runnig nodes
-## @return [str], [str]: pinged nodes, un-pingable nodes
-## @throws ROSNodeIOException
 def rosnode_ping_all(verbose=False):
+    """
+    Ping all runnig nodes
+    @return [str], [str]: pinged nodes, un-pingable nodes
+    @raise ROSNodeIOException: if unable to communicate with master
+    """
     master = scriptutil.get_master()
     try:
-        state = succeed(master.getSystemState(ID))
+        state = _succeed(master.getSystemState(ID))
     except socket.error:
         raise ROSNodeIOException("Unable to communicate with master!")
 
@@ -178,45 +211,60 @@ def rosnode_ping_all(verbose=False):
             unpinged.append(node)
     return pinged, unpinged
     
-## @param master xmlrpclib.ServerProxy
-## @param blacklist [str]: list of nodes to scrub
 def cleanup_master_blacklist(master, blacklist):
-    pubs, subs, srvs = succeed(master.getSystemState(ID))
+    """
+    Remove registrations from ROS Master that do not match blacklist.    
+    @param master: XMLRPC handle to ROS Master
+    @type  master: xmlrpclib.ServerProxy
+    @param blacklist: list of nodes to scrub
+    @type  blacklist: [str]
+    """
+    pubs, subs, srvs = _succeed(master.getSystemState(ID))
     for n in blacklist:
         print "Unregistering", n
         node_api = get_api_uri(master, n)
         for t, l in pubs:
             if n in l:
-                succeed(master.unregisterPublisher(n, t, node_api))
+                _succeed(master.unregisterPublisher(n, t, node_api))
         for t, l in subs:
             if n in l:
-                succeed(master.unregisterSubscriber(n, t, node_api))
+                _succeed(master.unregisterSubscriber(n, t, node_api))
         for s, l in srvs:
             if n in l:
-                service_api = succeed(master.lookupService(ID, s))
-                succeed(master.unregisterService(n, s, service_api))
+                service_api = _succeed(master.lookupService(ID, s))
+                _succeed(master.unregisterService(n, s, service_api))
 
-## @param master xmlrpclib.ServerProxy
-## @param whitelist [str]: list of nodes to keep
 def cleanup_master_whitelist(master, whitelist):
-    pubs, subs, srvs = succeed(master.getSystemState(ID))
+    """
+    Remove registrations from ROS Master that do not match whitelist.
+    @param master: XMLRPC handle to ROS Master
+    @type  master: xmlrpclib.ServerProxy
+    @param whitelist: list of nodes to keep
+    @type  whitelist: list of nodes to keep
+   """
+    pubs, subs, srvs = _succeed(master.getSystemState(ID))
     for t, l in pubs:
         for n in l:
             if n not in whitelist:
                 node_api = get_api_uri(master, n)
-                succeed(master.unregisterPublisher(n, t, node_api))
+                _succeed(master.unregisterPublisher(n, t, node_api))
     for t, l in subs:
         for n in l:
             if n not in whitelist:
                 node_api = get_api_uri(master, n)
-                succeed(master.unregisterSubscriber(n, t, node_api))
+                _succeed(master.unregisterSubscriber(n, t, node_api))
     for s, l in srvs:
         for n in l:
             if n not in whitelist:
-                service_api = succeed(master.lookupService(ID, s))
-                succeed(master.unregisterService(n, s, service_api))
+                service_api = _succeed(master.lookupService(ID, s))
+                _succeed(master.unregisterService(n, s, service_api))
 
 def rosnode_cleanup():
+    """
+    This is a semi-hidden routine for cleaning up stale node
+    registration information on the ROS Master. The intent is to
+    remove this method once Master TTLs are properly implemented.
+    """
     pinged, unpinged = rosnode_ping_all()
     if unpinged:
         master = scriptutil.get_master()
@@ -235,8 +283,14 @@ def rosnode_cleanup():
 
         print "done"
 
-## @throws ROSNodeIOException
 def rosnode_debugnode(node_name):
+    """
+    Print information about node, including subscriptions and other debugging information. This will query the node over the network.
+    
+    @param node_name: name of ROS node
+    @type  node_name: str
+    @raise ROSNodeIOException: if unable to communicate with master
+    """
     def topic_type(t, pub_topics):
         matches = [t_type for t_name, t_type in pub_topics if t_name == t]
         if matches:
@@ -248,8 +302,8 @@ def rosnode_debugnode(node_name):
 
     # go through the master system state first
     try:
-        state = succeed(master.getSystemState(ID))
-        pub_topics = succeed(scriptutil.get_master().getPublishedTopics(ID, '/'))
+        state = _succeed(master.getSystemState(ID))
+        pub_topics = _succeed(scriptutil.get_master().getPublishedTopics(ID, '/'))
     except socket.error:
         raise ROSNodeIOException("Unable to communicate with master!")
     pubs = [t for t, l in state[0] if node_name in l]
@@ -286,10 +340,10 @@ def rosnode_debugnode(node_name):
     node = xmlrpclib.ServerProxy(node_api)
 
     try:
-        pid = succeed(node.getPid(ID))
+        pid = _succeed(node.getPid(ID))
         print "Pid: %s"%pid
-        #master_uri = succeed(node.getMasterUri(ID))
-        businfo = succeed(node.getBusInfo(ID))
+        #master_uri = _succeed(node.getMasterUri(ID))
+        businfo = _succeed(node.getBusInfo(ID))
         if businfo:
             print "Connections:"
             for info in businfo:
@@ -318,7 +372,10 @@ def rosnode_debugnode(node_name):
     except socket.error:
         raise ROSNodeIOException("Communication with node[%s] failed! Node address is [%s]"%(node_name, node_api))
 
-def rosnode_cmd_list():
+def _rosnode_cmd_list():
+    """
+    Implements rosnode 'list' command.
+    """
     args = sys.argv[2:]
     parser = OptionParser(usage="usage: %prog list", prog=NAME)
     parser.add_option("-u",
@@ -334,7 +391,10 @@ def rosnode_cmd_list():
         parser.error("invalid arguments '%s'"%(' '.join(args)))
     rosnode_listnodes(list_uri=options.list_uri, list_all=options.list_all)
 
-def rosnode_cmd_info():
+def _rosnode_cmd_info():
+    """
+    Implements rosnode 'info' command.
+    """
     args = sys.argv[2:]
     parser = OptionParser(usage="usage: %prog info node1 [node2...]", prog=NAME)
     (options, args) = parser.parse_args(args)
@@ -343,13 +403,19 @@ def rosnode_cmd_info():
     for node in args:
         rosnode_debugnode(node)
 
-def rosnode_cmd_cleanup():
+def _rosnode_cmd_cleanup():
+    """
+    Implements rosnode 'cleanup' command.
+    """
     args = sys.argv[2:]
     parser = OptionParser(usage="usage: %prog cleanup", prog=NAME)
     (options, args) = parser.parse_args(args)
     rosnode_cleanup()
 
-def rosnode_cmd_ping():
+def _rosnode_cmd_ping():
+    """
+    Implements rosnode 'ping' command.
+    """
     args = sys.argv[2:]    
     parser = OptionParser(usage="usage: %prog ping [options] <node>", prog=NAME)
     parser.add_option("--all",
@@ -380,6 +446,9 @@ def rosnode_cmd_ping():
         rosnode_ping(node_name, verbose=True)        
     
 def fullusage():
+    """
+    Prints rosnode usage information.
+    """
     print """rosnode is a command-line tool for printing information about ROS Nodes.
 
 Commands:
@@ -392,18 +461,21 @@ Type rosnode <command> -h for more detailed usage, e.g. 'rosnode ping -h'
     sys.exit(os.EX_USAGE)
 
 def rosnodemain():
+    """
+    Prints rosnode main entrypoint.
+    """
     if len(sys.argv) == 1:
         fullusage()
     try:
         command = sys.argv[1]
         if command == 'ping':
-            rosnode_cmd_ping()
+            _rosnode_cmd_ping()
         elif command == 'list':
-            rosnode_cmd_list()
+            _rosnode_cmd_list()
         elif command == 'info':
-            rosnode_cmd_info()
+            _rosnode_cmd_info()
         elif command == 'cleanup':
-            rosnode_cmd_cleanup()
+            _rosnode_cmd_cleanup()
         else:
             fullusage()
     except socket.error:

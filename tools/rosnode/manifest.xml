@@ -10,5 +10,10 @@ rosnode is a command-line tool for displaying debug information about ROS <a hre
   <url>http://ros.org/wiki/rosnode</url>
   <depend package="roslib"/>
   <depend package="rospy"/>
+
+  <export>
+    <rosdoc config="rosdoc.yaml"/>    
+  </export>
+  
 </package>
 

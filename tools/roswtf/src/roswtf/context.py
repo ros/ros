@@ -196,7 +196,6 @@ def _load_pkg(ctx, pkg):
 ## utility for initializing WtfContext state
 ## @throws WtfException: if context state cannot be initialized
 def _load_stack(ctx, stack):
-    loaded = False
     try:
         ctx.stack = stack
         ctx.stacks = [stack] + roslib.rospack.rosstack_depends(stack)

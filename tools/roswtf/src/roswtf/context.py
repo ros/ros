@@ -78,6 +78,7 @@ class WtfContext(object):
         self.pkg_dir = None
         # main stack we are running 
         self.stack = None
+        self.stack_dir = None
         
         # - list of all packages involved in this check
         self.pkgs = []

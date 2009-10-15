@@ -71,7 +71,7 @@ def generate_links(ctx, package, base_dir, rd_configs):
     # length check. if these are unequal, cannot generate landing
     # page. this is often true if the config is merely generating
     # local. Ignore 'rosmake' builder as it doesn't have output spec
-    if len(output_dirs) != len(configsj):
+    if len(output_dirs) != len(configs):
         return None
 
     links = [_href(d, link_name(c)) for c, d in zip(configs, output_dirs)]

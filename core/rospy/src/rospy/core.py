@@ -175,7 +175,7 @@ def logdebug(msg, *args):
     Log a debug message to the /rosout topic
     @param msg: message to log, may include formatting arguments
     @type  msg: str
-    @param *args: format-string arguments, if necessary
+    @param args: format-string arguments, if necessary
     """    
     if args:
         msg = msg%args
@@ -187,7 +187,7 @@ def logwarn(msg, *args):
     Log a warning message to the /rosout topic
     @param msg: message to log, may include formatting arguments
     @type  msg: str
-    @param *args: format-string arguments, if necessary    
+    @param args: format-string arguments, if necessary    
     """    
     if args:
         msg = msg%args
@@ -199,7 +199,7 @@ def loginfo(msg, *args):
     Log an info message to the /rosout topic    
     @param msg: message to log, may include formatting arguments
     @type  msg: str
-    @param *args: format-string arguments, if necessary
+    @param args: format-string arguments, if necessary
     """    
     if args:
         msg = msg%args
@@ -212,7 +212,7 @@ def logerr(msg, *args):
     Log an error message to the /rosout topic
     @param msg: message to log, may include formatting arguments
     @type  msg: str
-    @param *args: format-string arguments, if necessary
+    @param args: format-string arguments, if necessary
     """
     if args:
         msg = msg%args
@@ -225,7 +225,7 @@ def logfatal(msg, *args):
     Log an error message to the /rosout topic    
     @param msg: message to log, may include formatting arguments
     @type  msg: str
-    @param *args: format-string arguments, if necessary
+    @param args: format-string arguments, if necessary
     """        
     if args:
         msg = msg%args

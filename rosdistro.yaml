@@ -13,7 +13,7 @@ stacks:
   image_common: {latest: 0.5.1}
   joystick_drivers: {latest: 0.9.0}
   laser_pipeline: {latest: 0.5.0}
-  navigation: {latest: 0.5.0}
+  navigation: {latest: 0.5.1}
   opencv: {latest: 0.2.0}
   physics_ode: {latest: 0.2.0}
   robot_model: {latest: 0.6.0}

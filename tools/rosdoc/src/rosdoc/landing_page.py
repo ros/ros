@@ -59,19 +59,8 @@ def link_name(rd_config):
     return n
     
 def generate_links(ctx, package, base_dir, rd_configs):
-    output_dirs = [c.get('output_dir', None) for c in rd_configs]
-    # filter out empties
-    output_dirs = [d for d in output_dirs if d and d != '.']
-    
-    # length check. if these are unequal, cannot generate landing
-    # page. this is often true if the config is merely generating
-    # local
-    if len(output_dirs) != len(rd_configs):
-        return None
-
-    links = []
-    for c, d in zip(rd_configs, output_dirs):
-        links.append(_href(d, link_name(c)))
+    # need to generate links for builders that specify an output_dir
+    links = [_href(c['output_dir'], link_name(c)) for c in rd_configs if 'output_dir' in c and c['output_dir'] != '.']
         
     msgs = roslib.msgs.list_msg_types(package, False)
     srvs = roslib.srvs.list_srv_types(package, False)

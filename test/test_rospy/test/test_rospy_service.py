@@ -41,11 +41,12 @@ import struct
 import unittest
 import time
 
+import rospy
 import rospy.service
 
 class MockServiceClass(rospy.service.ServiceDefinition):
-    _request_class = rospy.msg.AnyMsg
-    _response_class = rospy.msg.AnyMsg
+    _request_class = rospy.AnyMsg
+    _response_class = rospy.AnyMsg
 
 class TestRospyService(unittest.TestCase):
 

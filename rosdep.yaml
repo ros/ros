@@ -235,7 +235,11 @@ automake:
   arch: automake
   macports: automake
 libtool:
-  ubuntu: libtool libltdl3-dev
+  ubuntu: 
+    9.10: libtool libltdl-dev
+    9.04: libtool libltdl7-dev
+    8.10: libtool libltdl7-dev
+    8.04: libtool libltdl3-dev
   debian: libtool libltdl3-dev
   fedora: libtool libtool-ltdl-devel
   macports: libtool

@@ -38,8 +38,8 @@ Command-line utility for querying ROS services, along with library
 calls for similar functionality. The main benefit of the rosservice
 Python library over the rospy ServiceProxy library is that rosservice
 supports type-introspection on ROS Services. This allows for both
-introspecting information about Services, as well as using this
-introspection to dynamically call Services.
+introspecting information about services, as well as using this
+introspection to dynamically call services.
 """
 
 import roslib; roslib.load_manifest('rosservice')
@@ -71,7 +71,7 @@ class ROSServiceIOException(ROSServiceException):
     """rosservice related to network I/O failure"""    
     pass
 
-def succeed(args):
+def _succeed(args):
     """
     Utility that raises a ROSServiceException if ROS XMLRPC command fails
     @param args: (code, msg, val) ROS XMLRPC call return args
@@ -145,10 +145,11 @@ def get_service_type(service_name):
         except socket.error:
             raise ROSServiceIOException("Unable to communicate with service [%s]! Service address is [%s]"%(service_name, service_uri))
 
-def rosservice_type(service_name):
+def _rosservice_type(service_name):
     """
     Implements 'type' command. Prints service type to stdout
-    @param service_name str: name of service
+    @param service_name: name of service
+    @type  service_name: str
     """
     service_type = get_service_type(service_name)
     if service_type is None:
@@ -158,8 +159,12 @@ def rosservice_type(service_name):
 
 def get_service_uri(service_name):
     """
-    @param service_name str: name of service to lookup
-    @return str: ROSRPC URI for service_name
+    Retrieve ROSRPC URI of service.
+    
+    @param service_name: name of service to lookup
+    @type  service_name: str
+    @return: ROSRPC URI for service_name
+    @rtype: str
     """
     try:
         master = roslib.scriptutil.get_master()
@@ -170,7 +175,7 @@ def get_service_uri(service_name):
     except socket.error:
         raise ROSServiceIOException("Unable to communicate with master!")
 
-def rosservice_uri(service_name):
+def _rosservice_uri(service_name):
     """
     Implements rosservice uri command
     @param service_name: name of service to lookup
@@ -183,7 +188,7 @@ def rosservice_uri(service_name):
     else:
         print >> sys.stderr, "Unknown service: %s"%service_name
 
-def rosservice_node(service_name):
+def _rosservice_node(service_name):
     """
     Implements rosservice node command
     @param service_name: name of service to lookup
@@ -214,7 +219,7 @@ def get_service_list(node=None, include_nodes=False):
     """
     try:
         master = roslib.scriptutil.get_master()
-        state = succeed(master.getSystemState('/rosservice'))
+        state = _succeed(master.getSystemState('/rosservice'))
         srvs = state[2]
 
         if include_nodes:
@@ -230,7 +235,7 @@ def get_service_list(node=None, include_nodes=False):
     except socket.error:
         raise ROSServiceIOException("Unable to communicate with master!")
     
-def rosservice_list(node=None, print_nodes=False):
+def _rosservice_list(node=None, print_nodes=False):
     """
     Implements 'rosservice list'
     @param node: Name of node to print services for or None to print all services
@@ -257,7 +262,7 @@ def rosservice_find(service_type):
     master = roslib.scriptutil.get_master()
     matches = []
     try:
-        _, _, services = succeed(master.getSystemState('/rosservice'))
+        _, _, services = _succeed(master.getSystemState('/rosservice'))
         for s, l in services:
             t = get_service_type(s)
             if t == service_type:
@@ -266,10 +271,12 @@ def rosservice_find(service_type):
         raise ROSServiceIOException("Unable to communicate with master!")
     return matches
     
-def rosservice_cmd_find(argv=sys.argv):
+def _rosservice_cmd_find(argv=sys.argv):
     """
     Implements 'rosservice type'
-    @param argv [str]: command-line args
+    
+    @param argv: command-line args
+    @type  argv: [str]
     """
     args = argv[2:]
     parser = OptionParser(usage="usage: %prog find msg-type", prog=NAME)
@@ -346,7 +353,7 @@ def call_service(service_name, service_args, service_class=None):
         raise ROSServiceException("Unable to send request. One of the fields has an incorrect type:\n"+\
                                       "  %s\n\nsrv file:\n%s"%(e, rosmsg.get_srv_text(service_class._type)))
 
-def rosservice_call(service_name, service_args, verbose=False, service_class=None):
+def _rosservice_call(service_name, service_args, verbose=False, service_class=None):
     """
     Implements 'rosservice call'
     @param service_name: name of service to call
@@ -384,7 +391,7 @@ def has_service_args(service_name, service_class=None):
         service_class = get_service_class_by_name(service_name)
     return len(service_class._request_class.__slots__) > 0 
     
-def rosservice_args(service_name):
+def _rosservice_args(service_name):
     """
     Implements 'rosservice args'
     @param service_name: name of service to get arguments for
@@ -417,7 +424,7 @@ def _optparse_service_only(cmd, argv=sys.argv):
         parser.error("you may only specify one input service")
     return roslib.scriptutil.script_resolve_name('rosservice', args[0])
 
-def rosservice_cmd_type(argv):
+def _rosservice_cmd_type(argv):
     """
     Parse 'type' command arguments and run command Will cause a system
     exit if command-line argument parsing fails.
@@ -425,41 +432,41 @@ def rosservice_cmd_type(argv):
     @type  argv: [str]
     @raise ROSServiceException: if type command cannot be executed
     """
-    rosservice_type(_optparse_service_only('type', argv=argv))
+    _rosservice_type(_optparse_service_only('type', argv=argv))
     
-def rosservice_cmd_uri(argv, ):
+def _rosservice_cmd_uri(argv, ):
     """
-    Parse 'uri' command arguments and run command Will cause a system
+    Parse 'uri' command arguments and run command.  Will cause a system
     exit if command-line argument parsing fails.
     @param argv: command-line arguments
     @type  argv: [str]
     @raise ROSServiceException: if uri command cannot be executed
     """
-    rosservice_uri(_optparse_service_only('uri', argv=argv))
+    _rosservice_uri(_optparse_service_only('uri', argv=argv))
     
-def rosservice_cmd_node(argv, ):
+def _rosservice_cmd_node(argv, ):
     """
-    Parse 'node' command arguments and run command Will cause a system
+    Parse 'node' command arguments and run command. Will cause a system
     exit if command-line argument parsing fails.
     @param argv: command-line arguments
     @type  argv: [str]
     @raise ROSServiceException: if node command cannot be executed
     """
-    rosservice_node(_optparse_service_only('node', argv=argv))
+    _rosservice_node(_optparse_service_only('node', argv=argv))
 
-def rosservice_cmd_args(argv, ):
+def _rosservice_cmd_args(argv, ):
     """
-    Parse 'args' command arguments and run command Will cause a system
+    Parse 'args' command arguments and run command.  Will cause a system
     exit if command-line argument parsing fails.
     @param argv: command-line arguments
     @type  argv: [str]
     @raise ROSServiceException: if args command cannot be executed
     """
-    rosservice_args(_optparse_service_only('args', argv=argv))    
+    _rosservice_args(_optparse_service_only('args', argv=argv))    
     
-def rosservice_cmd_call(argv):
+def _rosservice_cmd_call(argv):
     """
-    Parse 'call' command arguments and run command Will cause a system
+    Parse 'call' command arguments and run command.  Will cause a system
     exit if command-line argument parsing fails.
     @param argv: command-line arguments
     @type  argv: [str]
@@ -495,9 +502,9 @@ def rosservice_cmd_call(argv):
     if not service_args and has_service_args(service_name, service_class=service_class):
         for service_args in _stdin_yaml_arg():
             if service_args:
-                rosservice_call(service_name, service_args, verbose=options.verbose, service_class=service_class) 
+                _rosservice_call(service_name, service_args, verbose=options.verbose, service_class=service_class) 
     else:
-        rosservice_call(service_name, service_args, verbose=options.verbose, service_class=service_class)
+        _rosservice_call(service_name, service_args, verbose=options.verbose, service_class=service_class)
 
 def _stdin_yaml_arg():
     """
@@ -526,7 +533,7 @@ def _stdin_yaml_arg():
     except select.error:
         return # most likely ctrl-c interrupt
 
-def rosservice_cmd_list(argv):
+def _rosservice_cmd_list(argv):
     """
     Parse 'list' command arguments and run command
     Will cause a system exit if command-line argument parsing fails.
@@ -545,9 +552,9 @@ def rosservice_cmd_list(argv):
         nodename = roslib.scriptutil.script_resolve_name('rosservice', args[0])
     elif len(args) > 1:
         parser.error("you may only specify one input node")
-    rosservice_list(nodename, print_nodes=options.print_nodes)
+    _rosservice_list(nodename, print_nodes=options.print_nodes)
     
-def fullusage():
+def _fullusage():
     """Print generic usage for rosservice"""
     print """Commands:
 \trosservice list\tprint information about active topics
@@ -563,27 +570,30 @@ Type rosservice <command> -h for more detailed usage, e.g. 'rosservice call -h'
 def rosservicemain(argv=sys.argv):
     """
     main entry point for rosservice command-line tool
+
+    @param argv: command-line args
+    @type  argv: [str]
     """
     if len(argv) == 1:
-        fullusage()
+        _fullusage()
     try:
         command = argv[1]
         if command == 'list':
-            rosservice_cmd_list(argv)
+            _rosservice_cmd_list(argv)
         elif command == 'type':
-            rosservice_cmd_type(argv)
+            _rosservice_cmd_type(argv)
         elif command == 'uri':
-            rosservice_cmd_uri(argv)
+            _rosservice_cmd_uri(argv)
         elif command == 'node':
-            rosservice_cmd_node(argv)
+            _rosservice_cmd_node(argv)
         elif command == 'call':
-            rosservice_cmd_call(argv)
+            _rosservice_cmd_call(argv)
         elif command == 'args':
-            rosservice_cmd_args(argv)
+            _rosservice_cmd_args(argv)
         elif command == 'find':
-            rosservice_cmd_find(argv)
+            _rosservice_cmd_find(argv)
         else:
-            fullusage()
+            _fullusage()
     except socket.error:
         print >> sys.stderr, "Network communication failed with the master or a node."
         sys.exit(1)

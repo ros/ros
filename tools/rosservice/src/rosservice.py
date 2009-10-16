@@ -245,6 +245,12 @@ def _rosservice_list(node=None, print_nodes=False):
     @raise ROSServiceIOException: if the I/O issues prevent retrieving service information    
     """
     srvs = get_service_list(node=node, include_nodes=print_nodes)
+    # print in sorted order
+    if print_nodes:
+        import operator
+        srvs.sort(key=operator.itemgetter(0))
+    else:
+        srvs.sort()
     for s in srvs:
         if print_nodes:
             print s[0]+' '+','.join(s[1])

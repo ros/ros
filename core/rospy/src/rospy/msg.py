@@ -40,6 +40,7 @@ import logging
 import traceback
 
 import roslib.message
+import rospy.core
 import rospy.names
 
 def serialize_message(b, seq, msg):
@@ -66,6 +67,7 @@ def serialize_message(b, seq, msg):
         # auto_timestamp is true if header.stamp is zero
         auto_timestamp = not header.stamp
         if auto_timestamp:
+            rospy.logwarn("Message being sent with timestamp of zero. Auto-setting of timestamps is deprecated!")
             header.stamp = rospy.rostime.get_rostime()
             auto_headers.append(header)
         # default value for frame_id is '0', not '' or None

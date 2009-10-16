@@ -62,5 +62,5 @@
   <param name="binaryfile" binfile="$(find roslaunch)/example.launch" />
   <param name="commandoutput" command="cat &quot;$(find roslaunch)/example.launch&quot;" />
 
-  <test test-name="test_params_basic" pkg="test_roslaunch" type="test_params_basic.py" />
+  <test test-name="params_basic" pkg="test_roslaunch" type="params_basic.py" />
 </launch>

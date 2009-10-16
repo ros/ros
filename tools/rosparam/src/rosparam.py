@@ -38,9 +38,8 @@ Implementation of the rosparam as well as a library for modifying the
 state of the ROS Parameter Server using YAML files.
 """
 
-PKG = 'rosparam'
 NAME = 'rosparam'
-import roslib; roslib.load_manifest(PKG)
+import roslib; roslib.load_manifest('rosparam')
 
 ## namespace key. Use of this in a YAML document specifies the
 ## namespace of all the params.  NOTE: phasing out most use of this

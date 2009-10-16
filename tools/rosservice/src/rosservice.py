@@ -557,7 +557,7 @@ def _rosservice_cmd_list(argv):
 def _fullusage():
     """Print generic usage for rosservice"""
     print """Commands:
-\trosservice list\tprint information about active topics
+\trosservice list\tprint information about active services
 \trosservice call\tcall the service with the provided args
 \trosservice type\tprint service type
 \trosservice find\tfind services by service type

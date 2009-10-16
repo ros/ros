@@ -935,7 +935,8 @@ def create_publisher(topic_name, topic_type, latch):
     except:
         raise ROSTopicException("invalid topic type: %s"%topic_type)
     if msg_class is None:
-        raise ROSTopicException("invalid topic type: %s"%topic_type)
+        pkg = roslib.names.resource_name_package(topic_type)
+        raise ROSTopicException("invalid message type: %s.\nIf this is a valid message type, perhaps you need to type 'rosmake %s'"%(topic_type, pkg))
     rospy.init_node('rostopic', anonymous=True)
     pub = rospy.Publisher(topic_name, msg_class, latch=latch)
     return pub, msg_class

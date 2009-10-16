@@ -34,7 +34,11 @@
 
 if __name__ == '__main__':
     import roslib; roslib.load_manifest('roslaunch')
-    
+
+"""
+Core roslaunch model and lower-level utility routines.
+"""
+
 import os
 import getpass
 import logging
@@ -54,7 +58,9 @@ import roslib.rosenv
 #TODO:temporary until xacro is ported after next ROS stable release
 resolve_args = roslib.substitution_args.resolve_args
 
-class RLException(Exception): pass
+class RLException(Exception):
+    """Base roslaunch exception type"""
+    pass
 
 
 ## Phases allow executables to be assigned to a particular run period
@@ -723,13 +729,10 @@ class RosbinExecutable(Executable):
     
 def generate_run_id():
     """
-    utility routine for generating run IDs (UUIDs)
+    Utility routine for generating run IDs (UUIDs)
     @return: guid
     @rtype: str
     """    
-    try:
-        import uuid
-    except ImportError, e:
-        import roslib.uuid as uuid
+    import uuid
     return str(uuid.uuid1())
 

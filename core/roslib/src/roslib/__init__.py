@@ -48,9 +48,6 @@ numerous ROS tools (e.g. rostopic).
 """
 
 from roslib.launcher import load_manifest
-## backwards compatibility
-update_path = load_manifest
-updatePath = load_manifest
 
 # bootstrapping code for rosdeb environments
 import os

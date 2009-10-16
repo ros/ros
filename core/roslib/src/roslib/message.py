@@ -339,12 +339,27 @@ def get_printable_message_args(msg, buff=None, prefix=''):
             buff.write(prefix+f+' ')
     return buff.getvalue().rstrip()
 
-def _fill_val(msg, f, v, prefix):
+def _fill_val(msg, f, v, keys, prefix):
+    """
+    Subroutine of L{_fill_message_args()}. Sets a particular field on a message
+    @param f: field name
+    @type  f: str
+    @param v: field value
+    @param keys: keys to use as substitute values for messages and timestamps. 
+    @type  keys: dict
+    """
     if not f in msg.__slots__:
         raise ROSMessageException("No field name [%s%s]"%(prefix, f))
     def_val = getattr(msg, f)
     if isinstance(def_val, Message) or isinstance(def_val, roslib.rostime._TVal):
-        _fill_message_args(def_val, v, prefix=(prefix+f+'.'))
+        # check for substitution key, e.g. 'now'
+        if type(v) == str:
+            if v in keys:
+                setattr(msg, f, keys[v])
+            else:
+                raise ROSMessageException("No key named [%s]"%(v))
+        else:
+            _fill_message_args(def_val, v, keys, prefix=(prefix+f+'.'))
     elif type(def_val) == list:
         if not type(v) == list:
             raise ROSMessageException("Field [%s%s] must be a list instead of: %s"%(prefix, f, v))
@@ -369,13 +384,16 @@ def _fill_val(msg, f, v, prefix):
         setattr(msg, f, v)
     
     
-def _fill_message_args(msg, msg_args, prefix=''):
+def _fill_message_args(msg, msg_args, keys, prefix=''):
     """
-    Populate message with specified args. 
+    Populate message with specified args.
+    
     @param msg: message to fill
     @type  msg: Message
     @param msg_args: list of arguments to set fields to
     @type  msg_args: [args]
+    @param keys: keys to use as substitute values for messages and timestamps. 
+    @type  keys: dict
     @param prefix: field name prefix (for verbose printing)
     @type  prefix: str
     @return: unused/leftover message arguments. 
@@ -391,7 +409,7 @@ def _fill_message_args(msg, msg_args, prefix=''):
         #print "ACTIVE SLOTS",msg.__slots__
         
         for f, v in msg_args.iteritems():
-            _fill_val(msg, f, v, prefix)
+            _fill_val(msg, f, v, keys, prefix)
     elif type(msg_args) == list:
         
         #print "LIST ARGS", msg_args
@@ -403,21 +421,30 @@ def _fill_message_args(msg, msg_args, prefix=''):
             raise ROSMessageException("Not enough arguments for field [%s %s]: %s"%(prefix, msg, msg_args))
         
         for f, v in itertools.izip(msg.__slots__, msg_args):
-            _fill_val(msg, f, v, prefix)
+            _fill_val(msg, f, v, keys, prefix)
     else:
         raise ROSMessageException("invalid message_args type: %s"%str(msg_args))
 
-def fill_message_args(msg, msg_args):
+def fill_message_args(msg, msg_args, keys={}):
     """
     Populate message with specified args. Args are assumed to be a
     list of arguments from a command-line YAML parser. See
     http://www.ros.org/wiki/ROS/YAMLCommandLine for specification on
     how messages are filled.
 
+    fill_message_args also takes in an optional 'keys' dictionary
+    which contain substitute values for message and time types. These
+    values must be of the correct instance type, i.e. a Message, Time,
+    or Duration. In a string key is encountered with these types, the
+    value from the keys dictionary will be used instead. This is
+    mainly used to provide values for the 'now' timestamp.
+
     @param msg: message to fill
     @type  msg: Message
     @param msg_args: list of arguments to set fields to
     @type  msg_args: [args]
+    @param keys: keys to use as substitute values for messages and timestamps. 
+    @type  keys: dict
     @raise ROSMessageException: if not enough/too many message arguments to fill message
     """
     # a list of arguments is similar to python's
@@ -432,7 +459,7 @@ def fill_message_args(msg, msg_args):
     if len(msg_args) == 1 and type(msg_args[0]) == dict:
         # according to spec, if we only get one msg_arg and it's a dictionary, we
         # use it directly
-        _fill_message_args(msg, msg_args[0], '')
+        _fill_message_args(msg, msg_args[0], keys, '')
     else:
-        _fill_message_args(msg, msg_args, '')
+        _fill_message_args(msg, msg_args, keys, '')
 

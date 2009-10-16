@@ -51,7 +51,8 @@ import traceback
             
 import roslib.names
 import roslib.scriptutil
-import roslib.message 
+import roslib.message
+import roslib.msg
 import rospy
 import rosmsg
 import rosrecord
@@ -1017,7 +1018,20 @@ def publish_message(pub, msg_class, pub_args, rate=None, once=False, verbose=Fal
     """
     msg = msg_class()
     try:
-        roslib.message.fill_message_args(msg, pub_args)
+        # Populate the message and enable substitution keys for 'now'
+        # and 'auto'. There is a corner case here: this logic doesn't
+        # work if you're publishing a Header only and wish to use
+        # 'auto' with it. This isn't a troubling case, but if we start
+        # allowing more keys in the future, it could become an actual
+        # use case. It greatly complicates logic because we'll have to
+        # do more reasoning over types. to avoid ambiguous cases
+        # (e.g. a std_msgs/String type, which only has a single string
+        # field).
+        
+        # allow the use of the 'now' string with timestamps and 'auto' with header
+        now = rospy.get_rostime() 
+        keys = { 'now': now, 'auto': roslib.msg.Header(stamp=now) }
+        roslib.message.fill_message_args(msg, pub_args, keys=keys)
     except roslib.message.ROSMessageException, e:
         raise ROSTopicException(str(e)+"\nArgs are: [%s]"%roslib.message.get_printable_message_args(msg))
     try:

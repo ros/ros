@@ -54,6 +54,5 @@
 	(ip-address (get-ip-address hostname)))
     (ros-debug (roslisp tcp) "~&Connecting to ~a ~a" ip-address port)
     (socket-connect connection ip-address port)
-    (ros-debug (roslisp tcp) "~&Successfully connected to ~a ~a" ip-address port)
     (values (socket-make-stream connection :output t :input t :element-type '(unsigned-byte 8)) connection)))
 

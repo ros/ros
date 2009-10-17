@@ -49,13 +49,15 @@
 
 (defun start-ros-node (name &key (xml-rpc-port 8001) (pub-server-port 7001) 
 		       (master-uri (make-uri "127.0.0.1" 11311) master-supplied) 
-		       (anonymous nil)
+		       (anonymous nil) (cmd-line-args (rest sb-ext:*posix-argv*))
 		       &allow-other-keys)
   "Start up the ROS Node with the given name and master URI.  Reset any stored state left over from previous invocations.
 
 MASTER-URI is either a string of the form http://foo:12345, or an object created using make-uri.  If MASTER-URI is not provided, use *default-master-uri*, and if that's nil (which it will be unless client code sets it), use the value of environment variable ROS_MASTER_URI.
 
-ANONYMOUS, if non-nil, causes the current time to be appended to the node name (to make it unique)."
+ANONYMOUS, if non-nil, causes the current time to be appended to the node name (to make it unique).
+
+CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its first element).  It can also be a string of space-separated arguments."
 
   (declare (string name) (integer xml-rpc-port pub-server-port) (type (or string uri) master-uri))
   (unless (eq *node-status* :shutdown)
@@ -74,7 +76,7 @@ ANONYMOUS, if non-nil, causes the current time to be appended to the node name (
 				(pathname (concatenate 'string (sb-ext:posix-getenv "ROS_ROOT") "/"))))
 	*ros-log-stream* (open *ros-log-location* :direction :output :if-exists :overwrite :if-does-not-exist :create))
     
-  (let ((params (handle-command-line-arguments name)))
+  (let ((params (handle-command-line-arguments name cmd-line-args)))
 
     ;; Deal with the master uri.  
     (unless master-supplied

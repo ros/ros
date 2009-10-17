@@ -280,13 +280,16 @@ Note that despite the name, this is not like with-accessors or with-slots in tha
       (when ,test (return))))
 	  
        
-(defmacro with-parallel-thread ((fn name) &body body)
+(defmacro with-parallel-thread ((fn &optional name) &body body)
   "with-parallel-thread (FN NAME) &body BODY
 
-Start a thread that executes FN, named NAME.  Then, in the current thread, execute BODY.  After BODY exits, terminate the newly started thread as well (typically BODY will be a long-running loop).
+Start a thread that executes FN, named NAME (which defaults to the symbol FN).  Then, in the current thread, execute BODY.  After BODY exits, terminate the newly started thread as well (typically BODY will be a long-running loop).
 
 If FN is a symbol, it's replaced by (function FN)."
-  
+
+  (unless name
+    (assert (symbolp fn) nil "If name is not provided to with-parallel-thread, the (unevaluated) fn argument should be a symbol")
+    (setq name `',fn))
   (let ((thread (gensym))
 	(fn (if (symbolp fn) `#',fn fn)))
     `(let ((,thread (sb-thread:make-thread ,fn :name ,name)))

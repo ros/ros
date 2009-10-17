@@ -60,6 +60,10 @@
 (defvar *serialize-recursion-level* 0
   "Bound during calls to serialize, so we can keep track of when header time stamps need to be filled in")
 
+(defvar *seq* 0)
+(defvar *seq-lock* (make-mutex :name "lock on seq global variable")) ;; not currently used
+(defvar *set-seq* nil) ;; For now not setting seq fields as doesn't seem to be necessary for ROS
+
 (defmethod serialize :around (msg str)
   ;; Note that each thread has its own copy of the variable
   (let ((*serialize-recursion-level* (1+ *serialize-recursion-level*)))
@@ -70,10 +74,12 @@
   ;; We save the old stamp for convenience when debugging interactively and reusing the same message object
   (let ((old-stamp (roslib-msg:stamp-val msg)))
     (unwind-protect
-
 	 (progn
-	   (when (and (= *serialize-recursion-level* 1) (= (roslib-msg:stamp-val msg) 0.0))
-	     (setf (roslib-msg:stamp-val msg) (ros-time)))
+	   (when (= *serialize-recursion-level* 1)
+	     (when *set-seq*
+	       (setf (roslib-msg:seq-val msg) (incf *seq*)))
+	     (when (= (roslib-msg:stamp-val msg) 0.0)
+	       (setf (roslib-msg:stamp-val msg) (ros-time))))
 	   (call-next-method))
 
       (setf (roslib-msg:stamp-val msg) old-stamp))))

@@ -78,6 +78,7 @@
    :publish-on-topic
    :publish
    :loop-at-most-every
+   :spin-until 
    :with-parallel-thread
    :store-message-in
 

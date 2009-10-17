@@ -131,7 +131,7 @@
       
       ;; Add this subscription to the list for the topic
       (let ((sub (make-subscriber-connection :subscriber-socket connection :subscriber-stream stream)))
-	(ros-debug (roslisp tcp) "~&Adding ~a to ~a" sub pub)
+	(ros-debug (roslisp tcp) "~&Adding ~a to ~a for topic ~a" sub pub topic)
 	(push sub (subscriber-connections pub))
 
 	(when (and (is-latching pub) (last-message pub))
@@ -146,6 +146,7 @@
   (check-type hostname string)
 
   (mvbind (str connection) (tcp-connect hostname port)
+    (ros-debug (roslisp tcp) "~&Successfully connected to ~a:~a for topic ~a" hostname port topic)
     (handler-case
 
 	(mvbind (sub known) (gethash topic *subscriptions*)

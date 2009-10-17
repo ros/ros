@@ -97,18 +97,20 @@ You can specify multiple names, which are just concatenated with /'s in between"
 
 
 
-(defun handle-command-line-arguments (name)
-  "Postcondition: the variables *remapped-names*, *namespace*, and *ros-node-name* are set based on the command line arguments and the environment variable ROS_NAMESPACE as per the ros command line protocol.  Also, arguments of the form _foo:=bar are interpreted by setting private parameter foo equal to bar (currently bar is just read using the lisp reader; it should eventually use yaml conventions)"
+(defun handle-command-line-arguments (name args)
+  "Postcondition: the variables *remapped-names*, *namespace*, and *ros-node-name* are set based on the argument list and the environment variable ROS_NAMESPACE as per the ros command line protocol.  Also, arguments of the form _foo:=bar are interpreted by setting private parameter foo equal to bar (currently bar is just read using the lisp reader; it should eventually use yaml conventions)"
+  (when (stringp args)
+    (setq args (tokens args)))
   (let ((remappings
 	 (mapcan #'(lambda (s) (mvbind (lhs rhs) (parse-remapping s) (when lhs (list (list lhs rhs))))) 
-		 (rest sb-ext:*posix-argv*))))
+		 args)))
     (setf *namespace* (or (sb-ext:posix-getenv "ROS_NAMESPACE") "/")
 	  *ros-node-name* name)
     (let ((params (process-command-line-remappings remappings)))
       (setf *namespace* (postprocess-namespace *namespace*)
 	    *ros-node-name* (postprocess-node-name *ros-node-name*))
 
-      (ros-debug (roslisp top) "Command line arguments are ~a" (rest sb-ext:*posix-argv*))
+      (ros-debug (roslisp top) "Command line arguments are ~a" args)
       (ros-info (roslisp top) "Node name is ~a" *ros-node-name*)
       (ros-info (roslisp top) "Namespace is ~a" *namespace*)
       (ros-info (roslisp top) "Params are ~a" params)

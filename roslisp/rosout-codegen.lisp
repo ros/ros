@@ -56,10 +56,12 @@
 	   (let ((,output-string (format nil ,str ,@format-args)))
 	     (with-mutex (*debug-stream-lock*)
 	       (format *debug-stream* "~&[~a ~a] ~a: ~a~&" ',(designated-list name) ,level (ros-time) ,output-string)
-	       (format *ros-log-stream* "~&[~a ~a] ~a: ~a~&" ',(designated-list name) ,level (ros-time) ,output-string)
+	       (when (open-stream-p *ros-log-stream*) (format *ros-log-stream* "~&[~a ~a] ~a: ~a~&" ',(designated-list name) ,level (ros-time) ,output-string))
 	       )
+	     
 	     (force-output *debug-stream*)
-	     (force-output *ros-log-stream*)
+	     (when (open-stream-p *ros-log-stream*) (force-output *ros-log-stream*))
+
 	     (when (and (eq *node-status* :running) (gethash "/rosout" *publications*))
 	       (publish-on-topic 
 		"/rosout"

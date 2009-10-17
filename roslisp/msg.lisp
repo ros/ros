@@ -47,10 +47,6 @@
     (deserialize m str)
     m))
 
-(defmethod serialization-length ((msg symbol))
-  (warn "Hmm... unexpectedly asked for serialization length of ~a.  Likely an error - please inform roslisp developers." msg)
-  42)
-
 (defmethod md5sum ((msg-type array))
   (if (stringp msg-type)
       (md5sum (get-topic-class-name msg-type))

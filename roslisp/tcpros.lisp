@@ -206,18 +206,22 @@
 
 
 (defun tcpros-write (msg str)
-  (unless (gethash str *broken-socket-streams*)
-    (handler-case
-	(progn
-	  (serialize-int (serialization-length msg) str)
-	  (serialize msg str)
+  (or
+   (unless (gethash str *broken-socket-streams*)
+     (handler-case
+	 (progn
+	   (serialize-int (serialization-length msg) str)
+	   (serialize msg str)
 
-	  ;; Technically, force-output isn't supposed to be called on binary streams...
-	  (force-output str)
-	  )
-      (error (c)
-	(ros-info (roslisp tcp) "Received error ~a when writing to ~a.  Skipping from now on." c str)
-	(setf (gethash str *broken-socket-streams*) t)))))
+	   ;; Technically, force-output isn't supposed to be called on binary streams...
+	   (force-output str)
+	   1 ;; Returns number of messages written 
+	   )
+       (error (c)
+	 (ros-info (roslisp tcp) "Received error ~a when writing to ~a.  Skipping from now on." c str)
+	 (setf (gethash str *broken-socket-streams*) t)
+	 0)))
+   0))
 
 
 

@@ -117,3 +117,14 @@ Each NAME (unevaluated) is a list, e.g. (roslisp tcp) denoting a debugger topic.
 
 ;; The default level for unknown topics is :info
 (set-debug-level nil (symbol-code 'roslib-msg:<Log> :info))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Some standard errors that can be declared now that
+;; the macros are defined
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmethod serialization-length ((msg t))
+  (ros-error roslisp "Hmm... unexpectedly asked for serialization length of ~w.  Most likely because the aforementioned object was found some place where a (nonprimitive) ros message was expected." msg)
+  42)
+

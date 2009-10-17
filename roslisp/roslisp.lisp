@@ -58,6 +58,7 @@
    :node-status
    :make-response
    :symbol-code
+   :symbol-codes
 
    :load-if-necessary
 
@@ -112,6 +113,7 @@
    :load-msg ;; todo remove?
    :load-srv ;; todo remove?
 
+   :*ros-node-name*
    
    :fully-qualified-name
    :make-uri

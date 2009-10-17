@@ -104,18 +104,19 @@
         (when (probe-file filename)
           filename)))))
 
+
 (defun asdf-ros-pkg-search (definition)
-    (let ((pos (position #\/ definition :from-end t)))
-      (when pos
-	(let* ((pkg (subseq definition 0 pos))
-	       (suffix (subseq definition (1+ pos)))
-	       (pkg-path (parse-namestring (ros-package-path pkg)))
-	       (filename
-		(merge-pathnames
-		 (make-pathname :directory '(:relative "asdf") :name suffix :type "asd")
-		 pkg-path)))
-	  (when (probe-file filename)
-	    filename)))))
+  (let ((pos (position #\/ definition :from-end t)))
+    (when pos
+      (let* ((pkg (subseq definition 0 pos))
+	     (suffix (subseq definition (1+ pos)))
+	     (pkg-path (parse-namestring (ros-package-path pkg)))
+	     (filename
+	      (merge-pathnames
+	       (make-pathname :directory '(:relative "asdf") :name suffix :type "asd")
+	       pkg-path)))
+	(when (probe-file filename)
+	  filename)))))
 
 
 (setq asdf:*system-definition-search-functions* 

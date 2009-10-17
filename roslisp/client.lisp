@@ -269,9 +269,10 @@ Set up things so that publish may now be called with this topic.  Also, returns 
 		     (subscriber-connections publication)))
 
     ;; Write message to each stream
-    (dolist (sub (subscriber-connections publication))
-      ;; TODO: TCPROS has been hardcoded in
-      (tcpros-write message (subscriber-stream sub))
+    (let ((num-written 0))
+      (dolist (sub (subscriber-connections publication) num-written)
+	;; TODO: TCPROS has been hardcoded in
+	(incf num-written (tcpros-write message (subscriber-stream sub))))
       )))
 
 (defun publish-on-topic (&rest args)

@@ -15,14 +15,14 @@ genmsg()
 #
 #
 
-rospack_add_lisp_executable(bin/talker roslisp_examples roslisp-talker:main)
-rospack_add_lisp_executable(bin/listener roslisp_examples roslisp-listener:main)
-rospack_add_lisp_executable(bin/add-two-ints-client roslisp_examples add-two-ints-client:main)
-rospack_add_lisp_executable(bin/add-two-ints-server roslisp_examples add-two-ints-server:main)
-rospack_add_lisp_executable(bin/params-example roslisp_examples params-example:main)
-rospack_add_lisp_executable(bin/rosout-examples roslisp_examples rosout-example:main)
-rospack_add_lisp_executable(bin/array-talker roslisp_examples roslisp-array-talker:main)
-rospack_add_lisp_executable(bin/array-listener roslisp_examples roslisp-array-listener:main)
+rospack_add_lisp_executable(bin/talker roslisp_examples roslisp-examples:talker)
+rospack_add_lisp_executable(bin/listener roslisp_examples roslisp-examples:listener)
+rospack_add_lisp_executable(bin/add-two-ints-client roslisp_examples roslisp-examples:add-two-ints-client)
+rospack_add_lisp_executable(bin/add-two-ints-server roslisp_examples roslisp-examples:add-two-ints-server)
+rospack_add_lisp_executable(bin/params-example roslisp_examples roslisp-examples:params-example)
+rospack_add_lisp_executable(bin/rosout-example roslisp_examples roslisp-examples:rosout-example)
+rospack_add_lisp_executable(bin/array-talker roslisp_examples roslisp-examples:array-talker)
+rospack_add_lisp_executable(bin/array-listener roslisp_examples roslisp-examples:array-listener)
 
 
 

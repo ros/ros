@@ -38,12 +38,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(defpackage :rosout-example
-  (:use :cl :roslisp)
-  (:export :main))
-(in-package :rosout-example)
+(in-package :roslisp-examples)
 
-(defun main ()
+(defun rosout-example ()
   "Print messages to rosout"
   (with-ros-node ("rosout-example")
     (let ((i 0))

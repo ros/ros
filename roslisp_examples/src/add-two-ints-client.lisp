@@ -38,19 +38,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(defpackage :add-two-ints-client
-  (:use :roslisp :cl :roslisp_examples-srv)
-  (:export :main))
-
-(in-package add-two-ints-client)
-
+(in-package :roslisp-examples)
 
 (defun add (a b)
   (sum-val (call-service "add_two_ints" 'AddTwoInts :a a :b b)))
 
-(defun main ()
+(defun add-two-ints-client ()
   (with-ros-node ("two-ints-client")
-    (let ((a (random 1000)) (b (random 1000)))
+    (let ((a (mod (ros-time) 42)) (b (mod (* 10 (ros-time)) 17)))
       (format t "~a + ~a = ~a~&" a b (add a b)))))
 
 

@@ -38,18 +38,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(defpackage :roslisp-talker
-  (:use :cl :roslisp :std_msgs-msg)
-  (:export :main))
-(in-package roslisp-talker)
+(in-package :roslisp-examples)
 
-(defun main ()
+(defun talker ()
   "Periodically print a string message on the /chatter topic"
-  (with-ros-node ("talker")
-    (advertise "chatter" '<String>)
-    (let ((i 0))
+  (with-ros-node ("talker")   
+    (let ((i 0) (pub (advertise "chatter" "std_msgs/String")))
       (loop-at-most-every .1
-	 (publish-on-topic "chatter" (make-instance '<String> :data (format nil "foo ~a" (incf i))))))))
+	 (publish-on-topic pub (make-msg "std_msgs/String" :data (format nil "foo ~a" (incf i))))))))
 
 
 

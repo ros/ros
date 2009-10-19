@@ -38,16 +38,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(defpackage :roslisp-array-listener
-  (:use :cl :roslisp :roslisp_examples-msg)
-  (:export :main))
-
-(in-package roslisp-array-listener)
+(in-package :roslisp-examples)
   
-(defun main ()
+(defun array-listener ()
   "Like listener, except illustrates an array message."
   (with-ros-node ("listener" :spin t)
-    (subscribe "array_chatter" '<Test> #'print)))
+    (subscribe "array_chatter" '<Test> 
+	       #'(lambda (x) (ros-info nil "~&Location is ~a and orientation is ~a" (location-val x) (orientation-val x))))))
 
 
   

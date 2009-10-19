@@ -38,14 +38,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(defpackage :params-example
-  (:use :cl :roslisp)
-  (:export :main))
-(in-package :params-example)
+(in-package :roslisp-examples)
 
 (roslisp:set-debug-level 'params :info)
 
-(defun main ()
+(defun params-example ()
   "Illustrates param operations."
   (with-ros-node ("param-example")
     (if (has-param "~foo")

@@ -73,10 +73,14 @@
    :advertise
    :subscribe
    :register-service
+   :register-service-fn
+
    :def-service-callback
    :call-service
    :publish-on-topic
    :publish
+   :publish-msg
+
    :loop-at-most-every
    :spin-until 
    :with-parallel-thread

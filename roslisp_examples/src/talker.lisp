@@ -45,7 +45,7 @@
   (with-ros-node ("talker")   
     (let ((i 0) (pub (advertise "chatter" "std_msgs/String")))
       (loop-at-most-every .1
-	 (publish-on-topic pub (make-msg "std_msgs/String" :data (format nil "foo ~a" (incf i))))))))
+	 (publish-msg pub :data (format nil "foo ~a" (incf i)))))))
 
 
 

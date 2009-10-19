@@ -37,7 +37,7 @@
 ;; DAMAGE.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package roslisp)
+(in-package :roslisp)
 
 (set-debug-level 'roslisp :warn)
 (set-debug-level '(roslisp top) :info)
@@ -246,6 +246,11 @@ Set up things so that publish may now be called with this topic.  Also, returns 
       (setf (gethash topic *publications*) (make-publication :pub-topic-type topic-type :subscriber-connections nil :is-latching latch :last-message nil)))))
 
 
+(defmacro publish-msg (pub &rest msg-args)
+  "Convenience function that first does make-msg using the type of PUB and MSG-ARGS, then publishes the resulting message on PUB"
+  (let ((p (gensym)))
+    `(let ((,p ,pub))
+       (publish ,p (make-msg (pub-topic-type ,p) ,@msg-args)))))
 
 (defgeneric publish (pub message)
   (:documentation "PUB is either a publication object returned by advertise, or a string naming a ros topic.  MESSAGE is the message object of the appropriate type for this topic.")
@@ -279,6 +284,8 @@ Set up things so that publish may now be called with this topic.  Also, returns 
 
 (defun publish-on-topic (&rest args)
   "Alias for publish (backwards compatibility)"
+  ;; Remove by Jan 2010
+  (ros-warn roslisp "Deprecated usage: use publish instead of publish-on-topic")
   (apply #'publish args))
 
 
@@ -303,7 +310,7 @@ Set up things so that publish may now be called with this topic.  Also, returns 
 	  (roslisp-error "Socket error ~a when attempting to contact master at ~a for advertising service ~a" c *master-uri* service-name))))))
 
 (defmacro register-service (service-name service-type)
-  "Register service with the given name SERVICE-NAME (a string) of type service-type (a symbol) with the master."
+  "Register service with the given name SERVICE-NAME (a string) of type SERVICE-TYPE (a symbol) with the master.  The callback for the service is also a function named SERVICE-TYPE.  See also register-service-fn, for if you want to use a function object as the callback."
   (when (and (listp service-type) (eq 'quote (first service-type)))
     (setq service-type (second service-type)))
   `(register-service-fn ,service-name #',service-type ',service-type))

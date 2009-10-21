@@ -1,9 +1,40 @@
 <launch>
 
+  <!-- 
+
+  Parameter Server parameters. You can omit the 'type' attribute if
+  value is unambiguous. Supported types are str, int, double, bool.
+  You can also specify the contents of a file instead using the
+  'textfile' or 'binfile' attributes.
+  
+  -->
+  <param name="somestring1" value="bar2" />
+  <!-- force to string instead of integer -->
+  <param name="somestring2" value="10" type="str" />
+  
+  <param name="someinteger1" value="1" type="int" />
+  <param name="someinteger2" value="2" />
+  
+  <param name="somefloat1" value="3.14159" type="double" />  
+  <param name="somefloat2" value="3.0" />
+  
+  <!-- you can set parameters in child namespaces -->
+  <param name="wg/wgchildparam" value="a child namespace parameter" />  
+  <group ns="wg2"> 
+    <param name="wg2childparam1" value="a child namespace parameter" />  
+    <param name="wg2childparam2" value="a child namespace parameter" />  
+  </group>
+
   <!-- use rosparam files -->
   <group ns="rosparam">
     <rosparam command="load" file="$(find rosparam)/example.yaml" />
   </group>
-    <rosparam ns="rosparam2" command="load" file="$(find rosparam)/example.yaml" />
+  
+  <!-- upload the contents of a file as a param -->
+  <param name="configfile" textfile="$(find roslaunch)/example.xml" />
+  <!-- upload the contents of a file as base64 binary as a param -->
+  <param name="binaryfile" binfile="$(find roslaunch)/example.xml" />
+  <!-- upload the output of a command as a param. -->
+  <param name="commandoutput" command="cat &quot;$(find rospy)/scripts/python-reserved-words.txt&quot;" />
   
 </launch>

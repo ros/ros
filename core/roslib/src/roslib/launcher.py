@@ -58,8 +58,8 @@ _bootstrapped = []
 
 def load_manifest(package_name, bootstrap_version="0.7"):
     """
-    Update the Python sys.path with package dependencies
-    @param package_name: name of the package that update_path is being called from.
+    Update the Python sys.path with package's dependencies
+    @param package_name: name of the package that load_manifest() is being called from.
     @type  package_name: str
     @param bootstrap_version: (keyword argument) do not use. Soon to be deprecated
     @type  bootstrap_version: str

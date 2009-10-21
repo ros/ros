@@ -1,4 +1,4 @@
 #!/usr/bin/env python
-import roslib; roslib.update_path('rostopic')
+import roslib; roslib.load_manifest('rostopic')
 import rostopic
 rostopic.rostopicmain()

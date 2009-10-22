@@ -76,6 +76,7 @@ typedef init_options::InitOption InitOption;
  * \param argv
  * \param name Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
  * \param options [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
+ * \throws InvalidNodeNameException If the name passed in is not a valid "base" name
  *
  */
 void init(int &argc, char **argv, const std::string& name, uint32_t options = 0);
@@ -86,7 +87,7 @@ void init(int &argc, char **argv, const std::string& name, uint32_t options = 0)
  * \param remappings A map<string, string> where each one constitutes a name remapping, or one of the special remappings like __name, __master, __ns, etc.
  * \param name Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
  * \param options [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
- *
+ * \throws InvalidNodeNameException If the name passed in is not a valid "base" name
  */
 void init(const M_string& remappings, const std::string& name, uint32_t options = 0);
 
@@ -96,7 +97,7 @@ void init(const M_string& remappings, const std::string& name, uint32_t options 
  * \param remappings A vector<pair<string, string> > where each one constitutes a name remapping, or one of the special remappings like __name, __master, __ns, etc.
  * \param name Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
  * \param options [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
- *
+ * \throws InvalidNodeNameException If the name passed in is not a valid "base" name
  */
 void init(const VP_string& remapping_args, const std::string& name, uint32_t options = 0);
 

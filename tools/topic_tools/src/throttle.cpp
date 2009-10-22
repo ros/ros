@@ -36,6 +36,7 @@
 #include <cstdlib>
 #include <deque>
 #include "topic_tools/shape_shifter.h"
+#include "topic_tools/parse.h"
 
 using std::string;
 using std::vector;
@@ -127,7 +128,11 @@ int main(int argc, char **argv)
 
   string intopic = string(argv[2]);
 
-  ros::init(argc, argv, intopic + string("_throttle"),
+  std::string topic_name;
+  if(!getBaseName(string(argv[2]), topic_name))
+    return 1;
+
+  ros::init(argc, argv, topic_name + string("_throttle"),
             ros::init_options::AnonymousName);
 
   if(!strcmp(argv[1], "messages"))

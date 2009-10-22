@@ -33,6 +33,7 @@
 #include "std_msgs/String.h"
 #include "topic_tools/MuxSelect.h"
 #include "topic_tools/shape_shifter.h"
+#include "topic_tools/parse.h"
 
 using std::string;
 using std::vector;
@@ -101,7 +102,10 @@ int main(int argc, char **argv)
     printf("\nusage: mux OUT_TOPIC IN_TOPIC1 [IN_TOPIC2 [...]]\n\n");
     return 1;
   }
-  ros::init(argc, argv, string(argv[1]) + string("_mux"),
+  std::string topic_name;
+  if(!getBaseName(string(argv[1]), topic_name))
+    return 1;
+  ros::init(argc, argv, topic_name + string("_mux"),
             ros::init_options::AnonymousName);
   vector<string> topics;
   for (int i = 2; i < argc; i++)

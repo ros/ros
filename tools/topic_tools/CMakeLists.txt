@@ -3,9 +3,10 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 rosbuild_init()
 rosbuild_gensrv()
 
-rosbuild_add_library(topic_tools src/shape_shifter.cpp)
+rosbuild_add_library(topic_tools src/shape_shifter.cpp src/parse.cpp)
 
 rosbuild_add_executable(bin/switch_mux src/switch_mux.cpp)
+target_link_libraries(bin/switch_mux topic_tools)
 
 rosbuild_add_executable(bin/mux src/mux.cpp)
 target_link_libraries(bin/mux topic_tools)
@@ -21,3 +22,6 @@ target_link_libraries(bin/drop topic_tools)
 
 rosbuild_add_executable(bin/throttle src/throttle.cpp)
 target_link_libraries(bin/throttle topic_tools)
+
+rosbuild_add_gtest(test/utest test/utest.cpp)
+target_link_libraries(test/utest topic_tools)

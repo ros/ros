@@ -63,7 +63,7 @@
 	     (when (open-stream-p *ros-log-stream*) (force-output *ros-log-stream*))
 
 	     (when (and (eq *node-status* :running) (gethash "/rosout" *publications*))
-	       (publish-on-topic 
+	       (publish 
 		"/rosout"
 		(make-instance 'roslib-msg:<Log> :name *ros-node-name*
 			       :level ,code :msg ,output-string)))))))))

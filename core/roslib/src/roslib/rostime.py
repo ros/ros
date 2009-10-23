@@ -111,6 +111,12 @@ class _TVal(object):
         @rtype: long
         """
         return self.secs * long(1e9) + self.nsecs
+    
+    def __hash__(self):
+        """
+        Time values are hashable. Time values with identical fields have the same hash.
+        """
+        return ("%s.%s"%(self.secs, self.nsecs)) .__hash__()
 
     def __str__(self):
         return str(self.tons())

@@ -61,6 +61,8 @@ class RostimeTest(unittest.TestCase):
       self.assertEquals(v, TVal())
       self.assertEquals(v, TVal(0))
       self.assertEquals(v, TVal(0, 0))
+      self.assertEquals(v.__hash__(), TVal(0, 0).__hash__())
+      
       self.assert_(v != TVal(0,1))
       self.assert_(v >= TVal())
       self.assert_(v <= TVal())
@@ -96,7 +98,9 @@ class RostimeTest(unittest.TestCase):
       self.assertEquals(v, TVal(1))
       self.assertEquals(v, TVal(1, 0))
       self.assertEquals(v, TVal(0,1000000000))
+      self.assertEquals(v.__hash__(), TVal(0,1000000000).__hash__())      
       self.assertNotEquals(v, TVal(0, 0))
+      self.assertNotEquals(v.__hash__(), TVal(0, 0).__hash__())      
       self.assertEquals(NotImplemented, v.__ge__(0))
       class Foo(object): pass
       self.assertEquals(NotImplemented, v.__gt__(Foo()))
@@ -165,6 +169,14 @@ class RostimeTest(unittest.TestCase):
           self.assertEquals(0, v.nsecs)
           self.assertEquals(-1, v.to_seconds())
           self.assertEquals(-1000000000, v.tons())
+
+          
+      # test some more hashes
+      self.assertEquals(TVal(1).__hash__(), TVal(1).__hash__())
+      self.assertEquals(TVal(1,1).__hash__(), TVal(1,1).__hash__())
+      self.assertNotEquals(TVal(1).__hash__(), TVal(2).__hash__())
+      self.assertNotEquals(TVal(1,1).__hash__(), TVal(1,2).__hash__())            
+      self.assertNotEquals(TVal(1,1).__hash__(), TVal(2,1).__hash__())            
 
   def test_Time(self):
       Time = roslib.rostime.Time

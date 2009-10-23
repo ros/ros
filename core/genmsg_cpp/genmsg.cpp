@@ -1168,7 +1168,17 @@ void msg_spec::emit_cpp_class(FILE *f, bool for_srv, const string &service_name)
       fputs(h.c_str(), f);
   }
   fputs(serializationLength_func().c_str(), f);
-  fputs("  virtual uint8_t *serialize(uint8_t *write_ptr, uint32_t seq) const\n  {\n", f);
+  fputs("  virtual uint8_t *serialize(uint8_t *write_ptr,\n", f);
+  if (!header_present)
+  {
+    fputs("#if defined(__GNUC__)\n", f);
+    fputs("                             __attribute__((unused)) uint32_t seq) const\n", f);
+    fputs("#else\n", f);
+  }
+  fputs("                             uint32_t seq) const\n", f);
+  if (!header_present)
+    fputs("#endif\n", f);
+  fputs("  {\n", f);
 
   if (header_present)
   {

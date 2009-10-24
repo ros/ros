@@ -437,58 +437,43 @@ private:
       return; // this file doesn't exist or isn't readable by us.
     }
     yaml_files_found.push_back(yaml_path);
-    YAML::Parser parser(fin);
-    while (parser)
+    try
     {
-      YAML::Node doc;
-      parser.GetNextDocument(doc);
-      if (doc.GetType() != YAML::CT_MAP)
-        throw runtime_error(yaml_path + "yaml top level isn't a map");
-      for (YAML::Iterator i = doc.begin(); i != doc.end(); ++i)
+      YAML::Parser parser(fin);
+      while (parser)
       {
-        string dep_name;
-        i.first() >> dep_name;
-        DepMap::iterator db_dep_it = deps.find(dep_name);
-        if (db_dep_it != deps.end()) // todo: pin down where it was defined
+        YAML::Node doc;
+        parser.GetNextDocument(doc);
+        if (doc.GetType() != YAML::CT_MAP)
+          throw runtime_error(yaml_path + "yaml top level isn't a map");
+        for (YAML::Iterator i = doc.begin(); i != doc.end(); ++i)
         {
-          if (from_old_db)
-            continue; // ignore duplicates that conflict with the old DB
-          else // but crash on duplicates in the Federation. shapeshifters.
-            throw runtime_error(yaml_path + 
-                                     string(" defined dependency key ") +
-                                     dep_name + 
-                                     string(" which was already defined in ") +
-                                     db_dep_it->second.yaml_path);
-        }
-        Dep dep;
-        if (from_old_db)
-          dep.from_old_db = true;
-        dep.yaml_path = yaml_path;
-        for (YAML::Iterator j = i.second().begin(); j!=i.second().end(); ++j)
-        {
-          if (j.second().GetType() == YAML::CT_SCALAR)
+          string dep_name;
+          i.first() >> dep_name;
+          DepMap::iterator db_dep_it = deps.find(dep_name);
+          if (db_dep_it != deps.end()) // todo: pin down where it was defined
           {
-            Sat sat;
-            j.first() >> sat.os_name;
-            string native_pkgs;
-            j.second() >> native_pkgs;
-            if (native_pkgs.find_first_of('\n') == string::npos)
-              rospack::string_split(native_pkgs, sat.pkgs, " ");
-            else
-              sat.bash = native_pkgs;
-            sat.rosdep_name = dep_name;
-            dep.sats.push_back(sat);
+            if (from_old_db)
+              continue; // ignore duplicates that conflict with the old DB
+            else // but crash on duplicates in the Federation. shapeshifters.
+              throw runtime_error(yaml_path + 
+                                  string(" defined dependency key ") +
+                                  dep_name + 
+                                  string(" which was already defined in ") +
+                                  db_dep_it->second.yaml_path);
           }
-          else if (j.second().GetType() == YAML::CT_MAP)
+          Dep dep;
+          if (from_old_db)
+            dep.from_old_db = true;
+          dep.yaml_path = yaml_path;
+          for (YAML::Iterator j = i.second().begin(); j!=i.second().end(); ++j)
           {
-            for (YAML::Iterator k = j.second().begin();
-                k != j.second().end(); ++k)
+            if (j.second().GetType() == YAML::CT_SCALAR)
             {
               Sat sat;
               j.first() >> sat.os_name;
-              k.first() >> sat.os_ver;
               string native_pkgs;
-              k.second() >> native_pkgs;
+              j.second() >> native_pkgs;
               if (native_pkgs.find_first_of('\n') == string::npos)
                 rospack::string_split(native_pkgs, sat.pkgs, " ");
               else
@@ -496,14 +481,39 @@ private:
               sat.rosdep_name = dep_name;
               dep.sats.push_back(sat);
             }
+            else if (j.second().GetType() == YAML::CT_MAP)
+            {
+              for (YAML::Iterator k = j.second().begin();
+                  k != j.second().end(); ++k)
+              {
+                Sat sat;
+                j.first() >> sat.os_name;
+                k.first() >> sat.os_ver;
+                string native_pkgs;
+                k.second() >> native_pkgs;
+                if (native_pkgs.find_first_of('\n') == string::npos)
+                  rospack::string_split(native_pkgs, sat.pkgs, " ");
+                else
+                  sat.bash = native_pkgs;
+                sat.rosdep_name = dep_name;
+                dep.sats.push_back(sat);
+              }
+            }
+            else if (j.second().GetType() != YAML::CT_NONE)
+              throw runtime_error(yaml_path+": expected a scalar or map");
           }
-          else if (j.second().GetType() != YAML::CT_NONE)
-            throw runtime_error(yaml_path+": expected a scalar or map");
+          deps[dep_name] = dep;
         }
-        deps[dep_name] = dep;
+        if (debug)
+          printf("parsed %s\n", yaml_path.c_str());
       }
-      if (debug)
-        printf("parsed %s\n", yaml_path.c_str());
+    }
+    catch(YAML::ParserException &e)
+    {
+      printf("YAML parse error in %s: %s\n",
+             yaml_path.c_str(), e.what());
+      exit(1);
+      return;
     }
   }
 

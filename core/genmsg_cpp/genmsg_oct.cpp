@@ -822,7 +822,7 @@ void msg_spec::emit_cpp_class(FILE *f, bool for_srv, const string &srv_name)
         for (; it != end; ++it) {
             std::string& line = *it;
 
-            // Escape bare \ and "
+            // Escape bare \ and " and '
             size_t pos = line.find("\\");
             while (pos != std::string::npos) {
                 line.insert(pos, "\\");
@@ -835,7 +835,7 @@ void msg_spec::emit_cpp_class(FILE *f, bool for_srv, const string &srv_name)
                 pos = line.find("\"", pos + 2);
             }
 
-            fprintf(f, "    '%s\\n' ...\n", line.c_str());
+            fprintf(f, "    \"%s\\n\" ...\n", line.c_str());
         }
         fprintf(f, "];\n\n");
     }

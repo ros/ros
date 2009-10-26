@@ -107,6 +107,7 @@ public:
 
 static RosoctStaticData s_staticdata;
 static bool s_bInstalled = false;
+static bool s_bHookRegistered = false;
 
 #define s_listWorkerItems s_staticdata.listWorkerItems
 #define s_mapAdvertised s_staticdata.mapAdvertised
@@ -1071,6 +1072,7 @@ void reset_all()
 static rl_event_hook_fcn_ptr octave_rl_event_hook = NULL;
 static int rosoct_hook(void)
 {
+    ROS_ASSERT(octave_rl_event_hook!=rosoct_hook);
     if( octave_rl_event_hook != NULL )
         octave_rl_event_hook();
 
@@ -1091,10 +1093,11 @@ void rosoct_exit()
         s_node.reset();
         s_rosthread.join();
 
-        if( octave_rl_event_hook != NULL ) {
+        if( s_bHookRegistered ) {
             ROS_INFO("unregistering rosoct hook");
             octave_rl_set_event_hook(octave_rl_event_hook);
             octave_rl_event_hook = NULL;
+            s_bHookRegistered = false;
         }
         s_bInstalled = false;
     }
@@ -1154,10 +1157,12 @@ bool install_rosoct(bool bRegisterHook)
 #ifdef COMPILE_FOR_MATLAB
     mexAtExit(rosoct_exit); // register mex function (buggy for octave)
 #else // octave
-    if( bRegisterHook ) {
+    if( bRegisterHook && !s_bHookRegistered ) {
         ROS_INFO("registering rosoct hook to readline");
         octave_rl_event_hook = octave_rl_get_event_hook();
+        ROS_ASSERT(octave_rl_event_hook!=rosoct_hook);
         octave_rl_set_event_hook(rosoct_hook);
+        s_bHookRegistered = true;
     }
 
     // register octave exit function
@@ -1175,7 +1180,7 @@ bool install_rosoct(bool bRegisterHook)
     gethostname(strname, sizeof(strname));
     strcat(strname,"_rosoct");
     ros::init(argc,argc > 0 ? &argv[0] : NULL,strname, ros::init_options::NoSigintHandler|ros::init_options::AnonymousName);
-
+    s_node.reset(new ros::NodeHandle());
     s_rosthread = boost::thread(boost::bind(ros::spin));
     return true;
 }
@@ -1219,6 +1224,10 @@ void mexFunction(int nlhs,mxArray *plhs[],int nrhs,const mxArray *prhs[])
         else if( cmd == "check_master" ) {
             if( nlhs > 0 )
                 plhs[0] = mxCreateDoubleScalar((double)ros::master::check());
+        }
+        else if( cmd == "exit" ) {
+            if( !s_bInstalled )
+                return;
         }
         else {
             if( !s_bInstalled ) {

@@ -134,8 +134,9 @@
   (host-ent-address (get-host-by-name hostname)))
 
 (defun hostname ()
-  (run-external "hostname"))
-
+  (or (sb-ext:posix-getenv "ROS_HOSTNAME")
+      (sb-ext:posix-getenv "ROS_IP")
+      (run-external "hostname")))
 
 (defun get-topic-class-name (topic)
   "Given a topic foo with message type, say the string /std_msgs/bar, this returns the symbol named bar from the package std_msgs. The topic must be one that has already been advertised or subscribed to."

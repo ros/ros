@@ -228,6 +228,10 @@ macro(rosbuild_init)
   add_custom_target(tests)
   # The 'test' target runs all but the future tests
   add_custom_target(test)
+  # We need to build tests before running them.  Addition of this
+  # dependency also ensures that old test results get cleaned prior to a
+  # new test run.
+  add_dependencies(test tests)
   # Clean out previous test results before running tests.  Use bash
   # conditional to ignore failures (most often happens when a stale NFS
   # handle lingers in the test results directory), because CMake doesn't

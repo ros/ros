@@ -464,8 +464,11 @@ string Package::direct_flags(string lang, string attrib)
     char buf[8192];
     memset(buf,0,sizeof(buf));
     // Read the command's output
-    const char *fgets_ret = fgets(buf,sizeof(buf)-1,p);
-    assert(fgets_ret);
+    do
+    {
+      clearerr(p);
+      while(fgets(buf + strlen(buf),sizeof(buf)-strlen(buf)-1,p));
+    } while(ferror(p) && errno == EINTR);
     // Close the subprocess, checking exit status
     if(pclose(p) != 0)
     {
@@ -521,7 +524,8 @@ VecPkg Package::deleted_pkgs;
 
 ROSPack *g_rospack = NULL; // singleton
 
-ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false)
+ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false),
+        my_argc(0), my_argv(NULL)
 {
   g_rospack = this;
   Package::pkgs.reserve(500); // get some space to avoid early recopying...
@@ -554,6 +558,7 @@ ROSPack::~ROSPack()
        p != Package::deleted_pkgs.end(); ++p)
     delete (*p);
   Package::deleted_pkgs.clear();
+  freeArgv();
 }
 
 const char* ROSPack::usage()
@@ -600,7 +605,10 @@ Package *ROSPack::get_pkg(string pkgname)
         // contains a manifest (#1115).
         std::string manifest_path = (*p)->path + fs_delim + "manifest.xml";
         struct stat s;
-        if(stat(manifest_path.c_str(), &s) == 0)
+        int ret;
+        while((ret = stat(manifest_path.c_str(), &s)) != 0 &&
+              errno == EINTR);
+        if(ret == 0)
         {
           // Answer looks good
           return (*p);
@@ -929,6 +937,38 @@ int ROSPack::cmd_plugins()
   return 0;
 }
 
+void ROSPack::freeArgv()
+{
+  if(my_argc)
+  {
+    for(int i=0;i<my_argc;i++)
+      free(my_argv[i]);
+    free(my_argv);
+  }
+  my_argc = 0;
+  my_argv = NULL;
+}
+
+int ROSPack::run(const std::string& cmd)
+{
+  std::vector<std::string> cmd_list;
+  
+  // TODO: split the input string properly, accounting for quotes, escaped
+  // quotes, etc.  This shouldn't really matter, because rospack shouldn't be
+  // given arguments with embedded spaces.
+  string_split(cmd, cmd_list, " ");
+
+  // In case we're called more than once.
+  freeArgv();
+
+  my_argc = (int)cmd_list.size() + 1;
+  my_argv = (char**)malloc(sizeof(char*) * my_argc);
+  my_argv[0] = strdup("rospack");
+  for(int i=1;i<my_argc;i++)
+    my_argv[i] = strdup(cmd_list[i-1].c_str());
+
+  return run(my_argc, my_argv);
+}
 
 int ROSPack::run(int argc, char **argv)
 {
@@ -1128,7 +1168,7 @@ int ROSPack::cmd_print_package_list(bool print_path)
     }
     else
     {
-      printf("%s\n", (*i)->name.c_str());
+      //printf("%s\n", (*i)->name.c_str());
       output_acc += (*i)->name + "\n";
     }
   return 0;
@@ -1423,7 +1463,10 @@ void ROSPack::crawl_for_packages(bool force_crawl)
     {
       struct stat s;
       string child_path = cqe.path + fs_delim + string(ent->d_name);
-      if (stat(child_path.c_str(), &s) != 0) 
+      int ret;
+      while ((ret = stat(child_path.c_str(), &s)) != 0 &&
+             errno == EINTR);
+      if (ret != 0)
         continue;
       if (!S_ISDIR(s.st_mode)) 
         continue;
@@ -1569,7 +1612,10 @@ VecPkg ROSPack::partial_crawl(const string &path)
     {
       struct stat s;
       string child_path = cqe.path + fs_delim + string(ent->d_name);
-      if (stat(child_path.c_str(), &s) != 0) 
+      int ret;
+      while ((ret = stat(child_path.c_str(), &s)) != 0 && 
+             errno == EINTR);
+      if (ret != 0)
         continue;
       if (!S_ISDIR(s.st_mode)) 
         continue;
@@ -1613,10 +1659,12 @@ void string_split(const string &s, vector<string> &t, const string &d)
   size_t start = 0, end;
   while ((end = s.find_first_of(d, start)) != string::npos)
   {
-    t.push_back(s.substr(start, end-start));
+    if((end-start) > 0)
+      t.push_back(s.substr(start, end-start));
     start = end + 1;
   }
-  t.push_back(s.substr(start));
+  if(start < s.size())
+    t.push_back(s.substr(start));
 }
 
 // Produce a new string by keeping only the first of each repeated token in

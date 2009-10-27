@@ -43,6 +43,7 @@ int main(int argc, char **argv)
   {
     rospack::ROSPack rp;
     ret = rp.run(argc, argv);
+    printf("%s", rp.getOutput().c_str());
   }
   catch(std::runtime_error &e)
   {

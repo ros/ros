@@ -656,7 +656,10 @@ int ROSPack::cmd_depends_on(bool include_indirect)
           : p->descendants1();
   for (VecPkg::const_iterator p = descendants.begin(); 
        p != descendants.end(); ++p)
-    printf("%s\n", (*p)->name.c_str());
+  {
+    //printf("%s\n", (*p)->name.c_str());
+    output_acc += (*p)->name + "\n";
+  }
   return 0;
 }
 
@@ -664,7 +667,8 @@ int ROSPack::cmd_find()
 {
   // todo: obey the search order
   Package *p = get_pkg(g_package);
-  printf("%s\n", p->path.c_str());
+  //printf("%s\n", p->path.c_str());
+  output_acc += p->path + "\n";
   return 0;
 }
 
@@ -672,7 +676,10 @@ int ROSPack::cmd_deps()
 {
   VecPkg d = get_pkg(g_package)->deps(Package::POSTORDER);
   for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
-    printf("%s\n", (*i)->name.c_str());
+  {
+    //printf("%s\n", (*i)->name.c_str());
+    output_acc += (*i)->name + "\n";
+  }
   return 0;
 }
 
@@ -680,8 +687,12 @@ int ROSPack::cmd_deps_manifests()
 {
   VecPkg d = get_pkg(g_package)->deps(Package::POSTORDER);
   for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
-    printf("%s/manifest.xml ", (*i)->path.c_str());
-  puts("");
+  {
+    //printf("%s/manifest.xml ", (*i)->path.c_str());
+    output_acc += (*i)->path + "/manifest.xml ";
+  }
+  //puts("");
+  output_acc += "\n";
   return 0;
 }
 
@@ -689,7 +700,10 @@ int ROSPack::cmd_deps1()
 {
   VecPkg d = get_pkg(g_package)->deps1();
   for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
-    printf("%s\n", (*i)->name.c_str());
+  {
+    //printf("%s\n", (*i)->name.c_str());
+    output_acc += (*i)->name + "\n";
+  }
   return 0;
 }
 
@@ -700,8 +714,12 @@ int ROSPack::cmd_depsindent(Package* pkg, int indent)
   for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
   {
     for(int s=0; s<indent; s++)
-      printf(" ");
-    printf("%s\n", (*i)->name.c_str());
+    {
+      //printf(" ");
+      output_acc += " ";
+    }
+    //printf("%s\n", (*i)->name.c_str());
+    output_acc += (*i)->name + "\n";
     cmd_depsindent(*i, indent+2);
   }
   return 0;
@@ -805,7 +823,8 @@ int ROSPack::cmd_libs_only(string token)
       lflags += string(" ") + getBinDepPath() + string("/lib");
     lflags = deduplicate_tokens(lflags);
   }
-  printf("%s\n", lflags.c_str());
+  //printf("%s\n", lflags.c_str());
+  output_acc += lflags + "\n";
   return 0;
 }
 
@@ -822,7 +841,8 @@ int ROSPack::cmd_cflags_only(string token)
       cflags += string(" ") + getBinDepPath() + string("/include");
     cflags = deduplicate_tokens(cflags);
   }
-  printf("%s\n", cflags.c_str());
+  //printf("%s\n", cflags.c_str());
+  output_acc += cflags + "\n";
   return 0;
 }
 
@@ -840,7 +860,8 @@ void ROSPack::export_flags(string pkg, string lang, string attrib)
       flags += string(" -Wl,-rpath,") + getBinDepPath() + string("/lib");
     }
   }
-  printf("%s\n", flags.c_str());
+  //printf("%s\n", flags.c_str());
+  output_acc += flags + "\n";
 }
 
 int ROSPack::cmd_versioncontrol(int depth)
@@ -860,7 +881,8 @@ int ROSPack::cmd_versioncontrol(int depth)
     }
   }
 
-  printf("%s", sds.c_str());
+  //printf("%s", sds.c_str());
+  output_acc += sds;
   return 0;
 }
 
@@ -880,7 +902,8 @@ int ROSPack::cmd_rosdep(int depth)
     }
   }
 
-  printf("%s", sds.c_str());
+  //printf("%s", sds.c_str());
+  output_acc += sds;
   return 0;
 }
 
@@ -899,7 +922,8 @@ int ROSPack::cmd_plugins()
   vector<pair<string, string> >::iterator end = plugins.end();
   for (; it != end; ++it)
   {
-    printf("%s %s\n", it->first.c_str(), it->second.c_str());
+    //printf("%s %s\n", it->first.c_str(), it->second.c_str());
+    output_acc += it->first + " " + it->second + "\n";
   }
 
   return 0;
@@ -1098,9 +1122,15 @@ int ROSPack::cmd_print_package_list(bool print_path)
   for (VecPkg::iterator i = Package::pkgs.begin(); 
        i != Package::pkgs.end(); ++i)
     if (print_path)
-      printf("%s %s\n", (*i)->name.c_str(), (*i)->path.c_str());
+    {
+      //printf("%s %s\n", (*i)->name.c_str(), (*i)->path.c_str());
+      output_acc += (*i)->name + " " + (*i)->path + "\n";
+    }
     else
+    {
       printf("%s\n", (*i)->name.c_str());
+      output_acc += (*i)->name + "\n";
+    }
   return 0;
 }
   
@@ -1134,9 +1164,13 @@ int ROSPack::cmd_print_langs_list()
         break;
     }
     if(j == disable_list.end())
-      printf("%s ", (*i)->name.c_str());
+    {
+      //printf("%s ", (*i)->name.c_str());
+      output_acc += (*i)->name + " ";
+    }
   }
-  printf("\n");
+  //printf("\n");
+  output_acc += "\n";
   return 0;
 }
 
@@ -1468,25 +1502,48 @@ perror("rename");
     }
     if(!g_profile_zombie_only)
     {
-      printf("\nFull tree crawl took %.6f seconds.\n", crawl_elapsed_time);
-      printf("Directories marked with (*) contain no manifest.  You may\n");
-      printf("want to delete these directories.\n");
-      printf("-------------------------------------------------------------\n");
+      //printf("\nFull tree crawl took %.6f seconds.\n", crawl_elapsed_time);
+      //printf("Directories marked with (*) contain no manifest.  You may\n");
+      //printf("want to delete these directories.\n");
+      //printf("-------------------------------------------------------------\n");
+      char buf[16];
+      snprintf(buf, sizeof(buf), "%.6f", crawl_elapsed_time);
+      output_acc += "\nFull tree crawl took " + string(buf) + " seconds.\n";
+      output_acc += "Directories marked with (*) contain no manifest.  You may\n";
+      output_acc += "want to delete these directories.\n";
+      output_acc += "-------------------------------------------------------------\n";
     }
     while (!reverse_profile.empty())
     {
       CrawlQueueEntry cqe = reverse_profile.top();
       reverse_profile.pop();
       if(!g_profile_zombie_only)
-        printf("%.6f %s %s\n", 
-               cqe.elapsed_time, 
-               cqe.has_manifest ? " " : "*",
-               cqe.path.c_str());
+      {
+        //printf("%.6f %s %s\n", 
+               //cqe.elapsed_time, 
+               //cqe.has_manifest ? " " : "*",
+               //cqe.path.c_str());
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%.6f", cqe.elapsed_time);
+        output_acc += string(buf) + " ";
+        if(cqe.has_manifest)
+          output_acc += "  ";
+        else
+          output_acc += "* ";
+        output_acc += cqe.path;
+        output_acc += "\n";
+      }
       else
-        printf("%s\n", cqe.path.c_str());
+      {
+        //printf("%s\n", cqe.path.c_str());
+        output_acc += cqe.path + "\n";
+      }
     }
     if(!g_profile_zombie_only)
-      printf("\n");
+    {
+      //printf("\n");
+      output_acc += "\n";
+    }
   }
 }
 

@@ -387,6 +387,9 @@ public:
    * @throws std::runtime_error
    */
   int run(int argc, char **argv);
+  
+  // Get the accumulated output
+  std::string getOutput() { return output_acc; }
 
   int cmd_print_package_list(bool print_path);
   
@@ -409,6 +412,8 @@ private:
   bool useBinDepPath();
   /** remove trailing slashes */
   void sanitize_rppvec(std::vector<std::string> &rppvec);
+  // Output accumulates here
+  std::string output_acc;
 };
 
 }

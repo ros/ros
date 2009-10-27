@@ -5,7 +5,8 @@
 #https://ros.svn.sourceforge.net/svnroot/ros/trunk
 #https://personalrobots.svn.sourceforge.net/svnroot/personalrobots/pkg/trunk
 ros   https://code.ros.org/svn/ros/stacks/ros/tags/stable
-camera_drivers https://code.ros.org/svn/ros-pkg/stacks/camera_drivers/tags/latest common https://code.ros.org/svn/ros-pkg/stacks/common/tags/latest
+camera_drivers https://code.ros.org/svn/ros-pkg/stacks/camera_drivers/tags/latest 
+common https://code.ros.org/svn/ros-pkg/stacks/common/tags/latest
 common_msgs https://code.ros.org/svn/ros-pkg/stacks/common_msgs/tags/latest
 diagnostics https://code.ros.org/svn/ros-pkg/stacks/diagnostics/tags/latest
 driver_common https://code.ros.org/svn/ros-pkg/stacks/driver_common/tags/latest

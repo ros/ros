@@ -22,3 +22,5 @@ rosbuild_add_pyunit(test/test_roslib_scriptutil.py)
 rosbuild_add_pyunit(test/test_roslib_substitution_args.py)
 rosbuild_add_pyunit(test/test_roslib_xmlrpc.py)
  
+
+rosbuild_add_gtest(test/utest test/utest.cpp)

@@ -106,6 +106,7 @@ class MasterProxy(NodeProxy):
         values can be cached.
         @param key: parameter key
         @type key: str
+        @raise KeyError: if key is not set
         """
         #NOTE: remapping occurs here!
         resolved_key = rospy.names.resolve_name(key)
@@ -159,11 +160,14 @@ class MasterProxy(NodeProxy):
     def __delitem__(self, key):
         """
         Delete parameter key from the parameter server.
+        @raise KeyError: if key is not set
         @raise ROSException: if parameter server reports an error
         """
         resolved_key = rospy.names.resolve_name(key)
         code, msg, _ = self.target.deleteParam(rospy.names.get_caller_id(), resolved_key)
-        if code != 1:
+        if code == -1:
+            raise KeyError(key)
+        elif code != 1:
             raise rospy.exceptions.ROSException("cannot delete parameter: %s"%msg)
         elif 0: #disable parameter cache
             # set the value in the cache so that it's marked as subscribed

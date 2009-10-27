@@ -412,6 +412,8 @@ def search_param(param_name):
     Search for a parameter on the param server
     @param param_name: parameter name
     @type  param_name: str
+    @return: key of matching parameter or None if no matching parameter. 
+    @rtype: str
     @raise ROSException: if parameter server reports an error
     """
     _init_param_server()
@@ -422,6 +424,7 @@ def delete_param(param_name):
     Delete a parameter on the param server
     @param param_name: parameter name
     @type  param_name: str
+    @raise KeyError: if parameter is not set    
     @raise ROSException: if parameter server reports an error
     """    
     _init_param_server()

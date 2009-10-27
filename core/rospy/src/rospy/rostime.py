@@ -97,7 +97,7 @@ class Time(roslib.rostime.Time):
     instances are mutable.
 
     The L{Time.now()} factory method can initialize Time to the
-    current ROS time and L{from_seconds()} can be used to create a
+    current ROS time and L{from_sec()} can be used to create a
     Time instance from the Python's time.time() float seconds
     representation.
 
@@ -118,7 +118,7 @@ class Time(roslib.rostime.Time):
 
       # NOTE: in general, you will want to avoid using time.time() in ROS code
       import time
-      py_time = rospy.Time.from_seconds(time.time())
+      py_time = rospy.Time.from_sec(time.time())
     """
     __slots__ = []    
 
@@ -126,7 +126,7 @@ class Time(roslib.rostime.Time):
         """
         Constructor: secs and nsecs are integers and correspond to the
         ROS 'time' primitive type. You may prefer to use the static
-        L{from_seconds()} and L{now()} factory methods instead.
+        L{from_sec()} and L{now()} factory methods instead.
         
         @param secs: seconds since epoch
         @type  secs: int
@@ -164,6 +164,19 @@ class Time(roslib.rostime.Time):
     
     def from_seconds(float_secs):
         """
+        Use Time.from_sec() instead. Retained for backwards compatibility.
+        
+        @param float_secs: time value in time.time() format
+        @type  float_secs: float
+        @return: Time instance for specified time
+        @rtype: L{Time}
+        """
+        return Time.from_sec(float_secs)
+    
+    from_seconds = staticmethod(from_seconds)
+
+    def from_sec(float_secs):
+        """
         Create new Time instance from a float seconds representation
         (e.g. time.time()).
         
@@ -176,7 +189,7 @@ class Time(roslib.rostime.Time):
         nsecs = int((float_secs - secs) * 1000000000)
         return Time(secs, nsecs)
     
-    from_seconds = staticmethod(from_seconds)
+    from_sec = staticmethod(from_sec)
     
 def _set_rostime(t):
     """Callback to update ROS time from a ROS Topic"""

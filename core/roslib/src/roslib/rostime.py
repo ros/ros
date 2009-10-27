@@ -99,14 +99,31 @@ class _TVal(object):
         """
         self.secs, self.nsecs = _canon(self.secs, self.nsecs)
         
-    def to_seconds(self):
+    def to_sec(self):
         """
         @return: time as float seconds (same as time.time() representation)
         @rtype: float
         """
         return float(self.secs) + float(self.nsecs) / 1e9
+
+    def to_nsec(self):
+        """
+        @return: time as nanoseconds
+        @rtype: long
+        """
+        return self.secs * long(1e9) + self.nsecs
+        
+    def to_seconds(self):
+        """
+        Use to_sec() instead. This is retained for backwards compatibility.
+        @return: time as float seconds (same as time.time() representation)
+        @rtype: float
+        """
+        return float(self.secs) + float(self.nsecs) / 1e9
+
     def tons(self):
         """
+        Use to_ns() instead. This is retained for backwards compatibility.
         @return: time as nanoseconds
         @rtype: long
         """
@@ -201,6 +218,17 @@ class Time(_TVal):
 
     def from_seconds(float_secs):
         """
+        Use from_sec() instead. This is retained for backwards compatibility.
+        
+        @param float_secs: time value in time.time() format
+        @type  float_secs: float
+        @return: Time instance for specified time
+        @rtype: L{Time}
+        """
+        return Time.from_sec(float_secs)
+
+    def from_sec(float_secs):
+        """
         Create new Time instance using time.time() value (float
         seconds)
         
@@ -214,10 +242,11 @@ class Time(_TVal):
         return Time(secs, nsecs)
     
     from_seconds = staticmethod(from_seconds)
+    from_sec = staticmethod(from_sec)    
 
     def to_time(self):
         """
-        Get Time in time.time() format. alias of to_seconds()
+        Get Time in time.time() format. alias of L{to_sec()}
         
         @return: time in floating point secs (time.time() format)
         @rtype: float
@@ -303,6 +332,17 @@ class Duration(_TVal):
 
     def from_seconds(float_seconds):
         """
+        Use from_sec() instead. This is retained for backward compatibility.
+        
+        @param float_seconds: time value in specified as float seconds
+        @type  float_seconds: float
+        @return: Duration instance for specified float_seconds
+        @rtype: Duration
+        """
+        return Duration.from_sec(float_seconds)
+
+    def from_sec(float_seconds):
+        """
         Create new Duration instance from float seconds format.
         
         @param float_seconds: time value in specified as float seconds
@@ -315,6 +355,7 @@ class Duration(_TVal):
         return Duration(secs, nsecs)
     
     from_seconds = staticmethod(from_seconds)
+    from_sec = staticmethod(from_sec)    
 
     def __neg__(self):
         """

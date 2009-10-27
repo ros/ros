@@ -113,14 +113,28 @@ def create_package_template(package, rd_config, m, path, html_dir,
 
 ## Processes manifest for package and then generates templates for
 ## header, footer, and manifest include file
-## @param package str: package to create templates for
-## @param path str: file path to package
-## @param m Manifest: package manifest or None
-## @return (str, str, str): header, footer, manifest
-def load_manifest_vars(ctx, package, path, docdir, m):
+## @param package: package to create templates for
+## @type  package: str
+## @param rd_config: rosdoc configuration dictionary
+## @type  rd_config: dict
+## @param path: file path to package
+## @type  path: str
+## @param m: package manifest or None
+## @type  m: manifest.Manifest
+## @return: header, footer, manifest
+## @rtype: (str, str, str)
+def load_manifest_vars(ctx, rd_config, package, path, docdir, m):
     author = license = dependencies = description = usedby = status = notes = li_vc = li_url = brief = ''
-    wiki_url = 'http://ros.org/wiki/%s'%package
-    project_link = '<a href="%s">%s</a>'%(wiki_url, package)
+    
+    # by default, assume that packages are on wiki
+    home_url = 'http://ros.org/wiki/%s'%package
+
+    if rd_config:
+        if 'homepage' in rd_config:
+            home_url = rd_config['homepage']
+            print "HOMEPAGE", home_url
+            
+    project_link = '<a href="%s">%s</a>'%(home_url, package)
     if m:
         license = m.license or ''
         author = m.author or ''
@@ -203,8 +217,12 @@ Package dependency tree links will not work properly.
 """
 
 ## Main entrypoint into creating doxygen files
+## @param disable_rxdeps: if True, don't generate rxdeps documenation (note: this parameter is volatile as rxdeps generation will be moved outside of doxygenator)
+## @type  disable_rxdeps: bool        
+## @param quiet: suppress most stdout output
+## @type  quiet: bool        
 ## @return [str]: list of packages that were successfully generated
-def generate_doxygen(ctx, quiet=False):
+def generate_doxygen(ctx, quiet=False, disable_rxdeps=False):
 
     #TODO: move external generator into its own generator
     #TODO: move rxdeps into its own generator    
@@ -276,10 +294,11 @@ def generate_doxygen(ctx, quiet=False):
 
                 # - instantiate the templates
                 manifest_ = manifests[package] if package in manifests else None
-                vars = load_manifest_vars(ctx, package, path, dir, manifest_)
+                vars = load_manifest_vars(ctx, rd_config, package, path, dir, manifest_)
                 header, footer, manifest_html = [instantiate_template(t, vars) for t in tmpls]
 
-                run_rxdeps(package, pkg_doc_dir)
+                if not disable_rxdeps:
+                    run_rxdeps(package, pkg_doc_dir)
                 if package not in external_docs:
                     doxy = \
                         create_package_template(package, rd_config, manifest_,

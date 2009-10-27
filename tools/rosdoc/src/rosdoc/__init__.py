@@ -55,6 +55,9 @@ def main():
     parser.add_option("--paths",metavar="PATHS",
                       dest="paths", default=None, 
                       help="package paths to document")
+    parser.add_option("--no-rxdeps", action="store_true",
+                      dest="no_rxdeps", default=False, 
+                      help="disable rxdeps")
     parser.add_option("-o",metavar="OUTPUT_DIRECTORY",
                       dest="docdir", default='doc', 
                       help="directory to write documentation to")
@@ -125,7 +128,7 @@ def main():
             print "building doxygen packages"
             try:
                 import doxygenator
-                doxy_success = doxygenator.generate_doxygen(ctx, quiet=options.quiet) 
+                doxy_success = doxygenator.generate_doxygen(ctx, quiet=options.quiet, disable_rxdeps=options.no_rxdeps) 
             except Exception, e:
                 traceback.print_exc()
                 print >> sys.stderr, "package header generation failed"

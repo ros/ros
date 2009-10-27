@@ -6,7 +6,7 @@ rosbuild_add_executable(timer_callbacks timer_callbacks.cpp)
 rosbuild_add_gtest_build_flags(timer_callbacks)
 target_link_libraries(timer_callbacks ros)
 
-rosbuild_add_executable(latching_publisher latching_publisher)
+rosbuild_add_executable(latching_publisher latching_publisher.cpp)
 rosbuild_add_gtest_build_flags(latching_publisher)
 target_link_libraries(latching_publisher ros)
 

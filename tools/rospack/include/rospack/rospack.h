@@ -388,6 +388,13 @@ public:
    */
   int run(int argc, char **argv);
 
+  // Another form of run, which takes the arguments as a single string.
+  // WARNING: this method does naive string-splitting on spaces.
+  int run(const std::string& cmd);
+  
+  // Get the accumulated output
+  std::string getOutput() { return output_acc; }
+
   int cmd_print_package_list(bool print_path);
   
   int cmd_print_langs_list();
@@ -409,6 +416,13 @@ private:
   bool useBinDepPath();
   /** remove trailing slashes */
   void sanitize_rppvec(std::vector<std::string> &rppvec);
+  // Output accumulates here
+  std::string output_acc;
+  // A place to store heap-allocated argv, in case we were passed a
+  // std::string in run().  It'll be freed on destruction.
+  int my_argc;
+  char** my_argv;
+  void freeArgv();
 };
 
 }

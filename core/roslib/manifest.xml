@@ -13,6 +13,7 @@
     <rosdoc config="${prefix}/rosdoc.yaml" />
   </export>
   <depend package="genmsg_cpp"/>
+  <depend package="rospack"/>
 
   <!-- for roslib.params -->
   <rosdep name="python"/>

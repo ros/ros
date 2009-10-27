@@ -31,9 +31,14 @@
 
 #include <stdexcept> // for std::runtime_error
 #include <string>
+#include <vector>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
+#include <time.h>
+#include <signal.h>
 #include <gtest/gtest.h>
+#include <boost/thread/thread.hpp>
 #include "rospack/rospack.h"
 
 /////////////////////////////////////////////////////////////
@@ -126,6 +131,38 @@ TEST(rospack, lflags_static_libs)
   lflags = rp.snarf_libs(input, true);
   lflags = rp.snarf_flags(lflags, "-L", true);
   EXPECT_EQ(other_output, lflags);
+}
+
+void handler(int sig)
+{
+}
+
+void signaler()
+{
+  struct timespec ts = {0, 100000};
+  for(int i=0; i<20000; i++)
+  {
+    nanosleep(&ts, NULL);
+    raise(SIGALRM);
+  }
+}
+
+TEST(rospack, signal_interruption)
+{
+  char buf[1024];
+  std::string rr = std::string(getcwd(buf, sizeof(buf))) + "/test2";
+  setenv("ROS_ROOT", rr.c_str(), 1);
+  unsetenv("ROS_PACKAGE_PATH");
+
+  signal(SIGALRM, handler);
+  boost::thread t(boost::bind(signaler));
+  rospack::ROSPack rp;
+  int ret = rp.run(std::string("list-names"));
+  t.join();
+  ASSERT_EQ(ret, 0);
+  std::vector<std::string> output_list;
+  rospack::string_split(rp.getOutput(), output_list, "\n");
+  ASSERT_EQ((int)output_list.size(), 4);
 }
 
 // Code-level tests against rospack's snarf_flags() method

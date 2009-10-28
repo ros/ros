@@ -411,7 +411,8 @@ class XmlLoader(object):
                 elif tagName == 'param':
                     self._param_tag(t, param_ns, ros_config, force_local=True, verbose=verbose)
                 elif tagName == 'rosparam':
-                    if not name:
+                    # #1883 <test> tags use test-name attribute instead
+                    if not is_test and not name:
                         raise XmlParseException(
                             "<node> tag must have a 'name' attribute in order to use <rosparam> tags: %s"%t.toxml())
                     ros_config.add_executable(self._rosparam_tag(t, param_ns, ros_config)) 

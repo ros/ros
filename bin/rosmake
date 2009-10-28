@@ -582,7 +582,7 @@ class RosMakeAll:
         if len(packages) == 0 and len(args) == 0:
             p = os.path.basename(os.path.abspath('.'))
             try:
-              if (roslib.packages.get_pkg_dir(p) == os.path.abspath('.')):
+              if (os.path.samefile(roslib.packages.get_pkg_dir(p), '.')):
                 packages = [p]
                 self.print_all( "No package specified.  Building %s"%packages)
               else:

@@ -59,29 +59,35 @@ def num_cpus():
   return n
 
 class DependencyTracker:
-  def __init__(self):
+  """ Track dependencies between packages.  This is basically a
+  caching way to call roslib. It also will allow you to specifiy a
+  range of packages over which to track dependencies.  This is useful
+  if you are only building a subset of the tree. For example with the
+  --specified-only optoion. """
+  def __init__(self, valid_packages = roslib.rospack.rospackexec(["list-names"]).split()):
+    self.valid_packages = valid_packages
     self.deps_1 = {}
     self.deps = {}
 
   def get_deps_1(self, package):
     if not package in self.deps:
-      self.deps_1[package] = roslib.rospack.rospack_depends_1(package) 
+      self.deps_1[package] = []
+      potential_dependencies = roslib.rospack.rospack_depends_1(package) 
+      for p in potential_dependencies:
+        if p in self.valid_packages:
+          self.deps_1[package].append(p)
+      
     return self.deps_1[package]
 
   def get_deps(self, package):
     if not package in self.deps:
-      self.deps[package] = roslib.rospack.rospack_depends(package) 
+      self.deps[package] = []
+      potential_dependencies = roslib.rospack.rospack_depends(package) 
+      for p in potential_dependencies:
+        if p in self.valid_packages:
+          self.deps[package].append(p)
     return self.deps[package]
 
-""" This class id designed to replace DependencyTracker above and always return no dependencies. 
-This is used in the case that dependencies are not being tracked "--specified-only" option. 
-
-This class must be API compatabile with the DependencyTracker.  """
-class DependencyFaker:
-  def get_deps_1(self, package):
-    return []
-  def get_deps(self, package):
-    return []
 
 
 class CompileThread(threading.Thread):
@@ -125,6 +131,8 @@ class CompileThread(threading.Thread):
         break # unnecessary since build_queue is done now, while will quit
 
 class BuildQueue:
+  """ This class provides a thread safe build queue.  Which will do
+  the sequencing for many CompileThreads. """
   def __init__(self, package_list, dependency_tracker):
     self._total_pkgs = len(package_list)
     self.dependency_tracker = dependency_tracker
@@ -228,22 +236,6 @@ class RosMakeAll:
           else:
             self.print_all("!"*20 + " Package %s does not exist. %s"%(p, ex) + "!"*20)
 
-
-    def build_pkgs(self, pkg_list, argument = None, robust_build = False):
-        build_counter = 1
-        self.profile[argument] = {}
-        self.output[argument] = {}
-        self.result[argument] = {}
-        for p in pkg_list:
-            if argument:
-                self.print_all ("[ %d of %d ] %s -- make %s -- "%(build_counter, len(pkg_list), p, argument), newline = False)
-            else:
-                self.print_all ("[ %d of %d ] %s -- make -- "%(build_counter, len(pkg_list), p), newline = False)
-            if not self.build(p, argument) and not robust_build:
-                self.print_all("[ rosmake ] Halting due to failure in package %s.\n[ rosmake ] Re-run with -r to ignore failures and keep building."%p)
-                return False
-            build_counter = build_counter + 1
-        return True # we didn't fail elsewhere
 
     def parallel_build_pkgs(self, pkg_list, argument = None, robust_build = False):
         self.profile[argument] = {}
@@ -655,7 +647,7 @@ class RosMakeAll:
           for pkg in self.build_list:
             if pkg in verified_packages:
               new_list.append(pkg)
-              self.dependency_tracker = DependencyFaker() # this will always return empty lists
+              self.dependency_tracker = DependencyTracker(verified_packages) # this will make the tracker only respond to packages in the list
         
           self.print_all("specified-only option was used, only building packages %s"%new_list)
           self.build_list = new_list
@@ -671,7 +663,7 @@ class RosMakeAll:
         tests_passed = True
         if build_passed and testing:
             self.print_verbose ("Testing packages %s"% packages)
-            tests_passed = self.build_pkgs(packages, "test", robust_build=True)
+            tests_passed = self.parallel_build_pkgs(self.build_list, "test", robust_build=True)
 
         self.finish_time = time.time() #note: before profiling
         self.generate_summary_output(self.log_dir)

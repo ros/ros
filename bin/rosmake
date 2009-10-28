@@ -580,8 +580,26 @@ class RosMakeAll:
                 self.print_all( "buildtest1 requested for package %s adding it and all depends-on1 packages: "%p)
 
         if len(packages) == 0 and len(args) == 0:
-            packages = [os.path.basename(os.path.abspath('.'))]
-            self.print_all( "No package specified.  Building %s"%packages)
+            p = os.path.basename(os.path.abspath('.'))
+            try:
+              if (roslib.packages.get_pkg_dir(p) == os.path.abspath('.')):
+                packages = [p]
+                self.print_all( "No package specified.  Building %s"%packages)
+              else:
+                self.print_all("No package selected and the current directory is not the correct path for package '%s'."%p)
+                
+            except roslib.packages.InvalidROSPkgException, ex:
+              try:
+                if (roslib.stacks.get_stack_dir(p) == os.path.abspath('.')):
+                  packages = [p]
+                  self.print_all( "No package specified.  Building stack %s"%packages)
+                else:
+                  self.print_all("No stack selected and the current directory is not the correct path for stack '%s'."%p)
+                  
+              except roslib.stacks.InvalidROSStackException, ex2:
+
+                self.print_all("No package or stack specified.  And current directory '%s' is not a package name or stack name."%p)
+                #sys.exit(-1)
         else:
             packages.extend(args)
             self.print_all( "Packages requested are: %s"%packages)

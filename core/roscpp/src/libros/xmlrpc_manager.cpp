@@ -166,6 +166,15 @@ void XMLRPCManager::shutdown()
   boost::mutex::scoped_lock lock(functions_mutex_);
   functions_.clear();
 
+  {
+    S_ASyncXMLRPCConnection::iterator it = connections_.begin();
+    S_ASyncXMLRPCConnection::iterator end = connections_.end();
+    for (; it != end; ++it)
+    {
+      (*it)->removeFromDispatch(server_.get_dispatch());
+    }
+  }
+
   connections_.clear();
 
   {

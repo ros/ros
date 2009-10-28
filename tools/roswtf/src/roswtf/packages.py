@@ -42,6 +42,13 @@ import roslib.msgs
 import roslib.packages
 import roslib.srvs
 
+## look for unknown tags in manifest
+def manifest_valid(ctx):
+    errors = []
+    if ctx.manifest is not None:
+        errors = ["<%s>"%t.tagName for t in ctx.manifest.unknown_tags]
+    return errors
+    
 ## look for unbuilt .msg files
 def msgs_built(ctx):
     unbuilt = set([])
@@ -240,6 +247,8 @@ warnings = [
      'The following packages need rosbuild_genmsg() in CMakeLists.txt:'),
     (cmake_gensrv,     
      'The following packages need rosbuild_gensrv() in CMakeLists.txt:'),
+    (manifest_valid, "%(pkg)s/manifest.xml has unrecognized tags:"),
+
     ]
 errors = [
     (msgs_built, "Messages have not been built in the following package(s).\nYou can fix this by typing 'rosmake %(pkg)s':"),

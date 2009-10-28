@@ -190,8 +190,12 @@ def _load_pkg(ctx, pkg):
     ctx.pkgs = [pkg] + roslib.rospack.rospack_depends(pkg)
     try:
         ctx.pkg_dir = roslib.packages.get_pkg_dir(pkg)
+        ctx.manifest_file = roslib.manifest.manifest_file(pkg)
+        ctx.manifest = roslib.manifest.parse_file(roslib.manifest.manifest_file(pkg))        
     except roslib.packages.InvalidROSPkgException:
         raise WtfException("Cannot locate manifest file for package [%s]"%pkg)
+    except roslib.manifest.ManifestException, e:
+        raise WtfException("Package [%s] has an invalid manifest: %s"%(pkg, e))
 
 ## utility for initializing WtfContext state
 ## @throws WtfException: if context state cannot be initialized

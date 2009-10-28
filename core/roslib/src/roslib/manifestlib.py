@@ -46,9 +46,11 @@ import xml.dom.minidom as dom
 
 import roslib.exceptions
 
+# stack.xml and manifest.xml have the same internal tags right now
 REQUIRED = ['author', 'license']
 ALLOWXHTML = ['description']
-OPTIONAL = ['logo', 'url', 'brief', 'description', 'status', 'notes', 'depend']
+OPTIONAL = ['logo', 'url', 'brief', 'description', 'status', 'notes', 'depend', 'rosdep', 'export', 'review']
+VALID = REQUIRED + OPTIONAL
 
 class ManifestException(roslib.exceptions.ROSLibException): pass
 
@@ -318,6 +320,7 @@ class _Manifest(object):
                  'depends', 'rosdeps',\
                  'logo', 'exports',\
                  'versioncontrol', 'status', 'notes',\
+                 'unknown_tags',\
                  '_type']
     def __init__(self, _type='package'):
         self.description = self.brief = self.author = \
@@ -327,6 +330,9 @@ class _Manifest(object):
         self.rosdeps = []
         self.exports = []
         self._type = _type
+        
+        # store unrecognized tags during parsing
+        self.unknown_tags = []
         
     def __str__(self):
         return self.xml()
@@ -465,5 +471,7 @@ def parse(m, string, filename='string'):
             raise ManifestException("stack manifests are not allowed to have exports")
         if m.rosdeps:
             raise ManifestException("stack manifests are not allowed to have rosdeps") 
-    
+
+    # store unrecognized tags
+    m.unknown_tags = [e for e in p.childNodes if e.nodeType == e.ELEMENT_NODE and e.tagName not in VALID]
     return m

@@ -138,7 +138,7 @@ def print_params(params, ns):
 ## corresponding namespaces for each YAML document in the file
 ## @throws ROSParamException if unable to load contents of \a filename
 def load_file(filename, default_namespace=None, verbose=False):
-    if not os.path.exists(filename):
+    if not os.path.isfile(filename):
         raise ROSParamException("file [%s] does not exist"%filename)
     if verbose:
         print "reading parameters from [%s]"%filename
@@ -283,7 +283,11 @@ def _set_param(param, value, verbose=False):
         # #1098 changing dictionary behavior to be an update, rather
         # than replace behavior.
         for k, v in value.iteritems():
-            _set_param(ns_join(param, k), v, verbose=verbose)
+            # dictionary keys must be non-unicode strings
+            if isinstance(k, str):
+                _set_param(ns_join(param, k), v, verbose=verbose)
+            else:
+                raise ROSParamException("YAML dictionaries must have string keys. Invalid dictionary is:\n%s"%value)
     else:
         try:
             succeed(get_param_server().setParam(_get_caller_id(), param, value))

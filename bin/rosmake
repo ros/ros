@@ -572,12 +572,12 @@ class RosMakeAll:
             if options.buildtest:
               for p in options.buildtest:
                 packages.extend(roslib.rospack.rospack_depends_on(p)) 
-                self.print_all( "Buildtest requested for package %s adding it and all dependent packages: "%p)
+                self.print_all( "buildtest requested for package %s adding it and all dependent packages: "%p)
 
             if options.buildtest1:
               for p in options.buildtest1:
                 packages.extend(roslib.rospack.rospack_depends_on_1(p)) 
-                self.print_all( "Buildtest requested for package %s adding it and all depends-on1 packages: "%p)
+                self.print_all( "buildtest1 requested for package %s adding it and all depends-on1 packages: "%p)
 
         if len(packages) == 0 and len(args) == 0:
             packages = [os.path.basename(os.path.abspath('.'))]

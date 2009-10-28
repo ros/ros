@@ -401,6 +401,25 @@ public:
   
   void crawl_for_packages(bool force_crawl = false);
   VecPkg partial_crawl(const std::string &path);
+
+  // Storage for --foo options
+  // --deps-only
+  bool opt_deps_only;
+  // --lang=
+  std::string opt_lang;
+  // --attrib=
+  std::string opt_attrib;
+  // --length=
+  std::string opt_length;
+  // --top=
+  std::string opt_top;
+  // The package name
+  std::string opt_package;
+  // the number of entries to list in the profile table
+  int opt_profile_length;
+  // only display zombie directories in profile?
+  bool opt_profile_zombie_only;
+
 private:
   bool cache_lock_failed;
   bool crawled;

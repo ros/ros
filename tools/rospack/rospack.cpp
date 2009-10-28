@@ -55,6 +55,7 @@ using namespace std;
 //#define VERBOSE_DEBUG
 const double DEFAULT_MAX_CACHE_AGE = 60.0; // rebuild cache every minute
 
+
 #include <sys/stat.h>
 #ifndef S_ISDIR 
 #define S_ISDIR(x) (((x) & S_IFMT) == S_IFDIR) 
@@ -63,32 +64,13 @@ const double DEFAULT_MAX_CACHE_AGE = 60.0; // rebuild cache every minute
 namespace rospack
 {
 
+ROSPack *g_rospack = NULL; // singleton
+
 #ifdef __APPLE__
 const string g_ros_os("osx");
 #else
 const string g_ros_os("linux");
 #endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Global storage for --foo options
-// --deps-only
-bool g_deps_only = false;
-// --lang=
-string g_lang;
-// --attrib=
-string g_attrib;
-// --length=
-string g_length;
-// --top=
-string g_top;
-// The package name
-string g_package;
-// the number of entries to list in the profile table
-int g_profile_length = 0;
-// only display zombie directories in profile?
-bool g_profile_zombie_only = false;
-
-//////////////////////////////////////////////////////////////////////////////
 
 const char *fs_delim = "/"; // ifdef this for windows
 
@@ -175,7 +157,7 @@ string Package::flags(string lang, string attrib)
   string s;
   // Conditionally include this package's exported flags, depending on
   // whether --deps-only was given
-  if(!g_deps_only)
+  if(!g_rospack->opt_deps_only)
     s += this->direct_flags(lang, attrib) + string(" ");
   for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
   {
@@ -229,9 +211,9 @@ vector<pair<string, string> > Package::plugins()
   VecPkg deplist;
   // If --top=foo was given, then restrict the search to packages that are
   // dependencies of foo, plus foo itself
-  if(g_top.size())
+  if(g_rospack->opt_top.size())
   {
-    Package* gtp = g_get_pkg(g_top);
+    Package* gtp = g_get_pkg(g_rospack->opt_top);
     deplist = gtp->deps(Package::POSTORDER);
     deplist.push_back(gtp);
   }
@@ -260,7 +242,7 @@ vector<pair<string, string> > Package::plugins()
       if(!found)
         continue;
     }
-    std::string flags = (*it)->direct_flags(name, g_attrib);
+    std::string flags = (*it)->direct_flags(name, g_rospack->opt_attrib);
     if (!flags.empty())
     {
       plugins.push_back(make_pair((*it)->name, flags));
@@ -456,7 +438,7 @@ string Package::direct_flags(string lang, string attrib)
     fprintf(stderr, "[rospack] warning: failed to execute backquote "
                     "expression \"%s\" in [%s]\n",
             cmd.c_str(), manifest_path().c_str());
-    string errmsg = string("error in backquote expansion for ") + g_package;
+    string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
     throw runtime_error(errmsg);
   }
   else
@@ -474,7 +456,7 @@ string Package::direct_flags(string lang, string attrib)
     {
       fprintf(stderr, "[rospack] warning: got non-zero exit status from executing backquote expression \"%s\" in [%s]\n",
               cmd.c_str(), manifest_path().c_str());
-      string errmsg = string("error in backquote expansion for ") + g_package;
+      string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
       throw runtime_error(errmsg);
     }
     else
@@ -522,7 +504,6 @@ VecPkg Package::deleted_pkgs;
 
 //////////////////////////////////////////////////////////////////////////////
 
-ROSPack *g_rospack = NULL; // singleton
 
 ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false),
         my_argc(0), my_argv(NULL)
@@ -650,13 +631,13 @@ int ROSPack::cmd_depends_on(bool include_indirect)
   Package* p;
   try
   {
-    p = get_pkg(g_package);
+    p = get_pkg(opt_package);
   }
   catch(runtime_error)
   {
     fprintf(stderr, "[rospack] warning: package %s doesn't exist\n", 
-            g_package.c_str());
-    p = new Package(g_package);
+            opt_package.c_str());
+    p = new Package(opt_package);
     Package::pkgs.push_back(p);
   }
   assert(p);
@@ -674,7 +655,7 @@ int ROSPack::cmd_depends_on(bool include_indirect)
 int ROSPack::cmd_find()
 {
   // todo: obey the search order
-  Package *p = get_pkg(g_package);
+  Package *p = get_pkg(opt_package);
   //printf("%s\n", p->path.c_str());
   output_acc += p->path + "\n";
   return 0;
@@ -682,7 +663,7 @@ int ROSPack::cmd_find()
 
 int ROSPack::cmd_deps()
 {
-  VecPkg d = get_pkg(g_package)->deps(Package::POSTORDER);
+  VecPkg d = get_pkg(opt_package)->deps(Package::POSTORDER);
   for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
   {
     //printf("%s\n", (*i)->name.c_str());
@@ -693,7 +674,7 @@ int ROSPack::cmd_deps()
 
 int ROSPack::cmd_deps_manifests()
 {
-  VecPkg d = get_pkg(g_package)->deps(Package::POSTORDER);
+  VecPkg d = get_pkg(opt_package)->deps(Package::POSTORDER);
   for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
   {
     //printf("%s/manifest.xml ", (*i)->path.c_str());
@@ -706,7 +687,7 @@ int ROSPack::cmd_deps_manifests()
 
 int ROSPack::cmd_deps1()
 {
-  VecPkg d = get_pkg(g_package)->deps1();
+  VecPkg d = get_pkg(opt_package)->deps1();
   for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
   {
     //printf("%s\n", (*i)->name.c_str());
@@ -808,7 +789,7 @@ string ROSPack::snarf_flags(string flags, string prefix, bool invert)
 
 int ROSPack::cmd_libs_only(string token)
 {
-  string lflags = get_pkg(g_package)->flags("cpp", "lflags");;
+  string lflags = get_pkg(opt_package)->flags("cpp", "lflags");;
   if(!token.compare("-other"))
   {
     lflags = snarf_libs(lflags, true);
@@ -838,7 +819,7 @@ int ROSPack::cmd_libs_only(string token)
 
 int ROSPack::cmd_cflags_only(string token)
 {
-  string cflags = get_pkg(g_package)->flags("cpp", "cflags");
+  string cflags = get_pkg(opt_package)->flags("cpp", "cflags");
   if(!token.compare("-other"))
     cflags = snarf_flags(cflags, "-I", true);
   else
@@ -876,11 +857,11 @@ int ROSPack::cmd_versioncontrol(int depth)
 {
   string sds;
 
-  sds += get_pkg(g_package)->versioncontrol();
+  sds += get_pkg(opt_package)->versioncontrol();
 
   if(depth < 0)
   {
-    VecPkg descs = get_pkg(g_package)->deps(Package::POSTORDER);
+    VecPkg descs = get_pkg(opt_package)->deps(Package::POSTORDER);
     for(VecPkg::iterator dit = descs.begin();
         dit != descs.end();
         dit++)
@@ -897,11 +878,11 @@ int ROSPack::cmd_versioncontrol(int depth)
 int ROSPack::cmd_rosdep(int depth)
 {
   string sds;
-  sds += get_pkg(g_package)->rosdep();
+  sds += get_pkg(opt_package)->rosdep();
 
   if(depth < 0)
   {
-    VecPkg descs = get_pkg(g_package)->deps(Package::POSTORDER);
+    VecPkg descs = get_pkg(opt_package)->deps(Package::POSTORDER);
     for(VecPkg::iterator dit = descs.begin();
         dit != descs.end();
         dit++)
@@ -917,13 +898,13 @@ int ROSPack::cmd_rosdep(int depth)
 
 int ROSPack::cmd_export()
 {
-  export_flags(g_package, g_lang, g_attrib);
+  export_flags(opt_package, opt_lang, opt_attrib);
   return 0;
 }
 
 int ROSPack::cmd_plugins()
 {
-  Package* p = get_pkg(g_package);
+  Package* p = get_pkg(opt_package);
 
   vector<pair<string, string> > plugins = p->plugins();
   vector<pair<string, string> >::iterator it = plugins.begin();
@@ -974,12 +955,31 @@ int ROSPack::run(int argc, char **argv)
 {
   assert(argc >= 2);
   int i;
-  const char* opt_deps    = "--deps-only";
-  const char* opt_zombie  = "--zombie-only";
-  const char* opt_lang    = "--lang=";
-  const char* opt_attrib  = "--attrib=";
-  const char* opt_length  = "--length=";
-  const char* opt_top     = "--top=";
+  const char* opt_deps_name    = "--deps-only";
+  const char* opt_zombie_name  = "--zombie-only";
+  const char* opt_lang_name    = "--lang=";
+  const char* opt_attrib_name  = "--attrib=";
+  const char* opt_length_name  = "--length=";
+  const char* opt_top_name     = "--top=";
+
+  // Reset to defaults.
+  opt_deps_only = false;
+  // --lang=
+  opt_lang = string("");
+  // --attrib=
+  opt_attrib = string("");
+  // --length=
+  opt_length = string("");
+  // --top=
+  opt_top = string("");
+  // The package name
+  opt_package = string("");
+  // the number of entries to list in the profile table
+  opt_profile_length = 0;
+  // only display zombie directories in profile?
+  opt_profile_zombie_only = false;
+
+  output_acc = string("");
 
   string errmsg = string(usage());
 
@@ -988,39 +988,39 @@ int ROSPack::run(int argc, char **argv)
 
   for(;i<argc;i++)
   {
-    if(!strcmp(argv[i], opt_deps))
-      g_deps_only=true;
-    else if(!strcmp(argv[i], opt_zombie))
-      g_profile_zombie_only=true;
-    else if(!strncmp(argv[i], opt_lang, strlen(opt_lang)))
+    if(!strcmp(argv[i], opt_deps_name))
+      opt_deps_only=true;
+    else if(!strcmp(argv[i], opt_zombie_name))
+      opt_profile_zombie_only=true;
+    else if(!strncmp(argv[i], opt_lang_name, strlen(opt_lang_name)))
     {
-      if(g_lang.size())
+      if(opt_lang.size())
         throw runtime_error(errmsg);
-      else if(strlen(argv[i]) > strlen(opt_lang))
-        g_lang = string(argv[i]+strlen(opt_lang));
+      else if(strlen(argv[i]) > strlen(opt_lang_name))
+        opt_lang = string(argv[i]+strlen(opt_lang_name));
       else
         throw runtime_error(errmsg);
     }
-    else if(!strncmp(argv[i], opt_attrib, strlen(opt_attrib)))
+    else if(!strncmp(argv[i], opt_attrib_name, strlen(opt_attrib_name)))
     {
-      if(g_attrib.size())
+      if(opt_attrib.size())
         throw runtime_error(errmsg);
-      else if(strlen(argv[i]) > strlen(opt_attrib))
-        g_attrib = string(argv[i]+strlen(opt_attrib));
+      else if(strlen(argv[i]) > strlen(opt_attrib_name))
+        opt_attrib = string(argv[i]+strlen(opt_attrib_name));
       else
         throw runtime_error(errmsg);
     }
-    else if(!strncmp(argv[i], opt_length, strlen(opt_length)))
+    else if(!strncmp(argv[i], opt_length_name, strlen(opt_length_name)))
     {
-      if(strlen(argv[i]) > strlen(opt_length))
-        g_length = string(argv[i]+strlen(opt_length));
+      if(strlen(argv[i]) > strlen(opt_length_name))
+        opt_length = string(argv[i]+strlen(opt_length_name));
       else
         throw runtime_error(errmsg);
     }
-    else if(!strncmp(argv[i], opt_top, strlen(opt_top)))
+    else if(!strncmp(argv[i], opt_top_name, strlen(opt_top_name)))
     {
-      if(strlen(argv[i]) > strlen(opt_top))
-        g_top = string(argv[i]+strlen(opt_top));
+      if(strlen(argv[i]) > strlen(opt_top_name))
+        opt_top = string(argv[i]+strlen(opt_top_name));
       else
         throw runtime_error(errmsg);
     }
@@ -1028,31 +1028,31 @@ int ROSPack::run(int argc, char **argv)
       break;
   }
   
-  if(strcmp(cmd, "profile") && (g_length.size() || g_profile_zombie_only))
+  if(strcmp(cmd, "profile") && (opt_length.size() || opt_profile_zombie_only))
     throw runtime_error(errmsg);
   
   // --top= is only valid for plugins
-  if(strcmp(cmd, "plugins") && g_top.size())
+  if(strcmp(cmd, "plugins") && opt_top.size())
     throw runtime_error(errmsg);
 
   // --attrib= is only valid for export and plugins
   if((strcmp(cmd, "export") && strcmp(cmd, "plugins")) && 
-     g_attrib.size())
+     opt_attrib.size())
     throw runtime_error(errmsg);
 
   // --lang= is only valid for export
-  if((strcmp(cmd, "export") && g_lang.size()))
+  if((strcmp(cmd, "export") && opt_lang.size()))
     throw runtime_error(errmsg);
   
   // export requires both --lang and --attrib
-  if(!strcmp(cmd, "export") && (!g_lang.size() || !g_attrib.size()))
+  if(!strcmp(cmd, "export") && (!opt_lang.size() || !opt_attrib.size()))
     throw runtime_error(errmsg);
     
   // plugins requires --attrib
-  if(!strcmp(cmd, "plugins") && !g_attrib.size())
+  if(!strcmp(cmd, "plugins") && !opt_attrib.size())
     throw runtime_error(errmsg);
 
-  if(g_deps_only && 
+  if(opt_deps_only && 
      strcmp(cmd, "export") &&
      strcmp(cmd, "cflags-only-I") &&
      strcmp(cmd, "cflags-only-other") &&
@@ -1070,7 +1070,7 @@ int ROSPack::run(int argc, char **argv)
        !strcmp(cmd, "profile"))
       throw runtime_error(errmsg);
 
-    g_package = string(argv[i++]);
+    opt_package = string(argv[i++]);
   }
   // Are we sitting in a package?
   else if(Package::is_package("."))
@@ -1078,7 +1078,7 @@ int ROSPack::run(int argc, char **argv)
     char buf[1024];
     if(!getcwd(buf,sizeof(buf)))
       throw runtime_error(errmsg);
-    g_package = string(basename(buf));
+    opt_package = string(basename(buf));
   }
 
   if (i != argc)
@@ -1086,17 +1086,17 @@ int ROSPack::run(int argc, char **argv)
 
   if (!strcmp(cmd, "profile"))
   {
-    if (g_length.size())
-      g_profile_length = atoi(g_length.c_str());
+    if (opt_length.size())
+      opt_profile_length = atoi(opt_length.c_str());
     else
     {
-      if(g_profile_zombie_only)
-        g_profile_length = -1; // default is infinite
+      if(opt_profile_zombie_only)
+        opt_profile_length = -1; // default is infinite
       else
-        g_profile_length = 20; // default is about a screenful or so
+        opt_profile_length = 20; // default is about a screenful or so
     }
 #ifdef VERBOSE_DEBUG
-    printf("profile_length = %d\n", g_profile_length);
+    printf("profile_length = %d\n", opt_profile_length);
 #endif
     // re-crawl with profiling enabled
     crawl_for_packages(true);
@@ -1117,7 +1117,7 @@ int ROSPack::run(int argc, char **argv)
   else if (!strcmp(cmd, "depends1") || !strcmp(cmd, "deps1"))
     return cmd_deps1();
   else if (!strcmp(cmd, "depends-indent") || !strcmp(cmd, "deps-indent"))
-    return cmd_depsindent(get_pkg(g_package), 0);
+    return cmd_depsindent(get_pkg(opt_package), 0);
   else if (!strcmp(cmd, "depends-on"))
     return cmd_depends_on(true);
   else if (!strcmp(cmd, "depends-on1"))
@@ -1423,7 +1423,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
     CrawlQueueEntry cqe = q.front();
     q.pop_front();
     //printf("crawling %s\n", cqe.path.c_str());
-    if (g_profile_length != 0)
+    if (opt_profile_length != 0)
     {
       if (cqe.start_time != 0)
       {
@@ -1439,10 +1439,10 @@ void ROSPack::crawl_for_packages(bool force_crawl)
         // such in the profile console output.
         if(cqe.start_num_pkgs < Package::pkgs.size())
           cqe.has_manifest = true;
-        if(!g_profile_zombie_only || !cqe.has_manifest)
+        if(!opt_profile_zombie_only || !cqe.has_manifest)
         {
           profile.push(cqe);
-          if ((g_profile_length > 0) && (profile.size() > g_profile_length)) // only save the worst guys
+          if ((opt_profile_length > 0) && (profile.size() > opt_profile_length)) // only save the worst guys
             profile.pop();
         }
         continue;
@@ -1534,7 +1534,7 @@ perror("rename");
   }
   fclose(cache);
 
-  if (g_profile_length)
+  if (opt_profile_length)
   {
     // dump it into a stack to reverse it (so slowest guys are first)
     stack<CrawlQueueEntry> reverse_profile;
@@ -1543,7 +1543,7 @@ perror("rename");
       reverse_profile.push(profile.top());
       profile.pop();
     }
-    if(!g_profile_zombie_only)
+    if(!opt_profile_zombie_only)
     {
       //printf("\nFull tree crawl took %.6f seconds.\n", crawl_elapsed_time);
       //printf("Directories marked with (*) contain no manifest.  You may\n");
@@ -1560,7 +1560,7 @@ perror("rename");
     {
       CrawlQueueEntry cqe = reverse_profile.top();
       reverse_profile.pop();
-      if(!g_profile_zombie_only)
+      if(!opt_profile_zombie_only)
       {
         //printf("%.6f %s %s\n", 
                //cqe.elapsed_time, 
@@ -1582,7 +1582,7 @@ perror("rename");
         output_acc += cqe.path + "\n";
       }
     }
-    if(!g_profile_zombie_only)
+    if(!opt_profile_zombie_only)
     {
       //printf("\n");
       output_acc += "\n";

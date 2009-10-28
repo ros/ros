@@ -349,7 +349,11 @@ def _set_param(param, value, verbose=False):
         # #1098 changing dictionary behavior to be an update, rather
         # than replace behavior.
         for k, v in value.iteritems():
-            _set_param(ns_join(param, k), v, verbose=verbose)
+            # dictionary keys must be non-unicode strings
+            if isinstance(k, str):
+                _set_param(ns_join(param, k), v, verbose=verbose)
+            else:
+                raise ROSParamException("YAML dictionaries must have string keys. Invalid dictionary is:\n%s"%value)
     else:
         try:
             _succeed(get_param_server().setParam(_get_caller_id(), param, value))

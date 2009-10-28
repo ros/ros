@@ -222,7 +222,13 @@ def get_master():
     @rtype: xmlrpclib.ServerProxy
     """
     import xmlrpclib
-    return xmlrpclib.ServerProxy(roslib.rosenv.get_master_uri())
+    # #1730 validate URL for better error messages
+    uri = roslib.rosenv.get_master_uri()
+    try:
+        roslib.network.parse_http_host_and_port(uri)
+    except ValueError:
+        raise roslib.exceptions.ROSLibException("invalid master URI: %s"%uri)
+    return xmlrpclib.ServerProxy(uri)
 
 
 def get_param_server():

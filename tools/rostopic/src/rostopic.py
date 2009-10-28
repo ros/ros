@@ -49,6 +49,7 @@ import threading
 import time
 import traceback
             
+import roslib.exceptions
 import roslib.names
 import roslib.scriptutil
 import roslib.message
@@ -1214,6 +1215,9 @@ def rostopicmain(argv=sys.argv):
         print >> sys.stderr, "Network communication failed. Most likely failed to communicate with master."
     except rosrecord.ROSRecordException, e:
         print >> sys.stderr, "ERROR: unable to use bag file: "+str(e)
+    except roslib.exceptions.ROSLibException, e:
+        # mainly for invalid master URI
+        print >> sys.stderr, "ERROR: "+str(e)
     except ROSTopicException, e:
         print >> sys.stderr, "ERROR: "+str(e)
     except rospy.ROSInterruptException: pass

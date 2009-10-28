@@ -615,7 +615,9 @@ class RosMakeAll:
           except roslib.packages.InvalidROSPkgException, ex:
             try: 
               roslib.stacks.get_stack_dir(p)
-              verified_packages.extend(roslib.stacks.packages_of(p))
+              packages_in_stack = roslib.stacks.packages_of(p)
+              verified_packages.extend(packages_in_stack)
+              self.print_all("Found stack %s.  Expanding to packages: %s"%(p, packages_in_stack))
             except roslib.stacks.InvalidROSStackException, ex2:
               self.print_all("Could not resolve %s as a package or as a stack [ %s ] [ %s ]"%(p, ex, ex2))
             

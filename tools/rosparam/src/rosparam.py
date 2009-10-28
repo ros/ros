@@ -170,7 +170,7 @@ def load_file(filename, default_namespace=None, verbose=False):
     corresponding namespaces for each YAML document in the file
     @raise ROSParamException: if unable to load contents of filename
     """
-    if not os.path.exists(filename):
+    if not os.path.isfile(filename):
         raise ROSParamException("file [%s] does not exist"%filename)
     if verbose:
         print "reading parameters from [%s]"%filename

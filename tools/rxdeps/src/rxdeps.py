@@ -404,11 +404,12 @@ def vdmain():
 	    rank_dictionary = build_dictionary([], [])
 	    rank = build_rank(rank_dictionary)
             for key in rank:
-                outfile.write('{ rank = same;')    
-	        for pkg_rank in rank[key]:
-                    if pkg_rank in pkg_dictionary:
-                        outfile.write(' "%s" ;'%pkg_rank)
-                outfile.write('}\n')
+                if len(rank[key]) > 1:
+                    outfile.write('{ rank = same;')    
+                    for pkg_rank in rank[key]:
+                        if pkg_rank in pkg_dictionary:
+                            outfile.write(' "%s" ;'%pkg_rank)
+                    outfile.write('}\n')
         outfile.write( '}\n')
     try:
         # Check version, make postscript if too old to make pdf

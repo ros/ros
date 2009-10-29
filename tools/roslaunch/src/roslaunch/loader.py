@@ -245,7 +245,7 @@ class Loader(object):
             raise ValueError("invalid <master> 'auto' value: %s"%auto_str)
 
         # TODO: URI validation
-        return Master(type_=type, uri=uri, auto=auto)
+        return Master(type_=type_, uri=uri, auto=auto)
 
     def add_param(self, ros_config, param_name, param_value):
         """

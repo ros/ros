@@ -44,7 +44,7 @@ class RostimeTest(unittest.TestCase):
       if TVal is None:
           # cannot set as default arg because --cov option reloads the module and causes
           # spurious failure
-          TVal=roslib.rostime._TVal
+          TVal=roslib.rostime.TVal
       # test constructor
       # - test zero
       v = TVal()

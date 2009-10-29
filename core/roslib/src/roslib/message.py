@@ -351,7 +351,7 @@ def _fill_val(msg, f, v, keys, prefix):
     if not f in msg.__slots__:
         raise ROSMessageException("No field name [%s%s]"%(prefix, f))
     def_val = getattr(msg, f)
-    if isinstance(def_val, Message) or isinstance(def_val, roslib.rostime._TVal):
+    if isinstance(def_val, Message) or isinstance(def_val, roslib.rostime.TVal):
         # check for substitution key, e.g. 'now'
         if type(v) == str:
             if v in keys:
@@ -400,7 +400,7 @@ def _fill_message_args(msg, msg_args, keys, prefix=''):
     @rtype: [args]
     @raise ROSMessageException: if not enough message arguments to fill message
     """
-    if not isinstance(msg, Message) and not isinstance(msg, roslib.rostime._TVal):
+    if not isinstance(msg, Message) and not isinstance(msg, roslib.rostime.TVal):
         raise ROSMessageException("msg must be a Message instance: %s"%msg)
 
     if type(msg_args) == dict:

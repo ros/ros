@@ -217,9 +217,21 @@ class TestXmlLoader(unittest.TestCase):
         
         
     def test_rosparam_valid(self):
-        mock = self._load('test/xml/test-rosparam-valid.xml')        
+        mock = self._load('test/xml/test-rosparam-valid.xml')
+
+        for prefix in ['', '/rosparam', '/node_rosparam']:
+            p = [p for p in mock.params if p.key == prefix+'/string1'][0]
+            self.assertEquals('bar', p.value)
+            p = [p for p in mock.params if p.key == prefix+'/robots/childparam'][0]
+            self.assertEquals('a child namespace parameter', p.value)
+
+        p = [p for p in mock.params if p.key == '/node_rosparam/string1'][0]
+        self.assertEquals('bar', p.value)
+        p = [p for p in mock.params if p.key == '/node_rosparam/robots/childparam'][0]
+        self.assertEquals('a child namespace parameter', p.value)
+        
         exes = [e for e in mock.executables if e.command == 'rosparam']
-        self.assertEquals(len(exes), 4, "expected 4 rosparam exes")
+        self.assertEquals(len(exes), 2, "expected 2 rosparam exes, got %s"%len(exes))
         from roslaunch.core import PHASE_SETUP
         for e in exes:
             self.assertEquals(PHASE_SETUP, e.phase)
@@ -227,18 +239,14 @@ class TestXmlLoader(unittest.TestCase):
             self.assertEquals(3, len(args), "expected 3 args, got %s"%str(args))
             rp_cmd, rp_file, rp_ctx = args
             self.failIf('$(find' in rp_file, "file attribute was not evaluated")
-            if rp_file.endswith('example2.yaml'):
-                self.assertEquals('dump', rp_cmd)
-            else:
-                self.assertEquals('load', rp_cmd, "%s should have been 'load'"%rp_file)
+            self.assertEquals('dump', rp_cmd)
                 
             # verify that the context is passed in correctly
-            if rp_file.endswith('example1.yaml') or rp_file.endswith('example2.yaml'):
+            if rp_file.endswith('dump.yaml'):
                 self.assertEquals('/', rp_ctx)
-            elif rp_file.endswith('example3.yaml'):
+            elif rp_file.endswith('dump2.yaml'):
                 self.assertEquals('/rosparam/', rp_ctx)
-            elif rp_file.endswith('example4.yaml'):
-                self.assertEquals('/node_rosparam/', rp_ctx)
+                
                     
     def test_rosparam_invalid(self):
         tests = ['test-rosparam-invalid-%s.xml'%i for i in range(1, 5)]
@@ -248,8 +256,8 @@ class TestXmlLoader(unittest.TestCase):
             try:
                 self.assert_(os.path.exists(filename))
                 loader.load(filename, RosLaunchMock())
-                self.fail("xmlloader did not throw an xmlparseexception for [%s]"%filename)
-            except roslaunch.xmlloader.XmlParseException, e:
+                self.fail("xmlloader did not throw an xmlloadexception for [%s]"%filename)
+            except roslaunch.xmlloader.XmlLoadException, e:
                 pass
         
     def test_node_valid(self):
@@ -277,6 +285,7 @@ class TestXmlLoader(unittest.TestCase):
                  ("test-node-rosparam-dump.xml","test_node_rosparam_dump"),
                  ("test-node-rosparam-delete.xml","test_node_rosparam_delete"),
                  ("test-node-rosparam-load-multi.xml", "test_node_rosparam_multi"),
+                 ("test-node-rosparam-load-param.xml", "test_node_rosparam_load_param"),
                  ("test-node-rosparam-load-ns.xml", "test_node_rosparam_load_ns")]
         for f, test in tests:
                  
@@ -288,13 +297,14 @@ class TestXmlLoader(unittest.TestCase):
             exes = [e for e in mock.executables if e.command == 'rosparam']
 
             if n.type == "test_node_rosparam_load":
-                self.assertEquals(1, len(exes))
-                rp_cmd, rp_file, rp_ctx = exes[0].args
-                self.assertEquals("load", rp_cmd)
-                self.assertEquals("load.yaml", rp_file)
-                self.assertEquals('/rosparam_load/', rp_ctx)
+                self.assertEquals(0, len(exes))
+                p = [p for p in mock.params if p.key == '/rosparam_load/string1'][0]
+                self.assertEquals('bar', p.value)
+                p = [p for p in mock.params if p.key == '/rosparam_load/robots/childparam'][0]
+                self.assertEquals('a child namespace parameter', p.value)
             elif n.type == "test_node_rosparam_delete":
                 self.assertEquals(1, len(exes))
+                self.assert_(len(exes[0].args) == 2, "invalid arg: %s"%(str(exes[0].args)))
                 rp_cmd, rp_param = exes[0].args   
                 self.assertEquals("delete", rp_cmd)
                 self.assertEquals("/ns1/rosparam_delete/ns2/param", rp_param)
@@ -305,28 +315,36 @@ class TestXmlLoader(unittest.TestCase):
                 self.assertEquals("dump.yaml", rp_file)
                 self.assertEquals('/rosparam_dump/', rp_ctx)
             elif n.type == "test_node_rosparam_load_ns":
-                self.assertEquals(1, len(exes))
-                rp_cmd, rp_file, rp_ctx = exes[0].args                
-                self.assertEquals("load", rp_cmd)
-                self.assertEquals("load_ns.yaml", rp_file)
-                self.assertEquals('/load_ns/subns/', rp_ctx)
+                self.assertEquals(0, len(exes))
+                p = [p for p in mock.params if p.key == '/load_ns/subns/string1'][0]
+                self.assertEquals('bar', p.value)
+                p = [p for p in mock.params if p.key == '/load_ns/subns/robots/childparam'][0]
+                self.assertEquals('a child namespace parameter', p.value)
+            elif n.type == "test_node_rosparam_load_param":
+                self.assertEquals(0, len(exes))
+                p = [p for p in mock.params if p.key == '/load_param/param/string1'][0]
+                self.assertEquals('bar', p.value)
+                p = [p for p in mock.params if p.key == '/load_param/param/robots/childparam'][0]
+                self.assertEquals('a child namespace parameter', p.value)
             elif n.type == "test_node_rosparam_multi":
-                self.assertEquals(3, len(exes))
-                for e in exes:
-                    rp_cmd, rp_file, rp_ctx = e.args
-                    if rp_file == "mload.yaml":
-                        self.assertEquals("load", rp_cmd)
-                        self.assertEquals("mload.yaml", rp_file)
-                        self.assertEquals('/rosparam_multi/', rp_ctx)
-                    elif rp_file == "mdump.yaml":
-                        self.assertEquals("dump", rp_cmd)
-                        self.assertEquals("mdump.yaml", rp_file)
-                        self.assertEquals('/rosparam_multi/', rp_ctx)
-                    elif rp_file == "msubns.yaml":
-                        self.assertEquals("load", rp_cmd)
-                        self.assertEquals("mload_ns.yaml", rp_file)
-                        self.assertEquals('/rosparam_multi/msubns/', rp_ctx)
+                self.assertEquals(1, len(exes))
+                e = exes[0]
+                rp_cmd, rp_file, rp_ctx = e.args
+                self.assertEquals("dump", rp_cmd)
+                self.assertEquals("mdump.yaml", rp_file)
+                self.assertEquals('/rosparam_multi/', rp_ctx)
 
+                # test two other rosparam tags
+                p = [p for p in mock.params if p.key == '/rosparam_multi/string1'][0]
+                self.assertEquals('bar', p.value)
+                p = [p for p in mock.params if p.key == '/rosparam_multi/robots/childparam'][0]
+                self.assertEquals('a child namespace parameter', p.value)
+
+                p = [p for p in mock.params if p.key == '/rosparam_multi/msubns/string1'][0]
+                self.assertEquals('bar', p.value)
+                p = [p for p in mock.params if p.key == '/rosparam_multi/msubns/robots/childparam'][0]
+                self.assertEquals('a child namespace parameter', p.value)
+                
     ## test that ~params in groups get applied to later members of group
     def test_local_param_group(self):
         mock = self._load('test/xml/test-local-param-group.xml')

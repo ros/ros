@@ -43,7 +43,7 @@
       
 
   <test test-name="test22" pkg="package" type="test_test_rosparam_load" name="rosparam_load">
-    <rosparam file="load.yaml" command="load" />
+    <rosparam file="$(find test_roslaunch)/test/params.yaml" command="load" />    
   </test>
   
   <test test-name="test23" pkg="package" type="test_test_rosparam_dump" name="rosparam_dump">
@@ -51,13 +51,13 @@
   </test>
   
   <test test-name="test24" pkg="package" type="test_test_rosparam_load_ns" name="load_ns">
-    <rosparam ns="subns" file="load_ns.yaml" command="load" />
+    <rosparam ns="subns" file="$(find test_roslaunch)/test/params.yaml" command="load" />        
   </test>
   
   <test test-name="test25" pkg="package" type="test_test_rosparam_multi" name="rosparam_multi">
-    <rosparam file="mload.yaml" command="load" />
+    <rosparam file="$(find test_roslaunch)/test/params.yaml" command="load" />
     <rosparam file="mdump.yaml" command="dump" />
-    <rosparam ns="msubns" file="mload_ns.yaml" command="load" />
+    <rosparam ns="msubns" file="$(find test_roslaunch)/test/params.yaml" command="load" />
   </test>
   
   <!-- TODO remap args test -->

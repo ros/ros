@@ -1,9 +1,9 @@
 <launch>
 
   <node pkg="package" type="test_node_rosparam_multi" name="rosparam_multi">
-    <rosparam file="mload.yaml" command="load" />
+    <rosparam file="$(find test_roslaunch)/test/params.yaml" command="load" />
     <rosparam file="mdump.yaml" command="dump" />
-    <rosparam ns="msubns" file="mload_ns.yaml" command="load" />
+    <rosparam ns="msubns" file="$(find test_roslaunch)/test/params.yaml" command="load" />
   </node>
   
 </launch>

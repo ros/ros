@@ -1,4 +1,4 @@
 <launch>
-  <rosparam file="$(find rosparam)/example.yaml" />
+  <rosparam file="$(find rosparam)/foo.yaml" />
 </launch>
 

@@ -449,48 +449,6 @@ class Param(object):
         return "%s=%s"%(self.key, self.value)
     def __repr__(self):
         return "%s=%s"%(self.key, self.value)
-
-#TODO: lists, maps(?)
-def convert_value(value, type_):
-    """
-    Convert a value from a string representation into the specified
-    type
-    @param type_: int, double, string, bool, or auto
-    @type  type_: str
-    """
-    type_ = type_.lower()
-    # currently don't support XML-RPC date, dateTime, maps, or list
-    # types
-    if type_ == 'auto':
-        #attempt numeric conversion
-        try:
-            if '.' in value:
-                return string.atof(value)
-            else:
-                return string.atoi(value)
-        except ValueError, e:
-            pass
-        #bool
-        lval = value.lower()
-        if lval == 'true' or lval == 'false':
-            return convert_value(value, 'bool')
-        #string
-        return value
-    elif type_ == 'str' or type_ == 'string':
-        return value
-    elif type_ == 'int':
-        return string.atoi(value)
-    elif type_ == 'double':
-        return string.atof(value)
-    elif type_ == 'bool' or type_ == 'boolean':
-        value = value.lower()
-        if value == 'true' or value == '1':
-            return True
-        elif value == 'false' or value == '0':
-            return False
-        raise Exception("%s is not a '%' type"%(value, type_))
-    else:
-        raise Exception("Unknown type '%s'"%type_)        
             
 _local_m = None
 def local_machine():

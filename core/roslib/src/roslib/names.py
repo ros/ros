@@ -150,7 +150,7 @@ def ns_join(ns, name):
     Join a namespace and name. If name is unjoinable (i.e. ~private or
     /global) it will be returned without joining
 
-    @param ns: namespace ('/' and '~' are both legal)
+    @param ns: namespace ('/' and '~' are both legal). If ns is the empty string, name will be returned.
     @type  ns: str
     @param name str: a legal name
     @return str: name concatenated to ns, or name if it is
@@ -161,6 +161,8 @@ def ns_join(ns, name):
         return name
     if ns == PRIV_NAME:
         return PRIV_NAME + name
+    if not ns: 
+        return name
     if ns[-1] == SEP:
         return ns + name
     return ns + SEP + name

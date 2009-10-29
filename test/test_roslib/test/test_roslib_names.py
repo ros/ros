@@ -171,7 +171,10 @@ class NamesTest(unittest.TestCase):
     self.assertEquals('/ns/name', ns_join('/ns', 'name'))
     self.assertEquals('/ns/name', ns_join('/ns/', 'name'))    
     self.assertEquals('/ns/ns2/name', ns_join('/ns', 'ns2/name'))
-    self.assertEquals('/ns/ns2/name', ns_join('/ns/', 'ns2/name'))    
+    self.assertEquals('/ns/ns2/name', ns_join('/ns/', 'ns2/name'))
+
+    # allow ns to be empty
+    self.assertEquals('name', ns_join('', 'name'))
     
 
   def test_load_mappings(self):

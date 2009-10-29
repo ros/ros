@@ -43,6 +43,7 @@ import rospy.names
 from rospy.core import add_log_handler, get_caller_id
 from rospy.exceptions import ROSException
 from rospy.registration import get_topic_manager
+from rospy.rostime import Time
 from rospy.topics import Publisher, Subscriber
 
 #Log message for rosout
@@ -75,7 +76,9 @@ def _rosout(level, msg):
                 try:
                     _in_rosout = True
                     msg = str(msg)
-                    _rosout_pub.publish(roslib.msg.Log(level=level, name=rospy.names.get_caller_id(), msg=msg, topics=get_topic_manager().get_topics()))
+                    l = roslib.msg.Log(level=level, name=rospy.names.get_caller_id(), msg=msg, topics=get_topic_manager().get_topics())
+                    l.header.stamp = Time.now()
+                    _rosout_pub.publish(l)
                 finally:
                     _in_rosout = False
     except Exception, e:

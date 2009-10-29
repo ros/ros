@@ -48,7 +48,7 @@ def _canon(secs, nsecs):
         nsecs += 1000000000
     return secs,nsecs
 
-class _TVal(object):
+class TVal(object):
     """
     Base class of L{Time} and L{Duration} representations. Representation
     is secs+nanoseconds since epoch.
@@ -139,7 +139,7 @@ class _TVal(object):
         return str(self.tons())
 
     def __repr__(self):
-        return "rostime._TVal[%d]"%self.tons()
+        return "rostime.TVal[%d]"%self.tons()
 
     def __nonzero__(self):
         """
@@ -182,7 +182,7 @@ class _TVal(object):
     def __ne__(self, other):
         return not self.__eq__(other)
     def __cmp__(self, other):
-        if not isinstance(other, _TVal):
+        if not isinstance(other, TVal):
             raise TypeError("Cannot compare to non-TVal")
         nanos = self.tons() - other.tons()
         if nanos > 0:
@@ -191,11 +191,11 @@ class _TVal(object):
             return 0
         return -1
     def __eq__(self, other):
-        if not isinstance(other, _TVal):
+        if not isinstance(other, TVal):
             return False
         return self.tons() == other.tons()
 
-class Time(_TVal):
+class Time(TVal):
     """
     Time contains the ROS-wide 'time' primitive representation, which
     consists of two integers: seconds since epoch and nanoseconds since
@@ -308,7 +308,7 @@ class Time(_TVal):
             return False
         return self.secs == other.secs and self.nsecs == other.nsecs
 
-class Duration(_TVal):
+class Duration(TVal):
     """
     Duration represents the ROS 'duration' primitive, which consists
     of two integers: seconds and nanoseconds. The Duration class

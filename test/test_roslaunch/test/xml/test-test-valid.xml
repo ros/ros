@@ -60,6 +60,8 @@
     <rosparam ns="msubns" file="$(find test_roslaunch)/test/params.yaml" command="load" />
   </test>
   
+  <test test-name="test26" pkg="package" type="test_retry" retry="2" />
+  
   <!-- TODO remap args test -->
 
 </launch>

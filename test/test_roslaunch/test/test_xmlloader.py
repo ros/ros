@@ -71,6 +71,9 @@ class RosLaunchMock(object):
         self.executables.append(t)        
 
     def add_param(self, p, filename=None, verbose=True):
+        matches = [x for x in self.params if x.key == p.key]
+        for m in matches:
+            self.params.remove(m)
         self.params.append(p)        
     def add_clear_param(self, param):
         self.clear_params.append(param)
@@ -246,10 +249,39 @@ class TestXmlLoader(unittest.TestCase):
                 self.assertEquals('/', rp_ctx)
             elif rp_file.endswith('dump2.yaml'):
                 self.assertEquals('/rosparam/', rp_ctx)
-                
+
+        # test inline yaml examples
+        p = [p for p in mock.params if p.key == '/inline_str'][0]
+        self.assertEquals('value1', p.value)
+        p = [p for p in mock.params if p.key == '/inline_list'][0]
+        self.assertEquals([1, 2, 3, 4], p.value)
+        p = [p for p in mock.params if p.key == '/inline_dict/key1'][0]
+        self.assertEquals('value1', p.value)
+        p = [p for p in mock.params if p.key == '/inline_dict/key2'][0]
+        self.assertEquals('value2', p.value)
+        p = [p for p in mock.params if p.key == '/inline_dict2/key3'][0]
+        self.assertEquals('value3', p.value)
+        p = [p for p in mock.params if p.key == '/inline_dict2/key4'][0]
+        self.assertEquals('value4', p.value)
+
+        # verify that later tags override 
+        # - key2 is overriden
+        self.assertEquals(1, len([p for p in mock.params if p.key == '/override/key1']))
+        p = [p for p in mock.params if p.key == '/override/key1'][0]
+        self.assertEquals('override1', p.value)
+        # - key2 is not overriden
+        p = [p for p in mock.params if p.key == '/override/key2'][0]
+        self.assertEquals('value2', p.value)
+
+        # verify that 'param' attribute is not required
+        p = [p for p in mock.params if p.key == '/noparam1'][0]
+        self.assertEquals('value1', p.value)
+        p = [p for p in mock.params if p.key == '/noparam2'][0]
+        self.assertEquals('value2', p.value)
+
                     
     def test_rosparam_invalid(self):
-        tests = ['test-rosparam-invalid-%s.xml'%i for i in range(1, 5)]
+        tests = ['test-rosparam-invalid-%s.xml'%i for i in range(1, 6)]
         loader = roslaunch.xmlloader.XmlLoader()
         for filename in tests:
             filename = os.path.join('test', 'xml', filename)
@@ -491,6 +523,10 @@ class TestXmlLoader(unittest.TestCase):
             elif n.type == 'test_time_limit_float_10_1':
                 self.assertAlmostEquals(10.1, n.time_limit, 3)
 
+    def test_rostest_retry(self):
+        n = self._load_valid_rostests(['test_retry'])[0]
+        self.assertEquals(2, n.retry)
+                
     def test_node_cwd(self):
         nodes = self._load_valid_nodes(['test_base', 'test_cwd_1', 'test_cwd_2'])
         for n in nodes:
@@ -770,8 +806,10 @@ class TestXmlLoader(unittest.TestCase):
     def test_node_invalid(self):
         tests = ['test-node-invalid-type.xml','test-node-invalid-type-2.xml',
                  'test-node-invalid-pkg.xml','test-node-invalid-pkg-2.xml',
+                 # 1 and 2 have been disabled for now until we re-remove ability to have unnamed nodes with params
                  #'test-node-invalid-name-1.xml',
-                 #'test-node-invalid-name-2.xml',                 
+                 #'test-node-invalid-name-2.xml',
+                 'test-node-invalid-name-3.xml',
                  'test-node-invalid-machine.xml',
                  'test-node-invalid-respawn.xml',
                  'test-node-invalid-ns.xml','test-node-invalid-ns-2.xml',                 
@@ -788,6 +826,7 @@ class TestXmlLoader(unittest.TestCase):
                  'test-test-invalid-output.xml',
                  'test-test-invalid-time-limit-1.xml',
                  'test-test-invalid-time-limit-2.xml',
+                 'test-test-invalid-retry.xml',
                  ]
         loader = roslaunch.xmlloader.XmlLoader()
         for filename in tests:
@@ -798,7 +837,21 @@ class TestXmlLoader(unittest.TestCase):
                 self.fail("xmlloader did not throw an xmlparseexception for [%s]"%filename)
             except roslaunch.xmlloader.XmlParseException, e:
                 pass
-        
+
+    def test_remap_invalid(self):
+        tests = ['test-remap-invalid-1.xml',
+                 'test-remap-invalid-2.xml',                 
+                 ]
+        loader = roslaunch.xmlloader.XmlLoader()
+        for filename in tests:
+            filename = os.path.join('test', 'xml', filename)
+            try:
+                self.assert_(os.path.exists(filename))
+                loader.load(filename, RosLaunchMock())
+                self.fail("xmlloader did not throw an xmlparseexception for [%s]"%filename)
+            except roslaunch.xmlloader.XmlParseException, e:
+                pass
+            
 if __name__ == '__main__':
-    rostest.unitrun('test_roslaunch', sys.argv[0], TestXmlLoader, coverage_packages=['roslaunch.xmlloader'])
+    rostest.unitrun('test_roslaunch', sys.argv[0], TestXmlLoader, coverage_packages=['roslaunch.xmlloader', 'roslaunch.loader'])
     

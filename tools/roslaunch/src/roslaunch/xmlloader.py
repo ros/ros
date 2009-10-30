@@ -229,14 +229,22 @@ class XmlLoader(Loader):
     NODE_ATTRS = ['pkg', 'type', 'machine', 'name', 'args', 'output', 'respawn', 'cwd', NS, CLEAR_PARAMS, 'launch-prefix']
     TEST_ATTRS = NODE_ATTRS + ['test-name','time-limit', 'retry']
     
-    ## @param tag Node: DOM node
-    ## @param context LoaderContext: namespace context
-    ## @param params [Param]: ROS parameter list
-    ## @param clear_params [str]: list of ROS parameter names to clear before setting parameters
-    ## @param default_machine str: default machine to assign to node
-    ## @param is_test bool: if set, will load as Test object instead
-    ## of Node object
     def _node_tag(self, tag, context, ros_config, default_machine, is_test=False, verbose=True):
+        """
+        Process XML <node> or <test> tag
+        @param tag: DOM node
+        @type  tag: Node
+        @param context: namespace context
+        @type  context: L{LoaderContext}
+        @param params: ROS parameter list
+        @type  params: [L{Param}]
+        @param clear_params: list of ROS parameter names to clear before setting parameters
+        @type  clear_params: [str]
+        @param default_machine: default machine to assign to node
+        @type  default_machine: str
+        @param is_test: if set, will load as L{Test} object instead of L{Node} object
+        @type  is_test: bool
+        """
         try:
             if is_test:
                 self._check_attrs(tag, context, ros_config, XmlLoader.TEST_ATTRS)
@@ -360,15 +368,20 @@ class XmlLoader(Loader):
             name, address = self.reqd_attrs(tag, context, ('name', 'address'))
             
             # optional attributes
-
             attrs = self.opt_attrs(tag, context,
                                    ('ros-root', 'ros-package-path', 'ros-ip', 'ros-host-name', 
                                     'ssh-port', 'user', 'password', 'default', 'timeout'))
             rosroot, ros_package_path, ros_ip, ros_host_name, \
                 ssh_port, user, password, default, timeout = attrs
 
+            # DEPRECATED: remove in ROS 0.11 if possible
             if ros_host_name and ros_ip:
                 raise XmlParseException("only one of 'ros-host-name' or 'ros-ip' may be set")
+            if ros_ip:
+                ros_config.add_config_error("WARN: ros-ip in <machine> tags is now deprecated. Use <env> tags instead")
+            if ros_host_name:
+                ros_config.add_config_error("WARN: ros-host-name in <machine> tags is now deprecated. Use <env> tags instead")
+
             ros_host_name = ros_host_name or ros_ip  #alias
             
             if not ros_package_path:

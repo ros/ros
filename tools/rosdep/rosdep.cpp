@@ -381,7 +381,7 @@ public:
       if (full_auto)
         pkg_install_cmd += "-y ";
     }
-    else if (os_name == "fedora" || os_name == "centos")
+    else if (os_name == "fedora" || os_name == "centos" || os_name == "rhel")
       pkg_install_cmd = "sudo yum install ";
     else if (os_name == "arch")
       pkg_install_cmd = "sudo pacman -Sy --needed ";
@@ -638,6 +638,12 @@ private:
           os_ver = os_tokens[2];
           return true;
         }
+        else if (os_tokens[2] == string("Enterprise"))
+        {
+          os_name = "rhel";
+          os_ver = os_tokens[6];
+          return true;
+        }
       }
       printf("Unknown /etc/redhat-release file found. Evidently your OS is not "
              "supported by this version of rosdep.");
@@ -720,7 +726,7 @@ private:
   {
     if (os_name == "ubuntu" || os_name == "debian")
       return string("dpkg -s ") + pkg_name;
-    else if (os_name == "fedora" || os_name == "centos")
+    else if (os_name == "fedora" || os_name == "centos" || os_name == "rhel")
       return string("yum list ") + pkg_name;
     else if (os_name == "arch")
       return string("pacman -Q ") + pkg_name;

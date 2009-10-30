@@ -155,10 +155,7 @@ class XmlLoader(Loader):
             self.load_rosparam(context, ros_config, cmd, param, file, _get_text(tag))
 
         except ValueError, e:
-            raise XmlLoadException("error loading <rosparam> tag: %s"+str(e)+"\nXML is %s"%tag.toxml())
-        except XmlParseException, e:
-            raise XmlParseException(str(e)+"\nXML is %s"%tag.toxml())
-
+            raise XmlLoadException("error loading <rosparam> tag: \n\t"+str(e)+"\nXML is %s"%tag.toxml())
 
     PARAM_ATTRS = ('name', 'value', 'type', 'value', 'textfile', 'binfile', 'command')
     def _param_tag(self, tag, context, ros_config, force_local=False, verbose=True):
@@ -194,8 +191,6 @@ class XmlLoader(Loader):
         except KeyError, e:
             raise XmlParseException(
                 "<param> tag is missing required attribute: %s. \n\nParam xml is %s"%(e, tag.toxml()))
-        except XmlLoadException, e:
-            raise XmlLoadException("%s\n\nParam xml is %s"%(str(e), tag.toxml()))
         except Exception, e:
             raise XmlParseException(
                 "Invalid <param> tag: %s. \n\nParam xml is %s"%(e, tag.toxml()))
@@ -350,8 +345,6 @@ class XmlLoader(Loader):
         except KeyError, e:
             raise XmlParseException(
                 "<%s> tag is missing required attribute: %s. Node xml is %s"%(tag.tagName, e, tag.toxml()))
-        except XmlLoadException, e:
-            raise XmlLoadException(str(e) + "\n\nNode xml is %s"%(tag.toxml()))
         except XmlParseException, e:
             raise XmlParseException(
                 "Invalid <node> tag: %s. \n\nNode xml is %s"%(e, tag.toxml()))

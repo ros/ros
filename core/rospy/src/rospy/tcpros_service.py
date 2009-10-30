@@ -399,8 +399,9 @@ class Service(_Service):
 
     def spin(self):
         """
-        Let service run and take over thread until shutdown. Use this method to keep
-        your scripts from exiting execution.
+        Let service run and take over thread until service or node
+        shutdown. Use this method to keep your scripts from exiting
+        execution.
         """
         try:
             while not rospy.core.is_shutdown() and not self.done:

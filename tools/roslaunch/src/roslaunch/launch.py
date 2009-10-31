@@ -537,14 +537,16 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         self._launch_master()
         self._launch_core_nodes()        
         
+        # run exectuables marked as setup period. this will block
+        # until these executables exit. setup executable have to run
+        # *before* parameters are uploaded so that commands like
+        # rosparam delete can execute.
+        self._launch_setup_executables()
+
         # no parameters for a child process
         if not self.is_child:
             self._load_parameters()
 
-        # run exectuables marked as setup period. this will block until
-        # these exectuables exit.
-        self._launch_setup_executables()
-        
     def launch(self):
         """
         Run the launch. Depending on usage, caller should call

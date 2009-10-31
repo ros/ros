@@ -18,19 +18,26 @@ VBoxManage controlvm $1 poweroff
 sleep 2
 VBoxManage snapshot $1 discardcurrent -state
 sleep 2
-if ! VBoxHeadless -startvm $1 & ; then
-  echo "unable to start VM $1"
-  exit 1
-fi
-while [ `VBoxManage showvminfo $1 | grep -c running` == 0 ]; do
+VBoxHeadless -startvm $1 & 
+TRY=1
+while [[ `VBoxManage showvminfo $1 | grep -c running` == 0 && $TRY < 20 ]]; do
   echo "waiting for VM $1 to start..."
   sleep 0.5
+  let "TRY = $TRY + 1"
 done
+if [ $TRY -ge 20 ] ; then
+  echo "VM $1 never seemed to start. goodbye.\n"
+  exit 1
+fi
 sleep 1
 echo -e "hooray, $1 has started. logging into it...\n\n"
  
-ssh -t -p $PORT user@localhost "bash -c 'sudo apt-get -y install build-essential python-yaml cmake subversion && wget http://ros.sf.net/rosconfig -O ~/rosconfig && chmod 755 ~/rosconfig && ~/rosconfig bootstrap -s http://ros.svn.sourceforge.net/viewvc/ros/trunk/tools/rosconfig/config/prdev.rosconfig ~/ros $2'"
-
+BUILD_FAIL=1
+if ssh -t -p $PORT user@localhost "bash -c 'sudo apt-get -y install build-essential python-yaml cmake subversion && wget http://ros.sf.net/rosconfig -O ~/rosconfig && chmod 755 ~/rosconfig && ~/rosconfig bootstrap -s http://ros.svn.sourceforge.net/viewvc/ros/trunk/tools/rosconfig/config/prdev.rosconfig ~/ros $2'" ; then
+  BUILD_FAIL=0
+fi
+  
 echo -e "\n\nnow I will brutally pull the plug on VM $1"
 VBoxManage controlvm $1 poweroff
-echo "done."
+
+exit $BUILD_FAIL

@@ -464,7 +464,7 @@ class RosMakeAll:
 
         # Setup logging
         if self.logging_enabled:
-          date_time_stamp =  "rosmake_output-" + time.strftime("%Y-%m-%d-%H-%M-%S")
+          date_time_stamp =  "rosmake_output-" + time.strftime("%Y%m%d-%H%M%S")
           if options.output_dir:
               #self.log_dir = os.path.join(os.getcwd(), options.output_dir, date_time_stamp);
               self.log_dir = os.path.abspath(options.output_dir)

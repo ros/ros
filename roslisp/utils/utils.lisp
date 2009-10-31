@@ -39,40 +39,41 @@
 
 
 (defpackage roslisp-utils
-  (:use cl)
+  (:use :cl :sb-thread)
   (:export
-   mvbind
-   dbind
-   bind-pprint-args
-   force-format
-   until
-   while
-   repeat
+   :mvbind
+   :dbind
+   :bind-pprint-args
+   :force-format
+   :until
+   :while
+   :repeat
 
-   unix-time
-   loop-at-most-every
-   spin-until
-   with-parallel-thread
+   :unix-time
+   :loop-at-most-every
+   :spin-until
+   :with-parallel-thread
+   :every-nth-time
 
-   hash-table-has-key
-   pprint-hash
-   do-hash
-   tokens
-   serialize-int
-   deserialize-int
-   serialize-string
-   deserialize-string
+   :hash-table-has-key
+   :pprint-hash
+   :do-hash
+   :tokens
+   :serialize-int
+   :deserialize-int
+   :serialize-string
+   :deserialize-string
 
-   filter
+   :filter
 
-   intern-compound-symbol
+   :intern-compound-symbol
    
-   encode-single-float-bits
-   encode-double-float-bits
-   decode-single-float-bits
-   decode-double-float-bits))
+   :encode-single-float-bits
+   :encode-double-float-bits
+   :decode-single-float-bits
+   :decode-double-float-bits))
 
-(in-package roslisp-utils)
+(in-package :roslisp-utils)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -296,6 +297,21 @@ If FN is a symbol, it's replaced by (function FN)."
        (unwind-protect
 	    (progn ,@body)
 	 (sb-thread:terminate-thread ,thread)))))
+
+(defvar *do-every-nth-table* (make-hash-table))
+(defvar *do-every-nth-lock* (make-mutex :name "do-every-nth"))
+
+(defun counter-value (id)
+  (with-mutex (*do-every-nth-lock*)
+    (let ((v (gethash id *do-every-nth-table*)))
+      (setf (gethash id *do-every-nth-table*) (if v (1+ v) 0)))))
+
+(defmacro every-nth-time (n &body body)
+  (let ((id (gensym)))
+    `(when (zerop (mod (counter-value ',id) ,n))
+       ,@body)))
+       
+  
    
   
       

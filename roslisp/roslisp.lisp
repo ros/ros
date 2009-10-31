@@ -119,6 +119,7 @@
    :load-srv ;; todo remove?
 
    :*ros-node-name*
+   :num-subscribers
    
    :fully-qualified-name
    :make-uri
@@ -217,6 +218,9 @@
 
 (defun node-status ()
   *node-status*)
+
+(defun num-subscribers (pub)
+  (length (subscriber-connections pub)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Debugging

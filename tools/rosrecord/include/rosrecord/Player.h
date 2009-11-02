@@ -238,6 +238,7 @@ public:
       if (topic_it->second)
         delete topic_it->second;
     }
+    delete[] next_msg_;
 
     topics_.clear();
     done_ = false;

@@ -1,7 +1,7 @@
 <package>
   <description brief="rosnode command line tool">
 
-rosnode is a command-line tool for displaying debug information about ROS <a href="http://www.ros.org/wiki/Nodes">Nodes</a>, including publications, subscriptions and connections. 
+rosnode is a command-line tool for displaying debug information about ROS <a href="http://www.ros.org/wiki/Nodes">Nodes</a>, including publications, subscriptions and connections. It also contains an experimental library for retrieving node information. This library is intended for internal use only. 
 
   </description>
   <author>Ken Conley/kwc@willowgarage.com</author>

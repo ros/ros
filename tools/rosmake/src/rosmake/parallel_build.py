@@ -78,7 +78,7 @@ class DependencyTracker:
     self.deps = {}
 
   def get_deps_1(self, package):
-    if not package in self.deps:
+    if not package in self.deps_1:
       self.deps_1[package] = []
       potential_dependencies = roslib.rospack.rospack_depends_1(package) 
       for p in potential_dependencies:
@@ -96,6 +96,10 @@ class DependencyTracker:
           self.deps[package].append(p)
     return self.deps[package]
 
+  def load_fake_deps(self, deps, deps1):
+    self.deps = deps
+    self.deps_1 = deps1
+    return
 
 
 class CompileThread(threading.Thread):

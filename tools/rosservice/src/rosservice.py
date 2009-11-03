@@ -404,9 +404,18 @@ def _rosservice_args(service_name):
     @type  service_name: str
     @raise ROSServiceException: if call command cannot be executed
     """
+    print get_service_args(service_name)
+
+def get_service_args(service_name):
+    """
+    Implements 'get service args'
+    @param service_name: name of service to get arguments for
+    @type  service_name: str
+    @raise ROSServiceException: if call command cannot be executed
+    """
     service_name = roslib.scriptutil.script_resolve_name('rosservice', service_name)
     service_class = get_service_class_by_name(service_name)
-    print roslib.message.get_printable_message_args(service_class._request_class)
+    return roslib.message.get_printable_message_args(service_class._request_class)
     
 ##########################################################################################
 # COMMAND PROCESSING #####################################################################

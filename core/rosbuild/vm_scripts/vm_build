@@ -7,6 +7,8 @@ case $1 in
     PORT=3000 ;;
   ubuntu-08-04 )
     PORT=3002 ;;
+  ubuntu-09-10 )
+    PORT=3006 ;;
 esac
 
 if [ $PORT -eq 12345 ] ; then
@@ -33,7 +35,7 @@ sleep 1
 echo -e "hooray, $1 has started. logging into it...\n\n"
  
 BUILD_FAIL=1
-if ssh -t -p $PORT user@localhost "bash -c 'sudo apt-get -y install build-essential python-yaml cmake subversion && wget http://ros.org/rosconfig -O ~/rosconfig && chmod 755 ~/rosconfig && ~/rosconfig bootstrap -s http://ros.org/rosconfigs/all.rosconfig ~/ros $2'" ; then
+if ssh -t -p $PORT user@localhost "bash -c 'export ROSDEP_YES=1 && sudo apt-get -y install build-essential python-yaml cmake subversion && wget http://ros.org/rosconfig -O ~/rosconfig && chmod 755 ~/rosconfig && ~/rosconfig bootstrap -s http://ros.org/rosconfigs/all.rosconfig ~/ros $2'" ; then
   BUILD_FAIL=0
 fi
   

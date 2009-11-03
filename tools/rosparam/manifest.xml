@@ -2,7 +2,7 @@
   <description brief="YAML-based parameter server initialization">
 
 <p>
-rosparam contains the rosparam command-line tool for getting and setting ROS Parameters on the <a href="http://www.ros.org/wiki/Parameter%20Server">Parameter Server</a> using YAML-encoded files. It also contains an experimental library for using YAML with the Parameter Server. This library is only intended for internal use.
+rosparam contains the rosparam command-line tool for getting and setting ROS Parameters on the <a href="http://www.ros.org/wiki/Parameter%20Server">Parameter Server</a> using YAML-encoded files. It also contains an experimental library for using YAML with the Parameter Server. This library is intended for internal use only.
 </p>
 <p>
 rosparam can be invoked within a <a href="http://www.ros.org/wiki/roslaunch">roslaunch</a> file.

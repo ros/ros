@@ -215,6 +215,7 @@ public:
 
     if(header_buffer_)
       free(header_buffer_);
+    delete[] next_msg_;
   }
 
   std::string getVersionString()

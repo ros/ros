@@ -17,16 +17,18 @@ namespace rxtools{ class RosoutListControl; }
 #include <wx/colour.h>
 #include <wx/settings.h>
 #include <wx/string.h>
-#include <wx/stattext.h>
-#include <wx/textctrl.h>
-#include <wx/checkbox.h>
 #include <wx/button.h>
 #include <wx/tglbtn.h>
+#include <wx/collpane.h>
 #include <wx/panel.h>
+#include <wx/textctrl.h>
 #include <wx/statbox.h>
+#include <wx/stattext.h>
 #include <wx/spinctrl.h>
 #include <wx/dialog.h>
 #include <wx/listbox.h>
+#include <wx/choice.h>
+#include <wx/checkbox.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -42,19 +44,14 @@ namespace rxtools
 		
 		protected:
 			rxtools::RosoutListControl* table_;
-			wxStaticText* m_staticText1;
-			wxTextCtrl* include_text_;
-			wxStaticText* m_staticText11;
-			wxTextCtrl* exclude_text_;
-			wxCheckBox* regex_checkbox_;
+			wxBoxSizer* severity_sizer_;
 			wxButton* clear_button_;
 			wxToggleButton* pause_button_;
 			wxButton* setup_button_;
+			wxBoxSizer* filters_pane_sizer_;
+			wxCollapsiblePane* filters_pane_;
 			
 			// Virtual event handlers, overide them in your derived class
-			virtual void onIncludeText( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onExcludeText( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onRegexChecked( wxCommandEvent& event ){ event.Skip(); }
 			virtual void onClear( wxCommandEvent& event ){ event.Skip(); }
 			virtual void onPause( wxCommandEvent& event ){ event.Skip(); }
 			virtual void onSetup( wxCommandEvent& event ){ event.Skip(); }
@@ -133,6 +130,70 @@ namespace rxtools
 		public:
 			LoggerLevelPanelBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,300 ), long style = wxTAB_TRAVERSAL );
 			~LoggerLevelPanelBase();
+		
+	};
+	
+	///////////////////////////////////////////////////////////////////////////////
+	/// Class RosoutTextFilterControlBase
+	///////////////////////////////////////////////////////////////////////////////
+	class RosoutTextFilterControlBase : public wxPanel 
+	{
+		private:
+		
+		protected:
+			wxTextCtrl* text_;
+			wxChoice* include_exclude_;
+			wxCheckBox* regex_;
+			wxStaticText* m_staticText2;
+			wxCheckBox* message_;
+			wxCheckBox* node_;
+			wxCheckBox* file_;
+			wxCheckBox* function_;
+			wxCheckBox* topics_;
+			
+			// Virtual event handlers, overide them in your derived class
+			virtual void onText( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onIncludeExclude( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onRegex( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onMessage( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onNode( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onFile( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onFunction( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onTopics( wxCommandEvent& event ){ event.Skip(); }
+			
+		
+		public:
+			RosoutTextFilterControlBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 750,42 ), long style = wxTAB_TRAVERSAL );
+			~RosoutTextFilterControlBase();
+		
+	};
+	
+	///////////////////////////////////////////////////////////////////////////////
+	/// Class RosoutSeverityFilterControlBase
+	///////////////////////////////////////////////////////////////////////////////
+	class RosoutSeverityFilterControlBase : public wxPanel 
+	{
+		private:
+		
+		protected:
+			wxStaticText* m_staticText21;
+			wxCheckBox* fatal_;
+			wxCheckBox* error_;
+			wxCheckBox* warn_;
+			wxCheckBox* info_;
+			wxCheckBox* debug_;
+			
+			// Virtual event handlers, overide them in your derived class
+			virtual void onFatal( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onError( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onWarn( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onInfo( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onDebug( wxCommandEvent& event ){ event.Skip(); }
+			
+		
+		public:
+			RosoutSeverityFilterControlBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 750,42 ), long style = wxTAB_TRAVERSAL );
+			~RosoutSeverityFilterControlBase();
 		
 	};
 	

@@ -43,6 +43,8 @@ namespace rxtools
 RosoutListControl::RosoutListControl(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxValidator& validator,
                                      const wxString& name)
 : wxListCtrl(parent, id, pos, size, style, validator, name), selection_(-1)
+, scrollbar_at_bottom_(true)
+, disable_scroll_to_bottom_(false)
 {
   wxListItem item;
   item.SetText(wxT("Message"));
@@ -299,6 +301,56 @@ void RosoutListControl::onItemActivated(wxListEvent& event)
 void RosoutListControl::onItemSelected(wxListEvent& event)
 {
   selection_ = event.GetIndex();
+
+  disable_scroll_to_bottom_ = true;
+}
+
+void RosoutListControl::preItemChanges()
+{
+  /// @todo wxListCtrl::GetScrollRange doesn't work, so I have to work around it.  Switch to use GetScrollPos and GetScrollRange once Bug #10155 in the wxWidgets trac is fixed.
+  scrollbar_at_bottom_ = false;
+  // wxListCtrl on the mac doesn't implement GetCountPerPage() correctly, so disable autoscrolling on the mac
+#ifndef __WXMAC__
+  int count_per_page = GetCountPerPage();
+  int scroll_pos = GetScrollPos(wxVERTICAL);
+  if (scroll_pos + count_per_page >= GetItemCount())
+  {
+    scrollbar_at_bottom_ = true;
+  }
+#endif
+
+  Freeze();
+}
+
+void RosoutListControl::postItemChanges()
+{
+  if (!disable_scroll_to_bottom_ && scrollbar_at_bottom_ && GetItemCount() > 0)
+  {
+    EnsureVisible(GetItemCount() - 1);
+  }
+
+  disable_scroll_to_bottom_ = false;
+
+  Thaw();
+
+  // This for some reason prevents the control from flickering: http://wiki.wxwidgets.org/Flicker-Free_Drawing#No-flickering_for_wxListCtrl_with_wxLC_REPORT_.7C_wxLC_VIRTUAL_style
+  wxIdleEvent idle;
+  wxTheApp->SendIdleEvents(this, idle);
+}
+
+void RosoutListControl::setSelection(int32_t index)
+{
+  if (index == -1)
+  {
+    if (selection_ != -1)
+    {
+      SetItemState(selection_, 0, wxLIST_STATE_SELECTED|wxLIST_STATE_FOCUSED);
+    }
+  }
+  else
+  {
+    SetItemState(index, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+  }
 }
 
 } // namespace rxtools

@@ -43,23 +43,9 @@ RosoutPanelBase::RosoutPanelBase( wxWindow* parent, wxWindowID id, const wxPoint
 	wxBoxSizer* bSizer9;
 	bSizer9 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText1 = new wxStaticText( this, wxID_ANY, wxT("Include:"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText1->Wrap( -1 );
-	bSizer9->Add( m_staticText1, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	severity_sizer_ = new wxBoxSizer( wxHORIZONTAL );
 	
-	include_text_ = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer9->Add( include_text_, 1, wxALL|wxEXPAND, 5 );
-	
-	m_staticText11 = new wxStaticText( this, wxID_ANY, wxT("Exclude:"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText11->Wrap( -1 );
-	bSizer9->Add( m_staticText11, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-	
-	exclude_text_ = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer9->Add( exclude_text_, 1, wxALL|wxEXPAND, 5 );
-	
-	regex_checkbox_ = new wxCheckBox( this, wxID_ANY, wxT("Regex"), wxDefaultPosition, wxDefaultSize, 0 );
-	
-	bSizer9->Add( regex_checkbox_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer9->Add( severity_sizer_, 1, wxEXPAND, 5 );
 	
 	clear_button_ = new wxButton( this, wxID_ANY, wxT("Clear Messages"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer9->Add( clear_button_, 0, wxALL, 5 );
@@ -70,7 +56,14 @@ RosoutPanelBase::RosoutPanelBase( wxWindow* parent, wxWindowID id, const wxPoint
 	setup_button_ = new wxButton( this, wxID_ANY, wxT("Setup"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer9->Add( setup_button_, 0, wxALL|wxALIGN_RIGHT, 5 );
 	
-	bSizer10->Add( bSizer9, 0, wxEXPAND, 5 );
+	bSizer10->Add( bSizer9, 0, wxALIGN_RIGHT|wxEXPAND, 5 );
+	
+	filters_pane_sizer_ = new wxBoxSizer( wxVERTICAL );
+	
+	filters_pane_ = new wxCollapsiblePane(this, wxID_ANY, wxT("Filters"));
+	filters_pane_sizer_->Add( filters_pane_, 0, wxALL|wxEXPAND, 5 );
+	
+	bSizer10->Add( filters_pane_sizer_, 0, wxEXPAND, 5 );
 	
 	bSizer2->Add( bSizer10, 1, wxEXPAND, 5 );
 	
@@ -78,9 +71,6 @@ RosoutPanelBase::RosoutPanelBase( wxWindow* parent, wxWindowID id, const wxPoint
 	this->Layout();
 	
 	// Connect Events
-	include_text_->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( RosoutPanelBase::onIncludeText ), NULL, this );
-	exclude_text_->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( RosoutPanelBase::onExcludeText ), NULL, this );
-	regex_checkbox_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutPanelBase::onRegexChecked ), NULL, this );
 	clear_button_->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onClear ), NULL, this );
 	pause_button_->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onPause ), NULL, this );
 	setup_button_->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onSetup ), NULL, this );
@@ -89,9 +79,6 @@ RosoutPanelBase::RosoutPanelBase( wxWindow* parent, wxWindowID id, const wxPoint
 RosoutPanelBase::~RosoutPanelBase()
 {
 	// Disconnect Events
-	include_text_->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( RosoutPanelBase::onIncludeText ), NULL, this );
-	exclude_text_->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( RosoutPanelBase::onExcludeText ), NULL, this );
-	regex_checkbox_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutPanelBase::onRegexChecked ), NULL, this );
 	clear_button_->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onClear ), NULL, this );
 	pause_button_->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onPause ), NULL, this );
 	setup_button_->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onSetup ), NULL, this );
@@ -234,4 +221,127 @@ LoggerLevelPanelBase::~LoggerLevelPanelBase()
 	nodes_refresh_->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( LoggerLevelPanelBase::onNodesRefresh ), NULL, this );
 	loggers_box_->Disconnect( wxEVT_COMMAND_LISTBOX_SELECTED, wxCommandEventHandler( LoggerLevelPanelBase::onLoggerSelected ), NULL, this );
 	levels_box_->Disconnect( wxEVT_COMMAND_LISTBOX_SELECTED, wxCommandEventHandler( LoggerLevelPanelBase::onLevelSelected ), NULL, this );
+}
+
+RosoutTextFilterControlBase::RosoutTextFilterControlBase( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
+{
+	wxBoxSizer* bSizer14;
+	bSizer14 = new wxBoxSizer( wxHORIZONTAL );
+	
+	text_ = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer14->Add( text_, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	wxString include_exclude_Choices[] = { wxT("Include"), wxT("Exclude") };
+	int include_exclude_NChoices = sizeof( include_exclude_Choices ) / sizeof( wxString );
+	include_exclude_ = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, include_exclude_NChoices, include_exclude_Choices, 0 );
+	include_exclude_->SetSelection( 0 );
+	bSizer14->Add( include_exclude_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	regex_ = new wxCheckBox( this, wxID_ANY, wxT("Regex"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	bSizer14->Add( regex_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	m_staticText2 = new wxStaticText( this, wxID_ANY, wxT("From"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText2->Wrap( -1 );
+	m_staticText2->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), 70, 90, 92, false, wxEmptyString ) );
+	
+	bSizer14->Add( m_staticText2, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	message_ = new wxCheckBox( this, wxID_ANY, wxT("Message"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	bSizer14->Add( message_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
+	
+	node_ = new wxCheckBox( this, wxID_ANY, wxT("Node"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	bSizer14->Add( node_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
+	
+	file_ = new wxCheckBox( this, wxID_ANY, wxT("File"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	bSizer14->Add( file_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
+	
+	function_ = new wxCheckBox( this, wxID_ANY, wxT("Function"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	bSizer14->Add( function_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
+	
+	topics_ = new wxCheckBox( this, wxID_ANY, wxT("Topics"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	bSizer14->Add( topics_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
+	
+	this->SetSizer( bSizer14 );
+	this->Layout();
+	
+	// Connect Events
+	text_->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( RosoutTextFilterControlBase::onText ), NULL, this );
+	include_exclude_->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( RosoutTextFilterControlBase::onIncludeExclude ), NULL, this );
+	regex_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onRegex ), NULL, this );
+	message_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onMessage ), NULL, this );
+	node_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onNode ), NULL, this );
+	file_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onFile ), NULL, this );
+	function_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onFunction ), NULL, this );
+	topics_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onTopics ), NULL, this );
+}
+
+RosoutTextFilterControlBase::~RosoutTextFilterControlBase()
+{
+	// Disconnect Events
+	text_->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( RosoutTextFilterControlBase::onText ), NULL, this );
+	include_exclude_->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( RosoutTextFilterControlBase::onIncludeExclude ), NULL, this );
+	regex_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onRegex ), NULL, this );
+	message_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onMessage ), NULL, this );
+	node_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onNode ), NULL, this );
+	file_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onFile ), NULL, this );
+	function_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onFunction ), NULL, this );
+	topics_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onTopics ), NULL, this );
+}
+
+RosoutSeverityFilterControlBase::RosoutSeverityFilterControlBase( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
+{
+	wxBoxSizer* bSizer14;
+	bSizer14 = new wxBoxSizer( wxHORIZONTAL );
+	
+	m_staticText21 = new wxStaticText( this, wxID_ANY, wxT("Severity"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText21->Wrap( -1 );
+	m_staticText21->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), 70, 90, 92, false, wxEmptyString ) );
+	
+	bSizer14->Add( m_staticText21, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	fatal_ = new wxCheckBox( this, wxID_ANY, wxT("Fatal"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	bSizer14->Add( fatal_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	error_ = new wxCheckBox( this, wxID_ANY, wxT("Error"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	bSizer14->Add( error_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	warn_ = new wxCheckBox( this, wxID_ANY, wxT("Warn"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	bSizer14->Add( warn_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	info_ = new wxCheckBox( this, wxID_ANY, wxT("Info"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	bSizer14->Add( info_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	debug_ = new wxCheckBox( this, wxID_ANY, wxT("Debug"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	bSizer14->Add( debug_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	this->SetSizer( bSizer14 );
+	this->Layout();
+	
+	// Connect Events
+	fatal_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutSeverityFilterControlBase::onFatal ), NULL, this );
+	error_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutSeverityFilterControlBase::onError ), NULL, this );
+	warn_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutSeverityFilterControlBase::onWarn ), NULL, this );
+	info_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutSeverityFilterControlBase::onInfo ), NULL, this );
+	debug_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutSeverityFilterControlBase::onDebug ), NULL, this );
+}
+
+RosoutSeverityFilterControlBase::~RosoutSeverityFilterControlBase()
+{
+	// Disconnect Events
+	fatal_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutSeverityFilterControlBase::onFatal ), NULL, this );
+	error_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutSeverityFilterControlBase::onError ), NULL, this );
+	warn_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutSeverityFilterControlBase::onWarn ), NULL, this );
+	info_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutSeverityFilterControlBase::onInfo ), NULL, this );
+	debug_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutSeverityFilterControlBase::onDebug ), NULL, this );
 }

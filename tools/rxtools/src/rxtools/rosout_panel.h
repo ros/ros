@@ -36,6 +36,7 @@
 #define RXTOOLS_ROSOUT_PANEL_H
 
 #include "rosout_generated.h"
+#include "rosout_filter.h"
 #include "roslib/Log.h"
 
 #include <ros/ros.h>
@@ -47,15 +48,24 @@
 #include <set>
 
 #include "boost/thread/mutex.hpp"
-#include <boost/regex.hpp>
 
 class wxTimer;
 class wxTimerEvent;
 class wxAuiNotebook;
 class wxRichTextCtrl;
+class wxCollapsiblePaneEvent;
+class wxScrolledWindow;
+class wxSizer;
+class wxBitmapButton;
+class wxCheckBox;
+class wxWindow;
+class wxPanel;
 
 namespace rxtools
 {
+
+class RosoutSeverityFilter;
+typedef boost::shared_ptr<RosoutSeverityFilter> RosoutSeverityFilterPtr;
 
 typedef unsigned int uint32_t; // for swig
 
@@ -85,6 +95,19 @@ struct RosoutMessageSummary
  */
 class RosoutPanel : public RosoutPanelBase
 {
+public:
+  struct FilterInfo
+  {
+    RosoutFilterPtr filter;
+    wxWindow* control;
+    wxSizer* sizer;
+    wxCheckBox* enabled_cb;
+    wxBitmapButton* delete_button;
+    wxBitmapButton* up_button;
+    wxBitmapButton* down_button;
+    wxPanel* panel;
+  };
+
 public:
   /**
    * \brief Constructor
@@ -118,20 +141,14 @@ public:
   void setBufferSize(uint32_t size);
 
   /**
-   * \brief Set the include filter
-   */
-  void setInclude(const std::string& filter);
-  /**
-   * \brief Set the exclude filter
-   */
-  void setExclude(const std::string& filter);
-
-  /**
    * \brief Returns a summary of the types of messages that have been received recently.
    * \param duration Controls how far in the past the function searches for messages
    * \return a RosoutMessageSummary structure detailing the types of messages received.
    */
   RosoutMessageSummary getMessageSummary(double duration) const;
+
+  void addFilter(const RosoutFilterPtr& filter, wxWindow* control);
+  void removeFilter(const RosoutFilterPtr& filter);
 
 protected:
   /**
@@ -147,22 +164,24 @@ protected:
    */
   virtual void onClear(wxCommandEvent& event);
   /**
+   * \brief (wx callback) Called when the "Filters..." button is pressed
+   */
+  virtual void onFilters(wxCommandEvent& event);
+  /**
    * \brief (wx callback) Called every 100ms so we can process new messages
    */
   void onProcessTimer(wxTimerEvent& evt);
 
-  /**
-   * \brief Called when the include text changes
-   */
-  virtual void onIncludeText(wxCommandEvent& event);
-  /**
-   * \brief Called when the exclude text changes
-   */
-  virtual void onExcludeText(wxCommandEvent& event);
-  /**
-   * \brief Called when the regex checkbox changes
-   */
-  virtual void onRegexChecked(wxCommandEvent& event);
+  void onFiltersCollapseStateChanged(wxCollapsiblePaneEvent& evt);
+  void onAddFilterPressed(wxCommandEvent& event);
+  void onFilterEnableChecked(wxCommandEvent& event);
+  void onFilterDelete(wxCommandEvent& event);
+  void onFilterMoveUp(wxCommandEvent& event);
+  void onFilterMoveDown(wxCommandEvent& event);
+
+  ////////////////////////////////////////////////////////////////////////////////////////
+
+  void onFilterChanged(const RosoutFilter*);
 
   /**
    * \brief subscribe to our topic
@@ -194,31 +213,6 @@ protected:
   void addMessageToTable(const roslib::Log::ConstPtr& message, uint32_t id);
 
   /**
-   * \brief Filter a string based on our current include filter
-   * @param str The string to match against
-   * @return True if the string should be included, false otherwise
-   */
-  bool include(const std::string& str) const;
-  /**
-   * \brief Filter a string based on our current exclude filter
-   * \param str The string to match against
-   * \return True if the string should be excluded, false otherwise
-   */
-  bool exclude(const std::string& str) const;
-  typedef std::vector<std::string> V_string;
-  /**
-   * \brief Filter a vector of strings based on our current include filter
-   * @param strs The strings to match against
-   * @return True if any string matches (should be included), false otherwise
-   */
-  bool include(const V_string& strs) const;
-  /**
-   * \brief Filter a vector of strings based on our current exclude filter
-   * \param strs The strings to match against
-   * \return True if any string matches (should be excluded), false otherwise
-   */
-  bool exclude(const V_string& strs) const;
-  /**
    * \brief Filter a message based on our current filter
    * @param id The id of the message to filter
    * @return True of anything in the message matches, false otherwise
@@ -241,6 +235,9 @@ protected:
    */
   void popMessage();
 
+  void resizeFiltersPane();
+  void updateFilterBackgrounds();
+
   bool enabled_; ///< Are we enabled?
   std::string topic_; ///< The topic we're listening on (or will listen on once we're enabled)
 
@@ -254,24 +251,28 @@ protected:
   uint32_t message_id_counter_; ///< Counter for generating unique ids for messages
   typedef std::map<uint32_t, roslib::Log::ConstPtr> M_IdToMessage;
   M_IdToMessage messages_; ///< Map of id->message
-  std::string include_filter_; ///< String to filter what's displayed in the list by
-  std::string exclude_filter_;
 
   typedef std::vector<uint32_t> V_u32;
   V_u32 ordered_messages_; ///< Already-filtered messages that are being displayed in the list
 
   uint32_t max_messages_; ///< Max number of messages to keep around.  When we hit this limit, we start throwing away the oldest messages
 
-  boost::regex include_regex_; ///< Cached compiled inclusion regex
-  boost::regex exclude_regex_; ///< Cached compiled exclusion regex
-  bool use_regex_; ///< True if we should use regex (vs. direct string-match)
-  bool valid_include_regex_; ///< True if we have a valid inclusion regex
-  bool valid_exclude_regex_; ///< True if we have a valid exclusion regex
   bool needs_refilter_; ///< Set to true when we need to refilter our messages (ie. a filter has changed)
   float refilter_timer_; ///< Accumulator used to gate how often we refilter
 
   ros::CallbackQueue callback_queue_;
   ros::Subscriber sub_;
+
+  typedef std::vector<FilterInfo> V_FilterInfo;
+  V_FilterInfo filters_;
+  // special severity filter, of which there is only one (and it's not in the "filters" collapsible pane)
+  RosoutSeverityFilterPtr severity_filter_;
+
+  wxScrolledWindow* filters_window_;
+  wxBoxSizer* filters_sizer_;
+  wxBitmap delete_filter_bitmap_;
+
+  bool pause_;
 };
 
 } // namespace rxtools

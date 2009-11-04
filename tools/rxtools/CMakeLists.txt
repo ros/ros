@@ -28,6 +28,11 @@ rosbuild_add_library(${PROJECT_NAME} src/rxtools/topic_display.cpp
         				                    src/rxtools/topic_display_dialog.cpp
         				                    src/rxtools/rosout_generated.cpp 
                                     src/rxtools/rosout_panel.cpp
+                                    src/rxtools/rosout_filter.cpp
+                                    src/rxtools/rosout_text_filter.cpp
+                                    src/rxtools/rosout_text_filter_control.cpp
+                                    src/rxtools/rosout_severity_filter.cpp
+                                    src/rxtools/rosout_severity_filter_control.cpp
                                     src/rxtools/rosout_list_control.cpp
                                     src/rxtools/rosout_setup_dialog.cpp
                                     src/rxtools/logger_level_panel.cpp

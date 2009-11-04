@@ -98,6 +98,11 @@ public:
     return selection_;
   }
 
+  void setSelection(int32_t index);
+
+  void preItemChanges();
+  void postItemChanges();
+
 protected:
 
   // Callbacks
@@ -120,6 +125,9 @@ protected:
   int32_t debug_image_id_;
 
   int32_t selection_;
+
+  bool scrollbar_at_bottom_;
+  bool disable_scroll_to_bottom_;
 };
 
 } // namespace rxtools

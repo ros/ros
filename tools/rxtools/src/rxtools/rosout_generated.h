@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Apr 16 2008)
+// C++ code generated with wxFormBuilder (version Apr 21 2008)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -155,8 +155,7 @@ namespace rxtools
 			wxStaticText* m_staticText2;
 			wxCheckBox* message_;
 			wxCheckBox* node_;
-			wxCheckBox* file_;
-			wxCheckBox* function_;
+			wxCheckBox* location_;
 			wxCheckBox* topics_;
 			
 			// Virtual event handlers, overide them in your derived class
@@ -165,8 +164,7 @@ namespace rxtools
 			virtual void onRegex( wxCommandEvent& event ){ event.Skip(); }
 			virtual void onMessage( wxCommandEvent& event ){ event.Skip(); }
 			virtual void onNode( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onFile( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onFunction( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onLocation( wxCommandEvent& event ){ event.Skip(); }
 			virtual void onTopics( wxCommandEvent& event ){ event.Skip(); }
 			
 		

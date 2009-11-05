@@ -49,9 +49,7 @@ enum Column
   Node,
   Time,
   Topics,
-  File,
-  Line,
-  Function,
+  Location,
 };
 }
 typedef columns::Column Column;

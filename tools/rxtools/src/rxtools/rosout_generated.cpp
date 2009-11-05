@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Apr 16 2008)
+// C++ code generated with wxFormBuilder (version Apr 21 2008)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -274,13 +274,9 @@ RosoutTextFilterControlBase::RosoutTextFilterControlBase( wxWindow* parent, wxWi
 	
 	bSizer14->Add( node_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
 	
-	file_ = new wxCheckBox( this, wxID_ANY, wxT("File"), wxDefaultPosition, wxDefaultSize, 0 );
+	location_ = new wxCheckBox( this, wxID_ANY, wxT("Location"), wxDefaultPosition, wxDefaultSize, 0 );
 	
-	bSizer14->Add( file_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
-	
-	function_ = new wxCheckBox( this, wxID_ANY, wxT("Function"), wxDefaultPosition, wxDefaultSize, 0 );
-	
-	bSizer14->Add( function_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
+	bSizer14->Add( location_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
 	
 	topics_ = new wxCheckBox( this, wxID_ANY, wxT("Topics"), wxDefaultPosition, wxDefaultSize, 0 );
 	
@@ -295,8 +291,7 @@ RosoutTextFilterControlBase::RosoutTextFilterControlBase( wxWindow* parent, wxWi
 	regex_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onRegex ), NULL, this );
 	message_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onMessage ), NULL, this );
 	node_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onNode ), NULL, this );
-	file_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onFile ), NULL, this );
-	function_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onFunction ), NULL, this );
+	location_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onLocation ), NULL, this );
 	topics_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onTopics ), NULL, this );
 }
 
@@ -308,8 +303,7 @@ RosoutTextFilterControlBase::~RosoutTextFilterControlBase()
 	regex_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onRegex ), NULL, this );
 	message_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onMessage ), NULL, this );
 	node_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onNode ), NULL, this );
-	file_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onFile ), NULL, this );
-	function_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onFunction ), NULL, this );
+	location_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onLocation ), NULL, this );
 	topics_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutTextFilterControlBase::onTopics ), NULL, this );
 }
 

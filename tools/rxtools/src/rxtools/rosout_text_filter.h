@@ -51,10 +51,9 @@ public:
   {
     Message = 1<<0,
     Node = 1<<1,
-    File = 1<<2,
-    Function = 1<<3,
-    Topics = 1<<4,
-    Default = Message | Node | File | Function | Topics,
+    Location = 1<<2,
+    Topics = 1<<3,
+    Default = Message | Node | Location | Topics,
   };
   void setFieldMask(uint32_t field_mask);
   uint32_t getFieldMask() { return field_mask_; }

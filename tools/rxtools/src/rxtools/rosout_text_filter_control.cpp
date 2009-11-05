@@ -42,8 +42,7 @@ RosoutTextFilterControl::RosoutTextFilterControl(wxWindow* parent, const RosoutT
   uint32_t field_mask = filter_->getFieldMask();
   message_->SetValue(field_mask & RosoutTextFilter::Message);
   node_->SetValue(field_mask & RosoutTextFilter::Node);
-  file_->SetValue(field_mask & RosoutTextFilter::File);
-  function_->SetValue(field_mask & RosoutTextFilter::Function);
+  location_->SetValue(field_mask & RosoutTextFilter::Location);
   topics_->SetValue(field_mask & RosoutTextFilter::Topics);
 
   include_exclude_->SetSelection(filter_->getFilterType());
@@ -122,29 +121,15 @@ void RosoutTextFilterControl::onNode( wxCommandEvent& event )
   checkValid();
 }
 
-void RosoutTextFilterControl::onFile( wxCommandEvent& event )
+void RosoutTextFilterControl::onLocation( wxCommandEvent& event )
 {
   if (event.IsChecked())
   {
-    filter_->addField(RosoutTextFilter::File);
+    filter_->addField(RosoutTextFilter::Location);
   }
   else
   {
-    filter_->removeField(RosoutTextFilter::File);
-  }
-
-  checkValid();
-}
-
-void RosoutTextFilterControl::onFunction( wxCommandEvent& event )
-{
-  if (event.IsChecked())
-  {
-    filter_->addField(RosoutTextFilter::Function);
-  }
-  else
-  {
-    filter_->removeField(RosoutTextFilter::Function);
+    filter_->removeField(RosoutTextFilter::Location);
   }
 
   checkValid();

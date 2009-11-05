@@ -53,8 +53,7 @@ protected:
   virtual void onText( wxCommandEvent& event );
   virtual void onMessage( wxCommandEvent& event );
   virtual void onNode( wxCommandEvent& event );
-  virtual void onFile( wxCommandEvent& event );
-  virtual void onFunction( wxCommandEvent& event );
+  virtual void onLocation( wxCommandEvent& event );
   virtual void onTopics( wxCommandEvent& event );
 
 private:

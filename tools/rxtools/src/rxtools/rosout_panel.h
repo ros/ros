@@ -53,7 +53,6 @@ class wxTimer;
 class wxTimerEvent;
 class wxAuiNotebook;
 class wxRichTextCtrl;
-class wxCollapsiblePaneEvent;
 class wxScrolledWindow;
 class wxSizer;
 class wxBitmapButton;
@@ -163,19 +162,12 @@ protected:
    * \brief (wx callback) Called when the "Clear" button is pressed
    */
   virtual void onClear(wxCommandEvent& event);
-  /**
-   * \brief (wx callback) Called when the "Filters..." button is pressed
-   */
-  virtual void onFilters(wxCommandEvent& event);
-
-  virtual void onSize( wxSizeEvent& event );
 
   /**
    * \brief (wx callback) Called every 100ms so we can process new messages
    */
   void onProcessTimer(wxTimerEvent& evt);
 
-  void onFiltersCollapseStateChanged(wxCollapsiblePaneEvent& evt);
   void onAddFilterPressed(wxCommandEvent& event);
   void onFilterEnableChecked(wxCommandEvent& event);
   void onFilterDelete(wxCommandEvent& event);

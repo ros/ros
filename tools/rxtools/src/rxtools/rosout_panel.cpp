@@ -420,25 +420,11 @@ void RosoutPanel::onProcessTimer(wxTimerEvent& evt)
   //PRINT_STUFF("onProcessTimer");
 }
 
-void RosoutPanel::onSize(wxSizeEvent& event)
-{
-  event.Skip();
-}
-
 void RosoutPanel::onAddFilterPressed(wxCommandEvent& event)
 {
   RosoutTextFilterPtr filter(new RosoutTextFilter);
   RosoutTextFilterControl* control = new RosoutTextFilterControl(filters_window_, filter);
   addFilter(filter, control);
-}
-
-void RosoutPanel::onFiltersCollapseStateChanged(wxCollapsiblePaneEvent& evt)
-{
-  table_->preItemChanges();
-
-  Layout();
-
-  table_->postItemChanges();
 }
 
 void RosoutPanel::onClear(wxCommandEvent& event)
@@ -610,11 +596,6 @@ void RosoutPanel::onSetup(wxCommandEvent& evt)
     setTopic(dialog.getTopic());
     setBufferSize(dialog.getBufferSize());
   }
-}
-
-void RosoutPanel::onFilters(wxCommandEvent& event)
-{
-
 }
 
 void RosoutPanel::setBufferSize(uint32_t size)

@@ -189,14 +189,14 @@ bool RosoutTextFilter::doFilter(const roslib::LogConstPtr& msg) const
     match = match || filterString(msg->name);
   }
 
-  if (field_mask_ & File)
+  if (field_mask_ & Location)
   {
-    match = match || filterString(msg->file);
-  }
-
-  if (field_mask_ & Function)
-  {
-    match = match || filterString(msg->function);
+    if (!match)
+    {
+      std::stringstream ss;
+      ss << msg->file << ":" << msg->function << ":" << msg->line;
+      match = match || filterString(ss.str());
+    }
   }
 
   if (field_mask_ & Topics)

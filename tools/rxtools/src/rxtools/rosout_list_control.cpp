@@ -62,15 +62,9 @@ RosoutListControl::RosoutListControl(wxWindow* parent, wxWindowID id, const wxPo
   item.SetText(wxT("Topics"));
   item.SetWidth(200);
   InsertColumn(columns::Topics, item);
-  item.SetText(wxT("File"));
-  item.SetWidth(200);
-  InsertColumn(columns::File, item);
-  item.SetText(wxT("Line"));
-  item.SetWidth(200);
-  InsertColumn(columns::Line, item);
-  item.SetText(wxT("Function"));
-  item.SetWidth(200);
-  InsertColumn(columns::Function, item);
+  item.SetText(wxT("Location"));
+  item.SetWidth(600);
+  InsertColumn(columns::Location, item);
 
 
   wxImageList* image_list = new wxImageList(16, 16);
@@ -242,19 +236,11 @@ wxString RosoutListControl::OnGetItemText(long item, long column) const
 
     return wxString::FromAscii(ss.str().c_str());
   }
-  case columns::File:
-  {
-    return wxString::FromAscii(message->file.c_str());
-  }
-  case columns::Line:
+  case columns::Location:
   {
     wxString str;
-    str << message->line;
+    str << wxString::FromAscii(message->file.c_str()) << wxT(":") << wxString::FromAscii(message->function.c_str()) << wxT(":") << message->line;
     return str;
-  }
-  case columns::Function:
-  {
-    return wxString::FromAscii(message->function.c_str());
   }
   case columns::Node:
   {

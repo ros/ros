@@ -382,7 +382,8 @@ class ROSHandler(XmlRpcHandler):
     @apivalidate([])
     def getSubscriptions(self, caller_id):
         """Retrieve a list of topics that this node subscribes to
-        @param caller_id str: ROS caller id    
+        @param caller_id: ROS caller id    
+        @type  caller_id: str
         @return [int, str, [ [topic1, topicType1]...[topicN, topicTypeN]]]: list of topics this node subscribes to
         """
         return 1, "subscriptions", get_topic_manager().get_subscriptions()
@@ -677,8 +678,8 @@ class ROSMasterHandler(ROSHandler):
             1, parameterValue should be ignored. If key is a namespace,
             the return value will be a dictionary, where each key is a
             parameter in that namespace. Sub-namespaces are also
-            represented as dictionaries.  @rtype: [int, str,
-            XMLRPCLegalValue]
+            represented as dictionaries.
+        @rtype: [int, str, XMLRPCLegalValue]
         """
         try:
             key = resolve_name(key, caller_id)
@@ -710,10 +711,9 @@ class ROSMasterHandler(ROSHandler):
 
         @param caller_id str: ROS caller id
         @type  caller_id: str
-        @param key: parameter to lookup. If key is a namespace,
-        getParam() will return a parameter tree.
+        @param key: parameter key to search for.
         @type  key: str
-        @return: [code, statusMessage, foundKey]. If code is not 1, parameterValue should be
+        @return: [code, statusMessage, foundKey]. If code is not 1, foundKey should be
             ignored. 
         @rtype: [int, str, str]
         """
@@ -760,11 +760,11 @@ class ROSMasterHandler(ROSHandler):
         @type  caller_id: str
         @param key: parameter to lookup.
         @type  key: str
-        @param str: API URI for paramUpdate callbacks.
+        @param caller_api: API URI for paramUpdate callbacks.
         @type  caller_api: str
-        @return: [code, statusMessage, numUnsubscribed]. If code is not
+        @return: [code, statusMessage, numUnsubscribed]. 
            If numUnsubscribed is zero it means that the caller was not subscribed to the parameter.
-        @rtype: [int, str, XMLRPCLegalValue]
+        @rtype: [int, str, int]
         """        
         key = resolve_name(key, caller_id)        
         try:
@@ -795,12 +795,16 @@ class ROSMasterHandler(ROSHandler):
             return 1, key, False            
 
     @apivalidate([])
-    ## Get list of all parameter names stored on this server.
-    ## This does not adjust parameter names for caller's scope.
-    ## @param self
-    ## @param caller_id str: ROS caller id    
-    ## @return [int, str, [str]]: [code, statusMessage, parameterNameList]
     def getParamNames(self, caller_id):
+        """
+        Get list of all parameter names stored on this server.
+        This does not adjust parameter names for caller's scope.
+        
+        @param caller_id: ROS caller id    
+        @type  caller_id: str
+        @return: [code, statusMessage, parameterNameList]
+        @rtype: [int, str, [str]]
+        """
         return 1, "Parameter names", self.param_server.get_param_names()
             
     ##################################################################################
@@ -911,8 +915,8 @@ class ROSMasterHandler(ROSHandler):
         @type  caller_id: str
         @param service: fully-qualified name of service to lookup.
         @type: service: str
-        @return (int, str, str): (code, message, serviceUrl). service URL is provides
-           and address and port of the service.  Fails if there is no provider.
+        @return (int, str, str): (code, message, serviceUrl). service URL is provider's
+           ROSRPC URI with address and port.  Fails if there is no provider.
         """
         try:
             self.ps_lock.acquire()
@@ -970,7 +974,7 @@ class ROSMasterHandler(ROSHandler):
         @type  caller_api: str
         @return: (code, message, publishers). Publishers is a list of XMLRPC API URIs
            for nodes currently publishing the specified topic.
-        @rtype: (int, str, list(str))
+        @rtype: (int, str, [str])
         """
         #NOTE: subscribers do not get to set topic type
         try:
@@ -992,8 +996,8 @@ class ROSMasterHandler(ROSHandler):
         @param topic: Fully-qualified name of topic to unregister.
         @type  topic: str
         @param caller_api: API URI of service to unregister. Unregistration will only occur if current
-        @type  caller_api: str
            registration matches.    
+        @type  caller_api: str
         @return: (code, statusMessage, numUnsubscribed). 
           If numUnsubscribed is zero it means that the caller was not registered as a subscriber.
           The call still succeeds as the intended final state is reached.

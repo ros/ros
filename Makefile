@@ -1,7 +1,6 @@
 all:
 	@if [ ! $(ROS_ROOT) ]; then echo "Please set ROS_ROOT first"; false; fi
 	cd tools/rospack && make
-	cd core/rosbuild && make
 	@if test -z `which rospack`; then echo "Please add ROS_ROOT/bin to PATH"; false; fi
 	cd tools/rosdep && make
 	cd 3rdparty/gtest && make
@@ -33,26 +32,21 @@ clean:
 	make -C tools/rosdep clean
 	make -C test/rostest clean
 	make -C tools/roslaunch clean
-	make -C core/rosbuild clean
 	rm -f `find . -name *.pyc`
 
 clean-everything:
 	cd tools/rospack && make
-	cd core/rosbuild && make
 	@for i in `rospack list-names` ; do  if [ $$i = rospack ] ; then continue; fi; echo "cleaning $$i"; cd `rospack find $$i` && make clean; done
 	cd tools/rospack && make clean
 
 wipe-everything:
 	cd tools/rospack && make
-	cd core/rosbuild && make
 	@for i in `rospack list-names` ; do  if [ $$i = rospack ] ; then continue; fi; echo "wiping $$i"; cd `rospack find $$i` && make wipe; done
 	rm -f rosmakeall-* stderr.txt stdout.txt rosmakeall-profile build-failure test-failure
 	cd tools/rospack && make clean
-	cd core/rosbuild && make clean
 
 minimal:
 	cd tools/rospack && make
-	cd core/rosbuild && make
 	cd tools/rosdep && make
 	cd 3rdparty/gtest && make
 	rosmake -v genmsg_cpp

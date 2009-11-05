@@ -125,7 +125,7 @@ def createXMLRunner(test_pkg, test_name, results_file=None, is_rostest=False):
     # determine output xml file name
     if not results_file:
         results_file = xmlResultsFile(test_pkg, test_name, is_rostest)
-    test_dir = os.path.dirname(results_file)
+    test_dir = os.path.abspath(os.path.dirname(results_file))
     if not os.path.exists(test_dir):
         os.makedirs(test_dir) #NOTE: this will pass up an error exception if it fails
     elif os.path.isfile(test_dir):

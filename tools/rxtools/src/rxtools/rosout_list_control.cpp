@@ -29,6 +29,8 @@
 
 #include "rosout_list_control.h"
 #include "rosout_generated.h"
+#include "rosout_panel.h"
+#include "rosout_text_filter.h"
 
 #include <ros/assert.h>
 
@@ -77,18 +79,17 @@ RosoutListControl::RosoutListControl(wxWindow* parent, wxWindowID id, const wxPo
   AssignImageList(image_list, wxIMAGE_LIST_SMALL);
 
   Connect(wxEVT_COMMAND_LIST_ITEM_ACTIVATED, wxListEventHandler(RosoutListControl::onItemActivated), NULL, this);
+  Connect(wxEVT_COMMAND_LIST_ITEM_RIGHT_CLICK, wxListEventHandler(RosoutListControl::onItemRightClick), NULL, this);
   Connect(wxEVT_COMMAND_LIST_ITEM_SELECTED, wxListEventHandler(RosoutListControl::onItemSelected), NULL, this);
 }
 
 RosoutListControl::~RosoutListControl()
 {
-  Disconnect(wxEVT_COMMAND_LIST_ITEM_ACTIVATED, wxListEventHandler(RosoutListControl::onItemActivated), NULL, this);
-  Disconnect(wxEVT_COMMAND_LIST_ITEM_SELECTED, wxListEventHandler(RosoutListControl::onItemSelected), NULL, this);
 }
 
-void RosoutListControl::setMessageFunction(const MessageFunc& func)
+void RosoutListControl::setModel(RosoutPanel* model)
 {
-  message_func_ = func;
+  model_ = model;
 }
 
 wxString RosoutListControl::getSeverityText(const roslib::LogConstPtr& message) const
@@ -112,9 +113,9 @@ wxString RosoutListControl::getSeverityText(const roslib::LogConstPtr& message) 
 
 int RosoutListControl::OnGetItemImage(long item) const
 {
-  ROS_ASSERT(message_func_ != 0);
+  ROS_ASSERT(model_);
 
-  roslib::LogConstPtr message = message_func_(item);
+  roslib::LogConstPtr message = model_->getMessageByIndex(item);
   if (!message)
   {
     return -1;
@@ -140,9 +141,9 @@ int RosoutListControl::OnGetItemImage(long item) const
 wxListItemAttr * RosoutListControl::OnGetItemAttr(long item) const
 {
 #if 0
-  ROS_ASSERT( message_func_ != 0 );
+  ROS_ASSERT(model_);
 
-  const roslib::Log& message = message_func_( item );
+  const roslib::Log& message = model_->getMessageByIndex(item);
 
   switch( message->level )
   {
@@ -171,9 +172,9 @@ wxListItemAttr * RosoutListControl::OnGetItemAttr(long item) const
 
 wxString RosoutListControl::OnGetItemText(long item, long column) const
 {
-  ROS_ASSERT(message_func_ != 0);
+  ROS_ASSERT(model_);
 
-  roslib::LogConstPtr message = message_func_(item);
+  roslib::LogConstPtr message = model_->getMessageByIndex(item);
   if (!message)
   {
     return wxString();
@@ -254,9 +255,9 @@ wxString RosoutListControl::OnGetItemText(long item, long column) const
 
 void RosoutListControl::onItemActivated(wxListEvent& event)
 {
-  ROS_ASSERT(message_func_ != 0);
+  ROS_ASSERT(model_);
 
-  roslib::LogConstPtr message = message_func_(event.GetIndex());
+  roslib::LogConstPtr message = model_->getMessageByIndex(event.GetIndex());
   if (!message)
   {
     return;
@@ -265,7 +266,7 @@ void RosoutListControl::onItemActivated(wxListEvent& event)
   std::stringstream ss;
   ss << "Node: " << message->name << std::endl;
   ss << "Time: " << message->header.stamp << std::endl;
-  ss << "Severity: " << (const char*) getSeverityText(message).fn_str() << std::endl;
+  ss << "Severity: " << (const char*) getSeverityText(message).char_str() << std::endl;
   ss << "Message:\n" << message->msg << "\n\n";
   ss << "File: " << message->file << std::endl;
   ss << "Line: " << message->line << std::endl;
@@ -282,6 +283,183 @@ void RosoutListControl::onItemActivated(wxListEvent& event)
   TextboxDialog* dialog = new TextboxDialog(this, wxID_ANY);
   dialog->text_control_->SetValue(wxString::FromAscii(ss.str().c_str()));
   dialog->Show();
+}
+
+void RosoutListControl::onExcludeLocation(wxCommandEvent& event)
+{
+  if (selection_ == -1)
+  {
+    return;
+  }
+
+  roslib::LogConstPtr message = model_->getMessageByIndex(selection_);
+  if (!message)
+  {
+    return;
+  }
+
+  RosoutTextFilterPtr filter = model_->createTextFilter();
+  filter->setFilterType(RosoutTextFilter::Exclude);
+  filter->setFieldMask(RosoutTextFilter::Location);
+  std::stringstream ss;
+  ss << "^" << message->file << ":" << message->function << ":" << message->line << "$";
+  filter->setText(ss.str());
+  filter->setUseRegex(true);
+}
+
+void RosoutListControl::onExcludeNode(wxCommandEvent& event)
+{
+  if (selection_ == -1)
+  {
+    return;
+  }
+
+  roslib::LogConstPtr message = model_->getMessageByIndex(selection_);
+  if (!message)
+  {
+    return;
+  }
+
+  RosoutTextFilterPtr filter = model_->createTextFilter();
+  filter->setFilterType(RosoutTextFilter::Exclude);
+  filter->setFieldMask(RosoutTextFilter::Node);
+  filter->setText("^" + message->name + "$");
+  filter->setUseRegex(true);
+}
+
+void RosoutListControl::onExcludeMessage(wxCommandEvent& event)
+{
+  if (selection_ == -1)
+  {
+    return;
+  }
+
+  roslib::LogConstPtr message = model_->getMessageByIndex(selection_);
+  if (!message)
+  {
+    return;
+  }
+
+  RosoutTextFilterPtr filter = model_->createTextFilter();
+  filter->setFilterType(RosoutTextFilter::Exclude);
+  filter->setFieldMask(RosoutTextFilter::Message);
+  filter->setText(message->msg);
+}
+
+void RosoutListControl::onIncludeLocation(wxCommandEvent& event)
+{
+  if (selection_ == -1)
+  {
+    return;
+  }
+
+  roslib::LogConstPtr message = model_->getMessageByIndex(selection_);
+  if (!message)
+  {
+    return;
+  }
+
+  RosoutTextFilterPtr filter = model_->createTextFilter();
+  filter->setFilterType(RosoutTextFilter::Include);
+  filter->setFieldMask(RosoutTextFilter::Location);
+  std::stringstream ss;
+  ss << "^" << message->file << ":" << message->function << ":" << message->line << "$";
+  filter->setText(ss.str());
+  filter->setUseRegex(true);
+}
+
+void RosoutListControl::onIncludeNode(wxCommandEvent& event)
+{
+  if (selection_ == -1)
+  {
+    return;
+  }
+
+  roslib::LogConstPtr message = model_->getMessageByIndex(selection_);
+  if (!message)
+  {
+    return;
+  }
+
+  RosoutTextFilterPtr filter = model_->createTextFilter();
+  filter->setFilterType(RosoutTextFilter::Include);
+  filter->setFieldMask(RosoutTextFilter::Node);
+  filter->setText("^" + message->name + "$");
+  filter->setUseRegex(true);
+}
+
+void RosoutListControl::onIncludeMessage(wxCommandEvent& event)
+{
+  if (selection_ == -1)
+  {
+    return;
+  }
+
+  roslib::LogConstPtr message = model_->getMessageByIndex(selection_);
+  if (!message)
+  {
+    return;
+  }
+
+  RosoutTextFilterPtr filter = model_->createTextFilter();
+  filter->setFilterType(RosoutTextFilter::Include);
+  filter->setFieldMask(RosoutTextFilter::Message);
+  filter->setText(message->msg);
+}
+
+void RosoutListControl::onItemRightClick(wxListEvent& event)
+{
+  if (selection_ == -1)
+  {
+    return;
+  }
+
+  ROS_ASSERT(model_);
+
+  roslib::LogConstPtr message = model_->getMessageByIndex(event.GetIndex());
+  if (!message)
+  {
+    return;
+  }
+
+  wxMenu* menu = new wxMenu(wxT(""));
+  wxMenu* exclude_menu = new wxMenu(wxT(""));
+  wxMenu* include_menu = new wxMenu(wxT(""));
+  wxMenuItem* item = 0;
+
+  // Setup the include menu
+  {
+    if (!message->file.empty())
+    {
+      item = include_menu->Append(wxID_ANY, wxT("This Location"));
+      Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeLocation), NULL, this);
+    }
+
+    item = include_menu->Append(wxID_ANY, wxT("This Node"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeNode), NULL, this);
+    item = include_menu->Append(wxID_ANY, wxT("This Message"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeMessage), NULL, this);
+
+    menu->AppendSubMenu(include_menu, wxT("Include"));
+  }
+
+  // Setup the exclude menu
+  {
+    if (!message->file.empty())
+    {
+      item = exclude_menu->Append(wxID_ANY, wxT("This Location"));
+      Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeLocation), NULL, this);
+    }
+
+    item = exclude_menu->Append(wxID_ANY, wxT("This Node"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeNode), NULL, this);
+    item = exclude_menu->Append(wxID_ANY, wxT("This Message"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeMessage), NULL, this);
+
+    menu->AppendSubMenu(exclude_menu, wxT("Exclude"));
+  }
+
+  PopupMenu(menu);
 }
 
 void RosoutListControl::onItemSelected(wxListEvent& event)
@@ -306,7 +484,7 @@ void RosoutListControl::preItemChanges()
     wxRect rect;
     if (GetItemRect(0, rect))
     {
-      // For some reason this is always returning -1 right now, so we default to 19 (above)
+      // For some reason this is always returning -1 right now, so we default to 20 (above)
       if (rect.GetHeight() > 0)
       {
         item_height = rect.GetHeight();

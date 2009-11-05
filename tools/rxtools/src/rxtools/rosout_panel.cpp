@@ -73,7 +73,7 @@ RosoutPanel::RosoutPanel(wxWindow* parent)
 
   Connect(process_timer_->GetId(), wxEVT_TIMER, wxTimerEventHandler(RosoutPanel::onProcessTimer), NULL, this);
 
-  table_->setMessageFunction(boost::bind(&RosoutPanel::getMessageByIndex, this, _1));
+  table_->setModel(this);
 
   setTopic("/rosout_agg");
   setEnabled(true);
@@ -336,7 +336,7 @@ void RosoutPanel::resizeFiltersPane()
   filters_window_->Layout();
 
   wxSize sizer_size = filters_window_->GetSizer()->GetMinSize();
-  if (0)//(sizer_size.GetHeight() > 150)
+  if (sizer_size.GetHeight() > 150)
   {
     filters_window_->SetMinSize(wxSize(-1, 150));
     filters_window_->GetSizer()->FitInside(filters_window_);
@@ -420,11 +420,18 @@ void RosoutPanel::onProcessTimer(wxTimerEvent& evt)
   //PRINT_STUFF("onProcessTimer");
 }
 
-void RosoutPanel::onAddFilterPressed(wxCommandEvent& event)
+RosoutTextFilterPtr RosoutPanel::createTextFilter()
 {
   RosoutTextFilterPtr filter(new RosoutTextFilter);
   RosoutTextFilterControl* control = new RosoutTextFilterControl(filters_window_, filter);
   addFilter(filter, control);
+
+  return filter;
+}
+
+void RosoutPanel::onAddFilterPressed(wxCommandEvent& event)
+{
+  createTextFilter();
 }
 
 void RosoutPanel::onClear(wxCommandEvent& event)

@@ -30,12 +30,21 @@
 #include "rosout_text_filter_control.h"
 #include "rosout_text_filter.h"
 
+#include <boost/bind.hpp>
+
 namespace rxtools
 {
 
 RosoutTextFilterControl::RosoutTextFilterControl(wxWindow* parent, const RosoutTextFilterPtr& filter)
 : RosoutTextFilterControlBase(parent, wxID_ANY)
 , filter_(filter)
+{
+  filter_changed_connection_ = filter_->getChangedSignal().connect(boost::bind(&RosoutTextFilterControl::read, this));
+
+  read();
+}
+
+void RosoutTextFilterControl::read()
 {
   regex_->SetValue(filter_->getUseRegex());
 
@@ -46,6 +55,8 @@ RosoutTextFilterControl::RosoutTextFilterControl(wxWindow* parent, const RosoutT
   topics_->SetValue(field_mask & RosoutTextFilter::Topics);
 
   include_exclude_->SetSelection(filter_->getFilterType());
+
+  text_->ChangeValue(wxString::FromAscii(filter_->getText().c_str()));
 
   setIncludeExcludeColor();
 }
@@ -73,7 +84,9 @@ void RosoutTextFilterControl::checkValid()
 
 void RosoutTextFilterControl::onIncludeExclude( wxCommandEvent& event )
 {
+  filter_changed_connection_.block();
   filter_->setFilterType((RosoutTextFilter::FilterType)include_exclude_->GetSelection());
+  filter_changed_connection_.unblock();
 
   checkValid();
   setIncludeExcludeColor();
@@ -81,20 +94,25 @@ void RosoutTextFilterControl::onIncludeExclude( wxCommandEvent& event )
 
 void RosoutTextFilterControl::onRegex( wxCommandEvent& event )
 {
+  filter_changed_connection_.block();
   filter_->setUseRegex(event.IsChecked());
+  filter_changed_connection_.unblock();
 
   checkValid();
 }
 
 void RosoutTextFilterControl::onText( wxCommandEvent& event )
 {
+  filter_changed_connection_.block();
   filter_->setText((const char*)text_->GetValue().char_str());
+  filter_changed_connection_.unblock();
 
   checkValid();
 }
 
 void RosoutTextFilterControl::onMessage( wxCommandEvent& event )
 {
+  filter_changed_connection_.block();
   if (event.IsChecked())
   {
     filter_->addField(RosoutTextFilter::Message);
@@ -103,12 +121,14 @@ void RosoutTextFilterControl::onMessage( wxCommandEvent& event )
   {
     filter_->removeField(RosoutTextFilter::Message);
   }
+  filter_changed_connection_.unblock();
 
   checkValid();
 }
 
 void RosoutTextFilterControl::onNode( wxCommandEvent& event )
 {
+  filter_changed_connection_.block();
   if (event.IsChecked())
   {
     filter_->addField(RosoutTextFilter::Node);
@@ -117,12 +137,14 @@ void RosoutTextFilterControl::onNode( wxCommandEvent& event )
   {
     filter_->removeField(RosoutTextFilter::Node);
   }
+  filter_changed_connection_.unblock();
 
   checkValid();
 }
 
 void RosoutTextFilterControl::onLocation( wxCommandEvent& event )
 {
+  filter_changed_connection_.block();
   if (event.IsChecked())
   {
     filter_->addField(RosoutTextFilter::Location);
@@ -131,12 +153,14 @@ void RosoutTextFilterControl::onLocation( wxCommandEvent& event )
   {
     filter_->removeField(RosoutTextFilter::Location);
   }
+  filter_changed_connection_.unblock();
 
   checkValid();
 }
 
 void RosoutTextFilterControl::onTopics( wxCommandEvent& event )
 {
+  filter_changed_connection_.block();
   if (event.IsChecked())
   {
     filter_->addField(RosoutTextFilter::Topics);
@@ -145,6 +169,7 @@ void RosoutTextFilterControl::onTopics( wxCommandEvent& event )
   {
     filter_->removeField(RosoutTextFilter::Topics);
   }
+  filter_changed_connection_.unblock();
 
   checkValid();
 }

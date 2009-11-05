@@ -63,6 +63,9 @@ class wxPanel;
 namespace rxtools
 {
 
+class RosoutTextFilter;
+typedef boost::shared_ptr<RosoutTextFilter> RosoutTextFilterPtr;
+
 class RosoutSeverityFilter;
 typedef boost::shared_ptr<RosoutSeverityFilter> RosoutSeverityFilterPtr;
 
@@ -146,8 +149,14 @@ public:
    */
   RosoutMessageSummary getMessageSummary(double duration) const;
 
-  void addFilter(const RosoutFilterPtr& filter, wxWindow* control);
-  void removeFilter(const RosoutFilterPtr& filter);
+  /**
+   * \brief Get a message by index in our ordered message list.  Used by the list control.
+   * @param index Index of the message to return
+   * @return The message
+   */
+  roslib::LogConstPtr getMessageByIndex(uint32_t index) const;
+
+  RosoutTextFilterPtr createTextFilter();
 
 protected:
   /**
@@ -219,19 +228,15 @@ protected:
   void refilter();
 
   /**
-   * \brief Get a message by index in our ordered message list.  Used by the list control.
-   * @param index Index of the message to return
-   * @return The message
-   */
-  roslib::LogConstPtr getMessageByIndex(uint32_t index) const;
-
-  /**
    * \brief Remove The oldest message
    */
   void popMessage();
 
   void resizeFiltersPane();
   void updateFilterBackgrounds();
+
+  void addFilter(const RosoutFilterPtr& filter, wxWindow* control);
+  void removeFilter(const RosoutFilterPtr& filter);
 
   bool enabled_; ///< Are we enabled?
   std::string topic_; ///< The topic we're listening on (or will listen on once we're enabled)

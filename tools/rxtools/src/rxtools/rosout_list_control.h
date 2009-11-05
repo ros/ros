@@ -40,6 +40,8 @@
 namespace rxtools
 {
 
+class RosoutPanel;
+
 namespace columns
 {
 enum Column
@@ -74,12 +76,7 @@ public:
    */
   virtual ~RosoutListControl();
 
-  typedef boost::function<roslib::LogConstPtr(uint32_t)> MessageFunc;
-  /**
-   * \brief Set the function used to retrieve a message at a given index
-   * @param func The function to use
-   */
-  void setMessageFunction(const MessageFunc& func);
+  void setModel(RosoutPanel* model);
 
   /**
    * \brief Get a text representation of the severity level of a message
@@ -106,6 +103,14 @@ protected:
   // Callbacks
   void onItemActivated(wxListEvent& event);
   void onItemSelected(wxListEvent& event);
+  void onItemRightClick(wxListEvent& event);
+
+  void onIncludeLocation(wxCommandEvent& event);
+  void onIncludeNode(wxCommandEvent& event);
+  void onIncludeMessage(wxCommandEvent& event);
+  void onExcludeLocation(wxCommandEvent& event);
+  void onExcludeNode(wxCommandEvent& event);
+  void onExcludeMessage(wxCommandEvent& event);
 
   // overrides from wxListCtrl
   virtual wxListItemAttr * OnGetItemAttr(long item) const;
@@ -114,7 +119,7 @@ protected:
 
   mutable wxListItemAttr attr_;
 
-  MessageFunc message_func_;
+  RosoutPanel* model_;
 
   int32_t error_image_id_;
   int32_t warning_image_id_;

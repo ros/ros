@@ -32,6 +32,7 @@
 
 #include "rosout_generated.h"
 #include <boost/shared_ptr.hpp>
+#include <boost/signals/connection.hpp>
 
 namespace rxtools
 {
@@ -47,6 +48,7 @@ public:
 protected:
   void checkValid();
   void setIncludeExcludeColor();
+  void read();
 
   virtual void onIncludeExclude( wxCommandEvent& event );
   virtual void onRegex( wxCommandEvent& event );
@@ -58,6 +60,7 @@ protected:
 
 private:
   RosoutTextFilterPtr filter_;
+  boost::signals::connection filter_changed_connection_;
 };
 
 }

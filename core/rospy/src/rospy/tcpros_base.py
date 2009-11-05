@@ -272,8 +272,13 @@ class TCPROSServer(object):
             else:
                 err_msg = 'no topic or service name detected'
             if err_msg:
-                write_ros_handshake_header(sock, {'error' : err_msg})
-                raise TransportInitError("Could not process inbound connection: "+err_msg)
+                # shutdown race condition: nodes that come up and down quickly can receive connections during teardown
+                if not rospy.core.is_shutdown():
+                    write_ros_handshake_header(sock, {'error' : err_msg})
+                    raise TransportInitError("Could not process inbound connection: "+err_msg+str(header))
+                else:
+                    write_ros_handshake_header(sock, {'error' : 'node shutting down'})
+                    return
         except rospy.exceptions.TransportInitError, e:
             logwarn(str(e))
             if sock is not None:

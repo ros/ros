@@ -400,7 +400,7 @@ def _fill_message_args(msg, msg_args, keys, prefix=''):
     @rtype: [args]
     @raise ROSMessageException: if not enough message arguments to fill message
     """
-    if not isinstance(msg, Message) and not isinstance(msg, roslib.rostime.TVal):
+    if not isinstance(msg, (Message, roslib.rostime.TVal)):
         raise ROSMessageException("msg must be a Message instance: %s"%msg)
 
     if type(msg_args) == dict:
@@ -416,9 +416,9 @@ def _fill_message_args(msg, msg_args, keys, prefix=''):
         #print "ACTIVE SLOTS",msg.__slots__
         
         if len(msg_args) > len(msg.__slots__):
-            raise ROSMessageException("Too many arguments for field [%s %s]: %s"%(prefix, msg, msg_args))
+            raise ROSMessageException("Too many arguments:\n * Given: %s\n * Expected: %s"%(msg_args, msg.__slots__))
         elif len(msg_args) < len(msg.__slots__):
-            raise ROSMessageException("Not enough arguments for field [%s %s]: %s"%(prefix, msg, msg_args))
+            raise ROSMessageException("Not enough arguments:\n * Given: %s\n * Expected: %s"%(msg_args, msg.__slots__))
         
         for f, v in itertools.izip(msg.__slots__, msg_args):
             _fill_val(msg, f, v, keys, prefix)

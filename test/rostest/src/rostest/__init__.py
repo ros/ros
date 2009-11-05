@@ -34,38 +34,47 @@
 
 ## Interface for using rostest from other Python code.
 
-## \defgroup clientapi Client API
+XML_OUTPUT_FLAG='--gtest_output=xml:' #use gtest-compatible flag
 
-import os
-import sys
-import unittest
-
-from rostestutil import createXMLRunner, getErrors, printSummary, xmlResultsFile, XML_OUTPUT_FLAG
-import xmlrunner
-
-## \ingroup clientapi Client API
-## predicate to check whether or not master think subscriber_id
-## subscribes to topic
-## @return bool: True if still register as a subscriber
 def is_subscriber(topic, subscriber_id):
+    """
+    Predicate to check whether or not master think subscriber_id
+    subscribes to topic.
+    @return: True if still register as a subscriber
+    @rtype: bool
+    """
     import roslib.scriptutil as scriptutil
     return scriptutil.is_subscriber(topic, subscriber_id)
 
-## \ingroup clientapi Client API
-## predicate to check whether or not master think publisher_id
-## publishes topic
-## @return bool: True if still register as a publisher
 def is_publisher(topic, publisher_id):
+    """
+    Predicate to check whether or not master think publisher_id
+    publishes topic.
+    @return: True if still register as a publisher
+    @rtype: bool
+    """    
     import roslib.scriptutil as scriptutil
     return scriptutil.is_publisher(topic, publisher_id)
 
-## \ingroup clientapi Client API
-## @param package str: name of package that test is in
-## @param test_name str: name of test that is being run
-## @param test unittest.TestCase: test class 
-## @param sysargs list: command-line argus, usually sys.argv. rostest
-##   will look for the --text and --gtest_output parameters
-def rosrun(package, test_name, test, sysargs=sys.argv):
+def rosrun(package, test_name, test, sysargs=None):
+    """
+    Run a rostest/unittest-based integration test.
+    
+    @param package: name of package that test is in
+    @type  package: str
+    @param test_name: name of test that is being run
+    @type  test_name: str
+    @param test: test class 
+    @type  test: unittest.TestCase
+    @param sysargs: command-line args. If not specified, this defaults to sys.argv. rostest
+      will look for the --text and --gtest_output parameters
+    @type  sysargs: list
+    """
+    if sysargs is None:
+        # lazy-init sys args
+        import sys
+        sysargs = sys.argv
+        
     #parse sysargs
     result_file = None
     for arg in sysargs:
@@ -75,9 +84,12 @@ def rosrun(package, test_name, test, sysargs=sys.argv):
     coverage_mode = '--cov' in sysargs
     if coverage_mode:
         _start_coverage(package)
-    
-    # lazy-import so that we don't load rospy unless necessary
+
+    # lazy-import so that these don't affect coverage tests
+    from rostestutil import createXMLRunner, printSummary
+    import unittest
     import rospy
+    
     suite = unittest.TestLoader().loadTestsFromTestCase(test)
     if text_mode:
         result = unittest.TextTestRunner(verbosity=2).run(suite)
@@ -95,11 +107,27 @@ def rosrun(package, test_name, test, sysargs=sys.argv):
 # TODO: rename to rosrun -- migrating name to avoid confusion and enable easy xmlrunner use 
 run = rosrun
 
-## \ingroup clientapi Client API
-## wrapper routine from running python unitttests with xmlrunner. 
-## @param package str: name of ROS package that is running the test
-## @param coverage_packages [str]: list of Python package to compute coverage results for. Defaults to \a package
-def unitrun(package, test_name, test, sysargs=sys.argv, coverage_packages=[]):
+def unitrun(package, test_name, test, sysargs=None, coverage_packages=[]):
+    """
+    Wrapper routine from running python unitttests with
+    JUnit-compatible XML output.  This is meant for unittests that do
+    not not need a running ROS graph (i.e. offline tests only).
+    
+    This enables JUnit-compatible test reporting so that
+    test results can be reported to higher-level tools. 
+    
+    @param package: name of ROS package that is running the test
+    @type  package: str
+    @param coverage_packages: list of Python package to compute coverage results for. Defaults to package
+    @type  coverage_packages: [str]
+    """
+    if sysargs is None:
+        # lazy-init sys args
+        import sys
+        sysargs = sys.argv
+
+    import unittest
+    
     if not coverage_packages:
         coverage_packages = [package]
         
@@ -114,6 +142,10 @@ def unitrun(package, test_name, test, sysargs=sys.argv, coverage_packages=[]):
 
     if coverage_mode:
         _start_coverage(coverage_packages)
+
+    # lazy-import after coverage tests begin
+    from rostestutil import createXMLRunner, printSummary
+        
     suite = unittest.TestLoader().loadTestsFromTestCase(test)
     if text_mode:
         result = unittest.TextTestRunner(verbosity=2).run(suite)

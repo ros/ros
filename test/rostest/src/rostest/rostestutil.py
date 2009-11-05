@@ -43,9 +43,6 @@ import roslib.rosenv
 
 import xmlrunner
 
-## command-line flag for designating XML output destination. 
-XML_OUTPUT_FLAG='--gtest_output=xml:' #use gtest-compatible flag
-
 _errors = None
 def getErrors():
     return _errors

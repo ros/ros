@@ -43,7 +43,7 @@ import roslaunch
 import roslib.packages 
 import roslib.roslogging
 
-from rostestutil import createXMLRunner, printSummary, printRostestSummary, xmlResultsFile, XML_OUTPUT_FLAG, rostest_name_from_path
+from rostestutil import createXMLRunner, printSummary, printRostestSummary, xmlResultsFile, rostest_name_from_path
 
 from rostest_parent import ROSTestLaunchParent
 
@@ -124,6 +124,13 @@ def rostestRunner(test, test_pkg):
             if os.path.exists(test_file):
                 printlog("removing previous test results file [%s]", test_file)
                 os.remove(test_file)
+
+            # TODO: have to redeclare this due to a bug -- this file
+            # needs to be renamed as it aliases the module where the
+            # constant is elsewhere defined. The fix is to rename
+            # rostest.py
+            XML_OUTPUT_FLAG='--gtest_output=xml:' #use gtest-compatible flag
+            
             test.args = "%s %s%s"%(test.args, XML_OUTPUT_FLAG, test_file)
             if _textMode:
                 test.output = 'screen'

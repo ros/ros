@@ -880,3 +880,17 @@ macro(rosbuild_check_for_vm var)
     set(${var} 0)
   endif(_xen_dir)
 endmacro(rosbuild_check_for_vm var)
+
+# Check whether there's an X display.  Intended to use in gating tests that
+# require a display.
+macro(rosbuild_check_for_display var)
+  execute_process(COMMAND "xdpyinfo"
+                  OUTPUT_VARIABLE _dummy
+                  ERROR_VARIABLE _dummy
+                  RESULT_VARIABLE _xdpyinfo_failed)
+  if(_xdpyinfo_failed)
+    set(${var} 0)
+  else(_xdpyinfo_failed)
+    set(${var} 1)
+  endif(_xdpyinfo_failed)
+endmacro(rosbuild_check_for_display)

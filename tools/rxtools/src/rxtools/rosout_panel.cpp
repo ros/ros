@@ -81,38 +81,10 @@ RosoutPanel::RosoutPanel(wxWindow* parent)
   std::string icon_path = ros::package::getPath(ROS_PACKAGE_NAME) + "/icons/";
   delete_filter_bitmap_ = wxBitmap(wxString::FromAscii((icon_path + "delete-filter-16.png").c_str()), wxBITMAP_TYPE_PNG);
 
-  // Set up the filters collapsible pane
-  wxWindow* win = filters_pane_->GetPane();
-
-  // Create the scrollable window that gets managed by the collapsible pane
-  filters_window_ = new wxScrolledWindow(win, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL);
-  filters_window_->EnableScrolling(false, true);
-
-  // Create the collapsible pane's sizer
-  wxBoxSizer* pane_sizer = new wxBoxSizer(wxVERTICAL);
-  pane_sizer->Add(filters_window_, 1, wxEXPAND);
-
-  // Create the filters window sizer.  This sizer contains two other sizers:
-  //  * filters_sizer_ contains all the actual filter controls
-  //  * add_sizer contains the add button, to keep it at the bottom right
-  wxBoxSizer* filters_window_sizer = new wxBoxSizer(wxVERTICAL);
-  filters_window_->SetSizer(filters_window_sizer);
-  filters_window_->SetMaxSize(wxSize(-1, 200));
-  filters_window_->SetScrollRate(-1, 30);
-
-  filters_sizer_ = new wxBoxSizer(wxVERTICAL);
-  filters_window_sizer->Add(filters_sizer_, 0, wxEXPAND);
-
   wxBitmap add_bitmap(wxString::FromAscii((icon_path + "add-16.png").c_str()), wxBITMAP_TYPE_PNG);
-  wxBitmapButton* add_button = new wxBitmapButton(filters_window_, wxID_ANY, add_bitmap);
-  wxBoxSizer* add_sizer = new wxBoxSizer(wxVERTICAL);
-  add_sizer->Add(add_button, 0, wxALIGN_RIGHT);
-  filters_window_sizer->Add(add_sizer, 0, wxALIGN_RIGHT);
+  add_filter_button_->SetBitmapLabel(add_bitmap);
 
-  win->SetSizer(pane_sizer);
-
-  filters_pane_->Connect(wxEVT_COMMAND_COLLPANE_CHANGED, wxCollapsiblePaneEventHandler(RosoutPanel::onFiltersCollapseStateChanged), NULL, this);
-  add_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(RosoutPanel::onAddFilterPressed), NULL, this);
+  add_filter_button_->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(RosoutPanel::onAddFilterPressed), NULL, this);
 
   {
     RosoutSeverityFilterPtr filter(new RosoutSeverityFilter);
@@ -126,9 +98,7 @@ RosoutPanel::RosoutPanel(wxWindow* parent)
     RosoutTextFilterControl* control = new RosoutTextFilterControl(filters_window_, filter);
     addFilter(filter, control);
   }
-  filters_window_->SetMinSize(wxSize(-1, 80));
-
-  filters_pane_->Expand();
+  filters_window_->SetMinSize(wxSize(-1, filters_[0].panel->GetSize().GetHeight() + add_filter_button_->GetSize().GetHeight() + 5));
 }
 
 RosoutPanel::~RosoutPanel()
@@ -291,19 +261,6 @@ void RosoutPanel::updateFilterBackgrounds()
   }
 }
 
-void printSize(const std::string& name, wxSize size)
-{
-  ROS_INFO("%s: %d, %d", name.c_str(), size.GetWidth(), size.GetHeight());
-}
-
-#define PRINT_SIZES(description) \
-  ROS_INFO(description); \
-  printSize("  filters_window_", filters_window_->GetSize()); \
-  printSize("  filters_sizer_", filters_sizer_->GetSize()); \
-  printSize("  filters_pane_", filters_pane_->GetSize()); \
-  printSize("  filters_pane_->GetPane()", filters_pane_->GetPane()->GetSize()); \
-  printSize("  filters_pane_->GetPane()->GetSizer()", filters_pane_->GetPane()->GetSizer()->GetSize());
-
 void RosoutPanel::addFilter(const RosoutFilterPtr& filter, wxWindow* control)
 {
   table_->preItemChanges();
@@ -314,11 +271,17 @@ void RosoutPanel::addFilter(const RosoutFilterPtr& filter, wxWindow* control)
 
   info.panel = new wxPanel(filters_window_, wxID_ANY);
   filters_sizer_->Add(info.panel, 0, wxEXPAND|wxBOTTOM, 1);
+  info.panel->SetPosition(wxPoint(0, info.panel->GetSize().GetHeight() * filters_.size()));
 
   if (filters_.size() % 2 == 0)
   {
     info.panel->SetBackgroundColour(*wxLIGHT_GREY);
     info.control->SetBackgroundColour(*wxLIGHT_GREY);
+  }
+  else
+  {
+    info.panel->SetBackgroundColour(wxNullColour);
+    info.control->SetBackgroundColour(wxNullColour);
   }
 
   control->Reparent(info.panel);
@@ -370,36 +333,18 @@ void RosoutPanel::addFilter(const RosoutFilterPtr& filter, wxWindow* control)
 
 void RosoutPanel::resizeFiltersPane()
 {
-#if 0
   filters_window_->Layout();
-  filters_pane_->GetPane()->GetSizer()->Fit(filters_pane_->GetPane());
-  filters_pane_->Layout();
-#else
-  // Horrible hack because I can't get the subwindows to resize themselves properly otherwise
-  if (filters_pane_->IsExpanded())
-  {
-    filters_pane_->Collapse();
-    filters_pane_->Expand();
-  }
 
   wxSize sizer_size = filters_window_->GetSizer()->GetMinSize();
-  if (sizer_size.GetHeight() > 150)
+  if (0)//(sizer_size.GetHeight() > 150)
   {
     filters_window_->SetMinSize(wxSize(-1, 150));
+    filters_window_->GetSizer()->FitInside(filters_window_);
   }
   else
   {
     filters_window_->SetMinSize(wxSize(-1, sizer_size.GetHeight()));
   }
-
-  if (filters_pane_->IsExpanded())
-  {
-    filters_pane_->Collapse();
-    filters_pane_->Expand();
-  }
-
-  //filters_window_->GetSizer()->FitInside(filters_window_);
-#endif
 
   Layout();
   Refresh();
@@ -431,6 +376,33 @@ void RosoutPanel::onFilterChanged(const RosoutFilter*)
   needs_refilter_ = true;
 }
 
+template<class T>
+void printStuff(const std::string& name, T* win)
+{
+  wxPoint point = win->GetPosition();
+  wxSize size = win->GetSize();
+  ROS_INFO("%s: x: %d, y: %d,      w: %d, h: %d", name.c_str(), point.x, point.y, size.GetWidth(), size.GetHeight());
+}
+
+#define PRINT_STUFF(description) \
+  ROS_INFO(description); \
+  printStuff("  filters_sizer_", filters_sizer_); \
+  printStuff("  filters_window_->GetSizer()", filters_window_->GetSizer()); \
+  printStuff("  filters_window_", filters_window_); \
+  for (size_t i = 0; i < filters_.size(); ++i) \
+  { \
+    { \
+      std::stringstream ss; \
+      ss << "    panel " << i; \
+      printStuff(ss.str(), filters_[i].panel); \
+    } \
+    { \
+      std::stringstream ss; \
+      ss << "    sizer " << i; \
+      printStuff(ss.str(), filters_[i].sizer); \
+    } \
+  }
+
 void RosoutPanel::onProcessTimer(wxTimerEvent& evt)
 {
   callback_queue_.callAvailable(ros::WallDuration());
@@ -444,6 +416,13 @@ void RosoutPanel::onProcessTimer(wxTimerEvent& evt)
     needs_refilter_ = false;
     refilter();
   }
+
+  //PRINT_STUFF("onProcessTimer");
+}
+
+void RosoutPanel::onSize(wxSizeEvent& event)
+{
+  event.Skip();
 }
 
 void RosoutPanel::onAddFilterPressed(wxCommandEvent& event)

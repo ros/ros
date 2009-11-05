@@ -167,6 +167,9 @@ protected:
    * \brief (wx callback) Called when the "Filters..." button is pressed
    */
   virtual void onFilters(wxCommandEvent& event);
+
+  virtual void onSize( wxSizeEvent& event );
+
   /**
    * \brief (wx callback) Called every 100ms so we can process new messages
    */
@@ -268,8 +271,6 @@ protected:
   // special severity filter, of which there is only one (and it's not in the "filters" collapsible pane)
   RosoutSeverityFilterPtr severity_filter_;
 
-  wxScrolledWindow* filters_window_;
-  wxBoxSizer* filters_sizer_;
   wxBitmap delete_filter_bitmap_;
 
   bool pause_;

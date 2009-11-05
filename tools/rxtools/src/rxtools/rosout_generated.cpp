@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Apr 21 2008)
+// C++ code generated with wxFormBuilder (version Apr 16 2008)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -60,8 +60,25 @@ RosoutPanelBase::RosoutPanelBase( wxWindow* parent, wxWindowID id, const wxPoint
 	
 	filters_pane_sizer_ = new wxBoxSizer( wxVERTICAL );
 	
-	filters_pane_ = new wxCollapsiblePane(this, wxID_ANY, wxT("Filters"));
-	filters_pane_sizer_->Add( filters_pane_, 0, wxALL|wxEXPAND, 5 );
+	filters_window_ = new wxScrolledWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL );
+	filters_window_->SetScrollRate( 30, 30 );
+	filters_window_sizer_ = new wxBoxSizer( wxVERTICAL );
+	
+	filters_sizer_ = new wxBoxSizer( wxVERTICAL );
+	
+	filters_window_sizer_->Add( filters_sizer_, 1, wxEXPAND, 5 );
+	
+	add_filter_button_ = new wxBitmapButton( filters_window_, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW );
+	add_filter_button_->SetToolTip( wxT("Add Filter") );
+	
+	add_filter_button_->SetToolTip( wxT("Add Filter") );
+	
+	filters_window_sizer_->Add( add_filter_button_, 0, wxALL|wxALIGN_RIGHT, 0 );
+	
+	filters_window_->SetSizer( filters_window_sizer_ );
+	filters_window_->Layout();
+	filters_window_sizer_->Fit( filters_window_ );
+	filters_pane_sizer_->Add( filters_window_, 1, wxALL|wxEXPAND, 5 );
 	
 	bSizer10->Add( filters_pane_sizer_, 0, wxEXPAND, 5 );
 	
@@ -71,6 +88,7 @@ RosoutPanelBase::RosoutPanelBase( wxWindow* parent, wxWindowID id, const wxPoint
 	this->Layout();
 	
 	// Connect Events
+	this->Connect( wxEVT_SIZE, wxSizeEventHandler( RosoutPanelBase::onSize ) );
 	clear_button_->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onClear ), NULL, this );
 	pause_button_->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onPause ), NULL, this );
 	setup_button_->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onSetup ), NULL, this );
@@ -79,6 +97,7 @@ RosoutPanelBase::RosoutPanelBase( wxWindow* parent, wxWindowID id, const wxPoint
 RosoutPanelBase::~RosoutPanelBase()
 {
 	// Disconnect Events
+	this->Disconnect( wxEVT_SIZE, wxSizeEventHandler( RosoutPanelBase::onSize ) );
 	clear_button_->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onClear ), NULL, this );
 	pause_button_->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onPause ), NULL, this );
 	setup_button_->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onSetup ), NULL, this );

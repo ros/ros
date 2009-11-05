@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Apr 21 2008)
+// C++ code generated with wxFormBuilder (version Apr 16 2008)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -19,7 +19,11 @@ namespace rxtools{ class RosoutListControl; }
 #include <wx/string.h>
 #include <wx/button.h>
 #include <wx/tglbtn.h>
-#include <wx/collpane.h>
+#include <wx/bitmap.h>
+#include <wx/image.h>
+#include <wx/icon.h>
+#include <wx/bmpbuttn.h>
+#include <wx/scrolwin.h>
 #include <wx/panel.h>
 #include <wx/textctrl.h>
 #include <wx/statbox.h>
@@ -49,9 +53,13 @@ namespace rxtools
 			wxToggleButton* pause_button_;
 			wxButton* setup_button_;
 			wxBoxSizer* filters_pane_sizer_;
-			wxCollapsiblePane* filters_pane_;
+			wxScrolledWindow* filters_window_;
+			wxBoxSizer* filters_window_sizer_;
+			wxBoxSizer* filters_sizer_;
+			wxBitmapButton* add_filter_button_;
 			
 			// Virtual event handlers, overide them in your derived class
+			virtual void onSize( wxSizeEvent& event ){ event.Skip(); }
 			virtual void onClear( wxCommandEvent& event ){ event.Skip(); }
 			virtual void onPause( wxCommandEvent& event ){ event.Skip(); }
 			virtual void onSetup( wxCommandEvent& event ){ event.Skip(); }

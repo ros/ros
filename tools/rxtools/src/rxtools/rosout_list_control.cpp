@@ -309,15 +309,31 @@ void RosoutListControl::preItemChanges()
 {
   /// @todo wxListCtrl::GetScrollRange doesn't work, so I have to work around it.  Switch to use GetScrollPos and GetScrollRange once Bug #10155 in the wxWidgets trac is fixed.
   scrollbar_at_bottom_ = false;
-  // wxListCtrl on the mac doesn't implement GetCountPerPage() correctly, so disable autoscrolling on the mac
-#ifndef __WXMAC__
   int count_per_page = GetCountPerPage();
   int scroll_pos = GetScrollPos(wxVERTICAL);
+#if __WXMAC__
+  // wxListCtrl::GetScrollPos has different behavior on OSX, adjust for that
+  //--count_per_page;
+  int32_t item_height = 20;
+  if (GetItemCount() > 0)
+  {
+    wxRect rect;
+    if (GetItemRect(0, rect))
+    {
+      // For some reason this is always returning -1 right now, so we default to 19 (above)
+      if (rect.GetHeight() > 0)
+      {
+        item_height = rect.GetHeight();
+      }
+    }
+  }
+
+  scroll_pos /= item_height;
+#endif
   if (scroll_pos + count_per_page >= GetItemCount())
   {
     scrollbar_at_bottom_ = true;
   }
-#endif
 
   Freeze();
 }

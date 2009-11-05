@@ -169,6 +169,7 @@ def init_tcpros_server():
     global _tcpros_server
     if _tcpros_server is None:
         _tcpros_server = TCPROSServer()
+        rospy.core.add_shutdown_hook(_tcpros_server.shutdown)
     return _tcpros_server
     
 def start_tcpros_server():
@@ -245,7 +246,7 @@ class TCPROSServer(object):
             return self.tcp_ros_server.get_full_addr()
         return None, None
     
-    def shutdown(self):
+    def shutdown(self, reason=''):
         """stops the TCP/IP server responsible for receiving inbound connections"""
         if self.tcp_ros_server:
             self.tcp_ros_server.shutdown()

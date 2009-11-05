@@ -939,7 +939,8 @@ def create_publisher(topic_name, topic_type, latch):
     if msg_class is None:
         pkg = roslib.names.resource_name_package(topic_type)
         raise ROSTopicException("invalid message type: %s.\nIf this is a valid message type, perhaps you need to type 'rosmake %s'"%(topic_type, pkg))
-    rospy.init_node('rostopic', anonymous=True)
+    # disable /rosout and /rostime as this causes blips in the pubsub network due to rostopic pub often exiting quickly
+    rospy.init_node('rostopic', anonymous=True, disable_rosout=True, disable_rostime=True)
     pub = rospy.Publisher(topic_name, msg_class, latch=latch)
     return pub, msg_class
 
@@ -1034,7 +1035,7 @@ def publish_message(pub, msg_class, pub_args, rate=None, once=False, verbose=Fal
         keys = { 'now': now, 'auto': roslib.msg.Header(stamp=now) }
         roslib.message.fill_message_args(msg, pub_args, keys=keys)
     except roslib.message.ROSMessageException, e:
-        raise ROSTopicException(str(e)+"\nArgs are: [%s]"%roslib.message.get_printable_message_args(msg))
+        raise ROSTopicException(str(e)+"\n\nArgs are: [%s]"%roslib.message.get_printable_message_args(msg))
     try:
         
         if rate is None:
@@ -1087,10 +1088,13 @@ def _rostopic_cmd_pub(argv):
         parser.error("topic type must be specified")
     topic_name, topic_type = args[0], args[1]
 
-    # type-case using YAML 
-    pub_args = []
-    for arg in args[2:]:
-        pub_args.append(yaml.load(arg))
+    # type-case using YAML
+    try:
+        pub_args = []
+        for arg in args[2:]:
+            pub_args.append(yaml.load(arg))
+    except yaml.parser.ParserError, e:
+        parser.error("Argument error: "+str(e))
 
     # make sure master is online. we wait until after we've parsed the
     # args to do this so that syntax errors are reported first

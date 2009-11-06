@@ -55,8 +55,8 @@
 namespace rxtools
 {
 
-RosoutPanel::RosoutPanel(wxWindow* parent)
-: RosoutPanelBase(parent)
+RosoutPanel::RosoutPanel(wxWindow* parent, int id, wxPoint pos, wxSize size, int style)
+: RosoutPanelBase(parent, id, pos, size, style)
 , enabled_(false)
 , message_id_counter_(0)
 , max_messages_(20000)
@@ -93,11 +93,8 @@ RosoutPanel::RosoutPanel(wxWindow* parent)
     severity_sizer_->Add(control, 0, wxEXPAND);
   }
 
-  {
-    RosoutTextFilterPtr filter(new RosoutTextFilter);
-    RosoutTextFilterControl* control = new RosoutTextFilterControl(filters_window_, filter);
-    addFilter(filter, control);
-  }
+  createTextFilter();
+
   filters_window_->SetMinSize(wxSize(-1, filters_[0].panel->GetSize().GetHeight() + add_filter_button_->GetSize().GetHeight() + 5));
 }
 
@@ -164,6 +161,27 @@ void RosoutPanel::setTopic(const std::string& topic)
   topic_ = topic;
 
   subscribe();
+}
+
+void RosoutPanel::setMessages(const M_IdToMessage& messages)
+{
+  messages_ = messages;
+  refilter();
+}
+
+RosoutFrame* RosoutPanel::createNewFrame()
+{
+  RosoutFrame* frame = new RosoutFrame(0);
+  frame->rosout_panel_->setMessages(messages_);
+  frame->Show();
+  frame->Raise();
+
+  return frame;
+}
+
+void RosoutPanel::onNewWindow(wxCommandEvent& event)
+{
+  createNewFrame();
 }
 
 bool filterEnabledCheckboxEqual(wxWindowID id, const RosoutPanel::FilterInfo& info)
@@ -368,6 +386,14 @@ void RosoutPanel::removeFilter(const RosoutFilterPtr& filter)
     updateFilterBackgrounds();
 
     refilter();
+  }
+}
+
+void RosoutPanel::clearFilters()
+{
+  while (!filters_.empty())
+  {
+    removeFilter(filters_.front().filter);
   }
 }
 

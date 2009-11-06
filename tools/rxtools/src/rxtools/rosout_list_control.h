@@ -110,9 +110,15 @@ protected:
   void onIncludeLocation(wxCommandEvent& event);
   void onIncludeNode(wxCommandEvent& event);
   void onIncludeMessage(wxCommandEvent& event);
+  void onIncludeLocationNewWindow(wxCommandEvent& event);
+  void onIncludeNodeNewWindow(wxCommandEvent& event);
+  void onIncludeMessageNewWindow(wxCommandEvent& event);
   void onExcludeLocation(wxCommandEvent& event);
   void onExcludeNode(wxCommandEvent& event);
   void onExcludeMessage(wxCommandEvent& event);
+  void onExcludeLocationNewWindow(wxCommandEvent& event);
+  void onExcludeNodeNewWindow(wxCommandEvent& event);
+  void onExcludeMessageNewWindow(wxCommandEvent& event);
 
   void onPopupKeyPressed(wxKeyEvent& event);
 

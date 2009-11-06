@@ -6,6 +6,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include "rosout_list_control.h"
+#include "rosout_panel.h"
 
 #include "rosout_generated.h"
 
@@ -47,7 +48,7 @@ RosoutPanelBase::RosoutPanelBase( wxWindow* parent, wxWindowID id, const wxPoint
 	
 	bSizer9->Add( severity_sizer_, 1, wxEXPAND, 5 );
 	
-	clear_button_ = new wxButton( this, wxID_ANY, wxT("Clear Messages"), wxDefaultPosition, wxDefaultSize, 0 );
+	clear_button_ = new wxButton( this, wxID_ANY, wxT("Clear"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer9->Add( clear_button_, 0, wxALL, 5 );
 	
 	pause_button_ = new wxToggleButton( this, wxID_ANY, wxT("Pause"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -55,6 +56,9 @@ RosoutPanelBase::RosoutPanelBase( wxWindow* parent, wxWindowID id, const wxPoint
 	
 	setup_button_ = new wxButton( this, wxID_ANY, wxT("Setup"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer9->Add( setup_button_, 0, wxALL|wxALIGN_RIGHT, 5 );
+	
+	m_button5 = new wxButton( this, wxID_ANY, wxT("New Window..."), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer9->Add( m_button5, 0, wxALL, 5 );
 	
 	bSizer10->Add( bSizer9, 0, wxALIGN_RIGHT|wxEXPAND, 5 );
 	
@@ -92,6 +96,7 @@ RosoutPanelBase::RosoutPanelBase( wxWindow* parent, wxWindowID id, const wxPoint
 	clear_button_->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onClear ), NULL, this );
 	pause_button_->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onPause ), NULL, this );
 	setup_button_->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onSetup ), NULL, this );
+	m_button5->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onNewWindow ), NULL, this );
 }
 
 RosoutPanelBase::~RosoutPanelBase()
@@ -101,6 +106,7 @@ RosoutPanelBase::~RosoutPanelBase()
 	clear_button_->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onClear ), NULL, this );
 	pause_button_->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onPause ), NULL, this );
 	setup_button_->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onSetup ), NULL, this );
+	m_button5->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onNewWindow ), NULL, this );
 }
 
 RosoutSetupDialogBase::RosoutSetupDialogBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
@@ -357,4 +363,22 @@ RosoutSeverityFilterControlBase::~RosoutSeverityFilterControlBase()
 	warn_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutSeverityFilterControlBase::onWarn ), NULL, this );
 	info_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutSeverityFilterControlBase::onInfo ), NULL, this );
 	debug_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( RosoutSeverityFilterControlBase::onDebug ), NULL, this );
+}
+
+RosoutFrame::RosoutFrame( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+	
+	wxBoxSizer* bSizer19;
+	bSizer19 = new wxBoxSizer( wxVERTICAL );
+	
+	rosout_panel_ = new rxtools::RosoutPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	bSizer19->Add( rosout_panel_, 1, wxEXPAND | wxALL, 5 );
+	
+	this->SetSizer( bSizer19 );
+	this->Layout();
+}
+
+RosoutFrame::~RosoutFrame()
+{
 }

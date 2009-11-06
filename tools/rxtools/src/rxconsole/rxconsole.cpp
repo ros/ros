@@ -29,7 +29,7 @@
 
 #include <wx/wx.h>
 
-#include "rxtools/rosout_panel.h"
+#include "rxtools/rosout_generated.h"
 
 #include "ros/ros.h"
 
@@ -38,25 +38,6 @@
 #endif
 
 using namespace rxtools;
-
-///Puts the RosoutPanel into a window
-class MyFrame: public wxFrame
-{
-public:
-  MyFrame(wxWindow* parent) :
-    wxFrame(parent, -1, _("rxconsole"), wxDefaultPosition, wxSize(800,
-        600), wxDEFAULT_FRAME_STYLE)
-  {
-    RosoutPanel* rosout_panel = new RosoutPanel(this);
-
-    rosout_panel->SetSize(this->GetSize());
-    rosout_panel->setEnabled(true);
-  }
-
-  ~MyFrame()
-  {
-  }
-};
 
 // our normal wxApp-derived class, as usual
 class MyApp: public wxApp
@@ -75,7 +56,7 @@ public:
     int argc = 0;
     ros::init(argc, 0, "rxconsole", ros::init_options::AnonymousName | ros::init_options::NoSigintHandler);
 
-    wxFrame* frame = new MyFrame(NULL);
+    wxFrame* frame = new RosoutFrame(NULL);
     SetTopWindow(frame);
     frame->Show();
     frame->Raise();

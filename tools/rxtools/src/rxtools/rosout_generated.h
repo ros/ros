@@ -9,6 +9,7 @@
 #define __rosout_generated__
 
 namespace rxtools{ class RosoutListControl; }
+namespace rxtools{ class RosoutPanel; }
 
 #include <wx/sizer.h>
 #include <wx/gdicmn.h>
@@ -34,6 +35,7 @@ namespace rxtools{ class RosoutListControl; }
 #include <wx/listbox.h>
 #include <wx/choice.h>
 #include <wx/checkbox.h>
+#include <wx/frame.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -53,6 +55,7 @@ namespace rxtools
 			wxButton* clear_button_;
 			wxToggleButton* pause_button_;
 			wxButton* setup_button_;
+			wxButton* m_button5;
 			wxBoxSizer* filters_pane_sizer_;
 			wxScrolledWindow* filters_window_;
 			wxBoxSizer* filters_window_sizer_;
@@ -64,6 +67,7 @@ namespace rxtools
 			virtual void onClear( wxCommandEvent& event ){ event.Skip(); }
 			virtual void onPause( wxCommandEvent& event ){ event.Skip(); }
 			virtual void onSetup( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onNewWindow( wxCommandEvent& event ){ event.Skip(); }
 			
 		
 		public:
@@ -201,6 +205,22 @@ namespace rxtools
 		public:
 			RosoutSeverityFilterControlBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 750,42 ), long style = wxTAB_TRAVERSAL );
 			~RosoutSeverityFilterControlBase();
+		
+	};
+	
+	///////////////////////////////////////////////////////////////////////////////
+	/// Class RosoutFrame
+	///////////////////////////////////////////////////////////////////////////////
+	class RosoutFrame : public wxFrame 
+	{
+		private:
+		
+		protected:
+		
+		public:
+			rxtools::RosoutPanel* rosout_panel_;
+			RosoutFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+			~RosoutFrame();
 		
 	};
 	

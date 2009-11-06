@@ -115,7 +115,7 @@ public:
    * \brief Constructor
    * @param parent The window which is the parent of this one
    */
-  RosoutPanel(wxWindow* parent);
+  RosoutPanel(wxWindow* parent, int id = wxID_ANY, wxPoint pos = wxDefaultPosition, wxSize size = wxDefaultSize, int style = wxTAB_TRAVERSAL);
   ~RosoutPanel();
 
   /**
@@ -157,6 +157,14 @@ public:
   roslib::LogConstPtr getMessageByIndex(uint32_t index) const;
 
   RosoutTextFilterPtr createTextFilter();
+  RosoutFrame* createNewFrame();
+
+  void clearFilters();
+
+  /**
+   * \brief Re-filter all messages
+   */
+  void refilter();
 
 protected:
   /**
@@ -171,6 +179,8 @@ protected:
    * \brief (wx callback) Called when the "Clear" button is pressed
    */
   virtual void onClear(wxCommandEvent& event);
+
+  virtual void onNewWindow(wxCommandEvent& event);
 
   /**
    * \brief (wx callback) Called every 100ms so we can process new messages
@@ -222,10 +232,6 @@ protected:
    * @return True of anything in the message matches, false otherwise
    */
   bool filter(uint32_t id) const;
-  /**
-   * \brief Re-filter all messages
-   */
-  void refilter();
 
   /**
    * \brief Remove The oldest message
@@ -238,6 +244,10 @@ protected:
   void addFilter(const RosoutFilterPtr& filter, wxWindow* control);
   void removeFilter(const RosoutFilterPtr& filter);
 
+  typedef std::map<uint32_t, roslib::Log::ConstPtr> M_IdToMessage;
+  // dirty hack, really need to be able to share a backing set of messages
+  void setMessages(const M_IdToMessage& messages);
+
   bool enabled_; ///< Are we enabled?
   std::string topic_; ///< The topic we're listening on (or will listen on once we're enabled)
 
@@ -249,14 +259,13 @@ protected:
   wxTimer* process_timer_; ///< Timer used to periodically process messages
 
   uint32_t message_id_counter_; ///< Counter for generating unique ids for messages
-  typedef std::map<uint32_t, roslib::Log::ConstPtr> M_IdToMessage;
+
   M_IdToMessage messages_; ///< Map of id->message
 
   typedef std::vector<uint32_t> V_u32;
   V_u32 ordered_messages_; ///< Already-filtered messages that are being displayed in the list
 
   uint32_t max_messages_; ///< Max number of messages to keep around.  When we hit this limit, we start throwing away the oldest messages
-
   bool needs_refilter_; ///< Set to true when we need to refilter our messages (ie. a filter has changed)
   float refilter_timer_; ///< Accumulator used to gate how often we refilter
 

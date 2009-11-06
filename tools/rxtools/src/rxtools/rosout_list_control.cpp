@@ -384,13 +384,21 @@ std::string escapeForRegex(const std::string& str)
   return boost::regex_replace(str, esc, rep, boost::match_default | boost::format_sed);
 }
 
-void addFilter(RosoutPanel* model, const std::string& text, uint32_t field_mask, bool include)
+void addFilter(RosoutPanel* model, const std::string& text, uint32_t field_mask, bool include, bool new_window)
 {
+  if (new_window)
+  {
+    RosoutFrame* frame = model->createNewFrame();
+    model = frame->rosout_panel_;
+    model->clearFilters();
+  }
+
   RosoutTextFilterPtr filter = model->createTextFilter();
   filter->setFilterType(include ? RosoutTextFilter::Include : RosoutTextFilter::Exclude);
   filter->setFieldMask(field_mask);
   filter->setText("^" + escapeForRegex(text) + "$");
   filter->setUseRegex(true);
+  model->refilter();
 }
 
 roslib::LogConstPtr RosoutListControl::getSelectedMessage()
@@ -409,7 +417,7 @@ void RosoutListControl::onExcludeLocation(wxCommandEvent& event)
   {
     std::stringstream ss;
     ss << message->file << ":" << message->function << ":" << message->line;
-    addFilter(model_, ss.str(), RosoutTextFilter::Location, false);
+    addFilter(model_, ss.str(), RosoutTextFilter::Location, false, false);
   }
 }
 
@@ -417,7 +425,7 @@ void RosoutListControl::onExcludeNode(wxCommandEvent& event)
 {
   if (roslib::LogConstPtr message = getSelectedMessage())
   {
-    addFilter(model_, message->name, RosoutTextFilter::Node, false);
+    addFilter(model_, message->name, RosoutTextFilter::Node, false, false);
   }
 }
 
@@ -425,7 +433,33 @@ void RosoutListControl::onExcludeMessage(wxCommandEvent& event)
 {
   if (roslib::LogConstPtr message = getSelectedMessage())
   {
-    addFilter(model_, message->msg, RosoutTextFilter::Message, false);
+    addFilter(model_, message->msg, RosoutTextFilter::Message, false, false);
+  }
+}
+
+void RosoutListControl::onExcludeLocationNewWindow(wxCommandEvent& event)
+{
+  if (roslib::LogConstPtr message = getSelectedMessage())
+  {
+    std::stringstream ss;
+    ss << message->file << ":" << message->function << ":" << message->line;
+    addFilter(model_, ss.str(), RosoutTextFilter::Location, false, true);
+  }
+}
+
+void RosoutListControl::onExcludeNodeNewWindow(wxCommandEvent& event)
+{
+  if (roslib::LogConstPtr message = getSelectedMessage())
+  {
+    addFilter(model_, message->name, RosoutTextFilter::Node, false, true);
+  }
+}
+
+void RosoutListControl::onExcludeMessageNewWindow(wxCommandEvent& event)
+{
+  if (roslib::LogConstPtr message = getSelectedMessage())
+  {
+    addFilter(model_, message->msg, RosoutTextFilter::Message, false, true);
   }
 }
 
@@ -435,7 +469,7 @@ void RosoutListControl::onIncludeLocation(wxCommandEvent& event)
   {
     std::stringstream ss;
     ss << message->file << ":" << message->function << ":" << message->line;
-    addFilter(model_, ss.str(), RosoutTextFilter::Location, true);
+    addFilter(model_, ss.str(), RosoutTextFilter::Location, true, false);
   }
 }
 
@@ -443,7 +477,7 @@ void RosoutListControl::onIncludeNode(wxCommandEvent& event)
 {
   if (roslib::LogConstPtr message = getSelectedMessage())
   {
-    addFilter(model_, message->name, RosoutTextFilter::Node, true);
+    addFilter(model_, message->name, RosoutTextFilter::Node, true, false);
   }
 }
 
@@ -451,7 +485,33 @@ void RosoutListControl::onIncludeMessage(wxCommandEvent& event)
 {
   if (roslib::LogConstPtr message = getSelectedMessage())
   {
-    addFilter(model_, message->msg, RosoutTextFilter::Message, true);
+    addFilter(model_, message->msg, RosoutTextFilter::Message, true, false);
+  }
+}
+
+void RosoutListControl::onIncludeLocationNewWindow(wxCommandEvent& event)
+{
+  if (roslib::LogConstPtr message = getSelectedMessage())
+  {
+    std::stringstream ss;
+    ss << message->file << ":" << message->function << ":" << message->line;
+    addFilter(model_, ss.str(), RosoutTextFilter::Location, true, true);
+  }
+}
+
+void RosoutListControl::onIncludeNodeNewWindow(wxCommandEvent& event)
+{
+  if (roslib::LogConstPtr message = getSelectedMessage())
+  {
+    addFilter(model_, message->name, RosoutTextFilter::Node, true, true);
+  }
+}
+
+void RosoutListControl::onIncludeMessageNewWindow(wxCommandEvent& event)
+{
+  if (roslib::LogConstPtr message = getSelectedMessage())
+  {
+    addFilter(model_, message->msg, RosoutTextFilter::Message, true, true);
   }
 }
 
@@ -481,12 +541,18 @@ void RosoutListControl::onItemRightClick(wxListEvent& event)
     {
       item = include_menu->Append(wxID_ANY, wxT("This Location"));
       Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeLocation), NULL, this);
+      item = include_menu->Append(wxID_ANY, wxT("This Location (New Window)"));
+      Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeLocationNewWindow), NULL, this);
     }
 
     item = include_menu->Append(wxID_ANY, wxT("This Node"));
     Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeNode), NULL, this);
+    item = include_menu->Append(wxID_ANY, wxT("This Node (New Window)"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeNodeNewWindow), NULL, this);
     item = include_menu->Append(wxID_ANY, wxT("This Message"));
     Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeMessage), NULL, this);
+    item = include_menu->Append(wxID_ANY, wxT("This Message (New Window)"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeMessageNewWindow), NULL, this);
 
     menu->AppendSubMenu(include_menu, wxT("Include"));
   }
@@ -497,12 +563,18 @@ void RosoutListControl::onItemRightClick(wxListEvent& event)
     {
       item = exclude_menu->Append(wxID_ANY, wxT("This Location"));
       Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeLocation), NULL, this);
+      item = exclude_menu->Append(wxID_ANY, wxT("This Location (New Window)"));
+      Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeLocationNewWindow), NULL, this);
     }
 
     item = exclude_menu->Append(wxID_ANY, wxT("This Node"));
     Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeNode), NULL, this);
+    item = exclude_menu->Append(wxID_ANY, wxT("This Node (New Window)"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeNodeNewWindow), NULL, this);
     item = exclude_menu->Append(wxID_ANY, wxT("This Message"));
     Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeMessage), NULL, this);
+    item = exclude_menu->Append(wxID_ANY, wxT("This Message (New Window)"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeMessageNewWindow), NULL, this);
 
     menu->AppendSubMenu(exclude_menu, wxT("Exclude"));
   }

@@ -153,7 +153,7 @@ hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, 
                 err_msg =  "Unable to verify host key for remote computer[%s:%s]"%(address, port)
             except paramiko.AuthenticationException:
                 _logger.error(traceback.format_exc())
-                err_msg = "Authentication to remote computer[%s:%s] failed"%(address, port)
+                err_msg = "Authentication to remote computer[%s:%s] failed.\nA common cause of this error is a missing key in your authorized_keys file."%(address, port)
             except paramiko.SSHException, e:
                 _logger.error(traceback.format_exc())
                 if str(e).startswith("Unknown server"):

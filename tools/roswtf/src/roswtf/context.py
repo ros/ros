@@ -131,12 +131,21 @@ class WtfContext(object):
     @staticmethod
     ## @param roslaunch_file str: roslaunch_file to check
     def from_roslaunch(roslaunch_files, env=os.environ):
+        # can't go any further if launch file doesn't validate
+        l, c = roslaunch.XmlLoader(), roslaunch.ROSLaunchConfig()
+        for f in roslaunch_files:
+            try:
+                l.load(f, c, verbose=False) 
+            except roslaunch.RLException, e:
+                raise WtfException("Unable to load roslaunch file [%s]: %s"%(f, str(e)))
+
         ctx = WtfContext()
         ctx.launch_files = roslaunch_files
         _load_roslaunch(ctx, roslaunch_files)
         # ctx.pkg and ctx.stack initialized by _load_roslaunch
         _load_pkg(ctx, ctx.pkg)
-        _load_stack(ctx, ctx.stack)        
+        if ctx.stack:
+            _load_stack(ctx, ctx.stack)        
         _load_env(ctx, env)
         return ctx
 

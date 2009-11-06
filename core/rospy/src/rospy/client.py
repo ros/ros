@@ -502,7 +502,7 @@ def sleep(duration):
     """
     if rospy.rostime.is_wallclock():
         if isinstance(duration, roslib.rostime.Duration):
-            duration = duration.to_seconds()
+            duration = duration.to_sec()
         if duration < 0:
             return
         else:
@@ -510,7 +510,7 @@ def sleep(duration):
     else:
         initial_rostime = rospy.rostime.get_rostime()
         if not isinstance(duration, roslib.rostime.Duration):
-            duration = rospy.rostime.Duration.from_seconds(duration)
+            duration = rospy.rostime.Duration.from_sec(duration)
         sleep_t = initial_rostime + duration
 
         rostime_cond = rospy.rostime.get_rostime_cond()

@@ -297,7 +297,7 @@ class Rebagger_v1_1(object):
       md5sum = msg[2]
       f.write(topic+'\n'+md5sum+'\n'+msg_type+'\n')
       if not t:
-        t = roslib.rostime.Time.from_seconds(time.time())
+        t = roslib.rostime.Time.from_sec(time.time())
       f.write(struct.pack("<LLL", t.secs, t.nsecs, len(serialized_bytes)))
       f.write(serialized_bytes)
     else:
@@ -308,7 +308,7 @@ class Rebagger_v1_1(object):
       f.write(topic+'\n'+md5sum+'\n'+msg_type+'\n')    
       msg.serialize(buff)
       if not t:
-        t = roslib.rostime.Time.from_seconds(time.time())
+        t = roslib.rostime.Time.from_sec(time.time())
       f.write(struct.pack("<LLL", t.secs, t.nsecs, buff.tell()))
       f.write(buff.getvalue())
 
@@ -376,7 +376,7 @@ class Rebagger(object):
 
       # note: timestamp does not respect sim time as Rebagger is not required to be running in a rospy node
       if not t:
-        t = roslib.rostime.Time.from_seconds(time.time())
+        t = roslib.rostime.Time.from_sec(time.time())
       self.add_hdr_data({ 'op' : chr(2),
                           'topic' : topic,
                           'md5' : md5sum,
@@ -395,7 +395,7 @@ class Rebagger(object):
       msg.serialize(buff)
       # note: timestamp does not respect sim time as Rebagger is not required to be running in a rospy node
       if not t:
-        t = roslib.rostime.Time.from_seconds(time.time())
+        t = roslib.rostime.Time.from_sec(time.time())
       self.add_hdr_data({ 'op' : chr(2),
                           'topic' : topic,
                           'md5' : md5sum,

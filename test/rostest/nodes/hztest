@@ -178,11 +178,11 @@ Test Duration: %s"""%(hz, hzerror, topic, test_duration)
 
             curr_rostime = rospy.get_rostime()
 
-            #print "CURR ROSTIME", curr_rostime.to_seconds()
+            #print "CURR ROSTIME", curr_rostime.to_sec()
             
             if curr_rostime.is_zero():
                 return
-            curr = curr_rostime.to_seconds()
+            curr = curr_rostime.to_sec()
  
             if self.msg_t0 <= 0.0 or self.msg_t0 > curr:
                 self.msg_t0 = curr

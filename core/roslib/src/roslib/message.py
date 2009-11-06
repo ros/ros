@@ -128,7 +128,7 @@ def strify_message(val, indent='', time_offset=None):
     if type(val) in [int, long, float, str, bool] or \
             isinstance(val, Time) or isinstance(val, Duration):
         if time_offset is not None and isinstance(val, Time):
-            return str((val-time_offset).to_seconds())
+            return str((val-time_offset).to_sec())
         else:
             return str(val)
     elif type(val) in [list, tuple]:

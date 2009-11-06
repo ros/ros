@@ -48,6 +48,20 @@ def _canon(secs, nsecs):
         nsecs += 1000000000
     return secs,nsecs
 
+import warnings
+def deprecated(func):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emmitted
+    when the function is used."""
+    def newFunc(*args, **kwargs):
+        warnings.warn("Call to deprecated function %s." % func.__name__,
+                      category=DeprecationWarning, stacklevel=2)
+        return func(*args, **kwargs)
+    newFunc.__name__ = func.__name__
+    newFunc.__doc__ = func.__doc__
+    newFunc.__dict__.update(func.__dict__)
+    return newFunc
+
 class TVal(object):
     """
     Base class of L{Time} and L{Duration} representations. Representation
@@ -113,6 +127,7 @@ class TVal(object):
         """
         return self.secs * long(1e9) + self.nsecs
         
+    @deprecated
     def to_seconds(self):
         """
         Use to_sec() instead. This is retained for backwards compatibility.
@@ -121,6 +136,7 @@ class TVal(object):
         """
         return float(self.secs) + float(self.nsecs) / 1e9
 
+    @deprecated
     def tons(self):
         """
         Use to_ns() instead. This is retained for backwards compatibility.
@@ -251,7 +267,7 @@ class Time(TVal):
         @return: time in floating point secs (time.time() format)
         @rtype: float
         """
-        return self.to_seconds()
+        return self.to_sec()
 
     def __repr__(self):
         return "rostime.Time[%d]"%self.tons()
@@ -330,6 +346,7 @@ class Duration(TVal):
     def __repr__(self):
         return "rostime.Duration[%d]"%self.tons()
 
+    @deprecated
     def from_seconds(float_seconds):
         """
         Use from_sec() instead. This is retained for backward compatibility.

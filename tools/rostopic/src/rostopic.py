@@ -124,7 +124,7 @@ class ROSTopicHz(object):
                     self.times = []
                 return
             
-            curr = curr_rostime.to_seconds()
+            curr = curr_rostime.to_sec()
             if self.msg_t0 < 0 or self.msg_t0 > curr:
                 #print "reset t0"
                 self.msg_t0 = curr
@@ -420,13 +420,13 @@ def _str_plot(val, time_offset=None):
     s = _sub_str_plot(val, time_offset)
     if s is not None:
         if time_offset is not None:
-            time_offset = time_offset.tons()
+            time_offset = time_offset.to_nsec()
         else:
             time_offset = 0            
         if getattr(val, "_has_header", False):
-            return "%s,%s"%(val.header.stamp.tons()-time_offset, s)
+            return "%s,%s"%(val.header.stamp.to_nsec()-time_offset, s)
         else:
-            return "%s,%s"%(rospy.get_rostime().tons()-time_offset, s)
+            return "%s,%s"%(rospy.get_rostime().to_nsec()-time_offset, s)
     
 #TODO: get rid of the ugly use of the _echo_nonostr and _echo_noarr
     

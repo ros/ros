@@ -73,7 +73,7 @@ def value_to_json(v):
     elif isinstance(v, rospy.Message):
         return ros_message_to_json(v)
     elif isinstance(v, rospy.Time) or isinstance(v, rospy.Duration) or isinstance(v, roslib.rostime.Time):
-        return v.to_seconds()
+        return v.to_sec()
     else:
         raise ROSJSONException("unknown type: %s"%type(v))
         

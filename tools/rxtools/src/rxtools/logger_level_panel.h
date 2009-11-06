@@ -34,6 +34,8 @@
 
 #include <ros/ros.h>
 
+#include <map>
+
 namespace rxtools
 {
 
@@ -52,6 +54,9 @@ protected:
   virtual void onLevelSelected( wxCommandEvent& event );
 
   ros::NodeHandle nh_;
+
+  typedef std::map<std::string, std::string> M_string;
+  M_string loggers_;
 };
 
 } // namespace rxtools

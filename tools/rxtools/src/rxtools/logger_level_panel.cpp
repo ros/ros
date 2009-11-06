@@ -35,6 +35,8 @@
 
 #include <wx/msgdlg.h>
 
+#include <algorithm>
+
 namespace rxtools
 {
 
@@ -80,6 +82,7 @@ void LoggerLevelPanel::onNodeSelected( wxCommandEvent& event )
 {
   loggers_box_->Clear();
   levels_box_->Clear();
+  loggers_.clear();
 
   std::string node = (const char*)nodes_box_->GetStringSelection().fn_str();
   if (node.empty())
@@ -90,13 +93,16 @@ void LoggerLevelPanel::onNodeSelected( wxCommandEvent& event )
   roscpp::GetLoggers srv;
   if (ros::service::call(node + "/get_loggers", srv))
   {
-    ros::V_string::iterator it = srv.response.loggers.begin();
-    ros::V_string::iterator end = srv.response.loggers.end();
+    std::vector<roscpp::Logger>::iterator it = srv.response.loggers.begin();
+    std::vector<roscpp::Logger>::iterator end = srv.response.loggers.end();
     for (; it != end; ++it)
     {
-      const std::string& logger = *it;
+      roscpp::Logger& logger = *it;
+      const std::string& name = logger.name;
 
-      loggers_box_->Append(wxString::FromAscii(logger.c_str()));
+      loggers_[name] = logger.level;
+
+      loggers_box_->Append(wxString::FromAscii(name.c_str()));
     }
   }
   else
@@ -117,11 +123,44 @@ void LoggerLevelPanel::onLoggerSelected( wxCommandEvent& event )
     return;
   }
 
+  M_string::iterator it = loggers_.find(logger);
+  std::string level = it->second;
+
+  std::transform(level.begin(), level.end(), level.begin(), (int(*)(int))std::toupper);
+
+  int selection = 0;
+  if (level == "DEBUG")
+  {
+    selection = 0;
+  }
+  else if (level == "INFO")
+  {
+    selection = 1;
+  }
+  else if (level == "WARN")
+  {
+    selection = 2;
+  }
+  else if (level == "ERROR")
+  {
+    selection = 3;
+  }
+  else if (level == "FATAL")
+  {
+    selection = 4;
+  }
+  else
+  {
+    ROS_ERROR("Unknown logger level [%s]", level.c_str());
+    selection = -1;
+  }
+
   levels_box_->Append(wxT("Debug"));
   levels_box_->Append(wxT("Info"));
   levels_box_->Append(wxT("Warn"));
   levels_box_->Append(wxT("Error"));
   levels_box_->Append(wxT("Fatal"));
+  levels_box_->SetSelection(selection);
 }
 
 void LoggerLevelPanel::onLevelSelected( wxCommandEvent& event )
@@ -143,6 +182,10 @@ void LoggerLevelPanel::onLevelSelected( wxCommandEvent& event )
     wxString msg;
     msg.Printf(wxT("Failed to call service [%s/set_logger_level].  Did the node go away?"), wxString::FromAscii(node.c_str()).c_str());
     wxMessageBox(msg, wxT("Failed to set logger level"), wxOK|wxICON_ERROR);
+  }
+  else
+  {
+    loggers_[logger] = level;
   }
 }
 

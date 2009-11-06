@@ -54,6 +54,8 @@
 #include <roslib/Time.h>
 #include <roslib/Clock.h>
 
+#include <algorithm>
+
 #include <signal.h>
 
 namespace ros
@@ -145,7 +147,14 @@ bool getLoggers(roscpp::GetLoggers::Request&, roscpp::GetLoggers::Response& resp
   log4cxx::LoggerList::iterator end = loggers.end();
   for (; it != end; ++it)
   {
-    resp.loggers.push_back((*it)->getName());
+    roscpp::Logger logger;
+    logger.name = (*it)->getName();
+    const log4cxx::LevelPtr& level = (*it)->getEffectiveLevel();
+    if (level)
+    {
+      logger.level = level->toString();
+    }
+    resp.loggers.push_back(logger);
   }
 
   return true;
@@ -156,23 +165,25 @@ bool setLoggerLevel(roscpp::SetLoggerLevel::Request& req, roscpp::SetLoggerLevel
   log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger(req.logger);
   log4cxx::LevelPtr level;
 
-  if (req.level == "DEBUG" || req.level == "debug" || req.level == "Debug")
+  std::transform(req.level.begin(), req.level.end(), req.level.begin(), (int(*)(int))std::toupper);
+
+  if (req.level == "DEBUG")
   {
     level = log4cxx::Level::getDebug();
   }
-  else if (req.level == "INFO" || req.level == "info" || req.level == "Info")
+  else if (req.level == "INFO")
   {
     level = log4cxx::Level::getInfo();
   }
-  else if (req.level == "WARN" || req.level == "warn" || req.level == "Warn")
+  else if (req.level == "WARN")
   {
     level = log4cxx::Level::getWarn();
   }
-  else if (req.level == "ERROR" || req.level == "error" || req.level == "Error")
+  else if (req.level == "ERROR")
   {
     level = log4cxx::Level::getError();
   }
-  else if (req.level == "FATAL" || req.level == "fatal" || req.level == "Fatal")
+  else if (req.level == "FATAL")
   {
     level = log4cxx::Level::getFatal();
   }

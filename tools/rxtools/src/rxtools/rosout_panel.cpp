@@ -177,8 +177,6 @@ void RosoutPanel::setMessages(const M_IdToMessage& messages)
   }
 
   refilter();
-
-
 }
 
 RosoutFrame* RosoutPanel::createNewFrame()

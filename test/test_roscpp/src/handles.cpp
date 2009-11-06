@@ -168,6 +168,31 @@ TEST(RoscppHandles, subscriberDestructionMultipleCallbacks)
   }
 }
 
+TEST(RoscppHandles, subscriberSpinAfterSubscriberShutdown)
+{
+  ros::NodeHandle n;
+  ros::Publisher pub = n.advertise<test_roscpp::TestArray>("test", 0);
+  test_roscpp::TestArray msg;
+
+  int32_t last_fn_count = g_recv_count;
+
+  {
+    ros::Subscriber sub_fn = n.subscribe("test", 0, subscriberCallback);
+
+    last_fn_count = g_recv_count;
+    for (int i = 0; i < 10; ++i)
+    {
+      pub.publish(msg);
+    }
+
+    ros::WallDuration(0.1).sleep();
+  }
+
+  ros::spinOnce();
+
+  ASSERT_EQ(last_fn_count, g_recv_count);
+}
+
 TEST(RoscppHandles, subscriberCopy)
 {
   ros::NodeHandle n;

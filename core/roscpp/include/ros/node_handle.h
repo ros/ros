@@ -147,7 +147,7 @@ NodeHandle child(parent.getNamespace() + "/" + ns, remappings);
   /**
    * \brief Returns the callback queue associated with this NodeHandle.  If none has been explicitly set, returns the global queue.
    */
-  CallbackQueueInterface* getCallbackQueue() { return callback_queue_ ? callback_queue_ : (CallbackQueueInterface*)getGlobalCallbackQueue(); }
+  CallbackQueueInterface* getCallbackQueue() const { return callback_queue_ ? callback_queue_ : (CallbackQueueInterface*)getGlobalCallbackQueue(); }
 
   /**
    * \brief Returns the namespace associated with this NodeHandle

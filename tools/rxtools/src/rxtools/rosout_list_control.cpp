@@ -50,6 +50,9 @@ RosoutListControl::RosoutListControl(wxWindow* parent, wxWindowID id, const wxPo
 : wxListCtrl(parent, id, pos, size, style, validator, name), selection_(-1)
 , scrollbar_at_bottom_(true)
 , disable_scroll_to_bottom_(false)
+#if __WXMAC__
+, manual_selection_(false)
+#endif
 {
   wxListItem item;
   item.SetText(wxT("Message"));
@@ -511,7 +514,15 @@ void RosoutListControl::onItemSelected(wxListEvent& event)
 {
   selection_ = event.GetIndex();
 
+#if __WXMAC__
+  if (!manual_selection_)
+  {
+#endif
   disable_scroll_to_bottom_ = true;
+#if __WXMAC__
+  }
+  manual_selection_ = false;
+#endif
 }
 
 void RosoutListControl::preItemChanges()
@@ -570,6 +581,9 @@ void RosoutListControl::postItemChanges()
 
 void RosoutListControl::setSelection(int32_t index)
 {
+#if __WXMAC__
+  manual_selection_ = true;
+#endif
   if (index == -1)
   {
     if (selection_ != -1)

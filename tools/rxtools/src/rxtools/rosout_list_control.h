@@ -135,6 +135,12 @@ protected:
 
   bool scrollbar_at_bottom_;
   bool disable_scroll_to_bottom_;
+
+  // Because we have to force-selection after every SetItemCount, here we keep track of if
+  // we're doing so manually to prevent it from always preventing auto-scroll
+#if __WXMAC__
+  bool manual_selection_;
+#endif
 };
 
 } // namespace rxtools

@@ -9,7 +9,6 @@
   
   -->
   <param name="somestring1" value="bar2" />
-  <rosparam param="rp_string">bar2</rosparam>
   <!-- force to string instead of integer -->
   <param name="somestring2" value="10" type="str" />
   
@@ -25,6 +24,13 @@
     <param name="wg2childparam1" value="a child namespace parameter" />  
     <param name="wg2childparam2" value="a child namespace parameter" />  
   </group>
+
+  <!-- use rosparam for more complex types -->
+  <rosparam param="list">[1, 2, 3, 4]</rosparam>
+  <rosparam>
+    rp_key1: a
+    rp_key2: b
+  </rosparam>
 
   <!-- use rosparam files -->
   <group ns="rosparam">

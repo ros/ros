@@ -1142,8 +1142,13 @@ def _stdin_yaml_arg():
     except select.error:
         return # most likely ctrl-c interrupt
     
-def _rostopic_cmd_list():
-    """command-line parsing for 'rostopic list' command"""
+def _rostopic_cmd_list(command):
+    """
+    Command-line parsing for 'rostopic list' command as well as 'rostopic info /topic_name' alias.
+
+    @param command: command name ('list' or 'info')
+    @type  command: str
+    """
     args = sys.argv[2:]
     parser = OptionParser(usage="usage: %prog list [/topic]", prog=NAME)
     parser.add_option("-b", "--bag",
@@ -1161,6 +1166,16 @@ def _rostopic_cmd_list():
 
     (options, args) = parser.parse_args(args)
     topic = None
+
+    # #1961
+    # 'rostopic info /topic_name' is an alias for 'rostopic list topic_name'. Unlike
+    # rostopic list, it does require an argument
+    if command == 'info':
+        if len(args) == 0:
+            parser.error("you must specify a topic name")
+        elif len(args) > 1:
+            parser.error("you may only specify one topic name")
+            
     if len(args) == 1:
         topic = roslib.scriptutil.script_resolve_name('rostopic', args[0])
     elif len(args) > 1:
@@ -1205,8 +1220,8 @@ def rostopicmain(argv=sys.argv):
             _rostopic_cmd_hz(argv)
         elif command == 'type':
             _rostopic_cmd_type()
-        elif command == 'list':
-            _rostopic_cmd_list()
+        elif command in ['list', 'info']:
+            _rostopic_cmd_list(command)
         elif command == 'pub':
             _rostopic_cmd_pub(argv)
         elif command == 'bw':

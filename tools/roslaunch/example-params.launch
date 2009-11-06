@@ -9,6 +9,7 @@
   
   -->
   <param name="somestring1" value="bar2" />
+  <rosparam param="rp_string">bar2</rosparam>
   <!-- force to string instead of integer -->
   <param name="somestring2" value="10" type="str" />
   
@@ -31,10 +32,9 @@
   </group>
   
   <!-- upload the contents of a file as a param -->
-  <param name="configfile" textfile="$(find roslaunch)/example.xml" />
+  <param name="configfile" textfile="$(find roslaunch)/example.launch" />
   <!-- upload the contents of a file as base64 binary as a param -->
-  <param name="binaryfile" binfile="$(find roslaunch)/example.xml" />
+  <param name="binaryfile" binfile="$(find roslaunch)/example.launch" />
   <!-- upload the output of a command as a param. -->
-  <param name="commandoutput" command="cat &quot;$(find rospy)/scripts/python-reserved-words.txt&quot;" />
   
 </launch>

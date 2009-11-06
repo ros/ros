@@ -45,6 +45,9 @@ import roslaunch.server
 import logging
 _logger = logging.getLogger("roslaunch.remoteprocess")
 
+# #1975 timeout for creating ssh connections
+TIMEOUT_SSH_CONNECT = 30.
+
 ## Process wrapper for launching and monitoring a child roslaunch process over SSH
 class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
     def __init__(self, run_id, name, server_uri, env, machine):
@@ -132,9 +135,9 @@ hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, 
         if not err_msg:
             try:
                 if not password: #use SSH agent
-                    ssh.connect(address, port, username)
+                    ssh.connect(address, port, username, timeout=TIMEOUT_SSH_CONNECT)
                 else: #use SSH with login/pass
-                    ssh.connect(address, port, username, password)
+                    ssh.connect(address, port, username, password, timeout=TIMEOUT_SSH_CONNECT)
             except paramiko.BadHostKeyException:
                 _logger.error(traceback.format_exc())
                 err_msg =  "Unable to verify host key for remote computer[%s:%s]"%(address, port)

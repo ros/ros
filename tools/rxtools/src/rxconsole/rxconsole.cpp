@@ -56,7 +56,7 @@ public:
     int argc = 0;
     ros::init(argc, 0, "rxconsole", ros::init_options::AnonymousName | ros::init_options::NoSigintHandler);
 
-    wxFrame* frame = new RosoutFrame(NULL);
+    wxFrame* frame = new RosoutFrame(0);
     SetTopWindow(frame);
     frame->Show();
     frame->Raise();

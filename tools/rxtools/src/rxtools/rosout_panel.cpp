@@ -166,7 +166,19 @@ void RosoutPanel::setTopic(const std::string& topic)
 void RosoutPanel::setMessages(const M_IdToMessage& messages)
 {
   messages_ = messages;
+
+  if (messages.empty())
+  {
+    message_id_counter_ = 0;
+  }
+  else
+  {
+    message_id_counter_ = messages.rbegin()->first;
+  }
+
   refilter();
+
+
 }
 
 RosoutFrame* RosoutPanel::createNewFrame()
@@ -522,6 +534,24 @@ bool RosoutPanel::filter(uint32_t id) const
   return true;
 }
 
+void RosoutPanel::validateOrderedMessages()
+{
+#if VALIDATE_FILTERING
+  typedef std::set<uint32_t> S_u32;
+  S_u32 s;
+  V_u32::iterator it = ordered_messages_.begin();
+  V_u32::iterator end = ordered_messages_.end();
+  for (; it != end; ++it)
+  {
+    uint32_t id = *it;
+    if (!s.insert(id).second)
+    {
+      ROS_BREAK();
+    }
+  }
+#endif
+}
+
 void RosoutPanel::refilter()
 {
   table_->preItemChanges();
@@ -539,6 +569,8 @@ void RosoutPanel::refilter()
       addMessageToTable(message, id);
     }
   }
+
+  validateOrderedMessages();
 
   table_->SetItemCount(ordered_messages_.size());
 
@@ -575,6 +607,8 @@ void RosoutPanel::processMessage(const roslib::Log::ConstPtr& message)
   {
     addMessageToTable(message, id);
   }
+
+  validateOrderedMessages();
 
   if (messages_.size() > max_messages_)
   {

@@ -248,6 +248,8 @@ protected:
   // dirty hack, really need to be able to share a backing set of messages
   void setMessages(const M_IdToMessage& messages);
 
+  void validateOrderedMessages();
+
   bool enabled_; ///< Are we enabled?
   std::string topic_; ///< The topic we're listening on (or will listen on once we're enabled)
 

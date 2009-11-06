@@ -556,6 +556,11 @@ void RosoutListControl::postItemChanges()
 
   disable_scroll_to_bottom_ = false;
 
+  // OSX has a problem where it unselects whatever was selected after adding items.
+#if __WXMAC__
+  setSelection(selection_);
+#endif
+
   Thaw();
 
   // This for some reason prevents the control from flickering: http://wiki.wxwidgets.org/Flicker-Free_Drawing#No-flickering_for_wxListCtrl_with_wxLC_REPORT_.7C_wxLC_VIRTUAL_style

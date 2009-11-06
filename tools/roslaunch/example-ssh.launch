@@ -7,7 +7,7 @@
   </group>
 
   <!-- default only affects nodes defined later -->
-  <machine name="machine-1" default="true" address="nxx.willowgarage.com" ros-root="/u/kwc/sf/ros/" user="kwc" ssh-port="22" />
+  <machine name="machine-1" default="true" address="localhost" ros-root="/u/kwc/sf/ros/" user="kwc2" ssh-port="2222" />
 
   <group ns="remote">
     <node name="talker" pkg="test_ros" type="talker.py" />

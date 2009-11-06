@@ -143,6 +143,7 @@ hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, 
         err_msg = self._ssh_check_known_hosts(ssh, address, port, username=username)
         
         if not err_msg:
+            username_str = '%s@'%username if username else ''
             try:
                 if not password: #use SSH agent
                     ssh.connect(address, port, username, timeout=TIMEOUT_SSH_CONNECT)
@@ -153,12 +154,12 @@ hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, 
                 err_msg =  "Unable to verify host key for remote computer[%s:%s]"%(address, port)
             except paramiko.AuthenticationException:
                 _logger.error(traceback.format_exc())
-                err_msg = "Authentication to remote computer[%s:%s] failed.\nA common cause of this error is a missing key in your authorized_keys file."%(address, port)
+                err_msg = "Authentication to remote computer[%s%s:%s] failed.\nA common cause of this error is a missing key in your authorized_keys file."%(username_str, address, port)
             except paramiko.SSHException, e:
                 _logger.error(traceback.format_exc())
                 if str(e).startswith("Unknown server"):
                     pass
-                err_msg = "Unable to establish ssh connection to [%s:%s]: %s"%(address, port, e)
+                err_msg = "Unable to establish ssh connection to [%s%s:%s]: %s"%(username_str, address, port, e)
             except socket.error, e:
                 # #1824
                 if e[0] == 111:

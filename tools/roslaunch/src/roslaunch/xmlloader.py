@@ -450,7 +450,7 @@ class XmlLoader(object):
                     name = test_name
                 return Test(test_name, pkg, node_type, name=name, namespace=child_ns.ns, 
                             machine_name=machine, args=args,
-                            remap_args=context.remap_args(), env_args=env_args,
+                            remap_args=remap_context.remap_args(), env_args=env_args,
                             time_limit=time_limit, cwd=cwd, launch_prefix=launch_prefix,
                             retry=retry)
         except KeyError, e:

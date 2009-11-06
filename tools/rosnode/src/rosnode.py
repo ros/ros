@@ -110,7 +110,42 @@ def get_node_names():
             nodes.extend(l)
 
     return list(set(nodes))
+
+def kill_nodes(node_names):
+    """
+    Call shutdown on the specified nodes
+
+    @return: list of nodes that shutdown was called on successfully and list of failures
+    @rtype: ([str], [str])
+    """
+    master = scriptutil.get_master()
     
+    success = []
+    fail = []
+    tocall = []
+    try:
+        # lookup all nodes keeping track of lookup failures for return value
+        for n in node_names:
+            try:
+                uri = _succeed(master.lookupNode(ID, n))
+                tocall.append([n, uri])
+            except:
+                fail.append(n)
+    except socket.error:
+        raise ROSNodeIOException("Unable to communicate with master!")
+
+    for n, uri in tocall:
+        # the shutdown call can sometimes fail to succeed if the node
+        # tears down during the request handling, so we assume success
+        try:
+            p = xmlrpclib.ServerProxy(uri)
+            _succeed(p.shutdown(ID, 'user request'))
+        except:
+            pass
+        success.append(n)            
+
+    return success, fail
+
 def _sub_rosnode_listnodes(list_uri=False, list_all=False):
     """
     @return: string list of all nodes
@@ -403,6 +438,65 @@ def _rosnode_cmd_info():
     for node in args:
         rosnode_debugnode(node)
 
+def _rosnode_cmd_kill():
+    """
+    Implements rosnode 'kill' command.
+
+    @raise ROSNodeException: if user enters in unrecognized nodes
+    """
+    args = sys.argv[2:]
+    parser = OptionParser(usage="usage: %prog kill <node1> [node2...]", prog=NAME)
+    (options, args) = parser.parse_args(args)
+    if not args:
+        node_list = get_node_names()
+        node_list.sort()
+        if not node_list:
+            print >> sys.stderr, "No nodes running"
+            return 0
+        
+        sys.stdout.write('\n'.join(["%s. %s"%(i+1, n) for i,n in enumerate(node_list)]))
+        sys.stdout.write("\n\nPlease enter the number of the node you wish to kill.\n")
+        sys.stdout.write("> ")
+        
+        selection = ''
+        while not selection:
+            selection = sys.stdin.readline().strip()
+            try:
+                selection = int(selection) 
+                if selection <= 0:
+                    print "ERROR: invalid selection. Please enter a number (ctrl-C to cancel)"                    
+            except:
+                print "ERROR: please enter a number (ctrl-C to cancel)"
+                sys.stdout.flush()
+                selection = ''
+        args = [node_list[selection - 1]]
+    else:
+        # validate args
+        import roslib.scriptutil
+        args = [roslib.scriptutil.script_resolve_name(ID, n) for n in args]
+        node_list = get_node_names()
+        unknown = [n for n in args if not n in node_list]
+        if unknown:
+            if len(unknown) > 1:
+                raise ROSNodeException("Unknown nodes:\n"+'\n'.join([" * %s"%n for n in unknown]))
+            else:
+                raise ROSNodeException("Unknown node %s"%(unknown[0]))
+
+    if len(args) > 1:
+        print "killing:\n"+'\n'.join([" * %s"%n for n in args])
+    else:
+        print "killing %s"%(args[0])
+            
+    success, fail = kill_nodes(args)
+    if fail:
+        if len(args) > 1:
+            print >> sys.stderr, "ERROR: Failed to kill:\n"+'\n'.join([" * %s"%n for n in fail])
+        else:
+            print >> sys.stderr, "ERROR: Failed to kill %s"%(fail[0])
+        return 1
+    else:
+        print "killed"
+        
 def _rosnode_cmd_cleanup():
     """
     Implements rosnode 'cleanup' command.
@@ -455,6 +549,7 @@ Commands:
 \trosnode ping\ttest connectivity to node
 \trosnode list\tlist active nodes
 \trosnode info\tprint information about node
+\trosnode kill\tkill a running node
 
 Type rosnode <command> -h for more detailed usage, e.g. 'rosnode ping -h'
 """
@@ -469,13 +564,15 @@ def rosnodemain():
     try:
         command = sys.argv[1]
         if command == 'ping':
-            _rosnode_cmd_ping()
+            sys.exit(_rosnode_cmd_ping() or 0)
         elif command == 'list':
-            _rosnode_cmd_list()
+            sys.exit(_rosnode_cmd_list() or 0)
         elif command == 'info':
-            _rosnode_cmd_info()
+            sys.exit(_rosnode_cmd_info() or 0)
         elif command == 'cleanup':
-            _rosnode_cmd_cleanup()
+            sys.exit(_rosnode_cmd_cleanup() or 0)
+        elif command == 'kill':
+            sys.exit(_rosnode_cmd_kill() or 0)
         else:
             fullusage()
     except socket.error:
@@ -484,5 +581,3 @@ def rosnodemain():
         print >> sys.stderr, "ERROR: "+str(e)
     except KeyboardInterrupt:
         pass
-        
-        

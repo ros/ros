@@ -143,7 +143,7 @@ class XmlLoader(Loader):
     # 'param'. 'param' is required if the value is a non-dictionary
     # type
     ROSPARAM_OPT_ATTRS = ('command', 'ns', 'file', 'param')
-    def _rosparam_tag(self, tag, context, ros_config):
+    def _rosparam_tag(self, tag, context, ros_config, verbose=True):
         try:
             cmd, ns, file, param = self.opt_attrs(tag, context, (XmlLoader.ROSPARAM_OPT_ATTRS))
             # ns atribute is a bit out-moded and is only left in for backwards compatibility
@@ -152,7 +152,7 @@ class XmlLoader(Loader):
             # load is the default command            
             cmd = cmd or 'load'
             
-            self.load_rosparam(context, ros_config, cmd, param, file, _get_text(tag))
+            self.load_rosparam(context, ros_config, cmd, param, file, _get_text(tag), verbose=verbose)
 
         except ValueError, e:
             raise XmlLoadException("error loading <rosparam> tag: \n\t"+str(e)+"\nXML is %s"%tag.toxml())
@@ -304,7 +304,7 @@ class XmlLoader(Loader):
                     if not is_test and not name:
                         raise XmlParseException(
                             "<node> tag must have a 'name' attribute in order to use <rosparam> tags: %s"%t.toxml())
-                    self._rosparam_tag(t, param_ns, ros_config)
+                    self._rosparam_tag(t, param_ns, ros_config, verbose=verbose)
                 elif tagName == 'env':
                     self._env_tag(t, context, ros_config)
                 else:
@@ -549,7 +549,7 @@ class XmlLoader(Loader):
                     default_machine = m
                 ros_config.add_machine(m, verbose=verbose)
             elif name == 'rosparam':
-                self._rosparam_tag(tag, context, ros_config)
+                self._rosparam_tag(tag, context, ros_config, verbose=verbose)
             elif name == 'master':
                 pass #handled non-recursively
             elif name == 'include':

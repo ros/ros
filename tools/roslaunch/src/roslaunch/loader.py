@@ -247,7 +247,7 @@ class Loader(object):
         # TODO: URI validation
         return Master(type_=type_, uri=uri, auto=auto)
 
-    def add_param(self, ros_config, param_name, param_value):
+    def add_param(self, ros_config, param_name, param_value, verbose=True):
         """
         Add L{Param} instances to launch config. Dictionary values are
         unrolled into individual parameters.
@@ -274,11 +274,11 @@ class Loader(object):
         if type(param_value) == dict:
             # unroll params
             for k, v in param_value.iteritems():
-                self.add_param(ros_config, ns_join(param_name, k), v)
+                self.add_param(ros_config, ns_join(param_name, k), v, verbose=verbose)
         else:
-            ros_config.add_param(Param(param_name, param_value))
+            ros_config.add_param(Param(param_name, param_value), verbose=verbose)
         
-    def load_rosparam(self, context, ros_config, cmd, param, file, text):
+    def load_rosparam(self, context, ros_config, cmd, param, file, text, verbose=True):
         """
         Load rosparam setting
         
@@ -333,7 +333,7 @@ class Loader(object):
             if not param and type(data) != dict:
                 raise ValueError("'param' attribute must be set for non-dictionary values")
 
-            self.add_param(ros_config, full_param, data)
+            self.add_param(ros_config, full_param, data, verbose=verbose)
 
         else:
             raise XmlParseException("unknown command %s"%cmd)

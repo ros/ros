@@ -123,10 +123,15 @@ class TCPServer:
         while not self.is_shutdown:
             try:
                 (client_sock, client_addr) = self.server_sock.accept()
+            except socket.timeout:
+                continue
+                
+            try:
                 #leave threading decisions up to inbound_handler
                 self.inbound_handler(client_sock, client_addr)
             except socket.error, e:
                 if not self.is_shutdown:
+                    traceback.print_exc()
                     logwarn("Failed to handle inbound connection due to socket error: %s"%e)
         logdebug("TCPServer[%s] shutting down", self.port)
 
@@ -286,8 +291,8 @@ class TCPROSServer(object):
                 sock.close()
         except Exception, e:
             # collect stack trace separately in local log file
-            logwarn("Inbound TCP/IP connected failed: %s", e)
-            rospyerr("Inbound TCP/IP connected failed:\n%s", traceback.format_exc(e))
+            logwarn("Inbound TCP/IP connection failed: %s", e)
+            rospyerr("Inbound TCP/IP connection failed:\n%s", traceback.format_exc(e))
             if sock is not None:
                 sock.close()
 

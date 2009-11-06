@@ -175,8 +175,11 @@ class Topic(object):
         unpublish/unsubscribe from topic. Topic instance is no longer
         valid after this call. Additional calls to unregister() have no effect.
         """
-        if self.impl:
-            get_topic_manager().release_impl(self.reg_type, self.resolved_name)
+        # as we don't guard unregister, have to protect value of
+        # resolved_name for release_impl call
+        resolved_name = self.resolved_name
+        if resolved_name and self.impl:
+            get_topic_manager().release_impl(self.reg_type, resolved_name)
             self.impl = self.resolved_name = self.type = self.md5sum = self.data_class = None
 
 class _TopicImpl(object):
@@ -1003,10 +1006,9 @@ class _TopicManager(object):
             map = self.pubs
         else:
             map = self.subs
-        try:
-            self.lock.acquire()
+        with self.lock:
             impl = map.get(resolved_name, None)
-            assert impl is not None, "cannot release topic impl as impl does not exist"
+            assert impl is not None, "cannot release topic impl as impl [%s] does not exist"%resolved_name
             impl.ref_count -= 1
             assert impl.ref_count >= 0, "topic impl's reference count has gone below zero"
             if impl.ref_count == 0:
@@ -1014,8 +1016,6 @@ class _TopicManager(object):
                 impl.close()
                 self._remove(impl, map, reg_type)
                 _logger.debug("... done deletig topic %s", resolved_name)
-        finally:
-            self.lock.release()
 
     def get_publisher_impl(self, resolved_name):
         """

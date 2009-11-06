@@ -65,11 +65,19 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
         # log errors during a stop(). 
         self.is_dead = False
         
-    def _ssh_check_known_hosts(self, ssh, address, port):
+    def _ssh_check_known_hosts(self, ssh, address, port, username=None):
         """
         Sub-routine for loading the host keys and making sure that they are configured
         properly for the desired SSH.
-        
+
+        @param ssh: paramiko SSH client
+        @type  ssh: L{paramiko.SSHClient}
+        @param address: SSH IP address
+        @type  address: str
+        @param port: SSH port
+        @type  port: int
+        @param username: optional username to include in error message if check fails
+        @type  username: str
         @return: error message if improperly configured, or None
         @rtype: str
         """
@@ -96,18 +104,20 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
         if override == '1':
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         elif hk.lookup(address) is None:
-            port_str = ''
+            port_str = user_str = ''
             if port != 22:
                 port_str = "-p %s "%port
+            if username:
+                user_str = username+'@'
             return """%s is not in your SSH known_hosts file.
 
 Please manually:
-  ssh %s%s
+  ssh %s%s%s
 
 then try roslaunching again.
 
 If you wish to configure roslaunch to automatically recognize unknown
-hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, port_str, address)
+hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, user_str, port_str, address)
         
     def _ssh_exec(self, command, env, address, port, username=None, password=None):
         if env:
@@ -130,7 +140,7 @@ hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, 
             return None, "paramiko is not installed"
         #load ssh client and connect
         ssh = paramiko.SSHClient()
-        err_msg = self._ssh_check_known_hosts(ssh, address, port)
+        err_msg = self._ssh_check_known_hosts(ssh, address, port, username=username)
         
         if not err_msg:
             try:

@@ -100,6 +100,8 @@ public:
 
 protected:
 
+  roslib::LogConstPtr getSelectedMessage();
+
   // Callbacks
   void onItemActivated(wxListEvent& event);
   void onItemSelected(wxListEvent& event);

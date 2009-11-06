@@ -381,128 +381,75 @@ std::string escapeForRegex(const std::string& str)
   return boost::regex_replace(str, esc, rep, boost::match_default | boost::format_sed);
 }
 
-void RosoutListControl::onExcludeLocation(wxCommandEvent& event)
+void addFilter(RosoutPanel* model, const std::string& text, uint32_t field_mask, bool include)
+{
+  RosoutTextFilterPtr filter = model->createTextFilter();
+  filter->setFilterType(include ? RosoutTextFilter::Include : RosoutTextFilter::Exclude);
+  filter->setFieldMask(field_mask);
+  filter->setText("^" + escapeForRegex(text) + "$");
+  filter->setUseRegex(true);
+}
+
+roslib::LogConstPtr RosoutListControl::getSelectedMessage()
 {
   if (selection_ == -1)
   {
-    return;
+    return roslib::LogConstPtr();
   }
 
-  roslib::LogConstPtr message = model_->getMessageByIndex(selection_);
-  if (!message)
+  return model_->getMessageByIndex(selection_);
+}
+
+void RosoutListControl::onExcludeLocation(wxCommandEvent& event)
+{
+  if (roslib::LogConstPtr message = getSelectedMessage())
   {
-    return;
+    std::stringstream ss;
+    ss << message->file << ":" << message->function << ":" << message->line;
+    addFilter(model_, ss.str(), RosoutTextFilter::Location, false);
   }
-
-  RosoutTextFilterPtr filter = model_->createTextFilter();
-  filter->setFilterType(RosoutTextFilter::Exclude);
-  filter->setFieldMask(RosoutTextFilter::Location);
-  std::stringstream ss;
-  ss << message->file << ":" << message->function << ":" << message->line;
-  filter->setText("^" + escapeForRegex(ss.str()) + "$");
-  filter->setUseRegex(true);
 }
 
 void RosoutListControl::onExcludeNode(wxCommandEvent& event)
 {
-  if (selection_ == -1)
+  if (roslib::LogConstPtr message = getSelectedMessage())
   {
-    return;
+    addFilter(model_, message->name, RosoutTextFilter::Node, false);
   }
-
-  roslib::LogConstPtr message = model_->getMessageByIndex(selection_);
-  if (!message)
-  {
-    return;
-  }
-
-  RosoutTextFilterPtr filter = model_->createTextFilter();
-  filter->setFilterType(RosoutTextFilter::Exclude);
-  filter->setFieldMask(RosoutTextFilter::Node);
-  filter->setText("^" + escapeForRegex(message->name) + "$");
-  filter->setUseRegex(true);
 }
 
 void RosoutListControl::onExcludeMessage(wxCommandEvent& event)
 {
-  if (selection_ == -1)
+  if (roslib::LogConstPtr message = getSelectedMessage())
   {
-    return;
+    addFilter(model_, message->msg, RosoutTextFilter::Message, false);
   }
-
-  roslib::LogConstPtr message = model_->getMessageByIndex(selection_);
-  if (!message)
-  {
-    return;
-  }
-
-  RosoutTextFilterPtr filter = model_->createTextFilter();
-  filter->setFilterType(RosoutTextFilter::Exclude);
-  filter->setFieldMask(RosoutTextFilter::Message);
-  filter->setText("^" + escapeForRegex(message->msg) + "$");
-  filter->setUseRegex(true);
 }
 
 void RosoutListControl::onIncludeLocation(wxCommandEvent& event)
 {
-  if (selection_ == -1)
+  if (roslib::LogConstPtr message = getSelectedMessage())
   {
-    return;
+    std::stringstream ss;
+    ss << message->file << ":" << message->function << ":" << message->line;
+    addFilter(model_, ss.str(), RosoutTextFilter::Location, true);
   }
-
-  roslib::LogConstPtr message = model_->getMessageByIndex(selection_);
-  if (!message)
-  {
-    return;
-  }
-
-  RosoutTextFilterPtr filter = model_->createTextFilter();
-  filter->setFilterType(RosoutTextFilter::Include);
-  filter->setFieldMask(RosoutTextFilter::Location);
-  std::stringstream ss;
-  ss << message->file << ":" << message->function << ":" << message->line;
-  filter->setText("^" + escapeForRegex(ss.str()) + "$");
-  filter->setUseRegex(true);
 }
 
 void RosoutListControl::onIncludeNode(wxCommandEvent& event)
 {
-  if (selection_ == -1)
+  if (roslib::LogConstPtr message = getSelectedMessage())
   {
-    return;
+    addFilter(model_, message->name, RosoutTextFilter::Node, true);
   }
-
-  roslib::LogConstPtr message = model_->getMessageByIndex(selection_);
-  if (!message)
-  {
-    return;
-  }
-
-  RosoutTextFilterPtr filter = model_->createTextFilter();
-  filter->setFilterType(RosoutTextFilter::Include);
-  filter->setFieldMask(RosoutTextFilter::Node);
-  filter->setText("^" + escapeForRegex(message->name) + "$");
-  filter->setUseRegex(true);
 }
 
 void RosoutListControl::onIncludeMessage(wxCommandEvent& event)
 {
-  if (selection_ == -1)
+  if (roslib::LogConstPtr message = getSelectedMessage())
   {
-    return;
+    addFilter(model_, message->msg, RosoutTextFilter::Message, true);
   }
-
-  roslib::LogConstPtr message = model_->getMessageByIndex(selection_);
-  if (!message)
-  {
-    return;
-  }
-
-  RosoutTextFilterPtr filter = model_->createTextFilter();
-  filter->setFilterType(RosoutTextFilter::Include);
-  filter->setFieldMask(RosoutTextFilter::Message);
-  filter->setText("^" + escapeForRegex(message->msg) + "$");
-  filter->setUseRegex(true);
 }
 
 void RosoutListControl::onItemRightClick(wxListEvent& event)

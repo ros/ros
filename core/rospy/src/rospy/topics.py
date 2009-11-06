@@ -173,10 +173,11 @@ class Topic(object):
     def unregister(self):
         """
         unpublish/unsubscribe from topic. Topic instance is no longer
-        valid after this call.
+        valid after this call. Additional calls to unregister() have no effect.
         """
-        get_topic_manager().release_impl(self.reg_type, self.resolved_name)
-        self.impl = self.resolved_name = self.type = self.md5sum = self.data_class = None
+        if self.impl:
+            get_topic_manager().release_impl(self.reg_type, self.resolved_name)
+            self.impl = self.resolved_name = self.type = self.md5sum = self.data_class = None
 
 class _TopicImpl(object):
     """
@@ -386,9 +387,22 @@ class Subscriber(Topic):
 
         if callback is not None:
             self.impl.add_callback(callback, callback_args)
+            # save arguments for unregister
+            self.callback = callback
+            self.callback_args = callback_args
         if tcp_nodelay:
             self.impl.set_tcp_nodelay(tcp_nodelay)        
 
+    def unregister(self):
+        """
+        unpublish/unsubscribe from topic. Topic instance is no longer
+        valid after this call. Additional calls to unregister() have no effect.
+        """
+        if self.impl:
+            self.impl.remove_callback(self.callback, self.callback_args)
+            self.callback = self.callback_args = None
+            super(Subscriber, self).unregister()
+            
 class _SubscriberImpl(_TopicImpl):
     """
     Underyling L{_TopicImpl} implementation for subscriptions.
@@ -483,7 +497,29 @@ class _SubscriberImpl(_TopicImpl):
             new_callbacks = self.callbacks[:]
             new_callbacks.append((cb, cb_args))
             self.callbacks = new_callbacks
-        
+
+    def remove_callback(self, cb, cb_args):
+        """
+        Unregister a message callback.
+        @param cb: callback function 
+        @type  cb: fn(msg)
+        @param cb_cargs: additional arguments associated with callback
+        @type  cb_cargs: Any
+        @raise KeyError: if no matching callback
+        """
+        with self.c_lock:
+            # we lock in order to serialize calls to add_callback, but
+            # we copy self.callbacks so we can it
+            matches = [x for x in self.callbacks if x[0] == cb and x[1] == cb_args]
+            if matches:
+                new_callbacks = self.callbacks[:]
+                # remove the first match
+                new_callbacks.remove(matches[0])
+                self.callbacks = new_callbacks
+        if not matches:
+            raise KeyError("no matching cb")
+
+            
     def receive_callback(self, msgs):
         """
         Called by underlying connection transport for each new message received

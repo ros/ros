@@ -355,6 +355,10 @@ def _set_param(param, value, verbose=False):
             else:
                 raise ROSParamException("YAML dictionaries must have string keys. Invalid dictionary is:\n%s"%value)
     else:
+        if type(value) == long:
+            if value > sys.maxint:
+                raise ROSParamException("Overflow: Parameter Server integers must be 32-bit signed integers:\n\t-%s <= value <= %s"%(sys.maxint-1, sys.maxint))
+            
         try:
             _succeed(get_param_server().setParam(_get_caller_id(), param, value))
         except socket.error:

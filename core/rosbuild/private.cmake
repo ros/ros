@@ -213,7 +213,7 @@ macro(_rosbuild_add_pyunit file)
 
   # Create target for this test
   add_custom_target(pyunit_${_testname}
-                    COMMAND ${ARGN} python ${file}
+                    COMMAND ${ARGN} python ${file} --gtest_output=xml:$ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml
                     DEPENDS ${file}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     VERBATIM)

@@ -585,9 +585,7 @@ macro(rosbuild_add_pyunit file)
   add_custom_target(test)
   add_dependencies(test pyunit_${_testname})
   # Register check for test output
-  # Can't do this, because the pyunit tests generate their own name
-  # internally. TODO
-  #_rosbuild_check_rostest_xml_result(pyunit_${_testname} $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml)
+  _rosbuild_check_rostest_xml_result(pyunit_${_testname} $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml)
 endmacro(rosbuild_add_pyunit)
 
 # A version of add_pyunit that checks a label against ROS_BUILD_TEST_LABEL

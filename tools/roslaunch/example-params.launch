@@ -34,7 +34,7 @@
 
   <!-- use rosparam files -->
   <group ns="rosparam">
-    <rosparam command="load" file="$(find rosparam)/badexample.yaml" />
+    <rosparam command="load" file="$(find rosparam)/example.yaml" />
   </group>
   
   <!-- upload the contents of a file as a param -->

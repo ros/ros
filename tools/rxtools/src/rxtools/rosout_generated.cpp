@@ -180,8 +180,8 @@ TextboxDialog::TextboxDialog( wxWindow* parent, wxWindowID id, const wxString& t
 	wxBoxSizer* bSizer11;
 	bSizer11 = new wxBoxSizer( wxVERTICAL );
 	
-	text_control_ = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE );
-	bSizer11->Add( text_control_, 1, wxALL|wxEXPAND, 5 );
+	text_ = new wxRichTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_AUTO_URL|wxTE_READONLY|wxVSCROLL|wxHSCROLL|wxNO_BORDER|wxWANTS_CHARS );
+	bSizer11->Add( text_, 1, wxEXPAND | wxALL, 5 );
 	
 	this->SetSizer( bSizer11 );
 	this->Layout();

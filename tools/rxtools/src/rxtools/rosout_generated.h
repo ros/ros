@@ -30,6 +30,7 @@ namespace rxtools{ class RosoutListControl; }
 #include <wx/stattext.h>
 #include <wx/spinctrl.h>
 #include <wx/dialog.h>
+#include <wx/richtext/richtextctrl.h>
 #include <wx/listbox.h>
 #include <wx/choice.h>
 #include <wx/checkbox.h>
@@ -109,7 +110,7 @@ namespace rxtools
 		protected:
 		
 		public:
-			wxTextCtrl* text_control_;
+			wxRichTextCtrl* text_;
 			TextboxDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 644,362 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 			~TextboxDialog();
 		

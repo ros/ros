@@ -34,6 +34,8 @@
 
 #include <ros/assert.h>
 
+#include <boost/algorithm/string/join.hpp>
+
 #include <wx/imaglist.h>
 #include <wx/artprov.h>
 
@@ -253,6 +255,43 @@ wxString RosoutListControl::OnGetItemText(long item, long column) const
   return wxT("Unknown Column");
 }
 
+void RosoutListControl::onPopupKeyPressed(wxKeyEvent& event)
+{
+  int key = event.GetKeyCode();
+  if (key == WXK_ESCAPE)
+  {
+    wxObject* obj = event.GetEventObject();
+    wxWindow* win = wxDynamicCast(obj, wxWindow);
+    if (win)
+    {
+      if (win->GetParent())
+      {
+        win->GetParent()->Close();
+      }
+      else
+      {
+        win->Close();
+      }
+    }
+  }
+  // For some reason the built-in ctrl-C handling doesn't work in linux
+  else if (key == 3)
+  {
+    wxObject* obj = event.GetEventObject();
+    wxRichTextCtrl* text = wxDynamicCast(obj, wxRichTextCtrl);
+    if (text)
+    {
+      text->Copy();
+    }
+
+    event.Skip();
+  }
+  else
+  {
+    event.Skip();
+  }
+}
+
 void RosoutListControl::onItemActivated(wxListEvent& event)
 {
   ROS_ASSERT(model_);
@@ -263,26 +302,75 @@ void RosoutListControl::onItemActivated(wxListEvent& event)
     return;
   }
 
-  std::stringstream ss;
-  ss << "Node: " << message->name << std::endl;
-  ss << "Time: " << message->header.stamp << std::endl;
-  ss << "Severity: " << (const char*) getSeverityText(message).char_str() << std::endl;
-  ss << "Message:\n" << message->msg << "\n\n";
-  ss << "File: " << message->file << std::endl;
-  ss << "Line: " << message->line << std::endl;
-  ss << "Function: " << message->function << std::endl;
-  ss << "Published topics:\n";
-  typedef std::vector<std::string> V_string;
-  V_string::const_iterator it = message->topics.begin();
-  V_string::const_iterator end = message->topics.end();
-  for (; it != end; ++it)
+  TextboxDialog* dialog = new TextboxDialog(this, wxID_ANY);
+  dialog->Show();
+  dialog->text_->SetFocus();
+  dialog->Connect(wxEVT_CHAR, wxKeyEventHandler(RosoutListControl::onPopupKeyPressed), NULL, this);
+  dialog->text_->Connect(wxEVT_CHAR, wxKeyEventHandler(RosoutListControl::onPopupKeyPressed), NULL, this);
+
+  wxRichTextCtrl& t = *dialog->text_;
+
+  // Node name
   {
-    ss << "\t" << *it << std::endl;;
+    t.BeginBold();
+    t.WriteText(wxT("Node: "));
+    t.EndBold();
+    t.WriteText(wxString::FromAscii(message->name.c_str()));
+    t.Newline();
   }
 
-  TextboxDialog* dialog = new TextboxDialog(this, wxID_ANY);
-  dialog->text_control_->SetValue(wxString::FromAscii(ss.str().c_str()));
-  dialog->Show();
+  // Time
+  {
+    t.BeginBold();
+    t.WriteText(wxT("Time: "));
+    t.EndBold();
+    std::stringstream ss;
+    ss << message->header.stamp;
+    t.WriteText(wxString::FromAscii(ss.str().c_str()));
+    t.Newline();
+  }
+
+  // Severity
+  {
+    t.BeginBold();
+    t.WriteText(wxT("Severity: "));
+    t.EndBold();
+    t.WriteText(getSeverityText(message));
+    t.Newline();
+  }
+
+  // Location
+  {
+    if (!message->file.empty())
+    {
+      t.BeginBold();
+      t.WriteText(wxT("Location: "));
+      t.EndBold();
+      std::stringstream ss;
+      ss << message->file << ":" << message->function << ":" << message->line;
+      t.WriteText(wxString::FromAscii(message->msg.c_str()));
+      t.Newline();
+    }
+  }
+
+  // Published Topics
+  {
+    t.BeginBold();
+    t.WriteText(wxT("Published Topics: "));
+    t.EndBold();
+    t.WriteText(wxString::FromAscii(boost::join(message->topics, ", ").c_str()));
+    t.Newline();
+  }
+
+  // Message
+  {
+    t.Newline();
+    t.BeginTextColour(wxColour(127, 61, 2));
+    t.BeginBold();
+    t.WriteText(wxString::FromAscii(message->msg.c_str()));
+    t.EndTextColour();
+    t.EndBold();
+  }
 }
 
 void RosoutListControl::onExcludeLocation(wxCommandEvent& event)

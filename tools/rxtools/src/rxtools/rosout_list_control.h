@@ -112,6 +112,8 @@ protected:
   void onExcludeNode(wxCommandEvent& event);
   void onExcludeMessage(wxCommandEvent& event);
 
+  void onPopupKeyPressed(wxKeyEvent& event);
+
   // overrides from wxListCtrl
   virtual wxListItemAttr * OnGetItemAttr(long item) const;
   virtual wxString OnGetItemText(long item, long column) const;

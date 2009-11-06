@@ -4,8 +4,6 @@ rosbuild_init()
 
 rosbuild_add_boost_directories()
 
-set(wxWidgets_USE_LIBS base core)
-
 find_package(wxWidgets REQUIRED)
 
 if(NOT wxWidgets_FOUND)

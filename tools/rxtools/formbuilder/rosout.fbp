@@ -910,9 +910,9 @@
                 <property name="permission">none</property>
                 <object class="sizeritem" expanded="1">
                     <property name="border">5</property>
-                    <property name="flag">wxALL|wxEXPAND</property>
+                    <property name="flag">wxEXPAND | wxALL</property>
                     <property name="proportion">1</property>
-                    <object class="wxTextCtrl" expanded="1">
+                    <object class="wxRichTextCtrl" expanded="1">
                         <property name="bg"></property>
                         <property name="context_help"></property>
                         <property name="enabled">1</property>
@@ -921,19 +921,17 @@
                         <property name="hidden">0</property>
                         <property name="id">wxID_ANY</property>
                         <property name="maximum_size"></property>
-                        <property name="maxlength">0</property>
                         <property name="minimum_size"></property>
-                        <property name="name">text_control_</property>
+                        <property name="name">text_</property>
                         <property name="permission">public</property>
                         <property name="pos"></property>
                         <property name="size"></property>
-                        <property name="style">wxTE_MULTILINE</property>
+                        <property name="style">wxTE_AUTO_URL|wxTE_READONLY</property>
                         <property name="subclass"></property>
                         <property name="tooltip"></property>
-                        <property name="value"></property>
                         <property name="window_extra_style"></property>
                         <property name="window_name"></property>
-                        <property name="window_style"></property>
+                        <property name="window_style">wxVSCROLL|wxHSCROLL|wxNO_BORDER|wxWANTS_CHARS</property>
                         <event name="OnChar"></event>
                         <event name="OnEnterWindow"></event>
                         <event name="OnEraseBackground"></event>
@@ -951,6 +949,15 @@
                         <event name="OnMouseEvents"></event>
                         <event name="OnMouseWheel"></event>
                         <event name="OnPaint"></event>
+                        <event name="OnRichTextCharacter"></event>
+                        <event name="OnRichTextContentDeleted"></event>
+                        <event name="OnRichTextContentInserted"></event>
+                        <event name="OnRichTextDelete"></event>
+                        <event name="OnRichTextReturn"></event>
+                        <event name="OnRichTextStyleChanged"></event>
+                        <event name="OnRichTextStyleSheetChanged"></event>
+                        <event name="OnRichTextStyleSheetReplaced"></event>
+                        <event name="OnRichTextStyleSheetReplacing"></event>
                         <event name="OnRightDClick"></event>
                         <event name="OnRightDown"></event>
                         <event name="OnRightUp"></event>

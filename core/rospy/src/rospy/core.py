@@ -118,10 +118,14 @@ def parse_rosrpc_uri(uri):
 
 #########################################################
         
-def _stdout_handler(msg):
-    sys.stdout.write(str(msg)+'\n')
-def _stderr_handler(msg):
-    sys.stderr.write(str(msg)+'\n')
+def _stdout_handler(level):
+    def fn(msg):
+        sys.stdout.write("[%s] %f: %s\n"%(level,time.time(), str(msg)))
+    return fn
+def _stderr_handler(level):
+    def fn(msg):
+        sys.stderr.write("[%s] %f: %s\n"%(level,time.time(), str(msg)))
+    return fn
 
 # client logger
 _clogger = logging.getLogger("rosout")
@@ -129,10 +133,10 @@ _clogger = logging.getLogger("rosout")
 _rospy_logger = logging.getLogger("rospy.internal")
 
 _logdebug_handlers = [_clogger.debug]
-_loginfo_handlers = [_clogger.info, _stdout_handler]
-_logwarn_handlers = [_clogger.warn, _stderr_handler]
-_logerr_handlers = [_clogger.error, _stderr_handler]
-_logfatal_handlers = [_clogger.critical, _stderr_handler]
+_loginfo_handlers = [_clogger.info, _stdout_handler('INFO')]
+_logwarn_handlers = [_clogger.warn, _stderr_handler('WARN')]
+_logerr_handlers = [_clogger.error, _stderr_handler('ERROR')]
+_logfatal_handlers = [_clogger.critical, _stderr_handler('FATAL')]
 
 # we keep a separate, non-rosout log file to contain stack traces and
 # other sorts of information that scare users but are essential for

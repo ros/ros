@@ -446,8 +446,18 @@ def _rosnode_cmd_kill():
     """
     args = sys.argv[2:]
     parser = OptionParser(usage="usage: %prog kill <node1> [node2...]", prog=NAME)
+    parser.add_option("-a",
+                      dest="kill_all", default=False,
+                      action="store_true",
+                      help="kill all nodes")
+
     (options, args) = parser.parse_args(args)
-    if not args:
+    if options.kill_all:
+        if args:
+            parser.error("invalid arguments with kill all (-a) option")
+        args = get_node_names()
+        args.sort()
+    elif not args:
         node_list = get_node_names()
         node_list.sort()
         if not node_list:

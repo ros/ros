@@ -214,8 +214,8 @@ def roslaunch_config_errors(ctx):
 def roslaunch_missing_deps_check(ctx):
     missing = []
     for pkg, miss in ctx.launch_file_missing_deps.iteritems():
-        for m in miss:
-            missing.append('  <depend package="%s" />'%m)
+        if miss:
+            missing.append("%s/manifest.xml: %s"%(pkg, ', '.join(miss)))
     return missing
 
 def roslaunch_respawn_check(ctx):

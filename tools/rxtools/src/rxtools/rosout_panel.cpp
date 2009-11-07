@@ -63,6 +63,7 @@ RosoutPanel::RosoutPanel(wxWindow* parent, int id, wxPoint pos, wxSize size, int
 , needs_refilter_(false)
 , refilter_timer_(0.0f)
 , pause_(false)
+, logger_level_frame_(0)
 {
   wxInitAllImageHandlers();
 
@@ -192,6 +193,24 @@ RosoutFrame* RosoutPanel::createNewFrame()
 void RosoutPanel::onNewWindow(wxCommandEvent& event)
 {
   createNewFrame();
+}
+
+void RosoutPanel::onLoggerLevelsClose(wxCloseEvent& event)
+{
+  logger_level_frame_->Show(false);
+  event.Veto();
+}
+
+void RosoutPanel::onLoggerLevels(wxCommandEvent& event)
+{
+  if (!logger_level_frame_)
+  {
+    logger_level_frame_ = new LoggerLevelFrame(this);
+    logger_level_frame_->Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(RosoutPanel::onLoggerLevelsClose), NULL, this);
+  }
+
+  logger_level_frame_->Show();
+  logger_level_frame_->Raise();
 }
 
 bool filterEnabledCheckboxEqual(wxWindowID id, const RosoutPanel::FilterInfo& info)

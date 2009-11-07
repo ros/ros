@@ -181,6 +181,8 @@ protected:
   virtual void onClear(wxCommandEvent& event);
 
   virtual void onNewWindow(wxCommandEvent& event);
+  virtual void onLoggerLevels(wxCommandEvent& event);
+  void onLoggerLevelsClose(wxCloseEvent& event);
 
   /**
    * \brief (wx callback) Called every 100ms so we can process new messages
@@ -282,6 +284,8 @@ protected:
   wxBitmap delete_filter_bitmap_;
 
   bool pause_;
+
+  LoggerLevelFrame* logger_level_frame_;
 };
 
 } // namespace rxtools

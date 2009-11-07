@@ -8,6 +8,7 @@
 #ifndef __rosout_generated__
 #define __rosout_generated__
 
+namespace rxtools{ class LoggerLevelPanel; }
 namespace rxtools{ class RosoutListControl; }
 namespace rxtools{ class RosoutPanel; }
 
@@ -18,8 +19,8 @@ namespace rxtools{ class RosoutPanel; }
 #include <wx/colour.h>
 #include <wx/settings.h>
 #include <wx/string.h>
-#include <wx/button.h>
 #include <wx/tglbtn.h>
+#include <wx/button.h>
 #include <wx/bitmap.h>
 #include <wx/image.h>
 #include <wx/icon.h>
@@ -52,10 +53,11 @@ namespace rxtools
 		protected:
 			rxtools::RosoutListControl* table_;
 			wxBoxSizer* severity_sizer_;
-			wxButton* clear_button_;
 			wxToggleButton* pause_button_;
+			wxButton* clear_button_;
 			wxButton* setup_button_;
-			wxButton* m_button5;
+			wxButton* clear_button_1;
+			wxButton* new_window_button_;
 			wxBoxSizer* filters_pane_sizer_;
 			wxScrolledWindow* filters_window_;
 			wxBoxSizer* filters_window_sizer_;
@@ -64,14 +66,15 @@ namespace rxtools
 			
 			// Virtual event handlers, overide them in your derived class
 			virtual void onSize( wxSizeEvent& event ){ event.Skip(); }
-			virtual void onClear( wxCommandEvent& event ){ event.Skip(); }
 			virtual void onPause( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onClear( wxCommandEvent& event ){ event.Skip(); }
 			virtual void onSetup( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onLoggerLevels( wxCommandEvent& event ){ event.Skip(); }
 			virtual void onNewWindow( wxCommandEvent& event ){ event.Skip(); }
 			
 		
 		public:
-			RosoutPanelBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 837,550 ), long style = wxCLIP_CHILDREN|wxTAB_TRAVERSAL );
+			RosoutPanelBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxCLIP_CHILDREN|wxTAB_TRAVERSAL );
 			~RosoutPanelBase();
 		
 	};
@@ -221,6 +224,22 @@ namespace rxtools
 			rxtools::RosoutPanel* rosout_panel_;
 			RosoutFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("rxconsole"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 			~RosoutFrame();
+		
+	};
+	
+	///////////////////////////////////////////////////////////////////////////////
+	/// Class LoggerLevelFrame
+	///////////////////////////////////////////////////////////////////////////////
+	class LoggerLevelFrame : public wxFrame 
+	{
+		private:
+		
+		protected:
+		
+		public:
+			rxtools::LoggerLevelPanel* logger_panel_;
+			LoggerLevelFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("rxloggerlevel"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,200 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+			~LoggerLevelFrame();
 		
 	};
 	

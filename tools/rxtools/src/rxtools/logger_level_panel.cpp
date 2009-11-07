@@ -40,8 +40,8 @@
 namespace rxtools
 {
 
-LoggerLevelPanel::LoggerLevelPanel(wxWindow* parent)
-: LoggerLevelPanelBase(parent, wxID_ANY)
+LoggerLevelPanel::LoggerLevelPanel(wxWindow* parent, int id, wxPoint pos, wxSize size, int style)
+: LoggerLevelPanelBase(parent, id, pos, size, style)
 {
   fillNodeList();
 }
@@ -71,6 +71,11 @@ void LoggerLevelPanel::fillNodeList()
       nodes_box_->Append(wxString::FromAscii(node.c_str()));
     }
   }
+}
+
+void LoggerLevelPanel::refresh()
+{
+  fillNodeList();
 }
 
 void LoggerLevelPanel::onNodesRefresh( wxCommandEvent& event )

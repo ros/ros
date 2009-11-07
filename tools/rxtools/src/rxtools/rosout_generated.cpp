@@ -5,6 +5,7 @@
 // PLEASE DO "NOT" EDIT THIS FILE!
 ///////////////////////////////////////////////////////////////////////////
 
+#include "logger_level_panel.h"
 #include "rosout_list_control.h"
 #include "rosout_panel.h"
 
@@ -48,17 +49,20 @@ RosoutPanelBase::RosoutPanelBase( wxWindow* parent, wxWindowID id, const wxPoint
 	
 	bSizer9->Add( severity_sizer_, 1, wxEXPAND, 5 );
 	
-	clear_button_ = new wxButton( this, wxID_ANY, wxT("Clear"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer9->Add( clear_button_, 0, wxALL, 5 );
-	
 	pause_button_ = new wxToggleButton( this, wxID_ANY, wxT("Pause"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer9->Add( pause_button_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	setup_button_ = new wxButton( this, wxID_ANY, wxT("Setup"), wxDefaultPosition, wxDefaultSize, 0 );
+	clear_button_ = new wxButton( this, wxID_ANY, wxT("Clear"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
+	bSizer9->Add( clear_button_, 0, wxALL, 5 );
+	
+	setup_button_ = new wxButton( this, wxID_ANY, wxT("Setup"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
 	bSizer9->Add( setup_button_, 0, wxALL|wxALIGN_RIGHT, 5 );
 	
-	m_button5 = new wxButton( this, wxID_ANY, wxT("New Window..."), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer9->Add( m_button5, 0, wxALL, 5 );
+	clear_button_1 = new wxButton( this, wxID_ANY, wxT("Levels..."), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
+	bSizer9->Add( clear_button_1, 0, wxALL, 5 );
+	
+	new_window_button_ = new wxButton( this, wxID_ANY, wxT("New Window..."), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT );
+	bSizer9->Add( new_window_button_, 0, wxALL, 5 );
 	
 	bSizer10->Add( bSizer9, 0, wxALIGN_RIGHT|wxEXPAND, 5 );
 	
@@ -93,20 +97,22 @@ RosoutPanelBase::RosoutPanelBase( wxWindow* parent, wxWindowID id, const wxPoint
 	
 	// Connect Events
 	this->Connect( wxEVT_SIZE, wxSizeEventHandler( RosoutPanelBase::onSize ) );
-	clear_button_->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onClear ), NULL, this );
 	pause_button_->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onPause ), NULL, this );
+	clear_button_->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onClear ), NULL, this );
 	setup_button_->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onSetup ), NULL, this );
-	m_button5->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onNewWindow ), NULL, this );
+	clear_button_1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onLoggerLevels ), NULL, this );
+	new_window_button_->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onNewWindow ), NULL, this );
 }
 
 RosoutPanelBase::~RosoutPanelBase()
 {
 	// Disconnect Events
 	this->Disconnect( wxEVT_SIZE, wxSizeEventHandler( RosoutPanelBase::onSize ) );
-	clear_button_->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onClear ), NULL, this );
 	pause_button_->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onPause ), NULL, this );
+	clear_button_->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onClear ), NULL, this );
 	setup_button_->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onSetup ), NULL, this );
-	m_button5->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onNewWindow ), NULL, this );
+	clear_button_1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onLoggerLevels ), NULL, this );
+	new_window_button_->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( RosoutPanelBase::onNewWindow ), NULL, this );
 }
 
 RosoutSetupDialogBase::RosoutSetupDialogBase( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
@@ -254,15 +260,21 @@ RosoutTextFilterControlBase::RosoutTextFilterControlBase( wxWindow* parent, wxWi
 	bSizer14 = new wxBoxSizer( wxHORIZONTAL );
 	
 	text_ = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	text_->SetToolTip( wxT("Enter the text to filter by here.") );
+	
 	bSizer14->Add( text_, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	wxString include_exclude_Choices[] = { wxT("Include"), wxT("Exclude") };
 	int include_exclude_NChoices = sizeof( include_exclude_Choices ) / sizeof( wxString );
 	include_exclude_ = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, include_exclude_NChoices, include_exclude_Choices, 0 );
 	include_exclude_->SetSelection( 0 );
+	include_exclude_->SetToolTip( wxT("The type of filtering to be done.  If the type is Include, only messages that match the filter string will be shown.  If the type is exclude, any message matching the filter string will not be shown.") );
+	
 	bSizer14->Add( include_exclude_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	regex_ = new wxCheckBox( this, wxID_ANY, wxT("Regex"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	regex_->SetToolTip( wxT("If checked, uses perl-style regular expressions to do the match.  If unchecked, uses wildcard syntax (* and ? being special).") );
 	
 	bSizer14->Add( regex_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
@@ -274,17 +286,25 @@ RosoutTextFilterControlBase::RosoutTextFilterControlBase( wxWindow* parent, wxWi
 	
 	message_ = new wxCheckBox( this, wxID_ANY, wxT("Message"), wxDefaultPosition, wxDefaultSize, 0 );
 	
+	message_->SetToolTip( wxT("Match against the message field") );
+	
 	bSizer14->Add( message_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
 	
 	node_ = new wxCheckBox( this, wxID_ANY, wxT("Node"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	node_->SetToolTip( wxT("Match against the node's name") );
 	
 	bSizer14->Add( node_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
 	
 	location_ = new wxCheckBox( this, wxID_ANY, wxT("Location"), wxDefaultPosition, wxDefaultSize, 0 );
 	
+	location_->SetToolTip( wxT("Match against the code location") );
+	
 	bSizer14->Add( location_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
 	
 	topics_ = new wxCheckBox( this, wxID_ANY, wxT("Topics"), wxDefaultPosition, wxDefaultSize, 0 );
+	
+	topics_->SetToolTip( wxT("Match against the published topics") );
 	
 	bSizer14->Add( topics_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
 	
@@ -367,7 +387,7 @@ RosoutSeverityFilterControlBase::~RosoutSeverityFilterControlBase()
 
 RosoutFrame::RosoutFrame( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
 {
-	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+	this->SetSizeHints( wxSize( 800,250 ), wxDefaultSize );
 	
 	wxBoxSizer* bSizer19;
 	bSizer19 = new wxBoxSizer( wxVERTICAL );
@@ -380,5 +400,23 @@ RosoutFrame::RosoutFrame( wxWindow* parent, wxWindowID id, const wxString& title
 }
 
 RosoutFrame::~RosoutFrame()
+{
+}
+
+LoggerLevelFrame::LoggerLevelFrame( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxSize( -1,-1 ), wxDefaultSize );
+	
+	wxBoxSizer* bSizer19;
+	bSizer19 = new wxBoxSizer( wxVERTICAL );
+	
+	logger_panel_ = new rxtools::LoggerLevelPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	bSizer19->Add( logger_panel_, 1, wxEXPAND | wxALL, 5 );
+	
+	this->SetSizer( bSizer19 );
+	this->Layout();
+}
+
+LoggerLevelFrame::~LoggerLevelFrame()
 {
 }

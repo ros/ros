@@ -166,6 +166,7 @@ def _start_coverage(packages):
     except ImportError, e:
         print >> sys.stderr, """WARNING: cannot import python-coverage, coverage tests will not run.
 To install coverage, run 'easy_install coverage'"""
+    import sys
     try:
         # reload the module to get coverage
         for package in packages:
@@ -176,6 +177,7 @@ To install coverage, run 'easy_install coverage'"""
         return
 
 def _stop_coverage(packages):
+    import sys
     try:
         import coverage
         coverage.stop()

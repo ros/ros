@@ -557,7 +557,7 @@ class XmlLoader(Loader):
             elif name == 'env':
                 self._env_tag(tag, context, ros_config)
             else:
-                ros_config.add_config_error("WARNING: unrecognized tag"+tag.tagName)
+                ros_config.add_config_error("unrecognized tag "+tag.tagName)
         return default_machine
 
     ## subroutine of launch for loading XML DOM into config. Load_launch assumes that it is

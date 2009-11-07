@@ -1,6 +1,5 @@
 <launch>
   <node name="talker" pkg="test_ros" type="talker.py" />
-  <node name="talker" pkg="test_ros" type="talker.py" />
   <group ns="foo">
     <node name="talker" pkg="test_ros" type="talker.py" />
   </group>

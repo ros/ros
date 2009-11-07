@@ -82,10 +82,12 @@ def _setTextMode(val):
 # global store of all ROSLaunchRunners so we can do an extra shutdown
 # in the rare event a tearDown fails to execute
 _test_parents = []
+_config = None
 def _addRostestParent(runner):
-    global _test_parents
+    global _test_parents, _config
     logger.info("_addRostestParent [%s]", runner)
     _test_parents.append(runner)
+    _config = runner.config
     
 # TODO: convert most of this into a run() routine of a RoslaunchRunner subclass
 
@@ -319,7 +321,15 @@ def rostestmain():
         logger.info("calling pmon_shutdown")
         pmon_shutdown()
         logger.info("... done calling pmon_shutdown")
-        
+
+    # print config errors after test has run so that we don't get caught up in .xml results
+    if _config:
+        if _config.config_errors:
+            print >> sys.stderr, "\n[ROSTEST WARNINGS]"+'-'*62+'\n'
+        for err in _config.config_errors:
+            print >> sys.stderr, " * %s"%err
+        print ''
+
     # summary is worthless if textMode is on as we cannot scrape .xml results
     subtest_results = _getResults()
     if not _textMode:

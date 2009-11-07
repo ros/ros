@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: masterslave.py 6487 2009-10-12 19:14:45Z kwc $
+# Revision $Id$
 """
 Python adapter for calling ROS Master API. While it is trivial to call the 
 Master directly using XML-RPC, this API provides a safer abstraction in the event

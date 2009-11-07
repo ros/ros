@@ -139,7 +139,7 @@ class TVal(object):
     @deprecated
     def tons(self):
         """
-        Use to_ns() instead. This is retained for backwards compatibility.
+        Use to_nsec() instead. This is retained for backwards compatibility.
         @return: time as nanoseconds
         @rtype: long
         """
@@ -305,7 +305,7 @@ class Time(TVal):
         """
         if not isinstance(other, Time):
             raise TypeError("cannot compare to non-Time")
-        nanos = self.tons() - other.tons()
+        nanos = self.to_nsec() - other.to_nsec()
         if nanos > 0:
             return 1
         if nanos == 0:
@@ -344,7 +344,7 @@ class Duration(TVal):
         super(Duration, self).__init__(secs, nsecs)
 
     def __repr__(self):
-        return "rostime.Duration[%d]"%self.tons()
+        return "rostime.Duration[%d]"%self.to_nsec()
 
     @deprecated
     def from_seconds(float_seconds):
@@ -429,7 +429,7 @@ class Duration(TVal):
     def __cmp__(self, other):
         if not isinstance(other, Duration):
             raise TypeError("Cannot compare to non-Duration")
-        nanos = self.tons() - other.tons()
+        nanos = self.to_nsec() - other.to_nsec()
         if nanos > 0:
             return 1
         if nanos == 0:

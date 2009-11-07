@@ -219,7 +219,7 @@ def get_time():
     @return: time in secs (time.time() format)    
     @rtype: float
     """
-    return Time.now().to_seconds()
+    return Time.now().to_sec()
 
 def set_rostime_initialized(val):
     """

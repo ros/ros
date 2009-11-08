@@ -97,6 +97,12 @@ def failDuplicateRunner(testName):
         print "Duplicate tests named [%s] in rostest suite"%testName
         self.fail("Duplicate tests named [%s] in rostest suite"%testName)
     return fn
+
+def failRunner(testName, message):
+    def fn(self):
+        print >> sys.stderr, message
+        self.fail(message)
+    return fn
     
 ## Test function generator that takes in a roslaunch Test object and
 ## returns a class instance method that runs the test. TestCase
@@ -226,8 +232,20 @@ def createUnitTest(pkg, test_file):
     # add in the tests
     testNames = []
     for test in config.tests:
+        # #1989: find test first to make sure it exists and is executable
+        err_msg = None
+        try:
+            cmd = roslib.packages.find_node(test.package, test.type, \
+                                            test.machine.ros_root, test.machine.ros_package_path)
+            if not cmd:
+                err_msg = "Test node [%s/%s] does not exist or is not executable"%(test.package, test.type)
+        except roslib.packages.ROSPkgException, e:
+            err_msg = "Package [%s] for test node [%s/%s] does not exist"%(test.package, test.package, test.type)
+
         testName = 'test%s'%(test.test_name)
-        if testName in testNames:
+        if err_msg:
+            classdict[testName] = failRunner(test.test_name, err_msg)
+        elif testName in testNames:
             classdict[testName] = failDuplicateRunner(test.test_name)
         else:
             classdict[testName] = rostestRunner(test, pkg)

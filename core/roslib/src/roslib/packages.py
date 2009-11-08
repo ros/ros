@@ -335,7 +335,6 @@ def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
     dir = get_pkg_dir(pkg, required=True, \
                       ros_root=ros_root, ros_package_path=ros_package_path)
     #UNIXONLY
-    node_exe = None
     for p, dirs, files in os.walk(dir):
         if node_type in files:
             test_path = os.path.join(p, node_type)

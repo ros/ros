@@ -178,6 +178,16 @@ bool isStarted();
  */
 CallbackQueue* getGlobalCallbackQueue();
 
+/**
+ * \brief returns a vector of program arguments that do not include any ROS remapping arguments.  Useful if you need
+ * to parse your arguments to determine your node name
+ *
+ * \param argc the number of command-line arguments
+ * \param argv the command-line arguments
+ * \param [out] args_out Output args, stripped of any ROS args
+ */
+void removeROSArgs(int argc, const char** argv, V_string& args_out);
+
 }
 
 #endif

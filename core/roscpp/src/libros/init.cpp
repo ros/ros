@@ -419,6 +419,19 @@ void init(const VP_string& remappings, const std::string& name, uint32_t options
   init(remappings_map, name, options);
 }
 
+void removeROSArgs(int argc, const char** argv, V_string& args_out)
+{
+  for (int i = 0; i < argc; ++i)
+  {
+    std::string arg = argv[i];
+    size_t pos = arg.find(":=");
+    if (pos == std::string::npos)
+    {
+      args_out.push_back(arg);
+    }
+  }
+}
+
 void spin()
 {
   SingleThreadedSpinner s;

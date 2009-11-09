@@ -58,6 +58,8 @@
 
 #include <signal.h>
 
+#include <cstdlib>
+
 namespace ros
 {
 
@@ -87,17 +89,18 @@ void init(const M_string& remappings);
 }
 
 CallbackQueue g_global_queue;
-bool g_initialized = false;
-bool g_started = false;
-boost::mutex g_start_mutex;
-bool g_ok = false;
-uint32_t g_init_options = 0;
-bool g_shutdown_requested = false;
-volatile bool g_shutting_down = false;
-boost::mutex g_shutting_down_mutex;
-boost::thread g_internal_queue_thread;
-extern CallbackQueue g_global_queue;
 ROSOutAppenderPtr g_rosout_appender;
+
+static bool g_initialized = false;
+static bool g_started = false;
+static bool g_atexit_registered = false;
+static boost::mutex g_start_mutex;
+static bool g_ok = false;
+static uint32_t g_init_options = 0;
+static bool g_shutdown_requested = false;
+static volatile bool g_shutting_down = false;
+static boost::mutex g_shutting_down_mutex;
+static boost::thread g_internal_queue_thread;
 
 bool isInitialized()
 {
@@ -120,6 +123,15 @@ void checkForShutdown()
 void requestShutdown()
 {
   g_shutdown_requested = true;
+}
+
+void atexitCallback()
+{
+  if (ok())
+  {
+    ROS_INFO("shutting down due to exit() or end of main() without cleanup of all NodeHandles");
+    shutdown();
+  }
 }
 
 void shutdownCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result)
@@ -337,6 +349,12 @@ void start()
 
 void init(const M_string& remappings, const std::string& name, uint32_t options)
 {
+  if (!g_atexit_registered)
+  {
+    g_atexit_registered = true;
+    atexit(atexitCallback);
+  }
+
   if (!g_initialized)
   {
     g_init_options = options;

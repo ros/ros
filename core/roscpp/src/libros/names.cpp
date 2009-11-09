@@ -31,6 +31,8 @@
 #include <ros/console.h>
 #include <ros/assert.h>
 
+#include <cstring>
+
 namespace ros
 {
 
@@ -48,6 +50,49 @@ const M_string& getRemappings()
 const M_string& getUnresolvedRemappings()
 {
   return g_unresolved_remappings;
+}
+
+bool isValidCharInName(char c)
+{
+  if (isalnum(c) || c == '/' || c == '_')
+  {
+    return true;
+  }
+
+  return false;
+}
+
+bool validate(const std::string& name, std::string& error)
+{
+  if (name.empty())
+  {
+    return true;
+  }
+
+  // First element is special, can be only ~ / or alpha
+  char c = name[0];
+  if (!isalpha(c) && c != '/' && c != '~')
+  {
+    std::stringstream ss;
+    ss << "Character [" << c << "] is not valid as the first character in Graph Resource Name [" << name << "].  Valid characters are a-z, A-Z, / and in some cases ~.";
+    error = ss.str();
+    return false;
+  }
+
+  for (size_t i = 1; i < name.size(); ++i)
+  {
+    c = name[i];
+    if (!isValidCharInName(c))
+    {
+      std::stringstream ss;
+      ss << "Character [" << c << "] at element [" << i << "] is not valid in Graph Resource Name [" << name <<"].  Valid characters are a-z, A-Z, 0-9, / and _.";
+      error = ss.str();
+
+      return false;
+    }
+  }
+
+  return true;
 }
 
 std::string clean(const std::string& name)
@@ -94,6 +139,12 @@ std::string resolve(const std::string& name, bool _remap)
 
 std::string resolve(const std::string& ns, const std::string& name, bool _remap)
 {
+  std::string error;
+  if (!validate(name, error))
+  {
+    ROS_WARN("%s  This will be an error in future versions of ROS.", error.c_str());
+  }
+
   if (name.empty())
   {
     if (ns.empty())

@@ -12,3 +12,6 @@ target_link_libraries(test/test_transport_tcp ros)
 
 rosbuild_add_gtest(test/test_subscription_queue subscription_queue.cpp)
 target_link_libraries(test/test_subscription_queue ros)
+
+rosbuild_add_gtest(test/test_names test_names.cpp)
+target_link_libraries(test/test_names ros)

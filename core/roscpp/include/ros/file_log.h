@@ -40,6 +40,7 @@ namespace file_log
 {
 
 const std::string& getLogFilename();
+const std::string& getLogDirectory();
 
 }
 

@@ -34,6 +34,10 @@
 
 #include <ros/console.h>
 
+#include <boost/filesystem.hpp>
+
+namespace fs = boost::filesystem;
+
 namespace ros
 {
 
@@ -41,10 +45,16 @@ namespace file_log
 {
 
 std::string g_log_filename;
+std::string g_log_directory;
 
 const std::string& getLogFilename()
 {
   return g_log_filename;
+}
+
+const std::string& getLogDirectory()
+{
+  return g_log_directory;
 }
 
 void init(const M_string& remappings)
@@ -71,11 +81,23 @@ void init(const M_string& remappings)
       }
       else
       {
-        ros_log_env = getenv("ROS_ROOT");
+        ros_log_env = getenv("ROS_HOME");
 
         if (ros_log_env)
         {
           log_file_name = ros_log_env + std::string("/log/");
+        }
+        else
+        {
+          // Not cross-platform?
+          ros_log_env = getenv("HOME");
+          if (ros_log_env)
+          {
+            std::string dotros = ros_log_env + std::string("/.ros/");
+            fs::create_directory(dotros);
+            log_file_name = dotros + "log/";
+            fs::create_directory(log_file_name);
+          }
         }
       }
 
@@ -97,6 +119,8 @@ void init(const M_string& remappings)
       log_file_name += std::string("_") + std::string(pid_str) + std::string(".log");
     }
 
+    log_file_name = fs::system_complete(log_file_name).string();
+    g_log_directory = fs::path(log_file_name).parent_path().string();
     g_log_filename = log_file_name;
 
     const log4cxx::LoggerPtr& logger = log4cxx::Logger::getLogger(ROSCONSOLE_ROOT_LOGGER_NAME);

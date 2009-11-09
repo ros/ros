@@ -129,7 +129,7 @@ void atexitCallback()
 {
   if (ok() && !isShuttingDown())
   {
-    ROS_INFO("shutting down due to exit() or end of main() without cleanup of all NodeHandles");
+    ROS_DEBUG("shutting down due to exit() or end of main() without cleanup of all NodeHandles");
     shutdown();
   }
 }

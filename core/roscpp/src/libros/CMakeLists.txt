@@ -53,4 +53,4 @@ rosbuild_add_library(ros
                     timer.cpp
                     wall_timer.cpp
                     )
-rosbuild_link_boost(ros thread signals filesystem)
+rosbuild_link_boost(ros thread signals filesystem system)

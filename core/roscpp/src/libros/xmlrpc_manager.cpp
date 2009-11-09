@@ -109,6 +109,8 @@ const XMLRPCManagerPtr& XMLRPCManager::instance()
 }
 
 XMLRPCManager::XMLRPCManager()
+: port_(0)
+, shutting_down_(false)
 {
 }
 

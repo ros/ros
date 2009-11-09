@@ -305,6 +305,40 @@ bool get(const std::string &key, bool &b, bool use_cache)
   return true;
 }
 
+bool search(const std::string& key, std::string& result_out)
+{
+  return search(this_node::getName(), key, result_out);
+}
+
+bool search(const std::string& ns, const std::string& key, std::string& result_out)
+{
+  XmlRpc::XmlRpcValue params, result, payload;
+  params[0] = ns;
+
+  // searchParam needs a separate form of remapping -- remapping on the unresolved name, rather than the
+  // resolved one.
+
+  std::string remapped = key;
+  M_string::const_iterator it = names::getUnresolvedRemappings().find(key);
+  if (it != names::getUnresolvedRemappings().end())
+  {
+    remapped = it->second;
+  }
+
+  params[1] = remapped;
+  // We don't loop here, because validateXmlrpcResponse() returns false
+  // both when we can't contact the master and when the master says, "I
+  // don't have that param."
+  if (!master::execute("searchParam", params, result, payload, false))
+  {
+    return false;
+  }
+
+  result_out = (std::string)payload;
+
+  return true;
+}
+
 void update(const std::string& key, const XmlRpc::XmlRpcValue& v)
 {
   std::string clean_key = names::clean(key);

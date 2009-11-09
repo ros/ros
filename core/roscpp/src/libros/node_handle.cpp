@@ -523,9 +523,6 @@ bool NodeHandle::getParam(const std::string &key, bool &b, bool use_cache) const
 
 bool NodeHandle::searchParam(const std::string &key, std::string& result_out) const
 {
-  XmlRpc::XmlRpcValue params, result, payload;
-  params[0] = resolveName("");
-
   // searchParam needs a separate form of remapping -- remapping on the unresolved name, rather than the
   // resolved one.
 
@@ -536,28 +533,8 @@ bool NodeHandle::searchParam(const std::string &key, std::string& result_out) co
   {
     remapped = it->second;
   }
-  else
-  {
-    // Then try global remappings
-    it = names::getUnresolvedRemappings().find(key);
-    if (it != names::getUnresolvedRemappings().end())
-    {
-      remapped = it->second;
-    }
-  }
 
-  params[1] = remapped;
-  // We don't loop here, because validateXmlrpcResponse() returns false
-  // both when we can't contact the master and when the master says, "I
-  // don't have that param."
-  if (!master::execute("searchParam", params, result, payload, false))
-  {
-    return false;
-  }
-
-  result_out = (std::string)payload;
-
-  return true;
+  return param::search(resolveName(""), remapped, result_out);
 }
 
 bool NodeHandle::ok() const

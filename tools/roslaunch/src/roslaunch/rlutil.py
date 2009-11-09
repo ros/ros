@@ -37,9 +37,12 @@ import time
 
 import roslaunch.core
 
-## resolve command-line \a args to roslaunch filenames
-## @return [str]: resolved filenames
 def resolve_launch_arguments(args):
+    """
+    Resolve command-line args to roslaunch filenames.
+    @return: resolved filenames
+    @rtype: [str]
+    """
     import roslib.packages
     # user can either specify:
     #  - filename + launch args
@@ -67,8 +70,12 @@ def resolve_launch_arguments(args):
             resolved_args = [resolved] + args[2:]
     return resolved_args
 
-## block until master detected
 def _wait_for_master():
+    """
+    Block until ROS Master is online
+    
+    @raise RuntimeError: if unexpected error occurs
+    """
     import roslaunch.core
     m = roslaunch.core.Master() # get a handle to the default master
     is_running = m.is_running()
@@ -109,12 +116,16 @@ def change_terminal_name(args, is_core):
     _terminal_name = 'roscore' if is_core else ','.join(args)
     _set_terminal(_terminal_name)
 
-## @param options_runid str: run_id value from command-line or None
-## @param options_wait_for_master bool: the wait_for_master command
-## option. If this is True, it means that we must retrieve the value
-## from the parameter server and need to avoid any race conditions
-## with the roscore being initialized.
 def get_or_generate_uuid(options_runid, options_wait_for_master):
+    """
+    @param options_runid: run_id value from command-line or None
+    @type  options_runid: str
+    @param options_wait_for_master: the wait_for_master command
+      option. If this is True, it means that we must retrieve the
+      value from the parameter server and need to avoid any race
+      conditions with the roscore being initialized.
+    @type  options_wait_for_master: bool
+    """
     import roslib.scriptutil
     # Three possible sources of the run_id:
     #
@@ -135,6 +146,7 @@ def get_or_generate_uuid(options_runid, options_wait_for_master):
             if code == 1:
                 return val
             else:
+                val = None
                 raise RuntimeError("unknown error communicating with Parameter Server: %s"%msg)
         except:
             if not options_wait_for_master:

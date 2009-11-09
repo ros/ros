@@ -151,7 +151,7 @@ def main(argv=sys.argv):
         if options.wait_for_master:
             if options.core:
                 parser.error("--wait cannot be used with roscore")
-            _wait_for_master()            
+            roslaunch.rlutil._wait_for_master()            
 
         # spin up the logging infrastructure. have to wait until we can read options.run_id
         uuid = roslaunch.rlutil.get_or_generate_uuid(options.run_id, options.wait_for_master)

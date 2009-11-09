@@ -9,7 +9,7 @@ all:
 	cd core/rospy && make
 	cd 3rdparty/pycrypto && make
 	cd 3rdparty/paramiko && make
-	cd 3rdparty/xmlrpc++ && make
+	cd 3rdparty/xmlrpcpp && make
 	cd tools/roslaunch && make
 	cd test/rostest && make
 	cd core/rosconsole && make
@@ -24,7 +24,7 @@ clean:
 	make -C core/rospy clean
 	make -C 3rdparty/pycrypto clean
 	make -C 3rdparty/paramiko clean
-	make -C 3rdparty/xmlrpc++ clean
+	make -C 3rdparty/xmlrpcpp clean
 	make -C core/rosconsole clean
 	make -C core/roscpp clean
 	make -C core/rosout clean

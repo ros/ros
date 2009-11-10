@@ -120,7 +120,7 @@ class CompileThread(threading.Thread):
     while not self.build_queue.is_done():
       (pkg, build_count, total_pkgs)  = self.build_queue.get_valid_package()
       if not pkg:
-        if self.build_queue.succeded():
+        if self.build_queue.succeeded():
           self.rosmakeall.print_verbose("[ Build Completed Thread Exiting ]", thread_name=self.name);
         else:
           self.rosmakeall.print_verbose("[ Build Terminated Thread Exiting ]", thread_name=self.name)
@@ -162,7 +162,7 @@ class BuildQueue:
     """Return if the build queue has been completed """
     return self._done
 
-  def succeded(self):
+  def succeeded(self):
     """ Return whether the build queue has completed all packages successfully. """
     return len( self.built)  == self._total_pkgs and self._done
 

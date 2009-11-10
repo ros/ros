@@ -125,7 +125,7 @@ class RosMakeAll:
         for v in self.result[argument].values():
           all_pkgs_passed = v and all_pkgs_passed
 
-        build_passed = build_queue.succeded() and all_pkgs_passed
+        build_passed = build_queue.succeeded() and all_pkgs_passed
         return build_passed
 
 

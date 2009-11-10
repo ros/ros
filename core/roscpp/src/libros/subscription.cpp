@@ -480,16 +480,6 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
   }
 }
 
-bool Subscription::handleMessage(const boost::shared_array<uint8_t>& buf, size_t num_bytes, const boost::shared_ptr<M_string>& connection_header)
-{
-  bool dropped = false;
-
-  boost::mutex::scoped_lock lock(callbacks_mutex_);
-  invokeCallback(buf, num_bytes, connection_header);
-
-  return dropped;
-}
-
 class SubscriptionCallback : public CallbackInterface
 {
 public:
@@ -513,6 +503,46 @@ private:
   uint64_t id_;
 };
 typedef boost::shared_ptr<SubscriptionCallback> SubscriptionCallbackPtr;
+
+uint32_t Subscription::handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes, const boost::shared_ptr<M_string>& connection_header, const PublisherLinkPtr& link)
+{
+  boost::mutex::scoped_lock lock(callbacks_mutex_);
+
+  uint32_t drops = 0;
+
+  MessagePtr msg;
+  MessageDeserializerPtr deserializer;
+
+  for (V_CallbackInfo::iterator cb = callbacks_.begin();
+       cb != callbacks_.end(); ++cb)
+  {
+    const CallbackInfoPtr& info = *cb;
+
+    ROS_ASSERT(info->callback_queue_);
+
+    if (!deserializer)
+    {
+      deserializer.reset(new MessageDeserializer(info->helper_, buffer, num_bytes, connection_header));
+    }
+
+    if (info->subscription_queue_->full())
+    {
+      ++drops;
+    }
+
+    uint64_t id = info->subscription_queue_->push(info->helper_, deserializer, info->has_tracked_object_, info->tracked_object_);
+    SubscriptionCallbackPtr cb(new SubscriptionCallback(info->subscription_queue_, id));
+    info->callback_queue_->addCallback(cb);
+  }
+
+  // If this link is latched, store off the message so we can immediately pass it to new subscribers later
+  if (deserializer && link->isLatched())
+  {
+    latched_messages_[link] = deserializer;
+  }
+
+  return drops;
+}
 
 bool Subscription::addCallback(const SubscriptionMessageHelperPtr& helper, CallbackQueueInterface* queue, int32_t queue_size, const VoidPtr& tracked_object)
 {
@@ -538,6 +568,31 @@ bool Subscription::addCallback(const SubscriptionMessageHelperPtr& helper, Callb
     }
 
     callbacks_.push_back(info);
+
+    // if we have any latched links, we need to immediately schedule callbacks
+    if (!latched_messages_.empty())
+    {
+      boost::mutex::scoped_lock lock(publisher_links_mutex_);
+
+      V_PublisherLink::iterator it = publisher_links_.begin();
+      V_PublisherLink::iterator end = publisher_links_.end();
+      for (; it != end;++it)
+      {
+        const PublisherLinkPtr& link = *it;
+        if (link->isLatched())
+        {
+          M_PublisherLinkToDeserializer::iterator des_it = latched_messages_.find(link);
+          if (des_it != latched_messages_.end())
+          {
+            const MessageDeserializerPtr& des = des_it->second;
+
+            uint64_t id = info->subscription_queue_->push(info->helper_, des, info->has_tracked_object_, info->tracked_object_);
+            SubscriptionCallbackPtr cb(new SubscriptionCallback(info->subscription_queue_, id));
+            info->callback_queue_->addCallback(cb);
+          }
+        }
+      }
+    }
   }
 
   return true;
@@ -559,30 +614,6 @@ void Subscription::removeCallback(const SubscriptionMessageHelperPtr& helper)
   }
 }
 
-void Subscription::invokeCallback(const boost::shared_array<uint8_t>& buffer, size_t num_bytes, const boost::shared_ptr<M_string>& connection_header)
-{
-  MessagePtr msg;
-  MessageDeserializerPtr deserializer;
-
-  for (V_CallbackInfo::iterator cb = callbacks_.begin();
-       cb != callbacks_.end(); ++cb)
-  {
-    const CallbackInfoPtr& info = *cb;
-
-    ROS_ASSERT(info->callback_queue_);
-
-    if (!deserializer)
-    {
-      deserializer.reset(new MessageDeserializer(info->helper_, buffer, num_bytes, connection_header));
-    }
-
-    uint64_t id = info->subscription_queue_->push(info->helper_, deserializer, info->has_tracked_object_, info->tracked_object_);
-    //ROS_DEBUG_STREAM("Subscription::invokeCallback for " << (*connection_header)["callerid"] << ", pushed buffer " << (uint64_t*)buffer.get() << " seq " << *(uint32_t*)buffer.get());
-    SubscriptionCallbackPtr cb(new SubscriptionCallback(info->subscription_queue_, id));
-    info->callback_queue_->addCallback(cb);
-  }
-}
-
 void Subscription::removePublisherLink(const PublisherLinkPtr& pub_link)
 {
   boost::mutex::scoped_lock lock(publisher_links_mutex_);
@@ -591,6 +622,11 @@ void Subscription::removePublisherLink(const PublisherLinkPtr& pub_link)
   if (it != publisher_links_.end())
   {
     publisher_links_.erase(it);
+  }
+
+  if (pub_link->isLatched())
+  {
+    latched_messages_.erase(pub_link);
   }
 }
 

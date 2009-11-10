@@ -53,6 +53,9 @@ typedef boost::shared_ptr<SubscriptionCallback> SubscriptionCallbackPtr;
 class SubscriptionQueue;
 typedef boost::shared_ptr<SubscriptionQueue> SubscriptionQueuePtr;
 
+class MessageDeserializer;
+typedef boost::shared_ptr<MessageDeserializer> MessageDeserializerPtr;
+
 
 /**
  * \brief Manages a subscription on a single topic.
@@ -94,13 +97,10 @@ public:
   typedef std::map<std::string, std::string> M_string;
 
   /**
-   * \brief If we're threaded, queues up a message for deserialization and callback invokation by our thread.  Otherwise invokes the callbacks immediately
+   * \brief Called to notify that a new message has arrived from a publisher.
+   * Schedules the callback for invokation with the callback queue
    */
-  bool handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes, const boost::shared_ptr<M_string>& connection_header);
-  /**
-   * \brief Deserializes a message and invokes all our callbacks
-   */
-  void invokeCallback(const boost::shared_array<uint8_t>& buffer, size_t num_bytes, const boost::shared_ptr<M_string>& connection_header);
+  uint32_t handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes, const boost::shared_ptr<M_string>& connection_header, const PublisherLinkPtr& link);
 
   const std::string datatype();
   const std::string md5sum();
@@ -211,6 +211,9 @@ private:
   boost::mutex publisher_links_mutex_;
 
   TransportHints transport_hints_;
+
+  typedef std::map<PublisherLinkPtr, MessageDeserializerPtr> M_PublisherLinkToDeserializer;
+  M_PublisherLinkToDeserializer latched_messages_;
 };
 
 }

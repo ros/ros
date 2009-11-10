@@ -44,8 +44,7 @@ uint64_t SubscriptionQueue::push(const SubscriptionMessageHelperPtr& helper, con
 {
   boost::mutex::scoped_lock lock(queue_mutex_);
 
-  if((size_ > 0) &&
-     (queue_.size() >= (uint32_t)size_))
+  if(full())
   {
     queue_.pop();
     ++queue_counter_;
@@ -146,6 +145,11 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
 bool SubscriptionQueue::ready(uint64_t id)
 {
   return id <= queue_counter_;
+}
+
+bool SubscriptionQueue::full()
+{
+  return (size_ > 0) && (queue_.size() >= (uint32_t)size_);
 }
 
 }

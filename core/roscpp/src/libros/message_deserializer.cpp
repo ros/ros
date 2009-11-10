@@ -54,6 +54,8 @@ MessagePtr MessageDeserializer::deserialize()
   msg_->__connection_header = connection_header_;
   msg_->deserialize(buffer_.get());
 
+  buffer_.reset();
+
   return msg_;
 }
 

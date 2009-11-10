@@ -98,14 +98,25 @@ TEST(SubscriptionQueue, queueSize)
   FakeSubHelperPtr helper(new FakeSubHelper);
   MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, boost::shared_ptr<M_string>()));
 
+  ASSERT_FALSE(queue.full());
+
   uint64_t id = queue.push(helper, des, false, VoidWPtr());
+
+  ASSERT_TRUE(queue.full());
+
   ASSERT_EQ(queue.call(id), CallbackInterface::Success);
 
+  ASSERT_FALSE(queue.full());
+
   id = queue.push(helper, des, false, VoidWPtr());
+
+  ASSERT_TRUE(queue.full());
 
   ASSERT_TRUE(queue.ready(id));
 
   uint64_t id2 = queue.push(helper, des, false, VoidWPtr());
+
+  ASSERT_TRUE(queue.full());
 
   ASSERT_TRUE(queue.ready(id));
   ASSERT_TRUE(queue.ready(id2));
@@ -126,6 +137,8 @@ TEST(SubscriptionQueue, infiniteQueue)
   FakeSubHelperPtr helper(new FakeSubHelper);
   MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, boost::shared_ptr<M_string>()));
 
+  ASSERT_FALSE(queue.full());
+
   uint64_t id = queue.push(helper, des, false, VoidWPtr());
   ASSERT_EQ(queue.call(id), CallbackInterface::Success);
 
@@ -133,7 +146,11 @@ TEST(SubscriptionQueue, infiniteQueue)
 
   ASSERT_TRUE(queue.ready(id));
 
+  ASSERT_FALSE(queue.full());
+
   uint64_t id2 = queue.push(helper, des, false, VoidWPtr());
+
+  ASSERT_FALSE(queue.full());
 
   ASSERT_TRUE(queue.ready(id));
   ASSERT_FALSE(queue.ready(id2));

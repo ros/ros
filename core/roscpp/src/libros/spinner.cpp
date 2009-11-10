@@ -186,6 +186,11 @@ void AsyncSpinnerImpl::threadFunc()
   }
 }
 
+AsyncSpinner::AsyncSpinner(uint32_t thread_count)
+: impl_(new AsyncSpinnerImpl(thread_count, 0))
+{
+}
+
 AsyncSpinner::AsyncSpinner(uint32_t thread_count, CallbackQueue* queue)
 : impl_(new AsyncSpinnerImpl(thread_count, queue))
 {

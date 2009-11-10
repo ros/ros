@@ -34,7 +34,7 @@
 
 namespace ros
 {
-
+class NodeHandle;
 class CallbackQueue;
 
 class Spinner
@@ -80,11 +80,19 @@ class AsyncSpinner
 {
 public:
   /**
-   * \brief Constructor
+   * \brief Simple constructor.  Uses the global callback queue
+   * \param thread_count The number of threads to use.  A value of 0 means to use the number of processor cores
+   */
+  AsyncSpinner(uint32_t thread_count);
+
+  /**
+   * \brief Constructor with custom callback queue
    * \param thread_count The number of threads to use.  A value of 0 means to use the number of processor cores
    * \param queue The callback queue to operate on.  A null value means to use the global queue
    */
-  AsyncSpinner(uint32_t thread_count, CallbackQueue* queue = 0);
+  AsyncSpinner(uint32_t thread_count, CallbackQueue* queue);
+
+
 
   /**
    * \brief Start this spinner spinning asynchronously

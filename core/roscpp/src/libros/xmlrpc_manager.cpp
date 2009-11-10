@@ -111,6 +111,7 @@ const XMLRPCManagerPtr& XMLRPCManager::instance()
 XMLRPCManager::XMLRPCManager()
 : port_(0)
 , shutting_down_(false)
+, unbind_requested_(false)
 {
 }
 
@@ -254,6 +255,11 @@ void XMLRPCManager::serverThreadFunc()
       server_.work(0.01);
     }
 
+    while (unbind_requested_)
+    {
+      WallDuration(0.01).sleep();
+    }
+
     if (shutting_down_)
     {
       return;
@@ -387,8 +393,10 @@ bool XMLRPCManager::bind(const std::string& function_name, const XMLRPCFunc& cb)
 
 void XMLRPCManager::unbind(const std::string& function_name)
 {
+  unbind_requested_ = true;
   boost::mutex::scoped_lock lock(functions_mutex_);
   functions_.erase(function_name);
+  unbind_requested_ = false;
 }
 
 } // namespace ros

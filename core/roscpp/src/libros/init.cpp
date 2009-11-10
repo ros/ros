@@ -474,13 +474,13 @@ void shutdown()
     return;
   }
 
+  ROS_INFO("Shutdown");
+  WallTime begin = WallTime::now();
+
   g_shutting_down = true;
 
   g_global_queue.disable();
   g_global_queue.clear();
-
-  getGlobalCallbackQueue()->disable();
-  getGlobalCallbackQueue()->clear();
 
   if (g_internal_queue_thread.get_id() != boost::this_thread::get_id())
   {
@@ -494,12 +494,15 @@ void shutdown()
 
   if (g_started)
   {
-    XMLRPCManager::instance()->shutdown();
     TopicManager::instance()->shutdown();
     ServiceManager::instance()->shutdown();
     ConnectionManager::instance()->shutdown();
     PollManager::instance()->shutdown();
+    XMLRPCManager::instance()->shutdown();
   }
+
+  WallTime end = WallTime::now();
+  ROS_INFO("Shutdown took [%f secs]", (end - begin).toSec());
 
   g_started = false;
   g_ok = false;

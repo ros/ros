@@ -133,9 +133,9 @@ class CompileThread(threading.Thread):
       else:
         self.rosmakeall.print_all (">>> %s >>> [ make ]"%(pkg), thread_name=self.name)
 
-      (result, result_string) = self.rosmakeall.build(pkg, self.argument) 
+      (result, result_string) = self.rosmakeall.build(pkg, self.argument, self.build_queue.robust_build) 
       self.rosmakeall.print_all("<<< %s <<< %s"%(pkg, result_string), thread_name= self.name)
-      if result or self.rosmakeall.robust_build:
+      if result or self.build_queue.robust_build:
         self.build_queue.return_built(pkg)
         if result_string.find("[Interrupted]") != -1:
           self.rosmakeall.print_all("Caught Interruption", thread_name=self.name)
@@ -149,14 +149,14 @@ class CompileThread(threading.Thread):
 class BuildQueue:
   """ This class provides a thread safe build queue.  Which will do
   the sequencing for many CompileThreads. """
-  def __init__(self, package_list, dependency_tracker):
+  def __init__(self, package_list, dependency_tracker, robust_build = False):
     self._total_pkgs = len(package_list)
     self.dependency_tracker = dependency_tracker
     self.to_build = package_list[:] # do a copy not a reference
     self.built = []
     self.condition = threading.Condition()
     self._done = False
-
+    self.robust_build = robust_build
 
   def is_done(self):
     """Return if the build queue has been completed """

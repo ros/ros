@@ -106,7 +106,7 @@ class RosMakeAll:
         self.output[argument] = {}
         self.result[argument] = {}
 
-        build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker)
+        build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = robust_build)
         cts = []
         for i in  xrange(0, self.threads):
           ct = parallel_build.CompileThread(str(i), build_queue, self, argument)
@@ -129,7 +129,7 @@ class RosMakeAll:
         return build_passed
 
 
-    def build(self, p, argument = None):
+    def build(self, p, argument = None, robust_build=False):
         return_string = ""
         try:
             local_env = os.environ.copy()

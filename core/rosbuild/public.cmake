@@ -224,6 +224,19 @@ macro(rosbuild_init)
   # Set up the test targets.  Subsequent calls to rosbuild_add_gtest and
   # friends add targets and dependencies from these targets.
   #
+  # Find rostest.  The variable rostest_path will also be reused in other
+  # macros.
+  rosbuild_invoke_rospack("" rostest path find rostest)
+  
+  # Record where we're going to put test results (#2003)
+  execute_process(COMMAND ${rostest_path}/bin/test-results-dir
+                  OUTPUT_VARIABLE rosbuild_test_results_dir
+                  RESULT_VARIABLE _test_results_dir_failed
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(_test_results_dir_failed)
+    message(FATAL_ERROR "Failed to invoke rostest/bin/test-results-dir")
+  endif(_test_results_dir_failed)
+
   # The 'tests' target builds the test program
   add_custom_target(tests)
   # The 'test' target runs all but the future tests
@@ -237,7 +250,7 @@ macro(rosbuild_init)
   # handle lingers in the test results directory), because CMake doesn't
   # seem to be able to do it.
   add_custom_target(clean-test-results
-                    if ! rm -rf $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}\; then echo "WARNING: failed to remove test-results directory"\; fi)
+                    if ! rm -rf ${rosbuild_test_results_dir}/${PROJECT_NAME}\; then echo "WARNING: failed to remove test-results directory"\; fi)
   # Make the tests target depend on clean-test-results, which will ensure
   # that test results are deleted before we try to build tests, and thus
   # before we try to run tests.
@@ -246,9 +259,6 @@ macro(rosbuild_init)
   add_custom_target(test-future)
 
 
-  # Find rostest.  The variable rostest_path will also be reused in other
-  # macros.
-  rosbuild_invoke_rospack("" rostest path find rostest)
   add_custom_target(test-results-run)
   add_custom_target(test-results
                     COMMAND ${rostest_path}/bin/rostest-results --nodeps ${_project})
@@ -523,7 +533,7 @@ macro(rosbuild_add_gtest exe)
   add_custom_target(test)
   add_dependencies(test test_${_testname})
   # Register check for test output
-  _rosbuild_check_rostest_xml_result(test_${_testname} $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml)
+  _rosbuild_check_rostest_xml_result(test_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
 endmacro(rosbuild_add_gtest)
 
 # A version of add_gtest that checks a label against ROS_BUILD_TEST_LABEL
@@ -585,7 +595,7 @@ macro(rosbuild_add_pyunit file)
   add_custom_target(test)
   add_dependencies(test pyunit_${_testname})
   # Register check for test output
-  _rosbuild_check_rostest_xml_result(pyunit_${_testname} $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml)
+  _rosbuild_check_rostest_xml_result(pyunit_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
 endmacro(rosbuild_add_pyunit)
 
 # A version of add_pyunit that checks a label against ROS_BUILD_TEST_LABEL

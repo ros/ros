@@ -135,7 +135,7 @@ macro(_rosbuild_add_gtest exe)
 
   # Create target for this test
   add_custom_target(test_${_testname}
-                    COMMAND ${EXECUTABLE_OUTPUT_PATH}/${exe} --gtest_output=xml:$ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml
+                    COMMAND ${EXECUTABLE_OUTPUT_PATH}/${exe} --gtest_output=xml:${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml
                     DEPENDS ${EXECUTABLE_OUTPUT_PATH}/${exe}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     VERBATIM)
@@ -143,7 +143,7 @@ macro(_rosbuild_add_gtest exe)
   # here through registration of a future test.  Eventually, we should pass
   # in the overriding target (e.g., test-results vs. test-future-results).
   # For now, we call _rosbuild_check_rostest_xml_result() in rosbuild_add_gtest() instead.
-  #_rosbuild_check_rostest_xml_result(test_${_testname} $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml)
+  #_rosbuild_check_rostest_xml_result(test_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
 
   # Make sure that any messages get generated prior to building this target
   add_dependencies(${exe} rospack_genmsg)
@@ -213,7 +213,7 @@ macro(_rosbuild_add_pyunit file)
 
   # Create target for this test
   add_custom_target(pyunit_${_testname}
-                    COMMAND ${ARGN} python ${file} --gtest_output=xml:$ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml
+                    COMMAND ${ARGN} python ${file} --gtest_output=xml:${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml
                     DEPENDS ${file}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     VERBATIM)

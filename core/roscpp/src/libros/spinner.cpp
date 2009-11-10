@@ -53,47 +53,16 @@ void SingleThreadedSpinner::spin(CallbackQueue* queue)
 }
 
 MultiThreadedSpinner::MultiThreadedSpinner(uint32_t thread_count)
+: thread_count_(thread_count)
 {
-  if (thread_count == 0)
-  {
-    thread_count = boost::thread::hardware_concurrency();
-
-    if (thread_count == 0)
-    {
-      thread_count = 1;
-    }
-  }
-
-  thread_count_ = thread_count;
-}
-
-void spinThreadFunc(CallbackQueue* queue)
-{
-  disableAllSignalsInThisThread();
-
-  ros::WallDuration d(0.01f);
-
-  ros::NodeHandle n;
-  while (n.ok())
-  {
-    queue->callOne();
-  }
 }
 
 void MultiThreadedSpinner::spin(CallbackQueue* queue)
 {
-  if (!queue)
-  {
-    queue = &g_global_queue;
-  }
+  AsyncSpinner s(thread_count_, queue);
+  s.start();
 
-  boost::thread_group tg;
-  for (uint32_t i = 0; i < thread_count_; ++i)
-  {
-    tg.create_thread(boost::bind(spinThreadFunc, queue));
-  }
-
-  tg.join_all();
+  ros::waitForShutdown();
 }
 
 class AsyncSpinnerImpl
@@ -126,6 +95,11 @@ AsyncSpinnerImpl::AsyncSpinnerImpl(uint32_t thread_count, CallbackQueue* queue)
   if (thread_count == 0)
   {
     thread_count_ = boost::thread::hardware_concurrency();
+
+    if (thread_count_ == 0)
+    {
+      thread_count_ = 1;
+    }
   }
 
   if (!queue)
@@ -169,6 +143,8 @@ void AsyncSpinnerImpl::stop()
 
 void AsyncSpinnerImpl::threadFunc()
 {
+  disableAllSignalsInThisThread();
+
   CallbackQueue* queue = callback_queue_;
   bool use_call_available = thread_count_ == 1;
   WallDuration timeout(0.01);

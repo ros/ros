@@ -308,7 +308,7 @@ class ServiceProxy(_Service):
         # #1997: deprecating timeout parameter in ROS 0.10, remove in ROS 0.11
         if timeout is not None:
             import warnings
-            warnings.warn("Deprecated 'timeout' parameter to ServiceProxy call. This parameter is no longer used."
+            warnings.warn("Deprecated 'timeout' parameter to ServiceProxy call. This parameter is no longer used.",
                           category=DeprecationWarning, stacklevel=2)
             
         # initialize transport

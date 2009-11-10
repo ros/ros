@@ -31,6 +31,7 @@
 # Author Tully Foote/tfoote@willowgarage.com
 
 from ros import rosmake
+import sys
 
 rma = rosmake.RosMakeAll()
 if not rma.main():

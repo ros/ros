@@ -39,13 +39,65 @@ the Master API is changed.
 
 import os
 import sys
-import urlparse
+import xmlrpclib
 
+import roslib.exceptions
+
+class ROSMasterException(roslib.exceptions.ROSLibException):
+    """
+    Base class of ROS-master related errors.
+    """
+    pass
+
+class Failure(ROSMasterException):
+    """
+    Call to Master failed. This generally indicates an internal error
+    in the Master and that the Master may be in an inconsistent state.
+    """
+    pass
+
+class Error(ROSMasterException):
+    """
+    Master returned an error code, which indicates an error in the
+    arguments passed to the Master.
+    """
+    pass
 
 class Master(object):
-    def __init__(self, caller_id):
+    """
+    API for interacting with the ROS master. Although the Master is
+    relatively simple to interact with using the XMLRPC API, this
+    abstraction layer provides protection against future updates. It
+    also provides a streamlined API with builtin return code checking
+    and caller_id passing.
+    """
+    
+    def __init__(self, caller_id, master_uri=None):
+        if master_uri is None:
+            master_uri = roslib.rosenv.get_master_uri()
+        self.master_uri = master_uri
+        self.handle = xmlrpclib.ServerProxy(self.master_uri)
         self.caller_id = caller_id
         
+    def _succeed(self, args):
+        """
+        Check master return code and return the value field.
+        
+        @param args: master return value
+        @type  args: (int, str, XMLRPCLegalValue)
+        @return: value field of args (master return value)
+        @rtype: XMLRPCLegalValue
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
+        """
+        code, msg, val = args
+        if code == 1:
+            return val
+        elif code == -1:
+            raise Error(msg)
+        else:
+            raise Failure(msg)            
+
     def getMasterUri(self):
         """
         Get the URI of the master node.
@@ -53,8 +105,11 @@ class Master(object):
         @type  caller_id: str
         @return: masterUri
         @rtype: str
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
         """
-
+        return self._succeed(self.handle.getMasterUri(self.caller_id))
+    
     def getPid(self):
         """
         Get the PID of this server
@@ -62,8 +117,11 @@ class Master(object):
         @type  caller_id: str
         @return: serverProcessPID
         @rtype: int
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
         """
-
+        return self._succeed(self.handle.getPid(self.caller_id))
+    
     def registerService(self, service, service_api, caller_api):
         """
         Register the caller as a provider of the specified service.
@@ -74,8 +132,11 @@ class Master(object):
         @param caller_api str: XML-RPC URI of caller node 
         @return: ignore
         @rtype: int
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
         """        
-
+        return self._succeed(self.handle.registerService(self.caller_id, service, service_api, caller_api))
+    
     def lookupService(self, service):
         """
         Lookup all provider of a particular service.
@@ -85,8 +146,11 @@ class Master(object):
         @type: service: str
         @return (int, str, str): (code, message, serviceUrl). service URL is provides
            and address and port of the service.  Fails if there is no provider.
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
         """
-
+        return self._succeed(self.handle.lookupService(self.caller_id, service))
+    
 
     def unregisterService(self, service, service_api):
         """
@@ -102,8 +166,11 @@ class Master(object):
            If this is zero it means that the caller was not registered as a service provider.
            The call still succeeds as the intended final state is reached.
         @rtype: (int, str, int)
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
         """
-
+        return self._succeed(self.handle.unregisterService(self.caller_id, service, service_api))
+    
 
     def registerSubscriber(self, topic, topic_type, caller_api):
         """
@@ -120,6 +187,8 @@ class Master(object):
         @return: (code, message, publishers). Publishers is a list of XMLRPC API URIs
            for nodes currently publishing the specified topic.
         @rtype: (int, str, list(str))
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
         """
         return self._succeed(self.handle.registerSubscriber(self.caller_id, topic, topic_type, caller_api))
     
@@ -138,6 +207,8 @@ class Master(object):
           If numUnsubscribed is zero it means that the caller was not registered as a subscriber.
           The call still succeeds as the intended final state is reached.
         @rtype: (int, str, int)
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
         """
         return self._succeed(self.handle.unregisterSubscriber(self.caller_id, topic, caller_api))
     
@@ -156,6 +227,8 @@ class Master(object):
         @return: subscriberApis.
         List of current subscribers of topic in the form of XMLRPC URIs.
         @rtype: [str]
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
         """
         return self._succeed(self.handle.registerPublisher(self.caller_id, topic, topic_type, caller_api))
     
@@ -174,6 +247,8 @@ class Master(object):
            If numUnregistered is zero it means that the caller was not registered as a publisher.
            The call still succeeds as the intended final state is reached.
         @rtype: int
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
         """            
         return self._succeed(self.handle.unregisterPublisher(self.caller_id, topic, caller_api))        
 
@@ -189,8 +264,10 @@ class Master(object):
         @type  node: str
         @return: URI
         @rtype: str
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
         """
-        return self._succeed(self.handle.getPublishedTopics(self.caller_id, subgraph))        
+        return self._succeed(self.handle.lookupNode(self.caller_id, node_name))        
         
     def getPublishedTopics(self, subgraph):
         """
@@ -203,10 +280,12 @@ class Master(object):
         @type  subgraph: str
         @return: [[topic1, type1]...[topicN, typeN]]
         @rtype: [[str, str],]
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
         """
         return self._succeed(self.handle.getPublishedTopics(self.caller_id, subgraph))        
     
-    def getSystemState(self, caller_id): 
+    def getSystemState(self): 
         """
         Retrieve list representation of system state (i.e. publishers, subscribers, and services).
         @param caller_id: ROS caller id    
@@ -225,5 +304,8 @@ class Master(object):
         
            services is of the form::
              [ [service1, [service1Provider1...service1ProviderN]] ... ]
+
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
         """
         return self._succeed(self.handle.getSystemState(self.caller_id))

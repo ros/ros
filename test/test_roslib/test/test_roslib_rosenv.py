@@ -136,7 +136,7 @@ class EnvTest(unittest.TestCase):
     home_dir = os.path.expanduser('~')
 
     # ROS_TEST_RESULTS_DIR has precedence
-    env = {'ROS_ROOT': get_ros_root(), 'ROS_TEST_DIR': ros_test_results_dir, 'ROS_HOME': ros_home_dir }
+    env = {'ROS_ROOT': get_ros_root(), 'ROS_TEST_RESULTS_DIR': ros_test_results_dir, 'ROS_HOME': ros_home_dir }
     self.assertEquals(ros_test_results_dir, get_test_results_dir(environ=env))
 
     env = {'ROS_ROOT': get_ros_root(), 'ROS_HOME': ros_home_dir }

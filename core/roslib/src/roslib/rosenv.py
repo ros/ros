@@ -60,7 +60,7 @@ ROS_NAMESPACE    ="ROS_NAMESPACE"
 ## directory in which log files are written
 ROS_LOG_DIR      ="ROS_LOG_DIR"
 ## directory in which test result files are written
-ROS_TEST_DIR     = "ROS_TEST_DIR"
+ROS_TEST_RESULTS_DIR = "ROS_TEST_RESULTS_DIR"
 
 class ROSEnvException(roslib.exceptions.ROSLibException):
     """Base class of roslib.rosenv errors."""
@@ -225,9 +225,9 @@ def get_log_dir(environ=None):
 def get_test_results_dir(environ=None):
     """
     Get directory to use for writing test result files. There are multiple
-    possible locations for this. The ROS_TEST_DIR environment variable
-    has priority. If that is set, ROS_TEST_DIR is returned.
-    If ROS_TEST_DIR is not set, then ROS_HOME/test_results is used. If
+    possible locations for this. The ROS_TEST_RESULTS_DIR environment variable
+    has priority. If that is set, ROS_TEST_RESULTS_DIR is returned.
+    If ROS_TEST_RESULTS_DIR is not set, then ROS_HOME/test_results is used. If
     ROS_HOME is not set, $HOME/.ros/test_results is used.
 
     @param environ: environment dictionary (defaults to os.environ)
@@ -241,8 +241,8 @@ def get_test_results_dir(environ=None):
     if 1:
         return os.path.join(get_ros_root(environ=environ), 'test', 'test_results')
         
-    if ROS_TEST_DIR in environ:
-        return environ[ROS_TEST_DIR]
+    if ROS_TEST_RESULTS_DIR in environ:
+        return environ[ROS_TEST_RESULTS_DIR]
     elif ROS_HOME in environ:
         return os.path.join(environ[ROS_HOME], 'test_results')
     else:

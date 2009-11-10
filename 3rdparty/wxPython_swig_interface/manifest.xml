@@ -1,6 +1,10 @@
 <package>
 <description brief="wxPython SWIG interface files">
-Interface files used for 
+Interface files used with SWIG to allow use of custom C++ widgets with wxPython code.
+
+These interface files were pulled from wxPython 2.8.1, because at the time that was the target version (since we were using Ubuntu Feisty).  We will probably continue to use these interface files until they no longer work for some reason.
+
+The ideal situation would be if these were installed in system installs along with wxPython, but unfortunately they are not.
 
 </description>
 <author>Many</author>

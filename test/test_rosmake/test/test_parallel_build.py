@@ -108,89 +108,89 @@ class TestBuildQueue(unittest.TestCase):
     def test_full_build(self):
         bq = parallel_build.BuildQueue(["a", "b", "c", "d", "e", "f"], self.serial_tracker)
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
         
         self.assertEqual(("f", 0, 6), bq.get_valid_package())
         bq.return_built("f")
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
 
         self.assertEqual(("e", 1, 6), bq.get_valid_package())
         bq.return_built("e")
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
 
         self.assertEqual(("d", 2, 6), bq.get_valid_package())
         bq.return_built("d")
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
 
         self.assertEqual(("c", 3, 6), bq.get_valid_package())
         bq.return_built("c")
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
 
         self.assertEqual(("b", 4, 6), bq.get_valid_package())
         bq.return_built("b")
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
 
         self.assertEqual(("a", 5, 6), bq.get_valid_package())
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
         bq.return_built("a")
         self.assertTrue (bq.is_done())
-        self.assertTrue (bq.succeded())
+        self.assertTrue (bq.succeeded())
 
 
     # partial build
     def test_partial_build(self):
         bq = parallel_build.BuildQueue(["d", "e", "f"], self.serial_tracker)
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
         
         self.assertEqual(("f", 0, 3), bq.get_valid_package())
         bq.return_built("f")
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
 
         self.assertEqual(("e", 1, 3), bq.get_valid_package())
         bq.return_built("e")
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
 
         self.assertEqual(("d", 2, 3), bq.get_valid_package())
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
         bq.return_built("d")
         self.assertTrue(bq.is_done())
-        self.assertTrue(bq.succeded())
+        self.assertTrue(bq.succeeded())
 
 
     # abort early
     def test_abort_early(self):
         bq = parallel_build.BuildQueue(["a", "b", "c", "d", "e", "f"], self.serial_tracker)
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
         
         self.assertEqual(("f", 0, 6), bq.get_valid_package())
         bq.return_built("f")
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
 
         self.assertEqual(("e", 1, 6), bq.get_valid_package())
         bq.return_built("e")
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
 
         self.assertEqual(("d", 2, 6), bq.get_valid_package())
         bq.return_built("d")
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
 
         bq.stop()
         self.assertTrue(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
 
         self.assertEqual((None, None, None), bq.get_valid_package())
 
@@ -198,7 +198,7 @@ class TestBuildQueue(unittest.TestCase):
     def test_parallel_build(self):
         bq = parallel_build.BuildQueue(["a", "b", "c", "d", "e", "f"], self.parallel_tracker)
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
         
         dependents = ["b", "c", "d", "e", "f"]
         count = 0
@@ -211,19 +211,19 @@ class TestBuildQueue(unittest.TestCase):
             self.assertEqual(count, done)
             self.assertEqual(total, pkgs)
             self.assertFalse(bq.is_done())
-            self.assertFalse(bq.succeded())
+            self.assertFalse(bq.succeeded())
             bq.return_built(result)
             count = count + 1
             self.assertFalse(bq.is_done())
-            self.assertFalse(bq.succeded())
+            self.assertFalse(bq.succeeded())
 
 
         self.assertEqual(("a", 5, 6), bq.get_valid_package())
         self.assertFalse(bq.is_done())
-        self.assertFalse(bq.succeded())
+        self.assertFalse(bq.succeeded())
         bq.return_built("a")
         self.assertTrue (bq.is_done())
-        self.assertTrue (bq.succeded())
+        self.assertTrue (bq.succeeded())
 
 
     # stalled(future)

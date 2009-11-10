@@ -95,7 +95,10 @@ Stack::Stack(string _path) : path(_path),
   vector<string> path_tokens;
   string_split(path, path_tokens, "/");
   name = path_tokens.back();
-  load_manifest();
+  // Don't load the manifest here, because it causes spurious errors to be
+  // printed if the stack has been moved (#1785).  Presumably the manifest
+  // will be loaded later, prior to being needed.
+  //load_manifest();
 }
 bool Stack::is_stack(const string &path)
 {
@@ -387,8 +390,39 @@ Stack *ROSStack::get_stack(const string &stack_name)
 #endif
   for (VecStack::iterator p = Stack::stacks.begin(); 
        p != Stack::stacks.end(); ++p)
+  {
     if ((*p)->name == stack_name)
-      return (*p);
+    {
+      if(!crawled)
+      {
+        // Answer come from the cache; check that the path is valid, and
+        // contains a manifest (related to #1115).
+        std::string manifest_path = (*p)->path + fs_delim + "stack.xml";
+        struct stat s;
+        int ret;
+        while((ret = stat(manifest_path.c_str(), &s)) != 0 &&
+              errno == EINTR);
+        if(ret == 0)
+        {
+          // Answer looks good
+          return (*p);
+        }
+        else
+        {
+          // Bad cache.  Warn and fall through to the recrawl below.
+          fprintf(stderr, "[rosstack] warning: invalid cached location %s for package %s; forcing recrawl\n",
+                  (*p)->path.c_str(),
+                  (*p)->name.c_str());
+          break;
+        }
+      }
+      else
+      {
+        // Answer came from a fresh crawl; no further checking needed.
+        return (*p);
+      }
+    }
+  }
   if (!crawled) // maybe it's a brand-new stack. force a crawl.
   {
     crawl_for_stacks(true); // will set the crawled flag; recursion is safe

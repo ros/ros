@@ -20,7 +20,7 @@
 </description>
 <author>A.M. Kuchling/www.amk.ca, ROS package maintained by Ken Conley</author>
 <license>Free</license>
-<review status="3rdparty" notes=""/>
+<review status="3rdparty doc reviewed" notes="11/9/2009"/>
 <url>http://ros.org/wiki/pycrypto</url>
 <rosdep name="python"/> <!-- requires python-dev -->
 <export>

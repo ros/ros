@@ -32,7 +32,9 @@
 #
 # Revision $Id$
 
-## module for isolating helper routines that are not ROS-specific. 
+"""
+rostest helper routines.
+"""
 
 # IMPORTANT: no routine here can in anyway cause rospy to be loaded (that includes roslaunch)
 
@@ -48,6 +50,12 @@ def getErrors():
     return _errors
 
 def rostest_name_from_path(pkg_dir, test_file):
+    """
+    Derive name of rostest name based on file name/path.
+    
+    @return: name of rostest
+    @rtype: str
+    """
     test_file_abs = os.path.abspath(test_file)
     if test_file_abs.startswith(pkg_dir):
         # compute package-relative path
@@ -60,6 +68,9 @@ def rostest_name_from_path(pkg_dir, test_file):
     return outname
 
 def printRostestSummary(result, rostest_results):
+    """
+    Print summary of rostest results to stdout.
+    """
     # we have two separate result objects, which can be a bit
     # confusing. 'result' counts successful _running_ of tests
     # (i.e. doesn't check for actual test success). The 'r' result
@@ -105,6 +116,10 @@ def printRostestSummary(result, rostest_results):
     print buff.getvalue()
 
 def printSummary(result):
+    """
+    Print summary of unit test result to stdout
+    @param result: test results
+    """
     buff = cStringIO.StringIO()
     buff.write("-------------------------------------------------------------\nSUMMARY:\n")
     if result.wasSuccessful():
@@ -116,11 +131,16 @@ def printSummary(result):
     buff.write(" * FAILURES: %s [%s]\n"%(len(result.failures), ','.join([e[0]._testMethodName for e in result.failures])))
     print buff.getvalue()
 
-## Create the unittest test runner with XML output
-## @param test_pkg str: package name
-## @param test_name str: test name
-## @param is_rostest bool: if True, use naming scheme for rostest itself instead of individual unit test naming
 def createXMLRunner(test_pkg, test_name, results_file=None, is_rostest=False):
+    """
+    Create the unittest test runner with XML output
+    @param test_pkg: package name
+    @type  test_pkg: str
+    @param test_name: test name
+    @type  test_name: str
+    @param is_rostest: if True, use naming scheme for rostest itself instead of individual unit test naming
+    @type  is_rostest: bool
+    """
     test_name = os.path.basename(test_name)
     # determine output xml file name
     if not results_file:
@@ -135,12 +155,18 @@ def createXMLRunner(test_pkg, test_name, results_file=None, is_rostest=False):
     outstream = open(results_file, 'w')
     return xmlrunner.XMLTestRunner(stream=outstream)
     
-## @param test_pkg str: name of test's package 
-## @param test_name str: name of test
-## @param is_rostest bool: True if the results file is for a rostest-generated unit instance
-## @return str: name of xml results file for specified test
 def xmlResultsFile(test_pkg, test_name, is_rostest=False):
-    test_dir = os.path.join(roslib.rosenv.get_ros_root(), 'test', 'test_results', test_pkg)
+    """
+    @param test_pkg: name of test's package 
+    @type  test_pkg: str
+    @param test_name str: name of test
+    @type  test_name: str
+    @param is_rostest: True if the results file is for a rostest-generated unit instance
+    @type  is_rostest: bool
+    @return: name of xml results file for specified test
+    @rtype:  str
+    """
+    test_dir = os.path.join(roslib.rosenv.get_test_results_dir(), test_pkg)
     # #576: strip out chars that would bork the filename
     # this is fairly primitive, but for now just trying to catch some common cases
     for c in ' "\'&$!`/\\':

@@ -66,7 +66,7 @@ class EnvTest(unittest.TestCase):
       get_ros_root(required=True, environ=env)
       self.fail("get_ros_root should have failed")
     except: pass
-
+    
   def test_get_ros_package_path(self):
     from roslib.rosenv import get_ros_package_path
     self.assertEquals(None, get_ros_package_path(required=False, environ={}))
@@ -100,6 +100,53 @@ class EnvTest(unittest.TestCase):
     e = os.environ.copy()
     setup_default_environment()
     self.assertEquals(e, os.environ)
+    
+  def test_get_log_dir(self):
+    from roslib.roslogging import get_log_dir
+    from roslib.rosenv import get_ros_root
+    import tempfile, os
+    base = tempfile.gettempdir()
+    ros_log_dir = os.path.join(base, 'ros_log_dir')
+    ros_home_dir = os.path.join(base, 'ros_home_dir')
+    home_dir = os.path.expanduser('~')
+
+    # ROS_LOG_DIR has precedence
+    env = {'ROS_ROOT': get_ros_root(), 'ROS_LOG_DIR': ros_log_dir, 'ROS_HOME': ros_home_dir }
+    self.assertEquals(ros_log_dir, get_log_dir(environ=env))
+
+    env = {'ROS_ROOT': get_ros_root(), 'ROS_HOME': ros_home_dir }
+    self.assertEquals(os.path.join(ros_home_dir, 'log'), get_log_dir(environ=env))
+
+    env = {'ROS_ROOT': get_ros_root()}
+    self.assertEquals(os.path.join(home_dir, '.ros', 'log'), get_log_dir(environ=env))
+
+    # test default assignment of env. Don't both checking return value as we would duplicate get_log_dir
+    self.assert_(get_log_dir() is not None)
+
+  def test_get_test_results_dir(self):
+    # disabled pending update of rosbuild
+    if 1:
+      return
+
+    from roslib.rosenv import get_ros_root, get_test_results_dir
+    import tempfile, os
+    base = tempfile.gettempdir()
+    ros_test_results_dir = os.path.join(base, 'ros_test_results_dir')
+    ros_home_dir = os.path.join(base, 'ros_home_dir')
+    home_dir = os.path.expanduser('~')
+
+    # ROS_TEST_RESULTS_DIR has precedence
+    env = {'ROS_ROOT': get_ros_root(), 'ROS_TEST_DIR': ros_test_results_dir, 'ROS_HOME': ros_home_dir }
+    self.assertEquals(ros_test_results_dir, get_test_results_dir(environ=env))
+
+    env = {'ROS_ROOT': get_ros_root(), 'ROS_HOME': ros_home_dir }
+    self.assertEquals(os.path.join(ros_home_dir, 'test_results'), get_test_results_dir(environ=env))
+
+    env = {'ROS_ROOT': get_ros_root()}
+    self.assertEquals(os.path.join(home_dir, '.ros', 'test_results'), get_test_results_dir(environ=env))
+
+    # test default assignment of env. Don't both checking return value as we would duplicate get_test_results_dir
+    self.assert_(get_test_results_dir() is not None)
     
 if __name__ == '__main__':
   rostest.unitrun('test_roslib', 'test_env', EnvTest, coverage_packages=['roslib.rosenv'])

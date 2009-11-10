@@ -77,23 +77,6 @@ $ rostest test/test-foo.xml
 \endverbatim
 
 
-\subsection rostestsummary rostest-summary
-
-\b rostest-summary prints a console summary of the test results for a
-package and packages that depend on it. This tool is meant to be used
-indirectly via build-integration scripts like rosmake.
-
-\subsubsection Usage
-\verbatim
-$ ./bin/rostest-summary package
-\endverbatim
-
-\par Example
-
-\verbatim
-$ bin/rostest-summary rospy
-\endverbatim
-
 \subsection catunit catunit
 
 \b catunit concatenates JUnit-style XML result files in ROS_ROOT/test/test_results into a single XML file.

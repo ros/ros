@@ -42,28 +42,13 @@ import os
 import sys
 import logging
 
-from roslib.rosenv import get_ros_root, ROS_LOG_DIR
+import roslib.rosenv
+from roslib.rosenv import get_ros_root, ROS_LOG_DIR, ROS_HOME
 import roslib.exceptions
 
-def get_log_dir(environ=os.environ):
-    """
-    @param environ: environment dictionary (defaults to os.environ)
-    @type  environ: dict
-    @return: path to use use for log file directory
-    @rtype: str
-    """
-    if ROS_LOG_DIR in environ:
-        log_dir = os.environ[ROS_LOG_DIR]
-    else:
-        # if ROS_LOG_DIR is not set and ROS_ROOT/log is not writeable, try $HOME/.ros/log instead
-        log_dir = os.path.join(get_ros_root(required=True), 'log')
-        #1222: log files should go to $HOME/.ros/logs if ROS_ROOT/log is not writable
-        if not os.access(log_dir, os.W_OK):
-            user_home_dir = os.path.expanduser('~') #slightly more robust than $HOME
-            log_dir = os.path.join(user_home_dir, '.ros', 'logs')
-    return log_dir
+get_log_dir = roslib.rosenv.get_log_dir
     
-def configure_logging(logname, level=logging.INFO, filename=None, additional=None, environ=os.environ):
+def configure_logging(logname, level=logging.INFO, filename=None, additional=None, environ=None):
     """
     Configure Python logging package to send log files to ROS-specific log directory
     @param logname str: name of logger
@@ -77,6 +62,9 @@ def configure_logging(logname, level=logging.INFO, filename=None, additional=Non
     @rtype: str
     @raise roslib.exceptions.ROSLibException: if logging cannot be configured as specified
     """
+    if environ is None:
+        environ = os.environ
+
     import logging.handlers
     
     logname = logname or 'unknown'

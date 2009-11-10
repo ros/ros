@@ -42,9 +42,10 @@ import sys
 import roslib.exceptions
 
 # Global, usually set in setup
-ROS_ROOT         ="ROS_ROOT"
-ROS_MASTER_URI   ="ROS_MASTER_URI"
+ROS_ROOT         = "ROS_ROOT"
+ROS_MASTER_URI   = "ROS_MASTER_URI"
 ROS_PACKAGE_PATH = "ROS_PACKAGE_PATH"
+ROS_HOME         = "ROS_HOME"
 
 # Build-related
 ROS_BINDEPS_PATH = "ROS_BINDEPS_PATH"
@@ -56,8 +57,10 @@ ROS_IP           ="ROS_IP"
 ## hostname/address to bind XML-RPC services to. 
 ROS_HOSTNAME     ="ROS_HOSTNAME"
 ROS_NAMESPACE    ="ROS_NAMESPACE"
-## directory in which log files are written (ROS_ROOT/log by default)
+## directory in which log files are written
 ROS_LOG_DIR      ="ROS_LOG_DIR"
+## directory in which test result files are written
+ROS_TEST_DIR     = "ROS_TEST_DIR"
 
 class ROSEnvException(roslib.exceptions.ROSLibException):
     """Base class of roslib.rosenv errors."""
@@ -83,7 +86,6 @@ before continuing.
         #Test:
         # 1. Is a path
         # 2. Is a directory
-        # 3. Has the pkg/ directory
         if not os.path.exists(p):
             raise ROSEnvException, """
 The %s environment variable has not been set properly:
@@ -141,7 +143,7 @@ def get_master_uri(required=True, environ=os.environ, argv=sys.argv):
     except KeyError, e:
         if required:
             raise ROSEnvException("%s has not been configured"%ROS_MASTER_URI)
-
+        
 def resolve_path(p):
     """
     @param path: path string
@@ -197,3 +199,52 @@ def setup_default_environment():
     else:
       os.environ['LD_LIBRARY_PATH'] = os.path.join(ros_root, "lib")
   
+def get_log_dir(environ=None):
+    """
+    Get directory to use for writing log files. There are multiple
+    possible locations for this. The ROS_LOG_DIR environment variable
+    has priority. If that is not set, then ROS_HOME/log is used. If
+    ROS_HOME is not set, $HOME/.ros/log is used.
+
+    @param environ: environment dictionary (defaults to os.environ)
+    @type  environ: dict
+    @return: path to use use for log file directory
+    @rtype: str
+    """
+    if environ is None:
+        environ = os.environ
+    if ROS_LOG_DIR in environ:
+        log_dir = environ[ROS_LOG_DIR]
+    elif ROS_HOME in environ:
+        log_dir = os.path.join(environ[ROS_HOME], 'log')
+    else:
+        user_home_dir = os.path.expanduser('~') #slightly more robust than $HOME
+        log_dir = os.path.join(user_home_dir, '.ros', 'log')
+    return log_dir
+
+def get_test_results_dir(environ=None):
+    """
+    Get directory to use for writing test result files. There are multiple
+    possible locations for this. The ROS_TEST_DIR environment variable
+    has priority. If that is set, ROS_TEST_DIR is returned.
+    If ROS_TEST_DIR is not set, then ROS_HOME/test_results is used. If
+    ROS_HOME is not set, $HOME/.ros/test_results is used.
+
+    @param environ: environment dictionary (defaults to os.environ)
+    @type  environ: dict
+    @return: path to use use for log file directory
+    @rtype: str
+    """
+    # temporary: XXX remove as soon as rosbuild.cmake migrated
+    if environ is None:
+        environ = os.environ
+    if 1:
+        return os.path.join(get_ros_root(environ=environ), 'test', 'test_results')
+        
+    if ROS_TEST_DIR in environ:
+        return environ[ROS_TEST_DIR]
+    elif ROS_HOME in environ:
+        return os.path.join(environ[ROS_HOME], 'test_results')
+    else:
+        #slightly more robust than $HOME
+        return os.path.join(os.path.expanduser('~'), '.ros', 'test_results')

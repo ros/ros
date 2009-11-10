@@ -40,6 +40,7 @@ import struct
 import sys
 import logging
 import thread
+import time
 import traceback
 
 import roslib.scriptutil 
@@ -248,10 +249,11 @@ class ServiceProxy(_Service):
         """
         callable-style version of the service api (#425)
         @param args: arguments to remote service
-        @param kwds: set timeout=float to override service call timeout
         @raise ROSSerializationException: If unable to serialize
         message. This is usually a type error with one of the fields.
         """
+        #@param kwds: message keyword arguments
+
         if len(args) == 1 and self.request_class == args[0].__class__:
             return self.call(args[0], **kwds)
         else:
@@ -303,7 +305,12 @@ class ServiceProxy(_Service):
         @raise ROSSerializationException: If unable to serialize
         message. This is usually a type error with one of the fields.
         """
-        
+        # #1997: deprecating timeout parameter in ROS 0.10, remove in ROS 0.11
+        if timeout is not None:
+            import warnings
+            warnings.warn("Deprecated 'timeout' parameter to ServiceProxy call. This parameter is no longer used."
+                          category=DeprecationWarning, stacklevel=2)
+            
         # initialize transport
         if self.transport is None:
             service_uri = self._get_service_uri(request, timeout)
@@ -324,6 +331,7 @@ class ServiceProxy(_Service):
         # send the actual request message
         self.seq += 1
         transport.send_message(request, self.seq)
+
         responses = transport.receive_once()
         if len(responses) == 0:
             raise ServiceException("service [%s] returned no response"%self.resolved_name)

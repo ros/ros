@@ -1186,8 +1186,10 @@ void msg_spec::emit_cpp_class(FILE *f, bool for_srv, const string &service_name)
     fputs("    bool __reset_seq = (header.seq == 0);\n" \
           "    if (__reset_seq) _ser_header.seq = seq;\n" \
           "    bool __reset_timestamp = header.stamp.is_zero();\n" \
-          "    if (__reset_timestamp)\n" \
-          "      _ser_header.stamp = ros::Time::now();\n", f);
+          "    if (__reset_timestamp) {\n" \
+          "      ROS_WARN(\"Automatic-filling of header timestamps is deprecated.  In future versions this time will be passed through as 0.\");\n" \
+          "      _ser_header.stamp = ros::Time::now();\n" \
+          "    }\n", f);
   }
 
   for (vector<msg_var *>::iterator v = vars.begin(); v != vars.end(); ++v)

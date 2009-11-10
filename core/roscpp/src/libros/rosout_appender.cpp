@@ -76,6 +76,8 @@ void ROSOutAppender::append(const log4cxx::spi::LoggingEventPtr& event, log4cxx:
 {
   roslib::LogPtr msg(new roslib::Log);
 
+  msg->header.stamp = ros::Time::now();
+
   if (event->getLevel() == log4cxx::Level::getFatal())
   {
     msg->level = roslib::Log::FATAL;

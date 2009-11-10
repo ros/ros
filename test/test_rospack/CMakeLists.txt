@@ -3,6 +3,7 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 rosbuild_init()
 rosbuild_add_boost_directories()
 rosbuild_add_pyunit(test/utest.py)
+rosbuild_add_pyunit(test/utest_rosstack.py)
 rosbuild_add_gtest(test/utest test/utest.cpp)
 rosbuild_link_boost(test/utest thread)
 

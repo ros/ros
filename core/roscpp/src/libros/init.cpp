@@ -474,7 +474,7 @@ void shutdown()
     return;
   }
 
-  ROS_INFO("Shutdown");
+  ROS_DEBUG("ros::shutdown() beginning");
   WallTime begin = WallTime::now();
 
   g_shutting_down = true;
@@ -502,7 +502,7 @@ void shutdown()
   }
 
   WallTime end = WallTime::now();
-  ROS_INFO("Shutdown took [%f secs]", (end - begin).toSec());
+  ROS_DEBUG("ros::shutdown() took [%f secs]", (end - begin).toSec());
 
   g_started = false;
   g_ok = false;

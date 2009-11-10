@@ -145,6 +145,11 @@ void spin(Spinner& spinner);
  */
 void spinOnce();
 
+/**
+ * \brief Wait for this node to be shutdown, whether through Ctrl-C, ros::shutdown(), or similar.
+ */
+void waitForShutdown();
+
 /** \brief Check whether it's time to exit.
  *
  * ok() becomes false once ros::shutdown() has been called and is finished

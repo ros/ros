@@ -448,6 +448,14 @@ void spinOnce()
   g_global_queue.callAvailable(ros::WallDuration());
 }
 
+void waitForShutdown()
+{
+  while (ok())
+  {
+    WallDuration(0.05).sleep();
+  }
+}
+
 CallbackQueue* getGlobalCallbackQueue()
 {
   return &g_global_queue;

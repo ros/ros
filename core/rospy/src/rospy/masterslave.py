@@ -810,13 +810,18 @@ class ROSMasterHandler(ROSHandler):
     ##################################################################################
     # NOTIFICATION ROUTINES
 
-    ## @internal
-    ## Generic implementation of callback notification
-    ## @param registrations Registrations
-    ## @param task fn: task to queue
-    ## @param key: registration key
-    ## @param value: value to pass to task
     def _notify(self, registrations, task, key, value):
+        """
+        Generic implementation of callback notification
+        @param registrations: Registrations
+        @type  registrations: L{Registrations}
+        @param task: task to queue
+        @type  task: fn
+        @param key: registration key
+        @type  key: str
+        @param value: value to pass to task
+        @type  value: Any
+        """
         # cache thread_pool for thread safety
         thread_pool = self.thread_pool
         if not thread_pool:
@@ -830,11 +835,12 @@ class ROSMasterHandler(ROSHandler):
             except KeyError:
                 _logger.warn('subscriber data stale (key [%s], listener [%s]): node API unknown'%(key, s))
         
-    ## @internal
-    ## Notify parameter subscribers of new parameter value
-    ## @param updates [([str], str, any)*]: [(subscribers, param_key, param_value)*]
-    ## @param param_value str: parameter value
     def _notify_param_subscribers(self, updates):
+        """
+        Notify parameter subscribers of new parameter value
+        @param updates [([str], str, any)*]: [(subscribers, param_key, param_value)*]
+        @param param_value str: parameter value
+        """
         # cache thread_pool for thread safety
         thread_pool = self.thread_pool
         if not thread_pool:
@@ -845,13 +851,18 @@ class ROSMasterHandler(ROSHandler):
             for caller_id, caller_api in subscribers:
                 self.thread_pool.queue_task(caller_api, self.param_update_task, (caller_id, caller_api, key, value))
 
-    ## Contact api.paramUpdate with specified parameters
-    ## @param self
-    ## @param caller_id str: caller ID
-    ## @param caller_api str: XML-RPC URI of node to contact
-    ## @param param_key str: parameter key to pass to node
-    ## @param param_value str: parameter value to pass to node
     def param_update_task(self, caller_id, caller_api, param_key, param_value):
+        """
+        Contact api.paramUpdate with specified parameters
+        @param caller_id: caller ID
+        @type  caller_id: str
+        @param caller_api: XML-RPC URI of node to contact
+        @type  caller_api: str
+        @param param_key: parameter key to pass to node
+        @type  param_key: str
+        @param param_value: parameter value to pass to node
+        @type  param_value: str
+        """
         mloginfo("paramUpdate[%s]", param_key)
         code, _, _ = xmlrpcapi(caller_api).paramUpdate('/master', param_key, param_value)
         if code == -1:
@@ -866,18 +877,24 @@ class ROSMasterHandler(ROSHandler):
                 self.ps_lock.release()
 
 
-    ## @internal
-    ## Notify subscribers with new publisher list
-    ## @param topic str: name of topic
-    ## @param pub_uris [str]: list of URIs of publishers.
     def _notify_topic_subscribers(self, topic, pub_uris):
+        """
+        Notify subscribers with new publisher list
+        @param topic: name of topic
+        @type  topic: str
+        @param pub_uris: list of URIs of publishers.
+        @type  pub_uris: [str]
+        """
         self._notify(self.subscribers, publisher_update_task, topic, pub_uris)
 
-    ## @internal
-    ## Notify clients of new service provider
-    ## @param service str: name of service
-    ## @param service_api str: new service URI
     def _notify_service_update(self, service, service_api):
+        """
+        Notify clients of new service provider
+        @param service: name of service
+        @type  service: str
+        @param service_api: new service URI
+        @type  service_api: str
+        """
         ###TODO:XXX:stub code, this callback doesnot exist yet
         self._notify(self.service_clients, service_update_task, service, service_api)
         
@@ -891,10 +908,14 @@ class ROSMasterHandler(ROSHandler):
         Register the caller as a provider of the specified service.
         @param caller_id str: ROS caller id
         @type  caller_id: str
-        @param service str: Fully-qualified name of service 
-        @param service_api str: Service URI 
-        @param caller_api str: XML-RPC URI of caller node 
-        @return (int, str, int): (code, message, ignore)
+        @param service: Fully-qualified name of service 
+        @type  service: str
+        @param service_api: Service URI 
+        @type  service_api: str
+        @param caller_api: XML-RPC URI of caller node 
+        @type  caller_api: str
+        @return: (code, message, ignore)
+        @rtype: (int, str, int)
         """        
         try:
             self.ps_lock.acquire()
@@ -915,8 +936,9 @@ class ROSMasterHandler(ROSHandler):
         @type  caller_id: str
         @param service: fully-qualified name of service to lookup.
         @type: service: str
-        @return (int, str, str): (code, message, serviceUrl). service URL is provider's
+        @return: (code, message, serviceUrl). service URL is provider's
            ROSRPC URI with address and port.  Fails if there is no provider.
+        @rtype: (int, str, str)
         """
         try:
             self.ps_lock.acquire()

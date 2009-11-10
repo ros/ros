@@ -101,14 +101,13 @@ class RosMakeAll:
             self.print_all("!"*20 + " Package %s does not exist. %s"%(p, ex) + "!"*20)
 
 
-    def parallel_build_pkgs(self, pkg_list, argument = None, robust_build = False):
+    def parallel_build_pkgs(self, build_queue, argument = None, threads = 1):
         self.profile[argument] = {}
         self.output[argument] = {}
         self.result[argument] = {}
 
-        build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = robust_build)
         cts = []
-        for i in  xrange(0, self.threads):
+        for i in  xrange(0, threads):
           ct = parallel_build.CompileThread(str(i), build_queue, self, argument)
           ct.start()
           cts.append(ct)
@@ -517,17 +516,20 @@ class RosMakeAll:
           self.build_list = new_list
 
         if options.pre_clean:
-          self.parallel_build_pkgs(self.build_list, "clean", robust_build=True)
+          build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = True)
+          self.parallel_build_pkgs(build_queue, "clean", threads = options.threads)
 
         build_passed = True
         if building:
           self.print_verbose ("Building packages %s"% self.build_list)
-          build_passed = self.parallel_build_pkgs(self.build_list, options.target, robust_build=options.robust)
+          build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = options.robust)
+          build_passed = self.parallel_build_pkgs(build_queue, options.target, threads = options.threads)
 
         tests_passed = True
         if build_passed and testing:
             self.print_verbose ("Testing packages %s"% packages)
-            tests_passed = self.parallel_build_pkgs(self.build_list, "test", robust_build=True)
+            build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = True)
+            tests_passed = self.parallel_build_pkgs(build_queue, "test", threads = 1)
 
         self.finish_time = time.time() #note: before profiling
         self.generate_summary_output(self.log_dir)

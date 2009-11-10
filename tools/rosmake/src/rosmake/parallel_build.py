@@ -170,43 +170,39 @@ class BuildQueue:
     """ Stop the build queue, including waking all blocking
     threads. It will not stop in flight builds."""
     self._done = True
-    self.condition.acquire()
-    self.condition.notifyAll() # wake any blocking threads
-    self.condition.release()
-
+    with self.condition:
+      self.condition.notifyAll() # wake any blocking threads
+      
   def return_built(self, package): # mark that a package is built
     """ The thread which completes a package marks it as done with
     this method."""
-    self.condition.acquire()
-    self.built.append(package)
-    if len(self.built) == self._total_pkgs:  #flag that we're finished
-      self._done = True
-    self.condition.notifyAll() #wake up any waiting threads
-    self.condition.release()
+    with self.condition:
+      self.built.append(package)
+      if len(self.built) == self._total_pkgs:  #flag that we're finished
+        self._done = True
+      self.condition.notifyAll() #wake up any waiting threads
 
   def get_valid_package(self): # blocking call to get a package to build returns none if done
     """ This is a blocking call which will return a package which has
     all dependencies met.  If interrupted or done it will return
     None"""
-    self.condition.acquire()
-    while (not self._done and len(self.to_build) > 0):
-      for p in self.to_build:
-        dependencies_met = True
-        for d in self.dependency_tracker.get_deps(p):
-          if d not in self.built:
-            dependencies_met = False
-            break
-        if dependencies_met:  # all dependencies met
-          self.to_build.remove(p)
-          count = len(self.built)
-          self.condition.release()
-          return (p, count, self._total_pkgs) # break out and return package if found
-            
+    with self.condition:
+      while (not self._done and len(self.to_build) > 0):
+        for p in self.to_build:
+          dependencies_met = True
+          for d in self.dependency_tracker.get_deps(p):
+            if d not in self.built:
+              dependencies_met = False
+              break
+          if dependencies_met:  # all dependencies met
+            self.to_build.remove(p)
+            count = len(self.built)
+            return (p, count, self._total_pkgs) # break out and return package if found
 
-      self.condition.wait()  # failed to find a package wait for a notify before looping
-      if self.is_done():
-        break
 
-    self.condition.release()
+        self.condition.wait()  # failed to find a package wait for a notify before looping
+        if self.is_done():
+          break
+
     return (None, None, None)
 

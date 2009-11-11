@@ -70,8 +70,8 @@ class PackageFlagTracker:
   """ This will use the dependency tracker to test if packages are
   blacklisted and all their dependents. """
   def __init__(self, dependency_tracker):
-    self.blacklisted = set()
-    self.blacklisted_osx = set()
+    self.blacklisted = {}
+    self.blacklisted_osx = {}
     self.nobuild = set()
     self.nomakefile = set()
     self.packages_tested = set()
@@ -83,17 +83,30 @@ class PackageFlagTracker:
       self.paths[package] = roslib.packages.get_pkg_dir(package)
     return self.paths[package]
 
+  def register_blacklisted(self, blacklisted_package, dependent_package):
+    if dependent_package in self.blacklisted.keys():
+      self.blacklisted[dependent_package] = blacklisted_package
+    else:
+      self.blacklisted[dependent_package] = [ blacklisted_package ]
+      
+  def register_blacklisted_osx(self, blacklisted_package, dependent_package):
+    if dependent_package in self.blacklisted_osx.keys():
+      self.blacklisted_osx[dependent_package] = blacklisted_package
+    else:
+      self.blacklisted_osx[dependent_package] = [ blacklisted_package ]
+
   def _check_package_flags(self, package):
     if package in self.packages_tested:
       return 
     if os.path.exists(os.path.join(self.get_path(package), "ROS_BUILD_BLACKLIST")):
-      self.blacklisted.add(package)
-      self.blacklisted.update(set(roslib.rospack.rospack_depends_on(package) ))
-      #print "adding %s to blacklist due to %s"%( roslib.rospack.rospack_depends_on(package) , package)
-
+      self.register_blacklisted(package, package)
+      for p in roslib.rospack.rospack_depends_on(package):
+        self.register_blacklisted(package, p)
+        
     if os.path.exists(os.path.join(self.get_path(package), "ROS_BUILD_BLACKLIST_OSX")):
-      self.blacklisted_osx.add(package)
-      self.blacklisted_osx.update(set(roslib.rospack.rospack_depends_on(package)))
+      self.register_blacklisted_osx(package, package)
+      for p in roslib.rospack.rospack_depends_on(package):
+        self.register_blacklisted_osx(package, p)
 
     if os.path.exists(os.path.join(self.get_path(package), "ROS_NOBUILD")):
       self.nobuild.add(package)
@@ -155,9 +168,10 @@ class PackageFlagTracker:
     self._check_package_flags(package)
 
     # Short circuit if known result
-    if package in self.nobuild:
-      return True
-    return False
+    if package in self.nomakefile:
+      return False
+    return True
+
 class DependencyTracker:
   """ Track dependencies between packages.  This is basically a
   caching way to call roslib. It also will allow you to specifiy a

@@ -181,38 +181,46 @@ def check_type(field_name, field_type, field_val):
         # check sign and width
         if field_type in ['byte', 'int8', 'int16', 'int32', 'int64']:
             if type(field_val) not in [long, int]:
-                raise SerializationError('field [%s] must be an integer type'%field_name)
+                raise SerializationError('field %s must be an integer type'%field_name)
             maxval = int(math.pow(2, _widths[field_type]-1))
             if field_val >= maxval or field_val <= -maxval:
-                raise SerializationError('field [%s] exceeds specified width [%s]'%(field_name, field_type))
+                raise SerializationError('field %s exceeds specified width [%s]'%(field_name, field_type))
         elif field_type in ['char', 'uint8', 'uint16', 'uint32', 'uint64']:
             if type(field_val) not in [long, int] or field_val < 0:
-                raise SerializationError('field [%s] must be unsigned integer type'%field_name)
+                raise SerializationError('field %s must be unsigned integer type'%field_name)
             maxval = int(math.pow(2, _widths[field_type]))
             if field_val >= maxval:
-                raise SerializationError('field [%s] exceeds specified width [%s]'%(field_name, field_type))
+                raise SerializationError('field %s exceeds specified width [%s]'%(field_name, field_type))
         elif field_type == 'bool':
             if field_val not in [True, False, 0, 1]:
-                raise SerializationError('field [%s] is not a bool'%(field_name))
+                raise SerializationError('field %s is not a bool'%(field_name))
     elif field_type == 'string':
-        if type(field_val) != str:
-            raise SerializationError('field [%s] must be of type [str]'%field_name)
+        if type(field_val) == unicode:
+            raise SerializationError('field %s is a unicode string instead of an ascii string'%field_name)
+        elif type(field_val) != str:
+            raise SerializationError('field %s must be of type str'%field_name)
     elif field_type == 'time':
         if not isinstance(field_val, Time):
-            raise SerializationError('field [%s] must be of type [Time]'%field_name)
+            raise SerializationError('field %s must be of type Time'%field_name)
     elif field_type == 'duration':
         if not isinstance(field_val, Duration):
-            raise SerializationError('field [%s] must be of type [Duration]'%field_name)
+            raise SerializationError('field %s must be of type Duration'%field_name)
     elif field_type.endswith(']'): # array type
         if not type(field_val) in [list, tuple]:
-            raise SerializationError('field [%s] must be a list or tuple type'%field_name)
+            raise SerializationError('field %s must be a list or tuple type'%field_name)
         # use index to generate error if '[' not present
         base_type = field_type[:field_type.index('[')]
         for v in field_val:
-            check_type(field_name, base_type, v)
-    #else:
-    #    if type(field_val) != types.InstanceType:
-    #        raise SerializationError('field [%s] must be a [%s] instance instead of a %s'%(field_name, field_type, type(field_val)))
+            check_type(field_name+"[]", base_type, v)
+    else:
+        if isinstance(field_val, Message):
+            if field_val._type != field_type:
+                raise SerializationError("field %s must be of type %s instead of %s"%(field_name, field_type, field_val._type))
+            for n, t in zip(field_val.__slots__, field_val._get_types()):
+                check_type("%s.%s"%(field_name,n), t, getattr(field_val, n))
+        else:
+            raise SerializationError("field %s must be of type [%s]"%(field_name, field_type))
+
         #TODO: dynamically load message class and do instance compare
 
 class Message(object):

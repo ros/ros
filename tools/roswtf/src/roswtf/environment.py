@@ -90,6 +90,25 @@ def ros_root_check(ctx):
     if not is_executable(rospack):
         return "%s is lacking executable permissions"%rospack
 
+    
+def _writable_dir_check(ctx, path, name):
+    """
+    If path is not None, validate that it is a writable directory
+    """
+    if path is None:
+        return
+    if isfile(path):
+        return "%s [%s] must point to a directory, not a file"%(name, path)
+    if not os.access(path, os.W_OK):
+        return "%s [%s] is not writable"%(name, path)
+
+def ros_home_check(ctx):
+    return _writable_dir_check(ctx, ctx.env.get('ROS_HOME', None), 'ROS_HOME')
+def ros_log_dir_check(ctx):
+    return _writable_dir_check(ctx, ctx.env.get('ROS_LOG_DIR', None), 'ROS_LOG_DIR')
+def ros_test_results_dir_check(ctx):
+    return _writable_dir_check(ctx, ctx.env.get('ROS_TEST_RESULTS_DIR', None), 'ROS_TEST_RESULTS_DIR')
+
 def pythonpath_check(ctx):
     path = ctx.pythonpath
     roslib_count = len([p for p in paths(path) if 'roslib' in p])
@@ -186,6 +205,11 @@ environment_errors = [
      "Not all paths in PYTHONPATH [%(pythonpath)s] point to a directory: "),
     (pythonpath_check,
      "PYTHONPATH [%(pythonpath)s] is invalid: "),
+
+    # ROS_HOME, ROS_LOG_DIR, ROS_TEST_RESULTS_DIR
+    (ros_home_check, "ROS_HOME is invalid: "),
+    (ros_log_dir_check, "ROS_LOG_DIR is invalid: "),    
+    (ros_test_results_dir_check, "ROS_TEST_RESULTS_DIR is invalid: "),    
 
     (lambda ctx: ctx.ros_bindeps_path and not isdir(ctx.ros_bindeps_path),
      "ROS_BINDEPS_PATH [%(ros_bindeps_path)s] does not point to a directory"),

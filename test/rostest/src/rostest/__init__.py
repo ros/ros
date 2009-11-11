@@ -113,7 +113,7 @@ def rosrun(package, test_name, test, sysargs=None):
 # TODO: rename to rosrun -- migrating name to avoid confusion and enable easy xmlrunner use 
 run = rosrun
 
-def unitrun(package, test_name, test, sysargs=None, coverage_packages=[]):
+def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
     """
     Wrapper routine from running python unitttests with
     JUnit-compatible XML output.  This is meant for unittests that do
@@ -134,7 +134,7 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=[]):
 
     import unittest
     
-    if not coverage_packages:
+    if coverage_packages is None:
         coverage_packages = [package]
         
     #parse sysargs

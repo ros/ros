@@ -235,11 +235,8 @@ def get_test_results_dir(environ=None):
     @return: path to use use for log file directory
     @rtype: str
     """
-    # temporary: XXX remove as soon as rosbuild.cmake migrated
     if environ is None:
         environ = os.environ
-    if 1:
-        return os.path.join(get_ros_root(environ=environ), 'test', 'test_results')
         
     if ROS_TEST_RESULTS_DIR in environ:
         return environ[ROS_TEST_RESULTS_DIR]

@@ -38,30 +38,44 @@ Generate HTML reports from coverage.py (aka python-coverage). This is
 currently a no-frills backend tool.
 """
 
+from __future__ import with_statement
+
 import sys
+import roslib
 
 try:
     import coverage
 except ImportError, e:
-    print >> sys.stderr, """ERROR: cannot import python-coverage, coverage report will not run.
-To install coverage, run 'easy_install coverage'"""
+    print >> sys.stderr, "ERROR: cannot import python-coverage, coverage report will not run.\nTo install coverage, run 'easy_install coverage'"
     sys.exit(1)
 
-def coverage_html(modules):
+def coverage_html():
+    with open('.coverage-modules','r') as f:
+        modules = [x for x in f.read().split('\n') if x.strip()]
+
     cov = coverage.coverage()
     cov.load()
 
     # import everything
-    [__import__(m) for m in modules]
+    for m in modules:
+        try:
+            base = m.split('.')[0]
+            roslib.load_manifest(base)
+            __import__(m)
+        except:
+            print >> sys.stderr, "WARN: cannot import %s"%base
+
+    print "Generating for\n"+'\n'.join([" * %s"%m for m in modules])
+
     # load the module instances to pass to coverage so it can generate annotation html reports
     mods = []
 
-    # TODO: rewrite as this is buggy
+    # TODO: rewrite, buggy
     for m in modules:
-        mods.extend([v for v in sys.modules.values() if v and v.__name__.startswith(m)] )
+        mods.extend([v for v in sys.modules.values() if v and v.__name__.startswith(m) and not v in mods])
         
     # dump the output to covhtml directory
     cov.html_report(mods, directory="covhtml")
     
 if __name__ == '__main__':
-    coverage_html(sys.argv[1:])
+    coverage_html()

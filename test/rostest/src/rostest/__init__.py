@@ -32,7 +32,13 @@
 #
 # Revision $Id$
 
-## Interface for using rostest from other Python code.
+from __future__ import with_statement
+
+"""
+Interface for using rostest from other Python code as well as running
+Python unittests with additional reporting mechanisms and rosbuild
+(CMake) integration.
+"""
 
 XML_OUTPUT_FLAG='--gtest_output=xml:' #use gtest-compatible flag
 
@@ -195,6 +201,16 @@ def _stop_coverage(packages, html=None):
         _cov.stop()
         # accumulate results
         _cov.save()
+        
+        # - update our own .coverage-modules file list for
+        #   coverage-html tool. The reason we read and rewrite instead
+        #   of append is that this does a uniqueness check to keep the
+        #   file from growing unbounded
+        with open('.coverage-modules','r') as f:
+            all_packages = set([x for x in f.read().split('\n') if x.strip()] + packages)
+        with open('.coverage-modules','w') as f:
+            f.write('\n'.join(all_packages)+'\n')
+            
         try:
             # list of all modules for html report
             all_mods = []

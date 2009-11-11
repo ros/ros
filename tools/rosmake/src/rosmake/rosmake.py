@@ -145,11 +145,11 @@ class RosMakeAll:
                 return (False, return_string)
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
             if not self.skip_blacklist and self.flag_tracker.is_blacklisted(p):
-              self.print_all ("!"*20 + " ROS_BUILD_BLACKLIST ENCOUNTERED in package: %s or one of its dependents --- TRYING TO BUILD ANYWAY"%p + "!"*20)
+              self.print_all ("!"*20 + " Building package %s. ROS_BUILD_BLACKLIST ENCOUNTERED in package(s): %s --- TRYING TO BUILD ANYWAY"%(p, self.flag_tracker.is_blacklisted(p)) + "!"*20)
 
             if self.skip_blacklist and self.flag_tracker.is_blacklisted(p):
                 self.result[argument][p] = True
-                return_string =  ("[SKIP] due to ROS_BUILD_BLACKLIST")
+                return_string =  ("[SKIP] due to ROS_BUILD_BLACKLIST in %s"%self.flag_tracker.is_blacklisted(p))
                 self.output[argument][p] = "ROS_BUILD_BLACKLIST"
             elif self.skip_blacklist_osx and self.flag_tracker.is_blacklisted_osx(p):
                 self.result[argument][p] = True

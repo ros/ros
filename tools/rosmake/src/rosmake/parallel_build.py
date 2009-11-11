@@ -85,15 +85,15 @@ class PackageFlagTracker:
 
   def register_blacklisted(self, blacklisted_package, dependent_package):
     if dependent_package in self.blacklisted.keys():
-      self.blacklisted[dependent_package] = blacklisted_package
+      self.blacklisted[dependent_package].append(blacklisted_package)
     else:
-      self.blacklisted[dependent_package] = [ blacklisted_package ]
+      self.blacklisted[dependent_package] = [blacklisted_package] 
       
   def register_blacklisted_osx(self, blacklisted_package, dependent_package):
-    if dependent_package in self.blacklisted_osx.keys():
-      self.blacklisted_osx[dependent_package] = blacklisted_package
+    if dependent_package in self.blacklisted_osx:
+      self.blacklisted_osx[dependent_package].append(blacklisted_package)
     else:
-      self.blacklisted_osx[dependent_package] = [ blacklisted_package ]
+      self.blacklisted_osx[dependent_package] =  [blacklisted_package] 
 
   def _check_package_flags(self, package):
     if package in self.packages_tested:
@@ -120,10 +120,6 @@ class PackageFlagTracker:
     # this will noop if already run
     self._check_package_flags(package)
 
-    # Short circuit if known result
-    if package in self.blacklisted:
-      return True
-
     # make sure it's not dependent on a blacklisted package
     for p in self.dependency_tracker.get_deps(package):
       if p not in self.packages_tested:
@@ -131,28 +127,24 @@ class PackageFlagTracker:
         
     # test result after checking all dependents.
     if package in self.blacklisted:
-      return True
+      return self.blacklisted[package]
         
-    return False
-      
+    return []
+
   def is_blacklisted_osx(self, package):
     # this will noop if already run
     self._check_package_flags(package)
 
-    # Short circuit if known result
-    if package in self.blacklisted_osx:
-      return True
-
-    # make sure it's not dependent on a blacklisted package
+    # make sure it's not dependent on a blacklisted_osx package
     for p in self.dependency_tracker.get_deps(package):
       if p not in self.packages_tested:
         self._check_package_flags(p)
         
     # test result after checking all dependents.
     if package in self.blacklisted_osx:
-      return True
+      return self.blacklisted_osx[package]
         
-    return False
+    return []
 
   def has_nobuild(self, package):
     # this will noop if already run

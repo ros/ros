@@ -111,6 +111,54 @@ def get_node_names():
 
     return list(set(nodes))
 
+def get_nodes_by_machine(machine):
+    """
+    Find nodes by machine name. This is a very costly procedure as it
+    must do N lookups with the Master, where N is the number of nodes.
+    
+    @return: list of nodes on the specified machine
+    @rtype: [str]
+    @raise ROSNodeException: if machine name cannot be resolved to an address
+    @raise ROSNodeIOException: if unable to communicate with master
+    """
+    import urlparse
+    
+    master = scriptutil.get_master()
+    try:
+        machine_actual = socket.gethostbyname(machine)
+    except:
+        raise ROSNodeException("cannot resolve machine name [%s] to address"%machine)
+
+    # get all the node names, lookup their uris, parse the hostname
+    # from the uris, and then compare the resolved hostname against
+    # the requested machine name.
+    matches = [machine, machine_actual]
+    not_matches = [] # cache lookups
+    node_names = get_node_names()
+    retval = []
+    for n in node_names:
+        try:
+            code, msg, uri = master.lookupNode(ID, n)
+            # it's possible that the state changes as we are doing lookups. this is a soft-fail
+            if code != 1:
+                continue
+
+            h = urlparse.urlparse(uri).hostname
+            if h in matches:
+                retval.append(n)
+            elif h in not_matches:
+                continue
+            else:
+                r = socket.gethostbyname(h)
+                if r == machine_actual:
+                    matches.append(r)
+                    retval.append(n)
+                else:
+                    not_matches.append(r)                        
+        except socket.error:
+            raise ROSNodeIOException("Unable to communicate with master!")    
+    return retval
+
 def kill_nodes(node_names):
     """
     Call shutdown on the specified nodes
@@ -438,6 +486,27 @@ def _rosnode_cmd_info():
     for node in args:
         rosnode_debugnode(node)
 
+def _rosnode_cmd_machine():
+    """
+    Implements rosnode 'machine' command.
+
+    @raise ROSNodeException: if user enters in unrecognized machine name
+    """
+    args = sys.argv[2:]
+    parser = OptionParser(usage="usage: %prog machine <machine-name>", prog=NAME)
+    parser.add_option("-a",
+                      dest="kill_all", default=False,
+                      action="store_true",
+                      help="kill all nodes")
+
+    (options, args) = parser.parse_args(args)
+    if len(args) == 0:
+        parser.error("please enter a machine name")
+    elif len(args) > 1:
+        parser.error("please enter only one machine name")
+    nodes = get_nodes_by_machine(args[0])
+    print '\n'.join(nodes)
+        
 def _rosnode_cmd_kill():
     """
     Implements rosnode 'kill' command.
@@ -465,9 +534,7 @@ def _rosnode_cmd_kill():
             return 0
         
         sys.stdout.write('\n'.join(["%s. %s"%(i+1, n) for i,n in enumerate(node_list)]))
-        sys.stdout.write("\n\nPlease enter the number of the node you wish to kill.\n")
-        sys.stdout.write("> ")
-        
+        sys.stdout.write("\n\nPlease enter the number of the node you wish to kill.\n> ")
         selection = ''
         while not selection:
             selection = sys.stdin.readline().strip()
@@ -482,16 +549,11 @@ def _rosnode_cmd_kill():
         args = [node_list[selection - 1]]
     else:
         # validate args
-        import roslib.scriptutil
-        args = [roslib.scriptutil.script_resolve_name(ID, n) for n in args]
+        args = [scriptutil.script_resolve_name(ID, n) for n in args]
         node_list = get_node_names()
         unknown = [n for n in args if not n in node_list]
         if unknown:
-            if len(unknown) > 1:
-                raise ROSNodeException("Unknown nodes:\n"+'\n'.join([" * %s"%n for n in unknown]))
-            else:
-                raise ROSNodeException("Unknown node %s"%(unknown[0]))
-
+            raise ROSNodeException("Unknown node(s):\n"+'\n'.join([" * %s"%n for n in unknown]))
     if len(args) > 1:
         print "killing:\n"+'\n'.join([" * %s"%n for n in args])
     else:
@@ -499,13 +561,10 @@ def _rosnode_cmd_kill():
             
     success, fail = kill_nodes(args)
     if fail:
-        if len(args) > 1:
-            print >> sys.stderr, "ERROR: Failed to kill:\n"+'\n'.join([" * %s"%n for n in fail])
-        else:
-            print >> sys.stderr, "ERROR: Failed to kill %s"%(fail[0])
+        print >> sys.stderr, "ERROR: Failed to kill:\n"+'\n'.join([" * %s"%n for n in fail])
         return 1
-    else:
-        print "killed"
+    print "killed"
+    return 0
         
 def _rosnode_cmd_cleanup():
     """
@@ -559,6 +618,7 @@ Commands:
 \trosnode ping\ttest connectivity to node
 \trosnode list\tlist active nodes
 \trosnode info\tprint information about node
+\trosnode machine\tlist nodes running on a particular machine
 \trosnode kill\tkill a running node
 
 Type rosnode <command> -h for more detailed usage, e.g. 'rosnode ping -h'
@@ -579,6 +639,8 @@ def rosnodemain():
             sys.exit(_rosnode_cmd_list() or 0)
         elif command == 'info':
             sys.exit(_rosnode_cmd_info() or 0)
+        elif command == 'machine':
+            sys.exit(_rosnode_cmd_machine() or 0)
         elif command == 'cleanup':
             sys.exit(_rosnode_cmd_cleanup() or 0)
         elif command == 'kill':

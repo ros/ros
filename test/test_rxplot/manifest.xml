@@ -1,0 +1,17 @@
+<package>
+  <description brief="test_rxplot">
+
+     Test suite for rxplot
+
+  </description>
+  <author>Rob Wheeler</author>
+  <license>BSD</license>
+  <review status="test" notes=""/>
+  <url>http://ros.org/wiki/test_rxplot</url>
+  <depend package="roslib"/>
+  <depend package="rospy"/>
+  <depend package="rostest"/>
+
+</package>
+
+

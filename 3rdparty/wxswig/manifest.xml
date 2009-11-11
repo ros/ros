@@ -11,7 +11,7 @@ wxswig is included as a 3rdparty package because it is not included in package m
 </description>
 <author>Many</author>
 <license url="http://swig.sourceforge.net/copyright.html">BSD</license>
-<review status="3rdparty" notes=""/>
+<review status="3rdparty doc reviewed" notes=""/>
 <url>http://swig.sourceforge.net</url>
 <export>
   <cpp cflags="-DSWIG_TYPE_TABLE=_wxPython_table -DWXP_USE_THREAD=1"/>

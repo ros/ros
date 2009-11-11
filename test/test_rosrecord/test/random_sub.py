@@ -88,7 +88,7 @@ class RandomSubTest(unittest.TestCase):
         if (roslib.message.strify_message(expect_msg) == roslib.message.strify_message(input_msg)):
           msg_match = True
           del self.input[ind]
-          self.assertTrue(abs(expect_time - input_time) < 0.05)
+          self.assertTrue(abs(expect_time - input_time) < 0.1)
           break
 
       self.assertTrue(msg_match)

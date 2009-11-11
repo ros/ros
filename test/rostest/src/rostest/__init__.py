@@ -196,7 +196,7 @@ def _stop_coverage(packages, html=None):
     """
     if _cov is None:
         return
-    import sys
+    import sys, os
     try:
         _cov.stop()
         # accumulate results
@@ -206,8 +206,11 @@ def _stop_coverage(packages, html=None):
         #   coverage-html tool. The reason we read and rewrite instead
         #   of append is that this does a uniqueness check to keep the
         #   file from growing unbounded
-        with open('.coverage-modules','r') as f:
-            all_packages = set([x for x in f.read().split('\n') if x.strip()] + packages)
+        if os.path.exists('.coverage-modules'):
+            with open('.coverage-modules','r') as f:
+                all_packages = set([x for x in f.read().split('\n') if x.strip()] + packages)
+        else:
+            all_packages = set(packages)
         with open('.coverage-modules','w') as f:
             f.write('\n'.join(all_packages)+'\n')
             

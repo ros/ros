@@ -53,6 +53,7 @@
 #include "ros/connection_manager.h"
 #include "ros/message_deserializer.h"
 #include "ros/subscription_queue.h"
+#include "ros/file_log.h"
 
 using XmlRpc::XmlRpcValue;
 
@@ -249,9 +250,10 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
   for (V_PublisherLink::iterator i = subtractions.begin();
            i != subtractions.end(); ++i)
   {
-    ROS_DEBUG("Disconnecting from publisher of topic [%s] at [%s]",
-                name_.c_str(), (*i)->getPublisherXMLRPCURI().c_str());
-    (*i)->getConnection()->drop();
+    const PublisherLinkPtr& link = *i;
+    ROSCPP_LOG_DEBUG("Disconnecting from publisher [%s] of topic [%s] at [%s]",
+                link->getConnection()->getCallerId().c_str(), name_.c_str(), link->getPublisherXMLRPCURI().c_str());
+    link->getConnection()->drop();
   }
 
   return retval;
@@ -405,7 +407,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
     }
     std::string pub_host = proto[1];
     int pub_port = proto[2];
-    ROS_DEBUG("Connecting via tcpros to topic [%s] at host [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
+    ROSCPP_LOG_DEBUG("Connecting via tcpros to topic [%s] at host [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
 
     TransportTCPPtr transport(new TransportTCP(&PollManager::instance()->getPollSet()));
     if (transport->connect(pub_host, pub_port))
@@ -421,7 +423,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
       boost::mutex::scoped_lock lock(publisher_links_mutex_);
       publisher_links_.push_back(pub_link);
 
-      ROS_DEBUG("Connected to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
+      ROSCPP_LOG_DEBUG("Connected to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
     }
     else
     {
@@ -444,7 +446,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
     int pub_port = proto[2];
     int conn_id = proto[3];
     int max_datagram_size = proto[4];
-    ROS_DEBUG("Connecting via udpros to topic [%s] at host [%s:%d] connection id [%08x] max_datagram_size [%d]", name_.c_str(), pub_host.c_str(), pub_port, conn_id, max_datagram_size);
+    ROSCPP_LOG_DEBUG("Connecting via udpros to topic [%s] at host [%s:%d] connection id [%08x] max_datagram_size [%d]", name_.c_str(), pub_host.c_str(), pub_port, conn_id, max_datagram_size);
 
     //TransportUDPPtr transport(new TransportUDP(&g_node->getPollSet()));
 
@@ -467,7 +469,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
       boost::mutex::scoped_lock lock(publisher_links_mutex_);
       publisher_links_.push_back(pub_link);
 
-      ROS_DEBUG("Connected to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
+      ROSCPP_LOG_DEBUG("Connected to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
     }
     else
     {

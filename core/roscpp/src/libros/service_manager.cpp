@@ -40,6 +40,7 @@
 #include "ros/transport/transport_udp.h"
 #include "ros/init.h"
 #include "ros/connection.h"
+#include "ros/file_log.h"
 
 #include "XmlRpc.h"
 
@@ -97,7 +98,7 @@ void ServiceManager::shutdown()
 
   shutting_down_ = true;
 
-  ROS_DEBUG( "unregistering our advertised services");
+  ROSCPP_LOG_DEBUG("ServiceManager::shutdown(): unregistering our advertised services");
   {
     boost::mutex::scoped_lock ss_lock(service_publications_mutex_);
 
@@ -105,7 +106,7 @@ void ServiceManager::shutdown()
          i != service_publications_.end(); ++i)
     {
       unregisterService((*i)->getName());
-      ROS_DEBUG( "shutting down service %s", (*i)->getName().c_str());
+      //ROSCPP_LOG_DEBUG( "shutting down service %s", (*i)->getName().c_str());
       (*i)->drop();
     }
     service_publications_.clear();
@@ -157,7 +158,6 @@ bool ServiceManager::advertiseService(const AdvertiseServiceOptions& ops)
   char uri_buf[1024];
   snprintf(uri_buf, sizeof(uri_buf), "rosrpc://%s:%d",
            network::getHost().c_str(), connection_manager_->getTCPPort());
-  ROS_DEBUG( "registering service [%s] with uri [%s]", ops.service.c_str(), uri_buf);
   args[2] = string(uri_buf);
   args[3] = xmlrpc_manager_->getServerURI();
   master::execute("registerService", args, result, payload, true);
@@ -192,7 +192,7 @@ bool ServiceManager::unadvertiseService(const string &serv_name)
   if (pub)
   {
     unregisterService(pub->getName());
-    ROS_DEBUG( "shutting down service [%s]", pub->getName().c_str());
+    ROSCPP_LOG_DEBUG( "shutting down service [%s]", pub->getName().c_str());
     pub->drop();
     return true;
   }

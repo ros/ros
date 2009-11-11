@@ -33,6 +33,7 @@
 #include "ros/this_node.h"
 #include "ros/connection_manager.h"
 #include "ros/topic_manager.h"
+#include "ros/file_log.h"
 
 #include <boost/bind.hpp>
 
@@ -75,7 +76,7 @@ bool SubscriberLink::handleHeader(const Header& header)
     return false;
   }
 
-  ROS_DEBUG("Client [%s] wants topic [%s] with md5sum [%s]", client_callerid.c_str(), topic.c_str(), md5sum.c_str());
+  ROSCPP_LOG_DEBUG("Client [%s] wants topic [%s] with md5sum [%s]", client_callerid.c_str(), topic.c_str(), md5sum.c_str());
   PublicationPtr pt = TopicManager::instance()->lookupPublication(topic);
   if (!pt)
   {
@@ -149,7 +150,7 @@ void SubscriberLink::onConnectionDropped(const ConnectionPtr& conn)
 
   if (parent)
   {
-    ROS_DEBUG("Connection to subscriber [%s] to topic [%s] dropped", connection_->getTransport()->getTransportInfo().c_str(), topic_.c_str());
+    ROSCPP_LOG_DEBUG("Connection to subscriber [%s] to topic [%s] dropped", connection_->getRemoteString().c_str(), topic_.c_str());
 
     parent->removeSubscriberLink(shared_from_this());
   }
@@ -232,7 +233,7 @@ void SubscriberLink::enqueueMessage(const SerializedMessage& m)
     {
       if (!queue_full_)
       {
-        ROS_DEBUG("Outgoing queue full for topic \"%s\".  "
+        ROS_DEBUG("Outgoing queue full for topic [%s].  "
                "Discarding oldest message\n",
                topic_.c_str());
       }

@@ -46,6 +46,7 @@ namespace file_log
 
 std::string g_log_filename;
 std::string g_log_directory;
+log4cxx::LoggerPtr g_file_only_logger;
 
 const std::string& getLogFilename()
 {
@@ -55,6 +56,16 @@ const std::string& getLogFilename()
 const std::string& getLogDirectory()
 {
   return g_log_directory;
+}
+
+log4cxx::LoggerPtr& getFileOnlyLogger()
+{
+  return g_file_only_logger;
+}
+
+log4cxx::LevelPtr getDebugLevel()
+{
+  return log4cxx::Level::getDebug();
 }
 
 void init(const M_string& remappings)
@@ -131,6 +142,10 @@ void init(const M_string& remappings)
     log4cxx::helpers::Pool pool;
     appender->activateOptions(pool);
     logger->addAppender(appender);
+
+    g_file_only_logger = log4cxx::Logger::getLogger("roscpp_internal");
+    g_file_only_logger->addAppender(appender);
+    g_file_only_logger->setLevel(log4cxx::Level::getDebug());
   }
 }
 

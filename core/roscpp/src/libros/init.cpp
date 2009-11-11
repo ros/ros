@@ -129,7 +129,7 @@ void atexitCallback()
 {
   if (ok() && !isShuttingDown())
   {
-    ROS_DEBUG("shutting down due to exit() or end of main() without cleanup of all NodeHandles");
+    ROSCPP_LOG_DEBUG("shutting down due to exit() or end of main() without cleanup of all NodeHandles");
     shutdown();
   }
 }
@@ -334,7 +334,7 @@ void start()
           g_global_queue.enable();
           getGlobalCallbackQueue()->enable();
 
-          ROS_DEBUG("Started node [%s], pid [%d], bound on [%s], xmlrpc port [%d], tcpros port [%d], logging to [%s], using [%s] time", this_node::getName().c_str(), getpid(), network::getHost().c_str(), XMLRPCManager::instance()->getServerPort(), ConnectionManager::instance()->getTCPPort(), file_log::getLogFilename().c_str(), Time::useSystemTime() ? "real" : "sim");
+          ROSCPP_LOG_DEBUG("Started node [%s], pid [%d], bound on [%s], xmlrpc port [%d], tcpros port [%d], logging to [%s], using [%s] time", this_node::getName().c_str(), getpid(), network::getHost().c_str(), XMLRPCManager::instance()->getServerPort(), ConnectionManager::instance()->getTCPPort(), file_log::getLogFilename().c_str(), Time::useSystemTime() ? "real" : "sim");
         }
       }
     }
@@ -366,8 +366,8 @@ void init(const M_string& remappings, const std::string& name, uint32_t options)
     master::init(remappings);
     // names:: namespace is initialized by this_node
     this_node::init(name, remappings, options);
-    param::init(remappings);
     file_log::init(remappings);
+    param::init(remappings);
 
     g_initialized = true;
   }
@@ -474,8 +474,7 @@ void shutdown()
     return;
   }
 
-  ROS_DEBUG("ros::shutdown() beginning");
-  WallTime begin = WallTime::now();
+  ROSCPP_LOG_DEBUG("Shutting down roscpp");
 
   g_shutting_down = true;
 
@@ -485,7 +484,6 @@ void shutdown()
   if (g_internal_queue_thread.get_id() != boost::this_thread::get_id())
   {
     g_internal_queue_thread.join();
-    ROS_DEBUG("internal callback queue thread shut down");
   }
 
   const log4cxx::LoggerPtr& logger = log4cxx::Logger::getLogger(ROSCONSOLE_ROOT_LOGGER_NAME);
@@ -502,7 +500,8 @@ void shutdown()
   }
 
   WallTime end = WallTime::now();
-  ROS_DEBUG("ros::shutdown() took [%f secs]", (end - begin).toSec());
+
+  ROSCPP_LOG_DEBUG("Shutdown finished");
 
   g_started = false;
   g_ok = false;

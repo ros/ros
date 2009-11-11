@@ -39,6 +39,7 @@
 #include "ros/transport/transport.h"
 #include "ros/this_node.h"
 #include "ros/connection_manager.h"
+#include "ros/file_log.h"
 
 #include <boost/bind.hpp>
 
@@ -169,7 +170,7 @@ void PublisherLink::onConnectionDropped(const ConnectionPtr& conn)
 
   if (SubscriptionPtr parent = parent_.lock())
   {
-    ROS_DEBUG("Connection to publisher [%s] to topic [%s] dropped", connection_->getTransport()->getTransportInfo().c_str(), parent->getName().c_str());
+    ROSCPP_LOG_DEBUG("Connection to publisher [%s] to topic [%s] dropped", connection_->getTransport()->getTransportInfo().c_str(), parent->getName().c_str());
 
     parent->removePublisherLink(shared_from_this());
   }

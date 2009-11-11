@@ -39,6 +39,7 @@
 #include "ros/service_manager.h"
 #include "ros/transport/transport.h"
 #include "ros/this_node.h"
+#include "ros/file_log.h"
 
 #include <boost/bind.hpp>
 
@@ -77,7 +78,7 @@ bool ServiceClientLink::handleHeader(const Header& header)
     return false;
   }
 
-  ROS_DEBUG("Service client [%s] wants service [%s] with md5sum [%s]", client_callerid.c_str(), service.c_str(), md5sum.c_str());
+  ROSCPP_LOG_DEBUG("Service client [%s] wants service [%s] with md5sum [%s]", client_callerid.c_str(), service.c_str(), md5sum.c_str());
   ServicePublicationPtr ss = ServiceManager::instance()->lookupServicePublication(service);
   if (!ss)
   {

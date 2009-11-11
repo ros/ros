@@ -34,6 +34,7 @@
 
 #include "ros/transport/transport_udp.h"
 #include "ros/poll_set.h"
+#include "ros/file_log.h"
 
 #include <ros/assert.h>
 
@@ -99,7 +100,7 @@ void TransportUDP::socketUpdate(int events)
      (events & POLLHUP) ||
      (events & POLLNVAL))
   {
-    ROS_DEBUG("Socket %d closed with (ERR|HUP|NVAL) events %d", sock_, events);
+    ROSCPP_LOG_DEBUG("Socket %d closed with (ERR|HUP|NVAL) events %d", sock_, events);
     close();
   }
   else
@@ -174,7 +175,7 @@ bool TransportUDP::connect(const std::string& host, int port, int connection_id)
       return false;
     }
 
-    ROS_DEBUG("Resolved host [%s] to [%s]", host.c_str(), inet_ntoa(sin.sin_addr));
+    ROSCPP_LOG_DEBUG("Resolved host [%s] to [%s]", host.c_str(), inet_ntoa(sin.sin_addr));
   }
   else
   {
@@ -185,7 +186,7 @@ bool TransportUDP::connect(const std::string& host, int port, int connection_id)
 
   if (::connect(sock_, (sockaddr *)&sin, sizeof(sin)))
   {
-    ROS_DEBUG("Connect to udpros host [%s:%d] failed with error [%s]", host.c_str(), port, strerror(errno));
+    ROSCPP_LOG_DEBUG("Connect to udpros host [%s:%d] failed with error [%s]", host.c_str(), port, strerror(errno));
     close();
 
     return false;
@@ -196,7 +197,7 @@ bool TransportUDP::connect(const std::string& host, int port, int connection_id)
     return false;
   }
 
-  ROS_DEBUG("Connect succeeded to [%s:%d] on socket [%d]", host.c_str(), port, sock_);
+  ROSCPP_LOG_DEBUG("Connect succeeded to [%s:%d] on socket [%d]", host.c_str(), port, sock_);
 
   return true;
 }
@@ -226,7 +227,7 @@ bool TransportUDP::createIncoming(int port, bool is_server)
   socklen_t len = sizeof(server_address_);
   getsockname(sock_, (sockaddr *)&server_address_, &len);
   server_port_ = ntohs(server_address_.sin_port);
-  ROS_DEBUG("UDPROS server listening on port [%d]", server_port_);
+  ROSCPP_LOG_DEBUG("UDPROS server listening on port [%d]", server_port_);
 
   if (!initializeSocket())
   {
@@ -276,7 +277,7 @@ void TransportUDP::close()
       {
         closed_ = true;
 
-        ROS_DEBUG("UDP socket [%d] closed", sock_);
+        ROSCPP_LOG_DEBUG("UDP socket [%d] closed", sock_);
 
         ROS_ASSERT(sock_ != -1);
 
@@ -315,7 +316,7 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
     boost::mutex::scoped_lock lock(close_mutex_);
     if (closed_)
     {
-      ROS_DEBUG("Tried to read on a closed socket [%d]", sock_);
+      ROSCPP_LOG_DEBUG("Tried to read on a closed socket [%d]", sock_);
       return -1;
     }
   }
@@ -354,7 +355,7 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
     {
       if (errno != EAGAIN)
       {
-        ROS_DEBUG("readv() failed with error [%s]", strerror(errno));
+        ROSCPP_LOG_DEBUG("readv() failed with error [%s]", strerror(errno));
         close();
         break;
       }
@@ -365,7 +366,7 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
     }
     else if (num_bytes == 0)
     {
-      ROS_DEBUG("Socket [%d] received 0/%d bytes, closing", sock_, size);
+      ROSCPP_LOG_DEBUG("Socket [%d] received 0/%d bytes, closing", sock_, size);
       close();
       return -1;
     }
@@ -378,7 +379,7 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
         case ROS_UDP_DATA0:
           if (current_message_id_)
           {
-            ROS_DEBUG("Received new message [%d:%d], while still working on [%d] (block %d of %d)", header.message_id_, header.block_, current_message_id_, last_block_ + 1, total_blocks_);
+            ROSCPP_LOG_DEBUG("Received new message [%d:%d], while still working on [%d] (block %d of %d)", header.message_id_, header.block_, current_message_id_, last_block_ + 1, total_blocks_);
             reorder_header_ = header;
             reorder_bytes_ = num_bytes;
             memcpy(reorder_buffer_, buffer + bytes_read, num_bytes);
@@ -394,19 +395,19 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
         case ROS_UDP_DATAN:
           if (header.message_id_ != current_message_id_)
           {
-            ROS_DEBUG("Message Id mismatch: %d != %d", header.message_id_, current_message_id_);
+            ROSCPP_LOG_DEBUG("Message Id mismatch: %d != %d", header.message_id_, current_message_id_);
             return 0;
           }
           if (header.block_ != last_block_ + 1)
           {
-            ROS_DEBUG("Expected block %d, received %d", last_block_ + 1, header.block_);
+            ROSCPP_LOG_DEBUG("Expected block %d, received %d", last_block_ + 1, header.block_);
             return 0;
           }
           last_block_ = header.block_;
 
           break;
         default:
-          ROS_DEBUG("Unexpected UDP header OP [%d]", header.op_);
+          ROSCPP_LOG_DEBUG("Unexpected UDP header OP [%d]", header.op_);
           return -1;
       }
       bytes_read += num_bytes;
@@ -433,7 +434,7 @@ int32_t TransportUDP::write(uint8_t* buffer, uint32_t size)
 
     if (closed_)
     {
-      ROS_DEBUG("Tried to write on a closed socket [%d]", sock_);
+      ROSCPP_LOG_DEBUG("Tried to write on a closed socket [%d]", sock_);
       return -1;
     }
   }
@@ -471,7 +472,7 @@ int32_t TransportUDP::write(uint8_t* buffer, uint32_t size)
     {
       if(errno != EAGAIN)
       {
-        ROS_DEBUG("writev() failed with error [%s]", strerror(errno));
+        ROSCPP_LOG_DEBUG("writev() failed with error [%s]", strerror(errno));
         close();
         break;
       }
@@ -482,7 +483,7 @@ int32_t TransportUDP::write(uint8_t* buffer, uint32_t size)
     }
     else if (num_bytes < ssize_t(sizeof(header)))
     {
-      ROS_DEBUG("Socket [%d] short write (%d bytes), closing", sock_, int(num_bytes));
+      ROSCPP_LOG_DEBUG("Socket [%d] short write (%d bytes), closing", sock_, int(num_bytes));
       close();
       break;
     }
@@ -498,7 +499,7 @@ int32_t TransportUDP::write(uint8_t* buffer, uint32_t size)
 
 void TransportUDP::enableRead()
 {
-  ROS_DEBUG("enableRead() on UDPROS socket [%d]", sock_);
+  ROSCPP_LOG_DEBUG("enableRead() on UDPROS socket [%d]", sock_);
 
   {
     boost::mutex::scoped_lock lock(close_mutex_);

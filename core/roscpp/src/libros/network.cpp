@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "ros/network.h"
+#include "ros/file_log.h"
 
 #include <ros/console.h>
 #include <ros/assert.h>
@@ -85,7 +86,7 @@ std::string determineHost()
   char *ip_env = getenv("ROS_HOSTNAME");
   if (ip_env)
   {
-    ROS_DEBUG( "determineIP: using value of ROS_HOSTNAME:%s:", ip_env);
+    ROSCPP_LOG_DEBUG( "determineIP: using value of ROS_HOSTNAME:%s:", ip_env);
     return std::string(ip_env);
   }
 
@@ -93,7 +94,7 @@ std::string determineHost()
   ip_env = getenv("ROS_IP");
   if (ip_env)
   {
-    ROS_DEBUG( "determineIP: using value of ROS_IP:%s:", ip_env);
+    ROSCPP_LOG_DEBUG( "determineIP: using value of ROS_IP:%s:", ip_env);
     return std::string(ip_env);
   }
 
@@ -136,7 +137,7 @@ std::string determineHost()
     if (getnameinfo(ifa->ifa_addr, salen, ip_, sizeof(ip_), NULL, 0,
                     NI_NUMERICHOST) < 0)
     {
-      ROS_DEBUG( "getnameinfo couldn't get the ip of interface [%s]", ifa->ifa_name);
+      ROSCPP_LOG_DEBUG( "getnameinfo couldn't get the ip of interface [%s]", ifa->ifa_name);
       continue;
     }
     //ROS_INFO( "ip of interface [%s] is [%s]", ifa->ifa_name, ip);
@@ -160,7 +161,7 @@ std::string determineHost()
         "Report to the ROS development team to seek a fix.");
     return std::string("127.0.0.1");
   }
-  ROS_DEBUG( "preferred IP is guessed to be %s", preferred_ip);
+  ROSCPP_LOG_DEBUG( "preferred IP is guessed to be %s", preferred_ip);
   return std::string(preferred_ip);
 #else
   // @todo Fix IP determination in the case where getifaddrs() isn't

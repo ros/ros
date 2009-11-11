@@ -151,6 +151,9 @@ public:
    */
   Header& getHeader() { return header_; }
 
+  std::string getCallerId();
+  std::string getRemoteString();
+
 private:
   /**
    * \brief Called by the Transport when there is data available to be read

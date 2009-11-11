@@ -29,6 +29,36 @@
 #define ROSCPP_FILE_LOG_H
 
 #include "forwards.h"
+#include <ros/console.h>
+
+namespace log4cxx
+{
+namespace helpers
+{
+template <class T> class ObjectPtrT;
+}
+
+class Logger;
+typedef helpers::ObjectPtrT<Logger> LoggerPtr;
+class Level;
+typedef helpers::ObjectPtrT<Level> LevelPtr;
+}
+
+#define ROSCPP_LOG_DEBUG(...) \
+    do \
+    { \
+      ROSCONSOLE_AUTOINIT; \
+      ROSCONSOLE_DEFINE_LOCATION(true, ros::console::levels::Debug, ROSCONSOLE_DEFAULT_NAME); \
+      \
+      if (ROS_UNLIKELY(enabled)) \
+      { \
+        ros::console::print( loc.logger_, *loc.log4cxx_level_, LOG4CXX_LOCATION, __VA_ARGS__); \
+      } \
+      else \
+      { \
+        ros::console::print(ros::file_log::getFileOnlyLogger(), ros::file_log::getDebugLevel(), LOG4CXX_LOCATION, __VA_ARGS__); \
+      } \
+    } while(0)
 
 namespace ros
 {
@@ -41,6 +71,9 @@ namespace file_log
 
 const std::string& getLogFilename();
 const std::string& getLogDirectory();
+
+log4cxx::LoggerPtr& getFileOnlyLogger();
+log4cxx::LevelPtr getDebugLevel();
 
 }
 

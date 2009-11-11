@@ -124,10 +124,6 @@ class EnvTest(unittest.TestCase):
     self.assert_(get_log_dir() is not None)
 
   def test_get_test_results_dir(self):
-    # disabled pending update of rosbuild
-    if 1:
-      return
-
     from roslib.rosenv import get_ros_root, get_test_results_dir
     import tempfile, os
     base = tempfile.gettempdir()
@@ -147,6 +143,23 @@ class EnvTest(unittest.TestCase):
 
     # test default assignment of env. Don't both checking return value as we would duplicate get_test_results_dir
     self.assert_(get_test_results_dir() is not None)
+
+  def test_get_ros_home(self):
+    from roslib.rosenv import get_ros_root, get_ros_home
+    import tempfile, os
+    base = tempfile.gettempdir()
+    ros_home_dir = os.path.join(base, 'ros_home_dir')
+    home_dir = os.path.expanduser('~')
+
+    # ROS_HOME has precedence
+    env = {'ROS_ROOT': get_ros_root(), 'ROS_HOME': ros_home_dir }
+    self.assertEquals(ros_home_dir, get_ros_home(environ=env))
+
+    env = {'ROS_ROOT': get_ros_root()}
+    self.assertEquals(os.path.join(home_dir, '.ros'), get_ros_home(environ=env))
+
+    # test default assignment of env. Don't both checking return value 
+    self.assert_(get_ros_home() is not None)
     
 if __name__ == '__main__':
   rostest.unitrun('test_roslib', 'test_env', EnvTest, coverage_packages=['roslib.rosenv'])

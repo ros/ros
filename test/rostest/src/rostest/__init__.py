@@ -138,8 +138,7 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=[]):
             result_file = arg[len(XML_OUTPUT_FLAG):]
     text_mode = '--text' in sysargs
 
-    coverage_mode = '--cov' in sysargs
-
+    coverage_mode = '--cov' in sysargs or '--covhtml' in sysargs
     if coverage_mode:
         _start_coverage(coverage_packages)
 
@@ -152,17 +151,23 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=[]):
     else:
         result = createXMLRunner(package, test_name, result_file).run(suite)
     if coverage_mode:
-        _stop_coverage(coverage_packages)
+        cov_html_dir = 'covhtml' if '--covhtml' in sysargs else None
+        _stop_coverage(coverage_packages, html=cov_html_dir)
     printSummary(result)
     
     if not result.wasSuccessful():
         sys.exit(1)
 
+# coverage instance
+_cov = None
 def _start_coverage(packages):
+    global _cov
     try:
         import coverage
-        coverage.erase()
-        coverage.start()
+        _cov = coverage.coverage()
+        # load previous results as we need to accumulate
+        _cov.load()
+        _cov.start()
     except ImportError, e:
         print >> sys.stderr, """WARNING: cannot import python-coverage, coverage tests will not run.
 To install coverage, run 'easy_install coverage'"""
@@ -176,19 +181,40 @@ To install coverage, run 'easy_install coverage'"""
         print >> sys.stderr, "WARNING: cannot import '%s', will not generate coverage report"%package
         return
 
-def _stop_coverage(packages):
+def _stop_coverage(packages, html=None):
+    """
+    @param packages: list of packages to generate coverage reports for
+    @type  packages: [str]
+    @param html: (optional) if not None, directory to generate html report to
+    @type  html: str
+    """
+    if _cov is None:
+        return
     import sys
     try:
-        import coverage
-        coverage.stop()
+        _cov.stop()
+        # accumulate results
+        _cov.save()
         try:
+            # list of all modules for html report
+            all_mods = []
+
+            # iterate over packages to generate per-package console reports
             for package in packages:
                 pkg = __import__(package)
                 m = [v for v in sys.modules.values() if v and v.__name__.startswith(package)]
-                coverage.report(m, show_missing=0)
+                all_mods.extend(m)
+
+                # generate overall report and per module analysis
+                _cov.report(m, show_missing=0)
                 for mod in m:
-                    res = coverage.analysis(mod)
+                    res = _cov.analysis(mod)
                     print "\n%s:\nMissing lines: %s"%(res[0], res[3])
+                    
+            if html:
+                
+                print "="*80+"\ngenerating html coverage report to %s\n"%html+"="*80
+                _cov.html_report(all_mods, directory=html)
         except ImportError, e:
             print >> sys.stderr, "WARNING: cannot import '%s', will not generate coverage report"%package
     except ImportError, e:

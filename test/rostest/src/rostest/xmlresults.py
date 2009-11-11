@@ -284,12 +284,14 @@ def read_all(filter=[]):
     @return: aggregated result
     @rtype: L{Result}
     """
-    dir = roslib.rosenv.get_test_results_dir()
+    dir_ = roslib.rosenv.get_test_results_dir()
     root_result = Result('ros', 0, 0, 0)
-    for d in os.listdir(dir):
+    if not os.path.exists(dir_):
+        return root_result
+    for d in os.listdir(dir_):
         if filter and not d in filter:
             continue
-        subdir = os.path.join(dir, d)
+        subdir = os.path.join(dir_, d)
         if os.path.isdir(subdir):
             for file in os.listdir(subdir):
                 if file.endswith('.xml'):

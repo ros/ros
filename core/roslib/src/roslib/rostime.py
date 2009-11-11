@@ -152,10 +152,10 @@ class TVal(object):
         return ("%s.%s"%(self.secs, self.nsecs)) .__hash__()
 
     def __str__(self):
-        return str(self.tons())
+        return str(self.to_nsec())
 
     def __repr__(self):
-        return "rostime.TVal[%d]"%self.tons()
+        return "rostime.TVal[%d]"%self.to_nsec()
 
     def __nonzero__(self):
         """
@@ -200,7 +200,7 @@ class TVal(object):
     def __cmp__(self, other):
         if not isinstance(other, TVal):
             raise TypeError("Cannot compare to non-TVal")
-        nanos = self.tons() - other.tons()
+        nanos = self.to_nsec() - other.to_nsec()
         if nanos > 0:
             return 1
         if nanos == 0:
@@ -209,7 +209,7 @@ class TVal(object):
     def __eq__(self, other):
         if not isinstance(other, TVal):
             return False
-        return self.tons() == other.tons()
+        return self.to_nsec() == other.to_nsec()
 
 class Time(TVal):
     """
@@ -270,7 +270,7 @@ class Time(TVal):
         return self.to_sec()
 
     def __repr__(self):
-        return "rostime.Time[%d]"%self.tons()
+        return "rostime.Time[%d]"%self.to_nsec()
 
     def __add__(self, other):
         """

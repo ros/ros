@@ -54,9 +54,9 @@ typedef helpers::ObjectPtrT<Level> LevelPtr;
       { \
         ros::console::print( loc.logger_, *loc.log4cxx_level_, LOG4CXX_LOCATION, __VA_ARGS__); \
       } \
-      else \
+      else if (log4cxx::LoggerPtr logger = ros::file_log::getFileOnlyLogger()) \
       { \
-        ros::console::print(ros::file_log::getFileOnlyLogger(), ros::file_log::getDebugLevel(), LOG4CXX_LOCATION, __VA_ARGS__); \
+        ros::console::print(logger, ros::file_log::getDebugLevel(), LOG4CXX_LOCATION, __VA_ARGS__); \
       } \
     } while(0)
 

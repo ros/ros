@@ -15,7 +15,7 @@ behaviors in ROS.
   </description>
   <author>Ken Conley/kwc@willowgarage.com</author>
   <license>BSD</license>
-  <review status="API cleared" notes="01/22/2009"/>
+  <review status="Doc reviewed" wotes=11/10/2009"/>
   <url>http://ros.org/wiki/rostopic</url>
   <depend package="roslib"/>
   <depend package="rosmsg"/>

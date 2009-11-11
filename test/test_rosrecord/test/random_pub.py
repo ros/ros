@@ -58,8 +58,8 @@ if __name__ == '__main__':
   while (not rospy.has_param('/spew')):
     r.sleep()
 
-  # Sleep an extra 2 seconds for good measure
-  rospy.sleep(rospy.Duration.from_sec(2.0))
+  # Sleep an extra 5 seconds for good measure
+  rospy.sleep(rospy.Duration.from_sec(5.0))
 
   start = rospy.Time.now()
   for (topic, msg, time) in rmg.messages():

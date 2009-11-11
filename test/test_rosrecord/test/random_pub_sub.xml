@@ -1,4 +1,8 @@
 <launch>
-  <node pkg="test_rosrecord" type="random_pub.py" name="random_pub" args="12345"/>
+  <node pkg="test_rosrecord" type="random_pub.py" name="random_pub" args="12346"/>
+  <!-- Trying to get output text somehow! -->
+  <node pkg="rosout" type="rosout_agg_listener" name="rosout_agg" output="screen">
+    <remap from="/rosout_agg" to="/rosout"/>
+  </node>
   <test time-limit="30" test-name="random_sub" pkg="test_rosrecord" type="random_sub.py" args="12345"/>
 </launch>

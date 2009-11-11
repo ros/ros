@@ -1,3 +1,8 @@
+# Set a flag to indicate that rosbuild_init() has not been called, so that
+# we can later catch out-of-order calls to macros that must be called prior
+# to rosbuild_init(), related to #1487.
+set(ROSBUILD_init_called 0)
+
 # Use this package to get add_file_dependencies()
 include(AddFileDependencies)
 # Used to check if a function exists
@@ -116,6 +121,9 @@ endmacro(rosbuild_invoke_rospack)
 # This is the user's main entry point.  A *lot* of work gets done here.  It
 # should probably be split up into multiple macros.
 macro(rosbuild_init)
+  # Record that we've been called
+  set(ROSBUILD_init_called 1)
+
   # Infer package name from directory name.
   get_filename_component(_project ${PROJECT_SOURCE_DIR} NAME)
   message("[rosbuild] Building package ${_project}")
@@ -618,6 +626,9 @@ endmacro(rosbuild_add_pyunit_future)
 
 set(_ROSBUILD_GENERATED_MSG_FILES "")
 macro(rosbuild_add_generated_msgs)
+  if(ROSBUILD_init_called)
+    message(FATAL_ERROR "rosbuild_add_generated_msgs() cannot be called after rosbuild_init()")
+  endif(ROSBUILD_init_called)
   list(APPEND _ROSBUILD_GENERATED_MSG_FILES ${ARGV})
 endmacro(rosbuild_add_generated_msgs)
 
@@ -638,6 +649,9 @@ endmacro(rosbuild_get_msgs)
 
 set(_ROSBUILD_GENERATED_SRV_FILES "")
 macro(rosbuild_add_generated_srvs)
+  if(ROSBUILD_init_called)
+    message(FATAL_ERROR "rosbuild_add_generated_srvs() cannot be called after rosbuild_init()")
+  endif(ROSBUILD_init_called)
   list(APPEND _ROSBUILD_GENERATED_SRV_FILES ${ARGV})
 endmacro(rosbuild_add_generated_srvs)
 

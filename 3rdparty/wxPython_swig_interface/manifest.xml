@@ -9,7 +9,7 @@ The ideal situation would be if these were installed in system installs along wi
 </description>
 <author>Many</author>
 <license url="http://www.opensource.org/licenses/wxwindows.php">wxWindows</license>
-<review status="3rdparty" notes=""/>
+<review status="3rdparty doc reviewed" notes=""/>
 <url>http://www.wxpython.org/</url>
 <export>
   <swig flags="-I${prefix}/src"/>

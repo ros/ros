@@ -88,7 +88,7 @@ class Duration(roslib.rostime.Duration):
         @param nsecs: nanoseconds
         @type  nsecs: int
         """
-        super(Duration, self).__init__(secs, nsecs)
+        roslib.rostime.Duration.__init__(self, secs, nsecs)
 
 class Time(roslib.rostime.Time):
     """
@@ -133,7 +133,7 @@ class Time(roslib.rostime.Time):
         @param nsecs: nanoseconds since seconds (since epoch)
         @type  nsecs: int
         """
-        super(Time, self).__init__(secs, nsecs)
+        roslib.rostime.Time.__init__(self, secs, nsecs)
         
     def now():
         """

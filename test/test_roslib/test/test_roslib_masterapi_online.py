@@ -108,5 +108,5 @@ class MasterApiOnlineTest(unittest.TestCase):
         pub, sub, srvs = self.m.getSystemState()
 
 if __name__ == '__main__':
-    rostest.unitrun('test_roslib', 'test_roslib_masterapi_online', MasterApiOnlineTest)
+    rostest.rosrun('test_roslib', 'test_roslib_masterapi_online', MasterApiOnlineTest)
 

@@ -54,6 +54,7 @@ class RosMakeAll:
         self.result = {}
         self.paths = {}
         self.dependency_tracker = parallel_build.DependencyTracker()
+        self.flag_tracker = parallel_build.PackageFlagTracker(self.dependency_tracker)
         self.output = {}
         self.verbose = False
         self.full_verbose = False
@@ -143,22 +144,22 @@ class RosMakeAll:
                 return_string = ("[SKIP] rosmake will not clean rospack. rosmake cannot operate without it.")
                 return (False, return_string)
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
-            if not self.skip_blacklist and os.path.exists(os.path.join(self.get_path(p), "ROS_BUILD_BLACKLIST")):
-              self.print_all ("!"*20 + " ROS_BUILD_BLACKLIST ENCOUNTERED in package: %s  --- TRYING TO BUILD ANYWAY"%p + "!"*20)
+            if not self.skip_blacklist and self.flag_tracker.is_blacklisted(p):
+              self.print_all ("!"*20 + " ROS_BUILD_BLACKLIST ENCOUNTERED in package: %s or one of its dependents --- TRYING TO BUILD ANYWAY"%p + "!"*20)
 
-            if self.skip_blacklist and os.path.exists(os.path.join(self.get_path(p), "ROS_BUILD_BLACKLIST")):
+            if self.skip_blacklist and self.flag_tracker.is_blacklisted(p):
                 self.result[argument][p] = True
                 return_string =  ("[SKIP] due to ROS_BUILD_BLACKLIST")
                 self.output[argument][p] = "ROS_BUILD_BLACKLIST"
-            elif self.skip_blacklist_osx and os.path.exists(os.path.join(self.get_path(p), "ROS_BUILD_BLACKLIST_OSX")):
+            elif self.skip_blacklist_osx and self.flag_tracker.is_blacklisted_osx(p):
                 self.result[argument][p] = True
                 return_string =  ("[SKIP] due to ROS_BUILD_BLACKLIST_OSX")
                 self.output[argument][p] = "ROS_BUILD_BLACKLIST_OSX"
-            elif os.path.exists(os.path.join(self.get_path(p), "ROS_NOBUILD")):
+            elif self.flag_tracker.has_nobuild(p):
                 self.result[argument][p] = True
                 return_string =  ("[SKIP] due to ROS_NOBUILD")
                 self.output[argument][p] = "ROS_NOBUILD"
-            elif not os.path.exists(os.path.join(self.get_path(p), "Makefile")):
+            elif not self.flag_tracker.has_makefile(p):
                 self.result[argument][p] = True
                 return_string =  ("[SKIP] due do to no Makefile")
                 self.output[argument][p] = "No Makefile Present"

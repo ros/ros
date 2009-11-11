@@ -66,6 +66,98 @@ def num_cpus():
       return ncpus
   return 1 # Default
 
+class PackageFlagTracker:
+  """ This will use the dependency tracker to test if packages are
+  blacklisted and all their dependents. """
+  def __init__(self, dependency_tracker):
+    self.blacklisted = set()
+    self.blacklisted_osx = set()
+    self.nobuild = set()
+    self.nomakefile = set()
+    self.packages_tested = set()
+    self.dependency_tracker = dependency_tracker
+    self.paths = {}
+
+  def get_path(self, package):
+    if not package in self.paths:
+      self.paths[package] = roslib.packages.get_pkg_dir(package)
+    return self.paths[package]
+
+  def _check_package_flags(self, package):
+    if package in self.packages_tested:
+      return 
+    if os.path.exists(os.path.join(self.get_path(package), "ROS_BUILD_BLACKLIST")):
+      self.blacklisted.add(package)
+      self.blacklisted.update(set(roslib.rospack.rospack_depends_on(package) ))
+      #print "adding %s to blacklist due to %s"%( roslib.rospack.rospack_depends_on(package) , package)
+
+    if os.path.exists(os.path.join(self.get_path(package), "ROS_BUILD_BLACKLIST_OSX")):
+      self.blacklisted_osx.add(package)
+      self.blacklisted_osx.update(set(roslib.rospack.rospack_depends_on(package)))
+
+    if os.path.exists(os.path.join(self.get_path(package), "ROS_NOBUILD")):
+      self.nobuild.add(package)
+
+    if not os.path.exists(os.path.join(self.get_path(package), "Makefile")):
+      self.nomakefile.add(package)                      
+
+    self.packages_tested.add(package)
+
+  def is_blacklisted(self, package):
+    # this will noop if already run
+    self._check_package_flags(package)
+
+    # Short circuit if known result
+    if package in self.blacklisted:
+      return True
+
+    # make sure it's not dependent on a blacklisted package
+    for p in self.dependency_tracker.get_deps(package):
+      if p not in self.packages_tested:
+        self._check_package_flags(p)
+        
+    # test result after checking all dependents.
+    if package in self.blacklisted:
+      return True
+        
+    return False
+      
+  def is_blacklisted_osx(self, package):
+    # this will noop if already run
+    self._check_package_flags(package)
+
+    # Short circuit if known result
+    if package in self.blacklisted_osx:
+      return True
+
+    # make sure it's not dependent on a blacklisted package
+    for p in self.dependency_tracker.get_deps(package):
+      if p not in self.packages_tested:
+        self._check_package_flags(p)
+        
+    # test result after checking all dependents.
+    if package in self.blacklisted_osx:
+      return True
+        
+    return False
+
+  def has_nobuild(self, package):
+    # this will noop if already run
+    self._check_package_flags(package)
+
+    # Short circuit if known result
+    if package in self.nobuild:
+      return True
+    return False
+
+  def has_makefile(self, package):
+    # this will noop if already run
+    self._check_package_flags(package)
+
+    # Short circuit if known result
+    if package in self.nobuild:
+      return True
+    return False
 class DependencyTracker:
   """ Track dependencies between packages.  This is basically a
   caching way to call roslib. It also will allow you to specifiy a

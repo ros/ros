@@ -2,7 +2,7 @@
 <description brief="wxPython version of SWIG">
 Generates python bindings for C/C++ code.
 
-This is a special version of swig needed by wxPython, which is SWIG version 1.3.29 plus some custom patches (explained at http://wxpython.org/builddoc.php).  The pre-patched latest version of wxPython SWIG is available at:
+This is a special version of swig needed by wxPython, which is SWIG version 1.3.29 plus some custom patches (explained at http://wxpython.org/builddoc.php).  The patched latest version of wxPython SWIG is available at:
 
 http://wxpython.wxcommunity.com/tools/
 

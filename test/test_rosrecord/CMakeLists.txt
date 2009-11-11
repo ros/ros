@@ -32,3 +32,4 @@ rosbuild_genmsg()
 # unit tests
 rosbuild_download_test_data(http://pr.willowgarage.com/data/rosrecord/rosrecord_rename_test.bag test/rosrecord_rename_test.bag 09c6e106c77b06ed3e836a5280c8a7c2)
 rosbuild_add_rostest(test/rename_test.xml)
+rosbuild_add_rostest(test/random_pub_sub.xml)

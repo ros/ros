@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="test_rosrecord" type="random_pub.py" name="random_pub" args="12345"/>
+  <test time-limit="30" test-name="random_sub" pkg="test_rosrecord" type="random_sub.py" args="12345"/>
+</launch>

@@ -306,15 +306,14 @@ class Rosdep:
         #print "Detected OS: " + osi.get_os_name()
         #print "Detected Version: " + osi.get_os_version()
 
-        (native_package, scripts) = self.get_packages_and_scripts(rosdeps)
+        (native_packages, scripts) = self.get_packages_and_scripts(rosdeps)
 
 
         if options.include_duplicates:
-            undetected = native_package
+            undetected = native_packages
         else:
-            undetected = osi.detect_packages(native_packages)
+            undetected = self.osi.detect_packages(native_packages)
 
-        print "Undetected packages", undetected
         bash_script = self.osi.generate_package_install_command(undetected)
         for sc in scripts:
             bash_script += "\n" + sc + "\n"

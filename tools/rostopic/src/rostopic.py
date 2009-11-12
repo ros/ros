@@ -756,13 +756,13 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
 ##########################################################################################
 # COMMAND PROCESSING #####################################################################
     
-def _rostopic_cmd_echo():
+def _rostopic_cmd_echo(argv):
     def expr_eval(expr):
         def eval_fn(m):
             return eval(expr)
         return eval_fn
-    
-    args = sys.argv[2:]
+
+    args = argv[2:]
     parser = OptionParser(usage="usage: %prog echo [options] /topic", prog=NAME)
     parser.add_option("-b", "--bag",
                       dest="bag", default=None,
@@ -1208,14 +1208,19 @@ Type rostopic <command> -h for more detailed usage, e.g. 'rostopic echo -h'
 """
     sys.exit(os.EX_USAGE)
 
-def rostopicmain(argv=sys.argv):
+def rostopicmain(argv=None):
+    if argv is None:
+        argv=sys.argv
+    # filter out remapping arguments in case we are being invoked via roslaunch
+    argv = roslib.scriptutil.myargv(argv)
+    
     # process argv
     if len(argv) == 1:
         _fullusage()
     try:
         command = argv[1]
         if command == 'echo':
-            _rostopic_cmd_echo()
+            _rostopic_cmd_echo(argv)
         elif command == 'hz':
             _rostopic_cmd_hz(argv)
         elif command == 'type':

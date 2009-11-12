@@ -156,7 +156,7 @@ class LocalProcess(Process):
     ## @return str, str: stdout log file name, stderr log file
     ## name. Values are None if stdout/stderr are not logged.
     def _configure_logging(self):
-        log_dir = roslib.roslogging.get_log_dir(os.environ)
+        log_dir = roslib.rosenv.get_log_dir(env=os.environ)
         if self.run_id:
             log_dir = os.path.join(log_dir, self.run_id)
         if not os.path.exists(log_dir):

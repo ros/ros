@@ -47,15 +47,15 @@ class NamesTest(unittest.TestCase):
     else:
       rosns = None
     self.assertEquals('/', roslib.names.get_ros_namespace())
-    self.assertEquals('/', roslib.names.get_ros_namespace(environ={}))
+    self.assertEquals('/', roslib.names.get_ros_namespace(env={}))
 
     os.environ['ROS_NAMESPACE'] = 'unresolved'
     self.assertEquals('/unresolved/', roslib.names.get_ros_namespace())
-    self.assertEquals('/unresolved/', roslib.names.get_ros_namespace(environ={'ROS_NAMESPACE': 'unresolved'}))
+    self.assertEquals('/unresolved/', roslib.names.get_ros_namespace(env={'ROS_NAMESPACE': 'unresolved'}))
     
     os.environ['ROS_NAMESPACE'] = '/resolved/'
     self.assertEquals('/resolved/', roslib.names.get_ros_namespace())
-    self.assertEquals('/resolved/', roslib.names.get_ros_namespace(environ={'ROS_NAMESPACE': '/resolved'}))
+    self.assertEquals('/resolved/', roslib.names.get_ros_namespace(env={'ROS_NAMESPACE': '/resolved'}))
     
     del os.environ['ROS_NAMESPACE']
     

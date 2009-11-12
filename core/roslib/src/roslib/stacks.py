@@ -114,12 +114,17 @@ def get_stack_dir(stack):
 _dir_cache = {}
 _cache_marker = None
 
-def list_stacks(env=os.environ):
+def list_stacks(env=None):
     """
     Get list of all ROS stacks. This initializes an internal cache.
+
+    @param env: override os.environ dictionary
+    @type  env: dict
     @return: complete list of stacks names in ROS environment
     @rtype: [str]
     """
+    if env is None:
+        env = os.environ
     global _cache_marker
     # record settings for cache
     ros_root = env[roslib.rosenv.ROS_ROOT]
@@ -132,7 +137,7 @@ def list_stacks(env=os.environ):
         _dir_cache.clear()
         _cache_marker = ros_root, ros_package_path
         
-    pkg_dirs = roslib.packages.get_package_paths(environ=env)
+    pkg_dirs = roslib.packages.get_package_paths(env=env)
     stacks = []
     # ros is assumed to be at ROS_ROOT
     if os.path.exists(os.path.join(ros_root, 'stack.xml')):
@@ -155,3 +160,31 @@ def list_stacks(env=os.environ):
             elif '.git' in dirs:
                 dirs.remove('.git')
     return stacks
+
+def expand_packages(self, names):
+    """
+    Expand names into a list of packages. Names can either be of packages or stacks.
+
+    @param names: names of stacks or packages
+    @type  names: [str]
+    @return: ([packages], [not_found]). expand_packages() returns two
+    lists. The first is of packages names. The second is a list of
+    names for which no matching stack or package was found.
+    @rtype: ([str], [str])
+    """
+
+    # do full package list first. This forces an entire tree
+    # crawl. This is less efficient for a small list of names, but
+    # much more efficient for many names.
+    valid_packages = list_pkgs()
+    verified_packages = [p for p in packages if p in valid_packages]
+    for p in packages:
+        try:
+            roslib.packages.get_pkg_dir(p)
+            verified_packages.append(p)
+        except roslib.packages.InvalidROSPkgException, ex:
+            try:
+                roslib.stacks.get_stack_dir(p)
+                verified_packages.extend(roslib.stacks.packages_of(p))
+            except roslib.stacks.InvalidROSStackException:
+                invalid.append(p)

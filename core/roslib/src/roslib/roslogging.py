@@ -48,7 +48,7 @@ import roslib.exceptions
 
 get_log_dir = roslib.rosenv.get_log_dir
     
-def configure_logging(logname, level=logging.INFO, filename=None, additional=None, environ=None):
+def configure_logging(logname, level=logging.INFO, filename=None, additional=None, env=None):
     """
     Configure Python logging package to send log files to ROS-specific log directory
     @param logname str: name of logger
@@ -58,17 +58,19 @@ def configure_logging(logname, level=logging.INFO, filename=None, additional=Non
     @type filename: str
     @param additional: additional log names to attach to same log handler
     @type  additional: [str]
+    @param env: override os.environ dictionary
+    @type  env: dict
     @return: log file name
     @rtype: str
     @raise roslib.exceptions.ROSLibException: if logging cannot be configured as specified
     """
-    if environ is None:
-        environ = os.environ
+    if env is None:
+        env = os.environ
 
     import logging.handlers
     
     logname = logname or 'unknown'
-    log_dir = get_log_dir(environ)
+    log_dir = get_log_dir(env=env)
     
     # if filename is not explicitly provided, generate one using logname
     if not filename:

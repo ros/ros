@@ -76,6 +76,16 @@ def deprecated(func):
     newFunc.__dict__.update(func.__dict__)
     return newFunc
 
+def myargv(argv=None):
+    """
+    Remove ROS remapping arguments from sys.argv arguments.
+    @return: copy of sys.argv with ROS remapping arguments removed
+    @rtype: [str]
+    """
+    if argv is None:
+        argv = sys.argv
+    return [a for a in argv if not roslib.names.REMAP in a]
+
 def script_resolve_name(script_name, name):
     """
     Name resolver for scripts. Supports ROS_NAMESPACE.  Does not

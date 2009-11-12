@@ -111,7 +111,8 @@ def myargv(argv=sys.argv):
     @return: copy of sys.argv with ROS remapping arguments removed
     @rtype: [str]
     """
-    return [a for a in argv if not rospy.names.REMAP in a]
+    import roslib.scriptutil
+    return roslib.scriptutil.myargv(argv=argv)
 
 def _init_node_params(argv, node_name):
     """

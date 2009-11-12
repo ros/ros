@@ -38,6 +38,8 @@ import sys
 import stat
 import string
 
+from subprocess import Popen, PIPE
+
 import roslib.exceptions
 import roslib.names
 import roslib.rosenv
@@ -83,36 +85,32 @@ def is_pkg_dir(d):
     """
     return os.path.isfile(os.path.join(d, MANIFEST_FILE))
 
-# TODO: really need to rethink this required logic. I think what we
-# really want is a way to get the existing paths. The general behavior
-# of PATH vars seems to be to not care if the path does not exist, so
-# the 'required' notion seems incorrect. It's really just
-# ros_root_required
-
-def get_package_paths(ros_root_required=True, environ=os.environ):
+def get_package_paths(ros_root_required=True, env=None):
     """
     Get the paths to search for packages
     
     @param ros_root_required: if True, raise exception if
     environment is invalid (i.e. ROS_ROOT is not set properly)
     @type  ros_root_required: bool
-    @param environ: override os.environ dictionary
-    @type  environ: dict
+    @param env: override os.environ dictionary
+    @type  env: dict
     @raise roslib.rosenv.ROSEnvException: if ros_root_required is True
     and ROS_ROOT is not set
     """
-    rpp = roslib.rosenv.get_ros_package_path(False, environ)
+    if env is None:
+        env = os.environ
+    rpp = roslib.rosenv.get_ros_package_path(required=False, env=env)
     if rpp:
         paths = [x for x in rpp.split(os.pathsep) if x]
     else:
         paths = []
-    rr_path = roslib.rosenv.get_ros_root(ros_root_required, environ)
+    rr_path = roslib.rosenv.get_ros_root(required=ros_root_required, env=env)
     if rr_path:
         return paths + [rr_path]
     else:
         return paths
 
-def get_dir_pkg(dir, environ=os.environ):
+def get_dir_pkg(dir, env=os.environ):
     """
     Get the package that the directory is contained within. This is
     determined by finding the nearest parent manifest.xml file. This
@@ -120,13 +118,13 @@ def get_dir_pkg(dir, environ=os.environ):
     relies on ROS_ROOT.
     @param dir: directory path
     @type  dir: str
-    @param environ dict: override os.environ dictionary
-    @type  environ: dict
+    @param env dict: override os.environ dictionary
+    @type  env: dict
     @return: (packageDirectory, package) of the specified directory, or None,None if not in a package
     @rtype: (str, str)
     """
     #TODO: the realpath is going to create issues with symlinks, most likely
-    pkgDirs = [os.path.realpath(x) for x in get_package_paths(True, environ)]
+    pkgDirs = [os.path.realpath(x) for x in get_package_paths(True, env=env)]
     for pkgDir in pkgDirs:
         parent = os.path.dirname(os.path.realpath(dir))
         #walk up until we hit ros root or ros/pkg
@@ -157,10 +155,9 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
     @rtype: str
     @raise InvalidROSPkgException: if required is True and package cannot be located
     """    
-    #subprocess is a Python 2.4 module, lazy import here so that roslib.packages constants can be access from Python 2.3
+
     #UNIXONLY
     #TODO: replace with non-rospack-based solution (e.g. os.walk())
-    from subprocess import Popen, PIPE
     try:
         penv = os.environ.copy()
         if ros_root:
@@ -208,7 +205,7 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
             raise
         return None
 
-def _get_pkg_subdir_by_dir(package_dir, subdir, required=True, environ=os.environ):
+def _get_pkg_subdir_by_dir(package_dir, subdir, required=True, env=None):
     """
     @param required: if True, will attempt to  create the subdirectory
         if it does not exist. An exception will be raised  if this fails.
@@ -217,14 +214,16 @@ def _get_pkg_subdir_by_dir(package_dir, subdir, required=True, environ=os.enviro
     @type  package_dir: str
     @param subdir: name of subdirectory to locate
     @type  subdir: str
-    @param environ: environment dictionary    
-    @type  environ: dict
+    @param env: override os.environ dictionary    
+    @type  env: dict
     @param required: if True, directory must exist    
     @type  required: bool
     @return: Package subdirectory if package exist, otherwise None.
     @rtype: str
     @raise InvalidROSPkgException: if required is True and directory does not exist
     """
+    if env is None:
+        env = os.environ
     try:
         if not package_dir:
             raise Exception("Cannot create a '%(subdir)s' directory in %(package_dir)s: package %(package) cannot be located"%locals())
@@ -246,23 +245,25 @@ Please check permissions and try again.
             raise
         return None
     
-def get_pkg_subdir(package, subdir, required=True, environ=os.environ):
+def get_pkg_subdir(package, subdir, required=True, env=None):
     """
     @param required: if True, will attempt to create the subdirectory
         if it does not exist. An exception will be raised  if this fails.
     @type  required: bool
     @param package: name of package
     @type  package: str
-    @param environ: environment dictionary    
-    @type  environ: dict
+    @param env: override os.environ dictionary
+    @type  env: dict
     @param required: if True, directory must exist    
     @type  required: bool
     @return: Package subdirectory if package exist, otherwise None.
     @rtype: str
     @raise InvalidROSPkgException: if required is True and directory does not exist
     """
-    pkg_dir = get_pkg_dir(package, required, ros_root=environ[ROS_ROOT]) 
-    return _get_pkg_subdir_by_dir(pkg_dir, subdir, required, environ)
+    if env is None:
+        env = os.environ
+    pkg_dir = get_pkg_dir(package, required, ros_root=env[ROS_ROOT]) 
+    return _get_pkg_subdir_by_dir(pkg_dir, subdir, required, env)
 
 #
 # Map ROS resources to files
@@ -299,8 +300,8 @@ def list_pkgs(pkg_dirs=None):
     # record settings for cache
     ros_root = os.environ[ROS_ROOT]
     ros_package_path = os.environ.get(ROS_PACKAGE_PATH, '')
-    for pkgRoot in pkg_dirs:
-        for dir, dirs, files in os.walk(pkgRoot, topdown=True):
+    for pkg_root in pkg_dirs:
+        for dir, dirs, files in os.walk(pkg_root, topdown=True):
             if MANIFEST_FILE in files:
                 package = os.path.basename(dir)
                 if package not in packages:
@@ -379,3 +380,4 @@ def find_resource(pkg, resource_name, filter_fn=None, ros_root=None, ros_package
         elif '.git' in dirs:
             dirs.remove('.git')
     return matches
+

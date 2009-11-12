@@ -61,13 +61,17 @@ class ROSNameException(roslib.exceptions.ROSLibException):
     """
     pass
 
-def get_ros_namespace(environ=os.environ):
+def get_ros_namespace(env=None):
     """
+    @param env: environment dictionary (defaults to os.environ)
+    @type  env: dict
     @return: ROS namespace of current program
     @rtype: str
     """    
-    #we force command-line-specified namespaces to be globally scoped 
-    return make_global_ns(environ.get(ROS_NAMESPACE, GLOBALNS))
+    #we force command-line-specified namespaces to be globally scoped
+    if env is None:
+        env = os.environ
+    return make_global_ns(env.get(ROS_NAMESPACE, GLOBALNS))
 
 def make_caller_id(name):
     """

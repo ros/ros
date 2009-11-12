@@ -70,18 +70,20 @@ class Manifest(roslib.manifestlib._Manifest):
         """
         return [e.get(attr) for e in self.exports if e.tag == tag if e.get(attr) is not None]
 
-def _manifest_file_by_dir(package_dir, required=True, environ=os.environ):
+def _manifest_file_by_dir(package_dir, required=True, env=None):
     """
     @param package_dir: path to package directory
     @type  package_dir: str
-    @param environ: environment dictionary
-    @type  environ: dict
+    @param env: environment dictionary
+    @type  env: dict
     @param required: require that the directory exist
     @type  required: bool
     @return: path to manifest file of package
     @rtype:  str
     @raise InvalidROSPkgException: if required is True and manifest file cannot be located
     """
+    if env is None:
+        env = os.environ
     try:
         p = os.path.join(package_dir, MANIFEST_FILE)
         if not required and not os.path.exists(p):
@@ -95,12 +97,12 @@ Package '%(package_dir)s' is improperly configured: no manifest file is present.
         if required:
             raise
 
-def manifest_file(package, required=True, environ=os.environ):
+def manifest_file(package, required=True, env=None):
     """
     @param package str: package name
     @type  package: str
-    @param environ: environment dictionary
-    @type  environ: dict
+    @param env: override os.environ dictionary
+    @type  env: dict
     @param required: require that the directory exist
     @type  required: bool
     @return: path to manifest file of package
@@ -110,8 +112,10 @@ def manifest_file(package, required=True, environ=os.environ):
     # ros_root needs to be determined from the environment or else
     # everything breaks when trying to launch nodes via ssh where the
     # path isn't setup correctly.
-    d = roslib.packages.get_pkg_dir(package, required, ros_root=environ[roslib.rosenv.ROS_ROOT]) 
-    return _manifest_file_by_dir(d, required, environ)
+    if env is None:
+        env = os.environ
+    d = roslib.packages.get_pkg_dir(package, required, ros_root=env[roslib.rosenv.ROS_ROOT]) 
+    return _manifest_file_by_dir(d, required=required, env=env)
         
 def parse_file(file):
     """

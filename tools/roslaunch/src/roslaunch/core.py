@@ -247,7 +247,7 @@ def get_ros_package_path():
     @rtype: str
     """
     # ROS_PACKAGE_PATH not required to be set
-    return roslib.rosenv.get_ros_package_path(False)
+    return roslib.rosenv.get_ros_package_path(required=False)
 
 def remap_localhost_uri(uri, force_localhost=False):
     """

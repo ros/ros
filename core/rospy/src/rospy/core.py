@@ -246,18 +246,22 @@ STATUS = 0
 MSG = 1
 VAL = 2
 
-def get_ros_root(env=os.environ, require=False):
+def get_ros_root(required=False, env=None):
     """
     Get the value of ROS_ROOT.
-    @param require: if True, fails with ROSException
+    @param env: override environment dictionary
+    @type  env: dict
+    @param required: if True, fails with ROSException
     @return: Value of ROS_ROOT environment
     @rtype: str
     @raise ROSException: if require is True and ROS_ROOT is not set
     """
-    rosRoot = env.get(roslib.rosenv.ROS_ROOT, None)
-    if require and not rosRoot:
+    if env is None:
+        env = os.environ
+    ros_root = env.get(roslib.rosenv.ROS_ROOT, None)
+    if required and not ros_root:
         raise rospy.exceptions.ROSException('%s is not set'%roslib.rosenv.ROS_ROOT)
-    return rosRoot
+    return ros_root
 
 
 #########################################################

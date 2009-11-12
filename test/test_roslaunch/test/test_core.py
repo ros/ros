@@ -241,7 +241,7 @@ class TestCore(unittest.TestCase):
 
             #verify properties
             self.assertEquals(lm.ros_root, roslib.rosenv.get_ros_root())
-            self.assertEquals(lm.ros_package_path, roslib.rosenv.get_ros_package_path(False))        
+            self.assertEquals(lm.ros_package_path, roslib.rosenv.get_ros_package_path())        
         
             # #1051 important test: this caused regressions up the tree
             self.assertEquals(lm.ros_ip, None)

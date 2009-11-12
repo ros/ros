@@ -221,14 +221,14 @@ class Rosdep:
         for p in packages:
           args = ["rosdep", p]
           #print "\n\n\nmy args are", args
-          deps_list = roslib.rospack.rospackexec(args).split('\n')
+          deps_list = [x for x in roslib.rospack.rospackexec(args).split('\n') if x]
           for dep_str in deps_list:
               dep = dep_str.split()
               if len(dep) == 2 and dep[0] == "name:":
                   rosdeps.add(dep[1])
               else:
                   print len(dep)
-                  print "rospack returned wrong number of values \n%s"%dep
+                  print "rospack returned wrong number of values \n\"%s\""%dep_str
 
 
         #print rosdeps
@@ -272,25 +272,8 @@ class Rosdep:
         
 
 
-
-        verified_packages = []
-        for p in packages:
-          try:
-            roslib.packages.get_pkg_dir(p)
-            verified_packages.append(p)
-          except roslib.packages.InvalidROSPkgException, ex:
-            try: 
-              roslib.stacks.get_stack_dir(p)
-              packages_in_stack = roslib.stacks.packages_of(p)
-              verified_packages.extend(packages_in_stack)
-              print "Found stack %s.  Expanding to packages: %s"%(p, packages_in_stack)
-            except roslib.stacks.InvalidROSStackException, ex2:
-              print "Could not resolve %s as a package or as a stack\n-->[ %s ]\n-->[ %s ]"%(p, ex, ex2)
-
-        if len(verified_packages) == 0:
-            print "No valid packages or stacks were found when parsing the arguments.  Quitting"
-            return False
-
+        (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(packages)
+        #print verified_packages, "Rejected", rejected_packages
 
         ### Find all dependencies
 

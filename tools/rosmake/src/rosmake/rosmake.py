@@ -357,7 +357,7 @@ class RosMakeAll:
       print "-"*79 + "}"
 
     def main(self):
-        parser = OptionParser(usage="usage: %prog [options]", prog='rosmake')
+        parser = OptionParser(usage="usage: %prog [options] COMMAND PACKAGE LIST", prog='rosmake')
         parser.add_option("--test-only", dest="test_only", default=False,
                           action="store_true", help="only run tests")
         parser.add_option("-t", dest="test", default=False,
@@ -481,25 +481,14 @@ class RosMakeAll:
               os.makedirs (self.log_dir)
 
 
-        counter = 0
-        verified_packages = []
-        for p in packages:
-          try:
-            roslib.packages.get_pkg_dir(p)
-            verified_packages.append(p)
-          except roslib.packages.InvalidROSPkgException, ex:
-            try: 
-              roslib.stacks.get_stack_dir(p)
-              packages_in_stack = roslib.stacks.packages_of(p)
-              verified_packages.extend(packages_in_stack)
-              self.print_all("Found stack %s.  Expanding to packages: %s"%(p, packages_in_stack))
-            except roslib.stacks.InvalidROSStackException, ex2:
-              self.print_all("Could not resolve %s as a package or as a stack [ %s ] [ %s ]"%(p, ex, ex2))
-            
+        (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(packages)
+        self.print_all("Expanded args %s to:\n%s"%(packages, verified_packages))
+
         # make sure all dependencies are satisfied and if not warn
         self.check_rosdep(verified_packages)
 
         #generate the list of packages necessary to build(in order of dependencies)
+        counter = 0
         for p in verified_packages:
 
             counter = counter + 1

@@ -122,15 +122,6 @@ def pythonpath_check(ctx):
     if 'rostools' in path:
         return "rostools should no longer be set in PYTHONPATH"
 
-def log4cxx_check(ctx):
-    if ctx.ros_bindeps_path:
-        if not os.path.exists(os.path.join(ctx.ros_bindeps_path, 'include', 'log4cxx')):
-            return "\n * [%(ros_bindeps_path)s/include/log4cxx] does not exist"
-    else:
-        p = os.path.join('/opt', 'ros', 'include', 'log4cxx')
-        if not isdir(p):
-            return "\n * [%s] does not exist"%p
-
 def rosconsole_config_file_check(ctx):
     if 'ROSCONSOLE_CONFIG_FILE' in ctx.env:
         return not isfile(ctx.env['ROSCONSOLE_CONFIG_FILE'])
@@ -197,7 +188,7 @@ environment_errors = [
     # ROS_PACKAGE_PATH
     (lambda ctx: [d for d in paths(ctx.ros_package_path) if d and isfile(d)],
      "Path(s) in ROS_PACKAGE_PATH [%(ros_package_path)s] points to a file instead of a directory: "),
-    (lambda ctx: [d for d in paths(ctx.ros_package_path) if d and not isdir(d)],
+    (lambda ctx: [d for d in paths(ctx.ros_package_path) if d and not isdir(d) and d != 'test_roswtf_ignore' ],
      "Not all paths in ROS_PACKAGE_PATH [%(ros_package_path)s] point to an existing directory: "),
     
     # PYTHONPATH
@@ -213,7 +204,6 @@ environment_errors = [
 
     (lambda ctx: ctx.ros_bindeps_path and not isdir(ctx.ros_bindeps_path),
      "ROS_BINDEPS_PATH [%(ros_bindeps_path)s] does not point to a directory"),
-    (log4cxx_check, "Cannot locate log4cxx. Please see installation instructions. "),
     (boost_check, "Cannot locate boost. Please see installation instructions. "),
     ]
 

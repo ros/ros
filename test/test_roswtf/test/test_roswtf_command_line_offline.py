@@ -65,6 +65,8 @@ class TestRoswtfOffline(unittest.TestCase):
         # point at a different 'master'
         env = os.environ.copy()
         env['ROS_MASTER_URI'] = 'http://localhost:11312'
+        # pass in special test key to roswtf for ROS_PACKAGE_PATH
+        env['ROS_PACKAGE_PATH'] = 'test_roswtf_ignore'
         kwds = { 'env': env, 'stdout': PIPE, 'stderr': PIPE}
 
         # run roswtf nakedly

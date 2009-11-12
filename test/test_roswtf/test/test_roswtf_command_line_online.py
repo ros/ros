@@ -72,8 +72,11 @@ class TestRostopicOnline(unittest.TestCase):
     def test_offline(self):
         cmd = 'roswtf'
 
-        kwds = { 'stdout': PIPE, 'stderr': PIPE}
+        # pass in special test key to roswtf for ROS_PACKAGE_PATH
+        env = os.environ.copy()        
+        env['ROS_PACKAGE_PATH'] = 'test_roswtf_ignore'
 
+        kwds = { 'env': env, 'stdout': PIPE, 'stderr': PIPE}
         # run roswtf nakedly
         output = Popen([cmd], **kwds).communicate()[0]
         self.assert_('No errors or warnings' in output, "OUTPUT[%s]"%output)

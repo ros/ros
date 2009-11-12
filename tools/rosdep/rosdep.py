@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (c) 2009, Willow Garage, Inc.
 # All rights reserved.
 # 
@@ -27,7 +28,7 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
-import roslib.scriptutil
+import roslib.rospack
 import os
 import sys
 import subprocess
@@ -50,10 +51,10 @@ class RosdepLookup:
         self.rosdep_map = {}
         self.rosdep_source = {}
         ## Find all rosdep.yamls here and load them into a map
-        stacks = roslib.scriptutil.rosstackexec(["list-names"]).split()
+        stacks = roslib.rospack.rosstackexec(["list-names"]).split()
         #print stacks
         for s in stacks:
-            path = os.path.join(roslib.scriptutil.rosstackexec(["find", s]), "rosdep.yaml")
+            path = os.path.join(roslib.rospack.rosstackexec(["find", s]), "rosdep.yaml")
             if os.path.exists(path):
                 try:
                     f = open(path)
@@ -215,7 +216,7 @@ rosdeps = set()
 for p in pkgs:
   args = ["rosdep", p]
   #print "\n\n\nmy args are", args
-  deps_list = roslib.scriptutil.rospackexec(args).split('\n')
+  deps_list = roslib.rospack.rospackexec(args).split('\n')
   for dep_str in deps_list:
       dep = dep_str.split()
       if len(dep) == 2 and dep[0] == "name:":

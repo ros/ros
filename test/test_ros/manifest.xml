@@ -12,6 +12,6 @@
   <!-- for test nodes -->
   <depend package="std_msgs" />
   <export>
-    <cpp cflags="-I${prefix}/msg/cpp"/>
+    <cpp cflags="-I${prefix}/msg/cpp -I${prefix}/srv/cpp"/>
   </export>
 </package>

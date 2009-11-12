@@ -25,3 +25,6 @@ target_link_libraries(bin/throttle topic_tools)
 
 rosbuild_add_gtest(test/utest test/utest.cpp)
 target_link_libraries(test/utest topic_tools)
+
+rosbuild_add_rostest(test/throttle.test)
+rosbuild_add_rostest(test/drop.test)

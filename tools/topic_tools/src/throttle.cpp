@@ -109,9 +109,9 @@ void in_cb(const boost::shared_ptr<ShapeShifter const>& msg)
 }
 
 #define USAGE "\nusage: \n"\
-           "  throttle_bandwidth messages IN_TOPIC MSGS_PER_SEC [OUT_TOPIC]]\n"\
+           "  throttle messages IN_TOPIC MSGS_PER_SEC [OUT_TOPIC]]\n"\
            "OR\n"\
-           "  throttle_bandwidth bytes IN_TOPIC BYTES_PER_SEC WINDOW [OUT_TOPIC]]\n\n"\
+           "  throttle bytes IN_TOPIC BYTES_PER_SEC WINDOW [OUT_TOPIC]]\n\n"\
            "  This program will drop messages from IN_TOPIC so that either: the \n"\
            "  average bytes per second on OUT_TOPIC, averaged over WINDOW \n"\
            "  seconds, remains below BYTES_PER_SEC, or: the minimum inter-message\n"\

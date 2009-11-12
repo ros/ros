@@ -11,6 +11,10 @@
   <review status="unreviewed" notes=""/>
   <depend package="roscpp"/>
   <depend package="std_msgs"/>
+
+  <!-- For rostopic_pub_wrapper.py; should eventually be removed -->
+  <depend package="rospy"/>
+
   <export>
     <cpp cflags="-I${prefix}/include -I${prefix}/srv/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -ltopic_tools"/>
   </export>

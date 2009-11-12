@@ -1,0 +1,26 @@
+<launch>
+  <node pkg="topic_tools" type="rostopic_pub_wrapper.py" name="rostopic_pub" 
+        args="pub -r 20 input std_msgs/String chatter"/>
+
+  <!-- Automatic output name -->
+  <node pkg="topic_tools" type="throttle" name="throttle"
+        args="messages input 5"/>
+  <test test-name="hztest" pkg="rostest" type="hztest">
+    <param name="topic" value="input_throttle"/>
+    <param name="hz" value="5.0"/>
+    <param name="hzerror" value="1.0"/>
+    <param name="test_duration" value="2.0" />
+  </test>
+
+  <!-- Explicit output name -->
+  <node pkg="topic_tools" type="throttle" name="throttle_explicit"
+        args="messages input 5 output"/>
+  <test test-name="hztest_explicit" pkg="rostest" type="hztest">
+    <param name="topic" value="output"/>
+    <param name="hz" value="5.0"/>
+    <param name="hzerror" value="1.0"/>
+    <param name="test_duration" value="2.0" />
+  </test>
+
+  <!-- TODO: test byte-based throttling -->
+</launch>

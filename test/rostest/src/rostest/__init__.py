@@ -108,6 +108,7 @@ def rosrun(package, test_name, test, sysargs=None):
     # shutdown any node resources in case test forgets to
     rospy.signal_shutdown('test complete')
     if not result.wasSuccessful():
+        import sys
         sys.exit(1)
     
 # TODO: rename to rosrun -- migrating name to avoid confusion and enable easy xmlrunner use 
@@ -162,6 +163,7 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
     printSummary(result)
     
     if not result.wasSuccessful():
+        import sys
         sys.exit(1)
 
 # coverage instance

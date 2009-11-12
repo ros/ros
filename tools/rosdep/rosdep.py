@@ -29,10 +29,12 @@
 # Author Tully Foote/tfoote@willowgarage.com
 
 import roslib.rospack
+import roslib.stacks
 import os
 import sys
 import subprocess
 import yaml
+from optparse import OptionParser
 
 ########## Class for interacting with rosdep.yaml files
 class RosdepLookup:
@@ -144,9 +146,11 @@ class OSIndex:
     def detect_packages(self, packages):
         return self._os_map[self.get_os_name()].detect_packages(packages)
 
-    def build_script(self, packages):
-        return self._os_map[self.get_os_name()].build_script(packages)
-
+    def generate_package_install_command(self, packages):
+        if len(packages) > 0:
+            return self._os_map[self.get_os_name()].generate_package_install_command(packages)
+        else:
+            return "#No Packages to install skipping package install command.\n"
 
 ###### UBUNTU SPECIALIZATION #########################
 class Ubuntu:
@@ -196,69 +200,132 @@ class Ubuntu:
                 #print "Didn't detect %s"%p
         return packages_not_detected
 
-    def build_script(self, packages):        
+    def generate_package_install_command(self, packages):        
         apt = "#Packages\nsudo apt-get install "
         for p in packages:
             apt += " " + p
-        return apt + other
+        return apt
 
 
 
 ###### END UBUNTU SPECIALIZATION ########################
 
-######################## REPLACE WITH COMMANDLINE #################
-pkgs = ["rxdeps", "roscpp", "tf"]
+
+class Rosdep:
+    def __init__(self):
+        self.osi = OSIndex()
+        self.rdl = RosdepLookup(self.osi)
+
+    def gather_rosdeps(self, packages):
+        rosdeps = set()
+        for p in packages:
+          args = ["rosdep", p]
+          #print "\n\n\nmy args are", args
+          deps_list = roslib.rospack.rospackexec(args).split('\n')
+          for dep_str in deps_list:
+              dep = dep_str.split()
+              if len(dep) == 2 and dep[0] == "name:":
+                  rosdeps.add(dep[1])
+              else:
+                  print len(dep)
+                  print "rospack returned wrong number of values \n%s"%dep
 
 
-### Find all dependencies
+        #print rosdeps
+        rosdeps = list(rosdeps)
+        return rosdeps
 
-rosdeps = set()
-for p in pkgs:
-  args = ["rosdep", p]
-  #print "\n\n\nmy args are", args
-  deps_list = roslib.rospack.rospackexec(args).split('\n')
-  for dep_str in deps_list:
-      dep = dep_str.split()
-      if len(dep) == 2 and dep[0] == "name:":
-          rosdeps.add(dep[1])
-      else:
-          print len(dep)
-          print "rospack returned wrong number of values \n%s"%dep
-  
-
-#print rosdeps
-rosdeps = list(rosdeps)
+    def get_packages_and_scripts(self, rosdeps):
+        native_packages = []
+        scripts = []
+        for r in rosdeps:
+            specific = self.rdl.lookup_rosdep(r)
+            if specific:
+                if len(specific.split('\n')) == 1:
+                    for pk in specific.split():
+                        native_packages.append(pk)
+                else:
+                    scripts.append(specific)
+        return (native_packages, scripts)
 
 
+    def main(self):
+        parser = OptionParser(usage="usage: %prog [options] COMMAND PACKAGE [LIST]", prog='rosdep')
+        parser.add_option("--verbose", "-v", dest="verbose", default=False, 
+                          action="store_true", help="verbose display")
+        parser.add_option("--include_duplicates", "-i", dest="include_duplicates", default=False, 
+                          action="store_true", help="do not deduplicate")
+        
+        options, args = parser.parse_args()
 
-### Detect OS name and version
-osi = OSIndex()
-rdl = RosdepLookup(osi)
+        if len(args) < 2:
+            print "rosdep requires at least 2 arguments a command and a package name."
+            return False
+        
+        command = args[0]
+        packages = args[1:]
+        
+        valid_commands = ["generate_bash", "install"]
+        if not command in valid_commands:
+            print "command %s not in the list of possible commands: %s"%(command, valid_commands)
+            return False
+        
 
-################ Add All specializations here ##############################
-ubuntu = Ubuntu(osi)
 
-############## Testing ################################
-print "Detected OS: " + osi.get_os_name()
-print "Detected Version: " + osi.get_os_version()
 
-native_packages = []
-scripts = []
-for r in rosdeps:
-    specific = rdl.lookup_rosdep(r)
-    if specific:
-        if len(specific.split('\n')) == 1:
-            for pk in specific.split():
-                native_packages.append(pk)
+        verified_packages = []
+        for p in packages:
+          try:
+            roslib.packages.get_pkg_dir(p)
+            verified_packages.append(p)
+          except roslib.packages.InvalidROSPkgException, ex:
+            try: 
+              roslib.stacks.get_stack_dir(p)
+              packages_in_stack = roslib.stacks.packages_of(p)
+              verified_packages.extend(packages_in_stack)
+              print "Found stack %s.  Expanding to packages: %s"%(p, packages_in_stack)
+            except roslib.stacks.InvalidROSStackException, ex2:
+              print "Could not resolve %s as a package or as a stack\n-->[ %s ]\n-->[ %s ]"%(p, ex, ex2)
+
+        if len(verified_packages) == 0:
+            print "No valid packages or stacks were found when parsing the arguments.  Quitting"
+            return False
+
+
+        ### Find all dependencies
+
+        rosdeps = self.gather_rosdeps(verified_packages)
+
+
+        ### Detect OS name and version
+
+        ################ Add All specializations here ##############################
+        ubuntu = Ubuntu(self.osi)
+
+        ############## Testing ################################
+        #print "Detected OS: " + osi.get_os_name()
+        #print "Detected Version: " + osi.get_os_version()
+
+        (native_package, scripts) = self.get_packages_and_scripts(rosdeps)
+
+
+        if options.include_duplicates:
+            undetected = native_package
         else:
-            scripts.append(specific)
+            undetected = osi.detect_packages(native_packages)
+
+        print "Undetected packages", undetected
+        bash_script = self.osi.generate_package_install_command(undetected)
+        for sc in scripts:
+            bash_script += "\n" + sc + "\n"
             
+        if command == "generate_bash":
+            print bash_script
+        else:
+            print "Unsupported command %s."%command
 
-undetected = osi.detect_packages(native_packages)
 
-print "Undetected packages", undetected
-if len(undetected) > 0:
-    print osi.build_script(undetected)
-for sc in scripts:
-    print sc
 
+r = Rosdep()
+if not r.main():
+    sys.exit(-1)

@@ -47,8 +47,11 @@ def load_plugins():
         m_file = roslib.manifest.manifest_file(pkg, True)
         m = roslib.manifest.parse_file(m_file)
         p_module = m.get_export('roswtf', 'plugin')
-        if len(p_module) != 1:
+        if not p_module:
+            continue
+        elif len(p_module) != 1:
             print >> sys.stderr, "Cannot load plugin [%s]: invalid 'plugin' attribute"%(pkg)
+            continue
         p_module = p_module[0]
         try:
             # load that packages namespace

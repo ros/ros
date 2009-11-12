@@ -51,7 +51,7 @@ uint64_t SubscriptionQueue::push(const SubscriptionMessageHelperPtr& helper, con
 
     if (!full_)
     {
-      ROS_DEBUG("Incoming queue full for topic \"%s\".  Discarding oldest message (current queue size [%d])", topic_.c_str(), queue_.size());
+      ROS_DEBUG("Incoming queue full for topic \"%s\".  Discarding oldest message (current queue size [%d])", topic_.c_str(), (int)queue_.size());
     }
 
     full_ = true;

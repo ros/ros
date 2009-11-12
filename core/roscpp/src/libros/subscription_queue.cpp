@@ -137,7 +137,12 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
   }
 
   MessagePtr msg = i.deserializer->deserialize();
-  i.helper->call(msg);
+
+  // msg can be null here if deserialization failed
+  if (msg)
+  {
+    i.helper->call(msg);
+  }
 
   return CallbackInterface::Success;
 }

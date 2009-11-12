@@ -27,6 +27,7 @@
 
 
 #include "ros/message_deserializer.h"
+#include <ros/console.h>
 
 namespace ros
 {
@@ -49,10 +50,24 @@ MessagePtr MessageDeserializer::deserialize()
     return msg_;
   }
 
+  if (!buffer_)
+  {
+    // If the buffer has been reset it means we tried to deserialize and failed
+    return MessagePtr();
+  }
+
   msg_ = helper_->create();
   msg_->__serialized_length = num_bytes_;
   msg_->__connection_header = connection_header_;
-  msg_->deserialize(buffer_.get());
+
+  try
+  {
+    msg_->deserialize(buffer_.get());
+  }
+  catch (std::exception& e)
+  {
+    ROS_ERROR("Exception thrown when deserializing message of length [%d] from [%s]: %s", num_bytes_, (*connection_header_)["callerid"].c_str(), e.what());
+  }
 
   buffer_.reset();
 

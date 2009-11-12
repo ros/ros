@@ -68,12 +68,17 @@ class TestRoswtfOffline(unittest.TestCase):
         kwds = { 'env': env, 'stdout': PIPE, 'stderr': PIPE}
 
         # run roswtf nakedly
-        check_call([cmd], **kwds)
+        output = Popen([cmd], **kwds).communicate()[0]
+        # - due both a positive and negative test
+        self.assert_('No errors or warnings' in output, "OUTPUT[%s]"%output)
+        self.assert_('ERROR' not in output, "OUTPUT[%s]"%output)
 
         # run roswtf on a simple launch file offline
         import roslib.packages
         p = os.path.join(roslib.packages.get_pkg_dir('test_roswtf'), 'test', 'min.launch')
-        check_call([cmd, p], **kwds)
+        output = Popen([cmd, p], **kwds).communicate()[0]
+        self.assert_('No errors or warnings' in output, "OUTPUT[%s]"%output)
+        self.assert_('ERROR' not in output, "OUTPUT[%s]"%output)        
         
 if __name__ == '__main__':
     rostest.unitrun('test_roswtf', NAME, TestRoswtfOffline, sys.argv, coverage_packages=[])

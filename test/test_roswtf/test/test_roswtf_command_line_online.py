@@ -75,12 +75,16 @@ class TestRostopicOnline(unittest.TestCase):
         kwds = { 'stdout': PIPE, 'stderr': PIPE}
 
         # run roswtf nakedly
-        check_call([cmd], **kwds)
+        output = Popen([cmd], **kwds).communicate()[0]
+        self.assert_('No errors or warnings' in output, "OUTPUT[%s]"%output)
+        self.assert_('ERROR' not in output, "OUTPUT[%s]"%output)        
 
         # run roswtf on a simple launch file online
         import roslib.packages
         p = os.path.join(roslib.packages.get_pkg_dir('test_roswtf'), 'test', 'min.launch')
-        check_call([cmd, p], **kwds)
-            
+        output = Popen([cmd, p], **kwds).communicate()[0]
+        self.assert_('No errors or warnings' in output, "OUTPUT[%s]"%output)
+        self.assert_('ERROR' not in output, "OUTPUT[%s]"%output)        
+        
 if __name__ == '__main__':
     rostest.run(PKG, NAME, TestRostopicOnline, sys.argv)

@@ -489,15 +489,24 @@ TEST(RoscppHandles, nodeHandleNames)
 {
   ros::NodeHandle n1;
   EXPECT_STREQ(n1.resolveName("blah").c_str(), "/blah");
-  EXPECT_STREQ(n1.resolveName("~blah").c_str(), (ros::this_node::getName() + "/blah").c_str());
+
+  try
+  {
+    n1.resolveName("~blah");
+    FAIL();
+  }
+  catch (ros::InvalidNameException&)
+  {
+  }
 
   ros::NodeHandle n2("internal_ns");
   EXPECT_STREQ(n2.resolveName("blah").c_str(), "/internal_ns/blah");
-  EXPECT_STREQ(n2.resolveName("~blah").c_str(), (ros::this_node::getName() + "/internal_ns/blah").c_str());
 
   ros::NodeHandle n3(n2, "2");
   EXPECT_STREQ(n3.resolveName("blah").c_str(), "/internal_ns/2/blah");
-  EXPECT_STREQ(n3.resolveName("~blah").c_str(), (ros::this_node::getName() + "/internal_ns/2/blah").c_str());
+
+  ros::NodeHandle n4("~");
+  EXPECT_STREQ(n4.resolveName("blah").c_str(), (ros::this_node::getName() + "/blah").c_str());
 }
 
 TEST(RoscppHandles, nodeHandleShutdown)

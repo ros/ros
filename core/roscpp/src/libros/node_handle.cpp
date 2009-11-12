@@ -210,9 +210,13 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
 
   if (final[0] == '~')
   {
-    ROS_WARN("Using ~ names with NodeHandle methods has been deprecated.  Instead, construct a NodeHandle with a namespace beginning with ~.  (name=[%s])", name.c_str());
-
-    final = names::append(names::append(this_node::getName(), unresolved_namespace_), final.substr(1));
+    std::stringstream ss;
+    ss << "Using ~ names with NodeHandle methods is not allowed.  If you want to use private names with the NodeHandle ";
+    ss << "interface, construct a NodeHandle using a private name as its namespace.  e.g. ";
+    ss << "ros::NodeHandle nh(\"~\");  ";
+    ss << "nh.getParam(\"my_private_name\");";
+    ss << " (name = [" << name << "])";
+    throw InvalidNameException(ss.str());
   }
   else if (final[0] == '/')
   {

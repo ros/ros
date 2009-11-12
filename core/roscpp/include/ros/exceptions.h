@@ -25,45 +25,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ROSCPP_THIS_NODE_H
-#define ROSCPP_THIS_NODE_H
+#ifndef ROSCPP_EXCEPTIONS_H
+#define ROSCPP_EXCEPTIONS_H
 
-#include "forwards.h"
+#include <stdexcept>
 
 namespace ros
 {
 
-/**
- * \brief Contains functions which provide information about this process' ROS node
- */
-namespace this_node
+class Exception : public std::runtime_error
 {
+public:
+  Exception(const std::string& what)
+  : std::runtime_error(what)
+  {}
+};
 
-/**
- * \brief Returns the name of the current node.
- */
-const std::string& getName();
-/**
- * \brief Returns the namespace of the current node.
- */
-const std::string& getNamespace();
+class InvalidNodeNameException : public ros::Exception
+{
+public:
+  InvalidNodeNameException(const std::string& name, const std::string& reason)
+  : Exception("Invalid node name [" + name + "]: " + reason)
+  {}
+};
 
-/** @brief Get the list of topics advertised by this node
- *
- * @param[out] topics The advertised topics
- */
-void getAdvertisedTopics(V_string& topics);
+class InvalidNameException : public ros::Exception
+{
+public:
+  InvalidNameException(const std::string& msg)
+  : Exception(msg)
+  {}
+};
 
-/** @brief Get the list of topics subscribed to by this node
- *
- * @param[out] The subscribed topics
- */
-void getSubscribedTopics(V_string& topics);
-
-} // namespace this_node
 
 } // namespace ros
 
-#endif // ROSCPP_THIS_NODE_H
-
+#endif
 

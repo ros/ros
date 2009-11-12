@@ -51,6 +51,14 @@ class RoslibStacksTest(unittest.TestCase):
     
     def test_expand_to_packages(self):
         from roslib.stacks import expand_to_packages
+        try:
+            # it's possible to accidentally pass in a sequence type
+            # like a string and get weird results, so check that we
+            # don't
+            self.assertEquals(([], []), expand_to_packages('ros'))
+            self.fail("expand_to_packages should only take in a list of strings")
+        except ValueError: pass
+        
         self.assertEquals(([], []), expand_to_packages([]))
         self.assertEquals((['rospy', 'test_roslib', 'roslib'], []), expand_to_packages(['rospy', 'test_roslib', 'roslib']))
         self.assertEquals(([], ['bogus_one', 'bogus_two']), expand_to_packages(['bogus_one', 'bogus_two']))

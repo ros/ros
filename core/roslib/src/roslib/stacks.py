@@ -174,6 +174,8 @@ def expand_to_packages(names):
     names for which no matching stack or package was found. Lists may have duplicates.
     @rtype: ([str], [str])
     """
+    if type(names) not in [tuple, list]:
+        raise ValueError("names must be a list of strings")
 
     # do full package list first. This forces an entire tree
     # crawl. This is less efficient for a small list of names, but

@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="topic_tools" type="rostopic_pub_wrapper.py" name="rostopic_pub" 
+  <node pkg="rostopic" type="rostopic" name="rostopic_pub" 
         args="pub -r 20 input std_msgs/String chatter"/>
 
   <!-- Automatic output name -->

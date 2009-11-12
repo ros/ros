@@ -28,3 +28,10 @@ target_link_libraries(test/utest topic_tools)
 
 rosbuild_add_rostest(test/throttle.test)
 rosbuild_add_rostest(test/drop.test)
+rosbuild_add_rostest(test/relay.test)
+rosbuild_add_rostest(test/mux.test)
+rosbuild_add_rostest(test/switch_mux.test)
+# Can't run this one yet, because hztest won't check for 0Hz output, # 2024
+#rosbuild_add_rostest(test/switch_mux_none.test)
+
+rosbuild_add_pyunit(test/args.py)

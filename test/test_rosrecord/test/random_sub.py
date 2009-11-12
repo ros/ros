@@ -82,18 +82,17 @@ class RandomSubTest(unittest.TestCase):
 
       msg_match = False
 
-      for ind in xrange(0,20):
+      for ind in xrange(0,100):
         (input_msg, input_time) = self.input[ind]
 
         if (roslib.message.strify_message(expect_msg) == roslib.message.strify_message(input_msg)):
           msg_match = True
           del self.input[ind]
-          self.assertTrue(abs(expect_time - input_time) < 1.0)
+          self.assertTrue(abs(expect_time - input_time) < 0.5)
           break
 
       if not msg_match:
-        rospy.loginfo("No matching message found at time %f"%(expect_time))
-
+        print "No match at time: %f"%expect_time
 
       self.assertTrue(msg_match)
     

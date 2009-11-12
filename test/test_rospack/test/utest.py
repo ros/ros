@@ -639,7 +639,7 @@ class RospackTestCase(unittest.TestCase):
             ([], "depth-0"),
             (depth_list, "depth-100"),
             ]
-        self.check_ordered_list("depends-on", tests)
+        self.check_unordered_list("depends-on", tests)
 
     def test_depends_on1(self):
         # sanity check first

@@ -235,6 +235,15 @@ TEST(rospack, multiple_rospack_objects)
   ASSERT_EQ((int)path_name.size(), 2);
 }
 
+TEST(rospack, deduplicate_tokens)
+{
+  rospack::ROSPack rp;
+  std::string input = "foo foo bar bat bar foobar batbar";
+  std::string truth = "foo bar bat foobar batbar";
+  std::string output = rp.deduplicate_tokens(input);
+  ASSERT_EQ(truth, output);
+}
+
 // Code-level tests against rospack's snarf_flags() method
 /////////////////////////////////////////////////////////////
 

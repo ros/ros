@@ -709,6 +709,7 @@ int ROSStack::cmd_print_packages()
     printf("%s\n", (*i)->name.c_str());
     delete *i;
   }
+  return 0;
 }
   
 void ROSStack::createROSHomeDirectory()

@@ -189,6 +189,12 @@ class RosstackTestCase(unittest.TestCase):
         self.rosstack_fail("deps", "list")
         self.rosstack_fail("deps", "list-names")
 
+    def test_contents(self):
+        self.erosstack_succeed(os.path.abspath("test2"), 
+                               os.path.abspath("test2"), 
+                               "test2",
+                               "contents")
+
 # TODO: port / adapt these rospack tests to exercise rosstack, #2009
 #
 #    def test_invalid_option_order(self):

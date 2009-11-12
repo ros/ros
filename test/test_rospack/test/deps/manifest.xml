@@ -6,4 +6,6 @@
 </export>
 <depend package="base"/>
 <depend package="base_two"/>
+<rosdep name="bar"/>
+<rosdep nombre="baz"/>
 </package>

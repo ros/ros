@@ -37,6 +37,8 @@ import roslib; roslib.load_manifest(PKG)
 
 import os
 import unittest
+import tempfile
+import shutil
 from subprocess import Popen, PIPE
 
 ROS_ROOT = 'ROS_ROOT'
@@ -64,6 +66,8 @@ aliases = {
     'deps1': 'depends1',
     'deps-manifests': 'depends-manifests',
     'deps-indent': 'depends-indent',
+    'rosdep': 'rosdeps',
+    'rosdep0': 'rosdeps0'
     }
 
 ## Process-level tests of rospack executable
@@ -86,8 +90,9 @@ class RospackTestCase(unittest.TestCase):
         # argv.
         #args = ["rospack", command, pkgname]
         args = ["rospack"]
-        for s in command.split():
-          args.append(s)
+        if command:
+          for s in command.split():
+            args.append(s)
         if pkgname is not None:
           args.append(pkgname)
         p = Popen(args, stdout=PIPE, stderr=PIPE, env=env)
@@ -95,14 +100,15 @@ class RospackTestCase(unittest.TestCase):
 
         # Also test command aliases, verifying that they give the same 
         # return code and console output
-        cmd = command.split()[-1] 
-        if cmd in aliases:
-          args[-2] = aliases[cmd]
-          alias_p = Popen(args, stdout=PIPE, stderr=PIPE, env=env)
-          alias_stdout, alias_stderr = alias_p.communicate()
-          self.assertEquals(p.returncode, alias_p.returncode)
-          self.assertEquals(stdout, alias_stdout)
-          #self.assertEquals(stderr, alias_stderr)
+        if command:
+          cmd = command.split()[-1] 
+          if cmd in aliases:
+            args[-2] = aliases[cmd]
+            alias_p = Popen(args, stdout=PIPE, stderr=PIPE, env=env)
+            alias_stdout, alias_stderr = alias_p.communicate()
+            self.assertEquals(p.returncode, alias_p.returncode)
+            self.assertEquals(stdout, alias_stdout)
+            #self.assertEquals(stderr, alias_stderr)
 
         return p.returncode, stdout.strip(), stderr
 
@@ -183,10 +189,22 @@ class RospackTestCase(unittest.TestCase):
             self.failIf(set(retlist) ^ set(retactual), "rospack %s %s failed: [%s] vs [%s]"%(command, package, retlist, retactual))
             #self.assertEquals('\n'.join(retlist), '\n'.join(retactual))
 
+    # variant that does not require ordering among the return values
+    def echeck_unordered_list(self, command, tests):
+        for retlist, ros_root, ros_package_path, package in tests:
+            expected = set(retlist)
+            self.erospack_succeed(ros_root, ros_package_path, package, command)
+            retval = self.erun_rospack(ros_root, ros_package_path, package, command)
+            retactual = [v for v in retval.split('\n') if v]            
+            self.failIf(set(retlist) ^ set(retactual), "rospack %s %s failed: [%s] vs [%s]"%(command, package, retlist, retactual))
+            #self.assertEquals('\n'.join(retlist), '\n'.join(retactual))
         
     ################################################################################
     ## ARG PARSING
         
+    def test_no_option(self):
+        self.rospack_succeed(None, None)
+
     def test_fake_option(self):
         self.rospack_fail("deps", "--fake deps")
 
@@ -194,6 +212,69 @@ class RospackTestCase(unittest.TestCase):
         self.rospack_fail("deps", "deps --lang=cpp --attrib=flags")
         self.rospack_fail("deps", "deps --lang=cpp")
         self.rospack_fail("deps", "deps --attrib=lflags")
+        self.rospack_fail("base", "export --lang=cpp --attrib=cflags --top=")
+        self.rospack_fail(None, "profile --length=")
+        self.rospack_fail(None, "deps --length=10")
+        self.rospack_fail(None, "deps --zombie-only")
+        self.rospack_fail(None, "profile --deps-only")
+
+    def test_ros_cache_timeout(self):
+        env = os.environ.copy()
+        os.environ['ROS_CACHE_TIMEOUT'] = '0'
+        self.rospack_succeed(None, "profile")
+        os.environ['ROS_CACHE_TIMEOUT'] = '-1'
+        self.rospack_succeed(None, "profile")
+        import time
+        time.sleep(0.1)
+        os.environ['ROS_CACHE_TIMEOUT'] = '.001'
+        self.rospack_succeed(None, "profile")
+        os.environ = env
+
+    def test_profile(self):
+        # TODO: test that the output is correct
+        self.rospack_succeed(None, "profile --zombie-only")
+        # TODO: test that the output is correct
+        self.rospack_succeed(None, "profile --length=10")
+
+    def test_ros_home(self):
+        env = os.environ.copy()
+
+        # Make sure we write to ROS_HOME
+        d = tempfile.mkdtemp()
+        os.environ['ROS_HOME'] = d
+        self.rospack_succeed(None, "profile")
+        self.assertEquals(True, os.path.exists(os.path.join(d,'rospack_cache')))
+        # Make sure we write to HOME, auto-creating HOME/.ros
+        del os.environ['ROS_HOME']
+        os.environ['HOME'] = d
+        self.rospack_succeed(None, "profile")
+        cache_path = os.path.join(d,'.ros','rospack_cache')
+        self.assertEquals(True, os.path.exists(cache_path))
+        # Test with a corrupted cache
+        f = open(cache_path, 'w')
+        f.write('#SOMETHING\n')
+        f.close()
+        self.rospack_succeed(None, "list")
+        # Make sure we write to HOME, not creating HOME/.ros
+        os.unlink(cache_path)
+        self.rospack_succeed(None, "profile")
+        self.assertEquals(True, os.path.exists(cache_path))
+        # Make sure we proceed when we can't create HOME/.ros
+        shutil.rmtree(os.path.join(d,'.ros'))
+        os.chmod(d, 0000)
+        self.rospack_succeed(None, "profile")
+        # Make sure we proceed when we HOME/.ros isn't a directory
+        os.chmod(d, 0700)
+        f = open(os.path.join(d,'.ros'), 'w')
+        f.close()
+        self.rospack_succeed(None, "profile")
+        # Make sure we proceed when HOME isn't set
+        del os.environ['HOME']
+        self.rospack_succeed(None, "profile")
+
+        # Clean up
+        shutil.rmtree(d)
+        os.environ = env
 
     def test_no_package_allowed(self):
         self.rospack_succeed(None, "help")
@@ -228,6 +309,13 @@ class RospackTestCase(unittest.TestCase):
         self.rospack_fail("base", "plugins --lang=cpp")
         self.rospack_fail("base", "plugins --attrib=")
         self.rospack_fail("base", "plugins --top=foo")
+
+    def test_rosdep(self):
+        self.rospack_succeed("base", "rosdep")
+        self.assertEquals("name: foo", self.run_rospack("base", "rosdep"))
+        self.rospack_succeed("deps", "rosdep0")
+        self.assertEquals("name: bar", self.run_rospack("deps", "rosdep0"))
+        self.check_unordered_list("rosdep", [(["name: foo", "name: bar"], "deps")])
   
     ################################################################################
     ## EXPORT
@@ -242,8 +330,29 @@ class RospackTestCase(unittest.TestCase):
         for retval, arg in tests:
             self.rospack_succeed(package, arg)
             self.assertEquals(retval, self.strip_opt_ros(self.run_rospack(package, arg)))
+        self.assertEquals("-lfoo -lbar", self.strip_opt_ros(self.run_rospack("deps", "export --lang=cpp --attrib=lflags --deps-only")))
         #TODO: test export with $prefix
-        #TODO: test export with non-cpp attribs
+
+    def test_export_roslang(self):
+        package = 'base'
+        tests = [("something.cmake", "export --lang=roslang --attrib=cmake")]
+        for retval, arg in tests:
+            self.rospack_succeed(package, arg)
+            self.assertEquals(retval, self.strip_opt_ros(self.run_rospack(package, arg)))
+
+    def test_export_cpp_bad_bindeps(self):
+        env = os.environ.copy()
+        os.environ['ROS_BINDEPS_PATH'] = '/a/non/existent/directory'
+        package = 'base'
+        tests = [("-lfoo", "export --lang=cpp --attrib=lflags"),
+                 ("-lfoo", "export --attrib=lflags --lang=cpp"),
+                 ("-Isomething", "export --lang=cpp --attrib=cflags"),
+                 ("-Isomething", "export --attrib=cflags --lang=cpp"),
+                ]
+        for retval, arg in tests:
+            self.rospack_succeed(package, arg)
+            self.assertEquals(retval, self.strip_opt_ros(self.run_rospack(package, arg)))
+        os.environ = env
 
     def test_export_non_existent_attrib(self):
         self.rospack_succeed("base", "export --lang=cpp --attrib=fake")
@@ -281,7 +390,7 @@ class RospackTestCase(unittest.TestCase):
         self.assertNotEquals(0, self.erun_rospack_status(non_existent1, testp, "deps", "deps"))
 
     ## test rospack with ROS_ROOT=ROS_PACKAGE_PATH 
-    def test_ros_root__ros_package_path_identical(self):
+    def test_ros_root_ros_package_path_identical(self):
         #implicitly depending on the deps test here
         #set ros_package_path to be identical to ros_root
         testp = os.path.abspath('test')        
@@ -328,7 +437,8 @@ class RospackTestCase(unittest.TestCase):
         # scatter some colons into ros package path to make sure rospack doesn't mind
         testp = os.path.abspath('test')
         test2p = os.path.abspath('test2')
-        test3p = os.path.abspath('test3')                
+        # Add a trailing slash, to make sure that it gets removed
+        test3p = os.path.abspath('test3') + '/'
         tests = [
             (["base","base_two"], testp, "::%s:::"%testp, "deps"),
             (["base","base_two"], testp, "::", "deps"),
@@ -350,6 +460,20 @@ class RospackTestCase(unittest.TestCase):
             (["test2"],testp, ":%s:%s"%(test2p, non_existentp), "precedence2"),
             ]
         self.echeck_ordered_list("libs-only-l", tests)
+
+    # Test rospack from within a package
+    def test_ros_in_package(self):
+        pwd = os.getcwd()
+        ros_root = os.path.join(pwd, 'test')
+        os.chdir(os.path.abspath(os.path.join('test', 'deps')))
+        self.erospack_succeed(ros_root, None, None, 'depends1')
+        self.echeck_unordered_list('depends1', [(["base", "base_two"], ros_root, None, None)])
+        # Check what happens when we're in an unlinked directory
+        d = tempfile.mkdtemp()
+        os.chdir(d)
+        os.rmdir(d)
+        self.erospack_fail(ros_root, None, None, 'depends1')
+        os.chdir(pwd)
 
     ################################################################################
     ## rospack list
@@ -510,6 +634,7 @@ class RospackTestCase(unittest.TestCase):
 
         self.rospack_succeed("deps", "depends-on")
         tests = [
+            (["plugins", "deps_dup", "deps", "deps_higher"], "base"),
             (["deps_higher","deps_dup"], "deps"),
             ([], "depth-0"),
             (depth_list, "depth-100"),
@@ -538,6 +663,27 @@ class RospackTestCase(unittest.TestCase):
         self.rospack_succeed("base", "libs-only-l")
         self.assertEquals("foo", self.run_rospack("base", "libs-only-l"))
 
+    def test_libs_only_L_bad_bindeps(self):
+        env = os.environ.copy()
+        os.environ['ROS_BINDEPS_PATH'] = '/a/non/existent/directory'
+        self.rospack_succeed("base", "libs-only-L")
+        self.assertEquals("", self.run_rospack("base", "libs-only-L"))
+        os.environ = env
+
+    def test_libs_only_L_explicit_bindeps(self):
+        env = os.environ.copy()
+        os.environ['ROS_BINDEPS_PATH'] = '/'
+        self.rospack_succeed("base", "libs-only-L")
+        self.assertEquals("//lib", self.run_rospack("base", "libs-only-L"))
+        os.environ = env
+
+    def test_cflags_only_I_bad_bindeps(self):
+        env = os.environ.copy()
+        os.environ['ROS_BINDEPS_PATH'] = '/a/non/existent/directory'
+        self.rospack_succeed("base", "cflags-only-I")
+        self.assertEquals("something", self.run_rospack("base", "cflags-only-I"))
+        os.environ = env
+
     def test_circular(self):
         testp = os.path.abspath("test")
         self.erospack_fail(testp, os.path.abspath("test_circular/cycle0"), "self_ref", "deps")
@@ -546,6 +692,10 @@ class RospackTestCase(unittest.TestCase):
         self.erospack_fail(testp, os.path.abspath("test_circular/cycle2"), "friend1", "deps")
         self.erospack_fail(testp, os.path.abspath("test_circular/cycle2"), "friend2", "deps")
         self.erospack_fail(testp, os.path.abspath("test_circular/cycle2"), "friend3", "deps")
+
+        # Interestingly, depends-on succeeds in the face of circular
+        # dependency
+        self.erospack_succeed(testp, os.path.abspath("test_circular/cycle2"), "friend3", "depends-on")
 
     def test_lflags_backquote(self):
         self.rospack_succeed("backquote", "libs-only-l")
@@ -580,6 +730,12 @@ class RospackTestCase(unittest.TestCase):
         self.rospack_succeed("backquote", "cflags-only-I")
         self.assertEquals("blah backquote", self.strip_opt_ros(self.run_rospack("backquote", "cflags-only-I")))
 
+    def test_lflags_archive(self):
+        self.rospack_succeed("lflags_with_archive_lib", "libs-only-l")
+        self.assertEquals("/usr/lib/libfoo.a", self.run_rospack("lflags_with_archive_lib", "libs-only-l"))
+        self.rospack_succeed("lflags_with_archive_lib", "libs-only-other")
+        self.assertEquals("/a/bad/flag", self.run_rospack("lflags_with_archive_lib", "libs-only-other"))
+
     def test_lflags_deps(self):
         self.rospack_succeed("deps", "libs-only-l")
         self.assertEquals("loki foo bar", self.run_rospack("deps", "libs-only-l"))
@@ -605,6 +761,13 @@ class RospackTestCase(unittest.TestCase):
         self.assertEquals("type: \turl:", self.run_rospack("empty", "vcs0"))
         self.rospack_succeed("deps_empty", "vcs")
         self.assertEquals("type: svn\turl: \ntype: \turl:", self.run_rospack("deps_empty", "vcs"))
+
+    def test_vcs_no_type_or_url(self):
+        self.rospack_succeed("vc_no_type_or_url", "vcs0")
+        self.assertEquals("", self.run_rospack("vc_no_type_or_url", "vcs0"))
+
+    def test_lflags_no_package_attrib(self):
+        self.rospack_fail("no_package_attribute", "libs-only-l")
 
     def test_lflags_invalid(self):
         self.rospack_fail("invalid", "libs-only-l")

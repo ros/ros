@@ -473,11 +473,12 @@ class Node(object):
                  'machine_name', 'machine', 'args', 'respawn', \
                  'remap_args', 'env_args',\
                  'process_name', 'output', 'cwd',
-                 'launch_prefix']
+                 'launch_prefix', 'required']
 
     def __init__(self, package, node_type, name=None, namespace='/', \
                  machine_name=None, args='', respawn=False, \
-                 remap_args=None,env_args=None, output=None, cwd=None, launch_prefix=None):
+                 remap_args=None,env_args=None, output=None, cwd=None, \
+                 launch_prefix=None, required=False):
         """
         @param package: node package name
         @type  package: str
@@ -504,6 +505,8 @@ class Node(object):
         @type  cwd: str
         @param launch_prefix: launch command/arguments to prepend to node executable arguments
         @type  launch_prefix: str
+        @param required: node is required to stay running (launch fails if node dies)
+        @type  required: bool
         """        
         self.package = package
         self.type = node_type
@@ -524,6 +527,7 @@ class Node(object):
         self.output = output or 'log'
         self.cwd = cwd or None
         self.launch_prefix = launch_prefix or None
+        self.required = required 
         
         # slot to store the process name in so that we can query the
         # associated process state
@@ -538,10 +542,6 @@ class Node(object):
             name_str = self.name
         if self.cwd:
             cwd_str = self.cwd
-        if self.respawn:
-            respawn_str = 'true'
-        else:
-            respawn_str = 'false'
 
         return [
             ('pkg', self.package),
@@ -551,9 +551,10 @@ class Node(object):
             ('args', self.args),
             ('output', self.output),
             ('cwd', cwd_str), 
-            ('respawn', respawn_str), #not valid on <test>
+            ('respawn', self.respawn), #not valid on <test>
             ('name', name_str),
             ('launch-prefix', self.launch_prefix),
+            ('required', self.required),
             ]
 
     def to_remote_xml(self):

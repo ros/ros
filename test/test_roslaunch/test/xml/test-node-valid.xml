@@ -77,6 +77,11 @@
     <rosparam ns="msubns" file="$(find test_roslaunch)/test/params.yaml" command="load" />
   </node>
   
+  <node pkg="package" type="test_required_true_1" required="true" />
+  <node pkg="package" type="test_required_true_2" required="True" />
+  <node pkg="package" type="test_required_false_1" required="false" />
+  <node pkg="package" type="test_required_false_2" required="FALSE" />
+
   <!-- TODO remap args test -->
 
   <node pkg="package" type="test_launch_prefix" launch-prefix="xterm -e gdb --args" />

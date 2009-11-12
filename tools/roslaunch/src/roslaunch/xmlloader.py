@@ -76,8 +76,39 @@ class XmlLoadException(RLException):
     """Error loading XML data as specified (e.g. cannot find included files, etc...)"""
     pass
 
-# maps node respawn attribute to Node respawn property
-_respawn = { 'true': True, 'false': False }
+def _bool_attr(v, label):
+    """
+    Validate boolean xml attribute
+    @param v: parameter value
+    @type v: any
+    @param label: parameter name/label
+    @type  label: str
+    @return: boolean value for attribute
+    @rtype: bool
+    @raise XmlParseException: if v is not in correct range
+    """
+    if v.lower() == 'true':
+        return True
+    elif v.lower() == 'false':
+        return False
+    else:
+        raise XmlParseException("invalid bool value for %s: %s"%(label, v))
+
+def _enum_attr(v, enums, label):
+    """
+    @param v: parameter value
+    @type v: any
+    @param enums: valid values for parameter
+    @type enums: [any]
+    @param label: parameter name/label
+    @type  label: str
+    @return: value for attribute
+    @raise XmlParseException: if v is not in correct range
+    """
+    if not v in enums:
+        raise XmlParseException("'%s' attribute must be one of: %s"%(label, ', '.join(enums)))
+    return v
+
 # maps machine 'default' attribute to Machine default property
 _is_default = {'true': True, 'false': False, 'never': False }
 # maps machine 'default' attribute to Machine assignable property
@@ -221,7 +252,7 @@ class XmlLoader(Loader):
 
         return test_name, time_limit, retry
         
-    NODE_ATTRS = ['pkg', 'type', 'machine', 'name', 'args', 'output', 'respawn', 'cwd', NS, CLEAR_PARAMS, 'launch-prefix']
+    NODE_ATTRS = ['pkg', 'type', 'machine', 'name', 'args', 'output', 'respawn', 'cwd', NS, CLEAR_PARAMS, 'launch-prefix', 'required']
     TEST_ATTRS = NODE_ATTRS + ['test-name','time-limit', 'retry']
     
     def _node_tag(self, tag, context, ros_config, default_machine, is_test=False, verbose=True):
@@ -255,8 +286,8 @@ class XmlLoader(Loader):
                 raise XmlParseException("<node> 'type' must be non-empty")
             
             # optional attributes
-            machine, name, args, output, respawn, cwd, launch_prefix = \
-                     self.opt_attrs(tag, context, ('machine', 'name', 'args', 'output', 'respawn', 'cwd', 'launch-prefix'))
+            machine, name, args, output, respawn, cwd, launch_prefix, required = \
+                     self.opt_attrs(tag, context, ('machine', 'name', 'args', 'output', 'respawn', 'cwd', 'launch-prefix', 'required'))
             if not name and not is_test:
                 ros_config.add_config_error("WARN: un-named nodes in roslaunch are deprecated:\n[%s]: %s"%(context.filename, tag.toxml()))
                 
@@ -271,19 +302,12 @@ class XmlLoader(Loader):
                 raise XmlParseException("<node> 'machine' must be non-empty: [%s]"%machine)
             if not machine and default_machine:
                 machine = default_machine.name
-            # valid values are 'log' or 'screen'
-            output = output or 'log'
-            if not output in ['log', 'screen']:
-                raise XmlParseException("<%s> 'output' attribute must be one of: 'log', 'screen'"%tag.tagName)
-
-            try:
-                respawn = _respawn[(respawn or "false").lower()]
-            except KeyError:
-                raise XmlParseException("Invalid respawn value: %s"%respawn)
-
-            valid_cwd = ['ros-root', 'node']
-            if cwd and cwd not in valid_cwd:
-                raise XmlParseException("<%s> 'cwd' attribute must be one of: %s"%(tag.tagName, ','.join(valid_cwd)))
+            # validate respawn, required, output and cwd
+            output = _enum_attr(output or 'log', ['log', 'screen'], 'output')
+            cwd = _enum_attr(cwd or 'ros-root', ['ros-root', 'node'], 'cwd')
+            # - required and respawn both have no meaning to Tests and aren't passed on
+            required, respawn = [_bool_attr(v, l) for v, l in ((required or 'false', 'required'),\
+                                                               (respawn or 'false', 'respawn'))]
 
             # each node gets its own copy of <remap> arguments, which
             # it inherits from its parent
@@ -332,7 +356,8 @@ class XmlLoader(Loader):
                 return Node(pkg, node_type, name=name, namespace=child_ns.ns, machine_name=machine, 
                             args=args, respawn=respawn, 
                             remap_args=remap_context.remap_args(), env_args=context.env_args,
-                            output=output, cwd=cwd, launch_prefix=launch_prefix)
+                            output=output, cwd=cwd, launch_prefix=launch_prefix,
+                            required=required)
             else:
                 test_name, time_limit, retry = self._test_attrs(tag, context)
                 if not name:
@@ -476,10 +501,8 @@ class XmlLoader(Loader):
         child_ns = context.child(ns)
         clear_p = self.resolve_args(tag.getAttribute(CLEAR_PARAMS), context)
         if clear_p:
-            clear_p = clear_p.lower()
-            if not clear_p in ['true', 'false']:
-                raise XmlParseException("'clear_params' attribute must be set to true or false")
-            if clear_p == 'true':
+            clear_p = _bool_attr(clear_p, 'clear_params')
+            if clear_p:
                 if tagName == 'node':
                     if not node_name:
                         raise XmlParseException("<%s> tag must have a 'name' attribute to use '%s' attribute"%(tagName, CLEAR_PARAMS))

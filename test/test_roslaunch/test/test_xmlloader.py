@@ -531,7 +531,7 @@ class TestXmlLoader(unittest.TestCase):
         nodes = self._load_valid_nodes(['test_base', 'test_cwd_1', 'test_cwd_2'])
         for n in nodes:
             if n.type == 'test_base':
-                self.assertEquals(None, n.cwd)
+                self.assertEquals('ros-root', n.cwd)
             elif n.type == 'test_cwd_1':
                 self.assertEquals("ros-root", n.cwd)                
             elif n.type == 'test_cwd_2':
@@ -545,6 +545,18 @@ class TestXmlLoader(unittest.TestCase):
             elif n.type == 'test_output_screen':
                 self.assertEquals("screen", n.output) 
 
+    def test_node_required(self):
+        nodes = self._load_valid_nodes(['test_base',
+                                        'test_required_true_1',
+                                        'test_required_true_2',
+                                        'test_required_false_1',
+                                        'test_required_false_2',                                        
+                                        ])
+        for n in nodes:
+            if n.type.startswith('test_required_true'):
+                self.assertEquals(True, n.required)
+            else:
+                self.assertEquals(False, n.required) 
 
     def test_node_machine(self):
         nodes = self._load_valid_nodes(['test_machine'])

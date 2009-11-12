@@ -48,8 +48,9 @@
 namespace ros
 {
 
-boost::mutex g_nh_refcount_mutex_;
-int32_t g_nh_refcount_ = 0;
+boost::mutex g_nh_refcount_mutex;
+int32_t g_nh_refcount = 0;
+bool g_node_started_by_nh = false;
 
 class NodeHandleBackingCollection
 {
@@ -139,25 +140,26 @@ void NodeHandle::construct()
   namespace_ = names::resolve(namespace_);
   ok_ = true;
 
-  boost::mutex::scoped_lock lock(g_nh_refcount_mutex_);
+  boost::mutex::scoped_lock lock(g_nh_refcount_mutex);
 
-  if (g_nh_refcount_ == 0)
+  if (g_nh_refcount == 0 && !ros::isStarted())
   {
+    g_node_started_by_nh = true;
     ros::start();
   }
 
-  ++g_nh_refcount_;
+  ++g_nh_refcount;
 }
 
 void NodeHandle::destruct()
 {
   delete collection_;
 
-  boost::mutex::scoped_lock lock(g_nh_refcount_mutex_);
+  boost::mutex::scoped_lock lock(g_nh_refcount_mutex);
 
-  --g_nh_refcount_;
+  --g_nh_refcount;
 
-  if (g_nh_refcount_ == 0)
+  if (g_nh_refcount == 0 && g_node_started_by_nh)
   {
     ros::shutdown();
   }

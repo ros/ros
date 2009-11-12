@@ -527,7 +527,10 @@ class Node(object):
         self.output = output or 'log'
         self.cwd = cwd or None
         self.launch_prefix = launch_prefix or None
-        self.required = required 
+        self.required = required
+
+        if self.respawn and self.required:
+            raise ValueError("respawn and required cannot both be set to true")
         
         # slot to store the process name in so that we can query the
         # associated process state

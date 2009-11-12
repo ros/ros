@@ -76,21 +76,27 @@ class XmlLoadException(RLException):
     """Error loading XML data as specified (e.g. cannot find included files, etc...)"""
     pass
 
-def _bool_attr(v, label):
+def _bool_attr(v, default, label):
     """
-    Validate boolean xml attribute
-    @param v: parameter value
+    Validate boolean xml attribute. 
+    @param v: parameter value or None if no value provided
     @type v: any
+    @param default: default value
+    @type  default: bool
     @param label: parameter name/label
     @type  label: str
     @return: boolean value for attribute
     @rtype: bool
-    @raise XmlParseException: if v is not in correct range
+    @raise XmlParseException: if v is not in correct range or is empty.
     """
+    if v is None:
+        return default
     if v.lower() == 'true':
         return True
     elif v.lower() == 'false':
         return False
+    elif not v:
+        raise XmlParseException("bool value for %s must be non-empty"%(label))
     else:
         raise XmlParseException("invalid bool value for %s: %s"%(label, v))
 
@@ -303,11 +309,12 @@ class XmlLoader(Loader):
             if not machine and default_machine:
                 machine = default_machine.name
             # validate respawn, required, output and cwd
+            # TODO: move more attribute validation into Node tag itself
             output = _enum_attr(output or 'log', ['log', 'screen'], 'output')
             cwd = _enum_attr(cwd or 'ros-root', ['ros-root', 'node'], 'cwd')
             # - required and respawn both have no meaning to Tests and aren't passed on
-            required, respawn = [_bool_attr(v, l) for v, l in ((required or 'false', 'required'),\
-                                                               (respawn or 'false', 'respawn'))]
+            required, respawn = [_bool_attr(*rr) for rr in ((required, False, 'required'),\
+                                                                (respawn, False, 'respawn'))]
 
             # each node gets its own copy of <remap> arguments, which
             # it inherits from its parent
@@ -371,6 +378,9 @@ class XmlLoader(Loader):
             raise XmlParseException(
                 "<%s> tag is missing required attribute: %s. Node xml is %s"%(tag.tagName, e, tag.toxml()))
         except XmlParseException, e:
+            raise XmlParseException(
+                "Invalid <node> tag: %s. \n\nNode xml is %s"%(e, tag.toxml()))
+        except ValueError, e:
             raise XmlParseException(
                 "Invalid <node> tag: %s. \n\nNode xml is %s"%(e, tag.toxml()))
 
@@ -501,7 +511,7 @@ class XmlLoader(Loader):
         child_ns = context.child(ns)
         clear_p = self.resolve_args(tag.getAttribute(CLEAR_PARAMS), context)
         if clear_p:
-            clear_p = _bool_attr(clear_p, 'clear_params')
+            clear_p = _bool_attr(clear_p, False, 'clear_params')
             if clear_p:
                 if tagName == 'node':
                     if not node_name:

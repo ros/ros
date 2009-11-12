@@ -113,7 +113,7 @@ def create_node_process(run_id, node, master_uri):
 
     log_output = node.output == 'log'
     _logger.debug('process[%s]: returning LocalProcess wrapper')
-    return LocalProcess(run_id, node.package, name, args, env, log_output, respawn=node.respawn, cwd=node.cwd)
+    return LocalProcess(run_id, node.package, name, args, env, log_output, respawn=node.respawn, required=node.required, cwd=node.cwd)
 
 ## Process launched on local machine
 class LocalProcess(Process):
@@ -128,8 +128,8 @@ class LocalProcess(Process):
     ## @param log_output bool: if True, log output streams of process
     ## @param respawn bool: respawn process if it dies (default is False)
     ## @param cwd str: working directory of process, or None
-    def __init__(self, run_id, package, name, args, env, log_output, respawn=False, cwd=None):
-        super(LocalProcess, self).__init__(package, name, args, env, respawn)
+    def __init__(self, run_id, package, name, args, env, log_output, respawn=False, required=False, cwd=None):
+        super(LocalProcess, self).__init__(package, name, args, env, respawn, required)
         self.run_id = run_id
         self.popen = None
         self.log_output = log_output
@@ -277,7 +277,10 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
                 else:
                     return 'process has died [pid %s, exit code %s]'%(self.pid, self.exit_code)
             else:
-                return 'process has finished cleanly'
+                if self.log_dir:
+                    return 'process has finished cleanly.\nlog file: %s*.log'%(os.path.join(self.log_dir, self.name))
+                else:
+                    return 'process has finished cleanly'
         else:
             return 'process has died'
 

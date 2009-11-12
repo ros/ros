@@ -57,7 +57,8 @@ def msgs_built(ctx):
         mtypes = roslib.msgs.list_msg_types(pkg, False)
         for t in mtypes:
             expected = [os.path.join('msg', 'cpp', pkg, '%s.h'%t),
-                        os.path.join('msg', 'lisp', pkg, '%s.lisp'%t),
+                        # roslisp is no longer builtin
+                        #os.path.join('msg', 'lisp', pkg, '%s.lisp'%t),
                         os.path.join('src', pkg, 'msg', '_%s.py'%t)]
             for e in expected:
                 if not os.path.isfile(os.path.join(pkg_dir, e)):
@@ -72,7 +73,8 @@ def srvs_built(ctx):
         mtypes = roslib.srvs.list_srv_types(pkg, False)
         for t in mtypes:
             expected = [os.path.join('srv', 'cpp', pkg, '%s.h'%t),
-                        os.path.join('srv', 'lisp', pkg, '%s.lisp'%t),
+                        # roslisp is no longer builtin
+                        #os.path.join('srv', 'lisp', pkg, '%s.lisp'%t),
                         os.path.join('src', pkg, 'srv', '_%s.py'%t)]
             for e in expected:
                 if not os.path.isfile(os.path.join(pkg_dir, e)):

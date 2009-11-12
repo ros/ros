@@ -106,6 +106,7 @@ def get_stack_dir(stack):
     @type  stack: str
     @return: directory of stack, or None
     @rtype: str
+    @raise InvalidROSStackException: if stack cannot be located
     """
     list_stacks() #update cache
     return _dir_cache.get(stack, None)
@@ -161,7 +162,8 @@ def list_stacks(env=None):
                 dirs.remove('.git')
     return stacks
 
-def expand_packages(self, names):
+# #2022
+def expand_to_packages(names):
     """
     Expand names into a list of packages. Names can either be of packages or stacks.
 
@@ -169,22 +171,22 @@ def expand_packages(self, names):
     @type  names: [str]
     @return: ([packages], [not_found]). expand_packages() returns two
     lists. The first is of packages names. The second is a list of
-    names for which no matching stack or package was found.
+    names for which no matching stack or package was found. Lists may have duplicates.
     @rtype: ([str], [str])
     """
 
     # do full package list first. This forces an entire tree
     # crawl. This is less efficient for a small list of names, but
     # much more efficient for many names.
-    valid_packages = list_pkgs()
-    verified_packages = [p for p in packages if p in valid_packages]
-    for p in packages:
-        try:
-            roslib.packages.get_pkg_dir(p)
-            verified_packages.append(p)
-        except roslib.packages.InvalidROSPkgException, ex:
+    package_list = roslib.packages.list_pkgs()
+    valid = []
+    invalid = []
+    for n in names:
+        if not n in package_list:
             try:
-                roslib.stacks.get_stack_dir(p)
-                verified_packages.extend(roslib.stacks.packages_of(p))
+                valid.extend(roslib.stacks.packages_of(n))
             except roslib.stacks.InvalidROSStackException:
-                invalid.append(p)
+                invalid.append(n)
+        else:
+            valid.append(n)
+    return valid, invalid

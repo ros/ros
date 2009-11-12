@@ -151,7 +151,7 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
     @type  ros_root: str
     @param ros_package_path: if specified, override ROS_PACKAGE_PATH
     @type  ros_package_path: str
-    @return: directory containing package.
+    @return: directory containing package or None if package cannot be found and required is False.
     @rtype: str
     @raise InvalidROSPkgException: if required is True and package cannot be located
     """    

@@ -1,0 +1,45 @@
+#!/bin/bash
+set -x
+
+PORT=12345
+case $1 in
+  ubuntu-09-04 )
+    PORT=3000 ;;
+  ubuntu-08-04 )
+    PORT=3002 ;;
+  ubuntu-09-10 )
+    PORT=3006 ;;
+esac
+
+if [ $PORT -eq 12345 ] ; then
+  echo "woah! I don't know about a VM called $1. goodbye."
+  exit 1
+fi
+
+VBoxManage controlvm $1 poweroff
+sleep 2
+VBoxManage snapshot $1 discardcurrent -state
+sleep 2
+VBoxHeadless -startvm $1 & 
+TRY=1
+while [[ `VBoxManage showvminfo $1 | grep -c running` == 0 && $TRY < 20 ]]; do
+  echo "waiting for VM $1 to start..."
+  sleep 0.5
+  let "TRY = $TRY + 1"
+done
+if [ $TRY -ge 20 ] ; then
+  echo "VM $1 never seemed to start. goodbye.\n"
+  exit 1
+fi
+sleep 1
+echo -e "hooray, $1 has started. logging into it...\n\n"
+ 
+BUILD_FAIL=1
+if ssh -t -p $PORT user@localhost "bash -c 'sudo apt-get -y install build-essential python-yaml cmake subversion && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/build_distro -O ~/build_distro && chmod 755 ~/build_distro && ~/build_distro'" ; then
+  BUILD_FAIL=0
+fi
+  
+echo -e "\n\nnow I will brutally pull the plug on VM $1"
+VBoxManage controlvm $1 poweroff
+
+exit $BUILD_FAIL

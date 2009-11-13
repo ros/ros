@@ -99,8 +99,8 @@ class RosdocContext(object):
         return True
 
     def init(self):
-        self.rosroot = roslib.rosenv.get_ros_root(require=True)
-        self.ros_package_path = roslib.rosenv.get_ros_package_path(require=False) or ''
+        self.rosroot = roslib.rosenv.get_ros_root(required=True)
+        self.ros_package_path = roslib.rosenv.get_ros_package_path(required=False) or ''
 
         rosdoc_dir = roslib.packages.get_pkg_dir('rosdoc')
         self.template_dir = os.path.join(rosdoc_dir, 'templates')

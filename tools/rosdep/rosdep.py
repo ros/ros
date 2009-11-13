@@ -217,10 +217,10 @@ class Rosdep:
         self.osi = OSIndex()
         self.rdl = RosdepLookup(self.osi)
 
-    def gather_rosdeps(self, packages):
+    def gather_rosdeps(self, packages, command = "rosdep"):
         rosdeps = set()
         for p in packages:
-          args = ["rosdep", p]
+          args = [command, p]
           #print "\n\n\nmy args are", args
           deps_list = [x for x in roslib.rospack.rospackexec(args).split('\n') if x]
           for dep_str in deps_list:
@@ -308,6 +308,24 @@ class Rosdep:
                     else:
                         for v in map[k][o]:
                             print "<<<< %s on ( %s %s ) -> %s >>>>"%(k, o, v,map[k][o][v])
+        elif command == "what_needs":
+            map = self.rdl.get_map()
+            rosdeps_queried = []
+            for p in packages:
+                if p in map.keys():
+                    print "verified %s"%p
+                    rosdeps_queried.append(p)
+            packages_using_rosdep = []
+            for p in roslib.packages.list_pkgs():
+                deps_list = self.gather_rosdeps([p], "rosdep0")
+                for r in rosdeps_queried:
+                    if r in deps_list:
+                        packages_using_rosdep.append(p)
+                        break
+                    else:
+                        pass#print "%s not in %s:%s"%(r, p, deps_list)
+
+            print "Packages using %s are: %s"%(rosdeps_queried, packages_using_rosdep)
         else:
             print "Unsupported command %s."%command
 

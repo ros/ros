@@ -5,7 +5,7 @@
   <!-- Automatic output name -->
   <node pkg="topic_tools" type="throttle" name="throttle"
         args="messages input 5"/>
-  <test test-name="hztest" pkg="rostest" type="hztest">
+  <test test-name="throttle_hztest" pkg="rostest" type="hztest">
     <param name="topic" value="input_throttle"/>
     <param name="hz" value="5.0"/>
     <param name="hzerror" value="1.0"/>
@@ -15,7 +15,7 @@
   <!-- Explicit output name -->
   <node pkg="topic_tools" type="throttle" name="throttle_explicit"
         args="messages input 5 output"/>
-  <test test-name="hztest_explicit" pkg="rostest" type="hztest">
+  <test test-name="throttle_hztest_explicit" pkg="rostest" type="hztest">
     <param name="topic" value="output"/>
     <param name="hz" value="5.0"/>
     <param name="hzerror" value="1.0"/>

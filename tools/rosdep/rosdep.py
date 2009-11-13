@@ -132,8 +132,14 @@ class OSIndex:
     active OS and Version of that OS for lookup in rosdep.yaml"""
     def __init__(self):
         self._os_map = {}
-        self._os_detected = False
-        self._os_version = False
+        try:
+            self._os_detected = os.environ["ROSDEP_OS_NAME"]
+        except:
+            self._os_detected = False
+        try:
+            self._os_version = os.environ["ROSDEP_OS_VERSION"]
+        except:
+            self._os_version = False
 
     def add_os(self, name, class_ref):
         self._os_map[name] = class_ref
@@ -162,10 +168,11 @@ class OSIndex:
         else:
             return "#No packages to install: skipping package install command.\n"
 
-###### UBUNTU SPECIALIZATION #########################
+###### DEBIAN SPECIALIZATION #########################
 def dpkg_detect(p):
     return subprocess.call(['dpkg', '-s', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+###### UBUNTU SPECIALIZATION #########################
 class Ubuntu:
     """ This is an implementation of a standard interface for
     interacting with rosdep.  This defines all Ubuntu sepecific
@@ -212,6 +219,244 @@ class Ubuntu:
         return "#Packages\nsudo apt-get install " + ' '.join(packages)
 
 ###### END UBUNTU SPECIALIZATION ########################
+
+###### Debian SPECIALIZATION #########################
+class Debian:
+    def __init__(self, index):
+        index.add_os("debian", self)
+
+    def check_presence(self):
+        try:
+            filename = "/etc/issue"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:                
+                    os_list = fh.read().split()
+                if os_list and os_list[0] == "Debian":
+                    return True
+        except:
+            print "Debian failed to detect OS"
+        return False
+
+    def get_version(self):
+        try:
+            filename = "/etc/issue"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:
+                    os_list = fh.read().split()
+                if os_list[0] == "Debian":
+                    return os_list[1]
+        except:
+            print "Debian failed to get version"
+            return False
+
+        return False
+
+    def detect_packages(self, packages):
+        return [p for p in packages if dpkg_detect(p)]
+
+    def generate_package_install_command(self, packages):        
+        return "#Packages\nsudo apt-get install " + ' '.join(packages)
+
+###### END Debian SPECIALIZATION ########################
+
+###### Mint SPECIALIZATION #########################
+class Mint:
+    def __init__(self, index):
+        index.add_os("mint", self)
+
+    def check_presence(self):
+        try:
+            filename = "/etc/issue"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:                
+                    os_list = fh.read().split()
+                if os_list and os_list[0] == "Linux" and os_list[1] == "Mint":
+                    return True
+        except:
+            print "Mint failed to detect OS"
+        return False
+
+    def get_version(self):
+        try:
+            filename = "/etc/issue"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:
+                    os_list = fh.read().split()
+                if os_list[0] == "Linux" and os_list[1] == "Mint":
+                    return os_list[2]
+        except:
+            print "Mint failed to get version"
+            return False
+
+        return False
+
+    def detect_packages(self, packages):
+        return [p for p in packages if dpkg_detect(p)]
+
+    def generate_package_install_command(self, packages):        
+        return "#Packages\nsudo apt-get install " + ' '.join(packages)
+
+###### END Mint SPECIALIZATION ########################
+
+###### Arch SPECIALIZATION #########################
+
+def pacman_detect(p):
+    return subprocess.call(['pacman', '-Q', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
+
+class Arch:
+    def __init__(self, index):
+        index.add_os("arch", self)
+
+    def check_presence(self):
+        filename = "/etc/arch-release"
+        if os.path.exists(filename):
+            return True
+        return False
+
+    def get_version(self):
+        return ""
+        # arch didn't have a version parsing in cpp version
+        try:
+            filename = "/etc/issue"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:
+                    os_list = fh.read().split()
+                if os_list[0] == "Linux" and os_list[1] == "Arch":
+                    return os_list[2]
+        except:
+            print "Arch failed to get version"
+            return False
+
+        return False
+
+    def detect_packages(self, packages):
+        return [p for p in packages if pacman_detect(p)]
+
+    def generate_package_install_command(self, packages):        
+        return "#Packages\nsudo packman -Sy --needed " + ' '.join(packages)
+
+###### END Arch SPECIALIZATION ########################
+
+###### Macports SPECIALIZATION #########################
+
+def pacman_detect(package):
+    return subprocess.call(['pacman', '-Q', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
+
+class Macports:
+    def __init__(self, index):
+        index.add_os("macports", self)
+
+    def check_presence(self):
+        filename = "/usr/bin/sw_vers"
+        if os.path.exists(filename):
+            return True
+        return False
+    
+    def get_version(self):
+        return ""
+        # TODO add this parsing from cpp version
+        try:
+            filename = "/etc/issue"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:
+                    os_list = fh.read().split()
+                if os_list[0] == "Linux" and os_list[1] == "Macports":
+                    return os_list[2]
+        except:
+            print "Macports failed to get version"
+            return False
+
+        return False
+
+    def detect_packages(self, packages):
+        return packages#
+
+    def generate_package_install_command(self, packages):        
+        return "#Packages\nsudo port install " + ' '.join(packages)
+
+###### END Macports SPECIALIZATION ########################
+
+
+def yum_detect(p):
+    return subprocess.call(['yum', 'list', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
+
+###### Fedora SPECIALIZATION #########################
+class Fedora:
+    def __init__(self, index):
+        index.add_os("fedora", self)
+
+    def check_presence(self):
+        try:
+            filename = "/etc/redhat_release"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:                
+                    os_list = fh.read().split()
+                if os_list and os_list[0] == "Fedora" and os_list[1] == "release":
+                    return True
+        except:
+            print "Fedora failed to detect OS"
+        return False
+
+    def get_version(self):
+        try:
+            filename = "/etc/issue"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:
+                    os_list = fh.read().split()
+                if os_list[0] == "Fedora" and os_list[1] == "release":
+                    return os_list[2]
+        except:
+            print "Fedora failed to get version"
+            return False
+
+        return False
+
+    def detect_packages(self, packages):
+        return [p for p in packages if yum_detect(p)]
+
+    def generate_package_install_command(self, packages):        
+        return "#Packages\nyum install " + ' '.join(packages)
+
+###### END Fedora SPECIALIZATION ########################
+
+###### Rhel SPECIALIZATION #########################
+class Rhel:
+    def __init__(self, index):
+        index.add_os("rhel", self)
+
+    def check_presence(self):
+        try:
+            filename = "/etc/redhat_release"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:                
+                    os_list = fh.read().split()
+                if os_list and os_list[2] == "Enterprise":
+                    return True
+        except:
+            print "Rhel failed to detect OS"
+        return False
+
+    def get_version(self):
+        try:
+            filename = "/etc/issue"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:
+                    os_list = fh.read().split()
+                if os_list and os_list[2] == "Enterprise":
+                    return os_list[6]
+        except:
+            print "Rhel failed to get version"
+            return False
+
+        return False
+
+    def detect_packages(self, packages):
+        return [p for p in packages if yum_detect(p)]
+
+    def generate_package_install_command(self, packages):        
+        return "#Packages\nyum install " + ' '.join(packages)
+
+###### END Rhel SPECIALIZATION ########################
 
 
 class Rosdep:
@@ -328,6 +573,9 @@ def main():
 
     ################ Add All specializations here ##############################
     ubuntu = Ubuntu(r.osi)
+    #debian = Debian(r.osi)
+    #fedora = Fedora(r.osi)
+    #rhel = Rhel(r.osi)
     ################ End Add specializations here ##############################
     
     if options.verbose:

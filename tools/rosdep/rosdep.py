@@ -66,14 +66,14 @@ class RosdepLookup:
                     yaml_dict = yaml.load(yaml_text)
                     for key in yaml_dict:
                         if key in self.rosdep_source.keys():
-                            print "rosdep already loaded %s from %s.  But it is also defined in %s.  This will not be overwritten"%(key, self.rosdep_source[key], path)
+                            print >>sys.stderr, "rosdep already loaded %s from %s.  But it is also defined in %s.  This will not be overwritten"%(key, self.rosdep_source[key], path)
                             #exit(-1)
                         else:
                             self.rosdep_source[key] = path
                             self.rosdep_map[key] = yaml_dict[key]
 
                 except yaml.YAMLError, exc:
-                    print "Failed parsing yaml while processing %s\n"%path, exc
+                    print >> sys.stderr, "Failed parsing yaml while processing %s\n"%path, exc
                     sys.exit(1)
             
         #print "built map", self.rosdep_map
@@ -112,7 +112,8 @@ class RosdepLookup:
         else:
             return False
         
-        
+    def get_map(self):
+        return self.rosdep_map
         
 
 
@@ -265,12 +266,6 @@ class Rosdep:
         command = args[0]
         packages = args[1:]
         
-        valid_commands = ["generate_bash", "install"]
-        if not command in valid_commands:
-            print "command %s not in the list of possible commands: %s"%(command, valid_commands)
-            return False
-        
-
 
         (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(packages)
         #print verified_packages, "Rejected", rejected_packages
@@ -301,8 +296,18 @@ class Rosdep:
         for sc in scripts:
             bash_script += "\n" + sc + "\n"
             
-        if command == "generate_bash":
+        if command == "generate_bash" or command == "satisfy":
             print bash_script
+
+        elif command == "depdb":
+            map = self.rdl.get_map()
+            for k in map:
+                for o in map[k]:
+                    if type("String") == type(map[k][o]):
+                        print "<<<< %s on ( %s ) -> %s >>>>"%(k, o, map[k][o])
+                    else:
+                        for v in map[k][o]:
+                            print "<<<< %s on ( %s %s ) -> %s >>>>"%(k, o, v,map[k][o][v])
         else:
             print "Unsupported command %s."%command
 

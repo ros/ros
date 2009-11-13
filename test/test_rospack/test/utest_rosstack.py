@@ -70,8 +70,9 @@ class RosstackTestCase(unittest.TestCase):
         # argv.
         #args = ["rospack", command, pkgname]
         args = ["rosstack"]
-        for s in command.split():
-          args.append(s)
+        if command:
+          for s in command.split():
+            args.append(s)
         if pkgname is not None:
           args.append(pkgname)
         p = Popen(args, stdout=PIPE, stderr=PIPE, env=env)
@@ -79,14 +80,15 @@ class RosstackTestCase(unittest.TestCase):
 
         # Also test command aliases, verifying that they give the same 
         # return code and console output
-        cmd = command.split()[-1] 
-        if cmd in aliases:
-          args[-2] = aliases[cmd]
-          alias_p = Popen(args, stdout=PIPE, stderr=PIPE, env=env)
-          alias_stdout, alias_stderr = alias_p.communicate()
-          self.assertEquals(p.returncode, alias_p.returncode)
-          self.assertEquals(stdout, alias_stdout)
-          #self.assertEquals(stderr, alias_stderr)
+        if command:
+          cmd = command.split()[-1] 
+          if cmd in aliases:
+            args[-2] = aliases[cmd]
+            alias_p = Popen(args, stdout=PIPE, stderr=PIPE, env=env)
+            alias_stdout, alias_stderr = alias_p.communicate()
+            self.assertEquals(p.returncode, alias_p.returncode)
+            self.assertEquals(stdout, alias_stdout)
+            #self.assertEquals(stderr, alias_stderr)
 
         return p.returncode, stdout.strip(), stderr
 
@@ -171,6 +173,9 @@ class RosstackTestCase(unittest.TestCase):
     ################################################################################
     ## ARG PARSING
         
+    def test_no_option(self):
+        self.rosstack_succeed(None, None)
+
     def test_fake_option(self):
         self.rosstack_fail("deps", "--fake deps")
 

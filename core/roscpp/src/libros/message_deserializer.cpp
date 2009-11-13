@@ -50,7 +50,7 @@ MessagePtr MessageDeserializer::deserialize()
     return msg_;
   }
 
-  if (!buffer_)
+  if (!buffer_ && num_bytes_ > 0)
   {
     // If the buffer has been reset it means we tried to deserialize and failed
     return MessagePtr();

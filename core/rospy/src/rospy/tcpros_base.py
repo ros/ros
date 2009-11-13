@@ -382,10 +382,6 @@ class TCPROSTransport(Transport):
         self.write_buff = cStringIO.StringIO()
             
         self.header = header
-
-        # #1852 have to hold onto latched messages on subscriber side
-        self.is_latched = False
-        self.latch = None
         
         # these fields are actually set by the remote
         # publisher/service. they are set for tools that connect
@@ -460,8 +456,6 @@ class TCPROSTransport(Transport):
                 raise TransportInitError("header missing required field [%s]"%required)
         self.md5sum = header['md5sum']
         self.type = header['type']
-        if header.get('latching', '0') == '1':
-            self.is_latched = True
 
     def write_header(self):
         """Writes the TCPROS header to the active connection."""
@@ -566,11 +560,6 @@ class TCPROSTransport(Transport):
             # set the _connection_header field
             for m in msg_queue:
                 m._connection_header = self.header
-                
-            # #1852: keep track of last latched message
-            if self.is_latched:
-                self.latch = msg_queue[-1]
-            
             return msg_queue
 
         except DeserializationError, e:

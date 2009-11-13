@@ -27,6 +27,7 @@ simulator_stage https://code.ros.org/svn/ros-pkg/stacks/simulator_stage/tags/lat
 slam_gmapping https://code.ros.org/svn/ros-pkg/stacks/slam_gmapping/tags/latest
 sound_drivers https://code.ros.org/svn/ros-pkg/stacks/sound_drivers/tags/latest
 visualization https://code.ros.org/svn/ros-pkg/stacks/visualization/tags/latest
+vision_opencv https://code.ros.org/svn/ros-pkg/stacks/vision_opencv/tags/latest
 visualization_common https://code.ros.org/svn/ros-pkg/stacks/visualization_common/tags/latest
 ros-pkg https://code.ros.org/svn/ros-pkg/trunk
 #

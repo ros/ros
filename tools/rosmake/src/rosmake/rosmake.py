@@ -483,9 +483,11 @@ class RosMakeAll:
 
         (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(packages)
         self.print_all("Expanded args %s to:\n%s"%(packages, verified_packages))
+        if rejected_packages:
+            self.print_all("WARNING: The following args could not be parsed as stacks or packages: %s"%rejected_packages)
 
         # make sure all dependencies are satisfied and if not warn
-        self.check_rosdep(verified_packages)
+        # TODO Uncomment when rosdep is more reliable self.check_rosdep(verified_packages)
 
         #generate the list of packages necessary to build(in order of dependencies)
         counter = 0

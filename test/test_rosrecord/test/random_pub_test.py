@@ -43,59 +43,29 @@ from cStringIO import StringIO
 import time
 from random_messages import RandomMsgGen
 
-class RandomSubTest(unittest.TestCase):
+class RandomPubTest(unittest.TestCase):
 
-  def msg_cb(self, msg):
-    nowtime = rospy.Time.now()
-    if self.start is None:
-      self.start = nowtime
-
-    self.input.append((msg, (nowtime-self.start).to_sec()))
-
-
-  def test_random_sub(self):
-    rospy.init_node('random_sub', anonymous=True)
-
-    self.start = None
-    self.input = []
-
-    self.assertTrue(len(sys.argv[1]) > 1)
+  def test_random_pub(self):
+    rospy.init_node('random_pub')
+  
+    if (len(sys.argv) < 2):
+      raise Exception("Expected seed as first argument")
 
     rmg = RandomMsgGen(int(sys.argv[1]), 10, 10.0)
 
-    subscribers = {}
+    publishers = {}
+
     for (topic, msg_class) in rmg.topics():
-      subscribers[topic] = rospy.Subscriber(topic, msg_class, self.msg_cb)
-
-    rospy.set_param('/spew',True)
-
-    r = rospy.Rate(10)
-    while (len(self.input) < rmg.message_count()):
-      r.sleep()
-
-    self.assertEqual(len(self.input), rmg.message_count())
-
-    for (expect_topic, expect_msg, expect_time) in rmg.messages():
-      buff = StringIO()
-      expect_msg.serialize(buff)
-      expect_msg.deserialize(buff.getvalue())
-
-      msg_match = False
-
-      for ind in xrange(0,100):
-        (input_msg, input_time) = self.input[ind]
-
-        if (roslib.message.strify_message(expect_msg) == roslib.message.strify_message(input_msg)):
-          msg_match = True
-          del self.input[ind]
-          self.assertTrue(abs(expect_time - input_time) < 0.5)
-          break
-
-      if not msg_match:
-        print "No match at time: %f"%expect_time
-
-      self.assertTrue(msg_match)
+      publishers[topic] = rospy.Publisher(topic, msg_class)
     
+      # Sleep an extra 5 seconds for good measure
+    rospy.sleep(rospy.Duration.from_sec(5.0))
+
+    start = rospy.Time.now()
+    for (topic, msg, time) in rmg.messages():
+      d = start + rospy.Duration.from_sec(time) - rospy.Time.now()
+      rospy.sleep(d)
+      publishers[topic].publish(msg)
 
 if __name__ == '__main__':
-  rostest.rosrun('test_rosrecord', 'random_sub', RandomSubTest, sys.argv)
+  rostest.rosrun('test_rosrecord', 'random_pub_test', RandomPubTest, sys.argv)

@@ -28,24 +28,31 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
+"""
+Library and command-line tool for calculating rosdeps.
+"""
+
+from __future__ import with_statement
+
 import roslib.rospack
 import roslib.stacks
 import os
 import sys
 import subprocess
+import types
 import yaml
-from optparse import OptionParser
 
-########## Class for interacting with rosdep.yaml files
 class RosdepLookup:
-    """This is a class for interacting with rosdep.yaml files.  It
-    will load all rosdep.yaml files in the current configuration at
+    """
+    This is a class for interacting with rosdep.yaml files.  It will
+    load all rosdep.yaml files in the current configuration at
     startup.  It has accessors to allow lookups into the rosdep.yaml
     from rosdep name and returns the string from the yaml file for the
     appropriate OS/version.
 
     It uses the OSIndex class for OS detection.
-"""
+    """
+    
     def __init__(self, osindex):
         """ Read all rosdep.yaml files found at the root of stacks in
         the current environment and build them into a map."""
@@ -66,7 +73,7 @@ class RosdepLookup:
                     yaml_dict = yaml.load(yaml_text)
                     for key in yaml_dict:
                         if key in self.rosdep_source.keys():
-                            print >>sys.stderr, "rosdep already loaded %s from %s.  But it is also defined in %s.  This will not be overwritten"%(key, self.rosdep_source[key], path)
+                            print >>sys.stderr, "%s already loaded from %s.  But it is also defined in %s.  This will not be overwritten"%(key, self.rosdep_source[key], path)
                             #exit(-1)
                         else:
                             self.rosdep_source[key] = path
@@ -98,6 +105,7 @@ class RosdepLookup:
                     else:
                         ## Hack to match rounding errors in pyyaml load 9.04  != 9.03999999999999996 in string space
                         for key in os_specific.keys():
+                            # NOTE: this hack fails if os_version is not major.minor
                             if float(key) == float(os_version):
                                 #print "Matched %s"%(os_version)
                                 return os_specific[key]
@@ -151,9 +159,12 @@ class OSIndex:
         if len(packages) > 0:
             return self._os_map[self.get_os_name()].generate_package_install_command(packages)
         else:
-            return "#No Packages to install skipping package install command.\n"
+            return "#No packages to install: skipping package install command.\n"
 
 ###### UBUNTU SPECIALIZATION #########################
+def dpkg_detect(p):
+    return subprocess.call(['dpkg', '-s', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
 class Ubuntu:
     """ This is an implementation of a standard interface for
     interacting with rosdep.  This defines all Ubuntu sepecific
@@ -166,24 +177,27 @@ class Ubuntu:
         try:
             filename = "/etc/issue"
             if os.path.exists(filename):
-                fh = open(filename, 'r')
-                os_list = fh.read().split()
-                if os_list[0] == "Ubuntu":
+                with open(filename, 'r') as fh:                
+                    os_list = fh.read().split()
+                if os_list and os_list[0] == "Ubuntu":
                     return True
         except:
             print "Ubuntu failed to detect OS"
-            return False
-
         return False
 
     def get_version(self):
         try:
             filename = "/etc/issue"
             if os.path.exists(filename):
-                fh = open(filename, 'r')
-                os_list = fh.read().split()
+                with open(filename, 'r') as fh:
+                    os_list = fh.read().split()
                 if os_list[0] == "Ubuntu":
-                    return os_list[1]
+                    v = os_list[1]
+                    # strip down to major.minor
+                    if '.' in v:
+                        return '.'.join(v.split('.')[:2])
+                    else:
+                        return v
         except:
             print "Ubuntu failed to get version"
             return False
@@ -191,23 +205,10 @@ class Ubuntu:
         return False
 
     def detect_packages(self, packages):
-        packages_not_detected = []
-        for p in packages:
-            fnull = open(os.devnull, 'w')
-            if not subprocess.call(['dpkg', '-s', p], stdout= fnull, stderr = fnull):
-                pass#print "Detected %s"%p
-            else:
-                packages_not_detected.append(p)
-                #print "Didn't detect %s"%p
-        return packages_not_detected
+        return [p for p in packages if dpkg_detect(p)]
 
     def generate_package_install_command(self, packages):        
-        apt = "#Packages\nsudo apt-get install "
-        for p in packages:
-            apt += " " + p
-        return apt
-
-
+        return "#Packages\nsudo apt-get install " + ' '.join(packages)
 
 ###### END UBUNTU SPECIALIZATION ########################
 
@@ -231,10 +232,7 @@ class Rosdep:
                   print len(dep)
                   print "rospack returned wrong number of values \n\"%s\""%dep_str
 
-
-        #print rosdeps
-        rosdeps = list(rosdeps)
-        return rosdeps
+        return list(rosdeps)
 
     def get_packages_and_scripts(self, rosdeps):
         native_packages = []
@@ -249,88 +247,106 @@ class Rosdep:
                     scripts.append(specific)
         return (native_packages, scripts)
 
-
-    def main(self):
-        parser = OptionParser(usage="usage: %prog [options] COMMAND PACKAGE [LIST]", prog='rosdep')
-        parser.add_option("--verbose", "-v", dest="verbose", default=False, 
-                          action="store_true", help="verbose display")
-        parser.add_option("--include_duplicates", "-i", dest="include_duplicates", default=False, 
-                          action="store_true", help="do not deduplicate")
-        
-        options, args = parser.parse_args()
-
-        if len(args) < 2:
-            print "rosdep requires at least 2 arguments a command and a package name."
-            return False
-        
-        command = args[0]
-        packages = args[1:]
+    def generate_script(self, rosdeps, include_duplicates=False):
+        native_packages, scripts = self.get_packages_and_scripts(rosdeps)
+        undetected = native_packages if include_duplicates else \
+            self.osi.detect_packages(native_packages)
+        return self.osi.generate_package_install_command(undetected) + \
+            "\n".join(["\n%s"%sc for sc in scripts])
         
 
-        (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(packages)
-        #print verified_packages, "Rejected", rejected_packages
+    def what_needs(self, rosdeps):
+        rosdeps = [p for p in rosdeps if p in self.rdl.get_map()]
+        packages = []
+        for p in roslib.packages.list_pkgs():
+            deps_list = self.gather_rosdeps([p], "rosdep0")
+            if [r for r in rosdeps if r in deps_list]:
+                packages.append(p)
+        return packages
 
-        ### Find all dependencies
+################################################################################
+# COMMAND LINE PROCESSING
+    
+_usage = """usage: rosdep [options] <command> <args>
 
-        rosdeps = self.gather_rosdeps(verified_packages)
+Commands:
 
+rosdep generate_bash  <packages>...
+rosdep satisfy <packages>...
+  will try to generate a bash script which will satisfy the 
+  dependencies of package(s) on your operating system.
 
-        ### Detect OS name and version
+rosdep install <packages>...
+  will generate a bash script and then execute it.
 
-        ################ Add All specializations here ##############################
-        ubuntu = Ubuntu(self.osi)
+rosdep depdb <packages>...
+  will generate the dependency database for package(s) and print
+  it to the console (note that the database will change depending
+  on which package(s) you query.
 
-        ############## Testing ################################
-        #print "Detected OS: " + osi.get_os_name()
-        #print "Detected Version: " + osi.get_os_version()
+rosdep what_needs <rosdeps>...
+  will print a list of packages that declare a rosdep on (at least
+  one of) ROSDEP_NAME[S]
 
-        (native_packages, scripts) = self.get_packages_and_scripts(rosdeps)
+rosdep check <packages>...
+  will check if the dependencies of package(s) have been met.
+"""
 
+_commands = ['generate_bash', 'satisfy', 'install', 'depdb', 'what_needs', 'check']
 
-        if options.include_duplicates:
-            undetected = native_packages
-        else:
-            undetected = self.osi.detect_packages(native_packages)
+def main():
+    from optparse import OptionParser
+    parser = OptionParser(usage=_usage, prog='rosdep')
+    parser.add_option("--verbose", "-v", dest="verbose", default=False, 
+                      action="store_true", help="verbose display")
+    parser.add_option("--include_duplicates", "-i", dest="include_duplicates", default=False, 
+                      action="store_true", help="do not deduplicate")
 
-        bash_script = self.osi.generate_package_install_command(undetected)
-        for sc in scripts:
-            bash_script += "\n" + sc + "\n"
-            
-        if command == "generate_bash" or command == "satisfy":
-            print bash_script
-
-        elif command == "depdb":
-            map = self.rdl.get_map()
-            for k in map:
-                for o in map[k]:
-                    if type("String") == type(map[k][o]):
-                        print "<<<< %s on ( %s ) -> %s >>>>"%(k, o, map[k][o])
-                    else:
-                        for v in map[k][o]:
-                            print "<<<< %s on ( %s %s ) -> %s >>>>"%(k, o, v,map[k][o][v])
-        elif command == "what_needs":
-            map = self.rdl.get_map()
-            rosdeps_queried = []
-            for p in packages:
-                if p in map.keys():
-                    print "verified %s"%p
-                    rosdeps_queried.append(p)
-            packages_using_rosdep = []
-            for p in roslib.packages.list_pkgs():
-                deps_list = self.gather_rosdeps([p], "rosdep0")
-                for r in rosdeps_queried:
-                    if r in deps_list:
-                        packages_using_rosdep.append(p)
-                        break
-                    else:
-                        pass#print "%s not in %s:%s"%(r, p, deps_list)
-
-            print "Packages using %s are: %s"%(rosdeps_queried, packages_using_rosdep)
-        else:
-            print "Unsupported command %s."%command
+    options, args = parser.parse_args()
 
 
+    if len(args) == 0:
+        parser.error("Please enter a command")
+    command = args[0]
+    if not command in _commands:
+        parser.error("Unsupported command %s."%command)
+    if len(args) < 2:
+        parser.error("Please enter arguments for '%s'"%command)
+    rdargs = args[1:]
 
-r = Rosdep()
-if not r.main():
-    sys.exit(-1)
+
+    (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(rdargs)
+    #print verified_packages, "Rejected", rejected_packages
+
+    
+    ### Find all dependencies
+    r = Rosdep()
+    rosdeps = r.gather_rosdeps(verified_packages)
+
+    ### Detect OS name and version
+
+    ################ Add All specializations here ##############################
+    ubuntu = Ubuntu(r.osi)
+    ################ End Add specializations here ##############################
+    
+    if options.verbose:
+        print "Detected OS: " + r.osi.get_os_name()
+        print "Detected Version: " + r.osi.get_os_version()
+
+    if command == "generate_bash" or command == "satisfy":
+        print r.generate_script(rosdeps, include_duplicates=options.include_duplicates)
+
+    elif command == "depdb":
+        map = r.rdl.get_map()
+        for k in map:
+            for o in map[k]:
+                if isinstance(map[k][o], basestring):
+                    print "<<<< %s on ( %s ) -> %s >>>>"%(k, o, map[k][o])
+                else:
+                    for v in map[k][o]:
+                        print "<<<< %s on ( %s %s ) -> %s >>>>"%(k, o, v,map[k][o][v])
+    elif command == "what_needs":
+        print '\n'.join(r.what_needs(rdargs))
+
+if __name__ == '__main__':
+    sys.exit(main() or 0)

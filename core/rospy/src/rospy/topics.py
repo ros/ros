@@ -389,6 +389,9 @@ class Subscriber(Topic):
             self.impl.set_buff_size(buff_size)
 
         if callback is not None:
+            # #1852
+            # it's important that we call add_callback so that the
+            # callback can be invoked with any latched messages
             self.impl.add_callback(callback, callback_args)
             # save arguments for unregister
             self.callback = callback
@@ -501,6 +504,11 @@ class _SubscriberImpl(_TopicImpl):
             new_callbacks.append((cb, cb_args))
             self.callbacks = new_callbacks
 
+        # #1852: invoke callback with any latched messages
+        for c in self.connections:
+            if c.latch is not None:
+                self._invoke_callback(c.latch, cb, cb_args)
+
     def remove_callback(self, cb, cb_args):
         """
         Unregister a message callback.
@@ -522,7 +530,27 @@ class _SubscriberImpl(_TopicImpl):
         if not matches:
             raise KeyError("no matching cb")
 
-            
+    def _invoke_callback(self, msg, cb, cb_args):
+        """
+        Invoke callback on msg. Traps and logs any exceptions raise by callback
+        @param msg: message data
+        @type  msg: L{Message}
+        @param cb: callback
+        @type  cb: fn(msg, cb_args)
+        @param cb_args: callback args or None
+        @type  cb_args: Any
+        """
+        try:
+            if cb_args is not None:
+                cb(msg, cb_args)
+            else:
+                cb(msg)
+        except Exception, e:
+            if not is_shutdown():
+                logerr("bad callback: %s\n%s"%(cb, traceback.format_exc()))
+            else:
+                _logger.warn("during shutdown, bad callback: %s\n%s"%(cb, traceback.format_exc()))
+        
     def receive_callback(self, msgs):
         """
         Called by underlying connection transport for each new message received
@@ -533,16 +561,7 @@ class _SubscriberImpl(_TopicImpl):
         callbacks = self.callbacks
         for msg in msgs:
             for cb, cb_args in callbacks:
-                try:
-                    if cb_args is not None:
-                        cb(msg, cb_args)
-                    else:
-                        cb(msg)
-                except Exception, e:
-                    if not is_shutdown():
-                        logerr("bad callback: %s\n%s"%(cb, traceback.format_exc()))
-                    else:
-                        _logger.warn("during shutdown, bad callback: %s\n%s"%(cb, traceback.format_exc()))                        
+                self._invoke_callback(msg, cb, cb_args)
 
 class SubscribeListener(object):
     """

@@ -237,6 +237,8 @@ void do_record(std::string prefix, bool add_date)
 
   tgt_fname = tgt_fname + std::string(".bag");
 
+  ROS_INFO("Recording to %s.", tgt_fname.c_str());
+
   std::string fname = tgt_fname + std::string(".active");
 
   ros::NodeHandle nh;
@@ -259,7 +261,12 @@ void do_record(std::string prefix, bool add_date)
     while(g_queue->empty())
     {
       if (!nh.ok())
+      {
+        // Close the file nicely
+        recorder.close();
+        rename(fname.c_str(),tgt_fname.c_str());
         return;
+      }
       g_queue_condition.wait(lock);
     }
 
@@ -274,8 +281,6 @@ void do_record(std::string prefix, bool add_date)
 
   // Close the file nicely
   recorder.close();
-
-  // Rename the file to the actual target name
   rename(fname.c_str(),tgt_fname.c_str());
 }
 

@@ -102,12 +102,12 @@ class RosdepLookup:
                     return os_specific
                 else:# it must be a map of versions
                     if os_version in os_specific.keys():
-                        return os_specific[versions]
+                        return os_specific[os_version]
                     else:
                         ## Hack to match rounding errors in pyyaml load 9.04  != 9.03999999999999996 in string space
                         for key in os_specific.keys():
                             # NOTE: this hack fails if os_version is not major.minor
-                            if float(key) == float(os_version):
+                            if os_name == "ubuntu" and float(key) == float(os_version):
                                 #print "Matched %s"%(os_version)
                                 return os_specific[key]
 
@@ -148,16 +148,19 @@ class OSIndex:
     def get_os_name(self):
         if not self._os_detected:
             for name in self._os_map.keys():
-                if self._os_map[name].check_presence:
+                if self._os_map[name].check_presence():
                     self._os_detected = name
                     return name
         if not self._os_detected:
             print "Failed to detect OS"
-            sys.exit(1)
+            sys.exit(-1) # TODO do this more elegantly
+
         return self._os_detected
 
     def get_os_version(self):
-        return self._os_map[self.get_os_name()].get_version()
+        if not self._os_version:
+            self._os_version = self._os_map[self.get_os_name()].get_version()
+        return self._os_version
 
     def detect_packages(self, packages):
         return self._os_map[self.get_os_name()].detect_packages(packages)
@@ -207,9 +210,7 @@ class Ubuntu:
                     else:
                         return v
         except:
-            print "Ubuntu failed to get version"
-            return False
-
+            pass#print "Ubuntu failed to get version"
         return False
 
     def detect_packages(self, packages):
@@ -234,7 +235,7 @@ class Debian:
                 if os_list and os_list[0] == "Debian":
                     return True
         except:
-            print "Debian failed to detect OS"
+            pass#print "Debian failed to detect OS"
         return False
 
     def get_version(self):
@@ -573,9 +574,10 @@ def main():
 
     ################ Add All specializations here ##############################
     ubuntu = Ubuntu(r.osi)
-    #debian = Debian(r.osi)
-    #fedora = Fedora(r.osi)
-    #rhel = Rhel(r.osi)
+    debian = Debian(r.osi)
+    fedora = Fedora(r.osi)
+    rhel = Rhel(r.osi)
+    arch = Arch(r.osi)
     ################ End Add specializations here ##############################
     
     if options.verbose:

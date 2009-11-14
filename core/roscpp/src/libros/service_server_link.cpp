@@ -38,6 +38,7 @@
 #include "ros/service_manager.h"
 #include "ros/transport/transport.h"
 #include "ros/this_node.h"
+#include "ros/file_log.h"
 
 #include <boost/bind.hpp>
 
@@ -166,7 +167,7 @@ bool ServiceServerLink::onHeaderReceived(const ConnectionPtr& conn, const Header
 void ServiceServerLink::onConnectionDropped(const ConnectionPtr& conn)
 {
   ROS_ASSERT(conn == connection_);
-  ROS_DEBUG("Service client for [%s] dropped", service_name_.c_str());
+  ROSCPP_LOG_DEBUG("Service client from [%s] for [%s] dropped", conn->getRemoteString().c_str(), service_name_.c_str());
 
   dropped_ = true;
   clearCalls();
@@ -333,7 +334,7 @@ bool ServiceServerLink::call(Message* req, Message* resp)
 
     if (connection_->isDropped())
     {
-      ROS_DEBUG("ServiceServerLink::call called on dropped connection for service [%s]", service_name_.c_str());
+      //ROSCPP_LOG_DEBUG("ServiceServerLink::call called on dropped connection for service [%s]", service_name_.c_str());
       return false;
     }
 

@@ -1,9 +1,11 @@
 <package>
-  <description brief="roslib tests">Unit tests verifying that roslib is operating as expected.</description>
-  <author>Jeremy Leibs/leibs@willowgarage.com</author>
+  <description brief="roslib tests">
+    Unit tests verifying that roslib is operating as expected.
+  </description>
+  <author>Jeremy Leibs/leibs@willowgarage.com, Ken Conley/kwc@willowgarage.com</author>
   <license>BSD</license>
-  <review status="na" notes="tests"/>
-  <url>http://pr.willowgarage.com/</url>
+  <review status="test" notes=""/>
+
   <depend package="roslib" />
   <depend package="rostest" />
   <depend package="std_msgs" />  

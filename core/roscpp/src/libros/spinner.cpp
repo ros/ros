@@ -53,47 +53,133 @@ void SingleThreadedSpinner::spin(CallbackQueue* queue)
 }
 
 MultiThreadedSpinner::MultiThreadedSpinner(uint32_t thread_count)
+: thread_count_(thread_count)
 {
-  if (thread_count == 0)
-  {
-    thread_count = boost::thread::hardware_concurrency();
-
-    if (thread_count == 0)
-    {
-      thread_count = 1;
-    }
-  }
-
-  thread_count_ = thread_count;
-}
-
-void spinThreadFunc(CallbackQueue* queue)
-{
-  disableAllSignalsInThisThread();
-
-  ros::WallDuration d(0.01f);
-
-  ros::NodeHandle n;
-  while (n.ok())
-  {
-    queue->callOne();
-  }
 }
 
 void MultiThreadedSpinner::spin(CallbackQueue* queue)
 {
+  AsyncSpinner s(thread_count_, queue);
+  s.start();
+
+  ros::waitForShutdown();
+}
+
+class AsyncSpinnerImpl
+{
+public:
+  AsyncSpinnerImpl(uint32_t thread_count, CallbackQueue* queue);
+  ~AsyncSpinnerImpl();
+  void start();
+  void stop();
+
+private:
+  void threadFunc();
+
+  boost::mutex mutex_;
+  boost::thread_group threads_;
+
+  uint32_t thread_count_;
+  CallbackQueue* callback_queue_;
+
+  volatile bool continue_;
+
+  ros::NodeHandle nh_;
+};
+
+AsyncSpinnerImpl::AsyncSpinnerImpl(uint32_t thread_count, CallbackQueue* queue)
+: thread_count_(thread_count)
+, callback_queue_(queue)
+, continue_(false)
+{
+  if (thread_count == 0)
+  {
+    thread_count_ = boost::thread::hardware_concurrency();
+
+    if (thread_count_ == 0)
+    {
+      thread_count_ = 1;
+    }
+  }
+
   if (!queue)
   {
-    queue = &g_global_queue;
+    callback_queue_ = &g_global_queue;
+  }
+}
+
+AsyncSpinnerImpl::~AsyncSpinnerImpl()
+{
+  stop();
+}
+
+void AsyncSpinnerImpl::start()
+{
+  boost::mutex::scoped_lock lock(mutex_);
+  if (continue_)
+  {
+    return;
   }
 
-  boost::thread_group tg;
+  continue_ = true;
+
   for (uint32_t i = 0; i < thread_count_; ++i)
   {
-    tg.create_thread(boost::bind(spinThreadFunc, queue));
+    threads_.create_thread(boost::bind(&AsyncSpinnerImpl::threadFunc, this));
+  }
+}
+
+void AsyncSpinnerImpl::stop()
+{
+  boost::mutex::scoped_lock lock(mutex_);
+  if (!continue_)
+  {
+    return;
   }
 
-  tg.join_all();
+  continue_ = false;
+  threads_.join_all();
+}
+
+void AsyncSpinnerImpl::threadFunc()
+{
+  disableAllSignalsInThisThread();
+
+  CallbackQueue* queue = callback_queue_;
+  bool use_call_available = thread_count_ == 1;
+  WallDuration timeout(0.01);
+
+  while (continue_ && nh_.ok())
+  {
+    if (use_call_available)
+    {
+      queue->callAvailable(timeout);
+    }
+    else
+    {
+      queue->callOne(timeout);
+    }
+  }
+}
+
+AsyncSpinner::AsyncSpinner(uint32_t thread_count)
+: impl_(new AsyncSpinnerImpl(thread_count, 0))
+{
+}
+
+AsyncSpinner::AsyncSpinner(uint32_t thread_count, CallbackQueue* queue)
+: impl_(new AsyncSpinnerImpl(thread_count, queue))
+{
+}
+
+void AsyncSpinner::start()
+{
+  impl_->start();
+}
+
+void AsyncSpinner::stop()
+{
+  impl_->stop();
 }
 
 }

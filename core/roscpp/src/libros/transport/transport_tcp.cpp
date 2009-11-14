@@ -35,6 +35,7 @@
 #include "ros/transport/transport_tcp.h"
 #include "ros/poll_set.h"
 #include "ros/header.h"
+#include "ros/file_log.h"
 
 #include <ros/assert.h>
 
@@ -100,7 +101,9 @@ bool TransportTCP::initializeSocket()
   }
   else
   {
-    cached_remote_host_ = getClientURI();
+    std::stringstream ss;
+    ss << getClientURI() << " on socket " << sock_;
+    cached_remote_host_ = ss.str();
   }
 
 #ifdef ROSCPP_USE_TCP_NODELAY
@@ -186,7 +189,7 @@ bool TransportTCP::connect(const std::string& host, int port)
       return false;
     }
 
-    ROS_DEBUG("Resolved publisher host [%s] to [%s]", host.c_str(), inet_ntoa(sin.sin_addr));
+    ROSCPP_LOG_DEBUG("Resolved publisher host [%s] to [%s]", host.c_str(), inet_ntoa(sin.sin_addr));
   }
   else
   {
@@ -197,7 +200,7 @@ bool TransportTCP::connect(const std::string& host, int port)
 
   if (::connect(sock_, (sockaddr *)&sin, sizeof(sin)))
   {
-    ROS_DEBUG("Connect to tcpros publisher [%s:%d] failed with error [%s]", host.c_str(), port, strerror(errno));
+    ROSCPP_LOG_DEBUG("Connect to tcpros publisher [%s:%d] failed with error [%s]", host.c_str(), port, strerror(errno));
     close();
 
     return false;
@@ -208,7 +211,7 @@ bool TransportTCP::connect(const std::string& host, int port)
     return false;
   }
 
-  ROS_DEBUG("Connect succeeded to [%s:%d] on socket [%d]", host.c_str(), port, sock_);
+  ROSCPP_LOG_DEBUG("Connect succeeded to [%s:%d] on socket [%d]", host.c_str(), port, sock_);
 
   return true;
 }
@@ -261,7 +264,7 @@ void TransportTCP::close()
       {
         closed_ = true;
 
-        ROS_DEBUG("TCP socket [%d] closed", sock_);
+        ROSCPP_LOG_DEBUG("TCP socket [%d] closed", sock_);
 
         ROS_ASSERT(sock_ != -1);
 
@@ -302,7 +305,7 @@ int32_t TransportTCP::read(uint8_t* buffer, uint32_t size)
     boost::recursive_mutex::scoped_lock lock(close_mutex_);
     if (closed_)
     {
-      ROS_DEBUG("Tried to read on a closed socket [%d]", sock_);
+      ROSCPP_LOG_DEBUG("Tried to read on a closed socket [%d]", sock_);
       return -1;
     }
   }
@@ -314,7 +317,7 @@ int32_t TransportTCP::read(uint8_t* buffer, uint32_t size)
   {
     if (errno != EAGAIN)
     {
-      ROS_DEBUG("recv() failed with error [%s]", strerror(errno));
+      ROSCPP_LOG_DEBUG("recv() failed with error [%s]", strerror(errno));
     }
     else
     {
@@ -323,7 +326,7 @@ int32_t TransportTCP::read(uint8_t* buffer, uint32_t size)
   }
   else if (num_bytes == 0)
   {
-    ROS_DEBUG("Socket [%d] received 0/%d bytes, closing", sock_, size);
+    ROSCPP_LOG_DEBUG("Socket [%d] received 0/%d bytes, closing", sock_, size);
     close();
     return -1;
   }
@@ -338,7 +341,7 @@ int32_t TransportTCP::write(uint8_t* buffer, uint32_t size)
 
     if (closed_)
     {
-      ROS_DEBUG("Tried to write on a closed socket [%d]", sock_);
+      ROSCPP_LOG_DEBUG("Tried to write on a closed socket [%d]", sock_);
       return -1;
     }
   }
@@ -350,7 +353,7 @@ int32_t TransportTCP::write(uint8_t* buffer, uint32_t size)
   {
     if(errno != EAGAIN)
     {
-      ROS_DEBUG("send() failed with error [%s]", strerror(errno));
+      ROSCPP_LOG_DEBUG("send() failed with error [%s]", strerror(errno));
 
       close();
     }
@@ -432,7 +435,7 @@ TransportTCPPtr TransportTCP::accept()
   int new_sock = ::accept(sock_, (sockaddr *)&client_address, &len);
   if (new_sock >= 0)
   {
-    ROS_DEBUG("Accepted connection on socket [%d]", new_sock);
+    ROSCPP_LOG_DEBUG("Accepted connection on socket [%d]", new_sock);
 
     TransportTCPPtr transport(new TransportTCP(poll_set_, flags_));
     if (!transport->setSocket(new_sock))
@@ -463,7 +466,7 @@ void TransportTCP::socketUpdate(int events)
      (events & POLLHUP) ||
      (events & POLLNVAL))
   {
-    ROS_DEBUG("Socket %d closed with (ERR|HUP|NVAL) events %d", sock_, events);
+    ROSCPP_LOG_DEBUG("Socket %d closed with (ERR|HUP|NVAL) events %d", sock_, events);
     close();
   }
   else

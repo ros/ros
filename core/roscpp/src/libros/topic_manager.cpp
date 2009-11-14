@@ -38,7 +38,7 @@
 #include "ros/transport/transport_udp.h"
 #include "ros/rosout_appender.h"
 #include "ros/init.h"
-
+#include "ros/file_log.h"
 
 #include "XmlRpc.h"
 
@@ -115,7 +115,8 @@ void TopicManager::shutdown()
   xmlrpc_manager_->unbind("getBusStats");
   xmlrpc_manager_->unbind("getBusInfo");
 
-  ROS_DEBUG( "unregistering our publishers");
+  ROSCPP_LOG_DEBUG("Shutting down topics...");
+  ROSCPP_LOG_DEBUG("  shutting down publishers");
   {
     boost::recursive_mutex::scoped_lock adv_lock(advertised_topics_mutex_);
 
@@ -132,7 +133,7 @@ void TopicManager::shutdown()
   }
 
   // unregister all of our subscriptions
-  ROS_DEBUG( "unregistering our subscribers");
+  ROSCPP_LOG_DEBUG("  shutting down subscribers");
   {
     boost::mutex::scoped_lock subs_lock(subs_mutex_);
 
@@ -520,7 +521,7 @@ bool TopicManager::pubUpdate(const string &topic, const vector<string> &pubs)
   }
   else
   {
-    ROS_DEBUG("got a request for updating publishers of topic %s, but I " \
+    ROSCPP_LOG_DEBUG("got a request for updating publishers of topic %s, but I " \
               "don't have any subscribers to that topic.", topic.c_str());
   }
 
@@ -601,7 +602,7 @@ bool TopicManager::requestTopic(const string &topic,
     }
     else
     {
-      ROS_DEBUG( "an unsupported protocol was offered: [%s]",
+      ROSCPP_LOG_DEBUG( "an unsupported protocol was offered: [%s]",
           proto_name.c_str());
     }
   }

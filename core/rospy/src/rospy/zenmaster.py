@@ -70,7 +70,7 @@ Flags:
 def zenmaster_usage(progname):
     print ZENMASTER_USAGE%vars()
 
-def zenmaster_main(argv=sys.argv, stdout=sys.stdout, environ=os.environ):
+def zenmaster_main(argv=sys.argv, stdout=sys.stdout, env=os.environ):
     import optparse
     parser = optparse.OptionParser(usage="usage: zenmaster [options]")
     parser.add_option("--core",
@@ -112,7 +112,7 @@ WARNING ACHTUNG WARNING ACHTUNG WARNING
     logger.info("initialization complete, waiting for shutdown")
     try:
         logger.info("Starting ROS Master Node")
-        rospy.init.start_master(environ, port)
+        rospy.init.start_master(env, port)
         while not rospy.is_shutdown():
             time.sleep(0.5)
     except KeyboardInterrupt:

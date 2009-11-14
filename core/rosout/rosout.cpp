@@ -31,6 +31,7 @@
 #include <cstdlib>
 
 #include "ros/ros.h"
+#include "ros/file_log.h"
 #include "roslib/Log.h"
 
 #include "log4cxx/logger.h"
@@ -66,27 +67,7 @@ public:
   void init()
   {
     //calculate log directory
-    std::string log_file_name;
-    char* ros_log_env = getenv("ROS_LOG_DIR");
-
-    if (ros_log_env)
-    {
-      log_file_name = ros_log_env + std::string("/");
-    }
-    else
-    {
-      ros_log_env = getenv("ROS_ROOT");
-
-      if (ros_log_env)
-      {
-        log_file_name = ros_log_env + std::string("/log/");
-      }
-    }
-
-    if (!ros_log_env)
-      throw std::runtime_error("Neither ROS_ROOT nor ROS_LOG_DIR are defined");
-
-    log_file_name += std::string("/rosout.log");
+    std::string log_file_name = ros::file_log::getLogDirectory() + "/rosout.log";
 
     logger_ = log4cxx::Logger::getRootLogger();
     log4cxx::LayoutPtr layout = new log4cxx::PatternLayout("");

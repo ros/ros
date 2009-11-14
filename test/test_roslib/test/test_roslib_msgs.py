@@ -205,6 +205,48 @@ class MsgSpecTest(unittest.TestCase):
       self.fail("should have failed invalid type")
     except MsgSpecException: pass
     
+  def test_load_package_dependencies(self):
+    # in order to do this test, we have to observe some inner state
+    roslib.msgs.reinit()
+    self.failIf('test_roslib' in roslib.msgs._loaded_packages)
+    self.failIf('std_msgs' in roslib.msgs._loaded_packages)
+    roslib.msgs.load_package_dependencies('test_roslib')
+    
+    self.assert_('std_msgs' in roslib.msgs._loaded_packages, roslib.msgs._loaded_packages)
+    # should load deps only, not package itself
+    self.failIf('test_roslib' in roslib.msgs._loaded_packages)
+
+    spec = roslib.msgs.get_registered('std_msgs/String')
+    self.assert_('data' in spec.names) # make sure we have an actual std_msgs msg
+    
+    # we don't have a test that properly exercises the recursive
+    # differences, but we need to at least test that branch of code
+    roslib.msgs.reinit()
+    self.failIf('test_roslib' in roslib.msgs._loaded_packages)
+    self.failIf('std_msgs' in roslib.msgs._loaded_packages)
+    roslib.msgs.load_package_dependencies('test_roslib', load_recursive=True)    
+    self.assert_('std_msgs' in roslib.msgs._loaded_packages, roslib.msgs._loaded_packages)
+    # should load deps only, not package itself
+    self.failIf('test_roslib' in roslib.msgs._loaded_packages)
+
+    spec = roslib.msgs.get_registered('std_msgs/String')
+    self.assert_('data' in spec.names) # make sure we have an actual std_msgs msg
+
+  def test_load_package(self):
+    # in order to do this test, we have to observe some inner state
+    roslib.msgs.reinit()
+    self.failIf('test_roslib' in roslib.msgs._loaded_packages)
+    self.failIf('std_msgs' in roslib.msgs._loaded_packages)
+    roslib.msgs.load_package('test_roslib')
+    
+    self.assert_('test_roslib' in roslib.msgs._loaded_packages)
+    # - shouldn't load deps
+    self.failIf('std_msgs' in roslib.msgs._loaded_packages, roslib.msgs._loaded_packages)
+
+    self.failIf(roslib.msgs.is_registered('std_msgs/String'))
+    spec = roslib.msgs.get_registered('test_roslib/FillSimple')
+    self.assertEquals(['i32', 'str', 'i32_array', 'b'], spec.names) # make sure we have an actual msg
+    
   def test_list_msg_types(self):
     # can only validly test with roslib, but we test with std_msgs anyways
     types1 = roslib.msgs.list_msg_types('roslib', False)

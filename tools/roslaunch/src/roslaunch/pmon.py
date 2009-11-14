@@ -32,6 +32,10 @@
 #
 # Revision $Id$
 
+"""
+Process monitoring implementation for roslaunch.
+"""
+
 import os
 import sys
 import time
@@ -45,9 +49,12 @@ from roslaunch.core import printlog, printlog_bold, printerrlog, RLException
 
 logger = logging.getLogger("roslaunch.pmon")          
 
-## Exception to indicate that a process launch has failed in a fatal
-## manner (i.e. relaunch is unlikely to succeed)
-class FatalProcessLaunch(RLException): pass
+class FatalProcessLaunch(RLException):
+    """
+    Exception to indicate that a process launch has failed in a fatal
+    manner (i.e. relaunch is unlikely to succeed)
+    """
+    pass
 
 # start/shutdown ################################################
 
@@ -75,13 +82,17 @@ def start_process_monitor():
 
     return process_monitor
 
-## @param process_monitor ProcessMonitor: process monitor to kill
-## @return bool: True if process_monitor was successfully
-## shutdown. False if it could not be shutdown cleanly or if there is
-## a problem with \a process_monitor
-## parameter. shutdown_process_monitor() does not throw any exceptions
-## as this is shutdown-critical code.
 def shutdown_process_monitor(process_monitor):
+    """
+    @param process_monitor: process monitor to kill
+    @type  process_monitor: L{ProcessMonitor}
+    @return: True if process_monitor was successfully
+    shutdown. False if it could not be shutdown cleanly or if there is
+    a problem with process_monitor
+    parameter. shutdown_process_monitor() does not throw any exceptions
+    as this is shutdown-critical code.
+    @rtype: bool
+    """
     try:
         if process_monitor is None or process_monitor.is_shutdown:
             return False
@@ -144,16 +155,19 @@ atexit.register(pmon_shutdown)
 
 # ##############################################################
 
-## Basic process representation for ProcessMonitor. Must be subclassed
-## to provide actual start()/stop() implementations.
 class Process(object):
+    """
+    Basic process representation for L{ProcessMonitor}. Must be subclassed
+    to provide actual start()/stop() implementations.
+    """
 
-    def __init__(self, package, name, args, env, respawn=False):
+    def __init__(self, package, name, args, env, respawn=False, required=False):
         self.package = package
         self.name = name
         self.args = args
         self.env = env
         self.respawn = respawn
+        self.required = required
         self.lock = Lock()
         self.exit_code = None
         # for keeping track of respawning
@@ -162,9 +176,12 @@ class Process(object):
     # NOTE: get_info() is going to have to be sufficient for
     # generating respawn requests, so we must be complete about it
         
-    ## Get all data about this process in dictionary form
-    ## @return dict { str: val }: dictionary of all relevant process properties
     def get_info(self):
+        """
+        Get all data about this process in dictionary form
+        @return: dictionary of all relevant process properties
+        @rtype: dict { str: val }
+        """
         info = {
             'spawn_count': self.spawn_count,
             'args': self.args,
@@ -173,6 +190,7 @@ class Process(object):
             'name': self.name,
             'alive': self.is_alive(),
             'respawn': self.respawn,
+            'required': self.required,
             }
         if self.exit_code is not None:
             info['exit_code'] = self.exit_code
@@ -197,9 +215,11 @@ class Process(object):
         else:
             return 'process has died'
 
-## Container class to maintain information about a process that has died. This
-## container allows us to delete the actual Process but still maintain the metadata
 class DeadProcess(Process):
+    """
+    Container class to maintain information about a process that has died. This
+    container allows us to delete the actual Process but still maintain the metadata
+    """
     def __init__(self, p):
         super(DeadProcess, self).__init__(p.package, p.name, p.args, p.env, p.respawn)
         self.exit_code = p.exit_code
@@ -213,18 +233,23 @@ class DeadProcess(Process):
     def is_alive(self):
         return False
 
-## Listener class for ProcessMonitor
 class ProcessListener(object):
+    """
+    Listener class for L{ProcessMonitor}
+    """
     
-    ## Notifies listener that process has died. This callback only
-    ## occurs for processes that die during normal process monitor
-    ## execution -- processes that are forcibly killed during
-    ## ProcessMonitor shutdown are not reported.
-    ## @param self
-    ## @param process_name str: name of process
-    ## @param exit_code int: exit code of process. If None, it means
-    ## that ProcessMonitor was unable to determine an exit code.
     def process_died(self, process_name, exit_code):
+        """
+        Notifies listener that process has died. This callback only
+        occurs for processes that die during normal process monitor
+        execution -- processes that are forcibly killed during
+        ProcessMonitor shutdown are not reported.
+        @param process_name: name of process
+        @type  process_name: str
+        @param exit_code: exit code of process. If None, it means
+        that ProcessMonitor was unable to determine an exit code.
+        @type  exit_code: int
+        """
         pass
     
 class ProcessMonitor(Thread):
@@ -246,17 +271,22 @@ class ProcessMonitor(Thread):
         
         logger.info("created process monitor %s"%self)
         
-    ## Listener for process events. MUST be called before
-    ## ProcessMonitor is running.See ProcessListener class.
-    ## @param l ProcessListener : listener instance
     def add_process_listener(self, l):
+        """
+        Listener for process events. MUST be called before
+        ProcessMonitor is running.See ProcessListener class.
+        @param l: listener instance
+        @type  l: L{ProcessListener}
+        """
         self.listeners.append(l)
 
-    ## Register process with ProcessMonitor
-    ## @param self
-    ## @param p Process
-    ## @throws RLException if process with same name is already registered
     def register(self, p):
+        """
+        Register process with L{ProcessMonitor}
+        @param p: Process
+        @type  p: L{Process}
+        @raise RLException: if process with same name is already registered
+        """
         logger.info("ProcessMonitor.register[%s]"%p.name)
         e = None
         try:
@@ -275,20 +305,24 @@ class ProcessMonitor(Thread):
         else:
             logger.info("ProcessMonitor.register[%s] complete"%p.name)
 
-    ## Register core process with ProcessMonitor. Coreprocesses
-    ## have special shutdown semantics. They are killed after all
-    ## other processes, in reverse order in which they are added.
-    ## @param self
-    ## @param p Process
-    ## @throws RLException if process with same name is already registered
     def register_core_proc(self, p):
+        """
+        Register core process with ProcessMonitor. Coreprocesses
+        have special shutdown semantics. They are killed after all
+        other processes, in reverse order in which they are added.
+        @param p Process
+        @type  p: L{Process}
+        @raise RLException: if process with same name is already registered
+        """
         self.register(p)
         self.core_procs.append(p)
         
-    ## Inform the process monitor that registrations are complete.
-    ## After the registrations_complete flag is set, process monitor
-    ## will exit if there are no processes left to monitor.
     def registrations_complete(self):
+        """
+        Inform the process monitor that registrations are complete.
+        After the registrations_complete flag is set, process monitor
+        will exit if there are no processes left to monitor.
+        """
         self._registrations_complete = True
         logger.info("registrations completed %s"%self)
         
@@ -301,13 +335,19 @@ class ProcessMonitor(Thread):
             self.plock.release()
         logger.info("ProcessMonitor.unregister[%s] complete"%p.name)             
 
-    ## @return bool: True if process is still be monitored. If False, process
-    ## has died or was never registered with process
     def has_process(self, name):
+        """
+        @return: True if process is still be monitored. If False, process
+        has died or was never registered with process
+        @rtype: bool
+        """
         return len([p for p in self.procs if p.name == name]) > 0
 
-    ## @return Process: process registered under \a name, or None
     def get_process(self, name):
+        """
+        @return: process registered under \a name, or None
+        @rtype: L{Process}
+        """
         try:
             self.plock.acquire()
             v = [p for p in self.procs if p.name == name]
@@ -316,28 +356,36 @@ class ProcessMonitor(Thread):
         if v:
             return v[0]
 
-    ## @return True if ProcessMonitor has tasks that need to be run in the main thread
     def has_main_thread_jobs(self):
+        """
+        @return: True if ProcessMonitor has tasks that need to be run in the main thread
+        @rtype: bool
+        """
         return len(self.reacquire_signals)
     
-    ## Execute tasks that need to be run in the main thread. Must be
-    ## called from main thread.
     def do_main_thread_jobs(self):
+        """
+        Execute tasks that need to be run in the main thread. Must be
+        called from main thread.
+        """
         #not entirely threadsafe
         sigs = [s for s in self.reacquire_signals]
         for s in sigs:
             _signal_chain[s] = signal.signal(s, rl_signal)
             self.reacquire_signals.remove(s)
     
-    ## kill process that matches \a name. NOTE: a killed process will
-    ## continue to show up as active until the process monitor thread
-    ## has caught that it has died.
-    ## @param self
-    ## @param name str: Process name
-    ## @return True if a process named \a name was removed from
-    ## process monitor. A process is considered killed if its stop()
-    ## method was called. 
     def kill_process(self, name):
+        """
+        Kill process that matches name. NOTE: a killed process will
+        continue to show up as active until the process monitor thread
+        has caught that it has died.
+        @param name: Process name
+        @type  name: str
+        @return: True if a process named name was removed from
+        process monitor. A process is considered killed if its stop()
+        method was called.
+        @rtype: bool
+        """
         if not isinstance(name, basestring):
             raise RLException("kill_process takes in a process name but was given: %s"%name)
         logger.debug("ProcessMonitor.kill_process[%s]"%name)
@@ -356,15 +404,17 @@ class ProcessMonitor(Thread):
         finally:
             self.plock.release()
         
-    ## Shutdown the process monitor thread
-    ## @param self
     def shutdown(self):
+        """
+        Shutdown the process monitor thread
+        """
         logger.info("ProcessMonitor.shutdown %s"%self)
         self.is_shutdown = True
         
-    ## @param self
-    ## @return [str]: list of active process names
     def get_active_names(self):
+        """
+        @return [str]: list of active process names
+        """
         try:
             self.plock.acquire()
             retval = [p.name for p in self.procs]
@@ -372,12 +422,14 @@ class ProcessMonitor(Thread):
             self.plock.release()
         return retval
 
-    ## @param self
-    ## @return [[(str, int),], [(str,int),]]: Two lists, where first
-    ## list of active process names along with the number of times
-    ## that process has been spawned. Second list contains dead process names
-    ## and their spawn count.
     def get_process_names_with_spawn_count(self):
+        """
+        @return: Two lists, where first
+        list of active process names along with the number of times
+        that process has been spawned. Second list contains dead process names
+        and their spawn count.
+        @rtype: [[(str, int),], [(str,int),]]
+        """
         try:
             self.plock.acquire()
             actives = [(p.name, p.spawn_count) for p in self.procs]
@@ -387,11 +439,12 @@ class ProcessMonitor(Thread):
             self.plock.release()
         return retval
 
-    ## run() occurs in a separate thread and cannot do certain signal-related
-    ## work. The main thread of the application must call mainthread_spin()
-    ## or mainthread_spin_once() in order to perform these jobs.
-    ## @param self
     def mainthread_spin_once(self):
+        """
+        run() occurs in a separate thread and cannot do certain signal-related
+        work. The main thread of the application must call mainthread_spin()
+        or mainthread_spin_once() in order to perform these jobs.
+        """
         if not self.done:
             if self.has_main_thread_jobs():
                 self.do_main_thread_jobs()
@@ -399,23 +452,25 @@ class ProcessMonitor(Thread):
         else:
             return False
         
-    ## run() occurs in a separate thread and cannot do certain signal-related
-    ## work. The main thread of the application must call mainthread_spin()
-    ## or mainthread_spin_once() in order to perform these jobs. mainthread_spin()
-    ## blocks until the process monitor is complete.
-    ## @param self
     def mainthread_spin(self):
+        """
+        run() occurs in a separate thread and cannot do certain signal-related
+        work. The main thread of the application must call mainthread_spin()
+        or mainthread_spin_once() in order to perform these jobs. mainthread_spin()
+        blocks until the process monitor is complete.
+        """
         while not self.done:
             time.sleep(0.1)
             if self.has_main_thread_jobs():
                 self.do_main_thread_jobs()
 
-    ## thread routine of the process monitor. NOTE: you must still
-    ## call mainthread_spin or mainthread_spin_once() from the main
-    ## thread in order to pick up main thread work from the process
-    ## monitor.
-    ## @param self
     def run(self):
+        """
+        thread routine of the process monitor. NOTE: you must still
+        call mainthread_spin or mainthread_spin_once() from the main
+        thread in order to pick up main thread work from the process
+        monitor.
+        """
         try:
             #don't let exceptions bomb thread, interferes with exit
             try:
@@ -426,9 +481,10 @@ class ProcessMonitor(Thread):
         finally:
             self._post_run()
             
-    ## Internal run loop of ProcessMonitor
-    ## @param self
-    def _run(self):        
+    def _run(self):
+        """
+        Internal run loop of ProcessMonitor
+        """
         plock = self.plock
         dead = []
         respawn = []
@@ -450,11 +506,14 @@ class ProcessMonitor(Thread):
             for p in procs:
                 try:
                     if not p.is_alive():
-                        logger.debug("Process[%s] has died, respawn=%s, exit_code=%s",p.name, p.respawn, p.exit_code)
+                        logger.debug("Process[%s] has died, respawn=%s, required=%s, exit_code=%s",p.name, p.respawn, p.required, p.exit_code)
                         exit_code_str = p.get_exit_description()
                         if p.respawn:
-                            printlog("[%s] %s, will respawn"%(p.name, exit_code_str))
+                            printlog_bold("[%s] %s\nrespawning..."%(p.name, exit_code_str))
                             respawn.append(p)
+                        elif p.required:
+                            printerrlog('='*80+"REQUIRED process [%s] has died!\n%s\nInitiating shutdown!\n"%(p.name, exit_code_str)+'='*80)
+                            self.is_shutdown = True
                         else:
                             if p.exit_code:
                                 printerrlog("[%s] %s"%(p.name, exit_code_str))

@@ -33,5 +33,12 @@
 # Revision $Id$
 # $Author$
 
-## Base class for exceptions in roslib
-class ROSLibException(Exception): pass
+"""
+Provides the L{ROSLibException} class, which is common to many roslib libraries.
+"""
+
+class ROSLibException(Exception):
+    """
+    Base class for exceptions in roslib    
+    """
+    pass

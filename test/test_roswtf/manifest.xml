@@ -1,0 +1,18 @@
+<package>
+  <description brief="test_roswtf">
+
+     test_roswtf
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/test_roswtf</url>
+  <depend package="roslib"/>
+  <depend package="roswtf"/>
+
+  <depend package="test_ros"/> <!-- due to min.launch test file -->
+
+</package>
+
+

@@ -215,6 +215,7 @@ public:
 
     if(header_buffer_)
       free(header_buffer_);
+    delete[] next_msg_;
   }
 
   std::string getVersionString()
@@ -238,7 +239,6 @@ public:
       if (topic_it->second)
         delete topic_it->second;
     }
-    delete[] next_msg_;
 
     topics_.clear();
     done_ = false;

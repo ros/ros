@@ -37,7 +37,7 @@
 
 PKG = 'test_rospy'
 NAME = 'talker'
-import roslib; roslib.update_path(PKG)
+import roslib; roslib.load_manifest(PKG)
 
 import sys
 import rospy

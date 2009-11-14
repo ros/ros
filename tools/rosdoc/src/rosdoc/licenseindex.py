@@ -38,7 +38,7 @@ from __future__ import with_statement
 import cStringIO
 import time
 
-import roslib.scriptutil
+import roslib.rospack
 
 from rosdoc.rdcore import *
 
@@ -71,7 +71,7 @@ license_template = load_tmpl('license-index.html')
 ## check to see if bsd package is contaminated by GPL
 ## @return str, [str]: license, blamelist
 def _check_contaminated(package, license, manifests):
-    depslist = roslib.scriptutil.rospackexec(['deps', package])
+    depslist = roslib.rospack.rospackexec(['deps', package])
     blame = []
     for dep in [d for d in depslist.split('\n') if d]:
         m = manifests[dep]

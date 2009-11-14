@@ -95,6 +95,28 @@ TEST(RoscppLatchingPublisher, latching)
   ASSERT_STREQ((*h.last_msg_->__connection_header)["latching"].c_str(), "1");
 }
 
+TEST(RoscppLatchingPublisher, latchingMultipleSubscriptions)
+{
+  ros::NodeHandle n;
+  ros::Publisher pub = n.advertise<TestArray>("test", 1, true);
+  TestArray arr;
+  pub.publish(arr);
+
+  Helper h1, h2;
+  ros::Subscriber sub1 = n.subscribe("test", 1, &Helper::cb, &h1);
+  ros::Duration(0.1).sleep();
+  ros::spinOnce();
+
+  ASSERT_EQ(h1.count_, 1);
+  ASSERT_EQ(h2.count_, 0);
+
+  ros::Subscriber sub2 = n.subscribe("test", 1, &Helper::cb, &h2);
+  ros::spinOnce();
+
+  ASSERT_EQ(h1.count_, 1);
+  ASSERT_EQ(h2.count_, 1);
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);

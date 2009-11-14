@@ -76,6 +76,7 @@ public:
   const Stats &getStats() { return stats_; }
   const std::string& getPublisherXMLRPCURI();
   inline int getConnectionID() const { return connection_id_; }
+  bool isLatched() { return latched_; }
 
 private:
   void onConnectionDropped(const ConnectionPtr& conn);
@@ -98,6 +99,8 @@ private:
   Stats stats_;
 
   TransportHints transport_hints_;
+
+  bool latched_;
 };
 
 } // namespace ros

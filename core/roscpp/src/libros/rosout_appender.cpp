@@ -58,7 +58,11 @@ ROSOutAppender::ROSOutAppender()
 ROSOutAppender::~ROSOutAppender()
 {
   shutting_down_ = true;
-  queue_condition_.notify_all();
+
+  {
+    boost::mutex::scoped_lock lock(queue_mutex_);
+    queue_condition_.notify_all();
+  }
 
   publish_thread_.join();
 }
@@ -71,6 +75,8 @@ const std::string&  ROSOutAppender::getLastError()
 void ROSOutAppender::append(const log4cxx::spi::LoggingEventPtr& event, log4cxx::helpers::Pool& pool)
 {
   roslib::LogPtr msg(new roslib::Log);
+
+  msg->header.stamp = ros::Time::now();
 
   if (event->getLevel() == log4cxx::Level::getFatal())
   {
@@ -118,6 +124,11 @@ void ROSOutAppender::logThread()
 
     {
       boost::mutex::scoped_lock lock(queue_mutex_);
+
+      if (shutting_down_)
+      {
+        return;
+      }
 
       queue_condition_.wait(lock);
 

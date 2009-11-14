@@ -402,6 +402,9 @@ public:
   void crawl_for_packages(bool force_crawl = false);
   VecPkg partial_crawl(const std::string &path);
 
+  // Exposed for testing purposes only
+  std::string deduplicate_tokens(const std::string& s);
+
   // Storage for --foo options
   // --deps-only
   bool opt_deps_only;
@@ -423,9 +426,8 @@ public:
 private:
   bool cache_lock_failed;
   bool crawled;
-  /** tests if the cache exists, is new enough, and is valid */
-  void createROSHomeDirectory();
   std::string getCachePath();
+  /** tests if the cache exists, is new enough, and is valid */
   bool cache_is_good();
   /** returns a double representing the seconds since the Epoch */
   static double time_since_epoch();

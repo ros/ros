@@ -6,79 +6,119 @@
 
 namespace YAML
 {
-	Scanner::SimpleKey::SimpleKey(int pos_, int line_, int column_, int flowLevel_)
-		: pos(pos_), line(line_), column(column_), flowLevel(flowLevel_), pMapStart(0), pKey(0)
+	Scanner::SimpleKey::SimpleKey(const Mark& mark_, int flowLevel_)
+		: mark(mark_), flowLevel(flowLevel_), pIndent(0), pMapStart(0), pKey(0)
 	{
 	}
 
 	void Scanner::SimpleKey::Validate()
 	{
+		// Note: pIndent will *not* be garbage here; see below
+		if(pIndent)
+			pIndent->isValid = true;
 		if(pMapStart)
-			pMapStart->status = TS_VALID;
+			pMapStart->status = Token::VALID;
 		if(pKey)
-			pKey->status = TS_VALID;
+			pKey->status = Token::VALID;
 	}
 
 	void Scanner::SimpleKey::Invalidate()
 	{
+		// Note: pIndent might be a garbage pointer here, but that's ok
+		//       An indent will only be popped if the simple key is invalid
 		if(pMapStart)
-			pMapStart->status = TS_INVALID;
+			pMapStart->status = Token::INVALID;
 		if(pKey)
-			pKey->status = TS_INVALID;
+			pKey->status = Token::INVALID;
+	}
+	
+	// CanInsertPotentialSimpleKey
+	bool Scanner::CanInsertPotentialSimpleKey() const
+	{
+		if(!m_simpleKeyAllowed)
+			return false;
+		
+		if(InFlowContext() && m_flows.top() != FLOW_MAP)
+			return false;
+
+		return !ExistsActiveSimpleKey();
 	}
 
-	// InsertSimpleKey
-	// . Adds a potential simple key to the queue,
-	//   and saves it on a stack.
-	void Scanner::InsertSimpleKey()
+	// ExistsActiveSimpleKey
+	// . Returns true if there's a potential simple key at our flow level
+	//   (there's allowed at most one per flow level, i.e., at the start of the flow start token)
+	bool Scanner::ExistsActiveSimpleKey() const
 	{
-		SimpleKey key(INPUT.pos, INPUT.line, INPUT.column, m_flowLevel);
+		if(m_simpleKeys.empty())
+			return false;
+		
+		const SimpleKey& key = m_simpleKeys.top();
+		return key.flowLevel == GetFlowLevel();
+	}
+
+	// InsertPotentialSimpleKey
+	// . If we can, add a potential simple key to the queue,
+	//   and save it on a stack.
+	void Scanner::InsertPotentialSimpleKey()
+	{
+		if(!CanInsertPotentialSimpleKey())
+			return;
+		
+		SimpleKey key(INPUT.mark(), GetFlowLevel());
 
 		// first add a map start, if necessary
-		key.pMapStart = PushIndentTo(INPUT.column, false);
-		if(key.pMapStart)
-			key.pMapStart->status = TS_UNVERIFIED;
+		key.pIndent = PushIndentTo(INPUT.column(), IndentMarker::MAP);
+		if(key.pIndent) {
+			key.pIndent->isValid = false;
+			key.pMapStart = key.pIndent->pStartToken;
+			key.pMapStart->status = Token::UNVERIFIED;
+		}
 
 		// then add the (now unverified) key
-		m_tokens.push(Token(TT_KEY, INPUT.line, INPUT.column));
+		m_tokens.push(Token(Token::KEY, INPUT.mark()));
 		key.pKey = &m_tokens.back();
-		key.pKey->status = TS_UNVERIFIED;
+		key.pKey->status = Token::UNVERIFIED;
 
 		m_simpleKeys.push(key);
+	}
+
+	// InvalidateSimpleKey
+	// . Automatically invalidate the simple key in our flow level
+	void Scanner::InvalidateSimpleKey()
+	{
+		if(m_simpleKeys.empty())
+			return;
+		
+		// grab top key
+		SimpleKey& key = m_simpleKeys.top();
+		if(key.flowLevel != GetFlowLevel())
+			return;
+		
+		key.Invalidate();
+		m_simpleKeys.pop();
 	}
 
 	// VerifySimpleKey
 	// . Determines whether the latest simple key to be added is valid,
 	//   and if so, makes it valid.
-	// . If 'force' is true, then we'll pop no matter what (whether we can verify it or not).
-	bool Scanner::VerifySimpleKey(bool force)
+	bool Scanner::VerifySimpleKey()
 	{
-		m_isLastKeyValid = false;
 		if(m_simpleKeys.empty())
-			return m_isLastKeyValid;
+			return false;
 
 		// grab top key
 		SimpleKey key = m_simpleKeys.top();
 
 		// only validate if we're in the correct flow level
-		if(key.flowLevel != m_flowLevel) {
-			if(force)
-				m_simpleKeys.pop();
+		if(key.flowLevel != GetFlowLevel())
 			return false;
-		}
 
 		m_simpleKeys.pop();
 
 		bool isValid = true;
 
-		// needs to be followed immediately by a value
-		if(m_flowLevel > 0 && !Exp::ValueInFlow.Matches(INPUT))
-			isValid = false;
-		if(m_flowLevel == 0 && !Exp::Value.Matches(INPUT))
-			isValid = false;
-
-		// also needs to be less than 1024 characters and inline
-		if(INPUT.line != key.line || INPUT.pos - key.pos > 1024)
+		// needs to be less than 1024 characters and inline
+		if(INPUT.line() != key.mark.line || INPUT.pos() - key.mark.pos > 1024)
 			isValid = false;
 
 		// invalidate key
@@ -87,22 +127,12 @@ namespace YAML
 		else
 			key.Invalidate();
 
-		// In block style, remember that we've pushed an indent for this potential simple key (if it was starting).
-		// If it was invalid, then we need to pop it off.
-		// Note: we're guaranteed to be popping the right one (i.e., there couldn't have been anything in
-		//       between) since keys have to be inline, and will be invalidated immediately on a newline.
-		if(!isValid && m_flowLevel == 0)
-			m_indents.pop();
-
-		m_isLastKeyValid = isValid;
 		return isValid;
 	}
 
-	// VerifyAllSimplyKeys
-	// . Pops all simple keys (with checking, but if we can't verify one, then pop it anyways).
-	void Scanner::VerifyAllSimpleKeys()
+	void Scanner::PopAllSimpleKeys()
 	{
 		while(!m_simpleKeys.empty())
-			VerifySimpleKey(true);
+			m_simpleKeys.pop();
 	}
 }

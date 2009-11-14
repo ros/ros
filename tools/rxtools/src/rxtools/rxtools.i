@@ -5,6 +5,7 @@
 #include "ros/types.h"
 #include "wx/wxPython/wxPython.h"
 #include "wx/wxPython/pyclasses.h"
+#include "rosout_filter.h"
 #include "rosout_panel.h"
 #include "init_roscpp.h"
 %}
@@ -17,6 +18,7 @@
 
 %pythonAppend RosoutPanel "self._setOORInfo(self)"
 
+%include rosout_filter.h
 %include rosout_generated.h
 %include rosout_panel.h
 %include init_roscpp.h

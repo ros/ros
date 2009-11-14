@@ -40,6 +40,8 @@
 namespace rxtools
 {
 
+class RosoutPanel;
+
 namespace columns
 {
 enum Column
@@ -49,9 +51,7 @@ enum Column
   Node,
   Time,
   Topics,
-  File,
-  Line,
-  Function,
+  Location,
 };
 }
 typedef columns::Column Column;
@@ -76,12 +76,7 @@ public:
    */
   virtual ~RosoutListControl();
 
-  typedef boost::function<roslib::LogConstPtr(uint32_t)> MessageFunc;
-  /**
-   * \brief Set the function used to retrieve a message at a given index
-   * @param func The function to use
-   */
-  void setMessageFunction(const MessageFunc& func);
+  void setModel(RosoutPanel* model);
 
   /**
    * \brief Get a text representation of the severity level of a message
@@ -98,11 +93,34 @@ public:
     return selection_;
   }
 
+  void setSelection(int32_t index);
+
+  void preItemChanges();
+  void postItemChanges();
+
 protected:
+
+  roslib::LogConstPtr getSelectedMessage();
 
   // Callbacks
   void onItemActivated(wxListEvent& event);
   void onItemSelected(wxListEvent& event);
+  void onItemRightClick(wxListEvent& event);
+
+  void onIncludeLocation(wxCommandEvent& event);
+  void onIncludeNode(wxCommandEvent& event);
+  void onIncludeMessage(wxCommandEvent& event);
+  void onIncludeLocationNewWindow(wxCommandEvent& event);
+  void onIncludeNodeNewWindow(wxCommandEvent& event);
+  void onIncludeMessageNewWindow(wxCommandEvent& event);
+  void onExcludeLocation(wxCommandEvent& event);
+  void onExcludeNode(wxCommandEvent& event);
+  void onExcludeMessage(wxCommandEvent& event);
+  void onExcludeLocationNewWindow(wxCommandEvent& event);
+  void onExcludeNodeNewWindow(wxCommandEvent& event);
+  void onExcludeMessageNewWindow(wxCommandEvent& event);
+
+  void onPopupKeyPressed(wxKeyEvent& event);
 
   // overrides from wxListCtrl
   virtual wxListItemAttr * OnGetItemAttr(long item) const;
@@ -111,7 +129,7 @@ protected:
 
   mutable wxListItemAttr attr_;
 
-  MessageFunc message_func_;
+  RosoutPanel* model_;
 
   int32_t error_image_id_;
   int32_t warning_image_id_;
@@ -120,6 +138,15 @@ protected:
   int32_t debug_image_id_;
 
   int32_t selection_;
+
+  bool scrollbar_at_bottom_;
+  bool disable_scroll_to_bottom_;
+
+  // Because we have to force-selection after every SetItemCount, here we keep track of if
+  // we're doing so manually to prevent it from always preventing auto-scroll
+#if __WXMAC__
+  bool manual_selection_;
+#endif
 };
 
 } // namespace rxtools

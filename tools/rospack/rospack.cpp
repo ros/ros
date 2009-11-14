@@ -74,8 +74,6 @@ const string g_ros_os("linux");
 
 const char *fs_delim = "/"; // ifdef this for windows
 
-string deduplicate_tokens(const string& s);
-
 Package::Package(string _path) : path(_path), 
         deps_calculated(false), direct_deps_calculated(false),
         descendants_calculated(false), manifest_loaded(false)
@@ -461,9 +459,8 @@ string Package::direct_flags(string lang, string attrib)
     }
     else
     {
-      // Strip newline produced by many pkg-config style programs
-      if(buf[strlen(buf)-1] == '\n')
-        buf[strlen(buf)-1] = '\0';
+      // Strip trailing newline, which was added by our call to echo
+      buf[strlen(buf)-1] = '\0';
       // Replace the backquote expression with the new text
       s = string(buf);
     }
@@ -523,8 +520,6 @@ ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false),
                    "is set and is writeable by your user account.\n");
     throw runtime_error(string("no ROS_ROOT"));
   }
-
-  createROSHomeDirectory();
 
   crawl_for_packages();
 }
@@ -1073,12 +1068,14 @@ int ROSPack::run(int argc, char **argv)
     opt_package = string(argv[i++]);
   }
   // Are we sitting in a package?
-  else if(Package::is_package("."))
+  else 
   {
     char buf[1024];
-    if(!getcwd(buf,sizeof(buf)))
-      throw runtime_error(errmsg);
-    opt_package = string(basename(buf));
+    if(getcwd(buf,sizeof(buf)))
+    {
+      if(Package::is_package("."))
+        opt_package = string(basename(buf));
+    }
   }
 
   if (i != argc)
@@ -1214,38 +1211,34 @@ int ROSPack::cmd_print_langs_list()
   return 0;
 }
 
-void ROSPack::createROSHomeDirectory()
-{
-  char *homedir = getenv("HOME");
-  if (!homedir) {
-    //fprintf(stderr, "[rospack] WARNING: cannot create ~/.ros directory.\n");
-  } 
-  else 
-  {
-    string path = string(homedir) + "/.ros";
-    if (!access(path.c_str(), R_OK) == 0) {
-      if(mkdir(path.c_str(), 0700) != 0) {
-        fprintf(stderr, "[rospack] WARNING: cannot create ~/.ros directory.\n");
-      }
-    }
-  }
-}
-
 string ROSPack::getCachePath()
 {
-  string path;
-  path = string(ros_root) + "/.rospack_cache";
-  if (access(ros_root, W_OK) == 0) {
-    return path;
+  string cache_file_name;
+  char* ros_home = getenv("ROS_HOME");
+
+  if (ros_home)
+  {
+    cache_file_name = ros_home + std::string("/rospack_cache");
   }
-
-  // if we cannot write into the ros_root, then let's try to
-  // write into the user's .ros directory.
-
-  createROSHomeDirectory();
-
-  path = string(getenv("HOME")) + "/.ros/rospack_cache";
-  return path;
+  else
+  {
+    // Not cross-platform?
+    ros_home = getenv("HOME");
+    if (ros_home)
+    {
+      // By providing the trailing slash, stat() will only succeed if the
+      // path exists AND is a directory.
+      std::string dotros = ros_home + std::string("/.ros/");
+      struct stat s;
+      if(stat(dotros.c_str(), &s))
+      {
+        if(mkdir(dotros.c_str(), 0700) != 0)
+          perror("[rospack] WARNING: cannot create ~/.ros directory");
+      }
+      cache_file_name = dotros + "rospack_cache";
+    }
+  }
+  return cache_file_name;
 }
 
 bool ROSPack::cache_is_good()
@@ -1279,13 +1272,10 @@ bool ROSPack::cache_is_good()
   char linebuf[30000];
   bool ros_root_ok = false, ros_package_path_ok = false;
   const char *ros_package_path = getenv("ROS_PACKAGE_PATH");
-  while (!feof(cache))
+  for(;;)
   {
-    linebuf[0] = 0;
     if (!fgets(linebuf, sizeof(linebuf), cache))
       break;
-    if (!linebuf[0])
-      continue;
     linebuf[strlen(linebuf)-1] = 0; // get rid of trailing newline
     if (linebuf[0] == '#')
     {
@@ -1346,8 +1336,7 @@ bool ROSPack::useBinDepPath()
 
 string ROSPack::getBinDepPath()
 {
-  if (!useBinDepPath())
-    return string();
+  // We assume that the caller already checked getBinDepPath()
   const char *bdp_env = getenv("ROS_BINDEPS_PATH");
   if (bdp_env)
     return string(bdp_env);
@@ -1372,12 +1361,11 @@ void ROSPack::crawl_for_packages(bool force_crawl)
       printf("trying to use cache...\n");
 #endif
       char linebuf[30000];
-      while (!feof(cache))
+      for(;;)
       {
-        linebuf[0] = 0;
         if (!fgets(linebuf, sizeof(linebuf), cache))
           break; // error in read operation
-        if (!linebuf[0] || linebuf[0] == '#')
+        if (linebuf[0] == '#')
           continue;
         char *newline_pos = strchr(linebuf, '\n');
         if (newline_pos)
@@ -1501,7 +1489,8 @@ void ROSPack::crawl_for_packages(bool force_crawl)
   }
   crawled = true; // don't try to re-crawl if we can't find something
   const double crawl_elapsed_time = time_since_epoch() - crawl_start_time;
-  // write the results of this crawl to the cache file
+  // Write the results of this crawl to the cache file.  At each step, give
+  // up on error, printing a warning to stderr.
   string cache_path(getCachePath());
   char tmp_cache_dir[PATH_MAX];
   char tmp_cache_path[PATH_MAX];
@@ -1510,29 +1499,33 @@ void ROSPack::crawl_for_packages(bool force_crawl)
   int fd = mkstemp(tmp_cache_path);
   if (fd < 0)
   {
-    fprintf(stderr, "Unable to create temporary cache file: %s\n", tmp_cache_path);
-    throw runtime_error(string("failed to create tmp cache file"));
+    fprintf(stderr, "[rospack] Unable to create temporary cache file %s: %s\n", 
+            tmp_cache_path, strerror(errno));
   }
-  FILE *cache = fdopen(fd, "w");
-  if (!cache)
+  else
   {
-    fprintf(stderr, "woah! couldn't create the cache file. Please check "
-            "ROS_ROOT to make sure it's a writeable directory.\n");
-    throw runtime_error(string("failed to create tmp cache file"));
+    FILE *cache = fdopen(fd, "w");
+    if (!cache)
+    {
+      fprintf(stderr, "[rospack] Unable open cache file %s: %s\n", 
+              tmp_cache_path, strerror(errno));
+    }
+    else
+    {
+      char *rpp = getenv("ROS_PACKAGE_PATH");
+      fprintf(cache, "#ROS_ROOT=%s\n#ROS_PACKAGE_PATH=%s\n", ros_root,
+              (rpp ? rpp : ""));
+      for (VecPkg::iterator pkg = Package::pkgs.begin();
+           pkg != Package::pkgs.end(); ++pkg)
+        fprintf(cache, "%s\n", (*pkg)->path.c_str());
+      fclose(cache);
+      if(rename(tmp_cache_path, cache_path.c_str()) < 0)
+      {
+        fprintf(stderr, "[rospack] Error: failed to rename cache file %s to %s: %s\n", 
+                tmp_cache_path, cache_path.c_str(), strerror(errno));
+      }
+    }
   }
-  char *rpp = getenv("ROS_PACKAGE_PATH");
-  fprintf(cache, "#ROS_ROOT=%s\n#ROS_PACKAGE_PATH=%s\n", ros_root,
-          (rpp ? rpp : ""));
-  for (VecPkg::iterator pkg = Package::pkgs.begin();
-       pkg != Package::pkgs.end(); ++pkg)
-    fprintf(cache, "%s\n", (*pkg)->path.c_str());
-  if(rename(tmp_cache_path, cache_path.c_str()) < 0)
-  {
-    fprintf(stderr, "[rospack] Error: failed rename cache file %s to %s\n", tmp_cache_path, cache_path.c_str());
-perror("rename");
-    throw runtime_error(string("failed to rename cache file"));
-  }
-  fclose(cache);
 
   if (opt_profile_length)
   {
@@ -1670,7 +1663,7 @@ void string_split(const string &s, vector<string> &t, const string &d)
 // Produce a new string by keeping only the first of each repeated token in
 // the input string, where tokens are space-separated.  I'm sure that Rob
 // could point me at the Boost/STL one-liner that does the same thing.
-string deduplicate_tokens(const string& s)
+string ROSPack::deduplicate_tokens(const string& s)
 {
   vector<string> in;
   vector<string> out;
@@ -1719,9 +1712,8 @@ void ROSPack::sanitize_rppvec(std::vector<std::string> &rppvec)
   // drop any trailing slashes
   for (size_t i = 0; i < rppvec.size(); i++)
   {
-    size_t last_slash_pos = rppvec[i].find_last_of("/");
-    if (last_slash_pos != string::npos &&
-        last_slash_pos == rppvec[i].length()-1)
+    size_t last_slash_pos;
+    while((last_slash_pos = rppvec[i].find_last_of("/")) == rppvec[i].length()-1)
     {
       fprintf(stderr, "[rospack] warning: trailing slash found in "
                       "ROS_PACKAGE_PATH\n");

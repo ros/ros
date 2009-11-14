@@ -8,33 +8,38 @@
 
 namespace YAML
 {
-	Parser::Parser(std::istream& in): m_pScanner(0)
+	Parser::Parser()
+	{
+	}
+	
+	Parser::Parser(std::istream& in)
 	{
 		Load(in);
 	}
 
 	Parser::~Parser()
 	{
-		delete m_pScanner;
 	}
 
 	Parser::operator bool() const
 	{
-		return !m_pScanner->empty();
+		return m_pScanner.get() && !m_pScanner->empty();
 	}
 
 	void Parser::Load(std::istream& in)
 	{
-		delete m_pScanner;
-		m_pScanner = new Scanner(in);
+		m_pScanner.reset(new Scanner(in));
 		m_state.Reset();
 	}
 
 	// GetNextDocument
 	// . Reads the next document in the queue (of tokens).
 	// . Throws a ParserException on error.
-	void Parser::GetNextDocument(Node& document)
+	bool Parser::GetNextDocument(Node& document)
 	{
+		if(!m_pScanner.get())
+			return false;
+		
 		// clear node
 		document.Clear();
 
@@ -43,18 +48,23 @@ namespace YAML
 
 		// we better have some tokens in the queue
 		if(m_pScanner->empty())
-			return;
+			return false;
 
 		// first eat doc start (optional)
-		if(m_pScanner->peek().type == TT_DOC_START)
+		if(m_pScanner->peek().type == Token::DOC_START)
 			m_pScanner->pop();
 
 		// now parse our root node
-		document.Parse(m_pScanner, m_state);
+		document.Parse(m_pScanner.get(), m_state);
 
 		// and finally eat any doc ends we see
-		while(!m_pScanner->empty() && m_pScanner->peek().type == TT_DOC_END)
+		while(!m_pScanner->empty() && m_pScanner->peek().type == Token::DOC_END)
 			m_pScanner->pop();
+
+		// clear anchors from the scanner, which are no longer relevant
+		m_pScanner->ClearAnchors();
+		
+		return true;
 	}
 
 	// ParseDirectives
@@ -68,7 +78,7 @@ namespace YAML
 				break;
 
 			Token& token = m_pScanner->peek();
-			if(token.type != TT_DIRECTIVE)
+			if(token.type != Token::DIRECTIVE)
 				break;
 
 			// we keep the directives from the last document if none are specified;
@@ -95,17 +105,17 @@ namespace YAML
 	void Parser::HandleYamlDirective(Token *pToken)
 	{
 		if(pToken->params.size() != 1)
-			throw ParserException(pToken->line, pToken->column, ErrorMsg::YAML_DIRECTIVE_ARGS);
+			throw ParserException(pToken->mark, ErrorMsg::YAML_DIRECTIVE_ARGS);
 
 		std::stringstream str(pToken->params[0]);
 		str >> m_state.version.major;
 		str.get();
 		str >> m_state.version.minor;
 		if(!str || str.peek() != EOF)
-			throw ParserException(pToken->line, pToken->column, ErrorMsg::YAML_VERSION + pToken->params[0]);
+			throw ParserException(pToken->mark, ErrorMsg::YAML_VERSION + pToken->params[0]);
 
 		if(m_state.version.major > 1)
-			throw ParserException(pToken->line, pToken->column, ErrorMsg::YAML_MAJOR_VERSION);
+			throw ParserException(pToken->mark, ErrorMsg::YAML_MAJOR_VERSION);
 
 		// TODO: warning on major == 1, minor > 2?
 	}
@@ -115,7 +125,7 @@ namespace YAML
 	void Parser::HandleTagDirective(Token *pToken)
 	{
 		if(pToken->params.size() != 2)
-			throw ParserException(pToken->line, pToken->column, ErrorMsg::TAG_DIRECTIVE_ARGS);
+			throw ParserException(pToken->mark, ErrorMsg::TAG_DIRECTIVE_ARGS);
 
 		std::string handle = pToken->params[0], prefix = pToken->params[1];
 		m_state.tags[handle] = prefix;
@@ -123,6 +133,9 @@ namespace YAML
 
 	void Parser::PrintTokens(std::ostream& out)
 	{
+		if(!m_pScanner.get())
+			return;
+		
 		while(1) {
 			if(m_pScanner->empty())
 				break;

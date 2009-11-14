@@ -45,35 +45,6 @@ import random
 
 class TestRospyMsg(unittest.TestCase):
 
-    def test_msg(self):
-        import rospy.msg
-        #trip wires against Message API
-        m = rospy.msg.Message()
-        buff = StringIO()
-        m.serialize(buff)
-        self.assertEquals(0, buff.tell())
-        m.deserialize('')
-        
-    def test_anymsg(self):
-        import rospy.msg
-        #trip wires against AnyMsg API
-        m = rospy.msg.AnyMsg()
-        try:
-            m.serialize(StringIO())
-            self.fail("AnyMsg should not allow serialization")
-        except:
-            pass
-
-        teststr = 'foostr-%s'%time.time()
-        m.deserialize(teststr)
-        self.assertEquals(teststr, m._buff)
-
-        #test AnyMsg ctor error checking
-        try:
-            m = rospy.msg.AnyMsg('foo')
-            self.fail("AnyMsg ctor should not allow args")
-        except: pass
-
     def test_serialize_message(self):
         import rospy.msg
         import rospy.rostime

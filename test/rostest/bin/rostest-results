@@ -41,7 +41,7 @@ import sys
 import cStringIO
 import os
 
-import roslib.scriptutil as scriptutil
+import roslib.rospack
 import rostest.xmlresults as xmlr
 
 def create_summary(result, packages):
@@ -94,7 +94,7 @@ def main():
     if options.no_deps:
         packages = [package]
     else:
-        packages = [package] + scriptutil.rospackexec(['depends-on', package]).split('\n')
+        packages = [package] + roslib.rospack.rospackexec(['depends-on', package]).split('\n')
         packages = [p for p in packages if p]
 
     result = xmlr.read_all(packages)

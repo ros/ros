@@ -64,7 +64,18 @@ def generate_epydoc(ctx):
                     os.makedirs(html_dir)
                     
                 command = ['epydoc', '--html', package, '-o', html_dir]
+                if 'exclude' in rd_config:
+                    for s in rd_config['exclude']:
+                        command.extend(['--exclude', s])
 
+                if 'config' in rd_config:
+                    import roslib.packages
+                    pkg_dir = roslib.packages.get_pkg_dir(package)
+                    command.extend(['--config', os.path.join(pkg_dir, rd_config['config']) ])
+                else:
+                    # default options
+                    command.extend(['--inheritance', 'included', '--no-private'])
+                
                 # determine the python path of the package
                 import roslib.launcher
                 # - really dirty here, but the launcher intentionally caches the path for performance

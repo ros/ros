@@ -48,6 +48,65 @@ _logger = logging.getLogger("roslaunch.remoteprocess")
 # #1975 timeout for creating ssh connections
 TIMEOUT_SSH_CONNECT = 30.
 
+def ssh_check_known_hosts(ssh, address, port, username=None, logger=None):
+    """
+    Validation routine for loading the host keys and making sure that
+    they are configured properly for the desired SSH. The behavior of
+    this routine can be modified by the ROSLAUNCH_SSH_UNKNOWN
+    environment variable, which enables the paramiko.AutoAddPolicy.
+
+    @param ssh: paramiko SSH client
+    @type  ssh: L{paramiko.SSHClient}
+    @param address: SSH IP address
+    @type  address: str
+    @param port: SSH port
+    @type  port: int
+    @param username: optional username to include in error message if check fails
+    @type  username: str
+    @param logger: (optional) logger to record tracebacks to
+    @type  logger: logging.Logger
+    @return: error message if improperly configured, or None
+    @rtype: str
+    """
+    import paramiko
+    try:
+        ssh.load_system_host_keys() #default location
+    except:
+        if logger:
+            logger.error(traceback.format_exc())
+        # as seen in #767, base64 raises generic Error.
+        #
+        # A corrupt pycrypto build can also cause this, though
+        # the cause of the corrupt builds has been fixed.
+        return "cannot load SSH host keys -- your known_hosts file may be corrupt"
+
+    # #1849: paramiko will raise an SSHException with an 'Unknown
+    # server' message if the address is not in the known_hosts
+    # file. This causes a lot of confusion to users, so we try
+    # and diagnose this in advance and offer better guidance
+
+    # - ssh.get_host_keys() does not return the system host keys
+    hk = ssh._system_host_keys
+    override = os.environ.get('ROSLAUNCH_SSH_UNKNOWN', 0)
+    if override == '1':
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    elif hk.lookup(address) is None:
+        port_str = user_str = ''
+        if port != 22:
+            port_str = "-p %s "%port
+        if username:
+            user_str = username+'@'
+        return """%s is not in your SSH known_hosts file.
+
+Please manually:
+  ssh %s%s%s
+
+then try roslaunching again.
+
+If you wish to configure roslaunch to automatically recognize unknown
+hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, user_str, port_str, address)
+        
+
 ## Process wrapper for launching and monitoring a child roslaunch process over SSH
 class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
     def __init__(self, run_id, name, server_uri, env, machine):
@@ -65,65 +124,16 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
         # log errors during a stop(). 
         self.is_dead = False
         
-    def _ssh_check_known_hosts(self, ssh, address, port, username=None):
-        """
-        Sub-routine for loading the host keys and making sure that they are configured
-        properly for the desired SSH.
-
-        @param ssh: paramiko SSH client
-        @type  ssh: L{paramiko.SSHClient}
-        @param address: SSH IP address
-        @type  address: str
-        @param port: SSH port
-        @type  port: int
-        @param username: optional username to include in error message if check fails
-        @type  username: str
-        @return: error message if improperly configured, or None
-        @rtype: str
-        """
-        import paramiko
-        err_msg = None
-        try:
-            ssh.load_system_host_keys() #default location
-        except:
-            _logger.error(traceback.format_exc())
-            # as seen in #767, base64 raises generic Error.
-            #
-            # A corrupt pycrypto build can also cause this, though
-            # the cause of the corrupt builds has been fixed.
-            return "cannot load SSH host keys -- your known_hosts file may be corrupt"
-
-        # #1849: paramiko will raise an SSHException with an 'Unknown
-        # server' message if the address is not in the known_hosts
-        # file. This causes a lot of confusion to users, so we try
-        # and diagnose this in advance and offer better guidance
-
-        # - ssh.get_host_keys() does not return the system host keys
-        hk = ssh._system_host_keys
-        override = os.environ.get('ROSLAUNCH_SSH_UNKNOWN', 0)
-        if override == '1':
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        elif hk.lookup(address) is None:
-            port_str = user_str = ''
-            if port != 22:
-                port_str = "-p %s "%port
-            if username:
-                user_str = username+'@'
-            return """%s is not in your SSH known_hosts file.
-
-Please manually:
-  ssh %s%s%s
-
-then try roslaunching again.
-
-If you wish to configure roslaunch to automatically recognize unknown
-hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, user_str, port_str, address)
-        
     def _ssh_exec(self, command, env, address, port, username=None, password=None):
         if env:
             env_command = "env "+' '.join(["%s=%s"%(k,v) for (k, v) in env.iteritems()])
             command = "%s %s"%(env_command, command)
         try:
+            # as pycrypto 2.0.1 is EOL, disable it's Python 2.6 deprecation warnings
+            import warnings
+            warnings.filterwarnings("ignore", message="the sha module is deprecated; use the hashlib module instead")
+            warnings.filterwarnings("ignore", message="the md5 module is deprecated; use hashlib instead")                                    
+            
             import Crypto
         except ImportError, e:
             _logger.error("cannot use SSH: pycrypto is not installed")
@@ -135,7 +145,7 @@ hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, 
             return None, "paramiko is not installed"
         #load ssh client and connect
         ssh = paramiko.SSHClient()
-        err_msg = self._ssh_check_known_hosts(ssh, address, port, username=username)
+        err_msg = ssh_check_known_hosts(ssh, address, port, username=username, logger=_logger)
         
         if not err_msg:
             username_str = '%s@'%username if username else ''

@@ -178,6 +178,21 @@ bool del(const std::string& key);
  */
 bool search(const std::string& ns, const std::string& key, std::string& result);
 
+/** \brief Search up the tree for a parameter with a given key.  This version defaults to starting in
+ * the current node's name
+ *
+ * This function parameter server's searchParam feature to search up the tree for
+ * a parameter.  For example, if the parameter server has a parameter [/a/b]
+ * and you specify the namespace [/a/c/d], searching for the parameter "b" will
+ * yield [/a/b].  If [/a/c/d/b] existed, that parameter would be returned instead.
+ *
+ * \param key the parameter to search for
+ * \param [out] result the found value (if any)
+ *
+ * \return true if the parameter was found, false otherwise.
+ */
+bool search(const std::string& key, std::string& result);
+
 /** \brief Assign value from parameter server, with default.
  *
  * This method tries to retrieve the indicated parameter value from the

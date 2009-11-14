@@ -1,10 +1,10 @@
 <package>
-  <description brief="Some test cases for ROS C++ client library">This package has a few test cases to make sure the C++ client library actually does what it claims to do and doesn't leak memory too badly.
+  <description brief="Some test cases for ROS C++ client library">
+    This package has a few test cases to make sure the C++ client library actually does what it claims to do and doesn't leak memory too badly.
   </description>
   <author>Morgan Quigley mquigley@cs.stanford.edu, Ken Conley kwc@willowgarage.com</author>
   <license>BSD</license>
-  <review status="na" notes="tests"/>
-  <url>http://pr.willowgarage.com/wiki/ROS</url>
+  <review status="test" notes=""/>
   <depend package="roscpp"/>
   <depend package="std_msgs"/>
   <depend package="test_ros"/>

@@ -40,23 +40,37 @@ import rostest
 
 class RoslibScriptutilTest(unittest.TestCase):
   
-  def test_rospack(self):
-    from roslib.scriptutil import rospackexec, rospack_depends, rospack_depends_1,\
-        rospack_depends_on, rospack_depends_on_1
+    def test_rospack(self):
+        from roslib.scriptutil import rospackexec, rospack_depends, rospack_depends_1,\
+            rospack_depends_on, rospack_depends_on_1
     
-    val = rospackexec(['list'])
-    self.assertEquals(set(['genmsg_cpp', 'rospack']), set(rospack_depends('roslib')))
-    self.assertEquals(set(['genmsg_cpp', 'rospack']), set(rospack_depends_1('roslib')))
-    self.assertEquals(set(['roslib', 'roslang']), set(rospack_depends_1('rospy')))
-    self.assertEquals(set(['rospack', 'roslib', 'roslang', 'genmsg_cpp']), set(rospack_depends('rospy')))
+        val = rospackexec(['list'])
+        self.assertEquals(set(['genmsg_cpp', 'rospack']), set(rospack_depends('roslib')))
+        self.assertEquals(set(['genmsg_cpp', 'rospack']), set(rospack_depends_1('roslib')))
+        self.assertEquals(set(['roslib', 'roslang']), set(rospack_depends_1('rospy')))
+        self.assertEquals(set(['rospack', 'roslib', 'roslang', 'genmsg_cpp']), set(rospack_depends('rospy')))
 
-    val = rospack_depends_on('roslang')
-    self.assert_('rospy' in val, val)
-    self.assert_('roscpp' in val)    
-    val = rospack_depends_on_1('roslang')
-    self.assert_('rospy' in val)
-    self.assert_('roscpp' in val)
+        val = rospack_depends_on('roslang')
+        self.assert_('rospy' in val, val)
+        self.assert_('roscpp' in val)    
+        val = rospack_depends_on_1('roslang')
+        self.assert_('rospy' in val)
+        self.assert_('roscpp' in val)
 
+    def test_myargv(self):
+        orig_argv = sys.argv
+        try:
+            from roslib.scriptutil import myargv
+            args = myargv()
+            self.assertEquals(args, sys.argv)
+            self.assertEquals(['foo', 'bar', 'baz'], myargv(['foo','bar', 'baz']))
+            self.assertEquals(['-foo', 'bar', '-baz'], myargv(['-foo','bar', '-baz']))
+            
+            self.assertEquals(['foo'], myargv(['foo','bar:=baz']))
+            self.assertEquals(['foo'], myargv(['foo','-bar:=baz']))
+        finally:
+            sys.argv = orig_argv
+    
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_scriptutil', RoslibScriptutilTest, coverage_packages=['roslib.scriptutil'])
+    rostest.unitrun('test_roslib', 'test_scriptutil', RoslibScriptutilTest, coverage_packages=['roslib.scriptutil'])
 

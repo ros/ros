@@ -106,6 +106,7 @@ def get_stack_dir(stack):
     @type  stack: str
     @return: directory of stack, or None
     @rtype: str
+    @raise InvalidROSStackException: if stack cannot be located
     """
     list_stacks() #update cache
     return _dir_cache.get(stack, None)
@@ -114,12 +115,17 @@ def get_stack_dir(stack):
 _dir_cache = {}
 _cache_marker = None
 
-def list_stacks(env=os.environ):
+def list_stacks(env=None):
     """
     Get list of all ROS stacks. This initializes an internal cache.
+
+    @param env: override os.environ dictionary
+    @type  env: dict
     @return: complete list of stacks names in ROS environment
     @rtype: [str]
     """
+    if env is None:
+        env = os.environ
     global _cache_marker
     # record settings for cache
     ros_root = env[roslib.rosenv.ROS_ROOT]
@@ -132,7 +138,7 @@ def list_stacks(env=os.environ):
         _dir_cache.clear()
         _cache_marker = ros_root, ros_package_path
         
-    pkg_dirs = roslib.packages.get_package_paths(environ=env)
+    pkg_dirs = roslib.packages.get_package_paths(env=env)
     stacks = []
     # ros is assumed to be at ROS_ROOT
     if os.path.exists(os.path.join(ros_root, 'stack.xml')):
@@ -155,3 +161,34 @@ def list_stacks(env=os.environ):
             elif '.git' in dirs:
                 dirs.remove('.git')
     return stacks
+
+# #2022
+def expand_to_packages(names):
+    """
+    Expand names into a list of packages. Names can either be of packages or stacks.
+
+    @param names: names of stacks or packages
+    @type  names: [str]
+    @return: ([packages], [not_found]). expand_packages() returns two
+    lists. The first is of packages names. The second is a list of
+    names for which no matching stack or package was found. Lists may have duplicates.
+    @rtype: ([str], [str])
+    """
+    if type(names) not in [tuple, list]:
+        raise ValueError("names must be a list of strings")
+
+    # do full package list first. This forces an entire tree
+    # crawl. This is less efficient for a small list of names, but
+    # much more efficient for many names.
+    package_list = roslib.packages.list_pkgs()
+    valid = []
+    invalid = []
+    for n in names:
+        if not n in package_list:
+            try:
+                valid.extend(roslib.stacks.packages_of(n))
+            except roslib.stacks.InvalidROSStackException:
+                invalid.append(n)
+        else:
+            valid.append(n)
+    return valid, invalid

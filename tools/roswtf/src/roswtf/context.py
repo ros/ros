@@ -39,7 +39,7 @@ import roslib.manifest
 import roslib.packages
 import roslib.stacks
 import roslib.rosenv
-import roslib.scriptutil
+import roslib.rospack
 import roslib.substitution_args
 
 import roslaunch.depends
@@ -196,18 +196,22 @@ def _load_roslaunch(ctx, roslaunch_files):
 ## @throws WtfException: if context state cannot be initialized
 def _load_pkg(ctx, pkg):
     ctx.pkg = pkg
-    ctx.pkgs = [pkg] + roslib.scriptutil.rospack_depends(pkg)
+    ctx.pkgs = [pkg] + roslib.rospack.rospack_depends(pkg)
     try:
         ctx.pkg_dir = roslib.packages.get_pkg_dir(pkg)
+        ctx.manifest_file = roslib.manifest.manifest_file(pkg)
+        ctx.manifest = roslib.manifest.parse_file(roslib.manifest.manifest_file(pkg))        
     except roslib.packages.InvalidROSPkgException:
         raise WtfException("Cannot locate manifest file for package [%s]"%pkg)
+    except roslib.manifest.ManifestException, e:
+        raise WtfException("Package [%s] has an invalid manifest: %s"%(pkg, e))
 
 ## utility for initializing WtfContext state
 ## @throws WtfException: if context state cannot be initialized
 def _load_stack(ctx, stack):
     try:
         ctx.stack = stack
-        ctx.stacks = [stack] + roslib.scriptutil.rosstack_depends(stack)
+        ctx.stacks = [stack] + roslib.rospack.rosstack_depends(stack)
         ctx.stack_dir = roslib.stacks.get_stack_dir(stack)
         if ctx.stack_dir is None:
             raise WtfException("[%s] appears to be a stack, but it's not on your ROS_PACKAGE_PATH"%stack)

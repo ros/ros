@@ -39,6 +39,7 @@
 #include "ros/transport/transport.h"
 #include "ros/this_node.h"
 #include "ros/connection_manager.h"
+#include "ros/file_log.h"
 
 #include <boost/bind.hpp>
 
@@ -51,6 +52,7 @@ PublisherLink::PublisherLink(const SubscriptionPtr& parent, const std::string& x
 : parent_(parent)
 , publisher_xmlrpc_uri_(xmlrpc_uri)
 , transport_hints_(transport_hints)
+, latched_(false)
 {
 }
 
@@ -89,7 +91,7 @@ void PublisherLink::onHeaderWritten(const ConnectionPtr& conn)
 
 bool PublisherLink::onHeaderReceived(const ConnectionPtr& conn, const Header& header)
 {
-  std::string md5sum, type;
+  std::string md5sum, type, latched_str;
   if (!header.getValue("md5sum", md5sum))
   {
     ROS_ERROR("Publisher TCPROS header did not have required element: md5sum");
@@ -101,6 +103,17 @@ bool PublisherLink::onHeaderReceived(const ConnectionPtr& conn, const Header& he
     ROS_ERROR("Publisher TCPROS header did not have required element: type");
     return false;
   }
+
+  latched_ = false;
+  if (header.getValue("latching", latched_str))
+  {
+    if (latched_str == "1")
+    {
+      latched_ = true;
+    }
+  }
+
+
 
   connection_id_ = ConnectionManager::instance()->getNewConnectionID();
 
@@ -157,7 +170,7 @@ void PublisherLink::onConnectionDropped(const ConnectionPtr& conn)
 
   if (SubscriptionPtr parent = parent_.lock())
   {
-    ROS_DEBUG("Connection to publisher [%s] to topic [%s] dropped", connection_->getTransport()->getTransportInfo().c_str(), parent->getName().c_str());
+    ROSCPP_LOG_DEBUG("Connection to publisher [%s] to topic [%s] dropped", connection_->getTransport()->getTransportInfo().c_str(), parent->getName().c_str());
 
     parent->removePublisherLink(shared_from_this());
   }
@@ -172,10 +185,7 @@ void PublisherLink::handleMessage(const boost::shared_array<uint8_t>& buffer, si
 
   if (parent)
   {
-    if (parent->handleMessage(buffer, num_bytes, getConnection()->getHeader().getValues()))
-    {
-      ++stats_.drops_;
-    }
+    stats_.drops_ += parent->handleMessage(buffer, num_bytes, getConnection()->getHeader().getValues(), shared_from_this());
   }
 }
 

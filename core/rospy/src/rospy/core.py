@@ -118,10 +118,14 @@ def parse_rosrpc_uri(uri):
 
 #########################################################
         
-def _stdout_handler(msg):
-    sys.stdout.write(str(msg)+'\n')
-def _stderr_handler(msg):
-    sys.stderr.write(str(msg)+'\n')
+def _stdout_handler(level):
+    def fn(msg):
+        sys.stdout.write("[%s] %f: %s\n"%(level,time.time(), str(msg)))
+    return fn
+def _stderr_handler(level):
+    def fn(msg):
+        sys.stderr.write("[%s] %f: %s\n"%(level,time.time(), str(msg)))
+    return fn
 
 # client logger
 _clogger = logging.getLogger("rosout")
@@ -129,10 +133,10 @@ _clogger = logging.getLogger("rosout")
 _rospy_logger = logging.getLogger("rospy.internal")
 
 _logdebug_handlers = [_clogger.debug]
-_loginfo_handlers = [_clogger.info, _stdout_handler]
-_logwarn_handlers = [_clogger.warn, _stderr_handler]
-_logerr_handlers = [_clogger.error, _stderr_handler]
-_logfatal_handlers = [_clogger.critical, _stderr_handler]
+_loginfo_handlers = [_clogger.info, _stdout_handler('INFO')]
+_logwarn_handlers = [_clogger.warn, _stderr_handler('WARN')]
+_logerr_handlers = [_clogger.error, _stderr_handler('ERROR')]
+_logfatal_handlers = [_clogger.critical, _stderr_handler('FATAL')]
 
 # we keep a separate, non-rosout log file to contain stack traces and
 # other sorts of information that scare users but are essential for
@@ -173,6 +177,9 @@ def add_log_handler(level, h):
 def logdebug(msg, *args):
     """
     Log a debug message to the /rosout topic
+    @param msg: message to log, may include formatting arguments
+    @type  msg: str
+    @param args: format-string arguments, if necessary
     """    
     if args:
         msg = msg%args
@@ -181,7 +188,10 @@ def logdebug(msg, *args):
 
 def logwarn(msg, *args):
     """
-    Log a warning message to the /rosout topic    
+    Log a warning message to the /rosout topic
+    @param msg: message to log, may include formatting arguments
+    @type  msg: str
+    @param args: format-string arguments, if necessary    
     """    
     if args:
         msg = msg%args
@@ -191,6 +201,9 @@ def logwarn(msg, *args):
 def loginfo(msg, *args):
     """
     Log an info message to the /rosout topic    
+    @param msg: message to log, may include formatting arguments
+    @type  msg: str
+    @param args: format-string arguments, if necessary
     """    
     if args:
         msg = msg%args
@@ -200,7 +213,10 @@ logout = loginfo # alias deprecated name
 
 def logerr(msg, *args):
     """
-    Log an error message to the /rosout topic    
+    Log an error message to the /rosout topic
+    @param msg: message to log, may include formatting arguments
+    @type  msg: str
+    @param args: format-string arguments, if necessary
     """
     if args:
         msg = msg%args
@@ -211,6 +227,9 @@ logerror = logerr # alias logerr
 def logfatal(msg, *args):
     """
     Log an error message to the /rosout topic    
+    @param msg: message to log, may include formatting arguments
+    @type  msg: str
+    @param args: format-string arguments, if necessary
     """        
     if args:
         msg = msg%args
@@ -227,18 +246,22 @@ STATUS = 0
 MSG = 1
 VAL = 2
 
-def get_ros_root(env=os.environ, require=False):
+def get_ros_root(required=False, env=None):
     """
     Get the value of ROS_ROOT.
-    @param require: if True, fails with ROSException
+    @param env: override environment dictionary
+    @type  env: dict
+    @param required: if True, fails with ROSException
     @return: Value of ROS_ROOT environment
     @rtype: str
     @raise ROSException: if require is True and ROS_ROOT is not set
     """
-    rosRoot = env.get(roslib.rosenv.ROS_ROOT, None)
-    if require and not rosRoot:
+    if env is None:
+        env = os.environ
+    ros_root = env.get(roslib.rosenv.ROS_ROOT, None)
+    if required and not ros_root:
         raise rospy.exceptions.ROSException('%s is not set'%roslib.rosenv.ROS_ROOT)
-    return rosRoot
+    return ros_root
 
 
 #########################################################

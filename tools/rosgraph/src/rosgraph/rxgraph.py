@@ -171,7 +171,11 @@ def _quiet_filter(name):
         if n in name:
             return False
     return True
+
 def _quiet_filter_edge(edge):
+    for quiet_label in ['/time', '/clock', '/rosout']:
+        if quiet_label in edge.label:
+            return False
     return _quiet_filter(edge.start) and _quiet_filter(edge.end)
 
 def generate_dotcode(graph_mode, quiet=False):

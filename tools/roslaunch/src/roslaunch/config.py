@@ -193,6 +193,8 @@ class ROSLaunchConfig(object):
     ## @param self
     ## @param exe Executable
     def add_executable(self, exe):
+        if not exe:
+            raise ValueError("exe is None")
         self.executables.append(exe)
         
     ## Declare a parameter to be cleared before new parameters are set
@@ -208,9 +210,9 @@ class ROSLaunchConfig(object):
         key = p.key
         if key in self.params and self.params[key] != p:
             if filename:
-                self.config_errors.append("[%s] parameter [%s] has conflicting values"%(filename, p.key))
+                self.logger.debug("[%s] overriding parameter [%s]"%(filename, p.key))
             else:
-                self.config_errors.append("parameter [%s] has conflicting values"%p.key)                
+                self.logger.debug("overriding parameter [%s]"%p.key)                
         self.params[key] = p
         if verbose:
             print "Added parameter [%s]"%key

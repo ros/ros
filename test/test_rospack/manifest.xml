@@ -8,8 +8,7 @@
   Brian Gerkey
   </author>
   <license>BSD</license>
-  <review status="na" notes="tests"/>
-  <url>http://pr.willowgarage.com/wiki/rostest</url>
+  <review status="test" notes="tests"/>
   <depend package="rospack"/>
   <depend package="rostest"/>
 </package>

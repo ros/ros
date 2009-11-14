@@ -19,13 +19,13 @@ namespace YAML
 		std::vector <std::string> params;
 
 		// pop indents and simple keys
-		PopIndentTo(-1);
-		VerifyAllSimpleKeys();
+		PopAllIndents();
+		PopAllSimpleKeys();
 
 		m_simpleKeyAllowed = false;
 
 		// store pos and eat indicator
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
 		INPUT.eat(1);
 
 		// read name
@@ -50,7 +50,7 @@ namespace YAML
 			params.push_back(param);
 		}
 		
-		Token token(TT_DIRECTIVE, line, column);
+		Token token(Token::DIRECTIVE, mark);
 		token.value = name;
 		token.params = params;
 		m_tokens.push(token);
@@ -59,141 +59,152 @@ namespace YAML
 	// DocStart
 	void Scanner::ScanDocStart()
 	{
-		PopIndentTo(INPUT.column);
-		VerifyAllSimpleKeys();
+		PopAllIndents();
+		PopAllSimpleKeys();
 		m_simpleKeyAllowed = false;
 
 		// eat
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
 		INPUT.eat(3);
-		m_tokens.push(Token(TT_DOC_START, line, column));
+		m_tokens.push(Token(Token::DOC_START, mark));
 	}
 
 	// DocEnd
 	void Scanner::ScanDocEnd()
 	{
-		PopIndentTo(-1);
-		VerifyAllSimpleKeys();
+		PopAllIndents();
+		PopAllSimpleKeys();
 		m_simpleKeyAllowed = false;
 
 		// eat
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
 		INPUT.eat(3);
-		m_tokens.push(Token(TT_DOC_END, line, column));
+		m_tokens.push(Token(Token::DOC_END, mark));
 	}
 
 	// FlowStart
 	void Scanner::ScanFlowStart()
 	{
 		// flows can be simple keys
-		InsertSimpleKey();
-		m_flowLevel++;
+		InsertPotentialSimpleKey();
 		m_simpleKeyAllowed = true;
 
 		// eat
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
 		char ch = INPUT.get();
-		TOKEN_TYPE type = (ch == Keys::FlowSeqStart ? TT_FLOW_SEQ_START : TT_FLOW_MAP_START);
-		m_tokens.push(Token(type, line, column));
+		FLOW_MARKER flowType = (ch == Keys::FlowSeqStart ? FLOW_SEQ : FLOW_MAP);
+		m_flows.push(flowType);
+		Token::TYPE type = (flowType == FLOW_SEQ ? Token::FLOW_SEQ_START : Token::FLOW_MAP_START);
+		m_tokens.push(Token(type, mark));
 	}
 
 	// FlowEnd
 	void Scanner::ScanFlowEnd()
 	{
-		if(m_flowLevel == 0)
-			throw ParserException(INPUT.line, INPUT.column, ErrorMsg::FLOW_END);
+		if(InBlockContext())
+			throw ParserException(INPUT.mark(), ErrorMsg::FLOW_END);
 
-		m_flowLevel--;
+		// we might have a solo entry in the flow context
+		if(VerifySimpleKey())
+			m_tokens.push(Token(Token::VALUE, INPUT.mark()));
+
 		m_simpleKeyAllowed = false;
 
 		// eat
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
 		char ch = INPUT.get();
-		TOKEN_TYPE type = (ch == Keys::FlowSeqEnd ? TT_FLOW_SEQ_END : TT_FLOW_MAP_END);
-		m_tokens.push(Token(type, line, column));
+
+		// check that it matches the start
+		FLOW_MARKER flowType = (ch == Keys::FlowSeqEnd ? FLOW_SEQ : FLOW_MAP);
+		if(m_flows.top() != flowType)
+			throw ParserException(mark, ErrorMsg::FLOW_END);
+		m_flows.pop();
+		
+		Token::TYPE type = (flowType ? Token::FLOW_SEQ_END : Token::FLOW_MAP_END);
+		m_tokens.push(Token(type, mark));
 	}
 
 	// FlowEntry
 	void Scanner::ScanFlowEntry()
 	{
+		 // we might have a solo entry in the flow context
+		if(VerifySimpleKey())
+			m_tokens.push(Token(Token::VALUE, INPUT.mark()));
+		
 		m_simpleKeyAllowed = true;
 
 		// eat
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
 		INPUT.eat(1);
-		m_tokens.push(Token(TT_FLOW_ENTRY, line, column));
+		m_tokens.push(Token(Token::FLOW_ENTRY, mark));
 	}
 
 	// BlockEntry
 	void Scanner::ScanBlockEntry()
 	{
 		// we better be in the block context!
-		if(m_flowLevel > 0)
-			throw ParserException(INPUT.line, INPUT.column, ErrorMsg::BLOCK_ENTRY);
+		if(InFlowContext())
+			throw ParserException(INPUT.mark(), ErrorMsg::BLOCK_ENTRY);
 
 		// can we put it here?
 		if(!m_simpleKeyAllowed)
-			throw ParserException(INPUT.line, INPUT.column, ErrorMsg::BLOCK_ENTRY);
+			throw ParserException(INPUT.mark(), ErrorMsg::BLOCK_ENTRY);
 
-		PushIndentTo(INPUT.column, true);
+		PushIndentTo(INPUT.column(), IndentMarker::SEQ);
 		m_simpleKeyAllowed = true;
 
 		// eat
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
 		INPUT.eat(1);
-		m_tokens.push(Token(TT_BLOCK_ENTRY, line, column));
+		m_tokens.push(Token(Token::BLOCK_ENTRY, mark));
 	}
 
 	// Key
 	void Scanner::ScanKey()
 	{
 		// handle keys diffently in the block context (and manage indents)
-		if(m_flowLevel == 0) {
+		if(InBlockContext()) {
 			if(!m_simpleKeyAllowed)
-				throw ParserException(INPUT.line, INPUT.column, ErrorMsg::MAP_KEY);
+				throw ParserException(INPUT.mark(), ErrorMsg::MAP_KEY);
 
-			PushIndentTo(INPUT.column, false);
+			PushIndentTo(INPUT.column(), IndentMarker::MAP);
 		}
 
 		// can only put a simple key here if we're in block context
-		if(m_flowLevel == 0)
-			m_simpleKeyAllowed = true;
-		else
-			m_simpleKeyAllowed = false;
+		m_simpleKeyAllowed = InBlockContext();
 
 		// eat
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
 		INPUT.eat(1);
-		m_tokens.push(Token(TT_KEY, line, column));
+		m_tokens.push(Token(Token::KEY, mark));
 	}
 
 	// Value
 	void Scanner::ScanValue()
 	{
-		// does this follow a simple key?
-		if(m_isLastKeyValid) {
+		// and check that simple key
+		bool isSimpleKey = VerifySimpleKey();
+		
+		if(isSimpleKey) {
 			// can't follow a simple key with another simple key (dunno why, though - it seems fine)
 			m_simpleKeyAllowed = false;
 		} else {
 			// handle values diffently in the block context (and manage indents)
-			if(m_flowLevel == 0) {
+			if(InBlockContext()) {
 				if(!m_simpleKeyAllowed)
-					throw ParserException(INPUT.line, INPUT.column, ErrorMsg::MAP_VALUE);
+					throw ParserException(INPUT.mark(), ErrorMsg::MAP_VALUE);
 
-				PushIndentTo(INPUT.column, false);
+				PushIndentTo(INPUT.column(), IndentMarker::MAP);
 			}
 
 			// can only put a simple key here if we're in block context
-			if(m_flowLevel == 0)
-				m_simpleKeyAllowed = true;
-			else
-				m_simpleKeyAllowed = false;
+			m_simpleKeyAllowed = InBlockContext();
 		}
 
 		// eat
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
 		INPUT.eat(1);
-		m_tokens.push(Token(TT_VALUE, line, column));
+		m_tokens.push(Token(Token::VALUE, mark));
 	}
 
 	// AnchorOrAlias
@@ -203,12 +214,11 @@ namespace YAML
 		std::string name;
 
 		// insert a potential simple key
-		if(m_simpleKeyAllowed)
-			InsertSimpleKey();
+		InsertPotentialSimpleKey();
 		m_simpleKeyAllowed = false;
 
 		// eat the indicator
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
 		char indicator = INPUT.get();
 		alias = (indicator == Keys::Alias);
 
@@ -218,14 +228,14 @@ namespace YAML
 
 		// we need to have read SOMETHING!
 		if(name.empty())
-			throw ParserException(INPUT.line, INPUT.column, alias ? ErrorMsg::ALIAS_NOT_FOUND : ErrorMsg::ANCHOR_NOT_FOUND);
+			throw ParserException(INPUT.mark(), alias ? ErrorMsg::ALIAS_NOT_FOUND : ErrorMsg::ANCHOR_NOT_FOUND);
 
 		// and needs to end correctly
 		if(INPUT && !Exp::AnchorEnd.Matches(INPUT))
-			throw ParserException(INPUT.line, INPUT.column, alias ? ErrorMsg::CHAR_IN_ALIAS : ErrorMsg::CHAR_IN_ANCHOR);
+			throw ParserException(INPUT.mark(), alias ? ErrorMsg::CHAR_IN_ALIAS : ErrorMsg::CHAR_IN_ANCHOR);
 
 		// and we're done
-		Token token(alias ? TT_ALIAS : TT_ANCHOR, line, column);
+		Token token(alias ? Token::ALIAS : Token::ANCHOR, mark);
 		token.value = name;
 		m_tokens.push(token);
 	}
@@ -236,12 +246,11 @@ namespace YAML
 		std::string handle, suffix;
 
 		// insert a potential simple key
-		if(m_simpleKeyAllowed)
-			InsertSimpleKey();
+		InsertPotentialSimpleKey();
 		m_simpleKeyAllowed = false;
 
 		// eat the indicator
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
 		handle += INPUT.get();
 
 		// read the handle
@@ -262,7 +271,7 @@ namespace YAML
 			handle = "!";
 		}
 
-		Token token(TT_TAG, line, column);
+		Token token(Token::TAG, mark);
 		token.value = handle;
 		token.params.push_back(suffix);
 		m_tokens.push(token);
@@ -275,21 +284,20 @@ namespace YAML
 
 		// set up the scanning parameters
 		ScanScalarParams params;
-		params.end = (m_flowLevel > 0 ? Exp::EndScalarInFlow : Exp::EndScalar) || (Exp::BlankOrBreak + Exp::Comment);
+		params.end = (InFlowContext() ? Exp::EndScalarInFlow : Exp::EndScalar) || (Exp::BlankOrBreak + Exp::Comment);
 		params.eatEnd = false;
-		params.indent = (m_flowLevel > 0 ? 0 : m_indents.top() + 1);
-		params.fold = true;
+		params.indent = (InFlowContext() ? 0 : GetTopIndent() + 1);
+		params.fold = FOLD_FLOW;
 		params.eatLeadingWhitespace = true;
 		params.trimTrailingSpaces = true;
-		params.chomp = CLIP;
+		params.chomp = STRIP;
 		params.onDocIndicator = BREAK;
 		params.onTabInIndentation = THROW;
 
 		// insert a potential simple key
-		if(m_simpleKeyAllowed)
-			InsertSimpleKey();
+		InsertPotentialSimpleKey();
 
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
 		scalar = ScanScalar(INPUT, params);
 
 		// can have a simple key only if we ended the scalar by starting a new line
@@ -297,9 +305,9 @@ namespace YAML
 
 		// finally, check and see if we ended on an illegal character
 		//if(Exp::IllegalCharInScalar.Matches(INPUT))
-		//	throw ParserException(INPUT.line, INPUT.column, ErrorMsg::CHAR_IN_SCALAR);
+		//	throw ParserException(INPUT.mark(), ErrorMsg::CHAR_IN_SCALAR);
 
-		Token token(TT_SCALAR, line, column);
+		Token token(Token::SCALAR, mark);
 		token.value = scalar;
 		m_tokens.push(token);
 	}
@@ -309,8 +317,8 @@ namespace YAML
 	{
 		std::string scalar;
 
-		// eat single or double quote
-		char quote = INPUT.get();
+		// peek at single or double quote (don't eat because we need to preserve (for the time being) the input position)
+		char quote = INPUT.peek();
 		bool single = (quote == '\'');
 
 		// setup the scanning parameters
@@ -319,21 +327,25 @@ namespace YAML
 		params.eatEnd = true;
 		params.escape = (single ? '\'' : '\\');
 		params.indent = 0;
-		params.fold = true;
+		params.fold = FOLD_FLOW;
 		params.eatLeadingWhitespace = true;
 		params.trimTrailingSpaces = false;
 		params.chomp = CLIP;
 		params.onDocIndicator = THROW;
 
 		// insert a potential simple key
-		if(m_simpleKeyAllowed)
-			InsertSimpleKey();
+		InsertPotentialSimpleKey();
 
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
+
+		// now eat that opening quote
+		INPUT.get();
+		
+		// and scan
 		scalar = ScanScalar(INPUT, params);
 		m_simpleKeyAllowed = false;
 
-		Token token(TT_SCALAR, line, column);
+		Token token(Token::SCALAR, mark);
 		token.value = scalar;
 		m_tokens.push(token);
 	}
@@ -351,11 +363,12 @@ namespace YAML
 		params.detectIndent = true;
 
 		// eat block indicator ('|' or '>')
-		int line = INPUT.line, column = INPUT.column;
+		Mark mark = INPUT.mark();
 		char indicator = INPUT.get();
-		params.fold = (indicator == Keys::FoldedScalar);
+		params.fold = (indicator == Keys::FoldedScalar ? FOLD_BLOCK : DONT_FOLD);
 
 		// eat chomping/indentation indicators
+		params.chomp = CLIP;
 		int n = Exp::Chomp.Match(INPUT);
 		for(int i=0;i<n;i++) {
 			char ch = INPUT.get();
@@ -365,7 +378,7 @@ namespace YAML
 				params.chomp = STRIP;
 			else if(Exp::Digit.Matches(ch)) {
 				if(ch == '0')
-					throw ParserException(INPUT.line, INPUT.column, ErrorMsg::ZERO_INDENT_IN_BLOCK);
+					throw ParserException(INPUT.mark(), ErrorMsg::ZERO_INDENT_IN_BLOCK);
 
 				params.indent = ch - '0';
 				params.detectIndent = false;
@@ -383,11 +396,11 @@ namespace YAML
 
 		// if it's not a line break, then we ran into a bad character inline
 		if(INPUT && !Exp::Break.Matches(INPUT))
-			throw ParserException(INPUT.line, INPUT.column, ErrorMsg::CHAR_IN_BLOCK);
+			throw ParserException(INPUT.mark(), ErrorMsg::CHAR_IN_BLOCK);
 
 		// set the initial indentation
-		if(m_indents.top() >= 0)
-			params.indent += m_indents.top();
+		if(GetTopIndent() >= 0)
+			params.indent += GetTopIndent();
 
 		params.eatLeadingWhitespace = false;
 		params.trimTrailingSpaces = false;
@@ -398,7 +411,7 @@ namespace YAML
 		// simple keys always ok after block scalars (since we're gonna start a new line anyways)
 		m_simpleKeyAllowed = true;
 
-		Token token(TT_SCALAR, line, column);
+		Token token(Token::SCALAR, mark);
 		token.value = scalar;
 		m_tokens.push(token);
 	}

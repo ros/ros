@@ -1,6 +1,9 @@
 #pragma once
 
-#include <ios>
+#ifndef CONTENT_H_62B23520_7C8E_11DE_8A39_0800200C9A66
+#define CONTENT_H_62B23520_7C8E_11DE_8A39_0800200C9A66
+
+
 #include <vector>
 #include <map>
 #include "parserstate.h"
@@ -15,35 +18,31 @@ namespace YAML
 	class Scalar;
 	class Sequence;
 	class Map;
+	class Emitter;
 
 	class Content
 	{
 	public:
 		Content();
 		virtual ~Content();
+		
+		virtual Content *Clone() const = 0;
 
 		virtual void Parse(Scanner *pScanner, const ParserState& state) = 0;
-		virtual void Write(std::ostream& out, int indent, bool startedLine, bool onlyOneCharOnLine) = 0;
+		virtual void Write(Emitter& out) const = 0;
 
 		virtual bool GetBegin(std::vector <Node *>::const_iterator&) const { return false; }
 		virtual bool GetBegin(std::map <Node *, Node *, ltnode>::const_iterator&) const { return false; }
 		virtual bool GetEnd(std::vector <Node *>::const_iterator&) const { return false; }
 		virtual bool GetEnd(std::map <Node *, Node *, ltnode>::const_iterator&) const { return false; }
-		virtual Node *GetNode(unsigned) const { return 0; }
-		virtual unsigned GetSize() const { return 0; }
+		virtual Node *GetNode(std::size_t) const { return 0; }
+		virtual std::size_t GetSize() const { return 0; }
 		virtual bool IsScalar() const { return false; }
 		virtual bool IsMap() const { return false; }
 		virtual bool IsSequence() const { return false; }
 
 		// extraction
-		virtual bool Read(std::string&) const { return false; }
-		virtual bool Read(int&) const { return false; }
-		virtual bool Read(unsigned&) const { return false; }
-		virtual bool Read(long&) const { return false; }
-		virtual bool Read(float&) const { return false; }
-		virtual bool Read(double&) const { return false; }
-		virtual bool Read(char&) const { return false; }
-		virtual bool Read(bool&) const { return false; }
+		virtual bool GetScalar(std::string&) const { return false; }
 
 		// ordering
 		virtual int Compare(Content *) { return 0; }
@@ -54,3 +53,5 @@ namespace YAML
 	protected:
 	};
 }
+
+#endif // CONTENT_H_62B23520_7C8E_11DE_8A39_0800200C9A66

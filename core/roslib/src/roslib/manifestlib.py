@@ -34,8 +34,10 @@
 # Revision $Id$
 # $Author$
 
-## Internal library for processing 'manifest' file, i.e. manifest.xml, stack.xml, and app.xml.
-## For external code apis, see roslib.manifest and roslib.stack_manifest.
+"""
+Internal library for processing 'manifest' files, i.e. manifest.xml and stack.xml.
+For external code apis, see L{roslib.manifest} and L{roslib.stack_manifest}.
+"""
 
 import sys
 import os
@@ -44,9 +46,11 @@ import xml.dom.minidom as dom
 
 import roslib.exceptions
 
+# stack.xml and manifest.xml have the same internal tags right now
 REQUIRED = ['author', 'license']
 ALLOWXHTML = ['description']
-OPTIONAL = ['logo', 'url', 'brief', 'description', 'status', 'notes', 'depend']
+OPTIONAL = ['logo', 'url', 'brief', 'description', 'status', 'notes', 'depend', 'rosdep', 'export', 'review']
+VALID = REQUIRED + OPTIONAL
 
 class ManifestException(roslib.exceptions.ROSLibException): pass
 
@@ -54,8 +58,11 @@ class ManifestException(roslib.exceptions.ROSLibException): pass
 # we are more commited to our manifest spec, this can be more direct
 # (and unit tested)
 
-## @throws ManifestException if validation fails
 def check_optional(name, allowXHTML=False):
+    """
+    Validator for optional elements.
+    @raise ManifestException: if validation fails
+    """
     def check(n, filename):
         n = n.getElementsByTagName(name)    
         if len(n) > 1:
@@ -66,8 +73,11 @@ def check_optional(name, allowXHTML=False):
             return _get_text(n[0].childNodes).strip()
     return check
 
-## @throws ManifestException if validation fails
 def check_required(name, allowXHTML=False):
+    """
+    Validator for required elements.
+    @raise ManifestException: if validation fails
+    """
     def check(n, filename):
         n = n.getElementsByTagName(name)
         if not n:
@@ -80,24 +90,33 @@ def check_required(name, allowXHTML=False):
         return _get_text(n[0].childNodes).strip()
     return check
 
-## @throws ManifestException if validation fails
 def check_depends(name):
+    """
+    Validator for manifest depends.
+    @raise ManifestException: if validation fails
+    """
     def check(n, filename):
         depends = [e.attributes for e in n.getElementsByTagName(name)]
         packages = [d['package'].value for d in depends]
         return [Depend(p) for p in packages]
     return check
 
-## @throws ManifestException if validation fails
 def check_stack_depends(name):
+    """
+    Validator for stack depends.
+    @raise ManifestException: if validation fails
+    """
     def check(n, filename):
         depends = [e.attributes for e in n.getElementsByTagName(name)]
         packages = [d['stack'].value for d in depends]
         return [StackDepend(p) for p in packages]
     return check
 
-## @throws ManifestException if validation fails
 def check_rosdeps(name):
+    """
+    Validator for stack rosdeps.    
+    @raise ManifestException: if validation fails
+    """
     def check(n, filename):
         rosdeps = [e.attributes for e in n.getElementsByTagName(name)]
         names = [d['name'].value for d in rosdeps]
@@ -146,32 +165,54 @@ def check(name):
             return check_optional(name, True)
         return check_optional(name)
     
-## Manifest 'export' tag
 class Export(object):
-    ## @param self
-    ## @param tag str: name of the XML tag
-    ## @param attrs dict: dictionary of XML attributes for this export tag
-    ## @param str str: string value contained by tag, if any
+    """
+    Manifest 'export' tag
+    """
+    
     def __init__(self, tag, attrs, str):
+        """
+        Create new export instance.
+        @param tag: name of the XML tag
+        @type  tag: str
+        @param attrs: dictionary of XML attributes for this export tag
+        @type  attrs: dict
+        @param str: string value contained by tag, if any
+        @type  str: str
+        """
         self.tag = tag
         self.attrs = attrs
         self.str = str
-    ## @return str: value of attribute or None if attribute not set
+
     def get(self, attr):
+        """
+        @return: value of attribute or None if attribute not set
+        @rtype:  str
+        """
         return self.attrs.get(attr, None)
     def xml(self):
+        """
+        @return: export instance represented as manifest XML
+        @rtype: str
+        """        
         attrs = ' '.join([' %s="%s"'%(k,v) for k,v in self.attrs.iteritems()])
         if self.str:
             return '<%s%s>%s</%s>'%(self.tag, attrs, self.str, self.tag)
         else:
             return '<%s%s />'%(self.tag, attrs)
         
-## Manifest 'depend' tag
 class Depend(object):
+    """
+    Manifest 'depend' tag
+    """
     __slots__ = ['package']
 
-    ## @param package str: package name. must be non-empty
     def __init__(self, package):
+        """
+        Create new depend instance.
+        @param package: package name. must be non-empty
+        @type  package: str
+        """
         if not package or not isinstance(package, basestring):
             raise ValueError("bad 'package' attribute")
         self.package = package
@@ -184,14 +225,23 @@ class Depend(object):
             return False
         return self.package == obj.package 
     def xml(self):
+        """
+        @return: depend instance represented as manifest XML
+        @rtype: str
+        """
         return '<depend package="%s" />'%self.package
         
-## Stack Manifest 'depend' tag
 class StackDepend(object):
+    """
+    Stack Manifest 'depend' tag
+    """
     __slots__ = ['stack']
 
-    ## @param stack str: stack name. must be non-empty
     def __init__(self, stack):
+        """
+        @param stack: stack name. must be non-empty
+        @type  stack: str
+        """
         if not stack or not isinstance(stack, basestring):
             raise ValueError("bad 'stack' attribute")
         self.stack = stack
@@ -204,31 +254,47 @@ class StackDepend(object):
             return False
         return self.stack == obj.stack 
     def xml(self):
+        """
+        @return: stack depend instance represented as stack manifest XML
+        @rtype: str
+        """        
         return '<depend stack="%s" />'%self.stack
 
-## object representation of a ROS manifest 'rosdep' tag
 class ROSDep(object):
+    """
+    Manifest 'rosdep' tag    
+    """
     __slots__ = ['name',]
 
-    ## ctor.
-    ## @param self
-    ## @param name str: dependency name. Must be non-empty.
     def __init__(self, name):
+        """
+        Create new rosdep instance.
+        @param name: dependency name. Must be non-empty.
+        @type  name: str
+        """
         if not name or not isinstance(name, basestring):
             raise ValueError("bad 'name' attribute")
         self.name = name
-    ## get XML representation of rosdep
-    ## @return str: XML representation of <rosdep/> tag
     def xml(self):
+        """
+        @return: rosdep instance represented as manifest XML
+        @rtype: str
+        """        
         return '<rosdep name="%s" />'%self.name
 
-## object representation of a ROS manifest 'versioncontrol' tag
 class VersionControl(object):
+    """
+    Manifest 'versioncontrol' tag
+    """
     __slots__ = ['type', 'url']
 
-    ## @param type_ str: version control type (e.g. 'svn'). must be non empty
-    ## @param url str: URL associated with version control. must be non empty
     def __init__(self, type_, url):
+        """
+        @param type_: version control type (e.g. 'svn'). must be non empty
+        @type  type_: str
+        @param url: URL associated with version control. must be non empty
+        @type  url: str
+        """
         if not type_ or not isinstance(type_, basestring):
             raise ValueError("bad 'type' attribute")
         if not url is None and not isinstance(url, basestring):
@@ -236,18 +302,25 @@ class VersionControl(object):
         self.type = type_
         self.url = url
     def xml(self):
+        """
+        @return: versioncontrol instance represented as manifest XML
+        @rtype: str
+        """        
         if self.url:
             return '<versioncontrol type="%s" url="%s" />'%(self.type, self.url)
         else:
             return '<versioncontrol type="%s" />'%self.type
     
-## object representation of a ROS manifest file
 class _Manifest(object):
+    """
+    Object representation of a ROS manifest file
+    """
     __slots__ = ['description', 'brief', \
                  'author', 'license', 'license_url', 'url', \
                  'depends', 'rosdeps',\
                  'logo', 'exports',\
                  'versioncontrol', 'status', 'notes',\
+                 'unknown_tags',\
                  '_type']
     def __init__(self, _type='package'):
         self.description = self.brief = self.author = \
@@ -258,13 +331,22 @@ class _Manifest(object):
         self.exports = []
         self._type = _type
         
+        # store unrecognized tags during parsing
+        self.unknown_tags = []
+        
     def __str__(self):
         return self.xml()
-    ## Get exports that match the specified tag and attribute, e.g. 'python', 'path'
     def get_export(self, tag, attr):
+        """
+        @return: exports that match the specified tag and attribute, e.g. 'python', 'path'
+        @rtype: [L{Export}]
+        """
         return [e.get(attr) for e in self.exports if e.tag == tag if e.get(attr) is not None]
-    ## Render the Manifest as XML
     def xml(self):
+        """
+        @return: Manifest instance as ROS XML manifest
+        @rtype: str
+        """
         if not self.brief:
             desc = "  <description>%s</description>"%self.description
         else:
@@ -290,16 +372,22 @@ class _Manifest(object):
         fields = filter(lambda x: x, [desc, author, license, review, url, logo, depends, rosdeps, exports, versioncontrol])
         return "<%s>\n"%self._type + "\n".join(fields) + "\n</%s>"%self._type
 
-## @internal
-## DOM utility routine for getting contents of text nodes
 def _get_text(nodes):
+    """
+    DOM utility routine for getting contents of text nodes
+    """
     return "".join([n.data for n in nodes if n.nodeType == n.TEXT_NODE])
 
-## Parse manifest file (package, stack, or app)
-## @param m _Manifest: field to populate
-## @param file str: manifest.xml file path
-## @return Manifest: return \a m, populated with parsed fields
 def parse_file(m, file):
+    """
+    Parse manifest file (package, stack)
+    @param m: field to populate
+    @type  m: L{_Manifest}
+    @param file: manifest.xml file path
+    @type  file: str
+    @return: return m, populated with parsed fields
+    @rtype: L{_Manifest}
+    """
     if not file:
         raise ValueError("Missing manifest file argument")
     if not os.path.isfile(file):
@@ -314,11 +402,16 @@ def parse_file(m, file):
     except ManifestException, e:
         raise ManifestException("Invalid manifest file [%s]: %s"%(os.path.abspath(file), e))
 
-## Parse manifest.xml string contents
-## @param string str: manifest.xml contents
-## @param m _Manifest: field to populate
-## @return Manifest: return \a m, populated with parsed fields
 def parse(m, string, filename='string'):
+    """
+    Parse manifest.xml string contents
+    @param string: manifest.xml contents
+    @type  string: str
+    @param m: field to populate
+    @type  m: L{_Manifest}
+    @return: return m, populated with parsed fields
+    @rtype: L{_Manifest}
+    """
     try:
         d = dom.parseString(string)
     except Exception, e:
@@ -378,5 +471,7 @@ def parse(m, string, filename='string'):
             raise ManifestException("stack manifests are not allowed to have exports")
         if m.rosdeps:
             raise ManifestException("stack manifests are not allowed to have rosdeps") 
-    
+
+    # store unrecognized tags
+    m.unknown_tags = [e for e in p.childNodes if e.nodeType == e.ELEMENT_NODE and e.tagName not in VALID]
     return m

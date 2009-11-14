@@ -33,9 +33,10 @@
 #
 # Revision $Id$
 # $Author$
-"""Python parser for rospack stack.xml files"""
-## Python parser for rospack stack.xml files
-## See: http://pr.willowgarage.com/wiki/Packages
+
+"""
+Python parser for rospack stack.xml files. See U{http://pr.willowgarage.com/wiki/Stack%20Manifest}
+"""
 
 import sys
 import os
@@ -51,17 +52,27 @@ import roslib.manifestlib
 # re-export symbols so that external code does not have to import manifestlib as well
 from roslib.manifestlib import ManifestException, StackDepend
 
-## object representation of a ROS manifest file
 class StackManifest(roslib.manifestlib._Manifest):
+    """
+    Object representation of a ROS manifest file
+    """
     __slots__ = []
     def __init__(self):
+        """
+        Create an empty stack manifest instance.
+        """
         super(StackManifest, self).__init__('stack')
         
-## @param stack_dir str: path to stack directory
-## @param required bool: require that the directory exist
-## @return str: path to manifest file of stack
-## @throws InvalidROSPkgException if required is True and manifest file cannot be located
 def _stack_file_by_dir(stack_dir, required=True):
+    """
+    @param stack_dir: path to stack directory
+    @type  stack_dir: str
+    @param required: require that the directory exist
+    @type  required: bool
+    @return: path to manifest file of stack
+    @rtype: str
+    @raise InvalidROSPkgException: if required is True and manifest file cannot be located
+    """
     try:
         p = os.path.join(stack_dir, STACK_FILE)
         if not required and not os.path.exists(p):
@@ -75,25 +86,37 @@ Stack '%(stack_dir)s' is improperly configured: no manifest file is present.
         if required:
             raise
 
-## @param stack str: stack name
-## @param required bool: require that the directory exist
-## @return str: path to manifest file of stack
-## @throws InvalidROSPkgException if required is True and manifest file cannot be located
 def stack_file(stack, required=True):
+    """
+    @param stack: stack name
+    @type  stack: str
+    @param required: require that the directory exist
+    @type  required: bool
+    @return: path to manifest file of stack
+    @rtype:  str
+    @raise InvalidROSPkgException: if required is True and manifest file cannot be located
+    """
     d = roslib.stacks.get_stack_dir(stack)
     return _stack_file_by_dir(d, required)
         
-## @internal
-## Parse stack.xml file
-## @param file str: stack.xml file path
-## @return StackManifest
 def parse_file(file):
+    """
+    Parse stack.xml file
+    @param file: stack.xml file path
+    @param file: str
+    @return: StackManifest instance
+    @rtype:  L{StackManifest}
+    """
     return roslib.manifestlib.parse_file(StackManifest(), file)
 
-## Parse stack.xml string contents
-## @param string str: stack.xml contents
-## @return StackManifest
 def parse(string, filename='string'):
+    """
+    Parse stack.xml string contents
+    @param string: stack.xml contents
+    @type  string: str
+    @return: StackManifest instance
+    @rtype:  L{StackManifest}
+    """
     s = roslib.manifestlib.parse(StackManifest(), string, filename)
     #TODO: validate
     return s

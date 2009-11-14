@@ -32,6 +32,7 @@
 #include "ros/service_client_link.h"
 #include "ros/transport/transport_tcp.h"
 #include "ros/transport/transport_udp.h"
+#include "ros/file_log.h"
 
 #include <ros/assert.h>
 
@@ -57,13 +58,10 @@ const ConnectionManagerPtr& ConnectionManager::instance()
 ConnectionManager::ConnectionManager()
 : connection_id_counter_(0)
 {
-  ROS_DEBUG("ConnectionManager constructor");
-
 }
 
 ConnectionManager::~ConnectionManager()
 {
-  ROS_DEBUG("ConnectionManager destructor");
   shutdown();
 }
 
@@ -179,7 +177,7 @@ void ConnectionManager::removeDroppedConnections()
 void ConnectionManager::udprosIncomingConnection(const TransportUDPPtr& transport, Header& header)
 {
   std::string client_uri = ""; // TODO: transport->getClientURI();
-  ROS_DEBUG("UDPROS received a connection from [%s]", client_uri.c_str());
+  ROSCPP_LOG_DEBUG("UDPROS received a connection from [%s]", client_uri.c_str());
 
   ConnectionPtr conn(new Connection());
   addConnection(conn);
@@ -191,7 +189,7 @@ void ConnectionManager::udprosIncomingConnection(const TransportUDPPtr& transpor
 void ConnectionManager::tcprosAcceptConnection(const TransportTCPPtr& transport)
 {
   std::string client_uri = transport->getClientURI();
-  ROS_DEBUG("TCPROS received a connection from [%s]", client_uri.c_str());
+  ROSCPP_LOG_DEBUG("TCPROS received a connection from [%s]", client_uri.c_str());
 
   ConnectionPtr conn(new Connection());
   addConnection(conn);
@@ -205,7 +203,7 @@ bool ConnectionManager::onConnectionHeaderReceived(const ConnectionPtr& conn, co
   std::string val;
   if (header.getValue("topic", val))
   {
-    ROS_DEBUG("Connection: Creating SubscriberLink for topic [%s] connected to [%s]", val.c_str(), conn->getTransport()->getTransportInfo().c_str());
+    ROSCPP_LOG_DEBUG("Connection: Creating SubscriberLink for topic [%s] connected to [%s]", val.c_str(), conn->getTransport()->getTransportInfo().c_str());
 
     SubscriberLinkPtr sub_link(new SubscriberLink());
     sub_link->initialize(conn);
@@ -213,7 +211,7 @@ bool ConnectionManager::onConnectionHeaderReceived(const ConnectionPtr& conn, co
   }
   else if (header.getValue("service", val))
   {
-    ROS_DEBUG("Connection: Creating ServiceClientLink for service [%s] connected to [%s]", val.c_str(), conn->getTransport()->getTransportInfo().c_str());
+    ROSCPP_LOG_DEBUG("Connection: Creating ServiceClientLink for service [%s] connected to [%s]", val.c_str(), conn->getTransport()->getTransportInfo().c_str());
 
     ServiceClientLinkPtr link(new ServiceClientLink());
     link->initialize(conn);

@@ -116,6 +116,63 @@ TEST(TimeSynchronizer, compile9)
   TimeSynchronizer<Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg> sync(f0, f1, f2, f3, f4, f5, f6, f7, f8, 1);
 }
 
+void function2(const MsgConstPtr&, const MsgConstPtr&) {}
+void function3(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+void function4(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+void function5(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+void function6(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+void function7(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+void function8(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+void function9(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+
+TEST(TimeSynchronizer, compileFunction2)
+{
+  TimeSynchronizer<Msg, Msg> sync(1);
+  sync.registerCallback(function2);
+}
+
+TEST(TimeSynchronizer, compileFunction3)
+{
+  TimeSynchronizer<Msg, Msg, Msg> sync(1);
+  sync.registerCallback(function3);
+}
+
+TEST(TimeSynchronizer, compileFunction4)
+{
+  TimeSynchronizer<Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(function4);
+}
+
+TEST(TimeSynchronizer, compileFunction5)
+{
+  TimeSynchronizer<Msg, Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(function5);
+}
+
+TEST(TimeSynchronizer, compileFunction6)
+{
+  TimeSynchronizer<Msg, Msg, Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(function6);
+}
+
+TEST(TimeSynchronizer, compileFunction7)
+{
+  TimeSynchronizer<Msg, Msg, Msg, Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(function7);
+}
+
+TEST(TimeSynchronizer, compileFunction8)
+{
+  TimeSynchronizer<Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(function8);
+}
+
+TEST(TimeSynchronizer, compileFunction9)
+{
+  TimeSynchronizer<Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(function9);
+}
+
 TEST(TimeSynchronizer, immediate2)
 {
   TimeSynchronizer<Msg, Msg> sync(1);

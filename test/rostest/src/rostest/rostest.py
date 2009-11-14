@@ -43,7 +43,7 @@ import roslaunch
 import roslib.packages 
 import roslib.roslogging
 
-from rostestutil import createXMLRunner, printSummary, printRostestSummary, xmlResultsFile, XML_OUTPUT_FLAG, rostest_name_from_path
+from rostestutil import createXMLRunner, printSummary, printRostestSummary, xmlResultsFile, rostest_name_from_path
 
 from rostest_parent import ROSTestLaunchParent
 
@@ -82,10 +82,12 @@ def _setTextMode(val):
 # global store of all ROSLaunchRunners so we can do an extra shutdown
 # in the rare event a tearDown fails to execute
 _test_parents = []
+_config = None
 def _addRostestParent(runner):
-    global _test_parents
+    global _test_parents, _config
     logger.info("_addRostestParent [%s]", runner)
     _test_parents.append(runner)
+    _config = runner.config
     
 # TODO: convert most of this into a run() routine of a RoslaunchRunner subclass
 
@@ -94,6 +96,12 @@ def failDuplicateRunner(testName):
     def fn(self):
         print "Duplicate tests named [%s] in rostest suite"%testName
         self.fail("Duplicate tests named [%s] in rostest suite"%testName)
+    return fn
+
+def failRunner(testName, message):
+    def fn(self):
+        print >> sys.stderr, message
+        self.fail(message)
     return fn
     
 ## Test function generator that takes in a roslaunch Test object and
@@ -124,6 +132,13 @@ def rostestRunner(test, test_pkg):
             if os.path.exists(test_file):
                 printlog("removing previous test results file [%s]", test_file)
                 os.remove(test_file)
+
+            # TODO: have to redeclare this due to a bug -- this file
+            # needs to be renamed as it aliases the module where the
+            # constant is elsewhere defined. The fix is to rename
+            # rostest.py
+            XML_OUTPUT_FLAG='--gtest_output=xml:' #use gtest-compatible flag
+            
             test.args = "%s %s%s"%(test.args, XML_OUTPUT_FLAG, test_file)
             if _textMode:
                 test.output = 'screen'
@@ -217,8 +232,20 @@ def createUnitTest(pkg, test_file):
     # add in the tests
     testNames = []
     for test in config.tests:
+        # #1989: find test first to make sure it exists and is executable
+        err_msg = None
+        try:
+            cmd = roslib.packages.find_node(test.package, test.type, \
+                                            test.machine.ros_root, test.machine.ros_package_path)
+            if not cmd:
+                err_msg = "Test node [%s/%s] does not exist or is not executable"%(test.package, test.type)
+        except roslib.packages.ROSPkgException, e:
+            err_msg = "Package [%s] for test node [%s/%s] does not exist"%(test.package, test.package, test.type)
+
         testName = 'test%s'%(test.test_name)
-        if testName in testNames:
+        if err_msg:
+            classdict[testName] = failRunner(test.test_name, err_msg)
+        elif testName in testNames:
             classdict[testName] = failDuplicateRunner(test.test_name)
         else:
             classdict[testName] = rostestRunner(test, pkg)
@@ -312,7 +339,15 @@ def rostestmain():
         logger.info("calling pmon_shutdown")
         pmon_shutdown()
         logger.info("... done calling pmon_shutdown")
-        
+
+    # print config errors after test has run so that we don't get caught up in .xml results
+    if _config:
+        if _config.config_errors:
+            print >> sys.stderr, "\n[ROSTEST WARNINGS]"+'-'*62+'\n'
+        for err in _config.config_errors:
+            print >> sys.stderr, " * %s"%err
+        print ''
+
     # summary is worthless if textMode is on as we cannot scrape .xml results
     subtest_results = _getResults()
     if not _textMode:

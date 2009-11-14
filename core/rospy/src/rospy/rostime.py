@@ -30,9 +30,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: client.py 2258 2008-09-30 23:03:06Z sfkwc $
+# Revision $Id$
 
-"""ROS time and duration representations, as well as internal routines for managing wallclock versus simulated time."""
+"""
+ROS time and duration representations, as well as internal routines
+for managing wallclock versus a simulated clock.  The important data
+classes are L{Time} and L{Duration}, which represent the ROS 'time'
+and 'duration' primitives, respectively.
+"""
 
 import threading
 import time
@@ -53,17 +58,91 @@ _rostime_cond = threading.Condition()
 
 # subclass roslib to provide abstraction layer
 class Duration(roslib.rostime.Duration):
-    """Duration class for rospy"""
-    pass
+    """
+    Duration represents the ROS 'duration' primitive type, which
+    consists of two integers: seconds and nanoseconds. The Duration
+    class allows you to add and subtract Duration instances, including
+    adding and subtracting from L{Time} instances.
+
+    Usage::
+      five_seconds = Duration(5)
+      five_nanoseconds = Duration(0, 5)
+
+      print 'Fields are', five_seconds.secs, five_seconds.nsecs
+
+      # Duration arithmetic
+      ten_seconds = five_seconds + five_seconds
+      five_secs_ago = rospy.Time.now() - five_seconds # Time minus Duration is a Time
+
+      true_val = ten_second > five_seconds
+    """
+    __slots__ = []
+
+    def __init__(self, secs=0, nsecs=0):
+        """
+        Create new Duration instance. secs and nsecs are integers and
+        correspond to the ROS 'duration' primitive type.
+
+        @param secs: seconds
+        @type  secs: int
+        @param nsecs: nanoseconds
+        @type  nsecs: int
+        """
+        roslib.rostime.Duration.__init__(self, secs, nsecs)
 
 class Time(roslib.rostime.Time):
     """
-    Time class for rospy. The L{Time.now()} factory method can initialize Time to the current ROS time.
+    Time represents the ROS 'time' primitive type, which consists of two
+    integers: seconds since epoch and nanoseconds since seconds. Time
+    instances are mutable.
+
+    The L{Time.now()} factory method can initialize Time to the
+    current ROS time and L{from_sec()} can be used to create a
+    Time instance from the Python's time.time() float seconds
+    representation.
+
+    The Time class allows you to subtract Time instances to compute
+    Durations, as well as add Durations to Time to create new Time
+    instances.
+
+    Usage::
+      now = rospy.Time.now()
+      zero_time = rospy.Time()
+
+      print 'Fields are', now.secs, now.nsecs
+
+      # Time arithmetic
+      five_secs_ago = now - rospy.Duration(5) # Time minus Duration is a Time
+      five_seconds  = now - five_secs_ago  # Time minus Time is a Duration
+      true_val = now > five_secs_ago
+
+      # NOTE: in general, you will want to avoid using time.time() in ROS code
+      import time
+      py_time = rospy.Time.from_sec(time.time())
     """
-    
+    __slots__ = []    
+
+    def __init__(self, secs=0, nsecs=0):
+        """
+        Constructor: secs and nsecs are integers and correspond to the
+        ROS 'time' primitive type. You may prefer to use the static
+        L{from_sec()} and L{now()} factory methods instead.
+        
+        @param secs: seconds since epoch
+        @type  secs: int
+        @param nsecs: nanoseconds since seconds (since epoch)
+        @type  nsecs: int
+        """
+        roslib.rostime.Time.__init__(self, secs, nsecs)
+        
     def now():
         """
-        create new L{Time} instance representing current time
+        Create new L{Time} instance representing current time. This
+        can either be wall-clock time or a simulated clock. It is
+        strongly recommended that you use the now() factory to create
+        current time representations instead of reading wall-clock
+        time and create Time instances from it.
+        
         @return: L{Time} instance for current time
         @rtype: L{Time}
         """
@@ -85,8 +164,22 @@ class Time(roslib.rostime.Time):
     
     def from_seconds(float_secs):
         """
-        create new Time instance using time.time() value (float
-        seconds)
+        Use Time.from_sec() instead. Retained for backwards compatibility.
+        
+        @param float_secs: time value in time.time() format
+        @type  float_secs: float
+        @return: Time instance for specified time
+        @rtype: L{Time}
+        """
+        return Time.from_sec(float_secs)
+    
+    from_seconds = staticmethod(from_seconds)
+
+    def from_sec(float_secs):
+        """
+        Create new Time instance from a float seconds representation
+        (e.g. time.time()).
+        
         @param float_secs: time value in time.time() format
         @type  float_secs: float
         @return: Time instance for specified time
@@ -96,7 +189,7 @@ class Time(roslib.rostime.Time):
         nsecs = int((float_secs - secs) * 1000000000)
         return Time(secs, nsecs)
     
-    from_seconds = staticmethod(from_seconds)
+    from_sec = staticmethod(from_sec)
     
 def _set_rostime(t):
     """Callback to update ROS time from a ROS Topic"""
@@ -126,10 +219,11 @@ def get_time():
     @return: time in secs (time.time() format)    
     @rtype: float
     """
-    return Time.now().to_seconds()
+    return Time.now().to_sec()
 
 def set_rostime_initialized(val):
     """
+    Internal use.
     Mark rostime as initialized. This flag enables other routines to
     throw exceptions if rostime is being used before the underlying
     system is initialized.

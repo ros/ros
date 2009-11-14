@@ -6,7 +6,7 @@ rosservice contains the rosservice command-line tool for listing and querying RO
   </description>
   <author>Ken Conley/ kwc@willowgarage.com</author>
   <license>BSD</license>
-  <review status="experimental" notes=""/>
+  <review status="doc reviewed" notes="11/5/2009"/>
   <url>http://ros.org/wiki/rosservice</url>
   <depend package="rospy"/>
   <depend package="rosmsg"/>

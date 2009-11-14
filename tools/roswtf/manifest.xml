@@ -13,7 +13,6 @@
   <depend package="roslaunch"/>
   <depend package="rosnode"/>
   <depend package="rosservice"/>
-  <depend package="rostopic"/>      
 
 </package>
 

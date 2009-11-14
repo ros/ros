@@ -100,6 +100,20 @@ def roslaunch_duplicate_node_check(ctx):
             warnings.append("node [%s] in package [%s]\n"%(node_type, pkg))
     return warnings
 
+def roslaunch_machine_credentials_check(ctx):
+    """
+    Do basic SSH checks for machine, this does not do the full NxN test
+    """
+    nodes = []
+    for filename, rldeps in ctx.launch_file_deps.iteritems():
+        nodes.extend(rldeps.nodes)
+    warnings = []
+    for pkg, node_type in nodes:
+        paths = _find_node(pkg, node_type)
+        if len(paths) > 1:
+            warnings.append("node [%s] in package [%s]\n"%(node_type, pkg))
+    return warnings
+
 def pycrypto_check(ctx):
     try:
         import Crypto
@@ -125,10 +139,12 @@ def paramiko_ssh(ctx, address, port, username, password):
     try:
         import paramiko
         ssh = paramiko.SSHClient()
-        try:
-            ssh.load_system_host_keys() #default location
-        except:
-            return
+
+        import roslaunch.remoteprocess
+        err_msg = roslaunch.remoteprocess.ssh_check_known_hosts(ssh, address, port, username=username)
+        if err_msg:
+            return err_msg
+        
         if not password: #use SSH agent
             ssh.connect(address, port, username)
         else: #use SSH with login/pass
@@ -183,15 +199,18 @@ def roslaunch_machine_name_check(ctx):
     return ''.join([' * %s\n'%b for b in bad])
 
 def roslaunch_ssh_check(ctx):
+    import roslaunch.core
     if not ctx.launch_files:
         return # not relevant
     config, machines = _load_roslaunch_config(ctx)
     err_msgs = []
     for m in machines:
         socket.setdefaulttimeout(3.)
-        err_msg = paramiko_ssh(ctx, m.address, m.ssh_port, m.user, m.password)
-        if err_msg:
-            err_msgs.append(err_msg)
+        # only check if the machine requires ssh to connect
+        if not roslaunch.core.is_machine_local(m):
+            err_msg = paramiko_ssh(ctx, m.address, m.ssh_port, m.user, m.password)
+            if err_msg:
+                err_msgs.append(err_msg)
     return err_msgs
 
 def roslaunch_missing_pkgs_check(ctx):

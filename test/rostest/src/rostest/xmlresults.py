@@ -276,16 +276,22 @@ def read(test_file, test_name):
     _load_suite_results(test_file_base, test_suite, result)
     return result
 
-## Read in the test_results and aggregate into a single Result object
-## @param filter [str]: list of packages that should be processed
-## @return Result aggregated result
 def read_all(filter=[]):
-    dir = os.path.join(roslib.rosenv.get_ros_root(), 'test', 'test_results')
+    """
+    Read in the test_results and aggregate into a single Result object
+    @param filter: list of packages that should be processed
+    @type filter: [str]
+    @return: aggregated result
+    @rtype: L{Result}
+    """
+    dir_ = roslib.rosenv.get_test_results_dir()
     root_result = Result('ros', 0, 0, 0)
-    for d in os.listdir(dir):
+    if not os.path.exists(dir_):
+        return root_result
+    for d in os.listdir(dir_):
         if filter and not d in filter:
             continue
-        subdir = os.path.join(dir, d)
+        subdir = os.path.join(dir_, d)
         if os.path.isdir(subdir):
             for file in os.listdir(subdir):
                 if file.endswith('.xml'):

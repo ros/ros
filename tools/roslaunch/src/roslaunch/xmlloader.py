@@ -32,6 +32,8 @@
 #
 # Revision $Id$
 
+from __future__ import with_statement
+
 import itertools
 import os
 import sys
@@ -47,6 +49,8 @@ from roslib.names import make_global_ns, ns_join, is_global, is_private, PRIV_NA
 from roslib.packages import InvalidROSPkgException
 import roslib.substitution_args
 
+from roslaunch.loader import Loader, LoaderContext, command_line_param
+
 # use in our namespace
 SubstitutionException = roslib.substitution_args.SubstitutionException
 
@@ -54,103 +58,75 @@ SubstitutionException = roslib.substitution_args.SubstitutionException
 NS='ns'
 CLEAR_PARAMS='clear_params'
 
-# TODO: unit test
-# #1269, #1270
-
-## convert parameter \a key with \a value to a ROS command-line
-## remapping argument.
-## @return str: remapping argument. remapping argument does not have a
-## leading or trailing space.
-def _command_line_param(key, value):
-    # return double-quoted representation of value. In simple
-    # command-line tests, this appears to cover common cases. YAML
-    # dump uses single-quoted strings to disambiguate overlapping
-    # cases (e.g. 'true')
-
-    # have to force UTF-8 in order to get python-yaml to encode cleanly
-    if type(value) == unicode:
-        value = value.encode('UTF-8')
-    # strip the yaml encoding as python-yaml adds a newline
-    encoded = yaml.dump(value).strip()
-    # #1731 strip the '...' end-of-document indicator as it is not
-    # #required (and confusing to users)
-    if encoded.endswith('\n...'):
-        encoded = encoded[:-4]
-    return '_%s:="%s"'%(key, encoded)
+def _get_text(tag):
+    buff = ''
+    for t in tag.childNodes:
+        if t.nodeType in [t.TEXT_NODE, t.CDATA_SECTION_NODE]:
+            buff += t.data
+    return buff
 
 # This code has gotten a bit crufty as roslaunch has grown far beyond
 # its original spec. It needs to be far more generic than it is in
 # order to not replicate bugs in multiple places.
 
-class XmlParseException(RLException): pass
-class XmlLoadException(RLException): pass
+class XmlParseException(RLException):
+    """Error with the XML syntax (e.g. invalid attribute/value combinations)"""
+    pass
+class XmlLoadException(RLException):
+    """Error loading XML data as specified (e.g. cannot find included files, etc...)"""
+    pass
 
-class _XmlContext(object):
-    def __init__(self, ns, filename, parent=None, params=None, env_args=None, resolve_dict={}):
-        self.parent = parent
-        self.ns = make_global_ns(ns or '/')
-        self._remap_args = []
-        self.params = params or []
-        self.env_args = env_args or []
-        self.filename = filename
-        # for substitution args
-        self.resolve_dict = resolve_dict
-        
-    ## add a ~param to the context. ~params are evaluated by any node
-    ## declarations that occur later in the same context.
-    def add_param(self, p):
-        # override any params already set
-        matches = [m for m in self.params if m.key == p.key]
-        for m in matches:
-            self.params.remove(m)
-        self.params.append(p)
-        
-    ## add a new remap setting to the context. if a remap already
-    ## exists with the same from key, it will be removed
-    def add_remap(self, remap):
-        matches = [r for r in self._remap_args if r[0] == remap[0]]
-        for m in matches:
-            self._remap_args.remove(m)
-        self._remap_args.append(remap)
-    ## get a copy of the current remap arguments
-    def remap_args(self):
-        if self.parent:
-            args = []
-            # filter out any parent remap args that have the same from key
-            for pr in self.parent.remap_args():
-                if not [r for r in self._remap_args if r[0] == pr[0]]:
-                    args.append(pr)
-            args.extend(self._remap_args)
-            return args
-        return self._remap_args[:]
-    ## @param ns str: sub-namespace of child context, or None if the
-    ##   child context shares the same namespace
-    ## @return A child xml context that inherits from this context
-    def child(self, ns):
-        if ns:
-            if ns[0] == '/': # global (discouraged)
-                return _XmlContext(ns, self.filename, parent=self, params=self.params, env_args=self.env_args[:], resolve_dict=self.resolve_dict)
-            elif ns == PRIV_NAME: # ~name
-                # private names can only be scoped privately or globally
-                return _XmlContext(PRIV_NAME, self.filename, parent=self, params=self.params, env_args=self.env_args[:], resolve_dict=self.resolve_dict)
-            else:
-                return _XmlContext(ns_join(self.ns, ns), self.filename, parent=self, params=self.params, env_args=self.env_args[:], resolve_dict=self.resolve_dict)
-        else:
-            return _XmlContext(self.ns, self.filename, parent=self, params=self.params, env_args=self.env_args[:], resolve_dict=self.resolve_dict)
+def _bool_attr(v, default, label):
+    """
+    Validate boolean xml attribute. 
+    @param v: parameter value or None if no value provided
+    @type v: any
+    @param default: default value
+    @type  default: bool
+    @param label: parameter name/label
+    @type  label: str
+    @return: boolean value for attribute
+    @rtype: bool
+    @raise XmlParseException: if v is not in correct range or is empty.
+    """
+    if v is None:
+        return default
+    if v.lower() == 'true':
+        return True
+    elif v.lower() == 'false':
+        return False
+    elif not v:
+        raise XmlParseException("bool value for %s must be non-empty"%(label))
+    else:
+        raise XmlParseException("invalid bool value for %s: %s"%(label, v))
 
-# maps master auto attribute to Master auto property
-_master_auto = {
-    'no': Master.AUTO_NO, 'start': Master.AUTO_START, 'restart': Master.AUTO_RESTART,
-}
-# maps node respawn attribute to Node respawn property
-_respawn = { 'true': True, 'false': False }
+def _enum_attr(v, enums, label):
+    """
+    @param v: parameter value
+    @type v: any
+    @param enums: valid values for parameter
+    @type enums: [any]
+    @param label: parameter name/label
+    @type  label: str
+    @return: value for attribute
+    @raise XmlParseException: if v is not in correct range
+    """
+    if not v in enums:
+        raise XmlParseException("'%s' attribute must be one of: %s"%(label, ', '.join(enums)))
+    return v
+
 # maps machine 'default' attribute to Machine default property
 _is_default = {'true': True, 'false': False, 'never': False }
 # maps machine 'default' attribute to Machine assignable property
 _assignable = {'true': True, 'false': True, 'never': False }
 
-## Parser for roslaunch XML format. Loads parsed representation into ROSConfig model.
-class XmlLoader(object):
+# NOTE: code is currently in a semi-refactored state. I'm slowly
+# migrating common routines into the Loader class in the hopes it will
+# make it easier to write alternate loaders and also test.
+class XmlLoader(Loader):
+    """
+    Parser for roslaunch XML format. Loads parsed representation into ROSConfig model.
+    """
 
     ## @param resolve_anon bool: If True (default), will resolve $(anon foo). If
     ## false, will leave these args as-is.
@@ -165,7 +141,7 @@ class XmlLoader(object):
 
     ## helper routine for fetching and resolving optional tag attributes
     ## @param tag DOM tag
-    ## @param context _XmlContext
+    ## @param context LoaderContext
     ## @param attrs (str): list of attributes to resolve        
     def opt_attrs(self, tag, context, attrs):
         def tag_value(tag, a):
@@ -195,92 +171,35 @@ class XmlLoader(object):
     MASTER_ATTRS = ('type', 'uri', 'auto')
     def _master_tag(self, tag, context, ros_config):
         self._check_attrs(tag, context, ros_config, XmlLoader.MASTER_ATTRS)
-        type, uri, auto_str = self.opt_attrs(tag, context, ('type', 'uri', 'auto'))
-        if tag.hasAttribute('type') and not len(type.strip()):
-            raise XmlParseException("<master> 'type' must be non-empty")
-        try: # auto attribute
-            auto_str = (auto_str or 'no').lower().strip()
-            auto = _master_auto[auto_str]
-        except KeyError:
-            raise XmlParseException("invalid <master> 'auto' value: %s"%auto_str)
         try:
-            return Master(type_=type, uri=uri, auto=auto)
+            return self.create_master(*self.opt_attrs(tag, context, ('type', 'uri', 'auto')))
         except ValueError, e:
             raise XmlParseException("invalid <master> tag: %s"%str(e))
 
-    # rosparam tag also has optional 'ns' attribute and must have one
-    # of 'file' or 'param'
-    ROSPARAM_ATTRS = ('command',)
-    ROSPARAM_OPT_ATTRS = ('file', 'param')
-    def _rosparam_tag(self, tag, context, ros_config):
+    # 'ns' attribute is now deprecated and is an alias for
+    # 'param'. 'param' is required if the value is a non-dictionary
+    # type
+    ROSPARAM_OPT_ATTRS = ('command', 'ns', 'file', 'param')
+    def _rosparam_tag(self, tag, context, ros_config, verbose=True):
         try:
-            cmd = self.reqd_attrs(tag, context, XmlLoader.ROSPARAM_ATTRS)[0]
-            file, param = self.opt_attrs(tag, context, (XmlLoader.ROSPARAM_OPT_ATTRS))
-            if not cmd in ('load', 'dump', 'delete'):
-                raise XmlParseException("<rosparam> 'command' must be 'load', 'dump', or 'delete'")
-
-            # validate file/param attributes with respect to command
-            if cmd in ('load', 'dump'):
-                yes_str, no_str, yes, no = 'file', 'param', file, param
-            else:
-                yes_str, no_str, yes, no = 'param', 'file', param, file
-            if not yes:
-                raise XmlParseException("<rosparam> '%s' must be set for '%s' command"%(yes_str, cmd))
-            if no:
-                raise XmlParseException("<rosparam> '%s' must not be set for '%s' command"%(no_str, cmd))
+            cmd, ns, file, param = self.opt_attrs(tag, context, (XmlLoader.ROSPARAM_OPT_ATTRS))
+            # ns atribute is a bit out-moded and is only left in for backwards compatibility
+            param = ns_join(ns or '', param or '')
             
-            child_ns = self._ns_clear_params_attr('rosparam', tag, context, ros_config)
+            # load is the default command            
+            cmd = cmd or 'load'
+            
+            self.load_rosparam(context, ros_config, cmd, param, file, _get_text(tag), verbose=verbose)
 
-            # return the rosparam exe
-            if cmd in ('load', 'dump'):
-                return RosbinExecutable('rosparam', (cmd, file, child_ns.ns), PHASE_SETUP)
-            else:
-                return RosbinExecutable('rosparam', (cmd, ns_join(child_ns.ns, param)), PHASE_SETUP)
-
-        except KeyError, e:
-            raise XmlParseException(
-                "<rosparam> tag is missing required attribute: %s. rosparam xml is %s"%(e, tag.toxml()))
-
-    ## @param name str: param name, for error message use only
-    def _param_value(self, verbose, name, ptype, value, textfile, binfile, command):
-        if value is not None:
-            return convert_value(value.strip(), ptype)
-        elif textfile is not None:
-            f = open(textfile, 'r')
-            try:
-                return f.read()
-            finally:
-                f.close()
-        elif binfile is not None:
-            f = open(binfile, 'rb')
-            try:
-                return xmlrpclib.Binary(f.read())
-            finally:
-                f.close()
-        elif command is not None:
-            if type(command) == unicode:
-                command = command.encode('UTF-8') #attempt to force to string for shlex/subprocess
-            if verbose:
-                print "... executing command param [%s]"%command
-            import subprocess, shlex #shlex rocks
-            try:
-                p = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE)
-                c_value = p.communicate()[0]
-                if p.returncode != 0:
-                    raise XmlLoadException("Cannot load command parameter [%s]: command [%s] returned with code [%s]"%(name, command, p.returncode))
-            except OSError, (errno, strerr):
-                if errno == 2:
-                    raise XmlLoadException("Cannot load command parameter [%s]: no such command [%s]"%(name, command))
-                raise
-            if c_value is None:
-                raise XmlLoadException("parameter: unable to get output of command [%s]"%command)
-            return c_value
-        else: #_param_tag prevalidates, so this should not be reachable
-            raise XmlParseException("unable to determine parameter value")
+        except ValueError, e:
+            raise XmlLoadException("error loading <rosparam> tag: \n\t"+str(e)+"\nXML is %s"%tag.toxml())
 
     PARAM_ATTRS = ('name', 'value', 'type', 'value', 'textfile', 'binfile', 'command')
-    ## @param force_local bool: if True, param must be added to \a context instead of \a ros_config
     def _param_tag(self, tag, context, ros_config, force_local=False, verbose=True):
+        """
+        @param force_local: if True, param must be added to context instead of ros_config
+        @type  force_local: bool
+        """
         try:
             self._check_attrs(tag, context, ros_config, XmlLoader.PARAM_ATTRS)
 
@@ -295,8 +214,9 @@ class XmlLoader(object):
             # compute name. if name is a tilde name, it is placed in
             # the context. otherwise it is placed in the ros config.
             name = self.resolve_args(tag.attributes['name'].value.strip(), context)
-            value = self._param_value(verbose, name, ptype, *vals)
+            value = self.param_value(verbose, name, ptype, *vals)
 
+            # TODO: this first branch should be unnecessary once we remove support for command-line param
             if is_private(name) or force_local:
                 p = Param(name, value)
                 context.add_param(p)
@@ -304,11 +224,10 @@ class XmlLoader(object):
                 p = Param(ns_join(context.ns, name), value)
                 ros_config.add_param(Param(ns_join(context.ns, name), value), filename=context.filename, verbose=verbose)
             return p
+
         except KeyError, e:
             raise XmlParseException(
                 "<param> tag is missing required attribute: %s. \n\nParam xml is %s"%(e, tag.toxml()))
-        except XmlLoadException, e:
-            raise
         except Exception, e:
             raise XmlParseException(
                 "Invalid <param> tag: %s. \n\nParam xml is %s"%(e, tag.toxml()))
@@ -339,17 +258,25 @@ class XmlLoader(object):
 
         return test_name, time_limit, retry
         
-    NODE_ATTRS = ['pkg', 'type', 'machine', 'name', 'args', 'output', 'respawn', 'cwd', NS, CLEAR_PARAMS, 'launch-prefix']
+    NODE_ATTRS = ['pkg', 'type', 'machine', 'name', 'args', 'output', 'respawn', 'cwd', NS, CLEAR_PARAMS, 'launch-prefix', 'required']
     TEST_ATTRS = NODE_ATTRS + ['test-name','time-limit', 'retry']
     
-    ## @param tag Node: DOM node
-    ## @param context _XmlContext: namespace context
-    ## @param params [Param]: ROS parameter list
-    ## @param clear_params [str]: list of ROS parameter names to clear before setting parameters
-    ## @param default_machine str: default machine to assign to node
-    ## @param is_test bool: if set, will load as Test object instead
-    ## of Node object
     def _node_tag(self, tag, context, ros_config, default_machine, is_test=False, verbose=True):
+        """
+        Process XML <node> or <test> tag
+        @param tag: DOM node
+        @type  tag: Node
+        @param context: namespace context
+        @type  context: L{LoaderContext}
+        @param params: ROS parameter list
+        @type  params: [L{Param}]
+        @param clear_params: list of ROS parameter names to clear before setting parameters
+        @type  clear_params: [str]
+        @param default_machine: default machine to assign to node
+        @type  default_machine: str
+        @param is_test: if set, will load as L{Test} object instead of L{Node} object
+        @type  is_test: bool
+        """
         try:
             if is_test:
                 self._check_attrs(tag, context, ros_config, XmlLoader.TEST_ATTRS)
@@ -365,8 +292,8 @@ class XmlLoader(object):
                 raise XmlParseException("<node> 'type' must be non-empty")
             
             # optional attributes
-            machine, name, args, output, respawn, cwd, launch_prefix = \
-                     self.opt_attrs(tag, context, ('machine', 'name', 'args', 'output', 'respawn', 'cwd', 'launch-prefix'))
+            machine, name, args, output, respawn, cwd, launch_prefix, required = \
+                     self.opt_attrs(tag, context, ('machine', 'name', 'args', 'output', 'respawn', 'cwd', 'launch-prefix', 'required'))
             if not name and not is_test:
                 ros_config.add_config_error("WARN: un-named nodes in roslaunch are deprecated:\n[%s]: %s"%(context.filename, tag.toxml()))
                 
@@ -381,19 +308,13 @@ class XmlLoader(object):
                 raise XmlParseException("<node> 'machine' must be non-empty: [%s]"%machine)
             if not machine and default_machine:
                 machine = default_machine.name
-            # valid values are 'log' or 'screen'
-            output = output or 'log'
-            if not output in ['log', 'screen']:
-                raise XmlParseException("<%s> 'output' attribute must be one of: 'log', 'screen'"%tag.tagName)
-
-            try:
-                respawn = _respawn[(respawn or "false").lower()]
-            except KeyError:
-                raise XmlParseException("Invalid respawn value: %s"%respawn)
-
-            valid_cwd = ['ros-root', 'node']
-            if cwd and cwd not in valid_cwd:
-                raise XmlParseException("<%s> 'cwd' attribute must be one of: %s"%(tag.tagName, ','.join(valid_cwd)))
+            # validate respawn, required, output and cwd
+            # TODO: move more attribute validation into Node tag itself
+            output = _enum_attr(output or 'log', ['log', 'screen'], 'output')
+            cwd = _enum_attr(cwd or 'ros-root', ['ros-root', 'node'], 'cwd')
+            # - required and respawn both have no meaning to Tests and aren't passed on
+            required, respawn = [_bool_attr(*rr) for rr in ((required, False, 'required'),\
+                                                                (respawn, False, 'respawn'))]
 
             # each node gets its own copy of <remap> arguments, which
             # it inherits from its parent
@@ -403,7 +324,6 @@ class XmlLoader(object):
             
             # nodes can have individual env args set in addition to
             # the ROS-specific ones.  
-            env_args = context.env_args
             for t in [c for c in tag.childNodes if c.nodeType == DomNode.ELEMENT_NODE]:
                 tagName = t.tagName.lower()
                 if tagName == 'remap':
@@ -415,9 +335,9 @@ class XmlLoader(object):
                     if not is_test and not name:
                         raise XmlParseException(
                             "<node> tag must have a 'name' attribute in order to use <rosparam> tags: %s"%t.toxml())
-                    ros_config.add_executable(self._rosparam_tag(t, param_ns, ros_config)) 
+                    self._rosparam_tag(t, param_ns, ros_config, verbose=verbose)
                 elif tagName == 'env':
-                    env_args.append(self._env_tag(t, context, ros_config))
+                    self._env_tag(t, context, ros_config)
                 else:
                     print >> sys.stderr, \
                           "WARN: unrecognized '%s' tag in <node> tag"%t.tagName
@@ -435,28 +355,32 @@ class XmlLoader(object):
                 elif args:
                     # don't know node name, have to pass in on command-line
                     # strip ~ as parameter args are always private
-                    args = args + " " + _command_line_param(pkey, p.value)
+                    args = args + " " + command_line_param(pkey, p.value)
                 else:
-                    args = _command_line_param(pkey, p.value)
+                    args = command_line_param(pkey, p.value)
                     
             if not is_test:
                 return Node(pkg, node_type, name=name, namespace=child_ns.ns, machine_name=machine, 
                             args=args, respawn=respawn, 
-                            remap_args=remap_context.remap_args(), env_args=env_args,
-                            output=output, cwd=cwd, launch_prefix=launch_prefix)
+                            remap_args=remap_context.remap_args(), env_args=context.env_args,
+                            output=output, cwd=cwd, launch_prefix=launch_prefix,
+                            required=required)
             else:
                 test_name, time_limit, retry = self._test_attrs(tag, context)
                 if not name:
                     name = test_name
                 return Test(test_name, pkg, node_type, name=name, namespace=child_ns.ns, 
                             machine_name=machine, args=args,
-                            remap_args=remap_context.remap_args(), env_args=env_args,
+                            remap_args=remap_context.remap_args(), env_args=context.env_args,
                             time_limit=time_limit, cwd=cwd, launch_prefix=launch_prefix,
                             retry=retry)
         except KeyError, e:
             raise XmlParseException(
                 "<%s> tag is missing required attribute: %s. Node xml is %s"%(tag.tagName, e, tag.toxml()))
-        except Exception, e:
+        except XmlParseException, e:
+            raise XmlParseException(
+                "Invalid <node> tag: %s. \n\nNode xml is %s"%(e, tag.toxml()))
+        except ValueError, e:
             raise XmlParseException(
                 "Invalid <node> tag: %s. \n\nNode xml is %s"%(e, tag.toxml()))
 
@@ -464,20 +388,28 @@ class XmlLoader(object):
                      'ssh-port', 'user', 'password', 'default', 'timeout')
     def _machine_tag(self, tag, context, ros_config, verbose=True):
         try:
+            # clone context as <machine> tag sets up its own env args
+            context = context.child(None)
+            
             self._check_attrs(tag, context, ros_config, XmlLoader.MACHINE_ATTRS)
             # required attributes
             name, address = self.reqd_attrs(tag, context, ('name', 'address'))
             
             # optional attributes
-
             attrs = self.opt_attrs(tag, context,
                                    ('ros-root', 'ros-package-path', 'ros-ip', 'ros-host-name', 
                                     'ssh-port', 'user', 'password', 'default', 'timeout'))
             rosroot, ros_package_path, ros_ip, ros_host_name, \
                 ssh_port, user, password, default, timeout = attrs
 
+            # DEPRECATED: remove in ROS 0.11 if possible
             if ros_host_name and ros_ip:
                 raise XmlParseException("only one of 'ros-host-name' or 'ros-ip' may be set")
+            if ros_ip:
+                ros_config.add_config_error("WARN: ros-ip in <machine> tags is now deprecated. Use <env> tags instead")
+            if ros_host_name:
+                ros_config.add_config_error("WARN: ros-host-name in <machine> tags is now deprecated. Use <env> tags instead")
+
             ros_host_name = ros_host_name or ros_ip  #alias
             
             if not ros_package_path:
@@ -505,10 +437,9 @@ class XmlLoader(object):
                 raise XmlParseException("Invalid value for 'attribute': %s"%default)
 
             # load env args
-            env_args = []
             for t in [c for c in tag.childNodes if c.nodeType == DomNode.ELEMENT_NODE]:
                 if t.tagName == 'env':
-                    env_args.append(self._env_tag(t, context, ros_config))
+                    self._env_tag(t, context, ros_config)
                 else:
                     ros_config.add_config_error("unrecognized '%s' tag in <%s> tag"%(t.tagName, tag.tagName))
             # cast timeout to float. make sure timeout wasn't an empty string or negative
@@ -521,10 +452,13 @@ class XmlLoader(object):
                 raise XmlParseException("'timeout' cannot be empty")
             if timeout is not None and timeout <= 0.:
                 raise XmlParseException("'timeout' be a positive number: [%s]"%timeout)                    
-                    
+
+            #TODO: change Machine representation to use an environment
+            # dictionary instead of the umpteen ROS environment
+            # variable settings.
             m = Machine(name, rosroot, ros_package_path, address, 
                         ros_ip=ros_host_name, ssh_port=ssh_port, user=user, password=password, 
-                        assignable=assignable, env_args=env_args, timeout=timeout)
+                        assignable=assignable, env_args=context.env_args, timeout=timeout)
             return (m, is_default)
         except KeyError, e:
             raise XmlParseException("<machine> tag is missing required attribute: %s"%e)
@@ -547,20 +481,27 @@ class XmlLoader(object):
     def _env_tag(self, tag, context, ros_config):
         try:
             self._check_attrs(tag, context, ros_config, XmlLoader.ENV_ATTRS)
-            name, value = self.reqd_attrs(tag, context, XmlLoader.ENV_ATTRS)
-            if not name:
-                raise XmlParseException("<env> 'name' attribute must be non-empty: %s"%tag.toxml())                
-            return name, value
+            self.load_env(context, ros_config, *self.reqd_attrs(tag, context, XmlLoader.ENV_ATTRS))
+        except ValueError, e:
+            raise XmlParseException("Invalid <env> tag: %s. \nXML is %s"%(str(e), tag.toxml()))
         except KeyError, e:
             raise XmlParseException("<env> tag is missing required name/value attributes: %s"%tag.toxml())
     
-    ## common processing routine for xml tags with NS and CLEAR_PARAMS attributes
-    ## @param tag Node: DOM Node
-    ## @param context _XmlContext: current namespace context 
-    ## @param clear_params [str]: list of params to clear
-    ## @param node_name str: name of node (for use when \a tagName == 'node')
-    ## @return _XmlContext namespace context 
     def _ns_clear_params_attr(self, tagName, tag, context, ros_config, node_name=None):
+        """
+        Common processing routine for xml tags with NS and CLEAR_PARAMS attributes
+        
+        @param tag: DOM Node
+        @type  tag: Node
+        @param context: current namespace context 
+        @type  context: LoaderContext
+        @param clear_params: list of params to clear
+        @type  clear_params: [str]
+        @param node_name: name of node (for use when tagName == 'node')
+        @type  node_name: str
+        @return: loader context 
+        @rtype:  L{LoaderContext}
+        """
         if tag.hasAttribute(NS):
             ns = self.resolve_args(tag.getAttribute(NS), context)
             if not ns:
@@ -570,10 +511,8 @@ class XmlLoader(object):
         child_ns = context.child(ns)
         clear_p = self.resolve_args(tag.getAttribute(CLEAR_PARAMS), context)
         if clear_p:
-            clear_p = clear_p.lower()
-            if not clear_p in ['true', 'false']:
-                raise XmlParseException("'clear_params' attribute must be set to true or false")
-            if clear_p == 'true':
+            clear_p = _bool_attr(clear_p, False, 'clear_params')
+            if clear_p:
                 if tagName == 'node':
                     if not node_name:
                         raise XmlParseException("<%s> tag must have a 'name' attribute to use '%s' attribute"%(tagName, CLEAR_PARAMS))
@@ -592,19 +531,21 @@ class XmlLoader(object):
         child_ns = self._ns_clear_params_attr(tag.tagName, tag, context, ros_config)
         child_ns.filename = inc_filename
 
-        env_args = child_ns.env_args
         for t in [c for c in tag.childNodes if c.nodeType == DomNode.ELEMENT_NODE]:
             tagName = t.tagName.lower()
             if tagName == 'env':
-                env_args.append(self._env_tag(t, child_ns, ros_config))
+                self._env_tag(t, child_ns, ros_config)
             else:
                 print >> sys.stderr, \
                     "WARN: unrecognized '%s' tag in <%s> tag"%(t.tagName, tag.tagName)
 
         launch = self._parse_launch(inc_filename, verbose=verbose)
-        default_machine = \
-            self._recurse_load(ros_config, launch.childNodes, child_ns, \
-                                   default_machine, is_core, verbose)
+        try:
+            default_machine = \
+                self._recurse_load(ros_config, launch.childNodes, child_ns, \
+                                       default_machine, is_core, verbose)
+        except XmlParseException, e:
+            raise XmlParseException("while processing %s:\n%s"%(inc_filename, str(e)))
         if verbose:
             print "... done importing include file [%s]"%inc_filename
         return default_machine
@@ -641,15 +582,15 @@ class XmlLoader(object):
                     default_machine = m
                 ros_config.add_machine(m, verbose=verbose)
             elif name == 'rosparam':
-                ros_config.add_executable(self._rosparam_tag(tag, context, ros_config))
+                self._rosparam_tag(tag, context, ros_config, verbose=verbose)
             elif name == 'master':
                 pass #handled non-recursively
             elif name == 'include':
                 default_machine = self._include_tag(tag, context, ros_config, default_machine, is_core, verbose)
             elif name == 'env':
-                context.env_args.append(self._env_tag(tag, context, ros_config))
+                self._env_tag(tag, context, ros_config)
             else:
-                ros_config.add_config_error("WARNING: unrecognized tag"+tag.tagName)
+                ros_config.add_config_error("unrecognized tag "+tag.tagName)
         return default_machine
 
     ## subroutine of launch for loading XML DOM into config. Load_launch assumes that it is
@@ -662,7 +603,7 @@ class XmlLoader(object):
         # tag in the top-level file. We ignore master tags in
         # included files.
         master_tags = launch.getElementsByTagName('master')
-        self.root_context = _XmlContext('', filename)
+        self.root_context = LoaderContext('', filename)
         if len(master_tags) > 1:
             raise XmlParseException("multiple <master> tags in top-level xml file not allowed")
         elif len(master_tags) == 1:

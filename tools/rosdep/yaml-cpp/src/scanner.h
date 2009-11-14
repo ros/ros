@@ -1,15 +1,22 @@
 #pragma once
 
+#ifndef SCANNER_H_62B23520_7C8E_11DE_8A39_0800200C9A66
+#define SCANNER_H_62B23520_7C8E_11DE_8A39_0800200C9A66
+
+
 #include <ios>
 #include <string>
 #include <queue>
 #include <stack>
 #include <set>
+#include <map>
 #include "stream.h"
 #include "token.h"
 
 namespace YAML
 {
+	class Node;
+
 	class Scanner
 	{
 	public:
@@ -21,30 +28,63 @@ namespace YAML
 		void pop();
 		Token& peek();
 
+		// anchor management
+		void Save(const std::string& anchor, Node* value);
+		const Node *Retrieve(const std::string& anchor) const;
+		void ClearAnchors();
+
 	private:
+		struct IndentMarker {
+			enum INDENT_TYPE { MAP, SEQ, NONE };
+			IndentMarker(int column_, INDENT_TYPE type_): column(column_), type(type_), isValid(true), pStartToken(0) {}
+		
+			int column;
+			INDENT_TYPE type;
+			bool isValid;
+			Token *pStartToken;
+		};
+		
+		enum FLOW_MARKER { FLOW_MAP, FLOW_SEQ };
+	
+	private:	
 		// scanning
 		void EnsureTokensInQueue();
 		void ScanNextToken();
 		void ScanToNextToken();
 		void StartStream();
 		void EndStream();
-		Token *PushIndentTo(int column, bool sequence);
-		void PopIndentTo(int column);
+		
+		bool InFlowContext() const { return !m_flows.empty(); }
+		bool InBlockContext() const { return m_flows.empty(); }
+		int GetFlowLevel() const { return m_flows.size(); }
+		
+		IndentMarker *PushIndentTo(int column, IndentMarker::INDENT_TYPE type);
+		void PopIndentToHere();
+		void PopAllIndents();
+		void PopIndent();
+		int GetTopIndent() const;
 
 		// checking input
-		void InsertSimpleKey();
-		bool VerifySimpleKey(bool force = false);
-		void VerifyAllSimpleKeys();
+		bool CanInsertPotentialSimpleKey() const;
+		bool ExistsActiveSimpleKey() const;
+		void InsertPotentialSimpleKey();
+		void InvalidateSimpleKey();
+		bool VerifySimpleKey();
+		void PopAllSimpleKeys();
+		
+		void ThrowParserException(const std::string& msg) const;
 
 		bool IsWhitespaceToBeEaten(char ch);
 
 		struct SimpleKey {
-			SimpleKey(int pos_, int line_, int column_, int flowLevel_);
+			SimpleKey(const Mark& mark_, int flowLevel_);
 
 			void Validate();
 			void Invalidate();
-
-			int pos, line, column, flowLevel;
+			
+			Mark mark;
+			int flowLevel;
+			IndentMarker *pIndent;
 			Token *pMapStart, *pKey;
 		};
 
@@ -77,9 +117,11 @@ namespace YAML
 		// state info
 		bool m_startedStream, m_endedStream;
 		bool m_simpleKeyAllowed;
-		int m_flowLevel;                // number of unclosed '[' and '{' indicators
-		bool m_isLastKeyValid;
 		std::stack <SimpleKey> m_simpleKeys;
-		std::stack <int> m_indents;
+		std::stack <IndentMarker> m_indents;
+		std::stack <FLOW_MARKER> m_flows;
+		std::map <std::string, const Node *> m_anchors;
 	};
 }
+
+#endif // SCANNER_H_62B23520_7C8E_11DE_8A39_0800200C9A66

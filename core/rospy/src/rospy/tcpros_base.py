@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: transport.py 2941 2008-11-26 03:19:48Z sfkwc $
+# Revision $Id$
 
 """Internal use: common TCPROS libraries"""
 
@@ -174,6 +174,7 @@ def init_tcpros_server():
     global _tcpros_server
     if _tcpros_server is None:
         _tcpros_server = TCPROSServer()
+        rospy.core.add_shutdown_hook(_tcpros_server.shutdown)
     return _tcpros_server
     
 def start_tcpros_server():
@@ -250,7 +251,7 @@ class TCPROSServer(object):
             return self.tcp_ros_server.get_full_addr()
         return None, None
     
-    def shutdown(self):
+    def shutdown(self, reason=''):
         """stops the TCP/IP server responsible for receiving inbound connections"""
         if self.tcp_ros_server:
             self.tcp_ros_server.shutdown()
@@ -277,8 +278,13 @@ class TCPROSServer(object):
             else:
                 err_msg = 'no topic or service name detected'
             if err_msg:
-                write_ros_handshake_header(sock, {'error' : err_msg})
-                raise TransportInitError("Could not process inbound connection: "+err_msg)
+                # shutdown race condition: nodes that come up and down quickly can receive connections during teardown
+                if not rospy.core.is_shutdown():
+                    write_ros_handshake_header(sock, {'error' : err_msg})
+                    raise TransportInitError("Could not process inbound connection: "+err_msg+str(header))
+                else:
+                    write_ros_handshake_header(sock, {'error' : 'node shutting down'})
+                    return
         except rospy.exceptions.TransportInitError, e:
             logwarn(str(e))
             if sock is not None:
@@ -376,6 +382,10 @@ class TCPROSTransport(Transport):
         self.write_buff = cStringIO.StringIO()
             
         self.header = header
+
+        # #1852 have to hold onto latched messages on subscriber side
+        self.is_latched = False
+        self.latch = None
         
         # these fields are actually set by the remote
         # publisher/service. they are set for tools that connect
@@ -450,6 +460,8 @@ class TCPROSTransport(Transport):
                 raise TransportInitError("header missing required field [%s]"%required)
         self.md5sum = header['md5sum']
         self.type = header['type']
+        if header.get('latching', '0') == '1':
+            self.is_latched = True
 
     def write_header(self):
         """Writes the TCPROS header to the active connection."""
@@ -554,6 +566,11 @@ class TCPROSTransport(Transport):
             # set the _connection_header field
             for m in msg_queue:
                 m._connection_header = self.header
+                
+            # #1852: keep track of last latched message
+            if self.is_latched:
+                self.latch = msg_queue[-1]
+            
             return msg_queue
 
         except DeserializationError, e:

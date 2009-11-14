@@ -48,8 +48,10 @@ int main(int argc, char **argv)
     return 1;
   ros::init(argc, argv, topic_name + string("_switcher"));
   ros::NodeHandle nh;
-  ros::ServiceClient client = nh.serviceClient<MuxSelect>
-                                 (string(argv[1]) + string("_select"));
+  string srv_name = string(argv[1]) + "_select";
+  ROS_INFO("Waiting for service %s...\n", srv_name.c_str());
+  ros::service::waitForService(srv_name, -1);
+  ros::ServiceClient client = nh.serviceClient<MuxSelect>(srv_name);
   MuxSelect cmd;
   cmd.request.topic = argv[2];
   if (client.call(cmd))

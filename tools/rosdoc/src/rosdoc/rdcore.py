@@ -41,7 +41,7 @@ from subprocess import Popen, PIPE
 import roslib.packages
 import roslib.rosenv
 import roslib.manifest 
-import roslib.scriptutil as scriptutil
+import roslib.rospack 
 import roslib.stacks
 import roslib.stack_manifest
 
@@ -99,14 +99,14 @@ class RosdocContext(object):
         return True
 
     def init(self):
-        self.rosroot = roslib.rosenv.get_ros_root(True)
-        self.ros_package_path = roslib.rosenv.get_ros_package_path(False) or ''
+        self.rosroot = roslib.rosenv.get_ros_root(required=True)
+        self.ros_package_path = roslib.rosenv.get_ros_package_path(required=False) or ''
 
         rosdoc_dir = roslib.packages.get_pkg_dir('rosdoc')
         self.template_dir = os.path.join(rosdoc_dir, 'templates')
 
         # use 'rospack list' to locate all packages and store their paths in a dictionary
-        rospack_list = scriptutil.rospackexec(['list']).split('\n')
+        rospack_list = roslib.rospack.rospackexec(['list']).split('\n')
         rospack_list = [x.split(' ') for x in rospack_list if ' ' in x]
 
         # I'm still debating whether or not to immediately filter

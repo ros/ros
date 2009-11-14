@@ -44,15 +44,14 @@ uint64_t SubscriptionQueue::push(const SubscriptionMessageHelperPtr& helper, con
 {
   boost::mutex::scoped_lock lock(queue_mutex_);
 
-  if((size_ > 0) &&
-     (queue_.size() >= (uint32_t)size_))
+  if(full())
   {
     queue_.pop();
     ++queue_counter_;
 
     if (!full_)
     {
-      ROS_DEBUG("Incoming queue full for topic \"%s\".  Discarding oldest message (current queue size [%d])", topic_.c_str(), queue_.size());
+      ROS_DEBUG("Incoming queue full for topic \"%s\".  Discarding oldest message (current queue size [%d])", topic_.c_str(), (int)queue_.size());
     }
 
     full_ = true;
@@ -138,7 +137,12 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
   }
 
   MessagePtr msg = i.deserializer->deserialize();
-  i.helper->call(msg);
+
+  // msg can be null here if deserialization failed
+  if (msg)
+  {
+    i.helper->call(msg);
+  }
 
   return CallbackInterface::Success;
 }
@@ -146,6 +150,11 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
 bool SubscriptionQueue::ready(uint64_t id)
 {
   return id <= queue_counter_;
+}
+
+bool SubscriptionQueue::full()
+{
+  return (size_ > 0) && (queue_.size() >= (uint32_t)size_);
 }
 
 }

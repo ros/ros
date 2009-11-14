@@ -34,14 +34,18 @@
 
 #include <ros/ros.h>
 
+#include <map>
+
 namespace rxtools
 {
 
 class LoggerLevelPanel : public LoggerLevelPanelBase
 {
 public:
-  LoggerLevelPanel(wxWindow* parent);
+  LoggerLevelPanel(wxWindow* parent, int id = wxID_ANY, wxPoint pos = wxDefaultPosition, wxSize size = wxDefaultSize, int style = wxTAB_TRAVERSAL);
   ~LoggerLevelPanel();
+
+  void refresh();
 
 protected:
   void fillNodeList();
@@ -52,6 +56,9 @@ protected:
   virtual void onLevelSelected( wxCommandEvent& event );
 
   ros::NodeHandle nh_;
+
+  typedef std::map<std::string, std::string> M_string;
+  M_string loggers_;
 };
 
 } // namespace rxtools

@@ -30,6 +30,7 @@
 
 #include "ros/forwards.h"
 #include "ros/time.h"
+#include "ros/file_log.h"
 
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
@@ -329,7 +330,7 @@ void TimerManager<T, D, E>::threadFunc()
     // detect time jumping backwards
     if (T::now() < current)
     {
-      ROS_DEBUG("Time jumped backward, resetting timers");
+      ROSCPP_LOG_DEBUG("Time jumped backward, resetting timers");
 
       current = T::now();
 
@@ -378,7 +379,7 @@ void TimerManager<T, D, E>::threadFunc()
           // detect time jumping forward, as well as callbacks that are too slow
           if (info->next_expected + info->period < current)
           {
-            ROS_DEBUG("Time jumped forward by [%f] for timer of period [%f], resetting timer (current=%f, next_expected=%f)", (current - info->next_expected).toSec(), info->period.toSec(), current.toSec(), info->next_expected.toSec());
+            ROSCPP_LOG_DEBUG("Time jumped forward by [%f] for timer of period [%f], resetting timer (current=%f, next_expected=%f)", (current - info->next_expected).toSec(), info->period.toSec(), current.toSec(), info->next_expected.toSec());
             info->next_expected = current;
           }
         }
@@ -403,7 +404,7 @@ void TimerManager<T, D, E>::threadFunc()
 
       if (T::now() < current)
       {
-        ROS_DEBUG("Time jumped backwards, breaking out of sleep");
+        ROSCPP_LOG_DEBUG("Time jumped backwards, breaking out of sleep");
         break;
       }
 

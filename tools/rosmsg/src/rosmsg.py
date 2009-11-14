@@ -184,7 +184,7 @@ def rosmsg_users(mode, type_):
 ## @return str: text of .srv file
 def get_srv_text(type_, raw=False):
     package, base_type = roslib.names.package_resource_name(type_)
-    roslib.msgs.load_package_dependencies(package)
+    roslib.msgs.load_package_dependencies(package, load_recursive=True)
     roslib.msgs.load_package(package)
     f = roslib.srvs.srv_file(package, base_type)
     name, spec = roslib.srvs.load_from_file(f)
@@ -199,7 +199,7 @@ def get_srv_text(type_, raw=False):
 ## @return str: text of .msg file
 def get_msg_text(type_, raw=False):
     package, base_type = roslib.names.package_resource_name(type_)
-    roslib.msgs.load_package_dependencies(package)
+    roslib.msgs.load_package_dependencies(package, load_recursive=True)
     roslib.msgs.load_package(package)
     spec = roslib.msgs.get_registered(type_)
     if raw:
@@ -292,7 +292,7 @@ def rosmsg_cmd_show(mode, full):
 
 def rosmsg_md5(mode, type_):
     package, base_type = roslib.names.package_resource_name(type_)
-    roslib.msgs.load_package_dependencies(package)
+    roslib.msgs.load_package_dependencies(package, load_recursive=True)
     roslib.msgs.load_package(package)
     if mode == roslib.msgs.EXT:
         f = roslib.msgs.msg_file(package, base_type)
@@ -341,25 +341,25 @@ def rosmsg_cmd_users(mode, full):
     
 def rosmsg_cmd_package(mode, full):
     parser = OptionParser(usage="usage: ros%s package <package>"%mode[1:])
-    parser.add_option("-p", "--pretty",
-                      dest="pretty", default=False,action="store_true",
-                      help="pretty print")
+    parser.add_option("-s",
+                      dest="single_line", default=False,action="store_true",
+                      help="list all msgs on a single line")
     options, arg = _stdin_arg(parser, full)
-    if options.pretty:    
-        print '\n'.join(rosmsg_list_package(mode, arg))
-    else:
+    if options.single_line:    
         print ' '.join(rosmsg_list_package(mode, arg))        
+    else:
+        print '\n'.join(rosmsg_list_package(mode, arg))
     
 def rosmsg_cmd_packages(mode, full):
     parser = OptionParser(usage="usage: ros%s packages"%mode[1:])
-    parser.add_option("-p", "--pretty",
-                      dest="pretty", default=False,action="store_true",
-                      help="pretty print (one package per line)")
+    parser.add_option("-s",
+                      dest="single_line", default=False,action="store_true",
+                      help="list all packages on a single line")
     options, args = parser.parse_args(sys.argv[2:])
-    if options.pretty:
-        print '\n'.join([p for p in iterate_packages(mode)])
-    else:
+    if options.single_line:
         print ' '.join([p for p in iterate_packages(mode)])
+    else:
+        print '\n'.join([p for p in iterate_packages(mode)])
 
 ## @param cmd str: command name
 ## @return str: usage text for \a cmd

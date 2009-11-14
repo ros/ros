@@ -1,6 +1,10 @@
-set(FILES main.cpp tests.cpp)
-include_directories(${YAML_CPP_SOURCE_DIR}/include)
-link_directories(${YAML_CPP_BINARY_DIR}/bin)
+file(GLOB yaml-reader_headers *.h)
+file(GLOB yaml-reader_sources *.cpp)
 
-add_executable(yaml-reader ${FILES})
+add_executable(yaml-reader
+	${yaml-reader_sources}
+	${yaml-reader_headers}
+)
 target_link_libraries(yaml-reader yaml-cpp)
+
+add_test(yaml-reader-test yaml-reader)

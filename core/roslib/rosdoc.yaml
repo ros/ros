@@ -1,5 +1,6 @@
  - builder: epydoc
    output_dir: python
+   config: epydoc.config   
  - builder: doxygen
    name: C++ API
    output_dir: c++

@@ -440,4 +440,22 @@ void Connection::setHeaderReceivedCallback(const HeaderReceivedFunc& func)
     read(4, boost::bind(&Connection::onHeaderLengthRead, this, _1, _2, _3, _4));
 }
 
+std::string Connection::getCallerId()
+{
+  std::string callerid;
+  if (header_.getValue("callerid", callerid))
+  {
+    return callerid;
+  }
+
+  return std::string("unknown");
+}
+
+std::string Connection::getRemoteString()
+{
+  std::stringstream ss;
+  ss << "callerid=[" << getCallerId() << "] address=[" << transport_->getTransportInfo() << "]";
+  return ss.str();
+}
+
 }

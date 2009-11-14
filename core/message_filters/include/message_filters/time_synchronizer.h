@@ -43,6 +43,11 @@
 #include <boost/bind.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/utility/enable_if.hpp>
+#include <boost/mpl/and.hpp>
+#include <boost/mpl/equal_to.hpp>
+#include <boost/function_types/function_arity.hpp>
+#include <boost/function_types/is_nonmember_callable_builtin.hpp>
 
 #include <roslib/Header.h>
 
@@ -52,6 +57,9 @@
 
 namespace message_filters
 {
+
+namespace ft = boost::function_types;
+namespace mpl = boost::mpl;
 
 class NullType
 {
@@ -122,6 +130,14 @@ public:
   typedef boost::shared_ptr<M8 const> M8ConstPtr;
   typedef boost::tuple<M0ConstPtr, M1ConstPtr, M2ConstPtr, M3ConstPtr, M4ConstPtr, M5ConstPtr, M6ConstPtr, M7ConstPtr, M8ConstPtr> Tuple;
   typedef boost::signal<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&, const M6ConstPtr&, const M7ConstPtr&, const M8ConstPtr&)> Signal;
+  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&)> Callback2;
+  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&)> Callback3;
+  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&)> Callback4;
+  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&)> Callback5;
+  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&)> Callback6;
+  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&, const M6ConstPtr&)> Callback7;
+  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&, const M6ConstPtr&, const M7ConstPtr&)> Callback8;
+  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&, const M6ConstPtr&, const M7ConstPtr&, const M8ConstPtr&)> Callback9;
 
   template<class F0, class F1>
   TimeSynchronizer(F0& f0, F1& f1, uint32_t queue_size)
@@ -264,7 +280,63 @@ public:
   }
 
   template<class C>
-  Connection registerCallback(const C& callback)
+  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
+                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 2> > >, Connection >::type registerCallback(const C& callback)
+  {
+    return registerCallback(boost::bind(Callback2(callback), _1, _2));
+  }
+
+  template<class C>
+  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
+                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 3> > >, Connection >::type registerCallback(const C& callback)
+  {
+    return registerCallback(boost::bind(Callback3(callback), _1, _2, _3));
+  }
+
+  template<class C>
+  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
+                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 4> > >, Connection >::type registerCallback(const C& callback)
+  {
+    return registerCallback(boost::bind(Callback4(callback), _1, _2, _3, _4));
+  }
+
+  template<class C>
+  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
+                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 5> > >, Connection >::type registerCallback(const C& callback)
+  {
+    return registerCallback(boost::bind(Callback5(callback), _1, _2, _3, _4, _5));
+  }
+
+  template<class C>
+  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
+                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 6> > >, Connection >::type registerCallback(const C& callback)
+  {
+    return registerCallback(boost::bind(Callback6(callback), _1, _2, _3, _4, _5, _6));
+  }
+
+  template<class C>
+  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
+                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 7> > >, Connection >::type registerCallback(const C& callback)
+  {
+    return registerCallback(boost::bind(Callback7(callback), _1, _2, _3, _4, _5, _6, _7));
+  }
+
+  template<class C>
+  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
+                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 8> > >, Connection >::type registerCallback(const C& callback)
+  {
+    return registerCallback(boost::bind(Callback8(callback), _1, _2, _3, _4, _5, _6, _7, _8));
+  }
+
+  template<class C>
+  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
+                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 9> > >, Connection >::type registerCallback(const C& callback)
+  {
+    return registerCallback(boost::bind(Callback9(callback), _1, _2, _3, _4, _5, _6, _7, _8, _9));
+  }
+
+  template<class C>
+  typename boost::disable_if<ft::is_nonmember_callable_builtin<C>, Connection >::type registerCallback(const C& callback)
   {
     boost::mutex::scoped_lock lock(signal_mutex_);
     return Connection(boost::bind(&TimeSynchronizer::disconnect, this, _1), signal_.connect(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7, _8, _9)));

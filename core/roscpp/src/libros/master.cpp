@@ -200,8 +200,6 @@ bool execute(const std::string& method, const XmlRpc::XmlRpcValue& request, XmlR
 
       if (g_retry_timeout.isZero())
       {
-        boost::system_time current_time = boost::get_system_time();
-
         if (g_retry_timeout > ros::WallDuration(0) && (ros::WallTime::now() - start_time) >= g_retry_timeout)
         {
           ROS_ERROR("[%s] Timed out trying to connect to the master after [%f] seconds", method.c_str(), g_retry_timeout.toSec());

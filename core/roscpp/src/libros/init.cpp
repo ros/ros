@@ -54,7 +54,11 @@
 #include <roslib/Time.h>
 #include <roslib/Clock.h>
 
+#include <algorithm>
+
 #include <signal.h>
+
+#include <cstdlib>
 
 namespace ros
 {
@@ -85,17 +89,18 @@ void init(const M_string& remappings);
 }
 
 CallbackQueue g_global_queue;
-bool g_initialized = false;
-bool g_started = false;
-boost::mutex g_start_mutex;
-bool g_ok = false;
-uint32_t g_init_options = 0;
-bool g_shutdown_requested = false;
-volatile bool g_shutting_down = false;
-boost::mutex g_shutting_down_mutex;
-boost::thread g_internal_queue_thread;
-extern CallbackQueue g_global_queue;
 ROSOutAppenderPtr g_rosout_appender;
+
+static bool g_initialized = false;
+static bool g_started = false;
+static bool g_atexit_registered = false;
+static boost::mutex g_start_mutex;
+static bool g_ok = false;
+static uint32_t g_init_options = 0;
+static bool g_shutdown_requested = false;
+static volatile bool g_shutting_down = false;
+static boost::mutex g_shutting_down_mutex;
+static boost::thread g_internal_queue_thread;
 
 bool isInitialized()
 {
@@ -118,6 +123,15 @@ void checkForShutdown()
 void requestShutdown()
 {
   g_shutdown_requested = true;
+}
+
+void atexitCallback()
+{
+  if (ok() && !isShuttingDown())
+  {
+    ROSCPP_LOG_DEBUG("shutting down due to exit() or end of main() without cleanup of all NodeHandles");
+    shutdown();
+  }
 }
 
 void shutdownCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result)
@@ -145,7 +159,14 @@ bool getLoggers(roscpp::GetLoggers::Request&, roscpp::GetLoggers::Response& resp
   log4cxx::LoggerList::iterator end = loggers.end();
   for (; it != end; ++it)
   {
-    resp.loggers.push_back((*it)->getName());
+    roscpp::Logger logger;
+    logger.name = (*it)->getName();
+    const log4cxx::LevelPtr& level = (*it)->getEffectiveLevel();
+    if (level)
+    {
+      logger.level = level->toString();
+    }
+    resp.loggers.push_back(logger);
   }
 
   return true;
@@ -156,23 +177,25 @@ bool setLoggerLevel(roscpp::SetLoggerLevel::Request& req, roscpp::SetLoggerLevel
   log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger(req.logger);
   log4cxx::LevelPtr level;
 
-  if (req.level == "DEBUG" || req.level == "debug" || req.level == "Debug")
+  std::transform(req.level.begin(), req.level.end(), req.level.begin(), (int(*)(int))std::toupper);
+
+  if (req.level == "DEBUG")
   {
     level = log4cxx::Level::getDebug();
   }
-  else if (req.level == "INFO" || req.level == "info" || req.level == "Info")
+  else if (req.level == "INFO")
   {
     level = log4cxx::Level::getInfo();
   }
-  else if (req.level == "WARN" || req.level == "warn" || req.level == "Warn")
+  else if (req.level == "WARN")
   {
     level = log4cxx::Level::getWarn();
   }
-  else if (req.level == "ERROR" || req.level == "error" || req.level == "Error")
+  else if (req.level == "ERROR")
   {
     level = log4cxx::Level::getError();
   }
-  else if (req.level == "FATAL" || req.level == "fatal" || req.level == "Fatal")
+  else if (req.level == "FATAL")
   {
     level = log4cxx::Level::getFatal();
   }
@@ -311,7 +334,7 @@ void start()
           g_global_queue.enable();
           getGlobalCallbackQueue()->enable();
 
-          ROS_DEBUG("Started node [%s], pid [%d], bound on [%s], xmlrpc port [%d], tcpros port [%d], logging to [%s], using [%s] time", this_node::getName().c_str(), getpid(), network::getHost().c_str(), XMLRPCManager::instance()->getServerPort(), ConnectionManager::instance()->getTCPPort(), file_log::getLogFilename().c_str(), Time::useSystemTime() ? "real" : "sim");
+          ROSCPP_LOG_DEBUG("Started node [%s], pid [%d], bound on [%s], xmlrpc port [%d], tcpros port [%d], logging to [%s], using [%s] time", this_node::getName().c_str(), getpid(), network::getHost().c_str(), XMLRPCManager::instance()->getServerPort(), ConnectionManager::instance()->getTCPPort(), file_log::getLogFilename().c_str(), Time::useSystemTime() ? "real" : "sim");
         }
       }
     }
@@ -326,6 +349,12 @@ void start()
 
 void init(const M_string& remappings, const std::string& name, uint32_t options)
 {
+  if (!g_atexit_registered)
+  {
+    g_atexit_registered = true;
+    atexit(atexitCallback);
+  }
+
   if (!g_initialized)
   {
     g_init_options = options;
@@ -337,8 +366,8 @@ void init(const M_string& remappings, const std::string& name, uint32_t options)
     master::init(remappings);
     // names:: namespace is initialized by this_node
     this_node::init(name, remappings, options);
-    param::init(remappings);
     file_log::init(remappings);
+    param::init(remappings);
 
     g_initialized = true;
   }
@@ -390,6 +419,19 @@ void init(const VP_string& remappings, const std::string& name, uint32_t options
   init(remappings_map, name, options);
 }
 
+void removeROSArgs(int argc, const char** argv, V_string& args_out)
+{
+  for (int i = 0; i < argc; ++i)
+  {
+    std::string arg = argv[i];
+    size_t pos = arg.find(":=");
+    if (pos == std::string::npos)
+    {
+      args_out.push_back(arg);
+    }
+  }
+}
+
 void spin()
 {
   SingleThreadedSpinner s;
@@ -404,6 +446,14 @@ void spin(Spinner& s)
 void spinOnce()
 {
   g_global_queue.callAvailable(ros::WallDuration());
+}
+
+void waitForShutdown()
+{
+  while (ok())
+  {
+    WallDuration(0.05).sleep();
+  }
 }
 
 CallbackQueue* getGlobalCallbackQueue()
@@ -424,18 +474,16 @@ void shutdown()
     return;
   }
 
+  ROSCPP_LOG_DEBUG("Shutting down roscpp");
+
   g_shutting_down = true;
 
   g_global_queue.disable();
   g_global_queue.clear();
 
-  getGlobalCallbackQueue()->disable();
-  getGlobalCallbackQueue()->clear();
-
   if (g_internal_queue_thread.get_id() != boost::this_thread::get_id())
   {
     g_internal_queue_thread.join();
-    ROS_DEBUG("internal callback queue thread shut down");
   }
 
   const log4cxx::LoggerPtr& logger = log4cxx::Logger::getLogger(ROSCONSOLE_ROOT_LOGGER_NAME);
@@ -444,12 +492,16 @@ void shutdown()
 
   if (g_started)
   {
-    XMLRPCManager::instance()->shutdown();
     TopicManager::instance()->shutdown();
     ServiceManager::instance()->shutdown();
     ConnectionManager::instance()->shutdown();
     PollManager::instance()->shutdown();
+    XMLRPCManager::instance()->shutdown();
   }
+
+  WallTime end = WallTime::now();
+
+  ROSCPP_LOG_DEBUG("Shutdown finished");
 
   g_started = false;
   g_ok = false;

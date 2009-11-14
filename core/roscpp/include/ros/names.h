@@ -39,11 +39,41 @@ namespace ros
 namespace names
 {
 
+/**
+ * \brief Cleans a graph resource name: removes double slashes, trailing slash
+ */
 std::string clean(const std::string& name);
+/**
+ * \brief Resolve a graph resource name into a fully qualified graph resource name
+ *
+ * See http://www.ros.org/wiki/Names for more details
+ *
+ * \param name Name to resolve
+ * \param remap Whether or not to apply remappings to the name
+ */
 std::string resolve(const std::string& name, bool remap = true);
+/**
+ * \brief Resolve a graph resource name into a fully qualified graph resource name
+ *
+ * See http://www.ros.org/wiki/Names for more details
+ *
+ * \param ns Namespace to use in resolution
+ * \param name Name to resolve
+ * \param remap Whether or not to apply remappings to the name
+ */
 std::string resolve(const std::string& ns, const std::string& name, bool remap = true);
+/**
+ * \brief Append one name to another
+ */
 std::string append(const std::string& left, const std::string& right);
+/**
+ * \brief Apply remappings to a name
+ */
 std::string remap(const std::string& name);
+/**
+ * \brief Validate a name against the name spec
+ */
+bool validate(const std::string& name, std::string& error);
 
 const M_string& getRemappings();
 const M_string& getUnresolvedRemappings();

@@ -73,8 +73,8 @@ public:
 //! Global verbose flag so we can easily use from callback
 bool g_verbose = false;
 
-//! Global blackbox flag so we can easily use from callback
-bool g_blackbox = false;
+//! Global snapshot flag so we can easily use from callback
+bool g_snapshot = false;
 
 // Global Eventual exit code
 int  g_exit_code       = 0;
@@ -94,7 +94,7 @@ uint64_t g_queue_size=0;
 //! Global max queue size
 uint64_t g_max_queue_size=1048576*256;
 
-//! Queue of queues to be used by the blackbox recorders
+//! Queue of queues to be used by the snapshot recorders
 std::queue<OutgoingQueue> g_queue_queue;
 
 //! Mutex for global queue
@@ -132,7 +132,8 @@ void print_help() {
   fprintf(stderr, " -a          : Record all published messages.\n");
   fprintf(stderr, " -v          : Display a message every time a message is received on a topic\n");
   fprintf(stderr, " -m          : Maximize internal buffer size in MB (Default: 256MB)  0 = infinite.\n");
-  fprintf(stderr, " -b          : Enable black box recording (don't write to file unless triggered)\n");
+  fprintf(stderr, " -s          : (EXPERIMENTAL) Enable snapshot recording (don't write to file unless triggered)\n");
+  fprintf(stderr, " -t          : (EXPERIMENTAL) Trigger snapshot recording\n");
   fprintf(stderr, " -h          : Display this help message\n");
 }
 
@@ -160,7 +161,7 @@ void do_queue(topic_tools::ShapeShifter::ConstPtr msg,
       OutgoingMessage drop = g_queue->front();
       g_queue->pop();
       g_queue_size -= drop.msg->msgBufUsed;
-      if (!g_blackbox)
+      if (!g_snapshot)
       {
         static ros::Time last = ros::Time();
         ros::Time now = ros::Time::now();
@@ -173,7 +174,7 @@ void do_queue(topic_tools::ShapeShifter::ConstPtr msg,
     }
   }
   
-  if (!g_blackbox)
+  if (!g_snapshot)
     g_queue_condition.notify_all();
 
   // If we are book-keeping count, decrement and possibly shutdown
@@ -186,7 +187,7 @@ void do_queue(topic_tools::ShapeShifter::ConstPtr msg,
 }
 
 //! Callback to be invoked to actually do the recording
-void blackbox_trigger(std_msgs::Empty::ConstPtr trigger, std::string prefix, bool add_date)
+void snapshot_trigger(std_msgs::Empty::ConstPtr trigger, std::string prefix, bool add_date)
 {
   ros::WallTime rectime = ros::WallTime::now();
 
@@ -204,7 +205,7 @@ void blackbox_trigger(std_msgs::Empty::ConstPtr trigger, std::string prefix, boo
   tgt_fname = tgt_fname + std::string(".bag");
 
 
-  ROS_INFO("Triggered blackbox recording with name %s.", tgt_fname.c_str());
+  ROS_INFO("Triggered snapshot recording with name %s.", tgt_fname.c_str());
 
   {
     boost::mutex::scoped_lock lock(g_queue_mutex);
@@ -381,7 +382,7 @@ int main(int argc, char **argv)
   // Parse options  
   int option_char;
 
-  while ((option_char = getopt(argc,argv,"f:F:c:m:abhv")) != -1)
+  while ((option_char = getopt(argc,argv,"f:F:c:m:ashv")) != -1)
   {
     switch (option_char)
     {
@@ -389,7 +390,7 @@ int main(int argc, char **argv)
     case 'F': prefix = std::string(optarg); add_date = false; break;
     case 'c': g_count = atoi(optarg); break;
     case 'a': check_master = true; break;
-    case 'b': g_blackbox = true; break;
+    case 's': g_snapshot = true; break;
     case 'v': g_verbose = true; break;
     case 'm': 
       {
@@ -407,6 +408,9 @@ int main(int argc, char **argv)
     case '?': print_usage(); return 1;
     }
   }
+
+  if (g_snapshot)
+    ROS_WARN("Using snapshot mode in rosrecord is experimental and usage syntax is subject to change");
 
   // Logic to make sure count is not specified with automatic topic
   // subscription (implied by no listed topics)
@@ -435,12 +439,12 @@ int main(int argc, char **argv)
     boost::thread record_thread;
 
     // Spin up a thread for actually writing to file
-    if (!g_blackbox)
+    if (!g_snapshot)
       record_thread = boost::thread(boost::bind(&do_record, prefix, add_date));
     else
       record_thread = boost::thread(boost::bind(&do_record_bb));
 
-    ros::Subscriber trigger = node_handle.subscribe<std_msgs::Empty>("blackbox_trigger", 100, boost::bind(&blackbox_trigger, _1, prefix, add_date));
+    ros::Subscriber trigger = node_handle.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&snapshot_trigger, _1, prefix, add_date));
 
     // Every non-processed argument is assumed to be a topic
     for (int i = optind; i < argc; i++)

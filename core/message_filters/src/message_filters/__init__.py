@@ -30,6 +30,9 @@ Message Filter Objects
 ======================
 """
 
+import threading
+import rospy
+
 class SimpleFilter:
 
     def __init__(self):
@@ -119,12 +122,14 @@ class TimeSynchronizer(SimpleFilter):
         SimpleFilter.__init__(self)
         self.connectInput(fs)
         self.queue_size = queue_size
+        self.lock = threading.Lock()
 
     def connectInput(self, fs):
         self.queues = [{} for f in fs]
         self.input_connections = [f.registerCallback(self.add, q) for (f, q) in zip(fs, self.queues)]
 
     def add(self, msg, my_queue):
+        self.lock.acquire()
         my_queue[msg.header.stamp] = msg
         while len(my_queue) > self.queue_size:
             del my_queue[min(my_queue)]
@@ -136,3 +141,4 @@ class TimeSynchronizer(SimpleFilter):
             self.signalMessage(*msgs)
             for q in self.queues:
                 del q[t]
+        self.lock.release()

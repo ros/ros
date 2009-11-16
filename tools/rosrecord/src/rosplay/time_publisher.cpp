@@ -36,6 +36,8 @@
 #include "rosrecord/time_publisher.h"
 #include <ros/time.h>  
 
+#include "roslib/Clock.h"
+
 
 TimePublisher::TimePublisher():
   freeze_time_(true), 
@@ -65,7 +67,7 @@ void TimePublisher::initialize(double publish_frequency, double time_scale_facto
   horizon_.fromSec(0.0);
 
   // advertise time topic
-  time_pub = node_handle.advertise<roslib::Time>("time",1);
+  time_pub = node_handle.advertise<roslib::Clock>("clock",1);
   publish_thread_ = new boost::thread(boost::bind(&TimePublisher::publishTime, this));
 
 
@@ -152,7 +154,7 @@ ros::Time TimePublisher::getSysTime()
 // publish time
 void TimePublisher::publishTime()
 {
-  roslib::Time pub_msg; 
+  roslib::Clock pub_msg; 
   while(node_handle.ok() && continue_) {
     if (is_started_){
       ros::Time now = getSysTime();
@@ -165,12 +167,11 @@ void TimePublisher::publishTime()
 
       {
         boost::mutex::scoped_lock offset_lock(offset_mutex_);
-        pub_msg.rostime = last_pub_time_ + 
-                ((now - last_sys_time_) * time_scale_factor_);
+        pub_msg.clock = last_pub_time_ + 
+          ((now - last_sys_time_) * time_scale_factor_);
         last_sys_time_ = now;
-        last_pub_time_ = pub_msg.rostime;
+        last_pub_time_ = pub_msg.clock;
       }
-      pub_msg.header.stamp = pub_msg.rostime;
       time_pub.publish(pub_msg);
     }
     usleep(1e6 / (publish_freq_ * time_scale_factor_));

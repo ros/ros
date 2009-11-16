@@ -368,6 +368,16 @@ void do_check_subscribers_left(const ros::TimerEvent& e)
 }
 
 
+void do_trigger()
+{
+  // Get a node_handle
+  ros::NodeHandle node_handle;
+  ros::Publisher pub = node_handle.advertise<std_msgs::Empty>("snapshot_trigger", 1, true);
+  pub.publish(std_msgs::Empty());
+  ros::Timer terminate_timer = node_handle.createTimer(ros::Duration(1.0), boost::bind(&ros::shutdown));
+  ros::spin();  
+}
+
 //! Main function
 int main(int argc, char **argv)
 {
@@ -382,7 +392,7 @@ int main(int argc, char **argv)
   // Parse options  
   int option_char;
 
-  while ((option_char = getopt(argc,argv,"f:F:c:m:ashv")) != -1)
+  while ((option_char = getopt(argc,argv,"f:F:c:m:asthv")) != -1)
   {
     switch (option_char)
     {
@@ -391,6 +401,7 @@ int main(int argc, char **argv)
     case 'c': g_count = atoi(optarg); break;
     case 'a': check_master = true; break;
     case 's': g_snapshot = true; break;
+    case 't': do_trigger(); return 0; break;
     case 'v': g_verbose = true; break;
     case 'm': 
       {

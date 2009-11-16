@@ -40,6 +40,7 @@
 # Revision $Id$
 
 PKG = 'rxtools'
+import collections
 import os
 import string
 import sys
@@ -149,7 +150,8 @@ class RxPlotFrame(wx.Frame):
         # datagen, datax, and datay use plot_index.
         self.datagen = []
         self.datax = []
-        self.datay = []        
+        self.datay = []
+        self.buffer_size = options.buffer        
         
         self.start_time = rospy.get_time()
         for topic_list in topics:
@@ -157,8 +159,8 @@ class RxPlotFrame(wx.Frame):
                 dg = ROSData(t, self.start_time)
                 self.datagen.append(dg)
                 datax, datay = dg.next()
-                self.datax.append(datax)
-                self.datay.append(datay)
+                self.datax.append(collections.deque(datax))
+                self.datay.append(collections.deque(datay))
         
         self.create_menu()
         self.statusbar = self.CreateStatusBar()
@@ -325,9 +327,17 @@ class RxPlotFrame(wx.Frame):
                     print >> sys.stderr, str(e)
                     wx.GetApp().Exit()
                     return
-                self.datax[plot_index].extend(datax)
-                self.datay[plot_index].extend(datay)
-        
+
+                plot_datax, plot_datay = self.datax[plot_index], self.datay[plot_index]
+                plot_datax.extend(datax)
+                plot_datay.extend(datay)
+
+                if self.buffer_size > 0:
+                    xcutoff = plot_datax[-1] - self.buffer_size
+                    while len(plot_datax) > 0 and plot_datax[0] < xcutoff:
+                        plot_datax.popleft()
+                        plot_datay.popleft()
+
             self.draw_plot(relimit=True)
     
     def on_exit(self, event):

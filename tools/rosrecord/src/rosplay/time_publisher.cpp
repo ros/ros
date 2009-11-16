@@ -170,6 +170,7 @@ void TimePublisher::publishTime()
         last_sys_time_ = now;
         last_pub_time_ = pub_msg.rostime;
       }
+      pub_msg.header.stamp = pub_msg.rostime;
       time_pub.publish(pub_msg);
     }
     usleep(1e6 / (publish_freq_ * time_scale_factor_));

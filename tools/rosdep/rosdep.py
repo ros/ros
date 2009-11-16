@@ -111,11 +111,11 @@ class RosdepLookup:
                                 #print "Matched %s"%(os_version)
                                 return os_specific[key]
 
-                        print "failed to find specific version %s of %s within"%(os_version, rosdep), os_specific
+                        print >> sys.stderr, "failed to find specific version %s of %s within"%(os_version, rosdep), os_specific
                         return False
                     
             else:
-                print "failed to find OS(%s) version of %s "%(os_name, rosdep)
+                print >> sys.stderr, "failed to find OS(%s) version of %s "%(os_name, rosdep)
                 return False
 
         else:
@@ -167,7 +167,12 @@ class OSIndex:
 
     def generate_package_install_command(self, packages):
         if len(packages) > 0:
-            return self._os_map[self.get_os_name()].generate_package_install_command(packages)
+            bash_script = ""
+            try:
+                bash_script = self._os_map[self.get_os_name()].generate_package_install_command(packages)
+            except KeyError:
+                return "# os name '%s' not registered as a valid os"%self.get_os_name()
+            return bash_script
         else:
             return "#No packages to install: skipping package install command.\n"
 
@@ -578,6 +583,7 @@ def main():
     fedora = Fedora(r.osi)
     rhel = Rhel(r.osi)
     arch = Arch(r.osi)
+    macports = Macports(r.osi)
     ################ End Add specializations here ##############################
     
     if options.verbose:

@@ -332,7 +332,7 @@ class RxPlotFrame(wx.Frame):
                 plot_datax.extend(datax)
                 plot_datay.extend(datay)
 
-                if self.buffer_size > 0:
+                if len(plot_datax) > 0 and self.buffer_size > 0:
                     xcutoff = plot_datax[-1] - self.buffer_size
                     while len(plot_datax) > 0 and plot_datax[0] < xcutoff:
                         plot_datax.popleft()

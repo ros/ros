@@ -196,7 +196,8 @@ class ROSLaunchRunner(object):
                     if code != 1:
                         raise RLException("Failed to clear parameter [%s]: %s"%(p, msg))
             for p in config.params.itervalues():
-                printlog("setting parameter [%s]"%p.key)
+                # suppressing this as it causes too much spam
+                #printlog("setting parameter [%s]"%p.key)
                 code, msg, _ = param_server.setParam(_ID, p.key, p.value)
                 if code != 1:
                     raise RLException("Failed to set parameter [%s] to [%s]"%(p.key, p.value))

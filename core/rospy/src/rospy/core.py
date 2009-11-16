@@ -69,10 +69,11 @@ def mloginfo(msg, *args):
     """
     #mloginfo is in core so that it is accessible to master and masterdata
     _mlogger.info(msg, *args)
-    if args:
-        print msg%args
-    else:
-        print msg
+    if 0: # disabling. making the master quieter
+        if args:
+            print msg%args
+        else:
+            print msg
 
 def mlogwarn(msg, *args):
     """

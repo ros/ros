@@ -52,7 +52,6 @@ import roslib.launcher
 import roslib.message
 import roslib.msgs 
 import roslib.names 
-import roslib.network
 import roslib.packages
 import roslib.rosenv 
 

@@ -8,6 +8,7 @@ minimal: core_tools
 # enough for rosmake
 core_tools:
 	@if [ ! $(ROS_ROOT) ]; then echo "Please set ROS_ROOT first"; false; fi	
+	make -C $(ROS_ROOT)/tools/rospack
 	@if test -z `which rospack`; then echo "Please add ROS_ROOT/bin to PATH"; false; fi
 	make -C $(ROS_ROOT)/tools/rosdep
 

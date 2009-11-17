@@ -49,6 +49,7 @@ except ImportError:
     print >> sys.stderr, "rxgraph requires GTK in order to run.\nPlease run\n\trosdep install rosgraph\nto install any missing dependencies of rxgraph."
     sys.exit(1)
 
+
 import rosgraph.xdot
 import rosgraph.graph
 
@@ -274,6 +275,15 @@ def rxgraph_main():
     if args:
         parser.error("invalid arguments")
 
+
+    import subprocess
+    try:
+        subprocess.check_call(['dot', '-V'])
+    except:
+        print >> sys.stderr, "Graphviz does not appear to be installed on your system. Please run:\n\n\trosdep install rosgraph\n\nto install the necessary dependencies on your system"
+        sys.exit(1)
+
+        
     roslib.roslogging.configure_logging('rosgraph', logging.DEBUG, additional=['rospy', 'roslib'])
     init_dotcode = """
 digraph G { initializing [label="initializing..."]; }

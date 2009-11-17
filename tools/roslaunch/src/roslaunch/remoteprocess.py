@@ -170,7 +170,7 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
                 if e[0] == 111:
                     err_msg = "network connection refused by [%s:%s]"%(address, port)
                 else:
-                    err_msg = "network error connecting to [%s:%s]: %s"%(address, port, msg)
+                    err_msg = "network error connecting to [%s:%s]: %s"%(address, port, str(e))
         if err_msg:
             return None, err_msg
         else:

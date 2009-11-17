@@ -509,6 +509,17 @@ class Rosdep:
         return self.osi.generate_package_install_command(undetected) + \
             "\n".join(["\n%s"%sc for sc in scripts])
         
+    def check(self, rosdeps):
+        native_packages, scripts = self.get_packages_and_scripts(rosdeps)
+        undetected = self.osi.detect_packages(native_packages)
+        return_str = ""
+        if len(undetected) > 0:
+            return_str += "Did not detect packages: %s\n"%undetected
+        if len(scripts) > 0:
+            return_str += "The following scripts were not tested:\n"
+        for s in scripts:
+            return_str += s + '\n'
+        return return_str
 
     def what_needs(self, rosdeps):
         rosdeps = [p for p in rosdeps if p in self.rdl.get_map()]
@@ -603,10 +614,9 @@ def main():
             fh.flush()
             
             print "executing this script:\n %s"%script
-            p= subprocess.Popen(['bash', fh.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            (sout, serr) = p.communicate()
-            print "Output was",sout
-        
+            p= subprocess.Popen(['bash', fh.name])
+            p.communicate()
+                    
     elif command == "depdb":
         map = r.rdl.get_map()
         for k in map:
@@ -618,6 +628,9 @@ def main():
                         print "<<<< %s on ( %s %s ) -> %s >>>>"%(k, o, v,map[k][o][v])
     elif command == "what_needs":
         print '\n'.join(r.what_needs(rdargs))
+
+    elif command == "check":
+        print r.check(rosdeps)
 
 if __name__ == '__main__':
     sys.exit(main() or 0)

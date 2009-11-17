@@ -204,7 +204,7 @@ def setup_default_environment():
     if 'ROS_MASTER_URI' not in os.environ:
       os.environ['ROS_MASTER_URI'] = "http://localhost:%d" % (10000+os.geteuid(),)
     if 'ROS_LOG_DIR' not in os.environ:
-      os.environ['ROS_LOG_DIR'] = os.path.join(os.environ.get("HOME"), ".ros", "logs")
+      os.environ['ROS_LOG_DIR'] = os.path.join(os.environ.get("HOME"), ".ros", "log")
 
     ros_root = os.environ.get("ROS_ROOT")
 

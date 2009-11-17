@@ -178,7 +178,10 @@ class OSIndex:
 
 ###### DEBIAN SPECIALIZATION #########################
 def dpkg_detect(p):
-    return subprocess.call(['dpkg', '-s', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = ['dpkg-query', '-W', '-f=\'${Status}\'', p]
+    pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (std_out, std_err) = pop.communicate()
+    return (std_out.count('installed') == 1)
 
 ###### UBUNTU SPECIALIZATION #########################
 class Ubuntu:
@@ -219,7 +222,7 @@ class Ubuntu:
         return False
 
     def detect_packages(self, packages):
-        return [p for p in packages if dpkg_detect(p)]
+        return [p for p in packages if not dpkg_detect(p)]
 
     def generate_package_install_command(self, packages):        
         return "#Packages\nsudo apt-get install " + ' '.join(packages)
@@ -258,7 +261,7 @@ class Debian:
         return False
 
     def detect_packages(self, packages):
-        return [p for p in packages if dpkg_detect(p)]
+        return [p for p in packages if not dpkg_detect(p)]
 
     def generate_package_install_command(self, packages):        
         return "#Packages\nsudo apt-get install " + ' '.join(packages)
@@ -297,7 +300,7 @@ class Mint:
         return False
 
     def detect_packages(self, packages):
-        return [p for p in packages if dpkg_detect(p)]
+        return [p for p in packages if not dpkg_detect(p)]
 
     def generate_package_install_command(self, packages):        
         return "#Packages\nsudo apt-get install " + ' '.join(packages)

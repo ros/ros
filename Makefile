@@ -7,16 +7,15 @@ minimal: core_tools
 
 # enough for rosmake
 core_tools:
-	@if [ ! $(ROS_ROOT) ]; then echo "Please set ROS_ROOT first"; false; fi
-	cd tools/rospack && make
+	@if [ ! $(ROS_ROOT) ]; then echo "Please set ROS_ROOT first"; false; fi	
 	@if test -z `which rospack`; then echo "Please add ROS_ROOT/bin to PATH"; false; fi
-	cd tools/rosdep && make
+	make -C $(ROS_ROOT)/tools/rosdep
 
 
 clean:
 	@if test -z `which rospack`; then echo "It appears that you have already done a 'make clean' because rospack is gone."; false; fi
 	rosmake -r --target=clean ros
-	cd tools/rospack && make clean
+	make -C $(ROS_ROOT)/tools/rospack clean
 
 ## include $(shell rospack find mk)/cmake_stack.mk
 ### copied below since it can't be found before rospack is built 

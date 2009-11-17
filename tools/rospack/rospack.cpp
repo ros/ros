@@ -1492,37 +1492,44 @@ void ROSPack::crawl_for_packages(bool force_crawl)
   // Write the results of this crawl to the cache file.  At each step, give
   // up on error, printing a warning to stderr.
   string cache_path(getCachePath());
-  char tmp_cache_dir[PATH_MAX];
-  char tmp_cache_path[PATH_MAX];
-  strncpy(tmp_cache_dir, cache_path.c_str(), sizeof(tmp_cache_dir));
-  snprintf(tmp_cache_path, sizeof(tmp_cache_path), "%s/.rospack_cache.XXXXXX", dirname(tmp_cache_dir));
-  int fd = mkstemp(tmp_cache_path);
-  if (fd < 0)
+  if(!cache_path.size())
   {
-    fprintf(stderr, "[rospack] Unable to create temporary cache file %s: %s\n", 
-            tmp_cache_path, strerror(errno));
+    fprintf(stderr, "[rospack] No location available to write cache file.  Try setting ROS_HOME or HOME.\n");
   }
   else
   {
-    FILE *cache = fdopen(fd, "w");
-    if (!cache)
+    char tmp_cache_dir[PATH_MAX];
+    char tmp_cache_path[PATH_MAX];
+    strncpy(tmp_cache_dir, cache_path.c_str(), sizeof(tmp_cache_dir));
+    snprintf(tmp_cache_path, sizeof(tmp_cache_path), "%s/.rospack_cache.XXXXXX", dirname(tmp_cache_dir));
+    int fd = mkstemp(tmp_cache_path);
+    if (fd < 0)
     {
-      fprintf(stderr, "[rospack] Unable open cache file %s: %s\n", 
+      fprintf(stderr, "[rospack] Unable to create temporary cache file %s: %s\n", 
               tmp_cache_path, strerror(errno));
     }
     else
     {
-      char *rpp = getenv("ROS_PACKAGE_PATH");
-      fprintf(cache, "#ROS_ROOT=%s\n#ROS_PACKAGE_PATH=%s\n", ros_root,
-              (rpp ? rpp : ""));
-      for (VecPkg::iterator pkg = Package::pkgs.begin();
-           pkg != Package::pkgs.end(); ++pkg)
-        fprintf(cache, "%s\n", (*pkg)->path.c_str());
-      fclose(cache);
-      if(rename(tmp_cache_path, cache_path.c_str()) < 0)
+      FILE *cache = fdopen(fd, "w");
+      if (!cache)
       {
-        fprintf(stderr, "[rospack] Error: failed to rename cache file %s to %s: %s\n", 
-                tmp_cache_path, cache_path.c_str(), strerror(errno));
+        fprintf(stderr, "[rospack] Unable open cache file %s: %s\n", 
+                tmp_cache_path, strerror(errno));
+      }
+      else
+      {
+        char *rpp = getenv("ROS_PACKAGE_PATH");
+        fprintf(cache, "#ROS_ROOT=%s\n#ROS_PACKAGE_PATH=%s\n", ros_root,
+                (rpp ? rpp : ""));
+        for (VecPkg::iterator pkg = Package::pkgs.begin();
+             pkg != Package::pkgs.end(); ++pkg)
+          fprintf(cache, "%s\n", (*pkg)->path.c_str());
+        fclose(cache);
+        if(rename(tmp_cache_path, cache_path.c_str()) < 0)
+        {
+          fprintf(stderr, "[rospack] Error: failed to rename cache file %s to %s: %s\n", 
+                  tmp_cache_path, cache_path.c_str(), strerror(errno));
+        }
       }
     }
   }

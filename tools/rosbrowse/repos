@@ -4,35 +4,35 @@
 # for manifests.
 #https://ros.svn.sourceforge.net/svnroot/ros/trunk
 #https://personalrobots.svn.sourceforge.net/svnroot/personalrobots/pkg/trunk
-ros   https://code.ros.org/svn/ros/stacks/ros/tags/stable
-camera_drivers https://code.ros.org/svn/ros-pkg/stacks/camera_drivers/tags/latest 
-common https://code.ros.org/svn/ros-pkg/stacks/common/tags/latest
-common_msgs https://code.ros.org/svn/ros-pkg/stacks/common_msgs/tags/latest
-diagnostics https://code.ros.org/svn/ros-pkg/stacks/diagnostics/tags/latest
-driver_common https://code.ros.org/svn/ros-pkg/stacks/driver_common/tags/latest
-geometry https://code.ros.org/svn/ros-pkg/stacks/geometry/tags/latest
-image_common https://code.ros.org/svn/ros-pkg/stacks/image_common/tags/latest
-image_pipeline https://code.ros.org/svn/ros-pkg/stacks/image_pipeline/tags/latest
-imu_drivers https://code.ros.org/svn/ros-pkg/stacks/imu_drivers/tags/latest
-joystick_drivers https://code.ros.org/svn/ros-pkg/stacks/joystick_drivers/tags/latest
-laser_drivers https://code.ros.org/svn/ros-pkg/stacks/laser_drivers/tags/latest
-laser_pipeline https://code.ros.org/svn/ros-pkg/stacks/laser_pipeline/tags/latest
-navigation https://code.ros.org/svn/ros-pkg/stacks/navigation/tags/latest
-opencv https://code.ros.org/svn/ros-pkg/stacks/opencv/tags/latest
-physics_ode https://code.ros.org/svn/ros-pkg/stacks/physics_ode/tags/latest
-robot_calibration https://code.ros.org/svn/ros-pkg/stacks/robot_calibration/tags/latest
-robot_model https://code.ros.org/svn/ros-pkg/stacks/robot_model/tags/latest
-simulator_gazebo https://code.ros.org/svn/ros-pkg/stacks/simulator_gazebo/tags/latest
-simulator_stage https://code.ros.org/svn/ros-pkg/stacks/simulator_stage/tags/latest
-slam_gmapping https://code.ros.org/svn/ros-pkg/stacks/slam_gmapping/tags/latest
-sound_drivers https://code.ros.org/svn/ros-pkg/stacks/sound_drivers/tags/latest
-visualization https://code.ros.org/svn/ros-pkg/stacks/visualization/tags/latest
-vision_opencv https://code.ros.org/svn/ros-pkg/stacks/vision_opencv/tags/latest
-visualization_common https://code.ros.org/svn/ros-pkg/stacks/visualization_common/tags/latest
+ros   https://code.ros.org/svn/ros/stacks/ros/tags/trunk
+camera_drivers https://code.ros.org/svn/ros-pkg/stacks/camera_drivers/tags/trunk 
+common https://code.ros.org/svn/ros-pkg/stacks/common/tags/trunk
+common_msgs https://code.ros.org/svn/ros-pkg/stacks/common_msgs/tags/trunk
+diagnostics https://code.ros.org/svn/ros-pkg/stacks/diagnostics/tags/trunk
+driver_common https://code.ros.org/svn/ros-pkg/trunk/stacks/driver_common
+geometry https://code.ros.org/svn/ros-pkg/stacks/geometry/tags/trunk
+image_common https://code.ros.org/svn/ros-pkg/stacks/image_common/tags/trunk
+image_pipeline https://code.ros.org/svn/ros-pkg/trunk/stacks/image_pipeline
+imu_drivers https://code.ros.org/svn/ros-pkg/trunk/stacks/imu_drivers
+joystick_drivers https://code.ros.org/svn/ros-pkg/stacks/joystick_drivers/tags/trunk
+laser_drivers https://code.ros.org/svn/ros-pkg/trunk/stacks/laser_drivers
+laser_pipeline https://code.ros.org/svn/ros-pkg/stacks/laser_pipeline/tags/trunk
+navigation https://code.ros.org/svn/ros-pkg/stacks/navigation/tags/trunk
+opencv https://code.ros.org/svn/ros-pkg/stacks/opencv/tags/trunk
+physics_ode https://code.ros.org/svn/ros-pkg/stacks/physics_ode/tags/trunk
+robot_calibration https://code.ros.org/svn/ros-pkg/trunk/stacks/robot_calibration
+robot_model https://code.ros.org/svn/ros-pkg/stacks/robot_model/tags/trunk
+simulator_gazebo https://code.ros.org/svn/ros-pkg/stacks/simulator_gazebo/tags/trunk
+simulator_stage https://code.ros.org/svn/ros-pkg/stacks/simulator_stage/tags/trunk
+slam_gmapping https://code.ros.org/svn/ros-pkg/stacks/slam_gmapping/tags/trunk
+sound_drivers https://code.ros.org/svn/ros-pkg/stacks/sound_drivers/tags/trunk
+visualization https://code.ros.org/svn/ros-pkg/stacks/visualization/tags/trunk
+vision_opencv https://code.ros.org/svn/ros-pkg/stacks/vision_opencv/tags/trunk
+visualization_common https://code.ros.org/svn/ros-pkg/stacks/visualization_common/tags/trunk
 ros-pkg https://code.ros.org/svn/ros-pkg/trunk
 #
-pr2_common https://code.ros.org/svn/wg-ros-pkg/stacks/pr2_common/tags/latest
-pr2_mechanism https://code.ros.org/svn/wg-ros-pkg/stacks/pr2_mechanism/tags/latest
+pr2_common https://code.ros.org/svn/wg-ros-pkg/stacks/pr2_common/tags/trunk
+pr2_mechanism https://code.ros.org/svn/wg-ros-pkg/trunk/stacks/pr2_mechanism
 wg-ros-pkg https://code.ros.org/svn/wg-ros-pkg/trunk
 #
 sail  https://sail-ros-pkg.svn.sourceforge.net/svnroot/sail-ros-pkg/trunk

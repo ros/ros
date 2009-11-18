@@ -29,6 +29,8 @@ def load_rosdoc_list(fn, all_repos):
       continue
     lsplit = l.split()
     key = lsplit[0].strip()
+    if key == 'ros':
+      continue
     if key not in all_repos:
       continue
     repos[key] = all_repos[key]
@@ -43,8 +45,7 @@ def checkout_repos(repos):
 def write_setup_file(repos):
   str = 'export ROS_PACKAGE_PATH='
   for key in repos:
-    if key != 'ros':
-      str += os.path.abspath(key) + ':'
+    str += os.path.abspath(key) + ':'
   f = open(os.path.abspath('setup.bash'), 'w')
   f.write('%s\n'%str)
   f.close()

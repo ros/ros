@@ -83,7 +83,7 @@ boost:
         sudo make install
       fi
   debian:
-    squeeze/sid: libboost-dev libboost-regex-dev libboost-thread-dev libboost-signals-dev libboost-filesystem-dev libboost-python-dev 
+    squeeze/sid: libboost-dev libboost-regex-dev libboost-thread-dev libboost-signals-dev libboost-filesystem-dev libboost-python-dev libboost-program-options-dev
     lenny: |
       if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
         mkdir -p ~/ros/ros-deps

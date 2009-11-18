@@ -5,6 +5,8 @@
 #https://ros.svn.sourceforge.net/svnroot/ros/trunk
 #https://personalrobots.svn.sourceforge.net/svnroot/personalrobots/pkg/trunk
 ros   https://code.ros.org/svn/ros/stacks/ros/trunk
+ros_tutorials https://code.ros.org/svn/ros/stacks/ros_tutorials/trunk
+ros_experimental https://code.ros.org/svn/ros/stacks/ros_experimental/trunk
 camera_drivers https://code.ros.org/svn/ros-pkg/trunk/stacks/camera_drivers
 common https://code.ros.org/svn/ros-pkg/stacks/common/trunk
 common_msgs https://code.ros.org/svn/ros-pkg/stacks/common_msgs/trunk

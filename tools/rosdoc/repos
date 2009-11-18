@@ -5,6 +5,8 @@
 # Each line is a key into rosbrowse/repos, which has a list of keys and
 # URIs
 ros
+ros_tutorials
+ros_experimental
 camera_drivers
 common
 common_msgs

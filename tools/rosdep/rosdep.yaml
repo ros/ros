@@ -386,11 +386,6 @@ libsndfile:
   debian: libsndfile1-dev
   arch: libsndfile
   macports: libsndfile
-sbcl:
-  ubuntu: sbcl
-  arch: sbcl
-  debian: sbcl
-  macports: sbcl
 jam:
   ubuntu: jam
   debian: jam

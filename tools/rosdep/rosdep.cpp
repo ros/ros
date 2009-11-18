@@ -725,7 +725,7 @@ private:
   string package_check_condition(string pkg_name)
   {
     if (os_name == "ubuntu" || os_name == "debian")
-      return string("dpkg -s ") + pkg_name;
+      return string("dpkg-query -W -f=\'${Status}\'") + pkg_name;
     else if (os_name == "fedora" || os_name == "centos" || os_name == "rhel")
       return string("yum list ") + pkg_name;
     else if (os_name == "arch")

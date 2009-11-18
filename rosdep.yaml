@@ -8,17 +8,20 @@ apr:
   debian: libapr1-dev libaprutil1-dev
   arch: apr apr-util
   fedora: apr-devel apr-util
+  rhel: apr-devel apr-util
   macports: apr apr-util
 python:
   ubuntu: python-dev
   debian: python-dev
   arch: python
   fedora: python-devel
+  rhel: python-devel
   macports: python25 python_select py25-hashlib
 python-yaml:
   ubuntu: python-yaml
   debian: python-yaml
   fedora: PyYAML
+  rhel: PyYAML
   centos: PyYAML
   arch: |
     if ! pacman -Q libyaml python-yaml; then yaourt -S libyaml python-yaml; fi
@@ -28,21 +31,27 @@ python-gtk2:
   arch: pygtk
   debian: python-gtk2
   macports: py25-gtk
+  fedora: python-gtk
+  rhel: pygtk2
 python-matplotlib:
   ubuntu: python-matplotlib
   arch: python-matplotlib
   debian: python-matplotlib
   macports: py25-matplotlib
+  fedora: python-matplotlib
+  rhel: python-matplotlib
 python-imaging:
   ubuntu: python-imaging
   debian: python-imaging
   fedora: python-imaging
+  rhel: python-imaging
   arch: pil
   macports: py25-pil
 python-numpy:
   ubuntu: python-numpy
   debian: python-numpy
   fedora: numpy
+  rhel: python-numpy
   arch: python-numpy
   macports: py25-numpy
 python-scipy:
@@ -54,6 +63,7 @@ bzip2:
   ubuntu: libbz2-dev
   debian: libbz2-dev
   fedora: bzip2-devel
+  rhel: bzip2-devel
   arch: bzip2
   macports: bzip2
 boost:
@@ -96,18 +106,21 @@ boost:
         sudo make install
       fi
   fedora: boost-devel
+  rhel: boost-devel
   arch: boost
   macports: boost
 zlib:
   ubuntu: zlib1g-dev
   debian: zlib1g-dev
   fedora: zlib-devel
+  rhel: zlib-devel
   arch: zlib
   macports: zlib
 graphviz:
   ubuntu: graphviz
   debian: graphviz
   fedora: graphviz
+  rhel: graphviz
   arch: graphviz
   macports: graphviz
 fakeroot:
@@ -128,12 +141,14 @@ wxwidgets:
   ubuntu: libwxgtk2.8-dev
   debian: libwxgtk2.8-dev
   fedora: wxGTK-devel
+  rhel: wxGTK-devel
   macports: wxwidgets
   arch: wxgtk
 wxpython:
   ubuntu: python-wxgtk2.8
   arch: wxpython
   fedora: wxPython-devel
+  rhel: wxPython-devel
   centos: wxPython-devel
   debian: python-wxgtk2.8
   macports: py25-wxpython
@@ -177,6 +192,7 @@ log4cxx:
         sudo make install
       fi
   fedora: log4cxx-devel
+  rhel: log4cxx-devel
   arch: |
     if ! pacman -Q log4cxx; then yaourt -S log4cxx; fi
   macports: log4cxx
@@ -184,54 +200,63 @@ libxext:
   ubuntu: libXext-dev
   debian: libxext-dev
   fedora: libXext-devel
+  rhel: libXext-devel
   macports: xorg-libXext
   arch: libxext
 swig:
   ubuntu: swig
   debian: swig
   fedora: swig
+  rhel: swig
   macports: swig
   arch: swig
 zziplib:
   ubuntu: libzzip-0-13 libzzip-dev
   debian: libzzip-0-13 libzzip-dev
   fedora: zziplib-devel
+  rhel: zziplib-devel
   macports: libzzip
   arch: zziplib
 libxaw:
   ubuntu: libxaw7-dev 
   debian: libxaw7-dev 
   fedora: libXaw-devel
+  rhel: libXaw-devel
   macports: xorg-libXaw
   arch: libxaw
 opengl:
   ubuntu: libgl1-mesa-dev libglu1-mesa-dev
   debian: libgl1-mesa-dev libglu1-mesa-dev
   fedora: mesa-libGL-devel mesa-libGLU-devel
+  rhel: mesa-libGL-devel mesa-libGLU-devel
   macports: mesa
   arch: mesa
 libxxf86vm:
   ubuntu: libxxf86vm-dev
   debian: libxxf86vm-dev
   fedora: libXxf86vm-devel
+  rhel: libXxf86vm-devel
   macports: xorg-libXxf86vm
   arch: libxxf86vm
 gtk2:
   ubuntu: libgtk2.0-dev
   debian: libgtk2.0-dev
   fedora: gtk2-devel
+  rhel: gtk2-devel
   macports: gtk2
   arch: gtk2
 autoconf:
   ubuntu: autoconf
   debian: autoconf
   fedora: autoconf
+  rhel: autoconf
   arch: autoconf
   macports: autoconf
 automake:
   ubuntu: automake
   debian: automake
   fedora: automake
+  rhel: automake
   arch: automake
   macports: automake
 libtool:
@@ -242,12 +267,14 @@ libtool:
     8.04: libtool libltdl3-dev
   debian: libtool libltdl3-dev
   fedora: libtool libtool-ltdl-devel
+  rhel: libtool libtool-ltdl-devel
   macports: libtool
   arch: libtool
 pkg-config:
   ubuntu: pkg-config
   debian: pkg-config
   fedora: pkgconfig
+  rhel: pkgconfig
   arch: pkgconfig
   macports: pkgconfig
 octave:
@@ -299,6 +326,7 @@ cppunit:
   ubuntu: libcppunit-dev
   debian: libcppunit-dev
   fedora: cppunit-devel
+  rhel: cppunit-devel
   arch: cppunit
   macports: cppunit
 intltool:
@@ -308,6 +336,7 @@ unzip:
   debian: unzip
   arch: unzip
   fedora: unzip
+  rhel: unzip
   macports: unzip
 sbcl:
   ubuntu: sbcl

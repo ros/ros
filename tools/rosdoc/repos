@@ -1,0 +1,49 @@
+# a list of publicly-viewable ROS subversion repositories
+# that will be included in the rosdoc build at
+# http://build.willowgarage.com.
+# 
+# Each line is a key into rosbrowse/repos, which has a list of keys and
+# URIs
+ros
+camera_drivers
+common
+common_msgs
+diagnostics
+driver_common
+geometry
+image_common
+image_pipeline
+imu_drivers
+joystick_drivers
+laser_drivers
+laser_pipeline
+navigation
+opencv
+physics_ode
+robot_calibration
+robot_model
+simulator_gazebo
+simulator_stage
+slam_gmapping
+sound_drivers
+visualization
+vision_opencv
+visualization_common
+ros-pkg
+pr2_common
+pr2_mechanism
+wg-ros-pkg
+#
+#sail
+#cmu
+tum
+#bosch
+#wu
+#usc
+#lis
+#gt
+foote
+#brown
+#wpi
+#prairiedog
+#alufr

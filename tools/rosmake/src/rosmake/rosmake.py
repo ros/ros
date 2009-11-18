@@ -521,7 +521,7 @@ class RosMakeAll:
         tests_passed = True
         if build_passed and testing:
             self.print_verbose ("Testing packages %s"% packages)
-            build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = True)
+            build_queue = parallel_build.BuildQueue(verified_packages, parallel_build.DependencyTracker(verified_packages), robust_build = True)
             tests_passed = self.parallel_build_pkgs(build_queue, "test", threads = 1)
 
         self.finish_time = time.time() #note: before profiling

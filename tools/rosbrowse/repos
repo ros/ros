@@ -5,7 +5,7 @@
 #https://ros.svn.sourceforge.net/svnroot/ros/trunk
 #https://personalrobots.svn.sourceforge.net/svnroot/personalrobots/pkg/trunk
 ros   https://code.ros.org/svn/ros/stacks/ros/trunk
-camera_drivers https://code.ros.org/svn/ros-pkg/stacks/camera_drivers/trunk 
+camera_drivers https://code.ros.org/svn/ros-pkg/trunk/stacks/camera_drivers
 common https://code.ros.org/svn/ros-pkg/stacks/common/trunk
 common_msgs https://code.ros.org/svn/ros-pkg/stacks/common_msgs/trunk
 diagnostics https://code.ros.org/svn/ros-pkg/stacks/diagnostics/trunk
@@ -31,7 +31,7 @@ vision_opencv https://code.ros.org/svn/ros-pkg/stacks/vision_opencv/trunk
 visualization_common https://code.ros.org/svn/ros-pkg/stacks/visualization_common/trunk
 ros-pkg https://code.ros.org/svn/ros-pkg/trunk
 #
-pr2_common https://code.ros.org/svn/wg-ros-pkg/stacks/pr2_common/trunk
+pr2_common https://code.ros.org/svn/wg-ros-pkg/trunk/stacks/pr2_common
 pr2_mechanism https://code.ros.org/svn/wg-ros-pkg/trunk/stacks/pr2_mechanism
 wg-ros-pkg https://code.ros.org/svn/wg-ros-pkg/trunk
 #

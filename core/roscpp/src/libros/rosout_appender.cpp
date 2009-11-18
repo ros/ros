@@ -58,7 +58,11 @@ ROSOutAppender::ROSOutAppender()
 ROSOutAppender::~ROSOutAppender()
 {
   shutting_down_ = true;
-  queue_condition_.notify_all();
+
+  {
+    boost::mutex::scoped_lock lock(queue_mutex_);
+    queue_condition_.notify_all();
+  }
 
   publish_thread_.join();
 }
@@ -120,6 +124,11 @@ void ROSOutAppender::logThread()
 
     {
       boost::mutex::scoped_lock lock(queue_mutex_);
+
+      if (shutting_down_)
+      {
+        return;
+      }
 
       queue_condition_.wait(lock);
 

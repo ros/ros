@@ -1183,13 +1183,17 @@ void msg_spec::emit_cpp_class(FILE *f, bool for_srv, const string &service_name)
   if (header_present)
   {
     fputs("    roslib::Header _ser_header = header;\n", f);
-    fputs("    bool __reset_seq = (header.seq == 0);\n" \
+    fprintf(f, "    bool __reset_seq = (header.seq == 0);\n" \
           "    if (__reset_seq) _ser_header.seq = seq;\n" \
           "    bool __reset_timestamp = header.stamp.is_zero();\n" \
           "    if (__reset_timestamp) {\n" \
-          "      ROS_WARN(\"Automatic-filling of header timestamps is deprecated.  In future versions this time will be passed through as 0.\");\n" \
+          "      static uint32_t counter = 100;\n" \
+          "      if (counter %% 100 == 0) {\n" \
+          "        ROS_WARN(\"Automatic-filling of header timestamps is deprecated.  In future versions this time will be passed through as 0. (message type = [%s/%s])\");\n" \
+          "      }\n" \
+          "      ++counter;\n" \
           "      _ser_header.stamp = ros::Time::now();\n" \
-          "    }\n", f);
+          "    }\n", package.c_str(), g_name.c_str());
   }
 
   for (vector<msg_var *>::iterator v = vars.begin(); v != vars.end(); ++v)

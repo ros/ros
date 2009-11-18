@@ -4,6 +4,7 @@ USAGE = 'checkout.py <rosbrowse_repos_list> <rosdoc_repos_list>'
 
 import fileinput
 import sys
+import os
 import subprocess
 
 
@@ -39,6 +40,15 @@ def checkout_repos(repos):
     cmd = ['svn', 'co', repos[key], key]
     subprocess.call(cmd)
 
+def write_setup_file(repos):
+  str = 'export ROS_PACKAGE_PATH='
+  for key in repos:
+    if key != 'ros':
+      str += os.path.abspath(key) + ':'
+  f = open(os.path.abspath('setup.bash'), 'w')
+  f.write('%s\n'%str)
+  f.close()
+
 def main(argv):
   if len(argv) != 3:
     print USAGE
@@ -50,6 +60,7 @@ def main(argv):
   repos = load_rosdoc_list(rosdoc, all_repos)
   if repos:
     checkout_repos(repos)
+    write_setup_file(repos)
   
 
 if __name__ == "__main__":

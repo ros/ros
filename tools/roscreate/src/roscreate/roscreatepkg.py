@@ -71,8 +71,8 @@ def create_package(package, author, depends, uses_roscpp=False, uses_rospy=False
         print "Creating cpp source directory", cpp_path
         os.makedirs(cpp_path)
     if uses_rospy:
-        # create package/src/package for rospy
-        py_path = os.path.join(p, 'src', package)
+        # create package/src/ for python files
+        py_path = os.path.join(p, 'src')
         print "Creating python source directory", py_path
         os.makedirs(py_path)
         

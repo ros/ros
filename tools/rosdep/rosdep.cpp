@@ -356,6 +356,9 @@ public:
       if (!(*sat_it)->bash.empty())
         printf("----\n%s----\n", (*sat_it)->bash.c_str());
 #endif
+    bool reinstall = false;
+    if (getenv("ROSDEP_REINSTALL"))
+      reinstall = (0 == strcmp(getenv("ROSDEP_REINSTALL"),"1"));
     set<string> native_pkgs_to_install;
     // check if they're already there
     for (list<Sat *>::iterator sat_it = sats.begin();
@@ -366,7 +369,7 @@ public:
         string cmd = package_check_condition(*pkg_it);
         int ret = system((cmd + string(" 2>/dev/null >/dev/null ")).c_str());
         int rc = WEXITSTATUS(ret);
-        if (rc)
+        if (rc || reinstall)
           native_pkgs_to_install.insert(*pkg_it);
       }
 

@@ -32,6 +32,8 @@
 #
 # Author: Brian Gerkey/Ken Conley
 
+from __future__ import with_statement
+
 PKG = 'test_rxdeps'
 import roslib; roslib.load_manifest(PKG)
 
@@ -64,7 +66,7 @@ class RxdepsTestCase(unittest.TestCase):
           for s in command.split():
             args.append(s)
         if pkgname is not None:
-          args.append(pkgname)
+          args.append("--target=%s"%pkgname)
         p = Popen(args, stdout=PIPE, stderr=PIPE, env=env)
         stdout, stderr = p.communicate()
 
@@ -84,8 +86,18 @@ class RxdepsTestCase(unittest.TestCase):
 
 
     def test_utest(self):
-        ret, out, err = self._run_rxdeps(os.path.join(roslib.packages.get_pkg_dir("rxdeps"),"test/test_packages"), "pkg3", None)
-        print ret, out, err
+        ret, out, err = self._run_rxdeps(os.path.join(roslib.packages.get_pkg_dir("test_rxdeps"),"test/test_packages"), "pkg1", None)
+        self.assertTrue(ret == 0)
+        #print ret, out, err
+        with open("deps.gv") as fh:
+            lines = fh.read().split("\n")
+            self.assertTrue("  \"pkg2\" -> \"pkg1\";" in lines)
+            self.assertTrue("  \"pkg3\" -> \"pkg2\";" in lines)
+            self.assertTrue("  \"pkg4\" -> \"pkg2\";" in lines)
+            self.assertTrue("  \"pkg5\" -> \"pkg3\";" in lines)
+            self.assertTrue("  \"pkg5\" -> \"pkg4\";" in lines)
+            
+        
 
 if __name__ == "__main__":
     import rostest

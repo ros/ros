@@ -1,0 +1,87 @@
+#!/usr/bin/env python
+# copyright 2009 morgan quigley, bsd license blah blah
+# much work lifted from scott hassan's rosdeb package
+# this script will build debs from whatever is in /opt/ros
+
+import os, shutil, yaml, urllib2, subprocess, sys
+
+def build_deb(path):
+  stack_name = path.split('/')[-1]
+  if not os.path.exists(path) or not stack_name in released:
+    return # get that out
+  version = stacks[stack_name][distro_name]
+  deb_dir = os.path.join(workspace, stack_name)
+  print "building deb for %s version %s in %s" % (stack_name, version, deb_dir)
+  #shutil.copytree(path, deb_dir, symlinks=True)
+  rosstack_path = os.path.join(ros_root, 'bin', 'rosstack')
+  stack_deps = subprocess.Popen([rosstack_path,'deps',stack_name], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
+  deb_deps = ['build-essential','cmake','python-yaml','subversion']
+  # get the packages in this stack
+  pkgs = subprocess.Popen([rosstack_path,'contents',stack_name], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
+  # snarf the output of 'rosdep generate_bash' for those packages
+  bash = subprocess.Popen([os.path.join(ros_root,'bin','rosdep'),'generate_bash']+pkgs, env=env_vars, stdout=subprocess.PIPE).communicate()[0].split('\n')
+  install_line = [s for s in bash if s.startswith("sudo apt-get install")]
+  native_packages = []
+  if install_line:
+    native_packages = install_line[0][20:].split()
+  deb_deps += native_packages
+  deb_deps += ["ros-%s-%s"%(distro_name,s) for s in stack_deps] 
+  deb_name = "ros-%s-%s" % (distro_name, stack_name)
+  size = int(subprocess.Popen(["du","-bs",path], stdout=subprocess.PIPE).communicate()[0].strip().split()[0])
+  os.mkdir(deb_dir, 0755)
+  control = open(os.path.join(deb_dir, "control"), "w")
+  control.write("Package: %s\n" % deb_name)
+  control.write("Source: %s\n" % deb_name)
+  control.write("Version: %s-1\n" % version)
+  control.write("Architecture: i386\n")
+  control.write("Maintainer: ROS maintains itself\n")
+  control.write("Installed-Size: %s\n" % size)
+  control.write("Depends: %s\n" % ", ".join(deb_deps))
+  control.write("Section: tools\n")
+  control.write("Priority: optional\n")
+  control.write("Homepage: http://ros.org\n")
+  control.write("Description: ROS - a Robot Operating System\n")
+  control.write(" More documentation could go here\n")
+
+
+ros_root = '/opt/ros/ros'
+stacks_root = '/opt/ros/stacks'
+if 'PATH' in os.environ:
+  bin_path = ':'.join([os.path.join(ros_root, 'bin'), os.environ['PATH']])
+else:
+  bin_path = os.path.join(ros_root, 'bin')
+if 'PYTHONPATH' in os.environ:
+  pythonpath = ':'.join([os.environ['PYTHONPATH'], os.path.join(ros_root, 'core', 'roslib', 'src')])
+else:
+  pythonpath = os.path.join(ros_root, 'core', 'roslib', 'src')
+env_vars = os.environ.copy()
+env_vars.update({'ROS_ROOT' : ros_root,
+                 'PATH' : bin_path,
+                 'PYTHONPATH' : pythonpath,
+                 'ROS_MASTER_URI' : 'http://localhost:11311',
+                 'ROS_PACKAGE_PATH' : stacks_root,
+                 'ROSDEP_REINSTALL' : '1',
+                 'ROBOT' : 'sim'})
+
+workspace = os.path.join(os.getcwd(), 'deb_workspace') 
+distro_name = 'latest'
+f = urllib2.urlopen('http://ros.org/rosdistro.yaml')
+d = yaml.load(f)
+distros = d['distros']
+stacks = d['stacks']
+for distro in distros:
+  if distro_name in distro:
+    released = distro[distro_name]
+
+try:
+  os.mkdir(workspace, 0755)
+except:
+  raise Exception("could not create workspace directory, ahhhhhh")
+ 
+# first, build deb for the ros stack, in /opt/ros/ros
+build_deb(ros_root)
+
+# now, build debs for stacks in /opt/ros/stacks/BLAH
+for stack in os.listdir(stacks_root): 
+  if stack != '.svn':
+    build_deb(os.path.join(stacks_root, stack))

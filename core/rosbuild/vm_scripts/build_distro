@@ -1,6 +1,13 @@
 #!/usr/bin/python
+# copyright 2009 morgan quigley, bsd license blah blah
 import yaml, urllib2, os, subprocess, sys
 
+if len(sys.argv) > 1:
+  workspace = sys.argv[1]
+else:
+  workspace = os.path.join(os.getcwd(), 'workspace') # creativity = win
+
+print "building distro in %s" % workspace
 f = urllib2.urlopen('http://ros.org/rosdistro.yaml')
 d = yaml.load(f)
 distros = d['distros']
@@ -19,8 +26,8 @@ ros_uri_rule = d['stacks']['ros']['_uri_rules']['release-svn']
 ros_version = d['stacks']['ros'][distro_name]
 ros_uri = ros_uri_rule.replace('$STACK_VERSION', ros_version)
 ros_uri = ros_uri.replace('$STACK_NAME', 'ros')
-workspace = os.path.join(os.getcwd(), 'workspace') # creativity = win
 ros_root = os.path.join(workspace, 'ros')
+stacks_root = os.path.join(workspace, 'stacks')
 try:
   os.mkdir(workspace, 0755)
 except:
@@ -41,6 +48,7 @@ env_vars.update({'ROS_ROOT' : ros_root,
                  'PYTHONPATH' : pythonpath,
                  'ROS_MASTER_URI' : 'http://localhost:11311',
                  'ROSDEP_YES' : '1',
+                 'ROS_PACKAGE_PATH' : stacks_root,
                  'ROBOT' : 'sim'})
 # make minimal of ros
 subprocess.check_call(['make','minimal'], cwd=ros_root, env=env_vars)
@@ -49,7 +57,7 @@ for stack in stacks:
   stack_name = stack[0]
   stack_uri = stack[1]
   print 'checking out %s from %s' % (stack_name, stack_uri)
-  stack_root = os.path.join(workspace, 'pkgs', stack_name)
+  stack_root = os.path.join(stacks_root, stack_name)
   subprocess.check_call(['/usr/bin/svn', 'co', stack_uri, stack_root])
 # get package list via rospack
 rospack_path = os.path.join(ros_root, 'bin', 'rospack')

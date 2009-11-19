@@ -102,20 +102,20 @@ class RosdepLookup:
                     return os_specific
                 else:# it must be a map of versions
                     if os_version in os_specific.keys():
-                        return os_specific[versions]
+                        return os_specific[os_version]
                     else:
                         ## Hack to match rounding errors in pyyaml load 9.04  != 9.03999999999999996 in string space
                         for key in os_specific.keys():
                             # NOTE: this hack fails if os_version is not major.minor
-                            if float(key) == float(os_version):
+                            if os_name == "ubuntu" and float(key) == float(os_version):
                                 #print "Matched %s"%(os_version)
                                 return os_specific[key]
 
-                        print "failed to find specific version %s of %s within"%(os_version, rosdep), os_specific
+                        print >> sys.stderr, "failed to find specific version %s of %s within"%(os_version, rosdep), os_specific
                         return False
                     
             else:
-                print "failed to find OS(%s) version of %s "%(os_name, rosdep)
+                print >> sys.stderr, "failed to find OS(%s) version of %s "%(os_name, rosdep)
                 return False
 
         else:
@@ -148,29 +148,69 @@ class OSIndex:
     def get_os_name(self):
         if not self._os_detected:
             for name in self._os_map.keys():
-                if self._os_map[name].check_presence:
+                if self._os_map[name].check_presence():
                     self._os_detected = name
                     return name
         if not self._os_detected:
             print "Failed to detect OS"
-            sys.exit(1)
+            sys.exit(-1) # TODO do this more elegantly
+
         return self._os_detected
 
     def get_os_version(self):
-        return self._os_map[self.get_os_name()].get_version()
+        if not self._os_version:
+            self._os_version = self._os_map[self.get_os_name()].get_version()
+        return self._os_version
 
     def detect_packages(self, packages):
         return self._os_map[self.get_os_name()].detect_packages(packages)
 
     def generate_package_install_command(self, packages):
         if len(packages) > 0:
-            return self._os_map[self.get_os_name()].generate_package_install_command(packages)
+            bash_script = ""
+            try:
+                bash_script = self._os_map[self.get_os_name()].generate_package_install_command(packages)
+            except KeyError:
+                return "# os name '%s' not registered as a valid os"%self.get_os_name()
+            return bash_script
         else:
             return "#No packages to install: skipping package install command.\n"
 
+####### Linux Helper Functions #####
+def lsb_get_os():
+    try:
+        cmd = ['lsb_release', '-si']
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        return std_out.strip()
+    except:
+        return None
+    
+def lsb_get_codename():
+    try:
+        cmd = ['lsb_release', '-sc']
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        return std_out.strip()
+    except:
+        return None
+    
+def lsb_get_release_version():
+    try:
+        cmd = ['lsb_release', '-sr']
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        return std_out.strip()
+    except:
+        return None
+
+
 ###### DEBIAN SPECIALIZATION #########################
 def dpkg_detect(p):
-    return subprocess.call(['dpkg', '-s', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = ['dpkg-query', '-W', '-f=\'${Status}\'', p]
+    pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (std_out, std_err) = pop.communicate()
+    return (std_out.count('installed') == 1)
 
 ###### UBUNTU SPECIALIZATION #########################
 class Ubuntu:
@@ -182,38 +222,15 @@ class Ubuntu:
         index.add_os("ubuntu", self)
 
     def check_presence(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:                
-                    os_list = fh.read().split()
-                if os_list and os_list[0] == "Ubuntu":
-                    return True
-        except:
-            print "Ubuntu failed to detect OS"
+        if "Ubuntu" == lsb_get_os():
+            return True
         return False
 
     def get_version(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:
-                    os_list = fh.read().split()
-                if os_list[0] == "Ubuntu":
-                    v = os_list[1]
-                    # strip down to major.minor
-                    if '.' in v:
-                        return '.'.join(v.split('.')[:2])
-                    else:
-                        return v
-        except:
-            print "Ubuntu failed to get version"
-            return False
-
-        return False
-
+        return lsb_get_release_version()
+    
     def detect_packages(self, packages):
-        return [p for p in packages if dpkg_detect(p)]
+        return [p for p in packages if not dpkg_detect(p)]
 
     def generate_package_install_command(self, packages):        
         return "#Packages\nsudo apt-get install " + ' '.join(packages)
@@ -234,7 +251,7 @@ class Debian:
                 if os_list and os_list[0] == "Debian":
                     return True
         except:
-            print "Debian failed to detect OS"
+            pass#print "Debian failed to detect OS"
         return False
 
     def get_version(self):
@@ -252,7 +269,7 @@ class Debian:
         return False
 
     def detect_packages(self, packages):
-        return [p for p in packages if dpkg_detect(p)]
+        return [p for p in packages if not dpkg_detect(p)]
 
     def generate_package_install_command(self, packages):        
         return "#Packages\nsudo apt-get install " + ' '.join(packages)
@@ -291,7 +308,7 @@ class Mint:
         return False
 
     def detect_packages(self, packages):
-        return [p for p in packages if dpkg_detect(p)]
+        return [p for p in packages if not dpkg_detect(p)]
 
     def generate_package_install_command(self, packages):        
         return "#Packages\nsudo apt-get install " + ' '.join(packages)
@@ -500,6 +517,17 @@ class Rosdep:
         return self.osi.generate_package_install_command(undetected) + \
             "\n".join(["\n%s"%sc for sc in scripts])
         
+    def check(self, rosdeps):
+        native_packages, scripts = self.get_packages_and_scripts(rosdeps)
+        undetected = self.osi.detect_packages(native_packages)
+        return_str = ""
+        if len(undetected) > 0:
+            return_str += "Did not detect packages: %s\n"%undetected
+        if len(scripts) > 0:
+            return_str += "The following scripts were not tested:\n"
+        for s in scripts:
+            return_str += s + '\n'
+        return return_str
 
     def what_needs(self, rosdeps):
         rosdeps = [p for p in rosdeps if p in self.rdl.get_map()]
@@ -573,9 +601,11 @@ def main():
 
     ################ Add All specializations here ##############################
     ubuntu = Ubuntu(r.osi)
-    #debian = Debian(r.osi)
-    #fedora = Fedora(r.osi)
-    #rhel = Rhel(r.osi)
+    debian = Debian(r.osi)
+    fedora = Fedora(r.osi)
+    rhel = Rhel(r.osi)
+    arch = Arch(r.osi)
+    macports = Macports(r.osi)
     ################ End Add specializations here ##############################
     
     if options.verbose:
@@ -592,10 +622,9 @@ def main():
             fh.flush()
             
             print "executing this script:\n %s"%script
-            p= subprocess.Popen(['bash', fh.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            (sout, serr) = p.communicate()
-            print "Output was",sout
-        
+            p= subprocess.Popen(['bash', fh.name])
+            p.communicate()
+                    
     elif command == "depdb":
         map = r.rdl.get_map()
         for k in map:
@@ -607,6 +636,9 @@ def main():
                         print "<<<< %s on ( %s %s ) -> %s >>>>"%(k, o, v,map[k][o][v])
     elif command == "what_needs":
         print '\n'.join(r.what_needs(rdargs))
+
+    elif command == "check":
+        print r.check(rosdeps)
 
 if __name__ == '__main__':
     sys.exit(main() or 0)

@@ -2,16 +2,19 @@
 # copyright 2009 morgan quigley, bsd license blah blah
 import yaml, urllib2, os, subprocess, sys
 
-if len(sys.argv) > 1:
-  workspace = sys.argv[1]
+if len(sys.argv) == 1:
+  print "syntax: build_distro DISTRO [WORKSPACE]"
+  exit(0)
+elif len(sys.argv) == 3:
+  workspace = sys.argv[2]
 else:
   workspace = os.path.join(os.getcwd(), 'workspace') # creativity = win
+distro_name = sys.argv[1]  
 
-print "building distro in %s" % workspace
+print "building distro '%s' in %s" % (distro_name, workspace)
 f = urllib2.urlopen('http://ros.org/rosdistro.yaml')
 d = yaml.load(f)
 distros = d['distros']
-distro_name = 'latest'
 for distro in distros:
   if distro_name in distro:
     released = distro[distro_name]

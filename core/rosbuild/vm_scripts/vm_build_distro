@@ -1,5 +1,6 @@
 #!/bin/bash
 set -x
+set -o errexit
 
 PORT=12345
 case $1 in
@@ -16,9 +17,9 @@ if [ $PORT -eq 12345 ] ; then
   exit 1
 fi
 
-VBoxManage controlvm $1 poweroff
+VBoxManage controlvm $1 poweroff && true
 sleep 2
-VBoxManage snapshot $1 discardcurrent -state
+VBoxManage snapshot $1 discardcurrent -state 
 sleep 2
 VBoxHeadless -startvm $1 & 
 TRY=1

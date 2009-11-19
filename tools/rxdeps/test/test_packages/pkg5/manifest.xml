@@ -1,0 +1,16 @@
+<package>
+  <description brief="pkg5">
+
+     pkg5
+
+  </description>
+  <author>Tully Foote</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/pkg5</url>
+  <depend package="pkg3"/>
+  <depend package="pkg4"/>
+
+</package>
+
+

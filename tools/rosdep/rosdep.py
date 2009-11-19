@@ -176,6 +176,35 @@ class OSIndex:
         else:
             return "#No packages to install: skipping package install command.\n"
 
+####### Linux Helper Functions #####
+def lsb_get_os():
+    try:
+        cmd = ['lsb_release', '-si']
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        return std_out.strip()
+    except:
+        return None
+    
+def lsb_get_codename():
+    try:
+        cmd = ['lsb_release', '-sc']
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        return std_out.strip()
+    except:
+        return None
+    
+def lsb_get_release_version():
+    try:
+        cmd = ['lsb_release', '-sr']
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        return std_out.strip()
+    except:
+        return None
+
+
 ###### DEBIAN SPECIALIZATION #########################
 def dpkg_detect(p):
     cmd = ['dpkg-query', '-W', '-f=\'${Status}\'', p]
@@ -193,34 +222,13 @@ class Ubuntu:
         index.add_os("ubuntu", self)
 
     def check_presence(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:                
-                    os_list = fh.read().split()
-                if os_list and os_list[0] == "Ubuntu":
-                    return True
-        except:
-            print "Ubuntu failed to detect OS"
+        if "Ubuntu" == lsb_get_os():
+            return True
         return False
 
     def get_version(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:
-                    os_list = fh.read().split()
-                if os_list[0] == "Ubuntu":
-                    v = os_list[1]
-                    # strip down to major.minor
-                    if '.' in v:
-                        return '.'.join(v.split('.')[:2])
-                    else:
-                        return v
-        except:
-            pass#print "Ubuntu failed to get version"
-        return False
-
+        return lsb_get_release_version()
+    
     def detect_packages(self, packages):
         return [p for p in packages if not dpkg_detect(p)]
 

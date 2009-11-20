@@ -5,14 +5,27 @@
 
 import os, shutil, yaml, urllib2, subprocess, sys
 
+def debianize_name(name):
+  return name.replace('_','-')
+
 def build_deb(path):
   stack_name = path.split('/')[-1]
   if not os.path.exists(path) or not stack_name in released:
     return # get that out
   version = stacks[stack_name][distro_name]
   deb_dir = os.path.join(workspace, stack_name)
-  print "building deb for %s version %s in %s" % (stack_name, version, deb_dir)
-  #shutil.copytree(path, deb_dir, symlinks=True)
+  print "working on %s version %s" % (stack_name, version)
+  print "  copying files..."
+  shutil.copytree(path, os.path.join(deb_dir,'opt','ros',distro_name), symlinks=True)
+  print "  removing non-essential files..."
+  #subprocess.check_call(['find',deb_dir,'-name','.svn',+'.deb'])
+  non_essential = subprocess.Popen(['find',deb_dir,'-name','.svn'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
+  non_essential += subprocess.Popen(['find',deb_dir,'-name','*.o'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
+  non_essential += subprocess.Popen(['find',deb_dir,'-name','.deps'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
+  non_essential += subprocess.Popen(['find',deb_dir,'-name','CMakeFiles'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
+  non_essential += subprocess.Popen(['find',deb_dir,'-name','CMakeCache.txt'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
+  subprocess.check_call(['sudo','rm','-rf'] + non_essential)
+  print "  generating dpkg dependencies..."
   rosstack_path = os.path.join(ros_root, 'bin', 'rosstack')
   stack_deps = subprocess.Popen([rosstack_path,'deps',stack_name], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
   deb_deps = ['build-essential','cmake','python-yaml','subversion']
@@ -25,15 +38,16 @@ def build_deb(path):
   if install_line:
     native_packages = install_line[0][20:].split()
   deb_deps += native_packages
-  deb_deps += ["ros-%s-%s"%(distro_name,s) for s in stack_deps] 
-  deb_name = "ros-%s-%s" % (distro_name, stack_name)
-  size = int(subprocess.Popen(["du","-bs",path], stdout=subprocess.PIPE).communicate()[0].strip().split()[0])
-  os.mkdir(deb_dir, 0755)
-  control = open(os.path.join(deb_dir, "control"), "w")
+  deb_deps += [debianize_name("ros-%s-%s"%(distro_name,s)) for s in stack_deps] 
+  deb_name = debianize_name("ros-%s-%s" % (distro_name, stack_name))
+  arch = subprocess.Popen(['dpkg', '--print-architecture'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].strip()
+  size = int(subprocess.Popen(["du","-bs",deb_dir], stdout=subprocess.PIPE).communicate()[0].strip().split()[0])
+  os.mkdir(os.path.join(deb_dir, 'DEBIAN'), 0755)
+  control = open(os.path.join(deb_dir, 'DEBIAN', "control"), "w")
   control.write("Package: %s\n" % deb_name)
   control.write("Source: %s\n" % deb_name)
   control.write("Version: %s-1\n" % version)
-  control.write("Architecture: i386\n")
+  control.write("Architecture: %s\n" % arch)
   control.write("Maintainer: ROS maintains itself\n")
   control.write("Installed-Size: %s\n" % size)
   control.write("Depends: %s\n" % ", ".join(deb_deps))
@@ -42,7 +56,10 @@ def build_deb(path):
   control.write("Homepage: http://ros.org\n")
   control.write("Description: ROS - a Robot Operating System\n")
   control.write(" More documentation could go here\n")
-
+  print "  running dpkg-deb..."
+  os.chdir(workspace)
+  control.close()
+  subprocess.check_call(['fakeroot','dpkg-deb','--build',deb_dir,deb_name+'.deb'])
 
 ros_root = '/opt/ros/ros'
 stacks_root = '/opt/ros/stacks'
@@ -80,7 +97,6 @@ except:
  
 # first, build deb for the ros stack, in /opt/ros/ros
 build_deb(ros_root)
-
 # now, build debs for stacks in /opt/ros/stacks/BLAH
 for stack in os.listdir(stacks_root): 
   if stack != '.svn':

@@ -28,7 +28,7 @@ def build_deb(path):
   print "  generating dpkg dependencies..."
   rosstack_path = os.path.join(ros_root, 'bin', 'rosstack')
   stack_deps = subprocess.Popen([rosstack_path,'deps',stack_name], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
-  deb_deps = ['build-essential','cmake','python-yaml','subversion']
+  deb_deps = ['libc6','build-essential','cmake','python-yaml','subversion']
   # get the packages in this stack
   pkgs = subprocess.Popen([rosstack_path,'contents',stack_name], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
   # snarf the output of 'rosdep generate_bash' for those packages
@@ -48,10 +48,11 @@ def build_deb(path):
   control.write("Source: %s\n" % deb_name)
   control.write("Version: %s-1\n" % version)
   control.write("Architecture: %s\n" % arch)
-  control.write("Maintainer: ROS maintains itself\n")
+  # not sure what to put here. lintian says it needs an email address.
+  control.write("Maintainer: The ROS community <mquigley@cs.stanford.edu>\n")
   control.write("Installed-Size: %s\n" % size)
   control.write("Depends: %s\n" % ", ".join(deb_deps))
-  control.write("Section: tools\n")
+  control.write("Section: utils\n")
   control.write("Priority: optional\n")
   control.write("Homepage: http://ros.org\n")
   control.write("Description: ROS - a Robot Operating System\n")

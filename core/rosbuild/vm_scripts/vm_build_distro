@@ -36,7 +36,7 @@ sleep 1
 echo -e "hooray, $1 has started. logging into it...\n\n"
  
 BUILD_FAIL=1
-if ssh -t -p $PORT user@localhost "bash -c 'sudo apt-get -y install build-essential python-yaml cmake subversion && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/build_distro -O ~/build_distro && chmod 755 ~/build_distro && ~/build_distro latest'" ; then
+if ssh -t -p $PORT user@localhost "bash -c 'sudo apt-get -y install build-essential python-yaml cmake subversion && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/build_distro -O ~/build_distro && chmod 755 ~/build_distro && sudo ~/build_distro latest /opt/ros && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/assemble_debs && sudo ./assemble_debs && ls -l'" ; then
   BUILD_FAIL=0
 fi
   

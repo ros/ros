@@ -568,6 +568,32 @@ rosdep check <packages>...
 
 _commands = ['generate_bash', 'satisfy', 'install', 'depdb', 'what_needs', 'check']
 
+class Context:
+  def __init__(self, packages):
+    (self.verified_packages, self.rejected_packages) = roslib.stacks.expand_to_packages(packages)
+    #print verified_packages, "Rejected", rejected_packages
+
+
+    ### Find all dependencies
+    self.r = Rosdep()
+    self.rosdeps = self.r.gather_rosdeps(self.verified_packages)
+
+    ### Detect OS name and version
+
+    ################ Add All specializations here ############################
+    ubuntu = Ubuntu(self.r.osi)
+    debian = Debian(self.r.osi)
+    fedora = Fedora(self.r.osi)
+    rhel = Rhel(self.r.osi)
+    arch = Arch(self.r.osi)
+    macports = Macports(self.r.osi)
+    ################ End Add specializations here ############################
+
+def get_native_packages(packages):
+  context = Context(packages)
+  native_packages, scripts = context.r.get_packages_and_scripts(context.rosdeps)
+  return native_packages
+
 def main():
     from optparse import OptionParser
     parser = OptionParser(usage=_usage, prog='rosdep')
@@ -578,7 +604,6 @@ def main():
 
     options, args = parser.parse_args()
 
-
     if len(args) == 0:
         parser.error("Please enter a command")
     command = args[0]
@@ -586,38 +611,20 @@ def main():
         parser.error("Unsupported command %s."%command)
     if len(args) < 2:
         parser.error("Please enter arguments for '%s'"%command)
-    rdargs = args[1:]
+    packages = args[1:]
 
-
-    (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(rdargs)
-    #print verified_packages, "Rejected", rejected_packages
-
-    
-    ### Find all dependencies
-    r = Rosdep()
-    rosdeps = r.gather_rosdeps(verified_packages)
-
-    ### Detect OS name and version
-
-    ################ Add All specializations here ##############################
-    ubuntu = Ubuntu(r.osi)
-    debian = Debian(r.osi)
-    fedora = Fedora(r.osi)
-    rhel = Rhel(r.osi)
-    arch = Arch(r.osi)
-    macports = Macports(r.osi)
-    ################ End Add specializations here ##############################
+    context = Context(packages)
     
     if options.verbose:
-        print "Detected OS: " + r.osi.get_os_name()
-        print "Detected Version: " + r.osi.get_os_version()
+        print "Detected OS: " + context.r.osi.get_os_name()
+        print "Detected Version: " + context.r.osi.get_os_version()
 
     if command == "generate_bash" or command == "satisfy":
-        print r.generate_script(rosdeps, include_duplicates=options.include_duplicates)
+        print context.r.generate_script(context.rosdeps, include_duplicates=options.include_duplicates)
 
     elif command == "install":
         with tempfile.NamedTemporaryFile() as fh:
-            script = r.generate_script(rosdeps, include_duplicates= options.include_duplicates)
+            script = context.r.generate_script(context.rosdeps, include_duplicates= options.include_duplicates)
             fh.write(script)
             fh.flush()
             
@@ -626,7 +633,7 @@ def main():
             p.communicate()
                     
     elif command == "depdb":
-        map = r.rdl.get_map()
+        map = context.r.rdl.get_map()
         for k in map:
             for o in map[k]:
                 if isinstance(map[k][o], basestring):
@@ -635,10 +642,10 @@ def main():
                     for v in map[k][o]:
                         print "<<<< %s on ( %s %s ) -> %s >>>>"%(k, o, v,map[k][o][v])
     elif command == "what_needs":
-        print '\n'.join(r.what_needs(rdargs))
+        print '\n'.join(context.r.what_needs(rdargs))
 
     elif command == "check":
-        print r.check(rosdeps)
+        print context.r.check(context.rosdeps)
 
 if __name__ == '__main__':
     sys.exit(main() or 0)

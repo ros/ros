@@ -92,20 +92,24 @@
     (when (probe-file asdf-path) asdf-path)))
       
 (defun asdf-ros-msg-srv-search (definition)
-  (let ((package-name (subseq definition 0 (- (length definition) 4)))
-        (package-suffix (subseq definition (- (length definition) 4))))
-    (when (member package-suffix '("-msg" "-srv") :test #'equal)
-      (let ((filename (merge-pathnames (make-pathname
-                                        :directory `(:relative ,(subseq package-suffix 1)
-                                                               "lisp" ,package-name)
-                                        :name definition
-                                        :type "asd")
-                                       (parse-namestring (ros-package-path package-name)))))
-        (when (probe-file filename)
-          filename)))))
+  (setq definition (asdf::coerce-name definition))
+  (when (> (length definition) 4)
+    (let ((package-name (subseq definition 0 (- (length definition) 4)))
+	  (package-suffix (subseq definition (- (length definition) 4))))
+      (when (member package-suffix '("-msg" "-srv") :test #'equal)
+	(let ((filename (merge-pathnames 
+			 (make-pathname
+			  :directory `(:relative ,(subseq package-suffix 1)
+						 "lisp" ,package-name)
+			  :name definition
+			  :type "asd")
+			 (parse-namestring (ros-package-path package-name)))))
+	  (when (probe-file filename)
+	    filename))))))
 
 
 (defun asdf-ros-pkg-search (definition)
+  (setq definition (asdf::coerce-name definition))
   (let ((pos (position #\/ definition :from-end t)))
     (when pos
       (let* ((pkg (subseq definition 0 pos))
@@ -120,8 +124,8 @@
 
 
 (setq asdf:*system-definition-search-functions* 
-      (nconc asdf:*system-definition-search-functions*
-	     '(asdf-ros-msg-srv-search asdf-ros-pkg-search)))
+      (append asdf:*system-definition-search-functions*
+	      '(asdf-ros-msg-srv-search asdf-ros-pkg-search)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; top level

@@ -272,7 +272,9 @@ Set up things so that publish may now be called with this topic.  Also, returns 
     
     ;; Remove closed streams
     (setf (subscriber-connections publication)
-	  (delete-if #'(lambda (sub) (not (open-stream-p (subscriber-stream sub))))
+	  (delete-if #'(lambda (sub) 
+			 (let ((str (subscriber-stream sub)))
+			   (or (not (open-stream-p str)) (gethash str *broken-socket-streams*))))
 		     (subscriber-connections publication)))
 
     ;; Write message to each stream

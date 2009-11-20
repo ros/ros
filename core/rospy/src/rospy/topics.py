@@ -67,16 +67,52 @@ from __future__ import with_statement
 import struct, cStringIO, thread, threading, logging, time
 from itertools import chain
 
-from roslib.message import Message, SerializationError
+import roslib.message
 
 from rospy.core import *
 from rospy.exceptions import ROSSerializationException, TransportTerminated
-from rospy.msg import serialize_message, AnyMsg
+from rospy.msg import serialize_message
 from rospy.registration import get_topic_manager, set_topic_manager, Registration, get_registration_listeners
 from rospy.tcpros import get_tcpros_handler, DEFAULT_BUFF_SIZE
 from rospy.transport import DeadTransport
 
-logger = logging.getLogger('rospy.topics')
+_logger = logging.getLogger('rospy.topics')
+
+# wrap roslib implementation and map it to rospy namespace
+Message = roslib.message.Message
+
+class AnyMsg(roslib.message.Message):
+    """
+    Message class to use for subscribing to any topic regardless
+    of type. Incoming messages are not deserialized. Instead, the raw
+    serialized data can be accssed via the buff property.
+
+    This class is meant to be used by advanced users only.
+    """
+    _md5sum = rospy.names.TOPIC_ANYTYPE
+    _type = rospy.names.TOPIC_ANYTYPE
+    _has_header = False
+    _full_text = ''
+    __slots__ = ['_buff']
+    def __init__(self, *args):
+        """
+        Constructor. Does not accept any arguments.
+        """
+        if len(args) != 0:
+            raise rospy.exceptions.ROSException("AnyMsg does not accept arguments")
+        self._buff = None
+
+    def serialize(self, buff):
+        """AnyMsg provides an implementation so that a node can forward messages w/o (de)serialization"""
+        if self._buff is None:
+            raise rospy.exceptions("AnyMsg is not initialized")
+        else:
+            buff.write(self._buff)
+            
+    def deserialize(self, str):
+        """Copies raw buffer into self._buff"""
+        self._buff = str
+        return self
 
 #######################################################################
 # Base classes for all client-API instantiated pub/sub
@@ -93,7 +129,7 @@ class Topic(object):
         @param name: graph resource name of topic, e.g. 'laser'. 
         @type  name: str
         @param data_class: message class for serialization
-        @type  data_class: Message
+        @type  data_class: L{Message}
         @param reg_type Registration.PUB or Registration.SUB
         @type  reg_type: str
         @raise ValueError: if parameters are invalid
@@ -105,7 +141,7 @@ class Topic(object):
             raise ValueError("topic parameter 'data_class' is not initialized")
         if not type(data_class) == type:
             raise ValueError("data_class [%s] is not a class"%data_class) 
-        if not issubclass(data_class, Message):
+        if not issubclass(data_class, roslib.message.Message):
             raise ValueError("data_class [%s] is not a message data class"%data_class.__class__.__name__)
         
         # this is a bit ugly, but necessary due to the fact that we allow
@@ -137,10 +173,14 @@ class Topic(object):
     def unregister(self):
         """
         unpublish/unsubscribe from topic. Topic instance is no longer
-        valid after this call.
+        valid after this call. Additional calls to unregister() have no effect.
         """
-        get_topic_manager().release_impl(self.reg_type, self.resolved_name)
-        self.impl = self.resolved_name = self.type = self.md5sum = self.data_class = None
+        # as we don't guard unregister, have to protect value of
+        # resolved_name for release_impl call
+        resolved_name = self.resolved_name
+        if resolved_name and self.impl:
+            get_topic_manager().release_impl(self.reg_type, resolved_name)
+            self.impl = self.resolved_name = self.type = self.md5sum = self.data_class = None
 
 class _TopicImpl(object):
     """
@@ -154,8 +194,8 @@ class _TopicImpl(object):
         Base constructor
         @param name: graph resource name of topic, e.g. 'laser'. 
         @type  name: str
-        @param data_class Message: message data class 
-        @type  data_class: Message
+        @param data_class: message data class 
+        @type  data_class: L{Message}
         """
 
         # #1810 made resolved/unresolved more explicit so we don't accidentally double-resolve
@@ -190,7 +230,7 @@ class _TopicImpl(object):
                     c.close()
                 except:
                     # seems more logger.error internal than external logerr
-                    logger.error(traceback.format_exc())
+                    _logger.error(traceback.format_exc())
             del self.connections[:]
 
     def get_num_connections(self):
@@ -305,7 +345,7 @@ class Subscriber(Topic):
         @type  name: str
         @param data_class: data type class to use for messages,
           e.g. std_msgs.msg.String
-        @type  data_class: Message class
+        @type  data_class: L{Message} class
         @param callback: function to call ( fn(data)) when data is
           received. If callback_args is set, the function must accept
           the callback_args as a second argument, i.e. fn(data,
@@ -349,10 +389,26 @@ class Subscriber(Topic):
             self.impl.set_buff_size(buff_size)
 
         if callback is not None:
+            # #1852
+            # it's important that we call add_callback so that the
+            # callback can be invoked with any latched messages
             self.impl.add_callback(callback, callback_args)
+            # save arguments for unregister
+            self.callback = callback
+            self.callback_args = callback_args
         if tcp_nodelay:
             self.impl.set_tcp_nodelay(tcp_nodelay)        
 
+    def unregister(self):
+        """
+        unpublish/unsubscribe from topic. Topic instance is no longer
+        valid after this call. Additional calls to unregister() have no effect.
+        """
+        if self.impl:
+            self.impl.remove_callback(self.callback, self.callback_args)
+            self.callback = self.callback_args = None
+            super(Subscriber, self).unregister()
+            
 class _SubscriberImpl(_TopicImpl):
     """
     Underyling L{_TopicImpl} implementation for subscriptions.
@@ -364,7 +420,7 @@ class _SubscriberImpl(_TopicImpl):
         @param name: graph resource name of topic, e.g. 'laser'.
         @type  name: str
         @param data_class: Message data class
-        @type  data_class: Message
+        @type  data_class: L{Message} class
         """
         super(_SubscriberImpl, self).__init__(name, data_class)
         # client-methods to invoke on new messages. should only modify
@@ -447,27 +503,65 @@ class _SubscriberImpl(_TopicImpl):
             new_callbacks = self.callbacks[:]
             new_callbacks.append((cb, cb_args))
             self.callbacks = new_callbacks
+
+        # #1852: invoke callback with any latched messages
+        for c in self.connections:
+            if c.latch is not None:
+                self._invoke_callback(c.latch, cb, cb_args)
+
+    def remove_callback(self, cb, cb_args):
+        """
+        Unregister a message callback.
+        @param cb: callback function 
+        @type  cb: fn(msg)
+        @param cb_cargs: additional arguments associated with callback
+        @type  cb_cargs: Any
+        @raise KeyError: if no matching callback
+        """
+        with self.c_lock:
+            # we lock in order to serialize calls to add_callback, but
+            # we copy self.callbacks so we can it
+            matches = [x for x in self.callbacks if x[0] == cb and x[1] == cb_args]
+            if matches:
+                new_callbacks = self.callbacks[:]
+                # remove the first match
+                new_callbacks.remove(matches[0])
+                self.callbacks = new_callbacks
+        if not matches:
+            raise KeyError("no matching cb")
+
+    def _invoke_callback(self, msg, cb, cb_args):
+        """
+        Invoke callback on msg. Traps and logs any exceptions raise by callback
+        @param msg: message data
+        @type  msg: L{Message}
+        @param cb: callback
+        @type  cb: fn(msg, cb_args)
+        @param cb_args: callback args or None
+        @type  cb_args: Any
+        """
+        try:
+            if cb_args is not None:
+                cb(msg, cb_args)
+            else:
+                cb(msg)
+        except Exception, e:
+            if not is_shutdown():
+                logerr("bad callback: %s\n%s"%(cb, traceback.format_exc()))
+            else:
+                _logger.warn("during shutdown, bad callback: %s\n%s"%(cb, traceback.format_exc()))
         
     def receive_callback(self, msgs):
         """
         Called by underlying connection transport for each new message received
         @param msgs: message data
-        @type msgs: [Message]
+        @type msgs: [L{Message}]
         """
         # save reference to avoid lock
         callbacks = self.callbacks
         for msg in msgs:
             for cb, cb_args in callbacks:
-                try:
-                    if cb_args is not None:
-                        cb(msg, cb_args)
-                    else:
-                        cb(msg)
-                except Exception, e:
-                    if not is_shutdown():
-                        logerr("bad callback: %s\n%s"%(cb, traceback.format_exc()))
-                    else:
-                        logger.warn("during shutdown, bad callback: %s\n%s"%(cb, traceback.format_exc()))                        
+                self._invoke_callback(msg, cb, cb_args)
 
 class SubscribeListener(object):
     """
@@ -516,7 +610,7 @@ class Publisher(Topic):
         @param name: resource name of topic, e.g. 'laser'. 
         @type  name: str
         @param data_class: message class for serialization
-        @type  data_class: Message class
+        @type  data_class: L{Message} class
         @param subscriber_listener: listener for
           subscription events. May be None.
         @type  subscriber_listener: L{SubscribeListener}
@@ -550,7 +644,7 @@ class Publisher(Topic):
           pub.publish(message_field_1, message_field_2...)            
           pub.publish(message_field_1='foo', message_field_2='bar')
     
-        @param args : Message instance, Message arguments, or no args if keyword arguments are used
+        @param args : L{Message} instance, message arguments, or no args if keyword arguments are used
         @param kwds : Message keyword arguments. If kwds are used, args must be unset
         @raise ROSException: If rospy node has not been initialized
         @raise ROSSerializationException: If unable to serialize
@@ -558,19 +652,19 @@ class Publisher(Topic):
         """
         if not is_initialized():
             raise ROSException("ROS node has not been initialized yet. Please call init_node() first")
-        data = args_kwds_to_message(self.data_class, args, kwds)
+        data = _args_kwds_to_message(self.data_class, args, kwds)
         try:
             self.impl.acquire()
             self.impl.publish(data)
-        except SerializationError, e:
+        except roslib.message.SerializationError, e:
             # can't go to rospy.logerr(), b/c this could potentially recurse
-            logger.error(traceback.format_exc(e))
+            _logger.error(traceback.format_exc(e))
             print traceback.format_exc(e)
             raise ROSSerializationException(str(e))
         finally:
             self.impl.release()            
 
-def args_kwds_to_message(data_class, args, kwds):
+def _args_kwds_to_message(data_class, args, kwds):
     if args and kwds:
         raise TypeError("publish() can be called with arguments or keywords, but not both.")
     elif kwds:
@@ -593,7 +687,7 @@ class _PublisherImpl(_TopicImpl):
         @param name: name of topic, e.g. 'laser'. 
         @type  name: str
         @param data_class: Message data class    
-        @type  data_class: Message
+        @type  data_class: L{Message} class
         """
         super(_PublisherImpl, self).__init__(name, data_class)
         self.buff = cStringIO.StringIO()
@@ -701,7 +795,7 @@ class _PublisherImpl(_TopicImpl):
         @type  connection_override: L{Transport}
         @return: True if the data was published, False otherwise.
         @rtype: bool
-        @raise roslib.message.SerializationError: if Message instance is unable to serialize itself
+        @raise roslib.message.SerializationError: if L{Message} instance is unable to serialize itself
         """
         if self.is_latch:
             self.latch = message
@@ -765,7 +859,7 @@ class _TopicManager(object):
         self.subs = {} #: { topic: _SubscriberImpl }
         self.topics = set() # [str] list of topic names
         self.lock = threading.Condition()
-        logger.info("topicmanager initialized")
+        _logger.info("topicmanager initialized")
 
     def get_pub_sub_info(self):
         """
@@ -817,7 +911,7 @@ class _TopicManager(object):
         @type  reg_type: str
         """
         resolved_name = ps.resolved_name
-        logger.debug("tm._add: %s, %s, %s", resolved_name, ps.type, reg_type)
+        _logger.debug("tm._add: %s, %s, %s", resolved_name, ps.type, reg_type)
         try:
             self.lock.acquire()
             map[resolved_name] = ps
@@ -845,7 +939,7 @@ class _TopicManager(object):
         @type  reg_type: str
         """
         resolved_name = ps.resolved_name
-        logger.debug("tm._remove: %s, %s, %s", resolved_name, ps.type, reg_type)
+        _logger.debug("tm._remove: %s, %s, %s", resolved_name, ps.type, reg_type)
         try:
             self.lock.acquire()
             del map[resolved_name]
@@ -891,7 +985,7 @@ class _TopicManager(object):
         @type  reg_type: str
         
         @param data_class: message class for topic
-        @type  data_class: Message Class
+        @type  data_class: L{Message} class
         """
         if reg_type == Registration.PUB:
             map = self.pubs
@@ -931,19 +1025,16 @@ class _TopicManager(object):
             map = self.pubs
         else:
             map = self.subs
-        try:
-            self.lock.acquire()
+        with self.lock:
             impl = map.get(resolved_name, None)
-            assert impl is not None, "cannot release topic impl as impl does not exist"
+            assert impl is not None, "cannot release topic impl as impl [%s] does not exist"%resolved_name
             impl.ref_count -= 1
             assert impl.ref_count >= 0, "topic impl's reference count has gone below zero"
             if impl.ref_count == 0:
-                logger.debug("topic impl's ref count is zero, deleting topic %s...", resolved_name)
+                _logger.debug("topic impl's ref count is zero, deleting topic %s...", resolved_name)
                 impl.close()
                 self._remove(impl, map, reg_type)
-                logger.debug("... done deletig topic %s", resolved_name)
-        finally:
-            self.lock.release()
+                _logger.debug("... done deletig topic %s", resolved_name)
 
     def get_publisher_impl(self, resolved_name):
         """
@@ -998,10 +1089,6 @@ class _TopicManager(object):
     ## @return [[str,str],]: list of topics published by this node, [ [topic1, topicType1]...[topicN, topicTypeN]]
     def get_publications(self):
         return self._get_list(self.pubs)
-
-# #519 backwards compatibility
-TopicPub = Publisher
-TopicSub = Subscriber
 
 set_topic_manager(_TopicManager())
 

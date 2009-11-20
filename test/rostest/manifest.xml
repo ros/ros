@@ -14,6 +14,7 @@
 
   <export>
     <cpp cflags="-I${prefix}/include"/>
+    <rosdoc config="rosdoc.yaml" />
   </export>
 
   <review status="API conditionally cleared" notes="2/5/09"/>

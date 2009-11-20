@@ -4,13 +4,22 @@
 #include "scanner.h"
 #include "token.h"
 #include "exceptions.h"
-#include <iostream>
+#include "emitter.h"
 #include <memory>
 
 namespace YAML
 {
 	Map::Map()
 	{
+	}
+	
+	Map::Map(const node_map& data)
+	{
+		for(node_map::const_iterator it=data.begin();it!=data.end();++it) {
+			std::auto_ptr<Node> pKey = it->first->Clone();
+			std::auto_ptr<Node> pValue = it->second->Clone();
+			m_data[pKey.release()] = pValue.release();
+		}
 	}
 
 	Map::~Map()
@@ -27,6 +36,11 @@ namespace YAML
 		m_data.clear();
 	}
 
+	Content *Map::Clone() const
+	{
+		return new Map(m_data);
+	}
+	
 	bool Map::GetBegin(std::map <Node *, Node *, ltnode>::const_iterator& it) const
 	{
 		it = m_data.begin();
@@ -39,14 +53,19 @@ namespace YAML
 		return true;
 	}
 
+	std::size_t Map::GetSize() const
+	{
+		return m_data.size();
+	}
+
 	void Map::Parse(Scanner *pScanner, const ParserState& state)
 	{
 		Clear();
 
 		// split based on start token
 		switch(pScanner->peek().type) {
-			case TT_BLOCK_MAP_START: ParseBlock(pScanner, state); break;
-			case TT_FLOW_MAP_START: ParseFlow(pScanner, state); break;
+			case Token::BLOCK_MAP_START: ParseBlock(pScanner, state); break;
+			case Token::FLOW_MAP_START: ParseFlow(pScanner, state); break;
 			default: break;
 		}
 	}
@@ -58,23 +77,27 @@ namespace YAML
 
 		while(1) {
 			if(pScanner->empty())
-				throw ParserException(-1, -1, ErrorMsg::END_OF_MAP);
+				throw ParserException(Mark::null(), ErrorMsg::END_OF_MAP);
 
 			Token token = pScanner->peek();
-			if(token.type != TT_KEY && token.type != TT_BLOCK_END)
-				throw ParserException(token.line, token.column, ErrorMsg::END_OF_MAP);
+			if(token.type != Token::KEY && token.type != Token::VALUE && token.type != Token::BLOCK_MAP_END)
+				throw ParserException(token.mark, ErrorMsg::END_OF_MAP);
 
-			pScanner->pop();
-			if(token.type == TT_BLOCK_END)
+			if(token.type == Token::BLOCK_MAP_END) {
+				pScanner->pop();
 				break;
+			}
 
 			std::auto_ptr <Node> pKey(new Node), pValue(new Node);
-
-			// grab key
-			pKey->Parse(pScanner, state);
+			
+			// grab key (if non-null)
+			if(token.type == Token::KEY) {
+				pScanner->pop();
+				pKey->Parse(pScanner, state);
+			}
 
 			// now grab value (optional)
-			if(!pScanner->empty() && pScanner->peek().type == TT_VALUE) {
+			if(!pScanner->empty() && pScanner->peek().type == Token::VALUE) {
 				pScanner->pop();
 				pValue->Parse(pScanner, state);
 			}
@@ -91,66 +114,47 @@ namespace YAML
 
 		while(1) {
 			if(pScanner->empty())
-				throw ParserException(-1, -1, ErrorMsg::END_OF_MAP_FLOW);
+				throw ParserException(Mark::null(), ErrorMsg::END_OF_MAP_FLOW);
 
 			Token& token = pScanner->peek();
 			// first check for end
-			if(token.type == TT_FLOW_MAP_END) {
+			if(token.type == Token::FLOW_MAP_END) {
 				pScanner->pop();
 				break;
 			}
-
-			// now it better be a key
-			if(token.type != TT_KEY)
-				throw ParserException(token.line, token.column, ErrorMsg::END_OF_MAP_FLOW);
-
-			pScanner->pop();
-
+			
 			std::auto_ptr <Node> pKey(new Node), pValue(new Node);
 
-			// grab key
-			pKey->Parse(pScanner, state);
-
+			// grab key (if non-null)
+			if(token.type == Token::KEY) {
+				pScanner->pop();
+				pKey->Parse(pScanner, state);
+			}
+			
 			// now grab value (optional)
-			if(!pScanner->empty() && pScanner->peek().type == TT_VALUE) {
+			if(!pScanner->empty() && pScanner->peek().type == Token::VALUE) {
 				pScanner->pop();
 				pValue->Parse(pScanner, state);
 			}
-
+			
 			// now eat the separator (or could be a map end, which we ignore - but if it's neither, then it's a bad node)
 			Token& nextToken = pScanner->peek();
-			if(nextToken.type == TT_FLOW_ENTRY)
+			if(nextToken.type == Token::FLOW_ENTRY)
 				pScanner->pop();
-			else if(nextToken.type != TT_FLOW_MAP_END)
-				throw ParserException(nextToken.line, nextToken.column, ErrorMsg::END_OF_MAP_FLOW);
+			else if(nextToken.type != Token::FLOW_MAP_END)
+				throw ParserException(nextToken.mark, ErrorMsg::END_OF_MAP_FLOW);
 
 			// assign the map with the actual pointers
 			m_data[pKey.release()] = pValue.release();
 		}
 	}
 
-	void Map::Write(std::ostream& out, int indent, bool startedLine, bool onlyOneCharOnLine)
+	void Map::Write(Emitter& out) const
 	{
-		if(startedLine && !onlyOneCharOnLine)
-			out << "\n";
-
-		for(node_map::const_iterator it=m_data.begin();it!=m_data.end();++it) {
-			if((startedLine && !onlyOneCharOnLine) || it != m_data.begin()) {
-				for(int i=0;i<indent;i++)
-					out << "  ";
-			}
-
-			out << "? ";
-			it->first->Write(out, indent + 1, true, it!= m_data.begin() || !startedLine || onlyOneCharOnLine);
-
-			for(int i=0;i<indent;i++)
-				out << "  ";
-			out << ": ";
-			it->second->Write(out, indent + 1, true, true);
-		}
-
-		if(m_data.empty())
-			out << "\n";
+		out << BeginMap;
+		for(node_map::const_iterator it=m_data.begin();it!=m_data.end();++it)
+			out << Key << *it->first << Value << *it->second;
+		out << EndMap;
 	}
 
 	int Map::Compare(Content *pContent)

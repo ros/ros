@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: masterslave.py 2364 2008-10-09 00:06:22Z sfkwc $
+# Revision $Id$
 
 from rospy.core import xmlrpcapi, mloginfo
 from rospy.names import get_caller_id

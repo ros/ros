@@ -1,0 +1,16 @@
+<package>
+  <description brief="test_rxdeps">
+
+     test_rxdeps
+
+  </description>
+  <author>Tully Foote</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/test_rxdeps</url>
+  <depend package="rxdeps"/>
+  <depend package="rostest"/>
+
+</package>
+
+

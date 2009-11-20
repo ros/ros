@@ -1,7 +1,7 @@
 <launch>
 
   <node pkg="package" type="test_node_rosparam_load" name="rosparam_load">
-    <rosparam file="load.yaml" command="load" />
+    <rosparam file="$(find test_roslaunch)/test/params.yaml" command="load" />
   </node>
   
 </launch>

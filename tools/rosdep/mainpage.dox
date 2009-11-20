@@ -58,4 +58,10 @@ package repositories, builds rospack and rosdep, and then instructs rosdep
 to install the dependencies of roscpp, and finally does a recursive make of
 roscpp.
 
+\section Acknowledgments
+
+rosdep uses yaml-cpp, a C++ YAML parser under the MIT license. The yaml-cpp
+project can be found here:
+http://code.google.com/p/yaml-cpp
+
 */

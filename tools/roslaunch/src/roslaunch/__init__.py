@@ -49,8 +49,10 @@ from roslaunch.xmlloader import XmlLoader, XmlParseException
 
 NAME = 'roslaunch'
 
-## scripts using roslaunch MUST call configure_logging
 def configure_logging(uuid):
+    """
+    scripts using roslaunch MUST call configure_logging
+    """
     try:
         import socket
         logfile_basename = os.path.join(uuid, '%s-%s-%s.log'%(NAME, socket.gethostname(), os.getpid()))
@@ -98,6 +100,9 @@ def _get_optparse():
     parser.add_option("--core", action="store_true",
                       dest="core", default=False, 
                       help="Launch core services only")
+    parser.add_option("--pid",
+                      dest="pid_fn", default="",
+                      help="write the roslaunch pid to filename")
     return parser
     
 def _validate_args(parser, options, args):
@@ -126,6 +131,7 @@ def _validate_args(parser, options, args):
         parser.error("The following input files do not exist: %s"%f)
     
 def main(argv=sys.argv):
+    options = None
     try:
         import roslaunch.rlutil
         parser = _get_optparse()
@@ -149,7 +155,11 @@ def main(argv=sys.argv):
         if options.wait_for_master:
             if options.core:
                 parser.error("--wait cannot be used with roscore")
-            _wait_for_master()            
+            roslaunch.rlutil._wait_for_master()            
+
+        # write the pid to a file
+        if options.pid_fn:
+          open(options.pid_fn, "w").write(str(os.getpid()))
 
         # spin up the logging infrastructure. have to wait until we can read options.run_id
         uuid = roslaunch.rlutil.get_or_generate_uuid(options.run_id, options.wait_for_master)
@@ -177,9 +187,15 @@ def main(argv=sys.argv):
             # This is a roslaunch parent, spin up parent server and launch processes.
             # args are the roslaunch files to load
             import roslaunch.parent
-            p = roslaunch.parent.ROSLaunchParent(uuid, args, is_core=options.core, port=options.port, local_only=options.local_only)
-            p.start()
-            p.spin()
+            try:
+              p = roslaunch.parent.ROSLaunchParent(uuid, args, is_core=options.core, port=options.port, local_only=options.local_only)
+              p.start()
+              p.spin()
+            finally:
+              # remove the pid file
+              if options.pid_fn:
+                try: os.unlink(options.pid_fn)
+                except os.error, reason: pass
 
     except RLException, e:
         roslaunch.core.printerrlog(str(e))

@@ -38,7 +38,6 @@ import sys, string
 import subprocess
 import getopt
 import roslib
-import roslib.scriptutil
 import roslib.rosenv
 
 from math import sqrt

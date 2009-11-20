@@ -3,13 +3,20 @@
 #include "node.h"
 #include "scanner.h"
 #include "token.h"
-#include <iostream>
+#include "emitter.h"
+#include <stdexcept>
 
 namespace YAML
 {
 	Sequence::Sequence()
 	{
 
+	}
+
+	Sequence::Sequence(const std::vector<Node *>& data)
+	{
+		for(std::size_t i=0;i<data.size();i++)
+			m_data.push_back(data[i]->Clone().release());
 	}
 
 	Sequence::~Sequence()
@@ -19,9 +26,14 @@ namespace YAML
 
 	void Sequence::Clear()
 	{
-		for(unsigned i=0;i<m_data.size();i++)
+		for(std::size_t i=0;i<m_data.size();i++)
 			delete m_data[i];
 		m_data.clear();
+	}
+
+	Content *Sequence::Clone() const
+	{
+		return new Sequence(m_data);
 	}
 
 	bool Sequence::GetBegin(std::vector <Node *>::const_iterator& it) const
@@ -36,14 +48,14 @@ namespace YAML
 		return true;
 	}
 
-	Node *Sequence::GetNode(unsigned i) const
+	Node *Sequence::GetNode(std::size_t i) const
 	{
 		if(i < m_data.size())
 			return m_data[i];
 		return 0;
 	}
 
-	unsigned Sequence::GetSize() const
+	std::size_t Sequence::GetSize() const
 	{
 		return m_data.size();
 	}
@@ -54,9 +66,8 @@ namespace YAML
 
 		// split based on start token
 		switch(pScanner->peek().type) {
-			case TT_BLOCK_SEQ_START: ParseBlock(pScanner, state); break;
-			case TT_BLOCK_ENTRY: ParseImplicit(pScanner, state); break;
-			case TT_FLOW_SEQ_START: ParseFlow(pScanner, state); break;
+			case Token::BLOCK_SEQ_START: ParseBlock(pScanner, state); break;
+			case Token::FLOW_SEQ_START: ParseFlow(pScanner, state); break;
 			default: break;
 		}
 	}
@@ -68,38 +79,26 @@ namespace YAML
 
 		while(1) {
 			if(pScanner->empty())
-				throw ParserException(-1, -1, ErrorMsg::END_OF_SEQ);
+				throw ParserException(Mark::null(), ErrorMsg::END_OF_SEQ);
 
 			Token token = pScanner->peek();
-			if(token.type != TT_BLOCK_ENTRY && token.type != TT_BLOCK_END)
-				throw ParserException(token.line, token.column, ErrorMsg::END_OF_SEQ);
+			if(token.type != Token::BLOCK_ENTRY && token.type != Token::BLOCK_SEQ_END)
+				throw ParserException(token.mark, ErrorMsg::END_OF_SEQ);
 
 			pScanner->pop();
-			if(token.type == TT_BLOCK_END)
+			if(token.type == Token::BLOCK_SEQ_END)
 				break;
 
 			Node *pNode = new Node;
 			m_data.push_back(pNode);
-			pNode->Parse(pScanner, state);
-		}
-	}
-
-	void Sequence::ParseImplicit(Scanner *pScanner, const ParserState& state)
-	{
-		while(1) {
-			// we're actually *allowed* to have no tokens at some point
-			if(pScanner->empty())
-				break;
-
-			// and we end at anything other than a block entry
-			Token& token = pScanner->peek();
-			if(token.type != TT_BLOCK_ENTRY)
-				break;
-
-			pScanner->pop();
-
-			Node *pNode = new Node;
-			m_data.push_back(pNode);
+			
+			// check for null
+			if(!pScanner->empty()) {
+				const Token& token = pScanner->peek();
+				if(token.type == Token::BLOCK_ENTRY || token.type == Token::BLOCK_SEQ_END)
+					continue;
+			}
+			
 			pNode->Parse(pScanner, state);
 		}
 	}
@@ -111,10 +110,10 @@ namespace YAML
 
 		while(1) {
 			if(pScanner->empty())
-				throw ParserException(-1, -1, ErrorMsg::END_OF_SEQ_FLOW);
+				throw ParserException(Mark::null(), ErrorMsg::END_OF_SEQ_FLOW);
 
 			// first check for end
-			if(pScanner->peek().type == TT_FLOW_SEQ_END) {
+			if(pScanner->peek().type == Token::FLOW_SEQ_END) {
 				pScanner->pop();
 				break;
 			}
@@ -126,30 +125,19 @@ namespace YAML
 
 			// now eat the separator (or could be a sequence end, which we ignore - but if it's neither, then it's a bad node)
 			Token& token = pScanner->peek();
-			if(token.type == TT_FLOW_ENTRY)
+			if(token.type == Token::FLOW_ENTRY)
 				pScanner->pop();
-			else if(token.type != TT_FLOW_SEQ_END)
-				throw ParserException(token.line, token.column, ErrorMsg::END_OF_SEQ_FLOW);
+			else if(token.type != Token::FLOW_SEQ_END)
+				throw ParserException(token.mark, ErrorMsg::END_OF_SEQ_FLOW);
 		}
 	}
 
-	void Sequence::Write(std::ostream& out, int indent, bool startedLine, bool onlyOneCharOnLine)
+	void Sequence::Write(Emitter& out) const
 	{
-		if(startedLine && !onlyOneCharOnLine)
-			out << "\n";
-
-		for(unsigned i=0;i<m_data.size();i++) {
-			if((startedLine && !onlyOneCharOnLine) || i > 0) {
-				for(int j=0;j<indent;j++)
-					out  << "  ";
-			}
-
-			out << "- ";
-			m_data[i]->Write(out, indent + 1, true, i > 0 || !startedLine || onlyOneCharOnLine);
-		}
-
-		if(m_data.empty())
-			out << "\n";
+		out << BeginSeq;
+		for(std::size_t i=0;i<m_data.size();i++)
+			out << *m_data[i];
+		out << EndSeq;
 	}
 
 	int Sequence::Compare(Content *pContent)
@@ -159,13 +147,13 @@ namespace YAML
 
 	int Sequence::Compare(Sequence *pSeq)
 	{
-		unsigned n = m_data.size(), m = pSeq->m_data.size();
+		std::size_t n = m_data.size(), m = pSeq->m_data.size();
 		if(n < m)
 			return -1;
 		else if(n > m)
 			return 1;
 
-		for(unsigned i=0;i<n;i++) {
+		for(std::size_t i=0;i<n;i++) {
 			int cmp = m_data[i]->Compare(*pSeq->m_data[i]);
 			if(cmp != 0)
 				return cmp;

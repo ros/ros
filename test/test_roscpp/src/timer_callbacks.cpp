@@ -185,6 +185,26 @@ TEST(RoscppTimerCallbacks, stopWallTimer)
   ASSERT_EQ(last_count, helper.total_calls_);
 }
 
+int32_t g_count = 0;
+void timerCallback(const ros::WallTimerEvent& evt)
+{
+  ++g_count;
+}
+
+TEST(RoscppTimerCallbacks, stopThenSpin)
+{
+  g_count = 0;
+  NodeHandle n;
+  ros::WallTimer timer = n.createWallTimer(ros::WallDuration(0.001), timerCallback);
+
+  WallDuration(0.1).sleep();
+  timer.stop();
+
+  spinOnce();
+
+  ASSERT_EQ(g_count, 0);
+}
+
 TEST(RoscppTimerCallbacks, oneShotWallTimer)
 {
   NodeHandle n;
@@ -376,7 +396,6 @@ TEST(RoscppTimerCallbacks, multipleROSTimeCallbacks)
   }
 }
 
-int32_t g_count = 0;
 class Tracked
 {
 public:

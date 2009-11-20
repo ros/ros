@@ -33,6 +33,7 @@
  */
 
 #include "ros/poll_set.h"
+#include "ros/file_log.h"
 
 #include "ros/transport/transport.h"
 
@@ -95,7 +96,7 @@ bool PollSet::addSocket(int fd, const SocketUpdateFunc& update_func, const Trans
     bool b = socket_info_.insert(std::make_pair(fd, info)).second;
     if (!b)
     {
-      ROS_DEBUG("PollSet: Tried to add duplicate fd [%d]", fd);
+      ROSCPP_LOG_DEBUG("PollSet: Tried to add duplicate fd [%d]", fd);
       return false;
     }
 
@@ -126,7 +127,7 @@ bool PollSet::delSocket(int fd)
     return true;
   }
 
-  ROS_DEBUG("PollSet: Tried to delete fd [%d] which is not being tracked", fd);
+  ROSCPP_LOG_DEBUG("PollSet: Tried to delete fd [%d] which is not being tracked", fd);
 
   return false;
 }
@@ -140,7 +141,7 @@ bool PollSet::addEvents(int sock, int events)
 
   if (it == socket_info_.end())
   {
-    ROS_DEBUG("PollSet: Tried to add events [%d] to fd [%d] which does not exist in this pollset", events, sock);
+    ROSCPP_LOG_DEBUG("PollSet: Tried to add events [%d] to fd [%d] which does not exist in this pollset", events, sock);
     return false;
   }
 
@@ -162,7 +163,7 @@ bool PollSet::delEvents(int sock, int events)
   }
   else
   {
-    ROS_DEBUG("PollSet: Tried to delete events [%d] to fd [%d] which does not exist in this pollset", events, sock);
+    ROSCPP_LOG_DEBUG("PollSet: Tried to delete events [%d] to fd [%d] which does not exist in this pollset", events, sock);
     return false;
   }
 

@@ -48,8 +48,9 @@
 namespace ros
 {
 
-boost::mutex g_nh_refcount_mutex_;
-int32_t g_nh_refcount_ = 0;
+boost::mutex g_nh_refcount_mutex;
+int32_t g_nh_refcount = 0;
+bool g_node_started_by_nh = false;
 
 class NodeHandleBackingCollection
 {
@@ -139,25 +140,26 @@ void NodeHandle::construct()
   namespace_ = names::resolve(namespace_);
   ok_ = true;
 
-  boost::mutex::scoped_lock lock(g_nh_refcount_mutex_);
+  boost::mutex::scoped_lock lock(g_nh_refcount_mutex);
 
-  if (g_nh_refcount_ == 0)
+  if (g_nh_refcount == 0 && !ros::isStarted())
   {
+    g_node_started_by_nh = true;
     ros::start();
   }
 
-  ++g_nh_refcount_;
+  ++g_nh_refcount;
 }
 
 void NodeHandle::destruct()
 {
   delete collection_;
 
-  boost::mutex::scoped_lock lock(g_nh_refcount_mutex_);
+  boost::mutex::scoped_lock lock(g_nh_refcount_mutex);
 
-  --g_nh_refcount_;
+  --g_nh_refcount;
 
-  if (g_nh_refcount_ == 0)
+  if (g_nh_refcount == 0 && g_node_started_by_nh)
   {
     ros::shutdown();
   }
@@ -210,9 +212,13 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
 
   if (final[0] == '~')
   {
-    ROS_WARN("Using ~ names with NodeHandle methods has been deprecated.  Instead, construct a NodeHandle with a namespace beginning with ~.  (name=[%s])", name.c_str());
-
-    final = names::append(names::append(this_node::getName(), unresolved_namespace_), final.substr(1));
+    std::stringstream ss;
+    ss << "Using ~ names with NodeHandle methods is not allowed.  If you want to use private names with the NodeHandle ";
+    ss << "interface, construct a NodeHandle using a private name as its namespace.  e.g. ";
+    ss << "ros::NodeHandle nh(\"~\");  ";
+    ss << "nh.getParam(\"my_private_name\");";
+    ss << " (name = [" << name << "])";
+    throw InvalidNameException(ss.str());
   }
   else if (final[0] == '/')
   {
@@ -523,9 +529,6 @@ bool NodeHandle::getParam(const std::string &key, bool &b, bool use_cache) const
 
 bool NodeHandle::searchParam(const std::string &key, std::string& result_out) const
 {
-  XmlRpc::XmlRpcValue params, result, payload;
-  params[0] = resolveName("");
-
   // searchParam needs a separate form of remapping -- remapping on the unresolved name, rather than the
   // resolved one.
 
@@ -536,28 +539,8 @@ bool NodeHandle::searchParam(const std::string &key, std::string& result_out) co
   {
     remapped = it->second;
   }
-  else
-  {
-    // Then try global remappings
-    it = names::getUnresolvedRemappings().find(key);
-    if (it != names::getUnresolvedRemappings().end())
-    {
-      remapped = it->second;
-    }
-  }
 
-  params[1] = remapped;
-  // We don't loop here, because validateXmlrpcResponse() returns false
-  // both when we can't contact the master and when the master says, "I
-  // don't have that param."
-  if (!master::execute("searchParam", params, result, payload, false))
-  {
-    return false;
-  }
-
-  result_out = (std::string)payload;
-
-  return true;
+  return param::search(resolveName(""), remapped, result_out);
 }
 
 bool NodeHandle::ok() const

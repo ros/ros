@@ -1,3 +1,8 @@
+# Set a flag to indicate that rosbuild_init() has not been called, so that
+# we can later catch out-of-order calls to macros that must be called prior
+# to rosbuild_init(), related to #1487.
+set(ROSBUILD_init_called 0)
+
 # Use this package to get add_file_dependencies()
 include(AddFileDependencies)
 # Used to check if a function exists
@@ -104,7 +109,7 @@ macro(rosbuild_invoke_rospack pkgname _prefix _varname)
     #set(${_prefix}_${_varname} "" CACHE INTERNAL "")
     message("${_rospack_err_ignore}")
     message("${_rospack_invoke_result}")
-    message(FATAL_ERROR "\nFailed to invoke rospack to get compile flags for package '${pkgname}.'  Look above for errors from rospack itself.  Aborting.  Please fix the broken dependency!\n")
+    message(FATAL_ERROR "\nFailed to invoke rospack to get compile flags for package '${pkgname}'.  Look above for errors from rospack itself.  Aborting.  Please fix the broken dependency!\n")
   else(_rospack_failed)
     separate_arguments(_rospack_invoke_result)
     set(_rospack_${_varname} ${_rospack_invoke_result})
@@ -116,6 +121,9 @@ endmacro(rosbuild_invoke_rospack)
 # This is the user's main entry point.  A *lot* of work gets done here.  It
 # should probably be split up into multiple macros.
 macro(rosbuild_init)
+  # Record that we've been called
+  set(ROSBUILD_init_called 1)
+
   # Infer package name from directory name.
   get_filename_component(_project ${PROJECT_SOURCE_DIR} NAME)
   message("[rosbuild] Building package ${_project}")
@@ -224,16 +232,33 @@ macro(rosbuild_init)
   # Set up the test targets.  Subsequent calls to rosbuild_add_gtest and
   # friends add targets and dependencies from these targets.
   #
+  # Find rostest.  The variable rostest_path will also be reused in other
+  # macros.
+  rosbuild_invoke_rospack("" rostest path find rostest)
+  
+  # Record where we're going to put test results (#2003)
+  execute_process(COMMAND ${rostest_path}/bin/test-results-dir
+                  OUTPUT_VARIABLE rosbuild_test_results_dir
+                  RESULT_VARIABLE _test_results_dir_failed
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(_test_results_dir_failed)
+    message(FATAL_ERROR "Failed to invoke rostest/bin/test-results-dir")
+  endif(_test_results_dir_failed)
+
   # The 'tests' target builds the test program
   add_custom_target(tests)
   # The 'test' target runs all but the future tests
   add_custom_target(test)
+  # We need to build tests before running them.  Addition of this
+  # dependency also ensures that old test results get cleaned prior to a
+  # new test run.
+  add_dependencies(test tests)
   # Clean out previous test results before running tests.  Use bash
   # conditional to ignore failures (most often happens when a stale NFS
   # handle lingers in the test results directory), because CMake doesn't
   # seem to be able to do it.
   add_custom_target(clean-test-results
-                    if ! rm -rf $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}\; then echo "WARNING: failed to remove test-results directory"\; fi)
+                    if ! rm -rf ${rosbuild_test_results_dir}/${PROJECT_NAME}\; then echo "WARNING: failed to remove test-results directory"\; fi)
   # Make the tests target depend on clean-test-results, which will ensure
   # that test results are deleted before we try to build tests, and thus
   # before we try to run tests.
@@ -242,9 +267,6 @@ macro(rosbuild_init)
   add_custom_target(test-future)
 
 
-  # Find rostest.  The variable rostest_path will also be reused in other
-  # macros.
-  rosbuild_invoke_rospack("" rostest path find rostest)
   add_custom_target(test-results-run)
   add_custom_target(test-results
                     COMMAND ${rostest_path}/bin/rostest-results --nodeps ${_project})
@@ -519,7 +541,7 @@ macro(rosbuild_add_gtest exe)
   add_custom_target(test)
   add_dependencies(test test_${_testname})
   # Register check for test output
-  _rosbuild_check_rostest_xml_result(test_${_testname} $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml)
+  _rosbuild_check_rostest_xml_result(test_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
 endmacro(rosbuild_add_gtest)
 
 # A version of add_gtest that checks a label against ROS_BUILD_TEST_LABEL
@@ -581,9 +603,7 @@ macro(rosbuild_add_pyunit file)
   add_custom_target(test)
   add_dependencies(test pyunit_${_testname})
   # Register check for test output
-  # Can't do this, because the pyunit tests generate their own name
-  # internally. TODO
-  #_rosbuild_check_rostest_xml_result(pyunit_${_testname} $ENV{ROS_ROOT}/test/test_results/${PROJECT_NAME}/${_testname}.xml)
+  _rosbuild_check_rostest_xml_result(pyunit_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
 endmacro(rosbuild_add_pyunit)
 
 # A version of add_pyunit that checks a label against ROS_BUILD_TEST_LABEL
@@ -606,6 +626,9 @@ endmacro(rosbuild_add_pyunit_future)
 
 set(_ROSBUILD_GENERATED_MSG_FILES "")
 macro(rosbuild_add_generated_msgs)
+  if(ROSBUILD_init_called)
+    message(FATAL_ERROR "rosbuild_add_generated_msgs() cannot be called after rosbuild_init()")
+  endif(ROSBUILD_init_called)
   list(APPEND _ROSBUILD_GENERATED_MSG_FILES ${ARGV})
 endmacro(rosbuild_add_generated_msgs)
 
@@ -626,6 +649,9 @@ endmacro(rosbuild_get_msgs)
 
 set(_ROSBUILD_GENERATED_SRV_FILES "")
 macro(rosbuild_add_generated_srvs)
+  if(ROSBUILD_init_called)
+    message(FATAL_ERROR "rosbuild_add_generated_srvs() cannot be called after rosbuild_init()")
+  endif(ROSBUILD_init_called)
   list(APPEND _ROSBUILD_GENERATED_SRV_FILES ${ARGV})
 endmacro(rosbuild_add_generated_srvs)
 
@@ -846,23 +872,21 @@ macro(rosbuild_make_distribution)
   include(CPack)
 endmacro(rosbuild_make_distribution)
 
-# rosbuild_count_cores() disabled until I can figure out how to build it
-# without Boost, which causes bootstrapping problems, #1865
-## Compute the number of hardware cores on the machine.  Intended to use for
-## gating tests that have heavy processor requirements. It calls out to a
-## helper program that uses boost::thread::hardware_concurrency().
-#macro(rosbuild_count_cores num)
-#  execute_process(COMMAND $ENV{ROS_ROOT}/core/rosbuild/tests/count_cores
-#                  OUTPUT_VARIABLE _cores_out
-#                  ERROR_VARIABLE _cores_error
-#                  RESULT_VARIABLE _cores_result
-#                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-#  if(_cores_result)
-#    message(FATAL_ERROR "Failed to run count_cores")
-#  endif(_cores_result)
-#
-#  set(${num} ${_cores_out})
-#endmacro(rosbuild_count_cores)
+# Compute the number of hardware cores on the machine.  Intended to use for
+# gating tests that have heavy processor requirements. It calls out to
+# Python to do the work (UNIX only)
+macro(rosbuild_count_cores num)
+  execute_process(COMMAND $ENV{ROS_ROOT}/core/rosbuild/tests/count_cores.py
+                  OUTPUT_VARIABLE _cores_out
+                  ERROR_VARIABLE _cores_error
+                  RESULT_VARIABLE _cores_result
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(_cores_result)
+    message(FATAL_ERROR "Failed to run count_cores")
+  endif(_cores_result)
+
+  set(${num} ${_cores_out})
+endmacro(rosbuild_count_cores)
 
 # Check whether we're running as a VM Intended to use for
 # gating tests that have heavy processor requirements.  It checks for
@@ -876,3 +900,17 @@ macro(rosbuild_check_for_vm var)
     set(${var} 0)
   endif(_xen_dir)
 endmacro(rosbuild_check_for_vm var)
+
+# Check whether there's an X display.  Intended to use in gating tests that
+# require a display.
+macro(rosbuild_check_for_display var)
+  execute_process(COMMAND "xdpyinfo"
+                  OUTPUT_VARIABLE _dummy
+                  ERROR_VARIABLE _dummy
+                  RESULT_VARIABLE _xdpyinfo_failed)
+  if(_xdpyinfo_failed)
+    set(${var} 0)
+  else(_xdpyinfo_failed)
+    set(${var} 1)
+  endif(_xdpyinfo_failed)
+endmacro(rosbuild_check_for_display)

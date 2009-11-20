@@ -49,6 +49,7 @@ except ImportError:
     print >> sys.stderr, "rxgraph requires GTK in order to run.\nPlease run\n\trosdep install rosgraph\nto install any missing dependencies of rxgraph."
     sys.exit(1)
 
+
 import rosgraph.xdot
 import rosgraph.graph
 
@@ -171,7 +172,11 @@ def _quiet_filter(name):
         if n in name:
             return False
     return True
+
 def _quiet_filter_edge(edge):
+    for quiet_label in ['/time', '/clock', '/rosout']:
+        if quiet_label in edge.label:
+            return False
     return _quiet_filter(edge.start) and _quiet_filter(edge.end)
 
 def generate_dotcode(graph_mode, quiet=False):
@@ -270,6 +275,15 @@ def rxgraph_main():
     if args:
         parser.error("invalid arguments")
 
+
+    import subprocess
+    try:
+        subprocess.check_call(['dot', '-V'])
+    except:
+        print >> sys.stderr, "Graphviz does not appear to be installed on your system. Please run:\n\n\trosdep install rosgraph\n\nto install the necessary dependencies on your system"
+        sys.exit(1)
+
+        
     roslib.roslogging.configure_logging('rosgraph', logging.DEBUG, additional=['rospy', 'roslib'])
     init_dotcode = """
 digraph G { initializing [label="initializing..."]; }

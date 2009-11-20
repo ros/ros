@@ -1,0 +1,61 @@
+#!/usr/bin/python
+import yaml, urllib2, os, subprocess, sys
+
+f = urllib2.urlopen('http://ros.org/rosdistro.yaml')
+d = yaml.load(f)
+distros = d['distros']
+distro_name = 'latest'
+for distro in distros:
+  if distro_name in distro:
+    released = distro[distro_name]
+nonpr2_prefix = 'https://code.ros.org/svn/ros-pkg/stacks/%s/tags/' + distro_name + '/'
+pr2_prefix = 'https://code.ros.org/svn/wg-ros-pkg/stacks/%s/tags/' + distro_name + '/'
+released = [s for s in released if s != 'ros'] # handle ros separately
+nonpr2 = [(s, nonpr2_prefix%s) for s in released if 'pr2' not in s]
+pr2 = [(s, pr2_prefix) for s in released if 'pr2' in s]
+stacks = nonpr2 + pr2
+# get ros
+ros_uri_rule = d['stacks']['ros']['_uri_rules']['release-svn']
+ros_version = d['stacks']['ros'][distro_name]
+ros_uri = ros_uri_rule.replace('$STACK_VERSION', ros_version)
+ros_uri = ros_uri.replace('$STACK_NAME', 'ros')
+workspace = os.path.join(os.getcwd(), 'workspace') # creativity = win
+ros_root = os.path.join(workspace, 'ros')
+try:
+  os.mkdir(workspace, 0755)
+except:
+  raise Exception("could not create workspace directory. ahhhhhhhhhh")
+subprocess.check_call(['/usr/bin/svn', 'co', ros_uri, ros_root])
+# set up environment for our new workspace
+if 'PATH' in os.environ:
+  path = ':'.join([os.path.join(ros_root, 'bin'), os.environ['PATH']])
+else:
+  path = os.path.join(ros_root, 'bin')
+if 'PYTHONPATH' in os.environ:
+  pythonpath = ':'.join([os.environ['PYTHONPATH'], os.path.join(ros_root, 'core', 'roslib', 'src')])
+else:
+  pythonpath = os.path.join(ros_root, 'core', 'roslib', 'src')
+env_vars = os.environ.copy()
+env_vars.update({'ROS_ROOT' : ros_root,
+                 'PATH' : path,
+                 'PYTHONPATH' : pythonpath,
+                 'ROS_MASTER_URI' : 'http://localhost:11311',
+                 'ROSDEP_YES' : '1',
+                 'ROBOT' : 'sim'})
+# make minimal of ros
+subprocess.check_call(['make','minimal'], cwd=ros_root, env=env_vars)
+# check out everything
+for stack in stacks:
+  stack_name = stack[0]
+  stack_uri = stack[1]
+  print 'checking out %s from %s' % (stack_name, stack_uri)
+  stack_root = os.path.join(workspace, 'pkgs', stack_name)
+  subprocess.check_call(['/usr/bin/svn', 'co', stack_uri, stack_root])
+# get package list via rospack
+rospack_path = os.path.join(ros_root, 'bin', 'rospack')
+pkgs = subprocess.Popen([rospack_path,'list-names'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
+# rosdep install everybody
+subprocess.check_call([os.path.join(ros_root,'bin','rosdep'),'install'] + pkgs, env=env_vars, stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr)
+# build everybody
+subprocess.check_call([os.path.join(ros_root,'bin','rosmake'),'-Vr','--skip-blacklist','--output=%s'%os.path.join(workspace, 'build_output'),'-a'], cwd=ros_root, env=env_vars, stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr)
+print "have a nice day"

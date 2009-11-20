@@ -40,47 +40,16 @@ import logging
 import traceback
 
 import roslib.message
+import rospy.core
 import rospy.names
 
-Message = roslib.message.Message
-
-logger = logging.getLogger('rospy.msg')
-
-class AnyMsg(roslib.message.Message):
-    """
-    Message class to use for subscribing to any topic regardless
-    of type. Incoming messages are not deserialized. Instead, the raw
-    serialized data can be accssed via the buff property.
-    """
-    _md5sum = rospy.names.TOPIC_ANYTYPE
-    _type = rospy.names.TOPIC_ANYTYPE
-    _has_header = False
-    _full_text = ''
-    __slots__ = ['_buff']
-    def __init__(self, *args):
-        if len(args) != 0:
-            raise rospy.exceptions.ROSException("AnyMsg does not accept arguments")
-        self._buff = None
-
-    def serialize(self, buff):
-        """AnyMsg provides an implementation so that a node can forward messages w/o (de)serialization"""
-        if self._buff is None:
-            raise rospy.exceptions("AnyMsg is not initialized")
-        else:
-            buff.write(self._buff)
-            
-    def deserialize(self, str):
-        """Copies raw buffer into self._buff"""
-        self._buff = str
-        return self
-        
 def serialize_message(b, seq, msg):
     """
     Serialize the message to the buffer 
     @param b: buffer to write to. WARNING: buffer will be reset after call
     @type  b: StringIO
     @param msg: message to write
-    @type  msg: Msg
+    @type  msg: Message
     @param seq: current sequence number (for headers)
     @type  seq: int: current sequence number (for headers)
     @raise ROSSerializationException: if unable to serialize
@@ -98,6 +67,7 @@ def serialize_message(b, seq, msg):
         # auto_timestamp is true if header.stamp is zero
         auto_timestamp = not header.stamp
         if auto_timestamp:
+            rospy.logwarn("Message being sent with timestamp of zero. Auto-setting of timestamps is deprecated!")
             header.stamp = rospy.rostime.get_rostime()
             auto_headers.append(header)
         # default value for frame_id is '0', not '' or None
@@ -202,6 +172,6 @@ def deserialize_messages(b, msg_queue, data_class, queue_size=None, max_msgs=Non
             else:
                 b.seek(btell)
     except Exception, e:
-        logger.error("cannot deserialize message: EXCEPTION %s", traceback.format_exc())
+        logging.getLogger('rospy.msg').error("cannot deserialize message: EXCEPTION %s", traceback.format_exc())
         raise roslib.message.DeserializationError("cannot deserialize: %s"%str(e))
 

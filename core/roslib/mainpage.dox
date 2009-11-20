@@ -11,38 +11,6 @@
 
 \section codeapi Code API
 
-\subsection pythonlibs Python Libraries
-
-One of the most important features roslib provides is the ability to update your Python
-sys.path so that you can easily import other ROS packages.
-
-\verbatim
-import roslib; roslib.load_manifest('your_package_name')
-\endverbatim
-
-There is also the looser import syntax based on using the 'ros' Python package:
-
-\verbatim
-from ros import your_package_name
-\endverbatim
-
-The load_manifest call reads in the specified package's manifest and
-then adds any dependency listed to the Python sys.path. load_manifest
-should be called before importing any other ROS package.
-
-NOTE: load_manifest is defined as \ref roslib::launcher::load_manifest
-
-Other libraries:
-
-- \ref roslib : Python library with important 'load_manifest' Python method
-- \ref roslib::scriptutil : Python library with common ROS script support routines
-- \ref roslib::rosenv : Python library for accessing ROS environment variables
-- \ref roslib::names : Python library for manipulating ROS names
-- \ref roslib::packages : Python library for locating ROS packages and package resources
-- \ref roslib::msgs : Python library for processing message definition files
-- \ref roslib::srvs : Python library for processing service definition files
-
-
 \subsection Common Messages (Header, Log, Time)
 
 roslib comes with the following message definitions:
@@ -55,10 +23,6 @@ valid message definitions that are read in by the ROS client
 libraries. It is very important that you not remove any fields from
 these message definitions. In some cases it is possible to add fields
 to these messages, but you must do so with great care.
-
-\section rosapi ROS API
-
-roslib has no ROS API as is designed as a pre-requisite to ROS client implementations.
 
 \section commandline Command-line tools
 

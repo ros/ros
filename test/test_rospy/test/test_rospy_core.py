@@ -151,15 +151,15 @@ class TestRospyCore(unittest.TestCase):
         
     def test_get_ros_root(self):
         try:
-            rospy.core.get_ros_root(env={}, require=True)
+            rospy.core.get_ros_root(env={}, required=True)
         except:
             pass
-        self.assertEquals(None, rospy.core.get_ros_root(env={}, require=False))
+        self.assertEquals(None, rospy.core.get_ros_root(env={}, required=False))
         rr = "%s"%time.time()
-        self.assertEquals(rr, rospy.core.get_ros_root(env={'ROS_ROOT': rr}, require=False))
-        self.assertEquals(rr, rospy.core.get_ros_root(env={'ROS_ROOT': rr}, require=True))        
+        self.assertEquals(rr, rospy.core.get_ros_root(env={'ROS_ROOT': rr}, required=False))
+        self.assertEquals(rr, rospy.core.get_ros_root(env={'ROS_ROOT': rr}, required=True))        
 
-        self.assertEquals(os.environ['ROS_ROOT'], rospy.core.get_ros_root(require=False))
+        self.assertEquals(os.environ['ROS_ROOT'], rospy.core.get_ros_root(required=False))
     def test_node_uri(self):
         uri = "http://localhost-%s:1234"%random.randint(1, 1000)
         self.assertEquals(None, rospy.core.get_node_uri())

@@ -31,9 +31,14 @@
 
 #include <stdexcept> // for std::runtime_error
 #include <string>
+#include <vector>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
+#include <time.h>
+#include <signal.h>
 #include <gtest/gtest.h>
+#include <boost/thread/thread.hpp>
 #include "rospack/rospack.h"
 
 /////////////////////////////////////////////////////////////
@@ -126,6 +131,117 @@ TEST(rospack, lflags_static_libs)
   lflags = rp.snarf_libs(input, true);
   lflags = rp.snarf_flags(lflags, "-L", true);
   EXPECT_EQ(other_output, lflags);
+}
+
+void handler(int sig)
+{
+}
+
+void signaler()
+{
+  struct timespec ts = {0, 100000};
+  for(int i=0; i<20000; i++)
+  {
+    nanosleep(&ts, NULL);
+    raise(SIGALRM);
+  }
+}
+
+TEST(rospack, signal_interruption)
+{
+  char buf[1024];
+  std::string rr = std::string(getcwd(buf, sizeof(buf))) + "/test2";
+  setenv("ROS_ROOT", rr.c_str(), 1);
+  unsetenv("ROS_PACKAGE_PATH");
+
+  signal(SIGALRM, handler);
+  boost::thread t(boost::bind(signaler));
+  rospack::ROSPack rp;
+  int ret = rp.run(std::string("list-names"));
+  t.join();
+  ASSERT_EQ(ret, 0);
+  std::vector<std::string> output_list;
+  rospack::string_split(rp.getOutput(), output_list, "\n");
+  ASSERT_EQ((int)output_list.size(), 4);
+}
+
+TEST(rospack, reentrant)
+{
+  char buf[1024];
+  std::string rr = std::string(getcwd(buf, sizeof(buf))) + "/test2";
+  setenv("ROS_ROOT", rr.c_str(), 1);
+  unsetenv("ROS_PACKAGE_PATH");
+
+  rospack::ROSPack rp;
+  int ret = rp.run(std::string("plugins --attrib=foo --top=precedence1 roslang"));
+  ASSERT_EQ(ret, 0);
+  ret = rp.run(std::string("find roslang"));
+  ASSERT_EQ(ret, 0);
+  ret = rp.run(std::string("list-names"));
+  ASSERT_EQ(ret, 0);
+  std::vector<std::string> output_list;
+  rospack::string_split(rp.getOutput(), output_list, "\n");
+  ASSERT_EQ((int)output_list.size(), 4);
+  ret = rp.run(std::string("list"));
+  ASSERT_EQ(ret, 0);
+  rospack::string_split(rp.getOutput(), output_list, "\n");
+  ASSERT_EQ((int)output_list.size(), 4);
+  std::vector<std::string> path_name;
+  rospack::string_split(output_list[0], path_name, " ");
+  ASSERT_EQ((int)path_name.size(), 2);
+}
+
+TEST(rospack, multiple_rospack_objects)
+{
+  char buf[1024];
+  std::string rr = std::string(getcwd(buf, sizeof(buf))) + "/test2";
+  setenv("ROS_ROOT", rr.c_str(), 1);
+  unsetenv("ROS_PACKAGE_PATH");
+
+  rospack::ROSPack rp;
+  int ret = rp.run(std::string("plugins --attrib=foo --top=precedence1 roslang"));
+  ASSERT_EQ(ret, 0);
+  ret = rp.run(std::string("find roslang"));
+  ASSERT_EQ(ret, 0);
+  ret = rp.run(std::string("list-names"));
+  ASSERT_EQ(ret, 0);
+  std::vector<std::string> output_list;
+  rospack::string_split(rp.getOutput(), output_list, "\n");
+  ASSERT_EQ((int)output_list.size(), 4);
+  ret = rp.run(std::string("list"));
+  ASSERT_EQ(ret, 0);
+  rospack::string_split(rp.getOutput(), output_list, "\n");
+  ASSERT_EQ((int)output_list.size(), 4);
+  std::vector<std::string> path_name;
+  rospack::string_split(output_list[0], path_name, " ");
+  ASSERT_EQ((int)path_name.size(), 2);
+
+  rospack::ROSPack rp2;
+  ret = rp2.run(std::string("plugins --attrib=foo --top=precedence1 roslang"));
+  ASSERT_EQ(ret, 0);
+  ret = rp2.run(std::string("find roslang"));
+  ASSERT_EQ(ret, 0);
+  ret = rp2.run(std::string("list-names"));
+  ASSERT_EQ(ret, 0);
+  output_list.clear();
+  rospack::string_split(rp2.getOutput(), output_list, "\n");
+  ASSERT_EQ((int)output_list.size(), 4);
+  ret = rp2.run(std::string("list"));
+  ASSERT_EQ(ret, 0);
+  rospack::string_split(rp2.getOutput(), output_list, "\n");
+  ASSERT_EQ((int)output_list.size(), 4);
+  path_name.clear();
+  rospack::string_split(output_list[0], path_name, " ");
+  ASSERT_EQ((int)path_name.size(), 2);
+}
+
+TEST(rospack, deduplicate_tokens)
+{
+  rospack::ROSPack rp;
+  std::string input = "foo foo bar bat bar foobar batbar";
+  std::string truth = "foo bar bat foobar batbar";
+  std::string output = rp.deduplicate_tokens(input);
+  ASSERT_EQ(truth, output);
 }
 
 // Code-level tests against rospack's snarf_flags() method

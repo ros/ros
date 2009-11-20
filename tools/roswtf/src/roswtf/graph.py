@@ -141,7 +141,7 @@ def unconnected_subscriptions(ctx):
                 ret += ''.join(["   * %s\n"%t for t in l])
     else:
         for sub, l in ctx.unconnected_subscriptions.iteritems():
-            l = [t for t in l if t != '/time']
+            l = [t for t in l if t not in ['/time', '/clock']]
             if l:
                 ret += ' * %s:\n'%sub
                 ret += ''.join(["   * %s\n"%t for t in l])

@@ -94,6 +94,12 @@ void init(const std::string& name, const M_string& remappings, uint32_t options)
     g_namespace = "/";
   }
 
+  std::string error;
+  if (!names::validate(g_namespace, error))
+  {
+    ROS_WARN("Namespace is invalid: %s  This will be an error in future versions of ROS.", error.c_str());
+  }
+
   // names must be initialized here, because it requires the namespace to already be known so that it can properly resolve names.
   // It must be done before we resolve g_name, because otherwise the name will not get remapped.
   names::init(remappings);

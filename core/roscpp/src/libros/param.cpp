@@ -87,7 +87,6 @@ void set(const std::string &key, const char* s)
   // call param::set(key, xmlvalue);
   std::string sxx = std::string(s);
   XmlRpc::XmlRpcValue v(sxx);
-  ROS_DEBUG("param::set(): set %s, type %d\n", key.c_str(), v.getType());
   param::set(key, v);
 }
 
@@ -173,7 +172,7 @@ bool get(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
       M_Param::iterator it = g_params.find(mapped_key);
       if (it != g_params.end())
       {
-        ROS_DEBUG("Using cached parameter value for key [%s]", mapped_key.c_str());
+        ROS_DEBUG_NAMED("cached_parameters", "Using cached parameter value for key [%s]", mapped_key.c_str());
 
         v = it->second;
         return true;
@@ -195,7 +194,7 @@ bool get(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
         }
         else
         {
-          ROS_DEBUG("Subscribed to parameter [%s]", mapped_key.c_str());
+          ROS_DEBUG_NAMED("cached_parameters", "Subscribed to parameter [%s]", mapped_key.c_str());
         }
       }
     }
@@ -217,7 +216,7 @@ bool get(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
   {
     boost::mutex::scoped_lock lock(g_params_mutex);
 
-    ROS_DEBUG("Caching parameter [%s] with value type [%d]", mapped_key.c_str(), v.getType());
+    ROS_DEBUG_NAMED("cached_parameters", "Caching parameter [%s] with value type [%d]", mapped_key.c_str(), v.getType());
     g_params[mapped_key] = v;
   }
 
@@ -305,10 +304,44 @@ bool get(const std::string &key, bool &b, bool use_cache)
   return true;
 }
 
+bool search(const std::string& key, std::string& result_out)
+{
+  return search(this_node::getName(), key, result_out);
+}
+
+bool search(const std::string& ns, const std::string& key, std::string& result_out)
+{
+  XmlRpc::XmlRpcValue params, result, payload;
+  params[0] = ns;
+
+  // searchParam needs a separate form of remapping -- remapping on the unresolved name, rather than the
+  // resolved one.
+
+  std::string remapped = key;
+  M_string::const_iterator it = names::getUnresolvedRemappings().find(key);
+  if (it != names::getUnresolvedRemappings().end())
+  {
+    remapped = it->second;
+  }
+
+  params[1] = remapped;
+  // We don't loop here, because validateXmlrpcResponse() returns false
+  // both when we can't contact the master and when the master says, "I
+  // don't have that param."
+  if (!master::execute("searchParam", params, result, payload, false))
+  {
+    return false;
+  }
+
+  result_out = (std::string)payload;
+
+  return true;
+}
+
 void update(const std::string& key, const XmlRpc::XmlRpcValue& v)
 {
   std::string clean_key = names::clean(key);
-  ROS_DEBUG("Received parameter update for key [%s]", clean_key.c_str());
+  ROS_DEBUG_NAMED("cached_parameters", "Received parameter update for key [%s]", clean_key.c_str());
 
   boost::mutex::scoped_lock lock(g_params_mutex);
 

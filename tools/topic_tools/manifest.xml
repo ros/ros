@@ -11,6 +11,8 @@
   <review status="unreviewed" notes=""/>
   <depend package="roscpp"/>
   <depend package="std_msgs"/>
+  <depend package="rostest"/>
+
   <export>
     <cpp cflags="-I${prefix}/include -I${prefix}/srv/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -ltopic_tools"/>
   </export>

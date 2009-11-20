@@ -74,8 +74,9 @@ typedef init_options::InitOption InitOption;
  *
  * \param argc
  * \param argv
- * \param name Name of this node
+ * \param name Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
  * \param options [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
+ * \throws InvalidNodeNameException If the name passed in is not a valid "base" name
  *
  */
 void init(int &argc, char **argv, const std::string& name, uint32_t options = 0);
@@ -83,18 +84,20 @@ void init(int &argc, char **argv, const std::string& name, uint32_t options = 0)
 /**
  * \brief alternate ROS initialization function.
  *
- * This version of init takes a map<string, string>, where each one constitutes
- * a name remapping, or one of the special remappings like __name, __master, __ns, etc.
- *
+ * \param remappings A map<string, string> where each one constitutes a name remapping, or one of the special remappings like __name, __master, __ns, etc.
+ * \param name Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
+ * \param options [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
+ * \throws InvalidNodeNameException If the name passed in is not a valid "base" name
  */
 void init(const M_string& remappings, const std::string& name, uint32_t options = 0);
 
 /**
  * \brief alternate ROS initialization function.
  *
- * This version of init takes a vector of string pairs, where each one constitutes
- * a name remapping, or one of the special remappings like __name, __master, __ns, etc.
- *
+ * \param remappings A vector<pair<string, string> > where each one constitutes a name remapping, or one of the special remappings like __name, __master, __ns, etc.
+ * \param name Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
+ * \param options [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
+ * \throws InvalidNodeNameException If the name passed in is not a valid "base" name
  */
 void init(const VP_string& remapping_args, const std::string& name, uint32_t options = 0);
 
@@ -142,6 +145,11 @@ void spin(Spinner& spinner);
  */
 void spinOnce();
 
+/**
+ * \brief Wait for this node to be shutdown, whether through Ctrl-C, ros::shutdown(), or similar.
+ */
+void waitForShutdown();
+
 /** \brief Check whether it's time to exit.
  *
  * ok() becomes false once ros::shutdown() has been called and is finished
@@ -174,6 +182,16 @@ bool isStarted();
  * or in the individual NodeHandle::subscribe()/NodeHandle::advertise()/etc. functions.
  */
 CallbackQueue* getGlobalCallbackQueue();
+
+/**
+ * \brief returns a vector of program arguments that do not include any ROS remapping arguments.  Useful if you need
+ * to parse your arguments to determine your node name
+ *
+ * \param argc the number of command-line arguments
+ * \param argv the command-line arguments
+ * \param [out] args_out Output args, stripped of any ROS args
+ */
+void removeROSArgs(int argc, const char** argv, V_string& args_out);
 
 }
 

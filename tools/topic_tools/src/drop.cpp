@@ -30,6 +30,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include "topic_tools/shape_shifter.h"
+#include "topic_tools/parse.h"
 
 using std::string;
 using std::vector;
@@ -77,7 +78,10 @@ int main(int argc, char **argv)
     puts(USAGE);
     return 1;
   }
-  ros::init(argc, argv, string(argv[1]) + string("_drop"),
+  std::string topic_name;
+  if(!getBaseName(string(argv[1]), topic_name))
+    return 1;
+  ros::init(argc, argv, topic_name + string("_drop"),
             ros::init_options::AnonymousName);
   if ((argc != 4 && argc != 5) || atoi(argv[2]) < 0 || atoi(argv[3]) < 1)
   {

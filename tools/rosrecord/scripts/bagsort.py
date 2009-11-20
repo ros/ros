@@ -41,7 +41,7 @@ def sortbags(inbag, outbag):
   rebag = rosrecord.Rebagger(outbag)
 
   schedule = []
-  for i,(topic, msg, t) in enumerate(rosrecord.logplayer(inbag, raw=True)):
+  for i, (topic, msg, t) in enumerate(rosrecord.logplayer(inbag, raw=True)):
     if rospy.is_shutdown():
       break
     schedule.append((t, i))
@@ -49,7 +49,7 @@ def sortbags(inbag, outbag):
   print schedule
 
   stage = {}
-  for i,(topic, msg, t) in enumerate(rosrecord.logplayer(inbag, raw=True)):
+  for i, (topic, msg, t) in enumerate(rosrecord.logplayer(inbag, raw=True)):
     if rospy.is_shutdown():
       break
     stage[i] = (topic, msg, t)

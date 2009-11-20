@@ -1,0 +1,4 @@
+<launch>
+  <node name="rostopic_pub" pkg="rostopic" type="rostopic" args="pub s std_msgs/String foo" />
+  <test test-name="test_latch" pkg="test_rospy" type="test_latch.py" />  
+</launch>

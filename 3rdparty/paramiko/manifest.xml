@@ -18,7 +18,7 @@
   </description>
   <author>Robey Pointer/robey@lag.net. ROS package maintained by Ken Conley</author>
   <license>LGPL</license>
-  <review status="3rdparty" notes=""/>
+  <review status="3rdparty doc reviewed" notes="11/9/2009"/>
   <url>http://ros.org/wiki/paramiko/</url>
   <depend package="pycrypto" />
   <export>

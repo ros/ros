@@ -118,6 +118,7 @@ def _roswtf_main():
     from roswtf.context import WtfContext
     from roswtf.environment import wtf_check_environment, invalid_url
     from roswtf.graph import wtf_check_graph
+    import roswtf.network
     import roswtf.packages
     import roswtf.roslaunchwtf
     import roswtf.stacks    
@@ -146,6 +147,7 @@ def _roswtf_main():
 
     # static checks
     wtf_check_environment(ctx)
+    roswtf.network.wtf_check(ctx)
     roswtf.packages.wtf_check(ctx)
     roswtf.stacks.wtf_check(ctx)    
     roswtf.roslaunchwtf.wtf_check_static(ctx)

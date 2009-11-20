@@ -62,6 +62,7 @@ public:
   void clear();
   CallbackInterface::CallResult call(uint64_t id);
   bool ready(uint64_t id);
+  bool full();
 
 private:
   std::string topic_;

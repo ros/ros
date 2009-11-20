@@ -167,6 +167,8 @@ private:
   typedef std::map<std::string, FunctionInfo> M_StringToFuncInfo;
   boost::mutex functions_mutex_;
   M_StringToFuncInfo functions_;
+
+  volatile bool unbind_requested_;
 };
 
 }

@@ -7,10 +7,10 @@ namespace YAML
 {
 	namespace Exp
 	{
-		unsigned ParseHex(const std::string& str, int line, int column)
+		unsigned ParseHex(const std::string& str, const Mark& mark)
 		{
 			unsigned value = 0;
-			for(unsigned i=0;i<str.size();i++) {
+			for(std::size_t i=0;i<str.size();i++) {
 				char ch = str[i];
 				int digit = 0;
 				if('a' <= ch && ch <= 'f')
@@ -20,7 +20,7 @@ namespace YAML
 				else if('0' <= ch && ch <= '9')
 					digit = ch - '0';
 				else
-					throw ParserException(line, column, ErrorMsg::INVALID_HEX);
+					throw ParserException(mark, ErrorMsg::INVALID_HEX);
 
 				value = (value << 4) + digit;
 			}
@@ -28,9 +28,9 @@ namespace YAML
 			return value;
 		}
 
-		std::string Str(char ch)
+		std::string Str(unsigned ch)
 		{
-			return std::string("") + ch;
+			return std::string(1, static_cast<char>(ch));
 		}
 
 		// Escape
@@ -44,13 +44,13 @@ namespace YAML
 				str += in.get();
 
 			// get the value
-			unsigned value = ParseHex(str, in.line, in.column);
+			unsigned value = ParseHex(str, in.mark());
 
 			// legal unicode?
 			if((value >= 0xD800 && value <= 0xDFFF) || value > 0x10FFFF) {
 				std::stringstream msg;
 				msg << ErrorMsg::INVALID_UNICODE << value;
-				throw ParserException(in.line, in.column, msg.str());
+				throw ParserException(in.mark(), msg.str());
 			}
 
 			// now break it up into chars
@@ -83,7 +83,7 @@ namespace YAML
 
 			// now do the slash (we're not gonna check if it's a slash - you better pass one!)
 			switch(ch) {
-				case '0': return "\0";
+				case '0': return std::string(1, '\x00');
 				case 'a': return "\x07";
 				case 'b': return "\x08";
 				case 't':
@@ -97,8 +97,9 @@ namespace YAML
 				case '\"': return "\"";
 				case '\'': return "\'";
 				case '\\': return "\\";
-				case 'N': return "\xC2\x85";  // NEL (#x85)
-				case '_': return "\xC2\xA0";  // #xA0
+				case '/': return "/";
+				case 'N': return "\x85";
+				case '_': return "\xA0";
 				case 'L': return "\xE2\x80\xA8";  // LS (#x2028)
 				case 'P': return "\xE2\x80\xA9";  // PS (#x2029)
 				case 'x': return Escape(in, 2);
@@ -107,7 +108,7 @@ namespace YAML
 			}
 
 			std::stringstream msg;
-			throw ParserException(in.line, in.column, ErrorMsg::INVALID_ESCAPE + ch);
+			throw ParserException(in.mark(), ErrorMsg::INVALID_ESCAPE + ch);
 		}
 	}
 }

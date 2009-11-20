@@ -6,8 +6,7 @@
   </description>
   <author>Ken Conley</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/rostopic</url>
+  <review status="test" notes=""/>
   <depend package="rostopic"/>
   <depend package="roslib"/>
   <depend package="rospy"/>

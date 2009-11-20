@@ -157,7 +157,9 @@ public:
     fprintf(f, "\n#include <string>\n"
 	       "#include <cstring>\n"
 	       "#include <vector>\n"
-         "#include <map>\n\n");
+         "#include <map>\n"
+         "#include \"ros/message.h\"\n"
+         "#include \"ros/time.h\"\n\n");
     request_spec.emit_cpp_includes(f);
     response_spec.emit_cpp_includes(f);
     fprintf(f, "namespace %s\n{\n\n", g_pkg.c_str());

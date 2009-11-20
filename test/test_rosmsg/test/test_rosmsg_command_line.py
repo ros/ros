@@ -66,8 +66,10 @@ class TestRosmsg(unittest.TestCase):
                 self.assert_('Usage' in output)
             
     def test_cmd_packages(self):
-        output1 = Popen(['rosmsg', 'packages'], stdout=PIPE).communicate()[0]
-        output2 = Popen(['rosmsg', 'packages', '-p'], stdout=PIPE).communicate()[0]
+        # - single line
+        output1 = Popen(['rosmsg', 'packages', '-s'], stdout=PIPE).communicate()[0]
+        # - multi-line
+        output2 = Popen(['rosmsg', 'packages'], stdout=PIPE).communicate()[0]
         l1 = [x for x in output1.split() if x]
         l2 = [x.strip() for x in output2.split('\n') if x.strip()]
         self.assertEquals(l1, l2)
@@ -76,8 +78,8 @@ class TestRosmsg(unittest.TestCase):
         for p in ['std_srvs', 'rospy']:
             self.assert_(p not in l1)
 
-        output1 = Popen(['rossrv', 'packages'], stdout=PIPE).communicate()[0]
-        output2 = Popen(['rossrv', 'packages', '-p'], stdout=PIPE).communicate()[0]
+        output1 = Popen(['rossrv', 'packages', '-s'], stdout=PIPE).communicate()[0]
+        output2 = Popen(['rossrv', 'packages'], stdout=PIPE).communicate()[0]
         l1 = [x for x in output1.split() if x]
         l2 = [x.strip() for x in output2.split('\n') if x.strip()]
         self.assertEquals(l1, l2)
@@ -88,9 +90,10 @@ class TestRosmsg(unittest.TestCase):
         
     def test_cmd_package(self):
         # this test is obviously very brittle, but should stabilize as the tests stabilize
-        output1 = Popen(['rosmsg', 'package', 'test_rosmsg'], stdout=PIPE).communicate()[0]
-        #  - validate pretty print as well
-        output2 = Popen(['rosmsg', 'package', '-p', 'test_rosmsg'], stdout=PIPE).communicate()[0]
+        # - single line output
+        output1 = Popen(['rosmsg', 'package', '-s', 'test_rosmsg'], stdout=PIPE).communicate()[0]
+        # - multi-line output
+        output2 = Popen(['rosmsg', 'package', 'test_rosmsg'], stdout=PIPE).communicate()[0]
         l = set([x for x in output1.split() if x])        
         l2 = set([x.strip() for x in output2.split('\n') if x.strip()])
         self.assertEquals(l, l2)
@@ -100,8 +103,8 @@ class TestRosmsg(unittest.TestCase):
                                'test_rosmsg/RosmsgC',
                                ]), l)
         
-        output = Popen(['rossrv', 'package', 'test_rosmsg'], stdout=PIPE).communicate()[0]
-        output2 = Popen(['rossrv', 'package', '-p', 'test_rosmsg'], stdout=PIPE).communicate()[0]        
+        output = Popen(['rossrv', 'package', '-s', 'test_rosmsg'], stdout=PIPE).communicate()[0]
+        output2 = Popen(['rossrv', 'package','test_rosmsg'], stdout=PIPE).communicate()[0]        
         l = set([x for x in output.split() if x])
         l2 = set([x.strip() for x in output2.split('\n') if x.strip()])
         self.assertEquals(l, l2)

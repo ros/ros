@@ -6,13 +6,12 @@
   </description>
   <author>Jeremy Leibs</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="test" notes=""/>
   <depend package="rospy"/>
   <depend package="rosrecord"/>
   <depend package="rostest"/>
   <depend package="test_crosspackage"/>
   <depend package="rosbagmigration"/>
-  <url>http://pr.willowgarage.com/wiki/test_rosbagmigration</url>
 
 </package>
 

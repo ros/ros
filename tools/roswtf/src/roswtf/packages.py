@@ -42,6 +42,13 @@ import roslib.msgs
 import roslib.packages
 import roslib.srvs
 
+## look for unknown tags in manifest
+def manifest_valid(ctx):
+    errors = []
+    if ctx.manifest is not None:
+        errors = ["<%s>"%t.tagName for t in ctx.manifest.unknown_tags]
+    return errors
+    
 ## look for unbuilt .msg files
 def msgs_built(ctx):
     unbuilt = set([])
@@ -50,7 +57,8 @@ def msgs_built(ctx):
         mtypes = roslib.msgs.list_msg_types(pkg, False)
         for t in mtypes:
             expected = [os.path.join('msg', 'cpp', pkg, '%s.h'%t),
-                        os.path.join('msg', 'lisp', pkg, '%s.lisp'%t),
+                        # roslisp is no longer builtin
+                        #os.path.join('msg', 'lisp', pkg, '%s.lisp'%t),
                         os.path.join('src', pkg, 'msg', '_%s.py'%t)]
             for e in expected:
                 if not os.path.isfile(os.path.join(pkg_dir, e)):
@@ -65,7 +73,8 @@ def srvs_built(ctx):
         mtypes = roslib.srvs.list_srv_types(pkg, False)
         for t in mtypes:
             expected = [os.path.join('srv', 'cpp', pkg, '%s.h'%t),
-                        os.path.join('srv', 'lisp', pkg, '%s.lisp'%t),
+                        # roslisp is no longer builtin
+                        #os.path.join('srv', 'lisp', pkg, '%s.lisp'%t),
                         os.path.join('src', pkg, 'srv', '_%s.py'%t)]
             for e in expected:
                 if not os.path.isfile(os.path.join(pkg_dir, e)):
@@ -189,7 +198,7 @@ def makefile_exists(ctx):
 
 def rospack_time(ctx):
     start = time.time()
-    roslib.scriptutil.rospackexec(['deps', 'roslib'])
+    roslib.rospack.rospackexec(['deps', 'roslib'])
     # arbitrarily tuned 
     return (time.time() - start) > 0.5
 
@@ -240,6 +249,8 @@ warnings = [
      'The following packages need rosbuild_genmsg() in CMakeLists.txt:'),
     (cmake_gensrv,     
      'The following packages need rosbuild_gensrv() in CMakeLists.txt:'),
+    (manifest_valid, "%(pkg)s/manifest.xml has unrecognized tags:"),
+
     ]
 errors = [
     (msgs_built, "Messages have not been built in the following package(s).\nYou can fix this by typing 'rosmake %(pkg)s':"),

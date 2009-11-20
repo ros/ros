@@ -17,10 +17,10 @@ function _ros_location_find {
     done
 
     if [[ $1 == log ]]; then
-        echo ${ROS_ROOT}/log
+        echo `${ROS_ROOT}/bin/roslaunch-logs`
         return 0
     elif [[ $1 == test_results ]]; then
-        echo ${ROS_ROOT}/test/test_results
+        echo `${ROS_ROOT}/test/rostest/bin/test-results-dir`
         return 0
     fi
 

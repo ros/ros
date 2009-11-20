@@ -37,7 +37,7 @@ import sys
 import time
 import traceback
 
-import roslib.roslogging
+import roslib.rosenv
 import roslib.scriptutil
 
 NAME = 'roslaunch-logs'
@@ -58,7 +58,7 @@ def logs_main():
     if args:
         parser.error("%s takes no arguments"%NAME)
         
-    log_dir = roslib.roslogging.get_log_dir()
+    log_dir = roslib.rosenv.get_log_dir()
     if not log_dir:
         print >> sys.stderr, "Cannot determine ROS log directory"
         sys.exit(1)

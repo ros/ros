@@ -30,6 +30,7 @@
 #include "ros/param.h"
 #include "ros/assert.h"
 #include "ros/common.h"
+#include "ros/file_log.h"
 
 using namespace XmlRpc;
 
@@ -109,6 +110,9 @@ const XMLRPCManagerPtr& XMLRPCManager::instance()
 }
 
 XMLRPCManager::XMLRPCManager()
+: port_(0)
+, shutting_down_(false)
+, unbind_requested_(false)
 {
 }
 
@@ -153,7 +157,7 @@ void XMLRPCManager::shutdown()
   {
     for (int wait_count = 0; i->in_use_ && wait_count < 10; wait_count++)
     {
-      ROS_DEBUG("waiting for xmlrpc connection to finish...");
+      ROSCPP_LOG_DEBUG("waiting for xmlrpc connection to finish...");
       ros::WallDuration(0.01).sleep();
     }
 
@@ -165,6 +169,15 @@ void XMLRPCManager::shutdown()
 
   boost::mutex::scoped_lock lock(functions_mutex_);
   functions_.clear();
+
+  {
+    S_ASyncXMLRPCConnection::iterator it = connections_.begin();
+    S_ASyncXMLRPCConnection::iterator end = connections_.end();
+    for (; it != end; ++it)
+    {
+      (*it)->removeFromDispatch(server_.get_dispatch());
+    }
+  }
 
   connections_.clear();
 
@@ -184,33 +197,33 @@ bool XMLRPCManager::validateXmlrpcResponse(const std::string& method, XmlRpcValu
 {
   if (response.getType() != XmlRpcValue::TypeArray)
   {
-    ROS_DEBUG("XML-RPC call [%s] didn't return an array",
+    ROSCPP_LOG_DEBUG("XML-RPC call [%s] didn't return an array",
         method.c_str());
     return false;
   }
   if (response.size() != 3)
   {
-    ROS_DEBUG("XML-RPC call [%s] didn't return a 3-element array",
+    ROSCPP_LOG_DEBUG("XML-RPC call [%s] didn't return a 3-element array",
         method.c_str());
     return false;
   }
   if (response[0].getType() != XmlRpcValue::TypeInt)
   {
-    ROS_DEBUG("XML-RPC call [%s] didn't return a int as the 1st element",
+    ROSCPP_LOG_DEBUG("XML-RPC call [%s] didn't return a int as the 1st element",
         method.c_str());
     return false;
   }
   int status_code = response[0];
   if (response[1].getType() != XmlRpcValue::TypeString)
   {
-    ROS_DEBUG("XML-RPC call [%s] didn't return a string as the 2nd element",
+    ROSCPP_LOG_DEBUG("XML-RPC call [%s] didn't return a string as the 2nd element",
         method.c_str());
     return false;
   }
   std::string status_string = response[1];
   if (status_code != 1)
   {
-    ROS_DEBUG("XML-RPC call [%s] returned an error (%d): [%s]",
+    ROSCPP_LOG_DEBUG("XML-RPC call [%s] returned an error (%d): [%s]",
         method.c_str(), status_code, status_string.c_str());
     return false;
   }
@@ -241,6 +254,11 @@ void XMLRPCManager::serverThreadFunc()
     {
       boost::mutex::scoped_lock lock(functions_mutex_);
       server_.work(0.01);
+    }
+
+    while (unbind_requested_)
+    {
+      WallDuration(0.01).sleep();
     }
 
     if (shutting_down_)
@@ -376,8 +394,10 @@ bool XMLRPCManager::bind(const std::string& function_name, const XMLRPCFunc& cb)
 
 void XMLRPCManager::unbind(const std::string& function_name)
 {
+  unbind_requested_ = true;
   boost::mutex::scoped_lock lock(functions_mutex_);
   functions_.erase(function_name);
+  unbind_requested_ = false;
 }
 
 } // namespace ros

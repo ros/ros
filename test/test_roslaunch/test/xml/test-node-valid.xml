@@ -63,20 +63,25 @@
       
 
   <node pkg="package" type="test_node_rosparam_load" name="rosparam_load">
-    <rosparam file="load.yaml" command="load" />
+    <rosparam file="$(find test_roslaunch)/test/params.yaml" command="load" />
   </node>
   <node pkg="package" type="test_node_rosparam_dump" name="rosparam_dump">
     <rosparam file="dump.yaml" command="dump" />
   </node>
   <node pkg="package" type="test_node_rosparam_load_ns" name="load_ns">
-    <rosparam ns="subns" file="load_ns.yaml" command="load" />
+    <rosparam ns="subns" file="$(find test_roslaunch)/test/params.yaml" command="load" />
   </node>
   <node pkg="package" type="test_node_rosparam_multi" name="rosparam_multi">
-    <rosparam file="mload.yaml" command="load" />
+    <rosparam file="$(find test_roslaunch)/test/params.yaml" command="load" />
     <rosparam file="mdump.yaml" command="dump" />
-    <rosparam ns="msubns" file="mload_ns.yaml" command="load" />
+    <rosparam ns="msubns" file="$(find test_roslaunch)/test/params.yaml" command="load" />
   </node>
   
+  <node pkg="package" type="test_required_true_1" required="true" />
+  <node pkg="package" type="test_required_true_2" required="True" />
+  <node pkg="package" type="test_required_false_1" required="false" />
+  <node pkg="package" type="test_required_false_2" required="FALSE" />
+
   <!-- TODO remap args test -->
 
   <node pkg="package" type="test_launch_prefix" launch-prefix="xterm -e gdb --args" />

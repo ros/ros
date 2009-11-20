@@ -55,7 +55,11 @@ class Module(object):
         try:
             return getattr(self.wrapped, name)
         except AttributeError:
-            roslib.load_manifest(name.split('.')[0])
+            import roslib.packages
+            try:
+                roslib.load_manifest(name.split('.')[0])
+            except roslib.packages.InvalidROSPkgException, e:
+                raise ImportError("Cannot import module '%s': \n%s"%(name, str(e)))
             return __import__(name)
 
 ## rewrite our own entry in sys.modules so that dynamic loading

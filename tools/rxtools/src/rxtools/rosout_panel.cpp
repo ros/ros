@@ -37,31 +37,36 @@
 #include "rosout_list_control.h"
 
 #include <wx/wx.h>
-#include <wx/aui/auibook.h>
-#include <wx/richtext/richtextctrl.h>
+#include <wx/artprov.h>
 
 #include <ros/ros.h>
+#include <ros/package.h>
 
 #include <sstream>
 #include <algorithm>
 
 #include <boost/bind.hpp>
 
+#include "rosout_text_filter.h"
+#include "rosout_text_filter_control.h"
+#include "rosout_severity_filter.h"
+#include "rosout_severity_filter_control.h"
+
 namespace rxtools
 {
 
-RosoutPanel::RosoutPanel(wxWindow* parent)
-: RosoutPanelBase(parent)
+RosoutPanel::RosoutPanel(wxWindow* parent, int id, wxPoint pos, wxSize size, int style)
+: RosoutPanelBase(parent, id, pos, size, style)
 , enabled_(false)
-, topic_()
 , message_id_counter_(0)
 , max_messages_(20000)
-, use_regex_(false)
-, valid_include_regex_(false)
-, valid_exclude_regex_(false)
 , needs_refilter_(false)
 , refilter_timer_(0.0f)
+, pause_(false)
+, logger_level_frame_(0)
 {
+  wxInitAllImageHandlers();
+
   nh_.setCallbackQueue(&callback_queue_);
 
   process_timer_ = new wxTimer(this);
@@ -69,10 +74,29 @@ RosoutPanel::RosoutPanel(wxWindow* parent)
 
   Connect(process_timer_->GetId(), wxEVT_TIMER, wxTimerEventHandler(RosoutPanel::onProcessTimer), NULL, this);
 
-  table_->setMessageFunction(boost::bind(&RosoutPanel::getMessageByIndex, this, _1));
+  table_->setModel(this);
 
   setTopic("/rosout_agg");
   setEnabled(true);
+
+  std::string icon_path = ros::package::getPath(ROS_PACKAGE_NAME) + "/icons/";
+  delete_filter_bitmap_ = wxBitmap(wxString::FromAscii((icon_path + "delete-filter-16.png").c_str()), wxBITMAP_TYPE_PNG);
+
+  wxBitmap add_bitmap(wxString::FromAscii((icon_path + "add-16.png").c_str()), wxBITMAP_TYPE_PNG);
+  add_filter_button_->SetBitmapLabel(add_bitmap);
+
+  add_filter_button_->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(RosoutPanel::onAddFilterPressed), NULL, this);
+
+  {
+    RosoutSeverityFilterPtr filter(new RosoutSeverityFilter);
+    RosoutSeverityFilterControl* control = new RosoutSeverityFilterControl(this, filter);
+    severity_filter_ = filter;
+    severity_sizer_->Add(control, 0, wxEXPAND);
+  }
+
+  createTextFilter();
+
+  filters_window_->SetMinSize(wxSize(-1, filters_[0].panel->GetSize().GetHeight() + add_filter_button_->GetSize().GetHeight() + 5));
 }
 
 RosoutPanel::~RosoutPanel()
@@ -140,19 +164,329 @@ void RosoutPanel::setTopic(const std::string& topic)
   subscribe();
 }
 
+void RosoutPanel::setMessages(const M_IdToMessage& messages)
+{
+  messages_ = messages;
+
+  if (messages.empty())
+  {
+    message_id_counter_ = 0;
+  }
+  else
+  {
+    message_id_counter_ = messages.rbegin()->first;
+  }
+
+  refilter();
+}
+
+RosoutFrame* RosoutPanel::createNewFrame()
+{
+  RosoutFrame* frame = new RosoutFrame(0);
+  frame->rosout_panel_->setMessages(messages_);
+  frame->Show();
+  frame->Raise();
+
+  return frame;
+}
+
+void RosoutPanel::onNewWindow(wxCommandEvent& event)
+{
+  createNewFrame();
+}
+
+void RosoutPanel::onLoggerLevelsClose(wxCloseEvent& event)
+{
+  logger_level_frame_->Show(false);
+  event.Veto();
+}
+
+void RosoutPanel::onLoggerLevels(wxCommandEvent& event)
+{
+  if (!logger_level_frame_)
+  {
+    logger_level_frame_ = new LoggerLevelFrame(this);
+    logger_level_frame_->Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(RosoutPanel::onLoggerLevelsClose), NULL, this);
+  }
+
+  logger_level_frame_->Show();
+  logger_level_frame_->Raise();
+}
+
+bool filterEnabledCheckboxEqual(wxWindowID id, const RosoutPanel::FilterInfo& info)
+{
+  return info.enabled_cb && info.enabled_cb->GetId() == id;
+}
+
+void RosoutPanel::onFilterEnableChecked(wxCommandEvent& event)
+{
+  V_FilterInfo::iterator it = std::find_if(filters_.begin(), filters_.end(), boost::bind(filterEnabledCheckboxEqual, event.GetId(), _1));
+  if (it != filters_.end())
+  {
+    FilterInfo& info = *it;
+    info.filter->setEnabled(event.IsChecked());
+    refilter();
+  }
+}
+
+bool filterDeleteButtonEqual(wxWindowID id, const RosoutPanel::FilterInfo& info)
+{
+  return info.delete_button && info.delete_button->GetId() == id;
+}
+
+void RosoutPanel::onFilterDelete(wxCommandEvent& event)
+{
+  V_FilterInfo::iterator it = std::find_if(filters_.begin(), filters_.end(), boost::bind(filterDeleteButtonEqual, event.GetId(), _1));
+  if (it != filters_.end())
+  {
+    FilterInfo& info = *it;
+    removeFilter(info.filter);
+  }
+}
+
+bool filterUpButtonEqual(wxWindowID id, const RosoutPanel::FilterInfo& info)
+{
+  return info.up_button && info.up_button->GetId() == id;
+}
+
+void RosoutPanel::onFilterMoveUp(wxCommandEvent& event)
+{
+  V_FilterInfo::iterator it = std::find_if(filters_.begin(), filters_.end(), boost::bind(filterUpButtonEqual, event.GetId(), _1));
+  if (it != filters_.end() && it != filters_.begin())
+  {
+    FilterInfo& info = *it;
+
+    filters_sizer_->Detach(info.panel);
+    size_t new_index = it - filters_.begin() - 1;
+    filters_sizer_->Insert(new_index, info.panel, 0, wxEXPAND|wxBOTTOM, 1);
+    filters_sizer_->Layout();
+    std::swap(*it, *(it - 1));
+
+    resizeFiltersPane();
+    updateFilterBackgrounds();
+  }
+}
+
+bool filterDownButtonEqual(wxWindowID id, const RosoutPanel::FilterInfo& info)
+{
+  return info.down_button && info.down_button->GetId() == id;
+}
+
+void RosoutPanel::onFilterMoveDown(wxCommandEvent& event)
+{
+  V_FilterInfo::iterator it = std::find_if(filters_.begin(), filters_.end(), boost::bind(filterDownButtonEqual, event.GetId(), _1));
+  if (it != filters_.end() && it != filters_.end() - 1)
+  {
+    FilterInfo& info = *it;
+
+    filters_sizer_->Detach(info.panel);
+    size_t new_index = it - filters_.begin() + 1;
+    filters_sizer_->Insert(new_index, info.panel, 0, wxEXPAND|wxBOTTOM, 1);
+    filters_sizer_->Layout();
+    std::swap(*it, *(it + 1));
+
+    resizeFiltersPane();
+    updateFilterBackgrounds();
+  }
+}
+
+void RosoutPanel::updateFilterBackgrounds()
+{
+  for (size_t i = 0; i < filters_.size(); ++i)
+  {
+    FilterInfo& info = filters_[i];
+    if (i % 2 == 0)
+    {
+      info.panel->SetBackgroundColour(*wxLIGHT_GREY);
+      info.control->SetBackgroundColour(*wxLIGHT_GREY);
+    }
+    else
+    {
+      info.panel->SetBackgroundColour(wxNullColour);
+      info.control->SetBackgroundColour(wxNullColour);
+    }
+  }
+}
+
+void RosoutPanel::addFilter(const RosoutFilterPtr& filter, wxWindow* control)
+{
+  table_->preItemChanges();
+
+  FilterInfo info;
+  info.filter = filter;
+  info.control = control;
+
+  info.panel = new wxPanel(filters_window_, wxID_ANY);
+  filters_sizer_->Add(info.panel, 0, wxEXPAND|wxBOTTOM, 1);
+  info.panel->SetPosition(wxPoint(0, info.panel->GetSize().GetHeight() * filters_.size()));
+
+  if (filters_.size() % 2 == 0)
+  {
+    info.panel->SetBackgroundColour(*wxLIGHT_GREY);
+    info.control->SetBackgroundColour(*wxLIGHT_GREY);
+  }
+  else
+  {
+    info.panel->SetBackgroundColour(wxNullColour);
+    info.control->SetBackgroundColour(wxNullColour);
+  }
+
+  control->Reparent(info.panel);
+
+  info.sizer = new wxBoxSizer(wxHORIZONTAL);
+  info.panel->SetSizer(info.sizer);
+
+
+#if 01
+  //if (disableable)
+  {
+    info.enabled_cb = new wxCheckBox(info.panel, wxID_ANY, wxT("Enabled"));
+    info.enabled_cb->SetValue(filter->isEnabled());
+    info.sizer->Add(info.enabled_cb, 0, wxALIGN_CENTER_VERTICAL);
+    info.enabled_cb->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(RosoutPanel::onFilterEnableChecked), NULL, this);
+  }
+#endif
+
+  info.sizer->Add(control, 1, wxALIGN_CENTER_VERTICAL);
+
+  info.delete_button = 0;
+  //if (removable)
+  {
+    info.delete_button = new wxBitmapButton(info.panel, wxID_ANY, delete_filter_bitmap_);
+    info.sizer->Add(info.delete_button, 0, wxALIGN_CENTER_VERTICAL);
+    info.delete_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(RosoutPanel::onFilterDelete), NULL, this);
+
+    info.down_button = new wxBitmapButton(info.panel, wxID_ANY, wxArtProvider::GetBitmap(wxART_GO_DOWN, wxART_OTHER, wxSize(16, 16)));
+    info.sizer->Add(info.down_button, 0, wxALIGN_CENTER_VERTICAL);
+    info.down_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(RosoutPanel::onFilterMoveDown), NULL, this);
+
+    info.up_button = new wxBitmapButton(info.panel, wxID_ANY, wxArtProvider::GetBitmap(wxART_GO_UP, wxART_OTHER, wxSize(16, 16)));
+    info.sizer->Add(info.up_button, 0, wxALIGN_CENTER_VERTICAL);
+    info.up_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(RosoutPanel::onFilterMoveUp), NULL, this);
+  }
+
+  filters_.push_back(info);
+
+  resizeFiltersPane();
+
+  filters_window_->Scroll(-1, 100000);
+
+  filter->getChangedSignal().connect(boost::bind(&RosoutPanel::onFilterChanged, this, _1));
+
+  needs_refilter_ = true;
+
+  table_->postItemChanges();
+}
+
+void RosoutPanel::resizeFiltersPane()
+{
+  filters_window_->Layout();
+
+  wxSize sizer_size = filters_window_->GetSizer()->GetMinSize();
+  if (sizer_size.GetHeight() > 150)
+  {
+    filters_window_->SetMinSize(wxSize(-1, 150));
+    filters_window_->GetSizer()->FitInside(filters_window_);
+  }
+  else
+  {
+    filters_window_->SetMinSize(wxSize(-1, sizer_size.GetHeight()));
+  }
+
+  Layout();
+  Refresh();
+}
+
+bool filterEquals(const RosoutFilterPtr& filter, const RosoutPanel::FilterInfo& info)
+{
+  return info.filter == filter;
+}
+
+void RosoutPanel::removeFilter(const RosoutFilterPtr& filter)
+{
+  V_FilterInfo::iterator it = std::find_if(filters_.begin(), filters_.end(), boost::bind(filterEquals, filter, _1));
+  if (it != filters_.end())
+  {
+    FilterInfo& info = *it;
+    info.panel->Destroy();
+    filters_.erase(it);
+
+    resizeFiltersPane();
+    updateFilterBackgrounds();
+
+    refilter();
+  }
+}
+
+void RosoutPanel::clearFilters()
+{
+  while (!filters_.empty())
+  {
+    removeFilter(filters_.front().filter);
+  }
+}
+
+void RosoutPanel::onFilterChanged(const RosoutFilter*)
+{
+  needs_refilter_ = true;
+}
+
+template<class T>
+void printStuff(const std::string& name, T* win)
+{
+  wxPoint point = win->GetPosition();
+  wxSize size = win->GetSize();
+  ROS_INFO("%s: x: %d, y: %d,      w: %d, h: %d", name.c_str(), point.x, point.y, size.GetWidth(), size.GetHeight());
+}
+
+#define PRINT_STUFF(description) \
+  ROS_INFO(description); \
+  printStuff("  filters_sizer_", filters_sizer_); \
+  printStuff("  filters_window_->GetSizer()", filters_window_->GetSizer()); \
+  printStuff("  filters_window_", filters_window_); \
+  for (size_t i = 0; i < filters_.size(); ++i) \
+  { \
+    { \
+      std::stringstream ss; \
+      ss << "    panel " << i; \
+      printStuff(ss.str(), filters_[i].panel); \
+    } \
+    { \
+      std::stringstream ss; \
+      ss << "    sizer " << i; \
+      printStuff(ss.str(), filters_[i].sizer); \
+    } \
+  }
+
 void RosoutPanel::onProcessTimer(wxTimerEvent& evt)
 {
   callback_queue_.callAvailable(ros::WallDuration());
 
   processMessages();
 
-  refilter_timer_ += 0.1f;
-  if (needs_refilter_ && refilter_timer_ > 1.0f)
+  refilter_timer_ += 0.25f;
+  if (needs_refilter_ && refilter_timer_ > 0.5f)
   {
     refilter_timer_ = 0.0f;
     needs_refilter_ = false;
     refilter();
   }
+
+  //PRINT_STUFF("onProcessTimer");
+}
+
+RosoutTextFilterPtr RosoutPanel::createTextFilter()
+{
+  RosoutTextFilterPtr filter(new RosoutTextFilter);
+  RosoutTextFilterControl* control = new RosoutTextFilterControl(filters_window_, filter);
+  addFilter(filter, control);
+
+  return filter;
+}
+
+void RosoutPanel::onAddFilterPressed(wxCommandEvent& event)
+{
+  createTextFilter();
 }
 
 void RosoutPanel::onClear(wxCommandEvent& event)
@@ -178,89 +512,10 @@ roslib::LogConstPtr RosoutPanel::getMessageByIndex(uint32_t index) const
   return it->second;
 }
 
-bool RosoutPanel::include(const std::string& str) const
-{
-  // If the include filter is empty, that means we should include everything
-  if (include_filter_.empty())
-  {
-    return true;
-  }
-
-  bool include_match = false;
-
-  if (use_regex_)
-  {
-    if (valid_include_regex_)
-    {
-      include_match = boost::regex_match(str, include_regex_);
-    }
-  }
-  else
-  {
-    include_match = str.find(include_filter_) != std::string::npos;
-  }
-
-  return include_match;
-}
-
-bool RosoutPanel::exclude(const std::string& str) const
-{
-  if (exclude_filter_.empty())
-  {
-    return false;
-  }
-
-  bool exclude_match = false;
-
-  if (use_regex_)
-  {
-    if (valid_exclude_regex_)
-    {
-      exclude_match = boost::regex_match(str, exclude_regex_);
-    }
-  }
-  else
-  {
-    exclude_match = str.find(exclude_filter_) != std::string::npos;
-  }
-
-  return exclude_match;
-}
-
-bool RosoutPanel::include(const V_string& strs) const
-{
-  V_string::const_iterator it = strs.begin();
-  V_string::const_iterator end = strs.end();
-  for (; it != end; ++it)
-  {
-    if (include(*it))
-    {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-bool RosoutPanel::exclude(const V_string& strs) const
-{
-  V_string::const_iterator it = strs.begin();
-  V_string::const_iterator end = strs.end();
-  for (; it != end; ++it)
-  {
-    if (exclude(*it))
-    {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 bool RosoutPanel::filter(uint32_t id) const
 {
-  // Early out if both include and exclude filters are empty
-  if (include_filter_.empty() && exclude_filter_.empty())
+  // No filters, always include
+  if (filters_.empty())
   {
     return true;
   }
@@ -270,41 +525,53 @@ bool RosoutPanel::filter(uint32_t id) const
 
   const roslib::LogConstPtr& message = it->second;
 
-  // Turn non-string values into strings so we can match against them
-  std::stringstream line;
-  line << message->line;
-  std::stringstream time;
-  time << message->header.stamp;
-
-  // If any of the exclusions match, this message should be excluded
-  if (exclude(message->name) || exclude(message->msg) || exclude(message->file) || exclude(message->function) || exclude(line.str()) || exclude(message->topics)
-      || exclude(time.str()) || exclude((const char*) table_->getSeverityText(message).fn_str()))
+  // First run through the severity filter
+  if (!severity_filter_->filter(message))
   {
     return false;
   }
 
-  // If any of the inclusions match, this message should be included
-  return include(message->name) || include(message->msg) || include(message->file) || include(message->function) || include(line.str()) || include(message->topics)
-      || include(time.str()) || include((const char*) table_->getSeverityText(message).fn_str());
+  {
+    V_FilterInfo::const_iterator it = filters_.begin();
+    V_FilterInfo::const_iterator end = filters_.end();
+    for (; it != end; ++it)
+    {
+      const FilterInfo& info = *it;
+      const RosoutFilterPtr& filter = info.filter;
+      if (filter->isEnabled() && filter->isValid())
+      {
+        if (!filter->filter(message))
+        {
+          return false;
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
+void RosoutPanel::validateOrderedMessages()
+{
+#if VALIDATE_FILTERING
+  typedef std::set<uint32_t> S_u32;
+  S_u32 s;
+  V_u32::iterator it = ordered_messages_.begin();
+  V_u32::iterator end = ordered_messages_.end();
+  for (; it != end; ++it)
+  {
+    uint32_t id = *it;
+    if (!s.insert(id).second)
+    {
+      ROS_BREAK();
+    }
+  }
+#endif
 }
 
 void RosoutPanel::refilter()
 {
-  table_->Freeze();
-
-  /// @todo wxListCtrl::GetScrollRange doesn't work, so I have to work around it.  Switch to use GetScrollPos and GetScrollRange once Bug #10155 in the wxWidgets trac is fixed.
-
-  bool scroll_to_bottom = false;
-
-  // wxListCtrl on the mac doesn't implement GetCountPerPage() correctly, so disable autoscrolling on the mac
-#ifndef __WXMAC__
-  int count_per_page = table_->GetCountPerPage();
-  int scroll_pos = table_->GetScrollPos(wxVERTICAL);
-  if (scroll_pos + count_per_page >= table_->GetItemCount())
-  {
-    scroll_to_bottom = true;
-  }
-#endif
+  table_->preItemChanges();
 
   ordered_messages_.clear();
   M_IdToMessage::iterator it = messages_.begin();
@@ -320,18 +587,11 @@ void RosoutPanel::refilter()
     }
   }
 
+  validateOrderedMessages();
+
   table_->SetItemCount(ordered_messages_.size());
 
-  if (scroll_to_bottom && !ordered_messages_.empty())
-  {
-    table_->EnsureVisible(table_->GetItemCount() - 1);
-  }
-
-  // This for some reason prevents the control from flickering: http://wiki.wxwidgets.org/Flicker-Free_Drawing#No-flickering_for_wxListCtrl_with_wxLC_REPORT_.7C_wxLC_VIRTUAL_style
-  wxIdleEvent idle;
-  wxTheApp->SendIdleEvents(this, idle);
-
-  table_->Thaw();
+  table_->postItemChanges();
 }
 
 void RosoutPanel::popMessage()
@@ -342,6 +602,13 @@ void RosoutPanel::popMessage()
 
     ordered_messages_.erase(ordered_messages_.begin());
     table_->SetItemCount(ordered_messages_.size());
+
+    // Removing early messages means subtracting 1 from the current selection
+    int32_t selection = table_->getSelection();
+    if (selection > -1)
+    {
+      table_->setSelection(selection - 1);
+    }
   }
 
   messages_.erase(it);
@@ -358,6 +625,8 @@ void RosoutPanel::processMessage(const roslib::Log::ConstPtr& message)
     addMessageToTable(message, id);
   }
 
+  validateOrderedMessages();
+
   if (messages_.size() > max_messages_)
   {
     popMessage();
@@ -371,21 +640,7 @@ void RosoutPanel::processMessages()
     return;
   }
 
-  table_->Freeze();
-
-  // determine if the scrollbar is at the bottom of its range
-  /// @todo wxListCtrl::GetScrollRange doesn't work, so I have to work around it.  Switch to use GetScrollPos and GetScrollRange once Bug #10155 in the wxWidgets trac is fixed.
-  bool scroll_to_bottom = false;
-  // wxListCtrl on the mac doesn't implement GetCountPerPage() correctly, so disable autoscrolling on the mac
-#ifndef __WXMAC__
-  int count_per_page = table_->GetCountPerPage();
-  int scroll_pos = table_->GetScrollPos(wxVERTICAL);
-  //printf("scroll_pos: %d, count_per_page: %d, scroll range: %d\n", scroll_pos, count_per_page, table_->GetScrollRange(wxVERTICAL));
-  if (scroll_pos + count_per_page >= table_->GetItemCount())
-  {
-    scroll_to_bottom = true;
-  }
-#endif
+  table_->preItemChanges();
 
   V_Log::iterator it = message_queue_.begin();
   V_Log::iterator end = message_queue_.end();
@@ -400,34 +655,20 @@ void RosoutPanel::processMessages()
 
   table_->SetItemCount(ordered_messages_.size());
 
-  // If the scrollbar was at the bottom of its range, make sure we're scrolled all the way down
-  if (scroll_to_bottom && !ordered_messages_.empty())
-  {
-    table_->EnsureVisible(table_->GetItemCount() - 1);
-  }
-
-  // This for some reason prevents the control from flickering: http://wiki.wxwidgets.org/Flicker-Free_Drawing#No-flickering_for_wxListCtrl_with_wxLC_REPORT_.7C_wxLC_VIRTUAL_style
-  wxIdleEvent idle;
-  wxTheApp->SendIdleEvents(this, idle);
-
-  table_->Thaw();
+  table_->postItemChanges();
 }
 
 void RosoutPanel::incomingMessage(const roslib::Log::ConstPtr& msg)
 {
-  message_queue_.push_back(msg);
+  if (!pause_)
+  {
+    message_queue_.push_back(msg);
+  }
 }
 
 void RosoutPanel::onPause(wxCommandEvent& evt)
 {
-  if (evt.IsChecked())
-  {
-    process_timer_->Stop();
-  }
-  else
-  {
-    process_timer_->Start(250);
-  }
+  pause_ = evt.IsChecked();
 }
 
 void RosoutPanel::onSetup(wxCommandEvent& evt)
@@ -448,72 +689,6 @@ void RosoutPanel::setBufferSize(uint32_t size)
   {
     popMessage();
   }
-}
-
-void RosoutPanel::setInclude(const std::string& filter)
-{
-  include_filter_ = filter;
-
-  include_text_->SetBackgroundColour(*wxWHITE);
-
-  valid_include_regex_ = true;
-
-  if (use_regex_ && !filter.empty())
-  {
-    try
-    {
-      include_regex_ = boost::regex(filter);
-    }
-    catch (std::runtime_error&)
-    {
-      include_text_->SetBackgroundColour(*wxRED);
-      valid_include_regex_ = false;
-    }
-  }
-
-  needs_refilter_ = true;
-}
-
-void RosoutPanel::setExclude(const std::string& filter)
-{
-  exclude_filter_ = filter;
-
-  exclude_text_->SetBackgroundColour(*wxWHITE);
-
-  valid_exclude_regex_ = true;
-
-  if (use_regex_ && !filter.empty())
-  {
-    try
-    {
-      exclude_regex_ = boost::regex(filter);
-    }
-    catch (std::runtime_error&)
-    {
-      exclude_text_->SetBackgroundColour(*wxRED);
-      valid_exclude_regex_ = false;
-    }
-  }
-
-  needs_refilter_ = true;
-}
-
-void RosoutPanel::onIncludeText(wxCommandEvent& event)
-{
-  setInclude((const char*) include_text_->GetValue().fn_str());
-}
-
-void RosoutPanel::onExcludeText(wxCommandEvent& event)
-{
-  setExclude((const char*) exclude_text_->GetValue().fn_str());
-}
-
-void RosoutPanel::onRegexChecked(wxCommandEvent& event)
-{
-  use_regex_ = regex_checkbox_->GetValue();
-
-  setInclude(include_filter_);
-  setExclude(exclude_filter_);
 }
 
 RosoutMessageSummary RosoutPanel::getMessageSummary(double duration) const

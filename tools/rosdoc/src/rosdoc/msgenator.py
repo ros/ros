@@ -180,7 +180,7 @@ def generate_msg_docs(ctx):
 
         # roslib.msgs work, load specs into memory
         roslib.msgs.reinit()
-        roslib.msgs.load_package_dependencies(p)
+        roslib.msgs.load_package_dependencies(p, load_recursive=True)
         roslib.msgs.load_package(p)
 
         # create the directory for the autogen files

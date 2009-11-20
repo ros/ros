@@ -33,10 +33,12 @@
 #
 # Revision $Id: catunit 3804 2009-02-11 02:16:00Z rob_wheeler $
 
-## Cleanunit is a simple script that takes all the xml-formatted unit
-## test output in ROS_ROOT/test/test_results and aggregates them
-## into ROS_ROOT/test/test_results/_hudson. In this process, it
-## strips any characters that tend to cause Hudson trouble.
+"""
+Cleanunit is a simple script that takes all the xml-formatted unit
+test output in test_results and aggregates them into
+test_results/_hudson. In this process, it strips any characters that
+tend to cause Hudson trouble.
+"""
 
 from __future__ import with_statement
 import roslib; roslib.load_manifest('rostest')
@@ -48,7 +50,7 @@ import roslib.rosenv
 import rostest.xmlresults as xmlr
 
 def prepare_dirs(output_dir_name):
-  test_results_dir = os.path.join(roslib.rosenv.get_ros_root(), 'test', 'test_results')
+  test_results_dir = roslib.rosenv.get_test_results_dir()
   print "will read test results from", test_results_dir
   output_dir = os.path.join(test_results_dir, output_dir_name)
   if not os.path.exists(output_dir):

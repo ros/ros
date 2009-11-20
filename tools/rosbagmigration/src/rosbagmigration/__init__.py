@@ -48,7 +48,7 @@ import collections
 
 import itertools
 
-import roslib.scriptutil
+import roslib.rospack
 import roslib.message
 
 # Anything outside the scope of these primitives is a submessage
@@ -483,7 +483,7 @@ class MessageMigrator(object):
         # Alternatively the preferred method is to load definitions
         # from the rosbagmigration ruleset export flag.
         if plugins:
-            for pkg in roslib.scriptutil.rospack_depends_on_1('rosbagmigration'):
+            for pkg in roslib.rospack.rospack_depends_on_1('rosbagmigration'):
                 m_file = roslib.manifest.manifest_file(pkg, True)
                 m = roslib.manifest.parse_file(m_file)
                 p_rules = m.get_export('rosbagmigration', 'rule_file')

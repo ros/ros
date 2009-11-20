@@ -31,6 +31,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
+"""
+Library for listing ROS filesystem resources. This is mainly used by
+higher-level libraries like L{roslib.msgs}.
+"""
+
 import os
 import itertools
 
@@ -38,27 +43,33 @@ import roslib.manifest
 import roslib.names
 import roslib.packages
 
-################################################################################
-# List ROS package resources
-
-
-## Helper routine for loading Manifest instances
-## @param package_dir str: package directory location
-## @return Manifest: manifest for package
 def _get_manifest_by_dir(package_dir):
+    """
+    Helper routine for loading Manifest instances
+    @param package_dir: package directory location
+    @type  package_dir: str
+    @return: manifest for package
+    @rtype: Manifest
+    """
     f = os.path.join(package_dir, roslib.manifest.MANIFEST_FILE)
     if f:
         return roslib.manifest.parse_file(f)
     else:
         return None
 
-## List resources in a package directory within a particular
-## subdirectory. This is useful for listing messages, services, etc...
-## @param package_dir str: package directory location
-## @param subdir str: name of subdirectory
-## @param include_depends bool: if True, include resources in dependencies as well    
-## @param rfilter fn: resource filter function that returns true if  filenames is the desired resource type
 def list_package_resources_by_dir(package_dir, include_depends, subdir, rfilter=os.path.isfile):
+    """
+    List resources in a package directory within a particular
+    subdirectory. This is useful for listing messages, services, etc...
+    @param package_dir: package directory location
+    @type  package_dir: str
+    @param subdir: name of subdirectory
+    @type  subdir: str
+    @param include_depends: if True, include resources in dependencies as well    
+    @type  include_depends: bool
+    @param rfilter: resource filter function that returns true if filename is the desired resource type
+    @type  rfilter: fn(filename)->bool
+    """
     package = os.path.basename(package_dir)
     resources = []
     dir = roslib.packages._get_pkg_subdir_by_dir(package_dir, subdir, False)
@@ -77,13 +88,19 @@ def list_package_resources_by_dir(package_dir, include_depends, subdir, rfilter=
                  for f in os.listdir(dir) if rfilter(os.path.join(dir, f))])
     return resources
 
-## List resources in a package within a particular subdirectory. This is useful for listing
-## messages, services, etc...    
-## @param package str: package name
-## @param subdir str: name of subdirectory
-## @param include_depends bool: if True, include resources in dependencies as well    
-## @param rfilter fn: resource filter function that returns true if  filenames is the desired resource type
 def list_package_resources(package, include_depends, subdir, rfilter=os.path.isfile):
+    """
+    List resources in a package within a particular subdirectory. This is useful for listing
+    messages, services, etc...    
+    @param package: package name
+    @type  package: str
+    @param subdir: name of subdirectory
+    @type  subdir: str
+    @param include_depends: if True, include resources in dependencies as well    
+    @type  include_depends: bool
+    @param rfilter: resource filter function that returns true if filename is the desired resource type
+    @type  rfilter: fn(filename)->bool
+    """    
     package_dir = roslib.packages.get_pkg_dir(package)
     return list_package_resources_by_dir(package_dir, include_depends, subdir, rfilter)
 

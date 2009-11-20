@@ -388,18 +388,46 @@ public:
    */
   int run(int argc, char **argv);
 
+  // Another form of run, which takes the arguments as a single string.
+  // WARNING: this method does naive string-splitting on spaces.
+  int run(const std::string& cmd);
+  
+  // Get the accumulated output
+  std::string getOutput() { return output_acc; }
+
   int cmd_print_package_list(bool print_path);
   
   int cmd_print_langs_list();
   
   void crawl_for_packages(bool force_crawl = false);
   VecPkg partial_crawl(const std::string &path);
+
+  // Exposed for testing purposes only
+  std::string deduplicate_tokens(const std::string& s);
+
+  // Storage for --foo options
+  // --deps-only
+  bool opt_deps_only;
+  // --lang=
+  std::string opt_lang;
+  // --attrib=
+  std::string opt_attrib;
+  // --length=
+  std::string opt_length;
+  // --top=
+  std::string opt_top;
+  // The package name
+  std::string opt_package;
+  // the number of entries to list in the profile table
+  int opt_profile_length;
+  // only display zombie directories in profile?
+  bool opt_profile_zombie_only;
+
 private:
   bool cache_lock_failed;
   bool crawled;
-  /** tests if the cache exists, is new enough, and is valid */
-  void createROSHomeDirectory();
   std::string getCachePath();
+  /** tests if the cache exists, is new enough, and is valid */
   bool cache_is_good();
   /** returns a double representing the seconds since the Epoch */
   static double time_since_epoch();
@@ -409,6 +437,13 @@ private:
   bool useBinDepPath();
   /** remove trailing slashes */
   void sanitize_rppvec(std::vector<std::string> &rppvec);
+  // Output accumulates here
+  std::string output_acc;
+  // A place to store heap-allocated argv, in case we were passed a
+  // std::string in run().  It'll be freed on destruction.
+  int my_argc;
+  char** my_argv;
+  void freeArgv();
 };
 
 }

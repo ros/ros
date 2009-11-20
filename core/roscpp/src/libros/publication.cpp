@@ -224,8 +224,6 @@ void Publication::getInfo(XmlRpc::XmlRpcValue& info)
 
 void Publication::dropAllConnections()
 {
-  ROS_DEBUG("Publication on topic [%s] dropping all connections", name_.c_str());
-
   // Swap our publishers list with a local one so we can only lock for a short period of time, because a
   // side effect of our calling drop() on connections can be re-locking the publishers mutex
   V_SubscriberLink local_publishers;
@@ -241,8 +239,6 @@ void Publication::dropAllConnections()
   {
     (*i)->getConnection()->drop();
   }
-
-  ROS_DEBUG("Publication on topic [%s] dropped all connections", name_.c_str());
 }
 
 class PeerConnDisconnCallback : public CallbackInterface

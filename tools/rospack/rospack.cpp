@@ -55,6 +55,7 @@ using namespace std;
 //#define VERBOSE_DEBUG
 const double DEFAULT_MAX_CACHE_AGE = 60.0; // rebuild cache every minute
 
+
 #include <sys/stat.h>
 #ifndef S_ISDIR 
 #define S_ISDIR(x) (((x) & S_IFMT) == S_IFDIR) 
@@ -63,36 +64,15 @@ const double DEFAULT_MAX_CACHE_AGE = 60.0; // rebuild cache every minute
 namespace rospack
 {
 
+ROSPack *g_rospack = NULL; // singleton
+
 #ifdef __APPLE__
 const string g_ros_os("osx");
 #else
 const string g_ros_os("linux");
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Global storage for --foo options
-// --deps-only
-bool g_deps_only = false;
-// --lang=
-string g_lang;
-// --attrib=
-string g_attrib;
-// --length=
-string g_length;
-// --top=
-string g_top;
-// The package name
-string g_package;
-// the number of entries to list in the profile table
-int g_profile_length = 0;
-// only display zombie directories in profile?
-bool g_profile_zombie_only = false;
-
-//////////////////////////////////////////////////////////////////////////////
-
 const char *fs_delim = "/"; // ifdef this for windows
-
-string deduplicate_tokens(const string& s);
 
 Package::Package(string _path) : path(_path), 
         deps_calculated(false), direct_deps_calculated(false),
@@ -175,7 +155,7 @@ string Package::flags(string lang, string attrib)
   string s;
   // Conditionally include this package's exported flags, depending on
   // whether --deps-only was given
-  if(!g_deps_only)
+  if(!g_rospack->opt_deps_only)
     s += this->direct_flags(lang, attrib) + string(" ");
   for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
   {
@@ -229,9 +209,9 @@ vector<pair<string, string> > Package::plugins()
   VecPkg deplist;
   // If --top=foo was given, then restrict the search to packages that are
   // dependencies of foo, plus foo itself
-  if(g_top.size())
+  if(g_rospack->opt_top.size())
   {
-    Package* gtp = g_get_pkg(g_top);
+    Package* gtp = g_get_pkg(g_rospack->opt_top);
     deplist = gtp->deps(Package::POSTORDER);
     deplist.push_back(gtp);
   }
@@ -260,7 +240,7 @@ vector<pair<string, string> > Package::plugins()
       if(!found)
         continue;
     }
-    std::string flags = (*it)->direct_flags(name, g_attrib);
+    std::string flags = (*it)->direct_flags(name, g_rospack->opt_attrib);
     if (!flags.empty())
     {
       plugins.push_back(make_pair((*it)->name, flags));
@@ -456,7 +436,7 @@ string Package::direct_flags(string lang, string attrib)
     fprintf(stderr, "[rospack] warning: failed to execute backquote "
                     "expression \"%s\" in [%s]\n",
             cmd.c_str(), manifest_path().c_str());
-    string errmsg = string("error in backquote expansion for ") + g_package;
+    string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
     throw runtime_error(errmsg);
   }
   else
@@ -464,21 +444,23 @@ string Package::direct_flags(string lang, string attrib)
     char buf[8192];
     memset(buf,0,sizeof(buf));
     // Read the command's output
-    const char *fgets_ret = fgets(buf,sizeof(buf)-1,p);
-    assert(fgets_ret);
+    do
+    {
+      clearerr(p);
+      while(fgets(buf + strlen(buf),sizeof(buf)-strlen(buf)-1,p));
+    } while(ferror(p) && errno == EINTR);
     // Close the subprocess, checking exit status
     if(pclose(p) != 0)
     {
       fprintf(stderr, "[rospack] warning: got non-zero exit status from executing backquote expression \"%s\" in [%s]\n",
               cmd.c_str(), manifest_path().c_str());
-      string errmsg = string("error in backquote expansion for ") + g_package;
+      string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
       throw runtime_error(errmsg);
     }
     else
     {
-      // Strip newline produced by many pkg-config style programs
-      if(buf[strlen(buf)-1] == '\n')
-        buf[strlen(buf)-1] = '\0';
+      // Strip trailing newline, which was added by our call to echo
+      buf[strlen(buf)-1] = '\0';
       // Replace the backquote expression with the new text
       s = string(buf);
     }
@@ -519,9 +501,9 @@ VecPkg Package::deleted_pkgs;
 
 //////////////////////////////////////////////////////////////////////////////
 
-ROSPack *g_rospack = NULL; // singleton
 
-ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false)
+ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false),
+        my_argc(0), my_argv(NULL), opt_profile_length(0)
 {
   g_rospack = this;
   Package::pkgs.reserve(500); // get some space to avoid early recopying...
@@ -539,8 +521,6 @@ ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false)
     throw runtime_error(string("no ROS_ROOT"));
   }
 
-  createROSHomeDirectory();
-
   crawl_for_packages();
 }
 
@@ -554,6 +534,7 @@ ROSPack::~ROSPack()
        p != Package::deleted_pkgs.end(); ++p)
     delete (*p);
   Package::deleted_pkgs.clear();
+  freeArgv();
 }
 
 const char* ROSPack::usage()
@@ -600,7 +581,10 @@ Package *ROSPack::get_pkg(string pkgname)
         // contains a manifest (#1115).
         std::string manifest_path = (*p)->path + fs_delim + "manifest.xml";
         struct stat s;
-        if(stat(manifest_path.c_str(), &s) == 0)
+        int ret;
+        while((ret = stat(manifest_path.c_str(), &s)) != 0 &&
+              errno == EINTR);
+        if(ret == 0)
         {
           // Answer looks good
           return (*p);
@@ -642,13 +626,13 @@ int ROSPack::cmd_depends_on(bool include_indirect)
   Package* p;
   try
   {
-    p = get_pkg(g_package);
+    p = get_pkg(opt_package);
   }
   catch(runtime_error)
   {
     fprintf(stderr, "[rospack] warning: package %s doesn't exist\n", 
-            g_package.c_str());
-    p = new Package(g_package);
+            opt_package.c_str());
+    p = new Package(opt_package);
     Package::pkgs.push_back(p);
   }
   assert(p);
@@ -656,40 +640,54 @@ int ROSPack::cmd_depends_on(bool include_indirect)
           : p->descendants1();
   for (VecPkg::const_iterator p = descendants.begin(); 
        p != descendants.end(); ++p)
-    printf("%s\n", (*p)->name.c_str());
+  {
+    //printf("%s\n", (*p)->name.c_str());
+    output_acc += (*p)->name + "\n";
+  }
   return 0;
 }
 
 int ROSPack::cmd_find()
 {
   // todo: obey the search order
-  Package *p = get_pkg(g_package);
-  printf("%s\n", p->path.c_str());
+  Package *p = get_pkg(opt_package);
+  //printf("%s\n", p->path.c_str());
+  output_acc += p->path + "\n";
   return 0;
 }
 
 int ROSPack::cmd_deps()
 {
-  VecPkg d = get_pkg(g_package)->deps(Package::POSTORDER);
+  VecPkg d = get_pkg(opt_package)->deps(Package::POSTORDER);
   for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
-    printf("%s\n", (*i)->name.c_str());
+  {
+    //printf("%s\n", (*i)->name.c_str());
+    output_acc += (*i)->name + "\n";
+  }
   return 0;
 }
 
 int ROSPack::cmd_deps_manifests()
 {
-  VecPkg d = get_pkg(g_package)->deps(Package::POSTORDER);
+  VecPkg d = get_pkg(opt_package)->deps(Package::POSTORDER);
   for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
-    printf("%s/manifest.xml ", (*i)->path.c_str());
-  puts("");
+  {
+    //printf("%s/manifest.xml ", (*i)->path.c_str());
+    output_acc += (*i)->path + "/manifest.xml ";
+  }
+  //puts("");
+  output_acc += "\n";
   return 0;
 }
 
 int ROSPack::cmd_deps1()
 {
-  VecPkg d = get_pkg(g_package)->deps1();
+  VecPkg d = get_pkg(opt_package)->deps1();
   for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
-    printf("%s\n", (*i)->name.c_str());
+  {
+    //printf("%s\n", (*i)->name.c_str());
+    output_acc += (*i)->name + "\n";
+  }
   return 0;
 }
 
@@ -700,8 +698,12 @@ int ROSPack::cmd_depsindent(Package* pkg, int indent)
   for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
   {
     for(int s=0; s<indent; s++)
-      printf(" ");
-    printf("%s\n", (*i)->name.c_str());
+    {
+      //printf(" ");
+      output_acc += " ";
+    }
+    //printf("%s\n", (*i)->name.c_str());
+    output_acc += (*i)->name + "\n";
     cmd_depsindent(*i, indent+2);
   }
   return 0;
@@ -782,7 +784,7 @@ string ROSPack::snarf_flags(string flags, string prefix, bool invert)
 
 int ROSPack::cmd_libs_only(string token)
 {
-  string lflags = get_pkg(g_package)->flags("cpp", "lflags");;
+  string lflags = get_pkg(opt_package)->flags("cpp", "lflags");;
   if(!token.compare("-other"))
   {
     lflags = snarf_libs(lflags, true);
@@ -805,13 +807,14 @@ int ROSPack::cmd_libs_only(string token)
       lflags += string(" ") + getBinDepPath() + string("/lib");
     lflags = deduplicate_tokens(lflags);
   }
-  printf("%s\n", lflags.c_str());
+  //printf("%s\n", lflags.c_str());
+  output_acc += lflags + "\n";
   return 0;
 }
 
 int ROSPack::cmd_cflags_only(string token)
 {
-  string cflags = get_pkg(g_package)->flags("cpp", "cflags");
+  string cflags = get_pkg(opt_package)->flags("cpp", "cflags");
   if(!token.compare("-other"))
     cflags = snarf_flags(cflags, "-I", true);
   else
@@ -822,7 +825,8 @@ int ROSPack::cmd_cflags_only(string token)
       cflags += string(" ") + getBinDepPath() + string("/include");
     cflags = deduplicate_tokens(cflags);
   }
-  printf("%s\n", cflags.c_str());
+  //printf("%s\n", cflags.c_str());
+  output_acc += cflags + "\n";
   return 0;
 }
 
@@ -840,18 +844,19 @@ void ROSPack::export_flags(string pkg, string lang, string attrib)
       flags += string(" -Wl,-rpath,") + getBinDepPath() + string("/lib");
     }
   }
-  printf("%s\n", flags.c_str());
+  //printf("%s\n", flags.c_str());
+  output_acc += flags + "\n";
 }
 
 int ROSPack::cmd_versioncontrol(int depth)
 {
   string sds;
 
-  sds += get_pkg(g_package)->versioncontrol();
+  sds += get_pkg(opt_package)->versioncontrol();
 
   if(depth < 0)
   {
-    VecPkg descs = get_pkg(g_package)->deps(Package::POSTORDER);
+    VecPkg descs = get_pkg(opt_package)->deps(Package::POSTORDER);
     for(VecPkg::iterator dit = descs.begin();
         dit != descs.end();
         dit++)
@@ -860,18 +865,19 @@ int ROSPack::cmd_versioncontrol(int depth)
     }
   }
 
-  printf("%s", sds.c_str());
+  //printf("%s", sds.c_str());
+  output_acc += sds;
   return 0;
 }
 
 int ROSPack::cmd_rosdep(int depth)
 {
   string sds;
-  sds += get_pkg(g_package)->rosdep();
+  sds += get_pkg(opt_package)->rosdep();
 
   if(depth < 0)
   {
-    VecPkg descs = get_pkg(g_package)->deps(Package::POSTORDER);
+    VecPkg descs = get_pkg(opt_package)->deps(Package::POSTORDER);
     for(VecPkg::iterator dit = descs.begin();
         dit != descs.end();
         dit++)
@@ -880,42 +886,95 @@ int ROSPack::cmd_rosdep(int depth)
     }
   }
 
-  printf("%s", sds.c_str());
+  //printf("%s", sds.c_str());
+  output_acc += sds;
   return 0;
 }
 
 int ROSPack::cmd_export()
 {
-  export_flags(g_package, g_lang, g_attrib);
+  export_flags(opt_package, opt_lang, opt_attrib);
   return 0;
 }
 
 int ROSPack::cmd_plugins()
 {
-  Package* p = get_pkg(g_package);
+  Package* p = get_pkg(opt_package);
 
   vector<pair<string, string> > plugins = p->plugins();
   vector<pair<string, string> >::iterator it = plugins.begin();
   vector<pair<string, string> >::iterator end = plugins.end();
   for (; it != end; ++it)
   {
-    printf("%s %s\n", it->first.c_str(), it->second.c_str());
+    //printf("%s %s\n", it->first.c_str(), it->second.c_str());
+    output_acc += it->first + " " + it->second + "\n";
   }
 
   return 0;
 }
 
+void ROSPack::freeArgv()
+{
+  if(my_argc)
+  {
+    for(int i=0;i<my_argc;i++)
+      free(my_argv[i]);
+    free(my_argv);
+  }
+  my_argc = 0;
+  my_argv = NULL;
+}
+
+int ROSPack::run(const std::string& cmd)
+{
+  std::vector<std::string> cmd_list;
+  
+  // TODO: split the input string properly, accounting for quotes, escaped
+  // quotes, etc.  This shouldn't really matter, because rospack shouldn't be
+  // given arguments with embedded spaces.
+  string_split(cmd, cmd_list, " ");
+
+  // In case we're called more than once.
+  freeArgv();
+
+  my_argc = (int)cmd_list.size() + 1;
+  my_argv = (char**)malloc(sizeof(char*) * my_argc);
+  my_argv[0] = strdup("rospack");
+  for(int i=1;i<my_argc;i++)
+    my_argv[i] = strdup(cmd_list[i-1].c_str());
+
+  return run(my_argc, my_argv);
+}
 
 int ROSPack::run(int argc, char **argv)
 {
   assert(argc >= 2);
   int i;
-  const char* opt_deps    = "--deps-only";
-  const char* opt_zombie  = "--zombie-only";
-  const char* opt_lang    = "--lang=";
-  const char* opt_attrib  = "--attrib=";
-  const char* opt_length  = "--length=";
-  const char* opt_top     = "--top=";
+  const char* opt_deps_name    = "--deps-only";
+  const char* opt_zombie_name  = "--zombie-only";
+  const char* opt_lang_name    = "--lang=";
+  const char* opt_attrib_name  = "--attrib=";
+  const char* opt_length_name  = "--length=";
+  const char* opt_top_name     = "--top=";
+
+  // Reset to defaults.
+  opt_deps_only = false;
+  // --lang=
+  opt_lang = string("");
+  // --attrib=
+  opt_attrib = string("");
+  // --length=
+  opt_length = string("");
+  // --top=
+  opt_top = string("");
+  // The package name
+  opt_package = string("");
+  // the number of entries to list in the profile table
+  opt_profile_length = 0;
+  // only display zombie directories in profile?
+  opt_profile_zombie_only = false;
+
+  output_acc = string("");
 
   string errmsg = string(usage());
 
@@ -924,39 +983,39 @@ int ROSPack::run(int argc, char **argv)
 
   for(;i<argc;i++)
   {
-    if(!strcmp(argv[i], opt_deps))
-      g_deps_only=true;
-    else if(!strcmp(argv[i], opt_zombie))
-      g_profile_zombie_only=true;
-    else if(!strncmp(argv[i], opt_lang, strlen(opt_lang)))
+    if(!strcmp(argv[i], opt_deps_name))
+      opt_deps_only=true;
+    else if(!strcmp(argv[i], opt_zombie_name))
+      opt_profile_zombie_only=true;
+    else if(!strncmp(argv[i], opt_lang_name, strlen(opt_lang_name)))
     {
-      if(g_lang.size())
+      if(opt_lang.size())
         throw runtime_error(errmsg);
-      else if(strlen(argv[i]) > strlen(opt_lang))
-        g_lang = string(argv[i]+strlen(opt_lang));
+      else if(strlen(argv[i]) > strlen(opt_lang_name))
+        opt_lang = string(argv[i]+strlen(opt_lang_name));
       else
         throw runtime_error(errmsg);
     }
-    else if(!strncmp(argv[i], opt_attrib, strlen(opt_attrib)))
+    else if(!strncmp(argv[i], opt_attrib_name, strlen(opt_attrib_name)))
     {
-      if(g_attrib.size())
+      if(opt_attrib.size())
         throw runtime_error(errmsg);
-      else if(strlen(argv[i]) > strlen(opt_attrib))
-        g_attrib = string(argv[i]+strlen(opt_attrib));
+      else if(strlen(argv[i]) > strlen(opt_attrib_name))
+        opt_attrib = string(argv[i]+strlen(opt_attrib_name));
       else
         throw runtime_error(errmsg);
     }
-    else if(!strncmp(argv[i], opt_length, strlen(opt_length)))
+    else if(!strncmp(argv[i], opt_length_name, strlen(opt_length_name)))
     {
-      if(strlen(argv[i]) > strlen(opt_length))
-        g_length = string(argv[i]+strlen(opt_length));
+      if(strlen(argv[i]) > strlen(opt_length_name))
+        opt_length = string(argv[i]+strlen(opt_length_name));
       else
         throw runtime_error(errmsg);
     }
-    else if(!strncmp(argv[i], opt_top, strlen(opt_top)))
+    else if(!strncmp(argv[i], opt_top_name, strlen(opt_top_name)))
     {
-      if(strlen(argv[i]) > strlen(opt_top))
-        g_top = string(argv[i]+strlen(opt_top));
+      if(strlen(argv[i]) > strlen(opt_top_name))
+        opt_top = string(argv[i]+strlen(opt_top_name));
       else
         throw runtime_error(errmsg);
     }
@@ -964,31 +1023,31 @@ int ROSPack::run(int argc, char **argv)
       break;
   }
   
-  if(strcmp(cmd, "profile") && (g_length.size() || g_profile_zombie_only))
+  if(strcmp(cmd, "profile") && (opt_length.size() || opt_profile_zombie_only))
     throw runtime_error(errmsg);
   
   // --top= is only valid for plugins
-  if(strcmp(cmd, "plugins") && g_top.size())
+  if(strcmp(cmd, "plugins") && opt_top.size())
     throw runtime_error(errmsg);
 
   // --attrib= is only valid for export and plugins
   if((strcmp(cmd, "export") && strcmp(cmd, "plugins")) && 
-     g_attrib.size())
+     opt_attrib.size())
     throw runtime_error(errmsg);
 
   // --lang= is only valid for export
-  if((strcmp(cmd, "export") && g_lang.size()))
+  if((strcmp(cmd, "export") && opt_lang.size()))
     throw runtime_error(errmsg);
   
   // export requires both --lang and --attrib
-  if(!strcmp(cmd, "export") && (!g_lang.size() || !g_attrib.size()))
+  if(!strcmp(cmd, "export") && (!opt_lang.size() || !opt_attrib.size()))
     throw runtime_error(errmsg);
     
   // plugins requires --attrib
-  if(!strcmp(cmd, "plugins") && !g_attrib.size())
+  if(!strcmp(cmd, "plugins") && !opt_attrib.size())
     throw runtime_error(errmsg);
 
-  if(g_deps_only && 
+  if(opt_deps_only && 
      strcmp(cmd, "export") &&
      strcmp(cmd, "cflags-only-I") &&
      strcmp(cmd, "cflags-only-other") &&
@@ -1006,15 +1065,17 @@ int ROSPack::run(int argc, char **argv)
        !strcmp(cmd, "profile"))
       throw runtime_error(errmsg);
 
-    g_package = string(argv[i++]);
+    opt_package = string(argv[i++]);
   }
   // Are we sitting in a package?
-  else if(Package::is_package("."))
+  else 
   {
     char buf[1024];
-    if(!getcwd(buf,sizeof(buf)))
-      throw runtime_error(errmsg);
-    g_package = string(basename(buf));
+    if(getcwd(buf,sizeof(buf)))
+    {
+      if(Package::is_package("."))
+        opt_package = string(basename(buf));
+    }
   }
 
   if (i != argc)
@@ -1022,17 +1083,17 @@ int ROSPack::run(int argc, char **argv)
 
   if (!strcmp(cmd, "profile"))
   {
-    if (g_length.size())
-      g_profile_length = atoi(g_length.c_str());
+    if (opt_length.size())
+      opt_profile_length = atoi(opt_length.c_str());
     else
     {
-      if(g_profile_zombie_only)
-        g_profile_length = -1; // default is infinite
+      if(opt_profile_zombie_only)
+        opt_profile_length = -1; // default is infinite
       else
-        g_profile_length = 20; // default is about a screenful or so
+        opt_profile_length = 20; // default is about a screenful or so
     }
 #ifdef VERBOSE_DEBUG
-    printf("profile_length = %d\n", g_profile_length);
+    printf("profile_length = %d\n", opt_profile_length);
 #endif
     // re-crawl with profiling enabled
     crawl_for_packages(true);
@@ -1053,7 +1114,7 @@ int ROSPack::run(int argc, char **argv)
   else if (!strcmp(cmd, "depends1") || !strcmp(cmd, "deps1"))
     return cmd_deps1();
   else if (!strcmp(cmd, "depends-indent") || !strcmp(cmd, "deps-indent"))
-    return cmd_depsindent(get_pkg(g_package), 0);
+    return cmd_depsindent(get_pkg(opt_package), 0);
   else if (!strcmp(cmd, "depends-on"))
     return cmd_depends_on(true);
   else if (!strcmp(cmd, "depends-on1"))
@@ -1098,9 +1159,15 @@ int ROSPack::cmd_print_package_list(bool print_path)
   for (VecPkg::iterator i = Package::pkgs.begin(); 
        i != Package::pkgs.end(); ++i)
     if (print_path)
-      printf("%s %s\n", (*i)->name.c_str(), (*i)->path.c_str());
+    {
+      //printf("%s %s\n", (*i)->name.c_str(), (*i)->path.c_str());
+      output_acc += (*i)->name + " " + (*i)->path + "\n";
+    }
     else
-      printf("%s\n", (*i)->name.c_str());
+    {
+      //printf("%s\n", (*i)->name.c_str());
+      output_acc += (*i)->name + "\n";
+    }
   return 0;
 }
   
@@ -1134,44 +1201,44 @@ int ROSPack::cmd_print_langs_list()
         break;
     }
     if(j == disable_list.end())
-      printf("%s ", (*i)->name.c_str());
-  }
-  printf("\n");
-  return 0;
-}
-
-void ROSPack::createROSHomeDirectory()
-{
-  char *homedir = getenv("HOME");
-  if (!homedir) {
-    //fprintf(stderr, "[rospack] WARNING: cannot create ~/.ros directory.\n");
-  } 
-  else 
-  {
-    string path = string(homedir) + "/.ros";
-    if (!access(path.c_str(), R_OK) == 0) {
-      if(mkdir(path.c_str(), 0700) != 0) {
-        fprintf(stderr, "[rospack] WARNING: cannot create ~/.ros directory.\n");
-      }
+    {
+      //printf("%s ", (*i)->name.c_str());
+      output_acc += (*i)->name + " ";
     }
   }
+  //printf("\n");
+  output_acc += "\n";
+  return 0;
 }
 
 string ROSPack::getCachePath()
 {
-  string path;
-  path = string(ros_root) + "/.rospack_cache";
-  if (access(ros_root, W_OK) == 0) {
-    return path;
+  string cache_file_name;
+  char* ros_home = getenv("ROS_HOME");
+
+  if (ros_home)
+  {
+    cache_file_name = ros_home + std::string("/rospack_cache");
   }
-
-  // if we cannot write into the ros_root, then let's try to
-  // write into the user's .ros directory.
-
-  createROSHomeDirectory();
-
-  path = string(getenv("HOME")) + "/.ros/rospack_cache";
-  return path;
+  else
+  {
+    // Not cross-platform?
+    ros_home = getenv("HOME");
+    if (ros_home)
+    {
+      // By providing the trailing slash, stat() will only succeed if the
+      // path exists AND is a directory.
+      std::string dotros = ros_home + std::string("/.ros/");
+      struct stat s;
+      if(stat(dotros.c_str(), &s))
+      {
+        if(mkdir(dotros.c_str(), 0700) != 0)
+          perror("[rospack] WARNING: cannot create ~/.ros directory");
+      }
+      cache_file_name = dotros + "rospack_cache";
+    }
+  }
+  return cache_file_name;
 }
 
 bool ROSPack::cache_is_good()
@@ -1205,13 +1272,10 @@ bool ROSPack::cache_is_good()
   char linebuf[30000];
   bool ros_root_ok = false, ros_package_path_ok = false;
   const char *ros_package_path = getenv("ROS_PACKAGE_PATH");
-  while (!feof(cache))
+  for(;;)
   {
-    linebuf[0] = 0;
     if (!fgets(linebuf, sizeof(linebuf), cache))
       break;
-    if (!linebuf[0])
-      continue;
     linebuf[strlen(linebuf)-1] = 0; // get rid of trailing newline
     if (linebuf[0] == '#')
     {
@@ -1272,8 +1336,7 @@ bool ROSPack::useBinDepPath()
 
 string ROSPack::getBinDepPath()
 {
-  if (!useBinDepPath())
-    return string();
+  // We assume that the caller already checked getBinDepPath()
   const char *bdp_env = getenv("ROS_BINDEPS_PATH");
   if (bdp_env)
     return string(bdp_env);
@@ -1298,12 +1361,11 @@ void ROSPack::crawl_for_packages(bool force_crawl)
       printf("trying to use cache...\n");
 #endif
       char linebuf[30000];
-      while (!feof(cache))
+      for(;;)
       {
-        linebuf[0] = 0;
         if (!fgets(linebuf, sizeof(linebuf), cache))
           break; // error in read operation
-        if (!linebuf[0] || linebuf[0] == '#')
+        if (linebuf[0] == '#')
           continue;
         char *newline_pos = strchr(linebuf, '\n');
         if (newline_pos)
@@ -1349,7 +1411,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
     CrawlQueueEntry cqe = q.front();
     q.pop_front();
     //printf("crawling %s\n", cqe.path.c_str());
-    if (g_profile_length != 0)
+    if (opt_profile_length != 0)
     {
       if (cqe.start_time != 0)
       {
@@ -1365,10 +1427,10 @@ void ROSPack::crawl_for_packages(bool force_crawl)
         // such in the profile console output.
         if(cqe.start_num_pkgs < Package::pkgs.size())
           cqe.has_manifest = true;
-        if(!g_profile_zombie_only || !cqe.has_manifest)
+        if(!opt_profile_zombie_only || !cqe.has_manifest)
         {
           profile.push(cqe);
-          if ((g_profile_length > 0) && (profile.size() > g_profile_length)) // only save the worst guys
+          if ((opt_profile_length > 0) && (profile.size() > opt_profile_length)) // only save the worst guys
             profile.pop();
         }
         continue;
@@ -1389,7 +1451,10 @@ void ROSPack::crawl_for_packages(bool force_crawl)
     {
       struct stat s;
       string child_path = cqe.path + fs_delim + string(ent->d_name);
-      if (stat(child_path.c_str(), &s) != 0) 
+      int ret;
+      while ((ret = stat(child_path.c_str(), &s)) != 0 &&
+             errno == EINTR);
+      if (ret != 0)
         continue;
       if (!S_ISDIR(s.st_mode)) 
         continue;
@@ -1424,40 +1489,52 @@ void ROSPack::crawl_for_packages(bool force_crawl)
   }
   crawled = true; // don't try to re-crawl if we can't find something
   const double crawl_elapsed_time = time_since_epoch() - crawl_start_time;
-  // write the results of this crawl to the cache file
+  // Write the results of this crawl to the cache file.  At each step, give
+  // up on error, printing a warning to stderr.
   string cache_path(getCachePath());
-  char tmp_cache_dir[PATH_MAX];
-  char tmp_cache_path[PATH_MAX];
-  strncpy(tmp_cache_dir, cache_path.c_str(), sizeof(tmp_cache_dir));
-  snprintf(tmp_cache_path, sizeof(tmp_cache_path), "%s/.rospack_cache.XXXXXX", dirname(tmp_cache_dir));
-  int fd = mkstemp(tmp_cache_path);
-  if (fd < 0)
+  if(!cache_path.size())
   {
-    fprintf(stderr, "Unable to create temporary cache file: %s\n", tmp_cache_path);
-    throw runtime_error(string("failed to create tmp cache file"));
+    fprintf(stderr, "[rospack] No location available to write cache file.  Try setting ROS_HOME or HOME.\n");
   }
-  FILE *cache = fdopen(fd, "w");
-  if (!cache)
+  else
   {
-    fprintf(stderr, "woah! couldn't create the cache file. Please check "
-            "ROS_ROOT to make sure it's a writeable directory.\n");
-    throw runtime_error(string("failed to create tmp cache file"));
+    char tmp_cache_dir[PATH_MAX];
+    char tmp_cache_path[PATH_MAX];
+    strncpy(tmp_cache_dir, cache_path.c_str(), sizeof(tmp_cache_dir));
+    snprintf(tmp_cache_path, sizeof(tmp_cache_path), "%s/.rospack_cache.XXXXXX", dirname(tmp_cache_dir));
+    int fd = mkstemp(tmp_cache_path);
+    if (fd < 0)
+    {
+      fprintf(stderr, "[rospack] Unable to create temporary cache file %s: %s\n", 
+              tmp_cache_path, strerror(errno));
+    }
+    else
+    {
+      FILE *cache = fdopen(fd, "w");
+      if (!cache)
+      {
+        fprintf(stderr, "[rospack] Unable open cache file %s: %s\n", 
+                tmp_cache_path, strerror(errno));
+      }
+      else
+      {
+        char *rpp = getenv("ROS_PACKAGE_PATH");
+        fprintf(cache, "#ROS_ROOT=%s\n#ROS_PACKAGE_PATH=%s\n", ros_root,
+                (rpp ? rpp : ""));
+        for (VecPkg::iterator pkg = Package::pkgs.begin();
+             pkg != Package::pkgs.end(); ++pkg)
+          fprintf(cache, "%s\n", (*pkg)->path.c_str());
+        fclose(cache);
+        if(rename(tmp_cache_path, cache_path.c_str()) < 0)
+        {
+          fprintf(stderr, "[rospack] Error: failed to rename cache file %s to %s: %s\n", 
+                  tmp_cache_path, cache_path.c_str(), strerror(errno));
+        }
+      }
+    }
   }
-  char *rpp = getenv("ROS_PACKAGE_PATH");
-  fprintf(cache, "#ROS_ROOT=%s\n#ROS_PACKAGE_PATH=%s\n", ros_root,
-          (rpp ? rpp : ""));
-  for (VecPkg::iterator pkg = Package::pkgs.begin();
-       pkg != Package::pkgs.end(); ++pkg)
-    fprintf(cache, "%s\n", (*pkg)->path.c_str());
-  if(rename(tmp_cache_path, cache_path.c_str()) < 0)
-  {
-    fprintf(stderr, "[rospack] Error: failed rename cache file %s to %s\n", tmp_cache_path, cache_path.c_str());
-perror("rename");
-    throw runtime_error(string("failed to rename cache file"));
-  }
-  fclose(cache);
 
-  if (g_profile_length)
+  if (opt_profile_length)
   {
     // dump it into a stack to reverse it (so slowest guys are first)
     stack<CrawlQueueEntry> reverse_profile;
@@ -1466,27 +1543,50 @@ perror("rename");
       reverse_profile.push(profile.top());
       profile.pop();
     }
-    if(!g_profile_zombie_only)
+    if(!opt_profile_zombie_only)
     {
-      printf("\nFull tree crawl took %.6f seconds.\n", crawl_elapsed_time);
-      printf("Directories marked with (*) contain no manifest.  You may\n");
-      printf("want to delete these directories.\n");
-      printf("-------------------------------------------------------------\n");
+      //printf("\nFull tree crawl took %.6f seconds.\n", crawl_elapsed_time);
+      //printf("Directories marked with (*) contain no manifest.  You may\n");
+      //printf("want to delete these directories.\n");
+      //printf("-------------------------------------------------------------\n");
+      char buf[16];
+      snprintf(buf, sizeof(buf), "%.6f", crawl_elapsed_time);
+      output_acc += "\nFull tree crawl took " + string(buf) + " seconds.\n";
+      output_acc += "Directories marked with (*) contain no manifest.  You may\n";
+      output_acc += "want to delete these directories.\n";
+      output_acc += "-------------------------------------------------------------\n";
     }
     while (!reverse_profile.empty())
     {
       CrawlQueueEntry cqe = reverse_profile.top();
       reverse_profile.pop();
-      if(!g_profile_zombie_only)
-        printf("%.6f %s %s\n", 
-               cqe.elapsed_time, 
-               cqe.has_manifest ? " " : "*",
-               cqe.path.c_str());
+      if(!opt_profile_zombie_only)
+      {
+        //printf("%.6f %s %s\n", 
+               //cqe.elapsed_time, 
+               //cqe.has_manifest ? " " : "*",
+               //cqe.path.c_str());
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%.6f", cqe.elapsed_time);
+        output_acc += string(buf) + " ";
+        if(cqe.has_manifest)
+          output_acc += "  ";
+        else
+          output_acc += "* ";
+        output_acc += cqe.path;
+        output_acc += "\n";
+      }
       else
-        printf("%s\n", cqe.path.c_str());
+      {
+        //printf("%s\n", cqe.path.c_str());
+        output_acc += cqe.path + "\n";
+      }
     }
-    if(!g_profile_zombie_only)
-      printf("\n");
+    if(!opt_profile_zombie_only)
+    {
+      //printf("\n");
+      output_acc += "\n";
+    }
   }
 }
 
@@ -1512,7 +1612,10 @@ VecPkg ROSPack::partial_crawl(const string &path)
     {
       struct stat s;
       string child_path = cqe.path + fs_delim + string(ent->d_name);
-      if (stat(child_path.c_str(), &s) != 0) 
+      int ret;
+      while ((ret = stat(child_path.c_str(), &s)) != 0 && 
+             errno == EINTR);
+      if (ret != 0)
         continue;
       if (!S_ISDIR(s.st_mode)) 
         continue;
@@ -1556,16 +1659,18 @@ void string_split(const string &s, vector<string> &t, const string &d)
   size_t start = 0, end;
   while ((end = s.find_first_of(d, start)) != string::npos)
   {
-    t.push_back(s.substr(start, end-start));
+    if((end-start) > 0)
+      t.push_back(s.substr(start, end-start));
     start = end + 1;
   }
-  t.push_back(s.substr(start));
+  if(start < s.size())
+    t.push_back(s.substr(start));
 }
 
 // Produce a new string by keeping only the first of each repeated token in
 // the input string, where tokens are space-separated.  I'm sure that Rob
 // could point me at the Boost/STL one-liner that does the same thing.
-string deduplicate_tokens(const string& s)
+string ROSPack::deduplicate_tokens(const string& s)
 {
   vector<string> in;
   vector<string> out;
@@ -1614,9 +1719,8 @@ void ROSPack::sanitize_rppvec(std::vector<std::string> &rppvec)
   // drop any trailing slashes
   for (size_t i = 0; i < rppvec.size(); i++)
   {
-    size_t last_slash_pos = rppvec[i].find_last_of("/");
-    if (last_slash_pos != string::npos &&
-        last_slash_pos == rppvec[i].length()-1)
+    size_t last_slash_pos;
+    while((last_slash_pos = rppvec[i].find_last_of("/")) == rppvec[i].length()-1)
     {
       fprintf(stderr, "[rospack] warning: trailing slash found in "
                       "ROS_PACKAGE_PATH\n");

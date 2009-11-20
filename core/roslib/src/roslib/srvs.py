@@ -30,8 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: srvspec.py 3357 2009-01-13 07:13:05Z jfaustwg $
-# $Author: jfaustwg $
+# Revision $Id$
+# $Author$
 """
 ROS Service Description Language Spec
 Implements U{http://ros.org/wiki/srv}

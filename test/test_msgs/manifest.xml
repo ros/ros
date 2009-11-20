@@ -4,7 +4,7 @@
   </description>
   <author>Morgan Quigley</author>
   <license>BSD</license>
-  <review status="na" notes="test"/>
+  <review status="test" notes=""/>
   <depend package="roslib"/>
   <depend package="roscpp"/>
   <depend package="std_msgs"/>

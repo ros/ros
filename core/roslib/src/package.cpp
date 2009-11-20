@@ -26,6 +26,7 @@
  */
 
 #include "ros/package.h"
+#include "rospack/rospack.h"
 
 #include <cstdio>
 #include <iostream>
@@ -41,6 +42,7 @@ namespace package
 
 std::string command(const std::string& _cmd)
 {
+  /*
   if (!getenv("ROS_ROOT"))
   {
     std::cerr << "ROS_ROOT is not set!  Cannot execute " << _cmd << std::endl;
@@ -61,8 +63,24 @@ std::string command(const std::string& _cmd)
 
     pclose(pipe);
   }
-
   return output;
+  */
+
+  rospack::ROSPack rp;
+  int ret;
+  try
+  {
+    ret = rp.run(_cmd);
+    if(ret == 0)
+      return rp.getOutput();
+    else
+      std::cerr << "ROSPack::run returned non-zero." << std::endl;
+  }
+  catch(std::runtime_error &e)
+  {
+    std::cerr << "[rospack] " << e.what() << std::endl;
+  }
+  return std::string("");
 }
 
 void command(const std::string& cmd, V_string& output)

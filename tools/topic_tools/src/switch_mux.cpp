@@ -31,8 +31,10 @@
 #include <cstdio>
 #include "ros/ros.h"
 #include "topic_tools/MuxSelect.h"
+#include "topic_tools/parse.h"
 using namespace std;
 using namespace ros;
+using namespace topic_tools;
 
 int main(int argc, char **argv)
 {
@@ -41,11 +43,16 @@ int main(int argc, char **argv)
     printf("usage: switch MUXED_TOPIC SELECT_TOPIC\n");
     return 1;
   }
-  ros::init(argc, argv, string(argv[1]) + string("_switcher"));
+  std::string topic_name;
+  if(!getBaseName(string(argv[1]), topic_name))
+    return 1;
+  ros::init(argc, argv, topic_name + string("_switcher"));
   ros::NodeHandle nh;
-  ros::ServiceClient client = nh.serviceClient<topic_tools::MuxSelect>
-                                 (string(argv[1]) + string("_select"));
-  topic_tools::MuxSelect cmd;
+  string srv_name = string(argv[1]) + "_select";
+  ROS_INFO("Waiting for service %s...\n", srv_name.c_str());
+  ros::service::waitForService(srv_name, -1);
+  ros::ServiceClient client = nh.serviceClient<MuxSelect>(srv_name);
+  MuxSelect cmd;
   cmd.request.topic = argv[2];
   if (client.call(cmd))
   {

@@ -181,8 +181,9 @@ class RegManager(RegistrationListener):
         self.uri = self.master_uri = None
         self.updates = []
         self.cond = threading.Condition() #for locking/notifying updates
-        self.registered = False        
-        rospy.core.add_shutdown_hook(self.cleanup)
+        self.registered = False
+        # cleanup has to occur before official shutdown
+        rospy.core.add_preshutdown_hook(self.cleanup)
         
     def start(self, uri, master_uri):
         """
@@ -313,7 +314,8 @@ class RegManager(RegistrationListener):
         Cleans up registrations with master and releases topic and service resources
         @param reason: human-reasonable debug string
         @type  reason: str
-        """        
+        """
+        self.logger.debug("registration cleanup starting")
         try:
             self.cond.acquire()
             self.cond.notifyAll()
@@ -336,12 +338,15 @@ class RegManager(RegistrationListener):
         try:
             if tm is not None:
                 for resolved_name, _ in tm.get_subscriptions():
+                    self.logger.debug("unregisterSubscriber [%s]"%resolved_name)
                     master.unregisterSubscriber(caller_id, resolved_name, self.uri)
                 for resolved_name, _ in tm.get_publications():
+                    self.logger.debug("unregisterPublisher [%s]"%resolved_name)                    
                     master.unregisterPublisher(caller_id, resolved_name, self.uri)
 
             if sm is not None:
                 for resolved_name, service_uri in sm.get_services():
+                    self.logger.debug("unregisterService [%s]"%resolved_name) 
                     master.unregisterService(caller_id, resolved_name, service_uri)
         except socket.error, (errno, msg):
             if errno == 111 or errno == 61: #can't talk to master, nothing we can do about it
@@ -350,6 +355,8 @@ class RegManager(RegistrationListener):
                 self.logger.warn("unclean shutdown\n%s"%traceback.format_exc())
         except:
             self.logger.warn("unclean shutdown\n%s"%traceback.format_exc())
+
+        self.logger.debug("registration cleanup: master calls complete")            
 
         #TODO: cleanup() should actually be orchestrated by a separate cleanup routine that calls the reg manager/sm/tm
         if tm is not None:

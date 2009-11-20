@@ -47,15 +47,15 @@ class NamesTest(unittest.TestCase):
     else:
       rosns = None
     self.assertEquals('/', roslib.names.get_ros_namespace())
-    self.assertEquals('/', roslib.names.get_ros_namespace(environ={}))
+    self.assertEquals('/', roslib.names.get_ros_namespace(env={}))
 
     os.environ['ROS_NAMESPACE'] = 'unresolved'
     self.assertEquals('/unresolved/', roslib.names.get_ros_namespace())
-    self.assertEquals('/unresolved/', roslib.names.get_ros_namespace(environ={'ROS_NAMESPACE': 'unresolved'}))
+    self.assertEquals('/unresolved/', roslib.names.get_ros_namespace(env={'ROS_NAMESPACE': 'unresolved'}))
     
     os.environ['ROS_NAMESPACE'] = '/resolved/'
     self.assertEquals('/resolved/', roslib.names.get_ros_namespace())
-    self.assertEquals('/resolved/', roslib.names.get_ros_namespace(environ={'ROS_NAMESPACE': '/resolved'}))
+    self.assertEquals('/resolved/', roslib.names.get_ros_namespace(env={'ROS_NAMESPACE': '/resolved'}))
     
     del os.environ['ROS_NAMESPACE']
     
@@ -171,7 +171,10 @@ class NamesTest(unittest.TestCase):
     self.assertEquals('/ns/name', ns_join('/ns', 'name'))
     self.assertEquals('/ns/name', ns_join('/ns/', 'name'))    
     self.assertEquals('/ns/ns2/name', ns_join('/ns', 'ns2/name'))
-    self.assertEquals('/ns/ns2/name', ns_join('/ns/', 'ns2/name'))    
+    self.assertEquals('/ns/ns2/name', ns_join('/ns/', 'ns2/name'))
+
+    # allow ns to be empty
+    self.assertEquals('name', ns_join('', 'name'))
     
 
   def test_load_mappings(self):

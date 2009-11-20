@@ -29,7 +29,7 @@
 
 #include <wx/wx.h>
 
-#include "rxtools/logger_level_panel.h"
+#include "rxtools/rosout_generated.h"
 
 #include "ros/ros.h"
 
@@ -38,25 +38,6 @@
 #endif
 
 using namespace rxtools;
-
-///Puts the RosoutPanel into a window
-class MyFrame: public wxFrame
-{
-public:
-  MyFrame(wxWindow* parent) :
-    wxFrame(parent, -1, _("rxloggerlevel"), wxDefaultPosition, wxSize(800,
-        200), wxDEFAULT_FRAME_STYLE)
-  {
-    LoggerLevelPanel* panel = new LoggerLevelPanel(this);
-
-    panel->SetSize(this->GetSize());
-  }
-
-  ~MyFrame()
-  {
-  }
-};
-
 // our normal wxApp-derived class, as usual
 class MyApp: public wxApp
 {
@@ -74,7 +55,7 @@ public:
     int argc = 0;
     ros::init(argc, 0, "rxloggerlevel", ros::init_options::AnonymousName | ros::init_options::NoSigintHandler);
 
-    wxFrame* frame = new MyFrame(NULL);
+    wxFrame* frame = new LoggerLevelFrame(NULL);
     SetTopWindow(frame);
     frame->Show();
     frame->Raise();

@@ -36,6 +36,7 @@
 #include <cstdlib>
 #include <deque>
 #include "topic_tools/shape_shifter.h"
+#include "topic_tools/parse.h"
 
 using std::string;
 using std::vector;
@@ -108,9 +109,9 @@ void in_cb(const boost::shared_ptr<ShapeShifter const>& msg)
 }
 
 #define USAGE "\nusage: \n"\
-           "  throttle_bandwidth messages IN_TOPIC MSGS_PER_SEC [OUT_TOPIC]]\n"\
+           "  throttle messages IN_TOPIC MSGS_PER_SEC [OUT_TOPIC]]\n"\
            "OR\n"\
-           "  throttle_bandwidth bytes IN_TOPIC BYTES_PER_SEC WINDOW [OUT_TOPIC]]\n\n"\
+           "  throttle bytes IN_TOPIC BYTES_PER_SEC WINDOW [OUT_TOPIC]]\n\n"\
            "  This program will drop messages from IN_TOPIC so that either: the \n"\
            "  average bytes per second on OUT_TOPIC, averaged over WINDOW \n"\
            "  seconds, remains below BYTES_PER_SEC, or: the minimum inter-message\n"\
@@ -127,7 +128,11 @@ int main(int argc, char **argv)
 
   string intopic = string(argv[2]);
 
-  ros::init(argc, argv, intopic + string("_throttle"),
+  std::string topic_name;
+  if(!getBaseName(string(argv[2]), topic_name))
+    return 1;
+
+  ros::init(argc, argv, topic_name + string("_throttle"),
             ros::init_options::AnonymousName);
 
   if(!strcmp(argv[1], "messages"))

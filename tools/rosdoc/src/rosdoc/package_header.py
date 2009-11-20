@@ -39,7 +39,7 @@ import os
 import sys
 
 import roslib.msgs
-import roslib.scriptutil
+import roslib.rospack
 import roslib.srvs
 import roslib.stacks
 
@@ -74,7 +74,7 @@ def _generate_package_headers(ctx, p):
     d['siblings'] = roslib.stacks.packages_of(stack)
 
   depends_on = []
-  d['depends_on'] = roslib.scriptutil.rospack_depends_on_1(p)
+  d['depends_on'] = roslib.rospack.rospack_depends_on_1(p)
     
   d['api_documentation'] = package_link(p)
 
@@ -150,7 +150,7 @@ def _generate_stack_headers(ctx, s):
     d['packages'] = roslib.stacks.packages_of(s)
 
     depends_on = []
-    d['depends_on'] = roslib.scriptutil.rosstack_depends_on_1(s)
+    d['depends_on'] = roslib.rospack.rosstack_depends_on_1(s)
     #d['dependency_tree'] = stack_link(p) + '%s.pdf'%p
 
     # encode unicode entries

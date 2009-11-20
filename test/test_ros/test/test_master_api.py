@@ -118,6 +118,12 @@ if __name__ == '__main__':
     from optparse import OptionParser
     parser = OptionParser(usage="usage: %prog [options] topic", prog=NAME)
 
+    # have to redeclare --text/--cov options, which are standard rostest options
+    parser.add_option("--text",dest="text_ignore", default=False,
+                      action="store_true", help="rostest standard option")
+    parser.add_option("--cov",dest="cov_ignore", default=False,
+                      action="store_true", help="rostest standard option")
+    
     parser.add_option("--simple",dest="simple", default=False,
                       action="store_true", help="MasterSimpleApi")
 

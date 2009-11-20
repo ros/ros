@@ -216,13 +216,41 @@ class Generator(object):
         return retcode
         
     def generate_all_by_package(self, package_files):
+        """
+        @return: return code
+        @rtype: int
+        """
         retcode = 0
         for package, pfiles in package_files.iteritems():
             retcode = self.generate_package(package, pfiles) or retcode
         return retcode
 
-    ## @return int: system return code
-    def generate_all(self, files):
+    def generate_initpy(self, files):
+        """
+        Generate __init__.py file for each package in in the msg/srv file list
+        and have the __init__.py file import the required symbols from
+        the generated version of the files.
+        @param files: list of msg/srv files
+        @type  files: [str]
+        @return: return code
+        @rtype: int
+        """
+        
+        package_files = {}
+        # pass 1: collect list of files for each package
+        retcode = self.generate_package_files(package_files, files, self.ext)
+
+        # pass 2: write the __init__.py file for the module
+        retcode = retcode or self.write_modules(package_files)
+        
+    def generate_messages(self, files, no_gen_initpy):
+        """
+        @param no_gen_initpy: if True, don't generate the __init__.py
+        file. This option is for backwards API compatibility.
+        @type  no_gen_initpy: bool
+        @return: return code
+        @rtype: int
+        """
         package_files = {}
         # pass 1: collect list of files for each package
         retcode = self.generate_package_files(package_files, files, self.ext)
@@ -231,8 +259,10 @@ class Generator(object):
         # pass 2: roslib.msgs.load_package(), generate messages
         retcode = retcode or self.generate_all_by_package(package_files)
 
-        # pass 3: write the __init__.py file for the module
-        retcode = retcode or self.write_modules(package_files)
+        # backwards compat
+        if not no_gen_initpy:
+            retcode = retcode or self.write_modules(package_files)
+            
         return retcode
 
     def write_gen(self, outfile, gen, verbose):
@@ -253,25 +283,33 @@ def get_files(argv, usage_fn, ext):
         usage_fn(argv[0])
     files = []
     for arg in argv[1:]:
-        files.extend(glob.glob(arg))
+        if not arg == '--initpy':
+            files.extend(glob.glob(arg))
     return files
 
 def genmain(argv, gen, usage_fn=usage):
     try:
-        files = get_files(sys.argv, usage_fn, gen.ext)
-        if not files:
-            print "No %s files found"%gen.ext
-            return #prevent side-effects
-        retcode = gen.generate_all(files)
-        if retcode != 0:
-            sys.exit(retcode)
+        gen_initpy = '--initpy' in argv
+        no_gen_initpy = '--noinitpy' in argv
+        
+        if gen_initpy:
+            # #1827
+            packages = [p for p in argv[1:] if not p == '--initpy']
+            retcode = gen.generate_initpy(packages)
+        else:
+            files = get_files(argv, usage_fn, gen.ext)
+            if not files:
+                print "No matching files found"
+                return
+            retcode = gen.generate_messages(files, no_gen_initpy)
     except roslib.msgs.MsgSpecException, e:
         print >> sys.stderr, "ERROR: ", e
-        sys.exit(1)        
+        retcode = 1
     except MsgGenerationException, e:
         print sys.stderr, "ERROR: ",e
-        sys.exit(2)
+        retcode = 2
     except Exception, e:
         traceback.print_exc()
         print "ERROR: ",e
-        sys.exit(3)
+        retcode = 3
+    sys.exit(retcode or 0)

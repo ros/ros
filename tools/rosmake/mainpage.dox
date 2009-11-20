@@ -1,0 +1,12 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosmake is the dependency aware build tool
+
+rosmake will recursively build packages in a way which satisfies dependency order.  
+
+usage:
+TODO
+
+*/

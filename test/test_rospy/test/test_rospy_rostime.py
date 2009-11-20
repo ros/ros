@@ -69,12 +69,12 @@ class TestRospyTime(unittest.TestCase):
         # #1600 Duration > Time should fail
         failed = False
         try:
-            v = Duration.from_seconds(0.1) > Time.from_seconds(0.5)
+            v = Duration.from_sec(0.1) > Time.from_sec(0.5)
             failed = True
         except: pass
         self.failIf(failed, "should have failed to compare")
         try:
-            v = Time.from_second(0.4) > Duration.from_seconds(0.1)
+            v = Time.from_sec(0.4) > Duration.from_sec(0.1)
             failed = True        
         except: pass
         self.failIf(failed, "should have failed to compare")
@@ -94,8 +94,15 @@ class TestRospyTime(unittest.TestCase):
         # test Time.now() is within 10 seconds of actual time (really generous)
         import time
         t = time.time()
-        v = Time.from_seconds(t)
+        v = Time.from_sec(t)
+        self.assertEquals(v.to_sec(), t)
         self.assertEquals(v.to_seconds(), t)
+        # test from_sec()
+        self.assertEquals(Time.from_sec(0), Time())
+        self.assertEquals(Time.from_sec(1.), Time(1))
+        self.assertEquals(Time.from_sec(v.to_sec()), v)
+        self.assertEquals(v.from_sec(v.to_sec()), v)
+
         # test from_seconds()
         self.assertEquals(Time.from_seconds(0), Time())
         self.assertEquals(Time.from_seconds(1.), Time(1))
@@ -180,6 +187,14 @@ class TestRospyTime(unittest.TestCase):
 
     def test_Duration(self):
         Duration = rospy.Duration
+
+        # test from_sec
+        v = Duration(1000)
+        self.assertEquals(v, Duration.from_sec(v.to_sec()))
+        self.assertEquals(v, v.from_sec(v.to_sec()))
+        v = Duration(0,1000)
+        self.assertEquals(v, Duration.from_sec(v.to_sec()))
+        self.assertEquals(v, v.from_sec(v.to_sec()))
 
         # test from_seconds
         v = Duration(1000)
@@ -270,15 +285,10 @@ class TestRospyTime(unittest.TestCase):
 
         self.assertAlmostEqual(time.time(), rospy.get_time(), 1)
 
-        t = Time.from_seconds(1.0)
-        _set_rostime(t)
-        self.assertEquals(t, rospy.get_rostime())
-        self.assertEquals(t.to_time(), rospy.get_time())        
-
-        t = Time.from_seconds(4.0)        
-        _set_rostime(t)
-        self.assertEquals(t, rospy.get_rostime())
-        self.assertEquals(t.to_time(), rospy.get_time())        
+        for t in [Time.from_seconds(1.0), Time.from_sec(1.0), Time.from_seconds(4.0), Time.from_sec(4.0)]:
+            _set_rostime(t)
+            self.assertEquals(t, rospy.get_rostime())
+            self.assertEquals(t.to_time(), rospy.get_time())        
 
     def test_get_rostime(self):
         rospy.rostime.switch_to_wallclock()
@@ -290,12 +300,13 @@ class TestRospyTime(unittest.TestCase):
         # test wallclock sleep
         rospy.rostime.switch_to_wallclock()
         rospy.sleep(0.1)
-        rospy.sleep(rospy.Duration.from_seconds(0.1))        
+        rospy.sleep(rospy.Duration.from_sec(0.1))
+        rospy.sleep(rospy.Duration.from_seconds(0.1))                
         
         from rospy.rostime import _set_rostime
         from rospy import Time 
 
-        t = Time.from_seconds(1.0)
+        t = Time.from_sec(1.0)
         _set_rostime(t)
         self.assertEquals(t, rospy.get_rostime())
         self.assertEquals(t.to_time(), rospy.get_time())        
@@ -308,7 +319,7 @@ class TestRospyTime(unittest.TestCase):
         time.sleep(1.0) #make sure thread is spun up
         self.failIf(test_sleep_done)
 
-        t = Time.from_seconds(1000000.0)
+        t = Time.from_sec(1000000.0)
         _set_rostime(t)
         time.sleep(0.5) #give sleeper time to wakeup
         self.assert_(test_sleep_done, "sleeper did not wake up")
@@ -319,7 +330,7 @@ class TestRospyTime(unittest.TestCase):
         time.sleep(1.0) #make sure thread is spun up
         self.failIf(test_duration_sleep_done)
 
-        t = Time.from_seconds(2000000.0)
+        t = Time.from_sec(2000000.0)
         _set_rostime(t)
         time.sleep(0.5) #give sleeper time to wakeup
         self.assert_(test_sleep_done, "sleeper did not wake up")
@@ -330,7 +341,7 @@ class TestRospyTime(unittest.TestCase):
         time.sleep(1.0) #make sure thread is spun up
         self.failIf(test_backwards_sleep_done)
 
-        t = Time.from_seconds(1.0)
+        t = Time.from_sec(1.0)
         _set_rostime(t)
         time.sleep(0.5) #give sleeper time to wakeup
         self.assert_(test_backwards_sleep_done, "backwards sleeper was not given an exception")

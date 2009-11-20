@@ -66,6 +66,16 @@ WARN = roslib.msg.Log.WARN
 ERROR = roslib.msg.Log.ERROR
 FATAL = roslib.msg.Log.FATAL
 
+# hide rospy.init implementation from users
+def get_node_proxy():
+    """
+    Retrieve L{NodeProxy} for slave node running on this machine.
+
+    @return: slave node API handle
+    @rtype: L{rospy.NodeProxy}
+    """
+    return rospy.init.get_node_proxy()
+    
 def on_shutdown(h):
     """
     Register function to be called on shutdown. This function will be
@@ -101,7 +111,8 @@ def myargv(argv=sys.argv):
     @return: copy of sys.argv with ROS remapping arguments removed
     @rtype: [str]
     """
-    return [a for a in argv if not rospy.names.REMAP in a]
+    import roslib.scriptutil
+    return roslib.scriptutil.myargv(argv=argv)
 
 def _init_node_params(argv, node_name):
     """
@@ -118,7 +129,7 @@ def _init_node_params(argv, node_name):
 
 _init_node_args = None
 
-def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rostime=False, disable_signals=False):
+def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rostime=False, disable_rosout=False, disable_signals=False):
     """Register client node with the master under the specified name.
     This should be called after Pub/Sub topics have been declared and
     it MUST be called from the main Python thread unless
@@ -126,35 +137,38 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     only allowed if the arguments are identical as the side-effects of
     this method are not reversible.
 
-    @param name: Node's name. This parameter cannot contain namespaces (i.e. '/')
+    @param name: Node's name. This parameter must be a base name,
+        meaning that it cannot contain namespaces (i.e. '/')
     @type  name: string
     
     @param argv: Command line arguments to this program. ROS reads
-    these arguments to find renaming params. Defaults to sys.argv.
+        these arguments to find renaming params. Defaults to sys.argv.
     @type  argv: [str]
 
-    @param anonymous: if True, a name will be auto-generated for
-    the node using name as the base.  This is useful when you wish
-    to have multiple instances of the same node and don't care about
-    their actual names (e.g. tools, guis). name will be used as the
-    stem of the auto-generated name. NOTE: you cannot remap the name
-    of an anonymous node.
-    @type  anonymous: bool
+    @param anonymous: if True, a name will be auto-generated for the
+        node using name as the base.  This is useful when you wish to
+        have multiple instances of the same node and don't care about
+        their actual names (e.g. tools, guis). name will be used as
+        the stem of the auto-generated name. NOTE: you cannot remap
+        the name of an anonymous node.  @type anonymous: bool
 
-    @param log_level: log level for sending message to /rosout,
-    which is INFO by default. For convenience, you may use
-    rospy.DEBUG, rospy.INFO, rospy.ERROR, rospy.WARN, rospy.FATAL,
+    @param log_level: log level for sending message to /rosout, which
+        is INFO by default. For convenience, you may use rospy.DEBUG,
+        rospy.INFO, rospy.ERROR, rospy.WARN, rospy.FATAL,
     @type  log_level: int
     
-    @param disable_signals: If True, rospy will not register its
-    own signal handlers. You must set this flag if (a) you are unable
-    to call init_node from the main thread and/or you are using rospy
-    in an environment where you need to control your own signal
-    handling (e.g. WX).
+    @param disable_signals: If True, rospy will not register its own
+        signal handlers. You must set this flag if (a) you are unable
+        to call init_node from the main thread and/or you are using
+        rospy in an environment where you need to control your own
+        signal handling (e.g. WX).
     @type  disable_signals: bool
     
     @param disable_rostime: for rostests only, suppresses
-    automatic subscription to rostime
+        automatic subscription to rostime
+    @type  disable_rostime: bool
+
+    @param disable_rosout: suppress auto-publication of rosout
     @type  disable_rostime: bool
 
     @raise ROSInitException: if initialization/registration fails
@@ -227,7 +241,8 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
         raise rospy.exceptions.ROSInitException("ROS node initialization failed: %s, %s, %s", code, msg, master_uri)
 
     rospy.rosout.load_rosout_handlers(log_level)
-    rospy.rosout.init_rosout()
+    if not disable_rosout:
+        rospy.rosout.init_rosout()
     logdebug("init_node, name[%s], pid[%s]", resolved_node_name, os.getpid())    
     if not disable_rostime:
         if not rospy.simtime.init_simtime():
@@ -245,7 +260,7 @@ def get_master(env=os.environ):
     though the ROS_MASTER_URI must be declared in the environment.
 
     @return: ROS Master remote object
-    @rtype: L{rospy.msproxy.MasterProxy}
+    @rtype: L{rospy.MasterProxy}
     @raise Exception: if server cannot be located or system cannot be
     initialized
     """
@@ -402,6 +417,8 @@ def search_param(param_name):
     Search for a parameter on the param server
     @param param_name: parameter name
     @type  param_name: str
+    @return: key of matching parameter or None if no matching parameter. 
+    @rtype: str
     @raise ROSException: if parameter server reports an error
     """
     _init_param_server()
@@ -412,6 +429,7 @@ def delete_param(param_name):
     Delete a parameter on the param server
     @param param_name: parameter name
     @type  param_name: str
+    @raise KeyError: if parameter is not set    
     @raise ROSException: if parameter server reports an error
     """    
     _init_param_server()
@@ -485,7 +503,7 @@ def sleep(duration):
     """
     if rospy.rostime.is_wallclock():
         if isinstance(duration, roslib.rostime.Duration):
-            duration = duration.to_seconds()
+            duration = duration.to_sec()
         if duration < 0:
             return
         else:
@@ -493,7 +511,7 @@ def sleep(duration):
     else:
         initial_rostime = rospy.rostime.get_rostime()
         if not isinstance(duration, roslib.rostime.Duration):
-            duration = rospy.rostime.Duration.from_seconds(duration)
+            duration = rospy.rostime.Duration.from_sec(duration)
         sleep_t = initial_rostime + duration
 
         rostime_cond = rospy.rostime.get_rostime_cond()

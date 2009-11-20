@@ -33,6 +33,6 @@
 #
 # Revision $Id$
 
-import roslib; roslib.update_path('rosdoc')
+import roslib; roslib.load_manifest('rosdoc')
 import rosdoc
 rosdoc.main()

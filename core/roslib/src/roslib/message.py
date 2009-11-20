@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: message.py 3357 2009-01-13 07:13:05Z jfaustwg $
+# Revision $Id$
 
 import cStringIO
 import math
@@ -128,7 +128,7 @@ def strify_message(val, indent='', time_offset=None):
     if type(val) in [int, long, float, str, bool] or \
             isinstance(val, Time) or isinstance(val, Duration):
         if time_offset is not None and isinstance(val, Time):
-            return str((val-time_offset).to_seconds())
+            return str((val-time_offset).to_sec())
         else:
             return str(val)
     elif type(val) in [list, tuple]:
@@ -181,38 +181,46 @@ def check_type(field_name, field_type, field_val):
         # check sign and width
         if field_type in ['byte', 'int8', 'int16', 'int32', 'int64']:
             if type(field_val) not in [long, int]:
-                raise SerializationError('field [%s] must be an integer type'%field_name)
+                raise SerializationError('field %s must be an integer type'%field_name)
             maxval = int(math.pow(2, _widths[field_type]-1))
             if field_val >= maxval or field_val <= -maxval:
-                raise SerializationError('field [%s] exceeds specified width [%s]'%(field_name, field_type))
+                raise SerializationError('field %s exceeds specified width [%s]'%(field_name, field_type))
         elif field_type in ['char', 'uint8', 'uint16', 'uint32', 'uint64']:
             if type(field_val) not in [long, int] or field_val < 0:
-                raise SerializationError('field [%s] must be unsigned integer type'%field_name)
+                raise SerializationError('field %s must be unsigned integer type'%field_name)
             maxval = int(math.pow(2, _widths[field_type]))
             if field_val >= maxval:
-                raise SerializationError('field [%s] exceeds specified width [%s]'%(field_name, field_type))
+                raise SerializationError('field %s exceeds specified width [%s]'%(field_name, field_type))
         elif field_type == 'bool':
             if field_val not in [True, False, 0, 1]:
-                raise SerializationError('field [%s] is not a bool'%(field_name))
+                raise SerializationError('field %s is not a bool'%(field_name))
     elif field_type == 'string':
-        if type(field_val) != str:
-            raise SerializationError('field [%s] must be of type [str]'%field_name)
+        if type(field_val) == unicode:
+            raise SerializationError('field %s is a unicode string instead of an ascii string'%field_name)
+        elif type(field_val) != str:
+            raise SerializationError('field %s must be of type str'%field_name)
     elif field_type == 'time':
         if not isinstance(field_val, Time):
-            raise SerializationError('field [%s] must be of type [Time]'%field_name)
+            raise SerializationError('field %s must be of type Time'%field_name)
     elif field_type == 'duration':
         if not isinstance(field_val, Duration):
-            raise SerializationError('field [%s] must be of type [Duration]'%field_name)
+            raise SerializationError('field %s must be of type Duration'%field_name)
     elif field_type.endswith(']'): # array type
         if not type(field_val) in [list, tuple]:
-            raise SerializationError('field [%s] must be a list or tuple type'%field_name)
+            raise SerializationError('field %s must be a list or tuple type'%field_name)
         # use index to generate error if '[' not present
         base_type = field_type[:field_type.index('[')]
         for v in field_val:
-            check_type(field_name, base_type, v)
-    #else:
-    #    if type(field_val) != types.InstanceType:
-    #        raise SerializationError('field [%s] must be a [%s] instance instead of a %s'%(field_name, field_type, type(field_val)))
+            check_type(field_name+"[]", base_type, v)
+    else:
+        if isinstance(field_val, Message):
+            if field_val._type != field_type:
+                raise SerializationError("field %s must be of type %s instead of %s"%(field_name, field_type, field_val._type))
+            for n, t in zip(field_val.__slots__, field_val._get_types()):
+                check_type("%s.%s"%(field_name,n), t, getattr(field_val, n))
+        else:
+            raise SerializationError("field %s must be of type [%s]"%(field_name, field_type))
+
         #TODO: dynamically load message class and do instance compare
 
 class Message(object):
@@ -227,10 +235,10 @@ class Message(object):
     
     def __init__(self, *args, **kwds):
         """
-        ctor. There are multiple ways of initializing Message
-        instances, either using a 1-to-1 correspondence between
-        constructor arguments and message fields (*args), or using
-        Python "keyword" arguments (**kwds) to initialize named field
+        Create a new Message instance. There are multiple ways of
+        initializing Message instances, either using a 1-to-1
+        correspondence between constructor arguments and message
+        fields (*args), or using Python "keyword" arguments (**kwds) to initialize named field
         and leave the rest with default values.
         """
         if args and kwds:
@@ -339,12 +347,27 @@ def get_printable_message_args(msg, buff=None, prefix=''):
             buff.write(prefix+f+' ')
     return buff.getvalue().rstrip()
 
-def _fill_val(msg, f, v, prefix):
+def _fill_val(msg, f, v, keys, prefix):
+    """
+    Subroutine of L{_fill_message_args()}. Sets a particular field on a message
+    @param f: field name
+    @type  f: str
+    @param v: field value
+    @param keys: keys to use as substitute values for messages and timestamps. 
+    @type  keys: dict
+    """
     if not f in msg.__slots__:
         raise ROSMessageException("No field name [%s%s]"%(prefix, f))
     def_val = getattr(msg, f)
-    if isinstance(def_val, Message) or isinstance(def_val, roslib.rostime._TVal):
-        _fill_message_args(def_val, v, prefix=(prefix+f+'.'))
+    if isinstance(def_val, Message) or isinstance(def_val, roslib.rostime.TVal):
+        # check for substitution key, e.g. 'now'
+        if type(v) == str:
+            if v in keys:
+                setattr(msg, f, keys[v])
+            else:
+                raise ROSMessageException("No key named [%s]"%(v))
+        else:
+            _fill_message_args(def_val, v, keys, prefix=(prefix+f+'.'))
     elif type(def_val) == list:
         if not type(v) == list:
             raise ROSMessageException("Field [%s%s] must be a list instead of: %s"%(prefix, f, v))
@@ -369,20 +392,23 @@ def _fill_val(msg, f, v, prefix):
         setattr(msg, f, v)
     
     
-def _fill_message_args(msg, msg_args, prefix=''):
+def _fill_message_args(msg, msg_args, keys, prefix=''):
     """
-    Populate message with specified args. 
+    Populate message with specified args.
+    
     @param msg: message to fill
     @type  msg: Message
     @param msg_args: list of arguments to set fields to
     @type  msg_args: [args]
+    @param keys: keys to use as substitute values for messages and timestamps. 
+    @type  keys: dict
     @param prefix: field name prefix (for verbose printing)
     @type  prefix: str
     @return: unused/leftover message arguments. 
     @rtype: [args]
     @raise ROSMessageException: if not enough message arguments to fill message
     """
-    if not isinstance(msg, Message) and not isinstance(msg, roslib.rostime._TVal):
+    if not isinstance(msg, (Message, roslib.rostime.TVal)):
         raise ROSMessageException("msg must be a Message instance: %s"%msg)
 
     if type(msg_args) == dict:
@@ -391,33 +417,42 @@ def _fill_message_args(msg, msg_args, prefix=''):
         #print "ACTIVE SLOTS",msg.__slots__
         
         for f, v in msg_args.iteritems():
-            _fill_val(msg, f, v, prefix)
+            _fill_val(msg, f, v, keys, prefix)
     elif type(msg_args) == list:
         
         #print "LIST ARGS", msg_args
         #print "ACTIVE SLOTS",msg.__slots__
         
         if len(msg_args) > len(msg.__slots__):
-            raise ROSMessageException("Too many arguments for field [%s %s]: %s"%(prefix, msg, msg_args))
+            raise ROSMessageException("Too many arguments:\n * Given: %s\n * Expected: %s"%(msg_args, msg.__slots__))
         elif len(msg_args) < len(msg.__slots__):
-            raise ROSMessageException("Not enough arguments for field [%s %s]: %s"%(prefix, msg, msg_args))
+            raise ROSMessageException("Not enough arguments:\n * Given: %s\n * Expected: %s"%(msg_args, msg.__slots__))
         
         for f, v in itertools.izip(msg.__slots__, msg_args):
-            _fill_val(msg, f, v, prefix)
+            _fill_val(msg, f, v, keys, prefix)
     else:
         raise ROSMessageException("invalid message_args type: %s"%str(msg_args))
 
-def fill_message_args(msg, msg_args):
+def fill_message_args(msg, msg_args, keys={}):
     """
     Populate message with specified args. Args are assumed to be a
     list of arguments from a command-line YAML parser. See
     http://www.ros.org/wiki/ROS/YAMLCommandLine for specification on
     how messages are filled.
 
+    fill_message_args also takes in an optional 'keys' dictionary
+    which contain substitute values for message and time types. These
+    values must be of the correct instance type, i.e. a Message, Time,
+    or Duration. In a string key is encountered with these types, the
+    value from the keys dictionary will be used instead. This is
+    mainly used to provide values for the 'now' timestamp.
+
     @param msg: message to fill
     @type  msg: Message
     @param msg_args: list of arguments to set fields to
     @type  msg_args: [args]
+    @param keys: keys to use as substitute values for messages and timestamps. 
+    @type  keys: dict
     @raise ROSMessageException: if not enough/too many message arguments to fill message
     """
     # a list of arguments is similar to python's
@@ -432,7 +467,7 @@ def fill_message_args(msg, msg_args):
     if len(msg_args) == 1 and type(msg_args[0]) == dict:
         # according to spec, if we only get one msg_arg and it's a dictionary, we
         # use it directly
-        _fill_message_args(msg, msg_args[0], '')
+        _fill_message_args(msg, msg_args[0], keys, '')
     else:
-        _fill_message_args(msg, msg_args, '')
+        _fill_message_args(msg, msg_args, keys, '')
 

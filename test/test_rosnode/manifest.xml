@@ -6,8 +6,7 @@
   </description>
   <author>Ken Conley</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/test_rosnode</url>
+  <review status="test" notes=""/>
   <depend package="rosnode"/>
   <depend package="rospy"/>
   <depend package="rostest"/>

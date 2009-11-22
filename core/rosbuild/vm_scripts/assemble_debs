@@ -45,7 +45,6 @@ def build_deb(path):
   deb_deps += native_packages
   deb_deps += [debianize_name("ros-%s-%s"%(distro_name,s)) for s in stack_deps] 
   deb_name = debianize_name("ros-%s-%s" % (distro_name, stack_name))
-  arch = subprocess.Popen(['dpkg', '--print-architecture'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].strip()
   size = int(subprocess.Popen(["du","-bs",deb_dir], stdout=subprocess.PIPE).communicate()[0].strip().split()[0])
   os.mkdir(os.path.join(deb_dir, 'DEBIAN'), 0755)
   control = open(os.path.join(deb_dir, 'DEBIAN', "control"), "w")
@@ -88,6 +87,8 @@ env_vars.update({'ROS_ROOT' : ros_root,
 
 workspace = os.path.join(os.getcwd(), 'deb_workspace') 
 distro_name = 'latest'
+arch = subprocess.Popen(['dpkg', '--print-architecture'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].strip()
+
 f = urllib2.urlopen('http://ros.org/rosdistro.yaml')
 d = yaml.load(f)
 distros = d['distros']
@@ -102,8 +103,34 @@ except:
   raise Exception("could not create workspace directory, ahhhhhh")
  
 # first, build deb for the ros stack, in /opt/ros/ros
-build_deb(ros_root)
+#build_deb(ros_root)
 # now, build debs for stacks in /opt/ros/stacks/BLAH
-for stack in os.listdir(stacks_root): 
-  if stack != '.svn':
-    build_deb(os.path.join(stacks_root, stack))
+#for stack in os.listdir(stacks_root): 
+#  if stack != '.svn':
+#    build_deb(os.path.join(stacks_root, stack))
+# finally, build a metapackage for the entire distro
+meta_dir = os.path.join(workspace, 'all')
+meta_name = "ros-%s-all" % distro_name
+meta_ver = "1.0.0-1" # not sure on this.
+os.mkdir(meta_dir, 0755)
+os.mkdir(os.path.join(meta_dir, 'DEBIAN'), 0755)
+control = open(os.path.join(meta_dir, 'DEBIAN', "control"), "w")
+control.write("Package: %s\n" % meta_name)
+control.write("Source: %s\n" % meta_name)
+control.write("Version: %s\n" % meta_ver) 
+control.write("Architecture: %s\n" % arch)
+# not sure what to put here. lintian says it needs an email address.
+control.write("Maintainer: The ROS community <mquigley@cs.stanford.edu>\n")
+control.write("Installed-Size: 0\n")
+all_stacks = ["ros-%s-ros" % distro_name] + ["ros-%s-%s" % (distro_name, debianize_name(s)) for s in os.listdir(stacks_root) if s != '.svn']
+control.write("Depends: %s\n" % ", ".join(all_stacks))
+control.write("Section: devel\n")
+control.write("Priority: optional\n")
+control.write("Homepage: http://ros.org\n")
+control.write("Description: ROS - a Robot Operating System\n")
+control.write(" More documentation could go here\n")
+print "  running dpkg-deb..."
+os.chdir(workspace)
+control.close()
+subprocess.check_call(['fakeroot','dpkg-deb','--build',meta_dir,meta_name+'_'+meta_ver+'_jaunty_'+arch+'.deb'])
+

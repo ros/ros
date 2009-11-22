@@ -16,7 +16,12 @@ def build_deb(path):
   deb_dir = os.path.join(workspace, stack_name)
   print "working on %s version %s" % (stack_name, version)
   print "  copying files..."
-  shutil.copytree(path, os.path.join(deb_dir,'opt','ros',distro_name), symlinks=True)
+  base_path = os.path.join(deb_dir, 'opt', 'ros', distro_name)
+  if stack_name == 'ros':
+    landing_dir = os.path.join(base_path, 'ros')
+  else:
+    landing_dir = os.path.join(base_path, 'stacks', stack_name)
+  shutil.copytree(path, landing_dir, symlinks=True)
   print "  removing non-essential files..."
   #subprocess.check_call(['find',deb_dir,'-name','.svn',+'.deb'])
   non_essential = subprocess.Popen(['find',deb_dir,'-name','.svn'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
@@ -52,7 +57,7 @@ def build_deb(path):
   control.write("Maintainer: The ROS community <mquigley@cs.stanford.edu>\n")
   control.write("Installed-Size: %s\n" % size)
   control.write("Depends: %s\n" % ", ".join(deb_deps))
-  control.write("Section: utils\n")
+  control.write("Section: devel\n")
   control.write("Priority: optional\n")
   control.write("Homepage: http://ros.org\n")
   control.write("Description: ROS - a Robot Operating System\n")
@@ -60,7 +65,7 @@ def build_deb(path):
   print "  running dpkg-deb..."
   os.chdir(workspace)
   control.close()
-  subprocess.check_call(['fakeroot','dpkg-deb','--build',deb_dir,deb_name+'.deb'])
+  subprocess.check_call(['fakeroot','dpkg-deb','--build',deb_dir,deb_name+'_'+version+'_jaunty_'+arch+'.deb'])
 
 ros_root = '/opt/ros/ros'
 stacks_root = '/opt/ros/stacks'

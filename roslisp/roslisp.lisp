@@ -162,7 +162,6 @@
 (defvar *debug-stream* t "Stream to which to print debug messages.  Defaults to standard out.")
 (defvar *break-on-socket-errors* nil "If true, then any error on a socket will cause a (continuable) break")
 (defvar *debug-level* 2 "Controls the behavior of ros-debug and others.  The default value of 2 means print info and above.  1 would be everything.  4 would be warnings and above, etc.")
-(defvar *last-time* nil)
 (defvar *last-clock* nil)
 (defvar *use-sim-time* nil)
 

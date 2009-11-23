@@ -47,13 +47,11 @@
 
 
 ;; Define this here rather than in client.lisp because it's needed by serialize
-(declaim (inline ros-time))
 (defun ros-time ()
   "If *use-sim-time* is true (which is set upon node startup by looking up the ros /use_sim_time parameter), return the last received time on the /time or /clock topics, or 0.0 if no time message received yet. Otherwise, return the unix time (seconds since epoch)."
   (if *use-sim-time*
       (cond
 	(*last-clock* (roslib-msg:clock-val *last-clock*))
-	(*last-time* (roslib-msg:rostime-val *last-time*))
 	(t 0.0))
       (unix-time)))
 

@@ -75,6 +75,7 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
 				(pathname (format nil "log/~a-~a.log" name (unix-time)))
 				(pathname (concatenate 'string (sb-ext:posix-getenv "ROS_ROOT") "/"))))
 	*ros-log-stream* (open *ros-log-location* :direction :output :if-exists :overwrite :if-does-not-exist :create))
+  (ros-info (roslisp top) "Log location is ~a" *ros-log-location*)
     
   (let ((params (handle-command-line-arguments name cmd-line-args)))
 
@@ -153,11 +154,11 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
     ;; Advertise on global rosout topic for debugging messages
     (advertise "/rosout" "roslib/Log")
 
-    ;; Subscribe to time and clock (for now, just allow them to overwrite each other)
     (when (member (get-param "use_sim_time" nil) '("true" 1 t) :test #'equal)
       (setq *use-sim-time* t)
-      (subscribe "/clock" "roslib/Clock" (store-message-in *last-clock*))
-      (subscribe "/time" "roslib/Time" (store-message-in *last-time*)))))
+      (subscribe "/clock" "roslib/Clock" #'(lambda (m) 
+						     (setq *last-clock* m))
+		 :max-queue-length 5))))
 
 
 (defmacro with-ros-node (args &rest body)

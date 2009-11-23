@@ -15,6 +15,7 @@ def build_deb(path):
   version = stacks[stack_name][distro_name]
   deb_dir = os.path.join(workspace, stack_name)
   print "working on %s version %s" % (stack_name, version)
+
   print "  copying files..."
   base_path = os.path.join(deb_dir, 'opt', 'ros', distro_name)
   if stack_name == 'ros':
@@ -22,15 +23,28 @@ def build_deb(path):
   else:
     landing_dir = os.path.join(base_path, 'stacks', stack_name)
   shutil.copytree(path, landing_dir, symlinks=True)
+
   print "  removing non-essential files..."
-  #subprocess.check_call(['find',deb_dir,'-name','.svn',+'.deb'])
   non_essential = subprocess.Popen(['find',deb_dir,'-name','.svn'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
   non_essential += subprocess.Popen(['find',deb_dir,'-name','*.o'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
   non_essential += subprocess.Popen(['find',deb_dir,'-name','.deps'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
   non_essential += subprocess.Popen(['find',deb_dir,'-name','CMakeFiles'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
   non_essential += subprocess.Popen(['find',deb_dir,'-name','CMakeCache.txt'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
   subprocess.check_call(['sudo','rm','-rf'] + non_essential)
-  print "  generating dpkg dependencies..."
+
+  print "  adding ROS_NOBUILD files..."
+  # could make this more robust someday, since packages could be buried deeper
+  if stack_name == 'ros':
+    open(os.path.join(landing_dir, 'ROS_NOBUILD'),'w').close()
+  else:
+    for dir_ele in os.listdir(landing_dir): 
+      pkg = os.path.join(landing_dir, dir_ele)
+      if pkg[0] == '.' or not os.path.isdir(pkg):
+        continue
+      if os.path.isfile(os.path.join(pkg, 'manifest.xml')):
+        open(os.path.join(pkg, 'ROS_NOBUILD'),'w').close()
+
+  print "  generating dpkg dependencies and writing control file..."
   rosstack_path = os.path.join(ros_root, 'bin', 'rosstack')
   stack_deps = subprocess.Popen([rosstack_path,'deps',stack_name], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()
   deb_deps = ['libc6','build-essential','cmake','python-yaml','subversion']
@@ -61,10 +75,16 @@ def build_deb(path):
   control.write("Homepage: http://ros.org\n")
   control.write("Description: ROS - a Robot Operating System\n")
   control.write(" More documentation could go here\n")
+  control.close()
+
   print "  running dpkg-deb..."
   os.chdir(workspace)
-  control.close()
   subprocess.check_call(['fakeroot','dpkg-deb','--build',deb_dir,deb_name+'_'+version+'_jaunty_'+arch+'.deb'])
+
+
+################################################################
+# script begins here. and yes, this should be organized better.
+################################################################
 
 ros_root = '/opt/ros/ros'
 stacks_root = '/opt/ros/stacks'
@@ -103,11 +123,13 @@ except:
   raise Exception("could not create workspace directory, ahhhhhh")
  
 # first, build deb for the ros stack, in /opt/ros/ros
-#build_deb(ros_root)
+build_deb(ros_root)
+
 # now, build debs for stacks in /opt/ros/stacks/BLAH
-#for stack in os.listdir(stacks_root): 
-#  if stack != '.svn':
-#    build_deb(os.path.join(stacks_root, stack))
+for stack in os.listdir(stacks_root): 
+  if stack != '.svn':
+    build_deb(os.path.join(stacks_root, stack))
+
 # finally, build a metapackage for the entire distro
 meta_dir = os.path.join(workspace, 'all')
 meta_name = "ros-%s-all" % distro_name
@@ -133,4 +155,6 @@ print "  running dpkg-deb..."
 os.chdir(workspace)
 control.close()
 subprocess.check_call(['fakeroot','dpkg-deb','--build',meta_dir,meta_name+'_'+meta_ver+'_jaunty_'+arch+'.deb'])
+
+print "phew! done. have a nice day"
 

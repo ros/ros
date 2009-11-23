@@ -46,8 +46,6 @@ import time
 
 import wx
 
-import sensor_msgs.msg
-
 from bag_file import BagFile
 import bag_index
 import base_frame

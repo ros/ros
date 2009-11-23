@@ -13,5 +13,6 @@ rxplay is a GUI tool for visualizing, inspecting and replaying histories of ROS 
   <depend package="std_msgs"/>
   <depend package="rosrecord"/>
   <depend package="rxtools"/>
-  <depend package="opencv_latest"/>
+  <depend package="cv_bridge"/>
+  <depend package="opencv2"/>
 </package>

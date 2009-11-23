@@ -40,7 +40,7 @@ import Image
 import wx
 
 import cv
-from opencv_latest.cv_bridge import CvBridge, CvBridgeError
+from cv_bridge import CvBridge, CvBridgeError
 
 ## Helper class for converting ROS sensor_msgs/Image <-> wxImage
 class ImageHelper:

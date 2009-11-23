@@ -33,16 +33,22 @@ def build_deb(path):
   subprocess.check_call(['sudo','rm','-rf'] + non_essential)
 
   print "  adding ROS_NOBUILD files..."
-  # could make this more robust someday, since packages could be buried deeper
-  if stack_name == 'ros':
-    open(os.path.join(landing_dir, 'ROS_NOBUILD'),'w').close()
-  else:
-    for dir_ele in os.listdir(landing_dir): 
-      pkg = os.path.join(landing_dir, dir_ele)
-      if pkg[0] == '.' or not os.path.isdir(pkg):
-        continue
-      if os.path.isfile(os.path.join(pkg, 'manifest.xml')):
-        open(os.path.join(pkg, 'ROS_NOBUILD'),'w').close()
+  pkgs = [ ]
+  s = [ landing_dir ]
+  while len(s) > 0:
+    p = s.pop()
+    if os.path.exists(os.path.join(p, 'manifest.xml')):
+      pkgs.append(p)
+    else: # crawl it
+      for child in os.listdir(p):
+        c = os.path.join(p, child)
+        if os.path.isfile(c) or os.path.islink(c) or os.path.basename(c)[0] == '.':
+          continue # forget this guy
+        if os.path.exists(os.path.join(c, 'rospack_nosubdirs')):
+          continue # ignore it, as requested
+        s.append(c) # if we get here, it's safe to descend into this tree
+  for pkg in pkgs: # drop ROS_NOBUILD in here, since the deb belongs to root
+    open(os.path.join(pkg, 'ROS_NOBUILD'),'w').close()
 
   print "  generating dpkg dependencies and writing control file..."
   rosstack_path = os.path.join(ros_root, 'bin', 'rosstack')

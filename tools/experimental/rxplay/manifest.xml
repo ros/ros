@@ -1,0 +1,17 @@
+<package>
+  <description brief="rxplay">
+
+rxplay is a GUI tool for visualizing, inspecting and replaying histories of ROS messages.
+
+  </description>
+  <author>Tim Field</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rxplay</url>
+  <depend package="rospy"/>
+  <depend package="roslib"/>
+  <depend package="std_msgs"/>
+  <depend package="rosrecord"/>
+  <depend package="rxtools"/>
+  <depend package="opencv_latest"/>
+</package>

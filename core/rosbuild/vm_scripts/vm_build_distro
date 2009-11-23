@@ -10,7 +10,16 @@ case $1 in
     PORT=3002 ;;
   ubuntu-09-10 )
     PORT=3006 ;;
+  ubuntu-09-04_64bit )
+    PORT=3007 ;;
 esac
+
+# follow the debian naming convention 
+ARCH=i386
+if [[ $1 == *64bit* ]] ; then
+  ARCH=amd64
+fi
+echo "inferred architecture of $ARCH"
 
 if [ $PORT -eq 12345 ] ; then
   echo "woah! I don't know about a VM called $1. goodbye."
@@ -37,12 +46,12 @@ echo -e "hooray, $1 has started. logging into it...\n\n"
  
 BUILD_FAIL=1
 # make a place for the debs to land
-rm -rf /home/rosbuild/binary-ros-pkgs/$1/i386
-mkdir /home/rosbuild/binary-ros-pkgs/$1/i386
+rm -rf /home/rosbuild/binary-ros-pkgs/$1/$ARCH
+mkdir -p /home/rosbuild/binary-ros-pkgs/$1/$ARCH
 
 #if ssh -t -p $PORT user@localhost "bash -c 'sudo apt-get -y install fakeroot dpkg-dev && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/assemble_debs -O /home/user/assemble_debs && chmod 755 /home/user/assemble_debs && sudo /home/user/assemble_debs && ls -l'" && scp -P $PORT user@localhost:~/deb_workspace/*.deb /home/rosbuild/binary-ros-pkgs/$1/ ; then
 
-if ssh -t -p $PORT user@localhost "bash -c 'sudo apt-get -y install build-essential python-yaml cmake subversion fakeroot && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/build_distro -O ~/build_distro && chmod 755 ~/build_distro && sudo ~/build_distro latest /opt/ros && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/assemble_debs -O /home/user/assemble_debs && chmod 755 /home/user/assemble_debs && sudo /home/user/assemble_debs && ls -l deb_workspace'" && scp -P $PORT user@localhost:~/deb_workspace/*.deb /home/rosbuild/binary-ros-pkgs/$1/i386/ ; then
+if ssh -t -p $PORT user@localhost "bash -c 'sudo apt-get -y install build-essential python-yaml cmake subversion fakeroot && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/build_distro -O ~/build_distro && chmod 755 ~/build_distro && sudo ~/build_distro latest /opt/ros && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/assemble_debs -O /home/user/assemble_debs && chmod 755 /home/user/assemble_debs && sudo /home/user/assemble_debs && ls -l deb_workspace'" && scp -P $PORT user@localhost:~/deb_workspace/*.deb /home/rosbuild/binary-ros-pkgs/$1/$ARCH/ ; then
   BUILD_FAIL=0
 fi
   

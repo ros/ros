@@ -207,6 +207,16 @@ class ImageView(msg_view.TopicMsgView):
         if self._image:
             self.parent.GetParent().SetSize(self._image.GetSize())
 
+    def export_image(self):
+        dialog = wx.FileDialog(self.parent.GetParent(), 'Save image to...', wildcard='PNG files (*.png)|*.png', style=wx.FD_SAVE)
+
+        if dialog.ShowModal() == wx.ID_OK:
+            filename = dialog.GetPath()
+            
+            self._image.SaveFile(filename, wx.BITMAP_TYPE_PNG)
+            
+        dialog.Destroy()
+
     def on_size(self, event):
         self.resize(*self.parent.GetClientSize())
 
@@ -258,9 +268,10 @@ class ImagePopupMenu(wx.Menu):
 
         self.image_view = image_view
 
-        self.reset_item = wx.MenuItem(self, wx.NewId(), 'Reset Size')
-        self.AppendItem(self.reset_item)
-        self.Bind(wx.EVT_MENU, self.on_reset_item, id=self.reset_item.GetId())
+        reset_item = wx.MenuItem(self, wx.NewId(), 'Reset Size')
+        self.AppendItem(reset_item)
+        self.Bind(wx.EVT_MENU, lambda e: self.image_view.reset_size(), id=reset_item.GetId())
 
-    def on_reset_item(self, event):
-        self.image_view.reset_size()
+        export_item = wx.MenuItem(self, wx.NewId(), 'Export to PNG...')
+        self.AppendItem(export_item)
+        self.Bind(wx.EVT_MENU, lambda e: self.image_view.export_image(), id=export_item.GetId())

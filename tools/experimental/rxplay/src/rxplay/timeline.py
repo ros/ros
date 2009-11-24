@@ -453,8 +453,9 @@ class Timeline(layer.Layer):
             datatype = self.bag_index.get_datatype(topic)
             
             topic_height = None
-            if datatype in self.timeline_renderers:
-                topic_height = self.timeline_renderers[datatype].get_segment_height(topic)
+            renderer = self.timeline_renderers.get(datatype)
+            if renderer:
+                topic_height = renderer.get_segment_height(topic)
             if not topic_height:
                 topic_height = self.topic_font_height
             
@@ -563,20 +564,13 @@ class Timeline(layer.Layer):
             
             datatype = self.bag_index.get_datatype(topic)
             
+            datatype_color = self.datatype_colors.get(datatype, self.default_datatype_color)
+            renderer       = self.timeline_renderers.get(datatype)
+
             # Set pen based on datatype
-            if datatype in self.datatype_colors:
-                datatype_color = self.datatype_colors[datatype]
-            else:
-                datatype_color = self.default_datatype_color
             dc.SetPen(wx.Pen(datatype_color))
             dc.SetBrush(wx.Brush(datatype_color))
-
-            # Get custom timeline renderer (if any)
-            if datatype in self.timeline_renderers:
-                renderer = self.timeline_renderers[datatype]
-            else:
-                renderer = None
-            
+           
             # Find the index of the earliest visible stamp
             stamp_left_index  = self.bag_index._data.find_stamp_index(topic, self.stamp_left)
             stamp_right_index = self.bag_index._data.find_stamp_index(topic, self.stamp_right)

@@ -50,6 +50,9 @@ class ImageHelper:
     def load_image_from_msg(cls, msg):
         if cls.valid_encoding(msg):
             try:
+                if msg.encoding == 'bayer_bggr8':
+                    msg.encoding = 'mono8'
+                    
                 if msg.encoding == 'mono8':
                     cv_img  = cls.cv_bridge.imgmsg_to_cv(msg)
                     pil_img = Image.fromstring('L', cv.GetSize(cv_img), cv_img.tostring()).convert('RGB')
@@ -68,5 +71,4 @@ class ImageHelper:
 
     @classmethod
     def valid_encoding(cls, msg):
-        return msg.encoding != 'bayer_bggr8'
-    
+        return True# msg.encoding != 'bayer_bggr8'

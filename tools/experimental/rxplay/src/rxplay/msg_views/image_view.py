@@ -108,15 +108,13 @@ class ImageTimelineRenderer(msg_view.TimelineRenderer):
 
     ## Can't handle wide stereo images currently
     def _valid_image_topic(self, topic):
-        return 'wide' not in topic
+        return True# 'wide' not in topic
 
     ## Loads the thumbnail from either the bag file or the cache
     def _get_thumbnail(self, topic, stamp, thumbnail_height, time_threshold):
         # Attempt to get a thumbnail from the cache that's within time_threshold secs from stamp
-        topic_cache = None
-        if topic in self.thumbnail_cache:
-            topic_cache = self.thumbnail_cache[topic]
-            
+        topic_cache = self.thumbnail_cache.get(topic)
+        if topic_cache:
             cache_index = bisect.bisect_right(topic_cache, (stamp, None))
             if cache_index < len(topic_cache):
                 (cache_stamp, cache_thumbnail) = topic_cache[cache_index]
@@ -153,8 +151,6 @@ class ImageTimelineRenderer(msg_view.TimelineRenderer):
             self.thumbnail_cache[topic] = topic_cache
 
         cache_value = (msg_stamp.to_sec(), thumbnail_bitmap)
-
-        #topic_cache.append(cache_value)
 
         # Maintain the cache sorted
         cache_index = bisect.bisect_right(topic_cache, cache_value)

@@ -341,8 +341,9 @@ class PlotDataLoader(threading.Thread):
             if not msg:
                 continue
 
-            if datatype in self.loaders:
-                series_list, data = self.loaders[datatype](msg)
+            loader = self.loaders.get(datatype)
+            if loader:
+                series_list, data = loader(msg)
                 if len(data) > 0:
                     if not datax:
                         self.plot._init_plot(series_list)

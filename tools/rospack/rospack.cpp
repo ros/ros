@@ -254,7 +254,12 @@ vector<pair<string, string> > Package::plugins()
 VecPkg Package::descendants1()
 {
   VecPkg children;
-  for (VecPkg::iterator p = pkgs.begin(); p != pkgs.end(); ++p)
+  // Make a copy of the pkgs vector, because a crawl can be caused in
+  // has_parent()->direct_deps()->g_get_pkg()->get_pkg().  That crawl 
+  // will rebuild pkgs, invalidating our iterator, causing esoteric crashes
+  // e.g., #2056.
+  VecPkg pkgs_copy(pkgs);
+  for (VecPkg::iterator p = pkgs_copy.begin(); p != pkgs_copy.end(); ++p)
   {
     // We catch exceptions here, because we don't care if some 
     // unrelated packages in the system have invalid manifests

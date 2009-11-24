@@ -812,47 +812,53 @@ macro(rosbuild_download_data _url _filename)
 endmacro(rosbuild_download_data)
 
 macro(rosbuild_add_openmp_flags target)
-# list of OpenMP flags to check
-  set(_rospack_check_openmp_flags
-    "-fopenmp" # gcc
-    "-openmp" # icc
-    "-mp" # SGI & PGI
-    "-xopenmp" # Sun
-    "-omp" # Tru64
-    "-qsmp=omp" # AIX
-    )
-
-# backup for a variable we will change
-  set(_rospack_openmp_flags_backup ${CMAKE_REQUIRED_FLAGS})
-
-# mark the fact we do not yet know the flag
-  set(_rospack_openmp_flag_found FALSE)
-  set(_rospack_openmp_flag_value)
-
-# find an OpenMP flag that works
-  foreach(_rospack_openmp_test_flag ${_rospack_check_openmp_flags})
-    if(NOT _rospack_openmp_flag_found)      
-      set(CMAKE_REQUIRED_FLAGS ${_rospack_openmp_test_flag})
-      check_function_exists(omp_set_num_threads _rospack_openmp_function_found${_rospack_openmp_test_flag})
-	   
-      if(_rospack_openmp_function_found${_rospack_openmp_test_flag})
-	set(_rospack_openmp_flag_value ${_rospack_openmp_test_flag})
-	set(_rospack_openmp_flag_found TRUE)
-      endif(_rospack_openmp_function_found${_rospack_openmp_test_flag})
-    endif(NOT _rospack_openmp_flag_found)
-  endforeach(_rospack_openmp_test_flag ${_rospack_check_openmp_flags})
-
-# restore the CMake variable
-  set(CMAKE_REQUIRED_FLAGS ${_rospack_openmp_flags_backup})
+  # Bullseye's wrappers appear to choke on OpenMP pragmas.  So if COVFILE
+  # is set (which indicates that we're doing a coverage build with
+  # Bullseye), we make this macro a no-op.
+  if("$ENV{COVFILE}" STREQUAL "")
   
-# add the flags or warn
-  if(_rospack_openmp_flag_found)
-    rosbuild_add_compile_flags(${target} ${_rospack_openmp_flag_value})
-    rosbuild_add_link_flags(${target} ${_rospack_openmp_flag_value})
-  else(_rospack_openmp_flag_found)
-    message("WARNING: OpenMP compile flag not found")
-  endif(_rospack_openmp_flag_found)
+  # list of OpenMP flags to check
+    set(_rospack_check_openmp_flags
+      "-fopenmp" # gcc
+      "-openmp" # icc
+      "-mp" # SGI & PGI
+      "-xopenmp" # Sun
+      "-omp" # Tru64
+      "-qsmp=omp" # AIX
+      )
+  
+  # backup for a variable we will change
+    set(_rospack_openmp_flags_backup ${CMAKE_REQUIRED_FLAGS})
+  
+  # mark the fact we do not yet know the flag
+    set(_rospack_openmp_flag_found FALSE)
+    set(_rospack_openmp_flag_value)
+  
+  # find an OpenMP flag that works
+    foreach(_rospack_openmp_test_flag ${_rospack_check_openmp_flags})
+      if(NOT _rospack_openmp_flag_found)      
+        set(CMAKE_REQUIRED_FLAGS ${_rospack_openmp_test_flag})
+        check_function_exists(omp_set_num_threads _rospack_openmp_function_found${_rospack_openmp_test_flag})
+  	   
+        if(_rospack_openmp_function_found${_rospack_openmp_test_flag})
+  	set(_rospack_openmp_flag_value ${_rospack_openmp_test_flag})
+  	set(_rospack_openmp_flag_found TRUE)
+        endif(_rospack_openmp_function_found${_rospack_openmp_test_flag})
+      endif(NOT _rospack_openmp_flag_found)
+    endforeach(_rospack_openmp_test_flag ${_rospack_check_openmp_flags})
+  
+  # restore the CMake variable
+    set(CMAKE_REQUIRED_FLAGS ${_rospack_openmp_flags_backup})
+    
+  # add the flags or warn
+    if(_rospack_openmp_flag_found)
+      rosbuild_add_compile_flags(${target} ${_rospack_openmp_flag_value})
+      rosbuild_add_link_flags(${target} ${_rospack_openmp_flag_value})
+    else(_rospack_openmp_flag_found)
+      message("WARNING: OpenMP compile flag not found")
+    endif(_rospack_openmp_flag_found)
 
+  endif("$ENV{COVFILE}" STREQUAL "")
 endmacro(rosbuild_add_openmp_flags)
 
 macro(rosbuild_make_distribution)

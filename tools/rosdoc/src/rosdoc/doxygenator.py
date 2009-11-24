@@ -212,9 +212,11 @@ def run_rxdeps(package, pkg_doc_dir):
         print "rxdeping %s [%s]"%(package, ' '.join(command))
         Popen(command, stdout=PIPE).communicate()
     except OSError, (errno, strerr):
-        print """\nERROR: It appears that you do not have rxdeps installed. 
+        print >> sys.stderr, """\nERROR: It appears that you do not have rxdeps installed. 
 Package dependency tree links will not work properly.
 """
+    except:
+        print >> sys.stderr, "ERROR: rxdeps failed"
 
 ## Main entrypoint into creating doxygen files
 ## @param disable_rxdeps: if True, don't generate rxdeps documenation (note: this parameter is volatile as rxdeps generation will be moved outside of doxygenator)
@@ -246,7 +248,9 @@ def generate_doxygen(ctx, quiet=False, disable_rxdeps=False):
     tmpls = [header_template, footer_template, manifest_template]
     try:
         for package, path in packages.iteritems():
-            if not package in doc_packages or not ctx.has_builder(package, 'doxygen'):
+            if not package in doc_packages or \
+                   not ctx.has_builder(package, 'doxygen') or \
+                   not package in manifests:
                 continue
 
             # the logic for the doxygen builder is different from

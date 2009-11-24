@@ -1,6 +1,5 @@
 
 minimal: core_tools
-	rosdep install gtest pycrypto paramiko roslaunch rosout rostest
 	rosmake gtest pycrypto paramiko roslaunch rosout rostest
 	@echo "You have built the minimal set of ROS tools."
 	@echo "If you want to make all ROS tools type 'rosmake ros'."

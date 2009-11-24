@@ -45,7 +45,6 @@ import threading
 import time
 
 import numpy
-import scipy.stats
 
 from bag_file import BagFile
 import timeline

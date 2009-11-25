@@ -32,7 +32,7 @@ ros_uri = ros_uri.replace('$STACK_NAME', 'ros')
 ros_root = os.path.join(workspace, 'ros')
 stacks_root = os.path.join(workspace, 'stacks')
 try:
-  os.mkdir(workspace, 0755)
+  os.makedirs(workspace, 0755)
 except:
   raise Exception("could not create workspace directory. ahhhhhhhhhh")
 subprocess.check_call(['/usr/bin/svn', 'co', ros_uri, ros_root])

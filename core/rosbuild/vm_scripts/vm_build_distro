@@ -51,7 +51,7 @@ mkdir -p /home/rosbuild/binary-ros-pkgs/$1/$ARCH
 
 #if ssh -t -p $PORT user@localhost "bash -c 'sudo apt-get -y install fakeroot dpkg-dev && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/assemble_debs -O /home/user/assemble_debs && chmod 755 /home/user/assemble_debs && sudo /home/user/assemble_debs && ls -l'" && scp -P $PORT user@localhost:~/deb_workspace/*.deb /home/rosbuild/binary-ros-pkgs/$1/ ; then
 
-if ssh -t -p $PORT user@localhost "bash -c 'sudo apt-get -y install build-essential python-yaml cmake subversion fakeroot && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/build_distro -O ~/build_distro && chmod 755 ~/build_distro && sudo ~/build_distro latest /opt/ros && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/assemble_debs -O /home/user/assemble_debs && chmod 755 /home/user/assemble_debs && sudo /home/user/assemble_debs && ls -l deb_workspace'" && scp -P $PORT user@localhost:~/deb_workspace/*.deb /home/rosbuild/binary-ros-pkgs/$1/$ARCH/ ; then
+if ssh -t -p $PORT user@localhost "bash -c 'sudo apt-get -y install build-essential python-yaml cmake subversion fakeroot && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/build_distro -O ~/build_distro && chmod 755 ~/build_distro && sudo ~/build_distro latest /opt/ros/latest && wget https://code.ros.org/svn/ros/stacks/ros/trunk/core/rosbuild/vm_scripts/assemble_debs -O /home/user/assemble_debs && chmod 755 /home/user/assemble_debs && sudo /home/user/assemble_debs && ls -l deb_workspace'" && scp -P $PORT user@localhost:~/deb_workspace/*.deb /home/rosbuild/binary-ros-pkgs/$1/$ARCH/ ; then
   BUILD_FAIL=0
 fi
   

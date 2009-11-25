@@ -92,8 +92,8 @@ def build_deb(path):
 # script begins here. and yes, this should be organized better.
 ################################################################
 
-ros_root = '/opt/ros/ros'
-stacks_root = '/opt/ros/stacks'
+ros_root = '/opt/ros/latest/ros'
+stacks_root = '/opt/ros/latest/stacks'
 if 'PATH' in os.environ:
   bin_path = ':'.join([os.path.join(ros_root, 'bin'), os.environ['PATH']])
 else:

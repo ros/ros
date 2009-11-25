@@ -23,6 +23,15 @@ def build_deb(path):
   else:
     landing_dir = os.path.join(base_path, 'stacks', stack_name)
   shutil.copytree(path, landing_dir, symlinks=True)
+  if stack_name == 'ros':
+    setup_file = open(os.path.join(base_path, 'setup.sh'), 'w')
+    setup_file.write("export ROS_ROOT=/opt/ros/%s/ros\n"%distro_name)
+    setup_file.write("export PATH=/opt/ros/%s/ros/bin:${PATH}\n"%distro_name)
+    setup_file.write("export PYTHONPATH=/opt/ros/%s/ros/core/roslib/src\n"%distro_name)
+    setup_file.write("if [ ! \"$ROS_MASTER_URI\" ] ; then export ROS_MASTER_URI=http://localhost:11311 ; fi\n")
+    setup_file.write("export ROS_PACKAGE_PATH=/opt/ros/%s/stacks"%distro_name)
+    setup_file.write(". /opt/ros/%s/ros/tools/rosbash/rosbash"%distro_name)
+    setup_file.close()
 
   print "  removing non-essential files..."
   non_essential = subprocess.Popen(['find',deb_dir,'-name','.svn'], env=env_vars, stdout=subprocess.PIPE).communicate()[0].split()

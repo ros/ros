@@ -65,7 +65,7 @@ def build_deb(path):
   deb_deps += native_packages
   deb_deps += [debianize_name("ros-%s-%s"%(distro_name,s)) for s in stack_deps] 
   deb_name = debianize_name("ros-%s-%s" % (distro_name, stack_name))
-  size = int(subprocess.Popen(["du","-bs",deb_dir], stdout=subprocess.PIPE).communicate()[0].strip().split()[0])
+  size = int(subprocess.Popen(["du","-bs",landing_dir], stdout=subprocess.PIPE).communicate()[0].strip().split()[0])
   os.mkdir(os.path.join(deb_dir, 'DEBIAN'), 0755)
   control = open(os.path.join(deb_dir, 'DEBIAN', "control"), "w")
   control.write("Package: %s\n" % deb_name)

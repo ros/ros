@@ -29,8 +29,8 @@ def build_deb(path):
     setup_file.write("export PATH=/opt/ros/%s/ros/bin:${PATH}\n"%distro_name)
     setup_file.write("export PYTHONPATH=/opt/ros/%s/ros/core/roslib/src\n"%distro_name)
     setup_file.write("if [ ! \"$ROS_MASTER_URI\" ] ; then export ROS_MASTER_URI=http://localhost:11311 ; fi\n")
-    setup_file.write("export ROS_PACKAGE_PATH=/opt/ros/%s/stacks"%distro_name)
-    setup_file.write(". /opt/ros/%s/ros/tools/rosbash/rosbash"%distro_name)
+    setup_file.write("export ROS_PACKAGE_PATH=/opt/ros/%s/stacks\n"%distro_name)
+    setup_file.write(". /opt/ros/%s/ros/tools/rosbash/rosbash\n"%distro_name)
     setup_file.close()
 
   print "  removing non-essential files..."

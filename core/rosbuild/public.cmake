@@ -858,6 +858,8 @@ macro(rosbuild_add_openmp_flags target)
       message("WARNING: OpenMP compile flag not found")
     endif(_rospack_openmp_flag_found)
 
+  else("$ENV{COVFILE}" STREQUAL "")
+    _rosbuild_warn("because COVFILE is set, OpenMP support is disabled")
   endif("$ENV{COVFILE}" STREQUAL "")
 endmacro(rosbuild_add_openmp_flags)
 

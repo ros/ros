@@ -77,6 +77,8 @@
 
    :def-service-callback
    :call-service
+   :wait-for-service
+
    :publish-on-topic
    :publish
    :publish-msg

@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 rosbuild_init()
 
-gensrv()
-genmsg()
+rosbuild_gensrv()
+rosbuild_genmsg()
 
 #rospack_add_lisp_executable(bin/add-two-ints-client src/add-two-ints-client.lisp)
 #rospack_add_lisp_executable(bin/listener src/listener.lisp)

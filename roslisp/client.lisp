@@ -353,6 +353,28 @@ Returns the response object from the service."
 	(tcpros-call-service host port service-name (apply #'make-instance request-type request-args) response-type)))))
     
 
+(defun wait-for-service (service-name &optional timeout)
+  "wait-for-service SERVICE-NAME &optional TIMEOUT
+
+Blocks until a service with this name is known to the ROS Master (unlike roscpp, doesn't currently check if the connection is actually valid), then returns true.
+TIMEOUT, if specified and non-nil, is the maximum (wallclock) time to wait for.  If we time out, returns false."
+  (not 
+   (nth-value 
+    1
+    (let* ((first-time t)
+	   (result
+	    (spin-until (handler-case (progn (lookup-service service-name) t)
+			  (ros-rpc-error (c) (declare (ignore c)) nil))
+			(.1 timeout)
+			(when first-time
+			  (setq first-time nil)
+			  (ros-debug (roslisp wait-for-service) "Waiting for service ~a" service-name)))))
+      (ros-debug (roslisp wait-for-service) result "Found service ~a" service-name)
+      (ros-debug (roslisp wait-for-service) (null result) "Timed out waiting for service ~a" service-name)
+      result))))
+      
+
+
 
 
 (defun subscribe (topic topic-type callback &key (max-queue-length 'infty))
@@ -450,6 +472,7 @@ Remove this key from parameter server"
 ;; Internal
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(declaim (inline ensure-node-is-running))
 (defun ensure-node-is-running ()
   (unless (eq *node-status* :running)
     (cerror "Start a dummy node" "Node status is ~a" *node-status*)
@@ -489,15 +512,6 @@ Remove this key from parameter server"
 		     (funcall callback item))
 		   (return))))))))
 	   
-
-#|(defun topic-queue (topic)
-  "Return the topic buffer, of type queue.  Should not be externally called."
-pp  (with-fully-qualified-name topic
-    (let ((sub (gethash topic *subscriptions*)))
-      (if sub
-	  (buffer sub)
-	  (error "Unknown topic ~a" topic)))))|#
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Experimental

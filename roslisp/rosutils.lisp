@@ -43,9 +43,16 @@
 ;; ROSLisp-specific utility code
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun lookup-service (name)
-  (ros-rpc-call *master-uri* "lookupService" name))
-
+(define-condition ros-rpc-error (error)
+  ((name :initarg :name :reader name)
+   (args :initarg :args :reader args)
+   (uri :initarg :uri :reader ros-rpc-error-uri)
+   (code :initarg :code :reader code)
+   (message :initarg :message :reader message)
+   (vals :initarg :vals :reader vals))
+  (:report (lambda (c str)
+	     (format str "XML RPC call ~a to ~a failed with code ~a, message ~a, and values ~a" 
+		     (cons (name c) (args c)) (ros-rpc-error-uri c) (code c) (msg c) (vals c)))))
 
 
 (defun ros-rpc-call (uri name &rest args)
@@ -58,8 +65,12 @@
 		(concatenate 'string "/" *ros-node-name*) ;; TODO: this assumes global namespace
 		args) 
 	 :host address :port port)
-      (when (<= code 0) (cerror "Ignore and continue" "XML RPC call ~a to ~a failed with code ~a, message ~a, and values ~a" (cons name args) uri code msg vals))
+      (when (<= code 0) (cerror "Ignore and continue"  'ros-rpc-error :name name :args args :uri uri :code code :message msg :vals vals))
       vals)))
+
+
+(defun lookup-service (name)
+  (ros-rpc-call *master-uri* "lookupService" name))
 
 (defmacro protected-call-to-master ((&rest args) &optional c &body cleanup-forms)
   (setf c (or c (gensym)))

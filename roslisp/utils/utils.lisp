@@ -268,6 +268,7 @@ Note that despite the name, this is not like with-accessors or with-slots in tha
     (set-next-real-time-to-run l next-time)))
 
 (defmacro loop-at-most-every (d &body body)
+  "Like loop, except ensures that BODY is executed at most once every D seconds (though possibly arbitrarily slower, if it takes a long time)"
   (let ((delay (gensym))
 	(inc (gensym)))
     `(let ((,delay (list (get-internal-real-time)))
@@ -276,17 +277,35 @@ Note that despite the name, this is not like with-accessors or with-slots in tha
 	  (run-and-increment-delay ,delay ,inc)
 	  ,@body))))
 
-(defmacro spin-until (test inc)
-  `(loop-at-most-every ,inc
-      (when ,test (return))))
-	  
+(defmacro spin-until (test inc &body body)
+  "Macro spin-until TEST INC &body BODY
+or
+spin-until TEST (INC TIMEOUT) &body BODY
+
+Every INC seconds, evaluate the form TEST, and return its value it becomes true.
+
+In the case with TIMEOUT specified, return two values: the first is the return value of TEST, and the second is T iff a timeout occurred (in which case the first value is meaningless)."
+  
+  (condlet (((listp inc) (actual-inc (first inc)) (timeout (second inc)))
+	    (t (actual-inc inc) (timeout nil)))
+	   (let ((init-time (gensym)) (test-var (gensym)))
+	     `(let ((,init-time (get-internal-real-time)))
+		(declare (ignorable ,init-time))
+		(loop-at-most-every ,actual-inc
+		     (let ((,test-var ,test))
+		       (when ,test-var (return ,test-var))
+		       ,(when timeout `(when (> (get-internal-real-time) (+ ,init-time (* ,timeout ,internal-time-units-per-second)))
+					 (return (values nil t))))
+			,@body))))))
+
        
 (defmacro with-parallel-thread ((fn &optional name) &body body)
   "with-parallel-thread (FN NAME) &body BODY
 
 Start a thread that executes FN, named NAME (which defaults to the symbol FN).  Then, in the current thread, execute BODY.  After BODY exits, terminate the newly started thread as well (typically BODY will be a long-running loop).
 
-If FN is a symbol, it's replaced by (function FN)."
+If FN is a symbol, it's replaced by (function FN).
+"
 
   (unless name
     (assert (symbolp fn) nil "If name is not provided to with-parallel-thread, the (unevaluated) fn argument should be a symbol")

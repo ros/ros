@@ -83,12 +83,9 @@ class RosdocContext(object):
         except KeyError:
             print >> sys.stderr, "config file for [%s] is invalid, missing required 'builder' key"%package
         
-    ## @return bool True if \a package should be documented
+    ## @return bool True if \a package should be document
     def should_document(self, package):
         if not package in self.packages:
-            return False
-        # ignore packages with invalid manifests
-        if not package in self.manifests:
             return False
         # package filters override all 
         if self.package_filters:
@@ -130,9 +127,7 @@ class RosdocContext(object):
         rd_configs = self.rd_configs
 
         stacks = self.stacks = {}
-
-        # keep track of packages with invalid manifests so we can unregister them
-        bad = []
+        
         for package, path in self.packages.iteritems():
 
             # find stacks to document on demand
@@ -175,10 +170,7 @@ class RosdocContext(object):
 
             except:
                 print >> sys.stderr, "WARN: Package '%s' does not have a valid manifest.xml file, manifest information will not be included in docs"%package
-                bad.append(package)
 
-        for b in bad:
-            del self.packages[b]
         stack_manifests = self.stack_manifests
         for stack, path in stacks.iteritems():
 

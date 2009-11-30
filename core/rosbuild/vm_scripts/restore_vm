@@ -1,4 +1,0 @@
-#!/bin/bash
-VBoxManage controlvm $1 poweroff
-sleep 2
-VBoxManage snapshot $1 discardcurrent -state

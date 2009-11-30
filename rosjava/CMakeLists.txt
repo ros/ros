@@ -32,15 +32,15 @@ FIND_PATH(JAVA_INCLUDE_PATH2 jni_md.h
 )
 
 
-rospack_add_library(rosjava rosjava.cpp)
-rospack_add_compile_flags(rosjava "-I${JAVA_INCLUDE_PATH}/" "-I${JAVA_INCLUDE_PATH2}/")
-#rospack_add_compile_flags(rosjava "-I/usr/lib/jvm/java-6-sun/include/" "-I/usr/lib/jvm/java-6-sun/include/linux/")
+rosbuild_add_library(rosjava rosjava.cpp)
+rosbuild_add_compile_flags(rosjava "-I${JAVA_INCLUDE_PATH}/" "-I${JAVA_INCLUDE_PATH2}/")
+#rosbuild_add_compile_flags(rosjava "-I/usr/lib/jvm/java-6-sun/include/" "-I/usr/lib/jvm/java-6-sun/include/linux/")
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
 
 
-gensrv()
-genmsg()
+rosbuild_gensrv()
+rosbuild_genmsg()
 
 
 

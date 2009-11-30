@@ -8,5 +8,5 @@ add_clj_source_dir(${PROJECT_SOURCE_DIR}/src)
 
 rospack_add_clj_repl(bin/clj)
 
-gensrv()
-genmsg()
+rosbuild_gensrv()
+rosbuild_genmsg()

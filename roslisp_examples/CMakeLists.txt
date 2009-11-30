@@ -29,6 +29,6 @@ rospack_add_lisp_executable(bin/array-listener roslisp_examples roslisp-examples
 ## tests
 #rospack_add_lisp_executable(bin/listener-test roslisp-examples-test roslisp-listener-test:main)
 # rospack_add_lisp_executable(bin/talker-test roslisp-examples-test roslisp-talker-test:main)
-# rospack_add_executable(bin/cpp-tester test/tester.cpp)
-# rospack_add_gtest_build_flags(bin/cpp-tester)
-# rospack_add_rostest(test/talker_listener_test.launch)
+# rosbuild_add_executable(bin/cpp-tester test/tester.cpp)
+# rosbuild_add_gtest_build_flags(bin/cpp-tester)
+# rosbuild_add_rostest(test/talker_listener_test.launch)

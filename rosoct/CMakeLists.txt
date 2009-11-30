@@ -30,9 +30,9 @@ set_target_properties(rosoct PROPERTIES PREFIX "" SUFFIX ".mex")
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/octave)
 
 ## custom compiling doesn't detect dependency changes well
-# find_ros_package(roscpp_sessions)
-# _rospack_invoke(rosoct rosoct cflags --lang=cpp --attrib=cflags export)
-# _rospack_invoke(rosoct rosoct lflags --lang=cpp --attrib=lflags export)
+# rosbuild_find_ros_package(roscpp_sessions)
+# rosbuild_invoke_rospack(rosoct rosoct cflags --lang=cpp --attrib=cflags export)
+# rosbuild_invoke_rospack(rosoct rosoct lflags --lang=cpp --attrib=lflags export)
 
 # add_custom_command(
 #   OUTPUT ${OCTAVE_MEX}

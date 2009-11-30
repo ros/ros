@@ -1,1 +1,1 @@
-rospack_add_executable(simple_session_client simple_session_client.cpp)
+rosbuild_add_executable(simple_session_client simple_session_client.cpp)

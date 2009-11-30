@@ -241,10 +241,14 @@ Set up things so that publish may now be called with this topic.  Also, returns 
       (when (hash-table-has-key *publications* topic)
 	(roslisp-error "Already publishing on ~a" topic))
 
-      (protected-call-to-master ("registerPublisher" topic topic-type *xml-rpc-caller-api*) c
-	(remhash topic *publications*)
-	(roslisp-error "Unable to contact master at ~a for advertising ~a: ~a" *master-uri* topic c))
-      (setf (gethash topic *publications*) (make-publication :pub-topic-type topic-type :subscriber-connections nil :is-latching latch :last-message nil)))))
+      (let ((pub (make-publication :pub-topic-type topic-type :subscriber-connections nil :is-latching latch :last-message nil)))
+	(setf (gethash topic *publications*) pub)      
+	(protected-call-to-master 
+	 ("registerPublisher" topic topic-type *xml-rpc-caller-api*) c
+	 (remhash topic *publications*)
+	 (roslisp-error "Unable to contact master at ~a for advertising ~a: ~a" *master-uri* topic c))
+	(ros-debug (roslisp pub) "Advertised ~a of type ~a" topic topic-type)
+	pub))))
 
 
 (defmacro publish-msg (pub &rest msg-args)

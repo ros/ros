@@ -210,7 +210,7 @@ def dpkg_detect(p):
     cmd = ['dpkg-query', '-W', '-f=\'${Status}\'', p]
     pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (std_out, std_err) = pop.communicate()
-    return (std_out.count('installed') == 1)
+    return (std_out.split()[2] =='installed')
 
 ###### UBUNTU SPECIALIZATION #########################
 class Ubuntu:

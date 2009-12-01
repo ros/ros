@@ -50,6 +50,11 @@ except ImportError, e:
     sys.exit(1)
 
 def coverage_html():
+    import os.path
+    if not os.path.isfile('.coverage-modules'):
+        print >> sys.stderr, "No .coverage-modules file; nothing to do"
+        return
+
     with open('.coverage-modules','r') as f:
         modules = [x for x in f.read().split('\n') if x.strip()]
 

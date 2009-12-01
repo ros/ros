@@ -211,9 +211,17 @@ macro(_rosbuild_add_pyunit file)
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname ${file})
 
+  # We look for ROS_TEST_COVERAGE=1
+  # to indicate that coverage reports are being requested.
+  if("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
+    set(_covarg "--cov")
+  else("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
+    set(_covarg)
+  endif("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
+
   # Create target for this test
   add_custom_target(pyunit_${_testname}
-                    COMMAND ${ARGN} python ${file} --gtest_output=xml:${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml
+                    COMMAND ${ARGN} python ${file} ${_covarg} --gtest_output=xml:${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml
                     DEPENDS ${file}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     VERBATIM)

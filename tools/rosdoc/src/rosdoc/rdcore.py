@@ -71,10 +71,13 @@ class RosdocContext(object):
 
         self.template_dir = None
 
-    ## @return: True if package is configured to use builder. NOTE: if
-    ## there is no config, package is assumed to define a doxygen
-    ## builder
     def has_builder(self, package, builder):
+        """
+        @return: True if package is configured to use builder. NOTE:
+        if there is no config, package is assumed to define a doxygen
+        builder
+        @rtype: bool
+        """
         rd_config = self.rd_configs.get(package, None)
         if not rd_config:
             return builder == 'doxygen'
@@ -83,8 +86,11 @@ class RosdocContext(object):
         except KeyError:
             print >> sys.stderr, "config file for [%s] is invalid, missing required 'builder' key"%package
         
-    ## @return bool True if \a package should be document
     def should_document(self, package):
+        """
+        @return: True if package should be documented
+        @rtype: bool
+        """
         if not package in self.packages:
             return False
         # package filters override all 
@@ -120,14 +126,18 @@ class RosdocContext(object):
         self.doc_packages = [p for p in packages if self.should_document(p)]
         self._crawl_deps()
         
-    ## Crawl manifest.xml dependencies
     def _crawl_deps(self):
+        """
+        Crawl manifest.xml dependencies
+        """
         external_docs = self.external_docs
         manifests = self.manifests
         rd_configs = self.rd_configs
 
         stacks = self.stacks = {}
-        
+
+        # keep track of packages with invalid manifests so we can unregister them
+        bad = []
         for package, path in self.packages.iteritems():
 
             # find stacks to document on demand
@@ -170,7 +180,11 @@ class RosdocContext(object):
 
             except:
                 print >> sys.stderr, "WARN: Package '%s' does not have a valid manifest.xml file, manifest information will not be included in docs"%package
+                bad.append(package)
 
+        for b in bad:
+            if b in self.packages:
+                del self.packages[b]
         stack_manifests = self.stack_manifests
         for stack, path in stacks.iteritems():
 
@@ -219,9 +233,13 @@ def load_tmpl(filename):
     finally:
         f.close()
 
-## @param package str: current package
-## @param packages [str]: list of packages to generate 'li' html links to
 def li_package_links(ctx, package, packages, docdir):
+    """
+    @param package: current package
+    @type  package: str
+    @param packages: list of packages to generate 'li' html links to
+    @type  packages: [str]
+    """
     curr_path = html_path(package, docdir)
     
     # don't link to packages that aren't documentable
@@ -247,8 +265,10 @@ def instantiate_template(tmpl, vars):
 ################################################################################
 # ROS package utilities
 
-## generate a tree representation of the available packages
 def generate_package_tree(ctx):
+    """
+    Generate a tree representation of the available packages
+    """
     remaining_packages = set(ctx.doc_packages)
     
     # step 1: assign stack packages

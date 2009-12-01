@@ -322,8 +322,10 @@ public:
     char code[CODE_LEN];
     if (len && ele_var->is_fixed_length())
     {
+      ele_var->name = name + string("[0]");
       snprintf(code, CODE_LEN, "%d * %s", len,
                ele_var->length_expr().c_str());
+      ele_var->name = "dummy";
     }
     else if (ele_var->is_fixed_length())
     {
@@ -877,7 +879,8 @@ msg_spec::msg_spec(const string &_spec_file, const string &_package,
     fseek(f, 0, SEEK_SET);
 
     char* buffer = new char[len];
-    fread(buffer, len, 1, f);
+    if (!fread(buffer, len, 1, f))
+      fprintf(stderr, "gcc 4.4 wanted me to check this value. it's bad.\n");
     memory_file = std::string(buffer, len);
     delete buffer;
 
@@ -1216,30 +1219,11 @@ void msg_spec::emit_cpp_class(FILE *f, bool for_srv, const string &service_name)
 string msg_spec::serializationLength_func()
 {
   string s;
-//  if (!is_fixed_length())
-    s += "  inline uint32_t serializationLength() const\n  {\n";
-//  else
-//    s += "  static uint32_t s_serializationLength()\n  {\n";
+  s += "  inline uint32_t serializationLength() const\n  {\n";
   s += "    unsigned __l = 0;\n";
   for (vector<msg_var *>::iterator v = vars.begin(); v != vars.end(); ++v)
-  {
-    // Is it an array of non-primitives?
-    // If so, then we need declare the dummy variable that
-    // will be used to determine serialization length
-    /*
-    var_array* array_ptr = dynamic_cast<var_array*>(*v);
-    if(array_ptr && !msg_spec::is_primitive(array_ptr->eletype))
-      s += string("    {\n    ") + array_ptr->ele_var->cpp_decl() +
-              string("  ");
-    */
-
     s += string("    __l += ") + (*v)->length_expr() + string("; // ") +
-      (*v)->name + string("\n");
-    /*
-    if(array_ptr && !msg_spec::is_primitive(array_ptr->eletype))
-      s += string("    }\n");
-    */
-  }
+         (*v)->name + string("\n");
   s += "    return __l;\n";
   s += "  }\n";
   return s;

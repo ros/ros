@@ -186,7 +186,7 @@ to, for example, recover build flags for a package.
 
  - <b>depends-indent [package]</b>  : newline-separated presentation of the entire dependency chain for the package, indented to indicate where in the chain each dependency arises.  May contain duplicates.
 
- - <b>depends-why --target=TARGET [package]</b> : newline-separated presentation of all dependency chains from the package to TARGET.
+ - <b>depends-why --target=TARGET [package]</b> (since 0.11): newline-separated presentation of all dependency chains from the package to TARGET.
 
  - <b>depends1 [package]</b>  : newline-separated ordered list of immediate dependencies of the package
 

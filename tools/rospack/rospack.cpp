@@ -501,6 +501,36 @@ TiXmlElement *Package::manifest_root()
   return ele;
 }
 
+// Naive recursion.  Dynamic programming would be more efficient.
+void Package::accumulate_deps(AccList& acc_list, Package* to)
+{
+  VecPkg dd = direct_deps();
+  for(VecPkg::iterator it = dd.begin(); 
+      it != dd.end();
+      ++it)
+  {
+    if((*it)->name == to->name)
+    {
+      Acc acc;
+      acc.push_back(this);
+      acc.push_back(to);
+      acc_list.push_back(acc);
+    }
+    else
+    {
+      AccList l;
+      (*it)->accumulate_deps(l, to);
+      for(AccList::iterator lit = l.begin();
+          lit != l.end();
+          ++lit)
+      {
+        lit->push_front(this);
+        acc_list.push_back(*lit);
+      }
+    }
+  }
+}
+
 VecPkg Package::pkgs;
 VecPkg Package::deleted_pkgs;
 
@@ -544,7 +574,7 @@ ROSPack::~ROSPack()
 
 const char* ROSPack::usage()
 {
-  return "USAGE: rospack [options] <command> [package]\n"
+  return "USAGE: rospack <command> [options] [package]\n"
           "  Allowed commands:\n"
           "    help\n"
           "    find [package]\n"
@@ -555,6 +585,7 @@ const char* ROSPack::usage()
           "    depends-manifests [package] (alias: deps-manifests)\n"
           "    depends1 [package] (alias: deps1)\n"
           "    depends-indent [package] (alias: deps-indent)\n"
+          "    depends-why --target=<target> [package] (alias: deps-why)\n"
           "    rosdep [package] (alias: rosdeps)\n"
           "    rosdep0 [package] (alias: rosdeps0)\n"
           "    vcs [package]\n"
@@ -648,6 +679,33 @@ int ROSPack::cmd_depends_on(bool include_indirect)
   {
     //printf("%s\n", (*p)->name.c_str());
     output_acc += (*p)->name + "\n";
+  }
+  return 0;
+}
+
+// Naive recursion.  Dynamic programming would be more efficient.
+int ROSPack::cmd_depends_why()
+{
+  AccList acc_list;
+  Package* from = get_pkg(opt_package);
+  Package* to = get_pkg(opt_target);
+  from->accumulate_deps(acc_list, to);
+  printf("Dependency chains from %s to %s:\n", 
+         from->name.c_str(), to->name.c_str());
+  for(AccList::iterator lit = acc_list.begin();
+      lit != acc_list.end();
+      ++lit)
+  {
+    printf("* ");
+    for(Acc::iterator ait = lit->begin();
+        ait != lit->end();
+        ++ait)
+    {
+      if(ait != lit->begin())
+        printf("-> ");
+      printf("%s ", (*ait)->name.c_str());
+    }
+    printf("\n");
   }
   return 0;
 }
@@ -961,6 +1019,7 @@ int ROSPack::run(int argc, char **argv)
   const char* opt_attrib_name  = "--attrib=";
   const char* opt_length_name  = "--length=";
   const char* opt_top_name     = "--top=";
+  const char* opt_target_name  = "--target=";
 
   // Reset to defaults.
   opt_deps_only = false;
@@ -972,6 +1031,8 @@ int ROSPack::run(int argc, char **argv)
   opt_length = string("");
   // --top=
   opt_top = string("");
+  // --target=
+  opt_target = string("");
   // The package name
   opt_package = string("");
   // the number of entries to list in the profile table
@@ -992,6 +1053,15 @@ int ROSPack::run(int argc, char **argv)
       opt_deps_only=true;
     else if(!strcmp(argv[i], opt_zombie_name))
       opt_profile_zombie_only=true;
+    else if(!strncmp(argv[i], opt_target_name, strlen(opt_target_name)))
+    {
+      if(opt_target.size())
+        throw runtime_error(errmsg);
+      else if(strlen(argv[i]) > strlen(opt_target_name))
+        opt_target = string(argv[i]+strlen(opt_target_name));
+      else
+        throw runtime_error(errmsg);
+    }
     else if(!strncmp(argv[i], opt_lang_name, strlen(opt_lang_name)))
     {
       if(opt_lang.size())
@@ -1027,6 +1097,12 @@ int ROSPack::run(int argc, char **argv)
     else
       break;
   }
+
+  if((strcmp(cmd, "depends-why") && strcmp(cmd, "deps-why")) && opt_target.size())
+    throw runtime_error(errmsg);
+
+  if((!strcmp(cmd, "depends-why") || !strcmp(cmd, "deps-why")) && !opt_target.size())
+    throw runtime_error(errmsg);
   
   if(strcmp(cmd, "profile") && (opt_length.size() || opt_profile_zombie_only))
     throw runtime_error(errmsg);
@@ -1122,6 +1198,8 @@ int ROSPack::run(int argc, char **argv)
     return cmd_depsindent(get_pkg(opt_package), 0);
   else if (!strcmp(cmd, "depends-on"))
     return cmd_depends_on(true);
+  else if (!strcmp(cmd, "depends-why") || !strcmp(cmd, "deps-why"))
+    return cmd_depends_why();
   else if (!strcmp(cmd, "depends-on1"))
     return cmd_depends_on(false);
   /*

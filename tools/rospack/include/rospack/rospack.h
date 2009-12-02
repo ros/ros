@@ -143,6 +143,7 @@ $ rospack [options] <command> [package]
      depends1 [package] (alias: deps1)
      depends-manifests [package] (alias: deps-manifests)
      depends-indent [package] (alias: deps-indent)
+     depends-why --target=<target> [package] (alias: deps-why)
      vcs [package]
      vcs0 [package]
      depends-on [package]
@@ -177,15 +178,17 @@ to, for example, recover build flags for a package.
  - <b>langs</b>  : space-separated list of available language-specific client libraries (e.g., "rospy roscpp")
    - Returns the list of packages that depend directly on the placeholder package @b roslang, minus any packages that are listed in the environment variable @b ROS_LANG_DISABLE.
 
- - <b>deps [package]</b>  : newline-separated ordered list of all dependencies of the package
+ - <b>depends [package]</b>  : newline-separated ordered list of all dependencies of the package
    - Used within rosmake
 
- - <b>deps-manifests [package]</b>  : space-separated ordered list of manifest.xml files for all dependencies of the package
+ - <b>depends-manifests [package]</b>  : space-separated ordered list of manifest.xml files for all dependencies of the package
    - Used within rosbuild.cmake to create explicit dependencies from source files to other packages' manifests.
 
- - <b>deps-indent [package]</b>  : newline-separated presentation of the entire dependency chain for the package, indented to indicate where in the chain each dependency arises.  May contain duplicates.
+ - <b>depends-indent [package]</b>  : newline-separated presentation of the entire dependency chain for the package, indented to indicate where in the chain each dependency arises.  May contain duplicates.
 
- - <b>deps1 [package]</b>  : newline-separated ordered list of immediate dependencies of the package
+ - <b>depends-why --target=TARGET [package]</b> : newline-separated presentation of all dependency chains from the package to TARGET.
+
+ - <b>depends1 [package]</b>  : newline-separated ordered list of immediate dependencies of the package
 
  - <b>vcs [package]</b>  : newline-separated list of all [versioncontrol] tags from the manifest.xml of the package and all of its dependencies
    - Useful for pre-caching SSL certificates for https SVN servers that
@@ -273,6 +276,7 @@ tilting_laser
 
 #include <string>
 #include <vector>
+#include <list>
 
 #include "tinyxml-2.5.3/tinyxml.h"
 
@@ -287,6 +291,8 @@ extern const char *fs_delim;
 Package *g_get_pkg(const std::string &name);
 
 typedef std::vector<Package *> VecPkg;
+typedef std::list<Package*> Acc;
+typedef std::list<Acc> AccList;
 
 /**
  * The Package class contains information about a single package
@@ -312,6 +318,8 @@ public:
   VecPkg descendants1();
   const std::vector<Package *> &descendants(int depth=0);
   TiXmlElement *manifest_root();
+  void accumulate_deps(AccList& acc_list, Package* to);
+
 
 private:
   bool deps_calculated, direct_deps_calculated, descendants_calculated;
@@ -345,6 +353,8 @@ public:
   Package *get_pkg(std::string pkgname);
   
   int cmd_depends_on(bool include_indirect);
+
+  int cmd_depends_why();
 
   int cmd_find();
 
@@ -418,6 +428,8 @@ public:
   std::string opt_top;
   // The package name
   std::string opt_package;
+  // --target=
+  std::string opt_target;
   // the number of entries to list in the profile table
   int opt_profile_length;
   // only display zombie directories in profile?

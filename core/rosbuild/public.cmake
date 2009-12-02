@@ -272,6 +272,17 @@ macro(rosbuild_init)
   add_custom_target(test-results
                     COMMAND ${rostest_path}/bin/rostest-results --nodeps ${_project})
   add_dependencies(test-results test-results-run)
+  # Do we want coverage reporting (only matters for Python, because
+  # Bullseye already collects everything into a single file).
+  if("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
+    add_custom_target(test-results-coverage
+                      COMMAND ${rostest_path}/bin/coverage-html
+                      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+    # Make tests run before collecting coverage results
+    add_dependencies(test-results-coverage test-results-run)
+    # Make coverage collection happen
+    add_dependencies(test-results test-results-coverage)
+  endif("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
 
   add_custom_target(gcoverage-run)
   add_custom_target(gcoverage 
@@ -812,10 +823,12 @@ macro(rosbuild_download_data _url _filename)
 endmacro(rosbuild_download_data)
 
 macro(rosbuild_add_openmp_flags target)
-  # Bullseye's wrappers appear to choke on OpenMP pragmas.  So if COVFILE
-  # is set (which indicates that we're doing a coverage build with
-  # Bullseye), we make this macro a no-op.
-  if("$ENV{COVFILE}" STREQUAL "")
+  # Bullseye's wrappers appear to choke on OpenMP pragmas.  So if
+  # ROS_TEST_COVERAGE is set (which indicates that we're doing a coverage
+  # build with Bullseye), we make this macro a no-op.
+  if("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
+    _rosbuild_warn("because ROS_TEST_COVERAGE is set, OpenMP support is disabled")
+  else("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
   
   # list of OpenMP flags to check
     set(_rospack_check_openmp_flags
@@ -858,9 +871,7 @@ macro(rosbuild_add_openmp_flags target)
       message("WARNING: OpenMP compile flag not found")
     endif(_rospack_openmp_flag_found)
 
-  else("$ENV{COVFILE}" STREQUAL "")
-    _rosbuild_warn("because COVFILE is set, OpenMP support is disabled")
-  endif("$ENV{COVFILE}" STREQUAL "")
+  endif("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
 endmacro(rosbuild_add_openmp_flags)
 
 macro(rosbuild_make_distribution)

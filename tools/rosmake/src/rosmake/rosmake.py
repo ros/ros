@@ -142,7 +142,7 @@ class RosMakeAll:
 
             if p == "rospack" and argument == "clean":
                 return_string = ("[SKIP] rosmake will not clean rospack. rosmake cannot operate without it.")
-                return (False, return_string)
+                return (True, return_string) # This will be caught later
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
             if not self.skip_blacklist and self.flag_tracker.is_blacklisted(p):
               self.print_all ("!"*20 + " Building package %s. ROS_BUILD_BLACKLIST ENCOUNTERED in package(s): %s --- TRYING TO BUILD ANYWAY"%(p, self.flag_tracker.is_blacklisted(p)) + "!"*20)
@@ -534,6 +534,9 @@ class RosMakeAll:
           self.print_verbose ("Building packages %s"% self.build_list)
           build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = options.robust)
           build_passed = self.parallel_build_pkgs(build_queue, options.target, threads = options.threads)
+          if "rospack" in self.build_list and options.target == "clean":
+              self.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it for it was skipped earlier.")
+              subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), "clean"])
 
         tests_passed = True
         if build_passed and testing:

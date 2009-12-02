@@ -52,6 +52,8 @@ import roslib.msgs
 import roslib.message
 import roslib.rostime
 import struct
+import gzip
+import bz2
 
 class ROSRecordException(Exception): pass
 
@@ -66,7 +68,13 @@ def open_log_file(filename):
   if isinstance(filename, file):
     f = filename
   else:
-    f = open(filename,'r')
+    ext = os.path.splitext(filename)[1]
+    if ext == '.gz':
+      f = gzip.open(filename)
+    elif ext == '.bz2':
+      f = bz2.BZ2File(filename)
+    else:
+      f = open(filename,'r')
   try:
     l = f.readline().rstrip() #ROSRECORD V1.1
     HEADERS = [ HEADER_V1_1, HEADER_V1_2 ]

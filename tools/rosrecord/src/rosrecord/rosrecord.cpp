@@ -103,6 +103,12 @@ boost::mutex g_queue_mutex;
 //! Conditional variable for global queue
 boost::condition_variable_any g_queue_condition;
 
+//! Compression mode
+static enum {
+  COMPRESSION_NONE,
+  COMPRESSION_GZIP,
+  COMPRESSION_BZIP2
+} g_compression = COMPRESSION_NONE;
 
 template <class T>
 std::string time_to_str(T ros_t)
@@ -132,6 +138,8 @@ void print_help() {
   fprintf(stderr, " -a          : Record all published messages.\n");
   fprintf(stderr, " -v          : Display a message every time a message is received on a topic\n");
   fprintf(stderr, " -m          : Maximize internal buffer size in MB (Default: 256MB)  0 = infinite.\n");
+  fprintf(stderr, " -z          : Compress the messages with gzip\n");
+  fprintf(stderr, " -j          : Compress the messages with bzip2\n");
   fprintf(stderr, " -s          : (EXPERIMENTAL) Enable snapshot recording (don't write to file unless triggered)\n");
   fprintf(stderr, " -t          : (EXPERIMENTAL) Trigger snapshot recording\n");
   fprintf(stderr, " -h          : Display this help message\n");
@@ -236,11 +244,27 @@ void do_record(std::string prefix, bool add_date)
   for (size_t i = 1; i < join.size(); i++)
     tgt_fname = tgt_fname + "_" + join[i];
 
-  tgt_fname = tgt_fname + std::string(".bag");
+  std::string suffix;
+  switch (g_compression) {
+  case COMPRESSION_GZIP:
+    suffix = ".gz";
+    break;
+  case COMPRESSION_BZIP2:
+    suffix = ".bz2";
+    break;
+  case COMPRESSION_NONE:
+    break;
+  default:
+    ROS_FATAL("Unknown compression method requested: %d", g_compression);
+    g_exit_code = 1;
+    ros::shutdown();
+    break;
+  }
+
+  tgt_fname = tgt_fname + std::string(".bag") + suffix;
+  std::string fname = tgt_fname + std::string(".active") + suffix;
 
   ROS_INFO("Recording to %s.", tgt_fname.c_str());
-
-  std::string fname = tgt_fname + std::string(".active");
 
   ros::NodeHandle nh;
   ros::record::Recorder recorder;
@@ -392,7 +416,7 @@ int main(int argc, char **argv)
   // Parse options  
   int option_char;
 
-  while ((option_char = getopt(argc,argv,"f:F:c:m:asthv")) != -1)
+  while ((option_char = getopt(argc,argv,"f:F:c:m:ajzsthv")) != -1)
   {
     switch (option_char)
     {
@@ -403,6 +427,8 @@ int main(int argc, char **argv)
     case 's': g_snapshot = true; break;
     case 't': do_trigger(); return 0; break;
     case 'v': g_verbose = true; break;
+    case 'z': g_compression = COMPRESSION_GZIP; break;
+    case 'j': g_compression = COMPRESSION_BZIP2; break;
     case 'm': 
       {
         int m=0;

@@ -9,14 +9,16 @@ SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 SET(CMAKE_INSTALL_RPATH "${PROJECT_SOURCE_DIR}/lib")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-#rospack_add_executable(demo src/demo/demo.cpp)
+#rosbuild_add_executable(demo src/demo/demo.cpp)
 
 rosbuild_add_library(rosrecorder src/rosrecord/recorder.cpp)
 
 rosbuild_add_executable(rosrecord src/rosrecord/rosrecord.cpp)
 target_link_libraries(rosrecord rosrecorder)
+rosbuild_link_boost(rosrecord iostreams)
 
 rosbuild_add_executable(rosplay src/rosplay/rosplay.cpp src/rosplay/time_publisher.cpp)
+rosbuild_link_boost(rosplay iostreams)
 
 INSTALL(TARGETS rosrecord rosplay
         RUNTIME DESTINATION $ENV{ROS_ROOT}/bin)

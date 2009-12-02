@@ -48,6 +48,11 @@
 #include <string.h>
 #include <limits.h>
 
+#include <boost/filesystem.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
+
 namespace ros
 {
 namespace record
@@ -164,6 +169,7 @@ class Player
 
 
   std::ifstream record_file_;
+  boost::iostreams::filtering_istream record_stream_;
 
   int version_;
   int version_major_;
@@ -230,6 +236,7 @@ public:
   bool isDone() {return done_;}
 
   void close() {
+    record_stream_.pop();
     record_file_.close();
 
     for (std::map<std::string, PlayerHelper*>::iterator topic_it = topics_.begin();
@@ -256,10 +263,17 @@ public:
       return false;
     }
 
+    std::string ext = boost::filesystem::extension(file_name);
+    if (ext == ".gz")
+      record_stream_.push(boost::iostreams::gzip_decompressor());
+    else if (ext == ".bz2")
+      record_stream_.push(boost::iostreams::bzip2_decompressor());
+    record_stream_.push(record_file_);
+
     char logtypename[100];
 
     std::string version_line;
-    getline(record_file_, version_line);
+    getline(record_stream_, version_line);
 
     sscanf(version_line.c_str(), "#ROS%s V%d.%d", logtypename, &version_major_, &version_minor_);
 
@@ -274,7 +288,7 @@ public:
 
     if (version_ == 0)
     {
-      record_file_.seekg(0, std::ios_base::beg);
+      record_stream_.seekg(0, std::ios_base::beg);
 
       quantity = 1;
 
@@ -282,7 +296,7 @@ public:
     else if (version_ == 100)
     {
       std::string quantity_line;
-      getline(record_file_,quantity_line);
+      getline(record_stream_,quantity_line);
       sscanf(quantity_line.c_str(), "%d", &quantity);
     }
     else if (version_ == 101)
@@ -299,9 +313,9 @@ public:
 
       for (int i = 0; i < quantity; i++)
       {
-        getline(record_file_,topic_name);
-        getline(record_file_,md5sum);
-        getline(record_file_,datatype);
+        getline(record_stream_,topic_name);
+        getline(record_stream_,md5sum);
+        getline(record_stream_,datatype);
 
         // support type remapping of these core datatypes. I don't want
         // to match rostools/* as rostools will be a package again in
@@ -473,8 +487,8 @@ protected:
     std::string message_definition;
 
     // Read the header length
-    record_file_.read((char*)&header_len, 4);
-    if (record_file_.eof())
+    record_stream_.read((char*)&header_len, 4);
+    if (record_stream_.eof())
       return false;
     if(header_buffer_size_ < header_len)
     {
@@ -485,8 +499,8 @@ protected:
     }
 
     // Read the header
-    record_file_.read((char*)header_buffer_, header_len);
-    if (record_file_.eof())
+    record_stream_.read((char*)header_buffer_, header_len);
+    if (record_stream_.eof())
       return false;
 
     // Parse the header
@@ -566,8 +580,8 @@ protected:
     }
 
     // Read the body length
-    record_file_.read((char*)&next_msg_size_, 4);
-    if (record_file_.eof())
+    record_stream_.read((char*)&next_msg_size_, 4);
+    if (record_stream_.eof())
       return false;
 
     return true;
@@ -575,7 +589,7 @@ protected:
 
   bool readNextMsg()
   {
-    if (!record_file_.good())
+    if (!record_stream_.good())
     {
       done_ = true;
       return false;
@@ -617,7 +631,7 @@ protected:
         if (version_ == 0)
           next_msg_name_ = (topics_.begin())->first;
         else
-          getline(record_file_, next_msg_name_);
+          getline(record_stream_, next_msg_name_);
 
         ros::Duration next_msg_dur;
       }
@@ -627,9 +641,9 @@ protected:
         std::string md5sum;
         std::string datatype;
 
-        getline(record_file_,topic_name);
-        getline(record_file_,md5sum);
-        getline(record_file_,datatype);
+        getline(record_stream_,topic_name);
+        getline(record_stream_,md5sum);
+        getline(record_stream_,datatype);
 
         // support type remapping of these core datatypes. I don't want
         // to match rostools/* as rostools will be a package again in
@@ -651,16 +665,16 @@ protected:
         }
       }
 
-      if (record_file_.eof())
+      if (record_stream_.eof())
       {
         done_ = true;
         return false;
       }
 
-      record_file_.read((char*)&next_msg_dur.sec, 4);
-      record_file_.read((char*)&next_msg_dur.nsec, 4);
-      record_file_.read((char*)&next_msg_size_, 4);
-      if (record_file_.eof())
+      record_stream_.read((char*)&next_msg_dur.sec, 4);
+      record_stream_.read((char*)&next_msg_dur.nsec, 4);
+      record_stream_.read((char*)&next_msg_size_, 4);
+      if (record_stream_.eof())
       {
         done_ = true;
         return false;
@@ -698,9 +712,9 @@ protected:
     }
 
     // Read in the message body
-    record_file_.read((char*)next_msg_, next_msg_size_);
+    record_stream_.read((char*)next_msg_, next_msg_size_);
 
-    if (record_file_.eof())
+    if (record_stream_.eof())
     {
       done_ = true;
       return false;

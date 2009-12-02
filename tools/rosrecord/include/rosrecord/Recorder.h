@@ -40,6 +40,7 @@
 #include "ros/message.h"
 
 #include <boost/thread/mutex.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -80,6 +81,7 @@ class Recorder
   unsigned int message_buf_size_;
 
   std::ofstream record_file_;
+  boost::iostreams::filtering_ostream record_stream_;
 
   boost::mutex record_mutex_;
 

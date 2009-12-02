@@ -39,6 +39,10 @@
 
 #include "rosrecord/Recorder.h"
 
+#include <boost/filesystem.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
+
 using namespace ros::record;
 
 const void* ros::record::Recorder::getHeaderBuffer()
@@ -102,8 +106,10 @@ void ros::record::Recorder::close()
   // the right thing.
   //sighandler_t old = signal(SIGINT, SIG_IGN);
   sig_t old = signal(SIGINT, SIG_IGN);
-  if (record_file_.is_open())
+  if (record_file_.is_open()) {
+    record_stream_.pop();
     record_file_.close();
+  }
   signal(SIGINT, old);
 }
 
@@ -118,12 +124,18 @@ bool ros::record::Recorder::open(const std::string &file_name)
     ROS_FATAL("rosrecord::Record: Failed to open file: %s", file_name.c_str());
     return false;
   }
+  std::string ext = boost::filesystem::extension(file_name);
+  if (ext == ".gz")
+    record_stream_.push(boost::iostreams::gzip_compressor());
+  else if (ext == ".bz2")
+    record_stream_.push(boost::iostreams::bzip2_compressor());
+  record_stream_.push(record_file_);
 
   checkDisk();
 
   check_disk_next_ = ros::WallTime::now() + ros::WallDuration().fromSec(20.0);
 
-  record_file_ << "#ROSRECORD V" << VERSION << std::endl;
+  record_stream_ << "#ROSRECORD V" << VERSION << std::endl;
 
   return true;
 }
@@ -209,9 +221,9 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
       Header::write(m, header_buffer, header_len);
 
       unsigned int data_len = 0;
-      record_file_.write((char*)&header_len, 4);
-      record_file_.write((char*)header_buffer.get(), header_len);
-      record_file_.write((char*)&data_len, 4);
+      record_stream_.write((char*)&header_len, 4);
+      record_stream_.write((char*)header_buffer.get(), header_len);
+      record_stream_.write((char*)&data_len, 4);
     }
 
     // Write a message data header, followed by the data
@@ -226,8 +238,8 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     boost::shared_array<uint8_t> header_buffer;
     uint32_t header_len;
     Header::write(m, header_buffer, header_len);
-    record_file_.write((char*)&header_len, 4);
-    record_file_.write((char*)header_buffer.get(), header_len);
+    record_stream_.write((char*)&header_len, 4);
+    record_stream_.write((char*)header_buffer.get(), header_len);
 
     if(message_buf_size_ < msg->__serialized_length)
     {
@@ -243,8 +255,8 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     }
     msg->serialize(message_buf_, 0);
 
-    record_file_.write((char*)&msg->__serialized_length, 4);
-    record_file_.write((char*)message_buf_, msg->__serialized_length);
+    record_stream_.write((char*)&msg->__serialized_length, 4);
+    record_stream_.write((char*)message_buf_, msg->__serialized_length);
 
     if (record_file_.fail())
     {

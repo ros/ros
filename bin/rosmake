@@ -36,17 +36,24 @@ import sys
 import subprocess
 
 def assert_rospack_built():
-    if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "bin/rospack")):
-        return True
-    else:
+    if not os.path.exists(os.path.join(os.environ["ROS_ROOT"], "bin/rospack")):
         print "Rosmake detected that rospack was not built.  Building it for you because it is required."
-        return subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
+        if subprocess.call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")]) :
+            print "Rospack failed to build" 
+            return False
+
+    if subprocess.call(["which", "rospack"]):
+        print "Rospack not in path.  Please add ROS_ROOT/bin to PATH"
+        return False
+    else:
+        print "which rospack passed"
+    return True
     
 
 
 ## make sure that rospack is built, it is a requirement for rosmake
-assert_rospack_built()
-
+if not assert_rospack_built():
+    sys.exit(-1)
 
 from ros import rosmake
 

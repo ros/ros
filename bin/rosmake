@@ -30,8 +30,25 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
-from ros import rosmake
+
+import os
 import sys
+import subprocess
+
+def assert_rospack_built():
+    if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "bin/rospack")):
+        return True
+    else:
+        print "Rosmake detected that rospack was not built.  Building it for you because it is required."
+        return subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
+    
+
+
+## make sure that rospack is built, it is a requirement for rosmake
+assert_rospack_built()
+
+
+from ros import rosmake
 
 rma = rosmake.RosMakeAll()
 if not rma.main():

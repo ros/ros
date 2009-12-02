@@ -362,9 +362,13 @@ class RosMakeAll:
         else:
             print "Rosmake detected that rospack was not built.  Building it for you because it is required.\
     "
-            return subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
+            return subprocess.call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
 
 
+
+    def is_rosout_built(self):
+        return os.path.exists(os.path.join(roslib.packages.get_pkg_dir("rosout"), "rosout"))
+            
 
     def main(self):
         parser = OptionParser(usage="usage: %prog [options] COMMAND PACKAGE LIST", prog='rosmake')
@@ -469,9 +473,16 @@ class RosMakeAll:
                 #sys.exit(-1)
         else:
             packages.extend(args)
-            self.print_all( "Packages requested are: %s"%packages)
-                    
 
+        if not self.is_rosout_built():
+            packages.append("rosout")
+            self.print_all("Detected rosout not built, adding it to the build")
+
+        self.print_all( "Packages requested are: %s"%packages)
+        
+        # these packages are not in the dependency tree but are needed they only cost 0.01 seconds to build
+        packages.append("paramiko")
+        packages.append("pycrypto")
 
         # Setup logging
         if self.logging_enabled:
@@ -531,11 +542,12 @@ class RosMakeAll:
 
         build_passed = True
         if building:
+          self.build_list.insert(0, "gtest") # Required by all cpp test packages but not in build dependency tree
           self.print_verbose ("Building packages %s"% self.build_list)
           build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = options.robust)
           build_passed = self.parallel_build_pkgs(build_queue, options.target, threads = options.threads)
           if "rospack" in self.build_list and options.target == "clean":
-              self.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it for it was skipped earlier.")
+              self.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it, because it was skipped earlier.")
               subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), "clean"])
 
         tests_passed = True

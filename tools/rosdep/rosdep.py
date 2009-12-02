@@ -210,6 +210,7 @@ def dpkg_detect(p):
     cmd = ['dpkg-query', '-W', '-f=\'${Status}\'', p]
     pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (std_out, std_err) = pop.communicate()
+    std_out = std_out.strip('\'')
     return (std_out.split()[2] =='installed')
 
 ###### UBUNTU SPECIALIZATION #########################
@@ -356,9 +357,6 @@ class Arch:
 
 ###### Macports SPECIALIZATION #########################
 
-def pacman_detect(package):
-    return subprocess.call(['pacman', '-Q', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
-
 class Macports:
     def __init__(self, index):
         index.add_os("macports", self)
@@ -386,7 +384,7 @@ class Macports:
         return False
 
     def detect_packages(self, packages):
-        return packages#
+        return packages# Detection of installed_packages not implemented, 
 
     def generate_package_install_command(self, packages):        
         return "#Packages\nsudo port install " + ' '.join(packages)
@@ -477,11 +475,12 @@ class Rhel:
 
 
 class Rosdep:
-    def __init__(self):
+    def __init__(self, packages, command = "rosdep"):
         self.osi = OSIndex()
         self.rdl = RosdepLookup(self.osi)
+        self.rosdeps = self.gather_rosdeps(packages, command)
 
-    def gather_rosdeps(self, packages, command = "rosdep"):
+    def gather_rosdeps(self, packages, command):
         rosdeps = set()
         for p in packages:
           args = [command, p]
@@ -497,10 +496,10 @@ class Rosdep:
 
         return list(rosdeps)
 
-    def get_packages_and_scripts(self, rosdeps):
+    def get_packages_and_scripts(self):
         native_packages = []
         scripts = []
-        for r in rosdeps:
+        for r in self.rosdeps:
             specific = self.rdl.lookup_rosdep(r)
             if specific:
                 if len(specific.split('\n')) == 1:
@@ -510,15 +509,18 @@ class Rosdep:
                     scripts.append(specific)
         return (native_packages, scripts)
 
-    def generate_script(self, rosdeps, include_duplicates=False):
-        native_packages, scripts = self.get_packages_and_scripts(rosdeps)
+    def get_native_packages(self):
+        return get_packages_and_scripts()[0]
+
+    def generate_script(self, include_duplicates=False):
+        native_packages, scripts = self.get_packages_and_scripts()
         undetected = native_packages if include_duplicates else \
             self.osi.detect_packages(native_packages)
         return self.osi.generate_package_install_command(undetected) + \
             "\n".join(["\n%s"%sc for sc in scripts])
         
-    def check(self, rosdeps):
-        native_packages, scripts = self.get_packages_and_scripts(rosdeps)
+    def check(self):
+        native_packages, scripts = self.get_packages_and_scripts()
         undetected = self.osi.detect_packages(native_packages)
         return_str = ""
         if len(undetected) > 0:
@@ -529,14 +531,36 @@ class Rosdep:
             return_str += s + '\n'
         return return_str
 
-    def what_needs(self, rosdeps):
-        rosdeps = [p for p in rosdeps if p in self.rdl.get_map()]
+    def what_needs(self, rosdep_args):
+        needed_rosdeps = [p for p in rosdep_args if p in self.rdl.get_map()]
         packages = []
         for p in roslib.packages.list_pkgs():
             deps_list = self.gather_rosdeps([p], "rosdep0")
-            if [r for r in rosdeps if r in deps_list]:
+            if [r for r in needed_rosdeps if r in deps_list]:
                 packages.append(p)
         return packages
+
+    def install(self, include_duplicates):
+        with tempfile.NamedTemporaryFile() as fh:
+            script = self.generate_script(include_duplicates)
+            fh.write(script)
+            fh.flush()
+            
+            print "executing this script:\n %s"%script
+            p= subprocess.Popen(['bash', fh.name])
+            p.communicate()
+                    
+    def depdb(self):
+        output = ""
+        map = self.rdl.get_map()
+        for k in map:
+            for o in map[k]:
+                if isinstance(map[k][o], basestring):
+                    output = output + "<<<< %s on ( %s ) -> %s >>>>\n"%(k, o, map[k][o])
+                else:
+                    for v in map[k][o]:
+                        output = output + "<<<< %s on ( %s %s ) -> %s >>>>\n"%(k, o, v,map[k][o][v])
+        return output
 
 ################################################################################
 # COMMAND LINE PROCESSING
@@ -591,11 +615,11 @@ def main():
 
     (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(rdargs)
     #print verified_packages, "Rejected", rejected_packages
-
+    if command != "what_needs" and len(rejected_packages) > 0:
+        print "Warning: could not identify %s"%rejected_packages
     
     ### Find all dependencies
-    r = Rosdep()
-    rosdeps = r.gather_rosdeps(verified_packages)
+    r = Rosdep(verified_packages)
 
     ### Detect OS name and version
 
@@ -613,32 +637,24 @@ def main():
         print "Detected Version: " + r.osi.get_os_version()
 
     if command == "generate_bash" or command == "satisfy":
-        print r.generate_script(rosdeps, include_duplicates=options.include_duplicates)
+        print r.generate_script(include_duplicates=options.include_duplicates)
 
     elif command == "install":
-        with tempfile.NamedTemporaryFile() as fh:
-            script = r.generate_script(rosdeps, include_duplicates= options.include_duplicates)
-            fh.write(script)
-            fh.flush()
-            
-            print "executing this script:\n %s"%script
-            p= subprocess.Popen(['bash', fh.name])
-            p.communicate()
-                    
+        r.install(options.include_duplicates);
+
     elif command == "depdb":
-        map = r.rdl.get_map()
-        for k in map:
-            for o in map[k]:
-                if isinstance(map[k][o], basestring):
-                    print "<<<< %s on ( %s ) -> %s >>>>"%(k, o, map[k][o])
-                else:
-                    for v in map[k][o]:
-                        print "<<<< %s on ( %s %s ) -> %s >>>>"%(k, o, v,map[k][o][v])
+        print r.depdb()
+
     elif command == "what_needs":
         print '\n'.join(r.what_needs(rdargs))
 
     elif command == "check":
-        print r.check(rosdeps)
+        output = r.check()
+        if len(output) == 0:
+            return True
+        else:
+            print "check failed", output
+            return False
 
 if __name__ == '__main__':
-    sys.exit(main() or 0)
+    sys.exit(not main() or 0)

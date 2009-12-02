@@ -761,11 +761,12 @@ macro(rosbuild_link_boost target)
 
   execute_process(COMMAND "rosboost-cfg" "--libs" ${_libs}
                   OUTPUT_VARIABLE BOOST_LIBS
+		  ERROR_VARIABLE _boostcfg_error
                   RESULT_VARIABLE _boostcfg_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
   
   if (_boostcfg_failed)
-    message(FATAL_ERROR "[rosboost-cfg --libs ${_libs}] failed with output: ${BOOST_LIBS}")
+    message(FATAL_ERROR "[rosboost-cfg --libs ${_libs}] failed with error: ${_boostcfg_error}")
   endif(_boostcfg_failed)
 
   separate_arguments(BOOST_LIBS)

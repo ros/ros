@@ -356,6 +356,16 @@ class RosMakeAll:
         print "  %s"%lines[l]
       print "-"*79 + "}"
 
+    def assert_rospack_built(self):
+        if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "bin/rospack")):
+            return True
+        else:
+            print "Rosmake detected that rospack was not built.  Building it for you because it is required.\
+    "
+            return subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
+
+
+
     def main(self):
         parser = OptionParser(usage="usage: %prog [options] COMMAND PACKAGE LIST", prog='rosmake')
         parser.add_option("--test-only", dest="test_only", default=False,
@@ -511,6 +521,13 @@ class RosMakeAll:
         if options.pre_clean:
           build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = True)
           self.parallel_build_pkgs(build_queue, "clean", threads = options.threads)
+          if "rospack" in self.build_list:
+              self.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it for it was skipped earlier.")
+              subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), "clean"])
+
+
+        if building or testing:
+            self.assert_rospack_built()
 
         build_passed = True
         if building:

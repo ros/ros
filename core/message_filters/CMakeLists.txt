@@ -8,7 +8,7 @@ rosbuild_add_boost_directories()
 rosbuild_add_library(message_filters src/connection.cpp)
 rosbuild_link_boost(message_filters thread signals)
 
-#rospack_add_executable(filter_example src/filter_example.cpp)
+#rosbuild_add_executable(filter_example src/filter_example.cpp)
 #target_link_libraries(filter_example message_filters)
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)

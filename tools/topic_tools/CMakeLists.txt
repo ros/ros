@@ -17,7 +17,7 @@ target_link_libraries(bin/relay topic_tools)
 rosbuild_add_executable(bin/drop src/drop.cpp)
 target_link_libraries(bin/drop topic_tools)
 
-#rospack_add_executable(demux demux.cpp)
+#rosbuild_add_executable(demux demux.cpp)
 #target_link_libraries(demux topic_tools)
 
 rosbuild_add_executable(bin/throttle src/throttle.cpp)

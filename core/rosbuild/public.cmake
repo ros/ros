@@ -151,14 +151,7 @@ macro(rosbuild_init)
   add_definitions(-DROS_PACKAGE_NAME=\\\"${PROJECT_NAME}\\\")
 
   # ROS_BUILD_TYPE is set by rosconfig
-  if(ROS_BUILD_TYPE STREQUAL "Coverage")
-    # "Coverage" is our own little target
-    set(CMAKE_BUILD_TYPE "Debug")
-    set(ROS_COMPILE_FLAGS "-W -Wall -Wno-unused-parameter -fno-strict-aliasing -fprofile-arcs -ftest-coverage")
-    set(ROS_LINK_LIBS "gcov")
-  else(ROS_BUILD_TYPE STREQUAL "Coverage")
-    set(CMAKE_BUILD_TYPE ${ROS_BUILD_TYPE})
-  endif(ROS_BUILD_TYPE STREQUAL "Coverage")
+  set(CMAKE_BUILD_TYPE ${ROS_BUILD_TYPE})
 
   # Set default output directories
   set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
@@ -283,16 +276,6 @@ macro(rosbuild_init)
     # Make coverage collection happen
     add_dependencies(test-results test-results-coverage)
   endif("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
-
-  add_custom_target(gcoverage-run)
-  add_custom_target(gcoverage 
-                    COMMAND rosgcov_summarize ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/.rosgcov_files)
-  add_dependencies(gcoverage gcoverage-run)
-  file(REMOVE ${PROJECT_SOURCE_DIR}/.rosgcov_files)
-  # This doesn't work for some reason...
-  #file(GLOB_RECURSE _old_gcov_files ${CMAKE_SOURCE_DIR} *.gcov)
-  #message("_old_gcov_files: ${_old_gcov_files}")
-  #file(REMOVE "${_old_gcov_files}")
 
   # Find roslib; roslib_path will be used later
   rosbuild_invoke_rospack("" roslib path find roslib)
@@ -898,7 +881,7 @@ macro(rosbuild_make_distribution)
   # CPACK_SOURCE_IGNORE_FILES contains things we want to ignore when
   # building a source package.  We assume that the package was already
   # cleaned, so we don't need to ignore .a, .o, .so, etc.
-  list(APPEND CPACK_SOURCE_IGNORE_FILES "/build/;/.svn/;.gitignore;.rosgcov_files;.build_version;build-failure;test-failure;rosmakeall-buildfailures-withcontext.txt;rosmakeall-profile;rosmakeall-buildfailures.txt;rosmakeall-testfailures.txt;rosmakeall-coverage.txt;/log/")
+  list(APPEND CPACK_SOURCE_IGNORE_FILES "/build/;/.svn/;.gitignore;.build_version;build-failure;test-failure;rosmakeall-buildfailures-withcontext.txt;rosmakeall-profile;rosmakeall-buildfailures.txt;rosmakeall-testfailures.txt;rosmakeall-coverage.txt;/log/")
   include(CPack)
 endmacro(rosbuild_make_distribution)
 

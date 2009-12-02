@@ -101,19 +101,6 @@ macro(_rosbuild_check_manifest)
 
 endmacro(_rosbuild_check_manifest)
 
-macro(_rosbuild_add_gcov src exe)
-  set(_gcov ${exe}_${_src}.gcov)
-  string(REPLACE "/" "_" _targetname ${_gcov})
-  add_custom_target(${_targetname} 
-                    COMMAND rosgcov ${_src} ${PROJECT_BINARY_DIR}
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  add_dependencies(${_targetname} test)
-  # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(gcoverage-run)
-  add_dependencies(gcoverage-run ${_targetname})
-  file(APPEND ${PROJECT_SOURCE_DIR}/.rosgcov_files "${CMAKE_CURRENT_SOURCE_DIR} ${_src}\n")
-endmacro(_rosbuild_add_gcov)
-
 # helper function to register check that results were generated (#580)
 macro(_rosbuild_check_rostest_xml_result test_name test_file)
   add_custom_target(${test_name}_result

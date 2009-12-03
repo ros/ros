@@ -1166,7 +1166,7 @@ def _rostopic_cmd_list(command):
     @type  command: str
     """
     args = sys.argv[2:]
-    parser = OptionParser(usage="usage: %prog list [/namespace]", prog=NAME)
+    parser = OptionParser(usage="usage: %%prog %s [/namespace]"%command, prog=NAME)
     parser.add_option("-b", "--bag",
                       dest="bag", default=None,
                       help="list topics in .bag file", metavar="BAGFILE")

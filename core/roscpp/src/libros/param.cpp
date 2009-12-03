@@ -78,7 +78,7 @@ void set(const std::string &key, const std::string &s)
   // construct xmlrpc_c::value object of the std::string and
   // call param::set(key, xmlvalue);
   XmlRpc::XmlRpcValue v(s);
-  param::set(key, v);
+  ros::param::set(key, v);
 }
 
 void set(const std::string &key, const char* s)
@@ -87,25 +87,25 @@ void set(const std::string &key, const char* s)
   // call param::set(key, xmlvalue);
   std::string sxx = std::string(s);
   XmlRpc::XmlRpcValue v(sxx);
-  param::set(key, v);
+  ros::param::set(key, v);
 }
 
 void set(const std::string &key, double d)
 {
   XmlRpc::XmlRpcValue v(d);
-  param::set(key, v);
+  ros::param::set(key, v);
 }
 
 void set(const std::string &key, int i)
 {
   XmlRpc::XmlRpcValue v(i);
-  param::set(key, v);
+  ros::param::set(key, v);
 }
 
 void set(const std::string& key, bool b)
 {
   XmlRpc::XmlRpcValue v(b);
-  param::set(key, v);
+  ros::param::set(key, v);
 }
 
 bool has(const std::string &key)
@@ -432,7 +432,7 @@ void paramUpdateCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& resul
   result[1] = std::string("");
   result[2] = 0;
 
-  param::update((std::string)params[1], params[2]);
+  ros::param::update((std::string)params[1], params[2]);
 }
 
 void init(const M_string& remappings)
@@ -458,7 +458,7 @@ void init(const M_string& remappings)
       try
       {
         int32_t i = boost::lexical_cast<int32_t>(param);
-        param::set(names::resolve(local_name), i);
+        ros::param::set(names::resolve(local_name), i);
         success = true;
       }
       catch (boost::bad_lexical_cast&)
@@ -474,7 +474,7 @@ void init(const M_string& remappings)
       try
       {
         double d = boost::lexical_cast<double>(param);
-        param::set(names::resolve(local_name), d);
+        ros::param::set(names::resolve(local_name), d);
         success = true;
       }
       catch (boost::bad_lexical_cast&)
@@ -489,15 +489,15 @@ void init(const M_string& remappings)
 
       if (param == "true" || param == "True" || param == "TRUE")
       {
-        param::set(names::resolve(local_name), true);
+        ros::param::set(names::resolve(local_name), true);
       }
       else if (param == "false" || param == "False" || param == "FALSE")
       {
-        param::set(names::resolve(local_name), false);
+        ros::param::set(names::resolve(local_name), false);
       }
       else
       {
-        param::set(names::resolve(local_name), param);
+        ros::param::set(names::resolve(local_name), param);
       }
     }
   }

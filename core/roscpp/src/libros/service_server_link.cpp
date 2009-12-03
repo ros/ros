@@ -302,7 +302,8 @@ void ServiceServerLink::processNextCall()
   }
   else
   {
-    SerializedMessage request(boost::shared_array<uint8_t>(), 0);
+    boost::shared_array<uint8_t> dummy;
+    SerializedMessage request(dummy, 0);
 
     {
       boost::mutex::scoped_lock lock(call_queue_mutex_);

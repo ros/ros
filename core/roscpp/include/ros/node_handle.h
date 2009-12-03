@@ -205,7 +205,7 @@ ros::Publisher pub = handle.advertise<std_msgs::Empty>("my_topic", 1);
   Publisher advertise(const std::string& topic, uint32_t queue_size, bool latch = false)
   {
     AdvertiseOptions ops;
-    ops.init<M>(topic, queue_size);
+    ops.template init<M>(topic, queue_size);
     ops.latch = latch;
     return advertise(ops);
   }
@@ -268,7 +268,7 @@ if (handle)
                             bool latch = false)
   {
     AdvertiseOptions ops;
-    ops.init<M>(topic, queue_size, connect_cb, disconnect_cb);
+    ops.template init<M>(topic, queue_size, connect_cb, disconnect_cb);
     ops.tracked_object = tracked_object;
     ops.latch = latch;
     return advertise(ops);
@@ -341,7 +341,7 @@ if (handle)
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr<M const>&), T* obj, const TransportHints& transport_hints = TransportHints())
   {
     SubscribeOptions ops;
-    ops.init<M>(topic, queue_size, boost::bind(fp, obj, _1));
+    ops.template init<M>(topic, queue_size, boost::bind(fp, obj, _1));
     ops.transport_hints = transport_hints;
     return subscribe(ops);
   }
@@ -387,7 +387,7 @@ if (handle)
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr<M const>&), const boost::shared_ptr<T>& obj, const TransportHints& transport_hints = TransportHints())
   {
     SubscribeOptions ops;
-    ops.init<M>(topic, queue_size, boost::bind(fp, obj.get(), _1));
+    ops.template init<M>(topic, queue_size, boost::bind(fp, obj.get(), _1));
     ops.tracked_object = obj;
     ops.transport_hints = transport_hints;
     return subscribe(ops);
@@ -431,7 +431,7 @@ if (handle)
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, void(*fp)(const boost::shared_ptr<M const>&), const TransportHints& transport_hints = TransportHints())
   {
     SubscribeOptions ops;
-    ops.init<M>(topic, queue_size, boost::function<void(const boost::shared_ptr<M>&)>(fp));
+    ops.template init<M>(topic, queue_size, boost::function<void(const boost::shared_ptr<M>&)>(fp));
     ops.transport_hints = transport_hints;
     return subscribe(ops);
   }
@@ -473,7 +473,7 @@ if (handle)
                              const VoidPtr& tracked_object = VoidPtr(), const TransportHints& transport_hints = TransportHints())
   {
     SubscribeOptions ops;
-    ops.init<M>(topic, queue_size, callback);
+    ops.template init<M>(topic, queue_size, callback);
     ops.tracked_object = tracked_object;
     ops.transport_hints = transport_hints;
     return subscribe(ops);
@@ -540,7 +540,7 @@ if (handle)
   ServiceServer advertiseService(const std::string& service, bool(T::*srv_func)(MReq &, MRes &), T *obj)
   {
     AdvertiseServiceOptions ops;
-    ops.init<MReq, MRes>(service, boost::bind(srv_func, obj, _1, _2));
+    ops.template init<MReq, MRes>(service, boost::bind(srv_func, obj, _1, _2));
     return advertiseService(ops);
   }
 
@@ -579,7 +579,7 @@ if (handle)
   ServiceServer advertiseService(const std::string& service, bool(T::*srv_func)(MReq &, MRes &), const boost::shared_ptr<T>& obj)
   {
     AdvertiseServiceOptions ops;
-    ops.init<MReq, MRes>(service, boost::bind(srv_func, obj.get(), _1, _2));
+    ops.template init<MReq, MRes>(service, boost::bind(srv_func, obj.get(), _1, _2));
     ops.tracked_object = obj;
     return advertiseService(ops);
   }
@@ -616,7 +616,7 @@ if (handle)
   ServiceServer advertiseService(const std::string& service, bool(*srv_func)(MReq&, MRes&))
   {
     AdvertiseServiceOptions ops;
-    ops.init<MReq, MRes>(service, boost::function<bool(MReq&, MRes&)>(srv_func));
+    ops.template init<MReq, MRes>(service, boost::function<bool(MReq&, MRes&)>(srv_func));
     return advertiseService(ops);
   }
 
@@ -650,7 +650,7 @@ if (handle)
   ServiceServer advertiseService(const std::string& service, const boost::function<bool(MReq&, MRes&)>& callback, const VoidPtr& tracked_object = VoidPtr())
   {
     AdvertiseServiceOptions ops;
-    ops.init<MReq, MRes>(service, callback);
+    ops.template init<MReq, MRes>(service, callback);
     ops.tracked_object = tracked_object;
     return advertiseService(ops);
   }
@@ -695,7 +695,7 @@ if (handle)
   ServiceClient serviceClient(const std::string& service_name, bool persistent = false, const M_string& header_values = M_string())
   {
     ServiceClientOptions ops;
-    ops.init<MReq, MRes>(service_name, persistent, header_values);
+    ops.template init<MReq, MRes>(service_name, persistent, header_values);
     return serviceClient(ops);
   }
 
@@ -714,7 +714,7 @@ if (handle)
   ServiceClient serviceClient(const std::string& service_name, bool persistent = false, const M_string& header_values = M_string())
   {
     ServiceClientOptions ops;
-    ops.init<Service>(service_name, persistent, header_values);
+    ops.template init<Service>(service_name, persistent, header_values);
     return serviceClient(ops);
   }
 

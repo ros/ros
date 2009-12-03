@@ -119,7 +119,7 @@ template<class MReq, class MRes>
 ROSCPP_DEPRECATED ServiceClient createHandle(const std::string& service_name, bool persistent = false, const M_string& header_values = M_string())
 {
   NodeHandle nh;
-  ServiceClient client = nh.serviceClient<MReq, MRes>(service_name, persistent, header_values);
+  ServiceClient client = nh.template serviceClient<MReq, MRes>(service_name, persistent, header_values);
   return client;
 }
 
@@ -137,7 +137,7 @@ template<class MReq, class MRes>
 ServiceClient createClient(const std::string& service_name, bool persistent = false, const M_string& header_values = M_string())
 {
   NodeHandle nh;
-  ServiceClient client = nh.serviceClient<MReq, MRes>(service_name, persistent, header_values);
+  ServiceClient client = nh.template serviceClient<MReq, MRes>(service_name, persistent, header_values);
   return client;
 }
 
@@ -155,7 +155,7 @@ template<class Service>
 ServiceClient createClient(const std::string& service_name, bool persistent = false, const M_string& header_values = M_string())
 {
   NodeHandle nh;
-  ServiceClient client = nh.serviceClient<Service>(service_name, persistent, header_values);
+  ServiceClient client = nh.template serviceClient<Service>(service_name, persistent, header_values);
   return client;
 }
 

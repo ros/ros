@@ -762,6 +762,27 @@ size_t TopicManager::getNumSubscriptions()
   return subscriptions_.size();
 }
 
+size_t TopicManager::getNumPublishers(const std::string &topic)
+{
+  boost::mutex::scoped_lock lock(subs_mutex_);
+
+  if (isShuttingDown())
+  {
+    return 0;
+  }
+
+  for (L_Subscription::const_iterator t = subscriptions_.begin();
+       t != subscriptions_.end(); ++t)
+  {
+    if ((*t)->getName() == topic)
+    {
+      return (*t)->getNumPublishers();
+    }
+  }
+
+  return 0;
+}
+
 void TopicManager::getBusStats(XmlRpcValue &stats)
 {
   XmlRpcValue publish_stats, subscribe_stats, service_stats;

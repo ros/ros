@@ -133,6 +133,12 @@ void Subscription::getInfo(XmlRpc::XmlRpcValue& info)
   }
 }
 
+uint32_t Subscription::getNumPublishers()
+{
+	boost::mutex::scoped_lock lock(publisher_links_mutex_);
+	return (uint32_t)publisher_links_.size();
+}
+
 void Subscription::drop()
 {
   if (!dropped_)

@@ -110,8 +110,9 @@ public:
    */
   void removePublisherLink(const PublisherLinkPtr& pub_link);
 
-  const std::string& getName() { return name_; }
-  uint32_t getNumCallbacks() { return callbacks_.size(); }
+  const std::string& getName() const { return name_; }
+  uint32_t getNumCallbacks() const { return callbacks_.size(); }
+  uint32_t getNumPublishers();
 
   // We'll keep a list of these objects, representing in-progress XMLRPC 
   // connections to other nodes.

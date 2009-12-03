@@ -193,6 +193,23 @@ TEST(RoscppHandles, subscriberSpinAfterSubscriberShutdown)
   ASSERT_EQ(last_fn_count, g_recv_count);
 }
 
+TEST(RoscppHandles, subscriberGetNumPublishers)
+{
+	ros::NodeHandle n;
+	ros::Publisher pub = n.advertise<test_roscpp::TestArray>("test", 0);
+
+	ros::Subscriber sub = n.subscribe("test", 0, subscriberCallback);
+
+	ros::WallTime begin = ros::WallTime::now();
+	while (sub.getNumPublishers() < 1 && (ros::WallTime::now() - begin < ros::WallDuration(1)))
+	{
+		ros::spinOnce();
+		ros::WallDuration(0.1).sleep();
+	}
+
+	ASSERT_EQ(sub.getNumPublishers(), 1ULL);
+}
+
 TEST(RoscppHandles, subscriberCopy)
 {
   ros::NodeHandle n;

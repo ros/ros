@@ -538,7 +538,7 @@ VecPkg Package::deleted_pkgs;
 
 
 ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false),
-        my_argc(0), my_argv(NULL), opt_profile_length(0)
+        my_argc(0), my_argv(NULL), opt_profile_length(0), total_num_pkgs(0)
 {
   g_rospack = this;
   Package::pkgs.reserve(500); // get some space to avoid early recopying...
@@ -1508,7 +1508,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
         // this directory's children?  If not, then this is likely a zombie
         // directory that should probably be deleted.  We'll mark it as
         // such in the profile console output.
-        if(cqe.start_num_pkgs < Package::pkgs.size())
+        if(cqe.start_num_pkgs < total_num_pkgs)
           cqe.has_manifest = true;
         if(!opt_profile_zombie_only || !cqe.has_manifest)
         {
@@ -1519,7 +1519,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
         continue;
       }
       cqe.start_time = time_since_epoch();
-      cqe.start_num_pkgs = Package::pkgs.size();
+      cqe.start_num_pkgs = total_num_pkgs;
       q.push_front(cqe);
     }
     DIR *d = opendir(cqe.path.c_str());
@@ -1545,6 +1545,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
         continue; // ignore hidden dirs
       if (Package::is_package(child_path))
       {
+        total_num_pkgs++;
         // Filter out duplicates; first encountered takes precedence
         Package* newp = new Package(child_path);
         // TODO: make this check more efficient
@@ -1621,9 +1622,14 @@ void ROSPack::crawl_for_packages(bool force_crawl)
   {
     // dump it into a stack to reverse it (so slowest guys are first)
     stack<CrawlQueueEntry> reverse_profile;
+    // Also build up a separate list of paths that will be used to remove
+    // children of zombies.
+    vector<string> zombie_dirs;
+    zombie_dirs.reserve(profile.size());
     while (!profile.empty())
     {
       reverse_profile.push(profile.top());
+      zombie_dirs.push_back(profile.top().path);
       profile.pop();
     }
     if(!opt_profile_zombie_only)
@@ -1637,12 +1643,15 @@ void ROSPack::crawl_for_packages(bool force_crawl)
       output_acc += "\nFull tree crawl took " + string(buf) + " seconds.\n";
       output_acc += "Directories marked with (*) contain no manifest.  You may\n";
       output_acc += "want to delete these directories.\n";
+      output_acc += "To get just of list of directories without manifests,\n";
+      output_acc += "re-run the profile with --zombie-only\n.";
       output_acc += "-------------------------------------------------------------\n";
     }
     while (!reverse_profile.empty())
     {
       CrawlQueueEntry cqe = reverse_profile.top();
       reverse_profile.pop();
+
       if(!opt_profile_zombie_only)
       {
         //printf("%.6f %s %s\n", 
@@ -1661,6 +1670,22 @@ void ROSPack::crawl_for_packages(bool force_crawl)
       }
       else
       {
+        bool dup = false;
+        // Does this entry's parent appear in the list?
+        for(vector<string>::const_iterator it = zombie_dirs.begin();
+            it != zombie_dirs.end();
+            ++it)
+        {
+          if((cqe.path.size() > it->size()) &&
+             (cqe.path.substr(0,it->size()) == (*it)))
+          {
+            dup = true;
+            break;
+          }
+        }
+        if(dup)
+          continue;
+
         //printf("%s\n", cqe.path.c_str());
         output_acc += cqe.path + "\n";
       }

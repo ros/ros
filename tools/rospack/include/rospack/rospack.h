@@ -456,6 +456,9 @@ private:
   int my_argc;
   char** my_argv;
   void freeArgv();
+  // Total number of packages found, including duplicates.  Used in
+  // determining whether a directory is a zombie.
+  int total_num_pkgs;
 };
 
 }

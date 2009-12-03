@@ -203,7 +203,7 @@ bool ConnectionManager::onConnectionHeaderReceived(const ConnectionPtr& conn, co
   std::string val;
   if (header.getValue("topic", val))
   {
-    ROSCPP_LOG_DEBUG("Connection: Creating SubscriberLink for topic [%s] connected to [%s]", val.c_str(), conn->getTransport()->getTransportInfo().c_str());
+    ROSCPP_LOG_DEBUG("Connection: Creating SubscriberLink for topic [%s] connected to [%s]", val.c_str(), conn->getRemoteString().c_str());
 
     SubscriberLinkPtr sub_link(new SubscriberLink());
     sub_link->initialize(conn);
@@ -211,7 +211,7 @@ bool ConnectionManager::onConnectionHeaderReceived(const ConnectionPtr& conn, co
   }
   else if (header.getValue("service", val))
   {
-    ROSCPP_LOG_DEBUG("Connection: Creating ServiceClientLink for service [%s] connected to [%s]", val.c_str(), conn->getTransport()->getTransportInfo().c_str());
+    ROSCPP_LOG_DEBUG("Connection: Creating ServiceClientLink for service [%s] connected to [%s]", val.c_str(), conn->getRemoteString().c_str());
 
     ServiceClientLinkPtr link(new ServiceClientLink());
     link->initialize(conn);
@@ -219,7 +219,7 @@ bool ConnectionManager::onConnectionHeaderReceived(const ConnectionPtr& conn, co
   }
   else
   {
-    ROS_ERROR("Got a connection for a type other than 'topic' or 'service'.  Fail.");
+  	ROSCPP_LOG_DEBUG("Got a connection for a type other than 'topic' or 'service' from [%s].  Fail.", conn->getRemoteString().c_str());
     return false;
   }
 

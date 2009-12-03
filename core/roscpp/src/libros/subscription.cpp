@@ -333,7 +333,7 @@ bool Subscription::negotiateConnection(const std::string& xmlrpc_uri)
   // Initiate the negotiation.  We'll come back and check on it later.
   if (!c->executeNonBlock("requestTopic", params))
   {
-    ROS_ERROR("Failed to contact publisher [%s:%d] for topic [%s]",
+    ROSCPP_LOG_DEBUG("Failed to contact publisher [%s:%d] for topic [%s]",
               peer_host.c_str(), peer_port, name_.c_str());
     delete c;
     return false;
@@ -378,25 +378,25 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
   XmlRpc::XmlRpcValue proto;
   if(!XMLRPCManager::instance()->validateXmlrpcResponse("requestTopic", result, proto))
   {
-    ROS_ERROR("Failed to contact publisher [%s:%d] for topic [%s]",
+  	ROSCPP_LOG_DEBUG("Failed to contact publisher [%s:%d] for topic [%s]",
               peer_host.c_str(), peer_port, name_.c_str());
     return;
   }
 
   if (proto.size() == 0)
   {
-    ROS_ERROR("Couldn't agree on any common protocols with [%s] for topic [%s]", xmlrpc_uri.c_str(), name_.c_str());
+  	ROSCPP_LOG_DEBUG("Couldn't agree on any common protocols with [%s] for topic [%s]", xmlrpc_uri.c_str(), name_.c_str());
     return;
   }
 
   if (proto.getType() != XmlRpcValue::TypeArray)
   {
-    ROS_ERROR("Available protocol info returned from %s is not a list.", xmlrpc_uri.c_str());
+  	ROSCPP_LOG_DEBUG("Available protocol info returned from %s is not a list.", xmlrpc_uri.c_str());
     return;
   }
   if (proto[0].getType() != XmlRpcValue::TypeString)
   {
-    ROS_ERROR("Available protocol info list doesn't have a string as its first element.");
+  	ROSCPP_LOG_DEBUG("Available protocol info list doesn't have a string as its first element.");
     return;
   }
 
@@ -407,7 +407,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
         proto[1].getType() != XmlRpcValue::TypeString ||
         proto[2].getType() != XmlRpcValue::TypeInt)
     {
-      ROS_ERROR("publisher implements TCPROS, but the " \
+    	ROSCPP_LOG_DEBUG("publisher implements TCPROS, but the " \
                 "parameters aren't string,int");
       return;
     }
@@ -433,7 +433,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
     }
     else
     {
-      ROS_ERROR("Failed to connect to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
+    	ROSCPP_LOG_DEBUG("Failed to connect to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
     }
   }
   else if (proto_name == "UDPROS")
@@ -444,7 +444,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
         proto[3].getType() != XmlRpcValue::TypeInt ||
         proto[4].getType() != XmlRpcValue::TypeInt)
     {
-      ROS_ERROR("publisher implements UDPROS, but the " \
+    	ROSCPP_LOG_DEBUG("publisher implements UDPROS, but the " \
                 "parameters aren't string,int,int");
       return;
     }
@@ -479,12 +479,12 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
     }
     else
     {
-      ROS_ERROR("Failed to connect to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
+    	ROSCPP_LOG_DEBUG("Failed to connect to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
     }
   }
   else
   {
-    ROS_ERROR("Publisher offered unsupported transport [%s]", proto_name.c_str());
+  	ROSCPP_LOG_DEBUG("Publisher offered unsupported transport [%s]", proto_name.c_str());
   }
 }
 

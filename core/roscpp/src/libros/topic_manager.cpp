@@ -537,13 +537,13 @@ bool TopicManager::requestTopic(const string &topic,
     XmlRpcValue proto = protos[proto_idx]; // save typing
     if (proto.getType() != XmlRpcValue::TypeArray)
     {
-      ROS_ERROR( "requestTopic protocol list was not a list of lists");
+    	ROSCPP_LOG_DEBUG( "requestTopic protocol list was not a list of lists");
       return false;
     }
 
     if (proto[0].getType() != XmlRpcValue::TypeString)
     {
-      ROS_ERROR( "requestTopic received a protocol list in which a sublist " \
+    	ROSCPP_LOG_DEBUG( "requestTopic received a protocol list in which a sublist " \
                  "did not start with a string");
       return false;
     }
@@ -568,7 +568,7 @@ bool TopicManager::requestTopic(const string &topic,
           proto[3].getType() != XmlRpcValue::TypeInt ||
           proto[4].getType() != XmlRpcValue::TypeInt)
       {
-        ROS_ERROR("Invalid protocol parameters for UDPROS");
+      	ROSCPP_LOG_DEBUG("Invalid protocol parameters for UDPROS");
         return false;
       }
       std::vector<char> header_bytes = proto[1];
@@ -578,7 +578,7 @@ bool TopicManager::requestTopic(const string &topic,
       string err;
       if (!h.parse(buffer, header_bytes.size(), err))
       {
-        ROS_ERROR("Unable to parse UDPROS connection header: %s", err.c_str());
+      	ROSCPP_LOG_DEBUG("Unable to parse UDPROS connection header: %s", err.c_str());
         return false;
       }
 
@@ -607,7 +607,7 @@ bool TopicManager::requestTopic(const string &topic,
     }
   }
 
-  ROS_ERROR( "Currently, roscpp only supports TCPROS. The caller to " \
+  ROSCPP_LOG_DEBUG( "Currently, roscpp only supports TCPROS. The caller to " \
              "requestTopic did not support TCPROS, so there are no " \
              "protocols in common.");
   return false;
@@ -621,15 +621,6 @@ void TopicManager::publish(const std::string &topic, const Message& m)
   {
     return;
   }
-
-  if(!isTopicAdvertised(topic))
-  {
-    ROS_ERROR("attempted to publish to topic %s, which was not " \
-        "previously advertised. call advertise(\"%s\") first.",
-        topic.c_str(), topic.c_str());
-    return;
-  }
-
 
   for (V_Publication::iterator t = advertised_topics_.begin();
        t != advertised_topics_.end(); ++t)
@@ -724,7 +715,7 @@ bool TopicManager::unsubscribe(const std::string &topic, const SubscriptionMessa
 
       if (!unregisterSubscriber(topic))
       {
-        ROS_ERROR("Couldn't unregister subscriber for topic [%s]", topic.c_str());
+      	ROSCPP_LOG_DEBUG("Couldn't unregister subscriber for topic [%s]", topic.c_str());
       }
     }
 

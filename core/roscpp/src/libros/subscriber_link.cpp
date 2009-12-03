@@ -83,7 +83,7 @@ bool SubscriberLink::handleHeader(const Header& header)
     std::string msg = std::string("received a connection for a nonexistent topic [") +
                     topic + std::string("] from [" + connection_->getTransport()->getTransportInfo() + "] [" + client_callerid +"].");
 
-    ROS_ERROR("%s", msg.c_str());
+    ROSCPP_LOG_DEBUG("%s", msg.c_str());
     connection_->sendHeaderError(msg);
 
     return false;

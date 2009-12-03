@@ -281,7 +281,7 @@ ServiceServerLinkPtr ServiceManager::createServiceServerLink(const std::string& 
     return client;
   }
 
-  ROS_ERROR("Failed to connect to service [%s] (mapped=[%s]) at [%s:%d]", service.c_str(), service.c_str(), serv_host.c_str(), serv_port);
+  ROSCPP_LOG_DEBUG("Failed to connect to service [%s] (mapped=[%s]) at [%s:%d]", service.c_str(), service.c_str(), serv_host.c_str(), serv_port);
 
   return ServiceServerLinkPtr();
 }

@@ -42,6 +42,7 @@ import xmlrpclib
 import roslib.network
 import roslib.scriptutil
 
+_ID = '/roslaunch-netapi'
 def get_roslaunch_uris():
     """
     @return: list of roslaunch XML-RPC URIs for roscore that's in
@@ -50,7 +51,7 @@ def get_roslaunch_uris():
     """
     try:
         param_server = roslib.scriptutil.get_param_server()
-        code, msg, vals = param_server.getParam('/roslaunch-netapi', '/roslaunch/uris')
+        code, msg, vals = param_server.getParam(_ID, '/roslaunch/uris')
         if code == 1 and vals:
             return vals.values()
     except socket.error: pass

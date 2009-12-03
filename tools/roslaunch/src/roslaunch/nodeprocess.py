@@ -194,10 +194,13 @@ class LocalProcess(Process):
 
         return logfileout, logfileerr
 
-    ## start the process.
-    ## @throws FatalProcessLaunch: if process cannot be started and it
-    ## is not likely to ever succeed
     def start(self):
+        """
+        Start the process.
+        
+        @raise FatalProcessLaunch: if process cannot be started and it
+        is not likely to ever succeed
+        """
         super(LocalProcess, self).start()
         try:
             self.lock.acquire()
@@ -254,9 +257,11 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
         finally:
             self.lock.release()
 
-    ## @param self
-    ## @return bool: True if process is still running
     def is_alive(self):
+        """
+        @return: True if process is still running
+        @rtype: bool
+        """
         if not self.started: #not started yet
             return True
         if self.stopped or self.popen is None:
@@ -266,9 +271,11 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
             return False
         return True
 
-    ## @param self
-    ## @return str: human-readable description of exit state 
     def get_exit_description(self):
+        """
+        @return: human-readable description of exit state 
+        @rtype: str
+        """
         # #973: include location of output location in message
         if self.exit_code is not None:
             if self.exit_code:
@@ -284,9 +291,13 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
         else:
             return 'process has died'
 
-    ## kill UNIX process
-    ## @param self
-    def _stop_unix(self):
+    def _stop_unix(self, errors):
+        """
+        UNIX implementation of process killing
+
+        @param errors: error messages. stop() will record messages into this list.
+        @type  errors: [str]
+        """
         self.exit_code = self.popen.poll() 
         if self.exit_code is not None:
             _logger.debug("process[%s].stop(): process has already returned %s", self.name, self.exit_code)
@@ -294,9 +305,11 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
             self.popen = None
             self.stopped = True
             return
+
         pid = self.popen.pid
         pgid = os.getpgid(pid)
         _logger.info("process[%s]: killing os process with pid[%s] pgid[%s]", self.name, pid, pgid)
+
         try:
             # Start with SIGINT and escalate from there.
             _logger.info("[%s] sending SIGINT to pgid [%s]", self.name, pgid)                                    
@@ -321,12 +334,14 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
                     retcode = self.popen.poll()
                 if retcode is None:
                     printerrlog("[%s] escalating to SIGKILL"%self.name)
+                    errors.append("process[%s, pid %s]: required SIGKILL. May still be running."%(self.name, pid))
                     try:
                         os.killpg(pgid, signal.SIGKILL)
                         _logger.info("[%s] sent SIGKILL to pgid [%s]"%(self.name, pgid))
+                        # #2096: don't block on SIGKILL, because this results in more orphaned processes overall
                         #self.popen.wait()
-                        os.wait()
-                        _logger.info("process[%s]: SIGKILL killed", self.name)
+                        #os.wait()
+                        _logger.info("process[%s]: sent SIGKILL", self.name)
                     except OSError, e:
                         if e.args[0] == 3:
                             printerrlog("no [%s] process with pid [%s]"%(self.name, pid))
@@ -340,11 +355,15 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
                 
         finally:
             self.popen = None
+
+    def stop(self, errors=[]):
+        """
+        Stop the process. Record any significant error messages in the errors parameter
         
-    ## Stop the process
-    ## @param self
-    def stop(self):
-        super(LocalProcess, self).stop()
+        @param errors: error messages. stop() will record messages into this list.
+        @type  errors: [str]
+        """
+        super(LocalProcess, self).stop(errors)
         self.lock.acquire()        
         try:
             try:
@@ -354,7 +373,7 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
                     return
                 #NOTE: currently POSIX-only. Need to add in Windows code once I have a test environment:
                 # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/347462
-                self._stop_unix()
+                self._stop_unix(errors)
             except:
                 #traceback.print_exc() 
                 _logger.error("[%s] EXCEPTION %s", self.name, traceback.format_exc())                                

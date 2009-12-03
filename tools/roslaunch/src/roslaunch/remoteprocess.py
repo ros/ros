@@ -242,7 +242,7 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             return False
         return True
 
-    def stop(self):
+    def stop(self, errors=[]):
         try:
             self.lock.acquire()            
             if not self.ssh:

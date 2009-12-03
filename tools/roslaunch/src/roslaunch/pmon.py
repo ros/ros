@@ -202,7 +202,13 @@ class Process(object):
     def is_alive(self):
         return False
 
-    def stop(self):
+    def stop(self, errors=[]):
+        """
+        Stop the process. Record any significant error messages in the errors parameter
+        
+        @param errors: error messages. stop() will record messages into this list.
+        @type  errors: [str]
+        """
         pass
 
     def get_exit_description(self):
@@ -395,7 +401,8 @@ class ProcessMonitor(Thread):
             p = self.get_process(name)
             if p:
                 try:
-                    p.stop()
+                    # no need to accumulate errors, so pass in []
+                    p.stop([])
                 except:
                     logger.error(traceback.format_exc())
                 return True
@@ -535,7 +542,8 @@ class ProcessMonitor(Thread):
             for d in dead:
                 try:
                     self.unregister(d)
-                    d.stop()
+                    # stop process, don't accumulate errors
+                    d.stop([])
 
                     # save process data to dead list 
                     plock.acquire()
@@ -558,7 +566,8 @@ class ProcessMonitor(Thread):
                     if self.is_shutdown:
                         break
                     printlog("[%s] restarting process"%r.name)
-                    r.stop()
+                    # stop process, don't accumulate errors
+                    r.stop([])
                     r.start()
                 except:
                     traceback.print_exc()
@@ -573,43 +582,49 @@ class ProcessMonitor(Thread):
         # this is already true entering, but go ahead and make sure
         self.is_shutdown = True
         # killall processes on run exit
+
+        import Queue
+        q = Queue.Queue()
+        q.join()
+        
         try:
             self.plock.acquire()
-            procs = self.procs[:]
+            
+            # make copy of core_procs for threadsafe usage
             core_procs = self.core_procs[:]
+            logger.info("ProcessMonitor._post_run %s: remaining procs are %s"%(self, self.procs))
+
+            # enqueue all non-core procs in reverse order for parallel kill
+            # #526/885: ignore core procs
+            [q.put(p) for p in reversed(self.procs) if not p in core_procs]
         finally:
             self.plock.release()
-        logger.info("ProcessMonitor._post_run %s: remaining procs are %s"%(self, procs))
-        
-        # kill in reverse order
-        for p in reversed(procs):
-            
-            # #526/885: ignore core procs
-            if p in core_procs:
-                continue
-            try:
-                logger.info("ProcessMonitor exit: killing %s", p.name)
-                printlog("[%s] killing on exit"%p.name)
-                p.stop()
-            except:
-                traceback.print_exc()
-                logger.error(traceback.format_exc())
 
+        # use 10 workers
+        killers = []
+        for i in range(10):
+            t = _ProcessKiller(q, i)
+            killers.append(t)
+            t.start()
+
+        # wait for workers to finish
+        q.join()
+        shutdown_errors = []
+
+        # accumulate all the shutdown errors
+        for t in killers:
+            shutdown_errors.extend(t.errors)
+        del killers[:]
+            
         # #526/885: kill core procs last
+        # we don't want to parallelize this as the master has to be last
         for p in reversed(core_procs):
-            try:
-                logger.info("ProcessMonitor exit: killing %s", p.name)
-                printlog("[%s] killing on exit"%p.name)
-                p.stop()
-            except:
-                traceback.print_exc()
-                logger.error(traceback.format_exc())
+            _kill_process(p, shutdown_errors)
 
         # delete everything except dead_list
         logger.info("ProcessMonitor exit: cleaning up data structures and signals")
         try:
             self.plock.acquire()
-            del procs[:]
             del core_procs[:]
             del self.procs[:]
             del self.core_procs[:]
@@ -621,3 +636,40 @@ class ProcessMonitor(Thread):
             reacquire_signals.clear() 
         logger.info("ProcessMonitor exit: pmon has shutdown")
         self.done = True
+
+        if shutdown_errors:
+            printerrlog("Shutdown errors:\n"+'\n'.join([" * %s"%e for e in shutdown_errors]))
+
+def _kill_process(p, errors):
+    """
+    Routine for kill Process p with appropriate logging to screen and logfile
+    
+    @param p: process to kill
+    @type  p: Process
+    @param errors: list of error messages from killed process
+    @type  errors: [str]
+    """
+    try:
+        logger.info("ProcessMonitor exit: killing %s", p.name)
+        printlog("[%s] killing on exit"%p.name)
+        # we accumulate errors from each process so that we can print these at the end
+        p.stop(errors)
+    except:
+        traceback.print_exc()
+        logger.error(traceback.format_exc())
+    
+class _ProcessKiller(Thread):
+    
+    def __init__(self, q, i):
+        Thread.__init__(self, name="ProcessKiller-%s"%i)
+        self.q = q
+        self.errors = []
+        
+    def run(self):
+        q = self.q
+        while not q.empty():
+            _kill_process(q.get(), self.errors)
+            q.task_done()
+
+        
+    

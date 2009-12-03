@@ -487,15 +487,13 @@ Remove this key from parameter server"
      (unless (eq *node-status* :running) (return))
 
      ;; Allow the tcp server to respond to any incoming connections
-     (handler-case
-	 (sb-sys:serve-all-events 1)
-       (simple-error (c)
-	 (with-mutex (*ros-lock*)
-	   (if (eq *node-status* :running)
-	       (error c)
-	       (progn
-		 (ros-info (roslisp event-loop) "Event loop received error ~a.  Node-status is now ~a" c *node-status*)
-		 (return)))))))
+     (handler-bind
+         ((simple-error #'(lambda (c)
+			    (with-mutex (*ros-lock*)
+			      (unless (eq *node-status* :running)
+				(ros-info (roslisp event-loop) "Event loop received error ~a.  Node-status is now ~a" c *node-status*)
+				(return))))))
+       (sb-sys:serve-all-events 1)))
 
   (ros-info (roslisp event-loop) "Terminating ROS Node event loop"))
       

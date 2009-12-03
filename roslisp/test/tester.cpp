@@ -163,7 +163,7 @@ void chatterCallback(const std_msgs::StringConstPtr& msg)
 TEST(Roslisp, TalkerListener)
 {
   ros::NodeHandle n;
-  ros::Subscriber sub = n.subscribe("chatter-echo", 1000, chatterCallback);
+  ros::Subscriber sub = n.subscribe("chatter_echo", 1000, chatterCallback);
   ros::Duration d(1);
 
   int wait_max=180;
@@ -171,7 +171,7 @@ TEST(Roslisp, TalkerListener)
   for (int i=0; i<wait_max && n.ok(); i++) {
     d.sleep();
     ros::spinOnce();
-    ROS_INFO_STREAM ("Have waited " << i << " out of " << wait_max << " seconds to receive 5 messages from chatter-echo");
+    ROS_INFO_STREAM ("Have waited " << i << " out of " << wait_max << " seconds to receive 5 messages from chatter_echo");
     if (num_messages_received>5)
       break;
   }

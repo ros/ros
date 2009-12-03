@@ -52,7 +52,7 @@
    (vals :initarg :vals :reader vals))
   (:report (lambda (c str)
 	     (format str "XML RPC call ~a to ~a failed with code ~a, message ~a, and values ~a" 
-		     (cons (name c) (args c)) (ros-rpc-error-uri c) (code c) (msg c) (vals c)))))
+		     (cons (name c) (args c)) (ros-rpc-error-uri c) (code c) (message c) (vals c)))))
 
 
 (defun ros-rpc-call (uri name &rest args)

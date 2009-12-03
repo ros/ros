@@ -91,6 +91,7 @@ public:
    *           eg. If the node's namespace is "/a" and the namespace passed in here is "b", all topics/services/parameters
    *           will be prefixed with "/a/b/"
    * \param remappings Remappings for this NodeHandle.
+   * \throws InvalidNameException if the namespace is not a valid graph resource name
    */
   NodeHandle(const std::string& ns = std::string(), const M_string& remappings = M_string());
   /**
@@ -110,6 +111,7 @@ NodeHandle child(parent.getNamespace() + "/" + ns);
    *
    * When a NodeHandle is copied, it inherits the namespace of the NodeHandle being copied, and increments the reference count of the global node state
    * by 1.
+   * \throws InvalidNameException if the namespace is not a valid graph resource name
    */
   NodeHandle(const NodeHandle& parent, const std::string& ns);
   /**
@@ -124,6 +126,7 @@ NodeHandle child(parent.getNamespace() + "/" + ns, remappings);
    *
    * When a NodeHandle is copied, it inherits the namespace of the NodeHandle being copied, and increments the reference count of the global node state
    * by 1.
+   * \throws InvalidNameException if the namespace is not a valid graph resource name
    */
   NodeHandle(const NodeHandle& parent, const std::string& ns, const M_string& remappings);
   /**
@@ -170,7 +173,7 @@ NodeHandle child(parent.getNamespace() + "/" + ns, remappings);
    * \param remap Whether to apply name-remapping rules
    *
    * \return Resolved name.
-   * \throws InvalidNameException If the name begins with a tilde
+   * \throws InvalidNameException If the name begins with a tilde, or is an otherwise invalid graph resource name
    */
   std::string resolveName(const std::string& name, bool remap = true) const;
 
@@ -199,7 +202,7 @@ ros::Publisher pub = handle.advertise<std_msgs::Empty>("my_topic", 1);
    * \param latch (optional) If true, the last message published on this topic will be saved and sent to new subscribers when they connect
    * \return On success, a Publisher that, when it goes out of scope, will automatically release a reference
    * on this advertisement.  On failure, an empty Publisher.
-   * \throws InvalidNameException If the topic name begins with a tilde
+   * \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name, or is an otherwise invalid graph resource name
    */
   template <class M>
   Publisher advertise(const std::string& topic, uint32_t queue_size, bool latch = false)
@@ -258,7 +261,7 @@ if (handle)
 ...
 }
 \endverbatim
-   * \throws InvalidNameException If the topic name begins with a tilde
+   * \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
    */
   template <class M>
   Publisher advertise(const std::string& topic, uint32_t queue_size,
@@ -293,7 +296,7 @@ if (handle)
 }
 \endverbatim
    *
-   * \throws InvalidNameException If the topic name begins with a tilde
+   * \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
    */
   Publisher advertise(AdvertiseOptions& ops);
 
@@ -335,7 +338,7 @@ if (handle)
 ...
 }
 \endverbatim
-   *  \throws InvalidNameException If the topic name begins with a tilde
+   *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
    */
   template<class M, class T>
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr<M const>&), T* obj, const TransportHints& transport_hints = TransportHints())
@@ -381,7 +384,7 @@ if (handle)
 ...
 }
 \endverbatim
-   *  \throws InvalidNameException If the topic name begins with a tilde
+   *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
    */
   template<class M, class T>
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr<M const>&), const boost::shared_ptr<T>& obj, const TransportHints& transport_hints = TransportHints())
@@ -425,7 +428,7 @@ if (handle)
 ...
 }
 \endverbatim
-   *  \throws InvalidNameException If the topic name begins with a tilde
+   *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
    */
   template<class M>
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, void(*fp)(const boost::shared_ptr<M const>&), const TransportHints& transport_hints = TransportHints())
@@ -466,7 +469,7 @@ if (handle)
 ...
 }
 \endverbatim
-   *  \throws InvalidNameException If the topic name begins with a tilde
+   *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
    */
   template<class M>
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, const boost::function<void (const boost::shared_ptr<M const>&)>& callback,
@@ -499,7 +502,7 @@ if (handle)
 ...
 }
 \endverbatim
-   *  \throws InvalidNameException If the topic name begins with a tilde
+   *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
    */
   Subscriber subscribe(SubscribeOptions& ops);
 
@@ -534,7 +537,7 @@ if (handle)
 ...
 }
 \endverbatim
-   *  \throws InvalidNameException If the service name begins with a tilde
+   *  \throws InvalidNameException If the service name begins with a tilde, or is an otherwise invalid graph resource name, or is an otherwise invalid graph resource name
    */
   template<class T, class MReq, class MRes>
   ServiceServer advertiseService(const std::string& service, bool(T::*srv_func)(MReq &, MRes &), T *obj)
@@ -573,7 +576,7 @@ if (handle)
 ...
 }
 \endverbatim
-   * \throws InvalidNameException If the service name begins with a tilde
+   * \throws InvalidNameException If the service name begins with a tilde, or is an otherwise invalid graph resource name
    */
   template<class T, class MReq, class MRes>
   ServiceServer advertiseService(const std::string& service, bool(T::*srv_func)(MReq &, MRes &), const boost::shared_ptr<T>& obj)
@@ -610,7 +613,7 @@ if (handle)
 ...
 }
 \endverbatim
-   * \throws InvalidNameException If the service name begins with a tilde
+   * \throws InvalidNameException If the service name begins with a tilde, or is an otherwise invalid graph resource name
    */
   template<class MReq, class MRes>
   ServiceServer advertiseService(const std::string& service, bool(*srv_func)(MReq&, MRes&))
@@ -644,7 +647,7 @@ if (handle)
 ...
 }
 \endverbatim
-   * \throws InvalidNameException If the service name begins with a tilde
+   * \throws InvalidNameException If the service name begins with a tilde, or is an otherwise invalid graph resource name
    */
   template<class MReq, class MRes>
   ServiceServer advertiseService(const std::string& service, const boost::function<bool(MReq&, MRes&)>& callback, const VoidPtr& tracked_object = VoidPtr())
@@ -672,7 +675,7 @@ if (handle)
 ...
 }
 \endverbatim
-   * \throws InvalidNameException If the service name begins with a tilde
+   * \throws InvalidNameException If the service name begins with a tilde, or is an otherwise invalid graph resource name
    */
   ServiceServer advertiseService(AdvertiseServiceOptions& ops);
 
@@ -689,7 +692,7 @@ if (handle)
    *        so that subsequent calls will happen faster.  In general persistent services are discouraged, as they are not as
    *        robust to node failure as non-persistent services.
    * @param header_values Key/value pairs you'd like to send along in the connection handshake
-   * \throws InvalidNameException If the service name begins with a tilde
+   * \throws InvalidNameException If the service name begins with a tilde, or is an otherwise invalid graph resource name
    */
   template<class MReq, class MRes>
   ServiceClient serviceClient(const std::string& service_name, bool persistent = false, const M_string& header_values = M_string())
@@ -708,7 +711,7 @@ if (handle)
    *        so that subsequent calls will happen faster.  In general persistent services are discouraged, as they are not as
    *        robust to node failure as non-persistent services.
    * @param header_values Key/value pairs you'd like to send along in the connection handshake
-   * \throws InvalidNameException If the service name begins with a tilde
+   * \throws InvalidNameException If the service name begins with a tilde, or is an otherwise invalid graph resource name
    */
   template<class Service>
   ServiceClient serviceClient(const std::string& service_name, bool persistent = false, const M_string& header_values = M_string())
@@ -723,7 +726,7 @@ if (handle)
    * When the last handle reference of a persistent connection is cleared, the connection will automatically close.
    *
    * @param ops The options for this service client
-   * \throws InvalidNameException If the service name begins with a tilde
+   * \throws InvalidNameException If the service name begins with a tilde, or is an otherwise invalid graph resource name
    */
   ServiceClient serviceClient(ServiceClientOptions& ops);
 
@@ -872,42 +875,42 @@ if (handle)
    *
    * \param key The key to be used in the parameter server's dictionary
    * \param v The value to be inserted.
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    */
   void setParam(const std::string& key, const XmlRpc::XmlRpcValue& v) const;
   /** \brief Set a string value on the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
    * \param s The value to be inserted.
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    */
   void setParam(const std::string& key, const std::string& s) const;
   /** \brief Set a string value on the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
    * \param s The value to be inserted.
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    */
   void setParam(const std::string& key, const char* s) const;
   /** \brief Set a double value on the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
    * \param d The value to be inserted.
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    */
   void setParam(const std::string& key, double d) const;
   /** \brief Set a integer value on the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
    * \param i The value to be inserted.
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    */
   void setParam(const std::string& key, int i) const;
   /** \brief Set a integer value on the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
    * \param b The value to be inserted.
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    */
   void setParam(const std::string& key, bool b) const;
 
@@ -917,7 +920,7 @@ if (handle)
 	 * \param[out] s Storage for the retrieved value.
 	 *
 	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
 	 */
 	bool getParam(const std::string& key, std::string& s) const;
 	/** \brief Get a double value from the parameter server.
@@ -926,7 +929,7 @@ if (handle)
 	 * \param[out] d Storage for the retrieved value.
 	 *
 	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
 	 */
 	bool getParam(const std::string& key, double& d) const;
 	/** \brief Get a integer value from the parameter server.
@@ -935,7 +938,7 @@ if (handle)
 	 * \param[out] i Storage for the retrieved value.
 	 *
 	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
 	 */
 	bool getParam(const std::string& key, int& i) const;
 	/** \brief Get a boolean value from the parameter server.
@@ -944,7 +947,7 @@ if (handle)
 	 * \param[out] b Storage for the retrieved value.
 	 *
 	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
 	 */
 	bool getParam(const std::string& key, bool& b) const;
 	/** \brief Get an arbitrary XML/RPC value from the parameter server.
@@ -953,7 +956,7 @@ if (handle)
 	 * \param[out] v Storage for the retrieved value.
 	 *
 	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
 	 */
 	bool getParam(const std::string& key, XmlRpc::XmlRpcValue& v) const;
 
@@ -968,7 +971,7 @@ if (handle)
 	 * \param[out] s Storage for the retrieved value.
 	 *
 	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
 	 */
 	bool getParamCached(const std::string& key, std::string& s) const;
 	/** \brief Get a double value from the parameter server, with local caching
@@ -982,7 +985,7 @@ if (handle)
 	 * \param[out] d Storage for the retrieved value.
 	 *
 	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
 	 */
 	bool getParamCached(const std::string& key, double& d) const;
 	/** \brief Get a integer value from the parameter server, with local caching
@@ -996,7 +999,7 @@ if (handle)
 	 * \param[out] i Storage for the retrieved value.
 	 *
 	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
 	 */
 	bool getParamCached(const std::string& key, int& i) const;
 	/** \brief Get a boolean value from the parameter server, with local caching
@@ -1010,7 +1013,7 @@ if (handle)
 	 * \param[out] b Storage for the retrieved value.
 	 *
 	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
 	 */
 	bool getParamCached(const std::string& key, bool& b) const;
 	/** \brief Get an arbitrary XML/RPC value from the parameter server, with local caching
@@ -1024,7 +1027,7 @@ if (handle)
 	 * \param[out] v Storage for the retrieved value.
 	 *
 	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
 	 */
 	bool getParamCached(const std::string& key, XmlRpc::XmlRpcValue& v) const;
 
@@ -1040,7 +1043,7 @@ if (handle)
    * the value.
    *
    * \return true if the parameter value was retrieved, false otherwise
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    * \deprecated in favor of getParamCached()
    */
   ROSCPP_DEPRECATED bool getParam(const std::string& key, std::string& s, bool use_cache) const;
@@ -1056,7 +1059,7 @@ if (handle)
    * the value.
    *
    * \return true if the parameter value was retrieved, false otherwise
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    * \deprecated in favor of getParamCached()
    */
   ROSCPP_DEPRECATED bool getParam(const std::string& key, double& d, bool use_cache) const;
@@ -1072,7 +1075,7 @@ if (handle)
    * the value.
    *
    * \return true if the parameter value was retrieved, false otherwise
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    * \deprecated in favor of getParamCached()
    */
   ROSCPP_DEPRECATED bool getParam(const std::string& key, int& i, bool use_cache) const;
@@ -1088,7 +1091,7 @@ if (handle)
    * the value.
    *
    * \return true if the parameter value was retrieved, false otherwise
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    * \deprecated in favor of getParamCached()
    */
   ROSCPP_DEPRECATED bool getParam(const std::string& key, bool& b, bool use_cache) const;
@@ -1104,7 +1107,7 @@ if (handle)
    * the value.
    *
    * \return true if the parameter value was retrieved, false otherwise
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    * \deprecated in favor of getParamCached()
    */
   ROSCPP_DEPRECATED bool getParam(const std::string& key, XmlRpc::XmlRpcValue& v, bool use_cache) const;
@@ -1114,7 +1117,7 @@ if (handle)
    * \param key The key to check.
    *
    * \return true if the parameter exists, false otherwise
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    */
   bool hasParam(const std::string& key) const;
   /** \brief Search up the tree for a parameter with a given key
@@ -1135,7 +1138,7 @@ if (handle)
    * \param key The key to delete.
    *
    * \return true if the deletion succeeded, false otherwise.
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    */
   bool deleteParam(const std::string& key) const;
 
@@ -1149,7 +1152,7 @@ if (handle)
    * \param[out] param_val Storage for the retrieved value.
    * \param default_val Value to use if the server doesn't contain this
    * parameter.
-   * \throws InvalidNameException If the parameter name begins with a tilde
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
    */
   template<typename T>
   void param(const std::string& param_name, T& param_val, const T& default_val) const

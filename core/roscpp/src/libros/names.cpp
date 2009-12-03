@@ -142,7 +142,7 @@ std::string resolve(const std::string& ns, const std::string& name, bool _remap)
   std::string error;
   if (!validate(name, error))
   {
-    ROS_WARN("%s  This will be an error in future versions of ROS.", error.c_str());
+  	throw InvalidNameException(error);
   }
 
   if (name.empty())

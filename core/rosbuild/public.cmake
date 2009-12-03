@@ -148,7 +148,7 @@ macro(rosbuild_init)
   if(NOT ROSPACK_MAKEDIST)
   
   # Add ROS_PACKAGE_NAME define
-  add_definitions(-DROS_PACKAGE_NAME=\\\"${PROJECT_NAME}\\\")
+  add_definitions(-DROS_PACKAGE_NAME='\"${PROJECT_NAME}\"')
 
   # ROS_BUILD_TYPE is set by rosconfig
   set(CMAKE_BUILD_TYPE ${ROS_BUILD_TYPE})

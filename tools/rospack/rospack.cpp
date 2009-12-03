@@ -385,19 +385,36 @@ string Package::direct_flags(string lang, string attrib)
   TiXmlElement *export_ele = mroot->FirstChildElement("export");
   if (!export_ele)
     return string("");
+  bool os_match = false;
   TiXmlElement *best_usage = NULL;
   for (TiXmlElement *lang_ele = export_ele->FirstChildElement(lang); 
        lang_ele; lang_ele = lang_ele->NextSiblingElement(lang))
   {
-    if (!best_usage)
-      best_usage = lang_ele;
     const char *os_str;
     if ((os_str = lang_ele->Attribute("os")))
     {
-      if (g_ros_os == string(os_str))
+      if(g_ros_os == string(os_str))
       {
+        if(os_match)
+        {
+          fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag with os=\"%s\" in export block\n",
+                  lang.c_str(), os_str);
+        }
+        else
+        {
+          best_usage = lang_ele;
+          os_match = true;
+        }
+      }
+    }
+    if(!os_match)
+    {
+      if (!best_usage)
         best_usage = lang_ele;
-        break;
+      else if(!os_str)
+      {
+        fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag in export block\n",
+                lang.c_str());
       }
     }
   }

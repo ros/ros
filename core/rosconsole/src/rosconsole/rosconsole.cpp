@@ -208,7 +208,14 @@ void print(log4cxx::LoggerPtr& logger, const log4cxx::LevelPtr& level, const log
 
   va_end(args);
 
-  logger->forcedLog(level, g_print_buffer.get(), location);
+  try
+  {
+  	logger->forcedLog(level, g_print_buffer.get(), location);
+  }
+  catch (std::exception& e)
+  {
+  	fprintf(stderr, "Caught exception while logging: [%s]\n", e.what());
+  }
 
   g_printing_thread_id = boost::thread::id();
 }

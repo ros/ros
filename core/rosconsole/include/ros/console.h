@@ -239,7 +239,14 @@ struct LogLocation
     if (ROS_UNLIKELY(enabled)) \
     { \
       log4cxx::helpers::MessageBuffer oss_; \
-      loc.logger_->forcedLog(*loc.log4cxx_level_, oss_.str(oss_ << args), LOG4CXX_LOCATION); \
+      try \
+      { \
+      	loc.logger_->forcedLog(*loc.log4cxx_level_, oss_.str(oss_ << args), LOG4CXX_LOCATION); \
+      } \
+      catch (std::exception& e) \
+      { \
+      	fprintf(stderr, "Caught exception while logging: [%s]\n", e.what()); \
+      } \
     } \
   } while(0)
 

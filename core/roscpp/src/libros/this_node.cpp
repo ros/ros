@@ -108,6 +108,10 @@ void init(const std::string& name, const M_string& remappings, uint32_t options)
   {
     throw InvalidNodeNameException(g_name, "node names cannot contain /");
   }
+  if (g_name.find("~") != std::string::npos)
+	{
+		throw InvalidNodeNameException(g_name, "node names cannot contain ~");
+	}
 
   g_name = names::resolve(g_namespace, g_name);
 

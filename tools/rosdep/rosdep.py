@@ -165,11 +165,11 @@ class OSIndex:
     def detect_packages(self, packages):
         return self._os_map[self.get_os_name()].detect_packages(packages)
 
-    def generate_package_install_command(self, packages):
+    def generate_package_install_command(self, packages, default_yes):
         if len(packages) > 0:
             bash_script = ""
             try:
-                bash_script = self._os_map[self.get_os_name()].generate_package_install_command(packages)
+                bash_script = self._os_map[self.get_os_name()].generate_package_install_command(packages, default_yes)
             except KeyError:
                 return "# os name '%s' not registered as a valid os"%self.get_os_name()
             return bash_script
@@ -233,8 +233,11 @@ class Ubuntu:
     def detect_packages(self, packages):
         return [p for p in packages if not dpkg_detect(p)]
 
-    def generate_package_install_command(self, packages):        
-        return "#Packages\nsudo apt-get install " + ' '.join(packages)
+    def generate_package_install_command(self, packages, default_yes):
+        if default_yes:
+            return "#Packages\nsudo apt-get install -y " + ' '.join(packages)        
+        else:
+            return "#Packages\nsudo apt-get install " + ' '.join(packages)
 
 ###### END UBUNTU SPECIALIZATION ########################
 
@@ -272,7 +275,7 @@ class Debian:
     def detect_packages(self, packages):
         return [p for p in packages if not dpkg_detect(p)]
 
-    def generate_package_install_command(self, packages):        
+    def generate_package_install_command(self, packages, default_yes):        
         return "#Packages\nsudo apt-get install " + ' '.join(packages)
 
 ###### END Debian SPECIALIZATION ########################
@@ -311,7 +314,7 @@ class Mint:
     def detect_packages(self, packages):
         return [p for p in packages if not dpkg_detect(p)]
 
-    def generate_package_install_command(self, packages):        
+    def generate_package_install_command(self, packages, default_yes):        
         return "#Packages\nsudo apt-get install " + ' '.join(packages)
 
 ###### END Mint SPECIALIZATION ########################
@@ -350,8 +353,8 @@ class Arch:
     def detect_packages(self, packages):
         return [p for p in packages if pacman_detect(p)]
 
-    def generate_package_install_command(self, packages):        
-        return "#Packages\nsudo packman -Sy --needed " + ' '.join(packages)
+    def generate_package_install_command(self, packages, default_yes):        
+        return "#Packages\nsudo pacman -Sy --needed " + ' '.join(packages)
 
 ###### END Arch SPECIALIZATION ########################
 
@@ -386,7 +389,7 @@ class Macports:
     def detect_packages(self, packages):
         return packages# Detection of installed_packages not implemented, 
 
-    def generate_package_install_command(self, packages):        
+    def generate_package_install_command(self, packages, default_yes):        
         return "#Packages\nsudo port install " + ' '.join(packages)
 
 ###### END Macports SPECIALIZATION ########################
@@ -429,7 +432,7 @@ class Fedora:
     def detect_packages(self, packages):
         return [p for p in packages if yum_detect(p)]
 
-    def generate_package_install_command(self, packages):        
+    def generate_package_install_command(self, packages, default_yes):        
         return "#Packages\nyum install " + ' '.join(packages)
 
 ###### END Fedora SPECIALIZATION ########################
@@ -468,7 +471,7 @@ class Rhel:
     def detect_packages(self, packages):
         return [p for p in packages if yum_detect(p)]
 
-    def generate_package_install_command(self, packages):        
+    def generate_package_install_command(self, packages, default_yes):
         return "#Packages\nyum install " + ' '.join(packages)
 
 ###### END Rhel SPECIALIZATION ########################
@@ -512,11 +515,11 @@ class Rosdep:
     def get_native_packages(self):
         return get_packages_and_scripts()[0]
 
-    def generate_script(self, include_duplicates=False):
+    def generate_script(self, include_duplicates=False, default_yes = False):
         native_packages, scripts = self.get_packages_and_scripts()
         undetected = native_packages if include_duplicates else \
             self.osi.detect_packages(native_packages)
-        return self.osi.generate_package_install_command(undetected) + \
+        return self.osi.generate_package_install_command(undetected, default_yes) + \
             "\n".join(["\n%s"%sc for sc in scripts])
         
     def check(self):
@@ -540,9 +543,9 @@ class Rosdep:
                 packages.append(p)
         return packages
 
-    def install(self, include_duplicates):
+    def install(self, include_duplicates, default_yes):
         with tempfile.NamedTemporaryFile() as fh:
-            script = self.generate_script(include_duplicates)
+            script = self.generate_script(include_duplicates, default_yes)
             fh.write(script)
             fh.flush()
             
@@ -599,6 +602,8 @@ def main():
                       action="store_true", help="verbose display")
     parser.add_option("--include_duplicates", "-i", dest="include_duplicates", default=False, 
                       action="store_true", help="do not deduplicate")
+    parser.add_option("--default-yes", "-y", dest="default_yes", default=False, 
+                      action="store_true", help="Tell the package manager to default to y or fail when installing")
 
     options, args = parser.parse_args()
 
@@ -637,10 +642,10 @@ def main():
         print "Detected Version: " + r.osi.get_os_version()
 
     if command == "generate_bash" or command == "satisfy":
-        print r.generate_script(include_duplicates=options.include_duplicates)
+        print r.generate_script(include_duplicates=options.include_duplicates, default_yes=options.default_yes)
 
     elif command == "install":
-        r.install(options.include_duplicates);
+        r.install(options.include_duplicates, options.default_yes);
 
     elif command == "depdb":
         print r.depdb()

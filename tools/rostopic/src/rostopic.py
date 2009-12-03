@@ -628,7 +628,7 @@ def get_api(master, caller_id):
         except socket.error:
             raise ROSTopicIOException("Unable to communicate with master!")
         if code != 1:
-            caller_api = 'unknown address'%caller_id
+            caller_api = 'unknown address %s'%caller_id
         else:
             _caller_apis[caller_id] = caller_api
     return caller_api
@@ -645,11 +645,13 @@ def _rostopic_list_bag(bag_file, topic=None):
     if not os.path.exists(bag_file):
         raise ROSTopicException("bag file [%s] does not exist"%bag_file)
     if topic:
+        # create string for namespace comparison
+        topic_ns = roslib.names.make_global_ns(topic)
         count = 0
         earliest = None
         latest = None
         for top, msg, t in rosrecord.logplayer(bag_file, raw=True):
-            if top == topic:
+            if top == topic or top.startswith(topic_ns):
                 count += 1
                 if earliest == None:
                     earliest = t
@@ -694,31 +696,45 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
         state = _succeed(master.getSystemState('/rostopic'))
 
         pubs, subs, _ = state
-        publists = [publist for t, publist in pubs if t == topic]
-        sublists = [sublist for t, sublist in subs if t == topic]
+        if topic:
+            # filter based on topic
+            topic_ns = roslib.names.make_global_ns(topic)        
+            subs = [x for x in subs if x[0] == topic or x[0].startswith(topic_ns)]
+            pubs = [x for x in pubs if x[0] == topic or x[0].startswith(topic_ns)]
 
         pub_topics = _succeed(master.getPublishedTopics('/rostopic', '/'))
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
-    
-    if topic:
+
+    def _exact_match(pubs, subs, topic):
+        # exact match if pubs/subs both match
+        return len([x for x in subs if x[0] == topic]) == len(subs) and \
+            len([x for x in pubs if x[0] == topic]) == len(pubs)
+
+    if topic and _exact_match(subs, pubs, topic):
+
+        if not pubs and not subs:
+            print >> sys.stderr, "Unknown topic %s"%topic
+            return 1
+            
         #print '-'*80
         print "\nType: %s\n"%topic_type(topic, pub_topics)
 
         import itertools
         if not subscribers_only:
-            if publists:
+
+            if pubs:
                 print "Publishers: "
-                for p in itertools.chain(*publists):
+                for p in itertools.chain(*[l for x, l in pubs]):
                     print " * %s (%s)"%(p, get_api(master, p))
             else:
                 print "Publishers: None"
             print ''
 
         if not publishers_only:
-            if sublists:
+            if subs:
                 print "Subscribers: "
-                for p in itertools.chain(*sublists):
+                for p in itertools.chain(*[l for x, l in subs]):
                     print " * %s (%s)"%(p, get_api(master, p))
             else:
                 print "Subscribers: None"
@@ -1150,7 +1166,7 @@ def _rostopic_cmd_list(command):
     @type  command: str
     """
     args = sys.argv[2:]
-    parser = OptionParser(usage="usage: %prog list [/topic]", prog=NAME)
+    parser = OptionParser(usage="usage: %prog list [/namespace]", prog=NAME)
     parser.add_option("-b", "--bag",
                       dest="bag", default=None,
                       help="list topics in .bag file", metavar="BAGFILE")
@@ -1190,7 +1206,7 @@ def _rostopic_cmd_list(command):
         if options.subscribers and options.publishers:
             parser.error("you may only specify one of -p, -s")
 
-        _rostopic_list(topic, verbose=options.verbose, subscribers_only=options.subscribers, publishers_only=options.publishers)
+        sys.exit(_rostopic_list(topic, verbose=options.verbose, subscribers_only=options.subscribers, publishers_only=options.publishers) or 0)
     
 def _fullusage():
     print """rostopic is a command-line tool for printing information about ROS Topics.

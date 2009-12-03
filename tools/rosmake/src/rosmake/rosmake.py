@@ -481,8 +481,10 @@ class RosMakeAll:
         self.print_all( "Packages requested are: %s"%packages)
         
         # these packages are not in the dependency tree but are needed they only cost 0.01 seconds to build
-        packages.append("paramiko")
-        packages.append("pycrypto")
+        if "paramiko" not in packages:
+            packages.append("paramiko")
+        if "pycrypto" not in packages:
+            packages.append("pycrypto")
 
         # Setup logging
         if self.logging_enabled:

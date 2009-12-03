@@ -33,6 +33,7 @@
 #define ROSCONSOLE_ROSCONSOLE_H
 
 #include "log4cxx/logger.h"
+#include <cstdio>
 
 #ifdef __GNUC__
 #if __GNUC__ >= 3

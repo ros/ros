@@ -61,7 +61,7 @@ class TestRosnodeOffline(unittest.TestCase):
         output = Popen([cmd, '-h'], stdout=PIPE).communicate()[0]
         self.assert_('Commands' in output)
 
-        for c in ['ping', 'list', 'info']:
+        for c in ['ping', 'list', 'info', 'kill']:
             output = Popen([cmd, c, '-h'], stdout=PIPE, stderr=PIPE).communicate()
             self.assert_("Usage:" in output[0], "[%s]: %s"%(c, output))
         # test no args on commands that require args
@@ -86,6 +86,9 @@ class TestRosnodeOffline(unittest.TestCase):
         output = Popen([cmd, 'info', 'talker'], **kwds).communicate()
         self.assert_(msg in output[1])
 
+        output = Popen([cmd, 'kill', 'talker'], **kwds).communicate()
+        self.assert_(msg in output[1])
+        
         
 if __name__ == '__main__':
     rostest.unitrun('test_rosnode', NAME, TestRosnodeOffline, sys.argv, coverage_packages=[])

@@ -357,6 +357,8 @@ class RosMakeAll:
       print "-"*79 + "}"
 
     def assert_rospack_built(self):
+        if self.flag_tracker.has_nobuild("rospack"):
+            return True
         return subprocess.call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
         # The check for presence doesn't check for updates
         #if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "bin/rospack")):
@@ -379,6 +381,10 @@ class RosMakeAll:
                           action="store_true", help="build and test packages")
         parser.add_option("-a", "--all", dest="build_all", default=False,
                           action="store_true", help="select all packages")
+        parser.add_option("-i", "--mark-installed", dest="mark_installed", default=False,
+                          action="store_true", help="On successful build, mark packages as installed with ROS_NOBUILD")
+        parser.add_option("-u", "--unmark-installed", dest="unmark_installed", default=False,
+                          action="store_true", help="Remove ROS_NOBUILD from the specified packages.  This will not build anything.")
         parser.add_option("-v", dest="verbose", default=False,
                           action="store_true", help="display errored builds")
         parser.add_option("-r","-k", "--robust", dest="robust", default=False,
@@ -481,11 +487,6 @@ class RosMakeAll:
 
         self.print_all( "Packages requested are: %s"%packages)
         
-        # these packages are not in the dependency tree but are needed they only cost 0.01 seconds to build
-        if "paramiko" not in packages:
-            packages.append("paramiko")
-        if "pycrypto" not in packages:
-            packages.append("pycrypto")
 
         # Setup logging
         if self.logging_enabled:
@@ -505,17 +506,30 @@ class RosMakeAll:
               os.makedirs (self.log_dir)
 
 
-        (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(packages)
-        self.print_all("Expanded args %s to:\n%s"%(packages, verified_packages))
+        (specified_packages, rejected_packages) = roslib.stacks.expand_to_packages(packages)
+        self.print_all("Expanded args %s to:\n%s"%(packages, specified_packages))
         if rejected_packages:
             self.print_all("WARNING: The following args could not be parsed as stacks or packages: %s"%rejected_packages)
 
         # make sure all dependencies are satisfied and if not warn
-        # TODO Uncomment when rosdep is more reliable self.check_rosdep(verified_packages)
+        # TODO Uncomment when rosdep is more reliable self.check_rosdep(specified_packages)
 
+        if options.unmark_installed:
+            for p in specified_packages:
+                if self.flag_tracker.remove_nobuild(p):
+                    self.print_all("Removed ROS_NOBUILD from %s"%p)
+            return True
+            
+        required_packages = specified_packages[:]
+        # these packages are not in the dependency tree but are needed they only cost 0.01 seconds to build
+        if "paramiko" not in specified_packages:
+            required_packages.append("paramiko")
+        if "pycrypto" not in specified_packages:
+            required_packages.append("pycrypto")
+    
         #generate the list of packages necessary to build(in order of dependencies)
         counter = 0
-        for p in verified_packages:
+        for p in required_packages:
 
             counter = counter + 1
             self.print_verbose( "Processing %s and all dependencies(%d of %d requested)"%(p, counter, len(packages)))
@@ -525,9 +539,9 @@ class RosMakeAll:
         if options.specified_only:
           new_list = []
           for pkg in self.build_list:
-            if pkg in verified_packages:
+            if pkg in specified_packages:
               new_list.append(pkg)
-              self.dependency_tracker = parallel_build.DependencyTracker(verified_packages) # this will make the tracker only respond to packages in the list
+              self.dependency_tracker = parallel_build.DependencyTracker(specified_packages) # this will make the tracker only respond to packages in the list
         
           self.print_all("specified-only option was used, only building packages %s"%new_list)
           self.build_list = new_list
@@ -540,7 +554,7 @@ class RosMakeAll:
               subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), "clean"])
 
 
-        if building or testing:
+        if building:
             self.assert_rospack_built()
 
         build_passed = True
@@ -556,8 +570,17 @@ class RosMakeAll:
         tests_passed = True
         if build_passed and testing:
             self.print_verbose ("Testing packages %s"% packages)
-            build_queue = parallel_build.BuildQueue(verified_packages, parallel_build.DependencyTracker(verified_packages), robust_build = True)
+            build_queue = parallel_build.BuildQueue(specified_packages, parallel_build.DependencyTracker(specified_packages), robust_build = True)
             tests_passed = self.parallel_build_pkgs(build_queue, "test", threads = 1)
+
+        if  options.mark_installed:
+            if build_passed and tests_passed: 
+                for p in specified_packages:
+                    if self.flag_tracker.add_nobuild(p):
+                        self.print_all("Marking %s as installed with a ROS_NOBUILD file"%p)
+            else:
+                self.print_all("All builds and tests did not pass cannot mark packages as installed. ")
+
 
         self.finish_time = time.time() #note: before profiling
         self.generate_summary_output(self.log_dir)

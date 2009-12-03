@@ -164,6 +164,25 @@ class PackageFlagTracker:
       return False
     return True
 
+  def add_nobuild(self, package):
+    with open(os.path.join(self.get_path(package), "ROS_NOBUILD"), 'w') as f:
+      f.write("created by rosmake to mark as installed")
+      self.nobuild.add(package)
+      return True
+    return False
+    
+
+  def remove_nobuild(self, package):
+    if not self.has_nobuild(package):
+      return True
+    try:
+      os.remove(os.path.join(self.get_path(package), "ROS_NOBUILD"))
+      self.nobuild.remove(package)
+      return True  
+    except:
+      return False
+
+
 class DependencyTracker:
   """ Track dependencies between packages.  This is basically a
   caching way to call roslib. It also will allow you to specifiy a

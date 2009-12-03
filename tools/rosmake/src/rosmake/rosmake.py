@@ -140,9 +140,9 @@ class RosMakeAll:
                 cmd.append(argument)
             self.print_full_verbose (cmd)
 
-            if p == "rospack" and argument == "clean":
-                return_string = ("[SKIP] rosmake will not clean rospack. rosmake cannot operate without it.")
-                return (False, return_string)
+            if p == "rospack":
+                return_string = ("[SKIP] rosmake cannot mutate rospack while using it.")
+                return (True, return_string)
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
             if not self.skip_blacklist and self.flag_tracker.is_blacklisted(p):
               self.print_all ("!"*20 + " Building package %s. ROS_BUILD_BLACKLIST ENCOUNTERED in package(s): %s --- TRYING TO BUILD ANYWAY"%(p, self.flag_tracker.is_blacklisted(p)) + "!"*20)

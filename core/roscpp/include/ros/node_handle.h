@@ -912,6 +912,123 @@ if (handle)
   void setParam(const std::string& key, bool b) const;
 
   /** \brief Get a string value from the parameter server.
+	 *
+	 * \param key The key to be used in the parameter server's dictionary
+	 * \param[out] s Storage for the retrieved value.
+	 *
+	 * \return true if the parameter value was retrieved, false otherwise
+	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 */
+	bool getParam(const std::string& key, std::string& s) const;
+	/** \brief Get a double value from the parameter server.
+	 *
+	 * \param key The key to be used in the parameter server's dictionary
+	 * \param[out] d Storage for the retrieved value.
+	 *
+	 * \return true if the parameter value was retrieved, false otherwise
+	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 */
+	bool getParam(const std::string& key, double& d) const;
+	/** \brief Get a integer value from the parameter server.
+	 *
+	 * \param key The key to be used in the parameter server's dictionary
+	 * \param[out] i Storage for the retrieved value.
+	 *
+	 * \return true if the parameter value was retrieved, false otherwise
+	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 */
+	bool getParam(const std::string& key, int& i) const;
+	/** \brief Get a boolean value from the parameter server.
+	 *
+	 * \param key The key to be used in the parameter server's dictionary
+	 * \param[out] b Storage for the retrieved value.
+	 *
+	 * \return true if the parameter value was retrieved, false otherwise
+	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 */
+	bool getParam(const std::string& key, bool& b) const;
+	/** \brief Get an arbitrary XML/RPC value from the parameter server.
+	 *
+	 * \param key The key to be used in the parameter server's dictionary
+	 * \param[out] v Storage for the retrieved value.
+	 *
+	 * \return true if the parameter value was retrieved, false otherwise
+	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 */
+	bool getParam(const std::string& key, XmlRpc::XmlRpcValue& v) const;
+
+	/** \brief Get a string value from the parameter server, with local caching
+	 *
+	 * This method will cache parameters locally, and subscribe for updates from
+	 * the parameter server.  Once the parameter is retrieved for the first time
+	 * no subsequent getCached() calls with the same key will query the master --
+	 * they will instead look up in the local cache.
+	 *
+	 * \param key The key to be used in the parameter server's dictionary
+	 * \param[out] s Storage for the retrieved value.
+	 *
+	 * \return true if the parameter value was retrieved, false otherwise
+	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 */
+	bool getParamCached(const std::string& key, std::string& s) const;
+	/** \brief Get a double value from the parameter server, with local caching
+	 *
+	 * This method will cache parameters locally, and subscribe for updates from
+	 * the parameter server.  Once the parameter is retrieved for the first time
+	 * no subsequent getCached() calls with the same key will query the master --
+	 * they will instead look up in the local cache.
+	 *
+	 * \param key The key to be used in the parameter server's dictionary
+	 * \param[out] d Storage for the retrieved value.
+	 *
+	 * \return true if the parameter value was retrieved, false otherwise
+	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 */
+	bool getParamCached(const std::string& key, double& d) const;
+	/** \brief Get a integer value from the parameter server, with local caching
+	 *
+	 * This method will cache parameters locally, and subscribe for updates from
+	 * the parameter server.  Once the parameter is retrieved for the first time
+	 * no subsequent getCached() calls with the same key will query the master --
+	 * they will instead look up in the local cache.
+	 *
+	 * \param key The key to be used in the parameter server's dictionary
+	 * \param[out] i Storage for the retrieved value.
+	 *
+	 * \return true if the parameter value was retrieved, false otherwise
+	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 */
+	bool getParamCached(const std::string& key, int& i) const;
+	/** \brief Get a boolean value from the parameter server, with local caching
+	 *
+	 * This method will cache parameters locally, and subscribe for updates from
+	 * the parameter server.  Once the parameter is retrieved for the first time
+	 * no subsequent getCached() calls with the same key will query the master --
+	 * they will instead look up in the local cache.
+	 *
+	 * \param key The key to be used in the parameter server's dictionary
+	 * \param[out] b Storage for the retrieved value.
+	 *
+	 * \return true if the parameter value was retrieved, false otherwise
+	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 */
+	bool getParamCached(const std::string& key, bool& b) const;
+	/** \brief Get an arbitrary XML/RPC value from the parameter server, with local caching
+	 *
+	 * This method will cache parameters locally, and subscribe for updates from
+	 * the parameter server.  Once the parameter is retrieved for the first time
+	 * no subsequent getCached() calls with the same key will query the master --
+	 * they will instead look up in the local cache.
+	 *
+	 * \param key The key to be used in the parameter server's dictionary
+	 * \param[out] v Storage for the retrieved value.
+	 *
+	 * \return true if the parameter value was retrieved, false otherwise
+	 * \throws InvalidNameException If the parameter name begins with a tilde
+	 */
+	bool getParamCached(const std::string& key, XmlRpc::XmlRpcValue& v) const;
+
+  /** \brief Get a string value from the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
    * \param[out] s Storage for the retrieved value.
@@ -924,8 +1041,9 @@ if (handle)
    *
    * \return true if the parameter value was retrieved, false otherwise
    * \throws InvalidNameException If the parameter name begins with a tilde
+   * \deprecated in favor of getParamCached()
    */
-  bool getParam(const std::string& key, std::string& s, bool use_cache = false) const;
+  ROSCPP_DEPRECATED bool getParam(const std::string& key, std::string& s, bool use_cache) const;
   /** \brief Get a double value from the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
@@ -939,8 +1057,9 @@ if (handle)
    *
    * \return true if the parameter value was retrieved, false otherwise
    * \throws InvalidNameException If the parameter name begins with a tilde
+   * \deprecated in favor of getParamCached()
    */
-  bool getParam(const std::string& key, double& d, bool use_cache = false) const;
+  ROSCPP_DEPRECATED bool getParam(const std::string& key, double& d, bool use_cache) const;
   /** \brief Get a integer value from the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
@@ -954,8 +1073,9 @@ if (handle)
    *
    * \return true if the parameter value was retrieved, false otherwise
    * \throws InvalidNameException If the parameter name begins with a tilde
+   * \deprecated in favor of getParamCached()
    */
-  bool getParam(const std::string& key, int& i, bool use_cache = false) const;
+  ROSCPP_DEPRECATED bool getParam(const std::string& key, int& i, bool use_cache) const;
   /** \brief Get a boolean value from the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
@@ -969,8 +1089,9 @@ if (handle)
    *
    * \return true if the parameter value was retrieved, false otherwise
    * \throws InvalidNameException If the parameter name begins with a tilde
+   * \deprecated in favor of getParamCached()
    */
-  bool getParam(const std::string& key, bool& b, bool use_cache = false) const;
+  ROSCPP_DEPRECATED bool getParam(const std::string& key, bool& b, bool use_cache) const;
   /** \brief Get an arbitrary XML/RPC value from the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
@@ -984,8 +1105,9 @@ if (handle)
    *
    * \return true if the parameter value was retrieved, false otherwise
    * \throws InvalidNameException If the parameter name begins with a tilde
+   * \deprecated in favor of getParamCached()
    */
-  bool getParam(const std::string& key, XmlRpc::XmlRpcValue& v, bool use_cache = false) const;
+  ROSCPP_DEPRECATED bool getParam(const std::string& key, XmlRpc::XmlRpcValue& v, bool use_cache) const;
 
   /** \brief Check whether a parameter exists on the parameter server.
    *

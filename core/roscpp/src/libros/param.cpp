@@ -159,7 +159,7 @@ bool del(const std::string &key)
   return true;
 }
 
-bool get(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
+bool getImpl(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
 {
   std::string mapped_key = ros::names::resolve(key);
 
@@ -223,10 +223,10 @@ bool get(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
   return true;
 }
 
-bool get(const std::string &key, std::string &s, bool use_cache)
+bool getImpl(const std::string &key, std::string &s, bool use_cache)
 {
   XmlRpc::XmlRpcValue v;
-  if (!get(key, v, use_cache))
+  if (!getImpl(key, v, use_cache))
     return false;
   if (v.getType() != XmlRpc::XmlRpcValue::TypeString)
     return false;
@@ -234,10 +234,10 @@ bool get(const std::string &key, std::string &s, bool use_cache)
   return true;
 }
 
-bool get(const std::string &key, double &d, bool use_cache)
+bool getImpl(const std::string &key, double &d, bool use_cache)
 {
   XmlRpc::XmlRpcValue v;
-  if (!get(key, v, use_cache))
+  if (!getImpl(key, v, use_cache))
   {
     return false;
   }
@@ -258,10 +258,10 @@ bool get(const std::string &key, double &d, bool use_cache)
   return true;
 }
 
-bool get(const std::string &key, int &i, bool use_cache)
+bool getImpl(const std::string &key, int &i, bool use_cache)
 {
   XmlRpc::XmlRpcValue v;
-  if (!get(key, v, use_cache))
+  if (!getImpl(key, v, use_cache))
   {
     return false;
   }
@@ -293,16 +293,94 @@ bool get(const std::string &key, int &i, bool use_cache)
   return true;
 }
 
-bool get(const std::string &key, bool &b, bool use_cache)
+bool getImpl(const std::string &key, bool &b, bool use_cache)
 {
   XmlRpc::XmlRpcValue v;
-  if (!get(key, v, use_cache))
+  if (!getImpl(key, v, use_cache))
     return false;
   if (v.getType() != XmlRpc::XmlRpcValue::TypeBoolean)
     return false;
   b = v;
   return true;
 }
+
+bool get(const std::string& key, std::string& s)
+{
+	return getImpl(key, s, false);
+}
+
+bool get(const std::string& key, double& d)
+{
+	return getImpl(key, d, false);
+}
+
+bool get(const std::string& key, int& i)
+{
+	return getImpl(key, i, false);
+}
+
+bool get(const std::string& key, bool& b)
+{
+	return getImpl(key, b, false);
+}
+
+bool get(const std::string& key, XmlRpc::XmlRpcValue& v)
+{
+	return getImpl(key, v, true);
+}
+
+bool getCached(const std::string& key, std::string& s)
+{
+	return getImpl(key, s, true);
+}
+
+bool getCached(const std::string& key, double& d)
+{
+	return getImpl(key, d, true);
+}
+
+bool getCached(const std::string& key, int& i)
+{
+	return getImpl(key, i, true);
+}
+
+bool getCached(const std::string& key, bool& b)
+{
+	return getImpl(key, b, true);
+}
+
+bool getCached(const std::string& key, XmlRpc::XmlRpcValue& v)
+{
+	return getImpl(key, v, true);
+}
+
+////////////////////////////////////////////////////////////
+// deprecated get() functions with the use_cache parameter
+bool get(const std::string& key, std::string& s, bool use_cache)
+{
+	return getImpl(key, s, true);
+}
+
+bool get(const std::string& key, double& d, bool use_cache)
+{
+	return getImpl(key, d, true);
+}
+
+bool get(const std::string& key, int& i, bool use_cache)
+{
+	return getImpl(key, i, true);
+}
+
+bool get(const std::string& key, bool& b, bool use_cache)
+{
+	return getImpl(key, b, true);
+}
+
+bool get(const std::string& key, XmlRpc::XmlRpcValue& v, bool use_cache)
+{
+	return getImpl(key, v, true);
+}
+//////////////////////////////////////////////////////////////
 
 bool search(const std::string& key, std::string& result_out)
 {

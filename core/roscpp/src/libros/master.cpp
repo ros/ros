@@ -213,7 +213,7 @@ bool execute(const std::string& method, const XmlRpc::XmlRpcValue& request, XmlR
     }
     else
     {
-      if (!XMLRPCManager::instance()->validateXmlrpcResponse(method, response, payload) && ok)
+      if (!XMLRPCManager::instance()->validateXmlrpcResponse(method, response, payload))
       {
         XMLRPCManager::instance()->releaseXMLRPCClient(c);
 

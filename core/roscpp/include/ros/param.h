@@ -81,6 +81,113 @@ void set(const std::string& key, bool b);
  *
  * \param key The key to be used in the parameter server's dictionary
  * \param[out] s Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ */
+bool get(const std::string& key, std::string& s);
+/** \brief Get a double value from the parameter server.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] d Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ */
+bool get(const std::string& key, double& d);
+/** \brief Get a integer value from the parameter server.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] i Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ */
+bool get(const std::string& key, int& i);
+/** \brief Get a boolean value from the parameter server.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] b Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ */
+bool get(const std::string& key, bool& b);
+/** \brief Get an arbitrary XML/RPC value from the parameter server.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] v Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ */
+bool get(const std::string& key, XmlRpc::XmlRpcValue& v);
+
+/** \brief Get a string value from the parameter server, with local caching
+ *
+ * This function will cache parameters locally, and subscribe for updates from
+ * the parameter server.  Once the parameter is retrieved for the first time
+ * no subsequent getCached() calls with the same key will query the master --
+ * they will instead look up in the local cache.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] s Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ */
+bool getCached(const std::string& key, std::string& s);
+/** \brief Get a double value from the parameter server, with local caching
+ *
+ * This function will cache parameters locally, and subscribe for updates from
+ * the parameter server.  Once the parameter is retrieved for the first time
+ * no subsequent getCached() calls with the same key will query the master --
+ * they will instead look up in the local cache.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] d Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ */
+bool getCached(const std::string& key, double& d);
+/** \brief Get a integer value from the parameter server, with local caching
+ *
+ * This function will cache parameters locally, and subscribe for updates from
+ * the parameter server.  Once the parameter is retrieved for the first time
+ * no subsequent getCached() calls with the same key will query the master --
+ * they will instead look up in the local cache.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] i Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ */
+bool getCached(const std::string& key, int& i);
+/** \brief Get a boolean value from the parameter server, with local caching
+ *
+ * This function will cache parameters locally, and subscribe for updates from
+ * the parameter server.  Once the parameter is retrieved for the first time
+ * no subsequent getCached() calls with the same key will query the master --
+ * they will instead look up in the local cache.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] b Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ */
+bool getCached(const std::string& key, bool& b);
+/** \brief Get an arbitrary XML/RPC value from the parameter server, with local caching
+ *
+ * This function will cache parameters locally, and subscribe for updates from
+ * the parameter server.  Once the parameter is retrieved for the first time
+ * no subsequent getCached() calls with the same key will query the master --
+ * they will instead look up in the local cache.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] v Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ */
+bool getCached(const std::string& key, XmlRpc::XmlRpcValue& v);
+
+/** \brief Get a string value from the parameter server.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] s Storage for the retrieved value.
  * \param use_cache Determines whether or not we will cache and subscribe
  * to updates for this parameter.  If use_cache is true and we don't have
  * this parameter cached, we will subscribe to updates for this parameter
@@ -89,8 +196,9 @@ void set(const std::string& key, bool b);
  * the value.
  *
  * \return true if the parameter value was retrieved, false otherwise
+ * \deprecated in favor of getCached
  */
-bool get(const std::string& key, std::string& s, bool use_cache = false);
+ROSCPP_DEPRECATED bool get(const std::string& key, std::string& s, bool use_cache);
 /** \brief Get a double value from the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
@@ -103,8 +211,9 @@ bool get(const std::string& key, std::string& s, bool use_cache = false);
  * the value.
  *
  * \return true if the parameter value was retrieved, false otherwise
+ * \deprecated in favor of getCached
  */
-bool get(const std::string& key, double& d, bool use_cache = false);
+ROSCPP_DEPRECATED bool get(const std::string& key, double& d, bool use_cache);
 /** \brief Get a integer value from the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
@@ -117,8 +226,9 @@ bool get(const std::string& key, double& d, bool use_cache = false);
  * the value.
  *
  * \return true if the parameter value was retrieved, false otherwise
+ * \deprecated in favor of getCached
  */
-bool get(const std::string& key, int& i, bool use_cache = false);
+ROSCPP_DEPRECATED bool get(const std::string& key, int& i, bool use_cache);
 /** \brief Get a boolean value from the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
@@ -131,8 +241,9 @@ bool get(const std::string& key, int& i, bool use_cache = false);
  * the value.
  *
  * \return true if the parameter value was retrieved, false otherwise
+ * \deprecated in favor of getCached
  */
-bool get(const std::string& key, bool& b, bool use_cache = false);
+ROSCPP_DEPRECATED bool get(const std::string& key, bool& b, bool use_cache);
 /** \brief Get an arbitrary XML/RPC value from the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
@@ -145,8 +256,9 @@ bool get(const std::string& key, bool& b, bool use_cache = false);
  * the value.
  *
  * \return true if the parameter value was retrieved, false otherwise
+ * \deprecated in favor of getCached
  */
-bool get(const std::string& key, XmlRpc::XmlRpcValue& v, bool use_cache = false);
+ROSCPP_DEPRECATED bool get(const std::string& key, XmlRpc::XmlRpcValue& v, bool use_cache);
 
 /** \brief Check whether a parameter exists on the parameter server.
  *

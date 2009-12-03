@@ -668,8 +668,12 @@ class _ProcessKiller(Thread):
     def run(self):
         q = self.q
         while not q.empty():
-            _kill_process(q.get(), self.errors)
-            q.task_done()
+            try:
+                p = q.get(False)
+                _kill_process(p, self.errors)
+                q.task_done()
+            except Queue.Empty:
+                pass
 
         
     

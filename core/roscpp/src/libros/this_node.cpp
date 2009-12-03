@@ -97,7 +97,9 @@ void init(const std::string& name, const M_string& remappings, uint32_t options)
   std::string error;
   if (!names::validate(g_namespace, error))
   {
-    ROS_WARN("Namespace is invalid: %s  This will be an error in future versions of ROS.", error.c_str());
+  	std::stringstream ss;
+  	ss << "Namespace [" << g_namespace << "] is invalid: " << error;
+  	throw InvalidNameException(ss.str());
   }
 
   // names must be initialized here, because it requires the namespace to already be known so that it can properly resolve names.

@@ -9,7 +9,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 rosbuild_add_boost_directories()
 
-rosbuild_add_library(roslib src/time.cpp src/rate.cpp src/package.cpp)
+rosbuild_add_library(roslib src/time.cpp src/rate.cpp src/package.cpp src/debug.cpp)
 rosbuild_link_boost(roslib thread)
 
 rosbuild_add_gtest(test_time test/time.cpp)

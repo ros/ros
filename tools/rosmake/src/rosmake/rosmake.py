@@ -559,6 +559,8 @@ class RosMakeAll:
 
         build_passed = True
         if building:
+          if "gtest" in self.build_list:
+              self.build_list.remove("gtest")
           self.build_list.insert(0, "gtest") # Required by all cpp test packages but not in build dependency tree
           self.print_verbose ("Building packages %s"% self.build_list)
           build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = options.robust)

@@ -233,21 +233,22 @@ def load_tmpl(filename):
     finally:
         f.close()
 
-def li_package_links(ctx, package, packages, docdir):
+def li_package_links(ctx, package, packages, docdir, package_htmldir=None):
     """
     @param package: current package
     @type  package: str
     @param packages: list of packages to generate 'li' html links to
     @type  packages: [str]
     """
-    curr_path = html_path(package, docdir)
+    # package_htmldir can be overridden by rosdoc config
+    package_htmldir = package_htmldir or html_path(package, docdir)
     
     # don't link to packages that aren't documentable
     documented_packages = [p for p in packages if ctx.should_document(p)]
     undocumented_packages = [p for p in packages if not ctx.should_document(p)]
     
     documented = '\n'.join(['  <li><a href="%s/index.html">%s</a></li>'%\
-                                (compute_relative(curr_path, html_path(p, docdir)), p) for p in documented_packages])
+                                (compute_relative(package_htmldir, html_path(p, docdir)), p) for p in documented_packages])
     undocumented = '\n'.join(['  <li>%s</li>'%p for p in undocumented_packages])
     return documented + undocumented + "\n</ul>"
             

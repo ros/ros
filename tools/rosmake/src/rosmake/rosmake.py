@@ -140,8 +140,8 @@ class RosMakeAll:
                 cmd.append(argument)
             self.print_full_verbose (cmd)
 
-            if p == "rospack" and argument == "clean":
-                return_string = ("[SKIP] rosmake will not clean rospack. rosmake cannot operate without it.")
+            if p == "rospack":
+                return_string = ("[SKIP] rosmake uses rospack.  If building it is already built, if cleaning it will be cleaned at the end.")
                 return (True, return_string) # This will be caught later
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
             if not self.skip_blacklist and self.flag_tracker.is_blacklisted(p):
@@ -357,12 +357,13 @@ class RosMakeAll:
       print "-"*79 + "}"
 
     def assert_rospack_built(self):
-        if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "bin/rospack")):
-            return True
-        else:
-            print "Rosmake detected that rospack was not built.  Building it for you because it is required.\
-    "
-            return subprocess.call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
+        return subprocess.call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
+        # The check for presence doesn't check for updates
+        #if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "bin/rospack")):
+        #    return True
+        #else:
+        #    print "Rosmake detected that rospack was not built.  Building it for you because it is required."
+        #    return subprocess.call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
 
 
 

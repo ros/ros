@@ -1688,6 +1688,15 @@ void ROSPack::crawl_for_packages(bool force_crawl)
       else
       {
         bool dup = false;
+        // Does this directory contain a stack.xml or app.xml?  In that
+        // case, it's an empty stack or app, and should not be considered a
+        // zombie.
+        if(file_exists(cqe.path + fs_delim + "stack.xml") ||
+           file_exists(cqe.path + fs_delim + "app.xml"))
+        {
+          continue;
+        }
+        //
         // Does this entry's parent appear in the list?
         for(vector<string>::const_iterator it = zombie_dirs.begin();
             it != zombie_dirs.end();

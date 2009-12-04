@@ -472,10 +472,11 @@ class Rhel:
 
 
 class Rosdep:
-    def __init__(self, packages, command = "rosdep"):
+    def __init__(self, packages, command = "rosdep", robust = False):
         self.osi = OSIndex()
         self.rdl = RosdepLookup(self.osi)
         self.rosdeps = self.gather_rosdeps(packages, command)
+        self.robust = robust
 
     def gather_rosdeps(self, packages, command):
         rosdeps = set()
@@ -496,6 +497,7 @@ class Rosdep:
     def get_packages_and_scripts(self):
         native_packages = []
         scripts = []
+        failed_rosdeps = []
         for r in self.rosdeps:
             specific = self.rdl.lookup_rosdep(r)
             if specific:
@@ -504,6 +506,14 @@ class Rosdep:
                         native_packages.append(pk)
                 else:
                     scripts.append(specific)
+            else:
+                failed_rosdeps.append(r)
+
+        if len(failed_rosdeps) > 0:
+            if not self.robust:
+                raise Exception("Rosdeps %s could not be resolved"%failed_rosdeps)
+            else:
+                print >> sys.stderr, "WARNING: Rosdeps %s could not be resolved"%failed_rosdeps
         return (native_packages, scripts)
 
     def get_native_packages(self):
@@ -517,7 +527,10 @@ class Rosdep:
             "\n".join(["\n%s"%sc for sc in scripts])
         
     def check(self):
-        native_packages, scripts = self.get_packages_and_scripts()
+        try:
+            native_packages, scripts = self.get_packages_and_scripts()
+        except:
+            pass
         undetected = self.osi.strip_detected_packages(native_packages)
         return_str = ""
         if len(undetected) > 0:
@@ -598,6 +611,8 @@ def main():
                       action="store_true", help="do not deduplicate")
     parser.add_option("--default-yes", "-y", dest="default_yes", default=False, 
                       action="store_true", help="Tell the package manager to default to y or fail when installing")
+    parser.add_option("-r", "-k", dest="robust", default=False, 
+                      action="store_true", help="Continue installing despite errors.")
 
     options, args = parser.parse_args()
 
@@ -618,7 +633,7 @@ def main():
         print "Warning: could not identify %s"%rejected_packages
     
     ### Find all dependencies
-    r = Rosdep(verified_packages)
+    r = Rosdep(verified_packages, robust=options.robust)
 
     ### Detect OS name and version
 
@@ -635,17 +650,24 @@ def main():
         print "Detected OS: " + r.osi.get_os_name()
         print "Detected Version: " + r.osi.get_os_version()
 
-    if command == "generate_bash" or command == "satisfy":
-        print r.generate_script(include_duplicates=options.include_duplicates, default_yes=options.default_yes)
-
-    elif command == "install":
-        r.install(options.include_duplicates, options.default_yes);
-
-    elif command == "depdb":
+    try:
+        if command == "generate_bash" or command == "satisfy":
+            print r.generate_script(include_duplicates=options.include_duplicates, default_yes=options.default_yes)
+            return True
+        elif command == "install":
+            r.install(options.include_duplicates, options.default_yes);
+            return True
+    except Exception, e:
+        print "ERROR: %s"%e
+        return False
+        
+    if command == "depdb":
         print r.depdb()
+        return True
 
     elif command == "what_needs":
         print '\n'.join(r.what_needs(rdargs))
+        return True
 
     elif command == "check":
         output = r.check()

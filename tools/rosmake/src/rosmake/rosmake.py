@@ -135,9 +135,9 @@ class RosMakeAll:
             local_env = os.environ.copy()
             local_env['ROS_PARALLEL_JOBS'] = "-j%d" % self.ros_parallel_jobs
             local_env['SVN_CMDLINE'] = "svn --non-interactive"
-            cmd = ["make" ]
+            cmd = ["bash", "-c", "cd %s && make "%self.get_path(p) ]
             if argument:
-                cmd.append(argument)
+                cmd[-1] += argument
             self.print_full_verbose (cmd)
 
             if p == "rospack":
@@ -165,7 +165,7 @@ class RosMakeAll:
                 self.output[argument][p] = "No Makefile Present"
             else:
                 start_time = time.time()
-                command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, env=local_env, cwd=self.get_path(p))
+                command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, env=local_env)
                 (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
                 self.profile[argument][p] = time.time() - start_time
                 self.output[argument][p] = pstd_out
@@ -359,7 +359,7 @@ class RosMakeAll:
     def assert_rospack_built(self):
         if self.flag_tracker.has_nobuild("rospack"):
             return True
-        return subprocess.call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
+        return subprocess.call(["bash", "-c", "cd %s && make "%os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
         # The check for presence doesn't check for updates
         #if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "bin/rospack")):
         #    return True

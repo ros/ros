@@ -135,7 +135,7 @@ class RosMakeAll:
             local_env = os.environ.copy()
             local_env['ROS_PARALLEL_JOBS'] = "-j%d" % self.ros_parallel_jobs
             local_env['SVN_CMDLINE'] = "svn --non-interactive"
-            cmd = ["make", "-C", self.get_path(p) ]
+            cmd = ["make" ]
             if argument:
                 cmd.append(argument)
             self.print_full_verbose (cmd)
@@ -165,7 +165,7 @@ class RosMakeAll:
                 self.output[argument][p] = "No Makefile Present"
             else:
                 start_time = time.time()
-                command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, env=local_env)
+                command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, env=local_env, cwd=self.get_path(p))
                 (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
                 self.profile[argument][p] = time.time() - start_time
                 self.output[argument][p] = pstd_out

@@ -162,8 +162,8 @@ class OSIndex:
             self._os_version = self._os_map[self.get_os_name()].get_version()
         return self._os_version
 
-    def detect_packages(self, packages):
-        return self._os_map[self.get_os_name()].detect_packages(packages)
+    def strip_detected_packages(self, packages):
+        return self._os_map[self.get_os_name()].strip_detected_packages(packages)
 
     def generate_package_install_command(self, packages, default_yes):
         if len(packages) > 0:
@@ -230,7 +230,7 @@ class Ubuntu:
     def get_version(self):
         return lsb_get_release_version()
     
-    def detect_packages(self, packages):
+    def strip_detected_packages(self, packages):
         return [p for p in packages if not dpkg_detect(p)]
 
     def generate_package_install_command(self, packages, default_yes):
@@ -272,7 +272,7 @@ class Debian:
 
         return False
 
-    def detect_packages(self, packages):
+    def strip_detected_packages(self, packages):
         return [p for p in packages if not dpkg_detect(p)]
 
     def generate_package_install_command(self, packages, default_yes):        
@@ -311,7 +311,7 @@ class Mint:
 
         return False
 
-    def detect_packages(self, packages):
+    def strip_detected_packages(self, packages):
         return [p for p in packages if not dpkg_detect(p)]
 
     def generate_package_install_command(self, packages, default_yes):        
@@ -350,7 +350,7 @@ class Arch:
 
         return False
 
-    def detect_packages(self, packages):
+    def strip_detected_packages(self, packages):
         return [p for p in packages if pacman_detect(p)]
 
     def generate_package_install_command(self, packages, default_yes):        
@@ -358,7 +358,14 @@ class Arch:
 
 ###### END Arch SPECIALIZATION ########################
 
+
 ###### Macports SPECIALIZATION #########################
+def port_detect(p):
+    cmd = ['port', 'installed', p]
+    pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (std_out, std_err) = pop.communicate()
+    
+    return (std_out.count("(active)") > 0)
 
 class Macports:
     def __init__(self, index):
@@ -371,23 +378,10 @@ class Macports:
         return False
     
     def get_version(self):
-        return ""
-        # TODO add this parsing from cpp version
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:
-                    os_list = fh.read().split()
-                if os_list[0] == "Linux" and os_list[1] == "Macports":
-                    return os_list[2]
-        except:
-            print "Macports failed to get version"
-            return False
+        return "macports" # macports is a rolling release and isn't versionsed
 
-        return False
-
-    def detect_packages(self, packages):
-        return packages# Detection of installed_packages not implemented, 
+    def strip_detected_packages(self, packages):
+        return [p for p in packages if not port_detect(p)] 
 
     def generate_package_install_command(self, packages, default_yes):        
         return "#Packages\nsudo port install " + ' '.join(packages)
@@ -429,7 +423,7 @@ class Fedora:
 
         return False
 
-    def detect_packages(self, packages):
+    def strip_detected_packages(self, packages):
         return [p for p in packages if yum_detect(p)]
 
     def generate_package_install_command(self, packages, default_yes):        
@@ -468,7 +462,7 @@ class Rhel:
 
         return False
 
-    def detect_packages(self, packages):
+    def strip_detected_packages(self, packages):
         return [p for p in packages if yum_detect(p)]
 
     def generate_package_install_command(self, packages, default_yes):
@@ -518,13 +512,13 @@ class Rosdep:
     def generate_script(self, include_duplicates=False, default_yes = False):
         native_packages, scripts = self.get_packages_and_scripts()
         undetected = native_packages if include_duplicates else \
-            self.osi.detect_packages(native_packages)
+            self.osi.strip_detected_packages(native_packages)
         return self.osi.generate_package_install_command(undetected, default_yes) + \
             "\n".join(["\n%s"%sc for sc in scripts])
         
     def check(self):
         native_packages, scripts = self.get_packages_and_scripts()
-        undetected = self.osi.detect_packages(native_packages)
+        undetected = self.osi.strip_detected_packages(native_packages)
         return_str = ""
         if len(undetected) > 0:
             return_str += "Did not detect packages: %s\n"%undetected

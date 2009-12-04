@@ -34,6 +34,7 @@
 
 #include "ros/connection.h"
 #include "ros/transport/transport.h"
+#include "ros/file_log.h"
 
 #include <ros/assert.h>
 
@@ -400,7 +401,7 @@ void Connection::onHeaderRead(const ConnectionPtr& conn, const boost::shared_arr
     std::string error_val;
     if (header_.getValue("error", error_val))
     {
-      ROS_ERROR("Received error message in header for connection to [%s]: [%s]", transport_->getTransportInfo().c_str(), error_val.c_str());
+      ROSCPP_LOG_DEBUG("Received error message in header for connection to [%s]: [%s]", transport_->getTransportInfo().c_str(), error_val.c_str());
       drop();
     }
     else

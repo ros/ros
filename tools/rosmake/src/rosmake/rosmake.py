@@ -510,6 +510,9 @@ class RosMakeAll:
         self.print_all("Expanded args %s to:\n%s"%(packages, specified_packages))
         if rejected_packages:
             self.print_all("WARNING: The following args could not be parsed as stacks or packages: %s"%rejected_packages)
+        if len(specified_packages) == 0:
+            self.print_all("ERROR: No arguments could be parsed into valid package or stack names.")
+            return False
 
         # make sure all dependencies are satisfied and if not warn
         # TODO Uncomment when rosdep is more reliable self.check_rosdep(specified_packages)

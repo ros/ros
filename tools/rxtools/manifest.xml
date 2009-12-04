@@ -3,9 +3,12 @@
     
 rxtools is two things.  First it is a library of GUI widgets (written in wxWidgets) that can be embedded in other applications. Second it is a set of GUI applications that view/manage ROS state. These GUI applications include <tt>rxconsole</tt> and <tt>rxplot</tt>.
     
+<br/>
+Pieces of rxtools use some icons from the silk icon pack (http://www.famfamfam.com/lab/icons/silk/)
+
     </description>
     <author>Josh Faust, Rob Wheeler, Ken Conley</author>
-    <license>BSD</license>
+    <license>BSD, Creative Commons</license>
     <review status="API cleared" notes=""/>
     <url>http://ros.org/wiki/rxtools</url>
     <depend package="roscpp"/>

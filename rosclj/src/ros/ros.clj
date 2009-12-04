@@ -508,6 +508,7 @@
   "Call service 'name' with the given Request map, and return a Clojure
    map corresponding to the response."
   ([#^NodeHandle nh #^String name request]
+      (println "Calling " name " with " request)
      (let [#^Message request (map->msg request)
 	   srv (.serviceClient nh name #^Service (req-srv request) false)
 	   result (msg->map (.call srv (map->msg request)))]
@@ -521,6 +522,7 @@
   call-service-cached   
   (let [mem (atom {})]
     (fn [#^NodeHandle nh #^String name request]
+      (println "Calling " name " with " request)
       (let [#^Message request (map->msg request)
 	    #^ServiceClient srv 
 	      (or (@mem [nh name])
@@ -528,7 +530,14 @@
 					    (req-srv request) true)]
 		    (swap! mem assoc [nh name] ret)
 		    ret))]
-	(msg->map (.call srv (map->msg request)))))))
+	(msg->map
+	 (try (.call srv (map->msg request))
+	      (catch RosException e
+		(let [new-srv (.serviceClient nh name #^Service 
+					      (req-srv request) true)]
+		  (swap! mem assoc [nh name] new-srv)
+		  (.call new-srv (map->msg request))))))))))
+		  
 
 
 

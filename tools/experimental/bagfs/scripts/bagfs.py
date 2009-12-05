@@ -37,7 +37,7 @@ class BagFS(Fuse):
             cdir = self.msgs
             for ns in topic.lstrip('/').split('/'):
                 if not ns in cdir:
-                    self.msgs[ns] = {}
+                    cdir[ns] = {}
                 cdir=cdir[ns]
             cdir["%.6d"%i] = (topic,msg,t)
 

@@ -129,7 +129,7 @@ void TransportTCP::parseHeader(const Header& header)
   std::string nodelay;
   if (header.getValue("tcp_nodelay", nodelay) && nodelay == "1")
   {
-    ROS_INFO("Setting nodelay on socket");
+    ROSCPP_LOG_DEBUG("Setting nodelay on socket [%d]", sock_);
     setNoDelay(true);
   }
 }

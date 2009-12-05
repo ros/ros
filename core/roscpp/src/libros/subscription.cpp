@@ -180,6 +180,33 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
 
   bool retval = true;
 
+  {
+    std::stringstream ss;
+
+    for (V_string::const_iterator up_i = new_pubs.begin();
+         up_i != new_pubs.end(); ++up_i)
+    {
+      ss << *up_i << ", ";
+    }
+
+    ss << " already have these connections: ";
+    for (V_PublisherLink::iterator spc = publisher_links_.begin();
+         spc!= publisher_links_.end(); ++spc)
+    {
+      ss << (*spc)->getPublisherXMLRPCURI() << ", ";
+    }
+
+    boost::mutex::scoped_lock lock(pending_connections_mutex_);
+    S_PendingConnection::iterator it = pending_connections_.begin();
+    S_PendingConnection::iterator end = pending_connections_.end();
+    for (; it != end; ++it)
+    {
+      ss << (*it)->getRemoteURI() << ", ";
+    }
+
+    ROSCPP_LOG_DEBUG("Publisher update for [%s]: %s", name_.c_str(), ss.str().c_str());
+  }
+
   V_string additions;
   V_PublisherLink subtractions;
   V_PublisherLink to_add;
@@ -250,6 +277,10 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
     if (XMLRPCManager::instance()->getServerURI() != *i)
     {
       retval &= negotiateConnection(*i);
+    }
+    else
+    {
+      ROSCPP_LOG_DEBUG("Skipping myself (%s, %s)", name_.c_str(), XMLRPCManager::instance()->getServerURI().c_str());
     }
   }
 
@@ -338,6 +369,8 @@ bool Subscription::negotiateConnection(const std::string& xmlrpc_uri)
     delete c;
     return false;
   }
+
+  ROSCPP_LOG_DEBUG("Began asynchronous xmlrpc connection to [%s:%d]", peer_host.c_str(), peer_port);
 
   // The PendingConnectionPtr takes ownership of c, and will delete it on
   // destruction.

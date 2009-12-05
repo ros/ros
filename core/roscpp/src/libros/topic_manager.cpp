@@ -456,16 +456,27 @@ bool TopicManager::registerSubscriber(const SubscriptionPtr& s, const string &da
   }
 
   vector<string> pub_uris;
-  bool self_subscribed = false;
   for (int i = 0; i < payload.size(); i++)
   {
-    if (payload[i] == xmlrpc_manager_->getServerURI())
-    {
-      self_subscribed = true;
-    }
-    else
+    if (payload[i] != xmlrpc_manager_->getServerURI())
     {
       pub_uris.push_back(string(payload[i]));
+    }
+  }
+
+  bool self_subscribed = false;
+  // Figure out if we have a local publisher
+  {
+    boost::recursive_mutex::scoped_lock lock(advertised_topics_mutex_);
+    V_Publication::const_iterator it = advertised_topics_.begin();
+    V_Publication::const_iterator end = advertised_topics_.end();
+    for (; it != end; ++it)
+    {
+      const PublicationPtr& pub = *it;
+      if (pub->getName() == s->getName() && pub->getDataType() == s->datatype() && !pub->isDropped())
+      {
+        self_subscribed = true;
+      }
     }
   }
 

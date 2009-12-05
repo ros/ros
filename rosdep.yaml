@@ -54,6 +54,9 @@ python-numpy:
   rhel: python-numpy
   arch: python-numpy
   macports: py25-numpy
+python-fuse:
+  ubuntu: python-fuse
+  debian: python-fuse
 python-scipy:
   ubuntu: python-scipy
   debian: python-scipy

@@ -168,7 +168,7 @@ class RosMakeAll:
                 self.output[argument][p] = "No Makefile Present"
             else:
                 start_time = time.time()
-                (returncode, pstd_out) = self.build_package(p)
+                (returncode, pstd_out) = self.build_package(p, argument)
                 self.profile[argument][p] = time.time() - start_time
                 self.output[argument][p] = pstd_out
                 if argument:

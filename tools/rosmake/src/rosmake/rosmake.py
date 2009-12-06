@@ -128,18 +128,21 @@ class RosMakeAll:
         build_passed = build_queue.succeeded() and all_pkgs_passed
         return build_passed
 
+    def build_package(self, package, argument=None):
+        local_env = os.environ.copy()
+        local_env['ROS_PARALLEL_JOBS'] = "-j%d" % self.ros_parallel_jobs
+        local_env['SVN_CMDLINE'] = "svn --non-interactive"
+        cmd = ["bash", "-c", "cd %s && make "%self.get_path(package) ]
+        if argument:
+            cmd[-1] += argument
+        self.print_full_verbose (cmd)
+        command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, env=local_env)
+        (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
+        return (command_line.returncode, pstd_out)
 
     def build(self, p, argument = None, robust_build=False):
         return_string = ""
         try:
-            local_env = os.environ.copy()
-            local_env['ROS_PARALLEL_JOBS'] = "-j%d" % self.ros_parallel_jobs
-            local_env['SVN_CMDLINE'] = "svn --non-interactive"
-            cmd = ["bash", "-c", "cd %s && make "%self.get_path(p) ]
-            if argument:
-                cmd[-1] += argument
-            self.print_full_verbose (cmd)
-
             if p == "rospack":
                 return_string = ("[SKIP] rosmake uses rospack.  If building it is already built, if cleaning it will be cleaned at the end.")
                 return (True, return_string) # This will be caught later
@@ -165,15 +168,14 @@ class RosMakeAll:
                 self.output[argument][p] = "No Makefile Present"
             else:
                 start_time = time.time()
-                command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, env=local_env)
-                (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
+                (returncode, pstd_out) = self.build_package(p)
                 self.profile[argument][p] = time.time() - start_time
                 self.output[argument][p] = pstd_out
                 if argument:
                     log_type = "build_%s"%argument
                 else:
                     log_type = "build"
-                if not command_line.returncode:
+                if not returncode:
                     self.print_full_verbose( pstd_out)
                     self.result[argument][p] = True
                     num_warnings = len(re.findall("warning:", pstd_out))

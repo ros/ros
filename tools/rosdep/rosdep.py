@@ -552,6 +552,8 @@ class Rosdep:
 
     def what_needs(self, rosdep_args):
         needed_rosdeps = [p for p in rosdep_args if p in self.rdl.get_map()]
+        undefined_rosdeps = [p for p in rosdep_args if p not in self.rdl.get_map()]
+        print >> sys.stderr,  "Warning: The following rosdeps are not defined in the system:\n%s"%undefined_rosdeps
         packages = []
         for p in roslib.packages.list_pkgs():
             deps_list = self.gather_rosdeps([p], "rosdep0")

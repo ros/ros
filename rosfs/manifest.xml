@@ -1,0 +1,17 @@
+<package>
+  <description brief="rosfs">
+
+     rosfs
+
+  </description>
+  <author>Josh</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rosfs</url>
+  <depend package="roscpp"/>
+  <depend package="rospy"/>
+  <depend package="roslib"/>
+
+</package>
+
+

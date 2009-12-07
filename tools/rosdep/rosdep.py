@@ -63,28 +63,37 @@ class RosdepLookup:
         ## Find all rosdep.yamls here and load them into a map
         stacks = roslib.rospack.rosstackexec(["list-names"]).split()
         #print stacks
+        pkg_paths_str = roslib.rosenv.get_ros_package_path()
+        if pkg_paths_str:
+            for pkg_path in pkg_paths_str.split(':'):
+                path = os.path.join(pkg_path, "rosdep.yaml")
+                self.parse_yaml(path)
+                
         for s in stacks:
             path = os.path.join(roslib.rospack.rosstackexec(["find", s]), "rosdep.yaml")
-            if os.path.exists(path):
-                try:
-                    f = open(path)
-                    yaml_text = f.read()
-                    f.close()
-
-                    yaml_dict = yaml.load(yaml_text)
-                    for key in yaml_dict:
-                        if key in self.rosdep_source.keys():
-                            print >>sys.stderr, "%s already loaded from %s.  But it is also defined in %s.  This will not be overwritten"%(key, self.rosdep_source[key], path)
-                            #exit(-1)
-                        else:
-                            self.rosdep_source[key] = path
-                            self.rosdep_map[key] = yaml_dict[key]
-
-                except yaml.YAMLError, exc:
-                    print >> sys.stderr, "Failed parsing yaml while processing %s\n"%path, exc
-                    sys.exit(1)
-            
+            self.parse_yaml(path)
         #print "built map", self.rosdep_map
+
+    def parse_yaml(self, path):
+        if os.path.exists(path):
+            try:
+                f = open(path)
+                yaml_text = f.read()
+                f.close()
+
+                yaml_dict = yaml.load(yaml_text)
+                for key in yaml_dict:
+                    if key in self.rosdep_source.keys():
+                        print >>sys.stderr, "%s already loaded from %s.  But it is also defined in %s.  This will not be overwritten"%(key, self.rosdep_source[key], path)
+                        #exit(-1)
+                    else:
+                        self.rosdep_source[key] = path
+                        self.rosdep_map[key] = yaml_dict[key]
+
+            except yaml.YAMLError, exc:
+                print >> sys.stderr, "Failed parsing yaml while processing %s\n"%path, exc
+                sys.exit(1)
+        
 
     def lookup_rosdep(self, rosdep):
         """ Lookup the OS specific packages or script from the

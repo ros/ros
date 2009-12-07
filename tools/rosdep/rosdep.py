@@ -75,6 +75,7 @@ class RosdepLookup:
         #print "built map", self.rosdep_map
 
     def parse_yaml(self, path):
+        #print "parsing path", path
         if os.path.exists(path):
             try:
                 f = open(path)
@@ -83,11 +84,12 @@ class RosdepLookup:
 
                 yaml_dict = yaml.load(yaml_text)
                 for key in yaml_dict:
-                    if key in self.rosdep_source.keys():
+                    if key in self.rosdep_source:
                         print >>sys.stderr, "%s already loaded from %s.  But it is also defined in %s.  This will not be overwritten"%(key, self.rosdep_source[key], path)
+                        self.rosdep_source[key].append("not using "+path)
                         #exit(-1)
                     else:
-                        self.rosdep_source[key] = path
+                        self.rosdep_source[key] = [path]
                         self.rosdep_map[key] = yaml_dict[key]
 
             except yaml.YAMLError, exc:
@@ -134,6 +136,11 @@ class RosdepLookup:
         return self.rosdep_map
         
 
+    def get_sources(self, rosdep):
+        if rosdep in self.rosdep_source:
+            return self.rosdep_source[rosdep]
+        else:
+            return []
 
 ########## Class for interacting with customized OS detectors ############
 class OSIndex:
@@ -583,6 +590,12 @@ class Rosdep:
                         output = output + "<<<< %s on ( %s %s ) -> %s >>>>\n"%(k, o, v,map[k][o][v])
         return output
 
+    def where_defined(self, rosdeps):
+        output = ""
+        for rd in rosdeps:
+            output += "%s defined in %s"%(rd, self.rdl.get_sources(rd))
+        return output
+
 ################################################################################
 # COMMAND LINE PROCESSING
     
@@ -607,11 +620,15 @@ rosdep what_needs <rosdeps>...
   will print a list of packages that declare a rosdep on (at least
   one of) ROSDEP_NAME[S]
 
+rosdep where_defined <rosdeps>...
+  will print a list of yaml files that declare a rosdep on (at least
+  one of) ROSDEP_NAME[S]
+
 rosdep check <packages>...
   will check if the dependencies of package(s) have been met.
 """
 
-_commands = ['generate_bash', 'satisfy', 'install', 'depdb', 'what_needs', 'check']
+_commands = ['generate_bash', 'satisfy', 'install', 'depdb', 'what_needs', 'check', 'where_defined']
 
 def main():
     from optparse import OptionParser
@@ -640,7 +657,7 @@ def main():
 
     (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(rdargs)
     #print verified_packages, "Rejected", rejected_packages
-    if command != "what_needs" and len(rejected_packages) > 0:
+    if not (command == "what_needs" or command == "where_defined" ) and len(rejected_packages) > 0:
         print "Warning: could not identify %s"%rejected_packages
     
     ### Find all dependencies
@@ -678,6 +695,10 @@ def main():
 
     elif command == "what_needs":
         print '\n'.join(r.what_needs(rdargs))
+        return True
+
+    elif command == "where_defined":
+        print r.where_defined(rdargs)
         return True
 
     elif command == "check":

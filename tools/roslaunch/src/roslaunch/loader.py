@@ -325,7 +325,7 @@ class Loader(object):
                 data = yaml.load(text)
             except Exception, e:
                 if not file:
-                    raise ValueError("invalid YAML: %s\n\nYAML is:\n%s"%(str(e), t))
+                    raise ValueError("invalid YAML: %s\n\nYAML is:\n%s"%(str(e), text))
                 else:
                     raise ValueError("file %s contains invalid YAML:\n%s"%(file, str(e)))
 

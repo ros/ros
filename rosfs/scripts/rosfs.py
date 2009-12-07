@@ -82,7 +82,7 @@ class ROSFS(Fuse):
             else:
                 st.st_mode = stat.S_IFREG | 0755
                 st.st_nlink = 1
-                st.st_size = len(str(param))
+                st.st_size = len(str(param) + "\n")
             
         return st
 
@@ -119,7 +119,7 @@ class ROSFS(Fuse):
                 print "  invalid param"
                 return -errno.EACCES
         
-            return str(param)
+            return str(param) + "\n"
 
         return -errno.EINVAL
 

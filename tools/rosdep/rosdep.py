@@ -671,6 +671,9 @@ def main():
 
     elif command == "check":
         output = r.check()
+        if len(rejected_packages) > 0:
+            print "Arguments %s are not packages"%rejected_packages
+            return False
         if len(output) == 0:
             return True
         else:

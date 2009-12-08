@@ -28,9 +28,9 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
-"""
-Library and command-line tool for calculating rosdeps.
-"""
+#"""
+#Library and command-line tool for calculating rosdeps.
+#"""
 
 from __future__ import with_statement
 
@@ -42,6 +42,9 @@ import subprocess
 import types
 import tempfile
 import yaml
+
+class RosdepException(Exception):
+    pass
 
 class RosdepLookup:
     """
@@ -227,7 +230,11 @@ def dpkg_detect(p):
     pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (std_out, std_err) = pop.communicate()
     std_out = std_out.strip('\'')
-    return (std_out.split()[2] =='installed')
+    std_out_list = std_out.split()
+    if len(std_out_list) == 3:
+        return (std_out_list[2] =='installed')
+    else:
+        return False
 
 ###### UBUNTU SPECIALIZATION #########################
 class Ubuntu:
@@ -527,7 +534,7 @@ class Rosdep:
 
         if len(failed_rosdeps) > 0:
             if not self.robust:
-                raise Exception("Rosdeps %s could not be resolved"%failed_rosdeps)
+                raise RosdepException("Rosdeps %s could not be resolved"%failed_rosdeps)
             else:
                 print >> sys.stderr, "WARNING: Rosdeps %s could not be resolved"%failed_rosdeps
         return (native_packages, scripts)
@@ -545,7 +552,7 @@ class Rosdep:
     def check(self):
         try:
             native_packages, scripts = self.get_packages_and_scripts()
-        except:
+        except RosdepException:
             pass
         undetected = self.osi.strip_detected_packages(native_packages)
         return_str = ""
@@ -685,7 +692,7 @@ def main():
         elif command == "install":
             r.install(options.include_duplicates, options.default_yes);
             return True
-    except Exception, e:
+    except RosdepException, e:
         print "ERROR: %s"%e
         return False
         

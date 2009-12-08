@@ -314,13 +314,13 @@ def get_service_class_by_name(service_name):
             raise ROSServiceException("Unable to determine type of service [%s]."%service_name)
 
     # get the Service class so we can populate the request
-    service_class = roslib.scriptutil.get_service_class(service_type)
+    service_class = roslib.message.get_service_class(service_type)
 
     # #1083: roscpp services are currently returning the wrong type
     if service_class and service_type.endswith('Request') and \
             not hasattr(service_class, "_request_class"):
         service_type = service_type[:-7]
-        service_class = roslib.scriptutil.get_service_class(service_type)
+        service_class = roslib.message.get_service_class(service_type)
         
     if service_class is None:
         pkg = roslib.names.resource_name_package(service_type)

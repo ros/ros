@@ -59,31 +59,40 @@ def create_package(package, author, depends, uses_roscpp=False, uses_rospy=False
     if os.path.exists(p):
         print >> sys.stderr, "%s already exists, aborting"%p
         sys.exit(1)
-    print "Creating package directory", p
-    os.makedirs(p)
 
+    os.makedirs(p)
+    print "Created package directory", p
+        
     if uses_roscpp:
         # create package/include/package and package/src for roscpp code
         cpp_path = os.path.join(p, 'include', package)
-        print "Creating include directory", cpp_path
-        os.makedirs(cpp_path)
-        cpp_path = os.path.join(p, 'src')
-        print "Creating cpp source directory", cpp_path
-        os.makedirs(cpp_path)
+        try:        
+            os.makedirs(cpp_path)
+            print "Created include directory", cpp_path
+            cpp_path = os.path.join(p, 'src')
+            os.makedirs(cpp_path)
+            print "Created cpp source directory", cpp_path
+        except:
+            # file exists
+            pass
     if uses_rospy:
         # create package/src/ for python files
         py_path = os.path.join(p, 'src')
-        print "Creating python source directory", py_path
-        os.makedirs(py_path)
+        try:
+            os.makedirs(py_path)
+            print "Created python source directory", py_path
+        except:
+            # file exists
+            pass
         
     templates = get_templates()
     for filename, template in templates.iteritems():
         contents = instantiate_template(template, package, package, package, author, depends)
         try:
             p = os.path.abspath(os.path.join(package, filename))
-            print "Creating package file", p
             f = open(p, 'w')
             f.write(contents)
+            print "Created package file", p
         finally:
             f.close()
     print "\nPlease edit %s/manifest.xml and mainpage.dox to finish creating your package"%package

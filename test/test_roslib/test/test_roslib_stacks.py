@@ -42,6 +42,33 @@ import rostest
 
 class RoslibStacksTest(unittest.TestCase):
   
+    def test_packages_of(self):
+        from roslib.stacks import packages_of
+        pkgs = packages_of('ros')
+        for p in ['test_roslib', 'roslib', 'rospy', 'roscpp']:
+            self.assert_(p in pkgs)
+        # due to caching behavior, test twice
+        pkgs = packages_of('ros')
+        for p in ['test_roslib', 'roslib', 'rospy', 'roscpp']:
+            self.assert_(p in pkgs)
+
+        try:
+            packages_of(None)
+            self.fail("should have raised ValueError")
+        except ValueError: pass
+    
+    def test_stack_of(self):
+        import roslib.packages
+        from roslib.stacks import stack_of
+        self.assertEquals('ros', stack_of('test_roslib'))
+        # due to caching, test twice
+        self.assertEquals('ros', stack_of('test_roslib'))
+        try:
+            stack_of('fake_test_roslib')
+            self.fail("should have failed")
+        except roslib.packages.InvalidROSPkgException:
+            pass
+    
     def test_get_stack_dir(self):
         # TODO setup artificial tree with more exhaustive tests
         import roslib.rosenv

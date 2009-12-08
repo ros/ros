@@ -42,6 +42,39 @@ import rostest
 
 class RoslibPackagesTest(unittest.TestCase):
   
+  def test_list_pkgs(self):
+    # should be equal to rospack list
+    import roslib.rospack
+    import roslib.packages    
+    pkgs = [s.split()[0] for s in roslib.rospack.rospackexec(['list']).split('\n')]
+    retval = roslib.packages.list_pkgs()
+    self.assertEquals(set(pkgs), set(retval), set(pkgs) ^ set(retval))
+    
+    # test twice for caching
+    retval = roslib.packages.list_pkgs()
+    self.assertEquals(set(pkgs), set(retval), set(pkgs) ^ set(retval))    
+    
+  def test_get_pkg_dir(self):
+    import roslib.packages
+    import roslib.rospack
+    path = roslib.rospack.rospackexec(['find', 'test_roslib'])
+    self.assertEquals(path, roslib.packages.get_pkg_dir('test_roslib'))
+    try:
+      self.assertEquals(path, roslib.packages.get_pkg_dir('fake_test_roslib'))      
+      self.fail("should have raised")
+    except roslib.packages.InvalidROSPkgException: pass
+
+  def test_get_dir_pkg(self):
+    import roslib.packages
+    import roslib.rospack
+    path = roslib.rospack.rospackexec(['find', 'test_roslib'])
+
+    self.assertEquals((path, 'test_roslib'), roslib.packages.get_dir_pkg(path))
+    self.assertEquals((path, 'test_roslib'), roslib.packages.get_dir_pkg(os.path.join(path, 'test')))
+
+    # must fail on parent of test_roslib
+    self.assertEquals((None, None), roslib.packages.get_dir_pkg(os.path.dirname(path)))
+    
   def test_get_package_paths(self):
     from roslib.packages import get_package_paths
 

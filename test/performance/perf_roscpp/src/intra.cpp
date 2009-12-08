@@ -532,7 +532,7 @@ LatencyResult LatencyTest::run()
 
   r.latency_avg = 0;
   r.latency_max = 0;
-  r.latency_min = 9999999999999;
+  r.latency_min = 9999999999999ULL;
   r.total_message_count = 0;
   r.message_size = message_size_;
   r.receiver_threads = receiver_threads_;

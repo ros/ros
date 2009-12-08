@@ -110,30 +110,27 @@ def get_package_paths(ros_root_required=True, env=None):
     else:
         return paths
 
-def get_dir_pkg(dir, env=os.environ):
+def get_dir_pkg(d):
     """
     Get the package that the directory is contained within. This is
     determined by finding the nearest parent manifest.xml file. This
     isn't 100% reliable, but symlinks can full any heuristic that
     relies on ROS_ROOT.
-    @param dir: directory path
-    @type  dir: str
-    @param env dict: override os.environ dictionary
-    @type  env: dict
-    @return: (packageDirectory, package) of the specified directory, or None,None if not in a package
+    @param d: directory path
+    @type  d: str
+    @return: (package_directory, package) of the specified directory, or None,None if not in a package
     @rtype: (str, str)
     """
     #TODO: the realpath is going to create issues with symlinks, most likely
-    pkgDirs = [os.path.realpath(x) for x in get_package_paths(True, env=env)]
-    for pkgDir in pkgDirs:
-        parent = os.path.dirname(os.path.realpath(dir))
-        #walk up until we hit ros root or ros/pkg
-        while not os.path.exists(os.path.join(dir, MANIFEST_FILE)) and parent != dir:
-            dir = parent
-            parent = os.path.dirname(dir)
-        if os.path.exists(os.path.join(dir, MANIFEST_FILE)):
-            pkg = os.path.basename(os.path.abspath(dir))
-            return dir, pkg
+
+    parent = os.path.dirname(os.path.realpath(d))
+    #walk up until we hit ros root or ros/pkg
+    while not os.path.exists(os.path.join(d, MANIFEST_FILE)) and parent != d:
+        d = parent
+        parent = os.path.dirname(d)
+    if os.path.exists(os.path.join(d, MANIFEST_FILE)):
+        pkg = os.path.basename(os.path.abspath(d))
+        return d, pkg
     return None, None
 
 _pkg_dir_cache = {}
@@ -279,11 +276,10 @@ def resource_file(package, subdir, resource_name):
     @rtype: str
     @raise roslib.packages.InvalidROSPkgException: If package does not exist 
     """
-    dir = get_pkg_subdir(package, subdir, False)
-    if dir is None:
+    d = get_pkg_subdir(package, subdir, False)
+    if d is None:
         raise InvalidROSPkgException(package)
-    return os.path.join(dir, resource_name)
-
+    return os.path.join(d, resource_name)
 
 # TODO: try and read in .rospack_cache
 # TODO: use this to replace get_pkg_dir shelling to rospack
@@ -297,24 +293,48 @@ def list_pkgs(pkg_dirs=None):
     if pkg_dirs is None:
         pkg_dirs = get_package_paths(True)
     packages = []
+    for pkg_root in pkg_dirs:
+        packages.extend(list_pkgs_by_path(pkg_root, cache=_pkg_dir_cache))
+    return packages
+
+def list_pkgs_by_path(path, cache=None):
+    """
+    @param path: path to list packages in
+    @type  path: str
+    @return: complete list of package names in ROS environment
+    @rtype: [str]
+    """
+    packages = []
+
     # record settings for cache
     ros_root = os.environ[ROS_ROOT]
     ros_package_path = os.environ.get(ROS_PACKAGE_PATH, '')
-    for pkg_root in pkg_dirs:
-        for dir, dirs, files in os.walk(pkg_root, topdown=True):
-            if MANIFEST_FILE in files:
-                package = os.path.basename(dir)
-                if package not in packages:
-                  packages.append(package)
-                  _pkg_dir_cache[package] = dir, ros_root, ros_package_path
-                del dirs[:]
-            elif 'rospack_nosubdirs' in files:
-                del dirs[:]
-            #small optimization
-            elif '.svn' in dirs:
-                dirs.remove('.svn')
-            elif '.git' in dirs:
-                dirs.remove('.git')
+
+    for d, dirs, files in os.walk(path, topdown=True):
+        if MANIFEST_FILE in files:
+            package = os.path.basename(d)
+            if package not in packages:
+                packages.append(package)
+                if cache is not None:
+                    cache[package] = d, ros_root, ros_package_path
+            del dirs[:]
+            continue #leaf
+        elif 'rospack_nosubdirs' in files:
+            del dirs[:]
+            continue #leaf
+        #small optimization
+        elif '.svn' in dirs:
+            dirs.remove('.svn')
+        elif '.git' in dirs:
+            dirs.remove('.git')
+
+        for sub_d in dirs:
+            # followlinks=True only available in Python 2.6, so we
+            # have to implement manually
+            sub_p = os.path.join(d, sub_d)
+            if os.path.islink(sub_p):
+                packages.extend(list_pkgs_by_path(sub_p, cache=cache))
+            
     return packages
 
 # TODO: reimplement using find_resource

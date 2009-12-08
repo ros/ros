@@ -108,30 +108,6 @@ class TestRospyMsg(unittest.TestCase):
         self.assertEquals(val.header, h)
         self.assertEquals('0', h.frame_id) 
         
-        #test timestamp filling
-        h.stamp = None
-        rospy.msg.serialize_message(buff, seq, val)
-        self.assertEquals(rospy.Time(0), val.header.stamp)
-        
-        #test auto header
-        val = HeaderVal(None, teststr)
-        seq += 1
-
-        rospy.msg.serialize_message(buff, seq, val)
-        self.assertEquals(seq, val.header.seq)
-        self.assertEquals('0', val.header.frame_id)
-        
-        #test that sub-headers are not modified
-        from test_rospy.msg import HeaderHeaderVal
-        val = HeaderHeaderVal(None, HeaderVal(None, teststr))
-        seq += 1
-        
-        rospy.msg.serialize_message(buff, seq, val)
-        self.assertEquals(seq, val.header.seq)
-        self.assertEquals('0', val.header.frame_id)
-        self.assertEquals(0, val.val.header.seq)
-        self.assertEquals('', val.val.header.frame_id)
-        
 
     def test_deserialize_messages(self):
         import rospy.msg

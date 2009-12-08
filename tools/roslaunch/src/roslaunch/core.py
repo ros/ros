@@ -473,12 +473,13 @@ class Node(object):
                  'machine_name', 'machine', 'args', 'respawn', \
                  'remap_args', 'env_args',\
                  'process_name', 'output', 'cwd',
-                 'launch_prefix', 'required']
+                 'launch_prefix', 'required',
+                 'filename']
 
     def __init__(self, package, node_type, name=None, namespace='/', \
                  machine_name=None, args='', respawn=False, \
                  remap_args=None,env_args=None, output=None, cwd=None, \
-                 launch_prefix=None, required=False):
+                 launch_prefix=None, required=False, filename='<unknown>'):
         """
         @param package: node package name
         @type  package: str
@@ -507,6 +508,8 @@ class Node(object):
         @type  launch_prefix: str
         @param required: node is required to stay running (launch fails if node dies)
         @type  required: bool
+        @param filename: name of file Node was parsed from
+        @type  filename: str
         """        
         self.package = package
         self.type = node_type
@@ -528,6 +531,7 @@ class Node(object):
         self.cwd = cwd or None
         self.launch_prefix = launch_prefix or None
         self.required = required
+        self.filename = filename
 
         if self.respawn and self.required:
             raise ValueError("respawn and required cannot both be set to true")
@@ -606,7 +610,7 @@ class Test(Node):
     def __init__(self, test_name, package, node_type, name=None, \
                  namespace='/', machine_name=None, args='', \
                  remap_args=None, env_args=None, time_limit=None, cwd=None,
-                 launch_prefix=None, retry=None):
+                 launch_prefix=None, retry=None, filename="<unknown>"):
         """
         Construct a new test node.
         @param test_name: name of test for recording in test results
@@ -622,7 +626,7 @@ class Test(Node):
                                    env_args=env_args,
                                    #output always is log
                                    output='log', cwd=cwd,
-                                   launch_prefix=launch_prefix)
+                                   launch_prefix=launch_prefix, filename=filename)
         self.test_name = test_name
 
         self.retry = retry or 0

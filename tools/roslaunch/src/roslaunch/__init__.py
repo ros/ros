@@ -78,6 +78,9 @@ def _get_optparse():
     parser.add_option("--nodes",
                       dest="node_list", default=False, action="store_true",
                       help="Print list of node names in launch file")
+    parser.add_option("--find-node",
+                      dest="find_node", default=None, 
+                      help="Find launch file that node is defined in", metavar="NODE_NAME")
     parser.add_option("-c", "--child",
                       dest="child_name", default=None,
                       help="Run as child service 'NAME'. Required with -u", metavar="NAME")
@@ -129,6 +132,9 @@ def _validate_args(parser, options, args):
         parser.error("you must specify at least one input file")
     elif [f for f in args if not os.path.exists(f)]:
         parser.error("The following input files do not exist: %s"%f)
+
+    if len([x for x in [options.node_list, options.find_node, options.node_args] if x]) > 1:
+        parser.error("only one of [--nodes, --find-node, --args] may be specified")
     
 def main(argv=sys.argv):
     options = None
@@ -141,14 +147,16 @@ def main(argv=sys.argv):
         _validate_args(parser, options, args)
 
         # node args doesn't require any roslaunch infrastructure, so process it first
-        if options.node_args or options.node_list:
+        if options.node_args or options.node_list or options.find_node:
             if options.node_args and not args:
                 parser.error("please specify a launch file")
             import roslaunch.node_args
             if options.node_args:
                 roslaunch.node_args.print_node_args(options.node_args, args)
+            elif options.find_node:
+                roslaunch.node_args.print_node_filename(options.find_node, args)                
             else:
-                roslaunch.node_args.print_node_list(args)                
+                roslaunch.node_args.print_node_list(args)
             return
 
         # we have to wait for the master here because we don't have the run_id yet

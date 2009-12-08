@@ -364,7 +364,7 @@ class XmlLoader(Loader):
                             args=args, respawn=respawn, 
                             remap_args=remap_context.remap_args(), env_args=context.env_args,
                             output=output, cwd=cwd, launch_prefix=launch_prefix,
-                            required=required)
+                            required=required, filename=context.filename)
             else:
                 test_name, time_limit, retry = self._test_attrs(tag, context)
                 if not name:
@@ -373,7 +373,7 @@ class XmlLoader(Loader):
                             machine_name=machine, args=args,
                             remap_args=remap_context.remap_args(), env_args=context.env_args,
                             time_limit=time_limit, cwd=cwd, launch_prefix=launch_prefix,
-                            retry=retry)
+                            retry=retry, filename=context.filename)
         except KeyError, e:
             raise XmlParseException(
                 "<%s> tag is missing required attribute: %s. Node xml is %s"%(tag.tagName, e, tag.toxml()))

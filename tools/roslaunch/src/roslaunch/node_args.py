@@ -54,10 +54,10 @@ import roslaunch.xmlloader
 class NodeParamsException(Exception): pass
 
 def get_node_list(config):
-    l = [_resolved_name(node) for node in config.nodes]
+    l = [_resolved_name(node) for node in config.nodes] + [_resolved_name(test) for test in config.tests]
     # filter out unnamed nodes
     return [x for x in l if x]
-    
+
 def print_node_list(roslaunch_files):
     try:
         loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
@@ -85,15 +85,38 @@ def _resolved_name(node):
             return roslib.names.ns_join(node.namespace, node.name)
     else:
         return None
-            
-## Get the node arguments for a node in \a roslaunch_files. NOTE: you
-## cannot get the node args for unnamed nodes.
-##
-## @param node_name str: name of node in \a roslaunch_files.
-## @param roslaunch_files [str]: roslaunch file names
-## @return [str]: list of command-line arguments used to launch \a node_name
-## @throws RLException if node args cannot be retrieved
+
+def print_node_filename(node_name, roslaunch_files):
+    try:
+        loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
+        config = load_config_default(roslaunch_files, None, loader=loader, verbose=False)
+        nodes = [n for n in config.nodes if _resolved_name(n) == node_name] + \
+            [t for t in config.tests if _resolved_name(t) == node_name]
+
+        if len(nodes) > 1:
+            raise RLException("ERROR: multiple nodes named [%s] in [%s].\nPlease fix the launch files as duplicate names are not allowed."%(node_name, ', '.join(roslaunch_files)))
+        if not nodes:
+            print >> sys.stderr, 'ERROR: cannot find node named [%s]. Run \n\troslaunch --nodes <files>\nto see list of node names.'%(node_name)
+        else:
+            print nodes[0].filename
+        
+    except RLException, e:
+        print >> sys.stderr, str(e)
+        sys.exit(1)
+
 def get_node_args(node_name, roslaunch_files):
+    """
+    Get the node arguments for a node in roslaunch_files. 
+
+    @param node_name: name of node in roslaunch_files.
+    @type  node_name: str
+    @param roslaunch_files: roslaunch file names
+    @type  roslaunch_files: [str]
+    @return: list of command-line arguments used to launch node_name
+    @rtype: [str]
+    @raise RLException: if node args cannot be retrieved
+    """
+    
     # we have to create our own XmlLoader so that we can use the same
     # resolution context for substitution args
 
@@ -102,7 +125,8 @@ def get_node_args(node_name, roslaunch_files):
     (node_name) = roslib.substitution_args.resolve_args((node_name), resolve_anon=False)
     node_name = roslib.names.ns_join('/', node_name) if not node_name.startswith('$') else node_name
     
-    node = [n for n in config.nodes if _resolved_name(n) == node_name]
+    node = [n for n in config.nodes if _resolved_name(n) == node_name] + \
+        [n for n in config.tests if _resolved_name(n) == node_name]
     if not node:
         node_list = get_node_list(config)
         node_list_str = '\n'.join([" * %s"%x for x in node_list])
@@ -127,11 +151,14 @@ def get_node_args(node_name, roslaunch_files):
     # join environment vars are bash prefix args
     return ["%s=%s"%(k, v) for k, v in env.iteritems()] + args
     
-## Setup environment for locally launched process. The local
-## environment includes the default os environment, with any
-## ROS-specific environment variables overriding this enviornment.
-## @return dict : environment variables
 def create_local_process_env(node, machine, master_uri, env=os.environ):
+    """
+    Setup environment for locally launched process. The local
+    environment includes the default os environment, with any
+    ROS-specific environment variables overriding this enviornment.
+    @return: environment variables
+    @rtype: dict
+    """
 
     # #1029: generate environment for the node. unset
     # #ROS-related environment vars before
@@ -162,11 +189,15 @@ def _launch_prefix_args(node):
     else:
         return []
 
-## subroutine for creating node arguments
-## @return list: arguments for node process
-## @raise NodeParamsException: if args cannot be constructed for Node
-## as specified (e.g. the node type does not exist)
 def create_local_process_args(node, machine):
+    """
+    Subroutine for creating node arguments.
+    @return: arguments for node process
+    @rtype: [str]
+    @raise NodeParamsException: if args cannot be constructed for Node
+    as specified (e.g. the node type does not exist)
+    """
+    
     # - Construct rosrun command
     remap_args = ["%s:=%s"%(src,dst) for src, dst in node.remap_args]
     resolve_dict = {}

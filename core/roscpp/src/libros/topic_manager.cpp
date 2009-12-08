@@ -218,8 +218,6 @@ bool TopicManager::addSubCallback(const SubscribeOptions& ops)
   SubscriptionPtr sub;
 
   {
-    boost::mutex::scoped_lock lock(subs_mutex_);
-
     if (isShuttingDown())
     {
       return false;
@@ -254,18 +252,16 @@ bool TopicManager::addSubCallback(const SubscribeOptions& ops)
 // this function has the subscription code that doesn't need to be templated.
 bool TopicManager::subscribe(const SubscribeOptions& ops)
 {
+  boost::mutex::scoped_lock lock(subs_mutex_);
+
   if (addSubCallback(ops))
   {
     return true;
   }
 
+  if (isShuttingDown())
   {
-    boost::mutex::scoped_lock lock(subs_mutex_);
-
-    if (isShuttingDown())
-    {
-      return false;
-    }
+    return false;
   }
 
   std::string md5sum = ops.helper->getMD5Sum();
@@ -281,10 +277,7 @@ bool TopicManager::subscribe(const SubscribeOptions& ops)
     return false;
   }
 
-  {
-    boost::mutex::scoped_lock lock(subs_mutex_);
-    subscriptions_.push_back(s);
-  }
+  subscriptions_.push_back(s);
 
   return true;
 }

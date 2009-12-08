@@ -288,9 +288,16 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
            i != subtractions.end(); ++i)
   {
     const PublisherLinkPtr& link = *i;
-    ROSCPP_LOG_DEBUG("Disconnecting from publisher [%s] of topic [%s] at [%s]",
-                link->getConnection()->getCallerId().c_str(), name_.c_str(), link->getPublisherXMLRPCURI().c_str());
-    link->getConnection()->drop();
+    if (link->getPublisherXMLRPCURI() != XMLRPCManager::instance()->getServerURI())
+    {
+      ROSCPP_LOG_DEBUG("Disconnecting from publisher [%s] of topic [%s] at [%s]",
+                  link->getConnection()->getCallerId().c_str(), name_.c_str(), link->getPublisherXMLRPCURI().c_str());
+      link->getConnection()->drop();
+    }
+    else
+    {
+      ROSCPP_LOG_DEBUG("Disconnect: skipping myself for topic [%s]", name_.c_str());
+    }
   }
 
   return retval;

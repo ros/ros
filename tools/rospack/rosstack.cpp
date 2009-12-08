@@ -118,6 +118,8 @@ const VecStack &Stack::deps1()
 }
 const VecStack &Stack::deps(traversal_order_t order, int depth)
 {
+  if (depth > 900) // hack
+    fprintf(stderr, "  %s\n", name.c_str());
   if (depth > 1000)
   {
     fprintf(stderr,"[rospack] woah! expanding the dependency tree made it blow "

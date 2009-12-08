@@ -60,18 +60,11 @@ def serialize_message(b, seq, msg):
     b.seek(start+4) #reserve 4-bytes for length
 
     #update Header object in top-level message
-    auto_headers = []
     if getattr(msg.__class__, "_has_header", False):
         header = msg.header
         header.seq = seq
-        # auto_timestamp is true if header.stamp is zero
-        auto_timestamp = not header.stamp
-        if auto_timestamp:
-            rospy.logwarn("Message being sent with timestamp of zero. Auto-setting of timestamps is deprecated!")
-            header.stamp = rospy.rostime.get_rostime()
-            auto_headers.append(header)
-        # default value for frame_id is '0', not '' or None
-        if header.frame_id is '' or header.frame_id is None:
+        # default value for frame_id is '0'
+        if header.frame_id is None:
             header.frame_id = "0"
 
     #serialize the message data
@@ -79,10 +72,6 @@ def serialize_message(b, seq, msg):
         msg.serialize(b)
     except struct.error, e:
         raise rospy.exceptions.ROSSerializationException(e)
-
-    #re-zero time object if we wrote into it
-    for h in auto_headers:
-        h.stamp = rospy.Time(0, 0)
 
     #write 4-byte packet length
     # -4 don't include size of length header

@@ -147,13 +147,16 @@ def get_service_type(service_name):
 
 def _rosservice_type(service_name):
     """
-    Implements 'type' command. Prints service type to stdout
+    Implements 'type' command. Prints service type to stdout. Will
+    system exit with error if service_name is unknown.
+    
     @param service_name: name of service
     @type  service_name: str
     """
     service_type = get_service_type(service_name)
     if service_type is None:
-        print "unknown"
+        print >> sys.stderr, "unknown"
+        sys.exit(1)
     else:
         print service_type
 
@@ -177,7 +180,9 @@ def get_service_uri(service_name):
 
 def _rosservice_uri(service_name):
     """
-    Implements rosservice uri command
+    Implements rosservice uri command. Will cause system exit with
+    error if service_name is unknown.
+    
     @param service_name: name of service to lookup
     @type  service_name: str
     @raise ROSServiceIOException: if the I/O issues prevent retrieving service information
@@ -187,29 +192,42 @@ def _rosservice_uri(service_name):
         print uri
     else:
         print >> sys.stderr, "Unknown service: %s"%service_name
+        sys.exit(1)
 
-def _rosservice_node(service_name):
+def get_service_node(service_name):
     """
-    Implements rosservice node command
-    @param service_name: name of service to lookup
-    @type  service_name: str
-    @raise ROSServiceIOException: if the I/O issues prevent retrieving service information
+    @return: name of node that implements service, or None
+    @rtype: str
     """
     srvs = get_service_list(include_nodes=True)
     s = [s for s in srvs if s[0] == service_name]
     if s:
         if s[0][1]:
-            print s[0][1][0]
-        else:
-            print >> sys.stderr, "Service %s no longer has a provider"%service_name
+            return s[0][1][0]
+    return None
+
+def _rosservice_node(service_name):
+    """
+    Implements rosservice node command. Will cause system exit with error if service is unknown.
+    
+    @param service_name: name of service to lookup
+    @type  service_name: str
+    @raise ROSServiceIOException: if the I/O issues prevent retrieving service information
+    """
+    n = get_service_node(service_name)
+    if n:
+        print n
     else:
         print >> sys.stderr, "Unknown service: %s"%service_name
+        sys.exit(1)
 
-def get_service_list(node=None, include_nodes=False):
+def get_service_list(node=None, namespace=None, include_nodes=False):
     """
     Get the list of services
-    @param node: Name of node to print services for or None to return all services
+    @param node: Name of node to get services for or None to return all services
     @type  node: str
+    @param namespace: Namespace to scope services to or None
+    @type  namespace: str
     @param include_nodes: If True, return list will be [service_name, [node]]
     @type  include_nodes: bool
     @return: if include_nodes, services is service_name,
@@ -222,6 +240,11 @@ def get_service_list(node=None, include_nodes=False):
         state = _succeed(master.getSystemState('/rosservice'))
         srvs = state[2]
 
+        # filter srvs to namespace
+        if namespace:
+            g_ns = roslib.names.make_global_ns(namespace)
+            srvs = [x for x in srvs if x[0] == namespace or x[0].startswith(g_ns)]
+        
         if include_nodes:
             if node is None:
                 return srvs
@@ -235,16 +258,17 @@ def get_service_list(node=None, include_nodes=False):
     except socket.error:
         raise ROSServiceIOException("Unable to communicate with master!")
     
-def _rosservice_list(node=None, print_nodes=False):
+def _rosservice_list(namespace=None, print_nodes=False):
     """
     Implements 'rosservice list'
-    @param node: Name of node to print services for or None to print all services
-    @type  node: str
+    @param namespace: Namespace to limit listing to or None
+    @type  namespace: str
     @param print_nodes: If True, also print nodes providing service
     @type  print_nodes: bool
     @raise ROSServiceIOException: if the I/O issues prevent retrieving service information    
     """
-    srvs = get_service_list(node=node, include_nodes=print_nodes)
+    srvs = get_service_list(namespace=namespace, include_nodes=print_nodes)
+        
     # print in sorted order
     if print_nodes:
         import operator
@@ -257,6 +281,34 @@ def _rosservice_list(node=None, print_nodes=False):
         else:
             print s
 
+def _rosservice_info(service_name):
+    """
+    Implements 'rosservice info'. Prints information about a service
+    @param service_name: name of service to get info for
+    @type  service_name: str
+    @raise ROSServiceIOException: if the I/O issues prevent retrieving service information    
+    """
+    n = get_service_node(service_name)
+    if not n:
+        print >> sys.stderr, "ERROR: unknown service"
+        sys.exit(1)
+    print "Node: %s"%n
+    uri = get_service_uri(service_name)
+    if not uri:
+        print >> sys.stderr, "ERROR: service is no longer available"
+        return
+    print "URI: %s"%uri
+    t = get_service_type(service_name)
+    if not t:
+        print >> sys.stderr, "ERROR: service is no longer available"
+        return
+    print "Type: %s"%t
+    args = get_service_args(service_name)
+    if not args:
+        print >> sys.stderr, "ERROR: service is no longer available"
+        return
+    print "Args: %s"%args
+    
 def rosservice_find(service_type):
     """
     Lookup services by service_type
@@ -557,17 +609,39 @@ def _rosservice_cmd_list(argv):
     @raise ROSServiceException: if list command cannot be executed
     """
     args = argv[2:]
-    parser = OptionParser(usage="usage: %prog list [/node]", prog=NAME)
+    parser = OptionParser(usage="usage: %prog list [/namespace]", prog=NAME)
     parser.add_option("-n", "--nodes",
                       dest="print_nodes", default=False, action="store_true",
-                      help="print nodes that provide service")
+                      help="print nodes that provide service(s)")
     (options, args) = parser.parse_args(args)
-    nodename = None
+
+    namespace = None
     if len(args) == 1:
-        nodename = roslib.scriptutil.script_resolve_name('rosservice', args[0])
+        namespace = roslib.scriptutil.script_resolve_name('rosservice', args[0])
     elif len(args) > 1:
-        parser.error("you may only specify one input node")
-    _rosservice_list(nodename, print_nodes=options.print_nodes)
+        parser.error("you may only specify one input namespace")
+    _rosservice_list(namespace, print_nodes=options.print_nodes)
+
+def _rosservice_cmd_info(argv):
+    """
+    Parse 'info' command arguments and run command
+    Will cause a system exit if command-line argument parsing fails.
+    @param argv: command-line arguments
+    @type  argv: [str]
+    @raise ROSServiceException: if list command cannot be executed
+    """
+    args = argv[2:]
+    parser = OptionParser(usage="usage: %prog info /service", prog=NAME)
+    (options, args) = parser.parse_args(args)
+
+    name = None
+    if len(args) == 1:
+        name = roslib.scriptutil.script_resolve_name('rosservice', args[0])
+    elif len(args) > 1:
+        parser.error("you may only specify one service")
+    elif not len(args):
+        parser.error("you must specify a service name")
+    _rosservice_info(name)
     
 def _fullusage():
     """Print generic usage for rosservice"""
@@ -593,8 +667,10 @@ def rosservicemain(argv=sys.argv):
         _fullusage()
     try:
         command = argv[1]
-        if command == 'list':
+        if command in 'list':
             _rosservice_cmd_list(argv)
+        elif command == 'info':
+            _rosservice_cmd_info(argv)
         elif command == 'type':
             _rosservice_cmd_type(argv)
         elif command == 'uri':

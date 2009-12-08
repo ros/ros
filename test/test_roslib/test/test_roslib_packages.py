@@ -67,7 +67,7 @@ class RoslibPackagesTest(unittest.TestCase):
   def test_get_dir_pkg(self):
     import roslib.packages
     import roslib.rospack
-    path = roslib.rospack.rospackexec(['find', 'test_roslib'])
+    path = os.path.normpath(roslib.rospack.rospackexec(['find', 'test_roslib']))
 
     self.assertEquals((path, 'test_roslib'), roslib.packages.get_dir_pkg(path))
     self.assertEquals((path, 'test_roslib'), roslib.packages.get_dir_pkg(os.path.join(path, 'test')))

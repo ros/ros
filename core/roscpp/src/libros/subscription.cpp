@@ -580,7 +580,7 @@ uint32_t Subscription::handleMessage(const boost::shared_array<uint8_t>& buffer,
 
     uint64_t id = info->subscription_queue_->push(info->helper_, deserializer, info->has_tracked_object_, info->tracked_object_);
     SubscriptionCallbackPtr cb(new SubscriptionCallback(info->subscription_queue_, id));
-    info->callback_queue_->addCallback(cb);
+    info->callback_queue_->addCallback(cb, (uint64_t)info.get());
   }
 
   // If this link is latched, store off the message so we can immediately pass it to new subscribers later
@@ -636,7 +636,7 @@ bool Subscription::addCallback(const SubscriptionMessageHelperPtr& helper, Callb
 
             uint64_t id = info->subscription_queue_->push(info->helper_, des, info->has_tracked_object_, info->tracked_object_);
             SubscriptionCallbackPtr cb(new SubscriptionCallback(info->subscription_queue_, id));
-            info->callback_queue_->addCallback(cb);
+            info->callback_queue_->addCallback(cb, (uint64_t)info.get());
           }
         }
       }
@@ -656,6 +656,7 @@ void Subscription::removeCallback(const SubscriptionMessageHelperPtr& helper)
     {
       const CallbackInfoPtr& info = *it;
       info->subscription_queue_->clear();
+      info->callback_queue_->removeByID((uint64_t)info.get());
       callbacks_.erase(it);
       break;
     }

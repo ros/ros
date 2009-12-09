@@ -37,10 +37,12 @@
 
 #include "ros/callback_queue_interface.h"
 #include "ros/time.h"
+#include "ros/rw_mutex.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
+#include <boost/thread/tss.hpp>
 
 #include <list>
 
@@ -56,7 +58,8 @@ public:
   CallbackQueue(bool enabled = true);
   virtual ~CallbackQueue();
 
-  virtual void addCallback(const CallbackInterfacePtr& callback);
+  virtual void addCallback(const CallbackInterfacePtr& callback, uint64_t removal_id = 0);
+  virtual void removeByID(uint64_t removal_id);
 
   /**
    * \brief Pop a single callback off the front of the queue and invoke it.  If the callback was not ready to be called,
@@ -89,10 +92,19 @@ public:
   bool isEnabled();
 
 protected:
-  typedef std::list<CallbackInterfacePtr> L_Callback;
-  L_Callback callbacks_;
+  void setupTLS();
+
+  struct CallbackInfo
+  {
+    CallbackInterfacePtr callback;
+    uint64_t removal_id;
+  };
+  typedef std::list<CallbackInfo> L_CallbackInfo;
+  L_CallbackInfo callbacks_;
   boost::mutex mutex_;
   boost::condition_variable condition_;
+  RWMutex calling_rw_mutex_;
+  boost::thread_specific_ptr<bool> calling_in_this_thread_;
 
   bool enabled_;
 };

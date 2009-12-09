@@ -41,7 +41,6 @@ namespace ros
 CallbackQueue::CallbackQueue(bool enabled)
 : enabled_(enabled)
 {
-
 }
 
 CallbackQueue::~CallbackQueue()
@@ -86,7 +85,16 @@ bool CallbackQueue::isEnabled()
   return enabled_;
 }
 
-void CallbackQueue::addCallback(const CallbackInterfacePtr& callback)
+void CallbackQueue::setupTLS()
+{
+  if (!calling_in_this_thread_.get())
+  {
+    calling_in_this_thread_.reset(new bool);
+    *calling_in_this_thread_ = false;
+  }
+}
+
+void CallbackQueue::addCallback(const CallbackInterfacePtr& callback, uint64_t removal_id)
 {
   boost::mutex::scoped_lock lock(mutex_);
 
@@ -95,14 +103,57 @@ void CallbackQueue::addCallback(const CallbackInterfacePtr& callback)
     return;
   }
 
-  callbacks_.push_back(callback);
+  setupTLS();
+
+  CallbackInfo info;
+  info.callback = callback;
+  info.removal_id = removal_id;
+  callbacks_.push_back(info);
 
   condition_.notify_one();
 }
 
+void CallbackQueue::removeByID(uint64_t removal_id)
+{
+  setupTLS();
+
+  // If we're being called from inside a callOne()/callAvailable() method,
+  // remove the read reference for this thread.  We'll add it back later.
+  if (*calling_in_this_thread_)
+  {
+    calling_rw_mutex_.readUnlock();
+  }
+
+  {
+    RWMutex::ScopedWriteLock rw_lock(calling_rw_mutex_);
+    boost::mutex::scoped_lock lock(mutex_);
+    L_CallbackInfo::iterator it = callbacks_.begin();
+    L_CallbackInfo::iterator end = callbacks_.end();
+    for (; it != end;)
+    {
+      CallbackInfo& info = *it;
+      if (info.removal_id == removal_id)
+      {
+        it = callbacks_.erase(it);
+      }
+      else
+      {
+        ++it;
+      }
+    }
+  }
+
+  if (*calling_in_this_thread_)
+  {
+    calling_rw_mutex_.readLock();
+  }
+}
+
 void CallbackQueue::callOne(ros::WallDuration timeout)
 {
-  CallbackInterfacePtr cb;
+  setupTLS();
+
+  CallbackInfo cb_info;
 
   {
     boost::mutex::scoped_lock lock(mutex_);
@@ -122,13 +173,14 @@ void CallbackQueue::callOne(ros::WallDuration timeout)
       }
     }
 
-    L_Callback::iterator it = callbacks_.begin();
-    L_Callback::iterator end = callbacks_.end();
+    L_CallbackInfo::iterator it = callbacks_.begin();
+    L_CallbackInfo::iterator end = callbacks_.end();
     for (; it != end;)
     {
-      if ((*it)->ready())
+      CallbackInfo& info = *it;
+      if (info.callback->ready())
       {
-        cb = *it;
+        cb_info = info;
         it = callbacks_.erase(it);
         break;
       }
@@ -136,23 +188,33 @@ void CallbackQueue::callOne(ros::WallDuration timeout)
       ++it;
     }
 
-    if (!cb)
+    if (!cb_info.callback)
     {
       return;
     }
   }
 
-  CallbackInterface::CallResult result = cb->call();
-  if (result == CallbackInterface::TryAgain)
   {
-    boost::mutex::scoped_lock lock(mutex_);
-    callbacks_.push_front(cb);
+    RWMutex::ScopedReadLock rw_lock(calling_rw_mutex_);
+    *calling_in_this_thread_ = true;
+
+    CallbackInterface::CallResult result = cb_info.callback->call();
+
+    *calling_in_this_thread_ = false;
+
+    if (result == CallbackInterface::TryAgain)
+    {
+      boost::mutex::scoped_lock lock(mutex_);
+      callbacks_.push_front(cb_info);
+    }
   }
 }
 
 void CallbackQueue::callAvailable(ros::WallDuration timeout)
 {
-  L_Callback local_callbacks;
+  setupTLS();
+
+  L_CallbackInfo local_callbacks;
 
   {
     boost::mutex::scoped_lock lock(mutex_);
@@ -175,32 +237,40 @@ void CallbackQueue::callAvailable(ros::WallDuration timeout)
     local_callbacks.swap(callbacks_);
   }
 
-  L_Callback::iterator it = local_callbacks.begin();
-  L_Callback::iterator end = local_callbacks.end();
-  for (; it != end;)
   {
-    CallbackInterfacePtr& cb = *it;
+    RWMutex::ScopedReadLock rw_lock(calling_rw_mutex_);
+    *calling_in_this_thread_ = true;
 
-    CallbackInterface::CallResult result = cb->call();
-    if (result == CallbackInterface::Success)
+    L_CallbackInfo::iterator it = local_callbacks.begin();
+    L_CallbackInfo::iterator end = local_callbacks.end();
+    for (; it != end;)
     {
-      it = local_callbacks.erase(it);
-    }
-    else if (result == CallbackInterface::Invalid)
-    {
-      it = local_callbacks.erase(it);
-    }
-    else if (result == CallbackInterface::TryAgain)
-    {
-      ++it;
-    }
-  }
+      CallbackInfo& info = *it;
+      CallbackInterfacePtr& cb = info.callback;
 
-  // If we had some callbacks that returned TryAgain, push them to the front of the shared queue
-  if (!local_callbacks.empty())
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    callbacks_.insert(callbacks_.begin(), local_callbacks.begin(), local_callbacks.end());
+      CallbackInterface::CallResult result = cb->call();
+      if (result == CallbackInterface::Success)
+      {
+        it = local_callbacks.erase(it);
+      }
+      else if (result == CallbackInterface::Invalid)
+      {
+        it = local_callbacks.erase(it);
+      }
+      else if (result == CallbackInterface::TryAgain)
+      {
+        ++it;
+      }
+    }
+
+    *calling_in_this_thread_ = false;
+
+    // If we had some callbacks that returned TryAgain, push them to the front of the shared queue
+    if (!local_callbacks.empty())
+    {
+      boost::mutex::scoped_lock lock(mutex_);
+      callbacks_.insert(callbacks_.begin(), local_callbacks.begin(), local_callbacks.end());
+    }
   }
 }
 

@@ -73,6 +73,7 @@ void Publication::removeCallbacks(const SubscriberCallbacksPtr& callbacks)
   V_Callback::iterator it = std::find(callbacks_.begin(), callbacks_.end(), callbacks);
   if (it != callbacks_.end())
   {
+    callback_queue_->removeByID((uint64_t)(*it).get());
     callbacks_.erase(it);
   }
 }
@@ -290,7 +291,7 @@ void Publication::peerConnect(const SubscriberLinkPtr& sub_link)
       if (callback_queue_)
       {
         CallbackInterfacePtr cb(new PeerConnDisconnCallback(cbs->connect_, sub_link, cbs->has_tracked_object_, cbs->tracked_object_));
-        callback_queue_->addCallback(cb);
+        callback_queue_->addCallback(cb, (uint64_t)cbs.get());
       }
       else
       {
@@ -312,7 +313,7 @@ void Publication::peerDisconnect(const SubscriberLinkPtr& sub_link)
       if (callback_queue_)
       {
         CallbackInterfacePtr cb(new PeerConnDisconnCallback(cbs->disconnect_, sub_link, cbs->has_tracked_object_, cbs->tracked_object_));
-        callback_queue_->addCallback(cb);
+        callback_queue_->addCallback(cb, (uint64_t)cbs.get());
       }
       else
       {

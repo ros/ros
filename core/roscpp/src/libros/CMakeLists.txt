@@ -1,5 +1,7 @@
 include(CheckIncludeFiles)
 include(CheckFunctionExists)
+# CMake 2.4.6 doesn't include FindPkgConfig, so we provide our own copy
+include($ENV{ROS_ROOT}/core/rosbuild/FindPkgConfig.cmake)
 
 # Not everybody has <ifaddrs.h> (e.g., embedded arm-linux)
 CHECK_INCLUDE_FILES(ifaddrs.h HAVE_IFADDRS_H)
@@ -10,9 +12,14 @@ CHECK_FUNCTION_EXISTS(trunc HAVE_TRUNC)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+pkg_check_modules(APR REQUIRED apr-1)
+include_directories(${APR_INCLUDE_DIRS})
+link_directories(${APR_LIBRARY_DIRS})
+
 rosbuild_add_boost_directories()
 
 rosbuild_add_library(ros 
+                    rw_mutex.cpp
                     common.cpp 
                     poll_set.cpp 
                     header.cpp
@@ -53,4 +60,5 @@ rosbuild_add_library(ros
                     timer.cpp
                     wall_timer.cpp
                     )
+target_link_libraries(ros ${APR_LIBRARIES})
 rosbuild_link_boost(ros thread signals filesystem system)

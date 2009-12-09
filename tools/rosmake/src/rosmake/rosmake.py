@@ -44,6 +44,7 @@ import roslib.rospack
 import roslib.rosenv
 import roslib.stacks
 import threading
+import math
 
 import parallel_build
 
@@ -312,7 +313,7 @@ class RosMakeAll:
                     test_time = self.profile["test"][key]
                 
                     
-            output = output + "%3d: %s in %.2f %s in %.2f --- %s\n"% (count, build_results[build_result], build_time, test_results[test_result], test_time, key)
+            output = output + "%3d: %s in %d:%.2f %s in %.2f --- %s\n"% (count, build_results[build_result], math.floor(build_time/60), build_time%60 , test_results[test_result], test_time, key)
             total = total + build_time
             count = count + 1
 

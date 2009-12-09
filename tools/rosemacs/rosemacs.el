@@ -62,12 +62,13 @@
 (require 'shell)
 (require 'cl)
 (require 'warnings)
+(require 'time-stamp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Parameters
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar ros-ignored-packages '("test_msgs" "test_roscpp_serialization_perf") "List of packages to ignore when searching")
+(defvar ros-ignored-packages '("test_msgs" "test_roscpp_serialization_perf" "turtlesim") "List of packages to ignore when searching")
 (defvar ros-topic-timeout-rate 5 "Number of seconds before info from rostopic hz is considered out-of-date" )
 (defvar ros-topic-display-update-interval 3 "Number of seconds between updates to the *rostopic* buffer (when it's visible)")
 (defvar ros-topic-update-interval nil "Gap in seconds between calls to rostopic list (end of one call to beginning of next).  nil means never call.")
@@ -86,7 +87,6 @@
 (defvar ros-topics nil "Vector of current published ros topics")
 (defvar ros-subscribed-topics nil "Subscribed topics")
 (defvar ros-all-topics nil "All topics (generated from published and subscribed)")
-(defvar ros-topic-completions (vector) "Completion table for topics (ros-topics, without the initial /")
 (defvar ros-topic-hertz-processes nil "Alist from topic name to process running rostopic hz on that topic")
 (defvar ros-topic-publication-rates nil "Hash table from topic name to hertz rate of that topic")
 (defvar ros-topic-last-hz-rate nil "Alist from topic name to last time we saw output from rostopic hz")
@@ -183,17 +183,17 @@
 (defun ros-package-dir (package)
   (unless ros-package-locations
     (ros-load-package-locations))
-  (lookup-vectors package ros-packages ros-package-locations))
+  (rosemacs-lookup-vectors package ros-packages ros-package-locations))
 
 (defun ros-message-package (m)
   (unless ros-message-packages
     (cache-ros-message-locations))
-  (lookup-vectors m ros-messages ros-message-packages))
+  (rosemacs-lookup-vectors m ros-messages ros-message-packages))
 
 (defun ros-service-package (m)
   (unless ros-service-packages
     (cache-ros-service-locations))
-  (lookup-vectors m ros-services ros-service-packages))
+  (rosemacs-lookup-vectors m ros-services ros-service-packages))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -214,9 +214,9 @@
 ;; Completion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(setq message-completor (dynamic-completion-table (lambda (str) (unless ros-messages (cache-ros-message-locations)) (bsearch-completions str ros-messages))))
-(setq service-completor (dynamic-completion-table (lambda (str) (unless ros-services (cache-ros-service-locations)) (bsearch-completions str ros-services))))
-(setq topic-completor (dynamic-completion-table (lambda (str) (bsearch-completions str ros-all-topics))))
+(setq message-completor (dynamic-completion-table (lambda (str) (unless ros-messages (cache-ros-message-locations)) (rosemacs-bsearch str ros-messages))))
+(setq service-completor (dynamic-completion-table (lambda (str) (unless ros-services (cache-ros-service-locations)) (rosemacs-bsearch str ros-services))))
+(setq topic-completor (dynamic-completion-table (lambda (str) (rosemacs-bsearch str ros-all-topics))))
 (setq ros-package-completor 
       ;; Longer because it has to deal with the case of PACKAGE/PATH-PREFIX in addition to PACKAGE-PREFIX
       (dynamic-completion-table 
@@ -228,7 +228,7 @@
 		 (let* ((files (directory-files dir nil (concat "^" dir-suffix)))
 			(comps (all-completions dir-suffix files)))
 		   (mapcar (lambda (comp) (concat package dir-prefix comp)) comps)))
-	     (bsearch-completions package ros-packages))))))
+	     (rosemacs-bsearch package ros-packages))))))
 
 
 
@@ -321,20 +321,29 @@
       (error "Could not find package for service %s" service))))
 
 
+;; (defun view-ros-message (message)
+;;   "Open definition of a ros message in view mode.  If used interactively, tab completion will work."
+;;   (interactive (list (completing-read
+;; 		      (if (current-word t t)
+;; 			  (format "Enter message name (default %s): " (current-word t t))
+;; 			"Enter message name: ")
+;; 		      message-completor nil nil nil nil (current-word t t))))
+;;   (let ((p (ros-message-package message)))
+;;     (if p
+;; 	(let ((dir (ros-package-dir p)))
+;; 	  (if dir
+;; 	      (view-file-other-window (concat dir "/msg/" message ".msg"))
+;; 	    (error "Could not find directory corresponding to package %s" p)))
+;;       (error "Could not find package for message %s" message))))
+
 (defun view-ros-message (message)
-  "Open definition of a ros message in view mode.  If used interactively, tab completion will work."
-  (interactive (list (completing-read
-		      (if (current-word t t)
-			  (format "Enter message name (default %s): " (current-word t t))
-			"Enter message name: ")
-		      message-completor nil nil nil nil (current-word t t))))
-  (let ((p (ros-message-package message)))
-    (if p
-	(let ((dir (ros-package-dir p)))
-	  (if dir
-	      (view-file-other-window (concat dir "/msg/" message ".msg"))
-	    (error "Could not find directory corresponding to package %s" p)))
-      (error "Could not find package for message %s" message))))
+   "Open definition of a ros message in view mode.  If used interactively, tab completion will work."
+   (interactive (list (completing-read
+ 		      (if (current-word t t)
+ 			  (format "Enter message name (default %s): " (current-word t t))
+ 			"Enter message name: ")
+ 		      message-completor nil nil nil nil (current-word t t))))
+   (shell-command (format "rosmsg show %s" message)))
 
 (defun view-ros-service (service)
   "Open definition of a ros service in view mode.  If used interactively, tab completion will work."
@@ -399,7 +408,7 @@
 	     (return))))))
     (sort* (map 'vector 'extract-exec-name ros-run-exec-paths) 'string<)))
   
-(defun complete-exec-name (str)
+(defun ros-run-complete-exec-name (str)
   (bsearch-completions str ros-run-exec-names))
 
 (defun ros-package-path (pkg)
@@ -414,7 +423,7 @@
   "pkg is a ros package name and exec is the executable name.  Tab completes package name.  Exec defaults to package name itself."
   (interactive (list (setq ros-run-temp-var (completing-read "Enter package: " ros-package-completor))
 		     (let ((ros-run-exec-names (ros-find-executables ros-run-temp-var)))
-		       (completing-read (format "Enter executable (default %s): " ros-run-temp-var) (dynamic-completion-table complete-exec-name)
+		       (completing-read (format "Enter executable (default %s): " ros-run-temp-var) (dynamic-completion-table 'ros-run-complete-exec-name)
 					nil nil nil nil ros-run-temp-var))))
   (let ((name (format "*rosrun:%s/%s*" pkg exec)))
     (start-process name (get-buffer-create name) "rosrun" pkg exec)))
@@ -459,6 +468,7 @@
 	(setq ros-topic-buffer (get-buffer-create "*ros-topics*"))
 	(switch-to-buffer ros-topic-buffer)
 	(ros-topic-list-mode)))
+    (ros-update-topic-list-internal)
     (update-ros-topic-buffer)))
 
 (defun add-hz-update (topic-regexp)
@@ -525,8 +535,14 @@
   (interactive)
   (interrupt-process))
 
+(defun buffer-process (b)
+  (find-if (lambda (proc) (equal (process-buffer proc) b)) (process-list)))
+
 (defun kill-current-buffer ()
   (interactive)
+  (let ((process (buffer-process (current-buffer))))
+    (when (and process (eq (process-status process) 'run))
+      (interrupt-process)))
   (kill-buffer nil))
 
 (defvar ros-topic-echo-keymap (make-sparse-keymap))
@@ -542,8 +558,6 @@ q kills the buffer and process"
   :lighter " ros-topic-echo"
   :keymap ros-topic-echo-keymap
   (message "ros-topic-echo-mode: k to stop, q to quit"))
-
-
 
 
 (defvar ros-topic-list-keymap (make-sparse-keymap))
@@ -592,11 +606,20 @@ q kills buffer"
       (save-excursion
 	(update-ros-topic-buffer-helper)))))
 
+(defun ros-topic-get-stamp-string ()
+  (goto-char (point-min))
+  (let ((pos (re-search-forward "^\\(Last updated.*\\)$" nil t)))
+    (if pos
+	(match-string 1)
+      "Last updated: <>")))
+
 (defun update-ros-topic-buffer-helper ()
   (set-buffer ros-topic-buffer)
-  (erase-buffer)
-  (princ (format "Master uri: %s\n" (getenv "ROS_MASTER_URI")) ros-topic-buffer)
-  (princ (format "Topics updated every %s seconds\n" ros-topic-update-interval) ros-topic-buffer)
+  (let ((old-stamp (ros-topic-get-stamp-string)))
+    (erase-buffer)
+    (princ (format "Master uri: %s\n" (getenv "ROS_MASTER_URI")) ros-topic-buffer)
+    (princ old-stamp ros-topic-buffer))
+ ;; (princ (format "Topics updated every %s seconds\n" ros-topic-update-interval) ros-topic-buffer)
 
   (when ros-topic-publication-rates
     (princ (format "\nHz-tracked topics:\n") ros-topic-buffer)
@@ -614,6 +637,7 @@ q kills buffer"
     (terpri ros-topic-buffer))
 
   (princ (format "\nTopic, #pubs, #subs\n\n") ros-topic-buffer)
+
   (dotimes (i (length ros-all-topics))
     (let ((topic (aref ros-all-topics i)))
       (princ (format " %s %s %s" topic (gethash topic ros-num-publishers 0) (gethash topic ros-num-subscribers 0)) ros-topic-buffer)
@@ -627,7 +651,7 @@ q kills buffer"
   (progn
     (sit-for (round (* .75 (or ros-topic-update-interval 0.0))))
     (when ros-topic-timer (cancel-timer ros-topic-timer))
-    (setq ros-topic-timer (run-with-idle-timer (round (* .25 (or ros-topic-update-interval 0.0))) nil 'parse-rostopic-list process event))))
+    (setq ros-topic-timer (run-with-idle-timer (+ .1 (round (* .25 (or ros-topic-update-interval 0.0)))) nil 'parse-rostopic-list process event))))
 
 
 (defun get-topics (start end h)
@@ -656,7 +680,7 @@ q kills buffer"
 	    (if (and pub-start sub-start)
 		(let ((new-published-topics (get-topics pub-start sub-start ros-num-publishers)))
 		  (setq ros-subscribed-topics (get-topics sub-start (point-max) ros-num-subscribers))
-		  (destructuring-bind (added deleted) (diffs ros-topics new-published-topics)
+		  (destructuring-bind (added deleted) (rosemacs-list-diffs ros-topics new-published-topics)
 		    (lwarn '(rosemacs) :debug "added topics : %s" added)
 		    (dolist (topic added)
 		      (add-ros-topic topic))
@@ -668,9 +692,18 @@ q kills buffer"
     (lwarn '(rosemacs) :debug "Done parsing rostopic list")
     (setq ros-all-topics 
 	  (sort* (remove-duplicates (vconcat ros-topics ros-subscribed-topics) :test 'equal) 'string<))
+
+    ;; update display
+    (save-excursion
+      (when ros-topic-buffer
+	(set-buffer ros-topic-buffer)
+	(let ((time-stamp-pattern "5/^Last updated: <%02H:%02M:%02S"))
+	  (time-stamp))))
+
     ;; Start the next round of topic updates
     (when ros-topic-update-interval
       (ros-update-topic-list-internal))
+ 
     (kill-buffer (process-buffer process))))
 
 
@@ -832,6 +865,71 @@ q kills buffer"
 	(when (and (>= start 0) (string-equal "rostopic" (buffer-substring-no-properties start (point))))
 	  arg)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; rosrun
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(defvar ros-run-temp-var "")
+(defvar ros-run-exec-names nil)
+
+(defun extract-exec-name (path)
+  (string-match "\\([^\/]+\\)$" path)
+  (match-string 1 path))
+  
+(defun ros-find-executables (pkg)
+  (let ((ros-run-exec-paths nil)
+	(path (ros-package-path pkg)))
+    (save-excursion
+      (with-temp-buffer 
+	(call-process "find" nil t nil path "-perm" "-100" "!" "-type" "d")
+	(goto-char (point-min))
+	(loop
+	 (let ((pos (re-search-forward "^\\(.+\\)$" (point-max) t)))
+	   (if pos
+	       (let ((str (match-string 1)))
+		 (push str ros-run-exec-paths))
+	     (return))))))
+    (sort* (map 'vector 'extract-exec-name ros-run-exec-paths) 'string<)))
+  
+(defun complete-exec-name (str)
+  (rosemacs-bsearch str ros-run-exec-names))
+
+(defun ros-package-path (pkg)
+  (save-excursion
+   (with-temp-buffer
+     (call-process "rospack" nil t nil "find" pkg)
+     (goto-char (point-min))
+     (re-search-forward "^\\(.*\\)$")
+     (match-string 1))))
+
+(define-minor-mode ros-run-mode
+  "Mode used for rosrun
+
+k kills the process (sends SIGINT).
+q kills the buffer and process."
+  :init-value nil
+  :lighter " ros-run"
+  :keymap ros-topic-echo-keymap
+  (message "ros-run mode: k to stop, q to quit"))
+
+(defun ros-run (pkg exec &rest args)
+  "pkg is a ros package name and exec is the executable name.  Tab completes package name.  Exec defaults to package name itself."
+  (interactive (list (setq ros-run-temp-var (completing-read "Enter package: " ros-package-completor))
+		     (let ((ros-run-exec-names (ros-find-executables ros-run-temp-var)))
+		       (completing-read (format "Enter executable (default %s): " ros-run-temp-var) (dynamic-completion-table 'complete-exec-name)
+					nil nil nil nil ros-run-temp-var))))
+  (let* ((name (format "*rosrun:%s/%s" pkg exec))
+	 (buf (generate-new-buffer name)))
+    (apply #'start-process name buf "rosrun" pkg exec args)
+    (save-excursion
+      (set-buffer buf)
+      (ros-run-mode))
+    buf))
+
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Keymap
@@ -880,44 +978,44 @@ q kills buffer"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(defun get-comp (completions i)
+(defun rosemacs-get-comp (completions i)
   (let ((comp (aref completions i)))
     (string-match "^/*\\(.*\\)" comp)
     (match-string 1 comp)))
 
-(defun bsearch-completions (str completions)
+(defun rosemacs-bsearch (str completions)
   "str is a string, completions is a sorted vector of strings.  Return list of strings in completions that str is a prefix of."
   (let ((num-completions (length completions)))
     (unless (or (= num-completions 0)
-		(string< (get-comp completions (1- num-completions)) str))
+		(string< (rosemacs-get-comp completions (1- num-completions)) str))
     (let ((i 0)
 	  (j (1- num-completions)))
       (while (< (1+ i) j)
 	(let ((k (floor (+ i j) 2)))
-	  (if (string< str (get-comp completions k))
+	  (if (string< str (rosemacs-get-comp completions k))
 	      (setq j k)
 	    (setq i k))))
 
-      (when (not (is-prefix str (get-comp completions i)))
+      (when (not (rosemacs-is-prefix str (rosemacs-get-comp completions i)))
 	(incf i))
       ;; Postcondition: completions of str, if they exist, begin at i
       
       (let ((returned-completions nil))
-	(while (and (< i (length completions)) (is-prefix str (get-comp completions i)))
-	  (push (get-comp completions i) returned-completions)
+	(while (and (< i (length completions)) (rosemacs-is-prefix str (rosemacs-get-comp completions i)))
+	  (push (rosemacs-get-comp completions i) returned-completions)
 	  (incf i))
 	returned-completions)))))
 
-(defun is-prefix (str1 str2)
+(defun rosemacs-is-prefix (str1 str2)
   (let ((m (length str1)))
     (eq t (compare-strings str1 0 m str2 0 m))))
 
-(defun lookup-vectors (str v1 v2)
+(defun rosemacs-lookup-vectors (str v1 v2)
   (let ((i (position str v1 :test #'string-equal)))
     (when i
       (aref v2 i)))) 
 
-(defun diffs (l1 l2)
+(defun rosemacs-list-diffs (l1 l2)
   "Given two sorted lists of strings, return a list with 1) l2 - l1 2) l1 - l2"
   (let ((added nil) (deleted nil) (remaining1 l1) (remaining2 l2))
     (while (or remaining1 remaining2)

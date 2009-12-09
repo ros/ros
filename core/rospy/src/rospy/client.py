@@ -302,6 +302,7 @@ def wait_for_service(service, timeout=None):
     @param timeout: timeout time in seconds
     @type  timeout: double
     @raise ROSException: if specified timeout is exceeded
+    @raise ROSInterruptException: if shutdown interrupts wait
     """
     def contact_service(resolved_name, timeout=10.0):
         code, _, uri = master.lookupService(resolved_name)
@@ -339,7 +340,10 @@ def wait_for_service(service, timeout=None):
                 if first:
                     first = False
                     rospy.core.logerr("wait_for_service(%s): failed to contact [%s], will keep trying"%(resolved_name, uri))
-        raise rospy.exceptions.ROSException("timeout exceeded while waiting for service %s"%resolved_name)
+        if rospy.core.is_shutdown():
+            raise rospy.exceptions.ROSInterruptException("rospy shutdown")
+        else:
+            raise rospy.exceptions.ROSException("timeout exceeded while waiting for service %s"%resolved_name)
     else:
         while not rospy.core.is_shutdown():
             try:
@@ -350,6 +354,9 @@ def wait_for_service(service, timeout=None):
                 if first:
                     first = False
                     rospy.core.logerr("wait_for_service(%s): failed to contact [%s], will keep trying"%(resolved_name, uri))
+        if rospy.core.is_shutdown():
+            raise rospy.exceptions.ROSInterruptException("rospy shutdown")
+    
     
 #########################################################
 # Param Server Access

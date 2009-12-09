@@ -1,0 +1,9 @@
+<stack name="ros_experimental" version="0.1.0">
+  <description brief="ros_experimental">
+  </description>
+  <author>Various</author>
+  <license>BSD</license>  
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/ros_experimental</url>
+
+</stack>

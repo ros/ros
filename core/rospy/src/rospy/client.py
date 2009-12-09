@@ -288,7 +288,52 @@ def get_published_topics(namespace='/'):
         raise rospy.exceptions.ROSException("unable to get published topics: %s"%msg)
     return val
 
+class _WFM(object):
+    def __init__(self):
+        self.msg = None
+    def cb(self, msg):
+        if self.msg is None:
+            self.msg = msg
+            
+def wait_for_message(topic, topic_type, timeout=None):
+    """
+    Receive one message from topic.
     
+    This will create a new subscription to the topic, receive one message, then unsubscribe.
+
+    @param topic: name of topic
+    @type  topic: str
+    @param topic_type: topic type
+    @type  topic_type: L{rospy.Message} class
+    @param timeout: timeout time in seconds
+    @type  timeout: double
+    @return: Message
+    @rtype: L{rospy.Message}
+    @raise ROSException: if specified timeout is exceeded
+    @raise ROSInterruptException: if shutdown interrupts wait
+    """
+    wfm = _WFM()
+    s = None
+    try:
+        s = rospy.topics.Subscriber(topic, topic_type, wfm.cb)
+        if timeout is not None:
+            timeout_t = time.time() + timeout
+            while not rospy.core.is_shutdown() and wfm.msg is None:
+                time.sleep(0.01)
+                if time.time() >= timeout_t:
+                    raise rospy.exceptions.ROSException("timeout exceeded while waiting for message on topic %s"%topic)
+
+        else:
+            while not rospy.core.is_shutdown() and wfm.msg is None:
+                time.sleep(0.01)            
+    finally:
+        if s is not None:
+            s.unregister()
+    if rospy.core.is_shutdown():
+        raise rospy.exceptions.ROSInterruptException("rospy shutdown")
+    return wfm.msg
+
+
 #########################################################
 # Service helpers
 

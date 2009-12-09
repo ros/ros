@@ -52,7 +52,8 @@ import rospy.init
 from roslib.msg import Header
 
 from rospy.client import spin, myargv, init_node, \
-    get_master, get_published_topics, wait_for_service, \
+    get_master, get_published_topics, \
+    wait_for_message, wait_for_service, \
     get_node_proxy,\
     on_shutdown, \
     get_param, get_param_names, set_param, delete_param, has_param, search_param,\

@@ -177,11 +177,6 @@ NodeHandle child(parent.getNamespace() + "/" + ns, remappings);
    */
   std::string resolveName(const std::string& name, bool remap = true) const;
 
-  /**
-   * \Deprecated in favor of resolveName()
-   */
-  ROSCPP_DEPRECATED std::string mapName(const std::string& name, bool remap = true) const { return resolveName(name, remap); }
-
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Versions of advertise()
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1185,24 +1180,6 @@ if (handle)
    */
   bool ok() const;
 
-  /**
-   * \deprecated in favor of ros::master::setRetryTimeout()
-   */
-  ROSCPP_DEPRECATED void setMasterRetryTimeout(int32_t milliseconds);
-
-  /** \deprecated in favor of ros::this_node::getAdvertisedTopics()
-   */
-  ROSCPP_DEPRECATED void getAdvertisedTopics(V_string& topics) const;
-
-  /** \deprecated in favor of ros::this_node::getSubscribedTopics()
-   */
-  ROSCPP_DEPRECATED void getSubscribedTopics(V_string& topics) const;
-
-  /**
-   * \brief deprecated in favor of ros::this_node::getName()
-   */
-  ROSCPP_DEPRECATED const std::string& getName() const;
-
 
   /** \brief Get the hostname where the master runs.
    *
@@ -1214,20 +1191,6 @@ if (handle)
    * \return The master's port.
    */
   int getMasterPort() const;
-
-  /**
-   * \deprecated in favor of ros::master::check()
-   */
-  ROSCPP_DEPRECATED bool checkMaster() const;
-
-  /** \deprecated in favor of ros::master::getTopics()
-   */
-  ROSCPP_DEPRECATED bool getPublishedTopics(VP_string& topics) const;
-
-  /**
-   * \deprecated in favor of ros::master::getNodes()
-   */
-  ROSCPP_DEPRECATED bool getNodes(V_string& nodes) const;
 
 private:
   void construct();

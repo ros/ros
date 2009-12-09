@@ -92,13 +92,6 @@ public:
   /**
    * \brief Returns whether or not this handle is valid.  For a persistent service, this becomes false when the connection has dropped.
    * Non-persistent service handles are always valid.
-   *
-   * \deprecated Use isValid()
-   */
-  ROSCPP_DEPRECATED bool valid() { return isValid(); }
-  /**
-   * \brief Returns whether or not this handle is valid.  For a persistent service, this becomes false when the connection has dropped.
-   * Non-persistent service handles are always valid.
    */
   bool isValid() const;
 

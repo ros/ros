@@ -50,11 +50,6 @@
 namespace ros
 {
 
-/**
- * \deprecated Use ros::package::getPath() in the roslib package instead
- */
-ROSCPP_DEPRECATED std::string getPackagePath(const std::string &package_name);
-
 void disableAllSignalsInThisThread();
 
 class SerializedMessage

@@ -236,8 +236,32 @@ def dpkg_detect(p):
     else:
         return False
 
+###### Debian SPECIALIZATION #########################
+class Debian:
+    def __init__(self, index):
+        index.add_os("debian", self)
+
+    def check_presence(self):
+        if "Debian" == lsb_get_os():
+            return True
+        return False
+
+    def get_version(self):
+        return lsb_get_release_codename()
+
+    def strip_detected_packages(self, packages):
+        return [p for p in packages if not dpkg_detect(p)]
+
+    def generate_package_install_command(self, packages, default_yes):
+        if default_yes:
+            return "#Packages\nsudo apt-get install -y " + ' '.join(packages)        
+        else:
+            return "#Packages\nsudo apt-get install " + ' '.join(packages)
+
+###### END Debian SPECIALIZATION ########################
+
 ###### UBUNTU SPECIALIZATION #########################
-class Ubuntu:
+class Ubuntu(Debian):
     """ This is an implementation of a standard interface for
     interacting with rosdep.  This defines all Ubuntu sepecific
     methods, including detecting the OS/Version number.  As well as
@@ -253,55 +277,9 @@ class Ubuntu:
     def get_version(self):
         return lsb_get_release_version()
     
-    def strip_detected_packages(self, packages):
-        return [p for p in packages if not dpkg_detect(p)]
-
-    def generate_package_install_command(self, packages, default_yes):
-        if default_yes:
-            return "#Packages\nsudo apt-get install -y " + ' '.join(packages)        
-        else:
-            return "#Packages\nsudo apt-get install " + ' '.join(packages)
 
 ###### END UBUNTU SPECIALIZATION ########################
 
-###### Debian SPECIALIZATION #########################
-class Debian:
-    def __init__(self, index):
-        index.add_os("debian", self)
-
-    def check_presence(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:                
-                    os_list = fh.read().split()
-                if os_list and os_list[0] == "Debian":
-                    return True
-        except:
-            pass#print "Debian failed to detect OS"
-        return False
-
-    def get_version(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:
-                    os_list = fh.read().split()
-                if os_list[0] == "Debian":
-                    return os_list[1]
-        except:
-            print "Debian failed to get version"
-            return False
-
-        return False
-
-    def strip_detected_packages(self, packages):
-        return [p for p in packages if not dpkg_detect(p)]
-
-    def generate_package_install_command(self, packages, default_yes):        
-        return "#Packages\nsudo apt-get install " + ' '.join(packages)
-
-###### END Debian SPECIALIZATION ########################
 
 ###### Mint SPECIALIZATION #########################
 class Mint:

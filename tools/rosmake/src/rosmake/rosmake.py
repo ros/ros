@@ -497,7 +497,7 @@ class RosMakeAll:
               #self.log_dir = os.path.join(os.getcwd(), options.output_dir, date_time_stamp);
               self.log_dir = os.path.abspath(options.output_dir)
           else:
-              self.log_dir = os.path.join(roslib.rosenv.get_ros_home(), date_time_stamp);
+              self.log_dir = os.path.join(roslib.rosenv.get_ros_home(), "rosmake", date_time_stamp);
 
           self.print_all("Logging to directory")
           self.print_all("%s"%self.log_dir)

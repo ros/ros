@@ -155,7 +155,6 @@ def _rosservice_type(service_name):
     """
     service_type = get_service_type(service_name)
     if service_type is None:
-        print >> sys.stderr, "unknown"
         sys.exit(1)
     else:
         print service_type

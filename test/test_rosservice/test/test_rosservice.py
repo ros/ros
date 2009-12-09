@@ -148,12 +148,11 @@ class TestRosservice(unittest.TestCase):
         from ros import rosservice
         cmd = 'rosservice'
         s = '/add_two_ints'
-        with fakestdout() as b:
-            try:
-                rosservice.rosservicemain([cmd, 'type', '/fake_service'])
-                self.fail("should have triggered error exit")
-            except SystemExit:
-                pass
+        try:
+            rosservice.rosservicemain([cmd, 'type', '/fake_service'])
+            self.fail("should have triggered error exit")
+        except SystemExit:
+            pass
 
         for s in ['/add_two_ints', 'add_two_ints', 'foo/add_two_ints']:
             with fakestdout() as b:

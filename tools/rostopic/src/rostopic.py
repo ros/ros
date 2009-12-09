@@ -187,7 +187,7 @@ def _rostopic_hz(topic, window_size=-1):
     @param window_size: number of messages to average over, -1 for infinite
     @type  window_size: int
     """
-    _, real_topic, _ = get_topic_type(topic) #pause hz until topic is published
+    _, real_topic, _ = get_topic_type(topic, blocking=True) #pause hz until topic is published
     if rospy.is_shutdown():
         return
     rospy.init_node(NAME, anonymous=True)
@@ -258,7 +258,7 @@ def _rostopic_bw(topic, window_size=-1):
     shutdown
     """
     _check_master()
-    _, real_topic, _ = get_topic_type(topic) #pause hz until topic is published
+    _, real_topic, _ = get_topic_type(topic, blocking=True) #pause hz until topic is published
     if rospy.is_shutdown():
         return
     rospy.init_node(NAME, anonymous=True)
@@ -313,25 +313,23 @@ def _get_topic_type(topic):
         t, t_type = matches[0]
         if t_type == roslib.names.ANYTYPE:
             return None, None, None
-        if t_type == topic:
-            return t_type, None
         return t_type, t, msgevalgen(topic[len(t):])
     else:
         return None, None, None
 
 # NOTE: this is used externally by rxplot
     
-def get_topic_type(topic, blocking=True):
+def get_topic_type(topic, blocking=False):
     """
     Get the topic type.
 
     @param topic: topic name
     @type  topic: str
-    @param blocking: (default True) block until topic becomes available
+    @param blocking: (default False) block until topic becomes available
     @type  blocking: bool
     
     @return: topic type, real topic name and fn to evaluate the message instance
-    if the topic points to a field within a topic, e.g. /rosout/msg
+    if the topic points to a field within a topic, e.g. /rosout/msg. fn is None otherwise.
     @rtype: str, str, fn
     @raise ROSTopicException: if master cannot be contacted
     """
@@ -348,7 +346,7 @@ def get_topic_type(topic, blocking=True):
                 time.sleep(0.1)
     return None, None, None
 
-def get_topic_class(topic):
+def get_topic_class(topic, blocking=False):
     """
     Get the topic message class
     @return: message class for topic, real topic
@@ -357,7 +355,7 @@ def get_topic_class(topic):
     @rtype: roslib.message.Message, str, str
     @raise ROSTopicException: if topic type cannot be determined or loaded
     """
-    topic_type, real_topic, msg_eval = get_topic_type(topic)
+    topic_type, real_topic, msg_eval = get_topic_type(topic, blocking=blocking)
     if topic_type is None:
         return None, None, None
     msg_class = roslib.message.get_message_class(topic_type)
@@ -563,7 +561,12 @@ def _rostopic_type(topic):
     @param topic: topic name
     @type  topic: str
     """
-    print >> sys.stdout, get_topic_type(topic)[0]
+    t, _, _ = get_topic_type(topic, blocking=False)
+    if t:
+        print t
+    else:
+        print >> sys.stderr, 'unknown topic [%s]'%topic
+        sys.exit(1)
 
 def _rostopic_echo_bag(callback_echo, bag_file):
     """
@@ -706,69 +709,85 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
 
-    def _exact_match(pubs, subs, topic):
-        # exact match if pubs/subs both match
-        return len([x for x in subs if x[0] == topic]) == len(subs) and \
-            len([x for x in pubs if x[0] == topic]) == len(pubs)
-
-    if topic and _exact_match(subs, pubs, topic):
-
-        if not pubs and not subs:
-            print >> sys.stderr, "Unknown topic %s"%topic
-            return 1
-            
-        #print '-'*80
-        print "\nType: %s\n"%topic_type(topic, pub_topics)
-
-        import itertools
+    if verbose:
         if not subscribers_only:
-
-            if pubs:
-                print "Publishers: "
-                for p in itertools.chain(*[l for x, l in pubs]):
-                    print " * %s (%s)"%(p, get_api(master, p))
-            else:
-                print "Publishers: None"
-            print ''
+            print "\nPublished topics:"
+            for t, l in pubs:
+                if len(l) > 1:
+                    print " * %s [%s] %s publishers"%(t, topic_type(t, pub_topics), len(l))
+                else:
+                    print " * %s [%s] 1 publisher"%(t, topic_type(t, pub_topics))                    
 
         if not publishers_only:
-            if subs:
-                print "Subscribers: "
-                for p in itertools.chain(*[l for x, l in subs]):
-                    print " * %s (%s)"%(p, get_api(master, p))
-            else:
-                print "Subscribers: None"
             print ''
-                    
+            print "Subscribed topics:"
+            for t,l in subs:
+                if len(l) > 1:
+                    print " * %s [%s] %s subscribers"%(t, topic_type(t, pub_topics), len(l))
+                else:
+                    print " * %s [%s] 1 subscriber"%(t, topic_type(t, pub_topics)) 
     else:
-        #print '-'*80
-        if verbose:
-            if not subscribers_only:
-                print "\nPublished topics:"
-                for t, l in pubs:
-                    if len(l) > 1:
-                        print " * %s [%s] %s publishers"%(t, topic_type(t, pub_topics), len(l))
-                    else:
-                        print " * %s [%s] 1 publisher"%(t, topic_type(t, pub_topics))                    
-
-            if not publishers_only:
-                print ''
-                print "Subscribed topics:"
-                for t,l in subs:
-                    if len(l) > 1:
-                        print " * %s [%s] %s subscribers"%(t, topic_type(t, pub_topics), len(l))
-                    else:
-                        print " * %s [%s] 1 subscriber"%(t, topic_type(t, pub_topics)) 
+        if publishers_only:
+            topics = [t for t,_ in pubs]
+        elif subscribers_only:
+            topics = [t for t,_ in subs]
         else:
-            if publishers_only:
-                topics = [t for t,_ in pubs]
-            elif subscribers_only:
-                topics = [t for t,_ in subs]
-            else:
-                topics = list(set([t for t,_ in pubs] + [t for t,_ in subs]))                
-            topics.sort()
-            print '\n'.join(topics)
+            topics = list(set([t for t,_ in pubs] + [t for t,_ in subs]))                
+        topics.sort()
+        print '\n'.join(topics)
 
+def _rostopic_info(topic):
+    """
+    Print topic information to screen.
+    
+    @param topic: topic name 
+    @type  topic: str
+    """
+    def topic_type(t, pub_topics):
+        matches = [t_type for t_name, t_type in pub_topics if t_name == t]
+        if matches:
+            return matches[0]
+        return 'unknown type'
+
+    master = roslib.scriptutil.get_master()
+    try:
+        state = _succeed(master.getSystemState('/rostopic'))
+
+        pubs, subs, _ = state
+        # filter based on topic
+        subs = [x for x in subs if x[0] == topic]
+        pubs = [x for x in pubs if x[0] == topic]
+
+        pub_topics = _succeed(master.getPublishedTopics('/rostopic', '/'))
+    except socket.error:
+        raise ROSTopicIOException("Unable to communicate with master!")
+
+    if not pubs and not subs:
+        print >> sys.stderr, "Unknown topic %s"%topic
+        return 1
+
+    #print '-'*80
+    print "\nType: %s\n"%topic_type(topic, pub_topics)
+
+    import itertools
+
+    if pubs:
+        print "Publishers: "
+        for p in itertools.chain(*[l for x, l in pubs]):
+            print " * %s (%s)"%(p, get_api(master, p))
+    else:
+        print "Publishers: None"
+    print ''
+
+    if subs:
+        print "Subscribers: "
+        for p in itertools.chain(*[l for x, l in subs]):
+            print " * %s (%s)"%(p, get_api(master, p))
+    else:
+        print "Subscribers: None"
+    print ''
+                    
+            
 ##########################################################################################
 # COMMAND PROCESSING #####################################################################
     
@@ -843,7 +862,7 @@ def _rostopic_cmd_echo(argv):
     except socket.error:
         print >> sys.stderr, "Network communication failed. Most likely failed to communicate with master."
     
-def _optparse_topic_only(cmd, argv=sys.argv):
+def _optparse_topic_only(cmd, argv):
     args = argv[2:]
     parser = OptionParser(usage="usage: %%prog %s /topic"%cmd, prog=NAME)
     (options, args) = parser.parse_args(args)
@@ -853,10 +872,10 @@ def _optparse_topic_only(cmd, argv=sys.argv):
         parser.error("you may only specify one input topic")
     return roslib.scriptutil.script_resolve_name('rostopic', args[0])
 
-def _rostopic_cmd_type():
-    _rostopic_type(_optparse_topic_only('type'))
+def _rostopic_cmd_type(argv):
+    _rostopic_type(_optparse_topic_only('type', argv))
     
-def _rostopic_cmd_hz(argv=sys.argv):
+def _rostopic_cmd_hz(argv):
     args = argv[2:]
     parser = OptionParser(usage="usage: %prog hz /topic", prog=NAME)
     parser.add_option("-w", "--window",
@@ -1109,7 +1128,7 @@ def _rostopic_cmd_pub(argv):
         pub_args = []
         for arg in args[2:]:
             pub_args.append(yaml.load(arg))
-    except yaml.parser.ParserError, e:
+    except Exception, e:
         parser.error("Argument error: "+str(e))
 
     # make sure master is online. we wait until after we've parsed the
@@ -1158,15 +1177,12 @@ def _stdin_yaml_arg():
     except select.error:
         return # most likely ctrl-c interrupt
     
-def _rostopic_cmd_list(command):
+def _rostopic_cmd_list(argv):
     """
-    Command-line parsing for 'rostopic list' command as well as 'rostopic info /topic_name' alias.
-
-    @param command: command name ('list' or 'info')
-    @type  command: str
+    Command-line parsing for 'rostopic list' command.
     """
-    args = sys.argv[2:]
-    parser = OptionParser(usage="usage: %%prog %s [/namespace]"%command, prog=NAME)
+    args = argv[2:]
+    parser = OptionParser(usage="usage: %prog list [/namespace]", prog=NAME)
     parser.add_option("-b", "--bag",
                       dest="bag", default=None,
                       help="list topics in .bag file", metavar="BAGFILE")
@@ -1183,15 +1199,6 @@ def _rostopic_cmd_list(command):
     (options, args) = parser.parse_args(args)
     topic = None
 
-    # #1961
-    # 'rostopic info /topic_name' is an alias for 'rostopic list topic_name'. Unlike
-    # rostopic list, it does require an argument
-    if command == 'info':
-        if len(args) == 0:
-            parser.error("you must specify a topic name")
-        elif len(args) > 1:
-            parser.error("you may only specify one topic name")
-            
     if len(args) == 1:
         topic = roslib.scriptutil.script_resolve_name('rostopic', args[0])
     elif len(args) > 1:
@@ -1206,8 +1213,28 @@ def _rostopic_cmd_list(command):
         if options.subscribers and options.publishers:
             parser.error("you may only specify one of -p, -s")
 
-        sys.exit(_rostopic_list(topic, verbose=options.verbose, subscribers_only=options.subscribers, publishers_only=options.publishers) or 0)
-    
+        exitval = _rostopic_list(topic, verbose=options.verbose, subscribers_only=options.subscribers, publishers_only=options.publishers) or 0
+        if exitval != 0:
+            sys.exit(exitval)
+
+def _rostopic_cmd_info(argv):
+    """
+    Command-line parsing for 'rostopic info' command.
+    """
+    args = argv[2:]
+    parser = OptionParser(usage="usage: %prog info /topic", prog=NAME)
+    (options, args) = parser.parse_args(args)
+
+    if len(args) == 0:
+        parser.error("you must specify a topic name")
+    elif len(args) > 1:
+        parser.error("you may only specify one topic name")
+            
+    topic = roslib.scriptutil.script_resolve_name('rostopic', args[0])
+    exitval = _rostopic_info(topic) or 0
+    if exitval != 0:
+        sys.exit(exitval)
+            
 def _fullusage():
     print """rostopic is a command-line tool for printing information about ROS Topics.
 
@@ -1240,9 +1267,11 @@ def rostopicmain(argv=None):
         elif command == 'hz':
             _rostopic_cmd_hz(argv)
         elif command == 'type':
-            _rostopic_cmd_type()
-        elif command in ['list', 'info']:
-            _rostopic_cmd_list(command)
+            _rostopic_cmd_type(argv)
+        elif command in 'list':
+            _rostopic_cmd_list(argv)
+        elif command == 'info':
+            _rostopic_cmd_info(argv)
         elif command == 'pub':
             _rostopic_cmd_pub(argv)
         elif command == 'bw':
@@ -1260,6 +1289,7 @@ def rostopicmain(argv=None):
         print >> sys.stderr, "ERROR: "+str(e)
     except ROSTopicException, e:
         print >> sys.stderr, "ERROR: "+str(e)
+    except KeyboardInterrupt: pass
     except rospy.ROSInterruptException: pass
         
 if __name__ == '__main__':

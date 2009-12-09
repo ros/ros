@@ -1,0 +1,4 @@
+libgtop:
+  ubuntu: libgtop2-dev
+python-fuse:
+  ubuntu: python-fuse

@@ -50,7 +50,7 @@ from roslaunch.pmon import Process, FatalProcessLaunch
 import logging
 _logger = logging.getLogger("roslaunch")
 
-_TIMEOUT_SIGINT  = 5.0 #seconds
+_TIMEOUT_SIGINT  = 15.0 #seconds
 _TIMEOUT_SIGTERM = 2.0 #seconds
 
 _counter = 0
@@ -315,7 +315,6 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
             _logger.info("[%s] sending SIGINT to pgid [%s]", self.name, pgid)                                    
             os.killpg(pgid, signal.SIGINT)
             _logger.info("[%s] sent SIGINT to pgid [%s]", self.name, pgid)
-            #time.sleep(0.5) #I'm not sure why this was here - kwc
             timeout_t = time.time() + _TIMEOUT_SIGINT
             retcode = self.popen.poll()                
             while time.time() < timeout_t and retcode is None:

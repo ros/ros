@@ -1187,20 +1187,7 @@ void msg_spec::emit_cpp_class(FILE *f, bool for_srv, const string &service_name)
   {
     fputs("    roslib::Header _ser_header = header;\n", f);
     fprintf(f, "    bool __reset_seq = (header.seq == 0);\n" \
-          "    if (__reset_seq) _ser_header.seq = seq;\n" \
-          "    bool __reset_timestamp = header.stamp.is_zero();\n" \
-          "    if (__reset_timestamp) {\n" \
-					"#if ROS_BREAK_ON_MESSAGE_TIMESTAMP_AUTOFILL\n" \
-					"        ROS_BREAK();\n"
-					"#endif\n" \
-          "      static uint32_t counter = 100;\n" \
-          "      if (counter %% 100 == 0) {\n" \
-					"			   std::string bt = ros::debug::getBacktrace();\n" \
-          "        ROS_WARN(\"Automatic-filling of header timestamps is deprecated.  In future versions this time will be passed through as 0.  Set the ROS_BREAK_ON_MESSAGE_TIMESTAMP_AUTOFILL define to force a break at this location. (message type = [%s/%s])\\n%%s\", bt.c_str());\n" \
-          "      }\n" \
-          "      ++counter;\n" \
-          "      _ser_header.stamp = ros::Time::now();\n" \
-          "    }\n", package.c_str(), g_name.c_str());
+          "    if (__reset_seq) _ser_header.seq = seq;\n");
   }
 
   for (vector<msg_var *>::iterator v = vars.begin(); v != vars.end(); ++v)

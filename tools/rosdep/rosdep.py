@@ -150,7 +150,7 @@ class OSIndex:
     """ This class will iterate over registered classes to lookup the
     active OS and Version of that OS for lookup in rosdep.yaml"""
     def __init__(self):
-        self._os_map = {}
+        self._os_list =[]
         try:
             self._os_detected = os.environ["ROSDEP_OS_NAME"]
         except:
@@ -160,35 +160,41 @@ class OSIndex:
         except:
             self._os_version = False
 
-    def add_os(self, name, class_ref):
-        self._os_map[name] = class_ref
+    def add_os(self, class_ref):
+        self._os_list.append(class_ref)
 
         # \TODO look at throwing here
-    def get_os_name(self):
+    def get_os(self):
         if not self._os_detected:
-            for name in self._os_map.keys():
-                if self._os_map[name].check_presence():
-                    self._os_detected = name
-                    return name
+            for os_class in self._os_list:
+                if os_class.check_presence():
+                    self._os_detected = os_class
+                    return os_class
         if not self._os_detected:
             print "Failed to detect OS"
             sys.exit(-1) # TODO do this more elegantly
 
         return self._os_detected
+    def get_os_name(self):
+        os_class = self.get_os()
+        if os_class:
+            return os_class.get_name()
+        else:
+            return False
 
     def get_os_version(self):
         if not self._os_version:
-            self._os_version = self._os_map[self.get_os_name()].get_version()
+            self._os_version = self.get_os().get_version()
         return self._os_version
 
     def strip_detected_packages(self, packages):
-        return self._os_map[self.get_os_name()].strip_detected_packages(packages)
+        return self.get_os().strip_detected_packages(packages)
 
     def generate_package_install_command(self, packages, default_yes):
         if len(packages) > 0:
             bash_script = ""
             try:
-                bash_script = self._os_map[self.get_os_name()].generate_package_install_command(packages, default_yes)
+                bash_script = self.get_os().generate_package_install_command(packages, default_yes)
             except KeyError:
                 return "# os name '%s' not registered as a valid os"%self.get_os_name()
             return bash_script
@@ -238,9 +244,6 @@ def dpkg_detect(p):
 
 ###### Debian SPECIALIZATION #########################
 class Debian:
-    def __init__(self, index):
-        index.add_os("debian", self)
-
     def check_presence(self):
         if "Debian" == lsb_get_os():
             return True
@@ -248,6 +251,8 @@ class Debian:
 
     def get_version(self):
         return lsb_get_release_codename()
+    def get_name(self):
+        return "debian"
 
     def strip_detected_packages(self, packages):
         return [p for p in packages if not dpkg_detect(p)]
@@ -266,9 +271,6 @@ class Ubuntu(Debian):
     interacting with rosdep.  This defines all Ubuntu sepecific
     methods, including detecting the OS/Version number.  As well as
     how to check for and install packages."""
-    def __init__(self, index):
-        index.add_os("ubuntu", self)
-
     def check_presence(self):
         if "Ubuntu" == lsb_get_os():
             return True
@@ -276,16 +278,14 @@ class Ubuntu(Debian):
 
     def get_version(self):
         return lsb_get_release_version()
-    
+    def get_name(self):
+        return "ubuntu"
 
 ###### END UBUNTU SPECIALIZATION ########################
 
 
 ###### Mint SPECIALIZATION #########################
 class Mint:
-    def __init__(self, index):
-        index.add_os("mint", self)
-
     def check_presence(self):
         try:
             filename = "/etc/issue"
@@ -312,6 +312,9 @@ class Mint:
 
         return False
 
+    def get_name(self):
+        return "mint"
+
     def strip_detected_packages(self, packages):
         return [p for p in packages if not dpkg_detect(p)]
 
@@ -326,8 +329,6 @@ def pacman_detect(p):
     return subprocess.call(['pacman', '-Q', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
 
 class Arch:
-    def __init__(self, index):
-        index.add_os("arch", self)
 
     def check_presence(self):
         filename = "/etc/arch-release"
@@ -351,6 +352,10 @@ class Arch:
 
         return False
 
+    def get_name(self):
+        return "arch"
+
+
     def strip_detected_packages(self, packages):
         return [p for p in packages if pacman_detect(p)]
 
@@ -369,9 +374,6 @@ def port_detect(p):
     return (std_out.count("(active)") > 0)
 
 class Macports:
-    def __init__(self, index):
-        index.add_os("macports", self)
-
     def check_presence(self):
         filename = "/usr/bin/sw_vers"
         if os.path.exists(filename):
@@ -380,6 +382,9 @@ class Macports:
     
     def get_version(self):
         return "macports" # macports is a rolling release and isn't versionsed
+
+    def get_name(self):
+        return "macports"
 
     def strip_detected_packages(self, packages):
         return [p for p in packages if not port_detect(p)] 
@@ -395,9 +400,6 @@ def yum_detect(p):
 
 ###### Fedora SPECIALIZATION #########################
 class Fedora:
-    def __init__(self, index):
-        index.add_os("fedora", self)
-
     def check_presence(self):
         try:
             filename = "/etc/redhat_release"
@@ -424,19 +426,22 @@ class Fedora:
 
         return False
 
+    def get_name(self):
+        return "fedora"
+
     def strip_detected_packages(self, packages):
         return [p for p in packages if yum_detect(p)]
 
-    def generate_package_install_command(self, packages, default_yes):        
-        return "#Packages\nyum install " + ' '.join(packages)
+    def generate_package_install_command(self, packages, default_yes):
+        if default_yes:
+            return "#Packages\nyum -y install " + ' '.join(packages)
+        else:
+            return "#Packages\nyum install " + ' '.join(packages)
 
 ###### END Fedora SPECIALIZATION ########################
 
 ###### Rhel SPECIALIZATION #########################
-class Rhel:
-    def __init__(self, index):
-        index.add_os("rhel", self)
-
+class Rhel(Fedora):
     def check_presence(self):
         try:
             filename = "/etc/redhat_release"
@@ -463,11 +468,8 @@ class Rhel:
 
         return False
 
-    def strip_detected_packages(self, packages):
-        return [p for p in packages if yum_detect(p)]
-
-    def generate_package_install_command(self, packages, default_yes):
-        return "#Packages\nyum install " + ' '.join(packages)
+    def get_name(self):
+        return "rhel"
 
 ###### END Rhel SPECIALIZATION ########################
 
@@ -651,12 +653,12 @@ def main():
     ### Detect OS name and version
 
     ################ Add All specializations here ##############################
-    ubuntu = Ubuntu(r.osi)
-    debian = Debian(r.osi)
-    fedora = Fedora(r.osi)
-    rhel = Rhel(r.osi)
-    arch = Arch(r.osi)
-    macports = Macports(r.osi)
+    r.osi.add_os(Ubuntu())
+    r.osi.add_os(Debian())
+    r.osi.add_os(Fedora())
+    r.osi.add_os(Rhel())
+    r.osi.add_os(Arch())
+    r.osi.add_os(Macports())
     ################ End Add specializations here ##############################
     
     if options.verbose:

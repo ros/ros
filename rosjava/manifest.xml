@@ -6,6 +6,9 @@
     <p>
         rosjava is currently in an early alpha state; the core functionality it provides has been fairly well tested, but many more advanced features are missing. Its API has not yet been reviewed, and is likely to change in the future. 
     </p>
+	<p>
+		rosjava is currently maintained by Nicholas Butko. Contact nbutko at ucsd dot edu with issues and fixes. 
+	</p>
   </description>
 
   <author>Jason Wolfe (jawolfe@willowgarage.com)</author>

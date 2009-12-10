@@ -48,6 +48,7 @@ rosbuild_add_library(ros
                     service_server_link.cpp
                     service_client_link.cpp
                     service.cpp
+                    topic.cpp
                     rosout_appender.cpp
                     callback_queue.cpp
                     spinner.cpp

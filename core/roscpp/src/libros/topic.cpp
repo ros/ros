@@ -32,26 +32,32 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ROSCPP_ROS_H
-#define ROSCPP_ROS_H
-
-#include "ros/time.h"
-#include "ros/rate.h"
-#include "ros/console.h"
-#include "ros/assert.h"
-
-#include "ros/common.h"
-#include "ros/types.h"
-#include "ros/node_handle.h"
-#include "ros/publisher.h"
-#include "ros/single_subscriber_publisher.h"
-#include "ros/service_server.h"
-#include "ros/subscriber.h"
-#include "ros/service.h"
-#include "ros/init.h"
-#include "ros/master.h"
-#include "ros/this_node.h"
-#include "ros/param.h"
 #include "ros/topic.h"
+#include "ros/callback_queue.h"
 
-#endif
+namespace ros
+{
+namespace topic
+{
+
+void waitForMessageImpl(SubscribeOptions& ops, const boost::function<bool(void)>& ready_pred, NodeHandle& nh, ros::Duration timeout)
+{
+  ros::CallbackQueue queue;
+  ops.callback_queue = &queue;
+
+  ros::Subscriber sub = nh.subscribe(ops);
+
+  ros::Time end = ros::Time::now() + timeout;
+  while (!ready_pred() && nh.ok())
+  {
+    queue.callAvailable(ros::WallDuration(0.01));
+
+    if (!timeout.isZero() && ros::Time::now() <= end)
+    {
+      return;
+    }
+  }
+}
+
+} // namespace topic
+} // namespace ros

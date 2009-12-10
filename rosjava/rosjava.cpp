@@ -550,7 +550,7 @@ JNIEXPORT void JNICALL Java_ros_roscpp_JNI_setParam__JLjava_lang_String_2I
   (JNIEnv * env, jclass __jni, jlong cppHandle, jstring jparam, jint val)
 {
 	NodeHandle *handle = (NodeHandle *) cppHandle;
-	return handle->setParam(getString(env, jparam), val);
+	return handle->setParam(getString(env, jparam), (int)val);
 }
 
 

@@ -33,7 +33,7 @@ FIND_PATH(JAVA_INCLUDE_PATH2 jni_md.h
 
 
 rosbuild_add_library(rosjava rosjava.cpp)
-rosbuild_add_compile_flags(rosjava "-I${JAVA_INCLUDE_PATH}/" "-I${JAVA_INCLUDE_PATH2}/")
+rosbuild_add_compile_flags(rosjava "-I${JAVA_INCLUDE_PATH}/" "-I${JAVA_INCLUDE_PATH2}/" "-fpermissive")
 #rosbuild_add_compile_flags(rosjava "-I/usr/lib/jvm/java-6-sun/include/" "-I/usr/lib/jvm/java-6-sun/include/linux/")
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 

@@ -280,11 +280,14 @@ class XmlLoader(Loader):
         try:
             if is_test:
                 self._check_attrs(tag, context, ros_config, XmlLoader.TEST_ATTRS)
+                (name,) = self.opt_attrs(tag, context, ('name',)) 
             else:
                 self._check_attrs(tag, context, ros_config, XmlLoader.NODE_ATTRS)
+                (name,) = self.reqd_attrs(tag, context, ('name',)) 
                 
             # required attributes
-            pkg, node_type, name = self.reqd_attrs(tag, context, ('pkg', 'type', 'name'))
+            pkg, node_type = self.reqd_attrs(tag, context, ('pkg', 'type'))
+
             
             if not len(pkg.strip()):
                 raise XmlParseException("<node> 'pkg' must be non-empty")

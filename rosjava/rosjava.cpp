@@ -737,7 +737,7 @@ JNIEXPORT jboolean JNICALL Java_ros_roscpp_JNI_isSubscriberValid
   (JNIEnv * env, jclass __jni, jlong cppSubscriber)
 {
 	Subscriber *subscriber = (Subscriber *) cppSubscriber;
-	return (*subscriber) ? true : false;
+	return (*subscriber) && ros::ok() ? true : false;
 }
 
 JNIEXPORT void JNICALL Java_ros_roscpp_JNI_shutdownSubscriber
@@ -782,7 +782,7 @@ JNIEXPORT jboolean JNICALL Java_ros_roscpp_JNI_isPublisherValid
   (JNIEnv * env, jclass __jni, jlong cppPublisher)
 {
 	Publisher *publisher = (Publisher *) cppPublisher;
-	return (*publisher) ? true : false;
+	return (*publisher)  && ros::ok() ? true : false;
 }
 
 
@@ -894,7 +894,7 @@ JNIEXPORT jboolean JNICALL Java_ros_roscpp_JNI_isServiceServerValid
   (JNIEnv * env, jclass __jni, jlong cppServiceServer)
 {
 	ServiceServer *server = (ServiceServer *) cppServiceServer;
-	return (*server) ? true : false;
+	return (*server)  && ros::ok() ? true : false;
 }
 
 JNIEXPORT void JNICALL Java_ros_roscpp_JNI_shutdownServiceServer

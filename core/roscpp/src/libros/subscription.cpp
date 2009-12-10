@@ -534,11 +534,23 @@ public:
   SubscriptionCallback(const SubscriptionQueuePtr& queue, uint64_t id)
   : queue_(queue)
   , id_(id)
+  , called_(false)
   {}
+
+  ~SubscriptionCallback()
+  {
+    if (!called_)
+    {
+      queue_->remove(id_);
+    }
+  }
 
   virtual CallResult call()
   {
-    return queue_->call(id_);
+    CallResult result = queue_->call(id_);
+    called_ = true;
+
+    return result;
   }
 
   virtual bool ready()
@@ -549,6 +561,7 @@ public:
 private:
   SubscriptionQueuePtr queue_;
   uint64_t id_;
+  bool called_;
 };
 typedef boost::shared_ptr<SubscriptionCallback> SubscriptionCallbackPtr;
 

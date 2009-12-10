@@ -35,7 +35,7 @@
 
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/mutex.hpp>
-#include <queue>
+#include <list>
 
 namespace ros
 {
@@ -53,8 +53,10 @@ private:
 
     bool has_tracked_object;
     VoidWPtr tracked_object;
+
+    uint64_t id;
   };
-  typedef std::queue<Item> Q_Item;
+  typedef std::list<Item> L_Item;
 
 public:
   SubscriptionQueue(const std::string& topic, int32_t queue_size);
@@ -63,16 +65,16 @@ public:
   CallbackInterface::CallResult call(uint64_t id);
   bool ready(uint64_t id);
   bool full();
+  void remove(uint64_t id);
 
 private:
   std::string topic_;
   int32_t size_;
   bool full_;
   uint64_t id_counter_;
-  uint64_t queue_counter_;
 
   boost::mutex queue_mutex_;
-  Q_Item queue_;
+  L_Item queue_;
 
   boost::recursive_mutex callback_mutex_;
 };

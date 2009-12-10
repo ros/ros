@@ -26,4 +26,5 @@
     <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags` -I${prefix}/srv/cpp -I${prefix}/msg/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lros `rosboost-cfg --lflags thread,signals`"/>
     <roslang cmake="${prefix}/cmake/roscpp.cmake"/>
   </export>
+  <rosdep name="pkg-config"/>
 </package>

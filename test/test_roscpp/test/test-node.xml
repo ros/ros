@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="test_roscpp" type="test_node" />
+  <node name="test_node" pkg="test_roscpp" type="test_node" />
   <test test-name="test_roscpp__global" pkg="test_ros" type="test_node_api.py" />
 
   <group>

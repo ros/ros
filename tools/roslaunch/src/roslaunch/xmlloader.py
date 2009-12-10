@@ -284,7 +284,7 @@ class XmlLoader(Loader):
                 self._check_attrs(tag, context, ros_config, XmlLoader.NODE_ATTRS)
                 
             # required attributes
-            pkg, node_type = self.reqd_attrs(tag, context, ('pkg', 'type'))
+            pkg, node_type, name = self.reqd_attrs(tag, context, ('pkg', 'type', 'name'))
             
             if not len(pkg.strip()):
                 raise XmlParseException("<node> 'pkg' must be non-empty")
@@ -292,8 +292,8 @@ class XmlLoader(Loader):
                 raise XmlParseException("<node> 'type' must be non-empty")
             
             # optional attributes
-            machine, name, args, output, respawn, cwd, launch_prefix, required = \
-                     self.opt_attrs(tag, context, ('machine', 'name', 'args', 'output', 'respawn', 'cwd', 'launch-prefix', 'required'))
+            machine, args, output, respawn, cwd, launch_prefix, required = \
+                     self.opt_attrs(tag, context, ('machine', 'args', 'output', 'respawn', 'cwd', 'launch-prefix', 'required'))
             if not name and not is_test:
                 ros_config.add_config_error("WARN: un-named nodes in roslaunch are deprecated:\n[%s]: %s"%(context.filename, tag.toxml()))
                 

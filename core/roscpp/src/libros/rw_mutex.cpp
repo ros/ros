@@ -46,7 +46,11 @@ class APRPool
 public:
   APRPool()
   {
+#if defined(apr_pool_create_unmanaged)
     CHECK_APR_STATUS(apr_pool_create_unmanaged(&pool));
+#else
+    CHECK_APR_STATUS(apr_pool_create(&pool, 0));
+#endif
   }
   ~APRPool()
   {
@@ -55,20 +59,20 @@ public:
 
   apr_pool_t* pool;
 };
-boost::thread_specific_ptr<APRPool> g_wrmutex_pool;
+boost::thread_specific_ptr<APRPool> g_rwmutex_pool;
 
 void createPoolIfNecessary()
 {
-  if (!g_wrmutex_pool.get())
+  if (!g_rwmutex_pool.get())
   {
-    g_wrmutex_pool.reset(new APRPool);
+    g_rwmutex_pool.reset(new APRPool);
   }
 }
 
 RWMutex::RWMutex()
 {
   createPoolIfNecessary();
-  CHECK_APR_STATUS(apr_thread_rwlock_create(&lock_, g_wrmutex_pool->pool));
+  CHECK_APR_STATUS(apr_thread_rwlock_create(&lock_, g_rwmutex_pool->pool));
 }
 
 RWMutex::~RWMutex()

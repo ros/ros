@@ -1,5 +1,5 @@
 <launch>
   <param name="/use_sim_time" value="True"/>
-  <node pkg="rosrecord" type="rosplay" args="-s 5 -b 10 $(find test_rosrecord)/test/rosrecord_rename_test.bag"/>
+  <node name="rosrecord" pkg="rosrecord" type="rosplay" args="-s 5 -b 10 $(find test_rosrecord)/test/rosrecord_rename_test.bag"/>
   <test time-limit="20" test-name="rename_test" pkg="test_rosrecord" type="rename_test.py"/>
 </launch>

@@ -362,7 +362,10 @@ class RosMakeAll:
     def assert_rospack_built(self):
         if self.flag_tracker.has_nobuild("rospack"):
             return True
-        return subprocess.call(["bash", "-c", "cd %s && make "%os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
+        ret_val = subprocess.call(["bash", "-c", "cd %s && make "%os.path.join(os.environ["ROS_ROOT"], "tools/rospack")]) 
+        ret_val2 = subprocess.call(["bash", "-c", "cd %s && make "%os.path.join(os.environ["ROS_ROOT"], "3rdparty/gtest")]) 
+        return ret_val and ret_val2
+            
         # The check for presence doesn't check for updates
         #if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "bin/rospack")):
         #    return True
@@ -565,9 +568,6 @@ class RosMakeAll:
 
         build_passed = True
         if building:
-          if "gtest" in self.build_list:
-              self.build_list.remove("gtest")
-          self.build_list.insert(0, "gtest") # Required by all cpp test packages but not in build dependency tree
           self.print_verbose ("Building packages %s"% self.build_list)
           build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = options.robust)
           build_passed = self.parallel_build_pkgs(build_queue, options.target, threads = options.threads)

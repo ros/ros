@@ -36,7 +36,7 @@ PKG = 'rxplay'
 import roslib; roslib.load_manifest(PKG)
 import wx
 
-from layer import Layer
+from util.layer import Layer
 from bag_index import BagIndex
 
 class StatusLayer(Layer):

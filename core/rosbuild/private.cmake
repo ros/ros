@@ -293,9 +293,9 @@ macro(_rosbuild_add_library lib libname type)
   rosbuild_add_compile_flags(${lib} ${ROS_COMPILE_FLAGS})
   rosbuild_add_link_flags(${lib} ${ROS_LINK_FLAGS})
 
-  # Make sure that any messages get generated prior to build this target
-  add_dependencies(${lib} rospack_genmsg_libexe)
-  add_dependencies(${lib} rospack_gensrv_libexe)
+  # Make sure to do any prebuild working (e.g., msg/srv generation) before
+  # building this target.
+  add_dependencies(${lib} rosbuild_precompile)
 endmacro(_rosbuild_add_library)
 
 # Internal macros above

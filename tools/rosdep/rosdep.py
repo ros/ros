@@ -196,7 +196,7 @@ class RosdepLookupPackage:
                 for key in yaml_dict:
                     if key in self.rosdep_source:
                         if override:
-                            print >>sys.stderr, "%s being overridden with %s from %s"%(key, yaml_dict[key], path)
+                            print >>sys.stderr, "ROSDEP_OVERRIDE: %s being overridden with %s from %s"%(key, yaml_dict[key], path)
                             self.rosdep_source[key].append("Overriding with "+path)
                             self.rosdep_map[key] = self.get_os_from_yaml(yaml_dict[key])
                         else:

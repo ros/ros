@@ -61,11 +61,14 @@ class BagFile:
                 yield pos, topic, msg, t
                 
             except rosrecord.ROSRecordException, e:
-                rospy.logerr('ROSRecordException: couldn\'t read msg at pos %d - %s' % (pos, e)) 
+                rospy.logerr('ROSRecordException: couldn\'t read msg at pos %d - %s' % (pos, e))
+                break
             except IOError:
                 rospy.logerr('IOError: couldn\'t read msg at pos %d' % pos)
+                break
             except KeyError:
                 rospy.logerr('KeyError: couldn\'t read msg at pos %d' % pos)
+                break
                 
         self._close()
 

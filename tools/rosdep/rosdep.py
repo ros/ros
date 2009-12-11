@@ -46,109 +46,6 @@ import yaml
 class RosdepException(Exception):
     pass
 
-class RosdepLookup:
-    """
-    This is a class for interacting with rosdep.yaml files.  It will
-    load all rosdep.yaml files in the current configuration at
-    startup.  It has accessors to allow lookups into the rosdep.yaml
-    from rosdep name and returns the string from the yaml file for the
-    appropriate OS/version.
-
-    It uses the OSIndex class for OS detection.
-    """
-    
-    def __init__(self, osindex):
-        """ Read all rosdep.yaml files found at the root of stacks in
-        the current environment and build them into a map."""
-        self.os_index = osindex
-        self.rosdep_map = {}
-        self.rosdep_source = {}
-        ## Find all rosdep.yamls here and load them into a map
-        stacks = roslib.rospack.rosstackexec(["list-names"]).split()
-        #print stacks
-        pkg_paths_str = roslib.rosenv.get_ros_package_path()
-        if pkg_paths_str:
-            for pkg_path in pkg_paths_str.split(':'):
-                path = os.path.join(pkg_path, "rosdep.yaml")
-                self.insert_map(self.parse_yaml(path), path)
-                
-        for s in stacks:
-            path = os.path.join(roslib.rospack.rosstackexec(["find", s]), "rosdep.yaml")
-            self.insert_map(self.parse_yaml(path), path)
-        #print "built map", self.rosdep_map
-
-
-    def insert_map(self, yaml_dict, source_path):
-        for key in yaml_dict:
-            if key in self.rosdep_source:
-                print >>sys.stderr, "%s already loaded from %s.  But it is also defined in %s.  This will not be overwritten"%(key, self.rosdep_source[key], source_path)
-                self.rosdep_source[key].append("not using "+source_path)
-                #exit(-1)
-            else:
-                self.rosdep_source[key] = [source_path]
-                self.rosdep_map[key] = yaml_dict[key]
-        
-
-    def parse_yaml(self, path):
-        #print "parsing path", path
-        if os.path.exists(path):
-            try:
-                f = open(path)
-                yaml_text = f.read()
-                f.close()
-
-                return yaml.load(yaml_text)
-
-            except yaml.YAMLError, exc:
-                print >> sys.stderr, "Failed parsing yaml while processing %s\n"%path, exc
-                sys.exit(1)
-        
-
-    def lookup_rosdep(self, rosdep):
-        """ Lookup the OS specific packages or script from the
-        prebuilt maps."""
-        os_name = self.os_index.get_os_name()
-        os_version = self.os_index.get_os_version()
-
-        if rosdep in self.rosdep_map:
-            individual_rosdep_map = self.rosdep_map[rosdep]
-            # See if the version for this OS exists
-            if os_name in individual_rosdep_map:
-                os_specific = individual_rosdep_map[os_name]
-                # See if there are different versions called out
-                if type(os_specific) == type("String"):
-                    return os_specific
-                else:# it must be a map of versions
-                    if os_version in os_specific.keys():
-                        return os_specific[os_version]
-                    else:
-                        ## Hack to match rounding errors in pyyaml load 9.04  != 9.03999999999999996 in string space
-                        for key in os_specific.keys():
-                            # NOTE: this hack fails if os_version is not major.minor
-                            if os_name == "ubuntu" and float(key) == float(os_version):
-                                #print "Matched %s"%(os_version)
-                                return os_specific[key]
-
-                        print >> sys.stderr, "failed to find specific version %s of %s within"%(os_version, rosdep), os_specific
-                        return False
-                    
-            else:
-                print >> sys.stderr, "failed to find OS(%s) version of %s "%(os_name, rosdep)
-                return False
-
-        else:
-            return False
-        
-    def get_map(self):
-        return self.rosdep_map
-        
-
-    def get_sources(self, rosdep):
-        if rosdep in self.rosdep_source:
-            return self.rosdep_source[rosdep]
-        else:
-            return []
-
 class RosdepLookupPackage:
     """
     This is a class for interacting with rosdep.yaml files.  It will
@@ -180,15 +77,36 @@ class RosdepLookupPackage:
             stacks = roslib.rospack.rosstackexec(["depends", "%s"%s]).split()
             #print stacks        for s in stacks:
             path = os.path.join(roslib.rospack.rosstackexec(["find", s]), "rosdep.yaml")
-            self.parse_yaml(path)
+            self.insert_map(self.parse_yaml(path), path)
         #print "built map", self.rosdep_map
 
         # Override with ros_home/rosdep.yaml if present
         ros_home = roslib.rosenv.get_ros_home()
         path = os.path.join(ros_home, "rosdep.yaml")
-        self.parse_yaml(path, True)
+        self.insert_map(self.parse_yaml(path), path, override=True)
 
-    def parse_yaml(self, path, override = False):
+    def insert_map(self, yaml_dict, source_path, override=False):
+        for key in yaml_dict:
+            if key in self.rosdep_source:
+                if override:
+                    print >>sys.stderr, "ROSDEP_OVERRIDE: %s being overridden with %s from %s"%(key, yaml_dict[key], source_path)
+                    self.rosdep_source[key].append("Overriding with "+source_path)
+                    self.rosdep_map[key] = self.get_os_from_yaml(yaml_dict[key])
+                else:
+                    if self.rosdep_map[key] == self.get_os_from_yaml(yaml_dict[key]):
+                        #print >> sys.stderr, "DEBUG: Same key found for %s: %s"%(key, self.rosdep_map[key])
+                        pass
+                    else:
+                        print >>sys.stderr, "CONFLICT: Rules for %s do not match.  These two rules do not match: \n{{{"%key, self.rosdep_map[key],"}}}, from %s, \n{{{"%self.rosdep_source[key], self.get_os_from_yaml(yaml_dict[key]), "}}} from %s"%source_path
+                        print >>sys.stderr, "QUITTING: due to conflicting rosdep definitions, please resolve."
+                        exit(-1)
+            else:
+                self.rosdep_source[key] = [source_path]
+                self.rosdep_map[key] = self.get_os_from_yaml(yaml_dict[key])
+                        #print "rosdep_map[%s] = %s"%(key, self.rosdep_map[key])
+
+
+    def parse_yaml(self, path):
         #print "parsing path", path
         if os.path.exists(path):
             try:
@@ -196,29 +114,13 @@ class RosdepLookupPackage:
                 yaml_text = f.read()
                 f.close()
 
-                yaml_dict = yaml.load(yaml_text)
-                for key in yaml_dict:
-                    if key in self.rosdep_source:
-                        if override:
-                            print >>sys.stderr, "ROSDEP_OVERRIDE: %s being overridden with %s from %s"%(key, yaml_dict[key], path)
-                            self.rosdep_source[key].append("Overriding with "+path)
-                            self.rosdep_map[key] = self.get_os_from_yaml(yaml_dict[key])
-                        else:
-                            if self.rosdep_map[key] == self.get_os_from_yaml(yaml_dict[key]):
-                                #print >> sys.stderr, "DEBUG: Same key found for %s: %s"%(key, self.rosdep_map[key])
-                                pass
-                            else:
-                                print >>sys.stderr, "CONFLICT: Rules for %s do not match.  These two rules do not match: \n{{{"%key, self.rosdep_map[key],"}}}, from %s, \n{{{"%self.rosdep_source[key], self.get_os_from_yaml(yaml_dict[key]), "}}} from %s"%path
-                                print >>sys.stderr, "QUITTING: due to conflicting rosdep definitions, please resolve."
-                                exit(-1)
-                    else:
-                        self.rosdep_source[key] = [path]
-                        self.rosdep_map[key] = self.get_os_from_yaml(yaml_dict[key])
-                        #print "rosdep_map[%s] = %s"%(key, self.rosdep_map[key])
+                return yaml.load(yaml_text)
 
             except yaml.YAMLError, exc:
                 print >> sys.stderr, "Failed parsing yaml while processing %s\n"%path, exc
-                sys.exit(1)
+                sys.exit(1)        
+                
+        return {}
         
     def get_os_from_yaml(self, yaml_map):
         # See if the version for this OS exists
@@ -600,7 +502,6 @@ class Rhel(Fedora):
 class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
         self.osi = OSIndex()
-        self.rdl = RosdepLookup(self.osi)
         self.rosdeps = self.gather_rosdeps(packages, command)
         self.robust = robust
 
@@ -710,8 +611,8 @@ class Rosdep:
         for s in stacks:
             pass
             
-        for rd in rosdeps:
-            output += "%s defined in %s"%(rd, self.rdl.get_sources(rd))
+        #for rd in rosdeps:
+            #output += "%s defined in %s"%(rd, self.rdl.get_sources(rd))
         return output
 
 ################################################################################

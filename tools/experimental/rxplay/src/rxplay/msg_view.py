@@ -39,12 +39,13 @@ import time
 
 import wx
 
-import layer
+from util.layer import Layer
 
 ## A widget that can render an interval of time of a topic as a rectangle on the timeline
 class TimelineRenderer:
-    def __init__(self, timeline):
-        self.timeline = timeline
+    def __init__(self, timeline, msg_combine_px=1.5):
+        self.timeline       = timeline
+        self.msg_combine_px = msg_combine_px   # don't draw discrete messages if they're less than this many pixels separated 
 
     def get_segment_height(self, topic):
         return None
@@ -53,11 +54,11 @@ class TimelineRenderer:
         return False
 
 ## A widget that can display message details 
-class MsgView(layer.Layer):
+class MsgView(Layer):
     name = 'Untitled'
     
     def __init__(self, timeline, parent, title, x, y, width, height, max_repaint=None):
-        layer.Layer.__init__(self, parent, title, x, y, width, height, max_repaint)
+        Layer.__init__(self, parent, title, x, y, width, height, max_repaint)
         
         self.timeline = timeline
         self.border   = False
@@ -87,6 +88,9 @@ class TopicMsgView(MsgView):
     def message_cleared(self):
         self.msg_index = None
         
+    def on_close(self, event):
+        self.timeline.remove_listener(self.topic, self)
+
     def navigate_first(self):
         if self.topic and self.msg_index is not None:
             topic_positions = self.timeline.bag_index.msg_positions[self.topic]
@@ -96,7 +100,7 @@ class TopicMsgView(MsgView):
     def navigate_previous(self):
         if self.topic and self.msg_index is not None:
             new_msg_index = self.msg_index - 1
-            if new_msg_index > 0:
+            if new_msg_index >= 0:
                 self.timeline.set_playhead(self.timeline.bag_index.msg_positions[self.topic][new_msg_index][0])
 
     def navigate_next(self):
@@ -111,13 +115,15 @@ class TopicMsgView(MsgView):
             topic_positions = self.timeline.bag_index.msg_positions[self.topic]
             if len(topic_positions) > 0:
                 self.timeline.set_playhead(topic_positions[-1][0])
+                
+    @property
+    def frame(self):
+        return self.parent.GetParent()
 
     def _create_toolbar(self):
-        frame = self.parent.GetParent()
-
         icons_dir = roslib.packages.get_pkg_dir(PKG) + '/icons/'
 
-        tb = frame.CreateToolBar()
+        tb = self.frame.CreateToolBar()
         tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_first(),    tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'resultset_first.png')))
         tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_previous(), tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'resultset_previous.png')))
         tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_next(),     tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'resultset_next.png')))

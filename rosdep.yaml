@@ -222,7 +222,7 @@ log4cxx:
     if ! pacman -Q log4cxx; then yaourt -S log4cxx; fi
   macports: log4cxx
 libxext:
-  ubuntu: libXext-dev
+  ubuntu: libxext-dev
   debian: libxext-dev
   fedora: libXext-devel
   rhel: libXext-devel

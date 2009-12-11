@@ -64,6 +64,7 @@ class RosdepLookupPackage:
         self.os_version = os_version
         self.rosdep_map = {}
         self.rosdep_source = {}
+        self.package = package
         ## Find all rosdep.yamls here and load them into a map
 
         if package:
@@ -165,6 +166,7 @@ class RosdepLookupPackage:
         if rosdep in self.rosdep_map:
             return self.rosdep_map[rosdep]
         else:
+            print >> sys.stderr, "Failed to find rosdep %s for package %s"%(rosdep, self.package)
             return False
         
     def get_map(self):

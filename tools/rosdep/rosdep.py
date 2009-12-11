@@ -72,15 +72,19 @@ class RosdepLookupPackage:
         
 
     def load_for_package(self, package):
-        pkg_path = roslib.packages.get_pkg_dir(package)
-        path = os.path.join(pkg_path, "rosdep.yaml")
-        self.insert_map(self.parse_yaml(path), path)
+        rosdep_dependent_packages = roslib.rospack.rospack_depends(package)
+        rosdep_dependent_packages.append(package)
 
-        s = roslib.stacks.stack_of(package)
-        if s:
-            stacks = roslib.rospack.rosstackexec(["depends", "%s"%s]).split()
-            #print stacks        for s in stacks:
-            path = os.path.join(roslib.rospack.rosstackexec(["find", s]), "rosdep.yaml")
+        paths = set()
+        for p in rosdep_dependent_packages:
+            stack = roslib.stacks.stack_of(p)
+            if stack:
+                paths.add( os.path.join(roslib.stacks.get_stack_dir(stack), "rosdep.yaml"))
+            else:
+                paths.add( os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
+
+
+        for path in paths:
             self.insert_map(self.parse_yaml(path), path)
         #print "built map", self.rosdep_map
 
@@ -550,7 +554,7 @@ class Rosdep:
                 raise RosdepException("Rosdeps %s could not be resolved"%failed_rosdeps)
             else:
                 print >> sys.stderr, "WARNING: Rosdeps %s could not be resolved"%failed_rosdeps
-        return (native_packages, scripts)
+        return (list(set(native_packages)), list(set(scripts)))
 
     def get_native_packages(self):
         return get_packages_and_scripts()[0]
@@ -613,13 +617,13 @@ class Rosdep:
         rdlp = RosdepLookupPackage(self.osi.get_os_name(), self.osi.get_os_version(), None)
         
         for r in rosdeps:
-            locations[r] = []
+            locations[r] = set()
 
         path = os.path.join(roslib.rosenv.get_ros_home(), "rosdep.yaml")
         rosdep_dict = rdlp.parse_yaml(path)
         for r in rosdeps:
             if r in rosdep_dict:
-                locations[r].append("Override:"+path)
+                locations[r].add("Override:"+path)
             
 
         for p in roslib.packages.list_pkgs():
@@ -627,7 +631,10 @@ class Rosdep:
             rosdep_dict = rdlp.parse_yaml(path)
             for r in rosdeps:
                 if r in rosdep_dict:
-                    locations[r].append(path)
+                    addendum = ""
+                    if roslib.stacks.stack_of(p):
+                        addendum = "<<Unused due to package '%s' being in a stack.]]"%p
+                    locations[r].add(">>" + path + addendum)
             
 
         for s in roslib.stacks.list_stacks():
@@ -635,7 +642,7 @@ class Rosdep:
             rosdep_dict = rdlp.parse_yaml(path)
             for r in rosdeps:
                 if r in rosdep_dict:
-                    locations[r].append(path)
+                    locations[r].add(path)
             
         for rd in locations:
             output += "%s defined in %s"%(rd, locations[rd])
@@ -686,6 +693,8 @@ def main():
                       action="store_true", help="Tell the package manager to default to y or fail when installing")
     parser.add_option("-r", "-k", dest="robust", default=False, 
                       action="store_true", help="Continue installing despite errors.")
+    parser.add_option("-a", "--all", dest="rosdep_all", default=False, 
+                      action="store_true", help="select all packages")
 
     options, args = parser.parse_args()
 
@@ -699,13 +708,23 @@ def main():
         parser.error("Please enter arguments for '%s'"%command)
     rdargs = args[1:]
 
+    verified_packages = []
 
-    (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(rdargs)
-    #print verified_packages, "Rejected", rejected_packages
-    if not (command == "what_needs" or command == "where_defined" ) and len(rejected_packages) > 0:
-        print "Warning: could not identify %s as a package"%rejected_packages
-    if len(verified_packages) == 0 and not (command == "what_needs" or command == "where_defined" ):
-        parser.error("No Valid Packages listed")
+
+    if not (command == "what_needs" or command == "where_defined" ): # package mode
+        if options.rosdep_all:
+            rdargs = roslib.packages.list_pkgs()
+        
+        (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(rdargs)
+    
+        if len(rejected_packages) > 0:
+            print "Warning: could not identify %s as a package"%rejected_packages
+        if len(verified_packages) == 0:
+            parser.error("No Valid Packages listed")
+                
+    else: # rosdep as argumets 
+        if options.rosdep_all:
+            parser.error("-a, --all is not a valid option for this command")
 
     ### Find all dependencies
     r = Rosdep(verified_packages, robust=options.robust)

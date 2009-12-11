@@ -30,7 +30,7 @@
 #include <apr_pools.h>
 
 #include <ros/assert.h>
-#include <boost/thread/tss.hpp>
+#include <boost/thread.hpp>
 
 namespace ros
 {
@@ -38,7 +38,13 @@ namespace ros
 #define CHECK_APR_STATUS(x) \
   { \
     apr_status_t status = x; \
-    ROS_ASSERT(status == APR_SUCCESS); \
+    if (status != APR_SUCCESS) \
+    { \
+      char str_status[200]; \
+      apr_strerror(status, str_status, sizeof(str_status)); \
+      ROS_FATAL("APR status checked failed: %s (%d)", str_status, status); \
+      ROS_BREAK(); \
+    } \
   }
 
 class APRPool
@@ -65,6 +71,7 @@ void createPoolIfNecessary()
 {
   if (!g_rwmutex_pool.get())
   {
+    ROS_DEBUG_STREAM("Creating rwmutex pool in thread " << boost::this_thread::get_id());
     g_rwmutex_pool.reset(new APRPool);
   }
 }

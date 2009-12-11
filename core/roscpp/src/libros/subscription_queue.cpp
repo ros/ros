@@ -105,6 +105,7 @@ void SubscriptionQueue::clear()
   boost::mutex::scoped_lock queue_lock(queue_mutex_);
 
   queue_.clear();
+  queue_size_ = 0;
 }
 
 CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)

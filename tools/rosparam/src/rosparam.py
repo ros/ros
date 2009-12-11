@@ -409,13 +409,16 @@ def list_params(ns):
 
 # COMMAND-LINE PARSING
     
-def _rosparam_cmd_get_dump(cmd):
+def _rosparam_cmd_get_dump(cmd, argv):
     """
     Process command line for rosparam get/dump, e.g.::
       rosparam get param
       rosparam dump file.yaml [namespace]
-    @param cmd str: command ('get' or 'dump')
+    @param cmd: command ('get' or 'dump')
     @type  cmd: str
+    @param argv: command-line args
+    @type  argv: str    
+    
     """
     # get and dump are equivalent functionality, just different arguments
     if cmd == 'dump':
@@ -427,7 +430,7 @@ def _rosparam_cmd_get_dump(cmd):
 
     parser.add_option("-v", dest="verbose", default=False,
                       action="store_true", help="turn on verbose output")
-    options, args = parser.parse_args(sys.argv[2:])
+    options, args = parser.parse_args(argv[2:])
 
     arg = None
     ns = ''
@@ -452,13 +455,15 @@ def _rosparam_cmd_get_dump(cmd):
             print "dumping namespace [%s] to file [%s]"%(ns, arg)
         dump_params(arg, script_resolve_name(NAME, ns), verbose=options.verbose)
 
-def _rosparam_cmd_set_load(cmd):
+def _rosparam_cmd_set_load(cmd, argv):
     """
     Process command line for rosparam set/load, e.g.::
       rosparam load file.yaml [namespace]
       rosparam set param value
     @param cmd: command name
     @type  cmd: str
+    @param argv: command-line args
+    @type  argv: str    
     """
     if cmd == 'load':
         parser = OptionParser(usage="usage: %prog load [options] file [namespace]", prog=NAME)
@@ -472,7 +477,7 @@ def _rosparam_cmd_set_load(cmd):
     # arguments.
     args = []
     optparse_args = []
-    for s in sys.argv[2:]:
+    for s in argv[2:]:
         if s.startswith('-'):
             if len(s) > 1 and ord(s[1]) >= ord('0') and ord(s[1]) < ord('9'):
                 args.append(s)
@@ -505,16 +510,16 @@ def _rosparam_cmd_set_load(cmd):
         for params,ns in paramlist:
             upload_params(ns, params, verbose=options.verbose)
 
-def _rosparam_cmd_list(cmd):
+def _rosparam_cmd_list(argv):
     """
     Process command line for rosparam set/load, e.g.::
       rosparam load file.yaml [namespace]
       rosparam set param value
-    @param cmd: command name
-    @type  cmd: str
+    @param argv: command-line args
+    @type  argv: str
     """
     parser = OptionParser(usage="usage: %prog load [namespace]", prog=NAME)
-    options, args = parser.parse_args(sys.argv[2:])
+    options, args = parser.parse_args(argv[2:])
 
     ns = GLOBALNS
     if len(args) == 1:
@@ -525,17 +530,19 @@ def _rosparam_cmd_list(cmd):
     print '\n'.join(list_params(ns))
 
 
-def _rosparam_cmd_delete(cmd):
+def _rosparam_cmd_delete(argv):
     """
     Process command line for rosparam delete, e.g.::
       rosparam delete param 
     @param cmd: command name
     @type  cmd: str
+    @param argv: command-line args
+    @type  argv: str
     """
     parser = OptionParser(usage="usage: %prog delete [options] parameter", prog=NAME)
     parser.add_option("-v", dest="verbose", default=False,
                       action="store_true", help="turn on verbose output")
-    options, args = parser.parse_args(sys.argv[2:])
+    options, args = parser.parse_args(argv[2:])
 
     arg2 = None
     if len(args) == 0:
@@ -563,26 +570,32 @@ Commands:
 """
     sys.exit(0)
 
-def yamlmain():
+def yamlmain(argv=None):
     """
-    Command-line main routine. Loads in one or more input files    
+    Command-line main routine. Loads in one or more input files
+    
+    @param argv: command-line arguments or None to use sys.argv
+    @type  argv: [str]
     """
-    if len(sys.argv) == 1:
+    if argv is None:
+        argv = sys.argv
+    if len(argv) == 1:
         _fullusage()
     try:
-        command = sys.argv[1]
+        command = argv[1]
         if command in ['get', 'dump']:
-            _rosparam_cmd_get_dump(command)
+            _rosparam_cmd_get_dump(command, argv)
         elif command in ['set', 'load']:
-            _rosparam_cmd_set_load(command)
+            _rosparam_cmd_set_load(command, argv)
         elif command in ['delete']:
-            _rosparam_cmd_delete(command)
+            _rosparam_cmd_delete(argv)
         elif command == 'list':
-            _rosparam_cmd_list(command)            
+            _rosparam_cmd_list(argv)
         else:
             _fullusage()
     except ROSParamException, e:
         print >> sys.stderr, "ERROR: "+str(e)
+        sys.exit(1)
 
 # YAML configuration. Doxygen does not like these being higher up in the code
 

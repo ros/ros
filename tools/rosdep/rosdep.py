@@ -70,12 +70,24 @@ class RosdepLookup:
         if pkg_paths_str:
             for pkg_path in pkg_paths_str.split(':'):
                 path = os.path.join(pkg_path, "rosdep.yaml")
-                self.parse_yaml(path)
+                self.insert_map(self.parse_yaml(path), path)
                 
         for s in stacks:
             path = os.path.join(roslib.rospack.rosstackexec(["find", s]), "rosdep.yaml")
-            self.parse_yaml(path)
+            self.insert_map(self.parse_yaml(path), path)
         #print "built map", self.rosdep_map
+
+
+    def insert_map(self, yaml_dict, source_path):
+        for key in yaml_dict:
+            if key in self.rosdep_source:
+                print >>sys.stderr, "%s already loaded from %s.  But it is also defined in %s.  This will not be overwritten"%(key, self.rosdep_source[key], source_path)
+                self.rosdep_source[key].append("not using "+source_path)
+                #exit(-1)
+            else:
+                self.rosdep_source[key] = [source_path]
+                self.rosdep_map[key] = yaml_dict[key]
+        
 
     def parse_yaml(self, path):
         #print "parsing path", path
@@ -85,15 +97,7 @@ class RosdepLookup:
                 yaml_text = f.read()
                 f.close()
 
-                yaml_dict = yaml.load(yaml_text)
-                for key in yaml_dict:
-                    if key in self.rosdep_source:
-                        print >>sys.stderr, "%s already loaded from %s.  But it is also defined in %s.  This will not be overwritten"%(key, self.rosdep_source[key], path)
-                        self.rosdep_source[key].append("not using "+path)
-                        #exit(-1)
-                    else:
-                        self.rosdep_source[key] = [path]
-                        self.rosdep_map[key] = yaml_dict[key]
+                return yaml.load(yaml_text)
 
             except yaml.YAMLError, exc:
                 print >> sys.stderr, "Failed parsing yaml while processing %s\n"%path, exc
@@ -700,6 +704,12 @@ class Rosdep:
 
     def where_defined(self, rosdeps):
         output = ""
+        rosdeps
+        for p in packages:
+            pass
+        for s in stacks:
+            pass
+            
         for rd in rosdeps:
             output += "%s defined in %s"%(rd, self.rdl.get_sources(rd))
         return output

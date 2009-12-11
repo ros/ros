@@ -35,11 +35,13 @@
 PKG = 'rxplay'
 import roslib; roslib.load_manifest(PKG)
 import wx
-import layer
 
-class StatusLayer(layer.Layer):
+from layer import Layer
+from bag_index import BagIndex
+
+class StatusLayer(Layer):
     def __init__(self, parent, title, timeline, x, y, width, height, max_repaint=None):
-        layer.Layer.__init__(self, parent, title, x, y, width, height, max_repaint)
+        Layer.__init__(self, parent, title, x, y, width, height, max_repaint)
         
         self.timeline = timeline
 
@@ -56,7 +58,7 @@ class StatusLayer(layer.Layer):
         dc.SetFont(self.font)
         dc.SetTextForeground(self.font_color)
 
-        s = self.timeline.stamp_to_str(self.timeline.playhead)
+        s = BagIndex.stamp_to_str(self.timeline.playhead)
         
         spd = self.timeline.play_speed
         spd_str = None
@@ -66,9 +68,9 @@ class StatusLayer(layer.Layer):
             elif spd == 1.0:
                 spd_str = '>'
             elif spd > 0.0:
-                spd_str = '> %.2fx' % spd
+                spd_str = '> 1/%.0fx' % (1.0 / spd)
             elif spd > -1.0:
-                spd_str = '< %.2fx' % -spd
+                spd_str = '< 1/%.0fx' % (1.0 / -spd)
             elif spd == 1.0:
                 spd_str = '<'
             else:
@@ -76,4 +78,7 @@ class StatusLayer(layer.Layer):
         if spd_str:
             s += ' ' + spd_str
 
-        dc.DrawText(s, self.timeline.margin_left, self.timeline.history_top - dc.GetTextExtent(s)[1] - 2)
+        x = self.timeline.margin_left
+        y = self.timeline.history_top - dc.GetTextExtent(s)[1] - 4
+
+        dc.DrawText(s, x, y)

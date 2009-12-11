@@ -213,7 +213,7 @@ class LayerPanel(wx.Window):
 
         # Repaint frequently
         self.timer = wx.Timer(self)
-        self.timer.Start(milliseconds=20, oneShot=False)
+        self.timer.Start(milliseconds=100, oneShot=False)
 
     @property
     def width(self): return self.bitmap.GetSize()[0]

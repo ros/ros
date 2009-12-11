@@ -75,7 +75,6 @@ def load_plugins():
     
             if plugins_func:
                 plugins.extend(plugins_func())
-                print "Loaded plugin", plugin_module_name
             else:
                 print >> sys.stderr, "Cannot load plugin [%s]: no 'get_rxplay_plugins' attribute" % (plugin_module_name)
 

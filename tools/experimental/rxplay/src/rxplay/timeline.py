@@ -77,8 +77,7 @@ class TimelinePanel(LayerPanel):
             bag_file = BagFile(bag_path)
 
             this_bag_index = BagIndexPickler(bag_path + '.index').load()
-
-            if this_bag_index:
+            if this_bag_index is not None:
                 bag_file.read_datatype_defs(this_bag_index)
                 
                 self.bag_files[bag_file] = this_bag_index
@@ -87,7 +86,6 @@ class TimelinePanel(LayerPanel):
 
         for bag_path in unindexed:
             self._index_bag_file(bag_path, bag_path + '.index')
-            self.bag_files[bag_file] = this_bag_index
 
     def _index_bag_file(self, bag_path, index_path):
         rospy.loginfo('Index not found - indexing...')
@@ -95,7 +93,10 @@ class TimelinePanel(LayerPanel):
         bag_index_factory = BagIndexFactory(bag_path)
         
         bag_index = bag_index_factory.index
-
+        
+        bag_file = BagFile(bag_path)
+        self.bag_files[bag_file] = bag_index
+        
         # Background thread to generate, then save the index
         class BagIndexFactoryThread(threading.Thread):
             def __init__(self, bag_index_factory):
@@ -161,6 +162,8 @@ class Timeline(Layer):
         Layer.__init__(self, parent, title, x, y, width, height, max_repaint)
 
         self.bag_files = {}
+        self.bag_file  = None
+        self.bag_index = None
 
         ## Rendering parameters
 
@@ -461,14 +464,14 @@ class Timeline(Layer):
         self.resize(w - self.x, h - self.y)   # resize layer to fill client area
 
     def check_dirty(self):
-        if not self.bag_index.loaded:
+        if self.bag_index is not None and not self.bag_index.loaded:
             self.invalidate()
 
     def paint(self, dc):
         dc.SetBackground(self.background_brush)
         dc.Clear()
 
-        if len(self.topics) == 0:
+        if self.bag_index is None or len(self.topics) == 0:
             return
 
         if not self.stamp_left:

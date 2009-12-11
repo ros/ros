@@ -522,7 +522,9 @@ endmacro(rosbuild_add_gtest_build_flags)
 macro(rosbuild_declare_test exe)
   # We provide a 'tests' target that just builds the tests.
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(tests)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(tests)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(tests ${exe})
 endmacro(rosbuild_declare_test)
 
@@ -556,7 +558,9 @@ macro(rosbuild_add_gtest_future exe)
   string(REPLACE "/" "_" _testname ${exe})
 
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test-future)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test-future)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test-future test_${_testname})
 endmacro(rosbuild_add_gtest_future)
 
@@ -566,7 +570,9 @@ macro(rosbuild_add_rostest file)
   string(REPLACE "/" "_" _testname ${file})
   _rosbuild_add_rostest(${file})
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test rostest_${_testname})
   _rosbuild_check_rostest_result(rostest_${_testname} ${PROJECT_NAME} ${file})
 endmacro(rosbuild_add_rostest)
@@ -585,7 +591,9 @@ macro(rosbuild_add_rostest_future file)
   string(REPLACE "/" "_" _testname ${file})
   _rosbuild_add_rostest(${file})
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test-future)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test-future)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test-future rostest_${_testname})
 endmacro(rosbuild_add_rostest_future)
 
@@ -595,7 +603,9 @@ macro(rosbuild_add_pyunit file)
   string(REPLACE "/" "_" _testname ${file})
   _rosbuild_add_pyunit(${file})
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test pyunit_${_testname})
   # Register check for test output
   _rosbuild_check_rostest_xml_result(pyunit_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
@@ -615,7 +625,9 @@ macro(rosbuild_add_pyunit_future file)
   string(REPLACE "/" "_" _testname ${file})
   _rosbuild_add_pyunit(${file})
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test-future)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test-future)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test-future pyunit_${_testname})
 endmacro(rosbuild_add_pyunit_future)
 
@@ -788,7 +800,9 @@ macro(rosbuild_download_test_data _url _filename)
                      COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
                      VERBATIM)
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(tests)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(tests)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(tests ${_testname})
 endmacro(rosbuild_download_test_data)
 

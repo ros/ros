@@ -107,7 +107,9 @@ macro(_rosbuild_check_rostest_xml_result test_name test_file)
                     COMMAND ${rostest_path}/bin/rostest-check-results ${test_file}
 		    VERBATIM)
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test-results-run)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test-results-run)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test-results-run ${test_name}_result)	 
 endmacro(_rosbuild_check_rostest_xml_result test_name)
 
@@ -150,7 +152,9 @@ macro(_rosbuild_check_rostest_result test_name test_pkg test_file)
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 		    VERBATIM)
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test-results-run)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test-results-run)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test-results-run ${test_name}_result)	 
 endmacro(_rosbuild_check_rostest_result test_name)
 

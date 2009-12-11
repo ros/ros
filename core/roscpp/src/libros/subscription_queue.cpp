@@ -37,15 +37,17 @@ SubscriptionQueue::SubscriptionQueue(const std::string& topic, int32_t queue_siz
 , size_(queue_size)
 , full_(false)
 , id_counter_(0)
+, queue_size_(0)
 {}
 
 uint64_t SubscriptionQueue::push(const SubscriptionMessageHelperPtr& helper, const MessageDeserializerPtr& deserializer, bool has_tracked_object, const VoidWPtr& tracked_object)
 {
   boost::mutex::scoped_lock lock(queue_mutex_);
 
-  if(full())
+  if(fullNoLock())
   {
     queue_.pop_front();
+    --queue_size_;
 
     if (!full_)
     {
@@ -68,6 +70,7 @@ uint64_t SubscriptionQueue::push(const SubscriptionMessageHelperPtr& helper, con
   i.tracked_object = tracked_object;
   i.id = count;
   queue_.push_back(i);
+  ++queue_size_;
 
   return count;
 }
@@ -151,6 +154,7 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
     }
 
     queue_.pop_front();
+    --queue_size_;
   }
 
   MessagePtr msg = i.deserializer->deserialize();
@@ -177,7 +181,13 @@ bool SubscriptionQueue::ready(uint64_t id)
 
 bool SubscriptionQueue::full()
 {
-  return (size_ > 0) && (queue_.size() >= (uint32_t)size_);
+  boost::mutex::scoped_lock lock(queue_mutex_);
+  return fullNoLock();
+}
+
+bool SubscriptionQueue::fullNoLock()
+{
+  return (size_ > 0) && (queue_size_ >= (uint32_t)size_);
 }
 
 }

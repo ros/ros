@@ -68,6 +68,7 @@ public:
   void remove(uint64_t id);
 
 private:
+  bool fullNoLock();
   std::string topic_;
   int32_t size_;
   bool full_;
@@ -75,6 +76,7 @@ private:
 
   boost::mutex queue_mutex_;
   L_Item queue_;
+  uint32_t queue_size_;
 
   boost::recursive_mutex callback_mutex_;
 };

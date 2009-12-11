@@ -249,14 +249,16 @@ class Timeline(Layer):
                 threading.Thread.__init__(self)
 
                 self.setDaemon(True)
-                self.timeline = timeline
+
+                self.timeline  = timeline
+                self.stop_flag = False
 
             def run(self):
                 self.last_frame, self.last_playhead = None, None
                 
-                while True:
+                while not self.stop_flag:
                     wx.CallAfter(self.step)
-                    time.sleep(0.08)
+                    time.sleep(0.05)
 
             def step(self):
                 if self.timeline.play_speed == 0.0:
@@ -277,12 +279,18 @@ class Timeline(Layer):
     
                     self.last_frame    = now
                     self.last_playhead = self.timeline.playhead
+                    
+            def stop(self):
+                self.stop_flag = True
 
         self.play_speed = 0.0
 
         self.play_thread = PlayThread(self)
         self.play_thread.start()
-        
+
+    def on_close(self, event):
+        self.play_thread.stop()
+
     def get_viewer_types(self, datatype):
         return [RawView] + self.viewer_types.get('*', []) + self.viewer_types.get(datatype, [])
 

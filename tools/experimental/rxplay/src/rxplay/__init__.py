@@ -47,21 +47,32 @@ WXVER = '2.8'
 if wxversion.checkInstalled(WXVER):
     wxversion.select(WXVER)
 else:
-    print >> sys.stderr, "This application requires wxPython version %s" % (WXVER)
+    print >> sys.stderr, 'This application requires wxPython version %s' % WXVER
     sys.exit(1)
 import wx
 
-import base_frame
+import util.base_frame
+import bag_index
 import timeline
 
 class RxPlayApp(wx.App):
     def __init__(self, input_files, options):
-        wx.App.__init__(self)
+        self.input_files = input_files
+        self.options     = options
 
-        frame          = base_frame.BaseFrame(None, 'rxplay', 'Timeline', title='rxplay - ' + input_files[0])
-        timeline_panel = timeline.TimelinePanel(input_files, options, frame, -1)
-        #frame.CreateStatusBar()
+        wx.App.__init__(self)
+    
+    def OnInit(self):
+        if len(self.input_files) == 1:
+            frame_title = 'rxplay - ' + self.input_files[0]
+        else:
+            frame_title = 'rxplay - [%d bags]' % len(self.input_files)
+
+        frame          = util.base_frame.BaseFrame(None, 'rxplay', 'Timeline', title=frame_title)
+        timeline_panel = timeline.TimelinePanel(self.input_files, self.options, frame, -1)
         frame.Show()
+        self.SetTopWindow(frame)
+        return True
 
 def connect_to_ros(node_name, init_timeout):
     # Attempt to connect to master node
@@ -93,22 +104,23 @@ def connect_to_ros(node_name, init_timeout):
             rospy.logerr('Giving up. Couldn\'t connect to master node.')
     except:
         rospy.loginfo('Master not found.')
-  
+
 def rxplay_main():
     # Parse command line for input files and options
     parser = optparse.OptionParser()
     parser.add_option('-i', '--index',           action='store_true', default=False, help='don\'t launch GUI; just generate bag file indexes')   
     parser.add_option('-t', '--init-timeout',    action='store',      default=0.5,   help='timeout in secs for connecting to master node')   
-    parser.add_option('-k', '--show-thumbnails', action='store_true', default=False, help='display thumbnails for sensor_msgs/Image messages')   
     options, args = parser.parse_args(sys.argv[1:])
     if len(args) == 0:
         parser.print_help()
         return
     input_files = args[:]
-    
+
     if options.index:
-        # TODO: should not launch GUI, just create bag indexes
-        pass
+        for bag_path in input_files:
+            bag_index_factory = bag_index.BagIndexFactory(bag_path)
+            if bag_index_factory.load():
+                bag_index.BagIndexPickler(bag_index_factory.bag_path + '.index').save(bag_index_factory.index)
     else:
         connect_to_ros('rxplay', options.init_timeout)
     

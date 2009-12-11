@@ -25,7 +25,7 @@
 # INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
 # BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICTS
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
@@ -41,19 +41,34 @@ import bisect
 import cPickle
 import math
 import os
+import sys
 import threading
 import time
 
 import numpy
 
 from bag_file import BagFile
-import timeline
+import util.progress_meter
 
 class BagIndex:
     def __init__(self):
         self._data              = BagIndexData()
         self.datatype_defs_read = None
         self.loaded             = False
+
+        self._dirty_stats = True
+        self._start_stamp = None
+        self._end_stamp   = None
+
+    @property
+    def start_stamp(self):
+        self.update_statistics()
+        return self._start_stamp
+
+    @property
+    def end_stamp(self):
+        self.update_statistics()
+        return self._end_stamp
 
     @property
     def topics(self): return self._data.topic_datatypes.keys()
@@ -65,7 +80,15 @@ class BagIndex:
     def msg_positions(self): return self._data.msg_positions
     
     def get_datatype(self, topic): return self._data.topic_datatypes.get(topic)
-    
+        
+    def update_statistics(self):
+        if not self._dirty_stats:
+            return
+        
+        self._start_stamp = self._data.get_start_stamp()
+        self._end_stamp   = self._data.get_end_stamp()
+        self._dirty_stats = False
+
     ## Add a record to the index
     def add_record(self, pos, topic, datatype, stamp):
         if not topic in self._data.topic_datatypes:
@@ -83,15 +106,33 @@ class BagIndex:
 
         # Record the timestamp and position
         self._data.msg_positions[topic].append((stamp.to_sec(), pos))
-        
+
+        self._dirty_stats = True
+
+    @staticmethod
+    def stamp_to_str(secs):
+        secs_frac     = secs - int(secs) 
+        secs_frac_str = ('%.2f' % secs_frac)[1:]
+
+        return time.strftime('%b %d %Y %H:%M:%S', time.localtime(secs)) + secs_frac_str
+
     def __str__(self):
-        start_stamp = self._data.get_start_stamp()
-        end_stamp   = self._data.get_end_stamp()
-        duration    = end_stamp - start_stamp
-        
-        s  = 'Duration: %d min %d secs\n' % (int(math.floor(duration / 60)), duration % 60)
-        s += 'Start:    %s (%.2f)\n' % (timeline.Timeline.stamp_to_str(start_stamp), start_stamp)
-        s += 'End:      %s (%.2f)\n' % (timeline.Timeline.stamp_to_str(end_stamp),   end_stamp)
+        if self.start_stamp is None:
+            return '<empty>'
+
+        duration = self.end_stamp - self.start_stamp
+
+        dur_secs = duration % 60
+        dur_mins = duration / 60
+        dur_hrs  = dur_mins / 60
+        if dur_hrs > 0:
+            dur_mins = dur_mins % 60
+            s  = 'Duration: %dhr %dmin %ds (%ds)\n' % (dur_hrs, dur_mins, dur_secs, duration)
+        else:
+            s  = 'Duration: %dmin %ds (%ds)\n' % (dur_mins, dur_secs, duration)
+
+        s += 'Start:    %s (%.2f)\n' % (self.stamp_to_str(self.start_stamp), self.start_stamp)
+        s += 'End:      %s (%.2f)\n' % (self.stamp_to_str(self.end_stamp),   self.end_stamp)
         s += 'Messages: %d\n' % (sum([len(p) for p in self._data.msg_positions.values()]))
 
         s += 'Topics:'
@@ -99,11 +140,11 @@ class BagIndex:
         max_datatype_len = max([len(self.get_datatype(topic)) for topic in self.topics]) 
         for i, topic in enumerate(sorted(self.topics)):
             indent = (3 if i == 0 else 10)
-            
+
             positions = numpy.array([stamp for (stamp, pos) in self.msg_positions[topic]])
             datatype  = self.get_datatype(topic)
             msg_count = len(positions)
-            
+
             s += '%s%-*s : %-*s %7d msgs' % (' ' * indent, max_datatype_len, datatype, max_topic_len, topic, msg_count)
 
             if msg_count > 1:
@@ -179,7 +220,7 @@ class BagIndexPickler:
     def load(self):
         try:
             # Open the index file
-            rospy.loginfo('Opening index: %s' % self.index_path)
+            rospy.logdebug('Opening index: %s' % self.index_path)
             index_file = file(self.index_path, 'rb')
             
             # Load the index data
@@ -187,10 +228,10 @@ class BagIndexPickler:
             index._data = cPickle.load(index_file)
             index.loaded = True
 
-            rospy.loginfo('Successful.\n\n%s\n%s\n%s' % (self.index_path, '-' * len(self.index_path), index))
-            
+            rospy.logdebug('Successful.\n\n%s\n%s\n%s' % (self.index_path, '-' * len(self.index_path), index))
+
             return index
-        
+
         except Exception, e:
             rospy.logerr('Unsuccessful loading index from %s: %s' % (self.index_path, e))
             return None
@@ -199,8 +240,6 @@ class BagIndexPickler:
         try:
             index_file = file(self.index_path, 'wb')
             cPickle.dump(index._data, index_file, -1)
-
-            rospy.loginfo('Index saved to %s' % self.index_path)
 
             return True
 
@@ -221,24 +260,21 @@ class BagIndexFactory:
     def load(self):
         try:
             bag_file = BagFile(self.bag_path)
-
+            
             file_size = os.path.getsize(self.bag_path)
-            last_complete_fraction = 0
+            
+            progress = util.progress_meter.ProgressMeter(self.bag_path, file_size, 1.0)
             
             for i, (pos, topic, raw_msg, stamp) in enumerate(bag_file.raw_messages()):
                 (datatype, message_data, md5, bag_pos, pytype) = raw_msg
-   
-                self.index.add_record(pos, topic, datatype, stamp)
-    
-                # Output % complete
-                complete_fraction = int(100.0 * float(pos) / file_size)
-                if complete_fraction != last_complete_fraction:
-                    rospy.loginfo('%d%% complete' % complete_fraction)
-                    last_complete_fraction = complete_fraction
-
-            self.index.loaded = True
             
-            rospy.loginfo('Successful.')
+                self.index.add_record(pos, topic, datatype, stamp)
+            
+                progress.step(pos)
+            
+            progress.finish()
+            
+            self.index.loaded = True
 
         except Exception, e:
             rospy.logerr('Unsuccessful creating index from %s: %s' % (self.bag_path, e))

@@ -145,6 +145,125 @@ class RosdepLookup:
         else:
             return []
 
+class RosdepLookupPackage:
+    """
+    This is a class for interacting with rosdep.yaml files.  It will
+    load all rosdep.yaml files in the current configuration at
+    startup.  It has accessors to allow lookups into the rosdep.yaml
+    from rosdep name and returns the string from the yaml file for the
+    appropriate OS/version.
+
+    It uses the OSIndex class for OS detection.
+    """
+    
+    def __init__(self, os_name, os_version, package):
+        """ Read all rosdep.yaml files found at the root of stacks in
+        the current environment and build them into a map."""
+        self.os_name = os_name
+        self.os_version = os_version
+        self.rosdep_map = {}
+        self.rosdep_source = {}
+        ## Find all rosdep.yamls here and load them into a map
+
+        
+        
+        pkg_path = roslib.packages.get_pkg_dir(package)
+        path = os.path.join(pkg_path, "rosdep.yaml")
+        self.parse_yaml(path)
+
+        s = roslib.stacks.stack_of(package)
+        if s:
+            stacks = roslib.rospack.rosstackexec(["depends", "%s"%s]).split()
+            #print stacks        for s in stacks:
+            path = os.path.join(roslib.rospack.rosstackexec(["find", s]), "rosdep.yaml")
+            self.parse_yaml(path)
+        #print "built map", self.rosdep_map
+
+        # Override with ros_home/rosdep.yaml if present
+        ros_home = roslib.rosenv.get_ros_home()
+        path = os.path.join(ros_home, "rosdep.yaml")
+        self.parse_yaml(path, True)
+
+    def parse_yaml(self, path, override = False):
+        #print "parsing path", path
+        if os.path.exists(path):
+            try:
+                f = open(path)
+                yaml_text = f.read()
+                f.close()
+
+                yaml_dict = yaml.load(yaml_text)
+                for key in yaml_dict:
+                    if key in self.rosdep_source:
+                        if override:
+                            print >>sys.stderr, "%s being overridden with %s from %s"%(key, yaml_dict[key], path)
+                            self.rosdep_source[key].append("Overriding with "+path)
+                            self.rosdep_map[key] = self.get_os_from_yaml(yaml_dict[key])
+                        else:
+                            if self.rosdep_map[key] == self.get_os_from_yaml(yaml_dict[key]):
+                                #print >> sys.stderr, "DEBUG: Same key found for %s: %s"%(key, self.rosdep_map[key])
+                                pass
+                            else:
+                                print >>sys.stderr, "CONFLICT: Rules for %s do not match.  These two rules do not match: \n{{{"%key, self.rosdep_map[key],"}}}, from %s, \n{{{"%self.rosdep_source[key], self.get_os_from_yaml(yaml_dict[key]), "}}} from %s"%path
+                                print >>sys.stderr, "QUITTING: due to conflicting rosdep definitions, please resolve."
+                                exit(-1)
+                    else:
+                        self.rosdep_source[key] = [path]
+                        self.rosdep_map[key] = self.get_os_from_yaml(yaml_dict[key])
+                        #print "rosdep_map[%s] = %s"%(key, self.rosdep_map[key])
+
+            except yaml.YAMLError, exc:
+                print >> sys.stderr, "Failed parsing yaml while processing %s\n"%path, exc
+                sys.exit(1)
+        
+    def get_os_from_yaml(self, yaml_map):
+        # See if the version for this OS exists
+        if self.os_name in yaml_map:
+            return self.get_version_from_yaml(yaml_map[self.os_name])
+        else:
+            print >> sys.stderr, "failed to find OS(%s) version of %s "%(os_name, rosdep)
+            return False
+
+    def get_version_from_yaml(self, os_specific):
+        if type(os_specific) == type("String"):
+            return os_specific
+        else:# it must be a map of versions
+            if self.os_version in os_specific.keys():
+                return os_specific[os_version]
+            else:
+                ## Hack to match rounding errors in pyyaml load 9.04  != 9.03999999999999996 in string space
+                for key in os_specific.keys():
+                    # NOTE: this hack fails if os_version is not major.minor
+                    if self.os_name == "ubuntu" and float(key) == float(self.os_version):
+                        #print "Matched %s"%(os_version)
+                        return os_specific[key]
+
+                print >> sys.stderr, "failed to find specific version %s of %s within"%(os_version, rosdep), os_specific
+                return False                    
+
+
+
+
+    def lookup_rosdep(self, rosdep):
+        """ Lookup the OS specific packages or script from the
+        prebuilt maps."""
+
+        if rosdep in self.rosdep_map:
+            return self.rosdep_map[rosdep]
+        else:
+            return False
+        
+    def get_map(self):
+        return self.rosdep_map
+        
+
+    def get_sources(self, rosdep):
+        if rosdep in self.rosdep_source:
+            return self.rosdep_source[rosdep]
+        else:
+            return []
+
+
 ########## Class for interacting with customized OS detectors ############
 class OSIndex:
     """ This class will iterate over registered classes to lookup the
@@ -482,35 +601,40 @@ class Rosdep:
         self.robust = robust
 
     def gather_rosdeps(self, packages, command):
-        rosdeps = set()
+        rosdeps = {}
         for p in packages:
           args = [command, p]
           #print "\n\n\nmy args are", args
           deps_list = [x for x in roslib.rospack.rospackexec(args).split('\n') if x]
+          rosdeps[p] = []
           for dep_str in deps_list:
               dep = dep_str.split()
               if len(dep) == 2 and dep[0] == "name:":
-                  rosdeps.add(dep[1])
+                  rosdeps[p].append(dep[1])
               else:
                   print len(dep)
                   print "rospack returned wrong number of values \n\"%s\""%dep_str
 
-        return list(rosdeps)
+                  
+        # todo deduplicate
+        return rosdeps
 
     def get_packages_and_scripts(self):
         native_packages = []
         scripts = []
         failed_rosdeps = []
-        for r in self.rosdeps:
-            specific = self.rdl.lookup_rosdep(r)
-            if specific:
-                if len(specific.split('\n')) == 1:
-                    for pk in specific.split():
-                        native_packages.append(pk)
+        for p in self.rosdeps:
+            rdlp = RosdepLookupPackage(self.osi.get_os_name(), self.osi.get_os_version(), p)
+            for r in self.rosdeps[p]:
+                specific = rdlp.lookup_rosdep(r)
+                if specific:
+                    if len(specific.split('\n')) == 1:
+                        for pk in specific.split():
+                            native_packages.append(pk)
+                    else:
+                        scripts.append(specific)
                 else:
-                    scripts.append(specific)
-            else:
-                failed_rosdeps.append(r)
+                    failed_rosdeps.append(r)
 
         if len(failed_rosdeps) > 0:
             if not self.robust:
@@ -545,14 +669,13 @@ class Rosdep:
         return return_str
 
     def what_needs(self, rosdep_args):
-        needed_rosdeps = [p for p in rosdep_args if p in self.rdl.get_map()]
-        undefined_rosdeps = [p for p in rosdep_args if p not in self.rdl.get_map()]
-        print >> sys.stderr,  "Warning: The following rosdeps are not defined in the system:\n%s"%undefined_rosdeps
         packages = []
         for p in roslib.packages.list_pkgs():
-            deps_list = self.gather_rosdeps([p], "rosdep0")
-            if [r for r in needed_rosdeps if r in deps_list]:
+            rosdeps_needed = self.gather_rosdeps([p], "rosdep")[p]
+            matches = [r for r in rosdep_args if r in rosdeps_needed]
+            for r in matches:
                 packages.append(p)
+                
         return packages
 
     def install(self, include_duplicates, default_yes):
@@ -565,16 +688,14 @@ class Rosdep:
             p= subprocess.Popen(['bash', fh.name])
             p.communicate()
                     
-    def depdb(self):
-        output = ""
-        map = self.rdl.get_map()
-        for k in map:
-            for o in map[k]:
-                if isinstance(map[k][o], basestring):
-                    output = output + "<<<< %s on ( %s ) -> %s >>>>\n"%(k, o, map[k][o])
-                else:
-                    for v in map[k][o]:
-                        output = output + "<<<< %s on ( %s %s ) -> %s >>>>\n"%(k, o, v,map[k][o][v])
+    def depdb(self, packages):
+        output = "Rosdep dependencies for operating system %s version %s "%(self.osi.get_os_name(), self.osi.get_os_version())
+        for p in packages:
+            output += "\nPACKAGE: %s\n"%p
+            rdlp = RosdepLookupPackage(self.osi.get_os_name(), self.osi.get_os_version(), p)
+            map = rdlp.get_map()
+            for k in map:
+                output = output + "<<<< %s -> %s >>>>\n"%(k, map[k])
         return output
 
     def where_defined(self, rosdeps):
@@ -645,8 +766,10 @@ def main():
     (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(rdargs)
     #print verified_packages, "Rejected", rejected_packages
     if not (command == "what_needs" or command == "where_defined" ) and len(rejected_packages) > 0:
-        print "Warning: could not identify %s"%rejected_packages
-    
+        print "Warning: could not identify %s as a package"%rejected_packages
+    if len(verified_packages) == 0 and not (command == "what_needs" or command == "where_defined" ):
+        parser.error("No Valid Packages listed")
+
     ### Find all dependencies
     r = Rosdep(verified_packages, robust=options.robust)
 
@@ -677,7 +800,7 @@ def main():
         return False
         
     if command == "depdb":
-        print r.depdb()
+        print r.depdb(verified_packages)
         return True
 
     elif command == "what_needs":

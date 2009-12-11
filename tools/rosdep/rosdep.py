@@ -66,11 +66,15 @@ class RosdepLookupPackage:
         self.rosdep_source = {}
         ## Find all rosdep.yamls here and load them into a map
 
+        if package:
+            self.load_for_package(package)
         
         
+
+    def load_for_package(self, package):
         pkg_path = roslib.packages.get_pkg_dir(package)
         path = os.path.join(pkg_path, "rosdep.yaml")
-        self.parse_yaml(path)
+        self.insert_map(self.parse_yaml(path), path)
 
         s = roslib.stacks.stack_of(package)
         if s:
@@ -605,14 +609,36 @@ class Rosdep:
 
     def where_defined(self, rosdeps):
         output = ""
-        rosdeps
-        for p in packages:
-            pass
-        for s in stacks:
-            pass
+        locations = {}
+        rdlp = RosdepLookupPackage(self.osi.get_os_name(), self.osi.get_os_version(), None)
+        
+        for r in rosdeps:
+            locations[r] = []
+
+        path = os.path.join(roslib.rosenv.get_ros_home(), "rosdep.yaml")
+        rosdep_dict = rdlp.parse_yaml(path)
+        for r in rosdeps:
+            if r in rosdep_dict:
+                locations[r].append("Override:"+path)
             
-        #for rd in rosdeps:
-            #output += "%s defined in %s"%(rd, self.rdl.get_sources(rd))
+
+        for p in roslib.packages.list_pkgs():
+            path = os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml")
+            rosdep_dict = rdlp.parse_yaml(path)
+            for r in rosdeps:
+                if r in rosdep_dict:
+                    locations[r].append(path)
+            
+
+        for s in roslib.stacks.list_stacks():
+            path = os.path.join(roslib.stacks.get_stack_dir(s), "rosdep.yaml")
+            rosdep_dict = rdlp.parse_yaml(path)
+            for r in rosdeps:
+                if r in rosdep_dict:
+                    locations[r].append(path)
+            
+        for rd in locations:
+            output += "%s defined in %s"%(rd, locations[rd])
         return output
 
 ################################################################################

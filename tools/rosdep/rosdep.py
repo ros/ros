@@ -81,6 +81,8 @@ class RosdepLookupPackage:
             stack = roslib.stacks.stack_of(p)
             if stack:
                 paths.add( os.path.join(roslib.stacks.get_stack_dir(stack), "rosdep.yaml"))
+                for s in roslib.rospack.rosstack_depends(stack):
+                    paths.add( os.path.join(roslib.stacks.get_stack_dir(s), "rosdep.yaml"))
             else:
                 paths.add( os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
 

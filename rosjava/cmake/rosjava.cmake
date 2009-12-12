@@ -1,10 +1,17 @@
 rosbuild_find_ros_package(genmsg_cpp)
 rosbuild_find_ros_package(rosjava)
-
 include(FindJava)
 
 set( _java_classpath "" )
+set( _java_runtime_classpath "" )
 set( JAVA_OUTPUT_DIR "${PROJECT_SOURCE_DIR}/bin" )
+
+# Add a jar or directory to java runtime dependencies. 
+macro(add_runtime_classpath _cp)
+	if (EXISTS ${_cp})
+		list(APPEND _java_runtime_classpath ${_cp})
+	endif(EXISTS ${_cp})
+endmacro(add_runtime_classpath _cp)
 
 # Add a jar to javac dependencies
 macro(add_classpath _cp)
@@ -74,11 +81,12 @@ macro(add_deps_classpath)
 endmacro(add_deps_classpath)
 
 macro(rospack_add_java_executable _exe_name _class)
-  #string(REPLACE ";" ":" _javac_classpath_param "${_java_classpath}:${JAVA_OUTPUT_DIR}")
-  #${_javac_classpath_param}
+  string(REPLACE ";" ":" _javac_classpath_param "${JAVA_OUTPUT_DIR}:${_java_runtime_classpath}:${rosjava_PACKAGE_PATH}/bin")
+#message("java classpath for executables is ${_javac_classpath_param}")
   add_custom_command(
     OUTPUT ${EXECUTABLE_OUTPUT_PATH}/${_exe_name}
-    COMMAND ${rosjava_PACKAGE_PATH}/scripts/rosjava_gen_exe ${rosjava_PACKAGE_PATH}/bin:${JAVA_OUTPUT_DIR} ${_class} ${EXECUTABLE_OUTPUT_PATH}/${_exe_name})
+#COMMAND ${rosjava_PACKAGE_PATH}/scripts/rosjava_gen_exe ${rosjava_PACKAGE_PATH}/bin:${JAVA_OUTPUT_DIR} ${_class} ${EXECUTABLE_OUTPUT_PATH}/${_exe_name})
+    COMMAND ${rosjava_PACKAGE_PATH}/scripts/rosjava_gen_exe ${_javac_classpath_param} ${_class} ${EXECUTABLE_OUTPUT_PATH}/${_exe_name})
   set(_targetname ${EXECUTABLE_OUTPUT_PATH}/${_exe_name})
   string(REPLACE "/" "_" _targetname ${_targetname})
   add_custom_target(${_targetname} ALL DEPENDS ${EXECUTABLE_OUTPUT_PATH}/${_exe_name})

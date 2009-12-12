@@ -123,7 +123,6 @@ template<>
 void SubscribeOptions::init<topic_tools::ShapeShifter>(const std::string& _topic, uint32_t _queue_size,
                                                        const boost::function<void (const boost::shared_ptr<topic_tools::ShapeShifter>&)>& _callback)
 {
-  printf("RUNNING GOOD INIT!\n");
   topic = _topic;
   queue_size = _queue_size;
   md5sum = "*";

@@ -52,6 +52,7 @@ ShapeShifter::deserialize(uint8_t *readPtr)
   md5 = (*__connection_header)["md5sum"];
   datatype = (*__connection_header)["type"];
   msg_def = (*__connection_header)["message_definition"];
+  typed = true;
 
   // stash this message in our buffer
   if (__serialized_length > msgBufAlloc)

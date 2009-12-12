@@ -36,15 +36,23 @@
 #define TOPIC_TOOLS_SHAPE_SHIFTER_H
 
 #include "ros/ros.h"
+#include "ros/console.h"
+#include "ros/assert.h"
 #include <vector>
 #include <string>
 #include <string.h>
-#include <assert.h>
-
 
 namespace topic_tools
 {
  
+  class ShapeShifterException : public ros::Exception
+  {
+  public:
+    ShapeShifterException(const std::string& msg)
+      : ros::Exception(msg)  {}
+  };
+
+
 // as on star trek, you've always got to be on the lookout for shape shifters
 class ShapeShifter : public ros::Message
 {
@@ -54,14 +62,13 @@ public:
 
   std::string md5, datatype, msg_def;
   bool typed;
-  std::vector<ShapeShifter *> in_msgs;
 
   uint8_t *msgBuf;
   uint32_t msgBufUsed, msgBufAlloc;
   std::string topic;
   
   ShapeShifter()
-  : ros::Message(), msgBuf(NULL), msgBufUsed(0), msgBufAlloc(0) { }
+    :  ros::Message(), typed(false), msgBuf(NULL), msgBufUsed(0), msgBufAlloc(0) { }
   virtual ~ShapeShifter() { if (msgBuf) delete[] msgBuf;
                             msgBuf = NULL; msgBufAlloc = 0; }
 
@@ -70,9 +77,9 @@ public:
   virtual const std::string __getMessageDefinition()   const { return msg_def; }
   
   // You should never use a static method on a shape shifter
-  static const std::string __s_getDataType() { assert(0); }
-  static const std::string __s_getMD5Sum()   { assert(0); }
-  static const std::string __s_getMessageDefinition()   { assert(0); }
+  static const std::string __s_getDataType() { ROS_ASSERT_MSG(0, "Tried to get static datatype of a ShapeShifter."); return "";}
+  static const std::string __s_getMD5Sum()   { ROS_ASSERT_MSG(0, "Tried to get static md5sum of a ShapeShifter."); return "";}
+  static const std::string __s_getMessageDefinition()   { ROS_ASSERT_MSG(0, "Tried to get static message definition of a ShapeShifter."); return "";}
 
   ros::Publisher advertise(ros::NodeHandle& nh, const std::string& topic, uint32_t queue_size_, bool latch=false) const;
 
@@ -81,6 +88,24 @@ public:
   virtual uint8_t *serialize(uint8_t *writePtr, uint32_t) const;
 
   virtual uint8_t *deserialize(uint8_t *readPtr);
+
+  template<class M> 
+  boost::shared_ptr<M> instantiate() const
+  {
+    if (!typed)
+      throw ShapeShifterException("Tried to instantiate message from an untyped shapeshifter.");
+
+    if (M::__s_getDataType() != __getDataType())
+      throw ShapeShifterException("Tried to instantiate message without matching datatype.");
+
+    if (M::__s_getMD5Sum() != __getMD5Sum())
+      throw ShapeShifterException("Tried to instantiate message without matching md5sum.");
+      
+    boost::shared_ptr<M> p(new M());
+    p->__serialized_length = msgBufUsed;
+    p->deserialize(msgBuf);
+    return p;
+  }
   
 };
 

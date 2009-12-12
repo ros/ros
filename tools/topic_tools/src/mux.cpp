@@ -77,18 +77,10 @@ bool sel_srv_cb( topic_tools::MuxSelect::Request  &req,
 void in_cb(const boost::shared_ptr<ShapeShifter const>& msg,
            ShapeShifter* s)
 {
-  if (!ShapeShifter::typed)
-  {
-    printf("reading first message header, setting datatype\n");
-    ShapeShifter::datatype = (*(msg->__connection_header))["type"];
-    ShapeShifter::md5 = (*(msg->__connection_header))["md5sum"];
-    ShapeShifter::msg_def = (*(msg->__connection_header))["message_definition"];
-    ShapeShifter::typed = true;
-  }
   if (!g_advertised)
   {
     printf("advertising\n");
-    g_pub = g_node->advertise<ShapeShifter>(g_output_topic, 10);
+    g_pub = msg->advertise(*g_node, g_output_topic, 10);
     g_advertised = true;
   }
   if (s == g_selected)

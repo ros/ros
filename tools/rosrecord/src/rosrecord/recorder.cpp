@@ -175,9 +175,9 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     {
       MsgInfo& info = topics_recorded_[topic_name];
 
-      info.msg_def  = (*(msg->__connection_header))["message_definition"];
-      info.datatype = (*(msg->__connection_header))["type"];
-      info.md5sum   = (*(msg->__connection_header))["md5sum"];
+      info.msg_def  = msg->__getMessageDefinition();
+      info.datatype = msg->__getDataType();
+      info.md5sum   = msg->__getMD5Sum();
       
       key = topics_recorded_.find(topic_name);
 

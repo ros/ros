@@ -67,12 +67,7 @@ def tolist(b):
 class TestRosparam(unittest.TestCase):
 
     def setUp(self):
-        self.vals = set()
-        self.msgs = {}
-
-    def callback(self, msg, val):
-        self.vals.add(val)
-        self.msgs[val] = msg
+        pass
 
     def _check(self, expected, actual):
         """

@@ -92,8 +92,10 @@ def get_api_uri(master, caller_id):
             raise ROSNodeIOException("Unable to communicate with master!")
     return caller_api
 
-def get_node_names():
+def get_node_names(namespace=None):
     """
+    @param namespace: optional namespace to scope return values by. Namespace must already be resolved.
+    @type  namespace: str
     @return: list of node caller IDs
     @rtype: [str]
     @raise ROSNodeIOException: if unable to communicate with master
@@ -105,10 +107,17 @@ def get_node_names():
         raise ROSNodeIOException("Unable to communicate with master!")
     nodes = []
     import itertools
-    for s in state:
-        for t, l in s:
-            nodes.extend(l)
-
+    if namespace:
+        # canonicalize namespace with leading/trailing slash
+        import roslib.names
+        g_ns = roslib.names.make_global_ns(namespace)
+        for s in state:
+            for t, l in s:
+                nodes.extend([n for n in l if n.startswith(g_ns) or n == namespace])
+    else:
+        for s in state:
+            for t, l in s:
+                nodes.extend(l)
     return list(set(nodes))
 
 def get_nodes_by_machine(machine):
@@ -194,15 +203,21 @@ def kill_nodes(node_names):
 
     return success, fail
 
-def _sub_rosnode_listnodes(list_uri=False, list_all=False):
+def _sub_rosnode_listnodes(namespace=None, list_uri=False, list_all=False):
     """
-    @return: string list of all nodes
+    Subroutine for rosnode_listnodes(). Composes list of strings to print to screen.
+    
+    @param namespace: (default None) namespace to scope list to. 
+    @type  namespace: str
+    @param list_uri: (default False) return uris of nodes instead of names. 
+    @type  list_uri: bool
+    @param list_all: (default False) return names and uris of nodes as combined strings
+    @type  list_all: bool
+    @return: new-line separated string containing list of all nodes
     @rtype: str
     """
     master = scriptutil.get_master()    
-    nodes = get_node_names()
-    #print '-'*80
-    #print "Nodes:"
+    nodes = get_node_names(namespace)
     if list_all:
         return '\n'.join(["%s \t%s"%(get_api_uri(master, n) or 'unknown address', n) for n in nodes])
     elif list_uri:
@@ -210,17 +225,26 @@ def _sub_rosnode_listnodes(list_uri=False, list_all=False):
     else:
         return '\n'.join(nodes)
     
-def rosnode_listnodes(list_uri=False, list_all=False):
+def rosnode_listnodes(namespace=None, list_uri=False, list_all=False):
     """
-    Print list of all ROS nodes
+    Print list of all ROS nodes to screen.
+
+    @param namespace: namespace to scope list to
+    @type  namespace: str
+    @param list_uri: print uris of nodes instead of names
+    @type  list_uri: bool
+    @param list_all: print node names and uris
+    @param list_all: bool    
     """
-    print _sub_rosnode_listnodes(list_uri=list_uri, list_all=list_all)
+    print _sub_rosnode_listnodes(namespace=namespace, list_uri=list_uri, list_all=list_all)
     
 def rosnode_ping(node_name, max_count=None, verbose=False):
     """
     Test connectivity to node by calling its XMLRPC API
     @param node_name: name of node to ping
     @type  node_name: str
+    @param max_count: number of ping requests to make
+    @type  max_count: int
     @param verbose: print ping information to screen
     @type  verbose: bool
     @return: True if node pinged
@@ -267,7 +291,7 @@ def rosnode_ping(node_name, max_count=None, verbose=False):
 
 def rosnode_ping_all(verbose=False):
     """
-    Ping all runnig nodes
+    Ping all running nodes
     @return [str], [str]: pinged nodes, un-pingable nodes
     @raise ROSNodeIOException: if unable to communicate with master
     """
@@ -366,7 +390,7 @@ def rosnode_cleanup():
 
         print "done"
 
-def rosnode_debugnode(node_name):
+def rosnode_info(node_name):
     """
     Print information about node, including subscriptions and other debugging information. This will query the node over the network.
     
@@ -455,11 +479,14 @@ def rosnode_debugnode(node_name):
     except socket.error:
         raise ROSNodeIOException("Communication with node[%s] failed! Node address is [%s]"%(node_name, node_api))
 
-def _rosnode_cmd_list():
+# backwards compatibility (deprecated)
+rosnode_debugnode = rosnode_info
+
+def _rosnode_cmd_list(argv):
     """
     Implements rosnode 'list' command.
     """
-    args = sys.argv[2:]
+    args = argv[2:]
     parser = OptionParser(usage="usage: %prog list", prog=NAME)
     parser.add_option("-u",
                       dest="list_uri", default=False,
@@ -470,35 +497,33 @@ def _rosnode_cmd_list():
                       action="store_true",
                       help="list all information")
     (options, args) = parser.parse_args(args)
-    if args:
-        parser.error("invalid arguments '%s'"%(' '.join(args)))
-    rosnode_listnodes(list_uri=options.list_uri, list_all=options.list_all)
+    namespace = None
+    if len(args) > 1:
+        parser.error("invalid args: you may only specify one namespace")
+    elif len(args) == 1:
+        namespace = scriptutil.script_resolve_name('rostopic', args[0])
+    rosnode_listnodes(namespace=namespace, list_uri=options.list_uri, list_all=options.list_all)
 
-def _rosnode_cmd_info():
+def _rosnode_cmd_info(argv):
     """
     Implements rosnode 'info' command.
     """
-    args = sys.argv[2:]
+    args = argv[2:]
     parser = OptionParser(usage="usage: %prog info node1 [node2...]", prog=NAME)
     (options, args) = parser.parse_args(args)
     if not args:
         parser.error("You must specify at least one node name")        
     for node in args:
-        rosnode_debugnode(node)
+        rosnode_info(node)
 
-def _rosnode_cmd_machine():
+def _rosnode_cmd_machine(argv):
     """
     Implements rosnode 'machine' command.
 
     @raise ROSNodeException: if user enters in unrecognized machine name
     """
-    args = sys.argv[2:]
+    args = argv[2:]
     parser = OptionParser(usage="usage: %prog machine <machine-name>", prog=NAME)
-    parser.add_option("-a",
-                      dest="kill_all", default=False,
-                      action="store_true",
-                      help="kill all nodes")
-
     (options, args) = parser.parse_args(args)
     if len(args) == 0:
         parser.error("please enter a machine name")
@@ -507,13 +532,13 @@ def _rosnode_cmd_machine():
     nodes = get_nodes_by_machine(args[0])
     print '\n'.join(nodes)
         
-def _rosnode_cmd_kill():
+def _rosnode_cmd_kill(argv):
     """
     Implements rosnode 'kill' command.
 
     @raise ROSNodeException: if user enters in unrecognized nodes
     """
-    args = sys.argv[2:]
+    args = argv[2:]
     parser = OptionParser(usage="usage: %prog kill <node1> [node2...]", prog=NAME)
     parser.add_option("-a",
                       dest="kill_all", default=False,
@@ -566,26 +591,34 @@ def _rosnode_cmd_kill():
     print "killed"
     return 0
         
-def _rosnode_cmd_cleanup():
+def _rosnode_cmd_cleanup(argv):
     """
     Implements rosnode 'cleanup' command.
+    @param argv: command-line args
+    @type  argv: [str]
     """
-    args = sys.argv[2:]
+    args = argv[2:]
     parser = OptionParser(usage="usage: %prog cleanup", prog=NAME)
     (options, args) = parser.parse_args(args)
     rosnode_cleanup()
 
-def _rosnode_cmd_ping():
+def _rosnode_cmd_ping(argv):
     """
     Implements rosnode 'ping' command.
+    @param argv: command-line args
+    @type  argv: [str]
     """
-    args = sys.argv[2:]    
+    args = argv[2:]    
     parser = OptionParser(usage="usage: %prog ping [options] <node>", prog=NAME)
     parser.add_option("--all",
                       dest="ping_all", default=False,
                       action="store_true",
                       help="ping all nodes")
-    (options, args) = parser.parse_args(args)    
+    parser.add_option("-c",
+                      dest="ping_count", default=None, metavar="COUNT",type="int",
+                      help="number of pings to send. Not available with --all")
+    (options, args) = parser.parse_args(args)
+
     node_name = None
     if not options.ping_all:
         if not args:
@@ -602,13 +635,15 @@ def _rosnode_cmd_ping():
     else:
         if args:
             parser.error("Invalid arguments '%s' used with --all"%(' '.join(args)))
-
+        elif options.ping_count:
+            parser.error("-c may not be used with --all")
+            
     if options.ping_all:
         rosnode_ping_all(verbose=True)
     else:
-        rosnode_ping(node_name, verbose=True)        
+        rosnode_ping(node_name, verbose=True, max_count=options.ping_count)
     
-def fullusage():
+def _fullusage():
     """
     Prints rosnode usage information.
     """
@@ -625,28 +660,32 @@ Type rosnode <command> -h for more detailed usage, e.g. 'rosnode ping -h'
 """
     sys.exit(os.EX_USAGE)
 
-def rosnodemain():
+def rosnodemain(argv=None):
     """
     Prints rosnode main entrypoint.
+    @param argv: override sys.argv
+    @param argv: [str]
     """
-    if len(sys.argv) == 1:
-        fullusage()
+    if argv == None:
+        argv = sys.argv
+    if len(argv) == 1:
+        _fullusage()
     try:
-        command = sys.argv[1]
+        command = argv[1]
         if command == 'ping':
-            sys.exit(_rosnode_cmd_ping() or 0)
+            sys.exit(_rosnode_cmd_ping(argv) or 0)
         elif command == 'list':
-            sys.exit(_rosnode_cmd_list() or 0)
+            sys.exit(_rosnode_cmd_list(argv) or 0)
         elif command == 'info':
-            sys.exit(_rosnode_cmd_info() or 0)
+            sys.exit(_rosnode_cmd_info(argv) or 0)
         elif command == 'machine':
-            sys.exit(_rosnode_cmd_machine() or 0)
+            sys.exit(_rosnode_cmd_machine(argv) or 0)
         elif command == 'cleanup':
-            sys.exit(_rosnode_cmd_cleanup() or 0)
+            sys.exit(_rosnode_cmd_cleanup(argv) or 0)
         elif command == 'kill':
-            sys.exit(_rosnode_cmd_kill() or 0)
+            sys.exit(_rosnode_cmd_kill(argv) or 0)
         else:
-            fullusage()
+            _fullusage()
     except socket.error:
         print >> sys.stderr, "Network communication failed. Most likely failed to communicate with master."
     except ROSNodeException, e:

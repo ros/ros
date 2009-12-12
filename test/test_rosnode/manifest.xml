@@ -14,6 +14,7 @@
 
   <!-- for sample nodes -->
   <depend package="test_ros"/>
+  <depend package="std_msgs"/>
   
 </package>
 

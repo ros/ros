@@ -708,7 +708,7 @@ def main():
     command = args[0]
     if not command in _commands:
         parser.error("Unsupported command %s."%command)
-    if len(args) < 2:
+    if len(args) < 2 and not options.rosdep_all:
         parser.error("Please enter arguments for '%s'"%command)
     rdargs = args[1:]
 

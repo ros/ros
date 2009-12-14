@@ -46,7 +46,6 @@
 #include <cstdio>
 
 #include <string.h>
-#include <limits.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
@@ -796,7 +795,8 @@ public:
   {
     Player* next_player = 0;
 
-    ros::Time min_t = ros::Time().fromNSec(ULLONG_MAX); // This should be the maximum unsigned int;
+    bool first = true;
+    ros::Time min_t = ros::Time(); // This should be the maximum unsigned int;
 
     bool remaining = false;
 
@@ -812,8 +812,9 @@ public:
       {
         remaining = true;
         ros::Time t = (*player_it)->get_next_msg_time();
-        if (t < min_t)
+        if (first || t < min_t)
         {
+          first = false;
           next_player = (*player_it);
           min_t = (*player_it)->get_next_msg_time();
         }

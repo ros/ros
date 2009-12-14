@@ -180,10 +180,12 @@ function roscmd {
 function rosed {
     local arg
     roscmd ${1} ${2}
-    if [[ -z $EDITOR ]]; then
-        vim ${arg}
-    else
-        $EDITOR ${arg}
+    if [[ -n ${arg} ]]; then
+        if [[ -z $EDITOR ]]; then
+            vim ${arg}
+        else
+            $EDITOR ${arg}
+        fi
     fi
 }
 

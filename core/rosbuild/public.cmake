@@ -765,13 +765,7 @@ endmacro(rosbuild_add_boost_directories)
 macro(rosbuild_link_boost target)
   set(_libs "")
   set(_first 1)
-  set(_extra_libs "")
   foreach(arg ${ARGN})
-    # If we're using boost::thread, then we add -lpthread,
-    # to make pickier linkers (e.g., gold) happy.
-    if("${arg}" STREQUAL "thread" AND UNIX AND NOT APPLE)
-      set(_extra_libs "pthread")
-    endif("${arg}" STREQUAL "thread" AND UNIX AND NOT APPLE)
     if (_first)
       set(_first 0)
       set(_libs "${arg}")
@@ -791,8 +785,6 @@ macro(rosbuild_link_boost target)
   endif(_boostcfg_failed)
 
   separate_arguments(BOOST_LIBS)
-
-  list(APPEND BOOST_LIBS "${_extra_libs}") 
 
   target_link_libraries(${target} ${BOOST_LIBS})
 endmacro(rosbuild_link_boost)

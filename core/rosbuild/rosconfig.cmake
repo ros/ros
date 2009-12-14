@@ -77,23 +77,11 @@ include(CheckCXXCompilerFlag)
 if(NOT DEFINED ROS_COMPILE_FLAGS)
   set(ROS_COMPILE_FLAGS "-W -Wall -Wno-unused-parameter -fno-strict-aliasing")
   # Old versions of gcc need -pthread to enable threading, #2095.  
-  # We have one data point, which is gcc 3.3.  We'll heuristically 
-  # add -pthread to any gcc < 4.0.
-  #
-  # Cursory testing on Linux suggests that passing -pthread when 
-  # you don't need it doesn't materially change the resulting object file.
-  execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
-                  ERROR_VARIABLE _cxx_version_failed
-                  OUTPUT_VARIABLE _cxx_version
-                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(NOT _cxx_version_failed)
-    STRING(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+" "\\1" _cxx_version_major "${_cxx_version}")
-    if(_cxx_version_major)
-      if(${_cxx_version_major} LESS 4)
-        set(ROS_COMPILE_FLAGS "${ROS_COMPILE_FLAGS} -pthread")
-      endif(${_cxx_version_major} LESS 4)
-    endif(_cxx_version_major)
-  endif(NOT _cxx_version_failed)
+  # Also, some linkers, e.g., goLD, require -pthread (or another way to
+  # generate -lpthread).
+  if(UNIX)
+    set(ROS_COMPILE_FLAGS "${ROS_COMPILE_FLAGS} -pthread")
+  endif(UNIX)
 endif(NOT DEFINED ROS_COMPILE_FLAGS)
 
 # Default link flags for all executables and libraries

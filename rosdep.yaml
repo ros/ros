@@ -368,3 +368,10 @@ sbcl:
   debian: sbcl
   arch: sbcl
   macports: sbcl
+fltk:
+  ubuntu: libfltk1.1-dev
+  debian: libfltk1.1-dev
+  fedora: fltk-devel
+  arch: fltk
+  macports: fltk
+  gentoo: "\"=x11-libs/fltk-1*\""

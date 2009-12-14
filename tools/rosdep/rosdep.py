@@ -588,7 +588,7 @@ class Rosdep:
     def what_needs(self, rosdep_args):
         packages = []
         for p in roslib.packages.list_pkgs():
-            rosdeps_needed = self.gather_rosdeps([p], "rosdep")[p]
+            rosdeps_needed = self.gather_rosdeps([p], "rosdep0")[p]
             matches = [r for r in rosdep_args if r in rosdeps_needed]
             for r in matches:
                 packages.append(p)

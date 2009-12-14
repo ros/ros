@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009, Willow Garage, Inc.
+ * Copyright (C) 2008, Morgan Quigley and Willow Garage, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -8,7 +8,7 @@
  *   * Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- *   * Neither the names of Willow Garage, Inc. nor the names of its
+ *   * Neither the names of Stanford University or Willow Garage, Inc. nor the names of its
  *     contributors may be used to endorse or promote products derived from
  *     this software without specific prior written permission.
  *
@@ -25,38 +25,51 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ROSCPP_MESSAGE_DESERIALIZER_H
-#define ROSCPP_MESSAGE_DESERIALIZER_H
-
-#include "subscription_message_helper.h"
-#include "message.h"
-
-#include <boost/thread/mutex.hpp>
-#include <boost/shared_array.hpp>
+#ifndef ROSCPP_TRANSPORT_SUBSCRIBER_LINK_H
+#define ROSCPP_TRANSPORT_SUBSCRIBER_LINK_H
+#include "subscriber_link.h"
 
 namespace ros
 {
 
-class MessageDeserializer
+/**
+ * \brief SubscriberLink handles broadcasting messages to a single subscriber on a single topic
+ */
+class TransportSubscriberLink : public SubscriberLink
 {
 public:
-  MessageDeserializer(const SubscriptionMessageHelperPtr& helper, const boost::shared_array<uint8_t>& buffer, size_t num_bytes, bool buffer_includes_size_header, const boost::shared_ptr<M_string>& connection_header);
+  TransportSubscriberLink();
+  virtual ~TransportSubscriberLink();
 
-  MessagePtr deserialize();
+  //
+  bool initialize(const ConnectionPtr& connection);
+  bool handleHeader(const Header& header);
+
+  const ConnectionPtr& getConnection() { return connection_; }
+
+  virtual bool publish(const Message& m);
+  virtual void enqueueMessage(const SerializedMessage& m);
+  virtual void drop();
+  virtual std::string getTransportType();
 
 private:
-  SubscriptionMessageHelperPtr helper_;
-  boost::shared_array<uint8_t> buffer_;
-  uint32_t num_bytes_;
-  bool buffer_includes_size_header_;
-  boost::shared_ptr<M_string> connection_header_;
+  void onConnectionDropped(const ConnectionPtr& conn);
 
-  boost::mutex mutex_;
-  MessagePtr msg_;
+  void onHeaderWritten(const ConnectionPtr& conn);
+  void onMessageWritten(const ConnectionPtr& conn);
+  void startMessageWrite(bool immediate_write);
+
+  bool writing_message_;
+  bool header_written_;
+
+  ConnectionPtr connection_;
+
+  std::queue<SerializedMessage> outbox_;
+  boost::mutex outbox_mutex_;
+  bool queue_full_;
 };
-typedef boost::shared_ptr<MessageDeserializer> MessageDeserializerPtr;
+typedef boost::shared_ptr<TransportSubscriberLink> TransportSubscriberLinkPtr;
 
-}
+} // namespace ros
 
-#endif // ROSCPP_MESSAGE_DESERIALIZER_H
-
+#endif // ROSCPP_TRANSPORT_SUBSCRIBER_LINK_H

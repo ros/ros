@@ -294,6 +294,8 @@ bool TopicManager::advertise(const AdvertiseOptions& ops, const SubscriberCallba
     ROS_WARN("Advertising on topic [%s] with md5sum [*].  If you are not playing back an old bag file, this is a problem.", ops.topic.c_str());
   }
 
+  PublicationPtr pub;
+
   {
     boost::recursive_mutex::scoped_lock lock(advertised_topics_mutex_);
 
@@ -302,8 +304,8 @@ bool TopicManager::advertise(const AdvertiseOptions& ops, const SubscriberCallba
       return false;
     }
 
-    PublicationPtr pub = lookupPublicationWithoutLock(ops.topic);
-    if (pub && pub->getRefcount() == 0)
+    pub = lookupPublicationWithoutLock(ops.topic);
+    if (pub && pub->getNumCallbacks() == 0)
     {
       pub.reset();
     }
@@ -317,13 +319,12 @@ bool TopicManager::advertise(const AdvertiseOptions& ops, const SubscriberCallba
         return false;
       }
 
-      pub->incrementRefcount();
       pub->addCallbacks(callbacks);
 
       return true;
     }
 
-    pub = PublicationPtr(new Publication(ops.topic, ops.datatype, ops.md5sum, ops.message_definition, ops.queue_size, ops.callback_queue, ops.latch));
+    pub = PublicationPtr(new Publication(ops.topic, ops.datatype, ops.md5sum, ops.message_definition, ops.queue_size, ops.latch));
     pub->addCallbacks(callbacks);
     advertised_topics_.push_back(pub);
   }
@@ -358,7 +359,7 @@ bool TopicManager::advertise(const AdvertiseOptions& ops, const SubscriberCallba
 
   if(found)
   {
-    sub->negotiateConnection(xmlrpc_manager_->getServerURI());
+    sub->addLocalConnection(pub);
   }
 
   XmlRpcValue args, result, payload;
@@ -373,42 +374,51 @@ bool TopicManager::advertise(const AdvertiseOptions& ops, const SubscriberCallba
 
 bool TopicManager::unadvertise(const std::string &topic, const SubscriberCallbacksPtr& callbacks)
 {
-  boost::recursive_mutex::scoped_lock lock(advertised_topics_mutex_);
+  PublicationPtr pub;
+  V_Publication::iterator i;
+  {
+    boost::recursive_mutex::scoped_lock lock(advertised_topics_mutex_);
 
-  if (isShuttingDown())
+    if (isShuttingDown())
+    {
+      return false;
+    }
+
+    for (i = advertised_topics_.begin();
+         i != advertised_topics_.end(); ++i)
+    {
+      if(((*i)->getName() == topic) && (!(*i)->isDropped()))
+      {
+        pub = *i;
+        break;
+      }
+    }
+  }
+
+  if (!pub)
   {
     return false;
   }
 
-  for (V_Publication::iterator i = advertised_topics_.begin();
-       i != advertised_topics_.end(); ++i)
+  pub->removeCallbacks(callbacks);
+
   {
-    if(((*i)->getName() == topic) && (!(*i)->isDropped()))
+    boost::recursive_mutex::scoped_lock lock(advertised_topics_mutex_);
+    if (pub->getNumCallbacks() == 0)
     {
-      PublicationPtr pub = *i;
-      pub->decrementRefcount();
-      pub->removeCallbacks(callbacks);
+      unregisterPublisher(pub->getName());
+      pub->drop();
 
-      if (pub->getRefcount() == 0)
+      advertised_topics_.erase(i);
+
       {
-        unregisterPublisher(pub->getName());
-        pub->drop();
-
-        {
-          advertised_topics_.erase(i);
-        }
-
-        {
-          boost::mutex::scoped_lock lock(advertised_topic_names_mutex_);
-          advertised_topic_names_.remove(pub->getName());
-        }
+        boost::mutex::scoped_lock lock(advertised_topic_names_mutex_);
+        advertised_topic_names_.remove(pub->getName());
       }
-
-      return true;
     }
   }
 
-  return false;
+  return true;
 }
 
 bool TopicManager::unregisterPublisher(const std::string& topic)
@@ -458,6 +468,7 @@ bool TopicManager::registerSubscriber(const SubscriptionPtr& s, const string &da
   }
 
   bool self_subscribed = false;
+  PublicationPtr pub;
   // Figure out if we have a local publisher
   {
     boost::recursive_mutex::scoped_lock lock(advertised_topics_mutex_);
@@ -465,10 +476,11 @@ bool TopicManager::registerSubscriber(const SubscriptionPtr& s, const string &da
     V_Publication::const_iterator end = advertised_topics_.end();
     for (; it != end; ++it)
     {
-      const PublicationPtr& pub = *it;
+      pub = *it;
       if (pub->getName() == s->getName() && pub->getDataType() == s->datatype() && !pub->isDropped())
       {
         self_subscribed = true;
+        break;
       }
     }
   }
@@ -476,7 +488,7 @@ bool TopicManager::registerSubscriber(const SubscriptionPtr& s, const string &da
   s->pubUpdate(pub_uris);
   if (self_subscribed)
   {
-    s->negotiateConnection(xmlrpc_manager_->getServerURI());
+    s->addLocalConnection(pub);
   }
 
   return true;

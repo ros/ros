@@ -30,6 +30,7 @@
 
 #include "ros/common.h"
 #include "ros/transport_hints.h"
+#include "ros/header.h"
 
 #include <boost/thread/mutex.hpp>
 #include <boost/shared_array.hpp>
@@ -67,31 +68,22 @@ public:
   PublisherLink(const SubscriptionPtr& parent, const std::string& xmlrpc_uri, const TransportHints& transport_hints);
   virtual ~PublisherLink();
 
-  //
-  bool initialize(const ConnectionPtr& connection);
-
-  const ConnectionPtr& getConnection() { return connection_; }
-
-  std::string getTransportType();
   const Stats &getStats() { return stats_; }
   const std::string& getPublisherXMLRPCURI();
-  inline int getConnectionID() const { return connection_id_; }
+  int getConnectionID() const { return connection_id_; }
+  const std::string& getCallerID() { return caller_id_; }
   bool isLatched() { return latched_; }
 
-private:
-  void onConnectionDropped(const ConnectionPtr& conn);
-  bool onHeaderReceived(const ConnectionPtr& conn, const Header& header);
+  bool setHeader(const Header& header);
 
   /**
    * \brief Handles handing off a received message to the subscription, where it will be deserialized and called back
    */
-  void handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes);
+  virtual void handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes) = 0;
+  virtual std::string getTransportType() = 0;
+  virtual void drop() = 0;
 
-  void onHeaderWritten(const ConnectionPtr& conn);
-  void onMessageLength(const ConnectionPtr& conn, const boost::shared_array<uint8_t>& buffer, uint32_t size, bool success);
-  void onMessage(const ConnectionPtr& conn, const boost::shared_array<uint8_t>& buffer, uint32_t size, bool success);
-
-  ConnectionPtr connection_;
+protected:
   SubscriptionWPtr parent_;
   unsigned int connection_id_;
   std::string publisher_xmlrpc_uri_;
@@ -101,6 +93,8 @@ private:
   TransportHints transport_hints_;
 
   bool latched_;
+  std::string caller_id_;
+  Header header_;
 };
 
 } // namespace ros

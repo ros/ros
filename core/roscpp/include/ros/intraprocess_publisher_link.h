@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009, Willow Garage, Inc.
+ * Copyright (C) 2008, Morgan Quigley and Willow Garage, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -8,7 +8,7 @@
  *   * Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- *   * Neither the names of Willow Garage, Inc. nor the names of its
+ *   * Neither the names of Stanford University or Willow Garage, Inc. nor the names of its
  *     contributors may be used to endorse or promote products derived from
  *     this software without specific prior written permission.
  *
@@ -25,38 +25,49 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ROSCPP_MESSAGE_DESERIALIZER_H
-#define ROSCPP_MESSAGE_DESERIALIZER_H
+#ifndef ROSCPP_INTRAPROCESS_PUBLISHER_LINK_H
+#define ROSCPP_INTRAPROCESS_PUBLISHER_LINK_H
 
-#include "subscription_message_helper.h"
-#include "message.h"
-
-#include <boost/thread/mutex.hpp>
-#include <boost/shared_array.hpp>
+#include "publisher_link.h"
 
 namespace ros
 {
+class Subscription;
+typedef boost::shared_ptr<Subscription> SubscriptionPtr;
+typedef boost::weak_ptr<Subscription> SubscriptionWPtr;
 
-class MessageDeserializer
+class IntraProcessSubscriberLink;
+typedef boost::shared_ptr<IntraProcessSubscriberLink> IntraProcessSubscriberLinkPtr;
+
+/**
+ * \brief Handles a connection to a single publisher on a given topic.  Receives messages from a publisher
+ * and hands them off to its parent Subscription
+ */
+class IntraProcessPublisherLink : public PublisherLink
 {
 public:
-  MessageDeserializer(const SubscriptionMessageHelperPtr& helper, const boost::shared_array<uint8_t>& buffer, size_t num_bytes, bool buffer_includes_size_header, const boost::shared_ptr<M_string>& connection_header);
+  IntraProcessPublisherLink(const SubscriptionPtr& parent, const std::string& xmlrpc_uri, const TransportHints& transport_hints);
+  virtual ~IntraProcessPublisherLink();
 
-  MessagePtr deserialize();
+  void setPublisher(const IntraProcessSubscriberLinkPtr& publisher);
+
+  virtual std::string getTransportType();
+  virtual void drop();
+
+  /**
+   * \brief Handles handing off a received message to the subscription, where it will be deserialized and called back
+   */
+  virtual void handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes);
 
 private:
-  SubscriptionMessageHelperPtr helper_;
-  boost::shared_array<uint8_t> buffer_;
-  uint32_t num_bytes_;
-  bool buffer_includes_size_header_;
-  boost::shared_ptr<M_string> connection_header_;
-
-  boost::mutex mutex_;
-  MessagePtr msg_;
+  IntraProcessSubscriberLinkPtr publisher_;
+  bool dropped_;
 };
-typedef boost::shared_ptr<MessageDeserializer> MessageDeserializerPtr;
+typedef boost::shared_ptr<IntraProcessPublisherLink> IntraProcessPublisherLinkPtr;
 
-}
+} // namespace ros
 
-#endif // ROSCPP_MESSAGE_DESERIALIZER_H
+#endif // ROSCPP_INTRAPROCESS_PUBLISHER_LINK_H
+
+
 

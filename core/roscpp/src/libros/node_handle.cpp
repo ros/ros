@@ -241,8 +241,6 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
 
 Publisher NodeHandle::advertise(AdvertiseOptions& ops)
 {
-  SubscriberCallbacksPtr callbacks(new SubscriberCallbacks(ops.connect_cb, ops.disconnect_cb, ops.tracked_object));
-
   ops.topic = resolveName(ops.topic);
   if (ops.callback_queue == 0)
   {
@@ -255,6 +253,8 @@ Publisher NodeHandle::advertise(AdvertiseOptions& ops)
       ops.callback_queue = getGlobalCallbackQueue();
     }
   }
+
+  SubscriberCallbacksPtr callbacks(new SubscriberCallbacks(ops.connect_cb, ops.disconnect_cb, ops.tracked_object, ops.callback_queue));
 
   if (TopicManager::instance()->advertise(ops, callbacks))
   {

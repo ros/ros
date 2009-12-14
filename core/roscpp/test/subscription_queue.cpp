@@ -96,7 +96,7 @@ TEST(SubscriptionQueue, queueSize)
   SubscriptionQueue queue("blah", 1);
 
   FakeSubHelperPtr helper(new FakeSubHelper);
-  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, boost::shared_ptr<M_string>()));
+  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, false, boost::shared_ptr<M_string>()));
 
   ASSERT_FALSE(queue.full());
 
@@ -135,7 +135,7 @@ TEST(SubscriptionQueue, infiniteQueue)
   SubscriptionQueue queue("blah", 0);
 
   FakeSubHelperPtr helper(new FakeSubHelper);
-  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, boost::shared_ptr<M_string>()));
+  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, false, boost::shared_ptr<M_string>()));
 
   ASSERT_FALSE(queue.full());
 
@@ -171,7 +171,7 @@ TEST(SubscriptionQueue, clearCall)
   SubscriptionQueue queue("blah", 1);
 
   FakeSubHelperPtr helper(new FakeSubHelper);
-  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, boost::shared_ptr<M_string>()));
+  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, false, boost::shared_ptr<M_string>()));
 
   uint64_t id = queue.push(helper, des, false, VoidWPtr());
   queue.clear();
@@ -183,7 +183,7 @@ TEST(SubscriptionQueue, clearThenAddAndCall)
   SubscriptionQueue queue("blah", 1);
 
   FakeSubHelperPtr helper(new FakeSubHelper);
-  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, boost::shared_ptr<M_string>()));
+  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, false, boost::shared_ptr<M_string>()));
 
   uint64_t id = queue.push(helper, des, false, VoidWPtr());
   queue.clear();
@@ -196,7 +196,7 @@ TEST(SubscriptionQueue, remove)
   SubscriptionQueue queue("blah", 2);
 
   FakeSubHelperPtr helper(new FakeSubHelper);
-  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, boost::shared_ptr<M_string>()));
+  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, false, boost::shared_ptr<M_string>()));
 
   uint64_t id = queue.push(helper, des, false, VoidWPtr());
   uint64_t id2 = queue.push(helper, des, false, VoidWPtr());
@@ -217,7 +217,7 @@ TEST(SubscriptionQueue, clearInCallback)
   SubscriptionQueue queue("blah", 1);
 
   FakeSubHelperPtr helper(new FakeSubHelper);
-  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, boost::shared_ptr<M_string>()));
+  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, false, boost::shared_ptr<M_string>()));
 
   helper->cb_ = boost::bind(clearInCallbackCallback, boost::ref(queue));
   uint64_t id = queue.push(helper, des, false, VoidWPtr());
@@ -241,7 +241,7 @@ TEST(SubscriptionQueue, clearWhileThreadIsBlocking)
   SubscriptionQueue queue("blah", 1);
 
   FakeSubHelperPtr helper(new FakeSubHelper);
-  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, boost::shared_ptr<M_string>()));
+  MessageDeserializerPtr des(new MessageDeserializer(helper, boost::shared_array<uint8_t>(), 0, false, boost::shared_ptr<M_string>()));
 
   bool done = false;
   boost::barrier barrier(2);

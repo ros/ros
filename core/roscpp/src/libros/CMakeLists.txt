@@ -41,9 +41,13 @@ rosbuild_add_library(ros
                     message_deserializer.cpp
                     subscription_queue.cpp
                     publisher_link.cpp
+                    transport_publisher_link.cpp
+                    intraprocess_publisher_link.cpp
                     publication.cpp
                     subscription.cpp
-                    subscriber_link.cpp 
+                    subscriber_link.cpp
+                    transport_subscriber_link.cpp
+                    intraprocess_subscriber_link.cpp 
                     service_publication.cpp
                     service_server_link.cpp
                     service_client_link.cpp

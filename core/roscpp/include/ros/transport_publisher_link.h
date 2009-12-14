@@ -25,73 +25,59 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ROSCPP_SUBSCRIBER_LINK_H
-#define ROSCPP_SUBSCRIBER_LINK_H
+#ifndef ROSCPP_TRANSPORT_PUBLISHER_LINK_H
+#define ROSCPP_TRANSPORT_PUBLISHER_LINK_H
 
-#include "ros/common.h"
-
-#include <boost/thread/mutex.hpp>
-#include <boost/shared_array.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-
-#include <queue>
+#include "publisher_link.h"
 
 namespace ros
 {
 class Header;
 class Message;
-class Publication;
-typedef boost::shared_ptr<Publication> PublicationPtr;
-typedef boost::weak_ptr<Publication> PublicationWPtr;
+class Subscription;
+typedef boost::shared_ptr<Subscription> SubscriptionPtr;
+typedef boost::weak_ptr<Subscription> SubscriptionWPtr;
 class Connection;
 typedef boost::shared_ptr<Connection> ConnectionPtr;
 
-class SubscriberLink : public boost::enable_shared_from_this<SubscriberLink>
+/**
+ * \brief Handles a connection to a single publisher on a given topic.  Receives messages from a publisher
+ * and hands them off to its parent Subscription
+ */
+class TransportPublisherLink : public PublisherLink
 {
 public:
-  class Stats
-  {
-  public:
-    uint64_t bytes_sent_, message_data_sent_, messages_sent_;
-    Stats()
-    : bytes_sent_(0), message_data_sent_(0), messages_sent_(0) { }
-  };
+  TransportPublisherLink(const SubscriptionPtr& parent, const std::string& xmlrpc_uri, const TransportHints& transport_hints);
+  virtual ~TransportPublisherLink();
 
-  SubscriberLink();
-  virtual ~SubscriberLink();
+  //
+  bool initialize(const ConnectionPtr& connection);
 
-  const std::string& getTopic() const { return topic_; }
-  const Stats &getStats() { return stats_; }
-  const std::string &getDestinationCallerID() const { return destination_caller_id_; }
-  int getConnectionID() const { return connection_id_; }
+  const ConnectionPtr& getConnection() { return connection_; }
+
+  virtual std::string getTransportType();
+  virtual void drop();
+
+private:
+  void onConnectionDropped(const ConnectionPtr& conn);
+  bool onHeaderReceived(const ConnectionPtr& conn, const Header& header);
 
   /**
-   * \brief Publish a message directly to our subscriber.  Useful for publication connection callbacks
-   * to publish directly to the new subscriber and no-one else
+   * \brief Handles handing off a received message to the subscription, where it will be deserialized and called back
    */
-  virtual bool publish(const Message& m) = 0;
-  /**
-   * \brief Queue up a message for publication.  Throws out old messages if we've reached our Publication's max queue size
-   */
-  virtual void enqueueMessage(const SerializedMessage& m) = 0;
+  virtual void handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes);
 
-  virtual void drop() = 0;
+  void onHeaderWritten(const ConnectionPtr& conn);
+  void onMessageLength(const ConnectionPtr& conn, const boost::shared_array<uint8_t>& buffer, uint32_t size, bool success);
+  void onMessage(const ConnectionPtr& conn, const boost::shared_array<uint8_t>& buffer, uint32_t size, bool success);
 
-  virtual std::string getTransportType() = 0;
-
-protected:
-  bool verifyDatatype(const std::string &datatype);
-
-  PublicationWPtr parent_;
-  unsigned int connection_id_;
-  std::string destination_caller_id_;
-  Stats stats_;
-  std::string topic_;
+  ConnectionPtr connection_;
 };
+typedef boost::shared_ptr<TransportPublisherLink> TransportPublisherLinkPtr;
 
 } // namespace ros
 
-#endif // ROSCPP_SUBSCRIBER_LINK_H
+#endif // ROSCPP_TRANSPORT_PUBLISHER_LINK_H
+
 
 

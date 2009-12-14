@@ -39,7 +39,6 @@ Publication::Publication(const std::string &name,
                          const std::string &_md5sum,
                          const std::string& message_definition,
                          size_t max_queue,
-                         CallbackQueueInterface* callback_queue,
                          bool latch)
 : name_(name),
   datatype_(datatype),
@@ -48,8 +47,6 @@ Publication::Publication(const std::string &name,
   max_queue_(max_queue),
   seq_(0),
   dropped_(false),
-  refcount_(1),
-  callback_queue_(callback_queue),
   latch_(latch)
 {
 }
@@ -73,7 +70,11 @@ void Publication::removeCallbacks(const SubscriberCallbacksPtr& callbacks)
   V_Callback::iterator it = std::find(callbacks_.begin(), callbacks_.end(), callbacks);
   if (it != callbacks_.end())
   {
-    callback_queue_->removeByID((uint64_t)(*it).get());
+    const SubscriberCallbacksPtr& cb = *it;
+    if (cb->callback_queue_)
+    {
+      cb->callback_queue_->removeByID((uint64_t)cb.get());
+    }
     callbacks_.erase(it);
   }
 }
@@ -93,22 +94,14 @@ void Publication::drop()
 
 bool Publication::enqueueMessage(const SerializedMessage& m)
 {
-  // This is somewhat nasty, but prevents a deadlock in the case where the subscriber connection callback has called publish()
-  // TODO this can change once the old roscpp API is removed
-  V_SubscriberLink local_publishers;
+  boost::mutex::scoped_lock lock(subscriber_links_mutex_);
+  if (dropped_)
   {
-    boost::mutex::scoped_lock lock(subscriber_links_mutex_);
-
-    if (dropped_)
-    {
-      return false;
-    }
-
-    local_publishers = subscriber_links_;
+    return false;
   }
 
-  for(V_SubscriberLink::iterator i = local_publishers.begin();
-      i != local_publishers.end(); ++i)
+  for(V_SubscriberLink::iterator i = subscriber_links_.begin();
+      i != subscriber_links_.end(); ++i)
   {
     const SubscriberLinkPtr& sub_link = (*i);
     sub_link->enqueueMessage(m);
@@ -238,7 +231,7 @@ void Publication::dropAllConnections()
   for (V_SubscriberLink::iterator i = local_publishers.begin();
            i != local_publishers.end(); ++i)
   {
-    (*i)->getConnection()->drop();
+    (*i)->drop();
   }
 }
 
@@ -286,17 +279,10 @@ void Publication::peerConnect(const SubscriberLinkPtr& sub_link)
   for (; it != end; ++it)
   {
     const SubscriberCallbacksPtr& cbs = *it;
-    if (cbs->connect_)
+    if (cbs->connect_ && cbs->callback_queue_)
     {
-      if (callback_queue_)
-      {
-        CallbackInterfacePtr cb(new PeerConnDisconnCallback(cbs->connect_, sub_link, cbs->has_tracked_object_, cbs->tracked_object_));
-        callback_queue_->addCallback(cb, (uint64_t)cbs.get());
-      }
-      else
-      {
-        cbs->connect_(sub_link);
-      }
+      CallbackInterfacePtr cb(new PeerConnDisconnCallback(cbs->connect_, sub_link, cbs->has_tracked_object_, cbs->tracked_object_));
+      cbs->callback_queue_->addCallback(cb, (uint64_t)cbs.get());
     }
   }
 }
@@ -308,34 +294,18 @@ void Publication::peerDisconnect(const SubscriberLinkPtr& sub_link)
   for (; it != end; ++it)
   {
     const SubscriberCallbacksPtr& cbs = *it;
-    if (cbs->disconnect_)
+    if (cbs->disconnect_ && cbs->callback_queue_)
     {
-      if (callback_queue_)
-      {
-        CallbackInterfacePtr cb(new PeerConnDisconnCallback(cbs->disconnect_, sub_link, cbs->has_tracked_object_, cbs->tracked_object_));
-        callback_queue_->addCallback(cb, (uint64_t)cbs.get());
-      }
-      else
-      {
-        cbs->disconnect_(sub_link);
-      }
+      CallbackInterfacePtr cb(new PeerConnDisconnCallback(cbs->disconnect_, sub_link, cbs->has_tracked_object_, cbs->tracked_object_));
+      cbs->callback_queue_->addCallback(cb, (uint64_t)cbs.get());
     }
   }
 }
 
-void Publication::incrementRefcount()
+size_t Publication::getNumCallbacks()
 {
-  ++refcount_;
-}
-
-void Publication::decrementRefcount()
-{
-  --refcount_;
-}
-
-uint32_t Publication::getRefcount()
-{
-  return refcount_;
+  boost::mutex::scoped_lock lock(callbacks_mutex_);
+  return callbacks_.size();
 }
 
 } // namespace ros

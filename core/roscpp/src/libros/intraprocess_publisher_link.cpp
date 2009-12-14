@@ -32,7 +32,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "ros/publisher_link.h"
+#include "ros/intraprocess_publisher_link.h"
+#include "ros/intraprocess_subscriber_link.h"
 #include "ros/subscription.h"
 #include "ros/header.h"
 #include "ros/connection.h"
@@ -48,53 +49,71 @@
 namespace ros
 {
 
-PublisherLink::PublisherLink(const SubscriptionPtr& parent, const std::string& xmlrpc_uri, const TransportHints& transport_hints)
-: parent_(parent)
-, publisher_xmlrpc_uri_(xmlrpc_uri)
-, transport_hints_(transport_hints)
-, latched_(false)
+IntraProcessPublisherLink::IntraProcessPublisherLink(const SubscriptionPtr& parent, const std::string& xmlrpc_uri, const TransportHints& transport_hints)
+: PublisherLink(parent, xmlrpc_uri, transport_hints)
+, dropped_(false)
 {
 }
 
-PublisherLink::~PublisherLink()
+IntraProcessPublisherLink::~IntraProcessPublisherLink()
 {
 }
 
-bool PublisherLink::setHeader(const Header& header)
+void IntraProcessPublisherLink::setPublisher(const IntraProcessSubscriberLinkPtr& publisher)
 {
-  header.getValue("callerid", caller_id_);
+  publisher_ = publisher;
 
-  std::string md5sum, type, latched_str;
-  if (!header.getValue("md5sum", md5sum))
-  {
-    ROS_ERROR("Publisher TCPROS header did not have required element: md5sum");
-    return false;
-  }
+  SubscriptionPtr parent = parent_.lock();
+  ROS_ASSERT(parent);
 
-  if (!header.getValue("type", type))
-  {
-    ROS_ERROR("Publisher TCPROS header did not have required element: type");
-    return false;
-  }
-
-  latched_ = false;
-  if (header.getValue("latching", latched_str))
-  {
-    if (latched_str == "1")
-    {
-      latched_ = true;
-    }
-  }
-
-  connection_id_ = ConnectionManager::instance()->getNewConnectionID();
-  header_ = header;
-
-  return true;
+  Header header;
+  M_stringPtr values = header.getValues();
+  (*values)["callerid"] = this_node::getName();
+  (*values)["topic"] = parent->getName();
+  (*values)["type"] = parent->datatype();
+  (*values)["md5sum"] = parent->md5sum();
+  (*values)["latching"] = publisher->isLatching() ? "1" : "0";
+  setHeader(header);
 }
 
-const std::string& PublisherLink::getPublisherXMLRPCURI()
+void IntraProcessPublisherLink::drop()
 {
-  return publisher_xmlrpc_uri_;
+  if (dropped_)
+  {
+    return;
+  }
+
+  dropped_ = true;
+
+  if (publisher_)
+  {
+    publisher_->drop();
+  }
+
+  if (SubscriptionPtr parent = parent_.lock())
+  {
+    ROSCPP_LOG_DEBUG("Connection to local publisher on topic [%s] dropped", parent->getName().c_str());
+
+    parent->removePublisherLink(shared_from_this());
+  }
+}
+
+void IntraProcessPublisherLink::handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes)
+{
+  stats_.bytes_received_ += num_bytes;
+  stats_.messages_received_++;
+
+  SubscriptionPtr parent = parent_.lock();
+
+  if (parent)
+  {
+    stats_.drops_ += parent->handleMessage(buffer, num_bytes, true, header_.getValues(), shared_from_this());
+  }
+}
+
+std::string IntraProcessPublisherLink::getTransportType()
+{
+  return std::string("INTRAPROCESS");
 }
 
 } // namespace ros

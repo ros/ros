@@ -84,6 +84,9 @@ public:
    * \param xmlrpc_uri The XMLRPC URI to connect to to negotiate the connection
    */
   bool negotiateConnection(const std::string& xmlrpc_uri);
+
+  void addLocalConnection(const PublicationPtr& pub);
+
   /**
    * \brief Returns whether this Subscription has been dropped or not
    */
@@ -100,7 +103,7 @@ public:
    * \brief Called to notify that a new message has arrived from a publisher.
    * Schedules the callback for invokation with the callback queue
    */
-  uint32_t handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes, const boost::shared_ptr<M_string>& connection_header, const PublisherLinkPtr& link);
+  uint32_t handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes, bool buffer_includes_size_header, const boost::shared_ptr<M_string>& connection_header, const PublisherLinkPtr& link);
 
   const std::string datatype();
   const std::string md5sum();

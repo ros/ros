@@ -42,7 +42,10 @@
 
 #include "ros/common.h"
 #include "ros/subscription.h"
-#include "ros/publisher_link.h"
+#include "ros/publication.h"
+#include "ros/transport_publisher_link.h"
+#include "ros/intraprocess_publisher_link.h"
+#include "ros/intraprocess_subscriber_link.h"
 #include "ros/connection.h"
 #include "ros/transport/transport_tcp.h"
 #include "ros/transport/transport_udp.h"
@@ -54,6 +57,7 @@
 #include "ros/message_deserializer.h"
 #include "ros/subscription_queue.h"
 #include "ros/file_log.h"
+#include "ros/transport_hints.h"
 
 using XmlRpc::XmlRpcValue;
 
@@ -165,8 +169,27 @@ void Subscription::dropAllConnections()
   V_PublisherLink::iterator end = localsubscribers.end();
   for (;it != end; ++it)
   {
-    (*it)->getConnection()->drop();
+    (*it)->drop();
   }
+}
+
+void Subscription::addLocalConnection(const PublicationPtr& pub)
+{
+  boost::mutex::scoped_lock lock(publisher_links_mutex_);
+  if (dropped_)
+  {
+    return;
+  }
+
+  ROSCPP_LOG_DEBUG("Creating intraprocess link for topic [%s]", name_.c_str());
+
+  IntraProcessPublisherLinkPtr pub_link(new IntraProcessPublisherLink(shared_from_this(), XMLRPCManager::instance()->getServerURI(), transport_hints_));
+  IntraProcessSubscriberLinkPtr sub_link(new IntraProcessSubscriberLink(pub));
+  pub_link->setPublisher(sub_link);
+  sub_link->setSubscriber(pub_link);
+
+  publisher_links_.push_back(pub_link);
+  pub->addSubscriberLink(sub_link);
 }
 
 bool Subscription::pubUpdate(const V_string& new_pubs)
@@ -291,8 +314,8 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
     if (link->getPublisherXMLRPCURI() != XMLRPCManager::instance()->getServerURI())
     {
       ROSCPP_LOG_DEBUG("Disconnecting from publisher [%s] of topic [%s] at [%s]",
-                  link->getConnection()->getCallerId().c_str(), name_.c_str(), link->getPublisherXMLRPCURI().c_str());
-      link->getConnection()->drop();
+                  link->getCallerID().c_str(), name_.c_str(), link->getPublisherXMLRPCURI().c_str());
+      link->drop();
     }
     else
     {
@@ -459,7 +482,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
     if (transport->connect(pub_host, pub_port))
     {
       ConnectionPtr connection(new Connection());
-      PublisherLinkPtr pub_link(new PublisherLink(shared_from_this(), xmlrpc_uri, transport_hints_));
+      TransportPublisherLinkPtr pub_link(new TransportPublisherLink(shared_from_this(), xmlrpc_uri, transport_hints_));
 
       connection->initialize(transport, false, HeaderReceivedFunc());
       pub_link->initialize(connection);
@@ -505,7 +528,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
     if (foo)
     {
       ConnectionPtr connection(new Connection());
-      PublisherLinkPtr pub_link(new PublisherLink(shared_from_this(), xmlrpc_uri, transport_hints_));
+      TransportPublisherLinkPtr pub_link(new TransportPublisherLink(shared_from_this(), xmlrpc_uri, transport_hints_));
 
       connection->initialize(udp_transport, false, NULL);
       pub_link->initialize(connection);
@@ -565,7 +588,7 @@ private:
 };
 typedef boost::shared_ptr<SubscriptionCallback> SubscriptionCallbackPtr;
 
-uint32_t Subscription::handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes, const boost::shared_ptr<M_string>& connection_header, const PublisherLinkPtr& link)
+uint32_t Subscription::handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes, bool buffer_includes_size_header, const boost::shared_ptr<M_string>& connection_header, const PublisherLinkPtr& link)
 {
   boost::mutex::scoped_lock lock(callbacks_mutex_);
 
@@ -583,7 +606,7 @@ uint32_t Subscription::handleMessage(const boost::shared_array<uint8_t>& buffer,
 
     if (!deserializer)
     {
-      deserializer.reset(new MessageDeserializer(info->helper_, buffer, num_bytes, connection_header));
+      deserializer.reset(new MessageDeserializer(info->helper_, buffer, num_bytes, buffer_includes_size_header, connection_header));
     }
 
     if (info->subscription_queue_->full())

@@ -5,5 +5,5 @@
   <license>BSD</license>  
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/ros_experimental</url>
-
+  <depend stack="ros"/>
 </stack>

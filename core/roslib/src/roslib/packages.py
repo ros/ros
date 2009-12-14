@@ -159,13 +159,14 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
         penv = os.environ.copy()
         if ros_root:
             ros_root = roslib.rosenv.resolve_path(ros_root)
-            rospack = os.path.join(ros_root, 'bin', 'rospack')
             penv[ROS_ROOT] = ros_root
+        elif ROS_ROOT in os.environ:
+            # record setting for _pkg_dir_cache
+            ros_root = os.environ[ROS_ROOT]
+        if ros_root:
+            rospack = os.path.join(ros_root, 'bin', 'rospack')
         else:
             rospack = 'rospack'
-            # record setting for _pkg_dir_cache
-            if ROS_ROOT in os.environ:
-                ros_root = os.environ[ROS_ROOT]
         if ros_package_path is not None:
             ros_package_path = roslib.rosenv.resolve_paths(ros_package_path)
             penv[ROS_PACKAGE_PATH] = ros_package_path

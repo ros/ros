@@ -10,7 +10,6 @@ core_tools:
 	@if [ ! $(ROS_ROOT) ]; then echo "Please set ROS_ROOT first"; false; fi	
 	cd $(ROS_ROOT)/tools/rospack && make
 	@if test -z `which rospack`; then echo "Please add ROS_ROOT/bin to PATH"; false; fi
-	cd $(ROS_ROOT)/tools/rosdep && make
 
 
 clean:

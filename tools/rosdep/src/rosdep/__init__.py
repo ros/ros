@@ -3,5 +3,4 @@ import redhat
 import macports
 import arch
 
-import osi
-
+from core import *

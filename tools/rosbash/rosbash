@@ -195,7 +195,9 @@ function roscp {
     cp ${arg} ${3}
 }
 
-
+function rosawesome {
+   alias megamaid=rosrecord
+}
 
 function _roscomplete {
     local arg opts

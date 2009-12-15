@@ -235,7 +235,8 @@ public:
   bool isDone() {return done_;}
 
   void close() {
-    record_stream_.pop();
+    if (!record_stream_.empty())
+      record_stream_.pop();
     record_file_.close();
 
     for (std::map<std::string, PlayerHelper*>::iterator topic_it = topics_.begin();

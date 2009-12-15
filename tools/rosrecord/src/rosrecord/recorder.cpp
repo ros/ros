@@ -107,7 +107,8 @@ void ros::record::Recorder::close()
   //sighandler_t old = signal(SIGINT, SIG_IGN);
   sig_t old = signal(SIGINT, SIG_IGN);
   if (record_file_.is_open()) {
-    record_stream_.pop();
+    if (!record_stream_.empty())
+      record_stream_.pop();
     record_file_.close();
   }
   signal(SIGINT, old);

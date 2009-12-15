@@ -53,9 +53,11 @@ void string_split(const std::string &s, std::vector<std::string> &t, const std::
 TEST(roslib, commandListNames)
 {
   char buf[1024];
-  std::string rr = std::string(getcwd(buf, sizeof(buf)));
+  //ROS_ROOT needs to be a non-package directory
+  std::string rr = std::string(getcwd(buf, sizeof(buf))) + "/src";
+  std::string rpp = std::string(getcwd(buf, sizeof(buf)));
   setenv("ROS_ROOT", rr.c_str(), 1);
-  setenv("ROS_PACKAGE_PATH", rr.c_str(), 1);
+  setenv("ROS_PACKAGE_PATH", rpp.c_str(), 1);
 
   std::string output = ros::package::command("list-names");
   std::vector<std::string> output_list;
@@ -67,9 +69,11 @@ TEST(roslib, commandListNames)
 TEST(roslib, commandList)
 {
   char buf[1024];
-  std::string rr = std::string(getcwd(buf, sizeof(buf)));
+  //ROS_ROOT needs to be a non-package directory
+  std::string rr = std::string(getcwd(buf, sizeof(buf))) + "/src";
+  std::string rpp = std::string(getcwd(buf, sizeof(buf)));
   setenv("ROS_ROOT", rr.c_str(), 1);
-  setenv("ROS_PACKAGE_PATH", rr.c_str(), 1);
+  setenv("ROS_PACKAGE_PATH", rpp.c_str(), 1);
 
   std::string output = ros::package::command("list");
   std::vector<std::string> output_list;
@@ -84,9 +88,11 @@ TEST(roslib, commandList)
 TEST(roslib, getAll)
 {
   char buf[1024];
-  std::string rr = std::string(getcwd(buf, sizeof(buf)));
+  //ROS_ROOT needs to be a non-package directory
+  std::string rr = std::string(getcwd(buf, sizeof(buf))) + "/src";
+  std::string rpp = std::string(getcwd(buf, sizeof(buf)));
   setenv("ROS_ROOT", rr.c_str(), 1);
-  setenv("ROS_PACKAGE_PATH", rr.c_str(), 1);
+  setenv("ROS_PACKAGE_PATH", rpp.c_str(), 1);
 
   std::vector<std::string> output_list;
   ASSERT_TRUE(ros::package::getAll(output_list));

@@ -70,7 +70,12 @@ def ssh_check_known_hosts(ssh, address, port, username=None, logger=None):
     """
     import paramiko
     try:
-        ssh.load_system_host_keys() #default location
+        try:
+            if os.path.isfile('/etc/ssh/ssh_known_hosts'): #default ubuntu location
+                ssh.load_system_host_keys('/etc/ssh/ssh_known_hosts') 
+        except IOError:
+            pass
+        ssh.load_system_host_keys() #default user location
     except:
         if logger:
             logger.error(traceback.format_exc())

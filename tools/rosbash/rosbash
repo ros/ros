@@ -197,6 +197,8 @@ function roscp {
 
 function rosawesome {
    alias megamaid=rosrecord
+   alias suck2blow=rosplay
+   alias botherder=roscore
 }
 
 function _roscomplete {

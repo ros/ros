@@ -153,3 +153,51 @@ def get_or_generate_uuid(options_runid, options_wait_for_master):
                 val = roslaunch.core.generate_run_id()
     return val
     
+def check_roslaunch(f):
+    """
+    Check roslaunch file for errors, returning error message if check fails. This routine
+    is mainly to support rostest's roslaunch_check.
+
+    @param f: roslaunch file name
+    @type  f: str
+    @return: error message or None
+    @rtype: str
+    """
+    try:
+        import roslaunch.config
+        config = roslaunch.config.load_config_default([f], 11311, verbose=False)
+    except roslaunch.RLException, e:
+        return str(e)
+    
+    errors = []
+    # check for missing deps
+    import roslaunch.depends
+    base_pkg, file_deps, missing = roslaunch.depends.roslaunch_deps([f])
+    for pkg, miss in missing.iteritems():
+        if miss:
+            errors.append("Missing manifest dependencies: %s/manifest.xml: %s"%(pkg, ', '.join(miss)))
+    
+    # load all node defs
+    nodes = []
+    for filename, rldeps in file_deps.iteritems():
+        nodes.extend(rldeps.nodes)
+
+    # check for missing packages
+    import roslib.packages
+    for pkg, node_type in nodes:
+        try:
+            roslib.packages.get_pkg_dir(pkg, required=True)
+        except:
+            errors.append("cannot find package [%s] for node [%s]"%(pkg, node_type))
+
+    # check for missing nodes
+    for pkg, node_type in nodes:
+        try:
+            if not roslib.packages.find_node(pkg, node_type):
+                errors.append("cannot find node [%s] in package [%s]"%(node_type, pkg))
+        except Exception, e:
+            errors.append("unable to find node [%s/%s]: %s"%(pkg, node_type, str(e)))
+                
+    if errors:
+        return '\n'.join(errors)
+                          

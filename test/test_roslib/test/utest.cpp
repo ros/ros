@@ -49,31 +49,41 @@ void string_split(const std::string &s, std::vector<std::string> &t, const std::
     t.push_back(s.substr(start));
 }
 
+char g_rr_buf[1024];
+void set_env_vars(void)
+{
+  // Point ROS_PACKAGE_PATH at the test_roslib directory, and point
+  // ROS_ROOT into an empty directory.
+  getcwd(g_rr_buf, sizeof(g_rr_buf));
+  setenv("ROS_PACKAGE_PATH", g_rr_buf, 1);
+  strncpy(g_rr_buf+strlen(g_rr_buf), "/tmp.XXXXXX", sizeof(g_rr_buf)-strlen(g_rr_buf)-1);
+  g_rr_buf[sizeof(g_rr_buf)-1] = '\0';
+  mkdtemp(g_rr_buf);
+  setenv("ROS_ROOT", g_rr_buf, 1);
+}
+void cleanup_env_vars(void)
+{
+  // Remove the empty directory that we created in set_env_vars().
+  rmdir(g_rr_buf);
+  memset(g_rr_buf, 0, sizeof(g_rr_buf));
+}
 
 TEST(roslib, commandListNames)
 {
-  char buf[1024];
-  //ROS_ROOT needs to be a non-package directory
-  std::string rr = std::string(getcwd(buf, sizeof(buf))) + "/src";
-  std::string rpp = std::string(getcwd(buf, sizeof(buf)));
-  setenv("ROS_ROOT", rr.c_str(), 1);
-  setenv("ROS_PACKAGE_PATH", rpp.c_str(), 1);
+  set_env_vars();
 
   std::string output = ros::package::command("list-names");
   std::vector<std::string> output_list;
   string_split(output, output_list, "\n");
   ASSERT_EQ((int)output_list.size(), 1);
   ASSERT_STREQ(output_list[0].c_str(), "test_roslib");
+
+  cleanup_env_vars();
 }
 
 TEST(roslib, commandList)
 {
-  char buf[1024];
-  //ROS_ROOT needs to be a non-package directory
-  std::string rr = std::string(getcwd(buf, sizeof(buf))) + "/src";
-  std::string rpp = std::string(getcwd(buf, sizeof(buf)));
-  setenv("ROS_ROOT", rr.c_str(), 1);
-  setenv("ROS_PACKAGE_PATH", rpp.c_str(), 1);
+  set_env_vars();
 
   std::string output = ros::package::command("list");
   std::vector<std::string> output_list;
@@ -83,21 +93,20 @@ TEST(roslib, commandList)
   string_split(output_list[0], name_path, " ");
   ASSERT_EQ((int)name_path.size(), 2);
   ASSERT_STREQ(name_path[0].c_str(), "test_roslib");
+
+  cleanup_env_vars();
 }
 
 TEST(roslib, getAll)
 {
-  char buf[1024];
-  //ROS_ROOT needs to be a non-package directory
-  std::string rr = std::string(getcwd(buf, sizeof(buf))) + "/src";
-  std::string rpp = std::string(getcwd(buf, sizeof(buf)));
-  setenv("ROS_ROOT", rr.c_str(), 1);
-  setenv("ROS_PACKAGE_PATH", rpp.c_str(), 1);
+  set_env_vars();
 
   std::vector<std::string> output_list;
   ASSERT_TRUE(ros::package::getAll(output_list));
   ASSERT_EQ((int)output_list.size(), 1);
   ASSERT_STREQ(output_list[0].c_str(), "test_roslib");
+
+  cleanup_env_vars();
 }
 
 int main(int argc, char **argv)

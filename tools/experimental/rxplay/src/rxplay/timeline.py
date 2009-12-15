@@ -52,10 +52,10 @@ import playhead
 import status
 import plugins
 
+from raw_view import RawView
+
 from bag_file import BagFile
 from bag_index import BagIndex, BagIndexFactory, BagIndexPickler
-
-from raw_view import RawView
 
 class TimelinePanel(LayerPanel):
     def __init__(self, input_files, options, *args, **kwargs):
@@ -142,7 +142,7 @@ class TimelinePanel(LayerPanel):
         tb.AddSeparator()
         thumbnails_tool  = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'pictures.png'))
 
-        tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_start(),       start_tool)       
+        tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_start(),       start_tool)
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_rewind(),      rewind_tool)
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_play(),        play_tool)       
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_fastforward(), fastforward_tool)       

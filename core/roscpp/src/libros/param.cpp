@@ -190,7 +190,9 @@ bool getImpl(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
 
         if (!master::execute("subscribeParam", params, result, payload, false))
         {
+          ROS_DEBUG_NAMED("cached_parameters", "Subscribe to parameter [%s]: call to the master failed", mapped_key.c_str());
           g_subscribed_params.erase(mapped_key);
+          use_cache = false;
         }
         else
         {
@@ -207,12 +209,9 @@ bool getImpl(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
   // We don't loop here, because validateXmlrpcResponse() returns false
   // both when we can't contact the master and when the master says, "I
   // don't have that param."
-  if (!master::execute("getParam", params, result, v, false))
-  {
-    return false;
-  }
+  bool ret = master::execute("getParam", params, result, v, false);
 
-  if (use_cache && v.valid())
+  if (use_cache)
   {
     boost::mutex::scoped_lock lock(g_params_mutex);
 
@@ -220,7 +219,7 @@ bool getImpl(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
     g_params[mapped_key] = v;
   }
 
-  return true;
+  return ret;
 }
 
 bool getImpl(const std::string &key, std::string &s, bool use_cache)

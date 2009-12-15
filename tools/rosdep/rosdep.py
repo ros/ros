@@ -246,156 +246,7 @@ class OSIndex:
 
 
 
-###### Arch SPECIALIZATION #########################
-
-def pacman_detect(p):
-    return subprocess.call(['pacman', '-Q', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
-
-class Arch:
-
-    def check_presence(self):
-        filename = "/etc/arch-release"
-        if os.path.exists(filename):
-            return True
-        return False
-
-    def get_version(self):
-        return ""
-        # arch didn't have a version parsing in cpp version
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:
-                    os_list = fh.read().split()
-                if os_list[0] == "Linux" and os_list[1] == "Arch":
-                    return os_list[2]
-        except:
-            print "Arch failed to get version"
-            return False
-
-        return False
-
-    def get_name(self):
-        return "arch"
-
-
-    def strip_detected_packages(self, packages):
-        return [p for p in packages if pacman_detect(p)]
-
-    def generate_package_install_command(self, packages, default_yes):        
-        return "#Packages\nsudo pacman -Sy --needed " + ' '.join(packages)
-
-###### END Arch SPECIALIZATION ########################
-
-
-###### Macports SPECIALIZATION #########################
-def port_detect(p):
-    cmd = ['port', 'installed', p]
-    pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (std_out, std_err) = pop.communicate()
-    
-    return (std_out.count("(active)") > 0)
-
-class Macports:
-    def check_presence(self):
-        filename = "/usr/bin/sw_vers"
-        if os.path.exists(filename):
-            return True
-        return False
-    
-    def get_version(self):
-        return "macports" # macports is a rolling release and isn't versionsed
-
-    def get_name(self):
-        return "macports"
-
-    def strip_detected_packages(self, packages):
-        return [p for p in packages if not port_detect(p)] 
-
-    def generate_package_install_command(self, packages, default_yes):        
-        return "#Packages\nsudo port install " + ' '.join(packages)
-
-###### END Macports SPECIALIZATION ########################
-
-
-def yum_detect(p):
-    return subprocess.call(['yum', 'list', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
-
-###### Fedora SPECIALIZATION #########################
-class Fedora:
-    def check_presence(self):
-        try:
-            filename = "/etc/redhat_release"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:                
-                    os_list = fh.read().split()
-                if os_list and os_list[0] == "Fedora" and os_list[1] == "release":
-                    return True
-        except:
-            print "Fedora failed to detect OS"
-        return False
-
-    def get_version(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:
-                    os_list = fh.read().split()
-                if os_list[0] == "Fedora" and os_list[1] == "release":
-                    return os_list[2]
-        except:
-            print "Fedora failed to get version"
-            return False
-
-        return False
-
-    def get_name(self):
-        return "fedora"
-
-    def strip_detected_packages(self, packages):
-        return [p for p in packages if yum_detect(p)]
-
-    def generate_package_install_command(self, packages, default_yes):
-        if default_yes:
-            return "#Packages\nyum -y install " + ' '.join(packages)
-        else:
-            return "#Packages\nyum install " + ' '.join(packages)
-
-###### END Fedora SPECIALIZATION ########################
-
-###### Rhel SPECIALIZATION #########################
-class Rhel(Fedora):
-    def check_presence(self):
-        try:
-            filename = "/etc/redhat_release"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:                
-                    os_list = fh.read().split()
-                if os_list and os_list[2] == "Enterprise":
-                    return True
-        except:
-            print "Rhel failed to detect OS"
-        return False
-
-    def get_version(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:
-                    os_list = fh.read().split()
-                if os_list and os_list[2] == "Enterprise":
-                    return os_list[6]
-        except:
-            print "Rhel failed to get version"
-            return False
-
-        return False
-
-    def get_name(self):
-        return "rhel"
-
-###### END Rhel SPECIALIZATION ########################
-
+ 
 
 class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
@@ -625,10 +476,10 @@ def main():
     r.osi.add_os(rosdep.debian.Ubuntu())
     r.osi.add_os(rosdep.debian.Debian())
     r.osi.add_os(rosdep.debian.Mint())
-    r.osi.add_os(Fedora())
-    r.osi.add_os(Rhel())
-    r.osi.add_os(Arch())
-    r.osi.add_os(Macports())
+    r.osi.add_os(rosdep.redhat.Fedora())
+    r.osi.add_os(rosdep.redhat.Rhel())
+    r.osi.add_os(rosdep.arch.Arch())
+    r.osi.add_os(rosdep.macports.Macports())
     ################ End Add specializations here ##############################
     
     if options.verbose:

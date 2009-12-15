@@ -52,7 +52,35 @@ class RoslibPackagesTest(unittest.TestCase):
     
     # test twice for caching
     retval = roslib.packages.list_pkgs()
-    self.assertEquals(set(pkgs), set(retval), set(pkgs) ^ set(retval))    
+    self.assertEquals(set(pkgs), set(retval), set(pkgs) ^ set(retval))
+
+    # now manipulate the environment to test ordering
+    d = roslib.packages.get_pkg_dir('test_roslib')
+    d = os.path.join(d, 'test', 'package_tests')
+    
+    # - p1/p2/p3
+    paths = [os.path.join(d, p) for p in ['p1', 'p2', 'p3']]
+    cache = {}
+    packages = roslib.packages.list_pkgs(pkg_dirs=paths, cache=cache)
+    self.assert_('foo' in packages)
+    self.assert_('bar' in packages)
+
+    foo_p = os.path.join(d, 'p1', 'foo')
+    bar_p = os.path.join(d, 'p1', 'bar')
+    self.assertEquals(foo_p, cache['foo'][0])
+    self.assertEquals(bar_p, cache['bar'][0])
+
+    # - p2/p3/p1
+    paths = [os.path.join(d, p) for p in ['p2', 'p3', 'p1']]
+    cache = {}
+    packages = roslib.packages.list_pkgs(pkg_dirs=paths, cache=cache)
+    self.assert_('foo' in packages)
+    self.assert_('bar' in packages)
+
+    foo_p = os.path.join(d, 'p2', 'foo')
+    bar_p = os.path.join(d, 'p1', 'bar')
+    self.assertEquals(foo_p, cache['foo'][0])
+    self.assertEquals(bar_p, cache['bar'][0])
     
   def test_get_pkg_dir(self):
     import roslib.packages

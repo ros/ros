@@ -284,29 +284,38 @@ def resource_file(package, subdir, resource_name):
 
 # TODO: try and read in .rospack_cache
 # TODO: use this to replace get_pkg_dir shelling to rospack
-def list_pkgs(pkg_dirs=None):
+def list_pkgs(pkg_dirs=None, cache=None):
     """
+    List packages in ROS_ROOT and ROS_PACKAGE_PATH. 
+    
     @param pkg_dirs: (optional) list of paths to search for packages
     @type  pkg_dirs: [str]
+    @param cache: package path cache to update (defaults to internal _pkg_dir_cache). Maps package name to directory path.
+    @type  cache: {str: str}
     @return: complete list of package names in ROS environment
     @rtype: [str]
     """
     if pkg_dirs is None:
         pkg_dirs = get_package_paths(True)
+    if cache is None:
+        cache = _pkg_dir_cache
     packages = []
     for pkg_root in pkg_dirs:
-        packages.extend(list_pkgs_by_path(pkg_root, cache=_pkg_dir_cache))
+        list_pkgs_by_path(pkg_root, packages, cache=cache)
     return packages
 
-def list_pkgs_by_path(path, cache=None):
+def list_pkgs_by_path(path, packages=[], cache=None):
     """
     @param path: path to list packages in
     @type  path: str
-    @return: complete list of package names in ROS environment
+    @param packages: list of packages to append to. If package is
+      already present in packages, it will be ignored.
+    @type  packages: [str]
+    @param cache: (optional) package path cache to update. Maps package name to directory path.
+    @type  cache: {str: str}
+    @return: complete list of package names in ROS environment. Same as packages parameter.
     @rtype: [str]
     """
-    packages = []
-
     # record settings for cache
     ros_root = os.environ[ROS_ROOT]
     ros_package_path = os.environ.get(ROS_PACKAGE_PATH, '')

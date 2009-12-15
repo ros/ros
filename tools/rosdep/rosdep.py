@@ -567,7 +567,7 @@ class Rosdep:
         native_packages, scripts = self.get_packages_and_scripts()
         undetected = native_packages if include_duplicates else \
             self.osi.strip_detected_packages(native_packages)
-        return self.osi.generate_package_install_command(undetected, default_yes) + \
+        return "set -o errexit\n" + self.osi.generate_package_install_command(undetected, default_yes) + \
             "\n".join(["\n%s"%sc for sc in scripts])
         
     def check(self):

@@ -32,6 +32,10 @@
 #
 # Revision $Id$
 
+"""
+Process handler for launching ssh-based roslaunch child processes.
+"""
+
 import os
 import sys
 import socket
@@ -112,8 +116,10 @@ If you wish to configure roslaunch to automatically recognize unknown
 hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, user_str, port_str, address)
         
 
-## Process wrapper for launching and monitoring a child roslaunch process over SSH
 class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
+    """
+    Process wrapper for launching and monitoring a child roslaunch process over SSH
+    """
     def __init__(self, run_id, name, server_uri, env, machine):
         if machine.ros_root:
             cmd = os.path.join(machine.ros_root, 'bin', 'roslaunch')

@@ -32,6 +32,10 @@
 #
 # Revision $Id$
 
+"""
+General routines and representations for loading roslaunch model.
+"""
+
 from __future__ import with_statement
 
 import os

@@ -32,6 +32,12 @@
 #
 # Revision $Id$
 
+"""
+Uncategorized utility routines for roslaunch.
+
+This API should not be considered stable.
+"""
+
 import os
 import time
 

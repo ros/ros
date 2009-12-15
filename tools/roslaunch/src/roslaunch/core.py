@@ -32,9 +32,6 @@
 #
 # Revision $Id$
 
-if __name__ == '__main__':
-    import roslib; roslib.load_manifest('roslaunch')
-
 """
 Core roslaunch model and lower-level utility routines.
 """

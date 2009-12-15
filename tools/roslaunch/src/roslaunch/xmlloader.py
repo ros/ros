@@ -32,6 +32,10 @@
 #
 # Revision $Id$
 
+"""
+Roslaunch XML file parser.
+"""
+
 from __future__ import with_statement
 
 import itertools
@@ -128,22 +132,29 @@ class XmlLoader(Loader):
     Parser for roslaunch XML format. Loads parsed representation into ROSConfig model.
     """
 
-    ## @param resolve_anon bool: If True (default), will resolve $(anon foo). If
-    ## false, will leave these args as-is.
     def __init__(self, resolve_anon=True):
+        """
+        @param resolve_anon: If True (default), will resolve $(anon foo). If
+        false, will leave these args as-is.
+        @type  resolve_anon: bool
+        """        
         # store the root XmlContext so that outside code can access it
         self.root_context = None
         self.resolve_anon = resolve_anon
 
-    ## wrapper around roslib.substitution_args.resolve_args to set common parameters
     def resolve_args(self, args, context):
+        """
+        Wrapper around roslib.substitution_args.resolve_args to set common parameters
+        """        
         return roslib.substitution_args.resolve_args(args, context=context.resolve_dict, resolve_anon=self.resolve_anon)
 
-    ## helper routine for fetching and resolving optional tag attributes
-    ## @param tag DOM tag
-    ## @param context LoaderContext
-    ## @param attrs (str): list of attributes to resolve        
     def opt_attrs(self, tag, context, attrs):
+        """
+        Helper routine for fetching and resolving optional tag attributes
+        @param tag DOM tag
+        @param context LoaderContext
+        @param attrs (str): list of attributes to resolve
+        """            
         def tag_value(tag, a):
             if tag.hasAttribute(a):
                 # getAttribute returns empty string for non-existent
@@ -154,11 +165,14 @@ class XmlLoader(Loader):
                 return None
         return [self.resolve_args(tag_value(tag,a), context) for a in attrs]
 
-    ## helper routine for fetching and resolving required tag attributes
-    ## @param tag DOM tag
-    ## @param attrs (str): list of attributes to resolve        
-    ## @raise KeyError if required attribute is missing
     def reqd_attrs(self, tag, context, attrs):
+        """
+        Helper routine for fetching and resolving required tag attributes
+        @param tag: DOM tag
+        @param attrs: list of attributes to resolve        
+        @type  attrs: (str)
+        @raise KeyError: if required attribute is missing
+        """            
         return [self.resolve_args(tag.attributes[a].value, context) for a in attrs]
 
     def _check_attrs(self, tag, context, ros_config, attrs):
@@ -233,9 +247,12 @@ class XmlLoader(Loader):
                 "Invalid <param> tag: %s. \n\nParam xml is %s"%(e, tag.toxml()))
 
 
-    ## process attributes of <test> tag not present in <node>
-    ## @return str, int: test_name, time_limit
     def _test_attrs(self, tag, context):
+        """
+        Process attributes of <test> tag not present in <node>
+        @return: test_name, time_limit
+        @rtype: str, int
+        """
         for attr in ['respawn', 'output']:
             if tag.hasAttribute(attr):
                 raise XmlParseException("<test> tags cannot have '%s' attribute"%attr)
@@ -554,8 +571,11 @@ class XmlLoader(Loader):
         return default_machine
                 
     GROUP_ATTRS = (NS, CLEAR_PARAMS)
-    ## @return default_machine Machine new default machine for current context
     def _recurse_load(self, ros_config, tags, context, default_machine, is_core, verbose):
+        """
+        @return: new default machine for current context
+        @rtype: L{Machine}
+        """
         for tag in [t for t in tags if t.nodeType == DomNode.ELEMENT_NODE]:
             name = tag.tagName
             if name == 'group':
@@ -596,12 +616,17 @@ class XmlLoader(Loader):
                 ros_config.add_config_error("unrecognized tag "+tag.tagName)
         return default_machine
 
-    ## subroutine of launch for loading XML DOM into config. Load_launch assumes that it is
-    ## creating the root XmlContext.
-    ## @param launch Node: DOM node of the root <launch> tag in the file
-    ## @param ros_config ROSLaunchConfig: launch configuration to load XML file into
-    ## @param is_core bool: if True, load file using ROS core rules
     def _load_launch(self, launch, ros_config, is_core=False, filename=None, verbose=True):
+        """
+        subroutine of launch for loading XML DOM into config. Load_launch assumes that it is
+        creating the root XmlContext.
+        @param launch: DOM node of the root <launch> tag in the file
+        @type  launch: L{Node}
+        @param ros_config: launch configuration to load XML file into
+        @type  ros_config: L{ROSLaunchConfig}
+        @param is_core: if True, load file using ROS core rules
+        @type  is_core: bool
+        """        
         # The <master> tag is special as we only only process a single
         # tag in the top-level file. We ignore master tags in
         # included files.
@@ -624,22 +649,32 @@ class XmlLoader(Loader):
             raise XmlParseException("Invalid roslaunch XML syntax: no root <launch> tag")
         return root[0]
         
-    ## load XML file into launch configuration
-    ## @param filename str: XML config file to load
-    ## @param ros_config ROSLaunchConfig: launch configuration to load XML file into
-    ## @param core bool: if True, load file using ROS core rules
     def load(self, filename, ros_config, core=False, verbose=True):
+        """
+        load XML file into launch configuration
+        @param filename: XML config file to load
+        @type  filename: str
+        @param ros_config: launch configuration to load XML file into
+        @type  ros_config: L{ROSLaunchConfig}
+        @param core: if True, load file using ROS core rules
+        @type  core: bool
+        """
         try:
             launch = self._parse_launch(filename, verbose)
             self._load_launch(launch, ros_config, is_core=core, filename=filename, verbose=verbose)
         except SubstitutionException, e:
             raise XmlParseException(str(e))
 
-    ## load XML text into launch configuration
-    ## @param xml_text str: XML configuration
-    ## @param ros_config ROSLaunchConfig: launch configuration to load XML file into
-    ## @param core bool: if True, load file using ROS core rules
     def load_string(self, xml_text, ros_config, core=False, verbose=True):
+        """
+        Load XML text into launch configuration
+        @param xml_text: XML configuration
+        @type  xml_text: str
+        @param ros_config: launch configuration to load XML file into
+        @type  ros_config: L{ROSLaunchConfig}
+        @param core: if True, load file using ROS core rules
+        @type  core: bool
+        """
         try:
             if verbose:
                 print "... loading XML"

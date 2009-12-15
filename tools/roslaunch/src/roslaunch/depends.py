@@ -32,6 +32,11 @@
 #
 # Revision $Id: __init__.py 3803 2009-02-11 02:04:39Z rob_wheeler $
 
+"""
+Utility module of roslaunch that extracts dependency information from
+roslaunch files, including calculating missing package dependencies.
+"""
+
 import roslib; roslib.load_manifest('roslaunch')
 
 import os
@@ -46,9 +51,16 @@ from xml.dom import Node as DomNode
 
 NAME="roslaunch-deps"
 
-class RoslaunchDepsException(Exception): pass
+class RoslaunchDepsException(Exception):
+    """
+    Base exception of roslaunch.depends errors.
+    """
+    pass
 
 class RoslaunchDeps(object):
+    """
+    Represents dependencies of a roslaunch file. 
+    """
     def __init__(self):
         self.nodes = []
         self.includes = []
@@ -118,14 +130,19 @@ def parse_launch(launch_file, file_deps, verbose):
     launch_tag = dom[0]
     _parse_launch(launch_tag.childNodes, launch_file, file_deps, verbose)
 
-## Generate \a file_deps file dependency info for the specified
-## roslaunch file and its dependencies.
-## @param file_deps dict: { filename : RoslaunchDeps } dictionary of
-## roslaunch dependency information to update, indexed by roslaunch
-## file name.
-## @param verbose bool: if True, print verbose output
-## @param launch_file str: name of roslaunch file
 def rl_file_deps(file_deps, launch_file, verbose=False):
+    """
+    Generate file_deps file dependency info for the specified
+    roslaunch file and its dependencies.
+    @param file_deps: dictionary mapping roslaunch filenames to
+        roslaunch dependency information. This dictionary will be
+        updated with dependency information.
+    @type  file_deps: { str : RoslaunchDeps } 
+    @param verbose: if True, print verbose output
+    @type  verbose: bool
+    @param launch_file: name of roslaunch file
+    @type  launch_file: str
+    """
     parse_launch(launch_file, file_deps, verbose)
     
 def fullusage():
@@ -158,7 +175,20 @@ def print_deps(base_pkg, file_deps, verbose):
     print ' '.join([p for p in set(pkgs)])
 
 def calculate_missing(base_pkg, missing, file_deps):
-    for launch_file, deps in file_deps.iteritems():
+    """
+    Calculate missing package dependencies in the manifest. This is
+    mainly used as a subroutine of roslaunch_deps().
+    
+    @param base_pkg: name of package where initial walk begins (unused).
+    @type  base_pkg: str
+    @param missing: dictionary mapping package names to set of missing package dependencies.
+    @type  missing: { str: set(str) }
+    @param file_deps: dictionary mapping launch file names to RoslaunchDeps of each file
+    @type  file_deps: { str: RoslaunchDeps}
+    @return: missing (see parameter)
+    @rtype: { str: set(str) }
+    """
+    for launch_file in file_deps.iterkeys():
         pkg_dir, pkg = roslib.packages.get_dir_pkg(os.path.dirname(os.path.abspath(launch_file)))
 
         if pkg is None: #cannot determine package
@@ -178,17 +208,22 @@ def calculate_missing(base_pkg, missing, file_deps):
     return missing
         
     
-## @param packages [str]: list of packages to check
-## @param files [str]: list of roslaunch files to check. Must be in
-## same package.
-## @return str, dict, dict: base_pkg, file_deps, missing.
-##  - base_pkg is the package of all \a files
-##  - file_deps is a { filename : RoslaunchDeps } dictionary of
-## roslaunch dependency information to update, indexed by roslaunch
-## file name.
-##  - missing is a { package : [packages] } dictionary of missing
-## manifest dependencies, indexed by package.
 def roslaunch_deps(files, verbose=False):
+    """
+    @param packages: list of packages to check
+    @type  packages: [str]
+    @param files [str]: list of roslaunch files to check. Must be in
+      same package.
+    @type  files: [str]
+    @return: base_pkg, file_deps, missing.
+      base_pkg is the package of all files
+      file_deps is a { filename : RoslaunchDeps } dictionary of
+        roslaunch dependency information to update, indexed by roslaunch
+        file name.
+       missing is a { package : [packages] } dictionary of missing
+        manifest dependencies, indexed by package.
+    @rtype: str, dict, dict
+    """
     file_deps = {}
     missing = {}
     base_pkg = None

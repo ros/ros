@@ -32,6 +32,10 @@
 #
 # Revision $Id$
 
+"""
+Local process implementation for running and monitoring nodes.
+"""
+
 import os
 import sys
 import signal
@@ -59,38 +63,49 @@ def _next_counter():
     _counter += 1
     return _counter
 
-## Launch a master
-## @param type str: name of master executable (currently just Master.ZENMASTER)
-## @param ros_root str: ROS_ROOT environment setting
-## @param port int: port to launch master on
-## @param log_output bool: if True, output goes to log file. Else, output goes to screen.
-## @throws RLException if \a type or \a port is invalid
-def create_master_process(run_id, type, ros_root, port, log_output=False):
+def create_master_process(run_id, type_, ros_root, port, log_output=False):
+    """
+    Launch a master
+    @param type_: name of master executable (currently just Master.ZENMASTER)
+    @type  type_: str
+    @param ros_root: ROS_ROOT environment setting
+    @type  ros_root: str
+    @param port: port to launch master on
+    @type  port: int
+    @param log_output: if True, output goes to log file. Else, output goes to screen.
+    @type  log_output: bool
+    @raise RLException: if type_ or port is invalid
+    """    
     if port < 1 or port > 65535:
         raise RLException("invalid port assignment: %s"%port)
 
-    _logger.info("create_master_process: %s, %s, %s", type, ros_root, port)
-    master = os.path.join(ros_root, 'bin', type)
+    _logger.info("create_master_process: %s, %s, %s", type_, ros_root, port)
+    master = os.path.join(ros_root, 'bin', type_)
     # only support zenmaster now that botherder is gone
-    if type == Master.ZENMASTER:
+    if type_ == Master.ZENMASTER:
         package = 'rospy'        
         args = [master, '--core', '-p', str(port)]
     else:
-        raise RLException("unknown master type: %s"%type)
+        raise RLException("unknown master typ_: %s"%type_)
 
     _logger.info("process[master]: launching with args [%s]"%args)
-    p = LocalProcess(run_id, package, 'master', args, os.environ, log_output, None)
-    return p
+    return LocalProcess(run_id, package, 'master', args, os.environ, log_output, None)
 
-## Factory for generating processes for launching local ROS
-## nodes. Also registers the process with the ProcessMonitor so that
-## events can be generated when the process dies.
-## @param run_id str: run_id of launch
-## @param node Node: node to launch
-## @param master_uri str: API URI for master node
-## @return LocalProcess local process instance
-## @raise NodeParamsException If the node's parameters are improperly specific
 def create_node_process(run_id, node, master_uri):
+    """
+    Factory for generating processes for launching local ROS
+    nodes. Also registers the process with the L{ProcessMonitor} so that
+    events can be generated when the process dies.
+    @param run_id: run_id of launch
+    @type  run_id: str
+    @param node: node to launch
+    @type  node: L{Node}
+    @param master_uri: API URI for master node
+    @type  master_uri: str
+    @return: local process instance
+    @rtype: L{LocalProcess}
+    @raise NodeParamsException: If the node's parameters are improperly specific
+    """    
     _logger.info("create_node_process: package[%s] type[%s] machine[%s] master_uri[%s]", node.package, node.type, node.machine, master_uri)
     # check input args
     machine = node.machine
@@ -115,20 +130,33 @@ def create_node_process(run_id, node, master_uri):
     _logger.debug('process[%s]: returning LocalProcess wrapper')
     return LocalProcess(run_id, node.package, name, args, env, log_output, respawn=node.respawn, required=node.required, cwd=node.cwd)
 
-## Process launched on local machine
+
 class LocalProcess(Process):
+    """
+    Process launched on local machine
+    """
     
-    ## @param run_id str: unique run ID for this roslaunch. Used to
-    ##   generate log directory location. run_id may be None if this
-    ##   feature is not being used.
-    ## @param package str: name of package process is part of
-    ## @param name str: name of process
-    ## @param args [str]: list of arguments to process
-    ## @param env dict: environment for process
-    ## @param log_output bool: if True, log output streams of process
-    ## @param respawn bool: respawn process if it dies (default is False)
-    ## @param cwd str: working directory of process, or None
     def __init__(self, run_id, package, name, args, env, log_output, respawn=False, required=False, cwd=None):
+        """
+        @param run_id: unique run ID for this roslaunch. Used to
+          generate log directory location. run_id may be None if this
+          feature is not being used.
+        @type  run_id: str
+        @param package: name of package process is part of
+        @type  package: str
+        @param name: name of process
+        @type  name: str
+        @param args: list of arguments to process
+        @type  args: [str]
+        @param env: environment dictionary for process
+        @type  env: {str : str}
+        @param log_output: if True, log output streams of process
+        @type  log_output: bool
+        @param respawn: respawn process if it dies (default is False)
+        @type  respawn: bool
+        @param cwd: working directory of process, or None
+        @type  cwd: str
+        """    
         super(LocalProcess, self).__init__(package, name, args, env, respawn, required)
         self.run_id = run_id
         self.popen = None
@@ -140,8 +168,10 @@ class LocalProcess(Process):
         self.pid = -1
 
     # NOTE: in the future, info() is going to have to be sufficient for relaunching a process
-    ## Get all data about this process in dictionary form
     def get_info(self):
+        """
+        Get all data about this process in dictionary form
+        """    
         info = super(LocalProcess, self).get_info()
         info['pid'] = self.pid
         if self.run_id:
@@ -151,11 +181,13 @@ class LocalProcess(Process):
             info['cwd'] = self.cwd
         return info
 
-    ## Configure logging of node's log file and stdout/stderr
-    ## @param self
-    ## @return str, str: stdout log file name, stderr log file
-    ## name. Values are None if stdout/stderr are not logged.
     def _configure_logging(self):
+        """
+        Configure logging of node's log file and stdout/stderr
+        @return: stdout log file name, stderr log file
+        name. Values are None if stdout/stderr are not logged.
+        @rtype: str, str
+        """    
         log_dir = roslib.rosenv.get_log_dir(env=os.environ)
         if self.run_id:
             log_dir = os.path.join(log_dir, self.run_id)
@@ -381,9 +413,13 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
             self.lock.release()
 
 
-# #1595: remove all instances of args that start with \a prefix. This is used to
-# remove args that were previously added (and are now being regenerated due to respawning)
+# #1595
 def _cleanup_remappings(args, prefix):
+    """
+    Remove all instances of args that start with prefix. This is used
+    to remove args that were previously added (and are now being
+    regenerated due to respawning)
+    """    
     existing_args = [a for a in args if a.startswith(prefix)]
     for a in existing_args:
         args.remove(a)

@@ -32,9 +32,10 @@
 #
 # Revision $Id$
 
-# This is a separate front-end for roslaunch that computes the
-# command-line arguments for a node. It performs no launching and is
-# not related to roslauch itself
+"""
+Utility module of roslaunch that computes the command-line arguments
+for a node.
+"""
 
 import logging
 import os
@@ -50,15 +51,31 @@ from roslaunch.core import setup_env, local_machine, RLException
 from roslaunch.config import load_config_default
 import roslaunch.xmlloader
 
-## Exception to indicate that node parameters were invalid
-class NodeParamsException(Exception): pass
+class NodeParamsException(Exception):
+    """
+    Exception to indicate that node parameters were invalid
+    """
+    pass
 
 def get_node_list(config):
+    """
+    @param config: roslaunch config
+    @type  config: ROSLaunchConfig
+    @return: list of node names in config
+    @rtype: [str]
+    """
     l = [_resolved_name(node) for node in config.nodes] + [_resolved_name(test) for test in config.tests]
     # filter out unnamed nodes
     return [x for x in l if x]
 
 def print_node_list(roslaunch_files):
+    """
+    Print list of nodes to screen. Will cause system exit if exception
+    occurs. This is a subroutine for the roslaunch main handler.
+
+    @param roslaunch_files: list of launch files to load
+    @type  roslaunch_files: str
+    """
     try:
         loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
         config = load_config_default(roslaunch_files, None, loader=loader, verbose=False)
@@ -69,6 +86,16 @@ def print_node_list(roslaunch_files):
         sys.exit(1)
 
 def print_node_args(node_name, roslaunch_files):
+    """
+    Print arguments of node to screen. Will cause system exit if
+    exception occurs. This is a subroutine for the roslaunch main
+    handler.
+    
+    @param node_name: node name
+    @type  node_name: str
+    @param roslaunch_files: list of launch files to load
+    @type  roslaunch_files: str
+    """
     try:
         args = get_node_args(node_name, roslaunch_files)
         print ' '.join(args)

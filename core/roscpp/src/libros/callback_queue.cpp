@@ -163,11 +163,14 @@ void CallbackQueue::callOne(ros::WallDuration timeout)
       return;
     }
 
-    if (callbacks_.empty() || !enabled_)
+    if (callbacks_.empty())
     {
-      condition_.timed_wait(lock, boost::posix_time::milliseconds(timeout.toSec() * 1000.0f));
+      if (!timeout.isZero())
+      {
+        condition_.timed_wait(lock, boost::posix_time::microseconds(timeout.toSec() * 1000000.0f));
+      }
 
-      if (callbacks_.empty())
+      if (callbacks_.empty() || !enabled_)
       {
         return;
       }
@@ -226,7 +229,10 @@ void CallbackQueue::callAvailable(ros::WallDuration timeout)
 
     if (callbacks_.empty())
     {
-      condition_.timed_wait(lock, boost::posix_time::milliseconds(timeout.toSec() * 1000.0f));
+      if (!timeout.isZero())
+      {
+        condition_.timed_wait(lock, boost::posix_time::microseconds(timeout.toSec() * 1000000.0f));
+      }
 
       if (callbacks_.empty() || !enabled_)
       {

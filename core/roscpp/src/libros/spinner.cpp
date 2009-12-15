@@ -36,7 +36,7 @@ namespace ros
 
 void SingleThreadedSpinner::spin(CallbackQueue* queue)
 {
-  ros::WallDuration d(0.01f);
+  ros::WallDuration timeout(0.01f);
 
   if (!queue)
   {
@@ -46,7 +46,7 @@ void SingleThreadedSpinner::spin(CallbackQueue* queue)
   ros::NodeHandle n;
   while (n.ok())
   {
-    queue->callAvailable();
+    queue->callAvailable(timeout);
   }
 }
 

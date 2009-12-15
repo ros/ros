@@ -64,18 +64,37 @@ public:
   /**
    * \brief Pop a single callback off the front of the queue and invoke it.  If the callback was not ready to be called,
    * pushes it back onto the queue.
+   */
+  void callOne()
+  {
+    callOne(ros::WallDuration());
+  }
+
+  /**
+   * \brief Pop a single callback off the front of the queue and invoke it.  If the callback was not ready to be called,
+   * pushes it back onto the queue.  This version includes a timeout which lets you specify the amount of time to wait for
+   * a callback to be available before returning.
    *
    * \param timeout The amount of time to wait for a callback to be available.  If there is already a callback available,
    * this parameter does nothing.
    */
-  void callOne(ros::WallDuration timeout = ros::WallDuration(0.1f));
+  void callOne(ros::WallDuration timeout);
+
   /**
    * \brief Invoke all callbacks currently in the queue.  If a callback was not ready to be called, pushes it back onto the queue.
+   */
+  void callAvailable()
+  {
+    callAvailable(ros::WallDuration());
+  }
+  /**
+   * \brief Invoke all callbacks currently in the queue.  If a callback was not ready to be called, pushes it back onto the queue.  This version
+   * includes a timeout which lets you specify the amount of time to wait for a callback to be available before returning.
    *
    * \param timeout The amount of time to wait for at least one callback to be available.  If there is already at least one callback available,
    * this parameter does nothing.
    */
-  void callAvailable(ros::WallDuration timeout = ros::WallDuration(0.1f));
+  void callAvailable(ros::WallDuration timeout);
 
   /**
    * \brief returns whether or not the queue is empty

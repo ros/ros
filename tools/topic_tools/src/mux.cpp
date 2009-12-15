@@ -30,25 +30,40 @@
 
 
 #include <cstdio>
+#include <vector>
+#include <list>
+#include "ros/console.h"
 #include "std_msgs/String.h"
 #include "topic_tools/MuxSelect.h"
+#include "topic_tools/MuxAdd.h"
+#include "topic_tools/MuxDelete.h"
 #include "topic_tools/shape_shifter.h"
 #include "topic_tools/parse.h"
 
 using std::string;
 using std::vector;
+using std::list;
 using namespace topic_tools;
 
 static ShapeShifter *g_selected = NULL;
 static ros::NodeHandle *g_node = NULL;
 static bool g_advertised = false;
 static string g_output_topic;
-static vector<ShapeShifter *> g_in_msgs;
 static ros::Publisher g_pub;
+static ros::Publisher g_pub_selected;
+
+struct sub_info_t
+{
+  ros::Subscriber sub;
+  ShapeShifter* msg;
+};
+static list<struct sub_info_t> g_subs;
+
 
 bool sel_srv_cb( topic_tools::MuxSelect::Request  &req,
                  topic_tools::MuxSelect::Response &res )
 {
+  bool ret = false;
   if (g_selected)
     res.prev_topic = g_selected->topic;
   else
@@ -56,30 +71,48 @@ bool sel_srv_cb( topic_tools::MuxSelect::Request  &req,
   // see if it's the magical '__none' topic, in which case we open the circuit
   if (req.topic == string("__none"))
   {
-    printf("mux selected to no input.\n");
+    ROS_INFO("mux selected to no input.");
     g_selected = NULL;
-    return true;
+    ret = true;
   }
-  printf("trying to switch mux to %s\n", req.topic.c_str());
-  // spin through our vector of inputs and find this guy
-  for (size_t i = 0; i < g_in_msgs.size(); i++)
+  else
   {
-    if (g_in_msgs[i]->topic == req.topic)
+    ROS_INFO("trying to switch mux to %s", req.topic.c_str());
+    // spin through our vector of inputs and find this guy
+    for (list<struct sub_info_t>::iterator it = g_subs.begin();
+	 it != g_subs.end();
+	 ++it)
     {
-      g_selected = g_in_msgs[i];
-      printf("mux selected input %zu: [%s]\n", i, g_in_msgs[i]->topic.c_str());
-      return true;
+      if (it->msg->topic == req.topic)
+      {
+	g_selected = it->msg;
+	ROS_INFO("mux selected input: [%s]", it->msg->topic.c_str());
+	ret = true;
+      }
     }
   }
-  return false;
+
+  std_msgs::String t;
+  t.data = g_selected->topic;
+  g_pub_selected.publish(t);
+
+  return ret;
 }
+
+bool sel_srv_cb_dep( topic_tools::MuxSelect::Request  &req,
+		     topic_tools::MuxSelect::Response &res )
+{
+  ROS_WARN("the <topic>_select service is deprecated; use mux/select instead");
+  return sel_srv_cb(req,res);
+}
+
 
 void in_cb(const boost::shared_ptr<ShapeShifter const>& msg,
            ShapeShifter* s)
 {
   if (!g_advertised)
   {
-    printf("advertising\n");
+    ROS_INFO("advertising");
     g_pub = msg->advertise(*g_node, g_output_topic, 10);
     g_advertised = true;
   }
@@ -87,40 +120,112 @@ void in_cb(const boost::shared_ptr<ShapeShifter const>& msg,
     g_pub.publish(msg);
 }
 
+bool add_topic_cb(topic_tools::MuxAdd::Request& req,
+		  topic_tools::MuxAdd::Response& res)
+{
+  // Check that it's not already in our list
+  ROS_INFO("trying to add %s to mux", req.topic.c_str());
+  // spin through our vector of inputs and find this guy
+  for (list<struct sub_info_t>::iterator it = g_subs.begin();
+       it != g_subs.end();
+       ++it)
+  {
+    if (it->msg->topic == req.topic)
+    {
+      ROS_WARN("tried to add a topic that mux was already listening to: [%s]", 
+	       it->msg->topic.c_str());
+      return false;
+    }
+  }
+
+  struct sub_info_t sub_info;
+  sub_info.msg = new ShapeShifter;
+  sub_info.msg->topic = req.topic;
+  sub_info.sub = g_node->subscribe<ShapeShifter>(req.topic, 10, boost::bind(in_cb, _1, sub_info.msg));
+  g_subs.push_back(sub_info);
+
+  ROS_INFO("added %s to mux", req.topic.c_str());
+
+  return true;
+}
+
+bool del_topic_cb(topic_tools::MuxDelete::Request& req,
+		  topic_tools::MuxDelete::Response& res)
+{
+  // Check that it's in our list
+  ROS_INFO("trying to delete %s from mux", req.topic.c_str());
+  // spin through our vector of inputs and find this guy
+  for (list<struct sub_info_t>::iterator it = g_subs.begin();
+       it != g_subs.end();
+       ++it)
+  {
+    if (it->msg->topic == req.topic)
+    {
+      it->sub.shutdown();
+      delete it->msg;
+      g_subs.erase(it);
+      ROS_INFO("deleted topic %s from mux", req.topic.c_str());
+      return true;
+    }
+  }
+
+  ROS_WARN("tried to delete non-subscribed topic %s from mux", req.topic.c_str());
+  return false;
+}
+
 int main(int argc, char **argv)
 {
-  if (argc < 3)
+  vector<string> args;
+  ros::removeROSArgs(argc, (const char**)argv, args);
+
+  if (args.size() < 3)
   {
     printf("\nusage: mux OUT_TOPIC IN_TOPIC1 [IN_TOPIC2 [...]]\n\n");
     return 1;
   }
   std::string topic_name;
-  if(!getBaseName(string(argv[1]), topic_name))
+  if(!getBaseName(args[1], topic_name))
     return 1;
   ros::init(argc, argv, topic_name + string("_mux"),
             ros::init_options::AnonymousName);
   vector<string> topics;
-  for (int i = 2; i < argc; i++)
-    topics.push_back(argv[i]);
+  for (unsigned int i = 2; i < args.size(); i++)
+    topics.push_back(args[i]);
   ros::NodeHandle n;
   g_node = &n;
-  g_output_topic = string(argv[1]);
-  ros::ServiceServer ss = n.advertiseService(g_output_topic + string("_select"), sel_srv_cb);
-  vector<ros::Subscriber> subs;
+  g_output_topic = args[1];
+  // Put our API into the "mux" namespace, which the user should usually remap
+  ros::NodeHandle mux_nh("mux");
+  // Latched publisher for selected input topic name
+  g_pub_selected = mux_nh.advertise<std_msgs::String>(string("selected"), 1, true);
+  // Backward compatibility
+  ros::ServiceServer ss = n.advertiseService(g_output_topic + string("_select"), sel_srv_cb_dep);
+  // New service
+  ros::ServiceServer ss_select = mux_nh.advertiseService(string("select"), sel_srv_cb);
+  ros::ServiceServer ss_add = mux_nh.advertiseService(string("add"), add_topic_cb);
+  ros::ServiceServer ss_del = mux_nh.advertiseService(string("delete"), del_topic_cb);
   for (size_t i = 0; i < topics.size(); i++)
   {
-    g_in_msgs.push_back(new ShapeShifter);
-    g_in_msgs.back()->topic = topics[i];
-    subs.push_back(n.subscribe<ShapeShifter>(topics[i], 10, boost::bind(in_cb, _1, g_in_msgs.back())));
+    struct sub_info_t sub_info;
+    sub_info.msg = new ShapeShifter;
+    sub_info.msg->topic = topics[i];
+    sub_info.sub = n.subscribe<ShapeShifter>(topics[i], 10, boost::bind(in_cb, _1, sub_info.msg));
+    g_subs.push_back(sub_info);
   }
-  g_selected = g_in_msgs[0]; // select first topic to start
+  g_selected = g_subs.front().msg; // select first topic to start
+  std_msgs::String t;
+  t.data = g_selected->topic;
+  g_pub_selected.publish(t);
   ros::spin();
-  for (size_t i = 0; i < g_in_msgs.size(); i++)
+  for (list<struct sub_info_t>::iterator it = g_subs.begin();
+       it != g_subs.end();
+       ++it)
   {
-    subs[i].shutdown();
-    delete g_in_msgs[i];
+    it->sub.shutdown();
+    delete it->msg;
   }
-  g_in_msgs.clear();
+
+  g_subs.clear();
   return 0;
 }
 

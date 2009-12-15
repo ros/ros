@@ -34,6 +34,8 @@
 
 from __future__ import with_statement
 
+import roslib; roslib.load_manifest("rosdep")
+
 import roslib.rospack
 import roslib.stacks
 import os
@@ -42,6 +44,8 @@ import subprocess
 import types
 import tempfile
 import yaml
+
+import rosdep
 
 class RosdepException(Exception):
     pass
@@ -238,127 +242,9 @@ class OSIndex:
         else:
             return "#No packages to install: skipping package install command.\n"
 
-####### Linux Helper Functions #####
-def lsb_get_os():
-    try:
-        cmd = ['lsb_release', '-si']
-        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (std_out, std_err) = pop.communicate()
-        return std_out.strip()
-    except:
-        return None
-    
-def lsb_get_codename():
-    try:
-        cmd = ['lsb_release', '-sc']
-        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (std_out, std_err) = pop.communicate()
-        return std_out.strip()
-    except:
-        return None
-    
-def lsb_get_release_version():
-    try:
-        cmd = ['lsb_release', '-sr']
-        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (std_out, std_err) = pop.communicate()
-        return std_out.strip()
-    except:
-        return None
 
 
-###### DEBIAN SPECIALIZATION #########################
-def dpkg_detect(p):
-    cmd = ['dpkg-query', '-W', '-f=\'${Status}\'', p]
-    pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (std_out, std_err) = pop.communicate()
-    std_out = std_out.strip('\'')
-    std_out_list = std_out.split()
-    if len(std_out_list) == 3:
-        return (std_out_list[2] =='installed')
-    else:
-        return False
 
-###### Debian SPECIALIZATION #########################
-class Debian:
-    def check_presence(self):
-        if "Debian" == lsb_get_os():
-            return True
-        return False
-
-    def get_version(self):
-        return lsb_get_release_codename()
-    def get_name(self):
-        return "debian"
-
-    def strip_detected_packages(self, packages):
-        return [p for p in packages if not dpkg_detect(p)]
-
-    def generate_package_install_command(self, packages, default_yes):
-        if default_yes:
-            return "#Packages\nsudo apt-get install -y " + ' '.join(packages)        
-        else:
-            return "#Packages\nsudo apt-get install " + ' '.join(packages)
-
-###### END Debian SPECIALIZATION ########################
-
-###### UBUNTU SPECIALIZATION #########################
-class Ubuntu(Debian):
-    """ This is an implementation of a standard interface for
-    interacting with rosdep.  This defines all Ubuntu sepecific
-    methods, including detecting the OS/Version number.  As well as
-    how to check for and install packages."""
-    def check_presence(self):
-        if "Ubuntu" == lsb_get_os():
-            return True
-        return False
-
-    def get_version(self):
-        return lsb_get_release_version()
-    def get_name(self):
-        return "ubuntu"
-
-###### END UBUNTU SPECIALIZATION ########################
-
-
-###### Mint SPECIALIZATION #########################
-class Mint:
-    def check_presence(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:                
-                    os_list = fh.read().split()
-                if os_list and os_list[0] == "Linux" and os_list[1] == "Mint":
-                    return True
-        except:
-            print "Mint failed to detect OS"
-        return False
-
-    def get_version(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:
-                    os_list = fh.read().split()
-                if os_list[0] == "Linux" and os_list[1] == "Mint":
-                    return os_list[2]
-        except:
-            print "Mint failed to get version"
-            return False
-
-        return False
-
-    def get_name(self):
-        return "mint"
-
-    def strip_detected_packages(self, packages):
-        return [p for p in packages if not dpkg_detect(p)]
-
-    def generate_package_install_command(self, packages, default_yes):        
-        return "#Packages\nsudo apt-get install " + ' '.join(packages)
-
-###### END Mint SPECIALIZATION ########################
 
 ###### Arch SPECIALIZATION #########################
 
@@ -736,8 +622,9 @@ def main():
     ### Detect OS name and version
 
     ################ Add All specializations here ##############################
-    r.osi.add_os(Ubuntu())
-    r.osi.add_os(Debian())
+    r.osi.add_os(rosdep.debian.Ubuntu())
+    r.osi.add_os(rosdep.debian.Debian())
+    r.osi.add_os(rosdep.debian.Mint())
     r.osi.add_os(Fedora())
     r.osi.add_os(Rhel())
     r.osi.add_os(Arch())

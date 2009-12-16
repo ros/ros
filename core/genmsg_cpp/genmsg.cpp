@@ -219,14 +219,27 @@ public:
   virtual string cpp_type_typedefs()
   {
     ostringstream code;
-    code << "  typedef std::vector<" << ele_var->cpp_type_name() << "> _" << name << "_type;\n";
+    if (len)
+    {
+      code << "  typedef boost::array<" << ele_var->cpp_type_name() << ", " << len << "> _" << name << "_type;\n";
+    }
+    else
+    {
+      code << "  typedef std::vector<" << ele_var->cpp_type_name() << "> _" << name << "_type;\n";
+    }
     return code.str();
   }
   virtual string cpp_decl()
   {
     ostringstream code;
-    code << "  std::vector<" << ele_var->cpp_type_name() << "> "
-         << name << ";\n";
+    if (len)
+    {
+      code << "  boost::array<" << ele_var->cpp_type_name() << ", " << len << "> " << name << ";\n";
+    }
+    else
+    {
+      code << "  std::vector<" << ele_var->cpp_type_name() << "> " << name << ";\n";
+    }
     return code.str();
   }
   virtual string test_populate(const string &prefix, int indent = 0)
@@ -284,7 +297,16 @@ public:
   }
   virtual string cpp_type_name()
   {
-    return string("std::vector<") + ele_var->cpp_type_name() + string("> ");
+    if (len)
+    {
+      std::stringstream ss;
+      ss << "  boost::array<" << ele_var->cpp_type_name() << ", " << len << "> ";
+      return ss.str();
+    }
+    else
+    {
+      return string("std::vector<") + ele_var->cpp_type_name() + string("> ");
+    }
     //return ele_var->cpp_type_name() + " *";
   }
   virtual vector<string> cpp_ctor_clauses()
@@ -295,7 +317,12 @@ public:
   {
     ostringstream code;
     if (len)
-      code << "  " << name << ".resize(" << len << ");\n";
+    {
+      if (msg_spec::is_integer(eletype) || eletype == "float32" || eletype == "float64")
+      {
+        code << "    " << name << ".assign(0);\n";
+      }
+    }
     return code.str();
   }
   virtual vector<string> cpp_copy_ctor_initializers()
@@ -314,7 +341,14 @@ public:
   }
   virtual string cpp_dtor_code()
   {
-    return string("    ") + name + string(".clear();\n");
+    if (len)
+    {
+      return string();
+    }
+    else
+    {
+      return string("    ") + name + string(".clear();\n");
+    }
   }
   virtual string length_expr()
   {
@@ -378,13 +412,17 @@ public:
       code << "      l += " << ele_var->length_expr() << ";\n"
            << "    return l;\n  }\n";
     }
-    // stl vector setters/getters
-    code << "  inline void get_" << name << "_vec (std::vector<"
-         << ele_var->cpp_type_name() << "> &__ros_vec) const\n"
-         << "  {\n    __ros_vec = this->" << name << ";\n  }\n";
-    code << "  inline void set_" << name << "_vec(const std::vector<"
-         << ele_var->cpp_type_name() << "> &__ros_vec)\n"
-         << "  {\n    this->" << name << " = __ros_vec;\n  }\n";
+
+    if (!len)
+    {
+      // stl vector setters/getters
+      code << "  inline void get_" << name << "_vec (std::vector<"
+           << ele_var->cpp_type_name() << "> &__ros_vec) const\n"
+           << "  {\n    __ros_vec = this->" << name << ";\n  }\n";
+      code << "  inline void set_" << name << "_vec(const std::vector<"
+           << ele_var->cpp_type_name() << "> &__ros_vec)\n"
+           << "  {\n    this->" << name << " = __ros_vec;\n  }\n";
+    }
     return code.str();
   }
   virtual string serialization_code()

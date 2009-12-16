@@ -33,6 +33,13 @@
 #
 # Revision $Id$
 
+"""
+Implements the roscreate-stack tool.
+
+The focus of this module is on supporting the command-line tool. The
+code API of this module is *not* stable.
+"""
+
 from __future__ import with_statement
 import roslib; roslib.load_manifest('roscreate')
 
@@ -43,31 +50,73 @@ import sys
 import roslib.manifest
 import roslib.packages
 import roslib.stacks
+import roslib.stack_manifest
 
-from roscreate.core import read_template, author_name
+from roscreate.core import read_template, author_name, print_warning
 
 def get_templates():
+    """
+    @return: mapping of file names to templates to instantiate
+    @rtype: {str: str}
+    """
     templates = {}
     templates['stack.xml'] = read_template('stack.tmpl')
     templates['CMakeLists.txt'] = read_template('CMakeLists.stack.tmpl')
     templates['Makefile'] = read_template('Makefile.stack.tmpl')
     return templates
 
-def instantiate_template(template, name, version, stack, brief, description, author, depends, licenses):
+def instantiate_template(template, stack, brief, description, author, depends, licenses, review):
+    """
+    @return: template instantiated with properties
+    @rtype: str
+    """
     return template%locals()
 
-## @param stack str: name of stack
-## @param stack_dir str: path to stack
-## @param author str: name of stack maintainer
-## @param depends dict {str: [str]}: map of stack name to packages that use that stack
-## @param licenses set(str): list of licenses present in stack
-def create_stack(stack, stack_dir, author, depends, licenses, show_deps):
-    depends = ''.join(['  <depend stack="%s"/> <!-- %s --> \n'%(s, ', '.join(set(pkgs))) for s, pkgs in depends.iteritems()])
-    if show_deps:
-      print depends
-      return
-    licenses = ','.join(licenses)
+def _update_depends(stack_manifest, depends):
+    new_depends = []
+    for s, pkgs in depends.iteritems():
+        d = roslib.stack_manifest.StackDepend(s)
+        d.annotation = ', '.join(set(pkgs))
+        new_depends.append(d)
+        new_depends.sort(lambda x, y: -1 if x.stack < y.stack else 1)
+    return ''.join(["  %s\n"%d.xml() for d in new_depends])
+         
+def create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, show_deps):
+    """
+    @param stack: name of stack
+    @type  stack: str
+    @param stack_dir: path to stack
+    @type  stack_dir: str
+    @param stack_manifest: existing stack manifest or None
+    @type  stack_manifest: L{roslib.stack_manifest.StackManifest}
+    @param author: name of stack maintainer. Overrides stack_manifest.
+    @type  author: str
+    @param depends: map of stack name to packages that use that stack. Overrides stack_manifest.
+    @type  depends: {str: [str]}
+    @param licenses: list of licenses present in stack
+    @type  licenses: set(str)
+    """
 
+    if show_deps:
+      print ''.join(['  <depend stack="%s"/> <!-- %s --> \n'%(s, ', '.join(set(pkgs))) for s, pkgs in depends.iteritems()])
+      return
+    
+    # load existing properties
+    if stack_manifest is not None:
+        try:
+            licenses.update([l.strip() for l in stack_manifest.license.split(',')])
+        except: pass
+        brief = stack_manifest.brief or stack
+        description = stack_manifest.description
+        review = '  <review status="%s" notes="%s"/>'%(stack_manifest.status, stack_manifest.notes)        
+    else:
+        stack_manifest = roslib.stack_manifest.StackManifest()
+        brief = description = stack
+        review = '  <review status="unreviewed" notes=""/>'
+
+    licenses = ','.join(licenses)
+    depends = _update_depends(stack_manifest, depends)
+    
     p = os.path.abspath(stack_dir)
     if not os.path.exists(p):
         print "Creating stack directory", p
@@ -75,7 +124,7 @@ def create_stack(stack, stack_dir, author, depends, licenses, show_deps):
 
     templates = get_templates()
     for filename, template in templates.iteritems():
-        contents = instantiate_template(template, stack, '0.1.0', stack, stack, stack, author, depends, licenses)
+        contents = instantiate_template(template, stack, brief, description, author, depends, licenses, review)
         p = os.path.abspath(os.path.join(stack_dir, filename))
         if not os.path.exists(filename) or filename == 'stack.xml':
             print "Creating stack file", p
@@ -95,7 +144,7 @@ def compute_stack_depends_and_licenses(stack, packages):
     for pkg in pkg_depends:
         st = roslib.stacks.stack_of(pkg)
         if not st:
-            print >> sys.stderr, "WARNING: stack depends on [%s], which is not in a stack"%pkg
+            print_warning("WARNING: stack depends on [%s], which is not in a stack"%pkg)
             continue 
         if st == stack:
             continue
@@ -133,12 +182,19 @@ def roscreatestack_main():
       # Check for existing stack.xml
       stack_xml_path = os.path.join(stack_dir, 'stack.xml')
       if os.path.exists(stack_xml_path):
-        import shutil
-        stack_xml_path_bak = os.path.join(stack_dir, 'stack.xml.bak')
-        print 'Backing up existing stack.xml to %s'%stack_xml_path_bak
-        shutil.copyfile(stack_xml_path, stack_xml_path_bak)
+          import shutil
+          stack_xml_path_bak = os.path.join(stack_dir, 'stack.xml.bak')
+          print 'Backing up existing stack.xml to %s'%stack_xml_path_bak
+          shutil.copyfile(stack_xml_path, stack_xml_path_bak)
+
+          # load existing stack.xml properties
+          stack_manifest = roslib.stack_manifest.parse_file(stack_xml_path)
+          author = stack_manifest.author
+      else:
+          stack_manifest = None
+          author = "Maintained by %s"%author_name()
   
-    create_stack(stack, stack_dir, author_name(), depends, licenses, options.show_deps)
+    create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, options.show_deps)
 
 if __name__ == "__main__":
     roscreatestack_main()

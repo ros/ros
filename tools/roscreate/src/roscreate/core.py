@@ -38,6 +38,10 @@ import sys
 
 import roslib.packages
 
+def print_warning(msg):
+    """print warning to screen (bold red)"""
+    print >> sys.stderr, '\033[31m%s\033[0m'%msg
+    
 # utility to compute logged in user name
 def author_name():
     import getpass

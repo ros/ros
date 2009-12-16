@@ -235,7 +235,7 @@ class StackDepend(object):
     """
     Stack Manifest 'depend' tag
     """
-    __slots__ = ['stack']
+    __slots__ = ['stack', 'annotation']
 
     def __init__(self, stack):
         """
@@ -245,6 +245,8 @@ class StackDepend(object):
         if not stack or not isinstance(stack, basestring):
             raise ValueError("bad 'stack' attribute")
         self.stack = stack
+        self.annotation = None
+        
     def __str__(self):
         return self.stack
     def __repr__(self):
@@ -257,8 +259,11 @@ class StackDepend(object):
         """
         @return: stack depend instance represented as stack manifest XML
         @rtype: str
-        """        
-        return '<depend stack="%s" />'%self.stack
+        """
+        if self.annotation:
+            return '<depend stack="%s" /> <!-- %s -->'%(self.stack, self.annotation)
+        else:
+            return '<depend stack="%s" />'%self.stack            
 
 class ROSDep(object):
     """

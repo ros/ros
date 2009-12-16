@@ -24,4 +24,4 @@ rosbuild_link_boost(rosplay iostreams system)
 INSTALL(TARGETS rosrecord rosplay
         RUNTIME DESTINATION $ENV{ROS_ROOT}/bin)
 
-#rosbuild_add_pyunit(test/test_rosrecord_offline.py)
+rosbuild_add_pyunit(test/test_rosrecord_offline.py)

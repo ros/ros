@@ -38,25 +38,27 @@ import subprocess
 import optparse
 from optparse import OptionParser
 
-def rosbag_info(argv):
+def info_cmd(argv):
     parser = OptionParser(usage="rosbag info BAGFILE",
                           description="Summarize the contents of a bag file.")
 
     (options, args) = parser.parse_args(argv)
 
-    if (len(args) != 1):
-        parser.error("You must pass in a single bagfile.")
+    if (len(args) == 0):
+        parser.error("You must pass in a bagfile.")
 
-    cmd = ["rosplay", "-c"]
+    for arg in args:
 
-    cmd.extend(args)
+        cmd = ["rosplay", "-c", arg]
 
-    proc = subprocess.Popen(cmd)
+        proc = subprocess.Popen(cmd)
 
-    # Ignore sigint since we're basically just pretending to be the subprocess now.
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
+        # Ignore sigint since we're basically just pretending to be the subprocess now.
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-    res = proc.wait()
+        res = proc.wait()
+
+        print ""
 
     sys.exit(res)
 

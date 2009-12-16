@@ -35,9 +35,9 @@
 import sys
 import UserDict
 
-from record import rosbag_record
-from play   import rosbag_play
-from info   import rosbag_info
+from record_cmd import record_cmd
+from play_cmd   import play_cmd
+from info_cmd   import info_cmd
 
 class RosbagCmds(UserDict.UserDict):
     def __init__(self):
@@ -72,9 +72,9 @@ class RosbagCmds(UserDict.UserDict):
 
 def rosbagmain(argv=None):
     cmds = RosbagCmds()
-    cmds['record'] = rosbag_record
-    cmds['play'] = rosbag_play
-    cmds['info'] = rosbag_info
+    cmds['record'] = record_cmd
+    cmds['play'] = play_cmd
+    cmds['info'] = info_cmd
 
     if argv is None:
         argv=sys.argv

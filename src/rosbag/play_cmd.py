@@ -38,7 +38,7 @@ import subprocess
 import optparse
 from optparse import OptionParser
 
-def rosbag_play(argv):
+def play_cmd(argv):
     parser = OptionParser(usage="rosbag play BAGFILE1 [BAGFILE2 BAGFILE3 ...]",
                           description="Play back the contents of one or more bag files in a time-synchronized fashion.")
     parser.add_option("-q", "--quiet", dest="quiet", default=False, action="store_true",

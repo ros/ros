@@ -78,22 +78,25 @@ class RosMakeAll:
         return self.paths[package]
         
     def check_rosdep(self, packages):
+        self.print_all("Checking rosdeps compliance for packages %s.  This may take a minute.")
         r = rosdep.core.Rosdep(packages, robust=True)
         output = r.check()
         if len(output) == 0:
-            #print "Rosdep check passed all packages:", packages
+            self.print_all( "Rosdep check passed all packages")# %s"% packages)
             return True
         else:
-            print "Rosdep check failed packages:", output
+            self.print_all("Rosdep check failed packages: %s"% output)
             return False
 
     def install_rosdeps(self, packages, default_yes):
+        self.print_all("Generating Install Script using rosdep then executing. This may take a minute, you will be prompted for permissions. . .")
         r = rosdep.core.Rosdep(packages, robust=True)
         try:
             r.install(include_duplicates=False, default_yes=default_yes);
+            self.print_all("Rosdep successfully installed all packages")
             return True
         except rosdep.RosdepException, e:
-            print "ERROR: %s"%e
+            self.print_all( "ERROR: %s"%e)
             return False
 
     def build_or_recurse(self,p):
@@ -437,6 +440,8 @@ class RosMakeAll:
                           action="store_true", help="call rosdep install before running")
         parser.add_option("--rosdep-yes", dest="rosdep_yes",
                           action="store_true", help="call rosdep install with default yes argument")
+        parser.add_option("--no-rosdep", dest="rosdep_disabled",
+                          action="store_true", help="disable the default check of rosdep")
         
 
         options, args = parser.parse_args()
@@ -537,10 +542,8 @@ class RosMakeAll:
 
         # make sure all dependencies are satisfied and if not warn
         if options.rosdep_install:
-            self.print_all("Generating Install Script using rosdep")
             self.install_rosdeps(specified_packages, options.rosdep_yes)
-        else:
-            self.print_all("Checking rosdeps compliance for packages")
+        elif not options.rosdep_disabled:
             self.check_rosdep(specified_packages)
 
         if options.unmark_installed:

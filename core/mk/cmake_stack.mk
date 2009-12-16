@@ -17,7 +17,6 @@ clean:
 	-cd build && make clean
 	#rm -rf msg/cpp msg/lisp msg/oct msg/java srv/cpp srv/lisp srv/oct srv/java src/$(PACKAGE_NAME)/msg src/$(PACKAGE_NAME)/srv
 	rm -rf build
-	#rm -f .build-version
 
 # Build a source package.  Assumes that you're in a clean tree.
 package_source: all

@@ -384,38 +384,6 @@ macro(rosbuild_init)
   set(_gtest_LIBRARIES ${_tmplist})
   list(REVERSE _gtest_LIBRARIES)
 
-  #
-  # Try to get the SVN URL and revision of the package. 
-  # TODO: Support other version control systems (svk, git, etc.)
-  #
-  execute_process(
-    COMMAND svn info ${PROJECT_SOURCE_DIR}
-    COMMAND grep Revision
-    COMMAND cut -d " " -f 2,2
-    OUTPUT_VARIABLE _svn_rev
-    ERROR_VARIABLE _svn_error
-    RESULT_VARIABLE _svn_failed
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  execute_process(
-    COMMAND svn info ${PROJECT_SOURCE_DIR}
-    COMMAND grep URL
-    COMMAND cut -d " " -f 2,2
-    OUTPUT_VARIABLE _svn_url
-    ERROR_VARIABLE _svn_error
-    RESULT_VARIABLE _svn_failed
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  if(_svn_failed)
-    # No big deal 
-  else(_svn_failed)
-    # We treat the revision as a string
-    set(ROS_PACKAGE_REVISION "${_svn_url}:${_svn_rev}")
-    # Stop passing this in, because it causes spurious re-builds after svn
-    # updates.
-    #add_definitions(-DROS_PACKAGE_REVISION=\\\"${ROS_PACKAGE_REVISION}\\\")
-    file(WRITE ${PROJECT_SOURCE_DIR}/.build_version ${ROS_PACKAGE_REVISION}\n)
-  endif(_svn_failed)
   endif(NOT ROSPACK_MAKEDIST)
 endmacro(rosbuild_init)
 ###############################################################################
@@ -899,7 +867,7 @@ macro(rosbuild_make_distribution)
   # CPACK_SOURCE_IGNORE_FILES contains things we want to ignore when
   # building a source package.  We assume that the package was already
   # cleaned, so we don't need to ignore .a, .o, .so, etc.
-  list(APPEND CPACK_SOURCE_IGNORE_FILES "/build/;/.svn/;.gitignore;.build_version;build-failure;test-failure;rosmakeall-buildfailures-withcontext.txt;rosmakeall-profile;rosmakeall-buildfailures.txt;rosmakeall-testfailures.txt;rosmakeall-coverage.txt;/log/")
+  list(APPEND CPACK_SOURCE_IGNORE_FILES "/build/;/.svn/;.gitignore;build-failure;test-failure;rosmakeall-buildfailures-withcontext.txt;rosmakeall-profile;rosmakeall-buildfailures.txt;rosmakeall-testfailures.txt;rosmakeall-coverage.txt;/log/")
   include(CPack)
 endmacro(rosbuild_make_distribution)
 

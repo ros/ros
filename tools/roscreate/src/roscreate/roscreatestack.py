@@ -94,7 +94,10 @@ def compute_stack_depends_and_licenses(stack, packages):
     stack_depends = {}
     for pkg in pkg_depends:
         st = roslib.stacks.stack_of(pkg)
-        if not st or st == stack:
+        if not st:
+            print >> sys.stderr, "WARNING: stack depends on [%s], which is not in a stack"%pkg
+            continue 
+        if st == stack:
             continue
         if not st in stack_depends:
             stack_depends[st] = []            

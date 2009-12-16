@@ -50,6 +50,9 @@ import parallel_build
 
 from optparse import OptionParser
 
+import rosdep
+
+
 class RosMakeAll:
     def __init__(self):
         self.result = {}
@@ -75,17 +78,23 @@ class RosMakeAll:
         return self.paths[package]
         
     def check_rosdep(self, packages):
-        cmd = ["rosdep", "check"]
-        cmd.extend(packages)
+        r = rosdep.core.Rosdep(packages, robust=True)
+        output = r.check()
+        if len(output) == 0:
+            #print "Rosdep check passed all packages:", packages
+            return True
+        else:
+            print "Rosdep check failed packages:", output
+            return False
+
+    def install_rosdeps(self, packages, default_yes):
+        r = rosdep.core.Rosdep(packages, robust=True)
         try:
-            command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
-            (pstd_out, pstd_err) = command_line.communicate()
-            if len(pstd_out) !=0:
-                self.print_all("------------------------\n Warning: rosdep check not satisfied for these packages\n------------------------\n %s\n------------------------"%(pstd_out))
-            else:
-                self.print_full_verbose("rosdep satisfied")
-        except OSError:
-            self.print_verbose("Failed to invoke rosdep, it's likely not built")
+            r.install(include_duplicates=False, default_yes=default_yes);
+            return True
+        except rosdep.RosdepException, e:
+            print "ERROR: %s"%e
+            return False
 
     def build_or_recurse(self,p):
         if p in self.build_list:
@@ -424,6 +433,12 @@ class RosMakeAll:
                           default=False, action="store_true", 
                           help="skip packages containing a file called ROS_BUILD_BLACKLIST_OSX (Default behavior will ignore the presence of ROS_BUILD_BLACKLIST_OSX)")
 
+        parser.add_option("--rosdep-install", dest="rosdep_install",
+                          action="store_true", help="call rosdep install before running")
+        parser.add_option("--rosdep-yes", dest="rosdep_yes",
+                          action="store_true", help="call rosdep install with default yes argument")
+        
+
         options, args = parser.parse_args()
 
         testing = False
@@ -521,7 +536,12 @@ class RosMakeAll:
             return False
 
         # make sure all dependencies are satisfied and if not warn
-        # TODO Uncomment when rosdep is more reliable self.check_rosdep(specified_packages)
+        if options.rosdep_install:
+            self.print_all("Generating Install Script using rosdep")
+            self.install_rosdeps(specified_packages, options.rosdep_yes)
+        else:
+            self.print_all("Checking rosdeps compliance for packages")
+            self.check_rosdep(specified_packages)
 
         if options.unmark_installed:
             for p in specified_packages:

@@ -37,10 +37,10 @@
 
 #include "ros/callback_queue_interface.h"
 #include "ros/time.h"
-#include "ros/rw_mutex.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/tss.hpp>
 
@@ -115,15 +115,29 @@ protected:
 
   struct CallbackInfo
   {
+    CallbackInfo()
+    : removal_id(0)
+    , marked_for_removal(false)
+    {}
     CallbackInterfacePtr callback;
     uint64_t removal_id;
+    bool marked_for_removal;
   };
   typedef std::list<CallbackInfo> L_CallbackInfo;
   L_CallbackInfo callbacks_;
   boost::mutex mutex_;
   boost::condition_variable condition_;
-  RWMutex calling_rw_mutex_;
-  boost::thread_specific_ptr<bool> calling_in_this_thread_;
+  boost::shared_mutex calling_rw_mutex_;
+
+  struct TLS
+  {
+    TLS()
+    : calling_in_this_thread(false)
+    {}
+    bool calling_in_this_thread;
+    L_CallbackInfo callbacks;
+  };
+  boost::thread_specific_ptr<TLS> tls_;
 
   bool enabled_;
 };

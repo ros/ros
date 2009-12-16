@@ -110,6 +110,9 @@ void SubscriptionQueue::clear()
 
 CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
 {
+  // The callback may result in our own destruction.  Therefore, we may need to keep a reference to ourselves
+  // that outlasts the scoped_try_lock
+  boost::shared_ptr<SubscriptionQueue> self;
   boost::recursive_mutex::scoped_try_lock lock(callback_mutex_);
   if (!lock.owns_lock())
   {
@@ -163,6 +166,7 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
   // msg can be null here if deserialization failed
   if (msg)
   {
+    self = shared_from_this();
     i.helper->call(msg);
   }
 

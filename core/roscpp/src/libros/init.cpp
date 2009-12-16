@@ -54,8 +54,6 @@
 #include <roslib/Time.h>
 #include <roslib/Clock.h>
 
-#include <apr_general.h>
-
 #include <algorithm>
 
 #include <signal.h>
@@ -134,8 +132,6 @@ void atexitCallback()
     ROSCPP_LOG_DEBUG("shutting down due to exit() or end of main() without cleanup of all NodeHandles");
     shutdown();
   }
-
-  apr_terminate();
 }
 
 void shutdownCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result)
@@ -354,8 +350,6 @@ void init(const M_string& remappings, const std::string& name, uint32_t options)
 {
   if (!g_atexit_registered)
   {
-    apr_initialize();
-
     g_atexit_registered = true;
     atexit(atexitCallback);
   }

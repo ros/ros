@@ -35,6 +35,7 @@
 
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <list>
 
 namespace ros
@@ -43,7 +44,7 @@ namespace ros
 class MessageDeserializer;
 typedef boost::shared_ptr<MessageDeserializer> MessageDeserializerPtr;
 
-class SubscriptionQueue
+class SubscriptionQueue : public boost::enable_shared_from_this<SubscriptionQueue>
 {
 private:
   struct Item

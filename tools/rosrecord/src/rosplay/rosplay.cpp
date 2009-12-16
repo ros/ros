@@ -204,7 +204,12 @@ bool RosPlay::spin()
       }
     }
     std::cout << std::endl << "Done." << std::endl;
+    // Request a shutdown
+    ros::shutdown();
   }
+
+  // Spin till it's actually done
+  ros::spin();
 
   return true;
 }

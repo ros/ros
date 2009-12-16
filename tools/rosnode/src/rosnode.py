@@ -218,6 +218,7 @@ def _sub_rosnode_listnodes(namespace=None, list_uri=False, list_all=False):
     """
     master = scriptutil.get_master()    
     nodes = get_node_names(namespace)
+    nodes.sort()
     if list_all:
         return '\n'.join(["%s \t%s"%(get_api_uri(master, n) or 'unknown address', n) for n in nodes])
     elif list_uri:
@@ -530,6 +531,7 @@ def _rosnode_cmd_machine(argv):
     elif len(args) > 1:
         parser.error("please enter only one machine name")
     nodes = get_nodes_by_machine(args[0])
+    nodes.sort()
     print '\n'.join(nodes)
         
 def _rosnode_cmd_kill(argv):

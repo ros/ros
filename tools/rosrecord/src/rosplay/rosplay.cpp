@@ -208,9 +208,6 @@ bool RosPlay::spin()
     ros::shutdown();
   }
 
-  // Spin till it's actually done
-  ros::spin();
-
   return true;
 }
 

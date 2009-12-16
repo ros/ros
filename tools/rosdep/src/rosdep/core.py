@@ -145,7 +145,7 @@ class RosdepLookupPackage:
         if self.os_name in yaml_map:
             return self.get_version_from_yaml(yaml_map[self.os_name])
         else:
-            print >> sys.stderr, "failed to find OS(%s) version of %s "%(os_name, rosdep)
+            print >> sys.stderr, "failed to resolve a rule for OS(%s)"%(self.os_name)
             return False
 
     def get_version_from_yaml(self, os_specific):

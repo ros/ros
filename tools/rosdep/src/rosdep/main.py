@@ -132,7 +132,7 @@ def main():
         elif command == "install":
             r.install(options.include_duplicates, options.default_yes);
             return True
-    except rosdep.RosdepException, e:
+    except core.RosdepException, e:
         print "ERROR: %s"%e
         return False
         

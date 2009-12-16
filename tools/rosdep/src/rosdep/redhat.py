@@ -30,7 +30,7 @@
 
 from __future__ import with_statement
 from linux_helpers import *
-
+import os.path
 
 def yum_detect(p):
     return subprocess.call(['yum', 'list', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    

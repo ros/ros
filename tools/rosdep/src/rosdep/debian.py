@@ -30,6 +30,7 @@
 
 from __future__ import with_statement
 from linux_helpers import *
+import os.path 
 
 ###### DEBIAN SPECIALIZATION #########################
 def dpkg_detect(p):

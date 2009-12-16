@@ -29,6 +29,7 @@
 # Author Tully Foote/tfoote@willowgarage.com
 
 from linux_helpers import *
+import os
 
 ###### Macports SPECIALIZATION #########################
 def port_detect(p):

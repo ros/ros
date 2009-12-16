@@ -32,4 +32,4 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from ros import rosrecord
-rosrecord.rebag_main()
+rosrecord._rebag_main()

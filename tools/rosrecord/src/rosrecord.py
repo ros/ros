@@ -103,8 +103,10 @@ def _next_msg_v1_1(f, raw=False):
   @type  raw: bool
 
   @return: (topic, data, time). If not raw, data will be the
-  deserialized Message. If raw, data will be a sequence (datatype,
-  data, md5sum, bag_position). More elements may be added to this
+  deserialized Message. If raw, data will be a sequence
+  (datatype,data, md5sum, bag_position).
+  
+  More elements may be added to this
   sequence in the future. Message next message in bag for which there
   is a matching handler
   @rtype: (str, data, rospy.Time)

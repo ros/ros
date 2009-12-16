@@ -38,7 +38,7 @@ import subprocess
 import optparse
 from optparse import OptionParser
 
-def rosbag_record(argv):
+def record_cmd(argv):
     parser = OptionParser(usage="rosbag record TOPIC1 [TOPIC2 TOPIC3 ...]",
                           description="Record a bag file with the contents of specified topics.",
                           formatter=optparse.IndentedHelpFormatter())
@@ -75,6 +75,7 @@ def rosbag_record(argv):
 
     if options.prefix: cmd.extend(["-f", options.prefix])
     if options.name:   cmd.extend(["-F", options.name])
+    if options.all:    cmd.extend(["-a"])
     if options.gzip:   cmd.extend(["-z"])
     if options.bzip:   cmd.extend(["-j"])
 

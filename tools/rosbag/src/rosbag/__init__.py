@@ -36,9 +36,9 @@ PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
 # Import the command wrappers in case someone wants to use them
-from record import rosbag_record
-from play   import rosbag_play
-from info   import rosbag_info
+from record_cmd import record_cmd
+from play_cmd   import play_cmd
+from info_cmd   import info_cmd
 
 # Import rosbag main to be used by the $ROS_ROOT/bin/rosbag
 from main import rosbagmain

@@ -33,9 +33,11 @@
 # Revision $Id$
 # $Author$
 
-## Python utility for iterating over messages in a ROS .bag file
-## See http://pr.willowgarage.com/wiki/ROS/LogFormat
-# authors: jamesb, kwc
+"""
+Python utility for iterating over messages in a ROS .bag file.
+
+See http://ros.org/wiki/ROS/LogFormat
+"""
 
 import roslib; roslib.load_manifest('rosrecord')
 
@@ -55,16 +57,23 @@ import struct
 import gzip
 import bz2
 
-class ROSRecordException(Exception): pass
+class ROSRecordException(Exception):
+  """
+  Base exception type for rosrecord-related errors.
+  """
+  pass
 
 HEADER_V1_1 = "#ROSRECORD V1.1"
 HEADER_V1_2 = "#ROSRECORD V1.2"
 
 g_message_defs = {}
 
-## @return stream: file stream, ready to call next_msg on
-## @raise ROSRecordException if file format is unrecognized    
 def open_log_file(filename):
+  """
+  @return: file stream, ready to call next_msg on
+  @rtype: stream
+  @raise ROSRecordException: if file format is unrecognized    
+  """
   if isinstance(filename, file):
     f = filename
   else:
@@ -85,15 +94,21 @@ def open_log_file(filename):
     f.close()
     raise
 
-## get the next message. also calls any registered handlers
-## @param f open log stream object to read from
-## @param raw bool See return
-## @return (str, data, rospy.Time): (topic, data, time). If not \a
-## raw, data will be the deserialized Message. If \a raw, data will be
-## a sequence (datatype, data, md5sum, bag_position). More elements
-## may be added to this sequence in the future. Message next message
-## in bag for which there is a matching handler
-def next_msg_v1_1(f, raw=False):
+def _next_msg_v1_1(f, raw=False):
+  """
+  Get the next message. also calls any registered handlers
+  @param f: open log stream object to read from
+  @type  f: stream
+  @param raw: See return
+  @type  raw: bool
+
+  @return: (topic, data, time). If not raw, data will be the
+  deserialized Message. If raw, data will be a sequence (datatype,
+  data, md5sum, bag_position). More elements may be added to this
+  sequence in the future. Message next message in bag for which there
+  is a matching handler
+  @rtype: (str, data, rospy.Time)
+  """  
   bag_pos = f.tell()
   # read topic/md5/type string headers
   topic = f.readline().rstrip()
@@ -144,16 +159,20 @@ def next_msg_v1_1(f, raw=False):
     msg.deserialize(data)
     return topic, msg, rospy.Time(time_sec, time_nsec)
 
-## get the next message. also calls any registered handlers
-## @param f open log stream object to read from
-## @param raw bool See return
-## @return (str, data, rospy.Time): (topic, data, time). If not \a
-## raw, data will be the deserialized Message. If \a raw, data will be
-## a sequence (datatype, data, md5sum, bag_position). More elements
-## may be added to this sequence in the future. Message next message
-## in bag for which there is a matching handler
-def next_msg_v1_2(f, raw=False):
-
+def _next_msg_v1_2(f, raw=False):
+  """
+  Get the next message. also calls any registered handlers
+  @param f: open log stream object to read from
+  @type  f: stream
+  @param raw: See return
+  @type  raw: bool
+  @return: (topic, data, time). If not raw, data will be the
+  deserialized Message. If raw, data will be a sequence (datatype,
+  data, md5sum, bag_position). More elements may be added to this
+  sequence in the future. Message next message in bag for which there
+  is a matching handler
+  @rtype: (str, data, rospy.Time)
+  """
   def read_sized(f):
     data = f.read(4)
     if len(data) != 4:
@@ -207,7 +226,7 @@ def next_msg_v1_2(f, raw=False):
     print >> sys.stderr, "WARNING: Found incomplete message header. %d bytes left."%(end - cur,)
     return None,None,None
 
-## The following hack sometimes recovers a corrupt file, but is by no means robust/correct
+# The following hack sometimes recovers a corrupt file, but is by no means robust/correct
 
 #    skipped = 4
 #
@@ -225,7 +244,7 @@ def next_msg_v1_2(f, raw=False):
 #
 #    f.seek(-12,os.SEEK_CUR)
 #
-#    return next_msg_v1_2(f, raw)
+#    return _next_msg_v1_2(f, raw)
   
   if op == chr(1): # is a message definition
     required = set([ 'topic', 'md5', 'type', 'def'])
@@ -240,7 +259,7 @@ def next_msg_v1_2(f, raw=False):
       raise ROSRecordException(str(e))
     if (g_message_defs[md5sum]._md5sum != md5sum):
       print "In V1.2 logfile, md5sum for type [%s] does not match definition.  Updating to new md5sum."%datatype
-    return next_msg_v1_2(f, raw)
+    return _next_msg_v1_2(f, raw)
 
   required = set([ 'topic', 'md5', 'type', 'sec', 'nsec' ])
   assert required.issubset(set(hdr.keys()))
@@ -262,14 +281,41 @@ def next_msg_v1_2(f, raw=False):
     msg.deserialize(message_data)
     return topic, msg, rospy.Time(time_sec, time_nsec)
 
-## iterator for (topic, msg) in filename
-## @param filename str: name of file to playback from
-## @raise ROSRecordException if file format is unrecognized
 def logplayer(filename, raw=False, seek=None):
+  """
+  Iterator for messages in a bag file. Return type of iterator depends on value of 'raw' parameter, which
+  is provided for improved iteration performance.
+  
+  If raw is False:
+    - topic: topic name (str)
+    - msg: Message instance (Message)
+    - t: time (rospy.Time)
+
+   If raw is True:
+    - topic: topic name (str)
+    - msg: (datatype, data, md5sum, bag_position).
+       - datatype: msg type name
+       - data: serialized message bytes.
+       - bag_position: offset into the file, which can be used for seeking.
+       - md5sum: md5sum of msg type for identify msg version
+       - NOTE: More elements may be added to this in the future, so this should
+         be unpacked assuming non-fixed length.
+    - t: time (rospy.Time)
+   
+  @param filename: name of file to playback from
+  @type  filename: str
+  @param raw: see description for raw behavior
+  @type  raw: bool
+  @param seek: initial position to seek to (default None)
+  @type  seek: int
+  @raise ROSRecordException: if file format is unrecognized
+  @return: iterator for messages. See description for iterator behavior.
+  @rtype: iterator
+  """
   f,version = open_log_file(filename)
   next_msg = {
-    HEADER_V1_1 : next_msg_v1_1,
-    HEADER_V1_2 : next_msg_v1_2
+    HEADER_V1_1 : _next_msg_v1_1,
+    HEADER_V1_2 : _next_msg_v1_2
   }[version]
   if seek is not None:
     f.seek(seek)
@@ -285,18 +331,31 @@ def logplayer(filename, raw=False, seek=None):
   finally:
     f.close()
 
-## Utility class for writing Message instances to a ROS .bag file
 class Rebagger_v1_1(object):
+  """
+  Utility class for writing Message instances to a ROS .bag file
+  """
   def __init__(self, filename):
+    """
+    Creates a new rebagger instance. This opens the bag file for writing.
+    
+    @param filename: name of bag file to write to
+    @type  filename: str
+    """
     self.buff = StringIO()
     self.f = open(filename, 'w')
     self.f.write(HEADER_V1_1+'\n')
     
-  ## Add a message to the bag
-  ## @param msg Message: message to add to bag
-  ## @param raw bool: if True, \a msg is in raw format (msg_type, serialized_bytes)
-  ## @param t Time: ROS time of message publication
   def add(self, topic, msg, t=None, raw=False):
+    """
+    Add a message to the bag
+    @param msg: Message: message to add to bag
+    @type  msg: L{roslib.message.Message}
+    @param raw: if True, msg is in "raw" format
+    @type  raw: bool
+    @param t: ROS time of message publication
+    @type  t: roslib.rostime.Time (rospy.Time)
+    """
     # note: timestamp does not respect sim time as Rebagger is not required to be running in a rospy node
     if raw:
       f = self.f
@@ -328,8 +387,10 @@ class Rebagger_v1_1(object):
       self.f.close()
     self.buff = None
 
-## Utility class for writing Message instances to a ROS .bag file
 class Rebagger(object):
+  """
+  Utility class for writing Message instances to a ROS .bag file
+  """
   def __init__(self, filename):
     self.buff = StringIO()
     self.f = open(filename, 'w')
@@ -349,11 +410,16 @@ class Rebagger(object):
     self.f.write(struct.pack("<L", len(data)))
     self.f.write(data)
     
-  ## Add a message to the bag
-  ## @param msg Message: message to add to bag
-  ## @param raw bool: if True, \a msg is in raw format (msg_type, serialized_bytes, md5sum, pytype)
-  ## @param t Time: ROS time of message publication
   def add(self, topic, msg, t=None, raw=False):
+    """
+    Add a message to the bag
+    @param msg: message to add to bag
+    @type  msg: Message
+    @param raw: if True, msg is in raw format (msg_type, serialized_bytes, md5sum, pytype)
+    @param raw: bool
+    @param t: ROS time of message publication
+    @type  t: U{roslib.message.Time}
+    """
     if raw:
       f = self.f
       msg_type = msg[0]
@@ -418,16 +484,22 @@ class Rebagger(object):
       self.f.close()
     self.buff = None
 
-
-## Filter the contents of \a inbag to \a outbag using \a filter_fn
-## @param inbag str: filename of input bag file.
-## @param outbag str: filename of output bag file. Existing bag file will be overwritten
-## @param filter_fn fn(topic, msg, time): Python function that returns True if msg is to be kept
-## @param raw bool: if True, \a msg will be kept deserialized. This is
-## useful if you are removing messages that no longer exist.
-## @param verbose_pattern fn(topic, msg, time): Python function that
-## returns string to print for verbose debugging
 def rebag(inbag, outbag, filter_fn, verbose_pattern=None, raw=False):
+  """
+  Filter the contents of inbag to outbag using filter_fn
+  @param inbag: filename of input bag file.
+  @type  inbag: str
+  @param outbag: filename of output bag file. Existing bag file will be overwritten
+  @type  outbag: str
+  @param filter_fn: Python function that returns True if msg is to be kept
+  @type  filter_fn: fn(topic, msg, time)
+  @param raw: if True, msg will be kept deserialized. This is useful
+  if you are removing messages that no longer exist.
+  @type  raw: bool
+  @param verbose_pattern: Python function that returns string to
+  print for verbose debugging
+  @type  verbose_pattern: fn(topic, msg, time)
+  """
   if verbose_pattern:
     rebag = Rebagger(outbag)
     for topic, msg, t in logplayer(inbag, raw=raw):
@@ -446,9 +518,10 @@ def rebag(inbag, outbag, filter_fn, verbose_pattern=None, raw=False):
         if rospy.is_shutdown():
           break
     
-
-## main routine for rosrebag
-def rebag_main():
+def _rebag_main():
+  """
+  main routine for rosrebag command-line tool
+  """
   ## filter function that uses command line expression to test topic/message/time
   def expr_eval(expr):
     def eval_fn(topic, m, t):
@@ -484,15 +557,3 @@ The following variables are available:
     sys.exit(1)
   rebag(inbag, outbag, expr_eval(expr), verbose_pattern=verbose_pattern)
     
-def demo():
-  filename = "/u/kwc/bags/chatter.bag"
-  for topic, msg, t in logplayer(filename):
-    print topic, msg, t
-
-def rebag_demo():
-  inbag = '/u/kwc/bags/chatter.bag'
-  outbag = '/u/kwc/bags/rechatter.bag'
-  rebag(inbag, outbag, lambda msg, topic, t: True)
-
-if __name__ == '__main__':
-  demo()

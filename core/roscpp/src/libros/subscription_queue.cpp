@@ -166,7 +166,13 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
   // msg can be null here if deserialization failed
   if (msg)
   {
-    self = shared_from_this();
+    try
+    {
+      self = shared_from_this();
+    }
+    catch (boost::bad_weak_ptr&) // For the tests, where we don't create a shared_ptr
+    {}
+
     i.helper->call(msg);
   }
 

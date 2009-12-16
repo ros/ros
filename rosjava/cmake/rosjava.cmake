@@ -6,6 +6,16 @@ set( _java_classpath "" )
 set( _java_runtime_classpath "" )
 set( JAVA_OUTPUT_DIR "${PROJECT_SOURCE_DIR}/bin" )
 
+# Add all the jar files under a given directory to the classpath
+macro(add_jar_dir _jardir)
+    file(GLOB_RECURSE _jar_files ${_jardir}/*.jar)
+    foreach(_jar ${_jar_files})
+        add_classpath(${_jar})
+        add_runtime_classpath(${_jar})
+    endforeach(_jar)
+endmacro(add_jar_dir)
+
+
 # Add a jar or directory to java runtime dependencies. 
 macro(add_runtime_classpath _cp)
 	if (EXISTS ${_cp})
@@ -82,10 +92,8 @@ endmacro(add_deps_classpath)
 
 macro(rospack_add_java_executable _exe_name _class)
   string(REPLACE ";" ":" _javac_classpath_param "${JAVA_OUTPUT_DIR}:${_java_runtime_classpath}:${rosjava_PACKAGE_PATH}/bin")
-#message("java classpath for executables is ${_javac_classpath_param}")
   add_custom_command(
     OUTPUT ${EXECUTABLE_OUTPUT_PATH}/${_exe_name}
-#COMMAND ${rosjava_PACKAGE_PATH}/scripts/rosjava_gen_exe ${rosjava_PACKAGE_PATH}/bin:${JAVA_OUTPUT_DIR} ${_class} ${EXECUTABLE_OUTPUT_PATH}/${_exe_name})
     COMMAND ${rosjava_PACKAGE_PATH}/scripts/rosjava_gen_exe ${_javac_classpath_param} ${_class} ${EXECUTABLE_OUTPUT_PATH}/${_exe_name})
   set(_targetname ${EXECUTABLE_OUTPUT_PATH}/${_exe_name})
   string(REPLACE "/" "_" _targetname ${_targetname})

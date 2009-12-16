@@ -7,9 +7,9 @@ available, it will use the system's package manager to install binaries of the
 dependencies.
 
    </description>
-  <author>Morgan Quigley</author>
+  <author>Tully Foote/tfoote@willowgarage.com</author>
   <license>BSD</license>
   <depend package="roslib"/>
   <depend package="rospack"/>
-  <review status="experimental" notes=""/>
+  <review status="unreviewed" notes=""/>
 </package>

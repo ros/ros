@@ -82,8 +82,11 @@ int  g_exit_code       = 0;
 //! Global variable including the set of currenly recording topics
 std::set<std::string> g_currently_recording;
 
-//! Global variable sued for initialization of counting messages
+//! Global variable used for initialization of counting messages
 int g_count = -1;
+
+//! Global variable used for book-keeping of our number of subscribers
+int g_num_subscribers = 0;
 
 //! Global queue for storing 
 std::queue<OutgoingMessage>* g_queue;
@@ -190,7 +193,12 @@ void do_queue(topic_tools::ShapeShifter::ConstPtr msg,
   {
     (*count)--;
     if ((*count) == 0)
+    {
       subscriber->shutdown();
+      
+      if (--g_num_subscribers == 0)
+        ros::shutdown();
+    }
   }
 }
 
@@ -380,18 +388,6 @@ void do_check_master(const ros::TimerEvent& e, ros::NodeHandle& node_handle)
   }
 }
 
-
-void do_check_subscribers_left(const ros::TimerEvent& e)
-{
-  ros::V_string subscribed_topics;
-  ros::this_node::getSubscribedTopics(subscribed_topics);
-
-  // If there is only 1 topic left (time), we can shutdown
-  if (subscribed_topics.size() == 1)
-    ros::shutdown();
-}
-
-
 void do_trigger()
 {
   // Get a node_handle
@@ -488,16 +484,13 @@ int main(int argc, char **argv)
     {
       boost::shared_ptr<int> count(new int(g_count));
       boost::shared_ptr<ros::Subscriber> sub(new ros::Subscriber);
+      g_num_subscribers++;
       *sub = node_handle.subscribe<topic_tools::ShapeShifter>(argv[i], 100, boost::bind(&do_queue, _1, argv[i], sub, count));
     }
 
     ros::Timer check_master_timer;
     if (check_master)
       check_master_timer = node_handle.createTimer(ros::Duration(1.0), boost::bind(&do_check_master, _1, boost::ref(node_handle)));
-    
-    ros::Timer check_subscribers_left_timer;
-    if (g_count >= 0)
-      check_subscribers_left_timer = node_handle.createTimer(ros::Duration(0.1), &do_check_subscribers_left);
     
     ros::MultiThreadedSpinner s(10);
     ros::spin(s);

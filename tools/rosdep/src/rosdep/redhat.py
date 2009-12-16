@@ -28,6 +28,7 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
+from __future__ import with_statement
 from linux_helpers import *
 
 

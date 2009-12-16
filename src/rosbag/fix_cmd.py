@@ -32,8 +32,35 @@
 #
 # Revision $Id$
 
-PKG = 'rosbag'
-import roslib; roslib.load_manifest(PKG)
+import sys
+import os
+import signal
+import subprocess
+import optparse
+from optparse import OptionParser
 
-# Import rosbag main to be used by the $ROS_ROOT/bin/rosbag
-from main import rosbagmain
+import rosbagmigration
+
+def fix_cmd(argv):
+    parser = OptionParser(usage="rosbag fix INBAG OUTBAG [EXTRARULES1 EXTRARULES2 ...]")
+
+    parser.add_option("-n","--noplugins",action="store_false",dest="noplugins",
+                      help = "Do not load rulefiles via plugins.")
+
+    (options, args) = parser.parse_args(argv)
+  
+    if len(args) >= 2:
+        if args[1].split('.')[-1] == "bmr":
+            parser.error("Second argument should be a bag, not a rule file.")
+
+        if args[1].split('.')[-1] != "bag":
+            parser.error("Output file must be a bag (not a .gz or .bz2)")
+
+        mm = rosbagmigration.MessageMigrator(args[2:], plugins=options.noplugins)
+
+        if rosbagmigration.fixbag(mm, args[0], args[1]):
+            print "Bag migrated successfully."
+        else:
+            print "Bag could not be migrated"
+    else:
+        parser.error("Must pass in 2 bagfiles")

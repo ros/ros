@@ -326,7 +326,7 @@ void pump(ros::CallbackQueue* queue)
 {
   while (queue->isEnabled())
   {
-    queue->callAvailable();
+    queue->callAvailable(ros::WallDuration(0.1));
   }
 }
 

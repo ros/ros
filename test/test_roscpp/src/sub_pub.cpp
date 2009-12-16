@@ -117,7 +117,7 @@ TEST_F(SubPub, pubSubNFast)
 
   while(ros::Time::now() < t1 && !success && !failure)
   {
-    ros::getGlobalCallbackQueue()->callAvailable();
+    ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(0.1));
   }
 
   if(success)

@@ -43,6 +43,13 @@ import types
 import tempfile
 import yaml
 
+import debian
+import redhat
+import macports
+import arch
+import core
+
+
 class RosdepException(Exception):
     pass
 
@@ -249,6 +256,21 @@ class Rosdep:
         self.osi = OSIndex()
         self.rosdeps = self.gather_rosdeps(packages, command)
         self.robust = robust
+        
+        ### Detect OS name and version
+        
+        ################ Add All specializations here ##############################
+        self.osi.add_os(debian.Ubuntu())
+        self.osi.add_os(debian.Debian())
+        self.osi.add_os(debian.Mint())
+        self.osi.add_os(redhat.Fedora())
+        self.osi.add_os(redhat.Rhel())
+        self.osi.add_os(arch.Arch())
+        self.osi.add_os(macports.Macports())
+        ################ End Add specializations here ##############################
+    
+
+
 
     def gather_rosdeps(self, packages, command):
         rosdeps = {}

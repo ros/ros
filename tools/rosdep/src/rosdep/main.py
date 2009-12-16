@@ -38,12 +38,7 @@ import roslib.stacks
 import sys
 import os
 
-import debian
-import redhat
-import macports
-import arch
 import core
-
 
 ################################################################################
 # COMMAND LINE PROCESSING
@@ -126,18 +121,6 @@ def main():
     ### Find all dependencies
     r = core.Rosdep(verified_packages, robust=options.robust)
 
-    ### Detect OS name and version
-
-    ################ Add All specializations here ##############################
-    r.osi.add_os(debian.Ubuntu())
-    r.osi.add_os(debian.Debian())
-    r.osi.add_os(debian.Mint())
-    r.osi.add_os(redhat.Fedora())
-    r.osi.add_os(redhat.Rhel())
-    r.osi.add_os(arch.Arch())
-    r.osi.add_os(macports.Macports())
-    ################ End Add specializations here ##############################
-    
     if options.verbose:
         print "Detected OS: " + r.osi.get_os_name()
         print "Detected Version: " + r.osi.get_os_version()

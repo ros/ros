@@ -6,7 +6,7 @@
   </description>
   <author>Ken Conley/kwc@willowgarage.com, Tully Foote/tfoote@willowgarage.com</author>
   <license>BSD</license>
-  <review status="API cleared" notes="01/22/2009"/>
+  <review status="Doc reviewed" notes="12/16/2009"/>
   <url>http://ros.org/wiki/rosmsg</url>
   <depend package="roslib"/>
   <depend package="rospy"/>

@@ -36,6 +36,7 @@ from __future__ import with_statement
 
 import roslib.rospack
 import roslib.stacks
+import roslib.os_detect
 import os
 import sys
 import subprocess
@@ -189,87 +190,17 @@ class RosdepLookupPackage:
             return []
 
 
-########## Class for interacting with customized OS detectors ############
-class OSIndex:
-    """ This class will iterate over registered classes to lookup the
-    active OS and Version of that OS for lookup in rosdep.yaml"""
-    def __init__(self):
-        self._os_list =[]
-        try:
-            self._os_detected = os.environ["ROSDEP_OS_NAME"]
-        except:
-            self._os_detected = False
-        try:
-            self._os_version = os.environ["ROSDEP_OS_VERSION"]
-        except:
-            self._os_version = False
-
-    def add_os(self, class_ref):
-        self._os_list.append(class_ref)
-
-        # \TODO look at throwing here
-    def get_os(self):
-        if not self._os_detected:
-            for os_class in self._os_list:
-                if os_class.check_presence():
-                    self._os_detected = os_class
-                    return os_class
-        if not self._os_detected:
-            print "Failed to detect OS"
-            sys.exit(-1) # TODO do this more elegantly
-
-        return self._os_detected
-    def get_os_name(self):
-        os_class = self.get_os()
-        if os_class:
-            return os_class.get_name()
-        else:
-            return False
-
-    def get_os_version(self):
-        if not self._os_version:
-            self._os_version = self.get_os().get_version()
-        return self._os_version
-
-    def strip_detected_packages(self, packages):
-        return self.get_os().strip_detected_packages(packages)
-
-    def generate_package_install_command(self, packages, default_yes):
-        if len(packages) > 0:
-            bash_script = ""
-            try:
-                bash_script = self.get_os().generate_package_install_command(packages, default_yes)
-            except KeyError:
-                return "# os name '%s' not registered as a valid os"%self.get_os_name()
-            return bash_script
-        else:
-            return "#No packages to install: skipping package install command.\n"
-
-
-
 
 
  
 
 class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
-        self.osi = OSIndex()
+        os_list = [debian.Ubuntu(), debian.Debian(), debian.Mint(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports()]
+        self.osi = roslib.os_detect.OSAbstraction(os_list)
         self.rosdeps = self.gather_rosdeps(packages, command)
         self.robust = robust
         
-        ### Detect OS name and version
-        
-        ################ Add All specializations here ##############################
-        self.osi.add_os(debian.Ubuntu())
-        self.osi.add_os(debian.Debian())
-        self.osi.add_os(debian.Mint())
-        self.osi.add_os(redhat.Fedora())
-        self.osi.add_os(redhat.Rhel())
-        self.osi.add_os(arch.Arch())
-        self.osi.add_os(macports.Macports())
-        ################ End Add specializations here ##############################
-    
-
 
 
     def gather_rosdeps(self, packages, command):
@@ -296,7 +227,7 @@ class Rosdep:
         scripts = []
         failed_rosdeps = []
         for p in self.rosdeps:
-            rdlp = RosdepLookupPackage(self.osi.get_os_name(), self.osi.get_os_version(), p)
+            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p)
             for r in self.rosdeps[p]:
                 specific = rdlp.lookup_rosdep(r)
                 if specific:
@@ -321,8 +252,8 @@ class Rosdep:
     def generate_script(self, include_duplicates=False, default_yes = False):
         native_packages, scripts = self.get_packages_and_scripts()
         undetected = native_packages if include_duplicates else \
-            self.osi.strip_detected_packages(native_packages)
-        return "set -o errexit\n" + self.osi.generate_package_install_command(undetected, default_yes) + \
+            self.osi.get_os_specific_class().strip_detected_packages(native_packages)
+        return "set -o errexit\n" + self.osi.get_os_specific_class().generate_package_install_command(undetected, default_yes) + \
             "\n".join(["\n%s"%sc for sc in scripts])
         
     def check(self):
@@ -330,7 +261,7 @@ class Rosdep:
             native_packages, scripts = self.get_packages_and_scripts()
         except RosdepException:
             pass
-        undetected = self.osi.strip_detected_packages(native_packages)
+        undetected = self.osi.get_os_specific_class().strip_detected_packages(native_packages)
         return_str = ""
         if len(undetected) > 0:
             return_str += "Did not detect packages: %s\n"%undetected
@@ -361,10 +292,10 @@ class Rosdep:
             p.communicate()
                     
     def depdb(self, packages):
-        output = "Rosdep dependencies for operating system %s version %s "%(self.osi.get_os_name(), self.osi.get_os_version())
+        output = "Rosdep dependencies for operating system %s version %s "%(self.osi.get_name(), self.osi.get_version())
         for p in packages:
             output += "\nPACKAGE: %s\n"%p
-            rdlp = RosdepLookupPackage(self.osi.get_os_name(), self.osi.get_os_version(), p)
+            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p)
             map = rdlp.get_map()
             for k in map:
                 output = output + "<<<< %s -> %s >>>>\n"%(k, map[k])
@@ -373,7 +304,7 @@ class Rosdep:
     def where_defined(self, rosdeps):
         output = ""
         locations = {}
-        rdlp = RosdepLookupPackage(self.osi.get_os_name(), self.osi.get_os_version(), None)
+        rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), None)
         
         for r in rosdeps:
             locations[r] = set()

@@ -61,7 +61,7 @@ class Debian:
 
     def generate_package_install_command(self, packages, default_yes):
         if not packages:
-            return "#No Packages to build"
+            return "#No Packages to install"
         if default_yes:
             return "#Packages\nsudo apt-get install -y " + ' '.join(packages)        
         else:

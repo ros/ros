@@ -5,6 +5,7 @@ rosbuild_genmsg()
 rosbuild_gensrv()
 # unit tests
 rosbuild_add_pyunit(test/test_genmsg_py.py)
+rosbuild_add_pyunit(test/test_gensrv_py.py)
 rosbuild_add_pyunit(test/test_rospy_api.py)
 rosbuild_add_pyunit(test/test_rospy_core.py)
 rosbuild_add_pyunit(test/test_rospy_client.py) 

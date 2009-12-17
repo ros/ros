@@ -41,6 +41,7 @@ from play_cmd   import play_cmd
 from info_cmd   import info_cmd
 from check_cmd  import check_cmd
 from fix_cmd    import fix_cmd
+from filter_cmd import filter_cmd
 
 class RosbagCmds(UserDict.UserDict):
     def __init__(self):
@@ -80,6 +81,7 @@ def rosbagmain(argv=None):
     cmds['info'] = info_cmd
     cmds['check'] = check_cmd
     cmds['fix'] = fix_cmd
+    cmds['filter'] = filter_cmd
 
     if argv is None:
         argv=sys.argv

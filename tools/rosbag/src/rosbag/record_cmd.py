@@ -47,9 +47,9 @@ def record_cmd(argv):
                       help="record all topics")
     parser.add_option("-q", "--quiet",    dest="quiet",    default=False, action="store_true",
                       help="suppress console output")
-    parser.add_option("-p", "--prefix",   dest="prefix",   default=None,  action="store",
+    parser.add_option("-o", "--output-prefix",   dest="prefix",   default=None,  action="store",
                       help="append PREFIX to beginning of bag name (name will always end with date stamp)")
-    parser.add_option("-n", "--name",     dest="name",     default=None,  action="store",
+    parser.add_option("-O", "--output-name",     dest="name",     default=None,  action="store",
                       help="record to bag with namename NAME.bag")
     parser.add_option("-z", "--gzip",     dest="gzip",     default=False, action="store_true",
                       help="compress the message with gzip")                      

@@ -10,9 +10,6 @@
   <depend package="std_msgs" />  
   <depend package="test_ros" />
 
-<!-- XXX:REMOVE -->
-  <depend package="geometry_msgs" />
-
   <rosdep name="python-numpy" /> <!-- for numpy tests -->
   <depend package="rostopic" />  <!-- for latch test -->
   

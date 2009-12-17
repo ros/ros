@@ -154,7 +154,7 @@ function rosls {
     ls ${rosvals[1]}${rosvals[2]}${rosvals[3]} $2
 }
 
-function roscmd {
+function _roscmd {
     local pkgdir exepath opt
     pkgdir=`_ros_package_find $1`
     if [[ $? != 0 ]] ; then
@@ -179,7 +179,7 @@ function roscmd {
 
 function rosed {
     local arg
-    roscmd ${1} ${2}
+    _roscmd ${1} ${2}
     if [[ -n ${arg} ]]; then
         if [[ -z $EDITOR ]]; then
             vim ${arg}
@@ -191,7 +191,7 @@ function rosed {
 
 function roscp {
     local arg
-    roscmd ${1} ${2}
+    _roscmd ${1} ${2}
     cp ${arg} ${3}
 }
 
@@ -289,6 +289,19 @@ function _roscomplete_file {
     _roscomplete_search_dir "-type f ! -regex .*[.][oa]$"
 }
 
+function _roscomplete_rosbag {
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="check fix help info play record"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    else
+        COMPREPLY=($(compgen -f -- ${arg}))
+    fi
+
+}
+
 complete -F "_roscomplete_sub_dir" -o "nospace" "roscd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rospd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rosls"
@@ -297,3 +310,4 @@ complete -F "_roscomplete_exe" "rosrun"
 complete -F "_roscomplete_file" "rosed"
 complete -F "_roscomplete_file" "roscp"
 complete -F "_roscomplete" -o "nospace" "rosupdate"
+complete -F "_roscomplete_rosbag" "rosbag"

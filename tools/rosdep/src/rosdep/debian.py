@@ -31,6 +31,7 @@
 from __future__ import with_statement
 from linux_helpers import *
 import os.path 
+import roslib.os_detect
 
 ###### DEBIAN SPECIALIZATION #########################
 def dpkg_detect(p):
@@ -45,17 +46,7 @@ def dpkg_detect(p):
         return False
 
 ###### Debian SPECIALIZATION #########################
-class Debian:
-    def check_presence(self):
-        if "Debian" == lsb_get_os():
-            return True
-        return False
-
-    def get_version(self):
-        return lsb_get_release_codename()
-    def get_name(self):
-        return "debian"
-
+class Debian(roslib.os_detect.Debian):
     def strip_detected_packages(self, packages):
         return [p for p in packages if not dpkg_detect(p)]
 
@@ -71,20 +62,13 @@ class Debian:
 
 
 ###### UBUNTU SPECIALIZATION #########################
-class Ubuntu(Debian):
+class Ubuntu(roslib.os_detect.Ubuntu, Debian):
     """ This is an implementation of a standard interface for
     interacting with rosdep.  This defines all Ubuntu sepecific
     methods, including detecting the OS/Version number.  As well as
     how to check for and install packages."""
-    def check_presence(self):
-        if "Ubuntu" == lsb_get_os():
-            return True
-        return False
-
-    def get_version(self):
-        return lsb_get_release_version()
-    def get_name(self):
-        return "ubuntu"
+    def other(self):
+        pass
 
 ###### END UBUNTU SPECIALIZATION ########################
 

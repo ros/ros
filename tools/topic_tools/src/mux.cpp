@@ -36,6 +36,7 @@
 #include "std_msgs/String.h"
 #include "topic_tools/MuxSelect.h"
 #include "topic_tools/MuxAdd.h"
+#include "topic_tools/MuxList.h"
 #include "topic_tools/MuxDelete.h"
 #include "topic_tools/shape_shifter.h"
 #include "topic_tools/parse.h"
@@ -45,6 +46,7 @@ using std::vector;
 using std::list;
 using namespace topic_tools;
 
+const static string g_none_topic = "__none";
 static ShapeShifter *g_selected = NULL;
 static ros::NodeHandle *g_node = NULL;
 static bool g_advertised = false;
@@ -69,7 +71,7 @@ bool sel_srv_cb( topic_tools::MuxSelect::Request  &req,
   else
     res.prev_topic = string("");
   // see if it's the magical '__none' topic, in which case we open the circuit
-  if (req.topic == string("__none"))
+  if (req.topic == g_none_topic)
   {
     ROS_INFO("mux selected to no input.");
     g_selected = NULL;
@@ -92,9 +94,12 @@ bool sel_srv_cb( topic_tools::MuxSelect::Request  &req,
     }
   }
 
-  std_msgs::String t;
-  t.data = g_selected->topic;
-  g_pub_selected.publish(t);
+  if(ret)
+  {
+    std_msgs::String t;
+    t.data = req.topic;
+    g_pub_selected.publish(t);
+  }
 
   return ret;
 }
@@ -120,11 +125,33 @@ void in_cb(const boost::shared_ptr<ShapeShifter const>& msg,
     g_pub.publish(msg);
 }
 
+bool list_topic_cb(topic_tools::MuxList::Request& req,
+	 	   topic_tools::MuxList::Response& res)
+{
+  for (list<struct sub_info_t>::iterator it = g_subs.begin();
+       it != g_subs.end();
+       ++it)
+  {
+    res.topics.push_back(it->msg->topic);
+  }
+
+  return true;
+}
+
 bool add_topic_cb(topic_tools::MuxAdd::Request& req,
 		  topic_tools::MuxAdd::Response& res)
 {
   // Check that it's not already in our list
   ROS_INFO("trying to add %s to mux", req.topic.c_str());
+  
+  // Can't add the __none topic
+  if(req.topic == g_none_topic)
+  {
+    ROS_WARN("failed to add topic %s to mux, because it's reserved for special use",
+	     req.topic.c_str());
+    return false;
+  }
+
   // spin through our vector of inputs and find this guy
   for (list<struct sub_info_t>::iterator it = g_subs.begin();
        it != g_subs.end();
@@ -139,9 +166,19 @@ bool add_topic_cb(topic_tools::MuxAdd::Request& req,
   }
 
   struct sub_info_t sub_info;
+  try
+  {
+    sub_info.sub = g_node->subscribe<ShapeShifter>(req.topic, 10, boost::bind(in_cb, _1, sub_info.msg));
+  }
+  catch(ros::InvalidNameException& e)
+  {
+    ROS_WARN("failed to add topic %s to mux, because it's an invalid name: %s",
+	     req.topic.c_str(), e.what());
+    return false;
+  }
+
   sub_info.msg = new ShapeShifter;
   sub_info.msg->topic = req.topic;
-  sub_info.sub = g_node->subscribe<ShapeShifter>(req.topic, 10, boost::bind(in_cb, _1, sub_info.msg));
   g_subs.push_back(sub_info);
 
   ROS_INFO("added %s to mux", req.topic.c_str());
@@ -203,6 +240,7 @@ int main(int argc, char **argv)
   // New service
   ros::ServiceServer ss_select = mux_nh.advertiseService(string("select"), sel_srv_cb);
   ros::ServiceServer ss_add = mux_nh.advertiseService(string("add"), add_topic_cb);
+  ros::ServiceServer ss_list = mux_nh.advertiseService(string("list"), list_topic_cb);
   ros::ServiceServer ss_del = mux_nh.advertiseService(string("delete"), del_topic_cb);
   for (size_t i = 0; i < topics.size(); i++)
   {

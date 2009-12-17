@@ -49,10 +49,11 @@ from topic_tools.srv import MuxSelect
 USAGE = 'USAGE: mux_switch MUX_NAME TOPIC'
 
 def call_srv(m, t):
-    print "Selecting \"%s\" at mux \"%s\""%(t, m)
     # There's probably a nicer rospy way of doing this
     s = m + '/select'
+    print "Waiting for service \"%s\""%(s)
     rospy.wait_for_service(s)
+    print "Selecting \"%s\" at mux \"%s\""%(t, m)
     try:
         srv = rospy.ServiceProxy(s, MuxSelect)
 	return srv(t)

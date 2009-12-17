@@ -49,10 +49,11 @@ from topic_tools.srv import MuxDelete
 USAGE = 'USAGE: mux_delete MUX_NAME TOPIC'
 
 def call_srv(m, t):
-    print "Deleting \"%s\" from mux \"%s\""%(t, m)
     # There's probably a nicer rospy way of doing this
     s = m + '/delete'
+    print "Waiting for service \"%s\""%(s)
     rospy.wait_for_service(s)
+    print "Deleting \"%s\" from mux \"%s\""%(t, m)
     try:
         srv = rospy.ServiceProxy(s, MuxDelete)
 	return srv(t)

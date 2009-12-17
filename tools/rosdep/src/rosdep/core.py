@@ -159,8 +159,14 @@ class RosdepLookupPackage:
                 ## Hack to match rounding errors in pyyaml load 9.04  != 9.03999999999999996 in string space
                 for key in os_specific.keys():
                     # NOTE: this hack fails if os_version is not major.minor
-                    if self.os_name == "ubuntu" and float(key) == float(self.os_version):
-                        #print "Matched %s"%(os_version)
+                    if self.os_name == "ubuntu" and float(key) == 9.1 and self.os_version == "karmic":
+                        print >> sys.stderr, "Warning matched key '9.10' for %s please convert to using 'karmic'"%os_specific[key]
+                        return os_specific[key]
+                    if self.os_name == "ubuntu" and float(key) == 9.04 and self.os_version == "jaunty":
+                        print >> sys.stderr, "Warning matched key '9.04' for %s please convert rosdep.yaml to using 'jaunty'"%os_specific[key]
+                        return os_specific[key]
+                    if self.os_name == "ubuntu" and float(key) == 8.04 and self.os_version == "hardy":
+                        print >> sys.stderr, "Warning matched key '8.04' for %s please convert to using 'hardy'"%os_specific[key]
                         return os_specific[key]
 
                 print >> sys.stderr, "failed to find specific version %s of %s within"%(os_version, rosdep), os_specific

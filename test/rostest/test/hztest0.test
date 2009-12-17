@@ -1,5 +1,5 @@
 <launch>
-  <!-- verify that hztest works with 0 rate -->
+  <!-- verify that hztest works with 0 rate. NOTE: there is no test for failure here, which needs to be added somehow -->
   <param name="hztest0/topic" value="fake" />  
   <param name="hztest0/hz" value="0.0" />
   <param name="hztest0/test_duration" value="5.0" />    

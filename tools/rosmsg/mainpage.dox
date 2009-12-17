@@ -1,9 +1,0 @@
-/**
-\mainpage
-\htmlinclude manifest.html
-
-The rosmsg package contains the \b rosmsg and \b rossrv command-line tools for displaying information about ROS Message and Service types. It exposes no external code API.
-
-Please see the Wiki page for documentation on the rosmsg and rossrv tools.
-
-*/

@@ -10,5 +10,8 @@
   <url>http://ros.org/wiki/rosmsg</url>
   <depend package="roslib"/>
   <depend package="rospy"/>
+  <export>
+    <rosdoc config="rosdoc.yaml"/>    
+  </export>
 </package>
 

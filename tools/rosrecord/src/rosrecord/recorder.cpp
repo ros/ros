@@ -32,18 +32,30 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
+#include "rosrecord/Recorder.h"
+
 #include "rosrecord/constants.h"
+
 #include <iomanip>
 #include <signal.h>
 #include <sys/statvfs.h>
-
-#include "rosrecord/Recorder.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
 
 using namespace ros::record;
+
+ros::record::Recorder::Recorder()
+  : file_header_pos_(0), index_data_pos_(0), header_buf_(NULL), header_buf_len_(0), header_buf_size_(0),
+    message_buf_(NULL), message_buf_len_(0), message_buf_size_(0), free_space_(0)
+{
+}
+
+ros::record::Recorder::~Recorder()
+{
+  close();
+}
 
 const void* ros::record::Recorder::getHeaderBuffer()
 {
@@ -60,22 +72,20 @@ void ros::record::Recorder::resetHeaderBuffer()
   header_buf_len_ = 0;
 }
 
-void ros::record::Recorder::writeFieldToHeaderBuffer(const std::string& name,
-                                        const void* value,
-                                        unsigned int value_len)
+void ros::record::Recorder::writeFieldToHeaderBuffer(const std::string& name, const void* value, unsigned int value_len)
 {
   // Do a little buffer-size management.
   unsigned int new_len = header_buf_len_ + name.size() + 1 + 4 + value_len;
-  if(header_buf_size_ < new_len)
+  if (header_buf_size_ < new_len)
   {
-    if(header_buf_size_ == 0)
+    if (header_buf_size_ == 0)
       header_buf_size_ = new_len;
     else
     {
-      while(header_buf_size_ < new_len)
+      while (header_buf_size_ < new_len)
         header_buf_size_ *= 2;
     }
-    header_buf_ = (unsigned char*)realloc(header_buf_, header_buf_size_);
+    header_buf_ = (unsigned char*) realloc(header_buf_, header_buf_size_);
     ROS_ASSERT(header_buf_);
   }
 
@@ -94,6 +104,42 @@ void ros::record::Recorder::writeFieldToHeaderBuffer(const std::string& name,
   header_buf_len_ += value_len;
 }
 
+bool ros::record::Recorder::open(const std::string &file_name, bool random_access)
+{
+  file_name_ = file_name;
+
+  std::string ext = boost::filesystem::extension(file_name);
+
+  store_index_ = !(ext == ".gz" || ext == ".bz2");
+  if (store_index_ && random_access)
+    record_file_.open(file_name.c_str(), std::ios::in | std::ios::out | std::ios::binary);
+  else
+    record_file_.open(file_name.c_str(), std::ios::out | std::ios::binary | std::ios::app);
+
+  if (record_file_.fail())
+  {
+    ROS_FATAL("rosrecord::Record: Failed to open file: %s", file_name.c_str());
+    return false;
+  }
+
+  if (ext == ".gz")
+    record_stream_.push(boost::iostreams::gzip_compressor());
+  else if (ext == ".bz2")
+    record_stream_.push(boost::iostreams::bzip2_compressor());
+  record_stream_.push(record_file_);
+
+  checkDisk();
+  check_disk_next_ = ros::WallTime::now() + ros::WallDuration().fromSec(20.0);
+
+  record_pos_ = 0;
+
+  return true;
+}
+
+pos_t ros::record::Recorder::getOffset()
+{
+  return record_pos_;
+}
 
 void ros::record::Recorder::close()
 {
@@ -106,55 +152,40 @@ void ros::record::Recorder::close()
   // the right thing.
   //sighandler_t old = signal(SIGINT, SIG_IGN);
   sig_t old = signal(SIGINT, SIG_IGN);
-  if (record_file_.is_open()) {
-    if (!record_stream_.empty())
+  if (record_file_.is_open())
+  {
+    while (!record_stream_.empty())
       record_stream_.pop();
     record_file_.close();
   }
   signal(SIGINT, old);
 }
 
-
-bool ros::record::Recorder::open(const std::string &file_name)
+void ros::record::Recorder::writeVersion()
 {
-  file_name_ = file_name;
-
-  record_file_.open(file_name.c_str());
-  if (record_file_.fail())
-  {
-    ROS_FATAL("rosrecord::Record: Failed to open file: %s", file_name.c_str());
-    return false;
-  }
-  std::string ext = boost::filesystem::extension(file_name);
-  if (ext == ".gz")
-    record_stream_.push(boost::iostreams::gzip_compressor());
-  else if (ext == ".bz2")
-    record_stream_.push(boost::iostreams::bzip2_compressor());
-  record_stream_.push(record_file_);
-
-  checkDisk();
-
-  check_disk_next_ = ros::WallTime::now() + ros::WallDuration().fromSec(20.0);
-
-  record_stream_ << "#ROSRECORD V" << VERSION << std::endl;
-
-  return true;
+  std::string version = std::string("#ROSRECORD V") + VERSION + std::string("\n");
+  write(version);
 }
 
 bool ros::record::Recorder::checkDisk()
 {
   struct statvfs fiData;
 
-  if((statvfs(file_name_.c_str(),&fiData)) < 0 ) {
+  if ((statvfs(file_name_.c_str(), &fiData)) < 0)
+  {
     ROS_WARN("rosrecord::Record: Failed to check filesystem stats.");
-  } else {
+  }
+  else
+  {
     free_space_ = (unsigned long long)(fiData.f_bsize) * (unsigned long long)(fiData.f_bavail);
 
-    if (free_space_ < 1073741824ull) {
+    if (free_space_ < 1073741824ull)
+    {
       ROS_ERROR("rosrecord::Record: Less than 1GB of space free on disk with %s.  Disabling logging.", file_name_.c_str());
       return false;
     }
-    else if (free_space_ < 5368709120ull) {
+    else if (free_space_ < 5368709120ull)
+    {
       ROS_WARN("rosrecord::Record: Less than 5GB of space free on disk with %s.", file_name_.c_str());
     }
   }
@@ -163,10 +194,8 @@ bool ros::record::Recorder::checkDisk()
 
 bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPtr msg, ros::Time time)
 {
-
   bool needs_def_written = false;
   std::map<std::string, MsgInfo>::iterator key;
-
   {
     boost::mutex::scoped_lock lock(topics_recorded_mutex_);
 
@@ -175,17 +204,18 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     if (key == topics_recorded_.end())
     {
       MsgInfo& info = topics_recorded_[topic_name];
-
       info.msg_def  = msg->__getMessageDefinition();
       info.datatype = msg->__getDataType();
       info.md5sum   = msg->__getMD5Sum();
-      
+
       key = topics_recorded_.find(topic_name);
+
+      topic_indexes_[topic_name] = std::vector<IndexEntry>();
 
       needs_def_written = true;
     }
   }
-
+  const MsgInfo& msg_info = key->second;
 
   {
     boost::mutex::scoped_lock lock(check_disk_mutex_);
@@ -194,7 +224,7 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     {
       if (!checkDisk())
         return false;
-                     
+
       check_disk_next_ = check_disk_next_ + ros::WallDuration().fromSec(20.0);
     }
   }
@@ -202,53 +232,28 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
   {
     boost::mutex::scoped_lock lock(record_mutex_);
 
-    // Assemble the header in memory first, because we need to write its
-    // length first.
+    // Assemble the header in memory first, because we need to write its length first.
 
-    // Have we written the definition for this topic yet?
-    if(needs_def_written)
+    // Write a message definition record, if necessary
+    if (needs_def_written)
     {
-      // Assemble a message definition header, which has no data, and
-      // write it to file
-      M_string m;
-      m[OP_FIELD_NAME] = std::string((char*)&OP_MSG_DEF, 1);
-      m[TOPIC_FIELD_NAME] = topic_name;
-      m[MD5_FIELD_NAME] = (key->second).md5sum;
-      m[TYPE_FIELD_NAME] = (key->second).datatype;
-      m[DEF_FIELD_NAME] = (key->second).msg_def;
-
-      boost::shared_array<uint8_t> header_buffer;
-      uint32_t header_len;
-      Header::write(m, header_buffer, header_len);
-
-      unsigned int data_len = 0;
-      record_stream_.write((char*)&header_len, 4);
-      record_stream_.write((char*)header_buffer.get(), header_len);
-      record_stream_.write((char*)&data_len, 4);
+      M_string header;
+      header[OP_FIELD_NAME]    = std::string((char*)&OP_MSG_DEF, 1);
+      header[TOPIC_FIELD_NAME] = topic_name;
+      header[MD5_FIELD_NAME]   = msg_info.md5sum;
+      header[TYPE_FIELD_NAME]  = msg_info.datatype;
+      header[DEF_FIELD_NAME]   = msg_info.msg_def;
+      writeHeader(header, 0);
     }
 
-    // Write a message data header, followed by the data
-    M_string m;
-    m[OP_FIELD_NAME] = std::string((char*)&OP_MSG_DATA, 1);
-    m[TOPIC_FIELD_NAME] = topic_name;
-    m[MD5_FIELD_NAME] = (key->second).md5sum;
-    m[TYPE_FIELD_NAME] = (key->second).datatype;
-    m[SEC_FIELD_NAME] = std::string((char*)&time.sec, 4);
-    m[NSEC_FIELD_NAME] = std::string((char*)&time.nsec, 4);
-
-    boost::shared_array<uint8_t> header_buffer;
-    uint32_t header_len;
-    Header::write(m, header_buffer, header_len);
-    record_stream_.write((char*)&header_len, 4);
-    record_stream_.write((char*)header_buffer.get(), header_len);
-
-    if(message_buf_size_ < msg->__serialized_length)
+    // Serialize the message into the message buffer
+    if (message_buf_size_ < msg->__serialized_length)
     {
-      if(message_buf_size_ == 0)
+      if (message_buf_size_ == 0)
         message_buf_size_ = msg->__serialized_length;
       else
       {
-        while(message_buf_size_ < msg->__serialized_length)
+        while (message_buf_size_ < msg->__serialized_length)
           message_buf_size_ *= 2;
       }
       message_buf_ = (unsigned char*)realloc(message_buf_, message_buf_size_);
@@ -256,15 +261,127 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     }
     msg->serialize(message_buf_, 0);
 
-    record_stream_.write((char*)&msg->__serialized_length, 4);
-    record_stream_.write((char*)message_buf_, msg->__serialized_length);
-
+    // Write a message instance record
+    M_string header;
+    header[OP_FIELD_NAME]    = std::string((char*)&OP_MSG_DATA, 1);
+    header[TOPIC_FIELD_NAME] = topic_name;
+    header[MD5_FIELD_NAME]   = msg_info.md5sum;
+    header[TYPE_FIELD_NAME]  = msg_info.datatype;
+    header[SEC_FIELD_NAME]   = std::string((char*)&time.sec, 4);
+    header[NSEC_FIELD_NAME]  = std::string((char*)&time.nsec, 4);
+    writeRecord(header, (char*)message_buf_, msg->__serialized_length);
     if (record_file_.fail())
     {
       ROS_FATAL("rosrecord::Record: could not write to file.  Check permissions and diskspace\n");
       return false;
     }
+
+    // Add to topic index
+    IndexEntry index_entry;
+    index_entry.sec  = time.sec;
+    index_entry.nsec = time.nsec;
+    index_entry.pos  = record_pos_;
+    topic_indexes_[topic_name].push_back(index_entry);
   }
 
   return true;
+}
+
+void ros::record::Recorder::writeFileHeader()
+{
+  boost::mutex::scoped_lock lock(record_mutex_);
+
+  // Remember position to file header record
+  file_header_pos_ = record_pos_;
+
+  // Write file header record
+  M_string header;
+  header[OP_FIELD_NAME]        = std::string((char*)&OP_FILE_HEADER, 1);
+  header[INDEX_POS_FIELD_NAME] = std::string((char*)&index_data_pos_, 8);
+  writeHeader(header, 0);
+
+  // Pad the file header record out
+  uint32_t padding_length = FILE_HEADER_LENGTH - (record_pos_ - file_header_pos_);
+  std::string padding;
+  padding.resize(padding_length, ' ');
+  write(padding);
+}
+
+void ros::record::Recorder::writeIndex()
+{
+	{
+		boost::mutex::scoped_lock lock(record_mutex_);
+
+		// Remember position to first index record
+		index_data_pos_ = record_pos_;
+
+		for (std::map<std::string, std::vector<IndexEntry> >::const_iterator i = topic_indexes_.begin(); i != topic_indexes_.end(); i++)
+		{
+			const std::string&             topic_name  = i->first;
+			const std::vector<IndexEntry>& topic_index = i->second;
+
+			uint32_t topic_index_size = topic_index.size();
+
+			// Write the index record header
+			M_string header;
+			header[OP_FIELD_NAME]    = std::string((char*)&OP_INDEX_DATA, 1);
+			header[TOPIC_FIELD_NAME] = topic_name;
+			header[VER_FIELD_NAME]   = std::string((char*)&INDEX_VERSION, 4);
+			header[COUNT_FIELD_NAME] = std::string((char*)&topic_index_size, 4);
+
+			uint32_t data_len = topic_index_size * sizeof(IndexEntry);
+			writeHeader(header, data_len);
+
+			// Write the index record data (pairs of timestamp and position in file)
+			for (std::vector<IndexEntry>::const_iterator j = topic_index.begin(); j != topic_index.end(); j++)
+			{
+				const IndexEntry& index_entry = *j;
+				write((char*)&index_entry.sec,  4);
+				write((char*)&index_entry.nsec, 4);
+				write((char*)&index_entry.pos,  8);
+			}
+		}
+	}
+
+	// Re-open the file for random access, and rewrite the file header to point to the first index data message
+  close();
+  open(file_name_, true);
+  seek(file_header_pos_);
+  writeFileHeader();
+}
+
+//
+
+void ros::record::Recorder::writeRecord(const M_string& fields, char* data, uint32_t data_len)
+{
+  writeHeader(fields, data_len);
+  write(data, data_len);
+}
+
+void ros::record::Recorder::writeHeader(const M_string& fields, uint32_t data_len)
+{
+  boost::shared_array<uint8_t> header_buffer;
+  uint32_t header_len;
+  Header::write(fields, header_buffer, header_len);
+
+  write((char*)&header_len, 4);
+  write((char*)header_buffer.get(), header_len);
+  write((char*)&data_len, 4);
+}
+
+void ros::record::Recorder::write(const char* s, std::streamsize n)
+{
+  record_stream_.write(s, n);
+  record_pos_ += n;
+}
+
+void ros::record::Recorder::write(const std::string& s)
+{
+  write(s.c_str(), s.length());
+}
+
+void ros::record::Recorder::seek(pos_t pos)
+{
+  record_file_.seekp(pos, std::ios_base::beg);
+  record_pos_ = pos;
 }

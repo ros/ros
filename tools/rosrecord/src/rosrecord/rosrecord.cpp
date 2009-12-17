@@ -285,23 +285,29 @@ void do_record(std::string prefix, bool add_date)
     ros::shutdown();
   }
   
+  recorder.writeVersion();
+  recorder.writeFileHeader();
+
   // Technically the g_queue_mutex should be locked while checking empty
   // Except it should only get checked if the node is not ok, and thus
   // it shouldn't be in contention.
   while (nh.ok() || !g_queue->empty())
   {
     boost::unique_lock<boost::mutex> lock(g_queue_mutex);
+
+    bool finished = false;
     while(g_queue->empty())
     {
       if (!nh.ok())
       {
-        // Close the file nicely
-        recorder.close();
-        rename(fname.c_str(),tgt_fname.c_str());
-        return;
+        lock.release()->unlock();
+        finished = true;
+        break;
       }
       g_queue_condition.wait(lock);
     }
+    if (finished)
+      break;
 
     OutgoingMessage out = g_queue->front();
     g_queue->pop();
@@ -312,11 +318,13 @@ void do_record(std::string prefix, bool add_date)
     recorder.record(out.topic_name, out.msg, out.time);
   }
 
+  // Write the index to a file
+  recorder.writeIndex();
+
   // Close the file nicely
   recorder.close();
   rename(fname.c_str(),tgt_fname.c_str());
 }
-
 
 void do_record_bb()
 {
@@ -344,8 +352,9 @@ void do_record_bb()
 
     if (recorder.open(fname))
     {
+      recorder.writeVersion();
 
-      while(!out_queue.queue->empty())
+      while (!out_queue.queue->empty())
       {
         OutgoingMessage out = out_queue.queue->front();
         out_queue.queue->pop();
@@ -362,8 +371,6 @@ void do_record_bb()
     }
   }
 }
-
-
 
 void do_check_master(const ros::TimerEvent& e, ros::NodeHandle& node_handle)
 {

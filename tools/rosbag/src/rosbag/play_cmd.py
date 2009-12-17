@@ -50,7 +50,7 @@ def play_cmd(argv):
                       help="start in paused mode")
 
     parser.add_option("--queue",      dest="queue",   default=0,   type='int', action="store",
-                      help="use an outgoign queue of size SIZE (defaults to %default)", metavar="SIZE")
+                      help="use an outgoing queue of size SIZE (defaults to %default)", metavar="SIZE")
     parser.add_option("--frequency",  dest="freq",       default=100, type='float', action="store",
                       help="publish the log time at a frequency of HZ (default: %default)", metavar="HZ")
     parser.add_option("-d", "--delay",      dest="delay",      default=0.2, type='float', action="store",

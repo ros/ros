@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="rospy_demo" type="talker" />
+  <node name="talker" pkg="test_ros" type="talker.py" />
 
   <param name="hztest1/topic" value="chatter" />  
   <param name="hztest1/hz" value="10.0" />

@@ -136,7 +136,14 @@ class RosdepCoreTest(unittest.TestCase):
     def test_Rosdep_tripwire(self):
         rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=True)
         rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=False)
-        
+
+    def test_RosdepLookupPackage_failed_version_lookup(self):
+        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep")
+        yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
+        rdlp.insert_map(yaml_map, "example_yaml_path", False)
+        rdlp.insert_map(yaml_map, "example_yaml_path2", True)
+        output = rdlp.lookup_rosdep("rosdep_test")
+        self.assertEqual(output, False)
     
 if __name__ == '__main__':
   os.environ["ROSDEP_TEST_OS"] = "True"

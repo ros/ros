@@ -7,3 +7,6 @@ rosdep_test:
 zlib:
   rosdep_test_os: zlib1g-dev
   debian: zlib1g-dev
+other_rosdep_test:
+  rosdep_test_os:
+    other_version: foo

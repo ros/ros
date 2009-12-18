@@ -47,6 +47,7 @@ import threading
 import math
 
 import parallel_build
+import package_stats
 
 from optparse import OptionParser
 

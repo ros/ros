@@ -232,20 +232,6 @@ class NamesTest(unittest.TestCase):
       pass
       
 
-  def test_is_valid_local_name(self):
-    from roslib.names import is_valid_local_name
-    failures = [1, None, '', 'x'*256,
-                'hello\n', '\t',
-                'foo//bar',
-                'foo++', 'foo-bar', '#foo',
-                ' name', 'name ',
-                '1name', 'foo\\']
-    for f in failures:
-      self.failIf(is_valid_local_name(f), f)
-    tests = ['f', 'foo', 'foo_bar', 'foo/bar']
-    for t in tests:
-      self.assert_(is_valid_local_name(t), t)
-
   def test_is_legal_resource_name(self):
     from roslib.names import is_legal_resource_name
     failures = [None, '', 'hello\n', '\t', 'foo++', 'foo-bar', '#foo', 
@@ -254,7 +240,7 @@ class NamesTest(unittest.TestCase):
                 '1name', 'foo\\']
     for f in failures:
       self.failIf(is_legal_resource_name(f), f)
-    tests = ['f', 'f1', 'f_', 'foo', 'foo_bar', 'foo/bar']
+    tests = ['f', 'f1', 'f_', 'foo', 'foo_bar', 'foo/bar', 'roslib/Log']
     for t in tests:
       self.assert_(is_legal_resource_name(t), t)
 
@@ -287,6 +273,20 @@ class NamesTest(unittest.TestCase):
     tests = ['f', 'f1', 'f_', 'foo', 'foo_bar']
     for t in tests:
       self.assert_(is_legal_base_name(t), "[%s]"%t)
+
+  def test_is_legal_resource_base_name(self):
+    from roslib.names import is_legal_resource_base_name
+    failures = [None, '', 'hello\n', '\t', 'foo++', 'foo-bar', '#foo',
+                'f/', 'foo/bar', '/', '/a',
+                'f//b',
+                '~f', '~a/b/c',                
+                ' name', 'name ',
+                '1name', 'foo\\']
+    for f in failures:
+      self.failIf(is_legal_resource_base_name(f), f)
+    tests = ['f', 'f1', 'f_', 'foo', 'foo_bar']
+    for t in tests:
+      self.assert_(is_legal_resource_base_name(t), "[%s]"%t)
       
 if __name__ == '__main__':
   rostest.unitrun('test_roslib', 'test_names', NamesTest, coverage_packages=['roslib.names'])

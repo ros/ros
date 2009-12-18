@@ -57,13 +57,17 @@ import roslib.rosenv
 SIOCGIFCONF=0x8912
 SIOCGIFADDR = 0x8915
 
-try:
-    import netifaces
-    _use_netifaces = True
-except:
-    # NOTE: in rare cases, I've seen Python fail to extract the egg
-    # cache when launching multiple python nodes.  Thus, we do
-    # except-all instead of except ImportError (kwc).
+if 0:
+    # disabling netifaces as it accounts for 50% of startup latency
+    try:
+        import netifaces
+        _use_netifaces = True
+    except:
+        # NOTE: in rare cases, I've seen Python fail to extract the egg
+        # cache when launching multiple python nodes.  Thus, we do
+        # except-all instead of except ImportError (kwc).
+        _use_netifaces = False
+else:
     _use_netifaces = False
 
 def parse_http_host_and_port(url):
@@ -141,11 +145,19 @@ def get_local_address():
     else: # loopback 
         return '127.0.0.1'
 
+# cache for performance reasons
+_local_addrs = None
 def get_local_addresses():
     """
     @return: known local addresses. Not affected by ROS_IP/ROS_HOSTNAME
     @rtype:  [str]
     """
+    # cache address data as it can be slow to calculate
+    global _local_addrs
+    if _local_addrs is not None:
+        return _local_addrs
+
+    local_addrs = None
     if _use_netifaces:
         # #552: netifaces is a more robust package for looking up
         # #addresses on multiple platforms (OS X, Unix, Windows)
@@ -155,7 +167,6 @@ def get_local_addresses():
             try:
                 local_addrs.extend([d['addr'] for d in netifaces.ifaddresses(i)[netifaces.AF_INET]])
             except KeyError: pass
-        return local_addrs
     elif _is_unix_like_platform():
         # unix-only branch
         # adapted from code from Rosen Diankov (rdiankov@cs.cmu.edu)
@@ -177,10 +188,12 @@ def get_local_addresses():
                            struct.pack('iL', max_bytes, buff.buffer_info()[0]))
         retbytes = struct.unpack('iL', info)[0]
         buffstr = buff.tostring()
-        return [socket.inet_ntoa(buffstr[i+20:i+24]) for i in range(0, retbytes, ifsize)]
+        local_addrs = [socket.inet_ntoa(buffstr[i+20:i+24]) for i in range(0, retbytes, ifsize)]
     else:
         # cross-platform branch, can only resolve one address
-        return [socket.gethostbyname(socket.gethostname())]
+        local_addrs = [socket.gethostbyname(socket.gethostname())]
+    _local_addrs = local_addrs
+    return local_addrs
 
 
 def get_bind_address(address=None):

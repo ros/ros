@@ -312,8 +312,24 @@ function _roscomplete_rosnode {
     if [[ $COMP_CWORD == 1 ]]; then
         opts="ping list info machine kill"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    elif [[ $COMP_CWORD == 2 ]]; then
+        case ${COMP_WORDS[1]} in
+            ping|info|list|kill)
+                opts=`rosnode list`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            machine)
+                # This takes more logic to determine which machines are present.
+                ;;
+        esac
     else
-        COMPREPLY=($(compgen -f -- ${arg}))
+        case ${COMP_WORDS[1]} in
+            kill)
+                # complete on node name
+                opts=`rosnode list`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+        esac
     fi
 
 }

@@ -324,8 +324,25 @@ function _roscomplete_rosparam {
     if [[ $COMP_CWORD == 1 ]]; then
         opts="set get load dump delete list"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-    else
-        COMPREPLY=($(compgen -f -- ${arg}))
+    elif [[ $COMP_CWORD == 2 ]]; then
+        case ${COMP_WORDS[1]} in
+            set|get|delete|list)
+                opts=`rosparam list`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            load|dump)
+                # complete on files
+                COMPREPLY=($(compgen -f -- ${arg}))
+                ;;
+        esac
+    elif [[ $COMP_CWORD == 3 ]]; then
+        case ${COMP_WORDS[1]} in
+            load|dump)
+                # complete on namespace
+                opts=`rosparam list`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+        esac
     fi
 
 }
@@ -336,7 +353,7 @@ function _roscomplete_rostopic {
     if [[ $COMP_CWORD == 1 ]]; then
         opts="bw echo hz list pub type find"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-    else
+    elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
             bw|echo|hz|list|type)
                 opts=`rostopic list`
@@ -359,8 +376,19 @@ function _roscomplete_rosservice {
     if [[ $COMP_CWORD == 1 ]]; then
         opts="list call type find uri"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-    else
-        COMPREPLY=($(compgen -f -- ${arg}))
+    elif [[ $COMP_CWORD == 2 ]]; then
+        case ${COMP_WORDS[1]} in
+            uri|list|type)
+                opts=`rosservice list`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            find)
+                # Need a clever way to do message searching
+                ;;
+            call)
+                # This takes more logic.
+                ;;
+        esac
     fi
 
 }

@@ -239,8 +239,8 @@ class ROSLaunchConfig(object):
             else:
                 self.logger.debug("overriding parameter [%s]"%p.key)                
         self.params[key] = p
-        #if verbose:
-        #    print "Added parameter [%s]"%key
+        if verbose:
+            print "Added parameter [%s]"%key
         t = type(p.value)
         if t in [str, unicode, types.InstanceType]:
             self.logger.debug("add_param[%s]: type [%s]"%(p.key, t))
@@ -333,9 +333,7 @@ class ROSLaunchConfig(object):
             # assign to local machine
             return self.machines['']            
 
-
-        
-def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None, verbose=True):
+def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None, verbose=False):
     """
     Base routine for creating a ROSLaunchConfig from a set of 
     roslaunch_files and or launch XML strings and initializing it. This
@@ -347,6 +345,8 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
     @type  port: int
     @param roslaunch_strs: (optional) roslaunch XML strings to load
     @type  roslaunch_strs: [str]
+    @param verbose: (optional) print info to screen about model as it is loaded. 
+    @type  verbose: bool
     @return: initialized rosconfig instance
     @rytpe: L{ROSLaunchConfig} initialized rosconfig instance
     """

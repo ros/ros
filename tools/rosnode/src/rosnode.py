@@ -50,7 +50,6 @@ import xmlrpclib
 from optparse import OptionParser
 
 import roslib.scriptutil as scriptutil 
-import rospy
 
 class ROSNodeException(Exception):
     """
@@ -266,25 +265,28 @@ def rosnode_ping(node_name, max_count=None, verbose=False):
     lastcall = 0.
     count = 0
     acc = 0.
-    while not rospy.is_shutdown():
-        try:
-            start = time.time()
-            pid = _succeed(node.getPid(ID))
-            end = time.time()
-            
-            dur = (end-start)*1000.
-            acc += dur
-            count += 1
-            
-            if verbose:
-                print "xmlrpc reply from %s\ttime=%fms"%(node_api, dur)
-            # 1s between pings
-        except socket.error:
-            print >> sys.stderr, "connection to [%s] timed out"%node_name
-            return False
-        if max_count and count >= max_count:
-            break
-        time.sleep(1.0)
+    try:
+        while True:
+            try:
+                start = time.time()
+                pid = _succeed(node.getPid(ID))
+                end = time.time()
+
+                dur = (end-start)*1000.
+                acc += dur
+                count += 1
+
+                if verbose:
+                    print "xmlrpc reply from %s\ttime=%fms"%(node_api, dur)
+                # 1s between pings
+            except socket.error:
+                print >> sys.stderr, "connection to [%s] timed out"%node_name
+                return False
+            if max_count and count >= max_count:
+                break
+            time.sleep(1.0)
+    except KeyboardInterrupt:
+        pass
             
     if verbose and count > 1:
         print "ping average: %fms"%(acc/count)

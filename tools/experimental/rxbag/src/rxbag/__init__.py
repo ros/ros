@@ -108,24 +108,17 @@ def connect_to_ros(node_name, init_timeout):
 def rxbag_main():
     # Parse command line for input files and options
     parser = optparse.OptionParser()
-    parser.add_option('-i', '--index',           action='store_true', default=False, help='don\'t launch GUI; just generate bag file indexes')   
-    parser.add_option('-t', '--init-timeout',    action='store',      default=0.5,   help='timeout in secs for connecting to master node')   
+    #parser.add_option('-t', '--init-timeout', action='store', default=0.5, help='timeout in secs for connecting to master node')   
     options, args = parser.parse_args(sys.argv[1:])
     if len(args) == 0:
         parser.print_help()
         return
     input_files = args[:]
 
-    if options.index:
-        for bag_path in input_files:
-            bag_index_factory = bag_index.BagIndexFactory(bag_path)
-            if bag_index_factory.load():
-                bag_index.BagIndexPickler(bag_index_factory.bag_path + '.index').save(bag_index_factory.index)
-    else:
-        #connect_to_ros('rxbag', options.init_timeout)
-    
-        # Start application
-        app = RxBagApp(input_files, options)
-        app.MainLoop()
-     
-        rospy.signal_shutdown('GUI shutdown')    
+    #connect_to_ros('rxbag', options.init_timeout)
+
+    # Start application
+    app = RxBagApp(input_files, options)
+    app.MainLoop()
+
+    rospy.signal_shutdown('GUI shutdown')

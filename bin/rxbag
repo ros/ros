@@ -33,7 +33,7 @@
 #
 # Revision $Id$
 
-import roslib; roslib.load_manifest('rxplay')
+import roslib; roslib.load_manifest('rxbag')
 
-import rxplay
-rxplay.rxplay_main()
+import rxbag
+rxbag.rxbag_main()

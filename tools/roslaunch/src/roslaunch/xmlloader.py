@@ -140,8 +140,12 @@ class XmlLoader(Loader):
     def resolve_args(self, args, context):
         """
         Wrapper around roslib.substitution_args.resolve_args to set common parameters
-        """        
-        return roslib.substitution_args.resolve_args(args, context=context.resolve_dict, resolve_anon=self.resolve_anon)
+        """
+        # resolve_args gets called a lot, so we optimize by testing for dollar sign before resolving
+        if args and '$' in args:
+            return roslib.substitution_args.resolve_args(args, context=context.resolve_dict, resolve_anon=self.resolve_anon)
+        else:
+            return args
 
     def opt_attrs(self, tag, context, attrs):
         """

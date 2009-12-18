@@ -135,8 +135,10 @@ class RoslibOsDetectTest(unittest.TestCase):
 
   def test_ubuntu_in_OSA(self):
     ubuntu = roslib.os_detect.Ubuntu()
-    ubuntu.check_presence = True
-    osa = roslib.os_detect.OSDetect()
+    def return_true():
+      return True
+    ubuntu.check_presence = return_true
+    osa = roslib.os_detect.OSDetect([ubuntu])
     self.assertEqual("ubuntu", ubuntu.get_name())
     os_class = osa.get_os()
     self.assertEqual("ubuntu", os_class.get_name())

@@ -93,7 +93,7 @@ private:
   void         writeFileHeader();
   void         writeIndex();
 
-  void         writeRecord(const M_string& fields, char* data, uint32_t data_len);
+  void         writeRecord(const M_string& fields, const char* data, uint32_t data_len);
   void         writeHeader(const M_string& fields, uint32_t data_len);
   void         write(const char* s, std::streamsize n);
   void         write(const std::string& s);

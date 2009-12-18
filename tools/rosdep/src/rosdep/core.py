@@ -106,8 +106,12 @@ class RosdepLookupPackage:
 
     def insert_map(self, yaml_dict, source_path, override=False):
         for key in yaml_dict:
+            rosdep_entry = self.get_os_from_yaml(yaml_dict[key])
+            if not rosdep_entry: # if no match don't do anything
+                continue # matches for loop
             if key in self.rosdep_source:
-                rosdep_entry = self.get_os_from_yaml(yaml_dict[key])
+
+
                 if override:
                     print >>sys.stderr, "ROSDEP_OVERRIDE: %s being overridden with %s from %s"%(key, yaml_dict[key], source_path)
                     self.rosdep_source[key].append("Overriding with "+source_path)
@@ -122,7 +126,7 @@ class RosdepLookupPackage:
                         
             else:
                 self.rosdep_source[key] = [source_path]
-                self.rosdep_map[key] = self.get_os_from_yaml(yaml_dict[key])
+                self.rosdep_map[key] = rosdep_entry
                         #print "rosdep_map[%s] = %s"%(key, self.rosdep_map[key])
 
 
@@ -147,7 +151,7 @@ class RosdepLookupPackage:
         if self.os_name in yaml_map:
             return self.get_version_from_yaml(yaml_map[self.os_name])
         else:
-            print >> sys.stderr, "failed to resolve a rule for OS(%s)"%(self.os_name)
+            #print >> sys.stderr, "failed to resolve a rule for OS(%s)"%(self.os_name)
             return False
 
     def get_version_from_yaml(self, os_specific):
@@ -196,7 +200,7 @@ class RosdepLookupPackage:
 
 class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
-        os_list = [debian.Ubuntu(), debian.Debian(), debian.Mint(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports()]
+        os_list = [debian.RosdepTestOS(), debian.Ubuntu(), debian.Debian(), debian.Mint(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports()]
         self.osi = roslib.os_detect.OSDetect(os_list)
         self.rosdeps = self.gather_rosdeps(packages, command)
         self.robust = robust

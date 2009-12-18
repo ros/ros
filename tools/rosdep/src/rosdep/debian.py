@@ -45,6 +45,30 @@ def dpkg_detect(p):
     else:
         return False
 
+###### Rosdep Test OS #########################
+class RosdepTestOS(roslib.os_detect.OSBase):
+    def check_presence(self):
+        if os.environ["ROSDEP_TEST_OS"]:
+            return True
+        else:
+            return False
+
+    def get_name(self):
+        return "rosdep_test_os"
+
+    def get_version(self):
+        return "rosdep_test_version"
+    
+    def strip_detected_packages(self, packages):
+        return packages
+
+    def generate_package_install_command(self, packages, default_yes):
+        if default_yes:
+            return "yes"
+        else:
+            return "no"
+
+
 ###### Debian SPECIALIZATION #########################
 class Debian(roslib.os_detect.Debian):
     def strip_detected_packages(self, packages):

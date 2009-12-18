@@ -35,9 +35,6 @@
 import os
 import logging
 import sys
-import traceback
-
-import roslib.roslogging
 
 import roslaunch.core
 
@@ -55,6 +52,7 @@ def configure_logging(uuid):
     """
     try:
         import socket
+        import roslib.roslogging
         logfile_basename = os.path.join(uuid, '%s-%s-%s.log'%(NAME, socket.gethostname(), os.getpid()))
         # additional: names of python packages we depend on that may also be logging
         logfile_name = roslib.roslogging.configure_logging(NAME, filename=logfile_basename, additional=['paramiko', 'roslib', 'rospy'])
@@ -209,6 +207,7 @@ def main(argv=sys.argv):
         roslaunch.core.printerrlog(str(e))
         sys.exit(1)
     except Exception, e:
+        import traceback
         traceback.print_exc()
         sys.exit(1)
 

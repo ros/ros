@@ -37,18 +37,11 @@ Core roslaunch model and lower-level utility routines.
 """
 
 import os
-import getpass
 import logging
 import socket
-import string
 import sys
-import urlparse
-import xmlrpclib
 
-import roslib.names 
 import roslib.network
-import roslib.packages
-import roslib.scriptutil 
 import roslib.substitution_args
 import roslib.rosenv
 
@@ -308,6 +301,7 @@ class Master:
         """
         @return ServerProxy: XMLRPC proxy for communicating with master
         """
+        import xmlrpclib
         return xmlrpclib.ServerProxy(self.uri)
     def set_port(self, port):
         """
@@ -511,6 +505,7 @@ class Node(object):
         self.package = package
         self.type = node_type
         self.name = name or None
+        import roslib.names 
         self.namespace = roslib.names.make_global_ns(namespace or '/')
         self.machine_name = machine_name or None
         

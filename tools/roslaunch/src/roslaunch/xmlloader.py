@@ -269,7 +269,7 @@ class XmlLoader(Loader):
                 raise XmlParseException("'time-limit' must be a positive number")
         if retry:
             try:
-                retry = string.atoi(retry)
+                retry = int(retry)
             except ValueError:
                 raise XmlParseException("'retry' must be a number: [%s]"%retry)
 

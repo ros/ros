@@ -141,7 +141,7 @@ class BagIndex:
         s += 'Messages: %d\n' % (sum([len(p) for p in self._data.msg_positions.values()]))
 
         s += 'Topics:'
-        max_topic_len = max([len(topic) for topic in self.topics])
+        max_topic_len = max([len(topic.lstrip('/')) for topic in self.topics])
         max_datatype_len = max([len(self.get_datatype(topic)) for topic in self.topics]) 
         for i, topic in enumerate(sorted(self.topics)):
             indent = (3 if i == 0 else 10)
@@ -150,7 +150,7 @@ class BagIndex:
             datatype = self.get_datatype(topic)
             msg_count = len(positions)
 
-            s += '%s%-*s : %-*s %7d msgs' % (' ' * indent, max_datatype_len, datatype, max_topic_len, topic, msg_count)
+            s += '%s%-*s - %-*s %7d msgs' % (' ' * indent, max_topic_len, topic.lstrip('/'), max_datatype_len, datatype, msg_count)
 
             if msg_count > 1:
                 spacing = positions[1:] - positions[:-1]
@@ -158,7 +158,7 @@ class BagIndex:
 
             s += '\n'
 
-        return s
+        return s.rstrip()
 
 ## The data for a bag index, allows for random access of a bag file. Separate from BagIndex for pickling.
 ## Currently contains:

@@ -71,21 +71,20 @@ class TimelinePanel(LayerPanel):
     def _init_bag_files(self, input_files):
         unindexed = []
 
-        rospy.loginfo('Loading %d bag files' % len(input_files))
         for i, bag_path in enumerate(input_files):
-            rospy.loginfo('%4d / %4d' % (i + 1, len(input_files)))
-            
             bag_file = rosrecord.BagReader(bag_path)
             
             # Try to read the index directly from the bag file, or hit the index if not found
-            this_bag_index = BagIndexReader(bag_path).load()
-            if this_bag_index is None:
-                this_bag_index = BagIndexPickler(bag_path + '.index').load()
+            idx = BagIndexReader(bag_path).load()
+            if idx is None:
+                idx = BagIndexPickler(bag_path + '.index').load()
 
-            if this_bag_index is not None:
-                bag_file.read_datatype_defs(this_bag_index)
+            if idx is not None:
+                bag_file.read_datatype_defs(idx)
+
+                self.bag_files[bag_file] = idx
                 
-                self.bag_files[bag_file] = this_bag_index
+                print '%s\n%s\n%s' % (bag_path, '-' * len(bag_path), idx)
             else:
                 unindexed.append(bag_path)
 
@@ -111,6 +110,8 @@ class TimelinePanel(LayerPanel):
             def run(self):
                 if self.bag_index_factory.load():
                     BagIndexPickler(self.bag_index_factory.bag_path + '.index').save(self.bag_index_factory.index)
+                    
+                    print self.bag_index_factory.index
 
         self.bag_index_factory_thread = BagIndexFactoryThread(bag_index_factory)
         self.bag_index_factory_thread.start()

@@ -108,7 +108,7 @@ class MsgTree(wx.TreeCtrl):
 
         self._expanded_paths = {}
 
-        self.Bind(wx.EVT_KEY_UP, self.on_key_down)
+        self.Bind(wx.EVT_KEY_UP, self.on_key_up)
 
     @property
     def msg(self):
@@ -140,9 +140,9 @@ class MsgTree(wx.TreeCtrl):
 
         self.Refresh()
 
-    def on_key_down(self, event):
+    def on_key_up(self, event):
         key, ctrl = event.GetKeyCode(), event.ControlDown()
-        
+
         if ctrl:
             if key == ord('C') or key == ord('c'):
                 # Ctrl-C: copy text from selected items to clipboard

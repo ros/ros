@@ -79,7 +79,7 @@ def connect_to_ros(node_name, init_timeout):
     class InitNodeThread(threading.Thread):
         def __init__(self):
             threading.Thread.__init__(self)
-            self.daemon = True
+            self.setDaemon(True)
             self.inited = False
             
         def run(self):
@@ -88,11 +88,11 @@ def connect_to_ros(node_name, init_timeout):
             self.inited = True
 
     try:
-        # Check whether ros master is running
+        # Check whether ROS master is running
         master = rospy.get_master()
         master.getPid()
         
-        # If so, attempt to initialize node
+        # If so (i.e. no exception), attempt to initialize node
         init_thread = InitNodeThread()
         init_thread.start()
         time.sleep(init_timeout)
@@ -122,7 +122,7 @@ def rxplay_main():
             if bag_index_factory.load():
                 bag_index.BagIndexPickler(bag_index_factory.bag_path + '.index').save(bag_index_factory.index)
     else:
-        connect_to_ros('rxplay', options.init_timeout)
+        #connect_to_ros('rxplay', options.init_timeout)
     
         # Start application
         app = RxPlayApp(input_files, options)

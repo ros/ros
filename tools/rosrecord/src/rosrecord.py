@@ -39,8 +39,6 @@ Python utility for iterating over messages in a ROS .bag file.
 See http://ros.org/wiki/ROS/LogFormat
 """
 
-import roslib; roslib.load_manifest('rosrecord')
-
 import os
 import sys
 import time

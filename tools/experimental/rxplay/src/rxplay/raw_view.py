@@ -100,13 +100,15 @@ class RawView(msg_view.TopicMsgView):
 
 class MsgTree(wx.TreeCtrl):
     def __init__(self, parent):
-        wx.TreeCtrl.__init__(self, parent, style=wx.TR_DEFAULT_STYLE | wx.TR_HIDE_ROOT)
+        wx.TreeCtrl.__init__(self, parent, style=wx.TR_DEFAULT_STYLE | wx.TR_HIDE_ROOT | wx.TR_MULTIPLE)
 
         self._font = wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
         self._msg = None
-        
+
         self._expanded_paths = {}
+
+        self.Bind(wx.EVT_KEY_UP, self.on_key_down)
 
     @property
     def msg(self):
@@ -137,6 +139,46 @@ class MsgTree(wx.TreeCtrl):
         self._msg = msg
 
         self.Refresh()
+
+    def on_key_down(self, event):
+        key, ctrl = event.GetKeyCode(), event.ControlDown()
+        
+        if ctrl:
+            if key == ord('C') or key == ord('c'):
+                # Ctrl-C: copy text from selected items to clipboard
+                self._copy_text_to_clipboard()
+            elif key == ord('A') or key == ord('a'):
+                # Ctrl-A: select all
+                self._select_all()
+
+    def _select_all(self):
+        first_selected = self.GetFirstVisibleItem()
+        for i in self.get_all_items():
+            if not self.IsSelected(i):
+                self.SelectItem(i, True)
+                
+        if first_selected is not None:
+            self.ScrollTo(first_selected)
+
+    def _copy_text_to_clipboard(self):
+        # Get the indented text for all selected items
+        
+        def get_distance(item, ancestor, distance=0):
+            parent = self.GetItemParent(item)
+            if parent == ancestor:
+                return distance
+            else:
+                return get_distance(parent, ancestor, distance + 1)
+        
+        root = self.GetRootItem()
+        text = '\n'.join([('\t' * get_distance(i, root)) + self.GetItemText(i) for i in self.GetSelections()])
+
+        # Copy the text to the clipboard
+        if wx.TheClipboard.Open():
+            try:
+                wx.TheClipboard.SetData(wx.TextDataObject(text))
+            finally:
+                wx.TheClipboard.Close()
 
     def get_item_path(self, item):
         return self.GetItemPyData(item)[0]

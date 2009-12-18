@@ -67,7 +67,7 @@ class RosMakeAll:
         self.verbose = False
         self.full_verbose = False
         self.profile = {}
-        self.ros_parallel_jobs = parallel_build.num_cpus()
+        self.ros_parallel_jobs = 0
         self.build_list = []
         self.start_time = time.time()
         self.log_dir = ""
@@ -147,7 +147,10 @@ class RosMakeAll:
 
     def build_package(self, package, argument=None):
         local_env = os.environ.copy()
-        local_env['ROS_PARALLEL_JOBS'] = "-j%d" % self.ros_parallel_jobs
+        if self.ros_parallel_jobs > 0:
+            local_env['ROS_PARALLEL_JOBS'] = "-j%d" % self.ros_parallel_jobs
+        elif "ROS_PARALLEL_JOBS" not in os.environ: #if no environment setup and no args fall back to # cpus
+            local_env['ROS_PARALLEL_JOBS'] = "-j%d" % parallel_build.num_cpus()
         local_env['SVN_CMDLINE'] = "svn --non-interactive"
         cmd = ["bash", "-c", "cd %s && %s "%(self.get_path(package), make_command()) ]
         if argument:
@@ -428,7 +431,7 @@ class RosMakeAll:
         parser.add_option("--target", dest="target",
                           action="store", help="run make with this target")
         parser.add_option("--pjobs", dest="ros_parallel_jobs", type="int",
-                          action="store", help="run make with this N jobs '-j=N'")
+                          action="store", help="Override ROS_PARALLEL_JOBS environment variable with this number of jobs.")
         parser.add_option("--threads", dest="threads", type="int", default = parallel_build.num_cpus(),
                           action="store", help="Build up to N packages in parallel")
         parser.add_option("--profile", dest="print_profile", default=False,

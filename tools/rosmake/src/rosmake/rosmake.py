@@ -432,7 +432,7 @@ class RosMakeAll:
                           action="store", help="run make with this target")
         parser.add_option("--pjobs", dest="ros_parallel_jobs", type="int",
                           action="store", help="Override ROS_PARALLEL_JOBS environment variable with this number of jobs.")
-        parser.add_option("--threads", dest="threads", type="int", default = parallel_build.num_cpus(),
+        parser.add_option("--threads", dest="threads", type="int", default = os.environ.get("ROSMAKE_THREADS", parallel_build.num_cpus()),
                           action="store", help="Build up to N packages in parallel")
         parser.add_option("--profile", dest="print_profile", default=False,
                           action="store_true", help="print time profile after build")

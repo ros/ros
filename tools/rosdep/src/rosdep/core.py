@@ -53,11 +53,15 @@ import core
 
 class YamlCache:
     def __init__(self):
-        self.cache = {}
+        self._yaml_cache = {}
+        self._rospack_depends_cache = {}
+        self._rosstack_depends_cache = {}
+        self._stack_dir = {}
+        self._package_dir = {}
         
     def get_yaml(self, path):
-        if path in self.cache:
-            return self.cache[path]
+        if path in self._yaml_cache:
+            return self._yaml_cache[path]
         
         #print "parsing path", path
         if os.path.exists(path):
@@ -65,15 +69,42 @@ class YamlCache:
                 f = open(path)
                 yaml_text = f.read()
                 f.close()
-                self.cache[path] = yaml.load(yaml_text)
-                return self.cache[path]
+                self._yaml_cache[path] = yaml.load(yaml_text)
+                return self._yaml_cache[path]
 
             except yaml.YAMLError, exc:
                 print >> sys.stderr, "Failed parsing yaml while processing %s\n"%path, exc
                 #sys.exit(1)        # not a breaking error
-        self.cache[path] = {}
+        self._yaml_cache[path] = {}
         return {}
 
+    def get_rospack_depends(self, package):
+        if package in self._rospack_depends_cache:
+            return self._rospack_depends_cache[package]
+        
+        self._rospack_depends_cache[package] = roslib.rospack.rospack_depends(package)
+        return self._rospack_depends_cache[package]
+    
+    def get_rosstack_depends(self, stack):
+        if stack in self._rosstack_depends_cache:
+            return self._rosstack_depends_cache[stack]
+        
+        self._rosstack_depends_cache[stack] = roslib.rospack.rosstack_depends(stack)
+        return self._rosstack_depends_cache[stack]
+    
+    def get_stack_dir(self, stack):
+        if stack in self._stack_dir:
+            return self._stack_dir[stack]
+        
+        self._stack_dir[stack] = roslib.stacks.get_stack_dir(stack)
+        return self._stack_dir[stack]
+
+    def get_package_dir(self, package):
+        if package in self._package_dir:
+            return self._package_dir[package]
+        
+        self._package_dir[package] = roslib.packages.get_pkg_dir(package)
+        return self._package_dir[package]
 
 class RosdepException(Exception):
     pass
@@ -113,11 +144,11 @@ class RosdepLookupPackage:
         for p in rosdep_dependent_packages:
             stack = roslib.stacks.stack_of(p)
             if stack:
-                paths.add( os.path.join(roslib.stacks.get_stack_dir(stack), "rosdep.yaml"))
-                for s in roslib.rospack.rosstack_depends(stack):
-                    paths.add( os.path.join(roslib.stacks.get_stack_dir(s), "rosdep.yaml"))
+                paths.add( os.path.join(self.yaml_cache.get_stack_dir(stack), "rosdep.yaml"))
+                for s in self.yaml_cache.get_rosstack_depends(stack):
+                    paths.add( os.path.join(self.yaml_cache.get_stack_dir(s), "rosdep.yaml"))
             else:
-                paths.add( os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
+                paths.add( os.path.join(self.yaml_cache.get_package_dir(p), "rosdep.yaml"))
 
 
         for path in paths:
@@ -274,9 +305,12 @@ class Rosdep:
             "\n".join(["\n%s"%sc for sc in scripts])
         
     def check(self):
+        native_packages = []
+        scripts = []
         try:
             native_packages, scripts = self.get_packages_and_scripts()
-        except RosdepException:
+        except RosdepException, e:
+            print >> sys.stderr, e
             pass
         undetected = self.osi.get_os().strip_detected_packages(native_packages)
         return_str = ""

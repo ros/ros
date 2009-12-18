@@ -243,8 +243,8 @@ class ROSLaunchConfig(object):
             else:
                 self.logger.debug("overriding parameter [%s]"%p.key)                
         self.params[key] = p
-        if verbose:
-            print "Added parameter [%s]"%key
+        #if verbose:
+        #    print "Added parameter [%s]"%key
         t = type(p.value)
         if t in [str, unicode, types.InstanceType]:
             self.logger.debug("add_param[%s]: type [%s]"%(p.key, t))

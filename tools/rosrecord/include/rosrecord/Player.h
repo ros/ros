@@ -343,7 +343,7 @@ public:
 
     if (!try_future && version_ > cur_version_major*100 + cur_version_minor)
     {
-      ROS_ERROR("Version on '%s' is more recent than this version of player.", file_name.c_str());
+      ROS_ERROR("'%s' has version %d.%d, but Reader only knows about versions up to %s.", file_name.c_str(), version_major_, version_minor_, VERSION.c_str());
       return false;
     }
 

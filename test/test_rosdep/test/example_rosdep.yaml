@@ -1,7 +1,7 @@
-boost:
+rosdep_test:
   ubuntu:
-    9.10: libboost1.40-all-dev
-    9.04: libboost1.37-dev
+    9.10: librosdep_test1.40-all-dev
+    9.04: librosdep_test1.37-dev
     8.10: |
       this is a script
 zlib:

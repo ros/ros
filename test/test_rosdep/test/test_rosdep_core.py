@@ -41,79 +41,86 @@ import rosdep.core
 
 
 class RosdepCoreTest(unittest.TestCase):
-    def test_Rosdep_get_os_from_yaml(self):
+    def test_RosdepLookupPackage_get_os_from_yaml(self):
         rdlp = rosdep.core.RosdepLookupPackage("ubuntu", "9.04", "rosdep")
         yaml_os_map = {"ubuntu":"one", "other":"two", "three":"three"};
         output = rdlp.get_os_from_yaml(yaml_os_map)
         self.assertEqual("one", output)
 
-    def test_Rosdep_get_version_from_yaml(self):
+    def test_RosdepLookupPackage_get_version_from_yaml(self):
         rdlp = rosdep.core.RosdepLookupPackage("ubuntu", "9.04", "rosdep")
         yaml_map = {"8.04":"one", "9.04":"two", "three":"three"};
         output = rdlp.get_version_from_yaml(yaml_map)
         self.assertEqual("two", output)
         
 
-    def test_Rosdep_parse_yaml_package(self):
+    def test_RosdepLookupPackage_parse_yaml_package(self):
         rdlp = rosdep.core.RosdepLookupPackage("ubuntu", "9.04", "test_rosdep")
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp.insert_map(yaml_map, "example_yaml_path", False)
-        output = rdlp.lookup_rosdep("boost")
-        self.assertEqual("libboost1.37-dev", output)
+        output = rdlp.lookup_rosdep("rosdep_test")
+        self.assertEqual("librosdep_test1.37-dev", output)
         output = rdlp.lookup_rosdep("foobar")
         self.assertEqual(False, output)
 
 
-    def test_Rosdep_parse_yaml_package_override(self):
+    def test_RosdepLookupPackage_parse_yaml_package_override(self):
         rdlp = rosdep.core.RosdepLookupPackage("ubuntu", "9.04", "test_rosdep")
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp.insert_map(yaml_map, "example_yaml_path", False)
         rdlp.insert_map(yaml_map, "example_yaml_path2", True)
-        output = rdlp.lookup_rosdep("boost")
-        self.assertEqual("libboost1.37-dev", output)
+        output = rdlp.lookup_rosdep("rosdep_test")
+        self.assertEqual("librosdep_test1.37-dev", output)
         output = rdlp.lookup_rosdep("foobar")
         self.assertEqual(False, output)
 
 
-    def test_Rosdep_parse_yaml_package_collision_pass(self):
+    def test_RosdepLookupPackage_parse_yaml_package_collision_pass(self):
         rdlp = rosdep.core.RosdepLookupPackage("ubuntu", "9.04", "test_rosdep")
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp.insert_map(yaml_map, "example_yaml_path", False) 
         rdlp.insert_map(yaml_map, "example_yaml_path2", False) 
-        output = rdlp.lookup_rosdep("boost")
-        self.assertEqual("libboost1.37-dev", output)
+        output = rdlp.lookup_rosdep("rosdep_test")
+        self.assertEqual("librosdep_test1.37-dev", output)
         output = rdlp.lookup_rosdep("foobar")
         self.assertEqual(False, output)
 
 
-    def test_Rosdep_parse_yaml_package_collision_fail(self):
+    def test_RosdepLookupPackage_parse_yaml_package_collision_fail(self):
         rdlp = rosdep.core.RosdepLookupPackage("ubuntu", "9.04", "test_rosdep")
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp.insert_map(yaml_map, "example_yaml_path", False) 
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep_conflicting.yaml"))
         self.assertRaises(rosdep.core.RosdepException, rdlp.insert_map, yaml_map, "example_yaml_path2", False)
-        #self.assertRaises(rosdep.core.RosdepException, rdlp.insert_map(yaml_map, "example_yaml_path2", False))
 
-    def test_Rosdep_parse_yaml_package_collision_override(self):
+    def test_RosdepLookupPackage_parse_yaml_package_collision_override(self):
         rdlp = rosdep.core.RosdepLookupPackage("ubuntu", "9.04", "test_rosdep")
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
-        rdlp.insert_map(yaml_map, "example_yaml_path", False) # need false
+        rdlp.insert_map(yaml_map, "example_yaml_path", False)
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep_conflicting.yaml"))
         rdlp.insert_map(yaml_map, "example_yaml_path2", True)
-        output = rdlp.lookup_rosdep("boost")
-        self.assertEqual("not-libboost1.37-dev", output)
+        output = rdlp.lookup_rosdep("rosdep_test")
+        self.assertEqual("not-librosdep_test1.37-dev", output)
         output = rdlp.lookup_rosdep("foobar")
         self.assertEqual(False, output)
 
+    def test_RosdepLookupPackage_sources(self):
+        rdlp = rosdep.core.RosdepLookupPackage("ubuntu", "9.04", "test_rosdep")
 
-        #print "rosdep_specific", rosdep_specific_map
-        #os_specific = rdlp.get_os_from_yaml(rosdep_specific_map) # need None test
-        #print "os_specific", os_specific
-        #output = rdlp.get_version_from_yaml(os_specific)
+        sources = rdlp.get_sources("rosdep_test")
+        self.assertEqual([], sources)
 
+        yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
+        rdlp.insert_map(yaml_map, "example_yaml_path", False) 
+        rdlp.insert_map(yaml_map, "example_yaml_path2", False) 
 
-    def test_RosdepLookupPackage_tripwire(self):
-        rdlp = rosdep.core.RosdepLookupPackage("ubuntu", "9.04", "rosdep")
+        sources = rdlp.get_sources("rosdep_test")
+        self.assertEqual(["example_yaml_path", "example_yaml_path2"], sources)
+
+        sources = rdlp.get_sources("undefined")
+        self.assertEqual([], sources)
+        
+
         
     def test_Rosdep_tripwire(self):
         rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=True)

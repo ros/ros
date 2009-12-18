@@ -107,12 +107,14 @@ class RosdepLookupPackage:
     def insert_map(self, yaml_dict, source_path, override=False):
         for key in yaml_dict:
             if key in self.rosdep_source:
+                rosdep_entry = self.get_os_from_yaml(yaml_dict[key])
                 if override:
                     print >>sys.stderr, "ROSDEP_OVERRIDE: %s being overridden with %s from %s"%(key, yaml_dict[key], source_path)
                     self.rosdep_source[key].append("Overriding with "+source_path)
-                    self.rosdep_map[key] = self.get_os_from_yaml(yaml_dict[key])
+                    self.rosdep_map[key] = rosdep_entry
                 else:
-                    if self.rosdep_map[key] == self.get_os_from_yaml(yaml_dict[key]):
+                    if self.rosdep_map[key] == rosdep_entry:
+                        self.rosdep_source[key].append(source_path)
                         #print >> sys.stderr, "DEBUG: Same key found for %s: %s"%(key, self.rosdep_map[key])
                         pass
                     else:

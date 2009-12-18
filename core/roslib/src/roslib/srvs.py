@@ -166,19 +166,19 @@ def load_from_file(file, package_context=''):
         else:
             print "Load spec from", file            
     fileName = os.path.basename(file)
-    type = fileName[:-len(EXT)]
+    type_ = fileName[:-len(EXT)]
     # determine the type name
     if package_context:
         while package_context.endswith(SEP):
             package_context = package_context[:-1] #strip message separators
-        type = "%s%s%s"%(package_context, SEP, type)
-    if not roslib.names.is_valid_local_name(type):
-        raise SrvSpecException("%s: %s is not a legal service type name"%(file, type))
+        type_ = "%s%s%s"%(package_context, SEP, type_)
+    if not roslib.names.is_legal_resource_name(type_):
+        raise SrvSpecException("%s: %s is not a legal service type name"%(file, type_))
     
     f = open(file, 'r')
     try:
         text = f.read()
-        return (type, load_from_string(text, package_context))
+        return (type_, load_from_string(text, package_context))
     finally:
         f.close()
 

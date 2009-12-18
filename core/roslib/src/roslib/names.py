@@ -265,11 +265,9 @@ def _is_safe_name(name, type_name):
         return False
     return is_legal_resource_name(name)
 
-def is_valid_local_name(name):
-    """
-    """    
-    return _is_safe_name(name, 'name')
-    
+################################################################################
+# NAME VALIDATORS
+
 import re
 #ascii char followed by (alphanumeric, _, /)
 RESOURCE_NAME_LEGAL_CHARS_P = re.compile('^[A-Za-z][\w_\/]*$') 
@@ -283,8 +281,8 @@ def is_legal_resource_name(name):
     @param name: Name
     @type  name: str
     """
-    # currently don't allow unicode
-    if name is None or type(name) != str:
+    # resource names can be unicode due to filesystem
+    if name is None or not isinstance(name, basestring):
         return False
     m = RESOURCE_NAME_LEGAL_CHARS_P.match(name)
     # '//' check makes sure there isn't double-slashes
@@ -302,8 +300,8 @@ def is_legal_name(name):
     @param name: Name
     @type  name: str
     """    
-    # currently don't allow unicode
-    if name is None or type(name) != str:
+    # should we enforce unicode checks?
+    if name is None or not isinstance(name, basestring):
         return False
     # empty string is a legal name as it resolves to namespace
     if name == '':
@@ -313,8 +311,23 @@ def is_legal_name(name):
     
 BASE_NAME_LEGAL_CHARS_P = re.compile('^[A-Za-z][\w_]*$') #ascii char followed by (alphanumeric, _)
 def is_legal_base_name(name):
-    # currently don't allow unicode
-    if name is None or type(name) != str:
+    """
+    Validates that name is a legal base name for a graph resource. A base name has
+    no namespace context, e.g. "node_name".
+    """
+    if name is None or not isinstance(name, basestring):
+        return False
+    m = BASE_NAME_LEGAL_CHARS_P.match(name)
+    return m is not None and m.group(0) == name
+
+BASE_RESOURCE_NAME_LEGAL_CHARS_P = re.compile('^[A-Za-z][\w_]*$') #ascii char followed by (alphanumeric, _)
+def is_legal_resource_base_name(name):
+    """
+    Validates that name is a legal resource base name. A base name has
+    no package context, e.g. "String".
+    """
+    # resource names can be unicode due to filesystem
+    if name is None or not isinstance(name, basestring):
         return False
     m = BASE_NAME_LEGAL_CHARS_P.match(name)
     return m is not None and m.group(0) == name

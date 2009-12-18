@@ -126,7 +126,7 @@ def is_valid_msg_type(x):
     if not x or len(x) != len(x.strip()):
         return False
     base = base_msg_type(x)
-    if not roslib.names.is_valid_local_name(base):
+    if not roslib.names.is_legal_resource_name(base):
         return False
     #parse array indicies
     x = x[len(base):]
@@ -159,7 +159,7 @@ def is_valid_msg_field_name(x):
     @return: True if the name is a syntatically legal message field name
     @rtype: bool
     """
-    return roslib.names.is_valid_local_name(x)
+    return roslib.names.is_legal_resource_base_name(x)
 
 # msg spec representation ##########################################
 
@@ -583,23 +583,23 @@ def load_from_file(file_path, package_context=''):
             print "Load spec from", file_path, "into package [%s]"%package_context
         else:
             print "Load spec from", file_path
-    fileName = os.path.basename(file_path)
-    type = fileName[:-len(EXT)]
+    file_name = os.path.basename(file_path)
+    type_ = file_name[:-len(EXT)]
     # determine the type name
     if package_context:
         while package_context.endswith(SEP):
             package_context = package_context[:-1] #strip message separators
-        type = "%s%s%s"%(package_context, SEP, type)
-    if not roslib.names.is_valid_local_name(type):
-        raise MsgSpecException("%s: %s is not a legal type name"%(file_path, type))
+        type_ = "%s%s%s"%(package_context, SEP, type_)
+    if not roslib.names.is_legal_resource_name(type_):
+        raise MsgSpecException("%s: [%s] is not a legal type name"%(file_path, type_))
     
     f = open(file_path, 'r')
     try:
         try:
             text = f.read()
-            return (type, load_from_string(text, package_context))
+            return (type_, load_from_string(text, package_context))
         except MsgSpecException, e:
-            raise MsgSpecException('%s: %s'%(fileName, e))
+            raise MsgSpecException('%s: %s'%(file_name, e))
     finally:
         f.close()
 

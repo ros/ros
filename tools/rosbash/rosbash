@@ -289,6 +289,10 @@ function _roscomplete_file {
     _roscomplete_search_dir "-type f ! -regex .*[.][oa]$"
 }
 
+function _roscomplete_launch {
+    _roscomplete_search_dir "-type f -name *.launch"
+}
+
 function _roscomplete_rosbag {
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
@@ -309,5 +313,6 @@ complete -F "_roscomplete" -o "nospace" "rosmake"
 complete -F "_roscomplete_exe" "rosrun"
 complete -F "_roscomplete_file" "rosed"
 complete -F "_roscomplete_file" "roscp"
+complete -F "_roscomplete_launch" "roslaunch"
 complete -F "_roscomplete" -o "nospace" "rosupdate"
 complete -F "_roscomplete_rosbag" "rosbag"

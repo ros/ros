@@ -305,6 +305,54 @@ function _roscomplete_rosbag {
     fi
 
 }
+function _roscomplete_rosnode {
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="ping list info machine kill"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    else
+        COMPREPLY=($(compgen -f -- ${arg}))
+    fi
+
+}
+function _roscomplete_rosparam {
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="set get load dump delete list"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    else
+        COMPREPLY=($(compgen -f -- ${arg}))
+    fi
+
+}
+function _roscomplete_rostopic {
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="bw echo hz list pub type find"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    else
+        COMPREPLY=($(compgen -f -- ${arg}))
+    fi
+
+}
+function _roscomplete_rosservice {
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="list call type find uri"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    else
+        COMPREPLY=($(compgen -f -- ${arg}))
+    fi
+
+}
 
 complete -F "_roscomplete_sub_dir" -o "nospace" "roscd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rospd"
@@ -316,3 +364,7 @@ complete -F "_roscomplete_file" "roscp"
 complete -F "_roscomplete_launch" "roslaunch"
 complete -F "_roscomplete" -o "nospace" "rosupdate"
 complete -F "_roscomplete_rosbag" "rosbag"
+complete -F "_roscomplete_rosnode" "rosnode"
+complete -F "_roscomplete_rosparam" "rosparam"
+complete -F "_roscomplete_rostopic" "rostopic"
+complete -F "_roscomplete_rosservice" "rosservice"

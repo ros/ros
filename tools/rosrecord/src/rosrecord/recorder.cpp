@@ -234,6 +234,13 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
 
     // Assemble the header in memory first, because we need to write its length first.
 
+    // Add to topic index
+    IndexEntry index_entry;
+    index_entry.sec  = time.sec;
+    index_entry.nsec = time.nsec;
+    index_entry.pos  = record_pos_;
+    topic_indexes_[topic_name].push_back(index_entry);
+
     // Write a message definition record, if necessary
     if (needs_def_written)
     {
@@ -275,13 +282,6 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
       ROS_FATAL("rosrecord::Record: could not write to file.  Check permissions and diskspace\n");
       return false;
     }
-
-    // Add to topic index
-    IndexEntry index_entry;
-    index_entry.sec  = time.sec;
-    index_entry.nsec = time.nsec;
-    index_entry.pos  = record_pos_;
-    topic_indexes_[topic_name].push_back(index_entry);
   }
 
   return true;
@@ -298,12 +298,20 @@ void ros::record::Recorder::writeFileHeader()
   M_string header;
   header[OP_FIELD_NAME]        = std::string((char*)&OP_FILE_HEADER, 1);
   header[INDEX_POS_FIELD_NAME] = std::string((char*)&index_data_pos_, 8);
-  writeHeader(header, 0);
+
+  boost::shared_array<uint8_t> header_buffer;
+  uint32_t header_len;
+  Header::write(header, header_buffer, header_len);
+  uint32_t data_len = 0;
+  if (header_len < FILE_HEADER_LENGTH)
+    data_len = FILE_HEADER_LENGTH - header_len;
+  write((char*)&header_len, 4);
+  write((char*)header_buffer.get(), header_len);
+  write((char*)&data_len, 4);
 
   // Pad the file header record out
-  uint32_t padding_length = FILE_HEADER_LENGTH - (record_pos_ - file_header_pos_);
   std::string padding;
-  padding.resize(padding_length, ' ');
+  padding.resize(data_len, ' ');
   write(padding);
 }
 
@@ -322,10 +330,13 @@ void ros::record::Recorder::writeIndex()
 
 			uint32_t topic_index_size = topic_index.size();
 
-			// Write the index record header
+	    const MsgInfo& msg_info = topics_recorded_[topic_name];
+
+	    // Write the index record header
 			M_string header;
 			header[OP_FIELD_NAME]    = std::string((char*)&OP_INDEX_DATA, 1);
 			header[TOPIC_FIELD_NAME] = topic_name;
+	    header[TYPE_FIELD_NAME]  = msg_info.datatype;
 			header[VER_FIELD_NAME]   = std::string((char*)&INDEX_VERSION, 4);
 			header[COUNT_FIELD_NAME] = std::string((char*)&topic_index_size, 4);
 

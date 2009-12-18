@@ -1,0 +1,8 @@
+<package>
+  <description brief="roslib tests">
+    Unit tests verifying that roslib is operating as expected.
+  </description>
+  <author>none</author>
+  <license>BSD</license>
+  <platform os="test_os" version="test_version"/>
+</package>

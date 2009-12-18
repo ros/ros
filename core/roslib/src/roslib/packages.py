@@ -45,6 +45,7 @@ from subprocess import Popen, PIPE
 import roslib.exceptions
 import roslib.names
 import roslib.rosenv
+import roslib.os_detect
 
 MSG_DIR = 'msg'
 SRV_DIR = 'srv'
@@ -457,3 +458,28 @@ def find_resource(pkg, resource_name, filter_fn=None, ros_root=None, ros_package
             dirs.remove('.git')
     return matches
 
+
+
+def _platform_supported(file, os, version):
+    m = roslib.manifest.parse_file(file)
+    for p in m.platforms:
+        if os == p.os and version == p.version:
+            return True
+    return False
+
+def platform_supported(pkg, os, version):
+    """
+    Return whether the platform defined by os and version is marked as supported in the package
+    @param pkg The package to test for support
+    @param os The os name to test for support
+    @param version The os version to test for support
+    """
+    return _platform_supported(roslib.manifest.manifest_file(pkg), os, version)
+
+def current_platform_supported(pkg):
+    """
+    Return whether the current running platform is marked as supported in the package
+    @param pkg The package to test for support
+    """
+    os_detector = roslib.os_detect.OSDetect()
+    return platform_supported(pkg, os_detector.get_name(), os_detector.get_version())

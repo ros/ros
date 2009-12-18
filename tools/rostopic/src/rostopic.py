@@ -40,23 +40,17 @@ NAME='rostopic'
 
 import os
 import sys
-import cStringIO
 import math
 import socket
-import threading
 import time
-import traceback
             
 import roslib.exceptions
 import roslib.names
 import roslib.scriptutil
 import roslib.message
-import roslib.msg
+#TODO: lazy-import rospy or move rospy-dependent routines to separate location
 import rospy
-import rosmsg
 import rosrecord
-
-from optparse import OptionParser
 
 ## don't print string fields in message
 _echo_nostr = False
@@ -95,6 +89,7 @@ class ROSTopicHz(object):
     ROSTopicHz receives messages for a topic and computes frequency stats
     """
     def __init__(self, window_size):
+        import threading
         self.lock = threading.Lock()
         self.last_printed_tn = 0
         self.msg_t0 = -1.
@@ -200,6 +195,7 @@ def _rostopic_hz(topic, window_size=-1):
     
 class ROSTopicBandwidth(object):
     def __init__(self, window_size=100):
+        import threading
         self.lock = threading.Lock()
         self.last_printed_tn = 0
         self.sizes =[]
@@ -219,6 +215,7 @@ class ROSTopicBandwidth(object):
                     self.times.pop(0)
                     self.sizes.pop(0)
             except:
+                import traceback
                 traceback.print_exc()
 
     def print_bw(self):
@@ -551,6 +548,7 @@ class CallbackEcho(object):
         except IOError:
             rospy.signal_shutdown('IOError')
         except:
+            import traceback
             traceback.print_exc()
             
 def _rostopic_type(topic):
@@ -700,8 +698,8 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
         if topic:
             # filter based on topic
             topic_ns = roslib.names.make_global_ns(topic)        
-            subs = [x for x in subs if x[0] == topic or x[0].startswith(topic_ns)]
-            pubs = [x for x in pubs if x[0] == topic or x[0].startswith(topic_ns)]
+            subs = (x for x in subs if x[0] == topic or x[0].startswith(topic_ns))
+            pubs = (x for x in pubs if x[0] == topic or x[0].startswith(topic_ns))
 
         pub_topics = _succeed(master.getPublishedTopics('/rostopic', '/'))
     except socket.error:
@@ -796,6 +794,7 @@ def _rostopic_cmd_echo(argv):
         return eval_fn
 
     args = argv[2:]
+    from optparse import OptionParser
     parser = OptionParser(usage="usage: %prog echo [options] /topic", prog=NAME)
     parser.add_option("-b", "--bag",
                       dest="bag", default=None,
@@ -862,6 +861,7 @@ def _rostopic_cmd_echo(argv):
     
 def _optparse_topic_only(cmd, argv):
     args = argv[2:]
+    from optparse import OptionParser
     parser = OptionParser(usage="usage: %%prog %s /topic"%cmd, prog=NAME)
     (options, args) = parser.parse_args(args)
     if len(args) == 0:
@@ -875,6 +875,7 @@ def _rostopic_cmd_type(argv):
     
 def _rostopic_cmd_hz(argv):
     args = argv[2:]
+    from optparse import OptionParser
     parser = OptionParser(usage="usage: %prog hz /topic", prog=NAME)
     parser.add_option("-w", "--window",
                       dest="window_size", default=-1,
@@ -897,6 +898,7 @@ def _rostopic_cmd_hz(argv):
 
 def _rostopic_cmd_bw(argv=sys.argv):
     args = argv[2:]
+    from optparse import OptionParser
     parser = OptionParser(usage="usage: %prog bw /topic", prog=NAME)
     parser.add_option("-w", "--window",
                       dest="window_size", default=None,
@@ -939,6 +941,7 @@ def _rostopic_cmd_find(argv=sys.argv):
     @type  argv: [str]
     """
     args = argv[2:]
+    from optparse import OptionParser
     parser = OptionParser(usage="usage: %prog find msg-type", prog=NAME)
     options, args = parser.parse_args(args)
     if not len(args):
@@ -1065,6 +1068,7 @@ def publish_message(pub, msg_class, pub_args, rate=None, once=False, verbose=Fal
         
         # allow the use of the 'now' string with timestamps and 'auto' with header
         now = rospy.get_rostime() 
+        import roslib.msg
         keys = { 'now': now, 'auto': roslib.msg.Header(stamp=now) }
         roslib.message.fill_message_args(msg, pub_args, keys=keys)
     except roslib.message.ROSMessageException, e:
@@ -1077,6 +1081,7 @@ def publish_message(pub, msg_class, pub_args, rate=None, once=False, verbose=Fal
             _publish_at_rate(pub, msg, rate, verbose)
             
     except rospy.ROSSerializationException, e:
+        import rosmsg
         # we could just print the message definition, but rosmsg is more readable
         raise ROSTopicException("Unable to publish message. One of the fields has an incorrect type:\n"+\
                                 "  %s\n\nmsg file:\n%s"%(e, rosmsg.get_msg_text(msg_class._type)))
@@ -1095,6 +1100,7 @@ def _rostopic_cmd_pub(argv):
         raise ROSTopicException("Cannot import yaml. Please make sure the pyyaml system dependency is installed")
 
     args = argv[2:]
+    from optparse import OptionParser
     parser = OptionParser(usage="usage: %prog pub /topic type [args...]", prog=NAME)
     parser.add_option("-v", dest="verbose", default=False,
                       action="store_true",
@@ -1180,6 +1186,7 @@ def _rostopic_cmd_list(argv):
     Command-line parsing for 'rostopic list' command.
     """
     args = argv[2:]
+    from optparse import OptionParser
     parser = OptionParser(usage="usage: %prog list [/namespace]", prog=NAME)
     parser.add_option("-b", "--bag",
                       dest="bag", default=None,
@@ -1220,6 +1227,7 @@ def _rostopic_cmd_info(argv):
     Command-line parsing for 'rostopic info' command.
     """
     args = argv[2:]
+    from optparse import OptionParser
     parser = OptionParser(usage="usage: %prog info /topic", prog=NAME)
     (options, args) = parser.parse_args(args)
 

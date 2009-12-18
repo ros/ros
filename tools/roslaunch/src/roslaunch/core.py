@@ -299,10 +299,20 @@ class Master:
 
     def get(self):
         """
-        @return ServerProxy: XMLRPC proxy for communicating with master
+        @return: XMLRPC proxy for communicating with master
+        @rtype: xmlrpclib.ServerProxy
         """
         import xmlrpclib
         return xmlrpclib.ServerProxy(self.uri)
+    
+    def get_multi(self):
+        """
+        @return: multicall XMLRPC proxy for communicating with master
+        @rtype: xmlrpclib.MultiCall
+        """
+        import xmlrpclib
+        return xmlrpclib.MultiCall(self.get())
+
     def set_port(self, port):
         """
         Override port specification of Master. This only has an effect on masters that have not

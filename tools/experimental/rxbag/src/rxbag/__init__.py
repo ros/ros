@@ -63,15 +63,19 @@ class RxBagApp(wx.App):
         wx.App.__init__(self)
     
     def OnInit(self):
-        if len(self.input_files) == 1:
-            frame_title = 'rxbag - ' + self.input_files[0]
-        else:
-            frame_title = 'rxbag - [%d bags]' % len(self.input_files)
+        try:
+            if len(self.input_files) == 1:
+                frame_title = 'rxbag - ' + self.input_files[0]
+            else:
+                frame_title = 'rxbag - [%d bags]' % len(self.input_files)
+    
+            frame = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline', title=frame_title)
+            timeline_panel = timeline.TimelinePanel(self.input_files, self.options, frame, -1)
+            frame.Show()
+            self.SetTopWindow(frame)
+        except:
+            return False
 
-        frame          = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline', title=frame_title)
-        timeline_panel = timeline.TimelinePanel(self.input_files, self.options, frame, -1)
-        frame.Show()
-        self.SetTopWindow(frame)
         return True
 
 def connect_to_ros(node_name, init_timeout):
@@ -107,7 +111,8 @@ def connect_to_ros(node_name, init_timeout):
 
 def rxbag_main():
     # Parse command line for input files and options
-    parser = optparse.OptionParser()
+    usage = "usage: %prog [options] BAG_FILE.bag"
+    parser = optparse.OptionParser(usage=usage)
     #parser.add_option('-t', '--init-timeout', action='store', default=0.5, help='timeout in secs for connecting to master node')   
     options, args = parser.parse_args(sys.argv[1:])
     if len(args) == 0:

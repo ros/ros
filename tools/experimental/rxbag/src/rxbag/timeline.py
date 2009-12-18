@@ -65,7 +65,9 @@ class TimelinePanel(LayerPanel):
         
         self.bag_files = {}
 
-        self._init_bag_files(input_files)
+        if not self._init_bag_files(input_files):
+            raise Exception('No valid bag files')
+
         self._create_controls(options)
         self._create_toolbar()
 
@@ -73,7 +75,11 @@ class TimelinePanel(LayerPanel):
         unindexed = []
 
         for i, bag_path in enumerate(input_files):
-            bag_file = rosrecord.BagReader(bag_path)
+            try:
+                bag_file = rosrecord.BagReader(bag_path)
+            except Exception, e:
+                print 'Error loading %s: %s' % (bag_path, e)
+                continue
             
             # Try to read the index directly from the bag file, or hit the index if not found
             idx = BagIndexReader(bag_path).load()
@@ -88,9 +94,14 @@ class TimelinePanel(LayerPanel):
                 print '%s\n%s\n%s' % (bag_path, '-' * len(bag_path), idx)
             else:
                 unindexed.append(bag_path)
+                
+        if len(unindexed) + len(self.bag_files) == 0:
+            return False
 
         for bag_path in unindexed:
             self._index_bag_file(bag_path, bag_path + '.index')
+            
+        return True
 
     def _index_bag_file(self, bag_path, index_path):
         rospy.loginfo('Index not found - indexing...')

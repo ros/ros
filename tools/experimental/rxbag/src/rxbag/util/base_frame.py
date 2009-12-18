@@ -32,10 +32,6 @@
 #
 # Revision $Id$
 
-PKG = 'rxplay'
-import roslib; roslib.load_manifest(PKG)
-import rospy
-
 import sys
 import wx
 

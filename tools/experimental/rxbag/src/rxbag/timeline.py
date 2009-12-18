@@ -34,7 +34,7 @@
 
 from __future__ import with_statement
 
-PKG = 'rxplay'
+PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 import rospy
 
@@ -971,7 +971,7 @@ class TimelinePopupMenu(wx.Menu):
             parent.Bind(wx.EVT_MENU, self.on_menu, id=self.GetId())
 
         def on_menu(self, event):
-            frame = BaseFrame(None, 'rxplay', self.topic, title='rxplay - %s [%s]' % (self.topic.lstrip('/'), self.viewer_type.name), pos=(4, 4), size=(640, 480))
+            frame = BaseFrame(None, 'rxbag', self.topic, title='rxbag - %s [%s]' % (self.topic.lstrip('/'), self.viewer_type.name), pos=(4, 4), size=(640, 480))
             panel = LayerPanel(frame, -1)
             view  = self.viewer_type(self.timeline, panel, self.topic, 0, 0, *frame.GetClientSize())
             panel.layers = [view]

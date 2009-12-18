@@ -33,7 +33,7 @@
 #
 # Revision $Id$
 
-PKG = 'rxplay'
+PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 import rospy
 
@@ -55,7 +55,7 @@ import util.base_frame
 import bag_index
 import timeline
 
-class RxPlayApp(wx.App):
+class RxBagApp(wx.App):
     def __init__(self, input_files, options):
         self.input_files = input_files
         self.options     = options
@@ -64,11 +64,11 @@ class RxPlayApp(wx.App):
     
     def OnInit(self):
         if len(self.input_files) == 1:
-            frame_title = 'rxplay - ' + self.input_files[0]
+            frame_title = 'rxbag - ' + self.input_files[0]
         else:
-            frame_title = 'rxplay - [%d bags]' % len(self.input_files)
+            frame_title = 'rxbag - [%d bags]' % len(self.input_files)
 
-        frame          = util.base_frame.BaseFrame(None, 'rxplay', 'Timeline', title=frame_title)
+        frame          = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline', title=frame_title)
         timeline_panel = timeline.TimelinePanel(self.input_files, self.options, frame, -1)
         frame.Show()
         self.SetTopWindow(frame)
@@ -105,7 +105,7 @@ def connect_to_ros(node_name, init_timeout):
     except:
         rospy.loginfo('Master not found.')
 
-def rxplay_main():
+def rxbag_main():
     # Parse command line for input files and options
     parser = optparse.OptionParser()
     parser.add_option('-i', '--index',           action='store_true', default=False, help='don\'t launch GUI; just generate bag file indexes')   
@@ -122,10 +122,10 @@ def rxplay_main():
             if bag_index_factory.load():
                 bag_index.BagIndexPickler(bag_index_factory.bag_path + '.index').save(bag_index_factory.index)
     else:
-        #connect_to_ros('rxplay', options.init_timeout)
+        #connect_to_ros('rxbag', options.init_timeout)
     
         # Start application
-        app = RxPlayApp(input_files, options)
+        app = RxBagApp(input_files, options)
         app.MainLoop()
      
         rospy.signal_shutdown('GUI shutdown')    

@@ -32,53 +32,53 @@
 #
 # Revision $Id$
 
-PKG = 'rxplay'
+PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
+import wx
 
-import os
-import sys
+from util.layer import Layer
+from bag_index import BagIndex
 
-import roslib.rospack
+class StatusLayer(Layer):
+    def __init__(self, parent, title, timeline, x, y, width, height, max_repaint=None):
+        Layer.__init__(self, parent, title, x, y, width, height, max_repaint)
+        
+        self.timeline = timeline
 
-def load_plugins():
-    plugins = []
+        self.font       = wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
+        self.font_color = wx.Colour(0, 0, 0)
 
-    to_check = roslib.rospack.rospack_depends_on_1('rxplay')
+    def paint(self, dc):
+        dc.SetBackground(self.timeline.background_brush)
+        dc.Clear()
 
-    for pkg in to_check:
-        manifest_file = roslib.manifest.manifest_file(pkg, True)
-        manifest      = roslib.manifest.parse_file(manifest_file)
+        if not self.timeline.playhead:
+            return
 
-        plugin_module_names = manifest.get_export('rxplay', 'plugin')
+        dc.SetFont(self.font)
+        dc.SetTextForeground(self.font_color)
 
-        if not plugin_module_names:
-            continue
-        elif len(plugin_module_names) != 1:
-            print >> sys.stderr, "Cannot load plugin [%s]: invalid 'plugin' attribute" % (pkg)
-            continue
-        plugin_module_name = plugin_module_names[0]
-
-        try:
-            # Load that package's namespace
-            roslib.load_manifest(pkg)
-    
-            # Import specified plugin module
-            plugin_module = __import__(plugin_module_name)
-            for sub_module in plugin_module_name.split('.')[1:]:
-                plugin_module = getattr(plugin_module, sub_module)
-    
-            # Retrieve the function
-            plugins_func = None
-            try:
-                plugins_func = getattr(plugin_module, 'get_rxplay_plugins')
-            except AttributeError: pass
-    
-            if plugins_func:
-                plugins.extend(plugins_func())
+        s = BagIndex.stamp_to_str(self.timeline.playhead)
+        
+        spd = self.timeline.play_speed
+        spd_str = None
+        if spd != 0.0:
+            if spd > 1.0:
+                spd_str = '>> %.0fx' % spd
+            elif spd == 1.0:
+                spd_str = '>'
+            elif spd > 0.0:
+                spd_str = '> 1/%.0fx' % (1.0 / spd)
+            elif spd > -1.0:
+                spd_str = '< 1/%.0fx' % (1.0 / -spd)
+            elif spd == 1.0:
+                spd_str = '<'
             else:
-                print >> sys.stderr, "Cannot load plugin [%s]: no 'get_rxplay_plugins' attribute" % (plugin_module_name)
+                spd_str = '<< %.0fx' % -spd
+        if spd_str:
+            s += ' ' + spd_str
 
-        except Exception, ex:
-            print >> sys.stderr, "Unable to load plugin [%s] from package [%s]: %s" % (plugin_module_name, pkg, ex)
+        x = self.timeline.margin_left
+        y = self.timeline.history_top - dc.GetTextExtent(s)[1] - 4
 
-    return plugins
+        dc.DrawText(s, x, y)

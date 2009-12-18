@@ -1,15 +1,15 @@
 <package>
-  <description brief="rxplay">
+  <description brief="rxbag">
 
-rxplay is a GUI tool for visualizing, inspecting and replaying histories of ROS messages.
-<br/>
+rxbag is a GUI tool for visualizing, inspecting and replaying histories of ROS messages.
+<br/><br/>
 Some icons from the Silk icon pack are used (http://www.famfamfam.com/lab/icons/silk/).
 
   </description>
   <author>Tim Field</author>
   <license>BSD, Creative Commons</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/rxplay</url>
+  <url>http://ros.org/wiki/rxbag</url>
   <depend package="rospy"/>
   <depend package="roslib"/>
   <depend package="std_msgs"/>

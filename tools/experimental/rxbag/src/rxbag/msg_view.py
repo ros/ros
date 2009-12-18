@@ -32,7 +32,7 @@
 #
 # Revision $Id$
 
-PKG = 'rxplay'
+PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 import rospy
 import time

@@ -32,7 +32,7 @@
 #
 # Revision $Id$
 
-PKG = 'rxplay'
+PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 import wx
 from util.layer import TransparentLayer

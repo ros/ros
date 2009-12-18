@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2009, Willow Garage, Inc.
@@ -33,7 +32,53 @@
 #
 # Revision $Id$
 
-import roslib; roslib.load_manifest('rxplay')
+PKG = 'rxbag'
+import roslib; roslib.load_manifest(PKG)
 
-import rxplay
-rxplay.rxplay_main()
+import os
+import sys
+
+import roslib.rospack
+
+def load_plugins():
+    plugins = []
+
+    to_check = roslib.rospack.rospack_depends_on_1('rxbag')
+
+    for pkg in to_check:
+        manifest_file = roslib.manifest.manifest_file(pkg, True)
+        manifest      = roslib.manifest.parse_file(manifest_file)
+
+        plugin_module_names = manifest.get_export('rxbag', 'plugin')
+
+        if not plugin_module_names:
+            continue
+        elif len(plugin_module_names) != 1:
+            print >> sys.stderr, "Cannot load plugin [%s]: invalid 'plugin' attribute" % (pkg)
+            continue
+        plugin_module_name = plugin_module_names[0]
+
+        try:
+            # Load that package's namespace
+            roslib.load_manifest(pkg)
+    
+            # Import specified plugin module
+            plugin_module = __import__(plugin_module_name)
+            for sub_module in plugin_module_name.split('.')[1:]:
+                plugin_module = getattr(plugin_module, sub_module)
+    
+            # Retrieve the function
+            plugins_func = None
+            try:
+                plugins_func = getattr(plugin_module, 'get_rxbag_plugins')
+            except AttributeError: pass
+    
+            if plugins_func:
+                plugins.extend(plugins_func())
+            else:
+                print >> sys.stderr, "Cannot load plugin [%s]: no 'get_rxbag_plugins' attribute" % (plugin_module_name)
+
+        except Exception, ex:
+            print >> sys.stderr, "Unable to load plugin [%s] from package [%s]: %s" % (plugin_module_name, pkg, ex)
+
+    return plugins

@@ -43,6 +43,7 @@ import subprocess
 import types
 import tempfile
 import yaml
+import time
 
 import debian
 import redhat
@@ -244,7 +245,12 @@ class Rosdep:
 
 
     def gather_rosdeps(self, packages, command):
+        if len(packages) == 0:
+            return {}
         rosdeps = {}
+        start_time = time.time()
+        if "ROSDEP_DEBUG" in os.environ:
+            print "Loading rosdeps for %d packages.  This may take a few seconds..."%len(packages)
         for p in packages:
           args = [command, p]
           #print "\n\n\nmy args are", args
@@ -257,16 +263,22 @@ class Rosdep:
               else:
                   print len(dep)
                   print "rospack returned wrong number of values \n\"%s\""%dep_str
-
-                  
+        time_delta = (time.time() - start_time)
+        if "ROSDEP_DEBUG" in os.environ:
+            print "Done loading rosdeps in %f seconds, averaging %f per package."%(time_delta, time_delta/len(packages))
         # todo deduplicate
         return rosdeps
 
     def get_packages_and_scripts(self):
+        if len(self.rosdeps) == 0:
+            return ([], [])
         native_packages = []
         scripts = []
         failed_rosdeps = []
         yc = YamlCache()
+        start_time = time.time()
+        if "ROSDEP_DEBUG" in os.environ:
+            print "Generating package list and scripts for %d rosdeps.  This may take a few seconds..."%len(self.rosdeps)
         for p in self.rosdeps:
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, yc)
             for r in self.rosdeps[p]:
@@ -282,9 +294,14 @@ class Rosdep:
 
         if len(failed_rosdeps) > 0:
             if not self.robust:
-                raise RosdepException("Rosdeps %s could not be resolved"%failed_rosdeps)
+                raise RosdepException("ABORTING: Rosdeps %s could not be resolved"%failed_rosdeps)
             else:
                 print >> sys.stderr, "WARNING: Rosdeps %s could not be resolved"%failed_rosdeps
+
+        time_delta = (time.time() - start_time)
+        if "ROSDEP_DEBUG" in os.environ:
+            print "Done loading rosdeps in %f seconds, averaging %f per rosdep."%(time_delta, time_delta/len(self.rosdeps))
+
         return (list(set(native_packages)), list(set(scripts)))
 
     def get_native_packages(self):

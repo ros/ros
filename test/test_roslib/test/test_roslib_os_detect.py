@@ -97,32 +97,49 @@ class RoslibOsDetectTest(unittest.TestCase):
     osa = roslib.os_detect.OSDetect([test_OS(), dummy_OS()])
     self.assertEqual("os_name", osa.get_name())
     self.assertEqual("os_version", osa.get_version())
+    os_class = osa.get_os()
+    self.assertEqual("os_name", os_class.get_name())
+    self.assertEqual("os_version", os_class.get_version())
 
   def test_OSDetect_second_of_two(self):
     osa = roslib.os_detect.OSDetect([dummy_OS(), test_OS()])
     self.assertEqual("os_name", osa.get_name())
     self.assertEqual("os_version", osa.get_version())
+    os_class = osa.get_os()
+    self.assertEqual("os_name", os_class.get_name())
+    self.assertEqual("os_version", os_class.get_version())
 
   def test_OSDetect_first_of_many(self):
     osa = roslib.os_detect.OSDetect([test_OS(), dummy_OS(), dummy_OS(), dummy_OS(), dummy_OS()])
     self.assertEqual("os_name", osa.get_name())
     self.assertEqual("os_version", osa.get_version())
+    os_class = osa.get_os()
+    self.assertEqual("os_name", os_class.get_name())
+    self.assertEqual("os_version", os_class.get_version())
 
   def test_OSDetect_second_of_many(self):
     osa = roslib.os_detect.OSDetect([dummy_OS(), test_OS(), dummy_OS(), dummy_OS(), dummy_OS()])
     self.assertEqual("os_name", osa.get_name())
     self.assertEqual("os_version", osa.get_version())
+    os_class = osa.get_os()
+    self.assertEqual("os_name", os_class.get_name())
+    self.assertEqual("os_version", os_class.get_version())
 
   def test_OSDetect_last_of_many(self):
     osa = roslib.os_detect.OSDetect([dummy_OS(), dummy_OS(), dummy_OS(), dummy_OS(), test_OS(),])
     self.assertEqual("os_name", osa.get_name())
     self.assertEqual("os_version", osa.get_version())
+    os_class = osa.get_os()
+    self.assertEqual("os_name", os_class.get_name())
+    self.assertEqual("os_version", os_class.get_version())
 
   def test_ubuntu_in_OSA(self):
     ubuntu = roslib.os_detect.Ubuntu()
     ubuntu.check_presence = True
     osa = roslib.os_detect.OSDetect()
     self.assertEqual("ubuntu", ubuntu.get_name())
+    os_class = osa.get_os()
+    self.assertEqual("ubuntu", os_class.get_name())
 
 
 

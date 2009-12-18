@@ -301,7 +301,7 @@ class OSDetect:
                 return True
         return False
 
-    def get_os_specific_class(self):
+    def get_os(self):
         if not self._os_class:
             if not self.detect_os():
                 raise OSDetectException("No OS detected")

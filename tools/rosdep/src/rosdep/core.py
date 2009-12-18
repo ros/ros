@@ -251,8 +251,8 @@ class Rosdep:
     def generate_script(self, include_duplicates=False, default_yes = False):
         native_packages, scripts = self.get_packages_and_scripts()
         undetected = native_packages if include_duplicates else \
-            self.osi.get_os_specific_class().strip_detected_packages(native_packages)
-        return "set -o errexit\n" + self.osi.get_os_specific_class().generate_package_install_command(undetected, default_yes) + \
+            self.osi.get_os().strip_detected_packages(native_packages)
+        return "set -o errexit\n" + self.osi.get_os().generate_package_install_command(undetected, default_yes) + \
             "\n".join(["\n%s"%sc for sc in scripts])
         
     def check(self):
@@ -260,7 +260,7 @@ class Rosdep:
             native_packages, scripts = self.get_packages_and_scripts()
         except RosdepException:
             pass
-        undetected = self.osi.get_os_specific_class().strip_detected_packages(native_packages)
+        undetected = self.osi.get_os().strip_detected_packages(native_packages)
         return_str = ""
         if len(undetected) > 0:
             return_str += "Did not detect packages: %s\n"%undetected

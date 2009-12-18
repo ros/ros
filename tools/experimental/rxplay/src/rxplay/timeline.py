@@ -38,6 +38,8 @@ PKG = 'rxplay'
 import roslib; roslib.load_manifest(PKG)
 import rospy
 
+import rosrecord
+
 import bisect
 import collections
 import math
@@ -49,13 +51,12 @@ import wx
 from util.base_frame import BaseFrame
 from util.layer import Layer, LayerPanel
 import playhead
-import status
 import plugins
+import status
 
 from raw_view import RawView
 
-from bag_file import BagFile
-from bag_index import BagIndex, BagIndexFactory, BagIndexPickler
+from bag_index import BagIndex, BagIndexFactory, BagIndexPickler, BagIndexReader
 
 class TimelinePanel(LayerPanel):
     def __init__(self, input_files, options, *args, **kwargs):
@@ -74,9 +75,13 @@ class TimelinePanel(LayerPanel):
         for i, bag_path in enumerate(input_files):
             rospy.loginfo('%4d / %4d' % (i + 1, len(input_files)))
             
-            bag_file = BagFile(bag_path)
+            bag_file = rosrecord.BagReader(bag_path)
+            
+            # Try to read the index directly from the bag file, or hit the index if not found
+            this_bag_index = BagIndexReader(bag_path).load()
+            if this_bag_index is None:
+                this_bag_index = BagIndexPickler(bag_path + '.index').load()
 
-            this_bag_index = BagIndexPickler(bag_path + '.index').load()
             if this_bag_index is not None:
                 bag_file.read_datatype_defs(this_bag_index)
                 
@@ -94,7 +99,7 @@ class TimelinePanel(LayerPanel):
         
         bag_index = bag_index_factory.index
         
-        bag_file = BagFile(bag_path)
+        bag_file = rosrecord.BagReader(bag_path)
         self.bag_files[bag_file] = bag_index
         
         # Background thread to generate, then save the index

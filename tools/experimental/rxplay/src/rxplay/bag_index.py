@@ -47,7 +47,6 @@ import time
 
 import numpy
 
-from bag_file import BagFile
 import util.progress_meter
 
 class BagIndex:
@@ -86,7 +85,7 @@ class BagIndex:
             return
         
         self._start_stamp = self._data.get_start_stamp()
-        self._end_stamp   = self._data.get_end_stamp()
+        self._end_stamp = self._data.get_end_stamp()
         self._dirty_stats = False
 
     ## Add a record to the index
@@ -111,7 +110,7 @@ class BagIndex:
 
     @staticmethod
     def stamp_to_str(secs):
-        secs_frac     = secs - int(secs) 
+        secs_frac = secs - int(secs) 
         secs_frac_str = ('%.2f' % secs_frac)[1:]
 
         return time.strftime('%b %d %Y %H:%M:%S', time.localtime(secs)) + secs_frac_str
@@ -124,25 +123,25 @@ class BagIndex:
 
         dur_secs = duration % 60
         dur_mins = duration / 60
-        dur_hrs  = dur_mins / 60
+        dur_hrs = dur_mins / 60
         if dur_hrs > 0:
             dur_mins = dur_mins % 60
-            s  = 'Duration: %dhr %dmin %ds (%ds)\n' % (dur_hrs, dur_mins, dur_secs, duration)
+            s = 'Duration: %dhr %dmin %ds (%ds)\n' % (dur_hrs, dur_mins, dur_secs, duration)
         else:
-            s  = 'Duration: %dmin %ds (%ds)\n' % (dur_mins, dur_secs, duration)
+            s = 'Duration: %dmin %ds (%ds)\n' % (dur_mins, dur_secs, duration)
 
         s += 'Start:    %s (%.2f)\n' % (self.stamp_to_str(self.start_stamp), self.start_stamp)
-        s += 'End:      %s (%.2f)\n' % (self.stamp_to_str(self.end_stamp),   self.end_stamp)
+        s += 'End:      %s (%.2f)\n' % (self.stamp_to_str(self.end_stamp), self.end_stamp)
         s += 'Messages: %d\n' % (sum([len(p) for p in self._data.msg_positions.values()]))
 
         s += 'Topics:'
-        max_topic_len    = max([len(topic) for topic in self.topics])
+        max_topic_len = max([len(topic) for topic in self.topics])
         max_datatype_len = max([len(self.get_datatype(topic)) for topic in self.topics]) 
         for i, topic in enumerate(sorted(self.topics)):
             indent = (3 if i == 0 else 10)
 
             positions = numpy.array([stamp for (stamp, pos) in self.msg_positions[topic]])
-            datatype  = self.get_datatype(topic)
+            datatype = self.get_datatype(topic)
             msg_count = len(positions)
 
             s += '%s%-*s : %-*s %7d msgs' % (' ' * indent, max_datatype_len, datatype, max_topic_len, topic, msg_count)
@@ -163,8 +162,8 @@ class BagIndex:
 class BagIndexData:
     def __init__(self):
         self.datatype_first_pos = {}   # datatype -> file offset
-        self.topic_datatypes    = {}   # topic -> datatype
-        self.msg_positions      = {}   # topic -> [(timestamp, file offset), ...]
+        self.topic_datatypes = {}   # topic -> datatype
+        self.msg_positions = {}   # topic -> [(timestamp, file offset), ...]
 
     ## Return first timestamp for a given topic
     def get_topic_start_stamp(self, topic):
@@ -211,6 +210,39 @@ class BagIndexData:
         index = bisect.bisect_right(self.msg_positions[topic], (stamp, 0))
 
         return max(0, min(index, len(self.msg_positions[topic]) - 1))
+
+## Reads an index from a bag file
+class BagIndexReader:
+    def __init__(self, bag_path):
+        self.bag_path = bag_path
+        
+        self.index = BagIndex()
+
+    def load(self):
+        try:
+            bag_file = rosrecord.BagReader(self.bag_path)
+
+            if bag_file.read_index() is None:
+                self.index = None
+                return None
+
+            # Read the index in ascending order of topic's first message position (ensures that each datatype message definition gets read)
+            topic_first_positions = sorted([(ti[0][1], t) for t, ti in bag_file.index.items()])
+
+            for _, topic in topic_first_positions:
+                topic_index = bag_file.index[topic]
+                datatype    = bag_file.datatypes[topic]
+
+                for stamp, pos in topic_index:
+                    self.index.add_record(pos, topic, datatype, stamp)
+
+            self.index.loaded = True
+
+        except Exception, e:
+            rospy.logerr('Unsuccessful loading index from %s: %s' % (self.bag_path, e))
+            self.index = None
+
+        return self.index
 
 ## Serialize bag file index to/from a binary file
 class BagIndexPickler:
@@ -259,20 +291,27 @@ class BagIndexFactory:
 
     def load(self):
         try:
-            bag_file = BagFile(self.bag_path)
+            bag_file = rosrecord.BagReader(self.bag_path)
             
-            file_size = os.path.getsize(self.bag_path)
-            
-            progress = util.progress_meter.ProgressMeter(self.bag_path, file_size, 1.0)
-            
-            for i, (pos, topic, raw_msg, stamp) in enumerate(bag_file.raw_messages()):
-                (datatype, message_data, md5, bag_pos, pytype) = raw_msg
-            
-                self.index.add_record(pos, topic, datatype, stamp)
-            
-                progress.step(pos)
-            
-            progress.finish()
+            if bag_file.read_index() is not None:
+                for topic, topic_index in bag_file.index.items():
+                    datatype = bag_file.datatypes[topic]
+                    
+                    for stamp, pos in topic_index:
+                        self.index.add_record(pos, topic, datatype, stamp)
+            else:
+                file_size = os.path.getsize(self.bag_path)
+                
+                progress = util.progress_meter.ProgressMeter(self.bag_path, file_size, 1.0)
+                
+                for i, (pos, topic, raw_msg, stamp) in enumerate(bag_file.raw_messages()):
+                    (datatype, message_data, md5, bag_pos, pytype) = raw_msg
+                
+                    self.index.add_record(pos, topic, datatype, stamp)
+                
+                    progress.step(pos)
+                
+                progress.finish()
             
             self.index.loaded = True
 

@@ -67,12 +67,15 @@ class RawView(msg_view.TopicMsgView):
 
     def message_viewed(self, bag_file, bag_index, topic, stamp, datatype, msg_index, msg):
         msg_view.TopicMsgView.message_viewed(self, bag_file, bag_index, topic, stamp, datatype, msg_index, msg)
-
-        self.msg_title.SetValue('%s #%d' % (time.asctime(time.localtime(stamp.to_sec())), msg_index))
-        self.msg_title.Refresh()
         
-        self.msg_incoming = msg
-        self.invalidate()
+        if stamp is None or msg_index is None:
+            self.message_cleared()
+        else:
+            self.msg_title.SetValue('%s #%d' % (time.asctime(time.localtime(stamp.to_sec())), msg_index))
+            self.msg_title.Refresh()
+    
+            self.msg_incoming = msg
+            self.invalidate()
         
     def message_cleared(self):
         msg_view.TopicMsgView.message_cleared(self)

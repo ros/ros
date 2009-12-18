@@ -141,10 +141,16 @@ class RosdepCoreTest(unittest.TestCase):
         rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep")
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp.insert_map(yaml_map, "example_yaml_path", False)
-        rdlp.insert_map(yaml_map, "example_yaml_path2", True)
-        output = rdlp.lookup_rosdep("rosdep_test")
+        output = rdlp.lookup_rosdep("other_rosdep_test")
         self.assertEqual(output, False)
     
+    def test_RosdepLookupPackage_failed_os_lookup(self):
+        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep")
+        yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
+        rdlp.insert_map(yaml_map, "example_yaml_path", False)
+        output = rdlp.lookup_rosdep("no_os_rosdep_test")
+        self.assertEqual(output, False)
+
 if __name__ == '__main__':
   os.environ["ROSDEP_TEST_OS"] = "True"
   rostest.unitrun('test_rosdep', 'test_core', RosdepCoreTest, coverage_packages=['rosdep.core'])  

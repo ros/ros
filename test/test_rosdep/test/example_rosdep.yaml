@@ -10,3 +10,5 @@ zlib:
 other_rosdep_test:
   rosdep_test_os:
     other_version: foo
+no_os_rosdep_test:
+  other_os: not_useful

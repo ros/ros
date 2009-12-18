@@ -64,13 +64,14 @@ from rospy.core import is_shutdown, signal_shutdown, \
     logdebug, logwarn, loginfo, logout, logerr, logfatal, \
     parse_rosrpc_uri
 from rospy.exceptions import *
+from rospy.msg import AnyMsg
 from rospy.msproxy import NodeProxy, MasterProxy
 from rospy.names import get_name, get_caller_id, get_namespace, resolve_name, remap_name
 from rospy.rostime import Time, Duration, get_rostime, get_time
 from rospy.service import ServiceException, ServiceDefinition
 # - use tcp ros implementation of services
 from rospy.tcpros_service import Service, ServiceProxy 
-from rospy.topics import AnyMsg, Message, SubscribeListener, Publisher, Subscriber
+from rospy.topics import Message, SubscribeListener, Publisher, Subscriber
 
 ## \defgroup validators Validators
 ## \defgroup clientapi Client API

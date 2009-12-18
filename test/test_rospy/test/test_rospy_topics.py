@@ -61,25 +61,6 @@ class ConnectionOverride(rospy.transport.Transport):
 # test rospy API verifies that the rospy module exports the required symbols
 class TestRospyTopics(unittest.TestCase):
 
-    def test_args_kwds_to_message(self):
-        import rospy
-        from rospy.topics import _args_kwds_to_message as args_kwds_to_message
-        from test_rospy.msg import Val
-        
-        v = Val('hello world-1')
-        d = args_kwds_to_message(Val, (v,), None)
-        self.assert_(d == v)
-        d = args_kwds_to_message(Val, ('hello world-2',), None)
-        self.assertEquals(d.val, 'hello world-2')
-        d = args_kwds_to_message(Val, (), {'val':'hello world-3'})
-        self.assertEquals(d.val, 'hello world-3')
-
-        # error cases
-        try:
-            args_kwds_to_message(Val, 'hi', val='hello world-3')
-            self.fail("should not allow args and kwds")
-        except TypeError: pass
-            
     def test_Publisher(self):
         import rospy
         from rospy.registration import get_topic_manager, Registration

@@ -71,7 +71,7 @@ import roslib.message
 
 from rospy.core import *
 from rospy.exceptions import ROSSerializationException, TransportTerminated
-from rospy.msg import serialize_message
+from rospy.msg import serialize_message, args_kwds_to_message
 from rospy.registration import get_topic_manager, set_topic_manager, Registration, get_registration_listeners
 from rospy.tcpros import get_tcpros_handler, DEFAULT_BUFF_SIZE
 from rospy.transport import DeadTransport
@@ -80,39 +80,6 @@ _logger = logging.getLogger('rospy.topics')
 
 # wrap roslib implementation and map it to rospy namespace
 Message = roslib.message.Message
-
-class AnyMsg(roslib.message.Message):
-    """
-    Message class to use for subscribing to any topic regardless
-    of type. Incoming messages are not deserialized. Instead, the raw
-    serialized data can be accssed via the buff property.
-
-    This class is meant to be used by advanced users only.
-    """
-    _md5sum = rospy.names.TOPIC_ANYTYPE
-    _type = rospy.names.TOPIC_ANYTYPE
-    _has_header = False
-    _full_text = ''
-    __slots__ = ['_buff']
-    def __init__(self, *args):
-        """
-        Constructor. Does not accept any arguments.
-        """
-        if len(args) != 0:
-            raise rospy.exceptions.ROSException("AnyMsg does not accept arguments")
-        self._buff = None
-
-    def serialize(self, buff):
-        """AnyMsg provides an implementation so that a node can forward messages w/o (de)serialization"""
-        if self._buff is None:
-            raise rospy.exceptions("AnyMsg is not initialized")
-        else:
-            buff.write(self._buff)
-            
-    def deserialize(self, str):
-        """Copies raw buffer into self._buff"""
-        self._buff = str
-        return self
 
 #######################################################################
 # Base classes for all client-API instantiated pub/sub
@@ -685,7 +652,7 @@ class Publisher(Topic):
             raise ROSException("publish() to an unregistered() handle")
         if not is_initialized():
             raise ROSException("ROS node has not been initialized yet. Please call init_node() first")
-        data = _args_kwds_to_message(self.data_class, args, kwds)
+        data = args_kwds_to_message(self.data_class, args, kwds)
         try:
             self.impl.acquire()
             self.impl.publish(data)
@@ -696,19 +663,6 @@ class Publisher(Topic):
             raise ROSSerializationException(str(e))
         finally:
             self.impl.release()            
-
-def _args_kwds_to_message(data_class, args, kwds):
-    if args and kwds:
-        raise TypeError("publish() can be called with arguments or keywords, but not both.")
-    elif kwds:
-        return data_class(**kwds)
-    else:
-        if len(args) == 1 and (
-            isinstance(args[0], data_class) or
-            isinstance(args[0], AnyMsg)):
-            return args[0]
-        else:
-            return data_class(*args)
 
 class _PublisherImpl(_TopicImpl):
     """

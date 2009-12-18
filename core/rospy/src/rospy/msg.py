@@ -43,6 +43,82 @@ import roslib.message
 import rospy.core
 import rospy.names
 
+class AnyMsg(roslib.message.Message):
+    """
+    Message class to use for subscribing to any topic regardless
+    of type. Incoming messages are not deserialized. Instead, the raw
+    serialized data can be accssed via the buff property.
+
+    This class is meant to be used by advanced users only.
+    """
+    _md5sum = rospy.names.TOPIC_ANYTYPE
+    _type = rospy.names.TOPIC_ANYTYPE
+    _has_header = False
+    _full_text = ''
+    __slots__ = ['_buff']
+    def __init__(self, *args):
+        """
+        Constructor. Does not accept any arguments.
+        """
+        if len(args) != 0:
+            raise rospy.exceptions.ROSException("AnyMsg does not accept arguments")
+        self._buff = None
+
+    def serialize(self, buff):
+        """AnyMsg provides an implementation so that a node can forward messages w/o (de)serialization"""
+        if self._buff is None:
+            raise rospy.exceptions("AnyMsg is not initialized")
+        else:
+            buff.write(self._buff)
+            
+    def deserialize(self, str):
+        """Copies raw buffer into self._buff"""
+        self._buff = str
+        return self
+
+def args_kwds_to_message(data_class, args, kwds):
+    """
+    Given a data class, take in the args and kwds of a function call and return the appropriate
+    data_class instance.
+
+    If kwds are specified, a new data_class instance will be created with keyword-style init.
+
+    If there is only a single arg and it is of the correct type, it
+    will be returned. AnyMsg is considered to match all data_class
+    types.
+
+    Otherwise, args will be used as args for a new message instance.
+
+    @param data_class: Message class that will be used to instantiate new instances, if necessary.
+    @type  data_class: Message class
+    @param args: function args
+    @type  args: sequence
+    @param kwds: function kwds
+    @type  kwds: dict
+    @raise TypeError: if args and kwds are both specified
+    """
+    if args and kwds:
+        raise TypeError("publish() can be called with arguments or keywords, but not both.")
+    elif kwds:
+        return data_class(**kwds)
+    else:
+        if len(args) == 1:
+            if isinstance(args[0], data_class) or isinstance(args[0], AnyMsg):
+                return args[0]
+            # If the argument is a message, make sure that it matches
+            # the type of the first field. This means that the
+            # data_class has fields and that the type matches.  This
+            # branch isn't necessary but provides more useful
+            # information to users
+            elif isinstance(args[0], roslib.message.Message) and \
+                    (len(data_class._slot_types) == 0 or \
+                         args[0]._type != data_class._slot_types[0]):
+                raise TypeError("expected [%s] but got [%s]"%(data_class._type, args[0]._type))
+            else:
+                return data_class(*args)
+        else:
+            return data_class(*args)
+
 def serialize_message(b, seq, msg):
     """
     Serialize the message to the buffer 

@@ -90,6 +90,20 @@ def check_required(name, allowXHTML=False):
         return _get_text(n[0].childNodes).strip()
     return check
 
+def check_platform(name):
+    """
+    Validator for manifest platform.
+    @raise ManifestException: if validation fails
+    """
+    def check(n, filename):
+        platforms = [e for e in n.getElementsByTagName(name)]
+        try:
+            vals = [(p.attributes['os'].value, p.attributes['version'].value, p.getAttribute('notes')) for p in platforms]
+        except KeyError, e:
+            raise ManifestException("<platform> tag is missing required '%s' attribute"%str(e))
+        return [Platform(*v) for v in vals]
+    return check
+
 def check_depends(name):
     """
     Validator for manifest depends.
@@ -156,6 +170,8 @@ def check(name):
         return check_versioncontrol('versioncontrol')
     elif name == 'rosdep':
         return check_rosdeps('rosdep')
+    elif name == 'platform':
+        return check_platform('platform')
     elif name in REQUIRED:
         if name in ALLOWXHTML:
             return check_required(name, True)
@@ -201,6 +217,53 @@ class Export(object):
         else:
             return '<%s%s />'%(self.tag, attrs)
         
+class Platform(object):
+    """
+    Manifest 'platform' tag
+    """
+    __slots__ = ['os', 'version', 'notes']
+
+    def __init__(self, os, version, notes=None):
+        """
+        Create new depend instance.
+        @param os: OS name. must be non-empty
+        @type  os: str
+        @param version: OS version. must be non-empty
+        @type  version: str
+        @param notes: (optional) notes about platform support
+        @type  notes: str
+        """
+        if not os or not isinstance(os, basestring):
+            raise ValueError("bad 'os' attribute")
+        if not version or not isinstance(version, basestring):
+            raise ValueError("bad 'version' attribute")
+        if notes and not isinstance(notes, basestring):
+            raise ValueError("bad 'notes' attribute")            
+        self.os = os
+        self.version = version
+        self.notes = notes
+        
+    def __str__(self):
+        return "%s %s"%(self.os, self.version)
+    def __repr__(self):
+        return "%s %s"%(self.os, self.version)
+    def __eq__(self, obj):
+        """
+        Override equality test. notes *are* considered in the equality test.
+        """
+        if not isinstance(obj, Platform):
+            return False
+        return self.os == obj.os and self.version == obj.version and self.notes == obj.notes 
+    def xml(self):
+        """
+        @return: instance represented as manifest XML
+        @rtype: str
+        """
+        if self.notes is not None:
+            return '<platform os="%s" version="%s" notes="%s"/>'%(self.os, self.version, self.notes)
+        else:
+            return '<platform os="%s" version="%s"/>'%(self.os, self.version)
+
 class Depend(object):
     """
     Manifest 'depend' tag
@@ -322,7 +385,7 @@ class _Manifest(object):
     """
     __slots__ = ['description', 'brief', \
                  'author', 'license', 'license_url', 'url', \
-                 'depends', 'rosdeps',\
+                 'depends', 'rosdeps','platforms',\
                  'logo', 'exports',\
                  'versioncontrol', 'status', 'notes',\
                  'unknown_tags',\
@@ -334,6 +397,7 @@ class _Manifest(object):
         self.depends = []
         self.rosdeps = []
         self.exports = []
+        self.platforms = []
         self._type = _type
         
         # store unrecognized tags during parsing
@@ -368,13 +432,16 @@ class _Manifest(object):
             logo    = "  <logo>%s</logo>"%self.logo
         depends = '\n'.join(["  %s"%d.xml() for d in self.depends])
         rosdeps = '\n'.join(["  %s"%rd.xml() for rd in self.rosdeps])
+        platforms = '\n'.join(["  %s"%p.xml() for p in self.platforms])
         if self.exports:
             exports = '  <export>\n' + '\n'.join(["  %s"%e.xml() for e in self.exports]) + '  </export>'
         if self.versioncontrol:
             versioncontrol = "  %s"%self.versioncontrol.xml()
         if self.status or self.notes:
             review = '  <review status="%s" notes="%s" />'%(self.status, self.notes)
-        fields = filter(lambda x: x, [desc, author, license, review, url, logo, depends, rosdeps, exports, versioncontrol])
+
+
+        fields = filter(lambda x: x, [desc, author, license, review, url, logo, depends, rosdeps, platforms, exports, versioncontrol])
         return "<%s>\n"%self._type + "\n".join(fields) + "\n</%s>"%self._type
 
 def _get_text(nodes):
@@ -442,6 +509,7 @@ def parse(m, string, filename='string'):
         # not implemented yet
         pass
     m.rosdeps = check('rosdep')(p, filename)    
+    m.platforms = check('platform')(p, filename)    
     m.exports = check('export')(p, filename)
     m.versioncontrol = check('versioncontrol')(p,filename)
     m.license = check('license')(p, filename)

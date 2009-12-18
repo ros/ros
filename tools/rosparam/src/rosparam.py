@@ -39,7 +39,6 @@ state of the ROS Parameter Server using YAML files.
 """
 
 NAME = 'rosparam'
-import roslib; roslib.load_manifest('rosparam')
 
 ## namespace key. Use of this in a YAML document specifies the
 ## namespace of all the params.  NOTE: phasing out most use of this
@@ -608,7 +607,4 @@ yaml.add_implicit_resolver(u'!degrees', pattern)
 pattern = re.compile(r'^rad\([^\)]*\)$')
 yaml.add_implicit_resolver(u'!radians', pattern)
 
-
-if __name__ == '__main__':
-    yamlmain()
 

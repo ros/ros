@@ -132,11 +132,6 @@ class RosdepCoreTest(unittest.TestCase):
         rdlp.insert_map(yaml_map, "example_yaml_path2", False) 
         self.assertEqual(parsed_output, rdlp.get_map())
 
-        
-    def test_Rosdep_tripwire(self):
-        rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=True)
-        rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=False)
-
     def test_RosdepLookupPackage_failed_version_lookup(self):
         rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep")
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
@@ -151,7 +146,13 @@ class RosdepCoreTest(unittest.TestCase):
         output = rdlp.lookup_rosdep("no_os_rosdep_test")
         self.assertEqual(output, False)
 
+    def test_Rosdep_tripwire(self):
+        rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=True)
+        rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=False)
+
+
+
 if __name__ == '__main__':
-  os.environ["ROSDEP_TEST_OS"] = "True"
+  os.environ["ROSDEP_TEST_OS"] = "rosdep_test_os"
   rostest.unitrun('test_rosdep', 'test_core', RosdepCoreTest, coverage_packages=['rosdep.core'])  
 

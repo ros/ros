@@ -47,14 +47,18 @@ def dpkg_detect(p):
 
 ###### Rosdep Test OS #########################
 class RosdepTestOS(roslib.os_detect.OSBase):
+    def __init__(self):
+        self.name = "uninitialized"
     def check_presence(self):
-        return os.environ.get("ROSDEP_TEST_OS", False)
+        if "ROSDEP_TEST_OS" in os.environ:
+            return True
+        return False
 
     def get_name(self):
-        return "rosdep_test_os"
+        return os.environ.get("ROSDEP_TEST_OS", "rosdep_test_os")
 
     def get_version(self):
-        return "rosdep_test_version"
+        return os.environ.get("ROSDEP_TEST_VERSION", "rosdep_test_version")
     
     def strip_detected_packages(self, packages):
         return packages

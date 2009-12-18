@@ -55,12 +55,6 @@ PRIV_NAME = '~'
 REMAP = ":="
 ANYTYPE = '*'
 
-class ROSNameException(roslib.exceptions.ROSLibException):
-    """
-    Base exception type for errors in roslib.names routines
-    """
-    pass
-
 def get_ros_namespace(env=None):
     """
     @param env: environment dictionary (defaults to os.environ)
@@ -93,10 +87,10 @@ def make_global_ns(name):
     @return str: name as a global name, e.g. 'foo' -> '/foo/'.
         This does NOT resolve a name.
     @rtype: str
-    @raise ROSNameException: if name is a ~name
+    @raise ValueError: if name is a ~name 
     """    
     if is_private(name):
-        raise ROSNameException("cannot turn [%s] into a global name"%name)
+        raise ValueError("cannot turn [%s] into a global name"%name)
     if not is_global(name):
         name = SEP + name
     if name[-1] != SEP:
@@ -254,12 +248,12 @@ def package_resource_name(name):
     @type  name: str
     @return: package name, resource name
     @rtype: str
-    @raise ROSNameException: if name is invalid
+    @raise ValueError: if name is invalid
     """    
     if PRN_SEPARATOR in name:
         val = tuple(name.split(PRN_SEPARATOR))
         if len(val) != 2:
-            raise ROSNameException("invalid name [%s]"%name)
+            raise ValueError("invalid name [%s]"%name)
         else:
             return val
     else:
@@ -276,23 +270,52 @@ def is_valid_local_name(name):
     """    
     return _is_safe_name(name, 'name')
     
-# TODO: redo this, this is very old
 import re
-NAME_LEGAL_CHARS_P = re.compile('^[A-Za-z][\w_\/]*$') #ascii char followed by (alphanumeric, _, /)
+#ascii char followed by (alphanumeric, _, /)
+RESOURCE_NAME_LEGAL_CHARS_P = re.compile('^[A-Za-z][\w_\/]*$') 
 def is_legal_resource_name(name):
     """
-    Check if name is a legal ROS name (alphabetical character followed
-    by alphanumeric, underscore, or forward slashes). This constraint
-    is currently not being enforced, but may start getting enforced in
-    later versions of ROS.
+    Check if name is a legal ROS name for filesystem resources
+    (alphabetical character followed by alphanumeric, underscore, or
+    forward slashes). This constraint is currently not being enforced,
+    but may start getting enforced in later versions of ROS.
+
+    @param name: Name
+    @type  name: str
+    """
+    # currently don't allow unicode
+    if name is None or type(name) != str:
+        return False
+    m = RESOURCE_NAME_LEGAL_CHARS_P.match(name)
+    # '//' check makes sure there isn't double-slashes
+    return m is not None and m.group(0) == name and not '//' in name
+
+#~,/, or ascii char followed by (alphanumeric, _, /)
+NAME_LEGAL_CHARS_P = re.compile('^[\~\/A-Za-z][\w_\/]*$') 
+def is_legal_name(name):
+    """
+    Check if name is a legal ROS name for graph resources
+    (alphabetical character followed by alphanumeric, underscore, or
+    forward slashes). This constraint is currently not being enforced,
+    but may start getting enforced in later versions of ROS.
 
     @param name: Name
     @type  name: str
     """    
-    if not name: #None or empty
+    # currently don't allow unicode
+    if name is None or type(name) != str:
         return False
-    if len(name) != len(name.strip()):
+    # empty string is a legal name as it resolves to namespace
+    if name == '':
+        return True
+    m = NAME_LEGAL_CHARS_P.match(name)
+    return m is not None and m.group(0) == name and not '//' in name
+    
+BASE_NAME_LEGAL_CHARS_P = re.compile('^[A-Za-z][\w_]*$') #ascii char followed by (alphanumeric, _)
+def is_legal_base_name(name):
+    # currently don't allow unicode
+    if name is None or type(name) != str:
         return False
-    return NAME_LEGAL_CHARS_P.match(name) is not None
-# same legal rules 
-is_legal_name = is_legal_resource_name
+    m = BASE_NAME_LEGAL_CHARS_P.match(name)
+    return m is not None and m.group(0) == name
+

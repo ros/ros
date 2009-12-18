@@ -63,7 +63,7 @@ def lsb_get_codename():
     except:
         return None
     
-def lsb_get_release_version():
+def lsb_get_version():
     try:
         cmd = ['lsb_release', '-sr']
         pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -111,7 +111,7 @@ class Ubuntu(Debian):
         return False
 
     def get_version(self):
-        return lsb_get_codename()
+        return lsb_get_version()
     def get_name(self):
         return "ubuntu"
 

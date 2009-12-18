@@ -39,16 +39,14 @@ General routines and representations for loading roslaunch model.
 from __future__ import with_statement
 
 import os
-import string
 import sys
-import traceback
-import xmlrpclib
-import yaml
 
-from roslib.names import make_global_ns, ns_join, is_global, is_private, PRIV_NAME
-from roslib.packages import InvalidROSPkgException
+from roslib.names import make_global_ns, ns_join, PRIV_NAME
 
 from roslaunch.core import Param, PHASE_SETUP, Master, RosbinExecutable, Node, Test, Machine
+
+#lazy-import global for yaml
+yaml = None
 
 # maps master auto attribute to Master auto property
 _master_auto = {
@@ -75,6 +73,10 @@ def command_line_param(key, value):
     # have to force UTF-8 in order to get python-yaml to encode cleanly
     if type(value) == unicode:
         value = value.encode('UTF-8')
+    # - lazy import
+    global yaml
+    if yaml is None:
+        import yaml
     # strip the yaml encoding as python-yaml adds a newline
     encoded = yaml.dump(value).strip()
     # #1731 strip the '...' end-of-document indicator as it is not
@@ -102,9 +104,9 @@ def convert_value(value, type_):
         #attempt numeric conversion
         try:
             if '.' in value:
-                return string.atof(value)
+                return float(value)
             else:
-                return string.atoi(value)
+                return int(value)
         except ValueError, e:
             pass
         #bool
@@ -116,9 +118,9 @@ def convert_value(value, type_):
     elif type_ == 'str' or type_ == 'string':
         return value
     elif type_ == 'int':
-        return string.atoi(value)
+        return int(value)
     elif type_ == 'double':
-        return string.atof(value)
+        return float(value)
     elif type_ == 'bool' or type_ == 'boolean':
         value = value.lower()
         if value == 'true' or value == '1':
@@ -325,6 +327,10 @@ class Loader(object):
                     raise ValueError("no YAML to load")
             
             # parse YAML text
+            # - lazy import
+            global yaml
+            if yaml is None:
+                import yaml
             try:
                 data = yaml.load(text)
             except Exception, e:
@@ -385,6 +391,7 @@ class Loader(object):
             finally:
                 f.close()
         elif binfile is not None:
+            import xmlrpclib
             f = open(binfile, 'rb')
             try:
                 return xmlrpclib.Binary(f.read())

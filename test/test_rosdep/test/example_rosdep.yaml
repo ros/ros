@@ -1,0 +1,32 @@
+boost:
+  ubuntu:
+    9.10: libboost1.40-all-dev
+    9.04: libboost1.37-dev
+    8.10: |
+    this is a script
+  debian:
+    squeeze/sid: libboost-dev libboost-regex-dev libboost-thread-dev libboost-signals-dev libboost-filesystem-dev libboost-python-dev libboost-program-options-dev
+    lenny: |
+    another_script
+    3.1: |
+      if [ ! -f /opt/ros/lib/libboost_date_time-gcc33-mt*-1_37.a ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/boost_1_37_0.tar.gz
+        tar xzf boost_1_37_0.tar.gz
+        cd boost_1_37_0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
+  fedora: boost-devel
+  rhel: boost-devel
+  arch: boost
+  macports: boost
+zlib:
+  ubuntu: zlib1g-dev
+  debian: zlib1g-dev
+  fedora: zlib-devel
+  rhel: zlib-devel
+  arch: zlib
+  macports: zlib

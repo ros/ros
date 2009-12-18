@@ -40,6 +40,19 @@ import rostest
 import rosdep.core
 
 class RosdepCoreTest(unittest.TestCase):
+    def test_Rosdep_get_os_from_yaml(self):
+        rdlp = rosdep.core.RosdepLookupPackage("ubuntu", "9.04", "rosdep")
+        yaml_os_map = {"ubuntu":"one", "other":"two", "three":"three"};
+        output = rdlp.get_os_from_yaml(yaml_os_map)
+        self.assertEqual("one", output)
+
+    def test_Rosdep_get_version_from_yaml(self):
+        rdlp = rosdep.core.RosdepLookupPackage("ubuntu", "9.04", "rosdep")
+        yaml_map = {"8.04":"one", "9.04":"two", "three":"three"};
+        output = rdlp.get_version_from_yaml(yaml_map)
+        self.assertEqual("two", output)
+        
+
     def test_RosdepLookupPackage_tripwire(self):
         rdlp = rosdep.core.RosdepLookupPackage("ubuntu", "9.04", "rosdep")
         

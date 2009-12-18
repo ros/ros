@@ -200,7 +200,7 @@ public:
          version_major_(0),
          version_minor_(0),
          time_scale_(time_scale),
-         done_(false),
+         done_(true),
          first_duration_(0,0),
          duration_(0,0),
          header_buffer_(NULL),
@@ -253,7 +253,7 @@ public:
     done_ = false;
   }
 
-  bool open(const std::string &file_name, ros::Time start_time)
+  bool open(const std::string &file_name, ros::Time start_time, bool try_future = false)
   {
     start_time_ = start_time;
 
@@ -336,6 +336,18 @@ public:
       }
     }
 
+    
+    int cur_version_major;
+    int cur_version_minor;
+    sscanf(VERSION.c_str(), "%d.%d", &cur_version_major, &cur_version_minor);
+
+    if (!try_future && version_ > cur_version_major*100 + cur_version_minor)
+    {
+      ROS_ERROR("Version on '%s' is more recent than this version of player.", file_name.c_str());
+      return false;
+    }
+
+    done_ = false;
     readNextMsg();
 
     return true;
@@ -632,7 +644,7 @@ protected:
 
     ros::Duration next_msg_dur;
 
-    if (version_ == 102)
+    if (version_ >= 102)
     {
       unsigned char op;
       if(!parseVersion102Header(op, next_msg_dur))
@@ -786,7 +798,7 @@ public:
     return d;
   }
 
-  bool open(std::vector<std::string> file_names, ros::Time start, double time_scale=1)
+  bool open(std::vector<std::string> file_names, ros::Time start, double time_scale=1, bool try_future = false)
   {
 
     ros::Duration first_duration;
@@ -797,7 +809,7 @@ public:
     {
       Player* l = new Player(time_scale);
 
-      if (l->open(*name_it, start))
+      if (l->open(*name_it, start, try_future))
       {
         players_.push_back(l);
 

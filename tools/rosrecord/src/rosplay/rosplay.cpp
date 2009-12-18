@@ -58,6 +58,7 @@ void print_help()
   fprintf(stderr, " -s sec\tsleep <sec> sleep duration after every advertise call (to allow subscribers to connect)\n");
   fprintf(stderr, " -t sec\tstart <sec> seconds into the files\n");
   fprintf(stderr, " -q sz\tUse an outgoing queue of size <sz> (defaults to 0)\n");
+  fprintf(stderr, " -T\tTry to play future version.\n");
   fprintf(stderr, " -h\tdisplay this help message\n");
 }
 
@@ -96,7 +97,9 @@ RosPlay::RosPlay(int i_argc, char **i_argv) :
   bool has_time = false;  
   int option_char;
   
-  while ((option_char = getopt(i_argc,i_argv,"ncahpb:r:s:t:q:")) != -1){
+  bool try_future = false;
+
+  while ((option_char = getopt(i_argc,i_argv,"ncahpb:r:s:t:q:T")) != -1){
     switch (option_char){
     case 'c': ros::shutdown(); break;  // This shouldn't happen
     case 'n': quiet_ = true; break;
@@ -107,6 +110,7 @@ RosPlay::RosPlay(int i_argc, char **i_argv) :
     case 'q': queue_size_ = atoi(optarg); break;
     case 'b': bag_time_frequency_ =  atoi(optarg); bag_time_ = true; break;
     case 'r': time_scale_ =  atof(optarg); break;
+    case 'T': try_future = true; break;
     case 'h': print_help(); ros::shutdown(); return;
     case '?': print_usage(); ros::shutdown(); return;
     }
@@ -141,7 +145,7 @@ RosPlay::RosPlay(int i_argc, char **i_argv) :
   start_time_ = getSysTime();
   requested_start_time_ = start_time_;
   
-  if (player_.open(bags, start_time_ + ros::Duration().fromSec(-float_time), time_scale_))
+  if (player_.open(bags, start_time_ + ros::Duration().fromSec(-float_time), time_scale_, try_future))
     player_.addHandler<AnyMsg>(string("*"), &RosPlay::doPublish, this, NULL, false);
   else
   {
@@ -405,8 +409,10 @@ int main(int argc, char **argv)
 
   if (check_bag)
   {
+    bool try_future = false;
+
     int option_char;
-    while ((option_char = getopt(argc,argv,"cdahpt:q:")) != -1)
+    while ((option_char = getopt(argc,argv,"cdahpt:q:T")) != -1)
       switch (option_char)
       {
       case 'c': break;
@@ -415,6 +421,7 @@ int main(int argc, char **argv)
       case 'p': fprintf(stderr, "Option -p is not valid when checking bag\n"); return 1;
       case 't': fprintf(stderr, "Option -t is not valid when checking bag\n"); return 1;
       case 'q': fprintf(stderr, "Option -q is not valid when checking bag\n"); return 1;
+      case 'T': try_future = true; break;
       case 'h': print_help();  return 0;
       case '?': print_usage();  return 0;
       }
@@ -427,7 +434,7 @@ int main(int argc, char **argv)
 
     ros::record::Player player;
 
-    if (player.open(argv[optind], ros::Time()))
+    if (player.open(argv[optind], ros::Time(), try_future))
     {
       player.addHandler<AnyMsg>(string("*"), &checkFile, NULL, false);
     }

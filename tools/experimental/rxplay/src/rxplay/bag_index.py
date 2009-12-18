@@ -69,6 +69,12 @@ class BagIndex:
         self.update_statistics()
         return self._end_stamp
 
+    def get_topics_by_datatype(self):
+        topics_by_datatype = {}
+        for topic, datatype in self._data.topic_datatypes.items():
+            topics_by_datatype.setdefault(datatype, []).append(topic)
+        return topics_by_datatype
+
     @property
     def topics(self): return self._data.topic_datatypes.keys()
 
@@ -239,7 +245,7 @@ class BagIndexReader:
             self.index.loaded = True
 
         except Exception, e:
-            rospy.logerr('Unsuccessful loading index from %s: %s' % (self.bag_path, e))
+            rospy.logerr('Unsuccessful loading index: %s' % e)
             self.index = None
 
         return self.index
@@ -265,7 +271,7 @@ class BagIndexPickler:
             return index
 
         except Exception, e:
-            rospy.logerr('Unsuccessful loading index from %s: %s' % (self.index_path, e))
+            rospy.logerr('Unsuccessful loading index: %s' % e)
             return None
 
     def save(self, index):

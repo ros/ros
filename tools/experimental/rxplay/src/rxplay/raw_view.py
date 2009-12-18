@@ -67,7 +67,7 @@ class RawView(msg_view.TopicMsgView):
 
     def message_viewed(self, bag_file, bag_index, topic, stamp, datatype, msg_index, msg):
         msg_view.TopicMsgView.message_viewed(self, bag_file, bag_index, topic, stamp, datatype, msg_index, msg)
-        
+
         if stamp is None or msg_index is None:
             self.message_cleared()
         else:

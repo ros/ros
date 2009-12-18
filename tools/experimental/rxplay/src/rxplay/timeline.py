@@ -298,6 +298,17 @@ class Timeline(Layer):
 
     def get_viewer_types(self, datatype):
         return [RawView] + self.viewer_types.get('*', []) + self.viewer_types.get(datatype, [])
+    
+    def get_renderers(self):
+        renderers = []
+
+        for topic in self.topics:
+            datatype = self.bag_index.get_datatype(topic)
+            renderer = self.timeline_renderers.get(datatype)
+            if renderer is not None:
+                renderers.append((topic, renderer))
+                
+        return renderers
 
     def load_plugins(self):
         for msg_view, timeline_renderer, msg_types in plugins.load_plugins():
@@ -867,50 +878,73 @@ class TimelinePopupMenu(wx.Menu):
         self.AppendItem(self.reset_timeline_menu)
         self.Bind(wx.EVT_MENU, lambda e: self.timeline.reset_timeline(), id=self.reset_timeline_menu.GetId())
 
+        # Get the renderers
+        renderers = self.timeline.get_renderers()
+
         # Thumbnails...
-        self.thumbnail_menu = wx.Menu()
-        self.AppendSubMenu(self.thumbnail_menu, 'Thumbnails...', 'View message thumbnails')
+        if len(renderers) > 0:
+            self.thumbnail_menu = wx.Menu()
+            self.AppendSubMenu(self.thumbnail_menu, 'Thumbnails...', 'View message thumbnails')
 
-        # Thumbnails... / Show All
-        self.show_thumbnails_menu = wx.MenuItem(self.thumbnail_menu, wx.NewId(), 'Show All')
-        self.thumbnail_menu.AppendItem(self.show_thumbnails_menu)
-        self.thumbnail_menu.Bind(wx.EVT_MENU, lambda e: self.timeline.set_renderers_active(True), id=self.show_thumbnails_menu.GetId())
-        
-        # Thumbnails... / Hide All
-        self.hide_thumbnails_menu = wx.MenuItem(self.thumbnail_menu, wx.NewId(), 'Hide All')
-        self.thumbnail_menu.AppendItem(self.hide_thumbnails_menu)
-        self.thumbnail_menu.Bind(wx.EVT_MENU, lambda e: self.timeline.set_renderers_active(False), id=self.hide_thumbnails_menu.GetId())
-        
-        # ---
-        self.thumbnail_menu.AppendSeparator()
-        
-        # Thumbnails... / topic/subtopic/subsubtopic
-        for topic in self.timeline.topics:
-            datatype = self.timeline.bag_index.get_datatype(topic)
-
-            renderer = self.timeline.timeline_renderers.get(datatype)
-            if renderer:
+            # Thumbnails... / Show All
+            self.show_thumbnails_menu = wx.MenuItem(self.thumbnail_menu, wx.NewId(), 'Show All')
+            self.thumbnail_menu.AppendItem(self.show_thumbnails_menu)
+            self.thumbnail_menu.Bind(wx.EVT_MENU, lambda e: self.timeline.set_renderers_active(True), id=self.show_thumbnails_menu.GetId())
+            
+            # Thumbnails... / Hide All
+            self.hide_thumbnails_menu = wx.MenuItem(self.thumbnail_menu, wx.NewId(), 'Hide All')
+            self.thumbnail_menu.AppendItem(self.hide_thumbnails_menu)
+            self.thumbnail_menu.Bind(wx.EVT_MENU, lambda e: self.timeline.set_renderers_active(False), id=self.hide_thumbnails_menu.GetId())
+            
+            # ---
+            self.thumbnail_menu.AppendSeparator()
+            
+            # Thumbnails... / topic/subtopic/subsubtopic
+            for topic, renderer in renderers:
                 renderer_item = self.TimelineRendererMenuItem(self.thumbnail_menu, wx.NewId(), topic.lstrip('/'), topic, renderer, self.timeline)
                 self.thumbnail_menu.AppendItem(renderer_item)
-
+    
                 renderer_item.Check(topic in self.timeline.rendered_topics)
 
-        # View...
-        self.view_menu = wx.Menu()
-        self.AppendSubMenu(self.view_menu, 'View...', 'View message detail')
+        # View (by topic)...
+        self.view_topic_menu = wx.Menu()
+        self.AppendSubMenu(self.view_topic_menu, 'View (by topic)...', 'View message detail')
         
         for topic in self.timeline.topics:
             datatype = self.timeline.bag_index.get_datatype(topic)
 
             # View... / topic/subtopic/subsubtopic
             topic_menu = wx.Menu()
-            self.view_menu.AppendSubMenu(topic_menu, topic.lstrip('/'), topic)
+            self.view_topic_menu.AppendSubMenu(topic_menu, topic.lstrip('/'), topic)
 
             viewer_types = self.timeline.get_viewer_types(datatype)
 
             # View... / topic/subtopic/subsubtopic / Viewer
             for viewer_type in viewer_types:
                 topic_menu.AppendItem(self.TopicViewMenuItem(topic_menu, wx.NewId(), viewer_type.name, topic, viewer_type, self.timeline))
+
+        # View (by datatype)...
+        self.view_datatype_menu = wx.Menu()
+        self.AppendSubMenu(self.view_datatype_menu, 'View (by datatype)...', 'View message detail')
+        
+        topics_by_datatype = self.timeline.bag_index.get_topics_by_datatype()
+        
+        for datatype in sorted(topics_by_datatype):
+            # View... / datatype
+            datatype_menu = wx.Menu()
+            self.view_datatype_menu.AppendSubMenu(datatype_menu, datatype, datatype)
+            
+            topics = topics_by_datatype[datatype]
+            
+            viewer_types = self.timeline.get_viewer_types(datatype)
+            
+            for topic in [t for t in self.timeline.topics if t in topics]:   # use timeline ordering
+                topic_menu = wx.Menu()
+                datatype_menu.AppendSubMenu(topic_menu, topic.lstrip('/'), topic)
+    
+                # View... / datatype / topic/subtopic/subsubtopic / Viewer
+                for viewer_type in viewer_types:
+                    topic_menu.AppendItem(self.TopicViewMenuItem(topic_menu, wx.NewId(), viewer_type.name, topic, viewer_type, self.timeline))
 
     class TimelineRendererMenuItem(wx.MenuItem):
         def __init__(self, parent, id, label, topic, renderer, timeline):

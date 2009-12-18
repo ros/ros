@@ -42,8 +42,6 @@ introspecting information about services, as well as using this
 introspection to dynamically call services.
 """
 
-import roslib; roslib.load_manifest('rosservice')
-
 NAME='rosservice'
 
 import cStringIO
@@ -692,6 +690,3 @@ def rosservicemain(argv=sys.argv):
         sys.exit(2)
     except KeyboardInterrupt:
         pass
-    
-if __name__ == '__main__':
-    rosservicemain()

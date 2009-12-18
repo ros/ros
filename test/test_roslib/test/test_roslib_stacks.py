@@ -68,7 +68,18 @@ class RoslibStacksTest(unittest.TestCase):
             self.fail("should have failed")
         except roslib.packages.InvalidROSPkgException:
             pass
-    
+
+    def test_list_stacks(self):
+        from roslib.stacks import list_stacks
+        l = list_stacks()
+        self.assert_('ros' in l)
+
+        # make sure it is equivalent to rosstack list
+        from roslib.rospack import rosstackexec
+        l2 = [x for x in rosstackexec(['list']).split('\n') if x]
+        l2 = [x.split()[0] for x in l2]
+        self.assertEquals(set(l), set(l2), set(l) ^ set(l2))
+        
     def test_get_stack_dir(self):
         # TODO setup artificial tree with more exhaustive tests
         import roslib.rosenv

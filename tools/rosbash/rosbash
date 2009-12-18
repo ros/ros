@@ -337,7 +337,17 @@ function _roscomplete_rostopic {
         opts="bw echo hz list pub type find"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     else
-        COMPREPLY=($(compgen -f -- ${arg}))
+        case ${COMP_WORDS[1]} in
+            bw|echo|hz|list|type)
+                opts=`rostopic list`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            find)
+                # Need a clever way to do message searching
+                ;;
+            pub)
+                # This takes more logic.
+        esac
     fi
 
 }

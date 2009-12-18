@@ -154,13 +154,17 @@ pos_t ros::record::Recorder::getOffset()
 
 void ros::record::Recorder::close()
 {
-  writeIndex();
+  if (!record_file_.is_open())
+    return;
+
+  if (store_index_)
+    writeIndex();
   closeFile();
 }
 
 void ros::record::Recorder::closeFile()
 {
-  // Unfortuantely closing this possibly enormous file takes a while
+  // Unfortunately closing this possibly enormous file takes a while
   // (especially over NFS) and handling of a SIGINT while a file is
   // closing leads to a double free.  So, we disable signals while
   // we close the file.
@@ -308,7 +312,7 @@ void ros::record::Recorder::writeFileHeader()
 {
   boost::mutex::scoped_lock lock(record_mutex_);
 
-  // Remember position to file header record
+  // Remember position of file header record
   file_header_pos_ = record_pos_;
 
   // Write file header record
@@ -327,9 +331,12 @@ void ros::record::Recorder::writeFileHeader()
   write((char*)&data_len, 4);
 
   // Pad the file header record out
-  std::string padding;
-  padding.resize(data_len, ' ');
-  write(padding);
+  if (data_len > 0)
+  {
+    std::string padding;
+    padding.resize(data_len, ' ');
+    write(padding);
+  }
 }
 
 void ros::record::Recorder::writeIndex()
@@ -337,7 +344,7 @@ void ros::record::Recorder::writeIndex()
 	{
 		boost::mutex::scoped_lock lock(record_mutex_);
 
-		// Remember position to first index record
+		// Remember position of first index record
 		index_data_pos_ = record_pos_;
 
 		for (std::map<std::string, std::vector<IndexEntry> >::const_iterator i = topic_indexes_.begin(); i != topic_indexes_.end(); i++)
@@ -380,7 +387,7 @@ void ros::record::Recorder::writeIndex()
 
 //
 
-void ros::record::Recorder::writeRecord(const M_string& fields, char* data, uint32_t data_len)
+void ros::record::Recorder::writeRecord(const M_string& fields, const char* data, uint32_t data_len)
 {
   writeHeader(fields, data_len);
   write(data, data_len);

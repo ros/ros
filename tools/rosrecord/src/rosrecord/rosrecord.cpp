@@ -69,7 +69,6 @@ public:
   ros::Time time;
 };
 
-
 //! Global verbose flag so we can easily use from callback
 bool g_verbose = false;
 
@@ -77,7 +76,7 @@ bool g_verbose = false;
 bool g_snapshot = false;
 
 // Global Eventual exit code
-int  g_exit_code       = 0;
+int g_exit_code = 0;
 
 //! Global variable including the set of currenly recording topics
 std::set<std::string> g_currently_recording;
@@ -130,7 +129,6 @@ void print_usage() {
                    );
 }
 
-
 //! Helper function to print executable options
 void print_help() {
   print_usage();
@@ -147,7 +145,6 @@ void print_help() {
   fprintf(stderr, " -t          : (EXPERIMENTAL) Trigger snapshot recording\n");
   fprintf(stderr, " -h          : Display this help message\n");
 }
-
 
 //! Callback to be invoked to save messages into a queue
 void do_queue(topic_tools::ShapeShifter::ConstPtr msg,
@@ -293,7 +290,7 @@ void do_record(std::string prefix, bool add_date)
     boost::unique_lock<boost::mutex> lock(g_queue_mutex);
 
     bool finished = false;
-    while(g_queue->empty())
+    while (g_queue->empty())
     {
       if (!nh.ok())
       {
@@ -316,8 +313,9 @@ void do_record(std::string prefix, bool add_date)
   }
 
   // Close the file nicely
+  ROS_INFO("Closing %s.", tgt_fname.c_str());
   recorder.close();
-  rename(fname.c_str(),tgt_fname.c_str());
+  rename(fname.c_str(), tgt_fname.c_str());
 }
 
 void do_record_bb()
@@ -327,7 +325,7 @@ void do_record_bb()
   while (nh.ok() || !g_queue_queue.empty())
   {
     boost::unique_lock<boost::mutex> lock(g_queue_mutex);
-    while(g_queue_queue.empty())
+    while (g_queue_queue.empty())
     {
       if (!nh.ok())
         return;
@@ -358,7 +356,9 @@ void do_record_bb()
 
       // Rename the file to the actual target name
       rename(fname.c_str(),tgt_fname.c_str());
-    } else {
+    }
+    else
+    {
       ROS_ERROR("Could not open file: %s", out_queue.fname.c_str());
     }
   }
@@ -403,10 +403,10 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "rosrecord", ros::init_options::AnonymousName);
 
   // Variables
-  bool check_master    = false; // Whether master should be checked periodically
+  bool check_master = false; // Whether master should be checked periodically
 
   bool add_date = true;;
-  std::string prefix("");   // Prefix                                          
+  std::string prefix("");
   
   // Parse options  
   int option_char;
@@ -465,7 +465,7 @@ int main(int argc, char **argv)
   // Get a node_handle
   ros::NodeHandle node_handle;
 
-  // Only set up recording if we actually got a useful nodehandle.
+  // Only set up recording if we actually got a useful nodehandle
   if (node_handle.ok())
   {
     boost::thread record_thread;
@@ -497,11 +497,9 @@ int main(int argc, char **argv)
     g_queue_condition.notify_all();
     
     record_thread.join();
-        
   }
   
   delete g_queue;
 
-  // Return our exit code
   return g_exit_code;
 }

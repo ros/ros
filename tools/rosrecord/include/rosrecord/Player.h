@@ -52,6 +52,8 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
 
+#include <iostream>
+
 namespace ros
 {
 namespace record
@@ -490,6 +492,7 @@ protected:
     record_stream_.read((char*)&header_len, 4);
     if (record_stream_.eof())
       return false;
+
     if(header_buffer_size_ < header_len)
     {
       header_buffer_size_ = header_len;
@@ -519,33 +522,78 @@ protected:
     M_string::const_iterator fitr;
     M_stringPtr fields_ptr = header.getValues();
     M_string& fields = *fields_ptr;
+
     if((fitr = checkField(fields, OP_FIELD_NAME,
                           1, 1, true)) == fields.end())
       return false;
-    memcpy(&op,fitr->second.data(),1);
-    // Extra checking on the value of op
-    if((op != OP_MSG_DEF) && (op != OP_MSG_DATA))
-    {
-      ROS_ERROR("Field %s has invalid value %u\n",
-                OP_FIELD_NAME.c_str(), op);
-      return false;
-    }
-    if((fitr = checkField(fields, TOPIC_FIELD_NAME,
-                          1, UINT_MAX, true)) == fields.end())
-      return false;
-    topic_name = fitr->second;
-    if((fitr = checkField(fields, MD5_FIELD_NAME,
-                          32, 32, true)) == fields.end())
-      return false;
-    md5sum = fitr->second;
-    if((fitr = checkField(fields, TYPE_FIELD_NAME,
-                          1, UINT_MAX, true)) == fields.end())
-      return false;
-    datatype = fitr->second;
 
-    // Some fields are only required for certain values of op
-    if(op == OP_MSG_DEF)
+    memcpy(&op,fitr->second.data(),1);
+
+    // Read the body length
+    record_stream_.read((char*)&next_msg_size_, 4);
+    if (record_stream_.eof())
+      return false;
+
+    // Extra checking on the value of op
+    switch (op)
     {
+    case OP_MSG_DATA:
+      if((fitr = checkField(fields, TOPIC_FIELD_NAME,
+                          1, UINT_MAX, true)) == fields.end())
+        return false;
+      topic_name = fitr->second;
+
+      if((fitr = checkField(fields, MD5_FIELD_NAME,
+                            32, 32, true)) == fields.end())
+        return false;
+      md5sum = fitr->second;
+
+      if((fitr = checkField(fields, TYPE_FIELD_NAME,
+                            1, UINT_MAX, true)) == fields.end())
+        return false;
+      datatype = fitr->second;      
+
+      if((fitr = checkField(fields, SEC_FIELD_NAME,
+                            4, 4, true)) == fields.end())
+        return false;
+      memcpy(&next_msg_dur.sec,fitr->second.data(),4);
+
+      if((fitr = checkField(fields, NSEC_FIELD_NAME,
+                            4, 4, true)) == fields.end())
+        return false;
+      memcpy(&next_msg_dur.nsec,fitr->second.data(),4);
+
+      next_msg_name_ = topic_name;
+      // If this is the first time that we've encountered this topic, we need
+      // to create a PlayerHelper, which inherits from ros::Message and is
+      // used to publish messages from this topic.
+      if (topics_.find(topic_name) == topics_.end())
+      {
+        PlayerHelper* l = new PlayerHelper(this, topic_name,
+                                           md5sum, datatype,
+                                           message_definition);
+        topics_[topic_name] = l;
+      }
+      
+      return true;
+
+
+    case OP_MSG_DEF:
+      if((fitr = checkField(fields, TOPIC_FIELD_NAME,
+                          1, UINT_MAX, true)) == fields.end())
+        return false;
+      topic_name = fitr->second;
+
+      if((fitr = checkField(fields, MD5_FIELD_NAME,
+                            32, 32, true)) == fields.end())
+        return false;
+      md5sum = fitr->second;
+
+      if((fitr = checkField(fields, TYPE_FIELD_NAME,
+                            1, UINT_MAX, true)) == fields.end())
+        return false;
+      datatype = fitr->second;      
+
       // Note that the field length can be zero.  This can happen if a
       // publisher didn't supply the definition, e.g., this bag was created
       // by recording from the playback of a pre-1.2 bag.
@@ -553,38 +601,25 @@ protected:
                             0, UINT_MAX, true)) == fields.end())
         return false;
       message_definition = fitr->second;
-    }
-    else if(op == OP_MSG_DATA)
-    {
-      if((fitr = checkField(fields, SEC_FIELD_NAME,
-                            4, 4, true)) == fields.end())
-        return false;
-      memcpy(&next_msg_dur.sec,fitr->second.data(),4);
-      if((fitr = checkField(fields, NSEC_FIELD_NAME,
-                            4, 4, true)) == fields.end())
-        return false;
-      memcpy(&next_msg_dur.nsec,fitr->second.data(),4);
-    }
+      
+      return true;
 
-    next_msg_name_ = topic_name;
 
-    // If this is the first time that we've encountered this topic, we need
-    // to create a PlayerHelper, which inherits from ros::Message and is
-    // used to publish messages from this topic.
-    if (topics_.find(topic_name) == topics_.end())
-    {
-      PlayerHelper* l = new PlayerHelper(this, topic_name,
-                                         md5sum, datatype,
-                                         message_definition);
-      topics_[topic_name] = l;
+    case OP_FILE_HEADER:
+      return true;
+
+
+    case OP_INDEX_DATA:
+      return true;
+
+    default:
+      ROS_ERROR("Field %s has invalid value %u\n",
+                OP_FIELD_NAME.c_str(), op);
+      return false;      
     }
 
-    // Read the body length
-    record_stream_.read((char*)&next_msg_size_, 4);
-    if (record_stream_.eof())
-      return false;
 
-    return true;
+    return false;
   }
 
   bool readNextMsg()
@@ -608,18 +643,12 @@ protected:
 
       // If it was just a definition, we return here, to avoid publishing
       // the zero-length body that follows
-      if(op == OP_MSG_DEF)
+      if(op != OP_MSG_DATA)
       {
-        if(next_msg_size_ != 0)
-        {
-          ROS_ERROR("Non-zero message body followed definition-only header; bag is malformed.");
-          done_ = true;
-          return false;
-        }
-        else
-        {
-          return readNextMsg();
-        }
+        // Just throw these bytes away for now.
+        record_stream_.ignore(next_msg_size_);
+
+        return readNextMsg();
       }
     }
     else

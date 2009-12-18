@@ -39,6 +39,7 @@
 #include "topic_tools/shape_shifter.h"
 
 #include <boost/thread.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <sstream>
 #include <string>
@@ -96,6 +97,12 @@ uint64_t g_queue_size=0;
 //! Global max queue size
 uint64_t g_max_queue_size=1048576*256;
 
+//! Global split size
+uint64_t g_split_size=0;
+
+//! Global split count
+uint64_t g_split_count=0;
+
 //! Queue of queues to be used by the snapshot recorders
 std::queue<OutgoingQueue> g_queue_queue;
 
@@ -104,6 +111,13 @@ boost::mutex g_queue_mutex;
 
 //! Conditional variable for global queue
 boost::condition_variable_any g_queue_condition;
+
+//! Global flag to add date
+bool g_add_date = true;;
+
+//! Global prefix
+std::string g_prefix;
+
 
 //! Compression mode
 static enum {
@@ -200,15 +214,15 @@ void do_queue(topic_tools::ShapeShifter::ConstPtr msg,
 }
 
 //! Callback to be invoked to actually do the recording
-void snapshot_trigger(std_msgs::Empty::ConstPtr trigger, std::string prefix, bool add_date)
+void snapshot_trigger(std_msgs::Empty::ConstPtr trigger)
 {
   ros::WallTime rectime = ros::WallTime::now();
 
   std::vector<std::string> join;
 
-  if (prefix.length() > 0)
-    join.push_back(prefix);
-  if (add_date)
+  if (g_prefix.length() > 0)
+    join.push_back(g_prefix);
+  if (g_add_date)
     join.push_back(time_to_str(rectime));
 
   std::string tgt_fname = join[0];
@@ -234,20 +248,24 @@ void snapshot_trigger(std_msgs::Empty::ConstPtr trigger, std::string prefix, boo
 }
 
 //! Thread that actually does writing to file.
-void do_record(std::string prefix, bool add_date)
+void do_record()
 {
   ros::WallTime rectime = ros::WallTime::now();
 
   std::vector<std::string> join;
 
-  if (prefix.length() > 0)
-    join.push_back(prefix);
-  if (add_date)
+  if (g_prefix.length() > 0)
+    join.push_back(g_prefix);
+  if (g_add_date)
     join.push_back(time_to_str(rectime));
 
-  std::string tgt_fname = join[0];
+  std::string base_name = join[0];
   for (size_t i = 1; i < join.size(); i++)
-    tgt_fname = tgt_fname + "_" + join[i];
+    base_name = base_name + "_" + join[i];
+
+  std::string split_name("");
+  if (g_split_size > 0)
+    split_name = std::string("_") + boost::lexical_cast<std::string>(g_split_count++);
 
   std::string suffix;
   switch (g_compression) {
@@ -266,8 +284,8 @@ void do_record(std::string prefix, bool add_date)
     break;
   }
 
-  tgt_fname = tgt_fname + std::string(".bag") + suffix;
-  std::string fname = tgt_fname + std::string(".active") + suffix;
+  std::string tgt_fname = base_name + split_name + std::string(".bag") + suffix;
+  std::string fname = base_name + split_name + std::string(".bag.active") + suffix;
 
   ROS_INFO("Recording to %s.", tgt_fname.c_str());
 
@@ -308,6 +326,26 @@ void do_record(std::string prefix, bool add_date)
     g_queue_size -= out.msg->msgBufUsed;
 
     lock.release()->unlock();
+
+    if (g_split_size > 0 && recorder.getOffset() > g_split_size)
+    {
+      recorder.close();
+      rename(fname.c_str(),tgt_fname.c_str());
+
+      split_name = std::string("_") + boost::lexical_cast<std::string>(g_split_count++);
+      tgt_fname = base_name + split_name + std::string(".bag") + suffix;
+      fname = base_name + split_name + std::string(".bag.active") + suffix;
+
+      if (!recorder.open(std::string(fname)))
+      {
+        ROS_FATAL("Could not open output file: %s", fname.c_str());
+        g_exit_code = 1;
+        ros::shutdown();
+      }
+
+      ROS_INFO("Recording to %s.", tgt_fname.c_str());
+
+    }
 
     recorder.record(out.topic_name, out.msg, out.time);
   }
@@ -405,18 +443,15 @@ int main(int argc, char **argv)
   // Variables
   bool check_master = false; // Whether master should be checked periodically
 
-  bool add_date = true;;
-  std::string prefix("");
-  
   // Parse options  
   int option_char;
 
-  while ((option_char = getopt(argc,argv,"f:F:c:m:ajzsthv")) != -1)
+  while ((option_char = getopt(argc,argv,"f:F:c:m:S:ajzsthv")) != -1)
   {
     switch (option_char)
     {
-    case 'f': prefix = std::string(optarg); break;
-    case 'F': prefix = std::string(optarg); add_date = false; break;
+    case 'f': g_prefix = std::string(optarg); break;
+    case 'F': g_prefix = std::string(optarg); g_add_date = false; break;
     case 'c': g_count = atoi(optarg); break;
     case 'a': check_master = true; break;
     case 's': g_snapshot = true; break;
@@ -434,6 +469,18 @@ int main(int argc, char **argv)
           return 1;
         }
         g_max_queue_size =  1048576*m;
+      }
+      break;
+    case 'S': 
+      {
+        int S=0;
+        S=atoi(optarg);
+        if (S < 0)
+        {
+          fprintf(stderr, "Splitting size must be 0 or positive.\n");
+          return 1;
+        }
+        g_split_size =  1048576*S;
       }
       break;
     case 'h': print_help(); return 1;
@@ -472,11 +519,11 @@ int main(int argc, char **argv)
 
     // Spin up a thread for actually writing to file
     if (!g_snapshot)
-      record_thread = boost::thread(boost::bind(&do_record, prefix, add_date));
+      record_thread = boost::thread(boost::bind(&do_record));
     else
       record_thread = boost::thread(boost::bind(&do_record_bb));
 
-    ros::Subscriber trigger = node_handle.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&snapshot_trigger, _1, prefix, add_date));
+    ros::Subscriber trigger = node_handle.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&snapshot_trigger, _1));
 
     // Every non-processed argument is assumed to be a topic
     for (int i = optind; i < argc; i++)

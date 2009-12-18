@@ -159,6 +159,10 @@ void ros::record::Recorder::close()
 
   if (store_index_)
     writeIndex();
+
+  topics_recorded_.clear();
+  topic_indexes_.clear();
+
   closeFile();
 }
 

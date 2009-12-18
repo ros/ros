@@ -34,6 +34,7 @@
 
 from __future__ import with_statement
 
+import roslib.exceptions
 import roslib.rospack
 import roslib.stacks
 import os
@@ -71,9 +72,20 @@ def lsb_get_release_version():
     except:
         return None
 
+class OSDetectException(roslib.exceptions.ROSLibException): pass
+
+class OSBase:
+    def check_presence(self):
+        raise OSDetectException("check_presence unimplemented")
+
+    def get_name(self):
+        raise OSDetectException("check_presence unimplemented")
+
+    def get_version(self):
+        raise OSDetectException("check_presence unimplemented")
 
 ###### Debian SPECIALIZATION #########################
-class Debian:
+class Debian(OSBase):
     def check_presence(self):
         if "Debian" == lsb_get_os():
             return True
@@ -106,7 +118,7 @@ class Ubuntu(Debian):
 ###### END UBUNTU SPECIALIZATION ########################
 
 ###### Mint SPECIALIZATION #########################
-class Mint:
+class Mint(Debian):
     def check_presence(self):
         try:
             filename = "/etc/issue"
@@ -119,26 +131,14 @@ class Mint:
             print "Mint failed to detect OS"
         return False
 
-    def get_version(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:
-                    os_list = fh.read().split()
-                if os_list[0] == "Linux" and os_list[1] == "Mint":
-                    return os_list[2]
-        except:
-            print "Mint failed to get version"
-            return False
-
-        return False
+    #get_version inherited from debian
 
     def get_name(self):
         return "mint"
 ###### END Mint SPECIALIZATION ########################
 
 ###### Fedora SPECIALIZATION #########################
-class Fedora:
+class Fedora(OSBase):
     def check_presence(self):
         try:
             filename = "/etc/redhat_release"
@@ -211,7 +211,7 @@ def port_detect(p):
     
     return (std_out.count("(active)") > 0)
 
-class Macports:
+class Macports(OSBase):
     def check_presence(self):
         filename = "/usr/bin/sw_vers"
         if os.path.exists(filename):
@@ -227,7 +227,7 @@ class Macports:
 ###### END Macports SPECIALIZATION ########################
 
 ###### Arch SPECIALIZATION #########################
-class Arch:
+class Arch(OSBase):
 
     def check_presence(self):
         filename = "/etc/arch-release"
@@ -256,7 +256,7 @@ class Arch:
 
 ###### END Arch SPECIALIZATION ########################
 
-class Override:
+class Override(OSBase):
     def __init__(self):
         self._os_name = "uninitialized from ROS_OS_OVERRIDE=name:version"
         self._os_version = "uninitialized from ROS_OS_OVERRIDE=name:version"
@@ -277,9 +277,9 @@ class Override:
     
 
 
-class OSAbstractionException(Exception): pass
 
-class OSAbstraction:
+
+class OSDetect:
     """ This class will iterate over registered classes to lookup the
     active OS and Version of that OS for lookup in rosdep.yaml"""
     def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), Fedora(), Rhel()]):
@@ -304,7 +304,7 @@ class OSAbstraction:
     def get_os_specific_class(self):
         if not self._os_class:
             if not self.detect_os():
-                raise OSAbstractionException("No OS detected")
+                raise OSDetectException("No OS detected")
         else:
             return self._os_class
 

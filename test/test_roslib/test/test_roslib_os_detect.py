@@ -41,6 +41,23 @@ import roslib.rosenv
 import roslib.os_detect
 import rostest
 
+class test_OS(roslib.os_detect.OSBase):
+  def check_presence(self):
+    return True
+  def get_name(self):
+    return "os_name"
+  def get_version(self):
+    return "os_version"
+
+class dummy_OS(roslib.os_detect.OSBase):
+  def check_presence(self):
+    return False
+  def get_name(self):
+    return "os_name2"
+  def get_version(self):
+    return "os_version2"
+
+
 class RoslibOsDetectTest(unittest.TestCase):
   
   def test_tripwire_ubuntu(self):
@@ -68,8 +85,46 @@ class RoslibOsDetectTest(unittest.TestCase):
       self.assertEqual("rhel", rhel.get_name())
 
 
-  def test_tripwire_OSAbstraction(self):
-    osa = roslib.os_detect.OSAbstraction()
+  def test_tripwire_OSDetect(self):
+    osa = roslib.os_detect.OSDetect()
+
+  def test_OSDetect_single(self):
+    osa = roslib.os_detect.OSDetect([test_OS()])
+    self.assertEqual("os_name", osa.get_name())
+    self.assertEqual("os_version", osa.get_version())
+
+  def test_OSDetect_first_of_two(self):
+    osa = roslib.os_detect.OSDetect([test_OS(), dummy_OS()])
+    self.assertEqual("os_name", osa.get_name())
+    self.assertEqual("os_version", osa.get_version())
+
+  def test_OSDetect_second_of_two(self):
+    osa = roslib.os_detect.OSDetect([dummy_OS(), test_OS()])
+    self.assertEqual("os_name", osa.get_name())
+    self.assertEqual("os_version", osa.get_version())
+
+  def test_OSDetect_first_of_many(self):
+    osa = roslib.os_detect.OSDetect([test_OS(), dummy_OS(), dummy_OS(), dummy_OS(), dummy_OS()])
+    self.assertEqual("os_name", osa.get_name())
+    self.assertEqual("os_version", osa.get_version())
+
+  def test_OSDetect_second_of_many(self):
+    osa = roslib.os_detect.OSDetect([dummy_OS(), test_OS(), dummy_OS(), dummy_OS(), dummy_OS()])
+    self.assertEqual("os_name", osa.get_name())
+    self.assertEqual("os_version", osa.get_version())
+
+  def test_OSDetect_last_of_many(self):
+    osa = roslib.os_detect.OSDetect([dummy_OS(), dummy_OS(), dummy_OS(), dummy_OS(), test_OS(),])
+    self.assertEqual("os_name", osa.get_name())
+    self.assertEqual("os_version", osa.get_version())
+
+  def test_ubuntu_in_OSA(self):
+    ubuntu = roslib.os_detect.Ubuntu()
+    ubuntu.check_presence = True
+    osa = roslib.os_detect.OSDetect()
+    self.assertEqual("ubuntu", ubuntu.get_name())
+
+
 
 if __name__ == '__main__':
   rostest.unitrun('test_roslib', 'test_os_detect', RoslibOsDetectTest, coverage_packages=['roslib.os_detect'])

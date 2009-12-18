@@ -53,6 +53,9 @@ from optparse import OptionParser
 
 import rosdep
 
+def make_command():
+    return os.environ.get("MAKE", "make")
+
 
 class RosMakeAll:
     def __init__(self):
@@ -146,7 +149,7 @@ class RosMakeAll:
         local_env = os.environ.copy()
         local_env['ROS_PARALLEL_JOBS'] = "-j%d" % self.ros_parallel_jobs
         local_env['SVN_CMDLINE'] = "svn --non-interactive"
-        cmd = ["bash", "-c", "cd %s && make "%self.get_path(package) ]
+        cmd = ["bash", "-c", "cd %s && %s "%(self.get_path(package), make_command()) ]
         if argument:
             cmd[-1] += argument
         self.print_full_verbose (cmd)
@@ -375,8 +378,8 @@ class RosMakeAll:
     def assert_rospack_built(self):
         if self.flag_tracker.has_nobuild("rospack"):
             return True
-        ret_val = subprocess.call(["bash", "-c", "cd %s && make "%os.path.join(os.environ["ROS_ROOT"], "tools/rospack")]) 
-        ret_val2 = subprocess.call(["bash", "-c", "cd %s && make "%os.path.join(os.environ["ROS_ROOT"], "3rdparty/gtest")]) 
+        ret_val = subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), make_command())]) 
+        ret_val2 = subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], "3rdparty/gtest"), make_command())]) 
         return ret_val and ret_val2
             
         # The check for presence doesn't check for updates

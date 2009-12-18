@@ -705,7 +705,7 @@ def rebag(inbag, outbag, filter_fn, verbose_pattern=None, raw=False):
         if rospy.is_shutdown():
           break
     
-def rebag_main():
+def _rebag_main():
   """
   main routine for rosrebag command-line tool
   """

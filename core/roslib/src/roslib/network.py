@@ -229,7 +229,7 @@ def get_host_name():
         except:
             pass
         if not hostname or hostname == 'localhost' or hostname.startswith('127.'):
-            hostname = network.get_local_address()
+            hostname = get_local_address()
     return hostname
 
 def create_local_xmlrpc_uri(port):

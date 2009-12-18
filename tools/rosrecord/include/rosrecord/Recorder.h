@@ -73,21 +73,25 @@ public:
   Recorder();
   virtual ~Recorder();
 
-  bool open(const std::string &file_name, bool random_access=false);
-  void writeVersion();
-  void writeFileHeader();
+  bool open(const std::string& file_name, bool random_access=false);
   bool record(std::string topic_name, ros::Message::ConstPtr msg, ros::Time time);
-  void writeIndex();
   void close();
 
   pos_t getOffset();
 
 private:
+  bool         openFile(const std::string& file_name, bool random_access=false);
+  void         closeFile();
+
   const void*  getHeaderBuffer();
   unsigned int getHeaderBufferLength();
   void         resetHeaderBuffer();
   void         writeFieldToHeaderBuffer(const std::string& name, const void* value, unsigned int value_len);
   bool         checkDisk();
+
+  void         writeVersion();
+  void         writeFileHeader();
+  void         writeIndex();
 
   void         writeRecord(const M_string& fields, char* data, uint32_t data_len);
   void         writeHeader(const M_string& fields, uint32_t data_len);

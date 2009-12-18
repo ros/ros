@@ -347,6 +347,7 @@ function _roscomplete_rostopic {
                 ;;
             pub)
                 # This takes more logic.
+                ;;
         esac
     fi
 

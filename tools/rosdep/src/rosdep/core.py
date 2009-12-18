@@ -57,7 +57,6 @@ class YamlCache:
         self._rospack_depends_cache = {}
         self._rosstack_depends_cache = {}
         self._stack_dir = {}
-        self._package_dir = {}
         
     def get_yaml(self, path):
         if path in self._yaml_cache:
@@ -99,12 +98,6 @@ class YamlCache:
         self._stack_dir[stack] = roslib.stacks.get_stack_dir(stack)
         return self._stack_dir[stack]
 
-    def get_package_dir(self, package):
-        if package in self._package_dir:
-            return self._package_dir[package]
-        
-        self._package_dir[package] = roslib.packages.get_pkg_dir(package)
-        return self._package_dir[package]
 
 class RosdepException(Exception):
     pass
@@ -148,7 +141,7 @@ class RosdepLookupPackage:
                 for s in self.yaml_cache.get_rosstack_depends(stack):
                     paths.add( os.path.join(self.yaml_cache.get_stack_dir(s), "rosdep.yaml"))
             else:
-                paths.add( os.path.join(self.yaml_cache.get_package_dir(p), "rosdep.yaml"))
+                paths.add( os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
 
 
         for path in paths:

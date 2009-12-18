@@ -203,6 +203,12 @@ std::string NodeHandle::remapName(const std::string& name) const
 
 std::string NodeHandle::resolveName(const std::string& name, bool remap) const
 {
+  std::string error;
+  if (!names::validate(name, error))
+  {
+    throw InvalidNameException(error);
+  }
+
   if (name.empty())
   {
     return namespace_;

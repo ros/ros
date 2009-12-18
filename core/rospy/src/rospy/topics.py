@@ -748,7 +748,8 @@ class _PublisherImpl(_TopicImpl):
         
     def release(self):
         """lock for thread-safe publishing to this transport"""
-        self.publock.release()
+        if self.publock:
+            self.publock.release()
         
     def add_connection(self, c):
         """

@@ -104,7 +104,18 @@ void ros::record::Recorder::writeFieldToHeaderBuffer(const std::string& name, co
   header_buf_len_ += value_len;
 }
 
-bool ros::record::Recorder::open(const std::string &file_name, bool random_access)
+bool ros::record::Recorder::open(const std::string& file_name, bool random_access)
+{
+  if (!openFile(file_name, random_access))
+    return false;
+
+  writeVersion();
+  writeFileHeader();
+
+  return true;
+}
+
+bool ros::record::Recorder::openFile(const std::string& file_name, bool random_access)
 {
   file_name_ = file_name;
 
@@ -142,6 +153,12 @@ pos_t ros::record::Recorder::getOffset()
 }
 
 void ros::record::Recorder::close()
+{
+  writeIndex();
+  closeFile();
+}
+
+void ros::record::Recorder::closeFile()
 {
   // Unfortuantely closing this possibly enormous file takes a while
   // (especially over NFS) and handling of a SIGINT while a file is
@@ -355,8 +372,8 @@ void ros::record::Recorder::writeIndex()
 	}
 
 	// Re-open the file for random access, and rewrite the file header to point to the first index data message
-  close();
-  open(file_name_, true);
+  closeFile();
+  openFile(file_name_, true);
   seek(file_header_pos_);
   writeFileHeader();
 }

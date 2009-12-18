@@ -284,9 +284,6 @@ void do_record(std::string prefix, bool add_date)
     g_exit_code = 1;
     ros::shutdown();
   }
-  
-  recorder.writeVersion();
-  recorder.writeFileHeader();
 
   // Technically the g_queue_mutex should be locked while checking empty
   // Except it should only get checked if the node is not ok, and thus
@@ -317,9 +314,6 @@ void do_record(std::string prefix, bool add_date)
 
     recorder.record(out.topic_name, out.msg, out.time);
   }
-
-  // Write the index to a file
-  recorder.writeIndex();
 
   // Close the file nicely
   recorder.close();
@@ -352,8 +346,6 @@ void do_record_bb()
 
     if (recorder.open(fname))
     {
-      recorder.writeVersion();
-
       while (!out_queue.queue->empty())
       {
         OutgoingMessage out = out_queue.queue->front();

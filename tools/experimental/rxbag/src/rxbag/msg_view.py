@@ -62,7 +62,7 @@ class MsgView(Layer):
         
         self.timeline = timeline
         self.border   = False
-        
+    
     def message_viewed(self, bag_file, bag_index, topic, stamp, datatype, msg_index, msg):
         pass
     
@@ -89,7 +89,7 @@ class TopicMsgView(MsgView):
         self.msg_index = None
         
     def on_close(self, event):
-        self.timeline.remove_listener(self.topic, self)
+        self.timeline.remove_view(self.topic, self)
 
     def navigate_first(self):
         if self.topic and self.msg_index is not None:

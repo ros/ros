@@ -37,22 +37,22 @@ import wx
 
 ## A Frame that can save/load its position and size. 
 class BaseFrame(wx.Frame):
-    def __init__(self, parent, config_name, config_key, id=wx.ID_ANY, title='Untitled', pos=wx.DefaultPosition, size=(300, 300), style=wx.DEFAULT_FRAME_STYLE):
+    def __init__(self, parent, config_name, config_key, id=wx.ID_ANY, title='Untitled', pos=wx.DefaultPosition, size=(800, 300), style=wx.DEFAULT_FRAME_STYLE):
         wx.Frame.__init__(self, parent, id, title, pos, size, style)
 
         self.config     = wx.Config(config_name)
         self.config_key = config_key
 
         self._load_config()
-
+        
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
     def on_close(self, event):
         self._save_config()
-        
+
         self.Destroy()
-        
-    ## Load position and size of the frame from config.
+
+    ## Load position and size of the frame from config
     def _load_config(self):
         (x, y), (width, height) = self.GetPositionTuple(), self.GetSizeTuple()
         if self.config.HasEntry(self._config_x):      x      = self.config.ReadInt(self._config_x)
@@ -63,7 +63,7 @@ class BaseFrame(wx.Frame):
         self.SetPosition((x, y))
         self.SetSize((width, height))
 
-    ## Save position and size of frame to config.
+    ## Save position and size of frame to config
     def _save_config(self):
         (x, y), (width, height) = self.GetPositionTuple(), self.GetSizeTuple()
         

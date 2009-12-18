@@ -43,6 +43,7 @@ import rosrecord
 import bisect
 import collections
 import math
+import os
 import threading
 import time
 
@@ -147,6 +148,9 @@ class TimelinePanel(LayerPanel):
         zoom_tool        = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'zoom.png'))
         tb.AddSeparator()
         thumbnails_tool  = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'pictures.png'))
+        #tb.AddSeparator()
+        #save_layout_tool = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'application_put.png'))
+        #load_layout_tool = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'application_get.png'))
 
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_start(),       start_tool)
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_rewind(),      rewind_tool)
@@ -158,6 +162,8 @@ class TimelinePanel(LayerPanel):
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.zoom_out(),             zoom_out_tool)
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.reset_zoom(),           zoom_tool)
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.toggle_renderers(),     thumbnails_tool)
+        #tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.save_layout(),          save_layout_tool)
+        #tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.load_layout(),          load_layout_tool)
 
         tb.Realize()
 
@@ -245,6 +251,8 @@ class Timeline(Layer):
         self.stamp_right   = None
         self.playhead      = None
         self.playhead_lock = threading.Lock()
+        
+        self.views = []
 
         self.listeners = {}
 
@@ -282,10 +290,10 @@ class Timeline(Layer):
                             new_playhead = end_stamp
     
                         self.timeline.set_playhead(new_playhead)
-    
+
                     self.last_frame    = now
                     self.last_playhead = self.timeline.playhead
-                    
+
             def stop(self):
                 self.stop_flag = True
 
@@ -296,6 +304,38 @@ class Timeline(Layer):
 
     def on_close(self, event):
         self.play_thread.stop()
+
+    def save_layout(self):
+        user_config_dir = wx.StandardPaths.Get().GetUserConfigDir()
+        config_dir = os.path.join(user_config_dir, '.rxbag')
+        if not os.path.exists(config_dir):
+            os.mkdir(config_dir)
+        layout_file = os.path.join(config_dir, 'layout')
+        config = wx.Config(localFilename=layout_file)
+        
+        # TODO
+
+        #for i, view in enumerate(self.views):
+        #    config.Write('/Views/View%d' % (i + 1), view.__class__.__name__)
+        #config.Flush()
+
+    def load_layout(self):
+        user_config_dir = wx.StandardPaths.Get().GetUserConfigDir()
+        config_dir = os.path.join(user_config_dir, '.rxbag')
+        if not os.path.exists(config_dir):
+            return
+        layout_file = os.path.join(config_dir, 'layout')
+        config = wx.Config(localFilename=layout_file)
+        
+        # TODO
+
+    def add_view(self, topic, view):
+        self.views.append(view)
+        self.add_listener(topic, view)
+
+    def remove_view(self, topic, view):
+        self.remove_listener(topic, view)
+        self.views.remove(view)
 
     def get_viewer_types(self, datatype):
         return [RawView] + self.viewer_types.get('*', []) + self.viewer_types.get(datatype, [])
@@ -976,5 +1016,5 @@ class TimelinePopupMenu(wx.Menu):
             view  = self.viewer_type(self.timeline, panel, self.topic, 0, 0, *frame.GetClientSize())
             panel.layers = [view]
             frame.Show()
-
-            self.timeline.add_listener(self.topic, view)
+            
+            self.timeline.add_view(self.topic, view)

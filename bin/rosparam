@@ -31,5 +31,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from ros import rosparam
+if 1:
+    # this is an extreme optimization. As rosparam is used A LOT, it's
+    # manually calculating the sys.path. It cuts load time in half for
+    # path calculation.
+    import roslib.packages
+    import os, sys
+    rr = os.environ['ROS_ROOT']
+    sys.path.append(os.path.join(rr, 'tools', 'rosparam', 'src'))
+    import rosparam
+else:
+    from ros import rosparam
 rosparam.yamlmain()

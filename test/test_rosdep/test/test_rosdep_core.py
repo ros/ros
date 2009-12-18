@@ -43,6 +43,10 @@ class RosdepCoreTest(unittest.TestCase):
     def test_RosdepLookupPackage_tripwire(self):
         rdlp = rosdep.core.RosdepLookupPackage("ubuntu", "9.04", "rosdep")
         
+    def test_Rosdep_tripwire(self):
+        rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=True)
+        rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=False)
+        
     
 if __name__ == '__main__':
   rostest.unitrun('test_rosdep', 'test_core', RosdepCoreTest, coverage_packages=['rosdep.core'])  

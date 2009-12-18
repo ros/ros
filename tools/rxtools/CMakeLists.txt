@@ -73,15 +73,9 @@ add_custom_command(OUTPUT   ${SWIG_OUTPUT_CPP_FILE}
 # workaround for a deficiency in CMake 2.4's handling of generated sources.
 include_directories(${PROJECT_SOURCE_DIR}/src/rxtools)
 # shared library (with SWIG)
-rosbuild_add_library(python_${PROJECT_NAME} ${SWIG_OUTPUT_CPP_FILE})
+rosbuild_add_swigpy_library(python_${PROJECT_NAME} ${PROJECT_NAME}cpp ${SWIG_OUTPUT_CPP_FILE})
 target_link_libraries(python_${PROJECT_NAME} ${PROJECT_NAME} ${PYTHON_LIBRARIES})
 
-# swig python needs a shared library named _<modulename>.[so|dll|...]
-# this renames the output file to conform to that by prepending an underscore and removing the "lib" prefix
-set_target_properties(python_${PROJECT_NAME}
-                      PROPERTIES OUTPUT_NAME _${PROJECT_NAME}cpp
-                      PREFIX "")
-                      
 #rxconsole binary
 rosbuild_add_executable(rxconsole src/rxconsole/rxconsole.cpp)
 target_link_libraries(rxconsole ${PROJECT_NAME})

@@ -913,3 +913,22 @@ macro(rosbuild_check_for_display var)
     set(${var} 1)
   endif(_xdpyinfo_failed)
 endmacro(rosbuild_check_for_display)
+
+macro(rosbuild_add_swigpy_library target lib)
+  rosbuild_add_library(${target} ${ARGN})
+  # swig python needs a shared library named _<modulename>.[so|dll|...]
+  # this renames the output file to conform to that by prepending 
+  # an underscore in place of the "lib" prefix.
+  # If on Darwin, force the suffix so ".so", because the MacPorts 
+  # version of Python won't find _foo.dylib for 'import _foo'
+  if(APPLE)
+    set_target_properties(${target}
+                          PROPERTIES OUTPUT_NAME ${lib} 
+                          PREFIX "_" SUFFIX ".so")
+  else(APPLE)
+    set_target_properties(${target}
+                          PROPERTIES OUTPUT_NAME ${lib} 
+                          PREFIX "_")
+  endif(APPLE)
+endmacro(rosbuild_add_swigpy_library)
+

@@ -48,10 +48,7 @@ def dpkg_detect(p):
 ###### Rosdep Test OS #########################
 class RosdepTestOS(roslib.os_detect.OSBase):
     def check_presence(self):
-        if os.environ["ROSDEP_TEST_OS"]:
-            return True
-        else:
-            return False
+        return os.environ.get("ROSDEP_TEST_OS", False)
 
     def get_name(self):
         return "rosdep_test_os"

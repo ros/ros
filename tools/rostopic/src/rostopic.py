@@ -36,8 +36,6 @@
 # make sure we aren't using floor division
 from __future__ import division, with_statement
 
-import roslib; roslib.load_manifest('rostopic')
-
 NAME='rostopic'
 
 import os
@@ -1291,6 +1289,3 @@ def rostopicmain(argv=None):
         print >> sys.stderr, "ERROR: "+str(e)
     except KeyboardInterrupt: pass
     except rospy.ROSInterruptException: pass
-        
-if __name__ == '__main__':
-    rostopicmain(argv=['rostopic', 'hz', 'cloud_pcd'])

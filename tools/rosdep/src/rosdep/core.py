@@ -154,7 +154,7 @@ class RosdepLookupPackage:
             return os_specific
         else:# it must be a map of versions
             if self.os_version in os_specific.keys():
-                return os_specific[os_version]
+                return os_specific[self.os_version]
             else:
                 ## Hack to match rounding errors in pyyaml load 9.04  != 9.03999999999999996 in string space
                 for key in os_specific.keys():
@@ -169,7 +169,7 @@ class RosdepLookupPackage:
                         print >> sys.stderr, "Warning matched key '8.04' for %s please convert to using 'hardy'"%os_specific[key]
                         return os_specific[key]
 
-                print >> sys.stderr, "failed to find specific version %s of %s within"%(os_version, rosdep), os_specific
+                print >> sys.stderr, "failed to find specific version %s of %s within"%(self.os_version, self.os_name), os_specific
                 return False                    
 
 

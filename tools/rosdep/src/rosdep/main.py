@@ -83,7 +83,7 @@ def main():
                       action="store_true", help="do not deduplicate")
     parser.add_option("--default-yes", "-y", dest="default_yes", default=False, 
                       action="store_true", help="Tell the package manager to default to y or fail when installing")
-    parser.add_option("-r", "-k", dest="robust", default=False, 
+    parser.add_option("-r", dest="robust", default=False, 
                       action="store_true", help="Continue installing despite errors.")
     parser.add_option("-a", "--all", dest="rosdep_all", default=False, 
                       action="store_true", help="select all packages")

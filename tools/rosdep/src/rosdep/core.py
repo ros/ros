@@ -51,6 +51,30 @@ import arch
 import core
 
 
+class YamlCache:
+    def __init__(self):
+        self.cache = {}
+        
+    def get_yaml(self, path):
+        if path in self.cache:
+            return self.cache[path]
+        
+        #print "parsing path", path
+        if os.path.exists(path):
+            try:
+                f = open(path)
+                yaml_text = f.read()
+                f.close()
+                self.cache[path] = yaml.load(yaml_text)
+                return self.cache[path]
+
+            except yaml.YAMLError, exc:
+                print >> sys.stderr, "Failed parsing yaml while processing %s\n"%path, exc
+                #sys.exit(1)        # not a breaking error
+        self.cache[path] = {}
+        return {}
+
+
 class RosdepException(Exception):
     pass
 
@@ -65,7 +89,7 @@ class RosdepLookupPackage:
     It uses the OSIndex class for OS detection.
     """
     
-    def __init__(self, os_name, os_version, package):
+    def __init__(self, os_name, os_version, package, yaml_cache):
         """ Read all rosdep.yaml files found at the root of stacks in
         the current environment and build them into a map."""
         self.os_name = os_name
@@ -73,6 +97,7 @@ class RosdepLookupPackage:
         self.rosdep_map = {}
         self.rosdep_source = {}
         self.package = package
+        self.yaml_cache = yaml_cache
         ## Find all rosdep.yamls here and load them into a map
 
         if package:
@@ -131,20 +156,7 @@ class RosdepLookupPackage:
 
 
     def parse_yaml(self, path):
-        #print "parsing path", path
-        if os.path.exists(path):
-            try:
-                f = open(path)
-                yaml_text = f.read()
-                f.close()
-
-                return yaml.load(yaml_text)
-
-            except yaml.YAMLError, exc:
-                print >> sys.stderr, "Failed parsing yaml while processing %s\n"%path, exc
-                sys.exit(1)        
-                
-        return {}
+        return self.yaml_cache.get_yaml(path)
         
     def get_os_from_yaml(self, yaml_map):
         # See if the version for this OS exists
@@ -230,8 +242,9 @@ class Rosdep:
         native_packages = []
         scripts = []
         failed_rosdeps = []
+        yc = YamlCache()
         for p in self.rosdeps:
-            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p)
+            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, yc)
             for r in self.rosdeps[p]:
                 specific = rdlp.lookup_rosdep(r)
                 if specific:
@@ -297,9 +310,10 @@ class Rosdep:
                     
     def depdb(self, packages):
         output = "Rosdep dependencies for operating system %s version %s "%(self.osi.get_name(), self.osi.get_version())
+        yc = YamlCache()
         for p in packages:
             output += "\nPACKAGE: %s\n"%p
-            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p)
+            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, yc)
             map = rdlp.get_map()
             for k in map:
                 output = output + "<<<< %s -> %s >>>>\n"%(k, map[k])
@@ -308,7 +322,7 @@ class Rosdep:
     def where_defined(self, rosdeps):
         output = ""
         locations = {}
-        rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), None)
+        rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), None, YamlCache())
         
         for r in rosdeps:
             locations[r] = set()

@@ -116,7 +116,18 @@ def manifest_file(package, required=True, env=None):
         env = os.environ
     d = roslib.packages.get_pkg_dir(package, required, ros_root=env[roslib.rosenv.ROS_ROOT]) 
     return _manifest_file_by_dir(d, required=required, env=env)
-        
+
+def load_manifest(package):
+    """
+    Load manifest for specified package.
+    @param pacakge: package name
+    @type  package: str
+    @return: Manifest instance
+    @rtype: L{Manifest}
+    @raise InvalidROSPkgException: if package is unknown
+    """
+    return parse_file(manifest_file(package))
+    
 def parse_file(file):
     """
     Parse manifest.xml file

@@ -290,6 +290,20 @@ def resource_file(package, subdir, resource_name):
         raise InvalidROSPkgException(package)
     return os.path.join(d, resource_name)
 
+def _update_rospack_cache():
+    """
+    Internal routine to update global package directory cache
+    
+    @return: True if cache is valid
+    @rtype: bool
+    """
+    cache = _pkg_dir_cache
+    if cache:
+        return True
+    ros_root = os.environ[ROS_ROOT]
+    ros_package_path = os.environ.get(ROS_PACKAGE_PATH, '')
+    return _read_rospack_cache(cache, ros_root, ros_package_path)
+
 def _read_rospack_cache(cache, ros_root, ros_package_path):
     """
     Read in rospack_cache data into cache
@@ -337,15 +351,15 @@ def list_pkgs(pkg_dirs=None, cache=None):
     if pkg_dirs is None:
         pkg_dirs = get_package_paths(True)
     if cache is None:
+        # if cache is not specified, we use global cache instead
+        
+        # TODO: we don't have any logic go populate user-specified
+        # cache in most optimal way
         cache = _pkg_dir_cache
-        # if _pkg_dir_cache is already loaded, return its keys
         if cache:
             return cache.keys()
-        ros_root = os.environ[ROS_ROOT]
-        ros_package_path = os.environ.get(ROS_PACKAGE_PATH, '')
-        if _read_rospack_cache(cache, ros_root, ros_package_path):
+        if _update_rospack_cache():
             return cache.keys()
-    
     packages = []
     for pkg_root in pkg_dirs:
         list_pkgs_by_path(pkg_root, packages, cache=cache)
@@ -458,7 +472,20 @@ def find_resource(pkg, resource_name, filter_fn=None, ros_root=None, ros_package
             dirs.remove('.git')
     return matches
 
-
+def rosdeps_of(packages):
+    """
+    Collect all rosdeps of specified packages.
+    @param packages: packages names
+    @type  packages: [str]
+    @return: list of rosdep names. The entries are not guaranteed to
+    be unique.
+    @rtype: [str]
+    """
+    _update_rospack_cache()
+    from roslib.manifest import load_manifest
+    manifests = [load_manifest(p) for p in packages]
+    import itertools
+    return [d.name for d in itertools.chain(*(m.rosdeps for m in manifests))]
 
 def _platform_supported(file, os, version):
     m = roslib.manifest.parse_file(file)
@@ -483,3 +510,4 @@ def current_platform_supported(pkg):
     """
     os_detector = roslib.os_detect.OSDetect()
     return platform_supported(pkg, os_detector.get_name(), os_detector.get_version())
+

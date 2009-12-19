@@ -392,7 +392,8 @@ def list_pkgs_by_path(path, packages=None, cache=None):
     @return: complete list of package names in ROS environment. Same as packages parameter.
     @rtype: [str]
     """
-    packages = packages or []
+    if packages is None:
+        packages = []
     # record settings for cache
     ros_root = os.environ[ROS_ROOT]
     ros_package_path = os.environ.get(ROS_PACKAGE_PATH, '')

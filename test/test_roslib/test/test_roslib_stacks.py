@@ -81,12 +81,60 @@ class RoslibStacksTest(unittest.TestCase):
         self.assertEquals(set(l), set(l2), set(l) ^ set(l2))
         
     def test_get_stack_dir(self):
-        # TODO setup artificial tree with more exhaustive tests
         import roslib.rosenv
-        from roslib.stacks import get_stack_dir, InvalidROSStackException
+        import roslib.packages
+        from roslib.stacks import get_stack_dir, InvalidROSStackException, list_stacks
         self.assertEquals(roslib.rosenv.get_ros_root(), get_stack_dir('ros'))
         self.assertEquals(None, get_stack_dir('non_existent'))
-    
+
+        # make sure it agrees with rosstack
+        stacks = list_stacks()
+        from roslib.rospack import rosstackexec
+        for s in stacks:
+            self.assertEquals(get_stack_dir(s), rosstackexec(['find', s]))
+
+        # now manipulate the environment to test precedence
+        # - save original RPP as we popen rosstack in other tests
+        rpp = os.environ.get(roslib.rosenv.ROS_PACKAGE_PATH, None)
+        try:
+            d = roslib.packages.get_pkg_dir('test_roslib')
+            d = os.path.join(d, 'test', 'stack_tests')
+
+            # - s1/s2/s3
+            print "s1/s2/s3"            
+            paths = [os.path.join(d, p) for p in ['s1', 's2', 's3']]
+            os.environ[roslib.rosenv.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
+            # - run multiple times to test caching
+            for i in xrange(2):
+                stacks = roslib.stacks.list_stacks()
+                self.assert_('foo' in stacks)
+                self.assert_('bar' in stacks)
+
+                foo_p = os.path.join(d, 's1', 'foo')
+                bar_p = os.path.join(d, 's1', 'bar')
+                self.assertEquals(foo_p, roslib.stacks.get_stack_dir('foo'))
+                self.assertEquals(bar_p, roslib.stacks.get_stack_dir('bar'))
+
+            # - s2/s3/s1
+            print "s2/s3/s1"
+            
+            paths = [os.path.join(d, p) for p in ['s2', 's3', 's1']]
+            os.environ[roslib.rosenv.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
+            stacks = roslib.stacks.list_stacks()
+            self.assert_('foo' in stacks)
+            self.assert_('bar' in stacks)
+
+            foo_p = os.path.join(d, 's2', 'foo')
+            bar_p = os.path.join(d, 's1', 'bar')
+            self.assertEquals(foo_p, roslib.stacks.get_stack_dir('foo'))
+            self.assertEquals(bar_p, roslib.stacks.get_stack_dir('bar'))
+        finally:
+            #restore rpp
+            if rpp is not None:
+                os.environ[roslib.rosenv.ROS_PACKAGE_PATH] = rpp
+            else:
+                del os.environ[roslib.rosenv.ROS_PACKAGE_PATH] 
+            
     def test_expand_to_packages(self):
         from roslib.stacks import expand_to_packages
         try:

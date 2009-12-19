@@ -137,16 +137,26 @@ def get_stack_dir(stack):
 
     return _dir_cache.get(stack, None)
 
+# rosstack directory cache
 _dir_cache = {}
+# stores ROS_ROOT, ROS_PACKAGE_PATH of _dir_cache
 _dir_cache_marker = None
 
 def _update_stack_cache(force=False):
-    if _dir_cache and not force:
-        return
+    """
+    Update _dir_cache if environment has changed since last cache build.
+    
+    @param force: force cache rebuild regardless of environment variables
+    @type  force: bool
+    """
     global _dir_cache_marker 
     env = os.environ
     ros_root = env[ROS_ROOT]
     ros_package_path = env.get(ROS_PACKAGE_PATH, '')
+    
+    if _dir_cache_marker == (ros_root, ros_package_path):
+        return
+    _dir_cache.clear()
     _dir_cache_marker = ros_root, ros_package_path
 
     pkg_dirs = roslib.packages.get_package_paths(env=env)
@@ -155,8 +165,13 @@ def _update_stack_cache(force=False):
         _dir_cache['ros'] = ros_root
         pkg_dirs.remove(ros_root)
 
+    # pass in accumulated stacks list to each call. This ensures
+    # precedence (i.e. that stacks first on pkg_dirs path win). 
+    stacks = []
     for pkg_root in pkg_dirs:
-        list_stacks_by_path(pkg_root, cache=_dir_cache)
+        # list_stacks_by_path will append list into stacks, so that
+        # each call accumulates in it.
+        list_stacks_by_path(pkg_root, stacks, cache=_dir_cache)
     
 def list_stacks():
     """
@@ -170,8 +185,26 @@ def list_stacks():
     _update_stack_cache()
     return _dir_cache.keys()
 
-def list_stacks_by_path(path, cache=None):
-    stacks = []
+def list_stacks_by_path(path, stacks=None, cache=None):
+    """
+    List ROS stacks within the specified path.
+
+    Optionally, a cache dictionary can be provided, which will be
+    updated with the stack->path mappings. list_stacks_by_path() does
+    NOT returned cached results -- it only updates the cache.
+    
+    @param path: path to list stacks in
+    @type  path: str
+    @param stacks: list of stacks to append to. If stack is
+      already present in stacks, it will be ignored.
+    @type  stacks: [str]
+    @param cache: (optional) stack path cache to update. Maps stack name to directory path.
+    @type  cache: {str: str}
+    @return: complete list of stack names in ROS environment. Same as stacks parameter.
+    @rtype: [str]
+    """
+    if stacks is None:
+        stacks = []
     MANIFEST_FILE = roslib.packages.MANIFEST_FILE
     basename = os.path.basename
     for d, dirs, files in os.walk(path, topdown=True):

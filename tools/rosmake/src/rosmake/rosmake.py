@@ -72,6 +72,9 @@ class RosMakeAll:
         self.start_time = time.time()
         self.log_dir = ""
         self.logging_enabled = True
+        self.obey_whitelist = False
+        self.obey_whitelist_recursively = False
+
 
     def num_packages_built(self):
         return len(self.result[argument].keys())
@@ -167,26 +170,8 @@ class RosMakeAll:
                 return_string = ("[SKIP] rosmake uses rospack.  If building it is already built, if cleaning it will be cleaned at the end.")
                 return (True, return_string) # This will be caught later
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
-            if not self.skip_blacklist and self.flag_tracker.is_blacklisted(p):
-              self.print_all ("!"*20 + " Building package %s. ROS_BUILD_BLACKLIST ENCOUNTERED in package(s): %s --- TRYING TO BUILD ANYWAY"%(p, self.flag_tracker.is_blacklisted(p)) + "!"*20)
-
-            if self.skip_blacklist and self.flag_tracker.is_blacklisted(p):
-                self.result[argument][p] = True
-                return_string =  ("[SKIP] due to ROS_BUILD_BLACKLIST in %s"%self.flag_tracker.is_blacklisted(p))
-                self.output[argument][p] = "ROS_BUILD_BLACKLIST"
-            elif self.skip_blacklist_osx and self.flag_tracker.is_blacklisted_osx(p):
-                self.result[argument][p] = True
-                return_string =  ("[SKIP] due to ROS_BUILD_BLACKLIST_OSX")
-                self.output[argument][p] = "ROS_BUILD_BLACKLIST_OSX"
-            elif self.flag_tracker.has_nobuild(p):
-                self.result[argument][p] = True
-                return_string =  ("[SKIP] due to ROS_NOBUILD")
-                self.output[argument][p] = "ROS_NOBUILD"
-            elif not self.flag_tracker.has_makefile(p):
-                self.result[argument][p] = True
-                return_string =  ("[SKIP] due do to no Makefile")
-                self.output[argument][p] = "No Makefile Present"
-            else:
+            (buildable, why) = package_stats.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist)
+            if buildable:
                 start_time = time.time()
                 (returncode, pstd_out) = self.build_package(p, argument)
                 self.profile[argument][p] = time.time() - start_time
@@ -221,6 +206,7 @@ class RosMakeAll:
                     self.output_to_file(p, log_type, pstd_out, always_print= not (no_target or interrupt))
 
                     return (False, return_string)
+            return_string += why
             return (True, return_string) # this means that we didn't error in any case above
         except roslib.packages.InvalidROSPkgException, ex:
             self.result[argument][p] = False
@@ -441,7 +427,7 @@ class RosMakeAll:
                           help="skip packages containing a file called ROS_BUILD_BLACKLIST (Default behavior will ignore the presence of ROS_BUILD_BLACKLIST)")
         parser.add_option("--skip-blacklist-osx", dest="skip_blacklist_osx", 
                           default=False, action="store_true", 
-                          help="skip packages containing a file called ROS_BUILD_BLACKLIST_OSX (Default behavior will ignore the presence of ROS_BUILD_BLACKLIST_OSX)")
+                          help="deprecated option. it will do nothing, please use platform declarations and --require-platform instead")
 
         parser.add_option("--rosdep-install", dest="rosdep_install",
                           action="store_true", help="call rosdep install before running")
@@ -449,6 +435,11 @@ class RosMakeAll:
                           action="store_true", help="call rosdep install with default yes argument")
         parser.add_option("--no-rosdep", dest="rosdep_disabled",
                           action="store_true", help="disable the default check of rosdep")
+
+        parser.add_option("--require-platform", dest="obey_whitelist",
+                          action="store_true", help="do not build a package unless it is marked as supported on this platform")
+        parser.add_option("--require-platform-recursive", dest="obey_whitelist_recursively",
+                          action="store_true", help="do not build a package unless it is marked as supported on this platform, and all dependents are also marked")
         
 
         options, args = parser.parse_args()
@@ -467,8 +458,13 @@ class RosMakeAll:
         self.robust_build = options.robust
         self.threads = options.threads
         self.skip_blacklist = options.skip_blacklist
-        self.skip_blacklist_osx = options.skip_blacklist_osx
+        if options.skip_blacklist_osx:
+            self.print_all("Option --skip-blacklist-osx is deprecated. It will do nothing, please use platform declarations and --require-platform instead");
         self.logging_enabled = options.logging_enabled
+        if options.obey_whitelist or options.obey_whitelist_recursively:
+            self.obey_whitelist = True
+            if options.obey_whitelist_recursively:
+                self.obey_whitelist_recursively = True
 
         # pass through verbosity options
         self.full_verbose = options.full_verbose

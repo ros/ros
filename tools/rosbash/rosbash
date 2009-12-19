@@ -1,9 +1,9 @@
 
 function _rossed {
     if [[ `uname` == Darwin ]]; then
-        sed -E $*
+        sed -E "$@"
     else
-        sed -r $*
+        sed -r "$@"
     fi
 }
 

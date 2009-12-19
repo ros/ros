@@ -39,8 +39,9 @@ Python utility for iterating over messages in a ROS .bag file.
 See http://ros.org/wiki/ROS/LogFormat
 """
 
-import bz2
-import gzip
+#Removing compression until we work out how to play nicely with index: JML
+#import bz2
+#import gzip
 import optparse
 import os
 import struct
@@ -86,13 +87,14 @@ class BagReader(object):
     else:
       self.filename = f
 
-      ext = os.path.splitext(self.filename)[1]
-      if ext == '.gz':
-        self.file = gzip.open(self.filename)
-      elif ext == '.bz2':
-        self.file = bz2.BZ2File(self.filename)
-      else:
-        self.file = open(self.filename, 'r')
+#Removing compression until we work out how to play nicely with index: JML
+#      ext = os.path.splitext(self.filename)[1]
+#      if ext == '.gz':
+#        self.file = gzip.open(self.filename)
+#      elif ext == '.bz2':
+#        self.file = bz2.BZ2File(self.filename)
+#      else:
+    self.file = open(self.filename, 'r')
 
     version_readers = {
       HEADER_V1_1 : self._next_msg_v1_1,

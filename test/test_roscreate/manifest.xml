@@ -1,0 +1,16 @@
+<package>
+  <description brief="test_roscreate">
+
+     test_roscreate: unit tests for roscreate
+
+  </description>
+  <author>Kenneth Conley</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/test_roscreate</url>
+  <depend package="roslib" />
+  <depend package="rostest" />
+  <depend package="roscreate" />
+</package>
+
+

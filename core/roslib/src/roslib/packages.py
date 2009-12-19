@@ -333,16 +333,22 @@ def _read_rospack_cache(cache, ros_root, ros_package_path):
     except:
         pass
     
-# TODO: use this to replace get_pkg_dir shelling to rospack
 def list_pkgs(pkg_dirs=None, cache=None):
     """
-    List packages in ROS_ROOT and ROS_PACKAGE_PATH. 
+    List packages in ROS_ROOT and ROS_PACKAGE_PATH.
+
+    If no cache and pkg_dirs arguments are provided, list_pkgs() will
+    use internal _pkg_dir_cache and will return cached answers if
+    available.
+
+    NOTE: use of pkg_dirs argument is DEPRECATED. Use
+    list_pkgs_by_path() instead, which has clearer meaning with the
+    cache.
     
     @param pkg_dirs: (optional) list of paths to search for packages
     @type  pkg_dirs: [str]
-    @param cache: Empty dictionary to store package list in. 
-        If no cache argument provided, list_pkgs() will use internal _pkg_dir_cache
-        and will return cached answers if available.
+    
+    @param cache: Empty dictionary to store package list in.     
         The format of the cache is {package_name: dir_path, ros_root, ros_package_path}.
     @type  cache: {str: str, str, str}
     @return: complete list of package names in ROS environment
@@ -350,16 +356,19 @@ def list_pkgs(pkg_dirs=None, cache=None):
     """
     if pkg_dirs is None:
         pkg_dirs = get_package_paths(True)
-    if cache is None:
-        # if cache is not specified, we use global cache instead
-        
-        # TODO: we don't have any logic go populate user-specified
-        # cache in most optimal way
-        cache = _pkg_dir_cache
-        if cache:
-            return cache.keys()
-        if _update_rospack_cache():
-            return cache.keys()
+        if cache is None:
+            # if cache is not specified, we use global cache instead
+
+            # TODO: we don't have any logic go populate user-specified
+            # cache in most optimal way
+            cache = _pkg_dir_cache
+            if cache:
+                return cache.keys()
+            if _update_rospack_cache():
+                return cache.keys()
+    else:
+        import warnings
+        warnings.warn("pkg_dirs argument is deprecated. Please use list_pkgs_by_path() instead", DeprecationWarning, stacklevel=2)
     packages = []
     for pkg_root in pkg_dirs:
         list_pkgs_by_path(pkg_root, packages, cache=cache)
@@ -367,6 +376,12 @@ def list_pkgs(pkg_dirs=None, cache=None):
 
 def list_pkgs_by_path(path, packages=[], cache=None):
     """
+    List ROS packages within the specified path.
+
+    Optionally, a cache dictionary can be provided, which will be
+    updated with the package->path mappings. list_pkgs_by_path() does
+    NOT returned cached results -- it only updates the cache.
+    
     @param path: path to list packages in
     @type  path: str
     @param packages: list of packages to append to. If package is

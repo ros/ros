@@ -42,7 +42,10 @@
 
 #include "ros/common.h"
 #include "ros/subscription.h"
-#include "ros/publisher_link.h"
+#include "ros/publication.h"
+#include "ros/transport_publisher_link.h"
+#include "ros/intraprocess_publisher_link.h"
+#include "ros/intraprocess_subscriber_link.h"
 #include "ros/connection.h"
 #include "ros/transport/transport_tcp.h"
 #include "ros/transport/transport_udp.h"
@@ -54,6 +57,7 @@
 #include "ros/message_deserializer.h"
 #include "ros/subscription_queue.h"
 #include "ros/file_log.h"
+#include "ros/transport_hints.h"
 
 using XmlRpc::XmlRpcValue;
 
@@ -133,6 +137,12 @@ void Subscription::getInfo(XmlRpc::XmlRpcValue& info)
   }
 }
 
+uint32_t Subscription::getNumPublishers()
+{
+	boost::mutex::scoped_lock lock(publisher_links_mutex_);
+	return (uint32_t)publisher_links_.size();
+}
+
 void Subscription::drop()
 {
   if (!dropped_)
@@ -159,8 +169,27 @@ void Subscription::dropAllConnections()
   V_PublisherLink::iterator end = localsubscribers.end();
   for (;it != end; ++it)
   {
-    (*it)->getConnection()->drop();
+    (*it)->drop();
   }
+}
+
+void Subscription::addLocalConnection(const PublicationPtr& pub)
+{
+  boost::mutex::scoped_lock lock(publisher_links_mutex_);
+  if (dropped_)
+  {
+    return;
+  }
+
+  ROSCPP_LOG_DEBUG("Creating intraprocess link for topic [%s]", name_.c_str());
+
+  IntraProcessPublisherLinkPtr pub_link(new IntraProcessPublisherLink(shared_from_this(), XMLRPCManager::instance()->getServerURI(), transport_hints_));
+  IntraProcessSubscriberLinkPtr sub_link(new IntraProcessSubscriberLink(pub));
+  pub_link->setPublisher(sub_link);
+  sub_link->setSubscriber(pub_link);
+
+  publisher_links_.push_back(pub_link);
+  pub->addSubscriberLink(sub_link);
 }
 
 bool Subscription::pubUpdate(const V_string& new_pubs)
@@ -173,6 +202,33 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
   }
 
   bool retval = true;
+
+  {
+    std::stringstream ss;
+
+    for (V_string::const_iterator up_i = new_pubs.begin();
+         up_i != new_pubs.end(); ++up_i)
+    {
+      ss << *up_i << ", ";
+    }
+
+    ss << " already have these connections: ";
+    for (V_PublisherLink::iterator spc = publisher_links_.begin();
+         spc!= publisher_links_.end(); ++spc)
+    {
+      ss << (*spc)->getPublisherXMLRPCURI() << ", ";
+    }
+
+    boost::mutex::scoped_lock lock(pending_connections_mutex_);
+    S_PendingConnection::iterator it = pending_connections_.begin();
+    S_PendingConnection::iterator end = pending_connections_.end();
+    for (; it != end; ++it)
+    {
+      ss << (*it)->getRemoteURI() << ", ";
+    }
+
+    ROSCPP_LOG_DEBUG("Publisher update for [%s]: %s", name_.c_str(), ss.str().c_str());
+  }
 
   V_string additions;
   V_PublisherLink subtractions;
@@ -245,15 +301,26 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
     {
       retval &= negotiateConnection(*i);
     }
+    else
+    {
+      ROSCPP_LOG_DEBUG("Skipping myself (%s, %s)", name_.c_str(), XMLRPCManager::instance()->getServerURI().c_str());
+    }
   }
 
   for (V_PublisherLink::iterator i = subtractions.begin();
            i != subtractions.end(); ++i)
   {
     const PublisherLinkPtr& link = *i;
-    ROSCPP_LOG_DEBUG("Disconnecting from publisher [%s] of topic [%s] at [%s]",
-                link->getConnection()->getCallerId().c_str(), name_.c_str(), link->getPublisherXMLRPCURI().c_str());
-    link->getConnection()->drop();
+    if (link->getPublisherXMLRPCURI() != XMLRPCManager::instance()->getServerURI())
+    {
+      ROSCPP_LOG_DEBUG("Disconnecting from publisher [%s] of topic [%s] at [%s]",
+                  link->getCallerID().c_str(), name_.c_str(), link->getPublisherXMLRPCURI().c_str());
+      link->drop();
+    }
+    else
+    {
+      ROSCPP_LOG_DEBUG("Disconnect: skipping myself for topic [%s]", name_.c_str());
+    }
   }
 
   return retval;
@@ -327,11 +394,13 @@ bool Subscription::negotiateConnection(const std::string& xmlrpc_uri)
   // Initiate the negotiation.  We'll come back and check on it later.
   if (!c->executeNonBlock("requestTopic", params))
   {
-    ROS_ERROR("Failed to contact publisher [%s:%d] for topic [%s]",
+    ROSCPP_LOG_DEBUG("Failed to contact publisher [%s:%d] for topic [%s]",
               peer_host.c_str(), peer_port, name_.c_str());
     delete c;
     return false;
   }
+
+  ROSCPP_LOG_DEBUG("Began asynchronous xmlrpc connection to [%s:%d]", peer_host.c_str(), peer_port);
 
   // The PendingConnectionPtr takes ownership of c, and will delete it on
   // destruction.
@@ -372,25 +441,25 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
   XmlRpc::XmlRpcValue proto;
   if(!XMLRPCManager::instance()->validateXmlrpcResponse("requestTopic", result, proto))
   {
-    ROS_ERROR("Failed to contact publisher [%s:%d] for topic [%s]",
+  	ROSCPP_LOG_DEBUG("Failed to contact publisher [%s:%d] for topic [%s]",
               peer_host.c_str(), peer_port, name_.c_str());
     return;
   }
 
   if (proto.size() == 0)
   {
-    ROS_ERROR("Couldn't agree on any common protocols with [%s] for topic [%s]", xmlrpc_uri.c_str(), name_.c_str());
+  	ROSCPP_LOG_DEBUG("Couldn't agree on any common protocols with [%s] for topic [%s]", xmlrpc_uri.c_str(), name_.c_str());
     return;
   }
 
   if (proto.getType() != XmlRpcValue::TypeArray)
   {
-    ROS_ERROR("Available protocol info returned from %s is not a list.", xmlrpc_uri.c_str());
+  	ROSCPP_LOG_DEBUG("Available protocol info returned from %s is not a list.", xmlrpc_uri.c_str());
     return;
   }
   if (proto[0].getType() != XmlRpcValue::TypeString)
   {
-    ROS_ERROR("Available protocol info list doesn't have a string as its first element.");
+  	ROSCPP_LOG_DEBUG("Available protocol info list doesn't have a string as its first element.");
     return;
   }
 
@@ -401,7 +470,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
         proto[1].getType() != XmlRpcValue::TypeString ||
         proto[2].getType() != XmlRpcValue::TypeInt)
     {
-      ROS_ERROR("publisher implements TCPROS, but the " \
+    	ROSCPP_LOG_DEBUG("publisher implements TCPROS, but the " \
                 "parameters aren't string,int");
       return;
     }
@@ -413,7 +482,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
     if (transport->connect(pub_host, pub_port))
     {
       ConnectionPtr connection(new Connection());
-      PublisherLinkPtr pub_link(new PublisherLink(shared_from_this(), xmlrpc_uri, transport_hints_));
+      TransportPublisherLinkPtr pub_link(new TransportPublisherLink(shared_from_this(), xmlrpc_uri, transport_hints_));
 
       connection->initialize(transport, false, HeaderReceivedFunc());
       pub_link->initialize(connection);
@@ -427,7 +496,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
     }
     else
     {
-      ROS_ERROR("Failed to connect to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
+    	ROSCPP_LOG_DEBUG("Failed to connect to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
     }
   }
   else if (proto_name == "UDPROS")
@@ -438,7 +507,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
         proto[3].getType() != XmlRpcValue::TypeInt ||
         proto[4].getType() != XmlRpcValue::TypeInt)
     {
-      ROS_ERROR("publisher implements UDPROS, but the " \
+    	ROSCPP_LOG_DEBUG("publisher implements UDPROS, but the " \
                 "parameters aren't string,int,int");
       return;
     }
@@ -459,7 +528,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
     if (foo)
     {
       ConnectionPtr connection(new Connection());
-      PublisherLinkPtr pub_link(new PublisherLink(shared_from_this(), xmlrpc_uri, transport_hints_));
+      TransportPublisherLinkPtr pub_link(new TransportPublisherLink(shared_from_this(), xmlrpc_uri, transport_hints_));
 
       connection->initialize(udp_transport, false, NULL);
       pub_link->initialize(connection);
@@ -473,12 +542,12 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
     }
     else
     {
-      ROS_ERROR("Failed to connect to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
+    	ROSCPP_LOG_DEBUG("Failed to connect to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
     }
   }
   else
   {
-    ROS_ERROR("Publisher offered unsupported transport [%s]", proto_name.c_str());
+  	ROSCPP_LOG_DEBUG("Publisher offered unsupported transport [%s]", proto_name.c_str());
   }
 }
 
@@ -488,11 +557,23 @@ public:
   SubscriptionCallback(const SubscriptionQueuePtr& queue, uint64_t id)
   : queue_(queue)
   , id_(id)
+  , called_(false)
   {}
+
+  ~SubscriptionCallback()
+  {
+    if (!called_)
+    {
+      queue_->remove(id_);
+    }
+  }
 
   virtual CallResult call()
   {
-    return queue_->call(id_);
+    CallResult result = queue_->call(id_);
+    called_ = true;
+
+    return result;
   }
 
   virtual bool ready()
@@ -503,10 +584,11 @@ public:
 private:
   SubscriptionQueuePtr queue_;
   uint64_t id_;
+  bool called_;
 };
 typedef boost::shared_ptr<SubscriptionCallback> SubscriptionCallbackPtr;
 
-uint32_t Subscription::handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes, const boost::shared_ptr<M_string>& connection_header, const PublisherLinkPtr& link)
+uint32_t Subscription::handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes, bool buffer_includes_size_header, const boost::shared_ptr<M_string>& connection_header, const PublisherLinkPtr& link)
 {
   boost::mutex::scoped_lock lock(callbacks_mutex_);
 
@@ -524,7 +606,7 @@ uint32_t Subscription::handleMessage(const boost::shared_array<uint8_t>& buffer,
 
     if (!deserializer)
     {
-      deserializer.reset(new MessageDeserializer(info->helper_, buffer, num_bytes, connection_header));
+      deserializer.reset(new MessageDeserializer(info->helper_, buffer, num_bytes, buffer_includes_size_header, connection_header));
     }
 
     if (info->subscription_queue_->full())
@@ -534,7 +616,7 @@ uint32_t Subscription::handleMessage(const boost::shared_array<uint8_t>& buffer,
 
     uint64_t id = info->subscription_queue_->push(info->helper_, deserializer, info->has_tracked_object_, info->tracked_object_);
     SubscriptionCallbackPtr cb(new SubscriptionCallback(info->subscription_queue_, id));
-    info->callback_queue_->addCallback(cb);
+    info->callback_queue_->addCallback(cb, (uint64_t)info.get());
   }
 
   // If this link is latched, store off the message so we can immediately pass it to new subscribers later
@@ -590,7 +672,7 @@ bool Subscription::addCallback(const SubscriptionMessageHelperPtr& helper, Callb
 
             uint64_t id = info->subscription_queue_->push(info->helper_, des, info->has_tracked_object_, info->tracked_object_);
             SubscriptionCallbackPtr cb(new SubscriptionCallback(info->subscription_queue_, id));
-            info->callback_queue_->addCallback(cb);
+            info->callback_queue_->addCallback(cb, (uint64_t)info.get());
           }
         }
       }
@@ -610,6 +692,7 @@ void Subscription::removeCallback(const SubscriptionMessageHelperPtr& helper)
     {
       const CallbackInfoPtr& info = *it;
       info->subscription_queue_->clear();
+      info->callback_queue_->removeByID((uint64_t)info.get());
       callbacks_.erase(it);
       break;
     }

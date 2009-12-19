@@ -34,10 +34,15 @@
 
 """
 roslaunch.parent providees the L{ROSLaunchParent} implementation,
-which represents the main 'parent' roslaunch process. In the roslaunch
-architecture, the parent is responsible for bringing up child
-roslaunches on other machines and coordinating the process launch. It
-will also bring up any local processes.
+which represents the main 'parent' roslaunch process. 
+
+ROSLaunch has a client/server architecture for running remote
+processes. When a user runs roslaunch, this creates a "parent"
+roslaunch process, which is responsible for managing local
+processes. This parent process will also start "child" processes on
+remote machines. The parent can then invoke methods on this child
+process to launch remote processes, and the child can invoke methods
+on the parent to provide feedback.
 """
 
 import logging

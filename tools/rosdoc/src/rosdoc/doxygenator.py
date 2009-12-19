@@ -123,7 +123,7 @@ def create_package_template(package, rd_config, m, path, html_dir,
 ## @type  m: manifest.Manifest
 ## @return: header, footer, manifest
 ## @rtype: (str, str, str)
-def load_manifest_vars(ctx, rd_config, package, path, docdir, m):
+def load_manifest_vars(ctx, rd_config, package, path, docdir, package_htmldir, m):
     author = license = dependencies = description = usedby = status = notes = li_vc = li_url = brief = ''
     
     # by default, assume that packages are on wiki
@@ -152,7 +152,7 @@ def load_manifest_vars(ctx, rd_config, package, path, docdir, m):
 
         if m.depends:
             dependencies = "<ul>\n" + \
-                           li_package_links(ctx, package, [d.package for d in m.depends], docdir)
+                           li_package_links(ctx, package, [d.package for d in m.depends], docdir, package_htmldir)
         else:
             dependencies = "None<br />"
 
@@ -160,7 +160,7 @@ def load_manifest_vars(ctx, rd_config, package, path, docdir, m):
     # filter depends by what we're actually documenting
     dependson1 = [d for d in dependson1 if d and ctx.should_document(d)]
     if dependson1:
-        usedby = "<ul>\n"+li_package_links(ctx, package, dependson1, docdir)
+        usedby = "<ul>\n"+li_package_links(ctx, package, dependson1, docdir, package_htmldir)
     else:
         usedby = "None<br />"
 
@@ -212,9 +212,11 @@ def run_rxdeps(package, pkg_doc_dir):
         print "rxdeping %s [%s]"%(package, ' '.join(command))
         Popen(command, stdout=PIPE).communicate()
     except OSError, (errno, strerr):
-        print """\nERROR: It appears that you do not have rxdeps installed. 
+        print >> sys.stderr, """\nERROR: It appears that you do not have rxdeps installed. 
 Package dependency tree links will not work properly.
 """
+    except:
+        print >> sys.stderr, "ERROR: rxdeps failed"
 
 ## Main entrypoint into creating doxygen files
 ## @param disable_rxdeps: if True, don't generate rxdeps documenation (note: this parameter is volatile as rxdeps generation will be moved outside of doxygenator)
@@ -246,8 +248,11 @@ def generate_doxygen(ctx, quiet=False, disable_rxdeps=False):
     tmpls = [header_template, footer_template, manifest_template]
     try:
         for package, path in packages.iteritems():
-            if not package in doc_packages or not ctx.has_builder(package, 'doxygen'):
+            if not package in doc_packages or \
+                   not ctx.has_builder(package, 'doxygen'):
                 continue
+
+            print "doxygenate", package
 
             # the logic for the doxygen builder is different from
             # others as doxygen is the default builder if no config is
@@ -294,7 +299,7 @@ def generate_doxygen(ctx, quiet=False, disable_rxdeps=False):
 
                 # - instantiate the templates
                 manifest_ = manifests[package] if package in manifests else None
-                vars = load_manifest_vars(ctx, rd_config, package, path, dir, manifest_)
+                vars = load_manifest_vars(ctx, rd_config, package, path, dir, html_dir, manifest_)
                 header, footer, manifest_html = [instantiate_template(t, vars) for t in tmpls]
 
                 if not disable_rxdeps:

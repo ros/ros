@@ -42,6 +42,7 @@ import roslib.msgs
 import roslib.rospack
 import roslib.srvs
 import roslib.stacks
+import roslib.packages
 
 _api_url = "http://ros.org/doc/api/"
 def package_link(package):
@@ -101,6 +102,19 @@ def _generate_package_headers(ctx, p):
       except UnicodeDecodeError, e:
         print >> sys.stderr, "error: cannot encode value for key", k
         d[k] = []
+
+  # Try to get SVN repo info
+  import subprocess
+  try:
+    pkg_path = roslib.packages.get_pkg_dir(p)
+    output = subprocess.Popen(['svn', 'info', pkg_path], stdout=subprocess.PIPE).communicate()[0]
+    match_str = 'Repository Root: '
+    for l in output.split('\n'):
+      if l.startswith(match_str):
+        d['repository'] = l[len(match_str):]
+        break
+  except e:
+    pass
 
   file_p = os.path.join(ctx.docdir, p, 'manifest.yaml')
   file_p_dir = os.path.dirname(file_p)

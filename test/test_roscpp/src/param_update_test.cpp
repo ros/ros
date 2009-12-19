@@ -44,22 +44,22 @@ int main(int argc, char** argv)
     ROS_INFO("getting parameters...");
 
     int i = -1;
-    if (nh.getParam("test", i, true))
+    if (nh.getParamCached("test", i))
     {
       ROS_INFO("test=%d", i);
     }
 
-    if (nh.getParam("test2", i, true))
+    if (nh.getParamCached("test2", i))
     {
       ROS_INFO("test2=%d", i);
     }
 
-    if (nh.getParam("test3", i, true))
+    if (nh.getParamCached("test3", i))
     {
       ROS_INFO("test3=%d", i);
     }
 
-    ros::Duration(0.1).sleep();
+    ros::WallDuration(0.1).sleep();
   }
 
   return 0;

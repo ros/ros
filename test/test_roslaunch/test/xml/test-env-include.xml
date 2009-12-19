@@ -1,3 +1,3 @@
 <launch>
-  <node pkg="package" type="test_one_two_include" />
+  <node name="n12i" pkg="package" type="test_one_two_include" />
 </launch>

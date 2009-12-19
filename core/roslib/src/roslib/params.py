@@ -35,7 +35,6 @@
 """
 Utilities for accessing the Parameter Server
 """
-## Utilities for accessing the Parameter Server
 
 import sys
 import xmlrpclib
@@ -45,11 +44,15 @@ from roslib.names import REMAP
 
 _param_server = None
 
-## Load node param mappings (aka private parameters) encoded in
-## command-line arguments, e.g. _foo:=bar. See also roslib.names.load_mappings.
-## @param argv [str]: command-line arguments
-## @return dict {str: val}: param->value remappings. 
 def load_command_line_node_params(argv):
+    """
+    Load node param mappings (aka private parameters) encoded in
+    command-line arguments, e.g. _foo:=bar. See also roslib.names.load_mappings.
+    @param argv: command-line arguments
+    @param argv: [str]
+    @return: param->value remappings. 
+    @rtype: {str: val}
+    """    
     try:
         import yaml
     except ImportError, e:
@@ -67,12 +70,16 @@ def load_command_line_node_params(argv):
                 print >> sys.stderr, "ERROR: Invalid remapping argument '%s'"%arg
     return mappings
 
-## Retrieve parameter value from parameter server. Each call to this
-## routine results in an actual network call to the parameter server.
-## Client must be an actual ROS node in order to implement a parameter cache.
-## @param key str: name of parameter to fetch
-## @raise KeyError if parameter is not set
 def get_param(key):
+    """
+    Retrieve parameter value from the Parameter Server. Each call to this
+    routine results in an actual network call to the Parameter Server.
+    Client must be an actual ROS node in order to implement a parameter cache.
+
+    @param key: name of parameter to fetch
+    @type  key: str
+    @raise KeyError: if parameter is not set
+    """
     global _param_server
     if _param_server is None:
         _param_server = xmlrpclib.ServerProxy(roslib.rosenv.get_master_uri())

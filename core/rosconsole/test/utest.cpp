@@ -33,6 +33,7 @@
 #include "log4cxx/spi/loggingevent.h"
 
 #include <vector>
+#include <stdexcept>
 
 #include <gtest/gtest.h>
 
@@ -59,6 +60,23 @@ protected:
     info.logger_name_ = event->getLoggerName();
 
     info_.push_back( info );
+  }
+
+  virtual void close()
+  {
+  }
+  virtual bool requiresLayout() const
+  {
+    return false;
+  }
+};
+
+class TestAppenderWithThrow : public log4cxx::AppenderSkeleton
+{
+protected:
+  virtual void append(const log4cxx::spi::LoggingEventPtr& event, log4cxx::helpers::Pool& pool)
+  {
+    throw std::runtime_error("This should be caught");
   }
 
   virtual void close()
@@ -452,6 +470,26 @@ TEST(RosConsole, longPrintfStyleOutput)
   logger->removeAppender( appender );
 
   logger->setLevel( log4cxx::Level::getDebug() );
+}
+
+TEST(RosConsole, throwingAppender)
+{
+	log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME);
+
+	TestAppenderWithThrow* appender = new TestAppenderWithThrow;
+	logger->addAppender( appender );
+
+	try
+	{
+		ROS_INFO("Hello there");
+	}
+	catch (std::exception& e)
+	{
+		FAIL();
+	}
+
+	logger->removeAppender( appender );
+	logger->setLevel( log4cxx::Level::getDebug() );
 }
 
 int main(int argc, char **argv)

@@ -388,20 +388,6 @@ class TestXmlLoader(unittest.TestCase):
             ]
         p_names = [p.key for p in mock.params]
         self.assertEquals(set([]), set(correct) ^ set(p_names), "%s does not match %s"%(p_names, correct))
-        # if a node is not named, should be converted to command-line assignment
-        expected = ['type2', 'g2type0', 'g2type1', 'g2type2']
-        for e in expected:
-            self.assert_(e in [n.type for n in mock.nodes])
-        for n in mock.nodes:
-            if n.type == 'g2type0':
-                pass
-            elif n.type == 'g2type1':
-                self.assert_('_g2param1:="val1"' in n.args, n.args)
-            elif n.type == 'g2type2':
-                self.assert_('_g2param1:="val1"' in n.args, n.args)                
-                self.assert_('_g2param2:="val2"' in n.args, n.args)                
-            elif n.type == 'type2':
-                self.assert_('_param1:="val1"' in n.args, n.args)                                
 
     def test_node_param(self):
         mock = self._load('test/xml/test-node-valid.xml')
@@ -413,13 +399,6 @@ class TestXmlLoader(unittest.TestCase):
             self.assertEquals(1, len(p), "%s not present in parameters: %s"%(k, mock.params))
             self.assertEquals(v, p[0].value)
         node_types = [n.type for n in mock.nodes]
-        self.assert_('test_param_unnamed1' in node_types, node_types)
-        self.assert_('test_param_unnamed2' in node_types, node_types)
-        for n in mock.nodes:
-            if n.type == 'test_param_unnamed1':
-                self.assert_('_baz1:="blah1"' in n.args, "missing _baz1:=blah1 in [%s]"%n.args)
-            elif n.type == 'test_param_unnamed2':
-                self.assertEquals('foo _baz2:="blah2"', n.args)
         
     def test_launch_prefix(self):
         nodes = self._load_valid_nodes(['test_launch_prefix'])
@@ -819,8 +798,8 @@ class TestXmlLoader(unittest.TestCase):
         tests = ['test-node-invalid-type.xml','test-node-invalid-type-2.xml',
                  'test-node-invalid-pkg.xml','test-node-invalid-pkg-2.xml',
                  # 1 and 2 have been disabled for now until we re-remove ability to have unnamed nodes with params
-                 #'test-node-invalid-name-1.xml',
-                 #'test-node-invalid-name-2.xml',
+                 'test-node-invalid-name-1.xml',
+                 'test-node-invalid-name-2.xml',
                  'test-node-invalid-name-3.xml',
                  'test-node-invalid-machine.xml',
                  'test-node-invalid-respawn.xml',

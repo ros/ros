@@ -47,7 +47,8 @@ import traceback
 import roslib.msgs 
 import roslib.packages 
 
-# genutil is a utility package the implements the package crawling logic of genmsg_py and gensrv_py logic
+# genutil is a utility package the implements the package crawling
+# logic of genmsg_py and gensrv_py logic
 import genutil
 
 import roslib.genpy 

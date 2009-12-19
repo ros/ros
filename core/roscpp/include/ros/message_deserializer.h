@@ -40,7 +40,7 @@ namespace ros
 class MessageDeserializer
 {
 public:
-  MessageDeserializer(const SubscriptionMessageHelperPtr& helper, const boost::shared_array<uint8_t>& buffer, size_t num_bytes, const boost::shared_ptr<M_string>& connection_header);
+  MessageDeserializer(const SubscriptionMessageHelperPtr& helper, const boost::shared_array<uint8_t>& buffer, size_t num_bytes, bool buffer_includes_size_header, const boost::shared_ptr<M_string>& connection_header);
 
   MessagePtr deserialize();
 
@@ -48,6 +48,7 @@ private:
   SubscriptionMessageHelperPtr helper_;
   boost::shared_array<uint8_t> buffer_;
   uint32_t num_bytes_;
+  bool buffer_includes_size_header_;
   boost::shared_ptr<M_string> connection_header_;
 
   boost::mutex mutex_;

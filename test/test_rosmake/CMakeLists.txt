@@ -30,3 +30,4 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #target_link_libraries(example ${PROJECT_NAME})
 
 rosbuild_add_pyunit(test/test_parallel_build.py)
+rosbuild_add_pyunit(test/test_rosmake_commandline.py)

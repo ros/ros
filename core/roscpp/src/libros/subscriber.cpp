@@ -95,4 +95,14 @@ std::string Subscriber::getTopic() const
   return std::string();
 }
 
+uint32_t Subscriber::getNumPublishers() const
+{
+	if (impl_ && impl_->isValid())
+	{
+		return TopicManager::instance()->getNumPublishers(impl_->topic_);
+	}
+
+	return 0;
+}
+
 } // namespace ros

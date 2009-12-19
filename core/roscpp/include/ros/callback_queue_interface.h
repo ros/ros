@@ -37,6 +37,8 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "types.h"
+
 namespace ros
 {
 
@@ -62,7 +64,16 @@ class CallbackQueueInterface
 public:
   virtual ~CallbackQueueInterface() {}
 
-  virtual void addCallback(const CallbackInterfacePtr& callback) = 0;
+  /**
+   * \brief Add a callback, with an optional removal id.  The removal id can be used to
+   * remove a set of callbacks from this queue.
+   */
+  virtual void addCallback(const CallbackInterfacePtr& callback, uint64_t removal_id = 0) = 0;
+
+  /**
+   * \brief Remove a set of callbacks by removal id
+   */
+  virtual void removeByID(uint64_t removal_id) = 0;
 };
 
 }

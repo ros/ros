@@ -42,6 +42,44 @@ import rostest
 
 class RoslibStacksTest(unittest.TestCase):
   
+    def test_packages_of(self):
+        from roslib.stacks import packages_of
+        pkgs = packages_of('ros')
+        for p in ['test_roslib', 'roslib', 'rospy', 'roscpp']:
+            self.assert_(p in pkgs)
+        # due to caching behavior, test twice
+        pkgs = packages_of('ros')
+        for p in ['test_roslib', 'roslib', 'rospy', 'roscpp']:
+            self.assert_(p in pkgs)
+
+        try:
+            packages_of(None)
+            self.fail("should have raised ValueError")
+        except ValueError: pass
+    
+    def test_stack_of(self):
+        import roslib.packages
+        from roslib.stacks import stack_of
+        self.assertEquals('ros', stack_of('test_roslib'))
+        # due to caching, test twice
+        self.assertEquals('ros', stack_of('test_roslib'))
+        try:
+            stack_of('fake_test_roslib')
+            self.fail("should have failed")
+        except roslib.packages.InvalidROSPkgException:
+            pass
+
+    def test_list_stacks(self):
+        from roslib.stacks import list_stacks
+        l = list_stacks()
+        self.assert_('ros' in l)
+
+        # make sure it is equivalent to rosstack list
+        from roslib.rospack import rosstackexec
+        l2 = [x for x in rosstackexec(['list']).split('\n') if x]
+        l2 = [x.split()[0] for x in l2]
+        self.assertEquals(set(l), set(l2), set(l) ^ set(l2))
+        
     def test_get_stack_dir(self):
         # TODO setup artificial tree with more exhaustive tests
         import roslib.rosenv

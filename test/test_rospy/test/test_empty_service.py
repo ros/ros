@@ -47,6 +47,7 @@ import rospy, rostest
 from test_rospy.srv import *
 
 EMPTY_SERVICE      = 'empty_service'
+EMPTY_RETURN_SERVICE = 'empty_return_service'
 EMPTY_REQ_SERVICE  = 'empty_req_service'
 EMPTY_RESP_SERVICE = 'empty_resp_service'
 
@@ -57,6 +58,11 @@ WAIT_TIMEOUT = 10.0 #s
 def handle_empty(req):
     print "Returning empty"
     return EmptySrvResponse()
+
+def handle_return_empty(req):
+    "print returning None"
+    pass
+
 ## handle empty request 
 def handle_empty_req(req):
     print "Returning fake_secret"
@@ -74,6 +80,7 @@ def empty_service():
     s1 = rospy.Service(EMPTY_SERVICE, EmptySrv, handle_empty)
     s2 = rospy.Service(EMPTY_REQ_SERVICE, EmptyReqSrv, handle_empty_req)
     s3 = rospy.Service(EMPTY_RESP_SERVICE, EmptyRespSrv, handle_empty_resp)
+    s4 = rospy.Service(EMPTY_RETURN_SERVICE, EmptySrv, handle_return_empty)
     rospy.spin()
 
 class TestEmptyServiceClient(unittest.TestCase):
@@ -84,8 +91,23 @@ class TestEmptyServiceClient(unittest.TestCase):
         resp = s.call(req)
         self.assert_(resp is not None)
         return resp
+
+    # test that __call__ and s.call() work with no-args on an empty request
+    def test_call_empty(self):
+        rospy.wait_for_service(EMPTY_REQ_SERVICE, WAIT_TIMEOUT)        
+        s = rospy.ServiceProxy(EMPTY_REQ_SERVICE, EmptyReqSrv)
+        resp = s()
+        self.assertEquals(FAKE_SECRET, resp.fake_secret, 
+                          "fake_secret fields is not set as expected")        
+        resp = s.call()
+        self.assertEquals(FAKE_SECRET, resp.fake_secret, 
+                          "fake_secret fields is not set as expected")        
+        
     def test_empty(self):
         self._test(EMPTY_SERVICE, EmptySrv, EmptySrvRequest())
+    # test that an empty return service handler can return None
+    def test_return_empty(self):
+        self._test(EMPTY_RETURN_SERVICE, EmptySrv, EmptySrvRequest())
     def test_empty_req(self):
         resp = self._test(EMPTY_REQ_SERVICE, EmptyReqSrv,
                           EmptyReqSrvRequest())

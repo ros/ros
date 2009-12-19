@@ -203,6 +203,12 @@ std::string NodeHandle::remapName(const std::string& name) const
 
 std::string NodeHandle::resolveName(const std::string& name, bool remap) const
 {
+  std::string error;
+  if (!names::validate(name, error))
+  {
+    throw InvalidNameException(error);
+  }
+
   if (name.empty())
   {
     return namespace_;
@@ -241,8 +247,6 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
 
 Publisher NodeHandle::advertise(AdvertiseOptions& ops)
 {
-  SubscriberCallbacksPtr callbacks(new SubscriberCallbacks(ops.connect_cb, ops.disconnect_cb, ops.tracked_object));
-
   ops.topic = resolveName(ops.topic);
   if (ops.callback_queue == 0)
   {
@@ -255,6 +259,8 @@ Publisher NodeHandle::advertise(AdvertiseOptions& ops)
       ops.callback_queue = getGlobalCallbackQueue();
     }
   }
+
+  SubscriberCallbacksPtr callbacks(new SubscriberCallbacks(ops.connect_cb, ops.disconnect_cb, ops.tracked_object, ops.callback_queue));
 
   if (TopicManager::instance()->advertise(ops, callbacks))
   {
@@ -502,30 +508,83 @@ bool NodeHandle::deleteParam(const std::string &key) const
   return param::del(resolveName(key));
 }
 
+bool NodeHandle::getParam(const std::string &key, XmlRpc::XmlRpcValue &v) const
+{
+  return param::get(resolveName(key), v);
+}
+
+bool NodeHandle::getParam(const std::string &key, std::string &s) const
+{
+  return param::get(resolveName(key), s);
+}
+
+bool NodeHandle::getParam(const std::string &key, double &d) const
+{
+  return param::get(resolveName(key), d);
+}
+
+bool NodeHandle::getParam(const std::string &key, int &i) const
+{
+  return param::get(resolveName(key), i);
+}
+
+bool NodeHandle::getParam(const std::string &key, bool &b) const
+{
+  return param::get(resolveName(key), b);
+}
+
+bool NodeHandle::getParamCached(const std::string &key, XmlRpc::XmlRpcValue &v) const
+{
+  return param::getCached(resolveName(key), v);
+}
+
+bool NodeHandle::getParamCached(const std::string &key, std::string &s) const
+{
+  return param::getCached(resolveName(key), s);
+}
+
+bool NodeHandle::getParamCached(const std::string &key, double &d) const
+{
+  return param::getCached(resolveName(key), d);
+}
+
+bool NodeHandle::getParamCached(const std::string &key, int &i) const
+{
+  return param::getCached(resolveName(key), i);
+}
+
+bool NodeHandle::getParamCached(const std::string &key, bool &b) const
+{
+  return param::getCached(resolveName(key), b);
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Deprecated caching versions of getParam()
 bool NodeHandle::getParam(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache) const
 {
-  return param::get(resolveName(key), v, use_cache);
+  return param::getCached(resolveName(key), v);
 }
 
 bool NodeHandle::getParam(const std::string &key, std::string &s, bool use_cache) const
 {
-  return param::get(resolveName(key), s, use_cache);
+  return param::getCached(resolveName(key), s);
 }
 
 bool NodeHandle::getParam(const std::string &key, double &d, bool use_cache) const
 {
-  return param::get(resolveName(key), d, use_cache);
+  return param::getCached(resolveName(key), d);
 }
 
 bool NodeHandle::getParam(const std::string &key, int &i, bool use_cache) const
 {
-  return param::get(resolveName(key), i, use_cache);
+  return param::getCached(resolveName(key), i);
 }
 
 bool NodeHandle::getParam(const std::string &key, bool &b, bool use_cache) const
 {
-  return param::get(resolveName(key), b, use_cache);
+  return param::getCached(resolveName(key), b);
 }
+////////////////////////////////////////////////////////////////////////////
 
 bool NodeHandle::searchParam(const std::string &key, std::string& result_out) const
 {
@@ -546,63 +605,6 @@ bool NodeHandle::searchParam(const std::string &key, std::string& result_out) co
 bool NodeHandle::ok() const
 {
   return ros::ok() && ok_;
-}
-
-void NodeHandle::setMasterRetryTimeout(int32_t milliseconds)
-{
-  master::setRetryTimeout(WallDuration(milliseconds / 1000.));
-}
-
-void NodeHandle::getAdvertisedTopics(V_string& topics) const
-{
-  this_node::getAdvertisedTopics(topics);
-}
-
-void NodeHandle::getSubscribedTopics(V_string& topics) const
-{
-  this_node::getSubscribedTopics(topics);
-}
-
-const std::string& NodeHandle::getName() const
-{
-  return this_node::getName();
-}
-
-const std::string& NodeHandle::getMasterHost() const
-{
-  return ros::master::getHost();
-}
-int NodeHandle::getMasterPort() const
-{
-  return ros::master::getPort();
-}
-
-bool NodeHandle::checkMaster() const
-{
-  return ros::master::check();
-}
-
-bool NodeHandle::getPublishedTopics(VP_string& topics) const
-{
-  master::V_TopicInfo info;
-  if (!master::getTopics(info))
-  {
-    return false;
-  }
-
-  master::V_TopicInfo::iterator it = info.begin();
-  master::V_TopicInfo::iterator end = info.end();
-  for (; it != end; ++it)
-  {
-    topics.push_back(std::make_pair(it->name, it->datatype));
-  }
-
-  return true;
-}
-
-bool NodeHandle::getNodes(V_string& nodes) const
-{
-  return master::getNodes(nodes);
 }
 
 } // namespace ros

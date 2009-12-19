@@ -62,6 +62,11 @@ public:
 
   std::string getTopic() const;
 
+  /**
+   * \brief Returns the number of publishers this subscriber is connected to
+   */
+  uint32_t getNumPublishers() const;
+
   operator void*() const { return (impl_ && impl_->isValid()) ? (void*)1 : (void*)0; }
 
   bool operator<(const Subscriber& rhs) const

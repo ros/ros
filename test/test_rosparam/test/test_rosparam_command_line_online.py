@@ -31,10 +31,10 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: test_rostopic_command_line_online.py 5710 2009-08-20 03:11:04Z sfkwc $
+# Revision $Id: test_rosparam_command_line_online.py 5710 2009-08-20 03:11:04Z sfkwc $
 
-PKG = 'test_rostopic'
-NAME = 'test_rostopic_command_line_online'
+PKG = 'test_rosparam'
+NAME = 'test_rosparam_command_line_online'
 import roslib; roslib.load_manifest(PKG)
 
 import os
@@ -46,13 +46,11 @@ import unittest
 import rospy
 import rostest
 
-import std_msgs.msg
-
 from subprocess import Popen, PIPE, check_call, call
 
 from roslib.scriptutil import get_param_server, script_resolve_name
 
-class TestRostopicOnline(unittest.TestCase):
+class TestRosparamOnline(unittest.TestCase):
 
     def setUp(self):
         self.vals = set()
@@ -62,7 +60,7 @@ class TestRostopicOnline(unittest.TestCase):
         self.vals.add(val)
         self.msgs[val] = msg
         
-    def test_rostopic(self):
+    def test_rosparam(self):
         ps = get_param_server()
 
         # network is initialized
@@ -196,4 +194,4 @@ class TestRostopicOnline(unittest.TestCase):
         # TODO: load
             
 if __name__ == '__main__':
-    rostest.run(PKG, NAME, TestRostopicOnline, sys.argv)
+    rostest.run(PKG, NAME, TestRosparamOnline, sys.argv)

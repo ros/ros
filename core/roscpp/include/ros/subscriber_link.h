@@ -47,9 +47,6 @@ typedef boost::weak_ptr<Publication> PublicationWPtr;
 class Connection;
 typedef boost::shared_ptr<Connection> ConnectionPtr;
 
-/**
- * \brief SubscriberLink handles broadcasting messages to a single subscriber on a single topic
- */
 class SubscriberLink : public boost::enable_shared_from_this<SubscriberLink>
 {
 public:
@@ -61,54 +58,35 @@ public:
     : bytes_sent_(0), message_data_sent_(0), messages_sent_(0) { }
   };
 
-
   SubscriberLink();
   virtual ~SubscriberLink();
 
-  //
-  bool initialize(const ConnectionPtr& connection);
-  bool handleHeader(const Header& header);
+  const std::string& getTopic() const { return topic_; }
+  const Stats &getStats() { return stats_; }
+  const std::string &getDestinationCallerID() const { return destination_caller_id_; }
+  int getConnectionID() const { return connection_id_; }
 
   /**
    * \brief Publish a message directly to our subscriber.  Useful for publication connection callbacks
    * to publish directly to the new subscriber and no-one else
    */
-  bool publish(const Message& m);
+  virtual bool publish(const Message& m) = 0;
   /**
    * \brief Queue up a message for publication.  Throws out old messages if we've reached our Publication's max queue size
    */
-  void enqueueMessage(const SerializedMessage& m);
+  virtual void enqueueMessage(const SerializedMessage& m) = 0;
 
-  const ConnectionPtr& getConnection() { return connection_; }
+  virtual void drop() = 0;
 
-  const std::string& getTopic() const { return topic_; }
-  std::string getTransportType();
-  const Stats &getStats() { return stats_; }
-  inline const std::string &getDestinationCallerID() const { return destination_caller_id_; }
-  inline int getConnectionID() const { return connection_id_; }
+  virtual std::string getTransportType() = 0;
 
-private:
+protected:
   bool verifyDatatype(const std::string &datatype);
-  void onConnectionDropped(const ConnectionPtr& conn);
 
-  void onHeaderWritten(const ConnectionPtr& conn);
-  void onMessageWritten(const ConnectionPtr& conn);
-  void startMessageWrite(bool immediate_write);
-
-  bool writing_message_;
-  bool header_written_;
-
-  ConnectionPtr connection_;
   PublicationWPtr parent_;
-
-  std::queue<SerializedMessage> outbox_;
-  boost::mutex outbox_mutex_;
-  bool queue_full_;
   unsigned int connection_id_;
   std::string destination_caller_id_;
-
   Stats stats_;
-
   std::string topic_;
 };
 

@@ -1,3 +1,3 @@
 <launch>
-  <node pkg="package" type="test_ns_invalid" machine="" />
+  <node name="n" pkg="package" type="test_ns_invalid" machine="" />
 </launch>

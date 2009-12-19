@@ -145,7 +145,7 @@ TEST_F(Synchronous, readWhileWriting)
     volatile bool done_read = false;
     boost::thread t(boost::bind(readThread, transports_[2], read_buf.get(), msg.size(), &read_out, &done_read));
 
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
 
     int32_t written = transports_[1]->write((uint8_t*)msg.c_str(), msg.length());
     ASSERT_EQ(written, (int32_t)msg.length());
@@ -267,7 +267,7 @@ protected:
     int count = 0;
     while (!transports_[2] && count < 100)
     {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+      boost::this_thread::sleep(boost::posix_time::milliseconds(50));
     }
 
     if (!transports_[2])
@@ -308,30 +308,30 @@ protected:
 TEST_F(Polled, readAndWrite)
 {
   transports_[1]->enableWrite();
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   transports_[1]->disableWrite();
 
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   ASSERT_GT(bytes_read_[2], 0);
   ASSERT_EQ(bytes_read_[2], bytes_written_[1]);
 
   int old_read_val = bytes_read_[2];
 
   transports_[2]->enableWrite();
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   transports_[2]->disableWrite();
 
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   ASSERT_EQ(bytes_read_[1], bytes_written_[2]);
   ASSERT_EQ(old_read_val, bytes_read_[2]);
 
   transports_[1]->enableWrite();
   transports_[2]->enableWrite();
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   transports_[1]->disableWrite();
   transports_[2]->disableWrite();
 
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   ASSERT_GT(bytes_read_[2], 0);
   ASSERT_EQ(bytes_read_[2], bytes_written_[1]);
   ASSERT_GT(bytes_read_[1], 0);
@@ -340,22 +340,22 @@ TEST_F(Polled, readAndWrite)
 
 TEST_F(Polled, enableDisableWrite)
 {
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   ASSERT_EQ(bytes_read_[1], 0);
   ASSERT_EQ(bytes_read_[2], 0);
   ASSERT_EQ(bytes_written_[1], 0);
   ASSERT_EQ(bytes_written_[2], 0);
 
   transports_[1]->enableWrite();
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   transports_[1]->disableWrite();
 
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   ASSERT_GT(bytes_read_[2], 0);
   ASSERT_GT(bytes_written_[1], 0);
   int old_read_val = bytes_read_[2];
   int old_written_val = bytes_written_[1];
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   ASSERT_EQ(bytes_read_[2], old_read_val);
   ASSERT_EQ(bytes_written_[1], old_written_val);
 }
@@ -368,7 +368,7 @@ TEST_F(Polled, disconnectNoTraffic)
   transports_[1]->close();
   ASSERT_EQ(disconnected_[1], true);
 
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
 
   ASSERT_EQ(disconnected_[2], true);
 }
@@ -379,13 +379,13 @@ TEST_F(Polled, disconnectWriter)
   ASSERT_EQ(disconnected_[2], false);
 
   transports_[1]->enableWrite();
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   ASSERT_GT(bytes_read_[2], 0);
 
   transports_[1]->close();
   ASSERT_EQ(disconnected_[1], true);
 
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
 
   ASSERT_EQ(disconnected_[2], true);
 }
@@ -396,13 +396,13 @@ TEST_F(Polled, disconnectReader)
   ASSERT_EQ(disconnected_[2], false);
 
   transports_[2]->enableWrite();
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   ASSERT_GT(bytes_read_[1], 0);
 
   transports_[1]->close();
   ASSERT_EQ(disconnected_[1], true);
 
-  boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  boost::this_thread::sleep(boost::posix_time::milliseconds(50));
 
   ASSERT_EQ(disconnected_[2], true);
 }

@@ -615,14 +615,14 @@ class TCPROSTransport(Transport):
         finally:
             if not self.done:
                 self.close()
-                self.done = True
 
     def close(self):
         """close i/o and release resources"""
-        super(TCPROSTransport, self).close()
         self.done = True
-        if self.socket is not None:
-            self.socket.close()
-            self.socket = None
-        self.read_buff = self.write_buff = self.protocol = None
+        try:        
+            if self.socket is not None:
+                self.socket.close()
+        finally:
+            self.socket = self.read_buff = self.write_buff = self.protocol = None
+            super(TCPROSTransport, self).close()
 

@@ -74,7 +74,7 @@ def main():
             dist = make_dist(name, version, distro, source_dir, release_props)
 
         if 1:
-            tag_url = tag_subversion(name, version, distro, release_props)
+            tag_urls = tag_subversion(name, version, distro, release_props)
 
         if 1:
             update_rosdistro_yaml(name, version, distro, distro_file)
@@ -122,25 +122,30 @@ def update_rosdistro_yaml(name, version, distro, distro_file):
         f.write(yaml.safe_dump(distro_d))
     
 def tag_subversion(name, version, distro, release_props):
-    # TODO: delete the old URL first?
-
-    from_url = expand_uri(release_props['dev-svn'], name, version, distro, \
-                             release_props['os_name'], release_props['os_ver'])
-    tag_url = expand_uri(release_props['release-svn'], name, version, distro, \
-                             release_props['os_name'], release_props['os_ver'])
+    urls = []
+    for k in ['release-svn', 'distro-svn']:
+        from_url = expand_uri(release_props['dev-svn'], name, version, distro, \
+                                  release_props['os_name'], release_props['os_ver'])
+        tag_url = expand_uri(release_props[k], name, version, distro, \
+                                 release_props['os_name'], release_props['os_ver'])
         
-    release_name = "%s-%s"%(name, version)
+        release_name = "%s-%s"%(name, version)
 
-    cmds = []
-    append_rm_if_exists(tag_url, cmds, 'Deleting old tag')
-    cmds.append(['svn', 'cp', '--parents', '-m', 'Tagging %s release'%release_name, from_url, tag_url])
-    if not ask_and_call(cmds):    
-        print "create_release will not tag this release in subversion"
-    return tag_url
+        cmds = []
+        # delete old svn tag if it's present
+        append_rm_if_exists(tag_url, cmds, 'Deleting old tag')
+        # svn cp command to create new tag
+        cmds.append(['svn', 'cp', '--parents', '-m', 'Tagging %s release'%release_name, from_url, tag_url])
+        if not ask_and_call(cmds):    
+            print "create_release will not create this tag in subversion"
+        else:
+            urls.append(tag_url)
+    return urls
         
 def get_active_distro():
     from subprocess import Popen, PIPE
     try:
+        #TODO: this logic won't work
         output = Popen(['rosdistro', 'active'], stdout=PIPE, stderr=PIPE).communicate()
     except:
         output = [None]

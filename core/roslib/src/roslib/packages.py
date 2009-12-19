@@ -33,6 +33,8 @@
 # Revision $Id$
 # $Author$
 
+from __future__ import with_statement
+
 import os
 import sys
 import stat
@@ -43,6 +45,7 @@ from subprocess import Popen, PIPE
 import roslib.exceptions
 import roslib.names
 import roslib.rosenv
+import roslib.os_detect
 
 MSG_DIR = 'msg'
 SRV_DIR = 'srv'
@@ -110,30 +113,27 @@ def get_package_paths(ros_root_required=True, env=None):
     else:
         return paths
 
-def get_dir_pkg(dir, env=os.environ):
+def get_dir_pkg(d):
     """
     Get the package that the directory is contained within. This is
     determined by finding the nearest parent manifest.xml file. This
     isn't 100% reliable, but symlinks can full any heuristic that
     relies on ROS_ROOT.
-    @param dir: directory path
-    @type  dir: str
-    @param env dict: override os.environ dictionary
-    @type  env: dict
-    @return: (packageDirectory, package) of the specified directory, or None,None if not in a package
+    @param d: directory path
+    @type  d: str
+    @return: (package_directory, package) of the specified directory, or None,None if not in a package
     @rtype: (str, str)
     """
     #TODO: the realpath is going to create issues with symlinks, most likely
-    pkgDirs = [os.path.realpath(x) for x in get_package_paths(True, env=env)]
-    for pkgDir in pkgDirs:
-        parent = os.path.dirname(os.path.realpath(dir))
-        #walk up until we hit ros root or ros/pkg
-        while not os.path.exists(os.path.join(dir, MANIFEST_FILE)) and parent != dir:
-            dir = parent
-            parent = os.path.dirname(dir)
-        if os.path.exists(os.path.join(dir, MANIFEST_FILE)):
-            pkg = os.path.basename(os.path.abspath(dir))
-            return dir, pkg
+
+    parent = os.path.dirname(os.path.realpath(d))
+    #walk up until we hit ros root or ros/pkg
+    while not os.path.exists(os.path.join(d, MANIFEST_FILE)) and parent != d:
+        d = parent
+        parent = os.path.dirname(d)
+    if os.path.exists(os.path.join(d, MANIFEST_FILE)):
+        pkg = os.path.basename(os.path.abspath(d))
+        return d, pkg
     return None, None
 
 _pkg_dir_cache = {}
@@ -177,12 +177,16 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
             # record setting for _pkg_dir_cache
             ros_package_path = os.environ[ROS_PACKAGE_PATH]
 
+        # update cache if we haven't. NOTE: we only get one cache
+        if not _pkg_dir_cache:
+            _read_rospack_cache(_pkg_dir_cache, ros_root, ros_package_path)
+            
         # now that we've resolved the args, check the cache
         if package in _pkg_dir_cache:
             dir, rr, rpp = _pkg_dir_cache[package]
             if rr == ros_root and rpp == ros_package_path:
                 return dir
-            
+
         rpout, rperr = Popen([rospack, 'find', package], \
                                  stdout=PIPE, stderr=PIPE, env=penv).communicate()
 
@@ -194,8 +198,9 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
             raise InvalidROSPkgException("Cannot locate installation of package %s: [%s] is not a valid path. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(package, pkg_dir, ros_root, ros_package_path))
         elif not os.path.isdir(pkg_dir):
             raise InvalidROSPkgException("Package %s is invalid: file [%s] is in the way"%(package, pkg_dir))
-        # we also save the ros_root/ros_package_path args as these affect the pkg_dir
-        _pkg_dir_cache[package] = (pkg_dir, ros_root, ros_package_path)
+        # don't update cache: this should only be updated from
+        # rospack_cache as it will corrupt list_pkgs() otherwise.
+        #_pkg_dir_cache[package] = (pkg_dir, ros_root, ros_package_path)
         return pkg_dir
     except OSError, e:
         if required:
@@ -280,42 +285,127 @@ def resource_file(package, subdir, resource_name):
     @rtype: str
     @raise roslib.packages.InvalidROSPkgException: If package does not exist 
     """
-    dir = get_pkg_subdir(package, subdir, False)
-    if dir is None:
+    d = get_pkg_subdir(package, subdir, False)
+    if d is None:
         raise InvalidROSPkgException(package)
-    return os.path.join(dir, resource_name)
+    return os.path.join(d, resource_name)
 
-
-# TODO: try and read in .rospack_cache
-# TODO: use this to replace get_pkg_dir shelling to rospack
-def list_pkgs(pkg_dirs=None):
+def _update_rospack_cache():
     """
+    Internal routine to update global package directory cache
+    
+    @return: True if cache is valid
+    @rtype: bool
+    """
+    cache = _pkg_dir_cache
+    if cache:
+        return True
+    ros_root = os.environ[ROS_ROOT]
+    ros_package_path = os.environ.get(ROS_PACKAGE_PATH, '')
+    return _read_rospack_cache(cache, ros_root, ros_package_path)
+
+def _read_rospack_cache(cache, ros_root, ros_package_path):
+    """
+    Read in rospack_cache data into cache
+    @param cache: empty dictionary to store package list in. 
+        If no cache argument provided, list_pkgs() will use internal _pkg_dir_cache
+        and will return cached answers if available.
+        The format of the cache is {package_name: dir_path, ros_root, ros_package_path}.
+    @type  cache: {str: str, str, str}
+    """
+    try:
+        with open(os.path.join(roslib.rosenv.get_ros_home(), 'rospack_cache')) as f:
+            for l in f.readlines():
+                l = l[:-1]
+                if not len(l):
+                    continue
+                if l[0] == '#':
+                    # check that the cache matches our env
+                    if l.startswith('#ROS_ROOT='):
+                        if not l[len('#ROS_ROOT='):] == ros_root:
+                            return False
+                    elif l.startswith('#ROS_PACKAGE_PATH='):
+                        if not l[len('#ROS_PACKAGE_PATH='):]:
+                            return False
+                else:
+                    cache[os.path.basename(l)] = l, ros_root, ros_package_path
+        return True
+    except:
+        pass
+    
+# TODO: use this to replace get_pkg_dir shelling to rospack
+def list_pkgs(pkg_dirs=None, cache=None):
+    """
+    List packages in ROS_ROOT and ROS_PACKAGE_PATH. 
+    
     @param pkg_dirs: (optional) list of paths to search for packages
     @type  pkg_dirs: [str]
+    @param cache: Empty dictionary to store package list in. 
+        If no cache argument provided, list_pkgs() will use internal _pkg_dir_cache
+        and will return cached answers if available.
+        The format of the cache is {package_name: dir_path, ros_root, ros_package_path}.
+    @type  cache: {str: str, str, str}
     @return: complete list of package names in ROS environment
     @rtype: [str]
     """
     if pkg_dirs is None:
         pkg_dirs = get_package_paths(True)
+    if cache is None:
+        # if cache is not specified, we use global cache instead
+        
+        # TODO: we don't have any logic go populate user-specified
+        # cache in most optimal way
+        cache = _pkg_dir_cache
+        if cache:
+            return cache.keys()
+        if _update_rospack_cache():
+            return cache.keys()
     packages = []
+    for pkg_root in pkg_dirs:
+        list_pkgs_by_path(pkg_root, packages, cache=cache)
+    return packages
+
+def list_pkgs_by_path(path, packages=[], cache=None):
+    """
+    @param path: path to list packages in
+    @type  path: str
+    @param packages: list of packages to append to. If package is
+      already present in packages, it will be ignored.
+    @type  packages: [str]
+    @param cache: (optional) package path cache to update. Maps package name to directory path.
+    @type  cache: {str: str}
+    @return: complete list of package names in ROS environment. Same as packages parameter.
+    @rtype: [str]
+    """
     # record settings for cache
     ros_root = os.environ[ROS_ROOT]
     ros_package_path = os.environ.get(ROS_PACKAGE_PATH, '')
-    for pkg_root in pkg_dirs:
-        for dir, dirs, files in os.walk(pkg_root, topdown=True):
-            if MANIFEST_FILE in files:
-                package = os.path.basename(dir)
-                if package not in packages:
-                  packages.append(package)
-                  _pkg_dir_cache[package] = dir, ros_root, ros_package_path
-                del dirs[:]
-            elif 'rospack_nosubdirs' in files:
-                del dirs[:]
-            #small optimization
-            elif '.svn' in dirs:
-                dirs.remove('.svn')
-            elif '.git' in dirs:
-                dirs.remove('.git')
+
+    for d, dirs, files in os.walk(path, topdown=True):
+        if MANIFEST_FILE in files:
+            package = os.path.basename(d)
+            if package not in packages:
+                packages.append(package)
+                if cache is not None:
+                    cache[package] = d, ros_root, ros_package_path
+            del dirs[:]
+            continue #leaf
+        elif 'rospack_nosubdirs' in files:
+            del dirs[:]
+            continue #leaf
+        #small optimization
+        elif '.svn' in dirs:
+            dirs.remove('.svn')
+        elif '.git' in dirs:
+            dirs.remove('.git')
+
+        for sub_d in dirs:
+            # followlinks=True only available in Python 2.6, so we
+            # have to implement manually
+            sub_p = os.path.join(d, sub_d)
+            if os.path.islink(sub_p):
+                packages.extend(list_pkgs_by_path(sub_p, cache=cache))
+            
     return packages
 
 # TODO: reimplement using find_resource
@@ -381,4 +471,43 @@ def find_resource(pkg, resource_name, filter_fn=None, ros_root=None, ros_package
         elif '.git' in dirs:
             dirs.remove('.git')
     return matches
+
+def rosdeps_of(packages):
+    """
+    Collect all rosdeps of specified packages.
+    @param packages: packages names
+    @type  packages: [str]
+    @return: list of rosdep names. The entries are not guaranteed to
+    be unique.
+    @rtype: [str]
+    """
+    _update_rospack_cache()
+    from roslib.manifest import load_manifest
+    manifests = [load_manifest(p) for p in packages]
+    import itertools
+    return [d.name for d in itertools.chain(*(m.rosdeps for m in manifests))]
+
+def _platform_supported(file, os, version):
+    m = roslib.manifest.parse_file(file)
+    for p in m.platforms:
+        if os == p.os and version == p.version:
+            return True
+    return False
+
+def platform_supported(pkg, os, version):
+    """
+    Return whether the platform defined by os and version is marked as supported in the package
+    @param pkg The package to test for support
+    @param os The os name to test for support
+    @param version The os version to test for support
+    """
+    return _platform_supported(roslib.manifest.manifest_file(pkg), os, version)
+
+def current_platform_supported(pkg):
+    """
+    Return whether the current running platform is marked as supported in the package
+    @param pkg The package to test for support
+    """
+    os_detector = roslib.os_detect.OSDetect()
+    return platform_supported(pkg, os_detector.get_name(), os_detector.get_version())
 

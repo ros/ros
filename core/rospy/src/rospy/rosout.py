@@ -76,7 +76,8 @@ def _rosout(level, msg):
                 try:
                     _in_rosout = True
                     msg = str(msg)
-                    l = roslib.msg.Log(level=level, name=rospy.names.get_caller_id(), msg=msg, topics=get_topic_manager().get_topics())
+                    topics = get_topic_manager().get_topics() or []
+                    l = roslib.msg.Log(level=level, name=str(rospy.names.get_caller_id()), msg=str(msg), topics=topics)
                     l.header.stamp = Time.now()
                     _rosout_pub.publish(l)
                 finally:

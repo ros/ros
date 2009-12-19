@@ -44,38 +44,161 @@ namespace param
  *
  * \param key The key to be used in the parameter server's dictionary
  * \param v The value to be inserted.
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
 void set(const std::string& key, const XmlRpc::XmlRpcValue& v);
 /** \brief Set a string value on the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
  * \param s The value to be inserted.
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
 void set(const std::string& key, const std::string& s);
 /** \brief Set a string value on the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
  * \param s The value to be inserted.
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
 void set(const std::string& key, const char* s);
 /** \brief Set a double value on the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
  * \param d The value to be inserted.
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
 void set(const std::string& key, double d);
 /** \brief Set a integer value on the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
  * \param i The value to be inserted.
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
 void set(const std::string& key, int i);
 /** \brief Set a integer value on the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
  * \param b The value to be inserted.
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
 void set(const std::string& key, bool b);
+
+/** \brief Get a string value from the parameter server.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] s Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ * \throws InvalidNameException if the key is not a valid graph resource name
+ */
+bool get(const std::string& key, std::string& s);
+/** \brief Get a double value from the parameter server.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] d Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ * \throws InvalidNameException if the key is not a valid graph resource name
+ */
+bool get(const std::string& key, double& d);
+/** \brief Get a integer value from the parameter server.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] i Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ * \throws InvalidNameException if the key is not a valid graph resource name
+ */
+bool get(const std::string& key, int& i);
+/** \brief Get a boolean value from the parameter server.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] b Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ * \throws InvalidNameException if the key is not a valid graph resource name
+ */
+bool get(const std::string& key, bool& b);
+/** \brief Get an arbitrary XML/RPC value from the parameter server.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] v Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ * \throws InvalidNameException if the key is not a valid graph resource name
+ */
+bool get(const std::string& key, XmlRpc::XmlRpcValue& v);
+
+/** \brief Get a string value from the parameter server, with local caching
+ *
+ * This function will cache parameters locally, and subscribe for updates from
+ * the parameter server.  Once the parameter is retrieved for the first time
+ * no subsequent getCached() calls with the same key will query the master --
+ * they will instead look up in the local cache.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] s Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ * \throws InvalidNameException if the key is not a valid graph resource name
+ */
+bool getCached(const std::string& key, std::string& s);
+/** \brief Get a double value from the parameter server, with local caching
+ *
+ * This function will cache parameters locally, and subscribe for updates from
+ * the parameter server.  Once the parameter is retrieved for the first time
+ * no subsequent getCached() calls with the same key will query the master --
+ * they will instead look up in the local cache.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] d Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ * \throws InvalidNameException if the key is not a valid graph resource name
+ */
+bool getCached(const std::string& key, double& d);
+/** \brief Get a integer value from the parameter server, with local caching
+ *
+ * This function will cache parameters locally, and subscribe for updates from
+ * the parameter server.  Once the parameter is retrieved for the first time
+ * no subsequent getCached() calls with the same key will query the master --
+ * they will instead look up in the local cache.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] i Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ * \throws InvalidNameException if the key is not a valid graph resource name
+ */
+bool getCached(const std::string& key, int& i);
+/** \brief Get a boolean value from the parameter server, with local caching
+ *
+ * This function will cache parameters locally, and subscribe for updates from
+ * the parameter server.  Once the parameter is retrieved for the first time
+ * no subsequent getCached() calls with the same key will query the master --
+ * they will instead look up in the local cache.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] b Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ * \throws InvalidNameException if the key is not a valid graph resource name
+ */
+bool getCached(const std::string& key, bool& b);
+/** \brief Get an arbitrary XML/RPC value from the parameter server, with local caching
+ *
+ * This function will cache parameters locally, and subscribe for updates from
+ * the parameter server.  Once the parameter is retrieved for the first time
+ * no subsequent getCached() calls with the same key will query the master --
+ * they will instead look up in the local cache.
+ *
+ * \param key The key to be used in the parameter server's dictionary
+ * \param[out] v Storage for the retrieved value.
+ *
+ * \return true if the parameter value was retrieved, false otherwise
+ * \throws InvalidNameException if the key is not a valid graph resource name
+ */
+bool getCached(const std::string& key, XmlRpc::XmlRpcValue& v);
 
 /** \brief Get a string value from the parameter server.
  *
@@ -89,8 +212,10 @@ void set(const std::string& key, bool b);
  * the value.
  *
  * \return true if the parameter value was retrieved, false otherwise
+ * \deprecated in favor of getCached
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool get(const std::string& key, std::string& s, bool use_cache = false);
+ROSCPP_DEPRECATED bool get(const std::string& key, std::string& s, bool use_cache);
 /** \brief Get a double value from the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
@@ -103,8 +228,10 @@ bool get(const std::string& key, std::string& s, bool use_cache = false);
  * the value.
  *
  * \return true if the parameter value was retrieved, false otherwise
+ * \deprecated in favor of getCached
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool get(const std::string& key, double& d, bool use_cache = false);
+ROSCPP_DEPRECATED bool get(const std::string& key, double& d, bool use_cache);
 /** \brief Get a integer value from the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
@@ -117,8 +244,10 @@ bool get(const std::string& key, double& d, bool use_cache = false);
  * the value.
  *
  * \return true if the parameter value was retrieved, false otherwise
+ * \deprecated in favor of getCached
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool get(const std::string& key, int& i, bool use_cache = false);
+ROSCPP_DEPRECATED bool get(const std::string& key, int& i, bool use_cache);
 /** \brief Get a boolean value from the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
@@ -131,8 +260,10 @@ bool get(const std::string& key, int& i, bool use_cache = false);
  * the value.
  *
  * \return true if the parameter value was retrieved, false otherwise
+ * \deprecated in favor of getCached
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool get(const std::string& key, bool& b, bool use_cache = false);
+ROSCPP_DEPRECATED bool get(const std::string& key, bool& b, bool use_cache);
 /** \brief Get an arbitrary XML/RPC value from the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
@@ -145,14 +276,17 @@ bool get(const std::string& key, bool& b, bool use_cache = false);
  * the value.
  *
  * \return true if the parameter value was retrieved, false otherwise
+ * \deprecated in favor of getCached
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool get(const std::string& key, XmlRpc::XmlRpcValue& v, bool use_cache = false);
+ROSCPP_DEPRECATED bool get(const std::string& key, XmlRpc::XmlRpcValue& v, bool use_cache);
 
 /** \brief Check whether a parameter exists on the parameter server.
  *
  * \param key The key to check.
  *
  * \return true if the parameter exists, false otherwise
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
 bool has(const std::string& key);
 /** \brief Delete a parameter from the parameter server.
@@ -160,6 +294,7 @@ bool has(const std::string& key);
  * \param key The key to delete.
  *
  * \return true if the deletion succeeded, false otherwise.
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
 bool del(const std::string& key);
 
@@ -175,6 +310,7 @@ bool del(const std::string& key);
  * \param [out] result the found value (if any)
  *
  * \return true if the parameter was found, false otherwise.
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
 bool search(const std::string& ns, const std::string& key, std::string& result);
 
@@ -190,6 +326,7 @@ bool search(const std::string& ns, const std::string& key, std::string& result);
  * \param [out] result the found value (if any)
  *
  * \return true if the parameter was found, false otherwise.
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
 bool search(const std::string& key, std::string& result);
 
@@ -203,6 +340,7 @@ bool search(const std::string& key, std::string& result);
  * \param[out] param_val Storage for the retrieved value.
  * \param default_val Value to use if the server doesn't contain this
  * parameter.
+ * \throws InvalidNameException if the key is not a valid graph resource name
  */
 template<typename T>
 void param(const std::string& param_name, T& param_val, const T& default_val)

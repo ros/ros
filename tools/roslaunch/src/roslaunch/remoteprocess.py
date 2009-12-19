@@ -32,6 +32,10 @@
 #
 # Revision $Id$
 
+"""
+Process handler for launching ssh-based roslaunch child processes.
+"""
+
 import os
 import sys
 import socket
@@ -112,8 +116,10 @@ If you wish to configure roslaunch to automatically recognize unknown
 hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, user_str, port_str, address)
         
 
-## Process wrapper for launching and monitoring a child roslaunch process over SSH
 class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
+    """
+    Process wrapper for launching and monitoring a child roslaunch process over SSH
+    """
     def __init__(self, run_id, name, server_uri, env, machine):
         if machine.ros_root:
             cmd = os.path.join(machine.ros_root, 'bin', 'roslaunch')
@@ -183,6 +189,10 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             return (ssh, sshin, sshout, ssherr), "executed remotely"
 
     def start(self):
+        """
+        Start the remote process. This will create an SSH connection
+        to the remote host.
+        """
         self.started = False #won't set to True until we are finished
         self.ssh = self.sshin = self.sshout = self.ssherr = None        
         try:
@@ -202,17 +212,22 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
         finally:
             self.lock.release()
 
-    ## @param self
-    ## @return ServerProxy to remote client XMLRPC server
     def getapi(self):
+        """
+        @return: ServerProxy to remote client XMLRPC server
+        @rtype: L{ServerProxy}
+        """
         if self.uri:
             return xmlrpclib.ServerProxy(self.uri)
         else:
             return None
     
-    ## @return True if the process is alive. is_alive needs to be
-    ## called periodically as it drains the SSH buffer
     def is_alive(self):
+        """
+        @return: True if the process is alive. is_alive needs to be
+        called periodically as it drains the SSH buffer
+        @rtype: bool
+        """
         if self.started and not self.ssh:
             return False
         elif not self.started:
@@ -225,11 +240,18 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             if not len(data):
                 self.is_dead = True
                 return False
+            # #2012 il8n: ssh *should* be UTF-8, but often isn't
+            # (e.g. Japan)
+            data = data.decode('utf-8')
             printerrlog("remote[%s]: %s"%(self.name, data))
         except socket.timeout:
             pass
         except IOError:
             return False
+        except UnicodeDecodeError:
+            # #2012: soft fail, printing is not essential. This occurs
+            # with older machines that don't send utf-8 over ssh
+            pass
 
         s = self.sshout
         s.channel.settimeout(0)
@@ -240,6 +262,7 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             if not len(data):
                 self.is_dead = True
                 return False
+            # data = data.decode('utf-8')
             #print "DATA", data
         except socket.timeout:
             pass
@@ -247,7 +270,10 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             return False
         return True
 
-    def stop(self):
+    def stop(self, errors=[]):
+        """
+        Terminate this process, including the SSH connection.
+        """
         try:
             self.lock.acquire()            
             if not self.ssh:

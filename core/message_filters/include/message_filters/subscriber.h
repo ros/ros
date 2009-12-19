@@ -117,7 +117,7 @@ public:
     if (!topic.empty())
     {
       ros::SubscribeOptions ops;
-      ops.init<M>(topic, queue_size, boost::bind(&Subscriber<M>::cb, this, _1));
+      ops.template init<M>(topic, queue_size, boost::bind(&Subscriber<M>::cb, this, _1));
       ops.callback_queue = callback_queue;
       ops.transport_hints = transport_hints;
       sub_ = nh.subscribe(ops);

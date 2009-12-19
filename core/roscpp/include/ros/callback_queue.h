@@ -40,7 +40,9 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
+#include <boost/thread/tss.hpp>
 
 #include <list>
 
@@ -56,23 +58,43 @@ public:
   CallbackQueue(bool enabled = true);
   virtual ~CallbackQueue();
 
-  virtual void addCallback(const CallbackInterfacePtr& callback);
+  virtual void addCallback(const CallbackInterfacePtr& callback, uint64_t removal_id = 0);
+  virtual void removeByID(uint64_t removal_id);
 
   /**
    * \brief Pop a single callback off the front of the queue and invoke it.  If the callback was not ready to be called,
    * pushes it back onto the queue.
+   */
+  void callOne()
+  {
+    callOne(ros::WallDuration());
+  }
+
+  /**
+   * \brief Pop a single callback off the front of the queue and invoke it.  If the callback was not ready to be called,
+   * pushes it back onto the queue.  This version includes a timeout which lets you specify the amount of time to wait for
+   * a callback to be available before returning.
    *
    * \param timeout The amount of time to wait for a callback to be available.  If there is already a callback available,
    * this parameter does nothing.
    */
-  void callOne(ros::WallDuration timeout = ros::WallDuration(0.1f));
+  void callOne(ros::WallDuration timeout);
+
   /**
    * \brief Invoke all callbacks currently in the queue.  If a callback was not ready to be called, pushes it back onto the queue.
+   */
+  void callAvailable()
+  {
+    callAvailable(ros::WallDuration());
+  }
+  /**
+   * \brief Invoke all callbacks currently in the queue.  If a callback was not ready to be called, pushes it back onto the queue.  This version
+   * includes a timeout which lets you specify the amount of time to wait for a callback to be available before returning.
    *
    * \param timeout The amount of time to wait for at least one callback to be available.  If there is already at least one callback available,
    * this parameter does nothing.
    */
-  void callAvailable(ros::WallDuration timeout = ros::WallDuration(0.1f));
+  void callAvailable(ros::WallDuration timeout);
 
   /**
    * \brief returns whether or not the queue is empty
@@ -89,10 +111,33 @@ public:
   bool isEnabled();
 
 protected:
-  typedef std::list<CallbackInterfacePtr> L_Callback;
-  L_Callback callbacks_;
+  void setupTLS();
+
+  struct CallbackInfo
+  {
+    CallbackInfo()
+    : removal_id(0)
+    , marked_for_removal(false)
+    {}
+    CallbackInterfacePtr callback;
+    uint64_t removal_id;
+    bool marked_for_removal;
+  };
+  typedef std::list<CallbackInfo> L_CallbackInfo;
+  L_CallbackInfo callbacks_;
   boost::mutex mutex_;
   boost::condition_variable condition_;
+  boost::shared_mutex calling_rw_mutex_;
+
+  struct TLS
+  {
+    TLS()
+    : calling_in_this_thread(false)
+    {}
+    bool calling_in_this_thread;
+    L_CallbackInfo callbacks;
+  };
+  boost::thread_specific_ptr<TLS> tls_;
 
   bool enabled_;
 };

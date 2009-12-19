@@ -29,6 +29,15 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+"""
+Implements rosmsg/rossrv command-line tools.
+
+The code API of the rosmsg module is unstable. Much of the
+functionality of rosmsg/rossrv is implemented using the roslib.msgs
+and roslib.srvs libraries and can be found there instead.
+"""
+
 import os
 import platform
 import sys
@@ -178,38 +187,58 @@ def rosmsg_users(mode, type_):
         if f not in correct_dependencies:
             print f
 
-## Get .srv file for \a type_ as text
-## @param type_ str: service type
-## @param raw bool: if True, include comments and whitespace (default False)
-## @return str: text of .srv file
 def get_srv_text(type_, raw=False):
+    """
+    Get .srv file for type_ as text
+    @param type_: service type
+    @type  type_: str
+    @param raw: if True, include comments and whitespace (default False)
+    @type  raw: bool
+    @return: text of .srv file
+    @rtype: str
+    @raise ROSMsgException: if type_ is unknown
+    """
     package, base_type = roslib.names.package_resource_name(type_)
     roslib.msgs.load_package_dependencies(package, load_recursive=True)
     roslib.msgs.load_package(package)
     f = roslib.srvs.srv_file(package, base_type)
+    if not os.path.isfile(f):
+        raise ROSMsgException("Unknown srv type: %s"%type_)
     name, spec = roslib.srvs.load_from_file(f)
     if raw:
         return spec.text
     else:
         return str(spec.request)+'---\n'+str(spec.response)
 
-## Get .msg file for \a type_ as text
-## @param type_ str: message type
-## @param raw bool: if True, include comments and whitespace (default False)
-## @return str: text of .msg file
 def get_msg_text(type_, raw=False):
+    """
+    Get .msg file for \a type_ as text
+    @param type_: message type
+    @type  type_: str
+    @param raw: if True, include comments and whitespace (default False)
+    @type  raw: bool
+    @return: text of .msg file
+    @rtype: str
+    @raise ROSMsgException: if type_ is unknown
+    """
     package, base_type = roslib.names.package_resource_name(type_)
     roslib.msgs.load_package_dependencies(package, load_recursive=True)
     roslib.msgs.load_package(package)
-    spec = roslib.msgs.get_registered(type_)
+    try:
+        spec = roslib.msgs.get_registered(type_)
+    except KeyError:
+        raise ROSMsgException("Unknown msg type: %s"%type_)        
     if raw:
         return spec.text
     else:
         return str(spec)
     
-## Prints contents of msg/srv file
-## @param mode str: roslib.srvs.EXT or roslib.msgs.EXT
 def rosmsg_debug(mode, type_, raw=False):
+    """
+    Prints contents of msg/srv file
+    @param mode: roslib.srvs.EXT or roslib.msgs.EXT
+    @type  mode: str
+    """
     if mode == roslib.srvs.EXT:
         print get_srv_text(type_, raw=raw)
     elif mode == roslib.msgs.EXT:
@@ -217,11 +246,16 @@ def rosmsg_debug(mode, type_, raw=False):
     else:
         raise ROSMsgException("invalid mode: %s"%mode)
     
-## Lists msg/srvs contained in \a package
-## @param mode str: roslib.srvs.EXT or roslib.msgs.EXT
-## @param package str: package name
-## @return [str]: list of msgs/srv in \a package
 def rosmsg_list_package(mode, package):
+    """
+    Lists msg/srvs contained in package
+    @param mode: roslib.srvs.EXT or roslib.msgs.EXT
+    @type  mode: str
+    @param package: package name
+    @type  package: str
+    @return: list of msgs/srv in \a package
+    @rtype: [str]
+    """
     if mode == roslib.msgs.EXT:
         return [roslib.names.resource_name(package, t) for t in roslib.msgs.list_msg_types(package, False)]
     elif mode == roslib.srvs.EXT:
@@ -229,9 +263,12 @@ def rosmsg_list_package(mode, package):
     else:
         raise ValueError('mode')
 
-## iterator for packages that contain messages/services
-## @param mode str: roslib.msgs.EXT or roslib.srvs.EXT
 def iterate_packages(mode):
+    """
+    Iterator for packages that contain messages/services
+    @param mode: roslib.msgs.EXT or roslib.srvs.EXT
+    @type  mode: str
+    """
     if mode == roslib.msgs.EXT:
         subdir = roslib.packages.MSG_DIR
     elif mode == roslib.srvs.EXT:
@@ -273,16 +310,24 @@ def _stdin_arg(parser, full):
         return options, arg
     else:
         if len(args) > 1:
-            parser.error("you may only specify one input package or %s"%full)
+            parser.error("you may only specify one %s"%full)
         return options, args[0]
     
 def rosmsg_cmd_show(mode, full):
-    parser = OptionParser(usage="usage: ros%s show [options] <%s>"%(mode[1:], full))
+    cmd = "ros%s"%(mode[1:])
+    parser = OptionParser(usage="usage: %s show [options] <%s>"%(cmd, full))
     parser.add_option("-r", "--raw",
                       dest="raw", default=False,action="store_true",
                       help="show raw message text, including comments")
     options, arg = _stdin_arg(parser, full)
+    if arg.endswith(mode):
+        arg = arg[:-(len(mode))]
 
+    # try to catch the user specifying code-style types and error
+    if '::' in arg:
+        parser.error(cmd+" does not understand C++-style namespaces (i.e. '::').\nPlease refer to msg/srv types as 'package_name/Type'.")
+    elif '.' in arg:
+        parser.error("invalid message type '%s'.\nPlease refer to msg/srv types as 'package_name/Type'.")
     if '/' in arg: #package specified
         rosmsg_debug(mode, arg, options.raw)
     else:
@@ -361,9 +406,13 @@ def rosmsg_cmd_packages(mode, full):
     else:
         print '\n'.join([p for p in iterate_packages(mode)])
 
-## @param cmd str: command name
-## @return str: usage text for \a cmd
 def fullusage(cmd):
+    """
+    @param cmd: command name
+    @type  cmd: str
+    @return: usage text for \a cmd
+    @rtype: str
+    """
     return """Commands:
 \t%(cmd)s show\tShow message description
 \t%(cmd)s users\tFind files that use message
@@ -374,10 +423,15 @@ def fullusage(cmd):
 Type %(cmd)s <command> -h for more detailed usage
 """%locals()
     
-## rosmsg can interact with either ros messages or ros services. the \a mode
-## param indicates which
-## @param mode str: roslib.msgs.EXT or roslib.srvs.EXT
 def rosmsgmain(mode=roslib.msgs.EXT):
+    """
+    Main entry point for command-line tools (rosmsg/rossrv).
+    
+    rosmsg can interact with either ros messages or ros services. The mode
+    param indicates which
+    @param mode: roslib.msgs.EXT or roslib.srvs.EXT
+    @type  mode: str
+    """
     if len(sys.argv) == 1:
         print fullusage('ros'+mode[1:])
         sys.exit(0)        
@@ -402,7 +456,7 @@ def rosmsgmain(mode=roslib.msgs.EXT):
             print fullusage('ros'+mode[1:])
             sys.exit(0)
     except KeyError, e:
-        print >> sys.stderr, "Invalid message: %s"%e
+        print >> sys.stderr, "Unknown message type: %s"%e
         sys.exit(os.EX_USAGE)
     except roslib.packages.InvalidROSPkgException, e:
         print >> sys.stderr, "Invalid package: '%s'"%e

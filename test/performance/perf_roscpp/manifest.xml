@@ -1,0 +1,15 @@
+<package>
+  <description brief="perf_roscpp">
+
+     This is a set of performance tests for roscpp, mainly to provide numbers to optimize against.
+
+  </description>
+  <author>Josh Faust (jfaust@willowgarage.com)</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/perf_roscpp</url>
+  <depend package="roscpp"/>
+
+</package>
+
+

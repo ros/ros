@@ -61,21 +61,6 @@ PRODUCT = 'ros'
 ## caller ID for master calls where caller ID is not vital
 _GLOBAL_CALLER_ID = '/script'
 
-
-import warnings
-def deprecated(func):
-    """This is a decorator which can be used to mark functions
-    as deprecated. It will result in a warning being emmitted
-    when the function is used."""
-    def newFunc(*args, **kwargs):
-        warnings.warn("Call to deprecated function %s." % func.__name__,
-                      category=DeprecationWarning, stacklevel=2)
-        return func(*args, **kwargs)
-    newFunc.__name__ = func.__name__
-    newFunc.__doc__ = func.__doc__
-    newFunc.__dict__.update(func.__dict__)
-    return newFunc
-
 def myargv(argv=None):
     """
     Remove ROS remapping arguments from sys.argv arguments.
@@ -108,125 +93,6 @@ def script_resolve_name(script_name, name):
         return ns_join(roslib.names.make_caller_id(script_name), name[1:])
     return roslib.names.get_ros_namespace() + name
 
-@deprecated
-def rospackexec(args):
-    """
-    @return: result of executing rospack command (via subprocess). string will be strip()ed.
-    @rtype: str
-    @raise roslib.exceptions.ROSLibException: if rospack command fails
-    """
-
-    val = (subprocess.Popen(['rospack'] + args, stdout=subprocess.PIPE).communicate()[0] or '').strip()
-    if val.startswith('rospack:'): #rospack error message
-        raise roslib.exceptions.ROSLibException(val)
-    return val
-
-@deprecated
-def rospack_depends_on_1(pkg):
-    """
-    @param pkg: package name
-    @type  pkg: str
-    @return: A list of the names of the packages which depend directly on pkg
-    @rtype: list
-    """
-    return rospackexec(['depends-on1', pkg]).split()
-
-@deprecated
-def rospack_depends_on(pkg):
-    """
-    @param pkg: package name
-    @type  pkg: str
-    @return: A list of the names of the packages which depend on pkg
-    @rtype: list
-    """
-    return rospackexec(['depends-on', pkg]).split()
-
-@deprecated
-def rospack_depends_1(pkg):
-    """
-    @param pkg: package name
-    @type  pkg: str
-    @return: A list of the names of the packages which pkg directly depends on
-    @rtype: list    
-    """
-    return rospackexec(['deps1', pkg]).split()
-
-@deprecated
-def rospack_depends(pkg):
-    """
-    @param pkg: package name
-    @type  pkg: str
-    @return: A list of the names of the packages which pkg depends on
-    @rtype: list    
-    """
-    return rospackexec(['deps', pkg]).split()
-
-@deprecated
-def rospack_plugins(pkg):
-    """
-    @param pkg: package name
-    @type  pkg: str
-    @return: A list of the names of the packages which provide a plugin for pkg
-    @rtype: list    
-    """
-    val = rospackexec(['plugins', '--attrib=plugin', pkg])
-    if val:
-      return [tuple(x.split(' ')) for x in val.split('\n')]
-    else:
-      return []
-
-@deprecated
-def rosstackexec(args):
-    """
-    @return: result of executing rosstack command (via subprocess). string will be strip()ed.
-    @rtype:  str
-    @raise roslib.exceptions.ROSLibException: if rosstack command fails
-    """
-    val = (subprocess.Popen(['rosstack'] + args, stdout=subprocess.PIPE).communicate()[0] or '').strip()
-    if val.startswith('rosstack:'): #rospack error message
-        raise Exception(val)
-    return val
-
-@deprecated
-def rosstack_depends_on(s):
-    """
-    @param s: stack name
-    @type  s: str
-    @return: A list of the names of the stacks which depend on s
-    @rtype: list
-    """
-    return rosstackexec(['depends-on', s]).split()
-
-@deprecated
-def rosstack_depends_on_1(s):
-    """
-    @param s: stack name
-    @type  s: str
-    @return: A list of the names of the stacks which depend directly on s
-    @rtype: list
-    """
-    return rosstackexec(['depends-on1', s]).split()
-
-@deprecated
-def rosstack_depends(s):
-    """
-    @param s: stack name
-    @type  s: str
-    @return: A list of the names of the stacks which s depends on 
-    @rtype: list
-    """
-    return rosstackexec(['depends', s]).split()
-
-@deprecated
-def rosstack_depends_1(s):
-    """
-    @param s: stack name
-    @type  s: str
-    @return: A list of the names of the stacks which s depends on directly
-    @rtype: list
-    """
-    return rosstackexec(['depends1', s]).split()
-
 def get_master():
     """
     @return: XML-RPC proxy to ROS master
@@ -248,12 +114,6 @@ def get_param_server():
     @rtype: xmlrpclib.ServerProxy
     """
     return get_master()
-
-## @deprecated
-get_message_class = roslib.message.get_message_class
-
-## @deprecated
-get_service_class = roslib.message.get_service_class
 
 def is_subscriber(topic, subscriber_id):
     """

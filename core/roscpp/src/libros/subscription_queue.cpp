@@ -37,17 +37,17 @@ SubscriptionQueue::SubscriptionQueue(const std::string& topic, int32_t queue_siz
 , size_(queue_size)
 , full_(false)
 , id_counter_(0)
-, queue_counter_(0)
+, queue_size_(0)
 {}
 
 uint64_t SubscriptionQueue::push(const SubscriptionMessageHelperPtr& helper, const MessageDeserializerPtr& deserializer, bool has_tracked_object, const VoidWPtr& tracked_object)
 {
   boost::mutex::scoped_lock lock(queue_mutex_);
 
-  if(full())
+  if(fullNoLock())
   {
-    queue_.pop();
-    ++queue_counter_;
+    queue_.pop_front();
+    --queue_size_;
 
     if (!full_)
     {
@@ -61,15 +61,42 @@ uint64_t SubscriptionQueue::push(const SubscriptionMessageHelperPtr& helper, con
     full_ = false;
   }
 
+  uint64_t count = id_counter_++;
+
   Item i;
   i.helper = helper;
   i.deserializer = deserializer;
   i.has_tracked_object = has_tracked_object;
   i.tracked_object = tracked_object;
-  queue_.push(i);
+  i.id = count;
+  queue_.push_back(i);
+  ++queue_size_;
 
-  uint64_t count = id_counter_++;
   return count;
+}
+
+void SubscriptionQueue::remove(uint64_t id)
+{
+  boost::mutex::scoped_lock lock(queue_mutex_);
+  if (!queue_.empty())
+  {
+    if (id < queue_.front().id)
+    {
+      return;
+    }
+  }
+
+  L_Item::iterator it = queue_.begin();
+  L_Item::iterator end = queue_.end();
+  for (; it != end; ++it)
+  {
+    const Item& i = *it;
+    if (i.id == id)
+    {
+      queue_.erase(it);
+      return;
+    }
+  }
 }
 
 void SubscriptionQueue::clear()
@@ -77,22 +104,15 @@ void SubscriptionQueue::clear()
   boost::recursive_mutex::scoped_lock cb_lock(callback_mutex_);
   boost::mutex::scoped_lock queue_lock(queue_mutex_);
 
-  while (!queue_.empty())
-  {
-    queue_.pop();
-    ++queue_counter_;
-  }
-
-  ROS_ASSERT(queue_counter_ == id_counter_);
+  queue_.clear();
+  queue_size_ = 0;
 }
 
 CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
 {
-  if (id > queue_counter_)
-  {
-    return CallbackInterface::TryAgain;
-  }
-
+  // The callback may result in our own destruction.  Therefore, we may need to keep a reference to ourselves
+  // that outlasts the scoped_try_lock
+  boost::shared_ptr<SubscriptionQueue> self;
   boost::recursive_mutex::scoped_try_lock lock(callback_mutex_);
   if (!lock.owns_lock())
   {
@@ -105,12 +125,19 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
   {
     boost::mutex::scoped_lock lock(queue_mutex_);
 
-    if (id < queue_counter_)
+    if (queue_.empty())
     {
       return CallbackInterface::Invalid;
     }
 
-    if (id > queue_counter_)
+    i = queue_.front();
+
+    if (id < i.id)
+    {
+      return CallbackInterface::Invalid;
+    }
+
+    if (id > i.id)
     {
       return CallbackInterface::TryAgain;
     }
@@ -119,8 +146,6 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
     {
       return CallbackInterface::Invalid;
     }
-
-    i = queue_.front();
 
     if (i.has_tracked_object)
     {
@@ -132,8 +157,8 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
       }
     }
 
-    queue_.pop();
-    ++queue_counter_;
+    queue_.pop_front();
+    --queue_size_;
   }
 
   MessagePtr msg = i.deserializer->deserialize();
@@ -141,6 +166,13 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
   // msg can be null here if deserialization failed
   if (msg)
   {
+    try
+    {
+      self = shared_from_this();
+    }
+    catch (boost::bad_weak_ptr&) // For the tests, where we don't create a shared_ptr
+    {}
+
     i.helper->call(msg);
   }
 
@@ -149,12 +181,24 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
 
 bool SubscriptionQueue::ready(uint64_t id)
 {
-  return id <= queue_counter_;
+  boost::mutex::scoped_lock lock(queue_mutex_);
+  if (queue_.empty())
+  {
+    return true;
+  }
+
+  return id <= queue_.front().id;
 }
 
 bool SubscriptionQueue::full()
 {
-  return (size_ > 0) && (queue_.size() >= (uint32_t)size_);
+  boost::mutex::scoped_lock lock(queue_mutex_);
+  return fullNoLock();
+}
+
+bool SubscriptionQueue::fullNoLock()
+{
+  return (size_ > 0) && (queue_size_ >= (uint32_t)size_);
 }
 
 }

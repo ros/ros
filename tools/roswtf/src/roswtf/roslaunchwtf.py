@@ -55,6 +55,10 @@ def bin_roslaunch_check(ctx):
     if not is_executable(roslaunch):
         return "%s is lacking executable permissions"%roslaunch
 
+# this is very similar to roslib.packages.find_node. However, we
+# cannot use that implementation as it returns the first found
+# path. For the sake of this test, we have to find all potential
+# candidates.
 def _find_node(pkg, node_type):
     try:
         dir = roslib.packages.get_pkg_dir(pkg)
@@ -90,20 +94,6 @@ def roslaunch_missing_node_check(ctx):
     
 ## check if two nodes with same name in package
 def roslaunch_duplicate_node_check(ctx):
-    nodes = []
-    for filename, rldeps in ctx.launch_file_deps.iteritems():
-        nodes.extend(rldeps.nodes)
-    warnings = []
-    for pkg, node_type in nodes:
-        paths = _find_node(pkg, node_type)
-        if len(paths) > 1:
-            warnings.append("node [%s] in package [%s]\n"%(node_type, pkg))
-    return warnings
-
-def roslaunch_machine_credentials_check(ctx):
-    """
-    Do basic SSH checks for machine, this does not do the full NxN test
-    """
     nodes = []
     for filename, rldeps in ctx.launch_file_deps.iteritems():
         nodes.extend(rldeps.nodes)

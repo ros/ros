@@ -40,8 +40,70 @@ import roslib.rosenv
 import roslib.packages
 import rostest
 
+
 class RoslibPackagesTest(unittest.TestCase):
   
+  def test_list_pkgs(self):
+    # should be equal to rospack list
+    import roslib.rospack
+    import roslib.packages    
+    pkgs = [s.split()[0] for s in roslib.rospack.rospackexec(['list']).split('\n')]
+    retval = roslib.packages.list_pkgs()
+    self.assertEquals(set(pkgs), set(retval), set(pkgs) ^ set(retval))
+    
+    # test twice for caching
+    retval = roslib.packages.list_pkgs()
+    self.assertEquals(set(pkgs), set(retval), set(pkgs) ^ set(retval))
+
+    # now manipulate the environment to test ordering
+    d = roslib.packages.get_pkg_dir('test_roslib')
+    d = os.path.join(d, 'test', 'package_tests')
+    
+    # - p1/p2/p3
+    paths = [os.path.join(d, p) for p in ['p1', 'p2', 'p3']]
+    cache = {}
+    packages = roslib.packages.list_pkgs(pkg_dirs=paths, cache=cache)
+    self.assert_('foo' in packages)
+    self.assert_('bar' in packages)
+
+    foo_p = os.path.join(d, 'p1', 'foo')
+    bar_p = os.path.join(d, 'p1', 'bar')
+    self.assertEquals(foo_p, cache['foo'][0])
+    self.assertEquals(bar_p, cache['bar'][0])
+
+    # - p2/p3/p1
+    paths = [os.path.join(d, p) for p in ['p2', 'p3', 'p1']]
+    cache = {}
+    packages = roslib.packages.list_pkgs(pkg_dirs=paths, cache=cache)
+    self.assert_('foo' in packages)
+    self.assert_('bar' in packages)
+
+    foo_p = os.path.join(d, 'p2', 'foo')
+    bar_p = os.path.join(d, 'p1', 'bar')
+    self.assertEquals(foo_p, cache['foo'][0])
+    self.assertEquals(bar_p, cache['bar'][0])
+    
+  def test_get_pkg_dir(self):
+    import roslib.packages
+    import roslib.rospack
+    path = roslib.rospack.rospackexec(['find', 'test_roslib'])
+    self.assertEquals(path, roslib.packages.get_pkg_dir('test_roslib'))
+    try:
+      self.assertEquals(path, roslib.packages.get_pkg_dir('fake_test_roslib'))      
+      self.fail("should have raised")
+    except roslib.packages.InvalidROSPkgException: pass
+
+  def test_get_dir_pkg(self):
+    import roslib.packages
+    import roslib.rospack
+    path = os.path.normpath(roslib.rospack.rospackexec(['find', 'test_roslib']))
+
+    self.assertEquals((path, 'test_roslib'), roslib.packages.get_dir_pkg(path))
+    self.assertEquals((path, 'test_roslib'), roslib.packages.get_dir_pkg(os.path.join(path, 'test')))
+
+    # must fail on parent of test_roslib
+    self.assertEquals((None, None), roslib.packages.get_dir_pkg(os.path.dirname(path)))
+    
   def test_get_package_paths(self):
     from roslib.packages import get_package_paths
 
@@ -73,6 +135,20 @@ class RoslibPackagesTest(unittest.TestCase):
         paths = get_package_paths(ros_root_required, env)
         self.assertEquals(v + [rr], paths)
 
+
+  def test__platform_supported(self):
+    self.assertTrue(roslib.packages._platform_supported(os.path.join(roslib.packages.get_pkg_dir("test_roslib"), "test", "platform_supported.manifest.xml"), "test_os", "test_version"))
+    self.assertFalse(roslib.packages._platform_supported(os.path.join(roslib.packages.get_pkg_dir("test_roslib"), "test", "platform_supported.manifest.xml"), "test_os", "not_test_version"))
+    self.assertFalse(roslib.packages._platform_supported(os.path.join(roslib.packages.get_pkg_dir("test_roslib"), "test", "platform_supported.manifest.xml"), "not_test_os", "test_version"))
+    self.assertFalse(roslib.packages._platform_supported(os.path.join(roslib.packages.get_pkg_dir("test_roslib"), "test", "platform_supported.manifest.xml"), "not_test_os", "not_test_version"))
+
+  def test_platform_supported_tripwire(self):
+    self.assertFalse(roslib.packages.platform_supported("test_roslib", "nonextant_os", "noextant_version"))
+
+  def test_current_platform_supported_tripwire(self):
+    roslib.packages.current_platform_supported("test_roslib")
+
+    
     
 if __name__ == '__main__':
   rostest.unitrun('test_roslib', 'test_packages', RoslibPackagesTest, coverage_packages=['roslib.packages'])

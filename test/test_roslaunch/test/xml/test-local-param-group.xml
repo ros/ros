@@ -16,16 +16,5 @@
   <param name="~param1" value="val1" />
   <node pkg="pkg" type="type1" name="node1" />
 
-  <!-- test with unnamed nodes -->
-  <group ns="group2">
-    <node pkg="pkg" type="g2type0" />
-    <param name="~g2param1" value="val1" />
-    <node pkg="pkg" type="g2type1" />
-    <param name="~g2param2" value="val2" />
-    <node pkg="pkg" type="g2type2" />
-  </group>
-  
-  <!-- unnamed, global context -->
-  <node pkg="pkg" type="type2" />
   
 </launch>

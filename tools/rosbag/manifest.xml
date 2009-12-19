@@ -1,0 +1,19 @@
+<package>
+  <description brief="rosbag">
+
+    The next generation interface to rosrecord.  For now this is
+    simply a wrapper defining the API and calling out to the old
+    tools.
+
+  </description>
+  <author>Jeremy Leibs</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rosbag</url>
+
+  <depend package="rosrecord"/>
+  <depend package="rosbagmigration"/>
+
+</package>
+
+

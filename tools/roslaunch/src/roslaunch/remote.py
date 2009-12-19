@@ -32,6 +32,10 @@
 #
 # Revision $Id$
 
+"""
+Integrates roslaunch remote process launching capabilities.
+"""
+
 import logging
 import socket
 import sys
@@ -51,14 +55,23 @@ from roslib.msg import Log
 
 _CHILD_REGISTER_TIMEOUT = 10.0 #seconds
 
-## Manages the running of remote roslaunch children
-class ROSRemoteRunner(roslaunch.launch.ROSRemoteRunnerIF):
     
-    ## @param run_id str: roslaunch run_id of this runner
-    ## @param config ROSConfig launch configuration
-    ## @param pm process monitor
-    ## @param server ROSLaunchParentNode
+class ROSRemoteRunner(roslaunch.launch.ROSRemoteRunnerIF):
+    """
+    Manages the running of remote roslaunch children
+    """
+    
     def __init__(self, run_id, rosconfig, pm, server):
+        """
+        @param run_id: roslaunch run_id of this runner
+        @type  run_id: str
+        @param config: launch configuration
+        @type  config: L{ROSConfig}
+        @param pm process monitor
+        @type  pm: L{ProcessMonitor}
+        @param server: roslaunch parent server
+        @type  server: L{ROSLaunchParentNode}
+        """
         self.run_id = run_id
         self.rosconfig = rosconfig
         self.server = server
@@ -69,10 +82,13 @@ class ROSRemoteRunner(roslaunch.launch.ROSRemoteRunnerIF):
         self.machine_list = []
         self.remote_processes = []
 
-    ## Listen to events about remote processes dying. Not
-    ## threadsafe. Must be called before processes started.
-    ## @param l ProcessListener
     def add_process_listener(self, l):
+        """
+        Listen to events about remote processes dying. Not
+        threadsafe. Must be called before processes started.
+        @param l: ProcessListener
+        @type  l: L{ProcessListener}
+        """
         self.listeners.append(l)
 
     def _start_child(self, server_node_uri, machine, counter):
@@ -92,9 +108,10 @@ class ROSRemoteRunner(roslaunch.launch.ROSRemoteRunnerIF):
         self.server.add_child(name, p)
         return p
 
-    ## start the child roslaunch processes
-    ## @param self
     def start_children(self):
+        """
+        Start the child roslaunch processes
+        """
         server_node_uri = self.server.uri
         if not server_node_uri:
             raise RLException("server URI is not initialized")
@@ -151,18 +168,22 @@ in your launch"""%'\n'.join([" * %s (timeout %ss)"%(m.name, m.timeout) for m in 
         self.remote_processes = procs
 
 
-    ## Utility routine for logging/recording nodes that failed
-    ## @param self
-    ## @param nodes [Node]: list of nodes that are assumed to have failed
-    ## @param failed [str]: list of names of nodes that have failed to extend
     def _assume_failed(self, nodes, failed):
+        """
+        Utility routine for logging/recording nodes that failed
+        @param nodes: list of nodes that are assumed to have failed
+        @type  nodes: [L{Node}]
+        @param failed: list of names of nodes that have failed to extend
+        @type  failed: [str]
+        """
         str_nodes = ["%s/%s"%(n.package, n.type) for n in nodes]
         failed.extend(str_nodes)
         printerrlog("Launch of the following nodes most likely failed: %s"%', '.join(str_nodes))
         
-    ## Contact each child to launch remote nodes
-    ## @param self
     def launch_remote_nodes(self):
+        """
+        Contact each child to launch remote nodes
+        """
         succeeded = []
         failed = []
         

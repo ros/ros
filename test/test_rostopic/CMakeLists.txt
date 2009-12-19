@@ -12,9 +12,9 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 rosbuild_init()
 
 #uncomment if you have defined messages
-#genmsg()
+#rosbuild_genmsg()
 #uncomment if you have defined services
-#gensrv()
+#rosbuild_gensrv()
 
 rosbuild_add_pyunit(test/test_rostopic_command_line_offline.py)
 rosbuild_add_rostest(test/rostopic.test)

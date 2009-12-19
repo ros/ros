@@ -63,6 +63,78 @@ class FakeSocket(object):
 
 # test service implementation
 class TestRospyTcprosService(unittest.TestCase):
+
+    def test_convert_return_to_response(self):
+        import rospy
+        from rospy.tcpros_service import convert_return_to_response
+        from test_ros.srv import AddTwoIntsResponse
+
+        cls = AddTwoIntsResponse
+        v = cls(3)
+        
+        # test various ways that a user could reasonable return a
+        # value for a single-arg message. This is actually our hardest
+        # case.
+        self.assertEquals(v, convert_return_to_response(v, cls))
+        self.assertEquals(v, convert_return_to_response(3, cls))
+        self.assertEquals(v, convert_return_to_response((3), cls))        
+        self.assertEquals(v, convert_return_to_response([3], cls))        
+        self.assertEquals(v, convert_return_to_response({'sum':3}, cls))
+        for bad in [[1, 2, 3], {'fake': 1}]:
+            try:
+                convert_return_to_response(bad, cls)
+                self.fail("should have raised: %s"%str(bad))
+            except rospy.ServiceException:
+                pass
+
+        # test multi-arg services
+        from test_rospy.srv import MultipleAddTwoIntsResponse
+        cls = MultipleAddTwoIntsResponse
+        v = cls(1, 2)
+        self.assertEquals(v, convert_return_to_response(v, cls))
+        self.assertEquals(v, convert_return_to_response((1, 2), cls))        
+        self.assertEquals(v, convert_return_to_response([1, 2], cls))        
+        self.assertEquals(v, convert_return_to_response({'ab':1, 'cd': 2}, cls))
+        for bad in [1, AddTwoIntsResponse(), [1, 2, 3], {'fake': 1}]:
+            try:
+                convert_return_to_response(bad, cls)
+                self.fail("should have raised: %s"%str(bad))
+            except rospy.ServiceException:
+                pass
+
+        # test response with single, array field
+        from test_rospy.srv import ListReturnResponse
+        cls = ListReturnResponse
+        v = cls([1, 2, 3])
+        self.assertEquals(v, convert_return_to_response(v, cls))
+        self.assertEquals(v, convert_return_to_response(((1, 2, 3),), cls))        
+        self.assertEquals(v, convert_return_to_response(([1, 2, 3],), cls))
+        self.assertEquals(v, convert_return_to_response([[1, 2, 3]], cls))        
+        self.assertEquals(v, convert_return_to_response({'abcd':[1,2,3]}, cls))
+        for bad in [[1, 2, 3], {'fake': 1}]:
+            try:
+                convert_return_to_response(bad, cls)
+                self.fail("should have raised: %s"%str(bad))
+            except rospy.ServiceException:
+                pass
+
+        # test with empty response
+        from test_rospy.srv import EmptySrvResponse
+        cls = EmptySrvResponse
+        v = cls()
+        # - only valid return values are None and a response instance
+        self.assertEquals(v, convert_return_to_response(v, cls))
+        self.assertEquals(v, convert_return_to_response(None, cls))
+        
+        # #2185: currently empty does not do any checking whatsoever,
+        # disabling this test as it is not convert()s fault
+        if 0:
+            for bad in [1, AddTwoIntsResponse(), [1, 2, 3], {'fake': 1}]:
+                try:
+                    convert_return_to_response(bad, cls)
+                    self.fail("should have raised: %s"%str(bad))
+                except rospy.ServiceException:
+                    pass
         
     def test_service_connection_handler(self):
         import test_rospy.srv

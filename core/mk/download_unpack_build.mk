@@ -18,18 +18,28 @@
 # your own 'all' target before including this file.  Otherwise, the first
 # target declared here will become the default.
 
+# This target is pretty much vestigial, and is only here to support the
+# download target.  The intended use it to depend on the unpacked file,
+# below, which repeats the download and check logic.
 $(TARBALL):
-	-mkdir build
-	wget $(TARBALL_URL) -O $(TARBALL)
+	-mkdir -p build
+ifneq ($(strip $(MD5SUM_FILE)),)
+	`rospack find rosbuild`/bin/download_checkmd5.py $(TARBALL_URL) $(TARBALL) `awk {'print $$1'} $(MD5SUM_FILE)`
+else
+	`rospack find rosbuild`/bin/download_checkmd5.py $(TARBALL_URL) $(TARBALL)
+endif
 	touch -c $(TARBALL)
 
 download: $(TARBALL)
 
-$(SOURCE_DIR)/unpacked: $(TARBALL) $(TARBALL_PATCH)
+$(SOURCE_DIR)/unpacked: $(TARBALL_PATCH)
+	-mkdir -p build
 ifneq ($(strip $(MD5SUM_FILE)),)
-	mkdir -p build
-	cd build; `rospack find mk`/rosmd5check ../$(MD5SUM_FILE)
+	`rospack find rosbuild`/bin/download_checkmd5.py $(TARBALL_URL) $(TARBALL) `awk {'print $$1'} $(MD5SUM_FILE)`
+else
+	`rospack find rosbuild`/bin/download_checkmd5.py $(TARBALL_URL) $(TARBALL)
 endif
+	touch -c $(TARBALL)
 	rm -rf $(SOURCE_DIR) $(INITIAL_DIR)
 ifneq ($(strip $(UNPACK_CMD)),)
 	cd build; $(UNPACK_CMD) ../$(TARBALL)

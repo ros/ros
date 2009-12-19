@@ -310,6 +310,7 @@ void TimerManager<T, D, E>::remove(int32_t handle)
       {
         boost::recursive_mutex::scoped_lock lock(info->callback_mutex);
         info->removed = true;
+        info->callback_queue->removeByID((uint64_t)info.get());
       }
       timers_.erase(it);
       break;
@@ -365,7 +366,7 @@ void TimerManager<T, D, E>::threadFunc()
 
         ROS_DEBUG("Scheduling timer callback for timer of period [%f]", info->period.toSec());
         CallbackInterfacePtr cb(new TimerQueueCallback(info, info->last_expected, info->last_real, info->next_expected));
-        info->callback_queue->addCallback(cb);
+        info->callback_queue->addCallback(cb, (uint64_t)info.get());
 
         if (info->oneshot)
         {

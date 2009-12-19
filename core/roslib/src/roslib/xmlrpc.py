@@ -203,7 +203,8 @@ class XmlRpcNode(object):
             
             #print "... started XML-RPC Server", self.uri
             logger.info("Started XML-RPC server [%s]", self.uri)
-            
+
+            self.server.register_multicall_functions()
             self.server.register_instance(self.handler)
 
         except socket.error, (n, errstr):

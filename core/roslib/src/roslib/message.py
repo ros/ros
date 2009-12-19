@@ -214,7 +214,10 @@ def check_type(field_name, field_type, field_val):
             check_type(field_name+"[]", base_type, v)
     else:
         if isinstance(field_val, Message):
-            if field_val._type != field_type:
+            if field_val._type == 'roslib/Header':
+                if field_type not in ['Header', 'roslib/Header']:
+                    raise SerializationError("field %s must be a Header instead of a %s"%(field_name, field_val._type))
+            elif field_val._type != field_type:
                 raise SerializationError("field %s must be of type %s instead of %s"%(field_name, field_type, field_val._type))
             for n, t in zip(field_val.__slots__, field_val._get_types()):
                 check_type("%s.%s"%(field_name,n), t, getattr(field_val, n))

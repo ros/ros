@@ -58,7 +58,6 @@ public:
             const std::string& _md5sum,
             const std::string& message_definition,
             size_t max_queue,
-            CallbackQueueInterface* callback_queue,
             bool latch);
 
   ~Publication();
@@ -133,9 +132,7 @@ public:
 
   void incrementSequence() { ++seq_; }
 
-  void incrementRefcount();
-  void decrementRefcount();
-  uint32_t getRefcount();
+  size_t getNumCallbacks();
 
   bool isLatching() { return latch_; }
 
@@ -167,10 +164,6 @@ private:
   boost::mutex subscriber_links_mutex_;
 
   bool dropped_;
-
-  uint32_t refcount_;
-
-  CallbackQueueInterface* callback_queue_;
 
   bool latch_;
   SerializedMessage last_message_;

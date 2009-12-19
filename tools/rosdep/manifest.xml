@@ -1,5 +1,5 @@
 <package>
-  <description brief="A ROS dependency manager">
+  <description brief="A ROS system dependency manager">
 
 rosdep attempts to manage system dependencies reasonably. It provides a
 database mapping 'friendly' names into system-specific package names. If
@@ -7,8 +7,9 @@ available, it will use the system's package manager to install binaries of the
 dependencies.
 
    </description>
-  <author>Morgan Quigley</author>
-  <license>BSD for the rosdep code. Rosdep links statically against yaml-cpp, which is MIT-licensed.</license>
+  <author>Tully Foote/tfoote@willowgarage.com</author>
+  <license>BSD</license>
+  <depend package="roslib"/>
   <depend package="rospack"/>
-  <review status="experimental" notes=""/>
+  <review status="unreviewed" notes=""/>
 </package>

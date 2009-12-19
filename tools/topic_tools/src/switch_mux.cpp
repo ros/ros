@@ -29,6 +29,7 @@
 
 
 #include <cstdio>
+#include "ros/console.h"
 #include "ros/ros.h"
 #include "topic_tools/MuxSelect.h"
 #include "topic_tools/parse.h"
@@ -38,6 +39,7 @@ using namespace topic_tools;
 
 int main(int argc, char **argv)
 {
+  ROS_WARN("topic_tools/switch_mux is deprecated; please use topic_tools/mux_select instead");
   if (argc < 3)
   {
     printf("usage: switch MUXED_TOPIC SELECT_TOPIC\n");

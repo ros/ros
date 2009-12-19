@@ -74,14 +74,37 @@ TEST(params, setThenGetString)
   ASSERT_STREQ( "asdf", param.c_str() );
 }
 
+TEST(params, setThenGetStringCachedDeprecated)
+{
+  std::string param;
+  ASSERT_FALSE( param::get( "test_set_param_setThenGetStringCachedDeprecated", param, true ) );
+
+  param::set( "test_set_param_setThenGetStringCachedDeprecated", std::string("asdf") );
+
+  ASSERT_TRUE( param::get( "test_set_param_setThenGetStringCachedDeprecated", param, true ) );
+  ASSERT_STREQ( "asdf", param.c_str() );
+}
+
 TEST(params, setThenGetStringCached)
 {
   std::string param;
-  ASSERT_FALSE( param::get( "test_set_param_setThenGetStringCached", param, true ) );
+  ASSERT_FALSE( param::getCached( "test_set_param_setThenGetStringCached", param) );
 
   param::set( "test_set_param_setThenGetStringCached", std::string("asdf") );
 
-  ASSERT_TRUE( param::get( "test_set_param_setThenGetStringCached", param, true ) );
+  ASSERT_TRUE( param::getCached( "test_set_param_setThenGetStringCached", param) );
+  ASSERT_STREQ( "asdf", param.c_str() );
+}
+
+TEST(params, setThenGetStringCachedNodeHandle)
+{
+	NodeHandle nh;
+  std::string param;
+  ASSERT_FALSE( nh.getParamCached( "test_set_param_setThenGetStringCachedNodeHandle", param) );
+
+  nh.setParam( "test_set_param_setThenGetStringCachedNodeHandle", std::string("asdf") );
+
+  ASSERT_TRUE( nh.getParamCached( "test_set_param_setThenGetStringCachedNodeHandle", param) );
   ASSERT_STREQ( "asdf", param.c_str() );
 }
 
@@ -174,6 +197,12 @@ TEST(params, searchParam)
   ASSERT_STREQ(result.c_str(), "/a/b/c/d/e/f/s_i");
   param::del("/a/b/c/d/e/f/s_i");
 
+  bool cont = true;
+  while (!cont)
+  {
+  	ros::WallDuration(0.1).sleep();
+  }
+
   ASSERT_FALSE(param::search(ns, "s_j", result));
 }
 
@@ -218,6 +247,7 @@ main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   ros::init( argc, argv, "params" );
+//  ros::NodeHandle nh;
 
   return RUN_ALL_TESTS();
 }

@@ -42,6 +42,15 @@ import rostest
 # Not much to test, just tripwires
 
 class MessageTest(unittest.TestCase):
+    
+    def test_check_types_Header(self):
+        # #2128: test that check_types works with a Header
+        # #message. This is a weird case because Header has an aliased
+        # #type and is the only ROS type for which that is true
+        from test_roslib.msg import HeaderTest
+        x = HeaderTest()
+        x._check_types()
+        
     def test_Message(self):
         import cStringIO
         from roslib.message import Message, SerializationError

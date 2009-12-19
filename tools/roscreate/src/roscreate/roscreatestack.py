@@ -72,7 +72,7 @@ def instantiate_template(template, stack, brief, description, author, depends, l
     """
     return template%locals()
 
-def _update_depends(stack_manifest, depends):
+def _update_depends(depends):
     new_depends = []
     for s, pkgs in depends.iteritems():
         d = roslib.stack_manifest.StackDepend(s)
@@ -115,7 +115,7 @@ def create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, sh
         review = '  <review status="unreviewed" notes=""/>'
 
     licenses = ','.join(licenses)
-    depends = _update_depends(stack_manifest, depends)
+    depends = _update_depends(depends)
     
     p = os.path.abspath(stack_dir)
     if not os.path.exists(p):
@@ -169,7 +169,7 @@ def roscreatestack_main():
     # check whether or not stack directory exists
     try:
         if os.path.exists(stack_dir):
-            packages = roslib.packages.list_pkgs(pkg_dirs=[os.path.abspath(stack_dir)])
+            packages = roslib.packages.list_pkgs_by_path(os.path.abspath(stack_dir))
             depends, licenses = compute_stack_depends_and_licenses(stack, packages)
         else:
             depends = dict()

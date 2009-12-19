@@ -39,7 +39,7 @@ import roslib.rospack
 import roslib.rosenv
 import roslib.stacks
 
-def can_build(pkg, use_whitelist = False, use_whitelist_recursive = False, use_blacklist = False, os_name = None, os_version = None):
+def can_build(pkg, use_whitelist = False, use_whitelist_recursive = False, use_blacklist = False, failed_packages = [], os_name = None, os_version = None):
     """
     Return (buildable, "reason why not")
     """
@@ -48,16 +48,24 @@ def can_build(pkg, use_whitelist = False, use_whitelist_recursive = False, use_b
         
     output_str = ""
     output_state = True
+    buildable = True
     if not os_name and not os_version:
         osd = roslib.os_detect.OSDetect()
         os_name = osd.get_name()
         os_version = osd.get_version()
         
 
+    for p in failed_packages:
+        if p in roslib.rospack.rospack_depends(pkg):
+            buildable = False
+            output_state = False
+            output_str += " Package %s cannot be built for dependent package %s failed. \n"%(pkg, p)
+
 
     if use_whitelist:
 
         if not roslib.packages.platform_supported(pkg, os_name, os_version):
+            buildable = False
             output_state = False
             output_str += " Package %s is not supported on this OS\n"%pkg
         if use_whitelist_recursive:
@@ -72,20 +80,23 @@ def can_build(pkg, use_whitelist = False, use_whitelist_recursive = False, use_b
         for p in blacklist_packages:
             blacklist_path = os.path.join(roslib.packages.get_pkg_dir(p), "ROS_BUILD_BLACKLIST")
             if os.path.exists(blacklist_path):
+                buildable = False
                 output_state = False
                 output_str += "ROS_BUILD_BLACKLIST found in %s contents are:\n[[[\n"%p
                 with open(blacklist_path) as f:
                     output_str += f.read() + "\n]]]\n"
 
     if os.path.exists(os.path.join(roslib.packages.get_pkg_dir(pkg), "ROS_NOBUILD")):
-        output_state = False
-        output_str += "ROS_NOBUILD in package\n"
+        buildable = False
+        output_state = True # dependents are ok, it should already be built
+        output_str += "ROS_NOBUILD in package %s\n"%pkg
 
 
     if not os.path.exists(os.path.join(roslib.packages.get_pkg_dir(pkg), "Makefile")):
-        output_state = False
-        output_str += " No Makefile in package\n"
+        output_state = True # dependents are ok no need to build
+        buildable = False
+        output_str += " No Makefile in package %s\n"%pkg
 
     
 
-    return (output_state, output_str)
+    return (buildable, output_state, output_str)

@@ -259,7 +259,7 @@ class CompileThread(threading.Thread):
           self.build_queue.stop()
           break # unnecessary since build_queue is done now while will quit
       else:
-        self.rosmakeall.print_all("Halting due to failure in package %s.\n[ rosmake ] Re-run with -r to ignore failures and keep building."%pkg)
+        self.rosmakeall.print_all("Halting due to failure in package %s.\n[ rosmake ]."%pkg)
         self.build_queue.stop()
         break # unnecessary since build_queue is done now, while will quit
 

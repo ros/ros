@@ -170,8 +170,9 @@ class RosMakeAll:
                 return_string = ("[SKIP] rosmake uses rospack.  If building it is already built, if cleaning it will be cleaned at the end.")
                 return (True, return_string) # This will be caught later
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
-            (buildable, why) = package_stats.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist)
-            if buildable:
+            failed_packages = [j for j in self.result[argument] if not self.result[argument][j] == True]
+            (buildable, error, why) = package_stats.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, failed_packages)
+            if buildable or self.robust_build:
                 start_time = time.time()
                 (returncode, pstd_out) = self.build_package(p, argument)
                 self.profile[argument][p] = time.time() - start_time
@@ -198,7 +199,7 @@ class RosMakeAll:
                         return_string = ("[Interrupted]" )
                     else:
                         return_string = ( "[FAIL] [ %.2f seconds ]"%( self.profile[argument][p]))
-                    self.result[argument][p] = no_target
+                    self.result[argument][p] = True if no_target else False
                     if self.robust_build or interrupt:
                       self.print_verbose( pstd_out)
                     else:
@@ -206,7 +207,10 @@ class RosMakeAll:
                     self.output_to_file(p, log_type, pstd_out, always_print= not (no_target or interrupt))
 
                     return (False, return_string)
-            return_string += why
+            else:
+                self.result[argument][p] = error
+                return_string += why
+                return(error, return_string)
             return (True, return_string) # this means that we didn't error in any case above
         except roslib.packages.InvalidROSPkgException, ex:
             self.result[argument][p] = False
@@ -398,8 +402,10 @@ class RosMakeAll:
                           action="store_true", help="Remove ROS_NOBUILD from the specified packages.  This will not build anything.")
         parser.add_option("-v", dest="verbose", default=False,
                           action="store_true", help="display errored builds")
-        parser.add_option("-r","-k", "--robust", dest="robust", default=False,
+        parser.add_option("-r","-k", "--robust", dest="best_effort", default=False,
                            action="store_true", help="do not stop build on error")
+        parser.add_option("--build-everything", dest="robust", default=False,
+                           action="store_true", help="build all packages regardless of errors")
         parser.add_option("-V", dest="full_verbose", default=False,
                           action="store_true", help="display all builds")
         parser.add_option("-s", "--specified-only", dest="specified_only", default=False,
@@ -456,6 +462,7 @@ class RosMakeAll:
             self.ros_parallel_jobs = options.ros_parallel_jobs
 
         self.robust_build = options.robust
+        self.best_effort = options.best_effort
         self.threads = options.threads
         self.skip_blacklist = options.skip_blacklist
         if options.skip_blacklist_osx:
@@ -595,7 +602,7 @@ class RosMakeAll:
         build_passed = True
         if building:
           self.print_verbose ("Building packages %s"% self.build_list)
-          build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = options.robust)
+          build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = options.robust or options.best_effort)
           build_passed = self.parallel_build_pkgs(build_queue, options.target, threads = options.threads)
           if "rospack" in self.build_list and options.target == "clean":
               self.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it, because it was skipped earlier.")

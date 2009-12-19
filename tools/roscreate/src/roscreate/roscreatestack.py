@@ -132,7 +132,22 @@ def create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, sh
                 f.write(contents)
     print "\nPlease edit %s/stack.xml to finish creating your stack"%stack
 
-def compute_stack_depends_and_licenses(stack, packages):
+def compute_stack_depends_and_licenses(stack_dir):
+    """
+    @return: depends, licenses
+    @rtype: {str: [str]}, [str]
+    @raise: roslib.packages.InvalidROSPkgException
+    """
+    stack = os.path.basename(os.path.abspath(stack_dir))    
+    if os.path.exists(stack_dir):
+        packages = roslib.packages.list_pkgs_by_path(os.path.abspath(stack_dir))
+        depends, licenses = _compute_stack_depends_and_licenses(stack, packages)
+    else:
+        depends = dict()
+        licenses = ['BSD']
+    return depends, licenses
+    
+def _compute_stack_depends_and_licenses(stack, packages):
     pkg_depends = []
     licenses = []
     for pkg in packages:
@@ -166,14 +181,8 @@ def roscreatestack_main():
     stack_dir = args[0]
     stack = os.path.basename(os.path.abspath(stack_dir))
 
-    # check whether or not stack directory exists
     try:
-        if os.path.exists(stack_dir):
-            packages = roslib.packages.list_pkgs_by_path(os.path.abspath(stack_dir))
-            depends, licenses = compute_stack_depends_and_licenses(stack, packages)
-        else:
-            depends = dict()
-            licenses = ['BSD']
+        depends, licenses = compute_stack_depends_and_licenses(stack_dir)
     except roslib.packages.InvalidROSPkgException, e:
         print >> sys.stderr, str(e)
         sys.exit(1)

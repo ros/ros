@@ -1,8 +1,13 @@
-if [[ `uname` == Darwin ]]; then
-   alias _rossed="sed -E"
-else
-   alias _rossed="sed -r"
-fi
+
+function _rossed {
+    if [[ `uname` == Darwin ]]; then
+        sed -E $*
+    else
+        sed -r $*
+    fi
+}
+
+
 
 function _ros_location_find {
     homedir=`echo $HOME | sed -e "s/\//\t\//g" -e "s/\t/\\\\\/g"`

@@ -133,11 +133,14 @@ bool ros::record::Recorder::openFile(const std::string& file_name, bool random_a
     return false;
   }
 
+  // Removing compression until we work out how to play nicely with index: JML
+  /*
   if (ext == ".gz")
     record_stream_.push(boost::iostreams::gzip_compressor());
   else if (ext == ".bz2")
     record_stream_.push(boost::iostreams::bzip2_compressor());
   record_stream_.push(record_file_);
+  */
 
   checkDisk();
   check_disk_next_ = ros::WallTime::now() + ros::WallDuration().fromSec(20.0);

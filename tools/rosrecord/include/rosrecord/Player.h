@@ -265,12 +265,23 @@ public:
       return false;
     }
 
+
     std::string ext = boost::filesystem::extension(file_name);
+    if (ext != ".bag")
+    {
+      ROS_ERROR("File: '%s' does not have .bag extension",file_name.c_str());
+      return false;
+    }
+
+    // Removing compression until we work out how to play nicely with index: JML
+    /*
     if (ext == ".gz")
       record_stream_.push(boost::iostreams::gzip_decompressor());
     else if (ext == ".bz2")
       record_stream_.push(boost::iostreams::bzip2_decompressor());
+    */
     record_stream_.push(record_file_);
+
 
     char logtypename[100];
 

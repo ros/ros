@@ -153,8 +153,9 @@ void print_help() {
   fprintf(stderr, " -a          : Record all published messages.\n");
   fprintf(stderr, " -v          : Display a message every time a message is received on a topic\n");
   fprintf(stderr, " -m          : Maximize internal buffer size in MB (Default: 256MB)  0 = infinite.\n");
-  fprintf(stderr, " -z          : Compress the messages with gzip\n");
-  fprintf(stderr, " -j          : Compress the messages with bzip2\n");
+  // Removing compression until we work out how to play nicely with index: JML
+  //  fprintf(stderr, " -z          : Compress the messages with gzip\n");
+  //  fprintf(stderr, " -j          : Compress the messages with bzip2\n");
   fprintf(stderr, " -s          : (EXPERIMENTAL) Enable snapshot recording (don't write to file unless triggered)\n");
   fprintf(stderr, " -t          : (EXPERIMENTAL) Trigger snapshot recording\n");
   fprintf(stderr, " -h          : Display this help message\n");
@@ -268,6 +269,9 @@ void do_record()
     split_name = std::string("_") + boost::lexical_cast<std::string>(g_split_count++);
 
   std::string suffix;
+
+  // Removing compression until we work out how to play nicely with index: JML
+  /*
   switch (g_compression) {
   case COMPRESSION_GZIP:
     suffix = ".gz";
@@ -283,6 +287,7 @@ void do_record()
     ros::shutdown();
     break;
   }
+  */
 
   std::string tgt_fname = base_name + split_name + std::string(".bag") + suffix;
   std::string fname = base_name + split_name + std::string(".bag.active") + suffix;
@@ -457,8 +462,9 @@ int main(int argc, char **argv)
     case 's': g_snapshot = true; break;
     case 't': do_trigger(); return 0; break;
     case 'v': g_verbose = true; break;
-    case 'z': g_compression = COMPRESSION_GZIP; break;
-    case 'j': g_compression = COMPRESSION_BZIP2; break;
+  // Removing compression until we work out how to play nicely with index: JML
+      //    case 'z': g_compression = COMPRESSION_GZIP; break;
+      //    case 'j': g_compression = COMPRESSION_BZIP2; break;
     case 'm': 
       {
         int m=0;

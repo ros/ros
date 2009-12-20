@@ -81,7 +81,6 @@ def can_build(pkg, use_whitelist = False, use_whitelist_recursive = False, use_b
             blacklist_path = os.path.join(roslib.packages.get_pkg_dir(p), "ROS_BUILD_BLACKLIST")
             if os.path.exists(blacklist_path):
                 buildable = False
-                output_state = False
                 output_str += "ROS_BUILD_BLACKLIST found in %s contents are:\n[[[\n"%p
                 with open(blacklist_path) as f:
                     output_str += f.read() + "\n]]]\n"

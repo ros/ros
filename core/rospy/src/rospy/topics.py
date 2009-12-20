@@ -744,11 +744,12 @@ class _PublisherImpl(_TopicImpl):
         
     def acquire(self):
         """lock for thread-safe publishing to this transport"""
-        self.publock.acquire()
+        if self.publock is not None:
+            self.publock.acquire()
         
     def release(self):
         """lock for thread-safe publishing to this transport"""
-        if self.publock:
+        if self.publock is not None:
             self.publock.release()
         
     def add_connection(self, c):

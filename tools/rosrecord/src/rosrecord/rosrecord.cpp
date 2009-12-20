@@ -451,7 +451,7 @@ int main(int argc, char **argv)
   // Parse options  
   int option_char;
 
-  while ((option_char = getopt(argc,argv,"f:F:c:m:S:ajzsthv")) != -1)
+  while ((option_char = getopt(argc,argv,"f:F:c:m:S:asthv")) != -1)
   {
     switch (option_char)
     {

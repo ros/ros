@@ -300,7 +300,7 @@ macro(rosbuild_init)
   # The rospack_genmsg_libexe target is defined for backward compatibility,
   # and will eventually be removed.
   add_custom_target(rospack_genmsg_libexe)
-  add_dependencies(rospack_genmsg_libexe rosbuild_precompile)
+  add_dependencies(rosbuild_precompile rospack_genmsg_libexe)
   
   # ${gendeps_exe} is a convenience variable that roslang cmake rules
   # must reference as a dependency of msg/srv generation

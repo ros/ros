@@ -411,10 +411,20 @@ function _roscomplete_rostopic {
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
             find)
-                # Need a clever way to do message searching
+                opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
             pub)
                 # This takes more logic.
+		opts=`rostopic list`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+                ;;
+        esac
+    elif [[ $COMP_CWORD == 3 ]]; then
+        case ${COMP_WORDS[1]} in
+            pub)
+                opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
         esac
     fi

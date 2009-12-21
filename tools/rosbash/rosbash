@@ -238,6 +238,36 @@ function _roscomplete_sub_dir {
     fi
 }
 
+function _msg_opts {
+    local arg pkgs pkgname msgname searchmsg path
+
+    if [[ $1 =~ .+/.* ]]; then
+        pkgname=${1%%/*}
+        msgname=${1#*/}
+        searchmsg=1
+    else
+        pkgname=${1}
+    fi
+
+    echo Pkg: $pkgname
+    echo Msg: $msgname
+
+    if [[ -z ${searchmsg} ]]; then
+        pkgs=(`rospack list`)
+        
+        for (( i = 0 ; i < ${#pkgs[@]} ; i=i+2 )); do
+            if [[ -d ${pkgs[i+1]}/msg ]]; then
+                echo ${pkgs[i]}/
+            fi
+        done
+    else
+        path=`rospack find ${pkgname}`
+        if [ -d ${path}/msg ]; then
+            echo `find ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g"`
+        fi
+    fi
+}
+
 function _roscomplete_search_dir {
     local arg opts pkgdir
     COMPREPLY=()
@@ -390,6 +420,7 @@ function _roscomplete_rostopic {
     fi
 
 }
+
 function _roscomplete_rosservice {
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
@@ -414,6 +445,70 @@ function _roscomplete_rosservice {
 
 }
 
+function _msg_opts {
+    local arg pkgs pkgname msgname searchmsg path count opts
+
+    if [[ $1 =~ .+/.* ]]; then
+        pkgname=${1%%/*}
+        msgname=${1#*/}
+        searchmsg=1
+    else
+        pkgname=${1}
+    fi
+
+    if [[ -z ${searchmsg} ]]; then
+        pkgs=(`rospack list | grep "^${pkgname}"`)
+        count=0
+
+        opts=""
+
+        for (( i = 0 ; i < ${#pkgs[@]} ; i=i+2 )); do
+            if [[ -d ${pkgs[i+1]}/msg ]]; then
+                opts="$opts ${pkgs[i]}/"
+                pkgname=${pkgs[i]}
+                count=$((count+1))
+            fi
+        done
+
+        if [[ $count -gt 1 ]]; then
+            echo $opts
+            return 0
+        fi
+    fi
+
+    path=`rospack find ${pkgname}`            
+
+    if [ -d ${path}/msg ]; then
+        echo `find ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g"`
+    fi
+}
+
+function _roscomplete_rosmsg {
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="show users md5 package packages"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    elif [[ $COMP_CWORD == 2 ]]; then
+        case ${COMP_WORDS[1]} in
+            show|users|md5)
+                opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            package)
+                opts=`rospack list-names`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            packages)
+                # This shouldn't really have a completion rule
+                ;;
+        esac
+    fi
+
+}
+
+
 complete -F "_roscomplete_sub_dir" -o "nospace" "roscd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rospd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rosls"
@@ -428,3 +523,4 @@ complete -F "_roscomplete_rosnode" "rosnode"
 complete -F "_roscomplete_rosparam" "rosparam"
 complete -F "_roscomplete_rostopic" "rostopic"
 complete -F "_roscomplete_rosservice" "rosservice"
+complete -F "_roscomplete_rosmsg" "rosmsg"

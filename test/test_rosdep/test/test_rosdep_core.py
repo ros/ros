@@ -182,8 +182,8 @@ class RosdepCoreTest(unittest.TestCase):
 
     def test_YamlCache_rosstack_depends(self): ## TODO add this in a walled garden so it can be asserted as being equal to something specific
         yc = rosdep.core.YamlCache()
-        depends = yc.get_rospack_depends("test_rospack")
-        depends2 = yc.get_rospack_depends("test_rospack")
+        depends = yc.get_rosstack_depends("ros")
+        depends2 = yc.get_rosstack_depends("ros")
         self.assertEqual(depends, depends2)
 
 if __name__ == '__main__':

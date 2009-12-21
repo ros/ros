@@ -150,7 +150,41 @@ class RosdepCoreTest(unittest.TestCase):
         rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=True)
         rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=False)
 
+    def test_YamlCache_init(self):
+        yc = rosdep.core.YamlCache()
 
+    def test_YamlCache_get_yaml(self):
+        yc = rosdep.core.YamlCache()
+        yaml_dict = yc.get_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"), "test", "example_rosdep.yaml"))
+        yaml_dict2 = yc.get_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"), "test", "example_rosdep.yaml"))
+        self.assertEqual(yaml_dict, yaml_dict2)
+
+        yaml_truth = {'other_rosdep_test': 
+                      {'rosdep_test_os': 
+                       {'other_version': 'foo'}
+                       }, 
+                      'no_os_rosdep_test': 
+                      {'other_os': 'not_useful'
+                       }, 
+                      'zlib': 
+                      {'rosdep_test_os': 'zlib1g-dev', 
+                       'debian': 'zlib1g-dev'
+                       }, 
+                      'rosdep_test': 
+                      {'rosdep_test_os': 
+                       {'rosdep_test_version': 'librosdep_test1.37-dev', 
+                        9.0999999999999996: 'librosdep_test1.40-all-dev', 
+                        8.0999999999999996: 'this is a script\n'
+                        }
+                       }
+                      }
+        self.assertEqual(yaml_dict, yaml_truth)
+
+    def test_YamlCache_rosstack_depends(self): ## TODO add this in a walled garden so it can be asserted as being equal to something specific
+        yc = rosdep.core.YamlCache()
+        depends = yc.get_rospack_depends("test_rospack")
+        depends2 = yc.get_rospack_depends("test_rospack")
+        self.assertEqual(depends, depends2)
 
 if __name__ == '__main__':
   os.environ["ROSDEP_TEST_OS"] = "rosdep_test_os"

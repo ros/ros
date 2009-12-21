@@ -56,14 +56,21 @@ class TestRosnodeOffline(unittest.TestCase):
     ## test that the rosmsg command works
     def test_cmd_help(self):
         cmd = 'rosnode'
+        sub = ['ping', 'machine', 'list', 'info', 'kill']
+        
         output = Popen([cmd], stdout=PIPE).communicate()[0]
         self.assert_('Commands' in output)
         output = Popen([cmd, '-h'], stdout=PIPE).communicate()[0]
         self.assert_('Commands' in output)
+        for c in sub:
+            # make sure command is in usage statement
+            self.assert_("%s %s"%(cmd, c) in output)
 
-        for c in ['ping', 'list', 'info', 'kill']:
+        for c in sub:
             output = Popen([cmd, c, '-h'], stdout=PIPE, stderr=PIPE).communicate()
             self.assert_("Usage:" in output[0], "[%s]: %s"%(c, output))
+            self.assert_("%s %s"%(cmd, c) in output[0], "%s: %s"%(c, output[0]))
+            
         # test no args on commands that require args
         for c in ['ping', 'info']:
             output = Popen([cmd, c], stdout=PIPE, stderr=PIPE).communicate()

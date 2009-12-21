@@ -280,7 +280,8 @@ def _rosservice_list(namespace=None, print_nodes=False):
 
 def _rosservice_info(service_name):
     """
-    Implements 'rosservice info'. Prints information about a service
+    Implements 'rosservice info'. Prints information about a service.
+    
     @param service_name: name of service to get info for
     @type  service_name: str
     @raise ROSServiceIOException: if the I/O issues prevent retrieving service information    
@@ -301,7 +302,7 @@ def _rosservice_info(service_name):
         return
     print "Type: %s"%t
     args = get_service_args(service_name)
-    if not args:
+    if args is None:
         print >> sys.stderr, "ERROR: service is no longer available"
         return
     print "Args: %s"%args
@@ -643,10 +644,12 @@ def _rosservice_cmd_info(argv):
 def _fullusage():
     """Print generic usage for rosservice"""
     print """Commands:
-\trosservice list\tprint information about active services
+\trosservice args\tprint service arguments
 \trosservice call\tcall the service with the provided args
-\trosservice type\tprint service type
 \trosservice find\tfind services by service type
+\trosservice info\tprint information about service
+\trosservice list\tlist active services
+\trosservice type\tprint service type
 \trosservice uri\tprint service ROSRPC uri
 
 Type rosservice <command> -h for more detailed usage, e.g. 'rosservice call -h'

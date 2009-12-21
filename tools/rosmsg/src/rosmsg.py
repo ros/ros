@@ -461,7 +461,7 @@ def rosmsgmain(mode=roslib.msgs.EXT):
     except roslib.packages.InvalidROSPkgException, e:
         print >> sys.stderr, "Invalid package: '%s'"%e
         sys.exit(os.EX_USAGE)        
-    except roslib.names.ROSNameException, e:
+    except ValueError, e:
         print >> sys.stderr, "Invalid type: '%s'"%e
         sys.exit(os.EX_USAGE)          
     except ROSMsgException, e:

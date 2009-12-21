@@ -56,18 +56,28 @@ class TestRostopicOffline(unittest.TestCase):
     ## test that the rosmsg command works
     def test_cmd_help(self):
         cmd = 'rostopic'
+
+        sub = ['bw', 'echo', 'hz', 'info', 'list', 'pub', 'type','find']
         output = Popen([cmd], stdout=PIPE).communicate()[0]
         self.assert_('Commands' in output)
         output = Popen([cmd, '-h'], stdout=PIPE).communicate()[0]
         self.assert_('Commands' in output)
+        # make sure all the commands are in the usage
+        for c in sub:
+            self.assert_("%s %s"%(cmd, c) in output, output)            
 
-        for c in ['bw', 'echo', 'hz', 'list', 'pub', 'type','find']:
+        for c in sub:
             output = Popen([cmd, c, '-h'], stdout=PIPE, stderr=PIPE).communicate()
             self.assert_("Usage:" in output[0], output)
+            # make sure usage refers to the command
+            self.assert_("%s %s"%(cmd, c) in output[0], output)
+            
         # test no args on commands that require args
-        for c in ['bw', 'echo', 'hz', 'pub', 'type', 'find']:
+        for c in ['bw', 'echo', 'hz', 'info', 'pub', 'type', 'find']:
             output = Popen([cmd, c], stdout=PIPE, stderr=PIPE).communicate()
             self.assert_("Usage:" in output[0] or "Usage:" in output[1], output)
+            # make sure usage refers to the command
+            self.assert_("%s %s"%(cmd, c) in output[1], output)
             
     def test_offline(self):
         cmd = 'rostopic'

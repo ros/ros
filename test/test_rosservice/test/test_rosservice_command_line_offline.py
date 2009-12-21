@@ -53,16 +53,24 @@ class TestRosserviceOffline(unittest.TestCase):
     def setUp(self):
         pass
 
-    ## test that the rosmsg command works
+    ## test that the usage command works
     def test_cmd_help(self):
         cmd = 'rosservice'
+        sub = ['args', 'info', 'list', 'call', 'type', 'uri', 'find']
+        
         output = Popen([cmd], stdout=PIPE).communicate()[0]
         self.assert_('Commands' in output)
         output = Popen([cmd, '-h'], stdout=PIPE).communicate()[0]
         self.assert_('Commands' in output)
+        # make sure all the commands are in the usage
+        for c in sub:
+            self.assert_("%s %s"%(cmd, c) in output, output)            
 
-        for c in ['list', 'call', 'type', 'uri', 'find']:
-            output = Popen([cmd, c, '-h'], stdout=PIPE).communicate()[0]
+        for c in sub:
+            output = Popen([cmd, c, '-h'], stdout=PIPE).communicate()
+            self.assert_("Usage:" in output[0], output)
+            # make sure usage refers to the command
+            self.assert_("%s %s"%(cmd, c) in output[0], output)
 
     def test_offline(self):
         cmd = 'rosservice'

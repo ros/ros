@@ -56,18 +56,27 @@ class TestRosparamOffline(unittest.TestCase):
     ## test that the rosmsg command works
     def test_cmd_help(self):
         cmd = 'rosparam'
+        sub = ['set', 'get', 'load', 'dump', 'delete', 'list']
+            
         output = Popen([cmd], stdout=PIPE).communicate()[0]
         self.assert_('Commands' in output, output)
         output = Popen([cmd, '-h'], stdout=PIPE).communicate()[0]
         self.assert_('Commands' in output)
 
-        for c in ['set', 'get', 'load', 'dump', 'delete', 'list']:
+        for c in sub:
+            # make sure command is in usage statement
+            self.assert_("%s %s"%(cmd, c) in output)
+        
+        for c in sub:
             output = Popen([cmd, c, '-h'], stdout=PIPE, stderr=PIPE).communicate()
             self.assert_("Usage:" in output[0], "%s\n%s"%(output, c))
+            self.assert_("%s %s"%(cmd, c) in output[0], "%s: %s"%(c, output[0]))
+            
         # test no args on commands that require args
         for c in ['set', 'get', 'load', 'dump', 'delete']:
             output = Popen([cmd, c], stdout=PIPE, stderr=PIPE).communicate()
             self.assert_("Usage:" in output[0] or "Usage:" in output[1], "%s\n%s"%(output, c))
+            self.assert_("%s %s"%(cmd, c) in output[1])
             
     def test_offline(self):
         cmd = 'rosparam'

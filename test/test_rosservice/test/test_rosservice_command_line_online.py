@@ -69,6 +69,10 @@ class TestRosserviceOnline(unittest.TestCase):
             self.assert_(s in l)
 
         for name in names:
+            # args
+            output = Popen([cmd, 'args', name], stdout=PIPE).communicate()[0]
+            self.assertEquals('a b', output.strip())
+
             # type
             output = Popen([cmd, 'type', name], stdout=PIPE).communicate()[0]
             self.assertEquals('test_ros/AddTwoInts', output.strip())

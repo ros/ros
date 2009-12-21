@@ -517,7 +517,7 @@ def _rosparam_cmd_list(argv):
     @param argv: command-line args
     @type  argv: str
     """
-    parser = OptionParser(usage="usage: %prog load [namespace]", prog=NAME)
+    parser = OptionParser(usage="usage: %prog list [namespace]", prog=NAME)
     options, args = parser.parse_args(argv[2:])
 
     ns = GLOBALNS

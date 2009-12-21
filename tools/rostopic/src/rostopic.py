@@ -1247,11 +1247,12 @@ def _fullusage():
 Commands:
 \trostopic bw\tdisplay bandwidth used by topic
 \trostopic echo\tprint messages to screen
+\trostopic find\tfind topics by type
 \trostopic hz\tdisplay publishing rate of topic    
-\trostopic list\tprint information about active topics
+\trostopic info\tprint information about active topic
+\trostopic list\tlist active topics
 \trostopic pub\tpublish data to topic
 \trostopic type\tprint topic type
-\trostopic find\tfind topics by type
 
 Type rostopic <command> -h for more detailed usage, e.g. 'rostopic echo -h'
 """

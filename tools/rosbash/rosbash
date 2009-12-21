@@ -326,6 +326,10 @@ function _roscomplete_file {
 
 function _roscomplete_launch {
     _roscomplete_search_dir "-type f -name *.launch"
+    if [[ $COMP_CWORD == 1 ]]; then
+        arg="${COMP_WORDS[COMP_CWORD]}"
+        COMPREPLY=($(compgen -f -X "!*.launch" -- ${arg}) ${COMPREPLY[@]})
+    fi
 }
 
 function _roscomplete_rosbag {

@@ -55,7 +55,6 @@ import core
 class YamlCache:
     def __init__(self):
         self._yaml_cache = {}
-        self._rospack_depends_cache = {}
         self._rosstack_depends_cache = {}
         
     def get_yaml(self, path):
@@ -77,13 +76,6 @@ class YamlCache:
         self._yaml_cache[path] = {}
         return {}
 
-    def get_rospack_depends(self, package):
-        if package in self._rospack_depends_cache:
-            return self._rospack_depends_cache[package]
-        
-        self._rospack_depends_cache[package] = roslib.rospack.rospack_depends(package)
-        return self._rospack_depends_cache[package]
-    
     def get_rosstack_depends(self, stack):
         if stack in self._rosstack_depends_cache:
             return self._rosstack_depends_cache[stack]

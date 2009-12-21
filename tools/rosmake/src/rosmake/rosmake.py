@@ -170,7 +170,10 @@ class RosMakeAll:
                 return_string = ("[SKIP] rosmake uses rospack.  If building it is already built, if cleaning it will be cleaned at the end.")
                 return (True, return_string) # This will be caught later
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
-            failed_packages = [j for j in self.result[argument] if not self.result[argument][j] == True]
+            if robust_build:
+                failed_packages = []
+            else:
+                failed_packages = [j for j in self.result[argument] if not self.result[argument][j] == True]
             (buildable, error, why) = package_stats.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, failed_packages)
             if buildable or self.robust_build:
                 start_time = time.time()

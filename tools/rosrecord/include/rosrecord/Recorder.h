@@ -126,9 +126,11 @@ private:
   unsigned int   message_buf_len_;
   unsigned int   message_buf_size_;
 
-  unsigned long long free_space_;
+  bool logging_enabled_;
+
   boost::mutex       check_disk_mutex_;
   ros::WallTime      check_disk_next_;
+  ros::WallTime      warn_next_;
 };
 
 }

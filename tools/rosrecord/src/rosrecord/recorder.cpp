@@ -48,7 +48,7 @@ using namespace ros::record;
 
 ros::record::Recorder::Recorder()
   : file_header_pos_(0), index_data_pos_(0), header_buf_(NULL), header_buf_len_(0), header_buf_size_(0),
-    message_buf_(NULL), message_buf_len_(0), message_buf_size_(0), free_space_(0)
+    message_buf_(NULL), message_buf_len_(0), message_buf_size_(0), logging_enabled_(true)
 {
 }
 
@@ -142,10 +142,12 @@ bool ros::record::Recorder::openFile(const std::string& file_name, bool random_a
   */
   record_stream_.push(record_file_);
 
-  checkDisk();
   check_disk_next_ = ros::WallTime::now() + ros::WallDuration().fromSec(20.0);
+  warn_next_ = ros::WallTime();
 
   record_pos_ = 0;
+
+  checkDisk();
 
   return true;
 }
@@ -205,16 +207,23 @@ bool ros::record::Recorder::checkDisk()
   }
   else
   {
-    free_space_ = (unsigned long long)(fiData.f_bsize) * (unsigned long long)(fiData.f_bavail);
+    unsigned long long free_space = 0;
 
-    if (free_space_ < 1073741824ull)
+    free_space = (unsigned long long)(fiData.f_bsize) * (unsigned long long)(fiData.f_bavail);
+
+    if (free_space < 1073741824ull)
     {
       ROS_ERROR("rosrecord::Record: Less than 1GB of space free on disk with %s.  Disabling logging.", file_name_.c_str());
+      logging_enabled_ = false;
       return false;
     }
-    else if (free_space_ < 5368709120ull)
+    else if (free_space < 5368709120ull)
     {
       ROS_WARN("rosrecord::Record: Less than 5GB of space free on disk with %s.", file_name_.c_str());
+    }
+    else
+    {
+      logging_enabled_ = true;
     }
   }
   return true;
@@ -222,6 +231,17 @@ bool ros::record::Recorder::checkDisk()
 
 bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPtr msg, ros::Time time)
 {
+  if (!logging_enabled_)
+  {
+    ros::WallTime nowtime = ros::WallTime::now();
+    if (nowtime > warn_next_)
+    {
+      warn_next_ = nowtime + ros::WallDuration().fromSec(5.0);
+      ROS_WARN("Not logging message because logging disabled.  Most likely cause is a full disk.");
+    }
+    return false;
+  }
+
   bool needs_def_written = false;
   std::map<std::string, MsgInfo>::iterator key;
   {
@@ -250,10 +270,10 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
 
     if (ros::WallTime::now() > check_disk_next_)
     {
+      check_disk_next_ = check_disk_next_ + ros::WallDuration().fromSec(20.0);
+
       if (!checkDisk())
         return false;
-
-      check_disk_next_ = check_disk_next_ + ros::WallDuration().fromSec(20.0);
     }
   }
 

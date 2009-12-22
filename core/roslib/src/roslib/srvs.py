@@ -107,26 +107,31 @@ def list_srv_types(package, include_depends):
     types = roslib.resources.list_package_resources(package, include_depends, roslib.packages.SRV_DIR, _srv_filter)
     return [x[:-len(EXT)] for x in types]
 
-## @param package str: name of package .srv file is in
-## @param type str: type name of service
-## @return str: file path of .srv file in specified package
-def srv_file(package, type):
-    return roslib.packages.resource_file(package, roslib.packages.SRV_DIR, type+EXT)
+def srv_file(package, type_):
+    """
+    @param package: name of package .srv file is in
+    @type  package: str
+    @param type_: type name of service
+    @type  type_: str
+    @return: file path of .srv file in specified package
+    @rtype: str
+    """
+    return roslib.packages.resource_file(package, roslib.packages.SRV_DIR, type_+EXT)
 
+#TODO: REMOVE? this is unused
 ## List all messages that a package contains
-#  @param depend Depend: roslib.manifest.Depend object representing package
-#  to load messages from
-#  @param nameContext str: package prefix for message type names
-#  @return [(str,roslib.MsgSpec), [str]]: list of message type names and specs for package, as well as a list
-#      of message names that could not be processed. 
-def get_pkg_srv_specs(depend, nameContext):
+## @param depend Depend: roslib.manifest.Depend object representing package
+## to load messages from
+## @return [(str,roslib.MsgSpec), [str]]: list of message type names and specs for package, as well as a list
+##     of message names that could not be processed. 
+def get_pkg_srv_specs(package):
     #almost identical to roslib.msgs.get_pkg_msg_specs
-    types = list_srv_types(depend.package, False)
+    types = list_srv_types(package, False)
     specs = [] #no fancy list comprehension as we want to show errors
     failures = []
     for t in types:
         try: 
-            spec = load_from_file(srv_file(depend.package, t), nameContext)
+            spec = load_from_file(srv_file(package, t), package)
             specs.append(spec)
         except Exception, e:
             failures.append(t)
@@ -137,21 +142,21 @@ def get_pkg_srv_specs(depend, nameContext):
 #  @param text str: .msg text 
 #  @param package_context: context to use for msgTypeName, i.e. the package name,
 #      or '' to use local naming convention.
-#  @return Roslib.MsgSpec: Message type name and message specification
-#  @throws Roslib.MsgSpecException: if syntax errors or other problems are detected in file
+#  @return roslib.MsgSpec: Message type name and message specification
+#  @throws roslib.MsgSpecException: if syntax errors or other problems are detected in file
 def load_from_string(text, package_context=''):
-    textIn  = cStringIO.StringIO()
-    textOut = cStringIO.StringIO()
-    accum = textIn
+    text_in  = cStringIO.StringIO()
+    text_out = cStringIO.StringIO()
+    accum = text_in
     for l in text.split('\n'):
         l = l.split(COMMENTCHAR)[0].strip() #strip comments        
         if l.startswith(IODELIM): #lenient, by request
-            accum = textOut
+            accum = text_out
         else:
             accum.write(l+'\n')
     # create separate roslib.msgs objects for each half of file
-    msgIn, msgOut = [roslib.msgs.load_from_string(b.getvalue()) for b in [textIn, textOut]]
-    return SrvSpec(msgIn, msgOut, text)
+    msg_in, msg_out = [roslib.msgs.load_from_string(b.getvalue(), package_context) for b in [text_in, text_out]]
+    return SrvSpec(msg_in, msg_out, text)
 
 ## Convert the .srv representation in the file to a SrvSpec instance.
 #  @param package_context: context to use for type name, i.e. the package name,

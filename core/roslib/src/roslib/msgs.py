@@ -357,13 +357,12 @@ def msg_file(package, type_):
     """
     return roslib.packages.resource_file(package, roslib.packages.MSG_DIR, type_+EXT)
 
-def get_pkg_msg_specs(package, name_context):
+def get_pkg_msg_specs(package):
     """
     List all messages that a package contains.
     
     @param package: package to load messages from
     @type  package: str
-    @param name_context str: package prefix for message type names
     @return: list of message type names and specs for package, as well as a list
         of message names that could not be processed. 
     @rtype: [(str, L{MsgSpec}), [str]]
@@ -374,7 +373,7 @@ def get_pkg_msg_specs(package, name_context):
     failures = []
     for t in types:
         try: 
-            typespec = load_from_file(msg_file(package, t), name_context)
+            typespec = load_from_file(msg_file(package, t), package)
             specs.append(typespec)
         except Exception, e:
             failures.append(t)
@@ -412,11 +411,7 @@ def load_package_dependencies(package, load_recursive=False):
         if d in _loaded_packages or d == package:
             continue
         _loaded_packages.append(d)
-        if d != package:
-            context = d
-        else:
-            context = ''
-        specs, failed = get_pkg_msg_specs(d, context)
+        specs, failed = get_pkg_msg_specs(d)
         msgs.extend(specs)
         failures.extend(failed)
     for key, spec in msgs:
@@ -445,7 +440,7 @@ def load_package(package):
         return
 
     _loaded_packages.append(package)
-    specs, failed = get_pkg_msg_specs(package, '')
+    specs, failed = get_pkg_msg_specs(package)
     if VERBOSE:
         print "Package contains the following messages: %s"%specs
     for key, spec in specs:
@@ -583,6 +578,7 @@ def load_from_file(file_path, package_context=''):
             print "Load spec from", file_path, "into package [%s]"%package_context
         else:
             print "Load spec from", file_path
+
     file_name = os.path.basename(file_path)
     type_ = file_name[:-len(EXT)]
     # determine the type name

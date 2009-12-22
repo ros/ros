@@ -39,7 +39,6 @@ import unittest
 import rostest
 import rosdep.core
 
-
 class RosdepCoreTest(unittest.TestCase):
     def test_RosdepLookupPackage_get_os_from_yaml(self):
         rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "rosdep", rosdep.core.YamlCache())
@@ -185,6 +184,14 @@ class RosdepCoreTest(unittest.TestCase):
         depends = yc.get_rosstack_depends("ros")
         depends2 = yc.get_rosstack_depends("ros")
         self.assertEqual(depends, depends2)
+
+    def test_YamlCache_no_file(self):
+        yc = rosdep.core.YamlCache()
+        self.assertEqual({}, yc.get_yaml("non_extant_rosdep.yaml"))
+
+    def test_YamlCache_parse_failure(self):
+        yc = rosdep.core.YamlCache()
+        self.assertEqual({}, yc.get_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"), "test", "invalid_rosdep.yaml")))
 
 if __name__ == '__main__':
   os.environ["ROSDEP_TEST_OS"] = "rosdep_test_os"

@@ -41,6 +41,7 @@ import sys
 import time
 import traceback
 import logging
+import Queue
 import signal
 import atexit
 from threading import Thread, RLock, Lock
@@ -583,7 +584,6 @@ class ProcessMonitor(Thread):
         self.is_shutdown = True
         # killall processes on run exit
 
-        import Queue
         q = Queue.Queue()
         q.join()
         

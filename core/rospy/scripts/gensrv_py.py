@@ -81,7 +81,9 @@ class SrvGenerator(genutil.Generator):
 
         prefix = infile_name[:-len(roslib.srvs.EXT)]
         # generate message files for request/response        
-        name, spec = roslib.srvs.load_from_file(f)
+        name, spec = roslib.srvs.load_from_file(f, package)
+        base_name = roslib.names.resource_name_base(name)
+        
         outfile = self.outfile_name(outdir, f)
         f = open(outfile, 'w')
         if verbose:
@@ -91,13 +93,13 @@ class SrvGenerator(genutil.Generator):
                 #outfile = os.path.join(outdir, prefix+suffix+".py")    
                 #gen = roslib.genpy.msg_generator(package, name+suffix, mspec)
                 #self.write_gen(outfile, gen, roslib.srvs.is_verbose())
-                for l in roslib.genpy.msg_generator(package, name+suffix, mspec):
+                for l in roslib.genpy.msg_generator(package, base_name+suffix, mspec):
                     f.write(l+'\n')
 
             # generate service file
             #outfile = os.path.join(outdir, prefix+".py")
             #self.write_gen(outfile, srv_generator(package, name, spec), verbose)
-            for l in srv_generator(package, name, spec):
+            for l in srv_generator(package, base_name, spec):
                 f.write(l+'\n')
         finally:
             f.close()

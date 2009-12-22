@@ -71,9 +71,10 @@ class GenmsgPackage(genutil.Generator):
         infile_name = os.path.basename(f)
         outfile_name = self.outfile_name(outdir, infile_name)
 
-        (name, spec) = roslib.msgs.load_from_file(f)
+        (name, spec) = roslib.msgs.load_from_file(f, package)
+        base_name = roslib.names.resource_name_base(name)
         
-        self.write_gen(outfile_name, roslib.genpy.msg_generator(package, name, spec), verbose)
+        self.write_gen(outfile_name, roslib.genpy.msg_generator(package, base_name, spec), verbose)
 
         roslib.msgs.register(name, spec)
         return outfile_name

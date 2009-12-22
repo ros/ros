@@ -113,7 +113,7 @@ def args_kwds_to_message(data_class, args, kwds):
             elif isinstance(args[0], roslib.message.Message) and \
                     (len(data_class._slot_types) == 0 or \
                          args[0]._type != data_class._slot_types[0]):
-                raise TypeError("expected [%s] but got [%s]"%(data_class._type, args[0]._type))
+                raise TypeError("expected [%s] but got [%s]"%(data_class._slot_types[0], args[0]._type))
             else:
                 return data_class(*args)
         else:

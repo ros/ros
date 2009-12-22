@@ -187,6 +187,7 @@ class RosdepLookupPackage:
                     if self.os_name == "ubuntu" and float(key) == float(self.os_version):
                         #print "Matched %s"%(os_version)
                         # NOTE: this hack fails if os_version is not major.minor
+                        print >> sys.stderr, "Warning: Ubuntu versions should be specified as a string not as a float, e.g. convert %.2f to '%.2f'.\n Please update '%s'"%(float(self.os_version), float(self.os_version), os_specific)
                         return os_specific[key]
                 print >> sys.stderr, "failed to find specific version %s of %s within"%(self.os_version, self.os_name), os_specific
                 return False                    

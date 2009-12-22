@@ -55,6 +55,9 @@ CONSTANTS_SERVICE_WRAPPED = 'constants_service_wrapped'
 ADD_TWO_INTS_SERVICE_NAKED = 'a2i_naked'
 ADD_TWO_INTS_SERVICE_WRAPPED = 'a2i_wrapped'
 
+STRING_CAT_SERVICE_NAKED = 'string_lower_naked'
+STRING_CAT_SERVICE_WRAPPED = 'string_lower_wrapped'
+
 #TODO:
 
 STRING_SERVICE       = 'string_service'
@@ -67,6 +70,14 @@ def add_two_ints_wrapped(req):
     return AddTwoIntsResponse(req.a + req.b)
 def add_two_ints_naked(req):
     return req.a + req.b
+
+def string_cat_naked(req):
+    from std_msgs.msg import String
+    return String(req.str.data + req.str2.val)
+def string_cat_wrapped(req):
+    from test_rospy.srv import StringStringResponse
+    from std_msgs.msg import String
+    return StringStringResponse(String(req.str.data + req.str2.val))
 
 def handle_constants_wrapped(req):
     cmr = ConstantsMultiplexRequest
@@ -103,6 +114,10 @@ def services():
     
     s3 = rospy.Service(ADD_TWO_INTS_SERVICE_NAKED, AddTwoInts, add_two_ints_naked)
     s4 = rospy.Service(ADD_TWO_INTS_SERVICE_WRAPPED, AddTwoInts, add_two_ints_wrapped)
+
+    s5 = rospy.Service(STRING_CAT_SERVICE_NAKED, StringString, string_cat_naked)
+    s6 = rospy.Service(STRING_CAT_SERVICE_WRAPPED, StringString, string_cat_wrapped)
+    
     rospy.spin()
 
 class TestBasicServicesClient(unittest.TestCase):
@@ -159,7 +174,21 @@ class TestBasicServicesClient(unittest.TestCase):
             resp_req_kwds = self._test_req_kwds(name, Cls, {'a': 3})
             for resp in [resp_req, resp_req_naked, resp_req_kwds]:
                 self.assertEquals(3, resp.sum)
-    
+
+    def test_String_String(self):
+        from std_msgs.msg import String
+        from test_rospy.srv import StringString, StringStringRequest
+        from test_rospy.msg import Val
+        Cls = StringString
+        Req = StringStringRequest
+
+        for name in [STRING_CAT_SERVICE_NAKED, STRING_CAT_SERVICE_WRAPPED]:
+            resp_req = self._test(name, Cls, Req(String('FOO'), Val('bar')))
+            resp_req_naked = self._test_req_naked(name, Cls, (String('FOO'), Val('bar'),))
+            resp_req_kwds = self._test_req_kwds(name, Cls, {'str': String('FOO'), 'str2': Val('bar')})
+            for resp in [resp_req, resp_req_naked, resp_req_kwds]:
+                self.assertEquals('FOObar', resp.str.data)
+        
     def test_constants(self):
         Cls = ConstantsMultiplex
         Req = ConstantsMultiplexRequest

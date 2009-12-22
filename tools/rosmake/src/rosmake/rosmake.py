@@ -85,7 +85,7 @@ class RosMakeAll:
         return self.paths[package]
         
     def check_rosdep(self, packages):
-        self.print_all("Checking rosdeps compliance for packages %s.  This may take a minute."%(', '.join(packages)))
+        self.print_all("Checking rosdeps compliance for packages %s.  This may take a few seconds."%(', '.join(packages)))
         r = rosdep.core.Rosdep(packages, robust=True)
         output = r.check()
         if len(output) == 0:

@@ -53,19 +53,26 @@ import genutil
 
 import roslib.genpy 
 
-## GenmsgPackage generates Python message code for all messages in a
-## package. See genutil.Generator. In order to generator code for a
-## single .msg file, see msg_generator.
 class GenmsgPackage(genutil.Generator):
+    """
+    GenmsgPackage generates Python message code for all messages in a
+    package. See genutil.Generator. In order to generator code for a
+    single .msg file, see msg_generator.
+    """
     def __init__(self):
         super(GenmsgPackage, self).__init__(
             'genmsg_py', 'messages', roslib.msgs.EXT, roslib.packages.MSG_DIR, roslib.genpy.MsgGenerationException)
 
-    ## Generate python message code for a single .msg file
-    ## @param f str: path to .msg file
-    ## @param outdir str: output directory for generated code
-    ## @return str filename of generated Python code 
     def generate(self, package, f, outdir):
+        """
+        Generate python message code for a single .msg file
+        @param f: path to .msg file
+        @type  f: str
+        @param outdir: output directory for generated code
+        @type  outdir: str
+        @return: filename of generated Python code 
+        @rtype: str
+        """
         verbose = True
         f = os.path.abspath(f)
         infile_name = os.path.basename(f)

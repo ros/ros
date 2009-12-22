@@ -33,9 +33,11 @@
 #
 # Revision $Id: gensrv_py.py 1030 2008-05-22 22:11:12Z sfkwc $
 
-## ROS message source code generation for Python
-#
-#  Converts ROS .srv files into Python source code implementations. 
+"""
+ROS message source code generation for rospy.
+
+Converts ROS .srv files into Python source code implementations.
+"""
 
 import roslib; roslib.load_manifest('rospy')
 

@@ -599,7 +599,7 @@ def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
     else:
         _check_master()
         rospy.init_node(NAME, anonymous=True)
-        msg_class, real_topic, msg_eval = get_topic_class(topic)
+        msg_class, real_topic, msg_eval = get_topic_class(topic, blocking=True)
         if msg_class is None:
             # occurs on ctrl-C
             return

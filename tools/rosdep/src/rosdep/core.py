@@ -224,7 +224,10 @@ class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
         os_list = [debian.RosdepTestOS(), debian.Ubuntu(), debian.Debian(), debian.Mint(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports()]
         self.osi = roslib.os_detect.OSDetect(os_list)
-        self.rosdeps = self.gather_rosdeps(packages, command)
+        self.packages = packages
+        self.rosdeps = roslib.packages.rosdeps_of(packages)
+        #self.rosdeps = self.gather_rosdeps(packages, command)
+        #print self.rosdeps
         self.robust = robust
         
 
@@ -234,6 +237,7 @@ class Rosdep:
             return {}
         rosdeps = {}
         start_time = time.time()
+
         if "ROSDEP_DEBUG" in os.environ:
             print "Loading rosdeps for %d packages.  This may take a few seconds..."%len(packages)
         for p in packages:
@@ -255,7 +259,7 @@ class Rosdep:
         return rosdeps
 
     def get_packages_and_scripts(self):
-        if len(self.rosdeps) == 0:
+        if len(self.packages) == 0:
             return ([], [])
         native_packages = []
         scripts = []
@@ -263,8 +267,8 @@ class Rosdep:
         yc = YamlCache()
         start_time = time.time()
         if "ROSDEP_DEBUG" in os.environ:
-            print "Generating package list and scripts for %d rosdeps.  This may take a few seconds..."%len(self.rosdeps)
-        for p in self.rosdeps:
+            print "Generating package list and scripts for %d rosdeps.  This may take a few seconds..."%len(self.packages)
+        for p in self.packages:
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, yc)
             for r in self.rosdeps[p]:
                 specific = rdlp.lookup_rosdep(r)
@@ -285,7 +289,7 @@ class Rosdep:
 
         time_delta = (time.time() - start_time)
         if "ROSDEP_DEBUG" in os.environ:
-            print "Done loading rosdeps in %f seconds, averaging %f per rosdep."%(time_delta, time_delta/len(self.rosdeps))
+            print "Done loading rosdeps in %f seconds, averaging %f per rosdep."%(time_delta, time_delta/len(self.packages))
 
         return (list(set(native_packages)), list(set(scripts)))
 

@@ -354,7 +354,7 @@ function _roscomplete_rosnode {
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
             ping|info|list|kill)
-                opts=`rosnode list`
+                opts=`rosnode list 2> /dev/null`
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
             machine)
@@ -365,7 +365,7 @@ function _roscomplete_rosnode {
         case ${COMP_WORDS[1]} in
             kill)
                 # complete on node name
-                opts=`rosnode list`
+                opts=`rosnode list 2> /dev/null`
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
         esac
@@ -382,7 +382,7 @@ function _roscomplete_rosparam {
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
             set|get|delete|list)
-                opts=`rosparam list`
+                opts=`rosparam list 2> /dev/null`
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
             load|dump)
@@ -394,7 +394,7 @@ function _roscomplete_rosparam {
         case ${COMP_WORDS[1]} in
             load|dump)
                 # complete on namespace
-                opts=`rosparam list`
+                opts=`rosparam list 2> /dev/null`
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
         esac
@@ -445,7 +445,7 @@ function _roscomplete_rosservice {
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
             uri|list|type)
-                opts=`rosservice list`
+                opts=`rosservice list 2> /dev/null`
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
             find)

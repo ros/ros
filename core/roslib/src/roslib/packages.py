@@ -491,18 +491,22 @@ def find_resource(pkg, resource_name, filter_fn=None, ros_root=None, ros_package
 
 def rosdeps_of(packages):
     """
-    Collect all rosdeps of specified packages.
+    Collect all rosdeps of specified packages into a dictionary.
     @param packages: packages names
     @type  packages: [str]
-    @return: list of rosdep names. The entries are not guaranteed to
-    be unique.
-    @rtype: [str]
+    @return: dictionary mapping package names to list of rosdep names.
+    @rtype: {str: [str]}
     """
+    if not type(packages) in [list, tuple]:
+        raise TypeError("packages must be list or tuple")
     _update_rospack_cache()
     from roslib.manifest import load_manifest
     manifests = [load_manifest(p) for p in packages]
     import itertools
-    return [d.name for d in itertools.chain(*(m.rosdeps for m in manifests))]
+    map = {}
+    for pkg, m in itertools.izip(packages, manifests):
+        map[pkg] = [d.name for d in m.rosdeps]
+    return map
 
 def _platform_supported(file, os, version):
     m = roslib.manifest.parse_file(file)

@@ -50,34 +50,29 @@ inline double toc()
 
 int main(int, char **)
 {
-  test_roscpp_serialization_perf::PointCloud pc, pc2;
+  test_roscpp_serialization_perf::PointCloud pc;
   static const int NUM_PTS = 1000000;
+  static const int NUM_ITER = 100;
   pc.pts.resize(NUM_PTS);
   pc.chan.resize(2);
   pc.chan[0].vals.resize(NUM_PTS);
   pc.chan[1].vals.resize(NUM_PTS);
-  // populate it with garbage
-  for (int i = 0; i < NUM_PTS; i++)
-  {
-    pc.pts[i].x = rand();
-    pc.pts[i].y = rand();
-    pc.pts[i].z = rand();
-    pc.chan[0].vals[i] = rand();
-    pc.chan[1].vals[i] = rand();
-  }
 
-  ros::Time t_start(ros::Time::now());
   uint8_t *ser_buf = new uint8_t[pc.serializationLength()];
+  ros::Time t_start(ros::Time::now());
   tic();
-  pc.serialize(ser_buf,0);
-  printf("serialization took %.6f sec\n", toc());
+  for (int i = 0; i < NUM_ITER; ++i)
+  {
+    pc.serialize(ser_buf,0);
+  }
+  printf("avg serialization took %.6f sec\n", toc() / (double)NUM_ITER);
 
   tic();
-  pc2.deserialize(ser_buf);
-  printf("first deserization took %.6f sec\n", toc());
-  const int NUM_ITER = 100;
   for (int i = 0; i < NUM_ITER; i++)
+  {
+    test_roscpp_serialization_perf::PointCloud pc2;
     pc2.deserialize(ser_buf);
+  }
 
   printf("avg deserization time %.6f sec\n", toc() / (double)NUM_ITER);
 

@@ -408,31 +408,31 @@ function _roscomplete_rostopic {
     if [[ $COMP_CWORD == 1 ]]; then
         opts="bw echo hz list pub type find"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-    elif [[ $COMP_CWORD == 2 ]]; then
+    elif [[ $COMP_CWORD -ge 2 ]]; then
         case ${COMP_WORDS[1]} in
             bw|echo|hz|list|type)
-                opts=`rostopic list`
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                if [[ ${COMP_WORDS[$(( $COMP_CWORD - 1 ))]} == "-b" ]]; then
+                    COMPREPLY=($(compgen -f -- ${arg}))
+                else
+                    opts=`rostopic list`
+                    COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+                fi
                 ;;
             find)
                 opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
             pub)
-                # This takes more logic.
-		opts=`rostopic list`
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-                ;;
-        esac
-    elif [[ $COMP_CWORD == 3 ]]; then
-        case ${COMP_WORDS[1]} in
-            pub)
-                opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+                if [[ $COMP_CWORD == 2 ]]; then
+		    opts=`rostopic list`
+                    COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+                elif [[ $COMP_CWORD == 3 ]]; then
+                    opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+                    COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+                fi
                 ;;
         esac
     fi
-
 }
 
 function _roscomplete_rosservice {

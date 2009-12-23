@@ -56,6 +56,9 @@ class PollSet;
 class TransportTCP : public Transport
 {
 public:
+  static bool s_use_keepalive_;
+
+public:
   enum Flags
   {
     SYNCHRONOUS = 1<<0,
@@ -95,6 +98,7 @@ public:
   int getServerPort() { return server_port_; }
 
   void setNoDelay(bool nodelay);
+  void setKeepAlive(bool use, uint32_t idle, uint32_t interval, uint32_t count);
 
   // overrides from Transport
   virtual int32_t read(uint8_t* buffer, uint32_t size);

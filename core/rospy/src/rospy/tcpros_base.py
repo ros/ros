@@ -443,14 +443,18 @@ class TCPROSTransport(Transport):
             
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             if _is_use_tcp_keepalive():
-                # turn on KEEPALIVE
-                s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-                # - # keepalive failures before actual connection failure
-                s.setsockopt(socket.SOL_TCP, socket.TCP_KEEPCNT, 9)
-                # - timeout before starting KEEPALIVE process
-                s.setsockopt(socket.SOL_TCP, socket.TCP_KEEPIDLE, 60)
-                # - interval to send KEEPALIVE after IDLE timeout
-                s.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, 10)
+                # OSX (among others) does not define these options
+                if hasattr(socket, 'TCP_KEEPCNT') and \
+                   hasattr(socket, 'TCP_KEEPIDLE') and \
+                   hasattr(socket, 'TCP_KEEPINTVL'):
+                    # turn on KEEPALIVE
+                    s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                    # - # keepalive failures before actual connection failure
+                    s.setsockopt(socket.SOL_TCP, socket.TCP_KEEPCNT, 9)
+                    # - timeout before starting KEEPALIVE process
+                    s.setsockopt(socket.SOL_TCP, socket.TCP_KEEPIDLE, 60)
+                    # - interval to send KEEPALIVE after IDLE timeout
+                    s.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, 10)
             if timeout is not None:
                 s.settimeout(timeout)
             self.socket = s

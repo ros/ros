@@ -799,10 +799,16 @@ class _PublisherImpl(_TopicImpl):
         @return: True if the data was published, False otherwise.
         @rtype: bool
         @raise roslib.message.SerializationError: if L{Message} instance is unable to serialize itself
-        @raise roslib.message.SerializationError: if L{Message} instance is unable to serialize itself
+        @raise rospy.ROSException: if topic has been closed
         """
         if self.closed:
-            raise ROSException("publish() to a closed topic")
+            # during shutdown, the topic can get closed, which creates
+            # a race condition with user code testing is_shutdown
+            if not is_shutdown():
+                raise ROSException("publish() to a closed topic")
+            else:
+                return
+            
         if self.is_latch:
             self.latch = message
 

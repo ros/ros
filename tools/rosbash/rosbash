@@ -414,7 +414,7 @@ function _roscomplete_rostopic {
                 if [[ ${COMP_WORDS[$(( $COMP_CWORD - 1 ))]} == "-b" ]]; then
                     COMPREPLY=($(compgen -f -- ${arg}))
                 else
-                    opts=`rostopic list`
+                    opts=`rostopic list 2> /dev/null`
                     COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 fi
                 ;;
@@ -424,7 +424,7 @@ function _roscomplete_rostopic {
                 ;;
             pub)
                 if [[ $COMP_CWORD == 2 ]]; then
-		    opts=`rostopic list`
+		    opts=`rostopic list 2> /dev/null`
                     COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 elif [[ $COMP_CWORD == 3 ]]; then
                     opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`

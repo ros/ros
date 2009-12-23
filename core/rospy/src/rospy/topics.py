@@ -103,7 +103,9 @@ class Topic(object):
         """
         
         if not name or not isinstance(name, basestring):
-            raise ValueError("topic parameter 'name' is not a non-empty string")
+            raise ValueError("topic name is not a non-empty string")
+        if isinstance(name, unicode):
+            raise ValueError("topic name cannot be unicode")
         if data_class is None:
             raise ValueError("topic parameter 'data_class' is not initialized")
         if not type(data_class) == type:

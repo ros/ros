@@ -36,6 +36,7 @@ from __future__ import with_statement
 
 import roslib.rospack
 import roslib.stacks
+import roslib.manifest
 import roslib.os_detect
 import os
 import sys
@@ -118,6 +119,7 @@ class RosdepLookupPackage:
         rosdep_dependent_packages = roslib.rospack.rospack_depends(package)
         rosdep_dependent_packages.append(package)
 
+
         paths = set()
         for p in rosdep_dependent_packages:
             stack = roslib.stacks.stack_of(p)
@@ -127,7 +129,7 @@ class RosdepLookupPackage:
                     paths.add( os.path.join(roslib.stacks.get_stack_dir(s), "rosdep.yaml"))
             else:
                 paths.add( os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
-
+                    
 
         for path in paths:
             self.insert_map(self.parse_yaml(path), path)
@@ -226,37 +228,14 @@ class Rosdep:
         self.osi = roslib.os_detect.OSDetect(os_list)
         self.packages = packages
         self.rosdeps = roslib.packages.rosdeps_of(packages)
-        #self.rosdeps = self.gather_rosdeps(packages, command)
-        #print self.rosdeps
         self.robust = robust
         
 
 
-    def gather_rosdeps(self, packages, command):
-        if len(packages) == 0:
-            return {}
-        rosdeps = {}
-        start_time = time.time()
-
-        if "ROSDEP_DEBUG" in os.environ:
-            print "Loading rosdeps for %d packages.  This may take a few seconds..."%len(packages)
-        for p in packages:
-          args = [command, p]
-          #print "\n\n\nmy args are", args
-          deps_list = [x for x in roslib.rospack.rospackexec(args).split('\n') if x]
-          rosdeps[p] = []
-          for dep_str in deps_list:
-              dep = dep_str.split()
-              if len(dep) == 2 and dep[0] == "name:":
-                  rosdeps[p].append(dep[1])
-              else:
-                  print len(dep)
-                  print "rospack returned wrong number of values \n\"%s\""%dep_str
-        time_delta = (time.time() - start_time)
-        if "ROSDEP_DEBUG" in os.environ:
-            print "Done loading rosdeps in %f seconds, averaging %f per package."%(time_delta, time_delta/len(packages))
-        # todo deduplicate
-        return rosdeps
+    def get_rosdep0(self, package):
+        m = roslib.manifest.load_manifest(package)
+        return [d.name for d in m.rosdeps]
+            
 
     def get_packages_and_scripts(self):
         if len(self.packages) == 0:
@@ -324,7 +303,7 @@ class Rosdep:
     def what_needs(self, rosdep_args):
         packages = []
         for p in roslib.packages.list_pkgs():
-            rosdeps_needed = self.gather_rosdeps([p], "rosdep0")[p]
+            rosdeps_needed = self.get_rosdep0(p)
             matches = [r for r in rosdep_args if r in rosdeps_needed]
             for r in matches:
                 packages.append(p)

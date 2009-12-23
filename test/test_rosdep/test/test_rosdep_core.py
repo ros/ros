@@ -41,20 +41,20 @@ import rosdep.core
 
 class RosdepCoreTest(unittest.TestCase):
     def test_RosdepLookupPackage_get_os_from_yaml(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "rosdep", rosdep.core.YamlCache())
+        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
         yaml_os_map = {"rosdep_test_os":"one", "other":"two", "three":"three"};
         output = rdlp.get_os_from_yaml(yaml_os_map)
         self.assertEqual("one", output)
 
     def test_RosdepLookupPackage_get_version_from_yaml(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "rosdep", rosdep.core.YamlCache())
+        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
         yaml_map = {"8.04":"one", "rosdep_test_version":"two", "three":"three"};
         output = rdlp.get_version_from_yaml(yaml_map)
         self.assertEqual("two", output)
         
 
     def test_RosdepLookupPackage_parse_yaml_package(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache())
+        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp.insert_map(yaml_map, "example_yaml_path", False)
         output = rdlp.lookup_rosdep("rosdep_test")
@@ -64,7 +64,7 @@ class RosdepCoreTest(unittest.TestCase):
 
 
     def test_RosdepLookupPackage_parse_yaml_package_override(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache())
+        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp.insert_map(yaml_map, "example_yaml_path", False)
         rdlp.insert_map(yaml_map, "example_yaml_path2", True)
@@ -75,7 +75,7 @@ class RosdepCoreTest(unittest.TestCase):
 
 
     def test_RosdepLookupPackage_parse_yaml_package_collision_pass(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache())
+        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp.insert_map(yaml_map, "example_yaml_path", False) 
         rdlp.insert_map(yaml_map, "example_yaml_path2", False) 
@@ -86,14 +86,14 @@ class RosdepCoreTest(unittest.TestCase):
 
 
     def test_RosdepLookupPackage_parse_yaml_package_collision_fail(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache())
+        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp.insert_map(yaml_map, "example_yaml_path", False) 
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep_conflicting.yaml"))
         self.assertRaises(rosdep.core.RosdepException, rdlp.insert_map, yaml_map, "example_yaml_path2", False)
 
     def test_RosdepLookupPackage_parse_yaml_package_collision_override(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache())
+        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp.insert_map(yaml_map, "example_yaml_path", False)
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep_conflicting.yaml"))
@@ -104,7 +104,7 @@ class RosdepCoreTest(unittest.TestCase):
         self.assertEqual(False, output)
 
     def test_RosdepLookupPackage_get_sources(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache())
+        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
 
         sources = rdlp.get_sources("rosdep_test")
         self.assertEqual([], sources)
@@ -120,7 +120,7 @@ class RosdepCoreTest(unittest.TestCase):
         self.assertEqual([], sources)
         
     def test_RosdepLookupPackage_get_map(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache())
+        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
 
 
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
@@ -132,14 +132,14 @@ class RosdepCoreTest(unittest.TestCase):
         self.assertEqual(parsed_output, rdlp.get_map())
 
     def test_RosdepLookupPackage_failed_version_lookup(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache())
+        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp.insert_map(yaml_map, "example_yaml_path", False)
         output = rdlp.lookup_rosdep("other_rosdep_test")
         self.assertEqual(output, False)
     
     def test_RosdepLookupPackage_failed_os_lookup(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache())
+        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp.insert_map(yaml_map, "example_yaml_path", False)
         output = rdlp.lookup_rosdep("no_os_rosdep_test")
@@ -150,10 +150,10 @@ class RosdepCoreTest(unittest.TestCase):
         rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=False)
 
     def test_YamlCache_init(self):
-        yc = rosdep.core.YamlCache()
+        yc = rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version")
 
     def test_YamlCache_get_yaml(self):
-        yc = rosdep.core.YamlCache()
+        yc = rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version")
         yaml_dict = yc.get_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"), "test", "example_rosdep.yaml"))
         yaml_dict2 = yc.get_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"), "test", "example_rosdep.yaml"))
         self.assertEqual(yaml_dict, yaml_dict2)
@@ -180,17 +180,17 @@ class RosdepCoreTest(unittest.TestCase):
         self.assertEqual(yaml_dict, yaml_truth)
 
     def test_YamlCache_rosstack_depends(self): ## TODO add this in a walled garden so it can be asserted as being equal to something specific
-        yc = rosdep.core.YamlCache()
+        yc = rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version")
         depends = yc.get_rosstack_depends("ros")
         depends2 = yc.get_rosstack_depends("ros")
         self.assertEqual(depends, depends2)
 
     def test_YamlCache_no_file(self):
-        yc = rosdep.core.YamlCache()
+        yc = rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version")
         self.assertEqual({}, yc.get_yaml("non_extant_rosdep.yaml"))
 
     def test_YamlCache_parse_failure(self):
-        yc = rosdep.core.YamlCache()
+        yc = rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version")
         self.assertEqual({}, yc.get_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"), "test", "invalid_rosdep.yaml")))
 
 if __name__ == '__main__':

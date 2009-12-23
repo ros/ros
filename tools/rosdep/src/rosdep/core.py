@@ -54,9 +54,12 @@ import core
 
 
 class YamlCache:
-    def __init__(self):
+    def __init__(self, os_name, os_version):
+        self.os_name = os_name
+        self.os_version = os_version
         self._yaml_cache = {}
         self._rosstack_depends_cache = {}
+        self._expanded_rosdeps = {}
         
     def get_yaml(self, path):
         if path in self._yaml_cache:
@@ -84,6 +87,49 @@ class YamlCache:
         self._rosstack_depends_cache[stack] = roslib.rospack.rosstack_depends(stack)
         return self._rosstack_depends_cache[stack]
     
+    def get_specific_rosdeps(self, path):
+        if path in self._expanded_rosdeps:
+            return self._expanded_rosdeps[path]
+
+        yaml_dict = self.get_yaml(path)
+        expanded_rosdeps = {}
+        for key in yaml_dict:
+            rosdep_entry = self.get_os_from_yaml(yaml_dict[key])
+            if not rosdep_entry: # if no match don't do anything
+                continue # matches for loop
+            expanded_rosdeps[key] = rosdep_entry
+        self._expanded_rosdeps[path] = expanded_rosdeps
+        return expanded_rosdeps
+
+    def get_os_from_yaml(self, yaml_map):
+        # See if the version for this OS exists
+        if self.os_name in yaml_map:
+            return self.get_version_from_yaml(yaml_map[self.os_name])
+        else:
+            #print >> sys.stderr, "failed to resolve a rule for OS(%s)"%(self.os_name)
+            return False
+
+    def get_version_from_yaml(self, os_specific):
+        if type(os_specific) == type("String"):
+            return os_specific
+        else:# it must be a map of versions
+            if self.os_version in os_specific.keys():
+                return os_specific[self.os_version]
+            else:
+                ## Hack to match rounding errors in pyyaml load 9.04  != 9.03999999999999996 in string space
+                for key in os_specific.keys():
+                    if self.os_name == "ubuntu" and float(key) == float(self.os_version):
+                        #print "Matched %s"%(os_version)
+                        # NOTE: this hack fails if os_version is not major.minor
+                        print >> sys.stderr, "Warning: Ubuntu versions should be specified as a string not as a float, e.g. convert %.2f to '%.2f'.\n Please update '%s'"%(float(self.os_version), float(self.os_version), os_specific)
+                        return os_specific[key]
+                print >> sys.stderr, "failed to find specific version %s of %s within"%(self.os_version, self.os_name), os_specific
+                return False                    
+
+
+
+
+
 
 class RosdepException(Exception):
     pass
@@ -110,6 +156,7 @@ class RosdepLookupPackage:
         self.yaml_cache = yaml_cache
         ## Find all rosdep.yamls here and load them into a map
 
+
         if package:
             self.load_for_package(package)
         
@@ -129,8 +176,6 @@ class RosdepLookupPackage:
                     paths.add( os.path.join(roslib.stacks.get_stack_dir(s), "rosdep.yaml"))
             else:
                 paths.add( os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
-                    
-
         for path in paths:
             self.insert_map(self.parse_yaml(path), path)
         #print "built map", self.rosdep_map
@@ -140,9 +185,10 @@ class RosdepLookupPackage:
         path = os.path.join(ros_home, "rosdep.yaml")
         self.insert_map(self.parse_yaml(path), path, override=True)
 
+
     def insert_map(self, yaml_dict, source_path, override=False):
         for key in yaml_dict:
-            rosdep_entry = self.get_os_from_yaml(yaml_dict[key])
+            rosdep_entry = yaml_dict[key]
             if not rosdep_entry: # if no match don't do anything
                 continue # matches for loop
             if key in self.rosdep_source:
@@ -167,7 +213,7 @@ class RosdepLookupPackage:
 
 
     def parse_yaml(self, path):
-        return self.yaml_cache.get_yaml(path)
+        return self.yaml_cache.get_specific_rosdeps(path)
         
     def get_os_from_yaml(self, yaml_map):
         # See if the version for this OS exists
@@ -243,7 +289,7 @@ class Rosdep:
         native_packages = []
         scripts = []
         failed_rosdeps = []
-        yc = YamlCache()
+        yc = YamlCache(self.osi.get_name(), self.osi.get_version())
         start_time = time.time()
         if "ROSDEP_DEBUG" in os.environ:
             print "Generating package list and scripts for %d rosdeps.  This may take a few seconds..."%len(self.packages)
@@ -322,7 +368,7 @@ class Rosdep:
                     
     def depdb(self, packages):
         output = "Rosdep dependencies for operating system %s version %s "%(self.osi.get_name(), self.osi.get_version())
-        yc = YamlCache()
+        yc = YamlCache(self.osi.get_name(), self.osi.get_version())
         for p in packages:
             output += "\nPACKAGE: %s\n"%p
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, yc)
@@ -334,7 +380,7 @@ class Rosdep:
     def where_defined(self, rosdeps):
         output = ""
         locations = {}
-        rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), None, YamlCache())
+        rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), None, YamlCache(self.osi.get_name(), self.osi.get_version()))
         
         for r in rosdeps:
             locations[r] = set()

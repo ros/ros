@@ -62,6 +62,22 @@ DEFAULT_BUFF_SIZE = 65536
 ## name of our customized TCP protocol for accepting flows over server socket
 TCPROS = "TCPROS" 
 
+_PARAM_TCP_KEEPALIVE = '/tcp_keepalive'
+_use_tcp_keepalive = None
+def _is_use_tcp_keepalive():
+    global _use_tcp_keepalive
+    if _use_tcp_keepalive is not None:
+        return _use_tcp_keepalive
+    # in order to prevent circular dependencies, this does not use the
+    # builtin libraries for interacting with the parameter server
+    import rospy.init
+    import roslib.rosenv
+    master_uri = rospy.init.get_local_master_uri() or roslib.rosenv.get_master_uri()
+    m = rospy.core.xmlrpcapi(master_uri)
+    code, msg, val = m.getParam(rospy.names.get_caller_id(), _PARAM_TCP_KEEPALIVE)
+    _use_tcp_keepalive = val if code == 1 else True
+    return _use_tcp_keepalive 
+
 def recv_buff(sock, b, buff_size):
     """
     Read data from socket into buffer.
@@ -425,9 +441,19 @@ class TCPROSTransport(Transport):
         try:
             self.endpoint_id = endpoint_id
             
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            if _is_use_tcp_keepalive():
+                # turn on KEEPALIVE
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                # - # keepalive failures before actual connection failure
+                s.setsockopt(socket.SOL_TCP, socket.TCP_KEEPCNT, 9)
+                # - timeout before starting KEEPALIVE process
+                s.setsockopt(socket.SOL_TCP, socket.TCP_KEEPIDLE, 60)
+                # - interval to send KEEPALIVE after IDLE timeout
+                s.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, 10)
             if timeout is not None:
-                self.socket.settimeout(timeout)
+                s.settimeout(timeout)
+            self.socket = s
             self.socket.connect((dest_addr, dest_port))
             self.write_header()
             self.read_header()

@@ -45,6 +45,7 @@
 #include "ros/callback_queue.h"
 #include "ros/param.h"
 #include "ros/rosout_appender.h"
+#include "ros/transport/transport_tcp.h"
 
 #include "roscpp/GetLoggers.h"
 #include "roscpp/SetLoggerLevel.h"
@@ -265,6 +266,8 @@ void start()
   g_shutting_down = false;
   g_started = true;
   g_ok = true;
+
+  param::param("/tcp_keepalive", TransportTCP::s_use_keepalive_, TransportTCP::s_use_keepalive_);
 
   PollManager::instance()->addPollThreadListener(checkForShutdown);
   XMLRPCManager::instance()->bind("shutdown", shutdownCallback);

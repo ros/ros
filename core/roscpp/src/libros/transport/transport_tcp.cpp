@@ -55,6 +55,8 @@
 namespace ros
 {
 
+bool TransportTCP::s_use_keepalive_ = true;
+
 TransportTCP::TransportTCP(PollSet* poll_set, int flags)
 : sock_(-1)
 , closed_(false)
@@ -94,6 +96,8 @@ bool TransportTCP::initializeSocket()
       return false;
     }
   }
+
+  setKeepAlive(s_use_keepalive_, 60, 10, 9);
 
   if (is_server_)
   {
@@ -141,6 +145,48 @@ void TransportTCP::setNoDelay(bool nodelay)
   if (result < 0)
   {
     ROS_ERROR("setsockopt failed to set TCP_NODELAY on socket [%d] [%s]", sock_, cached_remote_host_.c_str());
+  }
+}
+
+void TransportTCP::setKeepAlive(bool use, uint32_t idle, uint32_t interval, uint32_t count)
+{
+  if (use)
+  {
+    ROSCPP_LOG_DEBUG("Enabling TCP Keepalive on socket [%d]", sock_);
+
+    int val = 1;
+    if (setsockopt(sock_, SOL_SOCKET, SO_KEEPALIVE, &val, sizeof(val)) != 0)
+    {
+      ROS_ERROR("setsockopt failed to set SO_KEEPALIVE on socket [%d] [%s]", sock_, cached_remote_host_.c_str());
+    }
+
+    val = idle;
+    if (setsockopt(sock_, SOL_TCP, TCP_KEEPIDLE, &val, sizeof(val)) != 0)
+    {
+      ROS_ERROR("setsockopt failed to set TCP_KEEPIDLE on socket [%d] [%s]", sock_, cached_remote_host_.c_str());
+    }
+
+    val = interval;
+    if (setsockopt(sock_, SOL_TCP, TCP_KEEPINTVL, &val, sizeof(val)) != 0)
+    {
+      ROS_ERROR("setsockopt failed to set TCP_KEEPINTVL on socket [%d] [%s]", sock_, cached_remote_host_.c_str());
+    }
+
+    val = count;
+    if (setsockopt(sock_, SOL_TCP, TCP_KEEPCNT, &val, sizeof(val)) != 0)
+    {
+      ROS_ERROR("setsockopt failed to set TCP_KEEPCNT on socket [%d] [%s]", sock_, cached_remote_host_.c_str());
+    }
+  }
+  else
+  {
+    ROSCPP_LOG_DEBUG("Disabling TCP Keepalive on socket [%d]", sock_);
+
+    int val = 0;
+    if (setsockopt(sock_, SOL_SOCKET, SO_KEEPALIVE, &val, sizeof(val)) != 0)
+    {
+      ROS_ERROR("setsockopt failed to set SO_KEEPALIVE on socket [%d] [%s]", sock_, cached_remote_host_.c_str());
+    }
   }
 }
 

@@ -130,9 +130,9 @@ def _init_node_params(argv, node_name):
 _init_node_args = None
 
 def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rostime=False, disable_rosout=False, disable_signals=False):
-    """Register client node with the master under the specified name.
-    This should be called after Pub/Sub topics have been declared and
-    it MUST be called from the main Python thread unless
+    """
+    Register client node with the master under the specified name.
+    This MUST be called from the main Python thread unless
     disable_signals is set to True. Duplicate calls to init_node are
     only allowed if the arguments are identical as the side-effects of
     this method are not reversible.
@@ -161,7 +161,8 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
         signal handlers. You must set this flag if (a) you are unable
         to call init_node from the main thread and/or you are using
         rospy in an environment where you need to control your own
-        signal handling (e.g. WX).
+        signal handling (e.g. WX). If you set this to True, you should
+        call rospy.signal_shutdown(reason) to initiate clean shutdown.
     @type  disable_signals: bool
     
     @param disable_rostime: for rostests only, suppresses

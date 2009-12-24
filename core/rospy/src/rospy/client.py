@@ -205,8 +205,9 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
             anonymous = False
         
     if anonymous:
-        # not as good as a uuid/guid, but more readable
-        name = "%s-%s-%s-%s"%(name, socket.gethostname(), os.getpid(), int(time.time()*1000))
+        # not as good as a uuid/guid, but more readable. can't include
+        # hostname as that is not guaranteed to be a legal ROS name
+        name = "%s_%s_%s"%(name, os.getpid(), int(time.time()*1000))
 
     resolved_node_name = rospy.names.resolve_name(name)
     rospy.core.configure_logging(resolved_node_name)

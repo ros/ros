@@ -140,7 +140,11 @@ _pkg_dir_cache = {}
 
 def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
     """
-    Locate directory package is stored in
+    Locate directory package is stored in. This routine uses an
+    internal cache.
+
+    NOTE: cache does *not* rebuild if packages are relocated after
+    this process is initiated.
     
     @param package: package name
     @type  package: str
@@ -183,10 +187,14 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
             
         # now that we've resolved the args, check the cache
         if package in _pkg_dir_cache:
-            dir, rr, rpp = _pkg_dir_cache[package]
+            dir_, rr, rpp = _pkg_dir_cache[package]
             if rr == ros_root and rpp == ros_package_path:
-                return dir
-
+                if os.path.isfile(os.path.join(dir_, MANIFEST_FILE)):
+                    return dir_
+                else:
+                    # invalidate cache
+                    _invalidate_cache(_pkg_dir_cache)
+            
         rpout, rperr = Popen([rospack, 'find', package], \
                                  stdout=PIPE, stderr=PIPE, env=penv).communicate()
 
@@ -304,6 +312,11 @@ def _update_rospack_cache():
     ros_package_path = os.environ.get(ROS_PACKAGE_PATH, '')
     return _read_rospack_cache(cache, ros_root, ros_package_path)
 
+def _invalidate_cache(cache):
+    # I've only made this a separate routine because roslib.packages should really be using
+    # the roslib.stacks cache implementation instead with the separate cache marker
+    cache.clear()
+
 def _read_rospack_cache(cache, ros_root, ros_package_path):
     """
     Read in rospack_cache data into cache
@@ -359,6 +372,10 @@ def list_pkgs(pkg_dirs=None, cache=None):
         if cache is None:
             # if cache is not specified, we use global cache instead
 
+            # TODO: this cache can be out-of-date if rospack has not
+            # been run recently. Figure out correct approach for
+            # out-of-date cache.
+            
             # TODO: we don't have any logic go populate user-specified
             # cache in most optimal way
             cache = _pkg_dir_cache

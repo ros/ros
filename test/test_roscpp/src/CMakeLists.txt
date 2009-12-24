@@ -126,3 +126,6 @@ rosbuild_add_gtest_build_flags(check_master)
 
 rosbuild_add_executable(wait_for_message wait_for_message.cpp)
 rosbuild_add_gtest_build_flags(wait_for_message)
+
+rosbuild_add_executable(loads_of_publishers loads_of_publishers.cpp)
+rosbuild_add_gtest_build_flags(loads_of_publishers)

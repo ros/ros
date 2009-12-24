@@ -119,22 +119,33 @@ def get_stack_dir(stack):
     @rtype: str
     """
     
-    # this cache implementation is technically incorrect. it's
-    # possible to get incorrect results by manipulating environment
-    # overrides from multiple threads. for the sake of future
-    # implementations, we provide an environment check, but within
-    # this implementation it does not provide much guarantee
+    # it's possible to get incorrect results from this cache
+    # implementation by manipulating the environment and calling this
+    # from multiple threads.  as that is an unusual use case and would
+    # require a slower implmentation, it's not supported. the
+    # interpretation of this routine is get_stack_dir for the
+    # environment this process was launched in.
+    global _dir_cache_marker 
 
     env = os.environ
     if stack in _dir_cache:
         ros_root = env[ROS_ROOT]
         ros_package_path = env.get(ROS_PACKAGE_PATH, '')
 
-        if _dir_cache_marker == (ros_root, ros_package_path):
-            return _dir_cache[stack]
-    else:
-        _update_stack_cache() #update cache
-
+        # we don't attempt to be thread-safe to environment changes,
+        # however we do need to be threadsafe to cache invalidation.
+        try:
+            if _dir_cache_marker == (ros_root, ros_package_path):
+                d = _dir_cache[stack]
+                if os.path.isfile(os.path.join(d, STACK_FILE)):
+                    return d
+                else:
+                    # invalidate the cache
+                    _dir_cache_marker = None
+                    _dir_cache.clear()
+        except KeyError:
+            pass
+    _update_stack_cache() #update cache
     return _dir_cache.get(stack, None)
 
 # rosstack directory cache

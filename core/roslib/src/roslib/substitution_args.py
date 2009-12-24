@@ -128,7 +128,13 @@ def resolve_args(arg_str, context={}, resolve_anon=True):
             if id in context:
                 resolved = resolved.replace("$(%s)"%a, context[id])
             else:
-                resolve_to = "%s-%s-%s-%s"%(id, socket.gethostname(), os.getpid(), int(time.time()*1000))
+                resolve_to = "%s_%s_%s_%s"%(id, socket.gethostname(), os.getpid(), int(time.time()*1000))
+                # RFC 952 allows hyphens, IP addrs can have '.'s, both
+                # of which are illegal for ROS names. For good
+                # measure, screen ipv6 ':'. 
+                resolve_to = resolve_to.replace('.', '_')
+                resolve_to = resolve_to.replace('-', '_')                
+                resolve_to = resolve_to.replace(':', '_')                
                 resolved = resolved.replace("$(%s)"%a, resolve_to)
                 context[id] = resolve_to
             

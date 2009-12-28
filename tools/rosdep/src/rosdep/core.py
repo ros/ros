@@ -94,22 +94,22 @@ class YamlCache:
         yaml_dict = self.get_yaml(path)
         expanded_rosdeps = {}
         for key in yaml_dict:
-            rosdep_entry = self.get_os_from_yaml(yaml_dict[key])
+            rosdep_entry = self.get_os_from_yaml(yaml_dict[key], path)
             if not rosdep_entry: # if no match don't do anything
                 continue # matches for loop
             expanded_rosdeps[key] = rosdep_entry
         self._expanded_rosdeps[path] = expanded_rosdeps
         return expanded_rosdeps
 
-    def get_os_from_yaml(self, yaml_map):
+    def get_os_from_yaml(self, yaml_map, source_path): #source_path is for debugging where errors come from
         # See if the version for this OS exists
         if self.os_name in yaml_map:
-            return self.get_version_from_yaml(yaml_map[self.os_name])
+            return self.get_version_from_yaml(yaml_map[self.os_name], source_path)
         else:
             #print >> sys.stderr, "failed to resolve a rule for OS(%s)"%(self.os_name)
             return False
 
-    def get_version_from_yaml(self, os_specific):
+    def get_version_from_yaml(self, os_specific, source_path):
         if type(os_specific) == type("String"):
             return os_specific
         else:# it must be a map of versions
@@ -121,7 +121,7 @@ class YamlCache:
                     if self.os_name == "ubuntu" and float(key) == float(self.os_version):
                         #print "Matched %s"%(os_version)
                         # NOTE: this hack fails if os_version is not major.minor
-                        print >> sys.stderr, "Warning: Ubuntu versions should be specified as a string not as a float, e.g. convert %.2f to '%.2f'.\n Please update '%s'"%(float(self.os_version), float(self.os_version), os_specific)
+                        print >> sys.stderr, "Warning: Ubuntu versions should be specified as a string not as a float in file %s, please convert %.2f to '%.2f'.\n Rosdep entry is:\"%s\""%(source_path, float(self.os_version), float(self.os_version), os_specific)
                         return os_specific[key]
                 print >> sys.stderr, "failed to find specific version %s of %s within"%(self.os_version, self.os_name), os_specific
                 return False                    

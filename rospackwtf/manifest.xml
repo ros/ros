@@ -1,0 +1,19 @@
+<package>
+  <description brief="rospackwtf">
+
+     rospackwtf
+
+  </description>
+  <author>Tully Foote</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rospackwtf</url>
+  <export>
+    <roswtf plugin="rospackwtf.rospackwtf"/>
+  </export>
+  <depend package="roslib"/>
+  <depend package="roswtf"/>
+
+</package>
+
+

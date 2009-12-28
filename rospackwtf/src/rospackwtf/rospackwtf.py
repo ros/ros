@@ -62,14 +62,18 @@ def package_dependencies_present(ctx):
     print "Done checking package dependencies"
     return missing
 
-def ros_root_invalid(ctx):
-    rr = roslib.rosenv.get_ros_root()
-    last_element = rr.split('/')[-1]
-    if last_element != "ros":
-        return ["ROS_ROOT must end in 'ros' it currently ends in %s"%last_element]
-    else:
-        return None
-
+def stack_names_correct(ctx):
+    stack_list = roslib.stacks.list_stacks()
+    for s in stack_list:
+        if roslib.stacks.get_stack_dir(s).split('/')[-1] != s:
+            print roslib.stacks.get_stack_dir(s), s
+    #name_mismatch = [s for s in stack_list if roslib.stacks.get_stack_dir(s).split('/')[-1] != s]
+    name_mismatch = []
+    for s in stack_list:
+        stack_dir = roslib.stacks.get_stack_dir(s)
+        if stack_dir.split('/')[-1] != s:
+            name_mismatch.append("stack [%s] does not have a correctly named directory '%s'.  The name and directory must match.  "%(s, stack_dir))
+    return name_mismatch
 
 ################################################################################
 # roswtf PLUGIN
@@ -81,8 +85,8 @@ rospack_warnings = [
 ]
 rospack_errors = [
   (stack_dependencies_present,"Not all stack dependencies are present for stack"),
+  (stack_names_correct,"Stack path does not match directory "),
   (package_dependencies_present,"Not all package dependencies are present for package"),
-  (ros_root_invalid,"ROS_ROOT invalid"),
 ]
 
 
@@ -100,7 +104,7 @@ def roswtf_plugin_online(ctx):
         error_rule(r, r[0](ctx), ctx)
 
     
-# currently no static checks for tf
+
 def roswtf_plugin_static(ctx):
     for r in rospack_warnings:
         warning_rule(r, r[0](ctx), ctx)

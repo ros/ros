@@ -171,9 +171,16 @@ class RosdepLookupPackage:
         for p in rosdep_dependent_packages:
             stack = roslib.stacks.stack_of(p)
             if stack:
-                paths.add( os.path.join(roslib.stacks.get_stack_dir(stack), "rosdep.yaml"))
+                try:
+                    paths.add( os.path.join(roslib.stacks.get_stack_dir(stack), "rosdep.yaml"))
+                except AttributeError, ex:
+                    print "Stack [%s] could not be found"%(stack)
                 for s in self.yaml_cache.get_rosstack_depends(stack):
-                    paths.add( os.path.join(roslib.stacks.get_stack_dir(s), "rosdep.yaml"))
+                    try:
+                        paths.add( os.path.join(roslib.stacks.get_stack_dir(s), "rosdep.yaml"))
+                    except AttributeError, ex:
+                        print "Stack [%s] dependency of [%s] could not be found"%(s, stack)
+                        
             else:
                 paths.add( os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
         for path in paths:

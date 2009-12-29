@@ -525,6 +525,79 @@ def rosdeps_of(packages):
         map[pkg] = [d.name for d in m.rosdeps]
     return map
 
+class ROSPackages(object):
+    """
+    UNSTABLE/EXPERIMENTAL
+    
+    Utility class for querying properties about ROS packages. This
+    should be used when querying properties about multiple
+    packages. ROSPackages caches information about packages, which
+    enables it to have higher performance than alternatives like
+    shelling out to rospack.
+
+    Example::
+      rp = ROSPackages()
+      d = rp.depends1(['roscpp', 'rospy'])
+      print d['roscpp']
+      d = rp.rosdeps(['roscpp', 'rospy'])
+      print d['rospy']
+    """
+    
+    def __init__(self):
+        self.manifests = {}
+
+    def load_manifests(self, packages):
+        """
+        Load manifests for specified packages into 'manifests' attribute.
+        
+        @param packages: packages names
+        @type  packages: [str]
+        """
+
+        if not type(packages) in [list, tuple]:
+            raise TypeError("packages must be list or tuple")
+
+        # load any manifests that we haven't already
+        to_load = [p for p in packages if not p in self.manifests]
+        if to_load:
+            _update_rospack_cache()
+            from roslib.manifest import load_manifest
+            self.manifests.update(dict([(p, load_manifest(p)) for p in to_load]))
+        
+    def depends1(self, packages):
+        """
+        Collect all direct dependencies of specified packages into a
+        dictionary.
+        
+        @param packages: packages names
+        @type  packages: [str]
+        @return: dictionary mapping package names to list of rosdep names.
+        @rtype: {str: [str]}
+        """
+        self.load_manifests(packages)
+        import itertools
+        map = {}
+        manifests = self.manifests
+        for pkg in packages:
+            map[pkg] = [d.package for d in manifests[pkg].depends]
+        return map
+
+    def rosdeps(self, packages):
+        """
+        Collect all rosdeps of specified packages into a dictionary.
+        @param packages: packages names
+        @type  packages: [str]
+        @return: dictionary mapping package names to list of rosdep names.
+        @rtype: {str: [str]}
+        """
+        self.load_manifests(packages)
+        import itertools
+        map = {}
+        manifests = self.manifests
+        for pkg in packages:
+            map[pkg] = [d.name for d in manifests[pkg].rosdeps]
+        return map
+        
 def _platform_supported(file, os, version):
     m = roslib.manifest.parse_file(file)
     for p in m.platforms:

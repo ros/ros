@@ -1,14 +1,16 @@
 <package>
   <description brief="ROS documentation generator">
 
-      rosdoc wraps doxygen with ROS package semantics to auto-generate
-      documentation across all ROS packages.
+      rosdoc wraps documentation tools like doxygen, sphinx, and epydoc
+      with ROS package semantics to auto-generate
+      documentation for ROS packages. rosdoc also supports online documentation,
+      like the ROS wiki.
 
    </description>
    <author>Ken Conley/kwc@willowgarage.com</author>
    <license>BSD</license>
    <review status="na" notes=""/>
-   <url>http://pr.willowgarage.com/wiki/rosdoc</url>
+   <url>http://ros.org/wiki/rosdoc</url>
    <depend package="roslib"/>
    <depend package="rxdeps"/>
    <depend package="rosmsg"/>   

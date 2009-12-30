@@ -43,6 +43,7 @@ import string
 from subprocess import Popen, PIPE
 
 import roslib.exceptions
+import roslib.manifest
 import roslib.names
 import roslib.rosenv
 import roslib.os_detect
@@ -525,6 +526,15 @@ def rosdeps_of(packages):
         map[pkg] = [d.name for d in m.rosdeps]
     return map
 
+def _safe_load_manifest(p):
+    """
+    Calls roslib.manifest.load_manifest and returns None if the calls raises an Exception (i.e. invalid package)
+    """
+    try:
+        return roslib.manifest.load_manifest(p)
+    except:
+        return roslib.manifest.Manifest()
+
 class ROSPackages(object):
     """
     UNSTABLE/EXPERIMENTAL
@@ -552,6 +562,7 @@ class ROSPackages(object):
         """
         Load manifests for specified packages into 'manifests' attribute.
         
+        
         @param packages: package names
         @type  packages: [str]
         """
@@ -563,8 +574,7 @@ class ROSPackages(object):
         to_load = [p for p in packages if not p in self.manifests]
         if to_load:
             _update_rospack_cache()
-            from roslib.manifest import load_manifest
-            self.manifests.update(dict([(p, load_manifest(p)) for p in to_load]))
+            self.manifests.update(dict([(p, _safe_load_manifest(p)) for p in to_load]))
         
     def depends1(self, packages):
         """

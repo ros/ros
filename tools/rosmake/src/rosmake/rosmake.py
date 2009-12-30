@@ -505,17 +505,16 @@ class RosMakeAll:
                 self.print_all("No package selected and the current directory is not the correct path for package '%s'."%p)
                 
             except roslib.packages.InvalidROSPkgException, ex:
-              try:
-                if os.path.samefile(roslib.stacks.get_stack_dir(p), '.'):
-                  packages = [p]
-                  self.print_all( "No package specified.  Building stack %s"%packages)
+                stack_dir = roslib.stacks.get_stack_dir(p)
+                if not stack_dir:
+                    self.print_all("No package or stack specified.  And current directory '%s' is not a package name or stack name."%p)
                 else:
-                  self.print_all("No stack selected and the current directory is not the correct path for stack '%s'. Stack directory is: %s."%(p, roslib.stacks.get_stack_dir(p)))
+                    if os.path.samefile(stack_dir, '.'):
+                        packages = [p]
+                        self.print_all( "No package specified.  Building stack %s"%packages)
+                    else:
+                        self.print_all("No package or stack arguments and the current directory is not the correct path for stack '%s'. Stack directory is: %s."%(p, roslib.stacks.get_stack_dir(p)))
                   
-              except roslib.stacks.InvalidROSStackException, ex2:
-
-                self.print_all("No package or stack specified.  And current directory '%s' is not a package name or stack name."%p)
-                #sys.exit(-1)
         else:
             packages.extend(args)
 

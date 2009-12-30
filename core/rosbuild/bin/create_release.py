@@ -144,16 +144,24 @@ def tag_subversion(name, version, distro, release_props):
         
 def get_active_distro():
     from subprocess import Popen, PIPE
-    try:
-        #TODO: this logic won't work
-        output = Popen(['rosdistro', 'active'], stdout=PIPE, stderr=PIPE).communicate()
-    except:
-        output = [None]
+    if 0:
+        try:
+            #TODO: this logic won't work
+            output = Popen(['rosdistro', 'active'], stdout=PIPE, stderr=PIPE).communicate()
+        except:
+            output = [None]
 
-    if not output[0]:
-        return 'latest'
+        if not output[0]:
+            return 'latest'
+        else:
+            return output[0].strip()
     else:
-        return output[0].strip()
+        # hardwired to latest or ROS_DISTRO env variable (until we
+        # have a replacement for rosdistro active)
+        if 'ROS_DISTRO' in os.environ:
+            return os.environ['ROS_DISTRO']
+        else:
+            return 'latest'
     
 def load_release_props(name, distro, distro_file, stack_dir):
     print "Loading uri rules from %s"%distro_file

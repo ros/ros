@@ -60,6 +60,7 @@ class YamlCache:
         self._yaml_cache = {}
         self._rosstack_depends_cache = {}
         self._expanded_rosdeps = {}
+        self.rp = roslib.packages.ROSPackages()
         
     def get_yaml(self, path):
         if path in self._yaml_cache:
@@ -158,18 +159,29 @@ class RosdepLookupPackage:
 
 
         if package:
-            self.load_for_package(package)
+            self.load_for_package(package, yaml_cache.rp)
         
         
 
-    def load_for_package(self, package):
-        rosdep_dependent_packages = roslib.rospack.rospack_depends(package)
+    def load_for_package(self, package, ros_package_proxy):
+        try:
+            rosdep_dependent_packages = ros_package_proxy.depends([package])[package]
+            #print "package", package, "needs", rosdep_dependent_packages
+        except KeyError, ex:
+            print "Depends Failed on package", ex
+            print " The errors was in ",  ros_package_proxy.depends([package])
+            rosdep_dependent_packages = []
+        #print "Dependents of", package, rosdep_dependent_packages
         rosdep_dependent_packages.append(package)
 
 
         paths = set()
         for p in rosdep_dependent_packages:
-            stack = roslib.stacks.stack_of(p)
+            try:
+                stack = roslib.stacks.stack_of(p)
+            except roslib.packages.InvalidROSPkgException, ex:
+                print >> sys.stderr, "Failed to find stack for package [%s]"%p
+                pass
             if stack:
                 try:
                     paths.add( os.path.join(roslib.stacks.get_stack_dir(stack), "rosdep.yaml"))
@@ -281,6 +293,8 @@ class Rosdep:
         self.osi = roslib.os_detect.OSDetect(os_list)
         self.packages = packages
         self.rosdeps = roslib.packages.rosdeps_of(packages)
+        rp = roslib.packages.ROSPackages()
+        self.rosdeps = rp.rosdeps(packages)
         self.robust = robust
         
 

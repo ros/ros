@@ -39,9 +39,135 @@ import roslib.rospack
 import roslib.rosenv
 import roslib.stacks
 
-def can_build(pkg, use_whitelist = False, use_whitelist_recursive = False, use_blacklist = False, failed_packages = [], os_name = None, os_version = None):
+
+
+class PackageFlagTracker:
+  """ This will use the dependency tracker to test if packages are
+  blacklisted and all their dependents. """
+  def __init__(self, dependency_tracker):
+    self.blacklisted = {}
+    self.blacklisted_osx = {}
+    self.nobuild = set()
+    self.nomakefile = set()
+    self.packages_tested = set()
+    self.dependency_tracker = dependency_tracker
+    self.paths = {}
+    self.build_failed = set()
+
+  def get_path(self, package):
+    if not package in self.paths:
+      self.paths[package] = roslib.packages.get_pkg_dir(package)
+    return self.paths[package]
+
+  def register_blacklisted(self, blacklisted_package, dependent_package):
+    if dependent_package in self.blacklisted.keys():
+      self.blacklisted[dependent_package].append(blacklisted_package)
+    else:
+      self.blacklisted[dependent_package] = [blacklisted_package] 
+      
+  def register_blacklisted_osx(self, blacklisted_package, dependent_package):
+    if dependent_package in self.blacklisted_osx:
+      self.blacklisted_osx[dependent_package].append(blacklisted_package)
+    else:
+      self.blacklisted_osx[dependent_package] =  [blacklisted_package] 
+
+  def _check_package_flags(self, package):
+    if package in self.packages_tested:
+      return 
+    if os.path.exists(os.path.join(self.get_path(package), "ROS_BUILD_BLACKLIST")):
+      self.register_blacklisted(package, package)
+      for p in roslib.rospack.rospack_depends_on(package):
+        self.register_blacklisted(package, p)
+        
+    if os.path.exists(os.path.join(self.get_path(package), "ROS_BUILD_BLACKLIST_OSX")):
+      self.register_blacklisted_osx(package, package)
+      for p in roslib.rospack.rospack_depends_on(package):
+        self.register_blacklisted_osx(package, p)
+
+    if os.path.exists(os.path.join(self.get_path(package), "ROS_NOBUILD")):
+      self.nobuild.add(package)
+
+    if not os.path.exists(os.path.join(self.get_path(package), "Makefile")):
+      self.nomakefile.add(package)                      
+
+    self.packages_tested.add(package)
+
+  def is_blacklisted(self, package):
+    # this will noop if already run
+    self._check_package_flags(package)
+
+    # make sure it's not dependent on a blacklisted package
+    for p in self.dependency_tracker.get_deps(package):
+      if p not in self.packages_tested:
+        self._check_package_flags(p)
+        
+    # test result after checking all dependents.
+    if package in self.blacklisted:
+      return self.blacklisted[package]
+        
+    return []
+
+  def is_blacklisted_osx(self, package):
+    # this will noop if already run
+    self._check_package_flags(package)
+
+    # make sure it's not dependent on a blacklisted_osx package
+    for p in self.dependency_tracker.get_deps(package):
+      if p not in self.packages_tested:
+        self._check_package_flags(p)
+        
+    # test result after checking all dependents.
+    if package in self.blacklisted_osx:
+      return self.blacklisted_osx[package]
+        
+    return []
+
+  def has_nobuild(self, package):
+    # this will noop if already run
+    self._check_package_flags(package)
+
+    # Short circuit if known result
+    if package in self.nobuild:
+      return True
+    return False
+
+  def has_makefile(self, package):
+    # this will noop if already run
+    self._check_package_flags(package)
+
+    # Short circuit if known result
+    if package in self.nomakefile:
+      return False
+    return True
+
+  def add_nobuild(self, package):
+    with open(os.path.join(self.get_path(package), "ROS_NOBUILD"), 'w') as f:
+      f.write("created by rosmake to mark as installed")
+      self.nobuild.add(package)
+      return True
+    return False
+    
+
+  def remove_nobuild(self, package):
+    if not self.has_nobuild(package):
+      return True
+    try:
+      os.remove(os.path.join(self.get_path(package), "ROS_NOBUILD"))
+      self.nobuild.remove(package)
+      return True  
+    except:
+      return False
+
+
+  def mark_build_failed(self, package):
+      self.build_failed.add(package)
+
+  def build_failed(self, package):
+      return package in self.build_failed
+
+  def can_build(self, pkg, use_whitelist = False, use_whitelist_recursive = False, use_blacklist = False, failed_packages = [], os_name = None, os_version = None):
     """
-    Return (buildable, "reason why not")
+    Return (buildable, error, "reason why not")
     """
 
 
@@ -54,12 +180,13 @@ def can_build(pkg, use_whitelist = False, use_whitelist_recursive = False, use_b
         os_name = osd.get_name()
         os_version = osd.get_version()
         
-
-    for p in failed_packages:
-        if p in roslib.rospack.rospack_depends(pkg):
-            buildable = False
-            output_state = False
-            output_str += " Package %s cannot be built for dependent package %s failed. \n"%(pkg, p)
+    
+    #for p in failed_packages:
+        #if p in roslib.rospack.rospack_depends(pkg):
+    for p in [ pk for pk in failed_packages if pk in roslib.rospack.rospack_depends(pkg)]:
+        buildable = False
+        output_state = False
+        output_str += " Package %s cannot be built for dependent package %s failed. \n"%(pkg, p)
 
 
     if use_whitelist:

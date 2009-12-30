@@ -62,7 +62,7 @@ class RosMakeAll:
         self.result = {}
         self.paths = {}
         self.dependency_tracker = parallel_build.DependencyTracker()
-        self.flag_tracker = parallel_build.PackageFlagTracker(self.dependency_tracker)
+        self.flag_tracker = package_stats.PackageFlagTracker(self.dependency_tracker)
         self.output = {}
         self.verbose = False
         self.full_verbose = False
@@ -170,11 +170,11 @@ class RosMakeAll:
                 return_string = ("[SKIP] rosmake uses rospack.  If building it is already built, if cleaning it will be cleaned at the end.")
                 return (True, return_string) # This will be caught later
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
-            if robust_build:
+            if argument == "test":
                 failed_packages = []
             else:
                 failed_packages = [j for j in self.result[argument] if not self.result[argument][j] == True]
-            (buildable, error, why) = package_stats.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, failed_packages)
+            (buildable, error, why) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, failed_packages)
             if buildable or self.robust_build:
                 start_time = time.time()
                 (returncode, pstd_out) = self.build_package(p, argument)
@@ -203,10 +203,7 @@ class RosMakeAll:
                     else:
                         return_string = ( "[FAIL] [ %.2f seconds ]"%( self.profile[argument][p]))
                     self.result[argument][p] = True if no_target else False
-                    if self.robust_build or interrupt:
-                      self.print_verbose( pstd_out)
-                    else:
-                      self.print_tail( pstd_out)
+                    self.print_tail( pstd_out)
                     self.output_to_file(p, log_type, pstd_out, always_print= not (no_target or interrupt))
 
                     return (False, return_string)
@@ -360,6 +357,8 @@ class RosMakeAll:
 
     def print_tail(self, s, tail_lines=40):
       lines = s.splitlines()
+      if self.full_verbose:
+          tail_lines = len(lines)
 
       num_lines = min(len(lines), tail_lines)
       if num_lines == tail_lines:
@@ -506,17 +505,16 @@ class RosMakeAll:
                 self.print_all("No package selected and the current directory is not the correct path for package '%s'."%p)
                 
             except roslib.packages.InvalidROSPkgException, ex:
-              try:
-                if os.path.samefile(roslib.stacks.get_stack_dir(p), '.'):
-                  packages = [p]
-                  self.print_all( "No package specified.  Building stack %s"%packages)
+                stack_dir = roslib.stacks.get_stack_dir(p)
+                if not stack_dir:
+                    self.print_all("No package or stack specified.  And current directory '%s' is not a package name or stack name."%p)
                 else:
-                  self.print_all("No stack selected and the current directory is not the correct path for stack '%s'. Stack directory is: %s."%(p, roslib.stacks.get_stack_dir(p)))
+                    if os.path.samefile(stack_dir, '.'):
+                        packages = [p]
+                        self.print_all( "No package specified.  Building stack %s"%packages)
+                    else:
+                        self.print_all("No package or stack arguments and the current directory is not the correct path for stack '%s'. Stack directory is: %s."%(p, roslib.stacks.get_stack_dir(p)))
                   
-              except roslib.stacks.InvalidROSStackException, ex2:
-
-                self.print_all("No package or stack specified.  And current directory '%s' is not a package name or stack name."%p)
-                #sys.exit(-1)
         else:
             packages.extend(args)
 

@@ -62,7 +62,7 @@ class RosMakeAll:
         self.result = {}
         self.paths = {}
         self.dependency_tracker = parallel_build.DependencyTracker()
-        self.flag_tracker = parallel_build.PackageFlagTracker(self.dependency_tracker)
+        self.flag_tracker = package_stats.PackageFlagTracker(self.dependency_tracker)
         self.output = {}
         self.verbose = False
         self.full_verbose = False
@@ -171,7 +171,7 @@ class RosMakeAll:
                 return (True, return_string) # This will be caught later
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
             failed_packages = [j for j in self.result[argument] if not self.result[argument][j] == True]
-            (buildable, error, why) = package_stats.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, failed_packages)
+            (buildable, error, why) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, failed_packages)
             if buildable or self.robust_build:
                 start_time = time.time()
                 (returncode, pstd_out) = self.build_package(p, argument)

@@ -170,7 +170,10 @@ class RosMakeAll:
                 return_string = ("[SKIP] rosmake uses rospack.  If building it is already built, if cleaning it will be cleaned at the end.")
                 return (True, return_string) # This will be caught later
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
-            failed_packages = [j for j in self.result[argument] if not self.result[argument][j] == True]
+            if argument == "test":
+                failed_packages = []
+            else:
+                failed_packages = [j for j in self.result[argument] if not self.result[argument][j] == True]
             (buildable, error, why) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, failed_packages)
             if buildable or self.robust_build:
                 start_time = time.time()
@@ -200,10 +203,7 @@ class RosMakeAll:
                     else:
                         return_string = ( "[FAIL] [ %.2f seconds ]"%( self.profile[argument][p]))
                     self.result[argument][p] = True if no_target else False
-                    if self.robust_build or interrupt:
-                      self.print_verbose( pstd_out)
-                    else:
-                      self.print_tail( pstd_out)
+                    self.print_tail( pstd_out)
                     self.output_to_file(p, log_type, pstd_out, always_print= not (no_target or interrupt))
 
                     return (False, return_string)
@@ -357,6 +357,8 @@ class RosMakeAll:
 
     def print_tail(self, s, tail_lines=40):
       lines = s.splitlines()
+      if self.full_verbose:
+          tail_lines = len(lines)
 
       num_lines = min(len(lines), tail_lines)
       if num_lines == tail_lines:

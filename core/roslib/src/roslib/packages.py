@@ -547,6 +547,8 @@ class ROSPackages(object):
         self.manifests = {}
         self._depends1 = {}
         self._depends = {}
+        self._rosdeps0 = {}
+        self._rosdeps = {}
 
     def load_manifests(self, packages):
         """
@@ -573,7 +575,7 @@ class ROSPackages(object):
         
         @param packages: packages names
         @type  packages: [str]
-        @return: dictionary mapping package names to list of rosdep names.
+        @return: dictionary mapping package names to list of dependent package names.
         @rtype: {str: [str]}
         """
         self.load_manifests(packages)
@@ -595,14 +597,9 @@ class ROSPackages(object):
         
         @param packages: packages names
         @type  packages: [str]
-        @return: dictionary mapping package names to list of rosdep names.
+        @return: dictionary mapping package names to list of dependent package names.
         @rtype: {str: [str]}
         """
-        def get_depends1_single(package):
-            try:
-                return set(self.depends1([package])[package])
-            except:
-                return set()
 
 
         map = {}
@@ -614,7 +611,7 @@ class ROSPackages(object):
                 continue
 
 
-            temp_set = get_depends1_single(pkg)
+            temp_set = self._get_depends1_single(pkg)
             out_set = temp_set.copy()
             for p in temp_set:
                 out_set |= set(self.depends([p])[p])
@@ -623,7 +620,7 @@ class ROSPackages(object):
             self._depends[pkg] = map[pkg]
         return map
 
-    def rosdeps(self, packages):
+    def rosdeps0(self, packages):
         """
         Collect rosdeps of specified packages into a dictionary.
         @param packages: packages names
@@ -636,9 +633,53 @@ class ROSPackages(object):
         map = {}
         manifests = self.manifests
         for pkg in packages:
-            map[pkg] = [d.name for d in manifests[pkg].rosdeps]
+            if pkg in self._rosdeps0:
+                map[pkg] = self._rosdeps0[pkg]
+            else:
+                map[pkg] = [d.name for d in manifests[pkg].rosdeps]
         return map
         
+    def rosdeps(self, packages):
+        """
+        Collect all dependencies of specified packages into a
+        dictionary.
+        
+        @param packages: packages names
+        @type  packages: [str]
+        @return: dictionary mapping package names to list of dependent package names.
+        @rtype: {str: [str]}
+        """
+
+        map = {}
+        out_set = set()
+        temp_set = set()
+        for pkg in packages:
+            if pkg in self._rosdeps:
+                map[pkg] = self._rosdeps[pkg]
+                continue
+
+
+            temp_set = self._get_depends1_single(pkg)
+            out_set = self._get_rosdep0_single(pkg)
+            for p in temp_set:
+                out_set |= set(self.rosdeps([p])[p])
+
+            map[pkg] = list(out_set)
+            self._rosdeps[pkg] = map[pkg]
+        return map
+
+    def _get_depends1_single(self, package):
+        try:
+            return set(self.depends1([package])[package])
+        except:
+            return set()
+
+    def _get_rosdep0_single(self, package):
+        try:
+            return set(self.rosdeps0([package])[package])
+        except:
+            return set()
+
 def _platform_supported(file, os, version):
     m = roslib.manifest.parse_file(file)
     for p in m.platforms:

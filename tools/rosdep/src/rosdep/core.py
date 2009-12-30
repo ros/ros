@@ -120,16 +120,8 @@ class YamlCache:
         else:# it must be a map of versions
             if self.os_version in os_specific.keys():
                 return os_specific[self.os_version]
-            else:
-                ## Hack to match rounding errors in pyyaml load 9.04  != 9.03999999999999996 in string space
-                for key in os_specific.keys():
-                    if self.os_name == "ubuntu" and float(key) == float(self.os_version):
-                        #print "Matched %s"%(os_version)
-                        # NOTE: this hack fails if os_version is not major.minor
-                        print >> sys.stderr, "Warning: Ubuntu versions should be specified as a string not as a float in file %s, please convert %.2f to '%.2f'.\n Rosdep entry is:\"%s\""%(source_path, float(self.os_version), float(self.os_version), os_specific)
-                        return os_specific[key]
-                print >> sys.stderr, "failed to find specific version %s of %s within"%(self.os_version, self.os_name), os_specific
-                return False                    
+            print >> sys.stderr, "failed to find specific version %s of %s within"%(self.os_version, self.os_name), os_specific
+            return False                    
 
 
 

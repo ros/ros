@@ -389,7 +389,7 @@ class RosMakeAll:
             
 
     def main(self):
-        parser = OptionParser(usage="usage: %prog [options] COMMAND PACKAGE LIST", prog='rosmake')
+        parser = OptionParser(usage="usage: %prog [options] [PACKAGE]...", prog='rosmake')
         parser.add_option("--test-only", dest="test_only", default=False,
                           action="store_true", help="only run tests")
         parser.add_option("-t", dest="test", default=False,

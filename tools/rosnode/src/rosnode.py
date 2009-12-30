@@ -543,7 +543,7 @@ def _rosnode_cmd_kill(argv):
     @raise ROSNodeException: if user enters in unrecognized nodes
     """
     args = argv[2:]
-    parser = OptionParser(usage="usage: %prog kill <node1> [node2...]", prog=NAME)
+    parser = OptionParser(usage="usage: %prog kill [node]...", prog=NAME)
     parser.add_option("-a",
                       dest="kill_all", default=False,
                       action="store_true",

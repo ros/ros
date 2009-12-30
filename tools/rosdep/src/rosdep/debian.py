@@ -34,16 +34,19 @@ import os.path
 import roslib.os_detect
 
 ###### DEBIAN SPECIALIZATION #########################
-def dpkg_detect(p):
-    cmd = ['dpkg-query', '-W', '-f=\'${Status}\'', p]
+def dpkg_detect(pkgs):
+    ret_list = []
+    cmd = ['dpkg-query', '-W', '-f=\'${Package} ${Status}\n\'']
+    cmd.extend(pkgs)
     pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (std_out, std_err) = pop.communicate()
-    std_out = std_out.strip('\'')
-    std_out_list = std_out.split()
-    if len(std_out_list) == 3:
-        return (std_out_list[2] =='installed')
-    else:
-        return False
+    std_out = std_out.replace('\'','')
+    pkg_list = std_out.split('\n')
+    for pkg in pkg_list:
+        pkg_row = pkg.split()
+        if len(pkg_row) == 4 and (pkg_row[3] =='installed'):
+            ret_list.append( pkg_row[0])
+    return ret_list
 
 ###### Rosdep Test OS #########################
 class RosdepTestOS(roslib.os_detect.OSBase):
@@ -73,6 +76,7 @@ class RosdepTestOS(roslib.os_detect.OSBase):
 ###### Debian SPECIALIZATION #########################
 class Debian(roslib.os_detect.Debian):
     def strip_detected_packages(self, packages):
+        return list(set(packages) - set(dpkg_detect(packages)))
         return [p for p in packages if not dpkg_detect(p)]
 
     def generate_package_install_command(self, packages, default_yes):
@@ -98,7 +102,7 @@ class Ubuntu(roslib.os_detect.Ubuntu, Debian):
 ###### END UBUNTU SPECIALIZATION ########################
 
 ###### Mint SPECIALIZATION #########################
-class Mint:
+class Mint(Debian):
     def check_presence(self):
         try:
             filename = "/etc/issue"
@@ -127,11 +131,5 @@ class Mint:
 
     def get_name(self):
         return "mint"
-
-    def strip_detected_packages(self, packages):
-        return [p for p in packages if not dpkg_detect(p)]
-
-    def generate_package_install_command(self, packages, default_yes):        
-        return "#Packages\nsudo apt-get install " + ' '.join(packages)
 
 ###### END Mint SPECIALIZATION ########################

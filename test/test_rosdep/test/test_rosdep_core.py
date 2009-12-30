@@ -172,8 +172,8 @@ class RosdepCoreTest(unittest.TestCase):
                       'rosdep_test': 
                       {'rosdep_test_os': 
                        {'rosdep_test_version': 'librosdep_test1.37-dev', 
-                        9.0999999999999996: 'librosdep_test1.40-all-dev', 
-                        8.0999999999999996: 'this is a script\n'
+                        '9.10': 'librosdep_test1.40-all-dev', 
+                        '8.10': 'this is a script\n'
                         }
                        }
                       }

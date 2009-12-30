@@ -85,7 +85,7 @@ class RosMakeAll:
         return self.paths[package]
         
     def check_rosdep(self, packages):
-        self.print_all("Checking rosdeps compliance for packages %s.  This may take a minute."%(', '.join(packages)))
+        self.print_all("Checking rosdeps compliance for packages %s.  This may take a few seconds."%(', '.join(packages)))
         r = rosdep.core.Rosdep(packages, robust=True)
         output = r.check()
         if len(output) == 0:
@@ -392,7 +392,7 @@ class RosMakeAll:
             
 
     def main(self):
-        parser = OptionParser(usage="usage: %prog [options] COMMAND PACKAGE LIST", prog='rosmake')
+        parser = OptionParser(usage="usage: %prog [options] [PACKAGE]...", prog='rosmake')
         parser.add_option("--test-only", dest="test_only", default=False,
                           action="store_true", help="only run tests")
         parser.add_option("-t", dest="test", default=False,
@@ -507,11 +507,11 @@ class RosMakeAll:
                 
             except roslib.packages.InvalidROSPkgException, ex:
               try:
-                if (roslib.stacks.get_stack_dir(p) == os.path.abspath('.')):
+                if os.path.samefile(roslib.stacks.get_stack_dir(p), '.'):
                   packages = [p]
                   self.print_all( "No package specified.  Building stack %s"%packages)
                 else:
-                  self.print_all("No stack selected and the current directory is not the correct path for stack '%s'."%p)
+                  self.print_all("No stack selected and the current directory is not the correct path for stack '%s'. Stack directory is: %s."%(p, roslib.stacks.get_stack_dir(p)))
                   
               except roslib.stacks.InvalidROSStackException, ex2:
 

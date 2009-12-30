@@ -320,12 +320,21 @@ def _invalidate_cache(cache):
 
 def _read_rospack_cache(cache, ros_root, ros_package_path):
     """
-    Read in rospack_cache data into cache
+    Read in rospack_cache data into cache. On-disk cache specifies a
+    ROS_ROOT and ROS_PACKAGE_PATH, which must match the requested
+    environment.
+    
     @param cache: empty dictionary to store package list in. 
         If no cache argument provided, list_pkgs() will use internal _pkg_dir_cache
         and will return cached answers if available.
         The format of the cache is {package_name: dir_path, ros_root, ros_package_path}.
     @type  cache: {str: str, str, str}
+    @param ros_package_path: ROS_ROOT value
+    @type  ros_root: str
+    @param ros_package_path: ROS_PACKAGE_PATH value or '' if not specified
+    @type  ros_package_path: str
+    @return: True if on-disk cache matches and was loaded, false otherwise
+    @rtype: bool
     """
     try:
         with open(os.path.join(roslib.rosenv.get_ros_home(), 'rospack_cache')) as f:
@@ -339,7 +348,7 @@ def _read_rospack_cache(cache, ros_root, ros_package_path):
                         if not l[len('#ROS_ROOT='):] == ros_root:
                             return False
                     elif l.startswith('#ROS_PACKAGE_PATH='):
-                        if not l[len('#ROS_PACKAGE_PATH='):]:
+                        if not l[len('#ROS_PACKAGE_PATH='):] == ros_package_path:
                             return False
                 else:
                     cache[os.path.basename(l)] = l, ros_root, ros_package_path

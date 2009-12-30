@@ -522,6 +522,16 @@ function _roscomplete_rosmsg {
 
 }
 
+function _roscomplete_roscreate_pkg {
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD != 1 ]]; then
+        opts=`rospack list-names`
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    fi
+}
+
 
 complete -F "_roscomplete_sub_dir" -o "nospace" "roscd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rospd"
@@ -538,3 +548,4 @@ complete -F "_roscomplete_rosparam" "rosparam"
 complete -F "_roscomplete_rostopic" "rostopic"
 complete -F "_roscomplete_rosservice" "rosservice"
 complete -F "_roscomplete_rosmsg" "rosmsg"
+complete -F "_roscomplete_roscreate_pkg" "roscreate-pkg"

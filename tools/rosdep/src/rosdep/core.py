@@ -53,6 +53,10 @@ import arch
 import core
 
 
+yaml.add_constructor(
+    u'tag:yaml.org,2002:float',
+    yaml.constructor.Constructor.construct_yaml_str)
+
 class YamlCache:
     def __init__(self, os_name, os_version):
         self.os_name = os_name

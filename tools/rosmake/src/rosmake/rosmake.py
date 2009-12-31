@@ -59,6 +59,7 @@ def make_command():
 
 class RosMakeAll:
     def __init__(self):
+        self._result_lock = threading.Lock()
         self.result = {}
         self.paths = {}
         self.dependency_tracker = parallel_build.DependencyTracker()
@@ -75,6 +76,9 @@ class RosMakeAll:
         self.obey_whitelist = False
         self.obey_whitelist_recursively = False
 
+        self.rosdep_install_result = None
+        self.rosdep_check_result = None
+
 
     def num_packages_built(self):
         return len(self.result[argument].keys())
@@ -85,26 +89,26 @@ class RosMakeAll:
         return self.paths[package]
         
     def check_rosdep(self, packages):
-        self.print_all("Checking rosdeps compliance for packages %s.  This may take a few seconds."%(', '.join(packages)))
+        self.print_all("Checking rosdeps compliance for system dependencies %s.  This may take a few seconds."%(', '.join(packages)))
         r = rosdep.core.Rosdep(packages, robust=True)
         output = r.check()
         if len(output) == 0:
-            self.print_all( "Rosdep check passed all packages")# %s"% packages)
-            return True
+            self.print_all( "Rosdep check passed all system dependencies")# %s"% packages)
+            return []
         else:
-            self.print_all("Rosdep check failed packages: %s"% output)
-            return False
+            self.print_all("Rosdep check failed: %s"% output)
+            return output
 
     def install_rosdeps(self, packages, default_yes):
         self.print_all("Generating Install Script using rosdep then executing. This may take a minute, you will be prompted for permissions. . .")
         r = rosdep.core.Rosdep(packages, robust=True)
         try:
             r.install(include_duplicates=False, default_yes=default_yes);
-            self.print_all("Rosdep successfully installed all packages")
-            return True
+            self.print_all("Rosdep successfully installed all system dependencies")
+            return None
         except rosdep.RosdepException, e:
             self.print_all( "ERROR: %s"%e)
-            return False
+            return "%s"%e
 
     def build_or_recurse(self,p):
         if p in self.build_list:
@@ -125,7 +129,8 @@ class RosMakeAll:
     def parallel_build_pkgs(self, build_queue, argument = None, threads = 1):
         self.profile[argument] = {}
         self.output[argument] = {}
-        self.result[argument] = {}
+        with self._result_lock:
+            self.result[argument] = {}
 
         cts = []
         for i in  xrange(0, threads):
@@ -142,8 +147,9 @@ class RosMakeAll:
             ct.join()
             pass
         all_pkgs_passed = True
-        for v in self.result[argument].values():
-          all_pkgs_passed = v and all_pkgs_passed
+        with self._result_lock:
+            for v in self.result[argument].values():
+                all_pkgs_passed = v and all_pkgs_passed
 
         build_passed = build_queue.succeeded() and all_pkgs_passed
         return build_passed
@@ -155,7 +161,7 @@ class RosMakeAll:
         elif "ROS_PARALLEL_JOBS" not in os.environ: #if no environment setup and no args fall back to # cpus
             local_env['ROS_PARALLEL_JOBS'] = "-j%d" % parallel_build.num_cpus()
         local_env['SVN_CMDLINE'] = "svn --non-interactive"
-        cmd = ["bash", "-c", "cd %s && %s "%(self.get_path(package), make_command()) ]
+        cmd = ["bash", "-c", "cd %s && %s "%(self.get_path(package), make_command()) ] #UNIXONLY
         if argument:
             cmd[-1] += argument
         self.print_full_verbose (cmd)
@@ -170,10 +176,14 @@ class RosMakeAll:
                 return_string = ("[SKIP] rosmake uses rospack.  If building it is already built, if cleaning it will be cleaned at the end.")
                 return (True, return_string) # This will be caught later
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
-            if argument == "test":
+
+            # do not build packages for which the build has failed
+            if argument == "test":  # Tests are not build dependent
                 failed_packages = []
             else:
-                failed_packages = [j for j in self.result[argument] if not self.result[argument][j] == True]
+                with self._result_lock:
+                    failed_packages = [j for j in self.result[argument] if not self.result[argument][j] == True]
+
             (buildable, error, why) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, failed_packages)
             if buildable or self.robust_build:
                 start_time = time.time()
@@ -186,7 +196,9 @@ class RosMakeAll:
                     log_type = "build"
                 if not returncode:
                     self.print_full_verbose( pstd_out)
-                    self.result[argument][p] = True
+                    with self._result_lock:
+                        self.result[argument][p] = True
+
                     num_warnings = len(re.findall("warning:", pstd_out))
                     if num_warnings > 0:
                         return_string =  ("[PASS] [ %.2f seconds ] -- WARNING: %d compiler warnings"%(self.profile[argument][p], num_warnings))
@@ -202,18 +214,23 @@ class RosMakeAll:
                         return_string = ("[Interrupted]" )
                     else:
                         return_string = ( "[FAIL] [ %.2f seconds ]"%( self.profile[argument][p]))
-                    self.result[argument][p] = True if no_target else False
+                    with self._result_lock:
+                        self.result[argument][p] = True if no_target else False
+
                     self.print_tail( pstd_out)
                     self.output_to_file(p, log_type, pstd_out, always_print= not (no_target or interrupt))
 
                     return (False, return_string)
             else:
-                self.result[argument][p] = error
+                with self._result_lock:
+                    self.result[argument][p] = error
+
                 return_string += why
                 return(error, return_string)
             return (True, return_string) # this means that we didn't error in any case above
         except roslib.packages.InvalidROSPkgException, ex:
-            self.result[argument][p] = False
+            with self._result_lock:
+                self.result[argument][p] = False
             self.print_verbose ("[SKIP] Package not found\n")
             self.output[argument][p] = "Package not found %s"%ex
             return (False, return_string)
@@ -241,7 +258,14 @@ class RosMakeAll:
 
         self.print_all("Summary output to directory")
         self.print_all("%s"%self.log_dir)
+        if self.rosdep_install_result:
+            self.print_all("ERROR: Rosdep installation failed with exception: %s"%self.rosdep_install_result)
+        if self.rosdep_check_result:
+            self.print_all("WARNING: Rosdep did not detect the following system dependencies as installed: %s Consider using --rosdep-install option or `rosdep install %s`"%(self.rosdep_check_result, self.specified_packages))
+        if self.rejected_packages:
+            self.print_all("WARNING: Skipped command line arguments: %s because they could not be resolved to a stack name or a package name. "%self.rejected_packages)
 
+                           
 
         if None in self.result.keys():
             if len(self.result[None].keys()) > 0:
@@ -373,8 +397,8 @@ class RosMakeAll:
     def assert_rospack_built(self):
         if self.flag_tracker.has_nobuild("rospack"):
             return True
-        ret_val = subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), make_command())]) 
-        ret_val2 = subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], "3rdparty/gtest"), make_command())]) 
+        ret_val = subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), make_command())])  #UNIXONLY
+        ret_val2 = subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], "3rdparty/gtest"), make_command())]) #UNIXONLY
         return ret_val and ret_val2
             
         # The check for presence doesn't check for updates
@@ -543,31 +567,37 @@ class RosMakeAll:
               os.makedirs (self.log_dir)
 
 
-        (specified_packages, rejected_packages) = roslib.stacks.expand_to_packages(packages)
-        self.print_all("Expanded args %s to:\n%s"%(packages, specified_packages))
-        if rejected_packages:
-            self.print_all("WARNING: The following args could not be parsed as stacks or packages: %s"%rejected_packages)
-        if len(specified_packages) == 0:
+        (self.specified_packages, self.rejected_packages) = roslib.stacks.expand_to_packages(packages)
+        self.print_all("Expanded args %s to:\n%s"%(packages, self.specified_packages))
+        if self.rejected_packages:
+            self.print_all("WARNING: The following args could not be parsed as stacks or packages: %s"%self.rejected_packages)
+        if len(self.specified_packages) == 0:
             self.print_all("ERROR: No arguments could be parsed into valid package or stack names.")
             return False
 
         # make sure all dependencies are satisfied and if not warn
+        buildable_packages = []
+        for p in self.specified_packages:
+            (buildable, error, str) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, [])
+            if buildable: 
+                buildable_packages.append(p)
+
         if options.rosdep_install:
-            self.install_rosdeps(specified_packages, options.rosdep_yes)
+            self.rosdep_install_result = self.install_rosdeps(buildable_packages, options.rosdep_yes)
         elif not options.rosdep_disabled:
-            self.check_rosdep(specified_packages)
+            self.rosdep_check_result = self.check_rosdep(buildable_packages)
 
         if options.unmark_installed:
-            for p in specified_packages:
+            for p in self.specified_packages:
                 if self.flag_tracker.remove_nobuild(p):
                     self.print_all("Removed ROS_NOBUILD from %s"%p)
             return True
             
-        required_packages = specified_packages[:]
+        required_packages = self.specified_packages[:]
         # these packages are not in the dependency tree but are needed they only cost 0.01 seconds to build
-        if "paramiko" not in specified_packages:
+        if "paramiko" not in self.specified_packages:
             required_packages.append("paramiko")
-        if "pycrypto" not in specified_packages:
+        if "pycrypto" not in self.specified_packages:
             required_packages.append("pycrypto")
     
         #generate the list of packages necessary to build(in order of dependencies)
@@ -582,9 +612,9 @@ class RosMakeAll:
         if options.specified_only:
           new_list = []
           for pkg in self.build_list:
-            if pkg in specified_packages:
+            if pkg in self.specified_packages:
               new_list.append(pkg)
-              self.dependency_tracker = parallel_build.DependencyTracker(specified_packages) # this will make the tracker only respond to packages in the list
+              self.dependency_tracker = parallel_build.DependencyTracker(self.specified_packages) # this will make the tracker only respond to packages in the list
         
           self.print_all("specified-only option was used, only building packages %s"%new_list)
           self.build_list = new_list
@@ -612,12 +642,12 @@ class RosMakeAll:
         tests_passed = True
         if build_passed and testing:
             self.print_verbose ("Testing packages %s"% packages)
-            build_queue = parallel_build.BuildQueue(specified_packages, parallel_build.DependencyTracker(specified_packages), robust_build = True)
+            build_queue = parallel_build.BuildQueue(self.specified_packages, parallel_build.DependencyTracker(self.specified_packages), robust_build = True)
             tests_passed = self.parallel_build_pkgs(build_queue, "test", threads = 1)
 
         if  options.mark_installed:
             if build_passed and tests_passed: 
-                for p in specified_packages:
+                for p in self.specified_packages:
                     if self.flag_tracker.add_nobuild(p):
                         self.print_all("Marking %s as installed with a ROS_NOBUILD file"%p)
             else:

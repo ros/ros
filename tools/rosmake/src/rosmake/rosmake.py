@@ -155,7 +155,7 @@ class RosMakeAll:
         elif "ROS_PARALLEL_JOBS" not in os.environ: #if no environment setup and no args fall back to # cpus
             local_env['ROS_PARALLEL_JOBS'] = "-j%d" % parallel_build.num_cpus()
         local_env['SVN_CMDLINE'] = "svn --non-interactive"
-        cmd = ["bash", "-c", "cd %s && %s "%(self.get_path(package), make_command()) ]
+        cmd = ["bash", "-c", "cd %s && %s "%(self.get_path(package), make_command()) ] #UNIXONLY
         if argument:
             cmd[-1] += argument
         self.print_full_verbose (cmd)
@@ -170,10 +170,13 @@ class RosMakeAll:
                 return_string = ("[SKIP] rosmake uses rospack.  If building it is already built, if cleaning it will be cleaned at the end.")
                 return (True, return_string) # This will be caught later
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
-            if argument == "test":
+
+            # do not build packages for which the build has failed
+            if argument == "test":  # Tests are not build dependent
                 failed_packages = []
             else:
                 failed_packages = [j for j in self.result[argument] if not self.result[argument][j] == True]
+
             (buildable, error, why) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, failed_packages)
             if buildable or self.robust_build:
                 start_time = time.time()
@@ -373,8 +376,8 @@ class RosMakeAll:
     def assert_rospack_built(self):
         if self.flag_tracker.has_nobuild("rospack"):
             return True
-        ret_val = subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), make_command())]) 
-        ret_val2 = subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], "3rdparty/gtest"), make_command())]) 
+        ret_val = subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), make_command())])  #UNIXONLY
+        ret_val2 = subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], "3rdparty/gtest"), make_command())]) #UNIXONLY
         return ret_val and ret_val2
             
         # The check for presence doesn't check for updates

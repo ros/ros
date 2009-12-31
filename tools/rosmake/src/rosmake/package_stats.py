@@ -187,27 +187,26 @@ class PackageFlagTracker:
     output_state = True
     buildable = True
         
-    
-    #for p in failed_packages:
-        #if p in roslib.rospack.rospack_depends(pkg):
-    for p in [ pk for pk in failed_packages if pk in roslib.rospack.rospack_depends(pkg)]:
+    previously_failed_pkgs = [ pk for pk in failed_packages if pk in self.dependency_tracker.get_deps(pkg)]
+    if len(previously_failed_pkgs) > 0:
         buildable = False
         output_state = False
-        output_str += " Package %s cannot be built for dependent package %s failed. \n"%(pkg, p)
+        output_str += " Package %s cannot be built for dependent package(s) %s failed. \n"%(pkg, previously_failed_pkgs)
 
 
     if use_whitelist:
-
+        non_whitelisted_packages = []
         if not self.is_whitelisted(pkg):
             buildable = False
             output_state = False
-            output_str += " Package %s is not supported on this OS\n"%pkg
+            non_whitelisted_packages.append(pkg)
         if use_whitelist_recursive:
-            for p in roslib.rospack.rospack_depends(pkg):
-                if not self.is_whitelisted(pkg):
-                    output_state = False
-                    output_str += " Package %s is not supported on this OS\n"%p
-                
+            for p in [pk for pk in self.dependency_tracker.get_deps(pkg) if not self.is_whitelisted(pk)]:
+                non_whitelisted_packages.append(p)
+        if len(non_whitelisted_packages) > 0:
+            output_state = False
+            output_str += " Package(s) %s are not supported on this OS\n"%non_whitelisted_packages                
+
     if use_blacklist:
         black_listed_dependents = self.is_blacklisted(pkg)
         if len(black_listed_dependents) > 0:

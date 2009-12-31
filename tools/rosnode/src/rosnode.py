@@ -495,7 +495,7 @@ def _rosnode_cmd_list(argv):
                       dest="list_uri", default=False,
                       action="store_true",
                       help="list XML-RPC URIs")
-    parser.add_option("-a",
+    parser.add_option("-a","--all",
                       dest="list_all", default=False,
                       action="store_true",
                       help="list all information")
@@ -544,7 +544,7 @@ def _rosnode_cmd_kill(argv):
     """
     args = argv[2:]
     parser = OptionParser(usage="usage: %prog kill [node]...", prog=NAME)
-    parser.add_option("-a",
+    parser.add_option("-a","--all",
                       dest="kill_all", default=False,
                       action="store_true",
                       help="kill all nodes")
@@ -614,7 +614,7 @@ def _rosnode_cmd_ping(argv):
     """
     args = argv[2:]    
     parser = OptionParser(usage="usage: %prog ping [options] <node>", prog=NAME)
-    parser.add_option("--all",
+    parser.add_option("--all", "-a",
                       dest="ping_all", default=False,
                       action="store_true",
                       help="ping all nodes")

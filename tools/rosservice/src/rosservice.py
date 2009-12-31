@@ -567,6 +567,9 @@ def _rosservice_cmd_call(argv):
     if not service_args and has_service_args(service_name, service_class=service_class):
         for service_args in _stdin_yaml_arg():
             if service_args:
+                # #2080: argument to _rosservice_call must be a list
+                if type(service_args) == dict:
+                    service_args = [service_args]
                 _rosservice_call(service_name, service_args, verbose=options.verbose, service_class=service_class) 
     else:
         _rosservice_call(service_name, service_args, verbose=options.verbose, service_class=service_class)
@@ -594,7 +597,12 @@ def _stdin_yaml_arg():
                     continue
                 elif arg.strip() != '---':
                     buff = buff + arg
-            yield yaml.load(buff.rstrip())
+            try:
+                yield yaml.load(buff.rstrip())
+            except Exception, e:
+                print >> sys.stderr, "Invalid YAML: %s"%str(e)
+            # reset arg
+            arg = 'x'
     except select.error:
         return # most likely ctrl-c interrupt
 

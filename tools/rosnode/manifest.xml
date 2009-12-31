@@ -6,7 +6,7 @@ rosnode is a command-line tool for displaying debug information about ROS <a hre
   </description>
   <author>Ken Conley/kwc@willowgarage.com</author>
   <license>BSD</license>
-  <review status="API cleared" notes=""/>
+  <review status="Doc reviewed" notes="2009-12-31"/>
   <url>http://ros.org/wiki/rosnode</url>
   <depend package="roslib"/>
 

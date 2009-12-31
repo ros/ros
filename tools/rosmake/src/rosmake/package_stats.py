@@ -44,7 +44,15 @@ import roslib.stacks
 class PackageFlagTracker:
   """ This will use the dependency tracker to test if packages are
   blacklisted and all their dependents. """
-  def __init__(self, dependency_tracker):
+  def __init__(self, dependency_tracker, os_name = None, os_version = None):
+    if not os_name and not os_version:
+        osd = roslib.os_detect.OSDetect()
+        self.os_name = osd.get_name()
+        self.os_version = osd.get_version()
+    else:
+        self.os_name = os_name
+        self.os_version = os_version
+
     self.blacklisted = {}
     self.blacklisted_osx = {}
     self.nobuild = set()
@@ -165,7 +173,10 @@ class PackageFlagTracker:
   def build_failed(self, package):
       return package in self.build_failed
 
-  def can_build(self, pkg, use_whitelist = False, use_whitelist_recursive = False, use_blacklist = False, failed_packages = [], os_name = None, os_version = None):
+  def is_whitelisted(self, package):
+      return roslib.packages.platform_supported(package, self.os_name, self.os_version)
+        
+  def can_build(self, pkg, use_whitelist = False, use_whitelist_recursive = False, use_blacklist = False, failed_packages = []):
     """
     Return (buildable, error, "reason why not")
     """
@@ -175,10 +186,6 @@ class PackageFlagTracker:
     output_str = ""
     output_state = True
     buildable = True
-    if not os_name and not os_version:
-        osd = roslib.os_detect.OSDetect()
-        os_name = osd.get_name()
-        os_version = osd.get_version()
         
     
     #for p in failed_packages:
@@ -191,34 +198,29 @@ class PackageFlagTracker:
 
     if use_whitelist:
 
-        if not roslib.packages.platform_supported(pkg, os_name, os_version):
+        if not self.is_whitelisted(pkg):
             buildable = False
             output_state = False
             output_str += " Package %s is not supported on this OS\n"%pkg
         if use_whitelist_recursive:
             for p in roslib.rospack.rospack_depends(pkg):
-                if not roslib.packages.platform_supported(pkg, os_name, os_version):
+                if not self.is_whitelisted(pkg):
                     output_state = False
                     output_str += " Package %s is not supported on this OS\n"%p
                 
     if use_blacklist:
-        blacklist_packages = roslib.rospack.rospack_depends(pkg)
-        blacklist_packages.append(pkg)
-        for p in blacklist_packages:
-            blacklist_path = os.path.join(roslib.packages.get_pkg_dir(p), "ROS_BUILD_BLACKLIST")
-            if os.path.exists(blacklist_path):
-                buildable = False
-                output_str += "ROS_BUILD_BLACKLIST found in %s contents are:\n[[[\n"%p
-                with open(blacklist_path) as f:
-                    output_str += f.read() + "\n]]]\n"
+        black_listed_dependents = self.is_blacklisted(pkg)
+        if len(black_listed_dependents) > 0:
+            buildable = False
+            output_str += "Cannot build %s ROS_BUILD_BLACKLIST found in packages %s"%(pkg, black_listed_dependents)
 
-    if os.path.exists(os.path.join(roslib.packages.get_pkg_dir(pkg), "ROS_NOBUILD")):
+    if self.has_nobuild(pkg):
         buildable = False
         output_state = True # dependents are ok, it should already be built
         output_str += "ROS_NOBUILD in package %s\n"%pkg
 
 
-    if not os.path.exists(os.path.join(roslib.packages.get_pkg_dir(pkg), "Makefile")):
+    if not self.has_makefile(pkg):
         output_state = True # dependents are ok no need to build
         buildable = False
         output_str += " No Makefile in package %s\n"%pkg

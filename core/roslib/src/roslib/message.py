@@ -132,13 +132,14 @@ def strify_message(val, indent='', time_offset=None):
         else:
             return str(val)
     elif type(val) in [list, tuple]:
+        # have to convert tuple->list to be yaml-safe
         if len(val) == 0:
-            return str(val)
+            return str(list(val))
         val0 = val[0]
         if type(val0) in [int, float, str, bool] or \
                isinstance(val0, Time) or isinstance(val0, Duration) or \
                type(val0) in [list, tuple]: # no array-of-arrays support yet
-            return str(val)
+            return str(list(val))
         else:
             indent = indent + '  '
             return "["+','.join([strify_message(v, indent, time_offset) for v in val])+"]"
@@ -369,11 +370,20 @@ def _fill_val(msg, f, v, keys, prefix):
                 setattr(msg, f, keys[v])
             else:
                 raise ROSMessageException("No key named [%s]"%(v))
+        elif isinstance(def_val, roslib.rostime.TVal) and type(v) in (int, long):
+            #special case to handle time value represented as a single number
+            #TODO: this is a lossy conversion
+            if isinstance(def_val, roslib.rostime.Time):
+                setattr(msg, f, roslib.rostime.Time.from_sec(v/1e9))
+            elif isinstance(def_val, roslib.rostime.Time):                    
+                setattr(msg, f, roslib.rostime.Duration.from_sec(v/1e9))
+            else:
+                raise ROSMessageException("Cannot time values of type [%s]"%(type(def_val)))
         else:
             _fill_message_args(def_val, v, keys, prefix=(prefix+f+'.'))
     elif type(def_val) == list:
-        if not type(v) == list:
-            raise ROSMessageException("Field [%s%s] must be a list instead of: %s"%(prefix, f, v))
+        if not type(v) in [list, tuple]:
+            raise ROSMessageException("Field [%s%s] must be a list or tuple instead of: %s"%(prefix, f, type(v).__name__))
         # determine base_type of field by looking at _slot_types
         idx = msg.__slots__.index(f)
         t = msg._slot_types[idx]
@@ -420,6 +430,9 @@ def _fill_message_args(msg, msg_args, keys, prefix=''):
         #print "ACTIVE SLOTS",msg.__slots__
         
         for f, v in msg_args.iteritems():
+            # assume that an empty key is actually an empty string
+            if v == None:
+                v = ''
             _fill_val(msg, f, v, keys, prefix)
     elif type(msg_args) == list:
         

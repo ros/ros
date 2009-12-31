@@ -401,6 +401,10 @@ def wait_for_service(service, timeout=None):
                 if contact_service(resolved_name):
                     return
                 time.sleep(0.3)
+            except KeyboardInterrupt:
+                # re-raise
+                rospy.core.logdebug("wait_for_service: received keyboard interrupt, assuming signals disabled and re-raising")
+                raise 
             except: # service not actually up
                 if first:
                     first = False

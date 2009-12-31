@@ -126,9 +126,8 @@ class RosMakeAll:
     def parallel_build_pkgs(self, build_queue, argument = None, threads = 1):
         self.profile[argument] = {}
         self.output[argument] = {}
-        self._result_lock.acquire()
-        self.result[argument] = {}
-        self._result_lock.release()
+        with self._result_lock:
+            self.result[argument] = {}
 
         cts = []
         for i in  xrange(0, threads):
@@ -145,10 +144,9 @@ class RosMakeAll:
             ct.join()
             pass
         all_pkgs_passed = True
-        self._result_lock.acquire()
-        for v in self.result[argument].values():
-          all_pkgs_passed = v and all_pkgs_passed
-        self._result_lock.release()
+        with self._result_lock:
+            for v in self.result[argument].values():
+                all_pkgs_passed = v and all_pkgs_passed
 
         build_passed = build_queue.succeeded() and all_pkgs_passed
         return build_passed
@@ -180,9 +178,8 @@ class RosMakeAll:
             if argument == "test":  # Tests are not build dependent
                 failed_packages = []
             else:
-                self._result_lock.acquire()
-                failed_packages = [j for j in self.result[argument] if not self.result[argument][j] == True]
-                self._result_lock.release()
+                with self._result_lock:
+                    failed_packages = [j for j in self.result[argument] if not self.result[argument][j] == True]
 
             (buildable, error, why) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, failed_packages)
             if buildable or self.robust_build:
@@ -196,9 +193,9 @@ class RosMakeAll:
                     log_type = "build"
                 if not returncode:
                     self.print_full_verbose( pstd_out)
-                    self._result_lock.acquire()
-                    self.result[argument][p] = True
-                    self._result_lock.release()
+                    with self._result_lock:
+                        self.result[argument][p] = True
+
                     num_warnings = len(re.findall("warning:", pstd_out))
                     if num_warnings > 0:
                         return_string =  ("[PASS] [ %.2f seconds ] -- WARNING: %d compiler warnings"%(self.profile[argument][p], num_warnings))
@@ -214,24 +211,23 @@ class RosMakeAll:
                         return_string = ("[Interrupted]" )
                     else:
                         return_string = ( "[FAIL] [ %.2f seconds ]"%( self.profile[argument][p]))
-                    self._result_lock.acquire()
-                    self.result[argument][p] = True if no_target else False
-                    self._result_lock.release()
+                    with self._result_lock:
+                        self.result[argument][p] = True if no_target else False
+
                     self.print_tail( pstd_out)
                     self.output_to_file(p, log_type, pstd_out, always_print= not (no_target or interrupt))
 
                     return (False, return_string)
             else:
-                self._result_lock.acquire()
-                self.result[argument][p] = error
-                self._result_lock.release()
+                with self._result_lock:
+                    self.result[argument][p] = error
+
                 return_string += why
                 return(error, return_string)
             return (True, return_string) # this means that we didn't error in any case above
         except roslib.packages.InvalidROSPkgException, ex:
-            self._result_lock.acquire()
-            self.result[argument][p] = False
-            self._result_lock.release()
+            with self._result_lock:
+                self.result[argument][p] = False
             self.print_verbose ("[SKIP] Package not found\n")
             self.output[argument][p] = "Package not found %s"%ex
             return (False, return_string)

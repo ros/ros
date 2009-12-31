@@ -576,10 +576,16 @@ class RosMakeAll:
             return False
 
         # make sure all dependencies are satisfied and if not warn
+        buildable_packages = []
+        for p in self.specified_packages:
+            (buildable, error, str) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, [])
+            if buildable: 
+                buildable_packages.append(p)
+
         if options.rosdep_install:
-            self.rosdep_install_result = self.install_rosdeps(self.specified_packages, options.rosdep_yes)
+            self.rosdep_install_result = self.install_rosdeps(buildable_packages, options.rosdep_yes)
         elif not options.rosdep_disabled:
-            self.rosdep_check_result = self.check_rosdep(self.specified_packages)
+            self.rosdep_check_result = self.check_rosdep(buildable_packages)
 
         if options.unmark_installed:
             for p in self.specified_packages:

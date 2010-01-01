@@ -182,8 +182,6 @@ environment_warnings = [
      "ROS_PACKAGE_PATH is empty. This is not required, but is unusual"),
     (lambda ctx: not ctx.ros_master_uri,
      "ROS_MASTER_URI is empty. This is not required, but is unusual"),
-    (lambda ctx: invalid_url(ctx.ros_master_uri),
-     "ROS_MASTER_URI [%(ros_master_uri)s] is not a valid URL: "),
     (ros_master_uri_hostname,
      "Cannot resolve hostname in ROS_MASTER_URI [%(ros_master_uri)s]"),
     (rosconsole_config_file_check,
@@ -217,6 +215,10 @@ environment_errors = [
     (lambda ctx: ctx.ros_bindeps_path and not isdir(ctx.ros_bindeps_path),
      "ROS_BINDEPS_PATH [%(ros_bindeps_path)s] does not point to a directory"),
     (boost_check, "Cannot locate boost. Please see installation instructions. "),
+
+    (lambda ctx: invalid_url(ctx.ros_master_uri),
+     "ROS_MASTER_URI [%(ros_master_uri)s] is not a valid URL: "),
+
     ]
 
 def wtf_check_environment(ctx):

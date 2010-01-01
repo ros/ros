@@ -260,7 +260,7 @@ errors = [
 
 def wtf_check(ctx):
     # no package in context to verify
-    if not ctx.pkg:
+    if not ctx.pkgs:
         return
     
     for r in warnings:

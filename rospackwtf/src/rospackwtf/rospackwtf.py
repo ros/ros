@@ -49,10 +49,10 @@ def detect_zombies(ctx):
     return std_out.split()
 
 def stack_dependencies_present(ctx):
-    print "Checking stack dependencies"
+    #print "Checking stack dependencies"
     stack_list = roslib.stacks.list_stacks()
     missing = [s for s in stack_list if set(stack_list).issubset(roslib.rospack.rosstack_depends_1(s))]
-    print "Done checking stack dependencies"
+    #print "Done checking stack dependencies"
     return missing
 
 def package_dependencies_present(ctx):
@@ -84,9 +84,9 @@ rospack_warnings = [
   (detect_zombies,"Zombied directories detected"),
 ]
 rospack_errors = [
-  (stack_dependencies_present,"Not all stack dependencies are present for stack"),
-  (stack_names_correct,"Stack path does not match directory "),
-  (package_dependencies_present,"Not all package dependencies are present for package"),
+    (stack_dependencies_present,"Not all stack dependencies are present for stack"),
+    (stack_names_correct,"Stack path does not match directory "),
+#  (package_dependencies_present,"Not all package dependencies are present for package"),
 ]
 
 

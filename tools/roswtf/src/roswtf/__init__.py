@@ -32,6 +32,10 @@
 #
 # Revision $Id$
 
+"""
+roswtf command-line tool.
+"""
+
 import os
 import socket
 import sys

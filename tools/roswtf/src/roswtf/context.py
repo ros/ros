@@ -32,6 +32,11 @@
 #
 # Revision $Id$
 
+"""
+L{WtfContext} object, which is commonly used throughout the roswtf
+APIs to pass state.
+"""
+
 import os
 import sys
 
@@ -46,11 +51,19 @@ import roslaunch.depends
 
 from roswtf.model import WtfWarning
 
-class WtfException(Exception): pass
+class WtfException(Exception):
+    """
+    Base exception class of roswtf-related issues.
+    """
+    pass
 
-## Context object for storing information about the state of the ROS
-## system we are attempting to debug
 class WtfContext(object):
+    """
+    WtfContext stores common state about the ROS filesystem and online
+    environment. The primary use of this is for convenience (not
+    having to load this state manually) and performance (not having to
+    do the same calculation repeatedly).
+    """
     __slots__ = ['pkg', 'pkg_dir', 'pkgs',
                  'stack', 'stack_dir', 'stacks',
                  'manifest_file', 'manifest',
@@ -123,14 +136,20 @@ class WtfContext(object):
         # errors that we have collected so far
         self.errors = []
 
-    ## @return dict: dictionary representation of context, which is
-    ## useful for producing error messages
     def as_dictionary(self):
+        """
+        @return: dictionary representation of context, which is
+        useful for producing error messages
+        @rtype: dict
+        """
         return dict((s, getattr(self, s)) for s in self.__slots__)
 
     @staticmethod
-    ## @param roslaunch_file str: roslaunch_file to check
     def from_roslaunch(roslaunch_files, env=os.environ):
+        """
+        @param roslaunch_file: roslaunch_file to load from
+        @type  roslaunch_file: str
+        """
         # can't go any further if launch file doesn't validate
         l, c = roslaunch.XmlLoader(), roslaunch.ROSLaunchConfig()
         for f in roslaunch_files:
@@ -150,8 +169,13 @@ class WtfContext(object):
         return ctx
 
     @staticmethod
-    ## @throws WtfException: if context state cannot be initialized
     def from_stack(stack, env=os.environ):
+        """
+        Initialize WtfContext from stack.
+        @param stack: stack name
+        @type  stack: str
+        @raise WtfException: if context state cannot be initialized
+        """
         ctx = WtfContext()
         _load_stack(ctx, stack)
         try:
@@ -163,8 +187,14 @@ class WtfContext(object):
         return ctx
     
     @staticmethod
-    ## @throws WtfException: if context state cannot be initialized
     def from_package(pkg, env=os.environ):
+        """
+        Initialize WtfContext from package name.
+
+        @param pkg: package name
+        @type  pkg: str
+        @raise WtfException: if context state cannot be initialized
+        """
         ctx = WtfContext()
         _load_pkg(ctx, pkg)
         stack = roslib.stacks.stack_of(pkg)
@@ -174,14 +204,20 @@ class WtfContext(object):
         return ctx
 
     @staticmethod
-    ## @throws WtfException: if context state cannot be initialized
     def from_env(env=os.environ):
+        """
+        Initialize WtfContext from environment.
+        
+        @raise WtfException: if context state cannot be initialized
+        """
         ctx = WtfContext()
         _load_env(ctx, env)
         return ctx
     
-## utility for initializing WtfContext state from roslaunch file
 def _load_roslaunch(ctx, roslaunch_files):
+    """
+    Utility for initializing WtfContext state from roslaunch file
+    """
     try:
         base_pkg, file_deps, missing = roslaunch.depends.roslaunch_deps(roslaunch_files)
         ctx.pkg = base_pkg
@@ -192,9 +228,11 @@ def _load_roslaunch(ctx, roslaunch_files):
     except roslaunch.depends.RoslaunchDepsException, e:
         raise WtfException(str(e))
 
-## utility for initializing WtfContext state
-## @throws WtfException: if context state cannot be initialized
 def _load_pkg(ctx, pkg):
+    """
+    Utility for initializing WtfContext state
+    @raise WtfException: if context state cannot be initialized
+    """
     ctx.pkg = pkg
     ctx.pkgs = [pkg] + roslib.rospack.rospack_depends(pkg)
     try:
@@ -206,9 +244,11 @@ def _load_pkg(ctx, pkg):
     except roslib.manifest.ManifestException, e:
         raise WtfException("Package [%s] has an invalid manifest: %s"%(pkg, e))
 
-## utility for initializing WtfContext state
-## @throws WtfException: if context state cannot be initialized
 def _load_stack(ctx, stack):
+    """
+    Utility for initializing WtfContext state
+    @raise WtfException: if context state cannot be initialized
+    """
     try:
         ctx.stack = stack
         ctx.stacks = [stack] + roslib.rospack.rosstack_depends(stack)
@@ -219,9 +259,12 @@ def _load_stack(ctx, stack):
         raise WtfException("[%s] appears to be a stack, but it's not on your ROS_PACKAGE_PATH"%stack)
     
     
-## utility for initializing WtfContext state
-## @throws WtfException: if context state cannot be initialized
 def _load_env(ctx,env):
+    """
+    Utility for initializing WtfContext state
+
+    @raise WtfException: if context state cannot be initialized
+    """
     ctx.env = env
     try:
         ctx.ros_root = env[roslib.rosenv.ROS_ROOT]

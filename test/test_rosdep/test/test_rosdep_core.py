@@ -149,50 +149,6 @@ class RosdepCoreTest(unittest.TestCase):
         rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=True)
         rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=False)
 
-    def test_YamlCache_init(self):
-        yc = rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version")
-
-    def test_YamlCache_get_yaml(self):
-        yc = rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version")
-        yaml_dict = yc.get_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"), "test", "example_rosdep.yaml"))
-        yaml_dict2 = yc.get_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"), "test", "example_rosdep.yaml"))
-        self.assertEqual(yaml_dict, yaml_dict2)
-
-        yaml_truth = {'other_rosdep_test': 
-                      {'rosdep_test_os': 
-                       {'other_version': 'foo'}
-                       }, 
-                      'no_os_rosdep_test': 
-                      {'other_os': 'not_useful'
-                       }, 
-                      'zlib': 
-                      {'rosdep_test_os': 'zlib1g-dev', 
-                       'debian': 'zlib1g-dev'
-                       }, 
-                      'rosdep_test': 
-                      {'rosdep_test_os': 
-                       {'rosdep_test_version': 'librosdep_test1.37-dev', 
-                        '9.10': 'librosdep_test1.40-all-dev', 
-                        '8.10': 'this is a script\n'
-                        }
-                       }
-                      }
-        self.assertEqual(yaml_dict, yaml_truth)
-
-    def test_YamlCache_rosstack_depends(self): ## TODO add this in a walled garden so it can be asserted as being equal to something specific
-        yc = rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version")
-        depends = yc.get_rosstack_depends("ros")
-        depends2 = yc.get_rosstack_depends("ros")
-        self.assertEqual(depends, depends2)
-
-    def test_YamlCache_no_file(self):
-        yc = rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version")
-        self.assertEqual({}, yc.get_yaml("non_extant_rosdep.yaml"))
-
-    def test_YamlCache_parse_failure(self):
-        yc = rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version")
-        self.assertEqual({}, yc.get_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"), "test", "invalid_rosdep.yaml")))
-
 if __name__ == '__main__':
   os.environ["ROSDEP_TEST_OS"] = "rosdep_test_os"
   rostest.unitrun('test_rosdep', 'test_core', RosdepCoreTest, coverage_packages=['rosdep.core'])  

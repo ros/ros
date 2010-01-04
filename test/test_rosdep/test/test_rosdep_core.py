@@ -145,9 +145,28 @@ class RosdepCoreTest(unittest.TestCase):
         output = rdlp.lookup_rosdep("no_os_rosdep_test")
         self.assertEqual(output, False)
 
+    def test_Rosdep_tripwire_robust(self):
+        rd = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=True)
+        try:
+            rd.check()
+            rd.what_needs(["boost"])
+            rd.depdb(['rosdep'])
+            rd.where_defined(['boost'])
+        except:
+            self.fail("test Rosdep improperly Raised an exception.")
+        
     def test_Rosdep_tripwire(self):
-        rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=True)
-        rdlp = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=False)
+        rd = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=False)
+        try:
+            rd.check()
+            rd.what_needs(["boost"])
+            rd.depdb(['rosdep'])
+            rd.where_defined(['boost'])
+        except:
+            self.fail("test Rosdep improperly Raised an exception.")
+
+        
+        
 
 if __name__ == '__main__':
   os.environ["ROSDEP_TEST_OS"] = "rosdep_test_os"

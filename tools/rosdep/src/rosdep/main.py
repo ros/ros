@@ -122,8 +122,8 @@ def main():
     r = core.Rosdep(verified_packages, robust=options.robust)
 
     if options.verbose:
-        print "Detected OS: " + r.osi.get_os_name()
-        print "Detected Version: " + r.osi.get_os_version()
+        print "Detected OS: " + r.osi.get_name()
+        print "Detected Version: " + r.osi.get_version()
 
     try:
         if command == "generate_bash" or command == "satisfy":

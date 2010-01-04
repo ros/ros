@@ -1,5 +1,5 @@
 <package>
-  <description brief="rosmsg command line tool">
+  <description brief="rosmsg and rossrv command-line tools">
 
      rosmsg contains two command-line tools: <tt>rosmsg</tt> and <tt>rossrv</tt>. <tt>rosmsg</tt> is a command-line tool for displaying information about <a href="http://www.ros.org/wiki/msg">ROS Message types</a>. <tt>rossrv</tt> is a command-line tool for displaying information about <a href="http://www.ros.org/wiki/srv">ROS Service types</a>. 
 

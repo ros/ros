@@ -1,5 +1,5 @@
 <package>
-  <description brief="rosservice">
+  <description brief="rosservice command-line tool">
 
 rosservice contains the rosservice command-line tool for listing and querying ROS <a href="http://www.ros.org/wiki/Services">Services</a>. It also contains a Python library for retrieving information about Services and dynamically invoking them. The Python library is experimental and is for internal-use only.
 

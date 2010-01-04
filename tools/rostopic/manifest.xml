@@ -1,5 +1,5 @@
 <package>
-  <description brief="rostopic command line tool">
+  <description brief="rostopic command-line tool">
 
 rostopic contains the rostopic command-line tool for displaying
 debug information about

@@ -256,6 +256,42 @@ class Arch(OSBase):
 
 ###### END Arch SPECIALIZATION ########################
 
+
+###### Gentoo Sepcialization ###############################
+class Gentoo(OSBase):
+    def check_presence(self):
+        try:
+            filename = "/etc/gentoo-release"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:                
+                    os_list = fh.read().split()
+                if os_list and os_list[0] == "Gentoo" and os_list[1] == "Base":
+                    return True
+        except:
+            pass#print >> sys.stderr, "Gentoo failed to detect OS"
+        return False
+
+    def get_version(self):
+        try:
+            filename = "/etc/gentoo-release"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:
+                    os_list = fh.read().split()
+                if os_list[0] == "Gentoo" and os_list[1] == "Base":
+                    return os_list[4]
+        except:
+            print >> sys.stderr, "Gentoo failed to get version"
+            return False
+
+        return False
+
+    def get_name(self):
+        return "gentoo"
+
+###### END Gentoo Sepcialization ###############################
+
+
+#### Override class for debugging and unsupported OSs ###########
 class Override(OSBase):
     def __init__(self):
         self._os_name = "uninitialized from ROS_OS_OVERRIDE=name:version"

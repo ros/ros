@@ -164,21 +164,22 @@ def _cmake_genmsg_gensrv(ctx, type_):
             files = os.listdir(d)
             if filter(lambda x: x.endswith('.'+type_), files):
                 c_file = os.path.join(pkg_dir, 'CMakeLists.txt')
-                f = open(c_file, 'r')
-                try:
-                    for l in f:
-                        # ignore all whitespace
-                        l = l.strip().replace(' ', '')
-                        found_cmd = False
-                        for cmd in cmds:
-                            if l.startswith(cmd):
-                                found_cmd = True
-                        if found_cmd:
-                            break
-                    else:
-                        missing.append(pkg)
-                finally:
-                    f.close()
+                if os.path.isfile(c_file):
+                    f = open(c_file, 'r')
+                    try:
+                        for l in f:
+                            # ignore all whitespace
+                            l = l.strip().replace(' ', '')
+                            found_cmd = False
+                            for cmd in cmds:
+                                if l.startswith(cmd):
+                                    found_cmd = True
+                            if found_cmd:
+                                break
+                        else:
+                            missing.append(pkg)
+                    finally:
+                        f.close()
     return missing
 
 def cmake_genmsg(ctx):
@@ -253,8 +254,8 @@ warnings = [
 
     ]
 errors = [
-    (msgs_built, "Messages have not been built in the following package(s).\nYou can fix this by typing 'rosmake %(pkg)s':"),
-    (srvs_built, "Services have not been built in the following package(s).\nYou can fix this by typing 'rosmake %(pkg)s':"),
+    (msgs_built, "Messages have not been built in the following package(s).\nYou can fix this by typing 'rosmake <package-name>':"),
+    (srvs_built, "Services have not been built in the following package(s).\nYou can fix this by typing 'rosmake <package-name>':"),
     (manifest_rpath_flags, "The following packages have rpath issues in manifest.xml:"),
     ]
 

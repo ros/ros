@@ -8,4 +8,9 @@
   <depend package="roslib"/>
   <depend package="roscpp"/>
   <depend package="std_msgs"/>
+
+  <export>
+    <cpp cflags="-I${prefix}/msg/cpp"/>
+  </export>
+
 </package>

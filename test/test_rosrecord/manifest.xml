@@ -11,7 +11,10 @@
   <depend package="rosrecord"/>
   <depend package="rostest"/>
   <depend package="test_crosspackage"/>
-  <url>http://pr.willowgarage.com/wiki/test_rosrecord</url>
+
+  <export>
+    <cpp cflags="-I${prefix}/msg/cpp"/>
+  </export>
 
 </package>
 

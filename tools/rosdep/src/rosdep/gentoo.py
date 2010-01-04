@@ -29,20 +29,40 @@
 from __future__ import with_statement
 import os.path
 import roslib.os_detect
+import subprocess
 
+# Determine whether package p needs to be installed
 def equery_detect(p):
-    cmd = ['equery', 'l', p]
+    cmd = ['equery', '-q', 'l', p]
     pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (std_out, std_err) = pop.communicate()
-
+    
     return (std_out.count("") == 1)
+
+# Check equery for existence and compatibility (gentoolkit 0.3)
+def equery_available():
+    if not os.path.exists("/usr/bin/equery"):
+        return False
+
+    cmd = ['equery', '-V']
+    pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (stdout, stderr) = pop.communicate()
+
+    return "0.3." == stdout[8:12]
+
 
 ###### Gentoo SPECIALIZATION #########################
 class Gentoo(roslib.os_detect.Gentoo):
     def strip_detected_packages(self, packages):
-        return [p for p in packages if equery_detect(p)]
+        if equery_available():
+            return [p for p in packages if equery_detect(p)]
+        else:
+            return packages
 
     def generate_package_install_command(self, packages, default_yes):
-        return "#Packages\nsudo emerge " + ' '.join(packages)
+        if equery_available():
+            return "#Packages\nsudo emerge " + ' '.join(packages)
+        else:
+	    return "#Packages\nsudo emerge -u " + ' '.join(packages)
 
 ###### END Gentoo SPECIALIZATION ########################

@@ -42,6 +42,9 @@ def info_cmd(argv):
     parser = OptionParser(usage="rosbag info BAGFILE",
                           description="Summarize the contents of a bag file.")
 
+    parser.add_option("--try-future-version",      dest="try_future", default=False, action="store_true",
+                      help="Still try to open a bagfile, even if the version number is not known to the player.")
+
     (options, args) = parser.parse_args(argv)
 
     if (len(args) == 0):
@@ -50,6 +53,8 @@ def info_cmd(argv):
     for arg in args:
 
         cmd = ["rosplay", "-c", arg]
+
+        if options.try_future: cmd.extend(["-T"])
 
         proc = subprocess.Popen(cmd)
 

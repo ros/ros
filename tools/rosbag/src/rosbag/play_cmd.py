@@ -51,14 +51,16 @@ def play_cmd(argv):
 
     parser.add_option("--queue",      dest="queue",   default=0,   type='int', action="store",
                       help="use an outgoing queue of size SIZE (defaults to %default)", metavar="SIZE")
-    parser.add_option("--frequency",  dest="freq",       default=100, type='float', action="store",
+    parser.add_option("--hz",  dest="freq",       default=100, type='float', action="store",
                       help="publish the log time at a frequency of HZ (default: %default)", metavar="HZ")
     parser.add_option("-d", "--delay",      dest="delay",      default=0.2, type='float', action="store",
                       help="Sleep SEC seconds after every advertise call (to allow subscribers to connect).", metavar="SEC")
     parser.add_option("-r", "--rate",       dest="rate",       default=1.0, type='float', action="store",
                       help="multiply the publish rate by FACTOR", metavar="FACTOR")
     parser.add_option("-s", "--start",      dest="sleep",      default=0.0, type='float', action="store",
-                      help="start TIME seconds into the bag files", metavar="TIME")
+                      help="start SEC seconds into the bag files", metavar="SEC")
+    parser.add_option("--try-future-version",      dest="try_future", default=False, action="store_true",
+                      help="Still try to open a bagfile, even if the version number is not known to the player.")
 
 
     (options, args) = parser.parse_args(argv)
@@ -68,9 +70,10 @@ def play_cmd(argv):
 
     cmd = ["rosplay"]
 
-    if options.quiet:     cmd.extend(["-n"])
-    if options.pause:     cmd.extend(["-p"])
-    if options.immediate: cmd.extend(["-a"])
+    if options.quiet:      cmd.extend(["-n"])
+    if options.pause:      cmd.extend(["-p"])
+    if options.immediate:  cmd.extend(["-a"])
+    if options.try_future: cmd.extend(["-T"])
 
     cmd.extend(["-q", str(options.queue)])
     cmd.extend(["-b", str(options.freq)])

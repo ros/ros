@@ -10,6 +10,10 @@
   <url>http://ros.org/wiki/perf_roscpp</url>
   <depend package="roscpp"/>
 
+  <export>
+    <cpp cflags="-I${prefix}/msg/cpp"/>
+  </export>
+
 </package>
 
 

@@ -94,7 +94,7 @@ class BagReader(object):
 #      elif ext == '.bz2':
 #        self.file = bz2.BZ2File(self.filename)
 #      else:
-    self.file = open(self.filename, 'r')
+      self.file = open(self.filename, 'r')
 
     version_readers = {
       HEADER_V1_1 : self._next_msg_v1_1,

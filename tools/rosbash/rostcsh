@@ -38,7 +38,6 @@ complete rosrun \
    'p@2@`rospack find $:1 | xargs -I 1 find 1 -perm /a+x -type f -printf "%f\n"`@'
 
 complete roslaunch \
-   'c/--/(port core server_uri child_name)/' \
-   'c/-/(p c u)/' \
-   'p/*/f:*.{launch,xml}/'
+   'p/1/`rospack list-names`/' \
+   'p@2@`rospack find $:1 | xargs -I 1 find 1 -regex ".*[xl][am][ul]n*c*h*" -type f -printf "%f\n"`@'
 

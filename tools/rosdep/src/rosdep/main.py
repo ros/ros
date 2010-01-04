@@ -156,5 +156,5 @@ def main():
         if len(output) == 0:
             return True
         else:
-            print "check failed", output
+            print "The following could not be detected:", output
             return False

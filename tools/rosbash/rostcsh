@@ -38,6 +38,6 @@ complete rosrun \
    'p@2@`rospack find $:1 | xargs -I 1 find 1 -perm /a+x -type f -printf "%f\n"`@'
 
 complete roslaunch \
-   'p/1/`rospack list-names`/' \
+   'p/1/`rospack list-names && find . -regex ".*[xl][am][ul]n*c*h*" -printf "%P\n" `/' \
    'p@2@`rospack find $:1 | xargs -I 1 find 1 -regex ".*[xl][am][ul]n*c*h*" -type f -printf "%f\n"`@'
 

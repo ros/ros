@@ -32,4 +32,5 @@
 # POSSIBILITY OF SUCH DAMAGE.
 import sys
 from ros import rosdep
-sys.exit(rosdep.main())
+#sys.exit(rosdep.main())
+rosdep.main()

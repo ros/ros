@@ -79,9 +79,10 @@ if(NOT DEFINED ROS_COMPILE_FLAGS)
   # Old versions of gcc need -pthread to enable threading, #2095.  
   # Also, some linkers, e.g., goLD, require -pthread (or another way to
   # generate -lpthread).
-  if(UNIX)
+  # CYGWIN gcc has their -pthread disabled
+  if(UNIX AND NOT CYGWIN) 
     set(ROS_COMPILE_FLAGS "${ROS_COMPILE_FLAGS} -pthread")
-  endif(UNIX)
+  endif(UNIX AND NOT CYGWIN)
 endif(NOT DEFINED ROS_COMPILE_FLAGS)
 
 # Default link flags for all executables and libraries

@@ -304,10 +304,10 @@ class RegManager(RegistrationListener):
         try:
             code, msg, _ = self.handler._connect_topic(topic, uri)
             if code != 1:
-                logerr("Unable to connect subscriber to publisher [%s] for topic [%s]: %s", uri, topic, msg)
+                logdebug("Unable to connect subscriber to publisher [%s] for topic [%s]: %s", uri, topic, msg)
         except Exception, e:
             if not is_shutdown():
-                logerr("Unable to connect to publisher [%s] for topic [%s]: %s"%(uri, topic, traceback.format_exc()))
+                logdebug("Unable to connect to publisher [%s] for topic [%s]: %s"%(uri, topic, traceback.format_exc()))
         
     def cleanup(self, reason):
         """

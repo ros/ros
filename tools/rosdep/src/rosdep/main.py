@@ -128,33 +128,37 @@ def main():
     try:
         if command == "generate_bash" or command == "satisfy":
             print r.generate_script(include_duplicates=options.include_duplicates, default_yes=options.default_yes)
-            return True
+            return 0
         elif command == "install":
             r.install(options.include_duplicates, options.default_yes);
-            return True
+            return 0
     except core.RosdepException, e:
         print "ERROR: %s"%e
-        return False
+        return 1
         
     if command == "depdb":
         print r.depdb(verified_packages)
-        return True
+        return 0
 
     elif command == "what_needs":
         print '\n'.join(r.what_needs(rdargs))
-        return True
+        return 0
 
     elif command == "where_defined":
         print r.where_defined(rdargs)
-        return True
+        return 0
 
     elif command == "check":
-        output = r.check()
+        return_val = 0
+        (output, scripts) = r.check()
         if len(rejected_packages) > 0:
-            print "Arguments %s are not packages"%rejected_packages
-            return False
-        if len(output) == 0:
-            return True
-        else:
-            print "The following could not be detected:", output
-            return False
+            print >> sys.stderr, "Arguments %s are not packages"%rejected_packages
+            return_val = 1
+        if len(output) != 0:
+            print >> sys.stderr, output
+            return 1
+        if len(scripts)>0:
+            print >> sys.stderr, scripts
+            # not an error condition
+
+        return return_val

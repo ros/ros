@@ -149,12 +149,16 @@ def main():
         return 0
 
     elif command == "check":
-        output = r.check()
+        return_val = 0
+        (output, scripts) = r.check()
         if len(rejected_packages) > 0:
-            print "Arguments %s are not packages"%rejected_packages
+            print >> sys.stderr, "Arguments %s are not packages"%rejected_packages
+            return_val = 1
+        if len(output) != 0:
+            print >> sys.stderr, output
             return 1
-        if len(output) == 0:
-            return 0
-        else:
-            print "The following could not be detected:", output
-            return 1
+        if len(scripts)>0:
+            print >> sys.stderr, scripts
+            # not an error condition
+
+        return return_val

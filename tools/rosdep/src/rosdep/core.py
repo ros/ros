@@ -357,13 +357,14 @@ class Rosdep:
             pass
         undetected = self.osi.get_os().strip_detected_packages(native_packages)
         return_str = ""
+        return_str_scripts = ""
         if len(undetected) > 0:
             return_str += "Did not detect packages: %s\n"%undetected
         if len(scripts) > 0:
-            return_str += "The following scripts were not tested:\n"
+            return_str_scripts += "The following scripts were not tested:\n"
         for s in scripts:
-            return_str += s + '\n'
-        return return_str
+            return_str_scripts += s + '\n'
+        return return_str, return_str_scripts
 
     def what_needs(self, rosdep_args):
         packages = []

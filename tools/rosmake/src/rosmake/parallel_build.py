@@ -208,3 +208,9 @@ class BuildQueue:
 
     return (None, None, None)
 
+
+  def register_prebuilt(self, package_list):
+    for p in package_list:
+      if p in self.to_build:
+        self.to_build.remove(p)
+        self.return_built(p)

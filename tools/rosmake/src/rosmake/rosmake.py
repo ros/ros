@@ -394,12 +394,21 @@ class RosMakeAll:
         print "  %s"%lines[l]
       print "-"*79 + "}"
 
-    def assert_rospack_built(self):
-        if self.flag_tracker.has_nobuild("rospack"):
-            return True
-        ret_val = subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), make_command())])  #UNIXONLY
-        ret_val2 = subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], "3rdparty/gtest"), make_command())]) #UNIXONLY
-        return ret_val and ret_val2
+    def assert_prebuild_built(self, ros_package_path_list):
+        ret_val = True
+        for pkg in ros_package_path_list:
+
+            pkg_name = pkg.split('/')[-1]
+
+            if self.flag_tracker.has_nobuild(pkg_name):
+                ret_val &= True
+            else:
+                self.print_all("Prebuilding %s"%pkg_name)
+                ret_val &= not subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], pkg), make_command())])  #UNIXONLY
+                if not ret_val:
+                    print >> sys.stderr, "Failed to build %s"%pkg_name
+                    sys.exit(-1)
+        return ret_val
             
         # The check for presence doesn't check for updates
         #if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "bin/rospack")):
@@ -627,13 +636,15 @@ class RosMakeAll:
               subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), "clean"])
 
 
-        if building:
-            self.assert_rospack_built()
-
         build_passed = True
         if building:
+          #make sure required packages are built before continuing (These are required by internal functions
+          self.assert_prebuild_built(["tools/rospack", "3rdparty/gtest", "core/genmsg_cpp"])
+
           self.print_verbose ("Building packages %s"% self.build_list)
           build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = options.robust or options.best_effort)
+          build_queue.register_prebuilt(["rospack", "gtest", "genmsg_cpp"])
+
           build_passed = self.parallel_build_pkgs(build_queue, options.target, threads = options.threads)
           if "rospack" in self.build_list and options.target == "clean":
               self.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it, because it was skipped earlier.")

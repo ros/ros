@@ -1,5 +1,5 @@
 <package>
-  <description brief="rosbag">
+  <description brief="rosbag command-line tool">
 
     The next generation interface to rosrecord.  For now this is
     simply a wrapper defining the API and calling out to the old

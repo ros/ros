@@ -23,6 +23,7 @@ apr:
   fedora: apr-devel apr-util
   macports: apr apr-util
   gentoo: apr
+  cygwin: libapr1 libaprutil1
 python:
   ubuntu: python-dev
   debian: python-dev
@@ -30,6 +31,7 @@ python:
   fedora: python-devel
   macports: python25 python_select py25-hashlib
   gentoo: python
+  cygwin: python
 python-bluez:
   ubuntu: python-bluez
 python-clearsilver:
@@ -45,6 +47,15 @@ python-yaml:
     if ! pacman -Q libyaml python-yaml; then yaourt -S libyaml python-yaml; fi
   macports: py25-yaml
   gentoo: pyyaml
+  cygwin: |
+      if [ ! -d /usr/lib/python2.5/site-packages/yaml ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pyyaml.org/download/pyyaml/PyYAML-3.09.tar.gz
+        tar xzf PyYAML-3.09.tar.gz
+        cd PyYAML-3.09
+       	python setup.py install 
+      fi
 python-gtk2:
   ubuntu: python-gtk2
   arch: pygtk
@@ -125,6 +136,7 @@ boost:
   arch: boost
   macports: boost
   gentoo: "\">=dev-libs/boost-1.37\""
+  cygwin: libboost-devel libboost1.40
 zlib:
   ubuntu: zlib1g-dev
   debian: zlib1g-dev
@@ -132,6 +144,7 @@ zlib:
   arch: zlib
   macports: zlib
   gentoo: zlib
+  cygwin: zlib
 graphviz:
   ubuntu: graphviz
   debian: graphviz
@@ -211,6 +224,7 @@ log4cxx:
     if ! pacman -Q log4cxx; then yaourt -S log4cxx; fi
   macports: log4cxx
   gentoo: "\">=dev-libs/log4cxx-0.10\""
+  cygwin: liblog4cxx-devel
 libxext:
   ubuntu: libXext-dev
   debian: libxext-dev
@@ -307,6 +321,7 @@ pkg-config:
   arch: pkgconfig
   macports: pkgconfig
   gentoo: pkgconfig
+  cygwin: pkg-config
 octave:
   ubuntu: octave3.0-headers
   arch: octave

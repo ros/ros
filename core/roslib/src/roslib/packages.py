@@ -484,8 +484,11 @@ def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
 
         # - We still have to look for bare node_type as user may have
         #   specified extension manually
+        node_type = node_type.lower()
         matches = [node_type, node_type+'.exe', node_type+'.bat']
         for p, dirs, files in os.walk(dir):
+            # case insensitive
+            files = [f.lower() for f in files]
             for m in matches:
                 if m in files:
                     test_path = os.path.join(p, node_type)

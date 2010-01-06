@@ -287,6 +287,7 @@ void CallbackQueue::callAvailable(ros::WallDuration timeout)
     {
       boost::mutex::scoped_lock lock(mutex_);
       callbacks_.insert(callbacks_.begin(), tls_->callbacks.begin(), tls_->callbacks.end());
+      tls_->callbacks.clear();
     }
   }
 }

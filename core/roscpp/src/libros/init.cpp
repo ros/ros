@@ -91,6 +91,7 @@ void init(const M_string& remappings);
 
 CallbackQueuePtr g_global_queue;
 ROSOutAppenderPtr g_rosout_appender;
+static CallbackQueuePtr g_internal_callback_queue;
 
 static bool g_initialized = false;
 static bool g_started = false;
@@ -223,13 +224,12 @@ void clockCallback(const roslib::Clock::ConstPtr& msg)
 
 CallbackQueuePtr getInternalCallbackQueue()
 {
-  static CallbackQueuePtr queue;
-  if (!queue)
+  if (!g_internal_callback_queue)
   {
-    queue.reset(new CallbackQueue);
+    g_internal_callback_queue.reset(new CallbackQueue);
   }
 
-  return queue;
+  return g_internal_callback_queue;
 }
 
 void basicSigintHandler(int sig)

@@ -2,7 +2,7 @@
   ROS Core Stack definition
 
   Before making any modifications to this file, please read:
-  http://pr.willowgarage.com/wiki/roscore
+  http://ros.org/wiki/roscore
   -->
 <launch>
   <master auto="start" />

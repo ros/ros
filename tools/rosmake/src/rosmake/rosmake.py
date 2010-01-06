@@ -404,11 +404,15 @@ class RosMakeAll:
                 ret_val &= True
             else:
                 self.print_all("Prebuilding %s"%pkg_name)
-                ret_val &= not subprocess.call(["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], pkg), make_command())])  #UNIXONLY
-                if not ret_val:
+                cmd = ["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], pkg), make_command())]
+                command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT)
+                (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
+                
+                self.print_verbose(pstd_out)
+                if command_line.returncode:
                     print >> sys.stderr, "Failed to build %s"%pkg_name
                     sys.exit(-1)
-        return ret_val
+        return True
             
         # The check for presence doesn't check for updates
         #if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "bin/rospack")):

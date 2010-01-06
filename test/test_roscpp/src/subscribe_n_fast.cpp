@@ -139,6 +139,7 @@ TEST_F(PubSub, pubSubNFast)
   while(ros::Time::now() < t1 && !success)
   {
     ros::spinOnce();
+    ros::WallDuration(0.01).sleep();
   }
   
   printf("msgs_received == %d\n", msgs_received);

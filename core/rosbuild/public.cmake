@@ -163,42 +163,69 @@ macro(rosbuild_init)
   set(_prefix ${PROJECT_NAME})
   set(${_prefix}_INCLUDEDIR "" CACHE INTERNAL "")
 
-  # Get the include dirs
-  rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} INCLUDE_DIRS cflags-only-I --deps-only)
-  #message("${pkgname} include dirs: ${${_prefix}_INCLUDE_DIRS}")
+  # Get the full paths to the manifests for all packages on which 
+  # we depend
+  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack invoke_result deps-manifests)
+  set(ROS_MANIFEST_LIST "${PROJECT_SOURCE_DIR}/manifest.xml ${_rospack_invoke_result}")
+  # convert whitespace-separated string to ;-separated list
+  separate_arguments(ROS_MANIFEST_LIST)
+
+  # Check the time at which we last cached flags against the latest
+  # modification time for all manifests that we depend on.  If our cache
+  # time is smaller, then we need to rebuild our cached values by calling
+  # out to rospack to get flags.  This is an optimization in the service of
+  # speeding up the build, #2109.
+  _rosbuild_time_less_than_latest_mtime(_rebuild_cache "${_rosbuild_cached_flag_time}" ${ROS_MANIFEST_LIST})
+  if(_rebuild_cache)
+    message("[rosbuild] Cached build flags older than manifests; calling rospack to get flags")
+    # Get the include dirs
+    rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} INCLUDE_DIRS cflags-only-I --deps-only)
+    #message("${pkgname} include dirs: ${${_prefix}_INCLUDE_DIRS}")
+    set(${_prefix}_INCLUDE_DIRS ${${_prefix}_INCLUDE_DIRS} CACHE INTERNAL "")
+  
+    # Get the other cflags
+    rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} temp cflags-only-other --deps-only)
+    _rosbuild_list_to_string(${_prefix}_CFLAGS_OTHER "${${_prefix}_temp}")
+    #message("${pkgname} other cflags: ${${_prefix}_CFLAGS_OTHER}")
+    set(${_prefix}_CFLAGS_OTHER ${${_prefix}_CFLAGS_OTHER} CACHE INTERNAL "")
+  
+    # Get the lib dirs
+    rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} LIBRARY_DIRS libs-only-L --deps-only)
+    #message("${pkgname} library dirs: ${${_prefix}_LIBRARY_DIRS}")
+    set(${_prefix}_LIBRARY_DIRS ${${_prefix}_LIBRARY_DIRS} CACHE INTERNAL "")
+  
+    # Get the libs
+    rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} LIBRARIES libs-only-l --deps-only)
+    #
+    # The following code removes duplicate libraries from the link line,
+    # saving only the last one.
+    #
+    list(REVERSE ${_prefix}_LIBRARIES)
+    #list(REMOVE_DUPLICATES ${_prefix}_LIBRARIES)
+    _rosbuild_list_remove_duplicates("${${_prefix}_LIBRARIES}" _tmplist)
+    set(${_prefix}_LIBRARIES ${__tmplist})
+    list(REVERSE ${_prefix}_LIBRARIES)
+  
+    # Also throw in the libs that we want to link everything against (only
+    # use case for this so far is -lgcov when building with code coverage
+    # support).
+    list(APPEND ${_prefix}_LIBRARIES "${ROS_LINK_LIBS}")
+    set(${_prefix}_LIBRARIES ${${_prefix}_LIBRARIES} CACHE INTERNAL "")
+  
+    # Get the other lflags
+    rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} temp libs-only-other --deps-only)
+    _rosbuild_list_to_string(${_prefix}_LDFLAGS_OTHER "${${_prefix}_temp}")
+    #message("${pkgname} other ldflags: ${${_prefix}_LDFLAGS_OTHER}")
+    set(${_prefix}_LDFLAGS_OTHER ${${_prefix}_LDFLAGS_OTHER} CACHE INTERNAL "")
+
+    # Record the time at which we cached those values
+    _rosbuild_get_clock(_time)
+    set(_rosbuild_cached_flag_time ${_time} CACHE INTERNAL "")
+  endif(_rebuild_cache)
+
+  # Use the (possibly cached) values returned by rospack.
   include_directories(${${_prefix}_INCLUDE_DIRS})
-
-  # Get the other cflags
-  rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} temp cflags-only-other --deps-only)
-  _rosbuild_list_to_string(${_prefix}_CFLAGS_OTHER "${${_prefix}_temp}")
-  #message("${pkgname} other cflags: ${${_prefix}_CFLAGS_OTHER}")
-
-  # Get the lib dirs
-  rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} LIBRARY_DIRS libs-only-L --deps-only)
-  #message("${pkgname} library dirs: ${${_prefix}_LIBRARY_DIRS}")
   link_directories(${${_prefix}_LIBRARY_DIRS})
-
-  # Get the libs
-  rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} LIBRARIES libs-only-l --deps-only)
-  #
-  # The following code removes duplicate libraries from the link line,
-  # saving only the last one.
-  #
-  list(REVERSE ${_prefix}_LIBRARIES)
-  #list(REMOVE_DUPLICATES ${_prefix}_LIBRARIES)
-  _rosbuild_list_remove_duplicates("${${_prefix}_LIBRARIES}" _tmplist)
-  set(${_prefix}_LIBRARIES ${__tmplist})
-  list(REVERSE ${_prefix}_LIBRARIES)
-
-  # Also throw in the libs that we want to link everything against (only
-  # use case for this so far is -lgcov when building with code coverage
-  # support).
-  list(APPEND ${_prefix}_LIBRARIES "${ROS_LINK_LIBS}")
-
-  # Get the other lflags
-  rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} temp libs-only-other --deps-only)
-  _rosbuild_list_to_string(${_prefix}_LDFLAGS_OTHER "${${_prefix}_temp}")
-  #message("${pkgname} other ldflags: ${${_prefix}_LDFLAGS_OTHER}")
 
   #
   # Catch absolute pathnames to archive libraries and bracket them with
@@ -215,13 +242,6 @@ macro(rosbuild_init)
       endif(_lib MATCHES "/[^ ]*\\.a")
     endforeach(_lib)
   endif(NOT APPLE)
-
-  # Also get the full paths to the manifests for all packages on which 
-  # we depend
-  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack invoke_result deps-manifests)
-  set(ROS_MANIFEST_LIST "${PROJECT_SOURCE_DIR}/manifest.xml ${_rospack_invoke_result}")
-  # convert whitespace-separated string to ;-separated list
-  separate_arguments(ROS_MANIFEST_LIST)
 
   # Set up the test targets.  Subsequent calls to rosbuild_add_gtest and
   # friends add targets and dependencies from these targets.

@@ -257,6 +257,25 @@ class Arch(OSBase):
 ###### END Arch SPECIALIZATION ########################
 
 
+###### Cygwin SPECIALIZATION #########################
+class Cygwin(OSBase):
+    def check_presence(self):
+        filename = "/usr/bin/cygwin1.dll"
+        if os.path.exists(filename):
+            return True
+        return False
+    
+    def get_version(self):
+        cmd = ['uname','-r'];
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        return std_out.strip()
+
+    def get_name(self):
+        return "cygwin"
+
+###### END Cygwin SPECIALIZATION ########################
+
 ###### Gentoo Sepcialization ###############################
 class Gentoo(OSBase):
     def check_presence(self):
@@ -318,7 +337,7 @@ class Override(OSBase):
 class OSDetect:
     """ This class will iterate over registered classes to lookup the
     active OS and Version of that OS for lookup in rosdep.yaml"""
-    def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), Fedora(), Rhel(), Gentoo()]):
+    def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), Fedora(), Rhel(), Gentoo(), Cygwin()]):
         self._os_list = [ Override()]
         self._os_list.extend(os_list)
 

@@ -83,6 +83,14 @@ class RoslibPackagesTest(unittest.TestCase):
     self.assertEquals(foo_p, cache['foo'][0])
     self.assertEquals(bar_p, cache['bar'][0])
     
+  def test_find_node(self):
+    import roslib.packages
+    d = roslib.packages.get_pkg_dir('test_roslib')
+    p = os.path.join(d, 'test', 'fake_node.py')
+    self.assertEquals(p, roslib.packages.find_node('test_roslib', 'fake_node.py'))
+    
+    self.assertEquals(None, roslib.packages.find_node('test_roslib', 'not_a_node'))
+    
   def test_get_pkg_dir(self):
     import roslib.packages
     import roslib.rospack

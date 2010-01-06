@@ -452,8 +452,6 @@ def list_pkgs_by_path(path, packages=None, cache=None):
             
     return packages
 
-# TODO: reimplement using find_resource
-
 def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
     """
     Locate the executable that implements the node
@@ -470,17 +468,46 @@ def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
     """
     dir = get_pkg_dir(pkg, required=True, \
                       ros_root=ros_root, ros_package_path=ros_package_path)
-    #UNIXONLY
-    for p, dirs, files in os.walk(dir):
-        if node_type in files:
-            test_path = os.path.join(p, node_type)
-            s = os.stat(test_path)
-            if (s.st_mode & stat.S_IRWXU == stat.S_IRWXU):
-                return test_path
-        if '.svn' in dirs:
-            dirs.remove('.svn')
-        elif '.git' in dirs:
-            dirs.remove('.git')
+    
+    #UNIXONLY: (partial) slowly supporting Windows here
+    import platform
+    if platform.system() == 'Windows':
+        # Windows logic requires more file patterns to resolve and is
+        # not case-sensitive, so leave it separate
+
+        # in the near-term, just hack in support for .exe/.bat. In the long
+        # term this needs to:
+        #
+        #  * parse PATHEXT to generate matches
+        #  * perform case-insensitive compares against potential
+        #    matches, in path-ext order
+
+        # - We still have to look for bare node_type as user may have
+        #   specified extension manually
+        matches = [node_type, node_type+'.exe', node_type+'.bat']
+        for p, dirs, files in os.walk(dir):
+            for m in matches:
+                if m in files:
+                    test_path = os.path.join(p, node_type)
+                    s = os.stat(test_path)
+                    if (s.st_mode & stat.S_IRWXU == stat.S_IRWXU):
+                        return test_path
+            if '.svn' in dirs:
+                dirs.remove('.svn')
+            elif '.git' in dirs:
+                dirs.remove('.git')
+    else:
+        #TODO: this could just execute find_resource with a filter_fn
+        for p, dirs, files in os.walk(dir):
+            if node_type in files:
+                test_path = os.path.join(p, node_type)
+                s = os.stat(test_path)
+                if (s.st_mode & stat.S_IRWXU == stat.S_IRWXU):
+                    return test_path
+            if '.svn' in dirs:
+                dirs.remove('.svn')
+            elif '.git' in dirs:
+                dirs.remove('.git')
 
 def find_resource(pkg, resource_name, filter_fn=None, ros_root=None, ros_package_path=None):
     """

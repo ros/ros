@@ -91,12 +91,14 @@ class RosMakeAll:
     def check_rosdep(self, packages):
         self.print_all("Checking rosdeps compliance for system dependencies %s.  This may take a few seconds."%(', '.join(packages)))
         r = rosdep.core.Rosdep(packages, robust=True)
-        output = r.check()
+        (output, scripts) = r.check()
+        if len(scripts) > 0:
+            self.print_all("Rosdep couldn't check scripts: %s"%scripts)
         if len(output) == 0:
-            self.print_all( "Rosdep check passed all system dependencies")# %s"% packages)
+            self.print_all( "Rosdep check passed all system dependencies in packages")# %s"% packages)
             return []
         else:
-            self.print_all("Rosdep check failed: %s"% output)
+            self.print_all("Rosdep check failed to find system dependencies: %s"% output)
             return output
 
     def install_rosdeps(self, packages, default_yes):

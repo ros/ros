@@ -115,7 +115,8 @@ def _check_for_rpath_flags(pkg, lflags):
     if not lflags:
         return
     L_arg = '-L'
-    rpath_arg = '-Wl,-rpath,'
+    Wl_arg = '-Wl'
+    rpath_arg = '-rpath'
     lflags_args = lflags.split()
     # Collect the args we care about
     L_args = []
@@ -124,20 +125,35 @@ def _check_for_rpath_flags(pkg, lflags):
     while i < len(lflags_args):
         f = lflags_args[i]
         if f.startswith(L_arg) and len(f) > len(L_arg):
-            L_args.append(f[len(L_arg):])
+            # normpath avoids problems with trailing slash vs. no trailing
+            # slash, #2284
+            L_args.append(os.path.normpath(f[len(L_arg):]))
         elif f == L_arg and (i+1) < len(lflags_args):
             i += 1
-            L_args.append(lflags_args[i])
-        elif f.startswith(rpath_arg) and len(f) > len(rpath_arg):
-            rpath_args.append(f[len(rpath_arg):])
+            # normpath avoids problems with trailing slash vs. no trailing
+            # slash, #2284
+            L_args.append(os.path.normpath(lflags_args[i]))
+        elif f.startswith(Wl_arg) and len(f) > len(Wl_arg):
+            # -Wl can be followed by multiple, comma-separated arguments,
+            # #2284.
+            args = f.split(',')
+            j = 1
+            while j < (len(args) - 1):
+                if args[j] == rpath_arg:
+                   # normpath avoids problems with trailing slash vs. no trailing
+                   # slash, #2284
+                    rpath_args.append(os.path.normpath(args[j+1]))
+                    j += 2
+                else:
+                    j += 1
         i += 1
     # Check for parallelism; not efficient, but these strings are short
     for f in L_args:
         if f not in rpath_args:
             return '%s: found flag "-L%s", but no matching "-Wl,-rpath,%s"'%(pkg, f,f)
-        for f in rpath_args:
-            if f not in L_args:
-                return '%s: found flag "-Wl,-rpath,%s", but no matching "-L%s"'%(pkg, f,f)
+    for f in rpath_args:
+        if f not in L_args:
+            return '%s: found flag "-Wl,-rpath,%s", but no matching "-L%s"'%(pkg, f,f)
 
 def manifest_rpath_flags(ctx):
     warn = []

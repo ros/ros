@@ -78,6 +78,8 @@ public:
     fprintf(f, "#include <string>\n"
                "#include <vector>\n"
                "#include \"ros/message.h\"\n"
+               "#include \"ros/debug.h\"\n" /// \todo remove when the timestamp auto-fill warning goes away
+							 "#include \"ros/assert.h\"\n" /// \todo remove when the timestamp auto-fill warning goes away
                "#include \"ros/time.h\"\n\n");
     spec.emit_cpp_class(f);
     fputs("#endif\n", f);

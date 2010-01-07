@@ -111,7 +111,7 @@ def ros_test_results_dir_check(ctx):
 
 def pythonpath_check(ctx):
     path = ctx.pythonpath
-    roslib_count = len([p for p in paths(path) if 'roslib' in p])
+    roslib_count = len(set([p for p in paths(path) if 'roslib' in p]))
     if not roslib_count:
         return "roslib directory is not in PYTHONPATH"
     if roslib_count > 1:

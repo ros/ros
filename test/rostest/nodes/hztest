@@ -140,8 +140,11 @@ Test Duration: %s"""%(hz, hzerror, topic, test_duration)
         wallclock_timeout_t = time.time() + 20.0
         while not self.message_received and time.time() < wallclock_timeout_t:
             time.sleep(0.1)
-        self.assert_(self.message_received, "no messages before timeout")
-        
+        if hz > 0.:
+            self.assert_(self.message_received, "no messages before timeout")
+        else:
+            self.failIf(self.message_received, "message received")
+            
         print "Starting rate measurement"
         timeout_t = rospy.get_time() + test_duration
         while rospy.get_time() < timeout_t:
@@ -150,7 +153,10 @@ Test Duration: %s"""%(hz, hzerror, topic, test_duration)
         sub.unregister()
 
         # Check that we got at least one message
-        self.assert_(self.msg_count > 0, "no messages received")
+        if hz > 0:
+            self.assert_(self.msg_count > 0, "no messages received")
+        else:
+            self.assertEquals(0, self.msg_count)
         # Check whether inter-message intervals were violated (if we were
         # checking them)
         self.assert_(not self.errors, '\n'.join(self.errors))

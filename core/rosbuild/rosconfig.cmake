@@ -48,7 +48,6 @@ endif(PROJECTCONFIG)
 # that are built with CMake.
 
 # Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
 #  Debug          : w/ debug symbols, w/o optimization
 #  Release        : w/o debug symbols, w/ optimization
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
@@ -74,8 +73,16 @@ if(NOT DEFINED ROS_BUILD_STATIC_LIBS)
 endif(NOT DEFINED ROS_BUILD_STATIC_LIBS)
 
 # Default compile flags for all source files
+include(CheckCXXCompilerFlag)
 if(NOT DEFINED ROS_COMPILE_FLAGS)
   set(ROS_COMPILE_FLAGS "-W -Wall -Wno-unused-parameter -fno-strict-aliasing")
+  # Old versions of gcc need -pthread to enable threading, #2095.  
+  # Also, some linkers, e.g., goLD, require -pthread (or another way to
+  # generate -lpthread).
+  # CYGWIN gcc has their -pthread disabled
+  if(UNIX AND NOT CYGWIN) 
+    set(ROS_COMPILE_FLAGS "${ROS_COMPILE_FLAGS} -pthread")
+  endif(UNIX AND NOT CYGWIN)
 endif(NOT DEFINED ROS_COMPILE_FLAGS)
 
 # Default link flags for all executables and libraries

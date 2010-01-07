@@ -34,21 +34,19 @@
 namespace ros
 {
 
-extern CallbackQueue g_global_queue;
-
 void SingleThreadedSpinner::spin(CallbackQueue* queue)
 {
-  ros::WallDuration d(0.01f);
+  ros::WallDuration timeout(0.01f);
 
   if (!queue)
   {
-    queue = &g_global_queue;
+    queue = getGlobalCallbackQueue();
   }
 
   ros::NodeHandle n;
   while (n.ok())
   {
-    queue->callAvailable();
+    queue->callAvailable(timeout);
   }
 }
 
@@ -104,7 +102,7 @@ AsyncSpinnerImpl::AsyncSpinnerImpl(uint32_t thread_count, CallbackQueue* queue)
 
   if (!queue)
   {
-    callback_queue_ = &g_global_queue;
+    callback_queue_ = getGlobalCallbackQueue();
   }
 }
 

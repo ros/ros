@@ -17,13 +17,10 @@ clean:
 	-cd build && make clean
 	#rm -rf msg/cpp msg/lisp msg/oct msg/java srv/cpp srv/lisp srv/oct srv/java src/$(PACKAGE_NAME)/msg src/$(PACKAGE_NAME)/srv
 	rm -rf build
-	#rm -f .build-version
 
-# Run the script that does the build, then do a fairly hacky cleanup, #1598
+# Build a source package.  Assumes that you're in a clean tree.
 package_source: all
-	`rospack find rosbuild`/bin/makestackdist $(CURDIR)
-	find build -mindepth 1 -not -name "*.bz2" | xargs rm -rf
-	rm -rf bin
+	cd build && make $@
 
 # All other targets are just passed through
 #test: all

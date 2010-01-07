@@ -145,9 +145,13 @@ def get_status_color():
     notes_dict = {}
     for pkg in roslib.packages.list_pkgs():
         f = roslib.manifest.manifest_file(pkg)
-        status = roslib.manifest.parse_file(f).status.lower()
-        notes_dict[pkg] = roslib.manifest.parse_file(f).notes
+        try:
+            status = roslib.manifest.parse_file(f).status.lower()
+            notes_dict[pkg] = roslib.manifest.parse_file(f).notes
+        except:
+            print "error parsing manifest '%s'"%f
         color_dict[pkg] = status_map.get(status, 'purple')
+            
         # show blacklisting
         if os.path.exists(os.path.join(os.path.dirname(f), "ROS_BUILD_BLACKLIST")):
             print f, "is blacklisted"

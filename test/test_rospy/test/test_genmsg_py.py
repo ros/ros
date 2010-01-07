@@ -63,6 +63,16 @@ class TestGenmsgPy(unittest.TestCase):
         else:
             self.assertAlmostEquals(orig.data, blank.data, 5)
 
+    ## #2133/2152
+    def test_test_rospy_TransitiveImport(self):
+        from test_rospy.msg import TransitiveImport
+        m = TransitiveImport()
+        # invoking serialize should be enough to expose issue. The bug
+        # was that genmsg_py was failing to include the imports of
+        # embedded messages. Because messages are flattened, this
+        # causes ImportErrors.
+        self._test_ser_deser(m, TransitiveImport())        
+
     def test_test_rospy_TestFixedArray(self):
         from test_rospy.msg import TestFixedArray
         m = TestFixedArray()

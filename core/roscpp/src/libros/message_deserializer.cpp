@@ -32,10 +32,11 @@
 namespace ros
 {
 
-MessageDeserializer::MessageDeserializer(const SubscriptionMessageHelperPtr& helper, const boost::shared_array<uint8_t>& buffer, size_t num_bytes, const boost::shared_ptr<M_string>& connection_header)
+MessageDeserializer::MessageDeserializer(const SubscriptionMessageHelperPtr& helper, const boost::shared_array<uint8_t>& buffer, size_t num_bytes, bool buffer_includes_size_header, const boost::shared_ptr<M_string>& connection_header)
 : helper_(helper)
 , buffer_(buffer)
 , num_bytes_(num_bytes)
+, buffer_includes_size_header_(buffer_includes_size_header)
 , connection_header_(connection_header)
 {
 
@@ -58,11 +59,20 @@ MessagePtr MessageDeserializer::deserialize()
 
   msg_ = helper_->create();
   msg_->__serialized_length = num_bytes_;
+  if (buffer_includes_size_header_)
+  {
+    msg_->__serialized_length -= 4;
+  }
   msg_->__connection_header = connection_header_;
 
   try
   {
-    msg_->deserialize(buffer_.get());
+    uint8_t* raw_buffer = buffer_.get();
+    if (buffer_includes_size_header_)
+    {
+      raw_buffer += 4;
+    }
+    msg_->deserialize(raw_buffer);
   }
   catch (std::exception& e)
   {

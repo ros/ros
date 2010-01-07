@@ -66,103 +66,7 @@ def num_cpus():
       return ncpus
   return 1 # Default
 
-class PackageFlagTracker:
-  """ This will use the dependency tracker to test if packages are
-  blacklisted and all their dependents. """
-  def __init__(self, dependency_tracker):
-    self.blacklisted = {}
-    self.blacklisted_osx = {}
-    self.nobuild = set()
-    self.nomakefile = set()
-    self.packages_tested = set()
-    self.dependency_tracker = dependency_tracker
-    self.paths = {}
 
-  def get_path(self, package):
-    if not package in self.paths:
-      self.paths[package] = roslib.packages.get_pkg_dir(package)
-    return self.paths[package]
-
-  def register_blacklisted(self, blacklisted_package, dependent_package):
-    if dependent_package in self.blacklisted.keys():
-      self.blacklisted[dependent_package].append(blacklisted_package)
-    else:
-      self.blacklisted[dependent_package] = [blacklisted_package] 
-      
-  def register_blacklisted_osx(self, blacklisted_package, dependent_package):
-    if dependent_package in self.blacklisted_osx:
-      self.blacklisted_osx[dependent_package].append(blacklisted_package)
-    else:
-      self.blacklisted_osx[dependent_package] =  [blacklisted_package] 
-
-  def _check_package_flags(self, package):
-    if package in self.packages_tested:
-      return 
-    if os.path.exists(os.path.join(self.get_path(package), "ROS_BUILD_BLACKLIST")):
-      self.register_blacklisted(package, package)
-      for p in roslib.rospack.rospack_depends_on(package):
-        self.register_blacklisted(package, p)
-        
-    if os.path.exists(os.path.join(self.get_path(package), "ROS_BUILD_BLACKLIST_OSX")):
-      self.register_blacklisted_osx(package, package)
-      for p in roslib.rospack.rospack_depends_on(package):
-        self.register_blacklisted_osx(package, p)
-
-    if os.path.exists(os.path.join(self.get_path(package), "ROS_NOBUILD")):
-      self.nobuild.add(package)
-
-    if not os.path.exists(os.path.join(self.get_path(package), "Makefile")):
-      self.nomakefile.add(package)                      
-
-    self.packages_tested.add(package)
-
-  def is_blacklisted(self, package):
-    # this will noop if already run
-    self._check_package_flags(package)
-
-    # make sure it's not dependent on a blacklisted package
-    for p in self.dependency_tracker.get_deps(package):
-      if p not in self.packages_tested:
-        self._check_package_flags(p)
-        
-    # test result after checking all dependents.
-    if package in self.blacklisted:
-      return self.blacklisted[package]
-        
-    return []
-
-  def is_blacklisted_osx(self, package):
-    # this will noop if already run
-    self._check_package_flags(package)
-
-    # make sure it's not dependent on a blacklisted_osx package
-    for p in self.dependency_tracker.get_deps(package):
-      if p not in self.packages_tested:
-        self._check_package_flags(p)
-        
-    # test result after checking all dependents.
-    if package in self.blacklisted_osx:
-      return self.blacklisted_osx[package]
-        
-    return []
-
-  def has_nobuild(self, package):
-    # this will noop if already run
-    self._check_package_flags(package)
-
-    # Short circuit if known result
-    if package in self.nobuild:
-      return True
-    return False
-
-  def has_makefile(self, package):
-    # this will noop if already run
-    self._check_package_flags(package)
-
-    # Short circuit if known result
-    if package in self.nomakefile:
-      return False
-    return True
 
 class DependencyTracker:
   """ Track dependencies between packages.  This is basically a
@@ -240,7 +144,7 @@ class CompileThread(threading.Thread):
           self.build_queue.stop()
           break # unnecessary since build_queue is done now while will quit
       else:
-        self.rosmakeall.print_all("Halting due to failure in package %s.\n[ rosmake ] Re-run with -r to ignore failures and keep building."%pkg)
+        self.rosmakeall.print_all("Halting due to failure in package %s.\n[ rosmake ]."%pkg)
         self.build_queue.stop()
         break # unnecessary since build_queue is done now, while will quit
 
@@ -304,3 +208,9 @@ class BuildQueue:
 
     return (None, None, None)
 
+
+  def register_prebuilt(self, package_list):
+    for p in package_list:
+      if p in self.to_build:
+        self.to_build.remove(p)
+        self.return_built(p)

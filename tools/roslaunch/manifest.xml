@@ -13,5 +13,8 @@ roslaunch is a tool for launching ROS <a href="http://ros.org/wiki/Nodes">Nodes<
   <depend package="paramiko"/>
   <depend package="rosout"/>
   <rosdep name="python-yaml"/>
+  <export>
+    <rosdoc config="rosdoc.yaml"/>
+  </export>    
 </package>
 

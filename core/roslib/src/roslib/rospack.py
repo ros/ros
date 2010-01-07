@@ -47,7 +47,7 @@ def rospackexec(args):
     @raise roslib.exceptions.ROSLibException: if rospack command fails
     """
 
-    val = (subprocess.Popen(['rospack'] + args, stdout=subprocess.PIPE).communicate()[0] or '').strip()
+    val = (subprocess.Popen(['rospack'] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()
     if val.startswith('rospack:'): #rospack error message
         raise roslib.exceptions.ROSLibException(val)
     return val

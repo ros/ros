@@ -45,18 +45,9 @@ static ros::Publisher g_pub;
 void in_cb(const boost::shared_ptr<ShapeShifter const>& msg)
 {
   static int s_count = 0;
-  if (!ShapeShifter::typed)
-  {
-    ShapeShifter::datatype = (*(msg->__connection_header))["type"];
-    ShapeShifter::md5 = (*(msg->__connection_header))["md5sum"];
-    ShapeShifter::msg_def = (*(msg->__connection_header))["message_definition"];
-    ShapeShifter::typed = true;
-    printf("read first message header, using datatype %s\n",
-           ShapeShifter::datatype.c_str());
-  }
   if (!g_advertised)
   {
-    g_pub = g_node->advertise<ShapeShifter>(g_output_topic, 10);
+    g_pub = msg->advertise(*g_node, g_output_topic, 10);
     g_advertised = true;
     printf("advertised as %s\n", g_output_topic.c_str());
   }

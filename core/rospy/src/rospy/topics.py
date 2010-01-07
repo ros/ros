@@ -71,7 +71,7 @@ import roslib.message
 
 from rospy.core import *
 from rospy.exceptions import ROSSerializationException, TransportTerminated
-from rospy.msg import serialize_message
+from rospy.msg import serialize_message, args_kwds_to_message
 from rospy.registration import get_topic_manager, set_topic_manager, Registration, get_registration_listeners
 from rospy.tcpros import get_tcpros_handler, DEFAULT_BUFF_SIZE
 from rospy.transport import DeadTransport
@@ -80,39 +80,6 @@ _logger = logging.getLogger('rospy.topics')
 
 # wrap roslib implementation and map it to rospy namespace
 Message = roslib.message.Message
-
-class AnyMsg(roslib.message.Message):
-    """
-    Message class to use for subscribing to any topic regardless
-    of type. Incoming messages are not deserialized. Instead, the raw
-    serialized data can be accssed via the buff property.
-
-    This class is meant to be used by advanced users only.
-    """
-    _md5sum = rospy.names.TOPIC_ANYTYPE
-    _type = rospy.names.TOPIC_ANYTYPE
-    _has_header = False
-    _full_text = ''
-    __slots__ = ['_buff']
-    def __init__(self, *args):
-        """
-        Constructor. Does not accept any arguments.
-        """
-        if len(args) != 0:
-            raise rospy.exceptions.ROSException("AnyMsg does not accept arguments")
-        self._buff = None
-
-    def serialize(self, buff):
-        """AnyMsg provides an implementation so that a node can forward messages w/o (de)serialization"""
-        if self._buff is None:
-            raise rospy.exceptions("AnyMsg is not initialized")
-        else:
-            buff.write(self._buff)
-            
-    def deserialize(self, str):
-        """Copies raw buffer into self._buff"""
-        self._buff = str
-        return self
 
 #######################################################################
 # Base classes for all client-API instantiated pub/sub
@@ -136,7 +103,9 @@ class Topic(object):
         """
         
         if not name or not isinstance(name, basestring):
-            raise ValueError("topic parameter 'name' is not a non-empty string")
+            raise ValueError("topic name is not a non-empty string")
+        if isinstance(name, unicode):
+            raise ValueError("topic name cannot be unicode")
         if data_class is None:
             raise ValueError("topic parameter 'data_class' is not initialized")
         if not type(data_class) == type:
@@ -221,17 +190,41 @@ class _TopicImpl(object):
         #STATS
         self.dead_connections = [] #for retaining stats on old conns
 
-    def close(self):
-        """close I/O"""
-        self.closed = True
-        with self.c_lock:
+    def __del__(self):
+        # very similar to close(), but have to be more careful in a __del__ what we call
+        if self.closed:
+            return
+        if self.connections is not None:
             for c in self.connections:
                 try:
                     c.close()
                 except:
-                    # seems more logger.error internal than external logerr
-                    _logger.error(traceback.format_exc())
+                    pass
             del self.connections[:]
+            del self.dead_connections[:]            
+        self.c_lock = self.dead_connections = self.connections = self.handler = self.data_class = self.type = None
+
+    def close(self):
+        """close I/O"""
+        if self.closed:
+            return
+        self.closed = True
+        if self.c_lock is not None:
+            with self.c_lock:
+                for c in self.connections:
+                    try:
+                        if c is not None:
+                            c.close()
+                    except:
+                        # seems more logger.error internal than external logerr
+                        _logger.error(traceback.format_exc())
+                del self.connections[:]
+            self.c_lock = self.connections = self.handler = self.data_class = self.type = None
+            
+            # note: currently not deleting self.dead_connections. not
+            # sure what the right policy here as dead_connections is
+            # for statistics only. they should probably be moved to
+            # the topic manager instead.
 
     def get_num_connections(self):
         with self.c_lock:
@@ -431,6 +424,13 @@ class _SubscriberImpl(_TopicImpl):
         self.buff_size = DEFAULT_BUFF_SIZE
         self.tcp_nodelay = False
 
+    def close(self):
+        """close I/O and release resources"""
+        _TopicImpl.close(self)
+        if self.callbacks:
+            del self.callbacks[:]
+            self.callbacks = None
+        
     def set_tcp_nodelay(self, tcp_nodelay):
         """
         Set the value of TCP_NODELAY, which causes the Nagle algorithm
@@ -650,9 +650,11 @@ class Publisher(Topic):
         @raise ROSSerializationException: If unable to serialize
         message. This is usually a type error with one of the fields.
         """
+        if self.impl is None:
+            raise ROSException("publish() to an unregistered() handle")
         if not is_initialized():
             raise ROSException("ROS node has not been initialized yet. Please call init_node() first")
-        data = _args_kwds_to_message(self.data_class, args, kwds)
+        data = args_kwds_to_message(self.data_class, args, kwds)
         try:
             self.impl.acquire()
             self.impl.publish(data)
@@ -663,19 +665,6 @@ class Publisher(Topic):
             raise ROSSerializationException(str(e))
         finally:
             self.impl.release()            
-
-def _args_kwds_to_message(data_class, args, kwds):
-    if args and kwds:
-        raise TypeError("publish() can be called with arguments or keywords, but not both.")
-    elif kwds:
-        return data_class(**kwds)
-    else:
-        if len(args) == 1 and (
-            isinstance(args[0], data_class) or
-            isinstance(args[0], AnyMsg)):
-            return args[0]
-        else:
-            return data_class(*args)
 
 class _PublisherImpl(_TopicImpl):
     """
@@ -703,6 +692,18 @@ class _PublisherImpl(_TopicImpl):
         
         #STATS
         self.message_data_sent = 0
+
+    def close(self):
+        """close I/O and release resources"""
+        _TopicImpl.close(self)
+        # release resources
+        if self.subscriber_listeners:
+            del self.subscriber_listeners[:]
+        if self.headers:
+            self.headers.clear()
+        if self.buff is not None:
+            self.buff.close()
+        self.publock = self.headers = self.buff = self.subscriber_listeners = None
 
     def add_headers(self, headers):
         """
@@ -745,11 +746,13 @@ class _PublisherImpl(_TopicImpl):
         
     def acquire(self):
         """lock for thread-safe publishing to this transport"""
-        self.publock.acquire()
+        if self.publock is not None:
+            self.publock.acquire()
         
     def release(self):
         """lock for thread-safe publishing to this transport"""
-        self.publock.release()
+        if self.publock is not None:
+            self.publock.release()
         
     def add_connection(self, c):
         """
@@ -796,7 +799,16 @@ class _PublisherImpl(_TopicImpl):
         @return: True if the data was published, False otherwise.
         @rtype: bool
         @raise roslib.message.SerializationError: if L{Message} instance is unable to serialize itself
+        @raise rospy.ROSException: if topic has been closed
         """
+        if self.closed:
+            # during shutdown, the topic can get closed, which creates
+            # a race condition with user code testing is_shutdown
+            if not is_shutdown():
+                raise ROSException("publish() to a closed topic")
+            else:
+                return
+            
         if self.is_latch:
             self.latch = message
 
@@ -810,8 +822,15 @@ class _PublisherImpl(_TopicImpl):
         else:
             conns = [connection_override]
 
-        # serialize the message
+        # #2128 test our buffer. I don't now how this got closed in
+        # that case, but we can at least diagnose the problem.
         b = self.buff
+        try:
+            b.tell()
+        except ValueError:
+            raise ROSException("topic's internal buffer is no longer valid")
+
+        # serialize the message
         self.seq += 1 #count messages published to the topic
         serialize_message(b, self.seq, message)
 
@@ -1034,7 +1053,8 @@ class _TopicManager(object):
                 _logger.debug("topic impl's ref count is zero, deleting topic %s...", resolved_name)
                 impl.close()
                 self._remove(impl, map, reg_type)
-                _logger.debug("... done deletig topic %s", resolved_name)
+                del impl
+                _logger.debug("... done deleting topic %s", resolved_name)
 
     def get_publisher_impl(self, resolved_name):
         """

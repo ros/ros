@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="test_roscpp" type="service_adv"/>
+  <node name="service_adv" pkg="test_roscpp" type="service_adv"/>
   <test test-name="service_call" pkg="test_roscpp" type="service_call"/>
 </launch>
 

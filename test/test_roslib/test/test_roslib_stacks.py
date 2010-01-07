@@ -42,13 +42,99 @@ import rostest
 
 class RoslibStacksTest(unittest.TestCase):
   
+    def test_packages_of(self):
+        from roslib.stacks import packages_of
+        pkgs = packages_of('ros')
+        for p in ['test_roslib', 'roslib', 'rospy', 'roscpp']:
+            self.assert_(p in pkgs)
+        # due to caching behavior, test twice
+        pkgs = packages_of('ros')
+        for p in ['test_roslib', 'roslib', 'rospy', 'roscpp']:
+            self.assert_(p in pkgs)
+
+        try:
+            packages_of(None)
+            self.fail("should have raised ValueError")
+        except ValueError: pass
+    
+    def test_stack_of(self):
+        import roslib.packages
+        from roslib.stacks import stack_of
+        self.assertEquals('ros', stack_of('test_roslib'))
+        # due to caching, test twice
+        self.assertEquals('ros', stack_of('test_roslib'))
+        try:
+            stack_of('fake_test_roslib')
+            self.fail("should have failed")
+        except roslib.packages.InvalidROSPkgException:
+            pass
+
+    def test_list_stacks(self):
+        from roslib.stacks import list_stacks
+        l = list_stacks()
+        self.assert_('ros' in l)
+
+        # make sure it is equivalent to rosstack list
+        from roslib.rospack import rosstackexec
+        l2 = [x for x in rosstackexec(['list']).split('\n') if x]
+        l2 = [x.split()[0] for x in l2]
+        self.assertEquals(set(l), set(l2), set(l) ^ set(l2))
+        
     def test_get_stack_dir(self):
-        # TODO setup artificial tree with more exhaustive tests
         import roslib.rosenv
-        from roslib.stacks import get_stack_dir, InvalidROSStackException
+        import roslib.packages
+        from roslib.stacks import get_stack_dir, InvalidROSStackException, list_stacks
         self.assertEquals(roslib.rosenv.get_ros_root(), get_stack_dir('ros'))
         self.assertEquals(None, get_stack_dir('non_existent'))
-    
+
+        # make sure it agrees with rosstack
+        stacks = list_stacks()
+        from roslib.rospack import rosstackexec
+        for s in stacks:
+            self.assertEquals(get_stack_dir(s), rosstackexec(['find', s]))
+
+        # now manipulate the environment to test precedence
+        # - save original RPP as we popen rosstack in other tests
+        rpp = os.environ.get(roslib.rosenv.ROS_PACKAGE_PATH, None)
+        try:
+            d = roslib.packages.get_pkg_dir('test_roslib')
+            d = os.path.join(d, 'test', 'stack_tests')
+
+            # - s1/s2/s3
+            print "s1/s2/s3"            
+            paths = [os.path.join(d, p) for p in ['s1', 's2', 's3']]
+            os.environ[roslib.rosenv.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
+            # - run multiple times to test caching
+            for i in xrange(2):
+                stacks = roslib.stacks.list_stacks()
+                self.assert_('foo' in stacks)
+                self.assert_('bar' in stacks)
+
+                foo_p = os.path.join(d, 's1', 'foo')
+                bar_p = os.path.join(d, 's1', 'bar')
+                self.assertEquals(foo_p, roslib.stacks.get_stack_dir('foo'))
+                self.assertEquals(bar_p, roslib.stacks.get_stack_dir('bar'))
+
+            # - s2/s3/s1
+            print "s2/s3/s1"
+            
+            paths = [os.path.join(d, p) for p in ['s2', 's3', 's1']]
+            os.environ[roslib.rosenv.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
+            stacks = roslib.stacks.list_stacks()
+            self.assert_('foo' in stacks)
+            self.assert_('bar' in stacks)
+
+            foo_p = os.path.join(d, 's2', 'foo')
+            bar_p = os.path.join(d, 's1', 'bar')
+            self.assertEquals(foo_p, roslib.stacks.get_stack_dir('foo'))
+            self.assertEquals(bar_p, roslib.stacks.get_stack_dir('bar'))
+        finally:
+            #restore rpp
+            if rpp is not None:
+                os.environ[roslib.rosenv.ROS_PACKAGE_PATH] = rpp
+            else:
+                del os.environ[roslib.rosenv.ROS_PACKAGE_PATH] 
+            
     def test_expand_to_packages(self):
         from roslib.stacks import expand_to_packages
         try:

@@ -39,6 +39,7 @@
 #include "topic_tools/shape_shifter.h"
 
 #include <boost/thread.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <sstream>
 #include <string>
@@ -69,7 +70,6 @@ public:
   ros::Time time;
 };
 
-
 //! Global verbose flag so we can easily use from callback
 bool g_verbose = false;
 
@@ -77,13 +77,16 @@ bool g_verbose = false;
 bool g_snapshot = false;
 
 // Global Eventual exit code
-int  g_exit_code       = 0;
+int g_exit_code = 0;
 
 //! Global variable including the set of currenly recording topics
 std::set<std::string> g_currently_recording;
 
-//! Global variable sued for initialization of counting messages
+//! Global variable used for initialization of counting messages
 int g_count = -1;
+
+//! Global variable used for book-keeping of our number of subscribers
+int g_num_subscribers = 0;
 
 //! Global queue for storing 
 std::queue<OutgoingMessage>* g_queue;
@@ -94,6 +97,12 @@ uint64_t g_queue_size=0;
 //! Global max queue size
 uint64_t g_max_queue_size=1048576*256;
 
+//! Global split size
+uint64_t g_split_size=0;
+
+//! Global split count
+uint64_t g_split_count=0;
+
 //! Queue of queues to be used by the snapshot recorders
 std::queue<OutgoingQueue> g_queue_queue;
 
@@ -103,6 +112,19 @@ boost::mutex g_queue_mutex;
 //! Conditional variable for global queue
 boost::condition_variable_any g_queue_condition;
 
+//! Global flag to add date
+bool g_add_date = true;;
+
+//! Global prefix
+std::string g_prefix;
+
+
+//! Compression mode
+static enum {
+  COMPRESSION_NONE,
+  COMPRESSION_GZIP,
+  COMPRESSION_BZIP2
+} g_compression = COMPRESSION_NONE;
 
 template <class T>
 std::string time_to_str(T ros_t)
@@ -121,7 +143,6 @@ void print_usage() {
                    );
 }
 
-
 //! Helper function to print executable options
 void print_help() {
   print_usage();
@@ -132,11 +153,13 @@ void print_help() {
   fprintf(stderr, " -a          : Record all published messages.\n");
   fprintf(stderr, " -v          : Display a message every time a message is received on a topic\n");
   fprintf(stderr, " -m          : Maximize internal buffer size in MB (Default: 256MB)  0 = infinite.\n");
+  // Removing compression until we work out how to play nicely with index: JML
+  //  fprintf(stderr, " -z          : Compress the messages with gzip\n");
+  //  fprintf(stderr, " -j          : Compress the messages with bzip2\n");
   fprintf(stderr, " -s          : (EXPERIMENTAL) Enable snapshot recording (don't write to file unless triggered)\n");
   fprintf(stderr, " -t          : (EXPERIMENTAL) Trigger snapshot recording\n");
   fprintf(stderr, " -h          : Display this help message\n");
 }
-
 
 //! Callback to be invoked to save messages into a queue
 void do_queue(topic_tools::ShapeShifter::ConstPtr msg,
@@ -182,20 +205,25 @@ void do_queue(topic_tools::ShapeShifter::ConstPtr msg,
   {
     (*count)--;
     if ((*count) == 0)
+    {
       subscriber->shutdown();
+      
+      if (--g_num_subscribers == 0)
+        ros::shutdown();
+    }
   }
 }
 
 //! Callback to be invoked to actually do the recording
-void snapshot_trigger(std_msgs::Empty::ConstPtr trigger, std::string prefix, bool add_date)
+void snapshot_trigger(std_msgs::Empty::ConstPtr trigger)
 {
   ros::WallTime rectime = ros::WallTime::now();
 
   std::vector<std::string> join;
 
-  if (prefix.length() > 0)
-    join.push_back(prefix);
-  if (add_date)
+  if (g_prefix.length() > 0)
+    join.push_back(g_prefix);
+  if (g_add_date)
     join.push_back(time_to_str(rectime));
 
   std::string tgt_fname = join[0];
@@ -221,26 +249,50 @@ void snapshot_trigger(std_msgs::Empty::ConstPtr trigger, std::string prefix, boo
 }
 
 //! Thread that actually does writing to file.
-void do_record(std::string prefix, bool add_date)
+void do_record()
 {
   ros::WallTime rectime = ros::WallTime::now();
 
   std::vector<std::string> join;
 
-  if (prefix.length() > 0)
-    join.push_back(prefix);
-  if (add_date)
+  if (g_prefix.length() > 0)
+    join.push_back(g_prefix);
+  if (g_add_date)
     join.push_back(time_to_str(rectime));
 
-  std::string tgt_fname = join[0];
+  std::string base_name = join[0];
   for (size_t i = 1; i < join.size(); i++)
-    tgt_fname = tgt_fname + "_" + join[i];
+    base_name = base_name + "_" + join[i];
 
-  tgt_fname = tgt_fname + std::string(".bag");
+  std::string split_name("");
+  if (g_split_size > 0)
+    split_name = std::string("_") + boost::lexical_cast<std::string>(g_split_count++);
+
+  std::string suffix;
+
+  // Removing compression until we work out how to play nicely with index: JML
+  /*
+  switch (g_compression) {
+  case COMPRESSION_GZIP:
+    suffix = ".gz";
+    break;
+  case COMPRESSION_BZIP2:
+    suffix = ".bz2";
+    break;
+  case COMPRESSION_NONE:
+    break;
+  default:
+    ROS_FATAL("Unknown compression method requested: %d", g_compression);
+    g_exit_code = 1;
+    ros::shutdown();
+    break;
+  }
+  */
+
+  std::string tgt_fname = base_name + split_name + std::string(".bag") + suffix;
+  std::string fname = base_name + split_name + std::string(".bag.active") + suffix;
 
   ROS_INFO("Recording to %s.", tgt_fname.c_str());
-
-  std::string fname = tgt_fname + std::string(".active");
 
   ros::NodeHandle nh;
   ros::record::Recorder recorder;
@@ -252,24 +304,27 @@ void do_record(std::string prefix, bool add_date)
     g_exit_code = 1;
     ros::shutdown();
   }
-  
+
   // Technically the g_queue_mutex should be locked while checking empty
   // Except it should only get checked if the node is not ok, and thus
   // it shouldn't be in contention.
   while (nh.ok() || !g_queue->empty())
   {
     boost::unique_lock<boost::mutex> lock(g_queue_mutex);
-    while(g_queue->empty())
+
+    bool finished = false;
+    while (g_queue->empty())
     {
       if (!nh.ok())
       {
-        // Close the file nicely
-        recorder.close();
-        rename(fname.c_str(),tgt_fname.c_str());
-        return;
+        lock.release()->unlock();
+        finished = true;
+        break;
       }
       g_queue_condition.wait(lock);
     }
+    if (finished)
+      break;
 
     OutgoingMessage out = g_queue->front();
     g_queue->pop();
@@ -277,14 +332,34 @@ void do_record(std::string prefix, bool add_date)
 
     lock.release()->unlock();
 
+    if (g_split_size > 0 && recorder.getOffset() > g_split_size)
+    {
+      recorder.close();
+      rename(fname.c_str(),tgt_fname.c_str());
+
+      split_name = std::string("_") + boost::lexical_cast<std::string>(g_split_count++);
+      tgt_fname = base_name + split_name + std::string(".bag") + suffix;
+      fname = base_name + split_name + std::string(".bag.active") + suffix;
+
+      if (!recorder.open(std::string(fname)))
+      {
+        ROS_FATAL("Could not open output file: %s", fname.c_str());
+        g_exit_code = 1;
+        ros::shutdown();
+      }
+
+      ROS_INFO("Recording to %s.", tgt_fname.c_str());
+
+    }
+
     recorder.record(out.topic_name, out.msg, out.time);
   }
 
   // Close the file nicely
+  ROS_INFO("Closing %s.", tgt_fname.c_str());
   recorder.close();
-  rename(fname.c_str(),tgt_fname.c_str());
+  rename(fname.c_str(), tgt_fname.c_str());
 }
-
 
 void do_record_bb()
 {
@@ -293,7 +368,7 @@ void do_record_bb()
   while (nh.ok() || !g_queue_queue.empty())
   {
     boost::unique_lock<boost::mutex> lock(g_queue_mutex);
-    while(g_queue_queue.empty())
+    while (g_queue_queue.empty())
     {
       if (!nh.ok())
         return;
@@ -312,8 +387,7 @@ void do_record_bb()
 
     if (recorder.open(fname))
     {
-
-      while(!out_queue.queue->empty())
+      while (!out_queue.queue->empty())
       {
         OutgoingMessage out = out_queue.queue->front();
         out_queue.queue->pop();
@@ -325,13 +399,13 @@ void do_record_bb()
 
       // Rename the file to the actual target name
       rename(fname.c_str(),tgt_fname.c_str());
-    } else {
+    }
+    else
+    {
       ROS_ERROR("Could not open file: %s", out_queue.fname.c_str());
     }
   }
 }
-
-
 
 void do_check_master(const ros::TimerEvent& e, ros::NodeHandle& node_handle)
 {
@@ -356,18 +430,6 @@ void do_check_master(const ros::TimerEvent& e, ros::NodeHandle& node_handle)
   }
 }
 
-
-void do_check_subscribers_left(const ros::TimerEvent& e)
-{
-  ros::V_string subscribed_topics;
-  ros::this_node::getSubscribedTopics(subscribed_topics);
-
-  // If there is only 1 topic left (time), we can shutdown
-  if (subscribed_topics.size() == 1)
-    ros::shutdown();
-}
-
-
 void do_trigger()
 {
   // Get a node_handle
@@ -384,25 +446,25 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "rosrecord", ros::init_options::AnonymousName);
 
   // Variables
-  bool check_master    = false; // Whether master should be checked periodically
+  bool check_master = false; // Whether master should be checked periodically
 
-  bool add_date = true;;
-  std::string prefix("");   // Prefix                                          
-  
   // Parse options  
   int option_char;
 
-  while ((option_char = getopt(argc,argv,"f:F:c:m:asthv")) != -1)
+  while ((option_char = getopt(argc,argv,"f:F:c:m:S:asthv")) != -1)
   {
     switch (option_char)
     {
-    case 'f': prefix = std::string(optarg); break;
-    case 'F': prefix = std::string(optarg); add_date = false; break;
+    case 'f': g_prefix = std::string(optarg); break;
+    case 'F': g_prefix = std::string(optarg); g_add_date = false; break;
     case 'c': g_count = atoi(optarg); break;
     case 'a': check_master = true; break;
     case 's': g_snapshot = true; break;
     case 't': do_trigger(); return 0; break;
     case 'v': g_verbose = true; break;
+  // Removing compression until we work out how to play nicely with index: JML
+      //    case 'z': g_compression = COMPRESSION_GZIP; break;
+      //    case 'j': g_compression = COMPRESSION_BZIP2; break;
     case 'm': 
       {
         int m=0;
@@ -413,6 +475,18 @@ int main(int argc, char **argv)
           return 1;
         }
         g_max_queue_size =  1048576*m;
+      }
+      break;
+    case 'S': 
+      {
+        int S=0;
+        S=atoi(optarg);
+        if (S < 0)
+        {
+          fprintf(stderr, "Splitting size must be 0 or positive.\n");
+          return 1;
+        }
+        g_split_size =  1048576*S;
       }
       break;
     case 'h': print_help(); return 1;
@@ -444,24 +518,25 @@ int main(int argc, char **argv)
   // Get a node_handle
   ros::NodeHandle node_handle;
 
-  // Only set up recording if we actually got a useful nodehandle.
+  // Only set up recording if we actually got a useful nodehandle
   if (node_handle.ok())
   {
     boost::thread record_thread;
 
     // Spin up a thread for actually writing to file
     if (!g_snapshot)
-      record_thread = boost::thread(boost::bind(&do_record, prefix, add_date));
+      record_thread = boost::thread(boost::bind(&do_record));
     else
       record_thread = boost::thread(boost::bind(&do_record_bb));
 
-    ros::Subscriber trigger = node_handle.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&snapshot_trigger, _1, prefix, add_date));
+    ros::Subscriber trigger = node_handle.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&snapshot_trigger, _1));
 
     // Every non-processed argument is assumed to be a topic
     for (int i = optind; i < argc; i++)
     {
       boost::shared_ptr<int> count(new int(g_count));
       boost::shared_ptr<ros::Subscriber> sub(new ros::Subscriber);
+      g_num_subscribers++;
       *sub = node_handle.subscribe<topic_tools::ShapeShifter>(argv[i], 100, boost::bind(&do_queue, _1, argv[i], sub, count));
     }
 
@@ -469,21 +544,15 @@ int main(int argc, char **argv)
     if (check_master)
       check_master_timer = node_handle.createTimer(ros::Duration(1.0), boost::bind(&do_check_master, _1, boost::ref(node_handle)));
     
-    ros::Timer check_subscribers_left_timer;
-    if (g_count >= 0)
-      check_subscribers_left_timer = node_handle.createTimer(ros::Duration(0.1), &do_check_subscribers_left);
-    
     ros::MultiThreadedSpinner s(10);
     ros::spin(s);
     
     g_queue_condition.notify_all();
     
     record_thread.join();
-        
   }
   
   delete g_queue;
 
-  // Return our exit code
   return g_exit_code;
 }

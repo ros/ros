@@ -49,7 +49,7 @@ class SubstitutionException(roslib.exceptions.ROSLibException):
     """
     pass
 
-def resolve_args(arg_str, context={}, resolve_anon=True):
+def resolve_args(arg_str, context=None, resolve_anon=True):
     """
     Resolves substitution args (see wiki spec U{http://ros.org/wiki/roslaunch}).
 
@@ -57,10 +57,11 @@ def resolve_args(arg_str, context={}, resolve_anon=True):
         in. arg_str may be None, in which case resolve_args will
         return None
     @type  arg_str: str
-    @param context dict: dictionary for storing results of the 'anon'
-        substitution arg. multiple calls to resolve_args should use
-        the same context so that 'anon' substitions resolve
-        consistently.
+    @param context dict: (optional) dictionary for storing results of
+        the 'anon' substitution arg. multiple calls to resolve_args
+        should use the same context so that 'anon' substitions resolve
+        consistently. If no context is provided, a new one will be
+        created for each call.
     @type  context: dict
     @param resolve_anon bool: If True (default), will resolve $(anon
         foo). If false, will leave these args as-is.
@@ -69,6 +70,8 @@ def resolve_args(arg_str, context={}, resolve_anon=True):
     @rtype:  str
     @raise SubstitutionException: if there is an error resolving substitution args
     """
+    if context is None:
+        context = {}
     #parse found substitution args
     if not arg_str:
         return arg_str
@@ -128,7 +131,13 @@ def resolve_args(arg_str, context={}, resolve_anon=True):
             if id in context:
                 resolved = resolved.replace("$(%s)"%a, context[id])
             else:
-                resolve_to = "%s-%s-%s-%s"%(id, socket.gethostname(), os.getpid(), int(time.time()*1000))
+                resolve_to = "%s_%s_%s_%s"%(id, socket.gethostname(), os.getpid(), int(time.time()*1000))
+                # RFC 952 allows hyphens, IP addrs can have '.'s, both
+                # of which are illegal for ROS names. For good
+                # measure, screen ipv6 ':'. 
+                resolve_to = resolve_to.replace('.', '_')
+                resolve_to = resolve_to.replace('-', '_')                
+                resolve_to = resolve_to.replace(':', '_')                
                 resolved = resolved.replace("$(%s)"%a, resolve_to)
                 context[id] = resolve_to
             

@@ -107,7 +107,7 @@ def is_simple(type_):
     """
     @return bool: True if type is a 'simple' type, i.e. is of
     fixed/known serialization length. This is effectively all primitive
-    types except for string"
+    types except for string
     @rtype: bool
     """
     return type_ in SIMPLE_TYPES
@@ -369,9 +369,8 @@ def compute_import(package, type_):
     else:
         retval = ['import %s.msg'%pkg]
         for t in get_registered_ex(type_str).types:
-            if '/' in t or is_special(t): # don't need to include relative types or primitive builtins
-                sub = compute_import(package, t)
-                retval.extend([x for x in sub if not x in retval])
+            sub = compute_import(package, t)
+            retval.extend([x for x in sub if not x in retval])
     return retval
 
 def compute_full_text_escaped(gen_deps_dict):

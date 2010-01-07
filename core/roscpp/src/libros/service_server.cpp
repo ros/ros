@@ -40,7 +40,7 @@ ServiceServer::Impl::Impl()
 ServiceServer::Impl::~Impl()
 {
   if (WallTime::now().toSec() - constructed_ < 0.001)
-    ROS_WARN("ServiceServer destroyed immediately after creation.  Did you forget to store the handle?");
+    ROS_WARN("ServiceServer on '%s' destroyed immediately after creation.  Did you forget to store the handle?", service_.c_str());
   unadvertise();
 }
 

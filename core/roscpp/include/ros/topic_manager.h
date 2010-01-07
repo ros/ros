@@ -106,6 +106,14 @@ public:
   size_t getNumSubscribers(const std::string &_topic);
   size_t getNumSubscriptions();
 
+  /**
+   * \brief Return the number of publishers connected to this node on a particular topic
+   *
+   * \param _topic the topic name to check
+   * \return the number of subscribers
+   */
+  size_t getNumPublishers(const std::string &_topic);
+
   /** @brief Publish a message.
    *
    * This method publishes a message on a topic, delivering it to any

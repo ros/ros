@@ -37,7 +37,6 @@ import roslib; roslib.load_manifest(PKG)
 
 import rosrecord
 import copy
-from sets import Set
 
 import os
 import sys
@@ -66,7 +65,7 @@ class BagMigrationException(Exception):
 # second element of the tuple is the expanded list of invalid rules
 # for that particular path.
 def checkbag(migrator, inbag):
-    checked = Set()
+    checked = set()
     migrations = []
 
     for i,(topic, msg, t) in enumerate(rosrecord.logplayer(inbag, raw=True)):
@@ -93,7 +92,7 @@ def checkbag(migrator, inbag):
 # second element of the tuple is the expanded list of invalid rules
 # for that particular path.
 def checkmessages(migrator, messages):
-    checked = Set()
+    checked = set()
     migrations = []
 
     for msg in messages:
@@ -406,7 +405,7 @@ class MessageUpdateRule(object):
 class RuleChain(object):
     def __init__(self):
         self.chain = []
-        self.order_keys = Set()
+        self.order_keys = set()
         self.rename = None
  
 
@@ -523,7 +522,7 @@ class MessageMigrator(object):
             prev_sn = None
 
             # Find name remapping list
-            rename_set = Set([type])
+            rename_set = set([type])
             tmp = rulechain.rename
             while tmp:
                 rename_set.add(tmp.new_type)
@@ -1251,4 +1250,4 @@ def constants_from_def(core_type, msg_def):
 #        dep_type, dep_spec = _generate_dynamic_specs(specs, dep_msg)
 #        specs[dep_type] = dep_spec
 
-    return Set([(x.name, x.val, x.type) for x in specs[core_type].constants])
+    return set([(x.name, x.val, x.type) for x in specs[core_type].constants])

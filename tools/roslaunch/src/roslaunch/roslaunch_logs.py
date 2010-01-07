@@ -32,6 +32,10 @@
 #
 # Revision $Id$
 
+"""
+Implementation for roslaunch-logs command-line utility.
+"""
+
 import os
 import sys
 import time

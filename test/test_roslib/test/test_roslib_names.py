@@ -70,7 +70,7 @@ class NamesTest(unittest.TestCase):
       try:
         make_global_ns(n)
         self.fail("make_global_ns should fail on %s"%n)
-      except roslib.names.ROSNameException: pass
+      except ValueError: pass
 
     self.assertEquals('/foo/', make_global_ns('foo'))
     self.assertEquals('/', make_global_ns(''))
@@ -91,7 +91,7 @@ class NamesTest(unittest.TestCase):
       try:
         make_caller_id('~name') # illegal
         self.fail("make_caller_id should fail on %s"%n)
-      except roslib.names.ROSNameException: pass
+      except ValueError: pass
     
     self.assertEquals('/node/', make_caller_id('node'))
     self.assertEquals('/bar/node/', make_caller_id('bar/node'))
@@ -223,26 +223,71 @@ class NamesTest(unittest.TestCase):
     self.assertEquals(('', ''), package_resource_name(''))
     self.assertEquals(('', 'foo'), package_resource_name('foo'))
     self.assertEquals(('foo', 'bar'), package_resource_name('foo/bar'))
-    self.assertEquals(('foo', ''), package_resource_name('foo/'))        
-
-  def test_is_valid_local_name(self):
-    from roslib.names import is_valid_local_name
-    failures = [1, None, '', 'x'*256, 'hello\n', '\t', 'foo++', 'foo-bar', '#foo', ' name', 'name ', '1name', 'foo\\']
-    for f in failures:
-      self.failIf(is_valid_local_name(f), f)
-    tests = ['f', 'foo', 'foo_bar', 'foo/bar']
-    for t in tests:
-      self.assert_(is_valid_local_name(t), t)
+    self.assertEquals(('foo', ''), package_resource_name('foo/'))
+    try:
+      # only allowed single separator
+      package_resource_name("foo/bar/baz")
+      self.fail("should have raised ValueError")
+    except ValueError:
+      pass
+      
 
   def test_is_legal_resource_name(self):
     from roslib.names import is_legal_resource_name
-    failures = [None, '', 'hello\n', '\t', 'foo++', 'foo-bar', '#foo', ' name', 'name ', '1name', 'foo\\']
+    failures = [None, '', 'hello\n', '\t', 'foo++', 'foo-bar', '#foo', 
+                ' name', 'name ',
+                '~name', '/name',
+                '1name', 'foo\\']
     for f in failures:
       self.failIf(is_legal_resource_name(f), f)
-    tests = ['f', 'foo', 'foo_bar', 'foo/bar']
+    tests = ['f', 'f1', 'f_', 'foo', 'foo_bar', 'foo/bar', 'roslib/Log']
     for t in tests:
       self.assert_(is_legal_resource_name(t), t)
-    
+
+  def test_is_legal_name(self):
+    from roslib.names import is_legal_name
+    failures = [None,
+                'foo++', 'foo-bar', '#foo',
+                'hello\n', '\t', ' name', 'name ',
+                'f//b',
+                '1name', 'foo\\']
+    for f in failures:
+      self.failIf(is_legal_name(f), f)
+    tests = ['',
+             'f', 'f1', 'f_', 'f/', 'foo', 'foo_bar', 'foo/bar', 'foo/bar/baz',
+             '~f', '~a/b/c',
+             '/a/b/c/d', '/']
+    for t in tests:
+      self.assert_(is_legal_name(t), "[%s]"%t)
+
+  def test_is_legal_base_name(self):
+    from roslib.names import is_legal_base_name
+    failures = [None, '', 'hello\n', '\t', 'foo++', 'foo-bar', '#foo',
+                'f/', 'foo/bar', '/', '/a',
+                'f//b',
+                '~f', '~a/b/c',                
+                ' name', 'name ',
+                '1name', 'foo\\']
+    for f in failures:
+      self.failIf(is_legal_base_name(f), f)
+    tests = ['f', 'f1', 'f_', 'foo', 'foo_bar']
+    for t in tests:
+      self.assert_(is_legal_base_name(t), "[%s]"%t)
+
+  def test_is_legal_resource_base_name(self):
+    from roslib.names import is_legal_resource_base_name
+    failures = [None, '', 'hello\n', '\t', 'foo++', 'foo-bar', '#foo',
+                'f/', 'foo/bar', '/', '/a',
+                'f//b',
+                '~f', '~a/b/c',                
+                ' name', 'name ',
+                '1name', 'foo\\']
+    for f in failures:
+      self.failIf(is_legal_resource_base_name(f), f)
+    tests = ['f', 'f1', 'f_', 'foo', 'foo_bar']
+    for t in tests:
+      self.assert_(is_legal_resource_base_name(t), "[%s]"%t)
+      
 if __name__ == '__main__':
   rostest.unitrun('test_roslib', 'test_names', NamesTest, coverage_packages=['roslib.names'])
 

@@ -39,7 +39,6 @@ state of the ROS Parameter Server using YAML files.
 """
 
 NAME = 'rosparam'
-import roslib; roslib.load_manifest('rosparam')
 
 ## namespace key. Use of this in a YAML document specifies the
 ## namespace of all the params.  NOTE: phasing out most use of this
@@ -339,7 +338,9 @@ def delete_param(param, verbose=False):
 
 def _set_param(param, value, verbose=False):
     """
-    Set param on the Parameter Server. Unlike L{set_param()}, this takes in a Python value to set instead of YAML.
+    Set param on the Parameter Server. Unlike L{set_param()}, this
+    takes in a Python value to set instead of YAML.
+    
     @param param: parameter name
     @type  param: str
     @param value XmlRpcLegalValue: value to upload
@@ -368,7 +369,8 @@ def _set_param(param, value, verbose=False):
 
 def set_param(param, value, verbose=False):
     """
-    Set param on the ROS parameter server using a YAML value
+    Set param on the ROS parameter server using a YAML value.
+    
     @param param: parameter name
     @type  param: str
     @param value: yaml-encoded value
@@ -409,13 +411,16 @@ def list_params(ns):
 
 # COMMAND-LINE PARSING
     
-def _rosparam_cmd_get_dump(cmd):
+def _rosparam_cmd_get_dump(cmd, argv):
     """
     Process command line for rosparam get/dump, e.g.::
       rosparam get param
       rosparam dump file.yaml [namespace]
-    @param cmd str: command ('get' or 'dump')
+    @param cmd: command ('get' or 'dump')
     @type  cmd: str
+    @param argv: command-line args
+    @type  argv: str    
+    
     """
     # get and dump are equivalent functionality, just different arguments
     if cmd == 'dump':
@@ -427,7 +432,7 @@ def _rosparam_cmd_get_dump(cmd):
 
     parser.add_option("-v", dest="verbose", default=False,
                       action="store_true", help="turn on verbose output")
-    options, args = parser.parse_args(sys.argv[2:])
+    options, args = parser.parse_args(argv[2:])
 
     arg = None
     ns = ''
@@ -452,13 +457,15 @@ def _rosparam_cmd_get_dump(cmd):
             print "dumping namespace [%s] to file [%s]"%(ns, arg)
         dump_params(arg, script_resolve_name(NAME, ns), verbose=options.verbose)
 
-def _rosparam_cmd_set_load(cmd):
+def _rosparam_cmd_set_load(cmd, argv):
     """
     Process command line for rosparam set/load, e.g.::
       rosparam load file.yaml [namespace]
       rosparam set param value
     @param cmd: command name
     @type  cmd: str
+    @param argv: command-line args
+    @type  argv: str    
     """
     if cmd == 'load':
         parser = OptionParser(usage="usage: %prog load [options] file [namespace]", prog=NAME)
@@ -472,7 +479,7 @@ def _rosparam_cmd_set_load(cmd):
     # arguments.
     args = []
     optparse_args = []
-    for s in sys.argv[2:]:
+    for s in argv[2:]:
         if s.startswith('-'):
             if len(s) > 1 and ord(s[1]) >= ord('0') and ord(s[1]) < ord('9'):
                 args.append(s)
@@ -499,22 +506,29 @@ def _rosparam_cmd_set_load(cmd):
         parser.error("too many arguments")
 
     if cmd == 'set':
+        # #2237: the empty string is really hard to specify on the
+        # command-line due to bash quoting rules. We cheat here and
+        # let an empty Python string be an empty YAML string (instead
+        # of YAML null, which has no meaning to the Parameter Server
+        # anyway).
+        if arg2 == '':
+            arg2 = '!!str'
         set_param(script_resolve_name(NAME, arg), arg2, verbose=options.verbose)
     else:
         paramlist = load_file(arg, default_namespace=script_resolve_name(NAME, arg2), verbose=options.verbose)
         for params,ns in paramlist:
             upload_params(ns, params, verbose=options.verbose)
 
-def _rosparam_cmd_list(cmd):
+def _rosparam_cmd_list(argv):
     """
     Process command line for rosparam set/load, e.g.::
       rosparam load file.yaml [namespace]
       rosparam set param value
-    @param cmd: command name
-    @type  cmd: str
+    @param argv: command-line args
+    @type  argv: str
     """
-    parser = OptionParser(usage="usage: %prog load [namespace]", prog=NAME)
-    options, args = parser.parse_args(sys.argv[2:])
+    parser = OptionParser(usage="usage: %prog list [namespace]", prog=NAME)
+    options, args = parser.parse_args(argv[2:])
 
     ns = GLOBALNS
     if len(args) == 1:
@@ -525,17 +539,19 @@ def _rosparam_cmd_list(cmd):
     print '\n'.join(list_params(ns))
 
 
-def _rosparam_cmd_delete(cmd):
+def _rosparam_cmd_delete(argv):
     """
     Process command line for rosparam delete, e.g.::
       rosparam delete param 
     @param cmd: command name
     @type  cmd: str
+    @param argv: command-line args
+    @type  argv: str
     """
     parser = OptionParser(usage="usage: %prog delete [options] parameter", prog=NAME)
     parser.add_option("-v", dest="verbose", default=False,
                       action="store_true", help="turn on verbose output")
-    options, args = parser.parse_args(sys.argv[2:])
+    options, args = parser.parse_args(argv[2:])
 
     arg2 = None
     if len(args) == 0:
@@ -563,26 +579,32 @@ Commands:
 """
     sys.exit(0)
 
-def yamlmain():
+def yamlmain(argv=None):
     """
-    Command-line main routine. Loads in one or more input files    
+    Command-line main routine. Loads in one or more input files
+    
+    @param argv: command-line arguments or None to use sys.argv
+    @type  argv: [str]
     """
-    if len(sys.argv) == 1:
+    if argv is None:
+        argv = sys.argv
+    if len(argv) == 1:
         _fullusage()
     try:
-        command = sys.argv[1]
+        command = argv[1]
         if command in ['get', 'dump']:
-            _rosparam_cmd_get_dump(command)
+            _rosparam_cmd_get_dump(command, argv)
         elif command in ['set', 'load']:
-            _rosparam_cmd_set_load(command)
+            _rosparam_cmd_set_load(command, argv)
         elif command in ['delete']:
-            _rosparam_cmd_delete(command)
+            _rosparam_cmd_delete(argv)
         elif command == 'list':
-            _rosparam_cmd_list(command)            
+            _rosparam_cmd_list(argv)
         else:
             _fullusage()
     except ROSParamException, e:
         print >> sys.stderr, "ERROR: "+str(e)
+        sys.exit(1)
 
 # YAML configuration. Doxygen does not like these being higher up in the code
 
@@ -595,7 +617,4 @@ yaml.add_implicit_resolver(u'!degrees', pattern)
 pattern = re.compile(r'^rad\([^\)]*\)$')
 yaml.add_implicit_resolver(u'!radians', pattern)
 
-
-if __name__ == '__main__':
-    yamlmain()
 

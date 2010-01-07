@@ -44,6 +44,42 @@ class RoslibManifestlibTest(unittest.TestCase):
     from roslib.manifestlib import ManifestException
     self.assert_(isinstance(ManifestException(), Exception))
 
+  def test_Platform(self):
+    from roslib.manifestlib import Platform, ManifestException
+    for bad in [None, '', 1]:
+      try:
+        Platform(bad, '1')
+        self.fail("should have failed on [%s]"%bad)
+      except ValueError: pass
+      try:
+        Platform('ubuntu', bad)
+        self.fail("should have failed on [%s]"%bad)
+      except ValueError: pass
+    
+    p = Platform('ubuntu', '8.04')
+    self.assertEquals('ubuntu 8.04', str(p))
+    self.assertEquals('ubuntu 8.04', repr(p))
+
+    self.assertEquals('<platform os="ubuntu" version="8.04"/>',p.xml())
+    self.assertEquals(p, Platform('ubuntu', '8.04'))
+    self.assertEquals(p, Platform('ubuntu', '8.04', notes=None))
+    self.assertNotEquals(p, Platform('ubuntu', '8.04', 'some notes'))
+    self.assertNotEquals(p, 'foo')
+    self.assertNotEquals(p, 1)
+
+    # note: probably actually "osx"
+    p = Platform('OS X', '10.6', 'macports')
+    self.assertEquals('OS X 10.6', str(p))
+    self.assertEquals('OS X 10.6', repr(p))
+
+    self.assertEquals('<platform os="OS X" version="10.6" notes="macports"/>',p.xml())
+    self.assertEquals(p, p)
+    self.assertEquals(p, Platform('OS X', '10.6', 'macports'))
+    self.assertNotEquals(p, Platform('OS X', '10.6'))
+    self.assertNotEquals(p, 'foo')
+    self.assertNotEquals(p, 1)
+    
+
   def test_Depend(self):
     from roslib.manifestlib import Depend, StackDepend, ManifestException
     for bad in [None, '', 1]:
@@ -61,7 +97,7 @@ class RoslibManifestlibTest(unittest.TestCase):
     self.assertNotEquals(d, StackDepend('roslib'))
     self.assertNotEquals(d, Depend('roslib2'))
     self.assertNotEquals(d, 1)
-
+    
   def test_StackDepend(self):
     from roslib.manifestlib import Depend, StackDepend, ManifestException
     for bad in [None, '', 1]:
@@ -128,6 +164,15 @@ class RoslibManifestlibTest(unittest.TestCase):
     self.assertEquals(set(['pkgname', 'common']), set(dpkgs))
     rdpkgs = [d.name for d in m.rosdeps]
     self.assertEquals(set(['python', 'bar', 'baz']), set(rdpkgs))
+    for p in m.platforms:
+      if p.os == 'ubuntu':
+        self.assertEquals("8.04", p.version)
+        self.assertEquals('', p.notes)        
+      elif p.os == 'OS X':
+        self.assertEquals("10.6", p.version)
+        self.assertEquals("macports", p.notes)        
+      else:
+        self.fail("unknown platform "+str(p))
 
   def _subtest_parse_stack_example1(self, m):
     from roslib.manifestlib import _Manifest
@@ -180,7 +225,7 @@ class RoslibManifestlibTest(unittest.TestCase):
     parse(m2, m.xml())
     self._subtest_parse_example1(m2)
     
-    
+  # bad file examples should be more like the roslaunch tests where there is just 1 thing wrong
   def test_parse_bad_file(self):
     from roslib.manifestlib import parse_file, _Manifest, ManifestException
     my_dir = roslib.packages.get_pkg_dir('test_roslib')
@@ -214,6 +259,8 @@ with other stuff</license>
   <rosdep name="python" />
   <rosdep name="bar" />
   <rosdep name="baz" />
+  <platform os="ubuntu" version="8.04" />
+  <platform os="OS X" version="10.6" notes="macports" />
 </package>"""
 
 STACK_EXAMPLE1 = """<stack>

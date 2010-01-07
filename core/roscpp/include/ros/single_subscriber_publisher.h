@@ -65,11 +65,6 @@ public:
   std::string getTopic() const;
 
   /**
-   * \deprecated in favor of getSubscriberName()
-   */
-  ROSCPP_DEPRECATED std::string getSubscriberCallerID() const;
-
-  /**
    * \brief Returns the name of the subscriber node
    */
   std::string getSubscriberName() const;

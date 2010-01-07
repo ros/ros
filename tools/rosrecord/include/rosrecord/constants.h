@@ -42,25 +42,37 @@ namespace ros
 namespace record
 {
 
-// What version of the log file do we write?
+// Log file version to write
 static const std::string VERSION = "1.2";
 
-// The strings that we're using to identify header fields
-static const std::string OP_FIELD_NAME = "op";
-static const std::string TOPIC_FIELD_NAME = "topic";
-static const std::string MD5_FIELD_NAME = "md5";
-static const std::string SEC_FIELD_NAME = "sec";
-static const std::string NSEC_FIELD_NAME = "nsec";
-static const std::string TYPE_FIELD_NAME = "type";
-static const std::string DEF_FIELD_NAME = "def";
+// Bytes reserved for file header record (4KB)
+static const uint32_t FILE_HEADER_LENGTH = 4 * 1024;
+
+// Header field delimiter
 static const unsigned char FIELD_DELIM = '=';
 
+// Header field keys
+static const std::string OP_FIELD_NAME        = "op";
+static const std::string TOPIC_FIELD_NAME     = "topic";
+static const std::string MD5_FIELD_NAME       = "md5";
+static const std::string SEC_FIELD_NAME       = "sec";
+static const std::string NSEC_FIELD_NAME      = "nsec";
+static const std::string TYPE_FIELD_NAME      = "type";
+static const std::string DEF_FIELD_NAME       = "def";
+static const std::string VER_FIELD_NAME       = "ver";
+static const std::string COUNT_FIELD_NAME     = "count";
+static const std::string INDEX_POS_FIELD_NAME = "index_pos";
+
+// Index data record version to write
+static const uint32_t INDEX_VERSION = 0;
+
 // The valid values of the "op" field
-static const unsigned char OP_MSG_DEF = 0x01;
-static const unsigned char OP_MSG_DATA = 0x02;
+static const unsigned char OP_MSG_DEF     = 0x01;
+static const unsigned char OP_MSG_DATA    = 0x02;
+static const unsigned char OP_FILE_HEADER = 0x03;
+static const unsigned char OP_INDEX_DATA  = 0x04;
 
 }
 }
 
 #endif
-

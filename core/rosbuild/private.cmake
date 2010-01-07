@@ -76,9 +76,9 @@ macro(_rosbuild_check_pythonpath)
   if("$ENV{PYTHONPATH}" STREQUAL "")
     message("WARNING: PYTHONPATH is not set.  This is almost certainly wrong. Check the ROS installation instructions for details on setting PYTHONPATH.")
   else("$ENV{PYTHONPATH}" STREQUAL "")
-    if(NOT $ENV{PYTHONPATH} MATCHES ".*roslib.*")
+    if(NOT "$ENV{PYTHONPATH}" MATCHES ".*roslib.*")
       message("WARNING: PYTHONPATH does not appear to contain roslib.  This is almost certainly wrong. Check the ROS installation instructions for details on setting PYTHONPATH.")
-    endif(NOT $ENV{PYTHONPATH} MATCHES ".*roslib.*")
+    endif(NOT "$ENV{PYTHONPATH}" MATCHES ".*roslib.*")
   endif("$ENV{PYTHONPATH}" STREQUAL "")
 endmacro(_rosbuild_check_pythonpath)
 
@@ -101,26 +101,15 @@ macro(_rosbuild_check_manifest)
 
 endmacro(_rosbuild_check_manifest)
 
-macro(_rosbuild_add_gcov src exe)
-  set(_gcov ${exe}_${_src}.gcov)
-  string(REPLACE "/" "_" _targetname ${_gcov})
-  add_custom_target(${_targetname} 
-                    COMMAND rosgcov ${_src} ${PROJECT_BINARY_DIR}
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  add_dependencies(${_targetname} test)
-  # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(gcoverage-run)
-  add_dependencies(gcoverage-run ${_targetname})
-  file(APPEND ${PROJECT_SOURCE_DIR}/.rosgcov_files "${CMAKE_CURRENT_SOURCE_DIR} ${_src}\n")
-endmacro(_rosbuild_add_gcov)
-
 # helper function to register check that results were generated (#580)
 macro(_rosbuild_check_rostest_xml_result test_name test_file)
   add_custom_target(${test_name}_result
                     COMMAND ${rostest_path}/bin/rostest-check-results ${test_file}
 		    VERBATIM)
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test-results-run)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test-results-run)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test-results-run ${test_name}_result)	 
 endmacro(_rosbuild_check_rostest_xml_result test_name)
 
@@ -163,7 +152,9 @@ macro(_rosbuild_check_rostest_result test_name test_pkg test_file)
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 		    VERBATIM)
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test-results-run)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test-results-run)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test-results-run ${test_name}_result)	 
 endmacro(_rosbuild_check_rostest_result test_name)
 
@@ -211,9 +202,17 @@ macro(_rosbuild_add_pyunit file)
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname ${file})
 
+  # We look for ROS_TEST_COVERAGE=1
+  # to indicate that coverage reports are being requested.
+  if("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
+    set(_covarg "--cov")
+  else("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
+    set(_covarg)
+  endif("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
+
   # Create target for this test
   add_custom_target(pyunit_${_testname}
-                    COMMAND ${ARGN} python ${file} --gtest_output=xml:${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml
+                    COMMAND ${ARGN} python ${file} ${_covarg} --gtest_output=xml:${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml
                     DEPENDS ${file}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     VERBATIM)
@@ -294,9 +293,9 @@ macro(_rosbuild_add_library lib libname type)
   rosbuild_add_compile_flags(${lib} ${ROS_COMPILE_FLAGS})
   rosbuild_add_link_flags(${lib} ${ROS_LINK_FLAGS})
 
-  # Make sure that any messages get generated prior to build this target
-  add_dependencies(${lib} rospack_genmsg_libexe)
-  add_dependencies(${lib} rospack_gensrv_libexe)
+  # Make sure to do any prebuild working (e.g., msg/srv generation) before
+  # building this target.
+  add_dependencies(${lib} rosbuild_precompile)
 endmacro(_rosbuild_add_library)
 
 # Internal macros above

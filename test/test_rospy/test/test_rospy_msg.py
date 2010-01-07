@@ -45,6 +45,25 @@ import random
 
 class TestRospyMsg(unittest.TestCase):
 
+    def test_args_kwds_to_message(self):
+        import rospy
+        from rospy.msg import args_kwds_to_message
+        from test_rospy.msg import Val
+        
+        v = Val('hello world-1')
+        d = args_kwds_to_message(Val, (v,), None)
+        self.assert_(d == v)
+        d = args_kwds_to_message(Val, ('hello world-2',), None)
+        self.assertEquals(d.val, 'hello world-2')
+        d = args_kwds_to_message(Val, (), {'val':'hello world-3'})
+        self.assertEquals(d.val, 'hello world-3')
+
+        # error cases
+        try:
+            args_kwds_to_message(Val, 'hi', val='hello world-3')
+            self.fail("should not allow args and kwds")
+        except TypeError: pass
+
     def test_serialize_message(self):
         import rospy.msg
         import rospy.rostime
@@ -107,30 +126,6 @@ class TestRospyMsg(unittest.TestCase):
         rospy.msg.serialize_message(buff, seq, val)
         self.assertEquals(val.header, h)
         self.assertEquals('0', h.frame_id) 
-        
-        #test timestamp filling
-        h.stamp = None
-        rospy.msg.serialize_message(buff, seq, val)
-        self.assertEquals(rospy.Time(0), val.header.stamp)
-        
-        #test auto header
-        val = HeaderVal(None, teststr)
-        seq += 1
-
-        rospy.msg.serialize_message(buff, seq, val)
-        self.assertEquals(seq, val.header.seq)
-        self.assertEquals('0', val.header.frame_id)
-        
-        #test that sub-headers are not modified
-        from test_rospy.msg import HeaderHeaderVal
-        val = HeaderHeaderVal(None, HeaderVal(None, teststr))
-        seq += 1
-        
-        rospy.msg.serialize_message(buff, seq, val)
-        self.assertEquals(seq, val.header.seq)
-        self.assertEquals('0', val.header.frame_id)
-        self.assertEquals(0, val.val.header.seq)
-        self.assertEquals('', val.val.header.frame_id)
         
 
     def test_deserialize_messages(self):

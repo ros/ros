@@ -50,6 +50,7 @@ std::string clean(const std::string& name);
  *
  * \param name Name to resolve
  * \param remap Whether or not to apply remappings to the name
+ * \throws InvalidNameException if the name passed is not a valid graph resource name
  */
 std::string resolve(const std::string& name, bool remap = true);
 /**
@@ -60,6 +61,7 @@ std::string resolve(const std::string& name, bool remap = true);
  * \param ns Namespace to use in resolution
  * \param name Name to resolve
  * \param remap Whether or not to apply remappings to the name
+ * \throws InvalidNameException if the name passed is not a valid graph resource name
  */
 std::string resolve(const std::string& ns, const std::string& name, bool remap = true);
 /**
@@ -68,6 +70,7 @@ std::string resolve(const std::string& ns, const std::string& name, bool remap =
 std::string append(const std::string& left, const std::string& right);
 /**
  * \brief Apply remappings to a name
+ * \throws InvalidNameException if the name passed is not a valid graph resource name
  */
 std::string remap(const std::string& name);
 /**

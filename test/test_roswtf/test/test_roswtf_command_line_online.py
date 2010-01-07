@@ -76,10 +76,16 @@ class TestRostopicOnline(unittest.TestCase):
         env = os.environ.copy()        
         env['ROS_PACKAGE_PATH'] = 'test_roswtf_ignore'
 
-        kwds = { 'env': env, 'stdout': PIPE, 'stderr': PIPE}
-        # run roswtf nakedly
-        output = Popen([cmd], **kwds).communicate()[0]
-        self.assert_('No errors or warnings' in output, "OUTPUT[%s]"%output)
+        import roslib.packages
+        cwd  = roslib.packages.get_pkg_dir('test_roswtf')
+        kwds = { 'env': env, 'stdout': PIPE, 'stderr': PIPE, 'cwd': cwd}
+
+        # run roswtf nakedly in the test_roswtf directory. Running in
+        # ROS_ROOT effectively make test_roswtf have dependencies on
+        # every package in the ROS stack, which doesn't work.
+
+        output, err = Popen([cmd], **kwds).communicate()
+        self.assert_('No errors or warnings' in output, "OUTPUT[%s]\nstderr[%s}"%(output, err))
         self.assert_('ERROR' not in output, "OUTPUT[%s]"%output)        
 
         # run roswtf on a simple launch file online

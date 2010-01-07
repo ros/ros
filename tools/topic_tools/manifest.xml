@@ -10,6 +10,7 @@
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <depend package="roscpp"/>
+  <depend package="rosconsole"/>
   <depend package="std_msgs"/>
   <depend package="rostest"/>
 

@@ -219,14 +219,27 @@ public:
   virtual string cpp_type_typedefs()
   {
     ostringstream code;
-    code << "  typedef std::vector<" << ele_var->cpp_type_name() << "> _" << name << "_type;\n";
+    if (len)
+    {
+      code << "  typedef boost::array<" << ele_var->cpp_type_name() << ", " << len << "> _" << name << "_type;\n";
+    }
+    else
+    {
+      code << "  typedef std::vector<" << ele_var->cpp_type_name() << "> _" << name << "_type;\n";
+    }
     return code.str();
   }
   virtual string cpp_decl()
   {
     ostringstream code;
-    code << "  std::vector<" << ele_var->cpp_type_name() << "> "
-         << name << ";\n";
+    if (len)
+    {
+      code << "  boost::array<" << ele_var->cpp_type_name() << ", " << len << "> " << name << ";\n";
+    }
+    else
+    {
+      code << "  std::vector<" << ele_var->cpp_type_name() << "> " << name << ";\n";
+    }
     return code.str();
   }
   virtual string test_populate(const string &prefix, int indent = 0)
@@ -284,7 +297,16 @@ public:
   }
   virtual string cpp_type_name()
   {
-    return string("std::vector<") + ele_var->cpp_type_name() + string("> ");
+    if (len)
+    {
+      std::stringstream ss;
+      ss << "  boost::array<" << ele_var->cpp_type_name() << ", " << len << "> ";
+      return ss.str();
+    }
+    else
+    {
+      return string("std::vector<") + ele_var->cpp_type_name() + string("> ");
+    }
     //return ele_var->cpp_type_name() + " *";
   }
   virtual vector<string> cpp_ctor_clauses()
@@ -295,7 +317,12 @@ public:
   {
     ostringstream code;
     if (len)
-      code << "  " << name << ".resize(" << len << ");\n";
+    {
+      if (msg_spec::is_integer(eletype) || eletype == "float32" || eletype == "float64")
+      {
+        code << "    " << name << ".assign(0);\n";
+      }
+    }
     return code.str();
   }
   virtual vector<string> cpp_copy_ctor_initializers()
@@ -314,7 +341,14 @@ public:
   }
   virtual string cpp_dtor_code()
   {
-    return string("    ") + name + string(".clear();\n");
+    if (len)
+    {
+      return string();
+    }
+    else
+    {
+      return string("    ") + name + string(".clear();\n");
+    }
   }
   virtual string length_expr()
   {
@@ -322,8 +356,10 @@ public:
     char code[CODE_LEN];
     if (len && ele_var->is_fixed_length())
     {
+      ele_var->name = name + string("[0]");
       snprintf(code, CODE_LEN, "%d * %s", len,
                ele_var->length_expr().c_str());
+      ele_var->name = "dummy";
     }
     else if (ele_var->is_fixed_length())
     {
@@ -376,13 +412,17 @@ public:
       code << "      l += " << ele_var->length_expr() << ";\n"
            << "    return l;\n  }\n";
     }
-    // stl vector setters/getters
-    code << "  inline void get_" << name << "_vec (std::vector<"
-         << ele_var->cpp_type_name() << "> &__ros_vec) const\n"
-         << "  {\n    __ros_vec = this->" << name << ";\n  }\n";
-    code << "  inline void set_" << name << "_vec(const std::vector<"
-         << ele_var->cpp_type_name() << "> &__ros_vec)\n"
-         << "  {\n    this->" << name << " = __ros_vec;\n  }\n";
+
+    if (!len)
+    {
+      // stl vector setters/getters
+      code << "  inline void get_" << name << "_vec (std::vector<"
+           << ele_var->cpp_type_name() << "> &__ros_vec) const\n"
+           << "  {\n    __ros_vec = this->" << name << ";\n  }\n";
+      code << "  inline void set_" << name << "_vec(const std::vector<"
+           << ele_var->cpp_type_name() << "> &__ros_vec)\n"
+           << "  {\n    this->" << name << " = __ros_vec;\n  }\n";
+    }
     return code.str();
   }
   virtual string serialization_code()
@@ -877,7 +917,8 @@ msg_spec::msg_spec(const string &_spec_file, const string &_package,
     fseek(f, 0, SEEK_SET);
 
     char* buffer = new char[len];
-    fread(buffer, len, 1, f);
+    if (!fread(buffer, len, 1, f))
+      fprintf(stderr, "gcc 4.4 wanted me to check this value. it's bad.\n");
     memory_file = std::string(buffer, len);
     delete buffer;
 
@@ -1184,16 +1225,7 @@ void msg_spec::emit_cpp_class(FILE *f, bool for_srv, const string &service_name)
   {
     fputs("    roslib::Header _ser_header = header;\n", f);
     fprintf(f, "    bool __reset_seq = (header.seq == 0);\n" \
-          "    if (__reset_seq) _ser_header.seq = seq;\n" \
-          "    bool __reset_timestamp = header.stamp.is_zero();\n" \
-          "    if (__reset_timestamp) {\n" \
-          "      static uint32_t counter = 100;\n" \
-          "      if (counter %% 100 == 0) {\n" \
-          "        ROS_WARN(\"Automatic-filling of header timestamps is deprecated.  In future versions this time will be passed through as 0. (message type = [%s/%s])\");\n" \
-          "      }\n" \
-          "      ++counter;\n" \
-          "      _ser_header.stamp = ros::Time::now();\n" \
-          "    }\n", package.c_str(), g_name.c_str());
+          "    if (__reset_seq) _ser_header.seq = seq;\n");
   }
 
   for (vector<msg_var *>::iterator v = vars.begin(); v != vars.end(); ++v)
@@ -1216,30 +1248,11 @@ void msg_spec::emit_cpp_class(FILE *f, bool for_srv, const string &service_name)
 string msg_spec::serializationLength_func()
 {
   string s;
-//  if (!is_fixed_length())
-    s += "  inline uint32_t serializationLength() const\n  {\n";
-//  else
-//    s += "  static uint32_t s_serializationLength()\n  {\n";
+  s += "  inline uint32_t serializationLength() const\n  {\n";
   s += "    unsigned __l = 0;\n";
   for (vector<msg_var *>::iterator v = vars.begin(); v != vars.end(); ++v)
-  {
-    // Is it an array of non-primitives?
-    // If so, then we need declare the dummy variable that
-    // will be used to determine serialization length
-    /*
-    var_array* array_ptr = dynamic_cast<var_array*>(*v);
-    if(array_ptr && !msg_spec::is_primitive(array_ptr->eletype))
-      s += string("    {\n    ") + array_ptr->ele_var->cpp_decl() +
-              string("  ");
-    */
-
     s += string("    __l += ") + (*v)->length_expr() + string("; // ") +
-      (*v)->name + string("\n");
-    /*
-    if(array_ptr && !msg_spec::is_primitive(array_ptr->eletype))
-      s += string("    }\n");
-    */
-  }
+         (*v)->name + string("\n");
   s += "    return __l;\n";
   s += "  }\n";
   return s;

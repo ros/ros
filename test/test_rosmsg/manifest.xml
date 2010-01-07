@@ -16,6 +16,10 @@
   
   <depend package="test_ros"/> <!-- tests depend on existence of this package -->
 
+  <export>
+    <cpp cflags="-I${prefix}/msg/cpp -I${prefix}/srv/cpp"/>
+  </export>
+
 </package>
 
 

@@ -47,32 +47,41 @@ import traceback
 import roslib.msgs 
 import roslib.packages 
 
-# genutil is a utility package the implements the package crawling logic of genmsg_py and gensrv_py logic
+# genutil is a utility package the implements the package crawling
+# logic of genmsg_py and gensrv_py logic
 import genutil
 
 import roslib.genpy 
 
-## GenmsgPackage generates Python message code for all messages in a
-## package. See genutil.Generator. In order to generator code for a
-## single .msg file, see msg_generator.
 class GenmsgPackage(genutil.Generator):
+    """
+    GenmsgPackage generates Python message code for all messages in a
+    package. See genutil.Generator. In order to generator code for a
+    single .msg file, see msg_generator.
+    """
     def __init__(self):
         super(GenmsgPackage, self).__init__(
             'genmsg_py', 'messages', roslib.msgs.EXT, roslib.packages.MSG_DIR, roslib.genpy.MsgGenerationException)
 
-    ## Generate python message code for a single .msg file
-    ## @param f str: path to .msg file
-    ## @param outdir str: output directory for generated code
-    ## @return str filename of generated Python code 
     def generate(self, package, f, outdir):
+        """
+        Generate python message code for a single .msg file
+        @param f: path to .msg file
+        @type  f: str
+        @param outdir: output directory for generated code
+        @type  outdir: str
+        @return: filename of generated Python code 
+        @rtype: str
+        """
         verbose = True
         f = os.path.abspath(f)
         infile_name = os.path.basename(f)
         outfile_name = self.outfile_name(outdir, infile_name)
 
-        (name, spec) = roslib.msgs.load_from_file(f)
+        (name, spec) = roslib.msgs.load_from_file(f, package)
+        base_name = roslib.names.resource_name_base(name)
         
-        self.write_gen(outfile_name, roslib.genpy.msg_generator(package, name, spec), verbose)
+        self.write_gen(outfile_name, roslib.genpy.msg_generator(package, base_name, spec), verbose)
 
         roslib.msgs.register(name, spec)
         return outfile_name

@@ -95,13 +95,20 @@ typedef std::pair<std::string, std::string> StringPair;
 class SingleSubscriberPublisher;
 typedef boost::function<void(const SingleSubscriberPublisher&)> SubscriberStatusCallback;
 
+class CallbackQueue;
+class CallbackQueueInterface;
+class CallbackInterface;
+typedef boost::shared_ptr<CallbackInterface> CallbackInterfacePtr;
+
 struct SubscriberCallbacks
 {
   SubscriberCallbacks(const SubscriberStatusCallback& connect = SubscriberStatusCallback(),
                       const SubscriberStatusCallback& disconnect = SubscriberStatusCallback(),
-                      const VoidPtr& tracked_object = VoidPtr())
+                      const VoidPtr& tracked_object = VoidPtr(),
+                      CallbackQueueInterface* callback_queue = 0)
   : connect_(connect)
   , disconnect_(disconnect)
+  , callback_queue_(callback_queue)
   {
     has_tracked_object_ = false;
     if (tracked_object)
@@ -115,13 +122,9 @@ struct SubscriberCallbacks
 
   bool has_tracked_object_;
   VoidWPtr tracked_object_;
+  CallbackQueueInterface* callback_queue_;
 };
 typedef boost::shared_ptr<SubscriberCallbacks> SubscriberCallbacksPtr;
-
-class CallbackQueue;
-class CallbackQueueInterface;
-class CallbackInterface;
-typedef boost::shared_ptr<CallbackInterface> CallbackInterfacePtr;
 
 struct TimerEvent
 {

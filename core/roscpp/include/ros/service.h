@@ -114,15 +114,6 @@ bool waitForService(const std::string& service_name, ros::Duration timeout = ros
  */
 bool exists(const std::string& service_name, bool print_failure_reason);
 
-/** \deprecated Use createClient() instead */
-template<class MReq, class MRes>
-ROSCPP_DEPRECATED ServiceClient createHandle(const std::string& service_name, bool persistent = false, const M_string& header_values = M_string())
-{
-  NodeHandle nh;
-  ServiceClient client = nh.serviceClient<MReq, MRes>(service_name, persistent, header_values);
-  return client;
-}
-
 /** @brief Create a client for a service.
  *
  * When the last handle reference of a persistent connection is cleared, the connection will automatically close.
@@ -137,7 +128,7 @@ template<class MReq, class MRes>
 ServiceClient createClient(const std::string& service_name, bool persistent = false, const M_string& header_values = M_string())
 {
   NodeHandle nh;
-  ServiceClient client = nh.serviceClient<MReq, MRes>(service_name, persistent, header_values);
+  ServiceClient client = nh.template serviceClient<MReq, MRes>(service_name, persistent, header_values);
   return client;
 }
 
@@ -155,7 +146,7 @@ template<class Service>
 ServiceClient createClient(const std::string& service_name, bool persistent = false, const M_string& header_values = M_string())
 {
   NodeHandle nh;
-  ServiceClient client = nh.serviceClient<Service>(service_name, persistent, header_values);
+  ServiceClient client = nh.template serviceClient<Service>(service_name, persistent, header_values);
   return client;
 }
 

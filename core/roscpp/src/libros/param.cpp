@@ -78,7 +78,7 @@ void set(const std::string &key, const std::string &s)
   // construct xmlrpc_c::value object of the std::string and
   // call param::set(key, xmlvalue);
   XmlRpc::XmlRpcValue v(s);
-  param::set(key, v);
+  ros::param::set(key, v);
 }
 
 void set(const std::string &key, const char* s)
@@ -87,25 +87,25 @@ void set(const std::string &key, const char* s)
   // call param::set(key, xmlvalue);
   std::string sxx = std::string(s);
   XmlRpc::XmlRpcValue v(sxx);
-  param::set(key, v);
+  ros::param::set(key, v);
 }
 
 void set(const std::string &key, double d)
 {
   XmlRpc::XmlRpcValue v(d);
-  param::set(key, v);
+  ros::param::set(key, v);
 }
 
 void set(const std::string &key, int i)
 {
   XmlRpc::XmlRpcValue v(i);
-  param::set(key, v);
+  ros::param::set(key, v);
 }
 
 void set(const std::string& key, bool b)
 {
   XmlRpc::XmlRpcValue v(b);
-  param::set(key, v);
+  ros::param::set(key, v);
 }
 
 bool has(const std::string &key)
@@ -159,7 +159,7 @@ bool del(const std::string &key)
   return true;
 }
 
-bool get(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
+bool getImpl(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
 {
   std::string mapped_key = ros::names::resolve(key);
 
@@ -190,7 +190,9 @@ bool get(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
 
         if (!master::execute("subscribeParam", params, result, payload, false))
         {
+          ROS_DEBUG_NAMED("cached_parameters", "Subscribe to parameter [%s]: call to the master failed", mapped_key.c_str());
           g_subscribed_params.erase(mapped_key);
+          use_cache = false;
         }
         else
         {
@@ -207,12 +209,9 @@ bool get(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
   // We don't loop here, because validateXmlrpcResponse() returns false
   // both when we can't contact the master and when the master says, "I
   // don't have that param."
-  if (!master::execute("getParam", params, result, v, false))
-  {
-    return false;
-  }
+  bool ret = master::execute("getParam", params, result, v, false);
 
-  if (use_cache && v.valid())
+  if (use_cache)
   {
     boost::mutex::scoped_lock lock(g_params_mutex);
 
@@ -220,13 +219,13 @@ bool get(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
     g_params[mapped_key] = v;
   }
 
-  return true;
+  return ret;
 }
 
-bool get(const std::string &key, std::string &s, bool use_cache)
+bool getImpl(const std::string &key, std::string &s, bool use_cache)
 {
   XmlRpc::XmlRpcValue v;
-  if (!get(key, v, use_cache))
+  if (!getImpl(key, v, use_cache))
     return false;
   if (v.getType() != XmlRpc::XmlRpcValue::TypeString)
     return false;
@@ -234,10 +233,10 @@ bool get(const std::string &key, std::string &s, bool use_cache)
   return true;
 }
 
-bool get(const std::string &key, double &d, bool use_cache)
+bool getImpl(const std::string &key, double &d, bool use_cache)
 {
   XmlRpc::XmlRpcValue v;
-  if (!get(key, v, use_cache))
+  if (!getImpl(key, v, use_cache))
   {
     return false;
   }
@@ -258,10 +257,10 @@ bool get(const std::string &key, double &d, bool use_cache)
   return true;
 }
 
-bool get(const std::string &key, int &i, bool use_cache)
+bool getImpl(const std::string &key, int &i, bool use_cache)
 {
   XmlRpc::XmlRpcValue v;
-  if (!get(key, v, use_cache))
+  if (!getImpl(key, v, use_cache))
   {
     return false;
   }
@@ -293,16 +292,94 @@ bool get(const std::string &key, int &i, bool use_cache)
   return true;
 }
 
-bool get(const std::string &key, bool &b, bool use_cache)
+bool getImpl(const std::string &key, bool &b, bool use_cache)
 {
   XmlRpc::XmlRpcValue v;
-  if (!get(key, v, use_cache))
+  if (!getImpl(key, v, use_cache))
     return false;
   if (v.getType() != XmlRpc::XmlRpcValue::TypeBoolean)
     return false;
   b = v;
   return true;
 }
+
+bool get(const std::string& key, std::string& s)
+{
+	return getImpl(key, s, false);
+}
+
+bool get(const std::string& key, double& d)
+{
+	return getImpl(key, d, false);
+}
+
+bool get(const std::string& key, int& i)
+{
+	return getImpl(key, i, false);
+}
+
+bool get(const std::string& key, bool& b)
+{
+	return getImpl(key, b, false);
+}
+
+bool get(const std::string& key, XmlRpc::XmlRpcValue& v)
+{
+	return getImpl(key, v, true);
+}
+
+bool getCached(const std::string& key, std::string& s)
+{
+	return getImpl(key, s, true);
+}
+
+bool getCached(const std::string& key, double& d)
+{
+	return getImpl(key, d, true);
+}
+
+bool getCached(const std::string& key, int& i)
+{
+	return getImpl(key, i, true);
+}
+
+bool getCached(const std::string& key, bool& b)
+{
+	return getImpl(key, b, true);
+}
+
+bool getCached(const std::string& key, XmlRpc::XmlRpcValue& v)
+{
+	return getImpl(key, v, true);
+}
+
+////////////////////////////////////////////////////////////
+// deprecated get() functions with the use_cache parameter
+bool get(const std::string& key, std::string& s, bool use_cache)
+{
+	return getImpl(key, s, true);
+}
+
+bool get(const std::string& key, double& d, bool use_cache)
+{
+	return getImpl(key, d, true);
+}
+
+bool get(const std::string& key, int& i, bool use_cache)
+{
+	return getImpl(key, i, true);
+}
+
+bool get(const std::string& key, bool& b, bool use_cache)
+{
+	return getImpl(key, b, true);
+}
+
+bool get(const std::string& key, XmlRpc::XmlRpcValue& v, bool use_cache)
+{
+	return getImpl(key, v, true);
+}
+//////////////////////////////////////////////////////////////
 
 bool search(const std::string& key, std::string& result_out)
 {
@@ -354,7 +431,7 @@ void paramUpdateCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& resul
   result[1] = std::string("");
   result[2] = 0;
 
-  param::update((std::string)params[1], params[2]);
+  ros::param::update((std::string)params[1], params[2]);
 }
 
 void init(const M_string& remappings)
@@ -380,7 +457,7 @@ void init(const M_string& remappings)
       try
       {
         int32_t i = boost::lexical_cast<int32_t>(param);
-        param::set(names::resolve(local_name), i);
+        ros::param::set(names::resolve(local_name), i);
         success = true;
       }
       catch (boost::bad_lexical_cast&)
@@ -396,7 +473,7 @@ void init(const M_string& remappings)
       try
       {
         double d = boost::lexical_cast<double>(param);
-        param::set(names::resolve(local_name), d);
+        ros::param::set(names::resolve(local_name), d);
         success = true;
       }
       catch (boost::bad_lexical_cast&)
@@ -411,15 +488,15 @@ void init(const M_string& remappings)
 
       if (param == "true" || param == "True" || param == "TRUE")
       {
-        param::set(names::resolve(local_name), true);
+        ros::param::set(names::resolve(local_name), true);
       }
       else if (param == "false" || param == "False" || param == "FALSE")
       {
-        param::set(names::resolve(local_name), false);
+        ros::param::set(names::resolve(local_name), false);
       }
       else
       {
-        param::set(names::resolve(local_name), param);
+        ros::param::set(names::resolve(local_name), param);
       }
     }
   }

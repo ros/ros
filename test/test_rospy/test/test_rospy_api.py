@@ -125,6 +125,7 @@ class TestRospyApi(unittest.TestCase):
         rospy.signal_shutdown
         rospy.sleep
         rospy.spin
+        rospy.wait_for_message
         rospy.wait_for_service
 
         rospy.delete_param

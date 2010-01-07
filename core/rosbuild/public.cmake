@@ -107,6 +107,7 @@ macro(rosbuild_invoke_rospack pkgname _prefix _varname)
   if (_rospack_failed)
     #set(_rospack_${_varname} "")
     #set(${_prefix}_${_varname} "" CACHE INTERNAL "")
+    message("Failed to invoke ${ROSPACK_EXE} ${ARGN} ${pkgname}")
     message("${_rospack_err_ignore}")
     message("${_rospack_invoke_result}")
     message(FATAL_ERROR "\nFailed to invoke rospack to get compile flags for package '${pkgname}'.  Look above for errors from rospack itself.  Aborting.  Please fix the broken dependency!\n")
@@ -147,17 +148,10 @@ macro(rosbuild_init)
   if(NOT ROSPACK_MAKEDIST)
   
   # Add ROS_PACKAGE_NAME define
-  add_definitions(-DROS_PACKAGE_NAME=\\\"${PROJECT_NAME}\\\")
+  add_definitions(-DROS_PACKAGE_NAME='\"${PROJECT_NAME}\"')
 
   # ROS_BUILD_TYPE is set by rosconfig
-  if(ROS_BUILD_TYPE STREQUAL "Coverage")
-    # "Coverage" is our own little target
-    set(CMAKE_BUILD_TYPE "Debug")
-    set(ROS_COMPILE_FLAGS "-W -Wall -Wno-unused-parameter -fno-strict-aliasing -fprofile-arcs -ftest-coverage")
-    set(ROS_LINK_LIBS "gcov")
-  else(ROS_BUILD_TYPE STREQUAL "Coverage")
-    set(CMAKE_BUILD_TYPE ${ROS_BUILD_TYPE})
-  endif(ROS_BUILD_TYPE STREQUAL "Coverage")
+  set(CMAKE_BUILD_TYPE ${ROS_BUILD_TYPE})
 
   # Set default output directories
   set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
@@ -271,16 +265,17 @@ macro(rosbuild_init)
   add_custom_target(test-results
                     COMMAND ${rostest_path}/bin/rostest-results --nodeps ${_project})
   add_dependencies(test-results test-results-run)
-
-  add_custom_target(gcoverage-run)
-  add_custom_target(gcoverage 
-                    COMMAND rosgcov_summarize ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/.rosgcov_files)
-  add_dependencies(gcoverage gcoverage-run)
-  file(REMOVE ${PROJECT_SOURCE_DIR}/.rosgcov_files)
-  # This doesn't work for some reason...
-  #file(GLOB_RECURSE _old_gcov_files ${CMAKE_SOURCE_DIR} *.gcov)
-  #message("_old_gcov_files: ${_old_gcov_files}")
-  #file(REMOVE "${_old_gcov_files}")
+  # Do we want coverage reporting (only matters for Python, because
+  # Bullseye already collects everything into a single file).
+  if("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
+    add_custom_target(test-results-coverage
+                      COMMAND ${rostest_path}/bin/coverage-html
+                      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+    # Make tests run before collecting coverage results
+    add_dependencies(test-results-coverage test-results-run)
+    # Make coverage collection happen
+    add_dependencies(test-results test-results-coverage)
+  endif("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
 
   # Find roslib; roslib_path will be used later
   rosbuild_invoke_rospack("" roslib path find roslib)
@@ -296,11 +291,16 @@ macro(rosbuild_init)
   # Create targets for client libs attach their message-generation output to
   add_custom_target(rospack_genmsg)
   add_custom_target(rospack_gensrv)
-  # Create targets for library and executable targets to depend on, to
-  # ensure message-generation, if enabled, happens before building
-  # anything.
+
+  # Add a target that will fire before compiling anything.  This is used by
+  # message and service generation, as well as things outside of ros, like
+  # dynamic_reconfigure.
+  add_custom_target(rosbuild_precompile)
+
+  # The rospack_genmsg_libexe target is defined for backward compatibility,
+  # and will eventually be removed.
   add_custom_target(rospack_genmsg_libexe)
-  add_custom_target(rospack_gensrv_libexe)
+  add_dependencies(rosbuild_precompile rospack_genmsg_libexe)
   
   # ${gendeps_exe} is a convenience variable that roslang cmake rules
   # must reference as a dependency of msg/srv generation
@@ -384,38 +384,6 @@ macro(rosbuild_init)
   set(_gtest_LIBRARIES ${_tmplist})
   list(REVERSE _gtest_LIBRARIES)
 
-  #
-  # Try to get the SVN URL and revision of the package. 
-  # TODO: Support other version control systems (svk, git, etc.)
-  #
-  execute_process(
-    COMMAND svn info ${PROJECT_SOURCE_DIR}
-    COMMAND grep Revision
-    COMMAND cut -d " " -f 2,2
-    OUTPUT_VARIABLE _svn_rev
-    ERROR_VARIABLE _svn_error
-    RESULT_VARIABLE _svn_failed
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  execute_process(
-    COMMAND svn info ${PROJECT_SOURCE_DIR}
-    COMMAND grep URL
-    COMMAND cut -d " " -f 2,2
-    OUTPUT_VARIABLE _svn_url
-    ERROR_VARIABLE _svn_error
-    RESULT_VARIABLE _svn_failed
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  if(_svn_failed)
-    # No big deal 
-  else(_svn_failed)
-    # We treat the revision as a string
-    set(ROS_PACKAGE_REVISION "${_svn_url}:${_svn_rev}")
-    # Stop passing this in, because it causes spurious re-builds after svn
-    # updates.
-    #add_definitions(-DROS_PACKAGE_REVISION=\\\"${ROS_PACKAGE_REVISION}\\\")
-    file(WRITE ${PROJECT_SOURCE_DIR}/.build_version ${ROS_PACKAGE_REVISION}\n)
-  endif(_svn_failed)
   endif(NOT ROSPACK_MAKEDIST)
 endmacro(rosbuild_init)
 ###############################################################################
@@ -462,9 +430,9 @@ macro(rosbuild_add_executable exe)
   rosbuild_add_compile_flags(${exe} ${ROS_COMPILE_FLAGS})
   rosbuild_add_link_flags(${exe} ${ROS_LINK_FLAGS})
 
-  # Make sure that any messages get generated prior to building this target
-  add_dependencies(${exe} rospack_genmsg_libexe)
-  add_dependencies(${exe} rospack_gensrv_libexe)
+  # Make sure to do any prebuild working (e.g., msg/srv generation) before
+  # building this target.
+  add_dependencies(${exe} rosbuild_precompile)
 
   # If we're linking boost statically, we have to force allow multiple definitions because
   # rospack does not remove duplicates
@@ -527,7 +495,9 @@ endmacro(rosbuild_add_gtest_build_flags)
 macro(rosbuild_declare_test exe)
   # We provide a 'tests' target that just builds the tests.
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(tests)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(tests)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(tests ${exe})
 endmacro(rosbuild_declare_test)
 
@@ -561,7 +531,9 @@ macro(rosbuild_add_gtest_future exe)
   string(REPLACE "/" "_" _testname ${exe})
 
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test-future)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test-future)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test-future test_${_testname})
 endmacro(rosbuild_add_gtest_future)
 
@@ -571,7 +543,9 @@ macro(rosbuild_add_rostest file)
   string(REPLACE "/" "_" _testname ${file})
   _rosbuild_add_rostest(${file})
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test rostest_${_testname})
   _rosbuild_check_rostest_result(rostest_${_testname} ${PROJECT_NAME} ${file})
 endmacro(rosbuild_add_rostest)
@@ -590,7 +564,9 @@ macro(rosbuild_add_rostest_future file)
   string(REPLACE "/" "_" _testname ${file})
   _rosbuild_add_rostest(${file})
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test-future)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test-future)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test-future rostest_${_testname})
 endmacro(rosbuild_add_rostest_future)
 
@@ -600,7 +576,9 @@ macro(rosbuild_add_pyunit file)
   string(REPLACE "/" "_" _testname ${file})
   _rosbuild_add_pyunit(${file})
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test pyunit_${_testname})
   # Register check for test output
   _rosbuild_check_rostest_xml_result(pyunit_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
@@ -620,7 +598,9 @@ macro(rosbuild_add_pyunit_future file)
   string(REPLACE "/" "_" _testname ${file})
   _rosbuild_add_pyunit(${file})
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(test-future)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test-future)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test-future pyunit_${_testname})
 endmacro(rosbuild_add_pyunit_future)
 
@@ -692,28 +672,36 @@ endmacro(rosbuild_gendeps)
 
 # gensrv processes srv/*.srv files into language-specific source files
 macro(rosbuild_gensrv)
-  # Create dummy target that depends on the autogenerated output from all
-  # client libs, which has already been attached to the rospack_gensrv
-  # target.
-  add_custom_target(rospack_gensrv_real ALL)
-  add_dependencies(rospack_gensrv_real rospack_gensrv)
-  # Make the libexe target, on which libraries and executables depend,
+  # Check whether there are any .srv files
+  rosbuild_get_srvs(_srvlist)
+  if(NOT _srvlist)
+    _rosbuild_warn("rosbuild_gensrv() was called, but no .srv files were found")
+  endif(NOT _srvlist)
+  # Create target to trigger service generation in the case where no libs
+  # or executables are made.
+  add_custom_target(rospack_gensrv_all ALL)
+  add_dependencies(rospack_gensrv_all rospack_gensrv)
+  # Make the precompile target, on which libraries and executables depend,
   # depend on the message generation.
-  add_dependencies(rospack_gensrv_libexe rospack_gensrv)
+  add_dependencies(rosbuild_precompile rospack_gensrv)
   # add in the directory that will contain the auto-generated .h files
   include_directories(${PROJECT_SOURCE_DIR}/srv/cpp)
 endmacro(rosbuild_gensrv)
 
 # genmsg processes msg/*.msg files into language-specific source files
 macro(rosbuild_genmsg)
-  # Create dummy target that depends on the autogenerated output from all
-  # client libs, which has already been attached to the rospack_genmsg
-  # target.
-  add_custom_target(rospack_genmsg_real ALL)
-  add_dependencies(rospack_genmsg_real rospack_genmsg)
-  # Make the libexe target, on which libraries and executables depend,
+  # Check whether there are any .srv files
+  rosbuild_get_msgs(_msglist)
+  if(NOT _msglist)
+    _rosbuild_warn("rosbuild_genmsg() was called, but no .msg files were found")
+  endif(NOT _msglist)
+  # Create target to trigger message generation in the case where no libs
+  # or executables are made.
+  add_custom_target(rospack_genmsg_all ALL)
+  add_dependencies(rospack_genmsg_all rospack_genmsg)
+  # Make the precompile target, on which libraries and executables depend,
   # depend on the message generation.
-  add_dependencies(rospack_genmsg_libexe rospack_genmsg)
+  add_dependencies(rosbuild_precompile rospack_genmsg)
   # add in the directory that will contain the auto-generated .h files
   include_directories(${PROJECT_SOURCE_DIR}/msg/cpp)
 endmacro(rosbuild_genmsg)
@@ -756,11 +744,12 @@ macro(rosbuild_link_boost target)
 
   execute_process(COMMAND "rosboost-cfg" "--libs" ${_libs}
                   OUTPUT_VARIABLE BOOST_LIBS
+		  ERROR_VARIABLE _boostcfg_error
                   RESULT_VARIABLE _boostcfg_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
   
   if (_boostcfg_failed)
-    message(FATAL_ERROR "rosboost-cfg --libs failed")
+    message(FATAL_ERROR "[rosboost-cfg --libs ${_libs}] failed with error: ${_boostcfg_error}")
   endif(_boostcfg_failed)
 
   separate_arguments(BOOST_LIBS)
@@ -782,7 +771,9 @@ macro(rosbuild_download_test_data _url _filename)
                      COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
                      VERBATIM)
   # Redeclaration of target is to workaround bug in 2.4.6
-  add_custom_target(tests)
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(tests)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(tests ${_testname})
 endmacro(rosbuild_download_test_data)
 
@@ -801,47 +792,55 @@ macro(rosbuild_download_data _url _filename)
 endmacro(rosbuild_download_data)
 
 macro(rosbuild_add_openmp_flags target)
-# list of OpenMP flags to check
-  set(_rospack_check_openmp_flags
-    "-fopenmp" # gcc
-    "-openmp" # icc
-    "-mp" # SGI & PGI
-    "-xopenmp" # Sun
-    "-omp" # Tru64
-    "-qsmp=omp" # AIX
-    )
-
-# backup for a variable we will change
-  set(_rospack_openmp_flags_backup ${CMAKE_REQUIRED_FLAGS})
-
-# mark the fact we do not yet know the flag
-  set(_rospack_openmp_flag_found FALSE)
-  set(_rospack_openmp_flag_value)
-
-# find an OpenMP flag that works
-  foreach(_rospack_openmp_test_flag ${_rospack_check_openmp_flags})
-    if(NOT _rospack_openmp_flag_found)      
-      set(CMAKE_REQUIRED_FLAGS ${_rospack_openmp_test_flag})
-      check_function_exists(omp_set_num_threads _rospack_openmp_function_found${_rospack_openmp_test_flag})
-	   
-      if(_rospack_openmp_function_found${_rospack_openmp_test_flag})
-	set(_rospack_openmp_flag_value ${_rospack_openmp_test_flag})
-	set(_rospack_openmp_flag_found TRUE)
-      endif(_rospack_openmp_function_found${_rospack_openmp_test_flag})
-    endif(NOT _rospack_openmp_flag_found)
-  endforeach(_rospack_openmp_test_flag ${_rospack_check_openmp_flags})
-
-# restore the CMake variable
-  set(CMAKE_REQUIRED_FLAGS ${_rospack_openmp_flags_backup})
+  # Bullseye's wrappers appear to choke on OpenMP pragmas.  So if
+  # ROS_TEST_COVERAGE is set (which indicates that we're doing a coverage
+  # build with Bullseye), we make this macro a no-op.
+  if("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
+    _rosbuild_warn("because ROS_TEST_COVERAGE is set, OpenMP support is disabled")
+  else("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
   
-# add the flags or warn
-  if(_rospack_openmp_flag_found)
-    rosbuild_add_compile_flags(${target} ${_rospack_openmp_flag_value})
-    rosbuild_add_link_flags(${target} ${_rospack_openmp_flag_value})
-  else(_rospack_openmp_flag_found)
-    message("WARNING: OpenMP compile flag not found")
-  endif(_rospack_openmp_flag_found)
+  # list of OpenMP flags to check
+    set(_rospack_check_openmp_flags
+      "-fopenmp" # gcc
+      "-openmp" # icc
+      "-mp" # SGI & PGI
+      "-xopenmp" # Sun
+      "-omp" # Tru64
+      "-qsmp=omp" # AIX
+      )
+  
+  # backup for a variable we will change
+    set(_rospack_openmp_flags_backup ${CMAKE_REQUIRED_FLAGS})
+  
+  # mark the fact we do not yet know the flag
+    set(_rospack_openmp_flag_found FALSE)
+    set(_rospack_openmp_flag_value)
+  
+  # find an OpenMP flag that works
+    foreach(_rospack_openmp_test_flag ${_rospack_check_openmp_flags})
+      if(NOT _rospack_openmp_flag_found)      
+        set(CMAKE_REQUIRED_FLAGS ${_rospack_openmp_test_flag})
+        check_function_exists(omp_set_num_threads _rospack_openmp_function_found${_rospack_openmp_test_flag})
+  	   
+        if(_rospack_openmp_function_found${_rospack_openmp_test_flag})
+  	set(_rospack_openmp_flag_value ${_rospack_openmp_test_flag})
+  	set(_rospack_openmp_flag_found TRUE)
+        endif(_rospack_openmp_function_found${_rospack_openmp_test_flag})
+      endif(NOT _rospack_openmp_flag_found)
+    endforeach(_rospack_openmp_test_flag ${_rospack_check_openmp_flags})
+  
+  # restore the CMake variable
+    set(CMAKE_REQUIRED_FLAGS ${_rospack_openmp_flags_backup})
+    
+  # add the flags or warn
+    if(_rospack_openmp_flag_found)
+      rosbuild_add_compile_flags(${target} ${_rospack_openmp_flag_value})
+      rosbuild_add_link_flags(${target} ${_rospack_openmp_flag_value})
+    else(_rospack_openmp_flag_found)
+      message("WARNING: OpenMP compile flag not found")
+    endif(_rospack_openmp_flag_found)
 
+  endif("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
 endmacro(rosbuild_add_openmp_flags)
 
 macro(rosbuild_make_distribution)
@@ -868,7 +867,7 @@ macro(rosbuild_make_distribution)
   # CPACK_SOURCE_IGNORE_FILES contains things we want to ignore when
   # building a source package.  We assume that the package was already
   # cleaned, so we don't need to ignore .a, .o, .so, etc.
-  list(APPEND CPACK_SOURCE_IGNORE_FILES "/build/;/.svn/;.gitignore;.rosgcov_files;.build_version;build-failure;test-failure;rosmakeall-buildfailures-withcontext.txt;rosmakeall-profile;rosmakeall-buildfailures.txt;rosmakeall-testfailures.txt;rosmakeall-coverage.txt;/log/")
+  list(APPEND CPACK_SOURCE_IGNORE_FILES "/build/;/.svn/;.gitignore;build-failure;test-failure;rosmakeall-buildfailures-withcontext.txt;rosmakeall-profile;rosmakeall-buildfailures.txt;rosmakeall-testfailures.txt;rosmakeall-coverage.txt;/log/")
   include(CPack)
 endmacro(rosbuild_make_distribution)
 
@@ -914,3 +913,22 @@ macro(rosbuild_check_for_display var)
     set(${var} 1)
   endif(_xdpyinfo_failed)
 endmacro(rosbuild_check_for_display)
+
+macro(rosbuild_add_swigpy_library target lib)
+  rosbuild_add_library(${target} ${ARGN})
+  # swig python needs a shared library named _<modulename>.[so|dll|...]
+  # this renames the output file to conform to that by prepending 
+  # an underscore in place of the "lib" prefix.
+  # If on Darwin, force the suffix so ".so", because the MacPorts 
+  # version of Python won't find _foo.dylib for 'import _foo'
+  if(APPLE)
+    set_target_properties(${target}
+                          PROPERTIES OUTPUT_NAME ${lib} 
+                          PREFIX "_" SUFFIX ".so")
+  else(APPLE)
+    set_target_properties(${target}
+                          PROPERTIES OUTPUT_NAME ${lib} 
+                          PREFIX "_")
+  endif(APPLE)
+endmacro(rosbuild_add_swigpy_library)
+

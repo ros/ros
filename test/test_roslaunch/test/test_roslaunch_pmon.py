@@ -119,7 +119,7 @@ class ProcessMock(roslaunch.pmon.Process):
     def __init__(self, package, name, args, env, respawn=False):
         super(ProcessMock, self).__init__(package, name, args, env, respawn)
         self.stopped = False
-    def stop(self):
+    def stop(self, errors):
         self.stopped = True
         
 class RespawnOnceProcessMock(ProcessMock):

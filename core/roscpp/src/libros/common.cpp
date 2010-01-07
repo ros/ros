@@ -44,26 +44,6 @@
 
 using std::string;
 
-std::string ros::getPackagePath(const std::string &package_name)
-{
-  // uses rospack to get a package path
-  string cmd = string("rospack find ") + package_name;
-  FILE *rospipe = popen(cmd.c_str(), "r");
-  if (!rospipe)
-    return string();
-  char rosout[PATH_MAX];
-  if (fgets(rosout, PATH_MAX, rospipe))
-  {
-    string ret(rosout);
-    // scrape any newlines out of it
-    for (size_t newline = ret.find('\n'); newline != string::npos;
-                newline = ret.find('\n'))
-      ret.erase(newline, 1);
-    return ret;
-  }
-  return string(); // couldn't read from rospack pipe
-}
-
 void ros::disableAllSignalsInThisThread()
 {
   sigset_t signal_set;

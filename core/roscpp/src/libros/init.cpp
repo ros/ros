@@ -45,6 +45,7 @@
 #include "ros/callback_queue.h"
 #include "ros/param.h"
 #include "ros/rosout_appender.h"
+#include "ros/transport/transport_tcp.h"
 
 #include "roscpp/GetLoggers.h"
 #include "roscpp/SetLoggerLevel.h"
@@ -88,8 +89,9 @@ namespace file_log
 void init(const M_string& remappings);
 }
 
-CallbackQueue g_global_queue;
+CallbackQueuePtr g_global_queue;
 ROSOutAppenderPtr g_rosout_appender;
+static CallbackQueuePtr g_internal_callback_queue;
 
 static bool g_initialized = false;
 static bool g_started = false;
@@ -222,13 +224,12 @@ void clockCallback(const roslib::Clock::ConstPtr& msg)
 
 CallbackQueuePtr getInternalCallbackQueue()
 {
-  static CallbackQueuePtr queue;
-  if (!queue)
+  if (!g_internal_callback_queue)
   {
-    queue.reset(new CallbackQueue);
+    g_internal_callback_queue.reset(new CallbackQueue);
   }
 
-  return queue;
+  return g_internal_callback_queue;
 }
 
 void basicSigintHandler(int sig)
@@ -265,6 +266,8 @@ void start()
   g_shutting_down = false;
   g_started = true;
   g_ok = true;
+
+  param::param("/tcp_keepalive", TransportTCP::s_use_keepalive_, TransportTCP::s_use_keepalive_);
 
   PollManager::instance()->addPollThreadListener(checkForShutdown);
   XMLRPCManager::instance()->bind("shutdown", shutdownCallback);
@@ -331,7 +334,6 @@ void start()
           }
 
           g_internal_queue_thread = boost::thread(internalCallbackQueueThreadFunc);
-          g_global_queue.enable();
           getGlobalCallbackQueue()->enable();
 
           ROSCPP_LOG_DEBUG("Started node [%s], pid [%d], bound on [%s], xmlrpc port [%d], tcpros port [%d], logging to [%s], using [%s] time", this_node::getName().c_str(), getpid(), network::getHost().c_str(), XMLRPCManager::instance()->getServerPort(), ConnectionManager::instance()->getTCPPort(), file_log::getLogFilename().c_str(), Time::useSystemTime() ? "real" : "sim");
@@ -353,6 +355,11 @@ void init(const M_string& remappings, const std::string& name, uint32_t options)
   {
     g_atexit_registered = true;
     atexit(atexitCallback);
+  }
+
+  if (!g_global_queue)
+  {
+    g_global_queue.reset(new CallbackQueue);
   }
 
   if (!g_initialized)
@@ -445,7 +452,7 @@ void spin(Spinner& s)
 
 void spinOnce()
 {
-  g_global_queue.callAvailable(ros::WallDuration());
+  g_global_queue->callAvailable(ros::WallDuration());
 }
 
 void waitForShutdown()
@@ -458,7 +465,7 @@ void waitForShutdown()
 
 CallbackQueue* getGlobalCallbackQueue()
 {
-  return &g_global_queue;
+  return g_global_queue.get();
 }
 
 bool ok()
@@ -478,8 +485,8 @@ void shutdown()
 
   g_shutting_down = true;
 
-  g_global_queue.disable();
-  g_global_queue.clear();
+  g_global_queue->disable();
+  g_global_queue->clear();
 
   if (g_internal_queue_thread.get_id() != boost::this_thread::get_id())
   {

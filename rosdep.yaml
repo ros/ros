@@ -3,6 +3,7 @@ ruby:
   debian: ruby
   arch: ruby
   macports: |
+  gentoo: ruby
 apr:
   ubuntu: libapr1-dev libaprutil1-dev
   debian: libapr1-dev libaprutil1-dev
@@ -10,6 +11,8 @@ apr:
   fedora: apr-devel apr-util
   rhel: apr-devel apr-util
   macports: apr apr-util
+  gentoo: dev-libs/apr dev-libs/apr-util
+  cygwin: libapr1 libaprutil1
 python:
   ubuntu: python-dev
   debian: python-dev
@@ -17,6 +20,8 @@ python:
   fedora: python-devel
   rhel: python-devel
   macports: python25 python_select py25-hashlib
+  gentoo: python
+  cygwin: python
 python-yaml:
   ubuntu: python-yaml
   debian: python-yaml
@@ -26,6 +31,16 @@ python-yaml:
   arch: |
     if ! pacman -Q libyaml python-yaml; then yaourt -S libyaml python-yaml; fi
   macports: py25-yaml
+  gentoo: pyyaml
+  cygwin: |
+      if [ ! -d /usr/lib/python2.5/site-packages/yaml/ ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pyyaml.org/download/pyyaml/PyYAML-3.09.tar.gz
+        tar xzf PyYAML-3.09.tar.gz
+        cd PyYAML-3.09
+        python setup.py install 
+      fi
 python-gtk2:
   ubuntu: python-gtk2
   arch: pygtk
@@ -33,6 +48,7 @@ python-gtk2:
   macports: py25-gtk
   fedora: python-gtk
   rhel: pygtk2
+  gentoo: "=dev-python/pygtk-2.*"
 python-matplotlib:
   ubuntu: python-matplotlib
   arch: python-matplotlib
@@ -40,6 +56,7 @@ python-matplotlib:
   macports: py25-matplotlib
   fedora: python-matplotlib
   rhel: python-matplotlib
+  gentoo: dev-python/matplotlib
 python-imaging:
   ubuntu: python-imaging
   debian: python-imaging
@@ -47,6 +64,7 @@ python-imaging:
   rhel: python-imaging
   arch: pil
   macports: py25-pil
+  gentoo: dev-python/imaging
 python-numpy:
   ubuntu: python-numpy
   debian: python-numpy
@@ -54,11 +72,17 @@ python-numpy:
   rhel: python-numpy
   arch: python-numpy
   macports: py25-numpy
+  gentoo: dev-python/numpy
+python-fuse:
+  ubuntu: python-fuse
+  debian: python-fuse
+  gentoo: dev-python/fuse-python
 python-scipy:
   ubuntu: python-scipy
   debian: python-scipy
   arch: python-scipy
   macports: py25-scipy
+  gentoo: dev-libs/scipy
 bzip2:
   ubuntu: libbz2-dev
   debian: libbz2-dev
@@ -66,11 +90,13 @@ bzip2:
   rhel: bzip2-devel
   arch: bzip2
   macports: bzip2
+  gentoo: app-arch/bzip2
+  cygwin: bzip2
 boost:
   ubuntu:
-    9.10: libboost1.38-dev
-    9.04: libboost1.37-dev
-    8.10: |
+    '9.10': libboost1.40-all-dev
+    '9.04': libboost1.37-dev
+    '8.10': |
       if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
         mkdir -p ~/ros/ros-deps
         cd ~/ros/ros-deps
@@ -81,7 +107,7 @@ boost:
         make
         sudo make install
       fi
-    8.04: |
+    '8.04': |
       if [ ! -f /opt/ros/lib/libboost_date_time-gcc42-mt*-1_37.a ] ; then
         mkdir -p ~/ros/ros-deps
         cd ~/ros/ros-deps
@@ -105,10 +131,23 @@ boost:
         make
         sudo make install
       fi
+    3.1: |
+      if [ ! -f /opt/ros/lib/libboost_date_time-gcc33-mt*-1_37.a ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/boost_1_37_0.tar.gz
+        tar xzf boost_1_37_0.tar.gz
+        cd boost_1_37_0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
   fedora: boost-devel
   rhel: boost-devel
   arch: boost
   macports: boost
+  gentoo: dev-libs/boost
+  cygwin: libboost-devel libboost1.40
 zlib:
   ubuntu: zlib1g-dev
   debian: zlib1g-dev
@@ -116,6 +155,8 @@ zlib:
   rhel: zlib-devel
   arch: zlib
   macports: zlib
+  gentoo: sys-libs/zlib
+  cygwin: zlib
 graphviz:
   ubuntu: graphviz
   debian: graphviz
@@ -123,10 +164,12 @@ graphviz:
   rhel: graphviz
   arch: graphviz
   macports: graphviz
+  gentoo: media-gfx/graphviz
 fakeroot:
   ubuntu: fakeroot
   arch: fakeroot
   debian: fakeroot
+  gentoo: sys-apps/fakeroot
 dpkg-dev:
   ubuntu: dpkg-dev
   debian: dpkg-dev
@@ -137,6 +180,7 @@ doxygen:
   arch: doxygen
   debian: doxygen
   macports: doxygen
+  gentoo: app-doc/doxygen
 wxwidgets:
   ubuntu: libwxgtk2.8-dev
   debian: libwxgtk2.8-dev
@@ -144,6 +188,7 @@ wxwidgets:
   rhel: wxGTK-devel
   macports: wxwidgets
   arch: wxgtk
+  gentoo: x11-libs/wxGTK
 wxpython:
   ubuntu: python-wxgtk2.8
   arch: wxpython
@@ -152,11 +197,12 @@ wxpython:
   centos: wxPython-devel
   debian: python-wxgtk2.8
   macports: py25-wxpython
+  gentoo: dev-python/wxpython
 log4cxx:
   ubuntu:
-    9.10: liblog4cxx10-dev
-    9.04: liblog4cxx10-dev
-    8.10: |
+    '9.10': liblog4cxx10-dev
+    '9.04': liblog4cxx10-dev
+    '8.10': |
       if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
         mkdir -p ~/ros/ros-deps
         cd ~/ros/ros-deps
@@ -167,7 +213,7 @@ log4cxx:
         make
         sudo make install
       fi
-    8.04: |
+    '8.04': |
       if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
         mkdir -p ~/ros/ros-deps
         cd ~/ros/ros-deps
@@ -191,18 +237,32 @@ log4cxx:
         make
         sudo make install
       fi
+    3.1: |
+      if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/apache-log4cxx-0.10.0-wg_patched.tar.gz
+        tar xzf apache-log4cxx-0.10.0-wg_patched.tar.gz
+        cd apache-log4cxx-0.10.0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
   fedora: log4cxx-devel
   rhel: log4cxx-devel
   arch: |
     if ! pacman -Q log4cxx; then yaourt -S log4cxx; fi
   macports: log4cxx
+  gentoo: dev-libs/log4cxx
+  cygwin: liblog4cxx-devel
 libxext:
-  ubuntu: libXext-dev
+  ubuntu: libxext-dev
   debian: libxext-dev
   fedora: libXext-devel
   rhel: libXext-devel
   macports: xorg-libXext
   arch: libxext
+  gentoo: x11-libs/libXext
 swig:
   ubuntu: swig
   debian: swig
@@ -210,6 +270,7 @@ swig:
   rhel: swig
   macports: swig
   arch: swig
+  gentoo: dev-lang/swig
 zziplib:
   ubuntu: libzzip-0-13 libzzip-dev
   debian: libzzip-0-13 libzzip-dev
@@ -217,6 +278,7 @@ zziplib:
   rhel: zziplib-devel
   macports: libzzip
   arch: zziplib
+  gentoo: dev-libs/zziplib
 libxaw:
   ubuntu: libxaw7-dev 
   debian: libxaw7-dev 
@@ -224,6 +286,7 @@ libxaw:
   rhel: libXaw-devel
   macports: xorg-libXaw
   arch: libxaw
+  gentoo: x11-libs/libXaw
 opengl:
   ubuntu: libgl1-mesa-dev libglu1-mesa-dev
   debian: libgl1-mesa-dev libglu1-mesa-dev
@@ -231,6 +294,7 @@ opengl:
   rhel: mesa-libGL-devel mesa-libGLU-devel
   macports: mesa
   arch: mesa
+  gentoo: media-libs/mesa
 libxxf86vm:
   ubuntu: libxxf86vm-dev
   debian: libxxf86vm-dev
@@ -238,6 +302,7 @@ libxxf86vm:
   rhel: libXxf86vm-devel
   macports: xorg-libXxf86vm
   arch: libxxf86vm
+  gentoo: x11-libs/libXxf86vm
 gtk2:
   ubuntu: libgtk2.0-dev
   debian: libgtk2.0-dev
@@ -245,6 +310,7 @@ gtk2:
   rhel: gtk2-devel
   macports: gtk2
   arch: gtk2
+  gentoo: x11-libs/gtk+
 autoconf:
   ubuntu: autoconf
   debian: autoconf
@@ -252,6 +318,7 @@ autoconf:
   rhel: autoconf
   arch: autoconf
   macports: autoconf
+  gentoo: sys-devel/autoconf
 automake:
   ubuntu: automake
   debian: automake
@@ -259,17 +326,19 @@ automake:
   rhel: automake
   arch: automake
   macports: automake
+  gentoo: sys-devel/automake
 libtool:
   ubuntu: 
-    9.10: libtool libltdl-dev
-    9.04: libtool libltdl7-dev
-    8.10: libtool libltdl7-dev
-    8.04: libtool libltdl3-dev
+    '9.10': libtool libltdl-dev
+    '9.04': libtool libltdl7-dev
+    '8.10': libtool libltdl7-dev
+    '8.04': libtool libltdl3-dev
   debian: libtool libltdl3-dev
   fedora: libtool libtool-ltdl-devel
   rhel: libtool libtool-ltdl-devel
   macports: libtool
   arch: libtool
+  gentoo: sys-devel/libtool
 pkg-config:
   ubuntu: pkg-config
   debian: pkg-config
@@ -277,48 +346,58 @@ pkg-config:
   rhel: pkgconfig
   arch: pkgconfig
   macports: pkgconfig
+  gentoo: dev-util/pkgconfig
+  cygwin: pkg-config
 octave:
   ubuntu: octave3.0-headers
   arch: octave
   macports: octave
   centos: octave-devel
   debian: octave3.0-headers
+  gentoo: sci-mathematics/octave
 ncurses:
   ubuntu: libncurses5-dev
   arch: ncurses
   macports: ncurses
   centos: ncurses-devel
   debian: libncurses5-dev
+  gentoo: sys-libs/ncurses
 qt4:
   ubuntu: libqt4-core libqt4-dev qt4-dev-tools
   debian: libqt4-core libqt4-dev qt4-dev-tools libqt4-opengl-dev
   arch: qt
   macports: qt4-mac
+  gentoo: ">=x11-libs/qt-core-4 >=x11-libs/qt-opengl-4"
 curl:
   ubuntu: libcurl4-openssl-dev
   debian: libcurl4-openssl-dev
   arch: curl
   macports: curl
+  gentoo: net-misc/curl
 libxml2:
   ubuntu: libxml2-dev
   debian: libxml2-dev
   arch: libxml2
   macports: libxml2
+  gentoo: dev-libs/libxml2
 scons:
   ubuntu: scons
   debian: scons
   arch: scons
   macports: scons
+  gentoo: dev-util/scons
 java:
   ubuntu: sun-java6-jdk
   debian: sun-java6-jdk
   arch: openjdk6
   macports: |
+  gentoo: dev-java/sun-jdk
 ant:
   ubuntu: ant
   debian: ant
   arch: apache-ant
   macports: apache-ant
+  gentoo: dev-java/ant
 libstdc++5:
   ubuntu: libstdc++5
   debian: libstdc++5
@@ -329,8 +408,10 @@ cppunit:
   rhel: cppunit-devel
   arch: cppunit
   macports: cppunit
+  gentoo: dev-util/cppunit
 intltool:
   ubuntu: intltool
+  gentoo: dev-util/intltool
 unzip:
   ubuntu: unzip
   debian: unzip
@@ -338,8 +419,17 @@ unzip:
   fedora: unzip
   rhel: unzip
   macports: unzip
+  gentoo: app-arch/unzip
 sbcl:
   ubuntu: sbcl
   debian: sbcl
   arch: sbcl
   macports: sbcl
+  gentoo: dev-lisp/sbcl
+fltk:
+  ubuntu: libfltk1.1-dev
+  debian: libfltk1.1-dev
+  fedora: fltk-devel
+  arch: fltk
+  macports: fltk
+  gentoo: "=x11-libs/fltk-1*"

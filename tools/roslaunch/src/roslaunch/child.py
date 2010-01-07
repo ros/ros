@@ -32,6 +32,17 @@
 #
 # Revision $Id$
 
+"""
+ROSLaunch child server.
+
+ROSLaunch has a client/server architecture for running remote
+processes. When a user runs roslaunch, this creates a "parent"
+roslaunch process. This parent process will then start "child"
+processes on remote machines. The parent can then invoke methods on
+this child process to launch remote processes, and the child can
+invoke methods on the parent to provide feedback.
+"""
+
 import logging
 import sys
 import time
@@ -41,15 +52,23 @@ import roslaunch.core
 import roslaunch.pmon
 import roslaunch.server
 
-## ROSLaunchChild infrastructure
 class ROSLaunchChild(object):
+    """
+    ROSLaunchChild infrastructure
+    """
 
-    ## Startup roslaunch remote client XML-RPC services. Blocks until shutdown
-    ## @param run_id str: UUID of roslaunch session
-    ## @param name str: name of remote client
-    ## @param server_uri str: XML-RPC URI of roslaunch server
-    ## @return str: XML-RPC URI
     def __init__(self, run_id, name, server_uri):
+        """
+        Startup roslaunch remote client XML-RPC services. Blocks until shutdown
+        @param run_id: UUID of roslaunch session
+        @type  run_id: str
+        @param name: name of remote client
+        @type  name: str
+        @param server_uri: XML-RPC URI of roslaunch server
+        @type  server_uri: str
+        @return: XML-RPC URI
+        @rtype:  str
+        """
         roslaunch.core.set_child_mode(True)
         
         self.logger = logging.getLogger("roslaunch.child")
@@ -59,9 +78,10 @@ class ROSLaunchChild(object):
         self.child_server = None
         self.pm = None
 
-    ## start process monitor for child roslaunch
-    ## @param self
     def _start_pm(self):
+        """
+        Start process monitor for child roslaunch
+        """
         # start process monitor
         #  - this test is mainly here so that testing logic can
         #    override process monitor with a mock
@@ -72,8 +92,10 @@ class ROSLaunchChild(object):
             raise roslaunch.core.RLException("cannot startup remote child: unable to start process monitor.")
         self.logger.debug("started process monitor")
         
-    ## Run's child. Blocks until child processes exit.
     def run(self):
+        """
+        Runs child. Blocks until child processes exit.
+        """
         try:
             try:
                 self.logger.info("starting roslaunch child process [%s], server URI is [%s]", self.name, self.server_uri)

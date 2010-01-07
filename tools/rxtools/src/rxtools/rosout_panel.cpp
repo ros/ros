@@ -694,7 +694,13 @@ void RosoutPanel::setBufferSize(uint32_t size)
 RosoutMessageSummary RosoutPanel::getMessageSummary(double duration) const
 {
   RosoutMessageSummary summary;
-  ros::Time search_end = ros::Time::now() - ros::Duration(duration);
+  ros::Time search_end(0);
+
+  if (ros::Time::now().toSec() - duration > 0)
+  {
+    search_end = ros::Time::now() - ros::Duration(duration);
+  }
+
   M_IdToMessage::const_reverse_iterator it = messages_.rbegin();
   M_IdToMessage::const_reverse_iterator end = messages_.rend();
   for (; it != end; ++it)

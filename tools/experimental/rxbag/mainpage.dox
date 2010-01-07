@@ -1,0 +1,10 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rxbag contains the rxbag GUI tool for visualizing, inspecting and replaying histories 
+of ROS messages.
+
+Please see the Wiki page for documentation on the rxbag tool.
+
+*/

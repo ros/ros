@@ -254,7 +254,12 @@ vector<pair<string, string> > Package::plugins()
 VecPkg Package::descendants1()
 {
   VecPkg children;
-  for (VecPkg::iterator p = pkgs.begin(); p != pkgs.end(); ++p)
+  // Make a copy of the pkgs vector, because a crawl can be caused in
+  // has_parent()->direct_deps()->g_get_pkg()->get_pkg().  That crawl 
+  // will rebuild pkgs, invalidating our iterator, causing esoteric crashes
+  // e.g., #2056.
+  VecPkg pkgs_copy(pkgs);
+  for (VecPkg::iterator p = pkgs_copy.begin(); p != pkgs_copy.end(); ++p)
   {
     // We catch exceptions here, because we don't care if some 
     // unrelated packages in the system have invalid manifests
@@ -380,19 +385,36 @@ string Package::direct_flags(string lang, string attrib)
   TiXmlElement *export_ele = mroot->FirstChildElement("export");
   if (!export_ele)
     return string("");
+  bool os_match = false;
   TiXmlElement *best_usage = NULL;
   for (TiXmlElement *lang_ele = export_ele->FirstChildElement(lang); 
        lang_ele; lang_ele = lang_ele->NextSiblingElement(lang))
   {
-    if (!best_usage)
-      best_usage = lang_ele;
     const char *os_str;
     if ((os_str = lang_ele->Attribute("os")))
     {
-      if (g_ros_os == string(os_str))
+      if(g_ros_os == string(os_str))
       {
+        if(os_match)
+        {
+          fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag with os=\"%s\" in export block\n",
+                  lang.c_str(), os_str);
+        }
+        else
+        {
+          best_usage = lang_ele;
+          os_match = true;
+        }
+      }
+    }
+    if(!os_match)
+    {
+      if (!best_usage)
         best_usage = lang_ele;
-        break;
+      else if(!os_str)
+      {
+        fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag in export block\n",
+                lang.c_str());
       }
     }
   }
@@ -496,6 +518,36 @@ TiXmlElement *Package::manifest_root()
   return ele;
 }
 
+// Naive recursion.  Dynamic programming would be more efficient.
+void Package::accumulate_deps(AccList& acc_list, Package* to)
+{
+  VecPkg dd = direct_deps();
+  for(VecPkg::iterator it = dd.begin(); 
+      it != dd.end();
+      ++it)
+  {
+    if((*it)->name == to->name)
+    {
+      Acc acc;
+      acc.push_back(this);
+      acc.push_back(to);
+      acc_list.push_back(acc);
+    }
+    else
+    {
+      AccList l;
+      (*it)->accumulate_deps(l, to);
+      for(AccList::iterator lit = l.begin();
+          lit != l.end();
+          ++lit)
+      {
+        lit->push_front(this);
+        acc_list.push_back(*lit);
+      }
+    }
+  }
+}
+
 VecPkg Package::pkgs;
 VecPkg Package::deleted_pkgs;
 
@@ -503,7 +555,7 @@ VecPkg Package::deleted_pkgs;
 
 
 ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false),
-        my_argc(0), my_argv(NULL), opt_profile_length(0)
+        my_argc(0), my_argv(NULL), opt_profile_length(0), total_num_pkgs(0)
 {
   g_rospack = this;
   Package::pkgs.reserve(500); // get some space to avoid early recopying...
@@ -539,7 +591,7 @@ ROSPack::~ROSPack()
 
 const char* ROSPack::usage()
 {
-  return "USAGE: rospack [options] <command> [package]\n"
+  return "USAGE: rospack <command> [options] [package]\n"
           "  Allowed commands:\n"
           "    help\n"
           "    find [package]\n"
@@ -550,6 +602,7 @@ const char* ROSPack::usage()
           "    depends-manifests [package] (alias: deps-manifests)\n"
           "    depends1 [package] (alias: deps1)\n"
           "    depends-indent [package] (alias: deps-indent)\n"
+          "    depends-why --target=<target> [package] (alias: deps-why)\n"
           "    rosdep [package] (alias: rosdeps)\n"
           "    rosdep0 [package] (alias: rosdeps0)\n"
           "    vcs [package]\n"
@@ -643,6 +696,33 @@ int ROSPack::cmd_depends_on(bool include_indirect)
   {
     //printf("%s\n", (*p)->name.c_str());
     output_acc += (*p)->name + "\n";
+  }
+  return 0;
+}
+
+// Naive recursion.  Dynamic programming would be more efficient.
+int ROSPack::cmd_depends_why()
+{
+  AccList acc_list;
+  Package* from = get_pkg(opt_package);
+  Package* to = get_pkg(opt_target);
+  from->accumulate_deps(acc_list, to);
+  printf("Dependency chains from %s to %s:\n", 
+         from->name.c_str(), to->name.c_str());
+  for(AccList::iterator lit = acc_list.begin();
+      lit != acc_list.end();
+      ++lit)
+  {
+    printf("* ");
+    for(Acc::iterator ait = lit->begin();
+        ait != lit->end();
+        ++ait)
+    {
+      if(ait != lit->begin())
+        printf("-> ");
+      printf("%s ", (*ait)->name.c_str());
+    }
+    printf("\n");
   }
   return 0;
 }
@@ -956,6 +1036,7 @@ int ROSPack::run(int argc, char **argv)
   const char* opt_attrib_name  = "--attrib=";
   const char* opt_length_name  = "--length=";
   const char* opt_top_name     = "--top=";
+  const char* opt_target_name  = "--target=";
 
   // Reset to defaults.
   opt_deps_only = false;
@@ -967,6 +1048,8 @@ int ROSPack::run(int argc, char **argv)
   opt_length = string("");
   // --top=
   opt_top = string("");
+  // --target=
+  opt_target = string("");
   // The package name
   opt_package = string("");
   // the number of entries to list in the profile table
@@ -987,6 +1070,15 @@ int ROSPack::run(int argc, char **argv)
       opt_deps_only=true;
     else if(!strcmp(argv[i], opt_zombie_name))
       opt_profile_zombie_only=true;
+    else if(!strncmp(argv[i], opt_target_name, strlen(opt_target_name)))
+    {
+      if(opt_target.size())
+        throw runtime_error(errmsg);
+      else if(strlen(argv[i]) > strlen(opt_target_name))
+        opt_target = string(argv[i]+strlen(opt_target_name));
+      else
+        throw runtime_error(errmsg);
+    }
     else if(!strncmp(argv[i], opt_lang_name, strlen(opt_lang_name)))
     {
       if(opt_lang.size())
@@ -1022,6 +1114,12 @@ int ROSPack::run(int argc, char **argv)
     else
       break;
   }
+
+  if((strcmp(cmd, "depends-why") && strcmp(cmd, "deps-why")) && opt_target.size())
+    throw runtime_error(errmsg);
+
+  if((!strcmp(cmd, "depends-why") || !strcmp(cmd, "deps-why")) && !opt_target.size())
+    throw runtime_error(errmsg);
   
   if(strcmp(cmd, "profile") && (opt_length.size() || opt_profile_zombie_only))
     throw runtime_error(errmsg);
@@ -1117,6 +1215,8 @@ int ROSPack::run(int argc, char **argv)
     return cmd_depsindent(get_pkg(opt_package), 0);
   else if (!strcmp(cmd, "depends-on"))
     return cmd_depends_on(true);
+  else if (!strcmp(cmd, "depends-why") || !strcmp(cmd, "deps-why"))
+    return cmd_depends_why();
   else if (!strcmp(cmd, "depends-on1"))
     return cmd_depends_on(false);
   /*
@@ -1425,7 +1525,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
         // this directory's children?  If not, then this is likely a zombie
         // directory that should probably be deleted.  We'll mark it as
         // such in the profile console output.
-        if(cqe.start_num_pkgs < Package::pkgs.size())
+        if(cqe.start_num_pkgs < total_num_pkgs)
           cqe.has_manifest = true;
         if(!opt_profile_zombie_only || !cqe.has_manifest)
         {
@@ -1436,7 +1536,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
         continue;
       }
       cqe.start_time = time_since_epoch();
-      cqe.start_num_pkgs = Package::pkgs.size();
+      cqe.start_num_pkgs = total_num_pkgs;
       q.push_front(cqe);
     }
     DIR *d = opendir(cqe.path.c_str());
@@ -1462,6 +1562,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
         continue; // ignore hidden dirs
       if (Package::is_package(child_path))
       {
+        total_num_pkgs++;
         // Filter out duplicates; first encountered takes precedence
         Package* newp = new Package(child_path);
         // TODO: make this check more efficient
@@ -1538,9 +1639,14 @@ void ROSPack::crawl_for_packages(bool force_crawl)
   {
     // dump it into a stack to reverse it (so slowest guys are first)
     stack<CrawlQueueEntry> reverse_profile;
+    // Also build up a separate list of paths that will be used to remove
+    // children of zombies.
+    vector<string> zombie_dirs;
+    zombie_dirs.reserve(profile.size());
     while (!profile.empty())
     {
       reverse_profile.push(profile.top());
+      zombie_dirs.push_back(profile.top().path);
       profile.pop();
     }
     if(!opt_profile_zombie_only)
@@ -1554,12 +1660,15 @@ void ROSPack::crawl_for_packages(bool force_crawl)
       output_acc += "\nFull tree crawl took " + string(buf) + " seconds.\n";
       output_acc += "Directories marked with (*) contain no manifest.  You may\n";
       output_acc += "want to delete these directories.\n";
+      output_acc += "To get just of list of directories without manifests,\n";
+      output_acc += "re-run the profile with --zombie-only\n.";
       output_acc += "-------------------------------------------------------------\n";
     }
     while (!reverse_profile.empty())
     {
       CrawlQueueEntry cqe = reverse_profile.top();
       reverse_profile.pop();
+
       if(!opt_profile_zombie_only)
       {
         //printf("%.6f %s %s\n", 
@@ -1578,6 +1687,31 @@ void ROSPack::crawl_for_packages(bool force_crawl)
       }
       else
       {
+        bool dup = false;
+        // Does this directory contain a stack.xml or app.xml?  In that
+        // case, it's an empty stack or app, and should not be considered a
+        // zombie.
+        if(file_exists(cqe.path + fs_delim + "stack.xml") ||
+           file_exists(cqe.path + fs_delim + "app.xml"))
+        {
+          continue;
+        }
+        //
+        // Does this entry's parent appear in the list?
+        for(vector<string>::const_iterator it = zombie_dirs.begin();
+            it != zombie_dirs.end();
+            ++it)
+        {
+          if((cqe.path.size() > it->size()) &&
+             (cqe.path.substr(0,it->size()) == (*it)))
+          {
+            dup = true;
+            break;
+          }
+        }
+        if(dup)
+          continue;
+
         //printf("%s\n", cqe.path.c_str());
         output_acc += cqe.path + "\n";
       }

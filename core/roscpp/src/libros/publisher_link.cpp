@@ -58,39 +58,12 @@ PublisherLink::PublisherLink(const SubscriptionPtr& parent, const std::string& x
 
 PublisherLink::~PublisherLink()
 {
-  ROS_ASSERT(connection_->isDropped());
 }
 
-bool PublisherLink::initialize(const ConnectionPtr& connection)
+bool PublisherLink::setHeader(const Header& header)
 {
-  connection_ = connection;
-  connection_->addDropListener(boost::bind(&PublisherLink::onConnectionDropped, this, _1));
+  header.getValue("callerid", caller_id_);
 
-  if (connection_->getTransport()->requiresHeader())
-    connection_->setHeaderReceivedCallback(boost::bind(&PublisherLink::onHeaderReceived, this, _1, _2));
-  else
-    connection_->read(4, boost::bind(&PublisherLink::onMessageLength, this, _1, _2, _3, _4));
-
-  SubscriptionPtr parent = parent_.lock();
-
-  M_string header;
-  header["topic"] = parent->getName();
-  header["md5sum"] = parent->md5sum();
-  header["callerid"] = this_node::getName();
-  header["type"] = parent->datatype();
-  header["tcp_nodelay"] = transport_hints_.getTCPNoDelay() ? "1" : "0";
-  connection_->writeHeader(header, boost::bind(&PublisherLink::onHeaderWritten, this, _1));
-
-  return true;
-}
-
-void PublisherLink::onHeaderWritten(const ConnectionPtr& conn)
-{
-  // Do nothing
-}
-
-bool PublisherLink::onHeaderReceived(const ConnectionPtr& conn, const Header& header)
-{
   std::string md5sum, type, latched_str;
   if (!header.getValue("md5sum", md5sum))
   {
@@ -113,85 +86,10 @@ bool PublisherLink::onHeaderReceived(const ConnectionPtr& conn, const Header& he
     }
   }
 
-
-
   connection_id_ = ConnectionManager::instance()->getNewConnectionID();
-
-  connection_->read(4, boost::bind(&PublisherLink::onMessageLength, this, _1, _2, _3, _4));
+  header_ = header;
 
   return true;
-}
-
-void PublisherLink::onMessageLength(const ConnectionPtr& conn, const boost::shared_array<uint8_t>& buffer, uint32_t size, bool success)
-{
-  if (!success)
-  {
-    if (connection_)
-      connection_->read(4, boost::bind(&PublisherLink::onMessageLength, this, _1, _2, _3, _4));
-    return;
-  }
-
-  ROS_ASSERT(conn == connection_);
-  ROS_ASSERT(size == 4);
-
-  uint32_t len = *((uint32_t*)buffer.get());
-
-  if (len > 1000000000)
-  {
-    ROS_ERROR("woah! a message of over a gigabyte was " \
-                "predicted in tcpros. that seems highly " \
-                "unlikely, so I'll assume protocol " \
-                "synchronization is lost... it's over.");
-    conn->drop();
-  }
-
-  connection_->read(len, boost::bind(&PublisherLink::onMessage, this, _1, _2, _3, _4));
-}
-
-void PublisherLink::onMessage(const ConnectionPtr& conn, const boost::shared_array<uint8_t>& buffer, uint32_t size, bool success)
-{
-  if (!success && !conn)
-    return;
-
-  ROS_ASSERT(conn == connection_);
-
-  if (success)
-    handleMessage(buffer, size);
-
-  if (success || !connection_->getTransport()->requiresHeader())
-  {
-    connection_->read(4, boost::bind(&PublisherLink::onMessageLength, this, _1, _2, _3, _4));
-  }
-}
-
-void PublisherLink::onConnectionDropped(const ConnectionPtr& conn)
-{
-  ROS_ASSERT(conn == connection_);
-
-  if (SubscriptionPtr parent = parent_.lock())
-  {
-    ROSCPP_LOG_DEBUG("Connection to publisher [%s] to topic [%s] dropped", connection_->getTransport()->getTransportInfo().c_str(), parent->getName().c_str());
-
-    parent->removePublisherLink(shared_from_this());
-  }
-}
-
-void PublisherLink::handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes)
-{
-  stats_.bytes_received_ += num_bytes;
-  stats_.messages_received_++;
-
-  SubscriptionPtr parent = parent_.lock();
-
-  if (parent)
-  {
-    stats_.drops_ += parent->handleMessage(buffer, num_bytes, getConnection()->getHeader().getValues(), shared_from_this());
-  }
-}
-
-std::string PublisherLink::getTransportType()
-{
-  return connection_->getTransport()->getType();
 }
 
 const std::string& PublisherLink::getPublisherXMLRPCURI()

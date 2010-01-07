@@ -39,18 +39,13 @@ lower-level libraries.
 
 import os
 import logging
-import socket
-import subprocess
 import sys
 import time
-import traceback
 
-import roslib.names
 import roslib.network 
 
 from roslaunch.core import *
 from roslaunch.config import ROSLaunchConfig
-from roslaunch.node_args import NodeParamsException, create_local_process_env
 from roslaunch.nodeprocess import create_master_process, create_node_process
 from roslaunch.pmon import start_process_monitor, ProcessListener, FatalProcessLaunch
 
@@ -89,6 +84,7 @@ class _ROSLaunchListeners(ProcessListener):
             try:
                 l.process_died(process_name, exit_code)
             except Exception, e:
+                import traceback
                 logging.getLogger('roslaunch').error(traceback.format_exc())
                 
 class ROSLaunchListener(object):
@@ -189,18 +185,17 @@ class ROSLaunchRunner(object):
         param_server = config.master.get()
         p = None
         try:
+            # multi-call style xmlrpc
             for p in config.clear_params:
                 if param_server.hasParam(_ID, p)[2]:
-                    printlog("deleting parameter [%s]"%p)
                     code, msg, _ = param_server.deleteParam(_ID, p)
                     if code != 1:
-                        raise RLException("Failed to clear parameter [%s]: %s"%(p, msg))
+                        raise RLException("Failed to clear parameter: %s"%(msg))
+                
             for p in config.params.itervalues():
-                # suppressing this as it causes too much spam
-                #printlog("setting parameter [%s]"%p.key)
                 code, msg, _ = param_server.setParam(_ID, p.key, p.value)
                 if code != 1:
-                    raise RLException("Failed to set parameter [%s] to [%s]"%(p.key, p.value))
+                    raise RLException("Failed to set parameter: %s"%(msg))
         except RLException:
             raise
         except Exception, e:
@@ -273,6 +268,7 @@ class ROSLaunchRunner(object):
                 # hostnames are not configured properly
                 hostname, _ = roslib.network.parse_http_host_and_port(m.uri)
                 local_addrs = roslib.network.get_local_addresses()
+                import socket
                 reverse_ip = socket.gethostbyname(hostname)
                 if reverse_ip not in local_addrs:
                     self.logger.warn("IP address %s local hostname '%s' not in local addresses (%s)."%(reverse_ip, hostname, ','.join(local_addrs)))
@@ -380,7 +376,9 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
             cmd = "%s %s"%(cmd, ' '.join(e.args))
             print "running %s"%cmd
             local_machine = self.config.machines['']
-            env = create_local_process_env(None, local_machine, self.config.master.uri)
+            import roslaunch.node_args
+            env = roslaunch.node_args.create_local_process_env(None, local_machine, self.config.master.uri)
+            import subprocess
             retcode = subprocess.call(cmd, shell=True, env=env)
             if retcode < 0:
                 raise RLException("command [%s] failed with exit code %s"%(cmd, retcode))
@@ -403,6 +401,8 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         be already running
         @raise RLException: if core launches fail
         """
+        import roslib.names
+
         config = self.config
         master = config.master.get()
         tolaunch = []
@@ -434,9 +434,10 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         """
         self.logger.info("... preparing to launch node of type [%s/%s]", node.package, node.type)
         master = self.config.master
+        import roslaunch.node_args
         try:
             process = create_node_process(self.run_id, node, master.uri)
-        except NodeParamsException, e:
+        except roslaunch.node_args.NodeParamsException, e:
             self.logger.error(e)
             if node.package == 'rosout' and node.type == 'rosout':
                 printerrlog("\n\n\nERROR: rosout is not built. Please run 'rosmake rosout'\n\n\n")

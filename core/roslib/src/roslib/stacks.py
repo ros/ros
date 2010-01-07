@@ -45,7 +45,8 @@ import sys
 
 import roslib.exceptions
 import roslib.packages
-import roslib.rosenv
+from roslib.rosenv import ROS_ROOT, ROS_PACKAGE_PATH
+
 
 STACK_FILE = 'stack.xml'
 ROS_STACK = 'ros'
@@ -77,8 +78,8 @@ def packages_of(stack, env=os.environ):
     @raise ValueError: if stack name is invalid
     """
     # record settings for error messages
-    ros_root = env[roslib.rosenv.ROS_ROOT]
-    ros_package_path = env.get(roslib.rosenv.ROS_PACKAGE_PATH, '')
+    ros_root = env[ROS_ROOT]
+    ros_package_path = env.get(ROS_PACKAGE_PATH, '')
     
     if not stack:
         raise ValueError("stack name not specified")
@@ -87,6 +88,9 @@ def packages_of(stack, env=os.environ):
         raise InvalidROSStackException("Cannot locate installation of stack %s. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(stack, ros_root,ros_package_path))
     packages = []
     l = [os.path.join(stack_dir, d) for d in os.listdir(stack_dir)]
+    # kwc: this really is just a 1-directory reimplementation of
+    # list_pkgs(). Should merge implementations, though have to deal
+    # with issues of cache, etc...
     while l:
         d = l.pop()
         if os.path.isdir(d):
@@ -95,71 +99,148 @@ def packages_of(stack, env=os.environ):
                 # this is sometimes true if we've descended into a build directory
                 if not p in packages:
                     packages.append(p)
+            elif os.path.exists(os.path.join(d, 'rospack_nosubdirs')):
+                # don't descend
+                pass
             elif os.path.basename(d) not in ['build', '.svn', '.git']: #recurse
                 l.extend([os.path.join(d, e) for e in os.listdir(d)])
     return packages
     
-from subprocess import Popen, PIPE
 def get_stack_dir(stack):
     """
+    Get the directory of a ROS stack. This will initialize an internal
+    cache and return cached results if possible.
+    
+    This routine is not thread-safe to os.environ changes.
+    
     @param stack: name of ROS stack to locate on disk
     @type  stack: str
-    @return: directory of stack, or None
+    @return: directory of stack, or None if stack cannot be located
     @rtype: str
-    @raise InvalidROSStackException: if stack cannot be located
     """
-    list_stacks() #update cache
+    
+    # it's possible to get incorrect results from this cache
+    # implementation by manipulating the environment and calling this
+    # from multiple threads.  as that is an unusual use case and would
+    # require a slower implmentation, it's not supported. the
+    # interpretation of this routine is get_stack_dir for the
+    # environment this process was launched in.
+    global _dir_cache_marker 
+
+    env = os.environ
+    if stack in _dir_cache:
+        ros_root = env[ROS_ROOT]
+        ros_package_path = env.get(ROS_PACKAGE_PATH, '')
+
+        # we don't attempt to be thread-safe to environment changes,
+        # however we do need to be threadsafe to cache invalidation.
+        try:
+            if _dir_cache_marker == (ros_root, ros_package_path):
+                d = _dir_cache[stack]
+                if os.path.isfile(os.path.join(d, STACK_FILE)):
+                    return d
+                else:
+                    # invalidate the cache
+                    _dir_cache_marker = None
+                    _dir_cache.clear()
+        except KeyError:
+            pass
+    _update_stack_cache() #update cache
     return _dir_cache.get(stack, None)
 
-# TODO: consolidate with list_pkgs
+# rosstack directory cache
 _dir_cache = {}
-_cache_marker = None
+# stores ROS_ROOT, ROS_PACKAGE_PATH of _dir_cache
+_dir_cache_marker = None
 
-def list_stacks(env=None):
+def _update_stack_cache(force=False):
     """
-    Get list of all ROS stacks. This initializes an internal cache.
+    Update _dir_cache if environment has changed since last cache build.
+    
+    @param force: force cache rebuild regardless of environment variables
+    @type  force: bool
+    """
+    global _dir_cache_marker 
+    env = os.environ
+    ros_root = env[ROS_ROOT]
+    ros_package_path = env.get(ROS_PACKAGE_PATH, '')
+    
+    if _dir_cache_marker == (ros_root, ros_package_path):
+        return
+    _dir_cache.clear()
+    _dir_cache_marker = ros_root, ros_package_path
 
-    @param env: override os.environ dictionary
-    @type  env: dict
+    pkg_dirs = roslib.packages.get_package_paths(env=env)
+    # ros is assumed to be at ROS_ROOT
+    if os.path.exists(os.path.join(ros_root, 'stack.xml')):
+        _dir_cache['ros'] = ros_root
+        pkg_dirs.remove(ros_root)
+
+    # pass in accumulated stacks list to each call. This ensures
+    # precedence (i.e. that stacks first on pkg_dirs path win). 
+    stacks = []
+    for pkg_root in pkg_dirs:
+        # list_stacks_by_path will append list into stacks, so that
+        # each call accumulates in it.
+        list_stacks_by_path(pkg_root, stacks, cache=_dir_cache)
+    
+def list_stacks():
+    """
+    Get list of all ROS stacks. This uses an internal cache.
+
+    This routine is not thread-safe to os.environ changes.
+
     @return: complete list of stacks names in ROS environment
     @rtype: [str]
     """
-    if env is None:
-        env = os.environ
-    global _cache_marker
-    # record settings for cache
-    ros_root = env[roslib.rosenv.ROS_ROOT]
-    ros_package_path = env.get(roslib.rosenv.ROS_PACKAGE_PATH, '')
+    _update_stack_cache()
+    return _dir_cache.keys()
 
-    # validate cache
-    if _cache_marker == (ros_root, ros_package_path):
-        return _dir_cache.keys()
-    else:
-        _dir_cache.clear()
-        _cache_marker = ros_root, ros_package_path
-        
-    pkg_dirs = roslib.packages.get_package_paths(env=env)
-    stacks = []
-    # ros is assumed to be at ROS_ROOT
-    if os.path.exists(os.path.join(ros_root, 'stack.xml')):
-        stacks.append('ros')
-        _dir_cache['ros'] = ros_root
+def list_stacks_by_path(path, stacks=None, cache=None):
+    """
+    List ROS stacks within the specified path.
+
+    Optionally, a cache dictionary can be provided, which will be
+    updated with the stack->path mappings. list_stacks_by_path() does
+    NOT returned cached results -- it only updates the cache.
     
-    for pkg_root in pkg_dirs:
-        for dir, dirs, files in os.walk(pkg_root, topdown=True):
-            if STACK_FILE in files:
-                stack = os.path.basename(dir)
-                if stack not in stacks:
-                  stacks.append(stack)
-                  _dir_cache[stack] = dir
-                del dirs[:]
-            elif 'rospack_nosubdirs' in files:
-                del dirs[:]
-            #small optimization
-            elif '.svn' in dirs:
-                dirs.remove('.svn')
-            elif '.git' in dirs:
-                dirs.remove('.git')
+    @param path: path to list stacks in
+    @type  path: str
+    @param stacks: list of stacks to append to. If stack is
+      already present in stacks, it will be ignored.
+    @type  stacks: [str]
+    @param cache: (optional) stack path cache to update. Maps stack name to directory path.
+    @type  cache: {str: str}
+    @return: complete list of stack names in ROS environment. Same as stacks parameter.
+    @rtype: [str]
+    """
+    if stacks is None:
+        stacks = []
+    MANIFEST_FILE = roslib.packages.MANIFEST_FILE
+    basename = os.path.basename
+    for d, dirs, files in os.walk(path, topdown=True):
+        if STACK_FILE in files:
+            stack = basename(d)
+            if stack not in stacks:
+                stacks.append(stack)
+                if cache is not None:
+                    cache[stack] = d
+            del dirs[:]
+            continue #leaf
+        elif MANIFEST_FILE in files:
+            del dirs[:]
+            continue #leaf     
+        elif 'rospack_nosubdirs' in files:
+            del dirs[:]
+            continue  #leaf
+        # remove hidden dirs (esp. .svn/.git)
+        [dirs.remove(d) for d in dirs if d[0] == '.']
+        for sub_d in dirs:
+            # followlinks=True only available in Python 2.6, so we
+            # have to implement manually
+            sub_p = os.path.join(d, sub_d)
+            if os.path.islink(sub_p):
+                stacks.extend(list_stacks_by_path(sub_p, cache=cache))
     return stacks
 
 # #2022
@@ -187,7 +268,7 @@ def expand_to_packages(names):
         if not n in package_list:
             try:
                 valid.extend(roslib.stacks.packages_of(n))
-            except roslib.stacks.InvalidROSStackException:
+            except roslib.stacks.InvalidROSStackException, e:
                 invalid.append(n)
         else:
             valid.append(n)

@@ -40,7 +40,7 @@ Publisher::Impl::Impl()
 Publisher::Impl::~Impl()
 {
   if (WallTime::now().toSec() - constructed_ < 0.001)
-    ROS_WARN("Publisher destroyed immediately after creation.  Did you forget to store the handle?");
+    ROS_WARN("Publisher on '%s' destroyed immediately after creation.  Did you forget to store the handle?", topic_.c_str());
   unadvertise();
 }
 

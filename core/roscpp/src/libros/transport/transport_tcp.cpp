@@ -160,7 +160,8 @@ void TransportTCP::setKeepAlive(bool use, uint32_t idle, uint32_t interval, uint
       ROS_ERROR("setsockopt failed to set SO_KEEPALIVE on socket [%d] [%s]", sock_, cached_remote_host_.c_str());
     }
 
-#ifdef SOL_TCP
+/* cygwin SOL_TCP does not seem to support TCP_KEEPIDLE, TCP_KEEPINTVL, TCP_KEEPCNT */
+#if defined(SOL_TCP) && !defined(__CYGWIN__)
     val = idle;
     if (setsockopt(sock_, SOL_TCP, TCP_KEEPIDLE, &val, sizeof(val)) != 0)
     {

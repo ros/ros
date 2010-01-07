@@ -27,7 +27,7 @@
 
 #include "ros/debug.h"
 
-#if defined(__GNUC__)
+#if defined(HAVE_EXECINFO_H)
 #include <execinfo.h>
 #endif
 
@@ -41,7 +41,7 @@ namespace debug
 
 std::string getBacktrace()
 {
-#if defined(__GNUC__)
+#if defined(HAVE_GLIBC_BACKTRACE)
 	void *array[20];
 	size_t size;
 	char **strings;

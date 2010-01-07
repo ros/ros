@@ -40,7 +40,7 @@ Subscriber::Impl::Impl()
 Subscriber::Impl::~Impl()
 {
   if (!unsubscribed_ && WallTime::now().toSec() - constructed_ < 0.001)
-    ROS_WARN("Subscriber destroyed immediately after creation.  Did you forget to store the handle?");
+    ROS_WARN("Subscriber on '%s' destroyed immediately after creation.  Did you forget to store the handle?", topic_.c_str());
   unsubscribe();
 }
 

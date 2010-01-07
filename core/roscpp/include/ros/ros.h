@@ -53,5 +53,6 @@
 #include "ros/this_node.h"
 #include "ros/param.h"
 #include "ros/topic.h"
+#include "ros/names.h"
 
 #endif

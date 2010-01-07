@@ -66,6 +66,13 @@ void LoggerLevelPanel::fillNodeList()
   {
     const std::string& node = *it;
 
+    std::string error;
+    if (!ros::names::validate(node, error))
+    {
+      ROS_ERROR("Node [%s] has an invalid name", node.c_str());
+      continue;
+    }
+
     if (ros::service::exists(node + "/get_loggers", false))
     {
       nodes_box_->Append(wxString::FromAscii(node.c_str()));

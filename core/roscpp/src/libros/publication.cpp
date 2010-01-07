@@ -86,6 +86,11 @@ void Publication::drop()
   {
     boost::mutex::scoped_lock lock(subscriber_links_mutex_);
 
+    if (dropped_)
+    {
+      return;
+    }
+
     dropped_ = true;
   }
 
@@ -120,12 +125,12 @@ void Publication::addSubscriberLink(const SubscriberLinkPtr& sub_link)
   {
     boost::mutex::scoped_lock lock(subscriber_links_mutex_);
 
-    subscriber_links_.push_back(sub_link);
-  }
+    if (dropped_)
+    {
+      return;
+    }
 
-  if (dropped_)
-  {
-    return;
+    subscriber_links_.push_back(sub_link);
   }
 
   if (latch_ && last_message_.buf)
@@ -145,17 +150,17 @@ void Publication::removeSubscriberLink(const SubscriberLinkPtr& sub_link)
   {
     boost::mutex::scoped_lock lock(subscriber_links_mutex_);
 
+    if (dropped_)
+    {
+      return;
+    }
+
     V_SubscriberLink::iterator it = std::find(subscriber_links_.begin(), subscriber_links_.end(), sub_link);
     if (it != subscriber_links_.end())
     {
       link = *it;
       subscriber_links_.erase(it);
     }
-  }
-
-  if (dropped_)
-  {
-    return;
   }
 
   if (link)

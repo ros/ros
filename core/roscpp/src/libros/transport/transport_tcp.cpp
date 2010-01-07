@@ -328,8 +328,6 @@ void TransportTCP::close()
           ROS_ERROR("Error closing socket [%d]: [%s]", sock_, strerror(errno));
         }
 
-        closed_ = true;
-
         sock_ = -1;
 
         disconnect_cb = disconnect_cb_;

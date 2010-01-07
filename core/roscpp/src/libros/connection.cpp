@@ -316,18 +316,27 @@ void Connection::onDisconnect(const TransportPtr& transport)
 
 void Connection::drop()
 {
-  if (!dropped_)
+  bool did_drop = false;
   {
-    dropped_ = true;
+    boost::recursive_mutex::scoped_lock lock(drop_mutex_);
+    if (!dropped_)
+    {
+      dropped_ = true;
+      did_drop = true;
 
+      drop_signal_(shared_from_this());
+    }
+  }
+
+  if (did_drop)
+  {
     transport_->close();
-
-    drop_signal_(shared_from_this());
   }
 }
 
 bool Connection::isDropped()
 {
+  boost::recursive_mutex::scoped_lock lock(drop_mutex_);
   return dropped_;
 }
 

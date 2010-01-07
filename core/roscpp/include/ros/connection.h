@@ -243,6 +243,9 @@ private:
 
   /// Signal raised when this connection is dropped
   DropSignal drop_signal_;
+
+  /// Synchronizes drop() calls
+  boost::recursive_mutex drop_mutex_;
 };
 typedef boost::shared_ptr<Connection> ConnectionPtr;
 

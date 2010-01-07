@@ -17,7 +17,7 @@ Pieces of rxtools use some icons from the silk icon pack (http://www.famfamfam.c
     <depend package="wxswig"/>
     <depend package="wxPython_swig_interface"/>
     <export> 
-        <cpp cflags="-I${prefix}/src/ `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib/ -lrxtools `rosboost-cfg --lflags thread,regex`"/>
+        <cpp cflags="-I${prefix}/src/ `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lrxtools `rosboost-cfg --lflags thread,regex`"/>
         <python path="${prefix}/src/:${prefix}/lib/"/>
     </export>
 

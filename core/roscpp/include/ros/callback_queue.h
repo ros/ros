@@ -144,9 +144,9 @@ protected:
   struct TLS
   {
     TLS()
-    : calling_in_this_thread(false)
+    : calling_in_this_thread(0xffffffffffffffffULL)
     {}
-    bool calling_in_this_thread;
+    uint64_t calling_in_this_thread;
     L_CallbackInfo callbacks;
   };
   boost::thread_specific_ptr<TLS> tls_;

@@ -113,6 +113,16 @@ public:
 protected:
   void setupTLS();
 
+  struct IDInfo
+  {
+    uint64_t id;
+    boost::shared_mutex calling_rw_mutex;
+  };
+  typedef boost::shared_ptr<IDInfo> IDInfoPtr;
+  typedef std::map<uint64_t, IDInfoPtr> M_IDInfo;
+
+  IDInfoPtr getIDInfo(uint64_t id);
+
   struct CallbackInfo
   {
     CallbackInfo()
@@ -127,7 +137,9 @@ protected:
   L_CallbackInfo callbacks_;
   boost::mutex mutex_;
   boost::condition_variable condition_;
-  boost::shared_mutex calling_rw_mutex_;
+
+  boost::mutex id_info_mutex_;
+  M_IDInfo id_info_;
 
   struct TLS
   {

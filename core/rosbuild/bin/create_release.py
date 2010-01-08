@@ -20,25 +20,29 @@ class ReleaseException(Exception): pass
 
 def load_sys_args():
     """
-    @return: name, version, distro_file
-    @rtype: (str, str, str)
+    @return: name, version, distro_file, distro_name
+    @rtype: (str, str, str, str)
     """
     from optparse import OptionParser
-    parser = OptionParser(usage="usage: %prog stack-or-app version distro.yaml", prog=NAME)
+    parser = OptionParser(usage="usage: %prog <stack> <version> <distro-file> <distro-name>", prog=NAME)
     options, args = parser.parse_args()
-    if len(args) != 3:
-        parser.error("you must specify a stack or app name, version, and the location of the distro.yaml for this release")
-    name, version, distro_file = args
+    if len(args) != 4:
+        parser.error("""You must specify: 
+ * stack name (e.g. common_msgs)
+ * version (e.g. 1.0.1)
+ * distro file (e.g. rosdistro.yaml)
+ * distro name (e.g. latest, babybox)""")
+    name, version, distro_file, distro_name = args
     if not os.path.isfile(distro_file):
         parser.error("[%s] does not appear to be a valid file"%distro_file)
-    return name, version, distro_file        
+    return name, version, distro_file, distro_name
 
 def load_and_validate_properties():
     """
     @return: name, version, distro_file, source_dir, distro, release_props
     @rtype: (str, str, str, str, str, dict)
     """
-    name, version, distro_file = load_sys_args()
+    name, version, distro_file, distro = load_sys_args()
     # for now, we only work with stacks
     source_dir = roslib.stacks.get_stack_dir(name)
     if not source_dir:
@@ -48,7 +52,6 @@ def load_and_validate_properties():
     check_svn_status(source_dir)
     
     # figure out what we're releasing against
-    distro = get_active_distro()
     print "Distribution target is [%s]"%distro
 
     release_props = load_release_props(name, distro, distro_file, source_dir)
@@ -120,7 +123,7 @@ def update_rosdistro_yaml(name, version, distro, distro_file):
     print "Writing new release properties to [%s]"%distro_file
     with open(distro_file, 'w') as f:
         f.write(yaml.safe_dump(distro_d))
-    
+
 def tag_subversion(name, version, distro, release_props):
     urls = []
     for k in ['release-svn', 'distro-svn']:
@@ -133,36 +136,17 @@ def tag_subversion(name, version, distro, release_props):
 
         cmds = []
         # delete old svn tag if it's present
-        append_rm_if_exists(tag_url, cmds, 'Deleting old tag')
+        # - note: 'new release' is magic svn hook key
+        append_rm_if_exists(tag_url, cmds, 'Making room for new release')
         # svn cp command to create new tag
-        cmds.append(['svn', 'cp', '--parents', '-m', 'Tagging %s release'%release_name, from_url, tag_url])
+        # - note: 'new release' is magic svn hook key        
+        cmds.append(['svn', 'cp', '--parents', '-m', 'Tagging %s new release'%release_name, from_url, tag_url])
         if not ask_and_call(cmds):    
             print "create_release will not create this tag in subversion"
         else:
             urls.append(tag_url)
     return urls
         
-def get_active_distro():
-    from subprocess import Popen, PIPE
-    if 0:
-        try:
-            #TODO: this logic won't work
-            output = Popen(['rosdistro', 'active'], stdout=PIPE, stderr=PIPE).communicate()
-        except:
-            output = [None]
-
-        if not output[0]:
-            return 'latest'
-        else:
-            return output[0].strip()
-    else:
-        # hardwired to latest or ROS_DISTRO env variable (until we
-        # have a replacement for rosdistro active)
-        if 'ROS_DISTRO' in os.environ:
-            return os.environ['ROS_DISTRO']
-        else:
-            return 'latest'
-    
 def load_release_props(name, distro, distro_file, stack_dir):
     print "Loading uri rules from %s"%distro_file
     if not os.path.isfile(distro_file):

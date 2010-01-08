@@ -141,12 +141,6 @@ macro(rosbuild_init)
   # Check that manifest.xml is valid
   _rosbuild_check_manifest()
 
-  # If we're making a distribution, then we don't need to assemble build
-  # flags and such.  More to the point, this step will likely fail, because
-  # it can rely on call foo-config for a 3rdparty package foo that was
-  # cleaned before getting here.
-  if(NOT ROSPACK_MAKEDIST)
-  
   # Add ROS_PACKAGE_NAME define
   add_definitions(-DROS_PACKAGE_NAME='\"${PROJECT_NAME}\"')
 
@@ -403,8 +397,6 @@ macro(rosbuild_init)
   _rosbuild_list_remove_duplicates(${_gtest_LIBRARIES} _tmplist)
   set(_gtest_LIBRARIES ${_tmplist})
   list(REVERSE _gtest_LIBRARIES)
-
-  endif(NOT ROSPACK_MAKEDIST)
 endmacro(rosbuild_init)
 ###############################################################################
 

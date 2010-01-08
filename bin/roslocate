@@ -69,9 +69,7 @@ def get_cache_path():
 
 def download_megamanifest(cpath):
   #print "downloading megamanifest to %s" % cpath
-  uris = ['http://ros.sourceforge.net/browse/megamanifest.xml',
-          'http://stair.stanford.edu/ros/megamanifest.xml', 
-          'http://pr.willowgarage.com/roslocate/megamanifest.xml']
+  uris = ['http://ros.org/browse/megamanifest.xml']
   for uri in uris:
     #print "trying %s" % uri
     if (os.system("wget %s -q -O %s" % (uri, cpath)) != 0):
@@ -120,7 +118,7 @@ def describe(pkgs, pkgname):
 def svn(pkgs, pkgname):
   for pkg in pkgs:
     if pkg.attributes['name'].value == pkgname:
-      print "%s%s" % (pkg.attributes['repo'].value, pkg.attributes['path'].value)
+      print "%s%s" % (pkg.attributes['repo_host'].value, pkg.attributes['path'].value)
 
 def repo(pkgs, pkgname):
   for pkg in pkgs:

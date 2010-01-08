@@ -13,7 +13,7 @@ rospack uses the TinyXML parser, a zLib-licensed library which is available here
 </description>
   <author>Morgan Quigley, Brian Gerkey</author>
   <license>BSD</license>
-  <review status="API cleared" notes="code review in progress (Rob)"/>
+  <review status="Doc reviewed" notes="2010-01-07"/>
   <export>
     <cpp cflags="-I${prefix} -I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lrospack -lrosstack"/>
   </export>

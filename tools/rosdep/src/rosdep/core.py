@@ -221,7 +221,7 @@ class RosdepLookupPackage:
                         #print >> sys.stderr, "DEBUG: Same key found for %s: %s"%(key, self.rosdep_map[key])
                         pass
                     else:
-                        raise RosdepException("QUITTING: due to conflicting rosdep definitions, please resolve this conflict. Rules for %s do not match.  These two rules do not match: \n{{{"%key, self.rosdep_map[key],"}}}, from %s, \n{{{"%self.rosdep_source[key], self.get_os_from_yaml(yaml_dict[key]), "}}} from %s"%source_path)
+                        raise RosdepException("QUITTING: due to conflicting rosdep definitions, please resolve this conflict. Rules for %s do not match.  These two rules do not match: \n{{{"%key, self.rosdep_map[key],"}}}, from %s, \n{{{"%self.rosdep_source[key], self.yaml_cache.get_os_from_yaml(yaml_dict[key], source_path), "}}} from %s"%source_path)
                         
             else:
                 self.rosdep_source[key] = [source_path]
@@ -232,32 +232,6 @@ class RosdepLookupPackage:
     def parse_yaml(self, path):
         return self.yaml_cache.get_specific_rosdeps(path)
         
-    def get_os_from_yaml(self, yaml_map):
-        # See if the version for this OS exists
-        if self.os_name in yaml_map:
-            return self.get_version_from_yaml(yaml_map[self.os_name])
-        else:
-            #print >> sys.stderr, "failed to resolve a rule for OS(%s)"%(self.os_name)
-            return False
-
-    def get_version_from_yaml(self, os_specific):
-        if type(os_specific) == type("String"):
-            return os_specific
-        else:# it must be a map of versions
-            if self.os_version in os_specific.keys():
-                return os_specific[self.os_version]
-            else:
-                ## Hack to match rounding errors in pyyaml load 9.04  != 9.03999999999999996 in string space
-                for key in os_specific.keys():
-                    if self.os_name == "ubuntu" and float(key) == float(self.os_version):
-                        #print "Matched %s"%(os_version)
-                        # NOTE: this hack fails if os_version is not major.minor
-                        print >> sys.stderr, "Warning: Ubuntu versions should be specified as a string not as a float, e.g. convert %.2f to '%.2f'.\n Please update '%s'"%(float(self.os_version), float(self.os_version), os_specific)
-                        return os_specific[key]
-                print >> sys.stderr, "failed to find specific version %s of %s within"%(self.os_version, self.os_name), os_specific
-                return False                    
-
-
 
 
     def lookup_rosdep(self, rosdep):
@@ -287,7 +261,7 @@ class RosdepLookupPackage:
 
 class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
-        os_list = [debian.RosdepTestOS(), debian.Ubuntu(), debian.Debian(), debian.Mint(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports(), gentoo.Gentoo(), cygwin.Cygwin()]
+        os_list = [debian.RosdepTestOS(), debian.Debian(), debian.Ubuntu(), debian.Mint(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports(), gentoo.Gentoo(), cygwin.Cygwin()]
         self.osi = roslib.os_detect.OSDetect(os_list)
         self.packages = packages
         self.rosdeps = roslib.packages.rosdeps_of(packages)

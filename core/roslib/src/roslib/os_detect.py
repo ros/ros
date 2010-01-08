@@ -337,9 +337,13 @@ class Override(OSBase):
 class OSDetect:
     """ This class will iterate over registered classes to lookup the
     active OS and Version of that OS for lookup in rosdep.yaml"""
-    def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), Fedora(), Rhel(), Gentoo(), Cygwin()]):
+    def __init__(self, os_list = [Debian(), Mint(), Macports(), Arch(), Fedora(), Rhel(), Gentoo(), Cygwin()]):
         self._os_list = [ Override()]
         self._os_list.extend(os_list)
+
+        self._os_class = None
+        self._os_name = None
+        self._os_version = None
 
         self.detect_os()
 
@@ -358,23 +362,16 @@ class OSDetect:
 
     def get_os(self):
         if not self._os_class:
-            if not self.detect_os():
-                raise OSDetectException("No OS detected")
-        else:
-            return self._os_class
+            self.detect_os()
+        return self._os_class
 
     def get_name(self):
         if not self._os_name:
-            os_class = self.get_os()
-            if os_class:
-                return os_class.get_name()
-            else:
-                return False
+            self.detect_os()
         return self._os_name
 
     def get_version(self):
         if not self._os_version:
-            if self.os_class:
-                self._os_version = self.os_class.get_version()
+            not self.detect_os()
         return self._os_version
 

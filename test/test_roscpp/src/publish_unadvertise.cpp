@@ -45,7 +45,7 @@ static char** g_argv;
 bool failure;
 bool advertised;
 
-class Pub : public testing::Test
+class Publications : public testing::Test
 {
 public:
   ros::NodeHandle nh_;
@@ -63,7 +63,7 @@ public:
 
   bool adv()
   {
-    pub_ = nh_.advertise<test_roscpp::TestArray>("test_roscpp/pubsub_test", 1, boost::bind(&Pub::subscriberCallback, this, _1));
+    pub_ = nh_.advertise<test_roscpp::TestArray>("test_roscpp/pubsub_test", 1, boost::bind(&Publications::subscriberCallback, this, _1));
     return pub_;
   }
 
@@ -73,7 +73,7 @@ public:
   }
 
 protected:
-  Pub() {}
+  Publications() {}
   void SetUp()
   {
     advertised = false;
@@ -86,7 +86,7 @@ protected:
   }
 };
 
-TEST_F(Pub, pubUnadvertise)
+TEST_F(Publications, pubUnadvertise)
 {
   advertised = true;
   ROS_INFO("advertising");

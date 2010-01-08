@@ -46,7 +46,7 @@
 int g_argc;
 char** g_argv;
 
-class PubSub : public testing::Test
+class Subscriptions : public testing::Test
 {
   public:
     test_roscpp::TestEmpty msg;
@@ -71,7 +71,7 @@ class PubSub : public testing::Test
     }
 
   protected:
-    PubSub() {}
+    Subscriptions() {}
     void SetUp()
     {
       success = false;
@@ -87,10 +87,10 @@ class PubSub : public testing::Test
     }
 };
 
-TEST_F(PubSub, pubSubNFast)
+TEST_F(Subscriptions, emptyMsg)
 {
   ros::NodeHandle nh;
-  ros::Subscriber sub = nh.subscribe("test_roscpp/pubsub_test", msg_count, &PubSub::messageCallback, (PubSub*)this);
+  ros::Subscriber sub = nh.subscribe("test_roscpp/pubsub_test", msg_count, &Subscriptions::messageCallback, (Subscriptions*)this);
   ros::Time t1(ros::Time::now()+dt);
 
   while(ros::Time::now() < t1 && !success)

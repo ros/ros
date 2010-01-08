@@ -46,7 +46,7 @@
 int g_argc;
 char** g_argv;
 
-class PubSub : public testing::Test
+class Subscriptions : public testing::Test
 {
   public:
     // A node is needed to make a service call
@@ -96,7 +96,7 @@ class PubSub : public testing::Test
     }
 
   protected:
-    PubSub() {}
+    Subscriptions() {}
     void SetUp()
     {
       success = false;
@@ -122,7 +122,7 @@ class PubSub : public testing::Test
     }
 };
 
-TEST_F(PubSub, pubSubNFast)
+TEST_F(Subscriptions, pubSubNFast)
 {
   ros::TransportHints hints;
   if (reliable)
@@ -130,7 +130,7 @@ TEST_F(PubSub, pubSubNFast)
   else
     hints.unreliable();
 
-  ros::Subscriber sub = n.subscribe("test_roscpp/pubsub_test", msgs_expected, &PubSub::MsgCallback, (PubSub *)this, hints);
+  ros::Subscriber sub = n.subscribe("test_roscpp/pubsub_test", msgs_expected, &Subscriptions::MsgCallback, (Subscriptions *)this, hints);
   
   ASSERT_TRUE(sub);
 

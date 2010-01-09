@@ -145,6 +145,9 @@ def compute_stack_depends_and_licenses(stack_dir):
     else:
         depends = dict()
         licenses = ['BSD']
+    # add in bare ros dependency into any stack as an implicit depend
+    if not 'ros' in depends:
+        depends['ros'] = []
     return depends, licenses
     
 def _compute_stack_depends_and_licenses(stack, packages):

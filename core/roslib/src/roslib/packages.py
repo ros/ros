@@ -470,8 +470,7 @@ def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
                       ros_root=ros_root, ros_package_path=ros_package_path)
     
     #UNIXONLY: (partial) slowly supporting Windows here
-    import platform
-    if platform.system() == 'Windows':
+    if sys.platform in ['win32', 'cygwin']:
         # Windows logic requires more file patterns to resolve and is
         # not case-sensitive, so leave it separate
 

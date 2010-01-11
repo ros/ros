@@ -95,7 +95,7 @@ bzip2:
 boost:
   ubuntu:
     '9.10': libboost1.40-all-dev
-    '9.04': libboost1.37-dev
+    '9.04': libboost1.37-dev libboost-math1.37-dev
     '8.10': |
       if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
         mkdir -p ~/ros/ros-deps
@@ -119,7 +119,7 @@ boost:
         sudo make install
       fi
   debian:
-    squeeze/sid: libboost-dev libboost-regex-dev libboost-thread-dev libboost-signals-dev libboost-filesystem-dev libboost-python-dev libboost-program-options-dev
+    squeeze/sid: libboost-dev libboost-regex-dev libboost-thread-dev libboost-signals-dev libboost-filesystem-dev libboost-python-dev libboost-program-options-dev libboost-math-dev
     lenny: |
       if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
         mkdir -p ~/ros/ros-deps

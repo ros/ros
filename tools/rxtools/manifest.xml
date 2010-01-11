@@ -1,10 +1,13 @@
 <package>
     <description brief="Collection of ROS GUI tools and libraries">
     
-rxtools is two things.  First it is a library of GUI widgets (written in wxWidgets) that can be embedded in other applications. Second it is a set of GUI applications that view/manage ROS state. These GUI applications include <tt>rxconsole</tt> and <tt>rxplot</tt>.
+<p>
+rxtools is two things.  First it is a library of GUI widgets, written in wxWidgets, that can be embedded in other applications. Second, it is a set of GUI applications that view and manage ROS state. These GUI applications include <tt>rxconsole</tt> and <tt>rxplot</tt>.
+</p>
     
-<br/>
-Pieces of rxtools use some icons from the silk icon pack (http://www.famfamfam.com/lab/icons/silk/)
+<p>
+Pieces of rxtools use some icons from the <a href="http://www.famfamfam.com/lab/icons/silk/">Silk icon pack from famfamfam</a>.
+</p>
 
     </description>
     <author>Josh Faust, Rob Wheeler, Ken Conley</author>

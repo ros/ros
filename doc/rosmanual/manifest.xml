@@ -6,8 +6,8 @@
   </description>
   <author>Ken Conley/kwc@willowgarage.com</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
-  <url>http://pr.willowgarage.com/wiki/rosmanual</url>
+  <review status="experimental" notes=""/>
+  <url>http://ros.org/wiki/rosmanual</url>
 
 </package>
 

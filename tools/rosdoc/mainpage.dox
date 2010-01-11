@@ -8,8 +8,7 @@ documentation.  This mainly involves running
 <a href="http://sphinx.pocoo.org/">Sphinx</a>
 across
 multiple ROS packages and combining that with information parsed from
-ROS manifest files. Nightly updates currently appear at <a href="http://pr.willowgarage.com/pr-docs/ros-packages">http://pr.willowgarage.com/pr-docs/ros-packages</a>.
-
+ROS manifest files. 
 
 NOTE: ROS/doxygen best practices are <a
 href="http://pr.willowgarage.com/wiki/rosdoc">documented on the
@@ -75,18 +74,5 @@ Output documentation to doc-0.5 and change the title of the documentation:
 $ ./rosdoc -o doc-0.5 -n "ROS 0.5"
 \endverbatim
 
-\section externaldoc Linking to External Documentation
-
-There are packages for which you may wish to link to
-externally-generated code documentation. In particular, running
-doxygen on thirdparty packages is usually time consuming and not
-necessary. In these cases you'll want to include the following
-'export' tag in the manifest.xml file:
-\verbatim
-<export>
-  ... other export tags
-  <doxymaker external="http://external/documentation.html" />
-</export>
-\endverbatim
 
 */

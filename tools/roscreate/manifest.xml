@@ -2,15 +2,15 @@
   <description brief="roscreate">
 
      roscreate contains tools that assist in the creation of ROS filesystem resources. There are currently
-     two tools that it provides: roscreate-pkg and roscreate-stack. roscreate-pkg creates a new package directory,
-     including the appropriate build and manifest files. roscreate-stack computes a stack.xml file from a list of packages
+     two tools that it provides: <tt>roscreate-pkg</tt> and <tt>roscreate-stack</tt>. <tt>roscreate-pkg</tt> creates a new package directory,
+     including the appropriate build and manifest files. <tt>roscreate-stack</tt> computes a <tt>stack.xml</tt> file from a list of packages
      in a directory.
 
   </description>
   <author>Ken Conley/kwc@willowgarage.com</author>
   <license>BSD</license>
-  <review status="api cleared" notes=""/>
-  <url>http://pr.willowgarage.com/wiki/roscreate</url>
+  <review status="Doc reviewed" notes="2010/01/07"/>
+  <url>http://ros.org/wiki/roscreate</url>
   <depend package="roslib"/>
 </package>
 

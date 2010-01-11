@@ -65,7 +65,7 @@ def play_cmd(argv):
 
     (options, args) = parser.parse_args(argv)
 
-    if (len(args) == 0 and not options.all):
+    if len(args) == 0:
         parser.error("You must specify at least 1 bagfile to play back.")
 
     cmd = ["rosplay"]

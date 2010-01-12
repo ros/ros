@@ -376,7 +376,7 @@ def wait_for_service(service, timeout=None):
     resolved_name = rospy.names.resolve_name(service)
     master = get_master()
     first = False
-    if timeout:
+    if timeout is None:
         timeout_t = time.time() + timeout
         while not rospy.core.is_shutdown() and time.time() < timeout_t:
             try:

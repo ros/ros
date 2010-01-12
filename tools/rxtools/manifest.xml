@@ -12,7 +12,7 @@ Pieces of rxtools use some icons from the <a href="http://www.famfamfam.com/lab/
     </description>
     <author>Josh Faust, Rob Wheeler, Ken Conley</author>
     <license>BSD, Creative Commons</license>
-    <review status="API cleared" notes=""/>
+    <review status="Doc reviewed" notes=""/>
     <url>http://ros.org/wiki/rxtools</url>
     <depend package="roscpp"/>
     <depend package="roslib"/>        

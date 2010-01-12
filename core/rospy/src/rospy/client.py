@@ -346,7 +346,11 @@ def wait_for_service(service, timeout=None):
     service already running.
     @param service: name of service
     @type  service: str
-    @param timeout: timeout time in seconds
+    @param timeout: timeout time in seconds, None for no
+    timeout. NOTE: timeout=0 is invalid as wait_for_service actually
+    contacts the service, so non-blocking behavior is not
+    possible. For timeout=0 uses cases, just call the service without
+    waiting.
     @type  timeout: double
     @raise ROSException: if specified timeout is exceeded
     @raise ROSInterruptException: if shutdown interrupts wait
@@ -372,7 +376,8 @@ def wait_for_service(service, timeout=None):
             finally:
                 if s is not None:
                     s.close()
-
+    if timeout == 0.:
+        raise ValueError("timeout must be non-zero")
     resolved_name = rospy.names.resolve_name(service)
     master = get_master()
     first = False

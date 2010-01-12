@@ -1,13 +1,13 @@
 <package>
   <description brief="ROS C++ message generator">
     
-    genmsg_cpp implements ROS C++ Message generator. This package is only intended
+    genmsg_cpp implements the ROS C++ Message generator. This package is only intended
     for internal use by ROS client libraries.
 
   </description>
   <author>Morgan Quigley mquigley@cs.stanford.edu</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="Doc reviewed" notes=""/>
   <url>http://ros.org/wiki/ROS</url>
 </package>
 

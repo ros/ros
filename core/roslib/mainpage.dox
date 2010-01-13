@@ -3,7 +3,7 @@
 \htmlinclude manifest.html
 
 
-\b roslib is the base library support for ROS <a href="http://ros.org/wiki/Client Libraries">client implementations</a> as well as ROS tools. It includes:
+\b %roslib is the base library support for ROS <a href="http://ros.org/wiki/Client Libraries">client implementations</a> as well as ROS tools. It includes:
 
 - common message definitions used in ROS clients (e.g. Header)
 - a Python library for manipulating ROS system resources (e.g. .msg files, names)
@@ -11,6 +11,8 @@
 
 \section codeapi Code API
 
-
+- Time-related: ros::Time, ros::Duration, ros::Rate, ros::WallTime, ros::WallDuration, ros::WallRate.  Also see the <a href="http://ros.org/wiki/roscpp/Overview/Time">roscpp Time overview</a>.
+- Package-related: ros::package namespace
+- Debug-related: ros::debug namespace
 
 */

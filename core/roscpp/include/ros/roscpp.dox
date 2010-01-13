@@ -10,6 +10,8 @@
  - \ref ros::master : Contains functions for querying information from the master
  - \ref ros::this_node : Contains functions for querying information about this process' node
  - \ref ros::service : Contains functions for querying information about services
+ - \ref ros::param : Contains functions for querying the parameter service without the need for a ros::NodeHandle
+ - \ref ros::names : Contains functions for manipulating ROS graph resource names
 
 @par Examples
 

@@ -10,11 +10,6 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #set(ROS_BUILD_TYPE RelWithDebInfo) 
 rosbuild_init()
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-
 #uncomment if you have defined messages
 rosbuild_genmsg()
 #uncomment if you have defined services
@@ -33,6 +28,8 @@ rosbuild_download_test_data(http://pr.willowgarage.com/data/rosrecord/rosrecord_
 rosbuild_download_test_data(http://pr.willowgarage.com/data/test_rosrecord/hello_world.bag test/hello_world.bag 95b2aecfd2069c4acb7a29357c7d9c41)
 rosbuild_add_pyunit(test/test_rosrecord_py.py)
 rosbuild_add_rostest(test/rename_test.xml)
+
+rosbuild_add_gtest(test/test_recorder_player test/test_recorder_player.cpp)
 
 # Remove test until we resolve details of making them pass deterministically
 rosbuild_add_rostest_future(test/random_pub_sub.xml)

@@ -37,19 +37,39 @@
 namespace ros
 {
 
+/**
+ * \brief Abstract base class used by subscriptions to deal with concrete message types through a common
+ * interface.  This is one part of the roscpp API that is \b not fully stable, so overloading this class
+ * is not recommended unless you have an explicit need (like to implement a scripting interface).
+ */
 class SubscriptionMessageHelper
 {
 public:
   virtual ~SubscriptionMessageHelper() {}
+  /**
+   * \brief Create a message
+   */
   virtual MessagePtr create() = 0;
 
+  /**
+   * \brief Returns the md5sum of this message
+   */
   virtual std::string getMD5Sum() = 0;
+  /**
+   * \brief Returns the datatype of this message
+   */
   virtual std::string getDataType() = 0;
 
+  /**
+   * \brief Call the callback associated with this helper on the specified message
+   */
   virtual void call(const MessagePtr& msg) = 0;
 };
 typedef boost::shared_ptr<SubscriptionMessageHelper> SubscriptionMessageHelperPtr;
 
+/**
+ * \brief Concrete generic implementation of SubscriptionMessageHelper for any normal message type
+ */
 template<class M>
 class SubscriptionMessageHelperT : public SubscriptionMessageHelper
 {

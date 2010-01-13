@@ -34,6 +34,9 @@
 namespace ros
 {
 
+/**
+ * \brief Encapsulates all options available for advertising a service
+ */
 struct AdvertiseServiceOptions
 {
   AdvertiseServiceOptions()
@@ -57,7 +60,7 @@ struct AdvertiseServiceOptions
   {}
 
   /**
-   * \brief Templated convenience constructor
+   * \brief Templated convenience method for filling out md5sum/etc. based on the service request/response types
    * \param _service Service name to advertise on
    * \param _callback Callback to call when this service is called
    */
@@ -83,7 +86,7 @@ struct AdvertiseServiceOptions
   }
 
   /**
-   * \brief Templated convenience constructor
+   * \brief Templated convenience method for filling out md5sum/etc. based on the service type
    * \param _service Service name to advertise on
    * \param _callback Callback to call when this service is called
    */
@@ -111,6 +114,8 @@ struct AdvertiseServiceOptions
   CallbackQueueInterface* callback_queue;                             ///< Queue to add callbacks to.  If NULL, the global callback queue will be used
 
   /**
+   * \brief An object whose destruction will prevent the callback associated with this service from being called
+   *
    * A shared pointer to an object to track for these callbacks.  If set, the a weak_ptr will be created to this object,
    * and if the reference count goes to 0 the subscriber callbacks will not get called.
    *
@@ -120,6 +125,13 @@ struct AdvertiseServiceOptions
    */
   VoidPtr tracked_object;
 
+  /**
+   * \brief Templated helper function for creating an AdvertiseServiceOptions with all of its options
+   * \param service Service name to advertise on
+   * \param callback The callback to invoke when the service is called
+   * \param tracked_object The tracked object to use (see AdvertiseServiceOptions::tracked_object)
+   * \param queue The callback queue to use (see AdvertiseServiceOptions::callback_queue)
+   */
   template<class Service>
   static AdvertiseServiceOptions create(const std::string& service,
                                  const boost::function<bool(typename Service::Request&, typename Service::Response&)>& callback,

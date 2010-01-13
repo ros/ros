@@ -110,6 +110,8 @@ struct SubscribeOptions
   CallbackQueueInterface* callback_queue;                           ///< Queue to add callbacks to.  If NULL, the global callback queue will be used
 
   /**
+   * \brief An object whose destruction will prevent the callback associated with this subscription
+   *
    * A shared pointer to an object to track for these callbacks.  If set, the a weak_ptr will be created to this object,
    * and if the reference count goes to 0 the subscriber callbacks will not get called.
    *
@@ -121,6 +123,16 @@ struct SubscribeOptions
 
   TransportHints transport_hints;                                   ///< Hints for transport type and options
 
+  /**
+   * \brief Templated helper function for creating an AdvertiseServiceOptions with most of its options
+   * \param topic Topic name to subscribe to
+   * \param queue_size Number of incoming messages to queue up for
+   *        processing (messages in excess of this queue capacity will be
+   *        discarded).
+   * \param callback The callback to invoke when a message is received on this topic
+   * \param tracked_object The tracked object to use (see SubscribeOptions::tracked_object)
+   * \param queue The callback queue to use (see SubscribeOptions::callback_queue)
+   */
   template<class M>
   static SubscribeOptions create(const std::string& topic, uint32_t queue_size,
                                  const boost::function<void (const boost::shared_ptr<M>&)>& callback,

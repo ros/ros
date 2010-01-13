@@ -70,8 +70,7 @@ const std::string& getURI();
 /** @brief Check whether the master is up
  *
  * This method tries to contact the master.  You can call it any time
- * after the node constructor has run, including within the constructor
- * of a class that inherits from node.  The intended usage is to check
+ * after ros::init has been called.  The intended usage is to check
  * whether the master is up before trying to make other requests
  * (subscriptions, advertisements, etc.).
  *

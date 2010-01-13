@@ -68,6 +68,15 @@ struct AdvertiseOptions
   , latch(false)
   {}
 
+  /**
+   * \brief templated helper function for automatically filling out md5sum, datatype and message definition
+   *
+   * \param M [template] Message type
+   * \param _topic Topic to publish on
+   * \param _queue_size Maximum number of outgoing messages to be queued for delivery to subscribers
+   * \param _connect_cb Function to call when a subscriber connects to this topic
+   * \param _disconnect_cb Function to call when a subscriber disconnects from this topic
+   */
   template <class M>
   void init(const std::string& _topic, uint32_t _queue_size,
             const SubscriberStatusCallback& _connect_cb = SubscriberStatusCallback(),
@@ -95,6 +104,8 @@ struct AdvertiseOptions
   CallbackQueueInterface* callback_queue;                           ///< Queue to add callbacks to.  If NULL, the global callback queue will be used
 
   /**
+   * \brief An object whose destruction will prevent the callbacks associated with this advertisement from being called
+   *
    * A shared pointer to an object to track for these callbacks.  If set, the a weak_ptr will be created to this object,
    * and if the reference count goes to 0 the subscriber callbacks will not get called.
    *
@@ -105,11 +116,24 @@ struct AdvertiseOptions
   VoidPtr tracked_object;
 
   /**
-   * Whether or not this publication should "latch".  A latching publication will automatically send out the last published message
+   * \brief Whether or not this publication should "latch".  A latching publication will automatically send out the last published message
    * to any new subscribers.
    */
   bool latch;
 
+  /**
+   * \brief Templated helper function for creating an AdvertiseOptions for a message type with most options.
+   *
+   * \param M [template] Message type
+   * \param topic Topic to publish on
+   * \param queue_size Maximum number of outgoing messages to be queued for delivery to subscribers
+   * \param connect_cb Function to call when a subscriber connects to this topic
+   * \param disconnect_cb Function to call when a subscriber disconnects from this topic
+   * \param tracked_object tracked object to use (see AdvertiseOptions::tracked_object)
+   * \param queue The callback queue to use (see AdvertiseOptions::callback_queue)
+   *
+   * \return an AdvertiseOptions which embodies the parameters
+   */
   template<class M>
   static AdvertiseOptions create(const std::string& topic, uint32_t queue_size,
                           const SubscriberStatusCallback& connect_cb,

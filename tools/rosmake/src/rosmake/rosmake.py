@@ -108,7 +108,7 @@ class RosMakeAll:
             r.install(include_duplicates=False, default_yes=default_yes);
             self.print_all("Rosdep successfully installed all system dependencies")
             return None
-        except rosdep.RosdepException, e:
+        except rosdep.core.RosdepException, e:
             self.print_all( "ERROR: %s"%e)
             return "%s"%e
 

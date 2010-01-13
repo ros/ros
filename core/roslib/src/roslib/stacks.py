@@ -35,7 +35,7 @@
 
 """
 Python utilities for manipulating ROS Stacks.
-See: http://ros.org/wiki/Stacks
+See: U{http://ros.org/wiki/Stacks}
 
 Warning: this API is still fairly experimental and incomplete.
 """

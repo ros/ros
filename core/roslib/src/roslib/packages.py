@@ -33,6 +33,15 @@
 # Revision $Id$
 # $Author$
 
+"""
+Python utilities for manipulating ROS packages.
+See: U{http://ros.org/wiki/Packages}
+
+Warning: while most of this API is stable, some parts are still fairly
+experimental and incomplete. In particular, the L{ROSPackages} class
+in very experimental.
+"""
+
 from __future__ import with_statement
 
 import os

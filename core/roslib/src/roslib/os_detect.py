@@ -28,9 +28,13 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
-#"""
-#Library and command-line tool for calculating rosdeps.
-#"""
+"""
+Library for detecting the current OS, including detecting specific
+Linux distributions. 
+
+The APIs of this library are still very coupled with the rosdep 
+command-line tool.
+"""
 
 from __future__ import with_statement
 
@@ -46,6 +50,9 @@ import yaml
 
 ####### Linux Helper Functions #####
 def lsb_get_os():
+    """
+    Linux: wrapper around lsb_release to get the current OS
+    """
     try:
         cmd = ['lsb_release', '-si']
         pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -55,6 +62,9 @@ def lsb_get_os():
         return None
     
 def lsb_get_codename():
+    """
+    Linux: wrapper around lsb_release to get the current OS codename
+    """
     try:
         cmd = ['lsb_release', '-sc']
         pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -64,6 +74,9 @@ def lsb_get_codename():
         return None
     
 def lsb_get_version():
+    """
+    Linux: wrapper around lsb_release to get the current OS version
+    """
     try:
         cmd = ['lsb_release', '-sr']
         pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -86,6 +99,9 @@ class OSBase:
 
 ###### Debian SPECIALIZATION #########################
 class Debian(OSBase):
+    """
+    Detect Debian OS.
+    """
     def check_presence(self):
         if "Debian" == lsb_get_os():
             return True
@@ -119,6 +135,9 @@ class Ubuntu(Debian):
 
 ###### Mint SPECIALIZATION #########################
 class Mint(Debian):
+    """
+    Detect Mint variants of Debian.
+    """
     def check_presence(self):
         try:
             filename = "/etc/issue"
@@ -139,6 +158,9 @@ class Mint(Debian):
 
 ###### Fedora SPECIALIZATION #########################
 class Fedora(OSBase):
+    """
+    Detect Fedora OS.
+    """
     def check_presence(self):
         try:
             filename = "/etc/redhat_release"
@@ -172,6 +194,9 @@ class Fedora(OSBase):
 
 ###### Rhel SPECIALIZATION #########################
 class Rhel(Fedora):
+    """
+    Detect Redhat OS.
+    """
     def check_presence(self):
         try:
             filename = "/etc/redhat_release"
@@ -205,6 +230,9 @@ class Rhel(Fedora):
 
 ###### Macports SPECIALIZATION #########################
 def port_detect(p):
+    """
+    Detect presence of Macports by running "port installed" command.
+    """
     cmd = ['port', 'installed', p]
     pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (std_out, std_err) = pop.communicate()
@@ -212,6 +240,9 @@ def port_detect(p):
     return (std_out.count("(active)") > 0)
 
 class Macports(OSBase):
+    """
+    Detect OS X and Macports.
+    """
     def check_presence(self):
         filename = "/usr/bin/sw_vers"
         if os.path.exists(filename):
@@ -228,6 +259,9 @@ class Macports(OSBase):
 
 ###### Arch SPECIALIZATION #########################
 class Arch(OSBase):
+    """
+    Detect Arch Linux.
+    """
 
     def check_presence(self):
         filename = "/etc/arch-release"
@@ -259,6 +293,9 @@ class Arch(OSBase):
 
 ###### Cygwin SPECIALIZATION #########################
 class Cygwin(OSBase):
+    """
+    Detect Cygwin presence on Windows OS.
+    """
     def check_presence(self):
         filename = "/usr/bin/cygwin1.dll"
         if os.path.exists(filename):
@@ -278,6 +315,9 @@ class Cygwin(OSBase):
 
 ###### Gentoo Sepcialization ###############################
 class Gentoo(OSBase):
+    """
+    Detect Gentoo OS.
+    """
     def check_presence(self):
         try:
             filename = "/etc/gentoo-release"
@@ -336,7 +376,7 @@ class Override(OSBase):
 
 class OSDetect:
     """ This class will iterate over registered classes to lookup the
-    active OS and Version of that OS for lookup in rosdep.yaml"""
+    active OS and version"""
     def __init__(self, os_list = [Debian(), Mint(), Macports(), Arch(), Fedora(), Rhel(), Gentoo(), Cygwin()]):
         self._os_list = [ Override()]
         self._os_list.extend(os_list)

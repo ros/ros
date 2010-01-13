@@ -175,6 +175,9 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     @raise ROSInitException: if initialization/registration fails
     @raise ValueError: if parameters are invalid (e.g. name contains a namespace or is otherwise illegal)
     """
+    # this test can be eliminated once we change from warning to error in the next check
+    if roslib.names.SEP in name:
+        raise ValueError("namespaces are not allowed in node names")
     if not roslib.names.is_legal_base_name(name):
         import warnings
         warnings.warn("'%s' is not a legal ROS base name. This may cause problems with other ROS tools"%name, stacklevel=2)

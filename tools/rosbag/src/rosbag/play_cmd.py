@@ -51,8 +51,10 @@ def play_cmd(argv):
 
     parser.add_option("--queue",      dest="queue",   default=0,   type='int', action="store",
                       help="use an outgoing queue of size SIZE (defaults to %default)", metavar="SIZE")
+    parser.add_option("--clock",  dest="clock",       default=False, action="store_true",
+                      help="publish the clock time")
     parser.add_option("--hz",  dest="freq",       default=100, type='float', action="store",
-                      help="publish the log time at a frequency of HZ (default: %default)", metavar="HZ")
+                      help="Use a frequency of HZ when publishing clock time (default: %default)", metavar="HZ")
     parser.add_option("-d", "--delay",      dest="delay",      default=0.2, type='float', action="store",
                       help="Sleep SEC seconds after every advertise call (to allow subscribers to connect).", metavar="SEC")
     parser.add_option("-r", "--rate",       dest="rate",       default=1.0, type='float', action="store",
@@ -75,8 +77,10 @@ def play_cmd(argv):
     if options.immediate:  cmd.extend(["-a"])
     if options.try_future: cmd.extend(["-T"])
 
+    if options.clock:
+        cmd.extend(["-b", str(options.freq)])
+
     cmd.extend(["-q", str(options.queue)])
-    cmd.extend(["-b", str(options.freq)])
     cmd.extend(["-r", str(options.rate)])
     cmd.extend(["-s", str(options.delay)])
     cmd.extend(["-t", str(options.sleep)])

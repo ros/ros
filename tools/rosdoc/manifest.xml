@@ -9,11 +9,12 @@
    </description>
    <author>Ken Conley/kwc@willowgarage.com</author>
    <license>BSD</license>
-   <review status="na" notes=""/>
+   <review status="Doc reviewed" notes=""/>
    <url>http://ros.org/wiki/rosdoc</url>
    <depend package="roslib"/>
    <depend package="rxdeps"/>
    <depend package="rosmsg"/>   
    <rosdep name="doxygen"/>
+
 </package>
 

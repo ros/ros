@@ -19,7 +19,7 @@
     default Master for ROS. Many of the ROS tools, such
     as <a href="http://ros.org/wiki/rostopic">rostopic</a>
     and <a href="http://ros.org/wiki/rosservice">rosservice</a>, are
-    built on top of rospy
+    built on top of rospy.
 </p>
 
   </description>

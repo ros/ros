@@ -3,7 +3,7 @@
 \htmlinclude manifest.html
 
 
-\b roslib is the base library support for ROS <a href="http://pr.willowgarage.com/wiki/ROS/client_libs">client implementations</a> as well as ROS tools. It includes:
+\b roslib is the base library support for ROS <a href="http://ros.org/wiki/Client Libraries">client implementations</a> as well as ROS tools. It includes:
 
 - common message definitions used in ROS clients (e.g. Header)
 - a Python library for manipulating ROS system resources (e.g. .msg files, names)
@@ -11,100 +11,6 @@
 
 \section codeapi Code API
 
-\subsection Common Messages (Header, Log, Time)
-
-roslib comes with the following message definitions:
-- \b Header : ROS message header which has the special name reference 'Header header' when used at the top of .msg files
-- \b Log : ROS message for /rosout topic
-- \b Time: ROS message for /time topic
-
-The message definition for Header.msg, Log.msg, and Time.msg are all
-valid message definitions that are read in by the ROS client
-libraries. It is very important that you not remove any fields from
-these message definitions. In some cases it is possible to add fields
-to these messages, but you must do so with great care.
-
-\section commandline Command-line tools
-
-\subsection gendeps
-
-\b gendeps is a multipurpose command-line tool that is able to load
-the dependency tree for a specified message. It is used by the build
-system to determine whether or not a message/service is up-to-date. It
-is also used by the message/service generators to calculate md5 hashes
-as well as exchange the full text of message definitions for use with
-bag files. Without any options, it prints out the list of files that
-the specified file depends on.
-
-\subsubsection Usage
-\verbatim
-gendeps [options] [files...]
-
-Options:
-  -h, --help  show this help message and exit
-  -m, --md5   Generate md5 hash of files
-  -s, --sha1  Generate SHA1 hash of files
-  -c, --cat   Generate md5 hash of files
-\endverbatim
-
-\par Example
-\verbatim
-./gendeps ~/ros-pkg/robot_srvs/srv/SelfTest.srv 
-/u/user/ros-pkg/robot_msgs/msg/DiagnosticString.msg /u/user/ros-pkg/robot_msgs/msg/DiagnosticValue.msg /u/user/ros-pkg/robot_msgs/msg/DiagnosticStatus.msg
-
-./gendeps --md5 ~/ros-pkg/robot_srvs/srv/SelfTest.srv 
-ab38b6966d9a1cc41a9555ac59c9a9b9
-
-./gendeps --cat `rospack find robot_msgs`/msg/DiagnosticStatus.msg
-byte level #(OK=0, WARN=1, ERROR=2)
-string name # a description of the test/component reporting
-string message # a description of the status
-DiagnosticValue[] values # an array of values associated with the status
-DiagnosticString[] strings # an array of string associated with the status
-
-================================================================================
-MSG: robot_msgs/DiagnosticValue
-float32 value # a value to track over time
-string label # what to label this value when viewing
-
-================================================================================
-MSG: robot_msgs/DiagnosticString
-string value # a string data type
-string label # what to label this value when viewing
-
-\endverbatim
-
-
-\subsection genmsg
-
-\b genmsg is a script that locates available ROS client message generators and invokes them.
-
-
-\subsubsection Usage
-\verbatim
-$ scripts/genmsg [msg files...]
-\endverbatim
-
-\par Example
-
-\verbatim
-$ scripts/genmsg msg/Message.msg
-\endverbatim
-
-\subsection gensrv
-
-\b gensrv a script that locates available ROS client servicre generators and invokes them.
-
-\subsubsection Usage
-\verbatim
-$ scripts/gensrv [srv files...]
-\endverbatim
-
-\par Example
-
-\verbatim
-$ scripts/gensrv srv/Service.srv
-\endverbatim
 
 
 */

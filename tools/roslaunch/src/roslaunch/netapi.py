@@ -42,7 +42,7 @@ import xmlrpclib
 import roslib.network
 import roslib.scriptutil
 
-_ID = '/roslaunch-netapi'
+_ID = '/roslaunch_netapi'
 def get_roslaunch_uris():
     """
     @return: list of roslaunch XML-RPC URIs for roscore that's in

@@ -58,6 +58,24 @@ _ID = '/roslaunch'
 
 class RLTestTimeoutException(RLException): pass
 
+def _hostname_to_rosname(hostname):
+    """
+    Utility function to strip illegal characters from hostname.  This
+    is implemented to be correct, not efficient."""
+    
+    # prepend 'host_', which guarantees leading alpha character
+    fixed = 'host_'
+    # simplify comparison by making name lowercase
+    hostname = hostname.lower()
+    for c in hostname:
+        # only allow alphanumeric and numeral
+        if (c >= 'a' and c <= 'z') or \
+                (c >= '0' and c <= '9'):
+            fixed+=c
+        else:
+            fixed+='_'
+    return fixed
+    
 class _ROSLaunchListeners(ProcessListener):
     """
     Helper class to manage distributing process events. It functions as
@@ -343,8 +361,9 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
             # store parent XML-RPC URI on param server
             # - param name is the /roslaunch/hostname:port so that multiple roslaunches can store at once
             hostname, port = roslib.network.parse_http_host_and_port(self.server_uri)
-            self.logger.info("setting /roslaunch/uris/%s:%s' to %s"%(hostname, port, self.server_uri))
-            param_server.setParam(_ID, '/roslaunch/uris/%s:%s'%(hostname, port),self.server_uri)
+            hostname = _hostname_to_rosname(hostname)
+            self.logger.info("setting /roslaunch/uris/%s__%s' to %s"%(hostname, port, self.server_uri))
+            param_server.setParam(_ID, '/roslaunch/uris/%s__%s'%(hostname, port),self.server_uri)
 
     def _check_and_set_run_id(self, param_server, run_id):
         """

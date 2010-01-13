@@ -231,6 +231,11 @@ bool ros::record::Recorder::checkDisk()
 
 bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPtr msg, ros::Time time)
 {
+  return record(topic_name, *msg, time);
+}
+
+bool ros::record::Recorder::record(std::string topic_name, const ros::Message& msg, ros::Time time)
+{
   if (!logging_enabled_)
   {
     ros::WallTime nowtime = ros::WallTime::now();
@@ -252,9 +257,9 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     if (key == topics_recorded_.end())
     {
       MsgInfo& info = topics_recorded_[topic_name];
-      info.msg_def  = msg->__getMessageDefinition();
-      info.datatype = msg->__getDataType();
-      info.md5sum   = msg->__getMD5Sum();
+      info.msg_def  = msg.__getMessageDefinition();
+      info.datatype = msg.__getDataType();
+      info.md5sum   = msg.__getMD5Sum();
 
       key = topics_recorded_.find(topic_name);
 
@@ -302,19 +307,19 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     }
 
     // Serialize the message into the message buffer
-    if (message_buf_size_ < msg->serializationLength())
+    if (message_buf_size_ < msg.serializationLength())
     {
       if (message_buf_size_ == 0)
-        message_buf_size_ = msg->serializationLength();
+        message_buf_size_ = msg.serializationLength();
       else
       {
-        while (message_buf_size_ < msg->serializationLength())
+        while (message_buf_size_ < msg.serializationLength())
           message_buf_size_ *= 2;
       }
       message_buf_ = (unsigned char*)realloc(message_buf_, message_buf_size_);
       ROS_ASSERT(message_buf_);
     }
-    msg->serialize(message_buf_, 0);
+    msg.serialize(message_buf_, 0);
 
     // Write a message instance record
     M_string header;
@@ -324,7 +329,7 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     header[TYPE_FIELD_NAME]  = msg_info.datatype;
     header[SEC_FIELD_NAME]   = std::string((char*)&time.sec, 4);
     header[NSEC_FIELD_NAME]  = std::string((char*)&time.nsec, 4);
-    writeRecord(header, (char*)message_buf_, msg->serializationLength());
+    writeRecord(header, (char*)message_buf_, msg.serializationLength());
     if (record_file_.fail())
     {
       ROS_FATAL("rosrecord::Record: could not write to file.  Check permissions and diskspace\n");

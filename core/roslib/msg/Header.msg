@@ -1,5 +1,8 @@
-#Standard metadata for higher-level flow data types
-#sequence ID: consecutively increasing ID 
+# Standard metadata for higher-level stamped data types.
+# This is generally used to communicate timestamped data 
+# in a particular coordinate frame.
+# 
+# sequence ID: consecutively increasing ID 
 uint32 seq
 #Two-integer timestamp that is expressed as:
 # * stamp.secs: seconds (stamp_secs) since epoch

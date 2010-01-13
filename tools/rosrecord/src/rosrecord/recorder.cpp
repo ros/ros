@@ -125,7 +125,7 @@ bool ros::record::Recorder::openFile(const std::string& file_name, bool random_a
   if (store_index_ && random_access)
     record_file_.open(file_name.c_str(), std::ios::in | std::ios::out | std::ios::binary);
   else
-    record_file_.open(file_name.c_str(), std::ios::out | std::ios::binary | std::ios::app);
+    record_file_.open(file_name.c_str(), std::ios::out | std::ios::binary);
 
   if (record_file_.fail())
   {

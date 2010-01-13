@@ -29,7 +29,9 @@ rosbuild_download_test_data(http://pr.willowgarage.com/data/test_rosrecord/hello
 rosbuild_add_pyunit(test/test_rosrecord_py.py)
 rosbuild_add_rostest(test/rename_test.xml)
 
+rosbuild_add_boost_directories()
 rosbuild_add_gtest(test/test_recorder_player test/test_recorder_player.cpp)
+rosbuild_link_boost(test/test_recorder_player system)
 
 # Remove test until we resolve details of making them pass deterministically
 rosbuild_add_rostest_future(test/random_pub_sub.xml)

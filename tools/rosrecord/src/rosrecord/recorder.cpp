@@ -302,13 +302,13 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     }
 
     // Serialize the message into the message buffer
-    if (message_buf_size_ < msg->__serialized_length)
+    if (message_buf_size_ < msg->serializationLength())
     {
       if (message_buf_size_ == 0)
-        message_buf_size_ = msg->__serialized_length;
+        message_buf_size_ = msg->serializationLength();
       else
       {
-        while (message_buf_size_ < msg->__serialized_length)
+        while (message_buf_size_ < msg->serializationLength())
           message_buf_size_ *= 2;
       }
       message_buf_ = (unsigned char*)realloc(message_buf_, message_buf_size_);
@@ -324,7 +324,7 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     header[TYPE_FIELD_NAME]  = msg_info.datatype;
     header[SEC_FIELD_NAME]   = std::string((char*)&time.sec, 4);
     header[NSEC_FIELD_NAME]  = std::string((char*)&time.nsec, 4);
-    writeRecord(header, (char*)message_buf_, msg->__serialized_length);
+    writeRecord(header, (char*)message_buf_, msg->serializationLength());
     if (record_file_.fail())
     {
       ROS_FATAL("rosrecord::Record: could not write to file.  Check permissions and diskspace\n");

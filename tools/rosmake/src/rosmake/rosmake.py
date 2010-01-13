@@ -459,6 +459,8 @@ class RosMakeAll:
                           action="store", help="where to output results")
         parser.add_option("--pre-clean", dest="pre_clean",
                           action="store_true", help="run make clean first")
+        parser.add_option("--bootstrap", dest="bootstrap", default=False,
+                          action="store_true", help="Do the bootstrap packages even if there are no arguments")
         parser.add_option("--disable-logging", dest="logging_enabled", default=True,
                           action="store_false", help="turn off all logs")
         parser.add_option("--target", dest="target",
@@ -586,7 +588,7 @@ class RosMakeAll:
         self.print_all("Expanded args %s to:\n%s"%(packages, self.specified_packages))
         if self.rejected_packages:
             self.print_all("WARNING: The following args could not be parsed as stacks or packages: %s"%self.rejected_packages)
-        if len(self.specified_packages) == 0:
+        if len(self.specified_packages) == 0 and options.bootstrap == False:
             self.print_all("ERROR: No arguments could be parsed into valid package or stack names.")
             return False
 
@@ -610,10 +612,11 @@ class RosMakeAll:
             
         required_packages = self.specified_packages[:]
         # these packages are not in the dependency tree but are needed they only cost 0.01 seconds to build
-        if "paramiko" not in self.specified_packages:
-            required_packages.append("paramiko")
-        if "pycrypto" not in self.specified_packages:
-            required_packages.append("pycrypto")
+        always_build = ["paramiko", "pycrypto", "rosout", "rostest"]
+        for p in always_build:
+            if p not in self.specified_packages:
+                required_packages.append(p)
+
     
         #generate the list of packages necessary to build(in order of dependencies)
         counter = 0

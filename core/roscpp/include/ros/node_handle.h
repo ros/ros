@@ -910,202 +910,121 @@ if (handle)
   void setParam(const std::string& key, bool b) const;
 
   /** \brief Get a string value from the parameter server.
-	 *
-	 * \param key The key to be used in the parameter server's dictionary
-	 * \param[out] s Storage for the retrieved value.
-	 *
-	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-	 */
-	bool getParam(const std::string& key, std::string& s) const;
-	/** \brief Get a double value from the parameter server.
-	 *
-	 * \param key The key to be used in the parameter server's dictionary
-	 * \param[out] d Storage for the retrieved value.
-	 *
-	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-	 */
-	bool getParam(const std::string& key, double& d) const;
-	/** \brief Get a integer value from the parameter server.
-	 *
-	 * \param key The key to be used in the parameter server's dictionary
-	 * \param[out] i Storage for the retrieved value.
-	 *
-	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-	 */
-	bool getParam(const std::string& key, int& i) const;
-	/** \brief Get a boolean value from the parameter server.
-	 *
-	 * \param key The key to be used in the parameter server's dictionary
-	 * \param[out] b Storage for the retrieved value.
-	 *
-	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-	 */
-	bool getParam(const std::string& key, bool& b) const;
-	/** \brief Get an arbitrary XML/RPC value from the parameter server.
-	 *
-	 * \param key The key to be used in the parameter server's dictionary
-	 * \param[out] v Storage for the retrieved value.
-	 *
-	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-	 */
-	bool getParam(const std::string& key, XmlRpc::XmlRpcValue& v) const;
-
-	/** \brief Get a string value from the parameter server, with local caching
-	 *
-	 * This method will cache parameters locally, and subscribe for updates from
-	 * the parameter server.  Once the parameter is retrieved for the first time
-	 * no subsequent getCached() calls with the same key will query the master --
-	 * they will instead look up in the local cache.
-	 *
-	 * \param key The key to be used in the parameter server's dictionary
-	 * \param[out] s Storage for the retrieved value.
-	 *
-	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-	 */
-	bool getParamCached(const std::string& key, std::string& s) const;
-	/** \brief Get a double value from the parameter server, with local caching
-	 *
-	 * This method will cache parameters locally, and subscribe for updates from
-	 * the parameter server.  Once the parameter is retrieved for the first time
-	 * no subsequent getCached() calls with the same key will query the master --
-	 * they will instead look up in the local cache.
-	 *
-	 * \param key The key to be used in the parameter server's dictionary
-	 * \param[out] d Storage for the retrieved value.
-	 *
-	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-	 */
-	bool getParamCached(const std::string& key, double& d) const;
-	/** \brief Get a integer value from the parameter server, with local caching
-	 *
-	 * This method will cache parameters locally, and subscribe for updates from
-	 * the parameter server.  Once the parameter is retrieved for the first time
-	 * no subsequent getCached() calls with the same key will query the master --
-	 * they will instead look up in the local cache.
-	 *
-	 * \param key The key to be used in the parameter server's dictionary
-	 * \param[out] i Storage for the retrieved value.
-	 *
-	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-	 */
-	bool getParamCached(const std::string& key, int& i) const;
-	/** \brief Get a boolean value from the parameter server, with local caching
-	 *
-	 * This method will cache parameters locally, and subscribe for updates from
-	 * the parameter server.  Once the parameter is retrieved for the first time
-	 * no subsequent getCached() calls with the same key will query the master --
-	 * they will instead look up in the local cache.
-	 *
-	 * \param key The key to be used in the parameter server's dictionary
-	 * \param[out] b Storage for the retrieved value.
-	 *
-	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-	 */
-	bool getParamCached(const std::string& key, bool& b) const;
-	/** \brief Get an arbitrary XML/RPC value from the parameter server, with local caching
-	 *
-	 * This method will cache parameters locally, and subscribe for updates from
-	 * the parameter server.  Once the parameter is retrieved for the first time
-	 * no subsequent getCached() calls with the same key will query the master --
-	 * they will instead look up in the local cache.
-	 *
-	 * \param key The key to be used in the parameter server's dictionary
-	 * \param[out] v Storage for the retrieved value.
-	 *
-	 * \return true if the parameter value was retrieved, false otherwise
-	 * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-	 */
-	bool getParamCached(const std::string& key, XmlRpc::XmlRpcValue& v) const;
-
-  /** \brief Get a string value from the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
    * \param[out] s Storage for the retrieved value.
-   * \param use_cache Determines whether or not we will cache and subscribe
-   * to updates for this parameter.  If use_cache is true and we don't have
-   * this parameter cached, we will subscribe to updates for this parameter
-   * from the parameter server and cache the value for fast access.
-   * If use_cache is false, we always hit the parameter server to request
-   * the value.
    *
    * \return true if the parameter value was retrieved, false otherwise
    * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-   * \deprecated in favor of getParamCached()
    */
-  ROSCPP_DEPRECATED bool getParam(const std::string& key, std::string& s, bool use_cache) const;
+  bool getParam(const std::string& key, std::string& s) const;
   /** \brief Get a double value from the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
    * \param[out] d Storage for the retrieved value.
-   * \param use_cache Determines whether or not we will cache and subscribe
-   * to updates for this parameter.  If use_cache is true and we don't have
-   * this parameter cached, we will subscribe to updates for this parameter
-   * from the parameter server and cache the value for fast access.
-   * If use_cache is false, we always hit the parameter server to request
-   * the value.
    *
    * \return true if the parameter value was retrieved, false otherwise
    * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-   * \deprecated in favor of getParamCached()
    */
-  ROSCPP_DEPRECATED bool getParam(const std::string& key, double& d, bool use_cache) const;
+  bool getParam(const std::string& key, double& d) const;
   /** \brief Get a integer value from the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
    * \param[out] i Storage for the retrieved value.
-   * \param use_cache Determines whether or not we will cache and subscribe
-   * to updates for this parameter.  If use_cache is true and we don't have
-   * this parameter cached, we will subscribe to updates for this parameter
-   * from the parameter server and cache the value for fast access.
-   * If use_cache is false, we always hit the parameter server to request
-   * the value.
    *
    * \return true if the parameter value was retrieved, false otherwise
    * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-   * \deprecated in favor of getParamCached()
    */
-  ROSCPP_DEPRECATED bool getParam(const std::string& key, int& i, bool use_cache) const;
+  bool getParam(const std::string& key, int& i) const;
   /** \brief Get a boolean value from the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
    * \param[out] b Storage for the retrieved value.
-   * \param use_cache Determines whether or not we will cache and subscribe
-   * to updates for this parameter.  If use_cache is true and we don't have
-   * this parameter cached, we will subscribe to updates for this parameter
-   * from the parameter server and cache the value for fast access.
-   * If use_cache is false, we always hit the parameter server to request
-   * the value.
    *
    * \return true if the parameter value was retrieved, false otherwise
    * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-   * \deprecated in favor of getParamCached()
    */
-  ROSCPP_DEPRECATED bool getParam(const std::string& key, bool& b, bool use_cache) const;
+  bool getParam(const std::string& key, bool& b) const;
   /** \brief Get an arbitrary XML/RPC value from the parameter server.
    *
    * \param key The key to be used in the parameter server's dictionary
    * \param[out] v Storage for the retrieved value.
-   * \param use_cache Determines whether or not we will cache and subscribe
-   * to updates for this parameter.  If use_cache is true and we don't have
-   * this parameter cached, we will subscribe to updates for this parameter
-   * from the parameter server and cache the value for fast access.
-   * If use_cache is false, we always hit the parameter server to request
-   * the value.
    *
    * \return true if the parameter value was retrieved, false otherwise
    * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
-   * \deprecated in favor of getParamCached()
    */
-  ROSCPP_DEPRECATED bool getParam(const std::string& key, XmlRpc::XmlRpcValue& v, bool use_cache) const;
+  bool getParam(const std::string& key, XmlRpc::XmlRpcValue& v) const;
+
+  /** \brief Get a string value from the parameter server, with local caching
+   *
+   * This method will cache parameters locally, and subscribe for updates from
+   * the parameter server.  Once the parameter is retrieved for the first time
+   * no subsequent getCached() calls with the same key will query the master --
+   * they will instead look up in the local cache.
+   *
+   * \param key The key to be used in the parameter server's dictionary
+   * \param[out] s Storage for the retrieved value.
+   *
+   * \return true if the parameter value was retrieved, false otherwise
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
+   */
+  bool getParamCached(const std::string& key, std::string& s) const;
+  /** \brief Get a double value from the parameter server, with local caching
+   *
+   * This method will cache parameters locally, and subscribe for updates from
+   * the parameter server.  Once the parameter is retrieved for the first time
+   * no subsequent getCached() calls with the same key will query the master --
+   * they will instead look up in the local cache.
+   *
+   * \param key The key to be used in the parameter server's dictionary
+   * \param[out] d Storage for the retrieved value.
+   *
+   * \return true if the parameter value was retrieved, false otherwise
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
+   */
+  bool getParamCached(const std::string& key, double& d) const;
+  /** \brief Get a integer value from the parameter server, with local caching
+   *
+   * This method will cache parameters locally, and subscribe for updates from
+   * the parameter server.  Once the parameter is retrieved for the first time
+   * no subsequent getCached() calls with the same key will query the master --
+   * they will instead look up in the local cache.
+   *
+   * \param key The key to be used in the parameter server's dictionary
+   * \param[out] i Storage for the retrieved value.
+   *
+   * \return true if the parameter value was retrieved, false otherwise
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
+   */
+  bool getParamCached(const std::string& key, int& i) const;
+  /** \brief Get a boolean value from the parameter server, with local caching
+   *
+   * This method will cache parameters locally, and subscribe for updates from
+   * the parameter server.  Once the parameter is retrieved for the first time
+   * no subsequent getCached() calls with the same key will query the master --
+   * they will instead look up in the local cache.
+   *
+   * \param key The key to be used in the parameter server's dictionary
+   * \param[out] b Storage for the retrieved value.
+   *
+   * \return true if the parameter value was retrieved, false otherwise
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
+   */
+  bool getParamCached(const std::string& key, bool& b) const;
+  /** \brief Get an arbitrary XML/RPC value from the parameter server, with local caching
+   *
+   * This method will cache parameters locally, and subscribe for updates from
+   * the parameter server.  Once the parameter is retrieved for the first time
+   * no subsequent getCached() calls with the same key will query the master --
+   * they will instead look up in the local cache.
+   *
+   * \param key The key to be used in the parameter server's dictionary
+   * \param[out] v Storage for the retrieved value.
+   *
+   * \return true if the parameter value was retrieved, false otherwise
+   * \throws InvalidNameException If the parameter key begins with a tilde, or is an otherwise invalid graph resource name
+   */
+  bool getParamCached(const std::string& key, XmlRpc::XmlRpcValue& v) const;
 
   /** \brief Check whether a parameter exists on the parameter server.
    *

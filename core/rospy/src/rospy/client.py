@@ -175,9 +175,9 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     @raise ROSInitException: if initialization/registration fails
     @raise ValueError: if parameters are invalid (e.g. name contains a namespace or is otherwise illegal)
     """
-    # TODO use roslib.names.is_legal_name to really validate
-    if rospy.names.SEP in name:
-        raise ValueError("name cannot contain a namespace")
+    if not roslib.names.is_legal_base_name(name):
+        import warnings
+        warnings.warn("'%s' is not a legal ROS base name. This may cause problems with other ROS tools"%name, stacklevel=2)
     
     global _init_node_args
 
@@ -476,6 +476,11 @@ def set_param(param_name, param_value):
     @type  param_value: XmlRpcLegalValue
     @raise ROSException: if parameter server reports an error
     """
+    # #2202
+    if not roslib.names.is_legal_name(param_name):
+        import warnings
+        warnings.warn("'%s' is not a legal ROS graph resource name. This may cause problems with other ROS tools"%param_name, stacklevel=2)
+
     _init_param_server()
     _param_server[param_name] = param_value #MasterProxy does all the magic for us
 

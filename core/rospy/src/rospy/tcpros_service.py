@@ -425,6 +425,15 @@ class Service(_Service):
         @type  buff_size: int
         """
         super(Service, self).__init__(name, service_class)
+
+        if not name or not isinstance(name, basestring):
+            raise ValueError("service name is not a non-empty string")
+        # #2202
+        if not roslib.names.is_legal_name(name):
+            import warnings
+            warnings.warn("'%s' is not a legal ROS graph resource name. This may cause problems with other ROS tools"%name, stacklevel=2)
+
+        
         self.handler = handler
         self.registered = False
         self.seq = 0

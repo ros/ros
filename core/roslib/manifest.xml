@@ -1,12 +1,12 @@
 <package>
-  <description brief="ROS library">
+  <description brief="ROS base library">
 
-      Base dependencies and support libraries for ROS. 
+      Base dependencies and support libraries for ROS. roslib contains many of the common data structures and tools that are shared across ROS client library implementations. 
 
   </description>
-  <author>Ken Conley/kwc@willowgarage.com, Morgan Quigley/mquigley@cs.stanford.edu</author>
+  <author>Ken Conley/kwc@willowgarage.com, Morgan Quigley/mquigley@cs.stanford.edu, Josh Faust/jfaust@willowgarage.com</author>
   <license>BSD</license>
-  <review status="API cleared" notes=""/>
+  <review status="Doc reviewed" notes="2010/01/12"/>
   <url>http://ros.org/wiki/roslib</url>
   <export>
     <cpp cflags="-I${prefix}/msg/cpp -I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lroslib"/>

@@ -163,14 +163,14 @@ class Fedora(OSBase):
     """
     def check_presence(self):
         try:
-            filename = "/etc/redhat_release"
+            filename = "/etc/redhat-release"
             if os.path.exists(filename):
                 with open(filename, 'r') as fh:                
                     os_list = fh.read().split()
                 if os_list and os_list[0] == "Fedora" and os_list[1] == "release":
                     return True
         except:
-            print "Fedora failed to detect OS"
+            pass
         return False
 
     def get_version(self):
@@ -199,14 +199,14 @@ class Rhel(Fedora):
     """
     def check_presence(self):
         try:
-            filename = "/etc/redhat_release"
+            filename = "/etc/redhat-release"
             if os.path.exists(filename):
                 with open(filename, 'r') as fh:                
                     os_list = fh.read().split()
                 if os_list and os_list[2] == "Enterprise":
                     return True
         except:
-            print "Rhel failed to detect OS"
+            pass
         return False
 
     def get_version(self):

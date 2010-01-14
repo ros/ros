@@ -18,7 +18,7 @@ CMAKE_FLAGS= -Wdev -DCMAKE_TOOLCHAIN_FILE=../core/rosbuild/rostoolchain.cmake $(
 
 # The all target does the heavy lifting, creating the build directory and
 # invoking CMake
-all_dist: core_tools
+all_dist: minimal
 	@mkdir -p build
 	-mkdir -p bin
 	cd build && cmake $(CMAKE_FLAGS) ..

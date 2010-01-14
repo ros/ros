@@ -25,10 +25,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from rosmake import RosMakeAll
-
 """
 Implements the 'rosmake' command-line tool via the L{RosMakeAll}
 class.  This class is for internal-use only within ROS tools. The API
 is very likely to change in future releases and is not stable.
 """
+
+from rosmake import RosMakeAll
+

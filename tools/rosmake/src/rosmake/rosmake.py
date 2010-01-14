@@ -592,18 +592,6 @@ class RosMakeAll:
             self.print_all("ERROR: No arguments could be parsed into valid package or stack names.")
             return False
 
-        # make sure all dependencies are satisfied and if not warn
-        buildable_packages = []
-        for p in self.specified_packages:
-            (buildable, error, str) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, [])
-            if buildable: 
-                buildable_packages.append(p)
-
-        if options.rosdep_install:
-            self.rosdep_install_result = self.install_rosdeps(buildable_packages, options.rosdep_yes)
-        elif not options.rosdep_disabled:
-            self.rosdep_check_result = self.check_rosdep(buildable_packages)
-
         if options.unmark_installed:
             for p in self.specified_packages:
                 if self.flag_tracker.remove_nobuild(p):
@@ -616,6 +604,18 @@ class RosMakeAll:
         for p in always_build:
             if p not in self.specified_packages:
                 required_packages.append(p)
+
+        # make sure all dependencies are satisfied and if not warn
+        buildable_packages = []
+        for p in required_packages:
+            (buildable, error, str) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, [])
+            if buildable: 
+                buildable_packages.append(p)
+
+        if options.rosdep_install:
+            self.rosdep_install_result = self.install_rosdeps(buildable_packages, options.rosdep_yes)
+        elif not options.rosdep_disabled:
+            self.rosdep_check_result = self.check_rosdep(buildable_packages)
 
     
         #generate the list of packages necessary to build(in order of dependencies)

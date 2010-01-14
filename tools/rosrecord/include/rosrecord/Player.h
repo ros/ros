@@ -587,6 +587,8 @@ protected:
       memcpy(&next_msg_dur.nsec,fitr->second.data(),4);
 
       next_msg_name_ = topic_name;
+
+
       // If this is the first time that we've encountered this topic, we need
       // to create a PlayerHelper, which inherits from ros::Message and is
       // used to publish messages from this topic.
@@ -624,7 +626,18 @@ protected:
                             0, UINT_MAX, true)) == fields.end())
         return false;
       message_definition = fitr->second;
-      
+
+      // If this is the first time that we've encountered this topic, we need
+      // to create a PlayerHelper, which inherits from ros::Message and is
+      // used to publish messages from this topic.
+      if (topics_.find(topic_name) == topics_.end())
+      {
+        PlayerHelper* l = new PlayerHelper(this, topic_name,
+                                           md5sum, datatype,
+                                           message_definition);
+        topics_[topic_name] = l;
+      }      
+
       return true;
 
 
@@ -640,7 +653,6 @@ protected:
                 OP_FIELD_NAME.c_str(), op);
       return false;      
     }
-
 
     return false;
   }

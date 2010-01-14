@@ -1,5 +1,7 @@
 
-minimal:
+minimal:core_tools
+
+core_tools:
 	rosmake --rosdep-install --bootstrap
 	@echo "You have built the minimal set of ROS tools."
 	@echo "If you want to make all ROS tools type 'rosmake ros'."

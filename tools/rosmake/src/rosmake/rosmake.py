@@ -90,7 +90,10 @@ class RosMakeAll:
         
     def check_rosdep(self, packages):
         self.print_all("Checking rosdeps compliance for system dependencies %s.  This may take a few seconds."%(', '.join(packages)))
-        r = rosdep.core.Rosdep(packages, robust=True)
+        try:
+            r = rosdep.core.Rosdep(packages, robust=True)
+        except roslib.os_detect.OSDetectException, ex:
+            return "%s"%ex
         (output, scripts) = r.check()
         if len(scripts) > 0:
             self.print_all("Rosdep couldn't check scripts: %s"%scripts)
@@ -103,7 +106,10 @@ class RosMakeAll:
 
     def install_rosdeps(self, packages, default_yes):
         self.print_all("Generating Install Script using rosdep then executing. This may take a minute, you will be prompted for permissions. . .")
-        r = rosdep.core.Rosdep(packages, robust=True)
+        try:
+            r = rosdep.core.Rosdep(packages, robust=True)
+        except roslib.os_detect.OSDetectException, ex:
+            return "%s"%ex
         try:
             r.install(include_duplicates=False, default_yes=default_yes);
             self.print_all("Rosdep successfully installed all system dependencies")
@@ -616,7 +622,6 @@ class RosMakeAll:
             self.rosdep_install_result = self.install_rosdeps(buildable_packages, options.rosdep_yes)
         elif not options.rosdep_disabled:
             self.rosdep_check_result = self.check_rosdep(buildable_packages)
-
     
         #generate the list of packages necessary to build(in order of dependencies)
         counter = 0

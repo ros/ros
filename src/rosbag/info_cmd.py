@@ -43,7 +43,7 @@ def info_cmd(argv):
                           description="Summarize the contents of a bag file.")
 
     parser.add_option("--try-future-version", dest="try_future", default=False, action="store_true",
-                      help="Still try to open a bag file, even if the version number is not known to the player.")
+                      help="still try to open a bag file, even if the version number is not known to the player")
 
     (options, args) = parser.parse_args(argv)
 

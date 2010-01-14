@@ -45,7 +45,7 @@ def fix_cmd(argv):
     parser = OptionParser(usage="rosbag fix INBAG OUTBAG [EXTRARULES1 EXTRARULES2 ...]")
 
     parser.add_option("-n","--noplugins",action="store_false",dest="noplugins",
-                      help = "Do not load rulefiles via plugins.")
+                      help = "do not load rulefiles via plugins")
 
     (options, args) = parser.parse_args(argv)
   

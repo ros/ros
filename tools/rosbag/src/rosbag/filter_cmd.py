@@ -62,7 +62,7 @@ The following variables are available:
  * t: time of message (t.secs, t.nsecs)
 """)  
     parser.add_option('--print', dest="verbose_pattern", default=None,
-                      metavar="PRINT-EXPRESSION", help="Python expression to print for verbose debugging. Uses same variables as filter-expression.")
+                      metavar="PRINT-EXPRESSION", help="Python expression to print for verbose debugging. Uses same variables as filter-expression")
 
     options, args = parser.parse_args(argv)
     if len(args) == 0:

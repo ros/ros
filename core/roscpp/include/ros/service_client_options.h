@@ -34,7 +34,7 @@ namespace ros
 {
 
 /**
- * \brief Encapsulates all options available for creating a service client
+ * \brief Encapsulates all options available for creating a ServiceClient
  */
 struct ServiceClientOptions
 {

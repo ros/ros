@@ -35,7 +35,7 @@ namespace ros
 {
 
 /**
- * \brief Encapsulates all options available for advertising a service
+ * \brief Encapsulates all options available for creating a ServiceServer
  */
 struct AdvertiseServiceOptions
 {

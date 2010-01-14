@@ -34,7 +34,7 @@ namespace ros
 {
 
 /**
- * \brief Encapsulates all options available for advertising on a topic
+ * \brief Encapsulates all options available for creating a Publisher
  */
 struct AdvertiseOptions
 {

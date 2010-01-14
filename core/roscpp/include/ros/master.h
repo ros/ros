@@ -78,6 +78,9 @@ const std::string& getURI();
  */
 bool check();
 
+/**
+ * \brief Contains information retrieved from the master about a topic
+ */
 struct TopicInfo
 {
   TopicInfo() {}
@@ -86,9 +89,9 @@ struct TopicInfo
   , datatype(_datatype)
   , md5sum(_md5sum)
   {}
-  std::string name;
-  std::string datatype;
-  std::string md5sum;
+  std::string name;        ///< Name of the topic
+  std::string datatype;    ///< Datatype of the topic
+  std::string md5sum;      ///< md5sum of the topic
 };
 typedef std::vector<TopicInfo> V_TopicInfo;
 

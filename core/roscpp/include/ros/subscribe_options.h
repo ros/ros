@@ -35,6 +35,9 @@
 namespace ros
 {
 
+/**
+ * \brief Encapsulates all options available for creating a Subscriber
+ */
 struct SubscribeOptions
 {
   /**

@@ -56,6 +56,8 @@ namespace ros
 class NodeHandleBackingCollection;
 
 /**
+ * \brief roscpp's interface for creating subscribers, publishers, etc.
+ *
  * This class is used for writing nodes.  It provides a RAII interface to this process' node, in that
  * when the first NodeHandle is created, it instantiates everything necessary for this node, and when the last NodeHandle
  * goes out of scope it shuts down the node.

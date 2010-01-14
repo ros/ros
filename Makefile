@@ -1,21 +1,13 @@
 
-minimal: core_tools
-	rosmake gtest pycrypto paramiko roslaunch rosout rostest
+minimal:
+	rosmake --rosdep-install --bootstrap
 	@echo "You have built the minimal set of ROS tools."
 	@echo "If you want to make all ROS tools type 'rosmake ros'."
 	@echo "Or you can rosmake any other package in your ROS_PACKAGE_PATH."
 
-# enough for rosmake
-core_tools:
-	@if [ ! $(ROS_ROOT) ]; then echo "Please set ROS_ROOT first"; false; fi	
-	cd $(ROS_ROOT)/tools/rospack && make
-	@if test -z `which rospack`; then echo "Please add ROS_ROOT/bin to PATH"; false; fi
-
-
 clean:
 	@if test -z `which rospack`; then echo "It appears that you have already done a 'make clean' because rospack is gone."; false; fi
 	rosmake -r --target=clean ros
-	cd $(ROS_ROOT)/tools/rospack && make clean
 
 ## include $(shell rospack find mk)/cmake_stack.mk
 ### copied below since it can't be found before rospack is built 

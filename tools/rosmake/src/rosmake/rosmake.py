@@ -54,6 +54,10 @@ from optparse import OptionParser
 import rosdep
 
 def make_command():
+    """
+    @return: name of 'make' command
+    @rtype: str
+    """
     return os.environ.get("MAKE", "make")
 
 
@@ -81,6 +85,10 @@ class RosMakeAll:
 
 
     def num_packages_built(self):
+        """
+        @return: number of packages that were built
+        @rtype: int
+        """
         return len(self.result[argument].keys())
 
     def get_path(self, package):
@@ -105,6 +113,13 @@ class RosMakeAll:
             return output
 
     def install_rosdeps(self, packages, default_yes):
+        """
+        Install all rosdeps of packages.
+        @param packages: list of package name
+        @type  packages: [str]
+        @param default_yes: if True, assume 'yes' to all package manager prompts.
+        @type  default_yes: bool
+        """
         self.print_all("Generating Install Script using rosdep then executing. This may take a minute, you will be prompted for permissions. . .")
         try:
             r = rosdep.core.Rosdep(packages, robust=True)
@@ -162,7 +177,12 @@ class RosMakeAll:
         build_passed = build_queue.succeeded() and all_pkgs_passed
         return build_passed
 
-    def build_package(self, package, argument=None):
+    def _build_package(self, package, argument=None):
+        """
+        Lower-level routine for building a package. Handles execution of actual build command.
+        @param package: package name
+        @type  package: str
+        """
         local_env = os.environ.copy()
         if self.ros_parallel_jobs > 0:
             local_env['ROS_PARALLEL_JOBS'] = "-j%d" % self.ros_parallel_jobs
@@ -178,6 +198,11 @@ class RosMakeAll:
         return (command_line.returncode, pstd_out)
 
     def build(self, p, argument = None, robust_build=False):
+        """
+        Build package
+        @param p: package name
+        @type  p: str
+        """
         return_string = ""
         try:
             if p == "rospack":
@@ -195,7 +220,7 @@ class RosMakeAll:
             (buildable, error, why) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, failed_packages)
             if buildable or self.robust_build:
                 start_time = time.time()
-                (returncode, pstd_out) = self.build_package(p, argument)
+                (returncode, pstd_out) = self._build_package(p, argument)
                 self.profile[argument][p] = time.time() - start_time
                 self.output[argument][p] = pstd_out
                 if argument:
@@ -246,7 +271,7 @@ class RosMakeAll:
 
     def output_to_file(self, package, log_type, stdout, always_print= False):
         if not self.logging_enabled:
-          return
+            return
         package_log_dir = os.path.join(self.log_dir, package)
 
         std_out_filename = os.path.join(package_log_dir, log_type + "_output.log")
@@ -262,7 +287,7 @@ class RosMakeAll:
 
     def generate_summary_output(self, log_dir):
         if not self.logging_enabled:
-          return
+            return
 
         self.print_all("Summary output to directory")
         self.print_all("%s"%self.log_dir)
@@ -363,19 +388,19 @@ class RosMakeAll:
         return output
 
     def print_all(self, s, newline = True, thread_name=None):
-      if thread_name == None:
-        if newline:
-          print "[ rosmake ]", s
+        if thread_name == None:
+          if newline:
+              print "[ rosmake ]", s
+          else:
+              print "[ rosmake ]", s,
+              sys.stdout.flush()
         else:
-          print "[ rosmake ]", s,
-          sys.stdout.flush()
-      else:
-        if newline:
-          print "[rosmake-%s]"%thread_name, s
-        else:
-          print "[rosmake-%s]"%thread_name, s
-          sys.stdout.flush()
-
+          if newline:
+              print "[rosmake-%s]"%thread_name, s
+          else:
+              print "[rosmake-%s]"%thread_name, s
+              sys.stdout.flush()
+  
     def print_verbose(self, s, thread_name=None):
         if self.verbose or self.full_verbose:
           if thread_name:
@@ -388,20 +413,20 @@ class RosMakeAll:
             print "[ rosmake ] ", s
 
     def print_tail(self, s, tail_lines=40):
-      lines = s.splitlines()
-      if self.full_verbose:
-          tail_lines = len(lines)
-
-      num_lines = min(len(lines), tail_lines)
-      if num_lines == tail_lines:
-        print "[ rosmake ] Last %d lines"%num_lines
-      else:
-        print "[ rosmake ] All %d lines"%num_lines
-      print "{" + "-"*79
-      for l in xrange(-num_lines, -1):
-        print "  %s"%lines[l]
-      print "-"*79 + "}"
-
+        lines = s.splitlines()
+        if self.full_verbose:
+            tail_lines = len(lines)
+  
+        num_lines = min(len(lines), tail_lines)
+        if num_lines == tail_lines:
+            print "[ rosmake ] Last %d lines"%num_lines
+        else:
+            print "[ rosmake ] All %d lines"%num_lines
+        print "{" + "-"*79
+        for l in xrange(-num_lines, -1):
+            print "  %s"%lines[l]
+        print "-"*79 + "}"
+  
     def assert_prebuild_built(self, ros_package_path_list):
         ret_val = True
         for pkg in ros_package_path_list:
@@ -432,10 +457,17 @@ class RosMakeAll:
 
 
     def is_rosout_built(self):
+        """
+        @return: True if rosout package has been built
+        @rtype: bool
+        """
         return os.path.exists(os.path.join(roslib.packages.get_pkg_dir("rosout"), "rosout"))
             
 
     def main(self):
+        """
+        main command-line entrypoint
+        """
         parser = OptionParser(usage="usage: %prog [options] [PACKAGE]...", prog='rosmake')
         parser.add_option("--test-only", dest="test_only", default=False,
                           action="store_true", help="only run tests")

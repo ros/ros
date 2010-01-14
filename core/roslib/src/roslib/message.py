@@ -382,10 +382,10 @@ def _fill_val(msg, f, v, keys, prefix):
             #TODO: this is a lossy conversion
             if isinstance(def_val, roslib.rostime.Time):
                 setattr(msg, f, roslib.rostime.Time.from_sec(v/1e9))
-            elif isinstance(def_val, roslib.rostime.Time):                    
+            elif isinstance(def_val, roslib.rostime.Duration):                    
                 setattr(msg, f, roslib.rostime.Duration.from_sec(v/1e9))
             else:
-                raise ROSMessageException("Cannot time values of type [%s]"%(type(def_val)))
+                raise ROSMessageException("Cannot create time values of type [%s]"%(type(def_val)))
         else:
             _fill_message_args(def_val, v, keys, prefix=(prefix+f+'.'))
     elif type(def_val) == list:

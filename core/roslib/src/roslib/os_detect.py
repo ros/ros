@@ -398,6 +398,8 @@ class OSDetect:
                 self._os_version = os_class.get_version()
                 self._os_class = os_class
                 return True
+        attempted_oss = [o.get_name() for o in self._os_list]
+        raise OSDetectException("Could not detect OS, tried %s"%attempted_oss)
         return False
 
     def get_os(self):

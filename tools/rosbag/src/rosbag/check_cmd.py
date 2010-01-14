@@ -54,7 +54,7 @@ def check_cmd(argv):
     all_rules = []
 
     if len(args) == 0:
-        parser.error("Must specify a bag to check.")
+        parser.error("Must specify a bag file to check.")
     else:
       if options.append and options.rulefile is None:
           parser.error("Cannot specify -a without also specifying -g.")

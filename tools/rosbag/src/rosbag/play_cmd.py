@@ -62,13 +62,13 @@ def play_cmd(argv):
     parser.add_option("-s", "--start",      dest="sleep",      default=0.0, type='float', action="store",
                       help="start SEC seconds into the bag files", metavar="SEC")
     parser.add_option("--try-future-version",      dest="try_future", default=False, action="store_true",
-                      help="Still try to open a bagfile, even if the version number is not known to the player.")
+                      help="Still try to open a bag file, even if the version number is not known to the player.")
 
 
     (options, args) = parser.parse_args(argv)
 
     if len(args) == 0:
-        parser.error("You must specify at least 1 bagfile to play back.")
+        parser.error("You must specify at least 1 bag file to play back.")
 
     cmd = ["rosplay"]
 

@@ -51,10 +51,10 @@ def fix_cmd(argv):
   
     if len(args) >= 2:
         if args[1].split('.')[-1] == "bmr":
-            parser.error("Second argument should be a bag, not a rule file.")
+            parser.error("Second argument should be a bag file, not a rule file.")
 
         if args[1].split('.')[-1] != "bag":
-            parser.error("Output file must be a bag (not a .gz or .bz2)")
+            parser.error("Output file must be a .bag file (not a .gz or .bz2)")
 
         mm = rosbagmigration.MessageMigrator(args[2:], plugins=options.noplugins)
 
@@ -63,4 +63,4 @@ def fix_cmd(argv):
         else:
             print "Bag could not be migrated"
     else:
-        parser.error("Must pass in 2 bagfiles")
+        parser.error("Must pass in 2 bag files")

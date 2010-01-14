@@ -65,7 +65,7 @@ def record_cmd(argv):
     (options, args) = parser.parse_args(argv)
 
     if (len(args) == 0 and not options.all):
-        parser.error("You must specify a topicname or else use the '-a' option.")
+        parser.error("You must specify a topic name or else use the '-a' option.")
 
     if (options.prefix is not None and options.name is not None):
         parser.error("Can't set both prefix and name.")

@@ -16,7 +16,7 @@
   </description>
   <author>Morgan Quigley mquigley@cs.stanford.edu, Josh Faust jfaust@willowgarage.com, Brian Gerkey gerkey@willowgarage.com</author>
   <license>BSD</license>
-  <review status="API cleared"/>
+  <review status="Doc reviewed"/>
   <url>http://ros.org/wiki/roscpp</url>
   <depend package="roslang"/>
   <depend package="roslib"/>

@@ -33,6 +33,7 @@
 
 #include "rosrecord/Recorder.h"
 #include "rosrecord/Player.h"
+#include "rosrecord/AnyMsg.h"
 
 void string_handler(std::string name,      // Topic name       
                     std_msgs::String* str, // Message pointer  
@@ -43,6 +44,24 @@ void string_handler(std::string name,      // Topic name
   std_msgs::String* msg_ptr = (std_msgs::String*)(n);
   
   EXPECT_EQ(str->data, msg_ptr->data);
+  EXPECT_EQ(str->__getMD5Sum(), msg_ptr->__getMD5Sum());
+  EXPECT_EQ(str->__getDataType(), msg_ptr->__getDataType());
+  EXPECT_EQ(str->__getMessageDefinition(), msg_ptr->__getMessageDefinition());
+
+}
+
+void any_handler(std::string name,      // Topic name       
+                 ros::Message* any, // Message pointer  
+                 ros::Time t,           // Message timestamp
+                 ros::Time t_shift,     // Shifted time     
+                 void* n)               // Void pointer     
+{
+  std_msgs::String* msg_ptr = (std_msgs::String*)(n);
+
+  EXPECT_EQ(any->__getMD5Sum(), msg_ptr->__getMD5Sum());
+  EXPECT_EQ(any->__getDataType(), msg_ptr->__getDataType());
+  EXPECT_EQ(any->__getMessageDefinition(), msg_ptr->__getMessageDefinition());
+
 }
 
 
@@ -65,6 +84,10 @@ TEST(TestSuite, record_play_ptr)
   player.addHandler<std_msgs::String>(std::string("some_topic"),
                                       &string_handler,
                                       &(*msg_ptr));
+  player.addHandler<AnyMsg>(std::string("some_topic"),
+                                       &any_handler,
+                                       &(*msg_ptr),
+                                       false);
 
   EXPECT_TRUE(player.nextMsg());
   EXPECT_FALSE(player.nextMsg());
@@ -89,6 +112,10 @@ TEST(TestSuite, record_play_ref)
   player.addHandler<std_msgs::String>(std::string("some_topic"),
                                       &string_handler,
                                       &msg);
+  player.addHandler<AnyMsg>(std::string("some_topic"),
+                                       &any_handler,
+                                       &msg,
+                                       false);
 
   EXPECT_TRUE(player.nextMsg());
   EXPECT_FALSE(player.nextMsg());

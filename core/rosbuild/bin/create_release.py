@@ -44,9 +44,9 @@ def load_and_validate_properties():
     """
     name, version, distro_file, distro = load_sys_args()
     # for now, we only work with stacks
-    source_dir = roslib.stacks.get_stack_dir(name)
-    if not source_dir:
-            #TODO: check for app instead
+    try:
+        source_dir = roslib.stacks.get_stack_dir(name)
+    except:
         raise ReleaseException("cannot locate stack [%s]"%name)
 
     check_svn_status(source_dir)

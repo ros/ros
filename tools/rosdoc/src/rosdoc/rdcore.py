@@ -145,10 +145,10 @@ class RosdocContext(object):
                 stack = roslib.stacks.stack_of(package) or ''
                 if stack and stack not in stacks:
                     #print "adding stack [%s] to documentation"%stack
-                    p = roslib.stacks.get_stack_dir(stack)
-                    if p:
+                    try:
+                        p = roslib.stacks.get_stack_dir(stack)
                         stacks[stack] = p
-                    else:
+                    except:
                         print >> sys.stderr, "cannot locate directory of stack [%s]"%stack
                 
             f = os.path.join(path, roslib.manifest.MANIFEST_FILE)

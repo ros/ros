@@ -252,8 +252,9 @@ def _load_stack(ctx, stack):
     try:
         ctx.stack = stack
         ctx.stacks = [stack] + roslib.rospack.rosstack_depends(stack)
-        ctx.stack_dir = roslib.stacks.get_stack_dir(stack)
-        if ctx.stack_dir is None:
+        try:
+            ctx.stack_dir = roslib.stacks.get_stack_dir(stack)
+        except roslib.stacks.InvalidROSStackException:
             raise WtfException("[%s] appears to be a stack, but it's not on your ROS_PACKAGE_PATH"%stack)
     except roslib.stacks.InvalidROSStackException:
         raise WtfException("[%s] appears to be a stack, but it's not on your ROS_PACKAGE_PATH"%stack)

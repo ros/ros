@@ -115,8 +115,9 @@ def get_stack_dir(stack):
     
     @param stack: name of ROS stack to locate on disk
     @type  stack: str
-    @return: directory of stack, or None if stack cannot be located
+    @return: directory of stack.
     @rtype: str
+    @raise InvalidROSStackException: if stack cannot be located.
     """
     
     # it's possible to get incorrect results from this cache
@@ -146,7 +147,10 @@ def get_stack_dir(stack):
         except KeyError:
             pass
     _update_stack_cache() #update cache
-    return _dir_cache.get(stack, None)
+    val = _dir_cache.get(stack, None)
+    if val is None:
+        raise InvalidROSStackException("Cannot location installation of stack %s. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(stack, env[ROS_ROOT], env.get(ROS_PACKAGE_PATH, '')))
+    return val
 
 # rosstack directory cache
 _dir_cache = {}

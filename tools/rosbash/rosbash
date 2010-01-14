@@ -280,7 +280,7 @@ function _roscomplete_search_dir {
     elif [[ $COMP_CWORD == 2 ]]; then
         pkgdir=`_ros_package_find ${COMP_WORDS[1]}`
         if [[ $? == 0 ]]; then
-            opts=`find $pkgdir ${1} ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.*  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+            opts=`find $pkgdir ${1} ! -regex .*/[.].* ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
         else
             opts=""
         fi

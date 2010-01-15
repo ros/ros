@@ -37,6 +37,7 @@
 import logging
 import socket
 import thread
+import threading
 
 from rospy.core import logwarn, logerr, logdebug
 import rospy.exceptions
@@ -208,7 +209,9 @@ class TCPROSHandler(rospy.transport.ProtocolHandler):
             conn = TCPROSTransport(protocol, resolved_name)
             # timeout is really generous. for now just choosing one that is large but not infinite
             conn.connect(dest_addr, dest_port, pub_uri, timeout=60.)
-            thread.start_new_thread(conn.receive_loop, (sub.receive_callback,))
+            t = threading.Thread(name=resolved_name, target=conn.receive_loop, args=(sub.receive_callback,))
+            rospy.core._add_shutdown_thread(t)
+            t.start()
         except rospy.exceptions.TransportInitError, e:
             logerr("unable to create TCPROSSub: %s", e)
             return 0, "Internal error creating inbound TCP connection for [%s]: %s"%(resolved_name, e), -1

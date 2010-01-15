@@ -59,6 +59,11 @@ from rospy.validators import ParameterInvalid
 _logger = logging.getLogger("rospy.core")
 _mlogger = logging.getLogger("rospy.masterslave")
 
+# number of seconds to wait to join on threads. network issue can
+# cause joins to be not terminate gracefully, and it's better to
+# teardown dirty than to hang
+_TIMEOUT_SHUTDOWN_JOIN = 10.
+
 def mloginfo(msg, *args):
     """
     Info-level master log statements. These statements may be printed
@@ -455,7 +460,7 @@ def signal_shutdown(reason):
 
         for t in threads:
             if t.isAlive():
-                t.join()
+                t.join(_TIMEOUT_SHUTDOWN_JOIN)
         del _shutdown_threads[:]
         try:
             time.sleep(0.1) #hack for now until we get rid of all the extra threads

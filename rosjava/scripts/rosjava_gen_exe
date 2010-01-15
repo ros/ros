@@ -13,7 +13,7 @@ cat <<EOF > $3
 
 OS=\`uname -s\`
 if [ "\$OS" == "Darwin" ] ; then
-  DYLD_LIBRARY_PATH=${ROSJAVA_BASE_DIR}/bin java -classpath $1 $2 ${@:4} \$@
+  DYLD_LIBRARY_PATH=${ROSJAVA_BASE_DIR}/bin:$4 java -classpath $1 $2 ${@:5} \$@
 else
   LIBJSIG=\`find \$JAVA_HOME/jre/lib/ -maxdepth 2 -name "libjsig.so"\`
   if [ -z "\$LIBJSIG" ]; then
@@ -21,7 +21,7 @@ else
     exit 1
   fi
 
-  LD_PRELOAD=\$LIBJSIG LD_LIBRARY_PATH=${ROSJAVA_BASE_DIR}/bin java -classpath $1 $2 ${@:4} \$@
+  LD_PRELOAD=\$LIBJSIG LD_LIBRARY_PATH=${ROSJAVA_BASE_DIR}/bin:$4 java -classpath $1 $2 ${@:5} \$@
 fi
 
 

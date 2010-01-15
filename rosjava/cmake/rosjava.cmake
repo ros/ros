@@ -4,6 +4,7 @@ include(FindJava)
 
 set( _java_classpath "" )
 set( _java_runtime_classpath "" )
+set( _jniexe_path "" )
 set( JAVA_OUTPUT_DIR "${PROJECT_SOURCE_DIR}/bin" )
 
 # Add all the jar files under a given directory to the classpath
@@ -15,6 +16,12 @@ macro(add_jar_dir _jardir)
     endforeach(_jar)
 endmacro(add_jar_dir)
 
+# Add all the .jnilib files under a given directory to the classpath
+macro(add_jni_path _cp)
+	if(EXISTS ${_cp})
+		list(APPEND _jniexe_path ${_cp})
+	endif(EXISTS ${_cp})
+endmacro(add_jni_path _cp) 
 
 # Add a jar or directory to java runtime dependencies. 
 macro(add_runtime_classpath _cp)
@@ -92,9 +99,10 @@ endmacro(add_deps_classpath)
 
 macro(rospack_add_java_executable _exe_name _class)
   string(REPLACE ";" ":" _javac_classpath_param "${JAVA_OUTPUT_DIR}:${_java_runtime_classpath}:${rosjava_PACKAGE_PATH}/bin")
+  string(REPLACE ";" ":" _jniexe_path "${_jniexe_path}")
   add_custom_command(
     OUTPUT ${EXECUTABLE_OUTPUT_PATH}/${_exe_name}
-    COMMAND ${rosjava_PACKAGE_PATH}/scripts/rosjava_gen_exe ${_javac_classpath_param} ${_class} ${EXECUTABLE_OUTPUT_PATH}/${_exe_name})
+    COMMAND ${rosjava_PACKAGE_PATH}/scripts/rosjava_gen_exe ${_javac_classpath_param} ${_class} ${EXECUTABLE_OUTPUT_PATH}/${_exe_name} ${_jniexe_path} )
   set(_targetname ${EXECUTABLE_OUTPUT_PATH}/${_exe_name})
   string(REPLACE "/" "_" _targetname ${_targetname})
   add_custom_target(${_targetname} ALL DEPENDS ${EXECUTABLE_OUTPUT_PATH}/${_exe_name})

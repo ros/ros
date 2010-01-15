@@ -28,17 +28,19 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
-from __future__ import with_statement
 import os.path
 import roslib.os_detect
 import subprocess
 
-def rpm_detect(p):
-    return subprocess.call(['rpm', '-q', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
-
 class YumInstall:
+    """This class provides the functions for installing using yum
+    it's methods partially implement the Rosdep OS api to complement 
+    the roslib.OSDetect API. """
+    def rpm_detect(self, p):
+        return subprocess.call(['rpm', '-q', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
+
     def strip_detected_packages(self, packages):
-        return [p for p in packages if rpm_detect(p)]
+        return [p for p in packages if self.rpm_detect(p)]
 
     def generate_package_install_command(self, packages, default_yes):
         if not packages:
@@ -51,11 +53,19 @@ class YumInstall:
 
 
 ###### Fedora SPECIALIZATION #########################
-class Fedora(roslib.os_detect.Fedora, YumInstall): pass
+class Fedora(roslib.os_detect.Fedora, YumInstall): 
+    """This class provides the Rosdep OS API for by combining the Fedora
+    OSDetect API and the YumInstall API
+    """
+    pass
                  
 ###### END Fedora SPECIALIZATION ########################
 
 ###### Rhel SPECIALIZATION #########################
-class Rhel(roslib.os_detect.Rhel, YumInstall): pass
+class Rhel(roslib.os_detect.Rhel, YumInstall): 
+    """This class provides the Red Hat Enterprise Linux Rosdep OS API
+    for by combining the RHEL OSDetect API and the YumInstall API
+    """
+    pass
 ###### END Rhel SPECIALIZATION ########################
 

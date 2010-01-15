@@ -210,7 +210,8 @@ class TCPROSHandler(rospy.transport.ProtocolHandler):
             # timeout is really generous. for now just choosing one that is large but not infinite
             conn.connect(dest_addr, dest_port, pub_uri, timeout=60.)
             t = threading.Thread(name=resolved_name, target=conn.receive_loop, args=(sub.receive_callback,))
-            rospy.core._add_shutdown_thread(t)
+            # don't enable this just yet, need to work on this logic
+            #rospy.core._add_shutdown_thread(t)
             t.start()
         except rospy.exceptions.TransportInitError, e:
             logerr("unable to create TCPROSSub: %s", e)

@@ -62,7 +62,7 @@ _mlogger = logging.getLogger("rospy.masterslave")
 # number of seconds to wait to join on threads. network issue can
 # cause joins to be not terminate gracefully, and it's better to
 # teardown dirty than to hang
-_TIMEOUT_SHUTDOWN_JOIN = 10.
+_TIMEOUT_SHUTDOWN_JOIN = 5.
 
 def mloginfo(msg, *args):
     """

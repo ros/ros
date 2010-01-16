@@ -210,7 +210,7 @@ class MsgTree(wx.TreeCtrl):
             subobjs = []
             
         # TODO: need to handle non-string data stored in str's
-        if type(obj) in [str, int, long, float, complex]:
+        if type(obj) in [str, bool, int, long, float, complex, roslib.rostime.Time]:
             label += ': ' + str(obj)
             
         if parent is None:

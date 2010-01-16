@@ -33,6 +33,7 @@ import roslib.os_detect
 
 ###### Cygwin SPECIALIZATION #########################
 def port_detect(p):
+    import subprocess
     cmd = ['cygcheck', '-c', p]
     pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (std_out, std_err) = pop.communicate()

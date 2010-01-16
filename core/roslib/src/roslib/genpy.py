@@ -847,8 +847,6 @@ def msg_generator(package, name, spec):
         if i:
             yield i
 
-    yield '## \htmlinclude %s%s.html'%(name,roslib.msgs.EXT) #doxygen    
-    
     yield ''
     
     fulltype = '%s%s%s'%(package, roslib.msgs.SEP, name)

@@ -82,6 +82,10 @@ inline void normalizeSecNSecSigned(int32_t& sec, int32_t& nsec)
   nsec = (int32_t)nsec64;
 }
 
+/**
+ * \brief Base class for Duration implementations.  Provides storage, common functions and operator overloads.
+ * This should not need to be used directly.
+ */
 template<class T>
 class DurationBase
 {
@@ -111,6 +115,11 @@ public:
   bool isZero();
 };
 
+/**
+ * \brief Duration representation for use with the Time class.
+ *
+ * ros::DurationBase provides most of its functionality.
+ */
 class Duration : public DurationBase<Duration>
 {
 public:
@@ -133,6 +142,11 @@ public:
 extern const Duration DURATION_MAX;
 extern const Duration DURATION_MIN;
 
+/**
+ * \brief Duration representation for use with the WallTime class.
+ *
+ * ros::DurationBase provides most of its functionality.
+ */
 class WallDuration : public DurationBase<WallDuration>
 {
 public:

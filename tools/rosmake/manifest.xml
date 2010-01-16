@@ -12,6 +12,10 @@
   <depend package="roslib"/>
   <depend package="rosdep"/>
 
+  <export>
+    <rosdoc config="rosdoc.yaml"/>    
+  </export>
+  
 </package>
 
 

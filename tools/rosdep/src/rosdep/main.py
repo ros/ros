@@ -119,7 +119,11 @@ def main():
             parser.error("-a, --all is not a valid option for this command")
 
     ### Find all dependencies
-    r = core.Rosdep(verified_packages, robust=options.robust)
+    try:
+        r = core.Rosdep(verified_packages, robust=options.robust)
+    except roslib.os_detect.OSDetectException, ex:
+        print "rosdep ABORTING.  Failed to detect OS: %s"%ex
+        return 1
 
     if options.verbose:
         print "Detected OS: " + r.osi.get_name()

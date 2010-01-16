@@ -126,6 +126,9 @@ struct SubscriberCallbacks
 };
 typedef boost::shared_ptr<SubscriberCallbacks> SubscriberCallbacksPtr;
 
+/**
+ * \brief Structure passed as a parameter to the callback invoked by a ros::Timer
+ */
 struct TimerEvent
 {
   Time last_expected;                     ///< In a perfect world, this is when the last callback should have happened
@@ -141,6 +144,9 @@ struct TimerEvent
 };
 typedef boost::function<void(const TimerEvent&)> TimerCallback;
 
+/**
+ * \brief Structure passed as a parameter to the callback invoked by a ros::WallTimer
+ */
 struct WallTimerEvent
 {
   WallTime last_expected;                 ///< In a perfect world, this is when the last callback should have happened

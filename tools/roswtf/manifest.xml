@@ -1,12 +1,12 @@
 <package>
-  <description brief="roswtf">
+  <description brief="roswtf command-line tool">
 
      roswtf is a tool for diagnosing issues with a running ROS system. Think of it as a FAQ implemented in code.
 
   </description>
   <author>Ken Conley/kwc@willowgarage.com</author>
   <license>BSD</license>
-  <review status="experimental" notes=""/>
+  <review status="Doc reviewed" notes="1/4/2010. end-user docs passed. plugin API requires more work."/>
   <url>http://ros.org/wiki/roswtf</url>
   <depend package="rospy"/>
   <depend package="roslib"/>
@@ -14,6 +14,9 @@
   <depend package="rosnode"/>
   <depend package="rosservice"/>
 
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+  </export>
 </package>
 
 

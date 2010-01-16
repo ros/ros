@@ -37,19 +37,32 @@ namespace ros
 class NodeHandle;
 class CallbackQueue;
 
+/**
+ * \brief Abstract interface for classes which spin on a callback queue.
+ */
 class Spinner
 {
 public:
   virtual ~Spinner() {}
+
+  /**
+   * \brief Spin on a callback queue (defaults to the global one).  Blocks until roscpp has been shutdown.
+   */
   virtual void spin(CallbackQueue* queue = 0) = 0;
 };
 
+/**
+ * \brief Spinner which runs in a single thread.
+ */
 class SingleThreadedSpinner : public Spinner
 {
 public:
   virtual void spin(CallbackQueue* queue = 0);
 };
 
+/**
+ * \brief Spinner which spins in multiple threads.
+ */
 class MultiThreadedSpinner : public Spinner
 {
 public:

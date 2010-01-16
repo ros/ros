@@ -78,21 +78,33 @@ Publisher::~Publisher()
 
 void Publisher::publish(const MessageConstPtr& message) const
 {
-  if (!impl_ || !impl_->isValid())
+  if (!impl_)
   {
     ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher");
     return;
   }
+
+ if (!impl_->isValid())
+ {
+   ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher (topic [%s])", impl_->topic_.c_str());
+   return;
+ }
 
   TopicManager::instance()->publish(impl_->topic_, *message);
 }
 
 void Publisher::publish(const Message& message) const
 {
-  if (!impl_ || !impl_->isValid())
+  if (!impl_)
   {
     ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher");
     return;
+  }
+
+  if (!impl_->isValid())
+  {
+   ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher (topic [%s])", impl_->topic_.c_str());
+   return;
   }
 
   TopicManager::instance()->publish(impl_->topic_, message);

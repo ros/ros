@@ -220,7 +220,10 @@ class ROSHandler(XmlRpcHandler):
         self.uri = uri
         #connect up topics in separate thread
         if self.reg_man:
-            thread.start_new_thread(self.reg_man.start, (uri, self.masterUri))
+            import threading
+            t = threading.Thread(target=self.reg_man.start, args=(uri, self.masterUri))
+            rospy.core._add_shutdown_thread(t)
+            t.start()
 
     def _custom_validate(self, validation, param_name, param_value, caller_id):
         """

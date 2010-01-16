@@ -28,85 +28,44 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
-from __future__ import with_statement
-from linux_helpers import *
 import os.path
+import roslib.os_detect
+import subprocess
 
-def yum_detect(p):
-    return subprocess.call(['yum', 'list', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
-
-###### Fedora SPECIALIZATION #########################
-class Fedora:
-    def check_presence(self):
-        try:
-            filename = "/etc/redhat_release"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:                
-                    os_list = fh.read().split()
-                if os_list and os_list[0] == "Fedora" and os_list[1] == "release":
-                    return True
-        except:
-            print "Fedora failed to detect OS"
-        return False
-
-    def get_version(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:
-                    os_list = fh.read().split()
-                if os_list[0] == "Fedora" and os_list[1] == "release":
-                    return os_list[2]
-        except:
-            print "Fedora failed to get version"
-            return False
-
-        return False
-
-    def get_name(self):
-        return "fedora"
+class YumInstall:
+    """This class provides the functions for installing using yum
+    it's methods partially implement the Rosdep OS api to complement 
+    the roslib.OSDetect API. """
+    def rpm_detect(self, p):
+        return subprocess.call(['rpm', '-q', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
 
     def strip_detected_packages(self, packages):
-        return [p for p in packages if yum_detect(p)]
+        return [p for p in packages if self.rpm_detect(p)]
 
     def generate_package_install_command(self, packages, default_yes):
-        if default_yes:
-            return "#Packages\nyum -y install " + ' '.join(packages)
-        else:
-            return "#Packages\nyum install " + ' '.join(packages)
+        if not packages:
+            return "#No Packages to install"
 
+        if default_yes:
+            return "#Packages\nsudo yum -y install " + ' '.join(packages)
+        else:
+            return "#Packages\nsudo yum install " + ' '.join(packages)
+
+
+###### Fedora SPECIALIZATION #########################
+class Fedora(roslib.os_detect.Fedora, YumInstall): 
+    """This class provides the Rosdep OS API for by combining the Fedora
+    OSDetect API and the YumInstall API
+    """
+    pass
+                 
 ###### END Fedora SPECIALIZATION ########################
 
 ###### Rhel SPECIALIZATION #########################
-class Rhel(Fedora):
-    def check_presence(self):
-        try:
-            filename = "/etc/redhat_release"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:                
-                    os_list = fh.read().split()
-                if os_list and os_list[2] == "Enterprise":
-                    return True
-        except:
-            print "Rhel failed to detect OS"
-        return False
-
-    def get_version(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:
-                    os_list = fh.read().split()
-                if os_list and os_list[2] == "Enterprise":
-                    return os_list[6]
-        except:
-            print "Rhel failed to get version"
-            return False
-
-        return False
-
-    def get_name(self):
-        return "rhel"
-
+class Rhel(roslib.os_detect.Rhel, YumInstall): 
+    """This class provides the Red Hat Enterprise Linux Rosdep OS API
+    for by combining the RHEL OSDetect API and the YumInstall API
+    """
+    pass
 ###### END Rhel SPECIALIZATION ########################
 

@@ -37,6 +37,7 @@
 #include <time.h>
 #include <iomanip>
 #include <stdexcept>
+#include <limits>
 
 #include <config.h>
 
@@ -58,8 +59,11 @@ using namespace std;
 ros::Time ros::Time::sim_time_(0, 0);
 bool ros::Time::use_system_time_(true);
 
-const Duration ros::DURATION_MAX(INT_MAX, 999999999);
-const Duration ros::DURATION_MIN(INT_MIN, 0);
+const Duration ros::DURATION_MAX(std::numeric_limits<int32_t>::max(), 999999999);
+const Duration ros::DURATION_MIN(std::numeric_limits<int32_t>::min(), 0);
+
+const Time ros::TIME_MAX(std::numeric_limits<uint32_t>::max(), 999999999);
+const Time ros::TIME_MIN(0, 0);
 
 // This is declared here because it's set from the Time class but read from
 // the Duration class, and need not be exported to users of either.

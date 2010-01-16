@@ -43,6 +43,9 @@ namespace ros
 
 typedef std::map<std::string, std::string> M_string;
 
+/**
+ * \brief Base-class for all roscpp messages
+ */
 class Message
 {
 public:

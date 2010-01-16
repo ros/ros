@@ -85,7 +85,11 @@ class RoslibStacksTest(unittest.TestCase):
         import roslib.packages
         from roslib.stacks import get_stack_dir, InvalidROSStackException, list_stacks
         self.assertEquals(roslib.rosenv.get_ros_root(), get_stack_dir('ros'))
-        self.assertEquals(None, get_stack_dir('non_existent'))
+        try:
+            get_stack_dir('non_existent')
+            self.fail("should have raised")
+        except roslib.stacks.InvalidROSStackException:
+            pass
 
         # make sure it agrees with rosstack
         stacks = list_stacks()

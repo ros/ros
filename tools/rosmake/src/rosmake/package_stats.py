@@ -46,9 +46,12 @@ class PackageFlagTracker:
   blacklisted and all their dependents. """
   def __init__(self, dependency_tracker, os_name = None, os_version = None):
     if not os_name and not os_version:
-        osd = roslib.os_detect.OSDetect()
-        self.os_name = osd.get_name()
-        self.os_version = osd.get_version()
+        try:
+            osd = roslib.os_detect.OSDetect()
+            self.os_name = osd.get_name()
+            self.os_version = osd.get_version()
+        except roslib.os_detect.OSDetectException, ex:
+            print >> sys.stderr, "Could not detect OS. platform detection will not work"
     else:
         self.os_name = os_name
         self.os_version = os_version

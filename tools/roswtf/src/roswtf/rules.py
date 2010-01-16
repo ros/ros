@@ -32,6 +32,21 @@
 #
 # Revision $Id$
 
+"""
+Common library for writing rule-style checks for generating warnings
+and errors.  Use of this style streamlines reporting.
+
+The pattern for rules is simple: a rule provides a function that
+implements the rule and a format string. If the function returns a
+non-zero value, that value is combined with the format string to
+produced an error reporting string. There are other conveniences as
+well. If the rule returns a list or a tuple, that will be transformed
+into a human-readable list.
+
+This library is a layer on top of the base L{WtfWarning} and
+L{WtfError} representation in roswtf.model.
+"""
+
 from roswtf.model import WtfWarning, WtfError
 
 def _check_rule(rule, ret, ctx, ctx_list, level):
@@ -49,17 +64,29 @@ def _check_rule(rule, ret, ctx, ctx_list, level):
             f_msg = rule[1]
             ctx_list.append(level(f_msg%d, f_msg, ret))
     
-## Check return value of rule and update \a ctx if rule failed
-## @param rule (rule_fn, format_msg)
-## @param ret Any: return value of rule. If value is non-zero, rule failed
-## @param ctx WtfContext: context for which rule failed
 def warning_rule(rule, ret, ctx):
+    """
+    Check return value of rule and update ctx if rule failed.
+    
+    @param rule: Rule/message pair.
+    @type  rule: (rule_fn, format_msg)
+    @param ret: return value of rule. If value is non-zero, rule failed
+    @param ret: Any
+    @param ctx: context for which rule failed
+    @param ctx: L{WtfContext}
+    """
     _check_rule(rule, ret, ctx, ctx.warnings, WtfWarning)
     
-## Check return value of rule and update \a ctx if rule failed
-## @param rule (rule_fn, format_msg)
-## @param ret Any: return value of rule. If value is non-zero, rule failed
-## @param ctx WtfContext: context for which rule failed
 def error_rule(rule, ret, ctx):
+    """
+    Check return value of rule and update ctx if rule failed.
+    
+    @param rule: Rule/message pair.
+    @type  rule: (rule_fn, format_msg)
+    @param ret: return value of rule. If value is non-zero, rule failed
+    @type  ret: Any
+    @param ctx: context for which rule failed
+    @type  ctx: L{WtfContext}
+    """
     _check_rule(rule, ret, ctx, ctx.errors, WtfError)
     

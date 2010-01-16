@@ -56,20 +56,21 @@ msg_index_template = load_tmpl('msg-index.template')
 
 _api_url = "http://pr.willowgarage.com/pr-docs/ros-packages/"
 def package_link(package):
-  return _api_url + package + "/html/"
+    return _api_url + package + "/html/"
 
 def _href(link, text):
     return '<a href="%(link)s">%(text)s</a>'%locals()
 
 def type_link(type_, base_package):
-    if type_ in roslib.msgs.BUILTIN_TYPES:
+    base_type = roslib.msgs.base_msg_type(type_)
+    base_type = roslib.msgs.resolve_type(base_type, base_package)    
+    if base_type in roslib.msgs.BUILTIN_TYPES:
         return type_
-    base_type_ = roslib.msgs.base_msg_type(type_)
-    package, base_type_ = roslib.names.package_resource_name(base_type_)
+    package, base_type = roslib.names.package_resource_name(base_type)
     if not package or package == base_package:
-        return _href("%s.html"%base_type_, type_)
+        return _href("%s.html"%base_type, type_)
     else:
-        return _href("../../../%(package)s/html/msg/%(base_type_)s.html"%locals(), type_)
+        return _href("../../../%(package)s/html/msg/%(base_type)s.html"%locals(), type_)
 
 def index_type_link(pref, type_, base_package):
     if type_ in roslib.msgs.BUILTIN_TYPES:
@@ -101,6 +102,7 @@ def _generate_msg_text_from_spec(package, spec, buff=None, indent=0):
     for type_, name in zip(spec.types, spec.names):
         buff.write("%s%s %s<br />"%("&nbsp;"*indent, type_link(type_, package), name))
         base_type = roslib.msgs.base_msg_type(type_)
+        base_type = roslib.msgs.resolve_type(base_type, package)
         if not base_type in roslib.msgs.BUILTIN_TYPES:
             subspec = roslib.msgs.get_registered(base_type)
             _generate_msg_text_from_spec(package, subspec, buff, indent + 4)

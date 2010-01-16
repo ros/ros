@@ -32,14 +32,21 @@
 #
 # Revision $Id$
 
+"""
+Plugin loader for roswtf.
+"""
+
 import os
 import sys
 
 import roslib.rospack
 
-## @return [fn], [fn]: list of static roswtf plugins, list of online
-## roswtf plugins
 def load_plugins():
+    """
+    @return: list of static roswtf plugins, list of online
+    roswtf plugins
+    @rtype: [fn], [fn]
+    """
     to_check = roslib.rospack.rospack_depends_on_1('roswtf')
     static_plugins = []
     online_plugins = []

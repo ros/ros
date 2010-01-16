@@ -112,6 +112,10 @@ class Topic(object):
             raise ValueError("data_class [%s] is not a class"%data_class) 
         if not issubclass(data_class, roslib.message.Message):
             raise ValueError("data_class [%s] is not a message data class"%data_class.__class__.__name__)
+        # #2202
+        if not roslib.names.is_legal_name(name):
+            import warnings
+            warnings.warn("'%s' is not a legal ROS graph resource name. This may cause problems with other ROS tools"%name, stacklevel=2)
         
         # this is a bit ugly, but necessary due to the fact that we allow
         # topics and services to be initialized before the node

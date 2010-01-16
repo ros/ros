@@ -75,6 +75,7 @@ public:
 
   bool open(const std::string& file_name, bool random_access=false);
   bool record(std::string topic_name, ros::Message::ConstPtr msg, ros::Time time);
+  bool record(std::string topic_name, const ros::Message& msg, ros::Time time);
   void close();
 
   pos_t getOffset();

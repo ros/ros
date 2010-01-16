@@ -8,7 +8,7 @@
   </description>
   <author>Morgan Quigley, Brian Gerkey</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="Doc reviewed" notes="2010/01/07"/>
   <depend package="roscpp"/>
   <depend package="rosconsole"/>
   <depend package="std_msgs"/>

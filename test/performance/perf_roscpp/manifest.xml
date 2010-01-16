@@ -6,7 +6,7 @@
   </description>
   <author>Josh Faust (jfaust@willowgarage.com)</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="test" notes=""/>
   <url>http://ros.org/wiki/perf_roscpp</url>
   <depend package="roscpp"/>
 

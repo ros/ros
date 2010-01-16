@@ -115,22 +115,34 @@ bool ServiceClient::call(Message& req, Message& resp, const std::string& service
     return false;
   }
 
-  if (!impl_->server_link_)
-  {
-    impl_->server_link_ = ServiceManager::instance()->createServiceServerLink(impl_->name_, impl_->persistent_, service_md5sum, service_md5sum, impl_->header_values_);
+  ServiceServerLinkPtr link;
 
+  if (impl_->persistent_)
+  {
     if (!impl_->server_link_)
+    {
+      impl_->server_link_ = ServiceManager::instance()->createServiceServerLink(impl_->name_, impl_->persistent_, service_md5sum, service_md5sum, impl_->header_values_);
+
+      if (!impl_->server_link_)
+      {
+        return false;
+      }
+    }
+
+    link = impl_->server_link_;
+  }
+  else
+  {
+    link = ServiceManager::instance()->createServiceServerLink(impl_->name_, impl_->persistent_, service_md5sum, service_md5sum, impl_->header_values_);
+
+    if (!link)
     {
       return false;
     }
   }
 
-  bool ret = impl_->server_link_->call(&req, &resp);
-
-  if (!impl_->persistent_)
-  {
-    impl_->server_link_.reset();
-  }
+  bool ret = link->call(&req, &resp);
+  link.reset();
 
   return ret;
 }

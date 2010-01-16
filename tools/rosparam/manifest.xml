@@ -1,5 +1,5 @@
 <package>
-  <description brief="YAML-based parameter server initialization">
+  <description brief="rosparam command-line tool">
 
 <p>
 rosparam contains the rosparam command-line tool for getting and setting ROS Parameters on the <a href="http://www.ros.org/wiki/Parameter%20Server">Parameter Server</a> using YAML-encoded files. It also contains an experimental library for using YAML with the Parameter Server. This library is intended for internal use only.

@@ -298,6 +298,49 @@ macro(_rosbuild_add_library lib libname type)
   add_dependencies(${lib} rosbuild_precompile)
 endmacro(_rosbuild_add_library)
 
+macro(_rosbuild_get_clock var)
+  execute_process(
+    COMMAND python -c "import time; print time.time()"
+    OUTPUT_VARIABLE ${var}
+    ERROR_VARIABLE _time_error
+    RESULT_VARIABLE _time_failed
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(_time_failed)
+    message("[rosbuild] Error from calling to Python to get system time:")
+    message("${_time_error}")
+    message(FATAL_ERROR "[rosbuild] Failed to get system time; aborting")
+  endif(_time_failed)
+endmacro(_rosbuild_get_clock var)
+
+macro(_rosbuild_time_less_than_latest_mtime var _t)
+  if("${_t}" STREQUAL "")
+    # No time was given, so it's too old
+    set(${var} 1)
+  else("${_t}" STREQUAL "")
+    # Convert a CMake list into a Python list
+    set(_pylist "[")
+    foreach(_f ${ARGN})
+      set(_pylist "${_pylist} '${_f}',")
+    endforeach(_f)
+    set(_pylist "${_pylist}]")
+    # Call Python to compare the provided time to the latest mtime on all
+    # the files
+    execute_process(
+      COMMAND python -c "import os; print 1 if ${_t} < max(os.stat(f).st_mtime for f in ${_pylist}) else 0;"
+      OUTPUT_VARIABLE ${var}
+      ERROR_VARIABLE _mtime_error
+      RESULT_VARIABLE _mtime_failed
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(_mtime_failed)
+      message("[rosbuild] Error from calling to Python to get latest mtime:")
+      message("${_mtime_error}")
+      message(FATAL_ERROR "[rosbuild] Failed to get latest mtime; aborting")
+    endif(_mtime_failed)
+  endif("${_t}" STREQUAL "")
+endmacro(_rosbuild_time_less_than_latest_mtime var)
+
 # Internal macros above
 ###############################################################################
 

@@ -4,7 +4,7 @@
   <review status="API conditionally cleared" notes=""/>
   <description>
 
-rosbuild contains script for managing the CMake-based build system for ROS. 
+rosbuild contains scripts for managing the CMake-based build system for ROS. 
 
   </description>
   <url>http://ros.org/wiki/rosbuild</url>

@@ -204,14 +204,24 @@ class ROSLaunchRunner(object):
         p = None
         try:
             # multi-call style xmlrpc
+            param_server_multi = config.master.get_multi()
             for p in config.clear_params:
                 if param_server.hasParam(_ID, p)[2]:
-                    code, msg, _ = param_server.deleteParam(_ID, p)
-                    if code != 1:
-                        raise RLException("Failed to clear parameter: %s"%(msg))
-                
+                    #printlog("deleting parameter [%s]"%p)
+                    param_server_multi.deleteParam(_ID, p)
+            r = param_server_multi()
+            for code, msg, _ in r:
+                if code != 1:
+                    raise RLException("Failed to clear parameter: %s"%(msg))
+
+            # multi-call objects are not reusable
+            param_server_multi = config.master.get_multi()            
             for p in config.params.itervalues():
-                code, msg, _ = param_server.setParam(_ID, p.key, p.value)
+                # suppressing this as it causes too much spam
+                #printlog("setting parameter [%s]"%p.key)
+                param_server_multi.setParam(_ID, p.key, p.value)
+            r  = param_server_multi()
+            for code, msg, _ in r:
                 if code != 1:
                     raise RLException("Failed to set parameter: %s"%(msg))
         except RLException:

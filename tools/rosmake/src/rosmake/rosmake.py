@@ -54,6 +54,10 @@ from optparse import OptionParser
 import rosdep
 
 def make_command():
+    """
+    @return: name of 'make' command
+    @rtype: str
+    """
     return os.environ.get("MAKE", "make")
 
 
@@ -81,6 +85,10 @@ class RosMakeAll:
 
 
     def num_packages_built(self):
+        """
+        @return: number of packages that were built
+        @rtype: int
+        """
         return len(self.result[argument].keys())
 
     def get_path(self, package):
@@ -90,7 +98,10 @@ class RosMakeAll:
         
     def check_rosdep(self, packages):
         self.print_all("Checking rosdeps compliance for system dependencies %s.  This may take a few seconds."%(', '.join(packages)))
-        r = rosdep.core.Rosdep(packages, robust=True)
+        try:
+            r = rosdep.core.Rosdep(packages, robust=True)
+        except roslib.os_detect.OSDetectException, ex:
+            return "%s"%ex
         (output, scripts) = r.check()
         if len(scripts) > 0:
             self.print_all("Rosdep couldn't check scripts: %s"%scripts)
@@ -102,13 +113,23 @@ class RosMakeAll:
             return output
 
     def install_rosdeps(self, packages, default_yes):
+        """
+        Install all rosdeps of packages.
+        @param packages: list of package name
+        @type  packages: [str]
+        @param default_yes: if True, assume 'yes' to all package manager prompts.
+        @type  default_yes: bool
+        """
         self.print_all("Generating Install Script using rosdep then executing. This may take a minute, you will be prompted for permissions. . .")
-        r = rosdep.core.Rosdep(packages, robust=True)
+        try:
+            r = rosdep.core.Rosdep(packages, robust=True)
+        except roslib.os_detect.OSDetectException, ex:
+            return "%s"%ex
         try:
             r.install(include_duplicates=False, default_yes=default_yes);
             self.print_all("Rosdep successfully installed all system dependencies")
             return None
-        except rosdep.RosdepException, e:
+        except rosdep.core.RosdepException, e:
             self.print_all( "ERROR: %s"%e)
             return "%s"%e
 
@@ -156,7 +177,12 @@ class RosMakeAll:
         build_passed = build_queue.succeeded() and all_pkgs_passed
         return build_passed
 
-    def build_package(self, package, argument=None):
+    def _build_package(self, package, argument=None):
+        """
+        Lower-level routine for building a package. Handles execution of actual build command.
+        @param package: package name
+        @type  package: str
+        """
         local_env = os.environ.copy()
         if self.ros_parallel_jobs > 0:
             local_env['ROS_PARALLEL_JOBS'] = "-j%d" % self.ros_parallel_jobs
@@ -172,6 +198,11 @@ class RosMakeAll:
         return (command_line.returncode, pstd_out)
 
     def build(self, p, argument = None, robust_build=False):
+        """
+        Build package
+        @param p: package name
+        @type  p: str
+        """
         return_string = ""
         try:
             if p == "rospack":
@@ -189,7 +220,7 @@ class RosMakeAll:
             (buildable, error, why) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, failed_packages)
             if buildable or self.robust_build:
                 start_time = time.time()
-                (returncode, pstd_out) = self.build_package(p, argument)
+                (returncode, pstd_out) = self._build_package(p, argument)
                 self.profile[argument][p] = time.time() - start_time
                 self.output[argument][p] = pstd_out
                 if argument:
@@ -240,7 +271,7 @@ class RosMakeAll:
 
     def output_to_file(self, package, log_type, stdout, always_print= False):
         if not self.logging_enabled:
-          return
+            return
         package_log_dir = os.path.join(self.log_dir, package)
 
         std_out_filename = os.path.join(package_log_dir, log_type + "_output.log")
@@ -256,7 +287,7 @@ class RosMakeAll:
 
     def generate_summary_output(self, log_dir):
         if not self.logging_enabled:
-          return
+            return
 
         self.print_all("Summary output to directory")
         self.print_all("%s"%self.log_dir)
@@ -357,19 +388,19 @@ class RosMakeAll:
         return output
 
     def print_all(self, s, newline = True, thread_name=None):
-      if thread_name == None:
-        if newline:
-          print "[ rosmake ]", s
+        if thread_name == None:
+          if newline:
+              print "[ rosmake ]", s
+          else:
+              print "[ rosmake ]", s,
+              sys.stdout.flush()
         else:
-          print "[ rosmake ]", s,
-          sys.stdout.flush()
-      else:
-        if newline:
-          print "[rosmake-%s]"%thread_name, s
-        else:
-          print "[rosmake-%s]"%thread_name, s
-          sys.stdout.flush()
-
+          if newline:
+              print "[rosmake-%s]"%thread_name, s
+          else:
+              print "[rosmake-%s]"%thread_name, s
+              sys.stdout.flush()
+  
     def print_verbose(self, s, thread_name=None):
         if self.verbose or self.full_verbose:
           if thread_name:
@@ -382,20 +413,20 @@ class RosMakeAll:
             print "[ rosmake ] ", s
 
     def print_tail(self, s, tail_lines=40):
-      lines = s.splitlines()
-      if self.full_verbose:
-          tail_lines = len(lines)
-
-      num_lines = min(len(lines), tail_lines)
-      if num_lines == tail_lines:
-        print "[ rosmake ] Last %d lines"%num_lines
-      else:
-        print "[ rosmake ] All %d lines"%num_lines
-      print "{" + "-"*79
-      for l in xrange(-num_lines, -1):
-        print "  %s"%lines[l]
-      print "-"*79 + "}"
-
+        lines = s.splitlines()
+        if self.full_verbose:
+            tail_lines = len(lines)
+  
+        num_lines = min(len(lines), tail_lines)
+        if num_lines == tail_lines:
+            print "[ rosmake ] Last %d lines"%num_lines
+        else:
+            print "[ rosmake ] All %d lines"%num_lines
+        print "{" + "-"*79
+        for l in xrange(-num_lines, -1):
+            print "  %s"%lines[l]
+        print "-"*79 + "}"
+  
     def assert_prebuild_built(self, ros_package_path_list):
         ret_val = True
         for pkg in ros_package_path_list:
@@ -426,10 +457,17 @@ class RosMakeAll:
 
 
     def is_rosout_built(self):
+        """
+        @return: True if rosout package has been built
+        @rtype: bool
+        """
         return os.path.exists(os.path.join(roslib.packages.get_pkg_dir("rosout"), "rosout"))
             
 
     def main(self):
+        """
+        main command-line entrypoint
+        """
         parser = OptionParser(usage="usage: %prog [options] [PACKAGE]...", prog='rosmake')
         parser.add_option("--test-only", dest="test_only", default=False,
                           action="store_true", help="only run tests")
@@ -459,6 +497,8 @@ class RosMakeAll:
                           action="store", help="where to output results")
         parser.add_option("--pre-clean", dest="pre_clean",
                           action="store_true", help="run make clean first")
+        parser.add_option("--bootstrap", dest="bootstrap", default=False,
+                          action="store_true", help="Do the bootstrap packages even if there are no arguments")
         parser.add_option("--disable-logging", dest="logging_enabled", default=True,
                           action="store_false", help="turn off all logs")
         parser.add_option("--target", dest="target",
@@ -544,16 +584,15 @@ class RosMakeAll:
                 self.print_all("No package selected and the current directory is not the correct path for package '%s'."%p)
                 
             except roslib.packages.InvalidROSPkgException, ex:
-                stack_dir = roslib.stacks.get_stack_dir(p)
-                if not stack_dir:
-                    self.print_all("No package or stack specified.  And current directory '%s' is not a package name or stack name."%p)
-                else:
+                try:
+                    stack_dir = roslib.stacks.get_stack_dir(p)
                     if os.path.samefile(stack_dir, '.'):
                         packages = [p]
                         self.print_all( "No package specified.  Building stack %s"%packages)
                     else:
                         self.print_all("No package or stack arguments and the current directory is not the correct path for stack '%s'. Stack directory is: %s."%(p, roslib.stacks.get_stack_dir(p)))
-                  
+                except:
+                    self.print_all("No package or stack specified.  And current directory '%s' is not a package name or stack name."%p)
         else:
             packages.extend(args)
 
@@ -586,21 +625,9 @@ class RosMakeAll:
         self.print_all("Expanded args %s to:\n%s"%(packages, self.specified_packages))
         if self.rejected_packages:
             self.print_all("WARNING: The following args could not be parsed as stacks or packages: %s"%self.rejected_packages)
-        if len(self.specified_packages) == 0:
+        if len(self.specified_packages) == 0 and options.bootstrap == False:
             self.print_all("ERROR: No arguments could be parsed into valid package or stack names.")
             return False
-
-        # make sure all dependencies are satisfied and if not warn
-        buildable_packages = []
-        for p in self.specified_packages:
-            (buildable, error, str) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, [])
-            if buildable: 
-                buildable_packages.append(p)
-
-        if options.rosdep_install:
-            self.rosdep_install_result = self.install_rosdeps(buildable_packages, options.rosdep_yes)
-        elif not options.rosdep_disabled:
-            self.rosdep_check_result = self.check_rosdep(buildable_packages)
 
         if options.unmark_installed:
             for p in self.specified_packages:
@@ -610,10 +637,22 @@ class RosMakeAll:
             
         required_packages = self.specified_packages[:]
         # these packages are not in the dependency tree but are needed they only cost 0.01 seconds to build
-        if "paramiko" not in self.specified_packages:
-            required_packages.append("paramiko")
-        if "pycrypto" not in self.specified_packages:
-            required_packages.append("pycrypto")
+        always_build = ["paramiko", "pycrypto", "rosout", "rostest"]
+        for p in always_build:
+            if p not in self.specified_packages:
+                required_packages.append(p)
+
+        # make sure all dependencies are satisfied and if not warn
+        buildable_packages = []
+        for p in required_packages:
+            (buildable, error, str) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, [])
+            if buildable: 
+                buildable_packages.append(p)
+
+        if options.rosdep_install:
+            self.rosdep_install_result = self.install_rosdeps(buildable_packages, options.rosdep_yes)
+        elif not options.rosdep_disabled:
+            self.rosdep_check_result = self.check_rosdep(buildable_packages)
     
         #generate the list of packages necessary to build(in order of dependencies)
         counter = 0

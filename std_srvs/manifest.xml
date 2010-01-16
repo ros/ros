@@ -1,14 +1,13 @@
 <package>
   <description brief="Common ROS Services">
 
-    Common service definitions 
+    Common service definitions. Currently just the 'Empty' service.
 
   </description>
   <author>Morgan Quigley/mquigley@cs.stanford.edu</author>
   <license>BSD</license>
-  <review status="API cleared" notes=""/>
-  <url>http://pr.willowgarage.com/wiki/std_srvs</url>
-  <logo>http://www.willowgarage.com/files/willowgarage/robot10.jpg</logo>
+  <review status="Doc reviewed" notes="2010/01/10"/>
+  <url>http://ros.org/wiki/std_srvs</url>
   <export>
     <cpp cflags="-I${prefix}/srv/cpp"/>
   </export>

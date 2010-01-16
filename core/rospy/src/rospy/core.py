@@ -59,6 +59,11 @@ from rospy.validators import ParameterInvalid
 _logger = logging.getLogger("rospy.core")
 _mlogger = logging.getLogger("rospy.masterslave")
 
+# number of seconds to wait to join on threads. network issue can
+# cause joins to be not terminate gracefully, and it's better to
+# teardown dirty than to hang
+_TIMEOUT_SHUTDOWN_JOIN = 5.
+
 def mloginfo(msg, *args):
     """
     Info-level master log statements. These statements may be printed
@@ -343,6 +348,7 @@ def set_initialized(initialized):
 _shutdown_lock  = threading.Lock()
 _shutdown_flag  = False
 _shutdown_hooks = []
+_shutdown_threads = []
 _preshutdown_hooks = []
 
 _signalChain = {}
@@ -370,6 +376,28 @@ def _add_shutdown_hook(h, hooks):
             # race condition check, don't log as we are deep into shutdown
             return
         hooks.append(h)
+    finally:
+        _shutdown_lock.release()
+
+def _add_shutdown_thread(t):
+    """
+    Register thread that must be joined() on shutdown
+    """
+    if _shutdown_flag:
+        #TODO
+        return
+    try:
+        _shutdown_lock.acquire()
+        if _shutdown_threads is None:
+            # race condition check, don't log as we are deep into shutdown
+            return
+        # in order to prevent memory leaks, reap dead threads. The
+        # last thread may not get reaped until shutdown, but this is
+        # relatively minor
+        for other in _shutdown_threads[:]:
+            if not other.isAlive():
+                _shutdown_threads.remove(other)
+        _shutdown_threads.append(t)
     finally:
         _shutdown_lock.release()
 
@@ -426,8 +454,14 @@ def signal_shutdown(reason):
             except Exception, e:
                 print >> sys.stderr, "signal_shutdown hook error[%s]"%e
         del _shutdown_hooks[:]
-        _shutdown_lock.release()
         
+        threads = _shutdown_threads[:]
+        _shutdown_lock.release()
+
+        for t in threads:
+            if t.isAlive():
+                t.join(_TIMEOUT_SHUTDOWN_JOIN)
+        del _shutdown_threads[:]
         try:
             time.sleep(0.1) #hack for now until we get rid of all the extra threads
         except KeyboardInterrupt: pass

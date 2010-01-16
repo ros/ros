@@ -141,7 +141,8 @@ class TCPServer:
                 (client_sock, client_addr) = self.server_sock.accept()
             except socket.timeout:
                 continue
-                
+            if self.is_shutdown:
+                break
             try:
                 #leave threading decisions up to inbound_handler
                 self.inbound_handler(client_sock, client_addr)
@@ -177,7 +178,6 @@ class TCPServer:
         """shutdown I/O resources uses by this server"""
         if not self.is_shutdown:
             self.is_shutdown = True
-            #self.server_sock.shutdown(socket.SHUT_RDWR)
             self.server_sock.close()
 
 # base maintains a tcpros_server singleton that is shared between

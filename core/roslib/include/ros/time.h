@@ -96,6 +96,10 @@ inline void normalizeSecNSecUnsigned(int64_t& sec, int64_t& nsec)
   nsec = nsec_part;
 }
 
+/**
+ * \brief Base class for Time implementations.  Provides storage, common functions and operator overloads.
+ * This should not need to be used directly.
+ */
 template<class T, class D>
 class TimeBase
 {
@@ -131,6 +135,11 @@ public:
   inline bool is_zero() const { return isZero(); }
 };
 
+/**
+ * \brief Time representation.  May either represent wall clock time or ROS clock time.
+ *
+ * ros::TimeBase provides most of its functionality.
+ */
 class Time : public TimeBase<Time, Duration>
 {
 public:
@@ -144,7 +153,14 @@ public:
 
   explicit Time(double t) { fromSec(t); }
 
+  /**
+   * \brief Retrieve the current time.  If ROS clock time is in use, this returns the time according to the
+   * ROS clock.  Otherwise returns the current wall clock time.
+   */
   static Time now();
+  /**
+   * \brief Sleep until a specific time has been reached.
+   */
   static bool sleepUntil(const Time& end);
 
   static void init();
@@ -156,9 +172,14 @@ private:
   static bool use_system_time_;
 };
 
-static const Time TIME_MAX = ros::Time(UINT_MAX, 999999999);
-static const Time TIME_MIN = ros::Time(0, 0);
+extern const Time TIME_MAX;
+extern const Time TIME_MIN;
 
+/**
+ * \brief Time representation.  Always wall-clock time.
+ *
+ * ros::TimeBase provides most of its functionality.
+ */
 class WallTime : public TimeBase<WallTime, WallDuration>
 {
 public:
@@ -172,8 +193,14 @@ public:
 
   explicit WallTime(double t) { fromSec(t); }
 
+  /**
+   * \brief Returns the current wall clock time.
+   */
   static WallTime now();
 
+  /**
+   * \brief Sleep until a specific time has been reached.
+   */
   static bool sleepUntil(const WallTime& end);
 };
 

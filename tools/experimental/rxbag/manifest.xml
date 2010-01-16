@@ -1,9 +1,8 @@
 <package>
   <description brief="rxbag">
 
-rxbag is a GUI tool for visualizing, inspecting and replaying histories of ROS messages.
-<br/><br/>
-Some icons from the Silk icon pack are used (http://www.famfamfam.com/lab/icons/silk/).
+<p>rxbag is a GUI tool for visualizing, inspecting and replaying histories of ROS messages.</p>
+<p>Some icons from the Silk icon pack are used, which is available from <a href="http://www.famfamfam.com/lab/icons/silk/">famfamfam.com</a>.</p>
 
   </description>
   <author>Tim Field</author>

@@ -26,5 +26,6 @@ brown http://brown-ros-pkg.googlecode.com/svn/trunk
 wpi   http://ros-engagement.svn.sourceforge.net/svnroot/ros-engagement
 prairiedog http://prairiedog.googlecode.com/svn/trunk/
 alufr http://alufr-ros-pkg.googlecode.com/svn/trunk/
-ajh_pmad https://ajh-ros-pkg.svn.sourceforge.net/svnroot/ajh-ros-pkg/pmad/trunk
-ajh_cmucam_png https://ajh-ros-pkg.svn.sourceforge.net/svnroot/ajh-ros-pkg/cmucam_png/trunk
+# kwc: I've emailed ajh about reorging the repo so these direct pointers won't be necessary
+pmad https://ajh-ros-pkg.svn.sourceforge.net/svnroot/ajh-ros-pkg/pmad/trunk
+cmucam_png https://ajh-ros-pkg.svn.sourceforge.net/svnroot/ajh-ros-pkg/cmucam_png/trunk

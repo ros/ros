@@ -177,6 +177,8 @@ dpkg-dev:
     if ! pacman -Q dpkg; then yaourt -S dpkg; fi
 doxygen:
   ubuntu: doxygen
+  fedora: doxygen
+  rhel: doxygen
   arch: doxygen
   debian: doxygen
   macports: doxygen

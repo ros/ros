@@ -106,11 +106,27 @@ class Ubuntu(roslib.os_detect.Ubuntu, AptGetInstall):
 ###### END UBUNTU SPECIALIZATION ########################
 
 ###### Mint SPECIALIZATION #########################
-class Mint(roslib.os_detect.Mint, AptGetInstall):
+class Mint(AptGetInstall):
     """ This is an implementation of a standard interface for
-    interacting with rosdep.  This defines all Mint sepecific
-    methods, including detecting the OS/Version number.  As well as
-    how to check for and install packages."""
+    interacting with rosdep.  Mint is closely coupled to Ubuntu, it
+    will masquerade as ubuntu for the purposes of rosdep. """
+    
+    def __init__(self):
+        self.mint_detector = roslib.os_detect.Mint()
+        self.version_map = {'8':'9.10', 
+                            '7':'9.04',
+                            '6':'8.10',
+                            '5':'8.04'}
+    def get_version(self):
+        return self.version_map[self.mint_detector.get_version()]
+
+    def get_name(self):
+        return 'ubuntu'
+
+    def check_presence(self):
+        return self.mint_detector.check_presence()
+        
+
     pass
 
 ###### END Mint SPECIALIZATION ########################

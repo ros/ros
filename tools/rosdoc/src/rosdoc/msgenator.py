@@ -213,6 +213,8 @@ def generate_msg_docs(ctx):
                     #print "writing", file_p
                     f.write(text)
             except Exception, e:
+                import traceback
+                traceback.print_exc()
                 print >> sys.stderr, "FAILED to generate for %s/%s: %s"%(p, m, str(e))
 
         # create dir for srv documentation                

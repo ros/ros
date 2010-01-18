@@ -73,14 +73,37 @@ status_map = {
 
 class PackageCharacteristics:
     def __init__(self):
+        self.color_by = None
+        
+        self._file_colors = None
         self._status_colors = {}
         self._rosmake_result_colors = {}
         self._license_color = {}
         self._license = {}
         self._review_status = {}
         self._review_notes = {}
-        self.color_by = ''
         
+
+    def set_color_by(self, method, option=None):
+        self.color_by = method
+        if self.color_by == "file":
+            self._color_filename = option
+
+    def load_color_from_file(self):
+        if self._file_colors:
+            return True
+        with open(self._color_filename,'r') as color_file:
+            self._file_colors = {}
+            for line in color_file:
+                try:
+                    k, v = line.split()
+                    self.file_colors[k] = v
+                except:
+                    print "ERROR: badly formatted color line: %s"%line
+
+    def get_file_color(self, pkg):
+        self.load_color_from_file()
+        return self._file_colors.get(pkg, 'purple')
 
     def get_license(self, pkg):
         if pkg in self._license:
@@ -140,6 +163,8 @@ class PackageCharacteristics:
             
 
     def get_color(self, pkg):
+        if self.color_by == "file":
+            return self.get_file_color(pkg)
         if self.color_by == "review":
             return self.get_review_color(pkg)
         if self.color_by == "license":
@@ -192,21 +217,6 @@ def get_deps(d, name):
         pass #print "bad Key" # don't accumulate deps for a package not in the tree
     return accum
 
-## Load color data from file
-def get_color(filename):
-    color_dictionary = {}
-    try:
-        with open(filename,'r') as color_file:
-            for line in color_file:
-                try:
-                    k, v = line.split()
-                    color_dictionary[k] = v
-                except:
-                    print "ERROR: badly formatted color line: %s"%line
-    except IOError:
-        print "Couldn't open color file: \"%s\""%filename
-    return color_dictionary
-        
 rosmakeall_color_map = { "rosmakeall-testfailures.txt": "orange", "rosmakeall-buildfailures.txt": "red"}
 
 def get_rosmakeall_color():
@@ -250,7 +260,7 @@ def classify_packages(pkg_dict):
         for pkg in pkg_dict:
             found_stack = "Unreleased"
             for stack in stacks:
-                if roslib.stacks.stack_of(pkg):
+                if stack == roslib.stacks.stack_of(pkg):
                     #print "matching %s with %s"%(pkg_path, realpath_stack)
                     found_stack = stack
                     break
@@ -259,7 +269,7 @@ def classify_packages(pkg_dict):
             if found_stack == "Unreleased":
                 stack_dict["Unreleased"] = "Not Contained in a stack"
             else:
-                #print "adding package %s to stack %s with path %s"%(pkg, found_stack, stack_paths[found_stack])
+                print "adding package %s to stack %s with path %s"%(pkg, found_stack, roslib.stacks.get_stack_dir(found_stack))
                 stack_dict[found_stack] = roslib.stacks.get_stack_dir(found_stack)
 
             # Record the stack on the list of classes
@@ -330,20 +340,19 @@ def vdmain():
         exclude.extend(['roscpp','std_msgs', 'rospy', 'std_srvs', 'robot_msgs', 'robot_srvs', 'rosconsole', 'tf'])
         
     color_sources = [x for x in [options.review_status, options.license, options.rosmake, options.color_file] if x]
-    notes_dict = {}
     color_palate = None
 
     pkg_characterists = PackageCharacteristics()
     if options.review_status:
-        pkg_characterists.color_by = "review"
+        pkg_characterists.set_color_by("review")
     elif options.license:
-        pkg_characterists.color_by = "license"
-
+        pkg_characterists.set_color_by("license")
+    elif options.color_file:
+        pkg_characterists.set_color_by("file", options.color_file)
+        
 
     if False:
-        if options.color_file:
-            color_dict = get_color(options.color_file)
-        elif options.rosmake:
+        if options.rosmake:
             print "Coloring by rosmakeall results"
             color_dict = get_rosmakeall_color()
             color_palate = rosmakeall_color_map
@@ -411,9 +420,10 @@ def vdmain():
                 node_args.append('peripheries=6, style=bold')
             elif pkg in exclude: 
                 node_args.append('peripheries=3, style=dashed')
-
-            if len(notes_dict.get(pkg, '')) > 0:
-              node_args.append('label="%s\\n(%s)"' % (pkg, notes_dict[pkg]))
+                
+            notes = pkg_characterists.get_review_notes(pkg)
+            if len(notes) > 0:
+              node_args.append('label="%s\\n(%s)"' % (pkg, notes))
 
             if options.hide:
                if len(roslib.rospack.rospack_depends_on(pkg)) == 0 and len(roslib.rospack.rospack_depends(pkg)) == 0: #TODO: This is pretty slow

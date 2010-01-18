@@ -294,7 +294,7 @@ class RosMakeAll:
         if self.rosdep_install_result:
             self.print_all("ERROR: Rosdep installation failed with exception: %s"%self.rosdep_install_result)
         if self.rosdep_check_result:
-            self.print_all("WARNING: Rosdep did not detect the following system dependencies as installed: %s Consider using --rosdep-install option or `rosdep install %s`"%(self.rosdep_check_result, self.specified_packages))
+            self.print_all("WARNING: Rosdep did not detect the following system dependencies as installed: %s Consider using --rosdep-install option or `rosdep install %s`"%(self.rosdep_check_result, ' '.join(self.specified_packages)))
         if self.rejected_packages:
             self.print_all("WARNING: Skipped command line arguments: %s because they could not be resolved to a stack name or a package name. "%self.rejected_packages)
 

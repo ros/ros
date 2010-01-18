@@ -134,23 +134,17 @@ class Ubuntu(Debian):
 ###### END UBUNTU SPECIALIZATION ########################
 
 ###### Mint SPECIALIZATION #########################
-class Mint(Debian):
+class Mint(OSBase):
     """
     Detect Mint variants of Debian.
     """
     def check_presence(self):
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:                
-                    os_list = fh.read().split()
-                if os_list and os_list[0] == "Linux" and os_list[1] == "Mint":
-                    return True
-        except:
-            print "Mint failed to detect OS"
+        if "LinuxMint" == lsb_get_os():
+            return True
         return False
 
-    #get_version inherited from debian
+    def get_version(self):
+        return lsb_get_version()
 
     def get_name(self):
         return "mint"

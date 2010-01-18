@@ -201,29 +201,12 @@ def classify_packages(pkg_dict):
     found_stack = ''
     stack_dict = {}
     try:
-        # Check version, make postscript if too old to make pdf
-        args = ["rosstack", "list"]
-        vstr, verr = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-        stack_entries = vstr.split('\n')
-        stacks = []
-        stack_paths = {}
-        for entry in stack_entries:
-            if  len(entry.split()) == 2:
-                n, p = entry.split()
-                stacks.append(n)
-                stack_paths[n] = p
-            elif entry.strip():
-                print >> sys.stderr, "rosstack list returned wrong number of arguments %d not the expected 2: %s"%len(entry.split(), entry)
-        #print stacks, stack_paths
-        #sys.exit(-1)
+        stacks = roslib.stacks.list_stacks()
 
         for pkg in pkg_dict:
-            pkg_path = os.path.realpath(roslib.packages.get_pkg_dir(pkg))
-
             found_stack = "Unreleased"
             for stack in stacks:
-                realpath_stack = os.path.realpath(stack_paths[stack])+"/" # slash needed to prevent partial stack name matches aka ros matching ros-pkg
-                if pkg_path.startswith(realpath_stack):
+                if roslib.stacks.stack_of(pkg):
                     #print "matching %s with %s"%(pkg_path, realpath_stack)
                     found_stack = stack
                     break
@@ -233,7 +216,7 @@ def classify_packages(pkg_dict):
                 stack_dict["Unreleased"] = "Not Contained in a stack"
             else:
                 #print "adding package %s to stack %s with path %s"%(pkg, found_stack, stack_paths[found_stack])
-                stack_dict[found_stack] = stack_paths[found_stack]
+                stack_dict[found_stack] = roslib.stacks.get_stack_dir(found_stack)
 
             # Record the stack on the list of classes
             if found_stack in classes:

@@ -179,7 +179,7 @@ class PackageFlagTracker:
   def is_whitelisted(self, package):
       return roslib.packages.platform_supported(package, self.os_name, self.os_version)
         
-  def can_build(self, pkg, use_whitelist = False, use_whitelist_recursive = False, use_blacklist = False, failed_packages = []):
+  def can_build(self, pkg, use_whitelist = False, use_whitelist_recursive = False, use_blacklist = False, failed_packages = [], use_makefile = True):
     """
     Return (buildable, error, "reason why not")
     """
@@ -222,7 +222,7 @@ class PackageFlagTracker:
         output_str += "ROS_NOBUILD in package %s\n"%pkg
 
 
-    if not self.has_makefile(pkg):
+    if use_makefile and not self.has_makefile(pkg):
         output_state = True # dependents are ok no need to build
         buildable = False
         output_str += " No Makefile in package %s\n"%pkg

@@ -97,7 +97,7 @@ class RosMakeAll:
         return self.paths[package]
         
     def check_rosdep(self, packages):
-        self.print_all("Checking rosdeps compliance for system dependencies %s.  This may take a few seconds."%(', '.join(packages)))
+        self.print_all("Checking rosdeps compliance for packages %s.  This may take a few seconds."%(', '.join(packages)))
         try:
             r = rosdep.core.Rosdep(packages, robust=True)
         except roslib.os_detect.OSDetectException, ex:
@@ -645,7 +645,7 @@ class RosMakeAll:
         # make sure all dependencies are satisfied and if not warn
         buildable_packages = []
         for p in required_packages:
-            (buildable, error, str) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, [])
+            (buildable, error, str) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, [], False)
             if buildable: 
                 buildable_packages.append(p)
 

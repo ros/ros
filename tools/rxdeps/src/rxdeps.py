@@ -200,23 +200,12 @@ def build_dictionary(names, exclude, target1=False):
     return dict
 
 ## Get all the dependencies of dependent packages (deduplicated)
-def get_child_deps(d, name):
+def get_child_deps(pkg):
     accum = set()
-    for dep in d[name]:
-        accum.update(get_deps(d, dep))
+    for dep in roslib.rospack.rospack_depends_1(pkg):
+        accum.update(roslib.rospack.rospack_depends(dep))
     return accum
                      
-## Get all dependencies of this package recursively (deduplicated)
-def get_deps(d, name):
-    accum = set()
-    try:
-        for dep in d[name]:
-            accum.add(dep)
-            accum.update(get_deps(d, dep))
-    except KeyError:
-        pass #print "bad Key" # don't accumulate deps for a package not in the tree
-    return accum
-
 rosmakeall_color_map = { "rosmakeall-testfailures.txt": "orange", "rosmakeall-buildfailures.txt": "red"}
 
 def get_rosmakeall_color():
@@ -280,6 +269,30 @@ def classify_packages(pkg_dict):
     except subprocess.CalledProcessError:
         print >> sys.stderr, "failed to call [rosstack contents %s]"%stack_string
     return (classes, stack_dict)
+
+
+def build_package_links(pkg, include, exclude):
+    other_stacks = {}
+    
+    local_dependencies = set()
+    
+    immediate_stack = roslib.stacks.stack_of(pkg)
+    immediate_dependencies.update(roslib.rospack.rospack_depends1(pkg))
+    for dep in immediate_dependencies:
+        if dep in exclude:
+            pass
+        dep_stack = roslib.stacks.stack_of(dep)
+        if dep_stack == immediate_stack:
+            local_dependencies.add(dep)
+        else:
+            if dep_stack in other_stacks:
+                other_stacks[dep_stack].add(dep)
+            else:
+                other_stacks[dep_stack] = set([dep])
+
+
+    return local_dependences, other_stacks
+
 
 def vdmain():
     parser = OptionParser(usage="usage: %prog [options]", prog='rxdeps')
@@ -371,6 +384,7 @@ def vdmain():
   size="100,40";
   node [color=gainsboro, style=filled];
   ranksep = 2.0;
+  compound=true;
 """)
         colors = ['red', 'blue', 'green', 'yellow', 'gold', 'orange','chocolate', 'gray44', 'deeppink', 'black']
 	classes = []
@@ -392,10 +406,11 @@ def vdmain():
         for cl in classes:
             if options.cluster:
                 base_color = colors[values.index(base_dict[cl])%len(colors)]
-                outfile.write(' subgraph cluster_%d { style=bold; color=%s; label = "%s \\n (%s)"; '%(i,base_color, cl, base_dict[cl]))
-                i = i + 1
+                outfile.write(' subgraph cluster_%s { style=bold; color=%s; label = "%s \\n (%s)"; '%(cl,base_color, cl, base_dict[cl]))
                 for pkg in classes[cl]:
                     outfile.write(' "%s" ;'%pkg)
+                for s in roslib.rospack.rosstack_depends_1(cl):
+                    outfile.write(' "%s_%s" [ label = "Stack: %s"];'%(cl, s,s))
                 outfile.write('}\n')
                 
         for pkg, deps in pkg_dictionary.iteritems():
@@ -434,10 +449,17 @@ def vdmain():
 
             ## Edges
             for dep in deps:
-                if not options.verbose and dep in get_child_deps(pkg_dictionary, pkg): 
+                if not options.verbose and dep in get_child_deps(pkg): 
                     continue
                 if dep in pkg_dictionary: #Draw edges to all dependencies
-                    outfile.write( '  "%s" -> "%s";\n' % (pkg, dep))
+                    local_stack = roslib.stacks.stack_of(pkg)
+                    dependent_stack = roslib.stacks.stack_of(dep)
+                    if not (options.cluster and dependent_stack == local_stack):
+                        outfile.write( '  "%s" -> "%s";\n' % (pkg, dep))
+                    elif options.cluster:
+                        intermediate = "%s_%s"%(local_stack, dependent_stack)
+                        outfile.write( '  "%s" -> "%s"[color="blue", style="dashed"];\n' % (pkg, intermediate))
+                        outfile.write( '  "%s" -> "%s"[color="red", style="dashed", lhead=cluster_%s];\n' % (intermediate, dep, dependent_stack))
 #	outfile.write('}\n')
         ## rank
 	if options.rank:	

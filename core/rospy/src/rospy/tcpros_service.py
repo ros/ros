@@ -362,6 +362,7 @@ class ServiceProxy(_Service):
         
         @raise TypeError: if request is not of the valid type (Message)
         @raise ServiceException: if communication with remote service fails
+        @raise ROSInterruptException: if node shutdown (e.g. ctrl-C) interrupts service call
         @raise ROSSerializationException: If unable to serialize
         message. This is usually a type error with one of the fields.
         """
@@ -396,6 +397,12 @@ class ServiceProxy(_Service):
                 raise ServiceException("service [%s] returned no response"%self.resolved_name)
             elif len(responses) > 1:
                 raise ServiceException("service [%s] returned multiple responses: %s"%(self.resolved_name, len(responses)))
+        except rospy.exceptions.TransportException, e:
+            # convert lower-level exception to exposed type
+            if rospy.core.is_shutdown():
+                raise rospy.exceptions.ROSInterruptException("node shutdown interrupted service call")
+            else:
+                raise ServiceException("transport error completing service call: %s"%(str(e)))
         finally:
             if not self.persistent:
                 transport.close()

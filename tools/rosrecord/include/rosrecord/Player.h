@@ -313,10 +313,12 @@ public:
 
     if (version_ == 0)
     {
+
+      ROS_WARN("No #ROSRECORD header found.  Assuming a V0.0 bag file, but more likely a corrupt file, or not really a .bag at all");
+
       record_stream_.seekg(0, std::ios_base::beg);
 
       quantity = 1;
-
     }
     else if (version_ == 100)
     {

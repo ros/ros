@@ -1,15 +1,25 @@
 <package>
   <description brief="A ROS system dependency manager">
 
-rosdep attempts to manage system dependencies reasonably. It provides a
-database mapping 'friendly' names into system-specific package names. If
-available, it will use the system's package manager to install binaries of the
-dependencies.
+rosdep attempts to help you manage the external dependencies of ROS. Because
+the ROS codebase is so wide-ranging, these dependencies can be hard to map onto
+your system. For example, what packages do you need in order to get the OpenGL
+headers on Ubuntu? (answer: libgl1-mesa-dev and libglu1-mesa-dev). These
+package names can sometimes be unfriendly, and, much more seriously, they
+usually vary slightly from one operating system or Linux distribution to
+another (e.g., Debian/Ubuntu versus Fedora), and can even vary between
+different versions of the same distribution. Enter rosdep.
+
+The commandline API has been reviewed and will remain stable.  The
+internal code API is subject to change in future releases.
+
+The yaml format is stable. There may be a few extensions to the
+syntax, but all changes will keep backwards compatability.
 
    </description>
   <author>Tully Foote/tfoote@willowgarage.com</author>
   <license>BSD</license>
   <depend package="roslib"/>
   <depend package="rospack"/>
-  <review status="unreviewed" notes=""/>
+  <review status="Doc Reviewed" notes="2010-01-12"/>
 </package>

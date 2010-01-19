@@ -899,6 +899,7 @@ def msg_generator(package, name, spec):
   ## The available fields are:
   ##   %s
   ##
+  ## @param self: self
   ## @param args: complete set of field values, in .msg order
   ## @param kwds: use keyword arguments corresponding to message field names
   ## to set specific fields. 
@@ -913,15 +914,18 @@ def msg_generator(package, name, spec):
 
     yield """
   ## internal API method
+  ## @param self: self
   def _get_types(self): return %s._slot_types
 
   ## serialize message into buffer
+  ## @param self: self
   ## @param buff StringIO: buffer
   def serialize(self, buff):"""%name
     for y in serialize_fn_generator(package, spec):
         yield "    "+ y
     yield """
   ## unpack serialized message in str into this message instance
+  ## @param self: self
   ## @param str str: byte array of serialized message
   def deserialize(self, str):"""
     for y in deserialize_fn_generator(package, spec):
@@ -930,6 +934,7 @@ def msg_generator(package, name, spec):
 
     yield """
   ## serialize message with numpy array types into buffer
+  ## @param self: self
   ## @param buff StringIO: buffer
   ## @param numpy module: numpy python module
   def serialize_numpy(self, buff, numpy):"""
@@ -937,6 +942,7 @@ def msg_generator(package, name, spec):
         yield "    "+ y
     yield """
   ## unpack serialized message in str into this message instance using numpy for array types
+  ## @param self: self
   ## @param str str: byte array of serialized message
   ## @param numpy module: numpy python module
   def deserialize_numpy(self, str, numpy):"""

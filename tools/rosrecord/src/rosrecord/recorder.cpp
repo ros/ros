@@ -282,6 +282,25 @@ bool ros::record::Recorder::record(std::string topic_name, const ros::Message& m
     }
   }
 
+
+  // Get information about possible latching and callerid from the connection header
+  bool latching = false;
+  std::string callerid("");
+  M_string::iterator latch_iter = msg.__connection_header->find(std::string("latching"));
+  if (latch_iter != msg.__connection_header->end())
+  {
+    if (latch_iter->second != std::string("0"))
+    {
+      latching = true;
+    }
+  }
+
+  M_string::iterator callerid_iter = msg.__connection_header->find(std::string("callerid"));
+  if (callerid_iter != msg.__connection_header->end())
+  {
+    callerid = callerid_iter->second;
+  }
+
   {
     boost::mutex::scoped_lock lock(record_mutex_);
 
@@ -329,6 +348,13 @@ bool ros::record::Recorder::record(std::string topic_name, const ros::Message& m
     header[TYPE_FIELD_NAME]  = msg_info.datatype;
     header[SEC_FIELD_NAME]   = std::string((char*)&time.sec, 4);
     header[NSEC_FIELD_NAME]  = std::string((char*)&time.nsec, 4);
+
+    if (latching)
+    {
+      header[LATCHING_FIELD_NAME] = std::string("1");
+      header[CALLERID_FIELD_NAME] = callerid;
+    }
+
     writeRecord(header, (char*)message_buf_, msg.serializationLength());
     if (record_file_.fail())
     {
@@ -379,42 +405,44 @@ void ros::record::Recorder::writeIndex()
 		// Remember position of first index record
 		index_data_pos_ = record_pos_;
 
-		for (std::map<std::string, std::vector<IndexEntry> >::const_iterator i = topic_indexes_.begin(); i != topic_indexes_.end(); i++)
+		for (std::map<std::string, std::vector<IndexEntry> >::const_iterator i = topic_indexes_.begin();
+                     i != topic_indexes_.end();
+                     i++)
 		{
 			const std::string&             topic_name  = i->first;
 			const std::vector<IndexEntry>& topic_index = i->second;
 
 			uint32_t topic_index_size = topic_index.size();
 
-	    const MsgInfo& msg_info = topics_recorded_[topic_name];
-
-	    // Write the index record header
+                        const MsgInfo& msg_info = topics_recorded_[topic_name];
+                        
+                        // Write the index record header
 			M_string header;
 			header[OP_FIELD_NAME]    = std::string((char*)&OP_INDEX_DATA, 1);
 			header[TOPIC_FIELD_NAME] = topic_name;
-	    header[TYPE_FIELD_NAME]  = msg_info.datatype;
+                        header[TYPE_FIELD_NAME]  = msg_info.datatype;
 			header[VER_FIELD_NAME]   = std::string((char*)&INDEX_VERSION, 4);
 			header[COUNT_FIELD_NAME] = std::string((char*)&topic_index_size, 4);
-
+                        
 			uint32_t data_len = topic_index_size * sizeof(IndexEntry);
 			writeHeader(header, data_len);
-
+                        
 			// Write the index record data (pairs of timestamp and position in file)
 			for (std::vector<IndexEntry>::const_iterator j = topic_index.begin(); j != topic_index.end(); j++)
 			{
-				const IndexEntry& index_entry = *j;
-				write((char*)&index_entry.sec,  4);
-				write((char*)&index_entry.nsec, 4);
-				write((char*)&index_entry.pos,  8);
+                          const IndexEntry& index_entry = *j;
+                          write((char*)&index_entry.sec,  4);
+                          write((char*)&index_entry.nsec, 4);
+                          write((char*)&index_entry.pos,  8);
 			}
 		}
 	}
-
+        
 	// Re-open the file for random access, and rewrite the file header to point to the first index data message
-  closeFile();
-  openFile(file_name_, true);
-  seek(file_header_pos_);
-  writeFileHeader();
+        closeFile();
+        openFile(file_name_, true);
+        seek(file_header_pos_);
+        writeFileHeader();
 }
 
 //

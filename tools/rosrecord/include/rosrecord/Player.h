@@ -79,6 +79,8 @@ class Player
     std::string md5sum_;
     std::string datatype_;
     std::string message_definition_;    ///< \todo Fill this in
+    std::string latcing_;
+    std::string callerid_;
 
     ros::Message* msg_;
     uint8_t* next_msg_;
@@ -89,7 +91,13 @@ class Player
     PlayerHelper(Player* player, std::string topic_name, std::string md5sum, std::string datatype, std::string message_definition)
       : player_(player), topic_name_(topic_name),  md5sum_(md5sum),
         datatype_(datatype), message_definition_(message_definition),
-        msg_(NULL), next_msg_(NULL), next_msg_size_(0) {}
+        msg_(NULL), next_msg_(NULL), next_msg_size_(0)
+    {
+      __connection_header = boost::shared_ptr<M_string>(new M_string);
+      (*__connection_header)["type"] = datatype;
+      (*__connection_header)["md5sum"] = md5sum;
+      (*__connection_header)["message_definition"] = message_definition;
+    }
 
     virtual ~PlayerHelper()
     {
@@ -99,9 +107,10 @@ class Player
 
     void callHandlers()
     {
-
       next_msg_ = player_->next_msg_;
       next_msg_size_ = player_->next_msg_size_;
+      (*__connection_header)["callerid"] = player_->next_msg_callerid_;
+      (*__connection_header)["latching"] = player_->next_msg_latching_;
 
       __serialized_length = next_msg_size_;
 
@@ -141,7 +150,10 @@ class Player
           }
 
           if (fmf_it->inflate)
+          {
+            msg_->__connection_header = __connection_header;
             fmf_it->f->call(topic_name_, msg_, player_->next_msg_time_,  player_->next_msg_time_recorded_);
+          }
           else
             fmf_it->f->call(topic_name_, this, player_->next_msg_time_,  player_->next_msg_time_recorded_);
         }
@@ -461,6 +473,10 @@ protected:
   uint8_t *next_msg_;
   uint32_t next_msg_size_, next_msg_alloc_size_;
 
+  // Putting these here feels very wrong
+  std::string next_msg_latching_;
+  std::string next_msg_callerid_;
+
   std::vector<FilteredMsgFunctor> callbacks_;
 
   // Helper to check for the presence of a field in a map of fields.
@@ -510,6 +526,8 @@ protected:
     std::string md5sum;
     std::string datatype;
     std::string message_definition;
+    std::string latching("0");
+    std::string callerid("");
 
     // Read the header length
     record_stream_.read((char*)&header_len, 4);
@@ -586,7 +604,21 @@ protected:
         return false;
       memcpy(&next_msg_dur.nsec,fitr->second.data(),4);
 
+
+      // Latching and callerid fields are optional
+      if((fitr = checkField(fields, LATCHING_FIELD_NAME,
+                          1, UINT_MAX, false)) != fields.end())
+        latching = fitr->second;
+
+      if((fitr = checkField(fields, CALLERID_FIELD_NAME,
+                          1, UINT_MAX, false)) != fields.end())
+        callerid = fitr->second;
+
       next_msg_name_ = topic_name;
+
+      // We always set to defaults specified at the beginning
+      next_msg_latching_ = latching;
+      next_msg_callerid_ = callerid;
 
 
       // If this is the first time that we've encountered this topic, we need

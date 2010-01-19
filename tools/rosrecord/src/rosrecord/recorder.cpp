@@ -286,19 +286,23 @@ bool ros::record::Recorder::record(std::string topic_name, const ros::Message& m
   // Get information about possible latching and callerid from the connection header
   bool latching = false;
   std::string callerid("");
-  M_string::iterator latch_iter = msg.__connection_header->find(std::string("latching"));
-  if (latch_iter != msg.__connection_header->end())
+  
+  if (msg.__connection_header != NULL)
   {
-    if (latch_iter->second != std::string("0"))
+    M_string::iterator latch_iter = msg.__connection_header->find(std::string("latching"));
+    if (latch_iter != msg.__connection_header->end())
     {
-      latching = true;
+      if (latch_iter->second != std::string("0"))
+      {
+        latching = true;
+      }
     }
-  }
 
-  M_string::iterator callerid_iter = msg.__connection_header->find(std::string("callerid"));
-  if (callerid_iter != msg.__connection_header->end())
-  {
-    callerid = callerid_iter->second;
+    M_string::iterator callerid_iter = msg.__connection_header->find(std::string("callerid"));
+    if (callerid_iter != msg.__connection_header->end())
+    {
+      callerid = callerid_iter->second;
+    }
   }
 
   {

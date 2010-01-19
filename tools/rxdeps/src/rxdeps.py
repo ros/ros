@@ -454,7 +454,7 @@ def vdmain():
                 if dep in pkg_dictionary: #Draw edges to all dependencies
                     local_stack = roslib.stacks.stack_of(pkg)
                     dependent_stack = roslib.stacks.stack_of(dep)
-                    if not (options.cluster and dependent_stack == local_stack):
+                    if not (options.cluster and not dependent_stack == local_stack):
                         outfile.write( '  "%s" -> "%s";\n' % (pkg, dep))
                     elif options.cluster:
                         intermediate = "%s_%s"%(local_stack, dependent_stack)

@@ -25,7 +25,7 @@
   </description>
   <author>Ken Conley/kwc@willowgarage.com</author>
   <license>BSD</license>
-  <review status="API cleared" notes=""/>
+  <review status="Doc reviewed" notes="2010/01/18"/>
   <url>http://ros.org/wiki/rospy</url>
   <depend package="roslib"/>
   <depend package="roslang"/>

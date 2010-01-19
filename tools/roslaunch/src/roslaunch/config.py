@@ -341,7 +341,7 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
     on port.
     @param roslaunch_files: list of launch files to load
     @type  roslaunch_files: [str]
-    @param port: roscore/master port
+    @param port: roscore/master port override. Set to 0 or None to use default.
     @type  port: int
     @param roslaunch_strs: (optional) roslaunch XML strings to load
     @type  roslaunch_strs: [str]

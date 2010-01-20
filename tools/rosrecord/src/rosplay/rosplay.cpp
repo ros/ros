@@ -197,7 +197,7 @@ bool RosPlay::spin()
     ros::WallDuration max_print_interval(0.1);
     while (node_handle->ok()){
       if (!player_.nextMsg())
-	break;
+        break;
       ros::WallTime t = ros::WallTime::now();
       if(!quiet_ && ((t - last_print_time) >= max_print_interval))
       {
@@ -226,7 +226,7 @@ Time RosPlay::getSysTime()
 
 std::map<std::string, ros::Publisher> g_publishers;
 
-void RosPlay::doPublish(string name, ros::Message* m, ros::Time play_time, ros::Time record_time, void* n)
+void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time, ros::Time record_time, void* n)
 {
   if (play_time < requested_start_time_)
     return;
@@ -250,7 +250,32 @@ void RosPlay::doPublish(string name, ros::Message* m, ros::Time play_time, ros::
       bag_time_publisher_->setHorizon(play_time);
   }
   
+  // We pull latching and callerid info out of the connection_header if it's available (which it always should be)
+  bool latching = false;
+  std::string callerid("");
+  
+  if (m->__connection_header != NULL)
+  {
+    M_string::iterator latch_iter = m->__connection_header->find(std::string("latching"));
+    if (latch_iter != m->__connection_header->end())
+    {
+      if (latch_iter->second != std::string("0"))
+      {
+        latching = true;
+      }
+    }
 
+    M_string::iterator callerid_iter = m->__connection_header->find(std::string("callerid"));
+    if (callerid_iter != m->__connection_header->end())
+    {
+      callerid = callerid_iter->second;
+    }
+  }
+
+  // We make a unique id composed of the callerid and the topicname allowing us to have separate advertisers
+  // for separate latching topics.
+
+  std::string name = callerid + topic_name;
   
   std::map<std::string, ros::Publisher>::iterator pub_token = g_publishers.find(name);
 
@@ -258,7 +283,9 @@ void RosPlay::doPublish(string name, ros::Message* m, ros::Time play_time, ros::
   //  if (ros::Node::instance()->advertise(name, *m, queue_size_))
   if (pub_token == g_publishers.end())
   {
-    AdvertiseOptions opts(name, queue_size_, m->__getMD5Sum(), m->__getDataType(), m->__getMessageDefinition());
+    AdvertiseOptions opts(topic_name, queue_size_, m->__getMD5Sum(), m->__getDataType(), m->__getMessageDefinition());
+    // Have to set the latching field explicitly
+    opts.latch = latching;
     ros::Publisher pub = node_handle->advertise(opts);
     g_publishers.insert(g_publishers.begin(), std::pair<std::string, ros::Publisher>(name, pub));
     pub_token = g_publishers.find(name);
@@ -266,7 +293,7 @@ void RosPlay::doPublish(string name, ros::Message* m, ros::Time play_time, ros::
     if (bag_time_) bag_time_publisher_->freezeTime();
     Time paused_time_ = getSysTime();
     ROS_INFO("Sleeping %.3f seconds after advertising %s...",
-             advertise_sleep_ / 1e6, name.c_str());
+             advertise_sleep_ / 1e6, topic_name.c_str());
     usleep(advertise_sleep_);
     ROS_INFO("Done sleeping.\n");
     Duration shift = getSysTime() - paused_time_;

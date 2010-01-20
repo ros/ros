@@ -125,6 +125,10 @@ def main():
         print "rosdep ABORTING.  Failed to detect OS: %s"%ex
         return 1
 
+    except roslib.exceptions.ROSLibException, ex:
+        print "rosdep ABORTING: %s"%ex
+        return 1
+
     if options.verbose:
         print "Detected OS: " + r.osi.get_name()
         print "Detected Version: " + r.osi.get_version()

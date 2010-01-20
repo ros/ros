@@ -79,8 +79,6 @@ class Player
     std::string md5sum_;
     std::string datatype_;
     std::string message_definition_;    ///< \todo Fill this in
-    std::string latcing_;
-    std::string callerid_;
 
     ros::Message* msg_;
     uint8_t* next_msg_;

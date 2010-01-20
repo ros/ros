@@ -205,6 +205,17 @@ def get_child_deps(pkg):
     for dep in roslib.rospack.rospack_depends_1(pkg):
         accum.update(roslib.rospack.rospack_depends(dep))
     return accum
+
+def get_internal_child_deps(pkg, stack = None):
+    if not stack:
+        stack = roslib.stacks.stack_of(pkg)
+    local_pkgs = set(roslib.stacks.packages_of(stack))
+
+    accum = set()
+    for dep in roslib.rospack.rospack_depends_1(pkg):
+        accum.update(roslib.rospack.rospack_depends(dep))
+    
+    return accum & local_pkgs
                      
 rosmakeall_color_map = { "rosmakeall-testfailures.txt": "orange", "rosmakeall-buildfailures.txt": "red"}
 
@@ -271,27 +282,62 @@ def classify_packages(pkg_dict):
     return (classes, stack_dict)
 
 
-def build_package_links(pkg, include, exclude):
-    other_stacks = {}
-    
-    local_dependencies = set()
-    
-    immediate_stack = roslib.stacks.stack_of(pkg)
-    immediate_dependencies.update(roslib.rospack.rospack_depends1(pkg))
-    for dep in immediate_dependencies:
-        if dep in exclude:
-            pass
-        dep_stack = roslib.stacks.stack_of(dep)
-        if dep_stack == immediate_stack:
-            local_dependencies.add(dep)
+def get_external_pkg_dependencies(pkg, stack=None):
+    if not stack:
+        stack = roslib.stacks.stack_of(pkg)
+    dependent_pkgs = roslib.rospack.rospack_depends_1(pkg)
+    return [ext for ext in dependent_pkgs if not roslib.stacks.stack_of(ext) == stack]
+
+def get_internal_pkg_dependencies(pkg, stack = None):
+    if not stack:
+        stack = roslib.stacks.stack_of(pkg)
+    dependent_pkgs = roslib.rospack.rospack_depends_1(pkg)
+    return [ext for ext in dependent_pkgs if roslib.stacks.stack_of(ext) == stack]
+
+
+def group_pkgs_by_stack(pkgs):
+    stacks = {}
+    for p in pkgs:
+        stack = roslib.stacks.stack_of(p)
+        if stack in stacks:
+            stacks[stack].add(p)
         else:
-            if dep_stack in other_stacks:
-                other_stacks[dep_stack].add(dep)
-            else:
-                other_stacks[dep_stack] = set([dep])
+            stacks[stack] = set([p])
+    return stacks
+
+def get_stack_depth(pkg, depth):
+    for stack_dep in roslib.rospack.rosstack_depends_1(pkg):
+    	depth = max(depth, get_stack_depth(stack_dep, depth + 1))
+    return depth
+
+def compute_stack_ranks():
+    rank = {}
+    for stack in roslib.stacks.list_stacks():
+    	depth = get_stack_depth(stack, 0)
+	if depth in rank:
+	   rank[depth].append(stack)
+        else:
+	   rank[depth] = [stack]
+
+    return rank
 
 
-    return local_dependences, other_stacks
+# cluster definitons
+def build_stack_list(stack):#, include, exclude):
+    stack_contents = set(roslib.stacks.packages_of(stack))
+    #stack_contents -= set(exclude)
+    #stack_contents &= set(include)
+    
+    external_dependencies = set()
+    for pkg in stack_contents:
+        external_dependencies.update(get_external_pkg_dependencies(pkg))
+        
+    external_stack_dependencies = group_pkgs_by_stack(external_dependencies)
+    
+    return stack_contents, external_stack_dependencies
+    
+
+    
 
 
 def vdmain():
@@ -382,9 +428,11 @@ def vdmain():
         outfile.write( """digraph ros {
   //size="11,8";
   size="100,40";
+//clusterrank=global;
   node [color=gainsboro, style=filled];
   ranksep = 2.0;
   compound=true;
+  
 """)
         colors = ['red', 'blue', 'green', 'yellow', 'gold', 'orange','chocolate', 'gray44', 'deeppink', 'black']
 	classes = []
@@ -395,7 +443,7 @@ def vdmain():
             i = 1
         # create the legend
         if color_palate:
-            outfile.write(' subgraph cluster_legend { style=bold; color=black; label = "Color Legend"; ')
+            outfile.write(' subgraph cluster__legend { style=bold; color=black; label = "Color Legend"; ')
             for type in color_palate:
                 text_color="black"
                 bg_color = color_palate[type]
@@ -406,13 +454,18 @@ def vdmain():
         for cl in classes:
             if options.cluster:
                 base_color = colors[values.index(base_dict[cl])%len(colors)]
-                outfile.write(' subgraph cluster_%s { style=bold; color=%s; label = "%s \\n (%s)"; '%(cl,base_color, cl, base_dict[cl]))
-                for pkg in classes[cl]:
+                outfile.write(' subgraph cluster__%s { style=bold; color=%s; label = "%s \\n (%s)"; '%(cl, base_color, cl, base_dict[cl]))
+                internal, external = build_stack_list(cl)
+                for pkg in internal:
                     outfile.write(' "%s" ;'%pkg)
-                for s in roslib.rospack.rosstack_depends_1(cl):
-                    outfile.write(' "%s_%s" [ label = "Stack: %s"];'%(cl, s,s))
+                for s in external:
+                    outfile.write(' subgraph cluster__%s_%s { rank=min; style=bold; color=%s; label = "Stack: %s \\n (%s)"; '%(cl, s, base_color, s, base_dict[cl]))
+                    for p in external[s]:
+                        outfile.write(' "%s.%s.%s" [ label = "%s"];'%(cl, s, p, p))
+                    outfile.write('}\n')
                 outfile.write('}\n')
                 
+        external_deps_connected = set()
         for pkg, deps in pkg_dictionary.iteritems():
             node_args = []
             ##Coloring
@@ -447,9 +500,12 @@ def vdmain():
 
             outfile.write('  "%s" [%s];\n'%(pkg, ', '.join(node_args)))
 
+
+
+
             ## Edges
             for dep in deps:
-                if not options.verbose and dep in get_child_deps(pkg): 
+                if not options.verbose and dep in get_internal_child_deps(pkg): 
                     continue
                 if dep in pkg_dictionary: #Draw edges to all dependencies
                     local_stack = roslib.stacks.stack_of(pkg)
@@ -457,12 +513,23 @@ def vdmain():
                     if not (options.cluster and not dependent_stack == local_stack):
                         outfile.write( '  "%s" -> "%s";\n' % (pkg, dep))
                     elif options.cluster:
-                        intermediate = "%s_%s"%(local_stack, dependent_stack)
+                        intermediate = "%s.%s.%s"%(local_stack, dependent_stack, dep)
+                        deduplication = "%s.%s"%(local_stack, dependent_stack)
                         outfile.write( '  "%s" -> "%s"[color="blue", style="dashed"];\n' % (pkg, intermediate))
-                        outfile.write( '  "%s" -> "%s"[color="red", style="dashed", lhead=cluster_%s];\n' % (intermediate, dep, dependent_stack))
+                        if not deduplication in external_deps_connected:
+                            outfile.write( '  "%s" -> "%s"[color="red", style="dashed", ltail=cluster__%s_%s, lhead=cluster__%s];\n' % (intermediate, dep, local_stack, dependent_stack, dependent_stack))
+                            external_deps_connected.add(deduplication)
 #	outfile.write('}\n')
         ## rank
-	if options.rank:	
+        if options.cluster and options.rank:
+            stacks = compute_stack_ranks()
+            for r in stacks:
+                if len(stacks[r]) > 1:
+                    outfile.write('{ rank = same;')    
+                    for stack in stacks[r]:
+                        outfile.write(' "cluster__%s" ;'%stack)
+                    outfile.write('}\n')
+        elif options.rank:	
 	    rank_dictionary = build_dictionary([], [])
 	    rank = build_rank(rank_dictionary)
             for key in rank:

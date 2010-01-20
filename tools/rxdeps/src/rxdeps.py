@@ -38,6 +38,7 @@ import getopt
 import roslib
 import roslib.rospack
 import roslib.rosenv
+import random
 
 from math import sqrt
 from optparse import OptionParser
@@ -172,6 +173,14 @@ class PackageCharacteristics:
         else:
             return "gainsboro"
 
+    def get_color_palate(self):
+        if self.color_by == "review":
+            return status_map
+        if self.color_by == "license":
+            return license_map
+        else:
+            return None
+
 ## Build the dictionary of dependencies for a list of packages
 ## @param names [str]: list of package names to target. If empty, all packages will be targetted.
 ## @param target1 bool: if True, only target direct dependencies for packages listed in \a names
@@ -249,39 +258,6 @@ def build_rank(pkg_dict):
 
     return rank
 
-def classify_packages(pkg_dict):
-    classes = {}
-    stacks = []
-    found_stack = ''
-    stack_dict = {}
-    try:
-        stacks = roslib.stacks.list_stacks()
-
-        for pkg in pkg_dict:
-            found_stack = "Unreleased"
-            for stack in stacks:
-                if stack == roslib.stacks.stack_of(pkg):
-                    #print "matching %s with %s"%(pkg_path, realpath_stack)
-                    found_stack = stack
-                    break
-
-            # record the path to the stack
-            if found_stack == "Unreleased":
-                stack_dict["Unreleased"] = "Not Contained in a stack"
-            else:
-                print "adding package %s to stack %s with path %s"%(pkg, found_stack, roslib.stacks.get_stack_dir(found_stack))
-                stack_dict[found_stack] = roslib.stacks.get_stack_dir(found_stack)
-
-            # Record the stack on the list of classes
-            if found_stack in classes:
-               classes[found_stack].append (pkg)
-            else:
-               classes[found_stack] = [pkg]
-    except subprocess.CalledProcessError:
-        print >> sys.stderr, "failed to call [rosstack contents %s]"%stack_string
-    return (classes, stack_dict)
-
-
 def get_external_pkg_dependencies(pkg, stack=None):
     if not stack:
         stack = roslib.stacks.stack_of(pkg)
@@ -342,8 +318,8 @@ def build_stack_list(stack):#, include, exclude):
 
 def vdmain():
     parser = OptionParser(usage="usage: %prog [options]", prog='rxdeps')
-    parser.add_option("-r", "--rosmake", dest="rosmake", default=False,
-                      action="store_true", help="color by rosmakeall results")
+    #parser.add_option("-r", "--rosmake", dest="rosmake", default=False,
+    #                  action="store_true", help="color by rosmakeall results")
     parser.add_option("-s", "--review", dest="review_status", default=False,
                       action="store_true", help="color by review status")
     parser.add_option("--size", dest="size_by_deps", default=False,
@@ -398,9 +374,6 @@ def vdmain():
     if options.quiet:
         exclude.extend(['roscpp','std_msgs', 'rospy', 'std_srvs', 'robot_msgs', 'robot_srvs', 'rosconsole', 'tf'])
         
-    color_sources = [x for x in [options.review_status, options.license, options.rosmake, options.color_file] if x]
-    color_palate = None
-
     pkg_characterists = PackageCharacteristics()
     if options.review_status:
         pkg_characterists.set_color_by("review")
@@ -435,13 +408,8 @@ def vdmain():
   
 """)
         colors = ['red', 'blue', 'green', 'yellow', 'gold', 'orange','chocolate', 'gray44', 'deeppink', 'black']
-	classes = []
-        if options.cluster:
-            classes, base_dict = classify_packages(pkg_dictionary)
-            bases = base_dict.keys()
-            values = list(set(base_dict.values()))
-            i = 1
         # create the legend
+        color_palate = pkg_characterists.get_color_palate()
         if color_palate:
             outfile.write(' subgraph cluster__legend { style=bold; color=black; label = "Color Legend"; ')
             for type in color_palate:
@@ -451,15 +419,15 @@ def vdmain():
                     text_color = "white"  
                 outfile.write('"%s" [color="%s", fontcolor="%s"];\n '%(type, bg_color, text_color))
             outfile.write('}\n')
-        for cl in classes:
+        for cl in roslib.stacks.list_stacks():
             if options.cluster:
-                base_color = colors[values.index(base_dict[cl])%len(colors)]
-                outfile.write(' subgraph cluster__%s { style=bold; color=%s; label = "%s \\n (%s)"; '%(cl, base_color, cl, base_dict[cl]))
+                base_color = colors[random.randrange(0, len(colors))]
+                outfile.write(' subgraph cluster__%s { style=bold; color=%s; label = "%s \\n (%s)"; '%(cl, base_color, cl, roslib.stacks.get_stack_dir(cl)))
                 internal, external = build_stack_list(cl)
                 for pkg in internal:
                     outfile.write(' "%s" ;'%pkg)
                 for s in external:
-                    outfile.write(' subgraph cluster__%s_%s { rank=min; style=bold; color=%s; label = "Stack: %s \\n (%s)"; '%(cl, s, base_color, s, base_dict[cl]))
+                    outfile.write(' subgraph cluster__%s_%s { rank=min; style=bold; color=%s; label = "Stack: %s \\n (%s)"; '%(cl, s, base_color, s, roslib.stacks.get_stack_dir(cl)))
                     for p in external[s]:
                         outfile.write(' "%s.%s.%s" [ label = "%s"];'%(cl, s, p, p))
                     outfile.write('}\n')
@@ -572,4 +540,5 @@ def vdmain():
         print >> sys.stderr, "failed to generate %s"%output_filename
 
 if __name__ == '__main__':
+    random.seed()
     vdmain()

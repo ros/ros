@@ -52,10 +52,12 @@ class ROSInitException(ROSException):
     """    
     pass
 
-class ROSInterruptException(ROSException):
+class ROSInterruptException(ROSException, KeyboardInterrupt):
     """
-    Exception for operations that interrupted, e.g. due to shutdown
+    Exception for operations that interrupted, e.g. due to shutdown.
 
+    This is a subclass of both L{ROSException} and KeyboardInterrupt
+    so that it can be used in logic tht expects either.
     """    
     pass
 

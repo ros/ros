@@ -55,7 +55,17 @@ class TestRospyExceptions(unittest.TestCase):
                   TransportException, TransportTerminated, TransportInitError]:
             exc = e('foo')
             self.assert_(isinstance(exc, ROSInternalException))
-            
+
+    def test_ROSInterruptException(self):
+        from rospy.exceptions import ROSInterruptException, ROSException
+        try:
+            raise ROSInterruptException("test")
+        except ROSException:
+            pass
+        try:
+            raise ROSInterruptException("test")
+        except KeyboardInterrupt:
+            pass
     
 if __name__ == '__main__':
     import rostest

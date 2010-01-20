@@ -214,7 +214,7 @@ class TCPROSHandler(rospy.transport.ProtocolHandler):
             #rospy.core._add_shutdown_thread(t)
             t.start()
         except rospy.exceptions.TransportInitError, e:
-            logerr("unable to create TCPROSSub: %s", e)
+            logerr("unable to create subscriber transport: %s", e)
             return 0, "Internal error creating inbound TCP connection for [%s]: %s"%(resolved_name, e), -1
 
         # Attach connection to _SubscriberImpl
@@ -284,11 +284,21 @@ class TCPROSHandler(rospy.transport.ProtocolHandler):
             if not topic:
                 return "[%s] is not a publisher of  [%s]. Topics are %s"%(rospy.names.get_caller_id(), resolved_topic_name, tm.get_publications())
             elif md5sum != rospy.names.TOPIC_ANYTYPE and md5sum != topic.data_class._md5sum:
+
+                actual_type = topic.data_class._type
+
                 # check to see if subscriber sent 'type' header. If they did, check that
                 # types are same first as this provides a better debugging message
-                if 'type' in header and header['type'] != topic.data_class._type:
-                    return "topic types do not match: [%s] vs. [%s]"%(header['type'], topic.data_class._type)
-                return "md5sums do not match: [%s] vs. [%s]"%(md5sum, topic.data_class._md5sum)
+                if 'type' in header:
+                    requested_type = header['type']
+                    if requested_type != actual_type:
+                        return "topic types do not match: [%s] vs. [%s]"%(requested_type, actual_type)
+                else:
+                    # defaults to actual type
+                    requested_type = actual_type
+
+                return "Client [%s] wants topic [%s] to have datatype/md5sum [%s/%s], but our version has [%s/%s] Dropping connection."%(header['callerid'], resolved_topic_name, requested_type, md5sum, actual_type, topic.data_class._md5sum)
+
             else:
                 #TODO:POLLING if polling header is present, have to spin up receive loop as well
 

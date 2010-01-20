@@ -189,7 +189,7 @@ class TestRospyTcprosPubsub(unittest.TestCase):
         header_copy = headers.copy()
         header_copy['md5sum'] = 'bad'
         md5_err = tch(sock, client_addr, header_copy)
-        self.assert_(md5_err)
+        self.assert_("md5sum" in md5_err, md5_err) 
 
         # now test with correct params
         err = tch(sock, client_addr, headers)        
@@ -205,7 +205,7 @@ class TestRospyTcprosPubsub(unittest.TestCase):
         # - now give mismatched md5sum, this will test different error message
         header_copy['md5sum'] = 'bad'
         type_md5_err = tch(sock, client_addr, header_copy)
-        self.assert_(type_md5_err)
+        self.assert_("types" in type_md5_err, type_md5_err)
         
         # - these error messages should be different
         self.assertNotEquals(md5_err, type_md5_err)

@@ -462,7 +462,6 @@ class TCPROSTransport(Transport):
             self.write_header()
             self.read_header()
         except TransportInitError, tie:
-            logwarn("Unable to initiate TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, tie))
             rospyerr("Unable to initiate TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, traceback.format_exc()))            
             raise
         except Exception, e:

@@ -92,6 +92,7 @@ RosoutPanel::RosoutPanel(wxWindow* parent, int id, wxPoint pos, wxSize size, int
     RosoutSeverityFilterControl* control = new RosoutSeverityFilterControl(this, filter);
     severity_filter_ = filter;
     severity_sizer_->Add(control, 0, wxEXPAND);
+    severity_filter_->getChangedSignal().connect(boost::bind(&RosoutPanel::onFilterChanged, this, _1));
   }
 
   createTextFilter();

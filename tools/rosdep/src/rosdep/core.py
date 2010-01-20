@@ -175,6 +175,7 @@ class RosdepLookupPackage:
 
         paths = set()
         for p in rosdep_dependent_packages:
+            stack = None
             try:
                 stack = roslib.stacks.stack_of(p)
             except roslib.packages.InvalidROSPkgException, ex:

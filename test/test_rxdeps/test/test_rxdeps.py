@@ -73,20 +73,41 @@ class RxdepsTestCase(unittest.TestCase):
         # Also test command aliases, verifying that they give the same 
         # return code and console output
         if command:
-          cmd = command.split()[-1] 
-          if cmd in aliases:
-            args[-2] = aliases[cmd]
-            alias_p = Popen(args, stdout=PIPE, stderr=PIPE, env=env)
-            alias_stdout, alias_stderr = alias_p.communicate()
-            self.assertEquals(p.returncode, alias_p.returncode)
-            self.assertEquals(stdout, alias_stdout)
-            #self.assertEquals(stderr, alias_stderr)
+            aliases = {}
+            cmd = command.split()[-1] 
+            if cmd in aliases:
+                args[-2] = aliases[cmd]
+                alias_p = Popen(args, stdout=PIPE, stderr=PIPE, env=env)
+                alias_stdout, alias_stderr = alias_p.communicate()
+                self.assertEquals(p.returncode, alias_p.returncode)
+                self.assertEquals(stdout, alias_stdout)
+                #self.assertEquals(stderr, alias_stderr)
 
         return p.returncode, stdout.strip(), stderr
 
 
     def test_utest(self):
-        ret, out, err = self._run_rxdeps(os.path.join(roslib.packages.get_pkg_dir("test_rxdeps"),"test/test_packages"), "pkg1", None)
+        ret, out, err = self._run_rxdeps(os.path.join(roslib.packages.get_pkg_dir("test_rxdeps"),"test/test_packages"), "pkg1", "--graphviz-output=deps.gv")
+        self.assertTrue(ret == 0)
+        #print ret, out, err
+        with open("deps.gv") as fh:
+            lines = fh.read().split("\n")
+            self.assertTrue("  \"pkg2\" -> \"pkg1\";" in lines)
+            self.assertTrue("  \"pkg3\" -> \"pkg2\";" in lines)
+            self.assertTrue("  \"pkg4\" -> \"pkg2\";" in lines)
+            self.assertTrue("  \"pkg5\" -> \"pkg3\";" in lines)
+            self.assertTrue("  \"pkg5\" -> \"pkg4\";" in lines)
+
+        # make sure the intermediate is cleaned up
+        os.remove("deps.gv")
+
+        # clean up the output too
+        self.assertTrue(os.path.exists("deps.pdf"))
+        os.remove("deps.pdf")
+
+
+    def test_output_arg(self):
+        ret, out, err = self._run_rxdeps(os.path.join(roslib.packages.get_pkg_dir("test_rxdeps"),"test/test_packages"), "pkg1",  "--graphviz-output=deps.gv -oout.pdf")
         self.assertTrue(ret == 0)
         #print ret, out, err
         with open("deps.gv") as fh:
@@ -97,7 +118,14 @@ class RxdepsTestCase(unittest.TestCase):
             self.assertTrue("  \"pkg5\" -> \"pkg3\";" in lines)
             self.assertTrue("  \"pkg5\" -> \"pkg4\";" in lines)
             
-        
+
+        # make sure the intermediate is cleaned up
+        os.remove("deps.gv")
+
+        # clean up the output too
+        self.assertTrue(os.path.exists("out.pdf"))
+        os.remove("out.pdf")
+
 
 if __name__ == "__main__":
     import rostest

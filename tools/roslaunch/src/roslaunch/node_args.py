@@ -204,6 +204,13 @@ def create_local_process_env(node, machine, master_uri, env=os.environ):
             del full_env[evar]
 
     proc_env = setup_env(node, machine, master_uri)
+
+    # #2372: add ROS_ROOT/bin to path if it is not present
+    rosroot_bin = os.path.join(roslib.rosenv.get_ros_root(), 'bin')
+    path = os.environ.get('PATH', '')
+    if not rosroot_bin in path.split(os.pathsep):
+        proc_env['PATH'] = path + os.pathsep + rosroot_bin
+        
     full_env.update(proc_env)
     return full_env
 

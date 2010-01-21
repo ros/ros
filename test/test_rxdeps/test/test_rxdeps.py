@@ -143,7 +143,12 @@ class RxdepsTestCase(unittest.TestCase):
         self.assertTrue(os.path.exists("out.pdf"))
         os.remove("out.pdf")
 
-
-if __name__ == "__main__":
+    def test_usage(self):
+        ret, out, err = self._run_rxdeps(os.path.join(roslib.packages.get_pkg_dir("test_rxdeps"),"test/test_packages"), "pkg1", "-h")
+        self.assertTrue(ret == 0)
+        self.assertEqual(out.count("Usage:"), 1)
+        #print ret, out, err
+        
+if __name__ == '__main__':
     import rostest
     rostest.unitrun(PKG, 'rxdeps_exe_process', RxdepsTestCase)

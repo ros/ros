@@ -105,6 +105,23 @@ class RxdepsTestCase(unittest.TestCase):
         self.assertTrue(os.path.exists("deps.pdf"))
         os.remove("deps.pdf")
 
+    def test_exclude(self):
+        ret, out, err = self._run_rxdeps(os.path.join(roslib.packages.get_pkg_dir("test_rxdeps"),"test/test_packages"), "pkg1", "--graphviz-output=deps.gv --exclude=pkg2")
+        self.assertTrue(ret == 0)
+        #print ret, out, err
+        with open("deps.gv") as fh:
+            lines = fh.read().split("\n")
+            self.assertFalse("pkg2" in lines)
+            self.assertTrue("  \"pkg5\" -> \"pkg3\";" in lines)
+            self.assertTrue("  \"pkg5\" -> \"pkg4\";" in lines)
+
+        # make sure the intermediate is cleaned up
+        os.remove("deps.gv")
+
+        # clean up the output too
+        self.assertTrue(os.path.exists("deps.pdf"))
+        os.remove("deps.pdf")
+
 
     def test_output_arg(self):
         ret, out, err = self._run_rxdeps(os.path.join(roslib.packages.get_pkg_dir("test_rxdeps"),"test/test_packages"), "pkg1",  "--graphviz-output=deps.gv -oout.pdf")

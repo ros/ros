@@ -100,9 +100,9 @@ class RosMakeAll:
         warning = ''
         try:
             r = rosdep.core.Rosdep(packages, robust=True)
+            (output, scripts) = r.check()
         except roslib.exceptions.ROSLibException, ex:
             return ("rosdep ABORTED: %s"%ex, '')
-        (output, scripts) = r.check()
 
         if len(scripts) > 0:
             warning = "rosdep check could not check scripts: %s"%scripts
@@ -122,13 +122,12 @@ class RosMakeAll:
         """
         try:
             r = rosdep.core.Rosdep(packages, robust=True)
-        except roslib.os_detect.OSDetectException, ex:
-            return "%s"%ex
-        try:
             r.install(include_duplicates=False, default_yes=default_yes);
             return None
         except rosdep.core.RosdepException, e:
             return "rosdep install FAILED: %s"%e
+        except roslib.exceptions.ROSLibExceptoin, ex:
+            return "%s"%ex
 
     def build_or_recurse(self,p):
         if p in self.build_list:
@@ -661,7 +660,6 @@ class RosMakeAll:
             if warning:
                 self.print_all("rosdep produced a warning: %s"%warning)
 
-            print self.rosdep_check_result, "warning", warning
             if len(self.rosdep_check_result) == 0:
                 self.print_all( "rosdep check passed all system dependencies in packages")# %s"% packages)
             else:

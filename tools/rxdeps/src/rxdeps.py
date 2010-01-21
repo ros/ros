@@ -39,6 +39,8 @@ import roslib
 import roslib.rospack
 import roslib.rosenv
 import random
+import tempfile
+import shutil
 
 from math import sqrt
 from optparse import OptionParser
@@ -344,6 +346,9 @@ def vdmain():
     parser.add_option("-o", metavar="FILENAME",
                       dest="output_filename", default=None, 
                       type="string", help="output_filename") 
+    parser.add_option("--graphviz-output", metavar="FILENAME",
+                      dest="graphviz_output_filename", default=None, 
+                      type="string", help="Save the intermediate output to this filename.") 
     parser.add_option("--target", metavar="PKG_NAMES_LIST,COMMA_SEPERATED",
                       dest="targets", default='', 
                       type="string", help="target packages")
@@ -397,8 +402,8 @@ def vdmain():
     pkg_dictionary = build_dictionary(targets, exclude, target1=options.target1)
 
     print "Writing"
-    with open('deps.gv', 'w') as outfile:
-        outfile.write( """digraph ros {
+    outfile = tempfile.NamedTemporaryFile()
+    outfile.write( """digraph ros {
   //size="11,8";
   size="100,40";
 //clusterrank=global;
@@ -407,107 +412,113 @@ def vdmain():
   compound=true;
   
 """)
-        colors = ['red', 'blue', 'green', 'yellow', 'gold', 'orange','chocolate', 'gray44', 'deeppink', 'black']
-        # create the legend
-        color_palate = pkg_characterists.get_color_palate()
-        if color_palate:
-            outfile.write(' subgraph cluster__legend { style=bold; color=black; label = "Color Legend"; ')
-            for type in color_palate:
-                text_color="black"
-                bg_color = color_palate[type]
-                if bg_color == "black":
-                    text_color = "white"  
-                outfile.write('"%s" [color="%s", fontcolor="%s"];\n '%(type, bg_color, text_color))
-            outfile.write('}\n')
-        for cl in roslib.stacks.list_stacks():
-            if options.cluster:
-                base_color = colors[random.randrange(0, len(colors))]
-                outfile.write(' subgraph cluster__%s { style=bold; color=%s; label = "%s \\n (%s)"; '%(cl, base_color, cl, roslib.stacks.get_stack_dir(cl)))
-                internal, external = build_stack_list(cl)
-                for pkg in internal:
-                    outfile.write(' "%s" ;'%pkg)
-                for s in external:
-                    outfile.write(' subgraph cluster__%s_%s { rank=min; style=bold; color=%s; label = "Stack: %s \\n (%s)"; '%(cl, s, base_color, s, roslib.stacks.get_stack_dir(cl)))
-                    for p in external[s]:
-                        outfile.write(' "%s.%s.%s" [ label = "%s"];'%(cl, s, p, p))
-                    outfile.write('}\n')
+    colors = ['red', 'blue', 'green', 'yellow', 'gold', 'orange','chocolate', 'gray44', 'deeppink', 'black']
+    # create the legend
+    color_palate = pkg_characterists.get_color_palate()
+    if color_palate:
+        outfile.write(' subgraph cluster__legend { style=bold; color=black; label = "Color Legend"; ')
+        for type in color_palate:
+            text_color="black"
+            bg_color = color_palate[type]
+            if bg_color == "black":
+                text_color = "white"  
+            outfile.write('"%s" [color="%s", fontcolor="%s"];\n '%(type, bg_color, text_color))
+        outfile.write('}\n')
+    for cl in roslib.stacks.list_stacks():
+        if options.cluster:
+            base_color = colors[random.randrange(0, len(colors))]
+            outfile.write(' subgraph cluster__%s { style=bold; color=%s; label = "%s \\n (%s)"; '%(cl, base_color, cl, roslib.stacks.get_stack_dir(cl)))
+            internal, external = build_stack_list(cl)
+            for pkg in internal:
+                outfile.write(' "%s" ;'%pkg)
+            for s in external:
+                outfile.write(' subgraph cluster__%s_%s { rank=min; style=bold; color=%s; label = "Stack: %s \\n (%s)"; '%(cl, s, base_color, s, roslib.stacks.get_stack_dir(cl)))
+                for p in external[s]:
+                    outfile.write(' "%s.%s.%s" [ label = "%s"];'%(cl, s, p, p))
                 outfile.write('}\n')
-                
-        external_deps_connected = set()
-        for pkg, deps in pkg_dictionary.iteritems():
-            node_args = []
-            ##Coloring
-            color = pkg_characterists.get_color(pkg)
-            node_args.append("color=%s"%color)
-            if color == 'black':
-                node_args.append("fontcolor=white")
-                
-            ## Shape
-            if pkg in exclude:
-                node_args.append("shape=box")
+            outfile.write('}\n')
 
-            # Size
-            if options.size_by_deps:
-                num_deps = len(roslib.rospack.rospack_depends_on(pkg))
-                node_args.append("width=%s,height=%s"%(.75 + .1 * sqrt(num_deps), .5 + .1* sqrt(num_deps)))
+    external_deps_connected = set()
+    for pkg, deps in pkg_dictionary.iteritems():
+        node_args = []
+        ##Coloring
+        color = pkg_characterists.get_color(pkg)
+        node_args.append("color=%s"%color)
+        if color == 'black':
+            node_args.append("fontcolor=white")
 
-            ##Perimeter 
-            if pkg in targets:
-                node_args.append('peripheries=6, style=bold')
-            elif pkg in exclude: 
-                node_args.append('peripheries=3, style=dashed')
-                
-            notes = pkg_characterists.get_review_notes(pkg)
-            if len(notes) > 0:
-              node_args.append('label="%s\\n(%s)"' % (pkg, notes))
+        ## Shape
+        if pkg in exclude:
+            node_args.append("shape=box")
 
-            if options.hide:
-               if len(roslib.rospack.rospack_depends_on(pkg)) == 0 and len(roslib.rospack.rospack_depends(pkg)) == 0: #TODO: This is pretty slow
-                  print "Hiding unattached package %s"%pkg
-                  continue
+        # Size
+        if options.size_by_deps:
+            num_deps = len(roslib.rospack.rospack_depends_on(pkg))
+            node_args.append("width=%s,height=%s"%(.75 + .1 * sqrt(num_deps), .5 + .1* sqrt(num_deps)))
 
-            outfile.write('  "%s" [%s];\n'%(pkg, ', '.join(node_args)))
+        ##Perimeter 
+        if pkg in targets:
+            node_args.append('peripheries=6, style=bold')
+        elif pkg in exclude: 
+            node_args.append('peripheries=3, style=dashed')
+
+        notes = pkg_characterists.get_review_notes(pkg)
+        if len(notes) > 0:
+          node_args.append('label="%s\\n(%s)"' % (pkg, notes))
+
+        if options.hide:
+           if len(roslib.rospack.rospack_depends_on(pkg)) == 0 and len(roslib.rospack.rospack_depends(pkg)) == 0: #TODO: This is pretty slow
+              print "Hiding unattached package %s"%pkg
+              continue
+
+        outfile.write('  "%s" [%s];\n'%(pkg, ', '.join(node_args)))
 
 
 
 
-            ## Edges
-            for dep in deps:
-                if not options.verbose and dep in get_internal_child_deps(pkg): 
-                    continue
-                if dep in pkg_dictionary: #Draw edges to all dependencies
-                    local_stack = roslib.stacks.stack_of(pkg)
-                    dependent_stack = roslib.stacks.stack_of(dep)
-                    if not (options.cluster and not dependent_stack == local_stack):
-                        outfile.write( '  "%s" -> "%s";\n' % (pkg, dep))
-                    elif options.cluster:
-                        intermediate = "%s.%s.%s"%(local_stack, dependent_stack, dep)
-                        deduplication = "%s.%s"%(local_stack, dependent_stack)
-                        outfile.write( '  "%s" -> "%s"[color="blue", style="dashed"];\n' % (pkg, intermediate))
-                        if not deduplication in external_deps_connected:
-                            outfile.write( '  "%s" -> "%s"[color="red", style="dashed", ltail=cluster__%s_%s, lhead=cluster__%s];\n' % (intermediate, dep, local_stack, dependent_stack, dependent_stack))
-                            external_deps_connected.add(deduplication)
-#	outfile.write('}\n')
-        ## rank
-        if options.cluster and options.rank:
-            stacks = compute_stack_ranks()
-            for r in stacks:
-                if len(stacks[r]) > 1:
-                    outfile.write('{ rank = same;')    
-                    for stack in stacks[r]:
-                        outfile.write(' "cluster__%s" ;'%stack)
-                    outfile.write('}\n')
-        elif options.rank:	
-	    rank_dictionary = build_dictionary([], [])
-	    rank = build_rank(rank_dictionary)
-            for key in rank:
-                if len(rank[key]) > 1:
-                    outfile.write('{ rank = same;')    
-                    for pkg_rank in rank[key]:
-                        if pkg_rank in pkg_dictionary:
-                            outfile.write(' "%s" ;'%pkg_rank)
-                    outfile.write('}\n')
-        outfile.write( '}\n')
+        ## Edges
+        for dep in deps:
+            if not options.verbose and dep in get_internal_child_deps(pkg): 
+                continue
+            if dep in pkg_dictionary: #Draw edges to all dependencies
+                local_stack = roslib.stacks.stack_of(pkg)
+                dependent_stack = roslib.stacks.stack_of(dep)
+                if not (options.cluster and not dependent_stack == local_stack):
+                    outfile.write( '  "%s" -> "%s";\n' % (pkg, dep))
+                elif options.cluster:
+                    intermediate = "%s.%s.%s"%(local_stack, dependent_stack, dep)
+                    deduplication = "%s.%s"%(local_stack, dependent_stack)
+                    outfile.write( '  "%s" -> "%s"[color="blue", style="dashed"];\n' % (pkg, intermediate))
+                    if not deduplication in external_deps_connected:
+                        outfile.write( '  "%s" -> "%s"[color="red", style="dashed", ltail=cluster__%s_%s, lhead=cluster__%s];\n' % (intermediate, dep, local_stack, dependent_stack, dependent_stack))
+                        external_deps_connected.add(deduplication)
+    #	outfile.write('}\n')
+    ## rank
+    if options.cluster and options.rank:
+        stacks = compute_stack_ranks()
+        for r in stacks:
+            if len(stacks[r]) > 1:
+                outfile.write('{ rank = same;')    
+                for stack in stacks[r]:
+                    outfile.write(' "cluster__%s" ;'%stack)
+                outfile.write('}\n')
+    elif options.rank:	
+        rank_dictionary = build_dictionary([], [])
+        rank = build_rank(rank_dictionary)
+        for key in rank:
+            if len(rank[key]) > 1:
+                outfile.write('{ rank = same;')    
+                for pkg_rank in rank[key]:
+                    if pkg_rank in pkg_dictionary:
+                        outfile.write(' "%s" ;'%pkg_rank)
+                outfile.write('}\n')
+    outfile.write( '}\n')
+    outfile.flush() # write to disk, but don't delete 
+
+    if options.graphviz_output_filename:
+        graphviz_output_filename = os.path.realpath(options.graphviz_output_filename)
+        shutil.copyfile(outfile.name, graphviz_output_filename)
+
     try:
         # Check version, make postscript if too old to make pdf
         args = ["dot", "-V"]
@@ -522,7 +533,7 @@ def vdmain():
           version = distutils.version.StrictVersion(m.group(1))
           print 'Detected dot version %s' % (version)
         if version > distutils.version.StrictVersion('2.8'):
-          subprocess.check_call(["dot", "-Tpdf", "deps.gv", "-o", output_filename])
+          subprocess.check_call(["dot", "-Tpdf", outfile.name, "-o", output_filename])
           print "%s generated"%output_filename
         else:
           orig = output_filename
@@ -530,7 +541,7 @@ def vdmain():
             output_filename = output_filename[:-3]+'ps'
           else:
             print "ERROR", output_filename
-          subprocess.check_call(["dot", "-Tps2", "deps.gv", "-o", output_filename])
+          subprocess.check_call(["dot", "-Tps2", outfile.name, "-o", output_filename])
           print "%s generated"%output_filename
           
           print "Trying to create %s..."%orig

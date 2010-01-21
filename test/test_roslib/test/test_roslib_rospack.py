@@ -57,6 +57,17 @@ class RoslibRospackTest(unittest.TestCase):
     self.assert_('rospy' in val)
     self.assert_('roscpp' in val)
 
+  def test_rosstack(self):
+    from roslib.rospack import rosstackexec, rosstack_depends, rosstack_depends_1,\
+        rosstack_depends_on, rosstack_depends_on_1
+    self.assertEquals(set([]), set(rosstack_depends('ros')))
+    self.assertEquals(set([]), set(rosstack_depends_1('ros')))
+    
+    # can't actually test these w/o setting up stack environment, so just make sure they don't throw
+    self.assert_(rosstack_depends_on('ros') is not None)
+    self.assert_(rosstack_depends_on_1('ros') is not None)
+
+
 if __name__ == '__main__':
   rostest.unitrun('test_roslib', 'test_rospack', RoslibRospackTest, coverage_packages=['roslib.rospack'])
 

@@ -37,8 +37,10 @@
 Wrappers for calling an processing return values from rospack and rosstack
 """
 
+import os
 import subprocess
 import roslib.exceptions
+import roslib.rosenv
 
 def rospackexec(args):
     """
@@ -46,8 +48,8 @@ def rospackexec(args):
     @rtype: str
     @raise roslib.exceptions.ROSLibException: if rospack command fails
     """
-
-    val = (subprocess.Popen(['rospack'] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()
+    rospack_bin = os.path.join(roslib.rosenv.get_ros_root(), 'bin', 'rospack')
+    val = (subprocess.Popen([rospack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()
     if val.startswith('rospack:'): #rospack error message
         raise roslib.exceptions.ROSLibException(val)
     return val
@@ -107,7 +109,8 @@ def rosstackexec(args):
     @rtype:  str
     @raise roslib.exceptions.ROSLibException: if rosstack command fails
     """
-    val = (subprocess.Popen(['rosstack'] + args, stdout=subprocess.PIPE).communicate()[0] or '').strip()
+    rosstack_bin = os.path.join(roslib.rosenv.get_ros_root(), 'bin', 'rosstack')
+    val = (subprocess.Popen([rosstack_bin] + args, stdout=subprocess.PIPE).communicate()[0] or '').strip()
     if val.startswith('rosstack:'): #rospack error message
         raise roslib.exceptions.ROSLibException(val)
     return val

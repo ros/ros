@@ -207,6 +207,9 @@ If you are on Ubuntu/Debian, you can install doxygen by typing:
 
 #TODO: move elsewhere
 def run_rxdeps(package, pkg_doc_dir):
+    if 1:
+        return
+    
     try:
         command = ['rxdeps', '-s', '--target=%s'%package, '--cluster', '-o', os.path.join(pkg_doc_dir, '%s_deps.pdf'%package)]
         print "rxdeping %s [%s]"%(package, ' '.join(command))

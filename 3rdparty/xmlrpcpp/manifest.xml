@@ -2,12 +2,14 @@
 <description brief="A C++ XML-RPC library">
 
 XmlRpc++ is a C++ implementation of the XML-RPC protocol. This version is 
-slightly modified from the package available on SourceForge. 
+heavily modified from the package available on SourceForge in order to 
+support roscpp's threading model. As such, we are maintaining our
+own fork. 
 
 </description>
 <author>Chris Morley and Konstantin Pilipchuk, slight modifications and ROS wrapping by Morgan Quigley</author>
 <license>LGPL</license>
-<review status="3rdparty" notes=""/>
+<review status="3rdparty doc reviewed" notes=""/>
 <url>http://xmlrpcpp.sourceforge.net</url>
 <logo>http://xmlrpcpp.sourceforge.net/xmlrpc.jpg</logo>
 <export>

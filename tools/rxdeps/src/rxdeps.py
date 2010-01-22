@@ -438,8 +438,10 @@ def vdmain():
     helper = HelperMethods()
 
     all_pkgs = set(targets)
-    if not args:
-        args = roslib.stacks.list_stacks()
+    args = set(args)
+    args.update([helper.get_stack_of(p) for p in targets])
+    if not args and options.cluster:
+        parser.error("Cluster option requires stacks as arguments or --target options")
     for s in args:
         all_pkgs.update(helper.get_packages_of(s))
     all_pkgs_plus_1 = set()

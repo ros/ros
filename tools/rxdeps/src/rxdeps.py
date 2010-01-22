@@ -486,7 +486,10 @@ def vdmain():
     for cl in args:#roslib.stacks.list_stacks():
         if options.cluster:
             base_color = colors[random.randrange(0, len(colors))]
-            stack_dir = roslib.stacks.get_stack_dir(cl)
+            try:
+                stack_dir = roslib.stacks.get_stack_dir(cl)
+            except  roslib.exceptions.ROSLibException, ex:
+                stack_dir = "None"
             outfile.write(' subgraph cluster__%s { style=bold; color=%s; label = "%s \\n (%s)"; '%(cl, base_color, cl, stack_dir))
             internal, external = helper.build_stack_list(cl)
             for pkg in internal:

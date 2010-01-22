@@ -338,9 +338,10 @@ class HelperMethods:
 
     # cluster definitons
     def build_stack_list(self, stack):#, include, exclude):
-        stack_contents = set(roslib.stacks.packages_of(stack))
-        #stack_contents -= set(exclude)
-        #stack_contents &= set(include)
+        if stack == "None":
+            stack_contents = set()
+        else:
+            stack_contents = set(roslib.stacks.packages_of(stack))
 
         external_dependencies = set()
         for pkg in stack_contents:

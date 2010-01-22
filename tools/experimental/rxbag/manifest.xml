@@ -7,7 +7,7 @@
   </description>
   <author>Tim Field</author>
   <license>BSD, Creative Commons</license>
-  <review status="unreviewed" notes=""/>
+  <review status="Doc reviewed" notes="2010/01/20"/>
   <url>http://ros.org/wiki/rxbag</url>
   <depend package="rospy"/>
   <depend package="roslib"/>

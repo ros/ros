@@ -256,33 +256,6 @@ class HelperMethods:
             #print "hit cache"
         return  self._deps_on1[pkg]
 
-    ## Build the dictionary of dependencies for a list of packages
-    ## @param names [str]: list of package names to target. If empty, all packages will be targetted.
-    ## @param target1 bool: if True, only target direct dependencies for packages listed in \a names
-    def build_dictionary(self, names, exclude, target1=False):
-        pkgs = set()
-        ## If no arguments list all packages
-        if not names:
-            pkgs = roslib.packages.list_pkgs()
-
-        ## Get all dependencies and depends of target packages
-        else:
-            for name in names:
-                if target1:
-                    pkgs.update(self.get_deps1(name))
-                    pkgs.update(self.get_deps_on1(name))
-                else:
-                    pkgs.update(self.get_deps(name))
-                    pkgs.update(self.get_deps_on(name))
-
-            pkgs.update(names)
-        pkgs = [p for p in pkgs if p not in exclude]
-        ## Build the dictionary of dependencies
-        dict = {}
-        for pkg in pkgs:
-            dict[pkg] = [d for d in roslib.rospack.rospack_depends_1(pkg) if not d in exclude]
-        return dict
-
     ## Get all the dependencies of dependent packages (deduplicated)
     def get_child_deps(self, pkg):
         accum = set()
@@ -305,15 +278,15 @@ class HelperMethods:
 
         return accum & local_pkgs
 
-    def get_depth(self, pkg_dict, pkg, depth):
-        for pkg_dep in pkg_dict[pkg]:
-            depth = max(depth, self.get_depth(pkg_dict, pkg_dep, depth + 1))
+    def get_depth(self, all_pkgs, pkg, depth):
+        for pkg_dep in self.get_deps1(pkg):
+            depth = max(depth, self.get_depth(all_pkgs, pkg_dep, depth + 1))
         return depth
 
-    def build_rank(self, pkg_dict):
+    def build_rank(self, all_pkgs):
         rank = {}
-        for pkg in pkg_dict:
-            depth = self.get_depth(pkg_dict, pkg, 0)
+        for pkg in all_pkgs:
+            depth = self.get_depth(all_pkgs, pkg, 0)
             if depth in rank:
                rank[depth].append(pkg)
             else:
@@ -469,10 +442,11 @@ def vdmain():
         args = roslib.stacks.list_stacks()
     for s in args:
         all_pkgs.update(helper.get_packages_of(s))
-
-    pkg_dictionary = helper.build_dictionary(all_pkgs, exclude, target1=options.target1)
-
-
+    all_pkgs_plus_1 = set()
+    for p in all_pkgs:
+        all_pkgs_plus_1.update(helper.get_deps1(p))
+    
+    
     print "Writing"
     outfile = tempfile.NamedTemporaryFile()
     outfile.write( """digraph ros {
@@ -515,7 +489,8 @@ def vdmain():
             outfile.write('}\n')
 
     external_deps_connected = set()
-    for pkg, deps in pkg_dictionary.iteritems():
+    for pkg in all_pkgs:
+        deps = helper.get_deps1(pkg)
         node_args = []
         ##Coloring
         color = pkg_characterists.get_color(pkg)
@@ -557,7 +532,7 @@ def vdmain():
         for dep in deps:
             if not options.verbose and dep in helper.get_internal_child_deps(pkg): 
                 continue
-            if dep in pkg_dictionary: #Draw edges to all dependencies
+            if dep in all_pkgs_plus_1: #Draw edges to all dependencies
                 local_stack = helper.get_stack_of(pkg)
                 dependent_stack = helper.get_stack_of(dep)
                 if local_stack not in args or not local_stack:
@@ -573,22 +548,13 @@ def vdmain():
                         external_deps_connected.add(deduplication)
     #	outfile.write('}\n')
     ## rank
-    if options.cluster and options.rank:
-        stacks = helper.compute_stack_ranks()
-        for r in stacks:
-            if len(stacks[r]) > 1:
-                outfile.write('{ rank = same;')    
-                for stack in stacks[r]:
-                    outfile.write(' "cluster__%s" ;'%stack)
-                outfile.write('}\n')
-    elif options.rank:	
-        rank_dictionary = helper.build_dictionary([], [])
-        rank = helper.build_rank(rank_dictionary)
+    if options.rank:	
+        rank = helper.build_rank(all_pkgs)
         for key in rank:
             if len(rank[key]) > 1:
                 outfile.write('{ rank = same;')    
                 for pkg_rank in rank[key]:
-                    if pkg_rank in pkg_dictionary:
+                    if pkg_rank in all_pkgs:
                         outfile.write(' "%s" ;'%pkg_rank)
                 outfile.write('}\n')
     outfile.write( '}\n')

@@ -217,10 +217,10 @@ class HelperMethods:
 
     def get_packages_of(self, stack):
         if stack not in self._packages_of:
-            packages = roslib.packages.packages_of(stack)
+            packages = roslib.stacks.packages_of(stack)
             self._packages_of[stack] = packages
             #print "hit cache"
-        return  self._packages_of[pkg]
+        return  self._packages_of[stack]
 
     def get_deps(self, pkg):
         if pkg not in self._deps:
@@ -442,7 +442,13 @@ def vdmain():
         
     helper = HelperMethods()
 
-    pkg_dictionary = helper.build_dictionary(targets, exclude, target1=options.target1)
+    all_pkgs = set(targets)
+    if not args:
+        args = roslib.stacks.list_stacks()
+    for s in args:
+        all_pkgs.update(helper.get_packages_of(s))
+
+    pkg_dictionary = helper.build_dictionary(all_pkgs, exclude, target1=options.target1)
 
 
     print "Writing"
@@ -468,7 +474,7 @@ def vdmain():
                 text_color = "white"  
             outfile.write('"%s" [color="%s", fontcolor="%s"];\n '%(type, bg_color, text_color))
         outfile.write('}\n')
-    for cl in roslib.stacks.list_stacks():
+    for cl in args:#roslib.stacks.list_stacks():
         if options.cluster:
             base_color = colors[random.randrange(0, len(colors))]
             outfile.write(' subgraph cluster__%s { style=bold; color=%s; label = "%s \\n (%s)"; '%(cl, base_color, cl, roslib.stacks.get_stack_dir(cl)))
@@ -515,7 +521,8 @@ def vdmain():
               print "Hiding unattached package %s"%pkg
               continue
 
-        outfile.write('  "%s" [%s];\n'%(pkg, ', '.join(node_args)))
+        if pkg in all_pkgs:
+            outfile.write('  "%s" [%s];\n'%(pkg, ', '.join(node_args)))
 
 
 
@@ -527,13 +534,15 @@ def vdmain():
             if dep in pkg_dictionary: #Draw edges to all dependencies
                 local_stack = helper.get_stack_of(pkg)
                 dependent_stack = helper.get_stack_of(dep)
+                if local_stack not in args:
+                    continue
                 if not (options.cluster and not dependent_stack == local_stack):
                     outfile.write( '  "%s" -> "%s";\n' % (pkg, dep))
                 elif options.cluster:
                     intermediate = "%s.%s.%s"%(local_stack, dependent_stack, dep)
                     deduplication = "%s.%s"%(local_stack, dependent_stack)
                     outfile.write( '  "%s" -> "%s"[color="blue", style="dashed"];\n' % (pkg, intermediate))
-                    if not deduplication in external_deps_connected:
+                    if not deduplication in external_deps_connected and dependent_stack in args:
                         outfile.write( '  "%s" -> "%s"[color="red", style="dashed", ltail=cluster__%s_%s, lhead=cluster__%s];\n' % (intermediate, dep, local_stack, dependent_stack, dependent_stack))
                         external_deps_connected.add(deduplication)
     #	outfile.write('}\n')

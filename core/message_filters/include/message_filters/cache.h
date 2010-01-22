@@ -111,7 +111,7 @@ public:
   }
 
   /**
-   * Add the most recent message to the cache, and pop off any elements that are too old.
+   * \brief Add a message to the cache, and pop off any elements that are too old.
    * This method is registered with a data provider when connectTo is called.
    */
   void add(const MConstPtr& msg)
@@ -142,7 +142,8 @@ public:
   }
 
   /**
-   * Receive a vector of messages that occur between a start and end time (inclusive).
+   * \brief Receive a vector of messages that occur between a start and end time (inclusive).
+   *
    * This call is non-blocking, and only aggregates messages it has already received.
    * It will not wait for messages have not yet been received, but occur in the interval.
    * \param start The start of the requested interval
@@ -180,7 +181,8 @@ public:
 
 
   /**
-   * Retrieve the smallest interval of messages that surrounds an interval from start to end.
+   * \brief Retrieve the smallest interval of messages that surrounds an interval from start to end.
+   *
    * If the messages in the cache do not surround (start,end), then this will return the interval
    * that gets closest to surrounding (start,end)
    */
@@ -212,7 +214,7 @@ public:
   }
 
   /**
-   * Grab the newest element that occurs right before the specified time.
+   * \brief Grab the newest element that occurs right before the specified time.
    * \param time Time that must occur right after the returned elem
    * \returns shared_ptr to the newest elem that occurs before 'time'. NULL if doesn't exist
    */
@@ -238,7 +240,7 @@ public:
   }
 
   /**
-   * Grab the oldest element that occurs right after the specified time.
+   * \brief Grab the oldest element that occurs right after the specified time.
    * \param time Time that must occur right before the returned elem
    * \returns shared_ptr to the oldest elem that occurs after 'time'. NULL if doesn't exist
    */
@@ -266,7 +268,7 @@ public:
   }
 
   /**
-   * Returns the timestamp associated with the newest packet cache
+   * \brief Returns the timestamp associated with the newest packet cache
    */
   ros::Time getLatestTime()
   {

@@ -104,13 +104,13 @@ void callback(const boost::shared_ptr<M0 const>&, const boost::shared_ptr<M1 con
  * \section usage USAGE
  * Example usage would be:
 \verbatim
-TimeSynchronizer<sensor_msgs::CamInfo, sensor_msgs::Image, sensor_msgs::Image> sync(caminfo_sub, limage_sub, rimage_sub, 3);
+TimeSynchronizer<sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::Image> sync(caminfo_sub, limage_sub, rimage_sub, 3);
 sync.registerCallback(callback);
 \endverbatim
 
  * The callback is then of the form:
 \verbatim
-void callback(const sensor_msgs::CamInfo::ConstPtr&, const sensor_msgs::Image::ConstPtr&, const sensor_msgs::Image::ConstPtr&);
+void callback(const sensor_msgs::CameraInfo::ConstPtr&, const sensor_msgs::Image::ConstPtr&, const sensor_msgs::Image::ConstPtr&);
 \endverbatim
  *
  */

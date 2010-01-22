@@ -1,0 +1,47 @@
+Robot Operating System (ROS)
+===============================================================================
+
+ROS is a meta-operating system for your robot.  It provides
+language-independent and network-transparent communication for a
+distributed robot control system.
+
+Installation Notes
+------------------
+
+- For full installation instructions, including system prerequisites and
+  platform-specific help, see:
+
+    http://pr.willowgarage.com/wiki/ROS/Installation
+
+- Before running make, some environment variables need to be declared.
+  Go to the base directory of ros and set the following environment variables:
+
+  for bash:
+    export ROS_ROOT=~/blah/ros
+    export ROS_PACKAGE_PATH=~/blah/pr # checkout of personalrobots.svn.sf.net
+    export PATH=$ROS_ROOT/bin:$PATH
+    export ROS_MASTER_URI=http://localhost:11311
+    export PYTHONPATH=$PYTHONPATH:$ROS_ROOT/core/roslib/src
+    export OCTAVE_PATH=$OCTAVE_PATH:$ROS_ROOT/core/experimental/rosoct/octave
+    source $ROS_ROOT/tools/rosbash/rosbash
+  for tcsh:
+    setenv ROS_ROOT `pwd`
+    setenv ROS_PACKAGE_PATH ~/blah/pr # checkout of personalrobots.svn.sf.net
+    setenv PATH ${ROS_ROOT}/bin:$PATH
+    setenv ROS_MASTER_URI http://localhost:11311
+    setenv PYTHONPATH ${PYTHONPATH}:${ROS_ROOT}/core/roslib/src
+    setenv OCTAVE_PATH ${OCTAVE_PATH}:${ROS_ROOT}/core/experimental/rosoct/octave
+    source $ROS_ROOT/tools/rosbash/rostcsh
+
+  Append this to the end of ~/.octaverc file
+    addpath(fullfile(getenv('ROS_ROOT'),'core','experimental','rosoct','octave'))
+- run
+    'make'
+
+- run
+    'rosmake roscpp'
+    and
+    'rosmake rospy'
+    and
+    'rosmake std_msgs'
+

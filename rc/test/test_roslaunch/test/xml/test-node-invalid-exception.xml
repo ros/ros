@@ -1,0 +1,6 @@
+<launch>
+  <!-- should raise exception for node pkg being empty -->
+  <node name="n" pkg="" type="test_xmlparseexception" />
+
+</launch>
+

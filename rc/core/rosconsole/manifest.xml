@@ -1,0 +1,12 @@
+<package>
+  <description brief="Console logging library for roscpp">ROS console output library.</description>
+  <license>BSD</license>
+  <review status="Doc reviewed" notes="2010/01/12"/>
+  <author>Josh Faust</author>
+  <depend package="roslib"/>
+  <export>
+    <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lrosconsole `rosboost-cfg --lflags thread` -llog4cxx"/>
+  </export>
+  <rosdep name="apr"/>
+  <rosdep name="log4cxx"/>
+</package>

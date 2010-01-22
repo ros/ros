@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Case-insentive search through all manifests for a term.  Returns
+# newline-separated list of names of packages that match the search term
+
+USAGE="USAGE: rossearch <term>"
+
+if [ $# != 1 ]; then
+  echo $USAGE
+  exit -1
+fi
+
+term=$1
+  
+pkgdirs=`rospack list | awk {'print \$2'}`
+
+manifests=""
+for d in $pkgdirs; do
+  mnf="$d/manifest.xml"
+  if [ ! -f $mnf ]; then
+    echo "Missing manifest in $d!"
+  else
+    manifests="$manifests $mnf"
+  fi
+done
+
+grepresult=`grep -il "$term" $manifests`
+
+for g in $grepresult; do
+  d=`dirname $g`
+  p=`basename $d`
+  echo $p
+done

@@ -1,0 +1,6 @@
+<launch>
+  <node name="n" pkg="package" type="env_test_invalid_value">
+    <env name="env1" />
+  </node>
+</launch>
+

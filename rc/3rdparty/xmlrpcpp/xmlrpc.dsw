@@ -1,0 +1,149 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+
+Project: "FileClient"=".\Test\FileClient.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name xmlrpc
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "HelloClient"=".\Test\HelloClient.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name xmlrpc
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "HelloServer"=".\Test\HelloServer.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name xmlrpc
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "TestBase64Client"=".\Test\TestBase64Client.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name xmlrpc
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "TestBase64Server"=".\Test\TestBase64Server.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name xmlrpc
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "TestValues"=".\Test\TestValues.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name xmlrpc
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "TestXml"=".\Test\TestXml.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name xmlrpc
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "Validator"=".\Test\Validator.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name xmlrpc
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "xmlrpc"=".\xmlrpc.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+

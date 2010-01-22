@@ -2,7 +2,7 @@
   <description>A set of message filters which take in messages and may output those messages at a later time, based on the conditions that filter needs met.</description>
   <author>Josh Faust (jfaust@willowgarage.com), Vijay Pradeep (vpradeep@willowgarage.com)</author>
   <license>BSD</license>
-  <review status="API cleared" notes=""/>
+  <review status="Doc reviewed" notes=""/>
   <depend package="roscpp" />
   <depend package="rospy" />
   <depend package="rostest" />

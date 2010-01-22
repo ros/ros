@@ -550,7 +550,7 @@ def vdmain():
             if dep in pkg_dictionary: #Draw edges to all dependencies
                 local_stack = helper.get_stack_of(pkg)
                 dependent_stack = helper.get_stack_of(dep)
-                if local_stack not in args:
+                if local_stack not in args and local_stack:
                     continue
                 if not (options.cluster and not dependent_stack == local_stack):
                     outfile.write( '  "%s" -> "%s";\n' % (pkg, dep))

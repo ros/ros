@@ -406,8 +406,13 @@ def vdmain():
         exclude = []
     if options.targets:
         targets = options.targets.split(',')
+        all_pkgs = roslib.packages.list_pkgs()
+        invalidtarget = [t for t in targets if t not in all_pkgs]
+        if invalidtarget:
+            parser.error("Invalid packages set as targets, %s"%invalidtarget)
     else:
         targets = []
+
     if options.stacks:
         stacks = options.stacks.split(',')
     else:
@@ -436,6 +441,12 @@ def vdmain():
         output_filename = "deps.pdf"
         
     helper = HelperMethods()
+
+    all_stacks = roslib.stacks.list_stacks()
+    invalid_args = set([stack for stack in args if stack not in all_stacks])
+    if invalid_args:
+        parser.error("Invalid stacks passed as arguments %s"%invalid_args)
+
 
     all_pkgs = set(targets)
     args = set(args)

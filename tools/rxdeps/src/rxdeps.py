@@ -207,6 +207,8 @@ class HelperMethods:
         self._packages_of = {}
         self._deps = {}
         self._deps1 = {}
+        self._deps_on = {}
+        self._deps_on1 = {}
         
     def get_stack_of(self, pkg):
         if pkg not in self._stack_of:
@@ -236,6 +238,20 @@ class HelperMethods:
             #print "hit cache"
         return  self._deps1[pkg]
 
+    def get_deps_on(self, pkg):
+        if pkg not in self._deps_on:
+            stack = roslib.rospack.rospack_depends_on(pkg)
+            self._deps_on[pkg] = stack
+            #print "hit cache"
+        return  self._deps_on[pkg]
+
+    def get_deps_on1(self, pkg):
+        if pkg not in self._deps_on1:
+            stack = roslib.rospack.rospack_depends_on_1(pkg)
+            self._deps_on1[pkg] = stack
+            #print "hit cache"
+        return  self._deps_on1[pkg]
+
     ## Build the dictionary of dependencies for a list of packages
     ## @param names [str]: list of package names to target. If empty, all packages will be targetted.
     ## @param target1 bool: if True, only target direct dependencies for packages listed in \a names
@@ -250,10 +266,10 @@ class HelperMethods:
             for name in names:
                 if target1:
                     pkgs.update(self.get_deps1(name))
-                    pkgs.update(roslib.rospack.rospack_depends_on_1(name))
+                    pkgs.update(self.get_deps_on1(name))
                 else:
                     pkgs.update(self.get_deps(name))
-                    pkgs.update(roslib.rospack.rospack_depends_on(name))
+                    pkgs.update(self.get_deps_on(name))
 
             pkgs.update(names)
         pkgs = [p for p in pkgs if p not in exclude]

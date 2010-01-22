@@ -213,11 +213,15 @@ class HelperMethods:
     def get_stack_of(self, pkg):
         if pkg not in self._stack_of:
             stack = roslib.stacks.stack_of(pkg)
+            if not stack:
+                stack = "None"
             self._stack_of[pkg] = stack
             #print "hit cache"
         return  self._stack_of[pkg]
 
     def get_packages_of(self, stack):
+        if stack == "None":
+            return set()
         if stack not in self._packages_of:
             packages = roslib.stacks.packages_of(stack)
             self._packages_of[stack] = packages
@@ -287,9 +291,11 @@ class HelperMethods:
         return accum
 
     def get_internal_child_deps(self, pkg, stack = None):
+        if stack == "None":
+            return set()
         if not stack:
             stack = self.get_stack_of(pkg)
-            if not stack: 
+            if not stack or stack == "None": 
                 return set()
         local_pkgs = set(roslib.stacks.packages_of(stack))
 
@@ -498,7 +504,11 @@ def vdmain():
             for pkg in internal:
                 outfile.write(' "%s" ;'%pkg)
             for s in external:
-                outfile.write(' subgraph cluster__%s_%s { style=bold; color=%s; label = "Stack: %s \\n (%s)"; '%(cl, s, base_color, s, roslib.stacks.get_stack_dir(cl)))
+                try:
+                    stack_dir = roslib.stacks.get_stack_dir(s)
+                except  roslib.exceptions.ROSLibException, ex:
+                    stack_dir = "None"
+                outfile.write(' subgraph cluster__%s_%s { style=bold; color=%s; label = "Stack: %s \\n (%s)"; '%(cl, s, base_color, s, stack_dir))
                 for p in external[s]:
                     outfile.write(' "%s.%s.%s" [ label = "%s"];'%(cl, s, p, p))
                 outfile.write('}\n')
@@ -554,7 +564,7 @@ def vdmain():
                     continue
                 if not (options.cluster and not dependent_stack == local_stack):
                     outfile.write( '  "%s" -> "%s";\n' % (pkg, dep))
-                elif options.cluster:
+                elif options.cluster and dependent_stack:
                     intermediate = "%s.%s.%s"%(local_stack, dependent_stack, dep)
                     deduplication = "%s.%s"%(local_stack, dependent_stack)
                     outfile.write( '  "%s" -> "%s"[color="blue", style="dashed"];\n' % (pkg, intermediate))

@@ -137,7 +137,7 @@ class PackageCharacteristics:
             
         # show blacklisting
         if os.path.exists(os.path.join(os.path.dirname(f), "ROS_BUILD_BLACKLIST")):
-            print f, "is blacklisted"
+            #print f, "is blacklisted"
             self._review_status[pkg] = "ROS_BUILD_BLACKLIST"
         return self._review_status[pkg]
         
@@ -152,7 +152,7 @@ class PackageCharacteristics:
             
         # show blacklisting
         if os.path.exists(os.path.join(os.path.dirname(f), "ROS_BUILD_BLACKLIST")):
-            print f, "is blacklisted"
+            #print f, "is blacklisted"
             self._review_notes[pkg] +=" ROS_BUILD_BLACKLIST"
         # show ROS_NOBUILD flag
         if os.path.exists(os.path.join(os.path.dirname(f), "ROS_NOBUILD")):
@@ -183,51 +183,6 @@ class PackageCharacteristics:
         else:
             return None
 
-## Build the dictionary of dependencies for a list of packages
-## @param names [str]: list of package names to target. If empty, all packages will be targetted.
-## @param target1 bool: if True, only target direct dependencies for packages listed in \a names
-def build_dictionary(names, exclude, target1=False):
-    pkgs = set()
-    ## If no arguments list all packages
-    if not names:
-        pkgs = roslib.packages.list_pkgs()
-        
-    ## Get all dependencies and depends of target packages
-    else:
-        for name in names:
-            if target1:
-                pkgs.update(roslib.rospack.rospack_depends_1(name))
-                pkgs.update(roslib.rospack.rospack_depends_on_1(name))
-            else:
-                pkgs.update(roslib.rospack.rospack_depends(name))
-                pkgs.update(roslib.rospack.rospack_depends_on(name))
-
-        pkgs.update(names)
-    pkgs = [p for p in pkgs if p not in exclude]
-    ## Build the dictionary of dependencies
-    dict = {}
-    for pkg in pkgs:
-        dict[pkg] = [d for d in roslib.rospack.rospack_depends_1(pkg) if not d in exclude]
-    return dict
-
-## Get all the dependencies of dependent packages (deduplicated)
-def get_child_deps(pkg):
-    accum = set()
-    for dep in roslib.rospack.rospack_depends_1(pkg):
-        accum.update(roslib.rospack.rospack_depends(dep))
-    return accum
-
-def get_internal_child_deps(pkg, stack = None):
-    if not stack:
-        stack = roslib.stacks.stack_of(pkg)
-    local_pkgs = set(roslib.stacks.packages_of(stack))
-
-    accum = set()
-    for dep in roslib.rospack.rospack_depends_1(pkg):
-        accum.update(roslib.rospack.rospack_depends(dep))
-    
-    return accum & local_pkgs
-                     
 rosmakeall_color_map = { "rosmakeall-testfailures.txt": "orange", "rosmakeall-buildfailures.txt": "red"}
 
 def get_rosmakeall_color():
@@ -244,78 +199,164 @@ def get_rosmakeall_color():
             sys.exit(1)
     return color_dict
 
-def get_depth(pkg_dict, pkg, depth):
-    for pkg_dep in pkg_dict[pkg]:
-    	depth = max(depth, get_depth(pkg_dict, pkg_dep, depth + 1))
-    return depth
-
-def build_rank(pkg_dict):
-    rank = {}
-    for pkg in pkg_dict:
-    	depth = get_depth(pkg_dict, pkg, 0)
-	if depth in rank:
-	   rank[depth].append(pkg)
-        else:
-	   rank[depth] = [pkg]
-
-    return rank
-
-def get_external_pkg_dependencies(pkg, stack=None):
-    if not stack:
-        stack = roslib.stacks.stack_of(pkg)
-    dependent_pkgs = roslib.rospack.rospack_depends_1(pkg)
-    return [ext for ext in dependent_pkgs if not roslib.stacks.stack_of(ext) == stack]
-
-def get_internal_pkg_dependencies(pkg, stack = None):
-    if not stack:
-        stack = roslib.stacks.stack_of(pkg)
-    dependent_pkgs = roslib.rospack.rospack_depends_1(pkg)
-    return [ext for ext in dependent_pkgs if roslib.stacks.stack_of(ext) == stack]
 
 
-def group_pkgs_by_stack(pkgs):
-    stacks = {}
-    for p in pkgs:
-        stack = roslib.stacks.stack_of(p)
-        if stack in stacks:
-            stacks[stack].add(p)
-        else:
-            stacks[stack] = set([p])
-    return stacks
-
-def get_stack_depth(pkg, depth):
-    for stack_dep in roslib.rospack.rosstack_depends_1(pkg):
-    	depth = max(depth, get_stack_depth(stack_dep, depth + 1))
-    return depth
-
-def compute_stack_ranks():
-    rank = {}
-    for stack in roslib.stacks.list_stacks():
-    	depth = get_stack_depth(stack, 0)
-	if depth in rank:
-	   rank[depth].append(stack)
-        else:
-	   rank[depth] = [stack]
-
-    return rank
-
-
-# cluster definitons
-def build_stack_list(stack):#, include, exclude):
-    stack_contents = set(roslib.stacks.packages_of(stack))
-    #stack_contents -= set(exclude)
-    #stack_contents &= set(include)
-    
-    external_dependencies = set()
-    for pkg in stack_contents:
-        external_dependencies.update(get_external_pkg_dependencies(pkg))
+class HelperMethods:
+    def __init__(self):
+        self._stack_of = {}
+        self._packages_of = {}
+        self._deps = {}
+        self._deps1 = {}
         
-    external_stack_dependencies = group_pkgs_by_stack(external_dependencies)
-    
-    return stack_contents, external_stack_dependencies
-    
+    def get_stack_of(self, pkg):
+        if pkg not in self._stack_of:
+            stack = roslib.stacks.stack_of(pkg)
+            self._stack_of[pkg] = stack
+            #print "hit cache"
+        return  self._stack_of[pkg]
 
-    
+    def get_packages_of(self, stack):
+        if stack not in self._packages_of:
+            packages = roslib.packages.packages_of(stack)
+            self._packages_of[stack] = packages
+            #print "hit cache"
+        return  self._packages_of[pkg]
+
+    def get_deps(self, pkg):
+        if pkg not in self._deps:
+            stack = roslib.rospack.rospack_depends(pkg)
+            self._deps[pkg] = stack
+            #print "hit cache"
+        return  self._deps[pkg]
+
+    def get_deps1(self, pkg):
+        if pkg not in self._deps1:
+            stack = roslib.rospack.rospack_depends_1(pkg)
+            self._deps1[pkg] = stack
+            #print "hit cache"
+        return  self._deps1[pkg]
+
+    ## Build the dictionary of dependencies for a list of packages
+    ## @param names [str]: list of package names to target. If empty, all packages will be targetted.
+    ## @param target1 bool: if True, only target direct dependencies for packages listed in \a names
+    def build_dictionary(self, names, exclude, target1=False):
+        pkgs = set()
+        ## If no arguments list all packages
+        if not names:
+            pkgs = roslib.packages.list_pkgs()
+
+        ## Get all dependencies and depends of target packages
+        else:
+            for name in names:
+                if target1:
+                    pkgs.update(self.get_deps1(name))
+                    pkgs.update(roslib.rospack.rospack_depends_on_1(name))
+                else:
+                    pkgs.update(self.get_deps(name))
+                    pkgs.update(roslib.rospack.rospack_depends_on(name))
+
+            pkgs.update(names)
+        pkgs = [p for p in pkgs if p not in exclude]
+        ## Build the dictionary of dependencies
+        dict = {}
+        for pkg in pkgs:
+            dict[pkg] = [d for d in roslib.rospack.rospack_depends_1(pkg) if not d in exclude]
+        return dict
+
+    ## Get all the dependencies of dependent packages (deduplicated)
+    def get_child_deps(self, pkg):
+        accum = set()
+        for dep in self.get_deps1(pkg):
+            accum.update(self.get_deps(dep))
+        return accum
+
+    def get_internal_child_deps(self, pkg, stack = None):
+        if not stack:
+            stack = self.get_stack_of(pkg)
+            if not stack: 
+                return set()
+        local_pkgs = set(roslib.stacks.packages_of(stack))
+
+        accum = set()
+        for dep in self.get_deps1(pkg):
+            accum.update(self.get_deps(dep))
+
+        return accum & local_pkgs
+
+    def get_depth(self, pkg_dict, pkg, depth):
+        for pkg_dep in pkg_dict[pkg]:
+            depth = max(depth, self.get_depth(pkg_dict, pkg_dep, depth + 1))
+        return depth
+
+    def build_rank(self, pkg_dict):
+        rank = {}
+        for pkg in pkg_dict:
+            depth = self.get_depth(pkg_dict, pkg, 0)
+            if depth in rank:
+               rank[depth].append(pkg)
+            else:
+               rank[depth] = [pkg]
+
+        return rank
+
+    def get_external_pkg_dependencies(self, pkg, stack=None):
+        if not stack:
+            stack = self.get_stack_of(pkg)
+        dependent_pkgs = self.get_deps1(pkg)
+        return [ext for ext in dependent_pkgs if not self.get_stack_of(ext) == stack]
+
+    def get_internal_pkg_dependencies(self, pkg, stack = None):
+        if not stack:
+            stack = self.get_stack_of(pkg)
+        dependent_pkgs = self.get_deps1(pkg)
+        return [ext for ext in dependent_pkgs if self.get_stack_of(ext) == stack]
+
+
+    def group_pkgs_by_stack(self, pkgs):
+        stacks = {}
+        for p in pkgs:
+            stack = self.get_stack_of(p)
+            if not stack:
+                continue
+            if stack in stacks:
+                stacks[stack].add(p)
+            else:
+                stacks[stack] = set([p])
+        return stacks
+
+    def get_stack_depth(self, pkg, depth):
+        for stack_dep in self.get_deps1(pkg):
+            depth = max(depth, get_stack_depth(stack_dep, depth + 1))
+        return depth
+
+    def compute_stack_ranks(self):
+        rank = {}
+        for stack in roslib.stacks.list_stacks():
+            depth = self.get_stack_depth(stack, 0)
+            if depth in rank:
+               rank[depth].append(stack)
+            else:
+               rank[depth] = [stack]
+
+        return rank
+
+
+    # cluster definitons
+    def build_stack_list(self, stack):#, include, exclude):
+        stack_contents = set(roslib.stacks.packages_of(stack))
+        #stack_contents -= set(exclude)
+        #stack_contents &= set(include)
+
+        external_dependencies = set()
+        for pkg in stack_contents:
+            external_dependencies.update(self.get_external_pkg_dependencies(pkg))
+
+        external_stack_dependencies = self.group_pkgs_by_stack(external_dependencies)
+
+        return stack_contents, external_stack_dependencies
+
+
+
 
 
 def vdmain():
@@ -399,7 +440,10 @@ def vdmain():
     else:
         output_filename = "deps.pdf"
         
-    pkg_dictionary = build_dictionary(targets, exclude, target1=options.target1)
+    helper = HelperMethods()
+
+    pkg_dictionary = helper.build_dictionary(targets, exclude, target1=options.target1)
+
 
     print "Writing"
     outfile = tempfile.NamedTemporaryFile()
@@ -428,11 +472,11 @@ def vdmain():
         if options.cluster:
             base_color = colors[random.randrange(0, len(colors))]
             outfile.write(' subgraph cluster__%s { style=bold; color=%s; label = "%s \\n (%s)"; '%(cl, base_color, cl, roslib.stacks.get_stack_dir(cl)))
-            internal, external = build_stack_list(cl)
+            internal, external = helper.build_stack_list(cl)
             for pkg in internal:
                 outfile.write(' "%s" ;'%pkg)
             for s in external:
-                outfile.write(' subgraph cluster__%s_%s { rank=min; style=bold; color=%s; label = "Stack: %s \\n (%s)"; '%(cl, s, base_color, s, roslib.stacks.get_stack_dir(cl)))
+                outfile.write(' subgraph cluster__%s_%s { style=bold; color=%s; label = "Stack: %s \\n (%s)"; '%(cl, s, base_color, s, roslib.stacks.get_stack_dir(cl)))
                 for p in external[s]:
                     outfile.write(' "%s.%s.%s" [ label = "%s"];'%(cl, s, p, p))
                 outfile.write('}\n')
@@ -467,7 +511,7 @@ def vdmain():
           node_args.append('label="%s\\n(%s)"' % (pkg, notes))
 
         if options.hide:
-           if len(roslib.rospack.rospack_depends_on(pkg)) == 0 and len(roslib.rospack.rospack_depends(pkg)) == 0: #TODO: This is pretty slow
+           if len(roslib.rospack.rospack_depends_on(pkg)) == 0 and len(helper.get_deps(pkg)) == 0: #TODO: This is pretty slow
               print "Hiding unattached package %s"%pkg
               continue
 
@@ -478,11 +522,11 @@ def vdmain():
 
         ## Edges
         for dep in deps:
-            if not options.verbose and dep in get_internal_child_deps(pkg): 
+            if not options.verbose and dep in helper.get_internal_child_deps(pkg): 
                 continue
             if dep in pkg_dictionary: #Draw edges to all dependencies
-                local_stack = roslib.stacks.stack_of(pkg)
-                dependent_stack = roslib.stacks.stack_of(dep)
+                local_stack = helper.get_stack_of(pkg)
+                dependent_stack = helper.get_stack_of(dep)
                 if not (options.cluster and not dependent_stack == local_stack):
                     outfile.write( '  "%s" -> "%s";\n' % (pkg, dep))
                 elif options.cluster:
@@ -495,7 +539,7 @@ def vdmain():
     #	outfile.write('}\n')
     ## rank
     if options.cluster and options.rank:
-        stacks = compute_stack_ranks()
+        stacks = helper.compute_stack_ranks()
         for r in stacks:
             if len(stacks[r]) > 1:
                 outfile.write('{ rank = same;')    
@@ -503,8 +547,8 @@ def vdmain():
                     outfile.write(' "cluster__%s" ;'%stack)
                 outfile.write('}\n')
     elif options.rank:	
-        rank_dictionary = build_dictionary([], [])
-        rank = build_rank(rank_dictionary)
+        rank_dictionary = helper.build_dictionary([], [])
+        rank = helper.build_rank(rank_dictionary)
         for key in rank:
             if len(rank[key]) > 1:
                 outfile.write('{ rank = same;')    

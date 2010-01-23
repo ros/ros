@@ -352,7 +352,7 @@ def rosmsg_md5(mode, type_):
 def _rosmsg_md5_check(mode, type_, gendeps_md5):
     try:
         msg_class = roslib.message.get_message_class(type_)
-        if msg_class._md5sum != gendeps_md5:
+        if msg_class is not None and msg_class._md5sum != gendeps_md5:
             print >> sys.stderr, "WARN: md5sum for compiled [%s] appears to differ from %s:\n\t%s vs %s"%(type_, mode, msg_class._md5sum, gendeps_md5)
     except ImportError: pass
     

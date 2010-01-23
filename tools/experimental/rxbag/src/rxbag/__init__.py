@@ -57,7 +57,7 @@ import timeline
 
 class RxBagApp(wx.App):
     def __init__(self, input_files, options):
-        self.input_files = input_files
+        self.input_files = [input_files[0]]
         self.options     = options
 
         wx.App.__init__(self)

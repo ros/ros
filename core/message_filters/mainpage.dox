@@ -18,6 +18,11 @@ The filters currently implemented in this package are:
 - message_filters::TimeSynchronizer - Synchronizes multiple messages by their timestamps, only passing them through when all have arrived.
 - message_filters::TimeSequencer - Tries to pass messages through ordered by their timestamps, even if some arrive out of order.
 
+There is also a base-class provided for simple filters: message_filters::SimpleFilter.  This provides callback management and disconnection
+for any filter that derives from it.  A simple filter is defined as one that outputs a single message.  message_filters::SimpleFilter provides
+the registerCallback() method for any of its derived classes.  message_filters::Subscriber, message_filters::Cache and message_filters::TimeSequencer
+are all derived from message_filters::SimpleFilter.
+
 Here's a simple example of using a Subscriber with a Cache:
 \verbatim
 void myCallback(const robot_msgs::Pose::ConstPtr& pose)

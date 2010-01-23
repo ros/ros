@@ -558,8 +558,8 @@ class XmlLoader(Loader):
                 print >> sys.stderr, \
                     "WARN: unrecognized '%s' tag in <%s> tag"%(t.tagName, tag.tagName)
 
-        launch = self._parse_launch(inc_filename, verbose=verbose)
         try:
+            launch = self._parse_launch(inc_filename, verbose=verbose)
             default_machine = \
                 self._recurse_load(ros_config, launch.childNodes, child_ns, \
                                        default_machine, is_core, verbose)

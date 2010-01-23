@@ -172,7 +172,18 @@ void shutdown();
  */
 void requestShutdown();
 
+/**
+ * \brief Actually starts the internals of the node (spins up threads, starts the network polling and xmlrpc loops,
+ * connects to internal subscriptions like /clock, starts internal service servers, etc.).
+ *
+ * Usually unnecessary to call manually, as it is automatically called by the creation of the first NodeHandle if
+ * the node has not already been started.  If you would like to prevent the automatic shutdown caused by the last
+ * NodeHandle going out of scope, call this before any NodeHandle has been created (e.g. immediately after init())
+ */
 void start();
+/**
+ * \brief Returns whether or not the node has been started through ros::start()
+ */
 bool isStarted();
 
 /**

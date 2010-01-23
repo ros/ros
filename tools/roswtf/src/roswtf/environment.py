@@ -32,6 +32,10 @@
 #
 # Revision $Id$
 
+"""
+Rules for checking ROS environment state.
+"""
+
 import os
 import socket
 import stat
@@ -43,23 +47,31 @@ from roswtf.rules import warning_rule, error_rule
 
 #TODO: unit tests
 
-## @return [str]: paths contained in \a path variable. \a path must
-## conform to OS conventions for path separation (i.e. colon-separated
-## on Unix)
 def paths(path):
+    """
+    @return: paths contained in path variable. path must conform to OS
+    conventions for path separation (i.e. colon-separated on Unix)
+    @rtype: [str]
+    """
     if path:
         return path.split(os.pathsep)
     return []
 
-## @return True if \a path has executable permissions
 def is_executable(path):
+    """
+    @return: True if path has executable permissions
+    @rtype: bool
+    """
     mode = os.stat(path)[stat.ST_MODE]
     return mode & (stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH)
 
 import urlparse
-## @return str error message if \a url is not a valid url. \a url is
-## allowed to be empty as that check is considered separately.
 def invalid_url(url):
+    """
+    @return: error message if \a url is not a valid url. \a url is
+    allowed to be empty as that check is considered separately.
+    @rtype: str
+    """
     if not url:
         return #caught by different rule
     p = urlparse.urlparse(url)
@@ -170,8 +182,6 @@ environment_warnings = [
      "ROS_PACKAGE_PATH is empty. This is not required, but is unusual"),
     (lambda ctx: not ctx.ros_master_uri,
      "ROS_MASTER_URI is empty. This is not required, but is unusual"),
-    (lambda ctx: invalid_url(ctx.ros_master_uri),
-     "ROS_MASTER_URI [%(ros_master_uri)s] is not a valid URL: "),
     (ros_master_uri_hostname,
      "Cannot resolve hostname in ROS_MASTER_URI [%(ros_master_uri)s]"),
     (rosconsole_config_file_check,
@@ -205,6 +215,10 @@ environment_errors = [
     (lambda ctx: ctx.ros_bindeps_path and not isdir(ctx.ros_bindeps_path),
      "ROS_BINDEPS_PATH [%(ros_bindeps_path)s] does not point to a directory"),
     (boost_check, "Cannot locate boost. Please see installation instructions. "),
+
+    (lambda ctx: invalid_url(ctx.ros_master_uri),
+     "ROS_MASTER_URI [%(ros_master_uri)s] is not a valid URL: "),
+
     ]
 
 def wtf_check_environment(ctx):

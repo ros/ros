@@ -69,6 +69,7 @@ private:
   ros::Time start_time_, requested_start_time_, paused_time_;
   ros::record::MultiPlayer player_;
 
+
   int queue_size_;
   unsigned int advertise_sleep_;
 

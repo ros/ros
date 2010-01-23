@@ -54,6 +54,21 @@ class MsgSpecTest(unittest.TestCase):
     for val, res in tests:
       self.assertEquals(res, roslib.msgs.base_msg_type(val))
 
+  def test_resolve_type(self):
+    from roslib.msgs import resolve_type
+    for t in ['string', 'string[]', 'string[14]', 'int32', 'int32[]']:
+      bt = roslib.msgs.base_msg_type(t)
+      self.assertEquals(t, resolve_type(t, 'test_roslib'))
+      
+    self.assertEquals('foo/string', resolve_type('foo/string', 'test_roslib'))
+    self.assertEquals('roslib/Header', resolve_type('Header', 'roslib'))
+    self.assertEquals('roslib/Header', resolve_type('roslib/Header', 'roslib'))
+    self.assertEquals('roslib/Header', resolve_type('Header', 'stereo_msgs'))
+    self.assertEquals('std_msgs/String', resolve_type('String', 'std_msgs'))    
+    self.assertEquals('std_msgs/String', resolve_type('std_msgs/String', 'std_msgs'))
+    self.assertEquals('std_msgs/String', resolve_type('std_msgs/String', 'test_roslib'))    
+    self.assertEquals('std_msgs/String[]', resolve_type('std_msgs/String[]', 'test_roslib'))
+    
   def test_parse_type(self):
     tests = [
       ('a', ('a', False, None)),

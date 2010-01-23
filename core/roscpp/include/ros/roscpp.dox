@@ -10,9 +10,11 @@
  - \ref ros::master : Contains functions for querying information from the master
  - \ref ros::this_node : Contains functions for querying information about this process' node
  - \ref ros::service : Contains functions for querying information about services
+ - \ref ros::param : Contains functions for querying the parameter service without the need for a ros::NodeHandle
+ - \ref ros::names : Contains functions for manipulating ROS graph resource names
 
 @par Examples
 
-Many examples of using ROS can be found <a href="http://pr.willowgarage.com/wiki/ROS/Tutorials">on the wiki</a> and in the <a href="../../roscpp_tutorials/html/index.html">roscpp_tutorials</a> package.
+Many examples of using ROS can be found <a href="http://www.ros.org/wiki/ROS/Tutorials">on the wiki</a> and in the <a href="http://www.ros.org/wiki/roscpp_tutorials">roscpp_tutorials</a> package.
 
 */

@@ -34,22 +34,51 @@
 namespace ros
 {
 
+/**
+ * \brief Abstract base class used by service servers to deal with concrete message types through a common
+ * interface.  This is one part of the roscpp API that is \b not fully stable, so overloading this class
+ * is not recommended unless you have an explicit need (like to implement a scripting interface).
+ */
 class ServiceMessageHelper
 {
 public:
   virtual ~ServiceMessageHelper() {}
+  /**
+   * \brief Create a request message
+   */
   virtual MessagePtr createRequest() = 0;
+  /**
+   * \brief Create a response message
+   */
   virtual MessagePtr createResponse() = 0;
 
+  /**
+   * \brief Call the service call associated with this helper
+   */
   virtual bool call(const MessagePtr& req, const MessagePtr& res) = 0;
 
+  /**
+   * \brief Returns the md5sum of this service
+   */
   virtual std::string getMD5Sum() = 0;
+  /**
+   * \brief Returns the datatype of this service
+   */
   virtual std::string getDataType() = 0;
+  /**
+   * \brief Returns the datatype of the request message
+   */
   virtual std::string getRequestDataType() = 0;
+  /**
+   * \brief Returns the datatype of the response message
+   */
   virtual std::string getResponseDataType() = 0;
 };
 typedef boost::shared_ptr<ServiceMessageHelper> ServiceMessageHelperPtr;
 
+/**
+ * \brief Concrete generic implementation of ServiceMessageHelper for any normal service type
+ */
 template<class MReq, class MRes>
 class ServiceMessageHelperT : public ServiceMessageHelper
 {

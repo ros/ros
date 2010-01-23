@@ -1,3 +1,0 @@
-string field1
-int32 field2
-test_crosspackage/TestSubMsgRename field3

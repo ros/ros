@@ -7,5 +7,5 @@ Assorted shell commands for using ros with bash.
   <author>Jeremy Leibs</author>
   <license>BSD</license>
   <url>http://pr.willowgarage.com/wiki/rosbash</url>
-  <review status="API conditionally cleared" notes="internal functions need to be hidden"/>
+  <review status="doc reviewed"/>
 </package>

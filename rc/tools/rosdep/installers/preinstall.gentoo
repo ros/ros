@@ -1,5 +1,0 @@
-#!/bin/bash
-set -o errexit
-set -o verbose
-sudo emerge --sync
-sudo emerge -u subversion wget cmake

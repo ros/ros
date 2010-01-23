@@ -33,6 +33,9 @@
 namespace ros
 {
 
+/**
+ * \brief Base class for all exceptions thrown by roscpp
+ */
 class Exception : public std::runtime_error
 {
 public:
@@ -41,6 +44,9 @@ public:
   {}
 };
 
+/**
+ * \brief Thrown when an invalid node name is specified to ros::init()
+ */
 class InvalidNodeNameException : public ros::Exception
 {
 public:
@@ -49,6 +55,10 @@ public:
   {}
 };
 
+/**
+ * \brief Thrown when an invalid graph resource name is specified to any roscpp
+ * function.
+ */
 class InvalidNameException : public ros::Exception
 {
 public:

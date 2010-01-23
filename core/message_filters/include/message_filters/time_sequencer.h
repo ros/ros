@@ -131,6 +131,9 @@ public:
     incoming_connection_.disconnect();
   }
 
+  /**
+   * \brief Manually add a message to the cache.
+   */
   void add(const MConstPtr& msg)
   {
     boost::mutex::scoped_lock lock(messages_mutex_);

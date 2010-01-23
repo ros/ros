@@ -48,7 +48,7 @@ int g_msg_count;
 ros::Duration g_dt;
 uint32_t g_options;
 
-class SubPub : public testing::Test
+class Subscriptions : public testing::Test
 {
   public:
     bool success;
@@ -106,12 +106,12 @@ class SubPub : public testing::Test
     }
 };
 
-TEST_F(SubPub, pubSubNFast)
+TEST_F(Subscriptions, subPub)
 {
   ros::NodeHandle nh;
-  ros::Subscriber sub = nh.subscribe("test_roscpp/pubsub_test", 0, &SubPub::messageCallback, (SubPub*)this);
+  ros::Subscriber sub = nh.subscribe("test_roscpp/pubsub_test", 0, &Subscriptions::messageCallback, (Subscriptions*)this);
   ASSERT_TRUE(sub);
-  pub_ = nh.advertise<test_roscpp::TestArray>("test_roscpp/subpub_test", 0, boost::bind(&SubPub::subscriberCallback, this, _1));
+  pub_ = nh.advertise<test_roscpp::TestArray>("test_roscpp/subpub_test", 0, boost::bind(&Subscriptions::subscriberCallback, this, _1));
   ASSERT_TRUE(pub_);
   ros::Time t1(ros::Time::now()+g_dt);
 

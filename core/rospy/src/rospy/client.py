@@ -130,9 +130,9 @@ def _init_node_params(argv, node_name):
 _init_node_args = None
 
 def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rostime=False, disable_rosout=False, disable_signals=False):
-    """Register client node with the master under the specified name.
-    This should be called after Pub/Sub topics have been declared and
-    it MUST be called from the main Python thread unless
+    """
+    Register client node with the master under the specified name.
+    This MUST be called from the main Python thread unless
     disable_signals is set to True. Duplicate calls to init_node are
     only allowed if the arguments are identical as the side-effects of
     this method are not reversible.
@@ -161,7 +161,8 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
         signal handlers. You must set this flag if (a) you are unable
         to call init_node from the main thread and/or you are using
         rospy in an environment where you need to control your own
-        signal handling (e.g. WX).
+        signal handling (e.g. WX). If you set this to True, you should
+        call rospy.signal_shutdown(reason) to initiate clean shutdown.
     @type  disable_signals: bool
     
     @param disable_rostime: for rostests only, suppresses
@@ -174,9 +175,12 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     @raise ROSInitException: if initialization/registration fails
     @raise ValueError: if parameters are invalid (e.g. name contains a namespace or is otherwise illegal)
     """
-    # TODO use roslib.names.is_legal_name to really validate
-    if rospy.names.SEP in name:
-        raise ValueError("name cannot contain a namespace")
+    # this test can be eliminated once we change from warning to error in the next check
+    if roslib.names.SEP in name:
+        raise ValueError("namespaces are not allowed in node names")
+    if not roslib.names.is_legal_base_name(name):
+        import warnings
+        warnings.warn("'%s' is not a legal ROS base name. This may cause problems with other ROS tools"%name, stacklevel=2)
     
     global _init_node_args
 
@@ -345,7 +349,11 @@ def wait_for_service(service, timeout=None):
     service already running.
     @param service: name of service
     @type  service: str
-    @param timeout: timeout time in seconds
+    @param timeout: timeout time in seconds, None for no
+    timeout. NOTE: timeout=0 is invalid as wait_for_service actually
+    contacts the service, so non-blocking behavior is not
+    possible. For timeout=0 uses cases, just call the service without
+    waiting.
     @type  timeout: double
     @raise ROSException: if specified timeout is exceeded
     @raise ROSInterruptException: if shutdown interrupts wait
@@ -371,7 +379,8 @@ def wait_for_service(service, timeout=None):
             finally:
                 if s is not None:
                     s.close()
-
+    if timeout == 0.:
+        raise ValueError("timeout must be non-zero")
     resolved_name = rospy.names.resolve_name(service)
     master = get_master()
     first = False
@@ -470,6 +479,11 @@ def set_param(param_name, param_value):
     @type  param_value: XmlRpcLegalValue
     @raise ROSException: if parameter server reports an error
     """
+    # #2202
+    if not roslib.names.is_legal_name(param_name):
+        import warnings
+        warnings.warn("'%s' is not a legal ROS graph resource name. This may cause problems with other ROS tools"%param_name, stacklevel=2)
+
     _init_param_server()
     _param_server[param_name] = param_value #MasterProxy does all the magic for us
 

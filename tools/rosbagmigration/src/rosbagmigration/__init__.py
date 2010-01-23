@@ -132,6 +132,29 @@ def fixbag(migrator, inbag, outbag):
     else:
         return False
 
+## Fix a bag so that it can be played in the current system
+#
+# @param migrator The message migrator to use
+# @param inbag Name of the bag to be fixed.
+# @param outbag Name of the bag to be saved.
+# @returns [] if bag could be migrated, otherwise, it returns the list of necessary migration paths
+def fixbag2(migrator, inbag, outbag):
+    # This checks/builds up rules for the given migrator
+    res = checkbag(migrator, inbag)
+
+    migrations = [m for m in res if m[1] != []]
+
+    # Deserializing all messages is inefficient, but we can speed this up later
+    if migrations == []:
+        rebag = rosrecord.Rebagger(outbag)
+        for i,(topic, msg, t) in enumerate(rosrecord.logplayer(inbag)):
+            new_msg = migrator.find_target(msg.__class__)()
+            migrator.migrate(msg, new_msg)
+            rebag.add(topic, new_msg, t)
+        rebag.close()    
+
+    return migrations
+
 
 ## Helper function to strip out roslib and package name from name usages.
 # 

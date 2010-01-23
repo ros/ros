@@ -125,7 +125,7 @@ bool ros::record::Recorder::openFile(const std::string& file_name, bool random_a
   if (store_index_ && random_access)
     record_file_.open(file_name.c_str(), std::ios::in | std::ios::out | std::ios::binary);
   else
-    record_file_.open(file_name.c_str(), std::ios::out | std::ios::binary | std::ios::app);
+    record_file_.open(file_name.c_str(), std::ios::out | std::ios::binary);
 
   if (record_file_.fail())
   {
@@ -231,6 +231,11 @@ bool ros::record::Recorder::checkDisk()
 
 bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPtr msg, ros::Time time)
 {
+  return record(topic_name, *msg, time);
+}
+
+bool ros::record::Recorder::record(std::string topic_name, const ros::Message& msg, ros::Time time)
+{
   if (!logging_enabled_)
   {
     ros::WallTime nowtime = ros::WallTime::now();
@@ -252,9 +257,9 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     if (key == topics_recorded_.end())
     {
       MsgInfo& info = topics_recorded_[topic_name];
-      info.msg_def  = msg->__getMessageDefinition();
-      info.datatype = msg->__getDataType();
-      info.md5sum   = msg->__getMD5Sum();
+      info.msg_def  = msg.__getMessageDefinition();
+      info.datatype = msg.__getDataType();
+      info.md5sum   = msg.__getMD5Sum();
 
       key = topics_recorded_.find(topic_name);
 
@@ -274,6 +279,29 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
 
       if (!checkDisk())
         return false;
+    }
+  }
+
+
+  // Get information about possible latching and callerid from the connection header
+  bool latching = false;
+  std::string callerid("");
+  
+  if (msg.__connection_header != NULL)
+  {
+    M_string::iterator latch_iter = msg.__connection_header->find(std::string("latching"));
+    if (latch_iter != msg.__connection_header->end())
+    {
+      if (latch_iter->second != std::string("0"))
+      {
+        latching = true;
+      }
+    }
+
+    M_string::iterator callerid_iter = msg.__connection_header->find(std::string("callerid"));
+    if (callerid_iter != msg.__connection_header->end())
+    {
+      callerid = callerid_iter->second;
     }
   }
 
@@ -302,19 +330,19 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     }
 
     // Serialize the message into the message buffer
-    if (message_buf_size_ < msg->__serialized_length)
+    if (message_buf_size_ < msg.serializationLength())
     {
       if (message_buf_size_ == 0)
-        message_buf_size_ = msg->__serialized_length;
+        message_buf_size_ = msg.serializationLength();
       else
       {
-        while (message_buf_size_ < msg->__serialized_length)
+        while (message_buf_size_ < msg.serializationLength())
           message_buf_size_ *= 2;
       }
       message_buf_ = (unsigned char*)realloc(message_buf_, message_buf_size_);
       ROS_ASSERT(message_buf_);
     }
-    msg->serialize(message_buf_, 0);
+    msg.serialize(message_buf_, 0);
 
     // Write a message instance record
     M_string header;
@@ -324,7 +352,14 @@ bool ros::record::Recorder::record(std::string topic_name, ros::Message::ConstPt
     header[TYPE_FIELD_NAME]  = msg_info.datatype;
     header[SEC_FIELD_NAME]   = std::string((char*)&time.sec, 4);
     header[NSEC_FIELD_NAME]  = std::string((char*)&time.nsec, 4);
-    writeRecord(header, (char*)message_buf_, msg->__serialized_length);
+
+    if (latching)
+    {
+      header[LATCHING_FIELD_NAME] = std::string("1");
+      header[CALLERID_FIELD_NAME] = callerid;
+    }
+
+    writeRecord(header, (char*)message_buf_, msg.serializationLength());
     if (record_file_.fail())
     {
       ROS_FATAL("rosrecord::Record: could not write to file.  Check permissions and diskspace\n");
@@ -374,42 +409,44 @@ void ros::record::Recorder::writeIndex()
 		// Remember position of first index record
 		index_data_pos_ = record_pos_;
 
-		for (std::map<std::string, std::vector<IndexEntry> >::const_iterator i = topic_indexes_.begin(); i != topic_indexes_.end(); i++)
+		for (std::map<std::string, std::vector<IndexEntry> >::const_iterator i = topic_indexes_.begin();
+                     i != topic_indexes_.end();
+                     i++)
 		{
 			const std::string&             topic_name  = i->first;
 			const std::vector<IndexEntry>& topic_index = i->second;
 
 			uint32_t topic_index_size = topic_index.size();
 
-	    const MsgInfo& msg_info = topics_recorded_[topic_name];
-
-	    // Write the index record header
+                        const MsgInfo& msg_info = topics_recorded_[topic_name];
+                        
+                        // Write the index record header
 			M_string header;
 			header[OP_FIELD_NAME]    = std::string((char*)&OP_INDEX_DATA, 1);
 			header[TOPIC_FIELD_NAME] = topic_name;
-	    header[TYPE_FIELD_NAME]  = msg_info.datatype;
+                        header[TYPE_FIELD_NAME]  = msg_info.datatype;
 			header[VER_FIELD_NAME]   = std::string((char*)&INDEX_VERSION, 4);
 			header[COUNT_FIELD_NAME] = std::string((char*)&topic_index_size, 4);
-
+                        
 			uint32_t data_len = topic_index_size * sizeof(IndexEntry);
 			writeHeader(header, data_len);
-
+                        
 			// Write the index record data (pairs of timestamp and position in file)
 			for (std::vector<IndexEntry>::const_iterator j = topic_index.begin(); j != topic_index.end(); j++)
 			{
-				const IndexEntry& index_entry = *j;
-				write((char*)&index_entry.sec,  4);
-				write((char*)&index_entry.nsec, 4);
-				write((char*)&index_entry.pos,  8);
+                          const IndexEntry& index_entry = *j;
+                          write((char*)&index_entry.sec,  4);
+                          write((char*)&index_entry.nsec, 4);
+                          write((char*)&index_entry.pos,  8);
 			}
 		}
 	}
-
+        
 	// Re-open the file for random access, and rewrite the file header to point to the first index data message
-  closeFile();
-  openFile(file_name_, true);
-  seek(file_header_pos_);
-  writeFileHeader();
+        closeFile();
+        openFile(file_name_, true);
+        seek(file_header_pos_);
+        writeFileHeader();
 }
 
 //

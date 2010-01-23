@@ -7,11 +7,15 @@
   </description>
   <author>Tully Foote/tfoote@willowgarage.com</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="Doc Reviewed" notes="2010-01-12"/>
   <url>http://ros.org/wiki/rosmake</url>
   <depend package="roslib"/>
   <depend package="rosdep"/>
 
+  <export>
+    <rosdoc config="rosdoc.yaml"/>    
+  </export>
+  
 </package>
 
 

@@ -6,7 +6,7 @@ std_msgs contains common message types representing primitive data types and oth
   </description>
   <author>Morgan Quigley/mquigley@cs.stanford.edu, Ken Conley/kwc@willowgarage.com, Jeremy Leibs/leibs@willowgarage.com</author>
   <license>BSD</license>
-  <review status="api cleared" notes="2009-02-26"/>
+  <review status="Doc reviewed" notes="2010-01-10"/>
   <url>http://www.ros.org/wiki/std_msgs</url>
   <depend package="roslib"/>
   <export>

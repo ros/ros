@@ -58,20 +58,23 @@ def manifest_depends(ctx):
     stack_list = roslib.stacks.list_stacks()
     #print stack_list
     for s in ctx.stacks:
-        s_deps = []
-        s_pkgs = _packages_of(s)
-        for p in s_pkgs:
-            s_deps.extend(roslib.rospack.rospack_depends_1(p))
-        pkg_dir = roslib.stacks.get_stack_dir(s)
-        m_file = roslib.stack_manifest.stack_file(s, True)
-        m = roslib.stack_manifest.parse_file(m_file)
-        for d in m.depends:
-            if not d.stack in stack_list:
-                errors.append("%s (%s does not exist)"%(m_file, d))
-            else:
-                pkgs = _packages_of(d.stack)
-                if not [p for p in pkgs if p in s_deps]:
-                    errors.append("%s (%s appears to be an unnecessary depend)"%(m_file, d))
+        try:
+            s_deps = []
+            s_pkgs = _packages_of(s)
+            for p in s_pkgs:
+                s_deps.extend(roslib.rospack.rospack_depends_1(p))
+            m_file = roslib.stack_manifest.stack_file(s, True)
+            m = roslib.stack_manifest.parse_file(m_file)
+            for d in m.depends:
+                if not d.stack in stack_list:
+                    errors.append("%s (%s does not exist)"%(m_file, d))
+                else:
+                    pkgs = _packages_of(d.stack)
+                    if not [p for p in pkgs if p in s_deps]:
+                        errors.append("%s (%s appears to be an unnecessary depend)"%(m_file, d))
+        except roslib.stacks.InvalidROSStackException:
+            # report with a different rule
+            pass
     return errors
 
 warnings = [

@@ -74,17 +74,6 @@ TEST(params, setThenGetString)
   ASSERT_STREQ( "asdf", param.c_str() );
 }
 
-TEST(params, setThenGetStringCachedDeprecated)
-{
-  std::string param;
-  ASSERT_FALSE( param::get( "test_set_param_setThenGetStringCachedDeprecated", param, true ) );
-
-  param::set( "test_set_param_setThenGetStringCachedDeprecated", std::string("asdf") );
-
-  ASSERT_TRUE( param::get( "test_set_param_setThenGetStringCachedDeprecated", param, true ) );
-  ASSERT_STREQ( "asdf", param.c_str() );
-}
-
 TEST(params, setThenGetStringCached)
 {
   std::string param;

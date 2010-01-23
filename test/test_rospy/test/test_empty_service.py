@@ -60,8 +60,8 @@ def handle_empty(req):
     return EmptySrvResponse()
 
 def handle_return_empty(req):
-    "print returning None"
-    pass
+    "print returning empty list"
+    return []
 
 ## handle empty request 
 def handle_empty_req(req):
@@ -105,7 +105,7 @@ class TestEmptyServiceClient(unittest.TestCase):
         
     def test_empty(self):
         self._test(EMPTY_SERVICE, EmptySrv, EmptySrvRequest())
-    # test that an empty return service handler can return None
+    # test that an empty return service handler can return an empty list
     def test_return_empty(self):
         self._test(EMPTY_RETURN_SERVICE, EmptySrv, EmptySrvRequest())
     def test_empty_req(self):

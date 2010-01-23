@@ -1,3 +1,0 @@
-<launch>
-  <param name="name" command="not_a_command" />
-</launch>

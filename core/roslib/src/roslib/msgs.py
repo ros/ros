@@ -86,6 +86,29 @@ def base_msg_type(type_):
         return type_[:type_.find('[')]
     return type_
 
+def resolve_type(type_, package_context):
+    """
+    Resolve type name based on current package context.
+
+    NOTE: in ROS, 'Header' always resolves to 'roslib/Header'
+
+    e.g.::
+      resolve_type('String', 'std_msgs') -> 'std_msgs/String'
+      resolve_type('String[]', 'std_msgs') -> 'std_msgs/String[]'
+      resolve_type('std_msgs/String', 'foo') -> 'std_msgs/String'    
+      resolve_type('uint16', 'std_msgs') -> 'uint16'
+      resolve_type('uint16[]', 'std_msgs') -> 'uint16[]'
+    """
+    bt = base_msg_type(type_)
+    if bt in BUILTIN_TYPES:
+        return type_
+    elif bt == 'Header':
+        return 'roslib/Header'
+    elif SEP in type_:
+        return type_
+    else:
+        return "%s%s%s"%(package_context, SEP, type_)    
+
 #NOTE: this assumes that we aren't going to support multi-dimensional
 
 def parse_type(type_):

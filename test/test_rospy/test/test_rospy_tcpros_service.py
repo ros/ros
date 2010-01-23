@@ -122,9 +122,10 @@ class TestRospyTcprosService(unittest.TestCase):
         from test_rospy.srv import EmptySrvResponse
         cls = EmptySrvResponse
         v = cls()
-        # - only valid return values are None and a response instance
+        # - only valid return values are empty list, empty dict and a response instance
         self.assertEquals(v, convert_return_to_response(v, cls))
-        self.assertEquals(v, convert_return_to_response(None, cls))
+        self.assertEquals(v, convert_return_to_response([], cls))
+        self.assertEquals(v, convert_return_to_response({}, cls))
         
         # #2185: currently empty does not do any checking whatsoever,
         # disabling this test as it is not convert()s fault

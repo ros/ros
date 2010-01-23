@@ -104,10 +104,22 @@ public:
    * \brief returns whether or not the queue is empty
    */
   bool isEmpty();
+  /**
+   * \brief Removes all callbacks from the queue.  Does \b not wait for calls currently in progress to finish.
+   */
   void clear();
 
+  /**
+   * \brief Enable the queue (queue is enabled by default)
+   */
   void enable();
+  /**
+   * \brief Disable the queue, meaning any calls to addCallback() will have no effect
+   */
   void disable();
+  /**
+   * \brief Returns whether or not this queue is enabled
+   */
   bool isEnabled();
 
 protected:

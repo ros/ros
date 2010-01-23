@@ -17,7 +17,7 @@
     <rosdoc config="rosdoc.yaml" />
   </export>
 
-  <review status="API conditionally cleared" notes="2/5/09"/>
+  <review status="Doc reviewed" notes="2010/01/12"/>
   <url>http://ros.org/wiki/rostest</url>
   <depend package="roslaunch"/>
   <depend package="roslib"/>

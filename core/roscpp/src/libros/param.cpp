@@ -353,34 +353,6 @@ bool getCached(const std::string& key, XmlRpc::XmlRpcValue& v)
 	return getImpl(key, v, true);
 }
 
-////////////////////////////////////////////////////////////
-// deprecated get() functions with the use_cache parameter
-bool get(const std::string& key, std::string& s, bool use_cache)
-{
-	return getImpl(key, s, true);
-}
-
-bool get(const std::string& key, double& d, bool use_cache)
-{
-	return getImpl(key, d, true);
-}
-
-bool get(const std::string& key, int& i, bool use_cache)
-{
-	return getImpl(key, i, true);
-}
-
-bool get(const std::string& key, bool& b, bool use_cache)
-{
-	return getImpl(key, b, true);
-}
-
-bool get(const std::string& key, XmlRpc::XmlRpcValue& v, bool use_cache)
-{
-	return getImpl(key, v, true);
-}
-//////////////////////////////////////////////////////////////
-
 bool search(const std::string& key, std::string& result_out)
 {
   return search(this_node::getName(), key, result_out);

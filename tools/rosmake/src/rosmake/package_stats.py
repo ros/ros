@@ -46,9 +46,12 @@ class PackageFlagTracker:
   blacklisted and all their dependents. """
   def __init__(self, dependency_tracker, os_name = None, os_version = None):
     if not os_name and not os_version:
-        osd = roslib.os_detect.OSDetect()
-        self.os_name = osd.get_name()
-        self.os_version = osd.get_version()
+        try:
+            osd = roslib.os_detect.OSDetect()
+            self.os_name = osd.get_name()
+            self.os_version = osd.get_version()
+        except roslib.os_detect.OSDetectException, ex:
+            print >> sys.stderr, "Could not detect OS. platform detection will not work"
     else:
         self.os_name = os_name
         self.os_version = os_version
@@ -176,7 +179,7 @@ class PackageFlagTracker:
   def is_whitelisted(self, package):
       return roslib.packages.platform_supported(package, self.os_name, self.os_version)
         
-  def can_build(self, pkg, use_whitelist = False, use_whitelist_recursive = False, use_blacklist = False, failed_packages = []):
+  def can_build(self, pkg, use_whitelist = False, use_whitelist_recursive = False, use_blacklist = False, failed_packages = [], use_makefile = True):
     """
     Return (buildable, error, "reason why not")
     """
@@ -219,7 +222,7 @@ class PackageFlagTracker:
         output_str += "ROS_NOBUILD in package %s\n"%pkg
 
 
-    if not self.has_makefile(pkg):
+    if use_makefile and not self.has_makefile(pkg):
         output_state = True # dependents are ok no need to build
         buildable = False
         output_str += " No Makefile in package %s\n"%pkg

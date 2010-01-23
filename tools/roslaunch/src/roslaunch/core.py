@@ -177,6 +177,10 @@ def setup_env(node, machine, master_uri):
     """
     Create dictionary of environment variables to set for launched
     process.
+
+    setup_env() will only set ROS_*, PYTHONPATH, and user-specified
+    environment variables.
+    
     @param machine Machine: machine being launched on
     @type  machine: L{Machine}
     @param node: node that is being launched or None

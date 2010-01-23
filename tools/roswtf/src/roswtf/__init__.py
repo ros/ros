@@ -32,6 +32,10 @@
 #
 # Revision $Id$
 
+"""
+roswtf command-line tool.
+"""
+
 import os
 import socket
 import sys
@@ -142,7 +146,7 @@ def _roswtf_main():
             print "Stack:",curr_stack            
             ctx = WtfContext.from_stack(curr_stack)
         else:
-            print "No package in context"
+            print "No package or stack in context"
             ctx = WtfContext.from_env()
 
     # static checks

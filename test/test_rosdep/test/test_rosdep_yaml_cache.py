@@ -132,6 +132,19 @@ class RosdepYamlCacheTest(unittest.TestCase):
             }       
         self.assertEqual(yaml_dict2, yaml_truth)
 
+    def test_RosdepLookupPackage_get_os_from_yaml(self):
+        yc = rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version")
+        yaml_os_map = {"rosdep_test_os":"one", "other":"two", "three":"three"};
+        output = yc.get_os_from_yaml(yaml_os_map, "source_path")
+        self.assertEqual("one", output)
+
+    def test_RosdepLookupPackage_get_version_from_yaml(self):
+        yc = rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version")
+        yaml_map = {"8.04":"one", "rosdep_test_version":"two", "three":"three"};
+        output = yc.get_version_from_yaml(yaml_map, "source_path" )
+        self.assertEqual("two", output)
+        
+
 
 if __name__ == '__main__':
   rostest.unitrun('test_rosdep', 'test_yaml_cache', RosdepYamlCacheTest, coverage_packages=['rosdep.core'])  

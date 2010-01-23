@@ -2,66 +2,7 @@
 \mainpage
 \htmlinclude manifest.html
 
-rosdep attempts to help you manage the external dependencies of ROS. Because
-the ROS codebase is so wide-ranging, these dependencies can be hard to map onto
-your system. For example, what packages do you need in order to get the OpenGL
-headers on Ubuntu? (answer: libgl1-mesa-dev and libglu1-mesa-dev). These
-package names can sometimes be unfriendly, and, much more seriously, they
-usually vary slightly from one operating system or Linux distribution to
-another (e.g., Debian/Ubuntu versus Fedora), and can even vary between
-different versions of the same distribution. Enter rosdep.
-
-\section commandline Usage
-
-\subsection satisfying_dependencies Satisfying Dependencies
-
-If you want to build some package called, say, PACKAGE, you can use rosdep
-to output the bash necessary to satisfy that package's dependencies. For
-example,
-
-\verbatim
-$ rosdep satisfy PACKAGE
-\endverbatim
-
-You could write that to a text file, and then pass that text file to bash. To
-do this in one-shot, you can do this:
-
-\verbatim
-$ bash <(rosdep satisfy PACKAGE)
-\endverbatim
-
-That bit of bash magic will take the output of running rosdep, write it to a
-temporary file, and then pass that pseudo-filename as the argument to bash.
-(As an aside, I have tried just piping the output of rosdep to bash, and that
-doesn't seem to work.)
-
-\subsection installation Installation
-
-rosdep is capable of bootstrapping the ROS installation process. It does this
-by assuming only a very bare-bones system, installing everything else necessary
-to build any ROS packages you indicate. rosdep assumes the following exist:
-
--# C++ compiler (gcc)
--# CMake
--# subversion
--# wget
-
-There are "preinstall" scripts provided in the "installers" directory of the
-rosdep package which will install these base dependencies for various 
-operating systems.
-
-Once the base requirements are met, rosdep can then install the ROS core. The
-install.grand-unified script in the "installers" directory shows how this can
-be done. The script downloads a .bashrc.ros script to your home directory and
-adds this to your bashrc and bash_profile. Then, it checks out some ROS
-package repositories, builds rospack and rosdep, and then instructs rosdep 
-to install the dependencies of roscpp, and finally does a recursive make of
-roscpp.
-
-\section Acknowledgments
-
-rosdep uses yaml-cpp, a C++ YAML parser under the MIT license. The yaml-cpp
-project can be found here:
-http://code.google.com/p/yaml-cpp
+\section codeapi Code API The code API is not stable.  Please use the
+commandline interface documented at <a href="http://www.ros.org/wiki/rosdep">http://www.ros.org/wiki/rosdep</a>.
 
 */

@@ -41,7 +41,7 @@
 int g_argc;
 char** g_argv;
 
-class MultiSub : public testing::Test
+class Subscriptions : public testing::Test
 {
   public:
     ros::NodeHandle nh_;
@@ -79,10 +79,10 @@ class MultiSub : public testing::Test
       ROS_INFO("Subscribing %d", cb_num);
       boost::function<void(const test_roscpp::TestArrayConstPtr&)> funcs[4] =
       {
-        boost::bind(&MultiSub::cb0, this, _1),
-        boost::bind(&MultiSub::cb1, this, _1),
-        boost::bind(&MultiSub::cb2, this, _1),
-        boost::bind(&MultiSub::cb3, this, _1),
+        boost::bind(&Subscriptions::cb0, this, _1),
+        boost::bind(&Subscriptions::cb1, this, _1),
+        boost::bind(&Subscriptions::cb2, this, _1),
+        boost::bind(&Subscriptions::cb3, this, _1),
       };
 
       subs_[cb_num] = nh_.subscribe("test_roscpp/pubsub_test", 10, funcs[cb_num]);
@@ -92,8 +92,8 @@ class MultiSub : public testing::Test
     bool sub_wrappers()
     {
       ROS_INFO("sub_wrappers");
-      verify_sub_ = nh_.subscribe("test_roscpp/pubsub_test", 10, &MultiSub::cb_verify, this);
-      reset_sub_ = nh_.subscribe("test_roscpp/pubsub_test", 10, &MultiSub::cb_reset, this);
+      verify_sub_ = nh_.subscribe("test_roscpp/pubsub_test", 10, &Subscriptions::cb_verify, this);
+      reset_sub_ = nh_.subscribe("test_roscpp/pubsub_test", 10, &Subscriptions::cb_reset, this);
       return verify_sub_ && reset_sub_;
     }
     bool unsub(int cb_num)
@@ -112,7 +112,7 @@ class MultiSub : public testing::Test
     }
 };
 
-TEST_F(MultiSub, pubSubNFast)
+TEST_F(Subscriptions, multipleSubscriptions)
 {
   test_ready = false;
 

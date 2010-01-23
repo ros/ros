@@ -7,4 +7,11 @@
   <test test-name="rospy_empty_service" pkg="test_rospy" type="test_empty_service.py" />
   <test test-name="rospy_basic_services" pkg="test_rospy" type="test_basic_services.py" />  
   <test test-name="rospy_service_decl_order" pkg="test_rospy" type="test_service_order.py" />
+
+  <node name="fail_two_ints" pkg="test_ros" type="fail_two_ints_server">
+    <remap from="add_two_ints" to="fail_two_ints" />
+  </node>
+  
+  <test test-name="rospy_service_failure" pkg="test_rospy" type="test_service_failure.py" />
+  
 </launch>

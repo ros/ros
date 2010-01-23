@@ -83,6 +83,8 @@ class ROSLaunchParent(object):
         @param process_listeners: (optional) list of process listeners
             to register with process monitor once launch is running
         @type  process_listeners: [L{roslaunch.pmon.ProcessListener}]
+        @param port: (optional) override master port number from what is specified in the master URI.
+        @type  port: int
         @throws RLException
         """
         

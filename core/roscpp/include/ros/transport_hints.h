@@ -35,9 +35,27 @@
 namespace ros
 {
 
+/**
+ * \brief Provides a way of specifying network transport hints to ros::NodeHandle::subscribe() and
+ * someday ros::NodeHandle::advertise()
+ *
+ * Uses the named parameter idiom, allowing you to do things like:
+\verbatim
+ros::TransportHints()
+        .unreliable()
+        .maxDatagramSize(1000)
+        .tcpNoDelay();
+\endverbatim
+ *
+ * Hints for the transport type are used in the order they are specified, i.e. TransportHints().unreliable().reliable()
+ * specifies that you would prefer an unreliable transport, followed by a reliable one.
+ */
 class TransportHints
 {
 public:
+  /**
+   * \brief Specifies a reliable transport.  Currently this means TCP
+   */
   TransportHints& reliable()
   {
     tcp();
@@ -45,18 +63,30 @@ public:
     return *this;
   }
 
+  /**
+   * \brief Explicitly specifies the TCP transport
+   */
   TransportHints& tcp()
   {
     transports_.push_back("TCP");
     return *this;
   }
 
+  /**
+   * \brief If a TCP transport is used, specifies whether or not to use TCP_NODELAY to provide
+   * a potentially lower-latency connection.
+   *
+   * \param nodelay [optional] Whether or not to use TCP_NODELAY.  Defaults to true.
+   */
   TransportHints& tcpNoDelay(bool nodelay = true)
   {
     options_["tcp_nodelay"] = nodelay ? "true" : "false";
     return *this;
   }
 
+  /**
+   * \brief Returns whether or not this TransportHints has specified TCP_NODELAY
+   */
   bool getTCPNoDelay()
   {
     M_string::iterator it = options_.find("tcp_nodelay");
@@ -74,12 +104,21 @@ public:
     return false;
   }
 
+  /**
+   * \brief If a UDP transport is used, specifies the maximum datagram size.
+   *
+   * \param size The size, in bytes
+   */
   TransportHints& maxDatagramSize(int size)
   {
     options_["max_datagram_size"] = boost::lexical_cast<std::string>(size);
     return *this;
   }
 
+  /**
+   * \brief Returns the maximum datagram size specified on this TransportHints, or 0 if
+   * no size was specified.
+   */
   int getMaxDatagramSize()
   {
     M_string::iterator it = options_.find("max_datagram_size");
@@ -91,6 +130,9 @@ public:
     return boost::lexical_cast<int>(it->second);
   }
 
+  /**
+   * \brief Specifies an unreliable transport.  Currently this means UDP.
+   */
   TransportHints& unreliable()
   {
     udp();
@@ -98,13 +140,22 @@ public:
     return *this;
   }
 
+  /**
+   * \brief Explicitly specifies a UDP transport.
+   */
   TransportHints& udp()
   {
     transports_.push_back("UDP");
     return *this;
   }
 
+  /**
+   * \brief Returns a vector of transports, ordered by preference
+   */
   const V_string& getTransports() { return transports_; }
+  /**
+   * \brief Returns the map of options created by other methods inside TransportHints
+   */
   const M_string& getOptions() { return options_; }
 
 private:

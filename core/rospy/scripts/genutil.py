@@ -191,7 +191,11 @@ class Generator(object):
         # package/src/package/msg for messages, packages/src/package/srv for services
         outdir = self.outdir(package_dir)
         try:
-            roslib.msgs.load_package_dependencies(package)
+            # TODO: this can result in packages getting dependencies
+            # that they shouldn't. To implement this correctly will
+            # require an overhaul of the message generator
+            # infrastructure.
+            roslib.msgs.load_package_dependencies(package, load_recursive=True)
         except Exception, e:
             #traceback.print_exc()
             print "\nERROR[%s]: Unable to load package dependencies for %s: %s\n"%(self.name, package, e)

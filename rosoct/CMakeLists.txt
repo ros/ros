@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 add_definitions(-Wall)
-set(ROS_BUILD_TYPE RelWithDebInfo)
+set(ROS_BUILD_TYPE Debug)
 rosbuild_init()
 
 set( CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE )
@@ -20,10 +20,13 @@ rosbuild_add_boost_directories()
 include_directories(${OCTAVE_INCLUDE_DIRS})
 link_directories(${OCTAVE_LINK_DIRS})
 rosbuild_add_library(rosoct rosoct.cpp)
-rosbuild_add_compile_flags(rosoct "${OCTAVE_CXXFLAGS}")
+#rosbuild_add_compile_flags(rosoct "${OCTAVE_CXXFLAGS}")
+rosbuild_add_compile_flags(rosoct "-I/usr/include/octave-3.0.5 -I/usr/include/octave-3.0.5/octave -g")
 rosbuild_add_link_flags(rosoct "${OCTAVE_LINK_FLAGS}")
 target_link_libraries(rosoct ${OCTAVE_LIBRARY} ${COIN_LIBRARY})
 rosbuild_link_boost(rosoct thread)
+
+message("octave flags: ${OCTAVE_CXXFLAGS}")
 
 set_target_properties(rosoct PROPERTIES PREFIX "" SUFFIX ".mex")
 

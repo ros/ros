@@ -369,10 +369,14 @@ public:
     int sessionoffset;
 };
 
-class RoscppSubscription : public RoscppWorker, public SubscriptionMessageHelper
+class RoscppSubscription : public RoscppWorker
+#ifndef ROS_NEW_SERIALIZATION_API
+, public SubscriptionMessageHelper
+#endif
 {
 public:
-    RoscppSubscription(const string& topicname, const string& md5sum, const string& type, const mxArray* pfn, int maxqueue = 1) : _opts(topicname,maxqueue,md5sum,type)
+    RoscppSubscription(const string& topicname, const string& md5sum, const string& type, const mxArray* pfn, int maxqueue = 1)
+    : _opts(topicname,maxqueue,md5sum,type)
     {
         _bDropWork = false;
         assert( pfn != NULL );
@@ -395,8 +399,13 @@ public:
 
     virtual void init()
     {
-        ROS_ASSERT(!!as<SubscriptionMessageHelper>());
+#ifdef ROS_NEW_SERIALIZATION_API
+        _opts.helper.reset(new SubscriptionMessageHelperT<OctaveMsgDeserializer>(boost::bind(&RoscppSubscription::callback, this, _1), boost::bind(&RoscppSubscription::create, this)));
+#else
         _opts.helper = as<SubscriptionMessageHelper>();
+        ROS_ASSERT(_opts.helper);
+#endif
+
         _sub = s_node->subscribe(_opts);
     }
 
@@ -407,10 +416,25 @@ public:
         dowork(pmsg.get());
     }
 
+#ifdef ROS_NEW_SERIALIZATION_API
+    boost::shared_ptr<OctaveMsgDeserializer> create()
+    {
+      return boost::shared_ptr<OctaveMsgDeserializer>(new OctaveMsgDeserializer(_opts.md5sum, _opts.datatype));
+    }
+
+    void callback(const boost::shared_ptr<OctaveMsgDeserializer>& msg)
+    {
+      if( _bDropWork )
+          return;
+      boost::mutex::scoped_lock lock(_mutex);
+      AddWorker(this, new OctaveMsgDeserializer(*msg));
+    }
+#else
     virtual MessagePtr create() { return MessagePtr(new OctaveMsgDeserializer(_opts.md5sum,_opts.datatype)); }
     virtual std::string getMD5Sum() { return _opts.md5sum; }
     virtual std::string getDataType() { return _opts.datatype; }
-    
+
+
     virtual void call(const MessagePtr& msg)
     {
         if( _bDropWork )
@@ -418,6 +442,7 @@ public:
         boost::mutex::scoped_lock lock(_mutex);
         AddWorker(this, new OctaveMsgDeserializer(*dynamic_cast<OctaveMsgDeserializer*>(msg.get())));
     }
+#endif
 
 private:
     virtual void dowork(OctaveMsgDeserializer* pmsg)
@@ -441,7 +466,10 @@ private:
     bool _bDropWork;
 };
 
-class RoscppService : public RoscppWorker, public ServiceMessageHelper
+class RoscppService : public RoscppWorker
+#ifndef ROS_NEW_SERIALIZATION_API
+, public ServiceMessageHelper
+#endif
 {
 public:
     RoscppService(const string& servicename, const string& md5sum, const string& reqtype, const string& restype, const string& datatype, const mxArray* pservicefn)
@@ -473,8 +501,14 @@ public:
 
     virtual void init()
     {
+#ifdef ROS_NEW_SERIALIZATION_API
+        _opts.helper.reset(new ServiceMessageHelperT<OctaveMsgDeserializer, OctaveMsgDeserializer>(boost::bind(&RoscppService::callback, this, _1, _2),
+                                                                                                   boost::bind(&RoscppService::createRequest, this),
+                                                                                                   boost::bind(&RoscppService::createResponse, this)));
+#else
         ROS_ASSERT(!!as<ServiceMessageHelper>());
         _opts.helper = as<ServiceMessageHelper>();
+#endif
         _service = s_node->advertiseService(_opts);
         if( !_service )
             throw;
@@ -490,6 +524,25 @@ public:
         _control.notify_all();
     }
 
+#ifdef ROS_NEW_SERIALIZATION_API
+    virtual boost::shared_ptr<OctaveMsgDeserializer> createRequest() { return boost::shared_ptr<OctaveMsgDeserializer>(new OctaveMsgDeserializer(_opts.md5sum, _opts.req_datatype)); }
+    virtual boost::shared_ptr<OctaveMsgDeserializer> createResponse() { return boost::shared_ptr<OctaveMsgDeserializer>(new OctaveMsgDeserializer(_opts.md5sum, _opts.res_datatype)); }
+
+    bool callback(OctaveMsgDeserializer& req, OctaveMsgDeserializer& res)
+    {
+      if( _bDropWork )
+          return false;
+
+      boost::mutex::scoped_lock lockserv(_mutexService); // lock simultaneous service calls out
+      boost::mutex::scoped_lock lock(_mutex);
+      preq = &req;
+      pres = &res;
+      AddWorker(this, NULL);
+      _control.wait(lock);
+
+      return _bSuccess;
+    }
+#else
     virtual MessagePtr createRequest() { return MessagePtr(new OctaveMsgDeserializer(_opts.md5sum, _opts.req_datatype)); }
     virtual MessagePtr createResponse() { return MessagePtr(new OctaveMsgDeserializer(_opts.md5sum, _opts.res_datatype)); }
 
@@ -515,6 +568,7 @@ public:
     virtual std::string getDataType() { return _opts.datatype; }
     virtual std::string getRequestDataType() { return _opts.req_datatype; }
     virtual std::string getResponseDataType() { return _opts.res_datatype; }
+#endif
 
 private:
     virtual void dowork()
@@ -552,7 +606,13 @@ private:
 
     ServiceServer _service;
     AdvertiseServiceOptions _opts;
+
+#ifdef ROS_NEW_SERIALIZATION_API
+    OctaveMsgDeserializer* preq;
+    OctaveMsgDeserializer* pres;
+#else
     boost::shared_ptr<OctaveMsgDeserializer> preq, pres;
+#endif
     octave_value ovfnservice;
     boost::condition _control;
     boost::mutex _mutex, _mutexService;

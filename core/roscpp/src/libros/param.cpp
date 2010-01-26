@@ -325,7 +325,7 @@ bool get(const std::string& key, bool& b)
 
 bool get(const std::string& key, XmlRpc::XmlRpcValue& v)
 {
-	return getImpl(key, v, true);
+	return getImpl(key, v, false);
 }
 
 bool getCached(const std::string& key, std::string& s)

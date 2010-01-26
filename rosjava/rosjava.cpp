@@ -40,6 +40,8 @@
 #include <string>
 #include <map>
 #include <sstream>
+#include <stdexcept>
+
 
 #include <cstdio>
 #include <boost/thread.hpp>
@@ -55,6 +57,7 @@
 #include <ros/this_node.h>
 #include <ros/node_handle.h>
 #include <ros/service.h>
+#include <rospack/rospack.h>
 
 #include <signal.h>
 
@@ -368,6 +371,30 @@ JNIEXPORT jstring JNICALL Java_ros_roscpp_JNI_mapName
 	return makeString(env, handle->resolveName(getString(env, jname)));
 }
 
+
+JNIEXPORT jstring JNICALL Java_ros_roscpp_JNI_getPackageLocation
+(JNIEnv * env, jclass __jni, jstring jname)
+{
+	string pkgName = getString(env,jname);
+	
+	char a1[21], a2[21], a3[1025]; 
+	snprintf(a1, 20, "rospack"); 
+	snprintf(a2, 20, "find"); 
+	snprintf(a3, 1024, "%s", pkgName.c_str()); 
+	char* argv[3] = {a1, a2, a3};
+	std::string retval = ""; 
+	try  {
+		rospack::ROSPack rp;
+		rp.run(3, argv);
+		retval = rp.getOutput();
+		retval.resize(retval.size()-1); 
+	}
+	catch(std::runtime_error &e) {
+		fprintf(stderr, "[rospack] %s\n", e.what());
+	}
+	
+	return makeString(env, retval);
+}
 
 /************************************************************
  *   Logging

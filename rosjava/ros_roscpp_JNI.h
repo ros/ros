@@ -86,6 +86,11 @@ JNIEXPORT jstring JNICALL Java_ros_roscpp_JNI_getName
 
 JNIEXPORT jstring JNICALL Java_ros_roscpp_JNI_mapName
   (JNIEnv * env, jclass __jni, jlong cppHandle, jstring jname);
+	
+	
+JNIEXPORT jstring JNICALL Java_ros_roscpp_JNI_getPackageLocation
+	(JNIEnv * env, jclass __jni, jstring jname);
+	
 
 
 /************************************************************

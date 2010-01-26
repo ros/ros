@@ -67,6 +67,8 @@ class JNI {
 
 	public static native String getName(long cppHandle);
 	public static native String mapName(long cppHandle, String name);
+	
+	public static native String getPackageLocation(String name);
 
 	
 	/************************************************************

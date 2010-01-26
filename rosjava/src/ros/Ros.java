@@ -68,6 +68,8 @@ public abstract class Ros {
 	public abstract void logError(String message);
 	public abstract void logFatal(String message);
 	
+	public abstract String getPackageLocation(String pkgName); 
+	
 	// Convenience methods, defined as described in node_handle.h.
 	
 	public NodeHandle createNodeHandle() { 

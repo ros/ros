@@ -17,6 +17,7 @@
   <depend package="roslib"/>
   <depend package="roscpp"/>
   <depend package="roslang"/>
+  <depend package="rospack"/>
   <export>
     <roslang cmake="${prefix}/cmake/rosjava.cmake"/>
   </export>

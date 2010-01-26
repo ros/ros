@@ -85,6 +85,9 @@ public class RosCpp extends Ros {
 	@Override
 	public void spinOnce() { JNI.spinOnce(); }
 	
+	@Override
+	public String getPackageLocation(String pkgName) {return JNI.getPackageLocation(pkgName);} 
+	
 	
 	public void logDebug(String message) { JNI.logDebug(message); }
 	public void logInfo(String message)  { JNI.logInfo(message); }

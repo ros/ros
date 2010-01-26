@@ -47,7 +47,7 @@
 
 using namespace ros;
 
-TEST(params, allParamTypes)
+TEST(Params, allParamTypes)
 {
   std::string string_param;
   EXPECT_TRUE( param::get( "string", string_param ) );
@@ -66,7 +66,7 @@ TEST(params, allParamTypes)
   EXPECT_FALSE( bool_param );
 }
 
-TEST(params, setThenGetString)
+TEST(Params, setThenGetString)
 {
   param::set( "test_set_param", std::string("asdf") );
   std::string param;
@@ -74,7 +74,7 @@ TEST(params, setThenGetString)
   ASSERT_STREQ( "asdf", param.c_str() );
 }
 
-TEST(params, setThenGetStringCached)
+TEST(Params, setThenGetStringCached)
 {
   std::string param;
   ASSERT_FALSE( param::getCached( "test_set_param_setThenGetStringCached", param) );
@@ -85,7 +85,7 @@ TEST(params, setThenGetStringCached)
   ASSERT_STREQ( "asdf", param.c_str() );
 }
 
-TEST(params, setThenGetStringCachedNodeHandle)
+TEST(Params, setThenGetStringCachedNodeHandle)
 {
 	NodeHandle nh;
   std::string param;
@@ -97,7 +97,7 @@ TEST(params, setThenGetStringCachedNodeHandle)
   ASSERT_STREQ( "asdf", param.c_str() );
 }
 
-TEST(params, setThenGetCString)
+TEST(Params, setThenGetCString)
 {
   param::set( "test_set_param", "asdf" );
   std::string param;
@@ -105,7 +105,7 @@ TEST(params, setThenGetCString)
   ASSERT_STREQ( "asdf", param.c_str() );
 }
 
-TEST(params, setThenGetInt)
+TEST(Params, setThenGetInt)
 {
   param::set( "test_set_param", 42);
   int param;
@@ -113,13 +113,13 @@ TEST(params, setThenGetInt)
   ASSERT_EQ( 42, param );
 }
 
-TEST(params, unknownParam)
+TEST(Params, unknownParam)
 {
   std::string param;
   ASSERT_FALSE( param::get( "this_param_really_should_not_exist", param ) );
 }
 
-TEST(params, deleteParam)
+TEST(Params, deleteParam)
 {
   param::set( "test_delete_param", "asdf" );
   param::del( "test_delete_param" );
@@ -127,12 +127,12 @@ TEST(params, deleteParam)
   ASSERT_FALSE( param::get( "test_delete_param", param ) );
 }
 
-TEST(params, hasParam)
+TEST(Params, hasParam)
 {
   ASSERT_TRUE( param::has( "string" ) );
 }
 
-TEST(params, setIntDoubleGetInt)
+TEST(Params, setIntDoubleGetInt)
 {
   param::set("test_set_int_as_double", 1);
   param::set("test_set_int_as_double", 3.0f);
@@ -145,7 +145,7 @@ TEST(params, setIntDoubleGetInt)
   ASSERT_EQ(3.0, d);
 }
 
-TEST(params, getIntAsDouble)
+TEST(Params, getIntAsDouble)
 {
   param::set("int_param", 1);
   double d = 0.0;
@@ -153,7 +153,7 @@ TEST(params, getIntAsDouble)
   ASSERT_EQ(1.0, d);
 }
 
-TEST(params, getDoubleAsInt)
+TEST(Params, getDoubleAsInt)
 {
   param::set("double_param", 2.3);
   int i = -1;
@@ -166,7 +166,7 @@ TEST(params, getDoubleAsInt)
   ASSERT_EQ(4, i);
 }
 
-TEST(params, searchParam)
+TEST(Params, searchParam)
 {
   std::string ns = "/a/b/c/d/e/f";
   std::string result;
@@ -195,7 +195,7 @@ TEST(params, searchParam)
   ASSERT_FALSE(param::search(ns, "s_j", result));
 }
 
-TEST(params, searchParamNodeHandle)
+TEST(Params, searchParamNodeHandle)
 {
   NodeHandle n("/a/b/c/d/e/f");
   std::string result;
@@ -218,7 +218,7 @@ TEST(params, searchParamNodeHandle)
   ASSERT_FALSE(n.searchParam("s_j", result));
 }
 
-TEST(params, searchParamNodeHandleWithRemapping)
+TEST(Params, searchParamNodeHandleWithRemapping)
 {
   M_string remappings;
   remappings["s_c"] = "s_b";
@@ -229,6 +229,14 @@ TEST(params, searchParamNodeHandleWithRemapping)
   ASSERT_FALSE(n.searchParam("s_c", result));
   n.setParam("/s_b", 1);
   ASSERT_TRUE(n.searchParam("s_c", result));
+}
+
+// See ROS ticket #2381
+TEST(Params, getMissingXmlRpcValueParameterCachedTwice)
+{
+  XmlRpc::XmlRpcValue v;
+  ASSERT_FALSE(ros::param::getCached("invalid_xmlrpcvalue_param", v));
+  ASSERT_FALSE(ros::param::getCached("invalid_xmlrpcvalue_param", v));
 }
 
 int

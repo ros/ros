@@ -170,7 +170,7 @@ bool getImpl(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
     if (g_subscribed_params.find(mapped_key) != g_subscribed_params.end())
     {
       M_Param::iterator it = g_params.find(mapped_key);
-      if (it != g_params.end())
+      if (it != g_params.end() && it->second.valid())
       {
         ROS_DEBUG_NAMED("cached_parameters", "Using cached parameter value for key [%s]", mapped_key.c_str());
 

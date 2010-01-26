@@ -494,7 +494,7 @@ JNIEXPORT jboolean JNICALL Java_ros_roscpp_JNI_getBooleanParam
 {
 	NodeHandle *handle = (NodeHandle *) cppHandle;
 	bool ret;
-	if (!handle->getParam(getString(env, jparam), ret, cache)) {
+	if (!handle->getParam(getString(env, jparam), ret)) {
     	env->ThrowNew(jRosException, "Param could not be fetched!");
     	return false;
 	}
@@ -506,7 +506,7 @@ JNIEXPORT jint JNICALL Java_ros_roscpp_JNI_getIntParam
 {
 	NodeHandle *handle = (NodeHandle *) cppHandle;
 	int ret;
-	if (!handle->getParam(getString(env, jparam), ret, cache)) {
+	if (!handle->getParam(getString(env, jparam), ret)) {
     	env->ThrowNew(jRosException, "Param could not be fetched!");
     	return 0;
 	}
@@ -518,7 +518,7 @@ JNIEXPORT jdouble JNICALL Java_ros_roscpp_JNI_getDoubleParam
 {
 	NodeHandle *handle = (NodeHandle *) cppHandle;
 	double ret;
-	if (!handle->getParam(getString(env, jparam), ret, cache)) {
+	if (!handle->getParam(getString(env, jparam), ret)) {
     	env->ThrowNew(jRosException, "Param could not be fetched!");
     	return 0;
 	}
@@ -530,7 +530,7 @@ JNIEXPORT jstring JNICALL Java_ros_roscpp_JNI_getStringParam
 {
 	NodeHandle *handle = (NodeHandle *) cppHandle;
 	string ret;
-	if (!handle->getParam(getString(env, jparam), ret, cache)) {
+	if (!handle->getParam(getString(env, jparam), ret)) {
     	env->ThrowNew(jRosException, "Param could not be fetched!");
     	return 0;
 	}
@@ -687,6 +687,31 @@ public:
  *   Subscriptions
  ************************************************************/
 
+#if ROS_NEW_SERIALIZATION_API
+class SubscriptionMessage
+{
+public:
+    jobject _scb;
+    JavaMessage _msg;
+    string md5, datatype;
+
+    SubscriptionMessage(jobject scb, jobject tmpl) : _scb(getJNIEnv()->NewGlobalRef(scb)), _msg(tmpl) {
+        md5 = _msg.__getMD5Sum();
+        datatype = _msg.__getDataType();
+    }
+
+    ~SubscriptionMessage() { getJNIEnv()->DeleteGlobalRef(_scb); }
+
+    boost::shared_ptr<JavaMessage> create() { return boost::shared_ptr<JavaMessage>(new JavaMessage(_msg)); }
+    void callback(const boost::shared_ptr<JavaMessage const>& msg)
+    {
+      getJNIEnv()->CallVoidMethod(_scb, jSubscriberCallbackCall, msg->_message);
+    }
+
+    std::string getMD5Sum() { return md5; }
+    std::string getDataType() { return datatype; }
+};
+#else
 class JavaSubscriptionMessageHelper : public ros::SubscriptionMessageHelper {
 public:
 	jobject _scb;
@@ -708,26 +733,45 @@ public:
     	getJNIEnv()->CallVoidMethod(_scb, jSubscriberCallbackCall, ((JavaMessage *)msg.get())->_message);
 	}
 };
+#endif
 
 JNIEXPORT jlong JNICALL Java_ros_roscpp_JNI_createSubCallback
   (JNIEnv * env, jclass __jni, jobject jcallback, jobject messageTemplate)
 {
+#if ROS_NEW_SERIALIZATION_API
+    return (jlong) new boost::shared_ptr<SubscriptionMessage>(new SubscriptionMessage(jcallback, messageTemplate));
+#else
 	return (jlong) new boost::shared_ptr<JavaSubscriptionMessageHelper>(new JavaSubscriptionMessageHelper(jcallback, messageTemplate));
+#endif
 }
 
 JNIEXPORT void JNICALL Java_ros_roscpp_JNI_deleteSubCallback
   (JNIEnv * env, jclass __jni, jlong cppCallback)
 {
-	boost::shared_ptr<JavaSubscriptionMessageHelper> *callback = (boost::shared_ptr<JavaSubscriptionMessageHelper> *) cppCallback;
-	delete callback;
+#if ROS_NEW_SERIALIZATION_API
+    boost::shared_ptr<SubscriptionMessage> *callback = (boost::shared_ptr<SubscriptionMessage> *) cppCallback;
+    delete callback;
+#else
+    boost::shared_ptr<JavaSubscriptionMessageHelper> *callback = (boost::shared_ptr<JavaSubscriptionMessageHelper> *) cppCallback;
+    delete callback;
+#endif
 }
 
 JNIEXPORT jlong JNICALL Java_ros_roscpp_JNI_subscribe
   (JNIEnv * env, jclass __jni, jlong cppHandle, jstring jtopic, jlong cppCallback, jint queueSize)
 {
 	NodeHandle *handle = (NodeHandle *) cppHandle;
+#if ROS_NEW_SERIALIZATION_API
+	boost::shared_ptr<SubscriptionMessage> *callback = (boost::shared_ptr<SubscriptionMessage> *) cppCallback;
+	SubscribeOptions so(getString(env, jtopic), queueSize, (*callback)->getMD5Sum(), (*callback)->getDataType());
+	so.helper.reset(new SubscriptionMessageHelperT<JavaMessage>(boost::bind(&SubscriptionMessage::callback, *callback, _1),
+                                                                boost::bind(&SubscriptionMessage::create, *callback)));
+#else
 	boost::shared_ptr<SubscriptionMessageHelper> *callback = (boost::shared_ptr<SubscriptionMessageHelper> *) cppCallback;
 	SubscribeOptions so(getString(env, jtopic), queueSize, *callback);
+#endif
+
+
 	Subscriber subscriber = handle->subscribe(so);
 	if (subscriber) return (jlong) new Subscriber(subscriber);
 	return 0;
@@ -834,6 +878,38 @@ JNIEXPORT void JNICALL Java_ros_roscpp_JNI_shutdownServiceClient
  *   Service Servers
  ************************************************************/
 
+#if ROS_NEW_SERIALIZATION_API
+class ServiceMessage
+{
+public:
+    jobject _scb;
+    JavaMessage _req, _res;
+    string md5, datatype, requestDataType, responseDataType;
+
+    ServiceMessage(jobject scb, string smd5, string sdatatype, jobject req, jobject res)
+        : _scb(getJNIEnv()->NewGlobalRef(scb)), _req(req), _res(res), md5(smd5), datatype(sdatatype) {
+        requestDataType = _req.__getDataType();
+        responseDataType = _res.__getDataType();
+    }
+    ~ServiceMessage() { getJNIEnv()->DeleteGlobalRef(_scb); }
+
+    boost::shared_ptr<JavaMessage> createRequest() { return boost::shared_ptr<JavaMessage>(new JavaMessage(_req)); }
+    boost::shared_ptr<JavaMessage> createResponse() { return boost::shared_ptr<JavaMessage>(new JavaMessage(_res)); }
+
+    std::string getMD5Sum() { return md5; }
+    std::string getDataType() { return datatype; }
+    std::string getRequestDataType() { return requestDataType; }
+    std::string getResponseDataType() { return responseDataType; }
+
+    bool callback(JavaMessage& req, JavaMessage& res) {
+        JNIEnv * env = getJNIEnv();
+        jobject jresponse = env->CallObjectMethod(_scb, jServiceCallbackCall, req._message);
+        MY_ROS_ASSERT(jresponse != 0 && dieOnException(env));
+        res.replaceContents(jresponse);
+        return true;
+    }
+};
+#else
 class JavaServiceMessageHelper : public ros::ServiceMessageHelper {
 public:
 	jobject _scb;
@@ -863,28 +939,53 @@ public:
     	return true;
 	}
 };
+#endif
 
 
 JNIEXPORT jlong JNICALL Java_ros_roscpp_JNI_createSrvCallback
   (JNIEnv * env, jclass __jni, jobject jcallback, jstring serviceMD5, jstring serviceDataType, jobject jreq, jobject jres)
 {
+#if ROS_NEW_SERIALIZATION_API
+    ServiceMessage *helper = new ServiceMessage(jcallback, getString(env, serviceMD5), getString(env, serviceDataType), jreq, jres);
+    return (jlong) new boost::shared_ptr<ServiceMessage>(helper);
+#else
 	JavaServiceMessageHelper *helper = new JavaServiceMessageHelper(jcallback, getString(env, serviceMD5), getString(env, serviceDataType), jreq, jres);
 	return (jlong) new boost::shared_ptr<JavaServiceMessageHelper>(helper);
+#endif
 }
 
 JNIEXPORT void JNICALL Java_ros_roscpp_JNI_deleteSrvCallback
   (JNIEnv * env, jclass __jni, jlong cppCallback)
 {
+#if ROS_NEW_SERIALIZATION_API
+    boost::shared_ptr<ServiceMessage> *callback = (boost::shared_ptr<ServiceMessage> *) cppCallback;
+    delete callback;
+#else
 	boost::shared_ptr<JavaServiceMessageHelper> *callback = (boost::shared_ptr<JavaServiceMessageHelper> *) cppCallback;
 	delete callback;
+#endif
 }
 
 JNIEXPORT jlong JNICALL Java_ros_roscpp_JNI_advertiseService
   (JNIEnv * env, jclass __jni, jlong cppHandle, jstring name, jlong cppCallback)
 {
 	NodeHandle *handle = (NodeHandle *) cppHandle;
+#if ROS_NEW_SERIALIZATION_API
+	boost::shared_ptr<ServiceMessage> *callback = (boost::shared_ptr<ServiceMessage> *) cppCallback;
+	AdvertiseServiceOptions aso;
+	aso.service = getString(env, name);
+	aso.md5sum = (*callback)->getMD5Sum();
+	aso.datatype = (*callback)->getDataType();
+	aso.req_datatype = (*callback)->getRequestDataType();
+	aso.res_datatype = (*callback)->getResponseDataType();
+	aso.helper.reset(new ServiceMessageHelperT<JavaMessage, JavaMessage>(boost::bind(&ServiceMessage::callback, *callback, _1, _2),
+                                                                         boost::bind(&ServiceMessage::createRequest, *callback),
+                                                                         boost::bind(&ServiceMessage::createResponse, *callback)));
+#else
 	boost::shared_ptr<ServiceMessageHelper> *callback = (boost::shared_ptr<ServiceMessageHelper> *) cppCallback;
 	AdvertiseServiceOptions aso(getString(env, name), *callback);
+#endif
+
 	ServiceServer server = handle->advertiseService(aso);
 	if (server) return (jlong) new ServiceServer(server);
 	return 0;

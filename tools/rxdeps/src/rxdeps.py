@@ -698,7 +698,7 @@ def vdmain():
         helper.generate_composite(roslib.stacks.list_stacks(), options.output_type, pkg_characterists, options.display_image)
     else:
         helper.generate_composite(args,  options.output_type, pkg_characterists, options.display_image)
-    return
+
     all_pkgs = set(targets)
     args = set(args)
     args.update([helper.get_stack_of(p) for p in targets])

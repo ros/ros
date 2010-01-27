@@ -339,22 +339,29 @@ Set up things so that publish may now be called with this topic.  Also, returns 
 
 (defun call-service (service-name service-type &rest request-args)
   "call-service SERVICE-NAME SERVICE-TYPE &rest ARGS
+or
+call-service SERVICE-NAME SERVICE-TYPE REQUEST-OBJECT (happens iff length(ARGS) is 1)
 
-SERVICE-NAME - string naming the service
-SERVICE-TYPE - symbol naming the service type
-REQUEST-ARGS - initialization arguments that would be used when calling make-instance to create a request object.
+SERVICE-NAME - a string that is the ROS name of the service, e.g., my_namespace/my_srv
+SERVICE-TYPE - symbol naming the Lisp type of the service (the basename of the .srv file), e.g. 'AddTwoInts
+REQUEST-ARGS - initialization arguments that would be used when calling make-instance to create a request object.  
+REQUEST-OBJECT - the request object itself
 
 Returns the response object from the service."
 
   (declare (string service-name) (symbol service-type))
   (ensure-node-is-running)
-  (let ((request-type (service-request-type service-type))
-	(response-type (service-response-type service-type)))
+  (let ((response-type (service-response-type service-type)))
     (with-fully-qualified-name service-name
       (mvbind (host port) (parse-rosrpc-uri (lookup-service service-name))
 	;; No error checking: lookup service should signal an error if there are problems
-	(ros-debug (roslisp call-service) "Calling service at host ~a and port ~a" host port)
-	(tcpros-call-service host port service-name (apply #'make-instance request-type request-args) response-type)))))
+
+	(let ((obj (if (= 1 (length request-args))
+		       (first request-args)
+		       (apply #'make-request service-type request-args))))
+
+	  (ros-debug (roslisp call-service) "Calling service at host ~a and port ~a with ~a" host port obj)
+	  (tcpros-call-service host port service-name obj response-type))))))
     
 
 (defun wait-for-service (service-name &optional timeout)
@@ -529,3 +536,29 @@ Remove this key from parameter server"
 			    `(,param (get-param ,param-name))))
 		      params)
 		,@body)))))
+
+(defmacro def-service-call (a service-ros-name &key return-field)
+  "Convenience macro for calls to a service.  
+
+def-service-call (FN-NAME TYPE-NAME) ROS-NAME &key RETURN-FIELD
+
+where FN-NAME and TYPE-NAME are unevaluated symbols, ROS-NAME is a string (evaluated, so doesn't have to be a literal)
+
+This means define a function FN-NAME that calls a ros service with the given ros-name, whose lisp type (which is the base name of the .srv file, but may have to be package qualified if you haven't imported it) is TYPE-NAME.  The function does a calls the given service using an appropriately typed request object constructed using its arguments.
+
+The first argument can also be a symbol NAME (unevaluated), which uses NAME for both FN-NAME and TYPE-NAME
+
+If RETURN-FIELD is provided, that field of the response is returned.  Otherwise, the entire response is returned."
+
+  (let ((args (gensym))
+	(response (gensym))
+	name service-type)
+    (if (listp a)
+	(setq name (first a) service-type `',(second a))
+	(setq name a service-type `',a))
+    `(defun ,name (&rest ,args)
+       (let ((,response (apply #'call-service ,service-ros-name ,service-type ,args)))
+	 ,(if return-field
+	      `(with-fields (,return-field) ,response
+		 ,return-field)
+	      response)))))

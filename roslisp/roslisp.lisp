@@ -57,6 +57,7 @@
    :modify-message-copy
    :node-status
    :make-response
+   :make-request
    :symbol-code
    :symbol-codes
 
@@ -78,6 +79,7 @@
    :def-service-callback
    :call-service
    :wait-for-service
+   :def-service-call
 
    :publish-on-topic
    :publish

@@ -68,6 +68,9 @@
         (warn "Hmm... unexpected topic type specifier ~a in message-definition.  Passing it on anyway..." msg-type)
         (call-next-method))))
 
+(defun make-request (service-type &rest args)
+  (apply #'make-instance (service-request-type service-type) args))
+
 (defun make-response (service-type &rest args)
   (apply #'make-instance (service-response-type service-type) args))
 
@@ -198,7 +201,7 @@ Return a new message that is a copy of MSG with some fields modified.  ARGS is a
 
 Convenience macro for creating messages easily.
 
-MSG-TYPE is a string naming a message ros datatype.
+MSG-TYPE is a string naming a message ros datatype, i.e.., of form package_name/message_name
 
 ARGS is a list of form FIELD-SPEC1 VAL1 ... FIELD-SPECk VALk
 Each FIELD-SPEC (unevaluated) is a list (or a symbol, which designates a list of one element) that refers to a possibly nested field.

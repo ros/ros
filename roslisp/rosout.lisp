@@ -100,7 +100,7 @@ CONDITION can be omitted if the FORMAT-STRING is a literal string, in which case
 (defun set-debug-level (name level)
   (when (symbolp level) (setq level (symbol-code 'roslib-msg:<Log> level)))
   (setf (gethash (reverse (designated-list name)) *debug-levels*) level)
-  (ros-debug (roslisp rosout) "Setting debug level of ~a to ~a" (designated-list name) level))
+  )
 
 (defmacro set-debug-levels (&rest args)
   "set-debug-level NAME1 LEVEL1 ... NAMEk LEVELk

@@ -59,7 +59,7 @@ See functions advertise, subscribe, publish.
 
 \section services Services
 
-See functions call-service, def-service-callback, register-service, register-service-fn, wait-for-service.
+See functions call-service, def-service-callback, register-service, register-service-fn, wait-for-service, make-request.
 
 \section params Parameters
 

@@ -1,5 +1,5 @@
 <package>
-  <description brief="A LISP implementation of ROS">This package is a LISP implementation of ROS, the Robot Operating System.</description>
+  <description brief="A Lisp client library for ROS">This package is a Lisp client library for ROS, the Robot Operating System.</description>
   <author>Bhaskara Marthi, Brian Gerkey, Lorenz Mösenlechner</author>
   <license>BSD</license>
   <review status="experimental" notes=""/>

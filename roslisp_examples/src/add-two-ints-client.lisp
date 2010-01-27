@@ -46,7 +46,7 @@
 (defun add-two-ints-client ()
   (with-ros-node ("two-ints-client")
     (if (wait-for-service "add_two_ints" 10)
-	(let ((a (mod (ros-time) 42)) (b (mod (* 10 (ros-time)) 17)))
+	(let ((a (1+ (round (mod (ros-time) 42)))) (b (1+ (round (mod (* 10 (ros-time)) 17)))))
 	  (format t "~a + ~a = ~a~&" a b (add a b)))
 	(ros-warn nil "Timed out waiting for service add_two_ints"))))
 

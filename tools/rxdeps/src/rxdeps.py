@@ -207,9 +207,13 @@ class HelperMethods:
         self._packages_of = {}
         self._deps = {}
         self._deps1 = {}
+        self._stack_deps = {}
+        self._stack_deps1 = {}
         self._deps_on = {}
         self._deps_on1 = {}
-        
+        self.verbose = False
+        self.display_test_packages = True
+
     def get_stack_of(self, pkg):
         if pkg not in self._stack_of:
             stack = roslib.stacks.stack_of(pkg)
@@ -242,6 +246,20 @@ class HelperMethods:
             #print "hit cache"
         return  self._deps1[pkg]
 
+    def get_stack_deps(self, stack):
+        if stack not in self._stack_deps:
+            deps = roslib.rospack.rosstack_depends(stack)
+            self._stack_deps[stack] = deps
+            #print "hit cache"
+        return  self._stack_deps[stack]
+
+    def get_stack_deps1(self, stack):
+        if stack not in self._stack_deps1:
+            deps = roslib.rospack.rosstack_depends_1(stack)
+            self._stack_deps1[stack] = deps
+            #print "hit cache"
+        return  self._stack_deps1[stack]
+
     def get_deps_on(self, pkg):
         if pkg not in self._deps_on:
             stack = roslib.rospack.rospack_depends_on(pkg)
@@ -261,6 +279,13 @@ class HelperMethods:
         accum = set()
         for dep in self.get_deps1(pkg):
             accum.update(self.get_deps(dep))
+        return accum
+
+    ## Get all the dependencies of dependent packages (deduplicated)
+    def get_child_stack_deps(self, stack):
+        accum = set()
+        for dep in self.get_stack_deps1(stack):
+            accum.update(self.get_stack_deps(dep))
         return accum
 
     def get_internal_child_deps(self, pkg, stack = None):
@@ -352,7 +377,218 @@ class HelperMethods:
         return stack_contents, external_stack_dependencies
 
 
+    def dict_to_set(self, dict):
+        accum = set()
+        for key, val in dict.iteritems():
+            accum.update(val)
+        return accum
 
+    def generate_stack(self, stack, type, pkg_characterists):
+
+        print "Generating Graphviz Intermediate"
+        outfile = tempfile.NamedTemporaryFile()
+        outfile.write( """digraph ros {
+    //size="11,8";
+    //size="100,40";
+    //clusterrank=global;
+      node [color=gainsboro, style=filled];
+      ranksep = 2.0;
+      compound=true;
+
+    """)
+        colors = ['red', 'blue', 'green', 'yellow', 'gold', 'orange','chocolate', 'gray44', 'deeppink', 'black']
+        # create the legend
+        color_palate = pkg_characterists.get_color_palate()
+        if False and color_palate:
+            outfile.write(' subgraph cluster__legend { style=bold; color=black; label = "Color Legend"; ')
+            for type in color_palate:
+                text_color="black"
+                bg_color = color_palate[type]
+                if bg_color == "black":
+                    text_color = "white"  
+                outfile.write('"%s" [color="%s", fontcolor="%s"];\n '%(type, bg_color, text_color))
+            outfile.write('}\n')
+        base_color = colors[random.randrange(0, len(colors))]
+        try:
+            stack_dir = roslib.stacks.get_stack_dir(stack)
+        except  roslib.exceptions.ROSLibException, ex:
+            stack_dir = "None"
+        outfile.write(' subgraph cluster__%s { style=bold; color=%s; label = "%s \\n (%s)"; '%(stack, base_color, stack, stack_dir))
+        internal, external = self.build_stack_list(stack)
+        if not self.display_test_packages:
+            internal = set([p for p in internal if not p.startswith("test_")])
+            for s in external:
+                external[s] = set([p for p in external[s] if not p.startswith("test_")])
+
+
+        for pkg in internal:
+            outfile.write(' "%s" ;'%pkg)
+        for s in external:
+            try:
+                stack_dir = roslib.stacks.get_stack_dir(s)
+            except  roslib.exceptions.ROSLibException, ex:
+                stack_dir = "None"
+            outfile.write(' subgraph cluster__%s_%s { style=bold; color=%s; label = "Stack: %s \\n (%s)"; '%(stack, s, base_color, s, stack_dir))
+            for p in external[s]:
+                outfile.write(' "%s.%s.%s" [ label = "%s"];'%(stack, s, p, p))
+            outfile.write('}\n')
+        outfile.write('}\n')
+
+        external_deps_connected = set()
+        for pkg in internal:
+            deps = self.get_deps1(pkg)
+            node_args = []
+            ##Coloring
+            color = pkg_characterists.get_color(pkg)
+            node_args.append("color=%s"%color)
+            if color == 'black':
+                node_args.append("fontcolor=white")
+
+            notes = pkg_characterists.get_review_notes(pkg)
+            if len(notes) > 0:
+              node_args.append('label="%s\\n(%s)"' % (pkg, notes))
+
+            if pkg in internal:
+                outfile.write('  "%s" [%s];\n'%(pkg, ', '.join(node_args)))
+
+
+
+
+            ## Edges
+            for dep in deps:
+                if not self.verbose and dep in self.get_child_deps(pkg): 
+                    #print "Failed to find", dep, "in ", self.get_internal_child_deps(pkg)
+                    continue
+
+                if dep in (internal | self.dict_to_set(external)): #Draw edges to all dependencies
+                    local_stack = self.get_stack_of(pkg)
+                    dependent_stack = self.get_stack_of(dep)
+                    #if local_stack not in args or not local_stack:
+                    #    continue
+                    if  dependent_stack == local_stack:
+                        outfile.write( '  "%s" -> "%s";\n' % (pkg, dep))
+                    elif dependent_stack:
+                        intermediate = "%s.%s.%s"%(local_stack, dependent_stack, dep)
+                        outfile.write( '  "%s" -> "%s"[color="blue", style="dashed"];\n' % (pkg, intermediate))
+        #	outfile.write('}\n')
+        outfile.write( '}\n')
+        outfile.flush() # write to disk, but don't delete 
+
+        try:
+            output_filename = "stack_%s.%s"%(stack, type)
+            print "Generating output %s"%output_filename
+            subprocess.check_call(["dot", "-T%s"%type, outfile.name, "-o", output_filename])
+            print "%s generated"%output_filename
+        except subprocess.CalledProcessError:
+            print >> sys.stderr, "failed to generate %s"%output_filename
+
+        return output_filename
+
+    def generate_composite(self, stacks, type, pkg_characterists, display_image = True):
+        stack_files = {}
+        if display_image:
+            for s in stacks:
+                stack_files[s] = self.generate_stack(s, type, pkg_characterists)
+
+        print "Generating Graphviz Intermediate"
+        outfile = tempfile.NamedTemporaryFile()
+        outfile.write( """digraph ros {
+    //size="11,8";
+    //size="100,40";
+    //clusterrank=global;
+      node [color=gainsboro, style=filled, shape=box];
+      ranksep = 2.0;
+      compound=true;
+
+    """)
+        colors = ['red', 'blue', 'green', 'yellow', 'gold', 'orange','chocolate', 'gray44', 'deeppink', 'black']
+        # create the legend
+        color_palate = pkg_characterists.get_color_palate()
+        if False and color_palate:
+            outfile.write(' subgraph cluster__legend { style=bold; color=black; label = "Color Legend"; ')
+            for type in color_palate:
+                text_color="black"
+                bg_color = color_palate[type]
+                if bg_color == "black":
+                    text_color = "white"  
+                outfile.write('"%s" [color="%s", fontcolor="%s"];\n '%(type, bg_color, text_color))
+            outfile.write('}\n')
+        #base_color = colors[random.randrange(0, len(colors))]
+        #try:
+        #    stack_dir = roslib.stacks.get_stack_dir(stack)
+        #except  roslib.exceptions.ROSLibException, ex:
+        #    stack_dir = "None"
+        
+        if False:
+            outfile.write(' subgraph cluster__%s { style=bold; color=%s; label = "%s \\n (%s)"; '%(stack, base_color, stack, stack_dir))
+            internal, external = self.build_stack_list(stack)
+            for pkg in internal:
+                outfile.write(' "%s" ;'%pkg)
+            for s in external:
+                try:
+                    stack_dir = roslib.stacks.get_stack_dir(s)
+                except  roslib.exceptions.ROSLibException, ex:
+                    stack_dir = "None"
+                outfile.write(' subgraph cluster__%s_%s { style=bold; color=%s; label = "Stack: %s \\n (%s)"; '%(stack, s, base_color, s, stack_dir))
+                for p in external[s]:
+                    outfile.write(' "%s.%s.%s" [ label = "%s"];'%(stack, s, p, p))
+                outfile.write('}\n')
+            outfile.write('}\n')
+
+        for stack in stacks:
+            #deps = self.get_deps1(pkg)
+            deps = roslib.rospack.rosstack_depends_1(stack)
+            node_args = []
+
+
+            if stack in stack_files and display_image:
+                node_args.append('image="%s"'%stack_files[stack])
+            ##Coloring
+            #color = pkg_characterists.get_color(pkg)
+            #node_args.append("color=%s"%color)
+            #if color == 'black':
+            #    node_args.append("fontcolor=white")
+
+            #notes = pkg_characterists.get_review_notes(pkg)
+            #if len(notes) > 0:
+            #  node_args.append('label="%s\\n(%s)"' % (pkg, notes))
+
+            #if pkg in all_pkgs:
+            #    outfile.write('  "%s" [%s];\n'%(pkg, ', '.join(node_args)))
+            outfile.write('  "%s" [%s];\n'%(stack, ', '.join(node_args)))
+
+
+
+
+            ## Edges
+            for dep in deps:
+                if not self.verbose and dep in self.get_child_stack_deps(stack): 
+                    #print "Failed to find", dep, "in ", self.get_child_stack_deps(stack)
+                    continue
+                outfile.write( '  "%s" -> "%s";\n' % (stack, dep))
+                if False:#dep in all_pkgs_plus_1: #Draw edges to all dependencies
+                    local_stack = self.get_stack_of(pkg)
+                    dependent_stack = self.get_stack_of(dep)
+                    #if local_stack not in args or not local_stack:
+                    #    continue
+                    if  dependent_stack == local_stack:
+                        outfile.write( '  "%s" -> "%s";\n' % (pkg, dep))
+                    elif dependent_stack:
+                        intermediate = "%s.%s.%s"%(local_stack, dependent_stack, dep)
+                        outfile.write( '  "%s" -> "%s"[color="blue", style="dashed"];\n' % (pkg, intermediate))
+        #	outfile.write('}\n')
+        outfile.write( '}\n')
+        outfile.flush() # write to disk, but don't delete 
+
+        try:
+            output_filename = "%s_deps.%s"%("composite", type)
+            print "Generating output %s"%output_filename
+            subprocess.check_call(["dot", "-T%s"%type, outfile.name, "-o", output_filename])
+            print "%s generated"%output_filename
+        except subprocess.CalledProcessError:
+            print >> sys.stderr, "failed to generate %s"%output_filename
+
+        return output_filename
 
 
 def vdmain():
@@ -398,6 +634,13 @@ def vdmain():
     parser.add_option("--message", metavar="full_message_name",
                       dest="message", default='', 
                       type="string", help="target_message")
+    parser.add_option("-T", metavar="File Type",
+                      dest="output_type", default="png", 
+                      type="string", help="output file type") 
+    parser.add_option("--no-stack-details",
+                      dest="display_image", default=True, 
+                      action="store_false", help="Do Not display stack details")
+    
 
 
     options, args = parser.parse_args()
@@ -442,13 +685,19 @@ def vdmain():
         output_filename = "deps.pdf"
         
     helper = HelperMethods()
+    helper.verbose = options.verbose
+    helper.display_test_packages = not options.quiet
 
     all_stacks = roslib.stacks.list_stacks()
     invalid_args = set([stack for stack in args if stack not in all_stacks])
     if invalid_args:
         parser.error("Invalid stacks passed as arguments %s"%invalid_args)
-
-
+        
+    if not args:
+        helper.generate_composite(roslib.stacks.list_stacks(), options.output_type, pkg_characterists, options.display_image)
+    else:
+        helper.generate_composite(args,  options.output_type, pkg_characterists, options.display_image)
+    return
     all_pkgs = set(targets)
     args = set(args)
     args.update([helper.get_stack_of(p) for p in targets])
@@ -461,7 +710,7 @@ def vdmain():
         all_pkgs_plus_1.update(helper.get_deps1(p))
     
     
-    print "Writing"
+    print "Generating Graphviz Intermediate"
     outfile = tempfile.NamedTemporaryFile()
     outfile.write( """digraph ros {
   //size="11,8";
@@ -583,6 +832,7 @@ def vdmain():
         shutil.copyfile(outfile.name, graphviz_output_filename)
 
     try:
+        print "Generating output %s"%output_filename
         # Check version, make postscript if too old to make pdf
         args = ["dot", "-V"]
         vstr = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[1]

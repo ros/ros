@@ -295,13 +295,13 @@ class HelperMethods:
             stack = self.get_stack_of(pkg)
             if not stack or stack == "None": 
                 return set()
-        local_pkgs = set(roslib.stacks.packages_of(stack))
 
+        internal_deps = self.get_internal_pkg_dependencies(pkg, stack)
         accum = set()
-        for dep in self.get_deps1(pkg):
-            accum.update(self.get_deps(dep))
+        for dep in internal_deps:
+            accum.update(self.get_deps1(dep))
 
-        return accum & local_pkgs
+        return accum
 
     def get_depth(self, all_pkgs, pkg, depth):
         for pkg_dep in self.get_deps1(pkg):
@@ -456,7 +456,7 @@ class HelperMethods:
 
             ## Edges
             for dep in deps:
-                if not self.verbose and dep in self.get_child_deps(pkg): 
+                if not self.verbose and dep in (self.get_internal_child_deps(pkg)):# & (internal | self.dict_to_set(external))): 
                     #print "Failed to find", dep, "in ", self.get_internal_child_deps(pkg)
                     continue
 
@@ -565,7 +565,8 @@ class HelperMethods:
                 if not self.verbose and dep in self.get_child_stack_deps(stack): 
                     #print "Failed to find", dep, "in ", self.get_child_stack_deps(stack)
                     continue
-                outfile.write( '  "%s" -> "%s";\n' % (stack, dep))
+                if dep in stacks:
+                    outfile.write( '  "%s" -> "%s";\n' % (stack, dep))
                 if False:#dep in all_pkgs_plus_1: #Draw edges to all dependencies
                     local_stack = self.get_stack_of(pkg)
                     dependent_stack = self.get_stack_of(dep)

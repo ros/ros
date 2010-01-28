@@ -24,17 +24,19 @@ def load_sys_args():
     @rtype: (str, str, str, str)
     """
     from optparse import OptionParser
-    parser = OptionParser(usage="usage: %prog <stack> <version> <distro-file> <distro-name>", prog=NAME)
+    parser = OptionParser(usage="usage: %prog <stack> <version> <release-file>", prog=NAME)
     options, args = parser.parse_args()
-    if len(args) != 4:
+    if len(args) != 3:
         parser.error("""You must specify: 
  * stack name (e.g. common_msgs)
  * version (e.g. 1.0.1)
- * distro file (e.g. rosdistro.yaml)
- * distro name (e.g. latest, babybox)""")
-    name, version, distro_file, distro_name = args
+ * release file (e.g. latest.rosdistro)""")
+    name, version, distro_file = args
     if not os.path.isfile(distro_file):
         parser.error("[%s] does not appear to be a valid file"%distro_file)
+    if not distro_file.endswith('.rosdistro'):
+        parser.error("rosdistro file [%s] must end with a .rosdistro extension"%distro_file)
+    distro_name = distro_file[:-len('.rosdistro')]
     return name, version, distro_file, distro_name
 
 def load_and_validate_properties():
@@ -42,7 +44,7 @@ def load_and_validate_properties():
     @return: name, version, distro_file, source_dir, distro, release_props
     @rtype: (str, str, str, str, str, dict)
     """
-    name, version, distro_file, distro = load_sys_args()
+    name, version, distro_file = load_sys_args()
     # for now, we only work with stacks
     try:
         source_dir = roslib.stacks.get_stack_dir(name)
@@ -51,13 +53,14 @@ def load_and_validate_properties():
 
     check_svn_status(source_dir)
     
-    # figure out what we're releasing against
-    print "Distribution target is [%s]"%distro
-
-    release_props = load_release_props(name, distro, distro_file, source_dir)
+    release_props = load_release_props(name, distro_file, source_dir)
     print_bold("Release Properties")
     for k, v in release_props.iteritems():
         print " * %s: %s"%(k, v)
+    release = release_props['release']
+    # figure out what we're releasing against
+    print "Release target is [%s]"%release
+
 
     # brittle test to make sure that user got the args correct
     if not '.' in version:
@@ -66,21 +69,21 @@ def load_and_validate_properties():
     if cmake_version != version:
         raise ReleaseException("version number in CMakeLists.txt appears to be incorrect:\n\n%s"%cmake_version)
     
-    return name, version, distro_file, source_dir, distro, release_props    
+    return name, version, distro_file, source_dir, release_props    
         
 def main():
     try:
         props = load_and_validate_properties()
-        name, version, distro_file, source_dir, distro, release_props = props[:6]
+        name, version, distro_file, source_dir, release_props = props[:6]
 
         if 1:
-            dist = make_dist(name, version, distro, source_dir, release_props)
+            dist = make_dist(name, version, source_dir, release_props)
 
         if 1:
-            tag_urls = tag_subversion(name, version, distro, release_props)
+            tag_urls = tag_subversion(name, version, release_props)
 
         if 1:
-            update_rosdistro_yaml(name, version, distro, distro_file)
+            update_rosdistro_yaml(name, version, distro_file)
 
     except ReleaseException, e:
         print >> sys.stderr, "ERROR: %s"%str(e)
@@ -100,7 +103,7 @@ def get_version(name, source_dir):
                 return lsplit[1]
 
     
-def update_rosdistro_yaml(name, version, distro, distro_file):
+def update_rosdistro_yaml(name, version, distro_file):
     if not os.path.exists(distro_file):
         raise ReleaseException("[%s] does not exist"%distro_file)
 
@@ -118,28 +121,25 @@ def update_rosdistro_yaml(name, version, distro, distro_file):
         d[name] = {}
     d = d[name]
     # set the version key, assume not overriding properties
-    d[distro] = str(version)
+    d['version'] = str(version)
 
     print "Writing new release properties to [%s]"%distro_file
     with open(distro_file, 'w') as f:
         f.write(yaml.safe_dump(distro_d))
 
-def tag_subversion(name, version, distro, release_props):
+def tag_subversion(name, version, release_props):
     urls = []
+    release = release_props['release']
     for k in ['release-svn', 'distro-svn']:
-        from_url = expand_uri(release_props['dev-svn'], name, version, distro, \
-                                  release_props['os_name'], release_props['os_ver'])
-        tag_url = expand_uri(release_props[k], name, version, distro, \
-                                 release_props['os_name'], release_props['os_ver'])
+        from_url = expand_uri(release_props['dev-svn'], name, version, release)
+        tag_url = expand_uri(release_props[k], name, version, release)
         
         release_name = "%s-%s"%(name, version)
 
         cmds = []
         # delete old svn tag if it's present
-        # - note: 'new release' is magic svn hook key
         append_rm_if_exists(tag_url, cmds, 'Making room for new release')
         # svn cp command to create new tag
-        # - note: 'new release' is magic svn hook key        
         cmds.append(['svn', 'cp', '--parents', '-m', 'Tagging %s new release'%release_name, from_url, tag_url])
         if not ask_and_call(cmds):    
             print "create_release will not create this tag in subversion"
@@ -147,7 +147,7 @@ def tag_subversion(name, version, distro, release_props):
             urls.append(tag_url)
     return urls
         
-def load_release_props(name, distro, distro_file, stack_dir):
+def load_release_props(name, distro_file, stack_dir):
     print "Loading uri rules from %s"%distro_file
     if not os.path.isfile(distro_file):
         raise ReleaseException("Cannot find [%s].\nPlease consult documentation on how to create this file"%p)
@@ -157,19 +157,18 @@ def load_release_props(name, distro, distro_file, stack_dir):
             raise ReleaseException("Found multiple YAML documents in [%s]"%distro_file)
         doc = docs[0]
 
-    # there are three tiers of dictionaries that we look in for uri rules
+    # there are two tiers of dictionaries that we look in for uri rules
     rules_d = [doc.get('stacks', {}),
-               doc.get('stacks', {}).get(name, {}),
-               doc.get('stacks', {}).get(name, {}).get(distro, {})]
+               doc.get('stacks', {}).get(name, {})]
     rules_d = [d for d in rules_d if d]
-    # load the '_uri_rules' from the dictionaries, in order
+    # load the 'rules' from the dictionaries, in order
     props = {}
     for d in rules_d:
         if type(d) == dict:
-            props.update(d.get('_uri_rules', {}))
+            props.update(d.get('rules', {}))
 
     if not props:
-        raise ReleaseException("[%s] is missing _uri_rules. Please consult documentation"%(distro_file))
+        raise ReleaseException("[%s] is missing 'rules'. Please consult documentation"%(distro_file))
     
     for reqd in ['release-svn']:
         if not reqd in props:
@@ -185,10 +184,6 @@ def load_release_props(name, distro, distro_file, stack_dir):
         else:
             raise ReleaseException("cannot determine SVN URL of stack [%s]"%name)
     
-    os_name, os_ver = detect_os()
-    props['os_name'] = os_name
-    props['os_ver'] = os_ver
-
     return props
            
     
@@ -204,9 +199,8 @@ def checkout_svn(name, uri):
     check_call(cmd)
     return tmp_dir
 
-def make_dist(name, version, distro, source_dir, release_props):
-    from_url = expand_uri(release_props['dev-svn'], name, version, distro, \
-                             release_props['os_name'], release_props['os_ver'])
+def make_dist(name, version, source_dir, release_props):
+    from_url = expand_uri(release_props['dev-svn'], name, version, release_props['release'])
     
     tmp_dir = checkout_svn(name, from_url)
     tmp_source_dir = os.path.join(tmp_dir, name)
@@ -221,79 +215,12 @@ def make_dist(name, version, distro, source_dir, release_props):
     shutil.rmtree(tmp_dir)
     print_bold("Release should be in %s"%dst)
     return dst
-                
-# this is copied from rosdistro -- need to change how
-# rosdistro works so that it can be used as a library    
-def expand_uri(rule, stack_name, stack_ver, distro_name, os_name, os_ver):
+
+def expand_uri(rule, stack_name, stack_ver, release_name):
   s = rule.replace('$STACK_NAME', stack_name)
   s =    s.replace('$STACK_VERSION', stack_ver)
-  s =    s.replace('$DISTRO_NAME', distro_name)
-  s =    s.replace('$OS_NAME', os_name)
-  s =    s.replace('$OS_VERSION', os_ver)
+  s =    s.replace('$RELEASE_NAME', release_name)
   return s
-
-
-# this is copied from rosdistro -- need to change how
-# rosdistro works so that it can be used as a library    
-def detect_os():
-  os_ver = ''
-  os_name = os.environ.get('ROS_OS_NAME')
-  if os_name is not None:
-    os_ver = os.environ.get('ROS_OS_VERSION')
-    if os_ver is None:
-      os_ver = ''
-    return os_name, os_ver
-  if os.path.isfile('/etc/arch-release'):
-    os_name = 'arch'
-  elif os.path.isfile('/etc/redhat-release'):
-    f = open('/etc/redhat_release', 'r')
-    tokens = f.readline().split()
-    if len(tokens) < 3 or tokens[0] != 'Fedora' or tokens[1] != 'release':
-      print >> sys.stderr, "unknown /etc/redhat-release file found."
-      exit(1)
-    os_name = 'fedora'
-    os_ver = tokens[2]
-  elif os.path.isfile('/etc/gentoo-release'):
-    f = open('/etc/gentoo-release', 'r')
-    tokens = f.readline().split()
-    if len(tokens) < 2 or tokens[0] != 'Gentoo':
-      print >> sys.stderr, "unknown /etc/gentoo-release file found."
-      exit(1)
-    os_name = 'gentoo'
-  elif os.path.isfile('/etc/issue'):
-    f = open('/etc/issue', 'r')
-    tokens = f.readline().split()
-    if len(tokens) < 2 or (tokens[0] != 'Ubuntu' and tokens[0] != 'Debian'):
-      print >> sys.stderr, "unknown /etc/issue file found."
-      exit(1)
-    if tokens[0] == 'Ubuntu':
-      os_name = 'ubuntu'
-      version_tokens = tokens[1].split('.')
-      if len(version_tokens) < 2:
-        print >> sys.stderr, "unknown version format in /etc/issue"
-        exit(1)
-      os_ver = version_tokens[0] + '.' + version_tokens[1]
-    elif tokens[1] == 'Debian':
-      os_name = 'debian'
-      if tokens[2] == '5.0':
-        os_ver = 'lenny'
-      elif tokens[2] == '4.0':
-        os_ver = 'etch'
-      elif tokens[2] == 'squeeze/sid':
-        os_ver = 'squeeze/sid'
-      else:
-        print >> sys.stderr, "unknown debian version in /etc/issue"
-        exit(1)
-    else:
-      print >> sys.stderr, "unknown /etc/issue file"
-      exit(1)
-  elif os.path.isfile('/usr/bin/sw_vers'):
-    os_name = 'macports' # assume this is the only decent way to get things
-    p = Popen(['sw_vers','-productVersion'], stdout = PIPE, stderr = PIPE)
-    sw_vers_stdout, sw_vers_stderr = p.communicate()
-    ver_tokens = sw_vers_stdout.strip().split('.')
-    os_ver = ver_tokens[0] + '.' + ver_tokens[1]
-  return os_name, os_ver
 
 def check_svn_status(source_dir):
     """make sure that all outstanding code has been checked in"""

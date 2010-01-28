@@ -161,14 +161,14 @@ def load_release_props(name, distro_file, stack_dir):
     rules_d = [doc.get('stacks', {}),
                doc.get('stacks', {}).get(name, {})]
     rules_d = [d for d in rules_d if d]
-    # load the 'rules' from the dictionaries, in order
+    # load the '_rules' from the dictionaries, in order
     props = {}
     for d in rules_d:
         if type(d) == dict:
-            props.update(d.get('rules', {}))
+            props.update(d.get('_rules', {}))
 
     if not props:
-        raise ReleaseException("[%s] is missing 'rules'. Please consult documentation"%(distro_file))
+        raise ReleaseException("[%s] is missing '_rules'. Please consult documentation"%(distro_file))
     
     for reqd in ['release-svn']:
         if not reqd in props:

@@ -210,7 +210,8 @@
   (or
    (unless (gethash str *broken-socket-streams*)
      (handler-case
-	 (progn
+	 (handler-bind
+	     ((type-error #'invoke-debugger))
 	   (serialize-int (serialization-length msg) str)
 	   (serialize msg str)
 

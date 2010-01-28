@@ -155,10 +155,10 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
     (advertise "/rosout" "roslib/Log")
 
     (when (member (get-param "use_sim_time" nil) '("true" 1 t) :test #'equal)
-      (setq *use-sim-time* t)
-      (subscribe "/clock" "roslib/Clock" #'(lambda (m) 
-						     (setq *last-clock* m))
-		 :max-queue-length 5))))
+      (setq *last-clock* nil *use-sim-time* t)
+      (subscribe "/clock" "roslib/Clock" #'(lambda (m) (setq *last-clock* m))
+		 :max-queue-length 5)
+      )))
 
 
 (defmacro with-ros-node (args &rest body)
@@ -475,7 +475,14 @@ Remove this key from parameter server"
     (protected-call-to-master ("deleteParam" key) c
       (roslisp-error "Could not contact master at ~a when deleting param ~a: ~a" *master-uri* key c))))
 
-      
+
+(defun wait-duration (d &optional (inc 0.001))
+  "Given current ros-time T, wait until the ros-time is T+D.  Note that INC is how often to check in real seconds rather than ros seconds."
+  (let ((target-time (+ d (ros-time))))
+    (spin-until (>= (ros-time) target-time) inc)
+    (values)))
+
+     
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

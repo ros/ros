@@ -87,6 +87,7 @@
 
    :loop-at-most-every
    :spin-until 
+   :wait-duration
    :with-parallel-thread
    :store-message-in
 

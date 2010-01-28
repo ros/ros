@@ -45,14 +45,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+(defvar *ros-time-warning* nil)
 
 ;; Define this here rather than in client.lisp because it's needed by serialize
 (defun ros-time ()
   "If *use-sim-time* is true (which is set upon node startup by looking up the ros /use_sim_time parameter), return the last received time on the /time or /clock topics, or 0.0 if no time message received yet. Otherwise, return the unix time (seconds since epoch)."
   (if *use-sim-time*
-      (cond
-	(*last-clock* (roslib-msg:clock-val *last-clock*))
-	(t 0.0))
+      (if *last-clock*
+	  (roslib-msg:clock-val *last-clock*)
+	  (progn
+	    (unless (or *ros-time-warning* (mutex-owner *debug-stream-lock*))
+	      (setq *ros-time-warning* t)
+	      (ros-warn (roslisp time) "ros-time returning 0.0 because use_sim_time is true but no clock messages received yet.  This message will be displayed only once."))
+	    0.0))
       (unix-time)))
 
 (defvar *serialize-recursion-level* 0

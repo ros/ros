@@ -304,7 +304,7 @@ class HelperMethods:
         return accum
 
     def get_depth(self, all_pkgs, pkg, depth):
-        for pkg_dep in self.get_deps1(pkg):
+        for pkg_dep in (set(self.get_deps1(pkg)) & all_pkgs):
             depth = max(depth, self.get_depth(all_pkgs, pkg_dep, depth + 1))
         return depth
 
@@ -471,9 +471,25 @@ class HelperMethods:
                         intermediate = "%s.%s.%s"%(local_stack, dependent_stack, dep)
                         outfile.write( '  "%s" -> "%s"[color="blue", style="dashed"];\n' % (pkg, intermediate))
         #	outfile.write('}\n')
-        outfile.write( '}\n')
-        outfile.flush() # write to disk, but don't delete 
 
+        if False:
+            rank = self.build_rank(internal)
+            print rank
+            for key in rank:
+                if len(rank[key]) > 1:
+                    outfile.write('{ rank = same;')    
+                    print "key", key
+                    for pkg_rank in rank[key]:
+                        #if pkg_rank in rank.keys():
+                        outfile.write(' "%s" ;'%pkg_rank)
+                    outfile.write('}\n')
+
+            outfile.write( '}\n')
+            outfile.flush() # write to disk, but don't delete 
+
+            #shutil.copyfile(outfile.name, "NO#COMMIT.gv")
+
+        
         try:
             output_filename = "stack_%s.%s"%(stack, type)
             print "Generating output %s"%output_filename
@@ -578,6 +594,9 @@ class HelperMethods:
                         intermediate = "%s.%s.%s"%(local_stack, dependent_stack, dep)
                         outfile.write( '  "%s" -> "%s"[color="blue", style="dashed"];\n' % (pkg, intermediate))
         #	outfile.write('}\n')
+
+
+
         outfile.write( '}\n')
         outfile.flush() # write to disk, but don't delete 
 
@@ -641,6 +660,9 @@ def vdmain():
     parser.add_option("--no-stack-details",
                       dest="display_image", default=True, 
                       action="store_false", help="Do Not display stack details")
+    parser.add_option("--new",
+                      dest="use_new_version", default=False, 
+                      action="store_true", help="Use the new version")
     
 
 
@@ -694,9 +716,9 @@ def vdmain():
     if invalid_args:
         parser.error("Invalid stacks passed as arguments %s"%invalid_args)
         
-    if not args:
+    if not args and options.use_new_version:
         helper.generate_composite(roslib.stacks.list_stacks(), options.output_type, pkg_characterists, options.display_image)
-    else:
+    elif options.use_new_version:
         helper.generate_composite(args,  options.output_type, pkg_characterists, options.display_image)
 
     all_pkgs = set(targets)

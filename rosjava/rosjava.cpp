@@ -791,7 +791,7 @@ JNIEXPORT jlong JNICALL Java_ros_roscpp_JNI_subscribe
 #if ROS_NEW_SERIALIZATION_API
 	boost::shared_ptr<SubscriptionMessage> *callback = (boost::shared_ptr<SubscriptionMessage> *) cppCallback;
 	SubscribeOptions so(getString(env, jtopic), queueSize, (*callback)->getMD5Sum(), (*callback)->getDataType());
-	so.helper.reset(new SubscriptionMessageHelperT<JavaMessage>(boost::bind(&SubscriptionMessage::callback, *callback, _1),
+	so.helper.reset(new SubscriptionMessageHelperT<const boost::shared_ptr<JavaMessage const>&>(boost::bind(&SubscriptionMessage::callback, *callback, _1),
                                                                 boost::bind(&SubscriptionMessage::create, *callback)));
 #else
 	boost::shared_ptr<SubscriptionMessageHelper> *callback = (boost::shared_ptr<SubscriptionMessageHelper> *) cppCallback;
@@ -1005,7 +1005,7 @@ JNIEXPORT jlong JNICALL Java_ros_roscpp_JNI_advertiseService
 	aso.datatype = (*callback)->getDataType();
 	aso.req_datatype = (*callback)->getRequestDataType();
 	aso.res_datatype = (*callback)->getResponseDataType();
-	aso.helper.reset(new ServiceMessageHelperT<JavaMessage, JavaMessage>(boost::bind(&ServiceMessage::callback, *callback, _1, _2),
+	aso.helper.reset(new ServiceMessageHelperT<ServiceSpec<JavaMessage, JavaMessage> >(boost::bind(&ServiceMessage::callback, *callback, _1, _2),
                                                                          boost::bind(&ServiceMessage::createRequest, *callback),
                                                                          boost::bind(&ServiceMessage::createResponse, *callback)));
 #else

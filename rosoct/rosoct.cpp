@@ -400,7 +400,7 @@ public:
     virtual void init()
     {
 #ifdef ROS_NEW_SERIALIZATION_API
-        _opts.helper.reset(new SubscriptionMessageHelperT<OctaveMsgDeserializer>(boost::bind(&RoscppSubscription::callback, this, _1), boost::bind(&RoscppSubscription::create, this)));
+      _opts.helper.reset(new SubscriptionMessageHelperT<const boost::shared_ptr<OctaveMsgDeserializer const>&>(boost::bind(&RoscppSubscription::callback, this, _1), boost::bind(&RoscppSubscription::create, this)));
 #else
         _opts.helper = as<SubscriptionMessageHelper>();
         ROS_ASSERT(_opts.helper);
@@ -422,7 +422,7 @@ public:
       return boost::shared_ptr<OctaveMsgDeserializer>(new OctaveMsgDeserializer(_opts.md5sum, _opts.datatype));
     }
 
-    void callback(const boost::shared_ptr<OctaveMsgDeserializer>& msg)
+    void callback(const boost::shared_ptr<OctaveMsgDeserializer const>& msg)
     {
       if( _bDropWork )
           return;
@@ -502,7 +502,7 @@ public:
     virtual void init()
     {
 #ifdef ROS_NEW_SERIALIZATION_API
-        _opts.helper.reset(new ServiceMessageHelperT<OctaveMsgDeserializer, OctaveMsgDeserializer>(boost::bind(&RoscppService::callback, this, _1, _2),
+      _opts.helper.reset(new ServiceMessageHelperT<ServiceSpec<OctaveMsgDeserializer, OctaveMsgDeserializer> >(boost::bind(&RoscppService::callback, this, _1, _2),
                                                                                                    boost::bind(&RoscppService::createRequest, this),
                                                                                                    boost::bind(&RoscppService::createResponse, this)));
 #else

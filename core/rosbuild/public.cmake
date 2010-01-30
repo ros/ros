@@ -171,6 +171,14 @@ macro(rosbuild_init)
   # speeding up the build, #2109.
   _rosbuild_time_less_than_latest_mtime(_rebuild_cache "${_rosbuild_cached_flag_time}" ${ROS_MANIFEST_LIST})
   if(_rebuild_cache)
+    # Explicitly unset all cached variables, to avoid possible accumulation
+    # across builds, #2389.
+    set(${_prefix}_INCLUDE_DIRS "" CACHE INTERNAL "")
+    set(${_prefix}_CFLAGS_OTHER "" CACHE INTERNAL "")
+    set(${_prefix}_LIBRARY_DIRS "" CACHE INTERNAL "")
+    set(${_prefix}_LIBRARIES "" CACHE INTERNAL "")
+    set(${_prefix}_LDFLAGS_OTHER "" CACHE INTERNAL "")
+
     message("[rosbuild] Cached build flags older than manifests; calling rospack to get flags")
     # Get the include dirs
     rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} INCLUDE_DIRS cflags-only-I --deps-only)

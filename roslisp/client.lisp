@@ -39,10 +39,6 @@
 
 (in-package :roslisp)
 
-(set-debug-level 'roslisp :warn)
-(set-debug-level '(roslisp top) :info)
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The operations called by client code
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -75,13 +71,11 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
 				(pathname (format nil "log/~a-~a.log" name (unix-time)))
 				(pathname (concatenate 'string (sb-ext:posix-getenv "ROS_ROOT") "/"))))
 	*ros-log-stream* (open *ros-log-location* :direction :output :if-exists :overwrite :if-does-not-exist :create))
-  (ros-info (roslisp top) "Log location is ~a" *ros-log-location*)
     
   (let ((params (handle-command-line-arguments name cmd-line-args)))
 
-    ;; Deal with the master uri.  
-    (unless master-supplied
-      (ros-debug (roslisp top) "Master uri was not supplied, so using default")
+    ;; Deal with the master uri 
+    (unless master-supplied      
       (setq master-uri (or *default-master-uri* (sb-ext:posix-getenv "ROS_MASTER_URI")))
       (unless (and (stringp master-uri) (> (length master-uri) 0))
 	(error "Master uri needs to be supplied either as an argument to start-ros-node, or through the environment variable ROS_MASTER_URI, or by setting the lisp variable *default-master-uri*")))
@@ -93,10 +87,32 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
     (symbol-macrolet ((address (uri-address master-uri)))
       (unless (parse-string-ip-address address)
 	(setf address (ip-address-string (lookup-hostname-ip-address address)))))
-      
+
+    (setq *master-uri* master-uri)
+    
+    ;; Set params specified at command line
+    (dolist (p params)
+      (set-param (car p) (cdr p)))
+
+    ;; Initialize debug levels
+    (set-local-debug-level nil :debug)
+    (reset-debug-levels)
+    (set-debug-level-unless-exists nil :warn)
+    (set-debug-level-unless-exists '(roslisp top) :info)
+
+    (unless (debug-level-exists nil)
+      (set-debug-level nil :warn))
+
+    ;; Now we can finally print some debug messages 
+    (ros-debug (roslisp top) "Log location is ~a" *ros-log-location*)
+    (command-line-args-rosout cmd-line-args params)
+    (unless master-supplied (ros-debug (roslisp top) "Master uri was not supplied, so using default"))
     (ros-info (roslisp top) "master URI is ~a:~a" (uri-address master-uri) (uri-port master-uri))
+    
+    ;; Done setting up master connection
+    
 
-
+    ;; Spawn a thread that will start up the listeners, then run the event loop
     (with-mutex (*ros-lock*)
       (sb-thread:make-thread 
        #'(lambda ()
@@ -130,7 +146,6 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
   
 	   (setq *tcp-server-port* pub-server-port
 		 *broken-socket-streams* (make-hash-table :test #'eq)
-		 *master-uri* master-uri
 		 *service-uri* (format nil "rosrpc://~a:~a" *tcp-server-hostname* *tcp-server-port*)
 		 *xml-rpc-caller-api* (format nil "http://~a:~a" (hostname) xml-rpc-port)
 		 *publications* (make-hash-table :test #'equal)
@@ -147,18 +162,15 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
       ;; things will just queue up
       (spin-until (eq *node-status* :running) 1))
 
-    ;; Set params specified at command line
-    (dolist (p params)
-      (set-param (car p) (cdr p)))
-
     ;; Advertise on global rosout topic for debugging messages
     (advertise "/rosout" "roslib/Log")
 
     (when (member (get-param "use_sim_time" nil) '("true" 1 t) :test #'equal)
       (setq *last-clock* nil *use-sim-time* t)
       (subscribe "/clock" "roslib/Clock" #'(lambda (m) (setq *last-clock* m))
-		 :max-queue-length 5)
-      )))
+		 :max-queue-length 5))
+    
+    (ros-info (roslisp top) "Node startup complete")))
 
 
 (defmacro with-ros-node (args &rest body)
@@ -426,73 +438,6 @@ Can also be called on a topic that we're already subscribed to - in this case, i
 	    (values))))))
 
 
-(defun get-param (key &optional (default nil default-supplied))
-  "get-param KEY &optional DEFAULT.  
-
-KEY is a string naming a ros parameter.
-
-Looks up parameter on parameter server.  If not found, use default if provided, and error otherwise."
-  (declare (string key))
-  (ensure-node-is-running)
-  (with-fully-qualified-name key
-    (if (has-param key)
-	(protected-call-to-master ("getParam" key) c
-	    (roslisp-error "Could not contact master when getting param ~a: ~a" key c))
-	(if default-supplied
-	    default
-	    (roslisp-error "Param ~a does not exist, and no default supplied" key)))))
-
-(defun set-param (key val)
-  "set-param KEY VAL
-
-KEY is a string naming a ros parameter.
-VAL is a string or integer.
-
-Set the parameters value on the parameter server"
-
-  (declare (string key))
-  (ensure-node-is-running)
-  (with-fully-qualified-name key
-    (protected-call-to-master ("setParam" key val) c
-      (roslisp-error "Could not contact master at ~a when setting param ~a" *master-uri* key))))
-
-(defun has-param (key)
-  "KEY is a string naming a ros parameter
-
-Return true iff this parameter exists on the server"
-  (declare (string key))
-  (ensure-node-is-running)
-  (with-fully-qualified-name key
-    (protected-call-to-master ("hasParam" key) c
-      (roslisp-error "Could not contact master at ~a for call to hasParam ~a: ~a" *master-uri* key c))))
-
-(defun delete-param (key)
-  "KEY is a string naming a ros parameter
-Remove this key from parameter server"
-  (declare (string key))
-  (ensure-node-is-running)
-  (with-fully-qualified-name key
-    (protected-call-to-master ("deleteParam" key) c
-      (roslisp-error "Could not contact master at ~a when deleting param ~a: ~a" *master-uri* key c))))
-
-(defun have-valid-ros-time ()
-  "Return true iff have received a valid ros-time"
-  (ensure-node-is-running)
-  (if *use-sim-time* *last-clock* t))
-
-(defun wait-duration (d &optional (inc 0.001))
-  "Given current ros-time T, wait until the ros-time is T+D.  Note that INC is how often to check in real seconds rather than ros seconds.  If we don't have a valid ros time yet, will signal an error."
-  (if (have-valid-ros-time)
-      (let ((target-time (+ d (ros-time))))
-	(spin-until (>= (ros-time) target-time) inc)
-	(values))
-      (error 'ros-time-not-yet-received)))
-
-(defun wait-until-ros-time-valid ()
-  "Postcondition is that have-valid-ros-time returns true"
-  (spin-until (have-valid-ros-time) 0.01))
-  
-     
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

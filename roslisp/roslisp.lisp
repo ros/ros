@@ -98,6 +98,7 @@
    :set-param
    :has-param
    :delete-param
+   :list-params
 
    :ros-time
    :ros-time-not-yet-received
@@ -132,6 +133,7 @@
    :make-uri
 
    :*default-master-uri*
+   :*master-uri*
 
    :standalone-exec-debug-hook
    :*running-from-command-line*))

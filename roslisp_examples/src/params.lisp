@@ -40,11 +40,10 @@
 
 (in-package :roslisp-examples)
 
-(roslisp:set-debug-level 'params :info)
-
 (defun params-example ()
   "Illustrates param operations."
   (with-ros-node ("param-example")
+    (roslisp:set-debug-level 'params :info)
     (if (has-param "~foo")
 	(ros-info params "Param foo exists with value ~a" (get-param "~foo"))
 	(ros-info params "Param foo does not exist"))

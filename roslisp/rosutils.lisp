@@ -43,44 +43,6 @@
 ;; ROSLisp-specific utility code
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-condition ros-rpc-error (error)
-  ((name :initarg :name :reader name)
-   (args :initarg :args :reader args)
-   (uri :initarg :uri :reader ros-rpc-error-uri)
-   (code :initarg :code :reader code)
-   (message :initarg :message :reader message)
-   (vals :initarg :vals :reader vals))
-  (:report (lambda (c str)
-	     (format str "XML RPC call ~a to ~a failed with code ~a, message ~a, and values ~a" 
-		     (cons (name c) (args c)) (ros-rpc-error-uri c) (code c) (message c) (vals c)))))
-
-
-(defun ros-rpc-call (uri name &rest args)
-  "ros-rpc-call XML-RPC-SERVER-URI CALL-NAME &rest CALL-ARGS.  Preprends the ros node name to the arg list and does the call.  Throws a continuable error if a code <= 0 is returned.  Otherwise, return the values."
-  (mvbind (address port) (parse-uri uri)
-  
-    (dbind (code msg vals)
-	(xml-rpc-call 
-	 (apply #'encode-xml-rpc-call name 
-		(concatenate 'string "/" *ros-node-name*) ;; TODO: this assumes global namespace
-		args) 
-	 :host address :port port)
-      (when (<= code 0) (cerror "Ignore and continue"  'ros-rpc-error :name name :args args :uri uri :code code :message msg :vals vals))
-      vals)))
-
-
-(defun lookup-service (name)
-  (ros-rpc-call *master-uri* "lookupService" name))
-
-(defmacro protected-call-to-master ((&rest args) &optional c &body cleanup-forms)
-  (setf c (or c (gensym)))
-  `(handler-case (ros-rpc-call *master-uri* ,@args)
-     (sb-bsd-sockets:connection-refused-error (,c)
-       (declare (ignorable ,c))
-       ,@cleanup-forms)))
-
-
-
 (defun parse-uri (uri)
   "parse a uri struct or uri string of the form http://address:port.  Return two values: address and port."
   (etypecase uri

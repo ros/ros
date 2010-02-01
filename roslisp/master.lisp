@@ -39,39 +39,47 @@
 
 (in-package :roslisp)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; code generation for rosout
+;; Code for talking to the master over xml rpc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun designated-list (x)
-  (if (listp x) x (list x)))
+(define-condition ros-rpc-error ()
+  ;; TODO
+  ((code :initarg :code :reader code)
+   (message :initarg :message :reader message)
+   (vals :initarg :vals :reader vals)
+   (call :initarg :call :reader call)
+   (uri :initarg :uri :reader rpc-uri))
+  (:report (lambda (c str) 
+	     (format str "ros-rpc call ~a to ~a failed with code ~a, message ~a, values ~a"
+		     (call c) (rpc-uri c) (code c) (message c) (vals c)))))
 
-(defgeneric make-keyword-symbol (s)
-  (:method ((s symbol)) (intern (string-upcase (symbol-name s)) :keyword))
-  (:method ((s string)) (intern (string-upcase s) :keyword)))
+(defun lookup-service (name)
+  (ros-rpc-call *master-uri* "lookupService" name))
 
-(defun can-write-to-log ()
-  (and *ros-log-stream* (open-stream-p *ros-log-stream*)))
+(defun ros-rpc-call (uri name &rest args)
+  "ros-rpc-call XML-RPC-SERVER-URI CALL-NAME &rest CALL-ARGS.  Preprends the ros node name to the arg list and does the call.  Throws a continuable error if a code <= 0 is returned.  Otherwise, return the values.  Requires that uri is not null (though node need not be running)."
+  (mvbind (address port) (parse-uri uri)
+  
+    (dbind (code msg vals)
+	(xml-rpc-call 
+	 (apply #'encode-xml-rpc-call name 
+		(concatenate 'string "/" *ros-node-name*) ;; TODO: this assumes global namespace
+		args) 
+	 :host address :port port)
+      (when (<= code 0) (cerror "Ignore and continue" 'ros-rpc-error
+				:call (cons name args) :uri uri :code code :message msg :vals vals))
+      vals)))
 
-(defun rosout-msg (name level args)
-  (let ((code (symbol-code 'roslib-msg:<Log> level)))
-    (when (typep (first args) 'string) (push t args))
-    (dbind (check str &rest format-args) args
-      (let ((output-string (gensym)))
-	`(when (and (>= ,code (debug-level ',(reverse (mapcar #'make-keyword-symbol (if (listp name) name (list name)))))) ,check)
-	   (let ((,output-string (format nil ,str ,@format-args)))
-	     (with-mutex (*debug-stream-lock*)
-	       (format *debug-stream* "~&[~a ~a] ~a: ~a~&" ',(designated-list name) ,level (ros-time) ,output-string)
-	       (when (can-write-to-log) 
-		 (format *ros-log-stream* "~&[~a ~a] ~a: ~a~&" 
-			 ',(designated-list name) ,level (ros-time) ,output-string)))
-	     
-	     (force-output *debug-stream*)
-	     (when (can-write-to-log) (force-output *ros-log-stream*))
+(defmacro protected-call-to-master ((&rest args) &optional c &body cleanup-forms)
+  "Wraps an xml-rpc call to the master.  Calls cleanup forms if xml-rpc connection fails.  Requires that the node is running, or that the *master-uri* is set."
+  (setf c (or c (gensym)))
+  `(handler-case (progn (assert *master-uri* nil "Master uri not set") (ros-rpc-call *master-uri* ,@args))
+     (sb-bsd-sockets:connection-refused-error (,c)
+       (declare (ignorable ,c))
+       ,@cleanup-forms)))
 
-	     (when (and (eq *node-status* :running) (gethash "/rosout" *publications*))
-	       (publish 
-		"/rosout"
-		(make-instance 'roslib-msg:<Log> :name *ros-node-name*
-			       :level ,code :msg ,output-string)))))))))
+
+
+
+

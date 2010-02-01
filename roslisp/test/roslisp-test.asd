@@ -3,8 +3,7 @@
 
 (in-package :asdf)
 
-(defsystem "roslisp/roslisp-test"
-  :name "roslisp-test"
+(defsystem "roslisp-test"
   :depends-on ("std_msgs-msg" "roslisp" "roslisp-msg")
 
   :components

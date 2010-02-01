@@ -3,7 +3,7 @@
 
 (in-package :asdf)
 
-(defsystem "roslisp_examples/roslisp_examples"
+(defsystem "roslisp-examples"
   :components
   ((:file "pkg")
    (:file "talker" :depends-on ("pkg"))

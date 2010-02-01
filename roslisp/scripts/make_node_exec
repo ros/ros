@@ -8,7 +8,7 @@ if [[ $# == 4 ]]; then
   sbcl --noinform --end-runtime-options --no-userinit --noprint --disable-debugger --load `rospack find roslisp`/scripts/make-roslisp-exec.lisp $pkg :$system $entry > $output.lisp
   cat > $output <<EOF
 #!/bin/bash
-sbcl --noinform --end-runtime-options --noprint --no-userinit --disable-debugger --load $output.lisp --end-toplevel-options \$*
+ROSLISP_CURRENT_PACKAGE=$pkg sbcl --noinform --end-runtime-options --noprint --no-userinit --disable-debugger --load $output.lisp --end-toplevel-options \$*
 EOF
   chmod a+x $output
 else

@@ -475,13 +475,23 @@ Remove this key from parameter server"
     (protected-call-to-master ("deleteParam" key) c
       (roslisp-error "Could not contact master at ~a when deleting param ~a: ~a" *master-uri* key c))))
 
+(defun have-valid-ros-time ()
+  "Return true iff have received a valid ros-time"
+  (ensure-node-is-running)
+  (if *use-sim-time* *last-clock* t))
 
 (defun wait-duration (d &optional (inc 0.001))
-  "Given current ros-time T, wait until the ros-time is T+D.  Note that INC is how often to check in real seconds rather than ros seconds."
-  (let ((target-time (+ d (ros-time))))
-    (spin-until (>= (ros-time) target-time) inc)
-    (values)))
+  "Given current ros-time T, wait until the ros-time is T+D.  Note that INC is how often to check in real seconds rather than ros seconds.  If we don't have a valid ros time yet, will signal an error."
+  (if (have-valid-ros-time)
+      (let ((target-time (+ d (ros-time))))
+	(spin-until (>= (ros-time) target-time) inc)
+	(values))
+      (error 'ros-time-not-yet-received)))
 
+(defun wait-until-ros-time-valid ()
+  "Postcondition is that have-valid-ros-time returns true"
+  (spin-until (have-valid-ros-time) 0.01))
+  
      
 
 

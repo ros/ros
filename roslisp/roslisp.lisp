@@ -100,6 +100,8 @@
    :delete-param
 
    :ros-time
+   :ros-time-not-yet-received
+   :wait-until-ros-time-valid
 
    :pprint-ros-message
    :read-ros-message

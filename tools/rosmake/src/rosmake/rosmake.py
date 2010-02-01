@@ -126,7 +126,7 @@ class RosMakeAll:
             return None
         except rosdep.core.RosdepException, e:
             return "rosdep install FAILED: %s"%e
-        except roslib.exceptions.ROSLibExceptoin, ex:
+        except roslib.exceptions.ROSLibException, ex:
             return "%s"%ex
 
     def build_or_recurse(self,p):

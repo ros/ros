@@ -45,7 +45,7 @@ namespace XmlRpc {
 
       
   // Format strings
-  std::string XmlRpcValue::_doubleFormat("%.14g");
+  std::string XmlRpcValue::_doubleFormat("%.16g");
 
 
 

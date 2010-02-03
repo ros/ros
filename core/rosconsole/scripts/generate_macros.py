@@ -71,6 +71,15 @@ def add_macro(f, caps_name, enum_name):
     f.write('#define ROS_%s_STREAM_COND(cond, args)\n' %(caps_name))
     f.write('#define ROS_%s_COND_NAMED(cond, name, ...)\n' %(caps_name))
     f.write('#define ROS_%s_STREAM_COND_NAMED(cond, name, args)\n' %(caps_name))
+    
+    f.write('#define ROS_%s_ONCE(...)\n' %(caps_name))
+    f.write('#define ROS_%s_STREAM_ONCE(args)\n' %(caps_name))
+    f.write('#define ROS_%s_ONCE_NAMED(name, ...)\n' %(caps_name))
+    f.write('#define ROS_%s_STREAM_ONCE_NAMED(name, args)\n' %(caps_name))
+    f.write('#define ROS_%s_LIMIT(rate, ...)\n' %(caps_name))
+    f.write('#define ROS_%s_STREAM_LIMIT(rate, args)\n' %(caps_name))
+    f.write('#define ROS_%s_LIMIT_NAMED(rate, name, ...)\n' %(caps_name))
+    f.write('#define ROS_%s_STREAM_LIMIT_NAMED(rate, name, args)\n' %(caps_name))
     f.write('#else\n')
     f.write('#define ROS_%s(...) ROS_LOG(ros::console::levels::%s, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)\n' %(caps_name, enum_name))
     f.write('#define ROS_%s_STREAM(args) ROS_LOG_STREAM(ros::console::levels::%s, ROSCONSOLE_DEFAULT_NAME, args)\n' %(caps_name, enum_name))
@@ -80,6 +89,16 @@ def add_macro(f, caps_name, enum_name):
     f.write('#define ROS_%s_STREAM_COND(cond, args) ROS_LOG_STREAM_COND(cond, ros::console::levels::%s, ROSCONSOLE_DEFAULT_NAME, args)\n' %(caps_name, enum_name))
     f.write('#define ROS_%s_COND_NAMED(cond, name, ...) ROS_LOG_COND(cond, ros::console::levels::%s, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)\n' %(caps_name, enum_name))
     f.write('#define ROS_%s_STREAM_COND_NAMED(cond, name, args) ROS_LOG_STREAM_COND(cond, ros::console::levels::%s, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)\n' %(caps_name, enum_name))
+    
+    f.write('#define ROS_%s_ONCE(...) ROS_LOG_ONCE(ros::console::levels::%s, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)\n' %(caps_name, enum_name))
+    f.write('#define ROS_%s_STREAM_ONCE(args) ROS_LOG_STREAM_ONCE(ros::console::levels::%s, ROSCONSOLE_DEFAULT_NAME, args)\n' %(caps_name, enum_name))
+    f.write('#define ROS_%s_ONCE_NAMED(name, ...) ROS_LOG_ONCE(ros::console::levels::%s, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)\n' %(caps_name, enum_name))
+    f.write('#define ROS_%s_STREAM_ONCE_NAMED(name, args) ROS_LOG_STREAM_ONCE(ros::console::levels::%s, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)\n' %(caps_name, enum_name))
+    
+    f.write('#define ROS_%s_LIMIT(rate, ...) ROS_LOG_LIMIT(rate, ros::console::levels::%s, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)\n' %(caps_name, enum_name))
+    f.write('#define ROS_%s_STREAM_LIMIT(rate, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::%s, ROSCONSOLE_DEFAULT_NAME, args)\n' %(caps_name, enum_name))
+    f.write('#define ROS_%s_LIMIT_NAMED(rate, name, ...) ROS_LOG_LIMIT(rate, ros::console::levels::%s, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)\n' %(caps_name, enum_name))
+    f.write('#define ROS_%s_STREAM_LIMIT_NAMED(rate, name, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::%s, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)\n' %(caps_name, enum_name))
     f.write('#endif\n\n')
 
 f = open('%s/include/rosconsole/macros_generated.h' %(base_path), 'w')

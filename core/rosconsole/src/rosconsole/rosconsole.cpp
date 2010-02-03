@@ -207,13 +207,17 @@ void print(log4cxx::Logger* logger, Level level, const char* file, int line, con
 
   va_end(args);
 
-  try
+  //if (filter->isEnabled(buffer, file, line, function, ...))
   {
-  	logger->forcedLog(g_level_lookup[level], g_print_buffer.get(), log4cxx::spi::LocationInfo(file, function, line));
-  }
-  catch (std::exception& e)
-  {
-  	fprintf(stderr, "Caught exception while logging: [%s]\n", e.what());
+
+    try
+    {
+      logger->forcedLog(g_level_lookup[level], g_print_buffer.get(), log4cxx::spi::LocationInfo(file, function, line));
+    }
+    catch (std::exception& e)
+    {
+      fprintf(stderr, "Caught exception while logging: [%s]\n", e.what());
+    }
   }
 
   g_printing_thread_id = boost::thread::id();

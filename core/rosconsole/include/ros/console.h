@@ -34,6 +34,7 @@
 
 #include <cstdio>
 #include <sstream>
+#include <ros/time.h>
 
 // TODO: this header is no longer needed to be included here, but removing it will break various code that incorrectly does not itself include log4cxx/logger.h
 // We should vet all the code using log4cxx directly and make sure the includes/link flags are used in those packages, and then we can remove this include
@@ -267,6 +268,83 @@ struct LogLocation
       ROSCONSOLE_PRINT_STREAM_AT_LOCATION(args); \
     } \
   } while(0)
+
+/**
+ * \brief Log to a given named logger at a given verbosity level, only the first time it is hit when enabled, with printf-style formatting
+ *
+ * \param level One of the levels specified in ros::console::levels::Level
+ * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
+ */
+#define ROS_LOG_ONCE(level, name, ...) \
+  do \
+  { \
+    ROSCONSOLE_DEFINE_LOCATION(true, level, name); \
+    static bool hit = false; \
+    if (ROS_UNLIKELY(enabled) && ROS_UNLIKELY(!hit)) \
+    { \
+      hit = true; \
+      ROSCONSOLE_PRINT_AT_LOCATION(__VA_ARGS__); \
+    } \
+  } while(0)
+
+/**
+ * \brief Log to a given named logger at a given verbosity level, only the first time it is hit when enabled, with printf-style formatting
+ *
+ * \param level One of the levels specified in ros::console::levels::Level
+ * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
+ */
+#define ROS_LOG_STREAM_ONCE(level, name, args) \
+  do \
+  { \
+    ROSCONSOLE_DEFINE_LOCATION(true, level, name); \
+    static bool hit = false; \
+    if (ROS_UNLIKELY(enabled) && ROS_UNLIKELY(!hit)) \
+    { \
+      hit = true; \
+      ROSCONSOLE_PRINT_STREAM_AT_LOCATION(args); \
+    } \
+  } while(0)
+
+/**
+ * \brief Log to a given named logger at a given verbosity level, limited to a specific rate of printing, with printf-style formatting
+ *
+ * \param level One of the levels specified in ros::console::levels::Level
+ * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
+ * \param rate The rate it should actually trigger at
+ */
+#define ROS_LOG_LIMIT(rate, level, name, ...) \
+  do \
+  { \
+    ROSCONSOLE_DEFINE_LOCATION(true, level, name); \
+    static double last_hit = 0.0; \
+    ros::Time now = ros::Time::now(); \
+    if (ROS_UNLIKELY(enabled) && ROS_UNLIKELY(last_hit + rate <= now.toSec())) \
+    { \
+      last_hit = now.toSec(); \
+      ROSCONSOLE_PRINT_AT_LOCATION(__VA_ARGS__); \
+    } \
+  } while(0)
+
+/**
+ * \brief Log to a given named logger at a given verbosity level, limited to a specific rate of printing, with printf-style formatting
+ *
+ * \param level One of the levels specified in ros::console::levels::Level
+ * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
+ * \param rate The rate it should actually trigger at
+ */
+#define ROS_LOG_STREAM_LIMIT(rate, level, name, args) \
+  do \
+  { \
+    ROSCONSOLE_DEFINE_LOCATION(true, level, name); \
+    static double last_hit = 0.0; \
+    ros::Time now = ros::Time::now(); \
+    if (ROS_UNLIKELY(enabled) && ROS_UNLIKELY(last_hit + rate <= now.toSec())) \
+    { \
+      last_hit = now.toSec(); \
+      ROSCONSOLE_PRINT_STREAM_AT_LOCATION(args); \
+    } \
+  } while(0)
+
 
 
 /**

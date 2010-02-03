@@ -95,6 +95,8 @@ TEST(Rosconsole, threadedCalls)
   tg.join_all();
 
   ASSERT_EQ(appender->info_.size(), 10ULL);
+
+  logger->removeAppender(appender);
 }
 
 int main(int argc, char **argv)

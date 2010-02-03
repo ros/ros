@@ -52,11 +52,11 @@ typedef helpers::ObjectPtrT<Level> LevelPtr;
       \
       if (ROS_UNLIKELY(enabled)) \
       { \
-        ros::console::print( loc.logger_, *loc.log4cxx_level_, LOG4CXX_LOCATION, __VA_ARGS__); \
+        ROSCONSOLE_PRINT_AT_LOCATION(__VA_ARGS__); \
       } \
       else if (log4cxx::LoggerPtr logger = ros::file_log::getFileOnlyLogger()) \
       { \
-        ros::console::print(logger, ros::file_log::getDebugLevel(), LOG4CXX_LOCATION, __VA_ARGS__); \
+        ros::console::print(logger, ros::console::levels::Debug, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__, __VA_ARGS__); \
       } \
     } while(0)
 

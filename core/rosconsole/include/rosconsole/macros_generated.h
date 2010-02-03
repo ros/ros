@@ -46,6 +46,10 @@
 #define ROS_DEBUG_STREAM_LIMIT(rate, args)
 #define ROS_DEBUG_LIMIT_NAMED(rate, name, ...)
 #define ROS_DEBUG_STREAM_LIMIT_NAMED(rate, name, args)
+#define ROS_DEBUG_FILTER(filter, ...)
+#define ROS_DEBUG_STREAM_FILTER(filter, args)
+#define ROS_DEBUG_FILTER_NAMED(filter, name, ...)
+#define ROS_DEBUG_STREAM_FILTER_NAMED(filter, name, args)
 #else
 #define ROS_DEBUG(...) ROS_LOG(ros::console::levels::Debug, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
 #define ROS_DEBUG_STREAM(args) ROS_LOG_STREAM(ros::console::levels::Debug, ROSCONSOLE_DEFAULT_NAME, args)
@@ -63,6 +67,10 @@
 #define ROS_DEBUG_STREAM_LIMIT(rate, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::Debug, ROSCONSOLE_DEFAULT_NAME, args)
 #define ROS_DEBUG_LIMIT_NAMED(rate, name, ...) ROS_LOG_LIMIT(rate, ros::console::levels::Debug, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)
 #define ROS_DEBUG_STREAM_LIMIT_NAMED(rate, name, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::Debug, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)
+#define ROS_DEBUG_FILTER(filter, ...) ROS_LOG_FILTER(filter, ros::console::levels::Debug, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
+#define ROS_DEBUG_STREAM_FILTER(filter, args) ROS_LOG_STREAM_FILTER(filter, ros::console::levels::Debug, ROSCONSOLE_DEFAULT_NAME, args)
+#define ROS_DEBUG_FILTER_NAMED(filter, name, ...) ROS_LOG_FILTER(filter, ros::console::levels::Debug, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)
+#define ROS_DEBUG_STREAM_FILTER_NAMED(filter, name, args) ROS_LOG_STREAM_FILTER(filter, ros::console::levels::Debug, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)
 #endif
 
 #if (ROSCONSOLE_MIN_SEVERITY > ROSCONSOLE_SEVERITY_INFO)
@@ -82,6 +90,10 @@
 #define ROS_INFO_STREAM_LIMIT(rate, args)
 #define ROS_INFO_LIMIT_NAMED(rate, name, ...)
 #define ROS_INFO_STREAM_LIMIT_NAMED(rate, name, args)
+#define ROS_INFO_FILTER(filter, ...)
+#define ROS_INFO_STREAM_FILTER(filter, args)
+#define ROS_INFO_FILTER_NAMED(filter, name, ...)
+#define ROS_INFO_STREAM_FILTER_NAMED(filter, name, args)
 #else
 #define ROS_INFO(...) ROS_LOG(ros::console::levels::Info, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
 #define ROS_INFO_STREAM(args) ROS_LOG_STREAM(ros::console::levels::Info, ROSCONSOLE_DEFAULT_NAME, args)
@@ -99,6 +111,10 @@
 #define ROS_INFO_STREAM_LIMIT(rate, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::Info, ROSCONSOLE_DEFAULT_NAME, args)
 #define ROS_INFO_LIMIT_NAMED(rate, name, ...) ROS_LOG_LIMIT(rate, ros::console::levels::Info, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)
 #define ROS_INFO_STREAM_LIMIT_NAMED(rate, name, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::Info, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)
+#define ROS_INFO_FILTER(filter, ...) ROS_LOG_FILTER(filter, ros::console::levels::Info, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
+#define ROS_INFO_STREAM_FILTER(filter, args) ROS_LOG_STREAM_FILTER(filter, ros::console::levels::Info, ROSCONSOLE_DEFAULT_NAME, args)
+#define ROS_INFO_FILTER_NAMED(filter, name, ...) ROS_LOG_FILTER(filter, ros::console::levels::Info, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)
+#define ROS_INFO_STREAM_FILTER_NAMED(filter, name, args) ROS_LOG_STREAM_FILTER(filter, ros::console::levels::Info, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)
 #endif
 
 #if (ROSCONSOLE_MIN_SEVERITY > ROSCONSOLE_SEVERITY_WARN)
@@ -118,6 +134,10 @@
 #define ROS_WARN_STREAM_LIMIT(rate, args)
 #define ROS_WARN_LIMIT_NAMED(rate, name, ...)
 #define ROS_WARN_STREAM_LIMIT_NAMED(rate, name, args)
+#define ROS_WARN_FILTER(filter, ...)
+#define ROS_WARN_STREAM_FILTER(filter, args)
+#define ROS_WARN_FILTER_NAMED(filter, name, ...)
+#define ROS_WARN_STREAM_FILTER_NAMED(filter, name, args)
 #else
 #define ROS_WARN(...) ROS_LOG(ros::console::levels::Warn, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
 #define ROS_WARN_STREAM(args) ROS_LOG_STREAM(ros::console::levels::Warn, ROSCONSOLE_DEFAULT_NAME, args)
@@ -135,6 +155,10 @@
 #define ROS_WARN_STREAM_LIMIT(rate, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::Warn, ROSCONSOLE_DEFAULT_NAME, args)
 #define ROS_WARN_LIMIT_NAMED(rate, name, ...) ROS_LOG_LIMIT(rate, ros::console::levels::Warn, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)
 #define ROS_WARN_STREAM_LIMIT_NAMED(rate, name, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::Warn, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)
+#define ROS_WARN_FILTER(filter, ...) ROS_LOG_FILTER(filter, ros::console::levels::Warn, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
+#define ROS_WARN_STREAM_FILTER(filter, args) ROS_LOG_STREAM_FILTER(filter, ros::console::levels::Warn, ROSCONSOLE_DEFAULT_NAME, args)
+#define ROS_WARN_FILTER_NAMED(filter, name, ...) ROS_LOG_FILTER(filter, ros::console::levels::Warn, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)
+#define ROS_WARN_STREAM_FILTER_NAMED(filter, name, args) ROS_LOG_STREAM_FILTER(filter, ros::console::levels::Warn, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)
 #endif
 
 #if (ROSCONSOLE_MIN_SEVERITY > ROSCONSOLE_SEVERITY_ERROR)
@@ -154,6 +178,10 @@
 #define ROS_ERROR_STREAM_LIMIT(rate, args)
 #define ROS_ERROR_LIMIT_NAMED(rate, name, ...)
 #define ROS_ERROR_STREAM_LIMIT_NAMED(rate, name, args)
+#define ROS_ERROR_FILTER(filter, ...)
+#define ROS_ERROR_STREAM_FILTER(filter, args)
+#define ROS_ERROR_FILTER_NAMED(filter, name, ...)
+#define ROS_ERROR_STREAM_FILTER_NAMED(filter, name, args)
 #else
 #define ROS_ERROR(...) ROS_LOG(ros::console::levels::Error, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
 #define ROS_ERROR_STREAM(args) ROS_LOG_STREAM(ros::console::levels::Error, ROSCONSOLE_DEFAULT_NAME, args)
@@ -171,6 +199,10 @@
 #define ROS_ERROR_STREAM_LIMIT(rate, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::Error, ROSCONSOLE_DEFAULT_NAME, args)
 #define ROS_ERROR_LIMIT_NAMED(rate, name, ...) ROS_LOG_LIMIT(rate, ros::console::levels::Error, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)
 #define ROS_ERROR_STREAM_LIMIT_NAMED(rate, name, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::Error, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)
+#define ROS_ERROR_FILTER(filter, ...) ROS_LOG_FILTER(filter, ros::console::levels::Error, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
+#define ROS_ERROR_STREAM_FILTER(filter, args) ROS_LOG_STREAM_FILTER(filter, ros::console::levels::Error, ROSCONSOLE_DEFAULT_NAME, args)
+#define ROS_ERROR_FILTER_NAMED(filter, name, ...) ROS_LOG_FILTER(filter, ros::console::levels::Error, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)
+#define ROS_ERROR_STREAM_FILTER_NAMED(filter, name, args) ROS_LOG_STREAM_FILTER(filter, ros::console::levels::Error, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)
 #endif
 
 #if (ROSCONSOLE_MIN_SEVERITY > ROSCONSOLE_SEVERITY_FATAL)
@@ -190,6 +222,10 @@
 #define ROS_FATAL_STREAM_LIMIT(rate, args)
 #define ROS_FATAL_LIMIT_NAMED(rate, name, ...)
 #define ROS_FATAL_STREAM_LIMIT_NAMED(rate, name, args)
+#define ROS_FATAL_FILTER(filter, ...)
+#define ROS_FATAL_STREAM_FILTER(filter, args)
+#define ROS_FATAL_FILTER_NAMED(filter, name, ...)
+#define ROS_FATAL_STREAM_FILTER_NAMED(filter, name, args)
 #else
 #define ROS_FATAL(...) ROS_LOG(ros::console::levels::Fatal, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
 #define ROS_FATAL_STREAM(args) ROS_LOG_STREAM(ros::console::levels::Fatal, ROSCONSOLE_DEFAULT_NAME, args)
@@ -207,5 +243,9 @@
 #define ROS_FATAL_STREAM_LIMIT(rate, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::Fatal, ROSCONSOLE_DEFAULT_NAME, args)
 #define ROS_FATAL_LIMIT_NAMED(rate, name, ...) ROS_LOG_LIMIT(rate, ros::console::levels::Fatal, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)
 #define ROS_FATAL_STREAM_LIMIT_NAMED(rate, name, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::Fatal, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)
+#define ROS_FATAL_FILTER(filter, ...) ROS_LOG_FILTER(filter, ros::console::levels::Fatal, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
+#define ROS_FATAL_STREAM_FILTER(filter, args) ROS_LOG_STREAM_FILTER(filter, ros::console::levels::Fatal, ROSCONSOLE_DEFAULT_NAME, args)
+#define ROS_FATAL_FILTER_NAMED(filter, name, ...) ROS_LOG_FILTER(filter, ros::console::levels::Fatal, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)
+#define ROS_FATAL_STREAM_FILTER_NAMED(filter, name, args) ROS_LOG_STREAM_FILTER(filter, ros::console::levels::Fatal, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)
 #endif
 

@@ -100,6 +100,7 @@ extern bool g_initialized;
  */
 void initialize();
 
+struct FilterBase;
 /**
  * \brief Don't call this directly.  Use the ROS_LOG() macro instead.
  * @param level Logging level
@@ -107,9 +108,9 @@ void initialize();
  * @param line Line of code this logging statement is from (usually generated with __LINE__)
  * @param fmt Format string
  */
-void print(log4cxx::Logger* logger, Level level, const char* file, int line, const char* function, const char* fmt, ...) ROSCONSOLE_PRINTF_ATTRIBUTE(6, 7);
+void print(FilterBase* filter, log4cxx::Logger* logger, Level level, const char* file, int line, const char* function, const char* fmt, ...) ROSCONSOLE_PRINTF_ATTRIBUTE(7, 8);
 
-void print(log4cxx::Logger* logger, Level level, const std::stringstream& str, const char* file, int line, const char* function);
+void print(FilterBase* filter, log4cxx::Logger* logger, Level level, const std::stringstream& str, const char* file, int line, const char* function);
 
 struct LogLocation;
 
@@ -132,11 +133,65 @@ void registerLogLocation(LogLocation* loc);
  */
 void notifyLoggerLevelsChanged();
 
+/**
+ * \brief Parameter structure passed to FilterBase::isEnabled(...);.  Includes both input and output parameters
+ */
+struct FilterParams
+{
+  // input parameters
+  log4cxx::LoggerPtr logger;                ///< [input] Logger that this message will be output to
+  Level level;                              ///< [input] Severity level
+  const char* file;                         ///< [input] File the message came from
+  int line;                                 ///< [input] Line the message came from
+  const char* function;                     ///< [input] Function the message came from
+  const char* message;                      ///< [input] The formatted message that will be output
+
+  // output parameters
+  log4cxx::LoggerPtr out_logger;            ///< [output] If set, uses this logger instead of the original
+  std::string out_message;                  ///< [output] If set, writes this message instead of the original
+  Level out_level;                          ///< [output] If set, uses this severity level instead of the original
+};
+
+/**
+ * \brief Base-class for filters.  Filters allow full user-defined control over whether or not a message should print.
+ * The ROS_X_FILTER... macros provide the filtering functionality.
+ *
+ * Filters get a chance to veto the message from printing at two times: first before the message arguments are
+ * evaluated and the message is formatted, and then once the message is formatted before it is printed.  It is also possible
+ * to change the message, logger and severity level at this stage (see the FilterParams struct for more details).
+ */
+class FilterBase
+{
+public:
+  /**
+   * \brief Returns whether or not the log statement should be printed.  Called before the log arguments are evaluated
+   * and the message is formatted.
+   */
+  inline virtual bool isEnabled() { return true; }
+  /**
+   * \brief Returns whether or not the log statement should be printed.  Called once the message has been formatted,
+   * and allows you to change the message, logger and severity level if necessary.
+   */
+  inline virtual bool isEnabled(FilterParams& params) { return true; }
+};
+
 struct LogLocation;
+/**
+ * \brief Internal
+ */
 void initializeLogLocation(LogLocation* loc, const std::string& name, Level level);
+/**
+ * \brief Internal
+ */
 void setLogLocationLevel(LogLocation* loc, Level level);
+/**
+ * \brief Internal
+ */
 void checkLogLocationEnabled(LogLocation* loc);
 
+/**
+ * \brief Internal
+ */
 struct LogLocation
 {
   bool initialized_;
@@ -219,16 +274,22 @@ struct LogLocation
   } \
   bool enabled = loc.logger_enabled_ && (cond);
 
-#define ROSCONSOLE_PRINT_AT_LOCATION(...) \
-    ros::console::print( loc.logger_, loc.level_, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__, __VA_ARGS__)
+#define ROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER(filter, ...) \
+    ros::console::print(filter, loc.logger_, loc.level_, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__, __VA_ARGS__)
 
-#define ROSCONSOLE_PRINT_STREAM_AT_LOCATION(args) \
+#define ROSCONSOLE_PRINT_AT_LOCATION(...) \
+    ROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER(0, __VA_ARGS__)
+
+#define ROSCONSOLE_PRINT_STREAM_AT_LOCATION_WITH_FILTER(filter, args) \
   do \
   { \
     std::stringstream ss; \
     ss << args; \
-    ros::console::print(loc.logger_, loc.level_, ss, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__); \
+    ros::console::print(filter, loc.logger_, loc.level_, ss, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__); \
   } while (0)
+
+#define ROSCONSOLE_PRINT_STREAM_AT_LOCATION(args) \
+    ROSCONSOLE_PRINT_STREAM_AT_LOCATION_WITH_FILTER(0, args)
 
 /**
  * \brief Log to a given named logger at a given verbosity level, only if a given condition has been met, with printf-style formatting
@@ -345,7 +406,39 @@ struct LogLocation
     } \
   } while(0)
 
+/**
+ * \brief Log to a given named logger at a given verbosity level, with user-defined filtering, with printf-style formatting
+ *
+ * \param filter pointer to the filter to be used
+ * \param level One of the levels specified in ros::console::levels::Level
+ * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
+ */
+#define ROS_LOG_FILTER(filter, level, name, ...) \
+  do \
+  { \
+    ROSCONSOLE_DEFINE_LOCATION(true, level, name); \
+    if (ROS_UNLIKELY(enabled) && (filter)->isEnabled()) \
+    { \
+      ROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER(filter, __VA_ARGS__); \
+    } \
+  } while(0)
 
+/**
+ * \brief Log to a given named logger at a given verbosity level, with user-defined filtering, with stream-style formatting
+ *
+ * \param cond Boolean condition to be evaluated
+ * \param level One of the levels specified in ros::console::levels::Level
+ * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
+ */
+#define ROS_LOG_STREAM_FILTER(filter, level, name, args) \
+  do \
+  { \
+    ROSCONSOLE_DEFINE_LOCATION(true, level, name); \
+    if (ROS_UNLIKELY(enabled) && (filter)->isEnabled()) \
+    { \
+      ROSCONSOLE_PRINT_STREAM_AT_LOCATION_WITH_FILTER(filter, args); \
+    } \
+  } while(0)
 
 /**
  * \brief Log to a given named logger at a given verbosity level, with printf-style formatting

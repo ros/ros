@@ -122,7 +122,7 @@ public:
   void connectInput(F& f)
   {
     incoming_connection_.disconnect();
-    incoming_connection_ = f.connect(boost::bind(&TimeSequencer::cb, this, _1));
+    incoming_connection_ = f.registerCallback(boost::bind(&TimeSequencer::cb, this, _1));
   }
 
   ~TimeSequencer()

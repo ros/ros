@@ -89,6 +89,13 @@ TEST(TimeSequencer, simple)
   ASSERT_EQ(h.count_, 1);
 }
 
+TEST(TimeSequencer, compilation)
+{
+  TimeSequencer<Msg> seq(ros::Duration(1.0), ros::Duration(0.01), 10);
+  TimeSequencer<Msg> seq2(ros::Duration(1.0), ros::Duration(0.01), 10);
+  seq2.connectInput(seq);
+}
+
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
 

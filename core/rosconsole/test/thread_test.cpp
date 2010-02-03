@@ -27,49 +27,79 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define ROS_ASSERT_ENABLED
-
-#include "ros/assert.h"
+#include "ros/console.h"
 
 #include <gtest/gtest.h>
 
-void doAssert()
+#include <boost/thread.hpp>
+
+#include "log4cxx/appenderskeleton.h"
+#include "log4cxx/spi/loggingevent.h"
+
+#include <vector>
+
+class TestAppender : public log4cxx::AppenderSkeleton
 {
-  ROS_ASSERT(false);
+public:
+  struct Info
+  {
+    log4cxx::LevelPtr level_;
+    std::string message_;
+    std::string logger_name_;
+  };
+
+  typedef std::vector<Info> V_Info;
+
+  V_Info info_;
+
+protected:
+  virtual void append(const log4cxx::spi::LoggingEventPtr& event, log4cxx::helpers::Pool& pool)
+  {
+    Info info;
+    info.level_ = event->getLevel();
+    info.message_ = event->getMessage();
+    info.logger_name_ = event->getLoggerName();
+
+    info_.push_back( info );
+  }
+
+  virtual void close()
+  {
+  }
+  virtual bool requiresLayout() const
+  {
+    return false;
+  }
+};
+
+void threadFunc(boost::barrier* b)
+{
+  b->wait();
+  ROS_INFO("Hello");
 }
 
-void doBreak()
+// Ensure all threaded calls go out
+TEST(Rosconsole, threadedCalls)
 {
-  ROS_BREAK();
-}
+  log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME);
 
-void doAssertMessage()
-{
-  ROS_ASSERT_MSG(false, "Testing %d %d %d", 1, 2, 3);
-}
+  TestAppender* appender = new TestAppender;
+  logger->addAppender( appender );
 
-TEST(RosAssert, assert)
-{
-  ROS_ASSERT(true);
+  boost::thread_group tg;
+  boost::barrier b(10);
+  for (uint32_t i = 0; i < 10; ++i)
+  {
+    tg.create_thread(boost::bind(threadFunc, &b));
+  }
+  tg.join_all();
 
-  EXPECT_DEATH(doAssert(), "ASSERTION FAILED");
-}
-
-TEST(RosAssert, breakpoint)
-{
-  EXPECT_DEATH(doBreak(), "BREAKPOINT HIT");
-}
-
-TEST(RosAssert, assertWithMessage)
-{
-  ROS_ASSERT_MSG(true, "Testing %d %d %d", 1, 2, 3);
-  EXPECT_DEATH(doAssertMessage(), "Testing 1 2 3");
+  ASSERT_EQ(appender->info_.size(), 10ULL);
 }
 
 int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  testing::FLAGS_gtest_death_test_style = "threadsafe";
 
   return RUN_ALL_TESTS();
 }

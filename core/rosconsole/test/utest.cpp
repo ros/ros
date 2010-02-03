@@ -851,6 +851,23 @@ TEST(RosConsole, changeFilter)
   logger->removeAppender(appender);
 }
 
+TEST(RosConsole, changeFilterStream)
+{
+  log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME);
+
+  TestAppender* appender = new TestAppender;
+  logger->addAppender(appender);
+
+  ChangeFilter filter;
+  ROS_LOG_STREAM_FILTER(&filter, ros::console::levels::Info, ROSCONSOLE_DEFAULT_NAME, "Hello");
+
+  ASSERT_EQ(appender->info_.size(), 1ULL);
+  EXPECT_STREQ(appender->info_[0].message_.c_str(), "haha");
+  EXPECT_EQ(appender->info_[0].level_, log4cxx::Level::getError());
+
+  logger->removeAppender(appender);
+}
+
 int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);

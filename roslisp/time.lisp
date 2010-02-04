@@ -39,30 +39,26 @@
 
 (in-package :roslisp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Header messages need to have timestamp autofilled
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar *serialize-recursion-level* 0
-  "Bound during calls to serialize, so we can keep track of when header time stamps need to be filled in")
 
-(defvar *seq* 0)
-(defvar *seq-lock* (make-mutex :name "lock on seq global variable")) ;; not currently used
-(defvar *set-seq* nil) ;; For now not setting seq fields as doesn't seem to be necessary for ROS
+(defvar *ros-time-warning* nil)
 
-(defmethod serialize :around (msg str)
-  ;; Note that each thread has its own copy of the variable
-  (let ((*serialize-recursion-level* (1+ *serialize-recursion-level*)))
-    (call-next-method)))
+(defun ros-time ()
+  "If *use-sim-time* is true (which is set upon node startup by looking up the ros /use_sim_time parameter), return the last received time on the /time or /clock topics, or 0.0 if no time message received yet. Otherwise, return the unix time (seconds since epoch)."
+  (if *use-sim-time*
+      (if *last-clock*
+	  (roslib-msg:clock-val *last-clock*)
+	  (progn
+	    (unless (or *ros-time-warning* (mutex-owner *debug-stream-lock*))
+	      (setq *ros-time-warning* t)
+	      (ros-warn (roslisp time) "ros-time returning 0.0 because use_sim_time is true but no clock messages received yet.  This message will be displayed only once."))
+	    0.0))
+      (unix-time)))
 
-(defmethod serialize :around ((msg roslib-msg:<Header>) str)
 
-  ;; We save the old stamp for convenience when debugging interactively and reusing the same message object
-  (let ((old-stamp (roslib-msg:stamp-val msg)))
-    (unwind-protect
-	 (progn
-	   (when (= *serialize-recursion-level* 1)
-	     (when *set-seq*
-	       (setf (roslib-msg:seq-val msg) (incf *seq*)))
-	     (when (= (roslib-msg:stamp-val msg) 0.0)
-	       (setf (roslib-msg:stamp-val msg) (ros-time))))
-	   (call-next-method))
-
-      (setf (roslib-msg:stamp-val msg) old-stamp))))
+(defun wait-until-ros-time (time &optional (inc 0.1))
+  "Waits until ros time exceeds TIME."
+  (spin-until (> (ros-time) time) inc))

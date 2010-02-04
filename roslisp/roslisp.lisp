@@ -103,7 +103,7 @@
 
    :ros-time
    :ros-time-not-yet-received
-   :wait-until-ros-time-valid
+   :wait-until-ros-time
 
    :pprint-ros-message
    :read-ros-message

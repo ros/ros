@@ -45,7 +45,7 @@
    :sb-sys
    :sb-thread
    :s-xml-rpc
-   :extended-reals
+   :roslisp-extended-reals
    :roslisp-queue
    :roslisp-utils
    :roslisp-msg-protocol
@@ -103,7 +103,6 @@
 
    :ros-time
    :ros-time-not-yet-received
-   :wait-until-ros-time
 
    :pprint-ros-message
    :read-ros-message

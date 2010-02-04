@@ -52,7 +52,7 @@
    :peek-front)
   (:use :cl 
 	:roslisp-utils
-	:extended-reals
+	:roslisp-extended-reals
 	:sb-thread))
 
 (in-package :roslisp-queue)

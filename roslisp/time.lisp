@@ -44,7 +44,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(defvar *ros-time-warning* nil)
 
 (defun ros-time ()
   "If *use-sim-time* is true (which is set upon node startup by looking up the ros /use_sim_time parameter), return the last received time on the /time or /clock topics, or 0.0 if no time message received yet. Otherwise, return the unix time (seconds since epoch)."
@@ -52,13 +51,20 @@
       (if *last-clock*
 	  (roslib-msg:clock-val *last-clock*)
 	  (progn
-	    (unless (or *ros-time-warning* (mutex-owner *debug-stream-lock*))
-	      (setq *ros-time-warning* t)
-	      (ros-warn (roslisp time) "ros-time returning 0.0 because use_sim_time is true but no clock messages received yet.  This message will be displayed only once."))
+	    (ros-debug (roslisp time) "Returning time of 0.0 as use_sim_time was true and no clock messages received")
 	    0.0))
       (unix-time)))
 
+(defun spin-until-ros-time-valid ()
+  (spin-until (> (ros-time) 0.0) 0.01
+    (every-nth-time 100
+      (ros-warn (roslisp time) "Waiting for valid ros-time before proceeding"))))
 
-(defun wait-until-ros-time (time &optional (inc 0.1))
-  "Waits until ros time exceeds TIME."
-  (spin-until (> (ros-time) time) inc))
+
+(defun wait-duration (d)
+  "Wait until time T+D, where T is the current ros-time."
+  (spin-until-ros-time-valid)
+  (let ((until (+ (ros-time) d)))
+    (spin-until (>= (ros-time) until) .01)))
+    
+    

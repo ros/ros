@@ -37,17 +37,14 @@
 ;; DAMAGE.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpackage extended-reals
-  (:use cl)
+(defpackage :roslisp-extended-reals
+  (:use :cl)
   (:export
-   infty
-   -infty
-   ext+
-   ext-
-   extmax))
+   :infty :-infty
+   :ext+ :ext- :extmax))
 
 
-(in-package extended-reals)
+(in-package :roslisp-extended-reals)
 
 ;(declaim (inline ext+ ext- ext>))
 (defun ext+ (&rest args)

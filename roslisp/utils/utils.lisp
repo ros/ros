@@ -323,7 +323,7 @@ If FN is a symbol, it's replaced by (function FN).
 (defun counter-value (id)
   (with-mutex (*do-every-nth-lock*)
     (let ((v (gethash id *do-every-nth-table*)))
-      (setf (gethash id *do-every-nth-table*) (if v (1+ v) 0)))))
+      (setf (gethash id *do-every-nth-table*) (if v (1+ v) 1)))))
 
 (defmacro every-nth-time (n &body body)
   (let ((id (gensym)))

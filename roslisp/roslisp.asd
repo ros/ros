@@ -20,14 +20,15 @@
    (:file "sockets" :depends-on ("roslisp" "rosout"))
    (:file "slave" :depends-on ("sockets" "tcpros" "rosout"))
    (:file "command-line-args" :depends-on ("roslisp" "rosout"))
-   (:file "client" :depends-on ("sockets" "debug-levels" "command-line-args" "msg" "rosout"))
-   (:file "debug-levels" :depends-on ("params" "rosout"))
+   (:file "client" :depends-on ("sockets" "command-line-args" "msg" "rosout"))
+   (:file "debug-levels" :depends-on ("params" "client" "rosout"))
+   (:file "node" :depends-on ("client"))
    (:file "pprint" :depends-on ("rosout" "msg"))
    )
 	  
 
   :depends-on (:s-xml :s-xml-rpc :sb-bsd-sockets
                :roslib-msg :roslisp-msg-protocol
-               :roslisp-utils))
+               :roslisp-utils :std_srvs-srv))
 
 ;;;; eof

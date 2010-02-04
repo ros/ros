@@ -85,17 +85,22 @@
 	(ros-debug (roslisp tcp) "Accepted TCP connection ~a" connection)
 	
 	(mvbind (header parse-error) (ignore-errors (parse-tcpros-header stream))
+	  ;; Any errors guaranteed to be handled in the first cond clause
+
+	  (ros-debug (roslisp tcp) "Parsed header: ~a ~:[~;Parse error ~:*~a~]" header parse-error)
 	  (handler-case
 	      (cond
 		((null header)
 		 (ros-info (roslisp tcp) "Ignoring connection attempt due to error parsing header: '~a'" parse-error)
 		 (socket-close connection))
+		((assoc "service" header :test #'equal)
+		 (handle-service-connection header connection stream))
 		((equal (cdr (assoc "probe" header :test #'equal)) "1")
+		 (ros-warn roslisp "Unexpectedly received a tcpros connection with probe set to 1.  Closing connection.")
 		 (socket-close connection))
 		((assoc "topic" header :test #'equal)
 		 (handle-topic-connection header connection stream))
-		((assoc "service" header :test #'equal)
-		 (handle-service-connection header connection stream)))
+		)
 	    (malformed-tcpros-header (c)
 	      (send-tcpros-header stream "error" (msg c))
 	      (warn "Connection server received error ~a when trying to parse header ~a.  Ignoring this connection attempt." (msg c) header)
@@ -237,33 +242,34 @@
   "Handle service connection.  For now, we assume a single request, which is processed immediately in this thread."
   (bind-from-header ((md5 "md5sum") (service-name "service")) header
     (let* ((service (gethash service-name *services*))
-	   (my-md5 (string-downcase (service-md5 service))))
+	   (my-md5 (string-downcase (service-md5 service)))
+	   (is-probe (equal (cdr (assoc "probe" header :test #'equal)) "1")))
       (tcpros-header-assert service "Unknown service")
       (tcpros-header-assert (or (equal md5 "*") (equal md5 my-md5)) "md5 sums don't match: ~a vs ~a" md5 my-md5)
       (send-tcpros-header stream "md5sum" my-md5 "callerid" *ros-node-name*
 			  "type" (service-ros-type service)
 			  "request_type" (service-request-ros-type service) 
 			  "response_type" (service-response-ros-type service))
-      (handle-single-service-request stream connection (service-request-class service) 
-				     (service-callback service)))))
+      (unwind-protect
+	   (unless is-probe
+	     (handle-single-service-request stream (service-request-class service) 
+					    (service-callback service)))
+	(socket-close connection)))))
 
 
 
 
 
-(defun handle-single-service-request (stream connection request-class-name callback)
+(defun handle-single-service-request (stream request-class-name callback)
   ;; Read length
   (dotimes (i 4)
     (read-byte stream))
   (let* ((msg (deserialize request-class-name stream))
 	 (response (funcall callback msg)))
-    (unwind-protect
-	 (progn
-	   (write-byte 1 stream)
-	   (serialize-int (serialization-length response) stream)
-	   (serialize response stream)
-	   (force-output stream))
-      (socket-close connection))))
+    (write-byte 1 stream)
+    (serialize-int (serialization-length response) stream)
+    (serialize response stream)
+    (force-output stream)))
     
 
 

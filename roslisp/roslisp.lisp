@@ -49,6 +49,7 @@
    :roslisp-queue
    :roslisp-utils
    :roslisp-msg-protocol
+   :std_srvs-srv
    )
   (:export
    :with-fields

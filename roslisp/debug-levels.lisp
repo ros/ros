@@ -107,8 +107,7 @@ Each NAME (unevaluated) is a list, e.g. (roslisp tcp) denoting a debugger topic.
     (subseq tokens 0 (1- (length tokens)))))
 
 
-(defun reset-debug-levels ()
-  "Load the debug levels from the param server"
+(def-service-callback (reset-debug-levels Empty) ()
   (let ((h (make-hash-table :test #'equal)))
     (dolist (param (list-params "~debug"))
       (when (is-debug-level-param param)
@@ -116,7 +115,9 @@ Each NAME (unevaluated) is a list, e.g. (roslisp tcp) denoting a debugger topic.
 	  (if (member level '("DEBUG" "INFO" "WARN" "ERROR" "FATAL") :test #'equal)
 	      (set-local-debug-level (get-debug-topic param) level h)
 	      (ros-warn (roslisp rosout) "Skipping setting debug level of ~a to unknown level ~a" param level)))))
-    (setq *debug-levels* h)))
+    (setq *debug-levels* h)
+    (make-response)))
+
     
 
 

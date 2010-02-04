@@ -145,7 +145,13 @@ macro(rosbuild_init)
   add_definitions(-DROS_PACKAGE_NAME='\"${PROJECT_NAME}\"')
 
   # ROS_BUILD_TYPE is set by rosconfig
-  set(CMAKE_BUILD_TYPE ${ROS_BUILD_TYPE})
+  # RelWithAsserts is our own type, not supported by CMake
+  if("${ROS_BUILD_TYPE}" STREQUAL "RelWithAsserts")
+    set(CMAKE_BUILD_TYPE "")
+    set(ROS_COMPILE_FLAGS "-O3 ${ROS_COMPILE_FLAGS}")
+  else("${ROS_BUILD_TYPE}" STREQUAL "RelWithAsserts")
+    set(CMAKE_BUILD_TYPE ${ROS_BUILD_TYPE})
+  endif("${ROS_BUILD_TYPE}" STREQUAL "RelWithAsserts")
 
   # Set default output directories
   set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})

@@ -159,6 +159,19 @@ struct FilterParams
  * Filters get a chance to veto the message from printing at two times: first before the message arguments are
  * evaluated and the message is formatted, and then once the message is formatted before it is printed.  It is also possible
  * to change the message, logger and severity level at this stage (see the FilterParams struct for more details).
+ *
+ * When a ROS_X_FILTER... macro is called, here is the high-level view of how it uses the filter passed in:
+\verbatim
+if (<logging level is enabled> && filter->isEnabled())
+{
+  <format message>
+  <fill out FilterParams>
+  if (filter->isEnabled(params))
+  {
+    <print message>
+  }
+}
+\endverbatim
  */
 class FilterBase
 {

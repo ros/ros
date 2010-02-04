@@ -53,8 +53,6 @@
 
 #include "connection.h"
 
-#define TIME_SYNCHRONIZER_MAX_MESSAGES 9
-
 namespace message_filters
 {
 
@@ -130,6 +128,8 @@ public:
   typedef boost::shared_ptr<M8 const> M8ConstPtr;
   typedef boost::tuple<M0ConstPtr, M1ConstPtr, M2ConstPtr, M3ConstPtr, M4ConstPtr, M5ConstPtr, M6ConstPtr, M7ConstPtr, M8ConstPtr> Tuple;
   typedef boost::signal<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&, const M6ConstPtr&, const M7ConstPtr&, const M8ConstPtr&)> Signal;
+  typedef boost::signal<void(const Tuple&)> DropSignal;
+  typedef boost::function<void(const Tuple&)> DropCallback;
   typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&)> Callback2;
   typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&)> Callback3;
   typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&)> Callback4;
@@ -138,6 +138,8 @@ public:
   typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&, const M6ConstPtr&)> Callback7;
   typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&, const M6ConstPtr&, const M7ConstPtr&)> Callback8;
   typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&, const M6ConstPtr&, const M7ConstPtr&, const M8ConstPtr&)> Callback9;
+
+  static const uint8_t MAX_MESSAGES = 9;
 
   template<class F0, class F1>
   TimeSynchronizer(F0& f0, F1& f1, uint32_t queue_size)
@@ -342,6 +344,20 @@ public:
     return Connection(boost::bind(&TimeSynchronizer::disconnect, this, _1), signal_.connect(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7, _8, _9)));
   }
 
+  /**
+   * \brief Register a callback to be called whenever a set of messages is removed from our queue
+   *
+   * The drop callback takes the form:
+\verbatim
+void callback(const TimeSynchronizer<M0, M1,...>::Tuple& tuple);
+\endverbatim
+   */
+  Connection registerDropCallback(const DropCallback& callback)
+  {
+    boost::mutex::scoped_lock lock(drop_signal_mutex_);
+    return Connection(boost::bind(&TimeSynchronizer::disconnectDrop, this, _1), drop_signal_.connect(callback));
+  }
+
   void add0(const M0ConstPtr& msg)
   {
     boost::mutex::scoped_lock lock(tuples_mutex_);
@@ -439,7 +455,7 @@ private:
 
   void disconnectAll()
   {
-    for (int i = 0; i < TIME_SYNCHRONIZER_MAX_MESSAGES; ++i)
+    for (int i = 0; i < MAX_MESSAGES; ++i)
     {
       input_connections_[i].disconnect();
     }
@@ -560,8 +576,10 @@ private:
 
     if (queue_size_ > 0)
     {
+      boost::mutex::scoped_lock lock(drop_signal_mutex_);
       while (tuples_.size() > queue_size_)
       {
+        drop_signal_(tuples_.begin()->second);
         tuples_.erase(tuples_.begin());
       }
     }
@@ -570,6 +588,8 @@ private:
   // assumes tuples_mutex_ is already locked
   void clearOldTuples()
   {
+    boost::mutex::scoped_lock lock(drop_signal_mutex_);
+
     typename M_TimeToTuple::iterator it = tuples_.begin();
     typename M_TimeToTuple::iterator end = tuples_.end();
     for (; it != end;)
@@ -578,6 +598,8 @@ private:
       {
         typename M_TimeToTuple::iterator old = it;
         ++it;
+
+        drop_signal_(old->second);
         tuples_.erase(old);
       }
       else
@@ -594,6 +616,12 @@ private:
     c.getBoostConnection().disconnect();
   }
 
+  void disconnectDrop(const Connection& c)
+  {
+    boost::mutex::scoped_lock lock(drop_signal_mutex_);
+    c.getBoostConnection().disconnect();
+  }
+
   uint32_t queue_size_;
 
   typedef std::map<ros::Time, Tuple> M_TimeToTuple;
@@ -604,7 +632,10 @@ private:
   boost::mutex signal_mutex_;
   ros::Time last_signal_time_;
 
-  Connection input_connections_[TIME_SYNCHRONIZER_MAX_MESSAGES];
+  boost::mutex drop_signal_mutex_;
+  DropSignal drop_signal_;
+
+  Connection input_connections_[MAX_MESSAGES];
 
   uint32_t real_type_count_;
 

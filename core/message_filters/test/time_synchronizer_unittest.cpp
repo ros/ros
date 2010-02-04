@@ -58,6 +58,7 @@ class Helper
 public:
   Helper()
   : count_(0)
+  , t_count_(0)
   {}
 
   void cb()
@@ -65,7 +66,14 @@ public:
     ++count_;
   }
 
+  template<typename T>
+  void cbT(T t)
+  {
+    ++t_count_;
+  }
+
   int32_t count_;
+  int32_t t_count_;
 };
 
 TEST(TimeSynchronizer, compile2)
@@ -390,6 +398,23 @@ TEST(TimeSynchronizer, queueSize)
   ASSERT_EQ(h.count_, 0);
   sync.add2(m);
   ASSERT_EQ(h.count_, 0);
+}
+
+TEST(TimeSynchronizer, dropCallback)
+{
+  TimeSynchronizer<Msg, Msg> sync(1);
+  Helper h;
+  sync.registerCallback(boost::bind(&Helper::cb, &h));
+  sync.registerDropCallback(boost::bind(&Helper::cbT<const TimeSynchronizer<Msg, Msg>::Tuple&>, &h, _1));
+  MsgPtr m(new Msg);
+  m->header.stamp = ros::Time();
+
+  sync.add0(m);
+  ASSERT_EQ(h.t_count_, 0);
+  m->header.stamp = ros::Time(0.1);
+  sync.add0(m);
+
+  ASSERT_EQ(h.t_count_, 1);
 }
 
 int main(int argc, char **argv){

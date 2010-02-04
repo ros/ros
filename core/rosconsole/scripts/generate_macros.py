@@ -37,30 +37,6 @@ roslib.load_manifest('rosconsole')
 
 base_path = roslib.packages.get_pkg_dir('rosconsole')
 
-#if (ROSCONSOLE_MIN_SEVERITY > ROSCONSOLE_SEVERITY_DEBUG)
-#define ROS_DEBUG(...)
-#define ROS_DEBUG_STREAM(args)
-
-#define ROS_DEBUG_NAMED(name, ...)
-#define ROS_DEBUG_STREAM_NAMED(name, args)
-
-#define ROS_DEBUG_COND(cond, ...)
-#define ROS_DEBUG_STREAM_COND(cond, args)
-#define ROS_DEBUG_COND_NAMED(cond, name, ...)
-#define ROS_DEBUG_STREAM_COND_NAMED(cond, name, args)
-#else
-#define ROS_DEBUG(...) ROS_LOG(ros::console::levels::Debug, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
-#define ROS_DEBUG_STREAM(args) ROS_LOG_STREAM(ros::console::levels::Debug, ROSCONSOLE_DEFAULT_NAME, args)
-
-#define ROS_DEBUG_NAMED(name, ...) ROS_LOG(ros::console::levels::Debug, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)
-#define ROS_DEBUG_STREAM_NAMED(name, args) ROS_LOG_STREAM(ros::console::levels::Debug, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)
-
-#define ROS_DEBUG_COND(cond, ...) ROS_LOG_COND(cond, ros::console::levels::Debug, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
-#define ROS_DEBUG_STREAM_COND(cond, args) ROS_LOG_STREAM_COND(cond, ros::console::levels::Debug, ROSCONSOLE_DEFAULT_NAME, args)
-#define ROS_DEBUG_COND_NAMED(cond, name, ...) ROS_LOG_COND(cond, ros::console::levels::Debug, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)
-#define ROS_DEBUG_STREAM_COND_NAMED(cond, name, args) ROS_LOG_STREAM_COND(cond, ros::console::levels::Debug, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)
-#endif
-
 def add_macro(f, caps_name, enum_name):
     f.write('#if (ROSCONSOLE_MIN_SEVERITY > ROSCONSOLE_SEVERITY_%s)\n' %(caps_name))
     f.write('#define ROS_%s(...)\n' %(caps_name))
@@ -76,10 +52,10 @@ def add_macro(f, caps_name, enum_name):
     f.write('#define ROS_%s_STREAM_ONCE(args)\n' %(caps_name))
     f.write('#define ROS_%s_ONCE_NAMED(name, ...)\n' %(caps_name))
     f.write('#define ROS_%s_STREAM_ONCE_NAMED(name, args)\n' %(caps_name))
-    f.write('#define ROS_%s_LIMIT(rate, ...)\n' %(caps_name))
-    f.write('#define ROS_%s_STREAM_LIMIT(rate, args)\n' %(caps_name))
-    f.write('#define ROS_%s_LIMIT_NAMED(rate, name, ...)\n' %(caps_name))
-    f.write('#define ROS_%s_STREAM_LIMIT_NAMED(rate, name, args)\n' %(caps_name))
+    f.write('#define ROS_%s_THROTTLE(rate, ...)\n' %(caps_name))
+    f.write('#define ROS_%s_STREAM_THROTTLE(rate, args)\n' %(caps_name))
+    f.write('#define ROS_%s_THROTTLE_NAMED(rate, name, ...)\n' %(caps_name))
+    f.write('#define ROS_%s_STREAM_THROTTLE_NAMED(rate, name, args)\n' %(caps_name))
     
     f.write('#define ROS_%s_FILTER(filter, ...)\n' %(caps_name))
     f.write('#define ROS_%s_STREAM_FILTER(filter, args)\n' %(caps_name))
@@ -100,10 +76,10 @@ def add_macro(f, caps_name, enum_name):
     f.write('#define ROS_%s_ONCE_NAMED(name, ...) ROS_LOG_ONCE(ros::console::levels::%s, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)\n' %(caps_name, enum_name))
     f.write('#define ROS_%s_STREAM_ONCE_NAMED(name, args) ROS_LOG_STREAM_ONCE(ros::console::levels::%s, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)\n' %(caps_name, enum_name))
     
-    f.write('#define ROS_%s_LIMIT(rate, ...) ROS_LOG_LIMIT(rate, ros::console::levels::%s, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)\n' %(caps_name, enum_name))
-    f.write('#define ROS_%s_STREAM_LIMIT(rate, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::%s, ROSCONSOLE_DEFAULT_NAME, args)\n' %(caps_name, enum_name))
-    f.write('#define ROS_%s_LIMIT_NAMED(rate, name, ...) ROS_LOG_LIMIT(rate, ros::console::levels::%s, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)\n' %(caps_name, enum_name))
-    f.write('#define ROS_%s_STREAM_LIMIT_NAMED(rate, name, args) ROS_LOG_STREAM_LIMIT(rate, ros::console::levels::%s, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)\n' %(caps_name, enum_name))
+    f.write('#define ROS_%s_THROTTLE(rate, ...) ROS_LOG_THROTTLE(rate, ros::console::levels::%s, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)\n' %(caps_name, enum_name))
+    f.write('#define ROS_%s_STREAM_THROTTLE(rate, args) ROS_LOG_STREAM_THROTTLE(rate, ros::console::levels::%s, ROSCONSOLE_DEFAULT_NAME, args)\n' %(caps_name, enum_name))
+    f.write('#define ROS_%s_THROTTLE_NAMED(rate, name, ...) ROS_LOG_THROTTLE(rate, ros::console::levels::%s, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, __VA_ARGS__)\n' %(caps_name, enum_name))
+    f.write('#define ROS_%s_STREAM_THROTTLE_NAMED(rate, name, args) ROS_LOG_STREAM_THROTTLE(rate, ros::console::levels::%s, std::string(ROSCONSOLE_NAME_PREFIX) + "." + name, args)\n' %(caps_name, enum_name))
     
     f.write('#define ROS_%s_FILTER(filter, ...) ROS_LOG_FILTER(filter, ros::console::levels::%s, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)\n' %(caps_name, enum_name))
     f.write('#define ROS_%s_STREAM_FILTER(filter, args) ROS_LOG_STREAM_FILTER(filter, ros::console::levels::%s, ROSCONSOLE_DEFAULT_NAME, args)\n' %(caps_name, enum_name))

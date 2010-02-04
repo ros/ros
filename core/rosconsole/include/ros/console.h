@@ -386,7 +386,7 @@ struct LogLocation
  * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
  * \param rate The rate it should actually trigger at
  */
-#define ROS_LOG_LIMIT(rate, level, name, ...) \
+#define ROS_LOG_THROTTLE(rate, level, name, ...) \
   do \
   { \
     ROSCONSOLE_DEFINE_LOCATION(true, level, name); \
@@ -406,7 +406,7 @@ struct LogLocation
  * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
  * \param rate The rate it should actually trigger at
  */
-#define ROS_LOG_STREAM_LIMIT(rate, level, name, args) \
+#define ROS_LOG_STREAM_THROTTLE(rate, level, name, args) \
   do \
   { \
     ROSCONSOLE_DEFINE_LOCATION(true, level, name); \

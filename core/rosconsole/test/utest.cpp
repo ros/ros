@@ -193,43 +193,43 @@ BasicFilter g_filter(true);
     log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME)->removeAppender( appender ); \
   }
 
-#define DEFINE_LIMIT_TESTS(name, macro_base, level) \
-  TEST(RosConsole, name##Limit) \
+#define DEFINE_THROTTLE_TESTS(name, macro_base, level) \
+  TEST(RosConsole, name##Throttle) \
   { \
     TestAppender* appender = new TestAppender; \
     log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME)->addAppender( appender ); \
-    macro_base##_LIMIT(0.5, "Testing %d %d %d", 1, 2, 3); \
+    macro_base##_THROTTLE(0.5, "Testing %d %d %d", 1, 2, 3); \
     ASSERT_EQ((int)appender->info_.size(), 1); \
     EXPECT_STREQ(appender->info_[0].message_.c_str(), "Testing 1 2 3"); \
     EXPECT_EQ(appender->info_[0].level_, ros::console::g_level_lookup[level]); \
     log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME)->removeAppender( appender ); \
   } \
-  TEST(RosConsole, name##NamedLimit) \
+  TEST(RosConsole, name##NamedThrottle) \
   { \
     TestAppender* appender = new TestAppender; \
     log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME)->addAppender( appender ); \
-    macro_base##_LIMIT_NAMED(0.5, "test", "Testing %d %d %d", 1, 2, 3); \
+    macro_base##_THROTTLE_NAMED(0.5, "test", "Testing %d %d %d", 1, 2, 3); \
     ASSERT_EQ((int)appender->info_.size(), 1); \
     EXPECT_STREQ(appender->info_[0].message_.c_str(), "Testing 1 2 3"); \
     EXPECT_EQ(appender->info_[0].level_, ros::console::g_level_lookup[level]); \
     EXPECT_STREQ(appender->info_[0].logger_name_.c_str(), ROSCONSOLE_ROOT_LOGGER_NAME".rosconsole.test"); \
     log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME)->removeAppender( appender ); \
   } \
-  TEST(RosConsole, name##StreamLimit) \
+  TEST(RosConsole, name##StreamThrottle) \
   { \
     TestAppender* appender = new TestAppender; \
     log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME)->addAppender( appender ); \
-    macro_base##_STREAM_LIMIT(0.5, "Testing " << 1 << " " << 2 << " " << 3); \
+    macro_base##_STREAM_THROTTLE(0.5, "Testing " << 1 << " " << 2 << " " << 3); \
     ASSERT_EQ((int)appender->info_.size(), 1); \
     EXPECT_STREQ(appender->info_[0].message_.c_str(), "Testing 1 2 3"); \
     EXPECT_EQ(appender->info_[0].level_, ros::console::g_level_lookup[level]); \
     log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME)->removeAppender( appender ); \
   } \
-  TEST(RosConsole, name##StreamLimitNamed) \
+  TEST(RosConsole, name##StreamThrottleNamed) \
   { \
     TestAppender* appender = new TestAppender; \
     log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME)->addAppender( appender ); \
-    macro_base##_STREAM_LIMIT_NAMED(0.5, "test", "Testing " << 1 << " " << 2 << " " << 3); \
+    macro_base##_STREAM_THROTTLE_NAMED(0.5, "test", "Testing " << 1 << " " << 2 << " " << 3); \
     ASSERT_EQ((int)appender->info_.size(), 1); \
     EXPECT_STREQ(appender->info_[0].message_.c_str(), "Testing 1 2 3"); \
     EXPECT_EQ(appender->info_[0].level_, ros::console::g_level_lookup[level]); \
@@ -326,7 +326,7 @@ BasicFilter g_filter(true);
   } \
   DEFINE_COND_TESTS(name, macro_base, level) \
   DEFINE_ONCE_TESTS(name, macro_base, level) \
-  DEFINE_LIMIT_TESTS(name, macro_base, level) \
+  DEFINE_THROTTLE_TESTS(name, macro_base, level) \
   DEFINE_FILTER_TESTS(name, macro_base, level)
 
 DEFINE_LEVEL_TESTS(debug, ROS_DEBUG, ros::console::levels::Debug)
@@ -660,12 +660,12 @@ TEST(RosConsole, once)
   logger->removeAppender(appender);
 }
 
-void limitFunc()
+void throttleFunc()
 {
-  ROS_LOG_LIMIT(0.5, ros::console::levels::Info, ROSCONSOLE_DEFAULT_NAME, "Hello");
+  ROS_LOG_THROTTLE(0.5, ros::console::levels::Info, ROSCONSOLE_DEFAULT_NAME, "Hello");
 }
 
-TEST(RosConsole, limit)
+TEST(RosConsole, throttle)
 {
   log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME);
 
@@ -675,11 +675,11 @@ TEST(RosConsole, limit)
   ros::Time start = ros::Time::now();
   while (ros::Time::now() <= start + ros::Duration(0.5))
   {
-    limitFunc();
+    throttleFunc();
     ros::Duration(0.01).sleep();
   }
 
-  limitFunc();
+  throttleFunc();
 
   EXPECT_EQ(appender->info_.size(), 2ULL);
 
@@ -706,12 +706,12 @@ TEST(RosConsole, onceStream)
   logger->removeAppender(appender);
 }
 
-void limitStreamFunc()
+void throttleStreamFunc()
 {
-  ROS_LOG_STREAM_LIMIT(0.5, ros::console::levels::Info, ROSCONSOLE_DEFAULT_NAME, "Hello");
+  ROS_LOG_STREAM_THROTTLE(0.5, ros::console::levels::Info, ROSCONSOLE_DEFAULT_NAME, "Hello");
 }
 
-TEST(RosConsole, limitStream)
+TEST(RosConsole, throttleStream)
 {
   log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME);
 
@@ -721,11 +721,11 @@ TEST(RosConsole, limitStream)
   ros::Time start = ros::Time::now();
   while (ros::Time::now() <= start + ros::Duration(0.5))
   {
-    limitStreamFunc();
+    throttleStreamFunc();
     ros::Duration(0.01).sleep();
   }
 
-  limitStreamFunc();
+  throttleStreamFunc();
 
   EXPECT_EQ(appender->info_.size(), 2ULL);
 

@@ -46,6 +46,32 @@
 namespace message_filters
 {
 
+class SubscriberBase
+{
+public:
+  /**
+   * \brief Subscribe to a topic.
+   *
+   * If this Subscriber is already subscribed to a topic, this function will first unsubscribe.
+   *
+   * \param nh The ros::NodeHandle to use to subscribe.
+   * \param topic The topic to subscribe to.
+   * \param queue_size The subscription queue size
+   * \param transport_hints The transport hints to pass along
+   * \param callback_queue The callback queue to pass along
+   */
+  virtual void subscribe(ros::NodeHandle& nh, const std::string& topic, uint32_t queue_size, const ros::TransportHints& transport_hints = ros::TransportHints(), ros::CallbackQueueInterface* callback_queue = 0) = 0;
+  /**
+   * \brief Re-subscribe to a topic.  Only works if this subscriber has previously been subscribed to a topic.
+   */
+  virtual void subscribe() = 0;
+  /**
+   * \brief Force immediate unsubscription of this subscriber from its topic
+   */
+  virtual void unsubscribe() = 0;
+};
+typedef boost::shared_ptr<SubscriberBase> SubscriberBasePtr;
+
 /**
  * \brief ROS subscription filter.
  *
@@ -66,7 +92,7 @@ void callback(const boost::shared_ptr<M const>&);
 \endverbatim
  */
 template<class M>
-class Subscriber : public SimpleFilter<M>
+class Subscriber : public SubscriberBase, public SimpleFilter<M>
 {
 public:
   typedef boost::shared_ptr<M const> MConstPtr;
@@ -116,11 +142,24 @@ public:
 
     if (!topic.empty())
     {
-      ros::SubscribeOptions ops;
-      ops.template init<M>(topic, queue_size, boost::bind(&Subscriber<M>::cb, this, _1));
-      ops.callback_queue = callback_queue;
-      ops.transport_hints = transport_hints;
-      sub_ = nh.subscribe(ops);
+      ops_.template init<M>(topic, queue_size, boost::bind(&Subscriber<M>::cb, this, _1));
+      ops_.callback_queue = callback_queue;
+      ops_.transport_hints = transport_hints;
+      sub_ = nh.subscribe(ops_);
+      nh_ = nh;
+    }
+  }
+
+  /**
+   * \brief Re-subscribe to a topic.  Only works if this subscriber has previously been subscribed to a topic.
+   */
+  void subscribe()
+  {
+    unsubscribe();
+
+    if (!ops_.topic.empty())
+    {
+      sub_ = nh_.subscribe(ops_);
     }
   }
 
@@ -142,6 +181,8 @@ private:
   }
 
   ros::Subscriber sub_;
+  ros::SubscribeOptions ops_;
+  ros::NodeHandle nh_;
 };
 
 }

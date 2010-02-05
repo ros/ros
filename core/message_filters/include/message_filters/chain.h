@@ -37,8 +37,6 @@
 
 #include "simple_filter.h"
 
-#include <boost/any.hpp>
-
 #include <vector>
 
 namespace message_filters
@@ -91,8 +89,8 @@ class ChainBase
 {
 public:
   /**
-   * \brief Retrieve a filter from this chain by index.  If index is greater than the # of filters in the chain,
-   * or the filter at the specified index is not of the type specified by F, an empty shared_ptr is returned
+   * \brief Retrieve a filter from this chain by index.  Returns an empty shared_ptr if the index is greater than
+   * the size of the chain.  \b NOT type-safe
    *
    * \param F [template] The type of the filter
    * \param index The index of the filter (returned by addFilter())
@@ -100,19 +98,17 @@ public:
   template<typename F>
   boost::shared_ptr<F> getFilter(size_t index)
   {
-    boost::any filter = getAnyForIndex(index);
-    try
+    boost::shared_ptr<void> filter = getFilterForIndex(index);
+    if (filter)
     {
-      return boost::any_cast<boost::shared_ptr<F> >(filter);
+      return boost::static_pointer_cast<F>(filter);
     }
-    catch (boost::bad_any_cast&)
-    {
-      return boost::shared_ptr<F>();
-    }
+
+    return boost::shared_ptr<F>();
   }
 
 protected:
-  virtual boost::any getAnyForIndex(size_t index) = 0;
+  virtual boost::shared_ptr<void> getFilterForIndex(size_t index) = 0;
 };
 typedef boost::shared_ptr<ChainBase> ChainBasePtr;
 
@@ -211,8 +207,8 @@ public:
   }
 
   /**
-   * \brief Retrieve a filter from this chain by index.  If index is greater than the # of filters in the chain,
-   * or the filter at the specified index is not of the type specified by F, an empty shared_ptr is returned
+   * \brief Retrieve a filter from this chain by index.  Returns an empty shared_ptr if the index is greater than
+   * the size of the chain.  \b NOT type-safe
    *
    * \param F [template] The type of the filter
    * \param index The index of the filter (returned by addFilter())
@@ -225,14 +221,7 @@ public:
       return boost::shared_ptr<F>();
     }
 
-    try
-    {
-      return boost::any_cast<boost::shared_ptr<F> >(filters_[index].filter);
-    }
-    catch (boost::bad_any_cast&)
-    {
-      return boost::shared_ptr<F>();
-    }
+    return boost::static_pointer_cast<F>(filters_[index].filter);
   }
 
   /**
@@ -254,11 +243,11 @@ public:
   }
 
 protected:
-  virtual boost::any getAnyForIndex(size_t index)
+  virtual boost::shared_ptr<void> getFilterForIndex(size_t index)
   {
     if (index >= filters_.size())
     {
-      return boost::any();
+      return boost::shared_ptr<void>();
     }
 
     return filters_[index].filter;
@@ -281,7 +270,7 @@ private:
   struct FilterInfo
   {
     boost::function<void(const MConstPtr&)> add_func;
-    boost::any filter;
+    boost::shared_ptr<void> filter;
     boost::shared_ptr<PassThrough<M> > passthrough;
   };
   typedef std::vector<FilterInfo> V_FilterInfo;

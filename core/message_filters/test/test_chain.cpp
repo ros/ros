@@ -148,7 +148,6 @@ TEST(Chain, retrieveFilter)
   c.addFilter(PassThroughPtr(new PassThrough<Msg>));
 
   ASSERT_TRUE(c.getFilter<PassThrough<Msg> >(0));
-  ASSERT_FALSE(c.getFilter<uint32_t>(0));
   ASSERT_FALSE(c.getFilter<PassThrough<Msg> >(1));
 }
 
@@ -162,8 +161,20 @@ TEST(Chain, retrieveFilterThroughBaseClass)
   c.addFilter(PassThroughPtr(new PassThrough<Msg>));
 
   ASSERT_TRUE(cb->getFilter<PassThrough<Msg> >(0));
-  ASSERT_FALSE(cb->getFilter<uint32_t>(0));
   ASSERT_FALSE(cb->getFilter<PassThrough<Msg> >(1));
+}
+
+struct PTDerived : public PassThrough<Msg>
+{
+
+};
+
+TEST(Chain, retrieveBaseClass)
+{
+  Chain<Msg> c;
+  c.addFilter(PassThroughPtr(new PTDerived));
+  ASSERT_TRUE(c.getFilter<PassThrough<Msg> >(0));
+  ASSERT_TRUE(c.getFilter<PTDerived>(0));
 }
 
 int main(int argc, char **argv){

@@ -84,6 +84,39 @@ private:
 };
 
 /**
+ * \brief Base class for Chain, allows you to store multiple chains in the same container.  Provides filter retrieval
+ * by index.
+ */
+class ChainBase
+{
+public:
+  /**
+   * \brief Retrieve a filter from this chain by index.  If index is greater than the # of filters in the chain,
+   * or the filter at the specified index is not of the type specified by F, an empty shared_ptr is returned
+   *
+   * \param F [template] The type of the filter
+   * \param index The index of the filter (returned by addFilter())
+   */
+  template<typename F>
+  boost::shared_ptr<F> getFilter(size_t index)
+  {
+    boost::any filter = getAnyForIndex(index);
+    try
+    {
+      return boost::any_cast<boost::shared_ptr<F> >(filter);
+    }
+    catch (boost::bad_any_cast&)
+    {
+      return boost::shared_ptr<F>();
+    }
+  }
+
+protected:
+  virtual boost::any getAnyForIndex(size_t index) = 0;
+};
+typedef boost::shared_ptr<ChainBase> ChainBasePtr;
+
+/**
  * \brief Chains a dynamic number of simple filters together.  Allows retrieval of filters by index after they are added.
  *
  * The Chain filter provides a container for simple filters.  It allows you to store an N-long set of filters inside a single
@@ -115,7 +148,7 @@ c.registerCallback(myCallback);
  *
  */
 template<typename M>
-class Chain : public SimpleFilter<M>
+class Chain : public ChainBase, public SimpleFilter<M>
 {
 public:
   typedef boost::shared_ptr<M const> MConstPtr;
@@ -218,6 +251,17 @@ public:
   void add(const MConstPtr& msg)
   {
     incomingCB(msg);
+  }
+
+protected:
+  virtual boost::any getAnyForIndex(size_t index)
+  {
+    if (index >= filters_.size())
+    {
+      return boost::any();
+    }
+
+    return filters_[index].filter;
   }
 
 private:

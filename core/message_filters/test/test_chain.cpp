@@ -152,6 +152,20 @@ TEST(Chain, retrieveFilter)
   ASSERT_FALSE(c.getFilter<PassThrough<Msg> >(1));
 }
 
+TEST(Chain, retrieveFilterThroughBaseClass)
+{
+  Chain<Msg> c;
+  ChainBase* cb = &c;
+
+  ASSERT_FALSE(cb->getFilter<PassThrough<Msg> >(0));
+
+  c.addFilter(PassThroughPtr(new PassThrough<Msg>));
+
+  ASSERT_TRUE(cb->getFilter<PassThrough<Msg> >(0));
+  ASSERT_FALSE(cb->getFilter<uint32_t>(0));
+  ASSERT_FALSE(cb->getFilter<PassThrough<Msg> >(1));
+}
+
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
 

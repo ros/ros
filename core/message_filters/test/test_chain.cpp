@@ -35,14 +35,15 @@
 #include <gtest/gtest.h>
 
 #include "ros/time.h"
-#include "roscpp/Logger.h"
-#include "message_filters/subscriber.h"
 #include "message_filters/chain.h"
 
 using namespace message_filters;
-typedef roscpp::Logger Msg;
-typedef roscpp::LoggerPtr MsgPtr;
-typedef roscpp::LoggerConstPtr MsgConstPtr;
+
+struct Msg
+{
+};
+typedef boost::shared_ptr<Msg> MsgPtr;
+typedef boost::shared_ptr<Msg const> MsgConstPtr;
 
 class Helper
 {
@@ -51,7 +52,7 @@ public:
   : count_(0)
   {}
 
-  void cb(const MsgConstPtr&)
+  void cb()
   {
     ++count_;
   }
@@ -59,73 +60,100 @@ public:
   int32_t count_;
 };
 
-TEST(Subscriber, simple)
+typedef boost::shared_ptr<PassThrough<Msg> > PassThroughPtr;
+
+TEST(Chain, simple)
 {
-  ros::NodeHandle nh;
-  Helper h;
-  Subscriber<Msg> sub(nh, "test_topic", 0);
-  sub.registerCallback(boost::bind(&Helper::cb, &h, _1));
-  ros::Publisher pub = nh.advertise<Msg>("test_topic", 0);
-
-  ros::Time start = ros::Time::now();
-  while (h.count_ == 0 && (ros::Time::now() - start) < ros::Duration(1.0))
-  {
-    pub.publish(Msg());
-    ros::Duration(0.01).sleep();
-    ros::spinOnce();
-  }
-
-  ASSERT_GT(h.count_, 0);
-}
-
-TEST(Subscriber, subUnsubSub)
-{
-  ros::NodeHandle nh;
-  Helper h;
-  Subscriber<Msg> sub(nh, "test_topic", 0);
-  sub.registerCallback(boost::bind(&Helper::cb, &h, _1));
-  ros::Publisher pub = nh.advertise<Msg>("test_topic", 0);
-
-  sub.unsubscribe();
-  sub.subscribe();
-
-  ros::Time start = ros::Time::now();
-  while (h.count_ == 0 && (ros::Time::now() - start) < ros::Duration(1.0))
-  {
-    pub.publish(Msg());
-    ros::Duration(0.01).sleep();
-    ros::spinOnce();
-  }
-
-  ASSERT_GT(h.count_, 0);
-}
-
-TEST(Subscriber, subInChain)
-{
-  ros::NodeHandle nh;
   Helper h;
   Chain<Msg> c;
-  c.addFilter(boost::shared_ptr<Subscriber<Msg> >(new Subscriber<Msg>(nh, "test_topic", 0)));
-  c.registerCallback(boost::bind(&Helper::cb, &h, _1));
-  ros::Publisher pub = nh.advertise<Msg>("test_topic", 0);
+  c.addFilter(PassThroughPtr(new PassThrough<Msg>));
+  c.registerCallback(boost::bind(&Helper::cb, &h));
 
-  ros::Time start = ros::Time::now();
-  while (h.count_ == 0 && (ros::Time::now() - start) < ros::Duration(1.0))
-  {
-    pub.publish(Msg());
-    ros::Duration(0.01).sleep();
-    ros::spinOnce();
-  }
-
-  ASSERT_GT(h.count_, 0);
+  c.add(MsgPtr(new Msg));
+  EXPECT_EQ(h.count_, 1);
+  c.add(MsgPtr(new Msg));
+  EXPECT_EQ(h.count_, 2);
 }
 
+TEST(Chain, multipleFilters)
+{
+  Helper h;
+  Chain<Msg> c;
+  c.addFilter(PassThroughPtr(new PassThrough<Msg>));
+  c.addFilter(PassThroughPtr(new PassThrough<Msg>));
+  c.addFilter(PassThroughPtr(new PassThrough<Msg>));
+  c.addFilter(PassThroughPtr(new PassThrough<Msg>));
+  c.registerCallback(boost::bind(&Helper::cb, &h));
+
+  c.add(MsgPtr(new Msg));
+  EXPECT_EQ(h.count_, 1);
+  c.add(MsgPtr(new Msg));
+  EXPECT_EQ(h.count_, 2);
+}
+
+TEST(Chain, addingFilters)
+{
+  Helper h;
+  Chain<Msg> c;
+  c.addFilter(PassThroughPtr(new PassThrough<Msg>));
+  c.addFilter(PassThroughPtr(new PassThrough<Msg>));
+  c.registerCallback(boost::bind(&Helper::cb, &h));
+
+  c.add(MsgPtr(new Msg));
+  EXPECT_EQ(h.count_, 1);
+
+  c.addFilter(PassThroughPtr(new PassThrough<Msg>));
+  c.addFilter(PassThroughPtr(new PassThrough<Msg>));
+
+  c.add(MsgPtr(new Msg));
+  EXPECT_EQ(h.count_, 2);
+}
+
+TEST(Chain, inputFilter)
+{
+  Helper h;
+  Chain<Msg> c;
+  c.addFilter(PassThroughPtr(new PassThrough<Msg>));
+  c.registerCallback(boost::bind(&Helper::cb, &h));
+
+  PassThrough<Msg> p;
+  c.connectInput(p);
+  p.add(MsgPtr(new Msg));
+  EXPECT_EQ(h.count_, 1);
+
+  p.add(MsgPtr(new Msg));
+  EXPECT_EQ(h.count_, 2);
+}
+
+TEST(Chain, nonSharedPtrFilter)
+{
+  Helper h;
+  Chain<Msg> c;
+  PassThrough<Msg> p;
+  c.addFilter(&p);
+  c.registerCallback(boost::bind(&Helper::cb, &h));
+
+  c.add(MsgPtr(new Msg));
+  EXPECT_EQ(h.count_, 1);
+  c.add(MsgPtr(new Msg));
+  EXPECT_EQ(h.count_, 2);
+}
+
+TEST(Chain, retrieveFilter)
+{
+  Chain<Msg> c;
+
+  ASSERT_FALSE(c.getFilter<PassThrough<Msg> >(0));
+
+  c.addFilter(PassThroughPtr(new PassThrough<Msg>));
+
+  ASSERT_TRUE(c.getFilter<PassThrough<Msg> >(0));
+  ASSERT_FALSE(c.getFilter<uint32_t>(0));
+  ASSERT_FALSE(c.getFilter<PassThrough<Msg> >(1));
+}
 
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
-
-  ros::init(argc, argv, "test_subscriber");
-  ros::NodeHandle nh;
 
   return RUN_ALL_TESTS();
 }

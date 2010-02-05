@@ -7,6 +7,9 @@ target_link_libraries(test/msg_cache_unittest message_filters)
 rosbuild_add_gtest(test/time_synchronizer_unittest time_synchronizer_unittest.cpp)
 target_link_libraries(test/time_synchronizer_unittest message_filters)
 
+rosbuild_add_gtest(test/test_chain test_chain.cpp)
+target_link_libraries(test/test_chain message_filters)
+
 # Needs to be a rostest because it spins up a node, which blocks until it hears from the master (unfortunately)
 rosbuild_add_executable(test/time_sequencer_unittest EXCLUDE_FROM_ALL time_sequencer_unittest.cpp)
 rosbuild_declare_test(test/time_sequencer_unittest)

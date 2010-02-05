@@ -171,7 +171,25 @@ public:
     sub_.shutdown();
   }
 
-  std::string getTopic() { return sub_ ? sub_.getTopic() : ""; }
+  std::string getTopic()
+  {
+    return ops_.topic;
+  }
+
+  /**
+   * \brief Does nothing.  Provided so that Subscriber may be used in a message_filters::Chain
+   */
+  template<typename F>
+  void connectInput(F& f)
+  {
+  }
+
+  /**
+   * \brief Does nothing.  Provided so that Subscriber may be used in a message_filters::Chain
+   */
+  void add(const MConstPtr& m)
+  {
+  }
 
 private:
 

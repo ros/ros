@@ -208,13 +208,13 @@ class Timeline(Layer):
         self.minor_spacing = 15
         self.major_spacing = 50
 
-        self.topic_font        = wx.Font(9, wx.FONTFAMILY_SCRIPT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        self.topic_font        = wx.Font(12, wx.FONTFAMILY_SCRIPT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         self.topic_font_height = None
         self.topic_name_sizes  = None
         self.margin_left       = 0
         self.margin_right      = 20
 
-        self.time_font        = wx.Font(9, wx.FONTFAMILY_SCRIPT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        self.time_font        = wx.Font(12, wx.FONTFAMILY_SCRIPT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         self.time_font_height = None
         
         self.history_top        = 26
@@ -597,7 +597,7 @@ class Timeline(Layer):
                 if renderer:
                     topic_height = renderer.get_segment_height(topic)
             if not topic_height:
-                topic_height = self.topic_font_height
+                topic_height = self.topic_font_height * 2
             
             self.history_bounds[topic] = (self.history_left, y, self.history_width, topic_height)
 
@@ -713,14 +713,14 @@ class Timeline(Layer):
                 renderer = self.timeline_renderers.get(datatype)
                 if not renderer is None:
                     msg_combine_interval = self.map_dx_to_dstamp(renderer.msg_combine_px)
-            
+
             if msg_combine_interval is None:
                 msg_combine_interval = self.map_dx_to_dstamp(self.default_msg_combine_px)
 
             # Set pen based on datatype
             dc.SetPen(wx.Pen(datatype_color))
             dc.SetBrush(wx.Brush(datatype_color))
-           
+
             # Find the index of the earliest visible stamp
             stamp_left_index  = self.bag_index._data.find_stamp_index(topic, self.stamp_left)
             stamp_right_index = self.bag_index._data.find_stamp_index(topic, self.stamp_right)

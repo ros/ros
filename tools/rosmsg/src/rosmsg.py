@@ -204,7 +204,7 @@ def get_srv_text(type_, raw=False):
     f = roslib.srvs.srv_file(package, base_type)
     if not os.path.isfile(f):
         raise ROSMsgException("Unknown srv type: %s"%type_)
-    name, spec = roslib.srvs.load_from_file(f)
+    name, spec = roslib.srvs.load_from_file(f, package)
     if raw:
         return spec.text
     else:
@@ -212,7 +212,7 @@ def get_srv_text(type_, raw=False):
 
 def get_msg_text(type_, raw=False):
     """
-    Get .msg file for \a type_ as text
+    Get .msg file for type_ as text
     @param type_: message type
     @type  type_: str
     @param raw: if True, include comments and whitespace (default False)
@@ -341,10 +341,10 @@ def rosmsg_md5(mode, type_):
     roslib.msgs.load_package(package)
     if mode == roslib.msgs.EXT:
         f = roslib.msgs.msg_file(package, base_type)
-        name, spec = roslib.msgs.load_from_file(f)
+        name, spec = roslib.msgs.load_from_file(f, package)
     else:
         f = roslib.srvs.srv_file(package, base_type)
-        name, spec = roslib.srvs.load_from_file(f)
+        name, spec = roslib.srvs.load_from_file(f, package)
     gendeps_dict = roslib.gentools.get_dependencies(spec, package, compute_files=False)
     return roslib.gentools.compute_md5(gendeps_dict)
 

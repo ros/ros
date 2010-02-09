@@ -394,8 +394,7 @@ void LatencyTest::sendCallback(const LatencyMessageConstPtr& msg, ros::Publisher
   thread_result_->latencies.push_back(msg->receipt_time - msg->publish_time);
   ++thread_result_->message_count;
 
-  LatencyMessagePtr reply(new LatencyMessage);
-  *reply = *msg;
+  LatencyMessagePtr reply = boost::const_pointer_cast<LatencyMessage>(msg);
   reply->publish_time = ros::WallTime::now().toSec();
   ++reply->count;
 

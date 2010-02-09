@@ -89,6 +89,11 @@ void runThroughputTests(std::ostream& out, V_ThroughputResult& results)
   addResult(results, intra::throughput(1            , 1      , 1024*1024*10 , 1           , 1              ), out, i++);
   addResult(results, intra::throughput(1            , 1      , 1024*1024*100, 1           , 1              ), out, i++);
 
+  addResult(results, intra::throughput(10           , 1      , 100          , 1           , 1              ), out, i++);
+  addResult(results, intra::throughput(10           , 1      , 1024*1024*10 , 1           , 1              ), out, i++);
+  addResult(results, intra::throughput(10           , 1      , 1024*1024*100, 1           , 1              ), out, i++);
+
+#if 0
   addResult(results, intra::throughput(10           , 1      , 100          , 1           , 10             ), out, i++);
   addResult(results, intra::throughput(10           , 1      , 1024*1024*10 , 1           , 10             ), out, i++);
   addResult(results, intra::throughput(10           , 1      , 1024*1024*100, 1           , 10             ), out, i++);
@@ -100,6 +105,7 @@ void runThroughputTests(std::ostream& out, V_ThroughputResult& results)
   addResult(results, intra::throughput(10           , 10     , 100          , 1           , 10             ), out, i++);
   addResult(results, intra::throughput(10           , 10     , 1024*1024*1  , 1           , 10             ), out, i++);
   addResult(results, intra::throughput(10           , 10     , 1024*1024*10 , 1           , 10             ), out, i++);
+#endif
 }
 
 void runLatencyTests(std::ostream& out, V_LatencyResult& results)
@@ -111,6 +117,7 @@ void runLatencyTests(std::ostream& out, V_LatencyResult& results)
   addResult(results, intra::latency(1000            , 1      , 1024*1024    , 1           , 1              ), out, i++);
   addResult(results, intra::latency(100             , 1      , 1024*1024*100, 1           , 1              ), out, i++);
 
+#if 0
   addResult(results, intra::latency(100000          , 1      , 1            , 1           , 10             ), out, i++);
   addResult(results, intra::latency(10000           , 1      , 1024         , 1           , 10             ), out, i++);
   addResult(results, intra::latency(1000            , 1      , 1024*1024    , 1           , 10             ), out, i++);
@@ -125,6 +132,7 @@ void runLatencyTests(std::ostream& out, V_LatencyResult& results)
   addResult(results, intra::latency(1000            , 10     , 1024         , 10          , 1              ), out, i++);
   addResult(results, intra::latency(100             , 10     , 1024*1024    , 10          , 1              ), out, i++);
   // 100mb test allocates too much memory
+#endif
 }
 
 int main(int argc, char** argv)
@@ -156,6 +164,7 @@ int main(int argc, char** argv)
     }
   }
 
+  i = 0;
   {
     V_LatencyResult::iterator it = latency_results.begin();
     V_LatencyResult::iterator end = latency_results.end();

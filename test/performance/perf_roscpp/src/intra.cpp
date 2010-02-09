@@ -179,6 +179,9 @@ void ThroughputTest::sendThread(boost::barrier* all_connected)
     }
   }
 
+  ThroughputMessagePtr msg(new ThroughputMessage);
+  msg->array.resize(message_size_);
+
   all_connected->wait();
 
   ROS_INFO_STREAM("Publish thread [" << boost::this_thread::get_id() << "] all connections established, beginning to publish");
@@ -190,14 +193,10 @@ void ThroughputTest::sendThread(boost::barrier* all_connected)
   try
   {
     const uint32_t streams = streams_;
-    const uint32_t size = message_size_;
     while (!boost::this_thread::interruption_requested())
     {
       for (uint32_t j = 0; j < streams; ++j)
       {
-        ThroughputMessagePtr msg(new ThroughputMessage);
-        msg->array.resize(size);
-        msg->publish_time = ros::WallTime::now().toSec();
         pubs[j].publish(msg);
 
         ++r.messages_sent;
@@ -378,9 +377,11 @@ LatencyTest::LatencyTest(uint32_t count_per_stream, uint32_t streams, uint32_t m
 
 void LatencyTest::receiveCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub)
 {
+  // Store off receipt time so we don't count the message copy time
+  ros::WallTime receipt_time = ros::WallTime::now();
   LatencyMessagePtr reply(new LatencyMessage);
   *reply = *msg;
-  reply->receipt_time = ros::WallTime::now().toSec();
+  reply->receipt_time = receipt_time.toSec();
   pub.publish(reply);
   //ROS_INFO("Receiver received message %d", msg->count);
 }

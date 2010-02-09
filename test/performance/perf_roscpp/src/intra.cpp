@@ -377,10 +377,8 @@ LatencyTest::LatencyTest(uint32_t count_per_stream, uint32_t streams, uint32_t m
 
 void LatencyTest::receiveCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub)
 {
-  // Store off receipt time so we don't count the message copy time
   ros::WallTime receipt_time = ros::WallTime::now();
-  LatencyMessagePtr reply(new LatencyMessage);
-  *reply = *msg;
+  LatencyMessagePtr reply = boost::const_pointer_cast<LatencyMessage>(msg);
   reply->receipt_time = receipt_time.toSec();
   pub.publish(reply);
   //ROS_INFO("Receiver received message %d", msg->count);
@@ -443,6 +441,15 @@ void LatencyTest::sendThread(boost::barrier* all_connected, uint32_t thread_inde
     }
   }
 
+  std::vector<LatencyMessagePtr> messages;
+  for (uint32_t i = 0; i < streams_; ++i)
+  {
+    LatencyMessagePtr msg(new LatencyMessage);
+    msg->thread_index = thread_index;
+    msg->array.resize(message_size_);
+    messages.push_back(msg);
+  }
+
   all_connected->wait();
 
   r.message_count = 0;
@@ -450,14 +457,10 @@ void LatencyTest::sendThread(boost::barrier* all_connected, uint32_t thread_inde
   const uint32_t count = count_per_stream_;
   const uint32_t streams = streams_;
   const uint32_t total_messages = count * streams;
-  const uint32_t size = message_size_;
   for (uint32_t j = 0; j < streams; ++j)
   {
-    LatencyMessagePtr msg(new LatencyMessage);
-    msg->thread_index = thread_index;
-    msg->array.resize(size);
-    msg->publish_time = ros::WallTime::now().toSec();
-    pubs[j].publish(msg);
+    messages[j]->publish_time = ros::WallTime::now().toSec();
+    pubs[j].publish(messages[j]);
   }
 
   while (r.latencies.size() < total_messages)

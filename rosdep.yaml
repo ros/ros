@@ -95,7 +95,7 @@ bzip2:
 boost:
   ubuntu:
     '9.10': libboost1.40-all-dev
-    '9.04': libboost1.37-dev libboost-math1.37-dev libboost-thread1.37-dev libboost-signals1.37-dev libboost-filesystem1.37-dev libboost-iostreams1.37-dev libboost-python1.37-dev libboost-program-options1.37-dev
+    '9.04': libboost-date-time1.37-dev libboost-filesystem1.37-dev libboost-graph1.37-dev libboost-iostreams1.37-dev libboost-math1.37-dev libboost-program-options1.37-dev libboost-python1.37-dev libboost-regex1.37-dev libboost-serialization1.37-dev libboost-signals1.37-dev libboost-system1.37-dev libboost-test1.37-dev libboost-thread1.37-dev libboost-wave1.37-dev libboost1.37-dev
     '8.10': |
       if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
         mkdir -p ~/ros/ros-deps

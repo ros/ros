@@ -187,7 +187,7 @@ Returns the response object from the service."
 
 	(let ((obj (if (= 1 (length request-args))
 		       (first request-args)
-		       (apply #'make-request service-type request-args))))
+		       (apply #'make-service-request service-type request-args))))
 
 	  (ros-debug (roslisp call-service) "Calling service at host ~a and port ~a with ~a" host port obj)
 	  (tcpros-call-service host port service-name obj response-type))))))

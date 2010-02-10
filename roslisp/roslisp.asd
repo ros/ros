@@ -30,6 +30,7 @@
 
   :depends-on (:s-xml :s-xml-rpc :sb-bsd-sockets
                :roslib-msg :roslisp-msg-protocol
+	       :ros-load-manifest
                :roslisp-utils :std_srvs-srv))
 
 ;;;; eof

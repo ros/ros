@@ -48,7 +48,11 @@
   (hash-table-has-key *debug-levels* (reverse l)))
 
 (defun debug-level (name)  
-  (or (gethash name *debug-levels*) (debug-level (cdr name))))
+  (or (gethash name *debug-levels*) 
+      (if name
+	  (debug-level (cdr name))
+	  (level-code :debug))))
+      
 
 (defun debug-topic-param (name)
   (concatenate-ros-names (cons "~debug" (nconc (mapcar #'string-downcase (designated-list name)) (list "level")))))
@@ -119,14 +123,3 @@ Each NAME (unevaluated) is a list, e.g. (roslisp tcp) denoting a debugger topic.
     (make-response)))
 
     
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Set some default debug levels
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;(set-debug-level nil (symbol-code 'roslib-msg:<Log> :info))
-;;(set-debug-level 'roslisp :warn)
-;;(set-debug-level '(roslisp top) :info)
-
-

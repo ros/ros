@@ -49,6 +49,7 @@
    :roslisp-queue
    :roslisp-utils
    :roslisp-msg-protocol
+   :ros-load-manifest
    :std_srvs-srv
    )
   (:export
@@ -56,6 +57,8 @@
    :make-message
    :make-msg
    :modify-message-copy
+   :setf-msg
+
    :node-status
    :make-response
    :make-request
@@ -63,6 +66,8 @@
    :symbol-codes
 
    :load-if-necessary
+   
+   :*current-ros-package*
 
    :start-ros-node
    :shutdown-ros-node

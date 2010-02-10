@@ -68,9 +68,6 @@
         (warn "Hmm... unexpected topic type specifier ~a in message-definition.  Passing it on anyway..." msg-type)
         (call-next-method))))
 
-(defun make-request (service-type &rest args)
-  (apply #'make-instance (service-request-type service-type) args))
-
 (defun make-response (service-type &rest args)
   (apply #'make-instance (service-response-type service-type) args))
 
@@ -188,13 +185,42 @@ you can use (with-fields ((foo (foo bar)) baz)
 	(assert class-name nil "Can't find class for ~a" msg-type)
 	(apply #'set-fields-fn (make-instance class-name) args)))))
 
+(defun make-service-request-fn (srv-type &rest args)
+  (destructuring-bind (pkg type) (tokens (string-upcase srv-type) :separators '(#\/))
+    (let ((pkg (find-package (intern (concatenate 'string pkg "-SRV") 'keyword))))
+      (assert pkg nil "Can't find package ~a" pkg)
+      (let ((class-name (find-symbol (concatenate 'string "<" type "-REQUEST>") pkg)))
+	(assert class-name nil "Can't find class ~a in package ~a" class-name pkg)
+	(apply #'set-fields-fn (make-instance class-name) args)))))
+
+(defmacro make-request (srv-type &rest args)
+  "make-request SRV-TYPE &rest ARGS
+
+Like make-message, but creates a service request object.  SRV-TYPE can be either a string of the form package_name/message_name, or a symbol naming the service (the name is the base name of the .srv file).  ARGS are as in make-message."
+  (etypecase srv-type
+    (string
+       `(make-service-request-fn ,srv-type
+				 ,@(loop
+				     for i from 0
+				     for arg in args
+				     collect (if (evenp i) `',arg arg))))
+    (symbol `(make-service-request ',srv-type ,@args))
+    (cons (assert (eql (car srv-type) 'quote)) `(make-service-request ,srv-type ,@args))))
+
+(defun make-service-request (service-type &rest args)
+  (apply #'make-instance (service-request-type service-type) args))
 
 (defmacro modify-message-copy (m &rest args)
   "modify-message-copy MSG &rest ARGS
 
 Return a new message that is a copy of MSG with some fields modified.  ARGS is a list of the form FIELD-SPEC1 VAL1 ... FIELD-SPEC_k VAL_k as in make-message."
   `(set-fields-fn ,m ,@(loop for i from 0 for arg in args collect (if (evenp i) `',arg arg))))
- 
+
+(defmacro setf-msg (place &rest args)
+  "Sets PLACE to be the result of calling modify-message-copy on PLACE and ARGS"
+  (let ((m (gensym)))
+    `(let ((,m ,place))
+       (setf ,place (modify-message-copy ,m ,@args)))))
 
 (defmacro make-message (msg-type &rest args)
   "make-message MSG-TYPE &rest ARGS

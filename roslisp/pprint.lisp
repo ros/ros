@@ -80,5 +80,9 @@
        (values)))))
 
 (defun print-debug-levels ()
-  (pprint-hash *debug-levels*))
+  (let ((h (make-hash-table)))
+    (loop 
+      for k being each hash-key in *debug-levels*
+      do (setf (gethash k h) (string-upcase (debug-level-string (gethash k *debug-levels*)))))
+    (pprint-hash h)))
       

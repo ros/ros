@@ -85,7 +85,7 @@ The roslisp Lisp package contains some additional generic operations that work o
 - list-to-ros-message L
 - pprint-ros-message STREAM MSG prints the message to the given stream in human-readable format.  This is also set as the default dispatch function for ROS messages in Lisp's pretty printer.  So if you have pretty printing turned on, and call a function from the prompt that returns a ROS message, that return value will be printed human-readably using pprint-ros-message.  Similarly, if your code contains something like (format t "The message is ~a" m), that will DTRT.
 
-There are a few additional operations that use the list representation of ros messages, and are therefore less efficient, but more readable and convenient for interactive use.  See with-fields, make-message, and modify-message-copy.
+There are a few additional operations that use the list representation of ros messages, and are therefore less efficient, but more readable and convenient for interactive use.  See with-fields, make-message, modify-message-copy, and setf-message-fields.
 
 \section services Service Data Types
 

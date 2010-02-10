@@ -51,12 +51,13 @@
       (if *last-clock*
 	  (roslib-msg:clock-val *last-clock*)
 	  (progn
-	    (ros-debug (roslisp time) "Returning time of 0.0 as use_sim_time was true and no clock messages received")
+	    (unless (mutex-owner *debug-stream-lock*)
+	      (ros-debug (roslisp time) "Returning time of 0.0 as use_sim_time was true and no clock messages received"))
 	    0.0))
       (unix-time)))
 
 (defun spin-until-ros-time-valid ()
-  (spin-until (> (ros-time) 0.0) 0.01
+  (spin-until (> (ros-time) 0.0) 0.05
     (every-nth-time 100
       (ros-warn (roslisp time) "Waiting for valid ros-time before proceeding"))))
 

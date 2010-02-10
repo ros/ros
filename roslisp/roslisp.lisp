@@ -58,6 +58,7 @@
    :make-msg
    :modify-message-copy
    :setf-msg
+   :ros-message
 
    :node-status
    :make-response

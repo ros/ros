@@ -114,11 +114,12 @@
       (intern (symbol-name s) 'keyword)))
 
 (defun extract-nested-field (l f)
-  "extract a field from a message that has been converted into a list.  F can also be a list.  E.g, if F is '(:foo :bar) that means extract field foo of field bar of the message."
-  (cond 
-    ((symbolp f) (get-field l f))
-    ((null (rest f)) (get-field l (first f)))
-    (t (get-field (extract-nested-field l (rest f)) (first f)))))
+  "extract a field from a message that has been converted into a list.  F can also be a list.  E.g, if F is '(:foo :bar) that means extract field foo of field bar of the message.  Calls list-to-ros-message before returning."
+  (list-to-ros-message
+   (cond 
+     ((symbolp f) (get-field l f))
+     ((null (rest f)) (get-field l (first f)))
+     (t (get-field (extract-nested-field l (rest f)) (first f))))))
 
 (defun get-field (l f)
   (let ((pair (assoc f (rest l))))

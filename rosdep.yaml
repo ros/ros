@@ -366,10 +366,10 @@ ncurses:
   gentoo: sys-libs/ncurses
 qt4:
   ubuntu: libqt4-core libqt4-dev qt4-dev-tools
-  debian: libqt4-core libqt4-dev qt4-dev-tools libqt4-opengl-dev
+  debian: libqt4-core libqt4-dev qt4-dev-tools 
   arch: qt
   macports: qt4-mac
-  gentoo: ">=x11-libs/qt-core-4 >=x11-libs/qt-opengl-4"
+  gentoo: ">=x11-libs/qt-core-4"
 curl:
   ubuntu: libcurl4-openssl-dev
   debian: libcurl4-openssl-dev

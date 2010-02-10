@@ -13,7 +13,7 @@ rosbuild_add_boost_directories()
 
 rosbuild_add_library(${PROJECT_NAME} src/rosconsole/rosconsole.cpp)
 target_link_libraries(${PROJECT_NAME} log4cxx)
-rosbuild_link_boost(${PROJECT_NAME} thread)
+rosbuild_link_boost(${PROJECT_NAME} thread regex)
 
 rosbuild_add_executable(example examples/example.cpp)
 target_link_libraries(example ${PROJECT_NAME})

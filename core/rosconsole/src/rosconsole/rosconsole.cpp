@@ -39,6 +39,7 @@
 
 #include <boost/thread.hpp>
 #include <boost/shared_array.hpp>
+#include <boost/regex.hpp>
 
 #include <cstdarg>
 #include <cstdlib>
@@ -69,6 +70,256 @@ log4cxx::LevelPtr g_level_lookup[ levels::Count ] =
 #define COLOR_GREEN "\033[32m"
 #define COLOR_YELLOW "\033[33m"
 
+const char* g_format_string = "[${severity}] [${time}]: ${message}";
+
+struct Token
+{
+  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event) = 0;
+};
+typedef boost::shared_ptr<Token> TokenPtr;
+typedef std::vector<TokenPtr> V_Token;
+
+struct FixedToken : public Token
+{
+  FixedToken(const std::string& str)
+  : str_(str)
+  {}
+
+  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  {
+    return str_.c_str();
+  }
+
+  std::string str_;
+};
+
+struct PlaceHolderToken : public Token
+{
+  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  {
+    return "PLACEHOLDER";
+  }
+};
+
+struct SeverityToken : public Token
+{
+  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  {
+    if (event->getLevel() == log4cxx::Level::getFatal())
+    {
+      return "FATAL";
+    }
+    else if (event->getLevel() == log4cxx::Level::getError())
+    {
+      return "ERROR";
+    }
+    else if (event->getLevel() == log4cxx::Level::getWarn())
+    {
+      return " WARN";
+    }
+    else if (event->getLevel() == log4cxx::Level::getInfo())
+    {
+      return " INFO";
+    }
+    else if (event->getLevel() == log4cxx::Level::getDebug())
+    {
+      return "DEBUG";
+    }
+
+    return "UNKNO";
+  }
+};
+
+struct MessageToken : public Token
+{
+  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  {
+    return event->getMessage().c_str();
+  }
+};
+
+struct TimeToken : public Token
+{
+  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  {
+    std::stringstream ss;
+    ss << ros::Time::now();
+    return ss.str().c_str();
+  }
+};
+
+struct ThreadToken : public Token
+{
+  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  {
+    std::stringstream ss;
+    ss << boost::this_thread::get_id();
+    return ss.str().c_str();
+  }
+};
+
+struct LoggerToken : public Token
+{
+  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  {
+    return event->getLoggerName().c_str();
+  }
+};
+
+struct FileToken : public Token
+{
+  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  {
+    return event->getLocationInformation().getFileName();
+  }
+};
+
+struct FunctionToken : public Token
+{
+  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  {
+    return event->getLocationInformation().getMethodName().c_str();
+  }
+};
+
+struct LineToken : public Token
+{
+  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  {
+    std::stringstream ss;
+    ss << event->getLocationInformation().getLineNumber();
+    return ss.str().c_str();
+  }
+};
+
+TokenPtr createTokenFromType(const std::string& type)
+{
+  if (type == "severity")
+  {
+    return TokenPtr(new SeverityToken());
+  }
+  else if (type == "message")
+  {
+    return TokenPtr(new MessageToken());
+  }
+  else if (type == "time")
+  {
+    return TokenPtr(new TimeToken());
+  }
+  else if (type == "thread")
+  {
+    return TokenPtr(new ThreadToken());
+  }
+  else if (type == "logger")
+  {
+    return TokenPtr(new LoggerToken());
+  }
+  else if (type == "file")
+  {
+    return TokenPtr(new FileToken());
+  }
+  else if (type == "line")
+  {
+    return TokenPtr(new LineToken());
+  }
+  else if (type == "function")
+  {
+    return TokenPtr(new FunctionToken());
+  }
+
+  return TokenPtr(new FixedToken("${" + type + "}"));
+}
+
+struct Formatter
+{
+  void init(const char* fmt)
+  {
+    format_ = fmt;
+
+    boost::regex e("\\$\\{([a-z|A-Z]+)\\}");
+    boost::match_results<std::string::const_iterator> results;
+    std::string::const_iterator start, end;
+    start = format_.begin();
+    end = format_.end();
+    bool matched_once = false;
+    std::string last_suffix;
+    while (boost::regex_search(start, end, results, e))
+    {
+#if 0
+      for (size_t i = 0; i < results.size(); ++i)
+      {
+        std::cout << i << "|" << results.prefix() << "|" <<  results[i] << "|" << results.suffix() << std::endl;
+      }
+#endif
+
+      std::string token = results[1];
+      last_suffix = results.suffix();
+      tokens_.push_back(TokenPtr(new FixedToken(results.prefix())));
+      tokens_.push_back(createTokenFromType(token));
+
+      start = results[0].second;
+      matched_once = true;
+    }
+
+    if (matched_once)
+    {
+      tokens_.push_back(TokenPtr(new FixedToken(last_suffix)));
+    }
+    else
+    {
+      tokens_.push_back(TokenPtr(new FixedToken(format_)));
+    }
+  }
+
+  void print(const log4cxx::spi::LoggingEventPtr& event)
+  {
+    const char* color = NULL;
+    FILE* f = stdout;
+
+    if (event->getLevel() == log4cxx::Level::getFatal())
+    {
+      color = COLOR_RED;
+      f = stderr;
+    }
+    else if (event->getLevel() == log4cxx::Level::getError())
+    {
+      color = COLOR_RED;
+      f = stderr;
+    }
+    else if (event->getLevel() == log4cxx::Level::getWarn())
+    {
+      color = COLOR_YELLOW;
+    }
+    else if (event->getLevel() == log4cxx::Level::getInfo())
+    {
+      color = COLOR_NORMAL;
+    }
+    else if (event->getLevel() == log4cxx::Level::getDebug())
+    {
+      color = COLOR_GREEN;
+    }
+
+    ROS_ASSERT(color != NULL);
+
+    std::stringstream ss;
+    ss << color;
+    V_Token::iterator it = tokens_.begin();
+    V_Token::iterator end = tokens_.end();
+    for (; it != end; ++it)
+    {
+      ss << (*it)->getString(event);
+    }
+    ss << COLOR_NORMAL;
+
+    fprintf(f, "%s\n", ss.str().c_str());
+  }
+
+  std::string format_;
+  V_Token tokens_;
+
+};
+Formatter g_formatter;
+
 class ROSConsoleStdioAppender : public log4cxx::AppenderSkeleton
 {
 public:
@@ -79,44 +330,7 @@ public:
 protected:
   virtual void append(const log4cxx::spi::LoggingEventPtr& event, log4cxx::helpers::Pool& pool)
   {
-    const char* color = NULL;
-    const char* prefix = NULL;
-    FILE* f = stdout;
-
-    if (event->getLevel() == log4cxx::Level::getFatal())
-    {
-      color = COLOR_RED;
-      prefix = "FATAL";
-      f = stderr;
-    }
-    else if (event->getLevel() == log4cxx::Level::getError())
-    {
-      color = COLOR_RED;
-      prefix = "ERROR";
-      f = stderr;
-    }
-    else if (event->getLevel() == log4cxx::Level::getWarn())
-    {
-      color = COLOR_YELLOW;
-      prefix = "WARN";
-    }
-    else if (event->getLevel() == log4cxx::Level::getInfo())
-    {
-      color = COLOR_NORMAL;
-      prefix = "INFO";
-    }
-    else if (event->getLevel() == log4cxx::Level::getDebug())
-    {
-      color = COLOR_GREEN;
-      prefix = "DEBUG";
-    }
-
-    ROS_ASSERT(color != NULL);
-    ROS_ASSERT(prefix != NULL);
-
-    std::stringstream ss;
-    ss << ros::Time::now();
-    fprintf(f, "%s[%5s] %s: %s%s\n", color, prefix, ss.str().c_str(), event->getMessage().c_str(), COLOR_NORMAL);
+    g_formatter.print(event);
   }
 
   virtual void close()
@@ -158,6 +372,15 @@ void do_initialize()
       log4cxx::PropertyConfigurator::configure(config_file);
     }
   }
+
+  // Check for the format string environment variable
+  const char* format_string = getenv("ROSCONSOLE_FORMAT");
+  if (format_string)
+  {
+    g_format_string = format_string;
+  }
+
+  g_formatter.init(g_format_string);
 
   log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger(ROSCONSOLE_ROOT_LOGGER_NAME);
   logger->addAppender(new ROSConsoleStdioAppender);

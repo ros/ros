@@ -122,11 +122,12 @@ class RosMakeAll:
         """
         try:
             r = rosdep.core.Rosdep(packages, robust=True)
-            r.install(include_duplicates=False, default_yes=default_yes);
+            if not r.install(include_duplicates=False, default_yes=default_yes):
+                return "Rosdep install failed"
             return None
         except rosdep.core.RosdepException, e:
             return "rosdep install FAILED: %s"%e
-        except roslib.exceptions.ROSLibExceptoin, ex:
+        except roslib.exceptions.ROSLibException, ex:
             return "%s"%ex
 
     def build_or_recurse(self,p):

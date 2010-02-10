@@ -133,6 +133,8 @@ void registerLogLocation(LogLocation* loc);
  */
 void notifyLoggerLevelsChanged();
 
+void setFixedFilterToken(const std::string& key, const std::string& val);
+
 /**
  * \brief Parameter structure passed to FilterBase::isEnabled(...);.  Includes both input and output parameters
  */

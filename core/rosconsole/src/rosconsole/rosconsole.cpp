@@ -79,6 +79,14 @@ struct Token
 typedef boost::shared_ptr<Token> TokenPtr;
 typedef std::vector<TokenPtr> V_Token;
 
+typedef std::map<std::string, std::string> M_string;
+M_string g_extra_fixed_tokens;
+
+void setFixedFilterToken(const std::string& key, const std::string& val)
+{
+  g_extra_fixed_tokens[key] = val;
+}
+
 struct FixedToken : public Token
 {
   FixedToken(const std::string& str)
@@ -88,6 +96,26 @@ struct FixedToken : public Token
   virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
   {
     return str_.c_str();
+  }
+
+  std::string str_;
+};
+
+struct FixedMapToken : public Token
+{
+  FixedMapToken(const std::string& str)
+  : str_(str)
+  {}
+
+  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  {
+    M_string::iterator it = g_extra_fixed_tokens.find(str_);
+    if (it == g_extra_fixed_tokens.end())
+    {
+      return ("${" + str_ + "}").c_str();
+    }
+
+    return it->second.c_str();
   }
 
   std::string str_;
@@ -227,7 +255,7 @@ TokenPtr createTokenFromType(const std::string& type)
     return TokenPtr(new FunctionToken());
   }
 
-  return TokenPtr(new FixedToken("${" + type + "}"));
+  return TokenPtr(new FixedMapToken(type));
 }
 
 struct Formatter

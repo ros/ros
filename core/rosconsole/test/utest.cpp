@@ -829,7 +829,7 @@ struct ChangeFilter : public ros::console::FilterBase
   inline virtual bool isEnabled(ros::console::FilterParams& params)
   {
     params.out_message = "haha";
-    params.out_level = ros::console::levels::Error;
+    params.level = ros::console::levels::Error;
     return true;
   }
 };

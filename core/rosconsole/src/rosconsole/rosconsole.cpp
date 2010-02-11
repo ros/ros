@@ -471,13 +471,9 @@ void print(FilterBase* filter, log4cxx::Logger* logger, Level level, const char*
     params.level = level;
     params.logger = logger_ptr;
     params.message = g_print_buffer.get();
-    params.out_level = level;
     enabled = filter->isEnabled(params);
-    level = params.out_level;
-    if (params.out_logger != 0)
-    {
-      logger_ptr = params.out_logger;
-    }
+    logger_ptr = params.logger;
+    level = params.level;
 
     if (!params.out_message.empty())
     {
@@ -532,13 +528,9 @@ void print(FilterBase* filter, log4cxx::Logger* logger, Level level, const std::
     params.level = level;
     params.logger = logger_ptr;
     params.message = g_print_buffer.get();
-    params.out_level = level;
     enabled = filter->isEnabled(params);
-    level = params.out_level;
-    if (params.out_logger != 0)
-    {
-      logger_ptr = params.out_logger;
-    }
+    logger_ptr = params.logger;
+    level = params.level;
 
     if (!params.out_message.empty())
     {

@@ -141,17 +141,17 @@ void setFixedFilterToken(const std::string& key, const std::string& val);
 struct FilterParams
 {
   // input parameters
-  log4cxx::LoggerPtr logger;                ///< [input] Logger that this message will be output to
-  Level level;                              ///< [input] Severity level
   const char* file;                         ///< [input] File the message came from
   int line;                                 ///< [input] Line the message came from
   const char* function;                     ///< [input] Function the message came from
   const char* message;                      ///< [input] The formatted message that will be output
 
+  // input/output parameters
+  log4cxx::LoggerPtr logger;                ///< [input/output] Logger that this message will be output to.  If changed, uses the new logger
+  Level level;                              ///< [input/output] Severity level.  If changed, uses the new level
+
   // output parameters
-  log4cxx::LoggerPtr out_logger;            ///< [output] If set, uses this logger instead of the original
   std::string out_message;                  ///< [output] If set, writes this message instead of the original
-  Level out_level;                          ///< [output] If set, uses this severity level instead of the original
 };
 
 /**

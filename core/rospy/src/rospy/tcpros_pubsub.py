@@ -34,9 +34,7 @@
 
 """Internal use: Topic-specific extensions for TCPROS support"""
 
-import logging
 import socket
-import thread
 import threading
 
 from rospy.core import logwarn, logerr, logdebug

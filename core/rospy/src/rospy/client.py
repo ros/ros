@@ -202,7 +202,8 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     # check for name override
     mappings = rospy.names.get_mappings()
     if '__name' in mappings:
-        name = rospy.names.resolve_name(mappings['__name'], remap=False)
+        # use roslib version of resolve_name to avoid remapping
+        name = roslib.names.resolve_name(mappings['__name'], rospy.core.get_caller_id())
         if anonymous:
             logdebug("[%s] WARNING: due to __name setting, anonymous setting is being changed to false"%name)
             anonymous = False
@@ -372,7 +373,7 @@ def wait_for_service(service, timeout=None):
                 s.settimeout(timeout)
                 s.connect(addr)
                 h = { 'probe' : '1', 'md5sum' : '*',
-                      'callerid' : rospy.names.get_caller_id(),
+                      'callerid' : rospy.core.get_caller_id(),
                       'service': resolved_name }
                 roslib.network.write_ros_handshake_header(s, h)
                 return True

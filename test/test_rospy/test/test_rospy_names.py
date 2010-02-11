@@ -174,9 +174,8 @@ class TestRospyNames(unittest.TestCase):
             ('~foo/bar', '/ns1/ns2', '/ns1/ns2/foo/bar'),
 
             ]
-        remap = False
         for name, node_name, v in tests:
-            self.assertEquals(v, resolve_name(name, node_name, remap))
+            self.assertEquals(v, resolve_name(name, node_name))
 
     def test_validators(self):
         from rospy.names import empty_or_valid_name, ParameterInvalid

@@ -66,6 +66,7 @@ create classes that are children of these implementations.
 from __future__ import with_statement
 import struct, cStringIO, thread, threading, logging, time
 from itertools import chain
+import traceback
 
 import roslib.message
 

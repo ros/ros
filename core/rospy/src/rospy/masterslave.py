@@ -55,12 +55,10 @@ Individual methods may assign additional meaning/semantics to statusCode.
 
 import os
 import sys
-import string
 import logging
-import random
 import socket
-import thread
 import threading
+import traceback
 import time
 import urlparse
 

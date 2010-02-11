@@ -38,11 +38,9 @@ import atexit
 import logging
 import os
 import signal
-import string
 import sys
 import threading
 import time
-import traceback
 import types
 import urlparse
 import xmlrpclib
@@ -117,7 +115,7 @@ def parse_rosrpc_uri(uri):
         if '/' in dest_addr:
             dest_addr = dest_addr[:dest_addr.find('/')]
         dest_addr, dest_port = dest_addr.split(':')
-        dest_port = string.atoi(dest_port)
+        dest_port = int(dest_port)
     except:
         raise ParameterInvalid("ROS service URL is invalid: %s"%uri)
     return dest_addr, dest_port
@@ -426,7 +424,7 @@ def add_shutdown_hook(h):
 
 def signal_shutdown(reason):
     """
-    Initiates shutdown process by singaling objects waiting on _shutdown_lock.
+    Initiates shutdown process by signaling objects waiting on _shutdown_lock.
     Shutdown and pre-shutdown hooks are invoked.
     @param reason: human-readable shutdown reason, if applicable
     @type  reason: str
@@ -441,6 +439,7 @@ def signal_shutdown(reason):
             try:
                 h(reason)
             except:
+                import traceback
                 traceback.print_exc()
         del _preshutdown_hooks[:]
 

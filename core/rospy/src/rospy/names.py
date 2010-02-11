@@ -45,6 +45,7 @@ from itertools import ifilter
 from roslib.names import namespace, get_ros_namespace, ns_join, make_global_ns, load_mappings, \
      SEP, GLOBALNS, TYPE_SEPARATOR, REMAP, ANYTYPE, \
      is_global, is_private
+import roslib.names
 
 from rospy.exceptions import ROSException
 from rospy.validators import ParameterInvalid
@@ -88,12 +89,12 @@ def initialize_mappings(node_name):
     global _resolved_mappings
     _resolved_mappings = {}
     for m,v in _mappings.iteritems():
-        # resolve both parts of the mappings, but make sure not to double-remap
+        # resolve both parts of the mappings. use the roslib.names
+        # version of resolve_name to avoid circular mapping.
         if m.startswith('__'): # __name, __log, etc...
             _resolved_mappings[m] = v
         else:
-            _resolved_mappings[resolve_name(m, caller_id=node_name, remap=False)] = resolve_name(v, caller_id=node_name, remap=False)
-        
+            _resolved_mappings[roslib.names.resolve_name(m, node_name)] = roslib.names.resolve_name(v, node_name)
 
 def resolve_name_without_node_name(name):
     """
@@ -107,17 +108,17 @@ def resolve_name_without_node_name(name):
     if is_private(name):
         raise ValueError("~name topics cannot be created before init_node() has been called")
 
+    # we use the underlying roslib.names.resolve_name to avoid dependencies on nodename/remappings
     fake_caller_id = ns_join(get_namespace(), 'node')
-    fake_resolved = resolve_name(name, caller_id=fake_caller_id, remap=False)
+    fake_resolved = roslib.names.resolve_name(name, fake_caller_id)
 
     for m, v in _mappings.iteritems():
-        if resolve_name(m, caller_id=fake_caller_id, remap=False) == fake_resolved:
+        if roslib.names.resolve_name(m, fake_caller_id) == fake_resolved:
             if is_private(name):
                 raise ROSInitException("due to the way this node is written, %s cannot be remapped to a ~name. \nThe declaration of topics/services must be moved after the call to init_node()"%name)
             else:
-                return resolve_name(v, caller_id=fake_caller_id, remap=False)
+                return roslib.names.resolve_name(v, fake_caller_id)
     return fake_resolved
-    
 
 def get_mappings():
     """
@@ -137,7 +138,8 @@ def get_resolved_mappings():
     """
     return _resolved_mappings
 
-def resolve_name(name, caller_id=None, remap=True):
+#TODO: port to a wrapped call to roslib.names.resolve_name
+def resolve_name(name, caller_id=None):
     """
     Resolve a ROS name to its global, canonical form. Private ~names
     are resolved relative to the node name. 
@@ -170,7 +172,7 @@ def resolve_name(name, caller_id=None, remap=True):
     #Mappings override general namespace-based resolution
     # - do this before canonicalization as remappings are meant to
     #   match the name as specified in the code
-    if remap and resolved_name in _resolved_mappings:
+    if resolved_name in _resolved_mappings:
         return _resolved_mappings[resolved_name]
     else:
         return resolved_name
@@ -193,7 +195,7 @@ def remap_name(name, caller_id=None, resolved=True):
     if not caller_id:
         caller_id = get_caller_id()
     if name in _mappings:
-        return resolve_name(_mappings[name], caller_id, remap=False)
+        return roslib.names.resolve_name(_mappings[name], caller_id)
     return name
 
 def scoped_name(caller_id, name):
@@ -273,7 +275,7 @@ def valid_name(param_name, resolve=True):
     return validator
 
 def global_name(param_name):
-    """"
+    """
     Validator that checks for valid, global graph resource name.
     @return: parameter value
     @rtype: str

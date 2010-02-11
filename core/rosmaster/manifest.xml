@@ -1,0 +1,14 @@
+<package>
+  <description brief="rosmaster">
+
+     ROS Master implementation.
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <url>http://ros.org/wiki/rosmaster</url>
+
+</package>
+
+

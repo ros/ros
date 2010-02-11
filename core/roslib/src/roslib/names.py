@@ -332,3 +332,35 @@ def is_legal_resource_base_name(name):
     m = BASE_NAME_LEGAL_CHARS_P.match(name)
     return m is not None and m.group(0) == name
 
+def resolve_name(name, namespace, remappings=None):
+    """
+    Resolve a ROS name to its global, canonical form. Private ~names
+    are resolved relative to the node name. 
+
+    @param name: name to resolve.
+    @type  name: str
+    @param namespace: node name to resolve relative to.
+    @type  namespace: str
+    @param remappings: Map of resolved remappings. Use None to indicate no remapping.
+    @return: Resolved name. If name is empty/None, resolve_name
+    returns parent namespace. If namespace is empty/None,
+    @rtype: str
+    """
+    if not name: #empty string resolves to parent of the namespace
+        return namespace(namespace)
+
+    name = canonicalize_name(name)
+    if name[0] == SEP: #global name
+        resolved_name = name
+    elif is_private(name): #~name
+        resolved_name = ns_join(namespace, name[1:])
+    else: #relative
+        resolved_name = namespace(namespace) + name
+
+    #Mappings override general namespace-based resolution
+    # - do this before canonicalization as remappings are meant to
+    #   match the name as specified in the code
+    if remap and resolved_name in remappings:
+        return remappings[resolved_name]
+    else:
+        return resolved_name

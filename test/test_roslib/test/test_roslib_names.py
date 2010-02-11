@@ -288,6 +288,46 @@ class NamesTest(unittest.TestCase):
     for t in tests:
       self.assert_(is_legal_resource_base_name(t), "[%s]"%t)
       
+    def test_resolve_name(self):
+        from roslib.names import resolve_name
+        # TODO: test with remappings
+        tests = [
+            ('', '/', '/'),
+            ('', None, '/'), #node_name defaults to /
+            ('', '/node', '/'),
+            ('', '/ns1/node', '/ns1/'),
+
+            ('foo', '', '/foo'),
+            ('foo', None, '/foo'),
+            ('foo/', '', '/foo'),
+            ('/foo', '', '/foo'),
+            ('/foo/', '', '/foo'),
+            ('/foo', '/', '/foo'),
+            ('/foo', None, '/foo'),
+            ('/foo/', '/', '/foo'),
+            ('/foo', '/bar', '/foo'),
+            ('/foo/', '/bar', '/foo'),
+
+            ('foo', '/ns1/ns2', '/ns1/foo'),
+            ('foo', '/ns1/ns2/', '/ns1/foo'),
+            ('foo', '/ns1/ns2/ns3/', '/ns1/ns2/foo'),
+            ('foo/', '/ns1/ns2', '/ns1/foo'),
+            ('/foo', '/ns1/ns2', '/foo'),
+            ('foo/bar', '/ns1/ns2', '/ns1/foo/bar'),
+            ('foo//bar', '/ns1/ns2', '/ns1/foo/bar'),
+            ('foo/bar', '/ns1/ns2/ns3', '/ns1/ns2/foo/bar'),
+            ('foo//bar//', '/ns1/ns2/ns3', '/ns1/ns2/foo/bar'),
+            
+            ('~foo', '/', '/foo'),            
+            ('~foo', '/node', '/node/foo'),            
+            ('~foo', '/ns1/ns2', '/ns1/ns2/foo'),            
+            ('~foo/', '/ns1/ns2', '/ns1/ns2/foo'),            
+            ('~foo/bar', '/ns1/ns2', '/ns1/ns2/foo/bar'),
+
+            ]
+        for name, node_name, v in tests:
+            self.assertEquals(v, resolve_name(name, node_name))
+
 if __name__ == '__main__':
   rostest.unitrun('test_roslib', 'test_names', NamesTest, coverage_packages=['roslib.names'])
 

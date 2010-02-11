@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+sd#!/usr/bin/env python
 # Copyright (c) 2009, Willow Garage, Inc.
 # All rights reserved.
 # 
@@ -193,7 +193,11 @@ class RosdepLookupPackage:
                         print "Stack [%s] dependency of [%s] could not be found"%(s, stack)
                         
             else:
-                paths.add( os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
+                try:
+                    paths.add( os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
+                except roslib.packages.InvalidROSPkgException, ex:
+                    print >> sys.stderr, "Failed to load rosdep.yaml for package [%s]:%s"%(p, ex)
+                    pass
         for path in paths:
             self.insert_map(self.parse_yaml(path), path)
         #print "built map", self.rosdep_map

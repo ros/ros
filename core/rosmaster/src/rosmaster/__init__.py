@@ -1,6 +1,6 @@
 # Software License Agreement (BSD License)
 #
-# Copyright (c) 2008, Willow Garage, Inc.
+# Copyright (c) 2010, Willow Garage, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,50 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: init.py 6487 2009-10-12 19:14:45Z kwc $
+# Revision $Id: zenmaster.py 6875 2009-11-12 21:10:24Z kwc $
 
-"""
-ROS Master. 
-
-This module integrates the lower-level implementation modules into a
-single interface for running and stopping the ROS Master.
-"""
-
-import logging
-import time
-
-import roslib.xmlrpc
-
-import rosmaster.master_api
-
-DEFAULT_MASTER_PORT=11311 #default port for master's to bind to
-
-class Master(object):
-    
-    def __init__(self, port=DEFAULT_MASTER_PORT):
-        self.port = port
-        
-    def start(self):
-        """
-        Start the ROS Master.
-        """
-        
-        handler = rosmaster.master_api.ROSMasterHandler()
-        master_node = roslib.xmlrpc.XmlRpcNode(self.port, handler)
-        master_node.start()
-
-        # poll for initialization
-        while not master_node.uri:
-            time.sleep(0.0001) 
-
-        # save fields
-        self.handler = handler
-        self.master_node = master_node
-        self.uri = master_node.uri
-        
-        logging.getLogger('rosmaster.master').info("Master initialized: port[%s], uri[%s]", self.port, self.uri)
-
-    def stop(self):
-        if self.master_node is not None:
-            self.master_node.shutdown('Master.stop')
-            self.master_node = None
+from rosmaster.main import rosmaster_main

@@ -30,7 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Copyright (c) 2008, Willow Garage, Inc.
 # Revision $Id: zenmaster.py 6875 2009-11-12 21:10:24Z kwc $
 
 """Command-line handler for ROS zenmaster (Python Master)"""
@@ -49,13 +48,15 @@ def configure_logging():
     """
     filename = 'master.log'
     # #988 __log command-line remapping argument
-    mappings = get_mappings()
+    import roslib.names
+    import roslib.roslogging
+    mappings = roslib.names.load_mappings(sys.argv)
     if '__log' in mappings:
         logfilename_remap = mappings['__log']
         filename = os.path.abspath(logfilename_remap)
     _log_filename = roslib.roslogging.configure_logging('rosmaster', logging.DEBUG, filename=filename, additional=['roslib', 'xmlrpc'])
 
-def zenmaster_main(argv=sys.argv, stdout=sys.stdout, env=os.environ):
+def rosmaster_main(argv=sys.argv, stdout=sys.stdout, env=os.environ):
     parser = optparse.OptionParser(usage="usage: zenmaster [options]")
     parser.add_option("--core",
                       dest="core", action="store_true", default=False,
@@ -71,7 +72,7 @@ def zenmaster_main(argv=sys.argv, stdout=sys.stdout, env=os.environ):
             parser.error("unrecognized arg: %s"%arg)
     configure_logging()   
     
-    port = rospy.init.DEFAULT_MASTER_PORT
+    port = rosmaster.master.DEFAULT_MASTER_PORT
     if options.port:
         port = int(options.port)
 
@@ -99,6 +100,9 @@ WARNING ACHTUNG WARNING ACHTUNG WARNING
         master = rosmaster.master.Master(port)
         master.start()
 
+        import time
+        while True:
+            time.sleep(10.)
     except KeyboardInterrupt:
         logger.info("keyboard interrupt, will exit")
     finally:

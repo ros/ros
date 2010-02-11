@@ -32,23 +32,24 @@
 #
 # Revision $Id: masterdata.py 6487 2009-10-12 19:14:45Z kwc $
 
-from rospy.core import xmlrpcapi, mloginfo
-from rospy.names import get_caller_id
-import rospy.exceptions
+from rosmaster.util import xmlrpcapi
+import rosmaster.exceptions
 
-"""Internal-use: data structures for the Master"""
+"""Data structures for representing registration data in the Master"""
 
-## Container for node registration information. Used in master's
-## self.nodes data structure.  This is effectively a reference
-## counter for the node registration information: when the
-## subscriptions and publications are empty the node registration can
-## be deleted.
 class NodeRef(object):
-
-    ## ctor
-    ## @param self
-    ## @param api str: node XML-RPC API
+    """
+    Container for node registration information. Used in master's
+    self.nodes data structure.  This is effectively a reference
+    counter for the node registration information: when the
+    subscriptions and publications are empty the node registration can
+    be deleted.
+    """
     def __init__(self, id, api):
+        """
+        ctor
+        @param api str: node XML-RPC API
+        """
         self.id = id
         self.api = api
         self.param_subscriptions = []
@@ -56,16 +57,19 @@ class NodeRef(object):
         self.topic_publications  = []
         self.services  = []        
         
-    ## Delete all state from this NodeRef except for the api location
     def clear(self):
+        """
+        Delete all state from this NodeRef except for the api location
+        """
         self.param_subscriptions = []
         self.topic_subscriptions = []
         self.topic_publications  = []
         self.services  = []        
 
-    ## @param self
-    ## @return True if node has no active registrations
     def is_empty(self):
+        """
+        @return: True if node has no active registrations
+        """
         return sum((len(x) for x in
                     [self.param_subscriptions, 
                      self.topic_subscriptions,
@@ -86,7 +90,7 @@ class NodeRef(object):
             if not key in self.param_subscriptions:
                 self.param_subscriptions.append(key)
         else:
-            raise rospy.exceptions.ROSInternalException("internal bug")
+            raise rosmaster.exceptions.InternalException("internal bug")
 
     def remove(self, type_, key):
         if type_ == Registrations.TOPIC_SUBSCRIPTIONS:
@@ -102,21 +106,25 @@ class NodeRef(object):
             if key in self.param_subscriptions:
                 self.param_subscriptions.remove(key)
         else:
-            raise rospy.exceptions.ROSInternalException("internal bug")
+            raise rosmaster.exceptions.InternalException("internal bug")
 
 # NOTE: I'm not terribly happy that this task has leaked into the data model. need
 # to refactor to get this back into masterslave.
 
-## Method to shutdown another ROS node. Generally invoked within a
-## separate thread as this is used to cleanup hung nodes.
-## @param api str: XML-RPC API of node to shutdown
-## @param caller_id str: name of node being shutdown
-## @param reason str: human-readable reason why node is being shutdown
 def shutdown_node_task(api, caller_id, reason):
-    import logging
+    """
+    Method to shutdown another ROS node. Generally invoked within a
+    separate thread as this is used to cleanup hung nodes.
+    
+    @param api: XML-RPC API of node to shutdown
+    @type  api: str
+    @param caller_id: name of node being shutdown
+    @type  caller_id: str
+    @param reason: human-readable reason why node is being shutdown
+    @type  reason: str
+    """
     try:
-        mloginfo("SHUTDOWN [%s %s]: %s"%(caller_id, api, reason))
-        xmlrpcapi(api).shutdown(get_caller_id(), reason)
+        xmlrpcapi(api).shutdown('/master', reason)
     except:
         pass #expected in many common cases
     
@@ -142,14 +150,16 @@ class Registrations(object):
             Registrations.TOPIC_PUBLICATIONS,
             Registrations.SERVICE,
             Registrations.PARAM_SUBSCRIPTIONS ]:
-            raise rospy.exceptions.ROSInternalException("invalid registration type: %s"%type_)
+            raise rosmaster.exceptions.InternalException("invalid registration type: %s"%type_)
         self.type = type_
         ## { key: [(caller_id, caller_api)] }
         self.map = {} 
         self.service_api_map = None
 
-    ## @return True if there are no registrations
     def __nonzero__(self):
+        """
+        @return: True if there are no registrations
+        """
         return len(self.map) != 0
 
     ## Iterate over registration keys
@@ -228,7 +238,7 @@ class Registrations(object):
                self.service_api_map = {}
             self.service_api_map[key] = (caller_id, service_api)
         elif self.type == Registrations.SERVICE:
-            raise rospy.exceptions.ROSInternalException("service_api must be specified for Registrations.SERVICE")            
+            raise rosmaster.exceptions.InternalException("service_api must be specified for Registrations.SERVICE")            
                    
     ## Remove all registrations associated with \a caller_id
     ## @param caller_id str: caller_id of provider
@@ -278,7 +288,7 @@ class Registrations(object):
             # caller_api is None for unregister service, so we can't validate as well
             return 1, "Unregistered [%s] as provider of [%s]"%(caller_id, key), 1
         elif self.type == Registrations.SERVICE:
-            raise rospy.exceptions.ROSInternalException("service_api must be specified for Registrations.SERVICE")
+            raise rosmaster.exceptions.InternalException("service_api must be specified for Registrations.SERVICE")
         else:
             providers = self.map.get(key, [])
             if (caller_id, caller_api) in providers:
@@ -343,21 +353,29 @@ class RegistrationManager(object):
             retval = 1, "[%s] is not a registered node"%caller_id, 0
         return retval
     
-    ## Register service provider
-    ## @return None
     def register_service(self, service, caller_id, caller_api, service_api):
+        """
+        Register service provider
+        @return: None
+        """
         self._register(self.services, service, caller_id, caller_api, service_api)
-    ## Register topic publisher
-    ## @return None
     def register_publisher(self, topic, caller_id, caller_api):
+        """
+        Register topic publisher
+        @return: None
+        """
         self._register(self.publishers, topic, caller_id, caller_api)
-    ## Register topic subscriber
-    ## @return None
     def register_subscriber(self, topic, caller_id, caller_api):
+        """
+        Register topic subscriber
+        @return: None
+        """
         self._register(self.subscribers, topic, caller_id, caller_api)
-    ## Register param subscriber
-    ## @return None
     def register_param_subscriber(self, param, caller_id, caller_api):
+        """
+        Register param subscriber
+        @return: None
+        """
         self._register(self.param_subscribers, param, caller_id, caller_api)
 
     def unregister_service(self, service, caller_id, service_api):
@@ -371,14 +389,16 @@ class RegistrationManager(object):
     def unregister_param_subscriber(self, param, caller_id, caller_api):
         return self._unregister(self.param_subscribers, param, caller_id, caller_api)
         
-    ## @param self
-    ## @param caller_id str: caller_id of provider
-    ## @param caller_api str: caller_api of provider
-    ## @return (NodeRef, bool) (registration_information,
-    ## changed_registration). changed_registration is true if \a
-    ## caller_api is differet than the one registered with \a
-    ## caller_id
     def _register_node_api(self, caller_id, caller_api):
+        """
+        @param caller_id: caller_id of provider
+        @type  caller_id: str
+        @param caller_api: caller_api of provider
+        @type  caller_api: str
+        @return: (registration_information, changed_registration). changed_registration is true if 
+        caller_api is differet than the one registered with caller_id
+        @rtype: (NodeRef, bool)
+        """
         node_ref = self.nodes.get(caller_id, None)
 
         bumped_api = None

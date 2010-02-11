@@ -53,32 +53,27 @@ Individual methods may assign additional meaning/semantics to statusCode.
 
 import os
 import sys
-import string
 import logging
-import random
-import socket
-import thread
 import threading
 import time
-import urlparse
+import traceback
 
 from roslib.xmlrpc import XmlRpcHandler
 
 import roslib.names
+from roslib.names import resolve_name
 import rosmaster.paramserver
 import rosmaster.threadpool
 
 from rosmaster.util import xmlrpcapi
 from rosmaster.registrations import RegistrationManager
-from rosmaster.validators import non_empty, non_empty_str, not_none, ParameterInvalid
+from rosmaster.validators import non_empty, non_empty_str, not_none, is_api, is_topic, is_service, valid_type_name, valid_name, empty_or_valid_name, ParameterInvalid
 
 NUM_WORKERS = 3 #number of threads we use to send publisher_update notifications
-
 
 _logger = logging.getLogger("rosmaster.master")
 
 LOG_API = True
-
 
 def mloginfo(msg, *args):
     """
@@ -245,11 +240,11 @@ class ROSMasterHandler(object):
         
     def _ready(self, uri):
         """
+        Initialize the handler with the XMLRPC URI. This is a standard callback from the roslib.xmlrpc.XmlRpcNode API.
+
         @param uri: XML-RPC URI
         @type  uri: str
-        callback from ROSNode to inform handler of correct i/o information
         """
-        _logger.info("_ready: %s", uri)
         self.uri = uri
 
     ###############################################################################

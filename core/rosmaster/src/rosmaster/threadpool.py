@@ -219,7 +219,7 @@ class ThreadPoolThread(threading.Thread):
                     if callback is not None:
                         callback(result)
                 except Exception, e:
-                    logging.getLogger('rospy.threadpool').error(traceback.format_exc())
+                    logging.getLogger('rosmaster.threadpool').error(traceback.format_exc())
     
     ## Exit the run loop next time through.
     def go_away(self):

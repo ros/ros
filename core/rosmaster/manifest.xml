@@ -9,6 +9,10 @@
   <review status="experimental" notes=""/>
   <url>http://ros.org/wiki/rosmaster</url>
 
+  <export>
+    <rosdoc config="rosdoc.yaml"/>    
+  </export>
+  
 </package>
 
 

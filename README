@@ -44,4 +44,3 @@ Installation Notes
     'rosmake rospy'
     and
     'rosmake std_msgs'
-

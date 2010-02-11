@@ -332,35 +332,52 @@ def is_legal_resource_base_name(name):
     m = BASE_NAME_LEGAL_CHARS_P.match(name)
     return m is not None and m.group(0) == name
 
-def resolve_name(name, namespace, remappings=None):
+def canonicalize_name(name):
+    """
+    Put name in canonical form. Double slashes '//' are removed and
+    name is returned without any trailing slash, e.g. /foo/bar
+    @param name: ROS name
+    @type  name: str
+    """
+    if not name or name == SEP:
+        return name
+    elif name[0] == SEP:
+        return '/' + '/'.join([x for x in name.split(SEP) if x])
+    else:
+        return '/'.join([x for x in name.split(SEP) if x])        
+    ##if len(name) > 1 and name[-1] == SEP:
+    ##    return name[:-1]
+    ##return name
+
+def resolve_name(name, namespace_, remappings=None):
     """
     Resolve a ROS name to its global, canonical form. Private ~names
     are resolved relative to the node name. 
 
     @param name: name to resolve.
     @type  name: str
-    @param namespace: node name to resolve relative to.
-    @type  namespace: str
+    @param namespace_: node name to resolve relative to.
+    @type  namespace_: str
     @param remappings: Map of resolved remappings. Use None to indicate no remapping.
     @return: Resolved name. If name is empty/None, resolve_name
-    returns parent namespace. If namespace is empty/None,
+    returns parent namespace_. If namespace_ is empty/None,
     @rtype: str
     """
-    if not name: #empty string resolves to parent of the namespace
-        return namespace(namespace)
+    if not name: #empty string resolves to parent of the namespace_
+        return namespace(namespace_)
 
     name = canonicalize_name(name)
     if name[0] == SEP: #global name
         resolved_name = name
     elif is_private(name): #~name
-        resolved_name = ns_join(namespace, name[1:])
+        resolved_name = ns_join(namespace_, name[1:])
     else: #relative
-        resolved_name = namespace(namespace) + name
+        resolved_name = namespace(namespace_) + name
 
     #Mappings override general namespace-based resolution
     # - do this before canonicalization as remappings are meant to
     #   match the name as specified in the code
-    if remap and resolved_name in remappings:
+    if remappings and resolved_name in remappings:
         return remappings[resolved_name]
     else:
         return resolved_name

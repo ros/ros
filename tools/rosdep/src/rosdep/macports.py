@@ -30,7 +30,7 @@
 
 from linux_helpers import *
 import os
-
+import base_rosdep
 ###### Macports SPECIALIZATION #########################
 def port_detect(p):
     cmd = ['port', 'installed', p]
@@ -39,7 +39,7 @@ def port_detect(p):
     
     return (std_out.count("(active)") > 0)
 
-class Macports:
+class Macports(base_rosdep.RosdepBaseOS):
     def check_presence(self):
         filename = "/usr/bin/sw_vers"
         if os.path.exists(filename):

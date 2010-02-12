@@ -46,12 +46,12 @@ import tempfile
 import yaml
 import time
 
+import base_rosdep
 import debian
 import redhat
 import gentoo
 import macports
 import arch
-import core
 import cygwin
 
 
@@ -267,6 +267,11 @@ class RosdepLookupPackage:
 class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
         os_list = [debian.RosdepTestOS(), debian.Debian(), debian.Ubuntu(), debian.Mint(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports(), gentoo.Gentoo(), cygwin.Cygwin()]
+        # Make sure that these classes are all well formed.  
+        for o in os_list:
+            if not isinstance(o, base_rosdep.RosdepBaseOS):
+                raise RosdepException("Class [%s] not derived from RosdepBaseOS"%o.__class__.__name__)
+        # Detect the OS on which this program is running. 
         self.osi = roslib.os_detect.OSDetect(os_list)
         self.packages = packages
         self.rosdeps = roslib.packages.rosdeps_of(packages)

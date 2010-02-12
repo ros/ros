@@ -92,10 +92,10 @@ class OSBase:
         raise OSDetectException("check_presence unimplemented")
 
     def get_name(self):
-        raise OSDetectException("check_presence unimplemented")
+        raise OSDetectException("get_name unimplemented")
 
     def get_version(self):
-        raise OSDetectException("check_presence unimplemented")
+        raise OSDetectException("get_version unimplemented")
 
 ###### Debian SPECIALIZATION #########################
 class Debian(OSBase):
@@ -374,6 +374,9 @@ class OSDetect:
     def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), Fedora(), Rhel(), Gentoo(), Cygwin()]):
         self._os_list = [ Override()]
         self._os_list.extend(os_list)
+        for o in self._os_list:
+            if not isinstance(o, OSBase):
+                raise OSDetectException("Class [%s] not derived from OSBase"%o.__class__.__name__)
 
         self._os_class = None
         self._os_name = None

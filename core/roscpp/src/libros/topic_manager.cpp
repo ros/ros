@@ -598,6 +598,13 @@ bool TopicManager::requestTopic(const string &topic,
         return false;
       }
 
+      PublicationPtr pub_ptr = lookupPublication(topic);
+      if(!pub_ptr)
+      {
+      	ROSCPP_LOG_DEBUG("Unable to find advertised topic %s for UDPROS connection", topic.c_str());
+        return false;
+      }
+
       std::string host = proto[2];
       int port = proto[3];
       int max_datagram_size = proto[4];
@@ -611,6 +618,16 @@ bool TopicManager::requestTopic(const string &topic,
       udpros_params[2] = connection_manager_->getUDPServerTransport()->getServerPort();
       udpros_params[3] = conn_id;
       udpros_params[4] = max_datagram_size;
+      M_string m;
+      m["topic"] = topic;
+      m["md5sum"] = pub_ptr->getMD5Sum();
+      m["type"] = pub_ptr->getDataType();
+      m["message_definition"] = pub_ptr->getMessageDefinition();
+      boost::shared_array<uint8_t> msg_def_buffer;
+      uint32_t len;
+      Header::write(m, msg_def_buffer, len);
+      XmlRpcValue v(msg_def_buffer.get(), len);
+      udpros_params[5] = v;
       ret[0] = int(1);
       ret[1] = string();
       ret[2] = udpros_params;

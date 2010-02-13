@@ -85,6 +85,9 @@ def create_master_process(run_id, type_, ros_root, port, log_output=False):
     if type_ == Master.ZENMASTER:
         package = 'rospy'        
         args = [master, '--core', '-p', str(port)]
+    elif type_ == Master.ROSMASTER:        
+        package = 'rosmaster'        
+        args = [master, '--core', '-p', str(port)]
     else:
         raise RLException("unknown master typ_: %s"%type_)
 

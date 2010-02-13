@@ -272,7 +272,7 @@ class Master:
     ## start/restart master (i.e. restart an existing master)
     AUTO_RESTART = 2
     ZENMASTER = 'zenmaster'
-    BOTHERDER = 'botherder'    
+    ROSMASTER = 'rosmaster'    
 
     def __init__(self, type_=None, uri=None, auto=None):
         """

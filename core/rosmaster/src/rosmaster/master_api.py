@@ -34,7 +34,9 @@
 """
 ROS Master API. 
 
-L{ROSMasterHandler} provides the API implementation.
+L{ROSMasterHandler} provides the API implementation of the
+Master. Python allows an API to be introspected from a Python class,
+so the handler has a 1-to-1 mapping with the actual XMLRPC API.
 
 API return convention: (statusCode, statusMessage, returnValue)
 
@@ -255,13 +257,13 @@ class ROSMasterHandler(object):
     ###############################################################################
     # EXTERNAL API
 
-
     @apivalidate('')
-    ## (Python-Only API) Get the XML-RPC URI of this server
-    ## @param self
-    ## @param caller_id str: ROS caller id    
-    ## @return [int, str, str]: [1, "", xmlRpcUri]
     def getUri(self, caller_id):
+        """
+        Get the XML-RPC URI of this server
+        @param caller_id str: ROS caller id    
+        @return [int, str, str]: [1, "", xmlRpcUri]
+        """
         return 1, "", self.uri
 
         

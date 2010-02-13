@@ -240,24 +240,29 @@ class ParamDictionary(object):
             self.lock.release()
             
 
-    ## @param key str: parameter key
-    ## @param unregistration_args tuple: additional args to pass to
-    ## subscribers.unregister. i.e. unregister will be called with
-    ## (key, *unregistration_args)
-    ## @return val : return value of subscribers.unregister()
     def unsubscribe_param(self, key, unregistration_args):
+        """
+        @param key str: parameter key
+        @type  key: str
+        @param unregistration_args: additional args to pass to
+        subscribers.unregister. i.e. unregister will be called with
+        (key, *unregistration_args)
+        @type  unregistration_args: tuple
+        @return: return value of subscribers.unregister()
+        """
         if key != SEP:
             key = canonicalize_name(key) + SEP
         return self.reg_manager.unregister_param_subscriber(key, *unregistration_args)
 
-    ## Delete the parameter in the parameter dictionary.
-
-    ## @param key str: parameter key
-    ## @param notify_task fn(updates): function to call with
-    ## subscriber updates. updates is of the form
-    ## [(subscribers, param_key, param_value)*]. The empty dictionary
-    ## represents an unset parameter.
-    def delete_param(self, key, notify_task=None): 
+    def delete_param(self, key, notify_task=None):
+        """
+        Delete the parameter in the parameter dictionary.
+        @param key str: parameter key
+        @param notify_task fn(updates): function to call with
+        subscriber updates. updates is of the form
+        [(subscribers, param_key, param_value)*]. The empty dictionary
+        represents an unset parameter.
+        """
         try:
             self.lock.acquire()
             if key == GLOBALNS:
@@ -306,13 +311,18 @@ class ParamDictionary(object):
         except KeyError:
             return False
     
-## Compute which subscribers should be notified based on the parameter update
-## @param param_key str: key of updated parameter
-## @param param_value value: value of updated parameter
-## @param all_keys [str]: (internal use only) list of parameter keys
-## to append to for recursive calls.
-## @return [str]: list of parameter keys. All keys will be canonicalized with trailing slash.
 def _compute_all_keys(param_key, param_value, all_keys=None):
+    """
+    Compute which subscribers should be notified based on the parameter update
+    @param param_key: key of updated parameter
+    @type  param_key: str
+    @param param_value: value of updated parameter
+    @param all_keys: (internal use only) list of parameter keys
+        to append to for recursive calls.
+    @type  all_keys: [str]
+    @return: list of parameter keys. All keys will be canonicalized with trailing slash.
+    @rtype: [str]
+    """
     if all_keys is None:
         all_keys = []
     for k, v in param_value.iteritems():

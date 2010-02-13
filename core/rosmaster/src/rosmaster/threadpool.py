@@ -97,9 +97,8 @@ class MarkedThreadPool:
             self.__threads[0].go_away()
             del self.__threads[0]
 
-    ## Return the number of threads in the pool.
     def get_thread_count(self):
-        """Return the number of threads in the pool."""
+        """@return: number of threads in the pool."""
         self.__resizeLock.acquire()
         try:
             return len(self.__threads)
@@ -189,12 +188,13 @@ class MarkedThreadPool:
 
 
         
-## Pooled thread class.
 class ThreadPoolThread(threading.Thread):
+    """
+    Pooled thread class.
+    """
     
     threadSleepTime = 0.1
 
-    ## Initialize the thread and remember the pool. 
     def __init__(self, pool):
         """Initialize the thread and remember the pool."""
         threading.Thread.__init__(self)
@@ -202,9 +202,11 @@ class ThreadPoolThread(threading.Thread):
         self.__pool = pool
         self.__isDying = False
         
-    ## Until told to quit, retrieve the next task and execute
-    ## it, calling the callback if any.  
     def run(self):
+        """
+        Until told to quit, retrieve the next task and execute
+        it, calling the callback if any.  
+        """
         while self.__isDying == False:
             marker, cmd, args, callback = self.__pool.get_next_task()
             # If there's nothing to do, just sleep a bit
@@ -221,7 +223,6 @@ class ThreadPoolThread(threading.Thread):
                 except Exception, e:
                     logging.getLogger('rosmaster.threadpool').error(traceback.format_exc())
     
-    ## Exit the run loop next time through.
     def go_away(self):
         """ Exit the run loop next time through."""
         self.__isDying = True

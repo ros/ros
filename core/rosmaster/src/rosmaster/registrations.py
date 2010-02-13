@@ -128,23 +128,28 @@ def shutdown_node_task(api, caller_id, reason):
     except:
         pass #expected in many common cases
     
-## All calls may result in access/modifications to node registrations
-## dictionary, so be careful to guarantee appropriate thread-safeness.
-##
-## Data structure for storing a set of registrations (e.g. publications, services).
-## The underlying data storage is the same except for services, which have the
-## constraint that only one registration may be active for a given key. 
 class Registrations(object):
+    """
+    All calls may result in access/modifications to node registrations
+    dictionary, so be careful to guarantee appropriate thread-safeness.
+
+    Data structure for storing a set of registrations (e.g. publications, services).
+    The underlying data storage is the same except for services, which have the
+    constraint that only one registration may be active for a given key. 
+    """
 
     TOPIC_SUBSCRIPTIONS = 1
     TOPIC_PUBLICATIONS = 2
     SERVICE = 3
     PARAM_SUBSCRIPTIONS = 4
     
-    ## @param self
-    ## @param type_ int: one of [ TOPIC_SUBSCRIPTIONS,
-    ## TOPIC_PUBLICATIONS, SERVICE, PARAM_SUBSCRIPTIONS ]
     def __init__(self, type_):
+        """
+        ctor.
+        @param type_: one of [ TOPIC_SUBSCRIPTIONS,
+        TOPIC_PUBLICATIONS, SERVICE, PARAM_SUBSCRIPTIONS ]
+        @type  type_: int
+        """
         if not type_ in [
             Registrations.TOPIC_SUBSCRIPTIONS,
             Registrations.TOPIC_PUBLICATIONS,
@@ -162,69 +167,92 @@ class Registrations(object):
         """
         return len(self.map) != 0
 
-    ## Iterate over registration keys
-    ## @param self
-    ## @return iterator for registration keys
     def iterkeys(self):
+        """
+        Iterate over registration keys
+        @return: iterator for registration keys
+        """
         return self.map.iterkeys()
 
-    ## Lookup service API URI. NOTE: this should only be valid if type==SERVICE as
-    ## service Registrations instances are the only ones that track service API URIs.
-    ## @param self
-    ## @param service str: service name
-    ## @return str: service_api for registered key or None if
-    ## registration is no longer valid. 
     def get_service_api(self, service):
+        """
+        Lookup service API URI. NOTE: this should only be valid if type==SERVICE as
+        service Registrations instances are the only ones that track service API URIs.
+        @param service: service name
+        @type  service: str
+        @return str: service_api for registered key or None if
+        registration is no longer valid. 
+        @type: str
+        """
         if self.service_api_map and service in self.service_api_map:
             caller_id, service_api = self.service_api_map[service]
             return service_api
         return None
     
-    ## Only valid if self.type != SERVICE.
-    ## @param self
-    ## @param key str: registration key (e.g. topic/service/param name)
-    ## @return [str]: caller_apis for registered key, empty list if registration is not valid
     def get_apis(self, key):
+        """
+        Only valid if self.type != SERVICE.
+        @param key: registration key (e.g. topic/service/param name)
+        @type  key: str
+        @return: caller_apis for registered key, empty list if registration is not valid
+        @rtype: [str]
+        """
         return [api for _, api in self.map.get(key, [])]
 
-    ## Emulate mapping type for has_key()
     def __contains__(self, key):
+        """
+        Emulate mapping type for has_key()
+        """
         return key in self.map
     
-    ## @param self
-    ## @param key str: registration key (e.g. topic/service/param name)
-    ## @return [(str, str),]: (caller_id, caller_api) for registered
-    ## key, empty list if registration is not valid
     def __getitem__(self, key):
+        """
+        @param key: registration key (e.g. topic/service/param name)
+        @type  key: str
+        @return: (caller_id, caller_api) for registered
+        key, empty list if registration is not valid
+        @rtype: [(str, str),]
+        """
         # unlike get_apis, returns the caller_id to prevent any race
         # conditions that can occur if caller_id/caller_apis change
         # due to a new node.
         return self.map.get(key, [])
 
-    ## @param self
-    ## @param key str: registration key (e.g. topic/service/param name)
-    ## @return bool True if \a key is registered
     def has_key(self, key):
+        """
+        @param key: registration key (e.g. topic/service/param name)
+        @type  key: str
+        @return: True if key is registered
+        @rtype: bool
+        """
         return key in self.map
     
-    ## @param self
-    ## @return [str, [str]...]: state in getSystemState()-friendly format [ [key, [callerId1...callerIdN]] ... ]
     def get_state(self):
+        """
+        @return: state in getSystemState()-friendly format [ [key, [callerId1...callerIdN]] ... ]
+        @rtype: [str, [str]...]
+        """
         retval = []
         for k in self.map.iterkeys():
             retval.append([k, [id for id, _ in self.map[k]]])
         return retval
 
-    ## Add \a caller_id into the map as a provider of the specified
-    ## service (key).  \a caller_id must not have been previously
-    ## registered with a different \a caller_api.
-    ## Subroutine for managing provider map data structure (essentially a multimap).
-    ## @param self
-    ## @param key str: registration key (e.g. topic/service/param name)
-    ## @param caller_id str: caller_id of provider
-    ## @param caller_api str: API URI of provider 
-    ## @param service_api str: (keyword) ROS service API URI if registering a service
     def register(self, key, caller_id, caller_api, service_api=None):
+        """
+        Add caller_id into the map as a provider of the specified
+        service (key).  caller_id must not have been previously
+        registered with a different caller_api.
+    
+        Subroutine for managing provider map data structure (essentially a multimap).
+        @param key: registration key (e.g. topic/service/param name)
+        @type  key: str
+        @param caller_id: caller_id of provider
+        @type  caller_id: str
+        @param caller_api: API URI of provider 
+        @type  caller_api: str
+        @param service_api: (keyword) ROS service API URI if registering a service
+        @type  service_api: str
+        """
         map = self.map
         if key in map and not service_api:
             providers = map[key]
@@ -240,9 +268,12 @@ class Registrations(object):
         elif self.type == Registrations.SERVICE:
             raise rosmaster.exceptions.InternalException("service_api must be specified for Registrations.SERVICE")            
                    
-    ## Remove all registrations associated with \a caller_id
-    ## @param caller_id str: caller_id of provider
     def unregister_all(self, caller_id):
+        """
+        Remove all registrations associated with caller_id
+        @param caller_id: caller_id of provider
+        @type  caller_id: str
+        """
         map = self.map
         # fairly expensive
         dead_keys = []
@@ -265,16 +296,22 @@ class Registrations(object):
             for k in dead_keys:
                 del self.service_api_map[k]
     
-    ## Remove caller_id from the map as a provider of the specified service (key).
-    ## Subroutine for managing provider map data structure, essentially a multimap
-    ## @param self
-    ## @param key str: registration key (e.g. topic/service/param name)
-    ## @param caller_id str: caller_id of provider
-    ## @param caller_api str: API URI of provider            
-    ## @param service_api str: (keyword) ROS service API URI if registering a service
-    ## @return code, msg, val: for ease of master integration, directly returns unregister value for
-    ## higher-level XMLRPC API. val is the number of APIs unregistered (0 or 1)
     def unregister(self, key, caller_id, caller_api, service_api=None):
+        """
+        Remove caller_id from the map as a provider of the specified service (key).
+        Subroutine for managing provider map data structure, essentially a multimap
+        @param key: registration key (e.g. topic/service/param name)
+        @type  key: str
+        @param caller_id: caller_id of provider
+        @type  caller_id: str
+        @param caller_api: API URI of provider            
+        @type  caller_api: str
+        @param service_api: (keyword) ROS service API URI if registering a service
+        @type  service_api: str
+        @return: for ease of master integration, directly returns unregister value for
+        higher-level XMLRPC API. val is the number of APIs unregistered (0 or 1)
+        @rtype: code, msg, val
+        """
         # if we are unregistering a topic, validate against the caller_api
         if service_api:
             # validate against the service_api 
@@ -299,12 +336,19 @@ class Registrations(object):
             else:
                 return 1, "[%s] is not a known provider of [%s]"%(caller_id, key), 0
 
-## RegistrationManager is not threadsafe, so access must be externally locked as appropriate
 class RegistrationManager(object):
+    """
+    Stores registrations for Master.
+    
+    RegistrationManager is not threadsafe, so access must be externally locked as appropriate
+    """
 
-    ## @param self
-    ## @param thread_pool ThreadPool thread pool for queueing tasks
     def __init__(self, thread_pool):
+        """
+        ctor.
+        @param thread_pool: thread pool for queueing tasks
+        @type  thread_pool: ThreadPool
+        """
         self.nodes = {}
         self.thread_pool = thread_pool
 
@@ -314,13 +358,17 @@ class RegistrationManager(object):
         self.param_subscribers = Registrations(Registrations.PARAM_SUBSCRIPTIONS)        
 
     
-    ## Get a NodeRef by \a caller_api
-    ## @param caller_api str
-    ## @return [NodeRef]: nodes that declare \a caller_api as their
-    ## API. 99.9% of the time this should only be one node, but we
-    ## allow for multiple matches as the master API does not restrict
-    ## this.
     def reverse_lookup(self, caller_api):
+        """
+        Get a NodeRef by caller_api
+        @param caller_api: caller XML RPC URI
+        @type  caller_api: str
+        @return: nodes that declare caller_api as their
+        API. 99.9% of the time this should only be one node, but we
+        allow for multiple matches as the master API does not restrict
+        this.
+        @rtype: [NodeRef]
+        """
         matches = [n for n in self.nodes.iteritems() if n.api == caller_api]
         if matches:
             return matches

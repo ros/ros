@@ -11,4 +11,4 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
 rosbuild_init()
 rosbuild_add_rostest(test/rosmaster.test)
-rosbuild_add_rostest(test/param-server.test)
+rosbuild_add_rostest(test/paramserver.test)

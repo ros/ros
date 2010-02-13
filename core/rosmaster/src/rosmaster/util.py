@@ -37,6 +37,7 @@ Utility routines for rosmaster.
 """
 
 import urlparse
+import xmlrpclib
 
 _proxies = {} #cache ServerProxys
 def xmlrpcapi(uri):

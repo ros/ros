@@ -84,7 +84,7 @@ def mloginfo(msg, *args):
     @param args: arguments for msg if msg is a format string
     """
     #mloginfo is in core so that it is accessible to master and masterdata
-    _mlogger.info(msg, *args)
+    _logger.info(msg, *args)
 
 def mlogwarn(msg, *args):
     """
@@ -95,7 +95,7 @@ def mlogwarn(msg, *args):
     @param args: arguments for msg if msg is a format string
     """
     #mloginfo is in core so that it is accessible to master and masterdata
-    _mlogger.warn(msg, *args)
+    _logger.warn(msg, *args)
     if args:
         print "WARN: "+msg%args
     else:
@@ -704,7 +704,7 @@ class ROSMasterHandler(object):
             self.ps_lock.acquire()
             self.reg_manager.register_publisher(topic, caller_id, caller_api)
             # don't let '*' type squash valid typing
-            if topic_type != roslib.names.TOPIC_ANYTYPE or not topic in self.topics_types:
+            if topic_type != roslib.names.ANYTYPE or not topic in self.topics_types:
                 self.topics_types[topic] = topic_type
             pub_uris = self.publishers.get_apis(topic)
             self._notify_topic_subscribers(topic, pub_uris)
@@ -786,8 +786,8 @@ class ROSMasterHandler(object):
         try:
             self.ps_lock.acquire()
             # force subgraph to be a namespace with trailing slash
-            if subgraph and subgraph[-1] != SEP:
-                subgraph = subgraph + SEP
+            if subgraph and subgraph[-1] != roslib.names.SEP:
+                subgraph = subgraph + roslib.names.SEP
             #we don't bother with subscribers as subscribers don't report topic types. also, the intended
             #use case is for subscribe-by-topic-type
             retval = [[t, self.topics_types[t]] for t in self.publishers.iterkeys() if t.startswith(subgraph)]

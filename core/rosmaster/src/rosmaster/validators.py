@@ -34,7 +34,7 @@
 
 """Internal-use Python decorators for parameter validation"""
 
-from roslib.names import ANYTYPE, TYPE_SEPARATOR
+from roslib.names import ANYTYPE, TYPE_SEPARATOR, resolve_name
 
 class ParameterInvalid(Exception):
     """Exception that is raised when a parameter fails validation checks"""

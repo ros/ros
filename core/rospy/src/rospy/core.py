@@ -245,11 +245,6 @@ def logfatal(msg, *args):
 
 MASTER_NAME = "master" #master is a reserved node name for the central master
 
-# Return code slots
-STATUS = 0
-MSG = 1
-VAL = 2
-
 def get_ros_root(required=False, env=None):
     """
     Get the value of ROS_ROOT.

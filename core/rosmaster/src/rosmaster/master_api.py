@@ -71,6 +71,11 @@ from rosmaster.validators import non_empty, non_empty_str, not_none, is_api, is_
 
 NUM_WORKERS = 3 #number of threads we use to send publisher_update notifications
 
+# Return code slots
+STATUS = 0
+MSG = 1
+VAL = 2
+
 _logger = logging.getLogger("rosmaster.master")
 
 LOG_API = True

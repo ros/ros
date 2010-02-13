@@ -36,6 +36,8 @@
 
 from roslib.names import ANYTYPE, TYPE_SEPARATOR, resolve_name
 
+ROSRPC = "rosrpc://"
+
 class ParameterInvalid(Exception):
     """Exception that is raised when a parameter fails validation checks"""
     def __init__(self, message):

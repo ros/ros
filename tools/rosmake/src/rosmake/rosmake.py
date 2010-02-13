@@ -122,8 +122,7 @@ class RosMakeAll:
         """
         try:
             r = rosdep.core.Rosdep(packages, robust=True)
-            if not r.install(include_duplicates=False, default_yes=default_yes):
-                return "Rosdep install failed"
+            r.install(include_duplicates=False, default_yes=default_yes);
             return None
         except rosdep.core.RosdepException, e:
             return "rosdep install FAILED: %s"%e

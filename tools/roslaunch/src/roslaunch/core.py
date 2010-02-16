@@ -271,15 +271,17 @@ class Master:
     AUTO_START   = 1
     ## start/restart master (i.e. restart an existing master)
     AUTO_RESTART = 2
-    ZENMASTER = 'zenmaster'
-    ROSMASTER = 'rosmaster'    
+    ROSMASTER = 'rosmaster'
+    
+    # deprecated
+    ZENMASTER = 'zenmaster'        
 
     def __init__(self, type_=None, uri=None, auto=None):
         """
         Create new Master instance.
         @param uri: master URI
         @type  uri: str
-        @param type_: 'zenmaster' or 'botherder'
+        @param type_: Currently only support 'rosmaster' 
         @type  type_: str
         @param auto: AUTO_NO | AUTO_START | AUTO_RESTART. AUTO_NO
           is the default
@@ -287,14 +289,14 @@ class Master:
         """
         if auto is not None and type(auto) != int:
             raise RLException("invalid auto value: %s"%auto)            
-        self.type = type_ or Master.ZENMASTER
+        self.type = type_ or Master.ROSMASTER
         self.auto = auto or Master.AUTO_NO
         if self.auto not in [Master.AUTO_NO, Master.AUTO_START, Master.AUTO_RESTART]:
             raise RLException("invalid auto value: %s"%auto)
         self.uri  = remap_localhost_uri(uri or get_master_uri_env())
         # by default, master output goes to screen
         self.log_output = False
-
+        
     def __eq__(self, m2):
         if not isinstance(m2, Master):
             return False
@@ -329,6 +331,7 @@ class Master:
     
     def is_running(self):
         """
+        Check if master is running. 
         @return: True if the master is running
         @rtype: bool
         """

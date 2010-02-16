@@ -400,7 +400,7 @@ public:
     virtual void init()
     {
 #ifdef ROS_NEW_SERIALIZATION_API
-      _opts.helper.reset(new SubscriptionMessageHelperT<const boost::shared_ptr<OctaveMsgDeserializer const>&>(boost::bind(&RoscppSubscription::callback, this, _1), boost::bind(&RoscppSubscription::create, this)));
+      _opts.helper.reset(new SubscriptionCallbackHelperT<const boost::shared_ptr<OctaveMsgDeserializer const>&>(boost::bind(&RoscppSubscription::callback, this, _1), boost::bind(&RoscppSubscription::create, this)));
 #else
         _opts.helper = as<SubscriptionMessageHelper>();
         ROS_ASSERT(_opts.helper);

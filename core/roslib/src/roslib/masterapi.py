@@ -98,18 +98,6 @@ class Master(object):
         else:
             raise Failure(msg)            
 
-    def getMasterUri(self):
-        """
-        Get the URI of the master node.
-        @param caller_id: ROS caller id    
-        @type  caller_id: str
-        @return: masterUri
-        @rtype: str
-        @raise roslib.masterapi.Error: if Master returns ERROR.
-        @raise roslib.masterapi.Failure: if Master returns FAILURE.
-        """
-        return self._succeed(self.handle.getMasterUri(self.caller_id))
-    
     def getPid(self):
         """
         Get the PID of this server

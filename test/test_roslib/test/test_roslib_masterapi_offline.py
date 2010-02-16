@@ -137,25 +137,6 @@ class MasterApiOfflineTest(unittest.TestCase):
         except roslib.masterapi.Error:
             pass
 
-    def test_getMasterUri(self):
-        h = self.m.handle
-        r = 'http://localhost:12345'
-        h.return_val = (1, '', r)
-        self.assertEquals(r, self.m.getMasterUri())
-        self.assertEquals(('getMasterUri',_ID), h.call)
-        try:
-            h.return_val = (0, '', r)
-            self.m.getMasterUri()
-            self.fail("should have thrown")
-        except roslib.masterapi.Failure:
-            pass
-        try:
-            h.return_val = (-1, '', r)
-            self.m.getMasterUri()
-            self.fail("should have thrown")
-        except roslib.masterapi.Error:
-            pass
-
     def test_lookupService(self):
         h = self.m.handle
         r = 'rosrpc://localhost:12345'

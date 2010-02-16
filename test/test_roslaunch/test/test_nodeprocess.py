@@ -77,7 +77,7 @@ class TestNodeprocess(unittest.TestCase):
         self.assertEquals(p.args[idx+1], str(port))
         self.assert_('--core' in p.args)
 
-        self.assertEquals(p.package, 'rospy')
+        self.assertEquals(p.package, 'rosmaster')
         self.failIf(p.log_output)
         
         p = create_master_process(run_id, type, ros_root, port, log_output=True)

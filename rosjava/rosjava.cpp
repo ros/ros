@@ -791,7 +791,7 @@ JNIEXPORT jlong JNICALL Java_ros_roscpp_JNI_subscribe
 #if ROS_NEW_SERIALIZATION_API
 	boost::shared_ptr<SubscriptionMessage> *callback = (boost::shared_ptr<SubscriptionMessage> *) cppCallback;
 	SubscribeOptions so(getString(env, jtopic), queueSize, (*callback)->getMD5Sum(), (*callback)->getDataType());
-	so.helper.reset(new SubscriptionMessageHelperT<const boost::shared_ptr<JavaMessage const>&>(boost::bind(&SubscriptionMessage::callback, *callback, _1),
+	so.helper.reset(new SubscriptionCallbackHelperT<const boost::shared_ptr<JavaMessage const>&>(boost::bind(&SubscriptionMessage::callback, *callback, _1),
                                                                 boost::bind(&SubscriptionMessage::create, *callback)));
 #else
 	boost::shared_ptr<SubscriptionMessageHelper> *callback = (boost::shared_ptr<SubscriptionMessageHelper> *) cppCallback;

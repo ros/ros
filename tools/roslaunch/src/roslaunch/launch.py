@@ -320,7 +320,7 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         is_running = m.is_running()
 
         if self.is_core and is_running:
-            raise RLException("roscore cannot run as another roscore/master is already running. \nPlease kill other roscore/zenmaster processes before relaunching")
+            raise RLException("roscore cannot run as another roscore/master is already running. \nPlease kill other roscore/master processes before relaunching.\nThe ROS_MASTER_URI is %s"%(m.uri))
 
         self.logger.debug("launch_master [%s]", auto)
         if auto in [m.AUTO_START, m.AUTO_RESTART] and not is_running:

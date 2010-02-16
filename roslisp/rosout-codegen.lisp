@@ -62,7 +62,7 @@
 	`(when (and (>= ,code (debug-level ',(reverse (mapcar #'make-keyword-symbol (if (listp name) name (list name)))))) ,check)
 	   (let ((,output-string (format nil ,str ,@format-args)))
 	     (with-mutex (*debug-stream-lock*)
-	       (format *debug-stream* "~&[~a ~a] ~a: ~a~&" ',(designated-list name) ,level (ros-time) ,output-string)
+	       (format *debug-stream* "~&[~a ~a] ~,1F: ~a~&" ',(designated-list name) ,level (ros-time) ,output-string)
 	       (when (can-write-to-log) 
 		 (format *ros-log-stream* "~&[~a ~a] ~a: ~a~&" 
 			 ',(designated-list name) ,level (ros-time) ,output-string)))

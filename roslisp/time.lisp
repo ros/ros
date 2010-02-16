@@ -39,9 +39,12 @@
 
 (in-package :roslisp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Header messages need to have timestamp autofilled
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(defvar *time-base* (unix-time)
+  "Holds unix time (rounded to the nearest second) when roslisp was started")
+(defvar *internal-time-base* (get-internal-real-time)
+  "Holds CL's internal time when roslisp was started")
 
 
 
@@ -54,7 +57,7 @@
 	    (unless (mutex-owner *debug-stream-lock*)
 	      (ros-debug (roslisp time) "Returning time of 0.0 as use_sim_time was true and no clock messages received"))
 	    0.0))
-      (unix-time)))
+      (float (+ *time-base* (/ (- (get-internal-real-time) *internal-time-base*) internal-time-units-per-second)) 0.0L0)))
 
 (defun spin-until-ros-time-valid ()
   (spin-until (> (ros-time) 0.0) 0.05
@@ -66,6 +69,8 @@
   "Wait until time T+D, where T is the current ros-time."
   (spin-until-ros-time-valid)
   (let ((until (+ (ros-time) d)))
-    (spin-until (>= (ros-time) until) .01)))
+    (spin-until (>= (ros-time) until) .01
+      (every-nth-time 100
+	(ros-debug (roslisp time) "In wait-duration spin loop; waiting until ~a" until)))))
     
     

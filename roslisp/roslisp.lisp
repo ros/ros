@@ -109,6 +109,7 @@
 
    :ros-time
    :ros-time-not-yet-received
+   :spin-until-ros-time-valid
 
    :pprint-ros-message
    :read-ros-message

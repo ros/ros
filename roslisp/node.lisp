@@ -163,8 +163,9 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
     (advertise "/rosout" "roslib/Log")
 
     ;; Subscribe to time if necessary
-    (when (member (get-param "use_sim_time" nil) '("true" 1 t) :test #'equal)
-      (setq *last-clock* nil *use-sim-time* t)
+    (setq *use-sim-time* (member (get-param "use_sim_time" nil) '("true" 1 t) :test #'equal))
+    (when *use-sim-time*
+      (setq *last-clock* nil)
       (subscribe "/clock" "roslib/Clock" #'(lambda (m) (setq *last-clock* m))
 		 :max-queue-length 5))
 

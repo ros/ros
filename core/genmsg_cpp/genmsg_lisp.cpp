@@ -158,7 +158,7 @@ public:
   {
     //return string("  ") + cpp_type_name() + string(" ") + name + string(";\n");
     string decl = string("(") + name +
-      string("\n    :accessor ") + name + string("-val") +
+      string("\n    :reader ") + name + string("-val") +
       string("\n    :initarg :") + name +
       string("\n    :type <") + type_spec->spec_name.c_str() +
             //string("\n    :initform NIL)");
@@ -287,7 +287,7 @@ public:
     return string(code);
     */
     ostringstream code;
-    code << "(" << name << "\n    :accessor " << name << string("-val");
+    code << "(" << name << "\n    :reader " << name << string("-val");
     code << "\n    :initarg :" << name;
     
     string vector_eletype = lisp_primitive_type(eletype);
@@ -639,7 +639,7 @@ public:
   {
     //return string("  ") + cpp_type_name() + string(" ") + name + string(";\n");
     string decl = string("(") + name +
-            string("\n    :accessor ") + name + string("-val") +
+            string("\n    :reader ") + name + string("-val") +
             string("\n    :initarg :") + name;
     string export_decl = name + string("-val");
     for(unsigned int i=0;i<export_decl.size();i++)

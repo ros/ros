@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: masterdata.py 6487 2009-10-12 19:14:45Z kwc $
+# Revision $Id$
 
 from rosmaster.util import xmlrpcapi
 import rosmaster.exceptions

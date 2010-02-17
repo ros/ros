@@ -30,6 +30,10 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: zenmaster.py 6875 2009-11-12 21:10:24Z kwc $
+# Revision $Id$
 
-class InternalException(object): pass
+"""
+Exceptions for rosmaster package.
+"""
+
+class InternalException(Exception): pass

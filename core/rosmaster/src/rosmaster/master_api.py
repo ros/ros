@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: masterslave.py 7887 2010-01-15 21:39:15Z kwc $
+# Revision $Id$
 """
 ROS Master API. 
 

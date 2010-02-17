@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: threadpool.py 6487 2009-10-12 19:14:45Z kwc $
+# Revision $Id$
 
 """
 Utility routines for rosmaster.

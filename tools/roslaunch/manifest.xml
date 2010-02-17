@@ -10,6 +10,7 @@ roslaunch is a tool for easily launching multiple ROS <a href="http://ros.org/wi
   <url>http://ros.org/wiki/roslaunch</url>
   <depend package="roslib"/>
   <depend package="rospy"/>
+  <depend package="rosmaster"/>  
   <depend package="paramiko"/>
   <depend package="rosout"/>
   <rosdep name="python-yaml"/>

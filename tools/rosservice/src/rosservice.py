@@ -398,9 +398,15 @@ def call_service(service_name, service_args, service_class=None):
     try:
         roslib.message.fill_message_args(request, service_args)
     except roslib.message.ROSMessageException:
-        raise ROSServiceException("Not enough arguments to call service.\n"+\
-                                      "Args are: [%s]"%roslib.message.get_printable_message_args(request))
+        def argsummary(args):
+            if type(args) in [tuple, list]:
+                return '\n'.join([' * %s (type %s)'%(a, type(a).__name__) for a in args])
+            else:
+                return ' * %s (type %s)'%(args, type(args).__name__)
 
+        raise ROSServiceException("Not enough arguments to call service.\n\nProvided arguments are:\n"+\
+                                      argsummary(service_args)+\
+                                      "\n\nService arguments are: [%s]"%roslib.message.get_printable_message_args(request))
     try:
         return request, rospy.ServiceProxy(service_name, service_class)(request)
     except rospy.ServiceException, e:
@@ -570,7 +576,7 @@ def _rosservice_cmd_call(argv):
                 # #2080: argument to _rosservice_call must be a list
                 if type(service_args) == dict:
                     service_args = [service_args]
-                _rosservice_call(service_name, service_args, verbose=options.verbose, service_class=service_class) 
+                _rosservice_call(service_name, service_args, verbose=options.verbose, service_class=service_class)
     else:
         _rosservice_call(service_name, service_args, verbose=options.verbose, service_class=service_class)
 
@@ -581,6 +587,7 @@ def _stdin_yaml_arg():
     """
     import yaml
     import select
+    loaded = None
     poll = select.poll()
     poll.register(sys.stdin, select.POLLIN)
     try:
@@ -598,9 +605,15 @@ def _stdin_yaml_arg():
                 elif arg.strip() != '---':
                     buff = buff + arg
             try:
-                yield yaml.load(buff.rstrip())
+                loaded = yaml.load(buff.rstrip())
             except Exception, e:
                 print >> sys.stderr, "Invalid YAML: %s"%str(e)
+            if loaded is not None:
+                yield loaded
+            else:
+                # EOF reached, this will raise GeneratorExit
+                return
+
             # reset arg
             arg = 'x'
     except select.error:

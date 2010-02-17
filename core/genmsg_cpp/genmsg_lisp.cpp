@@ -50,9 +50,27 @@ using namespace std;
 
 // TODO: migrate this into msg_spec
 static bool is_integer(const string &type);
-// TODO: migrate this into msg_spec
 static bool is_float(const string &type);
 static bool is_bool(const string& type);
+static bool is_time(const string& type);
+static bool is_string(const string& type);
+
+string lisp_primitive_type (const string& type)
+{
+  if ((type == "int8") || (type == "uint8") || (type=="int16") || (type=="uint16"))
+    return string("fixnum");
+  else if (is_integer(type)) 
+    return string("integer");
+  else if (is_bool(type))
+    return string("boolean");
+  else if (is_float(type))
+    return string("float");
+  else if (is_time(type))
+    return string("real");
+  else if (is_string(type))
+    return string("string");
+  else return string("unknown");
+}
 
 void write_depfile( const char *filename, const set<string> &deps );
 set<string> &read_depfile( const char *filename, set<string> &deps );
@@ -140,12 +158,12 @@ public:
   {
     //return string("  ") + cpp_type_name() + string(" ") + name + string(";\n");
     string decl = string("(") + name +
-            string("\n    :accessor ") + name + string("-val") +
-            string("\n    :initarg :") + name +
-            //string("\n    :type '") + type_spec->spec_name.c_str() +
+      string("\n    :accessor ") + name + string("-val") +
+      string("\n    :initarg :") + name +
+      string("\n    :type <") + type_spec->spec_name.c_str() +
             //string("\n    :initform NIL)");
-            string("\n    :initform (make-instance '") + package +
-            string("-msg:<") + type_spec->spec_name + string(">))");
+      string(">\n    :initform (make-instance '") + package +
+      string("-msg:<") + type_spec->spec_name + string(">))");
 
     string export_decl = name + string("-val");
     for(unsigned int i=0;i<export_decl.size();i++)
@@ -271,14 +289,21 @@ public:
     ostringstream code;
     code << "(" << name << "\n    :accessor " << name << string("-val");
     code << "\n    :initarg :" << name;
-    code << "\n    :initform (make-array " << len << " :initial-element ";
-    if (is_integer(eletype) || eletype=="time" || eletype=="duration")
+    
+    string vector_eletype = lisp_primitive_type(eletype);
+    if (vector_eletype == "unknown")
+      vector_eletype = lisp_eletype;
+
+    code << "\n    :type (vector " << vector_eletype <<
+      ")\n   :initform (make-array " << len << " :element-type '" << vector_eletype
+         << " :initial-element ";
+    if (is_integer(eletype) || is_time(eletype))
       code << "0";
     else if (is_float(eletype))
       code << "0.0";
     else if (is_bool(eletype))
       code << "nil";
-    else if (eletype=="string")
+    else if (is_string(eletype))
       code << "\"\"";
     else
       code << "(make-instance '" << lisp_eletype << ")";
@@ -620,15 +645,16 @@ public:
     for(unsigned int i=0;i<export_decl.size();i++)
       export_decl[i] = toupper(export_decl[i]);
     g_accessors.push_back(export_decl);
+    decl += string("\n    :type ") + lisp_primitive_type(type);
     if(is_integer(type))
       decl += string("\n    :initform 0");
     else if(is_bool(type))
       decl += string("\n    :initform nil");
     else if(is_float(type))
       decl += string("\n    :initform 0.0");
-    else if(type == "string")
+    else if(is_string(type))
       decl += string("\n    :initform \"\"");
-    else if(type == "time" || type == "duration")
+    else if(is_time(type))
       decl += string("\n    :initform 0");
     decl += string(")");
     return decl;
@@ -1276,6 +1302,16 @@ static bool is_integer(const string &type)
     if (*i == type)
       return true;
   return false;
+}
+
+static bool is_time (const string& type)
+{
+  return (type == "duration") || (type == "time");
+}
+
+static bool is_string (const string& type)
+{
+  return (type=="string");
 }
 
 static bool is_bool(const string& type)

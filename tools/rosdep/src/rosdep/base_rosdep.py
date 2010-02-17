@@ -36,10 +36,27 @@ import roslib.os_detect
 
 ###### Rosdep Test OS #########################
 class RosdepBaseOS(roslib.os_detect.OSBase):
+    """
+    This is the class which defines the API for a Rosdep OS
+    implementation.  It inherits from roslib.os_detect.OSBase for os
+    detection code and provides the interface to native package
+    managers.
+    """
     def strip_detected_packages(self, packages):
+        """
+        Take a list of packages and return the subset of that list
+        which is not installed. (If undetectable keep the package in
+        the list.)
+        """
         raise OSDetectException("strip_detected_packages unimplemented")
 
     def generate_package_install_command(self, packages, default_yes):
+        """
+        Return the install command necessary for installing all the
+        packages in the list packages as a string.  The option default_yes will
+        pass through an apt-get -y equivilant to the package manager
+        to allow this call to be non interactive in scripts.
+        """
         raise OSDetectException("generate_package_install_command unimplemented")
 
 

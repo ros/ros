@@ -273,10 +273,8 @@ def get_master(env=os.environ):
     global _master_proxy
     if _master_proxy is not None:
         return _master_proxy
-    # check against local interpreter plus global env
     import roslib.rosenv
-    master_uri = rospy.init.get_local_master_uri() or roslib.rosenv.get_master_uri()
-    _master_proxy = rospy.msproxy.MasterProxy(master_uri)
+    _master_proxy = rospy.msproxy.MasterProxy(roslib.rosenv.get_master_uri())
     return _master_proxy
 
 #########################################################

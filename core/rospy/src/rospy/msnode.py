@@ -35,7 +35,6 @@
 """Internal use: contains the L{ROSNode} wrapper, which provides an unified interface for running an XMLRPC server for the rospy client library."""
 
 import os
-import traceback
 import logging
 
 import roslib.xmlrpc
@@ -43,21 +42,24 @@ import roslib.xmlrpc
 import rospy.core
 
 from rospy.names import _set_caller_id, get_namespace, get_caller_id, scoped_name
-from rospy.masterslave import ROSMasterHandler, ROSHandler
 
-## Base ROS node, aka a slave node. Enables basic
-## functionality for the connection of topics with other nodes.
-## ROSNode is initialized when the uri field has a value.
 class ROSNode(roslib.xmlrpc.XmlRpcNode):
+    """
+    Base ROS node, aka a slave node. Enables basic functionality for
+    the connection of topics with other nodes.  ROSNode is initialized
+    when the uri field has a value.
+    """
 
-    ## Node constructor
-    ## @param self
-    ## @param name str: name of this node
-    ## @param port int: port to use for starting XML-RPC API. Set to 0 or omit to bind to any available port.
-    ## @param rpc_handler roslib.xmlrpc.XmlRpcHandler: XML-RPC API
-    ## handler for node. By default, a generic ROSHandler is used. May
-    ## be override to add additional API methods.
     def __init__(self, name, port=0, rpc_handler=None):
+        """
+        Node constructor
+        @param name: name of this node
+        @type  name: str
+        @param port: port to use for starting XML-RPC API. Set to 0 or omit to bind to any available port.
+        @type port: int
+        @param rpc_handler: XML-RPC API handler for node. 
+        @type  rpc_handler: roslib.xmlrpc.XmlRpcHandler
+        """
         super(ROSNode, self).__init__(port, rpc_handler)
         self.name = scoped_name(get_namespace(), name) #use the de-contexted name
         #TODO: move out of ROSNode
@@ -65,8 +67,10 @@ class ROSNode(roslib.xmlrpc.XmlRpcNode):
 
         logging.getLogger('rospy.msnode').info("Node initialized: callerId[%s] local name[%s] port[%s]", get_caller_id(), self.name, self.port)
 
-    ## Override parent hook for URI initialization
     def set_uri(self, uri):
+        """
+        Override parent hook for URI initialization
+        """
         super(ROSNode, self).set_uri(uri)
         rospy.core.set_node_uri(self.uri)
             
@@ -81,7 +85,7 @@ class ROSNode(roslib.xmlrpc.XmlRpcNode):
             super(ROSNode, self).run()
         except:
             try:
+                import traceback
                 logerr("ERROR: Unable to start XML-RPC server: \n"+traceback.format_exc())
             except: pass
             rospy.core.signal_shutdown('unable to start XML-RPC server')
-            return

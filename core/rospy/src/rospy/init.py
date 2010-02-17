@@ -67,28 +67,6 @@ def get_node_proxy():
 ###################################################
 # rospy module lower-level initialization
 
-_local_master_uri = None
-def get_local_master_uri():
-    """
-    @return: URI of master instance if a master is running within this Python interpreter
-    @rtype: str
-    """
-    return _local_master_uri
-
-def start_master(environ, port=DEFAULT_MASTER_PORT):
-    """
-    Start a local master instance.
-    @return: Node instance
-    @rtype: rospy.msnode.ROSNode
-    """
-    global _local_master_uri
-    master = rospy.msnode.ROSNode(rospy.core.MASTER_NAME, port, rospy.masterslave.ROSMasterHandler())
-    master.start()
-    while not master.uri and not rospy.core.is_shutdown():
-        time.sleep(0.0001) #poll for init
-    _local_master_uri = master.uri
-    return master
-
 def default_master_uri():
     """
     @return: URI of master that will be used if master is not otherwise configured.
@@ -135,7 +113,7 @@ def start_node(environ, resolved_name, master_uri=None, port=None):
     global _node
     rospy.tcpros.init_tcpros()
     if _node is not None:
-        raise Exception("Only one master/slave can be run per instance (multiple calls to start_master/start_node)")
+        raise Exception("Only one master/slave can be run per instance (multiple calls to start_node)")
     _node = _sub_start_node(environ, resolved_name, master_uri, port)
     return _node
     

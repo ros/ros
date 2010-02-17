@@ -1581,7 +1581,7 @@ string msg_spec::to_list_func()
   s += string("  \"Converts a ROS message object to a list\"\n");
   s += string("  (list '<") + g_name + string(">\n");
   for (vector<msg_var *>::iterator v = vars.begin(); v != vars.end(); ++v)
-    s += string("    (cons ':") + (*v)->name + string(" (ros-message-to-list (") + (*v)->name + string("-val") + string(" msg)))\n");
+    s += string("    (cons ':") + (*v)->name + string(" (") + (*v)->name + string("-val") + string(" msg))\n");
   s += "))\n";
   return s;
 }

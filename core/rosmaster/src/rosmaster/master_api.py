@@ -260,7 +260,7 @@ class ROSMasterHandler(object):
     @apivalidate('')
     def getUri(self, caller_id):
         """
-        Get the XML-RPC URI of this server
+        Get the XML-RPC URI of this server.
         @param caller_id str: ROS caller id    
         @return [int, str, str]: [1, "", xmlRpcUri]
         """

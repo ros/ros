@@ -1,7 +1,7 @@
 <package>
   <description brief="rosmaster">
 
-     ROS Master implementation.
+     ROS <a href="http://ros.org/wiki/Master">Master</a> implementation.
 
   </description>
   <author>Ken Conley</author>

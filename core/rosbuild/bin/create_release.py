@@ -206,7 +206,10 @@ def make_dist(name, version, source_dir, release_props):
     tmp_source_dir = os.path.join(tmp_dir, name)
     print 'Building a distribution for %s in %s'%(name, tmp_source_dir)
     cmd = ['make', 'package_source']
-    check_call(cmd, cwd=tmp_source_dir)
+    try:
+        check_call(cmd, cwd=tmp_source_dir)
+    except:
+        raise ReleaseException("unable to 'make package_source' in package. Most likely the Makefile and CMakeLists.txt files have not been checked in")
     tarball = "%s-%s.tar.bz2"%(name, version)
     import shutil
     src = os.path.join(tmp_source_dir, 'build', tarball)

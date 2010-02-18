@@ -29,4 +29,4 @@ alufr http://alufr-ros-pkg.googlecode.com/svn/trunk/
 ajh   https://ajh-ros-pkg.svn.sourceforge.net/svnroot/ajh-ros-pkg/trunk
 utexas-art http://utexas-art-ros-pkg.googlecode.com/svn/trunk/
 ua    http://ua-ros-pkg.googlecode.com/svn/trunk/
-#cob3  git:http://github.com/ipa320/care-o-bot
+cob3  git://github.com/ipa320/care-o-bot

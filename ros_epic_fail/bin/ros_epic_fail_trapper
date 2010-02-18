@@ -1,0 +1,30 @@
+#!/usr/bin/python
+
+
+import roslib
+roslib.load_manifest('rostest')
+import roslib.rosenv
+import os
+import sys
+
+
+results = roslib.rosenv.get_test_results_dir()
+if not os.path.exists(results):
+   raise "No test result directory!"
+
+result_bags = os.path.join(roslib.rosenv.get_test_results_dir(), 
+	    "ros_epic_fail_raw_bags")
+
+if not os.path.exists(result_bags):
+   os.makedirs(result_bags)
+
+try:
+   name = sys.argv[1]
+except:
+   raise "No name specified as argument."
+
+
+file = os.path.join(result_bags, name)
+
+#FIXME: use a better method here.
+os.system("rosrun rosrecord rosrecord -a -F \"" + file + "\"")

@@ -1,0 +1,56 @@
+#!/usr/bin/python
+
+from __future__ import with_statement
+import roslib; roslib.load_manifest('rostest')
+
+import sys
+import os
+
+import roslib.rosenv
+import rostest.xmlresults as xmlr
+
+import shutil #why?
+
+test_results_dir = roslib.rosenv.get_test_results_dir()
+raw_bags_dir = os.path.join(test_results_dir, "ros_epic_fail_raw_bags")
+bags_dir = os.path.join(test_results_dir, "ros_epic_fail_trapped_bags")
+
+def get_last_number(dir):
+    max = 0
+    for file in os.listdir(dir):
+        if ((file[0] == '1' or file[0] == '2' or file[0] == '3'
+             or file[0] == '4' or file[0] == '5' or file[0] == '6'
+             or file[0] == '7' or file[0] == '8' or file[0] == '9')
+            and file.find("_") != -1):
+            num = file[0:file.find("_")]
+            if (int(num) > max):
+                max = int(num)
+
+    return max
+
+for d in os.listdir(test_results_dir):
+    test_dir = os.path.join(test_results_dir, d)
+    base_test_name = os.path.basename(test_dir)
+    for	file in os.listdir(test_dir):
+        if file.endswith('.xml'):
+            test_name = base_test_name + '.' + file[:-4]
+            file = os.path.join(test_dir, file)
+            try:
+                result = xmlr.read(file, test_name)
+                fail = (result.num_errors + result.num_failures) > 0
+                if (fail):
+                    file = os.path.join(raw_bags_dir, result.name + ".bag")
+                    if (os.path.exists(file)):
+                        print "Failure of", result.name
+                        result_bag_dir = os.path.join(bags_dir, result.name)
+                        if (not os.path.exists(result_bag_dir)):
+                            os.makedirs(result_bag_dir)
+                        n = get_last_number(result_bag_dir) + 1
+                        output_file = os.path.join(result_bag_dir, 
+                                                   str(n) + "_" +  result.name + ".bag")
+                        #FIXME: this is brittle
+                        os.system("mv \"" + file + "\" \"" + output_file + "\"")
+                    else:
+                        print "No bag for", result.name
+            except Exception, e:
+                print >> sys.stderr, "ignoring [%s]: %s"%(file, e)

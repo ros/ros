@@ -1,0 +1,17 @@
+<package>
+  <description brief="ros_epic_fail">
+    Experimental package to create bag failures of test failures on the build server/
+  </description>
+  <author>Tony Pratkanis</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/ros_epic_fail</url>
+
+  <depend package="rospy"/>
+  <depend package="roslib"/>
+  <depend package="rostest"/>
+  <depend package="rosrecord"/>
+
+</package>
+
+

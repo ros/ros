@@ -38,9 +38,27 @@ def load_rosdoc_list(fn, all_repos):
 
 def checkout_repos(repos):
   for key in repos:
-    print 'Checking out %s to %s...'%(repos[key], key)
-    cmd = ['svn', 'co', repos[key], key]
-    subprocess.call(cmd)
+    url = repos[key]
+    fresh_install = os.path.exists(key)
+    cmd = None 
+    if url.startswith('git:'):
+      if fresh_install:
+        cmd = 'cd %s && git pull'%key
+      else:
+        cmd = ['git', 'clone', url, key]
+    elif url.startswith('bzr:'):
+      if fresh_install:
+        cmd = ['bzr', 'checkout', url, key]
+      else:
+        cmd = "cd %s && bzr up"%key
+    else:
+      cmd = ['svn', 'co', url, key]
+
+    if cmd:
+      print 'Checking out %s to %s...'%(url, key)
+      subprocess.call(cmd)
+    else:
+      print >> sys.stderr, "Unable to checkout %s"%key
 
 def write_setup_file(repos):
   str = 'export ROS_PACKAGE_PATH='
@@ -63,6 +81,5 @@ def main(argv):
     checkout_repos(repos)
     write_setup_file(repos)
   
-
 if __name__ == "__main__":
   main(sys.argv)

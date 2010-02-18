@@ -313,21 +313,28 @@ macro(_rosbuild_get_clock var)
   endif(_time_failed)
 endmacro(_rosbuild_get_clock var)
 
-macro(_rosbuild_time_less_than_latest_mtime var _t)
+macro(_rosbuild_cmakelist_to_pylist _cmakelist _pylist)
+    # Convert a CMake list into a Python list
+    set(_pyl "[")
+    foreach(_f ${_cmakelist})
+      set(_pyl "${_pyl} '${_f}',")
+    endforeach(_f)
+    set(_pyl "${_pyl}]")
+    set(${_pylist} "${_pyl}")
+endmacro(_rosbuild_cmakelist_to_pylist _cmakelist _pylist)
+
+macro(_rosbuild_compare_manifests var _t _c _m)
   if("${_t}" STREQUAL "")
     # No time was given, so it's too old
     set(${var} 1)
   else("${_t}" STREQUAL "")
-    # Convert a CMake list into a Python list
-    set(_pylist "[")
-    foreach(_f ${ARGN})
-      set(_pylist "${_pylist} '${_f}',")
-    endforeach(_f)
-    set(_pylist "${_pylist}]")
+    _rosbuild_cmakelist_to_pylist("${_m}" _pylist)
+    _rosbuild_cmakelist_to_pylist("${_c}" _cached_pylist)
+
     # Call Python to compare the provided time to the latest mtime on all
     # the files
     execute_process(
-      COMMAND python -c "import os; print 1 if ${_t} < max(os.stat(f).st_mtime for f in ${_pylist}) else 0;"
+      COMMAND python -c "import os; print 1 if set(${_pylist}) != set(${_cached_pylist}) or ${_t} < max(os.stat(f).st_mtime for f in ${_pylist}) else 0;"
       OUTPUT_VARIABLE ${var}
       ERROR_VARIABLE _mtime_error
       RESULT_VARIABLE _mtime_failed
@@ -339,7 +346,7 @@ macro(_rosbuild_time_less_than_latest_mtime var _t)
       message(FATAL_ERROR "[rosbuild] Failed to get latest mtime; aborting")
     endif(_mtime_failed)
   endif("${_t}" STREQUAL "")
-endmacro(_rosbuild_time_less_than_latest_mtime var)
+endmacro(_rosbuild_compare_manifests var _t)
 
 # Internal macros above
 ###############################################################################

@@ -1,0 +1,1 @@
+duration my_duration

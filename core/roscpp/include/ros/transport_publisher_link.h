@@ -65,7 +65,7 @@ private:
   /**
    * \brief Handles handing off a received message to the subscription, where it will be deserialized and called back
    */
-  virtual void handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes);
+  virtual void handleMessage(const SerializedMessage& m, bool ser, bool nocopy);
 
   void onHeaderWritten(const ConnectionPtr& conn);
   void onMessageLength(const ConnectionPtr& conn, const boost::shared_array<uint8_t>& buffer, uint32_t size, bool success);

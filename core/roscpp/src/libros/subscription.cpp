@@ -39,6 +39,7 @@
 #include <sys/poll.h> // for POLLOUT
 #include <cerrno>
 #include <cstring>
+#include <typeinfo>
 
 #include "ros/common.h"
 #include "ros/subscription.h"
@@ -58,16 +59,57 @@
 #include "ros/subscription_queue.h"
 #include "ros/file_log.h"
 #include "ros/transport_hints.h"
+#include "ros/subscription_callback_helper.h"
+
+#include <boost/make_shared.hpp>
 
 using XmlRpc::XmlRpcValue;
 
 namespace ros
 {
 
+class SubscriptionCallback : public CallbackInterface
+{
+public:
+  SubscriptionCallback(const SubscriptionQueuePtr& queue, uint64_t id)
+  : queue_(queue)
+  , id_(id)
+  , called_(false)
+  {}
+
+  ~SubscriptionCallback()
+  {
+    if (!called_)
+    {
+      queue_->remove(id_);
+    }
+  }
+
+  virtual CallResult call()
+  {
+    CallResult result = queue_->call(id_);
+    called_ = true;
+
+    return result;
+  }
+
+  virtual bool ready()
+  {
+    return queue_->ready(id_);
+  }
+
+private:
+  SubscriptionQueuePtr queue_;
+  uint64_t id_;
+  bool called_;
+};
+typedef boost::shared_ptr<SubscriptionCallback> SubscriptionCallbackPtr;
+
 Subscription::Subscription(const std::string &name, const std::string& md5sum, const std::string& datatype, const TransportHints& transport_hints)
 : name_(name)
 , md5sum_(md5sum)
 , datatype_(datatype)
+, nonconst_callbacks_(0)
 , dropped_(false)
 , shutting_down_(false)
 , transport_hints_(transport_hints)
@@ -563,51 +605,18 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
   }
 }
 
-class SubscriptionCallback : public CallbackInterface
-{
-public:
-  SubscriptionCallback(const SubscriptionQueuePtr& queue, uint64_t id)
-  : queue_(queue)
-  , id_(id)
-  , called_(false)
-  {}
-
-  ~SubscriptionCallback()
-  {
-    if (!called_)
-    {
-      queue_->remove(id_);
-    }
-  }
-
-  virtual CallResult call()
-  {
-    CallResult result = queue_->call(id_);
-    called_ = true;
-
-    return result;
-  }
-
-  virtual bool ready()
-  {
-    return queue_->ready(id_);
-  }
-
-private:
-  SubscriptionQueuePtr queue_;
-  uint64_t id_;
-  bool called_;
-};
-typedef boost::shared_ptr<SubscriptionCallback> SubscriptionCallbackPtr;
-
-uint32_t Subscription::handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes, bool buffer_includes_size_header, const boost::shared_ptr<M_string>& connection_header, const PublisherLinkPtr& link)
+uint32_t Subscription::handleMessage(const SerializedMessage& m, bool ser, bool nocopy, const boost::shared_ptr<M_string>& connection_header, const PublisherLinkPtr& link)
 {
   boost::mutex::scoped_lock lock(callbacks_mutex_);
 
   uint32_t drops = 0;
 
-  MessagePtr msg;
-  MessageDeserializerPtr deserializer;
+  // Cache the deserializers by type info.  If all the subscriptions are the same type this has the same performance as before.  If
+  // there are subscriptions with different C++ type (but same ROS message type), this now works correctly rather than passing
+  // garbage to the messages with different C++ types than the first one.
+  cached_deserializers_.clear();
+
+  ros::Time receipt_time = ros::Time::now();
 
   for (V_CallbackInfo::iterator cb = callbacks_.begin();
        cb != callbacks_.end(); ++cb)
@@ -616,35 +625,68 @@ uint32_t Subscription::handleMessage(const boost::shared_array<uint8_t>& buffer,
 
     ROS_ASSERT(info->callback_queue_);
 
-    if (!deserializer)
-    {
-      deserializer.reset(new MessageDeserializer(info->helper_, buffer, num_bytes, buffer_includes_size_header, connection_header));
-    }
+    const std::type_info* ti = &info->helper_->getTypeInfo();
 
-    if (info->subscription_queue_->full())
+    if ((nocopy && m.type_info && *ti == *m.type_info) || (ser && (!m.type_info || *ti != *m.type_info)))
     {
-      ++drops;
-    }
+      MessageDeserializerPtr deserializer;
 
-    uint64_t id = info->subscription_queue_->push(info->helper_, deserializer, info->has_tracked_object_, info->tracked_object_);
-    SubscriptionCallbackPtr cb(new SubscriptionCallback(info->subscription_queue_, id));
-    info->callback_queue_->addCallback(cb, (uint64_t)info.get());
+      V_TypeAndDeserializer::iterator des_it = cached_deserializers_.begin();
+      V_TypeAndDeserializer::iterator des_end = cached_deserializers_.end();
+      for (; des_it != des_end; ++des_it)
+      {
+        if (*des_it->first == *ti)
+        {
+          deserializer = des_it->second;
+          break;
+        }
+      }
+
+      if (!deserializer)
+      {
+        deserializer = boost::make_shared<MessageDeserializer>(info->helper_, m, connection_header);
+        cached_deserializers_.push_back(std::make_pair(ti, deserializer));
+      }
+
+      bool was_full = false;
+      bool nonconst_need_copy = false;
+      if (callbacks_.size() > 1)
+      {
+        nonconst_need_copy = true;
+      }
+
+      uint64_t id = info->subscription_queue_->push(info->helper_, deserializer, info->has_tracked_object_, info->tracked_object_, nonconst_need_copy, receipt_time, &was_full);
+      SubscriptionCallbackPtr cb = boost::make_shared<SubscriptionCallback>(info->subscription_queue_, id);
+      info->callback_queue_->addCallback(cb, (uint64_t)info.get());
+
+      if (was_full)
+      {
+        ++drops;
+      }
+    }
   }
 
   // If this link is latched, store off the message so we can immediately pass it to new subscribers later
-  if (deserializer && link->isLatched())
+  if (link->isLatched())
   {
-    latched_messages_[link] = deserializer;
+    LatchInfo li;
+    li.connection_header = connection_header;
+    li.link = link;
+    li.message = m;
+    li.receipt_time = receipt_time;
+    latched_messages_[link] = li;
   }
+
+  cached_deserializers_.clear();
 
   return drops;
 }
 
-bool Subscription::addCallback(const SubscriptionMessageHelperPtr& helper, CallbackQueueInterface* queue, int32_t queue_size, const VoidPtr& tracked_object)
+bool Subscription::addCallback(const SubscriptionCallbackHelperPtr& helper, const std::string& md5sum, CallbackQueueInterface* queue, int32_t queue_size, const VoidConstPtr& tracked_object)
 {
   ROS_ASSERT(helper);
   ROS_ASSERT(queue);
-  if (helper->getMD5Sum() != md5sum())
+  if (md5sum != this->md5sum())
   {
     return false;
   }
@@ -663,7 +705,13 @@ bool Subscription::addCallback(const SubscriptionMessageHelperPtr& helper, Callb
       info->has_tracked_object_ = true;
     }
 
+    if (!helper->isConst())
+    {
+      ++nonconst_callbacks_;
+    }
+
     callbacks_.push_back(info);
+    cached_deserializers_.reserve(callbacks_.size());
 
     // if we have any latched links, we need to immediately schedule callbacks
     if (!latched_messages_.empty())
@@ -677,12 +725,13 @@ bool Subscription::addCallback(const SubscriptionMessageHelperPtr& helper, Callb
         const PublisherLinkPtr& link = *it;
         if (link->isLatched())
         {
-          M_PublisherLinkToDeserializer::iterator des_it = latched_messages_.find(link);
+          M_PublisherLinkToLatchInfo::iterator des_it = latched_messages_.find(link);
           if (des_it != latched_messages_.end())
           {
-            const MessageDeserializerPtr& des = des_it->second;
+            const LatchInfo& latch_info = des_it->second;
 
-            uint64_t id = info->subscription_queue_->push(info->helper_, des, info->has_tracked_object_, info->tracked_object_);
+            MessageDeserializerPtr des(new MessageDeserializer(helper, latch_info.message, latch_info.connection_header));
+            uint64_t id = info->subscription_queue_->push(info->helper_, des, info->has_tracked_object_, info->tracked_object_, true, latch_info.receipt_time);
             SubscriptionCallbackPtr cb(new SubscriptionCallback(info->subscription_queue_, id));
             info->callback_queue_->addCallback(cb, (uint64_t)info.get());
           }
@@ -694,7 +743,7 @@ bool Subscription::addCallback(const SubscriptionMessageHelperPtr& helper, Callb
   return true;
 }
 
-void Subscription::removeCallback(const SubscriptionMessageHelperPtr& helper)
+void Subscription::removeCallback(const SubscriptionCallbackHelperPtr& helper)
 {
   boost::mutex::scoped_lock cbs_lock(callbacks_mutex_);
   for (V_CallbackInfo::iterator it = callbacks_.begin();
@@ -706,6 +755,12 @@ void Subscription::removeCallback(const SubscriptionMessageHelperPtr& helper)
       info->subscription_queue_->clear();
       info->callback_queue_->removeByID((uint64_t)info.get());
       callbacks_.erase(it);
+
+      if (!helper->isConst())
+      {
+        --nonconst_callbacks_;
+      }
+
       break;
     }
   }
@@ -724,6 +779,29 @@ void Subscription::removePublisherLink(const PublisherLinkPtr& pub_link)
   if (pub_link->isLatched())
   {
     latched_messages_.erase(pub_link);
+  }
+}
+
+void Subscription::getPublishTypes(bool& ser, bool& nocopy, const std::type_info& ti)
+{
+  boost::mutex::scoped_lock lock(callbacks_mutex_);
+  for (V_CallbackInfo::iterator cb = callbacks_.begin();
+       cb != callbacks_.end(); ++cb)
+  {
+    const CallbackInfoPtr& info = *cb;
+    if (info->helper_->getTypeInfo() == ti)
+    {
+      nocopy = true;
+    }
+    else
+    {
+      ser = true;
+    }
+
+    if (nocopy && ser)
+    {
+      return;
+    }
   }
 }
 

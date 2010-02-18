@@ -53,6 +53,21 @@ struct Msg
 typedef boost::shared_ptr<Msg> MsgPtr;
 typedef boost::shared_ptr<Msg const> MsgConstPtr;
 
+namespace ros
+{
+namespace message_traits
+{
+template<>
+struct TimeStamp<Msg>
+{
+  static ros::Time value(const Msg& m)
+  {
+    return m.header.stamp;
+  }
+};
+}
+}
+
 class Helper
 {
 public:
@@ -94,6 +109,38 @@ TEST(TimeSequencer, compilation)
   TimeSequencer<Msg> seq(ros::Duration(1.0), ros::Duration(0.01), 10);
   TimeSequencer<Msg> seq2(ros::Duration(1.0), ros::Duration(0.01), 10);
   seq2.connectInput(seq);
+}
+
+struct EventHelper
+{
+public:
+  void cb(const ros::MessageEvent<Msg const>& evt)
+  {
+    event_ = evt;
+  }
+
+  ros::MessageEvent<Msg const> event_;
+};
+
+TEST(TimeSequencer, eventInEventOut)
+{
+  TimeSequencer<Msg> seq(ros::Duration(1.0), ros::Duration(0.01), 10);
+  TimeSequencer<Msg> seq2(seq, ros::Duration(1.0), ros::Duration(0.01), 10);
+  EventHelper h;
+  seq2.registerCallback(&EventHelper::cb, &h);
+
+  ros::MessageEvent<Msg const> evt(MsgConstPtr(new Msg), ros::Time::now());
+  seq.add(evt);
+
+  ros::Time::setNow(ros::Time::now() + ros::Duration(2));
+  while (!h.event_.getMessage())
+  {
+    ros::WallDuration(0.01).sleep();
+    ros::spinOnce();
+  }
+
+  EXPECT_EQ(h.event_.getReceiptTime(), evt.getReceiptTime());
+  EXPECT_EQ(h.event_.getMessage(), evt.getMessage());
 }
 
 int main(int argc, char **argv){

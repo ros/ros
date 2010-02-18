@@ -11,11 +11,6 @@
   <depend package="rosrecord"/>
   <depend package="rostest"/>
   <depend package="test_crosspackage"/>
-
-  <export>
-    <cpp cflags="-I${prefix}/msg/cpp"/>
-  </export>
-
 </package>
 
 

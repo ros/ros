@@ -120,6 +120,82 @@ TEST(Subscriber, subInChain)
   ASSERT_GT(h.count_, 0);
 }
 
+struct ConstHelper
+{
+  void cb(const MsgConstPtr& msg)
+  {
+    msg_ = msg;
+  }
+
+  MsgConstPtr msg_;
+};
+
+struct NonConstHelper
+{
+  void cb(const MsgPtr& msg)
+  {
+    msg_ = msg;
+  }
+
+  MsgPtr msg_;
+};
+
+TEST(Subscriber, singleNonConstCallback)
+{
+  ros::NodeHandle nh;
+  NonConstHelper h;
+  Subscriber<Msg> sub(nh, "test_topic", 0);
+  sub.registerCallback(&NonConstHelper::cb, &h);
+  ros::Publisher pub = nh.advertise<Msg>("test_topic", 0);
+  MsgPtr msg(new Msg);
+  pub.publish(msg);
+
+  ros::spinOnce();
+
+  ASSERT_TRUE(h.msg_);
+  ASSERT_EQ(msg.get(), h.msg_.get());
+}
+
+TEST(Subscriber, multipleNonConstCallbacksFilterSubscriber)
+{
+  ros::NodeHandle nh;
+  NonConstHelper h, h2;
+  Subscriber<Msg> sub(nh, "test_topic", 0);
+  sub.registerCallback(&NonConstHelper::cb, &h);
+  sub.registerCallback(&NonConstHelper::cb, &h2);
+  ros::Publisher pub = nh.advertise<Msg>("test_topic", 0);
+  MsgPtr msg(new Msg);
+  pub.publish(msg);
+
+  ros::spinOnce();
+
+  ASSERT_TRUE(h.msg_);
+  ASSERT_TRUE(h2.msg_);
+  EXPECT_NE(msg.get(), h.msg_.get());
+  EXPECT_NE(msg.get(), h2.msg_.get());
+  EXPECT_NE(h.msg_.get(), h2.msg_.get());
+}
+
+TEST(Subscriber, multipleCallbacksSomeFilterSomeDirect)
+{
+  ros::NodeHandle nh;
+  NonConstHelper h, h2;
+  Subscriber<Msg> sub(nh, "test_topic", 0);
+  sub.registerCallback(&NonConstHelper::cb, &h);
+  ros::Subscriber sub2 = nh.subscribe("test_topic", 0, &NonConstHelper::cb, &h2);
+  ros::Publisher pub = nh.advertise<Msg>("test_topic", 0);
+  MsgPtr msg(new Msg);
+  pub.publish(msg);
+
+  ros::spinOnce();
+
+  ASSERT_TRUE(h.msg_);
+  ASSERT_TRUE(h2.msg_);
+  EXPECT_NE(msg.get(), h.msg_.get());
+  EXPECT_NE(msg.get(), h2.msg_.get());
+  EXPECT_NE(h.msg_.get(), h2.msg_.get());
+}
+
 
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);

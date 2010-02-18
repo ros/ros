@@ -53,6 +53,21 @@ struct Msg
 typedef boost::shared_ptr<Msg> MsgPtr;
 typedef boost::shared_ptr<Msg const> MsgConstPtr;
 
+namespace ros
+{
+namespace message_traits
+{
+template<>
+struct TimeStamp<Msg>
+{
+  static ros::Time value(const Msg& m)
+  {
+    return m.header.stamp;
+  }
+};
+}
+}
+
 class Helper
 {
 public:
@@ -131,7 +146,7 @@ void function5(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const
 void function6(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
 void function7(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
 void function8(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
-void function9(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+void function9(const MsgConstPtr&, MsgConstPtr, const MsgPtr&, MsgPtr, const Msg&, Msg, const ros::MessageEvent<Msg const>&, const ros::MessageEvent<Msg>&, const MsgConstPtr&) {}
 
 TEST(TimeSynchronizer, compileFunction2)
 {
@@ -179,6 +194,67 @@ TEST(TimeSynchronizer, compileFunction9)
 {
   TimeSynchronizer<Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg> sync(1);
   sync.registerCallback(function9);
+}
+
+struct MethodHelper
+{
+  void method2(const MsgConstPtr&, const MsgConstPtr&) {}
+  void method3(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+  void method4(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+  void method5(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+  void method6(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+  void method7(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+  void method8(const MsgConstPtr&, MsgConstPtr, const MsgPtr&, MsgPtr, const Msg&, Msg, const ros::MessageEvent<Msg const>&, const ros::MessageEvent<Msg>&) {}
+  // Can only do 8 here because the object instance counts as a parameter and bind only supports 9
+};
+
+TEST(TimeSynchronizer, compileMethod2)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method2, &h);
+}
+
+TEST(TimeSynchronizer, compileMethod3)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method3, &h);
+}
+
+TEST(TimeSynchronizer, compileMethod4)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method4, &h);
+}
+
+TEST(TimeSynchronizer, compileMethod5)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method5, &h);
+}
+
+TEST(TimeSynchronizer, compileMethod6)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg, Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method6, &h);
+}
+
+TEST(TimeSynchronizer, compileMethod7)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg, Msg, Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method7, &h);
+}
+
+TEST(TimeSynchronizer, compileMethod8)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method8, &h);
 }
 
 TEST(TimeSynchronizer, immediate2)
@@ -416,6 +492,36 @@ TEST(TimeSynchronizer, dropCallback)
 
   ASSERT_EQ(h.t_count_, 1);
 }
+
+struct EventHelper
+{
+  void callback(const ros::MessageEvent<Msg const>& e1, const ros::MessageEvent<Msg const>& e2)
+  {
+    e1_ = e1;
+    e2_ = e2;
+  }
+
+  ros::MessageEvent<Msg const> e1_;
+  ros::MessageEvent<Msg const> e2_;
+};
+
+TEST(TimeSynchronizer, eventInEventOut)
+{
+  TimeSynchronizer<Msg, Msg> sync(2);
+  EventHelper h;
+  sync.registerCallback(&EventHelper::callback, &h);
+  ros::MessageEvent<Msg const> evt(MsgPtr(new Msg), ros::Time(4));
+
+  sync.add0(evt);
+  sync.add1(evt);
+
+  ASSERT_TRUE(h.e1_.getMessage());
+  ASSERT_TRUE(h.e2_.getMessage());
+  ASSERT_EQ(h.e1_.getReceiptTime(), evt.getReceiptTime());
+  ASSERT_EQ(h.e2_.getReceiptTime(), evt.getReceiptTime());
+}
+
+//TEST(TimeSynchronizer, connectToSimple)
 
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);

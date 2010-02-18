@@ -30,6 +30,7 @@
 
 #include "ros/forwards.h"
 #include "ros/message.h"
+#include "ros/serialization.h"
 
 #include <boost/utility.hpp>
 
@@ -53,11 +54,21 @@ public:
    * passed directly into a callback function)
    *
    */
-  void publish(const Message::ConstPtr& message) const;
+  template<class M>
+  void publish(const boost::shared_ptr<M const>& message) const
+  {
+    publish(*message);
+  }
   /**
    * \brief Publish a message on the topic associated with this Publisher.
    */
-  void publish(const Message& message) const;
+  template<class M>
+  void publish(const M& message) const
+  {
+    using namespace serialization;
+    SerializedMessage m = serializeMessage(message);
+    publish(m);
+  }
 
   /**
    * \brief Returns the topic this publisher publishes on
@@ -70,6 +81,7 @@ public:
   std::string getSubscriberName() const;
 
 private:
+  void publish(const SerializedMessage& m) const;
 
   SubscriberLinkPtr link_;
 };

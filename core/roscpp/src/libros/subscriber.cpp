@@ -60,7 +60,7 @@ void Subscriber::Impl::unsubscribe()
   }
 }
 
-Subscriber::Subscriber(const std::string& topic, const NodeHandle& node_handle, const SubscriptionMessageHelperPtr& helper)
+Subscriber::Subscriber(const std::string& topic, const NodeHandle& node_handle, const SubscriptionCallbackHelperPtr& helper)
 : impl_(new Impl)
 {
   impl_->topic_ = topic;

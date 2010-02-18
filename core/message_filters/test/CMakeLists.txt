@@ -7,6 +7,9 @@ target_link_libraries(test/msg_cache_unittest message_filters)
 rosbuild_add_gtest(test/time_synchronizer_unittest time_synchronizer_unittest.cpp)
 target_link_libraries(test/time_synchronizer_unittest message_filters)
 
+rosbuild_add_gtest(test/test_simple test_simple.cpp)
+target_link_libraries(test/test_simple message_filters)
+
 rosbuild_add_gtest(test/test_chain test_chain.cpp)
 target_link_libraries(test/test_chain message_filters)
 

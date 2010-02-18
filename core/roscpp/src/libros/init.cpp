@@ -45,6 +45,7 @@
 #include "ros/callback_queue.h"
 #include "ros/param.h"
 #include "ros/rosout_appender.h"
+#include "ros/subscribe_options.h"
 #include "ros/transport/transport_tcp.h"
 
 #include "roscpp/GetLoggers.h"
@@ -368,6 +369,8 @@ void init(const M_string& remappings, const std::string& name, uint32_t options)
     g_ok = true;
 
     ROSCONSOLE_AUTOINIT;
+    // Disable SIGPIPE
+    signal(SIGPIPE, SIG_IGN);
     ros::Time::init();
     network::init(remappings);
     master::init(remappings);

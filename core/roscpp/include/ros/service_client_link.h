@@ -39,8 +39,6 @@
 namespace ros
 {
 class Header;
-class Message;
-typedef boost::shared_ptr<Message> MessagePtr;
 class ServicePublication;
 typedef boost::weak_ptr<ServicePublication> ServicePublicationWPtr;
 typedef boost::shared_ptr<ServicePublication> ServicePublicationPtr;
@@ -65,7 +63,7 @@ public:
    * \param ok Whether the callback was successful or not
    * \param resp The message response.  ServiceClientLink will delete this
    */
-  void processResponse(bool ok, const MessagePtr& resp);
+  void processResponse(bool ok, const SerializedMessage& res);
 
   const ConnectionPtr& getConnection() { return connection_; }
 

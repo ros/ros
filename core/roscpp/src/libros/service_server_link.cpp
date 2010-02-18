@@ -229,8 +229,7 @@ void ServiceServerLink::onResponse(const ConnectionPtr& conn, const boost::share
 
     if (current_call_->success_)
     {
-      current_call_->resp_->__serialized_length = size;
-      current_call_->resp_->deserialize(buffer.get());
+      *current_call_->resp_ = SerializedMessage(buffer, size);
     }
   }
 
@@ -302,28 +301,22 @@ void ServiceServerLink::processNextCall()
   }
   else
   {
-    boost::shared_array<uint8_t> dummy;
-    SerializedMessage request(dummy, 0);
+    SerializedMessage request;
 
     {
       boost::mutex::scoped_lock lock(call_queue_mutex_);
-
-      uint32_t num_bytes = current_call_->req_->serializationLength() + 4;
-
-      request = SerializedMessage(boost::shared_array<uint8_t>(new uint8_t[num_bytes]), num_bytes);
-      *((uint32_t*)request.buf.get()) = num_bytes - 4;
-      current_call_->req_->serialize(request.buf.get() + 4, 0);
+      request = current_call_->req_;
     }
 
     connection_->write(request.buf, request.num_bytes, boost::bind(&ServiceServerLink::onRequestWritten, this, _1));
   }
 }
 
-bool ServiceServerLink::call(Message* req, Message* resp)
+bool ServiceServerLink::call(const SerializedMessage& req, SerializedMessage& resp)
 {
   CallInfoPtr info(new CallInfo);
   info->req_ = req;
-  info->resp_ = resp;
+  info->resp_ = &resp;
   info->success_ = false;
   info->finished_ = false;
   info->call_finished_ = false;

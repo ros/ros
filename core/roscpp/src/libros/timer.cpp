@@ -54,7 +54,7 @@ void Timer::Impl::start()
 {
   if (!started_)
   {
-    VoidPtr tracked_object;
+    VoidConstPtr tracked_object;
     if (has_tracked_object_)
     {
       tracked_object = tracked_object_.lock();

@@ -43,7 +43,6 @@
 #include <boost/bind.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/utility/enable_if.hpp>
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/equal_to.hpp>
 #include <boost/function_types/function_arity.hpp>
@@ -52,6 +51,10 @@
 #include <roslib/Header.h>
 
 #include "connection.h"
+#include "signal9.h"
+#include <ros/message_traits.h>
+#include <ros/message_event.h>
+
 
 namespace message_filters
 {
@@ -59,24 +62,45 @@ namespace message_filters
 namespace ft = boost::function_types;
 namespace mpl = boost::mpl;
 
-class NullType
+struct NullType
 {
-public:
-  roslib::Header header;
 };
 typedef boost::shared_ptr<NullType const> NullTypeConstPtr;
 
 template<class M>
-class NullFilter
+struct NullFilter
 {
-public:
-  typedef boost::shared_ptr<M const> MConstPtr;
-  typedef boost::function<void(const MConstPtr&)> Callback;
-  Connection registerCallback(const Callback& cb)
+  template<typename C>
+  Connection registerCallback(const C& callback)
+  {
+    return Connection();
+  }
+
+  template<typename P>
+  Connection registerCallback(const boost::function<void(P)>& callback)
   {
     return Connection();
   }
 };
+}
+
+namespace ros
+{
+namespace message_traits
+{
+template<>
+struct TimeStamp<message_filters::NullType>
+{
+  static ros::Time value(const message_filters::NullType&)
+  {
+    return ros::Time();
+  }
+};
+}
+}
+
+namespace message_filters
+{
 
 /**
  * \brief Synchronizes up to 9 messages by their timestamps.
@@ -126,18 +150,20 @@ public:
   typedef boost::shared_ptr<M6 const> M6ConstPtr;
   typedef boost::shared_ptr<M7 const> M7ConstPtr;
   typedef boost::shared_ptr<M8 const> M8ConstPtr;
-  typedef boost::tuple<M0ConstPtr, M1ConstPtr, M2ConstPtr, M3ConstPtr, M4ConstPtr, M5ConstPtr, M6ConstPtr, M7ConstPtr, M8ConstPtr> Tuple;
-  typedef boost::signal<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&, const M6ConstPtr&, const M7ConstPtr&, const M8ConstPtr&)> Signal;
+  typedef ros::MessageEvent<M0 const> M0Event;
+  typedef ros::MessageEvent<M1 const> M1Event;
+  typedef ros::MessageEvent<M2 const> M2Event;
+  typedef ros::MessageEvent<M3 const> M3Event;
+  typedef ros::MessageEvent<M4 const> M4Event;
+  typedef ros::MessageEvent<M5 const> M5Event;
+  typedef ros::MessageEvent<M6 const> M6Event;
+  typedef ros::MessageEvent<M7 const> M7Event;
+  typedef ros::MessageEvent<M8 const> M8Event;
+  typedef boost::tuple<M0Event, M1Event, M2Event, M3Event, M4Event, M5Event, M6Event, M7Event, M8Event> Tuple;
+  typedef Signal9<M0, M1, M2, M3, M4, M5, M6, M7, M8> Signal;
   typedef boost::signal<void(const Tuple&)> DropSignal;
   typedef boost::function<void(const Tuple&)> DropCallback;
-  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&)> Callback2;
-  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&)> Callback3;
-  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&)> Callback4;
-  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&)> Callback5;
-  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&)> Callback6;
-  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&, const M6ConstPtr&)> Callback7;
-  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&, const M6ConstPtr&, const M7ConstPtr&)> Callback8;
-  typedef boost::function<void(const M0ConstPtr&, const M1ConstPtr&, const M2ConstPtr&, const M3ConstPtr&, const M4ConstPtr&, const M5ConstPtr&, const M6ConstPtr&, const M7ConstPtr&, const M8ConstPtr&)> Callback9;
+  typedef const boost::shared_ptr<NullType const>& NullP;
 
   static const uint8_t MAX_MESSAGES = 9;
 
@@ -270,78 +296,131 @@ public:
   {
     disconnectAll();
 
-    input_connections_[0] = f0.registerCallback(boost::bind(&TimeSynchronizer::cb0, this, _1));
-    input_connections_[1] = f1.registerCallback(boost::bind(&TimeSynchronizer::cb1, this, _1));
-    input_connections_[2] = f2.registerCallback(boost::bind(&TimeSynchronizer::cb2, this, _1));
-    input_connections_[3] = f3.registerCallback(boost::bind(&TimeSynchronizer::cb3, this, _1));
-    input_connections_[4] = f4.registerCallback(boost::bind(&TimeSynchronizer::cb4, this, _1));
-    input_connections_[5] = f5.registerCallback(boost::bind(&TimeSynchronizer::cb5, this, _1));
-    input_connections_[6] = f6.registerCallback(boost::bind(&TimeSynchronizer::cb6, this, _1));
-    input_connections_[7] = f7.registerCallback(boost::bind(&TimeSynchronizer::cb7, this, _1));
-    input_connections_[8] = f8.registerCallback(boost::bind(&TimeSynchronizer::cb8, this, _1));
+    input_connections_[0] = f0.registerCallback(boost::function<void(const ros::MessageEvent<M0 const>&)>(boost::bind(&TimeSynchronizer::cb0, this, _1)));
+    input_connections_[1] = f1.registerCallback(boost::function<void(const ros::MessageEvent<M1 const>&)>(boost::bind(&TimeSynchronizer::cb1, this, _1)));
+    input_connections_[2] = f2.registerCallback(boost::function<void(const ros::MessageEvent<M2 const>&)>(boost::bind(&TimeSynchronizer::cb2, this, _1)));
+    input_connections_[3] = f3.registerCallback(boost::function<void(const ros::MessageEvent<M3 const>&)>(boost::bind(&TimeSynchronizer::cb3, this, _1)));
+    input_connections_[4] = f4.registerCallback(boost::function<void(const ros::MessageEvent<M4 const>&)>(boost::bind(&TimeSynchronizer::cb4, this, _1)));
+    input_connections_[5] = f5.registerCallback(boost::function<void(const ros::MessageEvent<M5 const>&)>(boost::bind(&TimeSynchronizer::cb5, this, _1)));
+    input_connections_[6] = f6.registerCallback(boost::function<void(const ros::MessageEvent<M6 const>&)>(boost::bind(&TimeSynchronizer::cb6, this, _1)));
+    input_connections_[7] = f7.registerCallback(boost::function<void(const ros::MessageEvent<M7 const>&)>(boost::bind(&TimeSynchronizer::cb7, this, _1)));
+    input_connections_[8] = f8.registerCallback(boost::function<void(const ros::MessageEvent<M8 const>&)>(boost::bind(&TimeSynchronizer::cb8, this, _1)));
+  }
+
+  template<typename P0, typename P1>
+  Connection registerCallback(void(*callback)(P0, P1))
+  {
+    return registerCallback(boost::function<void(P0, P1, NullP, NullP, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, _1, _2)));
+  }
+
+  template<typename P0, typename P1, typename P2>
+  Connection registerCallback(void(*callback)(P0, P1, P2))
+  {
+    return registerCallback(boost::function<void(P0, P1, P2, NullP, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, _1, _2, _3)));
+  }
+
+  template<typename P0, typename P1, typename P2, typename P3>
+  Connection registerCallback(void(*callback)(P0, P1, P2, P3))
+  {
+    return registerCallback(boost::function<void(P0, P1, P2, P3, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, _1, _2, _3, _4)));
+  }
+
+  template<typename P0, typename P1, typename P2, typename P3, typename P4>
+  Connection registerCallback(void(*callback)(P0, P1, P2, P3, P4))
+  {
+    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, NullP, NullP, NullP, NullP)>(boost::bind(callback, _1, _2, _3, _4, _5)));
+  }
+
+  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5>
+  Connection registerCallback(void(*callback)(P0, P1, P2, P3, P4, P5))
+  {
+    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, NullP, NullP, NullP)>(boost::bind(callback, _1, _2, _3, _4, _5, _6)));
+  }
+
+  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
+  Connection registerCallback(void(*callback)(P0, P1, P2, P3, P4, P5, P6))
+  {
+    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, NullP, NullP)>(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7)));
+  }
+
+  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7>
+  Connection registerCallback(void(*callback)(P0, P1, P2, P3, P4, P5, P6, P7))
+  {
+    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, P7, NullP)>(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7, _8)));
+  }
+
+  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8>
+  Connection registerCallback(void(*callback)(P0, P1, P2, P3, P4, P5, P6, P7, P8))
+  {
+    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, P7, P8)>(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7, _8, _9)));
+  }
+
+  template<typename T, typename P0, typename P1>
+  Connection registerCallback(void(T::*callback)(P0, P1), T* t)
+  {
+    return registerCallback(boost::function<void(P0, P1, NullP, NullP, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2)));
+  }
+
+  template<typename T, typename P0, typename P1, typename P2>
+  Connection registerCallback(void(T::*callback)(P0, P1, P2), T* t)
+  {
+    return registerCallback(boost::function<void(P0, P1, P2, NullP, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3)));
+  }
+
+  template<typename T, typename P0, typename P1, typename P2, typename P3>
+  Connection registerCallback(void(T::*callback)(P0, P1, P2, P3), T* t)
+  {
+    return registerCallback(boost::function<void(P0, P1, P2, P3, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3, _4)));
+  }
+
+  template<typename T, typename P0, typename P1, typename P2, typename P3, typename P4>
+  Connection registerCallback(void(T::*callback)(P0, P1, P2, P3, P4), T* t)
+  {
+    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, NullP, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3, _4, _5)));
+  }
+
+  template<typename T, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5>
+  Connection registerCallback(void(T::*callback)(P0, P1, P2, P3, P4, P5), T* t)
+  {
+    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3, _4, _5, _6)));
+  }
+
+  template<typename T, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
+  Connection registerCallback(void(T::*callback)(P0, P1, P2, P3, P4, P5, P6), T* t)
+  {
+    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3, _4, _5, _6, _7)));
+  }
+
+  template<typename T, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7>
+  Connection registerCallback(void(T::*callback)(P0, P1, P2, P3, P4, P5, P6, P7), T* t)
+  {
+    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, P7, NullP)>(boost::bind(callback, t, _1, _2, _3, _4, _5, _6, _7, _8)));
+  }
+
+  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8>
+  Connection registerCallback(const boost::function<void(P0, P1, P2, P3, P4, P5, P6, P7, P8)>& callback)
+  {
+    typename CallbackHelper9<M0, M1, M2, M3, M4, M5, M6, M7, M8>::Ptr helper =
+        signal_.template addCallback<P0, P1, P2, P3, P4, P5, P6, P7, P8>(callback);
+
+    return Connection(boost::bind(&Signal::removeCallback, &signal_, helper));
   }
 
   template<class C>
-  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
-                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 2> > >, Connection >::type registerCallback(const C& callback)
+  Connection registerCallback(const C& callback)
   {
-    return registerCallback(boost::bind(Callback2(callback), _1, _2));
-  }
+    typename CallbackHelper9<M0, M1, M2, M3, M4, M5, M6, M7, M8>::Ptr helper =
+        signal_.template addCallback<const M0ConstPtr&,
+                                     const M1ConstPtr&,
+                                     const M2ConstPtr&,
+                                     const M3ConstPtr&,
+                                     const M4ConstPtr&,
+                                     const M5ConstPtr&,
+                                     const M6ConstPtr&,
+                                     const M7ConstPtr&,
+                                     const M8ConstPtr&>(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7, _8, _9));
 
-  template<class C>
-  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
-                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 3> > >, Connection >::type registerCallback(const C& callback)
-  {
-    return registerCallback(boost::bind(Callback3(callback), _1, _2, _3));
-  }
-
-  template<class C>
-  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
-                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 4> > >, Connection >::type registerCallback(const C& callback)
-  {
-    return registerCallback(boost::bind(Callback4(callback), _1, _2, _3, _4));
-  }
-
-  template<class C>
-  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
-                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 5> > >, Connection >::type registerCallback(const C& callback)
-  {
-    return registerCallback(boost::bind(Callback5(callback), _1, _2, _3, _4, _5));
-  }
-
-  template<class C>
-  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
-                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 6> > >, Connection >::type registerCallback(const C& callback)
-  {
-    return registerCallback(boost::bind(Callback6(callback), _1, _2, _3, _4, _5, _6));
-  }
-
-  template<class C>
-  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
-                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 7> > >, Connection >::type registerCallback(const C& callback)
-  {
-    return registerCallback(boost::bind(Callback7(callback), _1, _2, _3, _4, _5, _6, _7));
-  }
-
-  template<class C>
-  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
-                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 8> > >, Connection >::type registerCallback(const C& callback)
-  {
-    return registerCallback(boost::bind(Callback8(callback), _1, _2, _3, _4, _5, _6, _7, _8));
-  }
-
-  template<class C>
-  typename boost::enable_if<mpl::and_<ft::is_nonmember_callable_builtin<C>,
-                                      mpl::equal_to<ft::function_arity<C>, mpl::integral_c<size_t, 9> > >, Connection >::type registerCallback(const C& callback)
-  {
-    return registerCallback(boost::bind(Callback9(callback), _1, _2, _3, _4, _5, _6, _7, _8, _9));
-  }
-
-  template<class C>
-  typename boost::disable_if<ft::is_nonmember_callable_builtin<C>, Connection >::type registerCallback(const C& callback)
-  {
-    boost::mutex::scoped_lock lock(signal_mutex_);
-    return Connection(boost::bind(&TimeSynchronizer::disconnect, this, _1), signal_.connect(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7, _8, _9)));
+    return Connection(boost::bind(&Signal::removeCallback, &signal_, helper));
   }
 
   /**
@@ -360,90 +439,153 @@ void callback(const TimeSynchronizer<M0, M1,...>::Tuple& tuple);
 
   void add0(const M0ConstPtr& msg)
   {
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[msg->header.stamp];
-    boost::get<0>(t) = msg;
-
-    checkTuple(t);
+    add0(M0Event(msg));
   }
 
   void add1(const M1ConstPtr& msg)
   {
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[msg->header.stamp];
-    boost::get<1>(t) = msg;
-
-    checkTuple(t);
+    add1(M1Event(msg));
   }
 
   void add2(const M2ConstPtr& msg)
   {
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[msg->header.stamp];
-    boost::get<2>(t) = msg;
-
-    checkTuple(t);
+    add2(M2Event(msg));
   }
 
   void add3(const M3ConstPtr& msg)
   {
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[msg->header.stamp];
-    boost::get<3>(t) = msg;
-
-    checkTuple(t);
+    add3(M3Event(msg));
   }
 
   void add4(const M4ConstPtr& msg)
   {
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[msg->header.stamp];
-    boost::get<4>(t) = msg;
-
-    checkTuple(t);
+    add4(M4Event(msg));
   }
 
   void add5(const M5ConstPtr& msg)
   {
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[msg->header.stamp];
-    boost::get<5>(t) = msg;
-
-    checkTuple(t);
+    add5(M5Event(msg));
   }
 
   void add6(const M6ConstPtr& msg)
   {
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[msg->header.stamp];
-    boost::get<6>(t) = msg;
-
-    checkTuple(t);
+    add6(M6Event(msg));
   }
 
   void add7(const M7ConstPtr& msg)
   {
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[msg->header.stamp];
-    boost::get<7>(t) = msg;
-
-    checkTuple(t);
+    add7(M7Event(msg));
   }
 
   void add8(const M8ConstPtr& msg)
   {
+    add8(M8Event(msg));
+  }
+
+  void add0(const M0Event& evt)
+  {
+    namespace mt = ros::message_traits;
+
     boost::mutex::scoped_lock lock(tuples_mutex_);
 
-    Tuple& t = tuples_[msg->header.stamp];
-    boost::get<8>(t) = msg;
+    Tuple& t = tuples_[mt::TimeStamp<M0>::value(*evt.getMessage())];
+    boost::get<0>(t) = evt;
+
+    checkTuple(t);
+  }
+
+  void add1(const M1Event& evt)
+  {
+    namespace mt = ros::message_traits;
+
+    boost::mutex::scoped_lock lock(tuples_mutex_);
+
+    Tuple& t = tuples_[mt::TimeStamp<M1>::value(*evt.getMessage())];
+    boost::get<1>(t) = evt;
+
+    checkTuple(t);
+  }
+
+  void add2(const M2Event& evt)
+  {
+    namespace mt = ros::message_traits;
+
+    boost::mutex::scoped_lock lock(tuples_mutex_);
+
+    Tuple& t = tuples_[mt::TimeStamp<M2>::value(*evt.getMessage())];
+    boost::get<2>(t) = evt;
+
+    checkTuple(t);
+  }
+
+  void add3(const M3Event& evt)
+  {
+    namespace mt = ros::message_traits;
+
+    boost::mutex::scoped_lock lock(tuples_mutex_);
+
+    Tuple& t = tuples_[mt::TimeStamp<M3>::value(*evt.getMessage())];
+    boost::get<3>(t) = evt;
+
+    checkTuple(t);
+  }
+
+  void add4(const M4Event& evt)
+  {
+    namespace mt = ros::message_traits;
+
+    boost::mutex::scoped_lock lock(tuples_mutex_);
+
+    Tuple& t = tuples_[mt::TimeStamp<M4>::value(*evt.getMessage())];
+    boost::get<4>(t) = evt;
+
+    checkTuple(t);
+  }
+
+  void add5(const M5Event& evt)
+  {
+    namespace mt = ros::message_traits;
+
+    boost::mutex::scoped_lock lock(tuples_mutex_);
+
+    Tuple& t = tuples_[mt::TimeStamp<M5>::value(*evt.getMessage())];
+    boost::get<5>(t) = evt;
+
+    checkTuple(t);
+  }
+
+  void add6(const M6Event& evt)
+  {
+    namespace mt = ros::message_traits;
+
+    boost::mutex::scoped_lock lock(tuples_mutex_);
+
+    Tuple& t = tuples_[mt::TimeStamp<M6>::value(*evt.getMessage())];
+    boost::get<6>(t) = evt;
+
+    checkTuple(t);
+  }
+
+  void add7(const M7Event& evt)
+  {
+    namespace mt = ros::message_traits;
+
+    boost::mutex::scoped_lock lock(tuples_mutex_);
+
+    Tuple& t = tuples_[mt::TimeStamp<M7>::value(*evt.getMessage())];
+    boost::get<7>(t) = evt;
+
+    checkTuple(t);
+  }
+
+  void add8(const M8Event& evt)
+  {
+    namespace mt = ros::message_traits;
+
+    boost::mutex::scoped_lock lock(tuples_mutex_);
+
+    Tuple& t = tuples_[mt::TimeStamp<M8>::value(*evt.getMessage())];
+    boost::get<8>(t) = evt;
 
     checkTuple(t);
   }
@@ -501,73 +643,74 @@ private:
     }
   }
 
-  void cb0(const M0ConstPtr& msg)
+  void cb0(const M0Event& evt)
   {
-    add0(msg);
+    add0(evt);
   }
 
-  void cb1(const M1ConstPtr& msg)
+  void cb1(const M1Event& evt)
   {
-    add1(msg);
+    add1(evt);
   }
 
-  void cb2(const M2ConstPtr& msg)
+  void cb2(const M2Event& evt)
   {
-    add2(msg);
+    add2(evt);
   }
 
-  void cb3(const M3ConstPtr& msg)
+  void cb3(const M3Event& evt)
   {
-    add3(msg);
+    add3(evt);
   }
 
-  void cb4(const M4ConstPtr& msg)
+  void cb4(const M4Event& evt)
   {
-    add4(msg);
+    add4(evt);
   }
 
-  void cb5(const M5ConstPtr& msg)
+  void cb5(const M5Event& evt)
   {
-    add5(msg);
+    add5(evt);
   }
 
-  void cb6(const M6ConstPtr& msg)
+  void cb6(const M6Event& evt)
   {
-    add6(msg);
+    add6(evt);
   }
 
-  void cb7(const M7ConstPtr& msg)
+  void cb7(const M7Event& evt)
   {
-    add7(msg);
+    add7(evt);
   }
 
-  void cb8(const M8ConstPtr& msg)
+  void cb8(const M8Event& evt)
   {
-    add8(msg);
+    add8(evt);
   }
 
   // assumes tuples_mutex_ is already locked
   void checkTuple(Tuple& t)
   {
+    namespace mt = ros::message_traits;
+
     bool full = true;
-    full &= (bool)boost::get<0>(t);
-    full &= (bool)boost::get<1>(t);
-    full &= real_type_count_ > 2 ? (bool)boost::get<2>(t) : true;
-    full &= real_type_count_ > 3 ? (bool)boost::get<3>(t) : true;
-    full &= real_type_count_ > 4 ? (bool)boost::get<4>(t) : true;
-    full &= real_type_count_ > 5 ? (bool)boost::get<5>(t) : true;
-    full &= real_type_count_ > 6 ? (bool)boost::get<6>(t) : true;
-    full &= real_type_count_ > 7 ? (bool)boost::get<7>(t) : true;
-    full &= real_type_count_ > 8 ? (bool)boost::get<8>(t) : true;
+    full &= (bool)boost::get<0>(t).getMessage();
+    full &= (bool)boost::get<1>(t).getMessage();
+    full &= real_type_count_ > 2 ? (bool)boost::get<2>(t).getMessage() : true;
+    full &= real_type_count_ > 3 ? (bool)boost::get<3>(t).getMessage() : true;
+    full &= real_type_count_ > 4 ? (bool)boost::get<4>(t).getMessage() : true;
+    full &= real_type_count_ > 5 ? (bool)boost::get<5>(t).getMessage() : true;
+    full &= real_type_count_ > 6 ? (bool)boost::get<6>(t).getMessage() : true;
+    full &= real_type_count_ > 7 ? (bool)boost::get<7>(t).getMessage() : true;
+    full &= real_type_count_ > 8 ? (bool)boost::get<8>(t).getMessage() : true;
 
     if (full)
     {
-      {
-        boost::mutex::scoped_lock lock(signal_mutex_);
-        signal_(boost::get<0>(t), boost::get<1>(t), boost::get<2>(t), boost::get<3>(t), boost::get<4>(t), boost::get<5>(t), boost::get<6>(t), boost::get<7>(t), boost::get<8>(t));
+      signal_.call(boost::get<0>(t), boost::get<1>(t), boost::get<2>(t),
+                   boost::get<3>(t), boost::get<4>(t), boost::get<5>(t),
+                   boost::get<6>(t), boost::get<7>(t), boost::get<8>(t));
 
-        last_signal_time_ = boost::get<0>(t)->header.stamp;
-      }
+      last_signal_time_ = mt::TimeStamp<M0>::value(*boost::get<0>(t).getMessage());
 
       tuples_.erase(last_signal_time_);
 
@@ -610,12 +753,6 @@ private:
     }
   }
 
-  void disconnect(const Connection& c)
-  {
-    boost::mutex::scoped_lock lock(signal_mutex_);
-    c.getBoostConnection().disconnect();
-  }
-
   void disconnectDrop(const Connection& c)
   {
     boost::mutex::scoped_lock lock(drop_signal_mutex_);
@@ -629,7 +766,6 @@ private:
   boost::mutex tuples_mutex_;
 
   Signal signal_;
-  boost::mutex signal_mutex_;
   ros::Time last_signal_time_;
 
   boost::mutex drop_signal_mutex_;

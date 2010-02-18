@@ -6,9 +6,4 @@
   <license>BSD</license>
   <review status="na" notes="test"/>
   <depend package="roscpp"/>
-
-  <export>
-    <cpp cflags="-I${prefix}/msg/cpp"/>
-  </export>
-
 </package>

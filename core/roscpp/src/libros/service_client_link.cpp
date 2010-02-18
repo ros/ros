@@ -200,32 +200,9 @@ void ServiceClientLink::onResponseWritten(const ConnectionPtr& conn)
   connection_->read(4, boost::bind(&ServiceClientLink::onRequestLength, this, _1, _2, _3, _4));
 }
 
-void ServiceClientLink::processResponse(bool ok, const MessagePtr& resp)
+void ServiceClientLink::processResponse(bool ok, const SerializedMessage& res)
 {
-  boost::shared_array<uint8_t> buf;
-  uint32_t num_bytes = 0;
-
-  if (ok)
-  {
-    int msg_len = resp->serializationLength();
-    buf = boost::shared_array<uint8_t>(new uint8_t[msg_len + 5]);
-    buf[0] = 1;
-    memcpy(buf.get() + 1, &msg_len, 4);
-    resp->serialize(buf.get() + 5, 0);
-    num_bytes = msg_len + 5;
-  }
-  else
-  {
-    buf = boost::shared_array<uint8_t>(new uint8_t[5]);
-    buf[0] = 0;
-    buf[1] = 0;
-    buf[2] = 0;
-    buf[3] = 0;
-    buf[4] = 0;
-    num_bytes = 5;
-  }
-
-  connection_->write(buf, num_bytes, boost::bind(&ServiceClientLink::onResponseWritten, this, _1));
+  connection_->write(res.buf, res.num_bytes, boost::bind(&ServiceClientLink::onResponseWritten, this, _1));
 }
 
 

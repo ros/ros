@@ -30,13 +30,13 @@
 
 #include "forwards.h"
 
-#include "subscription_message_helper.h"
+#include "message_event.h"
 #include "callback_queue_interface.h"
 
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <list>
+#include <deque>
 
 namespace ros
 {
@@ -44,25 +44,30 @@ namespace ros
 class MessageDeserializer;
 typedef boost::shared_ptr<MessageDeserializer> MessageDeserializerPtr;
 
+class SubscriptionCallbackHelper;
+typedef boost::shared_ptr<SubscriptionCallbackHelper> SubscriptionCallbackHelperPtr;
+
 class SubscriptionQueue : public boost::enable_shared_from_this<SubscriptionQueue>
 {
 private:
   struct Item
   {
-    SubscriptionMessageHelperPtr helper;
+    SubscriptionCallbackHelperPtr helper;
     MessageDeserializerPtr deserializer;
 
     bool has_tracked_object;
-    VoidWPtr tracked_object;
+    VoidConstWPtr tracked_object;
 
     uint64_t id;
+    bool nonconst_need_copy;
+    ros::Time receipt_time;
   };
-  typedef std::list<Item> L_Item;
+  typedef std::deque<Item> D_Item;
 
 public:
   SubscriptionQueue(const std::string& topic, int32_t queue_size);
   ~SubscriptionQueue();
-  uint64_t push(const SubscriptionMessageHelperPtr& helper, const MessageDeserializerPtr& deserializer, bool has_tracked_object, const VoidWPtr& tracked_object);
+  uint64_t push(const SubscriptionCallbackHelperPtr& helper, const MessageDeserializerPtr& deserializer, bool has_tracked_object, const VoidConstWPtr& tracked_object, bool nonconst_need_copy, ros::Time receipt_time = ros::Time(), bool* was_full = 0);
   void clear();
   CallbackInterface::CallResult call(uint64_t id);
   bool ready(uint64_t id);
@@ -77,7 +82,7 @@ private:
   uint64_t id_counter_;
 
   boost::mutex queue_mutex_;
-  L_Item queue_;
+  D_Item queue_;
   uint32_t queue_size_;
 
   boost::recursive_mutex callback_mutex_;

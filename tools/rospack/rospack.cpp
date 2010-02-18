@@ -379,6 +379,56 @@ const vector<Package *> &Package::direct_deps(bool missing_package_as_warning)
   return _direct_deps;
 }
 
+string Package::cpp_message_flags(bool cflags, bool lflags)
+{
+  bool msg_exists = file_exists((path + "/msg_gen/generated").c_str());
+  bool srv_exists = file_exists((path + "/srv_gen/generated").c_str());
+
+  string flags;
+
+  if (cflags)
+  {
+    if (msg_exists)
+    {
+      flags += string(" -I") + path + "/msg_gen/cpp/include";
+    }
+
+    if (srv_exists)
+    {
+      flags += string(" -I") + path + "/srv_gen/cpp/include";
+    }
+  }
+
+  // lflags not needed until we have a cpp file, but this implementation works, adding -l<package_name>msgs and -l<package_name>srvs
+  // we'll probably need to figure out a better way of testing for msg/srvs than just checking if <package_path>/msg|srv exists though
+#if 0
+  if (lflags)
+  {
+    if (msg_exists)
+    {
+      flags += string(" -L") + path + "/lib";
+      flags += string(" -Wl,-rpath,") + path + "/lib";
+      flags += " -l" + package->name + "msgs";
+    }
+
+    if (srv_exists)
+    {
+      // if msgs already exist, we'll already have added this to the flags
+      if (!msg_exists)
+      {
+        flags += string(" -L") + path + "/lib";
+        flags += string(" -Wl,-rpath,") + path + "/lib";
+      }
+
+      flags += " -l" + package->name + "srvs";
+    }
+  }
+#endif
+
+  flags += " ";
+  return flags;
+}
+
 string Package::direct_flags(string lang, string attrib)
 {
   TiXmlElement *mroot = manifest_root();
@@ -485,6 +535,20 @@ string Package::direct_flags(string lang, string attrib)
       buf[strlen(buf)-1] = '\0';
       // Replace the backquote expression with the new text
       s = string(buf);
+    }
+  }
+
+  if (lang == "cpp")
+  {
+    if (attrib == "cflags")
+    {
+      // Message flags go last so it's possible to override them
+      s += cpp_message_flags(true, false);
+    }
+    else if (attrib == "lflags")
+    {
+      // Message flags go last so it's possible to override them
+      s += cpp_message_flags(false, true);
     }
   }
 
@@ -600,6 +664,7 @@ const char* ROSPack::usage()
           "    langs\n"
           "    depends [package] (alias: deps)\n"
           "    depends-manifests [package] (alias: deps-manifests)\n"
+          "    depends-msgsrv [package] (alias: deps-msgsrv)\n"
           "    depends1 [package] (alias: deps1)\n"
           "    depends-indent [package] (alias: deps-indent)\n"
           "    depends-why --target=<target> [package] (alias: deps-why)\n"
@@ -756,6 +821,29 @@ int ROSPack::cmd_deps_manifests()
     output_acc += (*i)->path + "/manifest.xml ";
   }
   //puts("");
+  output_acc += "\n";
+  return 0;
+}
+
+int ROSPack::cmd_deps_msgsrv()
+{
+  VecPkg d = get_pkg(opt_package)->deps(Package::POSTORDER);
+  for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
+  {
+    Package* p = *i;
+    bool msg_exists = file_exists((p->path + "/msg_gen/generated").c_str());
+    bool srv_exists = file_exists((p->path + "/srv_gen/generated").c_str());
+
+    if (msg_exists)
+    {
+      output_acc += p->path + "/msg_gen/generated ";
+    }
+
+    if (srv_exists)
+    {
+      output_acc += p->path + "/srv_gen/generated ";
+    }
+  }
   output_acc += "\n";
   return 0;
 }
@@ -1209,6 +1297,8 @@ int ROSPack::run(int argc, char **argv)
     return cmd_deps();
   else if (!strcmp(cmd, "depends-manifests") || !strcmp(cmd, "deps-manifests"))
     return cmd_deps_manifests();
+  else if (!strcmp(cmd, "depends-msgsrv") || !strcmp(cmd, "deps-msgsrv"))
+      return cmd_deps_msgsrv();
   else if (!strcmp(cmd, "depends1") || !strcmp(cmd, "deps1"))
     return cmd_deps1();
   else if (!strcmp(cmd, "depends-indent") || !strcmp(cmd, "deps-indent"))

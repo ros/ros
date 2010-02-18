@@ -165,8 +165,9 @@ macro(rosbuild_init)
 
   # Get the full paths to the manifests for all packages on which 
   # we depend
-  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack invoke_result deps-manifests)
-  set(ROS_MANIFEST_LIST "${PROJECT_SOURCE_DIR}/manifest.xml ${_rospack_invoke_result}")
+  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack deps_manifests_invoke_result deps-manifests)
+  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack msgsrv_gen_invoke_result deps-msgsrv)
+  set(ROS_MANIFEST_LIST "${PROJECT_SOURCE_DIR}/manifest.xml ${_rospack_deps_manifests_invoke_result} ${_rospack_msgsrv_gen_invoke_result}")
   # convert whitespace-separated string to ;-separated list
   separate_arguments(ROS_MANIFEST_LIST)
 
@@ -175,7 +176,7 @@ macro(rosbuild_init)
   # time is smaller, then we need to rebuild our cached values by calling
   # out to rospack to get flags.  This is an optimization in the service of
   # speeding up the build, #2109.
-  _rosbuild_time_less_than_latest_mtime(_rebuild_cache "${_rosbuild_cached_flag_time}" ${ROS_MANIFEST_LIST})
+  _rosbuild_compare_manifests(_rebuild_cache "${_rosbuild_cached_flag_time}" "${${_prefix}_cached_manifest_list}" "${ROS_MANIFEST_LIST}")
   if(_rebuild_cache)
     # Explicitly unset all cached variables, to avoid possible accumulation
     # across builds, #2389.
@@ -184,6 +185,7 @@ macro(rosbuild_init)
     set(${_prefix}_LIBRARY_DIRS "" CACHE INTERNAL "")
     set(${_prefix}_LIBRARIES "" CACHE INTERNAL "")
     set(${_prefix}_LDFLAGS_OTHER "" CACHE INTERNAL "")
+    set(${_prefix}_cached_manifest_list "" CACHE INTERNAL "")
 
     message("[rosbuild] Cached build flags older than manifests; calling rospack to get flags")
     # Get the include dirs
@@ -229,6 +231,7 @@ macro(rosbuild_init)
     # Record the time at which we cached those values
     _rosbuild_get_clock(_time)
     set(_rosbuild_cached_flag_time ${_time} CACHE INTERNAL "")
+    set(${_prefix}_cached_manifest_list ${ROS_MANIFEST_LIST} CACHE INTERNAL "")
   endif(_rebuild_cache)
 
   # Use the (possibly cached) values returned by rospack.
@@ -411,6 +414,10 @@ macro(rosbuild_init)
   _rosbuild_list_remove_duplicates(${_gtest_LIBRARIES} _tmplist)
   set(_gtest_LIBRARIES ${_tmplist})
   list(REVERSE _gtest_LIBRARIES)
+
+  # Delete the files that let rospack know messages/services have been generated
+  file(REMOVE ${PROJECT_SOURCE_DIR}/msg_gen/generated)
+  file(REMOVE ${PROJECT_SOURCE_DIR}/srv_gen/generated)
 endmacro(rosbuild_init)
 ###############################################################################
 
@@ -702,6 +709,19 @@ macro(rosbuild_gensrv)
   rosbuild_get_srvs(_srvlist)
   if(NOT _srvlist)
     _rosbuild_warn("rosbuild_gensrv() was called, but no .srv files were found")
+  else(NOT _srvlist)
+    file(WRITE ${PROJECT_SOURCE_DIR}/srv_gen/generated "yes")
+    # Now set the mtime to something consistent.  We only want whether or not this file exists to matter
+    execute_process(
+      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/srv_gen/generated', (0, 0))"
+      ERROR_VARIABLE _set_mtime_error
+      RESULT_VARIABLE _set_mtime_failed
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(_set_mtime_failed)
+      message("[rosbuild] Error from calling to Python to set the mtime on ${PROJECT_SOURCE_DIR}/srv_gen/generated:")
+      message("${_mtime_error}")
+      message(FATAL_ERROR "[rosbuild] Failed to set mtime; aborting")
+    endif(_set_mtime_failed)
   endif(NOT _srvlist)
   # Create target to trigger service generation in the case where no libs
   # or executables are made.
@@ -711,7 +731,7 @@ macro(rosbuild_gensrv)
   # depend on the message generation.
   add_dependencies(rosbuild_precompile rospack_gensrv)
   # add in the directory that will contain the auto-generated .h files
-  include_directories(${PROJECT_SOURCE_DIR}/srv/cpp)
+  include_directories(${PROJECT_SOURCE_DIR}/srv_gen/cpp/include)
 endmacro(rosbuild_gensrv)
 
 # genmsg processes msg/*.msg files into language-specific source files
@@ -720,6 +740,19 @@ macro(rosbuild_genmsg)
   rosbuild_get_msgs(_msglist)
   if(NOT _msglist)
     _rosbuild_warn("rosbuild_genmsg() was called, but no .msg files were found")
+  else(NOT _msglist)
+    file(WRITE ${PROJECT_SOURCE_DIR}/msg_gen/generated "yes")
+    # Now set the mtime to something consistent.  We only want whether or not this file exists to matter
+    execute_process(
+      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/msg_gen/generated', (0, 0))"
+      ERROR_VARIABLE _set_mtime_error
+      RESULT_VARIABLE _set_mtime_failed
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(_set_mtime_failed)
+      message("[rosbuild] Error from calling to Python to set the mtime on ${PROJECT_SOURCE_DIR}/msg_gen/generated:")
+      message("${_mtime_error}")
+      message(FATAL_ERROR "[rosbuild] Failed to set mtime; aborting")
+    endif(_set_mtime_failed)
   endif(NOT _msglist)
   # Create target to trigger message generation in the case where no libs
   # or executables are made.
@@ -729,7 +762,7 @@ macro(rosbuild_genmsg)
   # depend on the message generation.
   add_dependencies(rosbuild_precompile rospack_genmsg)
   # add in the directory that will contain the auto-generated .h files
-  include_directories(${PROJECT_SOURCE_DIR}/msg/cpp)
+  include_directories(${PROJECT_SOURCE_DIR}/msg_gen/cpp/include)
 endmacro(rosbuild_genmsg)
 
 macro(rosbuild_add_boost_directories)

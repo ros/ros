@@ -37,53 +37,28 @@
 namespace message_filters
 {
 
-Connection::Impl::Impl()
+
+Connection::Connection(const VoidDisconnectFunction& func)
+: void_disconnect_(func)
 {
 }
 
-Connection::Impl::~Impl()
+Connection::Connection(const WithConnectionDisconnectFunction& func, boost::signals::connection c)
+: connection_disconnect_(func)
+, connection_(c)
 {
-}
-
-Connection::Connection()
-{
-}
-
-Connection::Connection(const Connection& rhs)
-{
-  impl_ = rhs.impl_;
-}
-
-Connection::Connection(const DisconnectFunction& func, boost::signals::connection conn)
-: impl_(new Impl)
-{
-  impl_->disconnect_ = func;
-  impl_->connection_ = conn;
-}
-
-Connection& Connection::operator=(const Connection& rhs)
-{
-  impl_ = rhs.impl_;
-
-  return *this;
 }
 
 void Connection::disconnect()
 {
-  if (impl_)
+  if (void_disconnect_)
   {
-    impl_->disconnect_(*this);
+    void_disconnect_();
   }
-}
-
-boost::signals::connection Connection::getBoostConnection() const
-{
-  if (impl_)
+  else if (connection_disconnect_)
   {
-    return impl_->connection_;
+    connection_disconnect_(*this);
   }
-
-  return boost::signals::connection();
 }
 
 }

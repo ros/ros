@@ -103,7 +103,7 @@ private:
     Duration period_;
     TimerCallback callback_;
     CallbackQueueInterface* callback_queue_;
-    VoidWPtr tracked_object_;
+    VoidConstWPtr tracked_object_;
     bool has_tracked_object_;
     double constructed_;
     bool oneshot_;

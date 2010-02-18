@@ -65,7 +65,7 @@ private:
 
     bool removed;
 
-    VoidWPtr tracked_object;
+    VoidConstWPtr tracked_object;
     bool has_tracked_object;
 
     uint32_t waiting_callbacks;
@@ -83,7 +83,7 @@ public:
   TimerManager();
   ~TimerManager();
 
-  int32_t add(const D& period, const boost::function<void(const E&)>& callback, CallbackQueueInterface* callback_queue, const VoidPtr& tracked_object, bool oneshot);
+  int32_t add(const D& period, const boost::function<void(const E&)>& callback, CallbackQueueInterface* callback_queue, const VoidConstPtr& tracked_object, bool oneshot);
   void remove(int32_t handle);
 
   bool hasPending(int32_t handle);
@@ -153,7 +153,7 @@ private:
           return Invalid;
         }
 
-        VoidPtr tracked;
+        VoidConstPtr tracked;
         if (info->has_tracked_object)
         {
           tracked = info->tracked_object.lock();
@@ -243,7 +243,7 @@ bool TimerManager<T, D, E>::hasPending(int32_t handle)
 
   if (info->has_tracked_object)
   {
-    VoidPtr tracked = info->tracked_object.lock();
+    VoidConstPtr tracked = info->tracked_object.lock();
     if (!tracked)
     {
       return false;
@@ -255,7 +255,7 @@ bool TimerManager<T, D, E>::hasPending(int32_t handle)
 
 template<class T, class D, class E>
 int32_t TimerManager<T, D, E>::add(const D& period, const boost::function<void(const E&)>& callback, CallbackQueueInterface* callback_queue,
-                                   const VoidPtr& tracked_object, bool oneshot)
+                                   const VoidConstPtr& tracked_object, bool oneshot)
 {
   TimerInfoPtr info(new TimerInfo);
   info->period = period;

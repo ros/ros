@@ -96,6 +96,7 @@ class Subscriber : public SubscriberBase, public SimpleFilter<M>
 {
 public:
   typedef boost::shared_ptr<M const> MConstPtr;
+  typedef ros::MessageEvent<M const> EventType;
 
   /**
    * \brief Constructor
@@ -142,7 +143,7 @@ public:
 
     if (!topic.empty())
     {
-      ops_.template init<M>(topic, queue_size, boost::bind(&Subscriber<M>::cb, this, _1));
+      ops_.template initByFullCallbackType<const EventType&>(topic, queue_size, boost::bind(&Subscriber<M>::cb, this, _1));
       ops_.callback_queue = callback_queue;
       ops_.transport_hints = transport_hints;
       sub_ = nh.subscribe(ops_);
@@ -187,15 +188,15 @@ public:
   /**
    * \brief Does nothing.  Provided so that Subscriber may be used in a message_filters::Chain
    */
-  void add(const MConstPtr& m)
+  void add(const EventType& e)
   {
   }
 
 private:
 
-  void cb(const MConstPtr& m)
+  void cb(const EventType& e)
   {
-    signalMessage(m);
+    signalMessage(e);
   }
 
   ros::Subscriber sub_;

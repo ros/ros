@@ -424,7 +424,7 @@ void LatencyTest::sendThread(boost::barrier* all_connected, uint32_t thread_inde
     pubs.push_back(nh.advertise<LatencyMessage>(ss.str(), 0));
 
     ss << "_return";
-    subs.push_back(nh.subscribe<LatencyMessage>(ss.str(), 0, boost::bind(&LatencyTest::sendCallback, this, _1, boost::ref(pubs[i]), thread_index), ros::VoidPtr(), ros::TransportHints().tcpNoDelay()));
+    subs.push_back(nh.subscribe<LatencyMessage>(ss.str(), 0, boost::bind(&LatencyTest::sendCallback, this, _1, boost::ref(pubs[i]), thread_index), ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay()));
   }
 
   bool cont = true;
@@ -493,7 +493,7 @@ LatencyResult LatencyTest::run()
     ss << "_return";
     std::string pub_topic = ss.str();
     pubs.push_back(nh.advertise<LatencyMessage>(pub_topic, 0));
-    subs.push_back(nh.subscribe<LatencyMessage>(sub_topic, 0, boost::bind(&LatencyTest::receiveCallback, this, _1, boost::ref(pubs.back())), ros::VoidPtr(), ros::TransportHints().tcpNoDelay()));
+    subs.push_back(nh.subscribe<LatencyMessage>(sub_topic, 0, boost::bind(&LatencyTest::receiveCallback, this, _1, boost::ref(pubs.back())), ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay()));
   }
 
   boost::barrier all_connected(1 + sender_threads_);
@@ -579,6 +579,140 @@ LatencyResult latency(uint32_t count_per_stream, uint32_t streams, uint32_t mess
   ROS_INFO_STREAM("Running latency test: "<< "receiver_threads [" << receiver_threads << "], sender_threads [" << sender_threads << "], streams [" << streams << "], count_per_stream [" << count_per_stream << "], message_size [" << message_size << "]");
 
   LatencyTest t(count_per_stream, streams, message_size, sender_threads, receiver_threads);
+  return t.run();
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class STLatencyTest
+{
+public:
+  STLatencyTest(uint32_t message_count);
+
+  STLatencyResult run();
+
+private:
+
+  void receiveCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub);
+  void sendCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub);
+
+  struct Result
+  {
+    std::vector<double> latencies;
+  };
+  Result result_;
+
+  ros::CallbackQueue receive_queue_;
+
+  uint32_t message_count_;
+};
+
+STLatencyTest::STLatencyTest(uint32_t message_count)
+: message_count_(message_count)
+{
+}
+
+void STLatencyTest::receiveCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub)
+{
+  ros::WallTime receipt_time = ros::WallTime::now();
+  LatencyMessagePtr reply = boost::const_pointer_cast<LatencyMessage>(msg);
+  reply->receipt_time = receipt_time.toSec();
+  pub.publish(reply);
+  //ROS_INFO("Receiver received message %d", msg->count);
+}
+
+void STLatencyTest::sendCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub)
+{
+  result_.latencies.push_back(msg->receipt_time - msg->publish_time);
+
+  LatencyMessagePtr reply = boost::const_pointer_cast<LatencyMessage>(msg);
+  reply->publish_time = ros::WallTime::now().toSec();
+  ++reply->count;
+
+  //ROS_INFO("Sender received return message %d", msg->count);
+
+  if (reply->count < message_count_)
+  {
+    pub.publish(reply);
+  }
+}
+
+STLatencyResult STLatencyTest::run()
+{
+  ROS_INFO("Starting receive threads");
+  STLatencyResult r;
+  r.test_start = ros::WallTime::now();
+
+  ros::NodeHandle nh;
+  nh.setCallbackQueue(&receive_queue_);
+
+  ros::Publisher recv_pub = nh.advertise<LatencyMessage>("stlatency_perf_test_return", 0);
+  ros::Subscriber recv_sub = nh.subscribe<LatencyMessage>("stlatency_perf_test", 0, boost::bind(&STLatencyTest::receiveCallback, this, _1, boost::ref(recv_pub)), ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+  ros::Publisher send_pub = nh.advertise<LatencyMessage>("stlatency_perf_test", 0);
+  ros::Subscriber send_sub = nh.subscribe<LatencyMessage>("stlatency_perf_test_return", 0, boost::bind(&STLatencyTest::sendCallback, this, _1, boost::ref(send_pub)), ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+
+  ROS_INFO("Waiting for all connections to establish");
+
+  bool cont = true;
+  while (cont)
+  {
+    cont = recv_pub.getNumSubscribers() == 0 || send_pub.getNumSubscribers() == 0;
+    ros::WallDuration(0.001).sleep();
+  }
+
+  ROS_INFO("All connections established");
+
+  LatencyMessagePtr msg(new LatencyMessage);
+  msg->publish_time = ros::WallTime::now().toSec();
+  send_pub.publish(msg);
+  while (msg->count < message_count_)
+  {
+    receive_queue_.callAvailable(ros::WallDuration(0.1));
+  }
+
+  r.test_end = ros::WallTime::now();
+
+  r.latency_avg = 0;
+  r.latency_max = 0;
+  r.latency_min = 9999999999999ULL;
+  r.total_message_count = message_count_;
+
+  double latency_total = 0.0;
+  uint32_t latency_count = 0;
+  {
+    std::vector<double>::iterator lat_it = result_.latencies.begin();
+    std::vector<double>::iterator lat_end = result_.latencies.end();
+    for (; lat_it != lat_end; ++lat_it)
+    {
+      double latency = *lat_it;
+      r.latency_min = std::min(r.latency_min, latency);
+      r.latency_max = std::max(r.latency_max, latency);
+      ++latency_count;
+      latency_total += latency;
+    }
+  }
+
+  r.latency_avg = latency_total / latency_count;
+
+  ROS_INFO("Done collating results");
+
+  return r;
+}
+
+STLatencyResult stlatency(uint32_t message_count)
+{
+  ROS_INFO_STREAM("*****************************************************");
+  ROS_INFO_STREAM("Running single-threaded latency test: message count[" << message_count << "]");
+
+  STLatencyTest t(message_count);
   return t.run();
 }
 

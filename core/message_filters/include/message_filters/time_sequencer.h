@@ -76,6 +76,7 @@ class TimeSequencer : public SimpleFilter<M>
 {
 public:
   typedef boost::shared_ptr<M const> MConstPtr;
+  typedef ros::MessageEvent<M const> EventType;
 
   /**
    * \brief Constructor
@@ -122,7 +123,7 @@ public:
   void connectInput(F& f)
   {
     incoming_connection_.disconnect();
-    incoming_connection_ = f.registerCallback(boost::bind(&TimeSequencer::cb, this, _1));
+    incoming_connection_ = f.registerCallback(typename SimpleFilter<M>::EventCallback(boost::bind(&TimeSequencer::cb, this, _1)));
   }
 
   ~TimeSequencer()
@@ -131,18 +132,17 @@ public:
     incoming_connection_.disconnect();
   }
 
-  /**
-   * \brief Manually add a message to the cache.
-   */
-  void add(const MConstPtr& msg)
+  void add(const EventType& evt)
   {
+    namespace mt = ros::message_traits;
+
     boost::mutex::scoped_lock lock(messages_mutex_);
-    if (msg->header.stamp < last_time_)
+    if (mt::TimeStamp<M>::value(*evt.getMessage()) < last_time_)
     {
       return;
     }
 
-    messages_.insert(msg);
+    messages_.insert(evt);
 
     if (queue_size_ != 0 && messages_.size() > queue_size_)
     {
@@ -150,25 +150,37 @@ public:
     }
   }
 
+  /**
+   * \brief Manually add a message to the cache.
+   */
+  void add(const MConstPtr& msg)
+  {
+    EventType evt(msg);
+    add(evt);
+  }
+
 private:
   class MessageSort
   {
   public:
-    bool operator()(const MConstPtr& lhs, const MConstPtr& rhs) const
+    bool operator()(const EventType& lhs, const EventType& rhs) const
     {
-      return lhs->header.stamp < rhs->header.stamp;
+      namespace mt = ros::message_traits;
+      return mt::TimeStamp<M>::value(*lhs.getMessage()) < mt::TimeStamp<M>::value(*rhs.getMessage());
     }
   };
-  typedef std::multiset<MConstPtr, MessageSort> S_Message;
-  typedef std::vector<MConstPtr> V_Message;
+  typedef std::multiset<EventType, MessageSort> S_Message;
+  typedef std::vector<EventType> V_Message;
 
-  void cb(const MConstPtr& msg)
+  void cb(const EventType& evt)
   {
-    add(msg);
+    add(evt);
   }
 
   void dispatch()
   {
+    namespace mt = ros::message_traits;
+
     V_Message to_call;
 
     {
@@ -176,11 +188,12 @@ private:
 
       while (!messages_.empty())
       {
-        const MConstPtr& m = *messages_.begin();
-        if (m->header.stamp + delay_ <= ros::Time::now())
+        const EventType& e = *messages_.begin();
+        ros::Time stamp = mt::TimeStamp<M>::value(*e.getMessage());
+        if (stamp + delay_ <= ros::Time::now())
         {
-          last_time_ = m->header.stamp;
-          to_call.push_back(m);
+          last_time_ = stamp;
+          to_call.push_back(e);
           messages_.erase(messages_.begin());
         }
         else
@@ -209,8 +222,6 @@ private:
   {
     update_timer_ = nh_.createTimer(update_rate_, &TimeSequencer::update, this);
   }
-
-
 
   ros::Duration delay_;
   ros::Duration update_rate_;

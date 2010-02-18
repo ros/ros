@@ -76,38 +76,29 @@ Publisher::~Publisher()
 {
 }
 
-void Publisher::publish(const MessageConstPtr& message) const
+void Publisher::publish(const boost::function<SerializedMessage(void)>& serfunc, SerializedMessage& m) const
 {
   if (!impl_)
   {
-    ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher");
-    return;
-  }
-
- if (!impl_->isValid())
- {
-   ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher (topic [%s])", impl_->topic_.c_str());
-   return;
- }
-
-  TopicManager::instance()->publish(impl_->topic_, *message);
-}
-
-void Publisher::publish(const Message& message) const
-{
-  if (!impl_)
-  {
-    ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher");
+    ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher (topic [%s])", impl_->topic_.c_str());
     return;
   }
 
   if (!impl_->isValid())
   {
-   ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher (topic [%s])", impl_->topic_.c_str());
-   return;
+    ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher (topic [%s])", impl_->topic_.c_str());
+    return;
   }
 
-  TopicManager::instance()->publish(impl_->topic_, message);
+  TopicManager::instance()->publish(impl_->topic_, serfunc, m);
+}
+
+void Publisher::incrementSequence() const
+{
+  if (impl_ && impl_->isValid())
+  {
+    TopicManager::instance()->incrementSequence(impl_->topic_);
+  }
 }
 
 void Publisher::shutdown()

@@ -1005,7 +1005,7 @@ JNIEXPORT jlong JNICALL Java_ros_roscpp_JNI_advertiseService
 	aso.datatype = (*callback)->getDataType();
 	aso.req_datatype = (*callback)->getRequestDataType();
 	aso.res_datatype = (*callback)->getResponseDataType();
-	aso.helper.reset(new ServiceMessageHelperT<ServiceSpec<JavaMessage, JavaMessage> >(boost::bind(&ServiceMessage::callback, *callback, _1, _2),
+	aso.helper.reset(new ServiceCallbackHelperT<ServiceSpec<JavaMessage, JavaMessage> >(boost::bind(&ServiceMessage::callback, *callback, _1, _2),
                                                                          boost::bind(&ServiceMessage::createRequest, *callback),
                                                                          boost::bind(&ServiceMessage::createResponse, *callback)));
 #else

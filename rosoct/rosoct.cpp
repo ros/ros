@@ -502,7 +502,7 @@ public:
     virtual void init()
     {
 #ifdef ROS_NEW_SERIALIZATION_API
-      _opts.helper.reset(new ServiceMessageHelperT<ServiceSpec<OctaveMsgDeserializer, OctaveMsgDeserializer> >(boost::bind(&RoscppService::callback, this, _1, _2),
+      _opts.helper.reset(new ServiceCallbackHelperT<ServiceSpec<OctaveMsgDeserializer, OctaveMsgDeserializer> >(boost::bind(&RoscppService::callback, this, _1, _2),
                                                                                                    boost::bind(&RoscppService::createRequest, this),
                                                                                                    boost::bind(&RoscppService::createResponse, this)));
 #else

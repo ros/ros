@@ -47,6 +47,7 @@ def checkout_repos(repos):
       else:
         cmd = ['git', 'clone', url, key]
     elif url.startswith('bzr:'):
+      url = url[4:]      
       if fresh_install:
         cmd = ['bzr', 'checkout', url, key]
       else:
@@ -56,7 +57,7 @@ def checkout_repos(repos):
 
     if cmd:
       print 'Checking out %s to %s...'%(url, key)
-      subprocess.call(cmd)
+      subprocess.call(cmd, shell=True)
     else:
       print >> sys.stderr, "Unable to checkout %s"%key
 

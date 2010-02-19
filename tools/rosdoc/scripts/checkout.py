@@ -45,15 +45,15 @@ def checkout_repos(repos):
       if fresh_install:
         cmd = 'cd %s && git pull'%key
       else:
-        cmd = ['git', 'clone', url, key]
+        cmd = 'git clone %s %s'%(url, key)
     elif url.startswith('bzr:'):
       url = url[4:]      
       if fresh_install:
-        cmd = ['bzr', 'checkout', url, key]
+        cmd = 'bzr checkout %s %s'%(url, key)
       else:
         cmd = "cd %s && bzr up"%key
     else:
-      cmd = ['svn', 'co', url, key]
+      cmd = 'svn co %s %s'%(url, key)
 
     if cmd:
       print 'Checking out %s to %s...'%(url, key)

@@ -104,32 +104,26 @@ TEST(SubscriptionQueue, queueSize)
 
   ASSERT_FALSE(queue.full());
 
-  uint64_t id = queue.push(helper, des, false, VoidConstWPtr(), true);
+  queue.push(helper, des, false, VoidConstWPtr(), true);
 
   ASSERT_TRUE(queue.full());
 
-  ASSERT_EQ(queue.call(id), CallbackInterface::Success);
+  ASSERT_EQ(queue.call(), CallbackInterface::Success);
 
   ASSERT_FALSE(queue.full());
 
-  id = queue.push(helper, des, false, VoidConstWPtr(), true);
+  queue.push(helper, des, false, VoidConstWPtr(), true);
 
   ASSERT_TRUE(queue.full());
 
-  ASSERT_TRUE(queue.ready(id));
+  ASSERT_TRUE(queue.ready());
 
-  uint64_t id2 = queue.push(helper, des, false, VoidConstWPtr(), true);
+  queue.push(helper, des, false, VoidConstWPtr(), true);
 
   ASSERT_TRUE(queue.full());
 
-  ASSERT_TRUE(queue.ready(id));
-  ASSERT_TRUE(queue.ready(id2));
-
-  ASSERT_EQ(queue.call(id), CallbackInterface::Invalid);
-  ASSERT_EQ(queue.call(id2), CallbackInterface::Success);
-
-  ASSERT_TRUE(queue.ready(id));
-  ASSERT_TRUE(queue.ready(id2));
+  ASSERT_EQ(queue.call(), CallbackInterface::Success);
+  ASSERT_EQ(queue.call(), CallbackInterface::Invalid);
 
   ASSERT_EQ(helper->calls_, 2);
 }
@@ -143,31 +137,26 @@ TEST(SubscriptionQueue, infiniteQueue)
 
   ASSERT_FALSE(queue.full());
 
-  uint64_t id = queue.push(helper, des, false, VoidConstWPtr(), true);
-  ASSERT_EQ(queue.call(id), CallbackInterface::Success);
-
-  id = queue.push(helper, des, false, VoidConstWPtr(), true);
-
-  ASSERT_TRUE(queue.ready(id));
+  queue.push(helper, des, false, VoidConstWPtr(), true);
+  ASSERT_EQ(queue.call(), CallbackInterface::Success);
 
   ASSERT_FALSE(queue.full());
 
-  uint64_t id2 = queue.push(helper, des, false, VoidConstWPtr(), true);
+  for (int i = 0; i < 10000; ++i)
+  {
+    queue.push(helper, des, false, VoidConstWPtr(), true);
+  }
 
   ASSERT_FALSE(queue.full());
 
-  ASSERT_TRUE(queue.ready(id));
-  ASSERT_FALSE(queue.ready(id2));
+  for (int i = 0; i < 10000; ++i)
+  {
+    ASSERT_EQ(queue.call(), CallbackInterface::Success);
+  }
 
-  ASSERT_EQ(queue.call(id2), CallbackInterface::TryAgain);
-  ASSERT_EQ(queue.call(id), CallbackInterface::Success);
-  ASSERT_TRUE(queue.ready(id2));
-  ASSERT_EQ(queue.call(id2), CallbackInterface::Success);
+  ASSERT_EQ(queue.call(), CallbackInterface::Invalid);
 
-  ASSERT_TRUE(queue.ready(id));
-  ASSERT_TRUE(queue.ready(id2));
-
-  ASSERT_EQ(helper->calls_, 3);
+  ASSERT_EQ(helper->calls_, 10001);
 }
 
 TEST(SubscriptionQueue, clearCall)
@@ -177,9 +166,9 @@ TEST(SubscriptionQueue, clearCall)
   FakeSubHelperPtr helper(new FakeSubHelper);
   MessageDeserializerPtr des(new MessageDeserializer(helper, SerializedMessage(), boost::shared_ptr<M_string>()));
 
-  uint64_t id = queue.push(helper, des, false, VoidConstWPtr(), true);
+  queue.push(helper, des, false, VoidConstWPtr(), true);
   queue.clear();
-  ASSERT_EQ(queue.call(id), CallbackInterface::Invalid);
+  ASSERT_EQ(queue.call(), CallbackInterface::Invalid);
 }
 
 TEST(SubscriptionQueue, clearThenAddAndCall)
@@ -189,26 +178,10 @@ TEST(SubscriptionQueue, clearThenAddAndCall)
   FakeSubHelperPtr helper(new FakeSubHelper);
   MessageDeserializerPtr des(new MessageDeserializer(helper, SerializedMessage(), boost::shared_ptr<M_string>()));
 
-  uint64_t id = queue.push(helper, des, false, VoidConstWPtr(), true);
+  queue.push(helper, des, false, VoidConstWPtr(), true);
   queue.clear();
-  id = queue.push(helper, des, false, VoidConstWPtr(), true);
-  ASSERT_EQ(queue.call(id), CallbackInterface::Success);
-}
-
-TEST(SubscriptionQueue, remove)
-{
-  SubscriptionQueue queue("blah", 2);
-
-  FakeSubHelperPtr helper(new FakeSubHelper);
-  MessageDeserializerPtr des(new MessageDeserializer(helper, SerializedMessage(), boost::shared_ptr<M_string>()));
-
-  uint64_t id = queue.push(helper, des, false, VoidConstWPtr(), true);
-  uint64_t id2 = queue.push(helper, des, false, VoidConstWPtr(), true);
-
-  queue.remove(id);
-
-  ASSERT_EQ(queue.call(id2), CallbackInterface::Success);
-  ASSERT_EQ(queue.call(id), CallbackInterface::Invalid);
+  queue.push(helper, des, false, VoidConstWPtr(), true);
+  ASSERT_EQ(queue.call(), CallbackInterface::Success);
 }
 
 void clearInCallbackCallback(SubscriptionQueue& queue)
@@ -224,8 +197,8 @@ TEST(SubscriptionQueue, clearInCallback)
   MessageDeserializerPtr des(new MessageDeserializer(helper, SerializedMessage(), boost::shared_ptr<M_string>()));
 
   helper->cb_ = boost::bind(clearInCallbackCallback, boost::ref(queue));
-  uint64_t id = queue.push(helper, des, false, VoidConstWPtr(), true);
-  queue.call(id);
+  queue.push(helper, des, false, VoidConstWPtr(), true);
+  queue.call();
 }
 
 void clearWhileThreadIsBlockingCallback(bool* done, boost::barrier* barrier)
@@ -235,9 +208,9 @@ void clearWhileThreadIsBlockingCallback(bool* done, boost::barrier* barrier)
   *done = true;
 }
 
-void callThread(SubscriptionQueue& queue, uint64_t id)
+void callThread(SubscriptionQueue& queue)
 {
-  queue.call(id);
+  queue.call();
 }
 
 TEST(SubscriptionQueue, clearWhileThreadIsBlocking)
@@ -250,8 +223,8 @@ TEST(SubscriptionQueue, clearWhileThreadIsBlocking)
   bool done = false;
   boost::barrier barrier(2);
   helper->cb_ = boost::bind(clearWhileThreadIsBlockingCallback, &done, &barrier);
-  uint64_t id = queue.push(helper, des, false, VoidConstWPtr(), true);
-  boost::thread t(callThread, boost::ref(queue), id);
+  queue.push(helper, des, false, VoidConstWPtr(), true);
+  boost::thread t(callThread, boost::ref(queue));
   barrier.wait();
 
   queue.clear();

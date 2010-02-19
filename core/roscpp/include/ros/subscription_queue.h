@@ -47,7 +47,7 @@ typedef boost::shared_ptr<MessageDeserializer> MessageDeserializerPtr;
 class SubscriptionCallbackHelper;
 typedef boost::shared_ptr<SubscriptionCallbackHelper> SubscriptionCallbackHelperPtr;
 
-class SubscriptionQueue : public boost::enable_shared_from_this<SubscriptionQueue>
+class SubscriptionQueue : public CallbackInterface, public boost::enable_shared_from_this<SubscriptionQueue>
 {
 private:
   struct Item
@@ -58,7 +58,6 @@ private:
     bool has_tracked_object;
     VoidConstWPtr tracked_object;
 
-    uint64_t id;
     bool nonconst_need_copy;
     ros::Time receipt_time;
   };
@@ -67,19 +66,18 @@ private:
 public:
   SubscriptionQueue(const std::string& topic, int32_t queue_size);
   ~SubscriptionQueue();
-  uint64_t push(const SubscriptionCallbackHelperPtr& helper, const MessageDeserializerPtr& deserializer, bool has_tracked_object, const VoidConstWPtr& tracked_object, bool nonconst_need_copy, ros::Time receipt_time = ros::Time(), bool* was_full = 0);
+  void push(const SubscriptionCallbackHelperPtr& helper, const MessageDeserializerPtr& deserializer, bool has_tracked_object, const VoidConstWPtr& tracked_object, bool nonconst_need_copy, ros::Time receipt_time = ros::Time(), bool* was_full = 0);
   void clear();
-  CallbackInterface::CallResult call(uint64_t id);
-  bool ready(uint64_t id);
+
+  virtual CallbackInterface::CallResult call();
+  virtual bool ready();
   bool full();
-  void remove(uint64_t id);
 
 private:
   bool fullNoLock();
   std::string topic_;
   int32_t size_;
   bool full_;
-  uint64_t id_counter_;
 
   boost::mutex queue_mutex_;
   D_Item queue_;

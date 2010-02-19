@@ -68,43 +68,6 @@ using XmlRpc::XmlRpcValue;
 namespace ros
 {
 
-class SubscriptionCallback : public CallbackInterface
-{
-public:
-  SubscriptionCallback(const SubscriptionQueuePtr& queue, uint64_t id)
-  : queue_(queue)
-  , id_(id)
-  , called_(false)
-  {}
-
-  ~SubscriptionCallback()
-  {
-    if (!called_)
-    {
-      queue_->remove(id_);
-    }
-  }
-
-  virtual CallResult call()
-  {
-    CallResult result = queue_->call(id_);
-    called_ = true;
-
-    return result;
-  }
-
-  virtual bool ready()
-  {
-    return queue_->ready(id_);
-  }
-
-private:
-  SubscriptionQueuePtr queue_;
-  uint64_t id_;
-  bool called_;
-};
-typedef boost::shared_ptr<SubscriptionCallback> SubscriptionCallbackPtr;
-
 Subscription::Subscription(const std::string &name, const std::string& md5sum, const std::string& datatype, const TransportHints& transport_hints)
 : name_(name)
 , md5sum_(md5sum)
@@ -655,13 +618,15 @@ uint32_t Subscription::handleMessage(const SerializedMessage& m, bool ser, bool 
         nonconst_need_copy = true;
       }
 
-      uint64_t id = info->subscription_queue_->push(info->helper_, deserializer, info->has_tracked_object_, info->tracked_object_, nonconst_need_copy, receipt_time, &was_full);
-      SubscriptionCallbackPtr cb = boost::make_shared<SubscriptionCallback>(info->subscription_queue_, id);
-      info->callback_queue_->addCallback(cb, (uint64_t)info.get());
+      info->subscription_queue_->push(info->helper_, deserializer, info->has_tracked_object_, info->tracked_object_, nonconst_need_copy, receipt_time, &was_full);
 
       if (was_full)
       {
         ++drops;
+      }
+      else
+      {
+        info->callback_queue_->addCallback(info->subscription_queue_, (uint64_t)info.get());
       }
     }
   }
@@ -731,9 +696,12 @@ bool Subscription::addCallback(const SubscriptionCallbackHelperPtr& helper, cons
             const LatchInfo& latch_info = des_it->second;
 
             MessageDeserializerPtr des(new MessageDeserializer(helper, latch_info.message, latch_info.connection_header));
-            uint64_t id = info->subscription_queue_->push(info->helper_, des, info->has_tracked_object_, info->tracked_object_, true, latch_info.receipt_time);
-            SubscriptionCallbackPtr cb(new SubscriptionCallback(info->subscription_queue_, id));
-            info->callback_queue_->addCallback(cb, (uint64_t)info.get());
+            bool was_full = false;
+            info->subscription_queue_->push(info->helper_, des, info->has_tracked_object_, info->tracked_object_, true, latch_info.receipt_time, &was_full);
+            if (!was_full)
+            {
+              info->callback_queue_->addCallback(info->subscription_queue_, (uint64_t)info.get());
+            }
           }
         }
       }

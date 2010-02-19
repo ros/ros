@@ -433,7 +433,7 @@ def _sub_str_plot(val, time_offset):
         else:
             return str(val)    
     elif isinstance(val, rospy.Message):
-        sub = [s for s in [_sub_str_plot(getattr(val, a), time_offset) for a in val.__slots__] if s]
+        sub = [s for s in [_sub_str_plot(getattr(val, a), time_offset) for a in val.__slots__] if s is not None]
         if sub:
             return ','.join([s for s in sub])
     elif not _echo_nostr and isinstance(val, basestring):
@@ -449,7 +449,7 @@ def _sub_str_plot(val, time_offset):
         elif not _echo_nostr and isinstance(val0, basestring):
             return ','.join([v for v in val])            
         elif isinstance(val0, rospy.Message):
-            sub = [s for s in [_sub_str_plot(v, time_offset) for v in val] if s]
+            sub = [s for s in [_sub_str_plot(v, time_offset) for v in val] if s is not None]
             if sub:
                 return ','.join([s for s in sub])
     return None

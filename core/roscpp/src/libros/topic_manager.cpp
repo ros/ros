@@ -604,6 +604,7 @@ bool TopicManager::requestTopic(const string &topic,
       m["topic"] = topic;
       m["md5sum"] = pub_ptr->getMD5Sum();
       m["type"] = pub_ptr->getDataType();
+      m["callerid"] = this_node::getName();
       m["message_definition"] = pub_ptr->getMessageDefinition();
       boost::shared_array<uint8_t> msg_def_buffer;
       uint32_t len;

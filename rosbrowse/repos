@@ -1,33 +1,29 @@
-# a list of publicly-viewable ROS subversion repositories
-# if yours isn't here, please suggest it to me.
-# these will be checked out by the generate_megamanifest script and snarfed 
-# for manifests.
-#https://ros.svn.sourceforge.net/svnroot/ros/trunk
-#https://personalrobots.svn.sourceforge.net/svnroot/personalrobots/pkg/trunk
-ros   https://code.ros.org/svn/ros/stacks/ros/trunk
-ros_tutorials https://code.ros.org/svn/ros/stacks/ros_tutorials/trunk
-ros_experimental https://code.ros.org/svn/ros/stacks/ros_experimental/trunk
-ros-pkg https://code.ros.org/svn/ros-pkg/externals/trunk
-ros-pkg-trunk https://code.ros.org/svn/ros-pkg/trunk
+# List of publicly-viewable ROS repositories
+# This is used as input to both the rosbrowse and ros.org/rosdoc tools.
+ros   svn https://code.ros.org/svn/ros/stacks/ros/trunk
+ros_tutorials svn https://code.ros.org/svn/ros/stacks/ros_tutorials/trunk
+ros_experimental svn https://code.ros.org/svn/ros/stacks/ros_experimental/trunk
+ros-pkg svn https://code.ros.org/svn/ros-pkg/externals/trunk
+ros-pkg-trunk svn https://code.ros.org/svn/ros-pkg/trunk
 #
-wg-ros-pkg https://code.ros.org/svn/wg-ros-pkg/externals/trunk
-wg-ros-pkg-trunk https://code.ros.org/svn/wg-ros-pkg/trunk
+wg-ros-pkg svn https://code.ros.org/svn/wg-ros-pkg/externals/trunk
+wg-ros-pkg-trunk svn https://code.ros.org/svn/wg-ros-pkg/trunk
 #
-sail  https://sail-ros-pkg.svn.sourceforge.net/svnroot/sail-ros-pkg/trunk
-cmu   https://cmu-ros-pkg.svn.sourceforge.net/svnroot/cmu-ros-pkg/trunk
-tum   https://tum-ros-pkg.svn.sourceforge.net/svnroot/tum-ros-pkg
-bosch https://bosch-ros-pkg.svn.sourceforge.net/svnroot/bosch-ros-pkg
-wu    https://wu-ros-pkg.svn.sourceforge.net/svnroot/wu-ros-pkg
-usc   https://usc-ros-pkg.svn.sourceforge.net/svnroot/usc-ros-pkg
-lis   http://lis-ros-pkg.googlecode.com/svn/trunk 
-gt    http://gt-ros-pkg.googlecode.com/svn/trunk
-foote http://foote-ros-pkg.googlecode.com/svn/trunk
-brown http://brown-ros-pkg.googlecode.com/svn/trunk
-wpi   http://ros-engagement.svn.sourceforge.net/svnroot/ros-engagement
-prairiedog http://prairiedog.googlecode.com/svn/trunk/
-alufr http://alufr-ros-pkg.googlecode.com/svn/trunk/
-ajh   https://ajh-ros-pkg.svn.sourceforge.net/svnroot/ajh-ros-pkg/trunk
-utexas-art http://utexas-art-ros-pkg.googlecode.com/svn/trunk/
-ua    http://ua-ros-pkg.googlecode.com/svn/trunk/
-cob3  git://github.com/ipa320/care-o-bot
-umd   git://ram.umd.edu/umd-ros-pkg.git
+sail  svn https://sail-ros-pkg.svn.sourceforge.net/svnroot/sail-ros-pkg/trunk
+cmu   svn https://cmu-ros-pkg.svn.sourceforge.net/svnroot/cmu-ros-pkg/trunk
+tum   svn https://tum-ros-pkg.svn.sourceforge.net/svnroot/tum-ros-pkg
+bosch svn https://bosch-ros-pkg.svn.sourceforge.net/svnroot/bosch-ros-pkg
+wu    svn https://wu-ros-pkg.svn.sourceforge.net/svnroot/wu-ros-pkg
+usc   svn https://usc-ros-pkg.svn.sourceforge.net/svnroot/usc-ros-pkg
+lis   svn http://lis-ros-pkg.googlecode.com/svn/trunk 
+gt    svn http://gt-ros-pkg.googlecode.com/svn/trunk
+foote svn http://foote-ros-pkg.googlecode.com/svn/trunk
+brown svn http://brown-ros-pkg.googlecode.com/svn/trunk
+wpi   svn http://ros-engagement.svn.sourceforge.net/svnroot/ros-engagement
+prairiedog svn http://prairiedog.googlecode.com/svn/trunk/
+alufr svn http://alufr-ros-pkg.googlecode.com/svn/trunk/
+ajh   svn https://ajh-ros-pkg.svn.sourceforge.net/svnroot/ajh-ros-pkg/trunk
+utexas-art svn http://utexas-art-ros-pkg.googlecode.com/svn/trunk/
+ua    svn http://ua-ros-pkg.googlecode.com/svn/trunk/
+cob3  git http://github.com/ipa320/care-o-bot
+umd   git git://ram.umd.edu/umd-ros-pkg.git

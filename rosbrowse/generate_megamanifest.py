@@ -12,33 +12,15 @@ from roslib.manifest import MANIFEST_FILE
 with open('repos','r') as rf:
     reps = [l.strip().split() for l in rf.readlines() if l and l[0] != '#']
 
-for name, uri in reps:
-  path = 'checkouts'+os.sep+name
-  fresh_install = not os.path.exists(path)
-  if fresh_install:
-      print "checking out %(name)s from %(uri)s"%locals()
-  else:
-      print "updating %(name)s from %(uri)s"%locals()
-      
-  if uri.startswith('git:'):
-      if fresh_install:
-        cmd = 'cd checkouts && git clone %(uri)s %(name)s'%locals()
-      else:
-        cmd = "cd %s && git pull"%path
-  elif uri.startswith('bzr:'):
-      if fresh_install:
-        cmd = 'cd checkouts && bzr checkout %(uri)s %(name)s'%locals()
-      else:
-        cmd = "cd %s && bzr up"%path
-  else:
-      if fresh_install:
-          os.makedirs(path)
-      cmd = 'cd checkouts && svn co %(uri)s %(name)s'%locals()
+if not os.path.exists('checkouts'):
+    os.makedirs('checkouts')
 
-  check_call(cmd, shell=True)
+for name, vcs, uri in reps:
+    print "checking out %(name)s from %(uri)s"%locals()
+    roslib.vcs.checkout(vcs, uri, 'checkouts'+os.sep+name)
 
 all_pkgs = { }
-for name, uri in reps:
+for name, vcs, uri in reps:
     print "snarfing manifests in local copy of %s"%name
     rel_path = 'checkouts'+os.sep+name+os.sep
     # cache paths into repo_pkgs
@@ -52,13 +34,14 @@ for name, uri in reps:
             override_path = None
             try:
                 pkg_path = repos_pkgs[pkg][0]
-                vcs, true_uri = roslib.vcs.guess_vcs_uri(pkg_path)
-                # rel_path is incorrect if true_uri doesn't
-                # match. recompute rel_path by getting URL of package
-                # and slicing.
-                if vcs == 'svn' and true_uri != uri:
-                    url_path = roslib.vcs.get_svn_url(pkg_path)
-                    override_path = url_path[len(true_uri):]
+                if vcs == 'svn':
+                    vcs0, true_uri = roslib.vcs.guess_vcs_uri(pkg_path)
+                    # rel_path is incorrect if true_uri doesn't
+                    # match. recompute rel_path by getting URL of package
+                    # and slicing.
+                    if true_uri != uri:
+                        url_path = roslib.vcs.get_svn_url(pkg_path)
+                        override_path = url_path[len(true_uri):]
             except:
                 true_uri = uri
             all_pkgs[pkg] = [pkg, name, true_uri, pkg_path, override_path]

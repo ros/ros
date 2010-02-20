@@ -77,6 +77,18 @@ def checkout(vcs, uri, dir_path):
     else:
         subprocess.check_call(cmd)
         
+def get_svn_url(dir_path):
+    """
+    @return: SVN URL of the directory path (output of svn info command), or None if it cannot be determined
+    """
+    if os.path.isdir(os.path.join(dir_path, '.svn')):
+        import subprocess
+        output = subprocess.Popen(['svn', 'info', dir_path], stdout=subprocess.PIPE).communicate()[0]
+        matches = [l for l in output.split('\n') if l.startswith('URL: ')]
+        if matches:
+            return matches[0][5:]
+    return None
+    
 def guess_vcs_uri(dir_path):
     """
     Guess the repository URI of the version-controlled directory path

@@ -43,6 +43,7 @@ import roslib.rospack
 import roslib.srvs
 import roslib.stacks
 import roslib.packages
+import roslib.vcs
 
 _api_url = "http://ros.org/doc/api/"
 def package_link(package):
@@ -105,7 +106,6 @@ def _generate_package_headers(ctx, p):
         d[k] = []
 
   # Try to get SVN repo info
-  import roslib.vcs
   vcs, repo = roslib.vcs.guess_vcs_uri(roslib.packages.get_pkg_dir(p))
   if repo is not None:
     d['repository'] = repo

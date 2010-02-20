@@ -109,6 +109,11 @@ def _roswtf_main():
 
     import optparse
     parser = optparse.OptionParser(usage="usage: roswtf [launch file]")
+    # #2268
+    parser.add_option("--all", 
+                      dest="all_packages", default=False,
+                      action="store_true",
+                      help="run roswtf against all packages")
     #TODO: --all-pkgs option
     options, args = parser.parse_args()
     if args:
@@ -148,6 +153,9 @@ def _roswtf_main():
         else:
             print "No package or stack in context"
             ctx = WtfContext.from_env()
+        if options.all_packages:
+            print "roswtf will run against all packages"
+            ctx.pkgs = all_pkgs
 
     # static checks
     wtf_check_environment(ctx)

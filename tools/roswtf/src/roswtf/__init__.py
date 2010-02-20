@@ -215,6 +215,10 @@ def _roswtf_main():
             print "\nOnline checks summary:\n"
             print_results(ctx)
             
+    except roswtf.context.WtfException, e:
+        print >> sys.stderr, str(e)
+        print "\nAborting checks, partial results summary:\n"
+        print_results(ctx)
     except Exception, e:
         traceback.print_exc()
         print >> sys.stderr, str(e)

@@ -30,3 +30,4 @@ ajh   https://ajh-ros-pkg.svn.sourceforge.net/svnroot/ajh-ros-pkg/trunk
 utexas-art http://utexas-art-ros-pkg.googlecode.com/svn/trunk/
 ua    http://ua-ros-pkg.googlecode.com/svn/trunk/
 cob3  git://github.com/ipa320/care-o-bot
+umd   git://ram.umd.edu/umd-ros-pkg.git

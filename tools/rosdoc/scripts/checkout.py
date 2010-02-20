@@ -5,8 +5,8 @@ USAGE = 'checkout.py <rosbrowse_repos_list> <rosdoc_repos_list>'
 import fileinput
 import sys
 import os
-import subprocess
 
+import roslib.vcs
 
 def load_rosbrowse_list(fn):
   f_rosbrowse = fileinput.input(fn)
@@ -15,10 +15,10 @@ def load_rosbrowse_list(fn):
     if l.startswith('#'):
       continue
     lsplit = l.split()
-    if len(lsplit) != 2:
+    if len(lsplit) != 3:
       continue
-    key, uri = lsplit
-    all_repos[key] = uri
+    key, vcs, uri = lsplit
+    all_repos[key] = (vcs, uri)
   return all_repos
 
 def load_rosdoc_list(fn, all_repos):
@@ -38,28 +38,8 @@ def load_rosdoc_list(fn, all_repos):
 
 def checkout_repos(repos):
   for key in repos:
-    url = repos[key]
-    fresh_install = os.path.exists(key)
-    cmd = None 
-    if url.startswith('git:'):
-      if fresh_install:
-        cmd = 'git clone %s %s'%(url, key)
-      else:
-        cmd = 'cd %s && git pull'%key
-    elif url.startswith('bzr:'):
-      url = url[4:]      
-      if fresh_install:
-        cmd = 'bzr checkout %s %s'%(url, key)
-      else:
-        cmd = "cd %s && bzr up"%key
-    else:
-      cmd = 'svn co %s %s'%(url, key)
-
-    if cmd:
-      print 'Checking out %s to %s...'%(url, key)
-      subprocess.call(cmd, shell=True)
-    else:
-      print >> sys.stderr, "Unable to checkout %s"%key
+    vcs, url = repos[key]
+    roslib.vcs.checkout(vcs, url, key)
 
 def write_setup_file(repos):
   str = 'export ROS_PACKAGE_PATH='

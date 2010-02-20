@@ -43,9 +43,9 @@ def checkout_repos(repos):
     cmd = None 
     if url.startswith('git:'):
       if fresh_install:
-        cmd = 'cd %s && git pull'%key
-      else:
         cmd = 'git clone %s %s'%(url, key)
+      else:
+        cmd = 'cd %s && git pull'%key
     elif url.startswith('bzr:'):
       url = url[4:]      
       if fresh_install:

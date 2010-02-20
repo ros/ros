@@ -109,7 +109,7 @@ def guess_vcs_uri(dir_path):
         else:
             # check parent directories for the .git config directory
             dir_path = os.path.abspath(dir_path)
-            while dir_path and dir_path != os.path.dirname(dir_path) and repo is None:
+            while dir_path and dir_path != os.path.dirname(dir_path) and repo == (None, None):
                 if os.path.isdir(os.path.join(dir_path, '.git')):
                     with open(os.path.join(dir_path, '.git', 'config')) as config:
                         in_section = False

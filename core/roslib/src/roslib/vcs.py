@@ -41,6 +41,42 @@ from __future__ import with_statement
 
 import os
 
+def checkout(vcs, uri, dir_path):
+    """
+    @param vcs: vcs type (e.g. 'svn', 'git')
+    @type  vcs: str
+    @param uri: vcs repository URI
+    @type  uri: str
+    @param dir_path: path to checkout to
+    @type  dir_path: str
+    @raise CalledProcessError: if checkout command fails
+    @raise ValueError: if vcs type is unsupported/unknown
+    """
+    cmd = cwd = None
+    fresh_install = not os.path.exists(dir_path)
+    if vcs == 'svn':
+        cmd = ['svn', 'co', uri, dir_path]
+    elif vcs == 'git':
+        if fresh_install:
+            cmd = ['git', 'clone', uri, dir_path]
+        else:
+            cwd = dir_path
+            cmd = ['git', 'pull']
+    elif vcs == 'bzr':
+        url = url[4:]      
+        if fresh_install:
+            cmd = ['bzr', 'checkout', uri, dir_path]
+        else:
+            cwd = dir_path
+            cmd = ['bzr', 'up']
+    else:
+        raise ValueError("unknown vcs: %s"%vcs)
+    import subprocess
+    if cwd:
+        subprocess.check_call(cmd, cwd=cwd)
+    else:
+        subprocess.check_call(cmd)
+        
 def guess_vcs_uri(dir_path):
     """
     Guess the repository URI of the version-controlled directory path

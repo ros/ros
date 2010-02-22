@@ -168,14 +168,14 @@ def _generate_node_dotcode(node, g, quiet):
     
 def _quiet_filter(name):
     # ignore viewers
-    for n in ['/pr2_dashboard', '/rviz', '/rosout', '/cpu_monitor', '/monitor','/hd_monitor', '/rxloggerlevel']:
+    for n in ['/pr2_dashboard', '/rviz', '/rosout', '/cpu_monitor', '/monitor','/hd_monitor', '/rxloggerlevel', '/clock']:
         if n in name:
             return False
     return True
 
 def _quiet_filter_edge(edge):
     for quiet_label in ['/time', '/clock', '/rosout']:
-        if quiet_label in edge.label:
+        if quiet_label == edge.label:
             return False
     return _quiet_filter(edge.start) and _quiet_filter(edge.end)
 

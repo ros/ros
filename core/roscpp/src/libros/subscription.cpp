@@ -501,20 +501,31 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
   }
   else if (proto_name == "UDPROS")
   {
-    if (proto.size() != 5 ||
+    if (proto.size() != 6 ||
         proto[1].getType() != XmlRpcValue::TypeString ||
         proto[2].getType() != XmlRpcValue::TypeInt ||
         proto[3].getType() != XmlRpcValue::TypeInt ||
-        proto[4].getType() != XmlRpcValue::TypeInt)
+        proto[4].getType() != XmlRpcValue::TypeInt ||
+        proto[5].getType() != XmlRpcValue::TypeBase64)
     {
-    	ROSCPP_LOG_DEBUG("publisher implements UDPROS, but the " \
-                "parameters aren't string,int,int");
+      ROSCPP_LOG_DEBUG("publisher implements UDPROS, but the " \
+	    	       "parameters aren't string,int,int,int,base64");
       return;
     }
     std::string pub_host = proto[1];
     int pub_port = proto[2];
     int conn_id = proto[3];
     int max_datagram_size = proto[4];
+    std::vector<char> header_bytes = proto[5];
+    boost::shared_array<uint8_t> buffer = boost::shared_array<uint8_t>(new uint8_t[header_bytes.size()]);
+    memcpy(buffer.get(), &header_bytes[0], header_bytes.size());
+    Header h;
+    std::string err;
+    if (!h.parse(buffer, header_bytes.size(), err))
+    {
+      ROSCPP_LOG_DEBUG("Unable to parse UDPROS connection header: %s", err.c_str());
+      return;
+    }
     ROSCPP_LOG_DEBUG("Connecting via udpros to topic [%s] at host [%s:%d] connection id [%08x] max_datagram_size [%d]", name_.c_str(), pub_host.c_str(), pub_port, conn_id, max_datagram_size);
 
     //TransportUDPPtr transport(new TransportUDP(&g_node->getPollSet()));
@@ -531,6 +542,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
       TransportPublisherLinkPtr pub_link(new TransportPublisherLink(shared_from_this(), xmlrpc_uri, transport_hints_));
 
       connection->initialize(udp_transport, false, NULL);
+      connection->setHeader(h);
       pub_link->initialize(connection);
 
       ConnectionManager::instance()->addConnection(connection);

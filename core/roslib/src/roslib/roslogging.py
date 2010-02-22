@@ -100,6 +100,7 @@ def configure_logging(logname, level=logging.INFO, filename=None, additional=Non
         logger.addHandler(handler)
     return log_filename
 
+# deprecated: replace with rosenv copy
 def makedirs_with_parent_perms(p):
     """
     Create the directory using the permissions of the nearest

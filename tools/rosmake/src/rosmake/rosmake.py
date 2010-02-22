@@ -122,8 +122,7 @@ class RosMakeAll:
         """
         try:
             r = rosdep.core.Rosdep(packages, robust=True)
-            if not r.install(include_duplicates=False, default_yes=default_yes):
-                return "Rosdep install failed"
+            r.install(include_duplicates=False, default_yes=default_yes);
             return None
         except rosdep.core.RosdepException, e:
             return "rosdep install FAILED: %s"%e
@@ -273,7 +272,7 @@ class RosMakeAll:
 
         std_out_filename = os.path.join(package_log_dir, log_type + "_output.log")
         if not os.path.exists (package_log_dir):
-            os.makedirs (package_log_dir)
+            roslib.rosenv.makedirs_with_parent_perms(package_log_dir)
         with open(std_out_filename, 'w') as stdout_file:
             stdout_file.write(stdout)
             print_string = "Output from build of package %s written to:\n[ rosmake ]    %s"%(package, std_out_filename)
@@ -615,8 +614,7 @@ class RosMakeAll:
               self.print_all( "Log destination %s is a file; please remove it or choose a new destination"%self.log_dir)
               sys.exit(1)
           if not os.path.exists (self.log_dir):
-              os.makedirs (self.log_dir)
-
+              roslib.rosenv.makedirs_with_parent_perms(self.log_dir)
 
         (self.specified_packages, self.rejected_packages) = roslib.stacks.expand_to_packages(packages)
         self.print_all("Expanded args %s to:\n%s"%(packages, self.specified_packages))

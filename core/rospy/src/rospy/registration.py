@@ -378,16 +378,20 @@ class RegManager(RegistrationListener):
         if not master_uri:
             self.logger.error("Registrar: master_uri is not set yet, cannot inform master of deregistration")
         else:
-            master = xmlrpcapi(master_uri)
-            if reg_type == Registration.PUB:
-                self.logger.debug("unregisterPublisher(%s, %s)", resolved_name, self.uri)
-                master.unregisterPublisher(get_caller_id(), resolved_name, self.uri)
-            elif reg_type == Registration.SUB:            
-                self.logger.debug("unregisterSubscriber(%s, %s)", resolved_name, data_type_or_uri)
-                master.unregisterSubscriber(get_caller_id(), resolved_name, self.uri)
-            elif reg_type == Registration.SRV:
-                self.logger.debug("unregisterService(%s, %s)", resolved_name, data_type_or_uri)
-                master.unregisterService(get_caller_id(), resolved_name, data_type_or_uri)
+            try:
+                master = xmlrpcapi(master_uri)
+                if reg_type == Registration.PUB:
+                    self.logger.debug("unregisterPublisher(%s, %s)", resolved_name, self.uri)
+                    master.unregisterPublisher(get_caller_id(), resolved_name, self.uri)
+                elif reg_type == Registration.SUB:            
+                    self.logger.debug("unregisterSubscriber(%s, %s)", resolved_name, data_type_or_uri)
+                    master.unregisterSubscriber(get_caller_id(), resolved_name, self.uri)
+                elif reg_type == Registration.SRV:
+                    self.logger.debug("unregisterService(%s, %s)", resolved_name, data_type_or_uri)
+                    master.unregisterService(get_caller_id(), resolved_name, data_type_or_uri)
+            except:
+                logwarn("unable to communicate with ROS Master, registrations are now out of sync")
+                self.logger.error(traceback.format_exc())
     
     def reg_added(self, resolved_name, data_type_or_uri, reg_type):
         """

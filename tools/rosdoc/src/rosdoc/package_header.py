@@ -37,6 +37,7 @@ from __future__ import with_statement
 import codecs
 import os
 import sys
+import traceback
 
 import roslib.msgs
 import roslib.rospack
@@ -75,7 +76,6 @@ def _generate_package_headers(ctx, p):
     d['stack'] = stack
     d['siblings'] = roslib.stacks.packages_of(stack)
 
-  depends_on = []
   d['depends_on'] = roslib.rospack.rospack_depends_on_1(p)
     
   d['api_documentation'] = package_link(p)
@@ -105,10 +105,11 @@ def _generate_package_headers(ctx, p):
         print >> sys.stderr, "error: cannot encode value for key", k
         d[k] = []
 
-  # Try to get SVN repo info
+  # Try to get VCS repo info
   vcs, repo = roslib.vcs.guess_vcs_uri(roslib.packages.get_pkg_dir(p))
   if repo is not None:
     d['repository'] = repo
+    d['vcs'] = vcs
 
   file_p = os.path.join(ctx.docdir, p, 'manifest.yaml')
   file_p_dir = os.path.dirname(file_p)
@@ -117,8 +118,10 @@ def _generate_package_headers(ctx, p):
   with codecs.open(file_p, mode='w', encoding='utf-8') as f:
     f.write(yaml.dump(d))
   
-## generate manifest.yaml files for MoinMoin PackageHeader macro
 def generate_package_headers(ctx):
+    """
+    Generate manifest.yaml files for MoinMoin PackageHeader macro
+    """
     try:
         import yaml
     except ImportError:
@@ -133,7 +136,6 @@ def generate_package_headers(ctx):
           #print "generating wiki files for", p
           _generate_package_headers(ctx, p)
         except Exception, e:
-          import traceback
           traceback.print_exc()
           print >> sys.stderr, "Unable to generate manifest.yaml for "+p+str(e)
         
@@ -150,14 +152,15 @@ def _generate_stack_headers(ctx, s):
       'review_status': m.status or '',
       'review_notes': m.notes or '',
       'url': m.url,
+      'packages': roslib.stacks.packages_of(s),
+      'depends_on': roslib.rospack.rosstack_depends_on_1(s),
       }
 
-    siblings = []
-    d['packages'] = roslib.stacks.packages_of(s)
-
-    depends_on = []
-    d['depends_on'] = roslib.rospack.rosstack_depends_on_1(s)
-    #d['dependency_tree'] = stack_link(p) + '%s.pdf'%p
+    # Try to get VCS repo info
+    vcs, repo = roslib.vcs.guess_vcs_uri(roslib.stacks.get_stack_dir(s))
+    if repo is not None:
+      d['repository'] = repo
+      d['vcs'] = vcs
 
     # encode unicode entries
     d_copy = d.copy()
@@ -183,8 +186,10 @@ def _generate_stack_headers(ctx, s):
     with codecs.open(file_p, mode='w', encoding='utf-8') as f:
         f.write(yaml.dump(d))
   
-## generate stack.yaml files for MoinMoin PackageHeader macro
 def generate_stack_headers(ctx):
+    """
+    Generate stack.yaml files for MoinMoin PackageHeader macro
+    """
     try:
         import yaml
     except ImportError:
@@ -193,12 +198,10 @@ def generate_stack_headers(ctx):
 
     stacks = ctx.stacks
     for s in stacks.iterkeys():
-        #TODO: this curretly documents all stacks, instead of just ones related to args
         try:
           #print "generating stack wiki files for", s
           _generate_stack_headers(ctx, s)
         except Exception, e:
-          import traceback
           traceback.print_exc()
           print >> sys.stderr, "Unable to generate stack.yaml for "+s+str(e)
 

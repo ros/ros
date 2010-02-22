@@ -215,7 +215,6 @@ class ROSHandler(XmlRpcHandler):
         self.uri = uri
         #connect up topics in separate thread
         if self.reg_man:
-            import threading
             t = threading.Thread(target=self.reg_man.start, args=(uri, self.masterUri))
             rospy.core._add_shutdown_thread(t)
             t.start()

@@ -243,6 +243,30 @@ def _strify_spec(spec, buff=None, indent=''):
             _strify_spec(subspec, buff, indent + '  ')
     return buff.getvalue()
 
+class Field(object):
+    """
+    Container class for storing information about a single field in a MsgSpec
+    
+    Contains:
+    name
+    type
+    base_type
+    is_array
+    array_len
+    is_builtin
+    is_header
+    """
+    
+    def __init__(self, name, type):
+        self.name = name
+        self.type = type
+        (self.base_type, self.is_array, self.array_len) = parse_type(type)
+        self.is_header = is_header_type(self.base_type)
+        self.is_builtin = is_builtin(self.base_type)
+
+    def __repr__(self):
+        return "[%s, %s, %s, %s, %s]"%(self.name, self.type, self.base_type, self.is_array, self.array_len)
+
 class MsgSpec(object):
     """
     Container class for storing loaded msg description files. Field
@@ -250,7 +274,7 @@ class MsgSpec(object):
     correspondence. MsgSpec can also return an md5 of the source text.
     """
 
-    def __init__(self, types, names, constants, text):
+    def __init__(self, types, names, constants, text, name = '', short_name = '', package = ''):
         """
         @param types: list of field types, in order of declaration
         @type  types: [str]
@@ -271,6 +295,10 @@ class MsgSpec(object):
         #Header.msg support
         self.header_present = (HEADER, 'header') in zip(self.types, self.names)
         self.text = text
+        self.name = name
+        self.short_name = short_name
+        self.package = package
+        self._parsed_fields = [Field(name, type) for (type, name) in zip(self.types, self.names)]
         
     def fields(self):
         """
@@ -278,6 +306,13 @@ class MsgSpec(object):
         @rtype: [(str,str),]
         """
         return zip(self.types, self.names)
+    
+    def parsed_fields(self):
+        """
+        @return: list of Field classes
+        @rtype: [Field,]
+        """
+        return self._parsed_fields
 
     def has_header(self):
         """
@@ -524,10 +559,10 @@ def load_by_type(msgtype, package_context=''):
     try:
         m_f = msg_file(pkg, basetype)
     except roslib.packages.InvalidROSPkgException:
-        raise MsgSpecException("Cannot locate message type [%s], package does not exist"%msgtype) 
+        raise MsgSpecException("Cannot locate message type [%s], package [%s] does not exist"%(msgtype, pkg)) 
     return load_from_file(m_f, pkg)
 
-def load_from_string(text, package_context=''):
+def load_from_string(text, package_context='', full_name='', short_name=''):
     """
     Load message specification from a string.
     @param text: .msg text 
@@ -581,7 +616,7 @@ def load_from_string(text, package_context=''):
                     type_ = "%s/%s"%(package_context, type_)
             types.append(type_)
             names.append(name)
-    return MsgSpec(types, names, constants, text)
+    return MsgSpec(types, names, constants, text, full_name, short_name, package_context)
 
 def load_from_file(file_path, package_context=''):
     """
@@ -604,6 +639,7 @@ def load_from_file(file_path, package_context=''):
 
     file_name = os.path.basename(file_path)
     type_ = file_name[:-len(EXT)]
+    base_type_ = type_
     # determine the type name
     if package_context:
         while package_context.endswith(SEP):
@@ -616,7 +652,7 @@ def load_from_file(file_path, package_context=''):
     try:
         try:
             text = f.read()
-            return (type_, load_from_string(text, package_context))
+            return (type_, load_from_string(text, package_context, type_, base_type_))
         except MsgSpecException, e:
             raise MsgSpecException('%s: %s'%(file_name, e))
     finally:
@@ -636,7 +672,7 @@ def is_header_type(type_):
     @return: True if \a type_ refers to the ROS Header type
     @rtype:  bool
     """
-    return type_ in [roslib.msgs.HEADER, 'roslib/Header']
+    return type_ in [HEADER, 'roslib/Header']
        
 # time and duration types are represented as aggregate data structures
 # for the purposes of serialization from the perspective of
@@ -648,21 +684,13 @@ TIME_MSG     = "uint32 secs\nuint32 nsecs"
 ## duration as msg spec. duration is just like time except signed
 DURATION_MSG = "int32 secs\nint32 nsecs"
 
-## extended builtins are builtin types that can be represented as MsgSpec instances
-EXTENDED_BUILTINS = { TIME : load_from_string(TIME_MSG), DURATION: load_from_string(DURATION_MSG) }
-
 ## primitive types are those for which we allow constants, i.e. have  primitive representation
 PRIMITIVE_TYPES = ['int8','uint8','int16','uint16','int32','uint32','int64','uint64','float32','float64',
                    'string',
                    'bool',
                    # deprecated:
                    'char','byte']
-BUILTIN_TYPES = PRIMITIVE_TYPES + EXTENDED_BUILTINS.keys()
-
-RESERVED_TYPES  = BUILTIN_TYPES + [HEADER]
-
-REGISTERED_TYPES = { } 
-_loaded_packages = [] #keep track of packages so that we only load once (note: bug #59)
+BUILTIN_TYPES = PRIMITIVE_TYPES + [TIME, DURATION]
 
 def is_builtin(msg_type_name):
     """
@@ -672,6 +700,14 @@ def is_builtin(msg_type_name):
     @rtype: bool
     """
     return msg_type_name in BUILTIN_TYPES
+
+## extended builtins are builtin types that can be represented as MsgSpec instances
+EXTENDED_BUILTINS = { TIME : load_from_string(TIME_MSG), DURATION: load_from_string(DURATION_MSG) }
+
+RESERVED_TYPES  = BUILTIN_TYPES + [HEADER]
+
+REGISTERED_TYPES = { } 
+_loaded_packages = [] #keep track of packages so that we only load once (note: bug #59)
 
 def is_registered(msg_type_name):
     """

@@ -46,6 +46,8 @@
 #include "test_roscpp_serialization/WithTime.h"
 #include "test_roscpp_serialization/WithDuration.h"
 #include "test_roscpp_serialization/WithMemberNamedHeaderThatIsNotAHeader.h"
+#include "test_roscpp_serialization/FixedLengthArrayOfExternal.h"
+#include "test_roscpp_serialization/VariableLengthArrayOfExternal.h"
 
 using namespace test_roscpp_serialization;
 
@@ -60,6 +62,8 @@ ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, EmbeddedExternal, 
 ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, WithTime, MyWithTime, Allocator);
 ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, WithDuration, MyWithDuration, Allocator);
 ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, WithMemberNamedHeaderThatIsNotAHeader, MyWithMemberNamedHeaderThatIsNotAHeader, Allocator);
+ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, FixedLengthArrayOfExternal, MyFixedLengthArrayOfExternal, Allocator);
+ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, VariableLengthArrayOfExternal, MyVariableLengthArrayOfExternal, Allocator);
 
 TEST(GeneratedMessages, traitsWithStandardMessages)
 {
@@ -74,6 +78,8 @@ TEST(GeneratedMessages, traitsWithStandardMessages)
   EXPECT_TRUE(mt::isFixedSize<WithTime>());
   EXPECT_TRUE(mt::isFixedSize<WithDuration>());
   EXPECT_TRUE(mt::isFixedSize<WithMemberNamedHeaderThatIsNotAHeader>());
+  EXPECT_FALSE(mt::isFixedSize<FixedLengthArrayOfExternal>());
+  EXPECT_FALSE(mt::isFixedSize<VariableLengthArrayOfExternal>());
 
   EXPECT_FALSE(mt::hasHeader<ArrayOfFixedLength>());
   EXPECT_FALSE(mt::hasHeader<ArrayOfVariableLength>());
@@ -86,6 +92,8 @@ TEST(GeneratedMessages, traitsWithStandardMessages)
   EXPECT_FALSE(mt::hasHeader<WithTime>());
   EXPECT_FALSE(mt::hasHeader<WithDuration>());
   EXPECT_FALSE(mt::hasHeader<WithMemberNamedHeaderThatIsNotAHeader>());
+  EXPECT_FALSE(mt::hasHeader<FixedLengthArrayOfExternal>());
+  EXPECT_FALSE(mt::hasHeader<VariableLengthArrayOfExternal>());
 
   EXPECT_FALSE(mt::isSimple<ArrayOfFixedLength>());
   EXPECT_FALSE(mt::isSimple<ArrayOfVariableLength>());
@@ -98,6 +106,8 @@ TEST(GeneratedMessages, traitsWithStandardMessages)
   EXPECT_FALSE(mt::isSimple<WithTime>());
   EXPECT_FALSE(mt::isSimple<WithDuration>());
   EXPECT_FALSE(mt::isSimple<WithMemberNamedHeaderThatIsNotAHeader>());
+  EXPECT_FALSE(mt::isSimple<FixedLengthArrayOfExternal>());
+  EXPECT_FALSE(mt::isSimple<VariableLengthArrayOfExternal>());
 }
 
 TEST(GeneratedMessages, traitsWithCustomAllocator)
@@ -113,6 +123,8 @@ TEST(GeneratedMessages, traitsWithCustomAllocator)
   EXPECT_TRUE(mt::isFixedSize<MyWithTime>());
   EXPECT_TRUE(mt::isFixedSize<MyWithDuration>());
   EXPECT_TRUE(mt::isFixedSize<MyWithMemberNamedHeaderThatIsNotAHeader>());
+  EXPECT_FALSE(mt::isFixedSize<MyFixedLengthArrayOfExternal>());
+  EXPECT_FALSE(mt::isFixedSize<MyVariableLengthArrayOfExternal>());
 
   EXPECT_FALSE(mt::hasHeader<MyArrayOfFixedLength>());
   EXPECT_FALSE(mt::hasHeader<MyArrayOfVariableLength>());
@@ -125,6 +137,8 @@ TEST(GeneratedMessages, traitsWithCustomAllocator)
   EXPECT_FALSE(mt::hasHeader<MyWithTime>());
   EXPECT_FALSE(mt::hasHeader<MyWithDuration>());
   EXPECT_FALSE(mt::hasHeader<MyWithMemberNamedHeaderThatIsNotAHeader>());
+  EXPECT_FALSE(mt::hasHeader<MyFixedLengthArrayOfExternal>());
+  EXPECT_FALSE(mt::hasHeader<MyVariableLengthArrayOfExternal>());
 
   EXPECT_FALSE(mt::isSimple<MyArrayOfFixedLength>());
   EXPECT_FALSE(mt::isSimple<MyArrayOfVariableLength>());
@@ -137,6 +151,8 @@ TEST(GeneratedMessages, traitsWithCustomAllocator)
   EXPECT_FALSE(mt::isSimple<MyWithTime>());
   EXPECT_FALSE(mt::isSimple<MyWithDuration>());
   EXPECT_FALSE(mt::isSimple<MyWithMemberNamedHeaderThatIsNotAHeader>());
+  EXPECT_FALSE(mt::isSimple<MyFixedLengthArrayOfExternal>());
+  EXPECT_FALSE(mt::isSimple<MyVariableLengthArrayOfExternal>());
 }
 
 #define SERIALIZATION_COMPILATION_TEST(Type) \
@@ -157,6 +173,8 @@ SERIALIZATION_COMPILATION_TEST(EmbeddedExternal);
 SERIALIZATION_COMPILATION_TEST(WithTime);
 SERIALIZATION_COMPILATION_TEST(WithDuration);
 SERIALIZATION_COMPILATION_TEST(WithMemberNamedHeaderThatIsNotAHeader);
+SERIALIZATION_COMPILATION_TEST(FixedLengthArrayOfExternal);
+SERIALIZATION_COMPILATION_TEST(VariableLengthArrayOfExternal);
 
 SERIALIZATION_COMPILATION_TEST(MyArrayOfFixedLength);
 SERIALIZATION_COMPILATION_TEST(MyArrayOfVariableLength);
@@ -169,6 +187,8 @@ SERIALIZATION_COMPILATION_TEST(MyEmbeddedExternal);
 SERIALIZATION_COMPILATION_TEST(MyWithTime);
 SERIALIZATION_COMPILATION_TEST(MyWithDuration);
 SERIALIZATION_COMPILATION_TEST(MyWithMemberNamedHeaderThatIsNotAHeader);
+SERIALIZATION_COMPILATION_TEST(MyFixedLengthArrayOfExternal);
+SERIALIZATION_COMPILATION_TEST(MyVariableLengthArrayOfExternal);
 
 #define ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(Type, Allocator) \
   TEST(GeneratedMessages, allocationConstructor_##Type) \
@@ -188,6 +208,8 @@ ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(EmbeddedExternal, std::allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(WithTime, std::allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(WithDuration, std::allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(WithMemberNamedHeaderThatIsNotAHeader, std::allocator<void>);
+ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(FixedLengthArrayOfExternal, std::allocator<void>);
+ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(VariableLengthArrayOfExternal, std::allocator<void>);
 
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyArrayOfFixedLength, Allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyArrayOfVariableLength, Allocator<void>);
@@ -200,6 +222,8 @@ ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyEmbeddedExternal, Allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyWithTime, Allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyWithDuration, Allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyWithMemberNamedHeaderThatIsNotAHeader, Allocator<void>);
+ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyFixedLengthArrayOfExternal, Allocator<void>);
+ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyVariableLengthArrayOfExternal, Allocator<void>);
 
 int main(int argc, char** argv)
 {

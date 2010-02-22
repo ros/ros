@@ -57,10 +57,8 @@ def write_begin(s, spec, file):
     
     @param s: The stream to write to
     @type s: stream
-    @param pkg: The package
-    @type pkg: str
-    @param srv: The name of the service, e.g. GetString
-    @type srv: str
+    @param spec: The spec
+    @type spec: roslib.srvs.SrvSpec
     @param file: The file this service is being generated for
     @type file: str 
     """
@@ -74,10 +72,8 @@ def write_end(s, spec):
     
     @param s: The stream to write to
     @type s: stream
-    @param pkg: The package
-    @type pkg: str
-    @param srv: The name of the service, e.g. GetString
-    @type srv: str
+    @param spec: The spec
+    @type spec: roslib.srvs.SrvSpec
     """
     s.write('#endif // %s_SERVICE_%s_H\n'%(spec.package.upper(), spec.short_name.upper()))
     
@@ -124,10 +120,6 @@ def write_traits(s, spec, cpp_name_prefix):
     @type s: stream
     @param spec: The service spec
     @type spec: roslib.srvs.SrvSpec
-    @param pkg: The package
-    @type pkg: str
-    @param srv: The name of the service
-    @type srv: str
     @param cpp_name_prefix: The C++ prefix to prepend when referencing the service, e.g. "std_srvs::"
     @type cpp_name_prefix: str
     """

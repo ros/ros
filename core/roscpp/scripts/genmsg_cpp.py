@@ -116,10 +116,8 @@ def write_begin(s, spec, file):
     
     @param s: The stream to write to
     @type s: stream
-    @param pkg: The package
-    @type pkg: str
-    @param msg: The name of the message, e.g. String
-    @type msg: str
+    @param spec: The spec
+    @type spec: roslib.msgs.MsgSpec
     @param file: The file this message is being generated for
     @type file: str
     """
@@ -133,10 +131,8 @@ def write_end(s, spec):
     
     @param s: The stream to write to
     @type s: stream
-    @param pkg: The package
-    @type pkg: str
-    @param msg: The name of the message, e.g. String
-    @type msg: str
+    @param spec: The spec
+    @type spec: roslib.msgs.MsgSpec
     """
     s.write('#endif // %s_MESSAGE_%s_H\n'%(spec.package.upper(), spec.short_name.upper()))
     
@@ -162,8 +158,6 @@ def write_includes(s, spec):
     @type s: stream
     @param spec: The message spec to iterate over
     @type spec: roslib.msgs.MsgSpec
-    @param package: The name of the package being generated for
-    @type package: str
     """
     for field in spec.parsed_fields():
         if (not field.is_builtin):
@@ -184,8 +178,6 @@ def write_struct(s, spec, cpp_name_prefix):
     @type s: stream
     @param spec: The message spec
     @type spec: roslib.msgs.MsgSpec
-    @param msg: The message name
-    @type msg: str
     @param cpp_name_prefix: The C++ prefix to use when referring to the message, e.g. "std_msgs::"
     @type cpp_name_prefix: str
     """
@@ -305,8 +297,6 @@ def write_constructors(s, spec, cpp_name_prefix):
     
     @param s: The stream to write to
     @type s: stream
-    @param msg: The message type
-    @type msg: str
     @param spec: The message spec
     @type spec: roslib.msgs.MsgSpec
     @param cpp_name_prefix: The C++ prefix to use when referring to the message, e.g. "std_msgs::"
@@ -548,10 +538,6 @@ def write_traits(s, spec, cpp_name_prefix, datatype = None):
     @type s: stream
     @param spec: The message spec
     @type spec: roslib.msgs.MsgSpec
-    @param pkg: The package the message resides inside
-    @type pkg: str
-    @param msg: The message name
-    @type msg: str
     @param cpp_name_prefix: The C++ prefix to prepend to a message to refer to it (e.g. "std_msgs::")
     @type cpp_name_prefix: str
     @param datatype: The string to write as the datatype of the message.  If None (default), pkg/msg is used.
@@ -591,10 +577,6 @@ def write_serialization(s, spec, cpp_name_prefix):
     @type s: stream
     @param spec: The message spec
     @type spec: roslib.msgs.MsgSpec
-    @param pkg: The package the message comes from
-    @type pkg: str
-    @param msg: The message name
-    @type msg: str
     @param cpp_name_prefix: The C++ prefix to prepend to a message to refer to it (e.g. "std_msgs::")
     @type cpp_name_prefix: str
     """

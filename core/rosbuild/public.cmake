@@ -169,7 +169,7 @@ macro(rosbuild_init)
   # time is smaller, then we need to rebuild our cached values by calling
   # out to rospack to get flags.  This is an optimization in the service of
   # speeding up the build, #2109.
-  _rosbuild_time_less_than_latest_mtime(_rebuild_cache "${_rosbuild_cached_flag_time}" ${ROS_MANIFEST_LIST})
+  _rosbuild_compare_manifests(_rebuild_cache "${_rosbuild_cached_flag_time}" "${${_prefix}_cached_manifest_list}" "${ROS_MANIFEST_LIST}")
   if(_rebuild_cache)
     # Explicitly unset all cached variables, to avoid possible accumulation
     # across builds, #2389.
@@ -178,6 +178,7 @@ macro(rosbuild_init)
     set(${_prefix}_LIBRARY_DIRS "" CACHE INTERNAL "")
     set(${_prefix}_LIBRARIES "" CACHE INTERNAL "")
     set(${_prefix}_LDFLAGS_OTHER "" CACHE INTERNAL "")
+    set(${_prefix}_cached_manifest_list "" CACHE INTERNAL "")
 
     message("[rosbuild] Cached build flags older than manifests; calling rospack to get flags")
     # Get the include dirs
@@ -223,6 +224,7 @@ macro(rosbuild_init)
     # Record the time at which we cached those values
     _rosbuild_get_clock(_time)
     set(_rosbuild_cached_flag_time ${_time} CACHE INTERNAL "")
+    set(${_prefix}_cached_manifest_list ${ROS_MANIFEST_LIST} CACHE INTERNAL "")
   endif(_rebuild_cache)
 
   # Use the (possibly cached) values returned by rospack.

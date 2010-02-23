@@ -226,7 +226,7 @@ class RosdepLookupPackage:
                         #print >> sys.stderr, "DEBUG: Same key found for %s: %s"%(key, self.rosdep_map[key])
                         pass
                     else:
-                        raise RosdepException("QUITTING: due to conflicting rosdep definitions, please resolve this conflict. Rules for %s do not match.  These two rules do not match: \n{{{"%key, self.rosdep_map[key],"}}}, from %s, \n{{{"%self.rosdep_source[key], self.yaml_cache.get_os_from_yaml(yaml_dict[key], source_path), "}}} from %s"%source_path)
+                        raise RosdepException("QUITTING: due to conflicting rosdep definitions, please resolve this conflict. Rules for %s do not match.  These two rules do not match: \n{{{"%key, self.rosdep_map[key],"}}}, from %s, \n{{{"%self.rosdep_source[key], self.yaml_cache.get_os_from_yaml(key, yaml_dict[key], source_path), "}}} from %s"%source_path)
                         
             else:
                 self.rosdep_source[key] = [source_path]

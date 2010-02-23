@@ -225,6 +225,16 @@ ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyWithMemberNamedHeaderThatIsNotAHeader, 
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyFixedLengthArrayOfExternal, Allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyVariableLengthArrayOfExternal, Allocator<void>);
 
+TEST(Generated, serializationOStreamOperator)
+{
+  using namespace ros::serialization;
+  Array b(new uint8_t[8]);
+  OStream ostream(b.get(), 8);
+  FixedLength m;
+  ostream << m;
+  ASSERT_EQ(ostream.getLength(), 0UL);
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);

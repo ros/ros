@@ -145,8 +145,10 @@ def write_generic_includes(s):
     """
     s.write('#include <string>\n')
     s.write('#include <vector>\n')
+    s.write('#include <ostream>\n')
     s.write('#include "ros/serialization.h"\n')
     s.write('#include "ros/builtin_message_traits.h"\n')
+    s.write('#include "ros/message_operations.h"\n')
     s.write('#include "ros/message.h"\n')
     s.write('#include "ros/time.h"\n\n')
     
@@ -564,9 +566,42 @@ def write_traits(s, spec, cpp_name_prefix, datatype = None):
     if (is_fixed_length(spec)):
         write_trait_true_class(s, 'IsFixedSize', cpp_msg_with_alloc)
         
+    s.write('} // namespace message_traits\n')
+    s.write('} // namespace ros\n\n')
+    
+def write_operations(s, spec, cpp_name_prefix):
+    (cpp_msg_unqualified, cpp_msg_with_alloc, _) = cpp_message_declarations(cpp_name_prefix, spec.short_name)
+    s.write('namespace ros\n{\n')
+    s.write('namespace message_operations\n{\n')
+    
+    # Write the Printer operation
+    s.write('\ntemplate<class ContainerAllocator>\nstruct Printer<%s>\n{\n'%(cpp_msg_with_alloc))
+    s.write('  template<typename Stream> static void stream(Stream& s, const std::string& indent, const %s& v) \n  {\n'%cpp_msg_with_alloc)
+    for field in spec.parsed_fields():
+        cpp_type = msg_type_to_cpp(field.base_type)
+        if (field.is_array):
+            s.write('    s << indent << "%s[]" << std::endl;\n'%(field.name))
+            s.write('    for (size_t i = 0; i < v.%s.size(); ++i)\n    {\n'%(field.name))
+            s.write('      s << indent << "  %s[" << i << "]: ";\n'%field.name)
+            indent_increment = '  '
+            if (not field.is_builtin):
+                s.write('      s << std::endl;\n')
+                s.write('      s << indent;\n')
+                indent_increment = '    ';
+            s.write('      Printer<%s>::stream(s, indent + "%s", v.%s[i]);\n'%(cpp_type, indent_increment, field.name))
+            s.write('    }\n')
+        else:
+            s.write('    s << indent << "%s: ";\n'%field.name)
+            indent_increment = '  '
+            if (not field.is_builtin or field.is_array):
+                s.write('s << std::endl;\n')
+            s.write('    Printer<%s>::stream(s, indent + "%s", v.%s);\n'%(cpp_type, indent_increment, field.name))
+    s.write('  }\n')
+    s.write('};\n\n')
+        
     s.write('\n')
         
-    s.write('} // namespace message_traits\n')
+    s.write('} // namespace message_operations\n')
     s.write('} // namespace ros\n\n')
     
 def write_serialization(s, spec, cpp_name_prefix):
@@ -598,6 +633,11 @@ def write_serialization(s, spec, cpp_name_prefix):
         
     s.write('} // namespace serialization\n')
     s.write('} // namespace ros\n\n')
+    
+def write_ostream_operator(s, spec, cpp_name_prefix):
+    (cpp_msg_unqualified, cpp_msg_with_alloc, _) = cpp_message_declarations(cpp_name_prefix, spec.short_name)
+    s.write('template<typename ContainerAllocator>\nstd::ostream& operator<<(std::ostream& s, const %s& v)\n{\n'%(cpp_msg_with_alloc))
+    s.write('  ros::message_operations::Printer<%s>::stream(s, "", v);\n  return s;}\n\n'%(cpp_msg_with_alloc))
 
 def generate(msg_path):
     """
@@ -618,10 +658,12 @@ def generate(msg_path):
     
     s.write('namespace %s\n{\n'%(package))
     write_struct(s, spec, cpp_prefix)
+    write_ostream_operator(s, spec, cpp_prefix)
     s.write('} // namespace %s\n\n'%(package))
     
     write_traits(s, spec, cpp_prefix)
     write_serialization(s, spec, cpp_prefix)
+    write_operations(s, spec, cpp_prefix)
     write_end(s, spec)
     
     output_dir = '%s/msg_gen/cpp/include/%s'%(package_dir, package)
@@ -632,7 +674,7 @@ def generate(msg_path):
             os.makedirs(output_dir)
         except OSError, e:
             pass
-        
+         
     f = open('%s/%s.h'%(output_dir, spec.short_name), 'w')
     print >> f, s.getvalue()
     

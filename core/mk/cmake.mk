@@ -18,7 +18,7 @@ PACKAGE_NAME=$(shell basename $(PWD))
 # and thus CMake no longer knows about it.
 clean:
 	-cd build && make clean
-	rm -rf gen_msg gen_srv msg/cpp msg/lisp msg/oct msg/java srv/cpp srv/lisp srv/oct srv/java src/$(PACKAGE_NAME)/msg src/$(PACKAGE_NAME)/srv
+	rm -rf msg_gen srv_gen msg/cpp msg/lisp msg/oct msg/java srv/cpp srv/lisp srv/oct srv/java src/$(PACKAGE_NAME)/msg src/$(PACKAGE_NAME)/srv
 	rm -rf build
 
 # All other targets are just passed through

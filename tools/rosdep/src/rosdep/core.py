@@ -101,28 +101,28 @@ class YamlCache:
         yaml_dict = self.get_yaml(path)
         expanded_rosdeps = {}
         for key in yaml_dict:
-            rosdep_entry = self.get_os_from_yaml(yaml_dict[key], path)
+            rosdep_entry = self.get_os_from_yaml(key, yaml_dict[key], path)
             if not rosdep_entry: # if no match don't do anything
                 continue # matches for loop
             expanded_rosdeps[key] = rosdep_entry
         self._expanded_rosdeps[path] = expanded_rosdeps
         return expanded_rosdeps
 
-    def get_os_from_yaml(self, yaml_map, source_path): #source_path is for debugging where errors come from
+    def get_os_from_yaml(self, rosdep_name, yaml_map, source_path): #source_path is for debugging where errors come from
         # See if the version for this OS exists
         if self.os_name in yaml_map:
-            return self.get_version_from_yaml(yaml_map[self.os_name], source_path)
+            return self.get_version_from_yaml(rosdep_name, yaml_map[self.os_name], source_path)
         else:
-            #print >> sys.stderr, "failed to resolve a rule for OS(%s)"%(self.os_name)
+            print >> sys.stderr, "failed to resolve a rule for rosdep(%s) on OS(%s)"%(rosdep_name, self.os_name)
             return False
 
-    def get_version_from_yaml(self, os_specific, source_path):
+    def get_version_from_yaml(self, rosdep_name, os_specific, source_path):
         if type(os_specific) == type("String"):
             return os_specific
         else:# it must be a map of versions
             if self.os_version in os_specific.keys():
                 return os_specific[self.os_version]
-            print >> sys.stderr, "failed to find specific version %s of %s within"%(self.os_version, self.os_name), os_specific
+            print >> sys.stderr, "failed to find definition of %s for OS(%s) Version(%s) within '''%s'''. Defined in file %s"%(rosdep_name, self.os_name, self.os_version, os_specific, source_path)
             return False                    
 
 

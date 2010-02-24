@@ -73,7 +73,7 @@ class Helper
 public:
   Helper()
   : count_(0)
-  , t_count_(0)
+  , drop_count_(0)
   {}
 
   void cb()
@@ -81,14 +81,13 @@ public:
     ++count_;
   }
 
-  template<typename T>
-  void cbT(T t)
+  void dropcb()
   {
-    ++t_count_;
+    ++drop_count_;
   }
 
   int32_t count_;
-  int32_t t_count_;
+  int32_t drop_count_;
 };
 
 TEST(TimeSynchronizer, compile2)
@@ -481,16 +480,16 @@ TEST(TimeSynchronizer, dropCallback)
   TimeSynchronizer<Msg, Msg> sync(1);
   Helper h;
   sync.registerCallback(boost::bind(&Helper::cb, &h));
-  sync.registerDropCallback(boost::bind(&Helper::cbT<const TimeSynchronizer<Msg, Msg>::Tuple&>, &h, _1));
+  sync.registerDropCallback(boost::bind(&Helper::dropcb, &h));
   MsgPtr m(new Msg);
   m->header.stamp = ros::Time();
 
   sync.add0(m);
-  ASSERT_EQ(h.t_count_, 0);
+  ASSERT_EQ(h.drop_count_, 0);
   m->header.stamp = ros::Time(0.1);
   sync.add0(m);
 
-  ASSERT_EQ(h.t_count_, 1);
+  ASSERT_EQ(h.drop_count_, 1);
 }
 
 struct EventHelper
@@ -512,8 +511,8 @@ TEST(TimeSynchronizer, eventInEventOut)
   sync.registerCallback(&EventHelper::callback, &h);
   ros::MessageEvent<Msg const> evt(MsgPtr(new Msg), ros::Time(4));
 
-  sync.add0(evt);
-  sync.add1(evt);
+  sync.add<0>(evt);
+  sync.add<1>(evt);
 
   ASSERT_TRUE(h.e1_.getMessage());
   ASSERT_TRUE(h.e2_.getMessage());
@@ -530,5 +529,6 @@ int main(int argc, char **argv){
 
   return RUN_ALL_TESTS();
 }
+
 
 

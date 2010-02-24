@@ -38,6 +38,7 @@
 #include <boost/noncopyable.hpp>
 
 #include "connection.h"
+#include "null_types.h"
 #include <ros/message_event.h>
 #include <ros/parameter_adapter.h>
 
@@ -153,15 +154,129 @@ public:
   typedef ros::MessageEvent<M6 const> M6Event;
   typedef ros::MessageEvent<M7 const> M7Event;
   typedef ros::MessageEvent<M8 const> M8Event;
+  typedef boost::shared_ptr<M0 const> M0ConstPtr;
+  typedef boost::shared_ptr<M1 const> M1ConstPtr;
+  typedef boost::shared_ptr<M2 const> M2ConstPtr;
+  typedef boost::shared_ptr<M3 const> M3ConstPtr;
+  typedef boost::shared_ptr<M4 const> M4ConstPtr;
+  typedef boost::shared_ptr<M5 const> M5ConstPtr;
+  typedef boost::shared_ptr<M6 const> M6ConstPtr;
+  typedef boost::shared_ptr<M7 const> M7ConstPtr;
+  typedef boost::shared_ptr<M8 const> M8ConstPtr;
+  typedef const boost::shared_ptr<NullType const>& NullP;
 
   template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8>
-  CallbackHelper9Ptr addCallback(const boost::function<void(P0, P1, P2, P3, P4, P5, P6, P7, P8)>& callback)
+  Connection addCallback(const boost::function<void(P0, P1, P2, P3, P4, P5, P6, P7, P8)>& callback)
   {
     CallbackHelper9T<P0, P1, P2, P3, P4, P5, P6, P7, P8>* helper = new CallbackHelper9T<P0, P1, P2, P3, P4, P5, P6, P7, P8>(callback);
 
     boost::mutex::scoped_lock lock(mutex_);
     callbacks_.push_back(CallbackHelper9Ptr(helper));
-    return callbacks_.back();
+    return Connection(boost::bind(&Signal9::removeCallback, this, callbacks_.back()));
+  }
+
+  template<typename P0, typename P1>
+  Connection addCallback(void(*callback)(P0, P1))
+  {
+    return addCallback(boost::function<void(P0, P1, NullP, NullP, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, _1, _2)));
+  }
+
+  template<typename P0, typename P1, typename P2>
+  Connection addCallback(void(*callback)(P0, P1, P2))
+  {
+    return addCallback(boost::function<void(P0, P1, P2, NullP, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, _1, _2, _3)));
+  }
+
+  template<typename P0, typename P1, typename P2, typename P3>
+  Connection addCallback(void(*callback)(P0, P1, P2, P3))
+  {
+    return addCallback(boost::function<void(P0, P1, P2, P3, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, _1, _2, _3, _4)));
+  }
+
+  template<typename P0, typename P1, typename P2, typename P3, typename P4>
+  Connection addCallback(void(*callback)(P0, P1, P2, P3, P4))
+  {
+    return addCallback(boost::function<void(P0, P1, P2, P3, P4, NullP, NullP, NullP, NullP)>(boost::bind(callback, _1, _2, _3, _4, _5)));
+  }
+
+  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5>
+  Connection addCallback(void(*callback)(P0, P1, P2, P3, P4, P5))
+  {
+    return addCallback(boost::function<void(P0, P1, P2, P3, P4, P5, NullP, NullP, NullP)>(boost::bind(callback, _1, _2, _3, _4, _5, _6)));
+  }
+
+  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
+  Connection addCallback(void(*callback)(P0, P1, P2, P3, P4, P5, P6))
+  {
+    return addCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, NullP, NullP)>(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7)));
+  }
+
+  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7>
+  Connection addCallback(void(*callback)(P0, P1, P2, P3, P4, P5, P6, P7))
+  {
+    return addCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, P7, NullP)>(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7, _8)));
+  }
+
+  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8>
+  Connection addCallback(void(*callback)(P0, P1, P2, P3, P4, P5, P6, P7, P8))
+  {
+    return addCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, P7, P8)>(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7, _8, _9)));
+  }
+
+  template<typename T, typename P0, typename P1>
+  Connection addCallback(void(T::*callback)(P0, P1), T* t)
+  {
+    return addCallback(boost::function<void(P0, P1, NullP, NullP, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2)));
+  }
+
+  template<typename T, typename P0, typename P1, typename P2>
+  Connection addCallback(void(T::*callback)(P0, P1, P2), T* t)
+  {
+    return addCallback(boost::function<void(P0, P1, P2, NullP, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3)));
+  }
+
+  template<typename T, typename P0, typename P1, typename P2, typename P3>
+  Connection addCallback(void(T::*callback)(P0, P1, P2, P3), T* t)
+  {
+    return addCallback(boost::function<void(P0, P1, P2, P3, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3, _4)));
+  }
+
+  template<typename T, typename P0, typename P1, typename P2, typename P3, typename P4>
+  Connection addCallback(void(T::*callback)(P0, P1, P2, P3, P4), T* t)
+  {
+    return addCallback(boost::function<void(P0, P1, P2, P3, P4, NullP, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3, _4, _5)));
+  }
+
+  template<typename T, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5>
+  Connection addCallback(void(T::*callback)(P0, P1, P2, P3, P4, P5), T* t)
+  {
+    return addCallback(boost::function<void(P0, P1, P2, P3, P4, P5, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3, _4, _5, _6)));
+  }
+
+  template<typename T, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
+  Connection addCallback(void(T::*callback)(P0, P1, P2, P3, P4, P5, P6), T* t)
+  {
+    return addCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3, _4, _5, _6, _7)));
+  }
+
+  template<typename T, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7>
+  Connection addCallback(void(T::*callback)(P0, P1, P2, P3, P4, P5, P6, P7), T* t)
+  {
+    return addCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, P7, NullP)>(boost::bind(callback, t, _1, _2, _3, _4, _5, _6, _7, _8)));
+  }
+
+  template<typename C>
+  Connection addCallback(const C& callback)
+  {
+    return addCallback<const M0ConstPtr&,
+                     const M1ConstPtr&,
+                     const M2ConstPtr&,
+                     const M3ConstPtr&,
+                     const M4ConstPtr&,
+                     const M5ConstPtr&,
+                     const M6ConstPtr&,
+                     const M7ConstPtr&,
+                     const M8ConstPtr&>(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7, _8, _9));
   }
 
   void removeCallback(const CallbackHelper9Ptr& helper)

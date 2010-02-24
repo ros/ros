@@ -45,62 +45,16 @@
 #include <boost/noncopyable.hpp>
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/equal_to.hpp>
-#include <boost/function_types/function_arity.hpp>
-#include <boost/function_types/is_nonmember_callable_builtin.hpp>
 
 #include <roslib/Header.h>
 
-#include "connection.h"
-#include "signal9.h"
+#include "synchronizer.h"
 #include <ros/message_traits.h>
 #include <ros/message_event.h>
 
-
 namespace message_filters
 {
-
-namespace ft = boost::function_types;
 namespace mpl = boost::mpl;
-
-struct NullType
-{
-};
-typedef boost::shared_ptr<NullType const> NullTypeConstPtr;
-
-template<class M>
-struct NullFilter
-{
-  template<typename C>
-  Connection registerCallback(const C& callback)
-  {
-    return Connection();
-  }
-
-  template<typename P>
-  Connection registerCallback(const boost::function<void(P)>& callback)
-  {
-    return Connection();
-  }
-};
-}
-
-namespace ros
-{
-namespace message_traits
-{
-template<>
-struct TimeStamp<message_filters::NullType>
-{
-  static ros::Time value(const message_filters::NullType&)
-  {
-    return ros::Time();
-  }
-};
-}
-}
-
-namespace message_filters
-{
 
 /**
  * \brief Synchronizes up to 9 messages by their timestamps.
@@ -138,9 +92,11 @@ void callback(const sensor_msgs::CameraInfo::ConstPtr&, const sensor_msgs::Image
  */
 template<class M0, class M1, class M2 = NullType, class M3 = NullType, class M4 = NullType,
          class M5 = NullType, class M6 = NullType, class M7 = NullType, class M8 = NullType>
-class TimeSynchronizer : public boost::noncopyable
+class TimeSynchronizer : public Synchronizer<ExactTime<M0, M1, M2, M3, M4, M5, M6, M7, M8> >
 {
 public:
+  typedef ExactTime<M0, M1, M2, M3, M4, M5, M6, M7, M8> Policy;
+  typedef Synchronizer<Policy> Base;
   typedef boost::shared_ptr<M0 const> M0ConstPtr;
   typedef boost::shared_ptr<M1 const> M1ConstPtr;
   typedef boost::shared_ptr<M2 const> M2ConstPtr;
@@ -150,632 +106,122 @@ public:
   typedef boost::shared_ptr<M6 const> M6ConstPtr;
   typedef boost::shared_ptr<M7 const> M7ConstPtr;
   typedef boost::shared_ptr<M8 const> M8ConstPtr;
-  typedef ros::MessageEvent<M0 const> M0Event;
-  typedef ros::MessageEvent<M1 const> M1Event;
-  typedef ros::MessageEvent<M2 const> M2Event;
-  typedef ros::MessageEvent<M3 const> M3Event;
-  typedef ros::MessageEvent<M4 const> M4Event;
-  typedef ros::MessageEvent<M5 const> M5Event;
-  typedef ros::MessageEvent<M6 const> M6Event;
-  typedef ros::MessageEvent<M7 const> M7Event;
-  typedef ros::MessageEvent<M8 const> M8Event;
-  typedef boost::tuple<M0Event, M1Event, M2Event, M3Event, M4Event, M5Event, M6Event, M7Event, M8Event> Tuple;
-  typedef Signal9<M0, M1, M2, M3, M4, M5, M6, M7, M8> Signal;
-  typedef boost::signal<void(const Tuple&)> DropSignal;
-  typedef boost::function<void(const Tuple&)> DropCallback;
-  typedef const boost::shared_ptr<NullType const>& NullP;
 
-  static const uint8_t MAX_MESSAGES = 9;
+  using Base::add;
+  using Base::connectInput;
+  using Base::registerCallback;
+  using Base::setName;
+  using Base::getName;
+  typedef typename Base::M0Event M0Event;
+  typedef typename Base::M1Event M1Event;
+  typedef typename Base::M2Event M2Event;
+  typedef typename Base::M3Event M3Event;
+  typedef typename Base::M4Event M4Event;
+  typedef typename Base::M5Event M5Event;
+  typedef typename Base::M6Event M6Event;
+  typedef typename Base::M7Event M7Event;
+  typedef typename Base::M8Event M8Event;
 
   template<class F0, class F1>
   TimeSynchronizer(F0& f0, F1& f1, uint32_t queue_size)
-  : queue_size_(queue_size)
+  : Base(Policy(queue_size))
   {
-    determineRealTypeCount();
-    connectInput(f0, f1);
   }
 
   template<class F0, class F1, class F2>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, uint32_t queue_size)
-  : queue_size_(queue_size)
+  : Base(Policy(queue_size))
   {
-    determineRealTypeCount();
-    connectInput(f0, f1, f2);
   }
 
   template<class F0, class F1, class F2, class F3>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, F3& f3, uint32_t queue_size)
-  : queue_size_(queue_size)
+  : Base(Policy(queue_size))
   {
-    determineRealTypeCount();
-    connectInput(f0, f1, f2, f3);
   }
 
   template<class F0, class F1, class F2, class F3, class F4>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, uint32_t queue_size)
-  : queue_size_(queue_size)
+  : Base(Policy(queue_size))
   {
-    determineRealTypeCount();
-    connectInput(f0, f1, f2, f3, f4);
   }
 
   template<class F0, class F1, class F2, class F3, class F4, class F5>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, F5& f5, uint32_t queue_size)
-  : queue_size_(queue_size)
+  : Base(Policy(queue_size))
   {
-    determineRealTypeCount();
-    connectInput(f0, f1, f2, f3, f4, f5);
   }
 
   template<class F0, class F1, class F2, class F3, class F4, class F5, class F6>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, F5& f5, F6& f6, uint32_t queue_size)
-  : queue_size_(queue_size)
+  : Base(Policy(queue_size))
   {
-    determineRealTypeCount();
-    connectInput(f0, f1, f2, f3, f4, f5, f6);
   }
 
   template<class F0, class F1, class F2, class F3, class F4, class F5, class F6, class F7>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, F5& f5, F6& f6, F7& f7, uint32_t queue_size)
-  : queue_size_(queue_size)
+  : Base(Policy(queue_size))
   {
-    determineRealTypeCount();
-    connectInput(f0, f1, f2, f3, f4, f5, f6, f7);
   }
 
   template<class F0, class F1, class F2, class F3, class F4, class F5, class F6, class F7, class F8>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, F5& f5, F6& f6, F7& f7, F8& f8, uint32_t queue_size)
-  : queue_size_(queue_size)
+  : Base(Policy(queue_size))
   {
-    determineRealTypeCount();
-    connectInput(f0, f1, f2, f3, f4, f5, f6, f7, f8);
   }
 
   TimeSynchronizer(uint32_t queue_size)
-  : queue_size_(queue_size)
+  : Base(Policy(queue_size))
   {
-    determineRealTypeCount();
   }
 
-  ~TimeSynchronizer()
-  {
-    disconnectAll();
-  }
-
-  template<class F0, class F1>
-  void connectInput(F0& f0, F1& f1)
-  {
-    NullFilter<M2> f2;
-    connectInput(f0, f1, f2);
-  }
-
-  template<class F0, class F1, class F2>
-  void connectInput(F0& f0, F1& f1, F2& f2)
-  {
-    NullFilter<M3> f3;
-    connectInput(f0, f1, f2, f3);
-  }
-
-  template<class F0, class F1, class F2, class F3>
-  void connectInput(F0& f0, F1& f1, F2& f2, F3& f3)
-  {
-    NullFilter<M4> f4;
-    connectInput(f0, f1, f2, f3, f4);
-  }
-
-  template<class F0, class F1, class F2, class F3, class F4>
-  void connectInput(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4)
-  {
-    NullFilter<M5> f5;
-    connectInput(f0, f1, f2, f3, f4, f5);
-  }
-
-  template<class F0, class F1, class F2, class F3, class F4, class F5>
-  void connectInput(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, F5& f5)
-  {
-    NullFilter<M6> f6;
-    connectInput(f0, f1, f2, f3, f4, f5, f6);
-  }
-
-  template<class F0, class F1, class F2, class F3, class F4, class F5, class F6>
-  void connectInput(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, F5& f5, F6& f6)
-  {
-    NullFilter<M7> f7;
-    connectInput(f0, f1, f2, f3, f4, f5, f6, f7);
-  }
-
-  template<class F0, class F1, class F2, class F3, class F4, class F5, class F6, class F7>
-  void connectInput(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, F5& f5, F6& f6, F7& f7)
-  {
-    NullFilter<M8> f8;
-    connectInput(f0, f1, f2, f3, f4, f5, f6, f7, f8);
-  }
-
-  template<class F0, class F1, class F2, class F3, class F4, class F5, class F6, class F7, class F8>
-  void connectInput(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, F5& f5, F6& f6, F7& f7, F8& f8)
-  {
-    disconnectAll();
-
-    input_connections_[0] = f0.registerCallback(boost::function<void(const ros::MessageEvent<M0 const>&)>(boost::bind(&TimeSynchronizer::cb0, this, _1)));
-    input_connections_[1] = f1.registerCallback(boost::function<void(const ros::MessageEvent<M1 const>&)>(boost::bind(&TimeSynchronizer::cb1, this, _1)));
-    input_connections_[2] = f2.registerCallback(boost::function<void(const ros::MessageEvent<M2 const>&)>(boost::bind(&TimeSynchronizer::cb2, this, _1)));
-    input_connections_[3] = f3.registerCallback(boost::function<void(const ros::MessageEvent<M3 const>&)>(boost::bind(&TimeSynchronizer::cb3, this, _1)));
-    input_connections_[4] = f4.registerCallback(boost::function<void(const ros::MessageEvent<M4 const>&)>(boost::bind(&TimeSynchronizer::cb4, this, _1)));
-    input_connections_[5] = f5.registerCallback(boost::function<void(const ros::MessageEvent<M5 const>&)>(boost::bind(&TimeSynchronizer::cb5, this, _1)));
-    input_connections_[6] = f6.registerCallback(boost::function<void(const ros::MessageEvent<M6 const>&)>(boost::bind(&TimeSynchronizer::cb6, this, _1)));
-    input_connections_[7] = f7.registerCallback(boost::function<void(const ros::MessageEvent<M7 const>&)>(boost::bind(&TimeSynchronizer::cb7, this, _1)));
-    input_connections_[8] = f8.registerCallback(boost::function<void(const ros::MessageEvent<M8 const>&)>(boost::bind(&TimeSynchronizer::cb8, this, _1)));
-  }
-
-  template<typename P0, typename P1>
-  Connection registerCallback(void(*callback)(P0, P1))
-  {
-    return registerCallback(boost::function<void(P0, P1, NullP, NullP, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, _1, _2)));
-  }
-
-  template<typename P0, typename P1, typename P2>
-  Connection registerCallback(void(*callback)(P0, P1, P2))
-  {
-    return registerCallback(boost::function<void(P0, P1, P2, NullP, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, _1, _2, _3)));
-  }
-
-  template<typename P0, typename P1, typename P2, typename P3>
-  Connection registerCallback(void(*callback)(P0, P1, P2, P3))
-  {
-    return registerCallback(boost::function<void(P0, P1, P2, P3, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, _1, _2, _3, _4)));
-  }
-
-  template<typename P0, typename P1, typename P2, typename P3, typename P4>
-  Connection registerCallback(void(*callback)(P0, P1, P2, P3, P4))
-  {
-    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, NullP, NullP, NullP, NullP)>(boost::bind(callback, _1, _2, _3, _4, _5)));
-  }
-
-  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5>
-  Connection registerCallback(void(*callback)(P0, P1, P2, P3, P4, P5))
-  {
-    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, NullP, NullP, NullP)>(boost::bind(callback, _1, _2, _3, _4, _5, _6)));
-  }
-
-  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
-  Connection registerCallback(void(*callback)(P0, P1, P2, P3, P4, P5, P6))
-  {
-    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, NullP, NullP)>(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7)));
-  }
-
-  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7>
-  Connection registerCallback(void(*callback)(P0, P1, P2, P3, P4, P5, P6, P7))
-  {
-    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, P7, NullP)>(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7, _8)));
-  }
-
-  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8>
-  Connection registerCallback(void(*callback)(P0, P1, P2, P3, P4, P5, P6, P7, P8))
-  {
-    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, P7, P8)>(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7, _8, _9)));
-  }
-
-  template<typename T, typename P0, typename P1>
-  Connection registerCallback(void(T::*callback)(P0, P1), T* t)
-  {
-    return registerCallback(boost::function<void(P0, P1, NullP, NullP, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2)));
-  }
-
-  template<typename T, typename P0, typename P1, typename P2>
-  Connection registerCallback(void(T::*callback)(P0, P1, P2), T* t)
-  {
-    return registerCallback(boost::function<void(P0, P1, P2, NullP, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3)));
-  }
-
-  template<typename T, typename P0, typename P1, typename P2, typename P3>
-  Connection registerCallback(void(T::*callback)(P0, P1, P2, P3), T* t)
-  {
-    return registerCallback(boost::function<void(P0, P1, P2, P3, NullP, NullP, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3, _4)));
-  }
-
-  template<typename T, typename P0, typename P1, typename P2, typename P3, typename P4>
-  Connection registerCallback(void(T::*callback)(P0, P1, P2, P3, P4), T* t)
-  {
-    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, NullP, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3, _4, _5)));
-  }
-
-  template<typename T, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5>
-  Connection registerCallback(void(T::*callback)(P0, P1, P2, P3, P4, P5), T* t)
-  {
-    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, NullP, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3, _4, _5, _6)));
-  }
-
-  template<typename T, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
-  Connection registerCallback(void(T::*callback)(P0, P1, P2, P3, P4, P5, P6), T* t)
-  {
-    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, NullP, NullP)>(boost::bind(callback, t, _1, _2, _3, _4, _5, _6, _7)));
-  }
-
-  template<typename T, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7>
-  Connection registerCallback(void(T::*callback)(P0, P1, P2, P3, P4, P5, P6, P7), T* t)
-  {
-    return registerCallback(boost::function<void(P0, P1, P2, P3, P4, P5, P6, P7, NullP)>(boost::bind(callback, t, _1, _2, _3, _4, _5, _6, _7, _8)));
-  }
-
-  template<typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8>
-  Connection registerCallback(const boost::function<void(P0, P1, P2, P3, P4, P5, P6, P7, P8)>& callback)
-  {
-    typename CallbackHelper9<M0, M1, M2, M3, M4, M5, M6, M7, M8>::Ptr helper =
-        signal_.template addCallback<P0, P1, P2, P3, P4, P5, P6, P7, P8>(callback);
-
-    return Connection(boost::bind(&Signal::removeCallback, &signal_, helper));
-  }
-
-  template<class C>
-  Connection registerCallback(const C& callback)
-  {
-    typename CallbackHelper9<M0, M1, M2, M3, M4, M5, M6, M7, M8>::Ptr helper =
-        signal_.template addCallback<const M0ConstPtr&,
-                                     const M1ConstPtr&,
-                                     const M2ConstPtr&,
-                                     const M3ConstPtr&,
-                                     const M4ConstPtr&,
-                                     const M5ConstPtr&,
-                                     const M6ConstPtr&,
-                                     const M7ConstPtr&,
-                                     const M8ConstPtr&>(boost::bind(callback, _1, _2, _3, _4, _5, _6, _7, _8, _9));
-
-    return Connection(boost::bind(&Signal::removeCallback, &signal_, helper));
-  }
-
-  /**
-   * \brief Register a callback to be called whenever a set of messages is removed from our queue
-   *
-   * The drop callback takes the form:
-\verbatim
-void callback(const TimeSynchronizer<M0, M1,...>::Tuple& tuple);
-\endverbatim
-   */
-  Connection registerDropCallback(const DropCallback& callback)
-  {
-    boost::mutex::scoped_lock lock(drop_signal_mutex_);
-    return Connection(boost::bind(&TimeSynchronizer::disconnectDrop, this, _1), drop_signal_.connect(callback));
-  }
-
+  ////////////////////////////////////////////////////////////////
+  // For backwards compatibility
+  ////////////////////////////////////////////////////////////////
   void add0(const M0ConstPtr& msg)
   {
-    add0(M0Event(msg));
+    this->template add<0>(M0Event(msg));
   }
 
   void add1(const M1ConstPtr& msg)
   {
-    add1(M1Event(msg));
+    this->template add<1>(M1Event(msg));
   }
 
   void add2(const M2ConstPtr& msg)
   {
-    add2(M2Event(msg));
+    this->template add<2>(M2Event(msg));
   }
 
   void add3(const M3ConstPtr& msg)
   {
-    add3(M3Event(msg));
+    this->template add<3>(M3Event(msg));
   }
 
   void add4(const M4ConstPtr& msg)
   {
-    add4(M4Event(msg));
+    this->template add<4>(M4Event(msg));
   }
 
   void add5(const M5ConstPtr& msg)
   {
-    add5(M5Event(msg));
+    this->template add<5>(M5Event(msg));
   }
 
   void add6(const M6ConstPtr& msg)
   {
-    add6(M6Event(msg));
+    this->template add<6>(M6Event(msg));
   }
 
   void add7(const M7ConstPtr& msg)
   {
-    add7(M7Event(msg));
+    this->template add<7>(M7Event(msg));
   }
 
   void add8(const M8ConstPtr& msg)
   {
-    add8(M8Event(msg));
+    this->template add<8>(M8Event(msg));
   }
-
-  void add0(const M0Event& evt)
-  {
-    namespace mt = ros::message_traits;
-
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[mt::TimeStamp<M0>::value(*evt.getMessage())];
-    boost::get<0>(t) = evt;
-
-    checkTuple(t);
-  }
-
-  void add1(const M1Event& evt)
-  {
-    namespace mt = ros::message_traits;
-
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[mt::TimeStamp<M1>::value(*evt.getMessage())];
-    boost::get<1>(t) = evt;
-
-    checkTuple(t);
-  }
-
-  void add2(const M2Event& evt)
-  {
-    namespace mt = ros::message_traits;
-
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[mt::TimeStamp<M2>::value(*evt.getMessage())];
-    boost::get<2>(t) = evt;
-
-    checkTuple(t);
-  }
-
-  void add3(const M3Event& evt)
-  {
-    namespace mt = ros::message_traits;
-
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[mt::TimeStamp<M3>::value(*evt.getMessage())];
-    boost::get<3>(t) = evt;
-
-    checkTuple(t);
-  }
-
-  void add4(const M4Event& evt)
-  {
-    namespace mt = ros::message_traits;
-
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[mt::TimeStamp<M4>::value(*evt.getMessage())];
-    boost::get<4>(t) = evt;
-
-    checkTuple(t);
-  }
-
-  void add5(const M5Event& evt)
-  {
-    namespace mt = ros::message_traits;
-
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[mt::TimeStamp<M5>::value(*evt.getMessage())];
-    boost::get<5>(t) = evt;
-
-    checkTuple(t);
-  }
-
-  void add6(const M6Event& evt)
-  {
-    namespace mt = ros::message_traits;
-
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[mt::TimeStamp<M6>::value(*evt.getMessage())];
-    boost::get<6>(t) = evt;
-
-    checkTuple(t);
-  }
-
-  void add7(const M7Event& evt)
-  {
-    namespace mt = ros::message_traits;
-
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[mt::TimeStamp<M7>::value(*evt.getMessage())];
-    boost::get<7>(t) = evt;
-
-    checkTuple(t);
-  }
-
-  void add8(const M8Event& evt)
-  {
-    namespace mt = ros::message_traits;
-
-    boost::mutex::scoped_lock lock(tuples_mutex_);
-
-    Tuple& t = tuples_[mt::TimeStamp<M8>::value(*evt.getMessage())];
-    boost::get<8>(t) = evt;
-
-    checkTuple(t);
-  }
-
-  void setName(const std::string& name) { name_ = name; }
-  const std::string& getName() { return name_; }
-
-private:
-
-  void disconnectAll()
-  {
-    for (int i = 0; i < MAX_MESSAGES; ++i)
-    {
-      input_connections_[i].disconnect();
-    }
-  }
-
-  void determineRealTypeCount()
-  {
-    real_type_count_ = 2;
-
-    if (!boost::is_same<M2, NullType>::value)
-    {
-      ++real_type_count_;
-
-      if (!boost::is_same<M3, NullType>::value)
-      {
-        ++real_type_count_;
-
-        if (!boost::is_same<M4, NullType>::value)
-        {
-          ++real_type_count_;
-
-          if (!boost::is_same<M5, NullType>::value)
-          {
-            ++real_type_count_;
-
-            if (!boost::is_same<M6, NullType>::value)
-            {
-              ++real_type_count_;
-
-              if (!boost::is_same<M7, NullType>::value)
-              {
-                ++real_type_count_;
-
-                if (!boost::is_same<M8, NullType>::value)
-                {
-                  ++real_type_count_;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  void cb0(const M0Event& evt)
-  {
-    add0(evt);
-  }
-
-  void cb1(const M1Event& evt)
-  {
-    add1(evt);
-  }
-
-  void cb2(const M2Event& evt)
-  {
-    add2(evt);
-  }
-
-  void cb3(const M3Event& evt)
-  {
-    add3(evt);
-  }
-
-  void cb4(const M4Event& evt)
-  {
-    add4(evt);
-  }
-
-  void cb5(const M5Event& evt)
-  {
-    add5(evt);
-  }
-
-  void cb6(const M6Event& evt)
-  {
-    add6(evt);
-  }
-
-  void cb7(const M7Event& evt)
-  {
-    add7(evt);
-  }
-
-  void cb8(const M8Event& evt)
-  {
-    add8(evt);
-  }
-
-  // assumes tuples_mutex_ is already locked
-  void checkTuple(Tuple& t)
-  {
-    namespace mt = ros::message_traits;
-
-    bool full = true;
-    full &= (bool)boost::get<0>(t).getMessage();
-    full &= (bool)boost::get<1>(t).getMessage();
-    full &= real_type_count_ > 2 ? (bool)boost::get<2>(t).getMessage() : true;
-    full &= real_type_count_ > 3 ? (bool)boost::get<3>(t).getMessage() : true;
-    full &= real_type_count_ > 4 ? (bool)boost::get<4>(t).getMessage() : true;
-    full &= real_type_count_ > 5 ? (bool)boost::get<5>(t).getMessage() : true;
-    full &= real_type_count_ > 6 ? (bool)boost::get<6>(t).getMessage() : true;
-    full &= real_type_count_ > 7 ? (bool)boost::get<7>(t).getMessage() : true;
-    full &= real_type_count_ > 8 ? (bool)boost::get<8>(t).getMessage() : true;
-
-    if (full)
-    {
-      signal_.call(boost::get<0>(t), boost::get<1>(t), boost::get<2>(t),
-                   boost::get<3>(t), boost::get<4>(t), boost::get<5>(t),
-                   boost::get<6>(t), boost::get<7>(t), boost::get<8>(t));
-
-      last_signal_time_ = mt::TimeStamp<M0>::value(*boost::get<0>(t).getMessage());
-
-      tuples_.erase(last_signal_time_);
-
-      clearOldTuples();
-    }
-
-    if (queue_size_ > 0)
-    {
-      boost::mutex::scoped_lock lock(drop_signal_mutex_);
-      while (tuples_.size() > queue_size_)
-      {
-        drop_signal_(tuples_.begin()->second);
-        tuples_.erase(tuples_.begin());
-      }
-    }
-  }
-
-  // assumes tuples_mutex_ is already locked
-  void clearOldTuples()
-  {
-    boost::mutex::scoped_lock lock(drop_signal_mutex_);
-
-    typename M_TimeToTuple::iterator it = tuples_.begin();
-    typename M_TimeToTuple::iterator end = tuples_.end();
-    for (; it != end;)
-    {
-      if (it->first <= last_signal_time_)
-      {
-        typename M_TimeToTuple::iterator old = it;
-        ++it;
-
-        drop_signal_(old->second);
-        tuples_.erase(old);
-      }
-      else
-      {
-        // the map is sorted by time, so we can ignore anything after this if this one's time is ok
-        break;
-      }
-    }
-  }
-
-  void disconnectDrop(const Connection& c)
-  {
-    boost::mutex::scoped_lock lock(drop_signal_mutex_);
-    c.getBoostConnection().disconnect();
-  }
-
-  uint32_t queue_size_;
-
-  typedef std::map<ros::Time, Tuple> M_TimeToTuple;
-  M_TimeToTuple tuples_;
-  boost::mutex tuples_mutex_;
-
-  Signal signal_;
-  ros::Time last_signal_time_;
-
-  boost::mutex drop_signal_mutex_;
-  DropSignal drop_signal_;
-
-  Connection input_connections_[MAX_MESSAGES];
-
-  uint32_t real_type_count_;
-
-  std::string name_;
 };
 
 }

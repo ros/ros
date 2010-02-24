@@ -433,108 +433,110 @@ string Package::direct_flags(string lang, string attrib)
 {
   TiXmlElement *mroot = manifest_root();
   TiXmlElement *export_ele = mroot->FirstChildElement("export");
-  if (!export_ele)
-    return string("");
-  bool os_match = false;
-  TiXmlElement *best_usage = NULL;
-  for (TiXmlElement *lang_ele = export_ele->FirstChildElement(lang); 
-       lang_ele; lang_ele = lang_ele->NextSiblingElement(lang))
+  string str;
+  if (export_ele)
   {
-    const char *os_str;
-    if ((os_str = lang_ele->Attribute("os")))
+    bool os_match = false;
+    TiXmlElement *best_usage = NULL;
+    for (TiXmlElement *lang_ele = export_ele->FirstChildElement(lang);
+         lang_ele; lang_ele = lang_ele->NextSiblingElement(lang))
     {
-      if(g_ros_os == string(os_str))
+      const char *os_str;
+      if ((os_str = lang_ele->Attribute("os")))
       {
-        if(os_match)
+        if(g_ros_os == string(os_str))
         {
-          fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag with os=\"%s\" in export block\n",
-                  lang.c_str(), os_str);
+          if(os_match)
+          {
+            fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag with os=\"%s\" in export block\n",
+                    lang.c_str(), os_str);
+          }
+          else
+          {
+            best_usage = lang_ele;
+            os_match = true;
+          }
         }
-        else
-        {
+      }
+      if(!os_match)
+      {
+        if (!best_usage)
           best_usage = lang_ele;
-          os_match = true;
+        else if(!os_str)
+        {
+          fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag in export block\n",
+                  lang.c_str());
         }
       }
     }
-    if(!os_match)
+    if (!best_usage)
+      return string();
+    const char *cstr = best_usage->Attribute(attrib.c_str());
+    if (!cstr)
+      return string();
+    str = cstr;
+    while (1) // every decent C program has a while(1) in it
     {
-      if (!best_usage)
-        best_usage = lang_ele;
-      else if(!os_str)
-      {
-        fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag in export block\n",
-                lang.c_str());
-      }
+      int i = str.find(string("${prefix}"));
+      if (i < 0)
+        break; // no more occurrences
+      str.replace(i, string("${prefix}").length(), path);
     }
-  }
-  if (!best_usage)
-    return string();
-  const char *cstr = best_usage->Attribute(attrib.c_str());
-  if (!cstr)
-    return string();
-  string s(cstr);
-  while (1) // every decent C program has a while(1) in it
-  {
-    int i = s.find(string("${prefix}"));
-    if (i < 0)
-      break; // no more occurrences
-    s.replace(i, string("${prefix}").length(), path);
-  }
 
-  // Do backquote substitution.  E.g.,  if we find this string:
-  //   `pkg-config --cflags gdk-pixbuf-2.0`
-  // We replace it with the result of executing the command
-  // contained within the backquotes (reading from its stdout), which
-  // might be something like:
-  //   -I/usr/include/gtk-2.0 -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include  
+    // Do backquote substitution.  E.g.,  if we find this string:
+    //   `pkg-config --cflags gdk-pixbuf-2.0`
+    // We replace it with the result of executing the command
+    // contained within the backquotes (reading from its stdout), which
+    // might be something like:
+    //   -I/usr/include/gtk-2.0 -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include
 
-  // Construct and execute the string
-  // We do the assignment first to ensure that if backquote expansion (or
-  // anything else) fails, we'll get a non-zero exit status from pclose().
-  string cmd = string("ret=\"") + s + string("\" && echo $ret");
+    // Construct and execute the string
+    // We do the assignment first to ensure that if backquote expansion (or
+    // anything else) fails, we'll get a non-zero exit status from pclose().
+    string cmd = string("ret=\"") + str + string("\" && echo $ret");
 
-  // Remove embedded newlines
-  string token("\n");
-  for (string::size_type s = cmd.find(token); s != string::npos;
-       s = cmd.find(token, s))
-  {
-    cmd.replace(s,token.length(),string(" "));
-  }
-
-  FILE* p;
-  if(!(p = popen(cmd.c_str(), "r")))
-  {
-    fprintf(stderr, "[rospack] warning: failed to execute backquote "
-                    "expression \"%s\" in [%s]\n",
-            cmd.c_str(), manifest_path().c_str());
-    string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
-    throw runtime_error(errmsg);
-  }
-  else
-  {
-    char buf[8192];
-    memset(buf,0,sizeof(buf));
-    // Read the command's output
-    do
+    // Remove embedded newlines
+    string token("\n");
+    for (string::size_type s = cmd.find(token); s != string::npos;
+         s = cmd.find(token, s))
     {
-      clearerr(p);
-      while(fgets(buf + strlen(buf),sizeof(buf)-strlen(buf)-1,p));
-    } while(ferror(p) && errno == EINTR);
-    // Close the subprocess, checking exit status
-    if(pclose(p) != 0)
+      cmd.replace(s,token.length(),string(" "));
+    }
+
+    FILE* p;
+    if(!(p = popen(cmd.c_str(), "r")))
     {
-      fprintf(stderr, "[rospack] warning: got non-zero exit status from executing backquote expression \"%s\" in [%s]\n",
+      fprintf(stderr, "[rospack] warning: failed to execute backquote "
+                      "expression \"%s\" in [%s]\n",
               cmd.c_str(), manifest_path().c_str());
       string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
       throw runtime_error(errmsg);
     }
     else
     {
-      // Strip trailing newline, which was added by our call to echo
-      buf[strlen(buf)-1] = '\0';
-      // Replace the backquote expression with the new text
-      s = string(buf);
+      char buf[8192];
+      memset(buf,0,sizeof(buf));
+      // Read the command's output
+      do
+      {
+        clearerr(p);
+        while(fgets(buf + strlen(buf),sizeof(buf)-strlen(buf)-1,p));
+      } while(ferror(p) && errno == EINTR);
+      // Close the subprocess, checking exit status
+      if(pclose(p) != 0)
+      {
+        fprintf(stderr, "[rospack] warning: got non-zero exit status from executing backquote expression \"%s\" in [%s]\n",
+                cmd.c_str(), manifest_path().c_str());
+        string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
+        throw runtime_error(errmsg);
+      }
+      else
+      {
+        // Strip trailing newline, which was added by our call to echo
+        buf[strlen(buf)-1] = '\0';
+        // Replace the backquote expression with the new text
+        str = string(buf);
+      }
     }
   }
 
@@ -543,16 +545,16 @@ string Package::direct_flags(string lang, string attrib)
     if (attrib == "cflags")
     {
       // Message flags go last so it's possible to override them
-      s += cpp_message_flags(true, false);
+      str += cpp_message_flags(true, false);
     }
     else if (attrib == "lflags")
     {
       // Message flags go last so it's possible to override them
-      s += cpp_message_flags(false, true);
+      str += cpp_message_flags(false, true);
     }
   }
 
-  return s;
+  return str;
 }
 
 void Package::load_manifest()

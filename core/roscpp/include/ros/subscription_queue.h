@@ -61,6 +61,7 @@ private:
 
 public:
   SubscriptionQueue(const std::string& topic, int32_t queue_size);
+  ~SubscriptionQueue();
   uint64_t push(const SubscriptionMessageHelperPtr& helper, const MessageDeserializerPtr& deserializer, bool has_tracked_object, const VoidWPtr& tracked_object);
   void clear();
   CallbackInterface::CallResult call(uint64_t id);

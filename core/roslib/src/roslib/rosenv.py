@@ -277,3 +277,24 @@ def get_test_results_dir(env=None):
         return env[ROS_TEST_RESULTS_DIR]
     else:
         return os.path.join(get_ros_home(env), 'test_results')
+
+# this is a copy of the roslogging utility. it's been moved here as it is a common
+# routine for programs using accessing ROS directories
+def makedirs_with_parent_perms(p):
+    """
+    Create the directory using the permissions of the nearest
+    (existing) parent directory. This is useful for logging, where a
+    root process sometimes has to log in the user's space.
+    @param p: directory to create
+    @type  p: str
+    """    
+    p = os.path.abspath(p)
+    parent = os.path.dirname(p)
+    # recurse upwards, checking to make sure we haven't reached the
+    # top
+    if not os.path.exists(p) and p and parent != p:
+        makedirs_with_parent_perms(parent)
+        s = os.stat(parent)
+        os.mkdir(p)
+        os.chown(p, s.st_uid, s.st_gid)
+        os.chmod(p, s.st_mode)    

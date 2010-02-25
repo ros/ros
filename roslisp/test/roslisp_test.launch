@@ -1,0 +1,9 @@
+<launch>
+<master auto="start"/>
+<node pkg="roslisp" type="talker-test" name="talker_test" />
+<node pkg="roslisp" type="listener-test" name="listener_test" />
+<node pkg="roslisp" type="complex-talker-test" name="complex_talker_test" />
+<node pkg="roslisp" type="client-test" name="client_test" />
+<node pkg="roslisp" type="server-test" name="server_test" />
+<test test-name="cpp_tester" pkg="roslisp" type="cpp-tester"/>
+</launch>

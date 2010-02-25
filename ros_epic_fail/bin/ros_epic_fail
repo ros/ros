@@ -11,6 +11,14 @@ import rostest.xmlresults as xmlr
 
 import shutil #why?
 
+
+print "------------------------------------------------------"
+print "------------------------------------------------------"
+print "------------------ STARTING EPIC FAIL ----------------"
+print "------------------------------------------------------"
+print "------------------------------------------------------"
+
+
 test_results_dir = roslib.rosenv.get_test_results_dir()
 raw_bags_dir = os.path.join(test_results_dir, "ros_epic_fail_raw_bags")
 bags_dir = os.path.join(test_results_dir, "ros_epic_fail_trapped_bags")
@@ -35,6 +43,7 @@ for d in os.listdir(test_results_dir):
         if file.endswith('.xml'):
             test_name = base_test_name + '.' + file[:-4]
             file = os.path.join(test_dir, file)
+            print "Test: ", file
             try:
                 result = xmlr.read(file, test_name)
                 fail = (result.num_errors + result.num_failures) > 0
@@ -49,8 +58,17 @@ for d in os.listdir(test_results_dir):
                         output_file = os.path.join(result_bag_dir, 
                                                    str(n) + "_" +  result.name + ".bag")
                         #FIXME: this is brittle
-                        os.system("mv \"" + file + "\" \"" + output_file + "\"")
+                        cmd = "mv \"" + file + "\" \"" + output_file + "\""
+                        print "Moving: ", cmd
+                        os.system(cmd)
                     else:
-                        print "No bag for", result.name
+                        print "Failed, no bag for", result.name
             except Exception, e:
                 print >> sys.stderr, "ignoring [%s]: %s"%(file, e)
+
+
+print "------------------------------------------------------"
+print "------------------------------------------------------"
+print "-------------------- DONE EPIC FAIL ------------------"
+print "------------------------------------------------------"
+print "------------------------------------------------------"

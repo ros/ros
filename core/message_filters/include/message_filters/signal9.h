@@ -63,6 +63,8 @@ public:
   typedef ros::MessageEvent<M7 const> M7Event;
   typedef ros::MessageEvent<M8 const> M8Event;
 
+  virtual ~CallbackHelper9() {}
+
   virtual void call(bool nonconst_force_copy, const M0Event& e0, const M1Event& e1, const M2Event& e2, const M3Event& e3,
                     const M4Event& e4, const M5Event& e5, const M6Event& e6, const M7Event& e7, const M8Event& e8) = 0;
 

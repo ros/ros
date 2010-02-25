@@ -178,6 +178,7 @@ if (<logging level is enabled> && filter->isEnabled())
 class FilterBase
 {
 public:
+  virtual ~FilterBase() {}
   /**
    * \brief Returns whether or not the log statement should be printed.  Called before the log arguments are evaluated
    * and the message is formatted.

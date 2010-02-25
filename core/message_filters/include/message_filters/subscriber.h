@@ -49,6 +49,7 @@ namespace message_filters
 class SubscriberBase
 {
 public:
+  virtual ~SubscriberBase() {}
   /**
    * \brief Subscribe to a topic.
    *

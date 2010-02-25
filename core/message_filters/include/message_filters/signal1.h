@@ -50,6 +50,8 @@ template<class M>
 class CallbackHelper1
 {
 public:
+  virtual ~CallbackHelper1() {}
+
   virtual void call(const ros::MessageEvent<M const>& event, bool nonconst_need_copy) = 0;
 
   typedef boost::shared_ptr<CallbackHelper1<M> > Ptr;

@@ -94,6 +94,8 @@ private:
 class ChainBase
 {
 public:
+  virtual ~ChainBase() {}
+
   /**
    * \brief Retrieve a filter from this chain by index.  Returns an empty shared_ptr if the index is greater than
    * the size of the chain.  \b NOT type-safe

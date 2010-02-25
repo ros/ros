@@ -40,6 +40,11 @@ SubscriptionQueue::SubscriptionQueue(const std::string& topic, int32_t queue_siz
 , queue_size_(0)
 {}
 
+SubscriptionQueue::~SubscriptionQueue()
+{
+
+}
+
 uint64_t SubscriptionQueue::push(const SubscriptionMessageHelperPtr& helper, const MessageDeserializerPtr& deserializer, bool has_tracked_object, const VoidWPtr& tracked_object)
 {
   boost::mutex::scoped_lock lock(queue_mutex_);
@@ -94,6 +99,7 @@ void SubscriptionQueue::remove(uint64_t id)
     if (i.id == id)
     {
       queue_.erase(it);
+      --queue_size_;
       return;
     }
   }

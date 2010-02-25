@@ -358,8 +358,7 @@ class XmlLoader(Loader):
                 elif tagName == 'env':
                     self._env_tag(t, context, ros_config)
                 else:
-                    print >> sys.stderr, \
-                          "WARN: unrecognized '%s' tag in <node> tag"%t.tagName
+                    ros_config.add_config_error("WARN: unrecognized '%s' tag in <node> tag. Node xml is %s"%(t.tagName, tag.toxml()))
 
             # #1036 evaluate all ~params in context
             for p in itertools.chain(context.params, param_ns.params):

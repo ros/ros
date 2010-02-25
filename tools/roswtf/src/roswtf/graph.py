@@ -41,6 +41,7 @@ import sys
 import time
 import xmlrpclib
 
+import roslib.rosenv
 import roslib.network
 import roslib.scriptutil
 import rosnode
@@ -232,7 +233,11 @@ def _compute_system_state(ctx):
     start = time.time()
     for n in ctx.nodes:
         count += 1
-        code, msg, val = master.lookupNode('/roswtf', n)
+        try:
+            code, msg, val = master.lookupNode('/roswtf', n)
+        except socket.error:
+            ctx.errors.append(WtfError("cannot contact ROS Master at %s"%roslib.rosenv.get_master_uri()))
+            raise WtfException("roswtf lost connection to the ROS Master at %s"%roslib.rosenv.get_master_uri())
         if code == 1:
             ctx.uri_node_map[val] = n
         else:

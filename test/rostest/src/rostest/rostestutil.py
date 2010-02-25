@@ -147,7 +147,11 @@ def createXMLRunner(test_pkg, test_name, results_file=None, is_rostest=False):
         results_file = xmlResultsFile(test_pkg, test_name, is_rostest)
     test_dir = os.path.abspath(os.path.dirname(results_file))
     if not os.path.exists(test_dir):
-        os.makedirs(test_dir) #NOTE: this will pass up an error exception if it fails
+        try:
+            roslib.rosenv.makedirs_with_parent_perms(test_dir) #NOTE: this will pass up an error exception if it fails
+        except OSError:
+            raise IOError("cannot create test results directory [%s]. Please check permissions."%(test_dir))
+
     elif os.path.isfile(test_dir):
         raise Exception("ERROR: cannot run test suite, file is preventing creation of test dir: %s"%test_dir)
     
@@ -167,6 +171,12 @@ def xmlResultsFile(test_pkg, test_name, is_rostest=False):
     @rtype:  str
     """
     test_dir = os.path.join(roslib.rosenv.get_test_results_dir(), test_pkg)
+    if not os.path.exists(test_dir):
+        try:
+            roslib.rosenv.makedirs_with_parent_perms(test_dir)
+        except OSError:
+            raise IOError("cannot create test results directory [%s]. Please check permissions."%(test_dir))
+        
     # #576: strip out chars that would bork the filename
     # this is fairly primitive, but for now just trying to catch some common cases
     for c in ' "\'&$!`/\\':

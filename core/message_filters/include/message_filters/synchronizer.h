@@ -289,15 +289,21 @@ public:
   {
     disconnectAll();
 
-    input_connections_[0] = f0.registerCallback(boost::function<void(const M0Event&)>(boost::bind(&Synchronizer::cb<0>, this, _1)));
-    input_connections_[1] = f1.registerCallback(boost::function<void(const M1Event&)>(boost::bind(&Synchronizer::cb<1>, this, _1)));
-    input_connections_[2] = f2.registerCallback(boost::function<void(const M2Event&)>(boost::bind(&Synchronizer::cb<2>, this, _1)));
-    input_connections_[3] = f3.registerCallback(boost::function<void(const M3Event&)>(boost::bind(&Synchronizer::cb<3>, this, _1)));
-    input_connections_[4] = f4.registerCallback(boost::function<void(const M4Event&)>(boost::bind(&Synchronizer::cb<4>, this, _1)));
-    input_connections_[5] = f5.registerCallback(boost::function<void(const M5Event&)>(boost::bind(&Synchronizer::cb<5>, this, _1)));
-    input_connections_[6] = f6.registerCallback(boost::function<void(const M6Event&)>(boost::bind(&Synchronizer::cb<6>, this, _1)));
-    input_connections_[7] = f7.registerCallback(boost::function<void(const M7Event&)>(boost::bind(&Synchronizer::cb<7>, this, _1)));
-    input_connections_[8] = f8.registerCallback(boost::function<void(const M8Event&)>(boost::bind(&Synchronizer::cb<8>, this, _1)));
+    input_connections_[0] = f0.registerCallback(boost::function<void(const M0Event&)>(boost::bind(&Synchronizer::template cb<0>, this, _1)));
+    input_connections_[1] = f1.registerCallback(boost::function<void(const M1Event&)>(boost::bind(&Synchronizer::template cb<1>, this, _1)));
+    input_connections_[2] = f2.registerCallback(boost::function<void(const M2Event&)>(boost::bind(&Synchronizer::template cb<2>, this, _1)));
+    input_connections_[3] = f3.registerCallback(boost::function<void(const M3Event&)>(boost::bind(&Synchronizer::template cb<3>, this, _1)));
+    input_connections_[4] = f4.registerCallback(boost::function<void(const M4Event&)>(boost::bind(&Synchronizer::template cb<4>, this, _1)));
+    input_connections_[5] = f5.registerCallback(boost::function<void(const M5Event&)>(boost::bind(&Synchronizer::template cb<5>, this, _1)));
+    input_connections_[6] = f6.registerCallback(boost::function<void(const M6Event&)>(boost::bind(&Synchronizer::template cb<6>, this, _1)));
+    input_connections_[7] = f7.registerCallback(boost::function<void(const M7Event&)>(boost::bind(&Synchronizer::template cb<7>, this, _1)));
+    input_connections_[8] = f8.registerCallback(boost::function<void(const M8Event&)>(boost::bind(&Synchronizer::template cb<8>, this, _1)));
+  }
+
+  template<class C>
+  Connection registerCallback(C& callback)
+  {
+    return signal_.template addCallback(callback);
   }
 
   template<class C>
@@ -312,14 +318,32 @@ public:
     return signal_.template addCallback(callback, t);
   }
 
+  template<class C, typename T>
+  Connection registerCallback(C& callback, T* t)
+  {
+    return signal_.template addCallback(callback, t);
+  }
+
   template<class C>
   Connection registerDropCallback(const C& callback)
   {
     return drop_signal_.template addCallback(callback);
   }
 
+  template<class C>
+  Connection registerDropCallback(C& callback)
+  {
+    return drop_signal_.template addCallback(callback);
+  }
+
   template<class C, typename T>
   Connection registerDropCallback(const C& callback, T* t)
+  {
+    return drop_signal_.template addCallback(callback, t);
+  }
+
+  template<class C, typename T>
+  Connection registerDropCallback(C& callback, T* t)
   {
     return drop_signal_.template addCallback(callback, t);
   }

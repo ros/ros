@@ -268,7 +268,7 @@ public:
   }
 
   template<typename C>
-  Connection addCallback(const C& callback)
+  Connection addCallback( C& callback)
   {
     return addCallback<const M0ConstPtr&,
                      const M1ConstPtr&,

@@ -160,7 +160,7 @@ public:
     string decl = string("(") + name +
       string("\n    :reader ") + name + string("-val") +
       string("\n    :initarg :") + name +
-      string("\n    :type <") + type_spec->spec_name.c_str() +
+      string("\n    :type ") + package + string("-msg:<") + type_spec->spec_name.c_str() +
             //string("\n    :initform NIL)");
       string(">\n    :initform (make-instance '") + package +
       string("-msg:<") + type_spec->spec_name + string(">))");

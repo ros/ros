@@ -48,7 +48,7 @@
     (let ((l (ros-message-to-list m)))
       (write (first l) :stream str)
       (dolist (f (rest l))
-	(format str "~:@_  ~a:~:@_    ~w" (car f) (cdr f)))))
+	(format str "~:@_  ~a:~:@_    ~w" (car f) (ros-message-to-list (cdr f))))))
 
 )
 

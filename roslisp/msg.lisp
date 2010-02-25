@@ -96,6 +96,7 @@
 (defmethod list-to-ros-message ((l list))
   (apply #'make-instance (first l) (mapcan #'(lambda (pair) (list (car pair) (list-to-ros-message (cdr pair)))) (rest l))))
 
+;; Either a primitive type or vector or already a ros message (should do a bit more type checking)
 (defmethod list-to-ros-message (msg)
   msg)
 
@@ -113,19 +114,28 @@
       s
       (intern (symbol-name s) 'keyword)))
 
-(defun extract-nested-field (l f)
-  "extract a field from a message that has been converted into a list.  F can also be a list.  E.g, if F is '(:foo :bar) that means extract field foo of field bar of the message.  Calls list-to-ros-message before returning."
-  (list-to-ros-message
-   (cond 
-     ((symbolp f) (get-field l f))
-     ((null (rest f)) (get-field l (first f)))
-     (t (get-field (extract-nested-field l (rest f)) (first f))))))
+(defun extract-nested-field (m f)
+  "extract a named field from a message.  F can also be a list.  E.g, if F is '(:bar :foo) that means extract field foo of field bar of the message.  Calls list-to-ros-message before returning."
+  (let ((l (ros-message-to-list m)))
+    (list-to-ros-message
+     (cond 
+       ((symbolp f) (get-field l f))
+       ((null (rest f)) (get-field l (first f)))
+       (t (extract-nested-field (get-field l (first f)) (rest f)))))))
 
 (defun get-field (l f)
+  (declare (list l) (symbol f))
   (let ((pair (assoc f (rest l))))
     (unless pair
       (error "Could not find field ~a in ~a" f l))
     (cdr pair)))
+
+(defun set-field (l f v)
+  (declare (list l) (symbol f))
+  (let ((pair (assoc f (rest l))))
+    (unless pair
+      (error "Could not find field ~a in ~a" f l))
+    (setf (cdr pair) v)))
 
 (defmacro with-fields (bindings m &body body)
   "with-fields BINDINGS MSG &rest BODY
@@ -144,6 +154,7 @@ you can use (with-fields ((foo (foo bar)) baz)
 		(stuff))"
 
   (let ((msg-list (gensym)))
+    ;; Once message-to-list is cached, no need to call message-to-list here (just in extract-nested-field)
     `(let ((,msg-list (ros-message-to-list ,m)))
        (declare (ignorable ,msg-list))
        (let 
@@ -151,7 +162,7 @@ you can use (with-fields ((foo (foo bar)) baz)
 			(when (symbolp binding) (setq binding (list binding binding)))
 			(symbol-macrolet ((field (second binding)))
 			  (setf field (mapcar #'convert-to-keyword (if (symbolp field) (list field) field))))
-			`(,(first binding) (extract-nested-field ,msg-list ',(second binding))))
+			`(,(first binding) (extract-nested-field ,msg-list ',(reverse (second binding)))))
 		    bindings)
 	 ,@body))))
 
@@ -168,20 +179,40 @@ you can use (with-fields ((foo (foo bar)) baz)
 	p)))
 
 
+
+(defun listify-message (m nested-field)
+  (if nested-field
+      (dbind (f . r) nested-field
+	(let ((m2 (ros-message-to-list m)))
+	  (set-field m2 f (listify-message (get-field m2 f) r))
+	  m2))
+      m))
+
+
+(defun ros-message-to-list-nested (m fields)
+  "Return a copy of M which is sufficiently listified that all the specified fields can be accessed through lists"
+  (dolist (f fields m)
+    (setq m (listify-message m f))))
+    
+
 ;; Basic helper function that takes in a message and returns a new message with some fields updated (see below)
 (defun set-fields-fn (m &rest args)
-  (let ((l (ros-message-to-list m)))
+  (let (fields vals)
     (while args
-      (let* ((field (pop args))
-	     (val (pop args)))
-	(setf (cdr (field-pair (reverse (designated-list field)) l)) val)))
-    (list-to-ros-message l)))
+      (push (reverse (designated-list (pop args))) fields)
+      (push (pop args) vals))
+    (let ((l (ros-message-to-list-nested m fields)))
+      (loop
+	for field in fields
+	for val in vals
+	do (setf (cdr (field-pair field l)) val))
+      (list-to-ros-message l))))
 
 
 (defun make-message-fn (msg-type &rest args)
-  (destructuring-bind (pkg type) (tokens (string-upcase msg-type) :separators '(#\/))
-    (let ((pkg (find-package (intern (concatenate 'string pkg "-MSG") 'keyword))))
-      (assert pkg nil "Can't find package ~a" pkg)
+  (destructuring-bind (pkg-name type) (tokens (string-upcase msg-type) :separators '(#\/))
+    (let ((pkg (find-package (intern (concatenate 'string pkg-name "-MSG") 'keyword))))
+      (assert pkg nil "Can't find package ~a-MSG" pkg-name)
       (let ((class-name (find-symbol (concatenate 'string "<" type ">") pkg)))
 	(assert class-name nil "Can't find class for ~a" msg-type)
 	(apply #'set-fields-fn (make-instance class-name) args)))))
@@ -215,7 +246,7 @@ Like make-message, but creates a service request object.  SRV-TYPE can be either
   "modify-message-copy MSG &rest ARGS
 
 Return a new message that is a copy of MSG with some fields modified.  ARGS is a list of the form FIELD-SPEC1 VAL1 ... FIELD-SPEC_k VAL_k as in make-message."
-  `(set-fields-fn ,m ,@(loop for i from 0 for arg in args collect (if (evenp i) `',arg arg))))
+  `(set-fields-fn ,m ,@(loop for i from 0 for arg in args collect (if (evenp i) `',(mapcar #'convert-to-keyword (designated-list arg)) arg))))
 
 (defmacro setf-msg (place &rest args)
   "Sets PLACE to be the result of calling modify-message-copy on PLACE and ARGS"
@@ -241,7 +272,8 @@ this will create a Pose with the x field of position equal to 42 and the w field
 		    ,@(loop
 			 for i from 0
 			 for arg in args
-			 collect (if (evenp i) `',arg arg))))
+			 collect (if (evenp i) `',(mapcar #'convert-to-keyword (designated-list arg)) arg))))
+
 			   
 
 (defmacro make-msg (&rest args)

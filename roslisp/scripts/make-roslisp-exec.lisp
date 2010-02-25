@@ -58,8 +58,8 @@
     (format t "    (handler-case~%")
     (format t "      (handler-case (asdf:operate 'asdf:load-op qualified-sys :verbose nil)~%")
     (format t "        (asdf:missing-component (c) (declare (ignorable c)) (asdf:operate 'asdf:load-op sys :verbose nil)))~%")
-    (format t "      (asdf:missing-component (c) (declare (ignorable c)) (error ~aCouldn't find asdf system with filename ~aa.asd and system name ~aa or ~aa~a sys sys qualified-sys)))~%" 
-	    #\" #\~ #\~ #\~ #\")
+    (format t "      (asdf:missing-component (c) (error ~aCouldn't find asdf system (filename ~aa.asd and system name ~aa or ~aa) or some dependency.  Original condition was ~aa~a sys sys qualified-sys c)))~%" 
+	    #\" #\~ #\~ #\~ #\~ #\")
     (format t "    (load (merge-pathnames ~aroslisp-init.lisp~a *load-pathname*) :if-does-not-exist nil)~%" #\" #\")
     (format t "    (load (merge-pathnames ~a~a.init.lisp~a *load-pathname*) :if-does-not-exist nil)))~%" #\" (fourth *posix-argv*) #\")
     (format t "(handler-bind ((style-warning #'muffle-warning) (warning #'print)) (~a))" (fourth *posix-argv*))

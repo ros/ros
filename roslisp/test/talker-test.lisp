@@ -1,10 +1,6 @@
-(roslisp:load-message-types "std_msgs")
-(defpackage :roslisp-talker-test
-  (:use :cl :roslisp :std_msgs-msg)
-  (:export :main))
-(in-package roslisp-talker-test)
+(in-package :roslisp-test)
 
-(defun main ()
+(defun talker ()
   "Periodically print a string message on the /chatter topic"
   (with-ros-node ("talker")
     (let ((pub (advertise "chatter" "std_msgs/String" :latch nil))

@@ -77,15 +77,18 @@ See make-uri, fully-qualified-name, loop-at-most-every, ros-time.
 Each ROS message type has a corresponding Lisp class and operations on it.  A message type foo in ROS package bar corresponds to a Lisp class named <foo> in the bar-msg Lisp package.  If your code will create or operate on objects of this type, it should contain the form (roslisp:load-message-types "bar/foo").  Operations in the message's package:
 
 - An object of type <foo> in package bar-msg, with initial value of field baz equal to 3, is created using (make-instance 'bar-msg:<foo> :baz 3).  
-- Given a field named baz in an object m of the above message type, it can be accessed (read or written to) using (bar-msg:baz-val m).
-      
+- Given a field named baz in an object m of the above message type, it can be read using (bar-msg:baz-val m).
+
 The roslisp Lisp package contains some additional generic operations that work on any message:
 - symbol-code M S.  M is either a message or the name of a message class.  S is a keyword symbol naming a constant declaration in the .msg file.  Returns the value of the constant.  For example, to get the value of the DEBUG constant in roslib/Log.msg, use (symbol-code 'roslib-msg:<Log> :debug) or (symbol-code m :debug) where m is an instance of '<Log>.
 - ros-message-to-list MSG
 - list-to-ros-message L
 - pprint-ros-message STREAM MSG prints the message to the given stream in human-readable format.  This is also set as the default dispatch function for ROS messages in Lisp's pretty printer.  So if you have pretty printing turned on, and call a function from the prompt that returns a ROS message, that return value will be printed human-readably using pprint-ros-message.  Similarly, if your code contains something like (format t "The message is ~a" m), that will DTRT.
 
-There are a few additional operations that use the list representation of ros messages, and are therefore less efficient, but more readable and convenient for interactive use.  See with-fields, make-message, modify-message-copy, and setf-message-fields.
+There are a few additional operations that use the list representation of ros messages, and are therefore less efficient, but more readable and convenient for interactive use.  See with-fields, make-message, modify-message-copy, and setf-msg.
+
+IMPORTANT: message objects are assumed to be immutable; this assumption may be used in future to cache various things.  In other words, if m is a variable that refers to some message object, don't do something like (setf (slot-value m 'my-field) 42).  Instead, in this situation, do something like (setf-msg m 'my-field 42) (of course, it's always legal to do something like (setq m (function-that-returns-new-message-object)) since that just changes what m refers to rather than modifying the pointed-to object). When constructing messages, either use the form (make-instance '<Foo> :field1 42 :field24) or (make-msg "my_package/Foo" :field1 42 :field2 24).  Don't use the C++-inspired way of first creating the object then setting its fields.
+      
 
 \section services Service Data Types
 

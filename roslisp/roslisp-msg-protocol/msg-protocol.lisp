@@ -86,5 +86,3 @@ As a base case, non-ros messages just return themselves."))
 
 (defgeneric list-to-ros-message (l))
 
-(defmethod list-to-ros-message :around (l)
-  (call-next-method))

@@ -144,7 +144,7 @@
 	       pkg-path)))
 	(when debug-print (format t "~&  Checking if ~a exists" filename))
 	(when (probe-file filename)
-	  (format t "~&  ...found!")
+	  (when debug-print (format t "~&  ...found!"))
 	  filename)))))
 
 

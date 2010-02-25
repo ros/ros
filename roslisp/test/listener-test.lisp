@@ -1,14 +1,10 @@
-(roslisp:load-message-types "std_msgs")
-(defpackage :roslisp-listener-test
-  (:use :cl :roslisp :std_msgs-msg)
-  (:export :main))
-(in-package roslisp-listener-test)
+(in-package :roslisp-test)
 
-(defun main ()
+(defun listener ()
   (with-ros-node ("listener" :spin t :anonymous t)
     (advertise "chatter_echo" "std_msgs/String" :latch t)
     (sleep 3)
-    (subscribe "chatter" "std_msgs/String" #'(lambda (m) (publish "chatter_echo" (make-instance '<String> :data (reverse (data-val m))))))
+    (subscribe "chatter" "std_msgs/String" #'(lambda (m) (with-fields (data) m (publish "chatter_echo" (make-instance '<String> :data (reverse data))))))
     ))
 
 

@@ -1,10 +1,6 @@
-(roslisp:load-message-types "roslisp")
-(defpackage :roslisp-complex-talker-test
-  (:use :cl :roslisp :std_msgs-msg :roslisp-msg)
-  (:export :main))
-(in-package roslisp-complex-talker-test)
+(in-package :roslisp-test)
 
-(defun main ()
+(defun complex-talker ()
   (with-ros-node ("complex_talker")
     (let ((ping-pub (advertise "ping" "roslisp/ComplexMessage"))
 	  (pang-pub (advertise "pang" "roslisp/ComplexMessage")))

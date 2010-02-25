@@ -27,6 +27,7 @@
 
 #include "ros/ros.h"
 #include "std_msgs/String.h"
+#include "std_msgs/Int16.h"
 #include "roslisp/ComplexMessage.h"
 #include <gtest/gtest.h>
 #include <ros/time.h>
@@ -35,7 +36,8 @@
 using std::vector;
 
 int num_messages_received=0;
-
+int service_client_status=0;
+int service_client_response=0;
 
 using roslisp::ComplexMessage;
 using roslisp::Foo;
@@ -177,6 +179,29 @@ TEST(Roslisp, TalkerListener)
   }
   EXPECT_TRUE(num_messages_received>5);
   ROS_INFO_STREAM ("Successfully received " << num_messages_received << " echoed messages");
+}
+
+void clientStatusCallback (const std_msgs::Int16ConstPtr& msg)
+{
+  service_client_response = msg->data;
+  service_client_status = 1;
+}
+
+TEST(Roslisp, Service)
+{
+  ros::NodeHandle n;
+  ros::Subscriber sub=n.subscribe("client_status", 1000, clientStatusCallback);
+  ros::Duration d(1);
+  unsigned wait_max=180;
+  for (unsigned i=0; i<wait_max && n.ok(); i++) {
+    d.sleep();
+    ros::spinOnce();
+    ROS_INFO_STREAM ("Have waited " << i << " out of " << wait_max << " seconds to receive confirmation from service client test");
+    if (service_client_status)
+      break;
+  }
+
+  EXPECT_EQ (66, service_client_response);
 }
 
     

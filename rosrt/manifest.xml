@@ -1,0 +1,16 @@
+<package>
+  <description brief="rosrt">
+
+     rosrt
+
+  </description>
+  <author>Josh Faust</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rosrt</url>
+  <depend package="roscpp"/>
+  <depend package="roslib"/>
+
+</package>
+
+

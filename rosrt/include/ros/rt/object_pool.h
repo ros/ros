@@ -180,7 +180,7 @@ class ObjectPool
 {
   struct SPStorage
   {
-    uint8_t data[40];
+    uint8_t data[64];
   };
 
 public:
@@ -201,6 +201,8 @@ public:
     {
       *reinterpret_cast<uint32_t*>(in_use_[i].address()) = 0;
     }
+
+    initialized_ = true;
   }
 
   boost::shared_ptr<T> allocate()

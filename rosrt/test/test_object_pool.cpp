@@ -62,9 +62,9 @@ TEST(ObjectPool, multipleElements)
   for (uint32_t i = 0; i < count; ++i)
   {
     items.push_back(pool.allocate());
-    ASSERT_TRUE(items[count]);
-    EXPECT_EQ(*items[count], 5UL);
-    *items[count] = i;
+    ASSERT_TRUE(items[i]);
+    EXPECT_EQ(*items[i], 5UL);
+    *items[i] = i;
   }
 
   ASSERT_FALSE(pool.allocate());

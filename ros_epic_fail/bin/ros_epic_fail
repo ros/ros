@@ -39,32 +39,36 @@ def get_last_number(dir):
 for d in os.listdir(test_results_dir):
     test_dir = os.path.join(test_results_dir, d)
     base_test_name = os.path.basename(test_dir)
-    for	file in os.listdir(test_dir):
-        if file.endswith('.xml'):
-            test_name = base_test_name + '.' + file[:-4]
-            file = os.path.join(test_dir, file)
-            print "Test: ", file
-            try:
-                result = xmlr.read(file, test_name)
-                fail = (result.num_errors + result.num_failures) > 0
-                if (fail):
-                    file = os.path.join(raw_bags_dir, result.name + ".bag")
-                    if (os.path.exists(file)):
-                        print "Failure of", result.name
-                        result_bag_dir = os.path.join(bags_dir, result.name)
-                        if (not os.path.exists(result_bag_dir)):
-                            os.makedirs(result_bag_dir)
-                        n = get_last_number(result_bag_dir) + 1
-                        output_file = os.path.join(result_bag_dir, 
-                                                   str(n) + "_" +  result.name + ".bag")
-                        #FIXME: this is brittle
-                        cmd = "mv \"" + file + "\" \"" + output_file + "\""
-                        print "Moving: ", cmd
-                        os.system(cmd)
-                    else:
-                        print "Failed, no bag for", result.name
-            except Exception, e:
-                print >> sys.stderr, "ignoring [%s]: %s"%(file, e)
+    try:
+        for file in os.listdir(test_dir):
+            if file.endswith('.xml'):
+                test_name = base_test_name + '.' + file[:-4]
+                file = os.path.join(test_dir, file)
+                print "Test: ", file
+                try:
+                    result = xmlr.read(file, test_name)
+                    fail = (result.num_errors + result.num_failures) > 0
+                    if (fail):
+                        file = os.path.join(raw_bags_dir, result.name + ".bag")
+                        if (os.path.exists(file)):
+                            print "Failure of", result.name
+                            result_bag_dir = os.path.join(bags_dir, result.name)
+                            if (not os.path.exists(result_bag_dir)):
+                                os.makedirs(result_bag_dir)
+                                n = get_last_number(result_bag_dir) + 1
+                                output_file = os.path.join(result_bag_dir, 
+                                                           str(n) + "_" +  result.name + ".bag")
+                            #FIXME: this is brittle
+                            cmd = "mv \"" + file + "\" \"" + output_file + "\""
+                            print "Moving: ", cmd
+                            os.system(cmd)
+                        else:
+                            print "Failed, no bag for", result.name
+                except Exception, e:
+                    print >> sys.stderr, "ignoring [%s]: %s"%(file, e)
+    except Exception, e:
+        print >> sys.stderr, "ignoring [%s]: %s"%(test_dir, e)
+    
 
 
 print "------------------------------------------------------"

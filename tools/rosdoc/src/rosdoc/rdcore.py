@@ -81,6 +81,9 @@ class RosdocContext(object):
         rd_config = self.rd_configs.get(package, None)
         if not rd_config:
             return builder == 'doxygen'
+        if type(rd_config) != dict:
+            print >> sys.stderr, "WARNING: package [%s] has an invalid rosdoc config"%package
+            return False            
         try:
             return len([d for d in rd_config if d['builder'] == builder]) > 0
         except KeyError:
@@ -194,7 +197,7 @@ class RosdocContext(object):
             except:
                 import traceback
                 traceback.print_exc()
-                print >> sys.stderr, "WARN: Package '%s' does not have a valid manifest.xml file, manifest information will not be included in docs"%package
+                print >> sys.stderr, "WARN: stack '%s' does not have a valid stack.xml file, manifest information will not be included in docs"%package
                 
 
 def compute_relative(src, target):

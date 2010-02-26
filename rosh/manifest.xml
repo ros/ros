@@ -1,0 +1,22 @@
+<package>
+  <description brief="rosh">
+
+     rosh
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rosh</url>
+  <depend package="rospy"/>
+  <depend package="rostopic"/>
+  <depend package="rosservice"/>
+  <depend package="rosparam"/>
+  <depend package="rosmsg"/>
+  <export>
+    <rosdoc config="${prefix}/rosdoc.yaml" />
+  </export>
+
+</package>
+
+

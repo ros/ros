@@ -152,3 +152,25 @@ def is_publisher(topic, publisher_id):
     else:
         return False
 
+#TODO: can just use roslib.scriptutil.ask_and_call
+def ask_and_call(cmds):
+    """
+    Pretty print cmds, ask if they should be run, and if so, runs
+    them using subprocess.check_call.
+
+    @return: True if cmds were run.
+    """
+    # Pretty-print a string version of the commands
+    def quote(s):
+        return '"%s"'%s if ' ' in s else s
+    print "Okay to execute:\n\n%s\n(y/n)?"%('\n'.join([' '.join([quote(s) for s in c]) for c in cmds]))
+    while 1:
+        input = sys.stdin.readline().strip()
+        if input in ['y', 'n']:
+            break
+    accepted = input == 'y'
+    import subprocess
+    if accepted:
+        for c in cmds:
+            subprocess.check_call(c)
+    return accepted

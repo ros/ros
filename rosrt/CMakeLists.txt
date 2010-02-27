@@ -31,6 +31,9 @@ rosbuild_link_boost(${PROJECT_NAME} thread)
 rosbuild_add_gtest(test_object_pool test/test_object_pool.cpp)
 target_link_libraries(test_object_pool ${PROJECT_NAME})
 
+rosbuild_add_gtest(test_freelist test/test_freelist.cpp)
+target_link_libraries(test_freelist ${PROJECT_NAME})
+
 rosbuild_add_gtest(test_aligned_alloc test/test_aligned_alloc.cpp)
 target_link_libraries(test_aligned_alloc ${PROJECT_NAME})
 

@@ -66,7 +66,7 @@ void publishMessage(const ros::Publisher& pub, const VoidConstPtr& msg)
 
 void publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func);
 
-template<typename M, size_t message_pool_size>
+template<typename M>
 class Publisher : public boost::noncopyable
 {
   typedef boost::shared_ptr<M const> MConstPtr;
@@ -76,16 +76,15 @@ public:
   {
   }
 
-  Publisher(const ros::Publisher& pub, const M& tmpl)
-  : pool_(tmpl)
+  Publisher(const ros::Publisher& pub, uint32_t message_pool_size, const M& tmpl)
   {
-    initialize(pub, tmpl);
+    initialize(pub, message_pool_size, tmpl);
   }
 
-  void initialize(const ros::Publisher& pub, const M& tmpl)
+  void initialize(const ros::Publisher& pub, uint32_t message_pool_size, const M& tmpl)
   {
     pub_ = pub;
-    pool_.initialize(tmpl);
+    pool_.initialize(message_pool_size, tmpl);
   }
 
   void publish(const MConstPtr& msg)
@@ -100,7 +99,7 @@ public:
 
 private:
   ros::Publisher pub_;
-  ObjectPool<M, message_pool_size> pool_;
+  ObjectPool<M> pool_;
 };
 
 }

@@ -34,31 +34,31 @@
 
 #include <gtest/gtest.h>
 
-#include "ros/rt/object_pool.h"
+#include "ros/rt/free_list.h"
 
 using namespace ros::rt;
 
-TEST(ObjectPool, oneElement)
+TEST(FreeList, oneElement)
 {
-  ObjectPool<uint32_t> pool(1, 5);
+  FreeList<uint32_t> pool(1, 5);
 
-  boost::shared_ptr<uint32_t> item = pool.allocate();
+  uint32_t* item = pool.allocate();
   ASSERT_TRUE(item);
   EXPECT_EQ(*item, 5UL);
   *item = 6;
   ASSERT_FALSE(pool.allocate());
-  item.reset();
+  pool.free(item);
   item = pool.allocate();
   ASSERT_TRUE(item);
   EXPECT_EQ(*item, 6UL);
 }
 
-TEST(ObjectPool, multipleElements)
+TEST(FreeList, multipleElements)
 {
   const uint32_t count = 5;
-  ObjectPool<uint32_t> pool(count, 5);
+  FreeList<uint32_t> pool(count, 5);
 
-  std::vector<boost::shared_ptr<uint32_t> > items;
+  std::vector<uint32_t*> items;
   for (uint32_t i = 0; i < count; ++i)
   {
     items.push_back(pool.allocate());
@@ -68,12 +68,13 @@ TEST(ObjectPool, multipleElements)
   }
 
   ASSERT_FALSE(pool.allocate());
+  pool.free(items.back());
   items.pop_back();
   items.push_back(pool.allocate());
   ASSERT_TRUE(items.back());
   ASSERT_FALSE(pool.allocate());
 
-  std::set<boost::shared_ptr<uint32_t> > set;
+  std::set<uint32_t*> set;
   set.insert(items.begin(), items.end());
   EXPECT_EQ(set.size(), count);
 }
@@ -83,3 +84,4 @@ int main(int argc, char** argv)
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
+

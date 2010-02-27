@@ -35,8 +35,9 @@
 #ifndef ROSRT_OBJECT_POOL_H
 #define ROSRT_OBJECT_POOL_H
 
+#include "free_list.h"
+
 #include <ros/assert.h>
-#include <ros/atomic.h>
 
 #include <vector>
 #include <boost/shared_ptr.hpp>
@@ -174,7 +175,7 @@ private:
   uint32_t size_;
 };
 
-template<typename T, size_t size>
+template<typename T>
 class ObjectPool
 {
   struct SPStorage
@@ -182,26 +183,42 @@ class ObjectPool
     uint8_t data[64];
   };
 
-public:
-  ObjectPool()
+  struct Deleter
   {
-
-  }
-
-  ObjectPool(const T& tmpl)
-  {
-    initialize(tmpl);
-  }
-
-  void initialize(const T& tmpl)
-  {
-    items_.assign(tmpl);
-    for (uint32_t i = 0; i < size; ++i)
+    Deleter(ObjectPool* pool, SPStorage* storage)
+    : pool_(pool)
+    , sp_(storage)
     {
-      new (in_use_[i].address()) ros::atomic_uint32_t();
-      reinterpret_cast<ros::atomic_uint32_t*>(in_use_[i].address())->store(0);
+
     }
 
+    void operator()(T* t)
+    {
+      pool_->deallocate(t, sp_);
+    }
+
+  private:
+    ObjectPool* pool_;
+    SPStorage* sp_;
+  };
+
+public:
+  ObjectPool()
+  : initialized_(false)
+  {
+  }
+
+  ObjectPool(uint32_t size, const T& tmpl)
+  : initialized_(false)
+  {
+    initialize(size, tmpl);
+  }
+
+  void initialize(uint32_t size, const T& tmpl)
+  {
+    ROS_ASSERT(!initialized_);
+    freelist_.initialize(size, tmpl);
+    sp_storage_freelist_.initialize(size, SPStorage());
     initialized_ = true;
   }
 
@@ -209,35 +226,32 @@ public:
   {
     ROS_ASSERT(initialized_);
 
-    for (uint32_t i = 0; i < size;++i)
+    T* item = freelist_.allocate();
+    if (!item)
     {
-      ros::atomic_uint32_t* in_use = reinterpret_cast<ros::atomic_uint32_t*>(in_use_[i].address());
-      uint32_t zero = 0;
-      if (in_use->compare_exchange_strong(zero, 1))
-      {
-        uint8_t* sp_storage = sp_storage_[i].data;
-        boost::shared_ptr<T> ptr(&items_[i], boost::bind(&ObjectPool::deallocate, this, _1),
-                                 FixedBlockAllocator<void>(sp_storage, sizeof(SPStorage)));
-        return ptr;
-      }
+      return boost::shared_ptr<T>();
     }
 
-    return boost::shared_ptr<T>();
+    SPStorage* sp_storage_s = sp_storage_freelist_.allocate();
+    ROS_ASSERT(sp_storage_s);
+
+    uint8_t* sp_storage = sp_storage_s->data;
+    boost::shared_ptr<T> ptr(item, Deleter(this, sp_storage_s),
+                             FixedBlockAllocator<void>(sp_storage, sizeof(SPStorage)));
+    return ptr;
   }
 
 private:
-  void deallocate(T* t)
+  void deallocate(T* t, SPStorage* sp)
   {
-    ptrdiff_t index = t - &items_[0];
-    ros::atomic_uint32_t* in_use = reinterpret_cast<ros::atomic_uint32_t*>(in_use_[index].address());
-    in_use->store(0);
+    freelist_.free(t);
+    sp_storage_freelist_.free(sp);
   }
 
   bool initialized_;
 
-  boost::array<T, size> items_;
-  boost::array<boost::aligned_storage<sizeof(ros::atomic_uint32_t), -1>, size> in_use_;
-  boost::array<SPStorage, size> sp_storage_;
+  FreeList<T> freelist_;
+  FreeList<SPStorage> sp_storage_freelist_;
 };
 
 }

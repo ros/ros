@@ -62,8 +62,9 @@ TEST(Publisher, publish)
 {
   ros::NodeHandle nh;
 
+  Publisher<std_msgs::UInt32> pub(nh.advertise<std_msgs::UInt32>("test", 0), 1, std_msgs::UInt32());
+
   Helper h;
-  Publisher<std_msgs::UInt32, 1> pub(nh.advertise<std_msgs::UInt32>("test", 0), std_msgs::UInt32());
   ros::Subscriber sub = nh.subscribe("test", 0, &Helper::cb, &h);
 
   std_msgs::UInt32Ptr msg = pub.allocate();

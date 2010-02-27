@@ -1,0 +1,14 @@
+<package>
+  <description brief="rosatomic">
+
+     rosatomic
+
+  </description>
+  <author>Josh Faust</author>
+  <license>BSD, Boost</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rosatomic</url>
+
+</package>
+
+

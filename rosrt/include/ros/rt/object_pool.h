@@ -44,8 +44,6 @@
 #include <boost/aligned_storage.hpp>
 #include <boost/bind.hpp>
 
-#define CACHE_LINE 64
-
 namespace ros
 {
 namespace rt
@@ -175,7 +173,7 @@ private:
   uint32_t size_;
 };
 
-template<typename T, int size>
+template<typename T, size_t size>
 class ObjectPool
 {
   struct SPStorage

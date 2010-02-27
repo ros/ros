@@ -10,6 +10,7 @@
   <url>http://ros.org/wiki/rosrt</url>
   <depend package="roscpp"/>
   <depend package="roslib"/>
+  <depend package="std_msgs"/>
 
 </package>
 

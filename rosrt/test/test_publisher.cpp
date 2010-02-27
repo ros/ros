@@ -32,76 +32,61 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "object_pool.h"
+#include <gtest/gtest.h>
 
-#include <ros/publisher.h>
-#include <boost/utility.hpp>
+#include "ros/rt/publisher.h"
 
-namespace ros
-{
-namespace rt
-{
+#include <ros/ros.h>
 
-struct InitOptions
+#include <std_msgs/UInt32.h>
+
+using namespace ros::rt;
+
+struct Helper
 {
-  InitOptions()
-  : pubmanager_queue_size(1000)
+  Helper()
+  : count(0)
   {}
 
-  uint32_t pubmanager_queue_size;
-};
-void initThread(const InitOptions& ops = InitOptions());
-
-typedef void(*PublishFunc)(const ros::Publisher& pub, const VoidConstPtr& msg);
-
-namespace detail
-{
-template<typename M>
-void publishMessage(const ros::Publisher& pub, const VoidConstPtr& msg)
-{
-  boost::shared_ptr<M const> m = boost::static_pointer_cast<M const>(msg);
-  pub.publish(m);
-}
-} // namespace detail
-
-void publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func);
-
-template<typename M, size_t message_pool_size>
-class Publisher : public boost::noncopyable
-{
-  typedef boost::shared_ptr<M const> MConstPtr;
-
-public:
-  Publisher()
+  void cb(const std_msgs::UInt32ConstPtr& msg)
   {
+    latest = msg;
+    ++count;
   }
 
-  Publisher(const ros::Publisher& pub, const M& tmpl)
-  : pool_(tmpl)
-  {
-    initialize(pub, tmpl);
-  }
-
-  void initialize(const ros::Publisher& pub, const M& tmpl)
-  {
-    pub_ = pub;
-    pool_.initialize(tmpl);
-  }
-
-  void publish(const MConstPtr& msg)
-  {
-    ros::rt::publish(pub_, msg, detail::publishMessage<M>);
-  }
-
-  boost::shared_ptr<M> allocate()
-  {
-    return pool_.allocate();
-  }
-
-private:
-  ros::Publisher pub_;
-  ObjectPool<M, message_pool_size> pool_;
+  std_msgs::UInt32ConstPtr latest;
+  uint32_t count;
 };
 
+TEST(Publisher, publish)
+{
+  ros::NodeHandle nh;
+
+  Helper h;
+  Publisher<std_msgs::UInt32, 1> pub(nh.advertise<std_msgs::UInt32>("test", 0), std_msgs::UInt32());
+  ros::Subscriber sub = nh.subscribe("test", 0, &Helper::cb, &h);
+
+  std_msgs::UInt32Ptr msg = pub.allocate();
+  msg->data = 5;
+  pub.publish(msg);
+
+  while (h.count == 0)
+  {
+    ros::WallDuration(0.001).sleep();
+    ros::spinOnce();
+  }
+
+  ASSERT_EQ(h.count, 1UL);
+  ASSERT_EQ(h.latest->data, 5UL);
 }
+
+int main(int argc, char** argv)
+{
+  ros::init(argc, argv, "test_rt_publisher");
+  testing::InitGoogleTest(&argc, argv);
+
+  ros::NodeHandle nh;
+  initThread();
+
+  return RUN_ALL_TESTS();
 }

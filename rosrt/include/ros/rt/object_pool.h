@@ -36,6 +36,7 @@
 #define ROSRT_OBJECT_POOL_H
 
 #include <ros/assert.h>
+#include <ros/atomic.h>
 
 #include <vector>
 #include <boost/shared_ptr.hpp>
@@ -197,7 +198,8 @@ public:
     items_.assign(tmpl);
     for (uint32_t i = 0; i < size; ++i)
     {
-      *reinterpret_cast<uint32_t*>(in_use_[i].address()) = 0;
+      new (in_use_[i].address()) ros::atomic_uint32_t();
+      reinterpret_cast<ros::atomic_uint32_t*>(in_use_[i].address())->store(0);
     }
 
     initialized_ = true;
@@ -209,10 +211,10 @@ public:
 
     for (uint32_t i = 0; i < size;++i)
     {
-      uint32_t* in_use = (uint32_t*)in_use_[i].address();
-      if (!*in_use)  // TODO ATOMIC
+      ros::atomic_uint32_t* in_use = reinterpret_cast<ros::atomic_uint32_t*>(in_use_[i].address());
+      uint32_t zero = 0;
+      if (in_use->compare_exchange_strong(zero, 1))
       {
-        *in_use = 1;
         uint8_t* sp_storage = sp_storage_[i].data;
         boost::shared_ptr<T> ptr(&items_[i], boost::bind(&ObjectPool::deallocate, this, _1),
                                  FixedBlockAllocator<void>(sp_storage, sizeof(SPStorage)));
@@ -227,14 +229,14 @@ private:
   void deallocate(T* t)
   {
     ptrdiff_t index = t - &items_[0];
-    uint32_t* in_use = (uint32_t*)in_use_[index].address();
-    *in_use = 0;  // TODO ATOMIC
+    ros::atomic_uint32_t* in_use = reinterpret_cast<ros::atomic_uint32_t*>(in_use_[index].address());
+    in_use->store(0);
   }
 
   bool initialized_;
 
   boost::array<T, size> items_;
-  boost::array<boost::aligned_storage<sizeof(uint32_t), -1>, size> in_use_;
+  boost::array<boost::aligned_storage<sizeof(ros::atomic_uint32_t), -1>, size> in_use_;
   boost::array<SPStorage, size> sp_storage_;
 };
 

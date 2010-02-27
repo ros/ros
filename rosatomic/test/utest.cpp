@@ -126,7 +126,7 @@ void test_atomic_base(void)
         ASSERT_TRUE(i.load()==(T)44);
 
         n=i.exchange((T)20);
-        ASSERT_TRUE(n==(T)44);
+        ASSERT_EQ(n, (T)44);
         ASSERT_TRUE(i.load()==(T)20);
 }
 
@@ -239,7 +239,7 @@ void test_atomic_struct(void)
 }
 
 enum TestEnum {
-        Foo, Bar
+        Foo, Bar, Baz=1000
 };
 
 void test_fence()

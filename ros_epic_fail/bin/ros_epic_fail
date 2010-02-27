@@ -48,8 +48,8 @@ for d in os.listdir(test_results_dir):
                 try:
                     result = xmlr.read(file, test_name)
                     fail = (result.num_errors + result.num_failures) > 0
+                    file = os.path.join(raw_bags_dir, result.name + ".bag")
                     if (fail):
-                        file = os.path.join(raw_bags_dir, result.name + ".bag")
                         if (os.path.exists(file)):
                             print "Failure of", result.name
                             result_bag_dir = os.path.join(bags_dir, result.name)
@@ -64,6 +64,8 @@ for d in os.listdir(test_results_dir):
                             os.system(cmd)
                         else:
                             print "Failed, no bag for", result.name
+                    else:
+                        print "Succeed, file = ", file
                 except Exception, e:
                     print >> sys.stderr, "ignoring [%s]: %s"%(file, e)
     except Exception, e:

@@ -39,6 +39,12 @@
 
 (in-package :roslisp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Special case code for message headers
+;; Not currently used
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
 
 (defvar *serialize-recursion-level* 0
   "Bound during calls to serialize, so we can keep track of when header time stamps need to be filled in")
@@ -66,3 +72,5 @@
 	   (call-next-method))
 
       (setf (roslib-msg:stamp-val msg) old-stamp))))
+
+|#

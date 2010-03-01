@@ -45,7 +45,7 @@
 (defvar *debug-levels* (make-hash-table :test #'equal))
 
 (defun debug-level-exists (l)
-  (hash-table-has-key *debug-levels* (reverse l)))
+  (hash-table-has-key *debug-levels* (mapcar #'make-keyword-symbol (reverse l))))
 
 (defun debug-level (name)  
   (or (gethash name *debug-levels*) 
@@ -68,7 +68,8 @@
   (:method ((level string)) (level-code (find-symbol level :keyword))))
 
 (defun set-local-debug-level (topic level &optional (h *debug-levels*))
-  (setf (gethash (mapcar #'make-keyword-symbol (reverse topic)) h) (level-code level)))
+  (let ((debug-topic (mapcar #'make-keyword-symbol (reverse topic))))
+    (setf (gethash debug-topic h) (level-code level))))
 
 (defun set-debug-level (name level)
   (set-local-debug-level (designated-list name) level *debug-levels*)

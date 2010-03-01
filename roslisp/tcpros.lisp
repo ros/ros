@@ -210,6 +210,7 @@
   
 
 
+(defvar *stream-error-in-progress* nil)
 
 (defun tcpros-write (msg str)
   (or
@@ -224,8 +225,10 @@
 	   (force-output str)
 	   1 ;; Returns number of messages written 
 	   )
-       (error (c)
-	 (ros-info (roslisp tcp) "Received error ~a when writing to ~a.  Skipping from now on." c str)
+       ((or sb-bsd-sockets:socket-error stream-error) (c)
+	 (unless *stream-error-in-progress*
+	   (let ((*stream-error-in-progress* t))
+	     (ros-info (roslisp tcp) "Received error ~a when writing to ~a.  Skipping from now on." c str)))
 	 (setf (gethash str *broken-socket-streams*) t)
 	 0)))
    0))

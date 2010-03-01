@@ -97,9 +97,6 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
     (set-debug-level-unless-exists nil :warn)
     (set-debug-level-unless-exists '(roslisp top) :info)
 
-    (unless (debug-level-exists nil)
-      (set-debug-level nil :warn))
-
     ;; Now we can finally print some debug messages 
     (ros-debug (roslisp top) "Log location is ~a" *ros-log-location*)
     (command-line-args-rosout cmd-line-args params)

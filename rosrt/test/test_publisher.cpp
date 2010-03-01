@@ -58,7 +58,7 @@ struct Helper
   uint32_t count;
 };
 
-TEST(Publisher, publish)
+TEST(Publisher, singlePublisher)
 {
   ros::NodeHandle nh;
 
@@ -79,6 +79,57 @@ TEST(Publisher, publish)
 
   ASSERT_EQ(h.count, 1UL);
   ASSERT_EQ(h.latest->data, 5UL);
+}
+
+TEST(Publisher, multiplePublishers)
+{
+  ros::NodeHandle nh;
+
+  static const uint32_t count = 100;
+  Publisher<std_msgs::UInt32> pubs[count];
+
+  Helper helpers[count];
+  ros::Subscriber subs[count];
+
+  for (uint32_t i = 0; i < count; ++i)
+  {
+    std::stringstream topic;
+    topic << "test" << i;
+    pubs[i].initialize(nh.advertise<std_msgs::UInt32>(topic.str(), 0), 100, std_msgs::UInt32());
+    subs[i] = nh.subscribe(topic.str(), 0, &Helper::cb, &helpers[i]);
+  }
+
+  for (uint32_t j = 0; j < 100; ++j)
+  {
+    for (uint32_t i = 0; i < count; ++i)
+    {
+      std_msgs::UInt32Ptr msg = pubs[i].allocate();
+      ASSERT_TRUE(msg);
+      msg->data = j;
+      ASSERT_TRUE(pubs[i].publish(msg));
+    }
+  }
+
+  uint32_t recv_count = 0;
+  while (recv_count < count * 100)
+  {
+    ros::spinOnce();
+    ros::WallDuration(0.01).sleep();
+
+    recv_count = 0;
+
+    for (uint32_t i = 0; i < count; ++i)
+    {
+      recv_count += helpers[i].count;
+    }
+  }
+
+  ASSERT_EQ(recv_count, count * 100);
+
+  for (uint32_t i = 0; i < count; ++i)
+  {
+    ASSERT_EQ(helpers[i].latest->data, 99UL);
+  }
 }
 
 int main(int argc, char** argv)

@@ -33,6 +33,7 @@
 *********************************************************************/
 
 #include <ros/rt/publisher.h>
+#include <ros/rt/object_pool.h>
 #include <ros/debug.h>
 
 #include <boost/thread.hpp>
@@ -42,29 +43,96 @@ namespace ros
 namespace rt
 {
 
-class PublisherManager
+class PublishQueue
 {
 public:
-  PublisherManager(const InitOptions& ops);
-  ~PublisherManager();
-  void publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func);
-
-private:
-  void publishThread();
-
   struct PubItem
   {
     ros::Publisher pub;
     VoidConstPtr msg;
     PublishFunc pub_func;
+
+    PubItem* next;
   };
 
-  // TODO: lockfree-i-cise
-  typedef std::vector<PubItem> V_PubItem;
-  V_PubItem items_;
-  boost::mutex items_mutex_;
+  PublishQueue(uint32_t size);
+
+  bool push(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func);
+  void publishAll();
+
+private:
+  ObjectPool<PubItem> pool_;
+  atomic<PubItem*> head_;
+};
+
+PublishQueue::PublishQueue(uint32_t size)
+: pool_(size, PubItem())
+, head_(0)
+{
+}
+
+bool PublishQueue::push(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func)
+{
+  PubItem* i = pool_.allocateBare();
+  if (!i)
+  {
+    return false;
+  }
+
+  i->pub = pub;
+  i->msg = msg;
+  i->pub_func = pub_func;
+  PubItem* stale_head = head_.load(memory_order_relaxed);
+  do
+  {
+    i->next = stale_head;
+  } while(!head_.compare_exchange_weak(stale_head, i, memory_order_release));
+
+  return true;
+}
+
+void PublishQueue::publishAll()
+{
+  PubItem* last = head_.exchange(0, memory_order_consume);
+  PubItem* first = 0;
+
+  // Reverse the list to get it back in push() order
+  while (last)
+  {
+    PubItem* tmp = last;
+    last = last->next;
+    tmp->next = first;
+    first = tmp;
+  }
+
+  PubItem* it = first;
+  while (it)
+  {
+    it->pub_func(it->pub, it->msg);
+    it->msg.reset();
+    it->pub = ros::Publisher();
+    PubItem* tmp = it;
+    it = it->next;
+
+    pool_.freeBare(tmp);
+  }
+}
+
+class PublisherManager
+{
+public:
+  PublisherManager(const InitOptions& ops);
+  ~PublisherManager();
+  bool publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func);
+
+private:
+  void publishThread();
+
+  PublishQueue queue_;
   boost::condition_variable cond_;
+  boost::mutex cond_mutex_;
   boost::thread pub_thread_;
+  atomic<uint32_t> pub_count_;
   volatile bool running_;
 };
 boost::thread_specific_ptr<PublisherManager> g_publisher_manager;
@@ -76,16 +144,18 @@ void initThread(const InitOptions& ops)
   g_publisher_manager.reset(new PublisherManager(ops));
 }
 
-void publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func)
+bool publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func)
 {
   PublisherManager* man = g_publisher_manager.get();
   ROS_ASSERT_MSG(man, "ros::rt::initThread() has not been called for this thread!\n%s", ros::debug::getBacktrace().c_str());
 
-  man->publish(pub, msg, pub_func);
+  return man->publish(pub, msg, pub_func);
 }
 
 PublisherManager::PublisherManager(const InitOptions& ops)
-: running_(true)
+: queue_(ops.pubmanager_queue_size)
+, pub_count_(0)
+, running_(true)
 {
   pub_thread_ = boost::thread(&PublisherManager::publishThread, this);
 }
@@ -101,10 +171,9 @@ void PublisherManager::publishThread()
 {
   while (running_)
   {
-    V_PubItem local_items;
     {
-      boost::mutex::scoped_lock lock(items_mutex_);
-      while (running_ && items_.empty())
+      boost::mutex::scoped_lock lock(cond_mutex_);
+      while (running_ && pub_count_.load() == 0)
       {
         cond_.wait(lock);
       }
@@ -113,34 +182,24 @@ void PublisherManager::publishThread()
       {
         return;
       }
-
-      local_items.insert(local_items.end(), items_.begin(), items_.end());
-      items_.clear();
     }
 
-    V_PubItem::iterator it = local_items.begin();
-    V_PubItem::iterator end = local_items.end();
-    for (; it != end; ++it)
-    {
-      PubItem& i = *it;
-      i.pub_func(i.pub, i.msg);
-    }
+    queue_.publishAll();
+    pub_count_.fetch_sub(1);
   }
 }
 
-void PublisherManager::publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func)
+bool PublisherManager::publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func)
 {
-  PubItem i;
-  i.pub = pub;
-  i.msg = msg;
-  i.pub_func = pub_func;
-
+  if (!queue_.push(pub, msg, pub_func))
   {
-    boost::mutex::scoped_lock lock(items_mutex_);
-    items_.push_back(i);
+    return false;
   }
 
+  pub_count_.fetch_add(1);
   cond_.notify_one();
+
+  return true;
 }
 
 }

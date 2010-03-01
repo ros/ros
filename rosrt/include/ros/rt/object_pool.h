@@ -194,7 +194,7 @@ class ObjectPool
 
     void operator()(T* t)
     {
-      pool_->deallocate(t, sp_);
+      pool_->free(t, sp_);
     }
 
   private:
@@ -249,8 +249,18 @@ public:
     return ptr;
   }
 
+  T* allocateBare()
+  {
+    return static_cast<T*>(freelist_.allocate());
+  }
+
+  void freeBare(T* t)
+  {
+    freelist_.free(t);
+  }
+
 private:
-  void deallocate(T* t, SPStorage* sp)
+  void free(T* t, SPStorage* sp)
   {
     freelist_.free(t);
     sp_storage_freelist_.free(sp);

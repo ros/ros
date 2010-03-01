@@ -45,7 +45,7 @@ namespace rt
 struct InitOptions
 {
   InitOptions()
-  : pubmanager_queue_size(1000)
+  : pubmanager_queue_size(10000)
   {}
 
   uint32_t pubmanager_queue_size;
@@ -64,7 +64,7 @@ void publishMessage(const ros::Publisher& pub, const VoidConstPtr& msg)
 }
 } // namespace detail
 
-void publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func);
+bool publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func);
 
 template<typename M>
 class Publisher : public boost::noncopyable
@@ -87,9 +87,9 @@ public:
     pool_.initialize(message_pool_size, tmpl);
   }
 
-  void publish(const MConstPtr& msg)
+  bool publish(const MConstPtr& msg)
   {
-    ros::rt::publish(pub_, msg, detail::publishMessage<M>);
+    return ros::rt::publish(pub_, msg, detail::publishMessage<M>);
   }
 
   boost::shared_ptr<M> allocate()

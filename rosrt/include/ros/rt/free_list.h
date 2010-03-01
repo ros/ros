@@ -41,6 +41,8 @@
 #include <ros/assert.h>
 #include <ros/atomic.h>
 
+#include <boost/array.hpp>
+
 #define ROSRT_CACHELINE_SIZE 64 // TODO: actually determine this.  64 should work reasonably well no matter what
 
 namespace ros
@@ -51,54 +53,53 @@ namespace rt
 /**
  * \brief A lock-free (*not* wait-free) freelist implemented with CAS
  */
-template<typename T>
+template<size_t block_size>
 class FreeList
 {
-  typedef std::vector<T, AlignedAllocator<T, ROSRT_CACHELINE_SIZE> > V_Item;
   typedef std::vector<atomic_uint64_t, AlignedAllocator<atomic_uint64_t, ROSRT_CACHELINE_SIZE> > V_Next;
 
 public:
   FreeList()
-  : items_(0)
+  : blocks_(0)
   , next_(0)
   , size_(0)
   {
   }
 
-  FreeList(uint32_t size, const T& tmpl)
-  : items_(0)
+  FreeList(uint32_t size)
+  : blocks_(0)
   , next_(0)
   , size_(0)
   {
-    initialize(size, tmpl);
+    initialize(size);
   }
 
   ~FreeList()
   {
     for (uint32_t i = 0; i < size_; ++i)
     {
-      items_[i].~T();
       next_[i].~atomic_uint64_t();
     }
 
-    alignedFree(items_);
+    alignedFree(blocks_);
     alignedFree(next_);
   }
 
-  void initialize(uint32_t size, const T& tmpl)
+  void initialize(uint32_t size)
   {
-    ROS_ASSERT(!items_);
+    ROS_ASSERT(!blocks_);
     ROS_ASSERT(!next_);
 
     size_ = size;
     head_.store(0);
 
-    items_ = (T*)alignedMalloc(sizeof(T) * size, ROSRT_CACHELINE_SIZE);
+    blocks_ = (uint8_t*)alignedMalloc(block_size * size, ROSRT_CACHELINE_SIZE);
     next_ = (atomic_uint64_t*)alignedMalloc(sizeof(atomic_uint64_t) * size, ROSRT_CACHELINE_SIZE);
+
+    memset(blocks_, 0xCD, block_size * size);
 
     for (uint32_t i = 0; i < size; ++i)
     {
-      new (items_ + i) T(tmpl);
       new (next_ + i) atomic_uint64_t();
 
       if (i == size - 1)
@@ -132,8 +133,10 @@ public:
     val = ((uint64_t)getTag(val) << 32) | v;
   }
 
-  T* allocate()
+  void* allocate()
   {
+    ROS_ASSERT(blocks_);
+
     while (true)
     {
       uint64_t head = head_.load();
@@ -152,14 +155,14 @@ public:
       // If setting head to next is successful, return the item at next
       if (head_.compare_exchange_strong(head, new_head))
       {
-        return &items_[getVal(head)];
+        return static_cast<void*>(blocks_ + (block_size * getVal(head)));
       }
     }
   }
 
-  void free(T* t)
+  void free(void* t)
   {
-    uint32_t index = t - items_;
+    uint32_t index = (static_cast<uint8_t*>(t) - blocks_) / block_size;
 
     ROS_ASSERT(index < size_);
 
@@ -184,9 +187,36 @@ public:
     }
   }
 
+  template<typename T>
+  void constructAll(const T& tmpl)
+  {
+    for (uint32_t i = 0; i < size_; ++i)
+    {
+      new (blocks_ + (i * block_size)) T(tmpl);
+    }
+  }
+
+  template<typename T>
+  void constructAll()
+  {
+    for (uint32_t i = 0; i < size_; ++i)
+    {
+      new (blocks_ + (i * block_size)) T();
+    }
+  }
+
+  template<typename T>
+  void destructAll()
+  {
+    for (uint32_t i = 0; i < size_; ++i)
+    {
+      reinterpret_cast<T*>(blocks_ + (i * block_size))->~T();
+    }
+  }
+
 private:
 
-  T* items_;
+  uint8_t* blocks_;
   atomic_uint64_t* next_;
   atomic_uint64_t head_;
 

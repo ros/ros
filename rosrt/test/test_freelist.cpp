@@ -40,15 +40,16 @@ using namespace ros::rt;
 
 TEST(FreeList, oneElement)
 {
-  FreeList<uint32_t> pool(1, 5);
+  FreeList<4> pool(1);
+  pool.constructAll<uint32_t>(5);
 
-  uint32_t* item = pool.allocate();
+  uint32_t* item = static_cast<uint32_t*>(pool.allocate());
   ASSERT_TRUE(item);
   EXPECT_EQ(*item, 5UL);
   *item = 6;
   ASSERT_FALSE(pool.allocate());
   pool.free(item);
-  item = pool.allocate();
+  item = static_cast<uint32_t*>(pool.allocate());
   ASSERT_TRUE(item);
   EXPECT_EQ(*item, 6UL);
 }
@@ -56,12 +57,13 @@ TEST(FreeList, oneElement)
 TEST(FreeList, multipleElements)
 {
   const uint32_t count = 5;
-  FreeList<uint32_t> pool(count, 5);
+  FreeList<4> pool(count);
+  pool.constructAll<uint32_t>(5);
 
   std::vector<uint32_t*> items;
   for (uint32_t i = 0; i < count; ++i)
   {
-    items.push_back(pool.allocate());
+    items.push_back(static_cast<uint32_t*>(pool.allocate()));
     ASSERT_TRUE(items[i]);
     EXPECT_EQ(*items[i], 5UL);
     *items[i] = i;
@@ -70,7 +72,7 @@ TEST(FreeList, multipleElements)
   ASSERT_FALSE(pool.allocate());
   pool.free(items.back());
   items.pop_back();
-  items.push_back(pool.allocate());
+  items.push_back(static_cast<uint32_t*>(pool.allocate()));
   ASSERT_TRUE(items.back());
   ASSERT_FALSE(pool.allocate());
 

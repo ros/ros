@@ -214,11 +214,19 @@ public:
     initialize(size, tmpl);
   }
 
+  ~ObjectPool()
+  {
+    freelist_.template destructAll<T>();
+    sp_storage_freelist_.template destructAll<SPStorage>();
+  }
+
   void initialize(uint32_t size, const T& tmpl)
   {
     ROS_ASSERT(!initialized_);
-    freelist_.initialize(size, tmpl);
-    sp_storage_freelist_.initialize(size, SPStorage());
+    freelist_.initialize(size);
+    freelist_.template constructAll<T>(tmpl);
+    sp_storage_freelist_.initialize(size);
+    sp_storage_freelist_.template constructAll<SPStorage>();
     initialized_ = true;
   }
 
@@ -226,13 +234,13 @@ public:
   {
     ROS_ASSERT(initialized_);
 
-    T* item = freelist_.allocate();
+    T* item = static_cast<T*>(freelist_.allocate());
     if (!item)
     {
       return boost::shared_ptr<T>();
     }
 
-    SPStorage* sp_storage_s = sp_storage_freelist_.allocate();
+    SPStorage* sp_storage_s = static_cast<SPStorage*>(sp_storage_freelist_.allocate());
     ROS_ASSERT(sp_storage_s);
 
     uint8_t* sp_storage = sp_storage_s->data;
@@ -250,8 +258,8 @@ private:
 
   bool initialized_;
 
-  FreeList<T> freelist_;
-  FreeList<SPStorage> sp_storage_freelist_;
+  FreeList<sizeof(T)> freelist_;
+  FreeList<sizeof(SPStorage)> sp_storage_freelist_;
 };
 
 }

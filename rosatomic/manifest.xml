@@ -8,7 +8,9 @@
   <license>BSD, Boost</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/rosatomic</url>
-
+  <export>
+    <cpp cflags="-I${prefix}/include"/>
+  </export>
 </package>
 
 

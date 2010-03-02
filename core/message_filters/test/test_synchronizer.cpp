@@ -38,6 +38,7 @@
 #include "message_filters/synchronizer.h"
 
 using namespace message_filters;
+using namespace message_filters::synchro;
 
 struct Header
 {
@@ -56,16 +57,16 @@ typedef boost::shared_ptr<Msg const> MsgConstPtr;
 
 template<typename M0, typename M1, typename M2 = NullType, typename M3 = NullType, typename M4 = NullType,
          typename M5 = NullType, typename M6 = NullType, typename M7 = NullType, typename M8 = NullType>
-struct NullStaticTimePolicy : public StaticTimePolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
+struct NullPolicy : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
 {
-  typedef Synchronizer<NullStaticTimePolicy> Sync;
-  typedef StaticTimePolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8> Super;
+  typedef Synchronizer<NullPolicy> Sync;
+  typedef PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8> Super;
   typedef typename Super::Messages Messages;
   typedef typename Super::Signal Signal;
   typedef typename Super::Events Events;
   typedef typename Super::RealTypeCount RealTypeCount;
 
-  NullStaticTimePolicy()
+  NullPolicy()
   {
     for (int i = 0; i < RealTypeCount::value; ++i)
     {
@@ -85,14 +86,14 @@ struct NullStaticTimePolicy : public StaticTimePolicyBase<M0, M1, M2, M3, M4, M5
 
   int32_t added_[RealTypeCount::value];
 };
-typedef NullStaticTimePolicy<Msg, Msg> Policy2;
-typedef NullStaticTimePolicy<Msg, Msg, Msg> Policy3;
-typedef NullStaticTimePolicy<Msg, Msg, Msg, Msg> Policy4;
-typedef NullStaticTimePolicy<Msg, Msg, Msg, Msg, Msg> Policy5;
-typedef NullStaticTimePolicy<Msg, Msg, Msg, Msg, Msg, Msg> Policy6;
-typedef NullStaticTimePolicy<Msg, Msg, Msg, Msg, Msg, Msg, Msg> Policy7;
-typedef NullStaticTimePolicy<Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg> Policy8;
-typedef NullStaticTimePolicy<Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg> Policy9;
+typedef NullPolicy<Msg, Msg> Policy2;
+typedef NullPolicy<Msg, Msg, Msg> Policy3;
+typedef NullPolicy<Msg, Msg, Msg, Msg> Policy4;
+typedef NullPolicy<Msg, Msg, Msg, Msg, Msg> Policy5;
+typedef NullPolicy<Msg, Msg, Msg, Msg, Msg, Msg> Policy6;
+typedef NullPolicy<Msg, Msg, Msg, Msg, Msg, Msg, Msg> Policy7;
+typedef NullPolicy<Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg> Policy8;
+typedef NullPolicy<Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg> Policy9;
 
 TEST(Synchronizer, compile2)
 {

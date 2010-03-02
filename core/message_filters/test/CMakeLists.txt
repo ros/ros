@@ -13,8 +13,8 @@ target_link_libraries(test/test_synchronizer message_filters)
 rosbuild_add_gtest(test/test_exact_time_policy test_exact_time_policy.cpp)
 target_link_libraries(test/test_exact_time_policy message_filters)
 
-#rosbuild_add_gtest(test/test_approximate_time_policy test_approximate_time_policy.cpp)
-#target_link_libraries(test/test_approximate_time_policy message_filters)
+rosbuild_add_gtest(test/test_approximate_time_policy test_approximate_time_policy.cpp)
+target_link_libraries(test/test_approximate_time_policy message_filters)
 
 rosbuild_add_gtest(test/test_simple test_simple.cpp)
 target_link_libraries(test/test_simple message_filters)

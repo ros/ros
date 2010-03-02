@@ -678,6 +678,7 @@ private:
   void dequeDeleteFront()
   {
     std::deque<typename mpl::at_c<Events, i>::type>& deque = boost::get<i>(deques_);
+    ROS_ASSERT(!deque.empty());
     deque.pop_front();
     if (deque.empty())
     {
@@ -728,6 +729,7 @@ private:
   {
     std::deque<typename mpl::at_c<Events, i>::type>& deque = boost::get<i>(deques_);
     std::vector<typename mpl::at_c<Events, i>::type>& vector = boost::get<i>(past_);
+    ROS_ASSERT(!deque.empty());
     vector.push_back(deque.front());
     deque.pop_front();
     if (deque.empty())
@@ -823,7 +825,7 @@ private:
   template<int i>
   void recoverAndDelete()
   {
-    if (RealTypeCount::value >= i)
+    if (i >= RealTypeCount::value)
     {
       return;
     }
@@ -835,6 +837,9 @@ private:
       q.push_front(v.back());
       v.pop_back();
     }
+
+    ROS_ASSERT(!q.empty());
+
     q.pop_front();
     if (!q.empty())
     {

@@ -550,7 +550,7 @@ class Timeline(Layer):
         if self.bag_index is None or len(self.topics) == 0:
             return
 
-        if not self.stamp_left:
+        if self.stamp_left is None:
             if self.bag_index.loaded:
                 self.reset_timeline()
             else:
@@ -559,7 +559,7 @@ class Timeline(Layer):
                 self.set_timeline_view(start_stamp, start_stamp + (30 * 60))  # default to showing 30 mins if index not created yet
                 self.set_playhead(self.stamp_left)
 
-        if not self.stamp_left or not self.stamp_right:
+        if self.stamp_left is None or self.stamp_right is None:
             return
 
         self._calc_font_sizes(dc)
@@ -872,7 +872,7 @@ class Timeline(Layer):
 
         elif left:
             x, y = mouse_pos[0] - self.x, mouse_pos[1] - self.y
-            
+
             self.set_playhead(self.map_x_to_stamp(x))
 
             self.clicked_pos = mouse_pos

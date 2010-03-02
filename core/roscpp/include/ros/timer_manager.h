@@ -40,6 +40,9 @@
 #include "ros/assert.h"
 #include "ros/callback_queue_interface.h"
 
+#include <vector>
+#include <list>
+
 namespace ros
 {
 
@@ -68,6 +71,8 @@ private:
     VoidConstWPtr tracked_object;
     bool has_tracked_object;
 
+    // TODO: atomicize
+    boost::mutex waiting_mutex;
     uint32_t waiting_callbacks;
 
     bool oneshot;
@@ -78,6 +83,8 @@ private:
   typedef boost::shared_ptr<TimerInfo> TimerInfoPtr;
   typedef boost::weak_ptr<TimerInfo> TimerInfoWPtr;
   typedef std::vector<TimerInfoPtr> V_TimerInfo;
+
+  typedef std::list<int32_t> L_int32;
 
 public:
   TimerManager();
@@ -97,13 +104,18 @@ public:
 private:
   void threadFunc();
 
-  bool timerCompare(const TimerInfoPtr& lhs, const TimerInfoPtr& rhs);
+  bool waitingCompare(int32_t lhs, int32_t rhs);
   TimerInfoPtr findTimer(int32_t handle);
+  void schedule(const TimerInfoPtr& info);
+  void updateNext(const TimerInfoPtr& info, const T& current_time);
 
   V_TimerInfo timers_;
   boost::mutex timers_mutex_;
   boost::condition_variable timers_cond_;
   volatile bool new_timer_;
+
+  boost::mutex waiting_mutex_;
+  L_int32 waiting_;
 
   uint32_t id_counter_;
   boost::mutex id_mutex_;
@@ -117,10 +129,15 @@ private:
   class TimerQueueCallback : public CallbackInterface
   {
   public:
-    TimerQueueCallback(const TimerInfoPtr& info, T last_expected, T last_real, T current_expected) :
-      info_(info), last_expected_(last_expected), last_real_(last_real), current_expected_(current_expected), called_(false)
+    TimerQueueCallback(TimerManager<T, D, E>* parent, const TimerInfoPtr& info, T last_expected, T last_real, T current_expected)
+    : parent_(parent)
+    , info_(info)
+    , last_expected_(last_expected)
+    , last_real_(last_real)
+    , current_expected_(current_expected)
+    , called_(false)
     {
-      boost::recursive_mutex::scoped_lock lock(info->callback_mutex);
+      boost::mutex::scoped_lock lock(info->waiting_mutex);
       ++info->waiting_callbacks;
     }
 
@@ -129,7 +146,7 @@ private:
       TimerInfoPtr info = info_.lock();
       if (info)
       {
-        boost::recursive_mutex::scoped_lock lock(info->callback_mutex);
+        boost::mutex::scoped_lock lock(info->waiting_mutex);
         --info->waiting_callbacks;
       }
     }
@@ -176,12 +193,15 @@ private:
         info->last_cb_duration = cb_end - cb_start;
 
         info->last_real = event.current_real;
+
+        parent_->schedule(info);
       }
 
       return Success;
     }
 
   private:
+    TimerManager<T, D, E>* parent_;
     TimerInfoWPtr info_;
     T last_expected_;
     T last_real_;
@@ -209,9 +229,16 @@ TimerManager<T, D, E>::~TimerManager()
 }
 
 template<class T, class D, class E>
-bool TimerManager<T, D, E>::timerCompare(const TimerInfoPtr& lhs, const TimerInfoPtr& rhs)
+bool TimerManager<T, D, E>::waitingCompare(int32_t lhs, int32_t rhs)
 {
-  return lhs->next_expected < rhs->next_expected;
+  TimerInfoPtr infol = findTimer(lhs);
+  TimerInfoPtr infor = findTimer(rhs);
+  if (!infol || !infor)
+  {
+    return infol < infor;
+  }
+
+  return infol->next_expected < infor->next_expected;
 }
 
 template<class T, class D, class E>
@@ -250,6 +277,7 @@ bool TimerManager<T, D, E>::hasPending(int32_t handle)
     }
   }
 
+  boost::mutex::scoped_lock lock2(info->waiting_mutex);
   return info->next_expected <= T::now() || info->waiting_callbacks != 0;
 }
 
@@ -279,14 +307,21 @@ int32_t TimerManager<T, D, E>::add(const D& period, const boost::function<void(c
     info->handle = id_counter_++;
   }
 
-  boost::mutex::scoped_lock lock(timers_mutex_);
-  timers_.push_back(info);
-  std::sort(timers_.begin(), timers_.end(), boost::bind(&TimerManager::timerCompare, this, _1, _2));
-
-  if (!thread_started_)
   {
-    thread_ = boost::thread(boost::bind(&TimerManager::threadFunc, this));
-    thread_started_ = true;
+    boost::mutex::scoped_lock lock(timers_mutex_);
+    timers_.push_back(info);
+
+    if (!thread_started_)
+    {
+      thread_ = boost::thread(boost::bind(&TimerManager::threadFunc, this));
+      thread_started_ = true;
+    }
+  }
+
+  {
+    boost::mutex::scoped_lock lock(waiting_mutex_);
+    waiting_.push_back(info->handle);
+    waiting_.sort(boost::bind(&TimerManager::waitingCompare, this, _1, _2));
   }
 
   new_timer_ = true;
@@ -299,6 +334,7 @@ template<class T, class D, class E>
 void TimerManager<T, D, E>::remove(int32_t handle)
 {
   boost::mutex::scoped_lock lock(timers_mutex_);
+  boost::mutex::scoped_lock lock2(waiting_mutex_);
 
   typename V_TimerInfo::iterator it = timers_.begin();
   typename V_TimerInfo::iterator end = timers_.end();
@@ -314,6 +350,56 @@ void TimerManager<T, D, E>::remove(int32_t handle)
       }
       timers_.erase(it);
       break;
+    }
+  }
+
+  {
+    // Remove from the waiting list if it's in it
+    L_int32::iterator it = std::find(waiting_.begin(), waiting_.end(), handle);
+    if (it != waiting_.end())
+    {
+      waiting_.erase(it);
+    }
+  }
+}
+
+template<class T, class D, class E>
+void TimerManager<T, D, E>::schedule(const TimerManager<T, D, E>::TimerInfoPtr& info)
+{
+  {
+    boost::mutex::scoped_lock lock(waiting_mutex_);
+
+    if (info->removed)
+    {
+      return;
+    }
+
+    updateNext(info, T::now());
+    waiting_.push_back(info->handle);
+    waiting_.sort(boost::bind(&TimerManager::waitingCompare, this, _1, _2));
+  }
+
+  new_timer_ = true;
+  timers_cond_.notify_one();
+}
+
+template<class T, class D, class E>
+void TimerManager<T, D, E>::updateNext(const TimerManager<T, D, E>::TimerInfoPtr& info, const T& current_time)
+{
+  if (info->oneshot)
+  {
+    info->next_expected = T(INT_MAX, 999999999);
+  }
+  else
+  {
+    info->last_expected = info->next_expected;
+    info->next_expected += info->period;
+
+    // detect time jumping forward, as well as callbacks that are too slow
+    if (info->next_expected + info->period < current_time)
+    {
+      ROSCPP_LOG_DEBUG("Time jumped forward by [%f] for timer of period [%f], resetting timer (current=%f, next_expected=%f)", (current_time - info->next_expected).toSec(), info->period.toSec(), current_time.toSec(), info->next_expected.toSec());
+      info->next_expected = current_time;
     }
   }
 }
@@ -352,50 +438,39 @@ void TimerManager<T, D, E>::threadFunc()
 
     current = T::now();
 
-    if (timers_.empty())
     {
-      sleep_end = current + D(0.1);
-    }
-    else
-    {
-      TimerInfoPtr info = timers_.front();
+      boost::mutex::scoped_lock waitlock(waiting_mutex_);
 
-      while (info->next_expected <= current)
+      if (waiting_.empty())
       {
-        current = T::now();
-
-        ROS_DEBUG("Scheduling timer callback for timer of period [%f]", info->period.toSec());
-        CallbackInterfacePtr cb(new TimerQueueCallback(info, info->last_expected, info->last_real, info->next_expected));
-        info->callback_queue->addCallback(cb, (uint64_t)info.get());
-
-        if (info->oneshot)
-        {
-          info->next_expected = T(INT_MAX, 999999999);
-        }
-        else
-        {
-          info->last_expected = info->next_expected;
-          info->next_expected += info->period;
-
-          // detect time jumping forward, as well as callbacks that are too slow
-          if (info->next_expected + info->period < current)
-          {
-            ROSCPP_LOG_DEBUG("Time jumped forward by [%f] for timer of period [%f], resetting timer (current=%f, next_expected=%f)", (current - info->next_expected).toSec(), info->period.toSec(), current.toSec(), info->next_expected.toSec());
-            info->next_expected = current;
-          }
-        }
-
-        std::sort(timers_.begin(), timers_.end(), boost::bind(&TimerManager::timerCompare, this, _1, _2));
-        info = timers_.front();
-      }
-
-      if (info)
-      {
-        sleep_end = info->next_expected;
+        sleep_end = current + D(0.1);
       }
       else
       {
+        TimerInfoPtr info = findTimer(waiting_.front());
 
+        while (!waiting_.empty() && info && info->next_expected <= current)
+        {
+          current = T::now();
+
+          ROS_DEBUG("Scheduling timer callback for timer [%d] of period [%f]", info->handle, info->period.toSec());
+          CallbackInterfacePtr cb(new TimerQueueCallback(this, info, info->last_expected, info->last_real, info->next_expected));
+          info->callback_queue->addCallback(cb, (uint64_t)info.get());
+
+          waiting_.pop_front();
+
+          if (waiting_.empty())
+          {
+            break;
+          }
+
+          info = findTimer(waiting_.front());
+        }
+
+        if (info)
+        {
+          sleep_end = info->next_expected;
+        }
       }
     }
 

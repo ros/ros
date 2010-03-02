@@ -32,6 +32,9 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
+#ifndef ROSRT_PUBLISHER_H
+#define ROSRT_PUBLISHER_H
+
 #include "object_pool.h"
 
 #include <ros/publisher.h>
@@ -41,16 +44,6 @@ namespace ros
 {
 namespace rt
 {
-
-struct InitOptions
-{
-  InitOptions()
-  : pubmanager_queue_size(10000)
-  {}
-
-  uint32_t pubmanager_queue_size;
-};
-void initThread(const InitOptions& ops = InitOptions());
 
 typedef void(*PublishFunc)(const ros::Publisher& pub, const VoidConstPtr& msg);
 
@@ -104,3 +97,5 @@ private:
 
 }
 }
+
+#endif

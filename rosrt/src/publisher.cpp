@@ -33,7 +33,9 @@
 *********************************************************************/
 
 #include <ros/rt/publisher.h>
+#include <ros/rt/detail/publisher_manager.h>
 #include <ros/rt/object_pool.h>
+#include <ros/rt/init.h>
 #include <ros/debug.h>
 
 #include <boost/thread.hpp>
@@ -43,27 +45,15 @@ namespace ros
 namespace rt
 {
 
-class PublishQueue
+boost::thread_specific_ptr<PublisherManager> g_publisher_manager;
+
+bool publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func)
 {
-public:
-  struct PubItem
-  {
-    ros::Publisher pub;
-    VoidConstPtr msg;
-    PublishFunc pub_func;
+  PublisherManager* man = g_publisher_manager.get();
+  ROS_ASSERT_MSG(man, "ros::rt::initThread() has not been called for this thread!\n%s", ros::debug::getBacktrace().c_str());
 
-    PubItem* next;
-  };
-
-  PublishQueue(uint32_t size);
-
-  bool push(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func);
-  void publishAll();
-
-private:
-  ObjectPool<PubItem> pool_;
-  atomic<PubItem*> head_;
-};
+  return man->publish(pub, msg, pub_func);
+}
 
 PublishQueue::PublishQueue(uint32_t size)
 : pool_(size, PubItem())
@@ -116,40 +106,6 @@ void PublishQueue::publishAll()
 
     pool_.freeBare(tmp);
   }
-}
-
-class PublisherManager
-{
-public:
-  PublisherManager(const InitOptions& ops);
-  ~PublisherManager();
-  bool publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func);
-
-private:
-  void publishThread();
-
-  PublishQueue queue_;
-  boost::condition_variable cond_;
-  boost::mutex cond_mutex_;
-  boost::thread pub_thread_;
-  atomic<uint32_t> pub_count_;
-  volatile bool running_;
-};
-boost::thread_specific_ptr<PublisherManager> g_publisher_manager;
-
-// TODO: move this out of publisher.cpp
-void initThread(const InitOptions& ops)
-{
-  ROS_ASSERT(!g_publisher_manager.get());
-  g_publisher_manager.reset(new PublisherManager(ops));
-}
-
-bool publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func)
-{
-  PublisherManager* man = g_publisher_manager.get();
-  ROS_ASSERT_MSG(man, "ros::rt::initThread() has not been called for this thread!\n%s", ros::debug::getBacktrace().c_str());
-
-  return man->publish(pub, msg, pub_func);
 }
 
 PublisherManager::PublisherManager(const InitOptions& ops)

@@ -32,11 +32,26 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef ROSRT_RT_H
-#define ROSRT_RT_H
+#ifndef ROSRT_INIT_H
+#define ROSRT_INIT_H
 
-#include "rt/object_pool.h"
-#include "rt/publisher.h"
-#include "rt/init.h"
+namespace ros
+{
+namespace rt
+{
 
-#endif // ROSRT_RT_H
+struct InitOptions
+{
+  InitOptions()
+  : pubmanager_queue_size(10000)
+  {}
+
+  uint32_t pubmanager_queue_size;
+};
+void initThread(const InitOptions& ops = InitOptions());
+
+}
+}
+
+#endif
+

@@ -32,11 +32,66 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef ROSRT_RT_H
-#define ROSRT_RT_H
+#ifndef ROSRT_PUBLISHER_MANAGER_H
+#define ROSRT_PUBLISHER_MANAGER_H
 
-#include "rt/object_pool.h"
-#include "rt/publisher.h"
-#include "rt/init.h"
+#include <ros/atomic.h>
+#include <ros/publisher.h>
+#include <ros/rt/publisher.h>
+#include <ros/rt/object_pool.h>
+#include <boost/thread.hpp>
 
-#endif // ROSRT_RT_H
+namespace ros
+{
+
+namespace rt
+{
+struct InitOptions;
+
+class PublishQueue
+{
+public:
+  struct PubItem
+  {
+    ros::Publisher pub;
+    VoidConstPtr msg;
+    PublishFunc pub_func;
+
+    PubItem* next;
+  };
+
+  PublishQueue(uint32_t size);
+
+  bool push(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func);
+  void publishAll();
+
+private:
+  ObjectPool<PubItem> pool_;
+  atomic<PubItem*> head_;
+};
+
+class PublisherManager
+{
+public:
+  PublisherManager(const InitOptions& ops);
+  ~PublisherManager();
+  bool publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func);
+
+private:
+  void publishThread();
+
+  PublishQueue queue_;
+  boost::condition_variable cond_;
+  boost::mutex cond_mutex_;
+  boost::thread pub_thread_;
+  atomic<uint32_t> pub_count_;
+  volatile bool running_;
+};
+
+extern boost::thread_specific_ptr<PublisherManager> g_publisher_manager;
+
+}
+}
+
+#endif
+

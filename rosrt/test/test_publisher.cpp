@@ -34,7 +34,7 @@
 
 #include <gtest/gtest.h>
 
-#include "ros/rt/publisher.h"
+#include "ros/rt.h"
 
 #include <ros/ros.h>
 

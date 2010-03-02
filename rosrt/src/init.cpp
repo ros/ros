@@ -32,11 +32,22 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef ROSRT_RT_H
-#define ROSRT_RT_H
+#include <ros/rt/detail/publisher_manager.h>
 
-#include "rt/object_pool.h"
-#include "rt/publisher.h"
-#include "rt/init.h"
+#include <boost/thread.hpp>
 
-#endif // ROSRT_RT_H
+namespace ros
+{
+namespace rt
+{
+
+void initThread(const InitOptions& ops)
+{
+  ROS_ASSERT(!g_publisher_manager.get());
+  g_publisher_manager.reset(new PublisherManager(ops));
+}
+
+
+}
+}
+

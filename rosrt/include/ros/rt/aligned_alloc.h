@@ -48,7 +48,7 @@ namespace rt
 // alignedMalloc/alignedFree implementations found at
 // http://www.gamasutra.com/view/feature/3942/data_alignment_part_1.php?page=2
 
-void* alignedMalloc(size_t size, size_t alignment)
+inline void* alignedMalloc(size_t size, size_t alignment)
 {
   const int pointerSize = sizeof(void*);
   const int requestedSize = size + alignment - 1 + pointerSize;
@@ -65,14 +65,14 @@ void* alignedMalloc(size_t size, size_t alignment)
   return aligned;
 }
 
-void alignedFree(void* aligned)
+inline void alignedFree(void* aligned)
 {
   if (!aligned)
   {
     return;
   }
 
-  void* raw = *(void**)((uint8_t*)aligned-sizeof(void*));
+  void* raw = *(void**)((uint8_t*)aligned - sizeof(void*));
   std::free(raw);
 }
 

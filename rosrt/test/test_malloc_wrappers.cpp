@@ -34,64 +34,115 @@
 
 #include <gtest/gtest.h>
 
-#include "ros/rt/object_pool.h"
 #include "ros/rt/malloc_wrappers.h"
+#include "ros/atomic.h"
+#include <ros/time.h>
+#include <ros/console.h>
+
+#include <boost/thread.hpp>
 
 using namespace ros::rt;
+using namespace ros;
 
-TEST(ObjectPool, oneElement)
+void allocateThread(const atomic<bool>& done)
 {
-  ObjectPool<uint32_t> pool(1, 5);
-
-  resetThreadAllocInfo();
-
-  boost::shared_ptr<uint32_t> item = pool.allocate();
-  ASSERT_TRUE(item);
-  EXPECT_EQ(*item, 5UL);
-  *item = 6;
-  ASSERT_FALSE(pool.allocate());
-  item.reset();
-  item = pool.allocate();
-  ASSERT_TRUE(item);
-  EXPECT_EQ(*item, 6UL);
-
-  ASSERT_EQ(getThreadAllocInfo()->total_ops, 0ULL);
+  while (!done.load())
+  {
+    void* mem = malloc(500);
+    free(mem);
+    ros::WallDuration(0.001).sleep();
+  }
 }
 
-TEST(ObjectPool, multipleElements)
+TEST(MallocWrappers, statsMainThread)
 {
-  const uint32_t count = 5;
-  ObjectPool<uint32_t> pool(count, 5);
+  atomic<bool> done(false);
+  boost::thread t(boost::bind(allocateThread, boost::ref(done)));
 
-  std::vector<boost::shared_ptr<uint32_t> > items;
-  items.reserve(count);
-
+  initThreadAllocInfo();
   resetThreadAllocInfo();
 
-  for (uint32_t i = 0; i < count; ++i)
+  for (uint32_t i = 1; i <= 1000; ++i)
   {
-    items.push_back(pool.allocate());
-    ASSERT_TRUE(items[i]);
-    EXPECT_EQ(*items[i], 5UL);
-    *items[i] = i;
+    void* mem = malloc(500);
+    free(mem);
+    ros::WallDuration(0.001).sleep();
+
+    const AllocInfo* info = getThreadAllocInfo();
+    ASSERT_TRUE(info);
+
+    ASSERT_EQ(info->mallocs, i);
+    ASSERT_EQ(info->frees, i);
+    ASSERT_EQ(info->total_ops, i * 2);
   }
 
-  ASSERT_FALSE(pool.allocate());
-  items.pop_back();
-  items.push_back(pool.allocate());
-  ASSERT_TRUE(items.back());
-  ASSERT_FALSE(pool.allocate());
+  done.store(true);
+  t.join();
+}
 
-  ASSERT_EQ(getThreadAllocInfo()->total_ops, 0ULL);
+void statsThread(atomic<bool>& failed)
+{
+  initThreadAllocInfo();
+  resetThreadAllocInfo();
 
-  std::set<boost::shared_ptr<uint32_t> > set;
-  set.insert(items.begin(), items.end());
-  EXPECT_EQ(set.size(), count);
+  for (uint32_t i = 1; i <= 1000; ++i)
+  {
+    void* mem = malloc(500);
+    free(mem);
+    ros::WallDuration(0.001).sleep();
+
+    const AllocInfo* info = getThreadAllocInfo();
+    if (!info)
+    {
+      ROS_ERROR("getThreadAllocInfo returned NULL");
+      failed.store(true);
+      return;
+    }
+
+    if (info->mallocs != i)
+    {
+      ROS_ERROR_STREAM("mallocs is " << info->mallocs << " should be " << i);
+      failed.store(true);
+      return;
+    }
+
+    if (info->frees != i)
+    {
+      ROS_ERROR_STREAM("mallocs is " << info->frees << " should be " << i);
+      failed.store(true);
+      return;
+    }
+  }
+}
+
+TEST(MallocWrappers, statsNewThread)
+{
+  atomic<bool> failed(false);
+  boost::thread t(boost::bind(statsThread, boost::ref(failed)));
+  t.join();
+
+  ASSERT_FALSE(failed.load());
+}
+
+void doBreakOnMalloc()
+{
+  setThreadBreakOnAllocOrFree(true);
+  malloc(500);
+  setThreadBreakOnAllocOrFree(false);
+}
+
+TEST(MallocWrappersDeathTest, breakOnAllocFree)
+{
+  initThreadAllocInfo();
+  resetThreadAllocInfo();
+
+  ASSERT_DEATH_IF_SUPPORTED(doBreakOnMalloc(), "Issuing break due to break_on_alloc_or_free being set");
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  initThreadAllocInfo();
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   return RUN_ALL_TESTS();
 }
+

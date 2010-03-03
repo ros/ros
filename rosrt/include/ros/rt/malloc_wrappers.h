@@ -32,24 +32,47 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include <ros/rt/detail/publisher_manager.h>
-#include <ros/rt/malloc_wrappers.h>
+#ifndef ROSRT_MALLOC_WRAPPERS_H
+#define ROSRT_MALLOC_WRAPPERS_H
 
-#include <boost/thread.hpp>
+#include <ros/types.h>
 
 namespace ros
 {
 namespace rt
 {
 
-void initThread(const InitOptions& ops)
+struct AllocInfo
 {
-  ROS_ASSERT(!g_publisher_manager.get());
-  g_publisher_manager.reset(new PublisherManager(ops));
+  AllocInfo()
+  : mallocs(0)
+  , reallocs(0)
+  , callocs(0)
+  , memaligns(0)
+  , frees(0)
+  , total_memory_allocated(0)
+  , total_ops(0)
+  , break_on_alloc_or_free(false)
+  {}
 
-  initThreadAllocInfo();
+  uint64_t mallocs;
+  uint64_t reallocs;
+  uint64_t callocs;
+  uint64_t memaligns;
+  uint64_t frees;
+
+  uint64_t total_memory_allocated;
+  uint64_t total_ops;
+
+  bool break_on_alloc_or_free;
+};
+
+const AllocInfo* getThreadAllocInfo();
+void resetThreadAllocInfo();
+void setThreadBreakOnAllocOrFree(bool b);
+void initThreadAllocInfo();
+
+}
 }
 
-}
-}
-
+#endif // ROSRT_MALLOC_WRAPPERS_H

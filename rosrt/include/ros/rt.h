@@ -38,5 +38,7 @@
 #include "rt/object_pool.h"
 #include "rt/publisher.h"
 #include "rt/init.h"
+#include "rt/malloc_wrappers.h"
+#include "rt/aligned_alloc.h"
 
 #endif // ROSRT_RT_H

@@ -45,6 +45,8 @@ namespace ros
 namespace rt
 {
 
+typedef boost::shared_ptr<void const> VoidConstPtr;
+
 typedef void(*PublishFunc)(const ros::Publisher& pub, const VoidConstPtr& msg);
 
 namespace detail

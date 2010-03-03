@@ -51,6 +51,8 @@ namespace ros
 namespace rt
 {
 
+namespace detail
+{
 template<class T> class FixedBlockAllocator;
 
 // specialize for void:
@@ -69,10 +71,10 @@ public:
     typedef FixedBlockAllocator<U> other;
   };
 
-  FixedBlockAllocator(uint8_t* block, uint32_t size) throw ()
+  FixedBlockAllocator(uint8_t* block, uint32_t count) throw ()
   : block_(block)
   , used_(0)
-  , size_(size)
+  , size_(count)
   {
   }
 
@@ -112,10 +114,10 @@ public:
     typedef FixedBlockAllocator<U> other;
   };
 
-  FixedBlockAllocator(uint8_t* block, uint32_t size) throw ()
+  FixedBlockAllocator(uint8_t* block, uint32_t count) throw ()
   : block_(block)
   , used_(0)
-  , size_(size)
+  , size_(count)
   {
   }
 
@@ -175,6 +177,13 @@ private:
   uint32_t size_;
 };
 
+} // namespace detail
+
+/**
+ * \brief A fixed-count lock-free pool of the same type of object.  Supports both bare- and shared-pointer
+ * allocation
+ * \param T the object type
+ */
 template<typename T>
 class ObjectPool
 {
@@ -203,15 +212,23 @@ class ObjectPool
   };
 
 public:
+  /**
+   * \brief Default constructor.  Must call initialize() before calling allocate()
+   */
   ObjectPool()
   : initialized_(false)
   {
   }
 
-  ObjectPool(uint32_t size, const T& tmpl)
+  /**
+   * \brief Constructor with initialization.
+   * \param count The number of objects in the pool
+   * \param tmpl The object template to use to construct the objects
+   */
+  ObjectPool(uint32_t count, const T& tmpl)
   : initialized_(false)
   {
-    initialize(size, tmpl);
+    initialize(count, tmpl);
   }
 
   ~ObjectPool()
@@ -220,16 +237,26 @@ public:
     sp_storage_freelist_.template destructAll<SPStorage>();
   }
 
-  void initialize(uint32_t size, const T& tmpl)
+  /**
+   * \brief initialize the pool.  Only use with the default constructor
+   * \param count The number of objects in the pool
+   * \param tmpl The object template to use to construct the objects
+   */
+  void initialize(uint32_t count, const T& tmpl)
   {
     ROS_ASSERT(!initialized_);
-    freelist_.initialize(sizeof(T), size);
+    freelist_.initialize(sizeof(T), count);
     freelist_.template constructAll<T>(tmpl);
-    sp_storage_freelist_.initialize(sizeof(SPStorage), size);
+    sp_storage_freelist_.initialize(sizeof(SPStorage), count);
     sp_storage_freelist_.template constructAll<SPStorage>();
     initialized_ = true;
   }
 
+  /**
+   * \brief Allocate a single object from the pool, returning a shared pointer
+   * \return An empty shared pointer if there are no objects left in the pool.  Otherwise
+   * a shared pointer to an object of type T
+   */
   boost::shared_ptr<T> allocate()
   {
     ROS_ASSERT(initialized_);
@@ -245,15 +272,24 @@ public:
 
     uint8_t* sp_storage = sp_storage_s->data;
     boost::shared_ptr<T> ptr(item, Deleter(this, sp_storage_s),
-                             FixedBlockAllocator<void>(sp_storage, sizeof(SPStorage)));
+                             detail::FixedBlockAllocator<void>(sp_storage, sizeof(SPStorage)));
     return ptr;
   }
 
+  /**
+   * \brief Allocate a single object from the pool, returning a bare pointer
+   * \return 0 if there are no objects left in the pool.  Otherwise a pointer to an object
+   * of type T
+   */
   T* allocateBare()
   {
     return static_cast<T*>(freelist_.allocate());
   }
 
+  /**
+   * \brief Return an object allocated through allocateBare() to the pool
+   * \param t An object that was allocated with allocateBare()
+   */
   void freeBare(T* t)
   {
     freelist_.free(t);

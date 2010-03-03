@@ -47,6 +47,8 @@ namespace rt
 
 boost::thread_specific_ptr<PublisherManager> g_publisher_manager;
 
+namespace detail
+{
 bool publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func)
 {
   PublisherManager* man = g_publisher_manager.get();
@@ -54,6 +56,7 @@ bool publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub
 
   return man->publish(pub, msg, pub_func);
 }
+} // namespace detail
 
 PublishQueue::PublishQueue(uint32_t size)
 : pool_(size, PubItem())

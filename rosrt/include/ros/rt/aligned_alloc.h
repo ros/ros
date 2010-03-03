@@ -48,6 +48,12 @@ namespace rt
 // alignedMalloc/alignedFree implementations found at
 // http://www.gamasutra.com/view/feature/3942/data_alignment_part_1.php?page=2
 
+/**
+ * \brief Allocate memory aligned at on a value.  Memory allocated through alignedMalloc() \b must be
+ * freed through alignedFree()
+ * \param size The amount of memory to allocate
+ * \param alignment The value to align on
+ */
 inline void* alignedMalloc(size_t size, size_t alignment)
 {
   const int pointerSize = sizeof(void*);
@@ -65,6 +71,10 @@ inline void* alignedMalloc(size_t size, size_t alignment)
   return aligned;
 }
 
+/**
+ * \brief Free memory allocated through alignedMalloc()
+ * \param aligned The memory to free
+ */
 inline void alignedFree(void* aligned)
 {
   if (!aligned)
@@ -95,6 +105,11 @@ public:
   };
 };
 
+/**
+ * \brief An stl-compatible aligned allocator
+ * \param T The type of the container element
+ * \param align The alignment to allocate on
+ */
 template<class T, size_t align>
 class AlignedAllocator
 {

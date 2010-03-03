@@ -57,40 +57,71 @@ void publishMessage(const ros::Publisher& pub, const VoidConstPtr& msg)
   boost::shared_ptr<M const> m = boost::static_pointer_cast<M const>(msg);
   pub.publish(m);
 }
-} // namespace detail
 
 bool publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func);
+} // namespace detail
 
+/**
+ * \brief a realtime-safe ROS publisher
+ */
 template<typename M>
 class Publisher : public boost::noncopyable
 {
   typedef boost::shared_ptr<M const> MConstPtr;
 
 public:
+  /**
+   * \brief Default constructor.  You must call initialize() before you use this publisher
+   * for anything else
+   */
   Publisher()
   {
   }
 
+  /**
+   * \brief Constructor with initialization
+   * \param pub A ros::Publisher to use to actually publish any messages
+   * \param message_pool_size The size of the message pool to provide
+   * \param tmpl A template object to intialize all the messages in the message pool with
+   */
   Publisher(const ros::Publisher& pub, uint32_t message_pool_size, const M& tmpl)
   {
     initialize(pub, message_pool_size, tmpl);
   }
 
+  /**
+   * \brief initialization function.  Only use with the default constructor
+   * \param pub A ros::Publisher to use to actually publish any messages
+   * \param message_pool_size The size of the message pool to provide
+   * \param tmpl A template object to intialize all the messages in the message pool with
+   */
   void initialize(const ros::Publisher& pub, uint32_t message_pool_size, const M& tmpl)
   {
     pub_ = pub;
     pool_.initialize(message_pool_size, tmpl);
   }
 
+  /**
+   * \brief Publish a message
+   */
   bool publish(const MConstPtr& msg)
   {
-    return ros::rt::publish(pub_, msg, detail::publishMessage<M>);
+    return detail::publish(pub_, msg, detail::publishMessage<M>);
   }
 
+  /**
+   * \brief Allocate a message.  The message will have been constructed with the template provided
+   * to initialize()
+   */
   boost::shared_ptr<M> allocate()
   {
     return pool_.allocate();
   }
+
+  /**
+   * \brief Returns the ros::Publisher object in use
+   */
+  const ros::Publisher& getPublisher() { return pub_; }
 
 private:
   ros::Publisher pub_;

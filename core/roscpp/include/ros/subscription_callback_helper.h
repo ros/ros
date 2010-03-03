@@ -123,6 +123,13 @@ public:
     namespace ser = serialization;
 
     NonConstTypePtr msg = create_();
+
+    if (!msg)
+    {
+      ROS_DEBUG("Allocation failed for message of type [%s]", getTypeInfo().name());
+      return VoidConstPtr();
+    }
+
     assignSubscriptionConnectionHeader(msg.get(), params.connection_header);
 
     ser::IStream stream(params.buffer, params.length);

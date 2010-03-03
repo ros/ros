@@ -61,41 +61,94 @@ namespace rt
 {
 
 /**
- * \brief A lock-free (*not* wait-free) freelist implemented with CAS
+ * \brief A lock-free (*not* wait-free) statically-sized free-list implemented with CAS
+ *
+ * FreeList is implemented as a forward-linked list using indices instead of pointers.
+ * The array of blocks is allocated separately from the array of next indices, and both
+ * are always allocated aligned to a cache line.
+ *
+ * Indices are stored as 32-bits with a 64-bit head index whose upper 32-bits are tagged
+ * to avoid ABA problems
  */
 class FreeList
 {
 public:
+  /**
+   * \brief Default constructor.  You must call initialize() if you use this constructor.
+   */
   FreeList();
+  /**
+   * \brief Constructor with initialization
+   * \param block_size The size of each block allocate() will return
+   * \param block_count The number of blocks to allocate
+   */
   FreeList(uint32_t block_size, uint32_t block_count);
   ~FreeList();
 
+  /**
+   * \brief Initialize this FreeList.  Only use if you used to default constructor
+   * \param block_size The size of each block allocate() will return
+   * \param block_count The number of blocks to allocate
+   */
   void initialize(uint32_t block_size, uint32_t block_count);
 
+  /**
+   * \brief Allocate a single block from this FreeList
+   * \return 0 if all blocks are allocated, a pointer to a memory block of size block_size_ otherwise
+   */
   void* allocate();
-  void free(void* t);
+  /**
+   * \brief Free a block of memory allocated from this FreeList
+   * \param mem The block to be freed
+   */
+  void free(void* mem);
+  /**
+   * \brief Returns whether or not this FreeList owns a block of memory
+   * \param mem the block to check
+   * \return true if this FreeList owns the block, false otherwise
+   */
+  bool owns(void* mem);
 
+  /**
+   * \brief Construct all the blocks with a specific template.  If you call this you must call
+   * destructAll() prior to destroying this FreeList
+   * \param tmpl The object template to use
+   *
+   * \note sizeof(T) must equal block_size_
+   */
   template<typename T>
   void constructAll(const T& tmpl)
   {
+    ROS_ASSERT(sizeof(T) == block_size_);
     for (uint32_t i = 0; i < block_count_; ++i)
     {
       new (blocks_ + (i * block_size_)) T(tmpl);
     }
   }
 
+  /**
+   * \brief Construct all the blocks with a default constructor.  If you call this you must call
+   * destructAll() prior to destroying this FreeList
+   * \note sizeof(T) must equal block_size_
+   */
   template<typename T>
   void constructAll()
   {
+    ROS_ASSERT(sizeof(T) == block_size_);
     for (uint32_t i = 0; i < block_count_; ++i)
     {
       new (blocks_ + (i * block_size_)) T();
     }
   }
 
+  /**
+   * \brief Destruct all the objects in this FreeList.  You must have called constructAll() first.
+   * \note sizeof(T) must equal block_size_
+   */
   template<typename T>
   void destructAll()
   {
+    ROS_ASSERT(sizeof(T) == block_size_);
     for (uint32_t i = 0; i < block_count_; ++i)
     {
       reinterpret_cast<T*>(blocks_ + (i * block_size_))->~T();

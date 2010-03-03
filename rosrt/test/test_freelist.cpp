@@ -174,11 +174,11 @@ void threadFunc(FreeList& pool, ros::atomic<bool>& done, ros::atomic<bool>& fail
 
 TEST(FreeList, multipleThreads)
 {
-  FreeList pool(4, 100);
+  const uint32_t thread_count = boost::thread::hardware_concurrency() * 2;
+  FreeList pool(4, thread_count * 10);
   ros::atomic<bool> done(false);
   ros::atomic<bool> failed(false);
   boost::thread_group tg;
-  const uint32_t thread_count = boost::thread::hardware_concurrency();
   boost::barrier bar(thread_count);
   for (uint32_t i = 0; i < thread_count; ++i)
   {

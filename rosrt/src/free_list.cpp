@@ -159,16 +159,21 @@ void* FreeList::allocate()
   }
 }
 
-void FreeList::free(void* t)
+void FreeList::free(void* mem)
 {
+  if (!mem)
+  {
+    return;
+  }
+
 #if FREE_LIST_DEBUG
   initDebug();
 #endif
 
-  uint32_t index = (static_cast<uint8_t*>(t) - blocks_) / block_size_;
+  uint32_t index = (static_cast<uint8_t*>(mem) - blocks_) / block_size_;
 
-  ROS_ASSERT(((static_cast<uint8_t*>(t) - blocks_) % block_size_) == 0);
-  ROS_ASSERT(index < block_count_);
+  ROS_ASSERT(((static_cast<uint8_t*>(mem) - blocks_) % block_size_) == 0);
+  ROS_ASSERT(owns(mem));
 
   while (true)
   {
@@ -220,6 +225,12 @@ void FreeList::free(void* t)
       debug_->items.push_back(i);
 #endif
   }
+}
+
+bool FreeList::owns(void* mem)
+{
+  uint32_t sub = (static_cast<uint8_t*>(mem) - blocks_);
+  return sub < block_count_ * block_size_;
 }
 
 } // namespace rt

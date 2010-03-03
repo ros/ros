@@ -33,27 +33,11 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef ROSRT_FREE_LIST_H
-#define ROSRT_FREE_LIST_H
-
-#include "aligned_alloc.h"
-
-#include <ros/assert.h>
-#include <ros/atomic.h>
-
-#include <boost/array.hpp>
-
-#if FREE_LIST_DEBUG
-#include <boost/thread.hpp>
-#endif
+#include <ros/rt/free_list.h>
 
 #define ROSRT_CACHELINE_SIZE 64 // TODO: actually determine this.
 
-#if FREE_LIST_DEBUG
 #define FREELIST_DEBUG_YIELD() sched_yield()
-#else
-#define FREELIST_DEBUG_YIELD()
-#endif
 
 namespace ros
 {
@@ -356,7 +340,6 @@ private:
 #endif
 };
 
-}
-}
+} // namespace rt
+} // namespace ros
 
-#endif // ROSRT_FREE_LIST_H

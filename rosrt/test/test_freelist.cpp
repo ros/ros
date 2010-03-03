@@ -45,7 +45,7 @@ using namespace ros::rt;
 
 TEST(FreeList, oneElement)
 {
-  FreeList<4> pool(1);
+  FreeList pool(4, 1);
   pool.constructAll<uint32_t>(5);
 
   uint32_t* item = static_cast<uint32_t*>(pool.allocate());
@@ -62,7 +62,7 @@ TEST(FreeList, oneElement)
 TEST(FreeList, multipleElements)
 {
   const uint32_t count = 5;
-  FreeList<4> pool(count);
+  FreeList pool(4, count);
   pool.constructAll<uint32_t>(5);
 
   std::vector<uint32_t*> items;
@@ -88,16 +88,16 @@ TEST(FreeList, multipleElements)
 
 #if FREE_LIST_DEBUG
 boost::mutex g_debug_mutex;
-std::vector<FreeList<4>::Debug> g_debug;
+std::vector<FreeList::Debug> g_debug;
 
-std::ostream& operator<<(std::ostream& o, const FreeList<4>::Debug::Item& i)
+std::ostream& operator<<(std::ostream& o, const FreeList::Debug::Item& i)
 {
   o.width(20);
   o << (i.success ? 1 : 0);
   o << " ";
   o << i.time;
   o << ": ";
-  o << ((i.op == FreeList<4>::Debug::Alloc) ? std::string("alloc") : std::string("free "));
+  o << ((i.op == FreeList::Debug::Alloc) ? std::string("alloc") : std::string("free "));
   o << std::string("    head: ");
   o << std::hex;
   o << i.head;
@@ -120,7 +120,7 @@ struct PerfCounter
   ros::WallTime start;
 };
 
-void threadFunc(FreeList<4>& pool, ros::atomic<bool>& done, ros::atomic<bool>& failed, boost::barrier& b)
+void threadFunc(FreeList& pool, ros::atomic<bool>& done, ros::atomic<bool>& failed, boost::barrier& b)
 {
   b.wait();
 
@@ -174,7 +174,7 @@ void threadFunc(FreeList<4>& pool, ros::atomic<bool>& done, ros::atomic<bool>& f
 
 TEST(FreeList, multipleThreads)
 {
-  FreeList<4> pool(100);
+  FreeList pool(4, 100);
   ros::atomic<bool> done(false);
   ros::atomic<bool> failed(false);
   boost::thread_group tg;
@@ -201,7 +201,7 @@ TEST(FreeList, multipleThreads)
 #if FREE_LIST_DEBUG
   if (failed.load())
   {
-    std::vector<std::vector<FreeList<4>::Debug::Item>::iterator> its;
+    std::vector<std::vector<FreeList::Debug::Item>::iterator> its;
     its.resize(g_debug.size());
     for (size_t i = 0; i < its.size(); ++i)
     {

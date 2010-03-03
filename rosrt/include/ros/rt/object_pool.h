@@ -223,9 +223,9 @@ public:
   void initialize(uint32_t size, const T& tmpl)
   {
     ROS_ASSERT(!initialized_);
-    freelist_.initialize(size);
+    freelist_.initialize(sizeof(T), size);
     freelist_.template constructAll<T>(tmpl);
-    sp_storage_freelist_.initialize(size);
+    sp_storage_freelist_.initialize(sizeof(SPStorage), size);
     sp_storage_freelist_.template constructAll<SPStorage>();
     initialized_ = true;
   }
@@ -268,8 +268,8 @@ private:
 
   bool initialized_;
 
-  FreeList<sizeof(T)> freelist_;
-  FreeList<sizeof(SPStorage)> sp_storage_freelist_;
+  FreeList freelist_;
+  FreeList sp_storage_freelist_;
 };
 
 }

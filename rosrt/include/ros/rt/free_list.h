@@ -63,65 +63,54 @@ namespace rt
 /**
  * \brief A lock-free (*not* wait-free) freelist implemented with CAS
  */
-template<size_t block_size>
 class FreeList
 {
-  typedef std::vector<atomic_uint64_t, AlignedAllocator<atomic_uint64_t, ROSRT_CACHELINE_SIZE> > V_Next;
-
 public:
-  FreeList()
-  : blocks_(0)
-  , next_(0)
-  , size_(0)
-  {
-  }
+  FreeList();
+  FreeList(uint32_t block_size, uint32_t block_count);
+  ~FreeList();
 
-  FreeList(uint32_t size)
-  : blocks_(0)
-  , next_(0)
-  , size_(0)
-  {
-    initialize(size);
-  }
+  void initialize(uint32_t block_size, uint32_t block_count);
 
-  ~FreeList()
+  void* allocate();
+  void free(void* t);
+
+  template<typename T>
+  void constructAll(const T& tmpl)
   {
-    for (uint32_t i = 0; i < size_; ++i)
+    for (uint32_t i = 0; i < block_count_; ++i)
     {
-      next_[i].~atomic_uint32_t();
-    }
-
-    alignedFree(blocks_);
-    alignedFree(next_);
-  }
-
-  void initialize(uint32_t size)
-  {
-    ROS_ASSERT(!blocks_);
-    ROS_ASSERT(!next_);
-
-    size_ = size;
-    head_.store(0);
-
-    blocks_ = (uint8_t*)alignedMalloc(block_size * size, ROSRT_CACHELINE_SIZE);
-    next_ = (atomic_uint32_t*)alignedMalloc(sizeof(atomic_uint32_t) * size, ROSRT_CACHELINE_SIZE);
-
-    memset(blocks_, 0xCD, block_size * size);
-
-    for (uint32_t i = 0; i < size; ++i)
-    {
-      new (next_ + i) atomic_uint32_t();
-
-      if (i == size - 1)
-      {
-        next_[i].store(0xffffffffUL);
-      }
-      else
-      {
-        next_[i].store(i + 1);
-      }
+      new (blocks_ + (i * block_size_)) T(tmpl);
     }
   }
+
+  template<typename T>
+  void constructAll()
+  {
+    for (uint32_t i = 0; i < block_count_; ++i)
+    {
+      new (blocks_ + (i * block_size_)) T();
+    }
+  }
+
+  template<typename T>
+  void destructAll()
+  {
+    for (uint32_t i = 0; i < block_count_; ++i)
+    {
+      reinterpret_cast<T*>(blocks_ + (i * block_size_))->~T();
+    }
+  }
+
+#if FREE_LIST_DEBUG
+  struct Debug;
+  Debug* getDebug()
+  {
+    return debug_.get();
+  }
+#endif
+
+private:
 
   inline uint32_t getTag(uint64_t val)
   {
@@ -142,6 +131,13 @@ public:
   {
     val = ((uint64_t)getTag(val) << 32) | v;
   }
+
+  uint8_t* blocks_;
+  atomic_uint32_t* next_;
+  atomic_uint64_t head_;
+
+  uint32_t block_size_;
+  uint32_t block_count_;
 
 #if FREE_LIST_DEBUG
   struct Debug
@@ -172,160 +168,7 @@ public:
     std::vector<Item> items;
     std::string thread;
   };
-#endif
 
-  void* allocate()
-  {
-#if FREE_LIST_DEBUG
-    initDebug();
-#endif
-
-    ROS_ASSERT(blocks_);
-
-    while (true)
-    {
-      uint64_t head = head_.load(memory_order_consume);
-
-#if FREE_LIST_DEBUG
-      typename Debug::Item i;
-      i.head = head;
-      i.time = ros::WallTime::now();
-      i.op = Debug::Alloc;
-#endif
-
-      if (getVal(head) == 0xffffffffULL)
-      {
-#if FREE_LIST_DEBUG
-        debug_->items.push_back(i);
-#endif
-        return 0;  // Allocation failed
-      }
-
-      FREELIST_DEBUG_YIELD();
-
-      // Load the next index
-      uint64_t new_head = next_[getVal(head)].load();
-
-      FREELIST_DEBUG_YIELD();
-
-      // Increment the tag to avoid ABA
-      setTag(new_head, getTag(head) + 1);
-
-#if FREE_LIST_DEBUG
-      i.new_head = new_head;
-#endif
-
-      FREELIST_DEBUG_YIELD();
-
-      // If setting head to next is successful, return the item at next
-      if (head_.compare_exchange_strong(head, new_head))
-      {
-#if FREE_LIST_DEBUG
-        i.addr = blocks_ + (block_size * getVal(head));
-        i.success = 1;
-        debug_->items.push_back(i);
-#endif
-        return static_cast<void*>(blocks_ + (block_size * getVal(head)));
-      }
-
-#if FREE_LIST_DEBUG
-        i.success = 0;
-        debug_->items.push_back(i);
-#endif
-    }
-  }
-
-  void free(void* t)
-  {
-#if FREE_LIST_DEBUG
-    initDebug();
-#endif
-
-    uint32_t index = (static_cast<uint8_t*>(t) - blocks_) / block_size;
-
-    ROS_ASSERT(((static_cast<uint8_t*>(t) - blocks_) % block_size) == 0);
-    ROS_ASSERT(index < size_);
-
-    while (true)
-    {
-      // Load head
-      uint64_t head = head_.load(memory_order_consume);
-
-#if FREE_LIST_DEBUG
-      typename Debug::Item i;
-      i.head = head;
-      i.time = ros::WallTime::now();
-      i.op = Debug::Free;
-#endif
-
-      FREELIST_DEBUG_YIELD();
-
-      uint64_t new_head = head;
-      // set new head to the index of the block we're currently freeing
-      setVal(new_head, index);
-      // Increment the tag to avoid ABA
-      setTag(new_head, getTag(new_head) + 1);
-
-
-      FREELIST_DEBUG_YIELD();
-
-      // Store head as next index for this item
-      next_[index].store(getVal(head));
-
-      FREELIST_DEBUG_YIELD();
-
-#if FREE_LIST_DEBUG
-      i.new_head = new_head;
-#endif
-
-      FREELIST_DEBUG_YIELD();
-
-      // If setting the head to next is successful, return
-      if (head_.compare_exchange_strong(head, new_head))
-      {
-#if FREE_LIST_DEBUG
-        i.success = 1;
-        i.addr = blocks_ + (block_size * index);
-        debug_->items.push_back(i);
-#endif
-        return;
-      }
-
-#if FREE_LIST_DEBUG
-        i.success = 0;
-        debug_->items.push_back(i);
-#endif
-    }
-  }
-
-  template<typename T>
-  void constructAll(const T& tmpl)
-  {
-    for (uint32_t i = 0; i < size_; ++i)
-    {
-      new (blocks_ + (i * block_size)) T(tmpl);
-    }
-  }
-
-  template<typename T>
-  void constructAll()
-  {
-    for (uint32_t i = 0; i < size_; ++i)
-    {
-      new (blocks_ + (i * block_size)) T();
-    }
-  }
-
-  template<typename T>
-  void destructAll()
-  {
-    for (uint32_t i = 0; i < size_; ++i)
-    {
-      reinterpret_cast<T*>(blocks_ + (i * block_size))->~T();
-    }
-  }
-
-#if FREE_LIST_DEBUG
   void initDebug()
   {
     if (!debug_.get())
@@ -337,26 +180,11 @@ public:
     }
   }
 
-  Debug* getDebug()
-  {
-    return debug_.get();
-  }
-#endif
-
-private:
-
-  uint8_t* blocks_;
-  atomic_uint32_t* next_;
-  atomic_uint64_t head_;
-
-  uint32_t size_;
-
-#if FREE_LIST_DEBUG
   boost::thread_specific_ptr<Debug> debug_;
 #endif
 };
 
-}
-}
+} // namespace rt
+} // namespace ros
 
 #endif // ROSRT_FREE_LIST_H

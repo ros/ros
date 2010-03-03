@@ -301,6 +301,8 @@ public:
   int opt_profile_length;
   // only display zombie directories in profile?
   bool opt_profile_zombie_only;
+  // display warnings about missing dependencies?
+  bool opt_warn_on_missing_deps;
 
 private:
   bool cache_lock_failed;

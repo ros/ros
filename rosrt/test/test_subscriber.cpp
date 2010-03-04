@@ -65,6 +65,9 @@ TEST(Subscriber, singleSubscriber)
   boost::thread t(boost::bind(publishThread, boost::ref(pub), boost::ref(done)));
 
   Subscriber<std_msgs::UInt32> sub(2, nh, "test");
+
+  resetThreadAllocInfo();
+
   uint32_t count = 0;
   int32_t last = -1;
   while (count < 20000)
@@ -77,6 +80,8 @@ TEST(Subscriber, singleSubscriber)
       ++count;
     }
   }
+
+  ASSERT_EQ(getThreadAllocInfo()->total_ops, 0UL);
 
   done = true;
   t.join();
@@ -101,6 +106,7 @@ TEST(Subscriber, multipleSubscribersSameTopic)
     lasts[i] = -1;
   }
 
+  resetThreadAllocInfo();
 
   bool all_done = false;
   while (!all_done)
@@ -123,6 +129,8 @@ TEST(Subscriber, multipleSubscribersSameTopic)
       }
     }
   }
+
+  ASSERT_EQ(getThreadAllocInfo()->total_ops, 0UL);
 
   done = true;
   t.join();

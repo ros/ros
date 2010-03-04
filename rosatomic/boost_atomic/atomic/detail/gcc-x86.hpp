@@ -7,7 +7,6 @@
 //  See accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/memory_order.hpp>
 #include "base.hpp"
 #include "builder.hpp"
 
@@ -15,24 +14,24 @@ namespace boost {
 namespace detail {
 namespace atomic {
 
-static inline void fence_before(memory_order order)
+static inline void fence_before(memory_order2 order)
 {
 	switch(order) {
-		case memory_order_consume:
-		case memory_order_release:
-		case memory_order_acq_rel:
-		case memory_order_seq_cst:
+		case memory_order2_consume:
+		case memory_order2_release:
+		case memory_order2_acq_rel:
+		case memory_order2_seq_cst:
 			__asm__ __volatile__ ("" ::: "memory");
 		default:;
 	}
 }
 
-static inline void fence_after(memory_order order)
+static inline void fence_after(memory_order2 order)
 {
 	switch(order) {
-		case memory_order_acquire:
-		case memory_order_acq_rel:
-		case memory_order_seq_cst:
+		case memory_order2_acquire:
+		case memory_order2_acq_rel:
+		case memory_order2_seq_cst:
 			__asm__ __volatile__ ("" ::: "memory");
 		default:;
 	}
@@ -48,28 +47,28 @@ static inline void full_fence(void)
 #endif
 }
 
-static inline void fence_after_load(memory_order order)
+static inline void fence_after_load(memory_order2 order)
 {
 	switch(order) {
-		case memory_order_seq_cst:
+		case memory_order2_seq_cst:
 			full_fence();
-		case memory_order_acquire:
-		case memory_order_acq_rel:
+		case memory_order2_acquire:
+		case memory_order2_acq_rel:
 			__asm__ __volatile__ ("" ::: "memory");
 		default:;
 	}
 }
 
 template<>
-void platform_atomic_thread_fence(memory_order order)
+void platform_atomic_thread_fence(memory_order2 order)
 {
 	switch(order) {
-		case memory_order_seq_cst:
+		case memory_order2_seq_cst:
 			full_fence();
-		case memory_order_acquire:
-		case memory_order_consume:
-		case memory_order_acq_rel:
-		case memory_order_release:
+		case memory_order2_acquire:
+		case memory_order2_consume:
+		case memory_order2_acq_rel:
+		case memory_order2_release:
 			__asm__ __volatile__ ("" ::: "memory");
 		default:;
 	}
@@ -80,15 +79,15 @@ class atomic_x86_8 {
 public:
 	explicit atomic_x86_8(T v) : i(v) {}
 	atomic_x86_8() {}
-	T load(memory_order order=memory_order_seq_cst) const volatile
+	T load(memory_order2 order=memory_order2_seq_cst) const volatile
 	{
 		T v=*reinterpret_cast<volatile const T *>(&i);
 		fence_after_load(order);
 		return v;
 	}
-	void store(T v, memory_order order=memory_order_seq_cst) volatile
+	void store(T v, memory_order2 order=memory_order2_seq_cst) volatile
 	{
-		if (order!=memory_order_seq_cst) {
+		if (order!=memory_order2_seq_cst) {
 			fence_before(order);
 			*reinterpret_cast<volatile T *>(&i)=v;
 		} else {
@@ -98,8 +97,8 @@ public:
 	bool compare_exchange_strong(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		fence_before(success_order);
 		T prev=expected;
@@ -113,22 +112,22 @@ public:
 	bool compare_exchange_weak(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		return compare_exchange_strong(expected, desired, success_order, failure_order);
 	}
-	T exchange(T r, memory_order order=memory_order_seq_cst) volatile
+	T exchange(T r, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		__asm__ __volatile__("xchgb %0, %1\n" : "=r" (r) : "m"(i), "0" (r) : "memory");
 		return r;
 	}
-	T fetch_add(T c, memory_order order=memory_order_seq_cst) volatile
+	T fetch_add(T c, memory_order2 order=memory_order2_seq_cst) volatile
 	{
-		__asm__ __volatile__("lock; xaddb %0, %1" : "+q" (c), "+m" (i) :: "memory");
+		__asm__ __volatile__("lock xaddb %0, %1" : "+r" (c), "+m" (i) :: "memory");
 		return c;
 	}
-
+	
 	bool is_lock_free(void) const volatile {return true;}
 protected:
 	typedef T integral_type;
@@ -149,15 +148,15 @@ class atomic_x86_16 {
 public:
 	explicit atomic_x86_16(T v) : i(v) {}
 	atomic_x86_16() {}
-	T load(memory_order order=memory_order_seq_cst) const volatile
+	T load(memory_order2 order=memory_order2_seq_cst) const volatile
 	{
 		T v=*reinterpret_cast<volatile const T *>(&i);
 		fence_after_load(order);
 		return v;
 	}
-	void store(T v, memory_order order=memory_order_seq_cst) volatile
+	void store(T v, memory_order2 order=memory_order2_seq_cst) volatile
 	{
-		if (order!=memory_order_seq_cst) {
+		if (order!=memory_order2_seq_cst) {
 			fence_before(order);
 			*reinterpret_cast<volatile T *>(&i)=v;
 		} else {
@@ -167,8 +166,8 @@ public:
 	bool compare_exchange_strong(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		fence_before(success_order);
 		T prev=expected;
@@ -182,22 +181,22 @@ public:
 	bool compare_exchange_weak(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		return compare_exchange_strong(expected, desired, success_order, failure_order);
 	}
-	T exchange(T r, memory_order order=memory_order_seq_cst) volatile
+	T exchange(T r, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		__asm__ __volatile__("xchgw %0, %1\n" : "=r" (r) : "m"(i), "0" (r) : "memory");
 		return r;
 	}
-	T fetch_add(T c, memory_order order=memory_order_seq_cst) volatile
+	T fetch_add(T c, memory_order2 order=memory_order2_seq_cst) volatile
 	{
-		__asm__ __volatile__("lock; xaddw %0, %1" : "+r" (c), "+m" (i) :: "memory");
+		__asm__ __volatile__("lock xaddw %0, %1" : "+r" (c), "+m" (i) :: "memory");
 		return c;
 	}
-
+	
 	bool is_lock_free(void) const volatile {return true;}
 protected:
 	typedef T integral_type;
@@ -218,15 +217,15 @@ class atomic_x86_32 {
 public:
 	explicit atomic_x86_32(T v) : i(v) {}
 	atomic_x86_32() {}
-	T load(memory_order order=memory_order_seq_cst) const volatile
+	T load(memory_order2 order=memory_order2_seq_cst) const volatile
 	{
 		T v=*reinterpret_cast<volatile const T *>(&i);
 		fence_after_load(order);
 		return v;
 	}
-	void store(T v, memory_order order=memory_order_seq_cst) volatile
+	void store(T v, memory_order2 order=memory_order2_seq_cst) volatile
 	{
-		if (order!=memory_order_seq_cst) {
+		if (order!=memory_order2_seq_cst) {
 			fence_before(order);
 			*reinterpret_cast<volatile T *>(&i)=v;
 		} else {
@@ -236,8 +235,8 @@ public:
 	bool compare_exchange_strong(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		fence_before(success_order);
 		T prev=expected;
@@ -251,22 +250,22 @@ public:
 	bool compare_exchange_weak(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		return compare_exchange_strong(expected, desired, success_order, failure_order);
 	}
-	T exchange(T r, memory_order order=memory_order_seq_cst) volatile
+	T exchange(T r, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		__asm__ __volatile__("xchgl %0, %1\n" : "=r" (r) : "m"(i), "0" (r) : "memory");
 		return r;
 	}
-	T fetch_add(T c, memory_order order=memory_order_seq_cst) volatile
+	T fetch_add(T c, memory_order2 order=memory_order2_seq_cst) volatile
 	{
-		__asm__ __volatile__("lock; xaddl %0, %1" : "+r" (c), "+m" (i) :: "memory");
+		__asm__ __volatile__("lock xaddl %0, %1" : "+r" (c), "+m" (i) :: "memory");
 		return c;
 	}
-
+	
 	bool is_lock_free(void) const volatile {return true;}
 protected:
 	typedef T integral_type;
@@ -288,15 +287,15 @@ class atomic_x86_64 {
 public:
 	explicit atomic_x86_64(T v) : i(v) {}
 	atomic_x86_64() {}
-	T load(memory_order order=memory_order_seq_cst) const volatile
+	T load(memory_order2 order=memory_order2_seq_cst) const volatile
 	{
 		T v=*reinterpret_cast<volatile const T *>(&i);
 		fence_after_load(order);
 		return v;
 	}
-	void store(T v, memory_order order=memory_order_seq_cst) volatile
+	void store(T v, memory_order2 order=memory_order2_seq_cst) volatile
 	{
-		if (order!=memory_order_seq_cst) {
+		if (order!=memory_order2_seq_cst) {
 			fence_before(order);
 			*reinterpret_cast<volatile T *>(&i)=v;
 		} else {
@@ -306,8 +305,8 @@ public:
 	bool compare_exchange_strong(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		fence_before(success_order);
 		T prev=expected;
@@ -321,22 +320,22 @@ public:
 	bool compare_exchange_weak(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		return compare_exchange_strong(expected, desired, success_order, failure_order);
 	}
-	T exchange(T r, memory_order order=memory_order_seq_cst) volatile
+	T exchange(T r, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		__asm__ __volatile__("xchgq %0, %1\n" : "=r" (r) : "m"(i), "0" (r) : "memory");
 		return r;
 	}
-	T fetch_add(T c, memory_order order=memory_order_seq_cst) volatile
+	T fetch_add(T c, memory_order2 order=memory_order2_seq_cst) volatile
 	{
-		__asm__ __volatile__("lock; xaddq %0, %1" : "+r" (c), "+m" (i) :: "memory");
+		__asm__ __volatile__("lock xaddq %0, %1" : "+r" (c), "+m" (i) :: "memory");
 		return c;
 	}
-
+	
 	bool is_lock_free(void) const volatile {return true;}
 protected:
 	typedef T integral_type;
@@ -353,12 +352,12 @@ private:
 public:
 	explicit atomic_x86_64(T v) : i(v) {}
 	atomic_x86_64() {}
-
+	
 	bool compare_exchange_strong(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		fence_before(success_order);
 		T prev=expected;
@@ -373,41 +372,41 @@ public:
 	bool compare_exchange_weak(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		return compare_exchange_strong(expected, desired, success_order, failure_order);
 	}
-	T exchange(T r, memory_order order=memory_order_seq_cst) volatile
+	T exchange(T r, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		T prev=i;
-		do {} while(!compare_exchange_strong(prev, r, order, memory_order_relaxed));
+		do {} while(!compare_exchange_strong(prev, r, order, memory_order2_relaxed));
 		return prev;
 	}
-
-	T load(memory_order order=memory_order_seq_cst) const volatile
+	
+	T load(memory_order2 order=memory_order2_seq_cst) const volatile
 	{
 		/* this is a bit problematic -- there is no other
 		way to atomically load a 64 bit value, but of course
 		compare_exchange requires write access to the memory
 		area */
 		T expected=i;
-		do { } while(!const_cast<this_type *>(this)->compare_exchange_strong(expected, expected, order, memory_order_relaxed));
+		do { } while(!const_cast<this_type *>(this)->compare_exchange_strong(expected, expected, order, memory_order2_relaxed));
 		return expected;
 	}
-	void store(T v, memory_order order=memory_order_seq_cst) volatile
+	void store(T v, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		exchange(v, order);
 	}
-	T fetch_add(T c, memory_order order=memory_order_seq_cst) volatile
+	T fetch_add(T c, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		T expected=i, desired;;
 		do {
 			desired=expected+c;
-		} while(!compare_exchange_strong(expected, desired, order, memory_order_relaxed));
+		} while(!compare_exchange_strong(expected, desired, order, memory_order2_relaxed));
 		return expected;
 	}
-
+	
 	bool is_lock_free(void) const volatile {return true;}
 protected:
 	typedef T integral_type;

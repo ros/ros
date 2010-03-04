@@ -22,16 +22,16 @@ namespace boost {
 namespace detail {
 namespace atomic {
 
-static inline void fence_before(memory_order order)
+static inline void fence_before(memory_order2 order)
 {
 	switch(order) {
-		case memory_order_release:
-		case memory_order_acq_rel:
+		case memory_order2_release:
+		case memory_order2_acq_rel:
 #if defined(__powerpc64__)
 			__asm__ __volatile__ ("lwsync" ::: "memory");
 			break;
 #endif
-		case memory_order_seq_cst:
+		case memory_order2_seq_cst:
 			__asm__ __volatile__ ("sync" ::: "memory");
 		default:;
 	}
@@ -45,9 +45,9 @@ depends on the memory-accessing instruction -- isync waits
 until the branch can be resolved and thus implicitly until
 the memory access completes.
 
-This means that the load(memory_order_relaxed) instruction
+This means that the load(memory_order2_relaxed) instruction
 includes this branch, even though no barrier would be required
-here, but as a consequence atomic_thread_fence(memory_order_acquire)
+here, but as a consequence atomic_thread_fence(memory_order2_acquire)
 would have to be implemented using "sync" instead of "isync".
 The following simple cost-analysis provides the rationale
 for this decision:
@@ -59,33 +59,33 @@ for this decision:
 
 */
 
-static inline void fence_after(memory_order order)
+static inline void fence_after(memory_order2 order)
 {
 	switch(order) {
-		case memory_order_acquire:
-		case memory_order_acq_rel:
-		case memory_order_seq_cst:
+		case memory_order2_acquire:
+		case memory_order2_acq_rel:
+		case memory_order2_seq_cst:
 			__asm__ __volatile__ ("isync");
-		case memory_order_consume:
+		case memory_order2_consume:
 			__asm__ __volatile__ ("" ::: "memory");
 		default:;
 	}
 }
 
 template<>
-void platform_atomic_thread_fence(memory_order order)
+void platform_atomic_thread_fence(memory_order2 order)
 {
 	switch(order) {
-		case memory_order_acquire:
+		case memory_order2_acquire:
 			__asm__ __volatile__ ("isync" ::: "memory");
 			break;
-		case memory_order_release:
-		case memory_order_acq_rel:
+		case memory_order2_release:
+		case memory_order2_acq_rel:
 #if defined(__powerpc64__)
 			__asm__ __volatile__ ("lwsync" ::: "memory");
 			break;
 #endif
-		case memory_order_seq_cst:
+		case memory_order2_seq_cst:
 			__asm__ __volatile__ ("sync" ::: "memory");
 		default:;
 	}
@@ -104,7 +104,7 @@ public:
 	typedef T integral_type;
 	explicit atomic_ppc_32(T v) : i(v) {}
 	atomic_ppc_32() {}
-	T load(memory_order order=memory_order_seq_cst) const volatile
+	T load(memory_order2 order=memory_order2_seq_cst) const volatile
 	{
 		T v=*reinterpret_cast<volatile const T *>(&i);
 		__asm__ __volatile__ (
@@ -115,7 +115,7 @@ public:
 		fence_after(order);
 		return v;
 	}
-	void store(T v, memory_order order=memory_order_seq_cst) volatile
+	void store(T v, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		fence_before(order);
 		*reinterpret_cast<volatile T *>(&i)=v;
@@ -123,8 +123,8 @@ public:
 	bool compare_exchange_weak(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		fence_before(success_order);
 		int success;
@@ -136,7 +136,7 @@ public:
 			"bne- 2f\n"
 			"addi %1,0,1\n"
 			"1:"
-
+			
 			".subsection 2\n"
 			"2: addi %1,0,0\n"
 			"b 1b\n"
@@ -148,10 +148,10 @@ public:
 		else fence_after(failure_order);
 		return success;
 	}
-
+	
 	bool is_lock_free(void) const volatile {return true;}
 protected:
-	inline T fetch_add_var(T c, memory_order order) volatile
+	inline T fetch_add_var(T c, memory_order2 order) volatile
 	{
 		fence_before(order);
 		T original, tmp;
@@ -166,7 +166,7 @@ protected:
 		fence_after(order);
 		return original;
 	}
-	inline T fetch_inc(memory_order order) volatile
+	inline T fetch_inc(memory_order2 order) volatile
 	{
 		fence_before(order);
 		T original, tmp;
@@ -181,7 +181,7 @@ protected:
 		fence_after(order);
 		return original;
 	}
-	inline T fetch_dec(memory_order order) volatile
+	inline T fetch_dec(memory_order2 order) volatile
 	{
 		fence_before(order);
 		T original, tmp;
@@ -210,7 +210,7 @@ public:
 	typedef T integral_type;
 	explicit atomic_ppc_64(T v) : i(v) {}
 	atomic_ppc_64() {}
-	T load(memory_order order=memory_order_seq_cst) const volatile
+	T load(memory_order2 order=memory_order2_seq_cst) const volatile
 	{
 		T v=*reinterpret_cast<volatile const T *>(&i);
 		__asm__ __volatile__ (
@@ -221,7 +221,7 @@ public:
 		fence_after(order);
 		return v;
 	}
-	void store(T v, memory_order order=memory_order_seq_cst) volatile
+	void store(T v, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		fence_before(order);
 		*reinterpret_cast<volatile T *>(&i)=v;
@@ -229,8 +229,8 @@ public:
 	bool compare_exchange_weak(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		fence_before(success_order);
 		int success;
@@ -242,7 +242,7 @@ public:
 			"bne- 2f\n"
 			"addi %1,0,1\n"
 			"1:"
-
+			
 			".subsection 2\n"
 			"2: addi %1,0,0\n"
 			"b 1b\n"
@@ -255,10 +255,10 @@ public:
 		fence_after(order);
 		return success;
 	}
-
+	
 	bool is_lock_free(void) const volatile {return true;}
 protected:
-	inline T fetch_add_var(T c, memory_order order) volatile
+	inline T fetch_add_var(T c, memory_order2 order) volatile
 	{
 		fence_before(order);
 		T original, tmp;
@@ -273,7 +273,7 @@ protected:
 		fence_after(order);
 		return original;
 	}
-	inline T fetch_inc(memory_order order) volatile
+	inline T fetch_inc(memory_order2 order) volatile
 	{
 		fence_before(order);
 		T original, tmp;
@@ -288,7 +288,7 @@ protected:
 		fence_after(order);
 		return original;
 	}
-	inline T fetch_dec(memory_order order) volatile
+	inline T fetch_dec(memory_order2 order) volatile
 	{
 		fence_before(order);
 		T original, tmp;
@@ -320,7 +320,7 @@ template<typename T>
 class platform_atomic_integral<T, 1>: public build_atomic_from_larger_type<atomic_ppc_32<uint32_t>, T> {
 public:
 	typedef build_atomic_from_larger_type<atomic_ppc_32<uint32_t>, T> super;
-
+	
 	explicit platform_atomic_integral(T v) : super(v) {}
 	platform_atomic_integral(void) {}
 };
@@ -329,7 +329,7 @@ template<typename T>
 class platform_atomic_integral<T, 2>: public build_atomic_from_larger_type<atomic_ppc_32<uint32_t>, T> {
 public:
 	typedef build_atomic_from_larger_type<atomic_ppc_32<uint32_t>, T> super;
-
+	
 	explicit platform_atomic_integral(T v) : super(v) {}
 	platform_atomic_integral(void) {}
 };

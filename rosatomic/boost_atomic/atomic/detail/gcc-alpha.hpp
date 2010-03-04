@@ -18,7 +18,7 @@
 /*
 	NB: The most natural thing would be to write the increment/decrement
 	operators along the following lines:
-
+	
 	__asm__ __volatile__(
 		"1: ldl_l %0,%1 \n"
 		"addl %0,1,%0 \n"
@@ -28,13 +28,13 @@
 		: "m" (value)
 		: "cc"
 	);
-
+	
 	However according to the comments on the HP website and matching
 	comments in the Linux kernel sources this defies branch prediction,
 	as the cpu assumes that backward branches are always taken; so
 	instead copy the trick from the Linux kernel, introduce a forward
 	branch and back again.
-
+	
 	I have, however, had a hard time measuring the difference between
 	the two versions in microbenchmarks -- I am leaving it in nevertheless
 	as it apparently does not hurt either.
@@ -44,38 +44,38 @@ namespace boost {
 namespace detail {
 namespace atomic {
 
-static inline void fence_before(memory_order order)
+static inline void fence_before(memory_order2 order)
 {
 	switch(order) {
-		case memory_order_consume:
-		case memory_order_release:
-		case memory_order_acq_rel:
-		case memory_order_seq_cst:
+		case memory_order2_consume:
+		case memory_order2_release:
+		case memory_order2_acq_rel:
+		case memory_order2_seq_cst:
 			__asm__ __volatile__ ("mb" ::: "memory");
 		default:;
 	}
 }
 
-static inline void fence_after(memory_order order)
+static inline void fence_after(memory_order2 order)
 {
 	switch(order) {
-		case memory_order_acquire:
-		case memory_order_acq_rel:
-		case memory_order_seq_cst:
+		case memory_order2_acquire:
+		case memory_order2_acq_rel:
+		case memory_order2_seq_cst:
 			__asm__ __volatile__ ("mb" ::: "memory");
 		default:;
 	}
 }
 
 template<>
-void platform_atomic_thread_fence(memory_order order)
+void platform_atomic_thread_fence(memory_order2 order)
 {
 	switch(order) {
-		case memory_order_acquire:
-		case memory_order_consume:
-		case memory_order_release:
-		case memory_order_acq_rel:
-		case memory_order_seq_cst:
+		case memory_order2_acquire:
+		case memory_order2_consume:
+		case memory_order2_release:
+		case memory_order2_acq_rel:
+		case memory_order2_seq_cst:
 			__asm__ __volatile__ ("mb" ::: "memory");
 		default:;
 	}
@@ -87,13 +87,13 @@ public:
 	typedef T integral_type;
 	explicit atomic_alpha_32(T v) : i(v) {}
 	atomic_alpha_32() {}
-	T load(memory_order order=memory_order_seq_cst) const volatile
+	T load(memory_order2 order=memory_order2_seq_cst) const volatile
 	{
 		T v=*reinterpret_cast<volatile const int *>(&i);
 		fence_after(order);
 		return v;
 	}
-	void store(T v, memory_order order=memory_order_seq_cst) volatile
+	void store(T v, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		fence_before(order);
 		*reinterpret_cast<volatile int *>(&i)=(int)v;
@@ -101,8 +101,8 @@ public:
 	bool compare_exchange_weak(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		fence_before(success_order);
 		int current, success;
@@ -113,12 +113,12 @@ public:
 			"beq %3, 3f\n"
 			"stl_c %1, %4\n"
 			"2:\n"
-
+			
 			".subsection 2\n"
 			"3: mov %3, %1\n"
 			"br 2b\n"
 			".previous\n"
-
+			
 			: "+&r" (expected), "+&r" (desired), "=&r"(current), "=&r"(success)
 			: "m" (i)
 			:
@@ -127,10 +127,10 @@ public:
 		else fence_after(failure_order);
 		return desired;
 	}
-
+	
 	bool is_lock_free(void) const volatile {return true;}
 protected:
-	inline T fetch_add_var(T c, memory_order order) volatile
+	inline T fetch_add_var(T c, memory_order2 order) volatile
 	{
 		fence_before(order);
 		T original, modified;
@@ -139,11 +139,11 @@ protected:
 			"addl %0, %3, %1\n"
 			"stl_c %1, %2\n"
 			"beq %1, 2f\n"
-
+			
 			".subsection 2\n"
 			"2: br 1b\n"
 			".previous\n"
-
+			
 			: "=&r" (original), "=&r" (modified)
 			: "m" (i), "r" (c)
 			:
@@ -151,7 +151,7 @@ protected:
 		fence_after(order);
 		return original;
 	}
-	inline T fetch_inc(memory_order order) volatile
+	inline T fetch_inc(memory_order2 order) volatile
 	{
 		fence_before(order);
 		int original, modified;
@@ -160,11 +160,11 @@ protected:
 			"addl %0, 1, %1\n"
 			"stl_c %1, %2\n"
 			"beq %1, 2f\n"
-
+			
 			".subsection 2\n"
 			"2: br 1b\n"
 			".previous\n"
-
+			
 			: "=&r" (original), "=&r" (modified)
 			: "m" (i)
 			:
@@ -172,7 +172,7 @@ protected:
 		fence_after(order);
 		return original;
 	}
-	inline T fetch_dec(memory_order order) volatile
+	inline T fetch_dec(memory_order2 order) volatile
 	{
 		fence_before(order);
 		int original, modified;
@@ -181,11 +181,11 @@ protected:
 			"subl %0, 1, %1\n"
 			"stl_c %1, %2\n"
 			"beq %1, 2f\n"
-
+			
 			".subsection 2\n"
 			"2: br 1b\n"
 			".previous\n"
-
+			
 			: "=&r" (original), "=&r" (modified)
 			: "m" (i)
 			:
@@ -203,13 +203,13 @@ public:
 	typedef T integral_type;
 	explicit atomic_alpha_64(T v) : i(v) {}
 	atomic_alpha_64() {}
-	T load(memory_order order=memory_order_seq_cst) const volatile
+	T load(memory_order2 order=memory_order2_seq_cst) const volatile
 	{
 		T v=*reinterpret_cast<volatile const T *>(&i);
 		fence_after(order);
 		return v;
 	}
-	void store(T v, memory_order order=memory_order_seq_cst) volatile
+	void store(T v, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		fence_before(order);
 		*reinterpret_cast<volatile T *>(&i)=v;
@@ -217,8 +217,8 @@ public:
 	bool compare_exchange_weak(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		fence_before(success_order);
 		int current, success;
@@ -229,12 +229,12 @@ public:
 			"beq %3, 3f\n"
 			"stq_c %1, %4\n"
 			"2:\n"
-
+			
 			".subsection 2\n"
 			"3: mov %3, %1\n"
 			"br 2b\n"
 			".previous\n"
-
+			
 			: "+&r" (expected), "+&r" (desired), "=&r"(current), "=&r"(success)
 			: "m" (i)
 			:
@@ -243,10 +243,10 @@ public:
 		else fence_after(failure_order);
 		return desired;
 	}
-
+	
 	bool is_lock_free(void) const volatile {return true;}
 protected:
-	inline T fetch_add_var(T c, memory_order order) volatile
+	inline T fetch_add_var(T c, memory_order2 order) volatile
 	{
 		fence_before(order);
 		T original, modified;
@@ -255,11 +255,11 @@ protected:
 			"addq %0, %3, %1\n"
 			"stq_c %1, %2\n"
 			"beq %1, 2f\n"
-
+			
 			".subsection 2\n"
 			"2: br 1b\n"
 			".previous\n"
-
+			
 			: "=&r" (original), "=&r" (modified)
 			: "m" (i), "r" (c)
 			:
@@ -267,7 +267,7 @@ protected:
 		fence_after(order);
 		return original;
 	}
-	inline T fetch_inc(memory_order order) volatile
+	inline T fetch_inc(memory_order2 order) volatile
 	{
 		fence_before(order);
 		T original, modified;
@@ -276,11 +276,11 @@ protected:
 			"addq %0, 1, %1\n"
 			"stq_c %1, %2\n"
 			"beq %1, 2f\n"
-
+			
 			".subsection 2\n"
 			"2: br 1b\n"
 			".previous\n"
-
+			
 			: "=&r" (original), "=&r" (modified)
 			: "m" (i)
 			:
@@ -288,7 +288,7 @@ protected:
 		fence_after(order);
 		return original;
 	}
-	inline T fetch_dec(memory_order order) volatile
+	inline T fetch_dec(memory_order2 order) volatile
 	{
 		fence_before(order);
 		T original, modified;
@@ -297,11 +297,11 @@ protected:
 			"subq %0, 1, %1\n"
 			"stq_c %1, %2\n"
 			"beq %1, 2f\n"
-
+			
 			".subsection 2\n"
 			"2: br 1b\n"
 			".previous\n"
-
+			
 			: "=&r" (original), "=&r" (modified)
 			: "m" (i)
 			:
@@ -333,7 +333,7 @@ template<typename T>
 class platform_atomic_integral<T, 1>: public build_atomic_from_larger_type<atomic_alpha_32<uint32_t>, T> {
 public:
 	typedef build_atomic_from_larger_type<atomic_alpha_32<uint32_t>, T> super;
-
+	
 	explicit platform_atomic_integral(T v) : super(v) {}
 	platform_atomic_integral(void) {}
 };
@@ -342,7 +342,7 @@ template<typename T>
 class platform_atomic_integral<T, 2>: public build_atomic_from_larger_type<atomic_alpha_32<uint32_t>, T> {
 public:
 	typedef build_atomic_from_larger_type<atomic_alpha_32<uint32_t>, T> super;
-
+	
 	explicit platform_atomic_integral(T v) : super(v) {}
 	platform_atomic_integral(void) {}
 };

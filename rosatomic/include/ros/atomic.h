@@ -40,13 +40,13 @@
 namespace ros
 {
 
-const static boost::memory_order memory_order_relaxed = boost::memory_order_relaxed;
-const static boost::memory_order memory_order_acquire = boost::memory_order_acquire;
-const static boost::memory_order memory_order_release = boost::memory_order_release;
-const static boost::memory_order memory_order_acq_rel = boost::memory_order_acq_rel;
-const static boost::memory_order memory_order_seq_cst = boost::memory_order_seq_cst;
-const static boost::memory_order memory_order_consume = boost::memory_order_consume;
-//using boost::memory_order;
+const static boost::memory_order2 memory_order_relaxed = boost::memory_order2_relaxed;
+const static boost::memory_order2 memory_order_acquire = boost::memory_order2_acquire;
+const static boost::memory_order2 memory_order_release = boost::memory_order2_release;
+const static boost::memory_order2 memory_order_acq_rel = boost::memory_order2_acq_rel;
+const static boost::memory_order2 memory_order_seq_cst = boost::memory_order2_seq_cst;
+const static boost::memory_order2 memory_order_consume = boost::memory_order2_consume;
+typedef boost::memory_order2 memory_order;
 using boost::atomic;
 using boost::atomic_flag;
 using boost::atomic_thread_fence;

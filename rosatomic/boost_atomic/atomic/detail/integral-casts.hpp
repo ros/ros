@@ -22,19 +22,19 @@ public:
 	{
 	}
 	
-	void store(T t, memory_order order=memory_order_seq_cst) volatile
+	void store(T t, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		super::store(to_integral(t), order);
 	}
-	T load(memory_order order=memory_order_seq_cst) volatile const
+	T load(memory_order2 order=memory_order2_seq_cst) volatile const
 	{
 		return from_integral(super::load(order));
 	}
 	bool compare_exchange_strong(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		uint8_t _expected, _desired;
 		_expected=to_integral(expected);
@@ -46,8 +46,8 @@ public:
 	bool compare_exchange_weak(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		uint8_t _expected, _desired;
 		_expected=to_integral(expected);
@@ -57,7 +57,7 @@ public:
 		return success;
 	}
 	
-	T exchange(T replacement, memory_order order=memory_order_seq_cst) volatile
+	T exchange(T replacement, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		return from_integral(super::exchange(to_integral(replacement), order));
 	}
@@ -92,19 +92,19 @@ public:
 	{
 	}
 	
-	void store(T t, memory_order order=memory_order_seq_cst) volatile
+	void store(T t, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		super::store(to_integral(t), order);
 	}
-	T load(memory_order order=memory_order_seq_cst) volatile const
+	T load(memory_order2 order=memory_order2_seq_cst) volatile const
 	{
 		return from_integral(super::load(order));
 	}
 	bool compare_exchange_strong(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		uint16_t _expected, _desired;
 		_expected=to_integral(expected);
@@ -116,8 +116,8 @@ public:
 	bool compare_exchange_weak(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		uint16_t _expected, _desired;
 		_expected=to_integral(expected);
@@ -127,7 +127,7 @@ public:
 		return success;
 	}
 	
-	T exchange(T replacement, memory_order order=memory_order_seq_cst) volatile
+	T exchange(T replacement, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		return from_integral(super::exchange(to_integral(replacement), order));
 	}
@@ -162,19 +162,19 @@ public:
 	{
 	}
 	
-	void store(T t, memory_order order=memory_order_seq_cst) volatile
+	void store(T t, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		super::store(to_integral(t), order);
 	}
-	T load(memory_order order=memory_order_seq_cst) volatile const
+	T load(memory_order2 order=memory_order2_seq_cst) volatile const
 	{
 		return from_integral(super::load(order));
 	}
 	bool compare_exchange_strong(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		uint32_t _expected, _desired;
 		_expected=to_integral(expected);
@@ -186,8 +186,8 @@ public:
 	bool compare_exchange_weak(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		uint32_t _expected, _desired;
 		_expected=to_integral(expected);
@@ -197,7 +197,7 @@ public:
 		return success;
 	}
 	
-	T exchange(T replacement, memory_order order=memory_order_seq_cst) volatile
+	T exchange(T replacement, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		return from_integral(super::exchange(to_integral(replacement), order));
 	}
@@ -232,19 +232,19 @@ public:
 	{
 	}
 	
-	void store(T t, memory_order order=memory_order_seq_cst) volatile
+	void store(T t, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		super::store(to_integral(t), order);
 	}
-	T load(memory_order order=memory_order_seq_cst) volatile const
+	T load(memory_order2 order=memory_order2_seq_cst) volatile const
 	{
 		return from_integral(super::load(order));
 	}
 	bool compare_exchange_strong(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		uint64_t _expected, _desired;
 		_expected=to_integral(expected);
@@ -256,8 +256,8 @@ public:
 	bool compare_exchange_weak(
 		T &expected,
 		T desired,
-		memory_order success_order,
-		memory_order failure_order) volatile
+		memory_order2 success_order,
+		memory_order2 failure_order) volatile
 	{
 		uint64_t _expected, _desired;
 		_expected=to_integral(expected);
@@ -267,7 +267,7 @@ public:
 		return success;
 	}
 	
-	T exchange(T replacement, memory_order order=memory_order_seq_cst) volatile
+	T exchange(T replacement, memory_order2 order=memory_order2_seq_cst) volatile
 	{
 		return from_integral(super::exchange(to_integral(replacement), order));
 	}

@@ -37,6 +37,8 @@
 #include "ros/rt/object_pool.h"
 #include "ros/rt/malloc_wrappers.h"
 
+#include <set>
+
 using namespace ros::rt;
 
 TEST(ObjectPool, oneElement)

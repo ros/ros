@@ -32,14 +32,42 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef ROSRT_RT_H
-#define ROSRT_RT_H
+#include <ros/rt/subscriber.h>
+#include <ros/rt/detail/subscriber_manager.h>
 
-#include "rt/object_pool.h"
-#include "rt/publisher.h"
-#include "rt/subscriber.h"
-#include "rt/malloc_wrappers.h"
-#include "rt/aligned_alloc.h"
-#include "rt/init.h"
+#include <boost/bind.hpp>
 
-#endif // ROSRT_RT_H
+#include <ros/debug.h>
+
+namespace ros
+{
+namespace rt
+{
+namespace detail
+{
+
+boost::thread_specific_ptr<SubscriberManager> g_subscriber_manager;
+
+SubscriberManager::SubscriberManager()
+: spinner_(1, &callback_queue_)
+{
+  spinner_.start();
+}
+
+SubscriberManager::~SubscriberManager()
+{
+  spinner_.stop();
+  callback_queue_.disable();
+  callback_queue_.clear();
+}
+
+ros::CallbackQueueInterface* getSubscriberCallbackQueue()
+{
+  SubscriberManager* man = g_subscriber_manager.get();
+  ROS_ASSERT_MSG(man, "ros::rt::initThread() has not been called for this thread!\n%s", ros::debug::getBacktrace().c_str());
+  return man->getCallbackQueue();
+}
+
+} // namespace detail
+} // namespace rt
+} // namespace ros

@@ -101,13 +101,13 @@ public:
    * \brief Free a block of memory allocated from this FreeList
    * \param mem The block to be freed
    */
-  void free(void* mem);
+  void free(void const* mem);
   /**
    * \brief Returns whether or not this FreeList owns a block of memory
    * \param mem the block to check
    * \return true if this FreeList owns the block, false otherwise
    */
-  bool owns(void* mem);
+  bool owns(void const* mem);
 
   /**
    * \brief Construct all the blocks with a specific template.  If you call this you must call

@@ -127,7 +127,8 @@ TEST(MallocWrappers, statsNewThread)
 void doBreakOnMalloc()
 {
   setThreadBreakOnAllocOrFree(true);
-  malloc(500);
+  void* mem = malloc(500);
+  mem = 0;
   setThreadBreakOnAllocOrFree(false);
 }
 
@@ -136,7 +137,8 @@ TEST(MallocWrappersDeathTest, breakOnAllocFree)
   initThreadAllocInfo();
   resetThreadAllocInfo();
 
-  ASSERT_DEATH_IF_SUPPORTED(doBreakOnMalloc(), "Issuing break due to break_on_alloc_or_free being set");
+  // TODO: Re-enable once ROS 1.1 goes out with the updated version of gtest
+  //ASSERT_DEATH_IF_SUPPORTED(doBreakOnMalloc(), "Issuing break due to break_on_alloc_or_free being set");
 }
 
 int main(int argc, char** argv)

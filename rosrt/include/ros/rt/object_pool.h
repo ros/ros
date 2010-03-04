@@ -51,13 +51,22 @@ namespace ros
 namespace rt
 {
 
+template<typename T>
+class ObjectPool;
+
 namespace detail
 {
-template<class T> class FixedBlockAllocator;
+
+struct SPStorage
+{
+  uint8_t data[72];
+};
+
+template<class T> class SPAllocator;
 
 // specialize for void:
 template<>
-class FixedBlockAllocator<void>
+class SPAllocator<void>
 {
 public:
   typedef void* pointer;
@@ -68,36 +77,36 @@ public:
   template<class U>
   struct rebind
   {
-    typedef FixedBlockAllocator<U> other;
+    typedef SPAllocator<U> other;
   };
 
-  FixedBlockAllocator(uint8_t* block, uint32_t count) throw ()
+  SPAllocator(FreeList* pool, SPStorage* block) throw ()
   : block_(block)
   , used_(0)
-  , size_(count)
+  , pool_(pool)
   {
   }
 
   template<class U>
-  FixedBlockAllocator(const FixedBlockAllocator<U>& u) throw ()
+  SPAllocator(const SPAllocator<U>& u) throw ()
   {
     block_ = u.get_block();
-    size_ = u.get_size();
     used_ = u.get_used();
+    pool_ = u.get_pool();
   }
 
-  uint32_t get_size() const { return size_; }
-  uint8_t* get_block() const { return block_; }
+  SPStorage* get_block() const { return block_; }
   uint32_t get_used() const { return used_; }
+  FreeList* get_pool() const { return pool_; }
 
 private:
-  uint8_t* block_;
+  SPStorage* block_;
   uint32_t used_;
-  uint32_t size_;
+  FreeList* pool_;
 };
 
 template<class T>
-class FixedBlockAllocator
+class SPAllocator
 {
 public:
   typedef size_t size_type;
@@ -111,25 +120,25 @@ public:
   template<class U>
   struct rebind
   {
-    typedef FixedBlockAllocator<U> other;
+    typedef SPAllocator<U> other;
   };
 
-  FixedBlockAllocator(uint8_t* block, uint32_t count) throw ()
+  SPAllocator(FreeList* pool, SPStorage* block) throw ()
   : block_(block)
   , used_(0)
-  , size_(count)
+  , pool_(pool)
   {
   }
 
   template<class U>
-  FixedBlockAllocator(const FixedBlockAllocator<U>& u) throw ()
+  SPAllocator(const SPAllocator<U>& u) throw ()
   {
     block_ = u.get_block();
-    size_ = u.get_size();
     used_ = u.get_used();
+    pool_ = u.get_pool();
   }
 
-  ~FixedBlockAllocator() throw ()
+  ~SPAllocator() throw ()
   {
   }
 
@@ -145,17 +154,25 @@ public:
   {
     return ~size_type(0);
   }
-  pointer allocate(size_type n, FixedBlockAllocator<void>::const_pointer hint = 0)
+  pointer allocate(size_type n, SPAllocator<void>::const_pointer hint = 0)
   {
     uint32_t to_alloc = n * sizeof(T);
-    ROS_ASSERT_MSG(to_alloc <= (size_ - used_), "to_alloc=%d, size_=%d, used_=%d", to_alloc, size_, used_);
+    ROS_ASSERT_MSG(to_alloc <= (sizeof(SPStorage) - used_), "to_alloc=%d, size=%lu, used=%d", to_alloc, sizeof(SPStorage), used_);
 
-    pointer p = reinterpret_cast<pointer>(block_ + used_);
+    pointer p = reinterpret_cast<pointer>(block_->data + used_);
     used_ += to_alloc;
     return p;
   }
   void deallocate(pointer p, size_type n)
   {
+    uint32_t to_free = n * sizeof(T);
+    used_ -= to_free;
+    ROS_ASSERT_MSG(used_ >= -(int32_t)sizeof(SPStorage), "to_free=%d, size=%lu, used=%d", to_free, sizeof(SPStorage), used_);
+
+    if (used_ == 0 || used_ == -(int32_t)sizeof(SPStorage))
+    {
+      pool_->free(block_);
+    }
   }
 
   void construct(pointer p, const_reference val)
@@ -167,14 +184,14 @@ public:
     p->~T();
   }
 
-  uint32_t get_size() const { return size_; }
-  uint8_t* get_block() const { return block_; }
-  uint32_t get_used() const { return used_; }
+  SPStorage* get_block() const { return block_; }
+  int32_t get_used() const { return used_; }
+  FreeList* get_pool() const { return pool_; }
 
 private:
-  uint8_t* block_;
-  uint32_t used_;
-  uint32_t size_;
+  SPStorage* block_;
+  int32_t used_;
+  FreeList* pool_;
 };
 
 } // namespace detail
@@ -187,29 +204,29 @@ private:
 template<typename T>
 class ObjectPool
 {
-  struct SPStorage
-  {
-    uint8_t data[64];
-  };
-
   struct Deleter
   {
-    Deleter(ObjectPool* pool, SPStorage* storage)
+    Deleter(ObjectPool* pool, detail::SPStorage* storage)
     : pool_(pool)
     , sp_(storage)
+    , free_(true)
     {
-
     }
 
-    void operator()(T* t)
+    void operator()(T const* t)
     {
-      pool_->free(t, sp_);
+      if (free_)
+      {
+        pool_->free(t);
+      }
     }
 
-  private:
     ObjectPool* pool_;
-    SPStorage* sp_;
+    detail::SPStorage* sp_;
+    bool free_;
   };
+
+
 
 public:
   /**
@@ -234,7 +251,7 @@ public:
   ~ObjectPool()
   {
     freelist_.template destructAll<T>();
-    sp_storage_freelist_.template destructAll<SPStorage>();
+    sp_storage_freelist_.template destructAll<detail::SPStorage>();
   }
 
   /**
@@ -247,8 +264,8 @@ public:
     ROS_ASSERT(!initialized_);
     freelist_.initialize(sizeof(T), count);
     freelist_.template constructAll<T>(tmpl);
-    sp_storage_freelist_.initialize(sizeof(SPStorage), count);
-    sp_storage_freelist_.template constructAll<SPStorage>();
+    sp_storage_freelist_.initialize(sizeof(detail::SPStorage), count);
+    sp_storage_freelist_.template constructAll<detail::SPStorage>();
     initialized_ = true;
   }
 
@@ -267,13 +284,54 @@ public:
       return boost::shared_ptr<T>();
     }
 
-    SPStorage* sp_storage_s = static_cast<SPStorage*>(sp_storage_freelist_.allocate());
-    ROS_ASSERT(sp_storage_s);
+    boost::shared_ptr<T> ptr = makeShared(item);
+    if (!ptr)
+    {
+      freelist_.free(item);
+      return boost::shared_ptr<T>();
+    }
 
-    uint8_t* sp_storage = sp_storage_s->data;
-    boost::shared_ptr<T> ptr(item, Deleter(this, sp_storage_s),
-                             detail::FixedBlockAllocator<void>(sp_storage, sizeof(SPStorage)));
     return ptr;
+  }
+
+  /**
+   * \brief Make a shared_ptr out of a bare pointer allocated by this pool
+   */
+  boost::shared_ptr<T> makeShared(T* t)
+  {
+    return makeSharedImpl(t);
+  }
+
+  /**
+   * \brief Make a shared_ptr out of a bare pointer allocated by this pool
+   */
+  boost::shared_ptr<T const> makeShared(T const* t)
+  {
+    return makeSharedImpl<T const>(t);
+  }
+
+  /**
+   * \brief Make a bare pointer out of a shared_ptr allocated by this pool
+   */
+  T* removeShared(const boost::shared_ptr<T>& t)
+  {
+    ROS_ASSERT(freelist_.owns(t.get()));
+
+    Deleter* d = boost::get_deleter<Deleter>(t);
+    d->free_ = false;
+    return t.get();
+  }
+
+  /**
+   * \brief Make a bare pointer out of a shared_ptr allocated by this pool
+   */
+  T const* removeShared(const boost::shared_ptr<T const>& t)
+  {
+    ROS_ASSERT(freelist_.owns(t.get()));
+
+    Deleter* d = boost::get_deleter<Deleter>(t);
+    d->free_ = false;
+    return t.get();
   }
 
   /**
@@ -290,16 +348,39 @@ public:
    * \brief Return an object allocated through allocateBare() to the pool
    * \param t An object that was allocated with allocateBare()
    */
-  void freeBare(T* t)
+  void freeBare(T const* t)
   {
     freelist_.free(t);
   }
 
+  /**
+   * \brief Returns whether or not this pool owns the provided object
+   */
+  bool owns(T const* t)
+  {
+    return freelist_.owns(t);
+  }
+
 private:
-  void free(T* t, SPStorage* sp)
+  void free(T const* t)
   {
     freelist_.free(t);
-    sp_storage_freelist_.free(sp);
+  }
+
+  template<typename T2>
+  boost::shared_ptr<T2> makeSharedImpl(T2* t)
+  {
+    ROS_ASSERT(freelist_.owns(t));
+
+    detail::SPStorage* sp_storage = static_cast<detail::SPStorage*>(sp_storage_freelist_.allocate());
+
+    if (!sp_storage)
+    {
+      return boost::shared_ptr<T2>();
+    }
+
+    boost::shared_ptr<T2> ptr(t, Deleter(this, sp_storage), detail::SPAllocator<void>(&sp_storage_freelist_, sp_storage));
+    return ptr;
   }
 
   bool initialized_;

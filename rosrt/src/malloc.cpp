@@ -40,6 +40,7 @@
 
 #include <boost/thread.hpp>
 
+#include <iostream>
 #include <dlfcn.h>
 
 namespace ros
@@ -145,7 +146,7 @@ void* malloc(size_t size)
   {
     uint32_t rec = tls_recursion_count.fetch_add(1);
 
-    if (rec < 2)
+    if (rec < 1)
     {
       UPDATE_ALLOC_INFO(result, size, mallocs);
     }

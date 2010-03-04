@@ -33,6 +33,7 @@
 *********************************************************************/
 
 #include <ros/rt/detail/publisher_manager.h>
+#include <ros/rt/detail/subscriber_manager.h>
 #include <ros/rt/malloc_wrappers.h>
 
 #include <boost/thread.hpp>
@@ -44,8 +45,11 @@ namespace rt
 
 void initThread(const InitOptions& ops)
 {
-  ROS_ASSERT(!g_publisher_manager.get());
-  g_publisher_manager.reset(new PublisherManager(ops));
+  ROS_ASSERT(!detail::g_publisher_manager.get());
+  detail::g_publisher_manager.reset(new detail::PublisherManager(ops));
+
+  ROS_ASSERT(!detail::g_subscriber_manager.get());
+  detail::g_subscriber_manager.reset(new detail::SubscriberManager());
 
   initThreadAllocInfo();
 }

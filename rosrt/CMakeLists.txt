@@ -24,7 +24,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 include_directories(include)
 
 #common commands for building c++ executables and libraries
-rosbuild_add_library(${PROJECT_NAME} src/malloc.cpp src/free_list.cpp src/publisher.cpp src/init.cpp)
+rosbuild_add_library(${PROJECT_NAME} src/malloc.cpp src/free_list.cpp src/publisher.cpp src/subscriber.cpp src/init.cpp)
 rosbuild_add_boost_directories()
 rosbuild_link_boost(${PROJECT_NAME} thread)
 
@@ -39,6 +39,9 @@ target_link_libraries(test_aligned_alloc ${PROJECT_NAME})
 
 rosbuild_add_gtest(test_publisher test/test_publisher.cpp)
 target_link_libraries(test_publisher ${PROJECT_NAME})
+
+rosbuild_add_gtest(test_subscriber test/test_subscriber.cpp)
+target_link_libraries(test_subscriber ${PROJECT_NAME})
 
 rosbuild_add_gtest(test_malloc_wrappers test/test_malloc_wrappers.cpp)
 target_link_libraries(test_malloc_wrappers ${PROJECT_NAME})

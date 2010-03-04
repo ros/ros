@@ -159,7 +159,7 @@ void* FreeList::allocate()
   }
 }
 
-void FreeList::free(void* mem)
+void FreeList::free(void const* mem)
 {
   if (!mem)
   {
@@ -170,9 +170,9 @@ void FreeList::free(void* mem)
   initDebug();
 #endif
 
-  uint32_t index = (static_cast<uint8_t*>(mem) - blocks_) / block_size_;
+  uint32_t index = (static_cast<uint8_t const*>(mem) - blocks_) / block_size_;
 
-  ROS_ASSERT(((static_cast<uint8_t*>(mem) - blocks_) % block_size_) == 0);
+  ROS_ASSERT(((static_cast<uint8_t const*>(mem) - blocks_) % block_size_) == 0);
   ROS_ASSERT(owns(mem));
 
   while (true)
@@ -227,9 +227,9 @@ void FreeList::free(void* mem)
   }
 }
 
-bool FreeList::owns(void* mem)
+bool FreeList::owns(void const* mem)
 {
-  uint32_t sub = (static_cast<uint8_t*>(mem) - blocks_);
+  uint32_t sub = (static_cast<uint8_t const*>(mem) - blocks_);
   return sub < block_count_ * block_size_;
 }
 

@@ -48,6 +48,8 @@ namespace rt
 {
 struct InitOptions;
 
+namespace detail
+{
 class PublishQueue
 {
 public:
@@ -90,8 +92,9 @@ private:
 
 extern boost::thread_specific_ptr<PublisherManager> g_publisher_manager;
 
-}
-}
+} // namespace detail
+} // namespace rt
+} // namespace ros
 
 #endif
 

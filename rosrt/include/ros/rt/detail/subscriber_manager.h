@@ -32,14 +32,34 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef ROSRT_RT_H
-#define ROSRT_RT_H
+#include <ros/atomic.h>
+#include <boost/thread.hpp>
+#include <ros/callback_queue.h>
+#include <ros/spinner.h>
 
-#include "rt/object_pool.h"
-#include "rt/publisher.h"
-#include "rt/subscriber.h"
-#include "rt/malloc_wrappers.h"
-#include "rt/aligned_alloc.h"
-#include "rt/init.h"
+namespace ros
+{
+namespace rt
+{
+namespace detail
+{
 
-#endif // ROSRT_RT_H
+class SubscriberManager
+{
+public:
+  SubscriberManager();
+  ~SubscriberManager();
+
+  ros::CallbackQueue* getCallbackQueue() { return &callback_queue_; }
+
+private:
+
+  ros::CallbackQueue callback_queue_;
+  ros::AsyncSpinner spinner_;
+};
+
+extern boost::thread_specific_ptr<SubscriberManager> g_subscriber_manager;
+
+} // namespace detail
+} // namespace rt
+} // namespace ros

@@ -157,7 +157,7 @@ public:
   pointer allocate(size_type n, SPAllocator<void>::const_pointer hint = 0)
   {
     uint32_t to_alloc = n * sizeof(T);
-    ROS_ASSERT_MSG(to_alloc <= (sizeof(SPStorage) - used_), "to_alloc=%d, size=%lu, used=%d", to_alloc, sizeof(SPStorage), used_);
+    ROS_ASSERT_MSG(to_alloc <= (sizeof(SPStorage) - used_), "to_alloc=%d, size=%u, used=%d", to_alloc, (uint32_t)sizeof(SPStorage), used_);
 
     pointer p = reinterpret_cast<pointer>(block_->data + used_);
     used_ += to_alloc;
@@ -167,9 +167,9 @@ public:
   {
     uint32_t to_free = n * sizeof(T);
     used_ -= to_free;
-    ROS_ASSERT_MSG(used_ >= -(int32_t)sizeof(SPStorage), "to_free=%d, size=%lu, used=%d", to_free, sizeof(SPStorage), used_);
+    ROS_ASSERT_MSG(used_ >= -(int32_t)sizeof(SPStorage), "to_free=%d, size=%u, used=%d", to_free, (uint32_t)sizeof(SPStorage), used_);
 
-    if (used_ == 0 || used_ == -(int32_t)sizeof(SPStorage))
+    if (used_ == 0 || used_ < 0)
     {
       pool_->free(block_);
     }

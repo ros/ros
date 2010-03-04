@@ -70,7 +70,7 @@ TEST(Subscriber, singleSubscriber)
 
   uint32_t count = 0;
   int32_t last = -1;
-  while (count < 20000)
+  while (count < 2000)
   {
     std_msgs::UInt32ConstPtr msg = sub.getNew();
     if (msg)
@@ -123,7 +123,7 @@ TEST(Subscriber, multipleSubscribersSameTopic)
         ++counts[i];
       }
 
-      if (counts[i] < 20000)
+      if (counts[i] < 2000)
       {
         all_done = false;
       }
@@ -177,7 +177,7 @@ TEST(Subscriber, multipleSubscribersMultipleTopics)
         ++counts[i];
       }
 
-      if (counts[i] < 20000)
+      if (counts[i] < 2000)
       {
         all_done = false;
       }

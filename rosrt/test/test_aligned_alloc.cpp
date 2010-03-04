@@ -53,7 +53,7 @@ TEST(AlignedAlloc, stlAllocator)
 {
   for (size_t i = 1;i < 20000; ++i)
   {
-    std::vector<uint8_t, AlignedAllocator<void, 128> > v;
+    std::vector<uint8_t, AlignedAllocator<uint8_t, 128> > v;
     v.resize(i);
     ASSERT_TRUE((((uintptr_t)&v.front()) & 127) == 0);
   }

@@ -32,7 +32,6 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include <malloc.h>
 #include <ros/rt/malloc_wrappers.h>
 
 #include <ros/assert.h>

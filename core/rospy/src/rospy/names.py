@@ -224,21 +224,6 @@ def scoped_name(caller_id, name):
 #Technically XMLRPC will never send a None, but I don't want to code masterslave.py to be
 #XML-RPC specific in this way.
 
-def empty_or_valid_name(param_name):
-    """
-    empty or valid graph resource name.
-    Validator that resolves names unless they an empty string is supplied, in which case
-    an empty string is returned.
-    """
-    def validator(param_value, caller_id):
-        if not isinstance(param_value, basestring):
-            raise ParameterInvalid("ERROR: parameter [%s] must be a string"%param_name)              
-        if not param_value:
-            return ''
-        #return resolve_name(param_value, namespace(caller_id))
-        return resolve_name(param_value, caller_id)
-    return validator
-
 def valid_name_validator_resolved(param_name, param_value, caller_id):
     if not param_value or not isinstance(param_value, basestring):
         raise ParameterInvalid("ERROR: parameter [%s] must be a non-empty string"%param_name)            
@@ -288,20 +273,6 @@ def global_name(param_name):
             raise ParameterInvalid("ERROR: parameter [%s] must be a globally referenced name"%param_name)            
         return param_value
     return validator
-
-def valid_type_name(param_name):
-    """validator that checks the type name is specified correctly"""
-    def validator(param_value, caller_id):
-        if param_value == TOPIC_ANYTYPE:
-            return param_value
-        if not param_value or not isinstance(param_value, basestring):
-            raise ParameterInvalid("ERROR: parameter [%s] must be a non-empty string"%param_name)            
-        if not len(param_value.split(TYPE_SEPARATOR)) == 2:
-            raise ParameterInvalid("ERROR: parameter [%s] is not a valid package resource name"%param_name)
-        #TODO: actual validation of chars
-        return param_value
-    return validator
-
 
 #########################################################
 #Global Namespace Routines

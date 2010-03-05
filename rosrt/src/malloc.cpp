@@ -45,7 +45,7 @@
 #if defined(WIN32)
 #define STATIC_TLS_KW __declspec(thread)
 #define HAS_TLS_KW 1
-#elif defined(APPLE)
+#elif defined(__APPLE__)
 #define HAS_TLS_KW 0
 #else
 #define STATIC_TLS_KW __thread

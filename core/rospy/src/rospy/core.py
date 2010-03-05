@@ -55,43 +55,11 @@ from rospy.names import *
 from rospy.validators import ParameterInvalid
 
 _logger = logging.getLogger("rospy.core")
-_mlogger = logging.getLogger("rospy.masterslave")
 
 # number of seconds to wait to join on threads. network issue can
 # cause joins to be not terminate gracefully, and it's better to
 # teardown dirty than to hang
 _TIMEOUT_SHUTDOWN_JOIN = 5.
-
-def mloginfo(msg, *args):
-    """
-    Info-level master log statements. These statements may be printed
-    to screen so they should be user-readable.
-    @param msg: Message string
-    @type  msg: str
-    @param args: arguments for msg if msg is a format string
-    """
-    #mloginfo is in core so that it is accessible to master and masterdata
-    _mlogger.info(msg, *args)
-    if 0: # disabling. making the master quieter
-        if args:
-            print msg%args
-        else:
-            print msg
-
-def mlogwarn(msg, *args):
-    """
-    Warn-level master log statements. These statements may be printed
-    to screen so they should be user-readable.
-    @param msg: Message string
-    @type  msg: str    
-    @param args: arguments for msg if msg is a format string
-    """
-    #mloginfo is in core so that it is accessible to master and masterdata
-    _mlogger.warn(msg, *args)
-    if args:
-        print "WARN: "+msg%args
-    else:
-        print "WARN: "+str(msg)
 
 #########################################################
 # ROSRPC
@@ -483,33 +451,10 @@ def register_signals():
     
 # Validators ######################################
 
-def is_api(paramName):
-    """
-    Validator that checks that parameter is a valid API handle
-    (i.e. URI). Both http and rosrpc are allowed schemes.
-    """
-    def validator(param_value, callerId):
-        if not param_value or not isinstance(param_value, basestring):
-            raise ParameterInvalid("ERROR: parameter [%s] is not an XMLRPC URI"%paramName)
-        if not param_value.startswith("http://") and not param_value.startswith(ROSRPC):
-            raise ParameterInvalid("ERROR: parameter [%s] is not an RPC URI"%paramName)
-        #could do more fancy parsing, but the above catches the major cases well enough
-        return param_value
-    return validator
-
 def is_topic(param_name):
     """
     Validator that checks that parameter is a valid ROS topic name
     """    
-    def validator(param_value, caller_id):
-        v = valid_name_validator_resolved(param_name, param_value, caller_id)
-        if param_value == '/':
-            raise ParameterInvalid("ERROR: parameter [%s] cannot be the global namespace"%param_name)            
-        return v
-    return validator
-
-def is_service(param_name):
-    """Validator that checks that parameter is a valid ROS service name"""
     def validator(param_value, caller_id):
         v = valid_name_validator_resolved(param_name, param_value, caller_id)
         if param_value == '/':

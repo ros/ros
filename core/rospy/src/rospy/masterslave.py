@@ -32,11 +32,9 @@
 #
 # Revision $Id$
 """
-Internal use: ROS Master and Slave API. 
+Internal use: ROS Node (Slave) API. 
 
-The APIs are implemented by X{ROSHandler} and its subclass
-X{ROSMasterHandler}. With this implementation, a Master also includes
-the entire Slave API.
+The Node API is implemented by the L{ROSHandler}.
 
 API return convention: (statusCode, statusMessage, returnValue)
 
@@ -71,7 +69,7 @@ import rospy.tcpros
 
 from rospy.core import *
 from rospy.registration import RegManager, get_topic_manager
-from rospy.validators import non_empty, non_empty_str, not_none, ParameterInvalid
+from rospy.validators import non_empty, ParameterInvalid
 
 NUM_WORKERS = 3 #number of threads we use to send publisher_update notifications
 

@@ -72,7 +72,7 @@ TEST(Subscriber, singleSubscriber)
   int32_t last = -1;
   while (count < 2000)
   {
-    std_msgs::UInt32ConstPtr msg = sub.getNew();
+    std_msgs::UInt32ConstPtr msg = sub.poll();
     if (msg)
     {
       ASSERT_GT((int32_t)msg->data, last);
@@ -115,7 +115,7 @@ TEST(Subscriber, multipleSubscribersSameTopic)
 
     for (size_t i = 0; i < sub_count; ++i)
     {
-      std_msgs::UInt32ConstPtr msg = subs[i].getNew();
+      std_msgs::UInt32ConstPtr msg = subs[i].poll();
       if (msg)
       {
         ASSERT_GT((int32_t)msg->data, lasts[i]);
@@ -169,7 +169,7 @@ TEST(Subscriber, multipleSubscribersMultipleTopics)
 
     for (size_t i = 0; i < sub_count; ++i)
     {
-      std_msgs::UInt32ConstPtr msg = subs[i].getNew();
+      std_msgs::UInt32ConstPtr msg = subs[i].poll();
       if (msg)
       {
         ASSERT_GT((int32_t)msg->data, lasts[i]);

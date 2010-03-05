@@ -138,11 +138,11 @@ public:
    * The same message will only be returned once, i.e:
 \verbatim
 <msg received>
-msg = getNew(); // Returns a valid message
-msg = getNew(); // Returns NULL
+msg = poll(); // Returns a valid message
+msg = poll(); // Returns NULL
 \endverbatim
    */
-  boost::shared_ptr<M const> getNew()
+  boost::shared_ptr<M const> poll()
   {
     M const* latest = latest_.exchange(0);
     if (!latest)

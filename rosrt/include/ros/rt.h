@@ -39,7 +39,6 @@
 #include "rt/publisher.h"
 #include "rt/subscriber.h"
 #include "rt/malloc_wrappers.h"
-#include "rt/aligned_alloc.h"
 #include "rt/init.h"
 
 #endif // ROSRT_RT_H

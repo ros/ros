@@ -11,6 +11,7 @@
   <depend package="roscpp"/>
   <depend package="roslib"/>
   <depend package="rosatomic"/>
+  <depend package="allocators"/>
   <depend package="std_msgs"/>
 
 </package>

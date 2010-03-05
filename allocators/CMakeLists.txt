@@ -21,24 +21,12 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
-include_directories(include)
-
 #common commands for building c++ executables and libraries
-rosbuild_add_library(${PROJECT_NAME} src/malloc.cpp src/free_list.cpp src/publisher.cpp src/subscriber.cpp src/init.cpp)
-rosbuild_add_boost_directories()
-rosbuild_link_boost(${PROJECT_NAME} thread)
+#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
+#target_link_libraries(${PROJECT_NAME} another_library)
+#rosbuild_add_boost_directories()
+#rosbuild_link_boost(${PROJECT_NAME} thread)
+#rosbuild_add_executable(example examples/example.cpp)
+#target_link_libraries(example ${PROJECT_NAME})
 
-rosbuild_add_gtest(test_object_pool test/test_object_pool.cpp)
-target_link_libraries(test_object_pool ${PROJECT_NAME})
-
-rosbuild_add_gtest(test_freelist test/test_freelist.cpp)
-target_link_libraries(test_freelist ${PROJECT_NAME})
-
-rosbuild_add_gtest(test_publisher test/test_publisher.cpp)
-target_link_libraries(test_publisher ${PROJECT_NAME})
-
-rosbuild_add_gtest(test_subscriber test/test_subscriber.cpp)
-target_link_libraries(test_subscriber ${PROJECT_NAME})
-
-rosbuild_add_gtest(test_malloc_wrappers test/test_malloc_wrappers.cpp)
-target_link_libraries(test_malloc_wrappers ${PROJECT_NAME})
+rosbuild_add_gtest(test_aligned_alloc test/test_aligned_alloc.cpp)

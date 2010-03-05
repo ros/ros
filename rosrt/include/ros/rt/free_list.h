@@ -36,8 +36,6 @@
 #ifndef ROSRT_FREE_LIST_H
 #define ROSRT_FREE_LIST_H
 
-#include "aligned_alloc.h"
-
 #include <ros/assert.h>
 #include <ros/atomic.h>
 
@@ -177,7 +175,7 @@ private:
 
   inline void setTag(uint64_t& val, uint32_t tag)
   {
-    val = getVal(val) | (uint64_t)tag << 32;
+    val = getVal(val) | ((uint64_t)tag << 32);
   }
 
   inline void setVal(uint64_t& val, uint32_t v)

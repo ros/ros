@@ -1,0 +1,19 @@
+<package>
+  <description brief="allocators">
+
+     allocators
+
+  </description>
+  <author>Josh Faust</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/allocators</url>
+  
+  <depend package="roslib"/>
+  
+  <export>
+    <cpp cflags="-I${prefix}/include"/>
+  </export>
+</package>
+
+

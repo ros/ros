@@ -34,9 +34,9 @@
 
 #include <gtest/gtest.h>
 
-#include "ros/rt/aligned_alloc.h"
+#include <allocators/aligned.h>
 
-using namespace ros::rt;
+using namespace allocators;
 
 TEST(AlignedAlloc, mallocfree)
 {

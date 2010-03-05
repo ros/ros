@@ -108,6 +108,7 @@ public:
    */
   void initialize(uint32_t message_pool_size)
   {
+    ROS_ASSERT(message_pool_size > 1);
     pool_.initialize(message_pool_size, M());
     latest_.store(0);
   }

@@ -32,16 +32,13 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef ROSRT_ALIGNED_ALLOC_H
-#define ROSRT_ALIGNED_ALLOC_H
+#ifndef ALLOCATORS_ALIGNED_H
+#define ALLOCATORS_ALIGNED_H
 
-#include <new>
-#include <ros/assert.h>
-#include <ros/atomic.h>
+#include <cstdlib>
+#include <ros/types.h>
 
-namespace ros
-{
-namespace rt
+namespace allocators
 {
 
 // alignedMalloc/alignedFree implementations found at
@@ -172,8 +169,7 @@ public:
   }
 };
 
-}
-}
+} // namespace allocators
 
-#endif // ROSRT_ALIGNED_ALLOC_H
+#endif // ALLOCATORS_ALIGNED_H
 

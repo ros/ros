@@ -34,6 +34,7 @@
 *********************************************************************/
 
 #include <ros/rt/free_list.h>
+#include <allocators/aligned.h>
 
 namespace ros
 {
@@ -64,8 +65,8 @@ FreeList::~FreeList()
     next_[i].~atomic_uint32_t();
   }
 
-  alignedFree(blocks_);
-  alignedFree(next_);
+  allocators::alignedFree(blocks_);
+  allocators::alignedFree(next_);
 }
 
 void FreeList::initialize(uint32_t block_size, uint32_t block_count)
@@ -78,8 +79,8 @@ void FreeList::initialize(uint32_t block_size, uint32_t block_count)
 
   head_.store(0);
 
-  blocks_ = (uint8_t*)alignedMalloc(block_size * block_count, ROSRT_CACHELINE_SIZE);
-  next_ = (atomic_uint32_t*)alignedMalloc(sizeof(atomic_uint32_t) * block_count, ROSRT_CACHELINE_SIZE);
+  blocks_ = (uint8_t*)allocators::alignedMalloc(block_size * block_count, ROSRT_CACHELINE_SIZE);
+  next_ = (atomic_uint32_t*)allocators::alignedMalloc(sizeof(atomic_uint32_t) * block_count, ROSRT_CACHELINE_SIZE);
 
   memset(blocks_, 0xCD, block_size * block_count);
 

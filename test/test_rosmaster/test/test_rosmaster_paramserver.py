@@ -100,7 +100,7 @@ class TestRospyParamServer(unittest.TestCase):
         self.last_update = updates
 
     def test_subscribe_param_simple(self):
-        from rospy.masterdata import RegistrationManager
+        from rosmaster.registrations import RegistrationManager
         from rosmaster.paramserver import ParamDictionary
 
         # setup node and subscriber data
@@ -136,7 +136,7 @@ class TestRospyParamServer(unittest.TestCase):
         self.assertEquals([([('node1', 'http://node1b:1'), ('node2', 'http://node2:2')], '/foo/', 4), ], self.last_update)
 
     def test_subscribe_param_tree(self):
-        from rospy.masterdata import RegistrationManager
+        from rosmaster.registrations import RegistrationManager
         from rosmaster.paramserver import ParamDictionary
 
         # setup node and subscriber data
@@ -204,7 +204,7 @@ class TestRospyParamServer(unittest.TestCase):
 
     # verify that subscribe_param works with parameter deletion
     def test_subscribe_param_deletion(self):
-        from rospy.masterdata import RegistrationManager
+        from rosmaster.registrations import RegistrationManager
         from rosmaster.paramserver import ParamDictionary
 
         # setup node and subscriber data
@@ -242,7 +242,7 @@ class TestRospyParamServer(unittest.TestCase):
         self.assertEquals([([('del_parent', 'http://del_parent:1')], '/ns1/ns2/ns3/key/', {}), ], self.last_update)
     
     def test_unsubscribe_param(self):
-        from rospy.masterdata import RegistrationManager
+        from rosmaster.registrations import RegistrationManager
         from rosmaster.paramserver import ParamDictionary
 
         # setup node and subscriber data

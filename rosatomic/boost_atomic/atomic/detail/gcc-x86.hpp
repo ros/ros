@@ -124,7 +124,7 @@ public:
 	}
 	T fetch_add(T c, memory_order2 order=memory_order2_seq_cst) volatile
 	{
-		__asm__ __volatile__("lock xaddb %0, %1" : "+r" (c), "+m" (i) :: "memory");
+		__asm__ __volatile__("lock xaddb %0, %1" : "+q" (c), "+m" (i) :: "memory");
 		return c;
 	}
 	
@@ -193,7 +193,7 @@ public:
 	}
 	T fetch_add(T c, memory_order2 order=memory_order2_seq_cst) volatile
 	{
-		__asm__ __volatile__("lock xaddw %0, %1" : "+r" (c), "+m" (i) :: "memory");
+		__asm__ __volatile__("lock xaddw %0, %1" : "+q" (c), "+m" (i) :: "memory");
 		return c;
 	}
 	
@@ -262,7 +262,7 @@ public:
 	}
 	T fetch_add(T c, memory_order2 order=memory_order2_seq_cst) volatile
 	{
-		__asm__ __volatile__("lock xaddl %0, %1" : "+r" (c), "+m" (i) :: "memory");
+		__asm__ __volatile__("lock xaddl %0, %1" : "+q" (c), "+m" (i) :: "memory");
 		return c;
 	}
 	

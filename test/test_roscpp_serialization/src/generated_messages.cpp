@@ -48,6 +48,7 @@
 #include "test_roscpp_serialization/WithMemberNamedHeaderThatIsNotAHeader.h"
 #include "test_roscpp_serialization/FixedLengthArrayOfExternal.h"
 #include "test_roscpp_serialization/VariableLengthArrayOfExternal.h"
+#include "test_roscpp_serialization/Constants.h"
 
 using namespace test_roscpp_serialization;
 
@@ -233,6 +234,22 @@ TEST(Generated, serializationOStreamOperator)
   FixedLength m;
   ostream << m;
   ASSERT_EQ(ostream.getLength(), 0UL);
+}
+
+TEST(Generated, constants)
+{
+  EXPECT_EQ(Constants::a, 1U);
+  EXPECT_EQ(Constants::b, 2);
+  EXPECT_EQ(Constants::c, 3U);
+  EXPECT_EQ(Constants::d, 4);
+  EXPECT_EQ(Constants::e, 5U);
+  EXPECT_EQ(Constants::f, 6);
+  EXPECT_EQ(Constants::g, 7U);
+  EXPECT_EQ(Constants::h, 8);
+  EXPECT_FLOAT_EQ(Constants::fa, 1.5);
+  EXPECT_FLOAT_EQ(Constants::fb, 40.9);
+  EXPECT_STREQ(Constants::str.c_str(), "hello there");
+  EXPECT_STREQ(Constants::str2.c_str(), "this string has \"quotes\" and \\slashes\\ in it");
 }
 
 int main(int argc, char** argv)

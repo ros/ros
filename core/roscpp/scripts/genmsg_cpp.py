@@ -191,7 +191,7 @@ def write_struct(s, spec, cpp_name_prefix):
     
     write_constructors(s, spec, cpp_name_prefix)
     write_members(s, spec)
-    write_constants(s, spec)
+    write_constant_declarations(s, spec)
     write_deprecated_member_functions(s, spec)
     
     (cpp_msg_unqualified, cpp_msg_with_alloc, cpp_msg_base) = cpp_message_declarations(cpp_name_prefix, msg)
@@ -347,7 +347,12 @@ def write_members(s, spec):
     """
     [write_member(s, field) for field in spec.parsed_fields()]
         
-def write_constant(s, constant):
+def escape_string(str):
+    str = str.replace('\\', '\\\\')
+    str = str.replace('"', '\\"')
+    return str
+        
+def write_constant_declaration(s, constant):
     """
     Write a constant value as a static member
     
@@ -356,15 +361,14 @@ def write_constant(s, constant):
     @param constant: The constant
     @type constant: roslib.msgs.Constant
     """
-    if not constant.type in ['byte', 'int8', 'int16', 'int32', 'int64',
-                'char', 'uint8', 'uint16', 'uint32', 'uint64',
-                'float32', 'float64']:
-        #raise ValueError('%s not supported as a constant'%(constant.type))
-        return # TODO: strings
     
-    s.write('  static const %s %s = %s;\n'%(msg_type_to_cpp(constant.type), constant.name, constant.val))
+    # integral types get their definitions in the same place as the declaration so they can be used at compile time
+    if (constant.type in ['byte', 'int8', 'int16', 'int32', 'int64', 'char', 'uint8', 'uint16', 'uint32', 'uint64']):
+        s.write('  static const %s %s = %s;\n'%(msg_type_to_cpp(constant.type), constant.name, constant.val))
+    else:
+        s.write('  static const %s %s;\n'%(msg_type_to_cpp(constant.type), constant.name))
         
-def write_constants(s, spec):
+def write_constant_declarations(s, spec):
     """
     Write all the constants from a spec as static members
     
@@ -373,7 +377,35 @@ def write_constants(s, spec):
     @param spec: The message spec
     @type spec: roslib.msgs.MsgSpec
     """
-    [write_constant(s, constant) for constant in spec.constants]
+    [write_constant_declaration(s, constant) for constant in spec.constants]
+    s.write('\n')
+    
+def write_constant_definition(s, spec, constant):
+    """
+    Write a constant value as a static member
+    
+    @param s: The stream to write to
+    @type s: stream
+    @param constant: The constant
+    @type constant: roslib.msgs.Constant
+    """
+    
+    # integral types do not need a definition, since they've been defined where they are declared
+    if (constant.type not in ['byte', 'int8', 'int16', 'int32', 'int64', 'char', 'uint8', 'uint16', 'uint32', 'uint64', 'string']):
+        s.write('template<typename ContainerAllocator> const %s %s_<ContainerAllocator>::%s = %s;\n'%(msg_type_to_cpp(constant.type), spec.short_name, constant.name, constant.val))
+    elif (constant.type == 'string'):
+        s.write('template<typename ContainerAllocator> const %s %s_<ContainerAllocator>::%s = "%s";\n'%(msg_type_to_cpp(constant.type), spec.short_name, constant.name, escape_string(constant.val)))
+        
+def write_constant_definitions(s, spec):
+    """
+    Write all the constants from a spec as static members
+    
+    @param s: The stream to write to
+    @type s: stream
+    @param spec: The message spec
+    @type spec: roslib.msgs.MsgSpec
+    """
+    [write_constant_definition(s, spec, constant) for constant in spec.constants]
     s.write('\n')
         
 def is_fixed_length(spec):
@@ -466,8 +498,7 @@ def compute_full_text_escaped(gen_deps_dict):
     lines = definition.split('\n')
     s = StringIO()
     for line in lines:
-        line = line.replace('\\', '\\\\')
-        line = line.replace('"', '\\"')
+        line = escape_string(line)
         s.write('%s\\n \\\n'%(line))
         
     val = s.getvalue()
@@ -658,6 +689,7 @@ def generate(msg_path):
     
     s.write('namespace %s\n{\n'%(package))
     write_struct(s, spec, cpp_prefix)
+    write_constant_definitions(s, spec)
     write_ostream_operator(s, spec, cpp_prefix)
     s.write('} // namespace %s\n\n'%(package))
     

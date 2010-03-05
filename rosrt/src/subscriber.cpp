@@ -46,7 +46,7 @@ namespace rt
 namespace detail
 {
 
-boost::thread_specific_ptr<SubscriberManager> g_subscriber_manager;
+boost::shared_ptr<SubscriberManager> g_subscriber_manager;
 
 SubscriberManager::SubscriberManager()
 : spinner_(1, &callback_queue_)
@@ -63,9 +63,8 @@ SubscriberManager::~SubscriberManager()
 
 ros::CallbackQueueInterface* getSubscriberCallbackQueue()
 {
-  SubscriberManager* man = g_subscriber_manager.get();
-  ROS_ASSERT_MSG(man, "ros::rt::initThread() has not been called for this thread!\n%s", ros::debug::getBacktrace().c_str());
-  return man->getCallbackQueue();
+  ROS_ASSERT_MSG(g_subscriber_manager, "ros::rt::init() has not been called!\n%s", ros::debug::getBacktrace().c_str());
+  return g_subscriber_manager->getCallbackQueue();
 }
 
 } // namespace detail

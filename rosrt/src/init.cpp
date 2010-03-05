@@ -42,13 +42,20 @@ namespace ros
 namespace rt
 {
 
-void initThread(const InitOptions& ops)
-{
-  ROS_ASSERT(!detail::g_publisher_manager.get());
-  detail::g_publisher_manager.reset(new detail::PublisherManager(ops));
+static bool g_initialized = false;
 
-  ROS_ASSERT(!detail::g_subscriber_manager.get());
-  detail::g_subscriber_manager.reset(new detail::SubscriberManager());
+void init(const InitOptions& ops)
+{
+  if (!g_initialized)
+  {
+    ROS_ASSERT(!detail::g_publisher_manager);
+    detail::g_publisher_manager.reset(new detail::PublisherManager(ops));
+
+    ROS_ASSERT(!detail::g_subscriber_manager);
+    detail::g_subscriber_manager.reset(new detail::SubscriberManager());
+
+    g_initialized = true;
+  }
 }
 
 }

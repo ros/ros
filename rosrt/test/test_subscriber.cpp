@@ -70,7 +70,7 @@ TEST(Subscriber, singleSubscriber)
 
   uint32_t count = 0;
   int32_t last = -1;
-  while (count < 2000)
+  while (count < 10000)
   {
     std_msgs::UInt32ConstPtr msg = sub.poll();
     if (msg)
@@ -123,7 +123,7 @@ TEST(Subscriber, multipleSubscribersSameTopic)
         ++counts[i];
       }
 
-      if (counts[i] < 2000)
+      if (counts[i] < 10000)
       {
         all_done = false;
       }
@@ -177,7 +177,7 @@ TEST(Subscriber, multipleSubscribersMultipleTopics)
         ++counts[i];
       }
 
-      if (counts[i] < 2000)
+      if (counts[i] < 10000)
       {
         all_done = false;
       }
@@ -188,13 +188,83 @@ TEST(Subscriber, multipleSubscribersMultipleTopics)
   tg.join_all();
 }
 
+void subscribeThread(Subscriber<std_msgs::UInt32>& sub, bool& failed)
+{
+  resetThreadAllocInfo();
+
+  const int count = 10000;
+  int my_count = 0;
+  int32_t last = -1;
+  while (true)
+  {
+    std_msgs::UInt32ConstPtr msg = sub.poll();
+    if (msg)
+    {
+      if (last >= (int32_t)msg->data)
+      {
+        ROS_ERROR_STREAM("Thread " << boost::this_thread::get_id() << " last is greater than msg " << last << " >= " << msg->data);
+        failed = true;
+        break;
+      }
+
+      last = msg->data;
+      ++my_count;
+
+      //ROS_INFO_STREAM("Thread " << boost::this_thread::get_id() << " " << my_count);
+    }
+
+    if (my_count >= count)
+    {
+      break;
+    }
+
+    ros::WallDuration(0.0001).sleep();
+  }
+
+  if (getThreadAllocInfo().total_ops > 0UL)
+  {
+    ROS_ERROR_STREAM("Thread " << boost::this_thread::get_id() << " performed " << getThreadAllocInfo().total_ops << " memory operations (malloc/free/etc.)");
+    failed = true;
+  }
+}
+
+TEST(Subscriber, multipleThreadsSameTopic)
+{
+  ros::NodeHandle nh;
+  ros::Publisher pub = nh.advertise<std_msgs::UInt32>("test", 1);
+  bool done = false;
+  boost::thread t(boost::bind(publishThread, boost::ref(pub), boost::ref(done)));
+  boost::thread_group tg;
+
+  const size_t sub_count = 10;
+  Subscriber<std_msgs::UInt32> subs[sub_count];
+  bool failed[sub_count];
+  for (size_t i = 0; i < sub_count; ++i)
+  {
+    subs[i].initialize(2);
+    subs[i].subscribe(nh, "test");
+    failed[i] = false;
+
+    tg.create_thread(boost::bind(subscribeThread, boost::ref(subs[i]), boost::ref(failed[i])));
+  }
+
+  tg.join_all();
+  done = true;
+  t.join();
+
+  for (size_t i = 0; i < sub_count; ++i)
+  {
+    EXPECT_FALSE(failed[i]);
+  }
+}
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "test_rt_subscriber");
   testing::InitGoogleTest(&argc, argv);
 
   ros::NodeHandle nh;
-  initThread();
+  ros::rt::init();
 
   return RUN_ALL_TESTS();
 }

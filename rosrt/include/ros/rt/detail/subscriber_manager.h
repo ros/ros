@@ -58,7 +58,7 @@ private:
   ros::AsyncSpinner spinner_;
 };
 
-extern boost::thread_specific_ptr<SubscriberManager> g_subscriber_manager;
+extern boost::shared_ptr<SubscriberManager> g_subscriber_manager;
 
 } // namespace detail
 } // namespace rt

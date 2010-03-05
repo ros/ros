@@ -35,6 +35,8 @@
 #ifndef ROSRT_INIT_H
 #define ROSRT_INIT_H
 
+#include <ros/macros.h>
+
 namespace ros
 {
 namespace rt
@@ -48,7 +50,9 @@ struct InitOptions
 
   uint32_t pubmanager_queue_size;
 };
-void initThread(const InitOptions& ops = InitOptions());
+
+void init(const InitOptions& ops = InitOptions());
+ROSCPP_DEPRECATED inline void initThread(const InitOptions& ops = InitOptions()) { init(ops); }
 
 }
 }

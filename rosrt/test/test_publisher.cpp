@@ -142,7 +142,7 @@ int main(int argc, char** argv)
   testing::InitGoogleTest(&argc, argv);
 
   ros::NodeHandle nh;
-  initThread();
+  ros::rt::init();
 
   return RUN_ALL_TESTS();
 }

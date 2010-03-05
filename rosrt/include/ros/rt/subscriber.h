@@ -169,6 +169,12 @@ private:
     if (!pool_.owns(msg.get()))
     {
       M* copy = pool_.allocateBare();
+
+      if (!copy)
+      {
+        return;
+      }
+
       *copy = *msg;
       latest = copy;
     }

@@ -47,14 +47,12 @@ namespace rt
 namespace detail
 {
 
-boost::thread_specific_ptr<PublisherManager> g_publisher_manager;
+boost::shared_ptr<PublisherManager> g_publisher_manager;
 
 bool publish(const ros::Publisher& pub, const VoidConstPtr& msg, PublishFunc pub_func)
 {
-  PublisherManager* man = g_publisher_manager.get();
-  ROS_ASSERT_MSG(man, "ros::rt::initThread() has not been called for this thread!\n%s", ros::debug::getBacktrace().c_str());
-
-  return man->publish(pub, msg, pub_func);
+  ROS_ASSERT_MSG(g_publisher_manager, "ros::rt::init() has not been called!\n%s", ros::debug::getBacktrace().c_str());
+  return g_publisher_manager->publish(pub, msg, pub_func);
 }
 
 PublishQueue::PublishQueue(uint32_t size)

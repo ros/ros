@@ -90,7 +90,7 @@ private:
   volatile bool running_;
 };
 
-extern boost::thread_specific_ptr<PublisherManager> g_publisher_manager;
+extern boost::shared_ptr<PublisherManager> g_publisher_manager;
 
 } // namespace detail
 } // namespace rt

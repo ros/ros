@@ -362,9 +362,9 @@ def write_constant_declaration(s, constant):
     @type constant: roslib.msgs.Constant
     """
     
-    # integral types get their definitions in the same place as the declaration so they can be used at compile time
+    # integral types get their declarations as enums to allow use at compile time
     if (constant.type in ['byte', 'int8', 'int16', 'int32', 'int64', 'char', 'uint8', 'uint16', 'uint32', 'uint64']):
-        s.write('  static const %s %s = %s;\n'%(msg_type_to_cpp(constant.type), constant.name, constant.val))
+        s.write('  enum { %s = %s };\n'%(constant.name, constant.val))
     else:
         s.write('  static const %s %s;\n'%(msg_type_to_cpp(constant.type), constant.name))
         

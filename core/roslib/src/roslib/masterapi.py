@@ -42,6 +42,7 @@ import sys
 import xmlrpclib
 
 import roslib.exceptions
+import roslib.names
 
 class ROSMasterException(roslib.exceptions.ROSLibException):
     """
@@ -63,6 +64,18 @@ class Error(ROSMasterException):
     """
     pass
 
+def is_online(master_uri=None):
+    """
+    @param master_uri: (optional) override environment's ROS_MASTER_URI
+    @type  master_uri: str
+    @return: True if Master is available
+    """
+    try:
+        Master('roslib').is_online()
+        return True
+    except:
+        return False
+
 class Master(object):
     """
     API for interacting with the ROS master. Although the Master is
@@ -73,12 +86,35 @@ class Master(object):
     """
     
     def __init__(self, caller_id, master_uri=None):
+        """
+        @param caller_id: name of node to use in calls to master
+        @type  caller_id: str
+        @param master_uri: (optional) override environment's ROS_MASTER_URI
+        @type  master_uri: str
+        """
+
         if master_uri is None:
             master_uri = roslib.rosenv.get_master_uri()
         self.master_uri = master_uri
         self.handle = xmlrpclib.ServerProxy(self.master_uri)
-        self.caller_id = caller_id
+        self.caller_id = roslib.names.make_caller_id(caller_id) #resolve
         
+    def is_online(self):
+        """
+        Check if Master is online.
+
+        NOTE: this is not part of the actual Master API. This is a convenience function.
+        
+        @param master_uri: (optional) override environment's ROS_MASTER_URI
+        @type  master_uri: str
+        @return: True if Master is available
+        """
+        try:
+            self.getPid()
+            return True
+        except:
+            return False
+
     def _succeed(self, args):
         """
         Check master return code and return the value field.
@@ -109,6 +145,18 @@ class Master(object):
         @raise roslib.masterapi.Failure: if Master returns FAILURE.
         """
         return self._succeed(self.handle.getPid(self.caller_id))
+
+    def getUri(self):
+        """
+        Get the URI of this Master
+        @param caller_id: ROS caller id
+        @type  caller_id: str
+        @return: masterUri
+        @rtype: str
+        @raise roslib.masterapi.Error: if Master returns ERROR.
+        @raise roslib.masterapi.Failure: if Master returns FAILURE.
+        """
+        return self._succeed(self.handle.getUri(self.caller_id))
     
     def registerService(self, service, service_api, caller_api):
         """

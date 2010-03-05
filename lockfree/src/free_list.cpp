@@ -33,12 +33,12 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include <ros/rt/free_list.h>
+#include <lockfree/free_list.h>
 #include <allocators/aligned.h>
 
-namespace ros
-{
-namespace rt
+using namespace ros;
+
+namespace lockfree
 {
 
 FreeList::FreeList()
@@ -234,6 +234,5 @@ bool FreeList::owns(void const* mem)
   return sub < block_count_ * block_size_;
 }
 
-} // namespace rt
-} // namespace ros
+} // namespace lockfree
 

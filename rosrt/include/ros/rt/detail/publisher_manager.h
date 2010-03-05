@@ -38,7 +38,7 @@
 #include <ros/atomic.h>
 #include <ros/publisher.h>
 #include <ros/rt/publisher.h>
-#include <ros/rt/object_pool.h>
+#include <lockfree/object_pool.h>
 #include <boost/thread.hpp>
 
 namespace ros
@@ -68,7 +68,7 @@ public:
   void publishAll();
 
 private:
-  ObjectPool<PubItem> pool_;
+  lockfree::ObjectPool<PubItem> pool_;
   atomic<PubItem*> head_;
 };
 

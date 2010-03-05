@@ -32,7 +32,7 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "object_pool.h"
+#include <lockfree/object_pool.h>
 
 #include <ros/atomic.h>
 #include <ros/ros.h>
@@ -124,7 +124,7 @@ public:
   {
     ros::SubscribeOptions ops;
 #ifdef ROS_NEW_SERIALIZATION_API
-    ops.template init<M>(topic, 1, boost::bind(&Subscriber::callback, this, _1), boost::bind(&ObjectPool<M>::allocate, &pool_));
+    ops.template init<M>(topic, 1, boost::bind(&Subscriber::callback, this, _1), boost::bind(&lockfree::ObjectPool<M>::allocate, &pool_));
 #else
     ops.template init<M>(topic, 1, boost::bind(&Subscriber::callback, this, _1));
 #endif
@@ -193,7 +193,7 @@ private:
 
   atomic<M const*> latest_;
 
-  ObjectPool<M> pool_;
+  lockfree::ObjectPool<M> pool_;
   ros::Subscriber sub_;
 };
 

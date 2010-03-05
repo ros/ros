@@ -35,7 +35,6 @@
 #ifndef ROSRT_RT_H
 #define ROSRT_RT_H
 
-#include "rt/object_pool.h"
 #include "rt/publisher.h"
 #include "rt/subscriber.h"
 #include "rt/malloc_wrappers.h"

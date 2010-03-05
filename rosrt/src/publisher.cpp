@@ -34,9 +34,10 @@
 
 #include <ros/rt/publisher.h>
 #include <ros/rt/detail/publisher_manager.h>
-#include <ros/rt/object_pool.h>
 #include <ros/rt/init.h>
 #include <ros/debug.h>
+
+#include <lockfree/object_pool.h>
 
 #include <boost/thread.hpp>
 

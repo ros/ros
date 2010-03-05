@@ -1,0 +1,21 @@
+<package>
+  <description brief="A collection of lockfree data structures">
+
+     The lockfree package is EXPERIMENTAL and NOT API stable.
+
+  </description>
+  <author>Josh Faust</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/lockfree</url>
+  <depend package="rosatomic"/>
+  <depend package="rosconsole"/>
+  <depend package="roslib"/>
+  <depend package="allocators"/>
+
+  <export>
+  	<cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -llockfree"/>
+  </export>
+</package>
+
+

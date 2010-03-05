@@ -32,23 +32,16 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef ROSRT_OBJECT_POOL_H
-#define ROSRT_OBJECT_POOL_H
+#ifndef LOCKFREE_OBJECT_POOL_H
+#define LOCKFREE_OBJECT_POOL_H
 
 #include "free_list.h"
 
 #include <ros/assert.h>
 
-#include <vector>
 #include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/array.hpp>
-#include <boost/aligned_storage.hpp>
-#include <boost/bind.hpp>
 
-namespace ros
-{
-namespace rt
+namespace lockfree
 {
 
 template<typename T>
@@ -389,7 +382,6 @@ private:
   FreeList sp_storage_freelist_;
 };
 
-}
-}
+} // namespace lockfree
 
-#endif // ROSRT_OBJECT_POOL_H
+#endif // LOCKFREE_OBJECT_POOL_H

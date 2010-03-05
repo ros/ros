@@ -34,18 +34,15 @@
 
 #include <gtest/gtest.h>
 
-#include "ros/rt/object_pool.h"
-#include "ros/rt/malloc_wrappers.h"
+#include "lockfree/object_pool.h"
 
 #include <set>
 
-using namespace ros::rt;
+using namespace lockfree;
 
 TEST(ObjectPool, oneElement)
 {
   ObjectPool<uint32_t> pool(1, 5);
-
-  resetThreadAllocInfo();
 
   boost::shared_ptr<uint32_t> item = pool.allocate();
   ASSERT_TRUE(item);
@@ -56,8 +53,6 @@ TEST(ObjectPool, oneElement)
   item = pool.allocate();
   ASSERT_TRUE(item);
   EXPECT_EQ(*item, 6UL);
-
-  ASSERT_EQ(getThreadAllocInfo().total_ops, 0ULL);
 }
 
 TEST(ObjectPool, multipleElements)
@@ -67,8 +62,6 @@ TEST(ObjectPool, multipleElements)
 
   std::vector<boost::shared_ptr<uint32_t> > items;
   items.reserve(count);
-
-  resetThreadAllocInfo();
 
   for (uint32_t i = 0; i < count; ++i)
   {
@@ -83,8 +76,6 @@ TEST(ObjectPool, multipleElements)
   items.push_back(pool.allocate());
   ASSERT_TRUE(items.back());
   ASSERT_FALSE(pool.allocate());
-
-  ASSERT_EQ(getThreadAllocInfo().total_ops, 0ULL);
 
   std::set<boost::shared_ptr<uint32_t> > set;
   set.insert(items.begin(), items.end());

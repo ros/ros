@@ -33,13 +33,11 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef ROSRT_FREE_LIST_H
-#define ROSRT_FREE_LIST_H
+#ifndef LOCKFREE_FREE_LIST_H
+#define LOCKFREE_FREE_LIST_H
 
 #include <ros/assert.h>
 #include <ros/atomic.h>
-
-#include <boost/array.hpp>
 
 #if FREE_LIST_DEBUG
 #include <boost/thread.hpp>
@@ -53,9 +51,7 @@
 #define FREELIST_DEBUG_YIELD()
 #endif
 
-namespace ros
-{
-namespace rt
+namespace lockfree
 {
 
 /**
@@ -184,8 +180,8 @@ private:
   }
 
   uint8_t* blocks_;
-  atomic_uint32_t* next_;
-  atomic_uint64_t head_;
+  ros::atomic_uint32_t* next_;
+  ros::atomic_uint64_t head_;
 
   uint32_t block_size_;
   uint32_t block_count_;
@@ -235,7 +231,6 @@ private:
 #endif
 };
 
-} // namespace rt
-} // namespace ros
+} // namespace lockfree
 
-#endif // ROSRT_FREE_LIST_H
+#endif // LOCKFREE_FREE_LIST_H

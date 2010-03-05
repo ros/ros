@@ -1,7 +1,7 @@
 <package>
-  <description brief="allocators">
+  <description brief="A collection of memory allocators">
 
-     allocators
+     The allocators package EXPERIMENTAL and NOT API stable.
 
   </description>
   <author>Josh Faust</author>

@@ -35,21 +35,16 @@
 #include <gtest/gtest.h>
 
 //#define FREE_LIST_DEBUG 1
-#include "ros/rt/free_list.h"
-#include "ros/rt/malloc_wrappers.h"
-
-#include <ros/ros.h>
+#include "lockfree/free_list.h"
 
 #include <boost/thread.hpp>
 
-using namespace ros::rt;
+using namespace lockfree;
 
 TEST(FreeList, oneElement)
 {
   FreeList pool(4, 1);
   pool.constructAll<uint32_t>(5);
-
-  resetThreadAllocInfo();
 
   uint32_t* item = static_cast<uint32_t*>(pool.allocate());
   ASSERT_TRUE(item);
@@ -60,8 +55,6 @@ TEST(FreeList, oneElement)
   item = static_cast<uint32_t*>(pool.allocate());
   ASSERT_TRUE(item);
   EXPECT_EQ(*item, 6UL);
-
-  ASSERT_EQ(getThreadAllocInfo().total_ops, 0ULL);
 }
 
 TEST(FreeList, multipleElements)
@@ -72,8 +65,6 @@ TEST(FreeList, multipleElements)
 
   std::vector<uint32_t*> items;
   items.reserve(count);
-
-  resetThreadAllocInfo();
 
   for (uint32_t i = 0; i < count; ++i)
   {
@@ -89,8 +80,6 @@ TEST(FreeList, multipleElements)
   items.push_back(static_cast<uint32_t*>(pool.allocate()));
   ASSERT_TRUE(items.back());
   ASSERT_FALSE(pool.allocate());
-
-  ASSERT_EQ(getThreadAllocInfo().total_ops, 0ULL);
 
   std::set<uint32_t*> set;
   set.insert(items.begin(), items.end());
@@ -137,8 +126,6 @@ void threadFunc(FreeList& pool, ros::atomic<bool>& done, ros::atomic<bool>& fail
 
   //ROS_INFO_STREAM("Thread " << boost::this_thread::get_id() << " starting");
 
-  resetThreadAllocInfo();
-
   uint32_t* vals[10];
   uint64_t alloc_count = 0;
   while (!done.load())
@@ -180,13 +167,6 @@ void threadFunc(FreeList& pool, ros::atomic<bool>& done, ros::atomic<bool>& fail
 #endif
       return;
     }
-  }
-
-  AllocInfo info = getThreadAllocInfo();
-  if (info.total_ops > 0)
-  {
-    ROS_ERROR_STREAM("Thread " << boost::this_thread::get_id() << " used malloc or free when it wasn't supposed to. mallocs: " << info.mallocs << " frees " << info.frees << " total ops " << info.total_ops);
-    failed.store(true);
   }
 
   //ROS_INFO_STREAM("Thread " << boost::this_thread::get_id() << " allocated " << alloc_count << " blocks");
@@ -259,8 +239,6 @@ TEST(FreeList, multipleThreads)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_freelist");
-
   return RUN_ALL_TESTS();
 }
 

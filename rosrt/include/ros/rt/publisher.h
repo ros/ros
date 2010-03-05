@@ -35,7 +35,7 @@
 #ifndef ROSRT_PUBLISHER_H
 #define ROSRT_PUBLISHER_H
 
-#include "object_pool.h"
+#include <lockfree/object_pool.h>
 
 #include <ros/publisher.h>
 #include <boost/utility.hpp>
@@ -125,7 +125,7 @@ public:
 
 private:
   ros::Publisher pub_;
-  ObjectPool<M> pool_;
+  lockfree::ObjectPool<M> pool_;
 };
 
 }

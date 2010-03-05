@@ -40,6 +40,8 @@
 
 #include <std_msgs/UInt32.h>
 
+#include <boost/thread.hpp>
+
 using namespace ros::rt;
 
 struct Helper
@@ -133,6 +135,70 @@ TEST(Publisher, multiplePublishers)
   for (uint32_t i = 0; i < count; ++i)
   {
     ASSERT_EQ(helpers[i].latest->data, 99UL);
+  }
+}
+
+void publishThread(Publisher<std_msgs::UInt32>& pub, bool& done)
+{
+  while (!done)
+  {
+    std_msgs::UInt32Ptr msg = pub.allocate();
+    if (msg)
+    {
+      pub.publish(msg);
+    }
+    else
+    {
+      ros::WallDuration(0.0001).sleep();
+    }
+  }
+}
+
+TEST(Publisher, multipleThreads)
+{
+  ros::NodeHandle nh;
+
+  static const uint32_t count = 10;
+  Publisher<std_msgs::UInt32> pubs[count];
+
+  Helper helpers[count];
+  ros::Subscriber subs[count];
+
+  boost::thread_group tg;
+  bool done = false;
+  for (uint32_t i = 0; i < count; ++i)
+  {
+    std::stringstream topic;
+    topic << "test" << i;
+    pubs[i].initialize(nh.advertise<std_msgs::UInt32>(topic.str(), 0), 100, std_msgs::UInt32());
+    subs[i] = nh.subscribe(topic.str(), 0, &Helper::cb, &helpers[i]);
+
+    tg.create_thread(boost::bind(publishThread, boost::ref(pubs[i]), boost::ref(done)));
+  }
+
+  uint32_t recv_count = 0;
+  while (recv_count < count * 10000)
+  {
+    ros::spinOnce();
+
+    recv_count = 0;
+
+    for (uint32_t i = 0; i < count; ++i)
+    {
+      recv_count += helpers[i].count;
+    }
+
+    ros::WallDuration(0.01).sleep();
+  }
+
+  done = true;
+  tg.join_all();
+
+  ASSERT_GE(recv_count, count * 10000);
+
+  for (uint32_t i = 0; i < count; ++i)
+  {
+    ASSERT_TRUE(helpers[i].latest);
   }
 }
 

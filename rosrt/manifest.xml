@@ -1,7 +1,7 @@
 <package>
-  <description brief="rosrt">
+  <description brief="A set of tools for using ROS from within realtime systems">
 
-     rosrt
+    rosrt provides classes for interfacing with ROS from within realtime systems, such as realtime-safe Publisher and Subscriber classes.
 
   </description>
   <author>Josh Faust</author>

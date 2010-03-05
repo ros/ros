@@ -81,7 +81,7 @@ TEST(Subscriber, singleSubscriber)
     }
   }
 
-  ASSERT_EQ(getThreadAllocInfo()->total_ops, 0UL);
+  ASSERT_EQ(getThreadAllocInfo().total_ops, 0UL);
 
   done = true;
   t.join();
@@ -130,7 +130,7 @@ TEST(Subscriber, multipleSubscribersSameTopic)
     }
   }
 
-  ASSERT_EQ(getThreadAllocInfo()->total_ops, 0UL);
+  ASSERT_EQ(getThreadAllocInfo().total_ops, 0UL);
 
   done = true;
   t.join();

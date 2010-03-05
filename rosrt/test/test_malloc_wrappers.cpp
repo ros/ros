@@ -59,7 +59,6 @@ TEST(MallocWrappers, statsMainThread)
   atomic<bool> done(false);
   boost::thread t(boost::bind(allocateThread, boost::ref(done)));
 
-  initThreadAllocInfo();
   resetThreadAllocInfo();
 
   for (uint32_t i = 1; i <= 1000; ++i)
@@ -68,12 +67,10 @@ TEST(MallocWrappers, statsMainThread)
     free(mem);
     ros::WallDuration(0.001).sleep();
 
-    const AllocInfo* info = getThreadAllocInfo();
-    ASSERT_TRUE(info);
-
-    ASSERT_EQ(info->mallocs, i);
-    ASSERT_EQ(info->frees, i);
-    ASSERT_EQ(info->total_ops, i * 2);
+    AllocInfo info = getThreadAllocInfo();
+    ASSERT_EQ(info.mallocs, i);
+    ASSERT_EQ(info.frees, i);
+    ASSERT_EQ(info.total_ops, i * 2);
   }
 
   done.store(true);
@@ -82,7 +79,6 @@ TEST(MallocWrappers, statsMainThread)
 
 void statsThread(atomic<bool>& failed)
 {
-  initThreadAllocInfo();
   resetThreadAllocInfo();
 
   for (uint32_t i = 1; i <= 1000; ++i)
@@ -91,24 +87,17 @@ void statsThread(atomic<bool>& failed)
     free(mem);
     ros::WallDuration(0.001).sleep();
 
-    const AllocInfo* info = getThreadAllocInfo();
-    if (!info)
+    AllocInfo info = getThreadAllocInfo();
+    if (info.mallocs != i)
     {
-      ROS_ERROR("getThreadAllocInfo returned NULL");
+      ROS_ERROR_STREAM("mallocs is " << info.mallocs << " should be " << i);
       failed.store(true);
       return;
     }
 
-    if (info->mallocs != i)
+    if (info.frees != i)
     {
-      ROS_ERROR_STREAM("mallocs is " << info->mallocs << " should be " << i);
-      failed.store(true);
-      return;
-    }
-
-    if (info->frees != i)
-    {
-      ROS_ERROR_STREAM("mallocs is " << info->frees << " should be " << i);
+      ROS_ERROR_STREAM("mallocs is " << info.frees << " should be " << i);
       failed.store(true);
       return;
     }
@@ -134,7 +123,6 @@ void doBreakOnMalloc()
 
 TEST(MallocWrappersDeathTest, breakOnAllocFree)
 {
-  initThreadAllocInfo();
   resetThreadAllocInfo();
 
   // TODO: Re-enable once ROS 1.1 goes out with the updated version of gtest

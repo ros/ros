@@ -52,7 +52,6 @@ struct AllocInfo
   , frees(0)
   , total_memory_allocated(0)
   , total_ops(0)
-  , break_on_alloc_or_free(false)
   {}
 
   uint64_t mallocs;
@@ -63,14 +62,11 @@ struct AllocInfo
 
   uint64_t total_memory_allocated;
   uint64_t total_ops;
-
-  bool break_on_alloc_or_free;
 };
 
-const AllocInfo* getThreadAllocInfo();
+AllocInfo getThreadAllocInfo();
 void resetThreadAllocInfo();
 void setThreadBreakOnAllocOrFree(bool b);
-void initThreadAllocInfo();
 
 }
 }

@@ -73,7 +73,7 @@ TEST(Publisher, singlePublisher)
   msg->data = 5;
   pub.publish(msg);
 
-  ASSERT_EQ(getThreadAllocInfo()->total_ops, 0ULL);
+  ASSERT_EQ(getThreadAllocInfo().total_ops, 0ULL);
 
   while (h.count == 0)
   {

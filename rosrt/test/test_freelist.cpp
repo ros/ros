@@ -61,7 +61,7 @@ TEST(FreeList, oneElement)
   ASSERT_TRUE(item);
   EXPECT_EQ(*item, 6UL);
 
-  ASSERT_EQ(getThreadAllocInfo()->total_ops, 0ULL);
+  ASSERT_EQ(getThreadAllocInfo().total_ops, 0ULL);
 }
 
 TEST(FreeList, multipleElements)
@@ -90,7 +90,7 @@ TEST(FreeList, multipleElements)
   ASSERT_TRUE(items.back());
   ASSERT_FALSE(pool.allocate());
 
-  ASSERT_EQ(getThreadAllocInfo()->total_ops, 0ULL);
+  ASSERT_EQ(getThreadAllocInfo().total_ops, 0ULL);
 
   std::set<uint32_t*> set;
   set.insert(items.begin(), items.end());
@@ -135,9 +135,9 @@ void threadFunc(FreeList& pool, ros::atomic<bool>& done, ros::atomic<bool>& fail
 {
   b.wait();
 
-  initThreadAllocInfo();
-
   //ROS_INFO_STREAM("Thread " << boost::this_thread::get_id() << " starting");
+
+  resetThreadAllocInfo();
 
   uint32_t* vals[10];
   uint64_t alloc_count = 0;
@@ -182,10 +182,10 @@ void threadFunc(FreeList& pool, ros::atomic<bool>& done, ros::atomic<bool>& fail
     }
   }
 
-  const AllocInfo* info = getThreadAllocInfo();
-  if (info->total_ops > 0)
+  AllocInfo info = getThreadAllocInfo();
+  if (info.total_ops > 0)
   {
-    ROS_ERROR_STREAM("Thread " << boost::this_thread::get_id() << " used malloc or free when it wasn't supposed to. mallocs: " << info->mallocs << " frees " << info->frees << " total ops " << info->total_ops);
+    ROS_ERROR_STREAM("Thread " << boost::this_thread::get_id() << " used malloc or free when it wasn't supposed to. mallocs: " << info.mallocs << " frees " << info.frees << " total ops " << info.total_ops);
     failed.store(true);
   }
 
@@ -260,8 +260,6 @@ int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "test_freelist");
-
-  initThreadAllocInfo();
 
   return RUN_ALL_TESTS();
 }

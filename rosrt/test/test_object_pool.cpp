@@ -57,7 +57,7 @@ TEST(ObjectPool, oneElement)
   ASSERT_TRUE(item);
   EXPECT_EQ(*item, 6UL);
 
-  ASSERT_EQ(getThreadAllocInfo()->total_ops, 0ULL);
+  ASSERT_EQ(getThreadAllocInfo().total_ops, 0ULL);
 }
 
 TEST(ObjectPool, multipleElements)
@@ -84,7 +84,7 @@ TEST(ObjectPool, multipleElements)
   ASSERT_TRUE(items.back());
   ASSERT_FALSE(pool.allocate());
 
-  ASSERT_EQ(getThreadAllocInfo()->total_ops, 0ULL);
+  ASSERT_EQ(getThreadAllocInfo().total_ops, 0ULL);
 
   std::set<boost::shared_ptr<uint32_t> > set;
   set.insert(items.begin(), items.end());
@@ -94,6 +94,5 @@ TEST(ObjectPool, multipleElements)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  initThreadAllocInfo();
   return RUN_ALL_TESTS();
 }

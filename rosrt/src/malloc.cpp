@@ -42,53 +42,64 @@
 #include <iostream>
 #include <dlfcn.h>
 
+#if defined(WIN32)
+#define STATIC_TLS_KW __declspec(thread)
+#else
+#define STATIC_TLS_KW __thread
+#endif
+
 namespace ros
 {
 namespace rt
 {
-namespace malloc_tls
+namespace detail
 {
-boost::thread_specific_ptr<AllocInfo> g_alloc_info;
 
-static AllocInfo* getTLS()
-{
-  return g_alloc_info.get();
-}
-
-void initTLS()
-{
-  if (!g_alloc_info.get())
-  {
-    g_alloc_info.reset(new AllocInfo);
-  }
-}
+STATIC_TLS_KW uint64_t g_mallocs = 0;
+STATIC_TLS_KW uint64_t g_reallocs = 0;
+STATIC_TLS_KW uint64_t g_callocs = 0;
+STATIC_TLS_KW uint64_t g_memaligns = 0;
+STATIC_TLS_KW uint64_t g_frees = 0;
+STATIC_TLS_KW uint64_t g_total_ops = 0;
+STATIC_TLS_KW uint64_t g_total_memory_allocated = 0;
+STATIC_TLS_KW bool g_break_on_alloc_or_free = false;
 
 } // namespace malloc_tls
 
-const AllocInfo* getThreadAllocInfo()
+void printThreadAllocInfo()
 {
-  AllocInfo* info = malloc_tls::getTLS();
-  ROS_ASSERT_MSG(info, "ros::rt::initThread() or ros::rt::initThreadAllocInfo() have not been called in this thread");
+  AllocInfo info = getThreadAllocInfo();
+  ROS_INFO("mallocs: %lu, callocs: %lu, reallocs: %lu, memaligns: %lu, frees: %lu, total_ops: %lu, total_memory_allocated: %lu",
+           info.mallocs, info.callocs, info.reallocs, info.memaligns, info.frees, info.total_ops, info.total_memory_allocated);
+}
+
+AllocInfo getThreadAllocInfo()
+{
+  AllocInfo info;
+  info.mallocs = detail::g_mallocs;
+  info.callocs = detail::g_callocs;
+  info.reallocs = detail::g_reallocs;
+  info.memaligns = detail::g_memaligns;
+  info.frees = detail::g_frees;
+  info.total_ops = detail::g_total_ops;
+  info.total_memory_allocated = detail::g_total_memory_allocated;
   return info;
 }
 
 void resetThreadAllocInfo()
 {
-  AllocInfo* info = malloc_tls::getTLS();
-  ROS_ASSERT_MSG(info, "ros::rt::initThread() or ros::rt::initThreadAllocInfo() have not been called in this thread");
-  *info = AllocInfo();
+  detail::g_mallocs = 0;
+  detail::g_reallocs = 0;
+  detail::g_callocs = 0;
+  detail::g_memaligns = 0;
+  detail::g_frees = 0;
+  detail::g_total_ops = 0;
+  detail::g_total_memory_allocated = 0;
 }
 
 void setThreadBreakOnAllocOrFree(bool b)
 {
-  AllocInfo* info = malloc_tls::getTLS();
-  ROS_ASSERT_MSG(info, "ros::rt::initThread() or ros::rt::initThreadAllocInfo() have not been called in this thread");
-  info->break_on_alloc_or_free = b;
-}
-
-void initThreadAllocInfo()
-{
-  malloc_tls::initTLS();
+  detail::g_break_on_alloc_or_free = b;
 }
 
 } // namespace rt
@@ -96,8 +107,6 @@ void initThreadAllocInfo()
 
 extern "C"
 {
-
-static bool g_malloc_initialized = false;
 
 typedef void* (*MallocType)(size_t size);
 typedef void* (*CallocType)(size_t nmemb, size_t size);
@@ -107,50 +116,40 @@ typedef int (*PosixMemalignType)(void **memptr, size_t alignment, size_t size);
 typedef void (*FreeType)(void* ptr);
 
 #define UPDATE_ALLOC_INFO(result, size, type) \
-  if (g_malloc_initialized) \
+  if (result) \
   { \
-    ros::rt::AllocInfo* info = ros::rt::malloc_tls::getTLS(); \
-    if (info) \
-    { \
-      if (result) \
-      { \
-        info->total_memory_allocated += size; \
-      } \
- \
-      ++info->type; \
-      ++info->total_ops; \
- \
-      if (info->break_on_alloc_or_free) \
-      { \
-        std::cerr << "Issuing break due to break_on_alloc_or_free being set" << std::endl; \
-        ROS_ISSUE_BREAK(); \
-      } \
-    } \
+    ros::rt::detail::g_total_memory_allocated += size; \
+  } \
+\
+  ++ros::rt::detail::g_##type; \
+  ++ros::rt::detail::g_total_ops; \
+\
+  if (ros::rt::detail::g_break_on_alloc_or_free) \
+  { \
+    std::cerr << "Issuing break due to break_on_alloc_or_free being set" << std::endl; \
+    ROS_ISSUE_BREAK(); \
   }
 
 void* malloc(size_t size)
 {
-  static MallocType original_function = 0;
-  static ros::atomic<uint32_t> tls_recursion_count(0);
-
-  if (!original_function)
-  {
-    original_function = reinterpret_cast<MallocType>(dlsym(RTLD_NEXT, "malloc"));
-    g_malloc_initialized = true;
-  }
+  static MallocType original_function = reinterpret_cast<MallocType>(dlsym(RTLD_NEXT, "malloc"));
 
   void* result = original_function(size);
 
-  if (g_malloc_initialized)
+  //UPDATE_ALLOC_INFO(result, size, mallocs);
+
+  if (result)
   {
-    uint32_t rec = tls_recursion_count.fetch_add(1);
+    ros::rt::detail::g_total_memory_allocated += size;
+  }
 
-    if (rec < 1)
-    {
-      UPDATE_ALLOC_INFO(result, size, mallocs);
-    }
+  ++ros::rt::detail::g_mallocs;
+  ++ros::rt::detail::g_total_ops;
 
-    tls_recursion_count.fetch_sub(1);
+  if (ros::rt::detail::g_break_on_alloc_or_free)
+  {
+    std::cerr << "Issuing break due to break_on_alloc_or_free being set" << std::endl;
+    ROS_ISSUE_BREAK();
   }
 
   return result;
@@ -199,16 +198,13 @@ void free(void *ptr)
 
   original_function(ptr);
 
-  ros::rt::AllocInfo* info = ros::rt::malloc_tls::getTLS();
-  if (info)
-  {
-    ++info->frees;
-    ++info->total_ops;
+  ++ros::rt::detail::g_frees;
+  ++ros::rt::detail::g_total_ops;
 
-    if (info->break_on_alloc_or_free)
-    {
-      ROS_BREAK();
-    }
+  if (ros::rt::detail::g_break_on_alloc_or_free)
+  {
+    std::cerr << "Issuing break due to break_on_alloc_or_free being set" << std::endl;
+    ROS_ISSUE_BREAK();
   }
 }
 

@@ -317,7 +317,7 @@ void __libc_free(void* ptr)
 }
 
 // dlsym uses calloc so it has to be treated specially. Solution found at http://crbug.com/28244
-static void* null_calloc(size_t nmemb, size_t size)
+static void* nullCalloc(size_t nmemb, size_t size)
 {
   return 0;
 }
@@ -327,7 +327,7 @@ void* calloc(size_t nmemb, size_t size)
   static CallocType original_function = 0;
   if (original_function == 0)
   {
-      original_function = null_calloc;
+      original_function = nullCalloc;
       original_function = reinterpret_cast<CallocType>(dlsym(RTLD_NEXT, "calloc"));
   }
 

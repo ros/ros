@@ -74,11 +74,11 @@ class SrvSpecException(roslib.exceptions.ROSLibException): pass
 
 class SrvSpec(object):
     
-    def __init__(self, request, response, text, name = '', short_name = '', package = ''):
+    def __init__(self, request, response, text, full_name = '', short_name = '', package = ''):
         self.request = request
         self.response = response
         self.text = text
-        self.name = name
+        self.full_name = full_name
         self.short_name = short_name
         self.package = package
         

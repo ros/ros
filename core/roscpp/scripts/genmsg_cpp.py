@@ -551,7 +551,7 @@ def write_traits(s, spec, cpp_name_prefix, datatype = None):
     full_text = compute_full_text_escaped(gendeps_dict)
     
     if (datatype is None):
-        datatype = '%s'%(spec.name)
+        datatype = '%s'%(spec.full_name)
     
     (cpp_msg_unqualified, cpp_msg_with_alloc, _) = cpp_message_declarations(cpp_name_prefix, spec.short_name)
     s.write('namespace ros\n{\n')

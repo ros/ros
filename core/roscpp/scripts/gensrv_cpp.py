@@ -133,11 +133,11 @@ def write_traits(s, spec, cpp_name_prefix):
     response_with_allocator = '%s%s_<ContainerAllocator> '%(cpp_name_prefix, spec.response.short_name)
     
     write_trait_char_class(s, 'MD5Sum', '%s%s'%(cpp_name_prefix, spec.short_name), md5sum);
-    write_trait_char_class(s, 'DataType', '%s%s'%(cpp_name_prefix, spec.short_name), spec.name);
+    write_trait_char_class(s, 'DataType', '%s%s'%(cpp_name_prefix, spec.short_name), spec.full_name);
     genmsg_cpp.write_trait_char_class(s, 'MD5Sum', request_with_allocator, md5sum)
-    genmsg_cpp.write_trait_char_class(s, 'DataType', request_with_allocator, spec.name)
+    genmsg_cpp.write_trait_char_class(s, 'DataType', request_with_allocator, spec.full_name)
     genmsg_cpp.write_trait_char_class(s, 'MD5Sum', response_with_allocator, md5sum)
-    genmsg_cpp.write_trait_char_class(s, 'DataType', response_with_allocator, spec.name)
+    genmsg_cpp.write_trait_char_class(s, 'DataType', response_with_allocator, spec.full_name)
     s.write('} // namespace service_traits\n')
     s.write('} // namespace ros\n\n')
 

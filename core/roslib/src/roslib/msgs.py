@@ -274,7 +274,7 @@ class MsgSpec(object):
     correspondence. MsgSpec can also return an md5 of the source text.
     """
 
-    def __init__(self, types, names, constants, text, name = '', short_name = '', package = ''):
+    def __init__(self, types, names, constants, text, full_name = '', short_name = '', package = ''):
         """
         @param types: list of field types, in order of declaration
         @type  types: [str]
@@ -295,10 +295,10 @@ class MsgSpec(object):
         #Header.msg support
         self.header_present = (HEADER, 'header') in zip(self.types, self.names)
         self.text = text
-        self.name = name
+        self.full_name = full_name
         self.short_name = short_name
         self.package = package
-        self._parsed_fields = [Field(name, type) for (type, name) in zip(self.types, self.names)]
+        self._parsed_fields = [Field(name, type) for (name, type) in zip(self.names, self.types)]
         
     def fields(self):
         """

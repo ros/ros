@@ -9,8 +9,6 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/allocators</url>
   
-  <depend package="roslib"/>
-  
   <export>
     <cpp cflags="-I${prefix}/include"/>
   </export>

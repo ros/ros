@@ -36,7 +36,7 @@
 #define ALLOCATORS_ALIGNED_H
 
 #include <cstdlib>
-#include <ros/types.h>
+#include <boost/cstdint.hpp>
 
 namespace allocators
 {

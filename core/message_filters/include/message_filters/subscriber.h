@@ -179,6 +179,11 @@ public:
   }
 
   /**
+   * \brief Returns the internal ros::Subscriber object
+   */
+  const ros::Subscriber& getSubscriber() { return sub_; }
+
+  /**
    * \brief Does nothing.  Provided so that Subscriber may be used in a message_filters::Chain
    */
   template<typename F>

@@ -141,13 +141,6 @@ AllocInfo* allocateAllocInfo()
 
 } // namespace malloc_tls
 
-void printThreadAllocInfo()
-{
-  AllocInfo info = getThreadAllocInfo();
-  ROS_INFO("mallocs: %lu, callocs: %lu, reallocs: %lu, memaligns: %lu, frees: %lu, total_ops: %lu, total_memory_allocated: %lu",
-           info.mallocs, info.callocs, info.reallocs, info.memaligns, info.frees, info.total_ops, info.total_memory_allocated);
-}
-
 AllocInfo getThreadAllocInfo()
 {
   AllocInfo info;

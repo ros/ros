@@ -54,10 +54,6 @@ import rosmsg
 msg_template = load_tmpl('msg.template')
 msg_index_template = load_tmpl('msg-index.template')
 
-_api_url = "http://pr.willowgarage.com/pr-docs/ros-packages/"
-def package_link(package):
-    return _api_url + package + "/html/"
-
 def _href(link, text):
     return '<a href="%(link)s">%(text)s</a>'%locals()
 
@@ -67,8 +63,9 @@ def type_link(type_, base_package):
     if base_type in roslib.msgs.BUILTIN_TYPES:
         return type_
     package, base_type = roslib.names.package_resource_name(base_type)
+    # always chain upwards to msg dir
     if not package or package == base_package:
-        return _href("%s.html"%base_type, type_)
+        return _href("../msg/%s.html"%base_type, type_)
     else:
         return _href("../../../%(package)s/html/msg/%(base_type)s.html"%locals(), type_)
 

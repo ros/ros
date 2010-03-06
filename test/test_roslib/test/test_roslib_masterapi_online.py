@@ -50,6 +50,10 @@ class MasterApiOnlineTest(unittest.TestCase):
         val = self.m.getPid()
         val = int(val)
 
+    def test_getUri(self):
+        val = self.m.getUri()
+        self.assert_(val.startswith('http://'))
+        
     def test_lookupService(self):
         uri = 'http://localhost:897'
         rpcuri = 'rosrpc://localhost:9812'

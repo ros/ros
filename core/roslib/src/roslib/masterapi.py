@@ -98,6 +98,8 @@ class Master(object):
         self.master_uri = master_uri
         self.handle = xmlrpclib.ServerProxy(self.master_uri)
         self.caller_id = roslib.names.make_caller_id(caller_id) #resolve
+        if self.caller_id[-1] == '/':
+            self.caller_id = self.caller_id[:-1]
         
     def is_online(self):
         """

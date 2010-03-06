@@ -288,28 +288,6 @@ class TestRospyNames(unittest.TestCase):
         finally:
             _set_caller_id('/unnamed')
             
-    def test_valid_type_name(self):
-        from rospy.names import valid_type_name, ParameterInvalid
-        validator = valid_type_name('param_name')
-        tests = [
-            ('foo/Type', '/node'),            
-            ('*', '/node'),
-            # unicode
-            (u'foo/Type', '/node'),                        
-            ]
-        for t, caller_id in tests:
-            self.assertEquals(t, validator(t, caller_id))
-        invalid = [
-            (1, '/node'),            
-            (None, '/node'),            
-            ('name', '/node'),
-            ]
-        for t, caller_id in invalid:
-            try:
-                validator(t, caller_id)
-                self.fail("valid_type_name should have failed on : [%s], [%s]"%(t, caller_id))
-            except ParameterInvalid: pass
-            
 if __name__ == '__main__':
     import rostest
     rostest.unitrun('test_rospy', sys.argv[0], TestRospyNames, coverage_packages=['rospy.names'])

@@ -388,8 +388,8 @@ def call_service(service_name, service_args, service_class=None):
     @param service_class: (optional) service type class. If this
     argument is provided, it saves a probe call against the service
     @type  service_class: Message class
-    @return: service response
-    @rtype: roslib.message.Message
+    @return: service request, service response
+    @rtype: roslib.message.Message, roslib.message.Message
     @raise ROSServiceException: if call command cannot be executed
     """
     if service_class is None:

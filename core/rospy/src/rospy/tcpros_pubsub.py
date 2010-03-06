@@ -212,7 +212,7 @@ class TCPROSHandler(rospy.transport.ProtocolHandler):
             #rospy.core._add_shutdown_thread(t)
             t.start()
         except rospy.exceptions.TransportInitError, e:
-            logerr("unable to create subscriber transport: %s", e)
+            rospyerr("unable to create subscriber transport: %s", e)
             return 0, "Internal error creating inbound TCP connection for [%s]: %s"%(resolved_name, e), -1
 
         # Attach connection to _SubscriberImpl

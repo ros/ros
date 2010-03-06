@@ -467,7 +467,7 @@ class TCPROSTransport(Transport):
                 self.socket.close()
             self.socket = None
             
-            logerr("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, str(e)))
+            #logerr("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, str(e)))
             rospywarn("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, traceback.format_exc()))            
             raise TransportInitError(str(e)) #re-raise i/o error
                 

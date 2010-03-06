@@ -177,30 +177,6 @@ class TestRospyNames(unittest.TestCase):
         for name, node_name, v in tests:
             self.assertEquals(v, resolve_name(name, node_name))
 
-    def test_validators(self):
-        from rospy.names import empty_or_valid_name, ParameterInvalid
-        validator = empty_or_valid_name('param_name')
-        tests = [
-            ('', '/', ''),
-            ('', '/node', ''),
-            ('name', '/node', '/name'),            
-            ('/name', '/node', '/name'),            
-            ('~name', '/node', '/node/name'),
-            # unicode tests
-            (u'~name', '/node', u'/node/name'),            
-            ]
-        for name, caller_id, v in tests:
-            self.assertEquals(v, validator(name, caller_id))
-        invalid = [
-            (1, '/node'),            
-            (None, '/node'),            
-            ]
-        for name, caller_id in invalid:
-            try:
-                validator(name, caller_id)
-                self.fail("empty_or_valid_name should have failed on : [%s], [%s]"%(name, caller_id))
-            except ParameterInvalid: pass
-
     def test_valid_name(self):
         # test with resolution
         from rospy.names import valid_name_validator_resolved, valid_name, ParameterInvalid

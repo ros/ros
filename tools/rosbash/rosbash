@@ -344,6 +344,21 @@ function _roscomplete_rosbag {
     fi
 
 }
+
+function _roscomplete_rospack {
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="help find list list-names langs depends depends-manifests depends1 depends-indent depends-why rosdep rosdep0 vcs vcs0 depends-on depends-on1 export plugins cflags-only-I cflags-only-other libs-only-L libs-only-l libs-only-other profile"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    else
+        opts=`rospack list-names`
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+    fi
+
+}
+
 function _roscomplete_rosnode {
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
@@ -542,6 +557,7 @@ complete -F "_roscomplete_file" "rosed"
 complete -F "_roscomplete_file" "roscp"
 complete -F "_roscomplete_launch" -o filenames -o plusdirs "roslaunch"
 complete -F "_roscomplete" -o "nospace" "rosupdate"
+complete -F "_roscomplete_rospack" "rospack"
 complete -F "_roscomplete_rosbag" "rosbag"
 complete -F "_roscomplete_rosnode" "rosnode"
 complete -F "_roscomplete_rosparam" "rosparam"

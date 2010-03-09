@@ -1,5 +1,0 @@
-#!/usr/bin/env python
-PKG = 'rosdeb'
-import roslib; roslib.load_manifest(PKG)
-import rosdeb
-rosdeb.main()

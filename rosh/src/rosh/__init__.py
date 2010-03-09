@@ -71,140 +71,7 @@ def _resolve_name(name, ns='/'):
     # TODO:write real resolver. This is just a stub resolver to write against
     return roslib.names.resolve_name(name, ns)
 
-class Topic(object):
-    
-    def __init__(self, name, type_name):
-        self.name = name
-        self.type_name = type_name
-        # message class for easy instantiate
-        self.type = roslib.message.get_message_class(type_name)
-        self._cond = _threading.Condition()
-        self._pub = None
-        self._sub = None
-        self._last_msg = None
-
-        self._next_waiting = False
-
-    def _init_pub(self):
-        """
-        Lazy-init publisher for topic
-        """
-        if self._pub is not None:
-            with _rosh_lock:
-                if self._pub is not None:
-                    self._pub = _rospy.Publisher(self.name, self.type, latch=latching)
-
-    def _init_sub(self):
-        """
-        Lazy-init subscriber for topic
-        """
-        if self._sub is None:
-            with _rosh_lock:
-                if self._sub is None:
-                    #TODO: change Master APIs so that subscribers declare type
-                    if self.type is None:
-                        self.type = roslib.message.get_message_class(type_name)
-                    if self.type is None:
-                        return
-                    self._sub = _rospy.Subscriber(self.name, self.type, self._cb)
-        else:
-            print "already initialized"
-
-    def pub(self, *args, **kwds):
-        if self.type is None:
-            raise ROSHException("topic [%s] is not initialized yet. Please set the 'type' field if you wish to publish"%self.name)
-        if not kwds and len(args) == 1:
-            if isinstance(args[0], self.type):
-                self._init_pub()
-                
-    def _cb(self, msg):
-        """Message subscription callback"""
-        self._last_msg = msg
-        
-        # if next() has been called, enable semaphore code
-        if self._next_waiting:
-            with self._cond:
-                self._cond.notifyAll()
-
-    # TODO: redo as property
-    def next(self):
-        """
-        Get the next message to be published on this topic.
-
-        NOTE: for topics publishing at a fast rate, this may not literally be the 'next' message.
-        """
-        
-        # enable use of semaphore (for thread-safety, we don't
-        # de-enable the semaphore, so this is a permanent overhead)
-        self._next_waiting = True
-        with self._cond:
-            self._cond.wait()
-        return self._last_msg
-
-    # TODO: redo as property    
-    def latest(self):
-        if self._last_msg is not None:
-            return self._last_msg
-        else:
-            self._init_sub()
-            return self._last_msg
-
-    def release(self):
-        """
-        Release resources associated with this topic
-        """
-        with _rosh_lock:
-            if self._sub is None:
-                self._sub.unregister()
-            if self._pub is None:
-                self._pub.unregister()
-            self._sub = self._pub = None
-        self._last_msg = None
-    
-
 class ROSHException(Exception): pass
-
-def _succeed(args):
-    code, msg, val = args
-    if code != 1:
-        raise ROSHException("remote call failed: %s"%msg)
-    return val
-
-class Topics(object):
-    def __init__(self, master):
-        self._master = master
-        self._cache = {}
-    
-    def list(self, namespace='/'):
-        """
-        @param namespace: namespace to scope list to (default '/')
-        @type  namespace: str
-        """
-        namespace = _resolve_name(namespace)                
-        return [v[0] for v in self._master.getPublishedTopics(namespace)]
-
-    def type(self, topic):
-        """
-        @param topic: topic_name
-        @type  topic: str
-        @return: topic type, or None if not known
-        @rtype: str
-        """
-        key = _resolve_name(topic)        
-        return _rostopic.get_topic_type(topic, blocking=False)[0]
-        
-    def __getitem__(self, key):
-        key = _resolve_name(key)
-        if key in self._cache:
-            return self._cache[key]
-        else:
-            with _rosh_lock:
-                if key in self._cache:
-                    obj = self._cache[key]
-                else:
-                    obj = Topic(key, self.type(key))
-                    self._cache[key] = obj
-            return obj
 
 class Service(object):
 
@@ -323,13 +190,15 @@ def _init_master():
     global master
     import roslib.masterapi
     master = roslib.masterapi.Master('rosh')
+    return master.is_online()
 
 def _init_node():
     _rospy.init_node('rosh', anonymous=True)
 
 def _init_topics():
     global t, topics
-    t = Topics(master)
+    from rosh.topics import Topics
+    t = Topics(master, _rosh_lock)
     topics = t
     
 def _init_services():
@@ -337,15 +206,20 @@ def _init_services():
     s = Services(master)
     services = s
 
-_init_master()
-_init_node()    
-_init_topics()
-_init_services()    
+def init():
+    print 'rosh.init()'
+    if _init_master():
+        print 'master is', master.getUri()
+        _init_node()
+        print 'node initialized'
+        _init_topics()
+        print 'topics initialized'
+        #_init_services()
+    else:
+        raise ROSHException("ERROR: ROS Master is offline")
     
 # initialize privates
 
 # - lock for member/global initialization
 _rosh_lock = _threading.Lock()
-
-
 

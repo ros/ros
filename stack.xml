@@ -1,9 +1,11 @@
 <stack>
   <description brief="ros_experimental">
+    Experimental packages for ROS core system development.
   </description>
   <author>Various</author>
-  <license>BSD</license>  
+  <license>BSD,BSD, Boost</license>  
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/ros_experimental</url>
-  <depend stack="ros"/>
+  <depend stack="ros" /> <!-- roswtf, rospack, roscpp, rosservice, roslib, std_msgs, rosparam, rostest, rospy, rostopic, rosrecord, std_srvs, roslang, rosmsg -->
+
 </stack>

@@ -88,7 +88,11 @@ class RosdocContext(object):
             return len([d for d in rd_config if d['builder'] == builder]) > 0
         except KeyError:
             print >> sys.stderr, "config file for [%s] is invalid, missing required 'builder' key"%package
-        
+            return False
+        except:
+            print >> sys.stderr, "config file for [%s] is invalid"%package
+            return False
+            
     def should_document(self, package):
         """
         @return: True if package should be documented

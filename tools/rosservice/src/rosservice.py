@@ -133,7 +133,6 @@ def get_service_type(service_name):
     except socket.error:
         raise ROSServiceIOException("Unable to communicate with master!")
     if code == -1:
-        print >> sys.stderr, "Unknown service [%s]"%service_name
         return None
     elif code == 0:
         raise ROSServiceIOException("Master is malfunctioning: %s"%msg)
@@ -153,6 +152,7 @@ def _rosservice_type(service_name):
     """
     service_type = get_service_type(service_name)
     if service_type is None:
+        print >> sys.stderr, "Unknown service [%s]"%service_name
         sys.exit(1)
     else:
         print service_type

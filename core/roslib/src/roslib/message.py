@@ -306,6 +306,8 @@ class Message(object):
         @type str: str
         """
         pass
+    def __repr__(self):
+        return strify_message(self)
     def __str__(self):
         return strify_message(self)
     # TODO: unit test

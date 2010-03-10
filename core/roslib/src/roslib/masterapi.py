@@ -136,11 +136,135 @@ class Master(object):
         else:
             raise Failure(msg)            
 
+    ################################################################################
+    # PARAM SERVER
+
+    def deleteParam(self, key):
+        """
+        Parameter Server: delete parameter
+        @param key: parameter name
+        @type  key: str
+        @return: 0
+        @rtype: int
+        """
+        return self._succeed(self.handle.deleteParam(self.caller_id, key))
+        
+    def setParam(self, key, value):
+        """
+        Parameter Server: set parameter.  NOTE: if value is a
+        dictionary it will be treated as a parameter tree, where key
+        is the parameter namespace. For example:::
+          {'x':1,'y':2,'sub':{'z':3}}
+
+        will set key/x=1, key/y=2, and key/sub/z=3. Furthermore, it
+        will replace all existing parameters in the key parameter
+        namespace with the parameters in value. You must set
+        parameters individually if you wish to perform a union update.
+        
+        @param key: parameter name
+        @type  key: str
+        @param value: parameter value.
+        @type  value: XMLRPCLegalValue
+        @return: 0
+        @rtype: int
+        """
+        return self._succeed(self.handle.setParam(self.caller_id, key, value))
+
+    def getParam(self, key):
+        """
+        Retrieve parameter value from server.
+        @param key: parameter to lookup. If key is a namespace,
+        getParam() will return a parameter tree.
+        @type  key: str
+        getParam() will return a parameter tree.
+
+        @return: parameterValue. If key is a namespace,
+            the return value will be a dictionary, where each key is a
+            parameter in that namespace. Sub-namespaces are also
+            represented as dictionaries.
+        @rtype: XMLRPCLegalValue
+        """
+        return self._succeed(self.handle.getParam(self.caller_id, key))
+
+    def searchParam(self, key):
+        """
+        Search for parameter key on parameter server. Search starts in caller's namespace and proceeds
+        upwards through parent namespaces until Parameter Server finds a matching key.
+
+        searchParam's behavior is to search for the first partial match.
+        For example, imagine that there are two 'robot_description' parameters::
+          
+           /robot_description
+             /robot_description/arm
+             /robot_description/base
+           /pr2/robot_description
+             /pr2/robot_description/base
+
+        If I start in the namespace /pr2/foo and search for
+        'robot_description', searchParam will match
+        /pr2/robot_description. If I search for 'robot_description/arm'
+        it will return /pr2/robot_description/arm, even though that
+        parameter does not exist (yet).
+
+        @param key: parameter key to search for.
+        @type  key: str
+        @return: foundKey
+        @rtype: str
+        """
+        return self._succeed(self.handle.searchParam(self.caller_id, key))
+
+    def subscribeParam(self, caller_api, key):
+        """
+        Retrieve parameter value from server and subscribe to updates to that param. See
+        paramUpdate() in the Node API. 
+        @param key: parameter to lookup.
+        @type  key: str
+        @param caller_api: API URI for paramUpdate callbacks.
+        @type  caller_api: str
+        @return: parameterValue. parameterValue is an empty dictionary if the parameter has not been set yet.
+        @rtype: XMLRPCLegalValue
+        """
+        return self._succeed(self.handle.subscribeParam(self.caller_id, caller_api, key))
+
+    def unsubscribeParam(self, caller_api, key):
+        """
+        Retrieve parameter value from server and subscribe to updates to that param. See
+        paramUpdate() in the Node API. 
+        @param key: parameter to lookup.
+        @type  key: str
+        @param caller_api: API URI for paramUpdate callbacks.
+        @type  caller_api: str
+        @return: numUnsubscribed. If numUnsubscribed is zero it means that the caller was not subscribed to the parameter.
+        @rtype: int
+        """        
+        return self._succeed(self.handle.unsubscribeParam(self.caller_id, caller_api, key))
+
+    def hasParam(self, key):
+        """
+        Check if parameter is stored on server. 
+        @param key: parameter to check
+        @type  key: str
+        @return: [code, statusMessage, hasParam]
+        @rtype: [int, str, bool]
+        """
+        return self._succeed(self.handle.hasParam(self.caller_id, key))
+
+    def getParamNames(self):
+        """
+        Get list of all parameter names stored on this server.
+        This does not adjust parameter names for caller's scope.
+        
+        @return: [code, statusMessage, parameterNameList]
+        @rtype: [int, str, [str]]
+        """
+        return self._succeed(self.handle.getParamNames(self.caller_id))     
+            
+        
+    ################################################################################
+        
     def getPid(self):
         """
         Get the PID of this server
-        @param caller_id: ROS caller id
-        @type  caller_id: str
         @return: serverProcessPID
         @rtype: int
         @raise roslib.masterapi.Error: if Master returns ERROR.
@@ -151,8 +275,6 @@ class Master(object):
     def getUri(self):
         """
         Get the URI of this Master
-        @param caller_id: ROS caller id
-        @type  caller_id: str
         @return: masterUri
         @rtype: str
         @raise roslib.masterapi.Error: if Master returns ERROR.
@@ -163,8 +285,6 @@ class Master(object):
     def registerService(self, service, service_api, caller_api):
         """
         Register the caller as a provider of the specified service.
-        @param caller_id str: ROS caller id
-        @type  caller_id: str
         @param service str: Fully-qualified name of service 
         @param service_api str: Service URI 
         @param caller_api str: XML-RPC URI of caller node 
@@ -178,8 +298,6 @@ class Master(object):
     def lookupService(self, service):
         """
         Lookup all provider of a particular service.
-        @param caller_id str: ROS caller id
-        @type  caller_id: str
         @param service: fully-qualified name of service to lookup.
         @type: service: str
         @return (int, str, str): (code, message, serviceUrl). service URL is provides
@@ -193,8 +311,6 @@ class Master(object):
     def unregisterService(self, service, service_api):
         """
         Unregister the caller as a provider of the specified service.
-        @param caller_id str: ROS caller id
-        @type  caller_id: str
         @param service: Fully-qualified name of service
         @type  service: str
         @param service_api: API URI of service to unregister. Unregistration will only occur if current
@@ -215,8 +331,6 @@ class Master(object):
         Subscribe the caller to the specified topic. In addition to receiving
         a list of current publishers, the subscriber will also receive notifications
         of new publishers via the publisherUpdate API.        
-        @param caller_id: ROS caller id
-        @type  caller_id: str
         @param topic str: Fully-qualified name of topic to subscribe to. 
         @param topic_type: Datatype for topic. Must be a package-resource name, i.e. the .msg name.
         @type  topic_type: str
@@ -234,8 +348,6 @@ class Master(object):
     def unregisterSubscriber(self, topic, caller_api):
         """
         Unregister the caller as a publisher of the topic.
-        @param caller_id: ROS caller id
-        @type  caller_id: str
         @param topic: Fully-qualified name of topic to unregister.
         @type  topic: str
         @param caller_api: API URI of service to unregister. Unregistration will only occur if current
@@ -253,8 +365,6 @@ class Master(object):
     def registerPublisher(self, topic, topic_type, caller_api):
         """
         Register the caller as a publisher the topic.
-        @param caller_id: ROS caller id
-        @type  caller_id: str
         @param topic: Fully-qualified name of topic to register.
         @type  topic: str
         @param topic_type: Datatype for topic. Must be a
@@ -273,8 +383,6 @@ class Master(object):
     def unregisterPublisher(self, topic, caller_api):
         """
         Unregister the caller as a publisher of the topic.
-        @param caller_id: ROS caller id
-        @type  caller_id: str
         @param topic: Fully-qualified name of topic to unregister.
         @type  topic: str
         @param caller_api str: API URI of service to
@@ -296,8 +404,6 @@ class Master(object):
         name/caller_id.  This API is for looking information about
         publishers and subscribers. Use lookupService instead to lookup
         ROS-RPC URIs.
-        @param caller_id: ROS caller id
-        @type  caller_id: str
         @param node: name of node to lookup
         @type  node: str
         @return: URI
@@ -311,8 +417,6 @@ class Master(object):
         """
         Get list of topics that can be subscribed to. This does not return topics that have no publishers.
         See L{getSystemState()} to get more comprehensive list.
-        @param caller_id: ROS caller id
-        @type  caller_id: str
         @param subgraph: Restrict topic names to match within the specified subgraph. Subgraph namespace
            is resolved relative to the caller's namespace. Use '' to specify all names.
         @type  subgraph: str
@@ -326,8 +430,6 @@ class Master(object):
     def getSystemState(self): 
         """
         Retrieve list representation of system state (i.e. publishers, subscribers, and services).
-        @param caller_id: ROS caller id    
-        @type  caller_id: str
         @rtype: [[str,[str]], [str,[str]], [str,[str]]]
         @return: systemState
 

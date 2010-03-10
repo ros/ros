@@ -81,7 +81,7 @@ class RosdocContext(object):
         rd_config = self.rd_configs.get(package, None)
         if not rd_config:
             return builder == 'doxygen'
-        if type(rd_config) != dict:
+        if type(rd_config) != list:
             print >> sys.stderr, "WARNING: package [%s] has an invalid rosdoc config"%package
             return False            
         try:

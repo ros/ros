@@ -85,7 +85,7 @@ bool sel_srv_cb( topic_tools::MuxSelect::Request  &req,
 	 it != g_subs.end();
 	 ++it)
     {
-      if (it->msg->topic == req.topic)
+      if (ros::names::resolve(it->msg->topic) == ros::names::resolve(req.topic))
       {
 	g_selected = it->msg;
 	ROS_INFO("mux selected input: [%s]", it->msg->topic.c_str());

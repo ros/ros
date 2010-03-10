@@ -81,10 +81,10 @@ struct NullPolicy : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
   template<int i>
   void add(const typename mpl::at_c<Events, i>::type& evt)
   {
-    ++added_[i];
+    ++added_.at(i);
   }
 
-  int32_t added_[RealTypeCount::value];
+  boost::array<int32_t, RealTypeCount::value> added_;
 };
 typedef NullPolicy<Msg, Msg> Policy2;
 typedef NullPolicy<Msg, Msg, Msg> Policy3;

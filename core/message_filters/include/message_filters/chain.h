@@ -185,7 +185,7 @@ public:
    * \brief Add a filter to this chain, by bare pointer.  Returns the index of that filter in the chain.
    */
   template<class F>
-  uint32_t addFilter(F* filter)
+  size_t addFilter(F* filter)
   {
     boost::shared_ptr<F> ptr(filter, NullDeleter());
     return addFilter(ptr);

@@ -85,6 +85,12 @@ bool Timer::Impl::hasPending()
   return TimerManager<Time, Duration, TimerEvent>::global().hasPending(timer_handle_);
 }
 
+void Timer::Impl::setPeriod(const Duration& period)
+{
+  period_ = period;
+  TimerManager<Time, Duration, TimerEvent>::global().setPeriod(timer_handle_, period);
+}
+
 Timer::Timer(const TimerOptions& ops)
 : impl_(new Impl)
 {
@@ -129,6 +135,14 @@ bool Timer::hasPending()
   }
 
   return false;
+}
+
+void Timer::setPeriod(const Duration& period)
+{
+  if (impl_)
+  {
+    impl_->setPeriod(period);
+  }
 }
 
 }

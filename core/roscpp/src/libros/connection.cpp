@@ -360,7 +360,7 @@ void Connection::writeHeader(const M_string& key_vals, const WriteFinishedFunc& 
   memcpy(full_msg.get() + 4, buffer.get(), len);
   *((uint32_t*)full_msg.get()) = len;
 
-  write(full_msg, msg_len, boost::bind(&Connection::onHeaderWritten, this, _1));
+  write(full_msg, msg_len, boost::bind(&Connection::onHeaderWritten, this, _1), false);
 }
 
 void Connection::sendHeaderError(const std::string& error_msg)

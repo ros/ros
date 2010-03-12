@@ -144,3 +144,6 @@ rosbuild_add_gtest_build_flags(intraprocess_subscriptions)
 
 rosbuild_add_executable(nonconst_subscriptions nonconst_subscriptions.cpp)
 rosbuild_add_gtest_build_flags(nonconst_subscriptions)
+
+rosbuild_add_executable(subscribe_retry_tcp subscribe_retry_tcp.cpp)
+rosbuild_add_gtest_build_flags(subscribe_retry_tcp)

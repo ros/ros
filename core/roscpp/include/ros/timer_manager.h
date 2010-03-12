@@ -56,7 +56,6 @@ private:
     D period;
 
     boost::function<void(const E&)> callback;
-    boost::recursive_mutex callback_mutex;
     CallbackQueueInterface* callback_queue;
 
     WallDuration last_cb_duration;
@@ -94,6 +93,7 @@ public:
   void remove(int32_t handle);
 
   bool hasPending(int32_t handle);
+  void setPeriod(int32_t handle, const D& period);
 
   static TimerManager& global()
   {
@@ -160,15 +160,8 @@ private:
       }
 
       {
-        boost::recursive_mutex::scoped_lock lock(info->callback_mutex);
-
         ++info->total_calls;
         called_ = true;
-
-        if (info->removed)
-        {
-          return Invalid;
-        }
 
         VoidConstPtr tracked;
         if (info->has_tracked_object)
@@ -343,11 +336,8 @@ void TimerManager<T, D, E>::remove(int32_t handle)
     const TimerInfoPtr& info = *it;
     if (info->handle == handle)
     {
-      {
-        boost::recursive_mutex::scoped_lock lock(info->callback_mutex);
-        info->removed = true;
-        info->callback_queue->removeByID((uint64_t)info.get());
-      }
+      info->removed = true;
+      info->callback_queue->removeByID((uint64_t)info.get());
       timers_.erase(it);
       break;
     }
@@ -392,8 +382,14 @@ void TimerManager<T, D, E>::updateNext(const TimerManager<T, D, E>::TimerInfoPtr
   }
   else
   {
-    info->last_expected = info->next_expected;
-    info->next_expected += info->period;
+    // Protect against someone having called setPeriod()
+    // If the next expected time is already past the current time
+    // don't update it
+    if (info->next_expected <= current_time)
+    {
+      info->last_expected = info->next_expected;
+      info->next_expected += info->period;
+    }
 
     // detect time jumping forward, as well as callbacks that are too slow
     if (info->next_expected + info->period < current_time)
@@ -402,6 +398,29 @@ void TimerManager<T, D, E>::updateNext(const TimerManager<T, D, E>::TimerInfoPtr
       info->next_expected = current_time;
     }
   }
+}
+
+template<class T, class D, class E>
+void TimerManager<T, D, E>::setPeriod(int32_t handle, const D& period)
+{
+  boost::mutex::scoped_lock lock(timers_mutex_);
+  TimerInfoPtr info = findTimer(handle);
+
+  if (!info)
+  {
+    return;
+  }
+
+  {
+    boost::mutex::scoped_lock lock(waiting_mutex_);
+    info->period = period;
+    info->next_expected = T::now() + period;
+
+    waiting_.sort(boost::bind(&TimerManager::waitingCompare, this, _1, _2));
+  }
+
+  new_timer_ = true;
+  timers_cond_.notify_one();
 }
 
 template<class T, class D, class E>
@@ -453,7 +472,7 @@ void TimerManager<T, D, E>::threadFunc()
         {
           current = T::now();
 
-          ROS_DEBUG("Scheduling timer callback for timer [%d] of period [%f]", info->handle, info->period.toSec());
+          ROS_DEBUG("Scheduling timer callback for timer [%d] of period [%f], [%f] off expected", info->handle, info->period.toSec(), (current - info->next_expected).toSec());
           CallbackInterfacePtr cb(new TimerQueueCallback(this, info, info->last_expected, info->last_real, info->next_expected));
           info->callback_queue->addCallback(cb, (uint64_t)info.get());
 

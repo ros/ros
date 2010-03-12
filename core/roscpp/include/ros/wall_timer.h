@@ -64,6 +64,11 @@ public:
    */
   bool hasPending();
 
+  /**
+   * \brief Set the period of this timer
+   */
+  void setPeriod(const WallDuration& period);
+
   bool isValid() { return impl_ && impl_->isValid(); }
   operator void*() { return isValid() ? (void*)1 : (void*)0; }
 
@@ -93,6 +98,7 @@ private:
 
     bool isValid();
     bool hasPending();
+    void setPeriod(const WallDuration& period);
 
     void start();
     void stop();

@@ -1079,6 +1079,24 @@ if (handle)
    * \param oneshot If true, this timer will only fire once
    */
   template<class T>
+  Timer createTimer(Duration period, void(T::*callback)(const TimerEvent&) const, T* obj, bool oneshot = false) const
+  {
+    return createTimer(period, boost::bind(callback, obj, _1), oneshot);
+  }
+
+  /**
+   * \brief Create a timer which will call a callback at the specified rate.  This variant takes
+   * a class member function, and a bare pointer to the object to call the method on.
+   *
+   * When the Timer (and all copies of it) returned goes out of scope, the timer will automatically
+   * be stopped, and the callback will no longer be called.
+   *
+   * \param period The period at which to call the callback
+   * \param callback The method to call
+   * \param obj The object to call the method on
+   * \param oneshot If true, this timer will only fire once
+   */
+  template<class T>
   Timer createTimer(Duration period, void(T::*callback)(const TimerEvent&), T* obj, bool oneshot = false) const
   {
     return createTimer(period, boost::bind(callback, obj, _1), oneshot);

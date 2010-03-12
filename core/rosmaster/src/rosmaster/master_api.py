@@ -244,6 +244,7 @@ class ROSMasterHandler(object):
         if self.thread_pool is not None:
             self.thread_pool.join_all(wait_for_tasks=False, wait_for_threads=False)
             self.thread_pool = None
+        self.done = True
         
     def _ready(self, uri):
         """
@@ -254,9 +255,30 @@ class ROSMasterHandler(object):
         """
         self.uri = uri
 
+    def _ok(self):
+        return not self.done
+    
     ###############################################################################
     # EXTERNAL API
 
+    @apivalidate(0, (None, ))
+    def shutdown(self, caller_id, msg=''):
+        """
+        Stop this server
+        @param caller_id: ROS caller id
+        @type  caller_id: str
+        @param msg: a message describing why the node is being shutdown.
+        @type  msg: str
+        @return: [code, msg, 0]
+        @rtype: [int, str, int]
+        """
+        if msg:
+            print >> sys.stdout, "shutdown request: %s"%msg
+        else:
+            print >> sys.stdout, "shutdown requst"
+        self._shutdown('external shutdown request from [%s]: %s'%(caller_id, msg))
+        return 1, "shutdown", 0
+        
     @apivalidate('')
     def getUri(self, caller_id):
         """

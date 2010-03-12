@@ -101,8 +101,8 @@ WARNING ACHTUNG WARNING ACHTUNG WARNING
         master.start()
 
         import time
-        while True:
-            time.sleep(10.)
+        while master.ok():
+            time.sleep(.1)
     except KeyboardInterrupt:
         logger.info("keyboard interrupt, will exit")
     finally:

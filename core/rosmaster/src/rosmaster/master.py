@@ -57,7 +57,6 @@ class Master(object):
         """
         Start the ROS Master.
         """
-        
         handler = rosmaster.master_api.ROSMasterHandler()
         master_node = roslib.xmlrpc.XmlRpcNode(self.port, handler)
         master_node.start()
@@ -73,6 +72,12 @@ class Master(object):
         
         logging.getLogger('rosmaster.master').info("Master initialized: port[%s], uri[%s]", self.port, self.uri)
 
+    def ok(self):
+        if self.master_node is not None:
+            return self.master_node.handler._ok()
+        else:
+            return False
+    
     def stop(self):
         if self.master_node is not None:
             self.master_node.shutdown('Master.stop')

@@ -95,11 +95,18 @@ class Master(object):
 
         if master_uri is None:
             master_uri = roslib.rosenv.get_master_uri()
-        self.master_uri = master_uri
-        self.handle = xmlrpclib.ServerProxy(self.master_uri)
+        self._reinit(master_uri)
+
         self.caller_id = roslib.names.make_caller_id(caller_id) #resolve
         if self.caller_id[-1] == '/':
             self.caller_id = self.caller_id[:-1]
+        
+    def _reinit(self, master_uri):
+        """
+        Internal API for reinitializing this handle to be a new master
+        """
+        self.master_uri = master_uri
+        self.handle = xmlrpclib.ServerProxy(self.master_uri)
         
     def is_online(self):
         """

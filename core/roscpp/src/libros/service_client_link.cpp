@@ -52,6 +52,10 @@ ServiceClientLink::ServiceClientLink()
 
 ServiceClientLink::~ServiceClientLink()
 {
+  if (connection_)
+  {
+    connection_->drop();
+  }
 }
 
 bool ServiceClientLink::initialize(const ConnectionPtr& connection)

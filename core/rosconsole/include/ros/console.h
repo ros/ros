@@ -65,6 +65,11 @@ class Logger;
 typedef helpers::ObjectPtrT<Logger> LoggerPtr;
 } // namespace log4cxx
 
+namespace boost
+{
+template<typename T> class shared_array;
+}
+
 namespace ros
 {
 namespace console
@@ -215,6 +220,10 @@ struct LogLocation
   ros::console::Level level_;
   log4cxx::Logger* logger_;
 };
+
+void vformatToBuffer(boost::shared_array<char>& buffer, size_t& buffer_size, const char* fmt, va_list args);
+void formatToBuffer(boost::shared_array<char>& buffer, size_t& buffer_size, const char* fmt, ...);
+std::string formatToString(const char* fmt, ...);
 
 } // namespace console
 } // namespace ros

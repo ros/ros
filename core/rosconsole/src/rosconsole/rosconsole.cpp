@@ -425,6 +425,46 @@ void initialize()
   }
 }
 
+void vformatToBuffer(boost::shared_array<char>& buffer, size_t& buffer_size, const char* fmt, va_list args)
+{
+  va_list arg_copy;
+  va_copy(arg_copy, args);
+  size_t total = vsnprintf(buffer.get(), buffer_size, fmt, args);
+  if (total >= buffer_size)
+  {
+    buffer_size = total + 1;
+    buffer.reset(new char[buffer_size]);
+
+    vsnprintf(buffer.get(), buffer_size, fmt, arg_copy);
+    va_end(arg_copy);
+  }
+}
+
+void formatToBuffer(boost::shared_array<char>& buffer, size_t& buffer_size, const char* fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+
+  vformatToBuffer(buffer, buffer_size, fmt, args);
+
+  va_end(args);
+}
+
+std::string formatToString(const char* fmt, ...)
+{
+  boost::shared_array<char> buffer;
+  size_t size = 0;
+
+  va_list args;
+  va_start(args, fmt);
+
+  vformatToBuffer(buffer, size, fmt, args);
+
+  va_end(args);
+
+  return std::string(buffer.get(), size);
+}
+
 #define INITIAL_BUFFER_SIZE 4096
 static boost::mutex g_print_mutex;
 static boost::shared_array<char> g_print_buffer(new char[INITIAL_BUFFER_SIZE]);
@@ -445,17 +485,7 @@ void print(FilterBase* filter, log4cxx::Logger* logger, Level level, const char*
   va_list args;
   va_start(args, fmt);
 
-  size_t total = vsnprintf(g_print_buffer.get(), g_print_buffer_size, fmt, args);
-  if (total >= g_print_buffer_size)
-  {
-    va_end(args);
-    va_start(args, fmt);
-
-    g_print_buffer_size = total + 1;
-    g_print_buffer.reset(new char[g_print_buffer_size]);
-
-    vsnprintf(g_print_buffer.get(), g_print_buffer_size, fmt, args);
-  }
+  vformatToBuffer(g_print_buffer, g_print_buffer_size, fmt, args);
 
   va_end(args);
 

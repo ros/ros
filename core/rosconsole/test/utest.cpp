@@ -37,6 +37,8 @@
 
 #include <gtest/gtest.h>
 
+#include <boost/shared_array.hpp>
+
 class TestAppender : public log4cxx::AppenderSkeleton
 {
 public:
@@ -866,6 +868,30 @@ TEST(RosConsole, changeFilterStream)
   EXPECT_EQ(appender->info_[0].level_, log4cxx::Level::getError());
 
   logger->removeAppender(appender);
+}
+
+TEST(RosConsole, formatToBufferInitialZero)
+{
+  boost::shared_array<char> buffer;
+  size_t size = 0;
+  ros::console::formatToBuffer(buffer, size, "Hello World %d", 5);
+  EXPECT_EQ(size, 14U);
+  EXPECT_STREQ(buffer.get(), "Hello World 5");
+}
+
+TEST(RosConsole, formatToBufferInitialLargerThanFormat)
+{
+  boost::shared_array<char> buffer(new char[30]);
+  size_t size = 30;
+  ros::console::formatToBuffer(buffer, size, "Hello World %d", 5);
+  EXPECT_EQ(size, 30U);
+  EXPECT_STREQ(buffer.get(), "Hello World 5");
+}
+
+TEST(RosConsole, formatToString)
+{
+  std::string str = ros::console::formatToString("Hello World %d", 5);
+  EXPECT_STREQ(str.c_str(), "Hello World 5");
 }
 
 int main(int argc, char **argv)

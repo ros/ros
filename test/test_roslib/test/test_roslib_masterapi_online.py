@@ -108,6 +108,31 @@ class MasterApiOnlineTest(unittest.TestCase):
     def test_getSystemState(self):
         pub, sub, srvs = self.m.getSystemState()
 
+    def test_is_online(self):
+        self.assert_(roslib.masterapi.is_online())
+        self.assert_(self.m.is_online())        
+
+    def test_getParam(self):
+        try:
+            self.m.getParam('fake_param')
+            self.fail("should have failed to lookup fake parameter")
+        except roslib.masterapi.Error:
+            pass
+
+    def test_hasParam(self):
+        self.failIf(self.m.hasParam('fake_param'), "should have failed to lookup fake parameter")
+        self.assert_(self.m.hasParam('/run_id'), "should have failed to lookup fake parameter")
+
+    def test_setParam(self):
+        self.m.setParam('/foo', 1)
+        
+    def test_searchParam(self):
+        self.assertEquals("/run_id", self.m.searchParam('run_id'))
+
+    def test_getParamNames(self):
+        self.assert_(type(self.m.getParamNames()) == list)
+        
+        
 if __name__ == '__main__':
     rostest.rosrun('test_roslib', 'test_roslib_masterapi_online', MasterApiOnlineTest)
 

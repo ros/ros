@@ -70,11 +70,7 @@ def is_online(master_uri=None):
     @type  master_uri: str
     @return: True if Master is available
     """
-    try:
-        Master('roslib').is_online()
-        return True
-    except:
-        return False
+    return Master('roslib', master_uri=master_uri).is_online()
 
 class Master(object):
     """

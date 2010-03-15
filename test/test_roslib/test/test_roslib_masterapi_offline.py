@@ -57,6 +57,10 @@ class MasterMock(object):
     def getPid(self, caller_id):
         self.call = ('getPid', caller_id)
         return self.return_val
+
+    def getUri(self, caller_id):
+        self.call = ('getUri', caller_id)
+        return self.return_val
     
     def registerService(self, caller_id, service, service_api, caller_api):
         self.call = ('registerService', caller_id, service, service_api, caller_api)
@@ -98,6 +102,38 @@ class MasterMock(object):
         self.call = ('getSystemState', caller_id)
         return self.return_val
 
+    def getParam(self, caller_id, p):
+        self.call = ('getParam', caller_id, p)
+        return self.return_val
+
+    def hasParam(self, caller_id, p):
+        self.call = ('hasParam', caller_id, p)
+        return self.return_val
+
+    def deleteParam(self, caller_id, p):
+        self.call = ('deleteParam', caller_id, p)
+        return self.return_val
+
+    def searchParam(self, caller_id, p):
+        self.call = ('searchParam', caller_id, p)
+        return self.return_val
+
+    def setParam(self, caller_id, p, v):
+        self.call = ('setParam', caller_id, p, v)
+        return self.return_val
+
+    def subscribeParam(self, caller_id, api, p):
+        self.call = ('subscribeParam', caller_id, api, p)
+        return self.return_val
+
+    def unsubscribeParam(self, caller_id, api, p):
+        self.call = ('unsubscribeParam', caller_id, api, p)
+        return self.return_val
+    
+    def getParamNames(self, caller_id):
+        self.call = ('getParamNames', caller_id)
+        return self.return_val
+    
 class MasterApiOfflineTest(unittest.TestCase):
   
     def setUp(self):
@@ -105,6 +141,24 @@ class MasterApiOfflineTest(unittest.TestCase):
         # replace xmlrpclib server proxy with mock
         self.m.handle = MasterMock()
 
+    def throw_failure(self, attr, args, ret_val):
+        self.m.handle.return_val = ret_val
+        f = getattr(self.m, attr)
+        try:
+            f(*args)
+            self.fail("[%s] should have thrown Failure with args [%s], ret_val [%s]"%(attr, str(args), str(ret_val)))
+        except roslib.masterapi.Failure:
+            pass
+
+    def throw_error(self, attr, args, ret_val):
+        self.m.handle.return_val = ret_val
+        f = getattr(self.m, attr)
+        try:
+            f(*args)
+            self.fail("[%s] should have thrown Error with args [%s], ret_val [%s]"%(attr, str(args), str(ret_val)))
+        except roslib.masterapi.Error:
+            pass
+        
     def test_Master(self):
         # test constructor args
         m = roslib.masterapi.Master(_ID, master_uri = 'http://localhost:12345')
@@ -124,18 +178,17 @@ class MasterApiOfflineTest(unittest.TestCase):
         h.return_val = (1, '', r)
         self.assertEquals(r, self.m.getPid())
         self.assertEquals(('getPid',_ID), h.call)
-        try:
-            h.return_val = (0, '', r)
-            self.m.getPid()
-            self.fail("should have thrown")
-        except roslib.masterapi.Failure:
-            pass
-        try:
-            h.return_val = (-1, '', r)
-            self.m.getPid()
-            self.fail("should have thrown")
-        except roslib.masterapi.Error:
-            pass
+        self.throw_failure('getPid', (), (0, '', r))
+        self.throw_error('getPid', (), (-1, '', r))
+
+    def test_getPid(self):
+        h = self.m.handle
+        r = 'http://foo:1234'
+        h.return_val = (1, '', r)
+        self.assertEquals(r, self.m.getUri())
+        self.assertEquals(('getUri',_ID), h.call)
+        self.throw_failure('getUri', (), (0, '', r))
+        self.throw_error('getUri', (), (-1, '', r))
 
     def test_lookupService(self):
         h = self.m.handle
@@ -143,18 +196,8 @@ class MasterApiOfflineTest(unittest.TestCase):
         h.return_val = (1, '', r)
         self.assertEquals(r, self.m.lookupService('/bar/service'))
         self.assertEquals(('lookupService',_ID, '/bar/service'), h.call)
-        try:
-            h.return_val = (0, '', r)
-            self.m.lookupService('/bar/service')
-            self.fail("should have thrown")
-        except roslib.masterapi.Failure:
-            pass
-        try:
-            h.return_val = (-1, '', r)
-            self.m.lookupService('/bar/service')
-            self.fail("should have thrown")
-        except roslib.masterapi.Error:
-            pass
+        self.throw_failure('lookupService', ('/bar/service',), (0, '', r))
+        self.throw_error('lookupService', ('/bar/service',), (-1, '', r))
 
     def test_registerService(self):
         h = self.m.handle
@@ -162,18 +205,9 @@ class MasterApiOfflineTest(unittest.TestCase):
         h.return_val = (1, '', r)
         self.assertEquals(r, self.m.registerService('/bar/service', 'rosrpc://localhost:9812', 'http://localhost:893'))
         self.assertEquals(('registerService',_ID, '/bar/service', 'rosrpc://localhost:9812', 'http://localhost:893'), h.call)
-        try:
-            h.return_val = (0, '', r)
-            self.m.registerService('/bar/service', 'rosrpc://localhost:9812', 'http://localhost:893')
-            self.fail("should have thrown")
-        except roslib.masterapi.Failure:
-            pass
-        try:
-            h.return_val = (-1, '', r)
-            self.m.registerService('/bar/service', 'rosrpc://localhost:9812', 'http://localhost:893')
-            self.fail("should have thrown")
-        except roslib.masterapi.Error:
-            pass
+        args = ('/bar/service', 'rosrpc://localhost:9812', 'http://localhost:893')
+        self.throw_failure('registerService', args, (0, '', r))
+        self.throw_error('registerService', args, (-1, '', r))
 
     def test_unregisterService(self):
         h = self.m.handle
@@ -181,18 +215,9 @@ class MasterApiOfflineTest(unittest.TestCase):
         h.return_val = (1, '', r)
         self.assertEquals(r, self.m.unregisterService('/bar/service', 'rosrpc://localhost:9812'))
         self.assertEquals(('unregisterService',_ID, '/bar/service', 'rosrpc://localhost:9812'), h.call)
-        try:
-            h.return_val = (0, '', r)
-            self.m.unregisterService('/bar/service', 'rosrpc://localhost:9812')
-            self.fail("should have thrown")
-        except roslib.masterapi.Failure:
-            pass
-        try:
-            h.return_val = (-1, '', r)
-            self.m.unregisterService('/bar/service', 'rosrpc://localhost:9812')
-            self.fail("should have thrown")
-        except roslib.masterapi.Error:
-            pass
+        args = ('/bar/service', 'rosrpc://localhost:9812')
+        self.throw_failure('unregisterService', args, (0, '', r))
+        self.throw_error('unregisterService', args, (-1, '', r))
         
     def test_registerSubscriber(self):
         h = self.m.handle
@@ -200,18 +225,9 @@ class MasterApiOfflineTest(unittest.TestCase):
         h.return_val = (1, '', r)
         self.assertEquals(r, self.m.registerSubscriber('/foo/node', 'std_msgs/String', 'http://localhost:9812'))
         self.assertEquals(('registerSubscriber',_ID, '/foo/node', 'std_msgs/String', 'http://localhost:9812'), h.call)
-        try:
-            h.return_val = (0, '', r)
-            self.m.registerSubscriber('/foo/node', 'std_msgs/String', 'http://localhost:9812')
-            self.fail("should have thrown")
-        except roslib.masterapi.Failure:
-            pass
-        try:
-            h.return_val = (-1, '', r)
-            self.m.registerSubscriber('/foo/node', 'std_msgs/String', 'http://localhost:9812')
-            self.fail("should have thrown")
-        except roslib.masterapi.Error:
-            pass
+        args = ('/foo/node', 'std_msgs/String', 'http://localhost:9812')
+        self.throw_failure('registerSubscriber', args, (0, '', r))
+        self.throw_error('registerSubscriber', args, (-1, '', r))
 
     def test_unregisterSubscriber(self):
         h = self.m.handle
@@ -219,18 +235,9 @@ class MasterApiOfflineTest(unittest.TestCase):
         h.return_val = (1, '', r)
         self.assertEquals(r, self.m.unregisterSubscriber('/foo/node', 'http://localhost:9812'))
         self.assertEquals(('unregisterSubscriber',_ID, '/foo/node', 'http://localhost:9812'), h.call)
-        try:
-            h.return_val = (0, '', r)
-            self.m.unregisterSubscriber('/foo/node', 'http://localhost:9812')
-            self.fail("should have thrown")
-        except roslib.masterapi.Failure:
-            pass
-        try:
-            h.return_val = (-1, '', r)
-            self.m.unregisterSubscriber('/foo/node', 'http://localhost:9812')
-            self.fail("should have thrown")
-        except roslib.masterapi.Error:
-            pass
+        args = ('/foo/node', 'http://localhost:9812')
+        self.throw_failure('unregisterSubscriber', args, (0, '', r))
+        self.throw_error('unregisterSubscriber', args, (-1, '', r))
 
     def test_registerPublisher(self):
         h = self.m.handle
@@ -238,18 +245,9 @@ class MasterApiOfflineTest(unittest.TestCase):
         h.return_val = (1, '', r)
         self.assertEquals(r, self.m.registerPublisher('/foo/node', 'std_msgs/String', 'http://localhost:9812'))
         self.assertEquals(('registerPublisher',_ID, '/foo/node', 'std_msgs/String', 'http://localhost:9812'), h.call)
-        try:
-            h.return_val = (0, '', r)
-            self.m.registerPublisher('/foo/node', 'std_msgs/String', 'http://localhost:9812')
-            self.fail("should have thrown")
-        except roslib.masterapi.Failure:
-            pass
-        try:
-            h.return_val = (-1, '', r)
-            self.m.registerPublisher('/foo/node', 'std_msgs/String', 'http://localhost:9812')
-            self.fail("should have thrown")
-        except roslib.masterapi.Error:
-            pass
+        args = ('/foo/node', 'std_msgs/String', 'http://localhost:9812')
+        self.throw_failure('registerPublisher', args, (0, '', r))
+        self.throw_error('registerPublisher', args, (-1, '', r))
 
     def test_unregisterPublisher(self):
         h = self.m.handle
@@ -257,18 +255,9 @@ class MasterApiOfflineTest(unittest.TestCase):
         h.return_val = (1, '', r)
         self.assertEquals(r, self.m.unregisterPublisher('/foo/node', 'http://localhost:9812'))
         self.assertEquals(('unregisterPublisher',_ID, '/foo/node', 'http://localhost:9812'), h.call)
-        try:
-            h.return_val = (0, '', r)
-            self.m.unregisterPublisher('/foo/node', 'http://localhost:9812')
-            self.fail("should have thrown")
-        except roslib.masterapi.Failure:
-            pass
-        try:
-            h.return_val = (-1, '', r)
-            self.m.unregisterPublisher('/foo/node', 'http://localhost:9812')
-            self.fail("should have thrown")
-        except roslib.masterapi.Error:
-            pass
+        args = ('/foo/node', 'http://localhost:9812')
+        self.throw_failure('unregisterPublisher', args, (0, '', r))
+        self.throw_error('unregisterPublisher', args, (-1, '', r))
 
     def test_lookupNode(self):
         h = self.m.handle
@@ -276,18 +265,9 @@ class MasterApiOfflineTest(unittest.TestCase):
         h.return_val = (1, '', r)
         self.assertEquals(r, self.m.lookupNode('/foo/node'))
         self.assertEquals(('lookupNode',_ID, '/foo/node'), h.call)
-        try:
-            h.return_val = (0, '', r)
-            self.m.lookupNode('/foo/node')
-            self.fail("should have thrown")
-        except roslib.masterapi.Failure:
-            pass
-        try:
-            h.return_val = (-1, '', r)
-            self.m.lookupNode('/foo/node')
-            self.fail("should have thrown")
-        except roslib.masterapi.Error:
-            pass
+        args = ('/foo/node',)
+        self.throw_failure('lookupNode', args, (0, '', r))
+        self.throw_error('lookupNode', args, (-1, '', r))
         
     def test_getPublishedTopics(self):
         h = self.m.handle
@@ -295,18 +275,9 @@ class MasterApiOfflineTest(unittest.TestCase):
         h.return_val = (1, '', r)
         self.assertEquals(r, self.m.getPublishedTopics('/foo'))
         self.assertEquals(('getPublishedTopics',_ID, '/foo'), h.call)
-        try:
-            h.return_val = (0, '', r)
-            self.m.getPublishedTopics('/baz')
-            self.fail("should have thrown")
-        except roslib.masterapi.Failure:
-            pass
-        try:
-            h.return_val = (-1, '', r)
-            self.m.getPublishedTopics('/bar')            
-            self.fail("should have thrown")
-        except roslib.masterapi.Error:
-            pass
+        args = ('/baz',)
+        self.throw_failure('getPublishedTopics', args, (0, '', r))
+        self.throw_error('getPublishedTopics', args, (-1, '', r))
         
     def test_getSystemState(self):
         h = self.m.handle
@@ -314,19 +285,97 @@ class MasterApiOfflineTest(unittest.TestCase):
         h.return_val = (1, '', r)
         self.assertEquals(r, self.m.getSystemState())
         self.assertEquals(('getSystemState', _ID), h.call)        
-        try:
-            h.return_val = (0, '', r)
-            self.m.getSystemState()
-            self.fail("should have thrown")
-        except roslib.masterapi.Failure:
-            pass
-        try:
-            h.return_val = (-1, '', r)
-            self.m.getSystemState()            
-            self.fail("should have thrown")
-        except roslib.masterapi.Error:
-            pass
+        self.throw_failure('getSystemState', (), (0, '', r))
+        self.throw_error('getSystemState', (), (-1, '', r))
+
+    ################################################################################
+    # PARAM SERVER API TESTS
+
+    def test_getParam(self):
+        h = self.m.handle
+        r = 1
+        h.return_val = (1, '', r)
+        p = '/test_param'
+        self.assertEquals(r, self.m.getParam(p))
+        self.assertEquals(('getParam', _ID, p), h.call)
+        args = (p,)
+        self.throw_failure('getParam', args, (0, '', r))
+        self.throw_error('getParam', args, (-1, '', r))
+
+    def test_getParamNames(self):
+        h = self.m.handle
+        r = [ '/foo' ]
+        h.return_val = (1, '', r)
+        self.assertEquals(r, self.m.getParamNames())
+        self.assertEquals(('getParamNames', _ID), h.call)        
+        self.throw_failure('getParamNames', (), (0, '', r))
+        self.throw_error('getParamNames', (), (-1, '', r))
         
+    def test_hasParam(self):
+        h = self.m.handle
+        r = True
+        h.return_val = (1, '', r)
+        p = '/test_param'
+        self.assertEquals(r, self.m.hasParam(p))
+        self.assertEquals(('hasParam', _ID, p), h.call)
+        self.throw_failure('hasParam', (p,), (0, '', r))
+        self.throw_error('hasParam', (p,), (-1, '', r))
+
+    def test_searchParam(self):
+        h = self.m.handle
+        r = '/foo'
+        h.return_val = (1, '', r)
+        p = '/test_param'
+        self.assertEquals(r, self.m.searchParam(p))
+        self.assertEquals(('searchParam', _ID, p), h.call)
+        self.throw_failure('searchParam', (p,), (0, '', r))
+        self.throw_error('searchParam', (p,), (-1, '', r))
+
+    def test_deleteParam(self):
+        h = self.m.handle
+        r = '/foo'
+        h.return_val = (1, '', r)
+        p = '/test_param'
+        self.assertEquals(r, self.m.deleteParam(p))
+        self.assertEquals(('deleteParam', _ID, p), h.call)        
+        self.throw_failure('deleteParam', (p,), (0, '', r))
+        self.throw_error('deleteParam', (p,), (-1, '', r))
+
+    def test_is_online(self):
+        self.failIf(roslib.masterapi.is_online(master_uri="http://fake:12345"))
+
+        self.m.handle.return_val = (1, '', 1235)
+        self.assert_(self.m.is_online())
+        
+    def test_subscribeParam(self):
+        h = self.m.handle
+        r = 1
+        h.return_val = (1, '', r)
+        args = ('http://bar:12345', '/test_param')
+        self.assertEquals(r, self.m.subscribeParam(*args))
+        self.assertEquals(('subscribeParam', _ID, args[0], args[1]), h.call)
+        self.throw_failure('subscribeParam', args, (0, '', r))
+        self.throw_error('subscribeParam', args, (-1, '', r))
+
+    def test_unsubscribeParam(self):
+        h = self.m.handle
+        r = 1
+        h.return_val = (1, '', r)
+        args = ('http://bar:12345', '/test_param')
+        self.assertEquals(r, self.m.unsubscribeParam(*args))
+        self.assertEquals(('unsubscribeParam', _ID, args[0], args[1]), h.call)
+        self.throw_failure('unsubscribeParam', args, (0, '', r))
+        self.throw_error('unsubscribeParam', args, (-1, '', r))
+
+    def test_setParam(self):
+        h = self.m.handle
+        r = 1
+        h.return_val = (1, '', r)
+        args = ('/test_set_param', 'foo')
+        self.assertEquals(r, self.m.setParam(*args))
+        self.assertEquals(('setParam', _ID, args[0], args[1]), h.call)
+        self.throw_failure('setParam', args, (0, '', r))
+        self.throw_error('setParam', args, (-1, '', r))
 
 if __name__ == '__main__':
     rostest.unitrun('test_roslib', 'test_roslib_masterapi_offline', MasterApiOfflineTest, coverage_packages=['roslib.masterapi'])

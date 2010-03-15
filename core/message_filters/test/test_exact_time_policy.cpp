@@ -39,7 +39,7 @@
 #include "message_filters/sync_exact_time.h"
 
 using namespace message_filters;
-using namespace message_filters::synchro;
+using namespace message_filters::sync;
 
 struct Header
 {

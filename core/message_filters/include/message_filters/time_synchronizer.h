@@ -93,11 +93,11 @@ void callback(const sensor_msgs::CameraInfo::ConstPtr&, const sensor_msgs::Image
  */
 template<class M0, class M1, class M2 = NullType, class M3 = NullType, class M4 = NullType,
          class M5 = NullType, class M6 = NullType, class M7 = NullType, class M8 = NullType>
-class TimeSynchronizer : public synchro::Synchronizer<synchro::ExactTime<M0, M1, M2, M3, M4, M5, M6, M7, M8> >
+class TimeSynchronizer : public sync::Synchronizer<sync::ExactTime<M0, M1, M2, M3, M4, M5, M6, M7, M8> >
 {
 public:
-  typedef synchro::ExactTime<M0, M1, M2, M3, M4, M5, M6, M7, M8> Policy;
-  typedef synchro::Synchronizer<Policy> Base;
+  typedef sync::ExactTime<M0, M1, M2, M3, M4, M5, M6, M7, M8> Policy;
+  typedef sync::Synchronizer<Policy> Base;
   typedef boost::shared_ptr<M0 const> M0ConstPtr;
   typedef boost::shared_ptr<M1 const> M1ConstPtr;
   typedef boost::shared_ptr<M2 const> M2ConstPtr;

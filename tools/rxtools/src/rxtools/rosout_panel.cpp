@@ -605,11 +605,21 @@ void RosoutPanel::popMessage()
     table_->SetItemCount(ordered_messages_.size());
 
     // Removing early messages means subtracting 1 from the current selection
-    int32_t selection = table_->getSelection();
-    if (selection > -1)
+    const S_int32& selection = table_->getSelection();
+    S_int32 new_selection;
+
+    S_int32::const_iterator it = selection.begin();
+    S_int32::const_iterator end = selection.end();
+    for (; it != end; ++it)
     {
-      table_->setSelection(selection - 1);
+      int32_t new_index = *it - 1;
+      if (new_index >= 0)
+      {
+        new_selection.insert(new_index);
+      }
     }
+
+    table_->setSelection(new_selection);
   }
 
   messages_.erase(it);

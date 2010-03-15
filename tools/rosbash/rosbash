@@ -280,7 +280,7 @@ function _roscomplete_search_dir {
     elif [[ $COMP_CWORD == 2 ]]; then
         pkgdir=`_ros_package_find ${COMP_WORDS[1]}`
         if [[ $? == 0 ]]; then
-            opts=`find $pkgdir ${1} ! -regex .*/[.].* ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+            opts=`find $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
         else
             opts=""
         fi
@@ -325,10 +325,10 @@ function _roscomplete_file {
 }
 
 function _roscomplete_launch {
-    _roscomplete_search_dir "-type f -name *.launch"
+    _roscomplete_search_dir "-type f -regex .*[.]launch$"
     if [[ $COMP_CWORD == 1 ]]; then
         arg="${COMP_WORDS[COMP_CWORD]}"
-        COMPREPLY=($(compgen -f -X "!*.launch" -- ${arg}) ${COMPREPLY[@]})
+        COMPREPLY=($(compgen -o plusdirs -f -X "!*.launch" -- ${arg}) ${COMPREPLY[@]})
     fi
 }
 
@@ -555,7 +555,7 @@ complete -F "_roscomplete" -o "nospace" "rosmake"
 complete -F "_roscomplete_exe" "rosrun"
 complete -F "_roscomplete_file" "rosed"
 complete -F "_roscomplete_file" "roscp"
-complete -F "_roscomplete_launch" -o filenames -o plusdirs "roslaunch"
+complete -F "_roscomplete_launch" -o filenames "roslaunch"
 complete -F "_roscomplete" -o "nospace" "rosupdate"
 complete -F "_roscomplete_rospack" "rospack"
 complete -F "_roscomplete_rosbag" "rosbag"

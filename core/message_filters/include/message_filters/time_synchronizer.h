@@ -102,6 +102,7 @@ public:
   using Base::registerCallback;
   using Base::setName;
   using Base::getName;
+  using Policy::registerDropCallback;
   typedef typename Base::M0Event M0Event;
   typedef typename Base::M1Event M1Event;
   typedef typename Base::M2Event M2Event;

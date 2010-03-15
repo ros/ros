@@ -326,30 +326,6 @@ public:
     return signal_.template addCallback(callback, t);
   }
 
-  template<class C>
-  Connection registerDropCallback(const C& callback)
-  {
-    return drop_signal_.template addCallback(callback);
-  }
-
-  template<class C>
-  Connection registerDropCallback(C& callback)
-  {
-    return drop_signal_.template addCallback(callback);
-  }
-
-  template<class C, typename T>
-  Connection registerDropCallback(const C& callback, T* t)
-  {
-    return drop_signal_.template addCallback(callback, t);
-  }
-
-  template<class C, typename T>
-  Connection registerDropCallback(C& callback, T* t)
-  {
-    return drop_signal_.template addCallback(callback, t);
-  }
-
   void setName(const std::string& name) { name_ = name; }
   const std::string& getName() { return name_; }
 
@@ -358,12 +334,6 @@ public:
               const M5Event& e5, const M6Event& e6, const M7Event& e7, const M8Event& e8)
   {
     signal_.call(e0, e1, e2, e3, e4, e5, e6, e7, e8);
-  }
-
-  void signalDrop(const M0Event& e0, const M1Event& e1, const M2Event& e2, const M3Event& e3, const M4Event& e4,
-              const M5Event& e5, const M6Event& e6, const M7Event& e7, const M8Event& e8)
-  {
-    drop_signal_.call(e0, e1, e2, e3, e4, e5, e6, e7, e8);
   }
 
   Policy* getPolicy() { return static_cast<Policy*>(this); }
@@ -395,7 +365,6 @@ private:
   uint32_t queue_size_;
 
   Signal signal_;
-  Signal drop_signal_;
 
   Connection input_connections_[MAX_MESSAGES];
 

@@ -153,7 +153,7 @@ TEST(ExactTime, dropCallback)
   Sync2 sync(1);
   Helper h;
   sync.registerCallback(boost::bind(&Helper::cb, &h));
-  sync.registerDropCallback(boost::bind(&Helper::dropcb, &h));
+  sync.getPolicy()->registerDropCallback(boost::bind(&Helper::dropcb, &h));
   MsgPtr m(new Msg);
   m->header.stamp = ros::Time();
 

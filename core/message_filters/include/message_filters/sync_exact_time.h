@@ -131,6 +131,30 @@ struct ExactTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
     checkTuple(t);
   }
 
+  template<class C>
+  Connection registerDropCallback(const C& callback)
+  {
+    return drop_signal_.template addCallback(callback);
+  }
+
+  template<class C>
+  Connection registerDropCallback(C& callback)
+  {
+    return drop_signal_.template addCallback(callback);
+  }
+
+  template<class C, typename T>
+  Connection registerDropCallback(const C& callback, T* t)
+  {
+    return drop_signal_.template addCallback(callback, t);
+  }
+
+  template<class C, typename T>
+  Connection registerDropCallback(C& callback, T* t)
+  {
+    return drop_signal_.template addCallback(callback, t);
+  }
+
 private:
 
   // assumes mutex_ is already locked
@@ -167,9 +191,9 @@ private:
       while (tuples_.size() > queue_size_)
       {
         Tuple& t2 = tuples_.begin()->second;
-        parent_->signalDrop(boost::get<0>(t2), boost::get<1>(t2), boost::get<2>(t2),
-                            boost::get<3>(t2), boost::get<4>(t2), boost::get<5>(t2),
-                            boost::get<6>(t2), boost::get<7>(t2), boost::get<8>(t2));
+        drop_signal_.call(boost::get<0>(t2), boost::get<1>(t2), boost::get<2>(t2),
+                          boost::get<3>(t2), boost::get<4>(t2), boost::get<5>(t2),
+                          boost::get<6>(t2), boost::get<7>(t2), boost::get<8>(t2));
         tuples_.erase(tuples_.begin());
       }
     }
@@ -188,9 +212,9 @@ private:
         ++it;
 
         Tuple& t = old->second;
-        parent_->signalDrop(boost::get<0>(t), boost::get<1>(t), boost::get<2>(t),
-                            boost::get<3>(t), boost::get<4>(t), boost::get<5>(t),
-                            boost::get<6>(t), boost::get<7>(t), boost::get<8>(t));
+        drop_signal_.call(boost::get<0>(t), boost::get<1>(t), boost::get<2>(t),
+                          boost::get<3>(t), boost::get<4>(t), boost::get<5>(t),
+                          boost::get<6>(t), boost::get<7>(t), boost::get<8>(t));
         tuples_.erase(old);
       }
       else
@@ -208,6 +232,8 @@ private:
   typedef std::map<ros::Time, Tuple> M_TimeToTuple;
   M_TimeToTuple tuples_;
   ros::Time last_signal_time_;
+
+  Signal drop_signal_;
 
   boost::mutex mutex_;
 };

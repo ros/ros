@@ -499,7 +499,7 @@ def compute_full_text_escaped(gen_deps_dict):
     s = StringIO()
     for line in lines:
         line = escape_string(line)
-        s.write('%s\\n \\\n'%(line))
+        s.write('%s\\n\\\n'%(line))
         
     val = s.getvalue()
     s.close()

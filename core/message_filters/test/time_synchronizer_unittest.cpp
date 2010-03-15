@@ -36,6 +36,7 @@
 
 #include "ros/time.h"
 #include "message_filters/time_synchronizer.h"
+#include "message_filters/pass_through.h"
 
 using namespace message_filters;
 
@@ -518,6 +519,21 @@ TEST(TimeSynchronizer, eventInEventOut)
   ASSERT_TRUE(h.e2_.getMessage());
   ASSERT_EQ(h.e1_.getReceiptTime(), evt.getReceiptTime());
   ASSERT_EQ(h.e2_.getReceiptTime(), evt.getReceiptTime());
+}
+
+TEST(TimeSynchronizer, connectConstructor)
+{
+  PassThrough<Msg> pt1, pt2;
+  TimeSynchronizer<Msg, Msg> sync(pt1, pt2, 1);
+  Helper h;
+  sync.registerCallback(boost::bind(&Helper::cb, &h));
+  MsgPtr m(new Msg);
+  m->header.stamp = ros::Time::now();
+
+  pt1.add(m);
+  ASSERT_EQ(h.count_, 0);
+  pt2.add(m);
+  ASSERT_EQ(h.count_, 1);
 }
 
 //TEST(TimeSynchronizer, connectToSimple)

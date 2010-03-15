@@ -35,22 +35,11 @@
 #ifndef MESSAGE_FILTERS_TIME_SYNCHRONIZER_H
 #define MESSAGE_FILTERS_TIME_SYNCHRONIZER_H
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/function.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/signals.hpp>
-#include <boost/bind.hpp>
-#include <boost/type_traits/is_same.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/mpl/and.hpp>
-#include <boost/mpl/equal_to.hpp>
-
-#include <roslib/Header.h>
-
 #include "synchronizer.h"
 #include "sync_exact_time.h"
-#include <ros/message_traits.h>
+
+#include <boost/shared_ptr.hpp>
+
 #include <ros/message_event.h>
 
 namespace message_filters
@@ -127,48 +116,56 @@ public:
   TimeSynchronizer(F0& f0, F1& f1, uint32_t queue_size)
   : Base(Policy(queue_size))
   {
+    connectInput(f0, f1);
   }
 
   template<class F0, class F1, class F2>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, uint32_t queue_size)
   : Base(Policy(queue_size))
   {
+    connectInput(f0, f1, f2);
   }
 
   template<class F0, class F1, class F2, class F3>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, F3& f3, uint32_t queue_size)
   : Base(Policy(queue_size))
   {
+    connectInput(f0, f1, f2, f3);
   }
 
   template<class F0, class F1, class F2, class F3, class F4>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, uint32_t queue_size)
   : Base(Policy(queue_size))
   {
+    connectInput(f0, f1, f2, f3, f4);
   }
 
   template<class F0, class F1, class F2, class F3, class F4, class F5>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, F5& f5, uint32_t queue_size)
   : Base(Policy(queue_size))
   {
+    connectInput(f0, f1, f2, f3, f4, f5);
   }
 
   template<class F0, class F1, class F2, class F3, class F4, class F5, class F6>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, F5& f5, F6& f6, uint32_t queue_size)
   : Base(Policy(queue_size))
   {
+    connectInput(f0, f1, f2, f3, f4, f5, f6);
   }
 
   template<class F0, class F1, class F2, class F3, class F4, class F5, class F6, class F7>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, F5& f5, F6& f6, F7& f7, uint32_t queue_size)
   : Base(Policy(queue_size))
   {
+    connectInput(f0, f1, f2, f3, f4, f5, f6, f7);
   }
 
   template<class F0, class F1, class F2, class F3, class F4, class F5, class F6, class F7, class F8>
   TimeSynchronizer(F0& f0, F1& f1, F2& f2, F3& f3, F4& f4, F5& f5, F6& f6, F7& f7, F8& f8, uint32_t queue_size)
   : Base(Policy(queue_size))
   {
+    connectInput(f0, f1, f2, f3, f4, f5, f6, f7, f8);
   }
 
   TimeSynchronizer(uint32_t queue_size)

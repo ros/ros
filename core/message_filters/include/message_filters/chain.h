@@ -36,56 +36,12 @@
 #define MESSAGE_FILTERS_CHAIN_H
 
 #include "simple_filter.h"
+#include "pass_through.h"
 
 #include <vector>
 
 namespace message_filters
 {
-/**
- * \brief Simple passthrough filter.  What comes in goes out immediately.
- */
-template<typename M>
-class PassThrough : public SimpleFilter<M>
-{
-public:
-  typedef boost::shared_ptr<M const> MConstPtr;
-  typedef ros::MessageEvent<M const> EventType;
-
-  PassThrough()
-  {
-  }
-
-  template<typename F>
-  PassThrough(F& f)
-  {
-    connectInput(f);
-  }
-
-  template<class F>
-  void connectInput(F& f)
-  {
-    incoming_connection_.disconnect();
-    incoming_connection_ = f.registerCallback(typename SimpleFilter<M>::EventCallback(boost::bind(&PassThrough::cb, this, _1)));
-  }
-
-  void add(const MConstPtr& msg)
-  {
-    add(EventType(msg));
-  }
-
-  void add(const EventType& evt)
-  {
-    signalMessage(evt);
-  }
-
-private:
-  void cb(const EventType& evt)
-  {
-    add(evt);
-  }
-
-  Connection incoming_connection_;
-};
 
 /**
  * \brief Base class for Chain, allows you to store multiple chains in the same container.  Provides filter retrieval

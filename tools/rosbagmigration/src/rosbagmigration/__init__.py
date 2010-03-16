@@ -49,9 +49,10 @@ import itertools
 
 import roslib.rospack
 import roslib.message
+import roslib.msgs
 
 # Anything outside the scope of these primitives is a submessage
-_PRIMITIVES = ['bool', 'byte','int8','int16','int32','int64','char','uint8','uint16','uint32','uint64','float32','float64','string','time']
+#_PRIMITIVES = ['bool', 'byte','int8','int16','int32','int64','char','uint8','uint16','uint32','uint64','float32','float64','string','time']
 
 class BagMigrationException(Exception):
     pass
@@ -192,7 +193,7 @@ def qualified_name(name, top_name):
     # First clean the name, to make everyting else more deterministic
     tmp_name = clean_name(name, top_name)
 
-    if len(tmp_name.split('/')) == 2 or (tmp_name in _PRIMITIVES):
+    if len(tmp_name.split('/')) == 2 or (roslib.msgs.is_builtin(tmp_name)):
         return tmp_name
     elif (tmp_name == 'Header'):
         return 'roslib/Header'
@@ -1123,7 +1124,7 @@ class MessageMigrator(object):
                     else:
                         warn_msg = "Fixed length array converted from %d to %d"%(old_array_len,new_array_len)
 
-                elif (new_base_type in _PRIMITIVES):
+                elif (roslib.msgs.is_builtin(new_base_type)):
                     if (new_base_type != old_base_type):
                         warn_msg = "Primitive type changed"
                     else:

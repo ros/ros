@@ -36,7 +36,7 @@
 #define MESSAGE_FILTERS_TIME_SYNCHRONIZER_H
 
 #include "synchronizer.h"
-#include "sync_exact_time.h"
+#include "sync_policies/exact_time.h"
 
 #include <boost/shared_ptr.hpp>
 

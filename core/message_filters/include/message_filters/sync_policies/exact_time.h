@@ -35,7 +35,10 @@
 #ifndef MESSAGE_FILTERS_SYNC_EXACT_TIME_H
 #define MESSAGE_FILTERS_SYNC_EXACT_TIME_H
 
-#include "synchronizer.h"
+#include "message_filters/synchronizer.h"
+#include "message_filters/connection.h"
+#include "message_filters/null_types.h"
+#include "message_filters/signal9.h"
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_ptr.hpp>
@@ -51,9 +54,6 @@
 
 #include <roslib/Header.h>
 
-#include "connection.h"
-#include "null_types.h"
-#include "signal9.h"
 #include <ros/message_traits.h>
 #include <ros/message_event.h>
 

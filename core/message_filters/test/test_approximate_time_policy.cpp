@@ -35,7 +35,7 @@
 
 #include <gtest/gtest.h>
 #include "message_filters/synchronizer.h"
-#include "message_filters/sync_approximate_time.h"
+#include "message_filters/sync_policies/approximate_time.h"
 #include <vector>
 #include <ros/ros.h>
 //#include <pair>

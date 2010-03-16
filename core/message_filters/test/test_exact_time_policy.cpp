@@ -36,7 +36,7 @@
 
 #include "ros/time.h"
 #include "message_filters/synchronizer.h"
-#include "message_filters/sync_exact_time.h"
+#include "message_filters/sync_policies/exact_time.h"
 
 using namespace message_filters;
 using namespace message_filters::sync_policies;

@@ -63,8 +63,6 @@
 
 namespace message_filters
 {
-namespace sync
-{
 
 namespace mpl = boost::mpl;
 
@@ -392,7 +390,6 @@ struct PolicyBase
   typedef typename mpl::at_c<Events, 8>::type M8Event;
 };
 
-} // namespace sync
 } // namespace message_filters
 
 #endif // MESSAGE_FILTERS_SYNCHRONIZER_H

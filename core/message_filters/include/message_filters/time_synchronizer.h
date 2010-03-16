@@ -70,8 +70,8 @@ void callback(const boost::shared_ptr<M0 const>&, const boost::shared_ptr<M1 con
  * \section usage USAGE
  * Example usage would be:
 \verbatim
-TimeSynchronizer<sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::Image> sync(caminfo_sub, limage_sub, rimage_sub, 3);
-sync.registerCallback(callback);
+TimeSynchronizer<sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::Image> sync_policies(caminfo_sub, limage_sub, rimage_sub, 3);
+sync_policies.registerCallback(callback);
 \endverbatim
 
  * The callback is then of the form:
@@ -82,11 +82,11 @@ void callback(const sensor_msgs::CameraInfo::ConstPtr&, const sensor_msgs::Image
  */
 template<class M0, class M1, class M2 = NullType, class M3 = NullType, class M4 = NullType,
          class M5 = NullType, class M6 = NullType, class M7 = NullType, class M8 = NullType>
-class TimeSynchronizer : public sync::Synchronizer<sync::ExactTime<M0, M1, M2, M3, M4, M5, M6, M7, M8> >
+class TimeSynchronizer : public Synchronizer<sync_policies::ExactTime<M0, M1, M2, M3, M4, M5, M6, M7, M8> >
 {
 public:
-  typedef sync::ExactTime<M0, M1, M2, M3, M4, M5, M6, M7, M8> Policy;
-  typedef sync::Synchronizer<Policy> Base;
+  typedef sync_policies::ExactTime<M0, M1, M2, M3, M4, M5, M6, M7, M8> Policy;
+  typedef Synchronizer<Policy> Base;
   typedef boost::shared_ptr<M0 const> M0ConstPtr;
   typedef boost::shared_ptr<M1 const> M1ConstPtr;
   typedef boost::shared_ptr<M2 const> M2ConstPtr;

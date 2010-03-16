@@ -38,7 +38,6 @@
 #include "message_filters/synchronizer.h"
 
 using namespace message_filters;
-using namespace message_filters::sync;
 
 struct Header
 {

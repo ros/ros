@@ -41,7 +41,7 @@
 //#include <pair>
 
 using namespace message_filters;
-using namespace message_filters::sync;
+using namespace message_filters::sync_policies;
 
 struct Header
 {

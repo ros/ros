@@ -63,7 +63,7 @@
 
 namespace message_filters
 {
-namespace sync
+namespace sync_policies
 {
 
 namespace mpl = boost::mpl;

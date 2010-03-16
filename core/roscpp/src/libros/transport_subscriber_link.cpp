@@ -247,7 +247,7 @@ std::string TransportSubscriberLink::getTransportType()
 
 void TransportSubscriberLink::drop()
 {
-  connection_->drop();
+  connection_->drop(Connection::Destructing);
 }
 
 } // namespace ros

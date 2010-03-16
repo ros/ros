@@ -218,7 +218,7 @@ bool setLoggerLevel(roscpp::SetLoggerLevel::Request& req, roscpp::SetLoggerLevel
 bool closeAllConnections(roscpp::Empty::Request&, roscpp::Empty::Response&)
 {
   ROSCPP_LOG_DEBUG("close_all_connections service called, closing connections");
-  ConnectionManager::instance()->clear();
+  ConnectionManager::instance()->clear(Connection::TransportDisconnect);
   return true;
 }
 

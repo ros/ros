@@ -182,7 +182,7 @@ void ServicePublication::dropAllConnections()
   for (V_ServiceClientLink::iterator i = local_links.begin();
            i != local_links.end(); ++i)
   {
-    (*i)->getConnection()->drop();
+    (*i)->getConnection()->drop(Connection::Destructing);
   }
 }
 

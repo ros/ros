@@ -56,6 +56,7 @@ Connection::Connection()
 , write_size_(0)
 , writing_(false)
 , has_write_callback_(0)
+, sending_header_error_(false)
 {
 }
 
@@ -63,7 +64,7 @@ Connection::~Connection()
 {
   ROS_DEBUG_NAMED("superdebug", "Connection destructing, dropped=%s", dropped_ ? "true" : "false");
 
-  drop();
+  drop(Destructing);
 }
 
 void Connection::initialize(const TransportPtr& transport, bool is_server, const HeaderReceivedFunc& header_func)
@@ -258,7 +259,7 @@ void Connection::onWriteable(const TransportPtr& transport)
 
 void Connection::read(uint32_t size, const ReadFinishedFunc& callback)
 {
-  if (dropped_)
+  if (dropped_ || sending_header_error_)
   {
     return;
   }
@@ -281,7 +282,7 @@ void Connection::read(uint32_t size, const ReadFinishedFunc& callback)
 
 void Connection::write(const boost::shared_array<uint8_t>& buffer, uint32_t size, const WriteFinishedFunc& callback, bool immediate)
 {
-  if (dropped_)
+  if (dropped_ || sending_header_error_)
   {
     return;
   }
@@ -311,10 +312,10 @@ void Connection::onDisconnect(const TransportPtr& transport)
 {
   ROS_ASSERT(transport == transport_);
 
-  drop();
+  drop(TransportDisconnect);
 }
 
-void Connection::drop()
+void Connection::drop(DropReason reason)
 {
   bool did_drop = false;
   {
@@ -324,7 +325,7 @@ void Connection::drop()
       dropped_ = true;
       did_drop = true;
 
-      drop_signal_(shared_from_this());
+      drop_signal_(shared_from_this(), reason);
     }
   }
 
@@ -369,6 +370,7 @@ void Connection::sendHeaderError(const std::string& error_msg)
   m["error"] = error_msg;
 
   writeHeader(m, boost::bind(&Connection::onErrorHeaderWritten, this, _1));
+  sending_header_error_ = true;
 }
 
 void Connection::onHeaderLengthRead(const ConnectionPtr& conn, const boost::shared_array<uint8_t>& buffer, uint32_t size, bool success)
@@ -387,7 +389,7 @@ void Connection::onHeaderLengthRead(const ConnectionPtr& conn, const boost::shar
                 "predicted in tcpros. that seems highly " \
                 "unlikely, so I'll assume protocol " \
                 "synchronization is lost... it's over.");
-    conn->drop();
+    conn->drop(HeaderError);
   }
 
   read(len, boost::bind(&Connection::onHeaderRead, this, _1, _2, _3, _4));
@@ -403,7 +405,7 @@ void Connection::onHeaderRead(const ConnectionPtr& conn, const boost::shared_arr
   std::string error_msg;
   if (!header_.parse(buffer, size, error_msg))
   {
-    drop();
+    drop(HeaderError);
   }
   else
   {
@@ -411,7 +413,7 @@ void Connection::onHeaderRead(const ConnectionPtr& conn, const boost::shared_arr
     if (header_.getValue("error", error_val))
     {
       ROSCPP_LOG_DEBUG("Received error message in header for connection to [%s]: [%s]", transport_->getTransportInfo().c_str(), error_val.c_str());
-      drop();
+      drop(HeaderError);
     }
     else
     {
@@ -419,10 +421,7 @@ void Connection::onHeaderRead(const ConnectionPtr& conn, const boost::shared_arr
 
       transport_->parseHeader(header_);
 
-      if (!header_func_(conn, header_))
-      {
-        drop();
-      }
+      header_func_(conn, header_);
     }
   }
 
@@ -439,7 +438,7 @@ void Connection::onHeaderWritten(const ConnectionPtr& conn)
 
 void Connection::onErrorHeaderWritten(const ConnectionPtr& conn)
 {
-  drop();
+  drop(HeaderError);
 }
 
 void Connection::setHeaderReceivedCallback(const HeaderReceivedFunc& func)

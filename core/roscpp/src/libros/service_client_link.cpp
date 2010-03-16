@@ -54,7 +54,7 @@ ServiceClientLink::~ServiceClientLink()
 {
   if (connection_)
   {
-    connection_->drop();
+    connection_->drop(Connection::Destructing);
   }
 }
 
@@ -174,7 +174,8 @@ void ServiceClientLink::onRequestLength(const ConnectionPtr& conn, const boost::
                 "predicted in tcpros. that seems highly " \
                 "unlikely, so I'll assume protocol " \
                 "synchronization is lost... it's over.");
-    conn->drop();
+    conn->drop(Connection::Destructing);
+    return;
   }
 
   connection_->read(len, boost::bind(&ServiceClientLink::onRequest, this, _1, _2, _3, _4));

@@ -47,6 +47,7 @@ void callback(const test_roscpp::TestArrayConstPtr& msg)
 
 TEST(SubscribeRetryTCP, localDisconnect)
 {
+  g_count = 0;
   ros::NodeHandle nh;
   ros::Subscriber sub = nh.subscribe("test_roscpp/pubsub_test", 0, callback);
   // wait for initial messages to arrive
@@ -59,7 +60,7 @@ TEST(SubscribeRetryTCP, localDisconnect)
 
   ASSERT_GT(g_count, 0);
 
-  ros::ConnectionManager::instance()->clear();
+  ros::ConnectionManager::instance()->clear(ros::Connection::TransportDisconnect);
 
   // spin to make sure all previous messages have arrived
   ros::spinOnce();
@@ -76,8 +77,46 @@ TEST(SubscribeRetryTCP, localDisconnect)
   ASSERT_GT(g_count, 0);
 }
 
+TEST(SubscribeRetryTCP, localDisconnectNonTransportDisconnect)
+{
+  g_count = 0;
+  ros::NodeHandle nh;
+  ros::Subscriber sub = nh.subscribe("test_roscpp/pubsub_test", 0, callback);
+  // wait for initial messages to arrive
+  ros::WallTime start = ros::WallTime::now();
+  while (g_count == 0 && ros::WallTime::now() - start < ros::WallDuration(5.0))
+  {
+    ros::WallDuration(0.01).sleep();
+    ros::spinOnce();
+  }
+
+  ASSERT_GT(g_count, 0);
+
+  ros::ConnectionManager::instance()->clear(ros::Connection::HeaderError);
+
+  // spin for a bit to make sure all previous messages have arrived
+  start = ros::WallTime::now();
+  while (ros::WallTime::now() - start < ros::WallDuration(1.0))
+  {
+    ros::WallDuration(0.01).sleep();
+    ros::spinOnce();
+  }
+
+  g_count = 0;
+  // make sure we did not reconnect
+  start = ros::WallTime::now();
+  while (g_count == 0 && ros::WallTime::now() - start < ros::WallDuration(5.0))
+  {
+    ros::WallDuration(0.01).sleep();
+    ros::spinOnce();
+  }
+
+  ASSERT_EQ(g_count, 0);
+}
+
 TEST(SubscribeRetryTCP, remoteDisconnect)
 {
+  g_count = 0;
   ros::NodeHandle nh;
   ros::Subscriber sub = nh.subscribe("test_roscpp/pubsub_test", 0, callback);
   // wait for initial messages to arrive

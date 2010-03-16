@@ -74,7 +74,7 @@ TransportPublisherLink::~TransportPublisherLink()
 bool TransportPublisherLink::initialize(const ConnectionPtr& connection)
 {
   connection_ = connection;
-  connection_->addDropListener(boost::bind(&TransportPublisherLink::onConnectionDropped, this, _1));
+  connection_->addDropListener(boost::bind(&TransportPublisherLink::onConnectionDropped, this, _1, _2));
 
   if (connection_->getTransport()->requiresHeader())
   {
@@ -101,7 +101,7 @@ bool TransportPublisherLink::initialize(const ConnectionPtr& connection)
 void TransportPublisherLink::drop()
 {
   dropping_ = true;
-  connection_->drop();
+  connection_->drop(Connection::Destructing);
 
   if (SubscriptionPtr parent = parent_.lock())
   {
@@ -116,8 +116,11 @@ void TransportPublisherLink::onHeaderWritten(const ConnectionPtr& conn)
 
 bool TransportPublisherLink::onHeaderReceived(const ConnectionPtr& conn, const Header& header)
 {
+  ROS_ASSERT(conn == connection_);
+
   if (!setHeader(header))
   {
+    drop();
     return false;
   }
 
@@ -158,7 +161,8 @@ void TransportPublisherLink::onMessageLength(const ConnectionPtr& conn, const bo
                 "predicted in tcpros. that seems highly " \
                 "unlikely, so I'll assume protocol " \
                 "synchronization is lost... it's over.");
-    conn->drop();
+    drop();
+    return;
   }
 
   connection_->read(len, boost::bind(&TransportPublisherLink::onMessage, this, _1, _2, _3, _4));
@@ -232,7 +236,7 @@ void TransportPublisherLink::onRetryTimer(const ros::WallTimerEvent&)
 
 CallbackQueuePtr getInternalCallbackQueue();
 
-void TransportPublisherLink::onConnectionDropped(const ConnectionPtr& conn)
+void TransportPublisherLink::onConnectionDropped(const ConnectionPtr& conn, Connection::DropReason reason)
 {
   if (dropping_)
   {
@@ -242,25 +246,33 @@ void TransportPublisherLink::onConnectionDropped(const ConnectionPtr& conn)
   ROS_ASSERT(conn == connection_);
 
   SubscriptionPtr parent = parent_.lock();
-  std::string topic = parent ? parent->getName() : "unknown";
 
-  ROSCPP_LOG_DEBUG("Connection to publisher [%s] to topic [%s] dropped", connection_->getTransport()->getTransportInfo().c_str(), topic.c_str());
-
-  ROS_ASSERT(!needs_retry_);
-  needs_retry_ = true;
-  next_retry_ = WallTime::now() + retry_period_;
-
-  if (retry_timer_handle_ == -1)
+  if (reason == Connection::TransportDisconnect)
   {
-    retry_period_ = WallDuration(0.1);
+    std::string topic = parent ? parent->getName() : "unknown";
+
+    ROSCPP_LOG_DEBUG("Connection to publisher [%s] to topic [%s] dropped", connection_->getTransport()->getTransportInfo().c_str(), topic.c_str());
+
+    ROS_ASSERT(!needs_retry_);
+    needs_retry_ = true;
     next_retry_ = WallTime::now() + retry_period_;
-    retry_timer_handle_ = getInternalTimerManager()->add(WallDuration(retry_period_),
-        boost::bind(&TransportPublisherLink::onRetryTimer, this, _1), getInternalCallbackQueue().get(),
-        VoidConstPtr(), false);
+
+    if (retry_timer_handle_ == -1)
+    {
+      retry_period_ = WallDuration(0.1);
+      next_retry_ = WallTime::now() + retry_period_;
+      retry_timer_handle_ = getInternalTimerManager()->add(WallDuration(retry_period_),
+          boost::bind(&TransportPublisherLink::onRetryTimer, this, _1), getInternalCallbackQueue().get(),
+          VoidConstPtr(), false);
+    }
+    else
+    {
+      getInternalTimerManager()->setPeriod(retry_timer_handle_, retry_period_);
+    }
   }
   else
   {
-    getInternalTimerManager()->setPeriod(retry_timer_handle_, retry_period_);
+    drop();
   }
 }
 

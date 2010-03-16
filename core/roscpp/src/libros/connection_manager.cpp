@@ -103,10 +103,10 @@ void ConnectionManager::shutdown()
 
   poll_manager_->removePollThreadListener(poll_conn_);
 
-  clear();
+  clear(Connection::Destructing);
 }
 
-void ConnectionManager::clear()
+void ConnectionManager::clear(Connection::DropReason reason)
 {
   S_Connection local_connections;
   {
@@ -119,7 +119,7 @@ void ConnectionManager::clear()
       itr++)
   {
     const ConnectionPtr& conn = *itr;
-    conn->drop();
+    conn->drop(reason);
   }
 
   boost::mutex::scoped_lock dropped_lock(dropped_connections_mutex_);

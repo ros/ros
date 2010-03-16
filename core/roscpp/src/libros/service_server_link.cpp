@@ -197,7 +197,7 @@ void ServiceServerLink::onResponseOkAndLength(const ConnectionPtr& conn, const b
                 "predicted in tcpros. that seems highly " \
                 "unlikely, so I'll assume protocol " \
                 "synchronization is lost... it's over.");
-    conn->drop();
+    conn->drop(Connection::Destructing);
 
     return;
   }
@@ -292,7 +292,7 @@ void ServiceServerLink::processNextCall()
     if (!persistent_)
     {
       ROS_DEBUG_NAMED("superdebug", "Dropping non-persistent client to service [%s]", service_name_.c_str());
-      connection_->drop();
+      connection_->drop(Connection::Destructing);
     }
     else
     {

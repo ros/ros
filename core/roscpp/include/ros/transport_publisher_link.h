@@ -29,6 +29,7 @@
 #define ROSCPP_TRANSPORT_PUBLISHER_LINK_H
 
 #include "publisher_link.h"
+#include "connection.h"
 
 namespace ros
 {
@@ -61,7 +62,7 @@ public:
   virtual void drop();
 
 private:
-  void onConnectionDropped(const ConnectionPtr& conn);
+  void onConnectionDropped(const ConnectionPtr& conn, Connection::DropReason reason);
   bool onHeaderReceived(const ConnectionPtr& conn, const Header& header);
 
   /**

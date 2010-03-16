@@ -55,7 +55,7 @@ void ServiceClient::Impl::shutdown()
 
     if (server_link_)
     {
-      server_link_->getConnection()->drop();
+      server_link_->getConnection()->drop(Connection::Destructing);
       server_link_.reset();
     }
   }

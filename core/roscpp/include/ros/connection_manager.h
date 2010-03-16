@@ -26,6 +26,7 @@
  */
 
 #include "forwards.h"
+#include "connection.h"
 
 #include <boost/thread/mutex.hpp>
 #include <boost/signals/connection.hpp>
@@ -57,7 +58,7 @@ public:
    */
   void addConnection(const ConnectionPtr& connection);
 
-  void clear();
+  void clear(Connection::DropReason reason);
 
   uint32_t getTCPPort();
   uint32_t getUDPPort();

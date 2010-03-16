@@ -109,20 +109,26 @@ class YamlCache:
         return expanded_rosdeps
 
     def get_os_from_yaml(self, rosdep_name, yaml_map, source_path): #source_path is for debugging where errors come from
+        """
+        @return The os (and version specific if required) local package name
+        """
         # See if the version for this OS exists
         if self.os_name in yaml_map:
             return self.get_version_from_yaml(rosdep_name, yaml_map[self.os_name], source_path)
         else:
-            print >> sys.stderr, "failed to resolve a rule for rosdep(%s) on OS(%s)"%(rosdep_name, self.os_name)
+            #print >> sys.stderr, "failed to resolve a rule for rosdep(%s) on OS(%s)"%(rosdep_name, self.os_name)
             return False
 
     def get_version_from_yaml(self, rosdep_name, os_specific, source_path):
+        """
+        @return The os (and version specific if required) local package name
+        """
         if type(os_specific) == type("String"):
             return os_specific
         else:# it must be a map of versions
             if self.os_version in os_specific.keys():
                 return os_specific[self.os_version]
-            print >> sys.stderr, "failed to find definition of %s for OS(%s) Version(%s) within '''%s'''. Defined in file %s"%(rosdep_name, self.os_name, self.os_version, os_specific, source_path)
+            #print >> sys.stderr, "failed to find definition of %s for OS(%s) Version(%s) within '''%s'''. Defined in file %s"%(rosdep_name, self.os_name, self.os_version, os_specific, source_path)
             return False                    
 
 
@@ -246,7 +252,7 @@ class RosdepLookupPackage:
         if rosdep in self.rosdep_map:
             return self.rosdep_map[rosdep]
         else:
-            print >> sys.stderr, "Failed to find rosdep %s for package %s"%(rosdep, self.package)
+            print >> sys.stderr, "Failed to find rosdep %s for package %s on OS:%s version:%s"%(rosdep, self.package, self.os_name, self.os_version)
             return False
         
     def get_map(self):

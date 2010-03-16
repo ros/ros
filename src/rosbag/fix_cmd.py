@@ -53,7 +53,7 @@ def print_trans(old,new,indent):
 def fix_cmd(argv):
     parser = OptionParser(usage="rosbag fix INBAG OUTBAG [EXTRARULES1 EXTRARULES2 ...]")
 
-    parser.add_option("-n","--noplugins",action="store_false",dest="noplugins",
+    parser.add_option("-n","--noplugins",action="store_true",dest="noplugins",
                       help = "do not load rulefiles via plugins")
 
     (options, args) = parser.parse_args(argv)
@@ -91,9 +91,10 @@ def fix_cmd(argv):
                 print >> sys.stderr, "Cannot open %s for writing"%outname
                 sys.exit(1)
                 
+        if (options.noplugins is None):
+          options.noplugins = False
 
-
-        mm = rosbagmigration.MessageMigrator(args[2:], plugins=options.noplugins)
+        mm = rosbagmigration.MessageMigrator(args[2:], plugins=not options.noplugins)
 
         migrations = rosbagmigration.fixbag2(mm, args[0], outname)
 

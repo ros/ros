@@ -19,6 +19,8 @@
   <node pkg="test_roscpp" type="publish_constantly" name="publish_constantly18" />
   <node pkg="test_roscpp" type="publish_constantly" name="publish_constantly19" />
   <node pkg="test_roscpp" type="publish_constantly" name="publish_constantly20" />
+
+<!--
   <node pkg="test_roscpp" type="publish_constantly" name="publish_constantly21" />
   <node pkg="test_roscpp" type="publish_constantly" name="publish_constantly22" />
   <node pkg="test_roscpp" type="publish_constantly" name="publish_constantly23" />
@@ -99,6 +101,7 @@
   <node pkg="test_roscpp" type="publish_constantly" name="publish_constantly98" />
   <node pkg="test_roscpp" type="publish_constantly" name="publish_constantly99" />
   <node pkg="test_roscpp" type="publish_constantly" name="publish_constantly100" />
+-->
   
   <test test-name="loads_of_publishers" pkg="test_roscpp" type="loads_of_publishers" args="100" time-limit="200" />
 </launch>

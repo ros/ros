@@ -103,5 +103,5 @@
   <node pkg="test_roscpp" type="publish_constantly" name="publish_constantly100" />
 -->
   
-  <test test-name="loads_of_publishers" pkg="test_roscpp" type="loads_of_publishers" args="100" time-limit="200" />
+  <test test-name="loads_of_publishers" pkg="test_roscpp" type="loads_of_publishers" args="20" time-limit="200" />
 </launch>

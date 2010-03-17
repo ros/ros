@@ -33,6 +33,7 @@
 ********************************************************************/
 
 #include "ros/console.h"
+#include <log4cxx/logger.h>
 
 void print(ros::console::Level level, const std::string& s)
 {

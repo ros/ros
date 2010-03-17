@@ -261,20 +261,20 @@ class TestCore(unittest.TestCase):
         try:
             os.environ['ROS_MASTER_URI'] = 'http://foo:789'
             m = Master()
-            self.assertEquals(m.type, Master.ZENMASTER)
+            self.assertEquals(m.type, Master.ROSMASTER)
             self.assertEquals(m.uri, 'http://foo:789')
             self.assertEquals(m.auto, Master.AUTO_NO)
             self.assertEquals(m.log_output, False)
             self.assertEquals(m, m)
             self.assertEquals(m, Master())
             
-            m = Master(Master.ZENMASTER, 'http://foo:1234', Master.AUTO_START)
-            self.assertEquals(m.type, Master.ZENMASTER)
+            m = Master(Master.ROSMASTER, 'http://foo:1234', Master.AUTO_START)
+            self.assertEquals(m.type, Master.ROSMASTER)
             self.assertEquals(m.uri, 'http://foo:1234')
             self.assertEquals(m.auto, Master.AUTO_START)
             self.assertEquals(m.log_output, False)
             self.assertEquals(m, m)
-            self.assertEquals(m, Master(Master.ZENMASTER, 'http://foo:1234', Master.AUTO_START))
+            self.assertEquals(m, Master(Master.ROSMASTER, 'http://foo:1234', Master.AUTO_START))
 
             import xmlrpclib
             self.assert_(isinstance(m.get(), xmlrpclib.ServerProxy))
@@ -283,11 +283,11 @@ class TestCore(unittest.TestCase):
             self.failIf(m.is_running())
 
             try:
-                m = Master(Master.ZENMASTER, 'http://foo:1234', False)
+                m = Master(Master.ROSMASTER, 'http://foo:1234', False)
                 self.fail("should have failed on invalid auto value")
             except: pass
             try:
-                m = Master(Master.ZENMASTER, 'http://foo:1234', 123)
+                m = Master(Master.ROSMASTER, 'http://foo:1234', 123)
                 self.fail("should have failed on invalid auto value")
             except: pass
             

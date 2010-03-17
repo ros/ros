@@ -44,7 +44,7 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/tss.hpp>
 
-#include <list>
+#include <deque>
 
 namespace ros
 {
@@ -145,8 +145,8 @@ protected:
     uint64_t removal_id;
     bool marked_for_removal;
   };
-  typedef std::list<CallbackInfo> L_CallbackInfo;
-  L_CallbackInfo callbacks_;
+  typedef std::deque<CallbackInfo> D_CallbackInfo;
+  D_CallbackInfo callbacks_;
   boost::mutex mutex_;
   boost::condition_variable condition_;
 
@@ -159,7 +159,7 @@ protected:
     : calling_in_this_thread(0xffffffffffffffffULL)
     {}
     uint64_t calling_in_this_thread;
-    L_CallbackInfo callbacks;
+    D_CallbackInfo callbacks;
   };
   boost::thread_specific_ptr<TLS> tls_;
 

@@ -68,7 +68,7 @@ class RosDotWindow(rosgraph.xdot.DotWindow):
     XDot window with enhancements for rxgraph display
     """
     
-    def __init__(self, output_file=None, quiet=False, mode=NODE_NODE_GRAPH):
+    def __init__(self, output_file=None, quiet=False, mode=NODE_NODE_GRAPH, node_ns=None, topic_ns=None):
         rosgraph.xdot.DotWindow.__init__(self, (1400, 512)) 
         self.dotcode = self.new_dotcode = None
         # 1hz update loop
@@ -129,7 +129,7 @@ class RosDotWindow(rosgraph.xdot.DotWindow):
 
         return True # keep going
 
-_graph = rosgraph.graph.Graph() #singleton
+_graph = None
 
 def get_graph():
     """
@@ -271,6 +271,13 @@ def rxgraph_main():
                       dest="topics", default=False, action="store_true",
                       help="show all topics")
 
+    parser.add_option("--nodens",
+                      dest="node_ns", default=None,
+                      help="only show nodes in specified namespace")
+    parser.add_option("--topicns",
+                      dest="topic_ns", default=None,
+                      help="only show topics in specified namespace")
+    
     options, args = parser.parse_args()
     if args:
         parser.error("invalid arguments")
@@ -278,7 +285,7 @@ def rxgraph_main():
 
     import subprocess
     try:
-        subprocess.check_call(['dot', '-V'])
+        subprocess.check_call(['dot', '-V'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except:
         print >> sys.stderr, "Graphviz does not appear to be installed on your system. Please run:\n\n\trosdep install rosgraph\n\nto install the necessary dependencies on your system"
         sys.exit(1)
@@ -296,6 +303,11 @@ digraph G { initializing [label="initializing..."]; }
             mode = NODE_TOPIC_ALL_GRAPH
         else:
             mode = NODE_NODE_GRAPH
+
+        global _graph #singleton
+        _graph = rosgraph.graph.Graph(options.node_ns, options.topic_ns) 
+
+            
         window = RosDotWindow(options.output_file, options.quiet, mode)
         window.set_dotcode(init_dotcode)
         window.connect('destroy', gtk.main_quit)

@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Apr 21 2008)
+// C++ code generated with wxFormBuilder (version Oct 27 2009)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -65,15 +65,16 @@ namespace rxtools
 			wxBitmapButton* add_filter_button_;
 			
 			// Virtual event handlers, overide them in your derived class
-			virtual void onSize( wxSizeEvent& event ){ event.Skip(); }
-			virtual void onPause( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onClear( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onSetup( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onLoggerLevels( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onNewWindow( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onSize( wxSizeEvent& event ) { event.Skip(); }
+			virtual void onPause( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onClear( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onSetup( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onLoggerLevels( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onNewWindow( wxCommandEvent& event ) { event.Skip(); }
 			
 		
 		public:
+			
 			RosoutPanelBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxCLIP_CHILDREN|wxTAB_TRAVERSAL );
 			~RosoutPanelBase();
 		
@@ -96,12 +97,13 @@ namespace rxtools
 			wxButton* m_sdbSizer1Cancel;
 			
 			// Virtual event handlers, overide them in your derived class
-			virtual void onTopicBrowse( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onCancel( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onOk( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onTopicBrowse( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onCancel( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onOk( wxCommandEvent& event ) { event.Skip(); }
 			
 		
 		public:
+			
 			RosoutSetupDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Rosout Panel Setup"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 331,214 ), long style = wxDEFAULT_DIALOG_STYLE );
 			~RosoutSetupDialogBase();
 		
@@ -115,9 +117,14 @@ namespace rxtools
 		private:
 		
 		protected:
+			
+			// Virtual event handlers, overide them in your derived class
+			void onChar( wxKeyEvent& event );
+			
 		
 		public:
 			wxRichTextCtrl* text_;
+			
 			TextboxDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 644,362 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 			~TextboxDialog();
 		
@@ -137,13 +144,14 @@ namespace rxtools
 			wxListBox* levels_box_;
 			
 			// Virtual event handlers, overide them in your derived class
-			virtual void onNodeSelected( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onNodesRefresh( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onLoggerSelected( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onLevelSelected( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onNodeSelected( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onNodesRefresh( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onLoggerSelected( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onLevelSelected( wxCommandEvent& event ) { event.Skip(); }
 			
 		
 		public:
+			
 			LoggerLevelPanelBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,300 ), long style = wxTAB_TRAVERSAL );
 			~LoggerLevelPanelBase();
 		
@@ -167,16 +175,17 @@ namespace rxtools
 			wxCheckBox* topics_;
 			
 			// Virtual event handlers, overide them in your derived class
-			virtual void onText( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onIncludeExclude( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onRegex( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onMessage( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onNode( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onLocation( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onTopics( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onText( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onIncludeExclude( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onRegex( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onMessage( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onNode( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onLocation( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onTopics( wxCommandEvent& event ) { event.Skip(); }
 			
 		
 		public:
+			
 			RosoutTextFilterControlBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 750,42 ), long style = wxTAB_TRAVERSAL );
 			~RosoutTextFilterControlBase();
 		
@@ -198,14 +207,15 @@ namespace rxtools
 			wxCheckBox* debug_;
 			
 			// Virtual event handlers, overide them in your derived class
-			virtual void onFatal( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onError( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onWarn( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onInfo( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onDebug( wxCommandEvent& event ){ event.Skip(); }
+			virtual void onFatal( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onError( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onWarn( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onInfo( wxCommandEvent& event ) { event.Skip(); }
+			virtual void onDebug( wxCommandEvent& event ) { event.Skip(); }
 			
 		
 		public:
+			
 			RosoutSeverityFilterControlBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 750,42 ), long style = wxTAB_TRAVERSAL );
 			~RosoutSeverityFilterControlBase();
 		
@@ -222,6 +232,7 @@ namespace rxtools
 		
 		public:
 			rxtools::RosoutPanel* rosout_panel_;
+			
 			RosoutFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("rxconsole"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 			~RosoutFrame();
 		
@@ -238,6 +249,7 @@ namespace rxtools
 		
 		public:
 			rxtools::LoggerLevelPanel* logger_panel_;
+			
 			LoggerLevelFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("rxloggerlevel"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,200 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 			~LoggerLevelFrame();
 		

@@ -3,6 +3,7 @@
   <license>BSD</license>
   <review status="Doc reviewed" notes="2010/01/12"/>
   <author>Josh Faust</author>
+  <url>http://www.ros.org/wiki/rosconsole</url>
   <depend package="roslib"/>
   <export>
     <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lrosconsole `rosboost-cfg --lflags thread` -llog4cxx"/>

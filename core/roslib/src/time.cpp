@@ -34,7 +34,7 @@
 
 #include "ros/time.h"
 #include <cmath>
-#include <time.h>
+#include <ctime>
 #include <iomanip>
 #include <stdexcept>
 #include <limits>
@@ -43,8 +43,10 @@
 
 #include <boost/thread/mutex.hpp>
 
+#define HAS_CLOCK_GETTIME (_POSIX_C_SOURCE >= 199309L)
+
 #ifndef WIN32
-  #if POSIX_TIMERS <= 0
+  #if !HAS_CLOCK_GETTIME
   #include <sys/time.h>
   #endif
 #else
@@ -54,7 +56,6 @@
 
 using namespace ros;
 using namespace std;
-
 
 ros::Time ros::Time::sim_time_(0, 0);
 bool ros::Time::use_system_time_(true);
@@ -76,7 +77,7 @@ static boost::mutex g_sim_time_mutex;
 void getWallTime(uint32_t& sec, uint32_t& nsec)
 {
 #ifndef WIN32
-#if POSIX_TIMERS > 0
+#if HAS_CLOCK_GETTIME
   struct timespec start;
   clock_gettime(CLOCK_REALTIME, &start);
   sec  = start.tv_sec;

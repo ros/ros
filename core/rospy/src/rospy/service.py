@@ -38,8 +38,6 @@ See L{rospy.tcpros_service} for actual implementation."""
 import logging
 import traceback
 
-import roslib.scriptutil
-
 from rospy.core import *
 from rospy.registration import set_service_manager, Registration, get_registration_listeners
 from rospy.transport import *

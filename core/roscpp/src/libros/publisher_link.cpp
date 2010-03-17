@@ -67,13 +67,13 @@ bool PublisherLink::setHeader(const Header& header)
   std::string md5sum, type, latched_str;
   if (!header.getValue("md5sum", md5sum))
   {
-    ROS_ERROR("Publisher TCPROS header did not have required element: md5sum");
+    ROS_ERROR("Publisher header did not have required element: md5sum");
     return false;
   }
 
   if (!header.getValue("type", type))
   {
-    ROS_ERROR("Publisher TCPROS header did not have required element: type");
+    ROS_ERROR("Publisher header did not have required element: type");
     return false;
   }
 

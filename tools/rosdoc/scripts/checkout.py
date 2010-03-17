@@ -5,8 +5,8 @@ USAGE = 'checkout.py <rosbrowse_repos_list> <rosdoc_repos_list>'
 import fileinput
 import sys
 import os
-import subprocess
 
+import roslib.vcs
 
 def load_rosbrowse_list(fn):
   f_rosbrowse = fileinput.input(fn)
@@ -15,10 +15,10 @@ def load_rosbrowse_list(fn):
     if l.startswith('#'):
       continue
     lsplit = l.split()
-    if len(lsplit) != 2:
+    if len(lsplit) != 3:
       continue
-    key, uri = lsplit
-    all_repos[key] = uri
+    key, vcs, uri = lsplit
+    all_repos[key] = (vcs, uri)
   return all_repos
 
 def load_rosdoc_list(fn, all_repos):
@@ -38,9 +38,8 @@ def load_rosdoc_list(fn, all_repos):
 
 def checkout_repos(repos):
   for key in repos:
-    print 'Checking out %s to %s...'%(repos[key], key)
-    cmd = ['svn', 'co', repos[key], key]
-    subprocess.call(cmd)
+    vcs, url = repos[key]
+    roslib.vcs.checkout(vcs, url, key)
 
 def write_setup_file(repos):
   str = 'export ROS_PACKAGE_PATH='
@@ -63,6 +62,5 @@ def main(argv):
     checkout_repos(repos)
     write_setup_file(repos)
   
-
 if __name__ == "__main__":
   main(sys.argv)

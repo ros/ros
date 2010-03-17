@@ -34,13 +34,9 @@
 
 """Internal-use: Support for simulated clock."""
 
-import logging
-import traceback
-
 import roslib.msg
 import roslib.rosenv
 
-import rospy.init
 import rospy.core
 import rospy.rostime
 import rospy.topics
@@ -58,7 +54,7 @@ def _is_use_simtime():
     # in order to prevent circular dependencies, this does not use the
     # builtin libraries for interacting with the parameter server, at least
     # until I reorganize the client vs. internal APIs better.
-    master_uri = rospy.init.get_local_master_uri() or roslib.rosenv.get_master_uri()
+    master_uri = roslib.rosenv.get_master_uri()
     m = rospy.core.xmlrpcapi(master_uri)
     code, msg, val = m.getParam(rospy.names.get_caller_id(), _USE_SIMTIME)
     if code == 1 and val:
@@ -76,6 +72,7 @@ def init_simtime():
     Initialize the ROS time system by connecting to the /time topic and
     check the state of the /use_sim_time parameter.
     """    
+    import logging
     logger = logging.getLogger("rospy.simtime")
     try:
         global _rostime_sub, _clock_sub
@@ -92,5 +89,6 @@ def init_simtime():
         rospy.rostime.set_rostime_initialized(True)
         return True
     except Exception, e:
+        import traceback
         logger.error("Unable to initialize %s: %s\n%s", _ROSCLOCK, e, traceback.format_exc())
         return False

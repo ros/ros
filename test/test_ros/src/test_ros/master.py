@@ -109,6 +109,14 @@ class MasterApiTestCase(_MasterTestCase):
         pid = self.apiSuccess(self.master.getPid(self.caller_id))
         self.assert_(pid > 0)
 
+    ## validate master.getUri(caller_id)        
+    def _testGetUri(self):
+        # test with bad arity
+        self.apiError(self.master.getUri())
+        # test success        
+        uri = self.apiSuccess(self.master.getUri(self.caller_id))
+        self.assert_(type(uri) == str)
+        
     ## common test subroutine of both register and unregister tests. registers the common test cases
     def _subTestRegisterServiceSuccess(self):
         master = self.master

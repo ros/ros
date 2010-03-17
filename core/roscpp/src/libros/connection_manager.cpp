@@ -103,18 +103,23 @@ void ConnectionManager::shutdown()
 
   poll_manager_->removePollThreadListener(poll_conn_);
 
-  clear();
+  clear(Connection::Destructing);
 }
 
-void ConnectionManager::clear()
+void ConnectionManager::clear(Connection::DropReason reason)
 {
-  boost::mutex::scoped_lock conn_lock(connections_mutex_);
-  for(S_Connection::iterator itr = connections_.begin();
-      itr != connections_.end();
+  S_Connection local_connections;
+  {
+    boost::mutex::scoped_lock conn_lock(connections_mutex_);
+    local_connections.swap(connections_);
+  }
+
+  for(S_Connection::iterator itr = local_connections.begin();
+      itr != local_connections.end();
       itr++)
   {
     const ConnectionPtr& conn = *itr;
-    conn->drop();
+    conn->drop(reason);
   }
 
   boost::mutex::scoped_lock dropped_lock(dropped_connections_mutex_);
@@ -167,10 +172,7 @@ void ConnectionManager::removeDroppedConnections()
   for (;conn_it != conn_end; ++conn_it)
   {
     const ConnectionPtr& conn = *conn_it;
-
-    size_t prev_size = connections_.size();
     connections_.erase(conn);
-    ROS_ASSERT(connections_.size() == (prev_size - 1));
   }
 }
 

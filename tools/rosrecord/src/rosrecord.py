@@ -104,7 +104,7 @@ class BagReader(object):
     try:
       self.version = self.file.readline().rstrip()
       if not self.version in version_readers:
-        raise ROSRecordException('rosrecord.py only supports %s. File version is %s' % (','.join(HEADERS), self.version))
+        raise ROSRecordException('rosrecord.py only supports %s. File version is %s' % (','.join(version_readers.keys()), self.version))
     except:
       self.file.close()
       raise

@@ -83,6 +83,19 @@ struct LatencyResult
 };
 LatencyResult latency(uint32_t count_per_stream, uint32_t streams, uint32_t message_size, uint32_t sender_threads, uint32_t receiver_threads);
 
+struct STLatencyResult
+{
+  uint64_t total_message_count;
+
+  double latency_avg;
+  double latency_min;
+  double latency_max;
+
+  ros::WallTime test_start;
+  ros::WallTime test_end;
+};
+STLatencyResult stlatency(uint32_t message_count);
+
 } // namespace intra
 } // namespace perf_roscpp
 

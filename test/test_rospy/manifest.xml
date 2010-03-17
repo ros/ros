@@ -12,9 +12,4 @@
 
   <rosdep name="python-numpy" /> <!-- for numpy tests -->
   <depend package="rostopic" />  <!-- for latch test -->
-  
-  <export>
-    <cpp cflags="-I${prefix}/msg/cpp -I${prefix}/srv/cpp"/>
-  </export>
-
 </package>

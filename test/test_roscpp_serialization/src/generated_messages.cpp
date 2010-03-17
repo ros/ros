@@ -52,19 +52,22 @@
 
 using namespace test_roscpp_serialization;
 
-ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, ArrayOfFixedLength, MyArrayOfFixedLength, Allocator);
-ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, ArrayOfVariableLength, MyArrayOfVariableLength, Allocator);
-ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, EmbeddedFixedLength, MyEmbeddedFixedLength, Allocator);
-ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, EmbeddedVariableLength, MyEmbeddedVariableLength, Allocator);
-ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, FixedLength, MyFixedLength, Allocator);
-ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, VariableLength, MyVariableLength, Allocator);
-ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, WithHeader, MyWithHeader, Allocator);
-ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, EmbeddedExternal, MyEmbeddedExternal, Allocator);
-ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, WithTime, MyWithTime, Allocator);
-ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, WithDuration, MyWithDuration, Allocator);
-ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, WithMemberNamedHeaderThatIsNotAHeader, MyWithMemberNamedHeaderThatIsNotAHeader, Allocator);
-ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, FixedLengthArrayOfExternal, MyFixedLengthArrayOfExternal, Allocator);
-ROS_TYPEDEF_MESSAGE_WITH_ALLOCATOR(test_roscpp_serialization, VariableLengthArrayOfExternal, MyVariableLengthArrayOfExternal, Allocator);
+namespace test_roscpp_serialization
+{
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(ArrayOfFixedLength, MyArrayOfFixedLength, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(ArrayOfVariableLength, MyArrayOfVariableLength, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(EmbeddedFixedLength, MyEmbeddedFixedLength, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(EmbeddedVariableLength, MyEmbeddedVariableLength, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(FixedLength, MyFixedLength, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(VariableLength, MyVariableLength, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(WithHeader, MyWithHeader, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(EmbeddedExternal, MyEmbeddedExternal, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(WithTime, MyWithTime, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(WithDuration, MyWithDuration, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(WithMemberNamedHeaderThatIsNotAHeader, MyWithMemberNamedHeaderThatIsNotAHeader, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(FixedLengthArrayOfExternal, MyFixedLengthArrayOfExternal, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(VariableLengthArrayOfExternal, MyVariableLengthArrayOfExternal, Allocator);
+}
 
 TEST(GeneratedMessages, traitsWithStandardMessages)
 {

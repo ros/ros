@@ -69,6 +69,8 @@ TransportPublisherLink::~TransportPublisherLink()
   {
     getInternalTimerManager()->remove(retry_timer_handle_);
   }
+
+  connection_->drop(Connection::Destructing);
 }
 
 bool TransportPublisherLink::initialize(const ConnectionPtr& connection)

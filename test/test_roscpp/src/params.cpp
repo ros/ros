@@ -239,6 +239,15 @@ TEST(Params, getMissingXmlRpcValueParameterCachedTwice)
   ASSERT_FALSE(ros::param::getCached("invalid_xmlrpcvalue_param", v));
 }
 
+// See ROS ticket #2353
+TEST(Params, doublePrecision)
+{
+  ros::param::set("bar", 0.123456789123456789);
+  double d;
+  ASSERT_TRUE(ros::param::get("bar", d));
+  EXPECT_DOUBLE_EQ(d, 0.12345678912345678);
+}
+
 int
 main(int argc, char** argv)
 {

@@ -51,7 +51,7 @@ TransportSubscriberLink::TransportSubscriberLink()
 
 TransportSubscriberLink::~TransportSubscriberLink()
 {
-
+  drop();
 }
 
 bool TransportSubscriberLink::initialize(const ConnectionPtr& connection)

@@ -11,6 +11,8 @@
 # include <stdio.h>
 #endif
 
+#include <sstream>
+
 namespace XmlRpc {
 
 
@@ -341,13 +343,14 @@ namespace XmlRpc {
 
   std::string XmlRpcValue::doubleToXml() const
   {
-    char buf[256];
-    snprintf(buf, sizeof(buf)-1, getDoubleFormat().c_str(), _value.asDouble);
-    buf[sizeof(buf)-1] = 0;
+    std::stringstream ss;
+    ss.imbue(std::locale::classic()); // ensure we're using "C" locale for formatting floating-point (1.4 vs. 1,4, etc.)
+    ss.precision(17);
+    ss << _value.asDouble;
 
     std::string xml = VALUE_TAG;
     xml += DOUBLE_TAG;
-    xml += buf;
+    xml += ss.str();
     xml += DOUBLE_ETAG;
     xml += VALUE_ETAG;
     return xml;

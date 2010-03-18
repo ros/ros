@@ -296,5 +296,10 @@ def makedirs_with_parent_perms(p):
         makedirs_with_parent_perms(parent)
         s = os.stat(parent)
         os.mkdir(p)
-        os.chown(p, s.st_uid, s.st_gid)
-        os.chmod(p, s.st_mode)    
+
+        # if perms of new dir don't match, set anew
+        s2 = os.stat(p)
+        if s.st_uid != s2.st_uid or s.st_gid != s2.st_gid:
+            os.chown(p, s.st_uid, s.st_gid)
+        if s.st_mode != s2.st_mode:
+            os.chmod(p, s.st_mode)    

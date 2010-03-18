@@ -145,7 +145,13 @@ macro(rosbuild_init)
   add_definitions(-DROS_PACKAGE_NAME='\"${PROJECT_NAME}\"')
 
   # ROS_BUILD_TYPE is set by rosconfig
-  set(CMAKE_BUILD_TYPE ${ROS_BUILD_TYPE})
+  # RelWithAsserts is our own type, not supported by CMake
+  if("${ROS_BUILD_TYPE}" STREQUAL "RelWithAsserts")
+    set(CMAKE_BUILD_TYPE "")
+    set(ROS_COMPILE_FLAGS "-O3 ${ROS_COMPILE_FLAGS}")
+  else("${ROS_BUILD_TYPE}" STREQUAL "RelWithAsserts")
+    set(CMAKE_BUILD_TYPE ${ROS_BUILD_TYPE})
+  endif("${ROS_BUILD_TYPE}" STREQUAL "RelWithAsserts")
 
   # Set default output directories
   set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
@@ -159,8 +165,9 @@ macro(rosbuild_init)
 
   # Get the full paths to the manifests for all packages on which 
   # we depend
-  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack invoke_result deps-manifests)
-  set(ROS_MANIFEST_LIST "${PROJECT_SOURCE_DIR}/manifest.xml ${_rospack_invoke_result}")
+  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack deps_manifests_invoke_result deps-manifests)
+  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack msgsrv_gen_invoke_result deps-msgsrv)
+  set(ROS_MANIFEST_LIST "${PROJECT_SOURCE_DIR}/manifest.xml ${_rospack_deps_manifests_invoke_result} ${_rospack_msgsrv_gen_invoke_result}")
   # convert whitespace-separated string to ;-separated list
   separate_arguments(ROS_MANIFEST_LIST)
 
@@ -407,6 +414,10 @@ macro(rosbuild_init)
   _rosbuild_list_remove_duplicates(${_gtest_LIBRARIES} _tmplist)
   set(_gtest_LIBRARIES ${_tmplist})
   list(REVERSE _gtest_LIBRARIES)
+
+  # Delete the files that let rospack know messages/services have been generated
+  file(REMOVE ${PROJECT_SOURCE_DIR}/msg_gen/generated)
+  file(REMOVE ${PROJECT_SOURCE_DIR}/srv_gen/generated)
 endmacro(rosbuild_init)
 ###############################################################################
 
@@ -698,6 +709,19 @@ macro(rosbuild_gensrv)
   rosbuild_get_srvs(_srvlist)
   if(NOT _srvlist)
     _rosbuild_warn("rosbuild_gensrv() was called, but no .srv files were found")
+  else(NOT _srvlist)
+    file(WRITE ${PROJECT_SOURCE_DIR}/srv_gen/generated "yes")
+    # Now set the mtime to something consistent.  We only want whether or not this file exists to matter
+    execute_process(
+      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/srv_gen/generated', (0, 0))"
+      ERROR_VARIABLE _set_mtime_error
+      RESULT_VARIABLE _set_mtime_failed
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(_set_mtime_failed)
+      message("[rosbuild] Error from calling to Python to set the mtime on ${PROJECT_SOURCE_DIR}/srv_gen/generated:")
+      message("${_mtime_error}")
+      message(FATAL_ERROR "[rosbuild] Failed to set mtime; aborting")
+    endif(_set_mtime_failed)
   endif(NOT _srvlist)
   # Create target to trigger service generation in the case where no libs
   # or executables are made.
@@ -707,7 +731,7 @@ macro(rosbuild_gensrv)
   # depend on the message generation.
   add_dependencies(rosbuild_precompile rospack_gensrv)
   # add in the directory that will contain the auto-generated .h files
-  include_directories(${PROJECT_SOURCE_DIR}/srv/cpp)
+  include_directories(${PROJECT_SOURCE_DIR}/srv_gen/cpp/include)
 endmacro(rosbuild_gensrv)
 
 # genmsg processes msg/*.msg files into language-specific source files
@@ -716,6 +740,19 @@ macro(rosbuild_genmsg)
   rosbuild_get_msgs(_msglist)
   if(NOT _msglist)
     _rosbuild_warn("rosbuild_genmsg() was called, but no .msg files were found")
+  else(NOT _msglist)
+    file(WRITE ${PROJECT_SOURCE_DIR}/msg_gen/generated "yes")
+    # Now set the mtime to something consistent.  We only want whether or not this file exists to matter
+    execute_process(
+      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/msg_gen/generated', (0, 0))"
+      ERROR_VARIABLE _set_mtime_error
+      RESULT_VARIABLE _set_mtime_failed
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(_set_mtime_failed)
+      message("[rosbuild] Error from calling to Python to set the mtime on ${PROJECT_SOURCE_DIR}/msg_gen/generated:")
+      message("${_mtime_error}")
+      message(FATAL_ERROR "[rosbuild] Failed to set mtime; aborting")
+    endif(_set_mtime_failed)
   endif(NOT _msglist)
   # Create target to trigger message generation in the case where no libs
   # or executables are made.
@@ -725,7 +762,7 @@ macro(rosbuild_genmsg)
   # depend on the message generation.
   add_dependencies(rosbuild_precompile rospack_genmsg)
   # add in the directory that will contain the auto-generated .h files
-  include_directories(${PROJECT_SOURCE_DIR}/msg/cpp)
+  include_directories(${PROJECT_SOURCE_DIR}/msg_gen/cpp/include)
 endmacro(rosbuild_genmsg)
 
 macro(rosbuild_add_boost_directories)

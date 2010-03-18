@@ -28,6 +28,7 @@
 
 #include "ros/subscription_queue.h"
 #include "ros/message_deserializer.h"
+#include "ros/subscription_callback_helper.h"
 
 namespace ros
 {
@@ -36,7 +37,6 @@ SubscriptionQueue::SubscriptionQueue(const std::string& topic, int32_t queue_siz
 : topic_(topic)
 , size_(queue_size)
 , full_(false)
-, id_counter_(0)
 , queue_size_(0)
 {}
 
@@ -45,9 +45,16 @@ SubscriptionQueue::~SubscriptionQueue()
 
 }
 
-uint64_t SubscriptionQueue::push(const SubscriptionMessageHelperPtr& helper, const MessageDeserializerPtr& deserializer, bool has_tracked_object, const VoidWPtr& tracked_object)
+void SubscriptionQueue::push(const SubscriptionCallbackHelperPtr& helper, const MessageDeserializerPtr& deserializer,
+                                 bool has_tracked_object, const VoidConstWPtr& tracked_object, bool nonconst_need_copy,
+                                 ros::Time receipt_time, bool* was_full)
 {
   boost::mutex::scoped_lock lock(queue_mutex_);
+
+  if (was_full)
+  {
+    *was_full = false;
+  }
 
   if(fullNoLock())
   {
@@ -60,49 +67,26 @@ uint64_t SubscriptionQueue::push(const SubscriptionMessageHelperPtr& helper, con
     }
 
     full_ = true;
+
+    if (was_full)
+    {
+      *was_full = true;
+    }
   }
   else
   {
     full_ = false;
   }
 
-  uint64_t count = id_counter_++;
-
   Item i;
   i.helper = helper;
   i.deserializer = deserializer;
   i.has_tracked_object = has_tracked_object;
   i.tracked_object = tracked_object;
-  i.id = count;
+  i.nonconst_need_copy = nonconst_need_copy;
+  i.receipt_time = receipt_time;
   queue_.push_back(i);
   ++queue_size_;
-
-  return count;
-}
-
-void SubscriptionQueue::remove(uint64_t id)
-{
-  boost::mutex::scoped_lock lock(queue_mutex_);
-  if (!queue_.empty())
-  {
-    if (id < queue_.front().id)
-    {
-      return;
-    }
-  }
-
-  L_Item::iterator it = queue_.begin();
-  L_Item::iterator end = queue_.end();
-  for (; it != end; ++it)
-  {
-    const Item& i = *it;
-    if (i.id == id)
-    {
-      queue_.erase(it);
-      --queue_size_;
-      return;
-    }
-  }
 }
 
 void SubscriptionQueue::clear()
@@ -114,7 +98,7 @@ void SubscriptionQueue::clear()
   queue_size_ = 0;
 }
 
-CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
+CallbackInterface::CallResult SubscriptionQueue::call()
 {
   // The callback may result in our own destruction.  Therefore, we may need to keep a reference to ourselves
   // that outlasts the scoped_try_lock
@@ -125,7 +109,7 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
     return CallbackInterface::TryAgain;
   }
 
-  VoidPtr tracker;
+  VoidConstPtr tracker;
   Item i;
 
   {
@@ -137,16 +121,6 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
     }
 
     i = queue_.front();
-
-    if (id < i.id)
-    {
-      return CallbackInterface::Invalid;
-    }
-
-    if (id > i.id)
-    {
-      return CallbackInterface::TryAgain;
-    }
 
     if (queue_.empty())
     {
@@ -167,7 +141,7 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
     --queue_size_;
   }
 
-  MessagePtr msg = i.deserializer->deserialize();
+  VoidConstPtr msg = i.deserializer->deserialize();
 
   // msg can be null here if deserialization failed
   if (msg)
@@ -179,21 +153,17 @@ CallbackInterface::CallResult SubscriptionQueue::call(uint64_t id)
     catch (boost::bad_weak_ptr&) // For the tests, where we don't create a shared_ptr
     {}
 
-    i.helper->call(msg);
+    SubscriptionCallbackHelperCallParams params;
+    params.event = MessageEvent<void const>(msg, i.deserializer->getConnectionHeader(), i.receipt_time, i.nonconst_need_copy, MessageEvent<void const>::CreateFunction());
+    i.helper->call(params);
   }
 
   return CallbackInterface::Success;
 }
 
-bool SubscriptionQueue::ready(uint64_t id)
+bool SubscriptionQueue::ready()
 {
-  boost::mutex::scoped_lock lock(queue_mutex_);
-  if (queue_.empty())
-  {
-    return true;
-  }
-
-  return id <= queue_.front().id;
+  return true;
 }
 
 bool SubscriptionQueue::full()

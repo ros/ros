@@ -37,7 +37,6 @@
 import cStringIO
 import select
 import socket
-import struct
 import logging
 import thread
 import threading
@@ -70,10 +69,8 @@ def _is_use_tcp_keepalive():
         return _use_tcp_keepalive
     # in order to prevent circular dependencies, this does not use the
     # builtin libraries for interacting with the parameter server
-    import rospy.init
     import roslib.rosenv
-    master_uri = rospy.init.get_local_master_uri() or roslib.rosenv.get_master_uri()
-    m = rospy.core.xmlrpcapi(master_uri)
+    m = rospy.core.xmlrpcapi(roslib.rosenv.get_master_uri())
     code, msg, val = m.getParam(rospy.names.get_caller_id(), _PARAM_TCP_KEEPALIVE)
     _use_tcp_keepalive = val if code == 1 else True
     return _use_tcp_keepalive 
@@ -470,7 +467,7 @@ class TCPROSTransport(Transport):
                 self.socket.close()
             self.socket = None
             
-            logerr("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, str(e)))
+            #logerr("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, str(e)))
             rospywarn("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, traceback.format_exc()))            
             raise TransportInitError(str(e)) #re-raise i/o error
                 

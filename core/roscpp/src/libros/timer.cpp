@@ -54,7 +54,7 @@ void Timer::Impl::start()
 {
   if (!started_)
   {
-    VoidPtr tracked_object;
+    VoidConstPtr tracked_object;
     if (has_tracked_object_)
     {
       tracked_object = tracked_object_.lock();
@@ -83,6 +83,12 @@ bool Timer::Impl::hasPending()
   }
 
   return TimerManager<Time, Duration, TimerEvent>::global().hasPending(timer_handle_);
+}
+
+void Timer::Impl::setPeriod(const Duration& period)
+{
+  period_ = period;
+  TimerManager<Time, Duration, TimerEvent>::global().setPeriod(timer_handle_, period);
 }
 
 Timer::Timer(const TimerOptions& ops)
@@ -129,6 +135,14 @@ bool Timer::hasPending()
   }
 
   return false;
+}
+
+void Timer::setPeriod(const Duration& period)
+{
+  if (impl_)
+  {
+    impl_->setPeriod(period);
+  }
 }
 
 }

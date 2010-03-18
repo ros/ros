@@ -51,7 +51,7 @@ class TestNodeprocess(unittest.TestCase):
         
         ros_root = '/ros/root'
         port = 1234
-        type = Master.ZENMASTER
+        type = Master.ROSMASTER
         run_id = 'foo'
 
         # test invalid params
@@ -71,13 +71,13 @@ class TestNodeprocess(unittest.TestCase):
         # test valid params
         p = create_master_process(run_id, type, ros_root, port)
         self.assert_(isinstance(p, LocalProcess))
-        self.assertEquals(p.args[0], os.path.join(ros_root, 'bin', 'zenmaster'))
+        self.assertEquals(p.args[0], os.path.join(ros_root, 'bin', 'rosmaster'))
         idx = p.args.index('-p')
         self.failIf(idx < 1)
         self.assertEquals(p.args[idx+1], str(port))
         self.assert_('--core' in p.args)
 
-        self.assertEquals(p.package, 'rospy')
+        self.assertEquals(p.package, 'rosmaster')
         self.failIf(p.log_output)
         
         p = create_master_process(run_id, type, ros_root, port, log_output=True)
@@ -233,29 +233,25 @@ class TestNodeprocess(unittest.TestCase):
         import roslib.rosenv
         from roslaunch.nodeprocess import create_master_process
 
+        ros_root = roslib.rosenv.get_ros_root()
+        
         # test failures
         failed = False
         try:
-            create_master_process('runid-unittest', Master.BOTHERDER, roslib.rosenv.get_ros_root(), 1234, log_output=True)
-            failed = True
-        except RLException: pass
-        self.failIf(failed, "botherder should no longer be valid")
-        try:
-            create_master_process('runid-unittest', Master.ZENMASTER, roslib.rosenv.get_ros_root(), 0, log_output=True)
+            create_master_process('runid-unittest', Master.ROSMASTER, roslib.rosenv.get_ros_root(), 0, log_output=True)
             failed = True
         except RLException: pass
         self.failIf(failed, "invalid port should have triggered error")
 
-        # test success
-        ros_root = roslib.rosenv.get_ros_root()
-        m1 = create_master_process('runid-unittest', Master.ZENMASTER, ros_root, 1234, log_output=True)
+        # test success with ROSMASTER
+        m1 = create_master_process('runid-unittest', Master.ROSMASTER, ros_root, 1234, log_output=True)
         self.assertEquals('runid-unittest', m1.run_id)
         self.assertEquals(True, m1.log_output)
         self.failIf(m1.started)
         self.failIf(m1.stopped)
         self.assertEquals(None, m1.cwd)
         self.assertEquals('master', m1.name)
-        master_p = os.path.join(ros_root, 'bin', 'zenmaster')
+        master_p = os.path.join(ros_root, 'bin', 'rosmaster')
         self.assert_(master_p in m1.args)
         # - it should have the default environment
         self.assertEquals(os.environ, m1.env)
@@ -266,15 +262,15 @@ class TestNodeprocess(unittest.TestCase):
         self.assertEquals('1234', m1.args[idx+1])
 
         # test port argument
-        m2 = create_master_process('runid-unittest', Master.ZENMASTER, ros_root, 1234, log_output=False)
+        m2 = create_master_process('runid-unittest', Master.ROSMASTER, ros_root, 1234, log_output=False)
         self.assertEquals('runid-unittest', m2.run_id)
         self.assertEquals(False, m2.log_output)
 
         # test ros_root argument as well as log_output default
-        m3 = create_master_process('runid-unittest', Master.ZENMASTER, ros_root, 1234)
+        m3 = create_master_process('runid-unittest', Master.ROSMASTER, ros_root, 1234)
         self.assertEquals('runid-unittest', m3.run_id)
         self.assertEquals(False, m3.log_output)        
-        master_p = os.path.join(ros_root, 'bin', 'zenmaster')
+        master_p = os.path.join(ros_root, 'bin', 'rosmaster')
         self.assert_(master_p in m3.args)
         
 if __name__ == '__main__':

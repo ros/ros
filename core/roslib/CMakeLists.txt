@@ -22,7 +22,7 @@ endif(HAVE_GLIBC_BACKTRACE)
 
 rosbuild_add_boost_directories()
 
-rosbuild_add_library(roslib src/time.cpp src/rate.cpp src/package.cpp src/debug.cpp)
+rosbuild_add_library(roslib src/time.cpp src/rate.cpp src/package.cpp src/debug.cpp src/serialization.cpp)
 rosbuild_link_boost(roslib thread)
 
 rosbuild_add_gtest(test_time test/time.cpp)

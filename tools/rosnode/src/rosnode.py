@@ -393,6 +393,82 @@ def rosnode_cleanup():
 
         print "done"
 
+def get_node_info_description(node_name):
+    def topic_type(t, pub_topics):
+        matches = [t_type for t_name, t_type in pub_topics if t_name == t]
+        if matches:
+            return matches[0]
+        return 'unknown type'
+
+    master = scriptutil.get_master()
+
+    # go through the master system state first
+    try:
+        state = _succeed(master.getSystemState(ID))
+        pub_topics = _succeed(scriptutil.get_master().getPublishedTopics(ID, '/'))
+    except socket.error:
+        raise ROSNodeIOException("Unable to communicate with master!")
+    pubs = [t for t, l in state[0] if node_name in l]
+    subs = [t for t, l in state[1] if node_name in l]
+    srvs = [t for t, l in state[2] if node_name in l]  
+
+    buff = "Node [%s]"%node_name
+    if pubs:
+        buff += "\nPublications: \n"
+        buff += '\n'.join([" * %s [%s]"%(l, topic_type(l, pub_topics)) for l in pubs]) + '\n'
+    else:
+        buff += "\nPublications: None\n"
+    if subs:
+        buff += "\nSubscriptions: \n"
+        buff += '\n'.join([" * %s [%s]"%(l, topic_type(l, pub_topics)) for l in subs]) + '\n'
+    else:
+        buff += "\nSubscriptions: None\n"        
+    if srvs:
+        buff += "\nServices: \n"
+        buff += '\n'.join([" * %s"%l for l in srvs]) + '\n'
+    else:
+        buff += "\nServices: None\n"
+        
+    return buff
+
+def get_node_connection_info_description(node_api):
+    #turn down timeout on socket library
+    socket.setdefaulttimeout(5.0)
+    node = xmlrpclib.ServerProxy(node_api)
+
+    try:
+        pid = _succeed(node.getPid(ID))
+        buff = "Pid: %s\n"%pid
+        #master_uri = _succeed(node.getMasterUri(ID))
+        businfo = _succeed(node.getBusInfo(ID))
+        if businfo:
+            buff += "Connections:\n"
+            for info in businfo:
+                dest_id   = info[1]
+                direction = info[2]
+                transport = info[3]
+                topic     = info[4]
+                if len(info) > 5:
+                    connected = info[5]
+                else:
+                    connected = True #backwards compatibility
+
+                if connected:
+                    buff += " * topic: %s\n"%topic
+
+                    # older ros publisher implementations don't report a URI
+                    buff += "    * to: %s\n"%dest_id
+                    if direction == 'i':
+                        buff += "    * direction: inbound\n"
+                    elif direction == 'o':
+                        buff += "    * direction: outbound\n"
+                    else:
+                        buff += "    * direction: unknown\n"
+                    buff += "    * transport: %s\n"%transport
+    except socket.error:
+        raise ROSNodeIOException("Communication with node[%s] failed! Node address is [%s]"%(node_name, node_api))
+    return buff
+
 def rosnode_info(node_name):
     """
     Print information about node, including subscriptions and other debugging information. This will query the node over the network.
@@ -410,33 +486,8 @@ def rosnode_info(node_name):
     master = scriptutil.get_master()
     node_name = scriptutil.script_resolve_name('rosnode', node_name)
 
-    # go through the master system state first
-    try:
-        state = _succeed(master.getSystemState(ID))
-        pub_topics = _succeed(scriptutil.get_master().getPublishedTopics(ID, '/'))
-    except socket.error:
-        raise ROSNodeIOException("Unable to communicate with master!")
-    pubs = [t for t, l in state[0] if node_name in l]
-    subs = [t for t, l in state[1] if node_name in l]
-    srvs = [t for t, l in state[2] if node_name in l]  
-
     print '-'*80
-    print "Node [%s]"%node_name
-    if pubs:
-        print "\nPublications: "
-        print '\n'.join([" * %s [%s]"%(l, topic_type(l, pub_topics)) for l in pubs])
-    else:
-        print "\nPublications: None"
-    if subs:
-        print "\nSubscriptions: "
-        print '\n'.join([" * %s [%s]"%(l, topic_type(l, pub_topics)) for l in subs])
-    else:
-        print "\nSubscriptions: None"        
-    if srvs:
-        print "\nServices: "
-        print '\n'.join([" * %s"%l for l in srvs])
-    else:
-        print "\nServices: None"
+    print get_node_info_description(node_name)
         
     node_api = get_api_uri(master, node_name)
     if not node_api:
@@ -445,42 +496,7 @@ def rosnode_info(node_name):
     
     print "\ncontacting node %s ..."%node_api
 
-    #turn down timeout on socket library
-    socket.setdefaulttimeout(5.0)
-    node = xmlrpclib.ServerProxy(node_api)
-
-    try:
-        pid = _succeed(node.getPid(ID))
-        print "Pid: %s"%pid
-        #master_uri = _succeed(node.getMasterUri(ID))
-        businfo = _succeed(node.getBusInfo(ID))
-        if businfo:
-            print "Connections:"
-            for info in businfo:
-                dest_id   = info[1]
-                direction = info[2]
-                transport = info[3]
-                topic     = info[4]
-                if len(info) > 5:
-                    connected = info[5]
-                else:
-                    connected = True #backwards compatibility
-
-                if connected:
-                    print " * topic: %s"%topic
-
-                    # older ros publisher implementations don't report a URI
-                    print "    * to: %s"%dest_id
-                    if direction == 'i':
-                        print "    * direction: inbound"
-                    elif direction == 'o':
-                        print "    * direction: outbound"
-                    else:
-                        print "    * direction: unknown"
-                    print "    * transport: %s"%transport
-        print
-    except socket.error:
-        raise ROSNodeIOException("Communication with node[%s] failed! Node address is [%s]"%(node_name, node_api))
+    print get_node_connection_info_description(node_api)
 
 # backwards compatibility (deprecated)
 rosnode_debugnode = rosnode_info

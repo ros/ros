@@ -29,6 +29,7 @@
 #define ROSCPP_ADVERTISE_OPTIONS_H
 
 #include "ros/forwards.h"
+#include "ros/message_traits.h"
 
 namespace ros
 {
@@ -66,6 +67,7 @@ struct AdvertiseOptions
   , disconnect_cb(_disconnect_cb)
   , callback_queue(0)
   , latch(false)
+  , has_header(false)
   {}
 
   /**
@@ -86,9 +88,10 @@ struct AdvertiseOptions
     queue_size = _queue_size;
     connect_cb = _connect_cb;
     disconnect_cb = _disconnect_cb;
-    md5sum = M::__s_getMD5Sum();
-    datatype = M::__s_getDataType();
-    message_definition = M::__s_getMessageDefinition();
+    md5sum = message_traits::md5sum<M>();
+    datatype = message_traits::datatype<M>();
+    message_definition = message_traits::definition<M>();
+    has_header = message_traits::hasHeader<M>();
   }
 
   std::string topic;                                                ///< The topic to publish on
@@ -113,13 +116,19 @@ struct AdvertiseOptions
    * callback, and for it to go out of scope (and potentially be deleted) in the code path (and therefore
    * thread) that the callback is invoked from.
    */
-  VoidPtr tracked_object;
+  VoidConstPtr tracked_object;
 
   /**
    * \brief Whether or not this publication should "latch".  A latching publication will automatically send out the last published message
    * to any new subscribers.
    */
   bool latch;
+
+  /** \brief Tells whether or not the message has a header.  If it does, the sequence number will be written directly into the
+   *         serialized bytes after the message has been serialized.
+   */
+  bool has_header;
+
 
   /**
    * \brief Templated helper function for creating an AdvertiseOptions for a message type with most options.
@@ -138,7 +147,7 @@ struct AdvertiseOptions
   static AdvertiseOptions create(const std::string& topic, uint32_t queue_size,
                           const SubscriberStatusCallback& connect_cb,
                           const SubscriberStatusCallback& disconnect_cb,
-                          const VoidPtr& tracked_object,
+                          const VoidConstPtr& tracked_object,
                           CallbackQueueInterface* queue)
   {
     AdvertiseOptions ops;

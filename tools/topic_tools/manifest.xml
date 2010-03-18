@@ -15,6 +15,6 @@
   <depend package="rostest"/>
 
   <export>
-    <cpp cflags="-I${prefix}/include -I${prefix}/srv/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -ltopic_tools"/>
+    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -ltopic_tools"/>
   </export>
 </package>

@@ -31,6 +31,7 @@
 import os.path
 import roslib.os_detect
 import subprocess
+import base_rosdep
 
 class YumInstall:
     """This class provides the functions for installing using yum
@@ -53,7 +54,7 @@ class YumInstall:
 
 
 ###### Fedora SPECIALIZATION #########################
-class Fedora(roslib.os_detect.Fedora, YumInstall): 
+class Fedora(roslib.os_detect.Fedora, YumInstall, base_rosdep.RosdepBaseOS): 
     """This class provides the Rosdep OS API for by combining the Fedora
     OSDetect API and the YumInstall API
     """
@@ -62,7 +63,7 @@ class Fedora(roslib.os_detect.Fedora, YumInstall):
 ###### END Fedora SPECIALIZATION ########################
 
 ###### Rhel SPECIALIZATION #########################
-class Rhel(roslib.os_detect.Rhel, YumInstall): 
+class Rhel(roslib.os_detect.Rhel, YumInstall, base_rosdep.RosdepBaseOS): 
     """This class provides the Red Hat Enterprise Linux Rosdep OS API
     for by combining the RHEL OSDetect API and the YumInstall API
     """

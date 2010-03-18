@@ -1,6 +1,0 @@
-<launch>
-
-  <test test-name="test10" type="test_missing_pkg" />
-
-</launch>
-

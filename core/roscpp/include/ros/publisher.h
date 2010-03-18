@@ -29,7 +29,10 @@
 #define ROSCPP_PUBLISHER_HANDLE_H
 
 #include "ros/forwards.h"
+#include "ros/common.h"
 #include "ros/message.h"
+#include "ros/serialization.h"
+#include <boost/bind.hpp>
 
 namespace ros
 {
@@ -57,11 +60,53 @@ public:
    * passed directly into a callback function)
    *
    */
-  void publish(const Message::ConstPtr& message) const;
+  template<typename M>
+  void publish(const boost::shared_ptr<M>& message) const
+  {
+    using namespace serialization;
+
+    if (!impl_)
+    {
+      ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher (topic [%s])", impl_->topic_.c_str());
+      return;
+    }
+
+    if (!impl_->isValid())
+    {
+      ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher (topic [%s])", impl_->topic_.c_str());
+      return;
+    }
+
+    SerializedMessage m;
+    m.type_info = &typeid(M);
+    m.message = message;
+
+    publish(boost::bind(serializeMessage<M>, boost::ref(*message)), m);
+  }
+
   /**
    * \brief Publish a message on the topic associated with this Publisher.
    */
-  void publish(const Message& message) const;
+  template<typename M>
+  void publish(const M& message) const
+  {
+    using namespace serialization;
+
+    if (!impl_)
+    {
+      ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher (topic [%s])", impl_->topic_.c_str());
+      return;
+    }
+
+    if (!impl_->isValid())
+    {
+      ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher (topic [%s])", impl_->topic_.c_str());
+      return;
+    }
+
+    SerializedMessage m;
+    publish(boost::bind(serializeMessage<M>, boost::ref(message)), m);
+  }
 
   /**
    * \brief Shutdown the advertisement associated with this Publisher
@@ -85,6 +130,11 @@ public:
    */
   uint32_t getNumSubscribers() const;
 
+  /**
+   * \brief Returns whether or not this topic is latched
+   */
+  bool isLatched() const;
+
   operator void*() const { return (impl_ && impl_->isValid()) ? (void*)1 : (void*)0; }
 
   bool operator<(const Publisher& rhs) const
@@ -104,6 +154,9 @@ public:
 
 private:
   Publisher(const std::string& topic, const NodeHandle& node_handle, const SubscriberCallbacksPtr& callbacks);
+
+  void publish(const boost::function<SerializedMessage(void)>& serfunc, SerializedMessage& m) const;
+  void incrementSequence() const;
 
   class Impl
   {

@@ -49,7 +49,7 @@ void WallTimer::Impl::start()
 {
   if (!started_)
   {
-    VoidPtr tracked_object;
+    VoidConstPtr tracked_object;
     if (has_tracked_object_)
     {
       tracked_object = tracked_object_.lock();
@@ -83,6 +83,13 @@ bool WallTimer::Impl::hasPending()
 
   return TimerManager<WallTime, WallDuration, WallTimerEvent>::global().hasPending(timer_handle_);
 }
+
+void WallTimer::Impl::setPeriod(const WallDuration& period)
+{
+  period_ = period;
+  TimerManager<WallTime, WallDuration, WallTimerEvent>::global().setPeriod(timer_handle_, period);
+}
+
 
 WallTimer::WallTimer(const WallTimerOptions& ops)
 : impl_(new Impl)
@@ -128,6 +135,14 @@ bool WallTimer::hasPending()
   }
 
   return false;
+}
+
+void WallTimer::setPeriod(const WallDuration& period)
+{
+  if (impl_)
+  {
+    impl_->setPeriod(period);
+  }
 }
 
 }

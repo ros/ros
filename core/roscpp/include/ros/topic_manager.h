@@ -30,8 +30,7 @@
 
 #include "forwards.h"
 #include "common.h"
-#include "subscribe_options.h"
-#include "advertise_options.h"
+#include "ros/serialization.h"
 #include "rosout_appender.h"
 
 #include "XmlRpcValue.h"
@@ -43,6 +42,8 @@ namespace ros
 {
 
 class Message;
+class SubscribeOptions;
+class AdvertiseOptions;
 
 class TopicManager;
 typedef boost::shared_ptr<TopicManager> TopicManagerPtr;
@@ -56,6 +57,9 @@ typedef boost::shared_ptr<XMLRPCManager> XMLRPCManagerPtr;
 class ConnectionManager;
 typedef boost::shared_ptr<ConnectionManager> ConnectionManagerPtr;
 
+class SubscriptionCallbackHelper;
+typedef boost::shared_ptr<SubscriptionCallbackHelper> SubscriptionCallbackHelperPtr;
+
 class TopicManager
 {
 public:
@@ -68,7 +72,7 @@ public:
   void shutdown();
 
   bool subscribe(const SubscribeOptions& ops);
-  bool unsubscribe(const std::string &_topic, const SubscriptionMessageHelperPtr& helper);
+  bool unsubscribe(const std::string &_topic, const SubscriptionCallbackHelperPtr& helper);
 
   bool advertise(const AdvertiseOptions& ops, const SubscriberCallbacksPtr& callbacks);
   bool unadvertise(const std::string &topic, const SubscriberCallbacksPtr& callbacks);
@@ -114,26 +118,19 @@ public:
    */
   size_t getNumPublishers(const std::string &_topic);
 
-  /** @brief Publish a message.
-   *
-   * This method publishes a message on a topic, delivering it to any
-   * currently connected subscribers.  If no subscribers are connected,
-   * this call does nothing.
-   *
-   * You must have already called \ref advertise()
-   * on the topic you are trying to publish to, and the type supplied in
-   * the advertise() call must match the type of the message you are trying
-   * to publish.
-   *
-   * This method can be safely called from within a subscriber connection
-   * callback.
-   *
-   * @param _topic The topic to publish to.
-   * @param msg Message to be published.
-   */
-  void publish(const std::string &_topic, const Message& m);
+  template<typename M>
+  void publish(const std::string& topic, const M& message)
+  {
+    using namespace serialization;
 
-  void publish(const PublicationPtr& p, const Message& m);
+    SerializedMessage m;
+    publish(topic, boost::bind(serializeMessage<M>, boost::ref(message)), m);
+  }
+
+  void publish(const std::string &_topic, const boost::function<SerializedMessage(void)>& serfunc, SerializedMessage& m);
+
+  void incrementSequence(const std::string &_topic);
+  bool isLatched(const std::string& topic);
 
 private:
   /** if it finds a pre-existing subscription to the same topic and of the
@@ -166,7 +163,7 @@ private:
 
   PublicationPtr lookupPublicationWithoutLock(const std::string &topic);
 
-  void processPublishQueue();
+  void processPublishQueues();
 
   /** @brief Compute the statistics for the node's connectivity
    *
@@ -210,10 +207,6 @@ private:
   V_Publication advertised_topics_;
   std::list<std::string> advertised_topic_names_;
   boost::mutex advertised_topic_names_mutex_;
-
-  typedef std::vector<std::pair<PublicationPtr, SerializedMessage> > V_PublicationAndSerializedMessagePair;
-  V_PublicationAndSerializedMessagePair publish_queue_;
-  boost::mutex publish_queue_mutex_;
 
   volatile bool shutting_down_;
   boost::mutex shutting_down_mutex_;

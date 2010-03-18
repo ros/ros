@@ -14,4 +14,7 @@
   <depend package="std_msgs"/>
   <depend package="rosrecord"/>
   <depend package="rxtools"/>
+  <rosdep name="python-gtk2"/>
+  <rosdep name="python-matplotlib"/>
+  <rosdep name="wxpython"/>
 </package>

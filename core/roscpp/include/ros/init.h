@@ -202,7 +202,7 @@ CallbackQueue* getGlobalCallbackQueue();
  * \param argv the command-line arguments
  * \param [out] args_out Output args, stripped of any ROS args
  */
-void removeROSArgs(int argc, const char** argv, V_string& args_out);
+void removeROSArgs(int argc, const char* const* argv, V_string& args_out);
 
 }
 

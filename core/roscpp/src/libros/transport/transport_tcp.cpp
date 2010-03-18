@@ -81,10 +81,8 @@ bool TransportTCP::setSocket(int sock)
   return initializeSocket();
 }
 
-bool TransportTCP::initializeSocket()
+bool TransportTCP::setNonBlocking()
 {
-  ROS_ASSERT(sock_ != -1);
-
   if (!(flags_ & SYNCHRONOUS))
   {
     // make the socket non-blocking
@@ -95,6 +93,18 @@ bool TransportTCP::initializeSocket()
       close();
       return false;
     }
+  }
+
+  return true;
+}
+
+bool TransportTCP::initializeSocket()
+{
+  ROS_ASSERT(sock_ != -1);
+
+  if (!setNonBlocking())
+  {
+    return false;
   }
 
   setKeepAlive(s_use_keepalive_, 60, 10, 9);
@@ -196,12 +206,16 @@ void TransportTCP::setKeepAlive(bool use, uint32_t idle, uint32_t interval, uint
 bool TransportTCP::connect(const std::string& host, int port)
 {
   sock_ = socket(AF_INET, SOCK_STREAM, 0);
+  connected_host_ = host;
+  connected_port_ = port;
 
   if (sock_ == -1)
   {
     ROS_ERROR("socket() failed with error [%s]", strerror(errno));
     return false;
   }
+
+  setNonBlocking();
 
   sockaddr_in sin;
   sin.sin_family = AF_INET;
@@ -247,9 +261,12 @@ bool TransportTCP::connect(const std::string& host, int port)
 
   sin.sin_port = htons(port);
 
-  if (::connect(sock_, (sockaddr *)&sin, sizeof(sin)))
+  int ret = ::connect(sock_, (sockaddr *)&sin, sizeof(sin));
+  ROS_ASSERT((flags_ & SYNCHRONOUS) || ret != 0);
+  if (((flags_ & SYNCHRONOUS) && ret != 0) || // synchronous, connect() should return 0
+      (!(flags_ & SYNCHRONOUS) && errno != EINPROGRESS)) // asynchronous, connect() should return -1 and errno should be EINPROGRESS
   {
-    ROSCPP_LOG_DEBUG("Connect to tcpros publisher [%s:%d] failed with error [%s]", host.c_str(), port, strerror(errno));
+    ROSCPP_LOG_DEBUG("Connect to tcpros publisher [%s:%d] failed with error [%d, %s]", host.c_str(), port, ret, strerror(errno));
     close();
 
     return false;

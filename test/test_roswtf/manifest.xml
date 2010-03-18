@@ -6,7 +6,7 @@
   </description>
   <author>Ken Conley</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="test" notes=""/>
   <url>http://ros.org/wiki/test_roswtf</url>
   <depend package="roslib"/>
   <depend package="roswtf"/>

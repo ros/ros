@@ -1,5 +1,0 @@
-<launch>
-  <node pkg="rosrecord" type="rosrecord" respawn="false" args="-f $(find test_rosrecord)/rosrecord_rename_test test_msg"/>
-  <node pkg="test_rosrecord" type="generate_data.py" respawn="false"/>
-</launch>
-

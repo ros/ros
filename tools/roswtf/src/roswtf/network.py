@@ -49,7 +49,7 @@ def ip_check(ctx):
 
     resolved = socket.gethostbyname(socket.gethostname())
     if resolved not in addrs:
-        return "Local hostname [%s] resolves to [%s], which does not appear to be a local IP address %s.\n\nNOTE: for more accurate IP address detection, install netifaces:\n\tsudo easy_install netifaces"%(socket.gethostname(), resolved, str(addrs))
+        return "Local hostname [%s] resolves to [%s], which does not appear to be a local IP address %s."%(socket.gethostname(), resolved, str(addrs))
 
 # suggestion by mquigley based on laptop dhcp issues    
 def ros_hostname_check(ctx):
@@ -71,7 +71,7 @@ def ros_hostname_check(ctx):
     addrs = roslib.network.get_local_addresses()
 
     if resolved not in addrs:
-        return "ROS_HOSTNAME [%s] resolves to [%s], which does not appear to be a local IP address %s.\n\nNOTE: for more accurate IP address detection, install netifaces:\n\tsudo easy_install netifaces"%(hostname, resolved, str(addrs))
+        return "ROS_HOSTNAME [%s] resolves to [%s], which does not appear to be a local IP address %s."%(hostname, resolved, str(addrs))
 
 def ros_ip_check(ctx):
     """Make sure that ROS_IP is a local IP address"""
@@ -88,7 +88,7 @@ def ros_ip_check(ctx):
     addrs = roslib.network.get_local_addresses()
 
     if ip not in addrs:
-        return "ROS_IP [%s] does not appear to be a local IP address %s.\n\nNOTE: for more accurate IP address detection, install netifaces:\n\tsudo easy_install netifaces"%(ip, str(addrs))
+        return "ROS_IP [%s] does not appear to be a local IP address %s."%(ip, str(addrs))
     
 # Error/Warning Rules
 

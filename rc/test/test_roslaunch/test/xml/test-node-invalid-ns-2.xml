@@ -1,3 +1,0 @@
-<launch>
-  <node pkg="package" type="test_ns_invalid" ns="" />
-</launch>

@@ -1,7 +1,0 @@
-<package>
-<export>
-<cpp lflags="-lthor"/>
-</export>
-<depend package="deps"/>
-</package>
-

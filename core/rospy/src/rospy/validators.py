@@ -49,22 +49,3 @@ def non_empty(param_name):
             raise ParameterInvalid("ERROR: parameter [%s] must be specified and non-empty"%param_name)
         return param
     return validator
-
-def non_empty_str(param_name):
-    """Validator that checks that parameter is a string and non-empty"""
-    def validator(param, context):
-        if not param:
-            raise ParameterInvalid("ERROR: parameter [%s] must be specified and non-empty"%param_name)
-        elif not isinstance(param, basestring):
-            raise ParameterInvalid("ERROR: parameter [%s] must be a string"%param_name)            
-        return param
-    return validator
-        
-def not_none(param_name):
-    """Validator that checks that parameter is not None"""
-    def validator(param, context):
-        if param is None:
-            raise ParameterInvalid("ERROR: parameter [%s] must be specified"%param_name)
-        return param
-    return validator
-

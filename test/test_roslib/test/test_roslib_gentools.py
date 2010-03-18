@@ -90,9 +90,9 @@ class TestGentools(unittest.TestCase):
         from roslib.msg import Header
         Header_md5 = Header._md5sum
         roslib_msg_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'msg')
-        time_msg = os.path.join(roslib_msg_dir, 'Time.msg')
+        clock_msg = os.path.join(roslib_msg_dir, 'Clock.msg')
         # a bit gory, but go ahead and regression test these important messages
-        self.assertEquals("%s header\ntime rostime"%Header_md5, self._compute_md5_text(time_msg))
+        self.assertEquals("time clock", self._compute_md5_text(clock_msg))
         log_msg = os.path.join(roslib_msg_dir, 'Log.msg')
         self.assertEquals("byte DEBUG=1\nbyte INFO=2\nbyte WARN=4\nbyte ERROR=8\nbyte FATAL=16\n%s header\nbyte level\nstring name\nstring msg\nstring file\nstring function\nuint32 line\nstring[] topics"%Header_md5, self._compute_md5_text(log_msg))
 
@@ -109,7 +109,7 @@ class TestGentools(unittest.TestCase):
             files = [f for f in files if not f.endswith('%s1.txt'%k)]
             for f in files[1:]:
                 f_text = self._compute_md5_text(f)
-                self.assertEquals(ref_text, f_text, "failed on %s: \n[%s]\nvs.\n[%s]\n"%(k, ref_text, f_text))
+                self.assertEquals(ref_text, f_text, "failed on %s\n%s\n%s: \n[%s]\nvs.\n[%s]\n"%(k, ref_file, f, ref_text, f_text))
         
     def test_md5_equals(self):
         tests = self._load_md5_tests('same')

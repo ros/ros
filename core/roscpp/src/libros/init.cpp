@@ -55,7 +55,6 @@
 
 #include <ros/console.h>
 #include <ros/time.h>
-#include <roslib/Time.h>
 #include <roslib/Clock.h>
 
 #include <algorithm>
@@ -222,11 +221,6 @@ bool closeAllConnections(roscpp::Empty::Request&, roscpp::Empty::Response&)
   return true;
 }
 
-void timeCallback(const roslib::Time::ConstPtr& msg)
-{
-  Time::setNow(msg->rostime);
-}
-
 void clockCallback(const roslib::Clock::ConstPtr& msg)
 {
   Time::setNow(msg->clock);
@@ -352,15 +346,6 @@ void start()
     {
       Time::setNow(ros::Time());
     }
-  }
-
-  if (g_shutting_down) goto end;
-
-  {
-    ros::SubscribeOptions ops;
-    ops.init<roslib::Time>("/time", 1, timeCallback);
-    ops.callback_queue = getInternalCallbackQueue().get();
-    TopicManager::instance()->subscribe(ops);
   }
 
   if (g_shutting_down) goto end;

@@ -350,6 +350,7 @@ _shutdown_flag  = False
 _shutdown_hooks = []
 _shutdown_threads = []
 _preshutdown_hooks = []
+_client_shutdown_hooks = []
 
 _signalChain = {}
 
@@ -401,10 +402,23 @@ def _add_shutdown_thread(t):
     finally:
         _shutdown_lock.release()
 
+def add_client_shutdown_hook(h):
+    """
+    Add client method to invoke when system shuts down. Unlike
+    L{add_shutdown_hook} and L{add_preshutdown_hooks}, these methods
+    will be called before any rospy internal shutdown code.
+    
+    @param h: function that takes in a single string argument (shutdown reason)
+    @type  h: fn(str)
+    """
+    _add_shutdown_hook(h, _client_shutdown_hooks)
+
 def add_preshutdown_hook(h):
     """
-    Add method to invoke when system shuts down. Unlike X{add_shutdown_hook}, these
-    methods will be called before any other shutdown hooks.
+    Add method to invoke when system shuts down. Unlike
+    L{add_shutdown_hook}, these methods will be called before any
+    other shutdown hooks.
+    
     @param h: function that takes in a single string argument (shutdown reason)
     @type  h: fn(str)
     """
@@ -437,6 +451,15 @@ def signal_shutdown(reason):
         _shutdown_lock.acquire()
         if _shutdown_flag:
             return
+
+        for h in _client_shutdown_hooks:
+            try:
+                # client shutdown hooks do not accept a reason arg
+                h()
+            except:
+                traceback.print_exc()
+        del _client_shutdown_hooks[:]
+
         for h in _preshutdown_hooks:
             try:
                 h(reason)

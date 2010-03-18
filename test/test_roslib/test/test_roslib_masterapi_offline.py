@@ -97,6 +97,10 @@ class MasterMock(object):
     def getPublishedTopics(self, caller_id, subgraph):
         self.call = ('getPublishedTopics', caller_id, subgraph)
         return self.return_val
+
+    def getTopicTypes(self, caller_id):
+        self.call = ('getTopicTypes', caller_id)
+        return self.return_val
     
     def getSystemState(self, caller_id):
         self.call = ('getSystemState', caller_id)
@@ -279,6 +283,16 @@ class MasterApiOfflineTest(unittest.TestCase):
         self.throw_failure('getPublishedTopics', args, (0, '', r))
         self.throw_error('getPublishedTopics', args, (-1, '', r))
         
+    def test_getTopicTypes(self):
+        h = self.m.handle
+        r = [ ['/foo', 'std_msgs/String'], ['/baz', 'std_msgs/Int32'] ]
+        h.return_val = (1, '', r)
+        self.assertEquals(r, self.m.getTopicTypes())
+        self.assertEquals(('getTopicTypes',_ID), h.call)
+        self.throw_failure('getTopicTypes', (), (0, '', r))
+        self.throw_error('getTopicTypes', (), (-1, '', r))
+        
+
     def test_getSystemState(self):
         h = self.m.handle
         r = [ [], [], [] ]

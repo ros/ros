@@ -681,6 +681,12 @@ class ROSMasterHandler(object):
         try:
             self.ps_lock.acquire()
             self.reg_manager.register_subscriber(topic, caller_id, caller_api)
+
+            # ROS 1.1: subscriber can now set type if it is not already set
+            #  - don't let '*' type squash valid typing
+            if not topic in self.topics_types and topic_type != roslib.names.ANYTYPE:
+                self.topics_types[topic] = topic_type
+
             mloginfo("+SUB [%s] %s %s",topic, caller_id, caller_api)
             pub_uris = self.publishers.get_apis(topic)
         finally:
@@ -824,6 +830,22 @@ class ROSMasterHandler(object):
             self.ps_lock.release()
         return 1, "current topics", retval
     
+    @apivalidate([])
+    def getTopicTypes(self, caller_id): 
+        """
+        Retrieve list topic names and their types.
+        @param caller_id: ROS caller id    
+        @type  caller_id: str
+        @rtype: (int, str, [[str,str]] )
+        @return: (code, statusMessage, topicTypes). topicTypes is a list of [topicName, topicType] pairs.
+        """
+        try: 
+            self.ps_lock.acquire()
+            retval = self.topics_types.items()
+        finally:
+            self.ps_lock.release()
+        return 1, "current system state", retval
+
     @apivalidate([[],[], []])
     def getSystemState(self, caller_id): 
         """

@@ -430,6 +430,16 @@ class Master(object):
         """
         return self._succeed(self.handle.getPublishedTopics(self.caller_id, subgraph))        
     
+    def getTopicTypes(self): 
+        """
+        Retrieve list topic names and their types.
+        @param caller_id: ROS caller id    
+        @type  caller_id: str
+        @rtype: (int, str, [[str,str]] )
+        @return: (code, statusMessage, topicTypes). topicTypes is a list of [topicName, topicType] pairs.
+        """
+        return self._succeed(self.handle.getTopicTypes(self.caller_id))
+    
     def getSystemState(self): 
         """
         Retrieve list representation of system state (i.e. publishers, subscribers, and services).

@@ -1,0 +1,14 @@
+<package>
+  <description brief="ROS bag migration tools">
+    This is a pluggable python library that allows conversion rules to
+  be used to bring outdated bag files up to date after a message
+  format changes.  Packages which contain migration rules must depend
+  on this package and export an appropriate rules file.
+  </description>
+  <author>Jeremy Leibs/leibs@willowgarage.com</author>
+  <url>http://pr.willowgarage.com/wiki/rosbagmigration</url>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <depend package="rospy"/>
+  <depend package="rosrecord"/>
+</package>

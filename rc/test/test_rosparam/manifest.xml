@@ -1,0 +1,16 @@
+<package>
+  <description brief="test_rosparam">
+
+     Tests for the rosparam tool
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="test" notes=""/>
+  <depend package="rosparam"/>
+  <depend package="roslib"/>
+  <depend package="rostest"/>
+
+</package>
+
+

@@ -1,0 +1,9 @@
+<launch>
+  <!-- this test is currently disabled is this is legal right now -->
+       
+  <!-- name attribute missing with param set -->
+  <node pkg="package" type="name_test_invalid_value">
+    <param name="foo" value="bar" />
+  </node>
+</launch>
+

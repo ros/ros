@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="rostopic" type="rostopic" name="rostopic_pub" 
+        args="pub -r 10 input std_msgs/String chatter"/>
+
+  <test test-name="test_shapeshifter" pkg="topic_tools" type="test_shapeshifter"/>
+</launch>

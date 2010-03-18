@@ -1,0 +1,18 @@
+<package>
+  <description brief="test_rosmaster">
+
+     test_rosmaster
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/test_rosmaster</url>
+  <depend package="rosmaster"/>
+  <depend package="rostest"/>
+  <depend package="roslib"/>
+  <depend package="test_ros"/>
+
+</package>
+
+

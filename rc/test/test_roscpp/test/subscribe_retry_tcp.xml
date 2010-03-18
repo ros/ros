@@ -1,0 +1,8 @@
+<launch>
+  <node name="publish_constantly" pkg="test_roscpp" type="publish_constantly">
+    <env name="ROS_ENABLE_DEBUG" value="1"/>
+  </node>
+  <test test-name="subscribe_retry_tcp" pkg="test_roscpp" type="subscribe_retry_tcp"/>
+</launch>
+
+

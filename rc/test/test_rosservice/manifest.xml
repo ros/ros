@@ -1,0 +1,20 @@
+<package>
+  <description brief="test_rosservice">
+
+     Tests for the rosservice tool
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="test" notes=""/>
+  <depend package="rosservice"/>
+  <depend package="rospy"/>
+  <depend package="roslib"/>
+  <depend package="rostest"/>
+
+  <!-- runtime deps for online tests -->
+  <depend package="test_ros" />
+
+</package>
+
+

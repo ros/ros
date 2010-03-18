@@ -1,0 +1,8 @@
+<stack>
+  <description brief="rxdeps test stack">
+  </description>
+  <author>Tully Foote</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rxdeps</url>
+</stack>

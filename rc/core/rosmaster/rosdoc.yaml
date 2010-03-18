@@ -1,0 +1,2 @@
+ - builder: epydoc
+   config: epydoc.config

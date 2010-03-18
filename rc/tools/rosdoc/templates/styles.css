@@ -1,0 +1,55 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+}
+a {
+    text-decoration: none;
+    color: #2b7fcf;
+}
+a:link { }
+a:hover, a:focus {
+    text-decoration: underline;
+}
+
+h3 {
+    font-size: 1.1em;
+    line-height: 1.1em;
+    margin-top: 0.769em;
+    border-bottom-width: 1px;
+    border-bottom-style: dotted;
+    border-bottom-color: #545454;
+    padding-bottom: 3px;
+    margin-bottom: 5px;
+}
+
+.packages {
+    margin-top: 10px;
+}
+.nav-link {
+    font-size: 0.9em;
+}
+.subgroup {
+    margin: 5px 10px 10px -15px;
+}
+.greybox {
+    padding: 1px; 
+    background-color: #eee; 
+    border: 1px solid #333;
+}
+hr {
+  width: 100%;
+  height: 1px;
+  border-top: 0;
+  color: #000;
+}
+.fancy-msg {
+    width: auto;
+    border: 1px solid #333;
+    padding: 10px; 
+}
+
+.raw-msg {
+    font-family: monospace;
+    width: auto;
+    padding: 10px; 
+    border: 1px solid #333;
+}

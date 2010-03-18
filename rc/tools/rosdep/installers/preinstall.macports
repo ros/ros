@@ -1,0 +1,14 @@
+#!/bin/bash
+if ! which port &>/dev/null ; then
+  echo "You need to install MacPorts. Instructions provided at www.macports.org."
+  exit 1
+fi
+if ! which gcc &>/dev/null ; then
+  echo "You need to install the Developer Tools. Instructions at developer.apple.com"
+  exit 1
+fi
+set -o errexit
+set -o verbose
+sudo port selfupdate
+sudo port upgrade outdated
+sudo port install cmake wget

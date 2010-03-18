@@ -1,0 +1,16 @@
+<stack>
+  <description brief="ROS core">
+<p>
+ROS is an open-source, meta-operating system for your robot. It provides the services you would expect from an operating system, including hardware abstraction, low-level device control, implementation of commonly-used functionality, message-passing between processes, and package management. It also provides tools and libraries for obtaining, building, writing, and running code across multiple computers. 
+
+</p>
+<p>
+The ROS runtime "graph" is a peer-to-peer network of processes that are loosely coupled using the ROS communication infrastructure. ROS implements several different styles of communication, including synchronous RPC-style communication over Services, asynchronous streaming of data over Topics, and storage of data on a Parameter Server. These are explained in greater detail in our Conceptual Overview.
+</p>
+
+  </description>
+  <author>Eric Berger, Ken Conley, Josh Faust, Tully Foote, Brian Gerkey, Jeremy Leibs, Morgan Quigley, Rob Wheeler</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/ROS</url>
+</stack>

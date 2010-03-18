@@ -1,0 +1,38 @@
+<launch>
+
+  <!-- remap tags are evaluated sequentially and are scoped -->
+
+  <remap from="foo" to="bar" />
+
+  <!-- should just get foo-bar -->
+  <node name="n1" pkg="pkg" type="node1" />
+
+  <group ns="ns1">
+    <remap from="foo" to="baz" />
+    <node name="n2" pkg="pkg" type="node2" />
+  </group>
+
+  <!-- foo-baz should leave scope, should get foo-bar -->
+  <node name="n3" pkg="pkg" type="node3" />
+
+  <!-- should override existing, now foo-bar -->
+  <remap from="foo" to="far" />
+  <node name="n4" pkg="pkg" type="node4" />
+
+
+  <!-- test remaps within node's scope -->
+  <node name="n5" pkg="pkg" type="node5">
+    <remap from="foo" to="fad" />
+    <remap from="a" to="b" />
+    <remap from="c" to="d" />
+  </node>
+
+  <!-- test multiple remaps -->
+  <remap from="old1" to="new1" />
+  <remap from="old2" to="new2" />
+  <remap from="old3" to="new3" />   
+
+  <node name="n6" pkg="pkg" type="node6" />
+
+  
+</launch>

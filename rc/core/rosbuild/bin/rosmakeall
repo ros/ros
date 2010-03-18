@@ -1,0 +1,122 @@
+#!/bin/bash
+
+if [ $# == 0 ]; then
+  targetname=all
+else
+  targetname=$1
+fi
+
+export ROS_HOSTNAME=127.0.0.1
+export ROS_MASTER_URI=http://127.0.0.1:11311
+
+# This has been taking way too long to run
+#if [ $WORKSPACE ]; then
+#  `rospack find rospack`/roscachesvncert
+#fi
+
+# Use rosdep to install prereqs for anything that's not blacklisted
+rosdep update
+rosdep_pkgs=`for p in \`rospack list-names\`; do if [ ! -f \`rospack find $p\`/ROS_BUILD_BLACKLIST ]; then echo $p; fi; done`
+if ! rosdep satisfy $rosdep_pkgs; then
+  echo "rosdep failed; aborting"
+  exit 1
+fi
+bash <(rosdep satisfy $rosdep_pkgs)
+
+PKGS_CMD=`rospack find rospack`/rosallpkgs
+PKGS=`$PKGS_CMD`
+rm -f $ROS_ROOT/stdout.txt
+rm -f $ROS_ROOT/stderr.txt
+rm -f $ROS_ROOT/stdout_stderr.txt
+echo "A dummy line to make Hudson happy" > $ROS_ROOT/stderr.txt
+rm -f $ROS_ROOT/rosmakeall-profile
+rm -f $ROS_ROOT/test_results.xml
+rm -rf $ROS_ROOT/test/test_results/*
+mkdir -p $ROS_ROOT/test/test_results
+rm -f $ROS_ROOT/build-failure
+rm -f $ROS_ROOT/test-failure
+rm -f $ROS_ROOT/rosmakeall-coverage.txt
+rm -f $ROS_ROOT/rosmakeall-buildfailures.txt
+rm -f $ROS_ROOT/rosmakeall-buildfailures-withcontext.txt
+rm -f $ROS_ROOT/rosmakeall-testfailures.txt
+for p in $PKGS; do
+  cd `rospack find $p`
+  if test -f Makefile -a ! -f ROS_NOBUILD -a ! -f ROS_BUILD_BLACKLIST; then
+    # If the target is 'test-only', we don't build
+    if [ $targetname != "test-only" ]; then
+      s=`date +%s`
+      ((if ! make; then touch $ROS_ROOT/build-failure && echo "[rosmakeall-buildfail] Build of $p failed"; fi | tee -a $ROS_ROOT/stdout.txt) 3>&1 1>&2 2>&3 | tee -a $ROS_ROOT/stderr.txt) 2>&1 | tee -a $ROS_ROOT/stdout_stderr.txt
+      e=`date +%s`
+      d=$(($e - $s))
+      echo "$p build $d" >> $ROS_ROOT/rosmakeall-profile
+    fi
+    # If the target is 'all', we don't test
+    if [ $targetname != "all" ]; then
+      if [ -f CMakeLists.txt ]; then
+        # Are we building packages (as opposed to just ros itself)? If so,
+        # then we don't run tests on ros, because they were run elsewhere.
+        if [ ! -z $ROS_PACKAGE_PATH ]; then
+          if expr match `rospack find $p` $ROS_ROOT/; then
+            continue
+          fi
+        fi
+        s=`date +%s`
+        if [ $targetname = "test-only" ]; then targetname=test; fi
+        (if ! make $targetname; then touch $ROS_ROOT/test-failure && echo "[rosmakeall-testfail] Test of $p failed"; fi | tee -a $ROS_ROOT/stdout.txt) 3>&1 1>&2 2>&3 | tee -a $ROS_ROOT/stderr.txt
+        e=`date +%s`
+        d=$(($e - $s))
+        echo "$p test $d" >> $ROS_ROOT/rosmakeall-profile
+      fi
+    fi
+  fi
+done
+
+`rospack find rostest`/bin/cleanunit
+
+#echo "Coverage summary for $JOB_NAME build" > $ROS_ROOT/rosmakeall-coverage.txt
+#echo `date` >> $ROS_ROOT/rosmakeall-coverage.txt
+#grep "\[rosgcov\]" $ROS_ROOT/stdout.txt >> $ROS_ROOT/rosmakeall-coverage.txt
+#if [ $WORKSPACE ]; then
+#  scp -P 2222 $ROS_ROOT/rosmakeall-coverage.txt gerkey@pub1:public_html/ros/coverage-$JOB_NAME.txt
+#fi
+
+touch $ROS_ROOT/rosmakeall-buildfailures.txt
+touch $ROS_ROOT/rosmakeall-buildfailures-withcontext.txt
+buildfailures=`grep rosmakeall-buildfail $ROS_ROOT/stdout.txt | awk '{print $4}'`
+if [ "$buildfailures" ]; then
+  echo "" > $ROS_ROOT/rosmakeall-buildfailures-withcontext.txt
+  echo "Build failures, with preceding context (for more detail," >> $ROS_ROOT/rosmakeall-buildfailures-withcontext.txt
+  echo "follow the link above for full console output):" >> $ROS_ROOT/rosmakeall-buildfailures-withcontext.txt
+  echo "---" >> $ROS_ROOT/rosmakeall-buildfailures-withcontext.txt
+  grep -B 20 rosmakeall-buildfail $ROS_ROOT/stdout_stderr.txt >> $ROS_ROOT/rosmakeall-buildfailures-withcontext.txt
+
+  echo "The following packages failed to build:" >> $ROS_ROOT/rosmakeall-buildfailures.txt
+  for p in $buildfailures; do
+    echo "      $p" >> $ROS_ROOT/rosmakeall-buildfailures.txt
+  done
+  echo "Context preceding each failure is appended below." >> $ROS_ROOT/rosmakeall-buildfailures.txt
+fi
+touch $ROS_ROOT/rosmakeall-testfailures.txt
+testfailures=`grep rosmakeall-testfail $ROS_ROOT/stdout.txt | awk '{print $4}'`
+if [ "$testfailures" ]; then
+  echo "The following packages failed to test:" >> $ROS_ROOT/rosmakeall-testfailures.txt
+  for p in $testfailures; do
+    echo "      $p" >> $ROS_ROOT/rosmakeall-testfailures.txt
+  done
+fi
+
+if [ -f $ROS_ROOT/build-failure ]; then
+  buildresult=1
+else
+  buildresult=0
+fi
+
+if [ -f $ROS_ROOT/test-failure ]; then
+  testresult=1
+else
+  testresult=0
+fi
+
+echo "[rosmakeall] Build result: $buildresult"
+echo "[rosmakeall] Test result: $testresult"
+exit $buildresult

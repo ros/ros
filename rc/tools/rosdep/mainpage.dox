@@ -1,0 +1,8 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\section codeapi Code API The code API is not stable.  Please use the
+commandline interface documented at <a href="http://www.ros.org/wiki/rosdep">http://www.ros.org/wiki/rosdep</a>.
+
+*/

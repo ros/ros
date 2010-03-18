@@ -83,11 +83,7 @@ def on_shutdown(h):
     @param h: Function with zero args to be called on shutdown.
     @type  h: fn()
     """
-
-    # wrap function to strip reason argument that gets passed in for internal use
-    def wrapper(reason):
-        h()
-    rospy.core.add_preshutdown_hook(wrapper)
+    rospy.core.add_client_shutdown_hook(h)
     
 def spin():
     """

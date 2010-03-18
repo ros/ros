@@ -24,6 +24,7 @@ rosbuild_add_boost_directories()
 
 rosbuild_add_library(roslib src/time.cpp src/rate.cpp src/package.cpp src/debug.cpp src/serialization.cpp)
 rosbuild_link_boost(roslib thread)
+target_link_libraries(roslib rt)
 
 rosbuild_add_gtest(test_time test/time.cpp)
 target_link_libraries(test_time roslib)

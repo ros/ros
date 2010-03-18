@@ -34,6 +34,8 @@
 
 """Internal-use: Support for simulated clock."""
 
+import traceback
+
 import roslib.msg
 import roslib.rosenv
 
@@ -42,7 +44,6 @@ import rospy.rostime
 import rospy.topics
 
 # ROS clock topics and parameter config
-_ROSTIME = '/time'
 _ROSCLOCK = '/clock'
 _USE_SIMTIME = '/use_sim_time'
 
@@ -79,16 +80,12 @@ def init_simtime():
         if _rostime_sub is None:
             logger.info("initializing %s core topic"%_ROSCLOCK)
             _clock_sub = rospy.topics.Subscriber(_ROSCLOCK, roslib.msg.Clock, _set_rostime_clock_wrapper)
-            logger.info("connected to core topic %s"%_ROSTIME)
-            logger.info("initializing %s core topic"%_ROSTIME)
-            _rostime_sub = rospy.topics.Subscriber(_ROSTIME, roslib.msg.Time, _set_rostime_time_wrapper)
-            logger.info("connected to core topic %s"%_ROSTIME)
+            logger.info("connected to core topic %s"%_ROSCLOCK)
 
             if _is_use_simtime():
                 _set_rostime(rospy.rostime.Time(0, 0))
         rospy.rostime.set_rostime_initialized(True)
         return True
     except Exception, e:
-        import traceback
         logger.error("Unable to initialize %s: %s\n%s", _ROSCLOCK, e, traceback.format_exc())
         return False

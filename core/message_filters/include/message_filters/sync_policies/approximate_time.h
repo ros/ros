@@ -288,30 +288,30 @@ private:
     if (RealTypeCount::value > 2)
     {
       boost::get<2>(candidate_) = boost::get<2>(deques_).front();
-    }
-    else if (RealTypeCount::value > 3)
-    {
-      boost::get<3>(candidate_) = boost::get<3>(deques_).front();
-    }
-    else if (RealTypeCount::value > 4)
-    {
-      boost::get<4>(candidate_) = boost::get<4>(deques_).front();
-    }
-    else if (RealTypeCount::value > 5)
-    {
-      boost::get<5>(candidate_) = boost::get<5>(deques_).front();
-    }
-    else if (RealTypeCount::value > 6)
-    {
-      boost::get<6>(candidate_) = boost::get<6>(deques_).front();
-    }
-    else if (RealTypeCount::value > 7)
-    {
-      boost::get<7>(candidate_) = boost::get<7>(deques_).front();
-    }
-    else if (RealTypeCount::value > 8)
-    {
-      boost::get<8>(candidate_) = boost::get<8>(deques_).front();
+      if (RealTypeCount::value > 3)
+      {
+	boost::get<3>(candidate_) = boost::get<3>(deques_).front();
+	if (RealTypeCount::value > 4)
+	{
+	  boost::get<4>(candidate_) = boost::get<4>(deques_).front();
+	  if (RealTypeCount::value > 5)
+	  {
+	    boost::get<5>(candidate_) = boost::get<5>(deques_).front();
+	    if (RealTypeCount::value > 6)
+	    {
+	      boost::get<6>(candidate_) = boost::get<6>(deques_).front();
+	      if (RealTypeCount::value > 7)
+	      {
+		boost::get<7>(candidate_) = boost::get<7>(deques_).front();
+		if (RealTypeCount::value > 8)
+		{
+		  boost::get<8>(candidate_) = boost::get<8>(deques_).front();
+		}
+	      }
+	    }
+	  }
+	}
+      }
     }
     // Delete all past messages, since we have found a better candidate
     boost::get<0>(past_).clear();

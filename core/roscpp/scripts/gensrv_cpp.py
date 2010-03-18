@@ -190,7 +190,12 @@ def generate(srv_path):
     
     output_dir = '%s/srv_gen/cpp/include/%s'%(package_dir, package)
     if (not os.path.exists(output_dir)):
-        os.makedirs(output_dir)
+        # if we're being run concurrently, the above test can report false but os.makedirs can still fail if
+        # another copy just created the directory
+        try:
+            os.makedirs(output_dir)
+        except OSError, e:
+            pass
         
     f = open('%s/%s.h'%(output_dir, spec.short_name), 'w')
     print >> f, s.getvalue()

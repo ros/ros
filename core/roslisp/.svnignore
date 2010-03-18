@@ -1,0 +1,8 @@
+*.fasl
+*~
+.build_version
+bin
+build
+lib
+src
+msg

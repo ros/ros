@@ -1,0 +1,17 @@
+<package>
+  <description brief="A Lisp client library for ROS">This package is a Lisp client library for ROS, the Robot Operating System.</description>
+  <author>Bhaskara Marthi, Brian Gerkey, Lorenz Mösenlechner</author>
+  <license>BSD</license>
+  <review status="experimental" notes=""/>
+  <depend package="roslib"/>
+  <depend package="roslang"/>
+  <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+  <depend package="std_srvs"/>
+  <export>
+    <roslang cmake="${prefix}/cmake/roslisp.cmake"/>
+  </export>
+  <rosdep name="sbcl"/>
+  <url>http://pr.willowgarage.com/wiki/roslisp</url>
+</package>
+

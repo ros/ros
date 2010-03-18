@@ -12,6 +12,6 @@
     <roslang cmake="${prefix}/cmake/roslisp.cmake"/>
   </export>
   <rosdep name="sbcl"/>
-  <url>http://pr.willowgarage.com/wiki/roslisp</url>
+  <url>http://ros.org/wiki/roslisp</url>
 </package>
 

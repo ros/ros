@@ -295,7 +295,7 @@ def _get_topic_type(topic):
     @rtype: str, str, fn
     """
     try:
-        val = _succeed(roslib.scriptutil.get_master().getPublishedTopics('/', '/'))
+        val = _succeed(roslib.scriptutil.get_master().getTopicTypes('/'))
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
 
@@ -671,7 +671,7 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
     """
     Print topics to screen
     
-    @param topic: topic name to list infomration or None to match all topics
+    @param topic: topic name to list information or None to match all topics
     @type  topic: str
     @param verbose: print additional debugging information
     @type  verbose: bool
@@ -680,8 +680,8 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
     @param publishers_only: print information about subscriptions only
     @type  publishers_only: bool    
     """
-    def topic_type(t, pub_topics):
-        matches = [t_type for t_name, t_type in pub_topics if t_name == t]
+    def topic_type(t, topic_types):
+        matches = [t_type for t_name, t_type in topic_types if t_name == t]
         if matches:
             return matches[0]
         return 'unknown type'
@@ -701,7 +701,7 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
             subs = (x for x in subs if x[0] == topic or x[0].startswith(topic_ns))
             pubs = (x for x in pubs if x[0] == topic or x[0].startswith(topic_ns))
 
-        pub_topics = _succeed(master.getPublishedTopics('/rostopic', '/'))
+        topic_types = _succeed(master.getTopicTypes('/rostopic'))
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
 
@@ -710,18 +710,18 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
             print "\nPublished topics:"
             for t, l in pubs:
                 if len(l) > 1:
-                    print " * %s [%s] %s publishers"%(t, topic_type(t, pub_topics), len(l))
+                    print " * %s [%s] %s publishers"%(t, topic_type(t, topic_types), len(l))
                 else:
-                    print " * %s [%s] 1 publisher"%(t, topic_type(t, pub_topics))                    
+                    print " * %s [%s] 1 publisher"%(t, topic_type(t, topic_types))                    
 
         if not publishers_only:
             print ''
             print "Subscribed topics:"
             for t,l in subs:
                 if len(l) > 1:
-                    print " * %s [%s] %s subscribers"%(t, topic_type(t, pub_topics), len(l))
+                    print " * %s [%s] %s subscribers"%(t, topic_type(t, topic_types), len(l))
                 else:
-                    print " * %s [%s] 1 subscriber"%(t, topic_type(t, pub_topics)) 
+                    print " * %s [%s] 1 subscriber"%(t, topic_type(t, topic_types)) 
     else:
         if publishers_only:
             topics = [t for t,_ in pubs]
@@ -739,8 +739,8 @@ def _rostopic_info(topic):
     @param topic: topic name 
     @type  topic: str
     """
-    def topic_type(t, pub_topics):
-        matches = [t_type for t_name, t_type in pub_topics if t_name == t]
+    def topic_type(t, topic_types):
+        matches = [t_type for t_name, t_type in topic_types if t_name == t]
         if matches:
             return matches[0]
         return 'unknown type'
@@ -754,7 +754,7 @@ def _rostopic_info(topic):
         subs = [x for x in subs if x[0] == topic]
         pubs = [x for x in pubs if x[0] == topic]
 
-        pub_topics = _succeed(master.getPublishedTopics('/rostopic', '/'))
+        topic_types = _succeed(master.getTopicTypes('/rostopic'))
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
 
@@ -763,7 +763,7 @@ def _rostopic_info(topic):
         return 1
 
     #print '-'*80
-    print "\nType: %s\n"%topic_type(topic, pub_topics)
+    print "\nType: %s\n"%topic_type(topic, topic_types)
 
     import itertools
 
@@ -929,7 +929,7 @@ def find_by_type(topic_type):
     """
     master = roslib.scriptutil.get_master()
     try:
-        t_list = _succeed(master.getPublishedTopics('/rostopic', '/'))
+        t_list = _succeed(master.getTopicTypes('/rostopic'))
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
     return [t_name for t_name, t_type in t_list if t_type == topic_type]

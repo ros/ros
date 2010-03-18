@@ -1,2 +1,0 @@
-Bar y
-Bar[] z

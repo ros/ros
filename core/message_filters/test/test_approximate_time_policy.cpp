@@ -323,8 +323,8 @@ TEST(ApproxTimeSync, DroppedMessages) {
   // Time:     012345678901234
   // Input A:  a...b...c.d..e.
   // Input B:  .A.B...C...D..E
-  // Output:   ...b.......d...
-  //           ...B.......D...
+  // Output:   .......b.....d.
+  //           .......B.....D.
   std::vector<TimeAndTopic> input;
   std::vector<TimePair> output;
 
@@ -351,8 +351,8 @@ TEST(ApproxTimeSync, DroppedMessages) {
   // Time:     012345678901234
   // Input A:  a...b...c.d..e.
   // Input B:  .A.B...C...D..E
-  // Output:   .a..b...c..d...
-  //           .A..B...C..D...
+  // Output:   ....a..b...c.d.
+  //           ....A..B...C.D.
   std::vector<TimePair> output2;
   output2.push_back(TimePair(t, t+s));
   output2.push_back(TimePair(t+s*4, t+s*3));
@@ -367,8 +367,11 @@ TEST(ApproxTimeSync, DroppedMessages) {
 TEST(ApproxTimeSync, DoublePublish) {
   // Input A:  a..b
   // Input B:  .A.B
-  // Output:   .a.b
-  //           .A.B
+  // Output:   ...b
+  //           ...B
+  //              +
+  //              a
+  //              A
   std::vector<TimeAndTopic> input;
   std::vector<TimePair> output;
 
@@ -393,10 +396,10 @@ TEST(ApproxTimeSync, FourTopics) {
   // Input B:  .b....g..j....o
   // Input C:  ..c...h...k....
   // Input D:  ...d.f.....l...
-  // Output:   ...a..e....m...
-  //           ...b..g....j...
-  //           ...c..h....k...
-  //           ...d..f....l...
+  // Output:   ......a....e..m
+  //           ......b....g..j
+  //           ......c....h..k
+  //           ......d....f..l
   std::vector<TimeAndTopic> input;
   std::vector<TimeQuad> output;
 
@@ -421,6 +424,34 @@ TEST(ApproxTimeSync, FourTopics) {
   output.push_back(TimeQuad(t, t+s, t+s*2, t+s*3));
   output.push_back(TimeQuad(t+s*5, t+s*6, t+s*6, t+s*5));
   output.push_back(TimeQuad(t+s*10, t+s*9, t+s*10, t+s*11));
+
+  ApproximateTimeSynchronizerTestQuad sync_test(input, output, 10);
+  sync_test.run();
+}
+
+
+TEST(ApproxTimeSync, EarlyPublish) {
+  // Time:     012345678901234
+  // Input A:  a......e
+  // Input B:  .b......
+  // Input C:  ..c.....
+  // Input D:  ...d....
+  // Output:   .......a
+  //           .......b
+  //           .......c
+  //           .......d
+  std::vector<TimeAndTopic> input;
+  std::vector<TimeQuad> output;
+
+  ros::Time t(0, 0);
+  ros::Duration s(1, 0);
+
+  input.push_back(TimeAndTopic(t,0));     // a
+  input.push_back(TimeAndTopic(t+s,1));   // b
+  input.push_back(TimeAndTopic(t+s*2,2));   // c
+  input.push_back(TimeAndTopic(t+s*3,3));   // d 
+  input.push_back(TimeAndTopic(t+s*7,0));   // e
+  output.push_back(TimeQuad(t, t+s, t+s*2, t+s*3));
 
   ApproximateTimeSynchronizerTestQuad sync_test(input, output, 10);
   sync_test.run();

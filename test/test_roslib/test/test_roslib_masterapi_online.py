@@ -104,6 +104,9 @@ class MasterApiOnlineTest(unittest.TestCase):
         
     def test_getPublishedTopics(self):
         topics = self.m.getPublishedTopics('/')
+
+    def test_getTopicTypes(self):
+        topic_types = self.m.getTopicTypes()
         
     def test_getSystemState(self):
         pub, sub, srvs = self.m.getSystemState()

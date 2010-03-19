@@ -84,8 +84,9 @@ class ApproximateTimeSynchronizerTest
 public:
 
   ApproximateTimeSynchronizerTest(const std::vector<TimeAndTopic> &input,
-      const std::vector<TimePair> &output) :
-    input_(input), output_(output), output_position_(0)
+				  const std::vector<TimePair> &output,
+				  uint32_t queue_size) :
+    input_(input), output_(output), output_position_(0), queue_size_(queue_size)
   {
   }
 
@@ -103,7 +104,8 @@ public:
 
   void run()
   {
-    Synchronizer<ApproximateTime<Msg, Msg> > sync(ApproximateTime<Msg, Msg>(1));
+    typedef Synchronizer<ApproximateTime<Msg, Msg> > Sync2;
+    Sync2 sync(queue_size_);
     sync.registerCallback(boost::bind(&ApproximateTimeSynchronizerTest::callback, this, _1, _2));
     for (unsigned int i = 0; i < input_.size(); i++)
     {
@@ -128,7 +130,7 @@ private:
   const std::vector<TimeAndTopic> &input_;
   const std::vector<TimePair> &output_;
   unsigned int output_position_;
-
+  uint32_t queue_size_;
 };
 
 
@@ -155,7 +157,7 @@ TEST(ApproxTimeSync, PerfectMatch) {
   output.push_back(TimePair(t, t+s));
   output.push_back(TimePair(t+s*3, t+s*4));
 
-  ApproximateTimeSynchronizerTest sync_test(input, output);
+  ApproximateTimeSynchronizerTest sync_test(input, output, 10);
   sync_test.run();
 }
 
@@ -181,7 +183,7 @@ TEST(ApproxTimeSync, ImperfectMatch) {
   output.push_back(TimePair(t, t+s));
   output.push_back(TimePair(t+s*6, t+s*5));
 
-  ApproximateTimeSynchronizerTest sync_test(input, output);
+  ApproximateTimeSynchronizerTest sync_test(input, output, 10);
   sync_test.run();
 }
 
@@ -207,8 +209,54 @@ TEST(ApproxTimeSync, Acceleration) {
   output.push_back(TimePair(t+s*12, t+s*7));
   output.push_back(TimePair(t+s*17, t+s*18));
 
-  ApproximateTimeSynchronizerTest sync_test(input, output);
+  ApproximateTimeSynchronizerTest sync_test(input, output, 10);
   sync_test.run();
+}
+
+
+TEST(ApproxTimeSync, DroppedMessages) {
+  // Queue size 1 (too small)
+  // Time:     0123456789012345678
+  // Input A:  a...b...c.d..e.
+  // Input B:  .A.B...C...D..E
+  // Output:   ...b.......d...
+  //           ...B.......D...
+  std::vector<TimeAndTopic> input;
+  std::vector<TimePair> output;
+
+  ros::Time t(0, 0);
+  ros::Duration s(1, 0);
+
+  input.push_back(TimeAndTopic(t,0));     // a
+  input.push_back(TimeAndTopic(t+s,1));   // A
+  input.push_back(TimeAndTopic(t+s*3,1)); // B
+  input.push_back(TimeAndTopic(t+s*4,0)); // b
+  input.push_back(TimeAndTopic(t+s*7,1)); // C
+  input.push_back(TimeAndTopic(t+s*8,0)); // c
+  input.push_back(TimeAndTopic(t+s*10,0)); // d
+  input.push_back(TimeAndTopic(t+s*11,1)); // D
+  input.push_back(TimeAndTopic(t+s*13,0)); // e
+  input.push_back(TimeAndTopic(t+s*14,1)); // E
+  output.push_back(TimePair(t+s*4, t+s*3));
+  output.push_back(TimePair(t+s*10, t+s*11));
+
+  ApproximateTimeSynchronizerTest sync_test(input, output, 1);
+  sync_test.run();
+
+  // Queue size 2 (just enough)
+  // Time:     0123456789012345678
+  // Input A:  a...b...c.d..e.
+  // Input B:  .A.B...C...D..E
+  // Output:   .a..b...c..d...
+  //           .A..B...C..D...
+  std::vector<TimePair> output2;
+  output2.push_back(TimePair(t, t+s));
+  output2.push_back(TimePair(t+s*4, t+s*3));
+  output2.push_back(TimePair(t+s*8, t+s*7));
+  output2.push_back(TimePair(t+s*10, t+s*11));
+
+  ApproximateTimeSynchronizerTest sync_test2(input, output2, 2);
+  sync_test2.run();
 }
 
 

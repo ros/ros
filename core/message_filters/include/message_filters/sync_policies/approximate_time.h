@@ -116,7 +116,9 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
   , pivot_(NO_PIVOT)
   , max_interval_duration_(ros::DURATION_MAX)
   , epsilon_(0.1)
+  , has_dropped_messages_(9, false)
   {
+    ROS_ASSERT(queue_size_ > 0);  // The synchronizer will tend to drop many messages with a queue size of 1. At least 2 is recommended.
   }
 
   ApproximateTime(const ApproximateTime& e)
@@ -136,6 +138,7 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
     candidate_end_ = rhs.candidate_end_;
     deques_ = rhs.deques_;
     past_ = rhs.past_;
+    has_dropped_messages_ = rhs.has_dropped_messages_;
 
     return *this;
   }
@@ -159,6 +162,35 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
       {
         // All deques have messages
         process();
+      }
+    }
+    // Check whether we have more messages than allowed in the queue.
+    // Note that during the above call to process(), queue i may contain queue_size_+1 messages.
+    std::vector<typename mpl::at_c<Events, i>::type>& past = boost::get<i>(past_);
+    if (deque.size() + past.size() > queue_size_)
+    {
+      // Cancel ongoing candidate search, if any:
+      num_non_empty_deques_ = 0; // We will recompute it from scratch
+      recover<0>();
+      recover<1>();
+      recover<2>();
+      recover<3>();
+      recover<4>();
+      recover<5>();
+      recover<6>();
+      recover<7>();
+      recover<8>();
+      // Drop the oldest message in the offending topic
+      ROS_ASSERT(!deque.empty());
+      deque.pop_front();
+      has_dropped_messages_[i] = true;
+      if (pivot_ != NO_PIVOT)
+      {
+	// The candidate is no longer valid. Destroy it.
+	candidate_ = Tuple();
+	pivot_ = NO_PIVOT;
+	// There might still be enough messages to create a new candidate:
+	process();
       }
     }
   }
@@ -327,6 +359,28 @@ private:
   }
 
   template<int i>
+  void recover()
+  {
+    if (i >= RealTypeCount::value)
+    {
+      return;
+    }
+
+    std::vector<typename mpl::at_c<Events, i>::type>& v = boost::get<i>(past_);
+    std::deque<typename mpl::at_c<Events, i>::type>& q = boost::get<i>(deques_);
+    while (!v.empty())
+    {
+      q.push_front(v.back());
+      v.pop_back();
+    }
+
+    if (!q.empty())
+    {
+      ++num_non_empty_deques_;
+    }
+  }
+
+  template<int i>
   void recoverAndDelete()
   {
     if (i >= RealTypeCount::value)
@@ -362,9 +416,9 @@ private:
     // Delete this candidate
     candidate_ = Tuple();
     pivot_ = NO_PIVOT;
-    num_non_empty_deques_ = 0; // We will recompute it from scratch
 
     // Recover hidden messages, and delete the ones corresponding to the candidate
+    num_non_empty_deques_ = 0; // We will recompute it from scratch
     recoverAndDelete<0>();
     recoverAndDelete<1>();
     recoverAndDelete<2>();
@@ -465,6 +519,15 @@ private:
       uint32_t start_index;
       getCandidateEnd(end_index, end_time);
       getCandidateStart(start_index, start_time);
+      for (uint32_t i = 0; i < (uint32_t)RealTypeCount::value; i++)
+      {
+	if (i != end_index)
+	{
+	  // No dropped message could have been better to use than the ones we have,
+	  // so it becomes ok to use this topic as pivot in the future
+	  has_dropped_messages_[i] = false;
+	}
+      }
       if (pivot_ == NO_PIVOT)
       {
         // We do not have a candidate
@@ -476,21 +539,25 @@ private:
           dequeDeleteFront(start_index);
           continue;
         }
-        else
-        {
-          // This is a valid candidate, and we don't have any, so take it
-          makeCandidate();
-          candidate_start_ = start_time;
-          candidate_end_ = end_time;
-          pivot_ = end_index;
-          dequeMoveFrontToPast(start_index);
-          //intf("After dequeMoveFrontToPast\n");
-        }
+	if (has_dropped_messages_[end_index])
+	{
+	  // The topic that would become pivot has dropped messages, so it is not a good pivot
+	  dequeDeleteFront(start_index);
+	  continue;
+	}
+	// This is a valid candidate, and we don't have any, so take it
+	makeCandidate();
+	candidate_start_ = start_time;
+	candidate_end_ = end_time;
+	pivot_ = end_index;
+	dequeMoveFrontToPast(start_index);
+	//printf("After dequeMoveFrontToPast\n");
       }
       else
       {
         // We already have a candidate
         // Is this one better than the current candidate?
+	// INVARIANT: has_dropped_messages_ is all false
         if ((end_time - candidate_end_) * (1 + epsilon_) - (start_time
             - candidate_start_) > ros::Duration(0))
         {
@@ -508,6 +575,7 @@ private:
         }
       }
       // INVARIANT: we have a candidate and pivot
+      ROS_ASSERT(pivot_ != NO_PIVOT);
       //printf("start_index == %d, pivot_ == %d\n", start_index, pivot_);
       if (start_index == pivot_)
       {
@@ -534,6 +602,8 @@ private:
 
   ros::Duration max_interval_duration_; // TODO: initialize with a parameter
   double epsilon_;
+
+  std::vector<bool> has_dropped_messages_;
 };
 
 } // namespace sync

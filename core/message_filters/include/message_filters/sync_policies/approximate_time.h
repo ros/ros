@@ -131,6 +131,7 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
     parent_ = rhs.parent_;
     queue_size_ = rhs.queue_size_;
     num_non_empty_deques_ = rhs.num_non_empty_deques_;
+    pivot_time_ = rhs.pivot_time_;
     pivot_ = rhs.pivot_;
     max_interval_duration_ = rhs.max_interval_duration_;
     epsilon_ = rhs.epsilon_;
@@ -550,8 +551,8 @@ private:
 	candidate_start_ = start_time;
 	candidate_end_ = end_time;
 	pivot_ = end_index;
+	pivot_time_ = end_time;
 	dequeMoveFrontToPast(start_index);
-	//printf("After dequeMoveFrontToPast\n");
       }
       else
       {
@@ -562,7 +563,7 @@ private:
             - candidate_start_) > ros::Duration(0))
         {
           // This is not a better candidate, move to the next
-          dequeMoveFrontToPast(start_index);
+	  dequeMoveFrontToPast(start_index);
         }
         else
         {
@@ -571,7 +572,7 @@ private:
           candidate_start_ = start_time;
           candidate_end_ = end_time;
           dequeMoveFrontToPast(start_index);
-          // Keep the same pivot
+          // Keep the same pivot (and pivot time)
         }
       }
       // INVARIANT: we have a candidate and pivot
@@ -582,7 +583,11 @@ private:
         // We have exhausted all possible candidates for this pivot, we now can output the best one
         publishCandidate();
       }
-
+      else if ((end_time - candidate_end_) * (1 + epsilon_) >= (pivot_time_ - candidate_start_))
+      {
+	// We have not exhausted all candidates, but this candidate is already provably optimal
+	publishCandidate();
+      }
     }
   }
 
@@ -597,6 +602,7 @@ private:
   Tuple candidate_;  // NULL if there is no candidate, in which case there is no pivot.
   ros::Time candidate_start_;
   ros::Time candidate_end_;
+  ros::Time pivot_time_;
   uint32_t pivot_;  // Equal to NO_PIVOT if there is no candidate
   boost::mutex data_mutex_;  // Protects all of the above
 

@@ -137,6 +137,32 @@ private:
 //----------------------------------------------------------
 //                   Test Suite
 //----------------------------------------------------------
+TEST(ApproxTimeSync, ExactMatch) {
+  // Input A:  a..b..c
+  // Input B:  A..B..C
+  // Output:   a..b..c
+  //           A..B..C
+  std::vector<TimeAndTopic> input;
+  std::vector<TimePair> output;
+
+  ros::Time t(0, 0);
+  ros::Duration s(1, 0);
+
+  input.push_back(TimeAndTopic(t,0));     // a
+  input.push_back(TimeAndTopic(t,1));   // A
+  input.push_back(TimeAndTopic(t+s*3,0)); // b
+  input.push_back(TimeAndTopic(t+s*3,1)); // B
+  input.push_back(TimeAndTopic(t+s*6,0)); // c
+  input.push_back(TimeAndTopic(t+s*6,1)); // C
+  output.push_back(TimePair(t, t));
+  output.push_back(TimePair(t+s*3, t+s*3));
+  output.push_back(TimePair(t+s*6, t+s*6));
+
+  ApproximateTimeSynchronizerTest sync_test(input, output, 10);
+  sync_test.run();
+}
+
+
 TEST(ApproxTimeSync, PerfectMatch) {
   // Input A:  a..b..c.
   // Input B:  .A..B..C
@@ -216,7 +242,7 @@ TEST(ApproxTimeSync, Acceleration) {
 
 TEST(ApproxTimeSync, DroppedMessages) {
   // Queue size 1 (too small)
-  // Time:     0123456789012345678
+  // Time:     012345678901234
   // Input A:  a...b...c.d..e.
   // Input B:  .A.B...C...D..E
   // Output:   ...b.......d...
@@ -244,7 +270,7 @@ TEST(ApproxTimeSync, DroppedMessages) {
   sync_test.run();
 
   // Queue size 2 (just enough)
-  // Time:     0123456789012345678
+  // Time:     012345678901234
   // Input A:  a...b...c.d..e.
   // Input B:  .A.B...C...D..E
   // Output:   .a..b...c..d...

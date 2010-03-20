@@ -118,6 +118,7 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
   , epsilon_(0.1)
   , has_dropped_messages_(9, false)
   , inter_message_lower_bounds_(9, ros::Duration(0))
+  , warned_about_incorrect_bound_(9, false)
   {
     ROS_ASSERT(queue_size_ > 0);  // The synchronizer will tend to drop many messages with a queue size of 1. At least 2 is recommended.
   }
@@ -142,6 +143,7 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
     past_ = rhs.past_;
     has_dropped_messages_ = rhs.has_dropped_messages_;
     inter_message_lower_bounds_ = rhs.inter_message_lower_bounds_;
+    warned_about_incorrect_bound_ = rhs.warned_about_incorrect_bound_;
 
     return *this;
   }
@@ -150,6 +152,51 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
   {
     parent_ = parent;
   }
+
+  template<int i>
+  void checkInterMessageBound()
+  {
+    namespace mt = ros::message_traits;
+    if (warned_about_incorrect_bound_[i])
+    {
+      return;
+    }
+    std::deque<typename mpl::at_c<Events, i>::type>& deque = boost::get<i>(deques_);
+    std::vector<typename mpl::at_c<Events, i>::type>& v = boost::get<i>(past_);
+    ROS_ASSERT(!deque.empty());
+    const typename mpl::at_c<Messages, i>::type &msg = *(deque.back()).getMessage();
+    ros::Time msg_time = mt::TimeStamp<typename mpl::at_c<Messages, i>::type>::value(msg);
+    ros::Time previous_msg_time;
+    if (deque.size() == (size_t) 1)
+    {
+      if (v.empty())
+      {
+	// We have already published (or have never received) the previous message, we cannot check the bound
+	return;
+      }
+      const typename mpl::at_c<Messages, i>::type &previous_msg = *(v.back()).getMessage();
+      previous_msg_time = mt::TimeStamp<typename mpl::at_c<Messages, i>::type>::value(previous_msg);
+    }
+    else
+    {
+      // There are at least 2 elements in the deque. Check that the gap respects the bound if it was provided.
+      const typename mpl::at_c<Messages, i>::type &previous_msg = *(deque[deque.size()-2]).getMessage();
+      previous_msg_time =  mt::TimeStamp<typename mpl::at_c<Messages, i>::type>::value(previous_msg);
+    }
+    if (msg_time < previous_msg_time)
+    {
+      ROS_WARN_STREAM("Messages of type " << i << " arrived out of order (will print only once)");
+      warned_about_incorrect_bound_[i] = true;
+    }
+    else if ((msg_time - previous_msg_time) < inter_message_lower_bounds_[i])
+    {
+      ROS_WARN_STREAM("Messages of type " << i << " arrived closer (" << (msg_time - previous_msg_time)
+		      << ") than the lower bound you provided (" << inter_message_lower_bounds_[i]
+		      << ") (will print only once)");
+      warned_about_incorrect_bound_[i] = true;
+    }
+  }
+
 
   template<int i>
   void add(const typename mpl::at_c<Events, i>::type& evt)
@@ -166,6 +213,10 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
         // All deques have messages
         process();
       }
+    }
+    else
+    {
+      checkInterMessageBound<i>();
     }
     // Check whether we have more messages than allowed in the queue.
     // Note that during the above call to process(), queue i may contain queue_size_+1 messages.
@@ -772,6 +823,7 @@ private:
 
   std::vector<bool> has_dropped_messages_;
   std::vector<ros::Duration> inter_message_lower_bounds_;
+  std::vector<bool> warned_about_incorrect_bound_;
 };
 
 } // namespace sync

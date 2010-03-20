@@ -117,6 +117,7 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
   , max_interval_duration_(ros::DURATION_MAX)
   , epsilon_(0.1)
   , has_dropped_messages_(9, false)
+  , inter_message_lower_bounds_(9, ros::Duration(0))
   {
     ROS_ASSERT(queue_size_ > 0);  // The synchronizer will tend to drop many messages with a queue size of 1. At least 2 is recommended.
   }
@@ -140,6 +141,7 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
     deques_ = rhs.deques_;
     past_ = rhs.past_;
     has_dropped_messages_ = rhs.has_dropped_messages_;
+    inter_message_lower_bounds_ = rhs.inter_message_lower_bounds_;
 
     return *this;
   }
@@ -201,6 +203,12 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
     // For correctness we only need epsilon > -1.0, but most likely a negative epsilon is a mistake.
     ROS_ASSERT(epsilon >= 0);
     epsilon_ = epsilon;
+  }
+
+  void setInterMessageLowerBound(int i, ros::Duration lower_bound) {
+    // For correctness we only need epsilon > -1.0, but most likely a negative epsilon is a mistake.
+    ROS_ASSERT(lower_bound >= ros::Duration(0,0));
+    inter_message_lower_bounds_[i] = lower_bound;
   }
 
   void setMaxIntervalDuration(ros::Duration max_interval_duration) {
@@ -359,6 +367,33 @@ private:
     //printf("Candidate created\n");
   }
 
+
+  // ASSUMES: num_messages <= past_[i].size()
+  template<int i>
+  void recover(size_t num_messages)
+  {
+    if (i >= RealTypeCount::value)
+    {
+      return;
+    }
+
+    std::vector<typename mpl::at_c<Events, i>::type>& v = boost::get<i>(past_);
+    std::deque<typename mpl::at_c<Events, i>::type>& q = boost::get<i>(deques_);
+    ROS_ASSERT(num_messages <= v.size());
+    while (num_messages > 0)
+    {
+      q.push_front(v.back());
+      v.pop_back();
+      num_messages--;
+    }
+
+    if (!q.empty())
+    {
+      ++num_non_empty_deques_;
+    }
+  }
+
+
   template<int i>
   void recover()
   {
@@ -380,6 +415,7 @@ private:
       ++num_non_empty_deques_;
     }
   }
+
 
   template<int i>
   void recoverAndDelete()
@@ -446,6 +482,7 @@ private:
     return getCandidateBoundary(end_index, end_time, true);
   }
 
+  // ASSUMES: all deques are non-empty
   // end = true: look for the latest head of deque
   //       false: look for the earliest head of deque
   void getCandidateBoundary(uint32_t &index, ros::Time &time, bool end)
@@ -505,6 +542,80 @@ private:
     }
   }
 
+
+  // ASSUMES: we have a pivot and candidate
+  template<int i>
+  ros::Time getVirtualTime()
+  {
+    namespace mt = ros::message_traits;
+
+    if (i >= RealTypeCount::value)
+    {
+      return ros::Time(0,0);  // Dummy return value
+    }
+    ROS_ASSERT(pivot_ != NO_PIVOT);
+
+    std::vector<typename mpl::at_c<Events, i>::type>& v = boost::get<i>(past_);
+    std::deque<typename mpl::at_c<Events, i>::type>& q = boost::get<i>(deques_);
+    if (q.empty())
+    {
+      ROS_ASSERT(!v.empty());  // Because we have a candidate
+      ros::Time last_msg_time = mt::TimeStamp<typename mpl::at_c<Messages, i>::type>::value(*(v.back()).getMessage());
+      ros::Time msg_time_lower_bound = last_msg_time + inter_message_lower_bounds_[i];
+      if (msg_time_lower_bound > pivot_time_)  // Take the max
+      {
+        return msg_time_lower_bound;
+      }
+      return pivot_time_;
+    }
+    ros::Time current_msg_time = mt::TimeStamp<typename mpl::at_c<Messages, i>::type>::value(*(q.front()).getMessage());
+    return current_msg_time;
+  }
+
+
+  // ASSUMES: we have a pivot and candidate
+  void getVirtualCandidateStart(uint32_t &start_index, ros::Time &start_time)
+  {
+    return getVirtualCandidateBoundary(start_index, start_time, false);
+  }
+
+  // ASSUMES: we have a pivot and candidate
+  void getVirtualCandidateEnd(uint32_t &end_index, ros::Time &end_time)
+  {
+    return getVirtualCandidateBoundary(end_index, end_time, true);
+  }
+
+  // ASSUMES: we have a pivot and candidate
+  // end = true: look for the latest head of deque
+  //       false: look for the earliest head of deque
+  void getVirtualCandidateBoundary(uint32_t &index, ros::Time &time, bool end)
+  {
+    namespace mt = ros::message_traits;
+
+    std::vector<ros::Time> virtual_times(9);
+    virtual_times[0] = getVirtualTime<0>();
+    virtual_times[1] = getVirtualTime<1>();
+    virtual_times[2] = getVirtualTime<2>();
+    virtual_times[3] = getVirtualTime<3>();
+    virtual_times[4] = getVirtualTime<4>();
+    virtual_times[5] = getVirtualTime<5>();
+    virtual_times[6] = getVirtualTime<6>();
+    virtual_times[7] = getVirtualTime<7>();
+    virtual_times[8] = getVirtualTime<8>();
+ 
+    time = virtual_times[0];
+    index = 0;
+    for (int i = 0; i < RealTypeCount::value; i++)
+    {
+      if ((virtual_times[i] < time) ^ end)
+      {
+	time = virtual_times[i];
+	index = i;
+      }
+    }
+  }
+
+
   // assumes data_mutex_ is already locked
   void process()
   {
@@ -516,8 +627,7 @@ private:
       //show_internal_state();
       //printf("]\n");
       ros::Time end_time, start_time;
-      uint32_t end_index;
-      uint32_t start_index;
+      uint32_t end_index, start_index;
       getCandidateEnd(end_index, end_time);
       getCandidateStart(start_index, start_time);
       for (uint32_t i = 0; i < (uint32_t)RealTypeCount::value; i++)
@@ -558,12 +668,11 @@ private:
       {
         // We already have a candidate
         // Is this one better than the current candidate?
-	// INVARIANT: has_dropped_messages_ is all false
-        if ((end_time - candidate_end_) * (1 + epsilon_) - (start_time
-            - candidate_start_) > ros::Duration(0))
+        // INVARIANT: has_dropped_messages_ is all false
+        if ((end_time - candidate_end_) * (1 + epsilon_) > (start_time - candidate_start_))
         {
           // This is not a better candidate, move to the next
-	  dequeMoveFrontToPast(start_index);
+          dequeMoveFrontToPast(start_index);
         }
         else
         {
@@ -578,17 +687,69 @@ private:
       // INVARIANT: we have a candidate and pivot
       ROS_ASSERT(pivot_ != NO_PIVOT);
       //printf("start_index == %d, pivot_ == %d\n", start_index, pivot_);
-      if (start_index == pivot_)
+      if (start_index == pivot_)  // TODO: replace with start_time == pivot_time_
       {
         // We have exhausted all possible candidates for this pivot, we now can output the best one
         publishCandidate();
       }
       else if ((end_time - candidate_end_) * (1 + epsilon_) >= (pivot_time_ - candidate_start_))
       {
-	// We have not exhausted all candidates, but this candidate is already provably optimal
-	publishCandidate();
+        // We have not exhausted all candidates, but this candidate is already provably optimal
+        // Indeed, any future candidate must contain the interval [pivot_time_ end_time], which
+        // is already too big.
+        // Note: this case is subsumed by the next, but it may save some unnecessary work and
+        //       it makes things (a little) easier to understand
+        publishCandidate();
       }
-    }
+      else if (num_non_empty_deques_ < (uint32_t)RealTypeCount::value)
+      {
+        uint32_t num_non_empty_deques_before_virtual_search = num_non_empty_deques_;
+
+        // Before giving up, use the rate bounds, if provided, to further try to prove optimality
+        std::vector<int> num_virtual_moves(9,0);
+        while (1)
+        {
+          ros::Time end_time, start_time;
+          uint32_t end_index, start_index;
+          getVirtualCandidateEnd(end_index, end_time);
+          getVirtualCandidateStart(start_index, start_time);
+          if ((end_time - candidate_end_) * (1 + epsilon_) >= (pivot_time_ - candidate_start_))
+          {
+            // We have proved optimality
+            // As above, any future candidate must contain the interval [pivot_time_ end_time], which
+            // is already too big.
+            publishCandidate();  // This cleans up the virtual moves as a byproduct
+            break;  // From the while(1) loop only
+          }
+          if ((end_time - candidate_end_) * (1 + epsilon_) < (start_time - candidate_start_))
+          {
+            // We cannot prove optimality
+            // Indeed, we have a virtual (i.e. optimistic) candidate that is better than the current
+            // candidate
+            // Cleanup the virtual search:
+            num_non_empty_deques_ = 0; // We will recompute it from scratch
+	    recover<0>(num_virtual_moves[0]);
+	    recover<1>(num_virtual_moves[1]);
+	    recover<2>(num_virtual_moves[2]);
+	    recover<3>(num_virtual_moves[3]);
+	    recover<4>(num_virtual_moves[4]);
+	    recover<5>(num_virtual_moves[5]);
+	    recover<6>(num_virtual_moves[6]);
+	    recover<7>(num_virtual_moves[7]);
+	    recover<8>(num_virtual_moves[8]);
+            ROS_ASSERT(num_non_empty_deques_before_virtual_search == num_non_empty_deques_);
+            break;
+          }
+          // Note: we cannot reach this point with start_index == pivot_ since in that case we would
+          //       have start_time == pivot_time, in which case the two tests above are the negation
+          //       of each other, so that one must be true. Therefore the while loop always terminates.
+	  ROS_ASSERT(start_index != pivot_);
+	  ROS_ASSERT(start_time < pivot_time_);
+          dequeMoveFrontToPast(start_index);
+          num_virtual_moves[start_index]++;
+        } // while(1)
+      }
+    } // while(num_non_empty_deques_ == (uint32_t)RealTypeCount::value)
   }
 
   Sync* parent_;
@@ -610,6 +771,7 @@ private:
   double epsilon_;
 
   std::vector<bool> has_dropped_messages_;
+  std::vector<ros::Duration> inter_message_lower_bounds_;
 };
 
 } // namespace sync

@@ -31,7 +31,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: test_pubsub_order.py 2255 2008-09-29 22:37:08Z sfkwc $
+# Revision $Id$
 
 NAME = 'test_gentools'
 import roslib; roslib.load_manifest('test_roslib')

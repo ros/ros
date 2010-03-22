@@ -168,7 +168,7 @@ def _generate_node_dotcode(node, g, quiet):
     
 def _quiet_filter(name):
     # ignore viewers
-    for n in ['/pr2_dashboard', '/rviz', '/rosout', '/cpu_monitor', '/monitor','/hd_monitor', '/rxloggerlevel', '/clock']:
+    for n in ['/diag_agg', '/runtime_logger', '/pr2_dashboard', '/rviz', '/rosout', '/cpu_monitor', '/monitor','/hd_monitor', '/rxloggerlevel', '/clock']:
         if n in name:
             return False
     return True

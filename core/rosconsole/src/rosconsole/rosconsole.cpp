@@ -74,7 +74,7 @@ const char* g_format_string = "[${severity}] [${time}]: ${message}";
 
 struct Token
 {
-  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event) = 0;
+  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event) = 0;
 };
 typedef boost::shared_ptr<Token> TokenPtr;
 typedef std::vector<TokenPtr> V_Token;
@@ -93,7 +93,7 @@ struct FixedToken : public Token
   : str_(str)
   {}
 
-  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
     return str_.c_str();
   }
@@ -107,7 +107,7 @@ struct FixedMapToken : public Token
   : str_(str)
   {}
 
-  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
     M_string::iterator it = g_extra_fixed_tokens.find(str_);
     if (it == g_extra_fixed_tokens.end())
@@ -123,7 +123,7 @@ struct FixedMapToken : public Token
 
 struct PlaceHolderToken : public Token
 {
-  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
     return "PLACEHOLDER";
   }
@@ -131,7 +131,7 @@ struct PlaceHolderToken : public Token
 
 struct SeverityToken : public Token
 {
-  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
     if (event->getLevel() == log4cxx::Level::getFatal())
     {
@@ -160,7 +160,7 @@ struct SeverityToken : public Token
 
 struct MessageToken : public Token
 {
-  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
     return event->getMessage().c_str();
   }
@@ -168,35 +168,35 @@ struct MessageToken : public Token
 
 struct TimeToken : public Token
 {
-  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
     std::stringstream ss;
     ss << ros::Time::now();
-    return ss.str().c_str();
+    return ss.str();
   }
 };
 
 struct ThreadToken : public Token
 {
-  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
     std::stringstream ss;
     ss << boost::this_thread::get_id();
-    return ss.str().c_str();
+    return ss.str();
   }
 };
 
 struct LoggerToken : public Token
 {
-  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
-    return event->getLoggerName().c_str();
+    return event->getLoggerName();
   }
 };
 
 struct FileToken : public Token
 {
-  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
     return event->getLocationInformation().getFileName();
   }
@@ -204,19 +204,19 @@ struct FileToken : public Token
 
 struct FunctionToken : public Token
 {
-  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
-    return event->getLocationInformation().getMethodName().c_str();
+    return event->getLocationInformation().getMethodName();
   }
 };
 
 struct LineToken : public Token
 {
-  virtual const char* getString(const log4cxx::spi::LoggingEventPtr& event)
+  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
     std::stringstream ss;
     ss << event->getLocationInformation().getLineNumber();
-    return ss.str().c_str();
+    return ss.str();
   }
 };
 

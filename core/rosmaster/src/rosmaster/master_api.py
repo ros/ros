@@ -80,7 +80,7 @@ VAL = 2
 
 _logger = logging.getLogger("rosmaster.master")
 
-LOG_API = True
+LOG_API = False
 
 def mloginfo(msg, *args):
     """

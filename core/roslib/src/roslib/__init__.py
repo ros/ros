@@ -49,8 +49,3 @@ numerous ROS tools (e.g. rostopic).
 
 from roslib.launcher import load_manifest
 
-# bootstrapping code for rosdeb environments
-import os
-if 'ROS_ROOT' not in os.environ or os.environ['ROS_ROOT'] == '/usr/lib/ros':
-    import roslib.rosenv
-    roslib.rosenv.setup_default_environment()

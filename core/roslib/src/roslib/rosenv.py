@@ -188,36 +188,6 @@ def resolve_paths(paths):
     return os.pathsep.join([resolve_path(p) for p in paths.split(os.pathsep)])
 
 
-def setup_default_environment():
-  """
-  Bootstrap common ROS environment variables. For now, only affects
-  os.environ if the environment has a rosdeb-based installation. It
-  does not check for remapping args that may also affect
-  ROS_MASTER_URI as those have precedence regardless.
-  """
-  default_ros_root = "/usr/lib/ros"
-  if os.path.isdir(default_ros_root):
-    if 'ROS_ROOT' not in os.environ:
-      os.environ['ROS_ROOT'] = default_ros_root
-    if 'ROS_PACKAGE_PATH' not in os.environ:
-      os.environ['ROS_PACKAGE_PATH'] = os.path.join(default_ros_root, "pkgs")
-    if 'ROS_MASTER_URI' not in os.environ:
-      os.environ['ROS_MASTER_URI'] = "http://localhost:%d" % (10000+os.geteuid(),)
-    if 'ROS_LOG_DIR' not in os.environ:
-      os.environ['ROS_LOG_DIR'] = os.path.join(os.environ.get("HOME"), ".ros", "log")
-
-    ros_root = os.environ.get("ROS_ROOT")
-
-    if "PYTHONPATH" in os.environ:
-      os.environ['PYTHONPATH'] = os.environ['PYTHONPATH'] + ":" + os.path.join(ros_root, "python") + ":" + os.path.join(ros_root, "lib")
-    else:
-      os.environ['PYTHONPATH'] = os.path.join(ros_root, "python") + ":" + os.path.join(ros_root, "lib")
-
-    if "LD_LIBRARY_PATH" in os.environ:
-      os.environ['LD_LIBRARY_PATH'] = os.path.join(ros_root, "lib") + ":" + os.environ["LD_LIBRARY_PATH"]
-    else:
-      os.environ['LD_LIBRARY_PATH'] = os.path.join(ros_root, "lib")
-  
 def get_ros_home(env=None):
     """
     Get directory location of '.ros' directory (aka ROS home).

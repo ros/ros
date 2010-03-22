@@ -36,16 +36,10 @@
 ## The common syntax is 'from ros import foo', where foo is a ROS package
 ## name.
 
-import os
 import sys
 
 import roslib
 
-# bootstrapping code for rosdeb environments
-if 'ROS_ROOT' not in os.environ or os.environ['ROS_ROOT'] == '/usr/lib/ros':
-    import roslib.env
-    roslib.env.setup_default_environment()
-    
 ## @internal
 class Module(object):
     def __init__(self, wrapped):

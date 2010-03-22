@@ -88,7 +88,7 @@ def is_publishers_list(paramName):
 
 _logger = logging.getLogger("rospy.masterslave")
 
-LOG_API = True
+LOG_API = False
 
 def apivalidate(error_return_value, validators=()):
     """

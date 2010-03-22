@@ -47,6 +47,7 @@ namespace ros
 {
 
 ServiceClientLink::ServiceClientLink()
+: persistent_(false)
 {
 }
 
@@ -80,6 +81,15 @@ bool ServiceClientLink::handleHeader(const Header& header)
     connection_->sendHeaderError(msg);
 
     return false;
+  }
+
+  std::string persistent;
+  if (header.getValue("persistent", persistent))
+  {
+    if (persistent == "1" || persistent == "true")
+    {
+      persistent_ = true;
+    }
   }
 
   ROSCPP_LOG_DEBUG("Service client [%s] wants service [%s] with md5sum [%s]", client_callerid.c_str(), service.c_str(), md5sum.c_str());
@@ -202,7 +212,14 @@ void ServiceClientLink::onResponseWritten(const ConnectionPtr& conn)
 {
   ROS_ASSERT(conn == connection_);
 
-  connection_->read(4, boost::bind(&ServiceClientLink::onRequestLength, this, _1, _2, _3, _4));
+  if (persistent_)
+  {
+    connection_->read(4, boost::bind(&ServiceClientLink::onRequestLength, this, _1, _2, _3, _4));
+  }
+  else
+  {
+    connection_->drop(Connection::Destructing);
+  }
 }
 
 void ServiceClientLink::processResponse(bool ok, const SerializedMessage& res)

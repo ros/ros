@@ -4,6 +4,7 @@ rosbuild_init()
 rosbuild_genmsg()
 # unit tests
 rosbuild_add_pyunit(test/test_md5sums.py)
+rosbuild_add_pyunit(test/test_roslib.py)
 rosbuild_add_pyunit(test/test_roslib_exceptions.py)
 rosbuild_add_pyunit(test/test_roslib_genpy.py)
 rosbuild_add_pyunit(test/test_roslib_gentools.py)

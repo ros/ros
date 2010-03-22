@@ -53,7 +53,14 @@ class RoslibScriptutilTest(unittest.TestCase):
             self.assertEquals(['foo'], myargv(['foo','-bar:=baz']))
         finally:
             sys.argv = orig_argv
-    
+
+    def test_interactive(self):
+        import roslib.scriptutil
+        self.failIf(roslib.scriptutil.is_interactive(), "interactive should be false by default")
+        for v in [True, False]:
+            roslib.scriptutil.set_interactive(v)        
+            self.assertEquals(v, roslib.scriptutil.is_interactive())
+        
 if __name__ == '__main__':
     rostest.unitrun('test_roslib', 'test_scriptutil', RoslibScriptutilTest, coverage_packages=['roslib.scriptutil'])
 

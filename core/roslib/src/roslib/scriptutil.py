@@ -61,6 +61,32 @@ PRODUCT = 'ros'
 ## caller ID for master calls where caller ID is not vital
 _GLOBAL_CALLER_ID = '/script'
 
+_is_interactive = False
+def set_interactive(interactive):
+    """
+    General API for a script specifying that it is being run in an
+    interactive environment. Many libraries may wish to change their
+    behavior based on being interactive (e.g. disabling signal
+    handlers on Ctrl-C).
+
+    @param interactive: True if current script is being run in an interactive shell
+    @type  interactive: bool
+    """
+    global _is_interactive
+    _is_interactive = interactive
+
+def is_interactive():
+    """
+    General API for a script specifying that it is being run in an
+    interactive environment. Many libraries may wish to change their
+    behavior based on being interactive (e.g. disabling signal
+    handlers on Ctrl-C).
+
+    @return: True if interactive flag has been set
+    @rtype: bool
+    """
+    return _is_interactive
+
 def myargv(argv=None):
     """
     Remove ROS remapping arguments from sys.argv arguments.
@@ -95,6 +121,10 @@ def script_resolve_name(script_name, name):
 
 def get_master():
     """
+    Get an XMLRPC handle to the Master. It is recommended to use the
+    `roslib.masterapi` library instead, as it provides many
+    conveniences.
+    
     @return: XML-RPC proxy to ROS master
     @rtype: xmlrpclib.ServerProxy
     """

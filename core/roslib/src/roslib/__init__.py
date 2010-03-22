@@ -48,4 +48,4 @@ numerous ROS tools (e.g. rostopic).
 """
 
 from roslib.launcher import load_manifest
-
+from roslib.scriptutil import is_interactive, set_interactive

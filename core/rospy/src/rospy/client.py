@@ -44,6 +44,7 @@ import sys
 import time
 import random
 
+import roslib
 import roslib.msg
 import roslib.names
 import roslib.network
@@ -159,6 +160,10 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
         rospy in an environment where you need to control your own
         signal handling (e.g. WX). If you set this to True, you should
         call rospy.signal_shutdown(reason) to initiate clean shutdown.
+
+        NOTE: disable_signals is overridden to True if
+        roslib.is_interactive() is True.
+        
     @type  disable_signals: bool
     
     @param disable_rostime: for rostests only, suppresses
@@ -187,6 +192,10 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
             raise rospy.exceptions.ROSException("rospy.init_node() has already been called with different arguments: "+str(_init_node_args))
         else:
             return #already initialized
+
+    # for scripting environments, we don't want to use the ROS signal
+    # handlers
+    disable_signals = disable_signals or roslib.is_interactive()
     _init_node_args = (name, argv, anonymous, log_level, disable_rostime, disable_signals)
         
     if not disable_signals:

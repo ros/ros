@@ -55,7 +55,7 @@ import roslaunch.pmon
 import roslaunch.server
 import roslaunch.xmlloader 
 
-#TODOXXX: probably move process listener infrastructure into here
+#TODO: probably move process listener infrastructure into here
 
 # TODO: remove after wg_hardware_roslaunch has been updated
 # qualification accesses this API, which has been relocated
@@ -67,6 +67,8 @@ class ROSLaunchParent(object):
     is responsible for loading the launch files, assigning machines,
     and then starting up any remote processes. The __main__ method
     delegates most of runtime to ROSLaunchParent.
+
+    This must be called from the Python Main thread due to signal registration.    
     """
 
     def __init__(self, run_id, roslaunch_files, is_core=False, port=None, local_only=False, process_listeners=None):

@@ -36,6 +36,8 @@
 Process monitoring implementation for roslaunch.
 """
 
+from __future__ import with_statement
+
 import os
 import sys
 import time
@@ -46,6 +48,7 @@ import signal
 import atexit
 from threading import Thread, RLock, Lock
 
+import roslib
 from roslaunch.core import printlog, printlog_bold, printerrlog, RLException
 
 logger = logging.getLogger("roslaunch.pmon")          
@@ -149,10 +152,16 @@ def rl_signal(sig, stackframe):
         except KeyboardInterrupt:
             pass #filter out generic keyboard interrupt handler
         
-_signal_chain[signal.SIGTERM] = signal.signal(signal.SIGTERM, rl_signal)
-_signal_chain[signal.SIGINT]  = signal.signal(signal.SIGINT, rl_signal)
-_signal_chain[signal.SIGHUP]  = signal.signal(signal.SIGHUP, rl_signal)        
-atexit.register(pmon_shutdown)
+_atexit_registered = False
+def _init_signal_handlers():
+    global _atexit_registered
+    if not roslib.is_interactive():
+        _signal_chain[signal.SIGTERM] = signal.signal(signal.SIGTERM, rl_signal)
+        _signal_chain[signal.SIGINT]  = signal.signal(signal.SIGINT, rl_signal)
+        _signal_chain[signal.SIGHUP]  = signal.signal(signal.SIGHUP, rl_signal)
+    if not _atexit_registered:
+        atexit.register(pmon_shutdown)
+        _atexit_registered = True
 
 # ##############################################################
 
@@ -160,6 +169,9 @@ class Process(object):
     """
     Basic process representation for L{ProcessMonitor}. Must be subclassed
     to provide actual start()/stop() implementations.
+
+    Constructor *must* be called from the Python Main thread in order
+    for signal handlers to register properly.
     """
 
     def __init__(self, package, name, args, env, respawn=False, required=False):
@@ -173,6 +185,8 @@ class Process(object):
         self.exit_code = None
         # for keeping track of respawning
         self.spawn_count = 0
+
+        _init_signal_handlers()
 
     # NOTE: get_info() is going to have to be sufficient for
     # generating respawn requests, so we must be complete about it
@@ -296,16 +310,13 @@ class ProcessMonitor(Thread):
         """
         logger.info("ProcessMonitor.register[%s]"%p.name)
         e = None
-        try:
-            self.plock.acquire()
+        with self.plock:
             if self.has_process(p.name):
                 e = RLException("cannot add process with duplicate name '%s'"%p.name)
             elif self.is_shutdown:
                 e = RLException("cannot add process [%s] after process monitor has been shut down"%p.name)
             else:
                 self.procs.append(p)
-        finally:
-            self.plock.release()
         if e:
             logger.error("ProcessMonitor.register[%s] failed %s"%(p.name, e))
             raise e
@@ -335,11 +346,8 @@ class ProcessMonitor(Thread):
         
     def unregister(self, p):
         logger.info("ProcessMonitor.unregister[%s] starting"%p.name)                
-        try:
-            self.plock.acquire()
+        with self.plock:
             self.procs.remove(p)
-        finally:
-            self.plock.release()
         logger.info("ProcessMonitor.unregister[%s] complete"%p.name)             
 
     def has_process(self, name):
@@ -355,11 +363,8 @@ class ProcessMonitor(Thread):
         @return: process registered under \a name, or None
         @rtype: L{Process}
         """
-        try:
-            self.plock.acquire()
+        with self.plock:
             v = [p for p in self.procs if p.name == name]
-        finally:
-            self.plock.release()            
         if v:
             return v[0]
 
@@ -397,8 +402,7 @@ class ProcessMonitor(Thread):
             raise RLException("kill_process takes in a process name but was given: %s"%name)
         logger.debug("ProcessMonitor.kill_process[%s]"%name)
         printlog("[%s] kill requested"%name)
-        try:
-            self.plock.acquire()
+        with self.plock:
             p = self.get_process(name)
             if p:
                 try:
@@ -409,8 +413,6 @@ class ProcessMonitor(Thread):
                 return True
             else:
                 return False
-        finally:
-            self.plock.release()
         
     def shutdown(self):
         """
@@ -423,11 +425,8 @@ class ProcessMonitor(Thread):
         """
         @return [str]: list of active process names
         """
-        try:
-            self.plock.acquire()
+        with self.plock:
             retval = [p.name for p in self.procs]
-        finally:
-            self.plock.release()
         return retval
 
     def get_process_names_with_spawn_count(self):
@@ -438,13 +437,10 @@ class ProcessMonitor(Thread):
         and their spawn count.
         @rtype: [[(str, int),], [(str,int),]]
         """
-        try:
-            self.plock.acquire()
+        with self.plock:
             actives = [(p.name, p.spawn_count) for p in self.procs]
             deads = [(p.name, p.spawn_count) for p in self.dead_list]
             retval = [actives, deads]
-        finally:
-            self.plock.release()
         return retval
 
     def mainthread_spin_once(self):
@@ -497,11 +493,8 @@ class ProcessMonitor(Thread):
         dead = []
         respawn = []
         while not self.is_shutdown:
-            try: #copy self.procs
-                plock.acquire()
+            with plock: #copy self.procs
                 procs = self.procs[:]
-            finally:
-                plock.release()
             if self.is_shutdown:
                 break
 
@@ -547,12 +540,8 @@ class ProcessMonitor(Thread):
                     d.stop([])
 
                     # save process data to dead list 
-                    plock.acquire()
-                    try:
+                    with plock:
                         self.dead_list.append(DeadProcess(d))
-                    finally:
-                        plock.release()
-                    
                 except:
                     logger.error(traceback.format_exc())
                     
@@ -587,9 +576,7 @@ class ProcessMonitor(Thread):
         q = Queue.Queue()
         q.join()
         
-        try:
-            self.plock.acquire()
-            
+        with self.plock:
             # make copy of core_procs for threadsafe usage
             core_procs = self.core_procs[:]
             logger.info("ProcessMonitor._post_run %s: remaining procs are %s"%(self, self.procs))
@@ -597,8 +584,6 @@ class ProcessMonitor(Thread):
             # enqueue all non-core procs in reverse order for parallel kill
             # #526/885: ignore core procs
             [q.put(p) for p in reversed(self.procs) if not p in core_procs]
-        finally:
-            self.plock.release()
 
         # use 10 workers
         killers = []
@@ -623,13 +608,10 @@ class ProcessMonitor(Thread):
 
         # delete everything except dead_list
         logger.info("ProcessMonitor exit: cleaning up data structures and signals")
-        try:
-            self.plock.acquire()
+        with self.plock:
             del core_procs[:]
             del self.procs[:]
             del self.core_procs[:]
-        finally:
-            self.plock.release()
             
         reacquire_signals = self.reacquire_signals
         if reacquire_signals:

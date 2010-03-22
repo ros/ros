@@ -587,12 +587,16 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         @rtype: ([str], [str])
         @raise RLException: if launch fails (e.g. run_id parameter does
         not match ID on parameter server)
-        """        
-        self._setup()        
-        succeeded, failed = self._launch_nodes()
-        # inform process monitor that we are done with process registration
-        self.pm.registrations_complete()
-        return succeeded, failed 
+        """
+        try:
+            self._setup()        
+            succeeded, failed = self._launch_nodes()
+            # inform process monitor that we are done with process registration
+            self.pm.registrations_complete()
+            return succeeded, failed
+        except KeyboardInterrupt:
+            self.stop()
+            raise
 
     def run_test(self, test):
         """

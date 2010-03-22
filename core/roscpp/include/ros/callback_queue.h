@@ -45,6 +45,7 @@
 #include <boost/thread/tss.hpp>
 
 #include <list>
+#include <deque>
 
 namespace ros
 {
@@ -147,7 +148,8 @@ protected:
     bool marked_for_removal;
   };
   typedef std::list<CallbackInfo> L_CallbackInfo;
-  L_CallbackInfo callbacks_;
+  typedef std::deque<CallbackInfo> D_CallbackInfo;
+  D_CallbackInfo callbacks_;
   boost::mutex mutex_;
   boost::condition_variable condition_;
 

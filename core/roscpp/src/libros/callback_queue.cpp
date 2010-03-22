@@ -166,7 +166,7 @@ void CallbackQueue::removeByID(uint64_t removal_id)
     {
       boost::unique_lock<boost::shared_mutex> rw_lock(id_info->calling_rw_mutex);
       boost::mutex::scoped_lock lock(mutex_);
-      L_CallbackInfo::iterator it = callbacks_.begin();
+      D_CallbackInfo::iterator it = callbacks_.begin();
       for (; it != callbacks_.end();)
       {
         CallbackInfo& info = *it;
@@ -236,7 +236,7 @@ void CallbackQueue::callOne(ros::WallDuration timeout)
       }
     }
 
-    L_CallbackInfo::iterator it = callbacks_.begin();
+    D_CallbackInfo::iterator it = callbacks_.begin();
     for (; it != callbacks_.end();)
     {
       CallbackInfo& info = *it;

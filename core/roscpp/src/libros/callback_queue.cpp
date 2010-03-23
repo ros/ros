@@ -190,8 +190,8 @@ void CallbackQueue::removeByID(uint64_t removal_id)
   // If we're being called from within a callback, we need to remove the callbacks that match the id that have already been
   // popped off the queue
   {
-    L_CallbackInfo::iterator it = tls_->callbacks.begin();
-    L_CallbackInfo::iterator end = tls_->callbacks.end();
+    D_CallbackInfo::iterator it = tls_->callbacks.begin();
+    D_CallbackInfo::iterator end = tls_->callbacks.end();
     for (; it != end; ++it)
     {
       CallbackInfo& info = *it;
@@ -263,8 +263,14 @@ void CallbackQueue::callOne(ros::WallDuration timeout)
     }
   }
 
+  bool was_empty = tls->callbacks.empty();
   tls->callbacks.push_back(cb_info);
-  callOneCB();
+  if (was_empty)
+  {
+    tls->cb_it = tls->callbacks.begin();
+  }
+
+  callOneCB(tls);
 }
 
 void CallbackQueue::callAvailable(ros::WallDuration timeout)
@@ -293,29 +299,30 @@ void CallbackQueue::callAvailable(ros::WallDuration timeout)
       }
     }
 
+    bool was_empty = tls->callbacks.empty();
+
     tls->callbacks.insert(tls->callbacks.end(), callbacks_.begin(), callbacks_.end());
     callbacks_.clear();
+
+    if (was_empty)
+    {
+      tls->cb_it = tls->callbacks.begin();
+    }
   }
 
   while (!tls->callbacks.empty())
   {
-    callOneCB();
+    callOneCB(tls);
   }
 }
 
-void CallbackQueue::callOneCB()
+void CallbackQueue::callOneCB(TLS* tls)
 {
-  TLS* tls = tls_.get();
-
   // Check for a recursive call.  If recursive, increment the current iterator.  Otherwise
   // set the iterator it the beginning of the thread-local callbacks
   if (tls->calling_in_this_thread == 0xffffffffffffffffULL)
   {
     tls->cb_it = tls->callbacks.begin();
-  }
-  else
-  {
-    ++tls->cb_it;
   }
 
   if (tls->cb_it == tls->callbacks.end())

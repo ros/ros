@@ -125,7 +125,9 @@ public:
 
 protected:
   void setupTLS();
-  void callOneCB();
+
+  struct TLS;
+  void callOneCB(TLS* tls);
 
   struct IDInfo
   {
@@ -163,8 +165,8 @@ protected:
     , cb_it(callbacks.end())
     {}
     uint64_t calling_in_this_thread;
-    L_CallbackInfo callbacks;
-    L_CallbackInfo::iterator cb_it;
+    D_CallbackInfo callbacks;
+    D_CallbackInfo::iterator cb_it;
   };
   boost::thread_specific_ptr<TLS> tls_;
 

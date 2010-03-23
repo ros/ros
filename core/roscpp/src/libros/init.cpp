@@ -272,7 +272,7 @@ void start()
   g_ok = true;
 
   bool enable_debug = false;
-  const char* enable_debug_env = getenv("ROS_ENABLE_DEBUG");
+  const char* enable_debug_env = getenv("ROSCPP_ENABLE_DEBUG");
   if (enable_debug_env)
   {
     try

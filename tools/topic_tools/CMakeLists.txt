@@ -30,6 +30,7 @@ rosbuild_add_executable(test/test_shapeshifter test/test_shapeshifter.cpp)
 rosbuild_add_gtest_build_flags(test/test_shapeshifter)
 target_link_libraries(test/test_shapeshifter topic_tools)
 
+rosbuild_add_rostest(test/shapeshifter.test)
 rosbuild_add_rostest(test/throttle.test)
 rosbuild_add_rostest(test/drop.test)
 rosbuild_add_rostest(test/relay.test)

@@ -62,13 +62,21 @@ public:
   virtual void addCallback(const CallbackInterfacePtr& callback, uint64_t removal_id = 0);
   virtual void removeByID(uint64_t removal_id);
 
+  enum CallOneResult
+  {
+    Called,
+    TryAgain,
+    Disabled,
+    Empty,
+  };
+
   /**
    * \brief Pop a single callback off the front of the queue and invoke it.  If the callback was not ready to be called,
    * pushes it back onto the queue.
    */
-  void callOne()
+  CallOneResult callOne()
   {
-    callOne(ros::WallDuration());
+    return callOne(ros::WallDuration());
   }
 
   /**
@@ -79,7 +87,7 @@ public:
    * \param timeout The amount of time to wait for a callback to be available.  If there is already a callback available,
    * this parameter does nothing.
    */
-  void callOne(ros::WallDuration timeout);
+  CallOneResult callOne(ros::WallDuration timeout);
 
   /**
    * \brief Invoke all callbacks currently in the queue.  If a callback was not ready to be called, pushes it back onto the queue.
@@ -127,7 +135,7 @@ protected:
   void setupTLS();
 
   struct TLS;
-  void callOneCB(TLS* tls);
+  CallOneResult callOneCB(TLS* tls);
 
   struct IDInfo
   {

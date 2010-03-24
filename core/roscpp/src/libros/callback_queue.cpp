@@ -208,7 +208,7 @@ void CallbackQueue::removeByID(uint64_t removal_id)
   }
 }
 
-void CallbackQueue::callOne(ros::WallDuration timeout)
+CallbackQueue::CallOneResult CallbackQueue::callOne(ros::WallDuration timeout)
 {
   setupTLS();
   TLS* tls = tls_.get();
@@ -220,7 +220,7 @@ void CallbackQueue::callOne(ros::WallDuration timeout)
 
     if (!enabled_)
     {
-      return;
+      return Disabled;
     }
 
     if (callbacks_.empty())
@@ -230,9 +230,14 @@ void CallbackQueue::callOne(ros::WallDuration timeout)
         condition_.timed_wait(lock, boost::posix_time::microseconds(timeout.toSec() * 1000000.0f));
       }
 
-      if (callbacks_.empty() || !enabled_)
+      if (callbacks_.empty())
       {
-        return;
+        return Empty;
+      }
+
+      if (!enabled_)
+      {
+        return Disabled;
       }
     }
 
@@ -259,7 +264,7 @@ void CallbackQueue::callOne(ros::WallDuration timeout)
 
     if (!cb_info.callback)
     {
-      return;
+      return TryAgain;
     }
   }
 
@@ -270,7 +275,7 @@ void CallbackQueue::callOne(ros::WallDuration timeout)
     tls->cb_it = tls->callbacks.begin();
   }
 
-  callOneCB(tls);
+  return callOneCB(tls);
 }
 
 void CallbackQueue::callAvailable(ros::WallDuration timeout)
@@ -316,7 +321,7 @@ void CallbackQueue::callAvailable(ros::WallDuration timeout)
   }
 }
 
-void CallbackQueue::callOneCB(TLS* tls)
+CallbackQueue::CallOneResult CallbackQueue::callOneCB(TLS* tls)
 {
   // Check for a recursive call.  If recursive, increment the current iterator.  Otherwise
   // set the iterator it the beginning of the thread-local callbacks
@@ -327,7 +332,7 @@ void CallbackQueue::callOneCB(TLS* tls)
 
   if (tls->cb_it == tls->callbacks.end())
   {
-    return;
+    return Empty;
   }
 
   ROS_ASSERT(!tls->callbacks.empty());
@@ -362,12 +367,18 @@ void CallbackQueue::callOneCB(TLS* tls)
     {
       boost::mutex::scoped_lock lock(mutex_);
       callbacks_.push_back(info);
+
+      return TryAgain;
     }
+
+    return Called;
   }
   else
   {
     tls->cb_it = tls->callbacks.erase(tls->cb_it);
   }
+
+  return Called;
 }
 
 }

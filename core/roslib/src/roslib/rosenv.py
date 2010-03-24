@@ -54,9 +54,8 @@ ROS_BINDEPS_PATH = "ROS_BINDEPS_PATH"
 ROS_BOOST_ROOT = "ROS_BOOST_ROOT"
 
 # Per session
-## @deprecated Replaced by ROS_HOSTNAME, with equivalent functionality
-ROS_IP           ="ROS_IP"
 ## hostname/address to bind XML-RPC services to. 
+ROS_IP           ="ROS_IP"
 ROS_HOSTNAME     ="ROS_HOSTNAME"
 ROS_NAMESPACE    ="ROS_NAMESPACE"
 ## directory in which log files are written

@@ -11,8 +11,14 @@
   <review status="doc reviewed" notes=""/>
   <url>http://ros.org/wiki/rosbag</url>
 
+  <depend package="std_msgs"/>
   <depend package="rosrecord"/>
   <depend package="rosbagmigration"/>
+
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lrosbag"/>
+  </export>
+
 
 </package>
 

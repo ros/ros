@@ -56,21 +56,6 @@ namespace rosbag
 {
   typedef unsigned long long pos_t;
 
-  struct MsgInfo
-  {
-    std::string topic;
-    std::string msg_def;
-    std::string md5sum;
-    std::string datatype;
-  };
-  
-  struct IndexEntry
-  {
-    ros::Time time;
-    pos_t    pos;
-  };
-
-
   namespace bagmode
   {
     //! Enumerated modes
@@ -83,6 +68,32 @@ namespace rosbag
       };
   }
 
+
+  //! Struct to store message information
+  struct MsgInfo
+  {
+    std::string topic;
+    std::string msg_def;
+    std::string md5sum;
+    std::string datatype;
+  };
+  
+  //! Struct to store index information
+  struct IndexEntry
+  {
+    ros::Time time;
+    pos_t    pos;
+  };
+
+
+  class MessageInstance;
+  class MessageInstanceCompare;
+
+  //! Typedef for index: map of topic_name -> list of MessageInstance
+  typedef std::multiset<MessageInstance, MessageInstanceCompare> MessageList;
+
+  //! Intended typedef to use for the Bag Index.
+  typedef std::map<std::string, MessageList> BagIndex;
 
   //! Base class for rosbag exceptions
   class Exception : public std::runtime_error {};
@@ -102,13 +113,6 @@ namespace rosbag
   //  wrong type
   class InstantiateException : public Exception {};
 
-  class Bag;
-  class MessageInstance;
-  struct MessageInstanceCompare;
-
-  //! Typedef for index: map of topic_name -> list of MessageInstance
-  typedef std::multiset<MessageInstance, MessageInstanceCompare> MessageList;
-  typedef std::map<std::string, MessageList> BagIndex;
 
   //! Class for writinging to a bagfile
   class Bag
@@ -162,23 +166,24 @@ namespace rosbag
      */
     void write(const std::string& topic_name, ros::Time time, const MessageInstance& msg);
 
-    
+
+    //! Return a MessageList using a subset of topics
     MessageList getMessageListByTopic(const std::vector<std::string>& topics,
                              const ros::Time& start_time = ros::TIME_MIN, 
                              const ros::Time& end_time = ros::TIME_MAX);
 
+    //! Return a MessageList using a subset of types
     MessageList getMessageListByType(const std::vector<std::string>& types,
                              const ros::Time& start_time = ros::TIME_MIN, 
                              const ros::Time& end_time = ros::TIME_MAX);
 
   protected:
+    //! Actually try to load a record from a particular offset
     template <class T>
     boost::shared_ptr<T const> instantiate(uint64_t pos)
     {
 
-      boost::shared_ptr<T const> p;
-
-      ROS_ERROR_STREAM("Seeking to " << pos);
+      boost::shared_ptr<T> p;
 
       read_stream_.seekg(pos, std::ios::beg);
 
@@ -246,11 +251,11 @@ namespace rosbag
       // Read in the message body
       read_stream_.read((char*)message_buf_, message_buf_len_);
 
-      boost::shared_ptr<T> p2 = boost::shared_ptr<T>(new T());
-      p2->__serialized_length = message_buf_len_;
-      p2->deserialize(message_buf_);
+      p = boost::shared_ptr<T>(new T());
+      p->__serialized_length = message_buf_len_;
+      p->deserialize(message_buf_);
 
-      return p2;
+      return p;
 
     }
 
@@ -375,10 +380,10 @@ namespace rosbag
      * Templated instantiate
      */
     template <class T>
-    boost::shared_ptr<T const> instantiate()
+    boost::shared_ptr<T const> instantiate() const
     {
       if (ros::message_traits::MD5Sum<T>::value() != getMd5sum())
-        return boost::shared_ptr<T>();
+        return boost::shared_ptr<T const>();
 
       return bag_.instantiate<T>(index_.pos);
     }
@@ -396,7 +401,7 @@ namespace rosbag
 
   };
 
-
+  //! Comparator to sort MessageInstances by time-stamp
   struct MessageInstanceCompare
   {
     bool operator() (const MessageInstance& a, const MessageInstance& b) const
@@ -407,8 +412,8 @@ namespace rosbag
         return false;
     }
   };
+
+
 }
-
-
 
 #endif

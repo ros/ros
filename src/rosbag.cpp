@@ -149,13 +149,9 @@ bool rosbag::Bag::open(const std::string &file_name, int mode)
     if (writeMode())
       read_stream_.tie(&write_stream_);
 
-    ROS_ERROR("Reading version");
     readVersion();
-    ROS_ERROR("Reading file header");
     readFileHeader();
-    ROS_ERROR("Reading index");
     readIndex();
-    ROS_ERROR("Loading defs");
     readDefs();
   }
 
@@ -209,7 +205,6 @@ bool rosbag::Bag::readHeader(ros::Header& header, uint32_t& next_msg_size)
 
   // Read the header length
   read_stream_.read((char*)&header_len, 4);
-  ROS_ERROR_STREAM("Read " << read_stream_.gcount() << "/4");
   if (read_stream_.eof())
     return false;
 
@@ -231,7 +226,6 @@ bool rosbag::Bag::readHeader(ros::Header& header, uint32_t& next_msg_size)
   bool parsed = header.parse(header_buf_, header_len, error_msg);
   if (!parsed)
   {
-    ROS_ERROR("Error parsing header: %s", error_msg.c_str());
     return false;
   }
 
@@ -454,8 +448,6 @@ void rosbag::Bag::writeFileHeader()
   header[OP_FIELD_NAME]        = std::string((char*)&OP_FILE_HEADER, 1);
   header[INDEX_POS_FIELD_NAME] = std::string((char*)&index_data_pos_, 8);
 
-  ROS_ERROR("Writing index_data_pos %llu", index_data_pos_);
-
   boost::shared_array<uint8_t> header_buffer;
   uint32_t header_len;
   ros::Header::write(header, header_buffer, header_len);
@@ -557,8 +549,6 @@ void rosbag::Bag::writeIndex()
 bool rosbag::Bag::readIndex()
 {
 
-  ROS_ERROR("Seeking to %llu", index_data_pos_);
-
   read_stream_.seekg(index_data_pos_, std::ios::beg);
 
   do 
@@ -569,8 +559,6 @@ bool rosbag::Bag::readIndex()
     if (!readHeader(header, data_size))
       continue;
 
-    ROS_ERROR("Loop");
-    
     ros::M_string::const_iterator fitr;
     ros::M_stringPtr fields_ptr = header.getValues();
     ros::M_string& fields = *fields_ptr;
@@ -618,8 +606,6 @@ bool rosbag::Bag::readIndex()
 
     assert(sizeof(IndexEntry) == 16);
 
-    ROS_ERROR_STREAM(count << " x " << sizeof(IndexEntry) << " = " << data_size);
-
     assert(count*sizeof(IndexEntry) == data_size);
 
     std::vector<IndexEntry>& topic_index = topic_indexes_[topic_name];
@@ -661,9 +647,6 @@ bool rosbag::Bag::readDefs()
     
     std::vector<IndexEntry>::const_iterator j = topic_index.begin();
 
-    ROS_ERROR("Trying to read def for %s at %llu", i->first.c_str(), j->pos);
-
-    
     readDef(j->pos);
   }
 
@@ -672,8 +655,6 @@ bool rosbag::Bag::readDefs()
 
 bool rosbag::Bag::readDef(uint64_t pos)
 {
-
-  ROS_ERROR_STREAM("Seeking to " << pos);
 
   read_stream_.seekg(pos, std::ios::beg);
 
@@ -736,7 +717,6 @@ bool rosbag::Bag::readDef(uint64_t pos)
     info.datatype = datatype;
     info.md5sum   = md5sum;
 
-    ROS_ERROR("Index loaded for %s [%s]", topic_name.c_str(), datatype.c_str());
   }
 
   return true;

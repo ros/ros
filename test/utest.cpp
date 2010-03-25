@@ -47,14 +47,6 @@ TEST(Rosbag, simplewrite)
 
   bag.close();
 
-  /*
-  std::string in("foo");
-  std::string expected("foo");
-  std::string out;
-
-  ASSERT_TRUE(topic_tools::getBaseName(in, out));
-  ASSERT_EQ(expected, out);
-  */
 }
 
 TEST(Rosbag, simpleread)
@@ -74,28 +66,18 @@ TEST(Rosbag, simpleread)
     std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
     if (s != NULL)
     {
-      std::cout << "The string contains: " << s->data << std::endl;
-      std::cout << "At time: " << m.getTime() << std::endl;
+      ASSERT_EQ(s->data, std::string("foo"));
     }
 
     std_msgs::Int32::ConstPtr i = m.instantiate<std_msgs::Int32>();
     if (i != NULL)
     {
-      std::cout << "The int contains: " << i->data << std::endl;
-      std::cout << "At time: " << m.getTime() << std::endl;
+      ASSERT_EQ(i->data, 42);
     }
   }
 
   bag.close();
 
-  /*
-  std::string in("/foo");
-  std::string expected("foo");
-  std::string out;
-
-  ASSERT_TRUE(topic_tools::getBaseName(in, out));
-  ASSERT_EQ(expected, out);
-  */
 }
 
 int main(int argc, char **argv)

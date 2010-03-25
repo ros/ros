@@ -27,8 +27,6 @@
 
 #include "rosbag/rosbag.h"
 
-#include "rosbag/constants.h"
-
 #include <iomanip>
 #include <signal.h>
 #include <sys/statvfs.h>
@@ -206,6 +204,7 @@ bool rosbag::Bag::readVersion()
 // message body in the file.
 bool rosbag::Bag::readHeader(ros::Header& header, uint32_t& next_msg_size)
 {
+
   unsigned int header_len;
 
   // Read the header length
@@ -334,6 +333,7 @@ void rosbag::Bag::write(const std::string& topic_name, ros::Time time, const ros
     if (key == topics_recorded_.end())
     {
       MsgInfo& info = topics_recorded_[topic_name];
+      info.topic    = topic_name;
       info.msg_def  = msg.__getMessageDefinition();
       info.datatype = msg.__getDataType();
       info.md5sum   = msg.__getMD5Sum();
@@ -388,8 +388,7 @@ void rosbag::Bag::write(const std::string& topic_name, ros::Time time, const ros
 
     // Add to topic index
     IndexEntry index_entry;
-    index_entry.sec  = time.sec;
-    index_entry.nsec = time.nsec;
+    index_entry.time = time;
     index_entry.pos  = record_pos_;
     topic_indexes_[topic_name].push_back(index_entry);
 
@@ -543,8 +542,8 @@ void rosbag::Bag::writeIndex()
       for (std::vector<IndexEntry>::const_iterator j = topic_index.begin(); j != topic_index.end(); j++)
       {
         const IndexEntry& index_entry = *j;
-        writefil((char*)&index_entry.sec,  4);
-        writefil((char*)&index_entry.nsec, 4);
+        writefil((char*)&index_entry.time.sec,  4);
+        writefil((char*)&index_entry.time.nsec, 4);
         writefil((char*)&index_entry.pos,  8);
       }
     }
@@ -619,7 +618,7 @@ bool rosbag::Bag::readIndex()
 
     assert(sizeof(IndexEntry) == 16);
 
-    ROS_ERROR("%d x %d  = %u", count, sizeof(IndexEntry), data_size);
+    ROS_ERROR_STREAM(count << " x " << sizeof(IndexEntry) << " = " << data_size);
 
     assert(count*sizeof(IndexEntry) == data_size);
 
@@ -629,14 +628,21 @@ bool rosbag::Bag::readIndex()
     for (uint32_t i = 0; i < count; i ++)
     {
       IndexEntry index_entry;
-      read_stream_.read((char*)&index_entry.sec, 4);
-      read_stream_.read((char*)&index_entry.nsec, 4);
+
+      uint32_t sec;
+      uint32_t nsec;
+
+      read_stream_.read((char*)&sec, 4);
+      read_stream_.read((char*)&nsec, 4);
       read_stream_.read((char*)&index_entry.pos, 8);
+
+      index_entry.time = ros::Time(sec,nsec);
 
       topic_index.push_back(index_entry);
     }
     
   } while (read_stream_.good());
+
   // We've read to end of file... reset
   read_stream_.clear();
 
@@ -667,13 +673,10 @@ bool rosbag::Bag::readDefs()
 bool rosbag::Bag::readDef(uint64_t pos)
 {
 
-  ROS_ERROR("Seeking to %llu", pos);
+  ROS_ERROR_STREAM("Seeking to " << pos);
 
   read_stream_.seekg(pos, std::ios::beg);
 
-  // Remember position of first index record
-  index_data_pos_ = record_pos_;
-  
   ros::Header header;
   uint32_t data_size;
 
@@ -728,6 +731,7 @@ bool rosbag::Bag::readDef(uint64_t pos)
   if (key == topics_recorded_.end())
   {
     MsgInfo& info = topics_recorded_[topic_name];
+    info.topic    = topic_name;
     info.msg_def  = message_definition;
     info.datatype = datatype;
     info.md5sum   = md5sum;
@@ -805,31 +809,34 @@ rosbag::MessageList rosbag::Bag::getMessageListByTopic(const std::vector<std::st
                                          const ros::Time& start_time, 
                                          const ros::Time& end_time)
 {
-  rosbag::MessageList message_list(*this, topics, start_time, end_time);
+  rosbag::MessageList message_list;
+
+  // Algorithmically, this is non-ideal, and storage-wise we really
+  // don't need the intermediate structure.  But this works for now
+  // and can be made more efficient later.
+
+  for (std::vector<std::string>::const_iterator titer = topics.begin(); titer != topics.end(); titer++)
+  {
+    std::map<std::string, std::vector<IndexEntry> >::iterator ind = topic_indexes_.find(*titer);
+    std::map<std::string, MsgInfo>::iterator key = topics_recorded_.find(*titer);
+
+    const MsgInfo& msg_info = key->second;
+
+    if (ind != topic_indexes_.end() && key != topics_recorded_.end())
+    {
+      //      const std::string&             topic_name  = ind->first;
+      const std::vector<IndexEntry>& topic_index = ind->second;
+
+      for (std::vector<IndexEntry>::const_iterator j = topic_index.begin(); j != topic_index.end(); j++)
+      {
+        if (j->time >= start_time && j->time <= end_time)
+        {
+          MessageInstance inst(msg_info, *j, *this);
+          message_list.insert(inst);
+        }
+      }
+    }
+  }
 
   return message_list;
-}
-
-
-rosbag::MessageList::MessageList(const Bag& bag,
-                const std::vector<std::string>& topics,
-                const ros::Time& start_time,
-                const ros::Time& end_time) : bag_(bag), topics_(topics), start_time_(start_time), end_time_(end_time)
-{
-  
-  // Todo: calculation count properly
-  count_ = 1;
-
-}
-
-rosbag::MessageList::iterator rosbag::MessageList::begin() const
-{
-  rosbag::MessageList::iterator iter(*this, 0);
-  return iter;
-}
-
-rosbag::MessageList::iterator rosbag::MessageList::end() const
-{
-  rosbag::MessageList::iterator iter(*this, count_);
-  return iter;
 }

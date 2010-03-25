@@ -38,9 +38,10 @@
 #include "ros/header.h"
 #include "ros/time.h"
 #include "ros/message.h"
+#include "ros/message_traits.h"
 #include "ros/ros.h"
 
-
+#include "rosbag/constants.h"
 
 #include <boost/thread/mutex.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
@@ -57,6 +58,7 @@ namespace rosbag
 
   struct MsgInfo
   {
+    std::string topic;
     std::string msg_def;
     std::string md5sum;
     std::string datatype;
@@ -64,8 +66,7 @@ namespace rosbag
   
   struct IndexEntry
   {
-    uint32_t sec;
-    uint32_t nsec;
+    ros::Time time;
     pos_t    pos;
   };
 
@@ -103,94 +104,17 @@ namespace rosbag
 
   class Bag;
   class MessageInstance;
+  struct MessageInstanceCompare;
 
   //! Typedef for index: map of topic_name -> list of MessageInstance
-  typedef std::map<std::string, std::multiset<MessageInstance> > BagIndex;
-
-  class MessageList
-  {
-    friend class Bag;
-  public:
-    class iterator {
-      friend class MessageList;
-    public:
-      typedef std::random_access_iterator_tag   iterator_category;
-      typedef int                         difference_type;
-      typedef MessageInstance             value_type;
-      typedef const MessageInstance*      pointer;	
-      typedef const MessageInstance&      reference;	      
-
-      // Reference
-      reference	operator*() const;
-      //      {
-        //        return m_pNode->m_Data;
-      //      }
-
-      // Pointer
-      pointer operator->() const;
-      /*
-      {
-        return (&**this);
-      }
-      */
-      
-      // Prefix increment
-      iterator& operator++()
-      {
-        pos_++;
-        return *this;
-      }
-      
-      // Postfix increment
-      iterator operator++(int)
-      {
-        iterator itTemp(*this);
-        pos_++;
-        if (pos_ > message_list_.size())
-        {
-          pos_ = message_list_.size();
-        }
-        return itTemp;
-      }
-
-      // Equality test
-      bool operator==(const iterator& itR) const
-      {
-        return ( this->pos_ == itR.pos_ );
-      }
-
-    protected:
-      iterator(const MessageList& message_list, const uint32_t pos) : message_list_(message_list), pos_(pos) {}
-    private:
-      const MessageList& message_list_;
-      uint32_t pos_;
-    };
-
-    typedef iterator const_iterator;
-
-    iterator begin() const;
-    iterator end() const;
-
-    uint32_t size() const { return count_; }
-  protected:
-
-    MessageList(const Bag& bag,
-                const std::vector<std::string>& topics,
-                const ros::Time& start_time,
-                const ros::Time& end_time);
-
-  private:
-    
-    const Bag& bag_;
-    const std::vector<std::string> topics_;
-    const ros::Time start_time_;
-    const ros::Time end_time_;
-    uint32_t count_;
-  };
+  typedef std::multiset<MessageInstance, MessageInstanceCompare> MessageList;
+  typedef std::map<std::string, MessageList> BagIndex;
 
   //! Class for writinging to a bagfile
   class Bag
   {
+    friend class MessageInstance;
+
   public:
      //! Constructor
     Bag();
@@ -246,6 +170,89 @@ namespace rosbag
     MessageList getMessageListByType(const std::vector<std::string>& types,
                              const ros::Time& start_time = ros::TIME_MIN, 
                              const ros::Time& end_time = ros::TIME_MAX);
+
+  protected:
+    template <class T>
+    boost::shared_ptr<T const> instantiate(uint64_t pos)
+    {
+
+      boost::shared_ptr<T const> p;
+
+      ROS_ERROR_STREAM("Seeking to " << pos);
+
+      read_stream_.seekg(pos, std::ios::beg);
+
+      ros::Header header;
+      uint32_t data_size;
+      ros::M_string::const_iterator fitr;      
+      ros::M_stringPtr fields_ptr;
+      unsigned char op;
+
+      // We skip and read the following message if it's a DEF
+      do
+      {
+        if (!readHeader(header, data_size))
+          return p;
+      
+        fields_ptr = header.getValues();
+        ros::M_string& fields = *fields_ptr;
+
+        if((fitr = checkField(fields, OP_FIELD_NAME,
+                              1, 1, true)) == fields.end())
+          return p;
+      
+        memcpy(&op,fitr->second.data(),1);
+      
+      // If it's a DEF, read the immediately following message (since def has no body, no seeking necessary)
+      } while (op == OP_MSG_DEF);
+
+      assert (op == OP_MSG_DATA);
+
+      ros::M_string& fields = *fields_ptr;
+
+      std::string topic_name;
+      std::string md5sum;
+      std::string datatype;
+      std::string message_definition;
+      
+      if((fitr = checkField(fields, TOPIC_FIELD_NAME,
+                            1, UINT_MAX, true)) == fields.end())
+        return p;
+      topic_name = fitr->second;
+      
+      if((fitr = checkField(fields, MD5_FIELD_NAME,
+                            32, 32, true)) == fields.end())
+        return p;
+      md5sum = fitr->second;
+
+      // Make sure it all checks out.
+      assert(ros::message_traits::MD5Sum<T>::value() == md5sum);
+      
+      if((fitr = checkField(fields, TYPE_FIELD_NAME,
+                            1, UINT_MAX, true)) == fields.end())
+        return p;
+      datatype = fitr->second;      
+      
+      message_buf_len_ = data_size;
+
+      if (message_buf_len_ > message_buf_size_)
+      {
+        if (message_buf_)
+          delete[] message_buf_;
+        message_buf_size_ = message_buf_len_ * 2;
+        message_buf_ = new uint8_t[message_buf_size_];
+      }
+
+      // Read in the message body
+      read_stream_.read((char*)message_buf_, message_buf_len_);
+
+      boost::shared_ptr<T> p2 = boost::shared_ptr<T>(new T());
+      p2->__serialized_length = message_buf_len_;
+      p2->deserialize(message_buf_);
+
+      return p2;
+
+    }
 
   private:
 
@@ -333,11 +340,30 @@ namespace rosbag
   //! Class representing an actual message
   class MessageInstance
   {
+    friend class Bag;
+
+
   public:
-    const std::string getTopic();
-    const std::string getDatatype();
-    const std::string getMd5sum();
-    const ros::Time getTime();
+    const std::string getTopic() const
+    {
+      return info_.topic;
+    }
+    const std::string getDatatype() const
+    {
+      return info_.datatype;
+    }
+    const std::string getMd5sum() const
+    {
+      return info_.md5sum;
+    }
+    const std::string getDef() const
+    {
+      return info_.msg_def;
+    }
+    const ros::Time getTime() const
+    {
+      return index_.time;
+    };
 
     /*!
      * Templated type-check 
@@ -349,21 +375,38 @@ namespace rosbag
      * Templated instantiate
      */
     template <class T>
-    boost::shared_ptr<T const> instantiate() const;
+    boost::shared_ptr<T const> instantiate()
+    {
+      if (ros::message_traits::MD5Sum<T>::value() != getMd5sum())
+        return boost::shared_ptr<T>();
+
+      return bag_.instantiate<T>(index_.pos);
+    }
 
   protected:
     MessageInstance(const MsgInfo& info,
                     const IndexEntry& ind,
-                    const Bag& bag);
+                    Bag& bag) : info_(info), index_(ind), bag_(bag) {}
 
   private:
 
     const MsgInfo& info_;
-    const IndexEntry index_;
-    const Bag& bag_;
+    const IndexEntry& index_;
+    Bag& bag_;
 
   };
 
+
+  struct MessageInstanceCompare
+  {
+    bool operator() (const MessageInstance& a, const MessageInstance& b) const
+    {
+      if (a.getTime() < b.getTime()) 
+        return true;
+      else
+        return false;
+    }
+  };
 }
 
 

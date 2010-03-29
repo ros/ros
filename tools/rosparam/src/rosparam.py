@@ -253,7 +253,7 @@ def _pretty_print(value, indent=''):
             # confusing to users who are just getting a single scalar, we
             # strip it
             if dump.endswith('\n...\n'):
-                dump = dump[:-5]
+                dump = dump[:-4]
             
             sys.stdout.write("%s%s: %s"%(indent, k, dump))
             

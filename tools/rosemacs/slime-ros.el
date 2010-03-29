@@ -2,6 +2,13 @@
 (require 'slime-asdf)
 (require 'rosemacs)
 
+(defcustom slime-ros-completion-function 'completing-read
+  "The completion function to be used for package and system
+  completions. This variable can be set to `ido-completing-read'
+  to enable `ido-mode' for ros packages."
+  :type 'function
+  :group 'slime-ros)
+
 (defvar slime-ros-package-history nil)
 
 (defun slime-ros-read-pkg-name (&optional prompt default-value)
@@ -16,9 +23,10 @@
                                 (if default
                                     (format " (default `%s'): " default)
                                     ": "))))
-           (completing-read prompt (slime-bogus-completion-alist completions)
-                            nil nil nil
-                            'slime-ros-package-history default)))))
+           (funcall slime-ros-completion-function
+                    prompt (slime-bogus-completion-alist completions)
+                    nil nil nil
+                    'slime-ros-package-history default)))))
 
 (defun slime-ros-get-systems-in-pkg (package &optional default-value prompt)
   (let* ((package-path (ros-package-path package))
@@ -29,8 +37,9 @@
                          (if default
                              (format " (default `%s'): " default)
                              ": "))))
-    (completing-read prompt (slime-bogus-completion-alist asd-files)
-                     nil nil nil nil default)))
+    (funcall slime-ros-completion-function
+             prompt (slime-bogus-completion-alist asd-files)
+             nil nil nil nil default)))
 
 (defslime-repl-shortcut slime-repl-load-ros-system ("ros-load-system")
   (:handler (lambda ()

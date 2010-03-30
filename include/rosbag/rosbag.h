@@ -231,7 +231,8 @@ namespace rosbag
       md5sum = fitr->second;
 
       // Make sure it all checks out.
-      assert(ros::message_traits::MD5Sum<T>::value() == md5sum);
+      assert(ros::message_traits::MD5Sum<T>::value() == md5sum ||
+        ros::message_traits::MD5Sum<T>::value()[0] == '*');
       
       if((fitr = checkField(fields, TYPE_FIELD_NAME,
                             1, UINT_MAX, true)) == fields.end())
@@ -251,7 +252,14 @@ namespace rosbag
       // Read in the message body
       read_stream_.read((char*)message_buf_, message_buf_len_);
 
+      boost::shared_ptr<ros::M_string> connection_header(new ros::M_string);
+      (*connection_header)["md5sum"] = md5sum;
+      (*connection_header)["type"] = datatype;
+      // TODO: Maybe set message_definition from bag. No idea how this
+      // could be done.
+      (*connection_header)["message_definition"] = message_definition;
       p = boost::shared_ptr<T>(new T());
+      p->__connection_header = connection_header;
       p->__serialized_length = message_buf_len_;
       p->deserialize(message_buf_);
 
@@ -382,7 +390,8 @@ namespace rosbag
     template <class T>
     boost::shared_ptr<T const> instantiate() const
     {
-      if (ros::message_traits::MD5Sum<T>::value() != getMd5sum())
+      if (ros::message_traits::MD5Sum<T>::value() != getMd5sum() &&
+        ros::message_traits::MD5Sum<T>::value()[0] != '*')
         return boost::shared_ptr<T const>();
 
       return bag_.instantiate<T>(index_.pos);

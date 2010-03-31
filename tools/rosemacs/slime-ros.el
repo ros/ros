@@ -49,4 +49,12 @@
                 (slime-eval `(cl:setf ros-load:*current-ros-package* ,ros-pkg-name))
                 (slime-oos system-name 'load-op)))))
 
+(defslime-repl-shortcut slime-repl-load-ros-system ("ros-test-system")
+  (:handler (lambda ()
+              (interactive)
+              (let* ((ros-pkg-name (slime-ros-read-pkg-name))
+                     (system-name (slime-ros-get-systems-in-pkg ros-pkg-name ros-pkg-name)))
+                (slime-eval `(cl:setf ros-load:*current-ros-package* ,ros-pkg-name))
+                (slime-oos system-name 'test-op)))))
+
 (provide 'slime-ros)

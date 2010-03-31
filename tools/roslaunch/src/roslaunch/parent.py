@@ -209,9 +209,16 @@ class ROSLaunchParent(object):
             self.pm.shutdown()
             self.pm.join()
         
-    def start(self):
+    def start(self, auto_terminate=True):
         """
-        Run the parent roslaunch
+        Run the parent roslaunch.
+
+        @param auto_terminate: stop process monitor once there are no
+        more processes to monitor (default True). This defaults to
+        True, which is the command-line behavior of roslaunch. Scripts
+        may wish to set this to False if they wish to keep the
+        roslauch infrastructure up regardless of processes being
+        monitored.
         """
         self.logger.info("starting roslaunch parent run")
         
@@ -224,6 +231,11 @@ class ROSLaunchParent(object):
 
         # Start the launch
         self.runner.launch()
+
+        # inform process monitor that we are done with process registration
+        if auto_terminate:
+            self.pm.registrations_complete()
+        
         self.logger.info("... roslaunch parent running, waiting for process exit")
         if self.process_listeners:
             for l in self.process_listeners:

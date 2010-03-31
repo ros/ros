@@ -281,7 +281,7 @@ class ProcessMonitor(Thread):
         self.plock = RLock()
         self.is_shutdown = False
         self.done = False        
-        #self.setDaemon(True)
+        self.setDaemon(True)
         self.reacquire_signals = set()
         self.listeners = []
         self.dead_list = []

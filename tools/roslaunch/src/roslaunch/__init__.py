@@ -44,6 +44,9 @@ from roslaunch.config import ROSLaunchConfig
 from roslaunch.launch import ROSLaunchRunner
 from roslaunch.xmlloader import XmlLoader, XmlParseException
 
+# script api
+from roslaunch.scriptapi import ROSLaunch
+
 NAME = 'roslaunch'
 
 def configure_logging(uuid):

@@ -249,7 +249,7 @@ class ROSLaunchRunner(object):
         local_nodes = [n for n in config.nodes if is_machine_local(n.machine)]
             
         for node in local_nodes:
-            name, success = self._launch_node(node)
+            name, success = self.launch_node(node)
             if success:
                 succeeded.append(name)
             else:
@@ -448,20 +448,28 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
                 
         for node in tolaunch:
             node_name = roslib.names.ns_join(node.namespace, node.name)
-            name, success = self._launch_node(node, core=True)
+            name, success = self.launch_node(node, core=True)
             if success:
                 print "started core service [%s]"%node_name
             else:
                 raise RLException("failed to start core service [%s]"%node_name)
 
-    def _launch_node(self, node, core=False):
+    def launch_node(self, node, core=False):
         """
         Launch a single node locally. Remote launching is handled separately by the remote module.
+        
         @param node Node: node to launch
         @param core bool: if True, core node
         @return str, bool: node process name, successful launch
         """
         self.logger.info("... preparing to launch node of type [%s/%s]", node.package, node.type)
+        
+        # TODO: should this always override, per spec?. I added this
+        # so that this api can be called w/o having to go through an
+        # extra assign machines step.
+        if node.machine is None:
+            node.machine = self.config.machines['']
+            
         master = self.config.master
         import roslaunch.node_args
         try:
@@ -591,8 +599,6 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         try:
             self._setup()        
             succeeded, failed = self._launch_nodes()
-            # inform process monitor that we are done with process registration
-            self.pm.registrations_complete()
             return succeeded, failed
         except KeyboardInterrupt:
             self.stop()
@@ -606,7 +612,7 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         @raise RLTestTimeoutException: if test fails to launch or test times out
         """
         self.logger.info("... preparing to run test [%s] of type [%s/%s]", test.test_name, test.package, test.type)
-        name, success = self._launch_node(test)
+        name, success = self.launch_node(test)
         if not success:
             raise RLException("test [%s] failed to launch"%test.test_name)
 

@@ -568,13 +568,12 @@ def string_serializer_generator(package, type_, name, serialize):
             yield pack2("'<I%ss'%length", "length, %s"%var)
     else:
         yield "#deserialize %s"%var
-        if array_len is not None:
-            yield "pattern = '<%ss'"%array_len
-        else:
-            yield "pattern = '<%ss'%length"            
         yield "start = end"
-        yield "end += struct.calcsize(pattern)"
-        yield unpack2("(%s,)"%var, 'pattern', 'str[start:end]')
+        if array_len is not None:
+            yield "end += %s" % array_len
+        else:
+            yield "end += length"
+        yield "%s = str[start:end]" % var
         
 ## generator for array types
 ## @raise MsgGenerationException: if array spec is invalid

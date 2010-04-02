@@ -46,6 +46,7 @@ from roslaunch.xmlloader import XmlLoader, XmlParseException
 
 # script api
 from roslaunch.scriptapi import ROSLaunch
+from roslaunch.pmon import Process
 
 NAME = 'roslaunch'
 

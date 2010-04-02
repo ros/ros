@@ -101,17 +101,30 @@ class TestNodeprocess(unittest.TestCase):
         # test invalid params
         n = Node('not_a_real_package','not_a_node')
         n.machine = m
+        n.name = 'foo'
         try: # should fail b/c node cannot be found
             create_node_process(run_id, n, master_uri)
+            self.fail("should have failed")
         except NodeParamsException:
+            pass
+        
+        # have to specify a real node
+        n = Node('test_ros','talker.py')
+        n.machine = m
+        try: # should fail b/c n.name is not set
+            create_node_process(run_id, n, master_uri)
+            self.fail("should have failed")
+        except ValueError:
             pass
         
         # have to specify a real node
         n = Node('test_ros','talker.py')
 
         n.machine = None
+        n.name = 'talker'
         try: # should fail b/c n.machine is not set
             create_node_process(run_id, n, master_uri)
+            self.fail("should have failed")
         except RLException:
             pass
 
@@ -134,7 +147,7 @@ class TestNodeprocess(unittest.TestCase):
         # test package and name
         self.assertEquals(p.package, 'test_ros')
         # - no 'correct' full answer here 
-        self.assert_(p.name.startswith('talker'))
+        self.assert_(p.name.startswith('talker'), p.name)
 
         # test log_output
         n.output = 'log'

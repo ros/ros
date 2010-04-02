@@ -86,6 +86,8 @@ class ROSLaunch(object):
         
         @param node: roslaunch Node instance
         @type  node: roslaunch.Node
+        @return: node process
+        @rtype: roslaunch.Process
         @raise RLException: if launch fails
         """
         if not self.started:
@@ -93,9 +95,10 @@ class ROSLaunch(object):
         elif not isinstance(node, Node):
             raise ValueError("arg must be of type Node")
 
-        proc_name, success = self.parent.runner.launch_node(node)
+        proc, success = self.parent.runner.launch_node(node)
         if not success:
             raise RLException("failed to launch")
+        return proc
 
     def start(self):
         """

@@ -904,13 +904,18 @@ def msg_generator(package, name, spec):
   ## @param kwds: use keyword arguments corresponding to message field names
   ## to set specific fields. 
   def __init__(self, *args, **kwds):
-    super(%s, self).__init__(*args, **kwds)"""%(','.join(spec_names), name)
+    if args or kwds:
+      super(%s, self).__init__(*args, **kwds)"""%(','.join(spec_names), name)
 
     if len(spec_names):
-        yield "    #message fields cannot be None, assign default values for those that are"
+        yield "      #message fields cannot be None, assign default values for those that are"
         for (t, s) in zip(spec.types, spec_names):
-            yield "    if self.%s is None:"%s
-            yield "      self.%s = %s"%(s, default_value(t, package))
+            yield "      if self.%s is None:"%s
+            yield "        self.%s = %s"%(s, default_value(t, package))
+    if len(spec_names) > 0:
+      yield "    else:"
+      for (t, s) in zip(spec.types, spec_names):
+          yield "      self.%s = %s"%(s, default_value(t, package))
 
     yield """
   ## internal API method

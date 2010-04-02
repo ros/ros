@@ -496,10 +496,9 @@ else:
 end += 4
 (length,) = struct.unpack('<I',str[start:end])
 #deserialize var_name
-pattern = '<%ss'%length
 start = end
-end += struct.calcsize(pattern)
-(var_name,) = struct.unpack(pattern, str[start:end])"""
+end += length
+var_name = str[start:end]"""
         # string serializer and array serializer are identical
         g = string_serializer_generator('foo', 'string', 'var_name', False)
         self.assertEquals(val, '\n'.join(g))

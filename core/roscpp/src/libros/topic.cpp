@@ -52,7 +52,7 @@ void waitForMessageImpl(SubscribeOptions& ops, const boost::function<bool(void)>
   {
     queue.callAvailable(ros::WallDuration(0.01));
 
-    if (!timeout.isZero() && ros::Time::now() <= end)
+    if (!timeout.isZero() && ros::Time::now() >= end)
     {
       return;
     }

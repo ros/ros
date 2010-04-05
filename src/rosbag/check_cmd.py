@@ -42,12 +42,9 @@ from optparse import OptionParser
 def check_cmd(argv):
     parser = OptionParser(usage="rosbag check BAG [-g RULEFILE] [EXTRARULES1 EXTRARULES2 ...]")
 
-    parser.add_option("-g","--genrules",action="store",dest="rulefile",default=None,
-                      help = "generate a rulefile named RULEFILE")
-    parser.add_option("-a","--append",action="store_true",dest="append",
-                      help = "append to the end of an existing rulefile after loading it")
-    parser.add_option("-n","--noplugins",action="store_true",dest="noplugins",
-                      help = "do not load rulefiles via plugins")
+    parser.add_option("-g", "--genrules",  action="store",      dest="rulefile", default=None, help="generate a rulefile named RULEFILE")
+    parser.add_option("-a", "--append",    action="store_true", dest="append",                 help="append to the end of an existing rulefile after loading it")
+    parser.add_option("-n", "--noplugins", action="store_true", dest="noplugins",              help="do not load rulefiles via plugins")
 
     (options, args) = parser.parse_args(argv)
   

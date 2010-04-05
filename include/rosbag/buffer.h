@@ -32,4 +32,35 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#include "rosbag/rosbag.h"
+#ifndef ROSBAG_BUFFER_H
+#define ROSBAG_BUFFER_H
+
+#include <stdint.h>
+
+namespace rosbag
+{
+
+class Buffer
+{
+public:
+    Buffer();
+    ~Buffer();
+
+    uint8_t* getData();
+    uint32_t getCapacity() const;
+    uint32_t getSize()     const;
+
+    void setSize(uint32_t size);
+
+private:
+    void ensureCapacity(uint32_t capacity);
+
+private:
+    uint8_t* buffer_;
+    uint32_t capacity_;
+    uint32_t size_;
+};
+
+}
+
+#endif

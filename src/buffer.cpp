@@ -32,4 +32,41 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#include "rosbag/rosbag.h"
+#include "rosbag/buffer.h"
+
+#include <ros/ros.h>
+
+namespace rosbag {
+
+Buffer::Buffer() : buffer_(NULL), capacity_(0), size_(0) { }
+
+Buffer::~Buffer() {
+    free(buffer_);
+}
+
+uint8_t* Buffer::getData()           { return buffer_;   }
+uint32_t Buffer::getCapacity() const { return capacity_; }
+uint32_t Buffer::getSize()     const { return size_;     }
+
+void Buffer::setSize(uint32_t size) {
+    size_ = size;
+    ensureCapacity(size);
+}
+
+void Buffer::ensureCapacity(uint32_t capacity) {
+    if (capacity <= capacity_)
+        return;
+
+    if (capacity_ == 0)
+        capacity_ = capacity;
+    else {
+        while (capacity_ < capacity)
+            capacity_ *= 2;
+    }
+
+    buffer_ = (uint8_t*) realloc(buffer_, capacity_);
+    ROS_ASSERT(buffer_);
+}
+
+
+}

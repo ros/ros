@@ -39,31 +39,17 @@ import optparse
 from optparse import OptionParser
 
 def play_cmd(argv):
-    parser = OptionParser(usage="rosbag play BAGFILE1 [BAGFILE2 BAGFILE3 ...]",
-                          description="Play back the contents of one or more bag files in a time-synchronized fashion.")
-    parser.add_option("-q", "--quiet", dest="quiet", default=False, action="store_true",
-                      help="suppress console output")
-
-    parser.add_option("-i", "--immediate",  dest="immediate",  default=False, action="store_true",
-                      help="play back all messages without waiting")                      
-    parser.add_option("--pause",      dest="pause",      default=False, action="store_true",
-                      help="start in paused mode")
-
-    parser.add_option("--queue",      dest="queue",   default=0,   type='int', action="store",
-                      help="use an outgoing queue of size SIZE (defaults to %default)", metavar="SIZE")
-    parser.add_option("--clock",  dest="clock",       default=False, action="store_true",
-                      help="publish the clock time")
-    parser.add_option("--hz",  dest="freq",       default=100, type='float', action="store",
-                      help="use a frequency of HZ when publishing clock time (default: %default)", metavar="HZ")
-    parser.add_option("-d", "--delay",      dest="delay",      default=0.2, type='float', action="store",
-                      help="sleep SEC seconds after every advertise call (to allow subscribers to connect)", metavar="SEC")
-    parser.add_option("-r", "--rate",       dest="rate",       default=1.0, type='float', action="store",
-                      help="multiply the publish rate by FACTOR", metavar="FACTOR")
-    parser.add_option("-s", "--start",      dest="sleep",      default=0.0, type='float', action="store",
-                      help="start SEC seconds into the bag files", metavar="SEC")
-    parser.add_option("--try-future-version",      dest="try_future", default=False, action="store_true",
-                      help="still try to open a bag file, even if the version number is not known to the player")
-
+    parser = OptionParser(usage="rosbag play BAGFILE1 [BAGFILE2 BAGFILE3 ...]", description="Play back the contents of one or more bag files in a time-synchronized fashion.")
+    parser.add_option("-q", "--quiet",        dest="quiet",      default=False, action="store_true", help="suppress console output")
+    parser.add_option("-i", "--immediate",    dest="immediate",  default=False, action="store_true", help="play back all messages without waiting")                      
+    parser.add_option("--pause",              dest="pause",      default=False, action="store_true", help="start in paused mode")
+    parser.add_option("--queue",              dest="queue",      default=0,     type='int', action="store", help="use an outgoing queue of size SIZE (defaults to %default)", metavar="SIZE")
+    parser.add_option("--clock",              dest="clock",      default=False, action="store_true", help="publish the clock time")
+    parser.add_option("--hz",                 dest="freq",       default=100,   type='float', action="store", help="use a frequency of HZ when publishing clock time (default: %default)", metavar="HZ")
+    parser.add_option("-d", "--delay",        dest="delay",      default=0.2,   type='float', action="store", help="sleep SEC seconds after every advertise call (to allow subscribers to connect)", metavar="SEC")
+    parser.add_option("-r", "--rate",         dest="rate",       default=1.0,   type='float', action="store", help="multiply the publish rate by FACTOR", metavar="FACTOR")
+    parser.add_option("-s", "--start",        dest="sleep",      default=0.0,   type='float', action="store", help="start SEC seconds into the bag files", metavar="SEC")
+    parser.add_option("--try-future-version", dest="try_future", default=False, action="store_true", help="still try to open a bag file, even if the version number is not known to the player")
 
     (options, args) = parser.parse_args(argv)
 
@@ -84,7 +70,6 @@ def play_cmd(argv):
     cmd.extend(["-r", str(options.rate)])
     cmd.extend(["-s", str(options.delay)])
     cmd.extend(["-t", str(options.sleep)])
-
 
     cmd.extend(args)
 

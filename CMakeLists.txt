@@ -1,28 +1,30 @@
 cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
-
 rosbuild_init()
 
-#uncomment if you have defined messages
-#rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
-#common commands for building c++ executables and libraries
-rosbuild_add_library(rosbag src/rosbag.cpp)
-rosbuild_add_gtest(test/utest test/utest.cpp)
-target_link_libraries(test/utest rosbag)
+SET(CMAKE_SKIP_BUILD_RPATH FALSE)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+SET(CMAKE_INSTALL_RPATH "${PROJECT_SOURCE_DIR}/lib")
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-#rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
+rosbuild_add_library(chunked_file src/chunked_file.cpp)
+target_link_libraries(chunked_file bz2)
+
+rosbuild_add_library(bag src/bag.cpp src/buffer.cpp src/message_instance.cpp)
+target_link_libraries(bag chunked_file)
+
+rosbuild_add_executable(recorder src/recorder.cpp)
+rosbuild_link_boost(recorder iostreams system)
+target_link_libraries(recorder chunked_file bag)
+
+#rosbuild_add_executable(player src/player.cpp src/time_publisher.cpp src/player.cpp src/multi_player.cpp)
+#rosbuild_link_boost(player iostreams system)
+
+INSTALL(TARGETS recorder #player
+        RUNTIME DESTINATION $ENV{ROS_ROOT}/bin)
+
+#rosbuild_add_pyunit(test/test_rosrecord_offline.py)
+rosbuild_add_gtest(utest test/utest.cpp)
+target_link_libraries(utest chunked_file bag)

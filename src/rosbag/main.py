@@ -35,7 +35,6 @@
 import sys
 import UserDict
 
-
 from record_cmd import record_cmd
 from play_cmd   import play_cmd
 from info_cmd   import info_cmd
@@ -46,13 +45,14 @@ from filter_cmd import filter_cmd
 class RosbagCmds(UserDict.UserDict):
     def __init__(self):
         UserDict.UserDict.__init__(self)
-        self['help'] = self.help_cmd
 
+        self['help'] = self.help_cmd
 
     def get_valid_cmds(self):
         str = "Valid commands:\n"
         for k in sorted(self.keys()):
-            str += "    * %s\n"%k
+            str += "    * %s\n" % k
+
         return str
 
     def help_cmd(self,argv):
@@ -69,7 +69,7 @@ class RosbagCmds(UserDict.UserDict):
             if cmd in self:
                 self[cmd](["-h"])
             else:
-                print >> sys.stderr, "Invalid command: %s"%cmd
+                print >> sys.stderr, "Invalid command: %s" % cmd
                 print >> sys.stderr, ""
                 print >> sys.stderr, self.get_valid_cmds()
 
@@ -77,20 +77,20 @@ class RosbagCmds(UserDict.UserDict):
 def rosbagmain(argv=None):
     cmds = RosbagCmds()
     cmds['record'] = record_cmd
-    cmds['play'] = play_cmd
-    cmds['info'] = info_cmd
-    cmds['check'] = check_cmd
-    cmds['fix'] = fix_cmd
+    cmds['play']   = play_cmd
+    cmds['info']   = info_cmd
+    cmds['check']  = check_cmd
+    cmds['fix']    = fix_cmd
     cmds['filter'] = filter_cmd
 
     if argv is None:
-        argv=sys.argv
+        argv = sys.argv
 
     if '-h' in argv or '--help' in argv:
         argv = [a for a in argv if a != '-h' and a != '--help']
         argv.insert(1, 'help')
 
-    if (len(argv) > 1):
+    if len(argv) > 1:
         cmd = argv[1]
     else:
         cmd = 'help'

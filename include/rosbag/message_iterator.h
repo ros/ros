@@ -30,6 +30,44 @@
 *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
-********************************************************************/
+*********************************************************************/
 
-#include "rosbag/rosbag.h"
+#ifndef ROSBAG_MESSAGE_ITERATOR_H
+#define ROSBAG_MESSAGE_ITERATOR_H
+
+#include <ros/ros.h>
+#include <ros/message.h>
+
+#include <boost/iterator/iterator_facade.hpp>
+
+#include "rosbag/message_instance.h"
+
+namespace rosbag
+{
+
+class MessageIterator : public boost::iterator_facade<MessageIterator, MessageInstance, boost::forward_traversal_tag>
+{
+public:
+	MessageIterator() : msg_list_(NULL) { }
+
+	explicit MessageIterator(MessageList* msg_list) : msg_list_(msg_list) { }
+
+private:
+	friend class boost::iterator_core_access;
+
+	void increment() { iter_++; }
+
+	bool equal(const MessageIterator& other) const {
+		return iter_ == other.iter_;
+	}
+
+	MessageInstance& dereference() const { return *iter_; }
+
+private:
+	MessageList* msg_list_;
+	MessageList::const_iterator iter_;
+};
+
+}
+
+#endif

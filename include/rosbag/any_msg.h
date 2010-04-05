@@ -30,6 +30,32 @@
 *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
-********************************************************************/
+*********************************************************************/
 
-#include "rosbag/rosbag.h"
+#ifndef ROSBAG_ANY_MSG_H
+#define ROSBAG_ANY_MSG_H
+
+#include <ros/message.h>
+
+namespace rosbag
+{
+
+class AnyMsg : public ros::Message
+{
+public:
+    static std::string __s_getDataType()          { return std::string("*"); }
+    static std::string __s_getMD5Sum()            { return std::string("*"); }
+    static std::string __s_getMessageDefinition() { return std::string("");  }
+    
+    virtual const std::string __getDataType()          const { return __s_getDataType();          }
+    virtual const std::string __getMD5Sum()            const { return __s_getMD5Sum();            }
+    virtual const std::string __getMessageDefinition() const { return __s_getMessageDefinition(); }
+
+    virtual uint32_t serializationLength()                   const { return 0;               }
+    virtual uint8_t* serialize(uint8_t *write_ptr, uint32_t) const { assert(0); return NULL; }
+    virtual uint8_t* deserialize(uint8_t *read_ptr)                { assert(0); return NULL; }
+};
+
+}
+
+#endif

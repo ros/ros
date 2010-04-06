@@ -154,8 +154,15 @@ public:
     Bag();
     ~Bag();
 
-    //! Open a bag file
-    bool open(const std::string& filename, BagMode mode = bagmode::Default);
+    bool open(const std::string& filename, BagMode mode = bagmode::Default);           //!< Open a bag file
+
+    bool rewrite(const std::string& src_filename, const std::string& dest_filename);   //!< Fix a bag file
+
+    // Version 1.3 options
+    void            setChunkThreshold(uint32_t chunk_threshold);
+    uint32_t        getChunkThreshold() const;
+    void            setCompression(CompressionType compression);  //!< Set the compression method to use for writing chunks
+    CompressionType getCompression() const;                       //!< Get the compression method to use for writing chunks
 
     BagMode  getMode()   const;  //!< Get the mode
     uint64_t getOffset() const;
@@ -163,9 +170,6 @@ public:
     int getVersion()      const; //!< Get the version number
     int getMajorVersion() const; //!< Get the major version number
     int getMinorVersion() const; //!< Get the minor version number
-
-    void            setCompression(CompressionType compression);  //!< Set the compression method to use for writing chunks
-    CompressionType getCompression() const;                       //!< Get the compression method to use for writing chunks
 
     //! Close bag file
     /*!
@@ -306,12 +310,12 @@ private:
     ChunkedFile     file_;
     int             version_;
     CompressionType compression_;
+    uint32_t        chunk_threshold_;
 
     uint64_t file_header_pos_;
     uint64_t index_data_pos_;
     uint32_t topic_count_;
     uint32_t chunk_count_;
-    uint32_t chunk_threshold_;
 
     boost::mutex record_mutex_;
     boost::mutex topic_infos_mutex_;

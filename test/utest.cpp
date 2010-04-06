@@ -214,6 +214,17 @@ TEST_F(BagTest, ChunkedFileReadWriteWorks) {
     f.close();
 }
 
+TEST_F(BagTest, TestChunkSizes) {
+    uint32_t chunk_threshold_lo =  700 * 1024;
+    uint32_t chunk_threshold_hi = 1000 * 1024;
+
+    for (uint32_t t = chunk_threshold_lo; t <= chunk_threshold_hi; t += (25 * 1024)) {
+        rosbag::Bag b;
+        b.setChunkThreshold(t);
+        b.rewrite("test/diag_test.bag", "test/diag_test_" + boost::lexical_cast<std::string>(t) + ".bag");
+    }
+}
+
 /*
 TEST_F(BagTest, Read102IndexedWorks) {
 	rosbag::Bag b;

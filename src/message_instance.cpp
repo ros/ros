@@ -65,14 +65,11 @@ uint8_t* MessageInstance::deserialize(uint8_t* read_ptr) {
 }
 
 void MessageInstance::instantiateMessage() {
-	ROS_INFO("Instantiating message");
-
-    if (bag_.version_ == 103)
-    	bag_.readMessageDataRecord103(info_.topic, index_.chunk_pos, index_.offset);
-    else if (bag_.version_ == 102)
-    	bag_.readMessageDataRecord102(info_.topic, index_.chunk_pos);
-    else
-    	ROS_FATAL("Unhandled version: %d", bag_.version_);
+    switch (bag_.version_) {
+        case 103: bag_.readMessageDataRecord103(info_.topic, index_.chunk_pos, index_.offset); break;
+        case 102: bag_.readMessageDataRecord102(info_.topic, index_.chunk_pos);                break;
+        default:  ROS_FATAL("Unhandled version: %d", bag_.version_); return;
+    }
 
     __serialized_length = bag_.record_buffer_.getSize();
     deserialize(bag_.record_buffer_.getData());

@@ -46,12 +46,11 @@ namespace rosbag {
 
 Bag::Bag() :
     compression_(compression::BZ2),
+    chunk_threshold_(768 * 1024),  // 768KB chunks
     file_header_pos_(0),
     index_data_pos_(0),
     topic_count_(0),
     chunk_count_(0),
-    //chunk_threshold_(1),               // for debugging: new chunk for each message
-    chunk_threshold_(16 * 1024 * 1024),  // 16MB (uncompressed) chunks
     chunk_open_(false),
     curr_chunk_data_pos_(0),
     decompressed_chunk_(0),
@@ -145,6 +144,32 @@ bool Bag::openAppend(const string& filename) {
     return true;
 }
 
+bool Bag::rewrite(const string& src_filename, const string& dest_filename) {
+    Bag in;
+    if (!in.open(src_filename, rosbag::bagmode::Read))
+        return false;
+
+    string target_filename = dest_filename;
+    if (target_filename == src_filename)
+        target_filename += ".active";
+
+    if (!open(target_filename, rosbag::bagmode::Write))
+        return false;
+
+    BOOST_FOREACH(rosbag::MessageInstance m, in.getMessageList()) {
+        m.instantiateMessage();
+        write(m.getTopic(), m.getTime(), m);
+    }
+
+    in.close();
+    close();
+
+    if (target_filename != dest_filename)
+        rename(target_filename.c_str(), dest_filename.c_str());
+
+    return true;
+}
+
 void Bag::close() {
     if (!file_.isOpen())
         return;
@@ -175,16 +200,18 @@ void Bag::closeWrite() {
 BagMode  Bag::getMode()   const { return mode_;             }
 uint64_t Bag::getOffset() const { return file_.getOffset(); }
 
-void Bag::setCompression(CompressionType compression) { compression_ = compression; }
+void     Bag::setChunkThreshold(uint32_t chunk_threshold) { chunk_threshold_ = chunk_threshold; }
+uint32_t Bag::getChunkThreshold() const                   { return chunk_threshold_;            }
 
-CompressionType Bag::getCompression() const { return compression_; }
+void            Bag::setCompression(CompressionType compression) { compression_ = compression; }
+CompressionType Bag::getCompression() const                      { return compression_;        }
 
 // Version
 
 void Bag::writeVersion() {
     string version = string("#ROSBAG V") + VERSION + string("\n");
 
-    ROS_INFO("Writing VERSION [%llu]: %s", (unsigned long long) file_.getOffset(), version.c_str());
+    ROS_DEBUG("Writing VERSION [%llu]: %s", (unsigned long long) file_.getOffset(), version.c_str());
 
     write(version);
 }
@@ -205,7 +232,7 @@ bool Bag::readVersion() {
 
     version_ = version_major * 100 + version_minor;
 
-    ROS_INFO("Read VERSION: version=%d", version_);
+    ROS_DEBUG("Read VERSION: version=%d", version_);
 
     return true;
 }
@@ -234,7 +261,7 @@ void Bag::stopWritingVersion103() {
 }
 
 bool Bag::startReadingVersion103() {
-    ROS_INFO("Reading in version 1.3 bag");
+    ROS_DEBUG("Reading in version 1.3 bag");
 
     // Read the file header record, which points to the end of the chunks
     if (!readFileHeaderRecord())
@@ -280,7 +307,7 @@ bool Bag::startReadingVersion103() {
 }
 
 bool Bag::startReadingVersion102() {
-    ROS_INFO("Reading in version 1.2 bag");
+    ROS_DEBUG("Reading in version 1.2 bag");
 
     // Read the file header record, which points to the start of the topic indexes
     if (!readFileHeaderRecord())
@@ -298,7 +325,7 @@ bool Bag::startReadingVersion102() {
         const vector<IndexEntry>& topic_index = i->second;
         const IndexEntry&         first_entry = *topic_index.begin();
 
-        ROS_INFO("Reading message definition for %s at %llu", i->first.c_str(), (unsigned long long) first_entry.chunk_pos);
+        ROS_DEBUG("Reading message definition for %s at %llu", i->first.c_str(), (unsigned long long) first_entry.chunk_pos);
 
         seek(first_entry.chunk_pos);
 
@@ -310,7 +337,7 @@ bool Bag::startReadingVersion102() {
 }
 
 bool Bag::startReadingVersion101() {
-    ROS_INFO("Reading in version 1.1 bag");
+    ROS_DEBUG("Reading in version 1.1 bag");
 
     //! \todo implement reading version 101
 
@@ -325,7 +352,7 @@ void Bag::writeFileHeaderRecord() {
     topic_count_ = topic_infos_.size();
     chunk_count_ = chunk_infos_.size();
 
-    ROS_INFO("Writing FILE_HEADER [%llu]: index_pos=%llu topic_count=%d chunk_count=%d",
+    ROS_DEBUG("Writing FILE_HEADER [%llu]: index_pos=%llu topic_count=%d chunk_count=%d",
     		  (unsigned long long) file_.getOffset(), index_data_pos_, topic_count_, chunk_count_);
 
     // Write file header record
@@ -378,7 +405,7 @@ bool Bag::readFileHeaderRecord() {
         readField(fields, CHUNK_COUNT_FIELD_NAME, true, &chunk_count_);
     }
 
-    ROS_INFO("Read FILE_HEADER: index_pos=%llu topic_count=%d chunk_count=%d",
+    ROS_DEBUG("Read FILE_HEADER: index_pos=%llu topic_count=%d chunk_count=%d",
     		  (unsigned long long) index_data_pos_, topic_count_, chunk_count_);
 
     // Skip the data section (just padding)
@@ -471,7 +498,7 @@ void Bag::write(const string& topic, Time time, const ros::Message& msg) {
 
         // Check if we want to stop this chunk
         uint32_t chunk_size = getChunkOffset();
-        ROS_INFO("  curr_chunk_size=%d (threshold=%d)", chunk_size, chunk_threshold_);
+        ROS_DEBUG("  curr_chunk_size=%d (threshold=%d)", chunk_size, chunk_threshold_);
         if (chunk_size > chunk_threshold_)
             stopWritingChunk();
     }
@@ -515,7 +542,7 @@ void Bag::stopWritingChunk() {
     chunk_infos_.push_back(curr_chunk_info_);
     for (map<string, vector<IndexEntry> >::const_iterator i = curr_chunk_topic_indexes_.begin(); i != curr_chunk_topic_indexes_.end(); i++) {
         BOOST_FOREACH(const IndexEntry& e, i->second) {
-            ROS_INFO("adding to topic index: %s -> %llu:%d", i->first.c_str(), (unsigned long long) e.chunk_pos, e.offset);
+            ROS_DEBUG("adding to topic index: %s -> %llu:%d", i->first.c_str(), (unsigned long long) e.chunk_pos, e.offset);
             topic_indexes_[i->first].push_back(e);
         }
     }
@@ -525,7 +552,7 @@ void Bag::stopWritingChunk() {
     file_.setWriteModeUncompressed();
     uint32_t compressed_size = file_.getOffset() - curr_chunk_data_pos_;
 
-    ROS_INFO("<<< END CHUNK: uncompressed = %d compressed = %d", uncompressed_size, compressed_size);
+    ROS_DEBUG("<<< END CHUNK: uncompressed = %d compressed = %d", uncompressed_size, compressed_size);
 
     // Rewrite the chunk header with the size of the chunk (remembering current offset)
     uint64_t end_of_chunk_pos = file_.getOffset();
@@ -549,7 +576,7 @@ void Bag::stopWritingChunk() {
 }
 
 void Bag::writeChunkHeader(const ChunkHeader& chunk_header) {
-    ROS_INFO("Writing CHUNK [%llu]: compression=%s compressed=%d uncompressed=%d",
+    ROS_DEBUG("Writing CHUNK [%llu]: compression=%s compressed=%d uncompressed=%d",
     		  (unsigned long long) file_.getOffset(), chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size);
 
     M_string header;
@@ -572,7 +599,7 @@ bool Bag::readChunkHeader(ChunkHeader& chunk_header) {
     	!readField(fields, SIZE_FIELD_NAME,        true, &chunk_header.uncompressed_size))
         return false;
 
-    ROS_INFO("Read CHUNK: compression=%s size=%d uncompressed=%d (%f)", chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size, 100 * ((double) chunk_header.compressed_size) / chunk_header.uncompressed_size);
+    ROS_DEBUG("Read CHUNK: compression=%s size=%d uncompressed=%d (%f)", chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size, 100 * ((double) chunk_header.compressed_size) / chunk_header.uncompressed_size);
 
     return true;
 }
@@ -642,7 +669,7 @@ void Bag::writeMessageDataRecord(const string& topic, const Time& time, bool lat
     record_buffer_.setSize(msg_ser_len);
     msg.serialize(record_buffer_.getData(), 0);
 
-    ROS_INFO("Writing MSG_DATA [%llu:%d]: topic=%s sec=%d nsec=%d data_len=%d",
+    ROS_DEBUG("Writing MSG_DATA [%llu:%d]: topic=%s sec=%d nsec=%d data_len=%d",
     		  (unsigned long long) file_.getOffset(), getChunkOffset(), topic.c_str(), time.sec, time.nsec, msg_ser_len);
 
     writeHeader(header, msg_ser_len);
@@ -673,7 +700,7 @@ void Bag::writeTopicIndexRecords() {
         uint32_t data_len = topic_index_size * sizeof(IndexEntry);
         writeHeader(header, data_len);
 
-        ROS_INFO("Writing INDEX_DATA: topic=%s ver=%d count=%d", topic.c_str(), INDEX_VERSION, topic_index_size);
+        ROS_DEBUG("Writing INDEX_DATA: topic=%s ver=%d count=%d", topic.c_str(), INDEX_VERSION, topic_index_size);
         
         // Write the index record data (pairs of timestamp and position in file)
         BOOST_FOREACH(const IndexEntry& e, topic_index) {
@@ -681,7 +708,7 @@ void Bag::writeTopicIndexRecords() {
             write((char*) &e.time.nsec, 4);
             write((char*) &e.offset,    4);
 
-            ROS_INFO("  - %d.%d: %d", e.time.sec, e.time.nsec, e.offset);
+            ROS_DEBUG("  - %d.%d: %d", e.time.sec, e.time.nsec, e.offset);
         }
     }
 }
@@ -704,7 +731,7 @@ bool Bag::readTopicIndexRecord() {
     	!readField(fields, COUNT_FIELD_NAME, true, &count))
     	return false;
 
-	ROS_INFO("Read INDEX_DATA: ver=%d topic=%s count=%d", index_version, topic.c_str(), count);
+	ROS_DEBUG("Read INDEX_DATA: ver=%d topic=%s count=%d", index_version, topic.c_str(), count);
 
 	switch (index_version) {
 	case 0:  return readTopicIndexDataVersion0(data_size, count, topic);
@@ -730,7 +757,7 @@ bool Bag::readTopicIndexDataVersion0(uint32_t data_size, uint32_t count, const s
 		index_entry.time = Time(sec, nsec);
 		index_entry.offset = 0;
 
-		//ROS_INFO("  - %d.%d: %llu", sec, nsec, (unsigned long long) index_entry.chunk_pos);
+		ROS_DEBUG("  - %d.%d: %llu", sec, nsec, (unsigned long long) index_entry.chunk_pos);
 
 		topic_index.push_back(index_entry);
 	}
@@ -754,7 +781,7 @@ bool Bag::readTopicIndexDataVersion1(uint32_t data_size, uint32_t count, const s
 		read((char*) &index_entry.offset, 4);
 		index_entry.time = Time(sec, nsec);
 
-		ROS_INFO("  - %d.%d: %llu+%d", sec, nsec, (unsigned long long) index_entry.chunk_pos, index_entry.offset);
+		ROS_DEBUG("  - %d.%d: %llu+%d", sec, nsec, (unsigned long long) index_entry.chunk_pos, index_entry.offset);
 
 		topic_index.push_back(index_entry);
 	}
@@ -774,7 +801,7 @@ void Bag::writeMessageDefinitionRecords() {
 }
 
 void Bag::writeMessageDefinitionRecord(const TopicInfo& topic_info) {
-    ROS_INFO("Writing MSG_DEF [%llu:%d]: topic=%s md5sum=%s type=%s def=...",
+    ROS_DEBUG("Writing MSG_DEF [%llu:%d]: topic=%s md5sum=%s type=%s def=...",
     		  (unsigned long long) file_.getOffset(), getChunkOffset(), topic_info.topic.c_str(), topic_info.md5sum.c_str(), topic_info.datatype.c_str());
 
     M_string header;
@@ -816,7 +843,7 @@ bool Bag::readMessageDefinitionRecord() {
         info.datatype = datatype;
         info.md5sum   = md5sum;
 
-        ROS_INFO("Read MSG_DEF: topic=%s md5sum=%s datatype=%s def=...", topic.c_str(), md5sum.c_str(), datatype.c_str());
+        ROS_DEBUG("Read MSG_DEF: topic=%s md5sum=%s datatype=%s def=...", topic.c_str(), md5sum.c_str(), datatype.c_str());
     }
 
     return true;
@@ -840,7 +867,7 @@ bool Bag::decompressChunk(uint64_t chunk_pos) {
     if (chunk_header.compression != COMPRESSION_BZ2)
         return true;
 
-    ROS_INFO("compressed_size: %d uncompressed_size: %d", chunk_header.compressed_size, chunk_header.uncompressed_size);
+    ROS_DEBUG("compressed_size: %d uncompressed_size: %d", chunk_header.compressed_size, chunk_header.uncompressed_size);
 
     chunk_buffer_.setSize(chunk_header.compressed_size);
     file_.read((char*) chunk_buffer_.getData(), chunk_header.compressed_size);
@@ -854,7 +881,7 @@ bool Bag::decompressChunk(uint64_t chunk_pos) {
 }
 
 bool Bag::readMessageDataRecord102(const string& topic, uint64_t offset) {
-    ROS_INFO("readMessageDataRecord: offset=%llu", (unsigned long long) offset);
+    ROS_DEBUG("readMessageDataRecord: offset=%llu", (unsigned long long) offset);
 
 	seek(offset);
 
@@ -883,7 +910,7 @@ bool Bag::readMessageDataRecord102(const string& topic, uint64_t offset) {
 }
 
 bool Bag::readMessageDataRecord103(const string& topic, uint64_t chunk_pos, uint32_t offset) {
-    ROS_INFO("readMessageDataRecord: chunk_pos=%llu offset=%d", (unsigned long long) chunk_pos, offset);
+    ROS_DEBUG("readMessageDataRecord: chunk_pos=%llu offset=%d", (unsigned long long) chunk_pos, offset);
     if (decompressed_chunk_ != chunk_pos) {
         // Seek to the start of the chunk
         seek(chunk_pos);
@@ -903,7 +930,7 @@ bool Bag::readMessageDataRecord103(const string& topic, uint64_t chunk_pos, uint
         uint32_t data_size;
         uint8_t op;
         do {
-            ROS_INFO("reading header from buffer: offset=%d", offset);
+            ROS_DEBUG("reading header from buffer: offset=%d", offset);
             uint32_t bytes_read;
             if (!readHeaderFromBuffer(decompress_buffer_, offset, header, data_size, bytes_read))
                 return false;
@@ -972,7 +999,7 @@ void Bag::writeChunkInfoRecords() {
             data_len += 4 + topic.size() + 4;   // 4 bytes for length of topic_name + topic_name + 4 bytes for topic count
         }
         
-        ROS_INFO("Writing CHUNK_INFO [%llu]: ver=%d pos=%llu start=%d.%d end=%d.%d data_len=%d",
+        ROS_DEBUG("Writing CHUNK_INFO [%llu]: ver=%d pos=%llu start=%d.%d end=%d.%d data_len=%d",
 				  (unsigned long long) file_.getOffset(), CHUNK_INFO_VERSION, (unsigned long long) chunk_info.pos,
 				  chunk_info.start_time.sec, chunk_info.start_time.nsec,
 				  chunk_info.end_time.sec, chunk_info.end_time.nsec,
@@ -991,7 +1018,7 @@ void Bag::writeChunkInfoRecords() {
             write(topic);
             write((char*) &count, 4);            
 
-            ROS_INFO("  - %s: %d", topic.c_str(), count);
+            ROS_DEBUG("  - %s: %d", topic.c_str(), count);
         }
     }
 }
@@ -1020,7 +1047,7 @@ bool Bag::readChunkInfoRecord() {
 		!readField(fields, END_TIME_FIELD_NAME,   true,  chunk_info.end_time)   ||
         !readField(fields, COUNT_FIELD_NAME,      true, &chunk_topic_count))
         return false;
-    ROS_INFO("Read CHUNK_INFO: chunk_pos=%llu topic_count=%d start=%d.%d end=%d.%d",
+    ROS_DEBUG("Read CHUNK_INFO: chunk_pos=%llu topic_count=%d start=%d.%d end=%d.%d",
     		  (unsigned long long) chunk_info.pos, chunk_topic_count,
     		  chunk_info.start_time.sec, chunk_info.start_time.nsec,
 			  chunk_info.end_time.sec, chunk_info.end_time.nsec);
@@ -1036,7 +1063,7 @@ bool Bag::readChunkInfoRecord() {
 
         string topic = string(topic_name_buf, topic_name_len);
 
-        ROS_INFO("  %s: %d messages", topic.c_str(), topic_count);
+        ROS_DEBUG("  %s: %d messages", topic.c_str(), topic_count);
 
         chunk_info.topic_counts[topic] = topic_count;
     }
@@ -1228,7 +1255,7 @@ MessageList Bag::getMessageListByTopic(const vector<string>& topics, const Time&
         const vector<IndexEntry>& topic_index = ind->second;
         const TopicInfo&          topic_info  = key->second;
 
-        ROS_INFO("topic_index.size: %d", (int) topic_index.size());
+        ROS_DEBUG("topic_index.size: %d", (int) topic_index.size());
 
         BOOST_FOREACH(const IndexEntry& entry, topic_index) {
             if (entry.time >= start_time && entry.time <= end_time)

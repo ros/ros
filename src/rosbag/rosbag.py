@@ -36,7 +36,7 @@
 """
 Python utility for iterating over messages in a ROS .bag file.
 
-See http://ros.org/wiki/ROS/LogFormat
+See http://www.ros.org/wiki/Bags/Format
 """
 
 import optparse
@@ -53,14 +53,15 @@ import roslib.message
 import roslib.rostime
 import rospy
 
-class ROSRecordException(Exception):
+class ROSBagException(Exception):
   """
-  Base exception type for rosrecord-related errors.
+  Base exception type for rosbag-related errors.
   """
   pass
 
 HEADER_V1_1 = "#ROSRECORD V1.1"
 HEADER_V1_2 = "#ROSRECORD V1.2"
+HEADER_V1_3 = "#ROSBAG V1.3"
 
 g_message_defs = {}   # message definitions are stored by md5sum, so can be shared across bag files  
 
@@ -83,19 +84,11 @@ class BagReader(object):
       self.file = f
     else:
       self.filename = f
-
-#Removing compression until we work out how to play nicely with index: JML
-#      ext = os.path.splitext(self.filename)[1]
-#      if ext == '.gz':
-#        self.file = gzip.open(self.filename)
-#      elif ext == '.bz2':
-#        self.file = bz2.BZ2File(self.filename)
-#      else:
       self.file = open(self.filename, 'r')
 
     version_readers = {
       HEADER_V1_1 : self._next_msg_v1_1,
-      HEADER_V1_2 : self._next_msg_v1_2
+      HEADER_V1_2 : self._next_msg_v1_2      
     }
 
     try:

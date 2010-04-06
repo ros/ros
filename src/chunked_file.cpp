@@ -44,8 +44,8 @@ namespace rosbag {
 
 ChunkedFile::ChunkedFile() :
     verbosity_(0), 
-    blockSize100k_(9), 
-    workFactor_(30), 
+    blockSize100k_(9),
+    workFactor_(30),
     file_(NULL), 
     bzfile_(NULL), 
     unused_(NULL),

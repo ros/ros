@@ -518,18 +518,10 @@ void Bag::startWritingChunk(Time time) {
     curr_chunk_info_.end_time   = time;
 
     // Write the chunk header, with a place-holder for the data sizes (we'll fill in when the chunk is finished)
-    ChunkHeader chunk_header;
-    switch (compression_) {
-    case compression::None: chunk_header.compression = COMPRESSION_NONE; break;
-    case compression::BZ2:  chunk_header.compression = COMPRESSION_BZ2;  break;
-    }
-    chunk_header.compressed_size   = 0;
-    chunk_header.uncompressed_size = 0;
-    writeChunkHeader(chunk_header);
+    writeChunkHeader(compression_, 0, 0);
 
     // Turn on compressed writing
-    if (compression_ == compression::BZ2)
-        file_.setWriteModeCompressed();
+    file_.setWriteMode(compression_);
     
     // Record where the data section of this chunk started
     curr_chunk_data_pos_ = file_.getOffset();
@@ -549,7 +541,7 @@ void Bag::stopWritingChunk() {
 
     // Get the uncompressed and compressed sizes
     uint32_t uncompressed_size = getChunkOffset();
-    file_.setWriteModeUncompressed();
+    file_.setWriteMode(compression::None);
     uint32_t compressed_size = file_.getOffset() - curr_chunk_data_pos_;
 
     ROS_DEBUG("<<< END CHUNK: uncompressed = %d compressed = %d", uncompressed_size, compressed_size);
@@ -557,14 +549,7 @@ void Bag::stopWritingChunk() {
     // Rewrite the chunk header with the size of the chunk (remembering current offset)
     uint64_t end_of_chunk_pos = file_.getOffset();
     seek(curr_chunk_info_.pos);
-    ChunkHeader chunk_header;
-    switch (compression_) {
-    case compression::None: chunk_header.compression = "none"; break;
-    case compression::BZ2:  chunk_header.compression = "bz2";  break;
-    }
-    chunk_header.compressed_size   = compressed_size;
-    chunk_header.uncompressed_size = uncompressed_size;
-    writeChunkHeader(chunk_header);
+    writeChunkHeader(compression_, compressed_size, uncompressed_size);
 
     // Write out the topic indexes and clear them
     seek(end_of_chunk_pos);
@@ -575,7 +560,16 @@ void Bag::stopWritingChunk() {
     chunk_open_ = false;
 }
 
-void Bag::writeChunkHeader(const ChunkHeader& chunk_header) {
+void Bag::writeChunkHeader(CompressionType compression, uint32_t compressed_size, uint32_t uncompressed_size) {
+    ChunkHeader chunk_header;
+    switch (compression) {
+    case compression::None: chunk_header.compression = COMPRESSION_NONE; break;
+    case compression::BZ2:  chunk_header.compression = COMPRESSION_BZ2;  break;
+    case compression::GZ:   chunk_header.compression = COMPRESSION_GZ;   break;
+    }
+    chunk_header.compressed_size   = compressed_size;
+    chunk_header.uncompressed_size = uncompressed_size;
+
     ROS_DEBUG("Writing CHUNK [%llu]: compression=%s compressed=%d uncompressed=%d",
     		  (unsigned long long) file_.getOffset(), chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size);
 

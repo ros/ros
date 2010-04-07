@@ -70,17 +70,6 @@ namespace bagmode
 }
 typedef bagmode::BagMode BagMode;
 
-// CompressionType
-namespace compression
-{
-    enum CompressionType
-    {
-        None = 0,
-        BZ2  = 1
-    };
-}
-typedef compression::CompressionType CompressionType;
-
 /**
  * Contains the compression type as a string, e.g. "none" or "bz2" (see constants.h),
  * and the compressed and uncompressed size of the chunk in bytes.
@@ -240,7 +229,7 @@ private:
     void writeMessageDefinitionRecords();
     void writeChunkInfoRecords();
     void startWritingChunk(ros::Time time);
-    void writeChunkHeader(const ChunkHeader& chunk_header);
+    void writeChunkHeader(CompressionType compression, uint32_t compressed_size, uint32_t uncompressed_size);
     void stopWritingChunk();
 
     // Reading

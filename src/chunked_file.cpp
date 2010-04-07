@@ -39,6 +39,7 @@
 #include <ros/ros.h>
 
 using std::string;
+using ros::Exception;
 
 namespace rosbag {
 
@@ -102,10 +103,10 @@ bool ChunkedFile::open(const string& filename, const string& mode) {
         return false;
     }
 
-    compressed_read_  = false;
-    compressed_write_ = false;
-    filename_         = filename;
-    offset_           = ftell(file_);
+    read_compression_  = compression::None;
+    write_compression_ = compression::None;
+    filename_          = filename;
+    offset_            = ftell(file_);
 
     return true;
 }
@@ -122,8 +123,8 @@ bool ChunkedFile::close() {
         return true;
 
     // If needed, close the compressed stream by changing to uncompressed mode
-    if (compressed_write_)
-        setWriteModeUncompressed();
+    if (write_compression_ != compression::None)
+        setWriteMode(compression::None);
 
     // Close the file
     int success = fclose(file_);
@@ -140,94 +141,116 @@ bool ChunkedFile::close() {
     return true;
 }
 
-bool ChunkedFile::setReadModeCompressed() {
+// Read/write modes
+
+bool ChunkedFile::setWriteMode(CompressionType type) {
     if (!file_) {
         ROS_ERROR("Can't set compression mode before opening a file");
         return false;
     }
 
-    if (compressed_read_)
+    if (type == write_compression_)
         return true;
 
-    bzfile_ = BZ2_bzReadOpen(&bzerror_, file_, verbosity_, 0, unused_, nUnused_);   
-    if (bzerror_ != BZ_OK) {            
-        checkError();        
-        BZ2_bzReadClose(&bzerror_, bzfile_);        
-        ROS_FATAL("Error opening file for reading compressed stream");
+    try {
+        switch (type) {
+            case compression::None: setWriteModeUncompressed(); break;
+            case compression::BZ2:  setWriteModeBZ2();          break;
+            case compression::GZ:   setWriteModeGZ();           break;
+        }
+    }
+    catch (const Exception& ex) {
+        ROS_ERROR("Error setting write mode: %s", ex.what());
         return false;
     }
 
-    clearUnused();
-    compressed_read_ = true;
+    write_compression_ = type;
 
     return true;
 }
 
-bool ChunkedFile::setWriteModeCompressed() {
+bool ChunkedFile::setReadMode(CompressionType type) {
     if (!file_) {
         ROS_ERROR("Can't set compression mode before opening a file");
         return false;
     }
 
-    if (compressed_write_)
+    if (type == read_compression_)
         return true;
 
-    bzfile_ = BZ2_bzWriteOpen(&bzerror_, file_, blockSize100k_, verbosity_, workFactor_);
-    if (bzerror_ != BZ_OK) {
-        BZ2_bzWriteClose(&bzerror_, bzfile_, 0, NULL, NULL);
-        ROS_FATAL("Error opening file for writing compressed stream");
+    try {
+        switch (type) {
+            case compression::None: setReadModeUncompressed(); break;
+            case compression::BZ2:  setReadModeBZ2();          break;
+            case compression::GZ:   setReadModeGZ();           break;
+        }
+    }
+    catch (const Exception& ex) {
+        ROS_ERROR("Error setting read mode: %s", ex.what());
         return false;
     }
 
-    compressed_in_ = 0;
-    compressed_write_ = true;
+    read_compression_ = type;
 
     return true;
 }
 
-bool ChunkedFile::setReadModeUncompressed() {
-    if (!file_) {
-        ROS_ERROR("Can't set compression mode before opening a file");
-        return false;
-    }
-
-    if (!compressed_read_)
-        return true;
-
-    BZ2_bzReadClose(&bzerror_, bzfile_);
-    if (bzerror_ == BZ_IO_ERROR) {
-        ROS_FATAL("BZ_IO_ERROR");
-        return false;
-    }
-
-    compressed_read_ = false;
-
-    return true;
-}
-
-bool ChunkedFile::setWriteModeUncompressed() {
-    if (!file_) {
-        ROS_ERROR("Can't set compression mode before opening a file");
-        return false;
-    }
-
-    if (!compressed_write_)
-        return true;
-
+void ChunkedFile::setWriteModeUncompressed() {
     unsigned int nbytes_in;
     unsigned int nbytes_out;
     BZ2_bzWriteClose(&bzerror_, bzfile_, 0, &nbytes_in, &nbytes_out);
-    if (bzerror_ == BZ_IO_ERROR) {
-        ROS_FATAL("BZ_IO_ERROR");
-        return false;
+
+    switch (bzerror_) {
+        case BZ_IO_ERROR: throw Exception("BZ_IO_ERROR");
     }
 
     offset_ += nbytes_out;
     compressed_in_ = 0;
+}
 
-    compressed_write_ = false;
+void ChunkedFile::setReadModeUncompressed() {
+    BZ2_bzReadClose(&bzerror_, bzfile_);
 
-    return true;
+    switch (bzerror_ == BZ_IO_ERROR) {
+        case BZ_IO_ERROR: throw Exception("BZ_IO_ERROR");
+    }
+}
+
+void ChunkedFile::setWriteModeBZ2() {
+    bzfile_ = BZ2_bzWriteOpen(&bzerror_, file_, blockSize100k_, verbosity_, workFactor_);
+
+    switch (bzerror_) {
+        case BZ_OK: break;
+        default: {
+            BZ2_bzWriteClose(&bzerror_, bzfile_, 0, NULL, NULL);
+            throw Exception("Error opening file for writing compressed stream");
+        }
+    }
+
+    compressed_in_ = 0;
+}
+
+void ChunkedFile::setReadModeBZ2() {
+    bzfile_ = BZ2_bzReadOpen(&bzerror_, file_, verbosity_, 0, unused_, nUnused_);
+
+    switch (bzerror_) {
+        case BZ_OK: break;
+        default: {
+            checkError();
+            BZ2_bzReadClose(&bzerror_, bzfile_);
+            throw Exception("Error opening file for reading compressed stream");
+        }
+    }
+
+    clearUnused();
+}
+
+void ChunkedFile::setWriteModeGZ() {
+    //! \todo
+}
+
+void ChunkedFile::setReadModeGZ() {
+    //! \todo
 }
 
 bool ChunkedFile::seek(uint64_t offset, int origin) {
@@ -236,8 +259,7 @@ bool ChunkedFile::seek(uint64_t offset, int origin) {
         return false;
     }
 
-    if (compressed_read_)
-        setReadModeUncompressed();
+    setReadMode(compression::None);
 
     int success = fseek(file_, offset, origin);
     if (success != 0) {
@@ -261,21 +283,29 @@ bool ChunkedFile::truncate(uint64_t length) {
 size_t ChunkedFile::write(const string& s) { return write((void*) s.c_str(), s.size()); }
 
 size_t ChunkedFile::write(void* ptr, size_t size) {
-    if (compressed_write_) {
-        BZ2_bzWrite(&bzerror_, bzfile_, ptr, size);
+    switch (write_compression_) {
+        case compression::None: {
+            size_t result = fwrite(ptr, 1, size, file_);
+            if (result != size)
+                return false;
 
-        switch (bzerror_) {
-        case BZ_IO_ERROR: ROS_ERROR("BZ_IO_ERROR: error writing the compressed file"); return false;
+            offset_ += size;
+            break;
         }
+        case compression::BZ2: {
+            BZ2_bzWrite(&bzerror_, bzfile_, ptr, size);
 
-        compressed_in_ += size;
-    }
-    else {
-        size_t result = fwrite(ptr, 1, size, file_);
-        if (result != size)
-            return false;
+            switch (bzerror_) {
+            case BZ_IO_ERROR: ROS_ERROR("BZ_IO_ERROR: error writing the compressed file"); return false;
+            }
 
-        offset_ += size;
+            compressed_in_ += size;
+            break;
+        }
+        case compression::GZ: {
+            //! \todo
+            break;
+        }
     }
 
     return true;
@@ -292,45 +322,45 @@ string ChunkedFile::getline() {
 }
 
 size_t ChunkedFile::read(void* ptr, size_t size) {
-    if (!compressed_read_) {
-        // Reading an uncompressed stream
-        if (nUnused_ > 0) {
-            // We have unused data from the last compressed read
-            if ((size_t) nUnused_ == size) {
-                // Copy the unused data into the buffer
-                memcpy(ptr, unused_, nUnused_);
+    switch (read_compression_) {
+        case compression::None: {
+            if (nUnused_ > 0) {
+                // We have unused data from the last compressed read
+                if ((size_t) nUnused_ == size) {
+                    // Copy the unused data into the buffer
+                    memcpy(ptr, unused_, nUnused_);
 
-                clearUnused();
-            }
-            else if ((size_t) nUnused_ < size) {
-                // Copy the unused data into the buffer
-                memcpy(ptr, unused_, nUnused_);
+                    clearUnused();
+                }
+                else if ((size_t) nUnused_ < size) {
+                    // Copy the unused data into the buffer
+                    memcpy(ptr, unused_, nUnused_);
 
-                // Still have data to read
-                size -= nUnused_;
+                    // Still have data to read
+                    size -= nUnused_;
 
-                // Read the remaining data from the file
-                int result = fread((char*) ptr + nUnused_, 1, size, file_);
-                if ((size_t) result != size) {
-                    ROS_ERROR("Error reading from file: wanted %zd bytes, read %d bytes", size, result);
-                    return nUnused_ + result;
+                    // Read the remaining data from the file
+                    int result = fread((char*) ptr + nUnused_, 1, size, file_);
+                    if ((size_t) result != size) {
+                        ROS_ERROR("Error reading from file: wanted %zd bytes, read %d bytes", size, result);
+                        return nUnused_ + result;
+                    }
+
+                    offset_ += size;
+
+                    clearUnused();
+                }
+                else {
+                    // nUnused_ > size
+                    memcpy(ptr, unused_, size);
+
+                    unused_ += size;
+                    nUnused_ -= size;
                 }
 
-                offset_ += size;
-
-                clearUnused();
-            }
-            else {
-                // nUnused_ > size
-                memcpy(ptr, unused_, size);
-
-                unused_ += size;
-                nUnused_ -= size;
+                return size;
             }
 
-            return size;
-        }
-        else {
             // No unused data - read from stream
             int result = fread(ptr, 1, size, file_);
             if ((size_t) result != size)
@@ -339,31 +369,35 @@ size_t ChunkedFile::read(void* ptr, size_t size) {
             offset_ += size;
 
             return result;
-        }        
-    }
-    else {
-        // Reading a compressed stream
-
-        BZ2_bzRead(&bzerror_, bzfile_, ptr, size);
-
-        offset_ += size;
-
-        switch (bzerror_) {
-        case BZ_OK:               return size;
-        case BZ_STREAM_END:
-            if (unused_ || nUnused_ > 0)
-                ROS_ERROR("unused data already available");
-            else
-                BZ2_bzReadGetUnused(&bzerror_, bzfile_, (void**) &unused_, &nUnused_);
-            return size;
-        case BZ_IO_ERROR:         ROS_ERROR("BZ_IO_ERROR: error reading from compressed stream");                                break;
-        case BZ_UNEXPECTED_EOF:   ROS_ERROR("BZ_UNEXPECTED_EOF: compressed stream ended before logical end-of-stream detected"); break;
-        case BZ_DATA_ERROR:       ROS_ERROR("BZ_DATA_ERROR: data integrity error detected in compressed stream");                break;
-        case BZ_DATA_ERROR_MAGIC: ROS_ERROR("BZ_DATA_ERROR_MAGIC: stream does not begin with requisite header bytes");           break;
-        case BZ_MEM_ERROR:        ROS_ERROR("BZ_MEM_ERROR: insufficient memory available");                                      break;
         }
+        case compression::BZ2: {
+            // Reading a compressed stream
 
-        return 0;
+            BZ2_bzRead(&bzerror_, bzfile_, ptr, size);
+
+            offset_ += size;
+
+            switch (bzerror_) {
+            case BZ_OK:               return size;
+            case BZ_STREAM_END:
+                if (unused_ || nUnused_ > 0)
+                    ROS_ERROR("unused data already available");
+                else
+                    BZ2_bzReadGetUnused(&bzerror_, bzfile_, (void**) &unused_, &nUnused_);
+                return size;
+            case BZ_IO_ERROR:         ROS_ERROR("BZ_IO_ERROR: error reading from compressed stream");                                break;
+            case BZ_UNEXPECTED_EOF:   ROS_ERROR("BZ_UNEXPECTED_EOF: compressed stream ended before logical end-of-stream detected"); break;
+            case BZ_DATA_ERROR:       ROS_ERROR("BZ_DATA_ERROR: data integrity error detected in compressed stream");                break;
+            case BZ_DATA_ERROR_MAGIC: ROS_ERROR("BZ_DATA_ERROR_MAGIC: stream does not begin with requisite header bytes");           break;
+            case BZ_MEM_ERROR:        ROS_ERROR("BZ_MEM_ERROR: insufficient memory available");                                      break;
+            }
+
+            return 0;
+        }
+        case compression::GZ: {
+            //! \todo
+            return 0;
+        }
     }
 }
 

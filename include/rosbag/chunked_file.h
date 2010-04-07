@@ -44,6 +44,17 @@
 namespace rosbag
 {
 
+namespace compression
+{
+    enum CompressionType
+    {
+        None = 0,
+        BZ2  = 1,
+        GZ   = 2
+    };
+}
+typedef compression::CompressionType CompressionType;
+
 //! ChunkedFile reads and writes files which contain interleaved chunks of compressed and uncompressed data.
 /*!
  * ChunkedFile uses libbzip2 (http://www.bzip.org) for reading/writing compressed data.
@@ -66,11 +77,8 @@ public:
     bool        isOpen()               const;                   //!< returns true iff the file is open for reading/writing
     bool        good()                 const;                   //!< true if hasn't reached end-of-file and no error
 
-    bool setReadModeCompressed();                               //!< future reads will be compressed
-    bool setReadModeUncompressed();                             //!< future reads will be uncompressed
-
-    bool setWriteModeCompressed();                              //!< future writes will be compressed
-    bool setWriteModeUncompressed();                            //!< future writes will be uncompressed
+    bool        setReadMode(CompressionType type);
+    bool        setWriteMode(CompressionType type);
 
     // File I/O
     size_t      write(const std::string& s);
@@ -87,6 +95,14 @@ private:
     void clearUnused();
     void checkError() const;
 
+    void setReadModeUncompressed();
+    void setReadModeBZ2();
+    void setReadModeGZ();
+
+    void setWriteModeUncompressed();
+    void setWriteModeBZ2();
+    void setWriteModeGZ();
+
 private:
     int         verbosity_;          //!< level of debugging output (0-4; 0 default). 0 is silent, 4 is max verbose debugging output
     int         blockSize100k_;      //!< compression block size (1-9; 9 default). 9 is best compression, most memory
@@ -95,9 +111,9 @@ private:
     std::string filename_;           //!< path to file
     FILE*       file_;               //!< file pointer
 
-    bool        writing_;            //!< true iff file is opened for writing
-    bool        compressed_read_;    //!< true iff file is reading/writing compressed data
-    bool        compressed_write_;   //!< true iff file is reading/writing compressed data
+    bool            writing_;            //!< true iff file is opened for writing
+    CompressionType read_compression_;   //!< true iff file is reading/writing compressed data
+    CompressionType write_compression_;  //!< true iff file is reading/writing compressed data
 
     BZFILE*     bzfile_;             //!< bzlib compressed file stream
     int         bzerror_;            //!< last error from bzlib

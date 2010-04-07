@@ -42,6 +42,7 @@ import logging
 import sys
 import time
 
+import roslib.names
 import roslib.network 
 
 from roslaunch.core import *
@@ -57,6 +58,44 @@ _TIMEOUT_MASTER_STOP  = 10.0 #seconds
 _ID = '/roslaunch'
 
 class RLTestTimeoutException(RLException): pass
+
+def _all_namespace_parents(p):
+    splits = [s for s in p.split(roslib.names.SEP) if s]
+    curr =roslib.names.SEP
+    parents = [curr]
+    for s in splits[:-1]:
+        next_ = curr + s + roslib.names.SEP
+        parents.append(next_)
+        curr = next_
+    return parents
+    
+def _unify_clear_params(params):
+    """
+    Reduce clear_params such that only the highest-level namespaces
+    are represented for overlapping namespaces. e.g. if both /foo/ and
+    /foo/bar are present, return just /foo/.
+
+    @param params: paremter namees
+    @type  params: [str]
+    @return: unified parameters
+    @rtype: [str]
+    """
+    # note: this is a quick-and-dirty implementation
+    
+    # canonicalize parameters
+    canon_params = []
+    for p in params:
+        if not p[-1] == roslib.names.SEP:
+            p += roslib.names.SEP
+        if not p in canon_params:
+            canon_params.append(p)
+    # reduce operation
+    clear_params = canon_params[:]
+    for p in canon_params:
+        for parent in _all_namespace_parents(p):
+            if parent in canon_params and p in clear_params and p != '/':
+                clear_params.remove(p)
+    return clear_params
 
 def _hostname_to_rosname(hostname):
     """
@@ -205,7 +244,10 @@ class ROSLaunchRunner(object):
         try:
             # multi-call style xmlrpc
             param_server_multi = config.master.get_multi()
-            for p in config.clear_params:
+
+            # clear specified parameter namespaces
+            # #2468 unify clear params to prevent error
+            for p in _unify_clear_params(config.clear_params):
                 if param_server.hasParam(_ID, p)[2]:
                     #printlog("deleting parameter [%s]"%p)
                     param_server_multi.deleteParam(_ID, p)

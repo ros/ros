@@ -52,7 +52,7 @@ import roslib.packages
 import roslib.stacks
 import roslib.stack_manifest
 
-from roscreate.core import read_template, author_name, print_warning
+from roscreate.core import read_template, author_name, print_warning, on_ros_path
 
 def get_templates():
     """
@@ -186,6 +186,10 @@ def roscreatestack_main():
     stack_dir = args[0]
     stack = os.path.basename(os.path.abspath(stack_dir))
 
+    if not on_ros_path(stack_dir):
+        print >> sys.stderr, "ERROR: roscreate-stack only work in directories in ROS_PACKAGE_PATH\nPlease update your ROS_PACKAGE_PATH environment variable."
+        sys.exit(1)
+    
     try:
         depends, licenses = compute_stack_depends_and_licenses(stack_dir)
     except roslib.packages.InvalidROSPkgException, e:

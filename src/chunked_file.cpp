@@ -122,9 +122,8 @@ bool ChunkedFile::close() {
     if (!file_)
         return true;
 
-    // If needed, close the compressed stream by changing to uncompressed mode
-    if (write_compression_ != compression::None)
-        setWriteMode(compression::None);
+    // Close any compressed stream by changing to uncompressed mode
+    setWriteMode(compression::None);
 
     // Close the file
     int success = fclose(file_);

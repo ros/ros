@@ -68,64 +68,65 @@ public:
 
     bool openWrite    (const std::string& filename);            //!< open file for writing
     bool openRead     (const std::string& filename);            //!< open file for reading
-    bool openReadWrite(const std::string& filename);            //!< open file for reading/writing
+    bool openReadWrite(const std::string& filename);            //!< open file for reading & writing
 
     bool close();                                               //!< close the file
 
-    std::string getFileName()          const;                   //!< get name of currently open file
-    uint64_t    getOffset()            const;                   //!< returns the current offset from the beginning of the file
-    uint32_t    getCompressedBytesIn() const;                   //!< returns the number of bytes writen to current compressed stream
-    bool        isOpen()               const;                   //!< returns true iff the file is open for reading/writing
-    bool        good()                 const;                   //!< true if hasn't reached end-of-file and no error
+    std::string getFileName()          const;                   //!< return path of currently open file
+    uint64_t    getOffset()            const;                   //!< return current offset from the beginning of the file
+    uint32_t    getCompressedBytesIn() const;                   //!< return the number of bytes written to current compressed stream
+    bool        isOpen()               const;                   //!< return true if file is open for reading or writing
+    bool        good()                 const;                   //!< return true if hasn't reached end-of-file and no error
 
     bool        setReadMode(CompressionType type);
     bool        setWriteMode(CompressionType type);
 
     // File I/O
     size_t      write(const std::string& s);
-    size_t      write(void* ptr, size_t size);                         //!< write size bytes from ptr to the file
-    size_t      read(void* ptr, size_t size);                          //!< read size bytes from the file into ptr
+    size_t      write(void* ptr, size_t size);                          //!< write size bytes from ptr to the file
+    size_t      read(void* ptr, size_t size);                           //!< read size bytes from the file into ptr
     std::string getline();
     bool        truncate(uint64_t length);
-    bool        seek(uint64_t offset, int origin = std::ios_base::beg);   //!< seek to given offset from origin
+    bool        seek(uint64_t offset, int origin = std::ios_base::beg); //!< seek to given offset from origin
 
-    void decompress(uint8_t* dest, unsigned int destLen, uint8_t* source, unsigned int sourceLen);
+    void decompress(CompressionType compression, uint8_t* dest, unsigned int destLen, uint8_t* source, unsigned int sourceLen);
 
 private:
     bool open(const std::string& filename, const std::string& mode);
-    void clearUnused();
-    void checkError() const;
 
+    void clearUnusedBZ2();
+    void checkErrorBZ2() const;
     void startWriteBZ2();
-    void startWriteZLIB();
     void stopWriteBZ2();
-    void stopWriteZLIB();
-
     void startReadBZ2();
-    void startReadZLIB();
     void stopReadBZ2();
+
+    void startWriteZLIB();
+    void stopWriteZLIB();
+    void startReadZLIB();
     void stopReadZLIB();
 
 private:
-    int         verbosity_;          //!< level of debugging output (0-4; 0 default). 0 is silent, 4 is max verbose debugging output
-    int         blockSize100k_;      //!< compression block size (1-9; 9 default). 9 is best compression, most memory
-    int         workFactor_;         //!< compression behavior for worst case, highly repetitive data (0-250; 30 default)
-
-    std::string filename_;               //!< path to file
-    FILE*       file_;                   //!< file pointer
+    std::string     filename_;           //!< path to file
+    FILE*           file_;               //!< file pointer
 
     bool            writing_;            //!< true iff file is opened for writing
     CompressionType read_compression_;   //!< current compression mode for reading data
     CompressionType write_compression_;  //!< current compression mode for writing data
 
-    BZFILE*     bzfile_;             //!< bzlib compressed file stream
-    int         bzerror_;            //!< last error from bzlib
+    uint64_t        offset_;             //!< current position in the file
+    uint64_t        compressed_in_;      //!< number of bytes written to current compressed stream
 
-    char*       unused_;             //!< extra data read by bzlib
-    int         nUnused_;            //!< number of bytes of extra data read by bzlib
+    // BZ2 parameters
+    int             verbosity_;          //!< level of debugging output (0-4; 0 default). 0 is silent, 4 is max verbose debugging output
+    int             blockSize100k_;      //!< compression block size (1-9; 9 default). 9 is best compression, most memory
+    int             workFactor_;         //!< compression behavior for worst case, highly repetitive data (0-250; 30 default)
 
-    uint64_t    offset_;             //!< current position in the file
-    uint64_t    compressed_in_;      //!< number of bytes written to current compressed stream
+    // BZ2 state
+    BZFILE*         bzfile_;             //!< bzlib compressed file stream
+    int             bzerror_;            //!< last error from bzlib
+    char*           unused_;             //!< extra data read by bzlib
+    int             nUnused_;            //!< number of bytes of extra data read by bzlib
 };
 
 }

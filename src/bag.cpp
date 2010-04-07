@@ -858,16 +858,21 @@ bool Bag::decompressChunk(uint64_t chunk_pos) {
         return false;
     }
 
-    if (chunk_header.compression != COMPRESSION_BZ2)
+    CompressionType compression;
+    if      (chunk_header.compression == COMPRESSION_NONE) compression = compression::None;
+    else if (chunk_header.compression == COMPRESSION_BZ2)  compression = compression::BZ2;
+    else if (chunk_header.compression == COMPRESSION_ZLIB) compression = compression::ZLIB;
+
+    if (compression == compression::None)
         return true;
 
     ROS_DEBUG("compressed_size: %d uncompressed_size: %d", chunk_header.compressed_size, chunk_header.uncompressed_size);
 
     chunk_buffer_.setSize(chunk_header.compressed_size);
     file_.read((char*) chunk_buffer_.getData(), chunk_header.compressed_size);
-    
+
     decompress_buffer_.setSize(chunk_header.uncompressed_size);
-    file_.decompress(decompress_buffer_.getData(), decompress_buffer_.getSize(), chunk_buffer_.getData(), chunk_buffer_.getSize());
+    file_.decompress(compression, decompress_buffer_.getData(), decompress_buffer_.getSize(), chunk_buffer_.getData(), chunk_buffer_.getSize());
 
     decompressed_chunk_ = chunk_pos;
 

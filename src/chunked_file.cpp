@@ -44,15 +44,16 @@ using ros::Exception;
 namespace rosbag {
 
 ChunkedFile::ChunkedFile() :
+    file_(NULL),
+    offset_(0),
+    compressed_in_(0),
     verbosity_(0), 
     blockSize100k_(9),
     workFactor_(30),
-    file_(NULL), 
-    bzfile_(NULL), 
+    bzfile_(NULL),
+    bzerror_(0),
     unused_(NULL),
-    nUnused_(0),
-    offset_(0),
-    compressed_in_(0)
+    nUnused_(0)
 {
 }
 
@@ -135,7 +136,7 @@ bool ChunkedFile::close() {
     file_ = NULL;
     filename_.clear();
     
-    clearUnused();
+    clearUnusedBZ2();
 
     return true;
 }
@@ -251,13 +252,13 @@ void ChunkedFile::startReadBZ2() {
     switch (bzerror_) {
         case BZ_OK: break;
         default: {
-            checkError();
+            checkErrorBZ2();
             BZ2_bzReadClose(&bzerror_, bzfile_);
             throw Exception("Error opening file for reading compressed stream");
         }
     }
 
-    clearUnused();
+    clearUnusedBZ2();
 }
 
 void ChunkedFile::stopReadBZ2() {
@@ -407,7 +408,7 @@ size_t ChunkedFile::read(void* ptr, size_t size) {
                     // Copy the unused data into the buffer
                     memcpy(ptr, unused_, nUnused_);
 
-                    clearUnused();
+                    clearUnusedBZ2();
                 }
                 else if ((size_t) nUnused_ < size) {
                     // Copy the unused data into the buffer
@@ -425,7 +426,7 @@ size_t ChunkedFile::read(void* ptr, size_t size) {
 
                     offset_ += size;
 
-                    clearUnused();
+                    clearUnusedBZ2();
                 }
                 else {
                     // nUnused_ > size
@@ -469,31 +470,42 @@ size_t ChunkedFile::read(void* ptr, size_t size) {
             case BZ_MEM_ERROR:        ROS_ERROR("BZ_MEM_ERROR: insufficient memory available");                                      break;
             }
 
-            return 0;
+            break;
         }
         case compression::ZLIB: {
             //! \todo
-            return 0;
+            break;
+        }
+    }
+
+    return 0;
+}
+
+void ChunkedFile::decompress(CompressionType compression, uint8_t* dest, unsigned int destLen, uint8_t* source, unsigned int sourceLen) {
+    switch (compression) {
+        case compression::BZ2: {
+            int result = BZ2_bzBuffToBuffDecompress((char*) dest, &destLen, (char*) source, sourceLen, 0, verbosity_);
+
+            switch (result) {
+            case BZ_OK:               break;
+            case BZ_CONFIG_ERROR:     ROS_ERROR("library has been mis-compiled"); break;
+            case BZ_PARAM_ERROR:      ROS_ERROR("dest is NULL or destLen is NULL or small != 0 && small != 1 or verbosity < 0 or verbosity > 4"); break;
+            case BZ_MEM_ERROR:        ROS_ERROR("insufficient memory is available"); break;
+            case BZ_OUTBUFF_FULL:     ROS_ERROR("size of the compressed data exceeds *destLen"); break;
+            case BZ_DATA_ERROR:       ROS_ERROR("data integrity error was detected in the compressed data"); break;
+            case BZ_DATA_ERROR_MAGIC: ROS_ERROR("compressed data doesn't begin with the right magic bytes"); break;
+            case BZ_UNEXPECTED_EOF:   ROS_ERROR("compressed data ends unexpectedly"); break;
+            }
+            break;
+        }
+        case compression::ZLIB: {
+            // todo
+            break;
         }
     }
 }
 
-void ChunkedFile::decompress(uint8_t* dest, unsigned int destLen, uint8_t* source, unsigned int sourceLen) {
-    int result = BZ2_bzBuffToBuffDecompress((char*) dest, &destLen, (char*) source, sourceLen, 0, verbosity_);
-
-    switch (result) {
-    case BZ_OK:               break;
-    case BZ_CONFIG_ERROR:     ROS_ERROR("library has been mis-compiled"); break;
-    case BZ_PARAM_ERROR:      ROS_ERROR("dest is NULL or destLen is NULL or small != 0 && small != 1 or verbosity < 0 or verbosity > 4"); break;
-    case BZ_MEM_ERROR:        ROS_ERROR("insufficient memory is available"); break;
-    case BZ_OUTBUFF_FULL:     ROS_ERROR("size of the compressed data exceeds *destLen"); break;
-    case BZ_DATA_ERROR:       ROS_ERROR("data integrity error was detected in the compressed data"); break;
-    case BZ_DATA_ERROR_MAGIC: ROS_ERROR("compressed data doesn't begin with the right magic bytes"); break;
-    case BZ_UNEXPECTED_EOF:   ROS_ERROR("compressed data ends unexpectedly"); break;
-    }
-}
-
-void ChunkedFile::checkError() const {
+void ChunkedFile::checkErrorBZ2() const {
     switch (bzerror_) {
     case BZ_OK:               ROS_INFO("BZ_OK");                break;
     case BZ_STREAM_END:       ROS_INFO("BZ_STREAM_END");        break;
@@ -506,7 +518,7 @@ void ChunkedFile::checkError() const {
     }
 }
 
-void ChunkedFile::clearUnused() {
+void ChunkedFile::clearUnusedBZ2() {
     unused_ = NULL;
     nUnused_ = 0;
 }

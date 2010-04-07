@@ -51,6 +51,44 @@ class MessageTest(unittest.TestCase):
         x = HeaderTest()
         x._check_types()
         
+    def test_Message_check_types(self):
+        # test on a generated message
+        # - use UInt16MultiArray because it has an embedded MultiArrayLayout
+        from std_msgs.msg import String, UInt16MultiArray, MultiArrayLayout, MultiArrayDimension
+        from roslib.message import SerializationError
+        # not checking overflow in this test
+        correct = [String(), String('foo'), String(''), String(data='data'),
+                   UInt16MultiArray(),
+                   UInt16MultiArray(MultiArrayLayout(), []), 
+                   UInt16MultiArray(MultiArrayLayout(data_offset=1), [1, 2, 3]),         
+                   UInt16MultiArray(layout=MultiArrayLayout(data_offset=1)),
+                   UInt16MultiArray(layout=MultiArrayLayout(dim=[])),                   
+                   UInt16MultiArray(layout=MultiArrayLayout(dim=[MultiArrayDimension()])),                   
+                   UInt16MultiArray(data=[1, 2, 3]),
+                   ]
+        for t in correct:
+            t._check_types()
+        for t in correct:
+            try:
+                t._check_types(exc=Exception())
+                self.fail("should have raised wrapped exc")
+            except SerializationError:
+                pass
+
+        wrong = [String(1), String(data=1),
+                 UInt16MultiArray(1, []),                 
+                 UInt16MultiArray(MultiArrayLayout(), 1),
+                 UInt16MultiArray(String(), []),
+                 UInt16MultiArray(layout=MultiArrayLayout(dim=[1])),  
+                 UInt16MultiArray(layout=MultiArrayLayout(data_offset='')),  
+                 ]
+        for t in wrong:
+            try:
+                t._check_types()
+                self.fail("should have raised")
+            except SerializationError:
+                pass
+                 
     def test_Message(self):
         import cStringIO
         from roslib.message import Message, SerializationError

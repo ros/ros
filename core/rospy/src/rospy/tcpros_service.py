@@ -45,7 +45,7 @@ import traceback
 
 import roslib.scriptutil 
 
-from rospy.exceptions import TransportInitError, TransportTerminated
+from rospy.exceptions import TransportInitError, TransportTerminated, ROSException, ROSInterruptException
 from rospy.registration import get_service_manager
 from rospy.service import _Service, ServiceException
 from rospy.tcpros_base import TCPROSTransport, TCPROSTransportProtocol, \
@@ -59,6 +59,88 @@ import rospy.names
 import rospy.validators
 
 logger = logging.getLogger('rospy.service')
+
+#########################################################
+# Service helpers
+
+def wait_for_service(service, timeout=None):
+    """
+    Blocks until service is available. Use this in
+    initialization code if your program depends on a
+    service already running.
+    @param service: name of service
+    @type  service: str
+    @param timeout: timeout time in seconds, None for no
+    timeout. NOTE: timeout=0 is invalid as wait_for_service actually
+    contacts the service, so non-blocking behavior is not
+    possible. For timeout=0 uses cases, just call the service without
+    waiting.
+    @type  timeout: double
+    @raise ROSException: if specified timeout is exceeded
+    @raise ROSInterruptException: if shutdown interrupts wait
+    """
+    def contact_service(resolved_name, timeout=10.0):
+        code, _, uri = master.lookupService(rospy.names.get_caller_id(), resolved_name)
+        if False and code == 1:
+            return True
+        elif True and code == 1:
+            # disabling for now as this is causing socket.error 22 "Invalid argument" on OS X
+            addr = rospy.core.parse_rosrpc_uri(uri)
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)            
+            try:
+                # we always want to timeout just in case we're connecting
+                # to a down service.
+                s.settimeout(timeout)
+                s.connect(addr)
+                h = { 'probe' : '1', 'md5sum' : '*',
+                      'callerid' : rospy.core.get_caller_id(),
+                      'service': resolved_name }
+                roslib.network.write_ros_handshake_header(s, h)
+                return True
+            finally:
+                if s is not None:
+                    s.close()
+    if timeout == 0.:
+        raise ValueError("timeout must be non-zero")
+    resolved_name = rospy.names.resolve_name(service)
+    master = roslib.scriptutil.get_master()    
+    first = False
+    if timeout:
+        timeout_t = time.time() + timeout
+        while not rospy.core.is_shutdown() and time.time() < timeout_t:
+            try:
+                if contact_service(resolved_name, timeout_t-time.time()):
+                    return
+                time.sleep(0.3)
+            except KeyboardInterrupt:
+                # re-raise
+                rospy.core.logdebug("wait_for_service: received keyboard interrupt, assuming signals disabled and re-raising")
+                raise 
+            except: # service not actually up
+                if first:
+                    first = False
+                    rospy.core.logerr("wait_for_service(%s): failed to contact [%s], will keep trying"%(resolved_name, uri))
+        if rospy.core.is_shutdown():
+            raise ROSInterruptException("rospy shutdown")
+        else:
+            raise ROSException("timeout exceeded while waiting for service %s"%resolved_name)
+    else:
+        while not rospy.core.is_shutdown():
+            try:
+                if contact_service(resolved_name):
+                    return
+                time.sleep(0.3)
+            except KeyboardInterrupt:
+                # re-raise
+                rospy.core.logdebug("wait_for_service: received keyboard interrupt, assuming signals disabled and re-raising")
+                raise 
+            except: # service not actually up
+                if first:
+                    first = False
+                    rospy.core.logerr("wait_for_service(%s): failed to contact [%s], will keep trying"%(resolved_name, uri))
+        if rospy.core.is_shutdown():
+            raise ROSInterruptException("rospy shutdown")
+    
 
 def convert_return_to_response(response, response_class):
     """
@@ -301,6 +383,9 @@ class ServiceProxy(_Service):
         self.protocol = TCPROSServiceClient(self.resolved_name,
                                             self.service_class, headers=headers)
         self.transport = None #for saving persistent connections
+
+    def wait_for_service(self, timeout=None):
+        wait_for_service(self.resolved_name, timeout=timeout)
 
     # #425
     def __call__(self, *args, **kwds):

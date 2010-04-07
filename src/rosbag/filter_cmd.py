@@ -39,9 +39,8 @@ import subprocess
 import optparse
 from optparse import OptionParser
 
-import rosbagmigration
-
-import rosrecord
+import migration
+import rosbag
 
 def filter_cmd(argv):
     """

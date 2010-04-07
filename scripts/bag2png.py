@@ -34,18 +34,18 @@
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 import rospy
-import rosrecord
+import rosbag
 
 import sys
 import array
 import Image
 
 def int16_str(d):
-  return array.array('B', [ min(x,255) for x in d ]).tostring()
-  #return array.array('f', [ float(x) for x in d ]).tostring()
+    return array.array('B', [ min(x, 255) for x in d ]).tostring()
+    #return array.array('f', [ float(x) for x in d ]).tostring()
 
 def msg2im(msg):
-  """ Take an image_msgs::Image and return a PIL image """
+  """Take an image_msgs::Image and return a PIL image"""
   if len(msg.uint8_data.data) == 0 and len(msg.int16_data.data) == 0:
     return None
   else:
@@ -61,7 +61,7 @@ def msg2im(msg):
     return Image.fromstring(mode, (w,h), image_data)
 
 counter = 0
-for topic, msg, t in rosrecord.logplayer(sys.argv[1]):
+for topic, msg, t in rosbag.logplayer(sys.argv[1]):
   if rospy.is_shutdown():
     break
   if topic.endswith("stereo/raw_stereo"):

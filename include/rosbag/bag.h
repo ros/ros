@@ -38,6 +38,7 @@
 #include "rosbag/buffer.h"
 #include "rosbag/chunked_file.h"
 #include "rosbag/constants.h"
+#include "rosbag/exceptions.h"
 
 #include <ros/header.h>
 #include <ros/time.h>
@@ -130,21 +131,6 @@ typedef std::multiset<MessageInstance, MessageInstanceCompare> MessageList;
 
 //! Intended typedef to use for the Bag Index
 typedef std::map<std::string, MessageList> BagIndex;
-
-//! Base class for rosbag exceptions
-class Exception : public std::runtime_error { };
-
-//! Exception thrown if trying to add or read from an unopened recorder/player
-class BagNotOpenException : public Exception { };
-
-//! Exception thrown when assorted IO problems
-class BagIOException : public Exception { };
-
-//! Exception thrown if an invalid MsgPos (such as from another bag) is passed to seek
-class InvalidMsgPosException : public Exception { };
-
-//! Exception thrown if trying to instantiate a MsgInstance as the wrong type
-class InstantiateException : public Exception { };
 
 class Bag
 {

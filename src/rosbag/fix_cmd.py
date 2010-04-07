@@ -39,7 +39,7 @@ import subprocess
 import optparse
 from optparse import OptionParser
 
-import rosbagmigration
+import migration
 
 def print_trans(old,new,indent):
   from_txt = "%s [%s]"%(old._type, old._md5sum)

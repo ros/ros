@@ -35,12 +35,14 @@
 #ifndef ROSBAG_RECORDER_H
 #define ROSBAG_RECORDER_H
 
-#include <queue>
 #include <sys/stat.h>
-#include <string>
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
+
+#include <queue>
+#include <string>
+#include <vector>
 
 #include <boost/thread/condition.hpp>
 #include <boost/thread/mutex.hpp>
@@ -74,22 +76,41 @@ public:
     ros::Time                    time;
 };
 
+struct RecorderOptions
+{
+    RecorderOptions() : trigger(false), record_all(false), quiet(false), append_date(true), prefix(""), name(""), split_size(0), buffer_size(0), limit(0) { }
+
+    bool        trigger;
+    bool        record_all;
+    bool        quiet;
+    bool        append_date;
+    bool        snapshot;
+    bool        verbose;
+    std::string prefix;
+    std::string name;
+    uint32_t    split_size;
+    uint32_t    buffer_size;
+    uint32_t    limit;
+
+    std::vector<std::string> topics;
+};
+
 class Recorder
 {
 public:
 	Recorder();
 
-	int run(int argc, char** argv);
+    void do_trigger();
+
+    int run(const RecorderOptions& options);
 
 private:
 	void print_usage();
-	void print_help();
 	void do_queue(topic_tools::ShapeShifter::ConstPtr msg, std::string topic_name, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
 	void snapshot_trigger(std_msgs::Empty::ConstPtr trigger);
 	void do_record();
 	void do_record_bb();
 	void do_check_master(const ros::TimerEvent& e, ros::NodeHandle& node_handle);
-	void do_trigger();
 
 	template<class T>
 	static std::string time_to_str(T ros_t);

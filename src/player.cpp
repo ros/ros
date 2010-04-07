@@ -445,31 +445,4 @@ int Player::checkBag() {
     return 0;
 }
 
-int main(int argc, char** argv) {
-	// we intercept this before starting the node since checkbag doesn't require a node
-	bool check_bag = false;
-    for (int i = 0; i < argc; i++)
-        if (!strcmp(argv[i], "-c") || !strcmp(argv[i], "-cd"))
-            check_bag = true;
-
-    if (check_bag) {
-    	Player rp;
-    	return rp.checkBag();
-    }
-
-    ros::init(argc, argv, "rosplay", ros::init_options::AnonymousName);
-
-    try {
-        Player rp;
-        rp.init(argc, argv);
-        rp.spin();
-    }
-    catch (std::runtime_error& e) {
-        ROS_FATAL("%s", e.what());
-        return 1;
-    }
-    
-    return 0;
-}
-
 }

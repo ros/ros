@@ -41,6 +41,7 @@
 #include <sys/stat.h>
 #include <time.h>
 
+#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
 
@@ -89,7 +90,7 @@ Recorder::Recorder() :
 	split_count_(0),
 	add_date_(true)
 {
-};
+}
 
 template<class T>
 std::string Recorder::time_to_str(T ros_t) {
@@ -98,28 +99,6 @@ std::string Recorder::time_to_str(T ros_t) {
     struct tm* tms = localtime(&t);
     strftime(buf, 1024, "%Y-%m-%d-%H-%M-%S", tms);
     return string(buf);
-}
-
-//! Helper function to print executable usage
-void Recorder::print_usage() {
-    fprintf(stderr, "Usage: rosbag [options] TOPIC1 [TOPIC2 TOPIC3...]\n"
-                    "  rosbag logs ROS message data to a file.\n");
-}
-
-//! Helper function to print executable options
-void Recorder::print_help() {
-    print_usage();
-
-    fprintf(stderr, "Options:\n");
-    fprintf(stderr, " -c <num>    : Only receive <num> messages on each topic\n");
-    fprintf(stderr, " -f <prefix> : Prepend file prefix to beginning of bag name (name will always end with date stamp)\n");
-    fprintf(stderr, " -F <fname>  : Record to a file named exactly <fname>.bag\n");
-    fprintf(stderr, " -a          : Record all published messages.\n");
-    fprintf(stderr, " -v          : Display a message every time a message is received on a topic\n");
-    fprintf(stderr, " -m          : Maximize internal buffer size in MB (Default: 256MB)  0 = infinite.\n");
-    fprintf(stderr, " -s          : (EXPERIMENTAL) Enable snapshot recording (don't write to file unless triggered)\n");
-    fprintf(stderr, " -t          : (EXPERIMENTAL) Trigger snapshot recording\n");
-    fprintf(stderr, " -h          : Display this help message\n");
 }
 
 //! Callback to be invoked to save messages into a queue
@@ -336,94 +315,61 @@ void Recorder::do_check_master(const ros::TimerEvent& e, ros::NodeHandle& node_h
 }
 
 void Recorder::do_trigger() {
-    ros::NodeHandle node_handle;
-    ros::Publisher pub = node_handle.advertise<std_msgs::Empty>("snapshot_trigger", 1, true);
+    ros::NodeHandle nh;
+    ros::Publisher pub = nh.advertise<std_msgs::Empty>("snapshot_trigger", 1, true);
     pub.publish(std_msgs::Empty());
-    ros::Timer terminate_timer = node_handle.createTimer(ros::Duration(1.0), boost::bind(&ros::shutdown));
-    ros::spin();  
+
+    ros::Timer terminate_timer = nh.createTimer(ros::Duration(1.0), boost::bind(&ros::shutdown));
+    ros::spin();
 }
 
-int Recorder::run(int argc, char** argv) {
-    ros::init(argc, argv, "rosbag", ros::init_options::AnonymousName);
-
-    bool check_master = false;   // whether master should be checked periodically
-
-    int option_char;
-    while ((option_char = getopt(argc, argv, "f:F:c:m:S:asthv")) != -1) {
-        switch (option_char) {
-        case 'f': prefix_ = string(optarg); break;
-        case 'F': prefix_ = string(optarg); add_date_ = false; break;
-        case 'c': count_ = atoi(optarg); break;
-        case 'a': check_master = true; break;
-        case 's': snapshot_ = true; break;
-        case 't': do_trigger(); return 0; break;
-        case 'v': verbose_ = true; break;
-        case 'm': {
-            int m = 0;
-            m = atoi(optarg);
-            if (m < 0) {
-                fprintf(stderr, "Buffer size must be 0 or positive.\n");
-                return 1;
-            }
-            max_queue_size_ = 1048576 * m;
-        }
-        break;
-        case 'S': {
-            int S = 0;
-            S = atoi(optarg);
-            if (S < 0) {
-                fprintf(stderr, "Splitting size must be 0 or positive.\n");
-                return 1;
-            }
-            split_size_ = 1048576 * S;
-        }
-        break;
-        case 'h': print_help(); return 1;
-        case '?': print_usage(); return 1;
-        }
+int Recorder::run(const RecorderOptions& opts) {
+    if (opts.trigger) {
+        do_trigger();
+        return 0;
     }
-    
-    if (snapshot_)
-        ROS_WARN("Using snapshot mode in rosbag is experimental and usage syntax is subject to change");
 
-    // Logic to make sure count is not specified with automatic topic subscription (implied by no listed topics)
-    if ((argc - optind) < 1) {
-        if (count_ > 0) {
+    if (opts.topics.size() == 0) {
+        // Make sure limit is not specified with automatic topic subscription
+        if (opts.limit > 0) {
             fprintf(stderr, "Specifing a count is not valid with automatic topic subscription.\n");
             return 1;
         }
-        if (!check_master) {
-            ROS_WARN("Running rosbag with no arguments has been deprecated.  Please use 'rosbag -a' instead\n");
-            check_master = true;
+
+        // Make sure topics are specified
+        if (!opts.record_all) {
+            fprintf(stderr, "No topics specified.\n");
+            return 1;
         }
     }
-    
-    ros::NodeHandle node_handle;
-    if (!node_handle.ok())
+
+    ros::NodeHandle nh;
+    if (!nh.ok())
         return 0;
 
     queue_ = new std::queue<OutgoingMessage>;
 
     // Spin up a thread for actually writing to file
     boost::thread record_thread;
-    if (snapshot_)
+    if (opts.snapshot)
         record_thread = boost::thread(boost::bind(&Recorder::do_record_bb, this));
     else
         record_thread = boost::thread(boost::bind(&Recorder::do_record, this));
-    
-    ros::Subscriber trigger = node_handle.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&Recorder::snapshot_trigger, this, _1));
-    
-    // Every non-processed argument is assumed to be a topic
-    for (int i = optind; i < argc; i++) {
+
+    // Subscribe to the snapshot trigger
+    ros::Subscriber trigger = nh.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&Recorder::snapshot_trigger, this, _1));
+
+    // Subscribe to each topic
+    BOOST_FOREACH(const string& topic, opts.topics) {
         shared_ptr<int> count(new int(count_));
         shared_ptr<ros::Subscriber> sub(new ros::Subscriber);
-        *sub = node_handle.subscribe<topic_tools::ShapeShifter>(argv[i], 100, boost::bind(&Recorder::do_queue, this, _1, argv[i], sub, count));
+        *sub = nh.subscribe<topic_tools::ShapeShifter>(topic, 100, boost::bind(&Recorder::do_queue, this, _1, topic, sub, count));
         num_subscribers_++;
     }
-    
+
     ros::Timer check_master_timer;
-    if (check_master)
-        check_master_timer = node_handle.createTimer(ros::Duration(1.0), boost::bind(&Recorder::do_check_master, this, _1, boost::ref(node_handle)));
+    if (opts.record_all)
+        check_master_timer = nh.createTimer(ros::Duration(1.0), boost::bind(&Recorder::do_check_master, this, _1, boost::ref(nh)));
     
     ros::MultiThreadedSpinner s(10);
     ros::spin(s);
@@ -437,9 +383,4 @@ int Recorder::run(int argc, char** argv) {
     return exit_code_;
 }
 
-}
-
-int main(int argc, char** argv) {
-	rosbag::Recorder recorder;
-	return recorder.run(argc, argv);
 }

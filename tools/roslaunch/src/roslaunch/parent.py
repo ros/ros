@@ -71,7 +71,7 @@ class ROSLaunchParent(object):
     This must be called from the Python Main thread due to signal registration.    
     """
 
-    def __init__(self, run_id, roslaunch_files, is_core=False, port=None, local_only=False, process_listeners=None):
+    def __init__(self, run_id, roslaunch_files, is_core=False, port=None, local_only=False, process_listeners=None, verbose=False):
         """
         @param run_id: UUID of roslaunch session
         @type  run_id: str
@@ -87,6 +87,8 @@ class ROSLaunchParent(object):
         @type  process_listeners: [L{roslaunch.pmon.ProcessListener}]
         @param port: (optional) override master port number from what is specified in the master URI.
         @type  port: int
+        @param verbose: (optional) print verbose output
+        @type  verbose: boolean
         @throws RLException
         """
         
@@ -98,14 +100,15 @@ class ROSLaunchParent(object):
         self.is_core = is_core
         self.port = port
         self.local_only = local_only
-
+        self.verbose = verbose
+        
         # flag to prevent multiple shutdown attempts
         self._shutting_down = False
         
         self.config = self.runner = self.server = self.pm = self.remote_runner = None
 
     def _load_config(self):
-        self.config = roslaunch.config.load_config_default(self.roslaunch_files, self.port)
+        self.config = roslaunch.config.load_config_default(self.roslaunch_files, self.port, verbose=self.verbose)
 
     def _start_pm(self):
         """

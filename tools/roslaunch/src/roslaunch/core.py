@@ -573,6 +573,21 @@ class Node(object):
             ('required', self.required),
             ]
 
+    #TODO: unify with to_remote_xml using a filter_fn
+    def to_xml(self):
+        """
+        convert representation into XML representation. Currently cannot represent private parameters.
+        @return: XML representation for remote machine
+        @rtype: str
+        """
+        t = self.xmltype()
+        attrs = [(a, v) for a, v in self.xmlattrs() if v != None]
+        xmlstr = '<%s %s>\n'%(t, ' '.join(['%s="%s"'%(val[0], _xml_escape(val[1])) for val in attrs]))
+        xmlstr += ''.join(['  <remap from="%s" to="%s" />\n'%tuple(r) for r in self.remap_args])
+        xmlstr += ''.join(['  <env name="%s" value="%s" />\n'%tuple(e) for e in self.env_args])
+        xmlstr += "</%s>"%t
+        return xmlstr
+
     def to_remote_xml(self):
         """
         convert representation into remote representation. Remote representation does
@@ -580,7 +595,6 @@ class Node(object):
         @return: XML representation for remote machine
         @rtype: str
         """
-        respawn_str = test_name_str = name_str = cwd_str = ''
         t = self.xmltype()
         attrs = [(a, v) for a, v in self.xmlattrs() if v != None and a != 'machine']
         xmlstr = '<%s %s>\n'%(t, ' '.join(['%s="%s"'%(val[0], _xml_escape(val[1])) for val in attrs]))

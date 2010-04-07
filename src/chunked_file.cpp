@@ -155,7 +155,7 @@ bool ChunkedFile::setWriteMode(CompressionType type) {
         switch (type) {
             case compression::None: setWriteModeUncompressed(); break;
             case compression::BZ2:  setWriteModeBZ2();          break;
-            case compression::GZ:   setWriteModeGZ();           break;
+            case compression::ZLIB: setWriteModeZLIB();         break;
         }
     }
     catch (const Exception& ex) {
@@ -181,7 +181,7 @@ bool ChunkedFile::setReadMode(CompressionType type) {
         switch (type) {
             case compression::None: setReadModeUncompressed(); break;
             case compression::BZ2:  setReadModeBZ2();          break;
-            case compression::GZ:   setReadModeGZ();           break;
+            case compression::ZLIB: setReadModeZLIB();         break;
         }
     }
     catch (const Exception& ex) {
@@ -244,11 +244,11 @@ void ChunkedFile::setReadModeBZ2() {
     clearUnused();
 }
 
-void ChunkedFile::setWriteModeGZ() {
+void ChunkedFile::setWriteModeZLIB() {
     //! \todo
 }
 
-void ChunkedFile::setReadModeGZ() {
+void ChunkedFile::setReadModeZLIB() {
     //! \todo
 }
 
@@ -301,7 +301,7 @@ size_t ChunkedFile::write(void* ptr, size_t size) {
             compressed_in_ += size;
             break;
         }
-        case compression::GZ: {
+        case compression::ZLIB: {
             //! \todo
             break;
         }
@@ -393,7 +393,7 @@ size_t ChunkedFile::read(void* ptr, size_t size) {
 
             return 0;
         }
-        case compression::GZ: {
+        case compression::ZLIB: {
             //! \todo
             return 0;
         }

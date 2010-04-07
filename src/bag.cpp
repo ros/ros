@@ -565,7 +565,7 @@ void Bag::writeChunkHeader(CompressionType compression, uint32_t compressed_size
     switch (compression) {
     case compression::None: chunk_header.compression = COMPRESSION_NONE; break;
     case compression::BZ2:  chunk_header.compression = COMPRESSION_BZ2;  break;
-    case compression::GZ:   chunk_header.compression = COMPRESSION_GZ;   break;
+    case compression::ZLIB: chunk_header.compression = COMPRESSION_ZLIB; break;
     }
     chunk_header.compressed_size   = compressed_size;
     chunk_header.uncompressed_size = uncompressed_size;

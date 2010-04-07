@@ -40,6 +40,7 @@
 #include <string>
 
 #include <bzlib.h>
+#include <zlib.h>
 
 namespace rosbag
 {
@@ -50,7 +51,7 @@ namespace compression
     {
         None = 0,
         BZ2  = 1,
-        GZ   = 2
+        ZLIB = 2
     };
 }
 typedef compression::CompressionType CompressionType;
@@ -97,23 +98,23 @@ private:
 
     void setReadModeUncompressed();
     void setReadModeBZ2();
-    void setReadModeGZ();
+    void setReadModeZLIB();
 
     void setWriteModeUncompressed();
     void setWriteModeBZ2();
-    void setWriteModeGZ();
+    void setWriteModeZLIB();
 
 private:
     int         verbosity_;          //!< level of debugging output (0-4; 0 default). 0 is silent, 4 is max verbose debugging output
     int         blockSize100k_;      //!< compression block size (1-9; 9 default). 9 is best compression, most memory
     int         workFactor_;         //!< compression behavior for worst case, highly repetitive data (0-250; 30 default)
 
-    std::string filename_;           //!< path to file
-    FILE*       file_;               //!< file pointer
+    std::string filename_;               //!< path to file
+    FILE*       file_;                   //!< file pointer
 
     bool            writing_;            //!< true iff file is opened for writing
-    CompressionType read_compression_;   //!< true iff file is reading/writing compressed data
-    CompressionType write_compression_;  //!< true iff file is reading/writing compressed data
+    CompressionType read_compression_;   //!< current compression mode for reading data
+    CompressionType write_compression_;  //!< current compression mode for writing data
 
     BZFILE*     bzfile_;             //!< bzlib compressed file stream
     int         bzerror_;            //!< last error from bzlib

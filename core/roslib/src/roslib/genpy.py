@@ -679,13 +679,17 @@ def array_serializer_generator(package, type_, name, serialize, is_numpy):
     except Exception, e:
         raise MsgGenerationException(e) #wrap
     
-## Generator for serializing complex type
-## @param serialize bool: if True, generate serialization
-## code. Otherwise, deserialization code.
-## @param is_numpy bool: if True, generate serializer code for numpy
-## datatypes instead of Python lists
-## @raise MsgGenerationException: if type is not a valid
 def complex_serializer_generator(package, type_, name, serialize, is_numpy):
+    """
+    Generator for serializing complex type
+    @param serialize: if True, generate serialization
+    code. Otherwise, deserialization code.
+    @type  serialize: bool
+    @param is_numpy: if True, generate serializer code for numpy
+    datatypes instead of Python lists
+    @type  is_numpy: bool
+    @raise MsgGenerationException: if type is not a valid
+    """
     # ordering of these statements is important as we mutate the type
     # string we are checking throughout. parse_type strips array
     # brackets, then we check for the 'complex' builtin types (string,
@@ -716,11 +720,16 @@ def complex_serializer_generator(package, type_, name, serialize, is_numpy):
             #Invalid
             raise MsgGenerationException("Unknown type: %s. Package context is %s"%(type_, package))
 
-## Generator (de)serialization code for multiple fields from spec
-## @param spec MsgSpec
-## @param start int: first field to serialize
-## @param end int: last field to serialize
 def simple_serializer_generator(spec, start, end, serialize): #primitives that can be handled with struct
+    """
+    Generator (de)serialization code for multiple fields from spec
+    @param spec: MsgSpec
+    @type  spec: MsgSpec
+    @param start: first field to serialize
+    @type  start: int
+    @param end: last field to serialize
+    @type  end: int
+    """
     vars_ = _serial_context + (', '+_serial_context).join(spec.names[start:end])
     pattern = compute_struct_pattern(spec.types[start:end])
     if serialize:
@@ -738,16 +747,21 @@ def simple_serializer_generator(spec, start, end, serialize): #primitives that c
             var = _serial_context+f
             yield "%s = bool(%s)"%(var, var)
 
-## Python generator that yields un-indented python code for
-## (de)serializing MsgSpec. The code this yields is meant to be
-## included in a class method and cannot be used
-## standalone. serialize_fn_generator and deserialize_fn_generator
-## wrap method to provide appropriate class field initializations.
-## @param package str: name of package the spec is being used in
-## @param serialize bool: if True, yield serialization
-## code. Otherwise, yield deserialization code.
-## @param is_numpy bool: if True, generate serializer code for numpy datatypes instead of Python lists
 def serializer_generator(package, spec, serialize, is_numpy):
+    """
+    Python generator that yields un-indented python code for
+    (de)serializing MsgSpec. The code this yields is meant to be
+    included in a class method and cannot be used
+    standalone. serialize_fn_generator and deserialize_fn_generator
+    wrap method to provide appropriate class field initializations.
+    @param package: name of package the spec is being used in
+    @type  package: str
+    @param serialize: if True, yield serialization
+    code. Otherwise, yield deserialization code.
+    @type  serialize: bool
+    @param is_numpy: if True, generate serializer code for numpy datatypes instead of Python lists
+    @type  is_numpy: bool
+    """
     # Break spec into chunks of simple (primitives) vs. complex (arrays, etc...)
     # Simple types are batch serialized using the python struct module.
     # Complex types are individually serialized 
@@ -774,10 +788,13 @@ def serializer_generator(package, spec, serialize, is_numpy):
         for y in simple_serializer_generator(spec, curr, len(types), serialize):
             yield y
 
-## generator for body of serialize() function
-## @param is_numpy bool: if True, generate serializer code for numpy
-## datatypes instead of Python lists
 def serialize_fn_generator(package, spec, is_numpy=False):
+    """
+    generator for body of serialize() function
+    @param is_numpy: if True, generate serializer code for numpy
+    datatypes instead of Python lists
+    @type  is_numpy: bool
+    """
     # method-var context #########
     yield "try:"
     push_context('self.')
@@ -789,10 +806,13 @@ def serialize_fn_generator(package, spec, is_numpy=False):
     yield "except TypeError, te: self._check_types(te)" 
     # done w/ method-var context #
     
-## generator for body of deserialize() function
-## @param is_numpy bool: if True, generate serializer code for numpy
-## datatypes instead of Python lists
 def deserialize_fn_generator(package, spec, is_numpy=False):
+    """
+    generator for body of deserialize() function
+    @param is_numpy: if True, generate serializer code for numpy
+    datatypes instead of Python lists
+    @type  is_numpy: bool
+    """
     yield "try:"
     
     #Instantiate embedded type classes
@@ -836,7 +856,7 @@ def msg_generator(package, name, spec):
     spec = make_python_safe(spec) # remap spec names to be Python-safe
     spec_names = spec.names
 
-    yield '# autogenerated by genmsg_py from %s.msg. Do not edit.'%name
+    yield '"""autogenerated by genmsg_py from %s.msg. Do not edit."""'%name
     yield 'import roslib.message\nimport struct\n'
     import_strs = []
     for t in spec.types:
@@ -890,19 +910,20 @@ def msg_generator(package, name, spec):
         yield "  _slot_types = []"
 
     yield """
-  ## Constructor. Any message fields that are implicitly/explicitly
-  ## set to None will be assigned a default value. The recommend
-  ## use is keyword arguments as this is more robust to future message
-  ## changes.  You cannot mix in-order arguments and keyword arguments.
-  ##
-  ## The available fields are:
-  ##   %s
-  ##
-  ## @param self: self
-  ## @param args: complete set of field values, in .msg order
-  ## @param kwds: use keyword arguments corresponding to message field names
-  ## to set specific fields. 
   def __init__(self, *args, **kwds):
+    \"\"\"
+    Constructor. Any message fields that are implicitly/explicitly
+    set to None will be assigned a default value. The recommend
+    use is keyword arguments as this is more robust to future message
+    changes.  You cannot mix in-order arguments and keyword arguments.
+    
+    The available fields are:
+       %s
+    
+    @param args: complete set of field values, in .msg order
+    @param kwds: use keyword arguments corresponding to message field names
+    to set specific fields. 
+    \"\"\"
     if args or kwds:
       super(%s, self).__init__(*args, **kwds)"""%(','.join(spec_names), name)
 
@@ -917,37 +938,51 @@ def msg_generator(package, name, spec):
           yield "      self.%s = %s"%(s, default_value(t, package))
 
     yield """
-  ## internal API method
-  def _get_types(self): return self._slot_types
+  def _get_types(self):
+    \"\"\"
+    internal API method
+    \"\"\"
+    return self._slot_types
 
-  ## serialize message into buffer
-  ## @param buff StringIO: buffer
-  def serialize(self, buff):"""
+  def serialize(self, buff):
+    \"\"\"
+    serialize message into buffer
+    @param buff: buffer
+    @type  buff: StringIO
+    \"\"\""""
     for y in serialize_fn_generator(package, spec):
         yield "    "+ y
     yield """
-  ## unpack serialized message in str into this message instance
-  ## @param self: self
-  ## @param str str: byte array of serialized message
-  def deserialize(self, str):"""
+  def deserialize(self, str):
+    \"\"\"
+    unpack serialized message in str into this message instance
+    @param str: byte array of serialized message
+    @type  str: str
+    \"\"\""""
     for y in deserialize_fn_generator(package, spec):
         yield "    " + y
     yield ""
 
     yield """
-  ## serialize message with numpy array types into buffer
-  ## @param self: self
-  ## @param buff StringIO: buffer
-  ## @param numpy module: numpy python module
-  def serialize_numpy(self, buff, numpy):"""
+  def serialize_numpy(self, buff, numpy):
+    \"\"\"
+    serialize message with numpy array types into buffer
+    @param buff: buffer
+    @type  buff: StringIO
+    @param numpy: numpy python module
+    @type  numpy module
+    \"\"\""""
     for y in serialize_fn_generator(package, spec, is_numpy=True):
         yield "    "+ y
     yield """
-  ## unpack serialized message in str into this message instance using numpy for array types
-  ## @param self: self
-  ## @param str str: byte array of serialized message
-  ## @param numpy module: numpy python module
-  def deserialize_numpy(self, str, numpy):"""
+  def deserialize_numpy(self, str, numpy):
+    \"\"\"
+    unpack serialized message in str into this message instance using numpy for array types
+    @param str: byte array of serialized message
+    @type  str: str
+    @param numpy: numpy python module
+    @type  numpy: module
+    \"\"\""""
     for y in deserialize_fn_generator(package, spec, is_numpy=True):
         yield "    " + y
     yield ""

@@ -340,7 +340,8 @@ class ROSLaunchRunner(object):
                 local_addrs = roslib.network.get_local_addresses()
                 import socket
                 reverse_ip = socket.gethostbyname(hostname)
-                if reverse_ip not in local_addrs:
+                # 127. check is due to #1260
+                if reverse_ip not in local_addrs and not reverse_ip.startswith('127.'):
                     self.logger.warn("IP address %s local hostname '%s' not in local addresses (%s)."%(reverse_ip, hostname, ','.join(local_addrs)))
                     print >> sys.stderr, \
 """WARNING: IP address %s for local hostname '%s' does not appear to match

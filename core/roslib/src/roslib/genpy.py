@@ -918,13 +918,11 @@ def msg_generator(package, name, spec):
 
     yield """
   ## internal API method
-  ## @param self: self
-  def _get_types(self): return %s._slot_types
+  def _get_types(self): return self._slot_types
 
   ## serialize message into buffer
-  ## @param self: self
   ## @param buff StringIO: buffer
-  def serialize(self, buff):"""%name
+  def serialize(self, buff):"""
     for y in serialize_fn_generator(package, spec):
         yield "    "+ y
     yield """

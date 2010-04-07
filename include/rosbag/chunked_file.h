@@ -96,13 +96,15 @@ private:
     void clearUnused();
     void checkError() const;
 
-    void setReadModeUncompressed();
-    void setReadModeBZ2();
-    void setReadModeZLIB();
+    void startWriteBZ2();
+    void startWriteZLIB();
+    void stopWriteBZ2();
+    void stopWriteZLIB();
 
-    void setWriteModeUncompressed();
-    void setWriteModeBZ2();
-    void setWriteModeZLIB();
+    void startReadBZ2();
+    void startReadZLIB();
+    void stopReadBZ2();
+    void stopReadZLIB();
 
 private:
     int         verbosity_;          //!< level of debugging output (0-4; 0 default). 0 is silent, 4 is max verbose debugging output

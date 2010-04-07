@@ -152,14 +152,26 @@ bool ChunkedFile::setWriteMode(CompressionType type) {
         return true;
 
     try {
-        switch (type) {
-            case compression::None: setWriteModeUncompressed(); break;
-            case compression::BZ2:  setWriteModeBZ2();          break;
-            case compression::ZLIB: setWriteModeZLIB();         break;
+        switch (write_compression_) {
+            case compression::None: break;
+            case compression::BZ2:  stopWriteBZ2();  break;
+            case compression::ZLIB: stopWriteZLIB(); break;
         }
     }
     catch (const Exception& ex) {
-        ROS_ERROR("Error setting write mode: %s", ex.what());
+        ROS_ERROR("Error stopping write mode: %s", ex.what());
+        return false;
+    }
+
+    try {
+        switch (type) {
+            case compression::None: break;
+            case compression::BZ2:  startWriteBZ2();  break;
+            case compression::ZLIB: startWriteZLIB(); break;
+        }
+    }
+    catch (const Exception& ex) {
+        ROS_ERROR("Error starting write mode: %s", ex.what());
         return false;
     }
 
@@ -178,14 +190,26 @@ bool ChunkedFile::setReadMode(CompressionType type) {
         return true;
 
     try {
-        switch (type) {
-            case compression::None: setReadModeUncompressed(); break;
-            case compression::BZ2:  setReadModeBZ2();          break;
-            case compression::ZLIB: setReadModeZLIB();         break;
+        switch (read_compression_) {
+            case compression::None: break;
+            case compression::BZ2:  stopReadBZ2();  break;
+            case compression::ZLIB: stopReadZLIB(); break;
         }
     }
     catch (const Exception& ex) {
-        ROS_ERROR("Error setting read mode: %s", ex.what());
+        ROS_ERROR("Error stopping read mode: %s", ex.what());
+        return false;
+    }
+
+    try {
+        switch (type) {
+            case compression::None: break;
+            case compression::BZ2:  startReadBZ2();  break;
+            case compression::ZLIB: startReadZLIB(); break;
+        }
+    }
+    catch (const Exception& ex) {
+        ROS_ERROR("Error starting read mode: %s", ex.what());
         return false;
     }
 
@@ -194,28 +218,7 @@ bool ChunkedFile::setReadMode(CompressionType type) {
     return true;
 }
 
-void ChunkedFile::setWriteModeUncompressed() {
-    unsigned int nbytes_in;
-    unsigned int nbytes_out;
-    BZ2_bzWriteClose(&bzerror_, bzfile_, 0, &nbytes_in, &nbytes_out);
-
-    switch (bzerror_) {
-        case BZ_IO_ERROR: throw Exception("BZ_IO_ERROR");
-    }
-
-    offset_ += nbytes_out;
-    compressed_in_ = 0;
-}
-
-void ChunkedFile::setReadModeUncompressed() {
-    BZ2_bzReadClose(&bzerror_, bzfile_);
-
-    switch (bzerror_ == BZ_IO_ERROR) {
-        case BZ_IO_ERROR: throw Exception("BZ_IO_ERROR");
-    }
-}
-
-void ChunkedFile::setWriteModeBZ2() {
+void ChunkedFile::startWriteBZ2() {
     bzfile_ = BZ2_bzWriteOpen(&bzerror_, file_, blockSize100k_, verbosity_, workFactor_);
 
     switch (bzerror_) {
@@ -229,7 +232,20 @@ void ChunkedFile::setWriteModeBZ2() {
     compressed_in_ = 0;
 }
 
-void ChunkedFile::setReadModeBZ2() {
+void ChunkedFile::stopWriteBZ2() {
+    unsigned int nbytes_in;
+    unsigned int nbytes_out;
+    BZ2_bzWriteClose(&bzerror_, bzfile_, 0, &nbytes_in, &nbytes_out);
+
+    switch (bzerror_) {
+        case BZ_IO_ERROR: throw Exception("BZ_IO_ERROR");
+    }
+
+    offset_ += nbytes_out;
+    compressed_in_ = 0;
+}
+
+void ChunkedFile::startReadBZ2() {
     bzfile_ = BZ2_bzReadOpen(&bzerror_, file_, verbosity_, 0, unused_, nUnused_);
 
     switch (bzerror_) {
@@ -244,11 +260,40 @@ void ChunkedFile::setReadModeBZ2() {
     clearUnused();
 }
 
-void ChunkedFile::setWriteModeZLIB() {
-    //! \todo
+void ChunkedFile::stopReadBZ2() {
+    BZ2_bzReadClose(&bzerror_, bzfile_);
+
+    switch (bzerror_ == BZ_IO_ERROR) {
+        case BZ_IO_ERROR: throw Exception("BZ_IO_ERROR");
+    }
 }
 
-void ChunkedFile::setReadModeZLIB() {
+void ChunkedFile::startWriteZLIB() {
+    /*
+    int ret, flush;
+    unsigned have;
+    z_stream strm;
+    unsigned char in[CHUNK];
+    unsigned char out[CHUNK];
+
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    strm.opaque = Z_NULL;
+    ret = deflateInit(&strm, level);
+    if (ret != Z_OK)
+        return ret;
+
+    //! \todo
+    */
+}
+
+void ChunkedFile::stopWriteZLIB() {
+}
+
+void ChunkedFile::stopReadZLIB() {
+}
+
+void ChunkedFile::startReadZLIB() {
     //! \todo
 }
 
@@ -302,7 +347,40 @@ size_t ChunkedFile::write(void* ptr, size_t size) {
             break;
         }
         case compression::ZLIB: {
-            //! \todo
+            /*
+            // compress until end of file
+            do {
+                strm.avail_in = fread(in, 1, CHUNK, source);
+                if (ferror(source)) {
+                    (void)deflateEnd(&strm);
+                    return Z_ERRNO;
+                }
+                flush = feof(source) ? Z_FINISH : Z_NO_FLUSH;
+                strm.next_in = in;
+
+                // run deflate() on input until output buffer not full, finish compression if all of source has been read in
+                do {
+                    strm.avail_out = CHUNK;
+                    strm.next_out = out;
+                    ret = deflate(&strm, flush);    // no bad return value
+                    assert(ret != Z_STREAM_ERROR);  // state not clobbered
+                    have = CHUNK - strm.avail_out;
+                    if (fwrite(out, 1, have, dest) != have || ferror(dest)) {
+                        (void) deflateEnd(&strm);
+                        return Z_ERRNO;
+                    }
+                }
+                while (strm.avail_out == 0);
+                ROS_ASSERT(strm.avail_in == 0);     // all input will be used
+
+                // done when last data in file processed
+            }
+            while (flush != Z_FINISH);
+            ROS_ASSERT(ret == Z_STREAM_END);    // stream will be complete
+
+            // clean up and return
+            (void) deflateEnd(&strm);
+            */
             break;
         }
     }

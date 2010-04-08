@@ -454,9 +454,10 @@ def _fill_message_args(msg, msg_args, keys, prefix=''):
     @return: unused/leftover message arguments. 
     @rtype: [args]
     @raise ROSMessageException: if not enough message arguments to fill message
+    @raise ValueError: if msg or msg_args is not of correct type
     """
     if not isinstance(msg, (Message, roslib.rostime.TVal)):
-        raise ROSMessageException("msg must be a Message instance: %s"%msg)
+        raise ValueError("msg must be a Message instance: %s"%msg)
 
     if type(msg_args) == dict:
         
@@ -481,7 +482,7 @@ def _fill_message_args(msg, msg_args, keys, prefix=''):
         for f, v in itertools.izip(msg.__slots__, msg_args):
             _fill_val(msg, f, v, keys, prefix)
     else:
-        raise ROSMessageException("invalid message_args type: %s"%str(msg_args))
+        raise ValueError("invalid msg_args type: %s"%str(msg_args))
 
 def fill_message_args(msg, msg_args, keys={}):
     """

@@ -31,7 +31,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: catunit 3804 2009-02-11 02:16:00Z rob_wheeler $
+# Revision $Id$
 
 """
 Cleanunit is a simple script that takes all the xml-formatted unit

@@ -39,15 +39,17 @@ libraries for type checking and retrieving message classes by type
 name.
 """
 
-import cStringIO
 import math
 import itertools
 import struct
-import types
 
 import roslib.exceptions
 from roslib.rostime import Time, Duration
-import roslib.genpy
+
+# common struct pattern singletons for msgs to use. Although this
+# would better placed in a generator-specific module, we don't want to
+# add another import to messages (which incurs higher import cost)
+struct_I = struct.Struct('<I')
 
 class ROSMessageException(roslib.exceptions.ROSLibException):
     """
@@ -200,8 +202,10 @@ _widths = {
 def check_type(field_name, field_type, field_val):
     """
     Dynamic type checker that maps ROS .msg types to python types and
-    verifies the python value.  check_type() is not designed to be fast
-    and is targeted at error diagnosis.
+    verifies the python value.  check_type() is not designed to be
+    fast and is targeted at error diagnosis. This type checker is not
+    designed to run fast and is meant only for error diagnosis.
+    
     @param field_name: ROS .msg field name
     @type  field_name: str
     @param field_type: ROS .msg field type
@@ -210,6 +214,9 @@ def check_type(field_name, field_type, field_val):
     @type  field_val: Any
     @raise SerializationError: if typecheck fails
     """
+    # lazy-import as roslib.genpy has lots of extra imports. Would
+    # prefer to do lazy-init in a different manner
+    import roslib.genpy
     if roslib.genpy.is_simple(field_type):
         # check sign and width
         if field_type in ['byte', 'int8', 'int16', 'int32', 'int64']:
@@ -376,6 +383,7 @@ def get_printable_message_args(msg, buff=None, prefix=''):
     @return: printable representation of  msg args
     @rtype: str
     """
+    import cStringIO
     if buff is None:
         buff = cStringIO.StringIO()
     for f in msg.__slots__:

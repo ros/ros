@@ -102,6 +102,8 @@ def resolve_name_without_node_name(name):
     In general, this is okay, unless the name is a ~name, in which
     case we have to raise an ValueError
 
+    @param name: ROS name to resolve
+    @type  name: str
     @raise ValueError: if name is a ~name
     @raise ROSInitException: if name is remapped to a ~name
     """
@@ -149,9 +151,6 @@ def resolve_name(name, caller_id=None):
     @param caller_id: node name to resolve relative to. To
     resolve to local namespace, omit this parameter (or use None)
     @type  caller_id: str
-    @param remap: If False, remapping is turned off. This is mainly
-    used to prevent circular remappings.
-    @type  remap: bool
     @return: Resolved name. If name is empty/None, resolve_name
     returns parent namespace. If namespace is empty/None,
     @rtype: str

@@ -171,13 +171,17 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
 # coverage instance
 _cov = None
 def _start_coverage(packages):
+    print "START COVERGE"
     global _cov
     try:
         import coverage
-        _cov = coverage.coverage()
-        # load previous results as we need to accumulate
-        _cov.load()
-        _cov.start()
+        try:
+            _cov = coverage.coverage()
+            # load previous results as we need to accumulate
+            _cov.load()
+            _cov.start()
+        except coverage.CoverageException:
+            print >> sys.stderr, "WARNING: you have an older version of python-coverage that is not support. Please update to the version provided by 'easy_install coverage'"
     except ImportError, e:
         print >> sys.stderr, """WARNING: cannot import python-coverage, coverage tests will not run.
 To install coverage, run 'easy_install coverage'"""

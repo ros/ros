@@ -45,7 +45,7 @@ import roslaunch.rlutil
 
 def usage():
     print >> sys.stderr, """Usage:
-\troslaunch-check [file|directory]
+\troslaunch-check <file|directory> [env=value...]
 """
     print sys.argv
     sys.exit(os.EX_USAGE)
@@ -71,6 +71,12 @@ if __name__ == '__main__':
         usage()
     roslaunch_path = sys.argv[1]
 
+    # #2590: implementing this quick and dirty as this script should only be used by higher level tools
+    env_vars = sys.argv[2:]
+    for e in env_vars:
+        var, val = e.split('=')
+        os.environ[var] = val
+
     pkg_dir, pkg = roslib.packages.get_dir_pkg(roslaunch_path) 
 
     if os.path.isfile(roslaunch_path):
@@ -79,7 +85,9 @@ if __name__ == '__main__':
     else:
         print "checking *.launch in directory", roslaunch_path        
         error_msg = check_roslaunch_dir(roslaunch_path)
-        outname = os.path.relpath(os.path.abspath(roslaunch_path), pkg_dir).replace(os.sep, '_')
+        abspath = os.path.abspath
+        relpath = abspath(roslaunch_path)[len(abspath(pkg_dir))+1:]
+        outname = relpath.replace(os.sep, '_')
         if outname == '.':
             outname = '_pkg'
 

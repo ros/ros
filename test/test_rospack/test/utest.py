@@ -70,6 +70,9 @@ aliases = {
     'rosdep0': 'rosdeps0'
     }
 
+# Grab the initial CWD, so that we can set it back later.
+initial_cwd = os.getcwd()
+
 ## Process-level tests of rospack executable
 class RospackTestCase(unittest.TestCase):
     
@@ -109,6 +112,16 @@ class RospackTestCase(unittest.TestCase):
             self.assertEquals(p.returncode, alias_p.returncode)
             self.assertEquals(stdout, alias_stdout)
             #self.assertEquals(stderr, alias_stderr)
+
+	# rospack should only yield non-negative return codes.  A negative
+	# return code indicates a crash (e.g., SIGSEGV, SIGABORT), which is
+	# never ok.
+	if p.returncode < 0:
+	  # Some tests change CWD before calling _run_rospack(), then
+	  # change it back to the original value afterward.  If we're going 
+	  # to fail here, we need to set it back first.
+	  os.chdir(initial_cwd)
+	  self.fail('rospack returned non-zero exit code, indicating a crash')
 
         return p.returncode, stdout.strip(), stderr
 
@@ -511,6 +524,14 @@ class RospackTestCase(unittest.TestCase):
         retcode, retval = self._rospack_list(rr, None)
         self.assertEquals(0, retcode)
         self.failIf(retval, "rospack list on empty directory returned value %s"%retval)
+
+    ## test rospack depends-on1 in a directory that's not a package (#2556)
+    def test_rospack_depends_on_not_a_package(self):
+        pwd = os.getcwd()
+        ros_root = os.path.abspath('test')
+        os.chdir(os.path.abspath('test_empty'))
+        self.erospack_fail(ros_root, None, None, 'depends-on1')
+        os.chdir(pwd)
         
     # test that rospack list removes duplicates
     def test_rospack_list_dups(self):

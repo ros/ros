@@ -394,7 +394,7 @@ void TimerManager<T, D, E>::updateNext(const TimerManager<T, D, E>::TimerInfoPtr
     // detect time jumping forward, as well as callbacks that are too slow
     if (info->next_expected + info->period < current_time)
     {
-      ROSCPP_LOG_DEBUG("Time jumped forward by [%f] for timer of period [%f], resetting timer (current=%f, next_expected=%f)", (current_time - info->next_expected).toSec(), info->period.toSec(), current_time.toSec(), info->next_expected.toSec());
+      ROS_DEBUG("Time jumped forward by [%f] for timer of period [%f], resetting timer (current=%f, next_expected=%f)", (current_time - info->next_expected).toSec(), info->period.toSec(), current_time.toSec(), info->next_expected.toSec());
       info->next_expected = current_time;
     }
   }

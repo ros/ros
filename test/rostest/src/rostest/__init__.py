@@ -40,6 +40,8 @@ Python unittests with additional reporting mechanisms and rosbuild
 (CMake) integration.
 """
 
+import sys
+
 XML_OUTPUT_FLAG='--gtest_output=xml:' #use gtest-compatible flag
 
 def is_subscriber(topic, subscriber_id):
@@ -179,7 +181,6 @@ def _start_coverage(packages):
     except ImportError, e:
         print >> sys.stderr, """WARNING: cannot import python-coverage, coverage tests will not run.
 To install coverage, run 'easy_install coverage'"""
-    import sys
     try:
         # reload the module to get coverage
         for package in packages:

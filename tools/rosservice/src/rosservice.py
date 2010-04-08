@@ -563,6 +563,14 @@ def _rosservice_cmd_call(argv):
     service_name = args[0]
 
     if options.wait:
+        # have to make sure there is at least a master as the error
+        # behavior of all ros online tools is to fail if there is no
+        # master
+        master = roslib.scriptutil.get_master()
+        try:
+            code, msg, service_uri = master.getPid('/')
+        except socket.error:
+            raise ROSServiceIOException("Unable to communicate with master!")
         rospy.wait_for_service(service_name)
 
     # optimization: in order to prevent multiple probe calls against a service, lookup the service_class

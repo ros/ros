@@ -553,11 +553,17 @@ def _rosservice_cmd_call(argv):
     parser.add_option("-v", dest="verbose", default=False,
                       action="store_true",
                       help="print verbose output")
+    parser.add_option("--wait", dest="wait", default=False,
+                      action="store_true",
+                      help="wait for service to be advertised")
 
     (options, args) = parser.parse_args(args)
     if len(args) == 0:
         parser.error("service must be specified")
     service_name = args[0]
+
+    if options.wait:
+        rospy.wait_for_service(service_name)
 
     # optimization: in order to prevent multiple probe calls against a service, lookup the service_class
     service_name = roslib.scriptutil.script_resolve_name('rosservice', args[0])

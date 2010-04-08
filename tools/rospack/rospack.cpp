@@ -743,6 +743,17 @@ Package *ROSPack::get_pkg(string pkgname)
   
 int ROSPack::cmd_depends_on(bool include_indirect)
 {
+  // We can't proceed if the argument-parsing logic wasn't able to provide
+  // any package name.  Note that we need to check for an empty opt_package
+  // here, but not in other places (e.g., cmd_deps()), because here we're
+  // catching the exception that get_pkg() throws when it can't find the
+  // package.  Elsewhere, we let that exception propagate up.
+  if(opt_package.size() == 0)
+  {
+    string errmsg = string("no package name given, and current directory is not a package root");
+    throw runtime_error(errmsg);
+  }
+
   // Don't warn about missing deps
   opt_warn_on_missing_deps = false;
 

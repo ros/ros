@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2008, Willow Garage, Inc.
@@ -31,44 +32,48 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: add_two_ints_client 3804 2009-02-11 02:16:00Z rob_wheeler $
+# Author: Brian Gerkey
 
-PKG = 'topic_tools' # this package name
+PKG = 'topic_tools'
+import roslib; roslib.load_manifest(PKG)
 
-import roslib; roslib.load_manifest(PKG) 
-
-import sys
-import os
-import string
-
+import unittest
 import rospy
 
-# imports the MuxSelect service 
-from topic_tools.srv import MuxSelect
+from topic_tools.srv import MuxAdd
+from topic_tools.srv import MuxDelete
+from topic_tools.srv import MuxList
 
-USAGE = 'USAGE: mux_select MUX_NAME TOPIC'
+class MuxServiceTestCase(unittest.TestCase):
+    def make_srv_proxies(self):
+        try:
+            rospy.wait_for_service('mux/add', 5)
+            rospy.wait_for_service('mux/delete', 5)
+            rospy.wait_for_service('mux/list', 5)
+        except rospy.ROSException, e:
+            self.fail('failed to find a required service: ' + `e`)
 
-def call_srv(m, t):
-    # There's probably a nicer rospy way of doing this
-    s = m + '/select'
-    print "Waiting for service \"%s\""%(s)
-    rospy.wait_for_service(s)
-    print "Selecting \"%s\" at mux \"%s\""%(t, m)
-    try:
-        srv = rospy.ServiceProxy(s, MuxSelect)
-	return srv(t)
-    except rospy.ServiceException, e:
-        print "Service call failed: %s"%e
+        add_srv = rospy.ServiceProxy('mux/add', MuxAdd)
+        delete_srv = rospy.ServiceProxy('mux/delete', MuxDelete)
+        list_srv = rospy.ServiceProxy('mux/list', MuxList)
 
-def usage():
-    return "%s "%sys.argv[0]
+        return (add_srv, delete_srv, list_srv)
+            
+    def test_add_delete_list(self):
+        add_srv, delete_srv, list_srv = self.make_srv_proxies()
+        topics = list_srv().topics
+        self.assertEquals(set(topics), set(['input']))
+        add_srv('new_input')
+        topics = list_srv().topics
+        self.assertEquals(set(topics), set(['input', 'new_input']))
+        delete_srv('input')
+        topics = list_srv().topics
+        self.assertEquals(set(topics), set(['new_input']))
+        delete_srv('new_input')
+        topics = list_srv().topics
+        self.assertEquals(set(topics), set([]))
 
 if __name__ == "__main__":
-    args = rospy.myargv()
-    if len(args) != 3:
-        print USAGE
-	sys.exit(1)
+    import rostest
+    rostest.unitrun(PKG, 'mux_services', MuxServiceTestCase)
 
-    m = args[1]
-    t = args[2]
-    call_srv(m, t)

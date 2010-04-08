@@ -98,6 +98,7 @@ if __name__ == '__main__':
             f.write(rostest.rostestutil.test_failure_junit_xml(test_name, message))
             f.close()
         print "wrote test file to [%s]"%test_file
+        sys.exit(1)
     else:
         print "passed"
         with open(test_file, 'w') as f:

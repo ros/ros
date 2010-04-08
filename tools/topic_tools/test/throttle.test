@@ -22,5 +22,20 @@
     <param name="test_duration" value="2.0" />
   </test>
 
-  <!-- TODO: test byte-based throttling -->
+  <!-- Test byte-based throttling.  Note that the desired rate for the
+  hztest is a function of both the requested bytes/second and the length of
+  the string being published:
+    10 msg/sec = 110 B/sec / 11 B/msg 
+  (11 = 4-byte length + 7 characters in "chatter")
+  It would be more direct to test the bandwidth directly, but hztest 
+  doesn't do that.  -->
+  <node pkg="topic_tools" type="throttle" name="throttle_bytes"
+        args="bytes input 110 1 output_bytes"/>
+  <test test-name="throttle_hztest_bytes" pkg="rostest" type="hztest">
+    <param name="topic" value="output_bytes"/>
+    <param name="hz" value="10.0"/>
+    <param name="hzerror" value="1.0"/>
+    <param name="test_duration" value="4.0" />
+  </test>
+
 </launch>

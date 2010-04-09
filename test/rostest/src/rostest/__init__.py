@@ -171,7 +171,6 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
 # coverage instance
 _cov = None
 def _start_coverage(packages):
-    print "START COVERGE"
     global _cov
     try:
         import coverage

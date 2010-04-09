@@ -58,20 +58,9 @@ ChunkedFile::~ChunkedFile() {
     close();
 }
 
-bool ChunkedFile::openReadWrite(const string& filename) {
-    writing_ = true;
-    return open(filename, "r+b");
-}
-
-bool ChunkedFile::openWrite(const string& filename) {
-    writing_ = true;
-    return open(filename, "wb");
-}
-
-bool ChunkedFile::openRead(const string& filename) {
-    writing_ = false;
-    return open(filename, "rb");
-}
+bool ChunkedFile::openReadWrite(const string& filename) { return open(filename, "r+b"); }
+bool ChunkedFile::openWrite    (const string& filename) { return open(filename, "wb");  }
+bool ChunkedFile::openRead     (const string& filename) { return open(filename, "rb");  }
 
 bool ChunkedFile::open(const string& filename, const string& mode) {
     ROS_INFO("Opening file '%s' with mode '%s'", filename.c_str(), mode.c_str());
@@ -226,29 +215,27 @@ bool ChunkedFile::seek(uint64_t offset, int origin) {
 uint64_t ChunkedFile::getOffset()            const { return offset_;        }
 uint32_t ChunkedFile::getCompressedBytesIn() const { return compressed_in_; }
 
+size_t ChunkedFile::write(const string& s)        { return write((void*) s.c_str(), s.size()); }
+size_t ChunkedFile::write(void* ptr, size_t size) { return write_stream_->write(ptr, size);    }
+size_t ChunkedFile::read(void* ptr, size_t size)  { return read_stream_->read(ptr, size);      }
+
 bool ChunkedFile::truncate(uint64_t length) {
     int fd = fileno(file_);
     return ftruncate(fd, length) == 0;
 }
 
-size_t ChunkedFile::write(const string& s)        { return write((void*) s.c_str(), s.size()); }
-size_t ChunkedFile::write(void* ptr, size_t size) { return write_stream_->write(ptr, size);    }
-
 //! \todo add error handling
 string ChunkedFile::getline() {
-	char buffer[1024];
-	fgets(buffer, 1024, file_);
-	string s(buffer);
-	offset_ += s.size();
+    char buffer[1024];
+    fgets(buffer, 1024, file_);
+    string s(buffer);
+    offset_ += s.size();
 
     return s;
 }
 
-size_t ChunkedFile::read(void* ptr, size_t size) { return read_stream_->read(ptr, size); }
-
 void ChunkedFile::decompress(CompressionType compression, uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len) {
-    shared_ptr<Stream> stream = stream_factory_->getStream(compression);
-    stream->decompress(dest, dest_len, source, source_len);
+    stream_factory_->getStream(compression)->decompress(dest, dest_len, source, source_len);
 }
 
 void ChunkedFile::clearUnused() {

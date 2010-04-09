@@ -5,7 +5,7 @@ macro(genmsg_py)
   rosbuild_get_msgs(_msglist)
   set(_inlist "")
   set(_autogen "")
-  set(genmsg_py_exe ${rospy_PACKAGE_PATH}/scripts/genmsg_py)
+  set(genmsg_py_exe ${rospy_PACKAGE_PATH}/scripts/genmsg_py.py)
 
   foreach(_msg ${_msglist})
     # Construct the path to the .msg file

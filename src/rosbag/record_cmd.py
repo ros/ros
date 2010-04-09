@@ -32,10 +32,10 @@
 #
 # Revision $Id$
 
-import sys
+import optparse
 import signal
 import subprocess
-import optparse
+import sys
 from optparse import OptionParser
 
 def record_cmd(argv):
@@ -50,29 +50,31 @@ def record_cmd(argv):
     parser.add_option("--split",               dest="split",    default=0,     type='int', action="store", help="split bag into files of size SIZE", metavar="SIZE")
     parser.add_option("-b", "--buffsize",      dest="buffsize", default=256,   type='int', action="store", help="use in internal buffer of SIZE MB (Default: %default, 0 = infinite)", metavar="SIZE")
     parser.add_option("-l", "--limit",         dest="num",      default=0,     type='int', action="store", help="only record NUM messages on each topic")
+    parser.add_option("-z", "--zlib",          dest="zlib",     default=False, action="store_true",        help="use ZLIB compression")
+    parser.add_option("-j", "--bz2",           dest="bz2",      default=False, action="store_true",        help="use BZ2 compression")
 
     (options, args) = parser.parse_args(argv)
 
-    if (len(args) == 0 and not options.all):
+    if len(args) == 0 and not options.all:
         parser.error("You must specify a topic name or else use the '-a' option.")
 
-    if (options.prefix is not None and options.name is not None):
+    if options.prefix is not None and options.name is not None:
         parser.error("Can't set both prefix and name.")
 
-    cmd = ["rosrecord"]
+    cmd = ['record']
 
-    cmd.extend(["-m", str(options.buffsize)])
-    cmd.extend(["-c", str(options.num)])
-    cmd.extend(["-S", str(options.split)])
+    cmd.extend(['-m', str(options.buffsize)])
+    cmd.extend(['-c', str(options.num)])
+    cmd.extend(['-S', str(options.split)])
 
     if options.prefix: cmd.extend(["-f", options.prefix])
     if options.name:   cmd.extend(["-F", options.name])
     if options.all:    cmd.extend(["-a"])
- #   if options.gzip:   cmd.extend(["-z"])
- #   if options.bzip:   cmd.extend(["-j"])
+    if options.zlib:   cmd.extend(["-z"])
+    if options.bz2:    cmd.extend(["-j"])
 
     cmd.extend(args)
-
+    
     proc = subprocess.Popen(cmd)
 
     # Ignore sigint since we're basically just pretending to be the subprocess now.

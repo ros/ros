@@ -53,15 +53,18 @@
 #include <std_msgs/Empty.h>
 #include <topic_tools/shape_shifter.h>
 
+#include "rosbag/bag.h"
+#include "rosbag/stream.h"
+
 namespace rosbag
 {
 
 class OutgoingMessage
 {
 public:
-    OutgoingMessage(const std::string& _topic_name, topic_tools::ShapeShifter::ConstPtr _msg, ros::Time _time);
+    OutgoingMessage(const std::string& _topic, topic_tools::ShapeShifter::ConstPtr _msg, ros::Time _time);
 
-    std::string                         topic_name;
+    std::string                         topic;
     topic_tools::ShapeShifter::ConstPtr msg;
     ros::Time                           time;
 };
@@ -69,28 +72,29 @@ public:
 class OutgoingQueue
 {
 public:
-    OutgoingQueue(const std::string& _fname, std::queue<OutgoingMessage>* _queue, ros::Time _time);
+    OutgoingQueue(const std::string& _filename, std::queue<OutgoingMessage>* _queue, ros::Time _time);
 
-    std::string                  fname;
+    std::string                  filename;
     std::queue<OutgoingMessage>* queue;
     ros::Time                    time;
 };
 
 struct RecorderOptions
 {
-    RecorderOptions() : trigger(false), record_all(false), quiet(false), append_date(true), prefix(""), name(""), split_size(0), buffer_size(0), limit(0) { }
+    RecorderOptions();
 
-    bool        trigger;
-    bool        record_all;
-    bool        quiet;
-    bool        append_date;
-    bool        snapshot;
-    bool        verbose;
-    std::string prefix;
-    std::string name;
-    uint32_t    split_size;
-    uint32_t    buffer_size;
-    uint32_t    limit;
+    bool            trigger;
+    bool            record_all;
+    bool            quiet;
+    bool            append_date;
+    bool            snapshot;
+    bool            verbose;
+    CompressionType compression;
+    std::string     prefix;
+    std::string     name;
+    uint32_t        split_size;
+    uint32_t        buffer_size;
+    uint32_t        limit;
 
     std::vector<std::string> topics;
 };
@@ -98,15 +102,24 @@ struct RecorderOptions
 class Recorder
 {
 public:
-	Recorder();
+	Recorder(const RecorderOptions& options);
 
     void do_trigger();
 
-    int run(const RecorderOptions& options);
+    bool is_subscribed(const std::string& topic) const;
+
+    boost::shared_ptr<ros::Subscriber> subscribe(const std::string& topic);
+
+    int run();
 
 private:
 	void print_usage();
-	void do_queue(topic_tools::ShapeShifter::ConstPtr msg, std::string topic_name, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
+
+    void start_writing(Bag& bag);
+    void stop_writing(Bag& bag);
+    void update_filenames();
+
+    void do_queue(topic_tools::ShapeShifter::ConstPtr msg, std::string topic_name, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
 	void snapshot_trigger(std_msgs::Empty::ConstPtr trigger);
 	void do_record();
 	void do_record_bb();
@@ -116,23 +129,27 @@ private:
 	static std::string time_to_str(T ros_t);
 
 private:
-	bool                          verbose_;              //!< verbose flag
-	bool                          snapshot_;             //!< snapshot flag
+	RecorderOptions               options_;
 
-	int                           exit_code_;            //!< eventual exit code
-	std::set<std::string>         currently_recording_;  //!< set of currenly recording topics
-	int                           count_;                //!< used for initialization of counting messages
-	int                           num_subscribers_;      //!< used for book-keeping of our number of subscribers
+	std::string                   target_filename_;
+	std::string                   write_filename_;
+
+    std::set<std::string>         currently_recording_;  //!< set of currenly recording topics
+    int                           num_subscribers_;      //!< used for book-keeping of our number of subscribers
+
+    int                           exit_code_;            //!< eventual exit code
+
+    boost::condition_variable_any queue_condition_;      //!< conditional variable for queue
+    boost::mutex                  queue_mutex_;          //!< mutex for queue
 	std::queue<OutgoingMessage>*  queue_;                //!< queue for storing
 	uint64_t                      queue_size_;           //!< queue size
 	uint64_t                      max_queue_size_;       //!< max queue size
-	uint64_t                      split_size_;           //!< split size
+
 	uint64_t                      split_count_;          //!< split count
+
 	std::queue<OutgoingQueue>     queue_queue_;          //!< queue of queues to be used by the snapshot recorders
-	boost::mutex                  queue_mutex_;          //!< mutex for queue
-	boost::condition_variable_any queue_condition_;      //!< conditional variable for queue
-	bool                          add_date_;             //!< flag to add date
-	std::string                   prefix_;               //!< prefix
+
+	ros::Time                     last_buffer_warn_;
 };
 
 }

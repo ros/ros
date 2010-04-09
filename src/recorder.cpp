@@ -34,12 +34,13 @@
 
 #include "rosbag/recorder.h"
 
+#include <sys/stat.h>
+#include <time.h>
+
 #include <queue>
 #include <set>
 #include <sstream>
 #include <string>
-#include <sys/stat.h>
-#include <time.h>
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
@@ -62,8 +63,8 @@ namespace rosbag {
 
 // OutgoingMessage
 
-OutgoingMessage::OutgoingMessage(const string& _topic_name, topic_tools::ShapeShifter::ConstPtr _msg, Time _time) :
-    topic_name(_topic_name),
+OutgoingMessage::OutgoingMessage(const string& _topic, topic_tools::ShapeShifter::ConstPtr _msg, Time _time) :
+    topic(_topic),
     msg(_msg),
     time(_time)
 {
@@ -71,25 +72,115 @@ OutgoingMessage::OutgoingMessage(const string& _topic_name, topic_tools::ShapeSh
 
 // OutgoingQueue
 
-OutgoingQueue::OutgoingQueue(const string& _fname, std::queue<OutgoingMessage>* _queue, Time _time) :
-    fname(_fname),
+OutgoingQueue::OutgoingQueue(const string& _filename, std::queue<OutgoingMessage>* _queue, Time _time) :
+    filename(_filename),
     queue(_queue),
     time(_time)
 {
 }
 
-Recorder::Recorder() :
-	verbose_(false),
-	snapshot_(false),
-	exit_code_(0),
-	count_(-1),
+// RecorderOptions
+
+RecorderOptions::RecorderOptions() :
+    trigger(false),
+    record_all(false),
+    quiet(false),
+    append_date(true),
+    snapshot(false),
+    verbose(false),
+    compression(compression::None),
+    prefix(""),
+    name(""),
+    split_size(0),
+    buffer_size(0),
+    limit(0)
+{
+}
+
+// Recorder
+
+Recorder::Recorder(const RecorderOptions& options) :
+    options_(options),
 	num_subscribers_(0),
+	exit_code_(0),
 	queue_size_(0),
 	max_queue_size_(1048576 * 256),
-	split_size_(0),
-	split_count_(0),
-	add_date_(true)
+	split_count_(0)
 {
+}
+
+int Recorder::run() {
+    if (options_.trigger) {
+        do_trigger();
+        return 0;
+    }
+
+    if (options_.topics.size() == 0) {
+        // Make sure limit is not specified with automatic topic subscription
+        if (options_.limit > 0) {
+            fprintf(stderr, "Specifing a count is not valid with automatic topic subscription.\n");
+            return 1;
+        }
+
+        // Make sure topics are specified
+        if (!options_.record_all) {
+            fprintf(stderr, "No topics specified.\n");
+            return 1;
+        }
+    }
+
+    ros::NodeHandle nh;
+    if (!nh.ok())
+        return 0;
+
+    last_buffer_warn_ = Time();
+
+    queue_ = new std::queue<OutgoingMessage>;
+
+    // Spin up a thread for writing to the file
+    boost::thread record_thread;
+    if (options_.snapshot)
+        record_thread = boost::thread(boost::bind(&Recorder::do_record_bb, this));
+    else
+        record_thread = boost::thread(boost::bind(&Recorder::do_record, this));
+
+    // Subscribe to the snapshot trigger
+    ros::Subscriber trigger = nh.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&Recorder::snapshot_trigger, this, _1));
+
+    // Subscribe to each topic
+    BOOST_FOREACH(const string& topic, options_.topics) {
+        subscribe(topic);
+    }
+
+    ros::Timer check_master_timer;
+    if (options_.record_all)
+        check_master_timer = nh.createTimer(ros::Duration(1.0), boost::bind(&Recorder::do_check_master, this, _1, boost::ref(nh)));
+
+    ros::MultiThreadedSpinner s(10);
+    ros::spin(s);
+
+    queue_condition_.notify_all();
+
+    record_thread.join();
+
+    delete queue_;
+
+    return exit_code_;
+}
+
+bool Recorder::is_subscribed(const string& topic) const {
+    return currently_recording_.find(topic) != currently_recording_.end();
+}
+
+shared_ptr<ros::Subscriber> Recorder::subscribe(const string& topic) {
+    ros::NodeHandle nh;
+    shared_ptr<int> count(new int(options_.limit));
+    shared_ptr<ros::Subscriber> sub(new ros::Subscriber);
+    *sub = nh.subscribe<topic_tools::ShapeShifter>(topic, 100, boost::bind(&Recorder::do_queue, this, _1, topic, sub, count));
+    currently_recording_.insert(topic);
+    num_subscribers_++;
+
+    return sub;
 }
 
 template<class T>
@@ -102,35 +193,37 @@ std::string Recorder::time_to_str(T ros_t) {
 }
 
 //! Callback to be invoked to save messages into a queue
-void Recorder::do_queue(topic_tools::ShapeShifter::ConstPtr msg, string topic_name, shared_ptr<ros::Subscriber> subscriber, shared_ptr<int> count) {
+void Recorder::do_queue(topic_tools::ShapeShifter::ConstPtr msg, string topic, shared_ptr<ros::Subscriber> subscriber, shared_ptr<int> count) {
     Time rectime = Time::now();
     
-    if (verbose_)
+    if (options_.verbose)
         cout << "Received message on topic " << subscriber->getTopic() << endl;
 
-    OutgoingMessage out(topic_name, msg, rectime);
+    OutgoingMessage out(topic, msg, rectime);
     
     {
         boost::mutex::scoped_lock lock(queue_mutex_);
+
         queue_->push(out);
         queue_size_ += out.msg->msgBufUsed;
         
+        // Check to see if buffer has been exceeded
         while (max_queue_size_ > 0 && queue_size_ > max_queue_size_) {
             OutgoingMessage drop = queue_->front();
             queue_->pop();
             queue_size_ -= drop.msg->msgBufUsed;
-            if (!snapshot_) {
-                static ros::Time last = ros::Time();
-                ros::Time now = ros::Time::now();
-                if (now > last + ros::Duration(5.0)) {
-                    ROS_WARN("rosbag buffer exceeded.  Dropping oldest queued message.");
-                    last = now;
+
+            if (!options_.snapshot) {
+                Time now = Time::now();
+                if (now > last_buffer_warn_ + ros::Duration(5.0)) {
+                    ROS_WARN("rosbag record buffer exceeded.  Dropping oldest queued message.");
+                    last_buffer_warn_ = now;
                 }
             }
         }
     }
   
-    if (!snapshot_)
+    if (!options_.snapshot)
         queue_condition_.notify_all();
 
     // If we are book-keeping count, decrement and possibly shutdown
@@ -138,81 +231,77 @@ void Recorder::do_queue(topic_tools::ShapeShifter::ConstPtr msg, string topic_na
         (*count)--;
         if ((*count) == 0) {
             subscriber->shutdown();
+
             num_subscribers_--;
-      
+
             if (num_subscribers_ == 0)
                 ros::shutdown();
         }
     }
 }
 
+void Recorder::update_filenames() {
+    vector<string> parts;
+
+    if (options_.prefix.length() > 0)
+        parts.push_back(options_.prefix);
+    if (options_.append_date)
+        parts.push_back(time_to_str(ros::WallTime::now()));
+    if (options_.split_size > 0)
+        parts.push_back(boost::lexical_cast<string>(split_count_));
+
+    target_filename_ = parts[0];
+    for (unsigned int i = 1; i < parts.size(); i++)
+        target_filename_ += string("_") + parts[i];
+
+    target_filename_ += string(".bag");
+    write_filename_ = target_filename_ + string(".active");
+}
+
 //! Callback to be invoked to actually do the recording
 void Recorder::snapshot_trigger(std_msgs::Empty::ConstPtr trigger) {
-	// Build filename
-    ros::WallTime rectime = ros::WallTime::now();
+    update_filenames();
     
-    vector<string> join;
-    if (prefix_.length() > 0)
-        join.push_back(prefix_);
-    if (add_date_)
-        join.push_back(time_to_str(rectime));
-    
-    string tgt_fname = join[0];
-    for (size_t i = 1; i < join.size(); i++)
-        tgt_fname += string("_") + join[i];    
-    tgt_fname += string(".bag");
-    
-    ROS_INFO("Triggered snapshot recording with name %s.", tgt_fname.c_str());
+    ROS_INFO("Triggered snapshot recording with name %s.", target_filename_.c_str());
     
     {
         boost::mutex::scoped_lock lock(queue_mutex_);
-        
-        OutgoingQueue out(tgt_fname, queue_, Time::now());
-        
-        queue_ = new std::queue<OutgoingMessage>;
+        queue_queue_.push(OutgoingQueue(target_filename_, queue_, Time::now()));
+        queue_      = new std::queue<OutgoingMessage>;
         queue_size_ = 0;
-        
-        queue_queue_.push(out);
     }
+
     queue_condition_.notify_all();
+}
+
+void Recorder::start_writing(Bag& bag) {
+    bag.setCompression(options_.compression);
+
+    update_filenames();
+    if (!bag.open(write_filename_, bagmode::Write)) {
+        ROS_FATAL("Could not open output file: %s", write_filename_.c_str());
+        exit_code_ = 1;
+        ros::shutdown();
+    }
+    ROS_INFO("Recording to %s.", target_filename_.c_str());
+}
+
+void Recorder::stop_writing(Bag& bag) {
+    ROS_INFO("Closing %s.", target_filename_.c_str());
+    bag.close();
+    rename(write_filename_.c_str(), target_filename_.c_str());
 }
 
 //! Thread that actually does writing to file.
 void Recorder::do_record() {
-    ros::WallTime rectime = ros::WallTime::now();
-
-    vector<string> join;
-    if (prefix_.length() > 0)
-        join.push_back(prefix_);
-    if (add_date_)
-        join.push_back(time_to_str(rectime));
-
-    string base_name = join[0];
-    for (size_t i = 1; i < join.size(); i++)
-        base_name += string("_") + join[i];
-
-    string split_name("");
-    if (split_size_ > 0)
-        split_name = string("_") + boost::lexical_cast<string>(split_count_++);
-
-    string tgt_fname = base_name + split_name + string(".bag");
-    string fname     = tgt_fname + string(".active");
-
-    ROS_INFO("Recording to %s.", tgt_fname.c_str());
-
-    ros::NodeHandle nh;
-
-    // Open our bag file and add available topics
+    // Open bag file for writing
     Bag bag;
-    if (!bag.open(fname, bagmode::Write)) {
-        ROS_FATAL("Could not open output file: %s", fname.c_str());
-        exit_code_ = 1;
-        ros::shutdown();
-    }
+    start_writing(bag);
 
     // Technically the queue_mutex_ should be locked while checking empty.
     // Except it should only get checked if the node is not ok, and thus
     // it shouldn't be in contention.
+    ros::NodeHandle nh;
     while (nh.ok() || !queue_->empty()) {
         boost::unique_lock<boost::mutex> lock(queue_mutex_);
 
@@ -234,30 +323,16 @@ void Recorder::do_record() {
         
         lock.release()->unlock();
 
-        if (split_size_ > 0 && bag.getOffset() > split_size_) {
-            bag.close();
-            rename(fname.c_str(),tgt_fname.c_str());
-            
-            split_name = string("_") + boost::lexical_cast<string>(split_count_++);
-            tgt_fname = base_name + split_name + string(".bag");
-            fname     = tgt_fname + string(".active");
-
-            if (!bag.open(string(fname), bagmode::Write)) {
-                ROS_FATAL("Could not open output file: %s", fname.c_str());
-                exit_code_ = 1;
-                ros::shutdown();
-            }
-            
-            ROS_INFO("Recording to %s.", tgt_fname.c_str());
+        if (options_.split_size > 0 && bag.getOffset() > options_.split_size) {
+            stop_writing(bag);
+            split_count_++;
+            start_writing(bag);
         }
-        
-        bag.write(out.topic_name, out.time, out.msg);
+
+        bag.write(out.topic, out.time, out.msg);
     }
 
-    // Close the file nicely
-    ROS_INFO("Closing %s.", tgt_fname.c_str());
-    bag.close();
-    rename(fname.c_str(), tgt_fname.c_str());
+    stop_writing(bag);
 }
 
 void Recorder::do_record_bb() {
@@ -276,42 +351,34 @@ void Recorder::do_record_bb() {
         
         lock.release()->unlock();
         
-        string tgt_fname = out_queue.fname;
-        string fname = tgt_fname + string(".active");
+        string target_filename = out_queue.filename;
+        string write_filename  = target_filename + string(".active");
         
         Bag bag;
-        if (bag.open(fname, bagmode::Write)) {
+        if (!bag.open(write_filename, bagmode::Write)) {
+            ROS_ERROR("Could not open file: %s", out_queue.filename.c_str());
+        }
+        else {
             while (!out_queue.queue->empty()) {
                 OutgoingMessage out = out_queue.queue->front();
                 out_queue.queue->pop();
-                bag.write(out.topic_name, out.time, out.msg);
+
+                bag.write(out.topic, out.time, out.msg);
             }
 
-            bag.close();
-
-            // Rename the file to the actual target name
-            rename(fname.c_str(), tgt_fname.c_str());
-        }
-        else {
-            ROS_ERROR("Could not open file: %s", out_queue.fname.c_str());
+            stop_writing(bag);
         }
     }
 }
 
 void Recorder::do_check_master(const ros::TimerEvent& e, ros::NodeHandle& node_handle) {
     ros::master::V_TopicInfo all_topics;
-    if (!ros::master::getTopics(all_topics))
-    	return;
-
-    for (ros::master::V_TopicInfo::const_iterator topic_iter = all_topics.begin(); topic_iter != all_topics.end(); topic_iter++) {
-		// If we're not currently recording it, do so
-		if (currently_recording_.find(topic_iter->name) == currently_recording_.end()) {
-			shared_ptr<int> count(new int(count_));
-			shared_ptr<ros::Subscriber> sub(new ros::Subscriber);
-			*sub = node_handle.subscribe<topic_tools::ShapeShifter>(topic_iter->name, 100, boost::bind(&Recorder::do_queue, this, _1, topic_iter->name, sub, count));
-			currently_recording_.insert(topic_iter->name);
-		}
-	}
+    if (ros::master::getTopics(all_topics)) {
+        BOOST_FOREACH(const ros::master::TopicInfo& topic_info, all_topics) {
+            if (!is_subscribed(topic_info.name))
+                subscribe(topic_info.name);
+        }
+    }
 }
 
 void Recorder::do_trigger() {
@@ -321,66 +388,6 @@ void Recorder::do_trigger() {
 
     ros::Timer terminate_timer = nh.createTimer(ros::Duration(1.0), boost::bind(&ros::shutdown));
     ros::spin();
-}
-
-int Recorder::run(const RecorderOptions& opts) {
-    if (opts.trigger) {
-        do_trigger();
-        return 0;
-    }
-
-    if (opts.topics.size() == 0) {
-        // Make sure limit is not specified with automatic topic subscription
-        if (opts.limit > 0) {
-            fprintf(stderr, "Specifing a count is not valid with automatic topic subscription.\n");
-            return 1;
-        }
-
-        // Make sure topics are specified
-        if (!opts.record_all) {
-            fprintf(stderr, "No topics specified.\n");
-            return 1;
-        }
-    }
-
-    ros::NodeHandle nh;
-    if (!nh.ok())
-        return 0;
-
-    queue_ = new std::queue<OutgoingMessage>;
-
-    // Spin up a thread for actually writing to file
-    boost::thread record_thread;
-    if (opts.snapshot)
-        record_thread = boost::thread(boost::bind(&Recorder::do_record_bb, this));
-    else
-        record_thread = boost::thread(boost::bind(&Recorder::do_record, this));
-
-    // Subscribe to the snapshot trigger
-    ros::Subscriber trigger = nh.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&Recorder::snapshot_trigger, this, _1));
-
-    // Subscribe to each topic
-    BOOST_FOREACH(const string& topic, opts.topics) {
-        shared_ptr<int> count(new int(count_));
-        shared_ptr<ros::Subscriber> sub(new ros::Subscriber);
-        *sub = nh.subscribe<topic_tools::ShapeShifter>(topic, 100, boost::bind(&Recorder::do_queue, this, _1, topic, sub, count));
-        num_subscribers_++;
-    }
-
-    ros::Timer check_master_timer;
-    if (opts.record_all)
-        check_master_timer = nh.createTimer(ros::Duration(1.0), boost::bind(&Recorder::do_check_master, this, _1, boost::ref(nh)));
-    
-    ros::MultiThreadedSpinner s(10);
-    ros::spin(s);
-    
-    queue_condition_.notify_all();
-    
-    record_thread.join();
-    
-    delete queue_;
-
-    return exit_code_;
 }
 
 }

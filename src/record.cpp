@@ -55,15 +55,17 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
     rosbag::RecorderOptions opts;
 
     int option_char;
-    while ((option_char = getopt(argc, argv, "f:F:c:m:S:asthv?")) != -1) {
+    while ((option_char = getopt(argc, argv, "f:F:c:m:S:astvzj")) != -1) {
         switch (option_char) {
-        case 'f': opts.prefix     = std::string(optarg); break;
-        case 'F': opts.prefix     = std::string(optarg); opts.append_date = false; break;
-        case 'c': opts.limit      = atoi(optarg); break;
-        case 'a': opts.record_all = true; break;
-        case 's': opts.snapshot   = true; break;
-        case 'v': opts.verbose    = true; break;
-        case 't': opts.trigger    = true; break;
+        case 'f': opts.prefix      = std::string(optarg); break;
+        case 'F': opts.prefix      = std::string(optarg); opts.append_date = false; break;
+        case 'c': opts.limit       = atoi(optarg); break;
+        case 'a': opts.record_all  = true; break;
+        case 's': opts.snapshot    = true; break;
+        case 'v': opts.verbose     = true; break;
+        case 't': opts.trigger     = true; break;
+        case 'z': opts.compression = rosbag::compression::ZLIB; break;
+        case 'j': opts.compression = rosbag::compression::BZ2; break;
         case 'm': {
             int m = atoi(optarg);
             if (m < 0)
@@ -89,17 +91,6 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
-    // Check for -h or -? options
-    int option_char;
-    while ((option_char = getopt(argc, argv, "h?")) != -1) {
-        switch (option_char) {
-            case 'h':
-            case '?':
-                print_usage();
-                return 1;
-        }
-    }
-
     // Parse the command-line options
     rosbag::RecorderOptions opts;
     try {
@@ -113,8 +104,8 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "record", ros::init_options::AnonymousName);
 
     // Run the recorder
-	rosbag::Recorder recorder;
-	int result = recorder.run(opts);
+	rosbag::Recorder recorder(opts);
+	int result = recorder.run();
 
 	return result;
 }

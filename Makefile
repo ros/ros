@@ -12,9 +12,8 @@ all:
 	cd build && make $(ROS_PARALLEL_JOBS)
 	cd build && make install
 	@if test `uname` = Darwin ; then \
-	echo "Changing installed rosrecord and rosplay shared library location." && \
-	install_name_tool $(ROS_ROOT)/bin/rosrecord -change librosrecorder.dylib `rospack find rosrecord`/lib/librosrecorder.dylib && \
-	install_name_tool $(ROS_ROOT)/bin/rosplay -change librosrecorder.dylib `rospack find rosrecord`/lib/librosrecorder.dylib; \
+	echo "Changing installed rosbag shared library location." && \
+	install_name_tool $(ROS_ROOT)/bin/rosbag -change librosbag.dylib `rospack find rosbag`/lib/librosbag.dylib; \
 	fi
 
 PACKAGE_NAME=$(shell basename $(PWD))

@@ -43,7 +43,11 @@ using ros::Exception;
 
 namespace rosbag {
 
-ZLIBStream::ZLIBStream() { }
+ZLIBStream::ZLIBStream(ChunkedFile* file) : Stream(file) { }
+
+CompressionType ZLIBStream::getCompressionType() const {
+    return compression::ZLIB;
+}
 
 size_t ZLIBStream::write(void* ptr, size_t size) {
     /*
@@ -84,6 +88,7 @@ size_t ZLIBStream::write(void* ptr, size_t size) {
 }
 
 size_t ZLIBStream::read(void* ptr, size_t size) {
+    return 0;
 }
 
 void ZLIBStream::decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len) {

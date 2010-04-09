@@ -43,70 +43,21 @@ using ros::Exception;
 
 namespace rosbag {
 
-BZ2Stream::BZ2Stream() :
+BZ2Stream::BZ2Stream(ChunkedFile* file) :
+    Stream(file),
     verbosity_(0),
-    blockSize100k_(9),
-    workFactor_(30),
+    block_size_100k_(9),
+    work_factor_(30),
     bzfile_(NULL),
-    bzerror_(0),
-    unused_(NULL),
-    nUnused_(0)
+    bzerror_(0)
 { }
 
-void BZ2Stream::clearUnused() {
-    unused_ = NULL;
-    nUnused_ = 0;
-}
-
-size_t BZ2Stream::write(void* ptr, size_t size) {
-    BZ2_bzWrite(&bzerror_, bzfile_, ptr, size);
-
-    switch (bzerror_) {
-    case BZ_IO_ERROR: ROS_ERROR("BZ_IO_ERROR: error writing the compressed file"); return false;
-    }
-
-    compressed_in_ += size;
-    return true;
-}
-
-size_t BZ2Stream::read(void* ptr, size_t size) {
-    BZ2_bzRead(&bzerror_, bzfile_, ptr, size);
-
-    offset_ += size;
-
-    switch (bzerror_) {
-    case BZ_OK:               return size;
-    case BZ_STREAM_END:
-        if (unused_ || nUnused_ > 0)
-            ROS_ERROR("unused data already available");
-        else
-            BZ2_bzReadGetUnused(&bzerror_, bzfile_, (void**) &unused_, &nUnused_);
-        return size;
-    case BZ_IO_ERROR:         ROS_ERROR("BZ_IO_ERROR: error reading from compressed stream");                                break;
-    case BZ_UNEXPECTED_EOF:   ROS_ERROR("BZ_UNEXPECTED_EOF: compressed stream ended before logical end-of-stream detected"); break;
-    case BZ_DATA_ERROR:       ROS_ERROR("BZ_DATA_ERROR: data integrity error detected in compressed stream");                break;
-    case BZ_DATA_ERROR_MAGIC: ROS_ERROR("BZ_DATA_ERROR_MAGIC: stream does not begin with requisite header bytes");           break;
-    case BZ_MEM_ERROR:        ROS_ERROR("BZ_MEM_ERROR: insufficient memory available");                                      break;
-    }
-}
-
-void BZ2Stream::decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len) {
-    int result = BZ2_bzBuffToBuffDecompress((char*) dest, &destLen, (char*) source, sourceLen, 0, verbosity_);
-
-    switch (result) {
-    case BZ_OK:               break;
-    case BZ_CONFIG_ERROR:     ROS_ERROR("library has been mis-compiled"); break;
-    case BZ_PARAM_ERROR:      ROS_ERROR("dest is NULL or destLen is NULL or small != 0 && small != 1 or verbosity < 0 or verbosity > 4"); break;
-    case BZ_MEM_ERROR:        ROS_ERROR("insufficient memory is available"); break;
-    case BZ_OUTBUFF_FULL:     ROS_ERROR("size of the compressed data exceeds *destLen"); break;
-    case BZ_DATA_ERROR:       ROS_ERROR("data integrity error was detected in the compressed data"); break;
-    case BZ_DATA_ERROR_MAGIC: ROS_ERROR("compressed data doesn't begin with the right magic bytes"); break;
-    case BZ_UNEXPECTED_EOF:   ROS_ERROR("compressed data ends unexpectedly"); break;
-    }
+CompressionType BZ2Stream::getCompressionType() const {
+    return compression::BZ2;
 }
 
 void BZ2Stream::startWrite() {
-    bzfile_ = BZ2_bzWriteOpen(&bzerror_, file_, blockSize100k_, verbosity_, workFactor_);
+    bzfile_ = BZ2_bzWriteOpen(&bzerror_, getFilePointer(), block_size_100k_, verbosity_, work_factor_);
 
     switch (bzerror_) {
         case BZ_OK: break;
@@ -116,7 +67,18 @@ void BZ2Stream::startWrite() {
         }
     }
 
-    compressed_in_ = 0;
+    setCompressedIn(0);
+}
+
+size_t BZ2Stream::write(void* ptr, size_t size) {
+    BZ2_bzWrite(&bzerror_, bzfile_, ptr, size);
+
+    switch (bzerror_) {
+    case BZ_IO_ERROR: ROS_ERROR("BZ_IO_ERROR: error writing the compressed file"); return false;
+    }
+
+    setCompressedIn(getCompressedIn() + size);
+    return true;
 }
 
 void BZ2Stream::stopWrite() {
@@ -128,12 +90,12 @@ void BZ2Stream::stopWrite() {
         case BZ_IO_ERROR: throw Exception("BZ_IO_ERROR");
     }
 
-    offset_ += nbytes_out;
-    compressed_in_ = 0;
+    advanceOffset(nbytes_out);
+    setCompressedIn(0);
 }
 
 void BZ2Stream::startRead() {
-    bzfile_ = BZ2_bzReadOpen(&bzerror_, file_, verbosity_, 0, unused_, nUnused_);
+    bzfile_ = BZ2_bzReadOpen(&bzerror_, getFilePointer(), verbosity_, 0, getUnused(), getUnusedLength());
 
     switch (bzerror_) {
         case BZ_OK: break;
@@ -147,11 +109,52 @@ void BZ2Stream::startRead() {
     clearUnused();
 }
 
+size_t BZ2Stream::read(void* ptr, size_t size) {
+    BZ2_bzRead(&bzerror_, bzfile_, ptr, size);
+
+    advanceOffset(size);
+
+    switch (bzerror_) {
+    case BZ_OK:               return size;
+    case BZ_STREAM_END:
+        if (getUnused() || getUnusedLength() > 0)
+            ROS_ERROR("unused data already available");
+        else {
+            char* unused;
+            int nUnused;
+            BZ2_bzReadGetUnused(&bzerror_, bzfile_, (void**) &unused, &nUnused);
+            setUnused(unused);
+            setUnusedLength(nUnused);
+        }
+        return size;
+    case BZ_IO_ERROR:         ROS_ERROR("BZ_IO_ERROR: error reading from compressed stream");                                break;
+    case BZ_UNEXPECTED_EOF:   ROS_ERROR("BZ_UNEXPECTED_EOF: compressed stream ended before logical end-of-stream detected"); break;
+    case BZ_DATA_ERROR:       ROS_ERROR("BZ_DATA_ERROR: data integrity error detected in compressed stream");                break;
+    case BZ_DATA_ERROR_MAGIC: ROS_ERROR("BZ_DATA_ERROR_MAGIC: stream does not begin with requisite header bytes");           break;
+    case BZ_MEM_ERROR:        ROS_ERROR("BZ_MEM_ERROR: insufficient memory available");                                      break;
+    }
+}
+
 void BZ2Stream::stopRead() {
     BZ2_bzReadClose(&bzerror_, bzfile_);
 
     switch (bzerror_ == BZ_IO_ERROR) {
         case BZ_IO_ERROR: throw Exception("BZ_IO_ERROR");
+    }
+}
+
+void BZ2Stream::decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len) {
+    int result = BZ2_bzBuffToBuffDecompress((char*) dest, &dest_len, (char*) source, source_len, 0, verbosity_);
+
+    switch (result) {
+    case BZ_OK:               break;
+    case BZ_CONFIG_ERROR:     ROS_ERROR("library has been mis-compiled"); break;
+    case BZ_PARAM_ERROR:      ROS_ERROR("dest is NULL or destLen is NULL or small != 0 && small != 1 or verbosity < 0 or verbosity > 4"); break;
+    case BZ_MEM_ERROR:        ROS_ERROR("insufficient memory is available"); break;
+    case BZ_OUTBUFF_FULL:     ROS_ERROR("size of the compressed data exceeds *destLen"); break;
+    case BZ_DATA_ERROR:       ROS_ERROR("data integrity error was detected in the compressed data"); break;
+    case BZ_DATA_ERROR_MAGIC: ROS_ERROR("compressed data doesn't begin with the right magic bytes"); break;
+    case BZ_UNEXPECTED_EOF:   ROS_ERROR("compressed data ends unexpectedly"); break;
     }
 }
 

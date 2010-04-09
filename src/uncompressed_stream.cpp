@@ -43,61 +43,68 @@ using ros::Exception;
 
 namespace rosbag {
 
-UncompressedStream::UncompressedStream() { }
+UncompressedStream::UncompressedStream(ChunkedFile* file) : Stream(file) { }
+
+CompressionType UncompressedStream::getCompressionType() const {
+    return compression::None;
+}
 
 size_t UncompressedStream::write(void* ptr, size_t size) {
-    size_t result = fwrite(ptr, 1, size, file_);
+    size_t result = fwrite(ptr, 1, size, getFilePointer());
     if (result != size)
         return false;
 
-    offset_ += size;
+    advanceOffset(size);
     return true;
 }
 
 size_t UncompressedStream::read(void* ptr, size_t size) {
-    if (nUnused_ > 0) {
-        // We have unused data from the last compressed read
-        if ((size_t) nUnused_ == size) {
-            // Copy the unused data into the buffer
-            memcpy(ptr, unused_, nUnused_);
+    size_t nUnused = (size_t) getUnusedLength();
+    char* unused = getUnused();
 
-            clearUnusedBZ2();
-        }
-        else if ((size_t) nUnused_ < size) {
+    if (nUnused > 0) {
+        // We have unused data from the last compressed read
+        if (nUnused == size) {
             // Copy the unused data into the buffer
-            memcpy(ptr, unused_, nUnused_);
+            memcpy(ptr, unused, nUnused);
+
+            clearUnused();
+        }
+        else if (nUnused < size) {
+            // Copy the unused data into the buffer
+            memcpy(ptr, unused, nUnused);
 
             // Still have data to read
-            size -= nUnused_;
+            size -= nUnused;
 
             // Read the remaining data from the file
-            int result = fread((char*) ptr + nUnused_, 1, size, file_);
+            int result = fread((char*) ptr + nUnused, 1, size, getFilePointer());
             if ((size_t) result != size) {
                 ROS_ERROR("Error reading from file: wanted %zd bytes, read %d bytes", size, result);
-                return nUnused_ + result;
+                return nUnused + result;
             }
 
-            offset_ += size;
+            advanceOffset(size);
 
-            clearUnusedBZ2();
+            clearUnused();
         }
         else {
             // nUnused_ > size
-            memcpy(ptr, unused_, size);
+            memcpy(ptr, unused, size);
 
-            unused_ += size;
-            nUnused_ -= size;
+            setUnused(unused + size);
+            setUnusedLength(nUnused - size);
         }
 
         return size;
     }
 
     // No unused data - read from stream
-    int result = fread(ptr, 1, size, file_);
+    int result = fread(ptr, 1, size, getFilePointer());
     if ((size_t) result != size)
         ROS_ERROR("Error reading from file: wanted %zd bytes, read %d bytes", size, result);
 
-    offset_ += size;
+    advanceOffset(size);
 
     return result;
 }

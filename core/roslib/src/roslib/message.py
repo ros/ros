@@ -41,6 +41,7 @@ name.
 
 import math
 import itertools
+import traceback
 import struct
 
 import roslib.exceptions
@@ -329,7 +330,6 @@ class Message(object):
         @raise roslib.messages.SerializationError: if typecheck fails
         """
         if exc: # if exc is set and check_type could not diagnose, raise wrapped error
-            import traceback
             traceback.print_exc(exc)
 
         for n, t in zip(self.__slots__, self._get_types()):

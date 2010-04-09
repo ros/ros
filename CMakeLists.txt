@@ -10,7 +10,7 @@ SET(CMAKE_INSTALL_RPATH "${PROJECT_SOURCE_DIR}/lib")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 rosbuild_add_library(rosbag src/bag.cpp src/buffer.cpp src/bz2_stream.cpp src/chunked_file.cpp src/message_instance.cpp src/stream.cpp src/uncompressed_stream.cpp src/zlib_stream.cpp)
-target_link_libraries(rosbag bz2 zlib)
+target_link_libraries(rosbag bz2 z)
 
 rosbuild_add_executable(record src/record.cpp src/recorder.cpp)
 rosbuild_link_boost(record iostreams system)

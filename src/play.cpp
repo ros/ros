@@ -32,24 +32,22 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************/
 
-#include "player.h"
+#include "rosbag/player.h"
 
 int main(int argc, char** argv) {
-	// we intercept this before starting the node since checkbag doesn't require a node
 	bool check_bag = false;
     for (int i = 0; i < argc; i++)
         if (!strcmp(argv[i], "-c") || !strcmp(argv[i], "-cd"))
             check_bag = true;
-
     if (check_bag) {
-    	Player rp;
-    	return rp.checkBag();
+    	rosbag::Player rp;
+    	return rp.checkBag(argc, argv);
     }
 
     ros::init(argc, argv, "play", ros::init_options::AnonymousName);
 
     try {
-        Player rp;
+        rosbag::Player rp;
         rp.init(argc, argv);
         rp.spin();
     }

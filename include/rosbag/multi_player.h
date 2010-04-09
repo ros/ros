@@ -35,9 +35,9 @@
 #ifndef ROSBAG_MULTI_PLAYER_H
 #define ROSBAG_MULTI_PLAYER_H
 
-#include "rosbag/player.h"
-
 #include <boost/foreach.hpp>
+
+#include "rosbag/player.h"
 
 namespace rosbag
 {
@@ -74,33 +74,28 @@ private:
 
 template<class M>
 void MultiPlayer::addHandler(const std::string& topic_name, void (*fp)(std::string, ros::Message*, ros::Time, ros::Time, void*), void* ptr, bool inflate) {
-	BOOST_FOREACH(Player* p, players_) {
+	BOOST_FOREACH(Player* p, players_)
         p->addHandler<M>(topic_name, fp, ptr, inflate);
-	}
 }
 
 template<class M>
 void MultiPlayer::addHandler(const std::string& topic_name, void (*fp)(std::string, M*, ros::Time, ros::Time, void*), void* ptr) {
-	BOOST_FOREACH(Player* p, players_) {
+	BOOST_FOREACH(Player* p, players_)
         p->addHandler<M>(topic_name, fp, ptr);
-	}
 }
 
 template<class M, class T>
 void MultiPlayer::addHandler(const std::string& topic_name, void (T::*fp)(std::string, ros::Message*, ros::Time, ros::Time, void*), T* obj, void* ptr, bool inflate) {
-	BOOST_FOREACH(Player* p, players_) {
+	BOOST_FOREACH(Player* p, players_)
         p->addHandler<M>(topic_name, fp, obj, ptr, inflate);
-	}
 }
 
 template<class M, class T>
 void MultiPlayer::addHandler(const std::string& topic_name, void (T::*fp)(std::string, M*, ros::Time, ros::Time, void*), T* obj, void* ptr) {
-	BOOST_FOREACH(Player* p, players_) {
+	BOOST_FOREACH(Player* p, players_)
         p->addHandler<M>(topic_name, fp, obj, ptr);
-	}
 }
 
 }
 
 #endif
-

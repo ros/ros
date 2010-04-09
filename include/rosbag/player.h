@@ -35,12 +35,13 @@
 #ifndef ROSBAG_PLAYER_H
 #define ROSBAG_PLAYER_H
 
-#include <queue>
 #include <sys/stat.h>
-#include <string>
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
+
+#include <queue>
+#include <string>
 
 #include <ros/ros.h>
 #include <ros/time.h>
@@ -49,12 +50,9 @@
 #include <topic_tools/shape_shifter.h>
 
 #include "rosbag/any_msg.h"
-#include "rosbag/multi_player.h"
-#include "rosbag/player.h"
 #include "rosbag/time_publisher.h"
 
-namespace rosbag
-{
+namespace rosbag {
 
 struct BagContent
 {
@@ -67,14 +65,16 @@ struct BagContent
     int         count;
 };
 
+class MultiPlayer;
+
 class Player
 {
 public:
     Player();
     ~Player();
 
+    int  checkBag(int argc, char** argv);
     void init(int argc, char** argv);
-
     bool spin();
 
 private:
@@ -82,8 +82,11 @@ private:
     void      doPublish(std::string name, ros::Message* m, ros::Time play_time, ros::Time record_time,   void* n);
     void      checkFile(std::string name, ros::Message* m, ros::Time time_play, ros::Time time_recorded, void* n);
 
+    void print_usage();
+    void print_help();
+
 private:
-    ros::NodeHandle* node_handle;    //!< pointer to allow player to start before node handle exists since this is where argument parsing happens
+    ros::NodeHandle* node_handle_;    //!< pointer to allow player to start before node handle exists since this is where argument parsing happens
 
     bool   bag_time_initialized_;
     bool   at_once_;
@@ -93,10 +96,12 @@ private:
     bool   bag_time_;
     double time_scale_;
 
-    ros::Time   start_time_;
-    ros::Time   requested_start_time_;
-    ros::Time   paused_time_;
-    MultiPlayer player_;
+    ros::Time    start_time_;
+    ros::Time    requested_start_time_;
+    ros::Time    paused_time_;
+    MultiPlayer* player_;
+
+    Bag bag_;
 
     int          queue_size_;
     unsigned int advertise_sleep_;

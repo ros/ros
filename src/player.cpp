@@ -33,6 +33,7 @@
 ********************************************************************/
 
 #include "rosbag/player.h"
+#include "rosbag/multi_player.h"
 
 #include <sys/select.h>
 
@@ -51,12 +52,27 @@ Player::Player() :
     shifted_(false),
     bag_time_(false),
     time_scale_(1.0),
+    player_(new MultiPlayer),
     queue_size_(0),
     bag_time_publisher_(NULL)
 {
 }
 
-int Player::run(int argc, char** argv) {
+Player::~Player() {
+    if (node_handle) {
+        usleep(1000000);     // this shouldn't be necessary
+        delete node_handle;
+    }
+
+    delete player_;
+    delete bag_time_publisher_;
+
+    // Fix terminal settings
+    const int fd = fileno(stdin);
+    tcsetattr(fd, TCSANOW, &orig_flags_);
+}
+
+void Player::init(int argc, char** argv) {
     const int fd = fileno(stdin);
 
     advertise_sleep_ = 200000;
@@ -64,24 +80,23 @@ int Player::run(int argc, char** argv) {
     termios flags;
     tcgetattr(fd, &orig_flags_);
     flags = orig_flags_;
-    flags.c_lflag &= ~ICANON;  // set raw (unset canonical modes)
-    flags.c_cc[VMIN]  = 0;     // i.e. min 1 char for blocking, 0 chars for non-blocking
-    flags.c_cc[VTIME] = 0;     // block if waiting for char
-    tcsetattr(fd,TCSANOW,&flags);
+    flags.c_lflag &= ~ICANON;      // set raw (unset canonical modes)
+    flags.c_cc[VMIN]  = 0;         // i.e. min 1 char for blocking, 0 chars for non-blocking
+    flags.c_cc[VTIME] = 0;         // block if waiting for char
+    tcsetattr(fd, TCSANOW, &flags);
 
     FD_ZERO(&stdin_fdset_);
     FD_SET(fd, &stdin_fdset_);
     maxfd_ = fd + 1;
-    
+
+    bool try_future = false;
+
     char time[1024];
     bool has_time = false;  
     int option_char;
-    
-    bool try_future = false;
-
     while ((option_char = getopt(argc, argv, "ncahpb:r:s:t:q:T")) != -1) {
         switch (option_char) {
-        case 'c': ros::shutdown(); break;  // This shouldn't happen
+        case 'c': ros::shutdown(); break;  // this shouldn't happen
         case 'n': quiet_ = true; break;
         case 'a': at_once_ = true; break;
         case 'p': paused_ = true; break;
@@ -101,7 +116,7 @@ int Player::run(int argc, char** argv) {
         float_time = atof(time);
 
     if (optind == argc) {
-        fprintf(stderr, "You must specify at least one bagfile to play from.\n");
+        fprintf(stderr, "You must specify at least one bag file to play from.\n");
         print_help();
         ros::shutdown();
         return;
@@ -118,17 +133,17 @@ int Player::run(int argc, char** argv) {
         return;
     }
 
-    node_handle = new ros::NodeHandle;
+    node_handle_ = new ros::NodeHandle;
     bag_time_publisher_ = new TimePublisher;
-    
+
     if (bag_time_)
         bag_time_publisher_->initialize(bag_time_frequency_, time_scale_);
-    
+
     start_time_ = getSysTime();
     requested_start_time_ = start_time_;
     
-    if (player_.open(bags, start_time_ + ros::Duration().fromSec(-float_time), time_scale_, try_future))
-        player_.addHandler<AnyMsg>(string("*"), &RosPlay::doPublish, this, NULL, false);
+    if (player_->open(bags, start_time_ + ros::Duration().fromSec(-float_time), time_scale_, try_future))
+        player_->addHandler<AnyMsg>(string("*"), &Player::doPublish, this, NULL, false);
     else {
         // Not sure exactly why, but this shutdown is necessary for the
         // exception to be received by the main thread without giving a Ctrl-C.
@@ -150,7 +165,7 @@ int Player::run(int argc, char** argv) {
 }
 
 void Player::print_usage() {
-    fprintf(stderr, "Usage: rosbag [options] BAG1 [BAG2]\n");
+    fprintf(stderr, "Usage: play [options] BAG1 [BAG2]\n");
 }
 
 void Player::print_help() {
@@ -168,22 +183,7 @@ void Player::print_help() {
     fprintf(stderr, " -h\tdisplay this help message\n");
 }
 
-RosPlay::~RosPlay() {
-    if (node_handle) {
-        // This sleep shouldn't be necessary
-        usleep(1000000);
-        delete node_handle;
-    }
-    
-    if (bag_time_publisher_)
-        delete bag_time_publisher_;
-    
-    // Fix terminal settings.
-    const int fd = fileno(stdin);
-    tcsetattr(fd, TCSANOW, &orig_flags_);
-}
-
-bool RosPlay::spin() {
+bool Player::spin() {
     if (node_handle && node_handle->ok()) {
         if (!quiet_)
             puts("");
@@ -191,12 +191,12 @@ bool RosPlay::spin() {
         ros::WallTime last_print_time(0.0);
         ros::WallDuration max_print_interval(0.1);
         while (node_handle->ok()) {
-            if (!player_.nextMsg())
+            if (!player_->nextMsg())
                 break;
 
             ros::WallTime t = ros::WallTime::now();
             if (!quiet_ && ((t - last_print_time) >= max_print_interval)) {
-                printf("Time: %16.6f    Duration: %16.6f\r", ros::Time::now().toSec(), player_.getDuration().toSec());
+                printf("Time: %16.6f    Duration: %16.6f\r", ros::Time::now().toSec(), player_->getDuration().toSec());
                 fflush(stdout);
                 last_print_time = t;
             }
@@ -210,13 +210,13 @@ bool RosPlay::spin() {
     return true;
 }
 
-ros::Time RosPlay::getSysTime() {
+ros::Time Player::getSysTime() {
     struct timeval timeofday;
     gettimeofday(&timeofday, NULL);
     return ros::Time().fromNSec(1e9 * timeofday.tv_sec + 1e3 * timeofday.tv_usec);
 }
 
-void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time, ros::Time record_time, void* n) {
+void Player::doPublish(string topic_name, ros::Message* m, ros::Time play_time, ros::Time record_time, void* n) {
     if (play_time < requested_start_time_)
         return;
 
@@ -259,17 +259,15 @@ void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time,
     string name = callerid + topic_name;
   
     map<string, ros::Publisher>::iterator pub_token = publishers_.find(name);
-
-    // advertise the topic to publish
-    //  if (ros::Node::instance()->advertise(name, *m, queue_size_))
     if (pub_token == publishers_.end()) {
         ros::AdvertiseOptions opts(topic_name, queue_size_, m->__getMD5Sum(), m->__getDataType(), m->__getMessageDefinition());
+
         // Have to set the latching field explicitly
         opts.latch = latching;
         ros::Publisher pub = node_handle->advertise(opts);
         publishers_.insert(publishers_.begin(), std::pair<string, ros::Publisher>(name, pub));
         pub_token = publishers_.find(name);
-        
+
         if (bag_time_)
             bag_time_publisher_->freezeTime();
         ros::Time paused_time_ = getSysTime();
@@ -277,7 +275,7 @@ void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time,
         usleep(advertise_sleep_);
         ROS_INFO("Done sleeping.\n");
         ros::Duration shift = getSysTime() - paused_time_;
-        player_.shiftTime(shift);
+        player_->shiftTime(shift);
         if (bag_time_)
             bag_time_publisher_->startTime(record_time);
     }
@@ -330,7 +328,7 @@ void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time,
                             shift = getSysTime() - paused_time_;
                             play_time = play_time + shift;
                         }
-                        player_.shiftTime(shift);
+                        player_->shiftTime(shift);
                         std::cout << std::endl << "Hit space to pause.";
                         std::cout.flush();
                     }
@@ -360,6 +358,7 @@ void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time,
         if (!paused_ && delta > ros::Duration(0, 5000) && node_handle->ok())
             usleep(delta.toNSec() / 1000 - 5); // Should this be a ros::Duration::Sleep?
     }
+
     pub_token->second.publish(*m);
 }
 
@@ -373,7 +372,7 @@ void Player::checkFile(string name, ros::Message* m, ros::Time time_play, ros::T
     end_time_ = time_play.toNSec();
 }
 
-int Player::checkBag() {
+int Player::checkBag(int argc, char** argv) {
 	bool show_defs = false;
     bool try_future = false;
     
@@ -387,8 +386,8 @@ int Player::checkBag() {
         case 't': fprintf(stderr, "Option -t is not valid when checking bag\n"); return 1;
         case 'q': fprintf(stderr, "Option -q is not valid when checking bag\n"); return 1;
         case 'T': try_future = true; break;
-        case 'h': print_help();  return 0;
-        case '?': print_usage();  return 0;
+        case 'h': print_help(); return 0;
+        case '?': print_usage(); return 0;
         }
     }
     

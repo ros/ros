@@ -435,3 +435,6 @@ fltk:
   arch: fltk
   macports: fltk
   gentoo: "=x11-libs/fltk-1*"
+epydoc:
+  ubuntu: python-epydoc
+  macports: py25-epydoc

@@ -51,7 +51,7 @@ macro(gensrv_py)
   rosbuild_get_srvs(_srvlist)
   set(_inlist "")
   set(_autogen "")
-  set(gensrv_py_exe ${rospy_PACKAGE_PATH}/scripts/gensrv_py)
+  set(gensrv_py_exe ${rospy_PACKAGE_PATH}/scripts/gensrv_py.py)
 
   foreach(_srv ${_srvlist})
     # Construct the path to the .srv file

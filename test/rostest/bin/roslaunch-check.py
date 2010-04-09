@@ -53,6 +53,7 @@ def usage():
 def check_roslaunch_file(roslaunch_file):
     print "checking", roslaunch_file
     error_msg = roslaunch.rlutil.check_roslaunch(roslaunch_file)
+    # error message has to be XML attr safe
     if error_msg:
         return "[%s]:\n\t%s"%(roslaunch_file,error_msg)
 
@@ -63,6 +64,7 @@ def check_roslaunch_dir(roslaunch_dir):
             roslaunch_file = os.path.join(roslaunch_dir, f)
             if os.path.isfile(roslaunch_file):
                 error_msgs.append(check_roslaunch_file(roslaunch_file))
+    # error message has to be XML attr safe
     return '\n'.join([e for e in error_msgs if e])
 
 ## run check and output test result file
@@ -102,8 +104,8 @@ if __name__ == '__main__':
         if not os.path.exists(os.path.dirname(test_file)):
             os.makedirs(os.path.dirname(test_file))
         with open(test_file, 'w') as f:
-            message = "roslaunch check [%s] failed:\n %s"%(roslaunch_path, error_msg)
-            f.write(rostest.rostestutil.test_failure_junit_xml(test_name, message))
+            message = "roslaunch check [%s] failed"%(roslaunch_path)
+            f.write(rostest.rostestutil.test_failure_junit_xml(test_name, message, stdout=error_msg))
             f.close()
         print "wrote test file to [%s]"%test_file
         sys.exit(1)

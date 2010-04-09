@@ -34,10 +34,11 @@
 *********************************************************************/
 
 #include "rosbag/time_publisher.h"
+
 #include <ros/time.h>  
 #include <roslib/Clock.h>
 
-using namespace rosbag;
+namespace rosbag {
 
 TimePublisher::TimePublisher() :
     freeze_time_(true),
@@ -51,18 +52,18 @@ TimePublisher::TimePublisher() :
 TimePublisher::~TimePublisher() {
     if (publish_thread_) {
         continue_ = false;
-        publish_thread_->join();    // Wait for the thread to die before I kill the TimePublisher
+        publish_thread_->join();    // wait for the thread to die before killing TimePublisher
         delete publish_thread_;
     }
 }
 
 void TimePublisher::initialize(double publish_frequency, double time_scale_factor) {
     publish_freq_ = publish_frequency;
-    
+
     // Can't publish any time yet
     horizon_.fromSec(0.0);
 
-    time_pub_ = node_handle.advertise<roslib::Clock>("clock",1);
+    time_pub_ = node_handle.advertise<roslib::Clock>("clock", 1);
     publish_thread_ = new boost::thread(boost::bind(&TimePublisher::publishTime, this));
     
     time_scale_factor_ = time_scale_factor;
@@ -120,7 +121,7 @@ const ros::Time& TimePublisher::getHorizon() {
 ros::Time TimePublisher::getSysTime() {
     struct timeval timeofday;
     gettimeofday(&timeofday, NULL);
-    return ros::Time().fromNSec(1e9*timeofday.tv_sec + 1e3 * timeofday.tv_usec);
+    return ros::Time().fromNSec(1e9 * timeofday.tv_sec + 1e3 * timeofday.tv_usec);
 }
 
 //! Publish time
@@ -144,8 +145,10 @@ void TimePublisher::publishTime() {
                 last_sys_time_ = now;
                 last_pub_time_ = pub_msg.clock;
             }
-            time_pub.publish(pub_msg);
+            time_pub_.publish(pub_msg);
         }
         usleep(1e6 / (publish_freq_ * time_scale_factor_));
     }
+}
+
 }

@@ -15,8 +15,7 @@ target_link_libraries(rosbag bz2 z)
 rosbuild_add_executable(record src/record.cpp src/recorder.cpp)
 target_link_libraries(record rosbag)
 
-#rosbuild_add_executable(play src/play.cpp src/player.cpp src/time_publisher.cpp src/multi_player.cpp)
-rosbuild_add_executable(play src/play.cpp src/player.cpp)
+rosbuild_add_executable(play src/play.cpp src/player.cpp src/time_publisher.cpp)
 target_link_libraries(play rosbag)
 
 INSTALL(TARGETS record play

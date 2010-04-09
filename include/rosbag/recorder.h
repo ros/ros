@@ -104,32 +104,34 @@ class Recorder
 public:
 	Recorder(const RecorderOptions& options);
 
-    void do_trigger();
+    void doTrigger();
 
-    bool is_subscribed(const std::string& topic) const;
+    bool isSubscribed(const std::string& topic) const;
 
     boost::shared_ptr<ros::Subscriber> subscribe(const std::string& topic);
 
     int run();
 
 private:
-	void print_usage();
+	void printUsage();
 
-    void start_writing(Bag& bag);
-    void stop_writing(Bag& bag);
-    void update_filenames();
+    void updateFilenames();
+    void startWriting();
+    void stopWriting();
 
-    void do_queue(topic_tools::ShapeShifter::ConstPtr msg, std::string topic_name, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
-	void snapshot_trigger(std_msgs::Empty::ConstPtr trigger);
-	void do_record();
-	void do_record_bb();
-	void do_check_master(const ros::TimerEvent& e, ros::NodeHandle& node_handle);
+    void snapshotTrigger(std_msgs::Empty::ConstPtr trigger);
+    void doQueue(topic_tools::ShapeShifter::ConstPtr msg, std::string topic_name, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
+	void doRecord();
+	void doRecordSnapshotter();
+	void doCheckMaster(const ros::TimerEvent& e, ros::NodeHandle& node_handle);
 
 	template<class T>
-	static std::string time_to_str(T ros_t);
+	static std::string timeToStr(T ros_t);
 
 private:
 	RecorderOptions               options_;
+
+	Bag                           bag_;
 
 	std::string                   target_filename_;
 	std::string                   write_filename_;

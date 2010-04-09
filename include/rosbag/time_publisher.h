@@ -56,7 +56,7 @@ public:
     ~TimePublisher();
 
     //! Initialize publisher
-    void initialize(double publish_frequency, double time_scale_factor=1.0);
+    void initialize(double publish_frequency, double time_scale_factor = 1.0);
 
     //! Freeze time by publishing the repeatedly publishing the same time
     void freezeTime();

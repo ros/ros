@@ -49,7 +49,7 @@
 #include <std_msgs/Empty.h>
 #include <topic_tools/shape_shifter.h>
 
-#include "rosbag/any_msg.h"
+#include "rosbag/bag.h"
 #include "rosbag/time_publisher.h"
 
 namespace rosbag {
@@ -67,56 +67,71 @@ struct BagContent
 
 class MultiPlayer;
 
+struct PlayerOptions
+{
+    PlayerOptions();
+
+    void check();
+
+    bool     check_bag;
+    bool     at_once;
+    bool     quiet;
+    bool     paused;
+    bool     bag_time;
+    double   bag_time_frequency;
+    uint64_t advertise_sleep;
+    int      queue_size;
+    bool     try_future;
+    double   time_scale;
+    bool     has_time;
+    float    time;
+    bool     show_defs;
+
+    std::vector<std::string> bags;
+};
+
 class Player
 {
 public:
-    Player();
+    Player(const PlayerOptions& options);
     ~Player();
 
-    int  checkBag(int argc, char** argv);
-    void init(int argc, char** argv);
+    int  checkBag();
+
+    void run();
     bool spin();
 
 private:
+    void setTerminalSettings();
+    void unsetTerminalSettings();
+
     ros::Time getSysTime();
     void      doPublish(std::string name, ros::Message* m, ros::Time play_time, ros::Time record_time,   void* n);
     void      checkFile(std::string name, ros::Message* m, ros::Time time_play, ros::Time time_recorded, void* n);
 
-    void print_usage();
-    void print_help();
-
 private:
+    PlayerOptions options_;
+
     ros::NodeHandle* node_handle_;    //!< pointer to allow player to start before node handle exists since this is where argument parsing happens
 
-    bool   bag_time_initialized_;
-    bool   at_once_;
-    bool   quiet_;
-    bool   paused_;
-    bool   shifted_;
-    bool   bag_time_;
-    double time_scale_;
-
-    ros::Time    start_time_;
-    ros::Time    requested_start_time_;
-    ros::Time    paused_time_;
-    MultiPlayer* player_;
+    termios orig_flags_;
+    fd_set  stdin_fdset_;
+    int     maxfd_;
 
     Bag bag_;
 
-    int          queue_size_;
-    unsigned int advertise_sleep_;
+    bool           bag_time_initialized_;
+    bool           shifted_;
 
-    termios        orig_flags_;
+    ros::Time      start_time_;
+    ros::Time      requested_start_time_;
+    ros::Time      paused_time_;
+
     TimePublisher* bag_time_publisher_;  //!< internally contains a NodeHandle so we make a pointer for the same reason
-    double         bag_time_frequency_;
-
-    fd_set stdin_fdset_;
-    int    maxfd_;
-
-    std::map<std::string, BagContent> content_;
-    unsigned long long                end_time_;
 
     std::map<std::string, ros::Publisher> publishers_;
+
+    std::map<std::string, BagContent> content_;
 };
 
 }

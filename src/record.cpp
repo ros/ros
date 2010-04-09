@@ -35,7 +35,7 @@
 #include "rosbag/recorder.h"
 #include "rosbag/exceptions.h"
 
-void print_usage() {
+void printUsage() {
     fprintf(stderr, "Usage: record [options] TOPIC1 [TOPIC2 TOPIC3...]\n"
                     "  record logs ROS message data to a file.\n");
     fprintf(stderr, "Options:\n");

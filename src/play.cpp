@@ -34,26 +34,84 @@
 
 #include "rosbag/player.h"
 
+void printUsage() {
+    fprintf(stderr, "Usage: play [options] BAG1 [BAG2]\n");
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr, " -n\tdisable display of current log time\n");
+    fprintf(stderr, " -c\tcheck the contents of the bag without playing back\n");
+    fprintf(stderr, " -a\tplayback all messages without waiting\n");
+    fprintf(stderr, " -b hz\tpublish the bag time at frequence <hz>\n");
+    fprintf(stderr, " -p\tstart in paused mode\n");
+    fprintf(stderr, " -r\tincrease the publish rate ba a factor <rate_change>\n");
+    fprintf(stderr, " -s sec\tsleep <sec> sleep duration after every advertise call (to allow subscribers to connect)\n");
+    fprintf(stderr, " -t sec\tstart <sec> seconds into the files\n");
+    fprintf(stderr, " -q sz\tUse an outgoing queue of size <sz> (defaults to 0)\n");
+    fprintf(stderr, " -T\tTry to play future version.\n");
+    fprintf(stderr, " -h\tdisplay this help message\n");
+}
+
+rosbag::PlayerOptions parseOptions(int argc, char** argv) {
+    rosbag::PlayerOptions opts;
+
+    int option_char;
+    while ((option_char = getopt(argc, argv, "ncdahpb:r:s:t:q:T")) != -1) {
+        switch (option_char) {
+        case 'c': opts.check_bag = true; break;  // this shouldn't happen
+        case 'd': opts.show_defs = true; break;
+        case 'n': opts.quiet = true; break;
+        case 'a': opts.at_once = true; break;
+        case 'p': opts.paused = true; break;
+        case 's': opts.advertise_sleep = (unsigned int)(1000000.0 * atof(optarg)); break;
+        case 't': {
+            char time[1024];
+            strncpy(time, optarg, sizeof(time));
+            opts.time = atof(time);
+
+            opts.has_time = true;
+            break;
+        }
+        case 'q': opts.queue_size = atoi(optarg); break;
+        case 'b': opts.bag_time_frequency = atoi(optarg); opts.bag_time = true; break;
+        case 'r': opts.time_scale = atof(optarg); break;
+        case 'T': opts.try_future = true; break;
+        //case 'h': printUsage(); ros::shutdown(); return;
+        //case '?': printUsage(); ros::shutdown(); return;
+        }
+    }
+
+    for (int i = optind; i < argc; i++)
+        opts.bags.push_back(argv[i]);
+
+    return opts;
+}
+
 int main(int argc, char** argv) {
-	bool check_bag = false;
-    for (int i = 0; i < argc; i++)
-        if (!strcmp(argv[i], "-c") || !strcmp(argv[i], "-cd"))
-            check_bag = true;
-    if (check_bag) {
-    	rosbag::Player rp;
-    	return rp.checkBag(argc, argv);
-    }
-
-    ros::init(argc, argv, "play", ros::init_options::AnonymousName);
-
+    // Parse the command-line options
+    rosbag::PlayerOptions opts;
     try {
-        rosbag::Player rp;
-        rp.init(argc, argv);
-        rp.spin();
+        opts = parseOptions(argc, argv);
     }
-    catch (std::runtime_error& e) {
-        ROS_FATAL("%s", e.what());
+    catch (const ros::Exception& ex) {
+        fprintf(stderr, "Error reading options: %s", ex.what());
         return 1;
+    }
+
+    rosbag::Player player(opts);
+
+    if (opts.check_bag) {
+    	return player.checkBag();
+    }
+    else {
+        ros::init(argc, argv, "play", ros::init_options::AnonymousName);
+
+        try {
+            player.run();
+            player.spin();
+        }
+        catch (std::runtime_error& e) {
+            ROS_FATAL("%s", e.what());
+            return 1;
+        }
     }
     
     return 0;

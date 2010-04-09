@@ -115,11 +115,7 @@ struct IndexEntry
 class MessageInstance;
 class MessageInstanceCompare;
 
-//! Typedef for index: map of topic -> list of MessageInstance
 typedef std::multiset<MessageInstance, MessageInstanceCompare> MessageList;
-
-//! Intended typedef to use for the Bag Index
-typedef std::map<std::string, MessageList> BagIndex;
 
 class Bag
 {

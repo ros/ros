@@ -305,6 +305,19 @@ class Message(object):
                 else:
                     setattr(self, k, None)
 
+    def __getstate__(self):
+        """
+        support for Python pickling
+        """
+        return [getattr(self, x) for x in self.__slots__]
+
+    def __setstate__(self, state):
+        """
+        support for Python pickling
+        """
+        for x, val in itertools.izip(self.__slots__, state):
+            setattr(self, x, val)
+
     def _get_types(self):
         raise Exception("must be overriden")
     def _check_types(self, exc=None):

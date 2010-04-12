@@ -15,12 +15,11 @@ target_link_libraries(rosbag bz2 z)
 rosbuild_add_executable(record src/record.cpp src/recorder.cpp)
 target_link_libraries(record rosbag)
 
-rosbuild_add_executable(play src/play.cpp src/player.cpp src/time_publisher.cpp)
+rosbuild_add_executable(play src/play.cpp src/player.cpp)
 target_link_libraries(play rosbag)
 
 INSTALL(TARGETS record play
         RUNTIME DESTINATION $ENV{ROS_ROOT}/bin)
 
-#rosbuild_add_pyunit(test/test_rosrecord_offline.py)
 rosbuild_add_gtest(utest test/utest.cpp)
 target_link_libraries(utest rosbag)

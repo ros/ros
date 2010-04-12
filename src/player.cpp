@@ -38,11 +38,15 @@
 #include <sys/select.h>
 
 #include <boost/foreach.hpp>
+#include <boost/format.hpp>
+
+#define foreach BOOST_FOREACH
 
 using std::map;
 using std::pair;
 using std::string;
 using std::vector;
+using boost::shared_ptr;
 using ros::Exception;
 
 namespace rosbag {
@@ -52,9 +56,9 @@ namespace rosbag {
 PlayerOptions::PlayerOptions() :
     check_bag(false),
     show_defs(false),
-    at_once(false),
     quiet(false),
-    paused(false),
+    start_paused(false),
+    at_once(false),
     bag_time(false),
     bag_time_frequency(0.0),
     time_scale(1.0),
@@ -70,7 +74,7 @@ void PlayerOptions::check() {
     if (check_bag) {
         if (at_once)
             throw Exception("Option -a is not valid when checking bag");
-        if (paused)
+        if (start_paused)
             throw Exception("Option -p is not valid when checking bag");
         if (has_time)
             throw Exception("Option -t is not valid when checking bag");
@@ -92,9 +96,7 @@ void PlayerOptions::check() {
 Player::Player(const PlayerOptions& options) :
     options_(options),
     node_handle_(NULL),
-    bag_time_initialized_(false),
-    shifted_(false),
-    bag_time_publisher_(NULL)
+    paused_(false)
 {
 }
 
@@ -104,55 +106,151 @@ Player::~Player() {
         delete node_handle_;
     }
 
-    delete bag_time_publisher_;
+    foreach(shared_ptr<Bag> bag, bags_)
+        bag->close();
 
     unsetTerminalSettings();
 }
 
-void Player::run() {
+void Player::publish() {
     options_.check();
 
     setTerminalSettings();
 
-    node_handle_ = new ros::NodeHandle;
-    bag_time_publisher_ = new TimePublisher;
+    node_handle_ = new ros::NodeHandle();
 
-    if (options_.bag_time)
-        bag_time_publisher_->initialize(options_.bag_time_frequency, options_.time_scale);
+    // Open all the bag files
+    foreach(const string& filename, options_.bags) {
+        shared_ptr<Bag> bag(new Bag);
+        if (!bag->open(filename, bagmode::Read))
+            throw Exception((boost::format("Error opening file: %1%") % filename.c_str()).str());
 
-    start_time_ = getSysTime();
-    requested_start_time_ = start_time_;
-
-    /*
-    Bag bag;
-    if (!bag.open(filename, bagmode::Read))
-        throw Exception("Error opening file: %s", filename.c_str());
-
-    BOOST_FOREACH(const MessageInstance& m, bag.getMessageList()) {
+        bags_.push_back(bag);
     }
-    */
-    /*
-    if (player_->open(options_.bags, start_time_ + ros::Duration().fromSec(-options_.time), time_scale_, options_.try_future))
-        player_->addHandler<AnyMsg>(string("*"), &Player::doPublish, this, NULL, false);
-    else {
-        // Not sure exactly why, but this shutdown is necessary for the
-        // exception to be received by the main thread without giving a Ctrl-C.
-        ros::shutdown();  
-        throw std::runtime_error("Failed to open one of the bag files.");
-    }
-    */
+
+    // Aggregate the messages from all the bags
+    MessageList msgs;
+    foreach(shared_ptr<Bag> bag, bags_)
+        foreach(const MessageInstance& m, bag->getMessageList())
+            msgs.insert(m);
 
     if (!options_.at_once) {
-        if (options_.paused) {
-            paused_time_ = getSysTime();
-            std::cout << "Hit space to resume, or 's' to step.";
-            std::cout.flush();
+        if (options_.start_paused) {
+            paused_ = true;
+            std::cout << "Hit space to resume, or 's' to step." << std::flush;
         }
-        else {
-            std::cout << "Hit space to pause.";
-            std::cout.flush();
-        }
+        else
+            std::cout << "Hit space to pause." << std::flush;
     }
+
+    if (node_handle_ && node_handle_->ok()) {
+        if (!options_.quiet)
+            puts("");
+
+        ros::WallTime last_print_time(0.0);
+        ros::WallDuration max_print_interval(0.1);
+
+        foreach(const MessageInstance& m, msgs) {
+            if (!node_handle_->ok())
+                break;
+
+            ros::WallTime t = ros::WallTime::now();
+            if (!options_.quiet && ((t - last_print_time) >= max_print_interval)) {
+                printf("Time: %16.6f    Duration: %16.6f\r", ros::Time::now().toSec(), m.getTime().toSec());
+                fflush(stdout);
+                last_print_time = t;
+            }
+
+            MessageInstance& m2 = const_cast<MessageInstance&>(m);
+
+            m2.instantiateMessage();
+            doPublish(m2.getTopic(), &m2, m2.getTime(), NULL);
+        }
+
+        std::cout << std::endl << "Done." << std::endl;
+
+        ros::shutdown();
+    }
+}
+
+void Player::doPublish(const string& topic, ros::Message* m, ros::Time time, void* n) {
+    // Pull latching and callerid info out of the connection_header if it's available (which it always should be)
+    bool latching = false;
+    string callerid("");
+    if (m->__connection_header != NULL) {
+        ros::M_string::iterator latch_iter = m->__connection_header->find(string("latching"));
+        if (latch_iter != m->__connection_header->end() && latch_iter->second != string("0"))
+            latching = true;
+
+        ros::M_string::iterator callerid_iter = m->__connection_header->find(string("callerid"));
+        if (callerid_iter != m->__connection_header->end())
+            callerid = callerid_iter->second;
+    }
+
+    // Make a unique id composed of the callerid and the topicname allowing us to have separate advertisers for separate latching topics
+    string name = callerid + topic;
+
+    map<string, ros::Publisher>::iterator pub_iter = publishers_.find(name);
+    if (pub_iter == publishers_.end()) {
+        ros::AdvertiseOptions opts(topic, options_.queue_size, m->__getMD5Sum(), m->__getDataType(), m->__getMessageDefinition());
+        opts.latch = latching;
+
+        ros::Publisher pub = node_handle_->advertise(opts);
+        publishers_.insert(publishers_.begin(), pair<string, ros::Publisher>(name, pub));
+
+        pub_iter = publishers_.find(name);
+
+        ROS_INFO("Sleeping %.3f seconds after advertising %s...", options_.advertise_sleep / 1e6, topic.c_str());
+        usleep(options_.advertise_sleep);
+        ROS_INFO("Done sleeping.\n");
+    }
+
+    if (!options_.at_once) {
+        ros::Time now = getSysTime();
+        ros::Duration delta = time - getSysTime();
+
+        while ((paused_ || delta > ros::Duration(0, 100000)) && node_handle_->ok()) {
+            bool charsleftorpaused = true;
+            while (charsleftorpaused && node_handle_->ok()) {
+                switch (readCharFromStdin()) {
+                case ' ':
+                    // <space>: toggle paused
+                    if (!paused_) {
+                        paused_ = true;
+                        std::cout << std::endl << "Hit space to resume, or 's' to step." << std::flush;
+                    }
+                    else {
+                        paused_ = false;
+                        std::cout << std::endl << "Hit space to pause." << std::flush;
+                    }
+                    break;
+
+                case 's':
+                    // 's': step
+                    if (paused_) {
+                        pub_iter->second.publish(*m);
+                        return;
+                    }
+                    break;
+
+                case EOF:
+                    if (paused_)
+                        usleep(10000);
+                    else
+                        charsleftorpaused = false;
+                }
+            }
+      
+            usleep(100000);  // sleep for 0.1 secs
+
+            delta = time - getSysTime();
+        }
+
+        if (!paused_ && delta > ros::Duration(0, 5000) && node_handle_->ok())
+            usleep(delta.toNSec() / 1000 - 5);      // todo should this be a ros::Duration::Sleep?
+    }
+
+    pub_iter->second.publish(*m);
 }
 
 void Player::setTerminalSettings() {
@@ -175,190 +273,27 @@ void Player::unsetTerminalSettings() {
     tcsetattr(fd, TCSANOW, &orig_flags_);
 }
 
-bool Player::spin() {
-    if (node_handle_ && node_handle_->ok()) {
-        if (!options_.quiet)
-            puts("");
+char Player::readCharFromStdin() {
+#ifdef __APPLE__
+    fd_set testfd;
+    FD_COPY(&stdin_fdset_, &testfd);
+#else
+    fd_set testfd = stdin_fdset_;
+#endif
 
-        ros::WallTime last_print_time(0.0);
-        ros::WallDuration max_print_interval(0.1);
+    timeval tv;
+    tv.tv_sec  = 0;
+    tv.tv_usec = 0;
+    if (select(maxfd_, &testfd, NULL, NULL, &tv) <= 0)
+        return EOF;
 
-        /*
-        while (node_handle_->ok()) {
-            if (!player_->nextMsg())
-                break;
-
-            ros::WallTime t = ros::WallTime::now();
-            if (!options_.quiet && ((t - last_print_time) >= max_print_interval)) {
-                printf("Time: %16.6f    Duration: %16.6f\r", ros::Time::now().toSec(), player_->getDuration().toSec());
-                fflush(stdout);
-                last_print_time = t;
-            }
-        }
-        */
-        std::cout << std::endl << "Done." << std::endl;
-
-        ros::shutdown();
-    }
-
-    return true;
+    return getc(stdin);
 }
 
 ros::Time Player::getSysTime() {
     struct timeval timeofday;
     gettimeofday(&timeofday, NULL);
     return ros::Time().fromNSec(1e9 * timeofday.tv_sec + 1e3 * timeofday.tv_usec);
-}
-
-void Player::doPublish(string topic_name, ros::Message* m, ros::Time play_time, ros::Time record_time, void* n) {
-    if (play_time < requested_start_time_)
-        return;
-
-    // if we are using the bag time
-    if (options_.bag_time) {
-        // initialize bag time publisher
-        if (!bag_time_initialized_) {
-            // starting in paused mode
-            if (options_.paused)
-                bag_time_publisher_->stepTime(record_time);
-            // starting in play mode
-            else 
-                bag_time_publisher_->startTime(record_time);
-            bag_time_initialized_ = true;
-        }
-
-        if (options_.at_once)
-            bag_time_publisher_->startTime(record_time);
-        else
-            bag_time_publisher_->setHorizon(play_time);
-    }
-    
-    // We pull latching and callerid info out of the connection_header if it's available (which it always should be)
-    bool latching = false;
-    string callerid("");
-    
-    if (m->__connection_header != NULL) {
-        ros::M_string::iterator latch_iter = m->__connection_header->find(string("latching"));
-        if (latch_iter != m->__connection_header->end() && latch_iter->second != string("0"))
-            latching = true;
-
-        ros::M_string::iterator callerid_iter = m->__connection_header->find(string("callerid"));
-        if (callerid_iter != m->__connection_header->end())
-            callerid = callerid_iter->second;
-    }
-
-    // We make a unique id composed of the callerid and the topicname allowing us to have separate advertisers
-    // for separate latching topics.
-    
-    string name = callerid + topic_name;
-  
-    map<string, ros::Publisher>::iterator pub_token = publishers_.find(name);
-    if (pub_token == publishers_.end()) {
-        ros::AdvertiseOptions opts(topic_name, options_.queue_size, m->__getMD5Sum(), m->__getDataType(), m->__getMessageDefinition());
-
-        // Have to set the latching field explicitly
-        opts.latch = latching;
-        ros::Publisher pub = node_handle_->advertise(opts);
-        publishers_.insert(publishers_.begin(), pair<string, ros::Publisher>(name, pub));
-        pub_token = publishers_.find(name);
-
-        if (options_.bag_time)
-            bag_time_publisher_->freezeTime();
-        ros::Time paused_time_ = getSysTime();
-
-        ROS_INFO("Sleeping %.3f seconds after advertising %s...", options_.advertise_sleep / 1e6, topic_name.c_str());
-        usleep(options_.advertise_sleep);
-        ROS_INFO("Done sleeping.\n");
-
-        ros::Duration shift = getSysTime() - paused_time_;
-        //player_->shiftTime(shift);
-        if (options_.bag_time)
-            bag_time_publisher_->startTime(record_time);
-    }
-
-    if (!options_.at_once) {
-        ros::Time now = getSysTime();
-        ros::Duration delta = play_time - getSysTime();
-        
-        while ((options_.paused || delta > ros::Duration(0, 100000)) && node_handle_->ok()) {
-            bool charsleftorpaused = true;
-      
-            while (charsleftorpaused && node_handle_->ok()) {
-                // Read from stdin:
-        
-                char c = EOF;
-                
-#ifdef __APPLE__
-                fd_set testfd;
-                FD_COPY(&stdin_fdset_, &testfd);           
-#else
-                fd_set testfd = stdin_fdset_;
-#endif
-
-                timeval tv;
-                tv.tv_sec = 0;
-                tv.tv_usec = 0;
-                
-                if (select(maxfd_, &testfd, NULL, NULL, &tv) > 0)
-                    c = getc(stdin);
-                
-                switch (c) {
-                case ' ':
-                    options_.paused = !options_.paused;
-                    if (options_.paused) {
-                        if (options_.bag_time)
-                            bag_time_publisher_->freezeTime();
-                        paused_time_ = getSysTime();
-                        std::cout << std::endl << "Hit space to resume, or 's' to step.";
-                        std::cout.flush();
-                    }
-                    else {
-                        if (options_.bag_time)
-                        	bag_time_publisher_->startTime(record_time);
-
-                        ros::Duration shift;
-                        if (shifted_) {
-                            shift = getSysTime() - play_time;
-                            play_time = getSysTime();
-                            shifted_ = false;
-                        }
-                        else {
-                            shift = getSysTime() - paused_time_;
-                            play_time = play_time + shift;
-                        }
-                        //player_->shiftTime(shift);
-
-                        std::cout << std::endl << "Hit space to pause.";
-                        std::cout.flush();
-                    }
-                    break;
-                case 's':
-                    if (options_.paused) {
-                        shifted_ = true;
-                        if (options_.bag_time)
-                            bag_time_publisher_->stepTime(record_time);
-                        pub_token->second.publish(*m);
-                        return;
-                    }
-                    break;
-                case EOF:
-                    if (options_.paused)
-                        usleep(10000);
-                    else
-                        charsleftorpaused = false;
-                }
-            }
-      
-            usleep(100000);
-            
-            delta = play_time - getSysTime();
-        }
-        
-        if (!options_.paused && delta > ros::Duration(0, 5000) && node_handle_->ok())
-            usleep(delta.toNSec() / 1000 - 5);      // todo should this be a ros::Duration::Sleep?
-    }
-
-    pub_token->second.publish(*m);
 }
 
 int Player::checkBag() {
@@ -371,7 +306,7 @@ int Player::checkBag() {
         throw Exception("Error opening file");
 
     ros::Time end_time;
-    BOOST_FOREACH(const MessageInstance& m, bag.getMessageList()) {
+    foreach(const MessageInstance& m, bag.getMessageList()) {
         const string& topic = m.getTopic();
 
         map<string, BagContent>::iterator i = content_.find(topic);

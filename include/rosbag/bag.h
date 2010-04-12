@@ -56,7 +56,6 @@
 namespace rosbag
 {
 
-// BagMode
 namespace bagmode
 {
     enum BagMode
@@ -70,46 +69,35 @@ namespace bagmode
 }
 typedef bagmode::BagMode BagMode;
 
-/**
- * Contains the compression type as a string, e.g. "none" or "bz2" (see constants.h),
- * and the compressed and uncompressed size of the chunk in bytes.
- */
 struct ChunkHeader
 {
-    std::string compression;
-    uint32_t    compressed_size;
-    uint32_t    uncompressed_size;
+    std::string compression;          //! chunk compression type, e.g. "none" or "bz2" (see constants.h)
+    uint32_t    compressed_size;      //! compressed size of the chunk in bytes
+    uint32_t    uncompressed_size;    //! uncompressed size of the chunk in bytes
 };
 
-/**
- * Contains the earliest and latest timestamps in the chunk, the absolute offset of
- * the chunk record in the file, and the number of messages in each topic stored in
- * the chunk.
- */
 struct ChunkInfo
 {
-    ros::Time start_time;
-    ros::Time end_time;
-    uint64_t  pos;
+    ros::Time start_time;    //! earliest timestamp of a message in the chunk
+    ros::Time end_time;      //! latest timestamp of a message in the chunk
+    uint64_t  pos;           //! absolute byte offset of chunk record in bag file
 
-    std::map<std::string, uint32_t> topic_counts;
+    std::map<std::string, uint32_t> topic_counts;   //! number of messages in each topic stored in the chunk
 };
 
-//! Topic information
+struct IndexEntry
+{
+    ros::Time time;            //! timestamp of the message
+    uint64_t  chunk_pos;       //! absolute byte offset of the chunk record containing the message
+    uint32_t  offset;          //! relative byte offset of the message record (either definition or data) in the chunk
+};
+
 struct TopicInfo
 {
     std::string topic;
     std::string datatype;
     std::string md5sum;
     std::string msg_def;
-};
-
-//! Entry in a topic index
-struct IndexEntry
-{
-    ros::Time time;
-    uint64_t  chunk_pos;
-    uint32_t  offset;
 };
 
 class MessageInstance;
@@ -129,20 +117,19 @@ public:
 
     bool rewrite(const std::string& src_filename, const std::string& dest_filename);   //!< Fix a bag file
 
+    BagMode  getMode()         const;
+    uint64_t getOffset()       const;
+    int      getVersion()      const;
+    int      getMajorVersion() const;
+    int      getMinorVersion() const;
+
     // Version 1.3 options
     void            setChunkThreshold(uint32_t chunk_threshold);
     uint32_t        getChunkThreshold() const;
     void            setCompression(CompressionType compression);  //!< Set the compression method to use for writing chunks
     CompressionType getCompression() const;                       //!< Get the compression method to use for writing chunks
 
-    BagMode  getMode()   const;  //!< Get the mode
-    uint64_t getOffset() const;
-
-    int getVersion()      const; //!< Get the version number
-    int getMajorVersion() const; //!< Get the major version number
-    int getMinorVersion() const; //!< Get the minor version number
-
-    //! Close bag file
+    //! Close the bag file
     /*!
      * Ensure file is written out to disk, index is appended and file descriptor is closed.
      */

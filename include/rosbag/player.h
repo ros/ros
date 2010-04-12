@@ -50,7 +50,6 @@
 #include <topic_tools/shape_shifter.h>
 
 #include "rosbag/bag.h"
-#include "rosbag/time_publisher.h"
 
 namespace rosbag {
 
@@ -74,18 +73,18 @@ struct PlayerOptions
     void check();
 
     bool     check_bag;
-    bool     at_once;
+    bool     show_defs;
     bool     quiet;
-    bool     paused;
+    bool     start_paused;
+    bool     at_once;
     bool     bag_time;
     double   bag_time_frequency;
-    uint64_t advertise_sleep;
-    int      queue_size;
-    bool     try_future;
     double   time_scale;
+    int      queue_size;
+    uint64_t advertise_sleep;
+    bool     try_future;
     bool     has_time;
     float    time;
-    bool     show_defs;
 
     std::vector<std::string> bags;
 };
@@ -96,42 +95,34 @@ public:
     Player(const PlayerOptions& options);
     ~Player();
 
+    void publish();
     int  checkBag();
 
-    void run();
-    bool spin();
-
 private:
+    char readCharFromStdin();
     void setTerminalSettings();
     void unsetTerminalSettings();
 
     ros::Time getSysTime();
-    void      doPublish(std::string name, ros::Message* m, ros::Time play_time, ros::Time record_time,   void* n);
-    void      checkFile(std::string name, ros::Message* m, ros::Time time_play, ros::Time time_recorded, void* n);
+    void      doPublish(const std::string& topic, ros::Message* m, ros::Time time, void* n);
 
 private:
     PlayerOptions options_;
 
     ros::NodeHandle* node_handle_;    //!< pointer to allow player to start before node handle exists since this is where argument parsing happens
 
+    ros::Time start_time_;
+    bool      paused_;
+
+    std::vector<boost::shared_ptr<Bag> >  bags_;
+    std::map<std::string, ros::Publisher> publishers_;
+
+    std::map<std::string, BagContent>     content_;
+
+    // Terminal
     termios orig_flags_;
     fd_set  stdin_fdset_;
     int     maxfd_;
-
-    Bag bag_;
-
-    bool           bag_time_initialized_;
-    bool           shifted_;
-
-    ros::Time      start_time_;
-    ros::Time      requested_start_time_;
-    ros::Time      paused_time_;
-
-    TimePublisher* bag_time_publisher_;  //!< internally contains a NodeHandle so we make a pointer for the same reason
-
-    std::map<std::string, ros::Publisher> publishers_;
-
-    std::map<std::string, BagContent> content_;
 };
 
 }

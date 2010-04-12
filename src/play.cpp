@@ -56,12 +56,16 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
     int option_char;
     while ((option_char = getopt(argc, argv, "ncdahpb:r:s:t:q:T")) != -1) {
         switch (option_char) {
-        case 'c': opts.check_bag = true; break;  // this shouldn't happen
-        case 'd': opts.show_defs = true; break;
-        case 'n': opts.quiet = true; break;
-        case 'a': opts.at_once = true; break;
-        case 'p': opts.paused = true; break;
-        case 's': opts.advertise_sleep = (unsigned int)(1000000.0 * atof(optarg)); break;
+        case 'c': opts.check_bag    = true; break;
+        case 'd': opts.show_defs    = true; break;
+        case 'n': opts.quiet        = true; break;
+        case 'a': opts.at_once      = true; break;
+        case 'p': opts.start_paused = true; break;
+        case 'T': opts.try_future   = true; break;
+        case 'q': opts.queue_size         = atoi(optarg); break;
+        case 'r': opts.time_scale         = atof(optarg); break;
+        case 'b': opts.bag_time_frequency = atoi(optarg); opts.bag_time = true; break;
+        case 's': opts.advertise_sleep    = (unsigned int) (1000000.0 * atof(optarg)); break;
         case 't': {
             char time[1024];
             strncpy(time, optarg, sizeof(time));
@@ -70,10 +74,6 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
             opts.has_time = true;
             break;
         }
-        case 'q': opts.queue_size = atoi(optarg); break;
-        case 'b': opts.bag_time_frequency = atoi(optarg); opts.bag_time = true; break;
-        case 'r': opts.time_scale = atof(optarg); break;
-        case 'T': opts.try_future = true; break;
         //case 'h': printUsage(); ros::shutdown(); return;
         //case '?': printUsage(); ros::shutdown(); return;
         }
@@ -103,10 +103,8 @@ int main(int argc, char** argv) {
     }
     else {
         ros::init(argc, argv, "play", ros::init_options::AnonymousName);
-
         try {
-            player.run();
-            player.spin();
+            player.publish();
         }
         catch (std::runtime_error& e) {
             ROS_FATAL("%s", e.what());

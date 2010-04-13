@@ -471,9 +471,10 @@ def _rosparam_cmd_set_load(cmd, argv):
         parser = OptionParser(usage="usage: %prog load [options] file [namespace]", prog=NAME)
     elif cmd == 'set':
         parser = OptionParser(usage="usage: %prog set [options] parameter value", prog=NAME)
+
     parser.add_option("-v", dest="verbose", default=False,
                       action="store_true", help="turn on verbose output")
-
+    
     # we don't use optparse to parse actual arguments, just options,
     # due to the fact that optparse doesn't handle negative numbers as
     # arguments.
@@ -481,7 +482,7 @@ def _rosparam_cmd_set_load(cmd, argv):
     optparse_args = []
     for s in argv[2:]:
         if s.startswith('-'):
-            if len(s) > 1 and ord(s[1]) >= ord('0') and ord(s[1]) < ord('9'):
+            if len(s) > 1 and ord(s[1]) >= ord('0') and ord(s[1]) <= ord('9'):
                 args.append(s)
             else:
                 optparse_args.append(s)

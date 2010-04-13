@@ -48,7 +48,7 @@ def ip_check(ctx):
     addrs = roslib.network.get_local_addresses()
 
     resolved = socket.gethostbyname(socket.gethostname())
-    if resolved not in addrs:
+    if not resolved.startswith('127.') and resolved not in addrs:
         return "Local hostname [%s] resolves to [%s], which does not appear to be a local IP address %s."%(socket.gethostname(), resolved, str(addrs))
 
 # suggestion by mquigley based on laptop dhcp issues    

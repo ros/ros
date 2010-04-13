@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
     try {
         opts = parseOptions(argc, argv);
     }
-    catch (const ros::Exception& ex) {
+    catch (ros::Exception const& ex) {
         fprintf(stderr, "Error reading options: %s", ex.what());
         return 1;
     }

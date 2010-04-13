@@ -58,11 +58,11 @@ ChunkedFile::~ChunkedFile() {
     close();
 }
 
-bool ChunkedFile::openReadWrite(const string& filename) { return open(filename, "r+b"); }
-bool ChunkedFile::openWrite    (const string& filename) { return open(filename, "wb");  }
-bool ChunkedFile::openRead     (const string& filename) { return open(filename, "rb");  }
+bool ChunkedFile::openReadWrite(string const& filename) { return open(filename, "r+b"); }
+bool ChunkedFile::openWrite    (string const& filename) { return open(filename, "wb");  }
+bool ChunkedFile::openRead     (string const& filename) { return open(filename, "rb");  }
 
-bool ChunkedFile::open(const string& filename, const string& mode) {
+bool ChunkedFile::open(string const& filename, string const& mode) {
     ROS_INFO("Opening file '%s' with mode '%s'", filename.c_str(), mode.c_str());
 
     // Check if file is already open
@@ -141,7 +141,7 @@ bool ChunkedFile::setWriteMode(CompressionType type) {
     try {
         write_stream_->stopWrite();
     }
-    catch (const Exception& ex) {
+    catch (Exception const& ex) {
         ROS_ERROR("Error stopping write mode: %s", ex.what());
         return false;
     }
@@ -151,7 +151,7 @@ bool ChunkedFile::setWriteMode(CompressionType type) {
     try {
         stream->startWrite();
     }
-    catch (const Exception& ex) {
+    catch (Exception const& ex) {
         ROS_ERROR("Error starting write mode: %s", ex.what());
         return false;
     }
@@ -173,7 +173,7 @@ bool ChunkedFile::setReadMode(CompressionType type) {
     try {
         read_stream_->stopRead();
     }
-    catch (const Exception& ex) {
+    catch (Exception const& ex) {
         ROS_ERROR("Error stopping read mode: %s", ex.what());
         return false;
     }
@@ -183,7 +183,7 @@ bool ChunkedFile::setReadMode(CompressionType type) {
     try {
         stream->startRead();
     }
-    catch (const Exception& ex) {
+    catch (Exception const& ex) {
         ROS_ERROR("Error starting read mode: %s", ex.what());
         return false;
     }
@@ -215,7 +215,7 @@ bool ChunkedFile::seek(uint64_t offset, int origin) {
 uint64_t ChunkedFile::getOffset()            const { return offset_;        }
 uint32_t ChunkedFile::getCompressedBytesIn() const { return compressed_in_; }
 
-size_t ChunkedFile::write(const string& s)        { return write((void*) s.c_str(), s.size()); }
+size_t ChunkedFile::write(string const& s)        { return write((void*) s.c_str(), s.size()); }
 size_t ChunkedFile::write(void* ptr, size_t size) { return write_stream_->write(ptr, size);    }
 size_t ChunkedFile::read(void* ptr, size_t size)  { return read_stream_->read(ptr, size);      }
 

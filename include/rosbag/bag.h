@@ -113,9 +113,9 @@ public:
     Bag();
     ~Bag();
 
-    bool open(const std::string& filename, BagMode mode = bagmode::Default);           //!< Open a bag file
+    bool open(std::string const& filename, BagMode mode = bagmode::Default);           //!< Open a bag file
 
-    bool rewrite(const std::string& src_filename, const std::string& dest_filename);   //!< Fix a bag file
+    bool rewrite(std::string const& src_filename, std::string const& dest_filename);   //!< Fix a bag file
 
     BagMode  getMode()         const;
     uint64_t getOffset()       const;
@@ -166,25 +166,25 @@ public:
     void write(const std::string& topic, ros::Time time, MessageInstance* msg);
 
     //! Return a MessageList
-    MessageList getMessageList(const ros::Time& start_time = ros::TIME_MIN,
-                               const ros::Time& end_time = ros::TIME_MAX);
+    MessageList getMessageList(ros::Time const& start_time = ros::TIME_MIN,
+                               ros::Time const& end_time = ros::TIME_MAX);
 
     //! Return a MessageList using a subset of topics
-    MessageList getMessageListByTopic(const std::vector<std::string>& topics,
-                                      const ros::Time& start_time = ros::TIME_MIN,
-                                      const ros::Time& end_time = ros::TIME_MAX);
+    MessageList getMessageListByTopic(std::vector<std::string> const& topics,
+                                      ros::Time const& start_time = ros::TIME_MIN,
+                                      ros::Time const& end_time = ros::TIME_MAX);
 
     //! Return a MessageList using a subset of types
-    MessageList getMessageListByType(const std::vector<std::string>& types,
-                                     const ros::Time& start_time = ros::TIME_MIN,
-                                     const ros::Time& end_time = ros::TIME_MAX);
+    MessageList getMessageListByType(std::vector<std::string> const& types,
+                                     ros::Time const& start_time = ros::TIME_MIN,
+                                     ros::Time const& end_time = ros::TIME_MAX);
 
     void dump();
 
 private:
-    bool openRead  (const std::string& filename);
-    bool openWrite (const std::string& filename);
-    bool openAppend(const std::string& filename);
+    bool openRead  (std::string const& filename);
+    bool openWrite (std::string const& filename);
+    bool openAppend(std::string const& filename);
 
     void closeWrite();
 
@@ -206,8 +206,8 @@ private:
     
     void writeVersion();
     void writeFileHeaderRecord();
-    void writeMessageDefinitionRecord(const TopicInfo& topic_info);
-    void writeMessageDataRecord(const std::string& topic, const ros::Time& time, bool latching, const std::string& callerid, const ros::Message& msg);
+    void writeMessageDefinitionRecord(TopicInfo const& topic_info);
+    void writeMessageDataRecord(std::string const& topic, ros::Time const& time, bool latching, std::string const& callerid, ros::Message const& msg);
     void writeTopicIndexRecords();
     void writeMessageDefinitionRecords();
     void writeChunkInfoRecords();
@@ -220,12 +220,12 @@ private:
     bool readVersion();
     bool readFileHeaderRecord();
     bool readMessageDefinitionRecord();
-    bool readMessageDataRecord102(const std::string& topic, uint64_t offset);
-    bool readMessageDataRecord103(const std::string& topic, uint64_t chunk_pos, uint32_t offset);
+    bool readMessageDataRecord102(std::string const& topic, uint64_t offset);
+    bool readMessageDataRecord103(std::string const& topic, uint64_t chunk_pos, uint32_t offset);
     bool readChunkHeader(ChunkHeader& chunk_header);
     bool readTopicIndexRecord();
-    bool readTopicIndexDataVersion0(uint32_t data_size, uint32_t count, const std::string& topic);
-    bool readTopicIndexDataVersion1(uint32_t data_size, uint32_t count, const std::string& topic);
+    bool readTopicIndexDataVersion0(uint32_t data_size, uint32_t count, std::string const& topic);
+    bool readTopicIndexDataVersion1(uint32_t data_size, uint32_t count, std::string const& topic);
     bool readChunkInfoRecord();
 
     bool     decompressChunk(uint64_t chunk_pos);
@@ -233,7 +233,7 @@ private:
 
     // Record header I/O
 
-    void writeHeader(const ros::M_string& fields, uint32_t data_len);
+    void writeHeader(ros::M_string const& fields, uint32_t data_len);
     bool readHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& bytes_read);
     bool readHeader(ros::Header& header, uint32_t& data_size);
     bool isOp(ros::M_string& fields, uint8_t reqOp);
@@ -241,25 +241,25 @@ private:
     // Header fields
 
     template<typename T>
-    std::string toHeaderString(const T* field);
+    std::string toHeaderString(T const* field);
 
-    std::string toHeaderString(const ros::Time* field);
+    std::string toHeaderString(ros::Time const* field);
 
     template<typename T>
-    bool readField(const ros::M_string& fields, const std::string& field_name, bool required, T* data);
+    bool readField(ros::M_string const& fields, std::string const& field_name, bool required, T* data);
 
-    bool readField(const ros::M_string& fields, const std::string& field_name, unsigned int min_len, unsigned int max_len, bool required, std::string& data);
-    bool readField(const ros::M_string& fields, const std::string& field_name, bool required, std::string& data);
+    bool readField(ros::M_string const& fields, std::string const& field_name, unsigned int min_len, unsigned int max_len, bool required, std::string& data);
+    bool readField(ros::M_string const& fields, std::string const& field_name, bool required, std::string& data);
 
-    bool readField(const ros::M_string& fields, const std::string& field_name, bool required, ros::Time& data);
+    bool readField(ros::M_string const& fields, std::string const& field_name, bool required, ros::Time& data);
 
-    ros::M_string::const_iterator checkField(const ros::M_string& fields, const std::string& field,
+    ros::M_string::const_iterator checkField(ros::M_string const& fields, std::string const& field,
                                              unsigned int min_len, unsigned int max_len, bool required) const;
 
     // Low-level I/O
 
-    void write(const char* s, std::streamsize n);
-    void write(const std::string& s);
+    void write(char const* s, std::streamsize n);
+    void write(std::string const& s);
     void read(char* b, std::streamsize n);
     void seek(uint64_t pos, int origin = std::ios_base::beg);
 
@@ -306,12 +306,12 @@ private:
 // Templated method definitions
 
 template<typename T>
-std::string Bag::toHeaderString(const T* field) {
+std::string Bag::toHeaderString(T const* field) {
 	return std::string((char*) field, sizeof(T));
 }
 
 template<typename T>
-bool Bag::readField(const ros::M_string& fields, const std::string& field_name, bool required, T* data) {
+bool Bag::readField(ros::M_string const& fields, std::string const& field_name, bool required, T* data) {
     ros::M_string::const_iterator i;
     if ((i = checkField(fields, field_name, sizeof(T), sizeof(T), required)) == fields.end())
         return false;

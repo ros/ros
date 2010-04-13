@@ -36,6 +36,8 @@
 
 #include <boost/foreach.hpp>
 
+#define foreach BOOST_FOREACH
+
 using std::map;
 using std::string;
 using std::vector;
@@ -64,7 +66,7 @@ Bag::~Bag() {
 
 // Modes supported: read, write, append, append+read
 
-bool Bag::open(const string& filename, BagMode mode) {
+bool Bag::open(string const& filename, BagMode mode) {
     mode_ = mode;
 
     switch (mode_) {
@@ -79,7 +81,7 @@ bool Bag::open(const string& filename, BagMode mode) {
     return false;
 }
 
-bool Bag::openRead(const string& filename) {
+bool Bag::openRead(string const& filename) {
     if (!file_.openRead(filename)) {
         ROS_ERROR("Failed to open file: %s", filename.c_str());
         return false;
@@ -99,7 +101,7 @@ bool Bag::openRead(const string& filename) {
 	return true;
 }
 
-bool Bag::openWrite(const string& filename) {
+bool Bag::openWrite(string const& filename) {
 	if (!file_.openWrite(filename)) {
 		ROS_ERROR("Failed to open file: %s", filename.c_str());
 		return false;
@@ -115,7 +117,7 @@ bool Bag::openWrite(const string& filename) {
     return true;
 }
 
-bool Bag::openAppend(const string& filename) {
+bool Bag::openAppend(string const& filename) {
 	if (!file_.openReadWrite(filename)) {
 		ROS_ERROR("Failed to open file: %s", filename.c_str());
 		return false;
@@ -144,7 +146,7 @@ bool Bag::openAppend(const string& filename) {
     return true;
 }
 
-bool Bag::rewrite(const string& src_filename, const string& dest_filename) {
+bool Bag::rewrite(string const& src_filename, string const& dest_filename) {
     Bag in;
     if (!in.open(src_filename, rosbag::bagmode::Read))
         return false;
@@ -156,7 +158,7 @@ bool Bag::rewrite(const string& src_filename, const string& dest_filename) {
     if (!open(target_filename, rosbag::bagmode::Write))
         return false;
 
-    BOOST_FOREACH(rosbag::MessageInstance m, in.getMessageList()) {
+    foreach(rosbag::MessageInstance m, in.getMessageList()) {
         m.instantiateMessage();
         write(m.getTopic(), m.getTime(), m);
     }
@@ -287,7 +289,7 @@ bool Bag::startReadingVersion103() {
     }
 
     // Read the topic indexes
-    BOOST_FOREACH(const ChunkInfo& chunk_info, chunk_infos_) {
+    foreach(ChunkInfo const& chunk_info, chunk_infos_) {
         curr_chunk_info_ = chunk_info;
 
         seek(curr_chunk_info_.pos);
@@ -322,8 +324,8 @@ bool Bag::startReadingVersion102() {
 
     // Read the message definition records (which are the first entry in the topic indexes)
     for (map<string, vector<IndexEntry> >::const_iterator i = topic_indexes_.begin(); i != topic_indexes_.end(); i++) {
-        const vector<IndexEntry>& topic_index = i->second;
-        const IndexEntry&         first_entry = *topic_index.begin();
+        vector<IndexEntry> const& topic_index = i->second;
+        IndexEntry const&         first_entry = *topic_index.begin();
 
         ROS_DEBUG("Reading message definition for %s at %llu", i->first.c_str(), (unsigned long long) first_entry.chunk_pos);
 
@@ -416,15 +418,15 @@ bool Bag::readFileHeaderRecord() {
 
 // Write message records
 
-void Bag::write(const string& topic, Time time, MessageInstance* msg) {
+void Bag::write(string const& topic, Time time, MessageInstance* msg) {
     write(topic, time, *msg);
 }
 
-void Bag::write(const string& topic, Time time, ros::Message::ConstPtr msg) {
+void Bag::write(string const& topic, Time time, ros::Message::ConstPtr msg) {
     write(topic, time, *msg);
 }
 
-void Bag::write(const string& topic, Time time, const ros::Message& msg) {
+void Bag::write(string const& topic, Time time, ros::Message const& msg) {
     if (!checkLogging())
         return;
 
@@ -450,7 +452,7 @@ void Bag::write(const string& topic, Time time, const ros::Message& msg) {
             needs_def_written = true;
         }
     }
-    const TopicInfo& topic_info = key->second;
+    TopicInfo const& topic_info = key->second;
 
     //! \todo move to rosrecord
     scheduledCheckDisk();
@@ -533,7 +535,7 @@ void Bag::stopWritingChunk() {
     // Add this chunk to the index
     chunk_infos_.push_back(curr_chunk_info_);
     for (map<string, vector<IndexEntry> >::const_iterator i = curr_chunk_topic_indexes_.begin(); i != curr_chunk_topic_indexes_.end(); i++) {
-        BOOST_FOREACH(const IndexEntry& e, i->second) {
+        foreach(IndexEntry const& e, i->second) {
             ROS_DEBUG("adding to topic index: %s -> %llu:%d", i->first.c_str(), (unsigned long long) e.chunk_pos, e.offset);
             topic_indexes_[i->first].push_back(e);
         }
@@ -648,7 +650,7 @@ bool Bag::checkLogging() {
     return false;
 }
 
-void Bag::writeMessageDataRecord(const string& topic, const Time& time, bool latching, const string& callerid, const ros::Message& msg) {
+void Bag::writeMessageDataRecord(string const& topic, Time const& time, bool latching, string const& callerid, ros::Message const& msg) {
     M_string header;
     header[OP_FIELD_NAME]    = toHeaderString(&OP_MSG_DATA);
     header[TOPIC_FIELD_NAME] = topic;
@@ -735,7 +737,7 @@ bool Bag::readTopicIndexRecord() {
 }
 
 //! Store the position of the message in the chunk_pos field
-bool Bag::readTopicIndexDataVersion0(uint32_t data_size, uint32_t count, const string& topic) {
+bool Bag::readTopicIndexDataVersion0(uint32_t data_size, uint32_t count, string const& topic) {
 	//if (count * 20 != data_size)
     //	return false;
 
@@ -759,7 +761,7 @@ bool Bag::readTopicIndexDataVersion0(uint32_t data_size, uint32_t count, const s
     return true;
 }
 
-bool Bag::readTopicIndexDataVersion1(uint32_t data_size, uint32_t count, const string& topic) {
+bool Bag::readTopicIndexDataVersion1(uint32_t data_size, uint32_t count, string const& topic) {
 	if (count * sizeof(IndexEntry) != data_size)
     	return false;
 
@@ -794,7 +796,7 @@ void Bag::writeMessageDefinitionRecords() {
     }
 }
 
-void Bag::writeMessageDefinitionRecord(const TopicInfo& topic_info) {
+void Bag::writeMessageDefinitionRecord(TopicInfo const& topic_info) {
     ROS_DEBUG("Writing MSG_DEF [%llu:%d]: topic=%s md5sum=%s type=%s def=...",
     		  (unsigned long long) file_.getOffset(), getChunkOffset(), topic_info.topic.c_str(), topic_info.md5sum.c_str(), topic_info.datatype.c_str());
 
@@ -879,7 +881,7 @@ bool Bag::decompressChunk(uint64_t chunk_pos) {
     return true;
 }
 
-bool Bag::readMessageDataRecord102(const string& topic, uint64_t offset) {
+bool Bag::readMessageDataRecord102(string const& topic, uint64_t offset) {
     ROS_DEBUG("readMessageDataRecord: offset=%llu", (unsigned long long) offset);
 
 	seek(offset);
@@ -908,7 +910,7 @@ bool Bag::readMessageDataRecord102(const string& topic, uint64_t offset) {
     return true;
 }
 
-bool Bag::readMessageDataRecord103(const string& topic, uint64_t chunk_pos, uint32_t offset) {
+bool Bag::readMessageDataRecord103(string const& topic, uint64_t chunk_pos, uint32_t offset) {
     ROS_DEBUG("readMessageDataRecord: chunk_pos=%llu offset=%d", (unsigned long long) chunk_pos, offset);
     if (decompressed_chunk_ != chunk_pos) {
         // Seek to the start of the chunk
@@ -1079,7 +1081,7 @@ bool Bag::isOp(M_string& fields, uint8_t reqOp) {
 	return readField(fields, OP_FIELD_NAME, true, &op) && (op == reqOp);
 }
 
-void Bag::writeHeader(const M_string& fields, uint32_t data_len) {
+void Bag::writeHeader(M_string const& fields, uint32_t data_len) {
     boost::shared_array<uint8_t> header_buffer;
     uint32_t header_len;
     ros::Header::write(fields, header_buffer, header_len);
@@ -1139,7 +1141,7 @@ bool Bag::readHeader(ros::Header& header, uint32_t& data_size) {
     return true;
 }
 
-M_string::const_iterator Bag::checkField(const M_string& fields, const string& field, unsigned int min_len, unsigned int max_len, bool required) const {
+M_string::const_iterator Bag::checkField(M_string const& fields, string const& field, unsigned int min_len, unsigned int max_len, bool required) const {
     M_string::const_iterator fitr = fields.find(field);
     if (fitr == fields.end()) {
         if (required)
@@ -1153,11 +1155,11 @@ M_string::const_iterator Bag::checkField(const M_string& fields, const string& f
     return fitr;
 }
 
-bool Bag::readField(const M_string& fields, const string& field_name, bool required, string& data) {
+bool Bag::readField(M_string const& fields, string const& field_name, bool required, string& data) {
 	return readField(fields, field_name, 1, UINT_MAX, true, data);
 }
 
-bool Bag::readField(const M_string& fields, const string& field_name, unsigned int min_len, unsigned int max_len, bool required, string& data) {
+bool Bag::readField(M_string const& fields, string const& field_name, unsigned int min_len, unsigned int max_len, bool required, string& data) {
     M_string::const_iterator i;
     if ((i = checkField(fields, field_name, min_len, max_len, required)) == fields.end())
         return false;
@@ -1165,7 +1167,7 @@ bool Bag::readField(const M_string& fields, const string& field_name, unsigned i
     return true;
 }
 
-bool Bag::readField(const ros::M_string& fields, const string& field_name, bool required, Time& data) {
+bool Bag::readField(ros::M_string const& fields, string const& field_name, bool required, Time& data) {
     uint64_t packed_time;
 	if (!readField(fields, field_name, required, &packed_time))
 		return false;
@@ -1176,7 +1178,7 @@ bool Bag::readField(const ros::M_string& fields, const string& field_name, bool 
 	return true;
 }
 
-std::string Bag::toHeaderString(const Time* field) {
+std::string Bag::toHeaderString(Time const* field) {
 	uint64_t packed_time = (((uint64_t) field->sec) << 32) + field->nsec;
 	return toHeaderString(&packed_time);
 }
@@ -1184,8 +1186,8 @@ std::string Bag::toHeaderString(const Time* field) {
 // Low-level I/O
 
 void Bag::read(char* b, std::streamsize n)        { file_.read(b, n);             }
-void Bag::write(const string& s)                  { write(s.c_str(), s.length()); }
-void Bag::write(const char* s, std::streamsize n) { file_.write((char*) s, n);    }
+void Bag::write(string const& s)                  { write(s.c_str(), s.length()); }
+void Bag::write(char const* s, std::streamsize n) { file_.write((char*) s, n);    }
 void Bag::seek(uint64_t pos, int origin)          { file_.seek(pos, origin);      }
 
 // Debugging
@@ -1235,10 +1237,10 @@ MessageList Bag::getMessageList(const Time& start_time, const Time& end_time) {
     return message_list;
 }
 
-MessageList Bag::getMessageListByTopic(const vector<string>& topics, const Time& start_time, const Time& end_time) {
+MessageList Bag::getMessageListByTopic(vector<string> const& topics, Time const& start_time, Time const& end_time) {
     MessageList message_list;
     
-    BOOST_FOREACH(const string& topic, topics) {
+    foreach(string const& topic, topics) {
         map<string, vector<IndexEntry> >::const_iterator ind = topic_indexes_.find(topic);
         if (ind == topic_indexes_.end()) {
             ROS_ERROR("%s not in topic_indexes_", topic.c_str());
@@ -1251,21 +1253,20 @@ MessageList Bag::getMessageListByTopic(const vector<string>& topics, const Time&
             continue;
         }
         
-        const vector<IndexEntry>& topic_index = ind->second;
-        const TopicInfo&          topic_info  = key->second;
+        vector<IndexEntry> const& topic_index = ind->second;
+        TopicInfo const&          topic_info  = key->second;
 
         ROS_DEBUG("topic_index.size: %d", (int) topic_index.size());
 
-        BOOST_FOREACH(const IndexEntry& entry, topic_index) {
+        foreach(IndexEntry const& entry, topic_index)
             if (entry.time >= start_time && entry.time <= end_time)
                 message_list.insert(MessageInstance(topic_info, entry, *this));
-        }
     }
 
     return message_list;
 }
 
-MessageList Bag::getMessageListByType(const vector<string>& datatypes, const Time& start_time, const Time& end_time) {
+MessageList Bag::getMessageListByType(vector<string> const& datatypes, Time const& start_time, Time const& end_time) {
     MessageList message_list;
 
     //! \todo implement

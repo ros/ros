@@ -49,6 +49,8 @@
 #include <ros/ros.h>
 #include <topic_tools/shape_shifter.h>
 
+#define foreach BOOST_FOREACH
+
 using std::cout;
 using std::endl;
 using std::set;
@@ -61,7 +63,7 @@ namespace rosbag {
 
 // OutgoingMessage
 
-OutgoingMessage::OutgoingMessage(const string& _topic, topic_tools::ShapeShifter::ConstPtr _msg, Time _time) :
+OutgoingMessage::OutgoingMessage(string const& _topic, topic_tools::ShapeShifter::ConstPtr _msg, Time _time) :
     topic(_topic),
     msg(_msg),
     time(_time)
@@ -70,7 +72,7 @@ OutgoingMessage::OutgoingMessage(const string& _topic, topic_tools::ShapeShifter
 
 // OutgoingQueue
 
-OutgoingQueue::OutgoingQueue(const string& _filename, std::queue<OutgoingMessage>* _queue, Time _time) :
+OutgoingQueue::OutgoingQueue(string const& _filename, std::queue<OutgoingMessage>* _queue, Time _time) :
     filename(_filename),
     queue(_queue),
     time(_time)
@@ -97,7 +99,7 @@ RecorderOptions::RecorderOptions() :
 
 // Recorder
 
-Recorder::Recorder(const RecorderOptions& options) :
+Recorder::Recorder(RecorderOptions const& options) :
     options_(options),
 	num_subscribers_(0),
 	exit_code_(0),
@@ -146,9 +148,8 @@ int Recorder::run() {
     ros::Subscriber trigger_sub = nh.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&Recorder::snapshotTrigger, this, _1));
 
     // Subscribe to each topic
-    BOOST_FOREACH(const string& topic, options_.topics) {
+    foreach(string const& topic, options_.topics)
         subscribe(topic);
-    }
 
     ros::Timer check_master_timer;
     if (options_.record_all)
@@ -166,11 +167,11 @@ int Recorder::run() {
     return exit_code_;
 }
 
-bool Recorder::isSubscribed(const string& topic) const {
+bool Recorder::isSubscribed(string const& topic) const {
     return currently_recording_.find(topic) != currently_recording_.end();
 }
 
-shared_ptr<ros::Subscriber> Recorder::subscribe(const string& topic) {
+shared_ptr<ros::Subscriber> Recorder::subscribe(string const& topic) {
     ros::NodeHandle nh;
     shared_ptr<int> count(new int(options_.limit));
     shared_ptr<ros::Subscriber> sub(new ros::Subscriber);
@@ -367,10 +368,10 @@ void Recorder::doRecordSnapshotter() {
     }
 }
 
-void Recorder::doCheckMaster(const ros::TimerEvent& e, ros::NodeHandle& node_handle) {
+void Recorder::doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_handle) {
     ros::master::V_TopicInfo all_topics;
     if (ros::master::getTopics(all_topics)) {
-        BOOST_FOREACH(const ros::master::TopicInfo& topic_info, all_topics) {
+        foreach(ros::master::TopicInfo const& topic_info, all_topics) {
             if (!isSubscribed(topic_info.name))
                 subscribe(topic_info.name);
         }

@@ -32,18 +32,18 @@ using ros::Time;
 
 namespace rosbag {
 
-MessageInstance::MessageInstance(const TopicInfo& info, const IndexEntry& index, Bag& bag) :
+MessageInstance::MessageInstance(TopicInfo const& info, IndexEntry const& index, Bag& bag) :
 	ros::Message(), info_(info), index_(index), bag_(bag), msg_buf_(NULL), msg_buf_used_(0), msg_buf_alloc_(0) { }
 
 MessageInstance::~MessageInstance() {
 	delete[] msg_buf_;
 }
 
-const string& MessageInstance::getTopic()    const { return info_.topic;    }
-const string& MessageInstance::getDatatype() const { return info_.datatype; }
-const string& MessageInstance::getMd5sum()   const { return info_.md5sum;   }
-const string& MessageInstance::getDef()      const { return info_.msg_def;  }
-const Time&   MessageInstance::getTime()     const { return index_.time;    }
+string const& MessageInstance::getTopic()    const { return info_.topic;    }
+string const& MessageInstance::getDatatype() const { return info_.datatype; }
+string const& MessageInstance::getMd5sum()   const { return info_.md5sum;   }
+string const& MessageInstance::getDef()      const { return info_.msg_def;  }
+Time const&   MessageInstance::getTime()     const { return index_.time;    }
 
 uint8_t* MessageInstance::serialize(uint8_t* write_ptr, uint32_t) const {
 	memcpy(write_ptr, msg_buf_, msg_buf_used_);

@@ -93,7 +93,7 @@ void PlayerOptions::check() {
 
 // Player
 
-Player::Player(const PlayerOptions& options) :
+Player::Player(PlayerOptions const& options) :
     options_(options),
     node_handle_(NULL),
     paused_(false)
@@ -120,7 +120,7 @@ void Player::publish() {
     node_handle_ = new ros::NodeHandle();
 
     // Open all the bag files
-    foreach(const string& filename, options_.bags) {
+    foreach(string const& filename, options_.bags) {
         shared_ptr<Bag> bag(new Bag);
         if (!bag->open(filename, bagmode::Read))
             throw Exception((boost::format("Error opening file: %1%") % filename.c_str()).str());
@@ -131,7 +131,7 @@ void Player::publish() {
     // Aggregate the messages from all the bags
     MessageList msgs;
     foreach(shared_ptr<Bag> bag, bags_)
-        foreach(const MessageInstance& m, bag->getMessageList())
+        foreach(MessageInstance const& m, bag->getMessageList())
             msgs.insert(m);
 
     if (!options_.at_once) {
@@ -150,7 +150,7 @@ void Player::publish() {
         ros::WallTime last_print_time(0.0);
         ros::WallDuration max_print_interval(0.1);
 
-        foreach(const MessageInstance& m, msgs) {
+        foreach(MessageInstance const& m, msgs) {
             if (!node_handle_->ok())
                 break;
 
@@ -173,7 +173,7 @@ void Player::publish() {
     }
 }
 
-void Player::doPublish(const string& topic, ros::Message* m, ros::Time time, void* n) {
+void Player::doPublish(string const& topic, ros::Message* m, ros::Time time, void* n) {
     // Pull latching and callerid info out of the connection_header if it's available (which it always should be)
     bool latching = false;
     string callerid("");
@@ -306,8 +306,8 @@ int Player::checkBag() {
         throw Exception("Error opening file");
 
     ros::Time end_time;
-    foreach(const MessageInstance& m, bag.getMessageList()) {
-        const string& topic = m.getTopic();
+    foreach(MessageInstance const& m, bag.getMessageList()) {
+        string const& topic = m.getTopic();
 
         map<string, BagContent>::iterator i = content_.find(topic);
         if (i == content_.end()) {
@@ -329,8 +329,8 @@ int Player::checkBag() {
 
     printf("topics:\n");
     for (map<string, BagContent>::const_iterator i = content_.begin(); i != content_.end(); i++) {
-        const string&     topic   = i->first;
-        const BagContent& content = i->second;
+        string const&     topic   = i->first;
+        BagContent const& content = i->second;
 
         printf("  - name:       %s\n", topic.c_str());
         printf("    count:      %d\n", content.count);

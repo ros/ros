@@ -81,9 +81,9 @@ def create_master_process(run_id, type_, ros_root, port, log_output=False):
 
     _logger.info("create_master_process: %s, %s, %s", type_, ros_root, port)
     master = os.path.join(ros_root, 'bin', type_)
-    # zenmaster is deprecated and aliased to rosmaster
-    if type_ in [Master.ROSMASTER, Master.ZENMASTER]:        
-        package = 'rosmaster'        
+    # only support zenmaster now that botherder is gone
+    if type_ == Master.ZENMASTER:
+        package = 'rospy'        
         args = [master, '--core', '-p', str(port)]
     else:
         raise RLException("unknown master typ_: %s"%type_)

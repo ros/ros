@@ -133,6 +133,7 @@ def get_service_type(service_name):
     except socket.error:
         raise ROSServiceIOException("Unable to communicate with master!")
     if code == -1:
+        print >> sys.stderr, "Unknown service [%s]"%service_name
         return None
     elif code == 0:
         raise ROSServiceIOException("Master is malfunctioning: %s"%msg)
@@ -152,7 +153,6 @@ def _rosservice_type(service_name):
     """
     service_type = get_service_type(service_name)
     if service_type is None:
-        print >> sys.stderr, "Unknown service [%s]"%service_name
         sys.exit(1)
     else:
         print service_type
@@ -388,8 +388,8 @@ def call_service(service_name, service_args, service_class=None):
     @param service_class: (optional) service type class. If this
     argument is provided, it saves a probe call against the service
     @type  service_class: Message class
-    @return: service request, service response
-    @rtype: roslib.message.Message, roslib.message.Message
+    @return: service response
+    @rtype: roslib.message.Message
     @raise ROSServiceException: if call command cannot be executed
     """
     if service_class is None:

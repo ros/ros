@@ -46,12 +46,12 @@ import tempfile
 import yaml
 import time
 
-import base_rosdep
 import debian
 import redhat
 import gentoo
 import macports
 import arch
+import core
 import cygwin
 
 
@@ -101,25 +101,25 @@ class YamlCache:
         yaml_dict = self.get_yaml(path)
         expanded_rosdeps = {}
         for key in yaml_dict:
-            rosdep_entry = self.get_os_from_yaml(key, yaml_dict[key], path)
+            rosdep_entry = self.get_os_from_yaml(yaml_dict[key], path)
             if not rosdep_entry: # if no match don't do anything
                 continue # matches for loop
             expanded_rosdeps[key] = rosdep_entry
         self._expanded_rosdeps[path] = expanded_rosdeps
         return expanded_rosdeps
 
-    def get_os_from_yaml(self, rosdep_name, yaml_map, source_path): #source_path is for debugging where errors come from
+    def get_os_from_yaml(self, yaml_map, source_path): #source_path is for debugging where errors come from
         """
         @return The os (and version specific if required) local package name
         """
         # See if the version for this OS exists
         if self.os_name in yaml_map:
-            return self.get_version_from_yaml(rosdep_name, yaml_map[self.os_name], source_path)
+            return self.get_version_from_yaml(yaml_map[self.os_name], source_path)
         else:
             #print >> sys.stderr, "failed to resolve a rule for rosdep(%s) on OS(%s)"%(rosdep_name, self.os_name)
             return False
 
-    def get_version_from_yaml(self, rosdep_name, os_specific, source_path):
+    def get_version_from_yaml(self, os_specific, source_path):
         """
         @return The os (and version specific if required) local package name
         """
@@ -232,7 +232,7 @@ class RosdepLookupPackage:
                         #print >> sys.stderr, "DEBUG: Same key found for %s: %s"%(key, self.rosdep_map[key])
                         pass
                     else:
-                        raise RosdepException("QUITTING: due to conflicting rosdep definitions, please resolve this conflict. Rules for %s do not match.  These two rules do not match: \n{{{"%key, self.rosdep_map[key],"}}}, from %s, \n{{{"%self.rosdep_source[key], self.yaml_cache.get_os_from_yaml(key, yaml_dict[key], source_path), "}}} from %s"%source_path)
+                        raise RosdepException("QUITTING: due to conflicting rosdep definitions, please resolve this conflict. Rules for %s do not match.  These two rules do not match: \n{{{"%key, self.rosdep_map[key],"}}}, from %s, \n{{{"%self.rosdep_source[key], self.yaml_cache.get_os_from_yaml(yaml_dict[key], source_path), "}}} from %s"%source_path)
                         
             else:
                 self.rosdep_source[key] = [source_path]
@@ -273,11 +273,6 @@ class RosdepLookupPackage:
 class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
         os_list = [debian.RosdepTestOS(), debian.Debian(), debian.Ubuntu(), debian.Mint(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports(), gentoo.Gentoo(), cygwin.Cygwin()]
-        # Make sure that these classes are all well formed.  
-        for o in os_list:
-            if not isinstance(o, base_rosdep.RosdepBaseOS):
-                raise RosdepException("Class [%s] not derived from RosdepBaseOS"%o.__class__.__name__)
-        # Detect the OS on which this program is running. 
         self.osi = roslib.os_detect.OSDetect(os_list)
         self.packages = packages
         self.rosdeps = roslib.packages.rosdeps_of(packages)

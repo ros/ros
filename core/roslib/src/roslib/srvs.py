@@ -74,13 +74,10 @@ class SrvSpecException(roslib.exceptions.ROSLibException): pass
 
 class SrvSpec(object):
     
-    def __init__(self, request, response, text, full_name = '', short_name = '', package = ''):
+    def __init__(self, request, response, text):
         self.request = request
         self.response = response
         self.text = text
-        self.full_name = full_name
-        self.short_name = short_name
-        self.package = package
         
     def __eq__(self, other):
         if not other or not isinstance(other, SrvSpec):
@@ -147,7 +144,7 @@ def get_pkg_srv_specs(package):
 #      or '' to use local naming convention.
 #  @return roslib.MsgSpec: Message type name and message specification
 #  @throws roslib.MsgSpecException: if syntax errors or other problems are detected in file
-def load_from_string(text, package_context='', full_name='', short_name=''):
+def load_from_string(text, package_context=''):
     text_in  = cStringIO.StringIO()
     text_out = cStringIO.StringIO()
     accum = text_in
@@ -158,10 +155,8 @@ def load_from_string(text, package_context='', full_name='', short_name=''):
         else:
             accum.write(l+'\n')
     # create separate roslib.msgs objects for each half of file
-    
-    msg_in = roslib.msgs.load_from_string(text_in.getvalue(), package_context, '%sRequest'%(full_name), '%sRequest'%(short_name))
-    msg_out = roslib.msgs.load_from_string(text_out.getvalue(), package_context, '%sResponse'%(full_name), '%sResponse'%(short_name))
-    return SrvSpec(msg_in, msg_out, text, full_name, short_name, package_context)
+    msg_in, msg_out = [roslib.msgs.load_from_string(b.getvalue(), package_context) for b in [text_in, text_out]]
+    return SrvSpec(msg_in, msg_out, text)
 
 ## Convert the .srv representation in the file to a SrvSpec instance.
 #  @param package_context: context to use for type name, i.e. the package name,
@@ -177,7 +172,6 @@ def load_from_file(file, package_context=''):
             print "Load spec from", file            
     fileName = os.path.basename(file)
     type_ = fileName[:-len(EXT)]
-    base_type_ = type_
     # determine the type name
     if package_context:
         while package_context.endswith(SEP):
@@ -189,7 +183,7 @@ def load_from_file(file, package_context=''):
     f = open(file, 'r')
     try:
         text = f.read()
-        return (type_, load_from_string(text, package_context, type_, base_type_))
+        return (type_, load_from_string(text, package_context))
     finally:
         f.close()
 

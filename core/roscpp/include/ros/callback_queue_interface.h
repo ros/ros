@@ -37,7 +37,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "ros/types.h"
+#include "types.h"
 
 namespace ros
 {

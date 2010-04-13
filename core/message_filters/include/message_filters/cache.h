@@ -67,7 +67,6 @@ class Cache : public SimpleFilter<M>
 {
 public:
   typedef boost::shared_ptr<M const> MConstPtr;
-  typedef ros::MessageEvent<M const> EventType;
 
   template<class F>
   Cache(F& f, unsigned int cache_size = 1)
@@ -77,9 +76,8 @@ public:
   }
 
   /**
-   * Initializes a Message Cache without specifying a parent filter. This implies that in
-   * order to populate the cache, the user then has to call add themselves, or connectInput() is
-   * called later
+   * Initializes a Messsage Cache without specifying a parent filter. This implies that in
+   * order to populate the cache, the user then has to call add themselves
    */
   Cache(unsigned int cache_size = 1)
   {
@@ -89,7 +87,7 @@ public:
   template<class F>
   void connectInput(F& f)
   {
-    incoming_connection_ = f.registerCallback(typename SimpleFilter<M>::EventCallback(boost::bind(&Cache::callback, this, _1)));
+    incoming_connection_ = f.registerCallback(boost::bind(&Cache::add, this, _1));
   }
 
   ~Cache()
@@ -118,17 +116,6 @@ public:
    */
   void add(const MConstPtr& msg)
   {
-    add(EventType(msg));
-  }
-
-  /**
-   * \brief Add a message to the cache, and pop off any elements that are too old.
-   * This method is registered with a data provider when connectTo is called.
-   */
-  void add(const EventType& evt)
-  {
-    namespace mt = ros::message_traits;
-
     //printf("  Cache Size: %u\n", cache_.size()) ;
     {
       boost::mutex::scoped_lock lock(cache_lock_);
@@ -139,20 +126,19 @@ public:
       // No longer naively pushing msgs to back. Want to make sure they're sorted correctly
       //cache_.push_back(msg) ;                                    // Add the newest message to the back of the deque
 
-      typename std::deque<EventType >::reverse_iterator rev_it = cache_.rbegin();
+      typename std::deque<MConstPtr >::reverse_iterator rev_it = cache_.rbegin();
 
       // Keep walking backwards along deque until we hit the beginning,
       //   or until we find a timestamp that's smaller than (or equal to) msg's timestamp
-      ros::Time evt_stamp = mt::TimeStamp<M>::value(*evt.getMessage());
-      while(rev_it != cache_.rend() && mt::TimeStamp<M>::value(*(*rev_it).getMessage()) > evt_stamp)
+      while(rev_it != cache_.rend() && (*rev_it)->header.stamp > msg->header.stamp)
         rev_it++;
 
       // Add msg to the cache
-      cache_.insert(rev_it.base(), evt);
+      cache_.insert(rev_it.base(), msg);
 
     }
 
-    signalMessage(evt);
+    signalMessage(msg);
   }
 
   /**
@@ -165,14 +151,12 @@ public:
    */
   std::vector<MConstPtr> getInterval(const ros::Time& start, const ros::Time& end)
   {
-    namespace mt = ros::message_traits;
-
     boost::mutex::scoped_lock lock(cache_lock_);
 
     // Find the starting index. (Find the first index after [or at] the start of the interval)
     unsigned int start_index = 0 ;
     while(start_index < cache_.size() &&
-          mt::TimeStamp<M>::value(*cache_[start_index].getMessage()) < start)
+          cache_[start_index]->header.stamp < start)
     {
       start_index++ ;
     }
@@ -180,7 +164,7 @@ public:
     // Find the ending index. (Find the first index after the end of interval)
     unsigned int end_index = start_index ;
     while(end_index < cache_.size() &&
-          mt::TimeStamp<M>::value(*cache_[end_index].getMessage()) <= end)
+          cache_[end_index]->header.stamp <= end)
     {
       end_index++ ;
     }
@@ -189,7 +173,7 @@ public:
     interval_elems.reserve(end_index - start_index) ;
     for (unsigned int i=start_index; i<end_index; i++)
     {
-      interval_elems.push_back(cache_[i].getMessage()) ;
+      interval_elems.push_back(cache_[i]) ;
     }
 
     return interval_elems ;
@@ -204,19 +188,17 @@ public:
    */
   std::vector<MConstPtr> getSurroundingInterval(const ros::Time& start, const ros::Time& end)
   {
-    namespace mt = ros::message_traits;
-
     boost::mutex::scoped_lock lock(cache_lock_);
     // Find the starting index. (Find the first index after [or at] the start of the interval)
     unsigned int start_index = cache_.size()-1;
     while(start_index > 0 &&
-          mt::TimeStamp<M>::value(*cache_[start_index].getMessage()) > start)
+          cache_[start_index]->header.stamp > start)
     {
       start_index--;
     }
     unsigned int end_index = start_index;
     while(end_index < cache_.size()-1 &&
-          mt::TimeStamp<M>::value(*cache_[end_index].getMessage()) < end)
+          cache_[end_index]->header.stamp < end)
     {
       end_index++;
     }
@@ -225,7 +207,7 @@ public:
     interval_elems.reserve(end_index - start_index + 1) ;
     for (unsigned int i=start_index; i<=end_index; i++)
     {
-      interval_elems.push_back(cache_[i].getMessage()) ;
+      interval_elems.push_back(cache_[i]) ;
     }
 
     return interval_elems;
@@ -238,8 +220,6 @@ public:
    */
   MConstPtr getElemBeforeTime(const ros::Time& time)
   {
-    namespace mt = ros::message_traits;
-
     boost::mutex::scoped_lock lock(cache_lock_);
 
     MConstPtr out ;
@@ -247,14 +227,14 @@ public:
     unsigned int i=0 ;
     int elem_index = -1 ;
     while (i<cache_.size() &&
-           mt::TimeStamp<M>::value(*cache_[i].getMessage()) < time)
+           cache_[i]->header.stamp < time)
     {
       elem_index = i ;
       i++ ;
     }
 
     if (elem_index >= 0)
-      out = cache_[elem_index].getMessage() ;
+      out = cache_[elem_index] ;
 
     return out ;
   }
@@ -266,8 +246,6 @@ public:
    */
   MConstPtr getElemAfterTime(const ros::Time& time)
   {
-    namespace mt = ros::message_traits;
-
     boost::mutex::scoped_lock lock(cache_lock_);
 
     MConstPtr out ;
@@ -275,14 +253,14 @@ public:
     int i=cache_.size()-1 ;
     int elem_index = -1 ;
     while (i>=0 &&
-        mt::TimeStamp<M>::value(*cache_[i].getMessage()) > time)
+           cache_[i]->header.stamp > time)
     {
       elem_index = i ;
       i-- ;
     }
 
     if (elem_index >= 0)
-      out = cache_[elem_index].getMessage() ;
+      out = cache_[elem_index] ;
     else
       out.reset() ;
 
@@ -294,26 +272,19 @@ public:
    */
   ros::Time getLatestTime()
   {
-    namespace mt = ros::message_traits;
-
     boost::mutex::scoped_lock lock(cache_lock_);
 
-    ros::Time latest_time;
+    ros::Time latest_time(0, 0) ;
 
     if (cache_.size() > 0)
-      latest_time = mt::TimeStamp<M>::value(*cache_.back().getMessage());
+      latest_time = cache_.back()->header.stamp ;
 
     return latest_time ;
   }
 
 private:
-  void callback(const EventType& evt)
-  {
-    add(evt);
-  }
-
   boost::mutex cache_lock_ ;            //!< Lock for cache_
-  std::deque<EventType> cache_ ;        //!< Cache for the messages
+  std::deque<MConstPtr > cache_ ;       //!< Cache for the messages
   unsigned int cache_size_ ;            //!< Maximum number of elements allowed in the cache.
 
   Connection incoming_connection_;

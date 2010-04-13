@@ -198,8 +198,7 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     # check for name override
     mappings = rospy.names.get_mappings()
     if '__name' in mappings:
-        # use roslib version of resolve_name to avoid remapping
-        name = roslib.names.resolve_name(mappings['__name'], rospy.core.get_caller_id())
+        name = rospy.names.resolve_name(mappings['__name'], remap=False)
         if anonymous:
             logdebug("[%s] WARNING: due to __name setting, anonymous setting is being changed to false"%name)
             anonymous = False
@@ -269,8 +268,10 @@ def get_master(env=os.environ):
     global _master_proxy
     if _master_proxy is not None:
         return _master_proxy
+    # check against local interpreter plus global env
     import roslib.rosenv
-    _master_proxy = rospy.msproxy.MasterProxy(roslib.rosenv.get_master_uri())
+    master_uri = rospy.init.get_local_master_uri() or roslib.rosenv.get_master_uri()
+    _master_proxy = rospy.msproxy.MasterProxy(master_uri)
     return _master_proxy
 
 #########################################################
@@ -367,7 +368,7 @@ def wait_for_service(service, timeout=None):
                 s.settimeout(timeout)
                 s.connect(addr)
                 h = { 'probe' : '1', 'md5sum' : '*',
-                      'callerid' : rospy.core.get_caller_id(),
+                      'callerid' : rospy.names.get_caller_id(),
                       'service': resolved_name }
                 roslib.network.write_ros_handshake_header(s, h)
                 return True

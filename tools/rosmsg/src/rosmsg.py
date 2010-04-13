@@ -58,20 +58,6 @@ from optparse import OptionParser
 
 class ROSMsgException(Exception): pass
 
-import warnings
-def deprecated(func):
-    """This is a decorator which can be used to mark functions
-    as deprecated. It will result in a warning being emmitted
-    when the function is used."""
-    def newFunc(*args, **kwargs):
-        warnings.warn("Call to deprecated function %s." % func.__name__,
-                      category=DeprecationWarning, stacklevel=2)
-        return func(*args, **kwargs)
-    newFunc.__name__ = func.__name__
-    newFunc.__doc__ = func.__doc__
-    newFunc.__dict__.update(func.__dict__)
-    return newFunc
-
 def succeed(args):
     code, msg, val = args
     if code != 1:
@@ -260,39 +246,14 @@ def rosmsg_debug(mode, type_, raw=False):
     else:
         raise ROSMsgException("invalid mode: %s"%mode)
     
-def list_srvs(package):
-    """
-    List srvs contained in package
-    @param package: package name
-    @type  package: str
-    @return: list of srvs in package
-    @rtype: [str]
-    """
-    return list_types(package, mode=roslib.srvs.EXT)
-
-def list_msgs(package):
-    """
-    List msgs contained in package
-    @param package: package name
-    @type  package: str
-    @return: list of msgs in package
-    @rtype: [str]
-    """
-    return list_types(package)
-    
-# DEPRECATED
-@deprecated
 def rosmsg_list_package(mode, package):
-    return list_types(package, mode=mode)
-
-def list_types(package, mode=roslib.msgs.EXT):
     """
     Lists msg/srvs contained in package
+    @param mode: roslib.srvs.EXT or roslib.msgs.EXT
+    @type  mode: str
     @param package: package name
     @type  package: str
-    @param mode: roslib.srvs.EXT or roslib.msgs.EXT. Defaults to msgs.
-    @type  mode: str
-    @return: list of msgs/srv in package
+    @return: list of msgs/srv in \a package
     @rtype: [str]
     """
     if mode == roslib.msgs.EXT:
@@ -321,25 +282,14 @@ def iterate_packages(mode):
         if dir and os.path.isdir(dir):
             yield p
     
-@deprecated
+## list all packages that contain messages/services. This is a convenience
+## function of iterate_packages
+## @param mode str: roslib.msgs.EXT or roslib.srvs.EXT
+## @return [str]: list of packages that contain messages/services (depending on \a mode)
 def rosmsg_list_packages(mode):
-    """
-    Use list_packages
-    """
-    return list_packages(mode=mode)
-
-def list_packages(mode=roslib.msgs.EXT):
-    """
-    List all packages that contain messages/services. This is a convenience
-    function of iterate_packages
-    @param mode: roslib.msgs.EXT or roslib.srvs.EXT. Defaults to msgs
-    @type  mode: str
-    @return: list of packages that contain messages/services (depending on mode)
-    @rtype: [str]
-    """
     return [p for p in iterate_packages(mode)]
 
-## iterator for all packages that contain a message matching base_type
+## iterator for all packages that contain a message matching \a base_type
 ## @param base_type str: message base type to match, e.g. 'String' would match std_msgs/String
 def rosmsg_search(mode, base_type):
     if mode == roslib.msgs.EXT:
@@ -441,9 +391,9 @@ def rosmsg_cmd_package(mode, full):
                       help="list all msgs on a single line")
     options, arg = _stdin_arg(parser, full)
     if options.single_line:    
-        print ' '.join(list_types(arg,mode=mode))        
+        print ' '.join(rosmsg_list_package(mode, arg))        
     else:
-        print '\n'.join(list_types(arg, mode=mode))
+        print '\n'.join(rosmsg_list_package(mode, arg))
     
 def rosmsg_cmd_packages(mode, full):
     parser = OptionParser(usage="usage: ros%s packages"%mode[1:])
@@ -460,7 +410,7 @@ def fullusage(cmd):
     """
     @param cmd: command name
     @type  cmd: str
-    @return: usage text for cmd
+    @return: usage text for \a cmd
     @rtype: str
     """
     return """Commands:

@@ -30,8 +30,6 @@
 #include "ros/connection.h"
 #include "ros/callback_queue_interface.h"
 #include "ros/single_subscriber_publisher.h"
-#include "ros/serialization.h"
-#include <roslib/Header.h>
 
 namespace ros
 {
@@ -41,8 +39,7 @@ Publication::Publication(const std::string &name,
                          const std::string &_md5sum,
                          const std::string& message_definition,
                          size_t max_queue,
-                         bool latch,
-                         bool has_header)
+                         bool latch)
 : name_(name),
   datatype_(datatype),
   md5sum_(_md5sum),
@@ -50,9 +47,7 @@ Publication::Publication(const std::string &name,
   max_queue_(max_queue),
   seq_(0),
   dropped_(false),
-  latch_(latch),
-  has_header_(has_header),
-  intraprocess_subscriber_count_(0)
+  latch_(latch)
 {
 }
 
@@ -89,8 +84,7 @@ void Publication::drop()
   // grab a lock here, to ensure that no subscription callback will
   // be invoked after we return
   {
-    boost::mutex::scoped_lock lock(publish_queue_mutex_);
-    boost::mutex::scoped_lock lock2(subscriber_links_mutex_);
+    boost::mutex::scoped_lock lock(subscriber_links_mutex_);
 
     if (dropped_)
     {
@@ -111,27 +105,11 @@ bool Publication::enqueueMessage(const SerializedMessage& m)
     return false;
   }
 
-  ROS_ASSERT(m.buf);
-
-  uint32_t seq = incrementSequence();
-  if (has_header_)
-  {
-    // If we have a header, we know it's immediately after the message length
-    // Deserialize it, write the sequence, and then serialize it again.
-    namespace ser = ros::serialization;
-    roslib::Header header;
-    ser::IStream istream(m.buf.get() + 4, m.num_bytes - 4);
-    ser::deserialize(istream, header);
-    header.seq = seq;
-    ser::OStream ostream(m.buf.get() + 4, m.num_bytes - 4);
-    ser::serialize(ostream, header);
-  }
-
   for(V_SubscriberLink::iterator i = subscriber_links_.begin();
       i != subscriber_links_.end(); ++i)
   {
     const SubscriberLinkPtr& sub_link = (*i);
-    sub_link->enqueueMessage(m, true, false);
+    sub_link->enqueueMessage(m);
   }
 
   if (latch_)
@@ -153,16 +131,11 @@ void Publication::addSubscriberLink(const SubscriberLinkPtr& sub_link)
     }
 
     subscriber_links_.push_back(sub_link);
-
-    if (sub_link->isIntraprocess())
-    {
-      ++intraprocess_subscriber_count_;
-    }
   }
 
   if (latch_ && last_message_.buf)
   {
-    sub_link->enqueueMessage(last_message_, true, true);
+    sub_link->enqueueMessage(last_message_);
   }
 
   // This call invokes the subscribe callback if there is one.
@@ -180,11 +153,6 @@ void Publication::removeSubscriberLink(const SubscriberLinkPtr& sub_link)
     if (dropped_)
     {
       return;
-    }
-
-    if (sub_link->isIntraprocess())
-    {
-      --intraprocess_subscriber_count_;
     }
 
     V_SubscriberLink::iterator it = std::find(subscriber_links_.begin(), subscriber_links_.end(), sub_link);
@@ -275,7 +243,7 @@ void Publication::dropAllConnections()
 class PeerConnDisconnCallback : public CallbackInterface
 {
 public:
-  PeerConnDisconnCallback(const SubscriberStatusCallback& callback, const SubscriberLinkPtr& sub_link, bool use_tracked_object, const VoidConstWPtr& tracked_object)
+  PeerConnDisconnCallback(const SubscriberStatusCallback& callback, const SubscriberLinkPtr& sub_link, bool use_tracked_object, const VoidWPtr& tracked_object)
   : callback_(callback)
   , sub_link_(sub_link)
   , use_tracked_object_(use_tracked_object)
@@ -285,7 +253,7 @@ public:
 
   virtual CallResult call()
   {
-    VoidConstPtr tracker;
+    VoidPtr tracker;
     if (use_tracked_object_)
     {
       tracker = tracked_object_.lock();
@@ -306,7 +274,7 @@ private:
   SubscriberStatusCallback callback_;
   SubscriberLinkPtr sub_link_;
   bool use_tracked_object_;
-  VoidConstWPtr tracked_object_;
+  VoidWPtr tracked_object_;
 };
 
 void Publication::peerConnect(const SubscriberLinkPtr& sub_link)
@@ -343,102 +311,6 @@ size_t Publication::getNumCallbacks()
 {
   boost::mutex::scoped_lock lock(callbacks_mutex_);
   return callbacks_.size();
-}
-
-uint32_t Publication::incrementSequence()
-{
-  boost::mutex::scoped_lock lock(seq_mutex_);
-  uint32_t old_seq = seq_;
-  ++seq_;
-
-  return old_seq;
-}
-
-uint32_t Publication::getNumSubscribers()
-{
-  boost::mutex::scoped_lock lock(subscriber_links_mutex_);
-  return (uint32_t)subscriber_links_.size();
-}
-
-void Publication::getPublishTypes(bool& serialize, bool& nocopy, const std::type_info& ti)
-{
-  boost::mutex::scoped_lock lock(subscriber_links_mutex_);
-  V_SubscriberLink::const_iterator it = subscriber_links_.begin();
-  V_SubscriberLink::const_iterator end = subscriber_links_.end();
-  for (; it != end; ++it)
-  {
-    const SubscriberLinkPtr& sub = *it;
-    bool s = false;
-    bool n = false;
-    sub->getPublishTypes(s, n, ti);
-    serialize = serialize || s;
-    nocopy = nocopy || n;
-
-    if (serialize && nocopy)
-    {
-      break;
-    }
-  }
-}
-
-bool Publication::hasSubscribers()
-{
-  boost::mutex::scoped_lock lock(subscriber_links_mutex_);
-  return !subscriber_links_.empty();
-}
-
-void Publication::publish(SerializedMessage& m)
-{
-  if (m.message)
-  {
-    boost::mutex::scoped_lock lock(subscriber_links_mutex_);
-    V_SubscriberLink::const_iterator it = subscriber_links_.begin();
-    V_SubscriberLink::const_iterator end = subscriber_links_.end();
-    for (; it != end; ++it)
-    {
-      const SubscriberLinkPtr& sub = *it;
-      if (sub->isIntraprocess())
-      {
-        sub->enqueueMessage(m, false, true);
-      }
-    }
-
-    m.message.reset();
-  }
-
-  if (m.buf)
-  {
-    boost::mutex::scoped_lock lock(publish_queue_mutex_);
-    publish_queue_.push_back(m);
-  }
-}
-
-void Publication::processPublishQueue()
-{
-  V_SerializedMessage queue;
-  {
-    boost::mutex::scoped_lock lock(publish_queue_mutex_);
-
-    if (dropped_)
-    {
-      return;
-    }
-
-    queue.insert(queue.end(), publish_queue_.begin(), publish_queue_.end());
-    publish_queue_.clear();
-  }
-
-  if (queue.empty())
-  {
-    return;
-  }
-
-  V_SerializedMessage::iterator it = queue.begin();
-  V_SerializedMessage::iterator end = queue.end();
-  for (; it != end; ++it)
-  {
-    enqueueMessage(*it);
-  }
 }
 
 } // namespace ros

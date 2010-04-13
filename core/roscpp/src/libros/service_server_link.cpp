@@ -197,7 +197,7 @@ void ServiceServerLink::onResponseOkAndLength(const ConnectionPtr& conn, const b
                 "predicted in tcpros. that seems highly " \
                 "unlikely, so I'll assume protocol " \
                 "synchronization is lost... it's over.");
-    conn->drop(Connection::Destructing);
+    conn->drop();
 
     return;
   }
@@ -229,7 +229,8 @@ void ServiceServerLink::onResponse(const ConnectionPtr& conn, const boost::share
 
     if (current_call_->success_)
     {
-      *current_call_->resp_ = SerializedMessage(buffer, size);
+      current_call_->resp_->__serialized_length = size;
+      current_call_->resp_->deserialize(buffer.get());
     }
   }
 
@@ -292,7 +293,7 @@ void ServiceServerLink::processNextCall()
     if (!persistent_)
     {
       ROS_DEBUG_NAMED("superdebug", "Dropping non-persistent client to service [%s]", service_name_.c_str());
-      connection_->drop(Connection::Destructing);
+      connection_->drop();
     }
     else
     {
@@ -301,22 +302,28 @@ void ServiceServerLink::processNextCall()
   }
   else
   {
-    SerializedMessage request;
+    boost::shared_array<uint8_t> dummy;
+    SerializedMessage request(dummy, 0);
 
     {
       boost::mutex::scoped_lock lock(call_queue_mutex_);
-      request = current_call_->req_;
+
+      uint32_t num_bytes = current_call_->req_->serializationLength() + 4;
+
+      request = SerializedMessage(boost::shared_array<uint8_t>(new uint8_t[num_bytes]), num_bytes);
+      *((uint32_t*)request.buf.get()) = num_bytes - 4;
+      current_call_->req_->serialize(request.buf.get() + 4, 0);
     }
 
     connection_->write(request.buf, request.num_bytes, boost::bind(&ServiceServerLink::onRequestWritten, this, _1));
   }
 }
 
-bool ServiceServerLink::call(const SerializedMessage& req, SerializedMessage& resp)
+bool ServiceServerLink::call(Message* req, Message* resp)
 {
   CallInfoPtr info(new CallInfo);
   info->req_ = req;
-  info->resp_ = &resp;
+  info->resp_ = resp;
   info->success_ = false;
   info->finished_ = false;
   info->call_finished_ = false;

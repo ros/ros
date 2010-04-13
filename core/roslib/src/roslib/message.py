@@ -49,24 +49,16 @@ import roslib.exceptions
 from roslib.rostime import Time, Duration
 import roslib.genpy
 
-class ROSMessageException(roslib.exceptions.ROSLibException):
-    """
-    Exception type for errors in roslib.message routines
-    """
-    pass
+## Exception type for errors in roslib.message routines
+class ROSMessageException(roslib.exceptions.ROSLibException): pass
 
-def _get_message_or_service_class(type_str, message_type, reload_on_error=False):
-    """
-    Utility for retrieving message/service class instances. Used by
-    get_message_class and get_service_class. 
-    @param type_str: 'msg' or 'srv'
-    @type  type_str: str
-    @param message_type: type name of message/service
-    @type  message_type: str
-    @return: Message/Service  for message/service type or None
-    @rtype: class
-    @raise ValueError: if message_type is invalidly specified
-    """
+## Utility for retrieving message/service class instances. Used by
+## get_message_class and get_service_class. 
+## @param type_str str: 'msg' or 'srv'
+## @param message_type str: type name of message/service
+## @return Message/Service class for message/service type or None
+## @raise ValueError if  message_type is invalidly specified
+def _get_message_or_service_class(type_str, message_type):
     ## parse package and local type name for import
     package, base_type = roslib.names.package_resource_name(message_type)
     if not package:
@@ -74,50 +66,36 @@ def _get_message_or_service_class(type_str, message_type, reload_on_error=False)
             package = 'roslib'
         else:
             raise ValueError("message type is missing package name: %s"%str(message_type))
-    pypkg = val = None
+
     try: 
         # bootstrap our sys.path
         roslib.launcher.load_manifest(package)
-        # import the package and return the class
+        # import the package and return the class        
         pypkg = __import__('%s.%s'%(package, type_str))
-        val = getattr(getattr(pypkg, type_str), base_type)
+        return getattr(getattr(pypkg, type_str), base_type)
     except roslib.packages.InvalidROSPkgException:
-        val = None
+        return None
     except ImportError:
-        val = None
+        return None
     except AttributeError:
-        val = None
+        return None
 
-    # this logic is mainly to support rosh, so that a user doesn't
-    # have to exit a shell just because a message wasn't built yet
-    if val is None and reload_on_error:
-        try:
-            if pypkg:
-                reload(pypkg)
-            val = getattr(getattr(pypkg, type_str), base_type)
-        except:
-            val = None
-    return val
-        
 ## cache for get_message_class
 _message_class_cache = {}
 
-def get_message_class(message_type, reload_on_error=False):
+def get_message_class(message_type):
     """
     Get the message class. NOTE: this function maintains a
     local cache of results to improve performance.
     @param message_type: type name of message
     @type  message_type: str
-    @param reload_on_error: (optional). Attempt to reload the Python
-      module if unable to load message the first time. Defaults to
-      False. This is necessary if messages are built after the first load.
     @return: Message class for message/service type
     @rtype:  Message class
     @raise ValueError: if  message_type is invalidly specified
     """
     if message_type in _message_class_cache:
         return _message_class_cache[message_type]
-    cls = _get_message_or_service_class('msg', message_type, reload_on_error=reload_on_error)
+    cls = _get_message_or_service_class('msg', message_type)
     if cls:
         _message_class_cache[message_type] = cls
     return cls
@@ -125,22 +103,19 @@ def get_message_class(message_type, reload_on_error=False):
 ## cache for get_service_class
 _service_class_cache = {}
 
-def get_service_class(service_type, reload_on_error=False):
+def get_service_class(service_type):
     """
     Get the service class. NOTE: this function maintains a
     local cache of results to improve performance.
     @param service_type: type name of service
     @type  service_type: str
-    @param reload_on_error: (optional). Attempt to reload the Python
-      module if unable to load message the first time. Defaults to
-      False. This is necessary if messages are built after the first load.
     @return: Service class for service type
     @rtype: Service class
     @raise Exception: if service_type is invalidly specified
     """
     if service_type in _service_class_cache:
         return _service_class_cache[service_type]
-    cls = _get_message_or_service_class('srv', service_type, reload_on_error=reload_on_error)
+    cls = _get_message_or_service_class('srv', service_type)
     _service_class_cache[service_type] = cls
     return cls
 
@@ -331,8 +306,6 @@ class Message(object):
         @type str: str
         """
         pass
-    def __repr__(self):
-        return strify_message(self)
     def __str__(self):
         return strify_message(self)
     # TODO: unit test

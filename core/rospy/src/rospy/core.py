@@ -38,6 +38,7 @@ import atexit
 import logging
 import os
 import signal
+import string
 import sys
 import threading
 import time
@@ -56,11 +57,43 @@ from rospy.names import *
 from rospy.validators import ParameterInvalid
 
 _logger = logging.getLogger("rospy.core")
+_mlogger = logging.getLogger("rospy.masterslave")
 
 # number of seconds to wait to join on threads. network issue can
 # cause joins to be not terminate gracefully, and it's better to
 # teardown dirty than to hang
 _TIMEOUT_SHUTDOWN_JOIN = 5.
+
+def mloginfo(msg, *args):
+    """
+    Info-level master log statements. These statements may be printed
+    to screen so they should be user-readable.
+    @param msg: Message string
+    @type  msg: str
+    @param args: arguments for msg if msg is a format string
+    """
+    #mloginfo is in core so that it is accessible to master and masterdata
+    _mlogger.info(msg, *args)
+    if 0: # disabling. making the master quieter
+        if args:
+            print msg%args
+        else:
+            print msg
+
+def mlogwarn(msg, *args):
+    """
+    Warn-level master log statements. These statements may be printed
+    to screen so they should be user-readable.
+    @param msg: Message string
+    @type  msg: str    
+    @param args: arguments for msg if msg is a format string
+    """
+    #mloginfo is in core so that it is accessible to master and masterdata
+    _mlogger.warn(msg, *args)
+    if args:
+        print "WARN: "+msg%args
+    else:
+        print "WARN: "+str(msg)
 
 #########################################################
 # ROSRPC
@@ -84,7 +117,7 @@ def parse_rosrpc_uri(uri):
         if '/' in dest_addr:
             dest_addr = dest_addr[:dest_addr.find('/')]
         dest_addr, dest_port = dest_addr.split(':')
-        dest_port = int(dest_port)
+        dest_port = string.atoi(dest_port)
     except:
         raise ParameterInvalid("ROS service URL is invalid: %s"%uri)
     return dest_addr, dest_port
@@ -213,6 +246,11 @@ def logfatal(msg, *args):
 # CONSTANTS
 
 MASTER_NAME = "master" #master is a reserved node name for the central master
+
+# Return code slots
+STATUS = 0
+MSG = 1
+VAL = 2
 
 def get_ros_root(required=False, env=None):
     """
@@ -402,7 +440,7 @@ def add_shutdown_hook(h):
 
 def signal_shutdown(reason):
     """
-    Initiates shutdown process by signaling objects waiting on _shutdown_lock.
+    Initiates shutdown process by singaling objects waiting on _shutdown_lock.
     Shutdown and pre-shutdown hooks are invoked.
     @param reason: human-readable shutdown reason, if applicable
     @type  reason: str
@@ -474,10 +512,33 @@ def register_signals():
     
 # Validators ######################################
 
+def is_api(paramName):
+    """
+    Validator that checks that parameter is a valid API handle
+    (i.e. URI). Both http and rosrpc are allowed schemes.
+    """
+    def validator(param_value, callerId):
+        if not param_value or not isinstance(param_value, basestring):
+            raise ParameterInvalid("ERROR: parameter [%s] is not an XMLRPC URI"%paramName)
+        if not param_value.startswith("http://") and not param_value.startswith(ROSRPC):
+            raise ParameterInvalid("ERROR: parameter [%s] is not an RPC URI"%paramName)
+        #could do more fancy parsing, but the above catches the major cases well enough
+        return param_value
+    return validator
+
 def is_topic(param_name):
     """
     Validator that checks that parameter is a valid ROS topic name
     """    
+    def validator(param_value, caller_id):
+        v = valid_name_validator_resolved(param_name, param_value, caller_id)
+        if param_value == '/':
+            raise ParameterInvalid("ERROR: parameter [%s] cannot be the global namespace"%param_name)            
+        return v
+    return validator
+
+def is_service(param_name):
+    """Validator that checks that parameter is a valid ROS service name"""
     def validator(param_value, caller_id):
         v = valid_name_validator_resolved(param_name, param_value, caller_id)
         if param_value == '/':

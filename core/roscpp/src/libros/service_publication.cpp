@@ -43,8 +43,8 @@ namespace ros
 {
 
 ServicePublication::ServicePublication(const std::string& name, const std::string &md5sum, const std::string& data_type, const std::string& request_data_type,
-                             const std::string& response_data_type, const ServiceCallbackHelperPtr& helper, CallbackQueueInterface* callback_queue,
-                             const VoidConstPtr& tracked_object)
+                             const std::string& response_data_type, const ServiceMessageHelperPtr& helper, CallbackQueueInterface* callback_queue,
+                             const VoidPtr& tracked_object)
 : name_(name)
 , md5sum_(md5sum)
 , data_type_(data_type)
@@ -84,7 +84,7 @@ void ServicePublication::drop()
 class ServiceCallback : public CallbackInterface
 {
 public:
-  ServiceCallback(const ServiceCallbackHelperPtr& helper, const boost::shared_array<uint8_t>& buf, size_t num_bytes, const ServiceClientLinkPtr& link, bool has_tracked_object, const VoidConstWPtr& tracked_object)
+  ServiceCallback(const ServiceMessageHelperPtr& helper, const boost::shared_array<uint8_t>& buf, size_t num_bytes, const ServiceClientLinkPtr& link, bool has_tracked_object, const VoidWPtr& tracked_object)
   : helper_(helper)
   , buffer_(buf)
   , num_bytes_(num_bytes)
@@ -101,46 +101,38 @@ public:
       return Invalid;
     }
 
-    VoidConstPtr tracker;
+    VoidPtr tracker;
     if (has_tracked_object_)
     {
       tracker = tracked_object_.lock();
 
       if (!tracker)
       {
-        SerializedMessage res = serialization::serializeServiceResponse(false, 0);
-        link_->processResponse(false, res);
+        link_->processResponse(false, MessagePtr());
         return Invalid;
       }
     }
 
-    ServiceCallbackHelperCallParams params;
-    params.request = SerializedMessage(buffer_, num_bytes_);
-    params.connection_header = link_->getConnection()->getHeader().getValues();
-    try
-    {
+    MessagePtr req = helper_->createRequest();
+    MessagePtr resp = helper_->createResponse();
 
-      bool ok = helper_->call(params);
-      link_->processResponse(ok, params.response);
-    }
-    catch (std::exception& e)
-    {
-      ROS_ERROR("Exception thrown while processing service call: %s", e.what());
-      SerializedMessage res = serialization::serializeServiceResponse(false, 0);
-      link_->processResponse(false, params.response);
-      return Invalid;
-    }
+    req->__connection_header = link_->getConnection()->getHeader().getValues();
+
+    req->__serialized_length = num_bytes_;
+    req->deserialize(buffer_.get());
+    bool ok = helper_->call(req, resp);
+    link_->processResponse(ok, resp);
 
     return Success;
   }
 
 private:
-  ServiceCallbackHelperPtr helper_;
+  ServiceMessageHelperPtr helper_;
   boost::shared_array<uint8_t> buffer_;
   uint32_t num_bytes_;
   ServiceClientLinkPtr link_;
   bool has_tracked_object_;
-  VoidConstWPtr tracked_object_;
+  VoidWPtr tracked_object_;
 };
 
 void ServicePublication::processRequest(boost::shared_array<uint8_t> buf, size_t num_bytes, const ServiceClientLinkPtr& link)
@@ -182,7 +174,7 @@ void ServicePublication::dropAllConnections()
   for (V_ServiceClientLink::iterator i = local_links.begin();
            i != local_links.end(); ++i)
   {
-    (*i)->getConnection()->drop(Connection::Destructing);
+    (*i)->getConnection()->drop();
   }
 }
 

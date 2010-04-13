@@ -123,7 +123,7 @@ void ServiceManager::shutdown()
     L_ServiceServerLink::iterator end = local_service_clients.end();
     for (; it != end; ++it)
     {
-      (*it)->getConnection()->drop(Connection::Destructing);
+      (*it)->getConnection()->drop();
     }
 
     local_service_clients.clear();

@@ -28,10 +28,21 @@
 #ifndef ROSCPP_EXCEPTIONS_H
 #define ROSCPP_EXCEPTIONS_H
 
-#include <ros/exception.h>
+#include <stdexcept>
 
 namespace ros
 {
+
+/**
+ * \brief Base class for all exceptions thrown by roscpp
+ */
+class Exception : public std::runtime_error
+{
+public:
+  Exception(const std::string& what)
+  : std::runtime_error(what)
+  {}
+};
 
 /**
  * \brief Thrown when an invalid node name is specified to ros::init()

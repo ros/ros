@@ -56,7 +56,12 @@ TEST(Roscpp, waitForMessage)
 TEST(Roscpp, waitForMessageWithTimeout)
 {
   ros::NodeHandle nh;
+
+  ros::Time start = ros::Time::now();
   TestArrayConstPtr msg = topic::waitForMessage<TestArray>("test", ros::Duration(1.0));
+  ros::Time end = ros::Time::now();
+  ros::Duration dur = end - start;
+  ASSERT_GE(dur, ros::Duration(1.0));
   ASSERT_FALSE(msg);
 }
 

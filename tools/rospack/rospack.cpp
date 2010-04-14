@@ -363,8 +363,14 @@ const vector<Package *> &Package::direct_deps(bool missing_package_as_warning)
     catch (runtime_error &e)
     {
       if (missing_package_as_warning)
-        fprintf(stderr, "[rospack] warning: couldn't find dependency [%s] of [%s]\n",
-                dep_pkgname_copy, name.c_str());
+      {
+        // Don't warn if we're in certain modes, #2197
+        if(g_rospack->opt_warn_on_missing_deps)
+        {
+          fprintf(stderr, "[rospack] warning: couldn't find dependency [%s] of [%s]\n",
+                  dep_pkgname_copy, name.c_str());
+        }
+      }
       else
       {
         fprintf(stderr, "[rospack] couldn't find dependency [%s] of [%s]\n",
@@ -670,6 +676,20 @@ Package *ROSPack::get_pkg(string pkgname)
   
 int ROSPack::cmd_depends_on(bool include_indirect)
 {
+  // We can't proceed if the argument-parsing logic wasn't able to provide
+  // any package name.  Note that we need to check for an empty opt_package
+  // here, but not in other places (e.g., cmd_deps()), because here we're
+  // catching the exception that get_pkg() throws when it can't find the
+  // package.  Elsewhere, we let that exception propagate up.
+  if(opt_package.size() == 0)
+  {
+    string errmsg = string("no package name given, and current directory is not a package root");
+    throw runtime_error(errmsg);
+  }
+
+  // Don't warn about missing deps
+  opt_warn_on_missing_deps = false;
+
   // Explicitly crawl for packages, to ensure that we get newly added
   // dependent packages.  We also avoid the possibility of a recrawl
   // happening within the loop below, which could invalidate the pkgs 
@@ -979,6 +999,9 @@ int ROSPack::cmd_export()
 
 int ROSPack::cmd_plugins()
 {
+  // Don't warn about missing deps
+  opt_warn_on_missing_deps = false;
+  
   Package* p = get_pkg(opt_package);
 
   vector<pair<string, string> > plugins = p->plugins();
@@ -1056,6 +1079,8 @@ int ROSPack::run(int argc, char **argv)
   opt_profile_length = 0;
   // only display zombie directories in profile?
   opt_profile_zombie_only = false;
+  // warn on missing deps
+  opt_warn_on_missing_deps = true;
 
   output_acc = string("");
 
@@ -1273,6 +1298,9 @@ int ROSPack::cmd_print_package_list(bool print_path)
   
 int ROSPack::cmd_print_langs_list()
 {
+  // Don't warn about missing deps
+  opt_warn_on_missing_deps = false;
+
   // Check for packages that depend directly on roslang
   VecPkg lang_pkgs;
   Package* roslang;

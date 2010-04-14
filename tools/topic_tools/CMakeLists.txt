@@ -35,6 +35,7 @@ rosbuild_add_rostest(test/drop.test)
 rosbuild_add_rostest(test/relay.test)
 rosbuild_add_rostest(test/mux.test)
 rosbuild_add_rostest(test/switch_mux.test)
+rosbuild_add_rostest(test/switch_mux_leading_slash.test)
 # Can't run this one yet, because hztest won't check for 0Hz output, # 2024
 #rosbuild_add_rostest(test/switch_mux_none.test)
 

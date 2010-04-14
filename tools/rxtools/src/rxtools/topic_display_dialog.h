@@ -38,6 +38,7 @@
 #include "topic_display_generated.h"
 
 #include <vector>
+#include <string>
 
 namespace ros
 {

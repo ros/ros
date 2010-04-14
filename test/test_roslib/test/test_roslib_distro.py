@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 from __future__ import with_statement
-PKG = 'roslib2'
+PKG = 'test_roslib'
 import roslib; roslib.load_manifest(PKG)
 
 import os
@@ -48,7 +48,7 @@ def load_distros():
     d = roslib.packages.get_pkg_dir(PKG)
     distros = {}
     for release_name in ['latest', 'boxturtle']:
-        with open(os.path.join(d, 'test', '%s.rosdistro'%release_name)) as f:
+        with open(os.path.join(d, 'test', 'distro', '%s.rosdistro'%release_name)) as f:
             distros[release_name] = yaml.load(f.read())
     return distros
 
@@ -56,11 +56,11 @@ def load_Distros():
     """
     Load distro files as Distro instances
     """
-    from roslib2.distro import Distro
+    from roslib.distro import Distro
     d = roslib.packages.get_pkg_dir(PKG)
     distros = {}
     for release_name in ['latest', 'boxturtle']:
-        p = os.path.join(d, 'test', '%s.rosdistro'%release_name)
+        p = os.path.join(d, 'test', 'distro', '%s.rosdistro'%release_name)
         distros[release_name] = Distro(p)
     return distros
 
@@ -105,7 +105,7 @@ class DistroTest(unittest.TestCase):
 
     def test_Distro(self):
         # TODO: better unit tests. For now this is mostly a tripwire
-        from roslib2.distro import Distro, DistroStack, Variant
+        from roslib.distro import Distro, DistroStack, Variant
         distros = load_Distros()
 
         r = 'boxturtle'
@@ -134,7 +134,7 @@ class DistroTest(unittest.TestCase):
         distros = load_distros()
         # boxturtle tests
         boxturtle = distros['boxturtle']
-        from roslib2.distro import get_rules
+        from roslib.distro import get_rules
 
         
         self.assertEquals(boxturtle_ros_rules, get_rules(boxturtle, 'ros'))
@@ -146,7 +146,7 @@ class DistroTest(unittest.TestCase):
             self.assertEquals(wg_unbranched_rules, get_rules(boxturtle, s))
         
     def test_load_distro_stacks(self):
-        from roslib2.distro import load_distro_stacks, DistroStack
+        from roslib.distro import load_distro_stacks, DistroStack
 
         distros = load_distros()
 
@@ -193,8 +193,8 @@ class DistroTest(unittest.TestCase):
         self.assertEquals(val, load_distro_stacks(boxturtle, stack_names, r, v))
 
     def test_get_variants(self):
-        import roslib2.distro
-        from roslib2.distro import get_variants
+        import roslib.distro
+        from roslib.distro import get_variants
 
         distros = load_distros()
         # boxturtle tests
@@ -214,5 +214,5 @@ class DistroTest(unittest.TestCase):
         self.assertEquals([], get_variants(latest, 'fake'))
         
 if __name__ == '__main__':
-  rostest.unitrun('roslib2', 'test_distro', DistroTest, coverage_packages=['roslib2.distro'])
+  rostest.unitrun('test_roslib', 'test_distro', DistroTest, coverage_packages=['roslib.distro'])
 

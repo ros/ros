@@ -115,7 +115,7 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
   , num_non_empty_deques_(0)
   , pivot_(NO_PIVOT)
   , max_interval_duration_(ros::DURATION_MAX)
-  , epsilon_(0.1)
+  , age_penalty_(0.1)
   , has_dropped_messages_(9, false)
   , inter_message_lower_bounds_(9, ros::Duration(0))
   , warned_about_incorrect_bound_(9, false)
@@ -136,7 +136,7 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
     pivot_time_ = rhs.pivot_time_;
     pivot_ = rhs.pivot_;
     max_interval_duration_ = rhs.max_interval_duration_;
-    epsilon_ = rhs.epsilon_;
+    age_penalty_ = rhs.age_penalty_;
     candidate_start_ = rhs.candidate_start_;
     candidate_end_ = rhs.candidate_end_;
     deques_ = rhs.deques_;
@@ -249,21 +249,21 @@ struct ApproximateTime : public PolicyBase<M0, M1, M2, M3, M4, M5, M6, M7, M8>
     }
   }
 
-  void setEpsilon(double epsilon)
+  void setAgePenalty(double age_penalty)
   {
-    // For correctness we only need epsilon > -1.0, but most likely a negative epsilon is a mistake.
-    ROS_ASSERT(epsilon >= 0);
-    epsilon_ = epsilon;
+    // For correctness we only need age_penalty > -1.0, but most likely a negative age_penalty is a mistake.
+    ROS_ASSERT(age_penalty >= 0);
+    age_penalty_ = age_penalty;
   }
 
   void setInterMessageLowerBound(int i, ros::Duration lower_bound) {
-    // For correctness we only need epsilon > -1.0, but most likely a negative epsilon is a mistake.
+    // For correctness we only need age_penalty > -1.0, but most likely a negative age_penalty is a mistake.
     ROS_ASSERT(lower_bound >= ros::Duration(0,0));
     inter_message_lower_bounds_[i] = lower_bound;
   }
 
   void setMaxIntervalDuration(ros::Duration max_interval_duration) {
-    // For correctness we only need epsilon > -1.0, but most likely a negative epsilon is a mistake.
+    // For correctness we only need age_penalty > -1.0, but most likely a negative age_penalty is a mistake.
     ROS_ASSERT(max_interval_duration >= ros::Duration(0,0));
     max_interval_duration_ = max_interval_duration;
   }
@@ -720,7 +720,7 @@ private:
         // We already have a candidate
         // Is this one better than the current candidate?
         // INVARIANT: has_dropped_messages_ is all false
-        if ((end_time - candidate_end_) * (1 + epsilon_) > (start_time - candidate_start_))
+        if ((end_time - candidate_end_) * (1 + age_penalty_) >= (start_time - candidate_start_))
         {
           // This is not a better candidate, move to the next
           dequeMoveFrontToPast(start_index);
@@ -743,7 +743,7 @@ private:
         // We have exhausted all possible candidates for this pivot, we now can output the best one
         publishCandidate();
       }
-      else if ((end_time - candidate_end_) * (1 + epsilon_) >= (pivot_time_ - candidate_start_))
+      else if ((end_time - candidate_end_) * (1 + age_penalty_) >= (pivot_time_ - candidate_start_))
       {
         // We have not exhausted all candidates, but this candidate is already provably optimal
         // Indeed, any future candidate must contain the interval [pivot_time_ end_time], which
@@ -764,7 +764,7 @@ private:
           uint32_t end_index, start_index;
           getVirtualCandidateEnd(end_index, end_time);
           getVirtualCandidateStart(start_index, start_time);
-          if ((end_time - candidate_end_) * (1 + epsilon_) >= (pivot_time_ - candidate_start_))
+          if ((end_time - candidate_end_) * (1 + age_penalty_) >= (pivot_time_ - candidate_start_))
           {
             // We have proved optimality
             // As above, any future candidate must contain the interval [pivot_time_ end_time], which
@@ -772,7 +772,7 @@ private:
             publishCandidate();  // This cleans up the virtual moves as a byproduct
             break;  // From the while(1) loop only
           }
-          if ((end_time - candidate_end_) * (1 + epsilon_) < (start_time - candidate_start_))
+          if ((end_time - candidate_end_) * (1 + age_penalty_) < (start_time - candidate_start_))
           {
             // We cannot prove optimality
             // Indeed, we have a virtual (i.e. optimistic) candidate that is better than the current
@@ -819,7 +819,7 @@ private:
   boost::mutex data_mutex_;  // Protects all of the above
 
   ros::Duration max_interval_duration_; // TODO: initialize with a parameter
-  double epsilon_;
+  double age_penalty_;
 
   std::vector<bool> has_dropped_messages_;
   std::vector<ros::Duration> inter_message_lower_bounds_;

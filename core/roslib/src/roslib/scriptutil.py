@@ -182,7 +182,6 @@ def is_publisher(topic, publisher_id):
     else:
         return False
 
-#TODO: can just use roslib.scriptutil.ask_and_call
 def ask_and_call(cmds):
     """
     Pretty print cmds, ask if they should be run, and if so, runs

@@ -19,7 +19,7 @@ python:
   arch: python
   fedora: python-devel
   rhel: python-devel
-  macports: python25 python_select py25-hashlib
+  macports: python25 python_select
   gentoo: python
   cygwin: python
 python-yaml:

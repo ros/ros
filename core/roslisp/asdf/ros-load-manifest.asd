@@ -1,0 +1,1 @@
+../load-manifest/ros-load-manifest.asd

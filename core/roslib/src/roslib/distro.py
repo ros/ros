@@ -173,8 +173,12 @@ class DistroStack(object):
 
         #debian-specific stuff
         #TODO: move to rosdeb
-        self.debian_version = debianize_version(stack_version, release_version)
-        self.debian_name = debianize_name("ros-%s-%s"%(release_name,stack_name))
+        try:
+            self.debian_version = debianize_version(stack_version, release_version)
+            self.debian_name = debianize_name("ros-%s-%s"%(release_name,stack_name))
+        except DistroException:
+            # ignore on non debian systems. This really belongs in an extension
+            pass
 
         #rosdistro key
         self.dev_svn = expand_rule(rules['dev-svn'], stack_name, stack_version, release_name)
@@ -301,6 +305,8 @@ def ubuntu_release():
     """
     WARNING: this can only be called on an Ubuntu system
     """
+    if not os.path.isfile('/etc/issue'):
+        raise DistroException("this is not an ubuntu system")        
     f = open('/etc/issue')
     for s in f:
         if s.startswith('Ubuntu'):

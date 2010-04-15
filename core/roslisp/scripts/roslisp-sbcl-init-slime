@@ -13,8 +13,8 @@
     (unless (eql (char pathstr (1- (length pathstr))) #\/)
       (setf pathstr (concatenate 'string pathstr "/")))
     (let ((roslisp-base (pathname pathstr)))
-      (push roslisp-base asdf:*central-registry*)
-      (push (merge-pathnames #P"s-xml/" roslisp-base) asdf:*central-registry*)
-      (push (merge-pathnames #P"s-xml-rpc/" roslisp-base) asdf:*central-registry*))))
+      (push (merge-pathnames #P"asdf/" roslisp-base) asdf:*central-registry*))))
+
+(asdf:operate 'asdf:load-op :ros-load-manifest)
 
 (format t "~&Finished reading roslisp-sbcl-init-interactive")

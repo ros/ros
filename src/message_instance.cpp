@@ -32,47 +32,56 @@ using ros::Time;
 
 namespace rosbag {
 
-MessageInstance::MessageInstance(TopicInfo const& info, IndexEntry const& index, Bag& bag) :
-	ros::Message(), info_(info), index_(index), bag_(bag), msg_buf_(NULL), msg_buf_used_(0), msg_buf_alloc_(0) { }
+// MessageInfo
 
-MessageInstance::~MessageInstance() {
-	delete[] msg_buf_;
+MessageInfo::MessageInfo(TopicInfo const& topic_info, IndexEntry const& index_entry, Bag& bag) :
+	topic_info_(&topic_info), index_entry_(&index_entry), bag_(&bag) { }
+
+string const& MessageInfo::getTopic()    const { return topic_info_->topic;    }
+string const& MessageInfo::getDatatype() const { return topic_info_->datatype; }
+string const& MessageInfo::getMd5sum()   const { return topic_info_->md5sum;   }
+string const& MessageInfo::getDef()      const { return topic_info_->msg_def;  }
+Time const&   MessageInfo::getTime()     const { return index_entry_->time;    }
+
+MessageInstance::Ptr MessageInfo::instantiateInstance() const {
+	// Read message into the bag record buffer
+    switch (bag_->version_) {
+        case 103: bag_->readMessageDataRecord103(topic_info_->topic, index_entry_->chunk_pos, index_entry_->offset); break;
+        case 102: bag_->readMessageDataRecord102(topic_info_->topic, index_entry_->chunk_pos);                break;
+        default:  ROS_FATAL("Unhandled version: %d", bag_->version_); return boost::shared_ptr<MessageInstance>();
+    }
+
+    return MessageInstance::Ptr(new MessageInstance(*this));
 }
 
-string const& MessageInstance::getTopic()    const { return info_.topic;    }
-string const& MessageInstance::getDatatype() const { return info_.datatype; }
-string const& MessageInstance::getMd5sum()   const { return info_.md5sum;   }
-string const& MessageInstance::getDef()      const { return info_.msg_def;  }
-Time const&   MessageInstance::getTime()     const { return index_.time;    }
+// MessageInstance
+
+MessageInstance::MessageInstance(MessageInfo const& info) : ros::Message(), info_(&info) {
+    __serialized_length = info_->bag_->record_buffer_.getSize();
+    deserialize(info_->bag_->record_buffer_.getData());
+}
+
+MessageInstance::~MessageInstance() { }
+
+const string MessageInstance::__getDataType()          const { return info_->getDatatype(); }
+const string MessageInstance::__getMD5Sum()            const { return info_->getMd5sum();   }
+const string MessageInstance::__getMessageDefinition() const { return info_->getDef();      }
+
+const string MessageInstance::__s_getDataType()          { return "*"; }
+const string MessageInstance::__s_getMD5Sum()            { return "*"; }
+const string MessageInstance::__s_getMessageDefinition() { ROS_ASSERT_MSG(0, "Tried to get static message definition of a MessageInstance."); return "";}
+
+uint32_t MessageInstance::serializationLength() const { return info_->bag_->instantiate_buffer_.getSize(); }
 
 uint8_t* MessageInstance::serialize(uint8_t* write_ptr, uint32_t) const {
-	memcpy(write_ptr, msg_buf_, msg_buf_used_);
-
-	return write_ptr + msg_buf_used_;
+	memcpy(write_ptr, info_->bag_->instantiate_buffer_.getData(), info_->bag_->instantiate_buffer_.getSize());
+	return write_ptr + info_->bag_->instantiate_buffer_.getSize();
 }
 
 uint8_t* MessageInstance::deserialize(uint8_t* read_ptr) {
-	if (__serialized_length > msg_buf_alloc_) {
-		delete[] msg_buf_;
-		msg_buf_ = new uint8_t[__serialized_length];
-		msg_buf_alloc_ = __serialized_length;
-	}
-
-	msg_buf_used_ = __serialized_length;
-	memcpy(msg_buf_, read_ptr, __serialized_length);
-
+	info_->bag_->instantiate_buffer_.setSize(__serialized_length);
+	memcpy(info_->bag_->instantiate_buffer_.getData(), read_ptr, __serialized_length);
 	return NULL;
-}
-
-void MessageInstance::instantiateMessage() {
-    switch (bag_.version_) {
-        case 103: bag_.readMessageDataRecord103(info_.topic, index_.chunk_pos, index_.offset); break;
-        case 102: bag_.readMessageDataRecord102(info_.topic, index_.chunk_pos);                break;
-        default:  ROS_FATAL("Unhandled version: %d", bag_.version_); return;
-    }
-
-    __serialized_length = bag_.record_buffer_.getSize();
-    deserialize(bag_.record_buffer_.getData());
 }
 
 }

@@ -13,6 +13,8 @@
 #include <std_msgs/Int32.h>
 #include "topic_tools/shape_shifter.h"
 
+#define foreach BOOST_FOREACH
+
 class BagTest : public testing::Test
 {
 protected:
@@ -25,7 +27,7 @@ protected:
         i_.data = 42;
     }
 
-    void dumpContents(const std::string& filename) {
+    void dumpContents(std::string const& filename) {
         rosbag::Bag b;
         b.open(filename, rosbag::bagmode::Read);
         dumpContents(b);        
@@ -34,17 +36,17 @@ protected:
 
     void dumpContents(rosbag::Bag& b) {
         b.dump();
-        BOOST_FOREACH(const rosbag::MessageInstance& m, b.getMessageList()) {
+        foreach(rosbag::MessageInstance const& m, b.getMessageList()) {
             std::cout << m.getTime() << ": [" << m.getTopic() << "]" << std::endl;
         }
     }
 
-    void checkContents(const std::string& filename) {
+    void checkContents(std::string const& filename) {
         rosbag::Bag b;
         b.open(filename, rosbag::bagmode::Read);
 
         int message_count = 0;
-        BOOST_FOREACH(rosbag::MessageInstance m, b.getMessageList()) {
+        foreach(rosbag::MessageInstance const& m, b.getMessageList()) {
             std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
             if (s != NULL) {
                 ASSERT_EQ(s->data, foo_.data);
@@ -237,7 +239,7 @@ TEST_F(BagTest, Convert102To103Works) {
 	rosbag::Bag in, out;
 	in.open("test/sample_1.2_indexed.bag", rosbag::bagmode::Read);
 	out.open("test/Convert102To103Works.bag", rosbag::bagmode::Write);
-    BOOST_FOREACH(rosbag::MessageInstance m, in.getMessageList()) {
+    foreach(rosbag::MessageInstance const& m, in.getMessageList()) {
     	m.instantiateMessage();
     	out.write(m.getTopic(), m.getTime(), m);
     }
@@ -249,7 +251,7 @@ TEST_F(BagTest, RewriteWorks) {
 	rosbag::Bag in, out;
 	in.open("test/sample_1.3.bag", rosbag::bagmode::Read);
 	out.open("test/RewriteWorks.bag", rosbag::bagmode::Write);
-    BOOST_FOREACH(rosbag::MessageInstance m, in.getMessageList()) {
+    foreach(rosbag::MessageInstance const& m, in.getMessageList()) {
     	m.instantiateMessage();
     	out.write(m.getTopic(), m.getTime(), m);
     }

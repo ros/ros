@@ -62,7 +62,7 @@ namespace rosbag
 class OutgoingMessage
 {
 public:
-    OutgoingMessage(const std::string& _topic, topic_tools::ShapeShifter::ConstPtr _msg, ros::Time _time);
+    OutgoingMessage(std::string const& _topic, topic_tools::ShapeShifter::ConstPtr _msg, ros::Time _time);
 
     std::string                         topic;
     topic_tools::ShapeShifter::ConstPtr msg;
@@ -72,7 +72,7 @@ public:
 class OutgoingQueue
 {
 public:
-    OutgoingQueue(const std::string& _filename, std::queue<OutgoingMessage>* _queue, ros::Time _time);
+    OutgoingQueue(std::string const& _filename, std::queue<OutgoingMessage>* _queue, ros::Time _time);
 
     std::string                  filename;
     std::queue<OutgoingMessage>* queue;
@@ -102,13 +102,13 @@ struct RecorderOptions
 class Recorder
 {
 public:
-	Recorder(const RecorderOptions& options);
+	Recorder(RecorderOptions const& options);
 
     void doTrigger();
 
-    bool isSubscribed(const std::string& topic) const;
+    bool isSubscribed(std::string const& topic) const;
 
-    boost::shared_ptr<ros::Subscriber> subscribe(const std::string& topic);
+    boost::shared_ptr<ros::Subscriber> subscribe(std::string const& topic);
 
     int run();
 
@@ -123,7 +123,7 @@ private:
     void doQueue(topic_tools::ShapeShifter::ConstPtr msg, std::string topic_name, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
 	void doRecord();
 	void doRecordSnapshotter();
-	void doCheckMaster(const ros::TimerEvent& e, ros::NodeHandle& node_handle);
+	void doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_handle);
 
 	template<class T>
 	static std::string timeToStr(T ros_t);

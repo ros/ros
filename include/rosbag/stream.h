@@ -64,6 +64,7 @@ class Stream
 {
 public:
     Stream(ChunkedFile* file);
+    virtual ~Stream();
 
     virtual CompressionType getCompressionType() const = 0;
 

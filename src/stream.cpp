@@ -55,12 +55,15 @@ shared_ptr<Stream> StreamFactory::getStream(CompressionType type) const {
         case compression::None: return uncompressed_stream_;
         case compression::BZ2:  return bz2_stream_;
         case compression::ZLIB: return zlib_stream_;
+        default:                return shared_ptr<Stream>();
     }
 }
 
 // Stream
 
 Stream::Stream(ChunkedFile* file) : file_(file) { }
+
+Stream::~Stream() { }
 
 void Stream::startWrite() { }
 void Stream::stopWrite()  { }

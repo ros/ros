@@ -33,6 +33,7 @@
 ********************************************************************/
 
 #include "rosbag/player.h"
+#include "rosbag/message_instance.h"
 
 void printUsage() {
     fprintf(stderr, "Usage: play [options] BAG1 [BAG2]\n");

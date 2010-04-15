@@ -34,6 +34,7 @@
 
 #include "rosbag/recorder.h"
 #include "rosbag/exceptions.h"
+#include "rosbag/message_instance.h"
 
 void printUsage() {
     fprintf(stderr, "Usage: record [options] TOPIC1 [TOPIC2 TOPIC3...]\n"

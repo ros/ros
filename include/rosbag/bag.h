@@ -108,16 +108,14 @@ struct IndexEntryCompare
     bool operator() (IndexEntry const& a, ros::Time const& b) const { return a.time < b; }
 };
 
-class MessageInstance;
-class MessageInstanceCompare;
-
-typedef std::vector<MessageInstance> MessageList;
+class MessageInfo;
 
 class View;
 
 class Bag
 {
-    friend class MessageInstance;
+    friend class MessageInfo;
+	friend class MessageInstance;
 
 public:
     Bag();
@@ -177,19 +175,16 @@ public:
      */
     void write(const std::string& topic, ros::Time time, MessageInstance* msg);
 
-    //! Return a MessageList
-    MessageList getMessageList(ros::Time const& start_time = ros::TIME_MIN,
-                               ros::Time const& end_time = ros::TIME_MAX);
+    std::vector<MessageInfo> getMessages(ros::Time const& start_time = ros::TIME_MIN,
+										 ros::Time const& end_time = ros::TIME_MAX);
 
-    //! Return a MessageList using a subset of topics
-    MessageList getMessageListByTopic(std::vector<std::string> const& topics,
-                                      ros::Time const& start_time = ros::TIME_MIN,
-                                      ros::Time const& end_time = ros::TIME_MAX);
+    std::vector<MessageInfo> getMessagesByTopic(std::vector<std::string> const& topics,
+												   ros::Time const& start_time = ros::TIME_MIN,
+												   ros::Time const& end_time = ros::TIME_MAX);
 
-    //! Return a MessageList using a subset of types
-    MessageList getMessageListByType(std::vector<std::string> const& types,
-                                     ros::Time const& start_time = ros::TIME_MIN,
-                                     ros::Time const& end_time = ros::TIME_MAX);
+    std::vector<MessageInfo> getMessagesByType(std::vector<std::string> const& types,
+											   ros::Time const& start_time = ros::TIME_MIN,
+										 	   ros::Time const& end_time = ros::TIME_MAX);
 
     View getViewByTopic(std::vector<std::string> const& topics,
                         ros::Time const& start_time = ros::TIME_MIN,
@@ -311,6 +306,7 @@ private:
     Buffer   chunk_buffer_;       //!< reusable buffer to read chunk into
     Buffer   decompress_buffer_;  //!< reusable buffer to decompress chunks into
     uint64_t decompressed_chunk_;
+    Buffer   instantiate_buffer_;
     
     bool          writing_enabled_;
 
@@ -324,12 +320,12 @@ class View
     friend class Bag;
 
 public:
-    class iterator : public boost::iterator_facade<iterator, MessageInstance const, boost::forward_traversal_tag>
+    class iterator : public boost::iterator_facade<iterator, MessageInfo const, boost::forward_traversal_tag>
     {
     public:
-        iterator() {}
-        iterator(MessageList::const_iterator p) : pos_(p) {}
-        iterator(iterator const& other) : pos_(other.pos_) {}
+        iterator() { }
+        iterator(std::vector<MessageInfo>::const_iterator p) : pos_(p) { }
+        iterator(iterator const& other) : pos_(other.pos_) { }
 
     private:
         friend class boost::iterator_core_access;
@@ -338,23 +334,23 @@ public:
 
         void increment();
 
-        // This wouldn't have to be const if we weren't storing a const MessageList internally
-        MessageInstance const& dereference() const;
+        // This wouldn't have to be const if we weren't storing a const internally
+        MessageInfo const& dereference() const;
 
-        MessageList::const_iterator pos_;
+        std::vector<MessageInfo>::const_iterator pos_;
     };
 
-    typedef const_iterator iterator;
+    typedef iterator const_iterator;
 
     iterator begin() const;
     iterator end()   const;
     uint32_t size()  const;
 
 protected:
-    View(MessageList const& message_list) : message_list_(message_list) {}
+    View(std::vector<MessageInfo> const& messages) : messages_(messages) {}
 
 private:
-    MessageList const message_list_;
+    std::vector<MessageInfo> const messages_;
 };
 
 // Templated method definitions

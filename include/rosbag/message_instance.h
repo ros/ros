@@ -44,6 +44,33 @@
 
 namespace rosbag {
 
+class MessageInstance;
+
+class MessageInfo
+{
+    friend class Bag;
+    friend class MessageInstance;
+
+public:
+    MessageInfo(TopicInfo const& info, IndexEntry const& index, Bag& bag);
+
+    std::string const& getTopic()    const;
+    std::string const& getDatatype() const;
+    std::string const& getMd5sum()   const;
+    std::string const& getDef()      const;
+    ros::Time const&   getTime()     const;
+
+    template<class T>
+    boost::shared_ptr<T const> instantiate() const;
+
+    boost::shared_ptr<MessageInstance> instantiateInstance() const;
+
+private:
+    TopicInfo const*  topic_info_;
+    IndexEntry const* index_entry_;
+    Bag*              bag_;
+};
+
 class MessageInstance : public ros::Message
 {
     friend class Bag;
@@ -52,65 +79,39 @@ public:
     typedef boost::shared_ptr<MessageInstance> Ptr;
     typedef boost::shared_ptr<MessageInstance const> ConstPtr;
 
-    MessageInstance(const TopicInfo& info, const IndexEntry& index, Bag& bag);
+    MessageInstance(MessageInfo const& msg_info);
     virtual ~MessageInstance();
-
-    const std::string& getTopic()    const;
-    const std::string& getDatatype() const;
-    const std::string& getMd5sum()   const;
-    const std::string& getDef()      const;
-    const ros::Time&   getTime()     const;
-
-    template<class T>
-    boost::shared_ptr<T const> instantiate() const;
-
-    void instantiateMessage();
 
     // Message implementation
 
-    virtual const std::string __getDataType()          const { return getDatatype(); }
-    virtual const std::string __getMD5Sum()            const { return getMd5sum();   }
-    virtual const std::string __getMessageDefinition() const { return getDef();      }
+    virtual const std::string __getDataType()          const;
+    virtual const std::string __getMD5Sum()            const;
+    virtual const std::string __getMessageDefinition() const;
 
-    static const std::string __s_getDataType()          { return "*"; }
-    static const std::string __s_getMD5Sum()            { return "*"; }
-    static const std::string __s_getMessageDefinition() { ROS_ASSERT_MSG(0, "Tried to get static message definition of a MessageInstance."); return "";}
+    static const std::string __s_getDataType();
+    static const std::string __s_getMD5Sum();
+    static const std::string __s_getMessageDefinition();
 
-    uint32_t serializationLength() const { return msg_buf_used_; }
+    uint32_t serializationLength() const;
     virtual uint8_t* serialize(uint8_t* writePtr, uint32_t) const;
     virtual uint8_t* deserialize(uint8_t* readPtr);
 
 private:
-    const TopicInfo&  info_;
-    const IndexEntry& index_;
-    Bag&              bag_;
-
-    uint8_t* msg_buf_;
-    uint32_t msg_buf_used_;
-    uint32_t msg_buf_alloc_;
-};
-
-//! Comparator to sort MessageInstances by timestamp
-struct MessageInstanceCompare
-{
-    bool operator()(const MessageInstance& a, const MessageInstance& b) const {
-        return a.getTime() < b.getTime();
-    }
+    MessageInfo const* info_;
 };
 
 template<class T>
-boost::shared_ptr<T const> MessageInstance::instantiate() const {
+boost::shared_ptr<T const> MessageInfo::instantiate() const {
     if (ros::message_traits::MD5Sum<T>::value() != getMd5sum())
         return boost::shared_ptr<T const>();
 
-    if (bag_.version_ == 103)
-    	bag_.readMessageDataRecord103(info_.topic, index_.chunk_pos, index_.offset);
-    else if (bag_.version_ == 102)
-    	bag_.readMessageDataRecord102(info_.topic, index_.chunk_pos);
-    else
-    	ROS_FATAL("Unhandled version: %d", bag_.version_);
+    switch (bag_->version_) {
+    case 103: bag_->readMessageDataRecord103(topic_info_->topic, index_entry_->chunk_pos, index_entry_->offset); break;
+    case 102: bag_->readMessageDataRecord102(topic_info_->topic, index_entry_->chunk_pos); break;
+    default:  ROS_FATAL("Unhandled version: %d", bag_->version_);
+    }
 
-    return bag_.instantiateBuffer<T>();
+    return bag_->instantiateBuffer<T>();
 }
 
 }

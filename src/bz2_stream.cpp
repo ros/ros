@@ -133,6 +133,8 @@ size_t BZ2Stream::read(void* ptr, size_t size) {
     case BZ_DATA_ERROR_MAGIC: ROS_ERROR("BZ_DATA_ERROR_MAGIC: stream does not begin with requisite header bytes");           break;
     case BZ_MEM_ERROR:        ROS_ERROR("BZ_MEM_ERROR: insufficient memory available");                                      break;
     }
+
+    return 0;
 }
 
 void BZ2Stream::stopRead() {

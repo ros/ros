@@ -129,10 +129,10 @@ void Player::publish() {
     }
 
     // Aggregate the messages from all the bags
-    MessageList msgs;
+    vector<MessageInfo> messages;
     foreach(shared_ptr<Bag> bag, bags_)
-        foreach(MessageInstance const& m, bag->getMessageList())
-            msgs.insert(m);
+        foreach(MessageInfo const& m, bag->getMessages())
+            messages.push_back(m);
 
     if (!options_.at_once) {
         if (options_.start_paused) {
@@ -150,7 +150,7 @@ void Player::publish() {
         ros::WallTime last_print_time(0.0);
         ros::WallDuration max_print_interval(0.1);
 
-        foreach(MessageInstance const& m, msgs) {
+        foreach(MessageInfo const& m, messages) {
             if (!node_handle_->ok())
                 break;
 
@@ -161,10 +161,8 @@ void Player::publish() {
                 last_print_time = t;
             }
 
-            MessageInstance& m2 = const_cast<MessageInstance&>(m);
-
-            m2.instantiateMessage();
-            doPublish(m2.getTopic(), &m2, m2.getTime(), NULL);
+            MessageInstance::Ptr instance = m.instantiateInstance();
+            doPublish(m.getTopic(), instance, m.getTime(), NULL);
         }
 
         std::cout << std::endl << "Done." << std::endl;
@@ -173,7 +171,7 @@ void Player::publish() {
     }
 }
 
-void Player::doPublish(string const& topic, ros::Message* m, ros::Time const& time, void* n) {
+void Player::doPublish(string const& topic, ros::MessagePtr m, ros::Time const& time, void* n) {
     // Pull latching and callerid info out of the connection_header if it's available (which it always should be)
     bool latching = false;
     string callerid("");
@@ -308,14 +306,14 @@ int Player::checkBag() {
     // Build a count of messages in each topic
     map<string, BagContent> content_by_topic;
     ros::Time end_time;
-    foreach(MessageInstance const& m, bag.getMessageList()) {
+    foreach(MessageInfo const& m, bag.getMessages()) {
         string const& topic = m.getTopic();
 
         map<string, BagContent>::iterator i = content_by_topic.find(topic);
         if (i == content_by_topic.end())
-            content_by_topic[topic] = BagContent(m.__getDataType(), m.__getMD5Sum(), m.__getMessageDefinition());
+            content_by_topic.insert(std::pair<string, BagContent>(topic, BagContent(m.getDatatype(), m.getMd5sum(), m.getDef())));
         else {
-            BagContent const& content = i->second;
+            BagContent& content = i->second;
             content.count++;
         }
 

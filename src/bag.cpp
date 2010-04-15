@@ -42,6 +42,7 @@ using std::map;
 using std::priority_queue;
 using std::string;
 using std::vector;
+using boost::shared_ptr;
 using ros::M_string;
 using ros::Time;
 
@@ -159,9 +160,10 @@ bool Bag::rewrite(string const& src_filename, string const& dest_filename) {
     if (!open(target_filename, rosbag::bagmode::Write))
         return false;
 
-    foreach(rosbag::MessageInstance const& m, in.getMessageList()) {
-        m.instantiateMessage();
-        write(m.getTopic(), m.getTime(), m);
+    foreach(MessageInfo const& m, in.getMessages()) {
+    	shared_ptr<MessageInstance> instance = m.instantiateInstance();
+
+        write(m.getTopic(), m.getTime(), instance);
     }
 
     in.close();
@@ -865,6 +867,10 @@ bool Bag::decompressChunk(uint64_t chunk_pos) {
     if      (chunk_header.compression == COMPRESSION_NONE) compression = compression::None;
     else if (chunk_header.compression == COMPRESSION_BZ2)  compression = compression::BZ2;
     else if (chunk_header.compression == COMPRESSION_ZLIB) compression = compression::ZLIB;
+    else {
+    	ROS_ERROR("Unknown compression: %s", chunk_header.compression.c_str());
+    	return false;
+    }
 
     if (compression == compression::None)
         return true;
@@ -1242,14 +1248,14 @@ struct MergeCompare
 // Efficiently merge our sorted lists and store them in a new list
 // To get rid of the list structure all together we can essentially just store the merge_queue inside
 // our custom iterator, though it needs a little more logic to handle reverse iteration appropriately
-MessageList Bag::getMessageListByTopic(vector<string> const& topics, Time const& start_time, Time const& end_time)
+vector<MessageInfo> Bag::getMessagesByTopic(vector<string> const& topics, Time const& start_time, Time const& end_time)
 {
-    MessageList message_list;
+	vector<MessageInfo> messages;
 
     priority_queue<MergeHelper*, vector<MergeHelper*>, MergeCompare> merge_queue;
     foreach(string const& topic, topics) {
         map<string, vector<IndexEntry> >::iterator ind = topic_indexes_.find(topic);
-        map<string, TopicInfo>::iterator key = topics_infos_.find(topic);
+        map<string, TopicInfo>::iterator key = topic_infos_.find(topic);
 
         if (ind != topic_indexes_.end() && key != topic_infos_.end()) {
             vector<IndexEntry> const& index_entries = ind->second;
@@ -1272,7 +1278,7 @@ MessageList Bag::getMessageListByTopic(vector<string> const& topics, Time const&
 
         IndexEntry const& entry = *(merge_helper->iter);
 
-        message_list.push_back(MessageInstance(merge_helper->topic_info, entry, *this));
+        messages.push_back(MessageInfo(merge_helper->topic_info, entry, *this));
 
         merge_helper->advance();
 
@@ -1283,11 +1289,11 @@ MessageList Bag::getMessageListByTopic(vector<string> const& topics, Time const&
             merge_queue.push(merge_helper);
     }
 
-    return message_list;
+    return messages;
 }
 
-MessageList Bag::getMessageList(const Time& start_time, const Time& end_time) {
-    MessageList message_list;
+vector<MessageInfo> Bag::getMessages(const Time& start_time, const Time& end_time) {
+	vector<MessageInfo> messages;
 
     for (map<string, TopicInfo>::const_iterator i = topic_infos_.begin(); i != topic_infos_.end(); i++) {
         string const& topic = i->first;
@@ -1301,25 +1307,25 @@ MessageList Bag::getMessageList(const Time& start_time, const Time& end_time) {
 
         foreach(IndexEntry const& entry, topic_index) {
             if (entry.time >= start_time && entry.time <= end_time)
-                message_list.insert(MessageInstance(topic_info, entry, *this));
+                messages.push_back(MessageInfo(topic_info, entry, *this));
         }
     }
 
-    return message_list;
+    return messages;
 }
 
 // View
 
 View Bag::getViewByTopic(vector<string> const& topics, Time const& start_time, Time const& end_time) {
-    return View(getMessageListByTopic(topics, start_time, end_time));
+    return View(getMessagesByTopic(topics, start_time, end_time));
 }
 
-View::iterator View::begin() const { return iterator(message_list_.begin()); }
-View::iterator View::end()   const { return iterator(message_list_.end());   }
-uint32_t       View::size()  const { return message_list_.size();            }
+View::iterator View::begin() const { return iterator(messages_.begin()); }
+View::iterator View::end()   const { return iterator(messages_.end());   }
+uint32_t       View::size()  const { return messages_.size();            }
 
-bool                   View::iterator::equal(View::iterator const& other) const { return pos_ == other.pos_; }
-void                   View::iterator::increment()                              { pos_++;                    }
-MessageInstance const& View::iterator::dereference() const                      { return *pos_;              }
+bool               View::iterator::equal(View::iterator const& other) const { return pos_ == other.pos_; }
+void               View::iterator::increment()                              { pos_++;                    }
+MessageInfo const& View::iterator::dereference() const                      { return *pos_;              }
 
 }

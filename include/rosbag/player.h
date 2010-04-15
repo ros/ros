@@ -55,7 +55,7 @@ namespace rosbag {
 
 struct BagContent
 {
-    BagContent(std::string d, std::string m, std::string def)
+    BagContent(std::string const& d, std::string const& m, std::string const& def)
 		: datatype(d), md5sum(m), definition(def), count(1) { }
 
     std::string datatype;
@@ -92,7 +92,7 @@ struct PlayerOptions
 class Player
 {
 public:
-    Player(const PlayerOptions& options);
+    Player(PlayerOptions const& options);
     ~Player();
 
     void publish();
@@ -104,7 +104,7 @@ private:
     void unsetTerminalSettings();
 
     ros::Time getSysTime();
-    void      doPublish(const std::string& topic, ros::Message* m, ros::Time time, void* n);
+    void      doPublish(std::string const& topic, ros::MessagePtr m, ros::Time const& time, void* n);
 
 private:
     PlayerOptions options_;

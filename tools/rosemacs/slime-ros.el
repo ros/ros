@@ -57,4 +57,15 @@
                 (slime-eval `(cl:setf ros-load:*current-ros-package* ,ros-pkg-name))
                 (slime-oos system-name 'test-op)))))
 
+(defun slime-ros ()
+  (interactive)
+  (let* ((sbcl-pkg-path (ros-package-dir "sbcl"))
+         (roslisp-path (ros-package-dir "roslisp"))
+         (sbcl-binary (if sbcl-pkg-path
+                          (concat sbcl-pkg-path "/scripts/run-sbcl.sh")
+                          "/usr/bin/sbcl"))
+         (inferior-lisp-program (concat sbcl-binary " --load " roslisp-path
+                                        "/scripts/roslisp-sbcl-init-slime")))
+    (slime)))
+
 (provide 'slime-ros)

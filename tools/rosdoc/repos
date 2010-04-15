@@ -1,4 +1,4 @@
-# a list of publicly-viewable ROS subversion repositories
+#a list of publicly-viewable ROS subversion repositories
 # that will be included in the rosdoc build at
 # http://build.willowgarage.com.
 # 
@@ -30,3 +30,5 @@ alufr
 ua
 cob3
 umd
+cu
+iheart

@@ -1,7 +1,7 @@
 int32 a
 Log log
 string s
-Time time
+Clock time
 int32 b
 duration d
 time t 

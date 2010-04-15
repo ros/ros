@@ -154,7 +154,7 @@ graph_warnings = [
     ]
 
 graph_errors = [
-    (simtime_check, "/use_simtime is set but no publisher of /time is present"),
+    (simtime_check, "/use_simtime is set but no publisher of /clock is present"),
     (ping_check, "Could not contact the following nodes:"),
     (missing_edges, "The following nodes should be connected but aren't:"),
     (probe_all_services, "Errors connecting to the following services:"),
@@ -317,7 +317,10 @@ def _compute_connectivity(ctx):
     # - iterate through subscribers and add edge to each publisher of topic
     for t, sub_list in subs:
         for sub in sub_list:
-            if t in pub_dict:
+            if sub == '/rosout' and t == '/rosout':
+                # special case this self-subscription
+                continue
+            elif t in pub_dict:
                 expected_edges.extend([(t, pub, sub) for pub in pub_dict[t]])
             elif sub in unconnected_subscriptions:
                 unconnected_subscriptions[sub].append(t)

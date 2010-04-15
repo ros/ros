@@ -84,14 +84,16 @@ bool check();
 struct TopicInfo
 {
   TopicInfo() {}
-  TopicInfo(const std::string& _name, const std::string& _datatype, const std::string& _md5sum)
+  TopicInfo(const std::string& _name, const std::string& _datatype /*, const std::string& _md5sum*/)
   : name(_name)
   , datatype(_datatype)
-  , md5sum(_md5sum)
+  //, md5sum(_md5sum)
   {}
   std::string name;        ///< Name of the topic
   std::string datatype;    ///< Datatype of the topic
-  std::string md5sum;      ///< md5sum of the topic
+
+  // not possible yet unfortunately (master does not have this information)
+  //std::string md5sum;      ///< md5sum of the topic
 };
 typedef std::vector<TopicInfo> V_TopicInfo;
 

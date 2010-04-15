@@ -72,7 +72,6 @@ void ServiceServerLink::cancelCall(const CallInfoPtr& info)
   CallInfoPtr local = info;
   {
     boost::mutex::scoped_lock lock(local->finished_mutex_);
-    local->success_ = false;
     local->finished_ = true;
     local->finished_condition_.notify_all();
   }
@@ -122,6 +121,7 @@ bool ServiceServerLink::initialize(const ConnectionPtr& connection)
   header["service"] = service_name_;
   header["md5sum"] = request_md5sum_;
   header["callerid"] = this_node::getName();
+  header["persistent"] = persistent_ ? "1" : "0";
   header.insert(extra_outgoing_header_values_.begin(), extra_outgoing_header_values_.end());
 
   connection_->writeHeader(header, boost::bind(&ServiceServerLink::onHeaderWritten, this, _1));

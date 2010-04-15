@@ -311,6 +311,7 @@ public:
     }
     fprintf(f, "\n(in-package :asdf)\n\n");
     fprintf(f, "(defsystem \"%s-srv\"\n"
+        "  :default-component-class roslisp-msg-source-file\n"
         "  :depends-on (:roslisp-msg-protocol :roslisp-utils", g_pkg.c_str());
 
     for(set<string>::iterator it = dependencies.begin();

@@ -44,6 +44,7 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/tss.hpp>
 
+#include <list>
 #include <deque>
 
 namespace ros
@@ -61,13 +62,21 @@ public:
   virtual void addCallback(const CallbackInterfacePtr& callback, uint64_t removal_id = 0);
   virtual void removeByID(uint64_t removal_id);
 
+  enum CallOneResult
+  {
+    Called,
+    TryAgain,
+    Disabled,
+    Empty,
+  };
+
   /**
    * \brief Pop a single callback off the front of the queue and invoke it.  If the callback was not ready to be called,
    * pushes it back onto the queue.
    */
-  void callOne()
+  CallOneResult callOne()
   {
-    callOne(ros::WallDuration());
+    return callOne(ros::WallDuration());
   }
 
   /**
@@ -78,7 +87,7 @@ public:
    * \param timeout The amount of time to wait for a callback to be available.  If there is already a callback available,
    * this parameter does nothing.
    */
-  void callOne(ros::WallDuration timeout);
+  CallOneResult callOne(ros::WallDuration timeout);
 
   /**
    * \brief Invoke all callbacks currently in the queue.  If a callback was not ready to be called, pushes it back onto the queue.
@@ -125,6 +134,9 @@ public:
 protected:
   void setupTLS();
 
+  struct TLS;
+  CallOneResult callOneCB(TLS* tls);
+
   struct IDInfo
   {
     uint64_t id;
@@ -145,6 +157,7 @@ protected:
     uint64_t removal_id;
     bool marked_for_removal;
   };
+  typedef std::list<CallbackInfo> L_CallbackInfo;
   typedef std::deque<CallbackInfo> D_CallbackInfo;
   D_CallbackInfo callbacks_;
   boost::mutex mutex_;
@@ -157,9 +170,11 @@ protected:
   {
     TLS()
     : calling_in_this_thread(0xffffffffffffffffULL)
+    , cb_it(callbacks.end())
     {}
     uint64_t calling_in_this_thread;
     D_CallbackInfo callbacks;
+    D_CallbackInfo::iterator cb_it;
   };
   boost::thread_specific_ptr<TLS> tls_;
 

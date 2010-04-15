@@ -41,6 +41,7 @@ import os
 import cStringIO
 
 import roslib.exceptions
+import roslib.names
 import roslib.packages
 
 class SubstitutionException(roslib.exceptions.ROSLibException):
@@ -131,13 +132,7 @@ def resolve_args(arg_str, context=None, resolve_anon=True):
             if id in context:
                 resolved = resolved.replace("$(%s)"%a, context[id])
             else:
-                resolve_to = "%s_%s_%s_%s"%(id, socket.gethostname(), os.getpid(), int(time.time()*1000))
-                # RFC 952 allows hyphens, IP addrs can have '.'s, both
-                # of which are illegal for ROS names. For good
-                # measure, screen ipv6 ':'. 
-                resolve_to = resolve_to.replace('.', '_')
-                resolve_to = resolve_to.replace('-', '_')                
-                resolve_to = resolve_to.replace(':', '_')                
+                resolve_to = roslib.names.anonymous_name(id)
                 resolved = resolved.replace("$(%s)"%a, resolve_to)
                 context[id] = resolve_to
             

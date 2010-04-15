@@ -41,7 +41,7 @@ import os
 import sys
 import roslib.packages
 
-from roscreate.core import read_template, author_name
+from roscreate.core import read_template, author_name, on_ros_path
 
 def get_templates():
     templates = {}
@@ -118,6 +118,8 @@ def roscreatepkg_main():
             sys.exit(1)
     depends = ''.join(['  <depend package="%s"/>\n'%d for d in depends])
 
+    if not on_ros_path(os.getcwd()):
+        print >> sys.stderr, '!'*80+"\nWARNING: current working directory is not on ROS_PACKAGE_PATH!\nPlease update your ROS_PACKAGE_PATH environment variable.\n"+'!'*80
     create_package(package, author_name(), depends, uses_roscpp=uses_roscpp, uses_rospy=uses_rospy)
 
 if __name__ == "__main__":

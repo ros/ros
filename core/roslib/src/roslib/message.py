@@ -39,15 +39,18 @@ libraries for type checking and retrieving message classes by type
 name.
 """
 
-import cStringIO
 import math
 import itertools
+import traceback
 import struct
-import types
 
 import roslib.exceptions
 from roslib.rostime import Time, Duration
-import roslib.genpy
+
+# common struct pattern singletons for msgs to use. Although this
+# would better placed in a generator-specific module, we don't want to
+# add another import to messages (which incurs higher import cost)
+struct_I = struct.Struct('<I')
 
 class ROSMessageException(roslib.exceptions.ROSLibException):
     """
@@ -200,8 +203,10 @@ _widths = {
 def check_type(field_name, field_type, field_val):
     """
     Dynamic type checker that maps ROS .msg types to python types and
-    verifies the python value.  check_type() is not designed to be fast
-    and is targeted at error diagnosis.
+    verifies the python value.  check_type() is not designed to be
+    fast and is targeted at error diagnosis. This type checker is not
+    designed to run fast and is meant only for error diagnosis.
+    
     @param field_name: ROS .msg field name
     @type  field_name: str
     @param field_type: ROS .msg field type
@@ -210,6 +215,9 @@ def check_type(field_name, field_type, field_val):
     @type  field_val: Any
     @raise SerializationError: if typecheck fails
     """
+    # lazy-import as roslib.genpy has lots of extra imports. Would
+    # prefer to do lazy-init in a different manner
+    import roslib.genpy
     if roslib.genpy.is_simple(field_type):
         # check sign and width
         if field_type in ['byte', 'int8', 'int16', 'int32', 'int64']:
@@ -298,6 +306,19 @@ class Message(object):
                 else:
                     setattr(self, k, None)
 
+    def __getstate__(self):
+        """
+        support for Python pickling
+        """
+        return [getattr(self, x) for x in self.__slots__]
+
+    def __setstate__(self, state):
+        """
+        support for Python pickling
+        """
+        for x, val in itertools.izip(self.__slots__, state):
+            setattr(self, x, val)
+
     def _get_types(self):
         raise Exception("must be overriden")
     def _check_types(self, exc=None):
@@ -309,7 +330,6 @@ class Message(object):
         @raise roslib.messages.SerializationError: if typecheck fails
         """
         if exc: # if exc is set and check_type could not diagnose, raise wrapped error
-            import traceback
             traceback.print_exc(exc)
 
         for n, t in zip(self.__slots__, self._get_types()):
@@ -376,6 +396,7 @@ def get_printable_message_args(msg, buff=None, prefix=''):
     @return: printable representation of  msg args
     @rtype: str
     """
+    import cStringIO
     if buff is None:
         buff = cStringIO.StringIO()
     for f in msg.__slots__:
@@ -454,9 +475,10 @@ def _fill_message_args(msg, msg_args, keys, prefix=''):
     @return: unused/leftover message arguments. 
     @rtype: [args]
     @raise ROSMessageException: if not enough message arguments to fill message
+    @raise ValueError: if msg or msg_args is not of correct type
     """
     if not isinstance(msg, (Message, roslib.rostime.TVal)):
-        raise ROSMessageException("msg must be a Message instance: %s"%msg)
+        raise ValueError("msg must be a Message instance: %s"%msg)
 
     if type(msg_args) == dict:
         
@@ -481,7 +503,7 @@ def _fill_message_args(msg, msg_args, keys, prefix=''):
         for f, v in itertools.izip(msg.__slots__, msg_args):
             _fill_val(msg, f, v, keys, prefix)
     else:
-        raise ROSMessageException("invalid message_args type: %s"%str(msg_args))
+        raise ValueError("invalid msg_args type: %s"%str(msg_args))
 
 def fill_message_args(msg, msg_args, keys={}):
     """

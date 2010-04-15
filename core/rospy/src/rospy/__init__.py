@@ -52,9 +52,9 @@ import rospy.init
 from roslib.msg import Header
 
 from rospy.client import spin, myargv, init_node, \
-    get_master, get_published_topics, \
-    wait_for_message, wait_for_service, \
-    get_node_proxy,\
+    get_published_topics, \
+    wait_for_message, \
+    get_master, get_node_proxy,\
     on_shutdown, \
     get_param, get_param_names, set_param, delete_param, has_param, search_param,\
     sleep, Rate,\
@@ -70,7 +70,7 @@ from rospy.names import get_name, get_caller_id, get_namespace, resolve_name, re
 from rospy.rostime import Time, Duration, get_rostime, get_time
 from rospy.service import ServiceException, ServiceDefinition
 # - use tcp ros implementation of services
-from rospy.tcpros_service import Service, ServiceProxy 
+from rospy.tcpros_service import Service, ServiceProxy, wait_for_service
 from rospy.topics import Message, SubscribeListener, Publisher, Subscriber
 
 ## \defgroup validators Validators

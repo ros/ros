@@ -96,9 +96,10 @@ def create_node_process(run_id, node, master_uri):
     Factory for generating processes for launching local ROS
     nodes. Also registers the process with the L{ProcessMonitor} so that
     events can be generated when the process dies.
+    
     @param run_id: run_id of launch
     @type  run_id: str
-    @param node: node to launch
+    @param node: node to launch. Node name must be assigned.
     @type  node: L{Node}
     @param master_uri: API URI for master node
     @type  master_uri: str
@@ -111,15 +112,18 @@ def create_node_process(run_id, node, master_uri):
     machine = node.machine
     if machine is None:
         raise RLException("Internal error: no machine selected for node of type [%s/%s]"%(node.package, node.type))
-    
+    if not node.name:
+        raise ValueError("node name must be assigned")
+
     # - setup env for process (vars must be strings for os.environ)
     env = create_local_process_env(node, machine, master_uri)
-    if node.name:
-        # we have to include the counter to prevent potential name
-        # collisions between the two branches
-        name = "%s-%s"%(node.name, _next_counter())
-    else:
-        name = "%s-%s"%(node.type, _next_counter())
+
+    if not node.name:
+        raise ValueError("node name must be assigned")
+    
+    # we have to include the counter to prevent potential name
+    # collisions between the two branches
+    name = "%s-%s"%(node.name, _next_counter())
 
     _logger.info('process[%s]: env[%s]', name, env)
 

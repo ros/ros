@@ -77,6 +77,7 @@ private:
 
   ConnectionPtr connection_;
   ServicePublicationWPtr parent_;
+  bool persistent_;
 };
 typedef boost::shared_ptr<ServiceClientLink> ServiceClientLinkPtr;
 

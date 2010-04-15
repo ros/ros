@@ -41,7 +41,7 @@
 
 #define ROS_VERSION_MAJOR 1
 #define ROS_VERSION_MINOR 1
-#define ROS_VERSION_PATCH 1
+#define ROS_VERSION_PATCH 2
 #define ROS_VERSION_COMBINED(major, minor, patch) (((major) << 20) | ((minor) << 10) | (patch))
 #define ROS_VERSION ROS_VERSION_COMBINED(ROS_VERSION_MAJOR, ROS_VERSION_MINOR, ROS_VERSION_PATCH)
 

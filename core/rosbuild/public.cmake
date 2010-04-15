@@ -637,6 +637,19 @@ macro(rosbuild_add_pyunit_future file)
   add_dependencies(test-future pyunit_${_testname})
 endmacro(rosbuild_add_pyunit_future)
 
+# Declare as a unit test a check of a roslaunch file, or a directory
+# containing roslaunch files.  Following the file/directory, you can
+# specify environment variables as var=val var=val ...
+macro(rosbuild_add_roslaunch_check file)
+  string(REPLACE "/" "_" _testname ${file})
+  _rosbuild_add_roslaunch_check(${ARGV})
+  # Redeclaration of target is to workaround bug in 2.4.6
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test)
+  endif(CMAKE_MINOR_VERSION LESS 6)
+  add_dependencies(test roslaunch_check_${_testname})
+endmacro(rosbuild_add_roslaunch_check)
+
 set(_ROSBUILD_GENERATED_MSG_FILES "")
 macro(rosbuild_add_generated_msgs)
   if(ROSBUILD_init_called)

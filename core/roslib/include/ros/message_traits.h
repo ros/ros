@@ -28,30 +28,12 @@
 #ifndef ROSLIB_MESSAGE_TRAITS_H
 #define ROSLIB_MESSAGE_TRAITS_H
 
+#include "message_forward.h"
+
 #include <ros/time.h>
 
 #include <string>
 #include <boost/utility/enable_if.hpp>
-
-/**
- * \brief Forward-declare a message, including Ptr and ConstPtr types, with an allocator
- *
- * \param ns The namespace the message should be declared inside
- * \param m The "base" message type, i.e. the name of the .msg file
- * \param new_name The name you'd like the message to have
- * \param alloc The allocator to use, e.g. std::allocator
- */
-#define ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(msg, new_name, alloc) \
-  template<class Allocator> struct msg##_; \
-  typedef msg##_<alloc<void> > new_name; \
-  typedef boost::shared_ptr<new_name> new_name##Ptr; \
-  typedef boost::shared_ptr<new_name const> new_name##ConstPtr;
-
-/**
- * \brief Forward-declare a message, including Ptr and ConstPtr types, using std::allocator
- * \param msg The "base" message type, i.e. the name of the .msg file
- */
-#define ROS_DECLARE_MESSAGE(msg) ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(msg, msg, std::allocator)
 
 namespace roslib
 {

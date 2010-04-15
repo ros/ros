@@ -89,6 +89,13 @@ endif(NOT DEFINED ROS_COMPILE_FLAGS)
 # Default link flags for all executables and libraries
 if(NOT DEFINED ROS_LINK_FLAGS)
   set(ROS_LINK_FLAGS "")
+  # Old versions of gcc need -pthread to enable threading, #2095.  
+  # Also, some linkers, e.g., goLD, require -pthread (or another way to
+  # generate -lpthread).
+  # CYGWIN gcc has their -pthread disabled
+  if(UNIX AND NOT CYGWIN) 
+    set(ROS_LINK_FLAGS "${ROS_LINK_FLAGS} -pthread")
+  endif(UNIX AND NOT CYGWIN)
 endif(NOT DEFINED ROS_LINK_FLAGS)
 
 # Default libraries to link against for all executables and libraries

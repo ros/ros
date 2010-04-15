@@ -127,7 +127,7 @@ public:
     {
       ROS_ERROR("Exception thrown while processing service call: %s", e.what());
       SerializedMessage res = serialization::serializeServiceResponse(false, 0);
-      link_->processResponse(false, params.response);
+      link_->processResponse(false, res);
       return Invalid;
     }
 

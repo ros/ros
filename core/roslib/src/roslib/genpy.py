@@ -67,12 +67,18 @@ import roslib.packages #for get_pkg_dir
 # indent width
 INDENT = '  '
 
-## Exception type for errors in roslib.genpy
-class MsgGenerationException(roslib.exceptions.ROSLibException): pass
+class MsgGenerationException(roslib.exceptions.ROSLibException):
+    """
+    Exception type for errors in roslib.genpy
+    """
+    pass
 
-## wrapper for roslib.msgs.get_registered that wraps unknown types with a MsgGenerationException
-## @param type_ str: ROS message type
 def get_registered_ex(type_):
+    """
+    wrapper for roslib.msgs.get_registered that wraps unknown types with a MsgGenerationException
+    @param type_: ROS message type
+    @type  type_: str
+    """
     try:
         return roslib.msgs.get_registered(type_)
     except KeyError:
@@ -423,20 +429,60 @@ def reduce_pattern(pattern):
 def serialize(expr):
     return "buff.write(%s)"%expr
     
+# int32 is very common due to length serialization, so it is special cased
+def int32_pack(var):
+    """
+    @param var: variable name
+    @type  var: str
+    @return: struct packing code for an int32
+    """
+    return serialize('_struct_I.pack(%s)'%var)
+
+# int32 is very common due to length serialization, so it is special cased
+def int32_unpack(var, buff):
+    """
+    @param var: variable name
+    @type  var: str
+    @return: struct unpacking code for an int32
+    """
+    return '(%s,) = _struct_I.unpack(%s)'%(var, buff)
+
 #NOTE: '<' = little endian
 def pack(pattern, vars):
-    """create struct.pack call for when pattern is a string pattern
-    @param pattern: string pattern for pack
-    @param vars: name of variables to pack"""
-    return serialize("struct.pack('<"+reduce_pattern(pattern)+"', "+vars+")")
+    """
+    create struct.pack call for when pattern is a string pattern
+    @param pattern: pattern for pack
+    @type  pattern: str
+    @param vars: name of variables to pack
+    @type  vars: str
+    """
+    # - store pattern in context
+    pattern = reduce_pattern(pattern)
+    add_pattern(pattern)
+    return serialize("_struct_%s.pack(%s)"%(pattern, vars))
 def pack2(pattern, vars):
-    """create struct.pack call for when pattern is the name of a variable
+    """
+    create struct.pack call for when pattern is the name of a variable
     @param pattern: name of variable storing string pattern
-    @param vars: name of variables to pack"""
+    @type  pattern: struct
+    @param vars: name of variables to pack
+    @type  vars: str
+    """
     return serialize("struct.pack(%s, %s)"%(pattern, vars))
 def unpack(var, pattern, buff):
-    """create struct.unpack call for when pattern is a string pattern"""
-    return var + " = struct.unpack('<"+reduce_pattern(pattern)+"',"+buff+")"
+    """
+    create struct.unpack call for when pattern is a string pattern
+    @param var: name of variable to unpack
+    @type  var: str
+    @param pattern: pattern for pack
+    @type  pattern: str
+    @param buff: buffer to unpack from
+    @type  buff: str
+    """
+    # - store pattern in context
+    pattern = reduce_pattern(pattern)
+    add_pattern(pattern)
+    return var + " = _struct_%s.unpack(%s)"%(pattern, buff)
 def unpack2(var, pattern, buff):
     """
     Create struct.unpack call for when pattern refers to variable
@@ -472,16 +518,17 @@ _NUMPY_DTYPE = {
     'byte' : 'numpy.int8',
     }
 # TODO: this doesn't explicitly specify little-endian byte order on the numpy data instance
-## generate unpack code for numpy array
 def unpack_numpy(var, count, dtype, buff):
-    """create numpy deserialization code"""
+    """
+    create numpy deserialization code
+    """
     return var + " = numpy.frombuffer(%s, dtype=%s, count=%s)"%(buff, dtype, count)
 
-## generate pack code for numpy array
 def pack_numpy(var):
-    """create numpy serialization code
-    @param pattern: string pattern for pack
-    @param vars: name of variables to pack"""
+    """
+    create numpy serialization code
+    @param vars: name of variables to pack
+    """
     return serialize("%s.tostring()"%var)
 
 ################################################################################
@@ -489,20 +536,49 @@ def pack_numpy(var):
 
 _serial_context = ''
 _context_stack = []
-## Push new variable context onto context stack.  The context stack
-## manages field-reference context for serialization, e.g. 'self.foo'
-## vs. 'self.bar.foo' vs. 'var.foo'"""
+
+_counter = 0
+def next_var():
+    # we could optimize this by reusing vars once the context is popped
+    global _counter
+    _counter += 1
+    return '_v%s'%_counter
+    
 def push_context(context):
+    """
+    Push new variable context onto context stack.  The context stack
+    manages field-reference context for serialization, e.g. 'self.foo'
+    vs. 'self.bar.foo' vs. 'var.foo'
+    """
     global _serial_context, _context_stack
     _context_stack.append(_serial_context)
     _serial_context = context
 
-## Pop variable context from context stack.  The context stack manages
-## field-reference context for serialization, e.g. 'self.foo'
-## vs. 'self.bar.foo' vs. 'var.foo'"""
 def pop_context():
+    """
+    Pop variable context from context stack.  The context stack manages
+    field-reference context for serialization, e.g. 'self.foo'
+    vs. 'self.bar.foo' vs. 'var.foo'
+    """
     global _serial_context
     _serial_context = _context_stack.pop()
+
+_context_patterns = []
+def add_pattern(p):
+    """
+    Record struct pattern that's been used for (de)serialization
+    """
+    _context_patterns.append(p)
+def clear_patterns():
+    """
+    Clear record of struct pattern that have been used for (de)serialization
+    """
+    del _context_patterns[:]
+def get_patterns():
+    """
+    @return: record of struct pattern that have been used for (de)serialization
+    """
+    return _context_patterns[:]
 
 # These are the workhorses of the message generation. The generators
 # are implemented as iterators, where each iteration value is a line
@@ -510,12 +586,17 @@ def pop_context():
 # using the context stack to manage any changes in variable-naming, so
 # that code can be reused as much as possible.
     
-## Generator for array-length serialization (32-bit, little-endian unsigned integer)
-## @param var str: variable name
-## @param is_string bool: if True, variable is a string type
-## @param serialize bool: if True, generate code for
-## serialization. Other, generate code for deserialization
 def len_serializer_generator(var, is_string, serialize):
+    """
+    Generator for array-length serialization (32-bit, little-endian unsigned integer)
+    @param var: variable name
+    @type  var: str
+    @param is_string: if True, variable is a string type
+    @type  is_string: bool
+    @param serialize bool: if True, generate code for
+    serialization. Other, generate code for deserialization
+    @type  serialize: bool
+    """
     if serialize:
         yield "length = len(%s)"%var
         # NOTE: it's more difficult to save a call to struct.pack with
@@ -524,19 +605,30 @@ def len_serializer_generator(var, is_string, serialize):
         # Python is not optimizing it, it is potentially worse for
         # performance to attempt to combine
         if not is_string:
-            yield pack("I", "length")
+            yield int32_pack("length")
     else:
         yield "start = end"
         yield "end += 4"
-        yield unpack('(length,)', "I", 'str[start:end]') #4 = struct.calcsize('<i') 
+        yield int32_unpack('length', 'str[start:end]') #4 = struct.calcsize('<i') 
     
-## Generator for string types. similar to arrays, but with more
-## efficient call to struct.pack.
-## @param name str: spec field name
-## @param serialize bool: if True, generate code for
-## serialization. Other, generate code for deserialization
 def string_serializer_generator(package, type_, name, serialize):
-    var = _serial_context+name
+    """
+    Generator for string types. similar to arrays, but with more
+    efficient call to struct.pack.
+    @param name: spec field name
+    @type  name: str
+    @param serialize: if True, generate code for
+    serialization. Other, generate code for deserialization
+    @type  serialize: bool
+    """
+    # don't optimize in deserialization case as assignment doesn't
+    # work
+    if _serial_context and serialize: 
+        # optimize as string serialization accesses field twice
+        yield "_x = %s%s"%(_serial_context, name)
+        var = "_x"
+    else:
+        var = _serial_context+name
 
     # the length generator is a noop if serialize is True as we
     # optimize the serialization call.
@@ -548,7 +640,6 @@ def string_serializer_generator(package, type_, name, serialize):
 
     if serialize:
         #serialize length and string together
-        yield "#serialize %s"%var
 
         #check to see if its a uint8/byte type, in which case we need to convert to string before serializing
         base_type, is_array, array_len = roslib.msgs.parse_type(type_)
@@ -567,18 +658,18 @@ def string_serializer_generator(package, type_, name, serialize):
         else:
             yield pack2("'<I%ss'%length", "length, %s"%var)
     else:
-        yield "#deserialize %s"%var
-        if array_len is not None:
-            yield "pattern = '<%ss'"%array_len
-        else:
-            yield "pattern = '<%ss'%length"            
         yield "start = end"
-        yield "end += struct.calcsize(pattern)"
-        yield unpack2("(%s,)"%var, 'pattern', 'str[start:end]')
+        if array_len is not None:
+            yield "end += %s" % array_len
+        else:
+            yield "end += length"
+        yield "%s = str[start:end]" % var
         
-## generator for array types
-## @raise MsgGenerationException: if array spec is invalid
 def array_serializer_generator(package, type_, name, serialize, is_numpy):
+    """
+    Generator for array types
+    @raise MsgGenerationException: if array spec is invalid
+    """
     base_type, is_array, array_len = roslib.msgs.parse_type(type_)
     if not is_array:
         raise MsgGenerationException("Invalid array spec: %s"%type_)
@@ -592,11 +683,6 @@ def array_serializer_generator(package, type_, name, serialize, is_numpy):
         return
     
     var = _serial_context+name
-    # yield code comment
-    if serialize:
-        yield "#serialize %s"%var
-    else:
-        yield "#deserialize %s"%var
     try:
         # yield length serialization, if necessary
         if var_length:
@@ -656,7 +742,7 @@ def array_serializer_generator(package, type_, name, serialize, is_numpy):
                 push_context('') 
                 factory = string_serializer_generator(package, base_type, loop_var, serialize)
             else:
-                push_context('%s.'%loop_var) 
+                push_context('%s.'%loop_var)
                 factory = serializer_generator(package, get_registered_ex(base_type), serialize, is_numpy)
 
             if serialize:
@@ -680,13 +766,17 @@ def array_serializer_generator(package, type_, name, serialize, is_numpy):
     except Exception, e:
         raise MsgGenerationException(e) #wrap
     
-## Generator for serializing complex type
-## @param serialize bool: if True, generate serialization
-## code. Otherwise, deserialization code.
-## @param is_numpy bool: if True, generate serializer code for numpy
-## datatypes instead of Python lists
-## @raise MsgGenerationException: if type is not a valid
 def complex_serializer_generator(package, type_, name, serialize, is_numpy):
+    """
+    Generator for serializing complex type
+    @param serialize: if True, generate serialization
+    code. Otherwise, deserialization code.
+    @type  serialize: bool
+    @param is_numpy: if True, generate serializer code for numpy
+    datatypes instead of Python lists
+    @type  is_numpy: bool
+    @raise MsgGenerationException: if type is not a valid
+    """
     # ordering of these statements is important as we mutate the type
     # string we are checking throughout. parse_type strips array
     # brackets, then we check for the 'complex' builtin types (string,
@@ -709,7 +799,11 @@ def complex_serializer_generator(package, type_, name, serialize, is_numpy):
             type_ = "%s/%s"%(pkg, base_type)
         if roslib.msgs.is_registered(type_):
             # descend data structure ####################
-            push_context(_serial_context+name+'.') 
+            ctx_var = next_var()
+            yield "%s = %s"%(ctx_var, _serial_context+name) 
+            push_context(ctx_var+'.')
+            # unoptimized code
+            #push_context(_serial_context+name+'.')             
             for y in serializer_generator(package, get_registered_ex(type_), serialize, is_numpy):
                 yield y #recurs on subtype
             pop_context()
@@ -717,12 +811,23 @@ def complex_serializer_generator(package, type_, name, serialize, is_numpy):
             #Invalid
             raise MsgGenerationException("Unknown type: %s. Package context is %s"%(type_, package))
 
-## Generator (de)serialization code for multiple fields from spec
-## @param spec MsgSpec
-## @param start int: first field to serialize
-## @param end int: last field to serialize
 def simple_serializer_generator(spec, start, end, serialize): #primitives that can be handled with struct
-    vars_ = _serial_context + (', '+_serial_context).join(spec.names[start:end])
+    """
+    Generator (de)serialization code for multiple fields from spec
+    @param spec: MsgSpec
+    @type  spec: MsgSpec
+    @param start: first field to serialize
+    @type  start: int
+    @param end: last field to serialize
+    @type  end: int
+    """
+    # optimize member var access
+    if end - start > 1 and _serial_context.endswith('.'):
+        yield '_x = '+_serial_context[:-1]
+        vars_ = '_x.' + (', _x.').join(spec.names[start:end])
+    else:
+        vars_ = _serial_context + (', '+_serial_context).join(spec.names[start:end])
+    
     pattern = compute_struct_pattern(spec.types[start:end])
     if serialize:
         yield pack(pattern, vars_)
@@ -736,19 +841,25 @@ def simple_serializer_generator(spec, start, end, serialize): #primitives that c
         # want to be consistent with bool
         bool_vars = [(f, t) for f, t in zip(spec.names[start:end], spec.types[start:end]) if t == 'bool']
         for f, t in bool_vars:
+            #TODO: could optimize this as well
             var = _serial_context+f
             yield "%s = bool(%s)"%(var, var)
 
-## Python generator that yields un-indented python code for
-## (de)serializing MsgSpec. The code this yields is meant to be
-## included in a class method and cannot be used
-## standalone. serialize_fn_generator and deserialize_fn_generator
-## wrap method to provide appropriate class field initializations.
-## @param package str: name of package the spec is being used in
-## @param serialize bool: if True, yield serialization
-## code. Otherwise, yield deserialization code.
-## @param is_numpy bool: if True, generate serializer code for numpy datatypes instead of Python lists
 def serializer_generator(package, spec, serialize, is_numpy):
+    """
+    Python generator that yields un-indented python code for
+    (de)serializing MsgSpec. The code this yields is meant to be
+    included in a class method and cannot be used
+    standalone. serialize_fn_generator and deserialize_fn_generator
+    wrap method to provide appropriate class field initializations.
+    @param package: name of package the spec is being used in
+    @type  package: str
+    @param serialize: if True, yield serialization
+    code. Otherwise, yield deserialization code.
+    @type  serialize: bool
+    @param is_numpy: if True, generate serializer code for numpy datatypes instead of Python lists
+    @type  is_numpy: bool
+    """
     # Break spec into chunks of simple (primitives) vs. complex (arrays, etc...)
     # Simple types are batch serialized using the python struct module.
     # Complex types are individually serialized 
@@ -775,10 +886,13 @@ def serializer_generator(package, spec, serialize, is_numpy):
         for y in simple_serializer_generator(spec, curr, len(types), serialize):
             yield y
 
-## generator for body of serialize() function
-## @param is_numpy bool: if True, generate serializer code for numpy
-## datatypes instead of Python lists
 def serialize_fn_generator(package, spec, is_numpy=False):
+    """
+    generator for body of serialize() function
+    @param is_numpy: if True, generate serializer code for numpy
+    datatypes instead of Python lists
+    @type  is_numpy: bool
+    """
     # method-var context #########
     yield "try:"
     push_context('self.')
@@ -790,10 +904,13 @@ def serialize_fn_generator(package, spec, is_numpy=False):
     yield "except TypeError, te: self._check_types(te)" 
     # done w/ method-var context #
     
-## generator for body of deserialize() function
-## @param is_numpy bool: if True, generate serializer code for numpy
-## datatypes instead of Python lists
 def deserialize_fn_generator(package, spec, is_numpy=False):
+    """
+    generator for body of deserialize() function
+    @param is_numpy: if True, generate serializer code for numpy
+    datatypes instead of Python lists
+    @type  is_numpy: bool
+    """
     yield "try:"
     
     #Instantiate embedded type classes
@@ -837,7 +954,11 @@ def msg_generator(package, name, spec):
     spec = make_python_safe(spec) # remap spec names to be Python-safe
     spec_names = spec.names
 
-    yield '# autogenerated by genmsg_py from %s.msg. Do not edit.'%name
+    # #1807 : this will be much cleaner when msggenerator library is
+    # rewritten to not use globals
+    clear_patterns()
+
+    yield '"""autogenerated by genmsg_py from %s.msg. Do not edit."""'%name
     yield 'import roslib.message\nimport struct\n'
     import_strs = []
     for t in spec.types:
@@ -891,64 +1012,95 @@ def msg_generator(package, name, spec):
         yield "  _slot_types = []"
 
     yield """
-  ## Constructor. Any message fields that are implicitly/explicitly
-  ## set to None will be assigned a default value. The recommend
-  ## use is keyword arguments as this is more robust to future message
-  ## changes.  You cannot mix in-order arguments and keyword arguments.
-  ##
-  ## The available fields are:
-  ##   %s
-  ##
-  ## @param self: self
-  ## @param args: complete set of field values, in .msg order
-  ## @param kwds: use keyword arguments corresponding to message field names
-  ## to set specific fields. 
   def __init__(self, *args, **kwds):
-    super(%s, self).__init__(*args, **kwds)"""%(','.join(spec_names), name)
+    \"\"\"
+    Constructor. Any message fields that are implicitly/explicitly
+    set to None will be assigned a default value. The recommend
+    use is keyword arguments as this is more robust to future message
+    changes.  You cannot mix in-order arguments and keyword arguments.
+    
+    The available fields are:
+       %s
+    
+    @param args: complete set of field values, in .msg order
+    @param kwds: use keyword arguments corresponding to message field names
+    to set specific fields. 
+    \"\"\"
+    if args or kwds:
+      super(%s, self).__init__(*args, **kwds)"""%(','.join(spec_names), name)
 
     if len(spec_names):
-        yield "    #message fields cannot be None, assign default values for those that are"
+        yield "      #message fields cannot be None, assign default values for those that are"
         for (t, s) in zip(spec.types, spec_names):
-            yield "    if self.%s is None:"%s
-            yield "      self.%s = %s"%(s, default_value(t, package))
+            yield "      if self.%s is None:"%s
+            yield "        self.%s = %s"%(s, default_value(t, package))
+    if len(spec_names) > 0:
+      yield "    else:"
+      for (t, s) in zip(spec.types, spec_names):
+          yield "      self.%s = %s"%(s, default_value(t, package))
 
     yield """
-  ## internal API method
-  ## @param self: self
-  def _get_types(self): return %s._slot_types
+  def _get_types(self):
+    \"\"\"
+    internal API method
+    \"\"\"
+    return self._slot_types
 
-  ## serialize message into buffer
-  ## @param self: self
-  ## @param buff StringIO: buffer
-  def serialize(self, buff):"""%name
+  def serialize(self, buff):
+    \"\"\"
+    serialize message into buffer
+    @param buff: buffer
+    @type  buff: StringIO
+    \"\"\""""
     for y in serialize_fn_generator(package, spec):
         yield "    "+ y
     yield """
-  ## unpack serialized message in str into this message instance
-  ## @param self: self
-  ## @param str str: byte array of serialized message
-  def deserialize(self, str):"""
+  def deserialize(self, str):
+    \"\"\"
+    unpack serialized message in str into this message instance
+    @param str: byte array of serialized message
+    @type  str: str
+    \"\"\""""
     for y in deserialize_fn_generator(package, spec):
         yield "    " + y
     yield ""
 
     yield """
-  ## serialize message with numpy array types into buffer
-  ## @param self: self
-  ## @param buff StringIO: buffer
-  ## @param numpy module: numpy python module
-  def serialize_numpy(self, buff, numpy):"""
+  def serialize_numpy(self, buff, numpy):
+    \"\"\"
+    serialize message with numpy array types into buffer
+    @param buff: buffer
+    @type  buff: StringIO
+    @param numpy: numpy python module
+    @type  numpy module
+    \"\"\""""
     for y in serialize_fn_generator(package, spec, is_numpy=True):
         yield "    "+ y
     yield """
-  ## unpack serialized message in str into this message instance using numpy for array types
-  ## @param self: self
-  ## @param str str: byte array of serialized message
-  ## @param numpy module: numpy python module
-  def deserialize_numpy(self, str, numpy):"""
+  def deserialize_numpy(self, str, numpy):
+    \"\"\"
+    unpack serialized message in str into this message instance using numpy for array types
+    @param str: byte array of serialized message
+    @type  str: str
+    @param numpy: numpy python module
+    @type  numpy: module
+    \"\"\""""
     for y in deserialize_fn_generator(package, spec, is_numpy=True):
         yield "    " + y
     yield ""
+
+
+    # #1807 : this will be much cleaner when msggenerator library is
+    # rewritten to not use globals
+    yield '_struct_I = roslib.message.struct_I'
+    patterns = get_patterns()
+    for p in set(patterns):
+        # I patterns are already optimized
+        if p == 'I':
+            continue
+        var_name = '_struct_%s'%(p.replace('<',''))
+        yield '%s = struct.Struct("<%s")'%(var_name, p)
+    clear_patterns()
     
 ################################################################################
 # dynamic generation of deserializer

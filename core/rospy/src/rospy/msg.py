@@ -34,6 +34,7 @@
 
 """Internal use: Support for ROS messages, including network serialization routines"""
 
+import types
 import time
 import struct
 import logging
@@ -103,17 +104,19 @@ def args_kwds_to_message(data_class, args, kwds):
         return data_class(**kwds)
     else:
         if len(args) == 1:
-            if isinstance(args[0], data_class) or isinstance(args[0], AnyMsg):
-                return args[0]
+            arg = args[0]
+            # #2584: have to compare on md5sum as isinstance check can fail in dyngen case
+            if hasattr(arg, '_md5sum') and (arg._md5sum == data_class._md5sum or isinstance(arg, AnyMsg)):
+                return arg
             # If the argument is a message, make sure that it matches
             # the type of the first field. This means that the
             # data_class has fields and that the type matches.  This
             # branch isn't necessary but provides more useful
             # information to users
-            elif isinstance(args[0], roslib.message.Message) and \
+            elif isinstance(arg, roslib.message.Message) and \
                     (len(data_class._slot_types) == 0 or \
-                         args[0]._type != data_class._slot_types[0]):
-                raise TypeError("expected [%s] but got [%s]"%(data_class._slot_types[0], args[0]._type))
+                         arg._type != data_class._slot_types[0]):
+                raise TypeError("expected [%s] but got [%s]"%(data_class._slot_types[0], arg._type))
             else:
                 return data_class(*args)
         else:

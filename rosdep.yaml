@@ -19,7 +19,7 @@ python:
   arch: python
   fedora: python-devel
   rhel: python-devel
-  macports: python25 python_select py25-hashlib
+  macports: python25 python_select
   gentoo: python
   cygwin: python
 python-yaml:
@@ -422,12 +422,6 @@ unzip:
   rhel: unzip
   macports: unzip
   gentoo: app-arch/unzip
-sbcl:
-  ubuntu: sbcl
-  debian: sbcl
-  arch: sbcl
-  macports: sbcl
-  gentoo: dev-lisp/sbcl
 fltk:
   ubuntu: libfltk1.1-dev
   debian: libfltk1.1-dev
@@ -435,3 +429,6 @@ fltk:
   arch: fltk
   macports: fltk
   gentoo: "=x11-libs/fltk-1*"
+epydoc:
+  ubuntu: python-epydoc
+  macports: py25-epydoc

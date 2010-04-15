@@ -201,27 +201,29 @@ Assuming spin is not true, this call will return the return value of the final s
       (ros-debug (roslisp top) "Initiating shutdown")
       (setf *node-status* :shutdown)
       (handler-case
-	  (stop-server *xml-server*)
-	(error (c)
-	  (cerror "Continue" "Error stopping xml-rpc server: ~a" c)))
+          (stop-server *xml-server*)
+        (error (c)
+          (cerror "Continue" "Error stopping xml-rpc server: ~a" c)))
       (close-socket *tcp-server*)
 
       ;; Unregister from publications and subscriptions and close the sockets and kill callback and deserialization threads
       (do-hash (topic pub *publications*)
-	(protected-call-to-master ("unregisterPublisher" topic *xml-rpc-caller-api*) c
-	  (ros-warn (roslisp) "Could not contact master at ~a when unregistering as publisher of ~a during shutdown: ~a" *master-uri* topic c))
-				  
-				  
-	(dolist (sub (subscriber-connections pub))
-	  (handler-case
-	      (close-socket (subscriber-socket sub))
-	    (sb-int:simple-stream-error (c)
-	      (ros-debug (roslisp top) "Received stream error ~a when attempting to close socket ~a.  Skipping." c (subscriber-socket sub))))))
+        (protected-call-to-master ("unregisterPublisher" topic *xml-rpc-caller-api*) c
+          (ros-warn (roslisp) "Could not contact master at ~a when unregistering as publisher of ~a during shutdown: ~a" *master-uri* topic c))
+        
+        
+        (dolist (sub (subscriber-connections pub))
+          (handler-case
+              (close-socket (subscriber-socket sub))
+            (sb-int:simple-stream-error (c)
+              (ros-debug (roslisp top) "Received stream error ~a when attempting to close socket ~a.  Skipping." c (subscriber-socket sub))))))
 
       (do-hash (topic sub *subscriptions*)
-	(protected-call-to-master ("unregisterSubscriber" topic *xml-rpc-caller-api*) c
-	  (ros-warn (roslisp) "Could not contact master when unsubscribing from ~a during shutdown: ~a" topic c))
-	(terminate-thread (topic-thread sub)))
+        (protected-call-to-master ("unregisterSubscriber" topic *xml-rpc-caller-api*) c
+          (ros-warn (roslisp) "Could not contact master when unsubscribing from ~a during shutdown: ~a" topic c))
+        (handler-case (terminate-thread (topic-thread sub))
+          (interrupt-thread-error (e)
+            (declare (ignore e)))))
 
       (dolist (thread *deserialization-threads*)
         (ros-debug (roslisp deserialization-thread) "Killing deserialization thread")
@@ -229,11 +231,11 @@ Assuming spin is not true, this call will return the return value of the final s
 
       ;; Unregister services
       (do-hash (name s *services*)
-	(let ((i (protected-call-to-master ("unregisterService" name *service-uri*) c
-		   (ros-warn roslisp "During shutdown, unable to contact master to unregister service ~a: ~a" name c)
-		   1)))
-	  (unless (eql i 1)
-	    (ros-warn (roslisp top) "When trying to close service ~a, ~a services were closed instead of 1" name i))))
+        (let ((i (protected-call-to-master ("unregisterService" name *service-uri*) c
+                   (ros-warn roslisp "During shutdown, unable to contact master to unregister service ~a: ~a" name c)
+                   1)))
+          (unless (eql i 1)
+            (ros-warn (roslisp top) "When trying to close service ~a, ~a services were closed instead of 1" name i))))
 
       (ros-info (roslisp top) "Shutdown complete")
       (close *ros-log-stream*)

@@ -39,22 +39,21 @@ import optparse
 from optparse import OptionParser
 
 def info_cmd(argv):
-    parser = OptionParser(usage="rosbag info BAGFILE",
-                          description="Summarize the contents of a bag file.")
+    parser = OptionParser(usage='rosbag info BAGFILE', description='Summarize the contents of a bag file.')
 
-    parser.add_option("--try-future-version", dest="try_future", default=False, action="store_true",
-                      help="still try to open a bag file, even if the version number is not known to the player")
+    parser.add_option('--try-future-version', dest='try_future', default=False, action='store_true',
+                      help='still try to open a bag file, even if the version number is not known to the player')
 
     (options, args) = parser.parse_args(argv)
 
     if (len(args) == 0):
-        parser.error("You must pass in a bag file.")
+        parser.error('You must pass in a bag file.')
 
     for arg in args:
+        cmd = ['play', '-c', arg]
 
-        cmd = ["rosplay", "-c", arg]
-
-        if options.try_future: cmd.extend(["-T"])
+        if options.try_future:
+            cmd.extend(["-T"])
 
         proc = subprocess.Popen(cmd)
 
@@ -63,7 +62,6 @@ def info_cmd(argv):
 
         res = proc.wait()
 
-        print ""
+        print ''
 
     sys.exit(res)
-

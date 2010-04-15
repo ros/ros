@@ -42,13 +42,13 @@ from optparse import OptionParser
 import migration
 
 def print_trans(old,new,indent):
-  from_txt = "%s [%s]"%(old._type, old._md5sum)
-  if new is not None:
-    to_txt= "%s [%s]"%(new._type, new._md5sum)
-  else:
-    to_txt = "Unknown"
-  print "    "*indent + " * From: %s"%(from_txt,)
-  print "    "*indent + "   To:   %s"%(to_txt,)
+    from_txt = "%s [%s]"%(old._type, old._md5sum)
+    if new is not None:
+        to_txt= "%s [%s]"%(new._type, new._md5sum)
+    else:
+        to_txt = "Unknown"
+    print "    "*indent + " * From: %s"%(from_txt,)
+    print "    "*indent + "   To:   %s"%(to_txt,)
 
 def fix_cmd(argv):
     parser = OptionParser(usage="rosbag fix INBAG OUTBAG [EXTRARULES1 EXTRARULES2 ...]")
@@ -57,7 +57,7 @@ def fix_cmd(argv):
                       help = "do not load rulefiles via plugins")
 
     (options, args) = parser.parse_args(argv)
-  
+
     if len(args) >= 2:
         if args[1].split('.')[-1] == "bmr":
             parser.error("Second argument should be a bag file, not a rule file.")
@@ -78,7 +78,7 @@ def fix_cmd(argv):
             except IOError, e:
                 print >> sys.stderr, "Cannot open %s for writing"%args[1]
                 sys.exit(1)
-                
+
         if os.path.exists(outname):
             if not os.access(outname, os.W_OK):
                 print >> sys.stderr, "Don't have permissions to access %s"%outname
@@ -90,9 +90,9 @@ def fix_cmd(argv):
             except IOError, e:
                 print >> sys.stderr, "Cannot open %s for writing"%outname
                 sys.exit(1)
-                
+
         if (options.noplugins is None):
-          options.noplugins = False
+            options.noplugins = False
 
         mm = rosbagmigration.MessageMigrator(args[2:], plugins=not options.noplugins)
 
@@ -102,7 +102,7 @@ def fix_cmd(argv):
             print "%s %s"%(outname, args[1])
             os.rename(outname, args[1])
             print "Bag migrated successfully."
-            
+
         else:
             print "Bag could not be migrated.  The following migrations could not be performed:"
             for m in migrations:
@@ -113,6 +113,6 @@ def fix_cmd(argv):
                         print_trans(r.old_class, r.new_class,1)
             print "Try running 'rosbag check' to create the necessary rule files."
             os.remove(outname)
-            
+
     else:
         parser.error("Must pass in 2 bag files")

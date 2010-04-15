@@ -41,7 +41,7 @@ from optparse import OptionParser
 def play_cmd(argv):
     parser = OptionParser(usage="rosbag play BAGFILE1 [BAGFILE2 BAGFILE3 ...]", description="Play back the contents of one or more bag files in a time-synchronized fashion.")
     parser.add_option("-q", "--quiet",        dest="quiet",      default=False, action="store_true", help="suppress console output")
-    parser.add_option("-i", "--immediate",    dest="immediate",  default=False, action="store_true", help="play back all messages without waiting")                      
+    parser.add_option("-i", "--immediate",    dest="immediate",  default=False, action="store_true", help="play back all messages without waiting")
     parser.add_option("--pause",              dest="pause",      default=False, action="store_true", help="start in paused mode")
     parser.add_option("--queue",              dest="queue",      default=0,     type='int', action="store", help="use an outgoing queue of size SIZE (defaults to %default)", metavar="SIZE")
     parser.add_option("--clock",              dest="clock",      default=False, action="store_true", help="publish the clock time")

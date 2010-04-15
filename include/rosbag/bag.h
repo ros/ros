@@ -48,9 +48,11 @@
 
 #include <ios>
 #include <map>
+#include <queue>
 #include <set>
 #include <stdexcept>
 
+#include <boost/iterator/iterator_facade.hpp>
 #include <boost/thread/mutex.hpp>
 
 namespace rosbag
@@ -69,11 +71,12 @@ namespace bagmode
 }
 typedef bagmode::BagMode BagMode;
 
-struct ChunkHeader
+struct TopicInfo
 {
-    std::string compression;          //! chunk compression type, e.g. "none" or "bz2" (see constants.h)
-    uint32_t    compressed_size;      //! compressed size of the chunk in bytes
-    uint32_t    uncompressed_size;    //! uncompressed size of the chunk in bytes
+    std::string topic;
+    std::string datatype;
+    std::string md5sum;
+    std::string msg_def;
 };
 
 struct ChunkInfo
@@ -85,6 +88,13 @@ struct ChunkInfo
     std::map<std::string, uint32_t> topic_counts;   //! number of messages in each topic stored in the chunk
 };
 
+struct ChunkHeader
+{
+    std::string compression;          //! chunk compression type, e.g. "none" or "bz2" (see constants.h)
+    uint32_t    compressed_size;      //! compressed size of the chunk in bytes
+    uint32_t    uncompressed_size;    //! uncompressed size of the chunk in bytes
+};
+
 struct IndexEntry
 {
     ros::Time time;            //! timestamp of the message
@@ -92,18 +102,18 @@ struct IndexEntry
     uint32_t  offset;          //! relative byte offset of the message record (either definition or data) in the chunk
 };
 
-struct TopicInfo
+struct IndexEntryCompare
 {
-    std::string topic;
-    std::string datatype;
-    std::string md5sum;
-    std::string msg_def;
+    bool operator() (ros::Time const& a, IndexEntry const& b) const { return a < b.time; }
+    bool operator() (IndexEntry const& a, ros::Time const& b) const { return a.time < b; }
 };
 
 class MessageInstance;
 class MessageInstanceCompare;
 
-typedef std::multiset<MessageInstance, MessageInstanceCompare> MessageList;
+typedef std::vector<MessageInstance> MessageList;
+
+class View;
 
 class Bag
 {
@@ -113,9 +123,11 @@ public:
     Bag();
     ~Bag();
 
-    bool open(std::string const& filename, BagMode mode = bagmode::Default);           //!< Open a bag file
+    //! Open a bag file
+    bool open(std::string const& filename, BagMode mode = bagmode::Default);
 
-    bool rewrite(std::string const& src_filename, std::string const& dest_filename);   //!< Fix a bag file
+    //! Fix a bag file
+    bool rewrite(std::string const& src_filename, std::string const& dest_filename);
 
     BagMode  getMode()         const;
     uint64_t getOffset()       const;
@@ -178,6 +190,10 @@ public:
     MessageList getMessageListByType(std::vector<std::string> const& types,
                                      ros::Time const& start_time = ros::TIME_MIN,
                                      ros::Time const& end_time = ros::TIME_MAX);
+
+    View getViewByTopic(std::vector<std::string> const& topics,
+                        ros::Time const& start_time = ros::TIME_MIN,
+                        ros::Time const& end_time = ros::TIME_MAX);
 
     void dump();
 
@@ -301,6 +317,44 @@ private:
     boost::mutex  check_disk_mutex_;
     ros::WallTime check_disk_next_;
     ros::WallTime warn_next_;
+};
+
+class View
+{
+    friend class Bag;
+
+public:
+    class iterator : public boost::iterator_facade<iterator, MessageInstance const, boost::forward_traversal_tag>
+    {
+    public:
+        iterator() {}
+        iterator(MessageList::const_iterator p) : pos_(p) {}
+        iterator(iterator const& other) : pos_(other.pos_) {}
+
+    private:
+        friend class boost::iterator_core_access;
+
+        bool equal(iterator const& other) const;
+
+        void increment();
+
+        // This wouldn't have to be const if we weren't storing a const MessageList internally
+        MessageInstance const& dereference() const;
+
+        MessageList::const_iterator pos_;
+    };
+
+    typedef const_iterator iterator;
+
+    iterator begin() const;
+    iterator end()   const;
+    uint32_t size()  const;
+
+protected:
+    View(MessageList const& message_list) : message_list_(message_list) {}
+
+private:
+    MessageList const message_list_;
 };
 
 // Templated method definitions

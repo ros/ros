@@ -47,21 +47,21 @@ def check_cmd(argv):
     parser.add_option("-n", "--noplugins", action="store_true", dest="noplugins",              help="do not load rulefiles via plugins")
 
     (options, args) = parser.parse_args(argv)
-  
+
     all_rules = []
 
     if len(args) == 0:
         parser.error("Must specify a bag file to check.")
     else:
-      if options.append and options.rulefile is None:
-          parser.error("Cannot specify -a without also specifying -g.")
-          
-      if options.rulefile is not None:
-          if os.path.isfile(options.rulefile) and not options.append:
-              parser.error("The file %s already exists.  Include -a if you intend to append."%options.rulefile)
-          if not os.path.isfile(options.rulefile) and options.append:
-              parser.error("The file %s does not exist, and so -a is invalid."%options.rulefile)
-  
+        if options.append and options.rulefile is None:
+            parser.error("Cannot specify -a without also specifying -g.")
+
+        if options.rulefile is not None:
+            if os.path.isfile(options.rulefile) and not options.append:
+                parser.error("The file %s already exists.  Include -a if you intend to append."%options.rulefile)
+            if not os.path.isfile(options.rulefile) and options.append:
+                parser.error("The file %s does not exist, and so -a is invalid."%options.rulefile)
+
     cmd = ["rosrun", "rosbagmigration", "checkbag.py"]
 
     if options.rulefile:   cmd.extend(["-g", options.rulefile])

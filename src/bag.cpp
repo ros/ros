@@ -39,6 +39,7 @@
 #define foreach BOOST_FOREACH
 
 using std::map;
+using std::priority_queue;
 using std::string;
 using std::vector;
 using ros::M_string;
@@ -158,7 +159,7 @@ bool Bag::rewrite(string const& src_filename, string const& dest_filename) {
     if (!open(target_filename, rosbag::bagmode::Write))
         return false;
 
-    foreach(rosbag::MessageInstance m, in.getMessageList()) {
+    foreach(rosbag::MessageInstance const& m, in.getMessageList()) {
         m.instantiateMessage();
         write(m.getTopic(), m.getTime(), m);
     }
@@ -355,8 +356,8 @@ void Bag::writeFileHeaderRecord() {
     chunk_count_ = chunk_infos_.size();
 
     ROS_DEBUG("Writing FILE_HEADER [%llu]: index_pos=%llu topic_count=%d chunk_count=%d",
-    		  (unsigned long long) file_.getOffset(), index_data_pos_, topic_count_, chunk_count_);
-
+             (unsigned long long) file_.getOffset(), (unsigned long long) index_data_pos_, topic_count_, chunk_count_);
+    
     // Write file header record
     M_string header;
     header[OP_FIELD_NAME]          = toHeaderString(&OP_FILE_HEADER);
@@ -699,7 +700,7 @@ void Bag::writeTopicIndexRecords() {
         ROS_DEBUG("Writing INDEX_DATA: topic=%s ver=%d count=%d", topic.c_str(), INDEX_VERSION, topic_index_size);
         
         // Write the index record data (pairs of timestamp and position in file)
-        BOOST_FOREACH(const IndexEntry& e, topic_index) {
+        foreach(IndexEntry const& e, topic_index) {
             write((char*) &e.time.sec,  4);
             write((char*) &e.time.nsec, 4);
             write((char*) &e.offset,    4);
@@ -982,7 +983,7 @@ bool Bag::readMessageDataRecord103(string const& topic, uint64_t chunk_pos, uint
 void Bag::writeChunkInfoRecords() {
     boost::mutex::scoped_lock lock(record_mutex_);
 
-    BOOST_FOREACH(const ChunkInfo& chunk_info, chunk_infos_) {
+    foreach(ChunkInfo const& chunk_info, chunk_infos_) {
         // Write the chunk info header
         M_string header;
         uint32_t chunk_topic_count = chunk_info.topic_counts.size();
@@ -1213,65 +1214,112 @@ void Bag::dump() {
     }
 }
 
-// Iteration
+// The merge helper stores the range of messages on a given topic
+// The comparator below helps us to sort these helpers based on the
+// First iterator so that we can store them in a priority queue
+struct MergeHelper
+{
+    MergeHelper(vector<IndexEntry>::const_iterator const& _iter,
+                vector<IndexEntry>::const_iterator const& _end,
+                TopicInfo const& _topic_info) : iter(_iter), end(_end), topic_info(_topic_info) { }
+
+    void advance()  { iter++; }
+    bool finished() { return iter == end; }
+
+    vector<IndexEntry>::const_iterator iter;
+    vector<IndexEntry>::const_iterator end;
+    TopicInfo const&                   topic_info;
+};
+
+// This class gets used to make a priority queue of merge helpers
+struct MergeCompare
+{
+    bool operator() (MergeHelper*& a, MergeHelper*& b) const {
+        return (a->iter)->time > (b->iter)->time;
+    }
+};
+
+// Efficiently merge our sorted lists and store them in a new list
+// To get rid of the list structure all together we can essentially just store the merge_queue inside
+// our custom iterator, though it needs a little more logic to handle reverse iteration appropriately
+MessageList Bag::getMessageListByTopic(vector<string> const& topics, Time const& start_time, Time const& end_time)
+{
+    MessageList message_list;
+
+    priority_queue<MergeHelper*, vector<MergeHelper*>, MergeCompare> merge_queue;
+    foreach(string const& topic, topics) {
+        map<string, vector<IndexEntry> >::iterator ind = topic_indexes_.find(topic);
+        map<string, TopicInfo>::iterator key = topics_infos_.find(topic);
+
+        if (ind != topic_indexes_.end() && key != topic_infos_.end()) {
+            vector<IndexEntry> const& index_entries = ind->second;
+            TopicInfo const& topic_info = key->second;
+
+            // lower_bound / upper_bound do a binary search to find the appropriate range of Index Entries given our time range
+            MergeHelper* merge_helper = new MergeHelper(std::lower_bound(index_entries.begin(), index_entries.end(), start_time, IndexEntryCompare()),
+                                                        std::upper_bound(index_entries.begin(), index_entries.end(), end_time,   IndexEntryCompare()),
+                                                        topic_info);
+
+            // Only insert our helper if it describes a valid range
+            if (merge_helper->iter != merge_helper->end)
+                merge_queue.push(merge_helper);
+        }
+    }
+
+    while (!merge_queue.empty()) {
+        MergeHelper* merge_helper = merge_queue.top();
+        merge_queue.pop();
+
+        IndexEntry const& entry = *(merge_helper->iter);
+
+        message_list.push_back(MessageInstance(merge_helper->topic_info, entry, *this));
+
+        merge_helper->advance();
+
+        // Delete our helper if we're done with it -- else put it back in queue
+        if (merge_helper->finished())
+            delete merge_helper;
+        else
+            merge_queue.push(merge_helper);
+    }
+
+    return message_list;
+}
 
 MessageList Bag::getMessageList(const Time& start_time, const Time& end_time) {
     MessageList message_list;
 
     for (map<string, TopicInfo>::const_iterator i = topic_infos_.begin(); i != topic_infos_.end(); i++) {
-        const string& topic = i->first;
+        string const& topic = i->first;
 
         map<string, vector<IndexEntry> >::const_iterator ind = topic_indexes_.find(topic);
         if (ind == topic_indexes_.end())
             continue;
 
-        const vector<IndexEntry>& topic_index = ind->second;
-        const TopicInfo&          topic_info  = i->second;        
-
-        BOOST_FOREACH(const IndexEntry& entry, topic_index) {
-            if (entry.time >= start_time && entry.time <= end_time)
-                message_list.insert(MessageInstance(topic_info, entry, *this));
-        }
-    }
-
-    return message_list;
-}
-
-MessageList Bag::getMessageListByTopic(vector<string> const& topics, Time const& start_time, Time const& end_time) {
-    MessageList message_list;
-    
-    foreach(string const& topic, topics) {
-        map<string, vector<IndexEntry> >::const_iterator ind = topic_indexes_.find(topic);
-        if (ind == topic_indexes_.end()) {
-            ROS_ERROR("%s not in topic_indexes_", topic.c_str());
-            continue;
-        }
-
-        map<string, TopicInfo>::const_iterator key = topic_infos_.find(topic);
-        if (key == topic_infos_.end()) {
-            ROS_ERROR("%s not in topic_infos_", topic.c_str());
-            continue;
-        }
-        
         vector<IndexEntry> const& topic_index = ind->second;
-        TopicInfo const&          topic_info  = key->second;
+        TopicInfo const&          topic_info  = i->second;
 
-        ROS_DEBUG("topic_index.size: %d", (int) topic_index.size());
-
-        foreach(IndexEntry const& entry, topic_index)
+        foreach(IndexEntry const& entry, topic_index) {
             if (entry.time >= start_time && entry.time <= end_time)
                 message_list.insert(MessageInstance(topic_info, entry, *this));
+        }
     }
 
     return message_list;
 }
 
-MessageList Bag::getMessageListByType(vector<string> const& datatypes, Time const& start_time, Time const& end_time) {
-    MessageList message_list;
+// View
 
-    //! \todo implement
-
-    return message_list;
+View Bag::getViewByTopic(vector<string> const& topics, Time const& start_time, Time const& end_time) {
+    return View(getMessageListByTopic(topics, start_time, end_time));
 }
+
+View::iterator View::begin() const { return iterator(message_list_.begin()); }
+View::iterator View::end()   const { return iterator(message_list_.end());   }
+uint32_t       View::size()  const { return message_list_.size();            }
+
+bool                   View::iterator::equal(View::iterator const& other) const { return pos_ == other.pos_; }
+void                   View::iterator::increment()                              { pos_++;                    }
+MessageInstance const& View::iterator::dereference() const                      { return *pos_;              }
 
 }

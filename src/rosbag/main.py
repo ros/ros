@@ -59,20 +59,19 @@ class RosbagCmds(UserDict.UserDict):
         argv = [a for a in argv if a != '-h' and a != '--help']
 
         if len(argv) == 0:
-            print "Usage: rosbag <command> [options] [args]"
-            print ""
+            print 'Usage: rosbag <command> [options] [args]'
+            print ''
             print self.get_valid_cmds()
-            print "For more information please visit the rosbag wiki page: http://code.ros.org/wiki/rosbag"
-            print ""
+            print 'For more information please visit the rosbag wiki page: http://code.ros.org/wiki/rosbag'
+            print ''
         else:
             cmd = argv[0]
             if cmd in self:
-                self[cmd](["-h"])
+                self[cmd](['-h'])
             else:
-                print >> sys.stderr, "Invalid command: %s" % cmd
-                print >> sys.stderr, ""
+                print >> sys.stderr, 'Invalid command: %s' % cmd
+                print >> sys.stderr, ''
                 print >> sys.stderr, self.get_valid_cmds()
-
 
 def rosbagmain(argv=None):
     cmds = RosbagCmds()

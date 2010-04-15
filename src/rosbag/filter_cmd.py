@@ -50,7 +50,7 @@ def filter_cmd(argv):
         def eval_fn(topic, m, t):
             return eval(expr)
         return eval_fn
-    
+
     parser = optparse.OptionParser(usage="""rosbag filter: INBAG OUTBAG EXPRESSION
 
 EXPRESSION can be any Python-legal expression.
@@ -59,7 +59,7 @@ The following variables are available:
  * topic: name of topic
  * m: message
  * t: time of message (t.secs, t.nsecs)
-""")  
+""")
     parser.add_option('--print', dest="verbose_pattern", default=None,
                       metavar="PRINT-EXPRESSION", help="Python expression to print for verbose debugging. Uses same variables as filter-expression")
 
@@ -75,7 +75,7 @@ The following variables are available:
     if options.verbose_pattern:
         verbose_pattern = expr_eval(options.verbose_pattern)
     else:
-        verbose_pattern = None    
+        verbose_pattern = None
     if not os.path.isfile(inbag):
         print >> sys.stderr, "cannot locate input bag file [%s]"%inbag
         sys.exit(1)

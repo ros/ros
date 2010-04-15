@@ -74,7 +74,7 @@ def record_cmd(argv):
     if options.bz2:    cmd.extend(["-j"])
 
     cmd.extend(args)
-    
+
     proc = subprocess.Popen(cmd)
 
     # Ignore sigint since we're basically just pretending to be the subprocess now.

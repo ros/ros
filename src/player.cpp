@@ -173,7 +173,7 @@ void Player::publish() {
     }
 }
 
-void Player::doPublish(string const& topic, ros::Message* m, ros::Time time, void* n) {
+void Player::doPublish(string const& topic, ros::Message* m, ros::Time const& time, void* n) {
     // Pull latching and callerid info out of the connection_header if it's available (which it always should be)
     bool latching = false;
     string callerid("");
@@ -299,23 +299,25 @@ ros::Time Player::getSysTime() {
 int Player::checkBag() {
     options_.check();
 
+    // Open the bag file for reading
     string filename = options_.bags[0];
-
     Bag bag;
     if (!bag.open(filename, bagmode::Read))
-        throw Exception("Error opening file");
+        throw Exception((boost::format("Error opening file: %1%") % filename.c_str()).str());
 
+    // Build a count of messages in each topic
+    map<string, BagContent> content_by_topic;
     ros::Time end_time;
     foreach(MessageInstance const& m, bag.getMessageList()) {
         string const& topic = m.getTopic();
 
-        map<string, BagContent>::iterator i = content_.find(topic);
-        if (i == content_.end()) {
-            BagContent content(m.__getDataType(), m.__getMD5Sum(), m.__getMessageDefinition());
-            content_.insert(pair<string, BagContent>(topic, content));
+        map<string, BagContent>::iterator i = content_by_topic.find(topic);
+        if (i == content_by_topic.end())
+            content_by_topic[topic] = BagContent(m.__getDataType(), m.__getMD5Sum(), m.__getMessageDefinition());
+        else {
+            BagContent const& content = i->second;
+            content.count++;
         }
-        else
-            i->second.count++;
 
         end_time = m.getTime();
     }
@@ -328,7 +330,7 @@ int Player::checkBag() {
     printf("length:     %llu\n",  (unsigned long long) end_time.toNSec());
 
     printf("topics:\n");
-    for (map<string, BagContent>::const_iterator i = content_.begin(); i != content_.end(); i++) {
+    for (map<string, BagContent>::const_iterator i = content_by_topic.begin(); i != content_by_topic.end(); i++) {
         string const&     topic   = i->first;
         BagContent const& content = i->second;
 

@@ -1,5 +1,0 @@
-Header header
-VariableLengthStruct s1
-FixedLengthStruct s2
-VariableLengthStruct s3
-int32 for_good_measure

@@ -9,9 +9,5 @@
   <depend package="std_msgs"/>
   <depend package="test_ros"/>
 
-  <export>
-    <cpp cflags="-I${prefix}/msg/cpp -I${prefix}/srv/cpp"/>
-  </export>
-  
 </package>
 

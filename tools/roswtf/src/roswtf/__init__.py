@@ -109,6 +109,11 @@ def _roswtf_main():
 
     import optparse
     parser = optparse.OptionParser(usage="usage: roswtf [launch file]")
+    # #2268
+    parser.add_option("--all", 
+                      dest="all_packages", default=False,
+                      action="store_true",
+                      help="run roswtf against all packages")
     #TODO: --all-pkgs option
     options, args = parser.parse_args()
     if args:
@@ -118,9 +123,9 @@ def _roswtf_main():
             launch_files = [a for a in args if os.path.isfile(a)]
             names = [a for a in args if not a in launch_files]
             names = [roslib.scriptutil.script_resolve_name('/roswtf', n) for n in names]
-        
+
     from roswtf.context import WtfContext
-    from roswtf.environment import wtf_check_environment, invalid_url
+    from roswtf.environment import wtf_check_environment, invalid_url, ros_root_check
     from roswtf.graph import wtf_check_graph
     import roswtf.network
     import roswtf.packages
@@ -128,6 +133,12 @@ def _roswtf_main():
     import roswtf.stacks    
     import roswtf.plugins
     static_plugins, online_plugins = roswtf.plugins.load_plugins()
+
+    # - do a ros_root check first and abort if it fails as rest of tests are useless after that
+    error = ros_root_check(None, ros_root=os.environ['ROS_ROOT'])
+    if error:
+        print "ROS_ROOT is invalid: "+str(error)
+        sys.exit(1)
 
     all_warnings = []
     all_errors = []
@@ -148,6 +159,9 @@ def _roswtf_main():
         else:
             print "No package or stack in context"
             ctx = WtfContext.from_env()
+        if options.all_packages:
+            print "roswtf will run against all packages"
+            ctx.pkgs = all_pkgs
 
     # static checks
     wtf_check_environment(ctx)

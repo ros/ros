@@ -36,12 +36,24 @@
 import os
 import sys
 
+import roslib.rosenv
 import roslib.packages
 
 def print_warning(msg):
     """print warning to screen (bold red)"""
     print >> sys.stderr, '\033[31m%s\033[0m'%msg
     
+def on_ros_path(p):
+    """
+    @param p: path
+    @type  p: str
+    @return: True if p is on the ROS path (ROS_ROOT, ROS_PACKAGE_PATH)
+    """
+    p = os.path.abspath(roslib.rosenv.resolve_path(p))
+    paths = roslib.packages.get_package_paths()
+    paths = [os.path.abspath(roslib.rosenv.resolve_path(x)) for x in paths]
+    return bool([x for x in paths if p == x or p.startswith(x + os.sep)])
+
 # utility to compute logged in user name
 def author_name():
     import getpass

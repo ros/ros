@@ -43,7 +43,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include "ros/ros.h"
-#include <roslib/Time.h>
+#include <roslib/Clock.h>
 
 int g_argc;
 char** g_argv;
@@ -54,15 +54,15 @@ class RosTimeTest : public testing::Test
 public:
   void setTime(ros::Time t)
   {
-    roslib::Time message;
-    message.rostime = t;
+    roslib::Clock message;
+    message.clock = t;
     pub_.publish(message);
   }
 
 protected:
   RosTimeTest()
   {
-    pub_ = nh_.advertise<roslib::Time>("/time", 1);
+    pub_ = nh_.advertise<roslib::Clock>("/clock", 1);
     while (pub_.getNumSubscribers() == 0)
     {
       ros::Duration(0.01).sleep();

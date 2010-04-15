@@ -109,6 +109,14 @@ class MasterApiTestCase(_MasterTestCase):
         pid = self.apiSuccess(self.master.getPid(self.caller_id))
         self.assert_(pid > 0)
 
+    ## validate master.getUri(caller_id)        
+    def _testGetUri(self):
+        # test with bad arity
+        self.apiError(self.master.getUri())
+        # test success        
+        uri = self.apiSuccess(self.master.getUri(self.caller_id))
+        self.assert_(type(uri) == str)
+        
     ## common test subroutine of both register and unregister tests. registers the common test cases
     def _subTestRegisterServiceSuccess(self):
         master = self.master
@@ -298,6 +306,9 @@ class MasterApiTestCase(_MasterTestCase):
             # - master knows topic type
             val = self.apiSuccess(master.getPublishedTopics(self.caller_id, '/'))
             self.assert_([topic_name, topic_type] in val, "master does not know topic type: %s"%val)
+            #   - test new api as well
+            val = self.apiSuccess(master.getTopicTypes(self.caller_id))
+            self.assert_([topic_name, topic_type] in val, "master does not know topic type: %s"%val)
 
             pubs, _, _ = self.apiSuccess(master.getSystemState(self.caller_id))
             for j in xrange(0, i+1):
@@ -319,12 +330,19 @@ class MasterApiTestCase(_MasterTestCase):
         self.assertEquals([], val) # should report no subscribers
         val = self.apiSuccess(master.getPublishedTopics(self.caller_id, '/'))
         self.assert_([topic_name, '*'] in val, "master is not reporting * as type: %s"%val)
+        #  - test new api as well
+        val = self.apiSuccess(master.getTopicTypes(self.caller_id))
+        self.assert_([topic_name, '*'] in val, "master is not reporting * as type: %s"%val)
+        
         # register a grounded type and make sure that '*' can't overwrite it
         for t in ['std_msgs/String', '*']:
             val = self.apiSuccess(master.registerPublisher(caller_id, topic_name, t, caller_api))   
             self.assertEquals([], val) # should report no subscribers
             val = self.apiSuccess(master.getPublishedTopics(self.caller_id, '/'))
-            self.assert_([topic_name, 'std_msgs/String'] in val, "master is not reporting * as type: %s"%val)
+            self.assert_([topic_name, 'std_msgs/String'] in val, "master is not reporting std_msgs/String as type: %s"%val)
+
+            val = self.apiSuccess(master.getTopicTypes(self.caller_id))
+            self.assert_([topic_name, 'std_msgs/String'] in val, "master is not reporting std_msgs/String as type: %s"%val)
         
     ## validate master.registerPublisher(caller_id, topic, topic_api, caller_api) 
     def _testRegisterPublisherSuccess(self):
@@ -398,6 +416,10 @@ class MasterApiTestCase(_MasterTestCase):
             val = self.apiSuccess(master.lookupNode(self.caller_id, caller_id))
             self.assertEquals(caller_api, val)
 
+            # - master should know topic type
+            val = self.apiSuccess(master.getTopicTypes(self.caller_id))
+            self.assert_([topic_name, topic_type] in val, "master does not know topic type: %s"%val)
+            
             _, subs, _ = self.apiSuccess(master.getSystemState(self.caller_id))
             for j in xrange(0, i+1):
                 jtopic_name = "%s-%s"%(topic_base, j)

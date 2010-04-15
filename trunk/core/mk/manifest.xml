@@ -1,6 +1,0 @@
-<package>
-  <description brief="ROS Makefile Includes">A collection of .mk include files for building ROS architectural elements.  Most package authors should use cmake .mk, which calls CMake for the build of the package.  The other files in this package are intended for use in exotic situations that mostly arise when importing 3rdparty code.</description>
-  <author>Morgan Quigley, Brian Gerkey</author>
-  <license>BSD</license>
-  <review status="Doc reviewed" notes="2010/01/12"/>
-</package>

@@ -240,11 +240,11 @@ class TestRostopic(unittest.TestCase):
             v = b.getvalue()
             for s in ["Publishers:", "Subscribers", "Type: std_msgs/String", " * /talker"]:
                 self.assert_(s in v, "failed on %s: %s"%(s, v))
-        # test on /clock, which has no publishers
+        # test on /clock, which has no publishers. subscriber should have set type
         with fakestdout() as b:            
             rostopic.rostopicmain([cmd, 'info', '/clock'])
             v = b.getvalue()
-            for s in ["Publishers:", "Type: unknown type"]:
+            for s in ["Publishers:", "Type: roslib/Clock"]:
                 self.assert_(s in v, "failed on %s: %s"%(s, v))
 
     def test_cmd_find(self):

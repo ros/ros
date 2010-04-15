@@ -137,18 +137,6 @@ class TestRospyCore(unittest.TestCase):
             self.fail_("add_preshutdown_hook is not protected against invalid args")
         except TypeError: pass
 
-    def test_mloginfo(self):
-        # just make sure it doesn't crash
-        rospy.core.mloginfo(None)
-        rospy.core.mloginfo("foo")
-        rospy.core.mloginfo("foo %s", 'bar')
-        
-    def test_mlogwarn(self):
-        # just make sure it doesn't crash
-        rospy.core.mlogwarn(None)
-        rospy.core.mlogwarn("foo")
-        rospy.core.mlogwarn("foo %s", 'bar')        
-        
     def test_get_ros_root(self):
         try:
             rospy.core.get_ros_root(env={}, required=True)
@@ -198,20 +186,6 @@ class TestRospyCore(unittest.TestCase):
         self.assert_(called2 is not None)
         rospy.core._shutdown_flag = False
 
-    def test_is_api(self):
-        # not forcing rospy to be pedantic -- yet, just try and do sanity checks
-        tests = ['http://localhost:1234', 'rosrpc://localhost:1234', u'rosrpc://localhost:1234',  ]
-        caller_id = '/me'
-        for t in tests:
-            self.assert_(rospy.core.is_api('p')(t, caller_id))
-        failures = ['ftp://foo', '', None, '1', True, 'http:']
-        for f in failures:
-            try:
-                rospy.core.is_api('p')(f, caller_id)
-                self.fail(f)
-            except rospy.core.ParameterInvalid, e:
-                pass
-
     #TODO: move to teset_rospy_names
     def test_valid_name(self):
         # not forcing rospy to be pedantic -- yet, just try and do sanity checks
@@ -227,28 +201,6 @@ class TestRospyCore(unittest.TestCase):
             except rospy.core.ParameterInvalid, e:
                 pass
     
-    def test_is_service(self):
-        # not forcing rospy to be pedantic -- yet, just try and do sanity checks
-        tests = [
-            ('service', '/node', '/service'),
-            ('service', '/ns/node', '/ns/service'),
-            ('/service', '/node', '/service'),
-            ('~service', '/node', '/node/service'),
-            ('/service1', '/node', '/service1'),
-            ('top/sub', '/node', '/top/sub'),
-            ('top/sub', '/ns/node', '/ns/top/sub'),
-            ]
-
-        for t,caller_id, v in tests:
-            self.assertEquals(v, rospy.core.is_service('p')(t, caller_id))
-        failures = ['/', 'ftp://foo', '', None, 1, True, 'http:', ' spaced ', ' ']
-        for f in failures:
-            try:
-                rospy.core.is_service('p')(f, caller_id)
-                self.fail(f)
-            except rospy.core.ParameterInvalid, e:
-                pass
-
     def test_is_topic(self):
         # not forcing rospy to be pedantic -- yet, just try and do sanity checks
         caller_id = '/me'

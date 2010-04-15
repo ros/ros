@@ -1,4 +1,0 @@
-<launch>
-  <machine name="machine1" address="address1" default="foo" />
-</launch>
-

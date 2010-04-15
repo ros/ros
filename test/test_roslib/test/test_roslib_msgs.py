@@ -268,7 +268,7 @@ class MsgSpecTest(unittest.TestCase):
     types2 = roslib.msgs.list_msg_types('roslib', True)
     
     self.assert_('Header' in types1, types1)
-    self.assert_('Time' in types1, types1)
+    self.assert_('Clock' in types1, types1)
     self.assert_('Log' in types1, types1)        
     
     # roslib has no deps, so this should be equivalent
@@ -285,8 +285,8 @@ class MsgSpecTest(unittest.TestCase):
     
     self.assert_('roslib/Header' in types2, types2)
     self.assert_('roslib/Header' not in types1, types1)
-    self.assert_('roslib/Time' in types2, types2)
-    self.assert_('roslib/Time' not in types1, types1)
+    self.assert_('roslib/Clock' in types2, types2)
+    self.assert_('roslib/Clock' not in types1, types1)
     self.assert_('roslib/Log' in types2, types2)        
     self.assert_('roslib/Log' not in types1, types1)        
     

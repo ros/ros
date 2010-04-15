@@ -222,6 +222,34 @@ macro(_rosbuild_add_pyunit file)
 
 endmacro(_rosbuild_add_pyunit)
 
+# Actual signature:
+#  _rosbuild_add_roslaunch_check file var=val var=val...
+macro(_rosbuild_add_roslaunch_check file)
+  # Check that the file exists, #1621
+  set(_file_name _file_name-NOTFOUND)
+  find_file(_file_name ${file} ${PROJECT_SOURCE_DIR} /)
+  if(NOT _file_name)
+    message(FATAL_ERROR "Can't find roslaunch file or directory \"${file}\"")
+  endif(NOT _file_name)
+
+  # Find rostest
+  rosbuild_invoke_rospack("" rostest path find rostest)
+
+  # Create a legal target name, in case the target name has slashes it
+  string(REPLACE "/" "_" _testname ${file})
+  
+  # Create target for this test
+  add_custom_target(roslaunch_check_${_testname}
+                    COMMAND ${rostest_path}/bin/roslaunch-check.py ${file} ${ARGN}
+                    DEPENDS ${file}
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                    VERBATIM)
+  
+  # Make sure all test programs are built before running this test
+  add_dependencies(roslaunch_check_${_testname} tests)
+  
+endmacro(_rosbuild_add_roslaunch_check)
+
 macro(_rosbuild_wget_and_build tarball tarball_url tarball_dir unpack_cmd configure_cmd make_cmd install_cmd)
   find_package(Wget REQUIRED)
 

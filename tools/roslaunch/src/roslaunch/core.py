@@ -271,15 +271,17 @@ class Master:
     AUTO_START   = 1
     ## start/restart master (i.e. restart an existing master)
     AUTO_RESTART = 2
-    ZENMASTER = 'zenmaster'
-    BOTHERDER = 'botherder'    
+    ROSMASTER = 'rosmaster'
+    
+    # deprecated
+    ZENMASTER = 'zenmaster'        
 
     def __init__(self, type_=None, uri=None, auto=None):
         """
         Create new Master instance.
         @param uri: master URI
         @type  uri: str
-        @param type_: 'zenmaster' or 'botherder'
+        @param type_: Currently only support 'rosmaster' 
         @type  type_: str
         @param auto: AUTO_NO | AUTO_START | AUTO_RESTART. AUTO_NO
           is the default
@@ -287,14 +289,14 @@ class Master:
         """
         if auto is not None and type(auto) != int:
             raise RLException("invalid auto value: %s"%auto)            
-        self.type = type_ or Master.ZENMASTER
+        self.type = type_ or Master.ROSMASTER
         self.auto = auto or Master.AUTO_NO
         if self.auto not in [Master.AUTO_NO, Master.AUTO_START, Master.AUTO_RESTART]:
             raise RLException("invalid auto value: %s"%auto)
         self.uri  = remap_localhost_uri(uri or get_master_uri_env())
         # by default, master output goes to screen
         self.log_output = False
-
+        
     def __eq__(self, m2):
         if not isinstance(m2, Master):
             return False
@@ -329,6 +331,7 @@ class Master:
     
     def is_running(self):
         """
+        Check if master is running. 
         @return: True if the master is running
         @rtype: bool
         """
@@ -570,6 +573,21 @@ class Node(object):
             ('required', self.required),
             ]
 
+    #TODO: unify with to_remote_xml using a filter_fn
+    def to_xml(self):
+        """
+        convert representation into XML representation. Currently cannot represent private parameters.
+        @return: XML representation for remote machine
+        @rtype: str
+        """
+        t = self.xmltype()
+        attrs = [(a, v) for a, v in self.xmlattrs() if v != None]
+        xmlstr = '<%s %s>\n'%(t, ' '.join(['%s="%s"'%(val[0], _xml_escape(val[1])) for val in attrs]))
+        xmlstr += ''.join(['  <remap from="%s" to="%s" />\n'%tuple(r) for r in self.remap_args])
+        xmlstr += ''.join(['  <env name="%s" value="%s" />\n'%tuple(e) for e in self.env_args])
+        xmlstr += "</%s>"%t
+        return xmlstr
+
     def to_remote_xml(self):
         """
         convert representation into remote representation. Remote representation does
@@ -577,7 +595,6 @@ class Node(object):
         @return: XML representation for remote machine
         @rtype: str
         """
-        respawn_str = test_name_str = name_str = cwd_str = ''
         t = self.xmltype()
         attrs = [(a, v) for a, v in self.xmlattrs() if v != None and a != 'machine']
         xmlstr = '<%s %s>\n'%(t, ' '.join(['%s="%s"'%(val[0], _xml_escape(val[1])) for val in attrs]))

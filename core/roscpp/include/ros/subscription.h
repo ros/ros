@@ -31,7 +31,6 @@
 #include <queue>
 #include "ros/common.h"
 #include "ros/header.h"
-#include "ros/subscription_message_helper.h"
 #include "ros/forwards.h"
 #include "ros/transport_hints.h"
 #include "ros/xmlrpc_manager.h"
@@ -56,6 +55,8 @@ typedef boost::shared_ptr<SubscriptionQueue> SubscriptionQueuePtr;
 class MessageDeserializer;
 typedef boost::shared_ptr<MessageDeserializer> MessageDeserializerPtr;
 
+class SubscriptionCallbackHelper;
+typedef boost::shared_ptr<SubscriptionCallbackHelper> SubscriptionCallbackHelperPtr;
 
 /**
  * \brief Manages a subscription on a single topic.
@@ -94,8 +95,8 @@ public:
   XmlRpc::XmlRpcValue getStats();
   void getInfo(XmlRpc::XmlRpcValue& info);
 
-  bool addCallback(const SubscriptionMessageHelperPtr& helper, CallbackQueueInterface* queue, int32_t queue_size, const VoidPtr& tracked_object);
-  void removeCallback(const SubscriptionMessageHelperPtr& helper);
+  bool addCallback(const SubscriptionCallbackHelperPtr& helper, const std::string& md5sum, CallbackQueueInterface* queue, int32_t queue_size, const VoidConstPtr& tracked_object);
+  void removeCallback(const SubscriptionCallbackHelperPtr& helper);
 
   typedef std::map<std::string, std::string> M_string;
 
@@ -103,7 +104,7 @@ public:
    * \brief Called to notify that a new message has arrived from a publisher.
    * Schedules the callback for invokation with the callback queue
    */
-  uint32_t handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes, bool buffer_includes_size_header, const boost::shared_ptr<M_string>& connection_header, const PublisherLinkPtr& link);
+  uint32_t handleMessage(const SerializedMessage& m, bool ser, bool nocopy, const boost::shared_ptr<M_string>& connection_header, const PublisherLinkPtr& link);
 
   const std::string datatype();
   const std::string md5sum();
@@ -177,6 +178,8 @@ public:
 
   void pendingConnectionDone(const PendingConnectionPtr& pending_conn, XmlRpc::XmlRpcValue& result);
 
+  void getPublishTypes(bool& ser, bool& nocopy, const std::type_info& ti);
+
 private:
   Subscription(const Subscription &); // not copyable
   Subscription &operator =(const Subscription &); // nor assignable
@@ -188,10 +191,10 @@ private:
     CallbackQueueInterface* callback_queue_;
 
     // Only used if callback_queue_ is non-NULL (NodeHandle API)
-    SubscriptionMessageHelperPtr helper_;
+    SubscriptionCallbackHelperPtr helper_;
     SubscriptionQueuePtr subscription_queue_;
     bool has_tracked_object_;
-    VoidWPtr tracked_object_;
+    VoidConstWPtr tracked_object_;
   };
   typedef boost::shared_ptr<CallbackInfo> CallbackInfoPtr;
   typedef std::vector<CallbackInfoPtr> V_CallbackInfo;
@@ -201,6 +204,7 @@ private:
   std::string datatype_;
   boost::mutex callbacks_mutex_;
   V_CallbackInfo callbacks_;
+  uint32_t nonconst_callbacks_;
 
   bool dropped_;
   bool shutting_down_;
@@ -216,8 +220,19 @@ private:
 
   TransportHints transport_hints_;
 
-  typedef std::map<PublisherLinkPtr, MessageDeserializerPtr> M_PublisherLinkToDeserializer;
-  M_PublisherLinkToDeserializer latched_messages_;
+  struct LatchInfo
+  {
+    SerializedMessage message;
+    PublisherLinkPtr link;
+    boost::shared_ptr<std::map<std::string, std::string> > connection_header;
+    ros::Time receipt_time;
+  };
+
+  typedef std::map<PublisherLinkPtr, LatchInfo> M_PublisherLinkToLatchInfo;
+  M_PublisherLinkToLatchInfo latched_messages_;
+
+  typedef std::vector<std::pair<const std::type_info*, MessageDeserializerPtr> > V_TypeAndDeserializer;
+  V_TypeAndDeserializer cached_deserializers_;
 };
 
 }

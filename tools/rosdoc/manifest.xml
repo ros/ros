@@ -15,6 +15,7 @@
    <depend package="rxdeps"/>
    <depend package="rosmsg"/>   
    <rosdep name="doxygen"/>
+   <rosdep name="epydoc"/>
 
 </package>
 

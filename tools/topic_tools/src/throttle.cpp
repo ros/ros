@@ -154,6 +154,11 @@ int main(int argc, char **argv)
   }
   else
   {
+    if(argc < 5)
+    {
+      puts(USAGE);
+      return 1;
+    }
     g_bps = atoi(argv[3]);
     g_window = atof(argv[4]);
   }

@@ -39,7 +39,7 @@
 
     <node name="listener" pkg="test_ros" type="listener.py" respawn="true" />
 
-    <node name="talker-1" pkg="test_ros" type="talker.py">
+    <node name="talker1" pkg="test_ros" type="talker.py">
       <env name="ENV_EXAMPLE" value="example value" />
       <remap from="foo" to="bar"/>
       <!-- params within node tags are equivalent to ~params. 
@@ -47,7 +47,7 @@
       <param name="talker_param" value="a value" />
     </node>
 
-    <node name="talker-2" pkg="test_ros" type="talker.py" />
+    <node name="talker2" pkg="test_ros" type="talker.py" />
 
   </group>
 

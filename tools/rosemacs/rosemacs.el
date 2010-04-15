@@ -132,13 +132,13 @@
 	      ros-service-packages nil))
       (message "Done loading ROS package info"))))
 
-(defun ros-messages-in-package (dir ext)
+(defun ros-files-in-package (dir ext &optional subdir)
   "Return list of files in subdirectory ext/ of dir whose extension is .ext"
   (with-temp-buffer
     (let ((l nil)
 	  (done nil)
 	  (p nil))
-      (call-process "ls" nil t nil (concat dir "/" ext "/"))
+      (call-process "ls" nil t nil (concat dir "/" (or subdir ext) "/"))
       (goto-char (point-min))
       (while (not done)
 	(setq p (point))
@@ -159,7 +159,7 @@
     (dotimes-with-progress-reporter (i (length ros-package-locations)) (concat "Caching locations of ." ext " files: ")
       (let ((package (aref ros-packages i))
 	    (dir (aref ros-package-locations i)))
-	(dolist (m (ros-messages-in-package dir ext))
+	(dolist (m (ros-files-in-package dir ext))
 	  (push (cons m package) l))))
     (sort* (vconcat l) (lambda (pair1 pair2) (string< (car pair1) (car pair2))))))
 

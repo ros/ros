@@ -1,4 +1,0 @@
-<launch>
-  <node pkg="rosrecord" type="rosplay" name="rosplay" args="-t -20 $(find test_rosrecord)/test/recording_54321.bag"/>
-  <test time-limit="100" test-name="random_sub_test" pkg="test_rosrecord" type="random_sub_test.py" args="54321"/>
-</launch>

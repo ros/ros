@@ -1,8 +1,0 @@
-<launch>
-
-  <node pkg="package" type="test_node_rosparam_dump" name="rosparam_dump">
-    <rosparam file="dump.yaml" command="dump" />
-  </node>
-  
-</launch>
-

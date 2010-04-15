@@ -123,6 +123,8 @@ void init(const std::string& name, const M_string& remappings, uint32_t options)
     snprintf(buf, sizeof(buf), "_%llu", (unsigned long long)WallTime::now().toNSec());
     g_name += buf;
   }
+
+  ros::console::setFixedFilterToken("node", g_name);
 }
 
 } // namespace this_node

@@ -227,8 +227,11 @@ class Graph(object):
     Not multi-thread-safe    
     """
     
-    def __init__(self):
+    def __init__(self, node_ns='/', topic_ns='/'):
         self.master = roslib.scriptutil.get_master()
+
+        self.node_ns = node_ns or '/'
+        self.topic_ns = topic_ns or '/'
 
         # ROS nodes
         self.nn_nodes = set([])
@@ -306,11 +309,12 @@ class Graph(object):
             nt_nodes = self.nt_nodes
             for state, direction in ((pubs, 'o'), (subs, 'i')):
                 for topic, l in state:
-                    nodes.extend(l)
-                    nt_nodes.add(topic_node(topic))
-                    for node in l:
-                        updated = nt_all_edges.add_edges(
-                            node, topic_node(topic), direction) or updated
+                    if topic.startswith(self.topic_ns):
+                        nodes.extend([n for n in l if n.startswith(self.node_ns)])
+                        nt_nodes.add(topic_node(topic))
+                        for node in l:
+                            updated = nt_all_edges.add_edges(
+                                node, topic_node(topic), direction) or updated
                             
             nodes = set(nodes)
 
@@ -410,7 +414,7 @@ class Graph(object):
                 else:
                     connected = True #backwards compatibility
 
-                if connected:
+                if connected and topic.startswith(self.topic_ns):
                     # blindly add as we will be able to catch state change via edges.
                     # this currently means we don't cleanup topics
                     self.nt_nodes.add(topic_node(topic))

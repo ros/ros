@@ -19,7 +19,7 @@ python:
   arch: python
   fedora: python-devel
   rhel: python-devel
-  macports: python25 python_select py25-hashlib
+  macports: python25 python_select
   gentoo: python
   cygwin: python
 python-yaml:
@@ -366,10 +366,10 @@ ncurses:
   gentoo: sys-libs/ncurses
 qt4:
   ubuntu: libqt4-core libqt4-dev qt4-dev-tools
-  debian: libqt4-core libqt4-dev qt4-dev-tools libqt4-opengl-dev
+  debian: libqt4-core libqt4-dev qt4-dev-tools 
   arch: qt
   macports: qt4-mac
-  gentoo: ">=x11-libs/qt-core-4 >=x11-libs/qt-opengl-4"
+  gentoo: ">=x11-libs/qt-core-4"
 curl:
   ubuntu: libcurl4-openssl-dev
   debian: libcurl4-openssl-dev
@@ -422,12 +422,6 @@ unzip:
   rhel: unzip
   macports: unzip
   gentoo: app-arch/unzip
-sbcl:
-  ubuntu: sbcl
-  debian: sbcl
-  arch: sbcl
-  macports: sbcl
-  gentoo: dev-lisp/sbcl
 fltk:
   ubuntu: libfltk1.1-dev
   debian: libfltk1.1-dev
@@ -435,3 +429,6 @@ fltk:
   arch: fltk
   macports: fltk
   gentoo: "=x11-libs/fltk-1*"
+epydoc:
+  ubuntu: python-epydoc
+  macports: py25-epydoc

@@ -53,6 +53,8 @@ from test_ros.master import MasterApiTestCase, set_node_name
 class MasterSimpleApi(MasterApiTestCase):
     def testGetPid(self):
         self._testGetPid()
+    def testGetUri(self):
+        self._testGetUri()
 
 class MasterRegisterServiceSuccess(MasterApiTestCase):
     def testRegisterServiceSuccess(self):

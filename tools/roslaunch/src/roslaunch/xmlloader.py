@@ -542,6 +542,15 @@ class XmlLoader(Loader):
                     ros_config.add_clear_param(child_ns.ns)
         return child_ns
         
+    def _launch_tag(self, tag, ros_config, filename=None):
+        # #2499
+        deprecated = tag.getAttribute('deprecated')
+        if deprecated:
+            if filename:
+                ros_config.add_config_error("[%s] DEPRECATED: %s"%(filename, deprecated))
+            else:
+                ros_config.add_config_error("Deprecation Warning: "+deprecated)
+
     INCLUDE_ATTRS = ('file', NS, CLEAR_PARAMS)
     def _include_tag(self, tag, context, ros_config, default_machine, is_core, verbose):
         self._check_attrs(tag, context, ros_config, XmlLoader.INCLUDE_ATTRS)
@@ -559,6 +568,7 @@ class XmlLoader(Loader):
 
         try:
             launch = self._parse_launch(inc_filename, verbose=verbose)
+            self._launch_tag(launch, ros_config, filename=inc_filename)
             default_machine = \
                 self._recurse_load(ros_config, launch.childNodes, child_ns, \
                                        default_machine, is_core, verbose)
@@ -628,6 +638,8 @@ class XmlLoader(Loader):
         # The <master> tag is special as we only only process a single
         # tag in the top-level file. We ignore master tags in
         # included files.
+
+        self._launch_tag(launch, ros_config, filename)
         master_tags = launch.getElementsByTagName('master')
         self.root_context = LoaderContext('', filename)
         if len(master_tags) > 1:

@@ -45,6 +45,21 @@ import unittest
 ## Test roslaunch.launch
 class TestRoslaunchLaunch(unittest.TestCase):
         
+    def test__unify_clear_params(self):
+        from roslaunch.launch import _unify_clear_params
+        self.assertEquals([], _unify_clear_params([]))
+        for t in [['/foo'], ['/foo/'], ['/foo/', '/foo'],
+                  ['/foo/', '/foo/'], ['/foo/', '/foo/bar', '/foo/'],
+                  ['/foo/', '/foo/bar', '/foo/bar/baz']]:
+            self.assertEquals(['/foo/'], _unify_clear_params(t))
+        for t in [['/'], ['/', '/foo/'], ['/foo/', '/', '/baz', '/car/dog']]:
+            self.assertEquals(['/'], _unify_clear_params(t))
+            
+        self.assertEquals(['/foo/', '/bar/', '/baz/'], _unify_clear_params(['/foo', '/bar', '/baz']))
+        self.assertEquals(['/foo/', '/bar/', '/baz/'], _unify_clear_params(['/foo', '/bar', '/baz', '/bar/delta', '/baz/foo']))
+        self.assertEquals(['/foo/bar/'], _unify_clear_params(['/foo/bar', '/foo/bar/baz']))
+        
+        
     def test__hostname_to_rosname(self):
         from roslaunch.launch import _hostname_to_rosname
         self.assertEquals("host_ann", _hostname_to_rosname('ann'))

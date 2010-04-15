@@ -47,11 +47,16 @@ namespace ros
 {
 
 ServiceClientLink::ServiceClientLink()
+: persistent_(false)
 {
 }
 
 ServiceClientLink::~ServiceClientLink()
 {
+  if (connection_)
+  {
+    connection_->drop(Connection::Destructing);
+  }
 }
 
 bool ServiceClientLink::initialize(const ConnectionPtr& connection)
@@ -76,6 +81,15 @@ bool ServiceClientLink::handleHeader(const Header& header)
     connection_->sendHeaderError(msg);
 
     return false;
+  }
+
+  std::string persistent;
+  if (header.getValue("persistent", persistent))
+  {
+    if (persistent == "1" || persistent == "true")
+    {
+      persistent_ = true;
+    }
   }
 
   ROSCPP_LOG_DEBUG("Service client [%s] wants service [%s] with md5sum [%s]", client_callerid.c_str(), service.c_str(), md5sum.c_str());
@@ -170,7 +184,8 @@ void ServiceClientLink::onRequestLength(const ConnectionPtr& conn, const boost::
                 "predicted in tcpros. that seems highly " \
                 "unlikely, so I'll assume protocol " \
                 "synchronization is lost... it's over.");
-    conn->drop();
+    conn->drop(Connection::Destructing);
+    return;
   }
 
   connection_->read(len, boost::bind(&ServiceClientLink::onRequest, this, _1, _2, _3, _4));
@@ -197,35 +212,19 @@ void ServiceClientLink::onResponseWritten(const ConnectionPtr& conn)
 {
   ROS_ASSERT(conn == connection_);
 
-  connection_->read(4, boost::bind(&ServiceClientLink::onRequestLength, this, _1, _2, _3, _4));
-}
-
-void ServiceClientLink::processResponse(bool ok, const MessagePtr& resp)
-{
-  boost::shared_array<uint8_t> buf;
-  uint32_t num_bytes = 0;
-
-  if (ok)
+  if (persistent_)
   {
-    int msg_len = resp->serializationLength();
-    buf = boost::shared_array<uint8_t>(new uint8_t[msg_len + 5]);
-    buf[0] = 1;
-    memcpy(buf.get() + 1, &msg_len, 4);
-    resp->serialize(buf.get() + 5, 0);
-    num_bytes = msg_len + 5;
+    connection_->read(4, boost::bind(&ServiceClientLink::onRequestLength, this, _1, _2, _3, _4));
   }
   else
   {
-    buf = boost::shared_array<uint8_t>(new uint8_t[5]);
-    buf[0] = 0;
-    buf[1] = 0;
-    buf[2] = 0;
-    buf[3] = 0;
-    buf[4] = 0;
-    num_bytes = 5;
+    connection_->drop(Connection::Destructing);
   }
+}
 
-  connection_->write(buf, num_bytes, boost::bind(&ServiceClientLink::onResponseWritten, this, _1));
+void ServiceClientLink::processResponse(bool ok, const SerializedMessage& res)
+{
+  connection_->write(res.buf, res.num_bytes, boost::bind(&ServiceClientLink::onResponseWritten, this, _1));
 }
 
 

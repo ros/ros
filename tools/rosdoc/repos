@@ -1,4 +1,4 @@
-# a list of publicly-viewable ROS subversion repositories
+#a list of publicly-viewable ROS subversion repositories
 # that will be included in the rosdoc build at
 # http://build.willowgarage.com.
 # 
@@ -14,14 +14,21 @@ wg-ros-pkg-trunk
 #
 #sail
 #cmu
+utexas-art
 tum
 bosch
-#wu
+wu
 #usc
 lis
 gt
 foote
-#brown
+brown
 #wpi
 prairiedog
-#alufr
+alufr
+#ajh
+ua
+cob3
+umd
+cu
+iheart

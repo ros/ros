@@ -1,9 +1,0 @@
-/**
-\mainpage
-\htmlinclude manifest.html
-
-\b rosrecord contains a collection of command-line tools for recording messages to \b bag files
-and playing them back. ros::record::Player provides a C++ interface for reading from these bag files.
-
-
-*/

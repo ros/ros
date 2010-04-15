@@ -1,4 +1,0 @@
-# field name is different, so md5 sum should be different
-string strbad
----
-string str

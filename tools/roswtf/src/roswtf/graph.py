@@ -154,7 +154,7 @@ graph_warnings = [
     ]
 
 graph_errors = [
-    (simtime_check, "/use_simtime is set but no publisher of /clock or /time is present"),
+    (simtime_check, "/use_simtime is set but no publisher of /clock is present"),
     (ping_check, "Could not contact the following nodes:"),
     (missing_edges, "The following nodes should be connected but aren't:"),
     (probe_all_services, "Errors connecting to the following services:"),

@@ -80,9 +80,6 @@ void PollManager::threadFunc()
 {
   disableAllSignalsInThisThread();
 
-  // Disable SIGPIPE, period
-  signal(SIGPIPE, SIG_IGN);
-
   while (!shutting_down_)
   {
     {

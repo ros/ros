@@ -178,7 +178,7 @@ class DistroStack(object):
             self.debian_name = debianize_name("ros-%s-%s"%(release_name,stack_name))
         except DistroException:
             # ignore on non debian systems. This really belongs in an extension
-            pass
+            self.debian_version = self.debian_name = None
 
         #rosdistro key
         self.dev_svn = expand_rule(rules['dev-svn'], stack_name, stack_version, release_name)

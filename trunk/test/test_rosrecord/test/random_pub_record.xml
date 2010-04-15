@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="rosrecord" type="rosrecord" name="rosrecord" args="-a -F $(find test_rosrecord)/test/recording_54321"/>
+  <test time-limit="100" test-name="random_pub_test" pkg="test_rosrecord" type="random_pub_test.py" args="54321"/>
+</launch>

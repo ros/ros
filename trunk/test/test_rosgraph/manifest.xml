@@ -1,0 +1,17 @@
+<package>
+  <description brief="test_rosgraph">
+
+     Test suite for rosgraph
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="test" notes=""/>
+  <url>http://ros.org/wiki/test_rosgraph</url>
+  <depend package="roslib"/>
+  <depend package="rospy"/>
+  <depend package="rostest"/>
+
+</package>
+
+

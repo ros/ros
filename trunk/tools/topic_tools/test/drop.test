@@ -1,0 +1,25 @@
+<launch>
+  <node pkg="rostopic" type="rostopic" name="rostopic_pub" 
+        args="pub -r 10 input std_msgs/String chatter"/>
+
+  <!-- Automatic output name -->
+  <node pkg="topic_tools" type="drop" name="drop"
+        args="input 1 2"/>
+  <test test-name="drop_hztest" pkg="rostest" type="hztest">
+    <param name="topic" value="input_drop"/>
+    <param name="hz" value="5.0"/>
+    <param name="hzerror" value="0.5"/>
+    <param name="test_duration" value="2.0" />
+  </test>
+
+  <!-- Explicit output name -->
+  <node pkg="topic_tools" type="drop" name="drop_explicit"
+        args="input 1 2 output"/>
+  <test test-name="drop_hztest_explicit" pkg="rostest" type="hztest">
+    <param name="topic" value="output"/>
+    <param name="hz" value="5.0"/>
+    <param name="hzerror" value="0.5"/>
+    <param name="test_duration" value="2.0" />
+  </test>
+
+</launch>

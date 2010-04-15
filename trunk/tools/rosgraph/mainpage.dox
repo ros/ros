@@ -1,0 +1,28 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosgraph contains command-line and graphical tools for visualizing the ROS Computation Graph. 
+
+\section commandline Command-line tools
+
+\subsection rxgraph rxgraph
+
+\b rxgraph is a graphical tool that visualizes the connections between ROS nodes and topics.
+
+\verbatim
+$ rxgraph
+\endverbatim
+
+\subsection rosgraph rosgraph
+
+The \b rosgraph command-line tool that displays information about connectivity between ROS nodes.
+
+\subsubsection Usage
+
+\verbatim
+$ rosgraph
+\endverbatim
+
+
+*/

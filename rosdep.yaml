@@ -422,12 +422,6 @@ unzip:
   rhel: unzip
   macports: unzip
   gentoo: app-arch/unzip
-sbcl:
-  ubuntu: sbcl
-  debian: sbcl
-  arch: sbcl
-  macports: sbcl
-  gentoo: dev-lisp/sbcl
 fltk:
   ubuntu: libfltk1.1-dev
   debian: libfltk1.1-dev

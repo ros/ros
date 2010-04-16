@@ -53,19 +53,6 @@
 
 namespace rosbag {
 
-struct BagContent
-{
-    BagContent(std::string const& d, std::string const& m, std::string const& def)
-		: datatype(d), md5sum(m), definition(def), count(1) { }
-
-    std::string datatype;
-    std::string md5sum;
-    std::string definition;
-    int         count;
-};
-
-class MultiPlayer;
-
 struct PlayerOptions
 {
     PlayerOptions();
@@ -89,6 +76,17 @@ struct PlayerOptions
     std::vector<std::string> bags;
 };
 
+//! \todo this information is already stored in the bag file
+struct BagContent
+{
+    BagContent(std::string const& d, std::string const& m, std::string const& def);
+
+    std::string datatype;
+    std::string md5sum;
+    std::string definition;
+    int         count;
+};
+
 class Player
 {
 public:
@@ -104,7 +102,7 @@ private:
     void unsetTerminalSettings();
 
     ros::Time getSysTime();
-    void      doPublish(std::string const& topic, ros::MessagePtr m, ros::Time const& time, void* n);
+    void      doPublish(std::string const& topic, ros::MessagePtr m, ros::Time const& time);
 
 private:
     PlayerOptions options_;
@@ -116,8 +114,6 @@ private:
 
     std::vector<boost::shared_ptr<Bag> >  bags_;
     std::map<std::string, ros::Publisher> publishers_;
-
-    std::map<std::string, BagContent>     content_;
 
     // Terminal
     termios orig_flags_;

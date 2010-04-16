@@ -109,7 +109,7 @@ struct IndexEntryCompare
 };
 
 class MessageInfo;
-
+class MessageInstance;
 class View;
 
 class Bag
@@ -128,16 +128,17 @@ public:
     bool rewrite(std::string const& src_filename, std::string const& dest_filename);
 
     BagMode  getMode()         const;
-    uint64_t getOffset()       const;
     int      getVersion()      const;
     int      getMajorVersion() const;
     int      getMinorVersion() const;
 
+    uint64_t getOffset()       const;   //! \todo replace with getSize?
+
     // Version 1.3 options
-    void            setChunkThreshold(uint32_t chunk_threshold);
-    uint32_t        getChunkThreshold() const;
     void            setCompression(CompressionType compression);  //!< Set the compression method to use for writing chunks
     CompressionType getCompression() const;                       //!< Get the compression method to use for writing chunks
+    void            setChunkThreshold(uint32_t chunk_threshold);
+    uint32_t        getChunkThreshold() const;
 
     //! Close the bag file
     /*!
@@ -153,7 +154,7 @@ public:
      *
      * Can throw BagNotOpenException or BagIOException
      */
-    void write(const std::string& topic, ros::Time time, ros::Message::ConstPtr msg);
+    void write(std::string const& topic, ros::Time const& time, ros::Message::ConstPtr msg);
 
     //! Write a message into the bag file
     /*!
@@ -163,7 +164,7 @@ public:
      *
      * Can throw BagNotOpenException or BagIOException
      */
-    void write(const std::string& topic, ros::Time time, const ros::Message& msg);
+    void write(std::string const& topic, ros::Time const& time, ros::Message const& msg);
 
     //! Write a message into the bag file
     /*!
@@ -173,14 +174,14 @@ public:
      *
      * Can throw BagNotOpenException or BagIOException
      */
-    void write(const std::string& topic, ros::Time time, MessageInstance* msg);
+    void write(std::string const& topic, ros::Time const& time, MessageInstance* msg);
 
     std::vector<MessageInfo> getMessages(ros::Time const& start_time = ros::TIME_MIN,
 										 ros::Time const& end_time = ros::TIME_MAX);
 
     std::vector<MessageInfo> getMessagesByTopic(std::vector<std::string> const& topics,
-												   ros::Time const& start_time = ros::TIME_MIN,
-												   ros::Time const& end_time = ros::TIME_MAX);
+												ros::Time const& start_time = ros::TIME_MIN,
+												ros::Time const& end_time = ros::TIME_MAX);
 
     std::vector<MessageInfo> getMessagesByType(std::vector<std::string> const& types,
 											   ros::Time const& start_time = ros::TIME_MIN,
@@ -301,56 +302,18 @@ private:
 
     //
 
-    Buffer   header_buffer_;      //!< reusable buffer in which to assemble the record header before writing to file
-    Buffer   record_buffer_;      //!< reusable buffer in which to assemble the record data before writing to file
-    Buffer   chunk_buffer_;       //!< reusable buffer to read chunk into
-    Buffer   decompress_buffer_;  //!< reusable buffer to decompress chunks into
-    uint64_t decompressed_chunk_;
-    Buffer   instantiate_buffer_;
+    Buffer   header_buffer_;        //!< reusable buffer in which to assemble the record header before writing to file
+    Buffer   record_buffer_;        //!< reusable buffer in which to assemble the record data before writing to file
+    Buffer   chunk_buffer_;         //!< reusable buffer to read chunk into
+    Buffer   decompress_buffer_;    //!< reusable buffer to decompress chunks into
+    uint64_t decompressed_chunk_;   //!< position of decompressed chunk
+    Buffer   instantiate_buffer_;   //!< reusable buffer in which to instantiate MessageInstance messages into
     
     bool          writing_enabled_;
 
     boost::mutex  check_disk_mutex_;
     ros::WallTime check_disk_next_;
     ros::WallTime warn_next_;
-};
-
-class View
-{
-    friend class Bag;
-
-public:
-    class iterator : public boost::iterator_facade<iterator, MessageInfo const, boost::forward_traversal_tag>
-    {
-    public:
-        iterator() { }
-        iterator(std::vector<MessageInfo>::const_iterator p) : pos_(p) { }
-        iterator(iterator const& other) : pos_(other.pos_) { }
-
-    private:
-        friend class boost::iterator_core_access;
-
-        bool equal(iterator const& other) const;
-
-        void increment();
-
-        // This wouldn't have to be const if we weren't storing a const internally
-        MessageInfo const& dereference() const;
-
-        std::vector<MessageInfo>::const_iterator pos_;
-    };
-
-    typedef iterator const_iterator;
-
-    iterator begin() const;
-    iterator end()   const;
-    uint32_t size()  const;
-
-protected:
-    View(std::vector<MessageInfo> const& messages) : messages_(messages) {}
-
-private:
-    std::vector<MessageInfo> const messages_;
 };
 
 // Templated method definitions

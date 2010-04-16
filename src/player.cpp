@@ -51,6 +51,16 @@ using ros::Exception;
 
 namespace rosbag {
 
+// BagContent
+
+BagContent::BagContent(std::string const& d, std::string const& m, std::string const& def) :
+    datatype(d),
+    md5sum(m),
+    definition(def),
+    count(1)
+{
+}
+
 // PlayerOptions
 
 PlayerOptions::PlayerOptions() :
@@ -121,6 +131,8 @@ void Player::publish() {
 
     // Open all the bag files
     foreach(string const& filename, options_.bags) {
+        ROS_INFO("Opening %s", filename.c_str());
+
         shared_ptr<Bag> bag(new Bag);
         if (!bag->open(filename, bagmode::Read))
             throw Exception((boost::format("Error opening file: %1%") % filename.c_str()).str());
@@ -128,7 +140,7 @@ void Player::publish() {
         bags_.push_back(bag);
     }
 
-    // Aggregate the messages from all the bags
+    // Aggregate the messages from all the bags - \todo fix this to insert in order
     vector<MessageInfo> messages;
     foreach(shared_ptr<Bag> bag, bags_)
         foreach(MessageInfo const& m, bag->getMessages())
@@ -154,6 +166,7 @@ void Player::publish() {
             if (!node_handle_->ok())
                 break;
 
+            // Print out time
             ros::WallTime t = ros::WallTime::now();
             if (!options_.quiet && ((t - last_print_time) >= max_print_interval)) {
                 printf("Time: %16.6f    Duration: %16.6f\r", ros::Time::now().toSec(), m.getTime().toSec());
@@ -161,8 +174,9 @@ void Player::publish() {
                 last_print_time = t;
             }
 
-            MessageInstance::Ptr instance = m.instantiateInstance();
-            doPublish(m.getTopic(), instance, m.getTime(), NULL);
+            // Publish the message
+            std::cout << "Publishing: " << m.getTime() << std::endl;
+            doPublish(m.getTopic(), m.instantiateInstance(), m.getTime());
         }
 
         std::cout << std::endl << "Done." << std::endl;
@@ -171,7 +185,7 @@ void Player::publish() {
     }
 }
 
-void Player::doPublish(string const& topic, ros::MessagePtr m, ros::Time const& time, void* n) {
+void Player::doPublish(string const& topic, ros::MessagePtr m, ros::Time const& time) {
     // Pull latching and callerid info out of the connection_header if it's available (which it always should be)
     bool latching = false;
     string callerid("");
@@ -203,50 +217,53 @@ void Player::doPublish(string const& topic, ros::MessagePtr m, ros::Time const& 
         ROS_INFO("Done sleeping.\n");
     }
 
-    if (!options_.at_once) {
-        ros::Time now = getSysTime();
-        ros::Duration delta = time - getSysTime();
+    if (options_.at_once) {
+        pub_iter->second.publish(*m);
+        return;
+    }
 
-        while ((paused_ || delta > ros::Duration(0, 100000)) && node_handle_->ok()) {
-            bool charsleftorpaused = true;
-            while (charsleftorpaused && node_handle_->ok()) {
-                switch (readCharFromStdin()) {
-                case ' ':
-                    // <space>: toggle paused
-                    if (!paused_) {
-                        paused_ = true;
-                        std::cout << std::endl << "Hit space to resume, or 's' to step." << std::flush;
-                    }
-                    else {
-                        paused_ = false;
-                        std::cout << std::endl << "Hit space to pause." << std::flush;
-                    }
-                    break;
+    ros::Time now = getSysTime();
+    ros::Duration delta = time - getSysTime();
 
-                case 's':
-                    // 's': step
-                    if (paused_) {
-                        pub_iter->second.publish(*m);
-                        return;
-                    }
-                    break;
-
-                case EOF:
-                    if (paused_)
-                        usleep(10000);
-                    else
-                        charsleftorpaused = false;
+    while ((paused_ || delta > ros::Duration(0, 100000)) && node_handle_->ok()) {
+        bool charsleftorpaused = true;
+        while (charsleftorpaused && node_handle_->ok()) {
+            switch (readCharFromStdin()) {
+            case ' ':
+                // <space>: toggle paused
+                if (!paused_) {
+                    paused_ = true;
+                    std::cout << std::endl << "Hit space to resume, or 's' to step." << std::flush;
                 }
-            }
-      
-            usleep(100000);  // sleep for 0.1 secs
+                else {
+                    paused_ = false;
+                    std::cout << std::endl << "Hit space to pause." << std::flush;
+                }
+                break;
 
-            delta = time - getSysTime();
+            case 's':
+                // 's': step
+                if (paused_) {
+                    pub_iter->second.publish(*m);
+                    return;
+                }
+                break;
+
+            case EOF:
+                if (paused_)
+                    usleep(10000);
+                else
+                    charsleftorpaused = false;
+            }
         }
 
-        if (!paused_ && delta > ros::Duration(0, 5000) && node_handle_->ok())
-            usleep(delta.toNSec() / 1000 - 5);      // todo should this be a ros::Duration::Sleep?
+        usleep(100000);  // sleep for 0.1 secs
+
+        delta = time - getSysTime();
     }
+
+    if (!paused_ && delta > ros::Duration(0, 5000) && node_handle_->ok())
+        usleep(delta.toNSec() / 1000 - 5);      // todo should this be a ros::Duration::Sleep?
 
     pub_iter->second.publish(*m);
 }

@@ -421,15 +421,15 @@ bool Bag::readFileHeaderRecord() {
 
 // Write message records
 
-void Bag::write(string const& topic, Time time, MessageInstance* msg) {
+void Bag::write(string const& topic, Time const& time, MessageInstance* msg) {
     write(topic, time, *msg);
 }
 
-void Bag::write(string const& topic, Time time, ros::Message::ConstPtr msg) {
+void Bag::write(string const& topic, Time const& time, ros::Message::ConstPtr msg) {
     write(topic, time, *msg);
 }
 
-void Bag::write(string const& topic, Time time, ros::Message const& msg) {
+void Bag::write(string const& topic, Time const& time, ros::Message const& msg) {
     if (!checkLogging())
         return;
 
@@ -1248,8 +1248,7 @@ struct MergeCompare
 // Efficiently merge our sorted lists and store them in a new list
 // To get rid of the list structure all together we can essentially just store the merge_queue inside
 // our custom iterator, though it needs a little more logic to handle reverse iteration appropriately
-vector<MessageInfo> Bag::getMessagesByTopic(vector<string> const& topics, Time const& start_time, Time const& end_time)
-{
+vector<MessageInfo> Bag::getMessagesByTopic(vector<string> const& topics, Time const& start_time, Time const& end_time) {
 	vector<MessageInfo> messages;
 
     priority_queue<MergeHelper*, vector<MergeHelper*>, MergeCompare> merge_queue;
@@ -1313,19 +1312,5 @@ vector<MessageInfo> Bag::getMessages(const Time& start_time, const Time& end_tim
 
     return messages;
 }
-
-// View
-
-View Bag::getViewByTopic(vector<string> const& topics, Time const& start_time, Time const& end_time) {
-    return View(getMessagesByTopic(topics, start_time, end_time));
-}
-
-View::iterator View::begin() const { return iterator(messages_.begin()); }
-View::iterator View::end()   const { return iterator(messages_.end());   }
-uint32_t       View::size()  const { return messages_.size();            }
-
-bool               View::iterator::equal(View::iterator const& other) const { return pos_ == other.pos_; }
-void               View::iterator::increment()                              { pos_++;                    }
-MessageInfo const& View::iterator::dereference() const                      { return *pos_;              }
 
 }

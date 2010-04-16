@@ -36,7 +36,7 @@ protected:
 
     void dumpContents(rosbag::Bag& b) {
         b.dump();
-        foreach(rosbag::MessageInstance const& m, b.getMessageList()) {
+        foreach(rosbag::MessageInfo const& m, b.getMessages()) {
             std::cout << m.getTime() << ": [" << m.getTopic() << "]" << std::endl;
         }
     }
@@ -46,7 +46,7 @@ protected:
         b.open(filename, rosbag::bagmode::Read);
 
         int message_count = 0;
-        foreach(rosbag::MessageInstance const& m, b.getMessageList()) {
+        foreach(rosbag::MessageInfo const& m, b.getMessages()) {
             std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
             if (s != NULL) {
                 ASSERT_EQ(s->data, foo_.data);
@@ -239,7 +239,7 @@ TEST_F(BagTest, Convert102To103Works) {
 	rosbag::Bag in, out;
 	in.open("test/sample_1.2_indexed.bag", rosbag::bagmode::Read);
 	out.open("test/Convert102To103Works.bag", rosbag::bagmode::Write);
-    foreach(rosbag::MessageInstance const& m, in.getMessageList()) {
+    foreach(rosbag::MessageInfo const& m, in.getMessages()) {
     	m.instantiateMessage();
     	out.write(m.getTopic(), m.getTime(), m);
     }
@@ -251,7 +251,7 @@ TEST_F(BagTest, RewriteWorks) {
 	rosbag::Bag in, out;
 	in.open("test/sample_1.3.bag", rosbag::bagmode::Read);
 	out.open("test/RewriteWorks.bag", rosbag::bagmode::Write);
-    foreach(rosbag::MessageInstance const& m, in.getMessageList()) {
+    foreach(rosbag::MessageInfo const& m, in.getMessages()) {
     	m.instantiateMessage();
     	out.write(m.getTopic(), m.getTime(), m);
     }

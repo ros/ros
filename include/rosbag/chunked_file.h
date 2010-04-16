@@ -58,9 +58,9 @@ public:
     ChunkedFile();
     ~ChunkedFile();
 
-    bool openWrite    (const std::string& filename);            //!< open file for writing
-    bool openRead     (const std::string& filename);            //!< open file for reading
-    bool openReadWrite(const std::string& filename);            //!< open file for reading & writing
+    bool openWrite    (std::string const& filename);            //!< open file for writing
+    bool openRead     (std::string const& filename);            //!< open file for reading
+    bool openReadWrite(std::string const& filename);            //!< open file for reading & writing
 
     bool close();                                               //!< close the file
 
@@ -74,7 +74,7 @@ public:
     bool        setWriteMode(CompressionType type);
 
     // File I/O
-    size_t      write(const std::string& s);
+    size_t      write(std::string const& s);
     size_t      write(void* ptr, size_t size);                          //!< write size bytes from ptr to the file
     size_t      read(void* ptr, size_t size);                           //!< read size bytes from the file into ptr
     std::string getline();
@@ -83,7 +83,7 @@ public:
     void        decompress(CompressionType compression, uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len);
 
 private:
-    bool open(const std::string& filename, const std::string& mode);
+    bool open(std::string const& filename, std::string const& mode);
     void clearUnused();
 
 private:

@@ -120,7 +120,7 @@ private:
     void stopWriting();
 
     void snapshotTrigger(std_msgs::Empty::ConstPtr trigger);
-    void doQueue(topic_tools::ShapeShifter::ConstPtr msg, std::string topic_name, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
+    void doQueue(topic_tools::ShapeShifter::ConstPtr msg, std::string const& topic, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
 	void doRecord();
 	void doRecordSnapshotter();
 	void doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_handle);

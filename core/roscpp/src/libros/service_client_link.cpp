@@ -53,7 +53,7 @@ ServiceClientLink::ServiceClientLink()
 
 ServiceClientLink::~ServiceClientLink()
 {
-  if (connection_ && !connection_->isSendingHeaderError())
+  if (connection_)
   {
     if (connection_->isSendingHeaderError())
     {

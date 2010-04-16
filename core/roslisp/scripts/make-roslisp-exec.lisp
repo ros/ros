@@ -25,6 +25,13 @@
   (let ((roslisp-path (merge-pathnames (make-pathname :directory '(:relative "asdf"))
                                        (ros-package-path "roslisp"))))
     (pprint '(require :asdf))
+    (pprint '(defmethod asdf:perform :around ((o asdf:load-op)
+                                              (c asdf:cl-source-file))
+              (handler-case (call-next-method o c)
+                ;; If a fasl was stale, try to recompile and load (once).
+                (sb-ext:invalid-fasl ()
+                  (asdf:perform (make-instance 'asdf:compile-op) c)
+                  (call-next-method)))))
     (pprint '(push :roslisp-standalone-executable *features*))
     (pprint '(declaim (sb-ext:muffle-conditions sb-ext:compiler-note)))
     (pprint '(load (format nil "~a/.sbclrc-roslisp" (sb-ext:posix-getenv "HOME")) :if-does-not-exist nil))

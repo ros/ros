@@ -83,6 +83,8 @@ public:
   virtual std::string getTransportType() = 0;
   virtual void drop() = 0;
 
+  const std::string& getMD5Sum();
+
 protected:
   SubscriptionWPtr parent_;
   unsigned int connection_id_;
@@ -95,6 +97,7 @@ protected:
   bool latched_;
   std::string caller_id_;
   Header header_;
+  std::string md5sum_;
 };
 
 } // namespace ros

@@ -147,3 +147,7 @@ rosbuild_add_gtest_build_flags(nonconst_subscriptions)
 
 rosbuild_add_executable(subscribe_retry_tcp subscribe_retry_tcp.cpp)
 rosbuild_add_gtest_build_flags(subscribe_retry_tcp)
+
+rosbuild_add_executable(subscribe_star subscribe_star.cpp)
+rosbuild_add_gtest_build_flags(subscribe_star)
+rosbuild_add_executable(publisher_for_star_subscriber publisher_for_star_subscriber.cpp)

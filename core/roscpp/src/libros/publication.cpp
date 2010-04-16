@@ -441,4 +441,54 @@ void Publication::processPublishQueue()
   }
 }
 
+bool Publication::validateHeader(const Header& header, std::string& error_msg)
+{
+  std::string md5sum, topic, client_callerid;
+  if (!header.getValue("md5sum", md5sum)
+   || !header.getValue("topic", topic)
+   || !header.getValue("callerid", client_callerid))
+  {
+    std::string msg("Header from subscriber did not have the required elements: md5sum, topic, callerid");
+
+    ROS_ERROR("%s", msg.c_str());
+    error_msg = msg;
+
+    return false;
+  }
+
+  // Check whether the topic has been deleted from
+  // advertised_topics through a call to unadvertise(), which could
+  // have happened while we were waiting for the subscriber to
+  // provide the md5sum.
+  if(isDropped())
+  {
+    std::string msg = std::string("received a tcpros connection for a nonexistent topic [") +
+                topic + std::string("] from [" + client_callerid +"].");
+
+    ROS_ERROR("%s", msg.c_str());
+    error_msg = msg;
+
+    return false;
+  }
+
+  if (getMD5Sum() != md5sum &&
+      (md5sum != std::string("*") && getMD5Sum() != std::string("*")))
+  {
+    std::string datatype;
+    header.getValue("type", datatype);
+
+    std::string msg = std::string("Client [") + client_callerid + std::string("] wants topic ") + topic +
+                      std::string(" to have datatype/md5sum [") + datatype + "/" + md5sum +
+                      std::string("], but our version has [") + getDataType() + "/" + getMD5Sum() +
+                      std::string("]. Dropping connection.");
+
+    ROS_ERROR("%s", msg.c_str());
+    error_msg = msg;
+
+    return false;
+  }
+
+  return true;
+}
+
 } // namespace ros

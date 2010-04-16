@@ -33,6 +33,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/shared_array.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/signals/connection.hpp>
 
 #include <queue>
 
@@ -78,6 +79,7 @@ private:
   ConnectionPtr connection_;
   ServicePublicationWPtr parent_;
   bool persistent_;
+  boost::signals::connection dropped_conn_;
 };
 typedef boost::shared_ptr<ServiceClientLink> ServiceClientLinkPtr;
 

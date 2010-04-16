@@ -71,6 +71,8 @@ bool PublisherLink::setHeader(const Header& header)
     return false;
   }
 
+  md5sum_ = md5sum;
+
   if (!header.getValue("type", type))
   {
     ROS_ERROR("Publisher header did not have required element: type");
@@ -89,12 +91,23 @@ bool PublisherLink::setHeader(const Header& header)
   connection_id_ = ConnectionManager::instance()->getNewConnectionID();
   header_ = header;
 
+  if (SubscriptionPtr parent = parent_.lock())
+  {
+    parent->headerReceived(shared_from_this(), header);
+  }
+
   return true;
 }
 
 const std::string& PublisherLink::getPublisherXMLRPCURI()
 {
   return publisher_xmlrpc_uri_;
+}
+
+const std::string& PublisherLink::getMD5Sum()
+{
+  ROS_ASSERT(!md5sum_.empty());
+  return md5sum_;
 }
 
 } // namespace ros

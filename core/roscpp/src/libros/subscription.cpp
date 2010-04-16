@@ -193,7 +193,7 @@ void Subscription::addLocalConnection(const PublicationPtr& pub)
   pub_link->setPublisher(sub_link);
   sub_link->setSubscriber(pub_link);
 
-  publisher_links_.push_back(pub_link);
+  addPublisherLink(pub_link);
   pub->addSubscriberLink(sub_link);
 }
 
@@ -312,22 +312,6 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
     }
   }
 
-  for (V_PublisherLink::iterator i = subtractions.begin();
-           i != subtractions.end(); ++i)
-  {
-    const PublisherLinkPtr& link = *i;
-    if (link->getPublisherXMLRPCURI() != XMLRPCManager::instance()->getServerURI())
-    {
-      ROSCPP_LOG_DEBUG("Disconnecting from publisher [%s] of topic [%s] at [%s]",
-                  link->getCallerID().c_str(), name_.c_str(), link->getPublisherXMLRPCURI().c_str());
-      link->drop();
-    }
-    else
-    {
-      ROSCPP_LOG_DEBUG("Disconnect: skipping myself for topic [%s]", name_.c_str());
-    }
-  }
-
   return retval;
 }
 
@@ -402,7 +386,10 @@ bool Subscription::negotiateConnection(const std::string& xmlrpc_uri)
     ROSCPP_LOG_DEBUG("Failed to contact publisher [%s:%d] for topic [%s]",
               peer_host.c_str(), peer_port, name_.c_str());
     delete c;
-    return false;
+    if (udp_transport)
+    {
+      udp_transport->close();
+    }
   }
 
   ROSCPP_LOG_DEBUG("Began asynchronous xmlrpc connection to [%s:%d]", peer_host.c_str(), peer_port);
@@ -419,6 +406,14 @@ bool Subscription::negotiateConnection(const std::string& xmlrpc_uri)
   }
 
   return true;
+}
+
+void closeTransport(const TransportUDPPtr& trans)
+{
+  if (trans)
+  {
+    trans->close();
+  }
 }
 
 void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRpcValue& result)
@@ -448,24 +443,28 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
   {
   	ROSCPP_LOG_DEBUG("Failed to contact publisher [%s:%d] for topic [%s]",
               peer_host.c_str(), peer_port, name_.c_str());
-    return;
+  	closeTransport(udp_transport);
+  	return;
   }
 
   if (proto.size() == 0)
   {
   	ROSCPP_LOG_DEBUG("Couldn't agree on any common protocols with [%s] for topic [%s]", xmlrpc_uri.c_str(), name_.c_str());
-    return;
+  	closeTransport(udp_transport);
+  	return;
   }
 
   if (proto.getType() != XmlRpcValue::TypeArray)
   {
   	ROSCPP_LOG_DEBUG("Available protocol info returned from %s is not a list.", xmlrpc_uri.c_str());
-    return;
+  	closeTransport(udp_transport);
+  	return;
   }
   if (proto[0].getType() != XmlRpcValue::TypeString)
   {
   	ROSCPP_LOG_DEBUG("Available protocol info list doesn't have a string as its first element.");
-    return;
+  	closeTransport(udp_transport);
+  	return;
   }
 
   std::string proto_name = proto[0];
@@ -495,7 +494,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
       ConnectionManager::instance()->addConnection(connection);
 
       boost::mutex::scoped_lock lock(publisher_links_mutex_);
-      publisher_links_.push_back(pub_link);
+      addPublisherLink(pub_link);
 
       ROSCPP_LOG_DEBUG("Connected to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
     }
@@ -515,6 +514,7 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
     {
       ROSCPP_LOG_DEBUG("publisher implements UDPROS, but the " \
 	    	       "parameters aren't string,int,int,int,base64");
+      closeTransport(udp_transport);
       return;
     }
     std::string pub_host = proto[1];
@@ -529,23 +529,23 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
     if (!h.parse(buffer, header_bytes.size(), err))
     {
       ROSCPP_LOG_DEBUG("Unable to parse UDPROS connection header: %s", err.c_str());
+      closeTransport(udp_transport);
       return;
     }
     ROSCPP_LOG_DEBUG("Connecting via udpros to topic [%s] at host [%s:%d] connection id [%08x] max_datagram_size [%d]", name_.c_str(), pub_host.c_str(), pub_port, conn_id, max_datagram_size);
 
-    //TransportUDPPtr transport(new TransportUDP(&g_node->getPollSet()));
+    std::string error_msg;
+    if (h.getValue("error", error_msg))
+    {
+      ROSCPP_LOG_DEBUG("Received error message in header for connection to [%s]: [%s]", xmlrpc_uri.c_str(), error_msg.c_str());
+      closeTransport(udp_transport);
+      return;
+    }
 
-    //if (udp_transport->connect(pub_host, pub_port, conn_id))
-    // Using if(1) below causes a bizarre compiler error on some OS X
-    // machines.  Creating a variable and testing it doesn't.  Presumably
-    // it's related to the conditional compilation that goes on inside
-    // ROS_ERROR.
-    int foo=1;
-    if (foo)
+    TransportPublisherLinkPtr pub_link(new TransportPublisherLink(shared_from_this(), xmlrpc_uri, transport_hints_));
+    if (pub_link->setHeader(h))
     {
       ConnectionPtr connection(new Connection());
-      TransportPublisherLinkPtr pub_link(new TransportPublisherLink(shared_from_this(), xmlrpc_uri, transport_hints_));
-
       connection->initialize(udp_transport, false, NULL);
       connection->setHeader(h);
       pub_link->initialize(connection);
@@ -553,13 +553,15 @@ void Subscription::pendingConnectionDone(const PendingConnectionPtr& conn, XmlRp
       ConnectionManager::instance()->addConnection(connection);
 
       boost::mutex::scoped_lock lock(publisher_links_mutex_);
-      publisher_links_.push_back(pub_link);
+      addPublisherLink(pub_link);
 
       ROSCPP_LOG_DEBUG("Connected to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
     }
     else
     {
-    	ROSCPP_LOG_DEBUG("Failed to connect to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
+      ROSCPP_LOG_DEBUG("Failed to connect to publisher of topic [%s] at [%s:%d]", name_.c_str(), pub_host.c_str(), pub_port);
+      closeTransport(udp_transport);
+      return;
     }
   }
   else
@@ -651,7 +653,18 @@ bool Subscription::addCallback(const SubscriptionCallbackHelperPtr& helper, cons
 {
   ROS_ASSERT(helper);
   ROS_ASSERT(queue);
-  if (md5sum != this->md5sum())
+
+  // Decay to a real type as soon as we have a subscriber with a real type
+  {
+    boost::mutex::scoped_lock lock(md5sum_mutex_);
+    if (md5sum_ == "*" && md5sum != "*")
+    {
+
+      md5sum_ = md5sum;
+    }
+  }
+
+  if (md5sum != "*" && md5sum != this->md5sum())
   {
     return false;
   }
@@ -734,6 +747,20 @@ void Subscription::removeCallback(const SubscriptionCallbackHelperPtr& helper)
   }
 }
 
+void Subscription::headerReceived(const PublisherLinkPtr& link, const Header& h)
+{
+  boost::mutex::scoped_lock lock(md5sum_mutex_);
+  if (md5sum_ == "*")
+  {
+    md5sum_ = link->getMD5Sum();
+  }
+}
+
+void Subscription::addPublisherLink(const PublisherLinkPtr& link)
+{
+  publisher_links_.push_back(link);
+}
+
 void Subscription::removePublisherLink(const PublisherLinkPtr& pub_link)
 {
   boost::mutex::scoped_lock lock(publisher_links_mutex_);
@@ -780,6 +807,7 @@ const std::string Subscription::datatype()
 
 const std::string Subscription::md5sum()
 {
+  boost::mutex::scoped_lock lock(md5sum_mutex_);
   return md5sum_;
 }
 

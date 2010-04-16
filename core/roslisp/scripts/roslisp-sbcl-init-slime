@@ -3,6 +3,15 @@
 
 (require :asdf)
 
+;;; Handle recompilation of fasls with wrong version.
+(defmethod asdf:perform :around ((o asdf:load-op)
+                                 (c asdf:cl-source-file))
+  (handler-case (call-next-method o c)
+    ;; If a fasl was stale, try to recompile and load (once).
+    (sb-ext:invalid-fasl ()
+      (asdf:perform (make-instance 'asdf:compile-op) c)
+      (call-next-method))))
+
 ;; Add appropriate paths for asdf to look for things, using rospack to find the base directory
 (let ((str (make-string-output-stream)))
   (sb-ext:run-program "rospack" '("find" "roslisp") :search t :output str)

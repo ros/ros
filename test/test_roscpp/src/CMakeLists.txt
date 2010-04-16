@@ -151,3 +151,6 @@ rosbuild_add_gtest_build_flags(subscribe_retry_tcp)
 rosbuild_add_executable(subscribe_star subscribe_star.cpp)
 rosbuild_add_gtest_build_flags(subscribe_star)
 rosbuild_add_executable(publisher_for_star_subscriber publisher_for_star_subscriber.cpp)
+
+rosbuild_add_executable(parameter_validation parameter_validation.cpp)
+rosbuild_add_gtest_build_flags(parameter_validation)

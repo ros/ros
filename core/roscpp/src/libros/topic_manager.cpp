@@ -259,6 +259,21 @@ bool TopicManager::subscribe(const SubscribeOptions& ops)
     return false;
   }
 
+  if (ops.md5sum.empty())
+  {
+    throw InvalidParameterException("Subscribing to topic [" + ops.topic + "] with an empty md5sum");
+  }
+
+  if (ops.datatype.empty())
+  {
+    throw InvalidParameterException("Subscribing to topic [" + ops.topic + "] with an empty datatype");
+  }
+
+  if (!ops.helper)
+  {
+    throw InvalidParameterException("Subscribing to topic [" + ops.topic + "] without a callback");
+  }
+
   const std::string& md5sum = ops.md5sum;
   std::string datatype = ops.datatype;
 
@@ -281,12 +296,31 @@ bool TopicManager::advertise(const AdvertiseOptions& ops, const SubscriberCallba
 {
   if (ops.datatype == "*")
   {
-    ROS_WARN("Advertising on topic [%s] with datatype [*].  If you are not playing back an old bag file, this is a problem.", ops.topic.c_str());
+    std::stringstream ss;
+    ss << "Advertising with * as the datatype is not allowed.  Topic [" << ops.topic << "]";
+    throw InvalidParameterException(ss.str());
   }
 
   if (ops.md5sum == "*")
   {
-    ROS_WARN("Advertising on topic [%s] with md5sum [*].  If you are not playing back an old bag file, this is a problem.", ops.topic.c_str());
+    std::stringstream ss;
+    ss << "Advertising with * as the md5sum is not allowed.  Topic [" << ops.topic << "]";
+    throw InvalidParameterException(ss.str());
+  }
+
+  if (ops.md5sum.empty())
+  {
+    throw InvalidParameterException("Advertising on topic [" + ops.topic + "] with an empty md5sum");
+  }
+
+  if (ops.datatype.empty())
+  {
+    throw InvalidParameterException("Advertising on topic [" + ops.topic + "] with an empty datatype");
+  }
+
+  if (ops.message_definition.empty())
+  {
+    ROS_WARN("Advertising on topic [%s] with an empty message definition.  Some tools (e.g. rosbag) may not work correctly.", ops.topic.c_str());
   }
 
   PublicationPtr pub;

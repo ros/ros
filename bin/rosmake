@@ -36,6 +36,10 @@ import sys
 import subprocess
 
 def assert_rospack_built():
+    if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "tools/rospack", "ROS_NOBUILD")):
+        # Do not try to build rospack if a ROS_NOBUILD flag is present
+        return True
+
     if subprocess.call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")], stdout=subprocess.PIPE, stderr=subprocess.PIPE) :
         print "Rospack failed to build" 
         return False

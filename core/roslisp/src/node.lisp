@@ -92,10 +92,8 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
       (set-param (car p) (cdr p)))
 
     ;; Initialize debug levels
-    (set-local-debug-level nil :debug)
+
     (reset-debug-levels (make-instance '<Empty-Request>))
-    (set-debug-level-unless-exists nil :warn)
-    (set-debug-level-unless-exists '(roslisp top) :info)
 
     ;; Now we can finally print some debug messages 
     (ros-debug (roslisp top) "Log location is ~a" *ros-log-location*)

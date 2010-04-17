@@ -16,8 +16,7 @@ Roslisp is integrated with the asdf build system.  When using roslisp nodes from
 
 This extends asdf to use two additional rospack-based search methods to finding .asd files.
 
-- Given a system name foo, if the variable ros-load:*current-ros-package* is a nonempty string, it will look for a system named foo defined in asdf/foo.asd of the package or one of its ros dependencies.  The file asdf/foo.asd will usually be a symbolic link to a file in whatever directory the actual source files are in.
-- To dynamically bind the variable ros-load:*current-ros-package* and perform the load operation, the function ros-load:load-system can be used. It takes the name of the ros package as first parameter and an optional second parameter for the name of the system to load, which defaults to the ros package name.
+- Given a system name foo, if the variable ros-load:*current-ros-package* is a nonempty string, it will look for a system named foo defined in asdf/foo.asd of the package or one of its ros dependencies.  The file asdf/foo.asd will usually be a symbolic link to a file in whatever directory the actual source files are in.  To dynamically bind the variable ros-load:*current-ros-package* and perform the load operation, the function ros-load:load-system can be used. It takes the name of the ros package as first parameter and an optional second parameter for the name of the system to load, which defaults to the ros package name.
 - Given a system of the form foo-msg, if there's a ros package called foo, the messages from this package will be loaded, and likewise for foo-srv and services.
 
 You can also build standalone nodes in the CMakeLists.txt file.  For example, roslisp_examples/CMakeLists.txt contains
@@ -25,7 +24,7 @@ You can also build standalone nodes in the CMakeLists.txt file.  For example, ro
 rospack_add_lisp_executable(bin/talker roslisp-examples roslisp-talker:main)
 \endverbatim
 
-This produces the executable roslisp_examples/bin/talker when built.  When run from the command line, the executable does not load your standard .sbclrc init file.  Rather, it loads ~/.sbclrc-roslisp (if it exists).  It then sets *current-ros-package* to roslisp_examples, and loads the asdf system roslisp-examples into memory (using rospack).  Next, it loads the files bin/roslisp-init.lisp and bin/roslisp-talker:main.init.lisp (if they exist).  These are the places where you can put global, package-specific, and node-specific runtime customizations (customizing debug levels, setting optimization flags, modifying constants) respectively.  Finally, it calls the function roslisp-talker:main.
+This produces the executable roslisp_examples/bin/talker when built.  When run from the command line, the executable does not load your standard .sbclrc init file.  Rather, it loads ~/.sbclrc-roslisp (if it exists).  It then sets *current-ros-package* to roslisp_examples, and loads the asdf system roslisp-examples into memory (using rospack).  Next, it loads the files bin/roslisp-init.lisp and bin/roslisp-talker:main.init.lisp (if they exist).  These are the places where you can put global, package-specific, and node-specific runtime customizations (customizing debug levels, setting optimization flags, modifying constants) respectively.  Finally, it calls the function roslisp-talker:main.  Also, when running standalone, the keyword :roslisp-standalone-executable is pushed on to the *features* list, in case you want to make use of this information in some way.  Finally, setting the ROSLISP_BACKTRACE_ON_ERRORS environment variable before running the node will print debugging info if it dies.
 
 \section emacs Integration into emacs
 
@@ -37,14 +36,14 @@ Roslisp provides a hierarchical, customizable-at-runtime, logging scheme, simila
 
 To set debug levels, from within Lisp use set-debug-levels.  To produce debugging output, use ros-{debug|info|warn|error|fatal}.  Additionally, debug levels correspond to ros parameters, e.g., topic (foo bar) corresponds to the private parameter ~debug/foo/bar/level.  Upon node initialization, these are read from the parameter server, and must be one of the five strings debug, info, warn, error, or fatal.  If they are changed after node startup, call the node's ~reset-debug-levels service to update.  A more permanent way to update debug levels is to call set-debug-levels in an initialization file.
 
-Roslisp itself uses debugging levels starting with the symbol roslisp:roslisp, with subtopics roslisp:top and roslisp:tcp.  For example, if debugging roslisp_examples/bin/talker, add the following line to roslisp_examples/bin/roslisp-init.lisp:
+Roslisp itself uses debugging levels starting with :roslisp, with subtopics such as :top, :tcp, and :rosout.  For example, if debugging roslisp_examples/bin/talker, add the following line to roslisp_examples/bin/roslisp-init.lisp:
 \verbatim
-(roslisp:set-debug-levels roslisp:roslisp :debug)
+(roslisp:set-debug-levels roslisp :debug)
 \endverbatim
 
 To reduce the number of connection-related debugging messages, also add the line
 \verbatim
-(roslisp:set-debug-levels (roslisp:roslisp roslisp:tcp) :info)
+(roslisp:set-debug-levels (roslisp tcp) :info)
 \endverbatim
 
 
@@ -62,7 +61,7 @@ See documentation for functions start-ros-node, shutdown-ros-node, and with-ros-
 
 \section topic Topics
 
-See functions advertise, subscribe, publish.
+See functions advertise, subscribe, publish, publish-msg.
 
 \section services Services
 
@@ -72,9 +71,13 @@ See functions call-service, def-service-callback, register-service, register-ser
 
 See functions get-param, set-param, has-param, delete-param.
 
+\section node Node information
+
+See function node-status.
+
 \section misc Miscellaneous functions
 
-See make-uri, fully-qualified-name, loop-at-most-every, ros-time.
+See make-uri, fully-qualified-name, loop-at-most-every, ros-time, 
 
 \section types Message data types
 
@@ -82,6 +85,8 @@ Each ROS message type has a corresponding Lisp class and operations on it.  A me
 
 - An object of type <foo> in package bar-msg, with initial value of field baz equal to 3, is created using (make-instance 'bar-msg:<foo> :baz 3).  
 - Given a field named baz in an object m of the above message type, it can be read using (bar-msg:baz-val m).
+
+However, it is recommended that you use the list operations below such as with-fields, unless this is slowing your code down.
 
 The roslisp Lisp package contains some additional generic operations that work on any message:
 - symbol-code M S.  M is either a message or the name of a message class.  S is a keyword symbol naming a constant declaration in the .msg file.  Returns the value of the constant.  For example, to get the value of the DEBUG constant in roslib/Log.msg, use (symbol-code 'roslib-msg:<Log> :debug) or (symbol-code m :debug) where m is an instance of '<Log>.
@@ -94,13 +99,7 @@ There are a few additional operations that use the list representation of ros me
 IMPORTANT: message objects are assumed to be immutable; this assumption may be used in future to cache various things.  In other words, if m is a variable that refers to some message object, don't do something like (setf (slot-value m 'my-field) 42).  Instead, in this situation, do something like (setf-msg m 'my-field 42) (of course, it's always legal to do something like (setq m (function-that-returns-new-message-object)) since that just changes what m refers to rather than modifying the pointed-to object). When constructing messages, either use the form (make-instance '<Foo> :field1 42 :field24) or (make-msg "my_package/Foo" :field1 42 :field2 24).  Don't use the C++-inspired way of first creating the object then setting its fields.
       
 
-\section services Service Data Types
+\section servicetypes Service Data Types
 
-Given a ROS service type qux in the bar ROS package, there are corresponding message types <qux-request> and <qux-response> in the bar-srv Lisp package. Code that uses these should contain a call to
-
-\verbatim
-(roslisp:load-service-types "bar/qux")
-\endverbatim
-
-The request and response messages can be operated on like any other message.
+Given a ROS service type qux in the bar ROS package, there are corresponding message types <qux-request> and <qux-response> in the bar-srv Lisp package.  The request and response messages can be operated on like any other message.
 */

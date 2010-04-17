@@ -185,7 +185,7 @@ class _BagSerializer(object):
 
         # Read record header
         try:
-            record_header = self._read_sized()
+            record_header = _read_sized(self.bag.file)
         except ROSBagException, ex:
             raise ROSBagFormatException('Error reading record header: %s' % str(ex))
 
@@ -213,7 +213,7 @@ class _BagSerializer(object):
 
     def read_record_data(self):
         try:
-            record_data = self._read_sized()
+            record_data = _read_sized(self.bag.file)
         except ROSBagException, ex:
             raise ROSBagFormatException('Error reading record data: %s' % str(ex))
 
@@ -332,7 +332,7 @@ class _BagSerializer103(_BagSerializer):
     def read_file_header_record(self):
         header = self.read_record_header()
         
-        self._assert_op(header, self.OP_FILE_HEADER)
+        _assert_op(header, self.OP_FILE_HEADER)
 
         self.index_data_pos = _read_uint64_field(header, 'index_pos')
         self.chunk_count    = _read_uint32_field(header, 'chunk_count')
@@ -343,7 +343,7 @@ class _BagSerializer103(_BagSerializer):
     def read_message_definition_record(self):
         header = self.read_record_header()
 
-        self._assert_op(header, self.OP_MSG_DEF)
+        _assert_op(header, self.OP_MSG_DEF)
 
         topic    = _read_str_field(header, 'topic')
         datatype = _read_str_field(header, 'type')
@@ -369,7 +369,7 @@ class _BagSerializer103(_BagSerializer):
     def read_chunk_info_record(self):
         header = self.read_record_header()
 
-        self._assert_op(header, self.OP_CHUNK_INFO)
+        _assert_op(header, self.OP_CHUNK_INFO)
 
         chunk_info_version = _read_uint32_field(header, 'ver')
         
@@ -381,11 +381,11 @@ class _BagSerializer103(_BagSerializer):
     
             chunk_info = ChunkInfo(chunk_pos, start_time, end_time)
     
-            self._read_uint32() # skip the record data size
+            _read_uint32(self.bag.file) # skip the record data size
 
             for i in range(topic_count):
-                topic_name  = _read_sized()
-                topic_count = _read_uint32()
+                topic_name  = _read_sized(self.bag.file)
+                topic_count = _read_uint32(self.bag.file)
     
                 chunk_info.topic_counts[topic_name] = topic_count
                 
@@ -396,25 +396,25 @@ class _BagSerializer103(_BagSerializer):
     def read_chunk_header(self):
         header = self.read_record_header()
         
-        self._assert_op(header, self.OP_CHUNK)
+        _assert_op(header, self.OP_CHUNK)
 
         compression       = _read_str_field   (header, 'compression')
         uncompressed_size = _read_uint32_field(header, 'size')
 
-        compressed_size = _read_uint32()  # read the record data size
+        compressed_size = _read_uint32(self.bag.file)  # read the record data size
         
         return ChunkHeader(compression, compressed_size, uncompressed_size)
 
     def read_topic_index_record(self):
         header = self.read_record_header()
 
-        self._assert_op(header, self.OP_INDEX_DATA)
+        _assert_op(header, self.OP_INDEX_DATA)
         
         index_version = _read_uint32_field(header, 'ver')
         topic         = _read_str_field   (header, 'topic')
         count         = _read_uint32_field(header, 'count')
     
-        self._read_uint32() # skip the record data size
+        _read_uint32(self.bag.file) # skip the record data size
 
         if index_version == 0:
             return (topic, self.read_topic_index_data_version_0(count, topic))
@@ -430,8 +430,8 @@ class _BagSerializer103(_BagSerializer):
         topic_index = []
         
         for i in range(count):
-            time   = self._read_time()
-            offset = self._read_uint32()
+            time   = _read_time(self.bag.file)
+            offset = _read_uint32(self.bag.file)
             
             topic_index.append(IndexEntry(time, self.curr_chunk_info.pos, offset))
             

@@ -1024,7 +1024,7 @@ void Bag::writeChunkInfoRecords() {
 
             write((char*) &topic_name_size, 4);
             write(topic);
-            write((char*) &count, 4);            
+            write((char*) &count, 4);
 
             ROS_DEBUG("  - %s: %d", topic.c_str(), count);
         }
@@ -1174,19 +1174,19 @@ bool Bag::readField(M_string const& fields, string const& field_name, unsigned i
     return true;
 }
 
-bool Bag::readField(ros::M_string const& fields, string const& field_name, bool required, Time& data) {
+bool Bag::readField(M_string const& fields, string const& field_name, bool required, Time& data) {
     uint64_t packed_time;
 	if (!readField(fields, field_name, required, &packed_time))
 		return false;
 
     uint64_t bitmask = (1LL << 33) - 1;
-	data.sec  = (uint32_t) (packed_time >> 32);
-	data.nsec = (uint32_t) (packed_time & bitmask);
+    data.sec  = (uint32_t) (packed_time & bitmask);
+	data.nsec = (uint32_t) (packed_time >> 32);
 	return true;
 }
 
 std::string Bag::toHeaderString(Time const* field) {
-	uint64_t packed_time = (((uint64_t) field->sec) << 32) + field->nsec;
+	uint64_t packed_time = (((uint64_t) field->nsec) << 32) + field->sec;
 	return toHeaderString(&packed_time);
 }
 

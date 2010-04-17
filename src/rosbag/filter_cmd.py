@@ -39,7 +39,7 @@ import subprocess
 import optparse
 from optparse import OptionParser
 
-import migration
+import rosbagmigration
 import rosbag
 
 def filter_cmd(argv):

@@ -32,6 +32,8 @@
 #
 # Revision $Id$
 
+import roslib; roslib.load_manifest('rosbag')
+
 import sys
 import os
 import signal
@@ -39,7 +41,7 @@ import subprocess
 import optparse
 from optparse import OptionParser
 
-import migration
+import rosbagmigration
 
 def print_trans(old,new,indent):
     from_txt = "%s [%s]"%(old._type, old._md5sum)

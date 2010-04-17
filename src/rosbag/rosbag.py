@@ -233,74 +233,43 @@ class _BagSerializer(object):
 
         return op
 
-    ###
+def _read_uint8 (f): return _unpack_uint8 (f.read(1))
+def _read_uint32(f): return _unpack_uint32(f.read(4))
+def _read_uint64(f): return _unpack_uint64(f.read(8))
+def _read_time  (f): return _unpack_time  (f.read(8))
 
-    @staticmethod
-    def _assert_op(header, expected_op):
-        if expected_op != _BagSerializer._read_uint8_field(header, 'op'):
-            raise ROSBagFormatException('Expected op code: %d, got %d' % (expected_op, op))
+def _read_str_field   (header, field): return _read_field(header, field, lambda v: v)
+def _read_uint8_field (header, field): return _read_field(header, field, _unpack_uint8)
+def _read_uint32_field(header, field): return _read_field(header, field, _unpack_uint32)
+def _read_uint64_field(header, field): return _read_field(header, field, _unpack_uint64)
+def _read_time_field  (header, field): return _read_field(header, field, _unpack_time)
 
-    @staticmethod
-    def _read_str_field(header, field):    return _BagSerializer._read_field(header, field, lambda v: v)
+def _unpack_uint8(v):  return struct.unpack('<B', v)[0]
+def _unpack_uint32(v): return struct.unpack('<L', v)[0]
+def _unpack_uint64(v): return struct.unpack('<Q', v)[0]
+def _unpack_time(v):   return rospy.Time(*struct.unpack('<LL', v))
 
-    @staticmethod
-    def _read_uint8_field(header, field):  return _BagSerializer._read_field(header, field, _BagSerializer._unpack_uint8)
+def _read_sized(f):
+    size = _read_uint32(f)
+    data = f.read(size)
+    if len(data) != size:
+        raise ROSBagException('Expecting %d bytes, read %d' % (size, len(data)))   
+    return data
 
-    @staticmethod
-    def _read_uint32_field(header, field): return _BagSerializer._read_field(header, field, _BagSerializer._unpack_uint32)
+def _read_field(header, field, unpack_fn):
+    if field not in header:
+        raise ROSBagFormatException('Expected "%s" field in record' % field)
     
-    @staticmethod
-    def _read_uint64_field(header, field): return _BagSerializer._read_field(header, field, _BagSerializer._unpack_uint64)
-
-    @staticmethod
-    def _read_time_field  (header, field): return _BagSerializer._read_field(header, field, _BagSerializer._unpack_time)
-
-    @staticmethod
-    def _read_field(header, field, unpack_fn):
-        if field not in header:
-            raise ROSBagFormatException('Expected "%s" field in record' % field)
-        
-        try:
-            value = unpack_fn(header[field])
-        except Exception, ex:
-            raise ROSBagFormatException('Error reading field "%s": %s' % (field, str(ex)))
-        
-        return value
-
-    def _read_sized(self):
-        # Read the size [4 bytes]
-        data = self.bag.file.read(4)
-        if len(data) != 4:
-            raise ROSBagException('Expecting 4 bytes, read %d' % len(data))
-
-        # Read size bytes
-        (size,) = struct.unpack('<L', data)
-        r = self.bag.file.read(size)
-        if len(r) != size:
-            raise ROSBagException('Expecting %d bytes, read %d' % (size, len(r)))
-        
-        return r
+    try:
+        value = unpack_fn(header[field])
+    except Exception, ex:
+        raise ROSBagFormatException('Error reading field "%s": %s' % (field, str(ex)))
     
-    def _read_uint8 (self): return self._unpack_uint8 (self.bag.file.read(1))
-    def _read_uint32(self): return self._unpack_uint32(self.bag.file.read(4))
-    def _read_uint64(self): return self._unpack_uint64(self.bag.file.read(8))
-    def _read_time  (self): return self._unpack_time  (self.bag.file.read(8))
+    return value
 
-    @staticmethod
-    def _unpack_uint8(v):
-        return struct.unpack('<B', v)[0]
-
-    @staticmethod
-    def _unpack_uint32(v):
-        return struct.unpack('<L', v)[0]
-    
-    @staticmethod
-    def _unpack_uint64(v):
-        return struct.unpack('<Q', v)[0]
-
-    @staticmethod
-    def _unpack_time(v):
-        return rospy.Time(*struct.unpack('<LL', v))
+def _assert_op(header, expected_op):
+    if expected_op != _read_uint8_field(header, 'op'):
+        raise ROSBagFormatException('Expected op code: %d, got %d' % (expected_op, op))
 
 class _BagSerializer103(_BagSerializer):
     OP_MSG_DEF     = 0x01
@@ -365,9 +334,9 @@ class _BagSerializer103(_BagSerializer):
         
         self._assert_op(header, self.OP_FILE_HEADER)
 
-        self.index_data_pos = self._read_uint64_field(header, 'index_pos')
-        self.chunk_count    = self._read_uint32_field(header, 'chunk_count')
-        self.topic_count    = self._read_uint32_field(header, 'topic_count')
+        self.index_data_pos = _read_uint64_field(header, 'index_pos')
+        self.chunk_count    = _read_uint32_field(header, 'chunk_count')
+        self.topic_count    = _read_uint32_field(header, 'topic_count')
 
         self.read_record_data()
 
@@ -376,10 +345,10 @@ class _BagSerializer103(_BagSerializer):
 
         self._assert_op(header, self.OP_MSG_DEF)
 
-        topic    = self._read_str_field(header, 'topic')
-        datatype = self._read_str_field(header, 'type')
-        md5sum   = self._read_str_field(header, 'md5')
-        msg_def  = self._read_str_field(header, 'def')
+        topic    = _read_str_field(header, 'topic')
+        datatype = _read_str_field(header, 'type')
+        md5sum   = _read_str_field(header, 'md5')
+        msg_def  = _read_str_field(header, 'def')
 
         self.read_record_data()
 
@@ -402,21 +371,21 @@ class _BagSerializer103(_BagSerializer):
 
         self._assert_op(header, self.OP_CHUNK_INFO)
 
-        chunk_info_version = self._read_uint32_field(header, 'ver')
+        chunk_info_version = _read_uint32_field(header, 'ver')
         
         if chunk_info_version == 1:
-            chunk_pos   = self._read_uint64_field(header, 'chunk_pos')
-            start_time  = self._read_time_field  (header, 'start_time')
-            end_time    = self._read_time_field  (header, 'end_time')
-            topic_count = self._read_uint32_field(header, 'count') 
+            chunk_pos   = _read_uint64_field(header, 'chunk_pos')
+            start_time  = _read_time_field  (header, 'start_time')
+            end_time    = _read_time_field  (header, 'end_time')
+            topic_count = _read_uint32_field(header, 'count') 
     
             chunk_info = ChunkInfo(chunk_pos, start_time, end_time)
     
             self._read_uint32() # skip the record data size
 
             for i in range(topic_count):
-                topic_name  = self._read_sized()
-                topic_count = self._read_uint32()
+                topic_name  = _read_sized()
+                topic_count = _read_uint32()
     
                 chunk_info.topic_counts[topic_name] = topic_count
                 
@@ -429,10 +398,10 @@ class _BagSerializer103(_BagSerializer):
         
         self._assert_op(header, self.OP_CHUNK)
 
-        compression       = self._read_str_field   (header, 'compression')
-        uncompressed_size = self._read_uint32_field(header, 'size')
+        compression       = _read_str_field   (header, 'compression')
+        uncompressed_size = _read_uint32_field(header, 'size')
 
-        compressed_size = self._read_uint32()  # read the record data size
+        compressed_size = _read_uint32()  # read the record data size
         
         return ChunkHeader(compression, compressed_size, uncompressed_size)
 
@@ -441,9 +410,9 @@ class _BagSerializer103(_BagSerializer):
 
         self._assert_op(header, self.OP_INDEX_DATA)
         
-        index_version = self._read_uint32_field(header, 'ver')
-        topic         = self._read_str_field   (header, 'topic')
-        count         = self._read_uint32_field(header, 'count')
+        index_version = _read_uint32_field(header, 'ver')
+        topic         = _read_str_field   (header, 'topic')
+        count         = _read_uint32_field(header, 'count')
     
         self._read_uint32() # skip the record data size
 
@@ -513,7 +482,7 @@ class _BagSerializer103(_BagSerializer):
     
             while True:
                 header = self.read_record_header()               
-                op = self._read_uint8_field(header, 'op')
+                op = _read_uint8_field(header, 'op')
                 if op != self.OP_MSG_DEF:
                     break
 

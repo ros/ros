@@ -59,6 +59,12 @@ class ROSBagFormatException(ROSBagException):
     def __init__(self, msg):
         ROSBagException.__init__(self, msg)
 
+COMPRESSION_NONE = 'none'
+COMPRESSION_BZ2  = 'bz2'
+COMPRESSION_ZLIB = 'zlib'
+
+###
+
 class TopicInfo(object):
     def __init__(self, topic, datatype, md5sum, msg_def):
         self.topic    = topic
@@ -116,10 +122,6 @@ class IndexEntry103(object):
     def __str__(self):
         return '%d.%d: %d+%d' % (self.time.secs, self.time.nsecs, self.chunk_pos, self.offset)
 
-COMPRESSION_NONE = 'none'
-COMPRESSION_BZ2  = 'bz2'
-COMPRESSION_ZLIB = 'zlib'
-
 _OP_MSG_DEF     = 0x01
 _OP_MSG_DATA    = 0x02
 _OP_FILE_HEADER = 0x03
@@ -136,6 +138,7 @@ class Bag(object):
     def __init__(self):
         self.file     = None
         self.filename = None
+        self.mode     = None
         
         self.topic_count   = 0   # (1.3)
         self.chunk_count   = 0   # (1.3)
@@ -178,6 +181,8 @@ class Bag(object):
             self.filename = f
         else:
             raise ROSBagException('open must be passed a file or str')
+        
+        self.mode = 'r'
 
         # Read the version line
         try:
@@ -211,11 +216,10 @@ class Bag(object):
         @type  filename: str
         """
         self.file = open(filename, 'wb')
+        
+        self.mode = 'w'
 
         self.start_writing()
-
-    def close(self):
-        pass
 
     def getMessages(self):
         return self.reader.get_messages()
@@ -247,10 +251,10 @@ class Bag(object):
 
     def close(self):
         if self.file:
-            self.stop_writing()
+            if self.mode == 'w':
+                self.stop_writing()
             
             self.file.close()
-        self.buffer = None
         
     def start_writing(self):        
         self.file.write(_VERSION + '\n')
@@ -630,7 +634,7 @@ class _BagReader(object):
 
 class _BagReader102_Unindexed(_BagReader):
     def __init__(self, bag):
-        _BagSerializer.__init__(self, bag)
+        _BagReader.__init__(self, bag)
 
     def start_reading(self):
         pass
@@ -779,7 +783,7 @@ class _BagReader102_Indexed(_BagReader):
 
 class _BagReader103(_BagReader):
     def __init__(self, bag):
-        _BagSerializer.__init__(self, bag)
+        _BagReader.__init__(self, bag)
         
         self.curr_chunk_info = None
         

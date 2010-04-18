@@ -83,7 +83,7 @@ class ChunkInfo(object):
         self.end_time   = end_time
         
         self.topic_counts = {}
-        
+
     def __str__(self):
         s  = 'chunk_pos:  %d\n' % self.pos
         s += 'start_time: %s\n' % str(self.start_time)
@@ -101,10 +101,8 @@ class ChunkHeader(object):
         self.data_pos          = data_pos
 
     def __str__(self):
-        s  = 'compression:  %s\n' % self.compression
-        s += 'size:         %d\n' % self.compressed_size
-        s += 'uncompressed: %d (%.2f%%)' % (self.uncompressed_size, 100 * (float(self.compressed_size) / self.uncompressed_size))
-        return s
+        ratio = 100 * (float(self.compressed_size) / self.uncompressed_size)
+        return 'compression: %s, size: %d, uncompressed: %d (%.2f%%)' % (self.compression, self.compressed_size, self.uncompressed_size, ratio)
 
 class IndexEntry102(object):
     def __init__(self, time, offset):
@@ -141,14 +139,15 @@ class Bag(object):
         self.filename = None
         self.mode     = None
         
+        self.version = None
+        self.reader  = None
+        
         self.topic_count   = 0   # (1.3)
         self.chunk_count   = 0   # (1.3)
         self.topic_infos   = {}  # TopicInfo        
         self.topic_indexes = {}  # topic -> IndexEntry[]
         self.chunk_infos   = []  # ChunkInfo[] (1.3)
         self.chunk_headers = {}  # chunk_pos -> ChunkHeader (1.3)
-
-        self.reader = None
         
         ### Writing
         
@@ -168,37 +167,113 @@ class Bag(object):
         self.curr_compression = Compression.NONE
         self.output_file      = self.file
         
-    def open(self, f, mode):
-        if   mode == 'r': self._open_read(f)
-        elif mode == 'w': self._open_write(f)
-        elif mode == 'a': self._open_append(f)
+    def open(self, filename, mode):
+        """
+        Opens the bag file
+        @param filename: filename of bag to open
+        @type  filename: str
+        """
+        if   mode == 'r': self._open_read(filename)
+        elif mode == 'w': self._open_write(filename)
+        elif mode == 'a': self._open_append(filename)
         else:
             raise ROSBagException('unknown mode: %s' % mode)
 
-    def _open_read(self, f):
+    def getMessages(self):
+        return self.reader.get_messages()
+    
+    def flush(self):
+        """
+        Writes the open chunk to disk so that subsequent reads will
+        """
+        if self.chunk_open:
+            self.stop_writing_chunk()
+
+    ###
+
+    def _open_read(self, filename):
         """
         Opens the bag file for reading
-        @param f: either a filename or a file object
-        @type  f: str or file
+        @param filename: filename of bag to open
+        @type  filename: str
         """
-        if isinstance(f, file):
-            self.file     = f
-            self.filename = None
-        elif isinstance(f, str):
-            self.file     = open(f, 'rb')
-            self.filename = f
-        else:
-            raise ROSBagException('open must be passed a file or str')
+        self.file     = open(filename, 'rb')
+        self.filename = filename
         
         self.mode = 'r'
 
-        # Read the version line
         try:
             self.version = self._read_version()
         except:
+            self.version = None
             self.file.close()
             raise
+
+        self._create_reader()
+        self.reader.start_reading()
+
+    def _open_write(self, filename):
+        """
+        Opens the bag file for writing
+        @param filename: filename
+        @type  filename: str
+        """
+        self.file     = open(filename, 'wb')
+        self.filename = filename
         
+        self.mode = 'w'
+
+        self.start_writing()
+
+    def _open_append(self, filename):
+        """
+        Opens the bag file for appending
+        @param filename: filename
+        @type  filename: str
+        """
+        file_exists = True
+        try:
+            f = open(filename, 'r')
+            f.close()
+        except:
+            file_exists = False
+        if file_exists:
+            self.file = open(filename, 'r+b')
+        else:
+            self.file = open(filename, 'w+b')
+        
+        self.filename = filename
+        
+        self.mode = 'a'
+        
+        try:
+            self.version = self._read_version()
+        except:
+            self.version = None
+            self.file.close()
+            raise
+
+        if self.version != 103:
+            self.file.close()
+            raise ROSBagException('bag version %d is unsupported for appending' % self.version)
+
+        self.file_header_pos = self.file.tell()
+
+        self._create_reader()
+        self.reader.start_reading()
+
+        # Truncate the file to chop off the index
+        self.file.truncate(self.reader.index_data_pos)
+        self.reader.index_data_pos = 0
+    
+        # Rewrite the file header, clearing the index position (so we know if the index is invalid)
+        self.file.seek(self.file_header_pos);
+        self.write_file_header_record(0, 0, 0)
+
+        # Seek to the end of the file
+        self.file.seek(0, os.SEEK_END)
+        
+    def _create_reader(self):
         if self.version == 103:
             self.reader = _BagReader103(self)
         elif self.version == 102:
@@ -215,32 +290,12 @@ class Bag(object):
         else:
             raise ROSBagFormatException('unknown bag version %d' % self.version)
 
-        self.reader.start_reading()
-
-    def _open_write(self, filename):
-        """
-        Opens the bag file for writing
-        @param filename: filename
-        @type  filename: str
-        """
-        self.file = open(filename, 'wb')
-        
-        self.mode = 'w'
-
-        self.start_writing()
-        
-    def _open_append(self, filename):
-        
-        
-        self.mode = 'a'
-
-    def getMessages(self):
-        return self.reader.get_messages()
-
     ### Record I/O
     
     def _read_version(self):
         version_line = self.file.readline().rstrip()
+        if len(version_line) == 0:
+            raise ROSBagException('empty file')
         
         matches = re.match("#ROS(.*) V(\d).(\d)", version_line)
         if matches is None or len(matches.groups()) != 3:
@@ -259,24 +314,23 @@ class Bag(object):
 
     def _seek(self, offset, whence=os.SEEK_SET):
         self.file.seek(offset, whence)
-        
+
     ### Writing
 
     def close(self):
         if self.file:
-            if self.mode == 'w':
+            if self.mode in 'wa':
                 self.stop_writing()
             
             self.file.close()
-        
+
     def start_writing(self):        
         self.file.write(_VERSION + '\n')
         self.file_header_pos = self.file.tell()
         self.write_file_header_record(0, 0, 0)
 
     def stop_writing(self):
-        if self.chunk_open:
-            self.stop_writing_chunk()
+        self.flush()
 
         index_pos = self.file.tell()
         
@@ -300,7 +354,7 @@ class Bag(object):
         @param msg: message to add to bag
         @type  msg: Message
         @param t: ROS time of message publication
-        @type  t: U{roslib.message.Time}
+        @type  t: U{roslib.rostime.Time}
         """
 
         if not t:
@@ -387,7 +441,7 @@ class Bag(object):
             return self.file.tell() - self.curr_chunk_data_pos
         else:
             return self.output_file.compressed_bytes_in
-        
+
     def stop_writing_chunk(self):
         # Add this chunk to the index
         self.chunk_infos.append(self.curr_chunk_info)
@@ -404,7 +458,9 @@ class Bag(object):
         # Rewrite the chunk header with the size of the chunk (remembering current offset)
         end_of_chunk_pos = self.file.tell()
         self.file.seek(self.curr_chunk_info.pos)
-        self.write_chunk_header(ChunkHeader(self.compression, compressed_size, uncompressed_size))
+        chunk_header = ChunkHeader(self.compression, compressed_size, uncompressed_size, self.curr_chunk_data_pos)
+        self.write_chunk_header(chunk_header)
+        self.chunk_headers[self.curr_chunk_info.pos] = chunk_header
 
         # Write out the topic indexes and clear them
         self.file.seek(end_of_chunk_pos)
@@ -682,7 +738,11 @@ class _BagReader102_Unindexed(_BagReader):
                 msg_type = self.get_message_type(topic_info)
             except KeyError:
                 raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % topic_info.datatype)
-    
+
+            secs  = _read_uint32_field(header, 'secs')
+            nsecs = _read_uint32_field(header, 'nsecs')
+            t = roslib.rostime.Time(secs, nsecs)
+   
             # Read the message content
             record_data = _read_record_data(f)
             
@@ -690,7 +750,7 @@ class _BagReader102_Unindexed(_BagReader):
             msg = msg_type()
             msg.deserialize(record_data)
 
-            yield msg
+            yield (topic, msg, t)
 
 class _BagReader102_Indexed(_BagReader):
     def __init__(self, bag):
@@ -705,7 +765,7 @@ class _BagReader102_Indexed(_BagReader):
             for entry in entries:
                 f.seek(entry.offset)
                 message = self.read_message_data_record(topic)
-                messages.append(message)
+                messages.append((topic, message, entry.time))
 
         return messages
 
@@ -810,21 +870,36 @@ class _BagReader103(_BagReader):
         for topic, entries in self.bag.topic_indexes.items():
             for entry in entries:
                 message = self.read_message_data_record(topic, entry)
-                messages.append(message)
+                messages.append((topic, message, entry.time))
 
         return messages
     
     def dump(self):
-        print '  index_data_pos: %d' % self.index_data_pos
-        print '  topic_count:    %d' % self.topic_count
-        print '  chunk_count:    %d' % self.chunk_count
+        print '---- %s [%s] ----' % (self.bag.filename, self.bag.mode)
 
+        print 'TOPICS:'
         for topic_info in self.bag.topic_infos:
-            print topic_info
+            print '  * ' + topic_info
+        print
+
+        print 'CHUNK HEADERS:'
+        for pos in sorted(self.bag.chunk_headers):
+            print '  %d: %s' % (pos, str(self.bag.chunk_headers[pos]))
+        print
             
-        for chunk_info in self.bag.chunk_infos:
-            print chunk_info
-    
+        print 'CHUNKS:'
+        for i, chunk_info in enumerate(self.bag.chunk_infos):
+            print '  %d: %s' % (i, str(chunk_info))
+        print
+            
+        print 'INDEX:'
+        for topic in sorted(self.bag.topic_indexes):
+            print '  * ' + topic
+            for entry in self.bag.topic_indexes[topic]:
+                print '    - ' + str(entry)
+                                
+        print '----'
+
     def start_reading(self):
         self.read_file_header_record()
         
@@ -843,22 +918,22 @@ class _BagReader103(_BagReader):
             self.bag.topic_infos[topic_info.topic] = topic_info
 
         # Read the chunk info records
-        self.chunk_infos = []
+        self.bag.chunk_infos = []
         for i in range(self.chunk_count):
             chunk_info = self.read_chunk_info_record()
-            self.chunk_infos.append(chunk_info)
+            self.bag.chunk_infos.append(chunk_info)
 
         # Read the chunk headers and topic indexes
         self.bag.topic_indexes = {}
-        self.chunk_headers = {}
-        for chunk_info in self.chunk_infos:
+        self.bag.chunk_headers = {}
+        for chunk_info in self.bag.chunk_infos:
             self.curr_chunk_info = chunk_info
             
             self.bag._seek(chunk_info.pos)
     
             # Remember the chunk header
             chunk_header = self.read_chunk_header()
-            self.chunk_headers[chunk_info.pos] = chunk_header
+            self.bag.chunk_headers[chunk_info.pos] = chunk_header
 
             # Skip over the chunk data
             self.bag._seek(chunk_header.compressed_size, os.SEEK_CUR)
@@ -940,8 +1015,8 @@ class _BagReader103(_BagReader):
 
     def read_message_data_record(self, topic, entry):
         chunk_pos, offset = entry.chunk_pos, entry.offset
-        
-        chunk_header = self.chunk_headers.get(chunk_pos)
+
+        chunk_header = self.bag.chunk_headers.get(chunk_pos)
         if chunk_header is None:
             raise ROSBagException('no chunk at position %d' % chunk_pos)
 

@@ -312,6 +312,8 @@ bool Bag::startReadingVersion103() {
 }
 
 bool Bag::startReadingVersion102() {
+	// @todo: handle 1.2 bags with no index
+
     ROS_DEBUG("Reading in version 1.2 bag");
 
     // Read the file header record, which points to the start of the topic indexes

@@ -81,9 +81,9 @@ struct TopicInfo
 
 struct ChunkInfo
 {
-    ros::Time start_time;    //! earliest timestamp of a message in the chunk
-    ros::Time end_time;      //! latest timestamp of a message in the chunk
-    uint64_t  pos;           //! absolute byte offset of chunk record in bag file
+    ros::Time   start_time;    //! earliest timestamp of a message in the chunk
+    ros::Time   end_time;      //! latest timestamp of a message in the chunk
+    uint64_t    pos;           //! absolute byte offset of chunk record in bag file
 
     std::map<std::string, uint32_t> topic_counts;   //! number of messages in each topic stored in the chunk
 };

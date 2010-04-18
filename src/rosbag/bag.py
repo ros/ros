@@ -66,7 +66,7 @@ class Compression:
 
 ###
 
-class TopicInfo(object):
+class _TopicInfo(object):
     def __init__(self, topic, datatype, md5sum, msg_def):
         self.topic    = topic
         self.datatype = datatype
@@ -76,7 +76,7 @@ class TopicInfo(object):
     def __str__(self):
         return '%s: %s [%s]' % (self.topic, self.datatype, self.md5sum)
 
-class ChunkInfo(object):
+class _ChunkInfo(object):
     def __init__(self, pos, start_time, end_time):
         self.pos        = pos
         self.start_time = start_time
@@ -93,7 +93,7 @@ class ChunkInfo(object):
         s += '\n'.join(['  - %-*s %d' % (max_topic_len, topic, count) for topic, count in self.topic_counts.items()])
         return s
 
-class ChunkHeader(object):
+class _ChunkHeader(object):
     def __init__(self, compression, compressed_size, uncompressed_size, data_pos=0):
         self.compression       = compression
         self.compressed_size   = compressed_size
@@ -104,7 +104,7 @@ class ChunkHeader(object):
         ratio = 100 * (float(self.compressed_size) / self.uncompressed_size)
         return 'compression: %s, size: %d, uncompressed: %d (%.2f%%)' % (self.compression, self.compressed_size, self.uncompressed_size, ratio)
 
-class IndexEntry102(object):
+class _IndexEntry102(object):
     def __init__(self, time, offset):
         self.time   = time
         self.offset = offset
@@ -112,7 +112,7 @@ class IndexEntry102(object):
     def __str__(self):
         return '%d.%d: %d' % (self.time.secs, self.time.nsecs, self.offset)
 
-class IndexEntry103(object):
+class _IndexEntry103(object):
     def __init__(self, time, chunk_pos, offset):
         self.time      = time
         self.chunk_pos = chunk_pos
@@ -367,14 +367,14 @@ class Bag(object):
             self.start_writing_chunk(t)
 
         # Update chunk index
-        index_entry = IndexEntry103(t, self.curr_chunk_info.pos, self.get_chunk_offset())
+        index_entry = _IndexEntry103(t, self.curr_chunk_info.pos, self.get_chunk_offset())
         self.curr_chunk_topic_indexes.setdefault(topic, []).append(index_entry)
         curr_topic_count = self.curr_chunk_info.topic_counts.setdefault(topic, 0)
         self.curr_chunk_info.topic_counts[topic] = curr_topic_count + 1
 
         # Write message definition record, if necessary
         if topic not in self.topic_infos:
-            topic_info = TopicInfo(topic, msg.__class__._type, msg.__class__._md5sum, msg._full_text)
+            topic_info = _TopicInfo(topic, msg.__class__._type, msg.__class__._md5sum, msg._full_text)
             self.write_message_definition_record(topic_info)
             self.topic_infos[topic] = topic_info
 
@@ -422,7 +422,7 @@ class Bag(object):
                 print >> sys.stderr, 'WARNING: md5sum of loaded type [%s] does not match that specified' % msg_type
                 #raise ROSRecordException('md5sum of loaded type does not match that of data being recorded')
 
-            topic_info = TopicInfo(topic, msg_type, md5sum, pytype._full_text)
+            topic_info = _TopicInfo(topic, msg_type, md5sum, pytype._full_text)
             self.write_message_definition_record(topic_info)
             self.topic_infos[topic] = topic_info
 
@@ -430,8 +430,8 @@ class Bag(object):
         self.write_message_data_record(topic, t, serialized_bytes)
 
     def start_writing_chunk(self, t):
-        self.curr_chunk_info = ChunkInfo(self.file.tell(), t, t)
-        self.write_chunk_header(ChunkHeader(self.compression, 0, 0))
+        self.curr_chunk_info = _ChunkInfo(self.file.tell(), t, t)
+        self.write_chunk_header(_ChunkHeader(self.compression, 0, 0))
         self.curr_chunk_data_pos = self.file.tell()
         self.set_compression_mode(self.compression)
         self.chunk_open = True
@@ -458,7 +458,7 @@ class Bag(object):
         # Rewrite the chunk header with the size of the chunk (remembering current offset)
         end_of_chunk_pos = self.file.tell()
         self.file.seek(self.curr_chunk_info.pos)
-        chunk_header = ChunkHeader(self.compression, compressed_size, uncompressed_size, self.curr_chunk_data_pos)
+        chunk_header = _ChunkHeader(self.compression, compressed_size, uncompressed_size, self.curr_chunk_data_pos)
         self.write_chunk_header(chunk_header)
         self.chunk_headers[self.curr_chunk_info.pos] = chunk_header
 
@@ -685,7 +685,7 @@ class _BagReader(object):
 
         _read_record_data(self.bag.file)
 
-        return TopicInfo(topic, datatype, md5sum, msg_def)
+        return _TopicInfo(topic, datatype, md5sum, msg_def)
     
     def get_message_type(self, topic_info):
         md5sum, datatype, msg_def = topic_info.md5sum, topic_info.datatype, topic_info.msg_def
@@ -819,7 +819,7 @@ class _BagReader102_Indexed(_BagReader):
             time   = _read_time  (f)
             offset = _read_uint64(f)
             
-            topic_index.append(IndexEntry102(time, offset))
+            topic_index.append(_IndexEntry102(time, offset))
             
         return (topic, topic_index)
     
@@ -886,7 +886,7 @@ class _BagReader103(_BagReader):
         for pos in sorted(self.bag.chunk_headers):
             print '  %d: %s' % (pos, str(self.bag.chunk_headers[pos]))
         print
-            
+
         print 'CHUNKS:'
         for i, chunk_info in enumerate(self.bag.chunk_infos):
             print '  %d: %s' % (i, str(chunk_info))
@@ -963,7 +963,7 @@ class _BagReader103(_BagReader):
             end_time    = _read_time_field  (header, 'end_time')
             topic_count = _read_uint32_field(header, 'count') 
     
-            chunk_info = ChunkInfo(chunk_pos, start_time, end_time)
+            chunk_info = _ChunkInfo(chunk_pos, start_time, end_time)
     
             _read_uint32(self.bag.file) # skip the record data size
 
@@ -987,7 +987,7 @@ class _BagReader103(_BagReader):
 
         data_pos = self.bag.file.tell()
 
-        return ChunkHeader(compression, compressed_size, uncompressed_size, data_pos)
+        return _ChunkHeader(compression, compressed_size, uncompressed_size, data_pos)
 
     def read_topic_index_record(self):
         f = self.bag.file
@@ -1009,7 +1009,7 @@ class _BagReader103(_BagReader):
             time   = _read_time  (f)
             offset = _read_uint32(f)
             
-            topic_index.append(IndexEntry103(time, self.curr_chunk_info.pos, offset))
+            topic_index.append(_IndexEntry103(time, self.curr_chunk_info.pos, offset))
             
         return (topic, topic_index)
 
@@ -1070,8 +1070,6 @@ class _BagReader103(_BagReader):
         msg.deserialize(record_data)
         
         return msg
-
-###
 
 class _BZ2CompressorFileFacade(object):
     """

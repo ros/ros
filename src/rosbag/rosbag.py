@@ -35,6 +35,7 @@ import roslib; roslib.load_manifest('rosbag')
 import roslib.genpy
 import rospy
 
+import bz
 import os
 import re
 import struct
@@ -84,6 +85,10 @@ class ChunkInfo:
         return s
 
 class ChunkHeader:
+    COMPRESSION_NONE = 'none'
+    COMPRESSION_BZ2  = 'bz2'
+    COMPRESSION_ZLIB = 'zlib'
+    
     def __init__(self, compression, compressed_size, uncompressed_size):
         self.compression       = compression
         self.compressed_size   = compressed_size
@@ -282,10 +287,6 @@ class _BagSerializer103(_BagSerializer):
     OP_CHUNK       = 0x05
     OP_CHUNK_INFO  = 0x06
 
-    COMPRESSION_NONE = 'none'
-    COMPRESSION_BZ2  = 'bz2'
-    COMPRESSION_ZLIB = 'zlib'
-    
     def __init__(self, bag):
         _BagSerializer.__init__(self, bag)
         
@@ -293,7 +294,8 @@ class _BagSerializer103(_BagSerializer):
         self.curr_chunk_info = None
         self.message_types   = {}
         
-        self.decompressed_chunk = None
+        self.decompressed_chunk_pos = None
+        self.decompressed_chunk     = None
     
     def start_reading(self):
         self.read_file_header_record()
@@ -444,11 +446,8 @@ class _BagSerializer103(_BagSerializer):
             
         return topic_index
 
-    def decompress_chunk(self, chunk_pos):
-        pass
-
     def read_message_data_record(self, topic, chunk_pos, offset):
-        if self.decompressed_chunk != chunk_pos:
+        if self.decompressed_chunk_pos != chunk_pos:
             # Seek to the start of the chunk
             self.bag._seek(chunk_pos)
     
@@ -456,37 +455,16 @@ class _BagSerializer103(_BagSerializer):
             chunk_header = self.read_chunk_header()
     
             # Read and decompress the chunk
-            if chunk_header.compression != self.COMPRESSION_NONE:
+            if chunk_header.compression != ChunkHeader.COMPRESSION_NONE:
                 self.decompress_chunk(chunk_pos)
-#
-#        if self.decompressed_chunk == chunk_pos:
-#            ros::Header header;
-#            uint32_t data_size;
-#            uint8_t op;
-#            do {
-#                ROS_DEBUG("reading header from buffer: offset=%d", offset);
-#                uint32_t bytes_read;
-#                if (!readHeaderFromBuffer(decompress_buffer_, offset, header, data_size, bytes_read))
-#                    return false;
-#                offset += bytes_read;
-#    
-#                if (!readField(*header.getValues(), OP_FIELD_NAME, true, &op))
-#                    return false;
-#            }
-#            while (op == OP_MSG_DEF);
-#            assert(op == OP_MSG_DATA);
-#    
-#            string msg_topic;
-#            if (!readField(*header.getValues(), TOPIC_FIELD_NAME, true, msg_topic))
-#                return false;
-#            ROS_ASSERT(topic == msg_topic);
-#    
-#            //! \todo shouldn't need to memcpy here
-#            record_buffer_.setSize(data_size);
-#            memcpy((char*) record_buffer_.getData(), decompress_buffer_.getData() + offset, data_size);
-#        }
-#        else {
-        if True:
+
+        if self.decompressed_chunk_pos == chunk_pos:
+            # Read compressed chunk
+            #while True:
+            #    header = self.read_record_header_from_buffer()
+            pass
+            
+        else:
             # Read uncompressed chunk
             self.bag._seek(offset, os.SEEK_CUR)
 
@@ -522,4 +500,17 @@ class _BagSerializer103(_BagSerializer):
             return msg
     
     def decompress_chunk(self, chunk_pos):
-        pass
+        if self.decompressed_chunk_pos == chunk_pos:
+            return
+
+        self.bag._seek(chunk_pos)
+        
+        chunk_header = self.read_chunk_header()
+    
+        if chunk_header.compression == ChunkHeader.COMPRESSION_NONE:
+            return
+        
+        compressed_chunk = self.read_record_data()
+        
+        self.decompressed_chunk     = bz2.decompress(compressed_chunk)
+        self.decompressed_chunk_pos = chunk_pos

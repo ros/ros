@@ -36,10 +36,11 @@ import roslib.genpy
 import rospy
 
 import bz2
-import cStringIO
+from cStringIO import StringIO
 import os
 import re
 import struct
+import time
 
 class ROSBagException(Exception):
     """
@@ -117,14 +118,17 @@ class Bag(object):
     def __init__(self):
         self.file     = None
         self.filename = None
-        
-        self.topic_count = 0
-        self.chunk_count = 0
-        
+                
         self.topic_infos   = {}  # TopicInfo
+        
+        # 102 indexed
+        self.topic_indexes = {}  # topic -> IndexEntry[]
+
+        # 103
+        self.topic_count   = 0
+        self.chunk_count   = 0
         self.chunk_infos   = []  # ChunkInfo
         self.chunk_headers = {}  # chunk_pos -> ChunkHeader
-        self.topic_indexes = {}  # topic -> IndexEntry[]
 
         self.serializer = None 
 
@@ -172,7 +176,7 @@ class Bag(object):
 
     def close(self):
         pass
-    
+
     def getMessages(self):
         return self.serializer.get_messages()
 
@@ -215,6 +219,11 @@ def _unpack_uint32(v): return struct.unpack('<L', v)[0]
 def _unpack_uint64(v): return struct.unpack('<Q', v)[0]
 def _unpack_time(v):   return rospy.Time(*struct.unpack('<LL', v))
 
+def _pack_uint8(v):  return struct.pack('<B', v)
+def _pack_uint32(v): return struct.pack('<L', v)
+def _pack_uint64(v): return struct.pack('<Q', v)
+def _pack_time(v):   return _pack_uint32(v.secs) + _pack_uint32(v.nsecs)
+
 def _read(f, size):
     data = f.read(size)
     if len(data) != size:
@@ -224,6 +233,10 @@ def _read(f, size):
 def _read_sized(f):
     size = _read_uint32(f)
     return _read(f, size)
+
+def _write_sized(f, v):
+    f.write(_pack_uint32(len(v)))
+    f.write(v)
 
 def _read_field(header, field, unpack_fn):
     if field not in header:
@@ -236,7 +249,21 @@ def _read_field(header, field, unpack_fn):
     
     return value
 
-def _read_record_header(f):
+def _write_record(f, header, data='', padded_size=None):
+    header_str = ''.join([_pack_uint32(len(k) + 1 + len(v)) + k + '=' + v for k, v in header.items()])
+
+    _write_sized(f, header_str)
+
+    if padded_size is not None:
+        header_len = len(header_str)
+        if header_len < padded_size:
+            data = ' ' * (padded_size - header_len)
+        else:
+            data = ''
+
+    _write_sized(f, data)
+
+def _read_record_header(f, req_op=None):
     bag_pos = f.tell()
 
     # Read record header
@@ -265,6 +292,12 @@ def _read_record_header(f):
         
         record_header = record_header[size:]
 
+    # Check the op code of the header, if supplied
+    if req_op is not None:
+        op = _read_uint8_field(header_dict, 'op')
+        if req_op != op:
+            raise ROSBagFormatException('Expected op code: %d, got %d' % (req_op, op))
+
     return header_dict
 
 def _read_record_data(f):
@@ -274,11 +307,6 @@ def _read_record_data(f):
         raise ROSBagFormatException('Error reading record data: %s' % str(ex))
 
     return record_data
-
-def _assert_op(header, expected_op):
-    op = _read_uint8_field(header, 'op')
-    if expected_op != op:
-        raise ROSBagFormatException('Expected op code: %d, got %d' % (expected_op, op))
 
 class _BagSerializer(object):
     OP_MSG_DEF     = 0x01
@@ -291,13 +319,11 @@ class _BagSerializer(object):
         
         self.index_data_pos = 0
 
-        self.message_types = {}
+        self.message_types = {}  # md5sum -> type
         
     def read_message_definition_record(self, header=None):
         if not header:
-            header = _read_record_header(self.bag.file)
-
-        _assert_op(header, self.OP_MSG_DEF)
+            header = _read_record_header(self.bag.file, self.OP_MSG_DEF)
 
         topic    = _read_str_field(header, 'topic')
         datatype = _read_str_field(header, 'type')
@@ -309,211 +335,18 @@ class _BagSerializer(object):
         return TopicInfo(topic, datatype, md5sum, msg_def)
     
     def get_message_type(self, topic_info):
-        datatype, msg_def = topic_info.datatype, topic_info.msg_def
+        md5sum, datatype, msg_def = topic_info.md5sum, topic_info.datatype, topic_info.msg_def
         
-        message_type = self.message_types.get(datatype)
-        if message_type is None:
+        message_type = self.message_types.get(md5sum)
+        if message_type is None:            
             try:
                 message_type = roslib.genpy.generate_dynamic(datatype, msg_def)[datatype]
             except roslib.genpy.MsgGenerationException, ex:
                 raise ROSBagException('Error generating datatype %s: %s' % (datatype, str(ex)))
 
-            self.message_types[datatype] = message_type
+            self.message_types[md5sum] = message_type
 
         return message_type
-
-class _BagSerializer103(_BagSerializer):
-    OP_CHUNK       = 0x05
-    OP_CHUNK_INFO  = 0x06
-
-    def __init__(self, bag):
-        _BagSerializer.__init__(self, bag)
-        
-        self.curr_chunk_info = None
-        
-        self.decompressed_chunk_pos = None
-        self.decompressed_chunk     = None
-        self.decompressed_chunk_io  = None
-    
-    def get_messages(self):
-        messages = []
-
-        for topic, entries in self.bag.topic_indexes.items():
-            for entry in entries:
-                message = self.read_message_data_record(topic, entry)
-                messages.append(message)
-
-        return messages
-    
-    def start_reading(self):
-        self.read_file_header_record()
-
-        # Seek to the end of the chunks
-        self.bag._seek(self.index_data_pos)
-
-        # Read the message definition records (one for each topic)
-        for i in range(self.topic_count):
-            topic_info = self.read_message_definition_record()
-            self.bag.topic_infos[topic_info.topic] = topic_info
-
-        # Read the chunk info records
-        self.chunk_infos = []
-        for i in range(self.chunk_count):
-            chunk_info = self.read_chunk_info_record()
-            self.chunk_infos.append(chunk_info)
-
-        # Read the chunk headers and topic indexes
-        self.bag.topic_indexes = {}
-        self.chunk_headers = {}
-        for chunk_info in self.chunk_infos:
-            self.curr_chunk_info = chunk_info
-            
-            self.bag._seek(chunk_info.pos)
-    
-            # Remember the chunk header
-            chunk_header = self.read_chunk_header()
-            self.chunk_headers[chunk_info.pos] = chunk_header
-
-            # Skip over the chunk data
-            self.bag._seek(chunk_header.compressed_size, os.SEEK_CUR)
-    
-            # Read the topic index records after the chunk
-            for i in range(len(chunk_info.topic_counts)):
-                (topic, index) = self.read_topic_index_record()
-                
-                self.bag.topic_indexes[topic] = index
-
-    def read_file_header_record(self):
-        header = _read_record_header(self.bag.file)
-        
-        _assert_op(header, self.OP_FILE_HEADER)
-
-        self.index_data_pos = _read_uint64_field(header, 'index_pos')
-        self.chunk_count    = _read_uint32_field(header, 'chunk_count')
-        self.topic_count    = _read_uint32_field(header, 'topic_count')
-
-        _read_record_data(self.bag.file)
-
-    def read_chunk_info_record(self):
-        header = _read_record_header(self.bag.file)
-
-        _assert_op(header, self.OP_CHUNK_INFO)
-
-        chunk_info_version = _read_uint32_field(header, 'ver')
-        
-        if chunk_info_version == 1:
-            chunk_pos   = _read_uint64_field(header, 'chunk_pos')
-            start_time  = _read_time_field  (header, 'start_time')
-            end_time    = _read_time_field  (header, 'end_time')
-            topic_count = _read_uint32_field(header, 'count') 
-    
-            chunk_info = ChunkInfo(chunk_pos, start_time, end_time)
-    
-            _read_uint32(self.bag.file) # skip the record data size
-
-            for i in range(topic_count):
-                topic_name  = _read_sized(self.bag.file)
-                topic_count = _read_uint32(self.bag.file)
-    
-                chunk_info.topic_counts[topic_name] = topic_count
-                
-            return chunk_info
-        else:
-            raise ROSBagFormatException('Unknown chunk info record version: %d' % chunk_info_version)
-
-    def read_chunk_header(self):
-        header = _read_record_header(self.bag.file)
-        
-        _assert_op(header, self.OP_CHUNK)
-
-        compression       = _read_str_field   (header, 'compression')
-        uncompressed_size = _read_uint32_field(header, 'size')
-
-        compressed_size = _read_uint32(self.bag.file)  # read the record data size
-
-        data_pos = self.bag.file.tell()
-
-        return ChunkHeader(compression, compressed_size, uncompressed_size, data_pos)
-
-    def read_topic_index_record(self):
-        f = self.bag.file
-
-        header = _read_record_header(f)
-
-        _assert_op(header, self.OP_INDEX_DATA)
-        
-        index_version = _read_uint32_field(header, 'ver')
-        topic         = _read_str_field   (header, 'topic')
-        count         = _read_uint32_field(header, 'count')
-        
-        if index_version != 1:
-            raise ROSBagFormatException('expecting index version 1, got %d' % index_version)
-    
-        _read_uint32(f) # skip the record data size
-
-        topic_index = []
-                
-        for i in range(count):
-            time   = _read_time  (f)
-            offset = _read_uint32(f)
-            
-            topic_index.append(IndexEntry103(time, self.curr_chunk_info.pos, offset))
-            
-        return (topic, topic_index)
-
-    def read_message_data_record(self, topic, entry):
-        chunk_pos, offset = entry.chunk_pos, entry.offset
-        
-        chunk_header = self.chunk_headers.get(chunk_pos)
-        if chunk_header is None:
-            raise ROSBagException('no chunk at position %d' % chunk_pos)
-
-        if chunk_header.compression == ChunkHeader.COMPRESSION_NONE:
-            f = self.bag.file
-            f.seek(chunk_header.data_pos + offset)
-        else:
-            if self.decompressed_chunk_pos != chunk_pos:
-                # Seek to the chunk data, read and decompress
-                self.bag._seek(chunk_header.data_pos)
-                compressed_chunk = _read(self.bag.file, chunk_header.compressed_size)
-
-                self.decompressed_chunk     = bz2.decompress(compressed_chunk)
-                self.decompressed_chunk_pos = chunk_pos
-
-                if self.decompressed_chunk_io:
-                    self.decompressed_chunk_io.close()
-                self.decompressed_chunk_io = cStringIO.StringIO(self.decompressed_chunk)
-
-            f = self.decompressed_chunk_io
-            f.seek(offset)
-
-        # Skip any MSG_DEF records
-        while True:
-            header = _read_record_header(f)
-            op = _read_uint8_field(header, 'op')
-            if op != self.OP_MSG_DEF:
-                break
-            _read_record_data(f)
-
-        # Check that we have a MSG_DATA record
-        if op != self.OP_MSG_DATA:
-            raise ROSBagFormatException('Expecting OP_MSG_DATA, got %d' % op)
-
-        # Get the message type
-        topic_info = self.bag.topic_infos[topic]
-        try:
-            msg_type = self.get_message_type(topic_info)
-        except KeyError:
-            raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % topic_info.datatype)
-
-        # Read the message content
-        record_data = _read_record_data(f)
-        
-        # Deserialize the message
-        msg = msg_type()
-        msg.deserialize(record_data)
-        
-        return msg
 
 class _BagSerializer102_Unindexed(_BagSerializer):
     def __init__(self, bag):
@@ -539,12 +372,13 @@ class _BagSerializer102_Unindexed(_BagSerializer):
     
                 topic_info = self.read_message_definition_record(header)
                 self.bag.topic_infos[topic_info.topic] = topic_info
-                
-                print topic_info
-    
+
             # Check that we have a MSG_DATA record
             if op != self.OP_MSG_DATA:
                 raise ROSBagFormatException('Expecting OP_MSG_DATA, got %d' % op)
+    
+            topic = _read_str_field(header, 'topic')
+            topic_info = self.bag.topic_infos[topic]
     
             # Get the message type
             try:
@@ -558,7 +392,7 @@ class _BagSerializer102_Unindexed(_BagSerializer):
             # Deserialize the message
             msg = msg_type()
             msg.deserialize(record_data)
-            
+
             yield msg
 
 class _BagSerializer102_Indexed(_BagSerializer):
@@ -570,7 +404,7 @@ class _BagSerializer102_Indexed(_BagSerializer):
 
         f = self.bag.file
 
-        for topic, entries in self.topic_indexes.items():
+        for topic, entries in self.bag.topic_indexes.items():
             for entry in entries:
                 f.seek(entry.offset)
                 message = self.read_message_data_record(topic)
@@ -585,9 +419,11 @@ class _BagSerializer102_Indexed(_BagSerializer):
         self.bag._seek(self.index_data_pos)
 
         while True:
-            (topic, index) = self.read_topic_index_record()
-            
-            self.bag.topic_indexes[topic] = index            
+            topic_index = self.read_topic_index_record()
+            if topic_index is None:
+                break
+            (topic, index) = topic_index
+            self.bag.topic_indexes[topic] = index
 
         # Read the message definition records (one for each topic)
         for topic, index in self.bag.topic_indexes.items():
@@ -597,27 +433,26 @@ class _BagSerializer102_Indexed(_BagSerializer):
             self.bag.topic_infos[topic_info.topic] = topic_info
 
     def read_file_header_record(self):
-        header = _read_record_header(self.bag.file)
-        
-        _assert_op(header, self.OP_FILE_HEADER)
+        header = _read_record_header(self.bag.file, self.OP_FILE_HEADER)
 
         self.index_data_pos = _read_uint64_field(header, 'index_pos')
 
-        _read_record_data(self.bag.file)
+        _read_record_data(self.bag.file)  # skip over padding
 
     def read_topic_index_record(self):
         f = self.bag.file
 
-        header = _read_record_header(f)
-
-        _assert_op(header, self.OP_INDEX_DATA)
+        try:
+            header = _read_record_header(f, self.OP_INDEX_DATA)
+        except struct.error:
+            return None
         
         index_version = _read_uint32_field(header, 'ver')
         topic         = _read_str_field   (header, 'topic')
         count         = _read_uint32_field(header, 'count')
         
-        if index_version != 1:
-            raise ROSBagFormatException('expecting index version 1, got %d' % index_version)
+        if index_version != 0:
+            raise ROSBagFormatException('expecting index version 0, got %d' % index_version)
     
         _read_uint32(f) # skip the record data size
 
@@ -661,3 +496,325 @@ class _BagSerializer102_Indexed(_BagSerializer):
         msg.deserialize(record_data)
         
         return msg
+
+class _BagSerializer103(_BagSerializer):
+    OP_CHUNK       = 0x05
+    OP_CHUNK_INFO  = 0x06
+
+    def __init__(self, bag):
+        _BagSerializer.__init__(self, bag)
+        
+        self.curr_chunk_info = None
+        
+        self.decompressed_chunk_pos = None
+        self.decompressed_chunk     = None
+        self.decompressed_chunk_io  = None
+
+    def get_messages(self):
+        messages = []
+
+        for topic, entries in self.bag.topic_indexes.items():
+            for entry in entries:
+                message = self.read_message_data_record(topic, entry)
+                messages.append(message)
+
+        return messages
+    
+    def start_reading(self):
+        self.read_file_header_record()
+
+        # Check if the index position has been written, i.e. the bag was closed successfully
+        if self.index_data_pos == 0:
+            print 'invalid index data position'
+            # @todo: reconstruct the index by reading in the chunks
+            return
+
+        # Seek to the end of the chunks
+        self.bag._seek(self.index_data_pos)
+
+        # Read the message definition records (one for each topic)
+        for i in range(self.topic_count):
+            topic_info = self.read_message_definition_record()
+            self.bag.topic_infos[topic_info.topic] = topic_info
+
+        # Read the chunk info records
+        self.chunk_infos = []
+        for i in range(self.chunk_count):
+            chunk_info = self.read_chunk_info_record()
+            self.chunk_infos.append(chunk_info)
+
+        # Read the chunk headers and topic indexes
+        self.bag.topic_indexes = {}
+        self.chunk_headers = {}
+        for chunk_info in self.chunk_infos:
+            self.curr_chunk_info = chunk_info
+            
+            self.bag._seek(chunk_info.pos)
+    
+            # Remember the chunk header
+            chunk_header = self.read_chunk_header()
+            self.chunk_headers[chunk_info.pos] = chunk_header
+
+            # Skip over the chunk data
+            self.bag._seek(chunk_header.compressed_size, os.SEEK_CUR)
+    
+            # Read the topic index records after the chunk
+            for i in range(len(chunk_info.topic_counts)):
+                (topic, index) = self.read_topic_index_record()
+                
+                self.bag.topic_indexes[topic] = index
+
+    def read_file_header_record(self):
+        header = _read_record_header(self.bag.file, self.OP_FILE_HEADER)
+
+        self.index_data_pos = _read_uint64_field(header, 'index_pos')
+        self.chunk_count    = _read_uint32_field(header, 'chunk_count')
+        self.topic_count    = _read_uint32_field(header, 'topic_count')
+
+        _read_record_data(self.bag.file)
+
+    def read_chunk_info_record(self):
+        header = _read_record_header(self.bag.file, self.OP_CHUNK_INFO)
+
+        chunk_info_version = _read_uint32_field(header, 'ver')
+        
+        if chunk_info_version == 1:
+            chunk_pos   = _read_uint64_field(header, 'chunk_pos')
+            start_time  = _read_time_field  (header, 'start_time')
+            end_time    = _read_time_field  (header, 'end_time')
+            topic_count = _read_uint32_field(header, 'count') 
+    
+            chunk_info = ChunkInfo(chunk_pos, start_time, end_time)
+    
+            _read_uint32(self.bag.file) # skip the record data size
+
+            for i in range(topic_count):
+                topic_name  = _read_sized(self.bag.file)
+                topic_count = _read_uint32(self.bag.file)
+    
+                chunk_info.topic_counts[topic_name] = topic_count
+                
+            return chunk_info
+        else:
+            raise ROSBagFormatException('Unknown chunk info record version: %d' % chunk_info_version)
+
+    def read_chunk_header(self):
+        header = _read_record_header(self.bag.file, self.OP_CHUNK)
+
+        compression       = _read_str_field   (header, 'compression')
+        uncompressed_size = _read_uint32_field(header, 'size')
+
+        compressed_size = _read_uint32(self.bag.file)  # read the record data size
+
+        data_pos = self.bag.file.tell()
+
+        return ChunkHeader(compression, compressed_size, uncompressed_size, data_pos)
+
+    def read_topic_index_record(self):
+        f = self.bag.file
+
+        header = _read_record_header(f, self.OP_INDEX_DATA)
+        
+        index_version = _read_uint32_field(header, 'ver')
+        topic         = _read_str_field   (header, 'topic')
+        count         = _read_uint32_field(header, 'count')
+        
+        if index_version != 1:
+            raise ROSBagFormatException('expecting index version 1, got %d' % index_version)
+    
+        _read_uint32(f) # skip the record data size
+
+        topic_index = []
+                
+        for i in range(count):
+            time   = _read_time  (f)
+            offset = _read_uint32(f)
+            
+            topic_index.append(IndexEntry103(time, self.curr_chunk_info.pos, offset))
+            
+        return (topic, topic_index)
+
+    def read_message_data_record(self, topic, entry):
+        chunk_pos, offset = entry.chunk_pos, entry.offset
+        
+        chunk_header = self.chunk_headers.get(chunk_pos)
+        if chunk_header is None:
+            raise ROSBagException('no chunk at position %d' % chunk_pos)
+
+        if chunk_header.compression == ChunkHeader.COMPRESSION_NONE:
+            f = self.bag.file
+            f.seek(chunk_header.data_pos + offset)
+        else:
+            if self.decompressed_chunk_pos != chunk_pos:
+                # Seek to the chunk data, read and decompress
+                self.bag._seek(chunk_header.data_pos)
+                compressed_chunk = _read(self.bag.file, chunk_header.compressed_size)
+
+                self.decompressed_chunk     = bz2.decompress(compressed_chunk)
+                self.decompressed_chunk_pos = chunk_pos
+
+                if self.decompressed_chunk_io:
+                    self.decompressed_chunk_io.close()
+                self.decompressed_chunk_io = StringIO(self.decompressed_chunk)
+
+            f = self.decompressed_chunk_io
+            f.seek(offset)
+
+        # Skip any MSG_DEF records
+        while True:
+            header = _read_record_header(f)
+            op = _read_uint8_field(header, 'op')
+            if op != self.OP_MSG_DEF:
+                break
+            _read_record_data(f)
+
+        # Check that we have a MSG_DATA record
+        if op != self.OP_MSG_DATA:
+            raise ROSBagFormatException('Expecting OP_MSG_DATA, got %d' % op)
+
+        # Get the message type
+        topic_info = self.bag.topic_infos[topic]
+        try:
+            msg_type = self.get_message_type(topic_info)
+        except KeyError:
+            raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % topic_info.datatype)
+
+        # Read the message content
+        record_data = _read_record_data(f)
+        
+        # Deserialize the message
+        msg = msg_type()
+        msg.deserialize(record_data)
+        
+        return msg
+
+###
+
+class BagWriter(object):
+    VERSION = '#ROSBAG V1.3'
+    
+    FILE_HEADER_LENGTH = 4096
+    
+    def __init__(self, filename):
+        self.file = file(filename, 'wb')
+        self.buffer = StringIO()
+        
+        self.defined = set()
+
+        self.start_writing()
+
+    def close(self):
+        if self.file:
+            self.file.close()
+        self.buffer = None
+        
+    def start_writing(self):        
+        self.file.write(self.VERSION + '\n')
+
+        self.write_file_header_record()
+
+    def write(self, topic, msg, t=None, raw=False):
+        """
+        Add a message to the bag
+        @param msg: message to add to bag
+        @type  msg: Message
+        @param raw: if True, msg is in raw format (msg_type, serialized_bytes, md5sum, pytype)
+        @param raw: bool
+        @param t: ROS time of message publication
+        @type  t: U{roslib.message.Time}
+        """
+        f = self.file
+        if raw:
+            msg_type = msg[0]
+            serialized_bytes = msg[1]
+            if len(msg) == 5:
+                md5sum = msg[4]._md5sum
+            else:
+                md5sum = msg[2]
+
+            if msg_type not in self.defined:
+                if len(msg) == 5:
+                    pytype = msg[4]
+                else:
+                    pytype = None
+                
+                self.write_message_definition_record(topic, md5sum, msg_type, pytype)
+
+            # note: timestamp does not respect sim time as not required to be running in a rospy node
+            if not t:
+                t = roslib.rostime.Time.from_sec(time.time())
+                
+            header = {
+                'op':    _pack_uint8(_BagSerializer.OP_MSG_DATA),
+                'topic': topic,
+                'md5':   md5sum,
+                'type':  msg_type,
+                'time':  _pack_time(t)
+            }
+            _write_record(self.file, header, serialized_bytes)
+        else:
+            buffer   = self.buffer
+            md5sum   = msg.__class__._md5sum
+            msg_type = msg.__class__._type
+
+            if not msg_type in self.defined:
+                self.defined.add(msg_type)
+                
+                header = {
+                    'op':    _pack_uint8(_BagSerializer.OP_MSG_DEF),
+                    'topic': topic,
+                    'md5':   md5sum,
+                    'type':  msg_type,
+                    'def':   msg._full_text
+                }                
+                _write_record(self.file, header)
+                
+            msg.serialize(buffer)
+            
+            # note: timestamp does not respect sim time as not required to be running in a rospy node
+            if not t:
+                t = roslib.rostime.Time.from_sec(time.time())
+
+            header = {
+                'op':    _pack_uint8(_BagSerializer.OP_MSG_DATA),
+                'topic': topic,
+                'md5':   md5sum,
+                'type':  msg_type,
+                'time':  _pack_time(t)
+            }
+            _write_record(self.file, header, buffer.getvalue())
+
+            buffer.seek(0)
+            buffer.truncate(0)
+
+    def write_file_header_record(self):
+        header = {
+            'op':          _pack_uint8(_BagSerializer.OP_FILE_HEADER),
+            'index_pos':   _pack_uint64(0),
+            'topic_count': _pack_uint32(0),
+            'chunk_count': _pack_uint32(0)
+        }
+        _write_record(self.file, header, padded_size=self.FILE_HEADER_LENGTH)
+
+    def write_message_definition_record(self, topic, md5sum, msg_type, pytype=None):
+        if pytype is None:
+            try:
+                pytype = roslib.message.get_message_class(msg_type)
+            except Exception:
+                pytype = None
+        if pytype is None:
+            raise ROSBagException('cannot locate message class and no message class provided for [%s]' % msg_type)
+
+        if pytype._md5sum != md5sum:
+            print >> sys.stderr, 'WARNING: md5sum of loaded type [%s] does not match that specified' % msg_type
+            #raise ROSRecordException('md5sum of loaded type does not match that of data being recorded')
+        
+        header = {
+            'op':    chr(1),
+            'topic': topic,
+            'md5':   md5sum,
+            'type':  msg_type,
+            'def':   pytype._full_text
+        }
+        _write_record(self.file, header)
+        self.defined.add(msg_type)

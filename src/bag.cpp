@@ -1095,6 +1095,7 @@ void Bag::writeHeader(M_string const& fields, uint32_t data_len) {
 
     write((char*) &header_len, 4);
     write((char*) header_buffer.get(), header_len);
+
     write((char*) &data_len, 4);
 }
 

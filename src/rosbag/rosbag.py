@@ -35,7 +35,8 @@ import roslib; roslib.load_manifest('rosbag')
 import roslib.genpy
 import rospy
 
-import bz
+import bz2
+import cStringIO
 import os
 import re
 import struct
@@ -188,59 +189,6 @@ class _BagSerializer(object):
     def __init__(self, bag):
         self.bag = bag
 
-    def read_record_header(self):
-        bag_pos = self.bag._tell()
-
-        # Read record header
-        try:
-            record_header = _read_sized(self.bag.file)
-        except ROSBagException, ex:
-            raise ROSBagFormatException('Error reading record header: %s' % str(ex))
-
-        # Parse header into a dict
-        header_dict = {}
-        while record_header != '':
-            # Read size
-            if len(record_header) < 4:
-                raise ROSBagFormatException('Error reading record header field')           
-            (size,) = struct.unpack("<L", record_header[:4])
-            record_header = record_header[4:]
-
-            # Read bytes
-            if len(record_header) < size:
-                raise ROSBagFormatException('Error reading record header field')
-            (name, sep, value) = record_header[:size].partition('=')
-            if sep == '':
-                raise ROSBagFormatException('Error reading record header field')
-
-            header_dict[name] = value
-            
-            record_header = record_header[size:]
-
-        return header_dict
-
-    def read_record_data(self):
-        try:
-            record_data = _read_sized(self.bag.file)
-        except ROSBagException, ex:
-            raise ROSBagFormatException('Error reading record data: %s' % str(ex))
-
-        return record_data
-
-    def _get_op(self):
-        try:
-            op = hdr['op']
-        except KeyError:
-            cur = f.tell()
-            f.seek(0, os.SEEK_END)
-            end = f.tell()
-            f.seek(cur)
-
-            print >> sys.stderr, "WARNING: Found incomplete message header. %d bytes left." % (end - cur,)
-            return None, None, None        
-
-        return op
-
 def _read_uint8 (f): return _unpack_uint8 (f.read(1))
 def _read_uint32(f): return _unpack_uint32(f.read(4))
 def _read_uint64(f): return _unpack_uint64(f.read(8))
@@ -257,12 +205,15 @@ def _unpack_uint32(v): return struct.unpack('<L', v)[0]
 def _unpack_uint64(v): return struct.unpack('<Q', v)[0]
 def _unpack_time(v):   return rospy.Time(*struct.unpack('<LL', v))
 
-def _read_sized(f):
-    size = _read_uint32(f)
+def _read(f, size):
     data = f.read(size)
     if len(data) != size:
         raise ROSBagException('Expecting %d bytes, read %d' % (size, len(data)))   
     return data
+
+def _read_sized(f):
+    size = _read_uint32(f)
+    return _read(f, size)
 
 def _read_field(header, field, unpack_fn):
     if field not in header:
@@ -274,6 +225,45 @@ def _read_field(header, field, unpack_fn):
         raise ROSBagFormatException('Error reading field "%s": %s' % (field, str(ex)))
     
     return value
+
+def _read_record_header(f):
+    bag_pos = f.tell()
+
+    # Read record header
+    try:
+        record_header = _read_sized(f)
+    except ROSBagException, ex:
+        raise ROSBagFormatException('Error reading record header: %s' % str(ex))
+
+    # Parse header into a dict
+    header_dict = {}
+    while record_header != '':
+        # Read size
+        if len(record_header) < 4:
+            raise ROSBagFormatException('Error reading record header field')           
+        (size,) = struct.unpack("<L", record_header[:4])
+        record_header = record_header[4:]
+
+        # Read bytes
+        if len(record_header) < size:
+            raise ROSBagFormatException('Error reading record header field')
+        (name, sep, value) = record_header[:size].partition('=')
+        if sep == '':
+            raise ROSBagFormatException('Error reading record header field')
+
+        header_dict[name] = value
+        
+        record_header = record_header[size:]
+
+    return header_dict
+
+def _read_record_data(f):
+    try:
+        record_data = _read_sized(f)
+    except ROSBagException, ex:
+        raise ROSBagFormatException('Error reading record data: %s' % str(ex))
+
+    return record_data
 
 def _assert_op(header, expected_op):
     if expected_op != _read_uint8_field(header, 'op'):
@@ -337,7 +327,7 @@ class _BagSerializer103(_BagSerializer):
                 self.bag.topic_indexes[topic] = index
 
     def read_file_header_record(self):
-        header = self.read_record_header()
+        header = _read_record_header(self.bag.file)
         
         _assert_op(header, self.OP_FILE_HEADER)
 
@@ -345,10 +335,10 @@ class _BagSerializer103(_BagSerializer):
         self.chunk_count    = _read_uint32_field(header, 'chunk_count')
         self.topic_count    = _read_uint32_field(header, 'topic_count')
 
-        self.read_record_data()
+        _read_record_data(self.bag.file)
 
     def read_message_definition_record(self):
-        header = self.read_record_header()
+        header = _read_record_header(self.bag.file)
 
         _assert_op(header, self.OP_MSG_DEF)
 
@@ -357,7 +347,7 @@ class _BagSerializer103(_BagSerializer):
         md5sum   = _read_str_field(header, 'md5')
         msg_def  = _read_str_field(header, 'def')
 
-        self.read_record_data()
+        _read_record_data(self.bag.file)
 
         return TopicInfo(topic, datatype, md5sum, msg_def)
     
@@ -376,7 +366,7 @@ class _BagSerializer103(_BagSerializer):
         return message_type
 
     def read_chunk_info_record(self):
-        header = self.read_record_header()
+        header = _read_record_header(self.bag.file)
 
         _assert_op(header, self.OP_CHUNK_INFO)
 
@@ -403,7 +393,7 @@ class _BagSerializer103(_BagSerializer):
             raise ROSBagFormatException('Unknown chunk info record version: %d' % chunk_info_version)
 
     def read_chunk_header(self):
-        header = self.read_record_header()
+        header = _read_record_header(self.bag.file)
         
         _assert_op(header, self.OP_CHUNK)
 
@@ -415,7 +405,7 @@ class _BagSerializer103(_BagSerializer):
         return ChunkHeader(compression, compressed_size, uncompressed_size)
 
     def read_topic_index_record(self):
-        header = self.read_record_header()
+        header = _read_record_header(self.bag.file)
 
         _assert_op(header, self.OP_INDEX_DATA)
         
@@ -447,6 +437,7 @@ class _BagSerializer103(_BagSerializer):
         return topic_index
 
     def read_message_data_record(self, topic, chunk_pos, offset):
+        # Decompress chunk if needed
         if self.decompressed_chunk_pos != chunk_pos:
             # Seek to the start of the chunk
             self.bag._seek(chunk_pos)
@@ -456,61 +447,45 @@ class _BagSerializer103(_BagSerializer):
     
             # Read and decompress the chunk
             if chunk_header.compression != ChunkHeader.COMPRESSION_NONE:
-                self.decompress_chunk(chunk_pos)
+                compressed_chunk = _read(self.bag.file, chunk_header.compressed_size)
+                
+                self.decompressed_chunk     = bz2.decompress(compressed_chunk)
+                self.decompressed_chunk_pos = chunk_pos
 
         if self.decompressed_chunk_pos == chunk_pos:
-            # Read compressed chunk
-            #while True:
-            #    header = self.read_record_header_from_buffer()
-            pass
-            
+            f = cStringIO.StringIO(self.decompressed_chunk)
         else:
-            # Read uncompressed chunk
-            self.bag._seek(offset, os.SEEK_CUR)
+            f = self.bag.file
 
-            while True:
-                header = self.read_record_header()               
-                op = _read_uint8_field(header, 'op')
-                if op != self.OP_MSG_DEF:
-                    break
+        f.seek(offset, os.SEEK_CUR)
 
-                self.read_record_data()
+        while True:
+            header = _read_record_header(f)
+            op = _read_uint8_field(header, 'op')
+            if op != self.OP_MSG_DEF:
+                break
 
-            if op != self.OP_MSG_DATA:
-                raise ROSBagFormatException('Expecting OP_MSG_DATA, got %d' % op)
+            _read_record_data(f)
 
-            msg_topic = _read_str_field(header, 'topic')
-            if topic != msg_topic:
-                raise ROSBagFormatException('Expecting topic "%s", got "%s"' % (topic, msg_topic))
+        if op != self.OP_MSG_DATA:
+            raise ROSBagFormatException('Expecting OP_MSG_DATA, got %d' % op)
 
-            record_data = self.read_record_data()
+        msg_topic = _read_str_field(header, 'topic')
+        if topic != msg_topic:
+            raise ROSBagFormatException('Expecting topic "%s", got "%s"' % (topic, msg_topic))
 
-            topic_info = self.bag.topic_infos[topic]
+        record_data = _read_record_data(f)
 
-            try:
-                msg_type = self.get_message_type(topic_info)
-            except KeyError:
-                raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % topic_info.datatype)
-            
-            msg = msg_type()
-            msg.deserialize(record_data)
-            
-            print msg
-            
-            return msg
-    
-    def decompress_chunk(self, chunk_pos):
-        if self.decompressed_chunk_pos == chunk_pos:
-            return
+        topic_info = self.bag.topic_infos[topic]
 
-        self.bag._seek(chunk_pos)
+        try:
+            msg_type = self.get_message_type(topic_info)
+        except KeyError:
+            raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % topic_info.datatype)
         
-        chunk_header = self.read_chunk_header()
-    
-        if chunk_header.compression == ChunkHeader.COMPRESSION_NONE:
-            return
+        msg = msg_type()
+        msg.deserialize(record_data)
         
-        compressed_chunk = self.read_record_data()
+        print msg
         
-        self.decompressed_chunk     = bz2.decompress(compressed_chunk)
-        self.decompressed_chunk_pos = chunk_pos
+        return msg

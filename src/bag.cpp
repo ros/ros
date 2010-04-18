@@ -72,10 +72,9 @@ bool Bag::open(string const& filename, BagMode mode) {
     mode_ = mode;
 
     switch (mode_) {
-    case bagmode::Read:       return openRead(filename);
-    case bagmode::Write:      return openWrite(filename);
-    case bagmode::Append:     return openAppend(filename);
-    case bagmode::ReadAppend: return openAppend(filename);
+    case bagmode::Read:   return openRead(filename);
+    case bagmode::Write:  return openWrite(filename);
+    case bagmode::Append: return openAppend(filename);
     default:
     	ROS_ERROR("Unknown mode: %d", (int) mode);
     }
@@ -179,7 +178,7 @@ void Bag::close() {
     if (!file_.isOpen())
         return;
 
-    if (mode_ == bagmode::Write || mode_ == bagmode::Append || mode_ == bagmode::ReadAppend)
+    if (mode_ == bagmode::Write || mode_ == bagmode::Append)
     	closeWrite();
     
     // Unfortunately closing this possibly enormous file takes a while

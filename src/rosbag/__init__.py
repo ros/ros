@@ -35,7 +35,7 @@
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
-from bag import Bag, COMPRESSION_NONE, COMPRESSION_BZ2, COMPRESSION_ZLIB
+from bag import Bag, Compression
 
 # Import rosbag main to be used by the $ROS_ROOT/bin/rosbag
 from main import rosbagmain

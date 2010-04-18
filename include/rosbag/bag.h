@@ -62,11 +62,10 @@ namespace bagmode
 {
     enum BagMode
     {
-        Write      = 0,
-        Read       = 1,
-        Append     = 2,
-        ReadAppend = 3,
-        Default    = Read
+        Write   = 0,
+        Read    = 1,
+        Append  = 2,
+        Default = Read
     };
 }
 typedef bagmode::BagMode BagMode;

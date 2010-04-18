@@ -59,9 +59,10 @@ class ROSBagFormatException(ROSBagException):
     def __init__(self, msg):
         ROSBagException.__init__(self, msg)
 
-COMPRESSION_NONE = 'none'
-COMPRESSION_BZ2  = 'bz2'
-COMPRESSION_ZLIB = 'zlib'
+class Compression:
+    NONE = 'none'
+    BZ2  = 'bz2'
+    ZLIB = 'zlib'
 
 ###
 
@@ -155,7 +156,7 @@ class Bag(object):
 
         self.file_header_pos = None
 
-        self.compression     = COMPRESSION_NONE
+        self.compression     = Compression.NONE
         self.chunk_threshold = 768 * 1024
         
         # Chunk book-keeping
@@ -164,10 +165,17 @@ class Bag(object):
         self.curr_chunk_data_pos      = None
         self.curr_chunk_topic_indexes = {}
 
-        self.curr_compression = COMPRESSION_NONE
+        self.curr_compression = Compression.NONE
         self.output_file      = self.file
+        
+    def open(self, f, mode):
+        if   mode == 'r': self._open_read(f)
+        elif mode == 'w': self._open_write(f)
+        elif mode == 'a': self._open_append(f)
+        else:
+            raise ROSBagException('unknown mode: %s' % mode)
 
-    def open_read(self, f):
+    def _open_read(self, f):
         """
         Opens the bag file for reading
         @param f: either a filename or a file object
@@ -209,7 +217,7 @@ class Bag(object):
 
         self.reader.start_reading()
 
-    def open_write(self, filename):
+    def _open_write(self, filename):
         """
         Opens the bag file for writing
         @param filename: filename
@@ -220,6 +228,11 @@ class Bag(object):
         self.mode = 'w'
 
         self.start_writing()
+        
+    def _open_append(self, filename):
+        
+        
+        self.mode = 'a'
 
     def getMessages(self):
         return self.reader.get_messages()
@@ -370,7 +383,7 @@ class Bag(object):
         self.chunk_open = True
     
     def get_chunk_offset(self):
-        if self.compression == COMPRESSION_NONE:
+        if self.compression == Compression.NONE:
             return self.file.tell() - self.curr_chunk_data_pos
         else:
             return self.output_file.compressed_bytes_in
@@ -385,7 +398,7 @@ class Bag(object):
 
         # Get the uncompressed and compressed sizes
         uncompressed_size = self.get_chunk_offset()
-        self.set_compression_mode(COMPRESSION_NONE)
+        self.set_compression_mode(Compression.NONE)
         compressed_size = self.file.tell() - self.curr_chunk_data_pos
 
         # Rewrite the chunk header with the size of the chunk (remembering current offset)
@@ -404,11 +417,11 @@ class Bag(object):
 
     def set_compression_mode(self, compression):
         # Flush the compressor, if needed
-        if self.curr_compression == COMPRESSION_BZ2:
+        if self.curr_compression == Compression.BZ2:
             self.output_file.flush()
         
         # Create the compressor
-        if compression == COMPRESSION_BZ2:
+        if compression == Compression.BZ2:
             self.output_file = _BZ2CompressorFileFacade(self.file)
         else:
             self.output_file = self.file
@@ -494,12 +507,6 @@ def _read_uint32(f): return _unpack_uint32(f.read(4))
 def _read_uint64(f): return _unpack_uint64(f.read(8))
 def _read_time  (f): return _unpack_time  (f.read(8))
 
-def _read_str_field   (header, field): return _read_field(header, field, lambda v: v)
-def _read_uint8_field (header, field): return _read_field(header, field, _unpack_uint8)
-def _read_uint32_field(header, field): return _read_field(header, field, _unpack_uint32)
-def _read_uint64_field(header, field): return _read_field(header, field, _unpack_uint64)
-def _read_time_field  (header, field): return _read_field(header, field, _unpack_time)
-
 def _unpack_uint8(v):  return struct.unpack('<B', v)[0]
 def _unpack_uint32(v): return struct.unpack('<L', v)[0]
 def _unpack_uint64(v): return struct.unpack('<Q', v)[0]
@@ -513,7 +520,7 @@ def _pack_time(v):   return _pack_uint32(v.secs) + _pack_uint32(v.nsecs)
 def _read(f, size):
     data = f.read(size)
     if len(data) != size:
-        raise ROSBagException('Expecting %d bytes, read %d' % (size, len(data)))   
+        raise ROSBagException('expecting %d bytes, read %d' % (size, len(data)))   
     return data
 
 def _read_sized(f):
@@ -526,14 +533,20 @@ def _write_sized(f, v):
 
 def _read_field(header, field, unpack_fn):
     if field not in header:
-        raise ROSBagFormatException('Expected "%s" field in record' % field)
+        raise ROSBagFormatException('expected "%s" field in record' % field)
     
     try:
         value = unpack_fn(header[field])
     except Exception, ex:
-        raise ROSBagFormatException('Error reading field "%s": %s' % (field, str(ex)))
+        raise ROSBagFormatException('error reading field "%s": %s' % (field, str(ex)))
     
     return value
+
+def _read_str_field   (header, field): return _read_field(header, field, lambda v: v)
+def _read_uint8_field (header, field): return _read_field(header, field, _unpack_uint8)
+def _read_uint32_field(header, field): return _read_field(header, field, _unpack_uint32)
+def _read_uint64_field(header, field): return _read_field(header, field, _unpack_uint64)
+def _read_time_field  (header, field): return _read_field(header, field, _unpack_time)
 
 def _write_record(f, header, data='', padded_size=None):
     header_str = _write_record_header(f, header)
@@ -932,7 +945,7 @@ class _BagReader103(_BagReader):
         if chunk_header is None:
             raise ROSBagException('no chunk at position %d' % chunk_pos)
 
-        if chunk_header.compression == COMPRESSION_NONE:
+        if chunk_header.compression == Compression.NONE:
             f = self.bag.file
             f.seek(chunk_header.data_pos + offset)
         else:
@@ -941,7 +954,7 @@ class _BagReader103(_BagReader):
                 self.bag._seek(chunk_header.data_pos)
                 compressed_chunk = _read(self.bag.file, chunk_header.compressed_size)
 
-                if chunk_header.compression == COMPRESSION_BZ2:
+                if chunk_header.compression == Compression.BZ2:
                     self.decompressed_chunk = bz2.decompress(compressed_chunk)
                 else:
                     raise ROSBagException('unsupported compression type: %s' % chunk_header.compression)

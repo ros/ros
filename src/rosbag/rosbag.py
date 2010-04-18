@@ -59,7 +59,27 @@ class ROSBagFormatException(ROSBagException):
     def __init__(self, msg):
         ROSBagException.__init__(self, msg)
 
-class TopicInfo:
+class BZ2CompressorFileFacade(object):
+    """
+    A file facade for the bz2.BZ2Compressor
+    """
+    def __init__(self, file):
+        self.file                = file
+        self.compressor          = bz2.BZ2Compressor()
+        self.compressed_bytes_in = 0
+    
+    def write(self, data):
+        compressed = self.compressor.compress(data)
+        if len(compressed) > 0:
+            self.file.write(compressed)
+        self.compressed_bytes_in += len(data)
+    
+    def flush(self):
+        compressed = self.compressor.flush()
+        if len(compressed) > 0:
+            self.file.write(compressed)
+
+class TopicInfo(object):
     def __init__(self, topic, datatype, md5sum, msg_def):
         self.topic    = topic
         self.datatype = datatype
@@ -69,7 +89,7 @@ class TopicInfo:
     def __str__(self):
         return '%s: %s [%s]' % (self.topic, self.datatype, self.md5sum)
 
-class ChunkInfo:
+class ChunkInfo(object):
     def __init__(self, pos, start_time, end_time):
         self.pos        = pos
         self.start_time = start_time
@@ -86,11 +106,7 @@ class ChunkInfo:
         s += '\n'.join(['  - %-*s %d' % (max_topic_len, topic, count) for topic, count in self.topic_counts.items()])
         return s
 
-class ChunkHeader:
-    COMPRESSION_NONE = 'none'
-    COMPRESSION_BZ2  = 'bz2'
-    COMPRESSION_ZLIB = 'zlib'
-    
+class ChunkHeader(object):
     def __init__(self, compression, compressed_size, uncompressed_size, data_pos=0):
         self.compression       = compression
         self.compressed_size   = compressed_size
@@ -107,6 +123,9 @@ class IndexEntry102(object):
     def __init__(self, time, offset):
         self.time   = time
         self.offset = offset
+        
+    def __str__(self):
+        return '%d.%d: %d' % (self.time.secs, self.time.nsecs, self.offset)
 
 class IndexEntry103(object):
     def __init__(self, time, chunk_pos, offset):
@@ -114,7 +133,14 @@ class IndexEntry103(object):
         self.chunk_pos = chunk_pos
         self.offset    = offset
 
+    def __str__(self):
+        return '%d.%d: %d+%d' % (self.time.secs, self.time.nsecs, self.chunk_pos, self.offset)
+
 class Bag(object):
+    COMPRESSION_NONE = 'none'
+    COMPRESSION_BZ2  = 'bz2'
+    COMPRESSION_ZLIB = 'zlib'
+
     def __init__(self):
         self.file     = None
         self.filename = None
@@ -143,7 +169,7 @@ class Bag(object):
             self.filename = None
         elif isinstance(f, str):
             rospy.loginfo('Opening %s' % f)
-            self.file     = file(f, 'rb')
+            self.file     = open(f, 'rb')
             self.filename = f
         else:
             raise ROSBagException('open must be passed a file or str')
@@ -250,9 +276,7 @@ def _read_field(header, field, unpack_fn):
     return value
 
 def _write_record(f, header, data='', padded_size=None):
-    header_str = ''.join([_pack_uint32(len(k) + 1 + len(v)) + k + '=' + v for k, v in header.items()])
-
-    _write_sized(f, header_str)
+    header_str = _write_record_header(f, header)
 
     if padded_size is not None:
         header_len = len(header_str)
@@ -262,6 +286,11 @@ def _write_record(f, header, data='', padded_size=None):
             data = ''
 
     _write_sized(f, data)
+
+def _write_record_header(f, header):
+    header_str = ''.join([_pack_uint32(len(k) + 1 + len(v)) + k + '=' + v for k, v in header.items()])
+    _write_sized(f, header_str)
+    return header_str
 
 def _read_record_header(f, req_op=None):
     bag_pos = f.tell()
@@ -520,9 +549,20 @@ class _BagSerializer103(_BagSerializer):
 
         return messages
     
+    def dump(self):
+        print '  index_data_pos: %d' % self.index_data_pos
+        print '  topic_count:    %d' % self.topic_count
+        print '  chunk_count:    %d' % self.chunk_count
+
+        for topic_info in self.bag.topic_infos:
+            print topic_info
+            
+        for chunk_info in self.bag.chunk_infos:
+            print chunk_info
+    
     def start_reading(self):
         self.read_file_header_record()
-
+        
         # Check if the index position has been written, i.e. the bag was closed successfully
         if self.index_data_pos == 0:
             print 'invalid index data position'
@@ -530,7 +570,7 @@ class _BagSerializer103(_BagSerializer):
             return
 
         # Seek to the end of the chunks
-        self.bag._seek(self.index_data_pos)
+        self.bag._seek(self.index_data_pos)        
 
         # Read the message definition records (one for each topic)
         for i in range(self.topic_count):
@@ -557,11 +597,10 @@ class _BagSerializer103(_BagSerializer):
 
             # Skip over the chunk data
             self.bag._seek(chunk_header.compressed_size, os.SEEK_CUR)
-    
+
             # Read the topic index records after the chunk
             for i in range(len(chunk_info.topic_counts)):
                 (topic, index) = self.read_topic_index_record()
-                
                 self.bag.topic_indexes[topic] = index
 
     def read_file_header_record(self):
@@ -641,7 +680,7 @@ class _BagSerializer103(_BagSerializer):
         if chunk_header is None:
             raise ROSBagException('no chunk at position %d' % chunk_pos)
 
-        if chunk_header.compression == ChunkHeader.COMPRESSION_NONE:
+        if chunk_header.compression == Bag.COMPRESSION_NONE:
             f = self.bag.file
             f.seek(chunk_header.data_pos + offset)
         else:
@@ -650,7 +689,7 @@ class _BagSerializer103(_BagSerializer):
                 self.bag._seek(chunk_header.data_pos)
                 compressed_chunk = _read(self.bag.file, chunk_header.compressed_size)
 
-                if chunk_header.compression == ChunkHeader.COMPRESSION_BZ2:
+                if chunk_header.compression == Bag.COMPRESSION_BZ2:
                     self.decompressed_chunk = bz2.decompress(compressed_chunk)
                 else:
                     raise ROSBagException('unsupported compression type: %s' % chunk_header.compression)
@@ -695,18 +734,23 @@ class _BagSerializer103(_BagSerializer):
 ###
 
 class BagWriter(object):
-    VERSION = '#ROSBAG V1.3'
-    
-    FILE_HEADER_LENGTH = 4096
+    VERSION             = '#ROSBAG V1.3'
+    FILE_HEADER_LENGTH  = 4096
+    INDEX_VERSION       = 1
+    CHUNK_INDEX_VERSION = 1
     
     def __init__(self, filename):
-        self.file = file(filename, 'wb')
+        self.file = open(filename, 'wb')
         self.buffer = StringIO()
+                
+        self.file_header_pos = None
+        
+        self.topic_indexes = {}
                 
         self.topic_infos = {}    # topic -> TopicInfo
         self.chunk_infos = []    # ChunkInfo[]
 
-        self.compression     = ChunkHeader.COMPRESSION_NONE
+        self.compression     = Bag.COMPRESSION_NONE
         self.chunk_threshold = 768 * 1024
         
         # Chunk book-keeping
@@ -714,6 +758,9 @@ class BagWriter(object):
         self.curr_chunk_info          = None
         self.curr_chunk_data_pos      = None
         self.curr_chunk_topic_indexes = {}
+
+        self.curr_compression = Bag.COMPRESSION_NONE
+        self.output_file      = self.file
 
         self.start_writing()
 
@@ -726,19 +773,26 @@ class BagWriter(object):
         
     def start_writing(self):        
         self.file.write(self.VERSION + '\n')
-        
-        index_pos   = 0    # @todo: fill in
-        topic_count = len(self.topic_infos)
-        chunk_count = 0    # @todo: fill in
-
-        self.write_file_header_record(index_pos, topic_count, chunk_count)
+        self.file_header_pos = self.file.tell()
+        self.write_file_header_record(0, 0, 0)
 
     def stop_writing(self):
+        if self.chunk_open:
+            self.stop_writing_chunk()
+
+        index_pos = self.file.tell()
+        
         # Write topic infos
         for topic_info in self.topic_infos.values():
             self.write_message_definition_record(topic_info)
 
         # Write chunk infos
+        for chunk_info in self.chunk_infos:
+            self.write_chunk_info_record(chunk_info)
+
+        # Re-write the file header
+        self.file.seek(self.file_header_pos)
+        self.write_file_header_record(index_pos, len(self.topic_infos), len(self.chunk_infos))
 
     def write(self, topic, msg, t=None):
         """
@@ -753,6 +807,9 @@ class BagWriter(object):
 
         if not t:
             t = roslib.rostime.Time.from_sec(time.time())
+        
+        # Seek to end (in case previous operation was a read)
+        self.file.seek(0, os.SEEK_END)
             
         if not self.chunk_open:
             self.start_writing_chunk(t)
@@ -824,15 +881,15 @@ class BagWriter(object):
         self.curr_chunk_info = ChunkInfo(self.file.tell(), t, t)
         self.write_chunk_header(ChunkHeader(self.compression, 0, 0))
         self.curr_chunk_data_pos = self.file.tell()
-        # @todo: set compression mode
+        self.set_compression_mode(self.compression)
         self.chunk_open = True
     
     def get_chunk_offset(self):
-        if self.compression == ChunkHeader.COMPRESSION_NONE:
+        if self.compression == Bag.COMPRESSION_NONE:
             return self.file.tell() - self.curr_chunk_data_pos
         else:
-            raise ROSBagException('!') #file_.getCompressedBytesIn();
-
+            return self.output_file.compressed_bytes_in
+        
     def stop_writing_chunk(self):
         # Add this chunk to the index
         self.chunk_infos.append(self.curr_chunk_info)
@@ -843,9 +900,9 @@ class BagWriter(object):
 
         # Get the uncompressed and compressed sizes
         uncompressed_size = self.get_chunk_offset()
-        self.set_compression_mode(ChunkHeader.COMPRESSION_NONE)
+        self.set_compression_mode(Bag.COMPRESSION_NONE)
         compressed_size = self.file.tell() - self.curr_chunk_data_pos
-    
+
         # Rewrite the chunk header with the size of the chunk (remembering current offset)
         end_of_chunk_pos = self.file.tell()
         self.file.seek(self.curr_chunk_info.pos)
@@ -853,18 +910,25 @@ class BagWriter(object):
 
         # Write out the topic indexes and clear them
         self.file.seek(end_of_chunk_pos)
-        self.write_topic_index_records()
+        for topic, entries in self.curr_chunk_topic_indexes.items():
+            self.write_topic_index_record(topic, entries)
         self.curr_chunk_topic_indexes.clear()
 
         # Flag that we're starting a new chunk
         self.chunk_open = False
 
     def set_compression_mode(self, compression):
-        # @todo: update the file writing mode
-        pass
+        # Flush the compressor, if needed
+        if self.curr_compression == Bag.COMPRESSION_BZ2:
+            self.output_file.flush()
+        
+        # Create the compressor
+        if compression == Bag.COMPRESSION_BZ2:
+            self.output_file = BZ2CompressorFileFacade(self.file)
+        else:
+            self.output_file = self.file
 
-    def write_topic_index_records(self):
-        pass
+        self.curr_compression = compression
 
     def write_file_header_record(self, index_pos, topic_count, chunk_count):
         header = {
@@ -883,7 +947,7 @@ class BagWriter(object):
             'type':  topic_info.datatype,
             'def':   topic_info.msg_def
         }
-        _write_record(self.file, header)
+        _write_record(self.output_file, header)
         
     def write_message_data_record(self, topic, t, serialized_bytes):
         header = {
@@ -891,7 +955,7 @@ class BagWriter(object):
             'topic': topic,
             'time':  _pack_time(t)
         }
-        _write_record(self.file, header, serialized_bytes)
+        _write_record(self.output_file, header, serialized_bytes)
 
     def write_chunk_header(self, chunk_header):
         header = {
@@ -899,6 +963,44 @@ class BagWriter(object):
             'compression': chunk_header.compression,
             'size':        _pack_uint32(chunk_header.uncompressed_size)
         }
-        _write_record(self.file, header)
+        _write_record_header(self.file, header)
 
         self.file.write(_pack_uint32(chunk_header.compressed_size))
+
+    def write_topic_index_record(self, topic, entries):        
+        header = {
+            'op':    _pack_uint8(_BagSerializer.OP_INDEX_DATA),
+            'topic': topic,
+            'ver':   _pack_uint32(self.INDEX_VERSION),
+            'count': _pack_uint32(len(entries))
+        }
+
+        buffer = self.buffer
+        buffer.seek(0)
+        buffer.truncate(0)            
+        for entry in entries:
+            buffer.write(_pack_time  (entry.time))
+            buffer.write(_pack_uint32(entry.offset))
+            
+        _write_record(self.file, header, buffer.getvalue())            
+
+    def write_chunk_info_record(self, chunk_info):
+        header = {
+            'op':         _pack_uint8 (_BagSerializer103.OP_CHUNK_INFO),
+            'ver':        _pack_uint32(self.CHUNK_INDEX_VERSION),
+            'chunk_pos':  _pack_uint64(chunk_info.pos),
+            'start_time': _pack_time(chunk_info.start_time),
+            'end_time':   _pack_time(chunk_info.end_time),
+            'count':      _pack_uint32(len(chunk_info.topic_counts))
+        }
+        
+        buffer = self.buffer
+        buffer.seek(0)
+        buffer.truncate(0)
+        for topic, count in chunk_info.topic_counts.items():
+            buffer.write(_pack_uint32(len(topic)))
+            buffer.write(topic)
+            buffer.write(_pack_uint32(count))
+
+        _write_record(self.file, header, buffer.getvalue())
+        

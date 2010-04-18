@@ -197,8 +197,6 @@ void Bag::close() {
 }
 
 void Bag::closeWrite() {
-    if (chunk_open_)
-        stopWritingChunk();
     stopWritingVersion103();
 }
 
@@ -255,6 +253,9 @@ void Bag::startWritingVersion103() {
 }
 
 void Bag::stopWritingVersion103() {
+    if (chunk_open_)
+        stopWritingChunk();
+
     index_data_pos_ = file_.getOffset();
     writeMessageDefinitionRecords();
     writeChunkInfoRecords();

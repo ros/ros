@@ -91,7 +91,7 @@ class ChunkHeader:
     COMPRESSION_BZ2  = 'bz2'
     COMPRESSION_ZLIB = 'zlib'
     
-    def __init__(self, compression, compressed_size, uncompressed_size, data_pos):
+    def __init__(self, compression, compressed_size, uncompressed_size, data_pos=0):
         self.compression       = compression
         self.compressed_size   = compressed_size
         self.uncompressed_size = uncompressed_size
@@ -127,7 +127,7 @@ class Bag(object):
         # 103
         self.topic_count   = 0
         self.chunk_count   = 0
-        self.chunk_infos   = []  # ChunkInfo
+        self.chunk_infos   = []  # ChunkInfo[]
         self.chunk_headers = {}  # chunk_pos -> ChunkHeader
 
         self.serializer = None 
@@ -369,7 +369,7 @@ class _BagSerializer102_Unindexed(_BagSerializer):
                 op = _read_uint8_field(header, 'op')
                 if op != self.OP_MSG_DEF:
                     break
-    
+
                 topic_info = self.read_message_definition_record(header)
                 self.bag.topic_infos[topic_info.topic] = topic_info
 
@@ -650,7 +650,11 @@ class _BagSerializer103(_BagSerializer):
                 self.bag._seek(chunk_header.data_pos)
                 compressed_chunk = _read(self.bag.file, chunk_header.compressed_size)
 
-                self.decompressed_chunk     = bz2.decompress(compressed_chunk)
+                if chunk_header.compression == ChunkHeader.COMPRESSION_BZ2:
+                    self.decompressed_chunk = bz2.decompress(compressed_chunk)
+                else:
+                    raise ROSBagException('unsupported compression type: %s' % chunk_header.compression)
+                
                 self.decompressed_chunk_pos = chunk_pos
 
                 if self.decompressed_chunk_io:
@@ -698,123 +702,203 @@ class BagWriter(object):
     def __init__(self, filename):
         self.file = file(filename, 'wb')
         self.buffer = StringIO()
+                
+        self.topic_infos = {}    # topic -> TopicInfo
+        self.chunk_infos = []    # ChunkInfo[]
+
+        self.compression     = ChunkHeader.COMPRESSION_NONE
+        self.chunk_threshold = 768 * 1024
         
-        self.defined = set()
+        # Chunk book-keeping
+        self.chunk_open               = False
+        self.curr_chunk_info          = None
+        self.curr_chunk_data_pos      = None
+        self.curr_chunk_topic_indexes = {}
 
         self.start_writing()
 
     def close(self):
         if self.file:
+            self.stop_writing()
+            
             self.file.close()
         self.buffer = None
         
     def start_writing(self):        
         self.file.write(self.VERSION + '\n')
+        
+        index_pos   = 0    # @todo: fill in
+        topic_count = len(self.topic_infos)
+        chunk_count = 0    # @todo: fill in
 
-        self.write_file_header_record()
+        self.write_file_header_record(index_pos, topic_count, chunk_count)
 
-    def write(self, topic, msg, t=None, raw=False):
+    def stop_writing(self):
+        # Write topic infos
+        for topic_info in self.topic_infos.values():
+            self.write_message_definition_record(topic_info)
+
+        # Write chunk infos
+
+    def write(self, topic, msg, t=None):
         """
         Add a message to the bag
+        @param topic: name of topic
+        @type  topic: str
         @param msg: message to add to bag
         @type  msg: Message
-        @param raw: if True, msg is in raw format (msg_type, serialized_bytes, md5sum, pytype)
-        @param raw: bool
         @param t: ROS time of message publication
         @type  t: U{roslib.message.Time}
         """
-        f = self.file
-        if raw:
-            msg_type = msg[0]
-            serialized_bytes = msg[1]
-            if len(msg) == 5:
-                md5sum = msg[4]._md5sum
-            else:
-                md5sum = msg[2]
 
-            if msg_type not in self.defined:
-                if len(msg) == 5:
-                    pytype = msg[4]
-                else:
-                    pytype = None
-                
-                self.write_message_definition_record(topic, md5sum, msg_type, pytype)
-
-            # note: timestamp does not respect sim time as not required to be running in a rospy node
-            if not t:
-                t = roslib.rostime.Time.from_sec(time.time())
-                
-            header = {
-                'op':    _pack_uint8(_BagSerializer.OP_MSG_DATA),
-                'topic': topic,
-                'md5':   md5sum,
-                'type':  msg_type,
-                'time':  _pack_time(t)
-            }
-            _write_record(self.file, header, serialized_bytes)
-        else:
-            buffer   = self.buffer
-            md5sum   = msg.__class__._md5sum
-            msg_type = msg.__class__._type
-
-            if not msg_type in self.defined:
-                self.defined.add(msg_type)
-                
-                header = {
-                    'op':    _pack_uint8(_BagSerializer.OP_MSG_DEF),
-                    'topic': topic,
-                    'md5':   md5sum,
-                    'type':  msg_type,
-                    'def':   msg._full_text
-                }                
-                _write_record(self.file, header)
-                
-            msg.serialize(buffer)
+        if not t:
+            t = roslib.rostime.Time.from_sec(time.time())
             
-            # note: timestamp does not respect sim time as not required to be running in a rospy node
-            if not t:
-                t = roslib.rostime.Time.from_sec(time.time())
+        if not self.chunk_open:
+            self.start_writing_chunk(t)
 
-            header = {
-                'op':    _pack_uint8(_BagSerializer.OP_MSG_DATA),
-                'topic': topic,
-                'md5':   md5sum,
-                'type':  msg_type,
-                'time':  _pack_time(t)
-            }
-            _write_record(self.file, header, buffer.getvalue())
+        # Update chunk index
+        index_entry = IndexEntry103(t, self.curr_chunk_info.pos, self.get_chunk_offset())
+        self.curr_chunk_topic_indexes.setdefault(topic, []).append(index_entry)
+        curr_topic_count = self.curr_chunk_info.topic_counts.setdefault(topic, 0)
+        self.curr_chunk_info.topic_counts[topic] = curr_topic_count + 1
 
-            buffer.seek(0)
-            buffer.truncate(0)
+        # Write message definition record, if necessary
+        if topic not in self.topic_infos:
+            topic_info = TopicInfo(topic, msg.__class__._type, msg.__class__._md5sum, msg._full_text)
+            self.write_message_definition_record(topic_info)
+            self.topic_infos[topic] = topic_info
 
-    def write_file_header_record(self):
+        # Serialize the message to the buffer
+        self.buffer.seek(0)
+        self.buffer.truncate(0)
+        msg.serialize(self.buffer)
+
+        # Write message data record
+        self.write_message_data_record(topic, t, self.buffer.getvalue())
+        
+        # Check if we want to stop this chunk
+        chunk_size = self.get_chunk_offset()
+        if chunk_size > self.chunk_threshold:
+            self.stop_writing_chunk()
+        
+    # @todo: update with chunk logic
+    def write_raw(self, topic, raw_msg_data, t=None):
+        """
+        Add a message to the bag
+        @param topic: name of topic
+        @type  topic: str
+        @param raw_msg_data: raw message data
+        @type  raw_msg_data: tuple of (msg_type, serialized_bytes, md5sum, pytype)
+        @param t: ROS time of message publication
+        @type  t: U{roslib.message.Time}
+        """
+
+        if not t:
+            t = roslib.rostime.Time.from_sec(time.time())
+
+        msg_type, serialized_bytes, md5sum, pytype = raw_msg_data
+
+        # Write message definition record, if necessary
+        if topic not in self.topic_infos:
+            if pytype is None:
+                try:
+                    pytype = roslib.message.get_message_class(msg_type)
+                except Exception:
+                    pytype = None
+            if pytype is None:
+                raise ROSBagException('cannot locate message class and no message class provided for [%s]' % msg_type)
+
+            if pytype._md5sum != md5sum:
+                print >> sys.stderr, 'WARNING: md5sum of loaded type [%s] does not match that specified' % msg_type
+                #raise ROSRecordException('md5sum of loaded type does not match that of data being recorded')
+
+            topic_info = TopicInfo(topic, msg_type, md5sum, pytype._full_text)
+            self.write_message_definition_record(topic_info)
+            self.topic_infos[topic] = topic_info
+
+        # Write message data record
+        self.write_message_data_record(topic, t, serialized_bytes)
+
+    def start_writing_chunk(self, t):
+        self.curr_chunk_info = ChunkInfo(self.file.tell(), t, t)
+        self.write_chunk_header(ChunkHeader(self.compression, 0, 0))
+        self.curr_chunk_data_pos = self.file.tell()
+        # @todo: set compression mode
+        self.chunk_open = True
+    
+    def get_chunk_offset(self):
+        if self.compression == ChunkHeader.COMPRESSION_NONE:
+            return self.file.tell() - self.curr_chunk_data_pos
+        else:
+            raise ROSBagException('!') #file_.getCompressedBytesIn();
+
+    def stop_writing_chunk(self):
+        # Add this chunk to the index
+        self.chunk_infos.append(self.curr_chunk_info)
+        
+        # Update the topic indexes with the current chunk index
+        for topic, entries in self.curr_chunk_topic_indexes.items():
+            self.topic_indexes.setdefault(topic, []).extend(entries)
+
+        # Get the uncompressed and compressed sizes
+        uncompressed_size = self.get_chunk_offset()
+        self.set_compression_mode(ChunkHeader.COMPRESSION_NONE)
+        compressed_size = self.file.tell() - self.curr_chunk_data_pos
+    
+        # Rewrite the chunk header with the size of the chunk (remembering current offset)
+        end_of_chunk_pos = self.file.tell()
+        self.file.seek(self.curr_chunk_info.pos)
+        self.write_chunk_header(ChunkHeader(self.compression, compressed_size, uncompressed_size))
+
+        # Write out the topic indexes and clear them
+        self.file.seek(end_of_chunk_pos)
+        self.write_topic_index_records()
+        self.curr_chunk_topic_indexes.clear()
+
+        # Flag that we're starting a new chunk
+        self.chunk_open = False
+
+    def set_compression_mode(self, compression):
+        # @todo: update the file writing mode
+        pass
+
+    def write_topic_index_records(self):
+        pass
+
+    def write_file_header_record(self, index_pos, topic_count, chunk_count):
         header = {
             'op':          _pack_uint8(_BagSerializer.OP_FILE_HEADER),
-            'index_pos':   _pack_uint64(0),
-            'topic_count': _pack_uint32(0),
-            'chunk_count': _pack_uint32(0)
+            'index_pos':   _pack_uint64(index_pos),
+            'topic_count': _pack_uint32(topic_count),
+            'chunk_count': _pack_uint32(chunk_count)
         }
         _write_record(self.file, header, padded_size=self.FILE_HEADER_LENGTH)
 
-    def write_message_definition_record(self, topic, md5sum, msg_type, pytype=None):
-        if pytype is None:
-            try:
-                pytype = roslib.message.get_message_class(msg_type)
-            except Exception:
-                pytype = None
-        if pytype is None:
-            raise ROSBagException('cannot locate message class and no message class provided for [%s]' % msg_type)
-
-        if pytype._md5sum != md5sum:
-            print >> sys.stderr, 'WARNING: md5sum of loaded type [%s] does not match that specified' % msg_type
-            #raise ROSRecordException('md5sum of loaded type does not match that of data being recorded')
-        
+    def write_message_definition_record(self, topic_info):
         header = {
-            'op':    chr(1),
-            'topic': topic,
-            'md5':   md5sum,
-            'type':  msg_type,
-            'def':   pytype._full_text
+            'op':    _pack_uint8(_BagSerializer.OP_MSG_DEF),
+            'topic': topic_info.topic,
+            'md5':   topic_info.md5sum,
+            'type':  topic_info.datatype,
+            'def':   topic_info.msg_def
         }
         _write_record(self.file, header)
-        self.defined.add(msg_type)
+        
+    def write_message_data_record(self, topic, t, serialized_bytes):
+        header = {
+            'op':    _pack_uint8(_BagSerializer.OP_MSG_DATA),
+            'topic': topic,
+            'time':  _pack_time(t)
+        }
+        _write_record(self.file, header, serialized_bytes)
+
+    def write_chunk_header(self, chunk_header):
+        header = {
+            'op':          _pack_uint8(_BagSerializer103.OP_CHUNK),
+            'compression': chunk_header.compression,
+            'size':        _pack_uint32(chunk_header.uncompressed_size)
+        }
+        _write_record(self.file, header)
+
+        self.file.write(_pack_uint32(chunk_header.compressed_size))

@@ -512,10 +512,10 @@ void Bag::write(string const& topic, Time const& time, ros::Message const& msg) 
 }
 
 uint32_t Bag::getChunkOffset() const {
-    if (compression_ == compression::BZ2)
-        return file_.getCompressedBytesIn();
-    else
+    if (compression_ == compression::None)
         return file_.getOffset() - curr_chunk_data_pos_;
+    else
+        return file_.getCompressedBytesIn();
 }
 
 void Bag::startWritingChunk(Time time) {
@@ -687,8 +687,8 @@ void Bag::writeTopicIndexRecords() {
     boost::mutex::scoped_lock lock(record_mutex_);
 
     for (map<string, vector<IndexEntry> >::const_iterator i = curr_chunk_topic_indexes_.begin(); i != curr_chunk_topic_indexes_.end(); i++) {
-        const string&             topic       = i->first;
-        const vector<IndexEntry>& topic_index = i->second;
+        string const&             topic       = i->first;
+        vector<IndexEntry> const& topic_index = i->second;
 
         // Write the index record header
         M_string header;
@@ -796,7 +796,7 @@ void Bag::writeMessageDefinitionRecords() {
     boost::mutex::scoped_lock lock(record_mutex_);
 
     for (map<string, TopicInfo>::const_iterator i = topic_infos_.begin(); i != topic_infos_.end(); i++) {
-        const TopicInfo& topic_info = i->second;
+        TopicInfo const& topic_info = i->second;
         writeMessageDefinitionRecord(topic_info);
     }
 }
@@ -1005,7 +1005,7 @@ void Bag::writeChunkInfoRecords() {
         // Measure length of data
         uint32_t data_len = 0;
         for (map<string, uint32_t>::const_iterator i = chunk_info.topic_counts.begin(); i != chunk_info.topic_counts.end(); i++) {
-            const string& topic = i->first;
+            string const& topic = i->first;
             data_len += 4 + topic.size() + 4;   // 4 bytes for length of topic_name + topic_name + 4 bytes for topic count
         }
         
@@ -1019,7 +1019,7 @@ void Bag::writeChunkInfoRecords() {
 
         // Write the topic names and counts
         for (map<string, uint32_t>::const_iterator i = chunk_info.topic_counts.begin(); i != chunk_info.topic_counts.end(); i++) {
-            const string& topic = i->first;
+            string const& topic = i->first;
             uint32_t      count = i->second;
 
             uint32_t topic_name_size = topic.size();
@@ -1294,7 +1294,7 @@ vector<MessageInfo> Bag::getMessagesByTopic(vector<string> const& topics, Time c
     return messages;
 }
 
-vector<MessageInfo> Bag::getMessages(const Time& start_time, const Time& end_time) {
+vector<MessageInfo> Bag::getMessages(Time const& start_time, Time const& end_time) {
 	vector<MessageInfo> messages;
 
     for (map<string, TopicInfo>::const_iterator i = topic_infos_.begin(); i != topic_infos_.end(); i++) {

@@ -13,6 +13,7 @@
   <depend package="topic_tools"/>
   <depend package="rostest"/>
   <depend package="rosbagmigration"/>
+  <depend package="rosrecord"/>
   <export>
     <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lrosbag"/>
     <rosdoc config="${prefix}/rosdoc.yaml" />

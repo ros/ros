@@ -56,7 +56,6 @@ class ROSBagFormatException(ROSBagException):
     def __init__(self, msg):
         ROSBagException.__init__(self, msg)
 
-
 class TopicInfo:
     def __init__(self, topic, datatype, md5sum, msg_def):
         self.topic    = topic
@@ -151,6 +150,10 @@ class Bag(object):
         pass
     
     def getMessages(self):
+        for topic, entries in self.topic_indexes.items():
+            for entry in entries:
+                self.serializer.read_message_data_record(topic, entry.chunk_pos, entry.offset)
+
         return []
 
     ### Record I/O
@@ -289,6 +292,8 @@ class _BagSerializer103(_BagSerializer):
         self.index_data_pos  = 0
         self.curr_chunk_info = None
         self.message_types   = {}
+        
+        self.decompressed_chunk = None
     
     def start_reading(self):
         self.read_file_header_record()
@@ -354,7 +359,9 @@ class _BagSerializer103(_BagSerializer):
 
         return TopicInfo(topic, datatype, md5sum, msg_def)
     
-    def get_message_type(self, datatype, msg_def):
+    def get_message_type(self, topic_info):
+        datatype, msg_def = topic_info.datatype, topic_info.msg_def
+        
         message_type = self.message_types.get(datatype)
         if message_type is None:
             try:
@@ -437,6 +444,9 @@ class _BagSerializer103(_BagSerializer):
             
         return topic_index
 
+    def decompress_chunk(self, chunk_pos):
+        pass
+
     def read_message_data_record(self, topic, chunk_pos, offset):
         if self.decompressed_chunk != chunk_pos:
             # Seek to the start of the chunk
@@ -446,7 +456,7 @@ class _BagSerializer103(_BagSerializer):
             chunk_header = self.read_chunk_header()
     
             # Read and decompress the chunk
-            if chunk_header.compression == COMPRESSION_BZ2:
+            if chunk_header.compression != self.COMPRESSION_NONE:
                 self.decompress_chunk(chunk_pos)
 #
 #        if self.decompressed_chunk == chunk_pos:
@@ -479,7 +489,7 @@ class _BagSerializer103(_BagSerializer):
         if True:
             # Read uncompressed chunk
             self.bag._seek(offset, os.SEEK_CUR)
-    
+
             while True:
                 header = self.read_record_header()               
                 op = _read_uint8_field(header, 'op')
@@ -491,13 +501,25 @@ class _BagSerializer103(_BagSerializer):
             if op != self.OP_MSG_DATA:
                 raise ROSBagFormatException('Expecting OP_MSG_DATA, got %d' % op)
 
-            msg_topic = self._read_str_field(header, 'topic')
+            msg_topic = _read_str_field(header, 'topic')
             if topic != msg_topic:
                 raise ROSBagFormatException('Expecting topic "%s", got "%s"' % (topic, msg_topic))
-            
+
             record_data = self.read_record_data()
+
+            topic_info = self.bag.topic_infos[topic]
+
+            try:
+                msg_type = self.get_message_type(topic_info)
+            except KeyError:
+                raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % topic_info.datatype)
             
-            print record_data
+            msg = msg_type()
+            msg.deserialize(record_data)
+            
+            print msg
+            
+            return msg
     
     def decompress_chunk(self, chunk_pos):
         pass

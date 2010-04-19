@@ -80,6 +80,8 @@ class ROSLaunchChild(object):
         self.child_server = None
         self.pm = None
 
+        roslaunch.pmon._init_signal_handlers()
+
     def _start_pm(self):
         """
         Start process monitor for child roslaunch

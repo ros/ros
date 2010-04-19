@@ -46,27 +46,29 @@ class TestRosbag(unittest.TestCase):
         for (_, _, t1), (_, _, t2) in zip(msgs, msgs[1:]):
             self.assert_(t1 < t2, 'messages returned unordered: got timestamp %s before %s' % (str(t1), str(t2)))
 
+    def test_large_write_compressed(self):
+        b = rosbag.Bag('test.bag', 'w')
+        msg_count = 0
+        for i in range(1000):
+            msg = Int32()
+            msg.data = i
+            t = roslib.rostime.Time.from_sec(i)
+            b.write('/ints', msg, t)
+            msg_count += 1
+        b.close()
+
+        msgs = list(rosbag.Bag('test.bag').getMessages())
+
+        self.assert_(len(msgs) == msg_count, 'not all messages written: expected %d, got %d' % (msg_count, len(msgs)))
+
+        for (_, _, t1), (_, _, t2) in zip(msgs, msgs[1:]):
+            self.assert_(t1 < t2, 'messages returned unordered: got timestamp %s before %s' % (str(t1), str(t2)))
+
     #def test_simple_write(self):
         #self.failIf(timeout_t < time.time(), "timeout exceeded")
         #self.assert_(self.callback_invoked[0], "callback not invoked")
 
 def main():
-    b = rosbag.Bag('test.bag', 'w')
-    msg_count = 0
-    for i in range(5, 0, -1):
-        msg = Int32()
-        msg.data = i
-        t = roslib.rostime.Time.from_sec(i)
-        b.write('/ints', msg, t)
-        msg_count += 1
-    b.close()
-    
-    b.dump()
-
-    msgs = list(rosbag.Bag('test.bag').getMessages())
-    
-    print msgs
-    
     sys.exit()
 
 if __name__ == '__main__':

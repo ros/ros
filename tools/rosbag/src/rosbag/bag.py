@@ -204,19 +204,34 @@ class Bag(object):
             raise ValueError('topic is invalid')
         if not msg:
             raise ValueError('msg is invalid')
-        
+
         # Seek to end (in case previous operation was a read)
         self._file.seek(0, os.SEEK_END)
-        
+
         # Open a chunk, if needed
         if not self._chunk_open:
             self._start_writing_chunk(t)
 
         # Update the current chunk's topic index
         index_entry = _IndexEntry103(t, self._curr_chunk_info.pos, self._get_chunk_offset())
-        self._curr_chunk_topic_indexes.setdefault(topic, []).append(index_entry)
-        curr_topic_count = self._curr_chunk_info.topic_counts.setdefault(topic, 0)
-        self._curr_chunk_info.topic_counts[topic] = curr_topic_count + 1
+
+        topic_index = self._curr_chunk_topic_indexes.get(topic)
+        if topic_index is None:
+            self._curr_chunk_topic_indexes[topic] = [index_entry]
+            self._curr_chunk_info.topic_counts[topic] = 1
+        else:
+            last_message_time = topic_index[-1].time
+            if t < last_message_time:
+                raise ROSBagException('received messages not in chronological order on topic %s (%s received after %s)' % (topic, str(t), str(last_message_time)))
+            topic_index.append(index_entry)
+
+            self._curr_chunk_info.topic_counts[topic] += 1
+
+        # Update the chunk start/end times
+        if t > self._curr_chunk_info.end_time:
+            self._curr_chunk_info.end_time = t
+        elif t < self._curr_chunk_info.start_time:
+            self._curr_chunk_info.start_time = t
 
         # Write message definition record, if necessary
         if topic not in self._topic_infos:

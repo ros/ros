@@ -32,6 +32,8 @@
 
 #include <iostream>
 
+#include <set>
+
 #include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
 
@@ -41,6 +43,40 @@
 #include "std_msgs/Int32.h"
 
 #define foreach BOOST_FOREACH
+
+struct IndexEntryMultiSetCompare
+{
+    bool operator()(rosbag::IndexEntry const& a, rosbag::IndexEntry const& b) const { return a.time < b.time; }
+};
+
+TEST(rosbag, multiset_vs_vector)
+{
+	int count = 1000 * 1000;
+
+	std::multiset<rosbag::IndexEntry, IndexEntryMultiSetCompare> s;
+	ros::Time start = ros::Time::now();
+	for (int i = 0; i < count; i++) {
+		rosbag::IndexEntry e;
+		e.time = ros::Time::now();
+		e.chunk_pos = 0;
+		e.offset = 0;
+		s.insert(s.end(), e);
+	}
+	ros::Time end = ros::Time::now();
+	std::cout << "multiset: " << end - start << std::endl;
+
+	std::vector<rosbag::IndexEntry> v;
+	start = ros::Time::now();
+	for (int i = 0; i < count; i++) {
+		rosbag::IndexEntry e;
+		e.time = ros::Time::now();
+		e.chunk_pos = 0;
+		e.offset = 0;
+		v.push_back(e);
+	}
+	end = ros::Time::now();
+	std::cout << "vector: " << end - start << std::endl;
+}
 
 class BagTest : public testing::Test
 {
@@ -137,7 +173,6 @@ TEST(rosbag, simpleread)
 
 	bag.close();
 }
-
 
 TEST(rosbag, timequery)
 {

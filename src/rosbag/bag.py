@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # @todo:
-# - make read-only properties: filename, mode, version
+# - getMessages needs to return messages in time order (i.e. merge sort)
 # - recreate index for unindexed or broken bags
 
 PKG = 'rosbag'
@@ -39,6 +39,7 @@ import roslib; roslib.load_manifest(PKG)
 
 import bz2
 from cStringIO import StringIO
+import heapq
 import os
 import re
 import struct
@@ -75,7 +76,6 @@ class Bag(object):
     """
     Bag objects serialize messages to and from disk using the bag format.
     """
-
     def __init__(self, filename, mode='r', compression=Compression.NONE, chunk_threshold=768 * 1024):
         """
         Open a bag file.  The mode can be 'r', 'w', or 'a' for reading (default),
@@ -93,6 +93,7 @@ class Bag(object):
         @type  chunk_threshold: int
         @raise ValueError: if any argument is invalid
         @raise ROSBagException: if error in opening file
+        @raise ROSBagFormatException: if bag is 
         """
         if not filename:
             raise ValueError('filename is invalid')
@@ -235,7 +236,7 @@ class Bag(object):
         chunk_size = self._get_chunk_offset()
         if chunk_size > self._chunk_threshold:
             self._stop_writing_chunk()
-        
+
     def getMessages(self):
         """
         Return a list of all messages in the bag file.
@@ -861,17 +862,12 @@ class _BagReader102_Indexed(_BagReader):
         _BagReader.__init__(self, bag)
 
     def get_messages(self):
-        messages = []
-
         f = self.bag._file
 
-        for topic, entries in self.bag._topic_indexes.items():
-            for entry in entries:
-                f.seek(entry.offset)
-                message = self.read_message_data_record(topic)
-                messages.append((topic, message, entry.time))
-
-        return messages
+        for entry, _ in _mergesort(self.bag._topic_indexes.values(), key=lambda entry: entry.time):
+            f.seek(entry.offset)
+            topic, msg = self.read_message_data_record(entry)
+            yield (topic, msg, entry.time)
 
     def start_reading(self):
         self.read_file_header_record()
@@ -927,7 +923,7 @@ class _BagReader102_Indexed(_BagReader):
             
         return (topic, topic_index)
     
-    def read_message_data_record(self, topic):
+    def read_message_data_record(self):
         f = self.bag._file
 
         # Skip any MSG_DEF records
@@ -941,6 +937,8 @@ class _BagReader102_Indexed(_BagReader):
         # Check that we have a MSG_DATA record
         if op != _OP_MSG_DATA:
             raise ROSBagFormatException('Expecting OP_MSG_DATA, got %d' % op)
+        
+        topic = _read_str_field(header, 'topic')
 
         # Get the message type
         topic_info = self.bag._topic_infos[topic]
@@ -956,7 +954,7 @@ class _BagReader102_Indexed(_BagReader):
         msg = msg_type()
         msg.deserialize(record_data)
         
-        return msg
+        return (topic, msg)
 
 class _BagReader103(_BagReader):
     """
@@ -970,18 +968,13 @@ class _BagReader103(_BagReader):
         self.decompressed_chunk_io  = None
 
     def get_messages(self):
-        messages = []
-
-        for topic, entries in self.bag._topic_indexes.items():
-            for entry in entries:
-                message = self.read_message_data_record(topic, entry)
-                messages.append((topic, message, entry.time))
-
-        return messages
+        for entry, _ in _mergesort(self.bag._topic_indexes.values(), key=lambda entry: entry.time):
+            topic, msg = self.read_message_data_record(entry)
+            yield (topic, msg, entry.time)
 
     def start_reading(self):
         self.read_file_header_record()
-        
+
         # Check if the index position has been written, i.e. the bag was closed successfully
         if self.bag._index_data_pos == 0:
             print 'invalid index data position'
@@ -1094,7 +1087,7 @@ class _BagReader103(_BagReader):
             
         return (topic, topic_index)
 
-    def read_message_data_record(self, topic, entry):
+    def read_message_data_record(self, entry):
         chunk_pos, offset = entry.chunk_pos, entry.offset
 
         chunk_header = self.bag._chunk_headers.get(chunk_pos)
@@ -1136,6 +1129,8 @@ class _BagReader103(_BagReader):
         if op != _OP_MSG_DATA:
             raise ROSBagFormatException('Expecting OP_MSG_DATA, got %d' % op)
 
+        topic = _read_str_field(header, 'topic')
+
         # Get the message type
         topic_info = self.bag._topic_infos[topic]
         try:
@@ -1150,7 +1145,72 @@ class _BagReader103(_BagReader):
         msg = msg_type()
         msg.deserialize(record_data)
         
-        return msg
+        return (topic, msg)
+
+## See http://code.activestate.com/recipes/511509
+def _mergesort(list_of_lists, key=None):
+    """
+    Perform an N-way merge operation on sorted lists.
+
+    @param list_of_lists: (really iterable of iterable) of sorted elements
+    (either by naturally or by C{key})
+    @param key: specify sort key function (like C{sort()}, C{sorted()})
+    @param iterfun: function that returns an iterator.
+
+    Yields tuples of the form C{(item, iterator)}, where the iterator is the
+    built-in list iterator or something you pass in, if you pre-generate the
+    iterators.
+
+    This is a stable merge; complexity O(N lg N)
+
+    Examples::
+
+    print list(x[0] for x in mergesort([[1,2,3,4],
+                                        [2,3.5,3.7,4.5,6,7],
+                                        [2.6,3.6,6.6,9]]))
+    [1, 2, 2, 2.6, 3, 3.5, 3.6, 3.7, 4, 4.5, 6, 6.6, 7, 9]
+
+    # note stability
+    print list(x[0] for x in mergesort([[1,2,3,4],
+                                        [2,3.5,3.7,4.5,6,7],
+                                        [2.6,3.6,6.6,9]], key=int))
+    [1, 2, 2, 2.6, 3, 3.5, 3.6, 3.7, 4, 4.5, 6, 6.6, 7, 9]
+
+    print list(x[0] for x in mergesort([[4,3,2,1],
+                                        [7,6.5,4,3.7,3.3,1.9],
+                                        [9,8.6,7.6,6.6,5.5,4.4,3.3]],
+                                        key=lambda x: -x))
+    [9, 8.6, 7.6, 7, 6.6, 6.5, 5.5, 4.4, 4, 4, 3.7, 3.3, 3.3, 3, 2, 1.9, 1]
+    """
+
+    heap = []
+    for i, itr in enumerate(iter(pl) for pl in list_of_lists):
+        try:
+            item = itr.next()
+            toadd = (key(item), i, item, itr) if key else (item, i, itr)
+            heap.append(toadd)
+        except StopIteration:
+            pass
+    heapq.heapify(heap)
+
+    if key:
+        while heap:
+            _, idx, item, itr = heap[0]
+            yield item, itr
+            try:
+                item = itr.next()
+                heapq.heapreplace(heap, (key(item), idx, item, itr) )
+            except StopIteration:
+                heapq.heappop(heap)
+
+    else:
+        while heap:
+            item, idx, itr = heap[0]
+            yield item, itr
+            try:
+                heapq.heapreplace(heap, (itr.next(), idx, itr))
+            except StopIteration:
+                heapq.heappop(heap)
 
 class _BZ2CompressorFileFacade(object):
     """

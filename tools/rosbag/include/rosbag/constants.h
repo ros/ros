@@ -90,7 +90,7 @@ static const uint32_t CHUNK_INFO_VERSION = 1;
 // Compression types
 static const std::string COMPRESSION_NONE = "none";
 static const std::string COMPRESSION_BZ2  = "bz2";
-static const std::string COMPRESSION_ZLIB = "zlib";
+//static const std::string COMPRESSION_ZLIB = "zlib";
 
 }
 

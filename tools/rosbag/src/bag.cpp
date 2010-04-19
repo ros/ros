@@ -580,7 +580,7 @@ void Bag::writeChunkHeader(CompressionType compression, uint32_t compressed_size
     switch (compression) {
     case compression::None: chunk_header.compression = COMPRESSION_NONE; break;
     case compression::BZ2:  chunk_header.compression = COMPRESSION_BZ2;  break;
-    case compression::ZLIB: chunk_header.compression = COMPRESSION_ZLIB; break;
+    //case compression::ZLIB: chunk_header.compression = COMPRESSION_ZLIB; break;
     }
     chunk_header.compressed_size   = compressed_size;
     chunk_header.uncompressed_size = uncompressed_size;
@@ -877,7 +877,7 @@ bool Bag::decompressChunk(uint64_t chunk_pos) {
     CompressionType compression;
     if      (chunk_header.compression == COMPRESSION_NONE) compression = compression::None;
     else if (chunk_header.compression == COMPRESSION_BZ2)  compression = compression::BZ2;
-    else if (chunk_header.compression == COMPRESSION_ZLIB) compression = compression::ZLIB;
+    //else if (chunk_header.compression == COMPRESSION_ZLIB) compression = compression::ZLIB;
     else {
     	ROS_ERROR("Unknown compression: %s", chunk_header.compression.c_str());
     	return false;

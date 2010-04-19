@@ -42,7 +42,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <bzlib.h>
-#include <zlib.h>
+//#include <zlib.h>
 
 namespace rosbag {
 
@@ -52,7 +52,7 @@ namespace compression
     {
         None = 0,
         BZ2  = 1,
-        ZLIB = 2
+        //ZLIB = 2
     };
 }
 typedef compression::CompressionType CompressionType;
@@ -103,7 +103,7 @@ public:
 private:
     boost::shared_ptr<Stream> uncompressed_stream_;
     boost::shared_ptr<Stream> bz2_stream_;
-    boost::shared_ptr<Stream> zlib_stream_;
+    //boost::shared_ptr<Stream> zlib_stream_;
 };
 
 class UncompressedStream : public Stream
@@ -151,6 +151,7 @@ private:
     int     bzerror_;          //!< last error from bzlib
 };
 
+#if 0
 /*!
  * ZLIBStream use zlibc (http://www.zlib.net) for reading/writing compressed data in the ZLIB format.
  */
@@ -171,6 +172,7 @@ public:
 
     void   decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len);
 };
+#endif
 
 }
 

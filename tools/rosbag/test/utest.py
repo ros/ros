@@ -47,9 +47,9 @@ class TestRosbag(unittest.TestCase):
             self.assert_(t1 < t2, 'messages returned unordered: got timestamp %s before %s' % (str(t1), str(t2)))
 
     def test_large_write_compressed(self):
-        b = rosbag.Bag('test.bag', 'w')
+        b = rosbag.Bag('large_write.bag', 'w')
         msg_count = 0
-        for i in range(1000):
+        for i in range(10000):
             msg = Int32()
             msg.data = i
             t = roslib.rostime.Time.from_sec(i)
@@ -57,7 +57,7 @@ class TestRosbag(unittest.TestCase):
             msg_count += 1
         b.close()
 
-        msgs = list(rosbag.Bag('test.bag').getMessages())
+        msgs = list(rosbag.Bag('large_write.bag').getMessages())
 
         self.assert_(len(msgs) == msg_count, 'not all messages written: expected %d, got %d' % (msg_count, len(msgs)))
 

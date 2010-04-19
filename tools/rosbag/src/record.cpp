@@ -65,7 +65,7 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
         case 's': opts.snapshot    = true; break;
         case 'v': opts.verbose     = true; break;
         case 't': opts.trigger     = true; break;
-        case 'z': opts.compression = rosbag::compression::ZLIB; break;
+        //case 'z': opts.compression = rosbag::compression::ZLIB; break;
         case 'j': opts.compression = rosbag::compression::BZ2; break;
         case 'm': {
             int m = atoi(optarg);

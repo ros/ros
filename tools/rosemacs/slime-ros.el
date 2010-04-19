@@ -65,7 +65,11 @@
                           (concat sbcl-pkg-path "/scripts/run-sbcl.sh")
                           "/usr/bin/sbcl"))
          (inferior-lisp-program (concat sbcl-binary " --load " roslisp-path
-                                        "/scripts/roslisp-sbcl-init-slime")))
+                                        "/scripts/roslisp-sbcl-init-slime"))
+
+         ;; Override user's implementations if set
+         (slime-lisp-implementations nil))
+
     (slime)))
 
 (provide 'slime-ros)

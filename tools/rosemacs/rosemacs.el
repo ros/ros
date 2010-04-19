@@ -73,6 +73,13 @@
 (defvar ros-topic-display-update-interval 3 "Number of seconds between updates to the *rostopic* buffer (when it's visible)")
 (defvar ros-topic-update-interval nil "Gap in seconds between calls to rostopic list (end of one call to beginning of next).  nil means never call.")
 
+(defcustom ros-completion-function 'completing-read
+  "The completion function to be used for package
+  completions. This variable can be set to `ido-completing-read'
+  to enable `ido-mode' for ros packages."
+  :type 'function
+  :group 'rosemacs)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; State
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -524,8 +531,15 @@
     (view-buffer-other-window buf)
     ))
     
-    
-
+(defun ros-rgrep-package (ros-pkg regexp files)
+  (interactive (progn (grep-compute-defaults)
+                      (let ((package (ros-completing-read-package))
+                            (regexp (grep-read-regexp)))
+                        (list
+                         package
+                         regexp
+                         (grep-read-files regexp)))))
+  (rgrep regexp files (ros-package-path ros-pkg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Internal
@@ -865,6 +879,20 @@ q kills buffer"
 	(when (and (>= start 0) (string-equal "rostopic" (buffer-substring-no-properties start (point))))
 	  arg)))))
 
+(defun ros-completing-read-package (&optional default prompt completion-function)
+  (unless ros-packages
+    (ros-load-package-locations))
+  (let ((completion-function (or completion-function ros-completion-function))
+        (prompt (concat (or prompt "ROS Package")
+                        (if default
+                            (format " (default `%s'): " default)
+                          ": "))))
+    (funcall completion-function
+             prompt (mapcar (lambda (x)
+                              (cons x nil))
+                            ros-packages)
+             nil nil nil nil default)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; rosrun
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -926,10 +954,6 @@ q kills the buffer and process."
       (set-buffer buf)
       (ros-run-mode))
     buf))
-
-
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Keymap

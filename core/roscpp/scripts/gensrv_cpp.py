@@ -160,10 +160,13 @@ def generate(srv_path):
     s.write('\n')
     genmsg_cpp.write_includes(s, spec.response)
     
+    gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package)
+    md5sum = roslib.gentools.compute_md5(gendeps_dict)
+    
     s.write('namespace %s\n{\n'%(package))
-    genmsg_cpp.write_struct(s, spec.request, cpp_prefix)
+    genmsg_cpp.write_struct(s, spec.request, cpp_prefix, {'ServerMD5Sum': md5sum})
     s.write('\n')
-    genmsg_cpp.write_struct(s, spec.response, cpp_prefix)
+    genmsg_cpp.write_struct(s, spec.response, cpp_prefix, {'ServerMD5Sum': md5sum})
     s.write('struct %s\n{\n'%(spec.short_name))
     s.write('\n')
     s.write('typedef %s Request;\n'%(spec.request.short_name))

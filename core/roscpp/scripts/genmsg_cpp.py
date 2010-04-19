@@ -173,7 +173,7 @@ def write_includes(s, spec):
     s.write('\n') 
     
     
-def write_struct(s, spec, cpp_name_prefix):
+def write_struct(s, spec, cpp_name_prefix, extra_deprecated_traits = {}):
     """
     Writes the entire message struct: declaration, constructors, members, constants and (deprecated) member functions
     @param s: The stream to write to
@@ -192,7 +192,12 @@ def write_struct(s, spec, cpp_name_prefix):
     write_constructors(s, spec, cpp_name_prefix)
     write_members(s, spec)
     write_constant_declarations(s, spec)
-    write_deprecated_member_functions(s, spec)
+    
+    gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package, compute_files=False)
+    md5sum = roslib.gentools.compute_md5(gendeps_dict)
+    full_text = compute_full_text_escaped(gendeps_dict)
+    
+    write_deprecated_member_functions(s, spec, dict({'MD5Sum': md5sum, 'DataType': '%s/%s'%(spec.package, spec.short_name), 'MessageDefinition': full_text}.items() + extra_deprecated_traits.items()))
     
     (cpp_msg_unqualified, cpp_msg_with_alloc, cpp_msg_base) = cpp_message_declarations(cpp_name_prefix, msg)
     s.write('  typedef boost::shared_ptr<%s> Ptr;\n'%(cpp_msg_with_alloc))
@@ -437,7 +442,7 @@ def is_fixed_length(spec):
         
     return True
     
-def write_deprecated_member_functions(s, spec):
+def write_deprecated_member_functions(s, spec, traits):
     """
     Writes the deprecated member functions for backwards compatibility
     """
@@ -449,22 +454,13 @@ def write_deprecated_member_functions(s, spec):
                 s.write('  ROSCPP_DEPRECATED void set_%s_size(uint32_t size) { %s.resize((size_t)size); }\n'%(field.name, field.name))
                 s.write('  ROSCPP_DEPRECATED void get_%s_vec(%s& vec) const { vec = this->%s; }\n'%(field.name, msg_type_to_cpp(field.type), field.name))
                 s.write('  ROSCPP_DEPRECATED void set_%s_vec(const %s& vec) { this->%s = vec; }\n'%(field.name, msg_type_to_cpp(field.type), field.name))
-    # duplicate these here so we don't have to forward declare all the message traits
-    gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package, compute_files=False)
-    md5sum = roslib.gentools.compute_md5(gendeps_dict)
-    full_text = compute_full_text_escaped(gendeps_dict)
     
-    s.write('private:\n')
-    s.write('  static const char* __s_getDataType_() { return "%s/%s"; }\n\n'%(spec.package, spec.short_name))
-    s.write('  static const char* __s_getMD5Sum_() { return "%s"; }\n\n'%(md5sum))
-    s.write('  static const char* __s_getMessageDefinition_() { return "%s"; }\n\n'%(full_text))
-    s.write('public:\n')
-    s.write('  ROSCPP_DEPRECATED static const std::string __s_getDataType() { return __s_getDataType_(); }\n')
-    s.write('  ROSCPP_DEPRECATED static const std::string __s_getMD5Sum() { return __s_getMD5Sum_(); }\n')
-    s.write('  ROSCPP_DEPRECATED static const std::string __s_getMessageDefinition() { return __s_getMessageDefinition_(); }\n')
-    s.write('  ROSCPP_DEPRECATED virtual const std::string __getDataType() const { return __s_getDataType_(); }\n')
-    s.write('  ROSCPP_DEPRECATED virtual const std::string __getMD5Sum() const { return __s_getMD5Sum_(); }\n')
-    s.write('  ROSCPP_DEPRECATED virtual const std::string __getMessageDefinition() const { return __s_getMessageDefinition_(); }\n')
+    for k, v in traits.iteritems():
+        s.write('private:\n')
+        s.write('  static const char* __s_get%s_() { return "%s"; }\n'%(k, v))
+        s.write('public:\n')
+        s.write('  ROSCPP_DEPRECATED static const std::string __s_get%s() { return __s_get%s_(); }\n\n'%(k, k))
+        s.write('  ROSCPP_DEPRECATED const std::string __get%s() const { return __s_get%s_(); }\n\n'%(k, k))
     
     s.write('  ROSCPP_DEPRECATED virtual uint8_t *serialize(uint8_t *write_ptr, uint32_t seq) const\n  {\n')
     s.write('    ros::serialization::OStream stream(write_ptr, 1000000000);\n')

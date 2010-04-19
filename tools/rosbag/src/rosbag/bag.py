@@ -30,10 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# @todo:
-# - write/reader latching and caller-id values
-# - recreate index for unindexed or broken bags
-
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
@@ -70,8 +66,8 @@ class Compression:
     """
     NONE = 'none'
     BZ2  = 'bz2'
-    ZLIB = 'zlib'
-
+    #ZLIB = 'zlib'
+    
 class Bag(object):
     """
     Bag objects serialize messages to and from disk using the bag format.
@@ -99,7 +95,7 @@ class Bag(object):
             raise ValueError('filename is invalid')
         if mode not in ['r', 'w', 'a']:
             raise ValueError('mode is invalid')
-        allowed_compressions = [Compression.NONE, Compression.BZ2, Compression.ZLIB]
+        allowed_compressions = [Compression.NONE, Compression.BZ2] #, Compression.ZLIB]
         if compression not in allowed_compressions:
             raise ValueError('compression must be one of: %s' % ', '.join(allowed_compressions))
         if chunk_threshold < 0:
@@ -167,7 +163,7 @@ class Bag(object):
         return self._compression
     
     def _set_compression(self, compression):
-        allowed_compressions = [Compression.NONE, Compression.BZ2, Compression.ZLIB]
+        allowed_compressions = [Compression.NONE, Compression.BZ2] #, Compression.ZLIB]
         if compression not in allowed_compressions:
             raise ValueError('compression must be one of: %s' % ', '.join(allowed_compressions))        
         
@@ -520,14 +516,16 @@ class Bag(object):
 
     def _set_compression_mode(self, compression):
         # Flush the compressor, if needed
-        if self._curr_compression == Compression.BZ2:
+        if self._curr_compression != Compression.NONE:
             self._output_file.flush()
         
         # Create the compressor
         if compression == Compression.BZ2:
             self._output_file = _BZ2CompressorFileFacade(self._file)
-        else:
+        elif compression == Compression.NONE:
             self._output_file = self._file
+        else:
+            raise ROSBagException('unsupported compression type: %s' % compression)
 
         self._curr_compression = compression
 

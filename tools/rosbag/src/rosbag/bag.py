@@ -115,10 +115,10 @@ class Bag(object):
         self._index_data_pos  = 0     # (1.2+)
         self._topic_indexes   = {}    # topic -> IndexEntry[] (1.2+)
 
-        self._topic_count     = 0     # (1.3)
-        self._chunk_count     = 0     # (1.3)
-        self._chunk_infos     = []    # ChunkInfo[] (1.3)
-        self._chunk_headers   = {}    # chunk_pos -> ChunkHeader (1.3)
+        self._topic_count     = 0     # (2.0)
+        self._chunk_count     = 0     # (2.0)
+        self._chunk_infos     = []    # ChunkInfo[] (2.0)
+        self._chunk_headers   = {}    # chunk_pos -> ChunkHeader (2.0)
         
         self._buffer                   = StringIO()        
 
@@ -209,7 +209,7 @@ class Bag(object):
             self._start_writing_chunk(t)
 
         # Update the current chunk's topic index
-        index_entry = _IndexEntry103(t, self._curr_chunk_info.pos, self._get_chunk_offset())
+        index_entry = _IndexEntry200(t, self._curr_chunk_info.pos, self._get_chunk_offset())
 
         topic_index = self._curr_chunk_topic_indexes.get(topic)
         if topic_index is None:
@@ -355,7 +355,7 @@ class Bag(object):
             self._file.close()
             raise
 
-        if self._version != 103:
+        if self._version != 200:
             self._file.close()
             raise ROSBagException('bag version %d is unsupported for appending' % self._version)
 
@@ -379,8 +379,8 @@ class Bag(object):
         """
         @raise ROSBagException: if the bag version is unsupported
         """
-        if self._version == 103:
-            self._reader = _BagReader103(self)
+        if self._version == 200:
+            self._reader = _BagReader200(self)
         elif self._version == 102:
             # Get the op code of the first record.  If it's FILE_HEADER, then we have
             # an indexed 1.2 bag.
@@ -612,7 +612,7 @@ _OP_INDEX_DATA  = 0x04
 _OP_CHUNK       = 0x05
 _OP_CHUNK_INFO  = 0x06
 
-_VERSION             = '#ROSBAG V1.3'
+_VERSION             = '#ROSBAG V2.0'
 _FILE_HEADER_LENGTH  = 4096
 _INDEX_VERSION       = 1
 _CHUNK_INDEX_VERSION = 1
@@ -663,7 +663,7 @@ class _IndexEntry102(object):
     def __str__(self):
         return '%d.%d: %d' % (self.time.secs, self.time.nsecs, self.offset)
 
-class _IndexEntry103(object):
+class _IndexEntry200(object):
     def __init__(self, time, chunk_pos, offset):
         self.time      = time
         self.chunk_pos = chunk_pos
@@ -969,9 +969,9 @@ class _BagReader102_Indexed(_BagReader):
         
         return (topic, msg)
 
-class _BagReader103(_BagReader):
+class _BagReader200(_BagReader):
     """
-    Support class for reading v1.3 bag files.
+    Support class for reading v2.0 bag files.
     """
     def __init__(self, bag):
         _BagReader.__init__(self, bag)
@@ -1096,7 +1096,7 @@ class _BagReader103(_BagReader):
             time   = _read_time  (f)
             offset = _read_uint32(f)
             
-            topic_index.append(_IndexEntry103(time, self.bag._curr_chunk_info.pos, offset))
+            topic_index.append(_IndexEntry200(time, self.bag._curr_chunk_info.pos, offset))
             
         return (topic, topic_index)
 

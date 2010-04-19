@@ -45,8 +45,8 @@ Time const&   MessageInfo::getTime()              const { return index_entry_.ti
 MessageInstance::Ptr MessageInfo::instantiateInstance() const {
 	// Read message into the bag record buffer
     switch (bag_->version_) {
-        case 103: bag_->readMessageDataRecord103(topic_info_->topic, index_entry_.chunk_pos, index_entry_.offset); break;
-        case 102: bag_->readMessageDataRecord102(topic_info_->topic, index_entry_.chunk_pos);                break;
+        case 200: bag_->readMessageDataRecord200(topic_info_->topic, index_entry_.chunk_pos, index_entry_.offset); break;
+        case 102: bag_->readMessageDataRecord102(topic_info_->topic, index_entry_.chunk_pos);                      break;
         default:  ROS_FATAL("Unhandled version: %d", bag_->version_); return boost::shared_ptr<MessageInstance>();
     }
 

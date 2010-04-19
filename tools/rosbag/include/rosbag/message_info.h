@@ -77,7 +77,7 @@ boost::shared_ptr<T const> MessageInfo::instantiate() const {
         return boost::shared_ptr<T const>();
 
     switch (bag_->version_) {
-    case 103: bag_->readMessageDataRecord103(topic_info_->topic, index_entry_.chunk_pos, index_entry_.offset); break;
+    case 200: bag_->readMessageDataRecord200(topic_info_->topic, index_entry_.chunk_pos, index_entry_.offset); break;
     case 102: bag_->readMessageDataRecord102(topic_info_->topic, index_entry_.chunk_pos); break;
     default:  ROS_FATAL("Unhandled version: %d", bag_->version_);
     }

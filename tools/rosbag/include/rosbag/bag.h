@@ -188,12 +188,11 @@ private:
     template<class T>
     boost::shared_ptr<T const> instantiateBuffer();  //!< deserializes the message held in record_buffer_
 
-    void startWritingVersion103();
-    void stopWritingVersion103();
+    void startWritingVersion200();
+    void stopWritingVersion200();
 
-    bool startReadingVersion101();
     bool startReadingVersion102();
-    bool startReadingVersion103();
+    bool startReadingVersion200();
 
     bool checkLogging();
     bool scheduledCheckDisk();
@@ -218,7 +217,7 @@ private:
     bool readFileHeaderRecord();
     bool readMessageDefinitionRecord();
     bool readMessageDataRecord102(std::string const& topic, uint64_t offset);
-    bool readMessageDataRecord103(std::string const& topic, uint64_t chunk_pos, uint32_t offset);
+    bool readMessageDataRecord200(std::string const& topic, uint64_t chunk_pos, uint32_t offset);
     bool readChunkHeader(ChunkHeader& chunk_header);
     bool readTopicIndexRecord();
     bool readTopicIndexDataVersion0(uint32_t data_size, uint32_t count, std::string const& topic);

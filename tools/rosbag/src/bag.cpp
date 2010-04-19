@@ -97,7 +97,7 @@ bool Bag::openRead(string const& filename) {
 
     switch (version_) {
     case 102: return startReadingVersion102();
-    case 103: return startReadingVersion103();
+    case 200: return startReadingVersion200();
     default:
         ROS_ERROR("Unsupported bag file version: %d.%d", getMajorVersion(), getMinorVersion());
         return false;
@@ -117,7 +117,7 @@ bool Bag::openWrite(string const& filename) {
     check_disk_next_ = ros::WallTime::now() + ros::WallDuration().fromSec(20.0);
 
     // Write the version and file header
-    startWritingVersion103();
+    startWritingVersion200();
 
     return true;
 }
@@ -135,7 +135,7 @@ bool Bag::openAppend(string const& filename) {
     // Read in the version and file header
     if (!readVersion())
         return false;
-    startReadingVersion103();
+    startReadingVersion200();
 
     // Truncate the file to chop off the index
     file_.truncate(index_data_pos_);
@@ -203,7 +203,7 @@ void Bag::close() {
 }
 
 void Bag::closeWrite() {
-    stopWritingVersion103();
+    stopWritingVersion200();
 }
 
 BagMode  Bag::getMode()   const { return mode_;             }
@@ -252,13 +252,13 @@ int Bag::getMinorVersion() const { return version_ % 100; }
 
 //
 
-void Bag::startWritingVersion103() {
+void Bag::startWritingVersion200() {
     writeVersion();
     file_header_pos_ = file_.getOffset();
     writeFileHeaderRecord();
 }
 
-void Bag::stopWritingVersion103() {
+void Bag::stopWritingVersion200() {
     if (chunk_open_)
         stopWritingChunk();
 
@@ -272,8 +272,8 @@ void Bag::stopWritingVersion103() {
     topic_infos_.clear();
 }
 
-bool Bag::startReadingVersion103() {
-    ROS_DEBUG("Reading in version 1.3 bag");
+bool Bag::startReadingVersion200() {
+    ROS_DEBUG("Reading in version 2.0 bag");
 
     // Read the file header record, which points to the end of the chunks
     if (!readFileHeaderRecord())
@@ -350,14 +350,6 @@ bool Bag::startReadingVersion102() {
     return true;
 }
 
-bool Bag::startReadingVersion101() {
-    ROS_DEBUG("Reading in version 1.1 bag");
-
-    //! \todo implement reading version 101
-
-    return true;
-}
-
 // File header record
 
 void Bag::writeFileHeaderRecord() {
@@ -414,7 +406,7 @@ bool Bag::readFileHeaderRecord() {
         return false;
 
     // Read topic and chunks count
-    if (version_ >= 103) {
+    if (version_ >= 200) {
         readField(fields, TOPIC_COUNT_FIELD_NAME, true, &topic_count_);
         readField(fields, CHUNK_COUNT_FIELD_NAME, true, &chunk_count_);
     }
@@ -928,7 +920,7 @@ bool Bag::readMessageDataRecord102(string const& topic, uint64_t offset) {
     return true;
 }
 
-bool Bag::readMessageDataRecord103(string const& topic, uint64_t chunk_pos, uint32_t offset) {
+bool Bag::readMessageDataRecord200(string const& topic, uint64_t chunk_pos, uint32_t offset) {
     ROS_DEBUG("readMessageDataRecord: chunk_pos=%llu offset=%d", (unsigned long long) chunk_pos, offset);
     if (decompressed_chunk_ != chunk_pos) {
         // Seek to the start of the chunk

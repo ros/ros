@@ -32,26 +32,58 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef ROSBAG_EXCEPTIONS_H
-#define ROSBAG_EXCEPTIONS_H
+#ifndef ROSBAG_MESSAGE_INFO_H
+#define ROSBAG_MESSAGE_INFO_H
 
-#include <ros/exception.h>
+#include <ros/message.h>
+#include <ros/message_traits.h>
+#include <ros/ros.h>
+#include <ros/time.h>
 
-using ros::Exception;
+#include "rosbag/bag.h"
 
 namespace rosbag {
 
-//! Exception thrown if trying to add or read from an unopened recorder/player
-class BagNotOpenException : public Exception { };
+class MessageInstance;
 
-//! Exception thrown when assorted IO problems
-class BagIOException : public Exception { };
+class MessageInfo
+{
+    friend class Bag;
+    friend class MessageInstance;
 
-//! Exception thrown if an invalid MsgPos (such as from another bag) is passed to seek
-class InvalidMsgPosException : public Exception { };
+public:
+    MessageInfo(TopicInfo const* info, IndexEntry const& index, Bag& bag);
 
-//! Exception thrown if trying to instantiate a MsgInstance as the wrong type
-class InstantiateException : public Exception { };
+    std::string const& getTopic()             const;
+    std::string const& getDataType()          const;
+    std::string const& getMD5Sum()            const;
+    std::string const& getMessageDefinition() const;
+    ros::Time const&   getTime()              const;
+
+    template<class T>
+    boost::shared_ptr<T const> instantiate() const;
+
+    boost::shared_ptr<MessageInstance> instantiateInstance() const;
+
+private:
+    TopicInfo const* topic_info_;
+    IndexEntry const index_entry_;
+    Bag*             bag_;
+};
+
+template<class T>
+boost::shared_ptr<T const> MessageInfo::instantiate() const {
+    if (ros::message_traits::MD5Sum<T>::value() != getMD5Sum())
+        return boost::shared_ptr<T const>();
+
+    switch (bag_->version_) {
+    case 103: bag_->readMessageDataRecord103(topic_info_->topic, index_entry_.chunk_pos, index_entry_.offset); break;
+    case 102: bag_->readMessageDataRecord102(topic_info_->topic, index_entry_.chunk_pos); break;
+    default:  ROS_FATAL("Unhandled version: %d", bag_->version_);
+    }
+
+    return bag_->instantiateBuffer<T>();
+}
 
 }
 

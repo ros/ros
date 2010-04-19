@@ -38,8 +38,7 @@
 #include <string>
 #include <stdint.h>
 
-namespace rosbag
-{
+namespace rosbag {
 
 // Bag file version to write
 static const std::string VERSION = "1.3";

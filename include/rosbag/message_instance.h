@@ -36,40 +36,11 @@
 #define ROSBAG_MESSAGE_INSTANCE_H
 
 #include <ros/message.h>
-#include <ros/message_traits.h>
-#include <ros/ros.h>
-#include <ros/time.h>
-
-#include "rosbag/bag.h"
 
 namespace rosbag {
 
-class MessageInstance;
-
-class MessageInfo
-{
-    friend class Bag;
-    friend class MessageInstance;
-
-public:
-    MessageInfo(TopicInfo const& info, IndexEntry const& index, Bag& bag);
-
-    std::string const& getTopic()    const;
-    std::string const& getDatatype() const;
-    std::string const& getMd5sum()   const;
-    std::string const& getDef()      const;
-    ros::Time const&   getTime()     const;
-
-    template<class T>
-    boost::shared_ptr<T const> instantiate() const;
-
-    boost::shared_ptr<MessageInstance> instantiateInstance() const;
-
-private:
-    TopicInfo const*  topic_info_;
-    IndexEntry const* index_entry_;
-    Bag*              bag_;
-};
+class Bag;
+class MessageInfo;
 
 class MessageInstance : public ros::Message
 {
@@ -99,20 +70,6 @@ public:
 private:
     MessageInfo const* info_;
 };
-
-template<class T>
-boost::shared_ptr<T const> MessageInfo::instantiate() const {
-    if (ros::message_traits::MD5Sum<T>::value() != getMd5sum())
-        return boost::shared_ptr<T const>();
-
-    switch (bag_->version_) {
-    case 103: bag_->readMessageDataRecord103(topic_info_->topic, index_entry_->chunk_pos, index_entry_->offset); break;
-    case 102: bag_->readMessageDataRecord102(topic_info_->topic, index_entry_->chunk_pos); break;
-    default:  ROS_FATAL("Unhandled version: %d", bag_->version_);
-    }
-
-    return bag_->instantiateBuffer<T>();
-}
 
 }
 

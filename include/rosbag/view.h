@@ -35,49 +35,75 @@
 #ifndef ROSBAG_VIEW_H
 #define ROSBAG_VIEW_H
 
-#include "rosbag/message_instance.h"
-
 #include <boost/iterator/iterator_facade.hpp>
 
-namespace rosbag
-{
+#include "rosbag/message_info.h"
+#include "rosbag/query.h"
 
+namespace rosbag {
+
+class MessageRange;
+class IndexEntry;
+class ViewIterHelper;
+
+// Our current View has a bug.  Our internal storage end is based on
+// an iterator element rather than a time.  This means if we update
+// the underlying index to include a new message after our end-time
+// but before where our end-iterator points, our view will include
+// it when it shouldn't.  Similarly, adding new messages before our
+// first message but after our start time won't be capture in the
+// view either.
 class View
 {
     friend class Bag;
 
 public:
-    class iterator : public boost::iterator_facade<iterator, MessageInfo const, boost::forward_traversal_tag>
+    class iterator : public boost::iterator_facade<iterator,
+												   MessageInfo,
+												   boost::forward_traversal_tag,
+												   MessageInfo>
     {
-    public:
-        iterator();
-        iterator(std::vector<MessageInfo>::const_iterator p);
-        iterator(iterator const& other);
+    protected:
+    	// NOTE: the default constructor on the merge_queue means this is an empty queue,
+    	//       i.e. our definition of end
+        iterator(View const* view, bool end = false);
 
     private:
+        friend class View;
         friend class boost::iterator_core_access;
+
+		void populate();
+		void populateSeek(std::vector<IndexEntry>::const_iterator iter);
 
         bool equal(iterator const& other) const;
 
         void increment();
 
-        // This wouldn't have to be const if we weren't storing a const internally
-        MessageInfo const& dereference() const;
+        MessageInfo dereference() const;
 
-        std::vector<MessageInfo>::const_iterator pos_;
+    private:
+        View const* view_;
+        std::vector<ViewIterHelper> iters_;
+        uint32_t view_revision_;
     };
 
     typedef iterator const_iterator;
+
+    View();
+    ~View();
 
     iterator begin() const;
     iterator end()   const;
     uint32_t size()  const;
 
-protected:
-    View(std::vector<MessageInfo> const& messages);
+    void addQuery(Bag& bag, Query const& query);
 
-private:
-    std::vector<MessageInfo> const messages_;
+protected:
+    friend class iterator;
+
+    std::vector<MessageRange*> ranges_;
+    std::vector<BagQuery*>     queries_;
+    uint32_t                   view_revision_;
 };
 
 }

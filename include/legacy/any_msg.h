@@ -32,26 +32,28 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef ROSBAG_EXCEPTIONS_H
-#define ROSBAG_EXCEPTIONS_H
+#ifndef ROSBAG_ANY_MSG_H
+#define ROSBAG_ANY_MSG_H
 
-#include <ros/exception.h>
-
-using ros::Exception;
+#include <ros/message.h>
 
 namespace rosbag {
 
-//! Exception thrown if trying to add or read from an unopened recorder/player
-class BagNotOpenException : public Exception { };
+class AnyMsg : public ros::Message
+{
+public:
+    static std::string __s_getDataType()          { return std::string("*"); }
+    static std::string __s_getMD5Sum()            { return std::string("*"); }
+    static std::string __s_getMessageDefinition() { return std::string("");  }
+    
+    virtual const std::string __getDataType()          const { return __s_getDataType();          }
+    virtual const std::string __getMD5Sum()            const { return __s_getMD5Sum();            }
+    virtual const std::string __getMessageDefinition() const { return __s_getMessageDefinition(); }
 
-//! Exception thrown when assorted IO problems
-class BagIOException : public Exception { };
-
-//! Exception thrown if an invalid MsgPos (such as from another bag) is passed to seek
-class InvalidMsgPosException : public Exception { };
-
-//! Exception thrown if trying to instantiate a MsgInstance as the wrong type
-class InstantiateException : public Exception { };
+    virtual uint32_t serializationLength()                   const { return 0;               }
+    virtual uint8_t* serialize(uint8_t *write_ptr, uint32_t) const { assert(0); return NULL; }
+    virtual uint8_t* deserialize(uint8_t *read_ptr)                { assert(0); return NULL; }
+};
 
 }
 

@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # @todo:
-# - getMessages needs to return messages in time order (i.e. merge sort)
+# - write/reader latching and caller-id values
 # - recreate index for unindexed or broken bags
 
 PKG = 'rosbag'

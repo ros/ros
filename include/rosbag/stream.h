@@ -44,8 +44,7 @@
 #include <bzlib.h>
 #include <zlib.h>
 
-namespace rosbag
-{
+namespace rosbag {
 
 namespace compression
 {

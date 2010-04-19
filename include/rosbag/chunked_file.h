@@ -46,8 +46,7 @@
 
 #include "rosbag/stream.h"
 
-namespace rosbag
-{
+namespace rosbag {
 
 //! ChunkedFile reads and writes files which contain interleaved chunks of compressed and uncompressed data.
 class ChunkedFile

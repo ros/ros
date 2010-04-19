@@ -56,8 +56,7 @@
 #include "rosbag/bag.h"
 #include "rosbag/stream.h"
 
-namespace rosbag
-{
+namespace rosbag {
 
 class OutgoingMessage
 {

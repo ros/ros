@@ -26,7 +26,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "rosbag/bag.h"
+#include "rosbag/message_info.h"
 #include "rosbag/message_instance.h"
+#include "rosbag/query.h"
+#include "rosbag/view.h"
 
 #include <inttypes.h>
 #include <signal.h>
@@ -64,9 +67,10 @@ Bag::Bag() :
 
 Bag::~Bag() {
     close();
-}
 
-// Modes supported: read, write, append, append+read
+    for (map<string, TopicInfo*>::iterator i = topic_infos_.begin(); i != topic_infos_.end(); i++)
+    	delete i->second;
+}
 
 bool Bag::open(string const& filename, BagMode mode) {
     mode_ = mode;
@@ -149,17 +153,20 @@ bool Bag::openAppend(string const& filename) {
 
 bool Bag::rewrite(string const& src_filename, string const& dest_filename) {
     Bag in;
-    if (!in.open(src_filename, rosbag::bagmode::Read))
+    if (!in.open(src_filename, bagmode::Read))
         return false;
 
     string target_filename = dest_filename;
     if (target_filename == src_filename)
         target_filename += ".active";
 
-    if (!open(target_filename, rosbag::bagmode::Write))
+    if (!open(target_filename, bagmode::Write))
         return false;
 
-    foreach(MessageInfo const& m, in.getMessages()) {
+    View view;
+    view.addQuery(in, Query());
+
+    foreach(MessageInfo const m, view) {
     	shared_ptr<MessageInstance> instance = m.instantiateInstance();
 
         write(m.getTopic(), m.getTime(), instance);
@@ -436,19 +443,19 @@ void Bag::write(string const& topic, Time const& time, ros::Message const& msg) 
         return;
 
     bool needs_def_written = false;
-    map<string, TopicInfo>::iterator key;
+    TopicInfo* topic_info;
     {
         boost::mutex::scoped_lock lock(topic_infos_mutex_);
         
-        key = topic_infos_.find(topic);
+        map<string, TopicInfo*>::iterator key = topic_infos_.find(topic);
         if (key == topic_infos_.end()) {
             // Extract the topic info from the message
-            TopicInfo& info = topic_infos_[topic];
-            info.topic    = topic;
-            info.msg_def  = msg.__getMessageDefinition();
-            info.datatype = msg.__getDataType();
-            info.md5sum   = msg.__getMD5Sum();            
-            key = topic_infos_.find(topic);
+            topic_info = new TopicInfo();
+            topic_info->topic    = topic;
+            topic_info->msg_def  = msg.__getMessageDefinition();
+            topic_info->datatype = msg.__getDataType();
+            topic_info->md5sum   = msg.__getMD5Sum();
+            topic_infos_[topic] = topic_info;
 
             // Initialize the topic index
             topic_indexes_[topic] = vector<IndexEntry>();
@@ -456,8 +463,9 @@ void Bag::write(string const& topic, Time const& time, ros::Message const& msg) 
             // Flag that we need to write a message definition
             needs_def_written = true;
         }
+        else
+        	topic_info = key->second;
     }
-    TopicInfo const& topic_info = key->second;
 
     //! \todo move to rosrecord
     scheduledCheckDisk();
@@ -795,22 +803,22 @@ bool Bag::readTopicIndexDataVersion1(uint32_t data_size, uint32_t count, string 
 void Bag::writeMessageDefinitionRecords() {
     boost::mutex::scoped_lock lock(record_mutex_);
 
-    for (map<string, TopicInfo>::const_iterator i = topic_infos_.begin(); i != topic_infos_.end(); i++) {
-        TopicInfo const& topic_info = i->second;
+    for (map<string, TopicInfo*>::const_iterator i = topic_infos_.begin(); i != topic_infos_.end(); i++) {
+        TopicInfo const* topic_info = i->second;
         writeMessageDefinitionRecord(topic_info);
     }
 }
 
-void Bag::writeMessageDefinitionRecord(TopicInfo const& topic_info) {
+void Bag::writeMessageDefinitionRecord(TopicInfo const* topic_info) {
     ROS_DEBUG("Writing MSG_DEF [%llu:%d]: topic=%s md5sum=%s type=%s def=...",
-    		  (unsigned long long) file_.getOffset(), getChunkOffset(), topic_info.topic.c_str(), topic_info.md5sum.c_str(), topic_info.datatype.c_str());
+    		  (unsigned long long) file_.getOffset(), getChunkOffset(), topic_info->topic.c_str(), topic_info->md5sum.c_str(), topic_info->datatype.c_str());
 
     M_string header;
     header[OP_FIELD_NAME]    = toHeaderString(&OP_MSG_DEF);
-    header[TOPIC_FIELD_NAME] = topic_info.topic;
-    header[MD5_FIELD_NAME]   = topic_info.md5sum;
-    header[TYPE_FIELD_NAME]  = topic_info.datatype;
-    header[DEF_FIELD_NAME]   = topic_info.msg_def;
+    header[TOPIC_FIELD_NAME] = topic_info->topic;
+    header[MD5_FIELD_NAME]   = topic_info->md5sum;
+    header[TYPE_FIELD_NAME]  = topic_info->datatype;
+    header[DEF_FIELD_NAME]   = topic_info->msg_def;
 
     writeHeader(header, 0);
 }
@@ -830,19 +838,20 @@ bool Bag::readMessageDefinitionRecord() {
     }
 
     string topic, md5sum, datatype, message_definition;
-    if (!readField(fields, TOPIC_FIELD_NAME,               true, topic) ||
+    if (!readField(fields, TOPIC_FIELD_NAME,               true, topic)      ||
         !readField(fields, MD5_FIELD_NAME,   32,       32, true, md5sum)     ||
         !readField(fields, TYPE_FIELD_NAME,                true, datatype)   ||
         !readField(fields, DEF_FIELD_NAME,    0, UINT_MAX, true, message_definition))
     	return false;
 
-    map<string, TopicInfo>::iterator key = topic_infos_.find(topic);
+    map<string, TopicInfo*>::iterator key = topic_infos_.find(topic);
     if (key == topic_infos_.end()) {
-        TopicInfo& info = topic_infos_[topic];
-        info.topic    = topic;
-        info.msg_def  = message_definition;
-        info.datatype = datatype;
-        info.md5sum   = md5sum;
+        TopicInfo* topic_info = new TopicInfo();
+        topic_info->topic    = topic;
+        topic_info->msg_def  = message_definition;
+        topic_info->datatype = datatype;
+        topic_info->md5sum   = md5sum;
+        topic_infos_[topic] = topic_info;
 
         ROS_DEBUG("Read MSG_DEF: topic=%s md5sum=%s datatype=%s def=...", topic.c_str(), md5sum.c_str(), datatype.c_str());
     }
@@ -1207,7 +1216,7 @@ void Bag::dump() {
     std::cout << "curr_chunk_info: " << curr_chunk_info_.topic_counts.size() << " topics" << std::endl;
 
     std::cout << "topic_infos:" << std::endl;
-    for (map<string, TopicInfo>::const_iterator i = topic_infos_.begin(); i != topic_infos_.end(); i++)
+    for (map<string, TopicInfo*>::const_iterator i = topic_infos_.begin(); i != topic_infos_.end(); i++)
         std::cout << "  topic: " << i->first << std::endl;
 
     std::cout << "chunk_infos:" << std::endl;
@@ -1221,99 +1230,6 @@ void Bag::dump() {
             std::cout << "    - " << j->chunk_pos << ":" << j->offset << std::endl;
         }
     }
-}
-
-// The merge helper stores the range of messages on a given topic
-// The comparator below helps us to sort these helpers based on the
-// First iterator so that we can store them in a priority queue
-struct MergeHelper
-{
-    MergeHelper(vector<IndexEntry>::const_iterator const& _iter,
-                vector<IndexEntry>::const_iterator const& _end,
-                TopicInfo const& _topic_info) : iter(_iter), end(_end), topic_info(_topic_info) { }
-
-    void advance()  { iter++; }
-    bool finished() { return iter == end; }
-
-    vector<IndexEntry>::const_iterator iter;
-    vector<IndexEntry>::const_iterator end;
-    TopicInfo const&                   topic_info;
-};
-
-// This class gets used to make a priority queue of merge helpers
-struct MergeCompare
-{
-    bool operator() (MergeHelper*& a, MergeHelper*& b) const {
-        return (a->iter)->time > (b->iter)->time;
-    }
-};
-
-// Efficiently merge our sorted lists and store them in a new list
-// To get rid of the list structure all together we can essentially just store the merge_queue inside
-// our custom iterator, though it needs a little more logic to handle reverse iteration appropriately
-vector<MessageInfo> Bag::getMessagesByTopic(vector<string> const& topics, Time const& start_time, Time const& end_time) {
-	vector<MessageInfo> messages;
-
-    priority_queue<MergeHelper*, vector<MergeHelper*>, MergeCompare> merge_queue;
-    foreach(string const& topic, topics) {
-        map<string, vector<IndexEntry> >::iterator ind = topic_indexes_.find(topic);
-        map<string, TopicInfo>::iterator key = topic_infos_.find(topic);
-
-        if (ind != topic_indexes_.end() && key != topic_infos_.end()) {
-            vector<IndexEntry> const& index_entries = ind->second;
-            TopicInfo const& topic_info = key->second;
-
-            // lower_bound / upper_bound do a binary search to find the appropriate range of Index Entries given our time range
-            MergeHelper* merge_helper = new MergeHelper(std::lower_bound(index_entries.begin(), index_entries.end(), start_time, IndexEntryCompare()),
-                                                        std::upper_bound(index_entries.begin(), index_entries.end(), end_time,   IndexEntryCompare()),
-                                                        topic_info);
-
-            // Only insert our helper if it describes a valid range
-            if (merge_helper->iter != merge_helper->end)
-                merge_queue.push(merge_helper);
-        }
-    }
-
-    while (!merge_queue.empty()) {
-        MergeHelper* merge_helper = merge_queue.top();
-        merge_queue.pop();
-
-        IndexEntry const& entry = *(merge_helper->iter);
-
-        messages.push_back(MessageInfo(merge_helper->topic_info, entry, *this));
-
-        merge_helper->advance();
-
-        // Delete our helper if we're done with it -- else put it back in queue
-        if (merge_helper->finished())
-            delete merge_helper;
-        else
-            merge_queue.push(merge_helper);
-    }
-
-    return messages;
-}
-
-vector<MessageInfo> Bag::getMessages(Time const& start_time, Time const& end_time) {
-	vector<MessageInfo> messages;
-
-    for (map<string, TopicInfo>::const_iterator i = topic_infos_.begin(); i != topic_infos_.end(); i++) {
-        string const& topic = i->first;
-
-        map<string, vector<IndexEntry> >::const_iterator ind = topic_indexes_.find(topic);
-        if (ind == topic_indexes_.end())
-            continue;
-
-        vector<IndexEntry> const& topic_index = ind->second;
-        TopicInfo const&          topic_info  = i->second;
-
-        foreach(IndexEntry const& entry, topic_index) {
-            if (entry.time >= start_time && entry.time <= end_time)
-                messages.push_back(MessageInfo(topic_info, entry, *this));
-        }
-    }
-
-    return messages;
 }
 
 }

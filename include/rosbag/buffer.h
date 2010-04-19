@@ -37,8 +37,7 @@
 
 #include <stdint.h>
 
-namespace rosbag
-{
+namespace rosbag {
 
 class Buffer
 {

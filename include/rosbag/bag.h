@@ -40,11 +40,11 @@
 #include "rosbag/constants.h"
 #include "rosbag/exceptions.h"
 
-#include <ros/header.h>
-#include <ros/time.h>
-#include <ros/message.h>
-#include <ros/message_traits.h>
-#include <ros/ros.h>
+#include "ros/header.h"
+#include "ros/time.h"
+#include "ros/message.h"
+#include "ros/message_traits.h"
+#include "ros/ros.h"
 
 #include <ios>
 #include <map>
@@ -55,8 +55,7 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/thread/mutex.hpp>
 
-namespace rosbag
-{
+namespace rosbag {
 
 namespace bagmode
 {
@@ -103,18 +102,20 @@ struct IndexEntry
 
 struct IndexEntryCompare
 {
-    bool operator() (ros::Time const& a, IndexEntry const& b) const { return a < b.time; }
-    bool operator() (IndexEntry const& a, ros::Time const& b) const { return a.time < b; }
+    bool operator()(ros::Time const& a, IndexEntry const& b) const { return a < b.time; }
+    bool operator()(IndexEntry const& a, ros::Time const& b) const { return a.time < b; }
 };
 
 class MessageInfo;
 class MessageInstance;
 class View;
+class Query;
 
 class Bag
 {
     friend class MessageInfo;
 	friend class MessageInstance;
+	friend class View;
 
 public:
     Bag();
@@ -175,21 +176,6 @@ public:
      */
     void write(std::string const& topic, ros::Time const& time, MessageInstance* msg);
 
-    std::vector<MessageInfo> getMessages(ros::Time const& start_time = ros::TIME_MIN,
-										 ros::Time const& end_time = ros::TIME_MAX);
-
-    std::vector<MessageInfo> getMessagesByTopic(std::vector<std::string> const& topics,
-												ros::Time const& start_time = ros::TIME_MIN,
-												ros::Time const& end_time = ros::TIME_MAX);
-
-    std::vector<MessageInfo> getMessagesByType(std::vector<std::string> const& types,
-											   ros::Time const& start_time = ros::TIME_MIN,
-										 	   ros::Time const& end_time = ros::TIME_MAX);
-
-    View getViewByTopic(std::vector<std::string> const& topics,
-                        ros::Time const& start_time = ros::TIME_MIN,
-                        ros::Time const& end_time = ros::TIME_MAX);
-
     void dump();
 
 private:
@@ -217,7 +203,7 @@ private:
     
     void writeVersion();
     void writeFileHeaderRecord();
-    void writeMessageDefinitionRecord(TopicInfo const& topic_info);
+    void writeMessageDefinitionRecord(TopicInfo const* topic_info);
     void writeMessageDataRecord(std::string const& topic, ros::Time const& time, bool latching, std::string const& callerid, ros::Message const& msg);
     void writeTopicIndexRecords();
     void writeMessageDefinitionRecords();
@@ -295,9 +281,9 @@ private:
     uint64_t  curr_chunk_data_pos_;
     std::map<std::string, std::vector<IndexEntry> > curr_chunk_topic_indexes_;
 
-    std::map<std::string, TopicInfo>                topic_infos_;    //!< topic infos
-    std::vector<ChunkInfo>                          chunk_infos_;    //!< chunk infos
-    std::map<std::string, std::vector<IndexEntry> > topic_indexes_;  //!< topic indexes
+    std::map<std::string, TopicInfo*>               topic_infos_;
+    std::vector<ChunkInfo>                          chunk_infos_;
+    std::map<std::string, std::vector<IndexEntry> > topic_indexes_;
 
     //
 

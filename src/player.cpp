@@ -34,6 +34,8 @@
 
 #include "rosbag/player.h"
 #include "rosbag/message_instance.h"
+#include "rosbag/message_info.h"
+#include "rosbag/view.h"
 
 #include <sys/select.h>
 
@@ -140,11 +142,9 @@ void Player::publish() {
         bags_.push_back(bag);
     }
 
-    // Aggregate the messages from all the bags - \todo fix this to insert in order
-    vector<MessageInfo> messages;
+    View view;
     foreach(shared_ptr<Bag> bag, bags_)
-        foreach(MessageInfo const& m, bag->getMessages())
-            messages.push_back(m);
+		view.addQuery(*bag, Query());
 
     if (!options_.at_once) {
         if (options_.start_paused) {
@@ -162,7 +162,7 @@ void Player::publish() {
         ros::WallTime last_print_time(0.0);
         ros::WallDuration max_print_interval(0.1);
 
-        foreach(MessageInfo const& m, messages) {
+        foreach(MessageInfo m, view) {
             if (!node_handle_->ok())
                 break;
 
@@ -323,12 +323,16 @@ int Player::checkBag() {
     // Build a count of messages in each topic
     map<string, BagContent> content_by_topic;
     ros::Time end_time;
-    foreach(MessageInfo const& m, bag.getMessages()) {
+
+    View view;
+	view.addQuery(bag, Query());
+
+	foreach(MessageInfo m, view) {
         string const& topic = m.getTopic();
 
         map<string, BagContent>::iterator i = content_by_topic.find(topic);
         if (i == content_by_topic.end())
-            content_by_topic.insert(std::pair<string, BagContent>(topic, BagContent(m.getDatatype(), m.getMd5sum(), m.getDef())));
+            content_by_topic.insert(std::pair<string, BagContent>(topic, BagContent(m.getDataType(), m.getMD5Sum(), m.getMessageDefinition())));
         else {
             BagContent& content = i->second;
             content.count++;

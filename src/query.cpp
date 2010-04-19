@@ -25,41 +25,67 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include "rosbag/message_instance.h"
-#include "rosbag/message_info.h"
+#include "rosbag/query.h"
 #include "rosbag/bag.h"
 
+#include <boost/foreach.hpp>
+
+#define foreach BOOST_FOREACH
+
+using std::map;
 using std::string;
-using ros::Time;
+using std::vector;
 
 namespace rosbag {
 
-MessageInstance::MessageInstance(MessageInfo const& info) : ros::Message(), info_(&info) {
-    __serialized_length = info_->bag_->record_buffer_.getSize();
-    deserialize(info_->bag_->record_buffer_.getData());
+// Query
+
+Query::Query(ros::Time const& start_time, ros::Time const& end_time)
+	: start_time_(start_time), end_time_(end_time)
+{
 }
 
-MessageInstance::~MessageInstance() { }
+Query::~Query() { }
 
-const string MessageInstance::__getDataType()          const { return info_->getDataType();          }
-const string MessageInstance::__getMD5Sum()            const { return info_->getMD5Sum();            }
-const string MessageInstance::__getMessageDefinition() const { return info_->getMessageDefinition(); }
+ros::Time Query::getStartTime() const { return start_time_; }
+ros::Time Query::getEndTime()   const { return end_time_;   }
 
-const string MessageInstance::__s_getDataType()          { return "*"; }
-const string MessageInstance::__s_getMD5Sum()            { return "*"; }
-const string MessageInstance::__s_getMessageDefinition() { ROS_ASSERT_MSG(0, "Tried to get static message definition of a MessageInstance."); return "";}
+bool Query::evaluate(TopicInfo const*) const { return true; }
 
-uint32_t MessageInstance::serializationLength() const { return info_->bag_->instantiate_buffer_.getSize(); }
+// TopicQuery
 
-uint8_t* MessageInstance::serialize(uint8_t* write_ptr, uint32_t) const {
-	memcpy(write_ptr, info_->bag_->instantiate_buffer_.getData(), info_->bag_->instantiate_buffer_.getSize());
-	return write_ptr + info_->bag_->instantiate_buffer_.getSize();
+TopicQuery::TopicQuery(std::vector<std::string> const& topics, ros::Time const& start_time, ros::Time const& end_time)
+	: Query(start_time, end_time), topics_(topics)
+{
 }
 
-uint8_t* MessageInstance::deserialize(uint8_t* read_ptr) {
-	info_->bag_->instantiate_buffer_.setSize(__serialized_length);
-	memcpy(info_->bag_->instantiate_buffer_.getData(), read_ptr, __serialized_length);
-	return NULL;
+bool TopicQuery::evaluate(TopicInfo const* info) const {
+	foreach(string const& topic, topics_)
+		if (topic == info->topic)
+			return true;
+
+	return false;
+}
+
+// MessageRange
+
+MessageRange::MessageRange(std::vector<IndexEntry>::const_iterator const& _begin,
+			 std::vector<IndexEntry>::const_iterator const& _end,
+			 TopicInfo const* _topic_info,
+			 BagQuery const* _bag_query)
+	: begin(_begin), end(_end), topic_info(_topic_info), bag_query(_bag_query)
+{
+}
+
+// ViewIterHelper
+
+ViewIterHelper::ViewIterHelper(std::vector<IndexEntry>::const_iterator _iter, MessageRange const* _range)
+	: iter(_iter), range(_range)
+{
+}
+
+bool ViewIterHelperCompare::operator()(ViewIterHelper const& a, ViewIterHelper const& b) {
+	return (a.iter)->time > (b.iter)->time;
 }
 
 }

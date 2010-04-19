@@ -32,8 +32,7 @@
 
 # @todo:
 # - make read-only properties: filename, mode, version
-# - make read/write properties: compression, chunk_threshold
-# - shouldn't be able to change read/write properties until we flush
+# - recreate index for unindexed or broken bags
 
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
@@ -135,6 +134,59 @@ class Bag(object):
         self._output_file      = self._file
         
         self._open(filename, mode)
+    
+    @property
+    def filename(self):
+        """Get the filename."""
+        return self._filename
+    
+    @property
+    def version(self):
+        """Get the version."""
+        return self._version
+    
+    @property
+    def mode(self):
+        """Get the mode."""
+        return self._mode
+
+    @property
+    def size(self):
+        """Get the size in bytes."""
+        pos = self._file.tell()
+        self._file.seek(0, os.SEEK_END)
+        size = self._file.tell()
+        self._file.seek(pos)
+        return size
+
+    # compression
+        
+    def _get_compression(self):
+        """Get the compression."""
+        return self._compression
+    
+    def _set_compression(self, compression):
+        allowed_compressions = [Compression.NONE, Compression.BZ2, Compression.ZLIB]
+        if compression not in allowed_compressions:
+            raise ValueError('compression must be one of: %s' % ', '.join(allowed_compressions))        
+        
+        self.flush()
+        self._compression = compression
+        
+    compression = property(_get_compression, _set_compression)
+    
+    # chunk_threshold
+    
+    def _get_chunk_threshold(self):
+        """Get the chunk threshold."""
+        return self._chunk_threshold
+    
+    def _set_chunk_threshold(self, chunk_threshold):
+        if chunk_threshold < 0:
+            raise ValueError('chunk_threshold must be greater than or equal to zero')
+        
+        self.flush()
+        self._chunk_threshold = chunk_threshold
 
     def write(self, topic, msg, t):
         """
@@ -748,6 +800,9 @@ class _BagReader(object):
         return message_type
 
 class _BagReader102_Unindexed(_BagReader):
+    """
+    Support class for reading unindexed v1.2 bag files.
+    """
     def __init__(self, bag):
         _BagReader.__init__(self, bag)
 
@@ -799,6 +854,9 @@ class _BagReader102_Unindexed(_BagReader):
             yield (topic, msg, t)
 
 class _BagReader102_Indexed(_BagReader):
+    """
+    Support class for reading indexed v1.2 bag files.
+    """
     def __init__(self, bag):
         _BagReader.__init__(self, bag)
 
@@ -901,6 +959,9 @@ class _BagReader102_Indexed(_BagReader):
         return msg
 
 class _BagReader103(_BagReader):
+    """
+    Support class for reading v1.3 bag files.
+    """
     def __init__(self, bag):
         _BagReader.__init__(self, bag)
         
@@ -1093,7 +1154,7 @@ class _BagReader103(_BagReader):
 
 class _BZ2CompressorFileFacade(object):
     """
-    A file facade for the bz2.BZ2Compressor
+    A file facade for the bz2.BZ2Compressor.
     """
     def __init__(self, file):
         self.file                = file

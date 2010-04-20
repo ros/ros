@@ -172,7 +172,7 @@ void Player::publish() {
 		// Print out time
 		ros::WallTime t = ros::WallTime::now();
 		if (!options_.quiet && ((t - last_print_time) >= max_print_interval)) {
-			printf("Time: %16.6f    Duration: %16.6f\r", ros::Time::now().toSec(), m.getTime().toSec());
+			printf(" Time: %16.6f    Duration: %16.6f\r", ros::Time::now().toSec(), m.getTime().toSec());
 			fflush(stdout);
 			last_print_time = t;
 		}
@@ -231,11 +231,11 @@ void Player::doPublish(MessageInstance const& m) {
                 // <space>: toggle paused
                 if (!paused_) {
                     paused_ = true;
-                    std::cout << std::endl << "Hit space to resume, or 's' to step." << std::flush;
+                    std::cout << std::endl << "Hit space to resume, or 's' to step." << std::endl;
                 }
                 else {
                     paused_ = false;
-                    std::cout << std::endl << "Hit space to pause." << std::flush;
+                    std::cout << std::endl << "Hit space to pause." << std::endl;
                 }
                 break;
 

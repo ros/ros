@@ -59,8 +59,7 @@ Bag::Bag() :
     chunk_count_(0),
     chunk_open_(false),
     curr_chunk_data_pos_(0),
-    decompressed_chunk_(0),
-    writing_enabled_(true)
+    decompressed_chunk_(0)
 {
 }
 
@@ -111,13 +110,7 @@ bool Bag::openWrite(string const& filename) {
         return false;
     }
 
-    warn_next_ = ros::WallTime();
-    checkDisk();
-    check_disk_next_ = ros::WallTime::now() + ros::WallDuration().fromSec(20.0);
-
-    // Write the version and file header
     startWritingVersion200();
-
     return true;
 }
 
@@ -126,10 +119,6 @@ bool Bag::openAppend(string const& filename) {
         ROS_ERROR("Failed to open file: %s", filename.c_str());
         return false;
     }
-
-    warn_next_ = ros::WallTime();
-    checkDisk();
-    check_disk_next_ = ros::WallTime::now() + ros::WallDuration().fromSec(20.0);
 
     // Read in the version and file header
     if (!readVersion())
@@ -214,8 +203,9 @@ void Bag::closeWrite() {
     stopWritingVersion200();
 }
 
-BagMode  Bag::getMode()   const { return mode_;             }
-uint64_t Bag::getOffset() const { return file_.getOffset(); }
+string   Bag::getFileName() const { return file_.getFileName(); }
+BagMode  Bag::getMode()     const { return mode_;               }
+uint64_t Bag::getOffset()   const { return file_.getOffset();   }
 
 void     Bag::setChunkThreshold(uint32_t chunk_threshold) { chunk_threshold_ = chunk_threshold; }
 uint32_t Bag::getChunkThreshold() const                   { return chunk_threshold_;            }
@@ -524,56 +514,6 @@ bool Bag::readChunkHeader(ChunkHeader& chunk_header) {
     ROS_DEBUG("Read CHUNK: compression=%s size=%d uncompressed=%d (%f)", chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size, 100 * ((double) chunk_header.compressed_size) / chunk_header.uncompressed_size);
 
     return true;
-}
-
-bool Bag::scheduledCheckDisk() {
-    boost::mutex::scoped_lock lock(check_disk_mutex_);
-        
-    if (ros::WallTime::now() < check_disk_next_)
-        return true;
-
-    check_disk_next_ += ros::WallDuration().fromSec(20.0);
-    return checkDisk();
-}
-
-//! \todo move into recorder
-bool Bag::checkDisk() {
-    struct statvfs fiData;
-    
-    if ((statvfs(file_.getFileName().c_str(), &fiData)) < 0) {
-        ROS_WARN("rosrecord::Record: Failed to check filesystem stats.");
-        return true;
-    }
-
-    unsigned long long free_space = 0;
-    
-    free_space = (unsigned long long)(fiData.f_bsize) * (unsigned long long)(fiData.f_bavail);
-    
-    if (free_space < 1073741824ull) {
-        ROS_ERROR("Less than 1GB of space free on disk with %s.  Disabling logging.", file_.getFileName().c_str());
-        writing_enabled_ = false;
-        return false;
-    }
-    else if (free_space < 5368709120ull) {
-        ROS_WARN("Less than 5GB of space free on disk with %s.", file_.getFileName().c_str());
-    }
-    else {
-        writing_enabled_ = true;
-    }
-
-    return true;
-}
-
-bool Bag::checkLogging() {
-    if (writing_enabled_)
-        return true;
-
-    ros::WallTime now = ros::WallTime::now();
-    if (now >= warn_next_) {
-        warn_next_ = now + ros::WallDuration().fromSec(5.0);
-        ROS_WARN("Not logging message because logging disabled.  Most likely cause is a full disk.");
-    }
-    return false;
 }
 
 // Topic index records

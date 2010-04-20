@@ -35,6 +35,7 @@
 #include "rosbag/recorder.h"
 
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <time.h>
 
 #include <queue>
@@ -105,7 +106,8 @@ Recorder::Recorder(RecorderOptions const& options) :
 	exit_code_(0),
 	queue_size_(0),
 	max_queue_size_(1048576 * 256),
-	split_count_(0)
+	split_count_(0),
+    writing_enabled_(true)
 {
 }
 
@@ -296,6 +298,11 @@ void Recorder::doRecord() {
     // Open bag file for writing
     startWriting();
 
+    // Schedule the disk space check
+    warn_next_ = ros::WallTime();
+    checkDisk();
+    check_disk_next_ = ros::WallTime::now() + ros::WallDuration().fromSec(20.0);
+
     // Technically the queue_mutex_ should be locked while checking empty.
     // Except it should only get checked if the node is not ok, and thus
     // it shouldn't be in contention.
@@ -327,7 +334,8 @@ void Recorder::doRecord() {
             startWriting();
         }
 
-        bag_.write(out.topic, out.time, out.msg);
+        if (scheduledCheckDisk() && checkLogging())
+        	bag_.write(out.topic, out.time, out.msg);
     }
 
     stopWriting();
@@ -385,6 +393,52 @@ void Recorder::doTrigger() {
 
     ros::Timer terminate_timer = nh.createTimer(ros::Duration(1.0), boost::bind(&ros::shutdown));
     ros::spin();
+}
+
+bool Recorder::scheduledCheckDisk() {
+    boost::mutex::scoped_lock lock(check_disk_mutex_);
+
+    if (ros::WallTime::now() < check_disk_next_)
+        return true;
+
+    check_disk_next_ += ros::WallDuration().fromSec(20.0);
+    return checkDisk();
+}
+
+bool Recorder::checkDisk() {
+    struct statvfs fiData;
+    if ((statvfs(bag_.getFileName().c_str(), &fiData)) < 0) {
+        ROS_WARN("Failed to check filesystem stats.");
+        return true;
+    }
+
+    unsigned long long free_space = 0;
+    free_space = (unsigned long long) (fiData.f_bsize) * (unsigned long long) (fiData.f_bavail);
+    if (free_space < 1073741824ull) {
+        ROS_ERROR("Less than 1GB of space free on disk with %s.  Disabling recording.", bag_.getFileName().c_str());
+        writing_enabled_ = false;
+        return false;
+    }
+    else if (free_space < 5368709120ull) {
+        ROS_WARN("Less than 5GB of space free on disk with %s.", bag_.getFileName().c_str());
+    }
+    else {
+        writing_enabled_ = true;
+    }
+
+    return true;
+}
+
+bool Recorder::checkLogging() {
+    if (writing_enabled_)
+        return true;
+
+    ros::WallTime now = ros::WallTime::now();
+    if (now >= warn_next_) {
+        warn_next_ = now + ros::WallDuration().fromSec(5.0);
+        ROS_WARN("Not logging message because logging disabled.  Most likely cause is a full disk.");
+    }
+    return false;
 }
 
 }

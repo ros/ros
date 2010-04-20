@@ -118,6 +118,10 @@ private:
     void startWriting();
     void stopWriting();
 
+    bool checkLogging();
+    bool scheduledCheckDisk();
+    bool checkDisk();
+
     void snapshotTrigger(std_msgs::Empty::ConstPtr trigger);
     void doQueue(topic_tools::ShapeShifter::ConstPtr msg, std::string const& topic, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
 	void doRecord();
@@ -151,6 +155,11 @@ private:
 	std::queue<OutgoingQueue>     queue_queue_;          //!< queue of queues to be used by the snapshot recorders
 
 	ros::Time                     last_buffer_warn_;
+
+    bool          writing_enabled_;
+    boost::mutex  check_disk_mutex_;
+    ros::WallTime check_disk_next_;
+    ros::WallTime warn_next_;
 };
 
 }

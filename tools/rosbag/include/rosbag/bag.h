@@ -89,10 +89,11 @@ public:
     //! Fix a bag file
     bool rewrite(std::string const& src_filename, std::string const& dest_filename);
 
-    BagMode  getMode()         const;
-    int      getVersion()      const;
-    int      getMajorVersion() const;
-    int      getMinorVersion() const;
+    std::string getFileName()     const;
+    BagMode     getMode()         const;
+    int         getVersion()      const;
+    int         getMajorVersion() const;
+    int         getMinorVersion() const;
 
     uint64_t getOffset()       const;   //! \todo replace with getSize?
 
@@ -159,10 +160,6 @@ private:
 
     bool startReadingVersion102();
     bool startReadingVersion200();
-
-    bool checkLogging();
-    bool scheduledCheckDisk();
-    bool checkDisk();
 
     // Writing
     
@@ -262,20 +259,12 @@ private:
     std::vector<ChunkInfo>                          chunk_infos_;
     std::map<std::string, std::vector<IndexEntry> > topic_indexes_;
 
-    //
-
     Buffer   header_buffer_;        //!< reusable buffer in which to assemble the record header before writing to file
     Buffer   record_buffer_;        //!< reusable buffer in which to assemble the record data before writing to file
     Buffer   chunk_buffer_;         //!< reusable buffer to read chunk into
     Buffer   decompress_buffer_;    //!< reusable buffer to decompress chunks into
     uint64_t decompressed_chunk_;   //!< position of decompressed chunk
     Buffer   instantiate_buffer_;   //!< reusable buffer in which to instantiate MessageInstance messages into
-    
-    bool          writing_enabled_;
-
-    boost::mutex  check_disk_mutex_;
-    ros::WallTime check_disk_next_;
-    ros::WallTime warn_next_;
 };
 
 }
@@ -351,9 +340,6 @@ boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry)
 
 template<class T>
 void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> connection_header) {
-    if (!checkLogging())
-        return;
-
     bool needs_def_written = false;
     TopicInfo* topic_info;
     {
@@ -378,9 +364,6 @@ void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, 
         else
             topic_info = key->second;
     }
-
-    //! \todo move to rosrecord
-    scheduledCheckDisk();
 
     // Get information about possible latching and callerid from the connection header
     bool latching = false;

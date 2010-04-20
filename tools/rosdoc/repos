@@ -5,8 +5,7 @@
 # Each line is a key into rosbrowse/repos, which has a list of keys and
 # URIs
 ros
-ros_tutorials
-ros_experimental
+ros_stacks
 ros-pkg
 ros-pkg-trunk
 wg-ros-pkg

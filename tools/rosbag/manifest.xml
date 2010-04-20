@@ -2,7 +2,7 @@
   <description brief="ROS Bag Tools">
     This is a set of tools for recording from and playing back to ROS
     topics.  It is intended to be high performance and avoids
-    deserialization and reserialization of the messages.
+    deserialization and reserialization of the messages. 
   </description>
   <author>Jeremy Leibs (leibs@willowgarage.com), James Bowman (jamesb@willowgarage.com), Ken Conley (kwc@willowgarage.com), and Tim Field (tfield@willowgarage.com)</author>
   <license>BSD</license>

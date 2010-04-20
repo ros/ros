@@ -102,6 +102,9 @@
 (defvar ros-topic-timer nil "If non-nil, equals timer object used to schedule calls to rostopic list")
 (defvar ros-num-publishers (make-hash-table :test 'equal) "num publishers of a topic")
 (defvar ros-num-subscribers (make-hash-table :test 'equal) "num subscribers of a topic")
+(defvar ros-find-args nil)
+(defvar ros-find-args-history nil)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Preloading
@@ -532,6 +535,10 @@
     ))
     
 (defun ros-rgrep-package (ros-pkg regexp files)
+  "Run a recursive grep in `ros-pkg', with `regexp' as search
+pattern and `files' as file pattern. This function is similar to
+RGREP but with a ros package instead of a directory as
+parameter."
   (interactive (progn (grep-compute-defaults)
                       (let ((package (ros-completing-read-package))
                             (regexp (grep-read-regexp)))
@@ -540,6 +547,16 @@
                          regexp
                          (grep-read-files regexp)))))
   (rgrep regexp files (ros-package-path ros-pkg)))
+
+(defun ros-find-dired (ros-pkg args)
+  "Run find in ros package `ros-pkg' with arguments `args' and
+load the result in a dired buffer. This function is similar to
+FIND-DIRED but with a ros package instead of a directory as
+parameter."
+  (interactive (list (ros-completing-read-package)
+                     (read-string "Run find (within args): " ros-find-args
+                                  '(ros-find-args-history . 1))))
+  (find-dired (ros-package-path ros-pkg) args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Internal

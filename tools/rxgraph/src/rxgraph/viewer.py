@@ -79,12 +79,27 @@ class RxGraphViewerFrame(wx.Frame):
     
     self._needs_refresh = False
 
-    vbox = wx.BoxSizer(wx.VERTICAL)
 
-    graph_view = wx.Panel(self, -1)
+    # setup UI
+    vbox = wx.BoxSizer(wx.VERTICAL)
+    
+    # Create Splitter
+    self.content_splitter = wx.SplitterWindow(self, -1,style = wx.SP_LIVE_UPDATE)
+    self.content_splitter.SetMinimumPaneSize(24)
+    self.content_splitter.SetSashGravity(0.85)
+
+    # Create viewer pane
+    viewer = wx.Panel(self.content_splitter,-1)
+
+    # Setup the graph panel
+    graph_view = wx.Panel(viewer, -1)
     gv_vbox = wx.BoxSizer(wx.VERTICAL)
     graph_view.SetSizer(gv_vbox)
 
+    viewer_box = wx.BoxSizer()
+    viewer_box.Add(graph_view,1,wx.EXPAND | wx.ALL, 4)
+    viewer.SetSizer(viewer_box)
+    
     # Construct toolbar
     toolbar = wx.ToolBar(graph_view, -1)
 
@@ -121,11 +136,24 @@ class RxGraphViewerFrame(wx.Frame):
     self._widget.set_dotcode(DOTCODE)
     self._widget.zoom_to_fit()
 
-    vbox.Add(graph_view, 1, wx.EXPAND | wx.ALL)
-    
     gv_vbox.Add(toolbar, 0, wx.EXPAND)
     gv_vbox.Add(self._widget, 1, wx.EXPAND)
 
+
+    # Create userdata widget
+    borders = wx.LEFT | wx.RIGHT | wx.TOP
+    border = 4
+    self.ud_win = wx.ScrolledWindow(self.content_splitter, -1)
+    self.ud_gs = wx.BoxSizer(wx.VERTICAL)
+    self.ud_gs.Add(wx.StaticText(self.ud_win,-1,"Info:"),0, borders, border)
+    self.ud_txt = wx.TextCtrl(self.ud_win,-1,style=wx.TE_MULTILINE | wx.TE_READONLY)
+    self.ud_gs.Add(self.ud_txt,1,wx.EXPAND | borders, border)
+    self.ud_win.SetSizer(self.ud_gs)
+
+    # Set content splitter
+    self.content_splitter.SplitVertically(viewer, self.ud_win, 512)
+
+    vbox.Add(self.content_splitter, 1, wx.EXPAND | wx.ALL)
     self.SetSizer(vbox)
     self.Center()
 
@@ -133,6 +161,9 @@ class RxGraphViewerFrame(wx.Frame):
 
     # user callback for select
     self._widget.register_select_callback(self.select_cb)
+
+  def register_select_cb(self, callback):
+    self._widget.register_select_callback(callback)
 
   def OnIdle(self, event):
     if self._needs_refresh:

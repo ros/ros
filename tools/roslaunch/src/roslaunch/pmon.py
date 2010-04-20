@@ -152,16 +152,17 @@ def rl_signal(sig, stackframe):
         except KeyboardInterrupt:
             pass #filter out generic keyboard interrupt handler
         
-_atexit_registered = False
+_sig_initialized = False
 def _init_signal_handlers():
-    global _atexit_registered
+    global _sig_initialized
+    if _sig_initialized:
+        return
     if not roslib.is_interactive():
         _signal_chain[signal.SIGTERM] = signal.signal(signal.SIGTERM, rl_signal)
         _signal_chain[signal.SIGINT]  = signal.signal(signal.SIGINT, rl_signal)
         _signal_chain[signal.SIGHUP]  = signal.signal(signal.SIGHUP, rl_signal)
-    if not _atexit_registered:
-        atexit.register(pmon_shutdown)
-        _atexit_registered = True
+    atexit.register(pmon_shutdown)
+    _sig_initialized = True
 
 # ##############################################################
 

@@ -27,7 +27,7 @@
 
 #include "rosbag/view.h"
 #include "rosbag/bag.h"
-#include "rosbag/message_info.h"
+#include "rosbag/message_instance.h"
 
 #include <boost/foreach.hpp>
 
@@ -97,9 +97,9 @@ void View::iterator::increment() {
 }
 
 //! \todo some check in case we are at end
-MessageInfo View::iterator::dereference() const {
+MessageInstance View::iterator::dereference() const {
 	ViewIterHelper const& i = iters_.back();
-	return MessageInfo(i.range->topic_info, *(i.iter), *(i.range->bag_query->first));
+	return MessageInstance(i.range->topic_info, *(i.iter), *(i.range->bag_query->first));
 }
 
 // View

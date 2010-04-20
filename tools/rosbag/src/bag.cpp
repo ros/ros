@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "rosbag/bag.h"
-#include "rosbag/message_info.h"
+#include "rosbag/message_instance.h"
 #include "rosbag/query.h"
 #include "rosbag/view.h"
 
@@ -150,6 +150,18 @@ bool Bag::openAppend(string const& filename) {
     return true;
 }
 
+void Bag::write(std::string const& topic, ros::Time const& time, ros::Message::ConstPtr msg) {
+	write_(topic, time, *msg, msg->__connection_header);
+}
+
+void Bag::write(std::string const& topic, ros::Time const& time, ros::Message const& msg) {
+	write_(topic, time, msg, msg.__connection_header);
+}
+
+void Bag::write(std::string const& topic, ros::Time const& time, MessageInstance const& msg, boost::shared_ptr<ros::M_string> connection_header) {
+	write_(topic, time, msg, connection_header);
+}
+
 bool Bag::rewrite(string const& src_filename, string const& dest_filename) {
     Bag in;
     if (!in.open(src_filename, bagmode::Read))
@@ -165,9 +177,8 @@ bool Bag::rewrite(string const& src_filename, string const& dest_filename) {
     View view;
     view.addQuery(in, Query());
 
-    foreach(MessageInfo const m, view) {
+    foreach(MessageInstance const m, view)
         write(m.getTopic(), m.getTime(), m);
-    }
 
     in.close();
     close();

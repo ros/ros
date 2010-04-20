@@ -37,7 +37,7 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 
-#include "rosbag/message_info.h"
+#include "rosbag/message_instance.h"
 #include "rosbag/query.h"
 
 namespace rosbag {
@@ -59,9 +59,9 @@ class View
 
 public:
     class iterator : public boost::iterator_facade<iterator,
-												   MessageInfo,
+												   MessageInstance,
 												   boost::forward_traversal_tag,
-												   MessageInfo>
+												   MessageInstance>
     {
     protected:
     	// NOTE: the default constructor on the merge_queue means this is an empty queue,
@@ -79,7 +79,7 @@ public:
 
         void increment();
 
-        MessageInfo dereference() const;
+        MessageInstance dereference() const;
 
     private:
         View const* view_;

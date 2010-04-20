@@ -32,8 +32,8 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef ROSBAG_MESSAGE_INFO_H
-#define ROSBAG_MESSAGE_INFO_H
+#ifndef ROSBAG_MESSAGE_INSTANCE_H
+#define ROSBAG_MESSAGE_INSTANCE_H
 
 #include <ros/message.h>
 #include <ros/message_traits.h>
@@ -46,12 +46,12 @@ namespace rosbag {
 
 class Bag;
 
-class MessageInfo
+class MessageInstance
 {
     friend class Bag;
   
 public:
-    MessageInfo(TopicInfo const* info, IndexEntry const& index, Bag& bag);
+    MessageInstance(TopicInfo const* info, IndexEntry const& index, Bag& bag);
   
     std::string const& getTopic()             const;
     std::string const& getDataType()          const;
@@ -59,8 +59,8 @@ public:
     std::string const& getMessageDefinition() const;
     ros::Time const&   getTime()              const;
 
-    bool getLatching() const;
-    std::string getCallerid() const;
+    bool        getLatching() const;
+    std::string getCallerId() const;
   
     template<class T>
     boost::shared_ptr<T const> instantiate() const;
@@ -76,7 +76,7 @@ private:
     Bag*             bag_;
 };
 
-ros::AdvertiseOptions createAdvertiseOptions(const MessageInfo&, uint32_t queue_size);
+ros::AdvertiseOptions createAdvertiseOptions(MessageInstance const&, uint32_t queue_size);
 
 } // namespace rosbag
 
@@ -86,68 +86,58 @@ namespace message_traits
 {
 
 template<>
-struct MD5Sum<rosbag::MessageInfo>
+struct MD5Sum<rosbag::MessageInstance>
 {
-    static const char* value(const rosbag::MessageInfo& m) {return m.getMD5Sum().c_str();}
+    static const char* value(const rosbag::MessageInstance& m) { return m.getMD5Sum().c_str(); }
 };
 
 template<>
-struct DataType<rosbag::MessageInfo>
+struct DataType<rosbag::MessageInstance>
 {
-    static const char* value(const rosbag::MessageInfo& m) {return m.getDataType().c_str();}
+    static const char* value(const rosbag::MessageInstance& m) { return m.getDataType().c_str(); }
 };
 
 template<>
-struct Definition<rosbag::MessageInfo>
+struct Definition<rosbag::MessageInstance>
 {
-    static const char* value(const rosbag::MessageInfo& m) {return m.getMessageDefinition().c_str();}
+    static const char* value(const rosbag::MessageInstance& m) { return m.getMessageDefinition().c_str(); }
 };
 
 } // namespace message_traits
 
 namespace serialization
 {
+
 template<>
-struct Serializer<rosbag::MessageInfo>
+struct Serializer<rosbag::MessageInstance>
 {
-    template<typename Stream> inline static void write(Stream& stream, const rosbag::MessageInfo& m)
-    {
+    template<typename Stream> inline static void write(Stream& stream, const rosbag::MessageInstance& m) {
         m.write(stream);
     }
 
-    inline static uint32_t serializedLength(const rosbag::MessageInfo& m)
-    {
+    inline static uint32_t serializedLength(const rosbag::MessageInstance& m) {
         return m.size();
     }
-
 };
+
 } // namespace serialization
 
-
 } //namespace ros
-
-
-
 
 // I really don't like having to do this
 #include "rosbag/bag.h"
 
 template<class T>
-boost::shared_ptr<T const> rosbag::MessageInfo::instantiate() const {
+boost::shared_ptr<T const> rosbag::MessageInstance::instantiate() const {
     if (ros::message_traits::MD5Sum<T>::value() != getMD5Sum())
         return boost::shared_ptr<T const>();
-
 
     return bag_->instantiateBuffer<T>(index_entry_);
 }
 
 template<typename Stream>
-void rosbag::MessageInfo::write(Stream& stream) const
-{
+void rosbag::MessageInstance::write(Stream& stream) const {
     bag_->readMessageDataIntoStream(index_entry_, stream);
 }
-
-
-
 
 #endif

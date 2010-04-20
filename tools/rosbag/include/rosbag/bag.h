@@ -58,8 +58,6 @@
 
 namespace rosbag {
 
-
-
 namespace bagmode
 {
 enum BagMode
@@ -72,13 +70,13 @@ enum BagMode
 }
 typedef bagmode::BagMode BagMode;
 
-class MessageInfo;
+class MessageInstance;
 class View;
 class Query;
 
 class Bag
 {
-    friend class MessageInfo;
+    friend class MessageInstance;
     friend class View;
 
 public:
@@ -121,10 +119,7 @@ public:
      *
      * Can throw BagNotOpenException or BagIOException
      */
-    void write(std::string const& topic, ros::Time const& time, ros::Message::ConstPtr msg)
-    {
-        write_(topic, time, *msg, msg->__connection_header);
-    }
+    void write(std::string const& topic, ros::Time const& time, ros::Message::ConstPtr msg);
 
     //! Write a message into the bag file
     /*!
@@ -134,23 +129,18 @@ public:
      *
      * Can throw BagNotOpenException or BagIOException
      */
-    void write(std::string const& topic, ros::Time const& time, ros::Message const& msg)
-    {
-        write_(topic, time, msg, msg.__connection_header);
-    }
+    void write(std::string const& topic, ros::Time const& time, ros::Message const& msg);
 
     //! Write a message into the bag file
     /*!
      * \param topic The topic name
      * \param time  Timestamp of the message
-     * \param msg   A messageInfo
+     * \param msg   A MessageInstance
      *
      * Can throw BagNotOpenException or BagIOException
      */
-    void write(std::string const& topic, ros::Time const& time, MessageInfo const& msg, boost::shared_ptr<ros::M_string> connection_header = boost::shared_ptr<ros::M_string>())
-    {
-        write_(topic, time, msg, connection_header);
-    }
+    void write(std::string const& topic, ros::Time const& time, MessageInstance const& msg,
+			   boost::shared_ptr<ros::M_string> connection_header = boost::shared_ptr<ros::M_string>());
 
     void dump();
 
@@ -197,12 +187,11 @@ private:
     ros::Header readMessageDataHeader(IndexEntry const& index_entry);
     uint32_t    readMessageDataSize(IndexEntry const& index_entry);
    
-    // Would be nice not to have to template this on Stream...  Also,
+    // Would be nice not to have to template this on Stream.  Also,
     // we don't need to read the header here either.  It just so
     // happens to be the most efficient way to skip it at the moment.
     template<typename Stream>
     void readMessageDataIntoStream(IndexEntry const& index_entry, Stream& stream);
-
 
     bool readChunkHeader(ChunkHeader& chunk_header);
     bool readTopicIndexRecord();
@@ -291,7 +280,7 @@ private:
 
 }
 
-#include "rosbag/message_info.h"
+#include "rosbag/message_instance.h"
 
 namespace rosbag {
 
@@ -310,7 +299,6 @@ bool Bag::readField(ros::M_string const& fields, std::string const& field_name, 
     memcpy(data, i->second.data(), sizeof(T));
     return true;
 }
-
 
 template<typename Stream>
 void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& stream)
@@ -334,7 +322,6 @@ void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& strea
         break;
     }
 }
-
 
 template<class T>
 boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry) {
@@ -362,8 +349,6 @@ boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry)
 
     return p;
 }
-
-
 
 template<class T>
 void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> connection_header) {
@@ -480,6 +465,5 @@ void Bag::writeMessageDataRecord(std::string const& topic, ros::Time const& time
 }
 
 }
-
 
 #endif

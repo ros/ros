@@ -25,25 +25,24 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include "rosbag/message_info.h"
+#include "rosbag/message_instance.h"
 
 using std::string;
 using ros::Time;
 
 namespace rosbag {
 
-MessageInfo::MessageInfo(TopicInfo const* topic_info, IndexEntry const& index_entry, Bag& bag) :
+MessageInstance::MessageInstance(TopicInfo const* topic_info, IndexEntry const& index_entry, Bag& bag) :
 	topic_info_(topic_info), index_entry_(index_entry), bag_(&bag) { }
 
-string const& MessageInfo::getTopic()             const { return topic_info_->topic;    }
-string const& MessageInfo::getDataType()          const { return topic_info_->datatype; }
-string const& MessageInfo::getMD5Sum()            const { return topic_info_->md5sum;   }
-string const& MessageInfo::getMessageDefinition() const { return topic_info_->msg_def;  }
-Time const&   MessageInfo::getTime()              const { return index_entry_.time;    }
+string const& MessageInstance::getTopic()             const { return topic_info_->topic;    }
+string const& MessageInstance::getDataType()          const { return topic_info_->datatype; }
+string const& MessageInstance::getMD5Sum()            const { return topic_info_->md5sum;   }
+string const& MessageInstance::getMessageDefinition() const { return topic_info_->msg_def;  }
+Time const&   MessageInstance::getTime()              const { return index_entry_.time;     }
 
-// TODo: This should cache the header
-bool MessageInfo::getLatching() const
-{
+// @todo: this should cache the header
+bool MessageInstance::getLatching() const {
     ros::Header header = bag_->readMessageDataHeader(index_entry_);
     ros::M_string& fields = *header.getValues();
     
@@ -54,8 +53,7 @@ bool MessageInfo::getLatching() const
         return false;
 }
 
-std::string MessageInfo::getCallerid() const
-{
+std::string MessageInstance::getCallerId() const {
     ros::Header header = bag_->readMessageDataHeader(index_entry_);
     ros::M_string& fields = *header.getValues();
 
@@ -66,16 +64,11 @@ std::string MessageInfo::getCallerid() const
         return std::string("");
 }
 
-
-uint32_t MessageInfo::size() const
-{
+uint32_t MessageInstance::size() const {
     return bag_->readMessageDataSize(index_entry_);
 }
 
-
-
-ros::AdvertiseOptions createAdvertiseOptions(MessageInfo const& m, uint32_t queue_size)
-{
+ros::AdvertiseOptions createAdvertiseOptions(MessageInstance const& m, uint32_t queue_size) {
     return ros::AdvertiseOptions(m.getTopic(), queue_size, m.getMD5Sum(), m.getDataType(), m.getMessageDefinition());
 }
 

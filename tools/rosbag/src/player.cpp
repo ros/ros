@@ -33,7 +33,7 @@
 ********************************************************************/
 
 #include "rosbag/player.h"
-#include "rosbag/message_info.h"
+#include "rosbag/message_instance.h"
 #include "rosbag/view.h"
 
 #include <sys/select.h>
@@ -161,7 +161,7 @@ void Player::publish() {
         ros::WallTime last_print_time(0.0);
         ros::WallDuration max_print_interval(0.1);
 
-        foreach(MessageInfo m, view) {
+        foreach(MessageInstance m, view) {
             if (!node_handle_->ok())
                 break;
 
@@ -184,18 +184,16 @@ void Player::publish() {
     }
 }
 
-void Player::doPublish(string const& topic, rosbag::MessageInfo const& m, ros::Time const& time) {
-
+void Player::doPublish(string const& topic, rosbag::MessageInstance const& m, ros::Time const& time) {
     // Pull latching and callerid info out of the connection_header if it's available (which it always should be)
-    bool latching = m.getLatching();
-    string callerid = m.getCallerid();
+    bool   latching = m.getLatching();
+    string callerid = m.getCallerId();
 
     // Make a unique id composed of the callerid and the topicname allowing us to have separate advertisers for separate latching topics
     string name = callerid + topic;
 
     map<string, ros::Publisher>::iterator pub_iter = publishers_.find(name);
     if (pub_iter == publishers_.end()) {
-
         ros::AdvertiseOptions opts = rosbag::createAdvertiseOptions(m, options_.queue_size);
         opts.latch = latching;
 
@@ -319,7 +317,7 @@ int Player::checkBag() {
     View view;
 	view.addQuery(bag, Query());
 
-	foreach(MessageInfo m, view) {
+	foreach(MessageInstance m, view) {
         string const& topic = m.getTopic();
 
         map<string, BagContent>::iterator i = content_by_topic.find(topic);

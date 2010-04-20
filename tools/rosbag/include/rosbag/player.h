@@ -46,9 +46,6 @@
 #include <ros/ros.h>
 #include <ros/time.h>
 
-#include <std_msgs/Empty.h>
-#include <topic_tools/shape_shifter.h>
-
 #include "rosbag/bag.h"
 
 namespace rosbag {
@@ -102,7 +99,7 @@ private:
     void unsetTerminalSettings();
 
     ros::Time getSysTime();
-    void      doPublish(std::string const& topic, rosbag::MessageInfo const& m, ros::Time const& time);
+    void      doPublish(std::string const& topic, rosbag::MessageInstance const& m, ros::Time const& time);
 
 private:
     PlayerOptions options_;

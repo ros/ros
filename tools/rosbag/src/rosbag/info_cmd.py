@@ -50,7 +50,7 @@ def info_cmd(argv):
         parser.error('You must pass in a bag file.')
 
     for arg in args:
-        cmd = ['play', '-c', arg]
+        cmd = ['rosrun', 'rosbag', 'play', '-c', arg]
 
         if options.try_future:
             cmd.extend(["-T"])

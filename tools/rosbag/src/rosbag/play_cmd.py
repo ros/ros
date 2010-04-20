@@ -56,7 +56,7 @@ def play_cmd(argv):
     if len(args) == 0:
         parser.error("You must specify at least 1 bag file to play back.")
 
-    cmd = ["play"]
+    cmd = ["rosrun", "rosbag", "play"]
 
     if options.quiet:      cmd.extend(["-n"])
     if options.pause:      cmd.extend(["-p"])

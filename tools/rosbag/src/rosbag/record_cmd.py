@@ -61,7 +61,7 @@ def record_cmd(argv):
     if options.prefix is not None and options.name is not None:
         parser.error("Can't set both prefix and name.")
 
-    cmd = ['record']
+    cmd = ['rosrun', 'rosbag', 'record']
 
     cmd.extend(['-m', str(options.buffsize)])
     cmd.extend(['-c', str(options.num)])

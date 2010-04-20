@@ -63,11 +63,10 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
       (declare (ignore success))
       (setq name (format nil "~a-~a-~a" name ms s))))
 
-  (setq *ros-log-location* (or *ros-log-location* 
-			       (merge-pathnames 
-				(pathname (format nil "log/~a-~a.log" name (unix-time)))
-				(pathname (concatenate 'string (sb-ext:posix-getenv "ROS_ROOT") "/"))))
-	*ros-log-stream* (open *ros-log-location* :direction :output :if-exists :overwrite :if-does-not-exist :create))
+  (setq *ros-log-location* (get-ros-log-location name))
+  (ensure-directories-exist *ros-log-location* :verbose nil)
+  (setq *ros-log-stream* (open *ros-log-location* :direction :output :if-exists :overwrite 
+                               :if-does-not-exist :create))
     
   (let ((params (handle-command-line-arguments name cmd-line-args)))
 
@@ -234,6 +233,9 @@ Assuming spin is not true, this call will return the return value of the final s
                    1)))
           (unless (eql i 1)
             (ros-warn (roslisp top) "When trying to close service ~a, ~a services were closed instead of 1" name i))))
+
+      ;; Unset variables that will be used upon next startup
+      (setq *ros-log-location* nil)
 
       (ros-info (roslisp top) "Shutdown complete")
       (close *ros-log-stream*)

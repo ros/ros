@@ -43,6 +43,20 @@
 ;; ROSLisp-specific utility code
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun get-ros-log-location (name)
+
+  ;; Tries various possibilities in order of decreasing priority
+  (let ((log-dir (sb-ext:posix-getenv "ROS_LOG_DIR"))
+        (ros-home-dir (sb-ext:posix-getenv "ROS_HOME"))
+        (home-dir (sb-ext:posix-getenv "HOME")))
+    (or *ros-log-location* 
+        (merge-pathnames
+         (pathname (format nil "~a-~a.log" name (unix-time)))
+         (or (when log-dir (concatenate 'string log-dir "/"))
+             (when ros-home-dir (concatenate 'string ros-home-dir "/log/"))
+             (when home-dir (concatenate 'string home-dir "/.ros/log/"))
+             (error "None of the possibilities for the log directory worked.  Even the HOME environment variable was not set."))))))
+
 (defun parse-uri (uri)
   "parse a uri struct or uri string of the form http://address:port.  Return two values: address and port."
   (etypecase uri

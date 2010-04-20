@@ -195,8 +195,8 @@ private:
 
     bool readChunkHeader(ChunkHeader& chunk_header);
     bool readTopicIndexRecord();
-    bool readTopicIndexDataVersion0(uint32_t data_size, uint32_t count, std::string const& topic);
-    bool readTopicIndexDataVersion1(uint32_t data_size, uint32_t count, std::string const& topic);
+    bool readTopicIndexDataVersion0(uint32_t count, std::string const& topic);
+    bool readTopicIndexDataVersion1(uint32_t count, std::string const& topic, uint64_t chunk_pos);
     bool readChunkInfoRecord();
 
     bool     decompressChunk(uint64_t chunk_pos);

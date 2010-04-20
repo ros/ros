@@ -107,6 +107,7 @@ void PlayerOptions::check() {
 Player::Player(PlayerOptions const& options) :
     options_(options),
     node_handle_(NULL),
+    started_(false),
     paused_(false),
     terminal_modified_(false)
 {
@@ -159,9 +160,11 @@ void Player::publish() {
 	ros::WallTime last_print_time(0.0);
 	ros::WallDuration max_print_interval(0.1);
 
+	// Publish all messages in the bags
 	View view;
 	foreach(shared_ptr<Bag> bag, bags_)
 		view.addQuery(*bag, Query());
+
 	foreach(MessageInstance m, view) {
 		if (!node_handle_->ok())
 			break;
@@ -174,9 +177,7 @@ void Player::publish() {
 			last_print_time = t;
 		}
 
-		// Publish the message
-		std::cout << "Publishing: " << m.getTime() << std::endl;
-		doPublish(m.getTopic(), m, m.getTime());
+		doPublish(m);
 	}
 
 	std::cout << std::endl << "Done." << std::endl;
@@ -184,26 +185,27 @@ void Player::publish() {
 	ros::shutdown();
 }
 
-void Player::doPublish(string const& topic, MessageInstance const& m, ros::Time const& time) {
-    bool   latching = m.getLatching();
+void Player::doPublish(MessageInstance const& m) {
+	string const& topic = m.getTopic();
+	ros::Time const& time = m.getTime();
+
+    // Make a unique id composed of the callerid and the topic allowing separate advertisers for separate latching topics
     string callerid = m.getCallerId();
+    string callerid_topic = callerid + topic;
 
-    // Make a unique id composed of the callerid and the topicname allowing us to have separate advertisers for separate latching topics
-    string name = callerid + topic;
-
-    map<string, ros::Publisher>::iterator pub_iter = publishers_.find(name);
+    map<string, ros::Publisher>::iterator pub_iter = publishers_.find(callerid_topic);
     if (pub_iter == publishers_.end()) {
         ros::AdvertiseOptions opts = createAdvertiseOptions(m, options_.queue_size);
-        opts.latch = latching;
+        opts.latch = m.getLatching();
 
         ros::Publisher pub = node_handle_->advertise(opts);
-        publishers_.insert(publishers_.begin(), pair<string, ros::Publisher>(name, pub));
+        publishers_.insert(publishers_.begin(), pair<string, ros::Publisher>(callerid_topic, pub));
 
-        pub_iter = publishers_.find(name);
+        pub_iter = publishers_.find(callerid_topic);
 
-        ROS_INFO("Sleeping %.3f seconds after advertising %s...", options_.advertise_sleep / 1e6, topic.c_str());
+        std::cout << "Waiting " << options_.advertise_sleep / 1e6 << " seconds after advertising " << topic << " [caller-id: " << callerid << "]..." << std::flush;
         usleep(options_.advertise_sleep);
-        ROS_INFO("Done sleeping.\n");
+        std::cout << " done." << std::endl;
     }
 
     if (options_.at_once) {
@@ -211,10 +213,17 @@ void Player::doPublish(string const& topic, MessageInstance const& m, ros::Time 
         return;
     }
 
-    ros::Time now = getSysTime();
-    ros::Duration delta = time - getSysTime();
+    if (!started_) {
+    	last_played_message_time_ = time;
+    	last_played_wall_time_ = getSysTime();
+    	started_ = true;
+    }
 
-    while ((paused_ || delta > ros::Duration(0, 100000)) && node_handle_->ok()) {
+    ros::Duration message_delta  = time - last_played_message_time_;
+    ros::Duration wall_delta     = getSysTime() - last_played_wall_time_;
+    ros::Duration sleep_duration = message_delta - wall_delta;
+
+    while ((paused_ || sleep_duration > ros::Duration(0, 100000)) && node_handle_->ok()) {
         bool charsleftorpaused = true;
         while (charsleftorpaused && node_handle_->ok()) {
             switch (readCharFromStdin()) {
@@ -240,19 +249,22 @@ void Player::doPublish(string const& topic, MessageInstance const& m, ros::Time 
 
             case EOF:
                 if (paused_)
-                    usleep(10000);
+                    usleep(10000);  // sleep for 10ms
                 else
                     charsleftorpaused = false;
             }
         }
 
-        usleep(100000);  // sleep for 0.1 secs
+        usleep(100000);  // sleep for 100ms
 
-        delta = time - getSysTime();
+        wall_delta     = getSysTime() - last_played_wall_time_;
+        sleep_duration = message_delta - wall_delta;
     }
 
-    if (!paused_ && delta > ros::Duration(0, 5000) && node_handle_->ok())
-        usleep(delta.toNSec() / 1000 - 5);      // todo should this be a ros::Duration::Sleep?
+    if (!paused_ && sleep_duration > ros::Duration(0, 5000) && node_handle_->ok())
+        usleep(sleep_duration.toNSec() / 1000 - 5);
+    last_played_message_time_ = time;
+    last_played_wall_time_ = getSysTime();
 
     pub_iter->second.publish(m);
 }

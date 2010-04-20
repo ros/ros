@@ -80,9 +80,9 @@ index_1
 index_2
   ...
 
-Version 1.3:
+Version 2.0:
 -------------
-#ROSRECORD V1.3
+#ROSBAG V2.0
 file_header
   op=3
   index_pos=msg_def_1.pos      # position of index

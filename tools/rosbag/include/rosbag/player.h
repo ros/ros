@@ -100,14 +100,16 @@ private:
     void restoreTerminal();
 
     ros::Time getSysTime();
-    void      doPublish(std::string const& topic, rosbag::MessageInstance const& m, ros::Time const& time);
+    void      doPublish(rosbag::MessageInstance const& m);
 
 private:
     PlayerOptions options_;
 
     ros::NodeHandle* node_handle_;    //!< pointer to allow player to start before node handle exists since this is where argument parsing happens
 
-    ros::Time start_time_;
+    bool      started_;
+    ros::Time last_played_message_time_;
+    ros::Time last_played_wall_time_;
     bool      paused_;
 
     std::vector<boost::shared_ptr<Bag> >  bags_;

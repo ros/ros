@@ -317,7 +317,8 @@ bool Bag::startReadingVersion200() {
 
         // Skip over the chunk data
         ChunkHeader chunk_header;
-        readChunkHeader(chunk_header);
+        if (!readChunkHeader(chunk_header))
+        	return false;
         seek(chunk_header.compressed_size, std::ios::cur);
 
         // Read the topic index records after the chunk
@@ -633,17 +634,17 @@ bool Bag::readTopicIndexRecord() {
     ROS_DEBUG("Read INDEX_DATA: ver=%d topic=%s count=%d", index_version, topic.c_str(), count);
 
     switch (index_version) {
-    case 0:  return readTopicIndexDataVersion0(data_size, count, topic);
-    case 1:  return readTopicIndexDataVersion1(data_size, count, topic);
-    default: return false;
+    case 0:  return readTopicIndexDataVersion0(count, topic);
+    case 1:  return readTopicIndexDataVersion1(count, topic, curr_chunk_info_.pos);
+    default: {
+    	ROS_ERROR("Unsupported INDEX_DATA version: %d", index_version);
+    	return false;
+    }
     }
 }
 
 //! Store the position of the message in the chunk_pos field
-bool Bag::readTopicIndexDataVersion0(uint32_t data_size, uint32_t count, string const& topic) {
-    //if (count * 20 != data_size)
-    //	return false;
-
+bool Bag::readTopicIndexDataVersion0(uint32_t count, string const& topic) {
     // Read the index entry records
     vector<IndexEntry>& topic_index = topic_indexes_[topic];
     for (uint32_t i = 0; i < count; i++) {
@@ -664,15 +665,12 @@ bool Bag::readTopicIndexDataVersion0(uint32_t data_size, uint32_t count, string 
     return true;
 }
 
-bool Bag::readTopicIndexDataVersion1(uint32_t data_size, uint32_t count, string const& topic) {
-    if (count * sizeof(IndexEntry) != data_size)
-    	return false;
-
+bool Bag::readTopicIndexDataVersion1(uint32_t count, string const& topic, uint64_t chunk_pos) {
     // Read the index entry records
     vector<IndexEntry>& topic_index = topic_indexes_[topic];
     for (uint32_t i = 0; i < count; i++) {
         IndexEntry index_entry;
-        index_entry.chunk_pos = curr_chunk_info_.pos;
+        index_entry.chunk_pos = chunk_pos;
         uint32_t sec;
         uint32_t nsec;
         read((char*) &sec,                4);

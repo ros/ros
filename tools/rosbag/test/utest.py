@@ -69,10 +69,18 @@ class TestRosbag(unittest.TestCase):
         #self.assert_(self.callback_invoked[0], "callback not invoked")
 
 def main():
+    b = rosbag.Bag('timing.bag', 'w')
+    for i in range(30):
+        msg = Int32()
+        msg.data = i
+        t = roslib.rostime.Time.from_sec(i)
+        b.write('/ints', msg, t)
+    b.close()
+    
     sys.exit()
 
 if __name__ == '__main__':
-    #main()
+    main()
 
     import rostest
     rostest.run(PKG, 'TestRosbag', TestRosbag, sys.argv)

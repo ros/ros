@@ -102,7 +102,7 @@ private:
     void unsetTerminalSettings();
 
     ros::Time getSysTime();
-    void      doPublish(std::string const& topic, ros::MessagePtr m, ros::Time const& time);
+    void      doPublish(std::string const& topic, rosbag::MessageInfo const& m, ros::Time const& time);
 
 private:
     PlayerOptions options_;

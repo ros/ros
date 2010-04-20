@@ -33,7 +33,6 @@
 ********************************************************************/
 
 #include "rosbag/player.h"
-#include "rosbag/message_instance.h"
 #include "rosbag/message_info.h"
 #include "rosbag/view.h"
 
@@ -176,7 +175,7 @@ void Player::publish() {
 
             // Publish the message
             std::cout << "Publishing: " << m.getTime() << std::endl;
-            doPublish(m.getTopic(), m.instantiateInstance(), m.getTime());
+            doPublish(m.getTopic(), m, m.getTime());
         }
 
         std::cout << std::endl << "Done." << std::endl;
@@ -185,26 +184,19 @@ void Player::publish() {
     }
 }
 
-void Player::doPublish(string const& topic, ros::MessagePtr m, ros::Time const& time) {
-    // Pull latching and callerid info out of the connection_header if it's available (which it always should be)
-    bool latching = false;
-    string callerid("");
-    if (m->__connection_header != NULL) {
-        ros::M_string::iterator latch_iter = m->__connection_header->find(string("latching"));
-        if (latch_iter != m->__connection_header->end() && latch_iter->second != string("0"))
-            latching = true;
+void Player::doPublish(string const& topic, rosbag::MessageInfo const& m, ros::Time const& time) {
 
-        ros::M_string::iterator callerid_iter = m->__connection_header->find(string("callerid"));
-        if (callerid_iter != m->__connection_header->end())
-            callerid = callerid_iter->second;
-    }
+    // Pull latching and callerid info out of the connection_header if it's available (which it always should be)
+    bool latching = m.getLatching();
+    string callerid = m.getCallerid();
 
     // Make a unique id composed of the callerid and the topicname allowing us to have separate advertisers for separate latching topics
     string name = callerid + topic;
 
     map<string, ros::Publisher>::iterator pub_iter = publishers_.find(name);
     if (pub_iter == publishers_.end()) {
-        ros::AdvertiseOptions opts(topic, options_.queue_size, m->__getMD5Sum(), m->__getDataType(), m->__getMessageDefinition());
+
+        ros::AdvertiseOptions opts = rosbag::createAdvertiseOptions(m, options_.queue_size);
         opts.latch = latching;
 
         ros::Publisher pub = node_handle_->advertise(opts);
@@ -218,7 +210,7 @@ void Player::doPublish(string const& topic, ros::MessagePtr m, ros::Time const& 
     }
 
     if (options_.at_once) {
-        pub_iter->second.publish(*m);
+        pub_iter->second.publish(m);
         return;
     }
 
@@ -244,7 +236,7 @@ void Player::doPublish(string const& topic, ros::MessagePtr m, ros::Time const& 
             case 's':
                 // 's': step
                 if (paused_) {
-                    pub_iter->second.publish(*m);
+                    pub_iter->second.publish(m);
                     return;
                 }
                 break;
@@ -265,7 +257,7 @@ void Player::doPublish(string const& topic, ros::MessagePtr m, ros::Time const& 
     if (!paused_ && delta > ros::Duration(0, 5000) && node_handle_->ok())
         usleep(delta.toNSec() / 1000 - 5);      // todo should this be a ros::Duration::Sleep?
 
-    pub_iter->second.publish(*m);
+    pub_iter->second.publish(m);
 }
 
 void Player::setTerminalSettings() {

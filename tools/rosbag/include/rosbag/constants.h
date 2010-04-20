@@ -41,7 +41,7 @@
 namespace rosbag {
 
 // Bag file version to write
-static const std::string VERSION = "1.3";
+static const std::string VERSION = "2.0";
 
 // Header field delimiter
 static const unsigned char FIELD_DELIM = '=';

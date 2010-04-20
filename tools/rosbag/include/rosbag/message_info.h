@@ -40,30 +40,35 @@
 #include <ros/ros.h>
 #include <ros/time.h>
 
-#include "rosbag/bag.h"
+#include "rosbag/structures.h"
 
 namespace rosbag {
 
-class MessageInstance;
+class Bag;
 
 class MessageInfo
 {
     friend class Bag;
-    friend class MessageInstance;
-
+  
 public:
     MessageInfo(TopicInfo const* info, IndexEntry const& index, Bag& bag);
-
+  
     std::string const& getTopic()             const;
     std::string const& getDataType()          const;
     std::string const& getMD5Sum()            const;
     std::string const& getMessageDefinition() const;
     ros::Time const&   getTime()              const;
 
+    bool getLatching() const;
+    std::string getCallerid() const;
+  
     template<class T>
     boost::shared_ptr<T const> instantiate() const;
+  
+    template<typename Stream>
+    void write(Stream& stream) const;
 
-    boost::shared_ptr<MessageInstance> instantiateInstance() const;
+    uint32_t size() const;
 
 private:
     TopicInfo const* topic_info_;
@@ -71,20 +76,78 @@ private:
     Bag*             bag_;
 };
 
+ros::AdvertiseOptions createAdvertiseOptions(const MessageInfo&, uint32_t queue_size);
+
+} // namespace rosbag
+
+namespace ros
+{
+namespace message_traits
+{
+
+template<>
+struct MD5Sum<rosbag::MessageInfo>
+{
+    static const char* value(const rosbag::MessageInfo& m) {return m.getMD5Sum().c_str();}
+};
+
+template<>
+struct DataType<rosbag::MessageInfo>
+{
+    static const char* value(const rosbag::MessageInfo& m) {return m.getDataType().c_str();}
+};
+
+template<>
+struct Definition<rosbag::MessageInfo>
+{
+    static const char* value(const rosbag::MessageInfo& m) {return m.getMessageDefinition().c_str();}
+};
+
+} // namespace message_traits
+
+namespace serialization
+{
+template<>
+struct Serializer<rosbag::MessageInfo>
+{
+    template<typename Stream> inline static void write(Stream& stream, const rosbag::MessageInfo& m)
+    {
+        m.write(stream);
+    }
+
+    inline static uint32_t serializedLength(const rosbag::MessageInfo& m)
+    {
+        return m.size();
+    }
+
+};
+} // namespace serialization
+
+
+} //namespace ros
+
+
+
+
+// I really don't like having to do this
+#include "rosbag/bag.h"
+
 template<class T>
-boost::shared_ptr<T const> MessageInfo::instantiate() const {
+boost::shared_ptr<T const> rosbag::MessageInfo::instantiate() const {
     if (ros::message_traits::MD5Sum<T>::value() != getMD5Sum())
         return boost::shared_ptr<T const>();
 
-    switch (bag_->version_) {
-    case 200: bag_->readMessageDataRecord200(topic_info_->topic, index_entry_.chunk_pos, index_entry_.offset); break;
-    case 102: bag_->readMessageDataRecord102(topic_info_->topic, index_entry_.chunk_pos); break;
-    default:  ROS_FATAL("Unhandled version: %d", bag_->version_);
-    }
 
-    return bag_->instantiateBuffer<T>();
+    return bag_->instantiateBuffer<T>(index_entry_);
 }
 
+template<typename Stream>
+void rosbag::MessageInfo::write(Stream& stream) const
+{
+    bag_->readMessageDataIntoStream(index_entry_, stream);
 }
+
+
+
 
 #endif

@@ -33,7 +33,6 @@
 ********************************************************************/
 
 #include "rosbag/recorder.h"
-#include "rosbag/message_instance.h"
 
 #include <sys/stat.h>
 #include <time.h>

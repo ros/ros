@@ -27,7 +27,6 @@
 
 #include "rosbag/bag.h"
 #include "rosbag/message_info.h"
-#include "rosbag/message_instance.h"
 #include "rosbag/query.h"
 #include "rosbag/view.h"
 
@@ -103,16 +102,16 @@ bool Bag::openRead(string const& filename) {
         return false;
     }
 
-	return true;
+    return true;
 }
 
 bool Bag::openWrite(string const& filename) {
-	if (!file_.openWrite(filename)) {
-		ROS_ERROR("Failed to open file: %s", filename.c_str());
-		return false;
-	}
+    if (!file_.openWrite(filename)) {
+        ROS_ERROR("Failed to open file: %s", filename.c_str());
+        return false;
+    }
 
-	warn_next_ = ros::WallTime();
+    warn_next_ = ros::WallTime();
     checkDisk();
     check_disk_next_ = ros::WallTime::now() + ros::WallDuration().fromSec(20.0);
 
@@ -123,10 +122,10 @@ bool Bag::openWrite(string const& filename) {
 }
 
 bool Bag::openAppend(string const& filename) {
-	if (!file_.openReadWrite(filename)) {
-		ROS_ERROR("Failed to open file: %s", filename.c_str());
-		return false;
-	}
+    if (!file_.openReadWrite(filename)) {
+        ROS_ERROR("Failed to open file: %s", filename.c_str());
+        return false;
+    }
 
     warn_next_ = ros::WallTime();
     checkDisk();
@@ -167,9 +166,7 @@ bool Bag::rewrite(string const& src_filename, string const& dest_filename) {
     view.addQuery(in, Query());
 
     foreach(MessageInfo const m, view) {
-    	shared_ptr<MessageInstance> instance = m.instantiateInstance();
-
-        write(m.getTopic(), m.getTime(), instance);
+        write(m.getTopic(), m.getTime(), m);
     }
 
     in.close();
@@ -319,7 +316,7 @@ bool Bag::startReadingVersion200() {
 }
 
 bool Bag::startReadingVersion102() {
-	// @todo: handle 1.2 bags with no index
+    // @todo: handle 1.2 bags with no index
 
     ROS_DEBUG("Reading in version 1.2 bag");
 
@@ -359,7 +356,7 @@ void Bag::writeFileHeaderRecord() {
     chunk_count_ = chunk_infos_.size();
 
     ROS_DEBUG("Writing FILE_HEADER [%llu]: index_pos=%llu topic_count=%d chunk_count=%d",
-             (unsigned long long) file_.getOffset(), (unsigned long long) index_data_pos_, topic_count_, chunk_count_);
+              (unsigned long long) file_.getOffset(), (unsigned long long) index_data_pos_, topic_count_, chunk_count_);
     
     // Write file header record
     M_string header;
@@ -412,103 +409,12 @@ bool Bag::readFileHeaderRecord() {
     }
 
     ROS_DEBUG("Read FILE_HEADER: index_pos=%llu topic_count=%d chunk_count=%d",
-    		  (unsigned long long) index_data_pos_, topic_count_, chunk_count_);
+              (unsigned long long) index_data_pos_, topic_count_, chunk_count_);
 
     // Skip the data section (just padding)
     seek(data_size, std::ios::cur);
 
     return true;
-}
-
-// Write message records
-
-void Bag::write(string const& topic, Time const& time, MessageInstance* msg) {
-    write(topic, time, *msg);
-}
-
-void Bag::write(string const& topic, Time const& time, ros::Message::ConstPtr msg) {
-    write(topic, time, *msg);
-}
-
-void Bag::write(string const& topic, Time const& time, ros::Message const& msg) {
-    if (!checkLogging())
-        return;
-
-    bool needs_def_written = false;
-    TopicInfo* topic_info;
-    {
-        boost::mutex::scoped_lock lock(topic_infos_mutex_);
-        
-        map<string, TopicInfo*>::iterator key = topic_infos_.find(topic);
-        if (key == topic_infos_.end()) {
-            // Extract the topic info from the message
-            topic_info = new TopicInfo();
-            topic_info->topic    = topic;
-            topic_info->msg_def  = msg.__getMessageDefinition();
-            topic_info->datatype = msg.__getDataType();
-            topic_info->md5sum   = msg.__getMD5Sum();
-            topic_infos_[topic] = topic_info;
-
-            // Initialize the topic index
-            topic_indexes_[topic] = vector<IndexEntry>();
-            
-            // Flag that we need to write a message definition
-            needs_def_written = true;
-        }
-        else
-        	topic_info = key->second;
-    }
-
-    //! \todo move to rosrecord
-    scheduledCheckDisk();
-
-    // Get information about possible latching and callerid from the connection header
-    bool latching = false;
-    string callerid("");
-    if (msg.__connection_header != NULL) {
-        M_string::iterator latch_iter = msg.__connection_header->find(string("latching"));
-        if (latch_iter != msg.__connection_header->end() && latch_iter->second != string("0"))
-            latching = true;
-        
-        M_string::iterator callerid_iter = msg.__connection_header->find(string("callerid"));
-        if (callerid_iter != msg.__connection_header->end())
-            callerid = callerid_iter->second;
-    }
-
-    {
-        //boost::mutex::scoped_lock lock(record_mutex_);
-
-        // Seek to the end of the file (needed in case previous operation was a read)
-        //! \todo only do when necessary
-        seek(0, std::ios::end);
-
-        // Write the chunk header if we're starting a new chunk
-        if (!chunk_open_)
-            startWritingChunk(time);
-
-        // Add to topic index
-        IndexEntry index_entry;
-        index_entry.time      = time;
-        index_entry.chunk_pos = curr_chunk_info_.pos;
-        index_entry.offset    = getChunkOffset();
-        curr_chunk_topic_indexes_[topic].push_back(index_entry);
-
-        // Increment the topic count
-        curr_chunk_info_.topic_counts[topic]++;
-
-        // Write a message definition record, if necessary
-        if (needs_def_written)
-            writeMessageDefinitionRecord(topic_info);
-
-        // Write the message data
-        writeMessageDataRecord(topic, time, latching, callerid, msg);
-
-        // Check if we want to stop this chunk
-        uint32_t chunk_size = getChunkOffset();
-        ROS_DEBUG("  curr_chunk_size=%d (threshold=%d)", chunk_size, chunk_threshold_);
-        if (chunk_size > chunk_threshold_)
-            stopWritingChunk();
-    }
 }
 
 uint32_t Bag::getChunkOffset() const {
@@ -578,7 +484,7 @@ void Bag::writeChunkHeader(CompressionType compression, uint32_t compressed_size
     chunk_header.uncompressed_size = uncompressed_size;
 
     ROS_DEBUG("Writing CHUNK [%llu]: compression=%s compressed=%d uncompressed=%d",
-    		  (unsigned long long) file_.getOffset(), chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size);
+              (unsigned long long) file_.getOffset(), chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size);
 
     M_string header;
     header[OP_FIELD_NAME]          = toHeaderString(&OP_CHUNK);
@@ -655,32 +561,6 @@ bool Bag::checkLogging() {
     return false;
 }
 
-void Bag::writeMessageDataRecord(string const& topic, Time const& time, bool latching, string const& callerid, ros::Message const& msg) {
-    M_string header;
-    header[OP_FIELD_NAME]    = toHeaderString(&OP_MSG_DATA);
-    header[TOPIC_FIELD_NAME] = topic;
-    header[TIME_FIELD_NAME]  = toHeaderString(&time);
-    if (latching) {
-        header[LATCHING_FIELD_NAME] = string("1");
-        header[CALLERID_FIELD_NAME] = callerid;
-    }
-
-    // Assemble message in memory first, because we need to write its length
-    uint32_t msg_ser_len = msg.serializationLength();
-    record_buffer_.setSize(msg_ser_len);
-    msg.serialize(record_buffer_.getData(), 0);
-
-    ROS_DEBUG("Writing MSG_DATA [%llu:%d]: topic=%s sec=%d nsec=%d data_len=%d",
-    		  (unsigned long long) file_.getOffset(), getChunkOffset(), topic.c_str(), time.sec, time.nsec, msg_ser_len);
-
-    writeHeader(header, msg_ser_len);
-    write((char*) record_buffer_.getData(), msg_ser_len);
-
-    // Update the current chunk time
-    if (time > curr_chunk_info_.end_time)
-    	curr_chunk_info_.end_time = time;
-}
-
 // Topic index records
 
 void Bag::writeTopicIndexRecords() {
@@ -732,60 +612,60 @@ bool Bag::readTopicIndexRecord() {
     	!readField(fields, COUNT_FIELD_NAME, true, &count))
     	return false;
 
-	ROS_DEBUG("Read INDEX_DATA: ver=%d topic=%s count=%d", index_version, topic.c_str(), count);
+    ROS_DEBUG("Read INDEX_DATA: ver=%d topic=%s count=%d", index_version, topic.c_str(), count);
 
-	switch (index_version) {
-	case 0:  return readTopicIndexDataVersion0(data_size, count, topic);
-	case 1:  return readTopicIndexDataVersion1(data_size, count, topic);
-	default: return false;
-	}
+    switch (index_version) {
+    case 0:  return readTopicIndexDataVersion0(data_size, count, topic);
+    case 1:  return readTopicIndexDataVersion1(data_size, count, topic);
+    default: return false;
+    }
 }
 
 //! Store the position of the message in the chunk_pos field
 bool Bag::readTopicIndexDataVersion0(uint32_t data_size, uint32_t count, string const& topic) {
-	//if (count * 20 != data_size)
+    //if (count * 20 != data_size)
     //	return false;
 
-	// Read the index entry records
-	vector<IndexEntry>& topic_index = topic_indexes_[topic];
-	for (uint32_t i = 0; i < count; i++) {
-		IndexEntry index_entry;
-		uint32_t sec;
-		uint32_t nsec;
-		read((char*) &sec,                   4);
-		read((char*) &nsec,                  4);
-		read((char*) &index_entry.chunk_pos, 8);
-		index_entry.time = Time(sec, nsec);
-		index_entry.offset = 0;
+    // Read the index entry records
+    vector<IndexEntry>& topic_index = topic_indexes_[topic];
+    for (uint32_t i = 0; i < count; i++) {
+        IndexEntry index_entry;
+        uint32_t sec;
+        uint32_t nsec;
+        read((char*) &sec,                   4);
+        read((char*) &nsec,                  4);
+        read((char*) &index_entry.chunk_pos, 8);
+        index_entry.time = Time(sec, nsec);
+        index_entry.offset = 0;
 
-		ROS_DEBUG("  - %d.%d: %llu", sec, nsec, (unsigned long long) index_entry.chunk_pos);
+        ROS_DEBUG("  - %d.%d: %llu", sec, nsec, (unsigned long long) index_entry.chunk_pos);
 
-		topic_index.push_back(index_entry);
-	}
+        topic_index.push_back(index_entry);
+    }
 
     return true;
 }
 
 bool Bag::readTopicIndexDataVersion1(uint32_t data_size, uint32_t count, string const& topic) {
-	if (count * sizeof(IndexEntry) != data_size)
+    if (count * sizeof(IndexEntry) != data_size)
     	return false;
 
-	// Read the index entry records
-	vector<IndexEntry>& topic_index = topic_indexes_[topic];
-	for (uint32_t i = 0; i < count; i++) {
-		IndexEntry index_entry;
-		index_entry.chunk_pos = curr_chunk_info_.pos;
-		uint32_t sec;
-		uint32_t nsec;
-		read((char*) &sec,                4);
-		read((char*) &nsec,               4);
-		read((char*) &index_entry.offset, 4);
-		index_entry.time = Time(sec, nsec);
+    // Read the index entry records
+    vector<IndexEntry>& topic_index = topic_indexes_[topic];
+    for (uint32_t i = 0; i < count; i++) {
+        IndexEntry index_entry;
+        index_entry.chunk_pos = curr_chunk_info_.pos;
+        uint32_t sec;
+        uint32_t nsec;
+        read((char*) &sec,                4);
+        read((char*) &nsec,               4);
+        read((char*) &index_entry.offset, 4);
+        index_entry.time = Time(sec, nsec);
 
-		ROS_DEBUG("  - %d.%d: %llu+%d", sec, nsec, (unsigned long long) index_entry.chunk_pos, index_entry.offset);
+        ROS_DEBUG("  - %d.%d: %llu+%d", sec, nsec, (unsigned long long) index_entry.chunk_pos, index_entry.offset);
 
-		topic_index.push_back(index_entry);
-	}
+        topic_index.push_back(index_entry);
+    }
 
     return true;
 }
@@ -803,7 +683,7 @@ void Bag::writeMessageDefinitionRecords() {
 
 void Bag::writeMessageDefinitionRecord(TopicInfo const* topic_info) {
     ROS_DEBUG("Writing MSG_DEF [%llu:%d]: topic=%s md5sum=%s type=%s def=...",
-    		  (unsigned long long) file_.getOffset(), getChunkOffset(), topic_info->topic.c_str(), topic_info->md5sum.c_str(), topic_info->datatype.c_str());
+              (unsigned long long) file_.getOffset(), getChunkOffset(), topic_info->topic.c_str(), topic_info->md5sum.c_str(), topic_info->datatype.c_str());
 
     M_string header;
     header[OP_FIELD_NAME]    = toHeaderString(&OP_MSG_DEF);
@@ -851,8 +731,8 @@ bool Bag::readMessageDefinitionRecord() {
     return true;
 }
 
-bool Bag::decompressChunk(uint64_t chunk_pos) {
-    // Nothing to do if this is the current decompressed chunk
+bool Bag::decompressChunk(uint64_t chunk_pos)
+{
     if (decompressed_chunk_ == chunk_pos)
         return true;
 
@@ -861,22 +741,48 @@ bool Bag::decompressChunk(uint64_t chunk_pos) {
 
     // Read the chunk header
     ChunkHeader chunk_header;
-    if (!readChunkHeader(chunk_header)) {
-        ROS_ERROR("Error reading chunk header");
+    if (!readChunkHeader(chunk_header))
         return false;
-    }
 
-    CompressionType compression;
-    if      (chunk_header.compression == COMPRESSION_NONE) compression = compression::None;
-    else if (chunk_header.compression == COMPRESSION_BZ2)  compression = compression::BZ2;
-    //else if (chunk_header.compression == COMPRESSION_ZLIB) compression = compression::ZLIB;
-    else {
-    	ROS_ERROR("Unknown compression: %s", chunk_header.compression.c_str());
-    	return false;
-    }
+    bool ret = false;
 
-    if (compression == compression::None)
-        return true;
+    // Read and decompress the chunk.  These assume we are at the right place in the stream already
+    if (chunk_header.compression == COMPRESSION_NONE)
+    {
+        ret = decompressRawChunk(chunk_header);
+    } else if (chunk_header.compression == COMPRESSION_BZ2)
+    {
+        ret = decompressBz2Chunk(chunk_header);
+    } else {
+        ROS_ERROR("Unknown compression: %s", chunk_header.compression.c_str());
+    }
+    
+    if (ret)
+        decompressed_chunk_ = chunk_pos;
+
+    return ret;
+}
+
+
+// Reading this into a buffer isn't completely necessary, but we do it anyways for now
+bool Bag::decompressRawChunk(ChunkHeader const& chunk_header)
+{
+    assert(chunk_header.compression == COMPRESSION_NONE);
+    assert(chunk_header.compressed_size == chunk_header.uncompressed_size);
+
+    ROS_DEBUG("compressed_size: %d uncompressed_size: %d", chunk_header.compressed_size, chunk_header.uncompressed_size);
+
+    decompress_buffer_.setSize(chunk_header.compressed_size);
+    file_.read((char*) decompress_buffer_.getData(), chunk_header.compressed_size);
+
+    return true;
+}
+
+bool Bag::decompressBz2Chunk(ChunkHeader const& chunk_header)
+{
+    assert(chunk_header.compression == COMPRESSION_BZ2);
+
+    CompressionType compression = compression::BZ2;
 
     ROS_DEBUG("compressed_size: %d uncompressed_size: %d", chunk_header.compressed_size, chunk_header.uncompressed_size);
 
@@ -886,108 +792,83 @@ bool Bag::decompressChunk(uint64_t chunk_pos) {
     decompress_buffer_.setSize(chunk_header.uncompressed_size);
     file_.decompress(compression, decompress_buffer_.getData(), decompress_buffer_.getSize(), chunk_buffer_.getData(), chunk_buffer_.getSize());
 
-    decompressed_chunk_ = chunk_pos;
-
     return true;
 }
 
-bool Bag::readMessageDataRecord102(string const& topic, uint64_t offset) {
-    ROS_DEBUG("readMessageDataRecord: offset=%llu", (unsigned long long) offset);
+ros::Header Bag::readMessageDataHeader(IndexEntry const& index_entry)
+{
+    ros::Header header;
+    uint32_t data_size;
+    uint32_t bytes_read;
+    switch (version_)
+    {
+    case 200:
+        decompressChunk(index_entry.chunk_pos);
+        readMessageDataHeaderFromBuffer(decompress_buffer_, index_entry.offset, header, data_size, bytes_read);
+        return header;
+    default:
+        ROS_FATAL("Unhandled version: %d", version_);
+        break;
+    }
 
-	seek(offset);
-
-	ros::Header header;
-	uint32_t data_size;
-	uint8_t op;
-	do {
-		if (!readHeader(header, data_size) ||
-			!readField(*header.getValues(), OP_FIELD_NAME, true, &op))
-			return false;
-	}
-	while (op == OP_MSG_DEF);
-	if (op != OP_MSG_DATA)
-		return false;
-
-	string msg_topic;
-	if (!readField(*header.getValues(), TOPIC_FIELD_NAME, true, msg_topic))
-		return false;
-	if (topic != msg_topic)
-		return false;
-
-	record_buffer_.setSize(data_size);
-	file_.read((char*) record_buffer_.getData(), data_size);
-
-    return true;
+    return ros::Header();
 }
 
-bool Bag::readMessageDataRecord200(string const& topic, uint64_t chunk_pos, uint32_t offset) {
-    ROS_DEBUG("readMessageDataRecord: chunk_pos=%llu offset=%d", (unsigned long long) chunk_pos, offset);
-    if (decompressed_chunk_ != chunk_pos) {
-        // Seek to the start of the chunk
-        seek(chunk_pos);
 
-        // Read the chunk header
-        ChunkHeader chunk_header;
-        if (!readChunkHeader(chunk_header))
-            return false;
+// This actually loads the header, which shouldn't be necessary.  Not
+// the end of the world for now.
+uint32_t  Bag::readMessageDataSize(IndexEntry const& index_entry)
+{
+    ros::Header header;
+    uint32_t data_size;
+    uint32_t bytes_read;
 
-        // Read and decompress the chunk
-        if (chunk_header.compression == COMPRESSION_BZ2)
-            decompressChunk(chunk_pos);
+    switch (version_)
+    {
+    case 200:
+        decompressChunk(index_entry.chunk_pos);
+        readMessageDataHeaderFromBuffer(decompress_buffer_, index_entry.offset, header, data_size, bytes_read);
+
+        return data_size;
+    default:
+        ROS_FATAL("Unhandled version: %d", version_);
+        break;
     }
 
-    if (decompressed_chunk_ == chunk_pos) {
-        ros::Header header;
-        uint32_t data_size;
-        uint8_t op;
-        do {
-            ROS_DEBUG("reading header from buffer: offset=%d", offset);
-            uint32_t bytes_read;
-            if (!readHeaderFromBuffer(decompress_buffer_, offset, header, data_size, bytes_read))
-                return false;
-            offset += bytes_read;
-
-            if (!readField(*header.getValues(), OP_FIELD_NAME, true, &op))
-            	return false;
-        }
-        while (op == OP_MSG_DEF);
-        assert(op == OP_MSG_DATA);
-
-        string msg_topic;
-        if (!readField(*header.getValues(), TOPIC_FIELD_NAME, true, msg_topic))
-            return false;
-        ROS_ASSERT(topic == msg_topic);
-
-        //! \todo shouldn't need to memcpy here
-        record_buffer_.setSize(data_size);
-        memcpy((char*) record_buffer_.getData(), decompress_buffer_.getData() + offset, data_size);
-    }
-    else {
-        // Read uncompressed chunk
-        seek(offset, std::ios::cur);
-
-        ros::Header header;
-        uint32_t data_size;
-        uint8_t op;    
-        do {
-            if (!readHeader(header, data_size) ||
-            	!readField(*header.getValues(), OP_FIELD_NAME, true, &op))
-            	return false;
-        }
-        while (op == OP_MSG_DEF);
-        ROS_ASSERT(op == OP_MSG_DATA);
-
-        string msg_topic;
-        if (!readField(*header.getValues(), TOPIC_FIELD_NAME, true, msg_topic))
-            return false;
-        ROS_ASSERT(topic == msg_topic);
-        
-        record_buffer_.setSize(data_size);
-        file_.read((char*) record_buffer_.getData(), data_size);
-    }
-
-    return true;
+    return 0;
 }
+
+// Will fill this in later
+/*
+  bool Bag::loadMessageDataRecord102(string const& topic, uint64_t offset) {
+  ROS_DEBUG("loadMessageDataRecord: offset=%llu", (unsigned long long) offset);
+
+  seek(offset);
+
+  ros::Header header;
+  uint32_t data_size;
+  uint8_t op;
+  do {
+  if (!readHeader(header, data_size) ||
+  !readField(*header.getValues(), OP_FIELD_NAME, true, &op))
+  return false;
+  }
+  while (op == OP_MSG_DEF);
+  if (op != OP_MSG_DATA)
+  return false;
+
+  string msg_topic;
+  if (!readField(*header.getValues(), TOPIC_FIELD_NAME, true, msg_topic))
+  return false;
+  if (topic != msg_topic)
+  return false;
+
+  record_buffer_.setSize(data_size);
+  file_.read((char*) record_buffer_.getData(), data_size);
+
+  return true;
+  }
+*/
 
 void Bag::writeChunkInfoRecords() {
     boost::mutex::scoped_lock lock(record_mutex_);
@@ -1011,10 +892,10 @@ void Bag::writeChunkInfoRecords() {
         }
         
         ROS_DEBUG("Writing CHUNK_INFO [%llu]: ver=%d pos=%llu start=%d.%d end=%d.%d data_len=%d",
-				  (unsigned long long) file_.getOffset(), CHUNK_INFO_VERSION, (unsigned long long) chunk_info.pos,
-				  chunk_info.start_time.sec, chunk_info.start_time.nsec,
-				  chunk_info.end_time.sec, chunk_info.end_time.nsec,
-				  data_len);
+                  (unsigned long long) file_.getOffset(), CHUNK_INFO_VERSION, (unsigned long long) chunk_info.pos,
+                  chunk_info.start_time.sec, chunk_info.start_time.nsec,
+                  chunk_info.end_time.sec, chunk_info.end_time.nsec,
+                  data_len);
 
         writeHeader(header, data_len);
 
@@ -1035,7 +916,7 @@ void Bag::writeChunkInfoRecords() {
 }
 
 bool Bag::readChunkInfoRecord() {
-	// Read a CHUNK_INFO header
+    // Read a CHUNK_INFO header
     ros::Header header;
     uint32_t data_size;
     if (!readHeader(header, data_size))
@@ -1054,14 +935,14 @@ bool Bag::readChunkInfoRecord() {
     ChunkInfo chunk_info;
     uint32_t chunk_topic_count;
     if (!readField(fields, CHUNK_POS_FIELD_NAME,  true, &chunk_info.pos)        ||
-		!readField(fields, START_TIME_FIELD_NAME, true,  chunk_info.start_time) ||
-		!readField(fields, END_TIME_FIELD_NAME,   true,  chunk_info.end_time)   ||
+        !readField(fields, START_TIME_FIELD_NAME, true,  chunk_info.start_time) ||
+        !readField(fields, END_TIME_FIELD_NAME,   true,  chunk_info.end_time)   ||
         !readField(fields, COUNT_FIELD_NAME,      true, &chunk_topic_count))
         return false;
     ROS_DEBUG("Read CHUNK_INFO: chunk_pos=%llu topic_count=%d start=%d.%d end=%d.%d",
-    		  (unsigned long long) chunk_info.pos, chunk_topic_count,
-    		  chunk_info.start_time.sec, chunk_info.start_time.nsec,
-			  chunk_info.end_time.sec, chunk_info.end_time.nsec);
+              (unsigned long long) chunk_info.pos, chunk_topic_count,
+              chunk_info.start_time.sec, chunk_info.start_time.nsec,
+              chunk_info.end_time.sec, chunk_info.end_time.nsec);
 
     // Read the topic count entries
     char topic_name_buf[4096];
@@ -1088,7 +969,7 @@ bool Bag::readChunkInfoRecord() {
 
 bool Bag::isOp(M_string& fields, uint8_t reqOp) {
     uint8_t op;
-	return readField(fields, OP_FIELD_NAME, true, &op) && (op == reqOp);
+    return readField(fields, OP_FIELD_NAME, true, &op) && (op == reqOp);
 }
 
 void Bag::writeHeader(M_string const& fields, uint32_t data_len) {
@@ -1131,6 +1012,30 @@ bool Bag::readHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& hea
     return true;
 }
 
+
+bool Bag::readMessageDataHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& total_bytes_read)
+{
+    total_bytes_read = 0;
+    uint8_t op;
+    do {
+        ROS_DEBUG("reading header from buffer: offset=%d", offset);
+        uint32_t bytes_read;
+        if (!readHeaderFromBuffer(decompress_buffer_, offset, header, data_size, bytes_read))
+            return false;
+        offset += bytes_read;
+        total_bytes_read += bytes_read;
+        
+        if (!readField(*header.getValues(), OP_FIELD_NAME, true, &op))
+            return false;
+    }
+    while (op == OP_MSG_DEF);
+    
+    assert(op == OP_MSG_DATA);    
+
+    return true;
+}
+
+
 bool Bag::readHeader(ros::Header& header, uint32_t& data_size) {
     // Read the header length
     uint32_t header_len;
@@ -1167,7 +1072,7 @@ M_string::const_iterator Bag::checkField(M_string const& fields, string const& f
 }
 
 bool Bag::readField(M_string const& fields, string const& field_name, bool required, string& data) {
-	return readField(fields, field_name, 1, UINT_MAX, true, data);
+    return readField(fields, field_name, 1, UINT_MAX, true, data);
 }
 
 bool Bag::readField(M_string const& fields, string const& field_name, unsigned int min_len, unsigned int max_len, bool required, string& data) {
@@ -1180,18 +1085,18 @@ bool Bag::readField(M_string const& fields, string const& field_name, unsigned i
 
 bool Bag::readField(M_string const& fields, string const& field_name, bool required, Time& data) {
     uint64_t packed_time;
-	if (!readField(fields, field_name, required, &packed_time))
-		return false;
+    if (!readField(fields, field_name, required, &packed_time))
+        return false;
 
     uint64_t bitmask = (1LL << 33) - 1;
     data.sec  = (uint32_t) (packed_time & bitmask);
-	data.nsec = (uint32_t) (packed_time >> 32);
-	return true;
+    data.nsec = (uint32_t) (packed_time >> 32);
+    return true;
 }
 
 std::string Bag::toHeaderString(Time const* field) {
-	uint64_t packed_time = (((uint64_t) field->nsec) << 32) + field->sec;
-	return toHeaderString(&packed_time);
+    uint64_t packed_time = (((uint64_t) field->nsec) << 32) + field->sec;
+    return toHeaderString(&packed_time);
 }
 
 // Low-level I/O

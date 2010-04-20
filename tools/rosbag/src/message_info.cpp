@@ -26,7 +26,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "rosbag/message_info.h"
-#include "rosbag/message_instance.h"
 
 using std::string;
 using ros::Time;
@@ -42,15 +41,42 @@ string const& MessageInfo::getMD5Sum()            const { return topic_info_->md
 string const& MessageInfo::getMessageDefinition() const { return topic_info_->msg_def;  }
 Time const&   MessageInfo::getTime()              const { return index_entry_.time;    }
 
-MessageInstance::Ptr MessageInfo::instantiateInstance() const {
-	// Read message into the bag record buffer
-    switch (bag_->version_) {
-        case 200: bag_->readMessageDataRecord200(topic_info_->topic, index_entry_.chunk_pos, index_entry_.offset); break;
-        case 102: bag_->readMessageDataRecord102(topic_info_->topic, index_entry_.chunk_pos);                      break;
-        default:  ROS_FATAL("Unhandled version: %d", bag_->version_); return boost::shared_ptr<MessageInstance>();
-    }
+// TODo: This should cache the header
+bool MessageInfo::getLatching() const
+{
+    ros::Header header = bag_->readMessageDataHeader(index_entry_);
+    ros::M_string& fields = *header.getValues();
+    
+    ros::M_string::iterator latch_iter = fields.find(string("latching"));
+    if (latch_iter != fields.end() && latch_iter->second != string("0"))
+        return true;
+    else
+        return false;
+}
 
-    return MessageInstance::Ptr(new MessageInstance(*this));
+std::string MessageInfo::getCallerid() const
+{
+    ros::Header header = bag_->readMessageDataHeader(index_entry_);
+    ros::M_string& fields = *header.getValues();
+
+    ros::M_string::iterator callerid_iter = fields.find(string("callerid"));
+    if (callerid_iter != fields.end())
+        return callerid_iter->second;
+    else
+        return std::string("");
+}
+
+
+uint32_t MessageInfo::size() const
+{
+    return bag_->readMessageDataSize(index_entry_);
+}
+
+
+
+ros::AdvertiseOptions createAdvertiseOptions(MessageInfo const& m, uint32_t queue_size)
+{
+    return ros::AdvertiseOptions(m.getTopic(), queue_size, m.getMD5Sum(), m.getDataType(), m.getMessageDefinition());
 }
 
 }

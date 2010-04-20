@@ -27,7 +27,6 @@
 
 #include "rosbag/bag.h"
 #include "rosbag/chunked_file.h"
-#include "rosbag/message_instance.h"
 #include "rosbag/view.h"
 
 #include <iostream>
@@ -51,31 +50,31 @@ struct IndexEntryMultiSetCompare
 
 TEST(rosbag, multiset_vs_vector)
 {
-	int count = 1000 * 1000;
+    int count = 1000 * 1000;
 
-	std::multiset<rosbag::IndexEntry, IndexEntryMultiSetCompare> s;
-	ros::Time start = ros::Time::now();
-	for (int i = 0; i < count; i++) {
-		rosbag::IndexEntry e;
-		e.time = ros::Time::now();
-		e.chunk_pos = 0;
-		e.offset = 0;
-		s.insert(s.end(), e);
-	}
-	ros::Time end = ros::Time::now();
-	std::cout << "multiset: " << end - start << std::endl;
+    std::multiset<rosbag::IndexEntry, IndexEntryMultiSetCompare> s;
+    ros::Time start = ros::Time::now();
+    for (int i = 0; i < count; i++) {
+        rosbag::IndexEntry e;
+        e.time = ros::Time::now();
+        e.chunk_pos = 0;
+        e.offset = 0;
+        s.insert(s.end(), e);
+    }
+    ros::Time end = ros::Time::now();
+    std::cout << "multiset: " << end - start << std::endl;
 
-	std::vector<rosbag::IndexEntry> v;
-	start = ros::Time::now();
-	for (int i = 0; i < count; i++) {
-		rosbag::IndexEntry e;
-		e.time = ros::Time::now();
-		e.chunk_pos = 0;
-		e.offset = 0;
-		v.push_back(e);
-	}
-	end = ros::Time::now();
-	std::cout << "vector: " << end - start << std::endl;
+    std::vector<rosbag::IndexEntry> v;
+    start = ros::Time::now();
+    for (int i = 0; i < count; i++) {
+        rosbag::IndexEntry e;
+        e.time = ros::Time::now();
+        e.chunk_pos = 0;
+        e.offset = 0;
+        v.push_back(e);
+    }
+    end = ros::Time::now();
+    std::cout << "vector: " << end - start << std::endl;
 }
 
 class BagTest : public testing::Test
@@ -134,277 +133,278 @@ protected:
 
 TEST(rosbag, simplewrite)
 {
-	rosbag::Bag bag;
-	bag.open("test.bag", rosbag::bagmode::Write);
+    rosbag::Bag bag;
+    bag.open("test.bag", rosbag::bagmode::Write);
 
-	std_msgs::String str;
-	str.data = std::string("foo");
+    std_msgs::String str;
+    str.data = std::string("foo");
 
-	std_msgs::Int32 i;
-	i.data = 42;
+    std_msgs::Int32 i;
+    i.data = 42;
 
-	bag.write("chatter", ros::Time::now(), str);
-	bag.write("numbers", ros::Time::now(), i);
+    bag.write("chatter", ros::Time::now(), str);
+    bag.write("numbers", ros::Time::now(), i);
 
-	bag.close();
+    bag.close();
 }
 
 TEST(rosbag, simpleread)
 {
-	rosbag::Bag bag;
-	bag.open("test.bag", rosbag::bagmode::Read);
+    rosbag::Bag bag;
+    bag.open("test.bag", rosbag::bagmode::Read);
 
-	std::vector<std::string> topics;
-	topics.push_back(std::string("chatter"));
-	topics.push_back(std::string("numbers"));
+    std::vector<std::string> topics;
+    topics.push_back(std::string("chatter"));
+    topics.push_back(std::string("numbers"));
 
-	rosbag::View view;
-	view.addQuery(bag, rosbag::TopicQuery(topics));
+    rosbag::View view;
+    view.addQuery(bag, rosbag::TopicQuery(topics));
 
-	foreach(rosbag::MessageInfo const m, view) {
-		std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
-		if (s != NULL)
-			ASSERT_EQ(s->data, std::string("foo"));
+    foreach(rosbag::MessageInfo const m, view) {
 
-		std_msgs::Int32::ConstPtr i = m.instantiate<std_msgs::Int32>();
-		if (i != NULL)
-			ASSERT_EQ(i->data, 42);
-	}
+        std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
+        if (s != NULL)
+            ASSERT_EQ(s->data, std::string("foo"));
 
-	bag.close();
+        std_msgs::Int32::ConstPtr i = m.instantiate<std_msgs::Int32>();
+        if (i != NULL)
+            ASSERT_EQ(i->data, 42);
+    }
+
+    bag.close();
 }
 
 TEST(rosbag, timequery)
 {
-	rosbag::Bag outbag;
-	outbag.open("timequery.bag", rosbag::bagmode::Write);
+    rosbag::Bag outbag;
+    outbag.open("timequery.bag", rosbag::bagmode::Write);
 
-	std_msgs::Int32 imsg;
+    std_msgs::Int32 imsg;
 
-	for (int i = 0; i < 1000; i++) {
-		imsg.data = i;
-		switch (rand() % 5) {
-		case 0:
-			outbag.write("t0", ros::Time(i, 0), imsg);
-			break;
-		case 1:
-			outbag.write("t1", ros::Time(i, 0), imsg);
-			break;
-		case 2:
-			outbag.write("t2", ros::Time(i, 0), imsg);
-			break;
-		case 3:
-			outbag.write("t2", ros::Time(i, 0), imsg);
-			break;
-		case 4:
-			outbag.write("t4", ros::Time(i, 0), imsg);
-			break;
-		}
-	}
-	outbag.close();
+    for (int i = 0; i < 1000; i++) {
+        imsg.data = i;
+        switch (rand() % 5) {
+        case 0:
+            outbag.write("t0", ros::Time(i, 0), imsg);
+            break;
+        case 1:
+            outbag.write("t1", ros::Time(i, 0), imsg);
+            break;
+        case 2:
+            outbag.write("t2", ros::Time(i, 0), imsg);
+            break;
+        case 3:
+            outbag.write("t2", ros::Time(i, 0), imsg);
+            break;
+        case 4:
+            outbag.write("t4", ros::Time(i, 0), imsg);
+            break;
+        }
+    }
+    outbag.close();
 
-	rosbag::Bag bag;
-	bag.open("timequery.bag", rosbag::bagmode::Read);
+    rosbag::Bag bag;
+    bag.open("timequery.bag", rosbag::bagmode::Read);
 
-	rosbag::View view;
-	view.addQuery(bag, rosbag::Query(ros::Time(23, 0), ros::Time(782, 0)));
+    rosbag::View view;
+    view.addQuery(bag, rosbag::Query(ros::Time(23, 0), ros::Time(782, 0)));
 
-	int i = 23;
+    int i = 23;
 
-	foreach(rosbag::MessageInfo const m, view) {
-		std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
-		if (imsg != NULL)
-		{
-			ASSERT_EQ(imsg->data, i++);
-			ASSERT_TRUE(m.getTime() < ros::Time(783,0));
-		}
-	}
+    foreach(rosbag::MessageInfo const m, view) {
+        std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
+        if (imsg != NULL)
+        {
+            ASSERT_EQ(imsg->data, i++);
+            ASSERT_TRUE(m.getTime() < ros::Time(783,0));
+        }
+    }
 
-	bag.close();
+    bag.close();
 }
 
 TEST(rosbag, topicquery)
 {
-	rosbag::Bag outbag;
-	outbag.open("topicquery.bag", rosbag::bagmode::Write);
+    rosbag::Bag outbag;
+    outbag.open("topicquery.bag", rosbag::bagmode::Write);
 
-	std_msgs::Int32 imsg;
+    std_msgs::Int32 imsg;
 
-	int j0 = 0;
-	int j1 = 0;
+    int j0 = 0;
+    int j1 = 0;
 
-	for (int i = 0; i < 1000; i++) {
-		switch (rand() % 5) {
-		case 0:
-			imsg.data = j0++;
-			outbag.write("t0", ros::Time(i, 0), imsg);
-			break;
-		case 1:
-			imsg.data = j0++;
-			outbag.write("t1", ros::Time(i, 0), imsg);
-			break;
-		case 2:
-			imsg.data = j1++;
-			outbag.write("t2", ros::Time(i, 0), imsg);
-			break;
-		case 3:
-			imsg.data = j1++;
-			outbag.write("t3", ros::Time(i, 0), imsg);
-			break;
-		case 4:
-			imsg.data = j1++;
-			outbag.write("t4", ros::Time(i, 0), imsg);
-			break;
-		}
-	}
-	outbag.close();
+    for (int i = 0; i < 1000; i++) {
+        switch (rand() % 5) {
+        case 0:
+            imsg.data = j0++;
+            outbag.write("t0", ros::Time(i, 0), imsg);
+            break;
+        case 1:
+            imsg.data = j0++;
+            outbag.write("t1", ros::Time(i, 0), imsg);
+            break;
+        case 2:
+            imsg.data = j1++;
+            outbag.write("t2", ros::Time(i, 0), imsg);
+            break;
+        case 3:
+            imsg.data = j1++;
+            outbag.write("t3", ros::Time(i, 0), imsg);
+            break;
+        case 4:
+            imsg.data = j1++;
+            outbag.write("t4", ros::Time(i, 0), imsg);
+            break;
+        }
+    }
+    outbag.close();
 
-	rosbag::Bag bag;
-	bag.open("topicquery.bag", rosbag::bagmode::Read);
+    rosbag::Bag bag;
+    bag.open("topicquery.bag", rosbag::bagmode::Read);
 
-	std::vector<std::string> t = boost::assign::list_of("t0")("t1");
+    std::vector<std::string> t = boost::assign::list_of("t0")("t1");
 
-	rosbag::View view;
-	view.addQuery(bag, rosbag::TopicQuery(t));
+    rosbag::View view;
+    view.addQuery(bag, rosbag::TopicQuery(t));
 
-	int i = 0;
+    int i = 0;
 
-	foreach(rosbag::MessageInfo const m, view) {
-		std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
-		if (imsg != NULL)
-			ASSERT_EQ(imsg->data, i++);
-	}
+    foreach(rosbag::MessageInfo const m, view) {
+        std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
+        if (imsg != NULL)
+            ASSERT_EQ(imsg->data, i++);
+    }
 
-	bag.close();
+    bag.close();
 }
 
 TEST(rosbag, verifymultibag)
 {
-	rosbag::Bag outbag1;
-	outbag1.open("bag1.bag", rosbag::bagmode::Write);
+    rosbag::Bag outbag1;
+    outbag1.open("bag1.bag", rosbag::bagmode::Write);
 
-	rosbag::Bag outbag2;
-	outbag2.open("bag2.bag", rosbag::bagmode::Write);
+    rosbag::Bag outbag2;
+    outbag2.open("bag2.bag", rosbag::bagmode::Write);
 
-	std_msgs::Int32 imsg;
-	for (int i = 0; i < 1000; i++) {
-		imsg.data = i;
-		switch (rand() % 5) {
-		case 0:
-			outbag1.write("t0", ros::Time::now(), imsg);
-			break;
-		case 1:
-			outbag1.write("t1", ros::Time::now(), imsg);
-			break;
-		case 2:
-			outbag1.write("t2", ros::Time::now(), imsg);
-			break;
-		case 3:
-			outbag2.write("t0", ros::Time::now(), imsg);
-			break;
-		case 4:
-			outbag2.write("t1", ros::Time::now(), imsg);
-			break;
-		}
-	}
+    std_msgs::Int32 imsg;
+    for (int i = 0; i < 1000; i++) {
+        imsg.data = i;
+        switch (rand() % 5) {
+        case 0:
+            outbag1.write("t0", ros::Time::now(), imsg);
+            break;
+        case 1:
+            outbag1.write("t1", ros::Time::now(), imsg);
+            break;
+        case 2:
+            outbag1.write("t2", ros::Time::now(), imsg);
+            break;
+        case 3:
+            outbag2.write("t0", ros::Time::now(), imsg);
+            break;
+        case 4:
+            outbag2.write("t1", ros::Time::now(), imsg);
+            break;
+        }
+    }
 
-	outbag1.close();
-	outbag2.close();
+    outbag1.close();
+    outbag2.close();
 
-	rosbag::Bag bag1;
-	bag1.open("bag1.bag", rosbag::bagmode::Read);
+    rosbag::Bag bag1;
+    bag1.open("bag1.bag", rosbag::bagmode::Read);
 
-	rosbag::Bag bag2;
-	bag2.open("bag2.bag", rosbag::bagmode::Read);
+    rosbag::Bag bag2;
+    bag2.open("bag2.bag", rosbag::bagmode::Read);
 
-	rosbag::View view;
-	view.addQuery(bag1, rosbag::Query());
-	view.addQuery(bag2, rosbag::Query());
+    rosbag::View view;
+    view.addQuery(bag1, rosbag::Query());
+    view.addQuery(bag2, rosbag::Query());
 
-	int i = 0;
+    int i = 0;
 
-	foreach(rosbag::MessageInfo const m, view) {
-		std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
-		if (imsg != NULL)
-			ASSERT_EQ(imsg->data, i++);
-	}
+    foreach(rosbag::MessageInfo const m, view) {
+        std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
+        if (imsg != NULL)
+            ASSERT_EQ(imsg->data, i++);
+    }
 
-	bag1.close();
-	bag2.close();
+    bag1.close();
+    bag2.close();
 }
 
 TEST(rosbag, modify)
 {
-	rosbag::Bag outbag;
-	outbag.open("modify.bag", rosbag::bagmode::Write);
+    rosbag::Bag outbag;
+    outbag.open("modify.bag", rosbag::bagmode::Write);
 
-	std_msgs::Int32 imsg;
+    std_msgs::Int32 imsg;
 
-	int j0 = 0;
-	int j1 = 1;
+    int j0 = 0;
+    int j1 = 1;
 
-	// Create a bag with 2 interlaced topics
-	for (int i = 0; i < 100; i++) {
-		imsg.data = j0;
-		j0 += 2;
-		outbag.write("t0", ros::Time(2 * i, 0), imsg);
+    // Create a bag with 2 interlaced topics
+    for (int i = 0; i < 100; i++) {
+        imsg.data = j0;
+        j0 += 2;
+        outbag.write("t0", ros::Time(2 * i, 0), imsg);
 
-		imsg.data = j1;
-		j1 += 2;
-		outbag.write("t1", ros::Time(2 * i + 1, 0), imsg);
-	}
-	outbag.close();
+        imsg.data = j1;
+        j1 += 2;
+        outbag.write("t1", ros::Time(2 * i + 1, 0), imsg);
+    }
+    outbag.close();
 
-	rosbag::Bag bag;
-	bag.open("modify.bag", rosbag::bagmode::Read);
+    rosbag::Bag bag;
+    bag.open("modify.bag", rosbag::bagmode::Read);
 
-	std::vector<std::string> t0 = boost::assign::list_of("t0");
-	std::vector<std::string> t1 = boost::assign::list_of("t1");
+    std::vector<std::string> t0 = boost::assign::list_of("t0");
+    std::vector<std::string> t1 = boost::assign::list_of("t1");
 
-	// We're going to skip the t1 for the first half
-	j0 = 0;
-	j1 = 101;
+    // We're going to skip the t1 for the first half
+    j0 = 0;
+    j1 = 101;
 
-	rosbag::View view;
-	view.addQuery(bag, rosbag::TopicQuery(t0));
+    rosbag::View view;
+    view.addQuery(bag, rosbag::TopicQuery(t0));
 
-	rosbag::View::iterator iter = view.begin();
+    rosbag::View::iterator iter = view.begin();
 
-	for (int i = 0; i < 50; i++) {
-		std_msgs::Int32::ConstPtr imsg = iter->instantiate<std_msgs::Int32> ();
+    for (int i = 0; i < 50; i++) {
+        std_msgs::Int32::ConstPtr imsg = iter->instantiate<std_msgs::Int32> ();
 
-		if (imsg != NULL) {
-			ASSERT_EQ(imsg->data, j0);
-			j0+=2;
-		}
-		iter++;
-	}
+        if (imsg != NULL) {
+            ASSERT_EQ(imsg->data, j0);
+            j0+=2;
+        }
+        iter++;
+    }
 
-	// We now add our query, and expect it to show up
-	view.addQuery(bag, rosbag::TopicQuery(t1));
+    // We now add our query, and expect it to show up
+    view.addQuery(bag, rosbag::TopicQuery(t1));
 
-	for (int i = 0; i < 50; i++)
-	{
-		std_msgs::Int32::ConstPtr imsg = iter->instantiate<std_msgs::Int32>();
+    for (int i = 0; i < 50; i++)
+    {
+        std_msgs::Int32::ConstPtr imsg = iter->instantiate<std_msgs::Int32>();
 
-		if (imsg != NULL)
-		{
-			ASSERT_EQ(imsg->data, j0);
-			j0+=2;
-		}
+        if (imsg != NULL)
+        {
+            ASSERT_EQ(imsg->data, j0);
+            j0+=2;
+        }
 
-		iter++;
-		imsg = iter->instantiate<std_msgs::Int32>();
+        iter++;
+        imsg = iter->instantiate<std_msgs::Int32>();
 
-		if (imsg != NULL)
-		{
-			ASSERT_EQ(imsg->data, j1);
-			j1+=2;
-		}
-		iter++;
-	}
+        if (imsg != NULL)
+        {
+            ASSERT_EQ(imsg->data, j1);
+            j1+=2;
+        }
+        iter++;
+    }
 
-	bag.close();
+    bag.close();
 }
 
 TEST_F(BagTest, WriteThenReadWorks) {
@@ -441,7 +441,7 @@ TEST_F(BagTest, ReadAppendWorks) {
     rosbag::Bag b;
     b.open(filename, rosbag::bagmode::Write);
     b.write("chatter", ros::Time::now(), foo_);
-	b.close();
+    b.close();
 
     rosbag::Bag b2;
     b2.open(filename, rosbag::bagmode::Append);
@@ -527,7 +527,7 @@ TEST_F(BagTest, ChunkedFileReadWriteWorks) {
     f.write(s3);
     f.setWriteMode(rosbag::compression::None);
     uint64_t offset0 = f.getOffset();
-    ROS_INFO("offset0: %llu", offset0);
+    ROS_INFO("offset0: %lu", offset0);
 
     // 4: write "aaaa" (compressed) and keep open (remember file pos in offset1)
     f.setWriteMode(rosbag::compression::BZ2);
@@ -560,57 +560,57 @@ TEST_F(BagTest, ChunkedFileReadWriteWorks) {
 }
 
 /*
-TEST_F(BagTest, TestChunkSizes) {
-    uint32_t chunk_threshold_lo =  700 * 1024;
-    uint32_t chunk_threshold_hi = 1000 * 1024;
+  TEST_F(BagTest, TestChunkSizes) {
+  uint32_t chunk_threshold_lo =  700 * 1024;
+  uint32_t chunk_threshold_hi = 1000 * 1024;
 
-    for (uint32_t t = chunk_threshold_lo; t <= chunk_threshold_hi; t += (25 * 1024)) {
-        rosbag::Bag b;
-        b.setChunkThreshold(t);
-        b.rewrite("test/diag_test.bag", "test/diag_test_" + boost::lexical_cast<std::string>(t) + ".bag");
-    }
-}
+  for (uint32_t t = chunk_threshold_lo; t <= chunk_threshold_hi; t += (25 * 1024)) {
+  rosbag::Bag b;
+  b.setChunkThreshold(t);
+  b.rewrite("test/diag_test.bag", "test/diag_test_" + boost::lexical_cast<std::string>(t) + ".bag");
+  }
+  }
 */
 /*
-TEST_F(BagTest, Read102IndexedWorks) {
-	rosbag::Bag b;
-	b.open("test/sample_1.2_indexed.bag", rosbag::bagmode::Read);
-	b.close();
-}
+  TEST_F(BagTest, Read102IndexedWorks) {
+  rosbag::Bag b;
+  b.open("test/sample_1.2_indexed.bag", rosbag::bagmode::Read);
+  b.close();
+  }
 
-TEST_F(BagTest, Convert102To103Works) {
-	rosbag::Bag in, out;
-	in.open("test/sample_1.2_indexed.bag", rosbag::bagmode::Read);
-	out.open("test/Convert102To103Works.bag", rosbag::bagmode::Write);
-	rosbag::View view;
-	view.addQuery(bag, rosbag::Query());
-	foreach(rosbag::MessageInfo m, view) {
-    	m.instantiateMessage();
-    	out.write(m.getTopic(), m.getTime(), m);
-    }
-	in.close();
-	out.close();
-}
+  TEST_F(BagTest, Convert102To103Works) {
+  rosbag::Bag in, out;
+  in.open("test/sample_1.2_indexed.bag", rosbag::bagmode::Read);
+  out.open("test/Convert102To103Works.bag", rosbag::bagmode::Write);
+  rosbag::View view;
+  view.addQuery(bag, rosbag::Query());
+  foreach(rosbag::MessageInfo m, view) {
+  m.instantiateMessage();
+  out.write(m.getTopic(), m.getTime(), m);
+  }
+  in.close();
+  out.close();
+  }
 
-TEST_F(BagTest, RewriteWorks) {
-	rosbag::Bag in, out;
-	in.open("test/sample_1.3.bag", rosbag::bagmode::Read);
-	out.open("test/RewriteWorks.bag", rosbag::bagmode::Write);
-	rosbag::View view;
-	view.addQuery(bag, rosbag::Query());
-	foreach(rosbag::MessageInfo m, view) {
-    	m.instantiateMessage();
-    	out.write(m.getTopic(), m.getTime(), m);
-    }
-	in.close();
-	out.close();
-}
+  TEST_F(BagTest, RewriteWorks) {
+  rosbag::Bag in, out;
+  in.open("test/sample_1.3.bag", rosbag::bagmode::Read);
+  out.open("test/RewriteWorks.bag", rosbag::bagmode::Write);
+  rosbag::View view;
+  view.addQuery(bag, rosbag::Query());
+  foreach(rosbag::MessageInfo m, view) {
+  m.instantiateMessage();
+  out.write(m.getTopic(), m.getTime(), m);
+  }
+  in.close();
+  out.close();
+  }
 
-TEST_F(BagTest, Read102UnindexedWorks) {
-	rosbag::Bag b;
-	b.open("test/sample_1.2_unindexed.bag", rosbag::bagmode::Read);
-	b.close();
-}
+  TEST_F(BagTest, Read102UnindexedWorks) {
+  rosbag::Bag b;
+  b.open("test/sample_1.2_unindexed.bag", rosbag::bagmode::Read);
+  b.close();
+  }
 */
 
 int main(int argc, char **argv) {

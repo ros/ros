@@ -241,7 +241,10 @@ bool Bag::readVersion() {
 
     char logtypename[100];
     int version_major, version_minor;
-    sscanf(version_line.c_str(), "#ROS%s V%d.%d", logtypename, &version_major, &version_minor);
+    if (sscanf(version_line.c_str(), "#ROS%s V%d.%d", logtypename, &version_major, &version_minor) != 3) {
+    	ROS_ERROR("Error reading version line");
+    	return false;
+    }
 
     // Special case
     if (version_major == 0 && version_line[0] == '#')
@@ -546,12 +549,12 @@ bool Bag::checkDisk() {
     free_space = (unsigned long long)(fiData.f_bsize) * (unsigned long long)(fiData.f_bavail);
     
     if (free_space < 1073741824ull) {
-        ROS_ERROR("rosrecord::Record: Less than 1GB of space free on disk with %s.  Disabling logging.", file_.getFileName().c_str());
+        ROS_ERROR("Less than 1GB of space free on disk with %s.  Disabling logging.", file_.getFileName().c_str());
         writing_enabled_ = false;
         return false;
     }
     else if (free_space < 5368709120ull) {
-        ROS_WARN("rosrecord::Record: Less than 5GB of space free on disk with %s.", file_.getFileName().c_str());
+        ROS_WARN("Less than 5GB of space free on disk with %s.", file_.getFileName().c_str());
     }
     else {
         writing_enabled_ = true;
@@ -608,12 +611,16 @@ void Bag::writeTopicIndexRecords() {
 bool Bag::readTopicIndexRecord() {
     ros::Header header;
     uint32_t data_size;
-    if (!readHeader(header, data_size))
+    if (!readHeader(header, data_size)) {
+    	ROS_ERROR("Error reading INDEX_DATA header");
     	return false;
+    }
     M_string& fields = *header.getValues();
     
-    if (!isOp(fields, OP_INDEX_DATA))
+    if (!isOp(fields, OP_INDEX_DATA)) {
+    	ROS_ERROR("Expected INDEX_DATA record");
         return false;
+    }
     
     uint32_t index_version;
     string topic;

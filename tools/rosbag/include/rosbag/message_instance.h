@@ -111,7 +111,8 @@ namespace serialization
 template<>
 struct Serializer<rosbag::MessageInstance>
 {
-    template<typename Stream> inline static void write(Stream& stream, const rosbag::MessageInstance& m) {
+    template<typename Stream>
+    inline static void write(Stream& stream, const rosbag::MessageInstance& m) {
         m.write(stream);
     }
 

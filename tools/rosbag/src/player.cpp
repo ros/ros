@@ -107,7 +107,8 @@ void PlayerOptions::check() {
 Player::Player(PlayerOptions const& options) :
     options_(options),
     node_handle_(NULL),
-    paused_(false)
+    paused_(false),
+    terminal_modified_(false)
 {
 }
 
@@ -120,15 +121,11 @@ Player::~Player() {
     foreach(shared_ptr<Bag> bag, bags_)
         bag->close();
 
-    unsetTerminalSettings();
+	restoreTerminal();
 }
 
 void Player::publish() {
     options_.check();
-
-    setTerminalSettings();
-
-    node_handle_ = new ros::NodeHandle();
 
     // Open all the bag files
     foreach(string const& filename, options_.bags) {
@@ -141,10 +138,6 @@ void Player::publish() {
         bags_.push_back(bag);
     }
 
-    View view;
-    foreach(shared_ptr<Bag> bag, bags_)
-		view.addQuery(*bag, Query());
-
     if (!options_.at_once) {
         if (options_.start_paused) {
             paused_ = true;
@@ -154,38 +147,44 @@ void Player::publish() {
             std::cout << "Hit space to pause." << std::flush;
     }
 
-    if (node_handle_ && node_handle_->ok()) {
-        if (!options_.quiet)
-            puts("");
+    setupTerminal();
 
-        ros::WallTime last_print_time(0.0);
-        ros::WallDuration max_print_interval(0.1);
+    node_handle_ = new ros::NodeHandle();
+    if (!node_handle_ || !node_handle_->ok())
+    	return;
 
-        foreach(MessageInstance m, view) {
-            if (!node_handle_->ok())
-                break;
+	if (!options_.quiet)
+		puts("");
 
-            // Print out time
-            ros::WallTime t = ros::WallTime::now();
-            if (!options_.quiet && ((t - last_print_time) >= max_print_interval)) {
-                printf("Time: %16.6f    Duration: %16.6f\r", ros::Time::now().toSec(), m.getTime().toSec());
-                fflush(stdout);
-                last_print_time = t;
-            }
+	ros::WallTime last_print_time(0.0);
+	ros::WallDuration max_print_interval(0.1);
 
-            // Publish the message
-            std::cout << "Publishing: " << m.getTime() << std::endl;
-            doPublish(m.getTopic(), m, m.getTime());
-        }
+	View view;
+	foreach(shared_ptr<Bag> bag, bags_)
+		view.addQuery(*bag, Query());
+	foreach(MessageInstance m, view) {
+		if (!node_handle_->ok())
+			break;
 
-        std::cout << std::endl << "Done." << std::endl;
+		// Print out time
+		ros::WallTime t = ros::WallTime::now();
+		if (!options_.quiet && ((t - last_print_time) >= max_print_interval)) {
+			printf("Time: %16.6f    Duration: %16.6f\r", ros::Time::now().toSec(), m.getTime().toSec());
+			fflush(stdout);
+			last_print_time = t;
+		}
 
-        ros::shutdown();
-    }
+		// Publish the message
+		std::cout << "Publishing: " << m.getTime() << std::endl;
+		doPublish(m.getTopic(), m, m.getTime());
+	}
+
+	std::cout << std::endl << "Done." << std::endl;
+
+	ros::shutdown();
 }
 
-void Player::doPublish(string const& topic, rosbag::MessageInstance const& m, ros::Time const& time) {
-    // Pull latching and callerid info out of the connection_header if it's available (which it always should be)
+void Player::doPublish(string const& topic, MessageInstance const& m, ros::Time const& time) {
     bool   latching = m.getLatching();
     string callerid = m.getCallerId();
 
@@ -194,7 +193,7 @@ void Player::doPublish(string const& topic, rosbag::MessageInstance const& m, ro
 
     map<string, ros::Publisher>::iterator pub_iter = publishers_.find(name);
     if (pub_iter == publishers_.end()) {
-        ros::AdvertiseOptions opts = rosbag::createAdvertiseOptions(m, options_.queue_size);
+        ros::AdvertiseOptions opts = createAdvertiseOptions(m, options_.queue_size);
         opts.latch = latching;
 
         ros::Publisher pub = node_handle_->advertise(opts);
@@ -258,7 +257,10 @@ void Player::doPublish(string const& topic, rosbag::MessageInstance const& m, ro
     pub_iter->second.publish(m);
 }
 
-void Player::setTerminalSettings() {
+void Player::setupTerminal() {
+	if (terminal_modified_)
+		return;
+
     const int fd = fileno(stdin);
     termios flags;
     tcgetattr(fd, &orig_flags_);
@@ -271,11 +273,18 @@ void Player::setTerminalSettings() {
     FD_ZERO(&stdin_fdset_);
     FD_SET(fd, &stdin_fdset_);
     maxfd_ = fd + 1;
+
+    terminal_modified_ = true;
 }
 
-void Player::unsetTerminalSettings() {
+void Player::restoreTerminal() {
+	if (!terminal_modified_)
+		return;
+
     const int fd = fileno(stdin);
     tcsetattr(fd, TCSANOW, &orig_flags_);
+
+    terminal_modified_ = false;
 }
 
 char Player::readCharFromStdin() {

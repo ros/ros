@@ -58,6 +58,7 @@ struct PlayerOptions
 
     bool     check_bag;
     bool     show_defs;
+
     bool     quiet;
     bool     start_paused;
     bool     at_once;
@@ -95,8 +96,8 @@ public:
 
 private:
     char readCharFromStdin();
-    void setTerminalSettings();
-    void unsetTerminalSettings();
+    void setupTerminal();
+    void restoreTerminal();
 
     ros::Time getSysTime();
     void      doPublish(std::string const& topic, rosbag::MessageInstance const& m, ros::Time const& time);
@@ -113,6 +114,7 @@ private:
     std::map<std::string, ros::Publisher> publishers_;
 
     // Terminal
+    bool    terminal_modified_;
     termios orig_flags_;
     fd_set  stdin_fdset_;
     int     maxfd_;

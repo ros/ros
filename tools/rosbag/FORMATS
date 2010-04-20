@@ -83,7 +83,7 @@ index_2
 Version 1.3:
 -------------
 #ROSRECORD V1.3
-file header
+file_header
   op=3
   index_pos=msg_def_1.pos      # position of index
   topic_count=topic_count      # total number of distinct topics in the file

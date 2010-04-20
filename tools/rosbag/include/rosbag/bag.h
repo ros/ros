@@ -336,7 +336,6 @@ boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry)
     case 200:
         decompressChunk(index_entry.chunk_pos);
         readMessageDataHeaderFromBuffer(decompress_buffer_, index_entry.offset, header, data_size, bytes_read);
-      
         {  
             ros::serialization::IStream s(decompress_buffer_.getData() + index_entry.offset + bytes_read, data_size);
             ros::serialization::deserialize(s, *p);

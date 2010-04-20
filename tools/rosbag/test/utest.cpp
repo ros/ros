@@ -101,7 +101,7 @@ protected:
 
     	rosbag::View view;
     	view.addQuery(b, rosbag::Query());
-        foreach(rosbag::MessageInfo m, view) {
+        foreach(rosbag::MessageInstance m, view) {
             std::cout << m.getTime() << ": [" << m.getTopic() << "]" << std::endl;
         }
     }
@@ -113,7 +113,7 @@ protected:
         int message_count = 0;
     	rosbag::View view;
     	view.addQuery(b, rosbag::Query());
-        foreach(rosbag::MessageInfo m, view) {
+        foreach(rosbag::MessageInstance m, view) {
             std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
             if (s != NULL) {
                 ASSERT_EQ(s->data, foo_.data);
@@ -160,7 +160,7 @@ TEST(rosbag, simpleread)
     rosbag::View view;
     view.addQuery(bag, rosbag::TopicQuery(topics));
 
-    foreach(rosbag::MessageInfo const m, view) {
+    foreach(rosbag::MessageInstance const m, view) {
 
         std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
         if (s != NULL)
@@ -211,7 +211,7 @@ TEST(rosbag, timequery)
 
     int i = 23;
 
-    foreach(rosbag::MessageInfo const m, view) {
+    foreach(rosbag::MessageInstance const m, view) {
         std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
         if (imsg != NULL)
         {
@@ -269,7 +269,7 @@ TEST(rosbag, topicquery)
 
     int i = 0;
 
-    foreach(rosbag::MessageInfo const m, view) {
+    foreach(rosbag::MessageInstance const m, view) {
         std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
         if (imsg != NULL)
             ASSERT_EQ(imsg->data, i++);
@@ -323,7 +323,7 @@ TEST(rosbag, verifymultibag)
 
     int i = 0;
 
-    foreach(rosbag::MessageInfo const m, view) {
+    foreach(rosbag::MessageInstance const m, view) {
         std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
         if (imsg != NULL)
             ASSERT_EQ(imsg->data, i++);
@@ -527,7 +527,7 @@ TEST_F(BagTest, ChunkedFileReadWriteWorks) {
     f.write(s3);
     f.setWriteMode(rosbag::compression::None);
     uint64_t offset0 = f.getOffset();
-    ROS_INFO("offset0: %lu", offset0);
+    ROS_INFO("offset0: %llu", (unsigned long long) offset0);
 
     // 4: write "aaaa" (compressed) and keep open (remember file pos in offset1)
     f.setWriteMode(rosbag::compression::BZ2);
@@ -584,7 +584,7 @@ TEST_F(BagTest, ChunkedFileReadWriteWorks) {
   out.open("test/Convert102To103Works.bag", rosbag::bagmode::Write);
   rosbag::View view;
   view.addQuery(bag, rosbag::Query());
-  foreach(rosbag::MessageInfo m, view) {
+  foreach(rosbag::MessageInstance m, view) {
   m.instantiateMessage();
   out.write(m.getTopic(), m.getTime(), m);
   }
@@ -598,7 +598,7 @@ TEST_F(BagTest, ChunkedFileReadWriteWorks) {
   out.open("test/RewriteWorks.bag", rosbag::bagmode::Write);
   rosbag::View view;
   view.addQuery(bag, rosbag::Query());
-  foreach(rosbag::MessageInfo m, view) {
+  foreach(rosbag::MessageInstance m, view) {
   m.instantiateMessage();
   out.write(m.getTopic(), m.getTime(), m);
   }

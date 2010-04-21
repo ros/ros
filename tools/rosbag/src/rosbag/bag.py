@@ -93,8 +93,15 @@ class Bag(object):
         """
         self._file            = None
         self._version         = None
-        self._compression     = Compression.NONE
-        self._chunk_threshold = 0
+        
+        allowed_compressions = [Compression.NONE, Compression.BZ2] #, Compression.ZLIB]
+        if compression not in allowed_compressions:
+            raise ValueError('compression must be one of: %s' % ', '.join(allowed_compressions))  
+        self._compression = compression      
+
+        if chunk_threshold < 0:
+            raise ValueError('chunk_threshold must be greater than or equal to zero')        
+        self._chunk_threshold = chunk_threshold
 
         self._reader          = None
         
@@ -118,9 +125,6 @@ class Bag(object):
 
         self._curr_compression = Compression.NONE
         self._output_file      = self._file
-        
-        self.compression     = compression
-        self.chunk_threshold = chunk_threshold
         
         self._open(filename, mode)
     

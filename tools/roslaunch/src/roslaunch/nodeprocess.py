@@ -261,6 +261,8 @@ class LocalProcess(Process):
 
             if self.cwd == 'node':
                 cwd = os.path.dirname(self.args[0])
+            elif self.cwd == 'cwd':
+                cwd = os.getcwd()
             else:
                 cwd = get_ros_root()
 

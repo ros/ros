@@ -30,7 +30,6 @@
 # Author: Jonathan Bohren 
 
 import roslib; roslib.load_manifest('xdot')
-import rospy
 
 import sys
 import xdot

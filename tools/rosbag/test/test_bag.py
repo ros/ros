@@ -1,4 +1,4 @@
-# utest.py
+# test_bag.py
 
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
@@ -86,28 +86,20 @@ class TestRosbag(unittest.TestCase):
         for (_, _, t1), (_, _, t2) in zip(msgs, msgs[1:]):
             self.assert_(t1 < t2, 'messages returned unordered: got timestamp %s before %s' % (str(t1), str(t2)))
 
-    #def test_simple_write(self):
-        #self.failIf(timeout_t < time.time(), "timeout exceeded")
-        #self.assert_(self.callback_invoked[0], "callback not invoked")
+    def test_get_messages_time_range(self):
+        b = rosbag.Bag('timing.bag', 'w')
+        for i in range(30):
+            msg = Int32()
+            msg.data = i
+            t = roslib.rostime.Time.from_sec(i)
+            b.write('/ints', msg, t)
+        b.close()
+        
+        start_time = roslib.rostime.Time.from_sec(3)
+        end_time = roslib.rostime.Time.from_sec(7)
 
-def main():
-    b = rosbag.Bag('timing.bag', 'w')
-    for i in range(30):
-        msg = Int32()
-        msg.data = i
-        t = roslib.rostime.Time.from_sec(i)
-        b.write('/ints', msg, t)
-    b.close()
-    
-    start_time = roslib.rostime.Time.from_sec(0)
-    end_time = roslib.rostime.Time.from_sec(8)
-    for (topic, msg, t) in rosbag.Bag('timing.bag').getMessages(topics=['/intsa'], start_time=start_time, end_time=end_time):
-        print topic, msg, t
-    
-    sys.exit()
+        self.assert_(len(list(rosbag.Bag('timing.bag').getMessages(start_time=start_time, end_time=end_time))) == 5)
 
 if __name__ == '__main__':
-    main()
-
     import rostest
     rostest.run(PKG, 'TestRosbag', TestRosbag, sys.argv)

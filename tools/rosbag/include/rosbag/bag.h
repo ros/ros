@@ -390,6 +390,10 @@ void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, 
         if (!chunk_open_)
             startWritingChunk(time);
 
+        // Write a message definition record, if necessary
+        if (needs_def_written)
+            writeMessageDefinitionRecord(topic_info);
+
         // Add to topic index
         IndexEntry index_entry;
         index_entry.time      = time;
@@ -399,10 +403,6 @@ void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, 
 
         // Increment the topic count
         curr_chunk_info_.topic_counts[topic]++;
-
-        // Write a message definition record, if necessary
-        if (needs_def_written)
-            writeMessageDefinitionRecord(topic_info);
 
         // Write the message data
         writeMessageDataRecord(topic, time, latching, callerid, msg);

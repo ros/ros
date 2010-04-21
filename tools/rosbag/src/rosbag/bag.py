@@ -36,9 +36,11 @@ import roslib; roslib.load_manifest(PKG)
 import bz2
 from cStringIO import StringIO
 import heapq
+import numpy
 import os
 import re
 import struct
+import time
 
 import roslib.genpy
 import rospy
@@ -241,6 +243,12 @@ class Bag(object):
         if not self._chunk_open:
             self._start_writing_chunk(t)
 
+        # Write message definition record, if necessary
+        if topic not in self._topic_infos:
+            topic_info = _TopicInfo(topic, msg.__class__._type, msg.__class__._md5sum, msg._full_text)
+            self._write_message_definition_record(topic_info)
+            self._topic_infos[topic] = topic_info
+
         # Update the current chunk's topic index
         index_entry = _IndexEntry200(t, self._curr_chunk_info.pos, self._get_chunk_offset())
 
@@ -261,12 +269,6 @@ class Bag(object):
             self._curr_chunk_info.end_time = t
         elif t < self._curr_chunk_info.start_time:
             self._curr_chunk_info.start_time = t
-
-        # Write message definition record, if necessary
-        if topic not in self._topic_infos:
-            topic_info = _TopicInfo(topic, msg.__class__._type, msg.__class__._md5sum, msg._full_text)
-            self._write_message_definition_record(topic_info)
-            self._topic_infos[topic] = topic_info
 
         # Serialize the message to the buffer
         self._buffer.seek(0)
@@ -292,31 +294,92 @@ class Bag(object):
             self._close_file()
 
     def __str__(self):
-        s = '---- %s [%s] ----\n' % (self._filename, self._mode)
+        s  = 'bag:          %s\n' % self.filename
+        s += 'version:      %d.%d\n' % (self.version / 100, self.version % 100)
 
-        s += 'TOPICS:\n'
-        for topic_info in self._topic_infos:
-            s += '  * ' + topic_info + '\n'
-        s += '\n'
+        if not self._topic_indexes:
+            return s
+        
+        # Show start and end times
+        start_stamp = min([index[ 0].time.to_sec() for index in self._topic_indexes.values()])
+        end_stamp   = max([index[-1].time.to_sec() for index in self._topic_indexes.values()])
+        s += 'start:        %s (%.2f)\n' % (_time_to_str(start_stamp), start_stamp)
+        s += 'end:          %s (%.2f)\n' % (_time_to_str(end_stamp),   end_stamp)
 
-        s += 'CHUNK HEADERS:\n'
-        for pos in sorted(self._chunk_headers):
-            s += '  %d: %s' % (pos, str(self._chunk_headers[pos])) + '\n'
-        s += '\n'
+        # Show length
+        duration = end_stamp - start_stamp
+        dur_secs = duration % 60
+        dur_mins = int(duration / 60)
+        dur_hrs  = int(dur_mins / 60)
+        if dur_hrs > 0:
+            dur_mins = dur_mins % 60
+            s += 'length:       %dhr %dmin %ds (%ds)\n' % (dur_hrs, dur_mins, dur_secs, duration)
+        elif dur_mins > 0:
+            s += 'length:       %dmin %ds (%ds)\n' % (dur_mins, dur_secs, duration)
+        else:
+            s += 'length:       %.1fs\n' % duration
 
-        s += 'CHUNKS:\n'
-        for i, chunk_info in enumerate(self._chunk_infos):
-            s += '  %d: %s' % (i, str(chunk_info)) + '\n'
-        s += '\n'
+        s += 'messages:     %d\n' % (sum([len(index) for index in self._topic_indexes.values()]))
+
+        # Calculate total size of message chunks
+        total_uncompressed_size = sum((h.uncompressed_size for h in self._chunk_headers.values()))
+        total_compressed_size   = sum((h.compressed_size   for h in self._chunk_headers.values()))
+        s += 'uncompressed: %9s\n' % _human_readable_size(total_uncompressed_size)
+        if total_compressed_size != total_uncompressed_size:
+            s += 'compressed:   %9s (%.2f%%)\n' % (_human_readable_size(total_compressed_size), (100.0 * total_compressed_size) / total_uncompressed_size)
+
+        # Calculate message sizes (not including first, as it's a MSG_DEF record, and last, as we don't have a succeeding offset)
+        #entries = [entry for entry, _ in _mergesort(self._topic_indexes.values(), key=lambda entry: entry.time)]
+        #entry_sizes = {}
+        #for i in range(len(entries) - 1):
+        #    offset0 = entries[i].offset
+        #    offset1 = entries[i + 1].offset            
+        #    if offset1 > offset0:
+        #        entry_sizes[entries[i]] = offset1 - offset0
+
+        # Show topics
+        s += 'topics:'
+        topics = sorted(self._topic_infos.keys())        
+        max_topic_len = max([len(topic.lstrip('/')) for topic in topics])
+        max_datatype_len = max([len(self._topic_infos[topic].datatype) for topic in topics])
+        for i, topic in enumerate(topics):
+            indent = (7 if i == 0 else 14)
             
-        s += 'INDEX:\n'
-        for topic in sorted(self._topic_indexes):
-            s += '  * ' + topic + '\n'
-            for entry in self._topic_indexes[topic]:
-                s += '    - ' + str(entry) + '\n'
+            index      = self._topic_indexes[topic]
+            topic_info = self._topic_infos[topic]
+            stamps     = numpy.array([entry.time.to_sec() for entry in index])
+            msg_count  = len(stamps)
 
-        s += '----\n'
-        return s
+            s += '%s%-*s (%-*s) %7d msgs' % (' ' * indent, max_topic_len, topic, max_datatype_len, topic_info.datatype, msg_count)
+            
+            if msg_count > 1:
+                spacing = stamps[1:] - stamps[:-1]
+                s += ' @ %5.1f Hz' % (1.0 / numpy.median(spacing))
+
+                #sizes = []
+                #for entry in index:
+                #    if entry in entry_sizes:
+                #        sizes.append(entry_sizes[entry])
+                #s += ' %d to %d bytes' % (min(sizes), max(sizes))
+
+            s += '\n'
+
+        # Show unique datatypes
+        datatypes = set()
+        datatype_infos = []
+        for topic_info in self._topic_infos.values():
+            if topic_info.datatype in datatypes:
+                continue
+            datatype_infos.append((topic_info.datatype, topic_info.md5sum, topic_info.msg_def))
+            datatypes.add(topic_info.datatype)
+        
+        s += 'types:'
+        for i, (datatype, md5sum, msg_def) in enumerate(sorted(datatype_infos)):
+            indent = (8 if i == 0 else 14)
+
+            s += '%s%-*s [%s]\n' % (' ' * indent, max_datatype_len, datatype, md5sum)
+
+        return s.rstrip()
 
     ### Implementation ###
 
@@ -1224,6 +1287,21 @@ class _BagReader200(_BagReader):
         msg.deserialize(record_data)
         
         return (topic, msg)
+
+def _time_to_str(secs):
+    secs_frac = secs - int(secs) 
+    secs_frac_str = ('%.2f' % secs_frac)[1:]
+
+    return time.strftime('%b %d %Y %H:%M:%S', time.localtime(secs)) + secs_frac_str
+
+def _human_readable_size(size):
+    multiple = 1024.0
+    for suffix in ['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']:
+        size /= multiple
+        if size < multiple:
+            return '%.1f %s' % (size, suffix)
+
+    raise ValueError('number too large')
 
 ## See http://code.activestate.com/recipes/511509
 def _mergesort(list_of_lists, key=None):

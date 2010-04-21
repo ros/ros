@@ -38,30 +38,16 @@ import subprocess
 import optparse
 from optparse import OptionParser
 
+from bag import Bag
+
 def info_cmd(argv):
-    parser = OptionParser(usage='rosbag info BAGFILE', description='Summarize the contents of a bag file.')
-
-    parser.add_option('--try-future-version', dest='try_future', default=False, action='store_true',
-                      help='still try to open a bag file, even if the version number is not known to the player')
-
+    parser = OptionParser(usage='rosbag info BAGFILE1 [BAGFILE2 BAGFILE3 ...]', description='Summarize the contents of one or more bag files.')
     (options, args) = parser.parse_args(argv)
 
-    if (len(args) == 0):
-        parser.error('You must pass in a bag file.')
+    if len(args) == 0:
+        parser.error('You must specify at least 1 bag file.')
 
-    for arg in args:
-        cmd = ['rosrun', 'rosbag', 'play', '-c', arg]
-
-        if options.try_future:
-            cmd.extend(["-T"])
-
-        proc = subprocess.Popen(cmd)
-
-        # Ignore sigint since we're basically just pretending to be the subprocess now.
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-        res = proc.wait()
-
-        print ''
-
-    sys.exit(res)
+    for i, arg in enumerate(args):
+        print Bag(arg)
+        if i < len(args) - 1:
+            print '---'

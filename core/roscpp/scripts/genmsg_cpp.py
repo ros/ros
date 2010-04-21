@@ -293,8 +293,13 @@ def write_fixed_length_assigns(s, spec, container_gets_allocator, cpp_name_prefi
         
         val = default_value(field.base_type)
         if (container_gets_allocator and takes_allocator(field.base_type)):
-            (cpp_msg_unqualified, cpp_msg_with_alloc, _) = cpp_message_declarations(cpp_name_prefix, field.base_type)
-            s.write('    %s.assign(%s(_alloc));\n'%(field.name, cpp_msg_with_alloc))
+            # String is a special case, as it is the only builtin type that takes an allocator
+            if (field.base_type == "string"):
+                string_cpp = msg_type_to_cpp("string")
+                s.write('    %s.assign(%s(_alloc));\n'%(field.name, string_cpp))
+            else:
+                (cpp_msg_unqualified, cpp_msg_with_alloc, _) = cpp_message_declarations(cpp_name_prefix, field.base_type)
+                s.write('    %s.assign(%s(_alloc));\n'%(field.name, cpp_msg_with_alloc))
         elif (len(val) > 0):
             s.write('    %s.assign(%s);\n'%(field.name, val))
 

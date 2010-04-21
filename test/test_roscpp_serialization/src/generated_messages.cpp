@@ -49,6 +49,8 @@
 #include "test_roscpp_serialization/FixedLengthArrayOfExternal.h"
 #include "test_roscpp_serialization/VariableLengthArrayOfExternal.h"
 #include "test_roscpp_serialization/Constants.h"
+#include "test_roscpp_serialization/VariableLengthStringArray.h"
+#include "test_roscpp_serialization/FixedLengthStringArray.h"
 
 using namespace test_roscpp_serialization;
 
@@ -67,6 +69,8 @@ namespace test_roscpp_serialization
   ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(WithMemberNamedHeaderThatIsNotAHeader, MyWithMemberNamedHeaderThatIsNotAHeader, Allocator);
   ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(FixedLengthArrayOfExternal, MyFixedLengthArrayOfExternal, Allocator);
   ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(VariableLengthArrayOfExternal, MyVariableLengthArrayOfExternal, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(FixedLengthStringArray, MyFixedLengthStringArray, Allocator);
+  ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(VariableLengthStringArray, MyVariableLengthStringArray, Allocator);
 }
 
 TEST(GeneratedMessages, traitsWithStandardMessages)
@@ -84,6 +88,8 @@ TEST(GeneratedMessages, traitsWithStandardMessages)
   EXPECT_TRUE(mt::isFixedSize<WithMemberNamedHeaderThatIsNotAHeader>());
   EXPECT_FALSE(mt::isFixedSize<FixedLengthArrayOfExternal>());
   EXPECT_FALSE(mt::isFixedSize<VariableLengthArrayOfExternal>());
+  EXPECT_FALSE(mt::isFixedSize<FixedLengthStringArray>());
+  EXPECT_FALSE(mt::isFixedSize<VariableLengthStringArray>());
 
   EXPECT_FALSE(mt::hasHeader<ArrayOfFixedLength>());
   EXPECT_FALSE(mt::hasHeader<ArrayOfVariableLength>());
@@ -98,6 +104,8 @@ TEST(GeneratedMessages, traitsWithStandardMessages)
   EXPECT_FALSE(mt::hasHeader<WithMemberNamedHeaderThatIsNotAHeader>());
   EXPECT_FALSE(mt::hasHeader<FixedLengthArrayOfExternal>());
   EXPECT_FALSE(mt::hasHeader<VariableLengthArrayOfExternal>());
+  EXPECT_FALSE(mt::hasHeader<FixedLengthStringArray>());
+  EXPECT_FALSE(mt::hasHeader<VariableLengthStringArray>());
 
   EXPECT_FALSE(mt::isSimple<ArrayOfFixedLength>());
   EXPECT_FALSE(mt::isSimple<ArrayOfVariableLength>());
@@ -112,6 +120,8 @@ TEST(GeneratedMessages, traitsWithStandardMessages)
   EXPECT_FALSE(mt::isSimple<WithMemberNamedHeaderThatIsNotAHeader>());
   EXPECT_FALSE(mt::isSimple<FixedLengthArrayOfExternal>());
   EXPECT_FALSE(mt::isSimple<VariableLengthArrayOfExternal>());
+  EXPECT_FALSE(mt::isSimple<FixedLengthStringArray>());
+  EXPECT_FALSE(mt::isSimple<VariableLengthStringArray>());
 }
 
 TEST(GeneratedMessages, traitsWithCustomAllocator)
@@ -129,6 +139,8 @@ TEST(GeneratedMessages, traitsWithCustomAllocator)
   EXPECT_TRUE(mt::isFixedSize<MyWithMemberNamedHeaderThatIsNotAHeader>());
   EXPECT_FALSE(mt::isFixedSize<MyFixedLengthArrayOfExternal>());
   EXPECT_FALSE(mt::isFixedSize<MyVariableLengthArrayOfExternal>());
+  EXPECT_FALSE(mt::isFixedSize<MyFixedLengthStringArray>());
+  EXPECT_FALSE(mt::isFixedSize<MyVariableLengthStringArray>());
 
   EXPECT_FALSE(mt::hasHeader<MyArrayOfFixedLength>());
   EXPECT_FALSE(mt::hasHeader<MyArrayOfVariableLength>());
@@ -143,6 +155,8 @@ TEST(GeneratedMessages, traitsWithCustomAllocator)
   EXPECT_FALSE(mt::hasHeader<MyWithMemberNamedHeaderThatIsNotAHeader>());
   EXPECT_FALSE(mt::hasHeader<MyFixedLengthArrayOfExternal>());
   EXPECT_FALSE(mt::hasHeader<MyVariableLengthArrayOfExternal>());
+  EXPECT_FALSE(mt::hasHeader<MyFixedLengthStringArray>());
+  EXPECT_FALSE(mt::hasHeader<MyVariableLengthStringArray>());
 
   EXPECT_FALSE(mt::isSimple<MyArrayOfFixedLength>());
   EXPECT_FALSE(mt::isSimple<MyArrayOfVariableLength>());
@@ -157,6 +171,8 @@ TEST(GeneratedMessages, traitsWithCustomAllocator)
   EXPECT_FALSE(mt::isSimple<MyWithMemberNamedHeaderThatIsNotAHeader>());
   EXPECT_FALSE(mt::isSimple<MyFixedLengthArrayOfExternal>());
   EXPECT_FALSE(mt::isSimple<MyVariableLengthArrayOfExternal>());
+  EXPECT_FALSE(mt::isSimple<MyFixedLengthStringArray>());
+  EXPECT_FALSE(mt::isSimple<MyVariableLengthStringArray>());
 }
 
 #define SERIALIZATION_COMPILATION_TEST(Type) \
@@ -179,6 +195,8 @@ SERIALIZATION_COMPILATION_TEST(WithDuration);
 SERIALIZATION_COMPILATION_TEST(WithMemberNamedHeaderThatIsNotAHeader);
 SERIALIZATION_COMPILATION_TEST(FixedLengthArrayOfExternal);
 SERIALIZATION_COMPILATION_TEST(VariableLengthArrayOfExternal);
+SERIALIZATION_COMPILATION_TEST(FixedLengthStringArray);
+SERIALIZATION_COMPILATION_TEST(VariableLengthStringArray);
 
 SERIALIZATION_COMPILATION_TEST(MyArrayOfFixedLength);
 SERIALIZATION_COMPILATION_TEST(MyArrayOfVariableLength);
@@ -193,6 +211,8 @@ SERIALIZATION_COMPILATION_TEST(MyWithDuration);
 SERIALIZATION_COMPILATION_TEST(MyWithMemberNamedHeaderThatIsNotAHeader);
 SERIALIZATION_COMPILATION_TEST(MyFixedLengthArrayOfExternal);
 SERIALIZATION_COMPILATION_TEST(MyVariableLengthArrayOfExternal);
+SERIALIZATION_COMPILATION_TEST(MyFixedLengthStringArray);
+SERIALIZATION_COMPILATION_TEST(MyVariableLengthStringArray);
 
 #define ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(Type, Allocator) \
   TEST(GeneratedMessages, allocationConstructor_##Type) \
@@ -214,6 +234,8 @@ ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(WithDuration, std::allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(WithMemberNamedHeaderThatIsNotAHeader, std::allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(FixedLengthArrayOfExternal, std::allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(VariableLengthArrayOfExternal, std::allocator<void>);
+ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(FixedLengthStringArray, std::allocator<void>);
+ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(VariableLengthStringArray, std::allocator<void>);
 
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyArrayOfFixedLength, Allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyArrayOfVariableLength, Allocator<void>);
@@ -228,6 +250,8 @@ ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyWithDuration, Allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyWithMemberNamedHeaderThatIsNotAHeader, Allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyFixedLengthArrayOfExternal, Allocator<void>);
 ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyVariableLengthArrayOfExternal, Allocator<void>);
+ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyFixedLengthStringArray, Allocator<void>);
+ALLOCATOR_CONSTRUCTOR_COMPILATION_TEST(MyVariableLengthStringArray, Allocator<void>);
 
 TEST(Generated, serializationOStreamOperator)
 {

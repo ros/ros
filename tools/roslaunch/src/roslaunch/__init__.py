@@ -89,6 +89,10 @@ def _get_optparse():
     parser.add_option("--local",
                       dest="local_only", default=False, action="store_true",
                       help="Do not launch remote nodes")
+    # #2370
+    parser.add_option("--screen",
+                      dest="force_screen", default=False, action="store_true",
+                      help="Force output of all local nodes to screen")
     parser.add_option("-u", "--server_uri",
                       dest="server_uri", default=None,
                       help="URI of server. Required with -c", metavar="URI")
@@ -201,7 +205,7 @@ def main(argv=sys.argv):
             # args are the roslaunch files to load
             import roslaunch.parent
             try:
-              p = roslaunch.parent.ROSLaunchParent(uuid, args, is_core=options.core, port=options.port, local_only=options.local_only, verbose=options.verbose)
+              p = roslaunch.parent.ROSLaunchParent(uuid, args, is_core=options.core, port=options.port, local_only=options.local_only, verbose=options.verbose, force_screen=options.force_screen)
               p.start()
               p.spin()
             finally:

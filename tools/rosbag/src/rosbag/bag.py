@@ -824,6 +824,33 @@ class _BagReader(object):
         
     def start_reading(self): pass
     def get_messages(self, topics, start_time, end_time, topic_filter): pass
+
+    def get_entries(self, topics, start_time, end_time, topic_filter):
+        for entry, _ in _mergesort(self.get_indexes(topics, topic_filter), key=lambda entry: entry.time):
+            if start_time and entry.time < start_time:
+                continue
+            if end_time and entry.time > end_time:
+                return
+            yield entry
+
+    def get_indexes(self, topics, topic_filter):
+        if topics is None and topic_filter is None:
+            return self.bag._topic_indexes.values()
+
+        if topics is not None:
+            topics = self.bag._topic_indexes.keys()
+    
+        if topic_filter is not None:
+            filtered_topics = []
+            for topic in topics:
+                if topic not in self.bag._topic_infos:
+                    continue
+                topic_info = self.bag._topic_infos[topic]
+                if topic_filter(topic, topic_info.datatype, topic_info.md5sum, topic_info.msg_def):
+                    filtered_topics.append(topic)
+            topics = filtered_topics
+
+        return [index for topic, index in self.bag._topic_indexes.items() if topic in topics]
     
     def read_message_definition_record(self, header=None):
         if not header:
@@ -915,8 +942,7 @@ class _BagReader102_Indexed(_BagReader):
 
     def get_messages(self, topics, start_time, end_time, topic_filter):
         f = self.bag._file
-
-        for entry, _ in _mergesort(self.bag._topic_indexes.values(), key=lambda entry: entry.time):
+        for entry in self.get_entries(topics, start_time, end_time, topic_filter):
             f.seek(entry.offset)
             topic, msg = self.read_message_data_record(entry)
             yield (topic, msg, entry.time)
@@ -1020,7 +1046,7 @@ class _BagReader200(_BagReader):
         self.decompressed_chunk_io  = None
 
     def get_messages(self, topics, start_time, end_time, topic_filter):
-        for entry, _ in _mergesort(self.bag._topic_indexes.values(), key=lambda entry: entry.time):
+        for entry in self.get_entries(topics, start_time, end_time, topic_filter):
             topic, msg = self.read_message_data_record(entry)
             yield (topic, msg, entry.time)
 

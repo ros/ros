@@ -186,6 +186,33 @@ class Bag(object):
         
     chunk_threshold = property(_get_chunk_threshold, _set_chunk_threshold)
 
+    def getMessages(self, topics=None, start_time=None, end_time=None, topic_filter=None):
+        """
+        @param topic: list of topics [optional]
+        @type  topic: list(str)
+        @param start_time: earliest timestamp of message to return [optional]
+        @type  start_time: U{roslib.rostime.Time}
+        @param end_time: latest timestamp of message to return [optional]
+        @type  end_time: U{roslib.rostime.Time}
+        @param topic_filter: function to filter topics to include [optional]
+        @type  topic_filter: function taking (topic, datatype, md5sum, msg_def) and returning bool
+        @return: generator of (topic, message, timestamp) tuples for each message in the bag file
+        @rtype: generator of tuples of (topic, message, timestamp)
+        """
+        self.flush()
+        return self._reader.get_messages(topics, start_time, end_time, topic_filter)
+
+    def flush(self):
+        """
+        Write the open chunk to disk so subsequent reads will read all messages.
+        @raise ValueError: if bag is closed 
+        """
+        if not self._file:
+            raise ValueError('I/O operation on closed bag')
+
+        if self._chunk_open:
+            self._stop_writing_chunk()
+
     def write(self, topic, msg, t):
         """
         Write a message to the bag.
@@ -195,8 +222,11 @@ class Bag(object):
         @type  msg: Message
         @param t: ROS time of message publication
         @type  t: U{roslib.rostime.Time}
-        @raise ValueError: if arguments are invalid
+        @raise ValueError: if arguments are invalid or bag is closed
         """
+        if not self._file:
+            raise ValueError('I/O operation on closed bag')
+        
         if not topic:
             raise ValueError('topic is invalid')
         if not msg:
@@ -251,20 +281,6 @@ class Bag(object):
         if chunk_size > self._chunk_threshold:
             self._stop_writing_chunk()
 
-    def getMessages(self):
-        """Return a generator of (topic, message, timestamp) tuples for each message in the bag file."""
-        self.flush()
-        
-        return self._reader.get_messages()
-    
-    def flush(self):
-        """Write the open chunk to disk so subsequent reads will read all messages."""
-        if not self._file:
-            raise ValueError('I/O operation on closed bag')
-
-        if self._chunk_open:
-            self._stop_writing_chunk()
-
     def close(self):
         """
         Close the bag file.  Closing an already closed bag does nothing.
@@ -275,34 +291,32 @@ class Bag(object):
             
             self._close_file()
 
-    def dump(self):
-        """
-        Print a summary of the contents of the bag.
-        """
-        print '---- %s [%s] ----' % (self._filename, self._mode)
+    def __str__(self):
+        s = '---- %s [%s] ----\n' % (self._filename, self._mode)
 
-        print 'TOPICS:'
+        s += 'TOPICS:\n'
         for topic_info in self._topic_infos:
-            print '  * ' + topic_info
-        print
+            s += '  * ' + topic_info + '\n'
+        s += '\n'
 
-        print 'CHUNK HEADERS:'
+        s += 'CHUNK HEADERS:\n'
         for pos in sorted(self._chunk_headers):
-            print '  %d: %s' % (pos, str(self._chunk_headers[pos]))
-        print
+            s += '  %d: %s' % (pos, str(self._chunk_headers[pos])) + '\n'
+        s += '\n'
 
-        print 'CHUNKS:'
+        s += 'CHUNKS:\n'
         for i, chunk_info in enumerate(self._chunk_infos):
-            print '  %d: %s' % (i, str(chunk_info))
-        print
+            s += '  %d: %s' % (i, str(chunk_info)) + '\n'
+        s += '\n'
             
-        print 'INDEX:'
+        s += 'INDEX:\n'
         for topic in sorted(self._topic_indexes):
-            print '  * ' + topic
+            s += '  * ' + topic + '\n'
             for entry in self._topic_indexes[topic]:
-                print '    - ' + str(entry)
-                                
-        print '----'
+                s += '    - ' + str(entry) + '\n'
+
+        s += '----\n'
+        return s
 
     ### Implementation ###
 
@@ -627,6 +641,8 @@ class Bag(object):
 
 ### Implementation ###
 
+_message_types = {}   # md5sum -> type
+
 _OP_MSG_DEF     = 0x01
 _OP_MSG_DATA    = 0x02
 _OP_FILE_HEADER = 0x03
@@ -806,8 +822,9 @@ class _BagReader(object):
     def __init__(self, bag):
         self.bag = bag
         
-        self.message_types = {}  # md5sum -> type
-        
+    def start_reading(self): pass
+    def get_messages(self, topics, start_time, end_time, topic_filter): pass
+    
     def read_message_definition_record(self, header=None):
         if not header:
             header = _read_record_header(self.bag._file, _OP_MSG_DEF)
@@ -824,14 +841,14 @@ class _BagReader(object):
     def get_message_type(self, topic_info):
         md5sum, datatype, msg_def = topic_info.md5sum, topic_info.datatype, topic_info.msg_def
         
-        message_type = self.message_types.get(md5sum)
+        message_type = _message_types.get(md5sum)
         if message_type is None:            
             try:
                 message_type = roslib.genpy.generate_dynamic(datatype, msg_def)[datatype]
             except roslib.genpy.MsgGenerationException, ex:
                 raise ROSBagException('Error generating datatype %s: %s' % (datatype, str(ex)))
 
-            self.message_types[md5sum] = message_type
+            _message_types[md5sum] = message_type
 
         return message_type
 
@@ -845,7 +862,7 @@ class _BagReader102_Unindexed(_BagReader):
     def start_reading(self):
         pass
 
-    def get_messages(self):
+    def get_messages(self, topics, start_time, end_time, topic_filter):
         f = self.bag._file
 
         while True:
@@ -896,7 +913,7 @@ class _BagReader102_Indexed(_BagReader):
     def __init__(self, bag):
         _BagReader.__init__(self, bag)
 
-    def get_messages(self):
+    def get_messages(self, topics, start_time, end_time, topic_filter):
         f = self.bag._file
 
         for entry, _ in _mergesort(self.bag._topic_indexes.values(), key=lambda entry: entry.time):
@@ -1002,7 +1019,7 @@ class _BagReader200(_BagReader):
         self.decompressed_chunk     = None
         self.decompressed_chunk_io  = None
 
-    def get_messages(self):
+    def get_messages(self, topics, start_time, end_time, topic_filter):
         for entry, _ in _mergesort(self.bag._topic_indexes.values(), key=lambda entry: entry.time):
             topic, msg = self.read_message_data_record(entry)
             yield (topic, msg, entry.time)

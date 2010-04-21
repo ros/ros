@@ -379,6 +379,7 @@ void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, 
     }
 
     {
+    	//! \todo enabling this lock seems to cause a deadlock - do we even need it?
         //boost::mutex::scoped_lock lock(record_mutex_);
 
         // Seek to the end of the file (needed in case previous operation was a read)

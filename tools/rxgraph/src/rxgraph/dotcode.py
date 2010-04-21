@@ -30,7 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: rxgraph.py 8782 2010-03-22 21:44:43Z kwc $
+# Revision $Id$
 
 import roslib.names
 import rosgraph.graph

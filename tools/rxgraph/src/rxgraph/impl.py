@@ -31,28 +31,19 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: rxgraph.py 8782 2010-03-22 21:44:43Z kwc $
+# Revision $Id$
 
 from __future__ import with_statement
-
-import roslib; roslib.load_manifest('rxgraph')
 
 import sys
 import time
 import threading
 import traceback
-import logging
-from optparse import OptionParser
 
 import rosgraph.graph
 import rxgraph.dotcode
 from rxgraph.dotcode import generate_dotcode, generate_namespaces, NODE_NODE_GRAPH, NODE_TOPIC_GRAPH
 from rxgraph.viewer import RxGraphViewerFrame
-
-import roslib.roslogging
-
-# have to import later than others due to xdot calling wxversion
-import wx
 
 import roslib.scriptutil
 import rostopic
@@ -94,8 +85,6 @@ class DotUpdate(threading.Thread):
                 self.selection_url = url
                 self.selection_update = True
         except:
-            import traceback
-            traceback.print_exc()
             pass
 
     def run(self):
@@ -184,54 +173,13 @@ def set_shutdown(is_shutdown):
     global _is_shutdown 
     _is_shutdown = is_shutdown
     
-def rxgraph_main():
-    parser = OptionParser(usage="usage: rxgraph [options]")
-    parser.add_option("-o", "--dot",
-                      dest="output_file", default=None,
-                      help="ouput graph as graphviz dot file", metavar="DOTFILE")
-    parser.add_option("--nodens",
-                      dest="node_ns", default=None,
-                      help="only show nodes in specified namespace")
-    parser.add_option("--topicns",
-                      dest="topic_ns", default=None,
-                      help="only show topics in specified namespace")
-    
-    options, args = parser.parse_args()
-    if args:
-        parser.error("invalid arguments")
+def init_frame():
+    frame = RxGraphViewerFrame()
+    frame.set_dotcode(rxgraph.dotcode.INIT_DOTCODE)
+    return frame
 
-
-    import subprocess
-    try:
-        subprocess.check_call(['dot', '-V'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except:
-        print >> sys.stderr, "Graphviz does not appear to be installed on your system. Please run:\n\n\trosdep install rosgraph\n\nto install the necessary dependencies on your system"
-        sys.exit(1)
-
-        
-    roslib.roslogging.configure_logging('rxgraph', logging.DEBUG, additional=['rospy', 'roslib', 'rosgraph'])
-    try:
-        # make gtk play nice with Python threads
-        #gtk.gdk.threads_init()
-
-        graph = rosgraph.graph.Graph(options.node_ns, options.topic_ns) 
-
-        app = wx.App()    
-        frame = RxGraphViewerFrame()
-        frame.set_dotcode(rxgraph.dotcode.INIT_DOTCODE)
-
-        updater = DotUpdate(graph, frame, output_file=options.output_file)
-        frame.register_select_cb(updater.select_callback)
-        updater.start()
-        
-        frame.Show()
-        app.MainLoop()
-
-    except KeyboardInterrupt:
-        pass
-    finally:
-        set_shutdown(True)
-        
-
-if __name__ == '__main__':
-    rxgraph_main()
+def init_updater(frame, node_ns=None, topic_ns=None, output_file=None):
+    graph = rosgraph.graph.Graph(node_ns, topic_ns) 
+    updater = DotUpdate(graph, frame, output_file=output_file)
+    frame.register_select_cb(updater.select_callback)
+    return updater

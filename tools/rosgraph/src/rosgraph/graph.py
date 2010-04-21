@@ -55,7 +55,7 @@ def topic_node(topic):
     """
     In order to prevent topic/node name aliasing, we have to remap
     topic node names. Currently we just prepend a space, which is
-    an illegal ROS name and thus not aliassed.
+    an illegal ROS name and thus not aliased.
     @return str: topic mapped to a graph node name.
     """
     return ' ' + topic

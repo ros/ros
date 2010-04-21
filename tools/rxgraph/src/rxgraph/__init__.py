@@ -30,4 +30,58 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: rxgraph.py 8782 2010-03-22 21:44:43Z kwc $
+# Revision $Id$
+
+import roslib; roslib.load_manifest('rxgraph')
+
+import rxgraph.impl
+from optparse import OptionParser
+
+def rxgraph_main():
+    parser = OptionParser(usage="usage: rxgraph [options]")
+    parser.add_option("-o", "--dot",
+                      dest="output_file", default=None,
+                      help="ouput graph as graphviz dot file", metavar="DOTFILE")
+    parser.add_option("--nodens",
+                      dest="node_ns", default=None,
+                      help="only show nodes in specified namespace")
+    parser.add_option("--topicns",
+                      dest="topic_ns", default=None,
+                      help="only show topics in specified namespace")
+    
+    options, args = parser.parse_args()
+    if args:
+        parser.error("invalid arguments")
+
+
+    import subprocess
+    try:
+        subprocess.check_call(['dot', '-V'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except:
+        print >> sys.stderr, "Graphviz does not appear to be installed on your system. Please run:\n\n\trosdep install rosgraph\n\nto install the necessary dependencies on your system"
+        sys.exit(1)
+
+        
+    # initialize logging libraries
+    import logging
+    import roslib.roslogging
+    roslib.roslogging.configure_logging('rxgraph', logging.DEBUG, additional=['rospy', 'roslib', 'rosgraph'])
+    try:
+        import wx
+        app = wx.App()    
+
+        frame = rxgraph.impl.init_frame()
+        updater = rxgraph.impl.init_updater(frame, node_ns=options.node_ns, topic_ns=options.topic_ns, output_file=options.output_file)
+        updater.start()
+        
+        frame.Show()
+        app.MainLoop()
+
+    except KeyboardInterrupt:
+        pass
+    finally:
+        rxgraph.impl.set_shutdown(True)
+
+        
+if __name__ == '__main__':
+    rxgraph_main()

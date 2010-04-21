@@ -732,13 +732,15 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
         topics.sort()
         print '\n'.join(topics)
 
-def _rostopic_info(topic):
+def get_info_text(topic):
     """
-    Print topic information to screen.
+    Get human-readable topic description
     
     @param topic: topic name 
     @type  topic: str
     """
+    import cStringIO, itertools
+    buff = cStringIO.StringIO()
     def topic_type(t, topic_types):
         matches = [t_type for t_name, t_type in topic_types if t_name == t]
         if matches:
@@ -759,30 +761,35 @@ def _rostopic_info(topic):
         raise ROSTopicIOException("Unable to communicate with master!")
 
     if not pubs and not subs:
-        print >> sys.stderr, "Unknown topic %s"%topic
-        return 1
+        raise ROSTopicException("Unknown topic %s"%topic)
 
-    #print '-'*80
-    print "\nType: %s\n"%topic_type(topic, topic_types)
-
-    import itertools
+    buff.write("Type: %s\n\n"%topic_type(topic, topic_types))
 
     if pubs:
-        print "Publishers: "
+        buff.write("Publishers: \n")
         for p in itertools.chain(*[l for x, l in pubs]):
-            print " * %s (%s)"%(p, get_api(master, p))
+            buff.write(" * %s (%s)\n"%(p, get_api(master, p)))
     else:
-        print "Publishers: None"
-    print ''
+        buff.write("Publishers: None\n")
+    buff.write('\n')
 
     if subs:
-        print "Subscribers: "
+        buff.write("Subscribers: \n")
         for p in itertools.chain(*[l for x, l in subs]):
-            print " * %s (%s)"%(p, get_api(master, p))
+            buff.write(" * %s (%s)\n"%(p, get_api(master, p)))
     else:
-        print "Subscribers: None"
-    print ''
-                    
+        buff.write("Subscribers: None\n")
+    buff.write('\n')
+    return buff.getvalue()
+    
+def _rostopic_info(topic):
+    """
+    Print topic information to screen.
+    
+    @param topic: topic name 
+    @type  topic: str
+    """
+    print get_info_text(topic)
             
 ##########################################################################################
 # COMMAND PROCESSING #####################################################################

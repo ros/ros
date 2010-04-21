@@ -43,6 +43,7 @@ import sys
 import math
 import socket
 import time
+import traceback
             
 import roslib.exceptions
 import roslib.names
@@ -472,7 +473,7 @@ class CallbackEcho(object):
     """
 
     def __init__(self, topic, msg_eval, plot=False, filter_fn=None,
-                 echo_clear=False, echo_all_topics=False, offset_time=False):
+                 echo_clear=False, echo_all_topics=False, offset_time=False, count=None):
         """
         @param plot: if True, echo in plotting-friendly format
         @type  plot: bool
@@ -482,6 +483,8 @@ class CallbackEcho(object):
         @type  echo_all_topics: bool
         @param offset_time: (optional) if True, display time as offset from current time
         @type  offset_time: bool
+        @param count: number of messages to echo, None for infinite
+        @type  count: int
         """
         if topic and topic[-1] == '/':
             topic = topic[:-1]
@@ -492,6 +495,11 @@ class CallbackEcho(object):
         self.sep = '---\n' # same as YAML document separator
         self.echo_all_topics = echo_all_topics
         self.offset_time = offset_time
+
+        # done tracks when we've exceeded the count
+        self.done = False
+        self.max_count = count
+        self.count = 0
 
         # determine which strifying function to use
         if plot:
@@ -521,6 +529,11 @@ class CallbackEcho(object):
         """
         if self.filter_fn is not None and not self.filter_fn(data):
             return
+
+        if self.max_count is not None and self.count >= self.max_count:
+            self.done = True
+            return
+        
         try:
             msg_eval = self.msg_eval
             if topic == self.topic:
@@ -544,6 +557,8 @@ class CallbackEcho(object):
                 
             # data can be None if msg_eval returns None
             if data is not None:
+
+                self.count += 1
                 
                 # print fields header for plot
                 if self.plot and self.first:
@@ -557,9 +572,10 @@ class CallbackEcho(object):
                     
             #sys.stdout.flush()
         except IOError:
-            rospy.signal_shutdown('IOError')
+            self.done = True
         except:
-            import traceback
+            # set done flag so we exit
+            self.done = True
             traceback.print_exc()
             
 def _rostopic_type(topic):
@@ -591,6 +607,9 @@ def _rostopic_echo_bag(callback_echo, bag_file):
         if t[0] != '/':
             t = roslib.scriptutil.script_resolve_name('rostopic', t)
         callback_echo.callback(msg, t)
+        # done is set if there is a max echo count
+        if callback_echo.done:
+            break
     
 def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
     """
@@ -617,7 +636,9 @@ def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
         callback_echo.msg_eval = msg_eval
 
         sub = rospy.Subscriber(real_topic, msg_class, callback_echo.callback, topic)
-        rospy.spin()
+
+        while not rospy.is_shutdown() and not callback_echo.done:
+            time.sleep(0.1)
 
 _caller_apis = {}
 def get_api(master, caller_id):
@@ -841,6 +862,9 @@ def _rostopic_cmd_echo(argv):
                       dest="all_topics", default=False,
                       action="store_true",
                       help="display all message in bag, only valid with -b option")
+    parser.add_option("-n", 
+                      dest="msg_count", default=None, metavar="COUNT",
+                      help="number of messages to echo")
     parser.add_option("--offset",
                       dest="offset_time", default=False,
                       action="store_true",
@@ -871,7 +895,11 @@ def _rostopic_cmd_echo(argv):
     if options.filter_expr:
         filter_fn = expr_eval(options.filter_expr)
 
-    callback_echo = CallbackEcho(topic, None, plot=options.plot, filter_fn=filter_fn, echo_clear=options.clear, echo_all_topics=options.all_topics, offset_time=options.offset_time)
+    try:
+        msg_count = int(options.msg_count) if options.msg_count else None
+    except ValueError:
+        parser.error("COUNT must be an integer")
+    callback_echo = CallbackEcho(topic, None, plot=options.plot, filter_fn=filter_fn, echo_clear=options.clear, echo_all_topics=options.all_topics, offset_time=options.offset_time, count=msg_count)
     try:
         _rostopic_echo(topic, callback_echo, bag_file=options.bag)
     except socket.error:

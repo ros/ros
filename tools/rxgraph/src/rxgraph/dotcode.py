@@ -118,7 +118,8 @@ def generate_namespaces(g, graph_mode, quiet=False):
     return list(set(namespaces))
 
 def _filter_edges(edges, nodes):
-    return [e for e in edges if e.start in nodes or e.end in nodes]
+    # currently using and rule as the or rule generates orphan nodes with the current logic
+    return [e for e in edges if e.start in nodes and e.end in nodes]
 
 def generate_dotcode(g, ns_filter, graph_mode, orientation, quiet=False):
     """

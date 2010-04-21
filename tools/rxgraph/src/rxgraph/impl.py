@@ -49,6 +49,9 @@ import roslib.scriptutil
 import rostopic
 import rosnode
 
+# have to import wx last due to xdot playing with the wx version
+import wx
+
 def get_info_text(selection_url):
     if selection_url is None:
         return ''

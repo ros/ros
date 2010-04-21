@@ -65,8 +65,6 @@ BagContent::BagContent(std::string const& d, std::string const& m, std::string c
 // PlayerOptions
 
 PlayerOptions::PlayerOptions() :
-    check_bag(false),
-    show_defs(false),
     quiet(false),
     start_paused(false),
     at_once(false),
@@ -82,24 +80,10 @@ PlayerOptions::PlayerOptions() :
 }
 
 void PlayerOptions::check() {
-    if (check_bag) {
-        if (at_once)
-            throw Exception("Option -a is not valid when checking bag");
-        if (start_paused)
-            throw Exception("Option -p is not valid when checking bag");
-        if (has_time)
-            throw Exception("Option -t is not valid when checking bag");
-        if (queue_size)
-            throw Exception("Option -q is not valid when checking bag");
-        if (bags.size() > 1)
-            throw Exception("Only 1 bag can be checked at a time");
-    }
-    else {
-        if (bags.size() == 0)
-            throw Exception("You must specify at least one bag file to play from");
-        if (bag_time && bags.size() > 1)
-            throw Exception("You can only play one single bag when using bag time [-b]");
-    }
+	if (bags.size() == 0)
+		throw Exception("You must specify at least one bag file to play from");
+	if (bag_time && bags.size() > 1)
+		throw Exception("You can only play one single bag when using bag time [-b]");
 }
 
 // Player
@@ -320,78 +304,6 @@ ros::Time Player::getSysTime() {
     struct timeval timeofday;
     gettimeofday(&timeofday, NULL);
     return ros::Time().fromNSec(1e9 * timeofday.tv_sec + 1e3 * timeofday.tv_usec);
-}
-
-int Player::checkBag() {
-    options_.check();
-
-    // Open the bag file for reading
-    string filename = options_.bags[0];
-    Bag bag;
-    if (!bag.open(filename, bagmode::Read))
-        throw Exception((boost::format("Error opening file: %1%") % filename.c_str()).str());
-
-    // Build a count of messages in each topic
-    map<string, BagContent> content_by_topic;
-    ros::Time end_time;
-
-    View view;
-	view.addQuery(bag, Query());
-
-	foreach(MessageInstance m, view) {
-        string const& topic = m.getTopic();
-
-        map<string, BagContent>::iterator i = content_by_topic.find(topic);
-        if (i == content_by_topic.end())
-            content_by_topic.insert(std::pair<string, BagContent>(topic, BagContent(m.getDataType(), m.getMD5Sum(), m.getMessageDefinition())));
-        else {
-            BagContent& content = i->second;
-            content.count++;
-        }
-
-        end_time = m.getTime();
-    }
-
-    // Print information about bag file
-    printf("bag:        %s\n",    filename.c_str());
-    printf("version:    %d.%d\n", bag.getMajorVersion(), bag.getMinorVersion());
-    //printf("start_time: %llu\n",  (unsigned long long) player.getFirstDuration().toNSec());
-    //printf("end_time:   %llu\n",  (unsigned long long) (end_time + player.getFirstDuration()).toNSec());
-    printf("length:     %llu\n",  (unsigned long long) end_time.toNSec());
-
-    printf("topics:\n");
-    for (map<string, BagContent>::const_iterator i = content_by_topic.begin(); i != content_by_topic.end(); i++) {
-        string const&     topic   = i->first;
-        BagContent const& content = i->second;
-
-        printf("  - name:       %s\n", topic.c_str());
-        printf("    count:      %d\n", content.count);
-        printf("    datatype:   %s\n", content.datatype.c_str());
-        printf("    md5sum:     %s\n", content.md5sum.c_str());
-
-        if (options_.show_defs) {
-            string def = content.definition.c_str();
-            if (def.length() > 0) {
-                printf("    definition: |\n");
-
-                size_t oldind = 0;
-                size_t ind = def.find_first_of('\n', 0);
-                while (ind != def.npos) {
-                    printf("      %s\n", def.substr(oldind, ind - oldind).c_str());
-                    oldind = ind + 1;
-                    ind = def.find_first_of('\n', oldind);
-                }
-                ind = def.length();
-
-                printf("      %s\n", def.substr(oldind, ind - oldind).c_str());
-            }
-            else {
-                printf("    definition: NONE\n");
-            }
-        }
-
-    }
-    return 0;
 }
 
 }

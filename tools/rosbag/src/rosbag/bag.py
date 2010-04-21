@@ -298,7 +298,7 @@ class Bag(object):
         s += 'version:      %d.%d\n' % (self.version / 100, self.version % 100)
 
         if not self._topic_indexes:
-            return s
+            return s.rstrip()
         
         # Show start and end times
         start_stamp = min([index[ 0].time.to_sec() for index in self._topic_indexes.values()])
@@ -313,9 +313,9 @@ class Bag(object):
         dur_hrs  = int(dur_mins / 60)
         if dur_hrs > 0:
             dur_mins = dur_mins % 60
-            s += 'length:       %dhr %dmin %ds (%ds)\n' % (dur_hrs, dur_mins, dur_secs, duration)
+            s += 'length:       %dhr %d:%ds (%ds)\n' % (dur_hrs, dur_mins, dur_secs, duration)
         elif dur_mins > 0:
-            s += 'length:       %dmin %ds (%ds)\n' % (dur_mins, dur_secs, duration)
+            s += 'length:       %d:%ds (%ds)\n' % (dur_mins, dur_secs, duration)
         else:
             s += 'length:       %.1fs\n' % duration
 
@@ -378,6 +378,25 @@ class Bag(object):
             indent = (8 if i == 0 else 14)
 
             s += '%s%-*s [%s]\n' % (' ' * indent, max_datatype_len, datatype, md5sum)
+
+#            string def = content.definition.c_str();
+#            if (def.length() > 0) {
+#                printf("    definition: |\n");
+#
+#                size_t oldind = 0;
+#                size_t ind = def.find_first_of('\n', 0);
+#                while (ind != def.npos) {
+#                    printf("      %s\n", def.substr(oldind, ind - oldind).c_str());
+#                    oldind = ind + 1;
+#                    ind = def.find_first_of('\n', oldind);
+#                }
+#                ind = def.length();
+#
+#                printf("      %s\n", def.substr(oldind, ind - oldind).c_str());
+#            }
+#            else {
+#                printf("    definition: NONE\n");
+#            }
 
         return s.rstrip()
 

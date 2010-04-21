@@ -38,7 +38,6 @@ void printUsage() {
     fprintf(stderr, "Usage: play [options] BAG1 [BAG2]\n");
     fprintf(stderr, "Options:\n");
     fprintf(stderr, " -n\tdisable display of current log time\n");
-    fprintf(stderr, " -c\tcheck the contents of the bag without playing back\n");
     fprintf(stderr, " -a\tplayback all messages without waiting\n");
     fprintf(stderr, " -b hz\tpublish the bag time at frequence <hz>\n");
     fprintf(stderr, " -p\tstart in paused mode\n");
@@ -46,7 +45,6 @@ void printUsage() {
     fprintf(stderr, " -s sec\tsleep <sec> sleep duration after every advertise call (to allow subscribers to connect)\n");
     fprintf(stderr, " -t sec\tstart <sec> seconds into the files\n");
     fprintf(stderr, " -q sz\tUse an outgoing queue of size <sz> (defaults to 0)\n");
-    fprintf(stderr, " -T\tTry to play future version.\n");
     fprintf(stderr, " -h\tdisplay this help message\n");
 }
 
@@ -54,10 +52,8 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
     rosbag::PlayerOptions opts;
 
     int option_char;
-    while ((option_char = getopt(argc, argv, "ncdahpb:r:s:t:q:T")) != -1) {
+    while ((option_char = getopt(argc, argv, "nahpb:r:s:t:q:T")) != -1) {
         switch (option_char) {
-        case 'c': opts.check_bag    = true; break;
-        case 'd': opts.show_defs    = true; break;
         case 'n': opts.quiet        = true; break;
         case 'a': opts.at_once      = true; break;
         case 'p': opts.start_paused = true; break;
@@ -98,19 +94,14 @@ int main(int argc, char** argv) {
 
     rosbag::Player player(opts);
 
-    if (opts.check_bag) {
-    	return player.checkBag();
-    }
-    else {
-        ros::init(argc, argv, "play", ros::init_options::AnonymousName);
-        try {
-            player.publish();
-        }
-        catch (std::runtime_error& e) {
-            ROS_FATAL("%s", e.what());
-            return 1;
-        }
-    }
+	ros::init(argc, argv, "play", ros::init_options::AnonymousName);
+	try {
+		player.publish();
+	}
+	catch (std::runtime_error& e) {
+		ROS_FATAL("%s", e.what());
+		return 1;
+	}
     
     return 0;
 }

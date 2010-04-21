@@ -72,6 +72,11 @@ struct IndexEntry
     ros::Time time;            //! timestamp of the message
     uint64_t  chunk_pos;       //! absolute byte offset of the chunk record containing the message
     uint32_t  offset;          //! relative byte offset of the message record (either definition or data) in the chunk
+
+    bool operator<(IndexEntry const& b) const
+    {
+        return time < b.time;
+    }
 };
 
 struct IndexEntryCompare

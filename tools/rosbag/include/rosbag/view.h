@@ -73,7 +73,7 @@ public:
         friend class boost::iterator_core_access;
 
 		void populate();
-		void populateSeek(std::vector<IndexEntry>::const_iterator iter);
+		void populateSeek(std::multiset<IndexEntry>::const_iterator iter);
 
         bool equal(iterator const& other) const;
 

@@ -37,8 +37,9 @@
 
 #include "ros/time.h"
 
-#include <map>
 #include <vector>
+#include <map>
+#include <set>
 
 namespace rosbag {
 
@@ -83,13 +84,13 @@ typedef std::pair<Bag*, Query> BagQuery;
 
 struct MessageRange
 {
-	MessageRange(std::vector<IndexEntry>::const_iterator const& _begin,
-				 std::vector<IndexEntry>::const_iterator const& _end,
+	MessageRange(std::multiset<IndexEntry>::const_iterator const& _begin,
+				 std::multiset<IndexEntry>::const_iterator const& _end,
 				 TopicInfo const* _topic_info,
 				 BagQuery const* _bag_query);
 
-	std::vector<IndexEntry>::const_iterator begin;
-	std::vector<IndexEntry>::const_iterator end;
+	std::multiset<IndexEntry>::const_iterator begin;
+	std::multiset<IndexEntry>::const_iterator end;
 	TopicInfo const* topic_info;
 	BagQuery const* bag_query;           //!< pointer to vector of queries in View
 };
@@ -97,10 +98,10 @@ struct MessageRange
 //! The actual iterator data structure
 struct ViewIterHelper
 {
-	ViewIterHelper(std::vector<IndexEntry>::const_iterator _iter,
+	ViewIterHelper(std::multiset<IndexEntry>::const_iterator _iter,
 				   MessageRange const* _range);
 
-	std::vector<IndexEntry>::const_iterator iter;
+	std::multiset<IndexEntry>::const_iterator iter;
 	MessageRange const* range;  //!< pointer to vector of ranges in View
 };
 

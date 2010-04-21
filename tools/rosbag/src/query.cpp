@@ -35,6 +35,7 @@
 using std::map;
 using std::string;
 using std::vector;
+using std::multiset;
 
 namespace rosbag {
 
@@ -69,8 +70,8 @@ bool TopicQuery::evaluate(TopicInfo const* info) const {
 
 // MessageRange
 
-MessageRange::MessageRange(std::vector<IndexEntry>::const_iterator const& _begin,
-			 std::vector<IndexEntry>::const_iterator const& _end,
+MessageRange::MessageRange(std::multiset<IndexEntry>::const_iterator const& _begin,
+			 std::multiset<IndexEntry>::const_iterator const& _end,
 			 TopicInfo const* _topic_info,
 			 BagQuery const* _bag_query)
 	: begin(_begin), end(_end), topic_info(_topic_info), bag_query(_bag_query)
@@ -79,7 +80,7 @@ MessageRange::MessageRange(std::vector<IndexEntry>::const_iterator const& _begin
 
 // ViewIterHelper
 
-ViewIterHelper::ViewIterHelper(std::vector<IndexEntry>::const_iterator _iter, MessageRange const* _range)
+ViewIterHelper::ViewIterHelper(std::multiset<IndexEntry>::const_iterator _iter, MessageRange const* _range)
 	: iter(_iter), range(_range)
 {
 }

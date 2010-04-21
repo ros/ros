@@ -43,6 +43,7 @@ using std::map;
 using std::priority_queue;
 using std::string;
 using std::vector;
+using std::multiset;
 using boost::shared_ptr;
 using ros::M_string;
 using ros::Time;
@@ -336,8 +337,8 @@ bool Bag::startReadingVersion102() {
         readTopicIndexRecord();
 
     // Read the message definition records (which are the first entry in the topic indexes)
-    for (map<string, vector<IndexEntry> >::const_iterator i = topic_indexes_.begin(); i != topic_indexes_.end(); i++) {
-        vector<IndexEntry> const& topic_index = i->second;
+    for (map<string, multiset<IndexEntry> >::const_iterator i = topic_indexes_.begin(); i != topic_indexes_.end(); i++) {
+        multiset<IndexEntry> const& topic_index = i->second;
         IndexEntry const&         first_entry = *topic_index.begin();
 
         ROS_DEBUG("Reading message definition for %s at %llu", i->first.c_str(), (unsigned long long) first_entry.chunk_pos);
@@ -449,10 +450,11 @@ void Bag::startWritingChunk(Time time) {
 void Bag::stopWritingChunk() {
     // Add this chunk to the index
     chunk_infos_.push_back(curr_chunk_info_);
-    for (map<string, vector<IndexEntry> >::const_iterator i = curr_chunk_topic_indexes_.begin(); i != curr_chunk_topic_indexes_.end(); i++) {
+    for (map<string, multiset<IndexEntry> >::const_iterator i = curr_chunk_topic_indexes_.begin(); i != curr_chunk_topic_indexes_.end(); i++) {
         foreach(IndexEntry const& e, i->second) {
             ROS_DEBUG("adding to topic index: %s -> %llu:%d", i->first.c_str(), (unsigned long long) e.chunk_pos, e.offset);
-            topic_indexes_[i->first].push_back(e);
+            std::multiset<IndexEntry>& index = topic_indexes_[i->first];
+            index.insert(index.end(), e);
         }
     }
 
@@ -520,9 +522,9 @@ bool Bag::readChunkHeader(ChunkHeader& chunk_header) {
 void Bag::writeTopicIndexRecords() {
     boost::mutex::scoped_lock lock(record_mutex_);
 
-    for (map<string, vector<IndexEntry> >::const_iterator i = curr_chunk_topic_indexes_.begin(); i != curr_chunk_topic_indexes_.end(); i++) {
+    for (map<string, multiset<IndexEntry> >::const_iterator i = curr_chunk_topic_indexes_.begin(); i != curr_chunk_topic_indexes_.end(); i++) {
         string const&             topic       = i->first;
-        vector<IndexEntry> const& topic_index = i->second;
+        multiset<IndexEntry> const& topic_index = i->second;
 
         // Write the index record header
         M_string header;
@@ -585,7 +587,7 @@ bool Bag::readTopicIndexRecord() {
 //! Store the position of the message in the chunk_pos field
 bool Bag::readTopicIndexDataVersion0(uint32_t count, string const& topic) {
     // Read the index entry records
-    vector<IndexEntry>& topic_index = topic_indexes_[topic];
+    multiset<IndexEntry>& topic_index = topic_indexes_[topic];
     for (uint32_t i = 0; i < count; i++) {
         IndexEntry index_entry;
         uint32_t sec;
@@ -598,7 +600,7 @@ bool Bag::readTopicIndexDataVersion0(uint32_t count, string const& topic) {
 
         ROS_DEBUG("  - %d.%d: %llu", sec, nsec, (unsigned long long) index_entry.chunk_pos);
 
-        topic_index.push_back(index_entry);
+        topic_index.insert(topic_index.end(), index_entry);
     }
 
     return true;
@@ -606,7 +608,7 @@ bool Bag::readTopicIndexDataVersion0(uint32_t count, string const& topic) {
 
 bool Bag::readTopicIndexDataVersion1(uint32_t count, string const& topic, uint64_t chunk_pos) {
     // Read the index entry records
-    vector<IndexEntry>& topic_index = topic_indexes_[topic];
+    multiset<IndexEntry>& topic_index = topic_indexes_[topic];
     for (uint32_t i = 0; i < count; i++) {
         IndexEntry index_entry;
         index_entry.chunk_pos = chunk_pos;
@@ -619,7 +621,7 @@ bool Bag::readTopicIndexDataVersion1(uint32_t count, string const& topic, uint64
 
         ROS_DEBUG("  - %d.%d: %llu+%d", sec, nsec, (unsigned long long) index_entry.chunk_pos, index_entry.offset);
 
-        topic_index.push_back(index_entry);
+        topic_index.insert(topic_index.end(), index_entry);
     }
 
     return true;
@@ -1076,9 +1078,9 @@ void Bag::dump() {
         std::cout << "  chunk: " << (*i).topic_counts.size() << " topics" << std::endl;
 
     std::cout << "topic_indexes:" << std::endl;
-    for (map<string, vector<IndexEntry> >::const_iterator i = topic_indexes_.begin(); i != topic_indexes_.end(); i++) {
+    for (map<string, multiset<IndexEntry> >::const_iterator i = topic_indexes_.begin(); i != topic_indexes_.end(); i++) {
         std::cout << "  topic: " << i->first << std::endl;
-        for (vector<IndexEntry>::const_iterator j = i->second.begin(); j != i->second.end(); j++) {
+        for (multiset<IndexEntry>::const_iterator j = i->second.begin(); j != i->second.end(); j++) {
             std::cout << "    - " << j->chunk_pos << ":" << j->offset << std::endl;
         }
     }

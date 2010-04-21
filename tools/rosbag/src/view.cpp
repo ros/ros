@@ -30,12 +30,14 @@
 #include "rosbag/message_instance.h"
 
 #include <boost/foreach.hpp>
+#include <set>
 
 #define foreach BOOST_FOREACH
 
 using std::map;
 using std::string;
 using std::vector;
+using std::multiset;
 
 namespace rosbag {
 
@@ -56,10 +58,10 @@ void View::iterator::populate() {
 	view_revision_ = view_->view_revision_;
 }
 
-void View::iterator::populateSeek(vector<IndexEntry>::const_iterator iter) {
+void View::iterator::populateSeek(multiset<IndexEntry>::const_iterator iter) {
 	iters_.clear();
 	foreach(MessageRange const* range, view_->ranges_) {
-		vector<IndexEntry>::const_iterator start = std::lower_bound(range->begin,
+		multiset<IndexEntry>::const_iterator start = std::lower_bound(range->begin,
 				range->end, iter->time, IndexEntryCompare());
 		if (start != range->end)
 			iters_.push_back(ViewIterHelper(start, range));
@@ -130,7 +132,7 @@ void View::addQuery(Bag& bag, Query const& query) {
 		if (!query.evaluate(i->second))
 			continue;
 
-		map<string, vector<IndexEntry> >::iterator j = bag.topic_indexes_.find(i->second->topic);
+		map<string, multiset<IndexEntry> >::iterator j = bag.topic_indexes_.find(i->second->topic);
 		if (j == bag.topic_indexes_.end())
 			continue;
 

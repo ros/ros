@@ -253,11 +253,11 @@ private:
     bool      chunk_open_;
     ChunkInfo curr_chunk_info_;
     uint64_t  curr_chunk_data_pos_;
-    std::map<std::string, std::vector<IndexEntry> > curr_chunk_topic_indexes_;
+    std::map<std::string, std::multiset<IndexEntry> > curr_chunk_topic_indexes_;
 
     std::map<std::string, TopicInfo*>               topic_infos_;
     std::vector<ChunkInfo>                          chunk_infos_;
-    std::map<std::string, std::vector<IndexEntry> > topic_indexes_;
+    std::map<std::string, std::multiset<IndexEntry> > topic_indexes_;
 
     Buffer   header_buffer_;        //!< reusable buffer in which to assemble the record header before writing to file
     Buffer   record_buffer_;        //!< reusable buffer in which to assemble the record data before writing to file
@@ -356,7 +356,7 @@ void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, 
             topic_infos_[topic] = topic_info;
 
             // Initialize the topic index
-            topic_indexes_[topic] = std::vector<IndexEntry>();
+            topic_indexes_[topic] = std::multiset<IndexEntry>();
             
             // Flag that we need to write a message definition
             needs_def_written = true;
@@ -399,7 +399,8 @@ void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, 
         index_entry.time      = time;
         index_entry.chunk_pos = curr_chunk_info_.pos;
         index_entry.offset    = getChunkOffset();
-        curr_chunk_topic_indexes_[topic].push_back(index_entry);
+        std::multiset<IndexEntry>& index = curr_chunk_topic_indexes_[topic];
+        index.insert(index.end(), index_entry);
 
         // Increment the topic count
         curr_chunk_info_.topic_counts[topic]++;

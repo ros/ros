@@ -25,3 +25,5 @@ INSTALL(TARGETS record play
 
 rosbuild_add_gtest(utest test/utest.cpp)
 target_link_libraries(utest rosbag)
+
+rosbuild_add_pyunit(test/test_bag.py)

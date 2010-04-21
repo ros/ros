@@ -16,6 +16,28 @@ from std_msgs.msg import ColorRGBA
 class TestRosbag(unittest.TestCase):
     def setUp(self):
         pass
+    
+    def test_invalid_bag_arguments_fails(self):
+        def fn1(): rosbag.Bag('')
+        def fn2(): rosbag.Bag(None)
+        def fn3(): rosbag.Bag('test.bag', 'z')        
+        def fn4(): rosbag.Bag('test.bag', 'r', compression='foobar')
+        def fn5(): rosbag.Bag('test.bag', 'r', chunk_threshold=-1000)
+        for fn in [fn1, fn2, fn3, fn4, fn5]:
+            self.failUnlessRaises(ValueError, fn)
+
+    def test_io_on_close_fails(self):
+        def fn():
+            b = rosbag.Bag('test.bag', 'w')
+            b.close()
+            size = b.size()
+        self.failUnlessRaises(ValueError, fn)
+        
+    def test_write_invalid_message_fails(self):
+        def fn():
+            b = rosbag.Bag('test.bag', 'w')
+            b.write(None, None, None)
+        self.failUnlessRaises(ValueError, fn)
 
     def test_write_non_chronological_fails(self):
         def fn():
@@ -80,7 +102,7 @@ def main():
     sys.exit()
 
 if __name__ == '__main__':
-    main()
+    #main()
 
     import rostest
     rostest.run(PKG, 'TestRosbag', TestRosbag, sys.argv)

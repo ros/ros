@@ -88,27 +88,16 @@ class Bag(object):
         @param chunk_threshold: size in bytes of chunks
         @type  chunk_threshold: int
         @raise ValueError: if any argument is invalid
-        @raise ROSBagException: if error in opening file
-        @raise ROSBagFormatException: if bag is 
+        @raise ROSBagException: if an error occurs opening file
+        @raise ROSBagFormatException: if bag format is corrupted
         """
-        if not filename:
-            raise ValueError('filename is invalid')
-        if mode not in ['r', 'w', 'a']:
-            raise ValueError('mode is invalid')
-        allowed_compressions = [Compression.NONE, Compression.BZ2] #, Compression.ZLIB]
-        if compression not in allowed_compressions:
-            raise ValueError('compression must be one of: %s' % ', '.join(allowed_compressions))
-        if chunk_threshold < 0:
-            raise ValueError('chunk_threshold must be greater than or equal to zero')
-
-        self._filename        = None
-        self._mode            = None                
-        self._version         = None
-        self._compression     = compression
-        self._chunk_threshold = chunk_threshold
-
         self._file            = None
+        self._version         = None
+        self._compression     = Compression.NONE
+        self._chunk_threshold = 0
+
         self._reader          = None
+        
         self._topic_infos     = {}    # topic -> TopicInfo
         self._file_header_pos = None
 
@@ -130,6 +119,9 @@ class Bag(object):
         self._curr_compression = Compression.NONE
         self._output_file      = self._file
         
+        self.compression     = compression
+        self.chunk_threshold = chunk_threshold
+        
         self._open(filename, mode)
     
     @property
@@ -150,6 +142,9 @@ class Bag(object):
     @property
     def size(self):
         """Get the size in bytes."""
+        if not self._file:
+            raise ValueError('I/O operation on closed bag')
+        
         pos = self._file.tell()
         self._file.seek(0, os.SEEK_END)
         size = self._file.tell()
@@ -184,6 +179,8 @@ class Bag(object):
         
         self.flush()
         self._chunk_threshold = chunk_threshold
+        
+    chunk_threshold = property(_get_chunk_threshold, _set_chunk_threshold)
 
     def write(self, topic, msg, t):
         """
@@ -200,6 +197,8 @@ class Bag(object):
             raise ValueError('topic is invalid')
         if not msg:
             raise ValueError('msg is invalid')
+        if t is None:
+            raise ValueError('t is invalid')
 
         # Seek to end (in case previous operation was a read)
         self._file.seek(0, os.SEEK_END)
@@ -249,29 +248,28 @@ class Bag(object):
             self._stop_writing_chunk()
 
     def getMessages(self):
-        """
-        Return a list of all messages in the bag file.
-        """
+        """Return a generator of (topic, message, timestamp) tuples for each message in the bag file."""
         self.flush()
         
         return self._reader.get_messages()
     
     def flush(self):
-        """
-        Write the open chunk to disk so subsequent reads will read all messages.
-        """
+        """Write the open chunk to disk so subsequent reads will read all messages."""
+        if not self._file:
+            raise ValueError('I/O operation on closed bag')
+
         if self._chunk_open:
             self._stop_writing_chunk()
 
     def close(self):
         """
-        Close the bag file.
+        Close the bag file.  Closing an already closed bag does nothing.
         """
         if self._file:
             if self._mode in 'wa':
                 self._stop_writing()
             
-            self._file.close()
+            self._close_file()
 
     def dump(self):
         """
@@ -305,11 +303,14 @@ class Bag(object):
     ### Implementation ###
 
     def _open(self, filename, mode):
+        if not filename:
+            raise ValueError('filename is invalid')
+
         if   mode == 'r': self._open_read(filename)
         elif mode == 'w': self._open_write(filename)
         elif mode == 'a': self._open_append(filename)
         else:
-            raise ROSBagException('unknown mode: %s' % mode)
+            raise ValueError('mode "%s" is invalid' % mode)
 
     def _open_read(self, filename):
         self._file     = open(filename, 'rb')
@@ -320,29 +321,36 @@ class Bag(object):
             self._version = self._read_version()
         except:
             self._version = None
-            self._file.close()
+            self._close_file()
             raise
 
-        self._create_reader()
-        self._reader.start_reading()
+        try:
+            self._create_reader()
+            self._reader.start_reading()
+        except:
+            self._close_file()
+            raise
 
     def _open_write(self, filename):
         self._file     = open(filename, 'wb')
         self._filename = filename
         self._mode     = 'w'
 
-        self._start_writing()
+        try:
+            self._start_writing()
+        except:
+            self._close_file()
+            raise
 
     def _open_append(self, filename):
-        file_exists = True
         try:
-            f = open(filename, 'r')
-            f.close()
-        except:
-            file_exists = False
-        if file_exists:
+            # Test if the file already exists.
+            open(filename, 'r').close()
+
+            # File exists, Open in read with update mode.
             self._file = open(filename, 'r+b')
-        else:
+        except:
+            # File doesn't exist. Open in write mode.
             self._file = open(filename, 'w+b')
         
         self._filename = filename        
@@ -352,29 +360,23 @@ class Bag(object):
             self._version = self._read_version()
         except:
             self._version = None
-            self._file.close()
+            self._close_file()
             raise
 
         if self._version != 200:
             self._file.close()
             raise ROSBagException('bag version %d is unsupported for appending' % self._version)
 
-        self._file_header_pos = self._file.tell()
-
-        self._create_reader()
-        self._reader.start_reading()
-
-        # Truncate the file to chop off the index
-        self._file.truncate(self._index_data_pos)
-        self._reader.index_data_pos = 0
-    
-        # Rewrite the file header, clearing the index position (so we know if the index is invalid)
-        self._file.seek(self._file_header_pos);
-        self._write_file_header_record(0, 0, 0)
-
-        # Seek to the end of the file
-        self._file.seek(0, os.SEEK_END)
+        try:
+            self._start_appending()
+        except:
+            self._close_file()
+            raise
         
+    def _close_file(self):
+        self._file.close()
+        self._file = None
+
     def _create_reader(self):
         """
         @raise ROSBagException: if the bag version is unsupported
@@ -382,8 +384,7 @@ class Bag(object):
         if self._version == 200:
             self._reader = _BagReader200(self)
         elif self._version == 102:
-            # Get the op code of the first record.  If it's FILE_HEADER, then we have
-            # an indexed 1.2 bag.
+            # Get the op code of the first record.  If it's FILE_HEADER, then we have an indexed 1.2 bag.
             first_record_pos = self._file.tell()
             header = _read_record_header(self._file)
             op = _read_uint8_field(header, 'op')
@@ -437,6 +438,23 @@ class Bag(object):
         # Re-write the file header
         self._file.seek(self._file_header_pos)
         self._write_file_header_record(self._index_data_pos, len(self._topic_infos), len(self._chunk_infos))
+
+    def _start_appending(self):
+        self._file_header_pos = self._file.tell()
+
+        self._create_reader()
+        self._reader.start_reading()
+
+        # Truncate the file to chop off the index
+        self._file.truncate(self._index_data_pos)
+        self._reader.index_data_pos = 0
+    
+        # Rewrite the file header, clearing the index position (so we know if the index is invalid)
+        self._file.seek(self._file_header_pos);
+        self._write_file_header_record(0, 0, 0)
+
+        # Seek to the end of the file
+        self._file.seek(0, os.SEEK_END)
 
     # @todo: update with chunk logic
     def _write_raw(self, topic, raw_msg_data):

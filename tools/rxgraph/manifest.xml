@@ -1,7 +1,7 @@
 <package>
   <description brief="rxgraph">
 
-     rxgraph
+     rxgraph is a command-line tool for visualizing a ROS computation graph. The rxgraph is a new package in ROS 1.1 that provides an updated version of the rxgraph tool that was originally distributed in the rosgraph package.
 
   </description>
   <author>Ken Conley</author>
@@ -12,6 +12,9 @@
   <depend package="rosgraph"/>
   <depend package="xdot"/>
   <depend package="roslib"/>
+
+  <depend package="rostopic"/>  
+  <depend package="rosnode"/>  
 
 </package>
 

@@ -78,7 +78,7 @@ class RxGraphViewerFrame(wx.Frame):
     self.topic_boxes = False
     
     self._needs_refresh = False
-
+    self._new_info_text = None
 
     # setup UI
     vbox = wx.BoxSizer(wx.VERTICAL)
@@ -106,16 +106,16 @@ class RxGraphViewerFrame(wx.Frame):
     toolbar.AddControl(wx.StaticText(toolbar,-1,"Path: "))
 
     self._ns_combo = wx.ComboBox(toolbar, -1, style=wx.CB_DROPDOWN)
-    self._ns_combo .Bind(wx.EVT_COMBOBOX, self.set_path)
+    self._ns_combo .Bind(wx.EVT_COMBOBOX, self._ns_combo_event)
     self._ns_combo.Append('/')
     self._ns_combo.SetValue('/')
     self._namespaces = ['/']
 
     # display options
     quiet_check = wx.CheckBox(toolbar, -1, label="Quiet")
-    quiet_check.Bind(wx.EVT_CHECKBOX, self.set_quiet_check)
+    quiet_check.Bind(wx.EVT_CHECKBOX, self._quiet_check_event)
     topic_check = wx.CheckBox(toolbar, -1, label="All topics")
-    topic_check.Bind(wx.EVT_CHECKBOX, self.set_topic_boxes)
+    topic_check.Bind(wx.EVT_CHECKBOX, self._topic_check_event)
     
     toolbar.AddControl(self._ns_combo)
 
@@ -139,19 +139,18 @@ class RxGraphViewerFrame(wx.Frame):
     gv_vbox.Add(toolbar, 0, wx.EXPAND)
     gv_vbox.Add(self._widget, 1, wx.EXPAND)
 
-
     # Create userdata widget
     borders = wx.LEFT | wx.RIGHT | wx.TOP
     border = 4
-    self.ud_win = wx.ScrolledWindow(self.content_splitter, -1)
-    self.ud_gs = wx.BoxSizer(wx.VERTICAL)
-    self.ud_gs.Add(wx.StaticText(self.ud_win,-1,"Info:"),0, borders, border)
-    self.ud_txt = wx.TextCtrl(self.ud_win,-1,style=wx.TE_MULTILINE | wx.TE_READONLY)
-    self.ud_gs.Add(self.ud_txt,1,wx.EXPAND | borders, border)
-    self.ud_win.SetSizer(self.ud_gs)
+    self.info_win = wx.ScrolledWindow(self.content_splitter, -1)
+    self.info_sizer = wx.BoxSizer(wx.VERTICAL)
+    self.info_sizer.Add(wx.StaticText(self.info_win,-1,"Info:"),0, borders, border)
+    self.info_txt = wx.TextCtrl(self.info_win,-1,style=wx.TE_MULTILINE | wx.TE_READONLY)
+    self.info_sizer.Add(self.info_txt,1,wx.EXPAND | borders, border)
+    self.info_win.SetSizer(self.info_sizer)
 
     # Set content splitter
-    self.content_splitter.SplitVertically(viewer, self.ud_win, 512)
+    self.content_splitter.SplitVertically(viewer, self.info_win, 512)
 
     vbox.Add(self.content_splitter, 1, wx.EXPAND | wx.ALL)
     self.SetSizer(vbox)
@@ -159,29 +158,29 @@ class RxGraphViewerFrame(wx.Frame):
 
     self.Bind(wx.EVT_IDLE,self.OnIdle)
 
-    # user callback for select
-    self._widget.register_select_callback(self.select_cb)
-
   def register_select_cb(self, callback):
     self._widget.register_select_callback(callback)
 
   def OnIdle(self, event):
+    if self._new_info_text is not None:
+      self.info_txt.SetValue(self._new_info_text)
+      self._new_info_text = None
     if self._needs_refresh:
       self.Refresh()
       self._needs_refresh = False
 
-  def select_cb(self, *args):
-    print args[0].item.url
-
-  def set_quiet_check(self, event):
+  def _quiet_check_event(self, event):
     self.quiet = event.Checked()
 
-  def set_topic_boxes(self, event):
+  def _topic_check_event(self, event):
     self.topic_boxes = event.Checked()
     
-  def set_path(self, event):
+  def _ns_combo_event(self, event):
     self.ns_filter = self._ns_combo.GetValue()
     self._needs_zoom = True
+    
+  def set_info_text(self, text):
+    self._new_info_text = text
 
   def update_namespaces(self, namespaces):
     # unfortunately this routine will not alphanumerically sort

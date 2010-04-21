@@ -110,7 +110,10 @@ def generate_namespaces(g, graph_mode, quiet=False):
             nt_nodes = [n for n in nt_nodes if not n in QUIET_NAMES]
         if nn_nodes or nt_nodes:
             namespaces = [roslib.names.namespace(n) for n in nn_nodes]
-            namespaces.extend([roslib.names.namespace(n) for n in nt_nodes])
+            # an annoyance with the rosgraph library is that it
+            # prepends a space to topic names as they have to have
+            # different graph node namees from nodes. we have to strip here
+            namespaces.extend([roslib.names.namespace(n[1:]) for n in nt_nodes])
 
     return list(set(namespaces))
 
@@ -151,6 +154,10 @@ def generate_dotcode(g, ns_filter, graph_mode, orientation, quiet=False):
         if quiet:
             nn_nodes = [n for n in nn_nodes if not n in QUIET_NAMES]
             nt_nodes = [n for n in nt_nodes if not n in QUIET_NAMES]
+        if ns_filter and ns_filter != '/':
+            nn_nodes = [n for n in nn_nodes if n.startswith(ns_filter) or n == name_filter]
+            nt_nodes = [n for n in nt_nodes if n[1:].startswith(ns_filter) or n[1:] == name_filter]
+            
         if nn_nodes or nt_nodes:
             nodes_str = '\n'.join([_generate_node_dotcode(n, g, quiet) for n in nn_nodes])
             nodes_str += '\n'.join(['  %s [shape=box,label="%s",URL="topic:%s"];'%(

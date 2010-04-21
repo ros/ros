@@ -54,6 +54,28 @@ import roslib.roslogging
 # have to import later than others due to xdot calling wxversion
 import wx
 
+import roslib.scriptutil
+import rostopic
+import rosnode
+
+def get_info_text(selection_url):
+    if selection_url is None:
+        return ''
+    if selection_url.startswith('node:'):
+        try:
+            node_name = selection_url[5:]
+            master = roslib.scriptutil.get_master()
+            node_api = rosnode.get_api_uri(master, node_name)
+            return rosnode.get_node_info_description(node_name) + rosnode.get_node_connection_info_description(node_api)
+        except rosnode.ROSNodeException, e:
+            return "ERROR: %s"%str(e)
+
+    elif selection_url.startswith('topic:'):
+        try:
+            return rostopic.get_info_text(selection_url[6:])
+        except rostopic.ROSTopicException, e:
+            return "ERROR: %s"%str(e)
+    
 class DotUpdate(threading.Thread):
     """Thread to control update of dot file"""
 
@@ -62,7 +84,20 @@ class DotUpdate(threading.Thread):
         self.viewer = viewer
         self.graph = graph
         self.output_file = None
-    
+        self.selection_url = None
+        self.selection_update = False
+
+    def select_callback(self, target, event):
+        try:
+            url = target.url
+            if url:
+                self.selection_url = url
+                self.selection_update = True
+        except:
+            import traceback
+            traceback.print_exc()
+            pass
+
     def run(self):
         viewer = self.viewer
         current_ns_filter = viewer.ns_filter
@@ -72,12 +107,16 @@ class DotUpdate(threading.Thread):
         quiet = False
 
         orientation = rxgraph.dotcode.ORIENTATIONS[0]
+        info_text = ''
 
         g.set_master_stale(5.0)
         g.set_node_stale(5.0)
 
         GUPDATE_INTERVAL = 0.5 
+        INFO_UPDATE_INTERVAL = 10.
+        
         last_gupdate = time.time() - GUPDATE_INTERVAL
+        last_info_update = time.time() - GUPDATE_INTERVAL   
         try:
             while not is_shutdown():
 
@@ -88,12 +127,20 @@ class DotUpdate(threading.Thread):
                 if now - last_gupdate >= GUPDATE_INTERVAL:
                     changed = g.update()
                     last_gupdate = now
+
+                if now - last_info_update >= INFO_UPDATE_INTERVAL or self.selection_update:
+                    last_info_update = now
+                    if self.selection_url is not None:
+                        info_text = get_info_text(self.selection_url)
                     
                 graph_mode = NODE_TOPIC_GRAPH if viewer.topic_boxes else NODE_NODE_GRAPH
 
                 changed |= viewer.ns_filter != current_ns_filter
                 changed |= quiet != viewer.quiet
                 changed |= graph_mode != last_graph_mode
+                if self.selection_update:
+                    self.selection_update = False
+                    changed = True
                 
                 quiet = viewer.quiet
                 last_graph_mode = graph_mode
@@ -107,6 +154,7 @@ class DotUpdate(threading.Thread):
                     viewer.update_namespaces(namespaces)
                     
                     viewer.set_dotcode(dotcode)
+                    viewer.set_info_text(info_text)
 
                     # store dotcode if requested
                     if output_file:
@@ -172,7 +220,9 @@ def rxgraph_main():
         frame = RxGraphViewerFrame()
         frame.set_dotcode(rxgraph.dotcode.INIT_DOTCODE)
 
-        DotUpdate(graph, frame, output_file=options.output_file).start()
+        updater = DotUpdate(graph, frame, output_file=options.output_file)
+        frame.register_select_cb(updater.select_callback)
+        updater.start()
         
         frame.Show()
         app.MainLoop()

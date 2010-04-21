@@ -837,7 +837,7 @@ class _BagReader(object):
         if topics is None and topic_filter is None:
             return self.bag._topic_indexes.values()
 
-        if topics is not None:
+        if topics is None:
             topics = self.bag._topic_indexes.keys()
     
         if topic_filter is not None:

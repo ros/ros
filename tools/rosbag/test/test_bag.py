@@ -99,10 +99,15 @@ def main():
         b.write('/ints', msg, t)
     b.close()
     
+    start_time = roslib.rostime.Time.from_sec(0)
+    end_time = roslib.rostime.Time.from_sec(8)
+    for (topic, msg, t) in rosbag.Bag('timing.bag').getMessages(topics=['/intsa'], start_time=start_time, end_time=end_time):
+        print topic, msg, t
+    
     sys.exit()
 
 if __name__ == '__main__':
-    #main()
+    main()
 
     import rostest
     rostest.run(PKG, 'TestRosbag', TestRosbag, sys.argv)

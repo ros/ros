@@ -274,13 +274,15 @@ class LocalProcess(Process):
                 _logger.error("OSError(%d, %s)", errno, msg)
                 if errno == 8: #Exec format error
                     raise FatalProcessLaunch("Unable to launch [%s]. \nIf it is a script, you may be missing a '#!' declaration at the top."%self.name)
-                elif errno ==2: #no such file or directory
+                elif errno == 2: #no such file or directory
                     raise FatalProcessLaunch("""Roslaunch got a '%s' error while attempting to run:
 
 %s
 
 Please make sure that all the executables in this command exist and have
 executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '.join(self.args)))
+                else:
+                    raise FatalProcessLaunch("unable to launch [%s]: %s"%(' '.join(self.args), msg))
                 
             self.started = True
             if self.popen.poll() is None:

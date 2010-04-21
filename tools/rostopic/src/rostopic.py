@@ -1296,12 +1296,16 @@ def rostopicmain(argv=None):
             _fullusage()
     except socket.error:
         print >> sys.stderr, "Network communication failed. Most likely failed to communicate with master."
+        sys.exit(1)
     except rosrecord.ROSRecordException, e:
         print >> sys.stderr, "ERROR: unable to use bag file: "+str(e)
+        sys.exit(1)
     except roslib.exceptions.ROSLibException, e:
         # mainly for invalid master URI
         print >> sys.stderr, "ERROR: "+str(e)
+        sys.exit(1)
     except ROSTopicException, e:
         print >> sys.stderr, "ERROR: "+str(e)
+        sys.exit(1)
     except KeyboardInterrupt: pass
     except rospy.ROSInterruptException: pass

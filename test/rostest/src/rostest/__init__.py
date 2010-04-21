@@ -250,5 +250,5 @@ To install coverage, run 'easy_install coverage'"""
 #502: backwards compatibility for unbuilt rostest packages
 def rostestmain():
     #NOTE: this is importing from rostest.rostest
-    from rostest import rostestmain as _main
+    from rostest.rostest_main import rostestmain as _main
     _main()

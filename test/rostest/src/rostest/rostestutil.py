@@ -40,10 +40,22 @@ rostest helper routines.
 
 import os
 import cStringIO
+import logging
 
 import roslib.rosenv 
 
-import xmlrunner
+import rostest.xmlrunner
+
+def printlog(msg, *args):
+    if args:
+        msg = msg%args
+    logging.getLogger('rostest').info(msg)
+    print "[ROSTEST]"+msg
+def printlogerr(msg, *args):
+    if args:
+        msg = msg%args
+    logging.getLogger('rostest').error(msg)
+    print >> sys.stderr, "[ROSTEST]"+msg
 
 _errors = None
 def getErrors():
@@ -157,7 +169,7 @@ def createXMLRunner(test_pkg, test_name, results_file=None, is_rostest=False):
     
     print "[ROSTEST] Outputting test results to %s"%results_file
     outstream = open(results_file, 'w')
-    return xmlrunner.XMLTestRunner(stream=outstream)
+    return rostest.xmlrunner.XMLTestRunner(stream=outstream)
     
 def xmlResultsFile(test_pkg, test_name, is_rostest=False):
     """

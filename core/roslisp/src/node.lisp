@@ -63,12 +63,13 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
       (declare (ignore success))
       (setq name (format nil "~a-~a-~a" name ms s))))
 
-  (setq *ros-log-location* (get-ros-log-location name))
-  (ensure-directories-exist *ros-log-location* :verbose nil)
-  (setq *ros-log-stream* (open *ros-log-location* :direction :output :if-exists :overwrite 
-                               :if-does-not-exist :create))
-    
   (let ((params (handle-command-line-arguments name cmd-line-args)))
+
+    (setq *ros-log-location* (get-ros-log-location name))
+    (ensure-directories-exist *ros-log-location* :verbose nil)
+    (setq *ros-log-stream* (open *ros-log-location* :direction :output :if-exists :overwrite 
+                                 :if-does-not-exist :create))
+    
 
     ;; Deal with the master uri 
     (unless master-supplied      

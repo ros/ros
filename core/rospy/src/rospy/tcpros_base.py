@@ -34,6 +34,8 @@
 
 """Internal use: common TCPROS libraries"""
 
+from __future__ import with_statement
+
 import cStringIO
 import select
 import socket

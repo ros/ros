@@ -45,7 +45,8 @@ class RoslibScriptutilTest(unittest.TestCase):
         try:
             from roslib.scriptutil import myargv
             args = myargv()
-            self.assertEquals(args, sys.argv)
+            sysargv = [a for a in sys.argv if not a.startswith('__log:=')]
+            self.assertEquals(args, sysargv)
             self.assertEquals(['foo', 'bar', 'baz'], myargv(['foo','bar', 'baz']))
             self.assertEquals(['-foo', 'bar', '-baz'], myargv(['-foo','bar', '-baz']))
             

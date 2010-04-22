@@ -38,6 +38,7 @@ import roslib; roslib.load_manifest('test_roslaunch')
 import os, sys, unittest
 
 import rostest
+import roslaunch.loader 
 import roslaunch.xmlloader 
 
 ## Fake RosLaunch object
@@ -174,7 +175,7 @@ class TestXmlLoader(unittest.TestCase):
                 self.fail("xmlloader did not throw an xmlparseexception for [%s]"%filename)
             except roslaunch.xmlloader.XmlParseException, e:
                 pass
-            except roslaunch.xmlloader.XmlLoadException, e:
+            except roslaunch.loader.LoadException, e:
                 pass
 
     def test_params(self):
@@ -289,7 +290,7 @@ class TestXmlLoader(unittest.TestCase):
                 self.assert_(os.path.exists(filename))
                 loader.load(filename, RosLaunchMock())
                 self.fail("xmlloader did not throw an xmlloadexception for [%s]"%filename)
-            except roslaunch.xmlloader.XmlLoadException, e:
+            except roslaunch.loader.LoadException, e:
                 pass
         
     def test_node_valid(self):

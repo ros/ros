@@ -43,7 +43,8 @@ import sys
 
 from roslib.names import make_global_ns, ns_join, PRIV_NAME
 
-from roslaunch.core import Param, PHASE_SETUP, Master, RosbinExecutable, Node, Test, Machine
+from roslaunch.core import Param, Master, RosbinExecutable, Node, Test, Machine, \
+    RLException, PHASE_SETUP
 
 #lazy-import global for yaml
 yaml = None
@@ -52,6 +53,10 @@ yaml = None
 _master_auto = {
     'no': Master.AUTO_NO, 'start': Master.AUTO_START, 'restart': Master.AUTO_RESTART,
 }
+
+class LoadException(RLException):
+    """Error loading data as specified (e.g. cannot find included files, etc...)"""
+    pass
 
 #TODO: lists, maps(?)
 def convert_value(value, type_):
@@ -99,13 +104,29 @@ def convert_value(value, type_):
     else:
         raise ValueError("Unknown type '%s'"%type_)        
 
+def process_include_args(context):
+    """
+    Processes arg declarations in context and makes sure that they are properly declared for passing into an included file. Also will correctly setup the context for passing to the included file.
+    """
+
+    # make sure all arguments have values
+    arg_dict = context.resolve_dict.get('arg', {})
+    for arg in context.arg_names:
+        if not arg in arg_dict:
+            raise LoadException("include args must have declared values")
+    # clear arg declarations so we don't error on re-declaration
+    context.arg_names = []
+    
+    pass
+
 class LoaderContext(object):
     """
     Container for storing current loader context (e.g. namespace,
     local parameter state, remapping state).
     """
     
-    def __init__(self, ns, filename, parent=None, params=None, env_args=None, resolve_dict={}):
+    def __init__(self, ns, filename, parent=None, params=None, env_args=None, \
+                     resolve_dict=None, arg_names=None, args_passed=None):
         self.parent = parent
         self.ns = make_global_ns(ns or '/')
         self._remap_args = []
@@ -113,7 +134,11 @@ class LoaderContext(object):
         self.env_args = env_args or []
         self.filename = filename
         # for substitution args
-        self.resolve_dict = resolve_dict
+        self.resolve_dict = resolve_dict or {}
+        # arg names. Args that have been declared in this context
+        self.arg_names = arg_names or []
+        # args passed in from higher-level (e.g. command-line, <include> tag)
+        self.args_passed = args_passed or {}
         
     def add_param(self, p):
         """
@@ -143,6 +168,33 @@ class LoaderContext(object):
             self._remap_args.remove(m)
         self._remap_args.append(remap)
         
+    def add_arg(self, name, default=None, value=None):
+        """
+        Add 'arg' to existing context. Args are only valid for their immediate context.
+        """
+        if name in self.arg_names:
+            raise LoadException("arg '%s' has already been declared"%name)
+        self.arg_names.append(name)
+
+        if not 'arg' in self.resolve_dict:
+            self.resolve_dict['arg'] = {}
+        arg_dict = self.resolve_dict['arg']
+
+        if value is not None:
+            # value is set, error if already declared with value
+            if name in arg_dict:
+                raise
+            arg_dict[name] = value
+
+            # TODO: record declaration of arg
+            
+        elif default is not None:
+            # assign value if not in context
+            pass
+        else:
+            # no value or default: just declare that arg exists. Need to set this so substitution args do not fail.
+            pass
+        
     def remap_args(self):
         """
         @return: copy of the current remap arguments
@@ -158,6 +210,23 @@ class LoaderContext(object):
             return args
         return self._remap_args[:]
     
+    def include_child(self, ns, filename):
+        """
+        Create child namespace based on include inheritance rules
+        @param ns: sub-namespace of child context, or None if the
+           child context shares the same namespace
+        @type  ns: str
+        @param filename: name of include file
+        @type  filename: str        
+        @return: A child xml context that inherits from this context
+        @rtype: L{LoaderContext}
+        """
+        ctx = self.child(ns)
+        # arg declarations are reset across include boundaries
+        ctx.arg_names = []
+        ctx.filename = filename
+        return ctx
+
     def child(self, ns):
         """
         @param ns: sub-namespace of child context, or None if the
@@ -168,23 +237,18 @@ class LoaderContext(object):
         """
         if ns:
             if ns[0] == '/': # global (discouraged)
-                return LoaderContext(ns, self.filename, parent=self,
-                                     params=self.params, env_args=self.env_args[:],
-                                     resolve_dict=self.resolve_dict)
+                child_ns = ns
             elif ns == PRIV_NAME: # ~name
                 # private names can only be scoped privately or globally
-                return LoaderContext(PRIV_NAME, self.filename, parent=self,
-                                     params=self.params, env_args=self.env_args[:],
-                                     resolve_dict=self.resolve_dict)
+                child_ns = PRIV_NAME
             else:
-                return LoaderContext(ns_join(self.ns, ns), self.filename,
-                                     parent=self, params=self.params,
-                                     env_args=self.env_args[:], resolve_dict=self.resolve_dict)
+                child_ns = ns_join(self.ns, ns)
         else:
-            return LoaderContext(self.ns, self.filename, parent=self,
-                                 params=self.params, env_args=self.env_args[:],
-                                 resolve_dict=self.resolve_dict)
-
+            child_ns = self.ns
+        return LoaderContext(child_ns, self.filename, parent=self,
+                             params=self.params, env_args=self.env_args[:],
+                             resolve_dict=self.resolve_dict)
+        
 #TODO: in-progress refactorization. I'm slowly separating out
 #non-XML-specific logic from xmlloader and moving into Loader. Soon
 #this will mean that it will be easier to write coverage tests for

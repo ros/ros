@@ -43,13 +43,13 @@ import os
 import sys
 
 from xml.dom.minidom import parse, parseString
-from xml.dom import Node as DomNode
+from xml.dom import Node as DomNode #avoid aliasing
 
 from roslib.names import make_global_ns, ns_join, is_global, is_private, PRIV_NAME
 import roslib.substitution_args
 
-from roslaunch.core import *
-from roslaunch.loader import Loader, LoaderContext, convert_value
+from roslaunch.core import Param, Node, Test, Machine, RLException, get_ros_package_path
+import roslaunch.loader
 
 # use in our namespace
 SubstitutionException = roslib.substitution_args.SubstitutionException
@@ -65,28 +65,30 @@ def _get_text(tag):
     return buff
 
 def ifunless_test(obj, tag, context):
+    """
+    @return True: if tag should be processed according to its if/unless attributes
+    """
     if_val, unless_val = obj.opt_attrs(tag, context, ['if', 'unless'])
     if if_val is not None and unless_val is not None:
         raise XmlParseException("cannot set both 'if' and 'unless' on the same tag")
     if if_val is not None:
-        if_val = convert_value(if_val, 'bool')
+        if_val = roslaunch.loader.convert_value(if_val, 'bool')
         if if_val:
             return True
     elif unless_val is not None:
-        unless_val = convert_value(unless_val, 'bool')
+        unless_val = roslaunch.loader.convert_value(unless_val, 'bool')
         if not unless_val:
             return True
     else:
         return True
     return False
-
     
 def ifunless(f):
     """
     Decorator for evaluating whether or not tag function should run based on if/unless attributes
     """
     def call(*args, **kwds):
-        #TODO: logging
+        #TODO: logging, as well as check for verbose in kwds
         if ifunless_test(args[0], args[1], args[2]):
             return f(*args, **kwds)
     return call
@@ -97,9 +99,6 @@ def ifunless(f):
 
 class XmlParseException(RLException):
     """Error with the XML syntax (e.g. invalid attribute/value combinations)"""
-    pass
-class XmlLoadException(RLException):
-    """Error loading XML data as specified (e.g. cannot find included files, etc...)"""
     pass
 
 def _bool_attr(v, default, label):
@@ -126,21 +125,6 @@ def _bool_attr(v, default, label):
     else:
         raise XmlParseException("invalid bool value for %s: %s"%(label, v))
 
-def _enum_attr(v, enums, label):
-    """
-    @param v: parameter value
-    @type v: any
-    @param enums: valid values for parameter
-    @type enums: [any]
-    @param label: parameter name/label
-    @type  label: str
-    @return: value for attribute
-    @raise XmlParseException: if v is not in correct range
-    """
-    if not v in enums:
-        raise XmlParseException("'%s' attribute must be one of: %s"%(label, ', '.join(enums)))
-    return v
-
 # maps machine 'default' attribute to Machine default property
 _is_default = {'true': True, 'false': False, 'never': False }
 # maps machine 'default' attribute to Machine assignable property
@@ -149,7 +133,7 @@ _assignable = {'true': True, 'false': True, 'never': False }
 # NOTE: code is currently in a semi-refactored state. I'm slowly
 # migrating common routines into the Loader class in the hopes it will
 # make it easier to write alternate loaders and also test.
-class XmlLoader(Loader):
+class XmlLoader(roslaunch.loader.Loader):
     """
     Parser for roslaunch XML format. Loads parsed representation into ROSConfig model.
     """
@@ -234,7 +218,7 @@ class XmlLoader(Loader):
             self.load_rosparam(context, ros_config, cmd, param, file, _get_text(tag), verbose=verbose)
 
         except ValueError, e:
-            raise XmlLoadException("error loading <rosparam> tag: \n\t"+str(e)+"\nXML is %s"%tag.toxml())
+            raise roslaunch.loader.LoadException("error loading <rosparam> tag: \n\t"+str(e)+"\nXML is %s"%tag.toxml())
 
     PARAM_ATTRS = ('name', 'value', 'type', 'value', 'textfile', 'binfile', 'command')
     @ifunless
@@ -259,7 +243,6 @@ class XmlLoader(Loader):
             name = self.resolve_args(tag.attributes['name'].value.strip(), context)
             value = self.param_value(verbose, name, ptype, *vals)
 
-            # TODO: this first branch should be unnecessary once we remove support for command-line param
             if is_private(name) or force_local:
                 p = Param(name, value)
                 context.add_param(p)
@@ -275,6 +258,30 @@ class XmlLoader(Loader):
             raise XmlParseException(
                 "Invalid <param> tag: %s. \n\nParam xml is %s"%(e, tag.toxml()))
 
+    ARG_ATTRS = ('name', 'value', 'default')
+    @ifunless
+    def _arg_tag(self, tag, context, ros_config, verbose=True):
+        """
+        Process an <arg> tag.
+        """
+        try:
+            self._check_attrs(tag, context, ros_config, XmlLoader.ARG_ATTRS)
+            (name,) = self.reqd_attrs(tag, context, ('name',))
+            value, default = self.opt_attrs(tag, context, ('value', 'default'))
+            
+            if value is not None and default is not None:
+                raise XmlParseException(
+                    "<arg> tag must have one and only one of value/default.")
+            
+            context.add_arg(name, value=value, default=default)
+
+            #TODO: redo exceptions
+        except KeyError, e:
+            raise XmlParseException(
+                "<arg> tag is missing required attribute: %s. \n\nParam xml is %s"%(e, tag.toxml()))
+        except Exception, e:
+            raise XmlParseException(
+                "Invalid <arg> tag: %s. \n\nArg xml is %s"%(e, tag.toxml()))
 
     def _test_attrs(self, tag, context):
         """
@@ -364,10 +371,6 @@ class XmlLoader(Loader):
                 elif tag_name == 'param':
                     self._param_tag(t, param_ns, ros_config, force_local=True, verbose=verbose)
                 elif tag_name == 'rosparam':
-                    # #1883 <test> tags use test-name attribute instead
-                    if not is_test and not name:
-                        raise XmlParseException(
-                            "<node> tag must have a 'name' attribute in order to use <rosparam> tags: %s"%t.toxml())
                     self._rosparam_tag(t, param_ns, ros_config, verbose=verbose)
                 elif tag_name == 'env':
                     self._env_tag(t, context, ros_config)
@@ -375,6 +378,7 @@ class XmlLoader(Loader):
                     ros_config.add_config_error("WARN: unrecognized '%s' tag in <node> tag. Node xml is %s"%(t.tagName, tag.toxml()))
 
             # #1036 evaluate all ~params in context
+            # TODO: can we get rid of force_local (above), remove this for loop, and just rely on param_tag logic instead?
             for p in itertools.chain(context.params, param_ns.params):
                 pkey = p.key
                 if is_private(pkey):
@@ -511,7 +515,7 @@ class XmlLoader(Loader):
         except KeyError, e:
             raise XmlParseException("<env> tag is missing required name/value attributes: %s"%tag.toxml())
     
-    def _ns_clear_params_attr(self, tagName, tag, context, ros_config, node_name=None):
+    def _ns_clear_params_attr(self, tagName, tag, context, ros_config, node_name=None, include_filename=None):
         """
         Common processing routine for xml tags with NS and CLEAR_PARAMS attributes
         
@@ -523,6 +527,8 @@ class XmlLoader(Loader):
         @type  clear_params: [str]
         @param node_name: name of node (for use when tagName == 'node')
         @type  node_name: str
+        @param include_filename: <include> filename if this is an <include> tag. If specified, context will use include rules.
+        @type  include_filename: str
         @return: loader context 
         @rtype:  L{LoaderContext}
         """
@@ -532,7 +538,10 @@ class XmlLoader(Loader):
                 raise XmlParseException("<%s> tag has an empty '%s' attribute"%(tagName, NS))
         else:
             ns = None
-        child_ns = context.child(ns)
+        if include_filename is not None:
+            child_ns = context.include_child(ns, include_filename)
+        else:
+            child_ns = context.child(ns)            
         clear_p = self.resolve_args(tag.getAttribute(CLEAR_PARAMS), context)
         if clear_p:
             clear_p = _bool_attr(clear_p, False, 'clear_params')
@@ -563,17 +572,20 @@ class XmlLoader(Loader):
     def _include_tag(self, tag, context, ros_config, default_machine, is_core, verbose):
         self._check_attrs(tag, context, ros_config, XmlLoader.INCLUDE_ATTRS)
         inc_filename = self.resolve_args(tag.attributes['file'].value, context)
-        child_ns = self._ns_clear_params_attr(tag.tagName, tag, context, ros_config)
-        child_ns.filename = inc_filename
+        child_ns = self._ns_clear_params_attr(tag.tagName, tag, context, ros_config, include_filename=inc_filename)
 
         for t in [c for c in tag.childNodes if c.nodeType == DomNode.ELEMENT_NODE]:
             tagName = t.tagName.lower()
             if tagName == 'env':
                 self._env_tag(t, child_ns, ros_config)
+            elif tag_name == 'arg':
+                self._arg_tag(t, child_ns, ros_config, verbose=verbose)
             else:
                 print >> sys.stderr, \
                     "WARN: unrecognized '%s' tag in <%s> tag"%(t.tagName, tag.tagName)
 
+        roslaunch.loader.process_include_args(context)
+                
         try:
             launch = self._parse_launch(inc_filename, verbose=verbose)
             self._launch_tag(launch, ros_config, filename=inc_filename)
@@ -658,7 +670,7 @@ class XmlLoader(Loader):
 
         self._launch_tag(launch, ros_config, filename)
         master_tags = launch.getElementsByTagName('master')
-        self.root_context = LoaderContext('', filename)
+        self.root_context = roslaunch.loader.LoaderContext('', filename)
         if len(master_tags) > 1:
             raise XmlParseException("multiple <master> tags in top-level xml file not allowed")
         elif len(master_tags) == 1:

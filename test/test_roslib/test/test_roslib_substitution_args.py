@@ -35,17 +35,97 @@ import os
 import sys
 import unittest
 
-import roslib.rosenv
 import rostest
 
 class SubArgsTest(unittest.TestCase):
   
+    def test__arg(self):
+        import random
+        from roslib.substitution_args import _arg, ArgException, SubstitutionException
+        
+        ctx = { 'arg': {
+                'foo': '12345',
+                'bar': 'hello world',
+                'baz': 'sim',
+                'empty': '',
+                }
+                }
+        
+        # test invalid
+        try:
+            _arg('$(arg)', 'arg', [], ctx)
+            self.fail("should have thrown")
+        except SubstitutionException:
+            pass
+
+        # test w/o default values
+        tests = [
+            ('12345', ('$(arg foo)', 'arg foo', ['foo'], ctx)),
+            ('', ('$(arg empty)', 'arg empty', ['empty'], ctx)),
+            ('sim', ('$(arg baz)', 'arg baz', ['baz'], ctx)),
+
+            # test with other args present, should only resolve match
+            ('1234512345', ('$(arg foo)$(arg foo)', 'arg foo', ['foo'], ctx)),
+            ('12345$(arg foo 1)', ('$(arg foo)$(arg foo 1)', 'arg foo', ['foo'], ctx)),
+            ('12345$(arg baz)', ('$(arg foo)$(arg baz)', 'arg foo', ['foo'], ctx)),            
+            ('$(arg foo)sim', ('$(arg foo)$(arg baz)', 'arg baz', ['baz'], ctx)),            
+
+            # test double-resolve safe
+            ('12345', ('12345', 'arg foo', ['foo'], ctx)),            
+            ]
+        
+        for result, test in tests:
+            resolved, a, args, context = test
+            self.assertEquals(result, _arg(resolved, a, args, context))
+
+        #  - test that all fail if ctx is not set
+        for result, test in tests:
+            resolved, a, args, context = test
+            try:
+                _arg(resolved, a, args, {})
+                self.fail("should have thrown")
+            except ArgException, e:
+                self.assertEquals(args[0], str(e))
+            try:
+                _arg(resolved, a, args, {'arg': {}})
+                self.fail("should have thrown")                
+            except ArgException, e:
+                self.assertEquals(args[0], str(e))
+
+        # test w/ default values
+        tests = [
+            ('abcd', ('$(arg new abcd)', 'arg new abcd', ['new', 'abcd'], {})),
+            ('abcd', ('$(arg new abcd)', 'arg new abcd', ['new', 'abcd'], ctx)),
+            ('12345', ('$(arg foo 56789)', 'arg foo 56789', ['foo', '56789'], ctx)),
+            ('56789', ('$(arg foonew 56789)', 'arg foonew 56789', ['foonew', '56789'], ctx)),
+            ('', ('$(arg empty not empty)', 'arg empty not empty', ['empty', 'not', 'empty'], ctx)),
+            ('not empty', ('$(arg new not empty)', 'arg new not empty', ['new', 'not', 'empty'], ctx)),
+            ('sim', ('$(arg baz robot)', 'arg baz robot', ['baz', 'robot'], ctx)),
+
+            # test with other args present, should only resolve match
+            ('1234512345', ('$(arg foo 1)$(arg foo 1)', 'arg foo 1', ['foo', '1'], ctx)),
+            ('$(arg foo)12345', ('$(arg foo)$(arg foo 1)', 'arg foo 1', ['foo', '1'], ctx)),
+            ('a$(arg new b)', ('$(arg new a)$(arg new b)', 'arg new a', ['new', 'a'], ctx)),
+            ('$(arg new a)b', ('$(arg new a)$(arg new b)', 'arg new b', ['new', 'b'], ctx)),
+            ('12345$(arg baz)', ('$(arg foo)$(arg baz)', 'arg foo', ['foo'], ctx)),            
+            ('$(arg foo)sim', ('$(arg foo)$(arg baz)', 'arg baz', ['baz'], ctx)),            
+
+            # test double-resolve safe
+            ('12345', ('12345', 'arg foo 1', ['foo', '1'], ctx)),            
+            ]
+
+        for result, test in tests:
+            resolved, a, args, context = test
+            self.assertEquals(result, _arg(resolved, a, args, context))
+
     def test_resolve_args(self):
         from roslib.substitution_args import resolve_args, SubstitutionException
         from roslib.packages import get_pkg_dir
         rospy_dir = get_pkg_dir('rospy', required=True)
 
-        context = {'foo': 'bar'}
+        anon_context = {'foo': 'bar'}
+        arg_context = {'fuga': 'hoge'}
+        context = {'anon': anon_context, 'arg': arg_context }
         
         tests = [
             ('$(find rospy)', rospy_dir),
@@ -73,6 +153,13 @@ class SubArgsTest(unittest.TestCase):
             ('$(anon foo)', 'bar'),
             ('$(anon foo)/baz', 'bar/baz'),
             ('$(anon foo)/baz/$(anon foo)', 'bar/baz/bar'),
+
+            # arg
+            ('$(arg new astring)', 'astring'),
+            ('$(arg a man a plan panama)', 'man a plan panama'),
+            ('$(arg fuga bar)', 'hoge'),
+            ('$(arg fuga 1)', 'hoge'), # in context
+
             ]
         for arg, val in tests:
             self.assertEquals(val, resolve_args(arg, context=context))

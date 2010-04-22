@@ -69,6 +69,16 @@ Set up things so that publish may now be called with this topic.  Also, returns 
 	(ros-debug (roslisp pub) "Advertised ~a of type ~a" topic topic-type)
 	pub))))
 
+(defun unadvertise (topic)
+  (ensure-node-is-running)
+  (with-fully-qualified-name topic
+    (with-mutex (*ros-lock*)
+      (unless (hash-table-has-key *publications* topic)
+       (roslisp-warn "Not publishing on ~a" topic))
+      (remhash topic *publications*)
+      (protected-call-to-master ("unregisterPublisher" topic *xml-rpc-caller-api*) c
+        (ros-warn (roslisp) "Could not contact master at ~a when unregistering as publisher of ~a during shutdown: ~a" *master-uri* topic c)))))
+
 
 (defmacro publish-msg (pub &rest msg-args)
   "Convenience function that first does make-msg using the type of PUB and MSG-ARGS, then publishes the resulting message on PUB"

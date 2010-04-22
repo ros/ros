@@ -49,7 +49,7 @@ from roslib.names import make_global_ns, ns_join, is_global, is_private, PRIV_NA
 import roslib.substitution_args
 
 from roslaunch.core import *
-from roslaunch.loader import Loader, LoaderContext
+from roslaunch.loader import Loader, LoaderContext, convert_value
 
 # use in our namespace
 SubstitutionException = roslib.substitution_args.SubstitutionException
@@ -63,6 +63,33 @@ def _get_text(tag):
         if t.nodeType in [t.TEXT_NODE, t.CDATA_SECTION_NODE]:
             buff += t.data
     return buff
+
+def ifunless_test(obj, tag, context):
+    if_val, unless_val = obj.opt_attrs(tag, context, ['if', 'unless'])
+    if if_val is not None and unless_val is not None:
+        raise XmlParseException("cannot set both 'if' and 'unless' on the same tag")
+    if if_val is not None:
+        if_val = convert_value(if_val, 'bool')
+        if if_val:
+            return True
+    elif unless_val is not None:
+        unless_val = convert_value(unless_val, 'bool')
+        if not unless_val:
+            return True
+    else:
+        return True
+    return False
+
+    
+def ifunless(f):
+    """
+    Decorator for evaluating whether or not tag function should run based on if/unless attributes
+    """
+    def call(*args, **kwds):
+        #TODO: logging
+        if ifunless_test(args[0], args[1], args[2]):
+            return f(*args, **kwds)
+    return call
 
 # This code has gotten a bit crufty as roslaunch has grown far beyond
 # its original spec. It needs to be far more generic than it is in
@@ -177,11 +204,12 @@ class XmlLoader(Loader):
     def _check_attrs(self, tag, context, ros_config, attrs):
         tag_attrs = tag.attributes.keys()
         for t_a in tag_attrs:
-            if not t_a in attrs:
+            if not t_a in attrs and not t_a in ['if', 'unless']:
                 ros_config.add_config_error("[%s] unknown <%s> attribute '%s'"%(context.filename, tag.tagName, t_a))
                 #print >> sys.stderr, "WARNING: 
 
     MASTER_ATTRS = ('type', 'uri', 'auto')
+    @ifunless
     def _master_tag(self, tag, context, ros_config):
         self._check_attrs(tag, context, ros_config, XmlLoader.MASTER_ATTRS)
         try:
@@ -193,6 +221,7 @@ class XmlLoader(Loader):
     # 'param'. 'param' is required if the value is a non-dictionary
     # type
     ROSPARAM_OPT_ATTRS = ('command', 'ns', 'file', 'param')
+    @ifunless
     def _rosparam_tag(self, tag, context, ros_config, verbose=True):
         try:
             cmd, ns, file, param = self.opt_attrs(tag, context, (XmlLoader.ROSPARAM_OPT_ATTRS))
@@ -208,6 +237,7 @@ class XmlLoader(Loader):
             raise XmlLoadException("error loading <rosparam> tag: \n\t"+str(e)+"\nXML is %s"%tag.toxml())
 
     PARAM_ATTRS = ('name', 'value', 'type', 'value', 'textfile', 'binfile', 'command')
+    @ifunless
     def _param_tag(self, tag, context, ros_config, force_local=False, verbose=True):
         """
         @param force_local: if True, param must be added to context instead of ros_config
@@ -277,6 +307,7 @@ class XmlLoader(Loader):
     NODE_ATTRS = ['pkg', 'type', 'machine', 'name', 'args', 'output', 'respawn', 'cwd', NS, CLEAR_PARAMS, 'launch-prefix', 'required']
     TEST_ATTRS = NODE_ATTRS + ['test-name','time-limit', 'retry']
     
+    @ifunless
     def _node_tag(self, tag, context, ros_config, default_machine, is_test=False, verbose=True):
         """
         Process XML <node> or <test> tag
@@ -376,6 +407,7 @@ class XmlLoader(Loader):
 
     MACHINE_ATTRS = ('name', 'address', 'ros-root', 'ros-package-path', 'ros-ip', 'ros-host-name', 
                      'ssh-port', 'user', 'password', 'default', 'timeout')
+    @ifunless
     def _machine_tag(self, tag, context, ros_config, verbose=True):
         try:
             # clone context as <machine> tag sets up its own env args
@@ -460,6 +492,7 @@ class XmlLoader(Loader):
                 "%s. \n\nMachine xml is %s"%(e, tag.toxml()))
         
     REMAP_ATTRS = ('from', 'to')
+    @ifunless
     def _remap_tag(self, tag, context, ros_config):
         try:
             self._check_attrs(tag, context, ros_config, XmlLoader.REMAP_ATTRS)
@@ -468,6 +501,7 @@ class XmlLoader(Loader):
             raise XmlParseException("<remap> tag is missing required from/to attributes: %s"%tag.toxml())
         
     ENV_ATTRS = ('name', 'value')
+    @ifunless
     def _env_tag(self, tag, context, ros_config):
         try:
             self._check_attrs(tag, context, ros_config, XmlLoader.ENV_ATTRS)
@@ -514,6 +548,7 @@ class XmlLoader(Loader):
                     ros_config.add_clear_param(child_ns.ns)
         return child_ns
         
+    @ifunless
     def _launch_tag(self, tag, ros_config, filename=None):
         # #2499
         deprecated = tag.getAttribute('deprecated')
@@ -524,6 +559,7 @@ class XmlLoader(Loader):
                 ros_config.add_config_error("Deprecation Warning: "+deprecated)
 
     INCLUDE_ATTRS = ('file', NS, CLEAR_PARAMS)
+    @ifunless
     def _include_tag(self, tag, context, ros_config, default_machine, is_core, verbose):
         self._check_attrs(tag, context, ros_config, XmlLoader.INCLUDE_ATTRS)
         inc_filename = self.resolve_args(tag.attributes['file'].value, context)
@@ -559,37 +595,46 @@ class XmlLoader(Loader):
         for tag in [t for t in tags if t.nodeType == DomNode.ELEMENT_NODE]:
             name = tag.tagName
             if name == 'group':
-                self._check_attrs(tag, context, ros_config, XmlLoader.GROUP_ATTRS)
-                try:
-                    child_ns = self._ns_clear_params_attr(name, tag, context, ros_config)
-                    default_machine = \
-                                    self._recurse_load(ros_config, tag.childNodes, child_ns, \
-                                                       default_machine, is_core, verbose)
-                except KeyError, e:
-                    raise XmlParseException("<ns> tag is missing required 'name' attribute")
+                if ifunless_test(self, tag, context):
+                    self._check_attrs(tag, context, ros_config, XmlLoader.GROUP_ATTRS)
+                    try:
+                        child_ns = self._ns_clear_params_attr(name, tag, context, ros_config)
+                        default_machine = \
+                                        self._recurse_load(ros_config, tag.childNodes, child_ns, \
+                                                           default_machine, is_core, verbose)
+                    except KeyError, e:
+                        raise XmlParseException("<ns> tag is missing required 'name' attribute")
             elif name == 'node':
                 # clone the context so that nodes' env does not pollute global env
                 n = self._node_tag(tag, context.child(''), ros_config, default_machine, verbose=verbose)
-                ros_config.add_node(n, core=is_core, verbose=verbose)
+                if n is not None:
+                    ros_config.add_node(n, core=is_core, verbose=verbose)
             elif name == 'test':
                 # clone the context so that nodes' env does not pollute global env                
                 t = self._node_tag(tag, context.child(''), ros_config, default_machine, is_test=True, verbose=verbose)
-                ros_config.add_test(t, verbose=verbose)
+                if t is not None:
+                    ros_config.add_test(t, verbose=verbose)
             elif name == 'param':
                 self._param_tag(tag, context, ros_config, verbose=verbose)
             elif name == 'remap':
-                context.add_remap(self._remap_tag(tag, context, ros_config))
+                r = self._remap_tag(tag, context, ros_config)
+                if r is not None:
+                    context.add_remap(r)
             elif name == 'machine':
-                (m, is_default) = self._machine_tag(tag, context, ros_config, verbose=verbose)
-                if is_default:
-                    default_machine = m
-                ros_config.add_machine(m, verbose=verbose)
+                val = self._machine_tag(tag, context, ros_config, verbose=verbose)
+                if val is not None:
+                    (m, is_default) = val
+                    if is_default:
+                        default_machine = m
+                    ros_config.add_machine(m, verbose=verbose)
             elif name == 'rosparam':
                 self._rosparam_tag(tag, context, ros_config, verbose=verbose)
             elif name == 'master':
                 pass #handled non-recursively
             elif name == 'include':
-                default_machine = self._include_tag(tag, context, ros_config, default_machine, is_core, verbose)
+                val = self._include_tag(tag, context, ros_config, default_machine, is_core, verbose)
+                if val is not None:
+                    default_machine = val
             elif name == 'env':
                 self._env_tag(tag, context, ros_config)
             else:

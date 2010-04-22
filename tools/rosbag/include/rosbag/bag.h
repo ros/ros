@@ -166,6 +166,7 @@ private:
     void writeVersion();
     void writeFileHeaderRecord();
     void writeMessageDefinitionRecord(TopicInfo const* topic_info);
+    void appendMessageDefinitionRecordToBuffer(Buffer& buf, TopicInfo const* topic_info);
     template<class T>
     void writeMessageDataRecord(std::string const& topic, ros::Time const& time, bool latching, std::string const& callerid, T const& msg);
     void writeTopicIndexRecords();
@@ -204,6 +205,7 @@ private:
     // Record header I/O
 
     void writeHeader(ros::M_string const& fields, uint32_t data_len);
+    void appendHeaderToBuffer(Buffer& buf, ros::M_string const& fields, uint32_t data_len);
     bool readHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& bytes_read);
     bool readMessageDataHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& bytes_read);
     bool readHeader(ros::Header& header, uint32_t& data_size);
@@ -261,10 +263,15 @@ private:
 
     Buffer   header_buffer_;        //!< reusable buffer in which to assemble the record header before writing to file
     Buffer   record_buffer_;        //!< reusable buffer in which to assemble the record data before writing to file
+
     Buffer   chunk_buffer_;         //!< reusable buffer to read chunk into
     Buffer   decompress_buffer_;    //!< reusable buffer to decompress chunks into
+
+    Buffer   outgoing_chunk_buffer_;         //!< reusable buffer to read chunk into
+
+    Buffer*  current_buffer_;
+
     uint64_t decompressed_chunk_;   //!< position of decompressed chunk
-    Buffer   instantiate_buffer_;   //!< reusable buffer in which to instantiate MessageInstance messages into
 };
 
 }
@@ -300,10 +307,10 @@ void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& strea
     {
     case 200:
         decompressChunk(index_entry.chunk_pos);
-        readMessageDataHeaderFromBuffer(decompress_buffer_, index_entry.offset, header, data_size, bytes_read);
+        readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
          
         if (data_size > 0)
-            memcpy(stream.advance(data_size), decompress_buffer_.getData() + index_entry.offset + bytes_read, data_size);
+            memcpy(stream.advance(data_size), current_buffer_->getData() + index_entry.offset + bytes_read, data_size);
             
         return;
     default:
@@ -324,9 +331,9 @@ boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry)
     {
     case 200:
         decompressChunk(index_entry.chunk_pos);
-        readMessageDataHeaderFromBuffer(decompress_buffer_, index_entry.offset, header, data_size, bytes_read);
+        readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
         {  
-            ros::serialization::IStream s(decompress_buffer_.getData() + index_entry.offset + bytes_read, data_size);
+            ros::serialization::IStream s(current_buffer_->getData() + index_entry.offset + bytes_read, data_size);
             ros::serialization::deserialize(s, *p);
         }
         break;
@@ -392,14 +399,21 @@ void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, 
 
         // Write a message definition record, if necessary
         if (needs_def_written)
+        {
             writeMessageDefinitionRecord(topic_info);
+            appendMessageDefinitionRecordToBuffer(outgoing_chunk_buffer_, topic_info);
+        }
 
         // Add to topic index
         IndexEntry index_entry;
         index_entry.time      = time;
         index_entry.chunk_pos = curr_chunk_info_.pos;
         index_entry.offset    = getChunkOffset();
-        std::multiset<IndexEntry>& index = curr_chunk_topic_indexes_[topic];
+
+        std::multiset<IndexEntry>& chunk_index = curr_chunk_topic_indexes_[topic];
+        chunk_index.insert(chunk_index.end(), index_entry);
+
+        std::multiset<IndexEntry>& index = topic_indexes_[topic];
         index.insert(index.end(), index_entry);
 
         // Increment the topic count
@@ -412,7 +426,13 @@ void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, 
         uint32_t chunk_size = getChunkOffset();
         ROS_DEBUG("  curr_chunk_size=%d (threshold=%d)", chunk_size, chunk_threshold_);
         if (chunk_size > chunk_threshold_)
+        {
+            // Empty the outgoing chunk
             stopWritingChunk();
+            outgoing_chunk_buffer_.setSize(0);
+            // We no longer have a valid curr_chunk_info...
+            curr_chunk_info_.pos = -1;
+        }
     }
 }
 
@@ -440,9 +460,21 @@ void Bag::writeMessageDataRecord(std::string const& topic, ros::Time const& time
     ROS_DEBUG("Writing MSG_DATA [%llu:%d]: topic=%s sec=%d nsec=%d data_len=%d",
               (unsigned long long) file_.getOffset(), getChunkOffset(), topic.c_str(), time.sec, time.nsec, msg_ser_len);
 
+
+    // TODO: If we are clever here, we can serialize into the
+    // outgoing_chunk_buffer and get rid of the record_buffer_ all
+    // together.
+
     writeHeader(header, msg_ser_len);
     write((char*) record_buffer_.getData(), msg_ser_len);
+    
+    // TODO: Using appendHeaderToBuffer is ugly.  We need a better abstraction
+    appendHeaderToBuffer(outgoing_chunk_buffer_, header, msg_ser_len);
 
+    uint32_t offset = outgoing_chunk_buffer_.getSize();
+    outgoing_chunk_buffer_.setSize(outgoing_chunk_buffer_.getSize() + msg_ser_len);
+    memcpy(outgoing_chunk_buffer_.getData() + offset, record_buffer_.getData(), msg_ser_len);
+    
     // Update the current chunk time
     if (time > curr_chunk_info_.end_time)
     	curr_chunk_info_.end_time = time;

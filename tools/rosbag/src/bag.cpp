@@ -220,6 +220,8 @@ void Bag::writeVersion() {
 
     ROS_DEBUG("Writing VERSION [%llu]: %s", (unsigned long long) file_.getOffset(), version.c_str());
 
+    version_ = 200;
+
     write(version);
 }
 
@@ -315,7 +317,12 @@ bool Bag::startReadingVersion200() {
         for (unsigned int i = 0; i < chunk_info.topic_counts.size(); i++)
             if (!readTopicIndexRecord())
                 return false;
+
+
     }
+
+    // At this point we don't have a curr_chunkinfo anymore...
+    curr_chunk_info_.pos = 0;
 
     return true;
 }
@@ -450,6 +457,9 @@ void Bag::startWritingChunk(Time time) {
 void Bag::stopWritingChunk() {
     // Add this chunk to the index
     chunk_infos_.push_back(curr_chunk_info_);
+    
+    // We push these into the master index as we go.  
+    /*
     for (map<string, multiset<IndexEntry> >::const_iterator i = curr_chunk_topic_indexes_.begin(); i != curr_chunk_topic_indexes_.end(); i++) {
         foreach(IndexEntry const& e, i->second) {
             ROS_DEBUG("adding to topic index: %s -> %llu:%d", i->first.c_str(), (unsigned long long) e.chunk_pos, e.offset);
@@ -457,6 +467,7 @@ void Bag::stopWritingChunk() {
             index.insert(index.end(), e);
         }
     }
+    */
 
     // Get the uncompressed and compressed sizes
     uint32_t uncompressed_size = getChunkOffset();
@@ -652,6 +663,18 @@ void Bag::writeMessageDefinitionRecord(TopicInfo const* topic_info) {
     writeHeader(header, 0);
 }
 
+void Bag::appendMessageDefinitionRecordToBuffer(Buffer& buf, TopicInfo const* topic_info)
+{
+    M_string header;
+    header[OP_FIELD_NAME]    = toHeaderString(&OP_MSG_DEF);
+    header[TOPIC_FIELD_NAME] = topic_info->topic;
+    header[MD5_FIELD_NAME]   = topic_info->md5sum;
+    header[TYPE_FIELD_NAME]  = topic_info->datatype;
+    header[DEF_FIELD_NAME]   = topic_info->msg_def;
+
+    appendHeaderToBuffer(buf, header, 0);
+}
+
 bool Bag::readMessageDefinitionRecord() {
     ros::Header header;
     uint32_t data_size;    
@@ -690,6 +713,18 @@ bool Bag::readMessageDefinitionRecord() {
 
 bool Bag::decompressChunk(uint64_t chunk_pos)
 {
+
+    if (curr_chunk_info_.pos == chunk_pos)
+    {
+        ROS_INFO("Trying to use already loaded chunk %lu %lu %u", curr_chunk_info_.pos, chunk_pos, outgoing_chunk_buffer_.getSize());
+        current_buffer_ = &outgoing_chunk_buffer_;
+        return true;
+    }
+    else
+    {
+        current_buffer_ = &decompress_buffer_;
+    }
+
     if (decompressed_chunk_ == chunk_pos)
         return true;
 
@@ -761,7 +796,7 @@ ros::Header Bag::readMessageDataHeader(IndexEntry const& index_entry)
     {
     case 200:
         decompressChunk(index_entry.chunk_pos);
-        readMessageDataHeaderFromBuffer(decompress_buffer_, index_entry.offset, header, data_size, bytes_read);
+        readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
         return header;
     default:
         ROS_FATAL("Unhandled version: %d", version_);
@@ -784,7 +819,7 @@ uint32_t  Bag::readMessageDataSize(IndexEntry const& index_entry)
     {
     case 200:
         decompressChunk(index_entry.chunk_pos);
-        readMessageDataHeaderFromBuffer(decompress_buffer_, index_entry.offset, header, data_size, bytes_read);
+        readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
 
         return data_size;
     default:
@@ -940,6 +975,22 @@ void Bag::writeHeader(M_string const& fields, uint32_t data_len) {
     write((char*) &data_len, 4);
 }
 
+void Bag::appendHeaderToBuffer(Buffer& buf, M_string const& fields, uint32_t data_len) {
+    boost::shared_array<uint8_t> header_buffer;
+    uint32_t header_len;
+    ros::Header::write(fields, header_buffer, header_len);
+
+    uint32_t offset = buf.getSize();
+
+    buf.setSize(buf.getSize() + header_len + 8);
+
+    memcpy(buf.getData() + offset, &header_len, 4);
+    offset += 4;
+    memcpy(buf.getData() + offset, header_buffer.get(), header_len);
+    offset += header_len;
+    memcpy(buf.getData() + offset, &data_len, 4);
+}
+
 //! \todo clean this up
 bool Bag::readHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& bytes_read) {
     ROS_ASSERT(buffer.getSize() > 8);
@@ -977,7 +1028,7 @@ bool Bag::readMessageDataHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::
     do {
         ROS_DEBUG("reading header from buffer: offset=%d", offset);
         uint32_t bytes_read;
-        if (!readHeaderFromBuffer(decompress_buffer_, offset, header, data_size, bytes_read))
+        if (!readHeaderFromBuffer(*current_buffer_, offset, header, data_size, bytes_read))
             return false;
         offset += bytes_read;
         total_bytes_read += bytes_read;

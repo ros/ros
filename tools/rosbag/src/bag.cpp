@@ -321,8 +321,8 @@ bool Bag::startReadingVersion200() {
 
     }
 
-    // At this point we don't have a curr_chunkinfo anymore...
-    curr_chunk_info_.pos = 0;
+    // At this point we don't have a curr_chunkinfo anymore so we reset it
+    curr_chunk_info_ = ChunkInfo();
 
     return true;
 }
@@ -716,7 +716,7 @@ bool Bag::decompressChunk(uint64_t chunk_pos)
 
     if (curr_chunk_info_.pos == chunk_pos)
     {
-        ROS_INFO("Trying to use already loaded chunk %lu %lu %u", curr_chunk_info_.pos, chunk_pos, outgoing_chunk_buffer_.getSize());
+        ROS_DEBUG("Trying to use already loaded chunk from %lu", curr_chunk_info_.pos);
         current_buffer_ = &outgoing_chunk_buffer_;
         return true;
     }

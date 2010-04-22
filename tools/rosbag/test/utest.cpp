@@ -455,7 +455,6 @@ TEST_F(BagTest, WriteThenReadWorks) {
     checkContents(filename);
 }
 
-/*
 TEST_F(BagTest, AppendWorks) {
     std::string filename("test/Append.bag");
 
@@ -489,7 +488,6 @@ TEST_F(BagTest, ReadAppendWorks) {
     checkContents(filename);
 }
 
-*/
 
 TEST_F(BagTest, ChunkedFileWorks) {
     std::string filename("test/ChunkedFile.bag");

@@ -272,7 +272,9 @@ TEST(rosbag, topicquery)
     foreach(rosbag::MessageInstance const m, view) {
         std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
         if (imsg != NULL)
+        {
             ASSERT_EQ(imsg->data, i++);
+        }
     }
 
     bag.close();
@@ -417,25 +419,53 @@ TEST(rosbag, modifybag)
 
     std::vector<std::string> t0 = boost::assign::list_of("t0");
 
-    std_msgs::Int32 msg;
-
-    for (int i = 0; i < 10; i++)
-    {
-        msg.data = i;
-        rwbag.write("t0", ros::Time(i + 1, 0), msg);
-    }
-
     rosbag::View view;
     view.addQuery(rwbag, rosbag::TopicQuery(t0));
-    rosbag::View::iterator iter = view.begin();
 
-    for (int i = 0; i < 10; i++) {
-        std_msgs::Int32::ConstPtr msg = iter->instantiate<std_msgs::Int32> ();
+    std_msgs::Int32 omsg;
 
-        if (msg != NULL) {
-            ASSERT_EQ(msg->data, i);
-        }
-        iter++;
+    // Put a message at time 5
+    omsg.data = 5;
+    rwbag.write("t0", ros::Time(5 + 1, 0), omsg);
+    
+    // Verify begin gets us to 5
+    rosbag::View::iterator iter1 = view.begin();
+    std_msgs::Int32::ConstPtr imsg = iter1->instantiate<std_msgs::Int32> ();
+    ASSERT_EQ(imsg->data, 5);
+
+    for (int i = 0; i < 5; i++)
+    {
+        omsg.data = i;
+        rwbag.write("t0", ros::Time(i + 1, 0), omsg);
+    }
+
+    // New iterator should be at 0
+    rosbag::View::iterator iter2 = view.begin();
+    imsg = iter2->instantiate<std_msgs::Int32> ();
+    ASSERT_EQ(imsg->data, 0);
+
+    // Increment it once
+    iter2++;
+    
+    // Output additional messages after time 5
+    for (int i = 6; i < 10; i++)
+    {
+        omsg.data = i;
+        rwbag.write("t0", ros::Time(i + 1, 0), omsg);
+    }
+
+    // Iter2 should contain 1->10
+    for (int i = 1; i < 10; i++) {
+        imsg = iter2->instantiate<std_msgs::Int32> ();
+        ASSERT_EQ(imsg->data, i);
+        iter2++;
+    }
+
+    // Iter1 should contain 5->10
+    for (int i = 5; i < 10; i++) {
+        imsg = iter1->instantiate<std_msgs::Int32> ();
+        ASSERT_EQ(imsg->data, i);
+        iter1++;
     }
     
     rwbag.close();

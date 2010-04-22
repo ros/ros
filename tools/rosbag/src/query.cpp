@@ -61,11 +61,14 @@ TopicQuery::TopicQuery(std::vector<std::string> const& topics, ros::Time const& 
 }
 
 bool TopicQuery::evaluate(TopicInfo const* info) const {
-	foreach(string const& topic, topics_)
-		if (topic == info->topic)
-			return true;
 
-	return false;
+    foreach(string const& topic, topics_)
+        if (topic == info->topic)
+        {
+            return true;
+        }
+
+    return false;
 }
 
 // MessageRange

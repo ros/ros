@@ -43,110 +43,153 @@ namespace rosbag {
 
 // View::iterator
 
-View::iterator::iterator(View const* view, bool end) : view_(view) {
-	if (!end)
-		populate();
+View::iterator::iterator(View* view, bool end) : view_(view) {
+    if (!end)
+        populate();
 }
 
 void View::iterator::populate() {
-	iters_.clear();
-	foreach(MessageRange const* range, view_->ranges_)
-		if (range->begin != range->end)
-			iters_.push_back(ViewIterHelper(range->begin, range));
+    iters_.clear();
+    foreach(MessageRange const* range, view_->ranges_)
+        if (range->begin != range->end)
+            iters_.push_back(ViewIterHelper(range->begin, range));
 
-	std::sort(iters_.begin(), iters_.end(), ViewIterHelperCompare());
-	view_revision_ = view_->view_revision_;
+    std::sort(iters_.begin(), iters_.end(), ViewIterHelperCompare());
+    view_revision_ = view_->view_revision_;
 }
 
 void View::iterator::populateSeek(multiset<IndexEntry>::const_iterator iter) {
-	iters_.clear();
-	foreach(MessageRange const* range, view_->ranges_) {
-		multiset<IndexEntry>::const_iterator start = std::lower_bound(range->begin,
-				range->end, iter->time, IndexEntryCompare());
-		if (start != range->end)
-			iters_.push_back(ViewIterHelper(start, range));
-	}
+    iters_.clear();
+    foreach(MessageRange const* range, view_->ranges_) {
+        multiset<IndexEntry>::const_iterator start = std::lower_bound(range->begin,
+                                                                      range->end, iter->time, IndexEntryCompare());
+        if (start != range->end)
+            iters_.push_back(ViewIterHelper(start, range));
+    }
 
-	std::sort(iters_.begin(), iters_.end(), ViewIterHelperCompare());
-	while (iter != iters_.back().iter)
-		increment();
+    std::sort(iters_.begin(), iters_.end(), ViewIterHelperCompare());
+    while (iter != iters_.back().iter)
+        increment();
 
-	view_revision_ = view_->view_revision_;
+    view_revision_ = view_->view_revision_;
 }
 
 bool View::iterator::equal(View::iterator const& other) const {
-	// We need some way of verifying these are actually talking about
-	// the same merge_queue data since we shouldn't be able to compare
-	// iterators from different Views.
+    // We need some way of verifying these are actually talking about
+    // the same merge_queue data since we shouldn't be able to compare
+    // iterators from different Views.
 
-	if (iters_.empty())
-		return other.iters_.empty();
-	if (other.iters_.empty())
-		return false;
+    if (iters_.empty())
+        return other.iters_.empty();
+    if (other.iters_.empty())
+        return false;
 
-	return iters_.back().iter == other.iters_.back().iter;
+    return iters_.back().iter == other.iters_.back().iter;
 }
 
 void View::iterator::increment() {
-	if (view_revision_ != view_->view_revision_)
-		populateSeek(iters_.back().iter);
+    view_->update();
 
-	iters_.back().iter++;
-	if (iters_.back().iter == iters_.back().range->end)
-		iters_.pop_back();
+    // Note, updating may have blown awway our message-ranges and
+    // replaced them in general the ViewIterHelpers are no longer
+    // valid, but the iterator it stores should still be good.
+    if (view_revision_ != view_->view_revision_)
+        populateSeek(iters_.back().iter);
 
-	std::sort(iters_.begin(), iters_.end(), ViewIterHelperCompare());
+    iters_.back().iter++;
+    if (iters_.back().iter == iters_.back().range->end)
+        iters_.pop_back();
+
+    std::sort(iters_.begin(), iters_.end(), ViewIterHelperCompare());
 }
 
 //! \todo some check in case we are at end
 MessageInstance View::iterator::dereference() const {
-	ViewIterHelper const& i = iters_.back();
-	return MessageInstance(i.range->topic_info, *(i.iter), *(i.range->bag_query->first));
+    ViewIterHelper const& i = iters_.back();
+    return MessageInstance(i.range->topic_info, *(i.iter), *(i.range->bag_query->bag));
 }
 
 // View
 View::View() : view_revision_(0) { }
 
 View::~View() {
-	foreach(MessageRange* range, ranges_)
-		delete range;
-	foreach(BagQuery* query, queries_)
-		delete query;
+    foreach(MessageRange* range, ranges_)
+        delete range;
+    foreach(BagQuery* query, queries_)
+        delete query;
 }
 
 //! Simply copy the merge_queue state into the iterator
-View::iterator View::begin() const { return iterator(this);       }
+View::iterator View::begin()
+{ 
+    update();
+    return iterator(this);
+}
 
 //! Default constructed iterator signifies end
-View::iterator View::end()   const { return iterator(this, true); }
+View::iterator View::end()  { return iterator(this, true); }
 
 //! \todo: this doesn't work for now
 uint32_t       View::size()  const { return 0;                    }
 
 void View::addQuery(Bag& bag, Query const& query) {
-	vector<ViewIterHelper> iters;
+    vector<ViewIterHelper> iters;
 
-	queries_.push_back(new BagQuery(&bag, query));
+    queries_.push_back(new BagQuery(&bag, query, bag.bag_revision_));
 
-	for (map<string, TopicInfo*>::iterator i = bag.topic_infos_.begin(); i != bag.topic_infos_.end(); i++) {
-		if (!query.evaluate(i->second))
-			continue;
+    _addQuery(queries_.back());
+}
 
-		map<string, multiset<IndexEntry> >::iterator j = bag.topic_indexes_.find(i->second->topic);
-		if (j == bag.topic_indexes_.end())
-			continue;
+void View::_addQuery(BagQuery* q)
+{
+   for (map<string, TopicInfo*>::iterator i = q->bag->topic_infos_.begin(); i != q->bag->topic_infos_.end(); i++) {
+        if (!q->query->evaluate(i->second))
+            continue;
+
+        map<string, multiset<IndexEntry> >::iterator j = q->bag->topic_indexes_.find(i->second->topic);
+        if (j == q->bag->topic_indexes_.end())
+            continue;
 
         // lower_bound/upper_bound do a binary search to find the appropriate range of Index Entries given our time range
-        MessageRange* range = new MessageRange(
-			std::lower_bound(j->second.begin(), j->second.end(), query.getStartTime(), IndexEntryCompare()),
-			std::upper_bound(j->second.begin(), j->second.end(), query.getEndTime(),   IndexEntryCompare()),
-			i->second,
-			queries_.back());
+        MessageRange* range = new MessageRange(std::lower_bound(j->second.begin(), j->second.end(), q->query->getStartTime(), IndexEntryCompare()),
+                                               std::upper_bound(j->second.begin(), j->second.end(), q->query->getEndTime(),   IndexEntryCompare()),
+                                               i->second,
+                                               q);
 
         ranges_.push_back(range);
-	}
+    }
 
-	view_revision_ += 1;
+    view_revision_ += 1;
+}
+
+
+void View::update()
+{
+    // TODO: This can be completely skipped if the bag is read-only
+
+    foreach(BagQuery* query, queries_)
+    {
+        if (query->bag->bag_revision_ != query->bag_revision)
+        {
+            ROS_DEBUG("Query has been outdated by bag -- re-evauating");
+            // Deleting affected range
+            for (std::vector<MessageRange*>::iterator iter = ranges_.begin();
+                 iter != ranges_.end();)
+            {
+                if ((*iter)->bag_query == query)
+                {
+                    ROS_DEBUG("Erasing corresponding range");
+                    delete *iter;
+                    iter = ranges_.erase(iter);
+                } else {
+                    iter++;
+                }
+            }
+            
+            _addQuery(query);
+        }
+        query->bag_revision = query->bag->bag_revision_;
+    }
 }
 
 }

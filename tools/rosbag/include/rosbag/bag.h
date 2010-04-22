@@ -242,6 +242,7 @@ private:
     int             version_;
     CompressionType compression_;
     uint32_t        chunk_threshold_;
+    uint32_t        bag_revision_;
 
     uint64_t file_header_pos_;
     uint64_t index_data_pos_;
@@ -347,6 +348,10 @@ boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry)
 
 template<class T>
 void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> connection_header) {
+
+    // Whenever we write we increment our revision
+    bag_revision_++;
+
     bool needs_def_written = false;
     TopicInfo* topic_info;
     {

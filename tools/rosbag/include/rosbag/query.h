@@ -51,63 +51,79 @@ class TopicInfo;
 class Query
 {
 public:
-	Query(ros::Time const& start_time = ros::TIME_MIN,
-		  ros::Time const& end_time   = ros::TIME_MAX);
-	virtual ~Query();
+    Query(ros::Time const& start_time = ros::TIME_MIN,
+          ros::Time const& end_time   = ros::TIME_MAX);
+    virtual ~Query();
 
-	ros::Time getStartTime() const;
-	ros::Time getEndTime()   const;
+    ros::Time getStartTime() const;
+    ros::Time getEndTime()   const;
 
-	virtual bool evaluate(TopicInfo const*) const;
+    virtual bool evaluate(TopicInfo const*) const;
+    virtual Query* clone() const { return new Query(*this); }
+    
 
 private:
-	ros::Time start_time_;
-	ros::Time end_time_;
+    ros::Time start_time_;
+    ros::Time end_time_;
 };
 
 //! A Query the returns messages on a specified topic
 class TopicQuery : public Query
 {
 public:
-	TopicQuery(std::vector<std::string> const& topics,
-			   ros::Time const& start_time = ros::TIME_MIN,
-			   ros::Time const& end_time   = ros::TIME_MAX);
+    TopicQuery(std::vector<std::string> const& topics,
+               ros::Time const& start_time = ros::TIME_MIN,
+               ros::Time const& end_time   = ros::TIME_MAX);
 
-	virtual bool evaluate(TopicInfo const*) const;
+    virtual bool evaluate(TopicInfo const*) const;
+    virtual Query* clone() const { return new TopicQuery(*this); }
 
 private:
-	std::vector<std::string> topics_;
+    std::vector<std::string> topics_;
 };
 
 //! Pairs of queries and the bags they come from (used internally by View)
-typedef std::pair<Bag*, Query> BagQuery;
+struct BagQuery
+{
+    Bag* bag;
+    Query* query;
+    uint32_t bag_revision;
+    BagQuery(Bag* _bag, const Query& _query, uint32_t _bag_revision) : bag(_bag), bag_revision(_bag_revision)
+    {
+        query = _query.clone();
+    }
+    
+    ~BagQuery() {
+        delete query;
+    }
+};
 
 struct MessageRange
 {
-	MessageRange(std::multiset<IndexEntry>::const_iterator const& _begin,
-				 std::multiset<IndexEntry>::const_iterator const& _end,
-				 TopicInfo const* _topic_info,
-				 BagQuery const* _bag_query);
+    MessageRange(std::multiset<IndexEntry>::const_iterator const& _begin,
+                 std::multiset<IndexEntry>::const_iterator const& _end,
+                 TopicInfo const* _topic_info,
+                 BagQuery const* _bag_query);
 
-	std::multiset<IndexEntry>::const_iterator begin;
-	std::multiset<IndexEntry>::const_iterator end;
-	TopicInfo const* topic_info;
-	BagQuery const* bag_query;           //!< pointer to vector of queries in View
+    std::multiset<IndexEntry>::const_iterator begin;
+    std::multiset<IndexEntry>::const_iterator end;
+    TopicInfo const* topic_info;
+    BagQuery const* bag_query;           //!< pointer to vector of queries in View
 };
 
 //! The actual iterator data structure
 struct ViewIterHelper
 {
-	ViewIterHelper(std::multiset<IndexEntry>::const_iterator _iter,
-				   MessageRange const* _range);
+    ViewIterHelper(std::multiset<IndexEntry>::const_iterator _iter,
+                   MessageRange const* _range);
 
-	std::multiset<IndexEntry>::const_iterator iter;
-	MessageRange const* range;  //!< pointer to vector of ranges in View
+    std::multiset<IndexEntry>::const_iterator iter;
+    MessageRange const* range;  //!< pointer to vector of ranges in View
 };
 
 struct ViewIterHelperCompare
 {
-	bool operator()(ViewIterHelper const& a, ViewIterHelper const& b);
+    bool operator()(ViewIterHelper const& a, ViewIterHelper const& b);
 };
 
 }

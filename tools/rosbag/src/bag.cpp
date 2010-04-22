@@ -53,6 +53,7 @@ namespace rosbag {
 Bag::Bag() :
     compression_(compression::BZ2),
     chunk_threshold_(768 * 1024),  // 768KB chunks
+    bag_revision_(0),
     file_header_pos_(0),
     index_data_pos_(0),
     topic_count_(0),
@@ -714,9 +715,6 @@ bool Bag::decompressChunk(uint64_t chunk_pos)
 
     if (curr_chunk_info_.pos == chunk_pos)
     {
-        ROS_INFO("Trying to use already loaded chunk %llu %llu %u",
-        		 (unsigned long long) curr_chunk_info_.pos, (unsigned long long) chunk_pos, outgoing_chunk_buffer_.getSize());
-
         current_buffer_ = &outgoing_chunk_buffer_;
         return true;
     }

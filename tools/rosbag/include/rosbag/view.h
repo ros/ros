@@ -59,14 +59,12 @@ class View
 
 public:
     class iterator : public boost::iterator_facade<iterator,
-												   MessageInstance,
-												   boost::forward_traversal_tag,
-												   MessageInstance>
+                                                   MessageInstance,
+                                                   boost::forward_traversal_tag,
+                                                   MessageInstance>
     {
     protected:
-    	// NOTE: the default constructor on the merge_queue means this is an empty queue,
-    	//       i.e. our definition of end
-        iterator(View const* view, bool end = false);
+        iterator(View* view, bool end = false);
 
     private:
         friend class View;
@@ -82,7 +80,7 @@ public:
         MessageInstance dereference() const;
 
     private:
-        View const* view_;
+        View* view_;
         std::vector<ViewIterHelper> iters_;
         uint32_t view_revision_;
     };
@@ -92,14 +90,18 @@ public:
     View();
     ~View();
 
-    iterator begin() const;
-    iterator end()   const;
+    iterator begin();
+    iterator end();
     uint32_t size()  const;
 
     void addQuery(Bag& bag, Query const& query);
 
 protected:
+    void _addQuery(BagQuery* q);
+
     friend class iterator;
+
+    void update();
 
     std::vector<MessageRange*> ranges_;
     std::vector<BagQuery*>     queries_;

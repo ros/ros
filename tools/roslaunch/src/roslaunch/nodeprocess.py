@@ -130,7 +130,8 @@ def create_node_process(run_id, node, master_uri):
     args = create_local_process_args(node, machine)
     _logger.info('process[%s]: args[%s]', name, args)        
 
-    log_output = node.output == 'log'
+    # default for node.output not set is 'log'
+    log_output = node.output != 'screen'
     _logger.debug('process[%s]: returning LocalProcess wrapper')
     return LocalProcess(run_id, node.package, name, args, env, log_output, respawn=node.respawn, required=node.required, cwd=node.cwd)
 

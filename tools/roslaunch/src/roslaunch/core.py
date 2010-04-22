@@ -41,6 +41,7 @@ import logging
 import socket
 import sys
 
+import roslib.names 
 import roslib.network
 import roslib.substitution_args
 import roslib.rosenv
@@ -510,7 +511,7 @@ class Node(object):
         @type  env_args: [(str, str)]
         @param output: where to log output to, either Node, 'screen' or 'log'
         @type  output: str
-        @param cwd: current working directory of node, either 'node' or 'ros-root'
+        @param cwd: current working directory of node, either 'node' or 'ros-root'. Default: ros-root
         @type  cwd: str
         @param launch_prefix: launch command/arguments to prepend to node executable arguments
         @type  launch_prefix: str
@@ -518,26 +519,21 @@ class Node(object):
         @type  required: bool
         @param filename: name of file Node was parsed from
         @type  filename: str
+
+        @raise ValueError: if parameters do not validate
         """        
+
         self.package = package
         self.type = node_type
         self.name = name or None
-        import roslib.names 
         self.namespace = roslib.names.make_global_ns(namespace or '/')
         self.machine_name = machine_name or None
-        
-        # machine is the assigned machine instance. should probably
-        # consider storing this elsewhere as it can be inconsistent
-        # with machine_name and is also a runtime, rather than
-        # configuration property
-        self.machine = None
-        
         self.respawn = respawn
         self.args = args or ''
         self.remap_args = remap_args or []
         self.env_args = env_args or []        
-        self.output = output or 'log'
-        self.cwd = cwd or None
+        self.output = output
+        self.cwd = cwd
         self.launch_prefix = launch_prefix or None
         self.required = required
         self.filename = filename
@@ -545,10 +541,32 @@ class Node(object):
         if self.respawn and self.required:
             raise ValueError("respawn and required cannot both be set to true")
         
+        # validation
+        if self.name and roslib.names.SEP in self.name: # #1821, namespaces in nodes need to be banned
+            raise ValueError("node name cannot contain a namespace")
+        if not len(self.package.strip()):
+            raise ValueError("package must be non-empty")
+        if not len(self.type.strip()):
+            raise ValueError("type must be non-empty")
+        if not self.output in ['log', 'screen', None]:
+            raise ValueError("output must be one of 'log', 'screen'")
+        if not self.cwd in ['ros-root', 'node', None]:
+            raise ValueError("cwd must be one of 'ros-root', 'node'")
+        
+        # Extra slots for assigning later
+        
         # slot to store the process name in so that we can query the
         # associated process state
         self.process_name = None
 
+        # machine is the assigned machine instance. should probably
+        # consider storing this elsewhere as it can be inconsistent
+        # with machine_name and is also a runtime, rather than
+        # configuration property
+        self.machine = None
+
+        
+        
     def xmltype(self):
         return 'node'
     

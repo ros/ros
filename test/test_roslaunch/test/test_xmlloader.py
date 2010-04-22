@@ -510,7 +510,7 @@ class TestXmlLoader(unittest.TestCase):
         nodes = self._load_valid_nodes(['test_base', 'test_cwd_1', 'test_cwd_2'])
         for n in nodes:
             if n.type == 'test_base':
-                self.assertEquals('ros-root', n.cwd)
+                self.assertEquals(None, n.cwd)
             elif n.type == 'test_cwd_1':
                 self.assertEquals("ros-root", n.cwd)                
             elif n.type == 'test_cwd_2':

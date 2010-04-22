@@ -53,38 +53,6 @@ _master_auto = {
     'no': Master.AUTO_NO, 'start': Master.AUTO_START, 'restart': Master.AUTO_RESTART,
 }
 
-# TODO: unit test
-# #1269, #1270
-
-# TODO: this should be unnecessary once we remove support for unnamed nodes
-def command_line_param(key, value):
-    """
-    Convert parameter into a ROS command-line remapping argument.
-
-    @return: remapping argument. remapping argument does not have a
-        leading or trailing space.
-    @rtype: str
-    """
-    # return double-quoted representation of value. In simple
-    # command-line tests, this appears to cover common cases. YAML
-    # dump uses single-quoted strings to disambiguate overlapping
-    # cases (e.g. 'true')
-
-    # have to force UTF-8 in order to get python-yaml to encode cleanly
-    if type(value) == unicode:
-        value = value.encode('UTF-8')
-    # - lazy import
-    global yaml
-    if yaml is None:
-        import yaml
-    # strip the yaml encoding as python-yaml adds a newline
-    encoded = yaml.dump(value).strip()
-    # #1731 strip the '...' end-of-document indicator as it is not
-    # #required (and confusing to users)
-    if encoded.endswith('\n...'):
-        encoded = encoded[:-4]
-    return '_%s:="%s"'%(key, encoded)
-
 #TODO: lists, maps(?)
 def convert_value(value, type_):
     """
@@ -130,8 +98,6 @@ def convert_value(value, type_):
         raise ValueError("%s is not a '%' type"%(value, type_))
     else:
         raise ValueError("Unknown type '%s'"%type_)        
-
-# TODO: now that 'name' is required, it should be possible to remove params once this is enforced
 
 class LoaderContext(object):
     """
@@ -346,7 +312,7 @@ class Loader(object):
             self.add_param(ros_config, full_param, data, verbose=verbose)
 
         else:
-            raise XmlParseException("unknown command %s"%cmd)
+            raise ValueError("unknown command %s"%cmd)
 
 
     def load_env(self, context, ros_config, name, value):

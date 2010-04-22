@@ -49,7 +49,7 @@ from roslib.names import make_global_ns, ns_join, is_global, is_private, PRIV_NA
 import roslib.substitution_args
 
 from roslaunch.core import *
-from roslaunch.loader import Loader, LoaderContext, command_line_param
+from roslaunch.loader import Loader, LoaderContext
 
 # use in our namespace
 SubstitutionException = roslib.substitution_args.SubstitutionException
@@ -297,41 +297,26 @@ class XmlLoader(Loader):
             if is_test:
                 self._check_attrs(tag, context, ros_config, XmlLoader.TEST_ATTRS)
                 (name,) = self.opt_attrs(tag, context, ('name',)) 
+                test_name, time_limit, retry = self._test_attrs(tag, context)
+                if not name:
+                    name = test_name
             else:
                 self._check_attrs(tag, context, ros_config, XmlLoader.NODE_ATTRS)
                 (name,) = self.reqd_attrs(tag, context, ('name',)) 
+            child_ns = self._ns_clear_params_attr('node', tag, context, ros_config, node_name=name)
+            param_ns = child_ns.child(name)
                 
             # required attributes
             pkg, node_type = self.reqd_attrs(tag, context, ('pkg', 'type'))
-
-            
-            if not len(pkg.strip()):
-                raise XmlParseException("<node> 'pkg' must be non-empty")
-            if not len(node_type.strip()):
-                raise XmlParseException("<node> 'type' must be non-empty")
             
             # optional attributes
             machine, args, output, respawn, cwd, launch_prefix, required = \
                      self.opt_attrs(tag, context, ('machine', 'args', 'output', 'respawn', 'cwd', 'launch-prefix', 'required'))
-            if not name and not is_test:
-                ros_config.add_config_error("WARN: un-named nodes in roslaunch are deprecated:\n[%s]: %s"%(context.filename, tag.toxml()))
-                
-            # #1821, namespaces in nodes need to be banned
-            if name and roslib.names.SEP in name:
-                raise XmlParseException("<%s> 'name' cannot contain a namespace"%tag.tagName)
-
-            args = args or ''
-            child_ns = self._ns_clear_params_attr('node', tag, context, ros_config, node_name=name)
-
             if tag.hasAttribute('machine') and not len(machine.strip()):
                 raise XmlParseException("<node> 'machine' must be non-empty: [%s]"%machine)
             if not machine and default_machine:
                 machine = default_machine.name
-            # validate respawn, required, output and cwd
-            # TODO: move more attribute validation into Node tag itself
-            output = _enum_attr(output or 'log', ['log', 'screen'], 'output')
-            cwd = _enum_attr(cwd or 'ros-root', ['ros-root', 'node'], 'cwd')
-            # - required and respawn both have no meaning to Tests and aren't passed on
+            # validate respawn, required
             required, respawn = [_bool_attr(*rr) for rr in ((required, False, 'required'),\
                                                                 (respawn, False, 'respawn'))]
 
@@ -339,23 +324,21 @@ class XmlLoader(Loader):
             # it inherits from its parent
             remap_context = context.child('')
 
-            param_ns = child_ns.child(name)
-            
             # nodes can have individual env args set in addition to
             # the ROS-specific ones.  
             for t in [c for c in tag.childNodes if c.nodeType == DomNode.ELEMENT_NODE]:
-                tagName = t.tagName.lower()
-                if tagName == 'remap':
+                tag_name = t.tagName.lower()
+                if tag_name == 'remap':
                     remap_context.add_remap(self._remap_tag(t, context, ros_config))
-                elif tagName == 'param':
+                elif tag_name == 'param':
                     self._param_tag(t, param_ns, ros_config, force_local=True, verbose=verbose)
-                elif tagName == 'rosparam':
+                elif tag_name == 'rosparam':
                     # #1883 <test> tags use test-name attribute instead
                     if not is_test and not name:
                         raise XmlParseException(
                             "<node> tag must have a 'name' attribute in order to use <rosparam> tags: %s"%t.toxml())
                     self._rosparam_tag(t, param_ns, ros_config, verbose=verbose)
-                elif tagName == 'env':
+                elif tag_name == 'env':
                     self._env_tag(t, context, ros_config)
                 else:
                     ros_config.add_config_error("WARN: unrecognized '%s' tag in <node> tag. Node xml is %s"%(t.tagName, tag.toxml()))
@@ -366,16 +349,8 @@ class XmlLoader(Loader):
                 if is_private(pkey):
                     # strip leading ~, which is optional/inferred
                     pkey = pkey[1:]
-
-                if name:
-                    pkey = param_ns.ns + pkey
-                    ros_config.add_param(Param(pkey, p.value), verbose=verbose)
-                elif args:
-                    # don't know node name, have to pass in on command-line
-                    # strip ~ as parameter args are always private
-                    args = args + " " + command_line_param(pkey, p.value)
-                else:
-                    args = command_line_param(pkey, p.value)
+                pkey = param_ns.ns + pkey
+                ros_config.add_param(Param(pkey, p.value), verbose=verbose)
                     
             if not is_test:
                 return Node(pkg, node_type, name=name, namespace=child_ns.ns, machine_name=machine, 
@@ -384,9 +359,6 @@ class XmlLoader(Loader):
                             output=output, cwd=cwd, launch_prefix=launch_prefix,
                             required=required, filename=context.filename)
             else:
-                test_name, time_limit, retry = self._test_attrs(tag, context)
-                if not name:
-                    name = test_name
                 return Test(test_name, pkg, node_type, name=name, namespace=child_ns.ns, 
                             machine_name=machine, args=args,
                             remap_args=remap_context.remap_args(), env_args=context.env_args,

@@ -544,7 +544,7 @@ macro(rosbuild_add_gtest exe)
   add_custom_target(test)
   add_dependencies(test test_${_testname})
   # Register check for test output
-  _rosbuild_check_rostest_xml_result(test_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
+  _rosbuild_check_rostest_xml_result(${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${_testname}.xml)
 endmacro(rosbuild_add_gtest)
 
 # A version of add_gtest that checks a label against ROS_BUILD_TEST_LABEL
@@ -614,7 +614,7 @@ macro(rosbuild_add_pyunit file)
   endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test pyunit_${_testname})
   # Register check for test output
-  _rosbuild_check_rostest_xml_result(pyunit_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
+  _rosbuild_check_rostest_xml_result(${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${_testname}.xml)
 endmacro(rosbuild_add_pyunit)
 
 # A version of add_pyunit that checks a label against ROS_BUILD_TEST_LABEL

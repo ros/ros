@@ -143,24 +143,21 @@ def _arg(resolved, a, args, context):
     @raise ArgException: if arg invalidly specified
     """
     if len(args) == 0:
-        raise SubstitutionException("$(optenv var) must specify an environment variable [%s]"%a)
+        raise SubstitutionException("$(arg var) must specify an environment variable [%s]"%a)
+    elif len(args) > 1:
+        raise SubstitutionException("$(arg var) may only specify one arg [%s]"%a)
     
     if 'arg' not in context:
         context['arg'] = {}
     arg_context = context['arg']
 
     arg_name = args[0]
-    default_value = ' '.join(args[1:]) if len(args) > 1 else None
-    arg_value = None
-
     if arg_name in arg_context:
         arg_value = arg_context[arg_name]
+        return resolved.replace("$(%s)"%a, arg_value)
     else:
-        arg_value = default_value
-        
-    if arg_value is None:
         raise ArgException(arg_name)
-    return resolved.replace("$(%s)"%a, arg_value)
+
 
 def resolve_args(arg_str, context=None, resolve_anon=True):
     """

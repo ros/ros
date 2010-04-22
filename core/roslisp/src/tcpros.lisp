@@ -116,7 +116,7 @@
                 (warn "Connection server received error ~a when trying to parse header ~a.  Ignoring this connection attempt." (msg c) header)
                 (close-connection))
               (stream-error (c)
-                (warn "Connection failed unexpectedly. Error: ~a." c)
+                (ros-debug (roslisp tcp) "stream error on connection to service client (could be a probe)")
                 (close-connection))))))))
 
 

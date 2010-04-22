@@ -317,8 +317,6 @@ bool Bag::startReadingVersion200() {
         for (unsigned int i = 0; i < chunk_info.topic_counts.size(); i++)
             if (!readTopicIndexRecord())
                 return false;
-
-
     }
 
     // At this point we don't have a curr_chunkinfo anymore so we reset it
@@ -716,7 +714,9 @@ bool Bag::decompressChunk(uint64_t chunk_pos)
 
     if (curr_chunk_info_.pos == chunk_pos)
     {
-        ROS_DEBUG("Trying to use already loaded chunk from %lu", curr_chunk_info_.pos);
+        ROS_INFO("Trying to use already loaded chunk %llu %llu %u",
+        		 (unsigned long long) curr_chunk_info_.pos, (unsigned long long) chunk_pos, outgoing_chunk_buffer_.getSize());
+
         current_buffer_ = &outgoing_chunk_buffer_;
         return true;
     }

@@ -29,8 +29,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
 import roslib; roslib.load_manifest('rosbag')
 
@@ -39,9 +37,8 @@ import os
 import signal
 import subprocess
 import optparse
-from optparse import OptionParser
 
-import rosbagmigration
+import bag_migration
 
 def print_trans(old,new,indent):
     from_txt = "%s [%s]"%(old._type, old._md5sum)
@@ -53,7 +50,7 @@ def print_trans(old,new,indent):
     print "    "*indent + "   To:   %s"%(to_txt,)
 
 def fix_cmd(argv):
-    parser = OptionParser(usage="rosbag fix INBAG OUTBAG [EXTRARULES1 EXTRARULES2 ...]")
+    parser = optparse.OptionParser(usage="rosbag fix INBAG OUTBAG [EXTRARULES1 EXTRARULES2 ...]")
 
     parser.add_option("-n","--noplugins",action="store_true",dest="noplugins",
                       help = "do not load rulefiles via plugins")
@@ -96,9 +93,9 @@ def fix_cmd(argv):
         if (options.noplugins is None):
             options.noplugins = False
 
-        mm = rosbagmigration.MessageMigrator(args[2:], plugins=not options.noplugins)
+        mm = bag_migration.MessageMigrator(args[2:], plugins=not options.noplugins)
 
-        migrations = rosbagmigration.fixbag2(mm, args[0], outname)
+        migrations = bag_migration.fixbag2(mm, args[0], outname)
 
         if migrations == []:
             print "%s %s"%(outname, args[1])

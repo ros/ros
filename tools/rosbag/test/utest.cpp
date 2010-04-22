@@ -471,7 +471,7 @@ TEST_F(BagTest, AppendWorks) {
     checkContents(filename);
 }
 
-
+/*
 TEST_F(BagTest, ReadAppendWorks) {
     std::string filename("test/ReadAppend.bag");
 

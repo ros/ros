@@ -29,23 +29,14 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
-import sys
+import optparse
 import os
 import signal
 import subprocess
-import optparse
-from optparse import OptionParser
-
-import rosbagmigration
-import rosbag
+import sys
 
 def filter_cmd(argv):
-    """
-    main routine for rosrebag command-line tool
-    """
     def expr_eval(expr):
         def eval_fn(topic, m, t):
             return eval(expr)
@@ -69,14 +60,16 @@ The following variables are available:
         sys.exit(0)
     elif len(args) != 3:
         parser.error("invalid arguments")
-    inbag = args[0]
-    outbag = args[1]
-    expr = args[2]
+    
+    inbag, outbag, expr = args
+
     if options.verbose_pattern:
         verbose_pattern = expr_eval(options.verbose_pattern)
     else:
         verbose_pattern = None
+        
     if not os.path.isfile(inbag):
         print >> sys.stderr, "cannot locate input bag file [%s]"%inbag
         sys.exit(1)
-    rosrecord.rebag(inbag, outbag, expr_eval(expr), verbose_pattern=verbose_pattern)
+
+    #rosrecord.rebag(inbag, outbag, expr_eval(expr), verbose_pattern=verbose_pattern)

@@ -69,20 +69,20 @@ class Compression:
     NONE = 'none'
     BZ2  = 'bz2'
     #ZLIB = 'zlib'
-    
+
 class Bag(object):
     """
     Bag objects serialize messages to and from disk using the bag format.
     """
-    def __init__(self, filename, mode='r', compression=Compression.NONE, chunk_threshold=768 * 1024):
+    def __init__(self, f, mode='r', compression=Compression.NONE, chunk_threshold=768 * 1024):
         """
         Open a bag file.  The mode can be 'r', 'w', or 'a' for reading (default),
         writing or appending.  The file will be created if it doesn't exist
         when opened for writing or appending; it will be truncated when opened
         for writing.  Simultaneous reading and writing is allowed when in writing
         or appending mode.        
-        @param filename: filename of bag to open
-        @type  filename: str
+        @param f: filename of bag to open or a stream to read from
+        @type  f: str or file
         @param mode: mode, either 'r', 'w', or 'a'
         @type  mode: str
         @param compression: compression mode, see Compression
@@ -94,6 +94,7 @@ class Bag(object):
         @raise ROSBagFormatException: if bag format is corrupted
         """
         self._file            = None
+        self._filename        = None
         self._version         = None
         
         allowed_compressions = [Compression.NONE, Compression.BZ2] #, Compression.ZLIB]
@@ -128,7 +129,7 @@ class Bag(object):
         self._curr_compression = Compression.NONE
         self._output_file      = self._file
         
-        self._open(filename, mode)
+        self._open(f, mode)
     
     @property
     def filename(self):
@@ -188,8 +189,24 @@ class Bag(object):
         
     chunk_threshold = property(_get_chunk_threshold, _set_chunk_threshold)
 
-    def getMessages(self, topics=None, start_time=None, end_time=None, topic_filter=None):
+    def _read_message(self, entry, raw):
+        self.flush()
+        return self._reader.read_message(entry, raw)
+
+    def getIndex(self):
         """
+        Get the index.
+        @return: the index
+        @rtype: dict of topic -> (U{roslib.rostime.Time}, position), where position is dependent on the bag format
+        """
+        if not self._topic_indexes:
+            raise ROSBagException('getIndex not supported on unindexed bag files')
+
+        return self._reader.get_index()
+
+    def readMessages(self, topics=None, start_time=None, end_time=None, topic_filter=None, raw=False):
+        """
+        Read the messages from the bag file.
         @param topic: list of topics [optional]
         @type  topic: list(str)
         @param start_time: earliest timestamp of message to return [optional]
@@ -198,11 +215,13 @@ class Bag(object):
         @type  end_time: U{roslib.rostime.Time}
         @param topic_filter: function to filter topics to include [optional]
         @type  topic_filter: function taking (topic, datatype, md5sum, msg_def) and returning bool
+        @param raw: if True, then generate tuples of (datatype, data, md5sum, position, pytype)
+        @type  raw: bool
         @return: generator of (topic, message, timestamp) tuples for each message in the bag file
         @rtype: generator of tuples of (topic, message, timestamp)
         """
         self.flush()
-        return self._reader.get_messages(topics, start_time, end_time, topic_filter)
+        return self._reader.read_messages(topics, start_time, end_time, topic_filter, raw)
 
     def flush(self):
         """
@@ -215,16 +234,19 @@ class Bag(object):
         if self._chunk_open:
             self._stop_writing_chunk()
 
-    def write(self, topic, msg, t):
+    def write(self, topic, msg, t=None, raw=False):
         """
-        Write a message to the bag.
+        Write a message to the bag.  Messages must be written in chronological order for a given topic.
         @param topic: name of topic
         @type  topic: str
-        @param msg: message to add to bag
-        @type  msg: Message
+        @param msg: message to add to bag, or tuple (if raw)
+        @type  msg: Message or tuple of raw message data
         @param t: ROS time of message publication
         @type  t: U{roslib.rostime.Time}
+        @param raw: if True, msg is in raw format, i.e. (msg_type, serialized_bytes, md5sum, pytype)
+        @type  raw: bool
         @raise ValueError: if arguments are invalid or bag is closed
+        @raise ROSBagException: if message isn't in chronological order
         """
         if not self._file:
             raise ValueError('I/O operation on closed bag')
@@ -233,8 +255,9 @@ class Bag(object):
             raise ValueError('topic is invalid')
         if not msg:
             raise ValueError('msg is invalid')
+
         if t is None:
-            raise ValueError('t is invalid')
+            t = roslib.rostime.Time.from_sec(time.time())
 
         # Seek to end (in case previous operation was a read)
         self._file.seek(0, os.SEEK_END)
@@ -245,7 +268,25 @@ class Bag(object):
 
         # Write message definition record, if necessary
         if topic not in self._topic_infos:
-            topic_info = _TopicInfo(topic, msg.__class__._type, msg.__class__._md5sum, msg._full_text)
+            if raw:
+                msg_type, serialized_bytes, md5sum, pytype = msg
+    
+                if pytype is None:
+                    try:
+                        pytype = roslib.message.get_message_class(msg_type)
+                    except Exception:
+                        pytype = None
+                if pytype is None:
+                    raise ROSBagException('cannot locate message class and no message class provided for [%s]' % msg_type)
+    
+                if pytype._md5sum != md5sum:
+                    print >> sys.stderr, 'WARNING: md5sum of loaded type [%s] does not match that specified' % msg_type
+                    #raise ROSBagException('md5sum of loaded type does not match that of data being recorded')
+            
+                topic_info = _TopicInfo(topic, msg_type, md5sum, pytype._full_text)
+            else:
+                topic_info = _TopicInfo(topic, msg.__class__._type, msg.__class__._md5sum, msg._full_text)
+                
             self._write_message_definition_record(topic_info)
             self._topic_infos[topic] = topic_info
 
@@ -270,13 +311,15 @@ class Bag(object):
         elif t < self._curr_chunk_info.start_time:
             self._curr_chunk_info.start_time = t
 
-        # Serialize the message to the buffer
-        self._buffer.seek(0)
-        self._buffer.truncate(0)
-        msg.serialize(self._buffer)
+        if not raw:
+            # Serialize the message to the buffer
+            self._buffer.seek(0)
+            self._buffer.truncate(0)
+            msg.serialize(self._buffer)
+            serialized_bytes = self._buffer.getvalue()
 
         # Write message data record
-        self._write_message_data_record(topic, t, self._buffer.getvalue())
+        self._write_message_data_record(topic, t, serialized_bytes)
         
         # Check if we want to stop this chunk
         chunk_size = self._get_chunk_offset()
@@ -294,8 +337,10 @@ class Bag(object):
             self._close_file()
 
     def __str__(self):
-        s  = 'bag:          %s\n' % self.filename
-        s += 'version:      %d.%d\n' % (self.version / 100, self.version % 100)
+        s = ''
+        if self._filename:
+            s += 'bag:          %s (%s)\n' % (self._filename, self._mode)
+        s += 'version:      %d.%d\n' % (self._version / 100, self._version % 100)
 
         if not self._topic_indexes:
             return s.rstrip()
@@ -402,20 +447,24 @@ class Bag(object):
 
     ### Implementation ###
 
-    def _open(self, filename, mode):
-        if not filename:
-            raise ValueError('filename is invalid')
+    def _open(self, f, mode):
+        if not f:
+            raise ValueError('filename (or stream) is invalid')
 
-        if   mode == 'r': self._open_read(filename)
-        elif mode == 'w': self._open_write(filename)
-        elif mode == 'a': self._open_append(filename)
+        if   mode == 'r': self._open_read(f)
+        elif mode == 'w': self._open_write(f)
+        elif mode == 'a': self._open_append(f)
         else:
             raise ValueError('mode "%s" is invalid' % mode)
 
-    def _open_read(self, filename):
-        self._file     = open(filename, 'rb')
-        self._filename = filename        
-        self._mode     = 'r'
+    def _open_read(self, f):
+        if isinstance(f, file):
+            self._file = f
+        else:
+            self._file     = open(f, 'rb')
+            self._filename = f        
+
+        self._mode = 'r'
 
         try:
             self._version = self._read_version()
@@ -431,10 +480,14 @@ class Bag(object):
             self._close_file()
             raise
 
-    def _open_write(self, filename):
-        self._file     = open(filename, 'wb')
-        self._filename = filename
-        self._mode     = 'w'
+    def _open_write(self, f):
+        if isinstance(f, file):
+            self._file = f
+        else:
+            self._file     = open(f, 'wb')
+            self._filename = f
+            
+        self._mode = 'w'
 
         try:
             self._start_writing()
@@ -442,20 +495,24 @@ class Bag(object):
             self._close_file()
             raise
 
-    def _open_append(self, filename):
-        try:
-            # Test if the file already exists.
-            open(filename, 'r').close()
+    def _open_append(self, f):
+        if isinstance(f, file):
+            self._file = f
+        else:        
+            try:
+                # Test if the file already exists.
+                open(f, 'r').close()
 
-            # File exists, Open in read with update mode.
-            self._file = open(filename, 'r+b')
-        except:
-            # File doesn't exist. Open in write mode.
-            self._file = open(filename, 'w+b')
+                # File exists, Open in read with update mode.
+                self._file = open(f, 'r+b')
+            except:
+                # File doesn't exist. Open in write mode.
+                self._file = open(f, 'w+b')
         
-        self._filename = filename        
-        self._mode     = 'a'
-        
+            self._filename = f
+
+        self._mode = 'a'
+
         try:
             self._version = self._read_version()
         except:
@@ -494,6 +551,8 @@ class Bag(object):
                 self._reader = _BagReader102_Indexed(self)
             else:
                 self._reader = _BagReader102_Unindexed(self)
+        elif self._version == 101:
+            self._reader = _BagReader101(self)
         else:
             raise ROSBagException('unknown bag version %d' % self._version)
 
@@ -555,40 +614,6 @@ class Bag(object):
 
         # Seek to the end of the file
         self._file.seek(0, os.SEEK_END)
-
-    # @todo: update with chunk logic
-    def _write_raw(self, topic, raw_msg_data):
-        """
-        Add a message to the bag
-        @param topic: name of topic
-        @type  topic: str
-        @param raw_msg_data: raw message data
-        @type  raw_msg_data: tuple of (msg_type, serialized_bytes, md5sum, pytype)
-        @param t: ROS time of message publication
-        @type  t: U{roslib.message.Time}
-        """
-        msg_type, serialized_bytes, md5sum, pytype = raw_msg_data
-
-        # Write message definition record, if necessary
-        if topic not in self._topic_infos:
-            if pytype is None:
-                try:
-                    pytype = roslib.message.get_message_class(msg_type)
-                except Exception:
-                    pytype = None
-            if pytype is None:
-                raise ROSBagException('cannot locate message class and no message class provided for [%s]' % msg_type)
-
-            if pytype._md5sum != md5sum:
-                print >> sys.stderr, 'WARNING: md5sum of loaded type [%s] does not match that specified' % msg_type
-                #raise ROSRecordException('md5sum of loaded type does not match that of data being recorded')
-
-            topic_info = _TopicInfo(topic, msg_type, md5sum, pytype._full_text)
-            self._write_message_definition_record(topic_info)
-            self._topic_infos[topic] = topic_info
-
-        # Write message data record
-        self._write_message_data_record(topic, t, serialized_bytes)
 
     def _start_writing_chunk(self, t):
         self._curr_chunk_info = _ChunkInfo(self._file.tell(), t, t)
@@ -905,7 +930,7 @@ class _BagReader(object):
         self.bag = bag
         
     def start_reading(self): pass
-    def get_messages(self, topics, start_time, end_time, topic_filter): pass
+    def read_messages(self, topics, start_time, end_time, topic_filter, raw): pass
 
     def get_entries(self, topics, start_time, end_time, topic_filter):
         for entry, _ in _mergesort(self.get_indexes(topics, topic_filter), key=lambda entry: entry.time):
@@ -961,9 +986,9 @@ class _BagReader(object):
 
         return message_type
 
-class _BagReader102_Unindexed(_BagReader):
+class _BagReader101(_BagReader):
     """
-    Support class for reading unindexed v1.2 bag files.
+    Support class for reading v1.1 bag files.
     """
     def __init__(self, bag):
         _BagReader.__init__(self, bag)
@@ -971,12 +996,78 @@ class _BagReader102_Unindexed(_BagReader):
     def start_reading(self):
         pass
 
-    def get_messages(self, topics, start_time, end_time, topic_filter):
+    def read_messages(self, topics, start_time, end_time, topic_filter, raw):
+        f = self.bag._file
+        
+        while True:
+            bag_pos = f.tell()
+            
+            # Read topic/md5/type string headers
+            topic = f.readline().rstrip()
+            if not topic:
+                return
+
+            md5sum = f.readline().rstrip()
+            datatype = f.readline().rstrip()
+            
+            # Migration for rostools->roslib rename
+            if datatype in ['rostools/Header', 'rostools/Log', 'rostools/Time']:
+                datatype = datatype.replace('rostools', 'roslib')
+          
+            # Read timestamp
+            data = f.read(12)
+            if len(data) != 12:
+                raise ROSBagFormatException('Bag file appears to be corrupt (1)')
+            (time_sec, time_nsec, length) = struct.unpack("<LLL", data)
+            t = rospy.Time(time_sec, time_nsec)
+        
+            # Read message
+            data = f.read(length)
+            if len(data) != length:
+                raise ROSBagFormatException('Bag file appears to be corrupt (2)')
+          
+            try:
+                pytype = _message_types[md5sum]
+            except KeyError:
+                try:
+                    pytype = roslib.message.get_message_class(datatype)
+                except Exception:
+                    pytype = None
+          
+                if pytype is None:
+                    raise ROSBagException('Cannot deserialize messages of type [%s]: cannot locate message class' % datatype)
+                else:
+                    if pytype._md5sum != md5sum:
+                        (package, type) = datatype.split('/')
+                    if roslib.gentools.compute_md5_v1(roslib.gentools.get_file_dependencies(roslib.msgs.msg_file(package,type))) == md5sum:
+                        print 'In V1.1 Logfile, found old md5sum for type [%s].  Allowing implicit migration to new md5sum.' % datatype
+                    else:
+                        raise ROSBagException('Cannot deserialize messages of type [%s]: md5sum is outdated in V1.1 bagfile' % datatype)
+                _message_types[md5sum] = pytype
+          
+            if raw:
+                msg = datatype, data, pytype._md5sum, bag_pos, pytype
+            else:    
+                msg = pytype()
+                msg.deserialize(data)
+            
+            yield topic, msg, t
+
+class _BagReader102_Unindexed(_BagReader):
+    """
+    Support class for reading unindexed v1.2 bag files.
+    """
+    def __init__(self, bag):
+        _BagReader.__init__(self, bag)
+
+    def read_messages(self, topics, start_time, end_time, topic_filter, raw):
         f = self.bag._file
 
         while True:
             # Read MSG_DEF records
             while True:
+                position = f.tell()
+                
                 try:
                     header = _read_record_header(f)
                 except:
@@ -1002,16 +1093,20 @@ class _BagReader102_Unindexed(_BagReader):
             except KeyError:
                 raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % topic_info.datatype)
 
+            # Get the timestamp
             secs  = _read_uint32_field(header, 'secs')
             nsecs = _read_uint32_field(header, 'nsecs')
             t = roslib.rostime.Time(secs, nsecs)
    
             # Read the message content
-            record_data = _read_record_data(f)
+            data = _read_record_data(f)
             
-            # Deserialize the message
-            msg = msg_type()
-            msg.deserialize(record_data)
+            if raw:
+                msg = (topic_info.datatype, data, topic_info.md5sum, position, msg_type)
+            else:
+                # Deserialize the message
+                msg = msg_type()
+                msg.deserialize(data)
 
             yield (topic, msg, t)
 
@@ -1022,12 +1117,19 @@ class _BagReader102_Indexed(_BagReader):
     def __init__(self, bag):
         _BagReader.__init__(self, bag)
 
-    def get_messages(self, topics, start_time, end_time, topic_filter):
-        f = self.bag._file
+    def read_messages(self, topics, start_time, end_time, topic_filter, raw):
         for entry in self.get_entries(topics, start_time, end_time, topic_filter):
-            f.seek(entry.offset)
-            topic, msg = self.read_message_data_record(entry)
-            yield (topic, msg, entry.time)
+            yield self.read_message(entry, raw)
+
+    def read_message(self, entry, raw):
+        topic, msg = self.read_message_data_record(entry, raw)
+        return (topic, msg, entry.time)
+    
+    def get_index(self):
+        index = {}
+        for topic, entries in self._topic_indexes:
+            index[topic] = [(e.time, e.offset) for e in entries]
+        return index
 
     def start_reading(self):
         self.read_file_header_record()
@@ -1083,8 +1185,11 @@ class _BagReader102_Indexed(_BagReader):
             
         return (topic, topic_index)
     
-    def read_message_data_record(self):
+    def read_message_data_record(self, entry, raw):
         f = self.bag._file
+
+        # Seek to the message position
+        f.seek(entry.offset)
 
         # Skip any MSG_DEF records
         while True:
@@ -1108,11 +1213,14 @@ class _BagReader102_Indexed(_BagReader):
             raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % topic_info.datatype)
 
         # Read the message content
-        record_data = _read_record_data(f)
+        data = _read_record_data(f)
         
-        # Deserialize the message
-        msg = msg_type()
-        msg.deserialize(record_data)
+        if raw:
+            msg = topic_info.datatype, data, topic_info.md5sum, entry.offset, msg_type
+        else:            
+            # Deserialize the message
+            msg = msg_type()
+            msg.deserialize(data)
         
         return (topic, msg)
 
@@ -1127,10 +1235,20 @@ class _BagReader200(_BagReader):
         self.decompressed_chunk     = None
         self.decompressed_chunk_io  = None
 
-    def get_messages(self, topics, start_time, end_time, topic_filter):
+    def read_messages(self, topics, start_time, end_time, topic_filter, raw):
         for entry in self.get_entries(topics, start_time, end_time, topic_filter):
-            topic, msg = self.read_message_data_record(entry)
-            yield (topic, msg, entry.time)
+            yield self.read_message(entry, raw)
+
+    def read_message(self, entry, raw):
+        topic, msg = self.read_message_data_record(entry, raw)
+        return (topic, msg, entry.time)
+
+    def get_index(self):
+        index = {}
+        for topic, entries in self._topic_indexes:
+            index[topic] = [(e.time, (e.chunk_pos, e.offset)) for e in entries]
+
+        return index
 
     def start_reading(self):
         self.read_file_header_record()
@@ -1244,10 +1362,10 @@ class _BagReader200(_BagReader):
             offset = _read_uint32(f)
             
             topic_index.append(_IndexEntry200(time, self.bag._curr_chunk_info.pos, offset))
-            
+
         return (topic, topic_index)
 
-    def read_message_data_record(self, entry):
+    def read_message_data_record(self, entry, raw):
         chunk_pos, offset = entry.chunk_pos, entry.offset
 
         chunk_header = self.bag._chunk_headers.get(chunk_pos)
@@ -1299,11 +1417,14 @@ class _BagReader200(_BagReader):
             raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % topic_info.datatype)
 
         # Read the message content
-        record_data = _read_record_data(f)
+        data = _read_record_data(f)
         
         # Deserialize the message
-        msg = msg_type()
-        msg.deserialize(record_data)
+        if raw:
+            msg = topic_info.datatype, data, topic_info.md5sum, (chunk_pos, offset), msg_type
+        else:
+            msg = msg_type()
+            msg.deserialize(data)
         
         return (topic, msg)
 

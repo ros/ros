@@ -71,7 +71,10 @@ class BareTestCase(unittest.TestCase):
         self.results = results
         _, self.package = roslib.packages.get_dir_pkg(exe)
         self.exe = exe
-        self.test_name = os.path.basename(exe)
+        if test_name is None:
+            self.test_name = os.path.basename(exe)
+        else:
+            self.test_name = test_name
 
         self.args = [self.exe] + args
         self.retry = retry

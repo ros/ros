@@ -94,7 +94,7 @@ def recv_buff(sock, b, buff_size):
     else: #bomb out
         raise TransportTerminated("unable to receive data from sender, check sender's logs for details")
 
-class TCPServer:
+class TCPServer(object):
     """
     Simple server that accepts inbound TCP/IP connections and hands
     them off to a handler function. TCPServer obeys the
@@ -240,8 +240,7 @@ class TCPROSServer(object):
         """Starts the TCP socket server if one is not already running"""
         if self.tcp_ros_server:
             return
-        try:
-            self.lock.acquire()
+        with self.lock:
             try:
                 if not self.tcp_ros_server:
                     self.tcp_ros_server = TCPServer(self._tcp_server_callback, 0) #bind to any port
@@ -250,9 +249,6 @@ class TCPROSServer(object):
                 self.tcp_ros_server = None
                 logerr("unable to start TCPROS server: %s\n%s"%(e, traceback.format_exc()))
                 return 0, "unable to establish TCPROS server: %s"%e, []
-        finally:
-            self.lock.release()
-
     
     def get_address(self):
         """

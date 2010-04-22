@@ -34,6 +34,8 @@
 
 """rospy internal core implementation library"""
 
+from __future__ import with_statement
+
 import atexit
 import logging
 import os
@@ -307,12 +309,23 @@ def set_initialized(initialized):
     global _client_ready
     _client_ready = initialized
 
-_shutdown_lock  = threading.Lock()
+_shutdown_lock  = threading.RLock()
+
+# _shutdown_flag flags that rospy is in shutdown mode, in_shutdown
+# flags that the shutdown routine has started. These are separate
+# because 'pre-shutdown' hooks require rospy to be in a non-shutdown
+# mode. These hooks are executed during the shutdown routine.
 _shutdown_flag  = False
+_in_shutdown = False
+
+# various hooks to call on shutdown. shutdown hooks are called in the
+# shutdown state, preshutdown are called just before entering shutdown
+# state, and client shutdown is called before both of these.
 _shutdown_hooks = []
-_shutdown_threads = []
 _preshutdown_hooks = []
 _client_shutdown_hooks = []
+# threads that must be joined on shutdown
+_shutdown_threads = []
 
 _signalChain = {}
 
@@ -333,14 +346,11 @@ def _add_shutdown_hook(h, hooks):
         _logger.warn("add_shutdown_hook called after shutdown")
         h("already shutdown")
         return
-    try:
-        _shutdown_lock.acquire()
+    with _shutdown_lock:
         if hooks is None:
             # race condition check, don't log as we are deep into shutdown
             return
         hooks.append(h)
-    finally:
-        _shutdown_lock.release()
 
 def _add_shutdown_thread(t):
     """
@@ -349,8 +359,7 @@ def _add_shutdown_thread(t):
     if _shutdown_flag:
         #TODO
         return
-    try:
-        _shutdown_lock.acquire()
+    with _shutdown_lock:
         if _shutdown_threads is None:
             # race condition check, don't log as we are deep into shutdown
             return
@@ -361,8 +370,6 @@ def _add_shutdown_thread(t):
             if not other.isAlive():
                 _shutdown_threads.remove(other)
         _shutdown_threads.append(t)
-    finally:
-        _shutdown_lock.release()
 
 def add_client_shutdown_hook(h):
     """
@@ -407,13 +414,16 @@ def signal_shutdown(reason):
     @param reason: human-readable shutdown reason, if applicable
     @type  reason: str
     """
-    global _shutdown_flag, _shutdown_lock, _shutdown_hooks
+    global _shutdown_flag, _in_shutdown, _shutdown_lock, _shutdown_hooks
     _logger.info("signal_shutdown [%s]"%reason)
-    if not _shutdown_flag:
-        _shutdown_lock.acquire()
-        if _shutdown_flag:
+    if _shutdown_flag or _in_shutdown:
+        return
+    with _shutdown_lock:
+        if _shutdown_flag or _in_shutdown:
             return
+        _in_shutdown = True
 
+        # make copy just in case client re-invokes shutdown
         for h in _client_shutdown_hooks:
             try:
                 # client shutdown hooks do not accept a reason arg
@@ -439,17 +449,16 @@ def signal_shutdown(reason):
             except Exception, e:
                 print >> sys.stderr, "signal_shutdown hook error[%s]"%e
         del _shutdown_hooks[:]
-        
-        threads = _shutdown_threads[:]
-        _shutdown_lock.release()
 
-        for t in threads:
-            if t.isAlive():
-                t.join(_TIMEOUT_SHUTDOWN_JOIN)
-        del _shutdown_threads[:]
-        try:
-            time.sleep(0.1) #hack for now until we get rid of all the extra threads
-        except KeyboardInterrupt: pass
+        threads = _shutdown_threads[:]
+
+    for t in threads:
+        if t.isAlive():
+            t.join(_TIMEOUT_SHUTDOWN_JOIN)
+    del _shutdown_threads[:]
+    try:
+        time.sleep(0.1) #hack for now until we get rid of all the extra threads
+    except KeyboardInterrupt: pass
 
 def _ros_signal(sig, stackframe):
     signal_shutdown("signal-"+str(sig))

@@ -138,6 +138,10 @@ def rostestmain():
             testCase = rostest.baretest.BareTestCase(test_file, args[1:], rostest.runner.getResults(), retry=0, time_limit=options.bare_limit, test_name=options.bare_name)
             suite = unittest.TestSuite()
             suite.addTest(testCase)
+
+            # override outname
+            if options.bare_name:
+                outname = options.bare_name
         else:
             testCase = rostest.runner.createUnitTest(pkg, test_file)
             suite = unittest.TestLoader().loadTestsFromTestCase(testCase)

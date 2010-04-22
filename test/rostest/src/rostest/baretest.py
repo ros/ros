@@ -112,7 +112,8 @@ class BareTestCase(unittest.TestCase):
             timeout_failure = False
 
             run_id = None
-            process = roslaunch.nodeprocess.LocalProcess(run_id, self.package, self.test_name, self.args, os.environ, False, cwd='cwd')
+            #TODO: really need different, non-node version of LocalProcess instead of these extra args
+            process = roslaunch.nodeprocess.LocalProcess(run_id, self.package, self.test_name, self.args, os.environ, False, cwd='cwd', is_node=False)
 
             pm = self.pmon
             pm.register(process)

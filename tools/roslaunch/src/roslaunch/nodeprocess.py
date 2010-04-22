@@ -140,7 +140,7 @@ class LocalProcess(Process):
     Process launched on local machine
     """
     
-    def __init__(self, run_id, package, name, args, env, log_output, respawn=False, required=False, cwd=None):
+    def __init__(self, run_id, package, name, args, env, log_output, respawn=False, required=False, cwd=None, is_node=True):
         """
         @param run_id: unique run ID for this roslaunch. Used to
           generate log directory location. run_id may be None if this
@@ -160,6 +160,8 @@ class LocalProcess(Process):
         @type  respawn: bool
         @param cwd: working directory of process, or None
         @type  cwd: str
+        @param is_node: (optional) if True, process is ROS node and accepts ROS node command-line arguments. Default: True
+        @type  is_node: False
         """    
         super(LocalProcess, self).__init__(package, name, args, env, respawn, required)
         self.run_id = run_id
@@ -170,6 +172,7 @@ class LocalProcess(Process):
         self.cwd = cwd
         self.log_dir = None
         self.pid = -1
+        self.is_node = is_node
 
     # NOTE: in the future, info() is going to have to be sufficient for relaunching a process
     def get_info(self):
@@ -224,9 +227,10 @@ class LocalProcess(Process):
 
         # #986: pass in logfile name to node
         node_log_file = log_dir
-        # #1595: on respawn, these keep appending
-        self.args = _cleanup_remappings(self.args, '__log:=')
-        self.args.append("__log:=%s"%os.path.join(log_dir, "%s.log"%self.name))
+        if self.is_node:
+            # #1595: on respawn, these keep appending
+            self.args = _cleanup_remappings(self.args, '__log:=')
+            self.args.append("__log:=%s"%os.path.join(log_dir, "%s.log"%self.name))
 
         return logfileout, logfileerr
 

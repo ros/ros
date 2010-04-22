@@ -34,6 +34,8 @@
 
 """
 Library for process rosdistro files.
+
+New in ROS C-Turtle
 """
 
 from __future__ import with_statement

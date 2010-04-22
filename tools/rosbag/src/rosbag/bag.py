@@ -1077,7 +1077,7 @@ class _BagReader102_Unindexed(_BagReader):
                 if op != _OP_MSG_DEF:
                     break
 
-                topic_info = self._read_message_definition_record(header)
+                topic_info = self.read_message_definition_record(header)
                 self.bag._topic_infos[topic_info.topic] = topic_info
 
             # Check that we have a MSG_DATA record
@@ -1094,10 +1094,10 @@ class _BagReader102_Unindexed(_BagReader):
                 raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % topic_info.datatype)
 
             # Get the timestamp
-            secs  = _read_uint32_field(header, 'secs')
-            nsecs = _read_uint32_field(header, 'nsecs')
+            secs  = _read_uint32_field(header, 'sec')
+            nsecs = _read_uint32_field(header, 'nsec')
             t = roslib.rostime.Time(secs, nsecs)
-   
+
             # Read the message content
             data = _read_record_data(f)
             
@@ -1127,7 +1127,7 @@ class _BagReader102_Indexed(_BagReader):
     
     def get_index(self):
         index = {}
-        for topic, entries in self._topic_indexes:
+        for topic, entries in self.bag._topic_indexes:
             index[topic] = [(e.time, e.offset) for e in entries]
         return index
 
@@ -1245,7 +1245,7 @@ class _BagReader200(_BagReader):
 
     def get_index(self):
         index = {}
-        for topic, entries in self._topic_indexes:
+        for topic, entries in self.bag._topic_indexes:
             index[topic] = [(e.time, (e.chunk_pos, e.offset)) for e in entries]
 
         return index

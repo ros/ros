@@ -846,18 +846,10 @@ inline SerializedMessage serializeServiceResponse(bool ok, const M& message)
  * \brief Deserialize a message.  If includes_length is true, skips the first 4 bytes
  */
 template<typename M>
-inline void deserializeMessage(const SerializedMessage& m, M& message, bool includes_length = false)
+inline void deserializeMessage(const SerializedMessage& m, M& message)
 {
-  if (includes_length)
-  {
-    IStream s(m.buf.get() + 4, m.num_bytes - 4);
-    deserialize(s, message);
-  }
-  else
-  {
-    IStream s(m.buf.get(), m.num_bytes);
-    deserialize(s, message);
-  }
+  IStream s(m.message_start, m.num_bytes - (m.message_start - m.buf.get()));
+  deserialize(s, message);
 }
 
 } // namespace serialization

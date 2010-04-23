@@ -145,7 +145,7 @@ RosPlay::RosPlay(int i_argc, char **i_argv) :
   start_time_ = getSysTime();
   requested_start_time_ = start_time_;
   
-  if (player_.open(bags, start_time_ + ros::Duration().fromSec(-float_time), time_scale_, try_future))
+  if (player_.open(bags, start_time_ + ros::Duration().fromSec(-float_time / time_scale_), time_scale_, try_future))
     player_.addHandler<AnyMsg>(string("*"), &RosPlay::doPublish, this, NULL, false);
   else
   {

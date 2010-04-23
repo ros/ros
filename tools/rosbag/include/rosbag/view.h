@@ -46,18 +46,18 @@ class MessageRange;
 class IndexEntry;
 class ViewIterHelper;
 
-// Our current View has a bug.  Our internal storage end is based on
-// an iterator element rather than a time.  This means if we update
-// the underlying index to include a new message after our end-time
-// but before where our end-iterator points, our view will include
-// it when it shouldn't.  Similarly, adding new messages before our
-// first message but after our start time won't be capture in the
-// view either.
 class View
 {
     friend class Bag;
 
 public:
+
+    //! An iterator that points to a MessageInstance from a bag
+    /*!
+     * This iterator derefences to a MessageInstance by VALUE, since
+     * there does not actually exist a structure of MessageInstance
+     * from which to return a reference.
+     */
     class iterator : public boost::iterator_facade<iterator,
                                                    MessageInstance,
                                                    boost::forward_traversal_tag,
@@ -85,6 +85,12 @@ public:
         uint32_t view_revision_;
     };
 
+    //! Typedef to const_iterator
+    /*!
+     * QUESTION: Is this ok to do?  The const_iterator is necessary in
+     * some places, and it can't actually be used to modify the
+     * underlying structure.
+     */
     typedef iterator const_iterator;
 
     View();
@@ -94,6 +100,11 @@ public:
     iterator end();
     uint32_t size()  const;
 
+    //! Add a query to a view
+    /*!
+     * param bag    The bag file on which to run this query.
+     * param query  The actual query to evaluate which topics to include
+     */
     void addQuery(Bag& bag, Query const& query);
 
 protected:

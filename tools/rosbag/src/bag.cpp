@@ -152,33 +152,6 @@ void Bag::write(std::string const& topic, ros::Time const& time, MessageInstance
 	write_(topic, time, msg, connection_header);
 }
 
-bool Bag::rewrite(string const& src_filename, string const& dest_filename) {
-    Bag in;
-    if (!in.open(src_filename, bagmode::Read))
-        return false;
-
-    string target_filename = dest_filename;
-    if (target_filename == src_filename)
-        target_filename += ".active";
-
-    if (!open(target_filename, bagmode::Write))
-        return false;
-
-    View view;
-    view.addQuery(in, Query());
-
-    foreach(MessageInstance const m, view)
-        write(m.getTopic(), m.getTime(), m);
-
-    in.close();
-    close();
-
-    if (target_filename != dest_filename)
-        rename(target_filename.c_str(), dest_filename.c_str());
-
-    return true;
-}
-
 void Bag::close() {
     if (!file_.isOpen())
         return;

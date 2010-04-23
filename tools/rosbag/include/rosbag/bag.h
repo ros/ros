@@ -60,6 +60,7 @@ namespace rosbag {
 
 namespace bagmode
 {
+//! The possible modes to open a bag in
 enum BagMode
     {
         Write   = 0,
@@ -83,35 +84,22 @@ public:
     Bag();
     ~Bag();
 
-    //! Open a bag file
-    bool open(std::string const& filename, BagMode mode = bagmode::Default);
+    bool open(std::string const& filename, BagMode mode = bagmode::Default);          //!< Open a bag file
+    void close();     //!< Close the bag file (write to disk, append index, etc.)
 
-    //! Fix a bag file
-    bool rewrite(std::string const& src_filename, std::string const& dest_filename);
-
-    std::string getFileName()     const;
-    BagMode     getMode()         const;
-    int         getVersion()      const;
-    int         getMajorVersion() const;
-    int         getMinorVersion() const;
-
-    uint64_t getOffset()       const;   //! \todo replace with getSize?
+    std::string getFileName()     const;                                              //!< Get the filename of the bag
+    BagMode     getMode()         const;                                              //!< Get the mode the bag is in
+    int         getVersion()      const;                                              //!< Get the version of the open bagfile
+    int         getMajorVersion() const;                                              //!< Get the major-version of the open bagfile
+    int         getMinorVersion() const;                                              //!< Get the minor-version of the open bagfile
+    uint64_t    getOffset()       const;                                              //!< Get the offset into the actual file
 
     // Version 1.3 options
     void            setCompression(CompressionType compression);  //!< Set the compression method to use for writing chunks
     CompressionType getCompression() const;                       //!< Get the compression method to use for writing chunks
-    void            setChunkThreshold(uint32_t chunk_threshold);
-    uint32_t        getChunkThreshold() const;
+    void            setChunkThreshold(uint32_t chunk_threshold);  //!< Set the threshold for creating new chunks
+    uint32_t        getChunkThreshold() const;                    //!< Get the threshold for creating new chunks
 
-    //! Close the bag file
-    /*!
-     * Ensure file is written out to disk, index is appended and file descriptor is closed.
-     */
-    void close();
-
-    template<class T>
-    void write_(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> connection_header);
-    
     //! Write a message into the bag file
     /*!
      * \param topic The topic name
@@ -137,6 +125,7 @@ public:
      * \param topic The topic name
      * \param time  Timestamp of the message
      * \param msg   A MessageInstance
+     * \param connection_header  A connection header.
      *
      * Can throw BagNotOpenException or BagIOException
      */
@@ -146,6 +135,11 @@ public:
     void dump();
 
 private:
+
+    //This helper function actually does the write with an arbitary serializable message thing
+    template<class T>
+    void write_(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> connection_header);
+
     bool openRead  (std::string const& filename);
     bool openWrite (std::string const& filename);
     bool openAppend(std::string const& filename);

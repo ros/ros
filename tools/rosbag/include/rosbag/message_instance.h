@@ -46,37 +46,60 @@ namespace rosbag {
 
 class Bag;
 
+//! A class pointing into a bag file
+/*!
+ *  The MessageInstance class itself is fairly light weight.  It
+ *  simply contains a pointer to a bag-file and the index_entry
+ *  necessary to get access to the corresponding data.
+ *
+ *  It adheres to the necessary ros::message_traits to be directly
+ *  serializable.
+ */
 class MessageInstance
 {
-    friend class Bag;
+    friend class View;
   
 public:
-    MessageInstance(TopicInfo const* info, IndexEntry const& index, Bag& bag);
-  
     std::string const& getTopic()             const;
     std::string const& getDataType()          const;
     std::string const& getMD5Sum()            const;
     std::string const& getMessageDefinition() const;
-    ros::Time const&   getTime()              const;
+    ros::Time   const& getTime()              const;
 
-    bool        getLatching() const;
-    std::string getCallerId() const;
+    // Additional useful informatio from header
+    bool               getLatching()          const;
+    std::string        getCallerId()          const;
   
+
+    //! Templated call to instantiate a message
+    /*!
+     * returns NULL pointer if incompatible
+     */
     template<class T>
-    boost::shared_ptr<T const> instantiate() const;
+    boost::shared_ptr<T const> instantiate()  const;
   
+    //! Write serialized message contents out to a stream
     template<typename Stream>
     void write(Stream& stream) const;
 
+    //! Size of serialized message
     uint32_t size() const;
 
 private:
+    MessageInstance(TopicInfo const* info, IndexEntry const& index, Bag& bag);
+ 
     TopicInfo const* topic_info_;
     IndexEntry const index_entry_;
     Bag*             bag_;
 };
 
-ros::AdvertiseOptions createAdvertiseOptions(MessageInstance const&, uint32_t queue_size);
+
+//! Helper function to create AdvertiseOptions from a MessageInstance
+/*!
+ *  param msg         The Message instance for which to generate adveritse options
+ *  param queue_size  The size of the outgoing queue
+ */
+ros::AdvertiseOptions createAdvertiseOptions(MessageInstance const& msg, uint32_t queue_size);
 
 } // namespace rosbag
 

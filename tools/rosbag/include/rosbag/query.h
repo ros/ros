@@ -51,14 +51,26 @@ class TopicInfo;
 class Query
 {
 public:
+    //! The base query takes an optional time-range
+    /*!
+     * param start_time  the beginning of the time_range for the query
+     * param end_time    the end of the time_range for the query
+     */
     Query(ros::Time const& start_time = ros::TIME_MIN,
           ros::Time const& end_time   = ros::TIME_MAX);
     virtual ~Query();
 
-    ros::Time getStartTime() const;
-    ros::Time getEndTime()   const;
+    ros::Time getStartTime() const; //!< Accessor for start-timep
+    ros::Time getEndTime()   const; //!< Accessor for end-timep
 
-    virtual bool evaluate(TopicInfo const*) const;
+    //! Virtual function which determines topic-inclusion
+    /*!
+     * param topic_info  The information for the topic
+     * return True if topic should be included in View
+     */
+    virtual bool evaluate(TopicInfo const* topic_info) const;
+
+    //! Virtual function to clone so we can store a copy of the query
     virtual Query* clone() const { return new Query(*this); }
     
 
@@ -77,6 +89,21 @@ public:
 
     virtual bool evaluate(TopicInfo const*) const;
     virtual Query* clone() const { return new TopicQuery(*this); }
+
+private:
+    std::vector<std::string> topics_;
+};
+
+//! A Query the returns messages of a specified type
+class TypeQuery : public Query
+{
+public:
+    TypeQuery(std::vector<std::string> const& topics,
+               ros::Time const& start_time = ros::TIME_MIN,
+               ros::Time const& end_time   = ros::TIME_MAX);
+
+    virtual bool evaluate(TopicInfo const*) const;
+    virtual Query* clone() const { return new TypeQuery(*this); }
 
 private:
     std::vector<std::string> topics_;

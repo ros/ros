@@ -208,7 +208,7 @@ class LoaderContext(object):
             # value is set, error if declared in our arg dict as args
             # with set values are constant/grounded.
             if name in arg_dict:
-                raise LoadException("cannot override arg '%s', which has a set value")
+                raise LoadException("cannot override arg '%s', which has a set value"%name)
             arg_dict[name] = value
         elif default is not None:
             # assign value if not in context

@@ -662,7 +662,7 @@ class XmlLoader(roslaunch.loader.Loader):
                 ros_config.add_config_error("unrecognized tag "+tag.tagName)
         return default_machine
 
-    def _load_launch(self, launch, ros_config, is_core=False, filename=None, verbose=True, argv=None):
+    def _load_launch(self, launch, ros_config, is_core=False, filename=None, argv=None, verbose=True):
         """
         subroutine of launch for loading XML DOM into config. Load_launch assumes that it is
         creating the root XmlContext, and is thus affected by command-line arguments.
@@ -709,7 +709,7 @@ class XmlLoader(roslaunch.loader.Loader):
             raise XmlParseException("Invalid roslaunch XML syntax: no root <launch> tag")
         return root[0]
         
-    def load(self, filename, ros_config, core=False, verbose=True):
+    def load(self, filename, ros_config, core=False, argv=None, verbose=True):
         """
         load XML file into launch configuration
         @param filename: XML config file to load
@@ -718,10 +718,12 @@ class XmlLoader(roslaunch.loader.Loader):
         @type  ros_config: L{ROSLaunchConfig}
         @param core: if True, load file using ROS core rules
         @type  core: bool
+        @param argv: override command-line arguments (mainly for arg testing)
+        @type  argv: [str]
         """
         try:
             launch = self._parse_launch(filename, verbose)
-            self._load_launch(launch, ros_config, is_core=core, filename=filename, verbose=verbose)
+            self._load_launch(launch, ros_config, is_core=core, filename=filename, argv=argv, verbose=verbose)
         except ArgException, e:
             raise XmlParseException("[%s] requires the '%s' arg to be set"%(filename, str(e)))
         except SubstitutionException, e:

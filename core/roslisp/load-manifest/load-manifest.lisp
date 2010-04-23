@@ -40,7 +40,8 @@
 
 (defpackage :ros-load-manifest
     (:nicknames :ros-load)
-  (:export :load-manifest :load-system :asdf-paths-to-add :*current-ros-package* :asdf-ros-search :asdf-ros-pkg-search)
+  (:export :load-manifest :load-system :asdf-paths-to-add :*current-ros-package*
+           :asdf-ros-search :asdf-ros-pkg-search :ros-package-path :ros-home)
   (:use :cl :s-xml))
 
 (in-package :ros-load-manifest)

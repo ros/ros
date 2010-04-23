@@ -130,7 +130,7 @@ class BareTestCase(unittest.TestCase):
                     time.sleep(0.1)
                 
             except roslaunch.launch.RLTestTimeoutException, e:
-                if retry:
+                if self.retry:
                     timeout_failure = True
                 else:
                     raise

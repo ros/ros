@@ -6,7 +6,7 @@ if [[ $# == 4 ]]; then
   system=$2
   entry=$3
   output=$4
-  $SBCL_CMD --noinform --end-runtime-options --no-userinit --noprint --disable-debugger --load `rospack find roslisp`/scripts/make-roslisp-exec.lisp $pkg :$system $entry > $output.lisp
+  $SBCL_CMD --noinform --end-runtime-options --userinit `rospack find roslisp`/scripts/roslisp-sbcl-init --noprint --disable-debugger --load `rospack find roslisp`/scripts/make-roslisp-exec.lisp $pkg $system $entry $output.lisp
   cat > $output <<EOF
 #!/bin/bash
 ROSLISP_CURRENT_PACKAGE=$pkg $SBCL_CMD --noinform --end-runtime-options --noprint --no-userinit --disable-debugger --load $output.lisp --end-toplevel-options \$*

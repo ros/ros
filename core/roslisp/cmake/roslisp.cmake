@@ -91,16 +91,15 @@ gensrv_lisp()
 rosbuild_find_ros_package(roslisp)
 set(roslisp_make_node_exe ${roslisp_PACKAGE_PATH}/scripts/make_node_exec)
 
-macro(rospack_add_lisp_executable _output _system_name _entry_point)
-  add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${_output} ${CMAKE_CURRENT_SOURCE_DIR}/${_output}.lisp
-                     COMMAND ${roslisp_make_node_exe} ${PROJECT_NAME} ${_system_name} ${_entry_point} ${CMAKE_CURRENT_SOURCE_DIR}/${_output}
-                     DEPENDS ${ROS_MANIFEST_LIST})
+macro(rosbuild_add_lisp_executable _output _system_name _entry_point)
   set(_targetname _roslisp_${_output})
   string(REPLACE "/" "_" _targetname ${_targetname})
   add_custom_target(${_targetname} ALL
-                    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_output} ${CMAKE_CURRENT_SOURCE_DIR}/${_output}.lisp)
-  add_dependencies(${_targetname} _rospack_genmsg)
-  add_dependencies(${_targetname} _rospack_gensrv)
+                     COMMAND ${roslisp_make_node_exe} ${PROJECT_NAME} ${_system_name} ${_entry_point} ${CMAKE_CURRENT_SOURCE_DIR}/${_output})
+  add_dependencies(${_targetname} rosbuild_precompile)
+endmacro(rosbuild_add_lisp_executable)
+
+macro(rospack_add_lisp_executable  _output _system_name _entry_point)
+  _rosbuild_warn_deprecate_rospack_prefix(rospack_add_lisp_executable)
+  rosbuild_add_lisp_executable(${_output} ${_system_name} ${_entry_point})
 endmacro(rospack_add_lisp_executable)
-
-

@@ -3,6 +3,15 @@
 
 (require :asdf)
 
+;;; Handle recompilation of fasls with wrong version.
+(defmethod asdf:perform :around ((o asdf:load-op)
+                                 (c asdf:cl-source-file))
+  (handler-case (call-next-method o c)
+    ;; If a fasl was stale, try to recompile and load (once).
+    (sb-ext:invalid-fasl ()
+      (asdf:perform (make-instance 'asdf:compile-op) c)
+      (call-next-method))))
+
 ;; Add appropriate paths for asdf to look for things, using rospack to find the base directory
 (let ((str (make-string-output-stream)))
   (sb-ext:run-program "rospack" '("find" "roslisp") :search t :output str)
@@ -13,14 +22,7 @@
     (unless (eql (char pathstr (1- (length pathstr))) #\/)
       (setf pathstr (concatenate 'string pathstr "/")))
     (let ((roslisp-base (pathname pathstr)))
-      (push roslisp-base asdf:*central-registry*)
-      (push (merge-pathnames #P"s-xml/" roslisp-base) asdf:*central-registry*)
-      (push (merge-pathnames #P"s-xml-rpc/" roslisp-base) asdf:*central-registry*))))
+      (push (merge-pathnames #P"asdf/" roslisp-base) asdf:*central-registry*))))
 
+(asdf:operate 'asdf:load-op :ros-load-manifest)
 
-;; Assumption is that you do your development in interactive mode, so by the time we get to the point of compiling to standalone executables, we should optimize
-(declaim (optimize speed space))
-(declaim (sb-ext:muffle-conditions sb-ext:compiler-note))
-
-
-(format t "~&Finished reading roslisp-sbcl-init")

@@ -60,7 +60,7 @@ public:
    * \param index The index of the filter (returned by addFilter())
    */
   template<typename F>
-  boost::shared_ptr<F> getFilter(size_t index)
+  boost::shared_ptr<F> getFilter(size_t index) const
   {
     boost::shared_ptr<void> filter = getFilterForIndex(index);
     if (filter)
@@ -72,7 +72,7 @@ public:
   }
 
 protected:
-  virtual boost::shared_ptr<void> getFilterForIndex(size_t index) = 0;
+  virtual boost::shared_ptr<void> getFilterForIndex(size_t index) const = 0;
 };
 typedef boost::shared_ptr<ChainBase> ChainBasePtr;
 
@@ -179,7 +179,7 @@ public:
    * \param index The index of the filter (returned by addFilter())
    */
   template<typename F>
-  boost::shared_ptr<F> getFilter(size_t index)
+  boost::shared_ptr<F> getFilter(size_t index) const
   {
     if (index >= filters_.size())
     {
@@ -216,7 +216,7 @@ public:
   }
 
 protected:
-  virtual boost::shared_ptr<void> getFilterForIndex(size_t index)
+  virtual boost::shared_ptr<void> getFilterForIndex(size_t index) const
   {
     if (index >= filters_.size())
     {

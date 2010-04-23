@@ -575,8 +575,8 @@ class XmlLoader(roslaunch.loader.Loader):
         child_ns = self._ns_clear_params_attr(tag.tagName, tag, context, ros_config, include_filename=inc_filename)
 
         for t in [c for c in tag.childNodes if c.nodeType == DomNode.ELEMENT_NODE]:
-            tagName = t.tagName.lower()
-            if tagName == 'env':
+            tag_name = t.tagName.lower()
+            if tag_name == 'env':
                 self._env_tag(t, child_ns, ros_config)
             elif tag_name == 'arg':
                 self._arg_tag(t, child_ns, ros_config, verbose=verbose)

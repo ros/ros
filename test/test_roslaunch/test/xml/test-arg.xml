@@ -1,0 +1,50 @@
+<launch>
+
+  <arg name="required" />
+  <arg name="if_test" />
+  
+  <arg name="optional" default="not_set" />
+  <arg name="grounded" value="set" />
+
+  <arg name="param1_name" value="p1" />
+  <arg name="param2_name" value="p2" />
+  <arg name="param3_name" value="p3" />
+  
+  <arg name="param1_value" value="$(arg required)" />
+  <arg name="param2_value" value="$(arg optional)" />
+  <arg name="param3_value" value="$(arg grounded)" />
+  
+
+  <param name="$(arg param1_name)_test" value="$(arg param1_value)" />
+  <param name="$(arg param2_name)_test" value="$(arg param2_value)" />
+  <param name="$(arg param3_name)_test" value="$(arg param3_value)" />
+
+  <!-- TODO: re-enable context test. this fails right now -->
+  <group if="0">
+    <arg name="context" value="group1" />
+    <param name="context1" value="$(arg context)" />
+  </group>
+
+  <group if="0">
+    <arg name="context" value="group2" />
+    <param name="context2" value="$(arg context)" />
+  </group>
+
+  <arg name="fail" value="0" />
+  <group if="$(arg fail)">
+    <param name="fail" value="fail" />
+  </group>
+
+  <group unless="$(arg fail)">
+    <param name="succeed" value="yes" />
+  </group>
+
+  <group if="$(arg if_test)">
+    <param name="if_test" value="ran" />
+  </group>
+
+  <group unless="$(arg if_test)">
+    <param name="if_test" value="not_ran" />
+  </group>
+
+</launch>

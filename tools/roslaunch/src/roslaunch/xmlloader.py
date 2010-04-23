@@ -585,7 +585,7 @@ class XmlLoader(roslaunch.loader.Loader):
                     "WARN: unrecognized '%s' tag in <%s> tag"%(t.tagName, tag.tagName)
 
         # setup arg passing
-        roslaunch.loader.process_include_args(context)
+        roslaunch.loader.process_include_args(child_ns)
                 
         try:
             launch = self._parse_launch(inc_filename, verbose=verbose)
@@ -595,7 +595,7 @@ class XmlLoader(roslaunch.loader.Loader):
                                        default_machine, is_core, verbose)
 
             # check for unused args
-            roslaunch.loader.post_process_include_args(context)
+            roslaunch.loader.post_process_include_args(child_ns)
             
         except XmlParseException, e:
             raise XmlParseException("while processing %s:\n%s"%(inc_filename, str(e)))
@@ -660,24 +660,36 @@ class XmlLoader(roslaunch.loader.Loader):
                 ros_config.add_config_error("unrecognized tag "+tag.tagName)
         return default_machine
 
-    def _load_launch(self, launch, ros_config, is_core=False, filename=None, verbose=True):
+    def _load_launch(self, launch, ros_config, is_core=False, filename=None, verbose=True, argv=None):
         """
         subroutine of launch for loading XML DOM into config. Load_launch assumes that it is
-        creating the root XmlContext.
+        creating the root XmlContext, and is thus affected by command-line arguments.
         @param launch: DOM node of the root <launch> tag in the file
         @type  launch: L{Node}
         @param ros_config: launch configuration to load XML file into
         @type  ros_config: L{ROSLaunchConfig}
-        @param is_core: if True, load file using ROS core rules
+        @param is_core: (optional) if True, load file using ROS core rules. Default False.
         @type  is_core: bool
+        @param filename: (optional) name of file being loaded
+        @type  filename: str
+        @param verbose: (optional) print verbose output. Default False.
+        @type  verbose: bool
+        @param argv: (optional) command-line args. Default sys.argv.
         """        
         # The <master> tag is special as we only only process a single
         # tag in the top-level file. We ignore master tags in
         # included files.
 
+        if argv is None:
+            argv = sys.argv
+
         self._launch_tag(launch, ros_config, filename)
         master_tags = launch.getElementsByTagName('master')
         self.root_context = roslaunch.loader.LoaderContext('', filename)
+        roslaunch.loader.load_sysargs_into_context(self.root_context, argv)
+
+        #TODO: need to warn user about unused parameters
+        
         if len(master_tags) > 1:
             raise XmlParseException("multiple <master> tags in top-level xml file not allowed")
         elif len(master_tags) == 1:

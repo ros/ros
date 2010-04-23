@@ -41,7 +41,7 @@ from __future__ import with_statement
 import os
 import sys
 
-from roslib.names import make_global_ns, ns_join, PRIV_NAME
+from roslib.names import make_global_ns, ns_join, PRIV_NAME, load_mappings
 
 from roslaunch.core import Param, Master, RosbinExecutable, Node, Test, Machine, \
     RLException, PHASE_SETUP
@@ -128,6 +128,19 @@ def post_process_include_args(context):
     if bad:
         raise LoadException("unused args [%s] for include of [%s]"%(', '.join(bad), context.filename))
 
+def load_sysargs_into_context(context, argv):
+    """
+    Load in ROS remapping arguments as arg assignments for context.
+
+    @param context: context to load into. context's resolve_dict for 'arg' will be reinitialized with values.
+    @type  context: L{LoaderContext{
+    @param argv: command-line arguments
+    @type  argv: [str]
+    """
+    # we use same command-line spec as ROS nodes
+    mappings = load_mappings(argv)
+    context.resolve_dict['arg'] = mappings
+
 class LoaderContext(object):
     """
     Container for storing current loader context (e.g. namespace,
@@ -200,7 +213,7 @@ class LoaderContext(object):
         elif default is not None:
             # assign value if not in context
             if name not in arg_dict:
-                arg_dict[name] = value
+                arg_dict[name] = default
         else:
             # no value or default: appending to arg_names is all we
             # need to do as it declares the existence of the arg.
@@ -235,7 +248,10 @@ class LoaderContext(object):
         ctx = self.child(ns)
         # arg declarations are reset across include boundaries
         ctx.arg_names = []
+        ctx.args_passed = []
         ctx.filename = filename
+        # clear arg dictionary, we only pass in args declared within the include tag
+        del ctx.resolve_dict['arg']
         return ctx
 
     def child(self, ns):

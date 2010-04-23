@@ -142,7 +142,7 @@ Postcondition: the node has set up a callback for calls to this service, and reg
 	(setf (gethash service-name *services*)
 	      (make-service :callback function :name service-name :ros-type (ros-datatype service-type)
 			    :request-ros-type (ros-datatype (service-request-type service-type)) :response-ros-type (ros-datatype (service-response-type service-type))
-			    :request-class req-class :md5 (string-downcase (format nil "~x" (md5sum req-class)))))
+			    :request-class req-class :md5 (md5sum req-class)))
 	(protected-call-to-master ("registerService" service-name uri *xml-rpc-caller-api*) c
 	  (remhash service-name *services*)
 	  (roslisp-error "Socket error ~a when attempting to contact master at ~a for advertising service ~a" c *master-uri* service-name))))))

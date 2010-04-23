@@ -106,18 +106,27 @@ def convert_value(value, type_):
 
 def process_include_args(context):
     """
-    Processes arg declarations in context and makes sure that they are properly declared for passing into an included file. Also will correctly setup the context for passing to the included file.
+    Processes arg declarations in context and makes sure that they are
+    properly declared for passing into an included file. Also will
+    correctly setup the context for passing to the included file.
     """
 
-    # make sure all arguments have values
+    # make sure all arguments have values. arg_names and resolve_dict
+    # are cleared when the context was initially created.
     arg_dict = context.resolve_dict.get('arg', {})
     for arg in context.arg_names:
         if not arg in arg_dict:
             raise LoadException("include args must have declared values")
+        
+    # save args that were declared for post-processing
+    context.args_passed = context.arg_names
     # clear arg declarations so we don't error on re-declaration
     context.arg_names = []
-    
-    pass
+
+def post_process_include_args(context):
+    bad = [a for a in context.args_passed if a not in context.arg_names]
+    if bad:
+        raise LoadException("unused args [%s] for include of [%s]"%(', '.join(bad), context.filename))
 
 class LoaderContext(object):
     """
@@ -138,7 +147,7 @@ class LoaderContext(object):
         # arg names. Args that have been declared in this context
         self.arg_names = arg_names or []
         # args passed in from higher-level (e.g. command-line, <include> tag)
-        self.args_passed = args_passed or {}
+        self.args_passed = args_passed or []
         
     def add_param(self, p):
         """
@@ -180,19 +189,21 @@ class LoaderContext(object):
             self.resolve_dict['arg'] = {}
         arg_dict = self.resolve_dict['arg']
 
+        # args can only be declared once. they must also have one and
+        # only value at the time that they are declared.
         if value is not None:
-            # value is set, error if already declared with value
+            # value is set, error if declared in our arg dict as args
+            # with set values are constant/grounded.
             if name in arg_dict:
-                raise
+                raise LoadException("cannot override arg '%s', which has a set value")
             arg_dict[name] = value
-
-            # TODO: record declaration of arg
-            
         elif default is not None:
             # assign value if not in context
-            pass
+            if name not in arg_dict:
+                arg_dict[name] = value
         else:
-            # no value or default: just declare that arg exists. Need to set this so substitution args do not fail.
+            # no value or default: appending to arg_names is all we
+            # need to do as it declares the existence of the arg.
             pass
         
     def remap_args(self):
@@ -247,7 +258,8 @@ class LoaderContext(object):
             child_ns = self.ns
         return LoaderContext(child_ns, self.filename, parent=self,
                              params=self.params, env_args=self.env_args[:],
-                             resolve_dict=self.resolve_dict)
+                             resolve_dict=self.resolve_dict.copy(),
+                             arg_names=self.arg_names[:], args_passed=self.args_passed[:])
         
 #TODO: in-progress refactorization. I'm slowly separating out
 #non-XML-specific logic from xmlloader and moving into Loader. Soon

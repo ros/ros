@@ -254,7 +254,7 @@ class XmlLoader(roslaunch.loader.Loader):
         except KeyError, e:
             raise XmlParseException(
                 "<param> tag is missing required attribute: %s. \n\nParam xml is %s"%(e, tag.toxml()))
-        except Exception, e:
+        except ValueError, e:
             raise XmlParseException(
                 "Invalid <param> tag: %s. \n\nParam xml is %s"%(e, tag.toxml()))
 
@@ -584,6 +584,7 @@ class XmlLoader(roslaunch.loader.Loader):
                 print >> sys.stderr, \
                     "WARN: unrecognized '%s' tag in <%s> tag"%(t.tagName, tag.tagName)
 
+        # setup arg passing
         roslaunch.loader.process_include_args(context)
                 
         try:
@@ -592,6 +593,10 @@ class XmlLoader(roslaunch.loader.Loader):
             default_machine = \
                 self._recurse_load(ros_config, launch.childNodes, child_ns, \
                                        default_machine, is_core, verbose)
+
+            # check for unused args
+            roslaunch.loader.post_process_include_args(context)
+            
         except XmlParseException, e:
             raise XmlParseException("while processing %s:\n%s"%(inc_filename, str(e)))
         if verbose:
@@ -649,6 +654,8 @@ class XmlLoader(roslaunch.loader.Loader):
                     default_machine = val
             elif name == 'env':
                 self._env_tag(tag, context, ros_config)
+            elif name == 'arg':
+                self._arg_tag(tag, context, ros_config, verbose=verbose)
             else:
                 ros_config.add_config_error("unrecognized tag "+tag.tagName)
         return default_machine

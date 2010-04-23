@@ -46,6 +46,7 @@ import time
 import roslib.packages
 import roslib.rosenv
 import roslib.substitution_args
+from roslib.scriptutil import script_resolve_name
 
 from roslaunch.core import setup_env, local_machine, RLException
 from roslaunch.config import load_config_default
@@ -97,6 +98,7 @@ def print_node_args(node_name, roslaunch_files):
     @type  roslaunch_files: str
     """
     try:
+        node_name = script_resolve_name('roslaunch', node_name)
         args = get_node_args(node_name, roslaunch_files)
         print ' '.join(args)
     except RLException, e:
@@ -115,6 +117,9 @@ def _resolved_name(node):
 
 def print_node_filename(node_name, roslaunch_files):
     try:
+        # #2309
+        node_name = script_resolve_name('roslaunch', node_name)
+        
         loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
         config = load_config_default(roslaunch_files, None, loader=loader, verbose=False)
         nodes = [n for n in config.nodes if _resolved_name(n) == node_name] + \
@@ -150,7 +155,7 @@ def get_node_args(node_name, roslaunch_files):
     loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
     config = load_config_default(roslaunch_files, None, loader=loader, verbose=False)
     (node_name) = roslib.substitution_args.resolve_args((node_name), resolve_anon=False)
-    node_name = roslib.names.ns_join('/', node_name) if not node_name.startswith('$') else node_name
+    node_name = script_resolve_name('roslaunch', node_name) if not node_name.startswith('$') else node_name
     
     node = [n for n in config.nodes if _resolved_name(n) == node_name] + \
         [n for n in config.tests if _resolved_name(n) == node_name]

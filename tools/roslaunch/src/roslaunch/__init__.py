@@ -73,7 +73,7 @@ def configure_logging(uuid):
 def _get_optparse():
     from optparse import OptionParser
 
-    parser = OptionParser(usage="usage: %prog [-p|--port=port] [--core] [-u|--server_uri=uri]  [-c|--child_name=name] package filename", prog=NAME)
+    parser = OptionParser(usage="usage: %prog [options] [package] <filename>", prog=NAME)
     parser.add_option("--args",
                       dest="node_args", default=None,
                       help="Print command-line arguments for node", metavar="NODE_NAME")

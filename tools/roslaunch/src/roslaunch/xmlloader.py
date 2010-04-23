@@ -53,6 +53,7 @@ import roslaunch.loader
 
 # use in our namespace
 SubstitutionException = roslib.substitution_args.SubstitutionException
+ArgException = roslib.substitution_args.ArgException
 
 NS='ns'
 CLEAR_PARAMS='clear_params'
@@ -275,8 +276,7 @@ class XmlLoader(roslaunch.loader.Loader):
             
             context.add_arg(name, value=value, default=default)
 
-            #TODO: redo exceptions
-        except KeyError, e:
+        except roslib.substitution_args.ArgException, e:
             raise XmlParseException(
                 "<arg> tag is missing required attribute: %s. \n\nParam xml is %s"%(e, tag.toxml()))
         except Exception, e:
@@ -597,6 +597,8 @@ class XmlLoader(roslaunch.loader.Loader):
             # check for unused args
             roslaunch.loader.post_process_include_args(child_ns)
             
+        except ArgException, e:
+            raise XmlParseException("included file [%s] requires the '%s' arg to be set: %s"%(inc_filename, str(e)))
         except XmlParseException, e:
             raise XmlParseException("while processing %s:\n%s"%(inc_filename, str(e)))
         if verbose:
@@ -720,6 +722,8 @@ class XmlLoader(roslaunch.loader.Loader):
         try:
             launch = self._parse_launch(filename, verbose)
             self._load_launch(launch, ros_config, is_core=core, filename=filename, verbose=verbose)
+        except ArgException, e:
+            raise XmlParseException("[%s] requires the '%s' arg to be set"%(filename, str(e)))
         except SubstitutionException, e:
             raise XmlParseException(str(e))
 

@@ -13,12 +13,21 @@
   <arg name="param1_value" value="$(arg required)" />
   <arg name="param2_value" value="$(arg optional)" />
   <arg name="param3_value" value="$(arg grounded)" />
+
+  <arg name="int_value" value="1234" />
+  <arg name="float_value" value="3.0" />
   
+  <arg if="$(arg if_test)" name="if_param_value" value="true" />
+  <arg unless="$(arg if_test)" name="if_param_value" value="false" />
 
   <param name="$(arg param1_name)_test" value="$(arg param1_value)" />
   <param name="$(arg param2_name)_test" value="$(arg param2_value)" />
   <param name="$(arg param3_name)_test" value="$(arg param3_value)" />
 
+  <param name="if_param" value="$(arg if_param_value)" />
+  <param name="int_param" value="$(arg int_value)" />
+  <param name="float_param" value="$(arg float_value)" />  
+  
   <!-- TODO: re-enable context test. this fails right now -->
   <group if="0">
     <arg name="context" value="group1" />
@@ -46,5 +55,21 @@
   <group unless="$(arg if_test)">
     <param name="if_test" value="not_ran" />
   </group>
+
+  <include file="$(find test_roslaunch)/test/xml/test-arg-include.xml">
+    <arg name="required" value="required1" />
+  </include>
+
+  <include ns="include2" file="$(find test_roslaunch)/test/xml/test-arg-include.xml">
+    <arg name="required" value="required2" />
+    <arg name="optional" value="optional2" />
+  </include>
+
+  <include if="$(arg if_test)" ns="include3" file="$(find test_roslaunch)/test/xml/test-arg-include.xml">
+    <arg name="required" value="required3" />
+    <arg name="optional" value="optional3" />
+  </include>
+  
+
 
 </launch>

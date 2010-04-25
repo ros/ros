@@ -105,6 +105,8 @@
 (defvar ros-find-args nil)
 (defvar ros-find-args-history nil)
 
+(defvar ros-buffer-package nil "A buffer-local variable for caching the current buffer's ros package.")
+(make-variable-buffer-local 'ros-buffer-package)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Preloading
@@ -224,8 +226,12 @@
       (ros-package-for-path fn))))
 
 (defun ros-current-pkg-modeline-entry ()
-  (let ((pkg (ros-package-for-buffer (current-buffer))))
-    (if pkg
+  (let ((pkg (or ros-buffer-package (ros-package-for-buffer (current-buffer)))))
+    (unless ros-buffer-package
+      (if pkg
+          (setf ros-buffer-package pkg)
+        (setf ros-buffer-package :none)))
+    (if (and pkg (not (eq pkg :none)))
         (format "(ROS Pkg: %s)" pkg)
       "")))
 

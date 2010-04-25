@@ -205,6 +205,29 @@
     (cache-ros-service-locations))
   (rosemacs-lookup-vectors m ros-services ros-service-packages))
 
+(defun ros-package-for-path (path)
+  (let ((path (cond ((file-directory-p path)
+                     (directory-file-name path))
+                    ((file-exists-p path)
+                     (directory-file-name (file-name-directory path)))
+                    (t nil))))
+    (catch 'done
+      (while (and path (not (equal path "/")))
+        (let ((files (directory-files path)))
+          (if (member "manifest.xml" files)
+              (throw 'done (file-name-nondirectory path))
+            (setf path (directory-file-name (file-name-directory path)))))))))
+
+(defun ros-package-for-buffer (buffer)
+  (let ((fn (buffer-file-name buffer)))
+    (when fn
+      (ros-package-for-path fn))))
+
+(defun ros-current-pkg-modeline-entry ()
+  (let ((pkg (ros-package-for-buffer (current-buffer))))
+    (if pkg
+        (format "(ROS Pkg: %s)" pkg)
+      "")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; parsing

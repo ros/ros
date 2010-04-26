@@ -87,8 +87,6 @@ class TimelinePanel(LayerPanel):
                 idx = BagIndexPickler(bag_path + '.index').load()
 
             if idx is not None:
-                bag_file.read_datatype_defs(idx)
-
                 self.bag_files[bag_file] = idx
                 
                 print '%s\n%s\n%s' % (bag_path, '-' * len(bag_path), idx)

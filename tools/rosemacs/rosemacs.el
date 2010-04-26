@@ -578,8 +578,7 @@ parameter."
          (buffer-name (concat "*rostopic:" topic-full-name "*"))
          (process (start-process buffer-name buffer-name "rostopic" "echo" topic-full-name)))
     (view-buffer-other-window (process-buffer process))
-    (ros-topic-echo-mode)
-    ))
+    (ros-topic-echo-mode)))
 
 (defun ros-topic-info (topic)
   "Print info about topic, using rostopic info"
@@ -591,8 +590,12 @@ parameter."
                         word))))
   (let* ((topic-full-name (if (string-match "^/" topic) topic (concat "/" topic)))
          (buffer-name (format "*rostopic-info:%s" topic))
-         (process (start-process buffer-name buffer-name "rostopic" "info" topic-full-name)))
-    (view-buffer-other-window (process-buffer process))))
+         (buf (get-buffer-create buffer-name)))
+    (with-current-buffer buf
+      (let ((buffer-read-only nil))
+        (erase-buffer)))
+    (view-buffer-other-window buf)
+    (call-process "rostopic" nil buf t "info" topic-full-name)))
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Internal

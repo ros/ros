@@ -59,8 +59,8 @@ class ROSBagFormatException(ROSBagException):
     """
     Exceptions for errors relating to the bag file format.
     """
-    def __init__(self, msg):
-        ROSBagException.__init__(self, msg)
+    def __init__(self, value):
+        ROSBagException.__init__(self, value)
 
 class Compression:
     """
@@ -191,13 +191,13 @@ class Bag(object):
 
     def _read_message(self, entry, raw):
         self.flush()
-        return self._reader.read_message(entry, raw)
+        return self._reader.read_message_data_record(entry, raw)
 
     def getIndex(self):
         """
         Get the index.
         @return: the index
-        @rtype: dict of topic -> (U{roslib.rostime.Time}, position), where position is dependent on the bag format
+        @rtype: dict of topic -> (U{roslib.rostime.Time}, position), where position depends on the bag format.
         """
         if not self._topic_indexes:
             raise ROSBagException('getIndex not supported on unindexed bag files')
@@ -1119,15 +1119,11 @@ class _BagReader102_Indexed(_BagReader):
 
     def read_messages(self, topics, start_time, end_time, topic_filter, raw):
         for entry in self.get_entries(topics, start_time, end_time, topic_filter):
-            yield self.read_message(entry, raw)
-
-    def read_message(self, entry, raw):
-        topic, msg = self.read_message_data_record(entry, raw)
-        return (topic, msg, entry.time)
+            yield self.read_message_data_record(entry, raw)
     
     def get_index(self):
         index = {}
-        for topic, entries in self.bag._topic_indexes:
+        for topic, entries in self.bag._topic_indexes.items():
             index[topic] = [(e.time, e.offset) for e in entries]
         return index
 
@@ -1147,7 +1143,7 @@ class _BagReader102_Indexed(_BagReader):
         # Read the message definition records (one for each topic)
         for topic, index in self.bag._topic_indexes.items():
             self.bag._file.seek(index[0].offset)
-            
+
             topic_info = self.read_message_definition_record()
             self.bag._topic_infos[topic_info.topic] = topic_info
 
@@ -1185,11 +1181,11 @@ class _BagReader102_Indexed(_BagReader):
             
         return (topic, topic_index)
     
-    def read_message_data_record(self, entry, raw):
+    def read_message_data_record(self, position, raw):
         f = self.bag._file
 
         # Seek to the message position
-        f.seek(entry.offset)
+        f.seek(position)
 
         # Skip any MSG_DEF records
         while True:
@@ -1212,17 +1208,22 @@ class _BagReader102_Indexed(_BagReader):
         except KeyError:
             raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % topic_info.datatype)
 
+        # Get the timestamp
+        secs  = _read_uint32_field(header, 'sec')
+        nsecs = _read_uint32_field(header, 'nsec')
+        t = roslib.rostime.Time(secs, nsecs)
+
         # Read the message content
         data = _read_record_data(f)
         
         if raw:
-            msg = topic_info.datatype, data, topic_info.md5sum, entry.offset, msg_type
+            msg = topic_info.datatype, data, topic_info.md5sum, position, msg_type
         else:            
             # Deserialize the message
             msg = msg_type()
             msg.deserialize(data)
         
-        return (topic, msg)
+        return (topic, msg, t)
 
 class _BagReader200(_BagReader):
     """
@@ -1237,15 +1238,11 @@ class _BagReader200(_BagReader):
 
     def read_messages(self, topics, start_time, end_time, topic_filter, raw):
         for entry in self.get_entries(topics, start_time, end_time, topic_filter):
-            yield self.read_message(entry, raw)
-
-    def read_message(self, entry, raw):
-        topic, msg = self.read_message_data_record(entry, raw)
-        return (topic, msg, entry.time)
+            yield self.read_message_data_record(entry, raw)
 
     def get_index(self):
         index = {}
-        for topic, entries in self.bag._topic_indexes:
+        for topic, entries in self.bag._topic_indexes.items():
             index[topic] = [(e.time, (e.chunk_pos, e.offset)) for e in entries]
 
         return index
@@ -1365,8 +1362,8 @@ class _BagReader200(_BagReader):
 
         return (topic, topic_index)
 
-    def read_message_data_record(self, entry, raw):
-        chunk_pos, offset = entry.chunk_pos, entry.offset
+    def read_message_data_record(self, position, raw):
+        chunk_pos, offset = position
 
         chunk_header = self.bag._chunk_headers.get(chunk_pos)
         if chunk_header is None:
@@ -1407,7 +1404,8 @@ class _BagReader200(_BagReader):
         if op != _OP_MSG_DATA:
             raise ROSBagFormatException('Expecting OP_MSG_DATA, got %d' % op)
 
-        topic = _read_str_field(header, 'topic')
+        topic = _read_str_field (header, 'topic')
+        t     = _read_time_field(header, 'time')
 
         # Get the message type
         topic_info = self.bag._topic_infos[topic]
@@ -1426,7 +1424,7 @@ class _BagReader200(_BagReader):
             msg = msg_type()
             msg.deserialize(data)
         
-        return (topic, msg)
+        return (topic, msg, t)
 
 def _time_to_str(secs):
     secs_frac = secs - int(secs) 

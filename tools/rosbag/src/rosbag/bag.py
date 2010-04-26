@@ -49,11 +49,11 @@ class ROSBagException(Exception):
     """
     Base class for exceptions in rosbag.
     """
-    def __init__(self, msg):
-        self.msg = msg
+    def __init__(self, value):
+        self.value = value
 
     def __str__(self):
-        return self.msg
+        return self.value
 
 class ROSBagFormatException(ROSBagException):
     """
@@ -80,14 +80,14 @@ class Bag(object):
         writing or appending.  The file will be created if it doesn't exist
         when opened for writing or appending; it will be truncated when opened
         for writing.  Simultaneous reading and writing is allowed when in writing
-        or appending mode.        
+        or appending mode.
         @param f: filename of bag to open or a stream to read from
         @type  f: str or file
         @param mode: mode, either 'r', 'w', or 'a'
         @type  mode: str
         @param compression: compression mode, see Compression
         @type  compression: str
-        @param chunk_threshold: size in bytes of chunks
+        @param chunk_threshold: minimum number of uncompressed bytes per chunk
         @type  chunk_threshold: int
         @raise ValueError: if any argument is invalid
         @raise ROSBagException: if an error occurs opening file
@@ -96,7 +96,7 @@ class Bag(object):
         self._file            = None
         self._filename        = None
         self._version         = None
-        
+
         allowed_compressions = [Compression.NONE, Compression.BZ2] #, Compression.ZLIB]
         if compression not in allowed_compressions:
             raise ValueError('compression must be one of: %s' % ', '.join(allowed_compressions))  

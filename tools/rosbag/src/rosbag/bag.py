@@ -189,9 +189,9 @@ class Bag(object):
         
     chunk_threshold = property(_get_chunk_threshold, _set_chunk_threshold)
 
-    def _read_message(self, entry, raw):
+    def _read_message(self, position, raw):
         self.flush()
-        return self._reader.read_message_data_record(entry, raw)
+        return self._reader.read_message_data_record(position, raw)
 
     def getIndex(self):
         """
@@ -1119,7 +1119,7 @@ class _BagReader102_Indexed(_BagReader):
 
     def read_messages(self, topics, start_time, end_time, topic_filter, raw):
         for entry in self.get_entries(topics, start_time, end_time, topic_filter):
-            yield self.read_message_data_record(entry, raw)
+            yield self.read_message_data_record(entry.offset, raw)
     
     def get_index(self):
         index = {}
@@ -1238,7 +1238,7 @@ class _BagReader200(_BagReader):
 
     def read_messages(self, topics, start_time, end_time, topic_filter, raw):
         for entry in self.get_entries(topics, start_time, end_time, topic_filter):
-            yield self.read_message_data_record(entry, raw)
+            yield self.read_message_data_record((entry.chunk_pos, entry.offset), raw)
 
     def get_index(self):
         index = {}

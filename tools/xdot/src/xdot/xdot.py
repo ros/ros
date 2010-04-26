@@ -399,7 +399,7 @@ class Edge(Element):
 
 class Graph(Shape):
 
-    def __init__(self, width=1, height=1, shapes=(), nodes=(), edges=()):
+    def __init__(self, width=1, height=1, shapes=(), nodes=(), edges=(), subgraph_shapes={}):
         Shape.__init__(self)
 
         self.width = width
@@ -407,6 +407,7 @@ class Graph(Shape):
         self.shapes = shapes
         self.nodes = nodes
         self.edges = edges
+        self.subgraph_shapes = subgraph_shapes
 
     def get_size(self):
         return self.width, self.height
@@ -961,6 +962,7 @@ class DotParser(Parser):
 
     def parse_subgraph(self):
         id = None
+        shapes_before = set(self.shapes)
         if self.lookahead.type == SUBGRAPH:
             self.consume()
             if self.lookahead.type == ID:
@@ -971,6 +973,8 @@ class DotParser(Parser):
             while self.lookahead.type != RCURLY:
                 self.parse_stmt()
             self.consume()
+        new_shapes = set(self.shapes) - shapes_before
+        self.subgraph_shapes[id] = [s for s in new_shapes if not any([s in ss for ss in self.subgraph_shapes.values()])]
         return id
 
     def parse_stmt(self):
@@ -1070,6 +1074,7 @@ class XDotParser(DotParser):
         self.shapes = []
         self.node_by_name = {}
         self.top_graph = True
+        self.subgraph_shapes = {}
 
     def handle_graph(self, attrs):
         if self.top_graph:
@@ -1140,7 +1145,12 @@ class XDotParser(DotParser):
     def parse(self):
         DotParser.parse(self)
 
-        return Graph(self.width, self.height, self.shapes, self.nodes, self.edges)
+        """
+        for k,shapes in self.subgraph_shapes.iteritems():
+          self.shapes += shapes
+        """
+
+        return Graph(self.width, self.height, self.shapes, self.nodes, self.edges, self.subgraph_shapes)
 
     def parse_node_pos(self, pos):
         x, y = pos.split(",")

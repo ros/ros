@@ -39,7 +39,11 @@ class ROSRecordException(Exception):
     """
     Base exception type for rosrecord-related errors.
     """
-    pass
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
 
 class BagReader(object):
     """
@@ -55,8 +59,8 @@ class BagReader(object):
         """
         try:
             self._bag = rosbag.Bag(f, 'r')
-        except:
-            raise ROSRecordException()
+        except Exception, e:
+            raise ROSRecordException(e.value)
 
     def close(self):
         """
@@ -65,8 +69,14 @@ class BagReader(object):
         try:
             if self._bag:
                 self._bag.close()
-        except:
-            raise ROSRecordException()
+        except Exception, e:
+            raise ROSRecordException(e.value)
+        
+    @property
+    def datatypes(self): return dict([(topic_info.topic, topic_info.datatype) for topic_info in self._bag._topic_infos.values()])
+    
+    @property
+    def filename(self): return self._bag.filename
 
     def read_index(self):
         """
@@ -74,14 +84,19 @@ class BagReader(object):
     
         @return dict(topic, [(stamp, pos)...]): bag file index
         """
-        return self._bag.getIndex()
-  
+        try:
+            self.index = self._bag.getIndex()
+        except rosbag.ROSBagException:
+            self.index = None
+
+        return self.index
+
     def logplayer(self, raw=False, seek=None):
         if not self._bag:
             return
 
         if seek is not None:
-            raise ROSBagException('seek not supported')
+            raise ROSRecordException('seek not supported')
 
         try:
             try:
@@ -108,7 +123,7 @@ class BagReader(object):
                 yield position, topic, msg, t
         
         except rosbag.ROSBagException, e:
-            rospy.logerr('ROSBagException: couldn\'t read message - %s' % e)
+            rospy.logerr('ROSBagException: couldn\'t read message - %s' % str(e))
         except IOError:
             rospy.logerr('IOError: couldn\'t read message')
         except KeyError:
@@ -132,7 +147,7 @@ class BagReader(object):
     def load_messages(self, positions, index=None):
         try:
             for pos in positions:
-                _, raw_msg, t = self._bag._get_message(pos, True)
+                _, raw_msg, t = self._bag._read_message(pos, True)
                 if raw_msg is not None:
                     (datatype, message_data, md5, bag_pos, pytype) = raw_msg
                     
@@ -142,7 +157,7 @@ class BagReader(object):
                     yield (datatype, msg, t)
         
         except rosbag.ROSBagException, e:
-            rospy.logerr('ROSRecordException: couldn\'t read %d - %s' % (pos, e)) 
+            rospy.logerr('ROSRecordException: couldn\'t read %s - %s' % (str(pos), str(e))) 
         except IOError:
             rospy.logerr('IOError: couldn\'t read %d' % pos)
         except KeyError:

@@ -327,7 +327,6 @@ template<class T, class D, class E>
 void TimerManager<T, D, E>::remove(int32_t handle)
 {
   boost::mutex::scoped_lock lock(timers_mutex_);
-  boost::mutex::scoped_lock lock2(waiting_mutex_);
 
   typename V_TimerInfo::iterator it = timers_.begin();
   typename V_TimerInfo::iterator end = timers_.end();
@@ -344,6 +343,7 @@ void TimerManager<T, D, E>::remove(int32_t handle)
   }
 
   {
+    boost::mutex::scoped_lock lock2(waiting_mutex_);
     // Remove from the waiting list if it's in it
     L_int32::iterator it = std::find(waiting_.begin(), waiting_.end(), handle);
     if (it != waiting_.end())

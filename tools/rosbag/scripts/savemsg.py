@@ -36,38 +36,33 @@
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
-import rospy
+import sys
 import rosbag
-import fileinput
+from rosbag import bag_migration
+import roslib.message
 
-def fixbags(md5file, inbag, outbag):
-    d = dict()
-    finput = fileinput.input(md5file)
-    for line in finput:
-        sp = line.split()
-        d[sp[1]] = [sp[0], sp[2], sp[3]]
-
-    rebag = rosbag.Bag(outbag, 'w')
-
-    for i, (topic, msg, t) in enumerate(rosbag.Bag(inbag).readMessages(raw=True)):
-        type  = msg[0]
-        bytes = msg[1]
-        md5   = msg[2]
-
-        if md5 in d:
-            if type != d[md5][0]:
-                print 'WARNING: found matching md5, but non-matching name'
-                continue
-            msg = (d[md5][1], msg[1], d[md5][2])
-
-        rebag.add(topic, msg, t, raw=True)
-
-    rebag.close()
+from optparse import OptionParser
 
 if __name__ == '__main__':
-    import sys
-    if len(sys.argv) == 4:
-        fixbags(sys.argv[1], sys.argv[2], sys.argv[3])
+    parser = OptionParser(usage='usage: savemsg.py [-b <bagfile] type')
+    parser.add_option('-b', '--bagfiles', action='store', dest='bagfile', default=None, help='Save message from a bagfile rather than system definition')
+
+    (options, args) = parser.parse_args()
+
+    if len(args) < 1:
+        parser.error('Message type not specified')
+
+    if options.bagfile is None:
+        sys_class = roslib.message.get_message_class(args[0])
+        if sys_class is None:
+            print >> sys.stderr, 'Could not find message %s.' % args[0]
+        else:
+            print '[%s]:' % args[0]
+            print sys_class._full_text
     else:
-        print 'usage: fix_moved_messages.py <name_md5_file> <inbag> <outbag>'
-        exit(2)
+        for i, (topic, msg, t) in enumerate(rosbag.Bag(options.bagfile).readMessages(raw=True)):
+            if msg[0] == args[0]:
+                print '[%s]:' % args[0]
+                print msg[4]._full_text
+                exit(0)
+        print >> sys.stderr, 'Could not find message %s in bag %s.' % (args[0], options.bagfile)

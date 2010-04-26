@@ -33,24 +33,24 @@
 
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
+
 import rospy
 import rosbag
 
 def rename_topic(intopic, inbag, outtopic, outbag):
-  rebag = rosrecord.Rebagger(outbag)
+    rebag = rosbag.Bag(outbag, 'w')
 
-  for (topic, msg, t) in rosrecord.logplayer(inbag, raw=True):
-    if rospy.is_shutdown():
-      break
-    if topic == intopic:
-      rebag.add(outtopic, msg, t, raw=True)
-    else:
-      rebag.add(topic, msg, t, raw=True)
-  rebag.close()
+    for (topic, msg, t) in rosbag.Bag(inbag).readMessages(raw=True):
+        if topic == intopic:
+            rebag.write(outtopic, msg, t, raw=True)
+        else:
+            rebag.write(topic, msg, t, raw=True)
+            
+    rebag.close()
 
 if __name__ == '__main__':
-  import sys
-  if len(sys.argv) == 5:
-    rename_topic(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
-  else:
-    print "usage: topic_renamer <intopic> <inbag> <outtopic> <outbag>"
+    import sys
+    if len(sys.argv) == 5:
+        rename_topic(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    else:
+        print "usage: topic_renamer.py <intopic> <inbag> <outtopic> <outbag>"

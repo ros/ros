@@ -33,41 +33,41 @@
 
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
-import rospy
-import rosbag
 
 import sys
 import array
 import Image
+import rospy
+import rosbag
 
 def int16_str(d):
     return array.array('B', [ min(x, 255) for x in d ]).tostring()
     #return array.array('f', [ float(x) for x in d ]).tostring()
 
 def msg2im(msg):
-  """Take an image_msgs::Image and return a PIL image"""
-  if len(msg.uint8_data.data) == 0 and len(msg.int16_data.data) == 0:
-    return None
-  else:
+    """Take an sensor_msgs/Image and return a PIL image"""
+    if len(msg.uint8_data.data) == 0 and len(msg.int16_data.data) == 0:
+        return None
+    
     if msg.depth == 'uint8':
-      ma = msg.uint8_data
-      image_data = ma.data
+        ma, image_data = msg.uint8_data, ma.data
     else:
-      ma = msg.int16_data
-      image_data = int16_str(ma.data)
-    dim = dict([ (d.label,d.size) for d in ma.layout.dim ])
+        ma, image_data = msg.int16_data, int16_str(ma.data)
+        
+    dim = dict([(d.label, d.size) for d in ma.layout.dim])
     mode = { ('uint8',1) : "L", ('uint8',3) : "RGB", ('int16',1) : "L" }[msg.depth, dim['channel']]
-    (w,h) = (dim['width'], dim['height'])
-    return Image.fromstring(mode, (w,h), image_data)
+    (w, h) = (dim['width'], dim['height'])
+    return Image.fromstring(mode, (w, h), image_data)
 
 counter = 0
-for topic, msg, t in rosbag.logplayer(sys.argv[1]):
-  if rospy.is_shutdown():
-    break
-  if topic.endswith("stereo/raw_stereo"):
-    for (mi,c) in [ (msg.left_image, 'L'), (msg.right_image, 'R'), (msg.disparity_image, 'D')]:
-      im = msg2im(mi)
-      if im:
-        ext = { 'L':'png', 'RGB':'png', 'F':'tiff' }[im.mode]
-        im.save("%06d%s.%s" % (counter, c, ext))
-    counter += 1
+for topic, msg, t in rosbag.Bag(sys.argv[1]).readMessages():
+    if rospy.is_shutdown():
+        break
+    
+    if topic.endswith('stereo/raw_stereo'):
+        for (mi,c) in [ (msg.left_image, 'L'), (msg.right_image, 'R'), (msg.disparity_image, 'D')]:
+            im = msg2im(mi)
+            if im:
+                ext = { 'L':'png', 'RGB':'png', 'F':'tiff' }[im.mode]
+                im.save('%06d%s.%s' % (counter, c, ext))
+        counter += 1

@@ -36,38 +36,36 @@
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
-import rospy
-import rosbag
+import sys
+from rosbag import bag_migration
 import fileinput
+import os
 
-def fixbags(md5file, inbag, outbag):
-    d = dict()
-    finput = fileinput.input(md5file)
-    for line in finput:
-        sp = line.split()
-        d[sp[1]] = [sp[0], sp[2], sp[3]]
+def fixbag_batch(inbags):
+    mm = bag_migration.MessageMigrator()
 
-    rebag = rosbag.Bag(outbag, 'w')
-
-    for i, (topic, msg, t) in enumerate(rosbag.Bag(inbag).readMessages(raw=True)):
-        type  = msg[0]
-        bytes = msg[1]
-        md5   = msg[2]
-
-        if md5 in d:
-            if type != d[md5][0]:
-                print 'WARNING: found matching md5, but non-matching name'
-                continue
-            msg = (d[md5][1], msg[1], d[md5][2])
-
-        rebag.add(topic, msg, t, raw=True)
-
-    rebag.close()
+    for b in inbags:
+        print 'Trying to migrate: %s' % b
+        outbag = b + '.tmp'
+        if not bag_migration.fixbag(mm, b, outbag):
+            os.remove(outbag)
+            print ' Migration failed.'
+            continue
+        
+        oldnamebase = b + '.old'
+        oldname = oldnamebase
+        i = 1
+        while os.path.isfile(oldname):
+            i += 1
+            oldname = oldnamebase + str(i)
+        os.rename(b, oldname)
+        os.rename(outbag, b)
+        print ' Migration successful.  Original stored as: %s' % oldname
 
 if __name__ == '__main__':
     import sys
-    if len(sys.argv) == 4:
-        fixbags(sys.argv[1], sys.argv[2], sys.argv[3])
+    if len(sys.argv) >= 2:
+        fixbag_batch(sys.argv[1:])
     else:
-        print 'usage: fix_moved_messages.py <name_md5_file> <inbag> <outbag>'
+        print 'usage: fixbag_batch.py bag1 [bag2 bag3 ...]'
         exit(2)

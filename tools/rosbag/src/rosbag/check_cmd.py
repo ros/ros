@@ -32,49 +32,37 @@
 #
 # Revision $Id$
 
-import sys
+import optparse
 import os
 import signal
 import subprocess
-import optparse
-from optparse import OptionParser
+import sys
 
 def check_cmd(argv):
-    parser = OptionParser(usage="rosbag check BAG [-g RULEFILE] [EXTRARULES1 EXTRARULES2 ...]")
-
-    parser.add_option("-g", "--genrules",  action="store",      dest="rulefile", default=None, help="generate a rulefile named RULEFILE")
-    parser.add_option("-a", "--append",    action="store_true", dest="append",                 help="append to the end of an existing rulefile after loading it")
-    parser.add_option("-n", "--noplugins", action="store_true", dest="noplugins",              help="do not load rulefiles via plugins")
-
+    parser = optparse.OptionParser(usage='rosbag check BAG [-g RULEFILE] [EXTRARULES1 EXTRARULES2 ...]')
+    parser.add_option('-g', '--genrules',  action='store',      dest='rulefile', default=None, help='generate a rulefile named RULEFILE')
+    parser.add_option('-a', '--append',    action='store_true', dest='append',                 help='append to the end of an existing rulefile after loading it')
+    parser.add_option('-n', '--noplugins', action='store_true', dest='noplugins',              help='do not load rulefiles via plugins')
     (options, args) = parser.parse_args(argv)
 
-    all_rules = []
-
     if len(args) == 0:
-        parser.error("Must specify a bag file to check.")
-    else:
-        if options.append and options.rulefile is None:
-            parser.error("Cannot specify -a without also specifying -g.")
+        parser.error('Must specify a bag file to check.')
+    if options.append and options.rulefile is None:
+        parser.error('Cannot specify -a without also specifying -g.')
+    if options.rulefile is not None:
+        rulefile_exists = os.path.isfile(options.rulefile)
+        if rulefile_exists and not options.append:
+            parser.error('The file %s already exists.  Include -a if you intend to append.' % options.rulefile)
+        if not rulefile_exists and options.append:
+            parser.error('The file %s does not exist, and so -a is invalid.' % options.rulefile)
 
-        if options.rulefile is not None:
-            if os.path.isfile(options.rulefile) and not options.append:
-                parser.error("The file %s already exists.  Include -a if you intend to append."%options.rulefile)
-            if not os.path.isfile(options.rulefile) and options.append:
-                parser.error("The file %s does not exist, and so -a is invalid."%options.rulefile)
-
-    cmd = ["rosrun", "rosbagmigration", "checkbag.py"]
-
-    if options.rulefile:   cmd.extend(["-g", options.rulefile])
-    if options.append:     cmd.extend(["-a"])
-    if options.noplugins:  cmd.extend(["-n"])
-
+    cmd = ['rosrun', 'rosbag', 'checkbag.py']
+    if options.rulefile:  cmd.extend(['-g', options.rulefile])
+    if options.append:    cmd.extend(['-a'])
+    if options.noplugins: cmd.extend(['-n'])
     cmd.extend(args)
 
     proc = subprocess.Popen(cmd)
-
-    # Ignore sigint since we're basically just pretending to be the subprocess now.
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-
+    signal.signal(signal.SIGINT, signal.SIG_IGN)  # ignore sigint since we're basically just pretending to be the subprocess now
     res = proc.wait()
-
     sys.exit(res)

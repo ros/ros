@@ -30,11 +30,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import roslib; roslib.load_manifest('rosbag')
+
 import optparse
 import os
 import signal
 import subprocess
 import sys
+
+import rosbag
 
 def filter_cmd(argv):
     def expr_eval(expr):
@@ -42,34 +46,51 @@ def filter_cmd(argv):
             return eval(expr)
         return eval_fn
 
-    parser = optparse.OptionParser(usage="""rosbag filter: INBAG OUTBAG EXPRESSION
+    parser = optparse.OptionParser(usage="""rosbag filter INBAG OUTBAG EXPRESSION
 
 EXPRESSION can be any Python-legal expression.
 
 The following variables are available:
  * topic: name of topic
  * m: message
- * t: time of message (t.secs, t.nsecs)
-""")
-    parser.add_option('--print', dest="verbose_pattern", default=None,
-                      metavar="PRINT-EXPRESSION", help="Python expression to print for verbose debugging. Uses same variables as filter-expression")
+ * t: time of message (t.secs, t.nsecs)""")
+    parser.add_option('--print', dest='verbose_pattern', default=None, metavar='PRINT-EXPRESSION', help='Python expression to print for verbose debugging. Uses same variables as filter-expression')
 
     options, args = parser.parse_args(argv)
     if len(args) == 0:
-        parser.print_usage()
-        sys.exit(0)
-    elif len(args) != 3:
-        parser.error("invalid arguments")
+        parser.error('Must specify an in bag, an out bag, and an expression.')
+    if len(args) == 1:
+        parser.error('Must specify an out bag and an expression.')
+    if len(args) == 2:
+        parser.error("Must specify an expression.")
+    if len(args) > 3:
+        parser.error("Too many arguments.")
+
+    inbag_filename, outbag_filename, expr = args
+
+    if not os.path.isfile(inbag_filename):
+        print >> sys.stderr, "Cannot locate input bag file [%s]" % inbag_filename
+        sys.exit(2)
+
+    filter_fn = expr_eval(expr)
+
+    outbag = rosbag.Bag(outbag_filename, 'w')
+    inbag  = rosbag.Bag(inbag_filename)
+
+    try:
+        if options.verbose_pattern:
+            verbose_pattern = expr_eval(options.verbose_pattern)
     
-    inbag, outbag, expr = args
-
-    if options.verbose_pattern:
-        verbose_pattern = expr_eval(options.verbose_pattern)
-    else:
-        verbose_pattern = None
-        
-    if not os.path.isfile(inbag):
-        print >> sys.stderr, "cannot locate input bag file [%s]"%inbag
-        sys.exit(1)
-
-    #rosrecord.rebag(inbag, outbag, expr_eval(expr), verbose_pattern=verbose_pattern)
+            for topic, msg, t in inbag.readMessages():
+                if filter_fn(topic, msg, t):
+                    print "MATCH", verbose_pattern(topic, msg, t)
+                    outbag.write(topic, msg, t)
+                else:
+                    print "NO MATCH", verbose_pattern(topic, msg, t)          
+        else:
+            for topic, msg, t in inbag.readMessages():
+                if filter_fn(topic, msg, t):
+                    outbag.write(topic, msg, t)
+    finally:
+        inbag.close()
+        outbag.close()

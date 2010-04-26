@@ -998,8 +998,11 @@ class _BagReader101(_BagReader):
 
     def read_messages(self, topics, start_time, end_time, topic_filter, raw):
         f = self.bag._file
-        
+
         while True:
+            if rospy.is_shutdown():
+                return
+
             bag_pos = f.tell()
             
             # Read topic/md5/type string headers
@@ -1064,6 +1067,9 @@ class _BagReader102_Unindexed(_BagReader):
         f = self.bag._file
 
         while True:
+            if rospy.is_shutdown():
+                return
+
             # Read MSG_DEF records
             while True:
                 position = f.tell()
@@ -1180,7 +1186,7 @@ class _BagReader102_Indexed(_BagReader):
             topic_index.append(_IndexEntry102(time, offset))
             
         return (topic, topic_index)
-    
+
     def read_message_data_record(self, position, raw):
         f = self.bag._file
 
@@ -1238,6 +1244,8 @@ class _BagReader200(_BagReader):
 
     def read_messages(self, topics, start_time, end_time, topic_filter, raw):
         for entry in self.get_entries(topics, start_time, end_time, topic_filter):
+            if rospy.is_shutdown():
+                return
             yield self.read_message_data_record((entry.chunk_pos, entry.offset), raw)
 
     def get_index(self):

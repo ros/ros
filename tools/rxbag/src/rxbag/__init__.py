@@ -73,7 +73,8 @@ class RxBagApp(wx.App):
             timeline_panel = timeline.TimelinePanel(self.input_files, self.options, frame, -1)
             frame.Show()
             self.SetTopWindow(frame)
-        except:
+        except Exception, ex:
+            rospy.logerr('Error initializing application: %s' % str(ex))
             return False
 
         return True

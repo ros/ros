@@ -385,7 +385,7 @@ class Bag(object):
         # Show topics
         s += 'topics:'
         topics = sorted(self._topic_infos.keys())        
-        max_topic_len = max([len(topic.lstrip('/')) for topic in topics])
+        max_topic_len = max([len(topic) for topic in topics])
         max_datatype_len = max([len(self._topic_infos[topic].datatype) for topic in topics])
         for i, topic in enumerate(topics):
             indent = (7 if i == 0 else 14)

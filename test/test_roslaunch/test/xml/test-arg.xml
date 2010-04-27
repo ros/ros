@@ -30,7 +30,6 @@
   <param name="int_param" value="$(arg int_value)" />
   <param name="float_param" value="$(arg float_value)" />  
   
-  <!-- TODO: re-enable context test. this fails right now -->
   <group>
     <arg name="context" value="group1" />
     <param name="context1" value="$(arg context)" />

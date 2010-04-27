@@ -68,7 +68,6 @@
 ;; Parameters
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar ros-ignored-packages '("test_msgs" "test_roscpp_serialization_perf" "turtlesim") "List of packages to ignore when searching")
 (defvar ros-topic-timeout-rate 5 "Number of seconds before info from rostopic hz is considered out-of-date" )
 (defvar ros-topic-display-update-interval 3 "Number of seconds between updates to the *rostopic* buffer (when it's visible)")
 (defvar ros-topic-update-interval nil "Gap in seconds between calls to rostopic list (end of one call to beginning of next).  nil means never call.")
@@ -133,8 +132,7 @@
 		;; Search for following string terminated by newline
 		(re-search-forward "\n")
 		(let ((dir (buffer-substring p (1- (point)))))
-		  (unless (member package ros-ignored-packages)
-		    (push (cons package dir) l))))))))
+		  (push (cons package dir) l)))))))
       (let ((package-alist (sort* (vconcat l) (lambda (pair1 pair2) (string< (car pair1) (car pair2))))))
 	(setq ros-packages (map 'vector #'car package-alist)
 	      ros-package-locations (map 'vector #'cdr package-alist)

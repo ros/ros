@@ -137,26 +137,49 @@ void View::addQuery(Bag& bag, Query const& query) {
 
     queries_.push_back(new BagQuery(&bag, query, bag.bag_revision_));
 
-    _addQuery(queries_.back());
+    updateQueries(queries_.back());
 }
 
-void View::_addQuery(BagQuery* q)
+void View::updateQueries(BagQuery* q)
 {
-   for (map<string, TopicInfo*>::iterator i = q->bag->topic_infos_.begin(); i != q->bag->topic_infos_.end(); i++) {
+    for (map<string, TopicInfo*>::iterator i = q->bag->topic_infos_.begin(); i != q->bag->topic_infos_.end(); i++) {
+        
+        // Skip if the query doesn't evaluate to true
         if (!q->query->evaluate(i->second))
             continue;
 
         map<string, multiset<IndexEntry> >::iterator j = q->bag->topic_indexes_.find(i->second->topic);
+
+        // Skip if the bag doeesn't have the corresponding index
         if (j == q->bag->topic_indexes_.end())
             continue;
 
         // lower_bound/upper_bound do a binary search to find the appropriate range of Index Entries given our time range
-        MessageRange* range = new MessageRange(std::lower_bound(j->second.begin(), j->second.end(), q->query->getStartTime(), IndexEntryCompare()),
-                                               std::upper_bound(j->second.begin(), j->second.end(), q->query->getEndTime(),   IndexEntryCompare()),
-                                               i->second,
-                                               q);
+        
+        std::multiset<IndexEntry>::const_iterator begin = std::lower_bound(j->second.begin(), j->second.end(), q->query->getStartTime(), IndexEntryCompare());
+        std::multiset<IndexEntry>::const_iterator end = std::upper_bound(j->second.begin(), j->second.end(), q->query->getEndTime(),   IndexEntryCompare());
+        TopicInfo* topic_info = i->second;
 
-        ranges_.push_back(range);
+        bool found = false;
+
+        // This could be made faster with a map of maps
+        for (vector<MessageRange*>::iterator k = ranges_.begin();
+             k != ranges_.end();
+             k++)
+        {
+            MessageRange* r = *k;
+            // If the topic and query are already in our ranges, we update
+            if (r->bag_query == q && r->topic_info->topic == topic_info->topic)
+            {
+                r->begin = begin;
+                r->end = end;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+            ranges_.push_back(new MessageRange(begin, end, topic_info, q));
     }
 
     view_revision_ += 1;
@@ -171,24 +194,27 @@ void View::update()
     {
         if (query->bag->bag_revision_ != query->bag_revision)
         {
-            ROS_DEBUG("Query has been outdated by bag -- re-evauating");
+            //            ROS_DEBUG("Query has been outdated by bag -- re-evauating");
             // Deleting affected range
+
+            /*
             for (std::vector<MessageRange*>::iterator iter = ranges_.begin();
                  iter != ranges_.end();)
             {
                 if ((*iter)->bag_query == query)
                 {
-                    ROS_DEBUG("Erasing corresponding range");
+                    //                    ROS_DEBUG("Erasing corresponding range");
                     delete *iter;
                     iter = ranges_.erase(iter);
                 } else {
                     iter++;
                 }
             }
+            */
             
-            _addQuery(query);
+            updateQueries(query);
+            query->bag_revision = query->bag->bag_revision_;
         }
-        query->bag_revision = query->bag->bag_revision_;
     }
 }
 

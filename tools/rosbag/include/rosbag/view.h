@@ -108,7 +108,7 @@ public:
     void addQuery(Bag& bag, Query const& query);
 
 protected:
-    void _addQuery(BagQuery* q);
+    void updateQueries(BagQuery* q);
 
     friend class iterator;
 

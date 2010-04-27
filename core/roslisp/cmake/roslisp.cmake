@@ -94,12 +94,13 @@ set(roslisp_make_node_exe ${roslisp_PACKAGE_PATH}/scripts/make_node_exec)
 macro(rosbuild_add_lisp_executable _output _system_name _entry_point)
   set(_targetname _roslisp_${_output})
   string(REPLACE "/" "_" _targetname ${_targetname})
+  # Add dummy custom command to get make clean behavior right.
+  add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${_output} ${CMAKE_CURRENT_SOURCE_DIR}/${_output}.lisp
+    COMMAND echo -n)
   add_custom_target(${_targetname} ALL
+                     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_output} ${CMAKE_CURRENT_SOURCE_DIR}/${_output}.lisp 
                      COMMAND ${roslisp_make_node_exe} ${PROJECT_NAME} ${_system_name} ${_entry_point} ${CMAKE_CURRENT_SOURCE_DIR}/${_output})
   add_dependencies(${_targetname} rosbuild_precompile)
-  get_directory_property(current_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
-  list(APPEND current_clean_files "${CMAKE_CURRENT_SOURCE_DIR}/${_output};${CMAKE_CURRENT_SOURCE_DIR}/${_output}.lisp")
-  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${current_clean_files}")
 endmacro(rosbuild_add_lisp_executable)
 
 macro(rospack_add_lisp_executable  _output _system_name _entry_point)

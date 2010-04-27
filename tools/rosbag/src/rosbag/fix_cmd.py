@@ -41,77 +41,81 @@ import optparse
 import bag_migration
 
 def print_trans(old,new,indent):
-    from_txt = "%s [%s]"%(old._type, old._md5sum)
+    from_txt = '%s [%s]' % (old._type, old._md5sum)
     if new is not None:
-        to_txt= "%s [%s]"%(new._type, new._md5sum)
+        to_txt= '%s [%s]' % (new._type, new._md5sum)
     else:
-        to_txt = "Unknown"
-    print "    "*indent + " * From: %s"%(from_txt,)
-    print "    "*indent + "   To:   %s"%(to_txt,)
+        to_txt = 'Unknown'
+    print '    ' * indent + ' * From: %s' % from_txt
+    print '    ' * indent + '   To:   %s' % to_txt
 
 def fix_cmd(argv):
-    parser = optparse.OptionParser(usage="rosbag fix INBAG OUTBAG [EXTRARULES1 EXTRARULES2 ...]")
-
-    parser.add_option("-n","--noplugins",action="store_true",dest="noplugins",
-                      help = "do not load rulefiles via plugins")
+    parser = optparse.OptionParser(usage='rosbag fix INBAG OUTBAG [EXTRARULES1 EXTRARULES2 ...]')
+    parser.add_option('-n', '--noplugins', action='store_true', dest='noplugins', help='do not load rulefiles via plugins')
 
     (options, args) = parser.parse_args(argv)
 
-    if len(args) >= 2:
-        if args[1].split('.')[-1] == "bmr":
-            parser.error("Second argument should be a bag file, not a rule file.")
+    if len(args) < 1:
+        parser.error('You must pass input and output bag files.')
+    if len(args) < 2:
+        parser.error('You must pass an output bag file.')
 
-        if args[1].split('.')[-1] != "bag":
-            parser.error("Output file must be a .bag file (not a .gz or .bz2)")
+    inbag_filename  = args[0]
+    outbag_filename = args[1]
+    rules           = args[2:]   
 
-        outname = args[1] + '.tmp'
+    ext = os.path.splitext(outbag_filename)[1]
+    if ext == '.bmr':
+        parser.error('Input file should be a bag file, not a rule file.')
+    if ext != '.bag':
+        parser.error('Output file must be a bag file.')
 
-        if os.path.exists(args[1]):
-            if not os.access(args[1], os.W_OK):
-                print >> sys.stderr, "Don't have permissions to access %s"%args[1]
-                sys.exit(1)
-        else:
-            try:
-                file = open(args[1],'w')
-                file.close()
-            except IOError, e:
-                print >> sys.stderr, "Cannot open %s for writing"%args[1]
-                sys.exit(1)
+    outname = outbag_filename + '.tmp'
 
-        if os.path.exists(outname):
-            if not os.access(outname, os.W_OK):
-                print >> sys.stderr, "Don't have permissions to access %s"%outname
-                sys.exit(1)
-        else:
-            try:
-                file = open(outname,'w')
-                file.close()
-            except IOError, e:
-                print >> sys.stderr, "Cannot open %s for writing"%outname
-                sys.exit(1)
-
-        if (options.noplugins is None):
-            options.noplugins = False
-
-        mm = bag_migration.MessageMigrator(args[2:], plugins=not options.noplugins)
-
-        migrations = bag_migration.fixbag2(mm, args[0], outname)
-
-        if migrations == []:
-            print "%s %s"%(outname, args[1])
-            os.rename(outname, args[1])
-            print "Bag migrated successfully."
-
-        else:
-            print "Bag could not be migrated.  The following migrations could not be performed:"
-            for m in migrations:
-                print_trans(m[0][0].old_class, m[0][-1].new_class, 0)
-                if len(m[1]) > 0:
-                    print "    %d rules missing:"%(len(m[1]))
-                    for r in m[1]:
-                        print_trans(r.old_class, r.new_class,1)
-            print "Try running 'rosbag check' to create the necessary rule files."
-            os.remove(outname)
-
+    if os.path.exists(outbag_filename):
+        if not os.access(outbag_filename, os.W_OK):
+            print >> sys.stderr, 'Don\'t have permissions to access %s' % outbag_filename
+            sys.exit(1)
     else:
-        parser.error("Must pass in 2 bag files")
+        try:
+            file = open(outbag_filename, 'w')
+            file.close()
+        except IOError, e:
+            print >> sys.stderr, 'Cannot open %s for writing' % outbag_filename
+            sys.exit(1)
+
+    if os.path.exists(outname):
+        if not os.access(outname, os.W_OK):
+            print >> sys.stderr, 'Don\'t have permissions to access %s' % outname
+            sys.exit(1)
+    else:
+        try:
+            file = open(outname, 'w')
+            file.close()
+        except IOError, e:
+            print >> sys.stderr, 'Cannot open %s for writing' % outname
+            sys.exit(1)
+
+    if options.noplugins is None:
+        options.noplugins = False
+
+    migrator = bag_migration.MessageMigrator(rules, plugins=not options.noplugins)
+
+    migrations = bag_migration.fixbag2(migrator, inbag_filename, outname)
+
+    if len(migrations) == 0:
+        print '%s %s' % (outname, outbag_filename)
+        os.rename(outname, outbag_filename)
+        print 'Bag migrated successfully.'
+    else:
+        print 'Bag could not be migrated.  The following migrations could not be performed:'
+        for m in migrations:
+            print_trans(m[0][0].old_class, m[0][-1].new_class, 0)
+            
+            if len(m[1]) > 0:
+                print '    %d rules missing:' % len(m[1])
+                for r in m[1]:
+                    print_trans(r.old_class, r.new_class,1)
+                    
+        print 'Try running \'rosbag check\' to create the necessary rule files.'
+        os.remove(outname)

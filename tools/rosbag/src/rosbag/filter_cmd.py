@@ -58,11 +58,11 @@ The following variables are available:
 
     options, args = parser.parse_args(argv)
     if len(args) == 0:
-        parser.error('Must specify an in bag, an out bag, and an expression.')
+        parser.error('You must specify an in bag, an out bag, and an expression.')
     if len(args) == 1:
-        parser.error('Must specify an out bag and an expression.')
+        parser.error('You must specify an out bag and an expression.')
     if len(args) == 2:
-        parser.error("Must specify an expression.")
+        parser.error("You must specify an expression.")
     if len(args) > 3:
         parser.error("Too many arguments.")
 

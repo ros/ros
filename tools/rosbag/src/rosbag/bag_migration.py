@@ -68,7 +68,7 @@ def checkbag(migrator, inbag):
     migrations = []
 
     bag = rosbag.Bag(inbag, 'r')
-    
+
     for topic, msg, t in bag.readMessages(raw=True):
         key = get_message_key(msg[4])
         if key not in checked:
@@ -76,8 +76,7 @@ def checkbag(migrator, inbag):
             # Even in the case of a zero-length path (matching md5sums), we still want
             # to migrate in the event of a type change (message move).
             path = migrator.find_path(msg[4], target)
-
-            if (path != []):
+            if len(path) > 0:
                 migrations.append((path, [r for r in migrator.expand_rules([sn.rule for sn in path]) if r.valid == False]))
 
             checked.add(key)
@@ -88,7 +87,7 @@ def checkbag(migrator, inbag):
 
 def checkmessages(migrator, messages):
     """
-    Check whether a bag file can be played in the current system
+    Check whether a bag file can be played in the current system.
     @param migrator The message migrator to use
     @param message_list A list of message classes.
     @returns A list of tuples for each type in the bag file.  The first
@@ -107,8 +106,7 @@ def checkmessages(migrator, messages):
             # Even in the case of a zero-length path (matching md5sums), we still want
             # to migrate in the event of a type change (message move).
             path = migrator.find_path(msg, target)
-
-            if (path != []):
+            if len(path) > 0:
                 migrations.append((path, [r for r in migrator.expand_rules([sn.rule for sn in path]) if r.valid == False]))
 
             checked.add(key)
@@ -128,7 +126,7 @@ def fixbag(migrator, inbag, outbag):
     # Deserializing all messages is inefficient, but we can speed this up later
     if not False in [m[1] == [] for m in res]:
         bag = rosbag.Bag(inbag, 'r')
-        rebag = rosbag.Bag(outbag, 'w')
+        rebag = rosbag.Bag(outbag, 'w', options=bag.options)
         for topic, msg, t in bag.readMessages():
             new_msg = migrator.find_target(msg.__class__)()
             migrator.migrate(msg, new_msg)
@@ -149,16 +147,16 @@ def fixbag2(migrator, inbag, outbag):
     # This checks/builds up rules for the given migrator
     res = checkbag(migrator, inbag)
 
-    migrations = [m for m in res if m[1] != []]
+    migrations = [m for m in res if len(m[1]) > 0]
 
     # Deserializing all messages is inefficient, but we can speed this up later
-    if migrations == []:
+    if len(migrations) == 0:
         bag = rosbag.Bag(inbag, 'r')
-        rebag = rosbag.Bag(outbag, 'w')
+        rebag = rosbag.Bag(outbag, 'w', options=bag.options)
         for topic, msg, t in bag.readMessages():
             new_msg = migrator.find_target(msg.__class__)()
             migrator.migrate(msg, new_msg)
-            rebag.add(topic, new_msg, t)
+            rebag.write(topic, new_msg, t)
         rebag.close()
         bag.close()
 
@@ -744,11 +742,10 @@ class MessageMigrator(object):
                 rulechain.order_keys.add(r.order)
                 rulechain.chain.append(r)
                 rulechain.chain.sort(key=lambda x: x.order)
-
                 
     # Helper function to determine if all rules are valid
     def all_rules_valid(self):
-        base_valid = not False in [sn.rule.valid for sn in self.base_nodes]
+        base_valid  = not False in [sn.rule.valid for sn in self.base_nodes]
         extra_valid = not False in [sn.rule.valid for sn in self.extra_nodes]
         return base_valid and extra_valid
 
@@ -835,7 +832,7 @@ class MessageMigrator(object):
                 if tmp_sn.new_class is not None:
                     last_class = tmp_sn.new_class
 
-                while (tmp_sn.next is not None):
+                while tmp_sn.next is not None:
                     tmp_sn = tmp_sn.next
 
                 if tmp_sn.new_class is not None:
@@ -852,7 +849,7 @@ class MessageMigrator(object):
 
         self.found_targets[key] = None
 
-        (pkg,msg) = last_class._type.split('/')
+        (pkg, msg) = last_class._type.split('/')
         try:
             pkg_dir = roslib.packages.get_pkg_dir(pkg)
         except roslib.packages.InvalidROSPkgException:
@@ -862,8 +859,6 @@ class MessageMigrator(object):
             if not os.path.isfile(os.path.join(pkg_dir, os.path.join('src', pkg, 'msg', '_%s.py'%msg))):
                 print >> sys.stderr, "WARNING: Package \'%s\' contains message '%s' but is not built."%(pkg,msg)
         return None
-
-        
             
     # This function determines the set of rules which must be created
     # to get from the old type to the new type.

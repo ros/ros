@@ -46,7 +46,7 @@ def check_cmd(argv):
     (options, args) = parser.parse_args(argv)
 
     if len(args) == 0:
-        parser.error('Must specify a bag file to check.')
+        parser.error('You must specify a bag file to check.')
     if options.append and options.rulefile is None:
         parser.error('Cannot specify -a without also specifying -g.')
     if options.rulefile is not None:

@@ -76,10 +76,6 @@ def record_cmd(argv):
     cmd.extend(args)
 
     proc = subprocess.Popen(cmd)
-
-    # Ignore sigint since we're basically just pretending to be the subprocess now.
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-
+    signal.signal(signal.SIGINT, signal.SIG_IGN)   # ignore sigint since we're basically just pretending to be the subprocess now
     res = proc.wait()
-
     sys.exit(res)

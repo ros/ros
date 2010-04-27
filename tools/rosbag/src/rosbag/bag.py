@@ -74,7 +74,7 @@ class Bag(object):
     """
     Bag objects serialize messages to and from disk using the bag format.
     """
-    def __init__(self, f, mode='r', compression=Compression.NONE, chunk_threshold=768 * 1024):
+    def __init__(self, f, mode='r', compression=Compression.NONE, chunk_threshold=768 * 1024, options=None):
         """
         Open a bag file.  The mode can be 'r', 'w', or 'a' for reading (default),
         writing or appending.  The file will be created if it doesn't exist
@@ -89,10 +89,20 @@ class Bag(object):
         @type  compression: str
         @param chunk_threshold: minimum number of uncompressed bytes per chunk
         @type  chunk_threshold: int
+        @param options: the bag options specified via a dictionary (currently, compression and chunk_threshold)
+        @type  options: dict
         @raise ValueError: if any argument is invalid
         @raise ROSBagException: if an error occurs opening file
         @raise ROSBagFormatException: if bag format is corrupted
         """
+        if options is not None:
+            if type(options) != dict:
+                raise ValueError('options must be of type dict')                
+            if 'compression' in options:
+                compression = options['compression']
+            if 'chunk_threshold' in options:
+                chunk_threshold = options['chunk_threshold']
+
         self._file            = None
         self._filename        = None
         self._version         = None
@@ -130,6 +140,11 @@ class Bag(object):
         self._output_file      = self._file
         
         self._open(f, mode)
+    
+    @property
+    def options(self):
+        """Get the options."""
+        return { 'compression' : self._compression, 'chunk_threshold' : self._chunk_threshold }
     
     @property
     def filename(self):

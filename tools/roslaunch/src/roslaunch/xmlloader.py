@@ -278,7 +278,7 @@ class XmlLoader(roslaunch.loader.Loader):
 
         except roslib.substitution_args.ArgException, e:
             raise XmlParseException(
-                "<arg> tag is missing required attribute: %s. \n\nParam xml is %s"%(e, tag.toxml()))
+                "arg '%s' is not defined. \n\nArg xml is %s"%(e, tag.toxml()))
         except Exception, e:
             raise XmlParseException(
                 "Invalid <arg> tag: %s. \n\nArg xml is %s"%(e, tag.toxml()))
@@ -515,7 +515,7 @@ class XmlLoader(roslaunch.loader.Loader):
         except KeyError, e:
             raise XmlParseException("<env> tag is missing required name/value attributes: %s"%tag.toxml())
     
-    def _ns_clear_params_attr(self, tagName, tag, context, ros_config, node_name=None, include_filename=None):
+    def _ns_clear_params_attr(self, tag_name, tag, context, ros_config, node_name=None, include_filename=None):
         """
         Common processing routine for xml tags with NS and CLEAR_PARAMS attributes
         
@@ -525,7 +525,7 @@ class XmlLoader(roslaunch.loader.Loader):
         @type  context: LoaderContext
         @param clear_params: list of params to clear
         @type  clear_params: [str]
-        @param node_name: name of node (for use when tagName == 'node')
+        @param node_name: name of node (for use when tag_name == 'node')
         @type  node_name: str
         @param include_filename: <include> filename if this is an <include> tag. If specified, context will use include rules.
         @type  include_filename: str
@@ -535,20 +535,20 @@ class XmlLoader(roslaunch.loader.Loader):
         if tag.hasAttribute(NS):
             ns = self.resolve_args(tag.getAttribute(NS), context)
             if not ns:
-                raise XmlParseException("<%s> tag has an empty '%s' attribute"%(tagName, NS))
+                raise XmlParseException("<%s> tag has an empty '%s' attribute"%(tag_name, NS))
         else:
             ns = None
         if include_filename is not None:
             child_ns = context.include_child(ns, include_filename)
         else:
-            child_ns = context.child(ns)            
+            child_ns = context.child(ns)
         clear_p = self.resolve_args(tag.getAttribute(CLEAR_PARAMS), context)
         if clear_p:
             clear_p = _bool_attr(clear_p, False, 'clear_params')
             if clear_p:
-                if tagName == 'node':
+                if tag_name == 'node':
                     if not node_name:
-                        raise XmlParseException("<%s> tag must have a 'name' attribute to use '%s' attribute"%(tagName, CLEAR_PARAMS))
+                        raise XmlParseException("<%s> tag must have a 'name' attribute to use '%s' attribute"%(tag_name, CLEAR_PARAMS))
                     # use make_global_ns to give trailing slash in order to be consistent with XmlContext.ns
                     ros_config.add_clear_param(make_global_ns(ns_join(child_ns.ns, node_name)))
                 else:
@@ -572,6 +572,7 @@ class XmlLoader(roslaunch.loader.Loader):
     def _include_tag(self, tag, context, ros_config, default_machine, is_core, verbose):
         self._check_attrs(tag, context, ros_config, XmlLoader.INCLUDE_ATTRS)
         inc_filename = self.resolve_args(tag.attributes['file'].value, context)
+
         child_ns = self._ns_clear_params_attr(tag.tagName, tag, context, ros_config, include_filename=inc_filename)
 
         for t in [c for c in tag.childNodes if c.nodeType == DomNode.ELEMENT_NODE]:
@@ -596,9 +597,9 @@ class XmlLoader(roslaunch.loader.Loader):
 
             # check for unused args
             roslaunch.loader.post_process_include_args(child_ns)
-            
+
         except ArgException, e:
-            raise XmlParseException("included file [%s] requires the '%s' arg to be set: %s"%(inc_filename, str(e)))
+            raise XmlParseException("included file [%s] requires the '%s' arg to be set"%(inc_filename, str(e)))
         except XmlParseException, e:
             raise XmlParseException("while processing %s:\n%s"%(inc_filename, str(e)))
         if verbose:
@@ -616,13 +617,10 @@ class XmlLoader(roslaunch.loader.Loader):
             if name == 'group':
                 if ifunless_test(self, tag, context):
                     self._check_attrs(tag, context, ros_config, XmlLoader.GROUP_ATTRS)
-                    try:
-                        child_ns = self._ns_clear_params_attr(name, tag, context, ros_config)
-                        default_machine = \
-                                        self._recurse_load(ros_config, tag.childNodes, child_ns, \
-                                                           default_machine, is_core, verbose)
-                    except KeyError, e:
-                        raise XmlParseException("<ns> tag is missing required 'name' attribute")
+                    child_ns = self._ns_clear_params_attr(name, tag, context, ros_config)
+                    default_machine = \
+                        self._recurse_load(ros_config, tag.childNodes, child_ns, \
+                                               default_machine, is_core, verbose)
             elif name == 'node':
                 # clone the context so that nodes' env does not pollute global env
                 n = self._node_tag(tag, context.child(''), ros_config, default_machine, verbose=verbose)

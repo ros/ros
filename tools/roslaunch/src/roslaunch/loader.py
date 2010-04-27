@@ -40,6 +40,7 @@ from __future__ import with_statement
 
 import os
 import sys
+from copy import deepcopy
 
 from roslib.names import make_global_ns, ns_join, PRIV_NAME, load_mappings
 
@@ -113,16 +114,20 @@ def process_include_args(context):
 
     # make sure all arguments have values. arg_names and resolve_dict
     # are cleared when the context was initially created.
-    arg_dict = context.resolve_dict.get('arg', {})
+    arg_dict = context.include_resolve_dict.get('arg', {})
     for arg in context.arg_names:
         if not arg in arg_dict:
             raise LoadException("include args must have declared values")
         
-    # save args that were declared for post-processing
-    context.args_passed = context.arg_names
-    # clear arg declarations so we don't error on re-declaration
+    # save args that were passed so we can check for unused args in post-processing
+    context.args_passed = arg_dict.keys()[:]
+    # clear arg declarations so included file can re-declare
     context.arg_names = []
 
+    # swap in new resolve dict for passing
+    context.resolve_dict = context.include_resolve_dict
+    context.include_resolve_dict = None
+    
 def post_process_include_args(context):
     bad = [a for a in context.args_passed if a not in context.arg_names]
     if bad:
@@ -148,7 +153,21 @@ class LoaderContext(object):
     """
     
     def __init__(self, ns, filename, parent=None, params=None, env_args=None, \
-                     resolve_dict=None, arg_names=None, args_passed=None):
+                     resolve_dict=None, include_resolve_dict=None, arg_names=None):
+        """
+        @param ns: namespace
+        @type  ns: str
+        @param filename: name of file this is being loaded from
+        @type  filename: str
+        @param resolve_dict: (optional) resolution dictionary for substitution args
+        @type  resolve_dict: dict
+        @param include_resolve_dict: special resolution dictionary for
+        <include> tags. Must be None if this is not an <include>
+        context.
+        @type include_resolve_dict: dict
+        @param arg_names: name of args that have been declared in this context
+        @type  arg_names: [str]
+        """
         self.parent = parent
         self.ns = make_global_ns(ns or '/')
         self._remap_args = []
@@ -159,9 +178,9 @@ class LoaderContext(object):
         self.resolve_dict = resolve_dict or {}
         # arg names. Args that have been declared in this context
         self.arg_names = arg_names or []
-        # args passed in from higher-level (e.g. command-line, <include> tag)
-        self.args_passed = args_passed or []
-        
+        # special scoped resolve dict for processing in <include> tag
+        self.include_resolve_dict = include_resolve_dict or None
+
     def add_param(self, p):
         """
         Add a ~param to the context. ~params are evaluated by any node
@@ -198,9 +217,11 @@ class LoaderContext(object):
             raise LoadException("arg '%s' has already been declared"%name)
         self.arg_names.append(name)
 
-        if not 'arg' in self.resolve_dict:
-            self.resolve_dict['arg'] = {}
-        arg_dict = self.resolve_dict['arg']
+        resolve_dict = self.resolve_dict if self.include_resolve_dict is None else self.include_resolve_dict
+
+        if not 'arg' in resolve_dict:
+            resolve_dict['arg'] = {}
+        arg_dict = resolve_dict['arg']
 
         # args can only be declared once. they must also have one and
         # only value at the time that they are declared.
@@ -208,7 +229,7 @@ class LoaderContext(object):
             # value is set, error if declared in our arg dict as args
             # with set values are constant/grounded.
             if name in arg_dict:
-                raise LoadException("cannot override arg '%s', which has a set value"%name)
+                raise LoadException("cannot override arg '%s', which has already been set"%name)
             arg_dict[name] = value
         elif default is not None:
             # assign value if not in context
@@ -243,15 +264,15 @@ class LoaderContext(object):
         @param filename: name of include file
         @type  filename: str        
         @return: A child xml context that inherits from this context
-        @rtype: L{LoaderContext}
+        @rtype: L{LoaderContext}jj
         """
         ctx = self.child(ns)
         # arg declarations are reset across include boundaries
         ctx.arg_names = []
-        ctx.args_passed = []
         ctx.filename = filename
-        # clear arg dictionary, we only pass in args declared within the include tag
-        del ctx.resolve_dict['arg']
+        # keep the resolve_dict for now, we will do all new assignments into include_resolve_dict
+        ctx.include_resolve_dict = {}
+        #del ctx.resolve_dict['arg']
         return ctx
 
     def child(self, ns):
@@ -274,8 +295,8 @@ class LoaderContext(object):
             child_ns = self.ns
         return LoaderContext(child_ns, self.filename, parent=self,
                              params=self.params, env_args=self.env_args[:],
-                             resolve_dict=self.resolve_dict.copy(),
-                             arg_names=self.arg_names[:], args_passed=self.args_passed[:])
+                             resolve_dict=deepcopy(self.resolve_dict),
+                             arg_names=self.arg_names[:], include_resolve_dict=self.include_resolve_dict)
         
 #TODO: in-progress refactorization. I'm slowly separating out
 #non-XML-specific logic from xmlloader and moving into Loader. Soon

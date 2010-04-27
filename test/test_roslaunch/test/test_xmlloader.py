@@ -864,9 +864,6 @@ class TestXmlLoader(unittest.TestCase):
         self.assertEquals(param_d['/p1_test'], 'test_arg')
         self.assertEquals(param_d['/p2_test'], 'not_set')
         self.assertEquals(param_d['/p3_test'], 'set')
-        if 0: #TODO: re-enable
-            self.assertEquals(param_d['/context1'], 'group1')
-            self.assertEquals(param_d['/context2'], 'group2')                
         self.assertEquals(param_d['/succeed'], 'yes')                
         self.assertEquals(param_d['/if_test'], 'not_ran')                
         self.assertEquals(param_d['/if_param'], False)   
@@ -874,18 +871,26 @@ class TestXmlLoader(unittest.TestCase):
         self.assertAlmostEquals(param_d['/float_param'], 3.)   
         self.failIf('/fail' in param_d)
 
+        # context tests
+        #  - args are scoped to their context, and thus can be rebound in a sibling context
+        self.assertEquals(param_d['/context1'], 'group1')
+        self.assertEquals(param_d['/context2'], 'group2')        
+        
         # include tests
         self.assertEquals(param_d['/include_test/p1_test'], 'required1')
         self.assertEquals(param_d['/include_test/p2_test'], 'not_set')
         self.assertEquals(param_d['/include_test/p3_test'], 'set')
-
+        self.assertEquals(param_d['/include_test/p4_test'], 'initial')
+        
         self.assertEquals(param_d['/include2/include_test/p1_test'], 'required2')
         self.assertEquals(param_d['/include2/include_test/p2_test'], 'optional2')
         self.assertEquals(param_d['/include2/include_test/p3_test'], 'set')
+        self.assertEquals(param_d['/include2/include_test/p4_test'], 'new2')
             
         self.assert_('/include3/include_test/p1_test' not in param_d)
         self.assert_('/include3/include_test/p2_test' not in param_d)
         self.assert_('/include3/include_test/p3_test' not in param_d)
+        self.assert_('/include3/include_test/p4_test' not in param_d)
 
         # test again with optional value set
         mock = RosLaunchMock()
@@ -898,9 +903,8 @@ class TestXmlLoader(unittest.TestCase):
         self.assertEquals(param_d['/p1_test'], 'test_arg')
         self.assertEquals(param_d['/p2_test'], 'test_arg2')
         self.assertEquals(param_d['/p3_test'], 'set')
-        if 0: #TODO: re-enable
-            self.assertEquals(param_d['/context1'], 'group1')
-            self.assertEquals(param_d['/context2'], 'group2')                
+        self.assertEquals(param_d['/context1'], 'group1')
+        self.assertEquals(param_d['/context2'], 'group2')                
         self.assertEquals(param_d['/succeed'], 'yes')                
         self.assertEquals(param_d['/if_test'], 'ran')   
         self.assertEquals(param_d['/if_param'], True)   
@@ -910,14 +914,17 @@ class TestXmlLoader(unittest.TestCase):
         self.assertEquals(param_d['/include_test/p1_test'], 'required1')
         self.assertEquals(param_d['/include_test/p2_test'], 'not_set')
         self.assertEquals(param_d['/include_test/p3_test'], 'set')
-
+        self.assertEquals(param_d['/include_test/p4_test'], 'initial')
+        
         self.assertEquals(param_d['/include2/include_test/p1_test'], 'required2')
         self.assertEquals(param_d['/include2/include_test/p2_test'], 'optional2')
         self.assertEquals(param_d['/include2/include_test/p3_test'], 'set')
-
+        self.assertEquals(param_d['/include2/include_test/p4_test'], 'new2')
+        
         self.assertEquals(param_d['/include3/include_test/p1_test'], 'required3')
         self.assertEquals(param_d['/include3/include_test/p2_test'], 'optional3')
         self.assertEquals(param_d['/include3/include_test/p3_test'], 'set')
+        self.assertEquals(param_d['/include3/include_test/p4_test'], 'new3')
         
 if __name__ == '__main__':
     rostest.unitrun('test_roslaunch', sys.argv[0], TestXmlLoader, coverage_packages=['roslaunch.xmlloader', 'roslaunch.loader'])

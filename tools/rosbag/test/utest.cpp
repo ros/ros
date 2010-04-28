@@ -29,8 +29,10 @@
 #include "rosbag/chunked_file.h"
 #include "rosbag/view.h"
 
-#include <iostream>
+#include <sys/stat.h>
+#include <sys/types.h>
 
+#include <iostream>
 #include <set>
 
 #include <boost/assign/list_of.hpp>
@@ -77,8 +79,10 @@ protected:
         b.open(filename, rosbag::bagmode::Read);
 
         int message_count = 0;
+
     	rosbag::View view;
     	view.addQuery(b, rosbag::Query());
+
         foreach(rosbag::MessageInstance m, view) {
             std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
             if (s != NULL) {
@@ -97,10 +101,39 @@ protected:
     }
 };
 
-TEST(rosbag, simplewrite)
-{
-    rosbag::Bag bag;
-    bag.open("test.bag", rosbag::bagmode::Write);
+TEST_F(BagTest, write_then_read_works) {
+    std::string filename("/tmp/write_then_read_works.bag");
+
+    rosbag::Bag b1;
+    b1.open(filename, rosbag::bagmode::Write);
+    b1.write("chatter", ros::Time::now(), foo_);
+    b1.write("numbers", ros::Time::now(), i_);
+    b1.close();
+
+    checkContents(filename);
+}
+
+TEST_F(BagTest, append_works) {
+    std::string filename("/tmp/append_works.bag");
+
+    rosbag::Bag b1;
+    b1.open(filename, rosbag::bagmode::Write);
+    b1.write("chatter", ros::Time::now(), foo_);
+    b1.close();
+    dumpContents(b1);
+
+    rosbag::Bag b2;
+    b2.open(filename, rosbag::bagmode::Append);
+    b2.write("numbers", ros::Time::now(), i_);
+    b2.close();
+    dumpContents(b2);
+
+    checkContents(filename);
+}
+
+TEST(rosbag, simple_write_and_read_works) {
+    rosbag::Bag b1;
+    b1.open("/tmp/simple_write_and_read_works.bag", rosbag::bagmode::Write);
 
     std_msgs::String str;
     str.data = std::string("foo");
@@ -108,23 +141,20 @@ TEST(rosbag, simplewrite)
     std_msgs::Int32 i;
     i.data = 42;
 
-    bag.write("chatter", ros::Time::now(), str);
-    bag.write("numbers", ros::Time::now(), i);
+    b1.write("chatter", ros::Time::now(), str);
+    b1.write("numbers", ros::Time::now(), i);
 
-    bag.close();
-}
+    b1.close();
 
-TEST(rosbag, simpleread)
-{
-    rosbag::Bag bag;
-    bag.open("test.bag", rosbag::bagmode::Read);
+    rosbag::Bag b2;
+    b2.open("/tmp/simple_write_and_read_works.bag", rosbag::bagmode::Read);
 
     std::vector<std::string> topics;
     topics.push_back(std::string("chatter"));
     topics.push_back(std::string("numbers"));
 
     rosbag::View view;
-    view.addQuery(bag, rosbag::TopicQuery(topics));
+    view.addQuery(b2, rosbag::TopicQuery(topics));
 
     foreach(rosbag::MessageInstance const m, view) {
         std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
@@ -136,13 +166,12 @@ TEST(rosbag, simpleread)
             ASSERT_EQ(i->data, 42);
     }
 
-    bag.close();
+    b2.close();
 }
 
-TEST(rosbag, timequery)
-{
+TEST(rosbag, time_query_works) {
     rosbag::Bag outbag;
-    outbag.open("timequery.bag", rosbag::bagmode::Write);
+    outbag.open("/tmp/time_query_works.bag", rosbag::bagmode::Write);
 
     std_msgs::Int32 imsg;
 
@@ -159,7 +188,7 @@ TEST(rosbag, timequery)
     outbag.close();
 
     rosbag::Bag bag;
-    bag.open("timequery.bag", rosbag::bagmode::Read);
+    bag.open("/tmp/time_query_works.bag", rosbag::bagmode::Read);
 
     rosbag::View view;
     view.addQuery(bag, rosbag::Query(ros::Time(23, 0), ros::Time(782, 0)));
@@ -177,10 +206,9 @@ TEST(rosbag, timequery)
     bag.close();
 }
 
-TEST(rosbag, topicquery)
-{
+TEST(rosbag, topic_query_works) {
     rosbag::Bag outbag;
-    outbag.open("topicquery.bag", rosbag::bagmode::Write);
+    outbag.open("/tmp/topic_query_works.bag", rosbag::bagmode::Write);
 
     std_msgs::Int32 imsg;
 
@@ -199,7 +227,7 @@ TEST(rosbag, topicquery)
     outbag.close();
 
     rosbag::Bag bag;
-    bag.open("topicquery.bag", rosbag::bagmode::Read);
+    bag.open("/tmp/topic_query_works.bag", rosbag::bagmode::Read);
 
     std::vector<std::string> t = boost::assign::list_of("t0")("t1");
 
@@ -217,13 +245,12 @@ TEST(rosbag, topicquery)
     bag.close();
 }
 
-TEST(rosbag, verifymultibag)
-{
+TEST(rosbag, multiple_bag_works) {
     rosbag::Bag outbag1;
-    outbag1.open("bag1.bag", rosbag::bagmode::Write);
+    outbag1.open("/tmp/multiple_bag_works1.bag", rosbag::bagmode::Write);
 
     rosbag::Bag outbag2;
-    outbag2.open("bag2.bag", rosbag::bagmode::Write);
+    outbag2.open("/tmp/multiple_bag_works2.bag", rosbag::bagmode::Write);
 
     std_msgs::Int32 imsg;
     for (int i = 0; i < 1000; i++) {
@@ -241,10 +268,10 @@ TEST(rosbag, verifymultibag)
     outbag2.close();
 
     rosbag::Bag bag1;
-    bag1.open("bag1.bag", rosbag::bagmode::Read);
+    bag1.open("/tmp/multiple_bag_works1.bag", rosbag::bagmode::Read);
 
     rosbag::Bag bag2;
-    bag2.open("bag2.bag", rosbag::bagmode::Read);
+    bag2.open("/tmp/multiple_bag_works2.bag", rosbag::bagmode::Read);
 
     rosbag::View view;
     view.addQuery(bag1, rosbag::Query());
@@ -262,10 +289,9 @@ TEST(rosbag, verifymultibag)
     bag2.close();
 }
 
-TEST(rosbag, modifyview)
-{
+TEST(rosbag, modify_view_works) {
     rosbag::Bag outbag;
-    outbag.open("modify.bag", rosbag::bagmode::Write);
+    outbag.open("/tmp/modify_view_works.bag", rosbag::bagmode::Write);
 
     std_msgs::Int32 imsg;
 
@@ -285,7 +311,7 @@ TEST(rosbag, modifyview)
     outbag.close();
 
     rosbag::Bag bag;
-    bag.open("modify.bag", rosbag::bagmode::Read);
+    bag.open("/tmp/modify_view_works.bag", rosbag::bagmode::Read);
 
     std::vector<std::string> t0 = boost::assign::list_of("t0");
     std::vector<std::string> t1 = boost::assign::list_of("t1");
@@ -330,10 +356,9 @@ TEST(rosbag, modifyview)
     bag.close();
 }
 
-TEST(rosbag, modifybag)
-{
+TEST(rosbag, modify_bag_works) {
     rosbag::Bag rwbag;
-    rwbag.open("rwbag.bag", rosbag::bagmode::Write);// | rosbag::bagmode::Read);
+    rwbag.open("/tmp/modify_bag_works.bag", rosbag::bagmode::Write);// | rosbag::bagmode::Read);
 
     std::vector<std::string> t0 = boost::assign::list_of("t0");
 
@@ -386,213 +411,6 @@ TEST(rosbag, modifybag)
     
     rwbag.close();
 }
-
-TEST_F(BagTest, WriteThenReadWorks) {
-    std::string filename("test/WriteThenRead.bag");
-
-    rosbag::Bag b1;
-    b1.open(filename, rosbag::bagmode::Write);
-    b1.write("chatter", ros::Time::now(), foo_);
-    b1.write("numbers", ros::Time::now(), i_);
-    b1.close();
-
-    checkContents(filename);
-}
-
-TEST_F(BagTest, AppendWorks) {
-    std::string filename("test/Append.bag");
-
-    rosbag::Bag b1;
-    b1.open(filename, rosbag::bagmode::Write);
-    b1.write("chatter", ros::Time::now(), foo_);
-    b1.close();
-    dumpContents(b1);
-
-    rosbag::Bag b2;
-    b2.open(filename, rosbag::bagmode::Append);
-    b2.write("numbers", ros::Time::now(), i_);
-    b2.close();
-    dumpContents(b2);
-
-    checkContents(filename);
-}
-
-/*
-TEST_F(BagTest, ReadAppendWorks) {
-    std::string filename("test/ReadAppend.bag");
-
-    rosbag::Bag b;
-    b.open(filename, rosbag::bagmode::Write);
-    b.write("chatter", ros::Time::now(), foo_);
-    b.close();
-
-    rosbag::Bag b2;
-    b2.open(filename, rosbag::bagmode::Append);
-    b2.write("numbers", ros::Time::now(), i_);
-    b2.close();
-
-    checkContents(filename);
-}
-
-TEST_F(BagTest, ChunkedFileWorks) {
-    std::string filename("test/ChunkedFile.bag");
-
-    std::string s1("aaaa");
-    std::string s2("bbbb");
-    std::string s3("cccc");
-
-    rosbag::ChunkedFile f;
-
-    f.openWrite(filename);
-    f.setWriteMode(rosbag::compression::BZ2);
-    f.write(s1);
-    f.setWriteMode(rosbag::compression::None);
-    f.write(s2);
-    
-    uint64_t offset1 = f.getOffset();
-    std::cout << "offset = " << offset1 << std::endl;
-
-    f.setWriteMode(rosbag::compression::BZ2);
-    f.write(s3);
-
-    f.close();
-
-    //
-
-    int length = 4;
-    char buffer[length];
-
-    f.openRead(filename);
-    
-    f.setReadMode(rosbag::compression::BZ2);
-    f.read((void*) buffer, length);
-    std::cout << std::string(buffer, length) << std::endl;
-    for (int i = 0; i < length; i++) buffer[i] = ' ';
-
-    f.setReadMode(rosbag::compression::None);
-    f.read((void*) buffer, length);
-    std::cout << std::string(buffer, length) << std::endl;
-    for (int i = 0; i < length; i++) buffer[i] = ' ';
-
-    f.seek(offset1);
-    f.setReadMode(rosbag::compression::BZ2);
-    f.read((void*) buffer, length);
-    std::cout << std::string(buffer, length) << std::endl;
-    for (int i = 0; i < length; i++) buffer[i] = ' ';
-
-    f.seek(0);
-    f.setReadMode(rosbag::compression::BZ2);
-
-    f.read((void*) buffer, length);
-    std::cout << f.getOffset() << std::endl;
-    std::cout << std::string(buffer, length) << std::endl;
-    for (int i = 0; i < length; i++) buffer[i] = ' ';
-    
-    f.close();
-}
-
-TEST_F(BagTest, ChunkedFileReadWriteWorks) {
-    std::string filename("test/ChunkedFileReadWrite.bag");
-
-    std::string s1("aaaa");
-    std::string s2("bbbb");
-    std::string s3("cccc");
-
-    int length = 4;
-    char buffer[length];
-
-    rosbag::ChunkedFile f;
-
-    f.openReadWrite(filename);
-
-    // 0: write "cccc" (compressed) and close (remember file pos in offset0)
-    f.setWriteMode(rosbag::compression::BZ2);
-    f.write(s3);
-    f.setWriteMode(rosbag::compression::None);
-    uint64_t offset0 = f.getOffset();
-    ROS_INFO("offset0: %llu", (unsigned long long) offset0);
-
-    // 4: write "aaaa" (compressed) and keep open (remember file pos in offset1)
-    f.setWriteMode(rosbag::compression::BZ2);
-    f.write(s1);
-    uint64_t offset1 = f.getOffset();
-
-    f.seek(0);
-    f.setReadMode(rosbag::compression::BZ2);
-    f.read((void*) buffer, length);
-    std::cout << std::string(buffer, length) << std::endl;
-    for (int i = 0; i < length; i++) buffer[i] = ' ';
-    f.setReadMode(rosbag::compression::None);
-
-    f.seek(offset1);
-    f.setWriteMode(rosbag::compression::None);
-    f.setWriteMode(rosbag::compression::BZ2);
-    f.write(s2);
-    f.close();
-
-    f.openRead(filename);
-    f.seek(offset1);
-    f.setReadMode(rosbag::compression::BZ2);
-    f.read((void*) buffer, length);
-    std::cout << std::string(buffer, length) << std::endl;
-    for (int i = 0; i < length; i++) buffer[i] = ' ';
-    f.read((void*) buffer, length);
-    std::cout << std::string(buffer, length) << std::endl;
-    for (int i = 0; i < length; i++) buffer[i] = ' ';
-    f.close();
-}
-
-  TEST_F(BagTest, TestChunkSizes) {
-  uint32_t chunk_threshold_lo =  700 * 1024;
-  uint32_t chunk_threshold_hi = 1000 * 1024;
-
-  for (uint32_t t = chunk_threshold_lo; t <= chunk_threshold_hi; t += (25 * 1024)) {
-  rosbag::Bag b;
-  b.setChunkThreshold(t);
-  b.rewrite("test/diag_test.bag", "test/diag_test_" + boost::lexical_cast<std::string>(t) + ".bag");
-  }
-  }
-
-  TEST_F(BagTest, Read102IndexedWorks) {
-  rosbag::Bag b;
-  b.open("test/sample_1.2_indexed.bag", rosbag::bagmode::Read);
-  b.close();
-  }
-
-  TEST_F(BagTest, Convert102To103Works) {
-  rosbag::Bag in, out;
-  in.open("test/sample_1.2_indexed.bag", rosbag::bagmode::Read);
-  out.open("test/Convert102To103Works.bag", rosbag::bagmode::Write);
-  rosbag::View view;
-  view.addQuery(bag, rosbag::Query());
-  foreach(rosbag::MessageInstance m, view) {
-  m.instantiateMessage();
-  out.write(m.getTopic(), m.getTime(), m);
-  }
-  in.close();
-  out.close();
-  }
-
-  TEST_F(BagTest, RewriteWorks) {
-  rosbag::Bag in, out;
-  in.open("test/sample_1.3.bag", rosbag::bagmode::Read);
-  out.open("test/RewriteWorks.bag", rosbag::bagmode::Write);
-  rosbag::View view;
-  view.addQuery(bag, rosbag::Query());
-  foreach(rosbag::MessageInstance m, view) {
-  m.instantiateMessage();
-  out.write(m.getTopic(), m.getTime(), m);
-  }
-  in.close();
-  out.close();
-  }
-
-  TEST_F(BagTest, Read102UnindexedWorks) {
-  rosbag::Bag b;
-  b.open("test/sample_1.2_unindexed.bag", rosbag::bagmode::Read);
-  b.close();
-  }
-*/
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);

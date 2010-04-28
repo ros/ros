@@ -435,7 +435,3 @@ fltk:
 epydoc:
   ubuntu: python-epydoc
   macports: py25-epydoc
-gtest:
-  ubuntu: libgtest-dev
-  debian: libgtest-dev
-  macports: google-test

@@ -37,6 +37,7 @@ import roslib; roslib.load_manifest(PKG)
 import sys
 import array
 import Image
+
 import rospy
 import rosbag
 
@@ -57,15 +58,13 @@ def msg2im(msg):
     dim = dict([(d.label, d.size) for d in ma.layout.dim])
     mode = { ('uint8',1) : "L", ('uint8',3) : "RGB", ('int16',1) : "L" }[msg.depth, dim['channel']]
     (w, h) = (dim['width'], dim['height'])
+
     return Image.fromstring(mode, (w, h), image_data)
 
 counter = 0
 for topic, msg, t in rosbag.Bag(sys.argv[1]).readMessages():
-    if rospy.is_shutdown():
-        break
-    
     if topic.endswith('stereo/raw_stereo'):
-        for (mi,c) in [ (msg.left_image, 'L'), (msg.right_image, 'R'), (msg.disparity_image, 'D')]:
+        for (mi, c) in [ (msg.left_image, 'L'), (msg.right_image, 'R'), (msg.disparity_image, 'D')]:
             im = msg2im(mi)
             if im:
                 ext = { 'L':'png', 'RGB':'png', 'F':'tiff' }[im.mode]

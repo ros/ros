@@ -35,15 +35,12 @@
 
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
-
-import rospy
 import rosbag
-import fileinput
 
 def fastrebag(inbag, outbag):
     rebag = rosbag.Bag(outbag, 'w')
     for i, (topic, msg, t) in enumerate(rosbag.Bag(inbag).readMessages(raw=True)):
-        rebag.add(topic, msg, t, raw=True)
+        rebag.write(topic, msg, t, raw=True)
     rebag.close()
 
 if __name__ == '__main__':

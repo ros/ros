@@ -35,8 +35,6 @@
 
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
-
-import fileinput
 import os
 import rospy
 import rosbag
@@ -48,7 +46,7 @@ def fix_md5sums(inbags):
         rebag = rosbag.Bag(outbag, 'w')
         try:
             for i,(topic, msg, t) in enumerate(rosbag.Bag(b).readMessages(raw=True)):
-                rebag.add(topic, msg, t, raw=True)
+                rebag.write(topic, msg, t, raw=True)
             rebag.close()
         except rosbag.ROSBagException, e:
             print ' Migration failed: %s' % str(e)

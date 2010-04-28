@@ -36,22 +36,21 @@
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
-import sys
-from rosbag import bag_migration
-import fileinput
 import os
+import sys
+import rosbag.migration
 
 def fixbag_batch(inbags):
-    mm = bag_migration.MessageMigrator()
+    mm = rosbag.migration.MessageMigrator()
 
     for b in inbags:
         print 'Trying to migrate: %s' % b
         outbag = b + '.tmp'
-        if not bag_migration.fixbag(mm, b, outbag):
+        if not rosbag.migration.fixbag(mm, b, outbag):
             os.remove(outbag)
             print ' Migration failed.'
             continue
-        
+
         oldnamebase = b + '.old'
         oldname = oldnamebase
         i = 1

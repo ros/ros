@@ -37,7 +37,7 @@ PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
 import sys
-from rosbag import bag_migration
+import rosbag.migration
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
@@ -48,10 +48,10 @@ if __name__ == '__main__':
         print >> sys.stderr, 'Second argument should be a bag, not a rule file.'
         exit(2)
 
-    mm = bag_migration.MessageMigrator(sys.argv[3:])
-    if bag_migration.fixbag(mm, sys.argv[1], sys.argv[2]):
-        print 'Bag migrated successfully.'
-        exit(0)
-    else:
+    mm = rosbag.migration.MessageMigrator(sys.argv[3:])
+    if not rosbag.migration.fixbag(mm, sys.argv[1], sys.argv[2]):
         print 'Bag could not be migrated.'
         exit(1)
+
+    print 'Bag migrated successfully.'
+    exit(0)

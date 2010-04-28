@@ -36,13 +36,13 @@
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
-from optparse import OptionParser
+import optparse
 import os
 import re
 import sys
-from rosbag import bag_migration
+import rosbag.migration
 
-def print_trans(old,new,indent):
+def print_trans(old, new, indent):
     from_txt = '%s [%s]' % (old._type, old._md5sum)
     if new is not None:
         to_txt= '%s [%s]' % (new._type, new._md5sum)
@@ -52,7 +52,7 @@ def print_trans(old,new,indent):
     print '    ' * indent + '   To:   %s' % to_txt
 
 if __name__ == '__main__':
-    parser = OptionParser(usage='usage: makerule.py msg.saved [-a] output_rulefile [rulefile1, rulefile2, ...] [-n]')
+    parser = optparse.OptionParser(usage='usage: makerule.py msg.saved [-a] output_rulefile [rulefile1, rulefile2, ...] [-n]')
     parser.add_option('-a', '--append',    action='store_true', dest='append',    default=False)
     parser.add_option('-n', '--noplugins', action='store_true', dest='noplugins', default=False)
     (options, args) = parser.parse_args()
@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
     f = open(sys.argv[1])
     if f is None:
-        print >> sys.stderr, "Could not open message full definition: %s"
+        print >> sys.stderr, 'Could not open message full definition: %s'
         sys.exit()
 
     type_line = f.readline()
@@ -94,18 +94,18 @@ if __name__ == '__main__':
     old_class = roslib.genpy.generate_dynamic(old_type,old_full_text)[old_type]
 
     if old_class is None:
-        print >> sys.stderr, "Could not generate class from full definition file."
+        print >> sys.stderr, 'Could not generate class from full definition file.'
         sys.exit()
 
-    mm = bag_migration.MessageMigrator(args[2:]+append_rule,not options.noplugins)
+    mm = rosbag.migration.MessageMigrator(args[2:]+append_rule,not options.noplugins)
 
-    migrations = bag_migration.checkmessages(mm, [old_class])
+    migrations = rosbag.migration.checkmessages(mm, [old_class])
 
     if migrations == []:
-        print "Saved definition is up to date"
+        print 'Saved definition is up to date.'
         exit(0)
 
-    print "The following migrations need to occur:"
+    print 'The following migrations need to occur:'
 
     all_rules = []
     for m in migrations:
@@ -117,12 +117,14 @@ if __name__ == '__main__':
             for r in m[1]:
                 print_trans(r.old_class, r.new_class, 1)
 
-    if rulefile is not None:
+    if rulefile is None:
+        print "rulefile not specified"
+    else:
         output = ''
         rules_left = mm.filter_rules_unique(all_rules)
 
         if rules_left == []:
-            print "\nNo additional rule files needed to be generated.  %s not created."%(rulefile)
+            print "\nNo additional rule files needed to be generated.  %s not created." % rulefile
             exit(0)
 
         while rules_left != []:
@@ -134,7 +136,7 @@ if __name__ == '__main__':
                     new_type = raw_input('>')
                     new_class = roslib.message.get_message_class(new_type)
                     while new_class is None:
-                        print "\'%s\' could not be found in your system.  Please make sure it is built."%new_type
+                        print "\'%s\' could not be found in your system.  Please make sure it is built." % new_type
                         new_type = raw_input('>')
                         new_class = roslib.message.get_message_class(new_type)
                     new_rule = mm.make_update_rule(r.old_class, new_class)
@@ -142,7 +144,7 @@ if __name__ == '__main__':
                     R.find_sub_paths()
                     new_rules = [r for r in mm.expand_rules(R.sub_rules) if r.valid == False]
                     extra_rules.extend(new_rules)
-                    print 'Creating the migration rule for %s requires additional missing rules:'%new_type
+                    print 'Creating the migration rule for %s requires additional missing rules:' % new_type
                     for nr in new_rules:
                         print_trans(nr.old_class, nr.new_class,1)
                     output += R.get_class_def()
@@ -153,5 +155,3 @@ if __name__ == '__main__':
         f.write(output)
         f.close()
         print "\nThe necessary rule files have been written to: %s" % rulefile
-    else:
-        print "rulefile not specified"

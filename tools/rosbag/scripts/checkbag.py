@@ -36,10 +36,11 @@
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
-import sys
-from rosbag import bag_migration
-from optparse import OptionParser
+import optparse
 import os
+import sys
+
+import rosbag.migration
 
 def print_trans(old, new, indent):
     from_txt = '%s [%s]' % (old._type, old._md5sum)
@@ -51,7 +52,7 @@ def print_trans(old, new, indent):
     print '    ' * indent + '   To:   %s' % to_txt
 
 if __name__ == '__main__':
-    parser = OptionParser(usage='usage: checkbag.py [-g] <inbag> [rulefile1, rulefile2, ...]')
+    parser = optparse.OptionParser(usage='usage: checkbag.py [-g] <inbag> [rulefile1, rulefile2, ...]')
     parser.add_option('-g', '--genrules',  action='store',      dest='rulefile', default=None)
     parser.add_option('-a', '--append',    action='store_true', dest='append')
     parser.add_option('-n', '--noplugins', action='store_true', dest='noplugins')
@@ -77,9 +78,9 @@ if __name__ == '__main__':
     else:
         append_rule = []
 
-    mm = bag_migration.MessageMigrator(args[1:] + append_rule, not options.noplugins)
+    mm = rosbag.migration.MessageMigrator(args[1:] + append_rule, not options.noplugins)
 
-    migrations = bag_migration.checkbag(mm, args[0])
+    migrations = rosbag.migration.checkbag(mm, args[0])
     if len(migrations) == 0:
         print 'Bag file is up to date.'
         exit(0)

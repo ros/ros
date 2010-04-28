@@ -36,21 +36,19 @@
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
+import optparse
 import sys
-import rosbag
-from rosbag import bag_migration
 import roslib.message
-
-from optparse import OptionParser
+import rosbag
 
 if __name__ == '__main__':
-    parser = OptionParser(usage='usage: savemsg.py [-b <bagfile] type')
+    parser = optparse.OptionParser(usage='usage: savemsg.py [-b <bagfile] type')
     parser.add_option('-b', '--bagfiles', action='store', dest='bagfile', default=None, help='Save message from a bagfile rather than system definition')
 
     (options, args) = parser.parse_args()
 
     if len(args) < 1:
-        parser.error('Message type not specified')
+        parser.error('Message type not specified.')
 
     if options.bagfile is None:
         sys_class = roslib.message.get_message_class(args[0])
@@ -60,9 +58,10 @@ if __name__ == '__main__':
             print '[%s]:' % args[0]
             print sys_class._full_text
     else:
-        for i, (topic, msg, t) in enumerate(rosbag.Bag(options.bagfile).readMessages(raw=True)):
+        for topic, msg, t in rosbag.Bag(options.bagfile).readMessages(raw=True):
             if msg[0] == args[0]:
                 print '[%s]:' % args[0]
                 print msg[4]._full_text
                 exit(0)
+
         print >> sys.stderr, 'Could not find message %s in bag %s.' % (args[0], options.bagfile)

@@ -41,18 +41,15 @@ import rosbag
 import fileinput
 
 def fixbags(md5file, inbag, outbag):
-    d = dict()
-    finput = fileinput.input(md5file)
-    for line in finput:
+    d = {}
+    for line in fileinput.input(md5file):
         sp = line.split()
         d[sp[1]] = [sp[0], sp[2], sp[3]]
 
     rebag = rosbag.Bag(outbag, 'w')
 
-    for i, (topic, msg, t) in enumerate(rosbag.Bag(inbag).readMessages(raw=True)):
-        type  = msg[0]
-        bytes = msg[1]
-        md5   = msg[2]
+    for topic, msg, t in rosbag.Bag(inbag).readMessages(raw=True):
+        type, bytes, md5 = msg[0], msg[1], msg[2]
 
         if md5 in d:
             if type != d[md5][0]:
@@ -60,7 +57,7 @@ def fixbags(md5file, inbag, outbag):
                 continue
             msg = (d[md5][1], msg[1], d[md5][2])
 
-        rebag.add(topic, msg, t, raw=True)
+        rebag.write(topic, msg, t, raw=True)
 
     rebag.close()
 

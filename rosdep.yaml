@@ -449,6 +449,17 @@ gtest:
         make
         sudo make install
       fi
+    '8.10': |
+      if [ ! -f /opt/ros/lib/libgtest.so.0 ] ; then
+        mkdir -p ~/ros/ros-deps
+        cd ~/ros/ros-deps
+        wget --tries=10 http://pr.willowgarage.com/downloads/gtest-1.3.0.tar.gz
+        tar xzf gtest-1.3.0.tar.gz
+        cd gtest-1.3.0
+        ./configure --prefix=/opt/ros
+        make
+        sudo make install
+      fi
   debian: libgtest-dev
   macports: google-test
 paramiko:

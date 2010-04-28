@@ -402,10 +402,10 @@ void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg,
             connection_info->md5sum   = std::string(ros::message_traits::md5sum(msg));
             connection_info->msg_def  = std::string(ros::message_traits::definition(msg));
 
-            ROS_INFO("NEW CONNECTION");
-            ROS_INFO("  datatype: %s", ros::message_traits::datatype(msg));
-            ROS_INFO("  md5sum: %s", ros::message_traits::md5sum(msg));
-            ROS_INFO("  msg_def: %s", ros::message_traits::definition(msg));
+            ROS_DEBUG("NEW CONNECTION");
+            ROS_DEBUG("  datatype: %s", ros::message_traits::datatype(msg));
+            ROS_DEBUG("  md5sum: %s", ros::message_traits::md5sum(msg));
+            ROS_DEBUG("  msg_def: %s", ros::message_traits::definition(msg));
 
             if (connection_header != NULL) {
                 for (ros::M_string::const_iterator i = connection_header->begin(); i != connection_header->end(); i++)
@@ -446,7 +446,7 @@ void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg,
 
         // Check if we want to stop this chunk
         uint32_t chunk_size = getChunkOffset();
-        ROS_INFO("  curr_chunk_size=%d (threshold=%d)", chunk_size, chunk_threshold_);
+        ROS_DEBUG("  curr_chunk_size=%d (threshold=%d)", chunk_size, chunk_threshold_);
         if (chunk_size > chunk_threshold_) {
             // Empty the outgoing chunk
             stopWritingChunk();
@@ -475,7 +475,7 @@ void Bag::writeMessageDataRecord(uint32_t conn_id, ros::Time const& time, T cons
     // TODO: with a little work here we can serialize directly into the file -- sweet
     ros::serialization::serialize(s, msg);
 
-    ROS_INFO("Writing MSG_DATA [%llu:%d]: conn=%d sec=%d nsec=%d data_len=%d",
+    ROS_DEBUG("Writing MSG_DATA [%llu:%d]: conn=%d sec=%d nsec=%d data_len=%d",
               (unsigned long long) file_.getOffset(), getChunkOffset(), conn_id, time.sec, time.nsec, msg_ser_len);
 
     // TODO: If we are clever here, we can serialize into the

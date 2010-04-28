@@ -32,38 +32,17 @@ using ros::Time;
 
 namespace rosbag {
 
-MessageInstance::MessageInstance(TopicInfo const* topic_info, IndexEntry const& index_entry, Bag& bag) :
-	topic_info_(topic_info), index_entry_(index_entry), bag_(&bag) { }
-
-string const& MessageInstance::getTopic()             const { return topic_info_->topic;    }
-string const& MessageInstance::getDataType()          const { return topic_info_->datatype; }
-string const& MessageInstance::getMD5Sum()            const { return topic_info_->md5sum;   }
-string const& MessageInstance::getMessageDefinition() const { return topic_info_->msg_def;  }
-Time const&   MessageInstance::getTime()              const { return index_entry_.time;     }
-
-// @todo: this should cache the header
-bool MessageInstance::getLatching() const {
-    ros::Header header = bag_->readMessageDataHeader(index_entry_);
-    ros::M_string& fields = *header.getValues();
-    
-    ros::M_string::iterator latch_iter = fields.find(string("latching"));
-    if (latch_iter != fields.end() && latch_iter->second != string("0"))
-        return true;
-    else
-        return false;
+MessageInstance::MessageInstance(ConnectionInfo const* connection_info, IndexEntry const& index_entry, Bag& bag) :
+	connection_info_(connection_info), index_entry_(index_entry), bag_(&bag)
+{
 }
 
-// @todo: this should cache the header
-std::string MessageInstance::getCallerId() const {
-    ros::Header header = bag_->readMessageDataHeader(index_entry_);
-    ros::M_string& fields = *header.getValues();
-
-    ros::M_string::iterator callerid_iter = fields.find(string("callerid"));
-    if (callerid_iter != fields.end())
-        return callerid_iter->second;
-    else
-        return std::string("");
-}
+string const&        MessageInstance::getTopic()             const { return connection_info_->topic;    }
+string const&        MessageInstance::getDataType()          const { return connection_info_->datatype; }
+string const&        MessageInstance::getMD5Sum()            const { return connection_info_->md5sum;   }
+string const&        MessageInstance::getMessageDefinition() const { return connection_info_->msg_def;  }
+ros::M_string const& MessageInstance::getConnectionHeader()  const { return connection_info_->header;   }
+Time const&          MessageInstance::getTime()              const { return index_entry_.time;          }
 
 uint32_t MessageInstance::size() const {
     return bag_->readMessageDataSize(index_entry_);
@@ -73,4 +52,4 @@ ros::AdvertiseOptions createAdvertiseOptions(MessageInstance const& m, uint32_t 
     return ros::AdvertiseOptions(m.getTopic(), queue_size, m.getMD5Sum(), m.getDataType(), m.getMessageDefinition());
 }
 
-}
+} // namespace rosbag

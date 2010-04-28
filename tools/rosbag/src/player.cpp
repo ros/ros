@@ -163,13 +163,22 @@ void Player::doPublish(MessageInstance const& m) {
 	ros::Time const& time = m.getTime();
 
     // Make a unique id composed of the callerid and the topic allowing separate advertisers for separate latching topics
-    string callerid = m.getCallerId();
+
+	ros::M_string const& header = m.getConnectionHeader();
+
+	ros::M_string::const_iterator header_iter = header.find("callerid");
+    string callerid;
+    if (header_iter != header.end())
+        callerid = header_iter->second;
+
     string callerid_topic = callerid + topic;
 
     map<string, ros::Publisher>::iterator pub_iter = publishers_.find(callerid_topic);
     if (pub_iter == publishers_.end()) {
         ros::AdvertiseOptions opts = createAdvertiseOptions(m, options_.queue_size);
-        opts.latch = m.getLatching();
+
+        ros::M_string::const_iterator header_iter = header.find("latching");
+        opts.latch = (header_iter != header.end() && header_iter->second == "1");
 
         ros::Publisher pub = node_handle_->advertise(opts);
         publishers_.insert(publishers_.begin(), pair<string, ros::Publisher>(callerid_topic, pub));

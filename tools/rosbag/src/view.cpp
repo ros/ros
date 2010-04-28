@@ -61,8 +61,7 @@ void View::iterator::populate() {
 void View::iterator::populateSeek(multiset<IndexEntry>::const_iterator iter) {
     iters_.clear();
     foreach(MessageRange const* range, view_->ranges_) {
-        multiset<IndexEntry>::const_iterator start = std::lower_bound(range->begin,
-                                                                      range->end, iter->time, IndexEntryCompare());
+        multiset<IndexEntry>::const_iterator start = std::lower_bound(range->begin, range->end, iter->time, IndexEntryCompare());
         if (start != range->end)
             iters_.push_back(ViewIterHelper(start, range));
     }
@@ -105,8 +104,16 @@ void View::iterator::increment() {
 
 //! \todo some check in case we are at end
 MessageInstance View::iterator::dereference() const {
+    ROS_ASSERT(iters_.size() > 0);
+
     ViewIterHelper const& i = iters_.back();
-    return MessageInstance(i.range->topic_info, *(i.iter), *(i.range->bag_query->bag));
+
+    ROS_ASSERT(i.range != NULL);
+    ROS_ASSERT(i.range->connection_info != NULL);
+    ROS_ASSERT(i.range->bag_query != NULL);
+    ROS_ASSERT(i.range->bag_query->bag != NULL);
+
+    return MessageInstance(i.range->connection_info, *(i.iter), *(i.range->bag_query->bag));
 }
 
 // View
@@ -140,22 +147,24 @@ void View::addQuery(Bag& bag, Query const& query) {
 }
 
 void View::updateQueries(BagQuery* q) {
-    for (map<string, TopicInfo*>::iterator i = q->bag->topic_infos_.begin(); i != q->bag->topic_infos_.end(); i++) {
+    for (map<uint32_t, ConnectionInfo*>::iterator i = q->bag->connections_.begin(); i != q->bag->connections_.end(); i++) {
+        ConnectionInfo const* connection = i->second;
+
         // Skip if the query doesn't evaluate to true
-        if (!q->query->evaluate(i->second))
+        if (!q->query->evaluate(connection))
             continue;
 
-        map<string, multiset<IndexEntry> >::iterator j = q->bag->topic_indexes_.find(i->second->topic);
+        map<uint32_t, multiset<IndexEntry> >::iterator j = q->bag->connection_indexes_.find(connection->id);
 
         // Skip if the bag doesn't have the corresponding index
-        if (j == q->bag->topic_indexes_.end())
+        if (j == q->bag->connection_indexes_.end())
             continue;
+        multiset<IndexEntry>& index = j->second;
 
         // lower_bound/upper_bound do a binary search to find the appropriate range of Index Entries given our time range
-        
-        std::multiset<IndexEntry>::const_iterator begin = std::lower_bound(j->second.begin(), j->second.end(), q->query->getStartTime(), IndexEntryCompare());
-        std::multiset<IndexEntry>::const_iterator end   = std::upper_bound(j->second.begin(), j->second.end(), q->query->getEndTime(),   IndexEntryCompare());
-        TopicInfo* topic_info = i->second;
+
+        std::multiset<IndexEntry>::const_iterator begin = std::lower_bound(index.begin(), index.end(), q->query->getStartTime(), IndexEntryCompare());
+        std::multiset<IndexEntry>::const_iterator end   = std::upper_bound(index.begin(), index.end(), q->query->getEndTime(),   IndexEntryCompare());
 
         // todo: this could be made faster with a map of maps
         bool found = false;
@@ -163,7 +172,7 @@ void View::updateQueries(BagQuery* q) {
             MessageRange* r = *k;
 
             // If the topic and query are already in our ranges, we update
-            if (r->bag_query == q && r->topic_info->topic == topic_info->topic) {
+            if (r->bag_query == q && r->connection_info->topic == connection->topic) {
                 r->begin = begin;
                 r->end   = end;
                 found    = true;
@@ -171,7 +180,7 @@ void View::updateQueries(BagQuery* q) {
             }
         }
         if (!found)
-            ranges_.push_back(new MessageRange(begin, end, topic_info, q));
+            ranges_.push_back(new MessageRange(begin, end, connection, q));
     }
 
     view_revision_++;

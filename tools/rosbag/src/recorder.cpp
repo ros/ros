@@ -283,7 +283,7 @@ void Recorder::startWriting() {
         bag_.open(write_filename_, bagmode::Write);
     }
     catch (rosbag::BagException e) {
-        ROS_ERROR(e.what());
+        ROS_ERROR("Error writing: %s", e.what());
         exit_code_ = 1;
         ros::shutdown();
     }
@@ -367,7 +367,7 @@ void Recorder::doRecordSnapshotter() {
             bag_.open(write_filename, bagmode::Write);
         }
         catch (rosbag::BagException ex) {
-            ROS_ERROR(ex.what());
+            ROS_ERROR("Error writing: %s", ex.what());
             return;
         }
 

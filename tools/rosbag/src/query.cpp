@@ -51,7 +51,7 @@ Query::~Query() { }
 ros::Time Query::getStartTime() const { return start_time_; }
 ros::Time Query::getEndTime()   const { return end_time_;   }
 
-bool Query::evaluate(TopicInfo const*) const { return true; }
+bool Query::evaluate(ConnectionInfo const*) const { return true; }
 
 Query* Query::clone() const { return new Query(*this); }
 
@@ -68,7 +68,7 @@ TopicQuery::TopicQuery(std::vector<std::string> const& topics, ros::Time const& 
 {
 }
 
-bool TopicQuery::evaluate(TopicInfo const* info) const {
+bool TopicQuery::evaluate(ConnectionInfo const* info) const {
     foreach(string const& topic, topics_)
         if (topic == info->topic)
             return true;
@@ -91,7 +91,7 @@ TypeQuery::TypeQuery(std::vector<std::string> const& types, ros::Time const& sta
 {
 }
 
-bool TypeQuery::evaluate(TopicInfo const* info) const {
+bool TypeQuery::evaluate(ConnectionInfo const* info) const {
     foreach(string const& type, types_)
         if (type == info->datatype)
             return true;
@@ -115,9 +115,9 @@ BagQuery::~BagQuery() {
 
 MessageRange::MessageRange(std::multiset<IndexEntry>::const_iterator const& _begin,
                            std::multiset<IndexEntry>::const_iterator const& _end,
-                           TopicInfo const* _topic_info,
+                           ConnectionInfo const* _connection_info,
                            BagQuery const* _bag_query)
-	: begin(_begin), end(_end), topic_info(_topic_info), bag_query(_bag_query)
+	: begin(_begin), end(_end), connection_info(_connection_info), bag_query(_bag_query)
 {
 }
 
@@ -132,4 +132,4 @@ bool ViewIterHelperCompare::operator()(ViewIterHelper const& a, ViewIterHelper c
 	return (a.iter)->time > (b.iter)->time;
 }
 
-}
+} // namespace rosbag

@@ -15,13 +15,8 @@
   (cond ((not (slime-current-connection))
           (message "Not connected."))
         (t
-         (let* ((default (slime-eval `(cl:identity ros-load:*current-ros-package*)))
-                (prompt (concat (or prompt "ROS Package")
-                                (if default
-                                    (format " (default `%s'): " default)
-                                    ": "))))
-           (ros-completing-read-package default prompt
-                                        slime-ros-completion-function)))))
+         (let ((default (slime-eval `(cl:identity ros-load:*current-ros-package*))))
+           (ros-completing-read-package nil default slime-ros-completion-function)))))
 
 (defun slime-ros-get-systems-in-pkg (package &optional default-value prompt)
   (let* ((package-path (ros-package-path package))

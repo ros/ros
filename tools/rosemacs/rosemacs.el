@@ -293,7 +293,7 @@
   (unless ros-packages
     (ros-load-package-locations))
   (let ((completion-function (or completion-function ros-completion-function))
-        (prompt (concat (or prompt "ROS Package")
+        (prompt (concat (or prompt "Enter package")
                         (if default
                             (format " (default `%s'): " default)
                           ": "))))
@@ -474,7 +474,9 @@ pattern and `files' as file pattern. This function is similar to
 RGREP but with a ros package instead of a directory as
 parameter."
   (interactive (progn (grep-compute-defaults)
-                      (let ((package (ros-completing-read-package))
+                      (let ((package (ros-completing-read-package
+                                      nil (unless (eq ros-buffer-package :none)
+                                            ros-buffer-package)))
                             (regexp (grep-read-regexp)))
                         (list
                          package
@@ -487,7 +489,9 @@ parameter."
 load the result in a dired buffer. This function is similar to
 FIND-DIRED but with a ros package instead of a directory as
 parameter."
-  (interactive (list (ros-completing-read-package)
+  (interactive (list (ros-completing-read-package
+                      nil (unless (eq ros-buffer-package :none)
+                            ros-buffer-package))
                      (read-string "Run find (within args): " ros-find-args
                                   '(ros-find-args-history . 1))))
   (find-dired (ros-package-path ros-pkg) args))
@@ -992,10 +996,8 @@ q kills the buffer and process."
 (defun ros-run (pkg exec &rest args)
   "pkg is a ros package name and exec is the executable name.  Tab completes package name.  Exec defaults to package name itself."
   (interactive (list (setq ros-run-temp-var (ros-completing-read-package
-                                             (if ros-buffer-package
-                                                 (format "Enter package (default %s): "  ros-buffer-package)
-                                               "Enter package: ")
-                                             ros-buffer-package))
+                                             nil (unless (eq ros-buffer-package :none)
+                                                   ros-buffer-package)))
                      (funcall ros-completion-function (format "Enter executable (default %s): " ros-run-temp-var)
                               (mapcar (lambda (pkg)
                                         (cons pkg nil))

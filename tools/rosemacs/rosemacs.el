@@ -298,9 +298,9 @@
                             (format " (default `%s'): " default)
                           ": "))))
     (funcall completion-function
-             prompt (mapcar (lambda (x)
-                              (cons x nil))
-                            ros-packages)
+             prompt (map 'list (lambda (x)
+                                 (cons x nil))
+                         ros-packages)
              nil nil nil nil default)))
 
 (defun ros-completing-read-pkg-file (prompt &optional default-pkg)
@@ -312,7 +312,8 @@
 (defun ros-ido-completing-read-pkg-file (prompt &optional default-pkg)
   (unless ros-packages
     (ros-load-package-locations))
-  (let ((old-ido-make-file-list (symbol-function 'ido-make-file-list-1)))
+  (let ((old-ido-make-file-list (symbol-function 'ido-make-file-list-1))
+        (ros-packages-list (map 'list #'identity ros-packages)))
     (flet ((pkg-expr->path (str)
              (let ((pkg-name (second (split-string str "/"))))
                (unless (= (length pkg-name) 0)
@@ -322,9 +323,9 @@
                (let ((path (pkg-expr->path dir)))
                  (if path
                      (funcall old-ido-make-file-list path)
-                   (map 'list (lambda (pkg) (concat pkg "/")) ros-packages)))))
+                   (mapcar (lambda (pkg) (concat pkg "/")) ros-packages-list)))))
         (substring (ido-read-file-name prompt "/"
-                                       (when (member default-pkg ros-packages)
+                                       (when (member default-pkg ros-packages-list)
                                          default-pkg))
                    1)))))
 
@@ -357,9 +358,9 @@
                              default)))
 
 (defun ros-completing-read-topic (prompt &optional default)
-  (funcall ros-completion-function prompt (mapcar (lambda (m)
-                                                    (cons m nil))
-                                                  ros-all-topics)
+  (funcall ros-completion-function prompt (map 'list (lambda (m)
+                                                       (cons m nil))
+                                               ros-all-topics)
            nil nil nil nil (when (member default ros-all-topics)
                              default)))
 

@@ -105,7 +105,7 @@ void Bag::openWrite(string const& filename) {
     if (!file_.openWrite(filename))
         throw BagIOException("Failed to open file: " + filename);
 
-    startWritingVersion200();
+    startWriting();
 }
 
 void Bag::openAppend(string const& filename) {
@@ -161,7 +161,7 @@ void Bag::close() {
 }
 
 void Bag::closeWrite() {
-    stopWritingVersion200();
+    stopWriting();
 }
 
 string   Bag::getFileName() const { return file_.getFileName(); }
@@ -223,13 +223,13 @@ int Bag::getMinorVersion() const { return version_ % 100; }
 
 //
 
-void Bag::startWritingVersion200() {
+void Bag::startWriting() {
     writeVersion();
     file_header_pos_ = file_.getOffset();
     writeFileHeaderRecord();
 }
 
-void Bag::stopWritingVersion200() {
+void Bag::stopWriting() {
     if (chunk_open_)
         stopWritingChunk();
 
@@ -285,11 +285,15 @@ void Bag::startReadingVersion102() {
     // Read the file header record, which points to the start of the topic indexes
     readFileHeaderRecord();
 
+    // Get the length of the file
+    seek(0, std::ios::end);
+    uint64_t filelength = getOffset();
+
     // Seek to the beginning of the topic index records
     seek(index_data_pos_);
 
     // Read the topic index records, which point to the offsets of each message in the file
-    while (file_.good())
+    while (file_.getOffset() < filelength)
         readTopicIndexRecord();
 
     // Read the message definition records (which are the first entry in the topic indexes)
@@ -596,9 +600,9 @@ void Bag::readConnectionRecord() {
     if (!isOp(fields, OP_CONNECTION))
         throw BagFormatException("Expected CONNECTION op not found");
 
-    string topic;
     uint32_t id;
     readField(fields, CONNECTION_FIELD_NAME, true, &id);
+    string topic;
     readField(fields, TOPIC_FIELD_NAME,      true, topic);
 
     ros::Header connection_header;
@@ -635,8 +639,6 @@ void Bag::readConnectionRecord() {
         }
     }
 }
-
-// Message definition records
 
 void Bag::readMessageDefinitionRecord() {
     ros::Header header;
@@ -697,6 +699,29 @@ void Bag::decompressChunk(uint64_t chunk_pos) {
     decompressed_chunk_ = chunk_pos;
 }
 
+void Bag::loadMessageDataRecord102(uint64_t offset) {
+    ROS_DEBUG("loadMessageDataRecord: offset=%llu", (unsigned long long) offset);
+
+    seek(offset);
+
+    ros::Header header;
+    uint32_t data_size;
+    uint8_t op;
+    do {
+        if (!readHeader(header) || !readDataLength(data_size))
+            throw BagFormatException("Error reading header");
+
+        readField(*header.getValues(), OP_FIELD_NAME, true, &op);
+    }
+    while (op == OP_MSG_DEF);
+
+    if (op != OP_MSG_DATA)
+        throw BagFormatException((format("Expected MSG_DATA op, got %d") % op).str());
+
+    record_buffer_.setSize(data_size);
+    file_.read((char*) record_buffer_.getData(), data_size);
+}
+
 // Reading this into a buffer isn't completely necessary, but we do it anyways for now
 void Bag::decompressRawChunk(ChunkHeader const& chunk_header) {
     assert(chunk_header.compression == COMPRESSION_NONE);
@@ -736,6 +761,10 @@ ros::Header Bag::readMessageDataHeader(IndexEntry const& index_entry) {
         decompressChunk(index_entry.chunk_pos);
         readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
         return header;
+    case 102:
+        loadMessageDataRecord102(index_entry.chunk_pos);
+        readMessageDataHeaderFromBuffer(record_buffer_, 0, header, data_size, bytes_read);
+        return header;
     default:
         throw BagFormatException((format("Unhandled version: %1%") % version_).str());
     }
@@ -746,50 +775,20 @@ uint32_t Bag::readMessageDataSize(IndexEntry const& index_entry) {
     ros::Header header;
     uint32_t data_size;
     uint32_t bytes_read;
-
     switch (version_)
     {
     case 200:
         decompressChunk(index_entry.chunk_pos);
         readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
-
         return data_size;
-
+    case 102:
+        loadMessageDataRecord102(index_entry.chunk_pos);
+        readMessageDataHeaderFromBuffer(record_buffer_, 0, header, data_size, bytes_read);
+        return data_size;
     default:
         throw BagFormatException((format("Unhandled version: %1%") % version_).str());
     }
 }
-
-/*
-bool Bag::loadMessageDataRecord102(string const& topic, uint64_t offset) {
-  ROS_DEBUG("loadMessageDataRecord: offset=%llu", (unsigned long long) offset);
-
-  seek(offset);
-
-  ros::Header header;
-  uint32_t data_size;
-  uint8_t op;
-  do {
-  if (!readHeader(header, data_size) ||
-  !readField(*header.getValues(), OP_FIELD_NAME, true, &op))
-  return false;
-  }
-  while (op == OP_MSG_DEF);
-  if (op != OP_MSG_DATA)
-  return false;
-
-  string msg_topic;
-  if (!readField(*header.getValues(), TOPIC_FIELD_NAME, true, msg_topic))
-  return false;
-  if (topic != msg_topic)
-  return false;
-
-  record_buffer_.setSize(data_size);
-  file_.read((char*) record_buffer_.getData(), data_size);
-
-  return true;
-  }
-*/
 
 void Bag::writeChunkInfoRecords() {
     boost::mutex::scoped_lock lock(record_mutex_);
@@ -856,10 +855,10 @@ void Bag::readChunkInfoRecord() {
 
     // Read the chunk position, timestamp, and topic count fields
     ChunkInfo chunk_info;
-    uint32_t chunk_topic_count;
     readField(fields, CHUNK_POS_FIELD_NAME,  true, &chunk_info.pos);
     readField(fields, START_TIME_FIELD_NAME, true,  chunk_info.start_time);
     readField(fields, END_TIME_FIELD_NAME,   true,  chunk_info.end_time);
+    uint32_t chunk_topic_count;
     readField(fields, COUNT_FIELD_NAME,      true, &chunk_topic_count);
 
     ROS_DEBUG("Read CHUNK_INFO: chunk_pos=%llu topic_count=%d start=%d.%d end=%d.%d",
@@ -968,7 +967,7 @@ void Bag::readMessageDataHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::
         
         readField(*header.getValues(), OP_FIELD_NAME, true, &op);
     }
-    while (op == OP_MSG_DEF);
+    while (op == OP_MSG_DEF || op == OP_CONNECTION);
 
     if (op != OP_MSG_DATA)
         throw BagFormatException("Expected MSG_DATA op not found");

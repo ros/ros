@@ -63,7 +63,7 @@ bool ChunkedFile::openWrite    (string const& filename) { return open(filename, 
 bool ChunkedFile::openRead     (string const& filename) { return open(filename, "rb");  }
 
 bool ChunkedFile::open(string const& filename, string const& mode) {
-    ROS_INFO("Opening file '%s' with mode '%s'", filename.c_str(), mode.c_str());
+    ROS_DEBUG("Opening file '%s' with mode '%s'", filename.c_str(), mode.c_str());
 
     // Check if file is already open
     if (file_) {
@@ -86,7 +86,7 @@ bool ChunkedFile::open(string const& filename, string const& mode) {
         file_ = fopen(filename.c_str(), mode.c_str());
 
     if (!file_) {
-        ROS_FATAL("Error opening file: %s", filename.c_str());
+        ROS_ERROR("Error opening file: %s", filename.c_str());
         return false;
     }
 
@@ -115,7 +115,7 @@ bool ChunkedFile::close() {
     // Close the file
     int success = fclose(file_);
     if (success != 0) {
-        ROS_FATAL("Error closing file: %s", filename_.c_str());
+        ROS_ERROR("Error closing file: %s", filename_.c_str());
         return false;
     }
 

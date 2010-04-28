@@ -148,8 +148,8 @@ private:
     template<class T>
     boost::shared_ptr<T const> instantiateBuffer(IndexEntry const& index_entry);  //!< deserializes the message held in record_buffer_
 
-    void startWritingVersion200();
-    void stopWritingVersion200();
+    void startWriting();
+    void stopWriting();
 
     void startReadingVersion102();
     void startReadingVersion200();
@@ -207,6 +207,8 @@ private:
     bool readHeader(ros::Header& header);
     bool readDataLength(uint32_t& data_size);
     bool isOp(ros::M_string& fields, uint8_t reqOp);
+
+    void loadMessageDataRecord102(uint64_t offset);
 
     // Header fields
 

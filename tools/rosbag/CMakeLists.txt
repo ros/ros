@@ -20,6 +20,9 @@ target_link_libraries(record rosbag)
 rosbuild_add_executable(play src/play.cpp)
 target_link_libraries(play rosbag)
 
+#rosbuild_add_executable(mytest test/mytest.cpp)
+#target_link_libraries(mytest rosbag)
+
 INSTALL(TARGETS record play
         RUNTIME DESTINATION $ENV{ROS_ROOT}/bin)
 

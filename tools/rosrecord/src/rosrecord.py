@@ -60,7 +60,7 @@ class BagReader(object):
         try:
             self._bag = rosbag.Bag(f, 'r')
         except Exception, e:
-            raise ROSRecordException(e.value)
+            raise ROSRecordException(str(e))
 
     def close(self):
         """
@@ -70,7 +70,7 @@ class BagReader(object):
             if self._bag:
                 self._bag.close()
         except Exception, e:
-            raise ROSRecordException(e.value)
+            raise ROSRecordException(str(e))
         
     @property
     def datatypes(self): return dict([(topic_info.topic, topic_info.datatype) for topic_info in self._bag._topic_infos.values()])

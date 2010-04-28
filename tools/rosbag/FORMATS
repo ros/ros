@@ -96,6 +96,17 @@ chunk_1
   compression=bz2              # type of compression (optional)
   size=<uncompressed bytes>    # size of data when uncompressed (optional)
   ---
+  conn_1i
+    op=7
+    topic=topic
+    id=0
+    ---
+    topic=topic
+    message_definition=
+    type=
+    md5sum=
+    latching=1
+    callerid=caller1234
   msg_def_1i
     op=1
     topic=
@@ -106,14 +117,16 @@ chunk_1
     <empty>
   msg_1
     op=2
-    topic=
-    time=
+    topic=...
+    time=...
+    conn=...
     ---
     <serialized msg>
   msg_2
     op=2
-    topic=
-    time=
+    topic=...
+    time=...
+    conn=...
     ---
     <serialized msg>
 
@@ -162,6 +175,13 @@ chunk_index_2.0
   timestamp_N+M, uncompressed_byte_offset_N+M
 
 ...
+
+conn_1
+  op=7
+  id=0
+  ---
+  latching=1
+  callerid=caller1234 
 
 msg_def_1
   op=1

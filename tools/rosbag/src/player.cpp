@@ -117,8 +117,7 @@ void Player::publish() {
         ROS_INFO("Opening %s", filename.c_str());
 
         shared_ptr<Bag> bag(new Bag);
-        if (!bag->open(filename, bagmode::Read))
-            throw Exception((boost::format("Error opening file: %1%") % filename.c_str()).str());
+        bag->open(filename, bagmode::Read);
 
         bags_.push_back(bag);
     }

@@ -37,21 +37,31 @@
 
 #include <ros/exception.h>
 
-using ros::Exception;
-
 namespace rosbag {
 
-//! Exception thrown if trying to add or read from an unopened recorder/player
-class BagNotOpenException : public Exception { };
+//! Base class for rosbag exceptions
+class BagException : public ros::Exception
+{
+public:
+    BagException(std::string const& msg) : ros::Exception(msg) { }
+};
 
-//! Exception thrown when assorted IO problems
-class BagIOException : public Exception { };
+//! Exception thrown if trying to read from or write to an unopened bag
+class BagNotOpenException : public BagException { };
 
-//! Exception thrown if an invalid MsgPos (such as from another bag) is passed to seek
-class InvalidMsgPosException : public Exception { };
+//! Exception thrown when on IO problems
+class BagIOException : public BagException
+{
+public:
+    BagIOException(std::string const& msg) : BagException(msg) { }
+};
 
-//! Exception thrown if trying to instantiate a MsgInstance as the wrong type
-class InstantiateException : public Exception { };
+//! Exception thrown on problems reading the bag format
+class BagFormatException : public BagException
+{
+public:
+    BagFormatException(std::string const& msg) : BagException(msg) { }
+};
 
 }
 

@@ -279,8 +279,11 @@ void Recorder::startWriting() {
     bag_.setCompression(options_.compression);
 
     updateFilenames();
-    if (!bag_.open(write_filename_, bagmode::Write)) {
-        ROS_FATAL("Could not open output file: %s", write_filename_.c_str());
+    try {
+        bag_.open(write_filename_, bagmode::Write);
+    }
+    catch (rosbag::BagException e) {
+        ROS_ERROR(e.what());
         exit_code_ = 1;
         ros::shutdown();
     }
@@ -360,19 +363,22 @@ void Recorder::doRecordSnapshotter() {
         string target_filename = out_queue.filename;
         string write_filename  = target_filename + string(".active");
         
-        if (!bag_.open(write_filename, bagmode::Write)) {
-            ROS_ERROR("Could not open file: %s", out_queue.filename.c_str());
+        try {
+            bag_.open(write_filename, bagmode::Write);
         }
-        else {
-            while (!out_queue.queue->empty()) {
-                OutgoingMessage out = out_queue.queue->front();
-                out_queue.queue->pop();
-
-                bag_.write(out.topic, out.time, out.msg);
-            }
-
-            stopWriting();
+        catch (rosbag::BagException ex) {
+            ROS_ERROR(ex.what());
+            return;
         }
+
+        while (!out_queue.queue->empty()) {
+            OutgoingMessage out = out_queue.queue->front();
+            out_queue.queue->pop();
+
+            bag_.write(out.topic, out.time, out.msg);
+        }
+
+        stopWriting();
     }
 }
 

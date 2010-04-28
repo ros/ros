@@ -38,10 +38,18 @@
 #include <map>
 #include <vector>
 
+#include "ros/message.h"
 #include "ros/time.h"
 
 namespace rosbag
 {
+
+struct ConnectionInfo
+{
+    uint32_t      id;
+    std::string   topic;
+    ros::M_string header;
+};
 
 struct TopicInfo
 {

@@ -53,7 +53,15 @@ ros::Time Query::getEndTime()   const { return end_time_;   }
 
 bool Query::evaluate(TopicInfo const*) const { return true; }
 
+Query* Query::clone() const { return new Query(*this); }
+
 // TopicQuery
+
+TopicQuery::TopicQuery(std::string const& topic, ros::Time const& start_time, ros::Time const& end_time)
+    : Query(start_time, end_time)
+{
+    topics_.push_back(topic);
+}
 
 TopicQuery::TopicQuery(std::vector<std::string> const& topics, ros::Time const& start_time, ros::Time const& end_time)
 	: Query(start_time, end_time), topics_(topics)
@@ -61,22 +69,54 @@ TopicQuery::TopicQuery(std::vector<std::string> const& topics, ros::Time const& 
 }
 
 bool TopicQuery::evaluate(TopicInfo const* info) const {
-
     foreach(string const& topic, topics_)
         if (topic == info->topic)
-        {
             return true;
-        }
 
     return false;
+}
+
+Query* TopicQuery::clone() const { return new TopicQuery(*this); }
+
+// TypeQuery
+
+TypeQuery::TypeQuery(std::string const& type, ros::Time const& start_time, ros::Time const& end_time)
+    : Query(start_time, end_time)
+{
+    types_.push_back(type);
+}
+
+TypeQuery::TypeQuery(std::vector<std::string> const& types, ros::Time const& start_time, ros::Time const& end_time)
+    : Query(start_time, end_time), types_(types)
+{
+}
+
+bool TypeQuery::evaluate(TopicInfo const* info) const {
+    foreach(string const& type, types_)
+        if (type == info->datatype)
+            return true;
+
+    return false;
+}
+
+Query* TypeQuery::clone() const { return new TypeQuery(*this); }
+
+// BagQuery
+
+BagQuery::BagQuery(Bag* _bag, Query const& _query, uint32_t _bag_revision) : bag(_bag), bag_revision(_bag_revision) {
+    query = _query.clone();
+}
+
+BagQuery::~BagQuery() {
+    delete query;
 }
 
 // MessageRange
 
 MessageRange::MessageRange(std::multiset<IndexEntry>::const_iterator const& _begin,
-			 std::multiset<IndexEntry>::const_iterator const& _end,
-			 TopicInfo const* _topic_info,
-			 BagQuery const* _bag_query)
+                           std::multiset<IndexEntry>::const_iterator const& _end,
+                           TopicInfo const* _topic_info,
+                           BagQuery const* _bag_query)
 	: begin(_begin), end(_end), topic_info(_topic_info), bag_query(_bag_query)
 {
 }

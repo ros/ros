@@ -53,6 +53,7 @@ bool MessageInstance::getLatching() const {
         return false;
 }
 
+// @todo: this should cache the header
 std::string MessageInstance::getCallerId() const {
     ros::Header header = bag_->readMessageDataHeader(index_entry_);
     ros::M_string& fields = *header.getValues();

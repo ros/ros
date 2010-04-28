@@ -120,17 +120,16 @@ View::~View() {
 }
 
 //! Simply copy the merge_queue state into the iterator
-View::iterator View::begin()
-{ 
+View::iterator View::begin() {
     update();
     return iterator(this);
 }
 
 //! Default constructed iterator signifies end
-View::iterator View::end()  { return iterator(this, true); }
+View::iterator View::end() { return iterator(this, true); }
 
 //! \todo: this doesn't work for now
-uint32_t       View::size()  const { return 0;                    }
+uint32_t View::size() const { return 0; }
 
 void View::addQuery(Bag& bag, Query const& query) {
     vector<ViewIterHelper> iters;
@@ -140,78 +139,49 @@ void View::addQuery(Bag& bag, Query const& query) {
     updateQueries(queries_.back());
 }
 
-void View::updateQueries(BagQuery* q)
-{
+void View::updateQueries(BagQuery* q) {
     for (map<string, TopicInfo*>::iterator i = q->bag->topic_infos_.begin(); i != q->bag->topic_infos_.end(); i++) {
-        
         // Skip if the query doesn't evaluate to true
         if (!q->query->evaluate(i->second))
             continue;
 
         map<string, multiset<IndexEntry> >::iterator j = q->bag->topic_indexes_.find(i->second->topic);
 
-        // Skip if the bag doeesn't have the corresponding index
+        // Skip if the bag doesn't have the corresponding index
         if (j == q->bag->topic_indexes_.end())
             continue;
 
         // lower_bound/upper_bound do a binary search to find the appropriate range of Index Entries given our time range
         
         std::multiset<IndexEntry>::const_iterator begin = std::lower_bound(j->second.begin(), j->second.end(), q->query->getStartTime(), IndexEntryCompare());
-        std::multiset<IndexEntry>::const_iterator end = std::upper_bound(j->second.begin(), j->second.end(), q->query->getEndTime(),   IndexEntryCompare());
+        std::multiset<IndexEntry>::const_iterator end   = std::upper_bound(j->second.begin(), j->second.end(), q->query->getEndTime(),   IndexEntryCompare());
         TopicInfo* topic_info = i->second;
 
+        // todo: this could be made faster with a map of maps
         bool found = false;
-
-        // This could be made faster with a map of maps
-        for (vector<MessageRange*>::iterator k = ranges_.begin();
-             k != ranges_.end();
-             k++)
-        {
+        for (vector<MessageRange*>::iterator k = ranges_.begin(); k != ranges_.end(); k++) {
             MessageRange* r = *k;
+
             // If the topic and query are already in our ranges, we update
-            if (r->bag_query == q && r->topic_info->topic == topic_info->topic)
-            {
+            if (r->bag_query == q && r->topic_info->topic == topic_info->topic) {
                 r->begin = begin;
-                r->end = end;
-                found = true;
+                r->end   = end;
+                found    = true;
                 break;
             }
         }
-
         if (!found)
             ranges_.push_back(new MessageRange(begin, end, topic_info, q));
     }
 
-    view_revision_ += 1;
+    view_revision_++;
 }
 
+void View::update() {
+    // todo this can be completely skipped if the bag is read-only
 
-void View::update()
-{
-    // TODO: This can be completely skipped if the bag is read-only
-
-    foreach(BagQuery* query, queries_)
-    {
-        if (query->bag->bag_revision_ != query->bag_revision)
-        {
-            //            ROS_DEBUG("Query has been outdated by bag -- re-evauating");
-            // Deleting affected range
-
-            /*
-            for (std::vector<MessageRange*>::iterator iter = ranges_.begin();
-                 iter != ranges_.end();)
-            {
-                if ((*iter)->bag_query == query)
-                {
-                    //                    ROS_DEBUG("Erasing corresponding range");
-                    delete *iter;
-                    iter = ranges_.erase(iter);
-                } else {
-                    iter++;
-                }
-            }
-            */
-            
+    foreach(BagQuery* query, queries_) {
+        if (query->bag->bag_revision_ != query->bag_revision) {
             updateQueries(query);
             query->bag_revision = query->bag->bag_revision_;
         }

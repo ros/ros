@@ -53,15 +53,15 @@ class Query
 public:
     //! The base query takes an optional time-range
     /*!
-     * param start_time  the beginning of the time_range for the query
-     * param end_time    the end of the time_range for the query
+     * param start_time the beginning of the time_range for the query
+     * param end_time   the end of the time_range for the query
      */
     Query(ros::Time const& start_time = ros::TIME_MIN,
           ros::Time const& end_time   = ros::TIME_MAX);
     virtual ~Query();
 
-    ros::Time getStartTime() const; //!< Accessor for start-timep
-    ros::Time getEndTime()   const; //!< Accessor for end-timep
+    ros::Time getStartTime() const; //!< Get the start-time
+    ros::Time getEndTime()   const; //!< Get the end-time
 
     //! Virtual function which determines topic-inclusion
     /*!
@@ -71,58 +71,60 @@ public:
     virtual bool evaluate(TopicInfo const* topic_info) const;
 
     //! Virtual function to clone so we can store a copy of the query
-    virtual Query* clone() const { return new Query(*this); }
-    
+    virtual Query* clone() const;
 
 private:
     ros::Time start_time_;
     ros::Time end_time_;
 };
 
-//! A Query the returns messages on a specified topic
+//! A Query the returns messages on the specified topics
 class TopicQuery : public Query
 {
 public:
+    TopicQuery(std::string const& topic,
+               ros::Time const& start_time = ros::TIME_MIN,
+               ros::Time const& end_time   = ros::TIME_MAX);
+
     TopicQuery(std::vector<std::string> const& topics,
                ros::Time const& start_time = ros::TIME_MIN,
                ros::Time const& end_time   = ros::TIME_MAX);
 
     virtual bool evaluate(TopicInfo const*) const;
-    virtual Query* clone() const { return new TopicQuery(*this); }
+    virtual Query* clone() const;
 
 private:
     std::vector<std::string> topics_;
 };
 
-//! A Query the returns messages of a specified type
+//! A Query the returns messages of the specified types
 class TypeQuery : public Query
 {
 public:
-    TypeQuery(std::vector<std::string> const& topics,
-               ros::Time const& start_time = ros::TIME_MIN,
-               ros::Time const& end_time   = ros::TIME_MAX);
+    TypeQuery(std::string const& type,
+              ros::Time const& start_time = ros::TIME_MIN,
+              ros::Time const& end_time   = ros::TIME_MAX);
+
+    TypeQuery(std::vector<std::string> const& types,
+              ros::Time const& start_time = ros::TIME_MIN,
+              ros::Time const& end_time   = ros::TIME_MAX);
 
     virtual bool evaluate(TopicInfo const*) const;
-    virtual Query* clone() const { return new TypeQuery(*this); }
+    virtual Query* clone() const;
 
 private:
-    std::vector<std::string> topics_;
+    std::vector<std::string> types_;
 };
 
 //! Pairs of queries and the bags they come from (used internally by View)
 struct BagQuery
 {
-    Bag* bag;
-    Query* query;
+    BagQuery(Bag* _bag, Query const& _query, uint32_t _bag_revision);
+    ~BagQuery();
+
+    Bag*     bag;
+    Query*   query;
     uint32_t bag_revision;
-    BagQuery(Bag* _bag, const Query& _query, uint32_t _bag_revision) : bag(_bag), bag_revision(_bag_revision)
-    {
-        query = _query.clone();
-    }
-    
-    ~BagQuery() {
-        delete query;
-    }
 };
 
 struct MessageRange

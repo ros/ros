@@ -22,5 +22,6 @@
   <rosdep name="bzip2"/>
   <rosdep name="zlib"/>
   <rosdep name="boost"/>
+  <rosdep name="gtest"/>
   
 </package>

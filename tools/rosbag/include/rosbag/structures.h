@@ -48,15 +48,10 @@ struct ConnectionInfo
 {
     uint32_t      id;
     std::string   topic;
+    std::string   datatype;
+    std::string   md5sum;
+    std::string   msg_def;
     ros::M_string header;
-};
-
-struct TopicInfo
-{
-    std::string topic;
-    std::string datatype;
-    std::string md5sum;
-    std::string msg_def;
 };
 
 struct ChunkInfo
@@ -81,10 +76,7 @@ struct IndexEntry
     uint64_t  chunk_pos;       //! absolute byte offset of the chunk record containing the message
     uint32_t  offset;          //! relative byte offset of the message record (either definition or data) in the chunk
 
-    bool operator<(IndexEntry const& b) const
-    {
-        return time < b.time;
-    }
+    bool operator<(IndexEntry const& b) const { return time < b.time; }
 };
 
 struct IndexEntryCompare

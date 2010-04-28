@@ -60,16 +60,12 @@ class MessageInstance
     friend class View;
   
 public:
-    std::string const& getTopic()             const;
-    std::string const& getDataType()          const;
-    std::string const& getMD5Sum()            const;
-    std::string const& getMessageDefinition() const;
-    ros::Time   const& getTime()              const;
-
-    // Additional useful informatio from header
-    bool               getLatching()          const;
-    std::string        getCallerId()          const;
-  
+    ros::Time     const& getTime()              const;
+    std::string   const& getTopic()             const;
+    std::string   const& getDataType()          const;
+    std::string   const& getMD5Sum()            const;
+    std::string   const& getMessageDefinition() const;
+    ros::M_string const& getConnectionHeader()  const;
 
     //! Templated call to instantiate a message
     /*!
@@ -86,11 +82,11 @@ public:
     uint32_t size() const;
 
 private:
-    MessageInstance(TopicInfo const* info, IndexEntry const& index, Bag& bag);
- 
-    TopicInfo const* topic_info_;
-    IndexEntry const index_entry_;
-    Bag*             bag_;
+    MessageInstance(ConnectionInfo const* connection_info, IndexEntry const& index, Bag& bag);
+
+    ConnectionInfo const* connection_info_;
+    IndexEntry const      index_entry_;
+    Bag*                  bag_;
 };
 
 
@@ -103,10 +99,8 @@ ros::AdvertiseOptions createAdvertiseOptions(MessageInstance const& msg, uint32_
 
 } // namespace rosbag
 
-namespace ros
-{
-namespace message_traits
-{
+namespace ros {
+namespace message_traits {
 
 template<>
 struct MD5Sum<rosbag::MessageInstance>
@@ -146,9 +140,8 @@ struct Serializer<rosbag::MessageInstance>
 
 } // namespace serialization
 
-} //namespace ros
+} // namespace ros
 
-// I really don't like having to do this
 #include "rosbag/bag.h"
 
 template<class T>

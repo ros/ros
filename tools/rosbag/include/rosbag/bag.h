@@ -135,9 +135,9 @@ public:
     void dump();
 
 private:
-    // This helper function actually does the write with an arbitary serializable message thing
+    // This helper function actually does the write with an arbitrary serializable message
     template<class T>
-    void write_(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> connection_header);
+    void doWrite(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> connection_header);
 
     void openRead  (std::string const& filename);
     void openWrite (std::string const& filename);
@@ -162,7 +162,7 @@ private:
     void appendConnectionRecordToBuffer(Buffer& buf, ConnectionInfo const* connection_info);
     template<class T>
     void writeMessageDataRecord(uint32_t conn_id, ros::Time const& time, T const& msg);
-    void writeTopicIndexRecords();
+    void writeIndexRecords();
     void writeConnectionRecords();
     void writeChunkInfoRecords();
     void startWritingChunk(ros::Time time);
@@ -174,7 +174,12 @@ private:
     void readVersion();
     void readFileHeaderRecord();
     void readConnectionRecord();
-    void readMessageDefinitionRecord();
+    void readChunkHeader(ChunkHeader& chunk_header);
+    void readChunkInfoRecord();
+    void readConnectionIndexRecord200();
+
+    void readTopicIndexRecord102();
+    void readMessageDefinitionRecord102();
 
     ros::Header readMessageDataHeader(IndexEntry const& index_entry);
     uint32_t    readMessageDataSize(IndexEntry const& index_entry);
@@ -184,12 +189,6 @@ private:
     // happens to be the most efficient way to skip it at the moment.
     template<typename Stream>
     void readMessageDataIntoStream(IndexEntry const& index_entry, Stream& stream);
-
-    void readChunkHeader(ChunkHeader& chunk_header);
-    void readTopicIndexRecord();
-    void readTopicIndexDataVersion0(uint32_t count, std::string const& topic);
-    void readTopicIndexDataVersion1(uint32_t count, std::string const& topic, uint64_t chunk_pos);
-    void readChunkInfoRecord();
 
     void     decompressChunk(uint64_t chunk_pos);
     void     decompressRawChunk(ChunkHeader const& chunk_header);
@@ -249,21 +248,22 @@ private:
     uint32_t chunk_count_;
 
     boost::mutex record_mutex_;
-    boost::mutex topic_infos_mutex_;
     
     // Current chunk
     bool      chunk_open_;
     ChunkInfo curr_chunk_info_;
     uint64_t  curr_chunk_data_pos_;
+    std::map<uint32_t,    std::multiset<IndexEntry> > curr_chunk_connection_indexes_;
     std::map<std::string, std::multiset<IndexEntry> > curr_chunk_topic_indexes_;
 
     uint32_t                                          top_connection_id_;
     std::map<std::string, uint32_t>                   topic_connection_ids_;
     std::map<ros::M_string*, uint32_t>                header_connection_ids_;
-    std::map<uint32_t, ConnectionInfo*>               connection_infos_;
+    std::map<uint32_t, ConnectionInfo*>               connections_;
 
-    std::map<std::string, TopicInfo*>                 topic_infos_;
-    std::vector<ChunkInfo>                            chunk_infos_;
+    std::vector<ChunkInfo>                            chunks_;
+
+    std::map<uint32_t, std::multiset<IndexEntry> >    connection_indexes_;
     std::map<std::string, std::multiset<IndexEntry> > topic_indexes_;
 
     Buffer   header_buffer_;           //!< reusable buffer in which to assemble the record header before writing to file
@@ -279,7 +279,7 @@ private:
     uint64_t decompressed_chunk_;      //!< position of decompressed chunk
 };
 
-}
+} // namespace rosbag
 
 #include "rosbag/message_instance.h"
 
@@ -309,9 +309,11 @@ void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& strea
     case 200:
         decompressChunk(index_entry.chunk_pos);
         readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
-         
         if (data_size > 0)
             memcpy(stream.advance(data_size), current_buffer_->getData() + index_entry.offset + bytes_read, data_size);
+        break;
+    case 102:
+        // todo
         break;
     default:
         throw BagFormatException((boost::format("Unhandled version: %1%") % version_).str());
@@ -336,36 +338,33 @@ boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry)
             ros::serialization::deserialize(s, *p);
         }
         return p;
+    //case 102:
+        // todo
     default:
         throw BagFormatException((boost::format("Unhandled version: %1%") % version_).str());
     }
 }
 
 template<class T>
-void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> connection_header) {
+void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> connection_header) {
     // Whenever we write we increment our revision
     bag_revision_++;
 
-    // @todo refactor into separate function
     // Get ID for connection header
-    bool needs_conn_written = false;
     ConnectionInfo* connection_info = NULL;
     uint32_t conn_id = 0;
     ros::M_string* header_address = connection_header.get();
     if (header_address == NULL) {
-        // No connection header: we'll manufacture one, and store by topic.
+        // No connection header: we'll manufacture one, and store by topic
 
         std::map<std::string, uint32_t>::iterator topic_connection_ids_iter = topic_connection_ids_.find(topic);
         if (topic_connection_ids_iter == topic_connection_ids_.end()) {
             conn_id = top_connection_id_++;
             topic_connection_ids_[topic] = conn_id;
-
-            // Flag that we need to write a connection record
-            needs_conn_written = true;
         }
         else {
             conn_id = topic_connection_ids_iter->second;
-            connection_info = connection_infos_[conn_id];
+            connection_info = connections_[conn_id];
         }
     }
     else {
@@ -375,36 +374,11 @@ void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, 
         if (header_connection_ids_iter == header_connection_ids_.end()) {
             conn_id = top_connection_id_++;
             header_connection_ids_[header_address] = conn_id;
-
-            // Flag that we need to write a connection record
-            needs_conn_written = true;
         }
         else {
             conn_id = header_connection_ids_iter->second;
-            connection_info = connection_infos_[conn_id];
+            connection_info = connections_[conn_id];
         }
-    }
-
-    // Store the topic info
-    TopicInfo* topic_info;
-    {
-        boost::mutex::scoped_lock lock(topic_infos_mutex_);
-
-        std::map<std::string, TopicInfo*>::iterator key = topic_infos_.find(topic);
-        if (key == topic_infos_.end()) {
-            // Extract the topic info from the message
-            topic_info = new TopicInfo();
-            topic_info->topic    = topic;
-            topic_info->datatype = ros::message_traits::datatype(msg);
-            topic_info->md5sum   = ros::message_traits::md5sum(msg);
-            topic_info->msg_def  = ros::message_traits::definition(msg);
-            topic_infos_[topic] = topic_info;
-
-            // Initialize the topic index
-            topic_indexes_[topic] = std::multiset<IndexEntry>();
-        }
-        else
-            topic_info = key->second;
     }
 
     {
@@ -420,35 +394,47 @@ void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, 
             startWritingChunk(time);
 
         // Write connection info record, if necessary
-        if (needs_conn_written) {
-            // Create connection info
+        if (connection_info == NULL) {
             connection_info = new ConnectionInfo();
-            connection_info->topic = topic;
-            connection_info->id = conn_id;
+            connection_info->id       = conn_id;
+            connection_info->topic    = topic;
+            connection_info->datatype = std::string(ros::message_traits::datatype(msg));
+            connection_info->md5sum   = std::string(ros::message_traits::md5sum(msg));
+            connection_info->msg_def  = std::string(ros::message_traits::definition(msg));
+
+            ROS_INFO("NEW CONNECTION");
+            ROS_INFO("  datatype: %s", ros::message_traits::datatype(msg));
+            ROS_INFO("  md5sum: %s", ros::message_traits::md5sum(msg));
+            ROS_INFO("  msg_def: %s", ros::message_traits::definition(msg));
+
             if (connection_header != NULL) {
                 for (ros::M_string::const_iterator i = connection_header->begin(); i != connection_header->end(); i++)
                     connection_info->header[i->first] = i->second;
             }
             else {
-                connection_info->header["topic"]              = topic_info->topic;
-                connection_info->header["type"]               = topic_info->datatype;
-                connection_info->header["md5sum"]             = topic_info->md5sum;
-                connection_info->header["message_definition"] = topic_info->msg_def;
+                connection_info->header["message_definition"] = connection_info->msg_def;
+                connection_info->header["datatype"]           = connection_info->datatype;
+                connection_info->header["md5sum"]             = connection_info->md5sum;
             }
-            connection_infos_[conn_id] = connection_info;
+            connections_[conn_id] = connection_info;
 
             writeConnectionRecord(connection_info);
             appendConnectionRecordToBuffer(outgoing_chunk_buffer_, connection_info);
         }
 
-        // Add to topic index
+        // Add to topic indexes
         IndexEntry index_entry;
         index_entry.time      = time;
         index_entry.chunk_pos = curr_chunk_info_.pos;
         index_entry.offset    = getChunkOffset();
 
-        std::multiset<IndexEntry>& chunk_index = curr_chunk_topic_indexes_[topic];
-        chunk_index.insert(chunk_index.end(), index_entry);
+        std::multiset<IndexEntry>& chunk_connection_index = curr_chunk_connection_indexes_[connection_info->id];
+        chunk_connection_index.insert(chunk_connection_index.end(), index_entry);
+        std::multiset<IndexEntry>& chunk_topic_index = curr_chunk_topic_indexes_[topic];
+        chunk_topic_index.insert(chunk_topic_index.end(), index_entry);
+
+        std::multiset<IndexEntry>& connection_index = connection_indexes_[connection_info->id];
+        connection_index.insert(connection_index.end(), index_entry);
         std::multiset<IndexEntry>& index = topic_indexes_[topic];
         index.insert(index.end(), index_entry);
 
@@ -460,7 +446,7 @@ void Bag::write_(std::string const& topic, ros::Time const& time, T const& msg, 
 
         // Check if we want to stop this chunk
         uint32_t chunk_size = getChunkOffset();
-        ROS_DEBUG("  curr_chunk_size=%d (threshold=%d)", chunk_size, chunk_threshold_);
+        ROS_INFO("  curr_chunk_size=%d (threshold=%d)", chunk_size, chunk_threshold_);
         if (chunk_size > chunk_threshold_) {
             // Empty the outgoing chunk
             stopWritingChunk();
@@ -489,7 +475,7 @@ void Bag::writeMessageDataRecord(uint32_t conn_id, ros::Time const& time, T cons
     // TODO: with a little work here we can serialize directly into the file -- sweet
     ros::serialization::serialize(s, msg);
 
-    ROS_DEBUG("Writing MSG_DATA [%llu:%d]: conn=%d sec=%d nsec=%d data_len=%d",
+    ROS_INFO("Writing MSG_DATA [%llu:%d]: conn=%d sec=%d nsec=%d data_len=%d",
               (unsigned long long) file_.getOffset(), getChunkOffset(), conn_id, time.sec, time.nsec, msg_ser_len);
 
     // TODO: If we are clever here, we can serialize into the

@@ -44,8 +44,8 @@
 namespace rosbag {
 
 class Bag;
+class ConnectionInfo;
 class IndexEntry;
-class TopicInfo;
 
 //! A base class for specifying queries from a bag
 class Query
@@ -63,12 +63,12 @@ public:
     ros::Time getStartTime() const; //!< Get the start-time
     ros::Time getEndTime()   const; //!< Get the end-time
 
-    //! Virtual function which determines topic-inclusion
+    //! Virtual function which determines connection-inclusion
     /*!
      * param topic_info  The information for the topic
      * return True if topic should be included in View
      */
-    virtual bool evaluate(TopicInfo const* topic_info) const;
+    virtual bool evaluate(ConnectionInfo const* connection_info) const;
 
     //! Virtual function to clone so we can store a copy of the query
     virtual Query* clone() const;
@@ -90,7 +90,7 @@ public:
                ros::Time const& start_time = ros::TIME_MIN,
                ros::Time const& end_time   = ros::TIME_MAX);
 
-    virtual bool evaluate(TopicInfo const*) const;
+    virtual bool evaluate(ConnectionInfo const*) const;
     virtual Query* clone() const;
 
 private:
@@ -109,7 +109,7 @@ public:
               ros::Time const& start_time = ros::TIME_MIN,
               ros::Time const& end_time   = ros::TIME_MAX);
 
-    virtual bool evaluate(TopicInfo const*) const;
+    virtual bool evaluate(ConnectionInfo const*) const;
     virtual Query* clone() const;
 
 private:
@@ -131,12 +131,12 @@ struct MessageRange
 {
     MessageRange(std::multiset<IndexEntry>::const_iterator const& _begin,
                  std::multiset<IndexEntry>::const_iterator const& _end,
-                 TopicInfo const* _topic_info,
+                 ConnectionInfo const* _connection_info,
                  BagQuery const* _bag_query);
 
     std::multiset<IndexEntry>::const_iterator begin;
     std::multiset<IndexEntry>::const_iterator end;
-    TopicInfo const* topic_info;
+    ConnectionInfo const* connection_info;
     BagQuery const* bag_query;           //!< pointer to vector of queries in View
 };
 
@@ -155,6 +155,6 @@ struct ViewIterHelperCompare
     bool operator()(ViewIterHelper const& a, ViewIterHelper const& b);
 };
 
-}
+} // namespace rosbag
 
 #endif

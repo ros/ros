@@ -435,3 +435,7 @@ fltk:
 epydoc:
   ubuntu: python-epydoc
   macports: py25-epydoc
+paramiko:
+  ubuntu: python-paramiko
+  debian: python-paramiko
+  macports: py25-paramiko

@@ -21,5 +21,6 @@
   <url>http://ros.org/wiki/rostest</url>
   <depend package="roslaunch"/>
   <depend package="roslib"/>
+  <rosdep name="gtest"/>
 </package>
 

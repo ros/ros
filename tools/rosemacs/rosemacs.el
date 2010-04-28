@@ -331,18 +331,28 @@
 (defun ros-completing-read-message (prompt &optional default)
   (unless ros-messages
     (cache-ros-message-locations))
-  (funcall ros-completion-function prompt (mapcar (lambda (m)
-                                                    (cons m nil))
-                                                  ros-messages)
+  (funcall ros-completion-function prompt
+           (map 'list
+                (lambda (m pkg)
+                  (cons (if (> (count m ros-messages :test 'equal) 1)
+                            (format "%s (%s)" m pkg)
+                          m)
+                        nil))
+                ros-messages ros-message-packages)
            nil nil nil nil (when (member default ros-messages)
                              default)))
 
 (defun ros-completing-read-service (prompt &optional default)
   (unless ros-services
     (cache-ros-service-locations))
-  (funcall ros-completion-function prompt (mapcar (lambda (m)
-                                                    (cons m nil))
-                                                  ros-services)
+  (funcall ros-completion-function prompt
+           (map 'list (lambda (m pkg)
+                        (cons
+                         (if (> (count m ros-services) 1)
+                             (format "%s (%s)" m pkg)
+                           m)
+                         nil))
+                ros-services ros-service-packages)
            nil nil nil nil (when (member default ros-services)
                              default)))
 

@@ -46,16 +46,7 @@ static const std::string VERSION = "2.0";
 // Header field delimiter
 static const unsigned char FIELD_DELIM = '=';
 
-// The valid values of the "op" field
-static const unsigned char OP_MSG_DEF     = 0x01;
-static const unsigned char OP_MSG_DATA    = 0x02;
-static const unsigned char OP_FILE_HEADER = 0x03;
-static const unsigned char OP_INDEX_DATA  = 0x04;
-static const unsigned char OP_CHUNK       = 0x05;
-static const unsigned char OP_CHUNK_INFO  = 0x06;
-static const unsigned char OP_CONNECTION  = 0x07;
-
-// Header field keys
+// Current header fields
 static const std::string OP_FIELD_NAME               = "op";
 static const std::string TOPIC_FIELD_NAME            = "topic";
 static const std::string VER_FIELD_NAME              = "ver";
@@ -63,15 +54,15 @@ static const std::string COUNT_FIELD_NAME            = "count";
 static const std::string INDEX_POS_FIELD_NAME        = "index_pos";     // 1.2+
 static const std::string CONNECTION_COUNT_FIELD_NAME = "conn_count";    // 2.0+
 static const std::string CHUNK_COUNT_FIELD_NAME      = "chunk_count";   // 2.0+
-static const std::string CHUNK_POS_FIELD_NAME        = "chunk_pos";     // 2.0+
+static const std::string CONNECTION_FIELD_NAME       = "conn";          // 2.0+
 static const std::string COMPRESSION_FIELD_NAME      = "compression";   // 2.0+
 static const std::string SIZE_FIELD_NAME             = "size";          // 2.0+
 static const std::string TIME_FIELD_NAME             = "time";          // 2.0+
 static const std::string START_TIME_FIELD_NAME       = "start_time";    // 2.0+
 static const std::string END_TIME_FIELD_NAME         = "end_time";      // 2.0+
-static const std::string CONNECTION_FIELD_NAME       = "conn";          // 2.0+
+static const std::string CHUNK_POS_FIELD_NAME        = "chunk_pos";     // 2.0+
 
-// Legacy fields
+// Legacy header fields
 static const std::string MD5_FIELD_NAME         = "md5";           // <2.0
 static const std::string TYPE_FIELD_NAME        = "type";          // <2.0
 static const std::string DEF_FIELD_NAME         = "def";           // <2.0
@@ -79,6 +70,17 @@ static const std::string SEC_FIELD_NAME         = "sec";           // <2.0
 static const std::string NSEC_FIELD_NAME        = "nsec";          // <2.0
 static const std::string LATCHING_FIELD_NAME    = "latching";      // <2.0
 static const std::string CALLERID_FIELD_NAME    = "callerid";      // <2.0
+
+// Current "op" field values
+static const unsigned char OP_MSG_DATA    = 0x02;
+static const unsigned char OP_FILE_HEADER = 0x03;
+static const unsigned char OP_INDEX_DATA  = 0x04;
+static const unsigned char OP_CHUNK       = 0x05;
+static const unsigned char OP_CHUNK_INFO  = 0x06;
+static const unsigned char OP_CONNECTION  = 0x07;
+
+// Legacy "op" field values
+static const unsigned char OP_MSG_DEF     = 0x01;
 
 // Bytes reserved for file header record (4KB)
 static const uint32_t FILE_HEADER_LENGTH = 4 * 1024;

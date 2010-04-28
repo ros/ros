@@ -52,8 +52,9 @@ from rospy.core import *
 from rospy.core import logwarn, loginfo, logerr, logdebug, rospydebug, rospyerr, rospywarn
 from rospy.exceptions import ROSInternalException, TransportException, TransportTerminated, TransportInitError
 from rospy.msg import deserialize_messages, serialize_message
-from rospy.transport import Transport, BIDIRECTIONAL
 from rospy.service import ServiceException
+
+from rospy.impl.transport import Transport, BIDIRECTIONAL
 
 logger = logging.getLogger('rospy.tcpros')
 

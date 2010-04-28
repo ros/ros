@@ -47,10 +47,10 @@ def callback1(data): pass
 def callback2(data): pass
 
 # for use with publish() tests
-import rospy.transport
-class ConnectionOverride(rospy.transport.Transport):
+import rospy.impl.transport
+class ConnectionOverride(rospy.impl.transport.Transport):
     def __init__(self, endpoint_id):
-        super(ConnectionOverride, self).__init__(rospy.transport.OUTBOUND, endpoint_id)
+        super(ConnectionOverride, self).__init__(rospy.impl.transport.OUTBOUND, endpoint_id)
         self.endpoint_id = endpoint_id
         self.data = ''
 
@@ -63,7 +63,7 @@ class TestRospyTopics(unittest.TestCase):
 
     def test_Publisher(self):
         import rospy
-        from rospy.registration import get_topic_manager, Registration
+        from rospy.impl.registration import get_topic_manager, Registration
         from rospy.topics import Publisher, DEFAULT_BUFF_SIZE
         # Publisher(self, name, data_class, subscriber_listener=None, tcp_nodelay=False, latch=False, headers=None)
 
@@ -209,7 +209,7 @@ class TestRospyTopics(unittest.TestCase):
         #TODO: negative buff_size
         #TODO: negative queue_size        
         import rospy
-        from rospy.registration import get_topic_manager, Registration
+        from rospy.impl.registration import get_topic_manager, Registration
         from rospy.topics import Subscriber, DEFAULT_BUFF_SIZE
 
         #Subscriber: name, data_class, callback=None, callback_args=None,

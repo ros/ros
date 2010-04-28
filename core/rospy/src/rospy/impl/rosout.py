@@ -42,9 +42,10 @@ import rospy.names
 
 from rospy.core import add_log_handler, get_caller_id
 from rospy.exceptions import ROSException
-from rospy.registration import get_topic_manager
-from rospy.rostime import Time
 from rospy.topics import Publisher, Subscriber
+from rospy.rostime import Time
+
+from rospy.impl.registration import get_topic_manager
 
 #Log message for rosout
 import roslib.msg

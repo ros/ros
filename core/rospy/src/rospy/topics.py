@@ -73,9 +73,10 @@ import roslib.message
 from rospy.core import *
 from rospy.exceptions import ROSSerializationException, TransportTerminated
 from rospy.msg import serialize_message, args_kwds_to_message
-from rospy.registration import get_topic_manager, set_topic_manager, Registration, get_registration_listeners
-from rospy.tcpros import get_tcpros_handler, DEFAULT_BUFF_SIZE
-from rospy.transport import DeadTransport
+
+from rospy.impl.registration import get_topic_manager, set_topic_manager, Registration, get_registration_listeners
+from rospy.impl.tcpros import get_tcpros_handler, DEFAULT_BUFF_SIZE
+from rospy.impl.transport import DeadTransport
 
 _logger = logging.getLogger('rospy.topics')
 

@@ -46,9 +46,10 @@ import traceback
 import roslib.scriptutil 
 
 from rospy.exceptions import TransportInitError, TransportTerminated, ROSException, ROSInterruptException
-from rospy.registration import get_service_manager
 from rospy.service import _Service, ServiceException
-from rospy.tcpros_base import TCPROSTransport, TCPROSTransportProtocol, \
+
+from rospy.impl.registration import get_service_manager
+from rospy.impl.tcpros_base import TCPROSTransport, TCPROSTransportProtocol, \
     get_tcpros_server_address, start_tcpros_server, recv_buff, \
     DEFAULT_BUFF_SIZE
 
@@ -56,7 +57,8 @@ from rospy.core import logwarn, loginfo, logerr, logdebug
 import rospy.core
 import rospy.msg
 import rospy.names
-import rospy.validators
+
+import rospy.impl.validators
 
 logger = logging.getLogger('rospy.service')
 
@@ -430,7 +432,7 @@ class ServiceProxy(_Service):
                 # validate
                 try:
                     rospy.core.parse_rosrpc_uri(self.uri)
-                except rospy.validators.ParameterInvalid:
+                except rospy.impl.validators.ParameterInvalid:
                     raise ServiceException("master returned invalid ROSRPC URI: %s"%self.uri)
             except socket.error, e:
                 logger.error("[%s]: socket error contacting service, master is probably unavailable",self.resolved_name)

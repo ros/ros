@@ -41,9 +41,10 @@ dictionary accessors on the parameter server.
     
 import rospy.core
 import rospy.exceptions
-import rospy.masterslave
 import rospy.names
-import rospy.paramserver
+
+import rospy.impl.paramserver
+import rospy.impl.masterslave
 
 class NodeProxy(object):
     """
@@ -57,7 +58,7 @@ class NodeProxy(object):
         
     def __getattr__(self, key): #forward api calls to target
         f = getattr(self.target, key)
-        remappings = rospy.masterslave.ROSHandler.remappings(key)
+        remappings = rospy.impl.masterslave.ROSHandler.remappings(key)
         def wrappedF(*args, **kwds):
             args = [rospy.names.get_caller_id(),]+list(args)
             #print "Remap indicies", remappings
@@ -112,7 +113,7 @@ class MasterProxy(NodeProxy):
         if key in _master_arg_remap:
             remappings = _master_arg_remap[key]
         else:
-            remappings = rospy.masterslave.ROSHandler.remappings(key)
+            remappings = rospy.impl.masterslave.ROSHandler.remappings(key)
         def wrappedF(*args, **kwds):
             args = [rospy.names.get_caller_id(),]+list(args)
             #print "Remap indicies", remappings
@@ -141,14 +142,14 @@ class MasterProxy(NodeProxy):
 
         try:
             # check for value in the parameter server cache
-            return rospy.paramserver.get_param_server_cache().get(resolved_key)
+            return rospy.impl.paramserver.get_param_server_cache().get(resolved_key)
         except KeyError:
             # first access, make call to parameter server
             code, msg, value = self.target.subscribeParam(rospy.names.get_caller_id(), rospy.core.get_node_uri(), resolved_key)
             if code != 1: #unwrap value with Python semantics
                 raise KeyError(key)
             # set the value in the cache so that it's marked as subscribed
-            rospy.paramserver.get_param_server_cache().set(resolved_key, value)
+            rospy.impl.paramserver.get_param_server_cache().set(resolved_key, value)
             return value
         
     def __setitem__(self, key, val):
@@ -194,7 +195,7 @@ class MasterProxy(NodeProxy):
             raise rospy.exceptions.ROSException("cannot delete parameter: %s"%msg)
         elif 0: #disable parameter cache
             # set the value in the cache so that it's marked as subscribed
-            rospy.paramserver.get_param_server_cache().delete(resolved_key)
+            rospy.impl.paramserver.get_param_server_cache().delete(resolved_key)
 
     def __contains__(self, key):
         """

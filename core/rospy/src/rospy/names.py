@@ -48,7 +48,7 @@ from roslib.names import namespace, get_ros_namespace, ns_join, make_global_ns, 
 import roslib.names
 
 from rospy.exceptions import ROSException
-from rospy.validators import ParameterInvalid
+from rospy.impl.validators import ParameterInvalid
 
 TOPIC_ANYTYPE = ANYTYPE #indicates that a subscriber will connect any datatype given to it
 SERVICE_ANYTYPE = ANYTYPE #indicates that a service client does not have a fixed type

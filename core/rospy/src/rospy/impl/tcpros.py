@@ -42,17 +42,17 @@ The rospy tcpros implementation is split into three areas:
  - L{rospy.tcpros_service}: Service-specific capabilities 
 """
 
-import rospy.tcpros_base
-import rospy.tcpros_pubsub
-import rospy.tcpros_service
+import rospy.impl.tcpros_service
 
-_handler = rospy.tcpros_pubsub.TCPROSHandler()
+from rospy.impl.tcpros_base import init_tcpros_server, DEFAULT_BUFF_SIZE
+from rospy.impl.tcpros_pubsub import TCPROSHandler
 
-DEFAULT_BUFF_SIZE = rospy.tcpros_base.DEFAULT_BUFF_SIZE
+_handler = TCPROSHandler()
+
 def init_tcpros():
-    server = rospy.tcpros_base.init_tcpros_server()
+    server = init_tcpros_server()
     server.topic_connection_handler = _handler.topic_connection_handler
-    server.service_connection_handler = rospy.tcpros_service.service_connection_handler
+    server.service_connection_handler = rospy.impl.tcpros_service.service_connection_handler
 
 def get_tcpros_handler():
     return _handler

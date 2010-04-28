@@ -44,7 +44,7 @@ import time
 class TestRospyTransport(unittest.TestCase):
 
     def test_Transport(self):
-        from rospy.transport import Transport, INBOUND, OUTBOUND, BIDIRECTIONAL
+        from rospy.impl.transport import Transport, INBOUND, OUTBOUND, BIDIRECTIONAL
         ids = []
         for d in [INBOUND, OUTBOUND, BIDIRECTIONAL]:
             t = Transport(d)
@@ -103,7 +103,7 @@ class TestRospyTransport(unittest.TestCase):
         except: pass
         
     def test_DeadTransport(self):
-        from rospy.transport import Transport, DeadTransport, INBOUND, OUTBOUND, BIDIRECTIONAL
+        from rospy.impl.transport import Transport, DeadTransport, INBOUND, OUTBOUND, BIDIRECTIONAL
         t = Transport(INBOUND, 'foo')
         t.stat_bytes = 1234
         t.stat_num_msg = 5678
@@ -126,7 +126,7 @@ class TestRospyTransport(unittest.TestCase):
         
     def test_ProtocolHandler(self):
         # tripwire tests
-        from rospy.transport import ProtocolHandler
+        from rospy.impl.transport import ProtocolHandler
         h = ProtocolHandler()
         self.failIf(h.supports('TCPROS'))
         self.assertEquals([], h.get_supported())
@@ -142,4 +142,4 @@ class TestRospyTransport(unittest.TestCase):
         
 if __name__ == '__main__':
     import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyTransport, coverage_packages=['rospy.transport'])
+    rostest.unitrun('test_rospy', sys.argv[0], TestRospyTransport, coverage_packages=['rospy.impl.transport'])

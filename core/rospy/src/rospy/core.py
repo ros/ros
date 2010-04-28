@@ -55,7 +55,7 @@ import roslib.roslogging
 import rospy.exceptions
 
 from rospy.names import *
-from rospy.validators import ParameterInvalid
+from rospy.impl.validators import ParameterInvalid
 
 _logger = logging.getLogger("rospy.core")
 

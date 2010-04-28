@@ -39,8 +39,9 @@ import logging
 import traceback
 
 from rospy.core import *
-from rospy.registration import set_service_manager, Registration, get_registration_listeners
-from rospy.transport import *
+
+from rospy.impl.registration import set_service_manager, Registration, get_registration_listeners
+from rospy.impl.transport import *
 
 logger = logging.getLogger('rospy.service')
 

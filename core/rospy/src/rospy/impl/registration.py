@@ -42,8 +42,9 @@ import threading
 import time
 import traceback
 
-import rospy.core
-from rospy.core import is_shutdown, xmlrpcapi, logfatal, logwarn, loginfo, logerr, logdebug
+from rospy.core import is_shutdown, xmlrpcapi, \
+    logfatal, logwarn, loginfo, logerr, logdebug, \
+    signal_shutdown, add_preshutdown_hook
 from rospy.names import get_caller_id, get_namespace
 
 # topic manager and service manager singletons
@@ -183,7 +184,7 @@ class RegManager(RegistrationListener):
         self.cond = threading.Condition() #for locking/notifying updates
         self.registered = False
         # cleanup has to occur before official shutdown
-        rospy.core.add_preshutdown_hook(self.cleanup)
+        add_preshutdown_hook(self.cleanup)
         
     def start(self, uri, master_uri):
         """
@@ -223,13 +224,13 @@ class RegManager(RegistrationListener):
                         code, msg, val = master.registerPublisher(caller_id, resolved_name, data_type, uri)
                         if code != 1:
                             logfatal("cannot register publication topic [%s] with master: %s"%(resolved_name, msg))
-                            rospy.core.signal_shutdown("master/node incompatibility with register publisher")
+                            signal_shutdown("master/node incompatibility with register publisher")
                     for resolved_name, data_type in sub:
                         self.logger.info("registering subscriber topic [%s] type [%s] with master", resolved_name, data_type)
                         code, msg, val = master.registerSubscriber(caller_id, resolved_name, data_type, uri)
                         if code != 1:
                             logfatal("cannot register subscription topic [%s] with master: %s"%(resolved_name, msg))
-                            rospy.core.signal_shutdown("master/node incompatibility with register subscriber")                        
+                            signal_shutdown("master/node incompatibility with register subscriber")                        
                         else:
                             self.publisher_update(resolved_name, val)
                     for resolved_name, service_uri in srv:
@@ -237,7 +238,7 @@ class RegManager(RegistrationListener):
                         code, msg, val = master.registerService(caller_id, resolved_name, service_uri, uri)
                         if code != 1:
                             logfatal("cannot register service [%s] with master: %s"%(resolved_name, msg))
-                            rospy.core.signal_shutdown("master/node incompatibility with register service")                        
+                            signal_shutdown("master/node incompatibility with register service")                        
  
                     registered = True
                     

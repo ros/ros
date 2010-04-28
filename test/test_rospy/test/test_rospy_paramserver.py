@@ -51,7 +51,7 @@ from roslib.names import make_global_ns, ns_join
 class TestRospyParamServer(unittest.TestCase):
     
     def test_param_server_cache(self):
-        from rospy.paramserver import get_param_server_cache
+        from rospy.impl.paramserver import get_param_server_cache
         ps = get_param_server_cache()
         self.assert_(ps is not None)
         try:
@@ -81,4 +81,4 @@ class TestRospyParamServer(unittest.TestCase):
             except KeyError: pass
 
 if __name__ == '__main__':
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyParamServer, coverage_packages=['rospy.paramserver'])
+    rostest.unitrun('test_rospy', sys.argv[0], TestRospyParamServer, coverage_packages=['rospy.impl.paramserver'])

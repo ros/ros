@@ -63,13 +63,14 @@ import urlparse
 from roslib.xmlrpc import XmlRpcHandler
 
 import rospy.names
-import rospy.paramserver
 import rospy.rostime
-import rospy.tcpros
+
+import rospy.impl.tcpros
 
 from rospy.core import *
-from rospy.registration import RegManager, get_topic_manager
-from rospy.validators import non_empty, ParameterInvalid
+from rospy.impl.paramserver import get_param_server_cache
+from rospy.impl.registration import RegManager, get_topic_manager
+from rospy.impl.validators import non_empty, ParameterInvalid
 
 NUM_WORKERS = 3 #number of threads we use to send publisher_update notifications
 
@@ -84,7 +85,7 @@ VAL = 2
 def is_publishers_list(paramName):
     return ('is_publishers_list', paramName)
 
-_logger = logging.getLogger("rospy.masterslave")
+_logger = logging.getLogger("rospy.impl.masterslave")
 
 LOG_API = True
 
@@ -183,7 +184,7 @@ class ROSHandler(XmlRpcHandler):
 
         # initialize protocol handlers. The master will not have any.
         self.protocol_handlers = []
-        handler = rospy.tcpros.get_tcpros_handler()
+        handler = rospy.impl.tcpros.get_tcpros_handler()
         if handler is not None:
             self.protocol_handlers.append(handler)
             
@@ -464,7 +465,7 @@ class ROSHandler(XmlRpcHandler):
         @rtype: [int, str, int]
         """
         try:
-            rospy.paramserver.get_param_server_cache().update(parameter_key, parameter_value)
+            get_param_server_cache().update(parameter_key, parameter_value)
             return 1, '', 0
         except KeyError:
             return -1, 'not subscribed', 0

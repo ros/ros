@@ -40,8 +40,8 @@ UDPROS connection protocol.
 
 import roslib.network
 
-import rospy.registration
-import rospy.transport
+import rospy.impl.registration
+import rospy.impl.transport
 
 def get_max_datagram_size():
     #TODO

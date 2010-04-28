@@ -40,10 +40,11 @@ import threading
 from rospy.core import logwarn, logerr, logdebug
 import rospy.exceptions
 import rospy.names
-import rospy.registration
-import rospy.transport
 
-from rospy.tcpros_base import TCPROSTransport, TCPROSTransportProtocol, \
+import rospy.impl.registration
+import rospy.impl.transport
+
+from rospy.impl.tcpros_base import TCPROSTransport, TCPROSTransportProtocol, \
     get_tcpros_server_address, start_tcpros_server,\
     DEFAULT_BUFF_SIZE, TCPROS
 
@@ -76,7 +77,7 @@ class TCPROSSub(TCPROSTransportProtocol):
         @type tcp_nodelay: bool
         """
         super(TCPROSSub, self).__init__(resolved_name, recv_data_class, queue_size, buff_size)
-        self.direction = rospy.transport.INBOUND
+        self.direction = rospy.impl.transport.INBOUND
         self.tcp_nodelay = tcp_nodelay
         
     def get_header_fields(self):
@@ -128,7 +129,7 @@ class TCPROSPub(TCPROSTransportProtocol):
         # very small buffer size for publishers as the messages they receive are very small
         super(TCPROSPub, self).__init__(resolved_name, None, queue_size=None, buff_size=128)
         self.pub_data_class = pub_data_class
-        self.direction = rospy.transport.OUTBOUND
+        self.direction = rospy.impl.transport.OUTBOUND
         self.is_latch = is_latch
         self.headers = headers if headers else {}
         
@@ -147,7 +148,7 @@ class TCPROSPub(TCPROSTransportProtocol):
             base.update(self.headers)
         return base
 
-class TCPROSHandler(rospy.transport.ProtocolHandler):
+class TCPROSHandler(rospy.impl.transport.ProtocolHandler):
     """
     ROS Protocol handler for TCPROS. Accepts both TCPROS topic
     connections as well as ROS service connections over TCP. TCP server
@@ -197,7 +198,7 @@ class TCPROSHandler(rospy.transport.ProtocolHandler):
             return 0, "INTERNAL ERROR: protocol id is not TCPROS: %s"%id, 0
         id, dest_addr, dest_port = protocol_params
 
-        sub = rospy.registration.get_topic_manager().get_subscriber_impl(resolved_name)
+        sub = rospy.impl.registration.get_topic_manager().get_subscriber_impl(resolved_name)
 
         #Create connection 
         try:
@@ -277,7 +278,7 @@ class TCPROSHandler(rospy.transport.ProtocolHandler):
         else:
             resolved_topic_name = header['topic']
             md5sum = header['md5sum']
-            tm = rospy.registration.get_topic_manager()
+            tm = rospy.impl.registration.get_topic_manager()
             topic = tm.get_publisher_impl(resolved_topic_name)
             if not topic:
                 return "[%s] is not a publisher of  [%s]. Topics are %s"%(rospy.names.get_caller_id(), resolved_topic_name, tm.get_publications())

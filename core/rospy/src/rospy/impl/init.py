@@ -45,11 +45,12 @@ import time
 import roslib.rosenv
 
 import rospy.core 
-import rospy.masterslave 
-import rospy.msnode 
 import rospy.msproxy 
 import rospy.names
-import rospy.tcpros 
+
+import rospy.impl.tcpros 
+import rospy.impl.msnode 
+import rospy.impl.masterslave 
 
 DEFAULT_NODE_PORT = 0 #bind to any open port
 DEFAULT_MASTER_PORT=11311 #default port for master's to bind to
@@ -83,8 +84,8 @@ def _sub_start_node(environ, resolved_name, master_uri=None, port=DEFAULT_NODE_P
     if not master_uri:
         master_uri = default_master_uri()
 
-    handler = rospy.masterslave.ROSHandler(resolved_name, master_uri)
-    node = rospy.msnode.ROSNode(resolved_name, port, handler)
+    handler = rospy.impl.masterslave.ROSHandler(resolved_name, master_uri)
+    node = rospy.impl.msnode.ROSNode(resolved_name, port, handler)
     node.start()
     while not node.uri and not rospy.core.is_shutdown():
         time.sleep(0.00001) #poll for XMLRPC init
@@ -111,7 +112,7 @@ def start_node(environ, resolved_name, master_uri=None, port=None):
     @rtype rospy.msproxy.NodeProxy
     """
     global _node
-    rospy.tcpros.init_tcpros()
+    rospy.impl.tcpros.init_tcpros()
     if _node is not None:
         raise Exception("Only one master/slave can be run per instance (multiple calls to start_node)")
     _node = _sub_start_node(environ, resolved_name, master_uri, port)

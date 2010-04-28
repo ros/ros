@@ -52,11 +52,12 @@ import roslib.network
 import rospy.core
 from rospy.core import logwarn, loginfo, logerr, logdebug
 import rospy.exceptions
-import rospy.init
 import rospy.names
-import rospy.rosout 
 import rospy.rostime
-import rospy.simtime
+
+import rospy.impl.init
+import rospy.impl.rosout 
+import rospy.impl.simtime
 
 TIMEOUT_READY = 15.0 #seconds
 
@@ -67,7 +68,7 @@ WARN = roslib.msg.Log.WARN
 ERROR = roslib.msg.Log.ERROR
 FATAL = roslib.msg.Log.FATAL
 
-# hide rospy.init implementation from users
+# hide rospy.impl.init implementation from users
 def get_node_proxy():
     """
     Retrieve L{NodeProxy} for slave node running on this machine.
@@ -75,7 +76,7 @@ def get_node_proxy():
     @return: slave node API handle
     @rtype: L{rospy.NodeProxy}
     """
-    return rospy.init.get_node_proxy()
+    return rospy.impl.init.get_node_proxy()
     
 def on_shutdown(h):
     """
@@ -226,7 +227,7 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     logger = logging.getLogger("rospy.client")
     logger.info("init_node, name[%s], pid[%s]", resolved_node_name, os.getpid())
             
-    node = rospy.init.start_node(os.environ, resolved_node_name) #node initialization blocks until registration with master
+    node = rospy.impl.init.start_node(os.environ, resolved_node_name) #node initialization blocks until registration with master
     
     timeout_t = time.time() + TIMEOUT_READY
     code = None
@@ -251,12 +252,12 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
         logger.error("ROS node initialization failed: %s, %s, %s", code, msg, master_uri)
         raise rospy.exceptions.ROSInitException("ROS node initialization failed: %s, %s, %s", code, msg, master_uri)
 
-    rospy.rosout.load_rosout_handlers(log_level)
+    rospy.impl.rosout.load_rosout_handlers(log_level)
     if not disable_rosout:
-        rospy.rosout.init_rosout()
+        rospy.impl.rosout.init_rosout()
     logdebug("init_node, name[%s], pid[%s]", resolved_node_name, os.getpid())    
     if not disable_rostime:
-        if not rospy.simtime.init_simtime():
+        if not rospy.impl.simtime.init_simtime():
             raise rospy.exceptions.ROSInitException("Failed to initialize time. Please check logs for additional details")
     else:
         rospy.rostime.set_rostime_initialized(True)

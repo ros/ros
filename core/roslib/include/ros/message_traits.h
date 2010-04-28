@@ -169,7 +169,7 @@ struct FrameId<M, typename boost::enable_if<HasHeader<M> >::type >
 };
 
 /**
- * \brief FrameId trait.  In the default implementation pointer()
+ * \brief TimeStamp trait.  In the default implementation pointer()
  * returns &m.header.stamp if HasHeader<M>::value is true, otherwise returns NULL.  value()
  * does not exist, and causes a compile error
  */

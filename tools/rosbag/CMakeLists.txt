@@ -23,7 +23,7 @@ target_link_libraries(play rosbag)
 INSTALL(TARGETS record play
         RUNTIME DESTINATION $ENV{ROS_ROOT}/bin)
 
-rosbuild_add_gtest(utest test/utest.cpp)
-target_link_libraries(utest rosbag)
+rosbuild_add_gtest(test_bag test/test_bag.cpp)
+target_link_libraries(test_bag rosbag)
 
 rosbuild_add_pyunit(test/test_bag.py)

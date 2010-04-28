@@ -481,7 +481,8 @@ class Bag(object):
 
     def _open_read(self, f):
         if isinstance(f, file):
-            self._file = f
+            self._file     = f
+            self._filename = None
         else:
             self._file     = open(f, 'rb')
             self._filename = f        
@@ -504,7 +505,8 @@ class Bag(object):
 
     def _open_write(self, f):
         if isinstance(f, file):
-            self._file = f
+            self._file     = f
+            self._filename = None
         else:
             self._file     = open(f, 'wb')
             self._filename = f
@@ -519,7 +521,8 @@ class Bag(object):
 
     def _open_append(self, f):
         if isinstance(f, file):
-            self._file = f
+            self._file     = f
+            self._filename = None
         else:        
             try:
                 # Test if the file already exists.
@@ -551,7 +554,7 @@ class Bag(object):
         except:
             self._close_file()
             raise
-        
+
     def _close_file(self):
         self._file.close()
         self._file = None
@@ -588,7 +591,7 @@ class Bag(object):
         
         matches = re.match("#ROS(.*) V(\d).(\d)", version_line)
         if matches is None or len(matches.groups()) != 3:
-            raise ROSBagException('rosbag does not support %s' % version_line)
+            raise ROSBagException('This does not appear to be a bag file')
         
         version_type, major_version_str, minor_version_str = matches.groups()
 

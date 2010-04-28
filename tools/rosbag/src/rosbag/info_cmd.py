@@ -32,22 +32,26 @@
 #
 # Revision $Id$
 
-import sys
+import optparse
 import signal
 import subprocess
-import optparse
-from optparse import OptionParser
+import sys
 
-from bag import Bag
+from bag import Bag, ROSBagException
 
 def info_cmd(argv):
-    parser = OptionParser(usage='rosbag info BAGFILE1 [BAGFILE2 BAGFILE3 ...]', description='Summarize the contents of one or more bag files.')
+    parser = optparse.OptionParser(usage='rosbag info BAGFILE1 [BAGFILE2 BAGFILE3 ...]', description='Summarize the contents of one or more bag files.')
     (options, args) = parser.parse_args(argv)
 
     if len(args) == 0:
         parser.error('You must specify at least 1 bag file.')
 
     for i, arg in enumerate(args):
-        print Bag(arg)
-        if i < len(args) - 1:
-            print '---'
+        try:
+            print Bag(arg)
+            if i < len(args) - 1:
+                print '---'
+        except ROSBagException, ex:
+            print >> sys.stderr, 'ERROR: %s' % str(ex)
+        except IOError, ex:
+            print >> sys.stderr, 'ERROR: %s' % str(ex)

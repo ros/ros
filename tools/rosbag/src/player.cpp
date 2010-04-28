@@ -52,16 +52,6 @@ using ros::Exception;
 
 namespace rosbag {
 
-// BagContent
-
-BagContent::BagContent(std::string const& d, std::string const& m, std::string const& def) :
-    datatype(d),
-    md5sum(m),
-    definition(def),
-    count(1)
-{
-}
-
 // PlayerOptions
 
 PlayerOptions::PlayerOptions() :

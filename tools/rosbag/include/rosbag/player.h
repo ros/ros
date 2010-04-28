@@ -56,9 +56,6 @@ struct PlayerOptions
 
     void check();
 
-    bool     check_bag;
-    bool     show_defs;
-
     bool     quiet;
     bool     start_paused;
     bool     at_once;
@@ -74,17 +71,6 @@ struct PlayerOptions
     std::vector<std::string> bags;
 };
 
-//! \todo this information is already stored in the bag file
-struct BagContent
-{
-    BagContent(std::string const& d, std::string const& m, std::string const& def);
-
-    std::string datatype;
-    std::string md5sum;
-    std::string definition;
-    int         count;
-};
-
 class Player
 {
 public:
@@ -92,7 +78,6 @@ public:
     ~Player();
 
     void publish();
-    int  checkBag();
 
 private:
     char readCharFromStdin();

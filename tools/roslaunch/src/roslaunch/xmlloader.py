@@ -634,9 +634,12 @@ class XmlLoader(roslaunch.loader.Loader):
             elif name == 'param':
                 self._param_tag(tag, context, ros_config, verbose=verbose)
             elif name == 'remap':
-                r = self._remap_tag(tag, context, ros_config)
-                if r is not None:
-                    context.add_remap(r)
+                try:
+                    r = self._remap_tag(tag, context, ros_config)
+                    if r is not None:
+                        context.add_remap(r)
+                except RLException, e:
+                    raise XmlParseException("Invalid <remap> tag: %s.\nXML is %s"%(str(e), tag.toxml()))
             elif name == 'machine':
                 val = self._machine_tag(tag, context, ros_config, verbose=verbose)
                 if val is not None:

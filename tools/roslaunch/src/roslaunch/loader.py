@@ -42,7 +42,7 @@ import os
 import sys
 from copy import deepcopy
 
-from roslib.names import make_global_ns, ns_join, PRIV_NAME, load_mappings
+from roslib.names import make_global_ns, ns_join, PRIV_NAME, load_mappings, is_legal_name
 
 from roslaunch.core import Param, Master, RosbinExecutable, Node, Test, Machine, \
     RLException, PHASE_SETUP
@@ -204,6 +204,11 @@ class LoaderContext(object):
         @param remap: remap setting
         @type  remap: (str, str)
         """
+        if not is_legal_name(remap[0]):
+            raise RLException("remap from [%s] is not a valid ROS name"%remap[0])
+        if not is_legal_name(remap[1]):
+            raise RLException("remap to [%s] is not a valid ROS name"%remap[1])
+        
         matches = [r for r in self._remap_args if r[0] == remap[0]]
         for m in matches:
             self._remap_args.remove(m)

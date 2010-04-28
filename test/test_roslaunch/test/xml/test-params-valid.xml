@@ -31,5 +31,10 @@
   <param name="binaryfile" binfile="$(find roslaunch)/example.launch" />
   <!-- upload the output of a command as a param. -->
   <param name="commandoutput" command="cat &quot;$(find roslib)/scripts/python-reserved-words.txt&quot;" />
+
+
+  <!-- test that we can override params -->
+  <param name="override" value="fail" />
+  <param name="override" value="pass" />
   
 </launch>

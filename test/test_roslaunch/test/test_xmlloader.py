@@ -184,24 +184,21 @@ class TestXmlLoader(unittest.TestCase):
 
     def test_params(self):
         mock = self._load(os.path.join(self.xml_dir, 'test-params-valid.xml'))
-        p = [p for p in mock.params if p.key == '/somestring1'][0]
-        self.assertEquals('bar2', p.value)
-        p = [p for p in mock.params if p.key == '/somestring2'][0]
-        self.assertEquals('10', p.value)
-        p = [p for p in mock.params if p.key == '/someinteger1'][0]
-        self.assertEquals(1, p.value)
-        p = [p for p in mock.params if p.key == '/someinteger2'][0]
-        self.assertEquals(2, p.value)
-        p = [p for p in mock.params if p.key == '/somefloat1'][0]
-        self.assertAlmostEquals(3.14159, p.value, 2)
-        p = [p for p in mock.params if p.key == '/somefloat2'][0]
-        self.assertAlmostEquals(5.0, p.value, 1)
-        p = [p for p in mock.params if p.key == '/wg/wgchildparam'][0]
-        self.assertEquals("a child namespace parameter 1", p.value, 1)
-        p = [p for p in mock.params if p.key == '/wg2/wg2childparam1'][0]
-        self.assertEquals("a child namespace parameter 2", p.value, 1)
-        p = [p for p in mock.params if p.key == '/wg2/wg2childparam2'][0]
-        self.assertEquals("a child namespace parameter 3", p.value, 1)
+
+        param_d = {}
+        for p in mock.params:
+            param_d[p.key] = p.value
+
+        self.assertEquals('pass', param_d['/override'])
+        self.assertEquals('bar2', param_d['/somestring1'])
+        self.assertEquals('10', param_d['/somestring2'])
+        self.assertEquals(1, param_d['/someinteger1'])
+        self.assertEquals(2, param_d['/someinteger2'])
+        self.assertAlmostEquals(3.14159, param_d['/somefloat1'], 2)
+        self.assertAlmostEquals(5.0, param_d['/somefloat2'], 1)
+        self.assertEquals("a child namespace parameter 1", param_d['/wg/wgchildparam'], p.value)
+        self.assertEquals("a child namespace parameter 2", param_d['/wg2/wg2childparam1'], p.value)
+        self.assertEquals("a child namespace parameter 3", param_d['/wg2/wg2childparam2'], p.value)
 
         import xmlrpclib
         from roslib.packages import get_pkg_dir
@@ -851,9 +848,70 @@ class TestXmlLoader(unittest.TestCase):
             except roslaunch.xmlloader.XmlParseException, e:
                 pass
 
+    def test_if_unless(self):
+        mock = RosLaunchMock()
+        loader = roslaunch.xmlloader.XmlLoader()
+        filename = os.path.join(self.xml_dir, 'test-if-unless.xml')
+        loader.load(filename, mock, argv=[])
+
+        param_d = {}
+        for p in mock.params:
+            param_d[p.key] = p.value
+
+        keys = ['group_if', 'group_unless', 'param_if', 'param_unless']
+        for k in keys:
+            self.assert_('/'+k+'_pass' in param_d, param_d)
+            self.failIf('/'+k+'_fail' in param_d, k)
+
+        n = mock.nodes[0]
+        for k in ['if', 'unless']:
+            self.assert_(['from_%s_pass'%k, 'to_%s_pass'%k] in n.remap_args)
+            self.failIf(['from_%s_fail'%k, 'to_%s_fail'%k] in n.remap_args)            
+        
+    def test_if_unless_invalid(self):
+        mock = RosLaunchMock()
+        loader = roslaunch.xmlloader.XmlLoader()
+        filename = os.path.join(self.xml_dir, 'test-if-unless-invalid-both.xml')
+        # this should raise, not sure XmlParseException is what we want as it destroys semantic info
+        try:
+            loader.load(filename, mock, argv=[])
+            self.fail("should have raised with invalid if and unless spec")
+        except roslaunch.xmlloader.XmlParseException, e:
+            self.assert_('unless' in str(e))
+            self.assert_('if' in str(e))
+
+    def test_arg_invalid(self):
+        mock = RosLaunchMock()
+        loader = roslaunch.xmlloader.XmlLoader()
+        filename = os.path.join(self.xml_dir, 'test-arg.xml')
+        # this should raise, not sure XmlParseException is what we want as it destroys semantic info
+        try:
+            loader.load(filename, mock, argv=[])
+            self.fail("should have raised with missing arg")
+        except roslaunch.xmlloader.XmlParseException, e:
+            self.assert_('required' in str(e))
+
+        # test with invalid $(arg unknown)
+        filename = os.path.join(self.xml_dir, 'test-arg-invalid-sub.xml')
+        try:
+            loader.load(filename, mock, argv=[])
+            self.fail("should have raised with unknown arg")
+        except roslaunch.xmlloader.XmlParseException, e:
+            self.assert_('missing' in str(e))
+
+        # test with invalid $(arg unknown)
+        filename = os.path.join(self.xml_dir, 'test-arg-invalid-redecl.xml')
+        try:
+            loader.load(filename, mock, argv=[])
+            self.fail("should have raised with multiple decl")
+        except roslaunch.xmlloader.XmlParseException, e:
+            self.assert_('grounded' in str(e))
+            
+                    
     def test_arg(self):
         loader = roslaunch.xmlloader.XmlLoader()
         filename = os.path.join(self.xml_dir, 'test-arg.xml')
+
         mock = RosLaunchMock()
         loader.load(filename, mock, argv=["required:=test_arg", "if_test:=0"])
 

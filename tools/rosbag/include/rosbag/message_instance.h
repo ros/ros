@@ -67,6 +67,9 @@ public:
     std::string   const& getMessageDefinition() const;
     ros::M_string const& getConnectionHeader()  const;
 
+    std::string getCallerId() const;
+    bool        isLatching()  const;
+
     //! Templated call to instantiate a message
     /*!
      * returns NULL pointer if incompatible

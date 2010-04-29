@@ -44,6 +44,16 @@ string const&        MessageInstance::getMessageDefinition() const { return conn
 ros::M_string const& MessageInstance::getConnectionHeader()  const { return connection_info_->header;   }
 Time const&          MessageInstance::getTime()              const { return index_entry_.time;          }
 
+string MessageInstance::getCallerId() const {
+    ros::M_string::const_iterator header_iter = connection_info_->header.find("callerid");
+    return header_iter != connection_info_->header.end() ? header_iter->second : string("");
+}
+
+bool MessageInstance::isLatching() const {
+    ros::M_string::const_iterator header_iter = connection_info_->header.find("latching");
+    return header_iter != connection_info_->header.end() && header_iter->second == "1";
+}
+
 uint32_t MessageInstance::size() const {
     return bag_->readMessageDataSize(index_entry_);
 }

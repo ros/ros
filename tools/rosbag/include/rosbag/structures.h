@@ -60,7 +60,7 @@ struct ChunkInfo
     ros::Time   end_time;      //! latest timestamp of a message in the chunk
     uint64_t    pos;           //! absolute byte offset of chunk record in bag file
 
-    std::map<std::string, uint32_t> topic_counts;   //! number of messages in each topic stored in the chunk
+    std::map<uint32_t, uint32_t> connection_counts;   //! number of messages in each connection stored in the chunk
 };
 
 struct ChunkHeader

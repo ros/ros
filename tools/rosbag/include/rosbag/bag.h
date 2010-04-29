@@ -402,11 +402,6 @@ void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg,
             connection_info->md5sum   = std::string(ros::message_traits::md5sum(msg));
             connection_info->msg_def  = std::string(ros::message_traits::definition(msg));
 
-            ROS_DEBUG("NEW CONNECTION");
-            ROS_DEBUG("  datatype: %s", ros::message_traits::datatype(msg));
-            ROS_DEBUG("  md5sum: %s", ros::message_traits::md5sum(msg));
-            ROS_DEBUG("  msg_def: %s", ros::message_traits::definition(msg));
-
             if (connection_header != NULL) {
                 for (ros::M_string::const_iterator i = connection_header->begin(); i != connection_header->end(); i++)
                     connection_info->header[i->first] = i->second;
@@ -438,8 +433,8 @@ void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg,
         std::multiset<IndexEntry>& index = topic_indexes_[topic];
         index.insert(index.end(), index_entry);
 
-        // Increment the topic count
-        curr_chunk_info_.topic_counts[topic]++;
+        // Increment the connection count
+        curr_chunk_info_.connection_counts[connection_info->id]++;
 
         // Write the message data
         writeMessageDataRecord(conn_id, time, msg);

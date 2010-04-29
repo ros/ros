@@ -211,10 +211,10 @@ chunk_info_1
   end=end_stamp_1
   count=K
   ---
-  len(topic_1), topic_1, count_1
-  len(topic_2), topic_2, count_2
+  conn_1, count_1
+  conn_2, count_2
   ...
-  len(topic_K), topic_K, count_K
+  conn_K, count_K
 
 chunk_info_2
   ...

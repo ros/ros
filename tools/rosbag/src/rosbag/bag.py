@@ -309,9 +309,9 @@ class Bag(object):
                     print >> sys.stderr, 'WARNING: md5sum of loaded type [%s] does not match that specified' % msg_type
                     #raise ROSBagException('md5sum of loaded type does not match that of data being recorded')
             
-                header = { 'topic' : topic, 'datatype' : msg_type, 'md5sum' : md5sum, 'message_definition' : pytype._full_text }
+                header = { 'topic' : topic, 'type' : msg_type, 'md5sum' : md5sum, 'message_definition' : pytype._full_text }
             else:
-                header = { 'topic' : topic, 'datatype' : msg.__class__._type, 'md5sum' : msg.__class__._md5sum, 'message_definition' : msg._full_text }
+                header = { 'topic' : topic, 'type' : msg.__class__._type, 'md5sum' : msg.__class__._md5sum, 'message_definition' : msg._full_text }
 
             connection_info = _ConnectionInfo(conn_id, topic, header)
 
@@ -803,7 +803,7 @@ _CHUNK_INDEX_VERSION = 1
 class _ConnectionInfo(object):
     def __init__(self, id, topic, header):
         try:
-            datatype, md5sum, msg_def = header['datatype'], header['md5sum'], header['message_definition']
+            datatype, md5sum, msg_def = header['type'], header['md5sum'], header['message_definition']
         except KeyError, ex:
             raise ROSBagFormatException('connection header field %s not found' % str(ex))
 
@@ -1014,7 +1014,7 @@ class _BagReader(object):
 
         _read_record_data(self.bag._file)
 
-        connection_header = { 'topic' : topic, 'datatype' : datatype, 'md5sum' : md5sum, 'message_definition' : msg_def }
+        connection_header = { 'topic' : topic, 'type' : datatype, 'md5sum' : md5sum, 'message_definition' : msg_def }
 
         id = len(self._connections)
 

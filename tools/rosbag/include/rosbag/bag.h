@@ -85,8 +85,11 @@ public:
     Bag();
     ~Bag();
 
-    void open(std::string const& filename, BagMode mode = bagmode::Default);          //!< Open a bag file
-    void close();     //!< Close the bag file (write to disk, append index, etc.)
+    //!< Open a bag file
+    void open(std::string const& filename, BagMode mode = bagmode::Default);
+
+    //! Close the bag file
+    void close();
 
     std::string     getFileName()     const;                      //!< Get the filename of the bag
     BagMode         getMode()         const;                      //!< Get the mode the bag is in
@@ -303,7 +306,6 @@ void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& strea
     ros::Header header;
     uint32_t data_size;
     uint32_t bytes_read;
-    
     switch (version_)
     {
     case 200:
@@ -311,9 +313,6 @@ void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& strea
         readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
         if (data_size > 0)
             memcpy(stream.advance(data_size), current_buffer_->getData() + index_entry.offset + bytes_read, data_size);
-        break;
-    case 102:
-        // todo
         break;
     default:
         throw BagFormatException((boost::format("Unhandled version: %1%") % version_).str());
@@ -327,7 +326,6 @@ boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry)
     ros::Header header;
     uint32_t data_size;
     uint32_t bytes_read;
-
     switch (version_)
     {
     case 200:
@@ -338,8 +336,6 @@ boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry)
             ros::serialization::deserialize(s, *p);
         }
         return p;
-    //case 102:
-        // todo
     default:
         throw BagFormatException((boost::format("Unhandled version: %1%") % version_).str());
     }
@@ -408,7 +404,7 @@ void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg,
             }
             else {
                 connection_info->header["message_definition"] = connection_info->msg_def;
-                connection_info->header["datatype"]           = connection_info->datatype;
+                connection_info->header["type"]               = connection_info->datatype;
                 connection_info->header["md5sum"]             = connection_info->md5sum;
             }
             connections_[conn_id] = connection_info;
@@ -467,15 +463,14 @@ void Bag::writeMessageDataRecord(uint32_t conn_id, ros::Time const& time, T cons
     
     ros::serialization::OStream s(record_buffer_.getData(), msg_ser_len);
 
-    // TODO: with a little work here we can serialize directly into the file -- sweet
+    // TODO: with a little work here we can serialize directly into the file
     ros::serialization::serialize(s, msg);
 
     ROS_DEBUG("Writing MSG_DATA [%llu:%d]: conn=%d sec=%d nsec=%d data_len=%d",
               (unsigned long long) file_.getOffset(), getChunkOffset(), conn_id, time.sec, time.nsec, msg_ser_len);
 
-    // TODO: If we are clever here, we can serialize into the
-    // outgoing_chunk_buffer and get rid of the record_buffer_ all
-    // together.
+    // TODO: If we are clever here, we can serialize into the outgoing_chunk_buffer and get
+    // rid of the record_buffer_ altogether
 
     writeHeader(header);
     writeDataLength(msg_ser_len);

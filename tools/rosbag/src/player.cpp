@@ -159,7 +159,7 @@ void Player::publish() {
 }
 
 void Player::doPublish(MessageInstance const& m) {
-	string const& topic = m.getTopic();
+	string const& topic   = m.getTopic();
 	ros::Time const& time = m.getTime();
 
     // Make a unique id composed of the callerid and the topic allowing separate advertisers for separate latching topics

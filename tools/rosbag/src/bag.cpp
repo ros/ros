@@ -635,7 +635,7 @@ void Bag::readConnectionRecord() {
         for (M_string::const_iterator i = connection_header.getValues()->begin(); i != connection_header.getValues()->end(); i++)
             connection_info->header[i->first] = i->second;
         connection_info->msg_def  = connection_info->header["message_definition"];
-        connection_info->datatype = connection_info->header["datatype"];
+        connection_info->datatype = connection_info->header["type"];
         connection_info->md5sum   = connection_info->header["md5sum"];
         connections_[id] = connection_info;
 

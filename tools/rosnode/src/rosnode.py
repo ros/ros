@@ -466,7 +466,7 @@ def get_node_connection_info_description(node_api):
                         buff += "    * direction: unknown\n"
                     buff += "    * transport: %s\n"%transport
     except socket.error:
-        raise ROSNodeIOException("Communication with node[%s] failed! Node address is [%s]"%(node_name, node_api))
+        raise ROSNodeIOException("Communication with node[%s] failed!"%(node_api))
     return buff
 
 def rosnode_info(node_name):

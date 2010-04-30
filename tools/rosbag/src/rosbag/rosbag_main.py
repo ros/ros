@@ -39,7 +39,8 @@ import subprocess
 import sys
 import UserDict
 
-import rosbag
+from bag import Bag, ROSBagException, ROSBagFormatException
+from migration import MessageMigrator, fixbag2
 
 def print_trans(old, new, indent):
     from_txt = '%s [%s]' % (old._type, old._md5sum)
@@ -100,9 +101,9 @@ def fix_cmd(argv):
     if options.noplugins is None:
         options.noplugins = False
 
-    migrator = rosbag.migration.MessageMigrator(rules, plugins=not options.noplugins)
+    migrator = MessageMigrator(rules, plugins=not options.noplugins)
 
-    migrations = rosbag.migration.fixbag2(migrator, inbag_filename, outname)
+    migrations = fixbag2(migrator, inbag_filename, outname)
 
     if len(migrations) == 0:
         print '%s %s' % (outname, outbag_filename)
@@ -283,8 +284,8 @@ The following variables are available:
 
     filter_fn = expr_eval(expr)
 
-    outbag = rosbag.Bag(outbag_filename, 'w')
-    inbag  = rosbag.Bag(inbag_filename)
+    outbag = Bag(outbag_filename, 'w')
+    inbag  = Bag(inbag_filename)
 
     try:
         if options.verbose_pattern:
@@ -326,14 +327,15 @@ class RosbagCmds(UserDict.UserDict):
             print self.get_valid_cmds()
             print 'For more information please visit the rosbag wiki page: http://code.ros.org/wiki/rosbag'
             print ''
+            return
+
+        cmd = argv[0]
+        if cmd in self:
+            self[cmd](['-h'])
         else:
-            cmd = argv[0]
-            if cmd in self:
-                self[cmd](['-h'])
-            else:
-                print >> sys.stderr, 'Invalid command: %s' % cmd
-                print >> sys.stderr, ''
-                print >> sys.stderr, self.get_valid_cmds()
+            print >> sys.stderr, 'Invalid command: %s' % cmd
+            print >> sys.stderr, ''
+            print >> sys.stderr, self.get_valid_cmds()
 
 def rosbagmain(argv=None):
     cmds = RosbagCmds()

@@ -686,7 +686,7 @@ class RosMakeAll:
         if options.pre_clean:
           build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = True)
           self.parallel_build_pkgs(build_queue, "clean", threads = options.threads)
-          if "rospack" in self.build_list:
+          if "rospack" in self.build_list and not self.flag_tracker.has_nobuild("rospack"):
               self.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it for it was skipped earlier.")
               subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), "clean"])
 

@@ -804,8 +804,12 @@ public:
     // have to drag that instance around, but oh well. If this turns
     // out to be a problem, I could spit out a .cpp file and compile a
     // library. But it's so much easier to keep the whole thing in a header.
+    if (type == "string")
       return string("  public static final ") + cpp_type_name() + string(" ") +
-             name + string(" = ") + constant + ";\n";
+        name + string(" = \"") + constant + "\";\n";
+    else
+      return string("  public static final ") + cpp_type_name() + string(" ") +
+	name + string(" = ") + constant + ";\n";
   }
 /*
   virtual string cpp_impl_decl()

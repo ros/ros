@@ -47,12 +47,14 @@ import time
 import subprocess
 
 import roslib
+import roslib.genpy
 import roslib.gentools
 import roslib.message
 import roslib.msgs
 import roslib.names
 import roslib.packages
 import roslib.srvs
+import rosbag
 
 from optparse import OptionParser
 
@@ -224,29 +226,53 @@ def get_srv_text(type_, raw=False):
     else:
         return str(spec.request)+'---\n'+str(spec.response)
 
-def get_msg_text(type_, raw=False):
+def get_msg_text(type_, raw=False, full_text=None):
     """
     Get .msg file for type_ as text
     @param type_: message type
     @type  type_: str
     @param raw: if True, include comments and whitespace (default False)
     @type  raw: bool
+    @param full_text: if not None, contains full text of message definition
+    @type  full_text: str
     @return: text of .msg file
     @rtype: str
     @raise ROSMsgException: if type_ is unknown
     """
     package, base_type = roslib.names.package_resource_name(type_)
-    roslib.msgs.load_package_dependencies(package, load_recursive=True)
-    roslib.msgs.load_package(package)
-    try:
-        spec = roslib.msgs.get_registered(type_)
-    except KeyError:
-        raise ROSMsgException("Unknown msg type: %s"%type_)        
-    if raw:
-        return spec.text
-    else:
-        return str(spec)
     
+    if not full_text:
+        roslib.msgs.load_package_dependencies(package, load_recursive=True)
+        roslib.msgs.load_package(package)
+        try:
+            spec = roslib.msgs.get_registered(type_)
+        except KeyError:
+            raise ROSMsgException("Unknown msg type: %s"%type_)        
+
+        if raw:
+            text = spec.text
+        else:
+            text = str(spec)
+    else:
+        splits = full_text.split('\n'+'='*80+'\n')
+        core_msg = splits[0]
+        deps_msgs = splits[1:]
+
+        specs = { type_: roslib.msgs.load_from_string(core_msg, package) }
+        for dep_msg in deps_msgs:
+            dep_type, dep_spec = roslib.genpy._generate_dynamic_specs(specs, dep_msg)
+            specs[dep_type] = dep_spec
+        
+        for t, spec in specs.iteritems():
+            roslib.msgs.register(t, spec)       
+        spec = specs[type_]
+        if raw:
+            text = spec.text
+        else:
+            text = str(spec)
+
+    return text
+
 def rosmsg_debug(mode, type_, raw=False):
     """
     Prints contents of msg/srv file
@@ -369,6 +395,9 @@ def rosmsg_cmd_show(mode, full):
     parser.add_option("-r", "--raw",
                       dest="raw", default=False,action="store_true",
                       help="show raw message text, including comments")
+    parser.add_option("-b", "--bag",
+                      dest="bag", default=None,
+                      help="show message from .bag file", metavar="BAGFILE")
     options, arg = _stdin_arg(parser, full)
     if arg.endswith(mode):
         arg = arg[:-(len(mode))]
@@ -378,12 +407,22 @@ def rosmsg_cmd_show(mode, full):
         parser.error(cmd+" does not understand C++-style namespaces (i.e. '::').\nPlease refer to msg/srv types as 'package_name/Type'.")
     elif '.' in arg:
         parser.error("invalid message type '%s'.\nPlease refer to msg/srv types as 'package_name/Type'.")
-    if '/' in arg: #package specified
-        rosmsg_debug(mode, arg, options.raw)
+    if options.bag:
+        bag_file = options.bag
+        if not os.path.exists(bag_file):
+            raise ROSMsgException("ERROR: bag file [%s] does not exist"%bag_file)
+        for topic, msg, t in rosbag.Bag(bag_file).readMessages(raw=True):
+            datatype, _, _, _, pytype = msg
+            if datatype == arg:
+                print get_msg_text(datatype, options.raw, pytype._full_text)
+                break
     else:
-        for found in rosmsg_search(mode, arg):
-            print "[%s]:"%found
-            rosmsg_debug(mode, found, options.raw)
+        if '/' in arg: #package specified
+            rosmsg_debug(mode, arg, options.raw)
+        else:
+            for found in rosmsg_search(mode, arg):
+                print "[%s]:"%found
+                rosmsg_debug(mode, found, options.raw)
 
 def rosmsg_md5(mode, type_):
     package, base_type = roslib.names.package_resource_name(type_)

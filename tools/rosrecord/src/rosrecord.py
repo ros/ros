@@ -71,9 +71,9 @@ class BagReader(object):
                 self._bag.close()
         except Exception, e:
             raise ROSRecordException(str(e))
-        
+
     @property
-    def datatypes(self): return dict([(topic_info.topic, topic_info.datatype) for topic_info in self._bag._topic_infos.values()])
+    def datatypes(self): return dict([(info.topic, info.datatype) for info in self._bag._connections.values()])
     
     @property
     def filename(self): return self._bag.filename

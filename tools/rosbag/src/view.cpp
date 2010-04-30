@@ -43,12 +43,16 @@ namespace rosbag {
 
 // View::iterator
 
-View::iterator::iterator(View* view, bool end) : view_(view) {
-    if (!end)
+View::iterator::iterator() : view_(NULL), view_revision_(-1) { }
+
+View::iterator::iterator(View* view, bool end) : view_(view), view_revision_(-1) {
+    if (view != NULL && !end)
         populate();
 }
 
 void View::iterator::populate() {
+    ROS_ASSERT(view_ != NULL);
+
     iters_.clear();
     foreach(MessageRange const* range, view_->ranges_)
         if (range->begin != range->end)
@@ -59,6 +63,8 @@ void View::iterator::populate() {
 }
 
 void View::iterator::populateSeek(multiset<IndexEntry>::const_iterator iter) {
+    ROS_ASSERT(view_ != NULL);
+
     iters_.clear();
     foreach(MessageRange const* range, view_->ranges_) {
         multiset<IndexEntry>::const_iterator start = std::lower_bound(range->begin, range->end, iter->time, IndexEntryCompare());
@@ -87,6 +93,8 @@ bool View::iterator::equal(View::iterator const& other) const {
 }
 
 void View::iterator::increment() {
+    ROS_ASSERT(view_ != NULL);
+
     view_->update();
 
     // Note, updating may have blown awway our message-ranges and
@@ -107,16 +115,11 @@ MessageInstance View::iterator::dereference() const {
     ROS_ASSERT(iters_.size() > 0);
 
     ViewIterHelper const& i = iters_.back();
-
-    ROS_ASSERT(i.range != NULL);
-    ROS_ASSERT(i.range->connection_info != NULL);
-    ROS_ASSERT(i.range->bag_query != NULL);
-    ROS_ASSERT(i.range->bag_query->bag != NULL);
-
     return MessageInstance(i.range->connection_info, *(i.iter), *(i.range->bag_query->bag));
 }
 
 // View
+
 View::View() : view_revision_(0) { }
 
 View::~View() {

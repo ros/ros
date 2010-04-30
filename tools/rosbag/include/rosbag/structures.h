@@ -46,12 +46,15 @@ namespace rosbag
 
 struct ConnectionInfo
 {
-    uint32_t      id;
-    std::string   topic;
-    std::string   datatype;
-    std::string   md5sum;
-    std::string   msg_def;
-    ros::M_string header;
+    ConnectionInfo() : id(-1) { }
+
+    uint32_t    id;
+    std::string topic;
+    std::string datatype;
+    std::string md5sum;
+    std::string msg_def;
+
+    boost::shared_ptr<ros::M_string> header;
 };
 
 struct ChunkInfo

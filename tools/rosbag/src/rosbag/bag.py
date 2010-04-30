@@ -985,16 +985,15 @@ class _BagReader(object):
         if topics:
             topics_set = set(topics)
         else:
-            topics_set = set()
+            topics_set = set(self.bag._topic_indexes.keys())
         
         filtered_connections = []
         for connection_info in self.bag._connections.values():
             if connection_info.topic not in topics_set:
                 continue
-            if not connection_filter:
-                continue           
-            if connection_filter(connection_info.topic, connection_info.datatype, connection_info.md5sum, connection_info.msg_def):
-                filtered_connections.append(connection_info.id)
+            if connection_filter and not connection_filter(connection_info.topic, connection_info.datatype, connection_info.md5sum, connection_info.msg_def):
+                continue
+            filtered_connections.append(connection_info.id)
 
         return [index for connection_id, index in self.bag._connection_indexes.items() if connection_id in filtered_connections]
     
@@ -1183,6 +1182,7 @@ class _BagReader102_Indexed(_BagReader):
             index[topic] = [(e.time, e.offset) for e in entries]
         return index
 
+    # todo: work with connections
     def start_reading(self):
         self.read_file_header_record()
 

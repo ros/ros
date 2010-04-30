@@ -45,6 +45,7 @@
 #include "ros/time.h"
 #include "ros/message.h"
 #include "ros/message_traits.h"
+#include "ros/subscription_callback_helper.h"
 #include "ros/ros.h"
 
 #include <ios>
@@ -321,22 +322,32 @@ void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& strea
 
 template<class T>
 boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry) {
-    boost::shared_ptr<T> p = boost::shared_ptr<T>(new T());
-
-    ros::Header header;
-    uint32_t data_size;
-    uint32_t bytes_read;
-    switch (version_)
-    {
-    case 200:
+    if (version_ == 200) {
         decompressChunk(index_entry.chunk_pos);
+
+        // Read the message header
+        ros::Header header;
+        uint32_t data_size;
+        uint32_t bytes_read;
         readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
-        {  
-            ros::serialization::IStream s(current_buffer_->getData() + index_entry.offset + bytes_read, data_size);
-            ros::serialization::deserialize(s, *p);
-        }
+
+        // Read the connection id from the header
+        uint32_t connection_id;
+        readField(*header.getValues(), CONNECTION_FIELD_NAME, true, &connection_id);
+        ConnectionInfo* connection_info = connections_[connection_id];
+
+        boost::shared_ptr<T> p = boost::shared_ptr<T>(new T());
+
+        // Set the connection header (if this is a ros::Message)
+        ros::assignSubscriptionConnectionHeader<T>(p.get(), connection_info->header);
+
+        // Deserialize the message
+        ros::serialization::IStream s(current_buffer_->getData() + index_entry.offset + bytes_read, data_size);
+        ros::serialization::deserialize(s, *p);
+
         return p;
-    default:
+    }
+    else {
         throw BagFormatException((boost::format("Unhandled version: %1%") % version_).str());
     }
 }
@@ -397,15 +408,14 @@ void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg,
             connection_info->datatype = std::string(ros::message_traits::datatype(msg));
             connection_info->md5sum   = std::string(ros::message_traits::md5sum(msg));
             connection_info->msg_def  = std::string(ros::message_traits::definition(msg));
-
             if (connection_header != NULL) {
-                for (ros::M_string::const_iterator i = connection_header->begin(); i != connection_header->end(); i++)
-                    connection_info->header[i->first] = i->second;
+                connection_info->header = connection_header;
             }
             else {
-                connection_info->header["message_definition"] = connection_info->msg_def;
-                connection_info->header["type"]               = connection_info->datatype;
-                connection_info->header["md5sum"]             = connection_info->md5sum;
+                connection_info->header = boost::shared_ptr<ros::M_string>(new ros::M_string);
+                (*connection_info->header)["type"]               = connection_info->datatype;
+                (*connection_info->header)["md5sum"]             = connection_info->md5sum;
+                (*connection_info->header)["message_definition"] = connection_info->msg_def;
             }
             connections_[conn_id] = connection_info;
 

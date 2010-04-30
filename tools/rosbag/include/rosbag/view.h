@@ -63,6 +63,9 @@ public:
                                                    boost::forward_traversal_tag,
                                                    MessageInstance>
     {
+    public:
+        iterator();
+
     protected:
         iterator(View* view, bool end = false);
 
@@ -85,12 +88,6 @@ public:
         uint32_t view_revision_;
     };
 
-    //! Typedef to const_iterator
-    /*!
-     * QUESTION: Is this ok to do?  The const_iterator is necessary in
-     * some places, and it can't actually be used to modify the
-     * underlying structure.
-     */
     typedef iterator const_iterator;
 
     View();

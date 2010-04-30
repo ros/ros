@@ -60,12 +60,13 @@ class MessageInstance
     friend class View;
   
 public:
-    ros::Time     const& getTime()              const;
-    std::string   const& getTopic()             const;
-    std::string   const& getDataType()          const;
-    std::string   const& getMD5Sum()            const;
-    std::string   const& getMessageDefinition() const;
-    ros::M_string const& getConnectionHeader()  const;
+    ros::Time   const& getTime()              const;
+    std::string const& getTopic()             const;
+    std::string const& getDataType()          const;
+    std::string const& getMD5Sum()            const;
+    std::string const& getMessageDefinition() const;
+
+    boost::shared_ptr<ros::M_string> getConnectionHeader() const;
 
     std::string getCallerId() const;
     bool        isLatching()  const;
@@ -149,7 +150,8 @@ struct Serializer<rosbag::MessageInstance>
 
 template<class T>
 boost::shared_ptr<T const> rosbag::MessageInstance::instantiate() const {
-    if (ros::message_traits::MD5Sum<T>::value() != getMD5Sum())
+    char const* md5sum = ros::message_traits::MD5Sum<T>::value();
+    if (md5sum != std::string("*") && md5sum != getMD5Sum())
         return boost::shared_ptr<T const>();
 
     return bag_->instantiateBuffer<T>(index_entry_);

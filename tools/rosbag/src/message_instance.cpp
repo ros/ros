@@ -29,6 +29,7 @@
 
 using std::string;
 using ros::Time;
+using boost::shared_ptr;
 
 namespace rosbag {
 
@@ -37,21 +38,22 @@ MessageInstance::MessageInstance(ConnectionInfo const* connection_info, IndexEnt
 {
 }
 
-string const&        MessageInstance::getTopic()             const { return connection_info_->topic;    }
-string const&        MessageInstance::getDataType()          const { return connection_info_->datatype; }
-string const&        MessageInstance::getMD5Sum()            const { return connection_info_->md5sum;   }
-string const&        MessageInstance::getMessageDefinition() const { return connection_info_->msg_def;  }
-ros::M_string const& MessageInstance::getConnectionHeader()  const { return connection_info_->header;   }
-Time const&          MessageInstance::getTime()              const { return index_entry_.time;          }
+Time const&   MessageInstance::getTime()              const { return index_entry_.time;          }
+string const& MessageInstance::getTopic()             const { return connection_info_->topic;    }
+string const& MessageInstance::getDataType()          const { return connection_info_->datatype; }
+string const& MessageInstance::getMD5Sum()            const { return connection_info_->md5sum;   }
+string const& MessageInstance::getMessageDefinition() const { return connection_info_->msg_def;  }
+
+shared_ptr<ros::M_string> MessageInstance::getConnectionHeader() const { return connection_info_->header; }
 
 string MessageInstance::getCallerId() const {
-    ros::M_string::const_iterator header_iter = connection_info_->header.find("callerid");
-    return header_iter != connection_info_->header.end() ? header_iter->second : string("");
+    ros::M_string::const_iterator header_iter = connection_info_->header->find("callerid");
+    return header_iter != connection_info_->header->end() ? header_iter->second : string("");
 }
 
 bool MessageInstance::isLatching() const {
-    ros::M_string::const_iterator header_iter = connection_info_->header.find("latching");
-    return header_iter != connection_info_->header.end() && header_iter->second == "1";
+    ros::M_string::const_iterator header_iter = connection_info_->header->find("latching");
+    return header_iter != connection_info_->header->end() && header_iter->second == "1";
 }
 
 uint32_t MessageInstance::size() const {

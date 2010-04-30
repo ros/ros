@@ -595,7 +595,7 @@ void Bag::writeConnectionRecord(ConnectionInfo const* connection_info) {
     header[CONNECTION_FIELD_NAME] = toHeaderString(&connection_info->id);
     writeHeader(header);
 
-    writeHeader(connection_info->header);
+    writeHeader(*connection_info->header);
 }
 
 void Bag::appendConnectionRecordToBuffer(Buffer& buf, ConnectionInfo const* connection_info) {
@@ -605,7 +605,7 @@ void Bag::appendConnectionRecordToBuffer(Buffer& buf, ConnectionInfo const* conn
     header[CONNECTION_FIELD_NAME] = toHeaderString(&connection_info->id);
     appendHeaderToBuffer(buf, header);
 
-    appendHeaderToBuffer(buf, connection_info->header);
+    appendHeaderToBuffer(buf, *connection_info->header);
 }
 
 void Bag::readConnectionRecord() {
@@ -632,11 +632,12 @@ void Bag::readConnectionRecord() {
         ConnectionInfo* connection_info = new ConnectionInfo();
         connection_info->id       = id;
         connection_info->topic    = topic;
+        connection_info->header = shared_ptr<M_string>(new M_string);
         for (M_string::const_iterator i = connection_header.getValues()->begin(); i != connection_header.getValues()->end(); i++)
-            connection_info->header[i->first] = i->second;
-        connection_info->msg_def  = connection_info->header["message_definition"];
-        connection_info->datatype = connection_info->header["type"];
-        connection_info->md5sum   = connection_info->header["md5sum"];
+            (*connection_info->header)[i->first] = i->second;
+        connection_info->msg_def  = (*connection_info->header)["message_definition"];
+        connection_info->datatype = (*connection_info->header)["type"];
+        connection_info->md5sum   = (*connection_info->header)["md5sum"];
         connections_[id] = connection_info;
 
         ROS_DEBUG("Read CONNECTION: topic=%s id=%d", topic.c_str(), id);
@@ -680,9 +681,8 @@ void Bag::decompressChunk(uint64_t chunk_pos) {
         current_buffer_ = &outgoing_chunk_buffer_;
         return;
     }
-    else {
-        current_buffer_ = &decompress_buffer_;
-    }
+
+    current_buffer_ = &decompress_buffer_;
 
     if (decompressed_chunk_ == chunk_pos)
         return;

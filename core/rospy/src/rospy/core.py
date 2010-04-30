@@ -34,10 +34,13 @@
 
 """rospy internal core implementation library"""
 
+from __future__ import with_statement
+
 import atexit
 import logging
 import os
 import signal
+import string
 import sys
 import threading
 import time
@@ -56,11 +59,43 @@ from rospy.names import *
 from rospy.validators import ParameterInvalid
 
 _logger = logging.getLogger("rospy.core")
+_mlogger = logging.getLogger("rospy.masterslave")
 
 # number of seconds to wait to join on threads. network issue can
 # cause joins to be not terminate gracefully, and it's better to
 # teardown dirty than to hang
 _TIMEOUT_SHUTDOWN_JOIN = 5.
+
+def mloginfo(msg, *args):
+    """
+    Info-level master log statements. These statements may be printed
+    to screen so they should be user-readable.
+    @param msg: Message string
+    @type  msg: str
+    @param args: arguments for msg if msg is a format string
+    """
+    #mloginfo is in core so that it is accessible to master and masterdata
+    _mlogger.info(msg, *args)
+    if 0: # disabling. making the master quieter
+        if args:
+            print msg%args
+        else:
+            print msg
+
+def mlogwarn(msg, *args):
+    """
+    Warn-level master log statements. These statements may be printed
+    to screen so they should be user-readable.
+    @param msg: Message string
+    @type  msg: str    
+    @param args: arguments for msg if msg is a format string
+    """
+    #mloginfo is in core so that it is accessible to master and masterdata
+    _mlogger.warn(msg, *args)
+    if args:
+        print "WARN: "+msg%args
+    else:
+        print "WARN: "+str(msg)
 
 #########################################################
 # ROSRPC
@@ -84,7 +119,7 @@ def parse_rosrpc_uri(uri):
         if '/' in dest_addr:
             dest_addr = dest_addr[:dest_addr.find('/')]
         dest_addr, dest_port = dest_addr.split(':')
-        dest_port = int(dest_port)
+        dest_port = string.atoi(dest_port)
     except:
         raise ParameterInvalid("ROS service URL is invalid: %s"%uri)
     return dest_addr, dest_port
@@ -214,6 +249,11 @@ def logfatal(msg, *args):
 
 MASTER_NAME = "master" #master is a reserved node name for the central master
 
+# Return code slots
+STATUS = 0
+MSG = 1
+VAL = 2
+
 def get_ros_root(required=False, env=None):
     """
     Get the value of ROS_ROOT.
@@ -307,12 +347,23 @@ def set_initialized(initialized):
     global _client_ready
     _client_ready = initialized
 
-_shutdown_lock  = threading.Lock()
+_shutdown_lock  = threading.RLock()
+
+# _shutdown_flag flags that rospy is in shutdown mode, in_shutdown
+# flags that the shutdown routine has started. These are separate
+# because 'pre-shutdown' hooks require rospy to be in a non-shutdown
+# mode. These hooks are executed during the shutdown routine.
 _shutdown_flag  = False
+_in_shutdown = False
+
+# various hooks to call on shutdown. shutdown hooks are called in the
+# shutdown state, preshutdown are called just before entering shutdown
+# state, and client shutdown is called before both of these.
 _shutdown_hooks = []
-_shutdown_threads = []
 _preshutdown_hooks = []
 _client_shutdown_hooks = []
+# threads that must be joined on shutdown
+_shutdown_threads = []
 
 _signalChain = {}
 
@@ -333,14 +384,11 @@ def _add_shutdown_hook(h, hooks):
         _logger.warn("add_shutdown_hook called after shutdown")
         h("already shutdown")
         return
-    try:
-        _shutdown_lock.acquire()
+    with _shutdown_lock:
         if hooks is None:
             # race condition check, don't log as we are deep into shutdown
             return
         hooks.append(h)
-    finally:
-        _shutdown_lock.release()
 
 def _add_shutdown_thread(t):
     """
@@ -349,8 +397,7 @@ def _add_shutdown_thread(t):
     if _shutdown_flag:
         #TODO
         return
-    try:
-        _shutdown_lock.acquire()
+    with _shutdown_lock:
         if _shutdown_threads is None:
             # race condition check, don't log as we are deep into shutdown
             return
@@ -361,8 +408,6 @@ def _add_shutdown_thread(t):
             if not other.isAlive():
                 _shutdown_threads.remove(other)
         _shutdown_threads.append(t)
-    finally:
-        _shutdown_lock.release()
 
 def add_client_shutdown_hook(h):
     """
@@ -402,18 +447,21 @@ def add_shutdown_hook(h):
 
 def signal_shutdown(reason):
     """
-    Initiates shutdown process by signaling objects waiting on _shutdown_lock.
+    Initiates shutdown process by singaling objects waiting on _shutdown_lock.
     Shutdown and pre-shutdown hooks are invoked.
     @param reason: human-readable shutdown reason, if applicable
     @type  reason: str
     """
-    global _shutdown_flag, _shutdown_lock, _shutdown_hooks
+    global _shutdown_flag, _in_shutdown, _shutdown_lock, _shutdown_hooks
     _logger.info("signal_shutdown [%s]"%reason)
-    if not _shutdown_flag:
-        _shutdown_lock.acquire()
-        if _shutdown_flag:
+    if _shutdown_flag or _in_shutdown:
+        return
+    with _shutdown_lock:
+        if _shutdown_flag or _in_shutdown:
             return
+        _in_shutdown = True
 
+        # make copy just in case client re-invokes shutdown
         for h in _client_shutdown_hooks:
             try:
                 # client shutdown hooks do not accept a reason arg
@@ -439,17 +487,16 @@ def signal_shutdown(reason):
             except Exception, e:
                 print >> sys.stderr, "signal_shutdown hook error[%s]"%e
         del _shutdown_hooks[:]
-        
-        threads = _shutdown_threads[:]
-        _shutdown_lock.release()
 
-        for t in threads:
-            if t.isAlive():
-                t.join(_TIMEOUT_SHUTDOWN_JOIN)
-        del _shutdown_threads[:]
-        try:
-            time.sleep(0.1) #hack for now until we get rid of all the extra threads
-        except KeyboardInterrupt: pass
+        threads = _shutdown_threads[:]
+
+    for t in threads:
+        if t.isAlive():
+            t.join(_TIMEOUT_SHUTDOWN_JOIN)
+    del _shutdown_threads[:]
+    try:
+        time.sleep(0.1) #hack for now until we get rid of all the extra threads
+    except KeyboardInterrupt: pass
 
 def _ros_signal(sig, stackframe):
     signal_shutdown("signal-"+str(sig))
@@ -474,10 +521,33 @@ def register_signals():
     
 # Validators ######################################
 
+def is_api(paramName):
+    """
+    Validator that checks that parameter is a valid API handle
+    (i.e. URI). Both http and rosrpc are allowed schemes.
+    """
+    def validator(param_value, callerId):
+        if not param_value or not isinstance(param_value, basestring):
+            raise ParameterInvalid("ERROR: parameter [%s] is not an XMLRPC URI"%paramName)
+        if not param_value.startswith("http://") and not param_value.startswith(ROSRPC):
+            raise ParameterInvalid("ERROR: parameter [%s] is not an RPC URI"%paramName)
+        #could do more fancy parsing, but the above catches the major cases well enough
+        return param_value
+    return validator
+
 def is_topic(param_name):
     """
     Validator that checks that parameter is a valid ROS topic name
     """    
+    def validator(param_value, caller_id):
+        v = valid_name_validator_resolved(param_name, param_value, caller_id)
+        if param_value == '/':
+            raise ParameterInvalid("ERROR: parameter [%s] cannot be the global namespace"%param_name)            
+        return v
+    return validator
+
+def is_service(param_name):
+    """Validator that checks that parameter is a valid ROS service name"""
     def validator(param_value, caller_id):
         v = valid_name_validator_resolved(param_name, param_value, caller_id)
         if param_value == '/':

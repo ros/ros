@@ -8,6 +8,11 @@
   <author>Jeremy Leibs</author>
   <license>BSD</license>
   <review status="test" notes=""/>
+
+  <export>
+    <cpp cflags="-I${prefix}/msg/cpp"/>
+  </export>
+
 </package>
 
 

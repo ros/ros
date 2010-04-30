@@ -55,7 +55,7 @@ import roslaunch.pmon
 import roslaunch.server
 import roslaunch.xmlloader 
 
-#TODO: probably move process listener infrastructure into here
+#TODOXXX: probably move process listener infrastructure into here
 
 # TODO: remove after wg_hardware_roslaunch has been updated
 # qualification accesses this API, which has been relocated
@@ -67,11 +67,9 @@ class ROSLaunchParent(object):
     is responsible for loading the launch files, assigning machines,
     and then starting up any remote processes. The __main__ method
     delegates most of runtime to ROSLaunchParent.
-
-    This must be called from the Python Main thread due to signal registration.    
     """
 
-    def __init__(self, run_id, roslaunch_files, is_core=False, port=None, local_only=False, process_listeners=None, verbose=False):
+    def __init__(self, run_id, roslaunch_files, is_core=False, port=None, local_only=False, process_listeners=None):
         """
         @param run_id: UUID of roslaunch session
         @type  run_id: str
@@ -87,8 +85,6 @@ class ROSLaunchParent(object):
         @type  process_listeners: [L{roslaunch.pmon.ProcessListener}]
         @param port: (optional) override master port number from what is specified in the master URI.
         @type  port: int
-        @param verbose: (optional) print verbose output
-        @type  verbose: boolean
         @throws RLException
         """
         
@@ -100,15 +96,14 @@ class ROSLaunchParent(object):
         self.is_core = is_core
         self.port = port
         self.local_only = local_only
-        self.verbose = verbose
-        
+
         # flag to prevent multiple shutdown attempts
         self._shutting_down = False
         
         self.config = self.runner = self.server = self.pm = self.remote_runner = None
 
     def _load_config(self):
-        self.config = roslaunch.config.load_config_default(self.roslaunch_files, self.port, verbose=self.verbose)
+        self.config = roslaunch.config.load_config_default(self.roslaunch_files, self.port)
 
     def _start_pm(self):
         """
@@ -212,16 +207,9 @@ class ROSLaunchParent(object):
             self.pm.shutdown()
             self.pm.join()
         
-    def start(self, auto_terminate=True):
+    def start(self):
         """
-        Run the parent roslaunch.
-
-        @param auto_terminate: stop process monitor once there are no
-        more processes to monitor (default True). This defaults to
-        True, which is the command-line behavior of roslaunch. Scripts
-        may wish to set this to False if they wish to keep the
-        roslauch infrastructure up regardless of processes being
-        monitored.
+        Run the parent roslaunch
         """
         self.logger.info("starting roslaunch parent run")
         
@@ -234,11 +222,6 @@ class ROSLaunchParent(object):
 
         # Start the launch
         self.runner.launch()
-
-        # inform process monitor that we are done with process registration
-        if auto_terminate:
-            self.pm.registrations_complete()
-        
         self.logger.info("... roslaunch parent running, waiting for process exit")
         if self.process_listeners:
             for l in self.process_listeners:

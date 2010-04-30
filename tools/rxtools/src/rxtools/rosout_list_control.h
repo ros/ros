@@ -37,8 +37,6 @@
 
 #include <boost/function.hpp>
 
-#include <set>
-
 namespace rxtools
 {
 
@@ -57,8 +55,6 @@ enum Column
 };
 }
 typedef columns::Column Column;
-
-typedef std::set<int32_t> S_int32;
 
 /**
  * \brief Custom list control for displaying large numbers of constantly changing messages.
@@ -92,32 +88,25 @@ public:
    * \brief Get the index of the currently selected item
    * @return The index of the currently selected item
    */
-  const S_int32& getSelection()
+  int32_t getSelection()
   {
-    updateSelection();
     return selection_;
   }
 
-  void setSelection(const S_int32& sel);
+  void setSelection(int32_t index);
 
   void preItemChanges();
   void postItemChanges();
 
-  void copySelectionToClipboard(bool message_only);
-
 protected:
 
   roslib::LogConstPtr getSelectedMessage();
-  void updateSelection();
 
   // Callbacks
   void onItemActivated(wxListEvent& event);
   void onItemSelected(wxListEvent& event);
   void onItemRightClick(wxListEvent& event);
 
-  void onCopy(wxCommandEvent& event);
-  void onCopyMessageOnly(wxCommandEvent& event);
-  void onChar(wxKeyEvent& event);
   void onIncludeLocation(wxCommandEvent& event);
   void onIncludeNode(wxCommandEvent& event);
   void onIncludeMessage(wxCommandEvent& event);
@@ -130,6 +119,8 @@ protected:
   void onExcludeLocationNewWindow(wxCommandEvent& event);
   void onExcludeNodeNewWindow(wxCommandEvent& event);
   void onExcludeMessageNewWindow(wxCommandEvent& event);
+
+  void onPopupKeyPressed(wxKeyEvent& event);
 
   // overrides from wxListCtrl
   virtual wxListItemAttr * OnGetItemAttr(long item) const;
@@ -146,8 +137,7 @@ protected:
   int32_t info_image_id_;
   int32_t debug_image_id_;
 
-  S_int32 selection_;
-  int32_t last_selection_;
+  int32_t selection_;
 
   bool scrollbar_at_bottom_;
   bool disable_scroll_to_bottom_;

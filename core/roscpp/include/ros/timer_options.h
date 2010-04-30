@@ -69,7 +69,7 @@ struct TimerOptions
    * callback, and for it to go out of scope (and potentially be deleted) in the code path (and therefore
    * thread) that the callback is invoked from.
    */
-  VoidConstPtr tracked_object;
+  VoidPtr tracked_object;
 
   bool oneshot;
 };

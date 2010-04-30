@@ -82,10 +82,7 @@ protected:
   {
     for (int i = 0; i < 3; ++i)
     {
-      if (transports_[i])
-      {
-        transports_[i]->close();
-      }
+      transports_[i]->close();
     }
   }
 

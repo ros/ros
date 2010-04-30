@@ -19,7 +19,7 @@ python:
   arch: python
   fedora: python-devel
   rhel: python-devel
-  macports: python25 python_select
+  macports: python25 python_select py25-hashlib
   gentoo: python
   cygwin: python
 python-yaml:
@@ -94,6 +94,7 @@ bzip2:
   cygwin: bzip2
 boost:
   ubuntu:
+    '10.04': libboost1.40-all-dev
     '9.10': libboost1.40-all-dev
     '9.04': libboost-date-time1.37-dev libboost-filesystem1.37-dev libboost-graph1.37-dev libboost-iostreams1.37-dev libboost-math1.37-dev libboost-program-options1.37-dev libboost-python1.37-dev libboost-regex1.37-dev libboost-serialization1.37-dev libboost-signals1.37-dev libboost-system1.37-dev libboost-test1.37-dev libboost-thread1.37-dev libboost-wave1.37-dev libboost1.37-dev
     '8.10': |
@@ -202,6 +203,7 @@ wxpython:
   gentoo: dev-python/wxpython
 log4cxx:
   ubuntu:
+    '10.04': liblog4cxx10-dev
     '9.10': liblog4cxx10-dev
     '9.04': liblog4cxx10-dev
     '8.10': |
@@ -331,6 +333,7 @@ automake:
   gentoo: sys-devel/automake
 libtool:
   ubuntu: 
+    '10.04': libtool libltdl-dev
     '9.10': libtool libltdl-dev
     '9.04': libtool libltdl7-dev
     '8.10': libtool libltdl7-dev
@@ -366,10 +369,10 @@ ncurses:
   gentoo: sys-libs/ncurses
 qt4:
   ubuntu: libqt4-core libqt4-dev qt4-dev-tools
-  debian: libqt4-core libqt4-dev qt4-dev-tools 
+  debian: libqt4-core libqt4-dev qt4-dev-tools libqt4-opengl-dev
   arch: qt
   macports: qt4-mac
-  gentoo: ">=x11-libs/qt-core-4"
+  gentoo: ">=x11-libs/qt-core-4 >=x11-libs/qt-opengl-4"
 curl:
   ubuntu: libcurl4-openssl-dev
   debian: libcurl4-openssl-dev
@@ -422,6 +425,12 @@ unzip:
   rhel: unzip
   macports: unzip
   gentoo: app-arch/unzip
+sbcl:
+  ubuntu: sbcl
+  debian: sbcl
+  arch: sbcl
+  macports: sbcl
+  gentoo: dev-lisp/sbcl
 fltk:
   ubuntu: libfltk1.1-dev
   debian: libfltk1.1-dev
@@ -429,6 +438,3 @@ fltk:
   arch: fltk
   macports: fltk
   gentoo: "=x11-libs/fltk-1*"
-epydoc:
-  ubuntu: python-epydoc
-  macports: py25-epydoc

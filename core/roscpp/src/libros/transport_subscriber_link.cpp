@@ -51,7 +51,7 @@ TransportSubscriberLink::TransportSubscriberLink()
 
 TransportSubscriberLink::~TransportSubscriberLink()
 {
-  drop();
+
 }
 
 bool TransportSubscriberLink::initialize(const ConnectionPtr& connection)
@@ -195,13 +195,31 @@ void TransportSubscriberLink::startMessageWrite(bool immediate_write)
   }
 }
 
-void TransportSubscriberLink::enqueueMessage(const SerializedMessage& m, bool ser, bool nocopy)
+bool TransportSubscriberLink::publish(const Message& m)
 {
-  if (!ser)
+  if (!verifyDatatype(m.__getDataType()))
   {
-    return;
+    return false;
   }
 
+  uint32_t msg_len = m.serializationLength();
+  boost::shared_array<uint8_t> buf = boost::shared_array<uint8_t>(new uint8_t[msg_len + 4]);
+  *((uint32_t*)buf.get()) = msg_len;
+
+  int seq = 0;
+  if (PublicationPtr parent = parent_.lock())
+  {
+    seq = parent->getSequence();
+  }
+
+  m.serialize(buf.get() + 4, seq);
+  enqueueMessage(SerializedMessage(buf, msg_len + 4));
+
+  return true;
+}
+
+void TransportSubscriberLink::enqueueMessage(const SerializedMessage& m)
+{
   {
     boost::mutex::scoped_lock lock(outbox_mutex_);
 
@@ -247,7 +265,7 @@ std::string TransportSubscriberLink::getTransportType()
 
 void TransportSubscriberLink::drop()
 {
-  connection_->drop(Connection::Destructing);
+  connection_->drop();
 }
 
 } // namespace ros

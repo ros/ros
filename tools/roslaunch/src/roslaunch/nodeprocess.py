@@ -81,9 +81,9 @@ def create_master_process(run_id, type_, ros_root, port, log_output=False):
 
     _logger.info("create_master_process: %s, %s, %s", type_, ros_root, port)
     master = os.path.join(ros_root, 'bin', type_)
-    # zenmaster is deprecated and aliased to rosmaster
-    if type_ in [Master.ROSMASTER, Master.ZENMASTER]:        
-        package = 'rosmaster'        
+    # only support zenmaster now that botherder is gone
+    if type_ == Master.ZENMASTER:
+        package = 'rospy'        
         args = [master, '--core', '-p', str(port)]
     else:
         raise RLException("unknown master typ_: %s"%type_)
@@ -96,10 +96,9 @@ def create_node_process(run_id, node, master_uri):
     Factory for generating processes for launching local ROS
     nodes. Also registers the process with the L{ProcessMonitor} so that
     events can be generated when the process dies.
-    
     @param run_id: run_id of launch
     @type  run_id: str
-    @param node: node to launch. Node name must be assigned.
+    @param node: node to launch
     @type  node: L{Node}
     @param master_uri: API URI for master node
     @type  master_uri: str
@@ -112,18 +111,15 @@ def create_node_process(run_id, node, master_uri):
     machine = node.machine
     if machine is None:
         raise RLException("Internal error: no machine selected for node of type [%s/%s]"%(node.package, node.type))
-    if not node.name:
-        raise ValueError("node name must be assigned")
-
+    
     # - setup env for process (vars must be strings for os.environ)
     env = create_local_process_env(node, machine, master_uri)
-
-    if not node.name:
-        raise ValueError("node name must be assigned")
-    
-    # we have to include the counter to prevent potential name
-    # collisions between the two branches
-    name = "%s-%s"%(node.name, _next_counter())
+    if node.name:
+        # we have to include the counter to prevent potential name
+        # collisions between the two branches
+        name = "%s-%s"%(node.name, _next_counter())
+    else:
+        name = "%s-%s"%(node.type, _next_counter())
 
     _logger.info('process[%s]: env[%s]', name, env)
 

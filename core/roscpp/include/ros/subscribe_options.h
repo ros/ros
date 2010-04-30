@@ -30,8 +30,7 @@
 
 #include "ros/forwards.h"
 #include "ros/transport_hints.h"
-#include "ros/message_traits.h"
-#include "subscription_callback_helper.h"
+#include "subscription_message_helper.h"
 
 namespace ros
 {
@@ -56,6 +55,23 @@ struct SubscribeOptions
    * \param _queue_size Number of incoming messages to queue up for
    *        processing (messages in excess of this queue capacity will be
    *        discarded).
+   * \param _helper Helper object used to get create messages and call callbacks
+   */
+  SubscribeOptions(const std::string& _topic, uint32_t _queue_size, const SubscriptionMessageHelperPtr& _helper)
+  : topic(_topic)
+  , queue_size(_queue_size)
+  , md5sum(_helper->getMD5Sum())
+  , datatype(_helper->getDataType())
+  , helper(_helper)
+  , callback_queue(0)
+  {}
+
+  /**
+   * \brief Constructor
+   * \param _topic Topic to subscribe on
+   * \param _queue_size Number of incoming messages to queue up for
+   *        processing (messages in excess of this queue capacity will be
+   *        discarded).
    * \param _md5sum
    * \param _datatype
    */
@@ -68,28 +84,7 @@ struct SubscribeOptions
   {}
 
   /**
-   * \brief Templated initialization, templated on callback parameter type.  Supports any callback parameters supported by the SubscriptionCallbackAdapter
-   * \param _topic Topic to subscribe on
-   * \param _queue_size Number of incoming messages to queue up for
-   *        processing (messages in excess of this queue capacity will be
-   *        discarded).
-   * \param _callback Callback to call when a message arrives on this topic
-   */
-  template<class P>
-  void initByFullCallbackType(const std::string& _topic, uint32_t _queue_size,
-       const boost::function<void (P)>& _callback,
-       const boost::function<boost::shared_ptr<typename ParameterAdapter<P>::Message>(void)>& factory_fn = defaultMessageCreateFunction<typename ParameterAdapter<P>::Message>)
-  {
-    typedef typename ParameterAdapter<P>::Message MessageType;
-    topic = _topic;
-    queue_size = _queue_size;
-    md5sum = message_traits::md5sum<MessageType>();
-    datatype = message_traits::datatype<MessageType>();
-    helper = SubscriptionCallbackHelperPtr(new SubscriptionCallbackHelperT<P>(_callback, factory_fn));
-  }
-
-  /**
-   * \brief Templated initialization, templated on message type.  Only supports "const boost::shared_ptr<M const>&" callback types
+   * \brief Templated initialization
    * \param _topic Topic to subscribe on
    * \param _queue_size Number of incoming messages to queue up for
    *        processing (messages in excess of this queue capacity will be
@@ -98,15 +93,13 @@ struct SubscribeOptions
    */
   template<class M>
   void init(const std::string& _topic, uint32_t _queue_size,
-       const boost::function<void (const boost::shared_ptr<M const>&)>& _callback,
-       const boost::function<boost::shared_ptr<M>(void)>& factory_fn = defaultMessageCreateFunction<M>)
+       const boost::function<void (const boost::shared_ptr<M>&)>& _callback)
   {
-    typedef typename ParameterAdapter<M>::Message MessageType;
     topic = _topic;
     queue_size = _queue_size;
-    md5sum = message_traits::md5sum<MessageType>();
-    datatype = message_traits::datatype<MessageType>();
-    helper = SubscriptionCallbackHelperPtr(new SubscriptionCallbackHelperT<const boost::shared_ptr<MessageType const>&>(_callback, factory_fn));
+    md5sum = M::__s_getMD5Sum();
+    datatype = M::__s_getDataType();
+    helper = SubscriptionMessageHelperPtr(new SubscriptionMessageHelperT<M>(_callback));
   }
 
   std::string topic;                                                ///< Topic to subscribe to
@@ -115,7 +108,7 @@ struct SubscribeOptions
   std::string md5sum;                                               ///< MD5 of the message datatype
   std::string datatype;                                             ///< Datatype of the message we'd like to subscribe as
 
-  SubscriptionCallbackHelperPtr helper;                              ///< Helper object used to get create messages and call callbacks
+  SubscriptionMessageHelperPtr helper;                              ///< Helper object used to get create messages and call callbacks
 
   CallbackQueueInterface* callback_queue;                           ///< Queue to add callbacks to.  If NULL, the global callback queue will be used
 
@@ -129,7 +122,7 @@ struct SubscribeOptions
    * callback, and for it to go out of scope (and potentially be deleted) in the code path (and therefore
    * thread) that the callback is invoked from.
    */
-  VoidConstPtr tracked_object;
+  VoidPtr tracked_object;
 
   TransportHints transport_hints;                                   ///< Hints for transport type and options
 
@@ -145,8 +138,8 @@ struct SubscribeOptions
    */
   template<class M>
   static SubscribeOptions create(const std::string& topic, uint32_t queue_size,
-                                 const boost::function<void (const boost::shared_ptr<M const>&)>& callback,
-                                 const VoidConstPtr& tracked_object, CallbackQueueInterface* queue)
+                                 const boost::function<void (const boost::shared_ptr<M>&)>& callback,
+                                 const VoidPtr& tracked_object, CallbackQueueInterface* queue)
   {
     SubscribeOptions ops;
     ops.init<M>(topic, queue_size, callback);

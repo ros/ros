@@ -238,7 +238,7 @@ def list_stacks_by_path(path, stacks=None, cache=None):
             del dirs[:]
             continue  #leaf
         # remove hidden dirs (esp. .svn/.git)
-        [dirs.remove(d) for d in dirs if d[0] == '.']
+        [dirs.remove(di) for di in dirs if di[0] == '.']
         for sub_d in dirs:
             # followlinks=True only available in Python 2.6, so we
             # have to implement manually

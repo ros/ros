@@ -100,9 +100,6 @@ public:
   void setNoDelay(bool nodelay);
   void setKeepAlive(bool use, uint32_t idle, uint32_t interval, uint32_t count);
 
-  const std::string& getConnectedHost() { return connected_host_; }
-  int getConnectedPort() { return connected_port_; }
-
   // overrides from Transport
   virtual int32_t read(uint8_t* buffer, uint32_t size);
   virtual int32_t write(uint8_t* buffer, uint32_t size);
@@ -123,8 +120,6 @@ private:
    * \brief Initializes the assigned socket -- sets it to non-blocking and enables reading
    */
   bool initializeSocket();
-
-  bool setNonBlocking();
 
   /**
    * \brief Set the socket to be used by this transport
@@ -156,9 +151,6 @@ private:
 
   PollSet* poll_set_;
   int flags_;
-
-  std::string connected_host_;
-  int connected_port_;
 };
 
 }

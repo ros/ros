@@ -289,13 +289,13 @@ class ROSLaunchRunner(object):
 
         # don't launch remote nodes
         local_nodes = [n for n in config.nodes if is_machine_local(n.machine)]
-
+            
         for node in local_nodes:
-            proc, success = self.launch_node(node)
+            name, success = self._launch_node(node)
             if success:
-                succeeded.append(proc.name)
+                succeeded.append(name)
             else:
-                failed.append(proc.name)
+                failed.append(name)
 
         if self.remote_runner:
             self.logger.info("launch_nodes: launching remote nodes ...")
@@ -340,8 +340,7 @@ class ROSLaunchRunner(object):
                 local_addrs = roslib.network.get_local_addresses()
                 import socket
                 reverse_ip = socket.gethostbyname(hostname)
-                # 127. check is due to #1260
-                if reverse_ip not in local_addrs and not reverse_ip.startswith('127.'):
+                if reverse_ip not in local_addrs:
                     self.logger.warn("IP address %s local hostname '%s' not in local addresses (%s)."%(reverse_ip, hostname, ','.join(local_addrs)))
                     print >> sys.stderr, \
 """WARNING: IP address %s for local hostname '%s' does not appear to match
@@ -491,31 +490,20 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
                 
         for node in tolaunch:
             node_name = roslib.names.ns_join(node.namespace, node.name)
-            name, success = self.launch_node(node, core=True)
+            name, success = self._launch_node(node, core=True)
             if success:
                 print "started core service [%s]"%node_name
             else:
                 raise RLException("failed to start core service [%s]"%node_name)
 
-    def launch_node(self, node, core=False):
+    def _launch_node(self, node, core=False):
         """
         Launch a single node locally. Remote launching is handled separately by the remote module.
-        If node name is not assigned, one will be created for it.
-        
         @param node Node: node to launch
         @param core bool: if True, core node
-        @return Process, bool: Process handle, successful launch
+        @return str, bool: node process name, successful launch
         """
         self.logger.info("... preparing to launch node of type [%s/%s]", node.package, node.type)
-        
-        # TODO: should this always override, per spec?. I added this
-        # so that this api can be called w/o having to go through an
-        # extra assign machines step.
-        if node.machine is None:
-            node.machine = self.config.machines['']
-        if node.name is None:
-            node.name = roslib.names.anonymous_name(node.type)
-            
         master = self.config.master
         import roslaunch.node_args
         try:
@@ -548,7 +536,7 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
                 printerrlog("local launch of %s/%s failed"%(node.package, node.type))   
         else:
             self.logger.info("... successfully launched [%s]", process.name)
-        return process, success
+        return process.name, success
         
     def is_node_running(self, node):
         """
@@ -641,14 +629,12 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         @rtype: ([str], [str])
         @raise RLException: if launch fails (e.g. run_id parameter does
         not match ID on parameter server)
-        """
-        try:
-            self._setup()        
-            succeeded, failed = self._launch_nodes()
-            return succeeded, failed
-        except KeyboardInterrupt:
-            self.stop()
-            raise
+        """        
+        self._setup()        
+        succeeded, failed = self._launch_nodes()
+        # inform process monitor that we are done with process registration
+        self.pm.registrations_complete()
+        return succeeded, failed 
 
     def run_test(self, test):
         """
@@ -658,7 +644,7 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         @raise RLTestTimeoutException: if test fails to launch or test times out
         """
         self.logger.info("... preparing to run test [%s] of type [%s/%s]", test.test_name, test.package, test.type)
-        proc_h, success = self.launch_node(test)
+        name, success = self._launch_node(test)
         if not success:
             raise RLException("test [%s] failed to launch"%test.test_name)
 

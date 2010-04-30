@@ -39,13 +39,11 @@
 
 #include <boost/thread.hpp>
 #include <boost/shared_array.hpp>
-#include <boost/regex.hpp>
 
 #include <cstdarg>
 #include <cstdlib>
 #include <cstdio>
 #include <memory>
-#include <cstring>
 #include <stdexcept>
 
 namespace ros
@@ -70,284 +68,6 @@ log4cxx::LevelPtr g_level_lookup[ levels::Count ] =
 #define COLOR_GREEN "\033[32m"
 #define COLOR_YELLOW "\033[33m"
 
-const char* g_format_string = "[${severity}] [${time}]: ${message}";
-
-struct Token
-{
-  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event) = 0;
-};
-typedef boost::shared_ptr<Token> TokenPtr;
-typedef std::vector<TokenPtr> V_Token;
-
-typedef std::map<std::string, std::string> M_string;
-M_string g_extra_fixed_tokens;
-
-void setFixedFilterToken(const std::string& key, const std::string& val)
-{
-  g_extra_fixed_tokens[key] = val;
-}
-
-struct FixedToken : public Token
-{
-  FixedToken(const std::string& str)
-  : str_(str)
-  {}
-
-  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
-  {
-    return str_.c_str();
-  }
-
-  std::string str_;
-};
-
-struct FixedMapToken : public Token
-{
-  FixedMapToken(const std::string& str)
-  : str_(str)
-  {}
-
-  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
-  {
-    M_string::iterator it = g_extra_fixed_tokens.find(str_);
-    if (it == g_extra_fixed_tokens.end())
-    {
-      return ("${" + str_ + "}").c_str();
-    }
-
-    return it->second.c_str();
-  }
-
-  std::string str_;
-};
-
-struct PlaceHolderToken : public Token
-{
-  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
-  {
-    return "PLACEHOLDER";
-  }
-};
-
-struct SeverityToken : public Token
-{
-  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
-  {
-    if (event->getLevel() == log4cxx::Level::getFatal())
-    {
-      return "FATAL";
-    }
-    else if (event->getLevel() == log4cxx::Level::getError())
-    {
-      return "ERROR";
-    }
-    else if (event->getLevel() == log4cxx::Level::getWarn())
-    {
-      return " WARN";
-    }
-    else if (event->getLevel() == log4cxx::Level::getInfo())
-    {
-      return " INFO";
-    }
-    else if (event->getLevel() == log4cxx::Level::getDebug())
-    {
-      return "DEBUG";
-    }
-
-    return "UNKNO";
-  }
-};
-
-struct MessageToken : public Token
-{
-  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
-  {
-    return event->getMessage().c_str();
-  }
-};
-
-struct TimeToken : public Token
-{
-  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
-  {
-    std::stringstream ss;
-    ss << ros::Time::now();
-    return ss.str();
-  }
-};
-
-struct ThreadToken : public Token
-{
-  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
-  {
-    std::stringstream ss;
-    ss << boost::this_thread::get_id();
-    return ss.str();
-  }
-};
-
-struct LoggerToken : public Token
-{
-  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
-  {
-    return event->getLoggerName();
-  }
-};
-
-struct FileToken : public Token
-{
-  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
-  {
-    return event->getLocationInformation().getFileName();
-  }
-};
-
-struct FunctionToken : public Token
-{
-  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
-  {
-    return event->getLocationInformation().getMethodName();
-  }
-};
-
-struct LineToken : public Token
-{
-  virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
-  {
-    std::stringstream ss;
-    ss << event->getLocationInformation().getLineNumber();
-    return ss.str();
-  }
-};
-
-TokenPtr createTokenFromType(const std::string& type)
-{
-  if (type == "severity")
-  {
-    return TokenPtr(new SeverityToken());
-  }
-  else if (type == "message")
-  {
-    return TokenPtr(new MessageToken());
-  }
-  else if (type == "time")
-  {
-    return TokenPtr(new TimeToken());
-  }
-  else if (type == "thread")
-  {
-    return TokenPtr(new ThreadToken());
-  }
-  else if (type == "logger")
-  {
-    return TokenPtr(new LoggerToken());
-  }
-  else if (type == "file")
-  {
-    return TokenPtr(new FileToken());
-  }
-  else if (type == "line")
-  {
-    return TokenPtr(new LineToken());
-  }
-  else if (type == "function")
-  {
-    return TokenPtr(new FunctionToken());
-  }
-
-  return TokenPtr(new FixedMapToken(type));
-}
-
-struct Formatter
-{
-  void init(const char* fmt)
-  {
-    format_ = fmt;
-
-    boost::regex e("\\$\\{([a-z|A-Z]+)\\}");
-    boost::match_results<std::string::const_iterator> results;
-    std::string::const_iterator start, end;
-    start = format_.begin();
-    end = format_.end();
-    bool matched_once = false;
-    std::string last_suffix;
-    while (boost::regex_search(start, end, results, e))
-    {
-#if 0
-      for (size_t i = 0; i < results.size(); ++i)
-      {
-        std::cout << i << "|" << results.prefix() << "|" <<  results[i] << "|" << results.suffix() << std::endl;
-      }
-#endif
-
-      std::string token = results[1];
-      last_suffix = results.suffix();
-      tokens_.push_back(TokenPtr(new FixedToken(results.prefix())));
-      tokens_.push_back(createTokenFromType(token));
-
-      start = results[0].second;
-      matched_once = true;
-    }
-
-    if (matched_once)
-    {
-      tokens_.push_back(TokenPtr(new FixedToken(last_suffix)));
-    }
-    else
-    {
-      tokens_.push_back(TokenPtr(new FixedToken(format_)));
-    }
-  }
-
-  void print(const log4cxx::spi::LoggingEventPtr& event)
-  {
-    const char* color = NULL;
-    FILE* f = stdout;
-
-    if (event->getLevel() == log4cxx::Level::getFatal())
-    {
-      color = COLOR_RED;
-      f = stderr;
-    }
-    else if (event->getLevel() == log4cxx::Level::getError())
-    {
-      color = COLOR_RED;
-      f = stderr;
-    }
-    else if (event->getLevel() == log4cxx::Level::getWarn())
-    {
-      color = COLOR_YELLOW;
-    }
-    else if (event->getLevel() == log4cxx::Level::getInfo())
-    {
-      color = COLOR_NORMAL;
-    }
-    else if (event->getLevel() == log4cxx::Level::getDebug())
-    {
-      color = COLOR_GREEN;
-    }
-
-    ROS_ASSERT(color != NULL);
-
-    std::stringstream ss;
-    ss << color;
-    V_Token::iterator it = tokens_.begin();
-    V_Token::iterator end = tokens_.end();
-    for (; it != end; ++it)
-    {
-      ss << (*it)->getString(event);
-    }
-    ss << COLOR_NORMAL;
-
-    fprintf(f, "%s\n", ss.str().c_str());
-  }
-
-  std::string format_;
-  V_Token tokens_;
-
-};
-Formatter g_formatter;
-
 class ROSConsoleStdioAppender : public log4cxx::AppenderSkeleton
 {
 public:
@@ -358,7 +78,44 @@ public:
 protected:
   virtual void append(const log4cxx::spi::LoggingEventPtr& event, log4cxx::helpers::Pool& pool)
   {
-    g_formatter.print(event);
+    const char* color = NULL;
+    const char* prefix = NULL;
+    FILE* f = stdout;
+
+    if (event->getLevel() == log4cxx::Level::getFatal())
+    {
+      color = COLOR_RED;
+      prefix = "FATAL";
+      f = stderr;
+    }
+    else if (event->getLevel() == log4cxx::Level::getError())
+    {
+      color = COLOR_RED;
+      prefix = "ERROR";
+      f = stderr;
+    }
+    else if (event->getLevel() == log4cxx::Level::getWarn())
+    {
+      color = COLOR_YELLOW;
+      prefix = "WARN";
+    }
+    else if (event->getLevel() == log4cxx::Level::getInfo())
+    {
+      color = COLOR_NORMAL;
+      prefix = "INFO";
+    }
+    else if (event->getLevel() == log4cxx::Level::getDebug())
+    {
+      color = COLOR_GREEN;
+      prefix = "DEBUG";
+    }
+
+    ROS_ASSERT(color != NULL);
+    ROS_ASSERT(prefix != NULL);
+
+    std::stringstream ss;
+    ss << ros::Time::now();
+    fprintf(f, "%s[%5s] %s: %s%s\n", color, prefix, ss.str().c_str(), event->getMessage().c_str(), COLOR_NORMAL);
   }
 
   virtual void close()
@@ -401,15 +158,6 @@ void do_initialize()
     }
   }
 
-  // Check for the format string environment variable
-  const char* format_string = getenv("ROSCONSOLE_FORMAT");
-  if (format_string)
-  {
-    g_format_string = format_string;
-  }
-
-  g_formatter.init(g_format_string);
-
   log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger(ROSCONSOLE_ROOT_LOGGER_NAME);
   logger->addAppender(new ROSConsoleStdioAppender);
 }
@@ -425,52 +173,13 @@ void initialize()
   }
 }
 
-void vformatToBuffer(boost::shared_array<char>& buffer, size_t& buffer_size, const char* fmt, va_list args)
-{
-  va_list arg_copy;
-  va_copy(arg_copy, args);
-  size_t total = vsnprintf(buffer.get(), buffer_size, fmt, args);
-  if (total >= buffer_size)
-  {
-    buffer_size = total + 1;
-    buffer.reset(new char[buffer_size]);
-
-    vsnprintf(buffer.get(), buffer_size, fmt, arg_copy);
-    va_end(arg_copy);
-  }
-}
-
-void formatToBuffer(boost::shared_array<char>& buffer, size_t& buffer_size, const char* fmt, ...)
-{
-  va_list args;
-  va_start(args, fmt);
-
-  vformatToBuffer(buffer, buffer_size, fmt, args);
-
-  va_end(args);
-}
-
-std::string formatToString(const char* fmt, ...)
-{
-  boost::shared_array<char> buffer;
-  size_t size = 0;
-
-  va_list args;
-  va_start(args, fmt);
-
-  vformatToBuffer(buffer, size, fmt, args);
-
-  va_end(args);
-
-  return std::string(buffer.get(), size);
-}
-
 #define INITIAL_BUFFER_SIZE 4096
 static boost::mutex g_print_mutex;
 static boost::shared_array<char> g_print_buffer(new char[INITIAL_BUFFER_SIZE]);
-static size_t g_print_buffer_size = INITIAL_BUFFER_SIZE;
+static int g_print_buffer_size = INITIAL_BUFFER_SIZE;
 static boost::thread::id g_printing_thread_id;
-void print(FilterBase* filter, log4cxx::Logger* logger, Level level, const char* file, int line, const char* function, const char* fmt, ...)
+void print(log4cxx::LoggerPtr& logger, const log4cxx::LevelPtr& level, const log4cxx::spi::LocationInfo& location,
+    const char* fmt, ...)
 {
   if (g_printing_thread_id == boost::this_thread::get_id())
   {
@@ -485,99 +194,27 @@ void print(FilterBase* filter, log4cxx::Logger* logger, Level level, const char*
   va_list args;
   va_start(args, fmt);
 
-  vformatToBuffer(g_print_buffer, g_print_buffer_size, fmt, args);
+  int total = vsnprintf(g_print_buffer.get(), g_print_buffer_size, fmt, args);
+  if (total >= g_print_buffer_size)
+  {
+    va_end(args);
+    va_start(args, fmt);
+
+    g_print_buffer_size = total + 1;
+    g_print_buffer.reset(new char[g_print_buffer_size]);
+
+    vsnprintf(g_print_buffer.get(), g_print_buffer_size, fmt, args);
+  }
 
   va_end(args);
 
-  log4cxx::LoggerPtr logger_ptr(logger);
-  bool enabled = true;
-
-  if (filter)
+  try
   {
-    FilterParams params;
-    params.file = file;
-    params.function = function;
-    params.line = line;
-    params.level = level;
-    params.logger = logger_ptr;
-    params.message = g_print_buffer.get();
-    enabled = filter->isEnabled(params);
-    logger_ptr = params.logger;
-    level = params.level;
-
-    if (!params.out_message.empty())
-    {
-      size_t msg_size = params.out_message.size();
-      if (g_print_buffer_size <= msg_size)
-      {
-        g_print_buffer_size = msg_size + 1;
-        g_print_buffer.reset(new char[g_print_buffer_size]);
-      }
-
-      memcpy(g_print_buffer.get(), params.out_message.c_str(), msg_size + 1);
-    }
+  	logger->forcedLog(level, g_print_buffer.get(), location);
   }
-
-  if (enabled)
+  catch (std::exception& e)
   {
-    try
-    {
-      logger_ptr->forcedLog(g_level_lookup[level], g_print_buffer.get(), log4cxx::spi::LocationInfo(file, function, line));
-    }
-    catch (std::exception& e)
-    {
-      fprintf(stderr, "Caught exception while logging: [%s]\n", e.what());
-    }
-  }
-
-  g_printing_thread_id = boost::thread::id();
-}
-
-void print(FilterBase* filter, log4cxx::Logger* logger, Level level, const std::stringstream& ss, const char* file, int line, const char* function)
-{
-  if (g_printing_thread_id == boost::this_thread::get_id())
-  {
-    fprintf(stderr, "Warning: recursive print statement has occurred.  Throwing out recursive print.\n");
-    return;
-  }
-
-  boost::mutex::scoped_lock lock(g_print_mutex);
-
-  g_printing_thread_id = boost::this_thread::get_id();
-
-  log4cxx::LoggerPtr logger_ptr(logger);
-  bool enabled = true;
-  std::string str = ss.str();
-
-  if (filter)
-  {
-    FilterParams params;
-    params.file = file;
-    params.function = function;
-    params.line = line;
-    params.level = level;
-    params.logger = logger_ptr;
-    params.message = g_print_buffer.get();
-    enabled = filter->isEnabled(params);
-    logger_ptr = params.logger;
-    level = params.level;
-
-    if (!params.out_message.empty())
-    {
-      str = params.out_message;
-    }
-  }
-
-  if (enabled)
-  {
-    try
-    {
-      logger->forcedLog(g_level_lookup[level], str, log4cxx::spi::LocationInfo(file, function, line));
-    }
-    catch (std::exception& e)
-    {
-      fprintf(stderr, "Caught exception while logging: [%s]\n", e.what());
-    }
+  	fprintf(stderr, "Caught exception while logging: [%s]\n", e.what());
   }
 
   g_printing_thread_id = boost::thread::id();
@@ -593,42 +230,6 @@ void registerLogLocation(LogLocation* loc)
   g_log_locations.push_back(loc);
 }
 
-void checkLogLocationEnabledNoLock(LogLocation* loc)
-{
-  loc->logger_enabled_ = loc->logger_->isEnabledFor(g_level_lookup[loc->level_]);
-}
-
-void initializeLogLocation(LogLocation* loc, const std::string& name, Level level)
-{
-  boost::mutex::scoped_lock lock(g_locations_mutex);
-
-  if (loc->initialized_)
-  {
-    return;
-  }
-
-  loc->logger_ = &(*log4cxx::Logger::getLogger(name));
-  loc->level_ = level;
-
-  g_log_locations.push_back(loc);
-
-  checkLogLocationEnabledNoLock(loc);
-
-  loc->initialized_ = true;
-}
-
-void setLogLocationLevel(LogLocation* loc, Level level)
-{
-  boost::mutex::scoped_lock lock(g_locations_mutex);
-  loc->level_ = level;
-}
-
-void checkLogLocationEnabled(LogLocation* loc)
-{
-  boost::mutex::scoped_lock lock(g_locations_mutex);
-  checkLogLocationEnabledNoLock(loc);
-}
-
 void notifyLoggerLevelsChanged()
 {
   boost::mutex::scoped_lock lock(g_locations_mutex);
@@ -638,7 +239,7 @@ void notifyLoggerLevelsChanged()
   for ( ; it != end; ++it )
   {
     LogLocation* loc = *it;
-    checkLogLocationEnabledNoLock(loc);
+    loc->checkEnabled();
   }
 }
 

@@ -8,5 +8,8 @@
   <license>BSD</license>
   <review status="Doc reviewed" notes="2010/01/10"/>
   <url>http://ros.org/wiki/std_srvs</url>
+  <export>
+    <cpp cflags="-I${prefix}/srv/cpp"/>
+  </export>
 </package>
 

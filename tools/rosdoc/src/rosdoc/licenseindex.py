@@ -42,10 +42,8 @@ import roslib.rospack
 
 from rosdoc.rdcore import *
 
-bsdstyle = ['bsd', 'bsd-style', 'new bsd', 'zlib', 'zlib-style', 'mit', 'wxwindows', 'lgpl', 'free', 'python', 'python-style', 'bsl1.0', 'boost', 'apache', 'bsd/gpl/lgpl', 'boost software license', 'public domain', 'apache license']
-contaminated = ['gpl', 'creativecommons-by-nc-sa-2.0', 'commercial', 'proprietary']
-# keep track of licenses we've reported as unknown
-_already_unknown = []
+bsdstyle = ['bsd', 'bsd-style', 'zlib', 'zlib-style', 'mit', 'wxwindows', 'lgpl', 'free', 'python', 'python-style', 'bsl1.0', 'boost', 'apache', 'bsd/gpl/lgpl', 'boost software license',]
+contaminated = ['gpl', 'creativecommons-by-nc-sa-2.0']
 
 contam_suffix = " (contaminated)"
 
@@ -82,9 +80,7 @@ def _check_contaminated(package, license, manifests):
         if dl in contaminated:
             blame.append(dep)
         elif not dl in bsdstyle:
-            if not dl in _already_unknown:
-                print "UNKNOWN", dl
-                _already_unknown.append(dl)
+            print "UNKNOWN", dl
     if blame:
         return license + contam_suffix, blame
     else:

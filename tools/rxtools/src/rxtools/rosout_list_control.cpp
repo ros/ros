@@ -39,7 +39,6 @@
 
 #include <wx/imaglist.h>
 #include <wx/artprov.h>
-#include <wx/clipbrd.h>
 
 #include <sstream>
 
@@ -48,8 +47,7 @@ namespace rxtools
 
 RosoutListControl::RosoutListControl(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxValidator& validator,
                                      const wxString& name)
-: wxListCtrl(parent, id, pos, size, style, validator, name)
-, last_selection_(-1)
+: wxListCtrl(parent, id, pos, size, style, validator, name), selection_(-1)
 , scrollbar_at_bottom_(true)
 , disable_scroll_to_bottom_(false)
 #if __WXMAC__
@@ -89,8 +87,6 @@ RosoutListControl::RosoutListControl(wxWindow* parent, wxWindowID id, const wxPo
   Connect(wxEVT_COMMAND_LIST_ITEM_ACTIVATED, wxListEventHandler(RosoutListControl::onItemActivated), NULL, this);
   Connect(wxEVT_COMMAND_LIST_ITEM_RIGHT_CLICK, wxListEventHandler(RosoutListControl::onItemRightClick), NULL, this);
   Connect(wxEVT_COMMAND_LIST_ITEM_SELECTED, wxListEventHandler(RosoutListControl::onItemSelected), NULL, this);
-  Connect(wxEVT_CHAR, wxKeyEventHandler(RosoutListControl::onChar));
-
 }
 
 RosoutListControl::~RosoutListControl()
@@ -263,7 +259,7 @@ wxString RosoutListControl::OnGetItemText(long item, long column) const
   return wxT("Unknown Column");
 }
 
-void TextboxDialog::onChar(wxKeyEvent& event)
+void RosoutListControl::onPopupKeyPressed(wxKeyEvent& event)
 {
   int key = event.GetKeyCode();
   if (key == WXK_ESCAPE)
@@ -313,6 +309,8 @@ void RosoutListControl::onItemActivated(wxListEvent& event)
   TextboxDialog* dialog = new TextboxDialog(this, wxID_ANY);
   dialog->Show();
   dialog->text_->SetFocus();
+  dialog->Connect(wxEVT_CHAR, wxKeyEventHandler(RosoutListControl::onPopupKeyPressed), NULL, this);
+  dialog->text_->Connect(wxEVT_CHAR, wxKeyEventHandler(RosoutListControl::onPopupKeyPressed), NULL, this);
 
   wxRichTextCtrl& t = *dialog->text_;
 
@@ -405,12 +403,12 @@ void addFilter(RosoutPanel* model, const std::string& text, uint32_t field_mask,
 
 roslib::LogConstPtr RosoutListControl::getSelectedMessage()
 {
-  if (last_selection_ == -1)
+  if (selection_ == -1)
   {
     return roslib::LogConstPtr();
   }
 
-  return model_->getMessageByIndex(last_selection_);
+  return model_->getMessageByIndex(selection_);
 }
 
 void RosoutListControl::onExcludeLocation(wxCommandEvent& event)
@@ -517,165 +515,82 @@ void RosoutListControl::onIncludeMessageNewWindow(wxCommandEvent& event)
   }
 }
 
-void RosoutListControl::copySelectionToClipboard(bool message_only)
-{
-  updateSelection();
-
-  std::stringstream ss;
-  S_int32::const_iterator it = selection_.begin();
-  S_int32::const_iterator end = selection_.end();
-  for (; it != end; ++it)
-  {
-    int32_t index = *it;
-
-    if (it != selection_.begin())
-    {
-      ss << std::endl << std::endl;
-    }
-
-    roslib::LogConstPtr message = model_->getMessageByIndex(index);
-    if (message)
-    {
-      if (message_only)
-      {
-        ss << message->msg;
-      }
-      else
-      {
-        ss << *message;
-      }
-    }
-  }
-
-  if (wxTheClipboard->Open())
-  {
-    wxTheClipboard->SetData(new wxTextDataObject(wxString::FromAscii(ss.str().c_str())));
-    wxTheClipboard->Close();
-  }
-}
-
-void RosoutListControl::onCopy(wxCommandEvent& event)
-{
-  copySelectionToClipboard(false);
-}
-
-void RosoutListControl::onCopyMessageOnly(wxCommandEvent& event)
-{
-  copySelectionToClipboard(true);
-}
-
-void RosoutListControl::onChar(wxKeyEvent& event)
-{
-  int key = event.GetKeyCode();
-  // Ctrl-C (copy)
-  if (key == 3)
-  {
-    copySelectionToClipboard(false);
-    event.Skip();
-  }
-}
-
 void RosoutListControl::onItemRightClick(wxListEvent& event)
 {
-  updateSelection();
+  if (selection_ == -1)
+  {
+    return;
+  }
+
   ROS_ASSERT(model_);
 
+  roslib::LogConstPtr message = model_->getMessageByIndex(event.GetIndex());
+  if (!message)
+  {
+    return;
+  }
+
   wxMenu* menu = new wxMenu(wxT(""));
+  wxMenu* exclude_menu = new wxMenu(wxT(""));
+  wxMenu* include_menu = new wxMenu(wxT(""));
   wxMenuItem* item = 0;
 
-  item = menu->Append(wxID_COPY, wxT("&Copy\tCtrl+C"));
-  Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onCopy));
-  item = menu->Append(wxID_ANY, wxT("Copy &Message Only"));
-  Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onCopyMessageOnly), NULL, this);
-
-  // Can only create new filters on 1 message at a time
-  if (selection_.size() == 1)
+  // Setup the include menu
   {
-    roslib::LogConstPtr message = model_->getMessageByIndex(event.GetIndex());
-    if (message)
+    if (!message->file.empty())
     {
-      wxMenu* exclude_menu = new wxMenu(wxT(""));
-      wxMenu* include_menu = new wxMenu(wxT(""));
-
-      // Setup the include menu
-      {
-        if (!message->file.empty())
-        {
-          item = include_menu->Append(wxID_ANY, wxT("This Location"));
-          Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeLocation), NULL, this);
-          item = include_menu->Append(wxID_ANY, wxT("This Location (New Window)"));
-          Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeLocationNewWindow), NULL, this);
-        }
-
-        item = include_menu->Append(wxID_ANY, wxT("This Node"));
-        Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeNode), NULL, this);
-        item = include_menu->Append(wxID_ANY, wxT("This Node (New Window)"));
-        Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeNodeNewWindow), NULL, this);
-        item = include_menu->Append(wxID_ANY, wxT("This Message"));
-        Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeMessage), NULL, this);
-        item = include_menu->Append(wxID_ANY, wxT("This Message (New Window)"));
-        Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeMessageNewWindow), NULL, this);
-
-        menu->AppendSubMenu(include_menu, wxT("&Include"));
-      }
-
-      // Setup the exclude menu
-      {
-        if (!message->file.empty())
-        {
-          item = exclude_menu->Append(wxID_ANY, wxT("This Location"));
-          Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeLocation), NULL, this);
-          item = exclude_menu->Append(wxID_ANY, wxT("This Location (New Window)"));
-          Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeLocationNewWindow), NULL, this);
-        }
-
-        item = exclude_menu->Append(wxID_ANY, wxT("This Node"));
-        Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeNode), NULL, this);
-        item = exclude_menu->Append(wxID_ANY, wxT("This Node (New Window)"));
-        Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeNodeNewWindow), NULL, this);
-        item = exclude_menu->Append(wxID_ANY, wxT("This Message"));
-        Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeMessage), NULL, this);
-        item = exclude_menu->Append(wxID_ANY, wxT("This Message (New Window)"));
-        Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeMessageNewWindow), NULL, this);
-
-        menu->AppendSubMenu(exclude_menu, wxT("&Exclude"));
-      }
+      item = include_menu->Append(wxID_ANY, wxT("This Location"));
+      Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeLocation), NULL, this);
+      item = include_menu->Append(wxID_ANY, wxT("This Location (New Window)"));
+      Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeLocationNewWindow), NULL, this);
     }
+
+    item = include_menu->Append(wxID_ANY, wxT("This Node"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeNode), NULL, this);
+    item = include_menu->Append(wxID_ANY, wxT("This Node (New Window)"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeNodeNewWindow), NULL, this);
+    item = include_menu->Append(wxID_ANY, wxT("This Message"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeMessage), NULL, this);
+    item = include_menu->Append(wxID_ANY, wxT("This Message (New Window)"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onIncludeMessageNewWindow), NULL, this);
+
+    menu->AppendSubMenu(include_menu, wxT("Include"));
+  }
+
+  // Setup the exclude menu
+  {
+    if (!message->file.empty())
+    {
+      item = exclude_menu->Append(wxID_ANY, wxT("This Location"));
+      Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeLocation), NULL, this);
+      item = exclude_menu->Append(wxID_ANY, wxT("This Location (New Window)"));
+      Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeLocationNewWindow), NULL, this);
+    }
+
+    item = exclude_menu->Append(wxID_ANY, wxT("This Node"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeNode), NULL, this);
+    item = exclude_menu->Append(wxID_ANY, wxT("This Node (New Window)"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeNodeNewWindow), NULL, this);
+    item = exclude_menu->Append(wxID_ANY, wxT("This Message"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeMessage), NULL, this);
+    item = exclude_menu->Append(wxID_ANY, wxT("This Message (New Window)"));
+    Connect(item->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(RosoutListControl::onExcludeMessageNewWindow), NULL, this);
+
+    menu->AppendSubMenu(exclude_menu, wxT("Exclude"));
   }
 
   PopupMenu(menu);
 }
 
-void RosoutListControl::updateSelection()
-{
-  selection_.clear();
-
-  int32_t index = -1;
-  while (true)
-  {
-    index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-    if (index == -1)
-    {
-      break;
-    }
-
-    selection_.insert(index);
-  }
-}
-
 void RosoutListControl::onItemSelected(wxListEvent& event)
 {
-  last_selection_ = event.GetIndex();
-
-  updateSelection();
+  selection_ = event.GetIndex();
 
 #if __WXMAC__
   if (!manual_selection_)
   {
 #endif
-
   disable_scroll_to_bottom_ = true;
-
 #if __WXMAC__
   }
   manual_selection_ = false;
@@ -736,39 +651,22 @@ void RosoutListControl::postItemChanges()
   wxTheApp->SendIdleEvents(this, idle);
 }
 
-void RosoutListControl::setSelection(const S_int32& sel)
+void RosoutListControl::setSelection(int32_t index)
 {
 #if __WXMAC__
   manual_selection_ = true;
 #endif
-
-  // Select anything in the new selection set
+  if (index == -1)
   {
-    S_int32::const_iterator it = sel.begin();
-    S_int32::const_iterator end = sel.end();
-    for (; it != end; ++it)
+    if (selection_ != -1)
     {
-      int32_t index = *it;
-      ROS_ASSERT(index >= 0);
-
-      SetItemState(index, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+      SetItemState(selection_, 0, wxLIST_STATE_SELECTED|wxLIST_STATE_FOCUSED);
     }
   }
-
-  // Deselect anything that was selected but is no longer
+  else
   {
-    S_int32::const_iterator it = selection_.begin();
-    S_int32::const_iterator end = selection_.end();
-    for (; it != end; ++it)
-    {
-      int32_t index = *it;
-      ROS_ASSERT(index >= 0);
-
-      SetItemState(index, 0, wxLIST_STATE_SELECTED|wxLIST_STATE_FOCUSED);
-    }
+    SetItemState(index, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
   }
-
-  selection_ = sel;
 }
 
 } // namespace rxtools

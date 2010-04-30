@@ -44,10 +44,6 @@ from roslaunch.config import ROSLaunchConfig
 from roslaunch.launch import ROSLaunchRunner
 from roslaunch.xmlloader import XmlLoader, XmlParseException
 
-# script api
-from roslaunch.scriptapi import ROSLaunch
-from roslaunch.pmon import Process
-
 NAME = 'roslaunch'
 
 def configure_logging(uuid):
@@ -73,7 +69,7 @@ def configure_logging(uuid):
 def _get_optparse():
     from optparse import OptionParser
 
-    parser = OptionParser(usage="usage: %prog [-p|--port=port] [--core] [-u|--server_uri=uri]  [-c|--child_name=name] package filename", prog=NAME)
+    parser = OptionParser(usage="usage: %prog [options] [package] <filename>", prog=NAME)
     parser.add_option("--args",
                       dest="node_args", default=None,
                       help="Print command-line arguments for node", metavar="NODE_NAME")
@@ -108,9 +104,6 @@ def _get_optparse():
     parser.add_option("--pid",
                       dest="pid_fn", default="",
                       help="write the roslaunch pid to filename")
-    parser.add_option("-v", action="store_true",
-                      dest="verbose", default=False,
-                      help="verbose printing")
     return parser
     
 def _validate_args(parser, options, args):
@@ -201,7 +194,7 @@ def main(argv=sys.argv):
             # args are the roslaunch files to load
             import roslaunch.parent
             try:
-              p = roslaunch.parent.ROSLaunchParent(uuid, args, is_core=options.core, port=options.port, local_only=options.local_only, verbose=options.verbose)
+              p = roslaunch.parent.ROSLaunchParent(uuid, args, is_core=options.core, port=options.port, local_only=options.local_only)
               p.start()
               p.spin()
             finally:

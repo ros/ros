@@ -385,182 +385,116 @@ const vector<Package *> &Package::direct_deps(bool missing_package_as_warning)
   return _direct_deps;
 }
 
-string Package::cpp_message_flags(bool cflags, bool lflags)
-{
-  bool msg_exists = file_exists((path + "/msg_gen/generated").c_str());
-  bool srv_exists = file_exists((path + "/srv_gen/generated").c_str());
-
-  string flags;
-
-  if (cflags)
-  {
-    if (msg_exists)
-    {
-      flags += string(" -I") + path + "/msg_gen/cpp/include";
-    }
-
-    if (srv_exists)
-    {
-      flags += string(" -I") + path + "/srv_gen/cpp/include";
-    }
-  }
-
-  // lflags not needed until we have a cpp file, but this implementation works, adding -l<package_name>msgs and -l<package_name>srvs
-  // we'll probably need to figure out a better way of testing for msg/srvs than just checking if <package_path>/msg|srv exists though
-#if 0
-  if (lflags)
-  {
-    if (msg_exists)
-    {
-      flags += string(" -L") + path + "/lib";
-      flags += string(" -Wl,-rpath,") + path + "/lib";
-      flags += " -l" + package->name + "msgs";
-    }
-
-    if (srv_exists)
-    {
-      // if msgs already exist, we'll already have added this to the flags
-      if (!msg_exists)
-      {
-        flags += string(" -L") + path + "/lib";
-        flags += string(" -Wl,-rpath,") + path + "/lib";
-      }
-
-      flags += " -l" + package->name + "srvs";
-    }
-  }
-#endif
-
-  flags += " ";
-  return flags;
-}
-
 string Package::direct_flags(string lang, string attrib)
 {
   TiXmlElement *mroot = manifest_root();
   TiXmlElement *export_ele = mroot->FirstChildElement("export");
-  string str;
-  if (export_ele)
+  if (!export_ele)
+    return string("");
+  bool os_match = false;
+  TiXmlElement *best_usage = NULL;
+  for (TiXmlElement *lang_ele = export_ele->FirstChildElement(lang); 
+       lang_ele; lang_ele = lang_ele->NextSiblingElement(lang))
   {
-    bool os_match = false;
-    TiXmlElement *best_usage = NULL;
-    for (TiXmlElement *lang_ele = export_ele->FirstChildElement(lang);
-         lang_ele; lang_ele = lang_ele->NextSiblingElement(lang))
+    const char *os_str;
+    if ((os_str = lang_ele->Attribute("os")))
     {
-      const char *os_str;
-      if ((os_str = lang_ele->Attribute("os")))
+      if(g_ros_os == string(os_str))
       {
-        if(g_ros_os == string(os_str))
+        if(os_match)
         {
-          if(os_match)
-          {
-            fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag with os=\"%s\" in export block\n",
-                    lang.c_str(), os_str);
-          }
-          else
-          {
-            best_usage = lang_ele;
-            os_match = true;
-          }
+          fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag with os=\"%s\" in export block\n",
+                  lang.c_str(), os_str);
         }
-      }
-      if(!os_match)
-      {
-        if (!best_usage)
+        else
+        {
           best_usage = lang_ele;
-        else if(!os_str)
-        {
-          fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag in export block\n",
-                  lang.c_str());
+          os_match = true;
         }
       }
     }
-    if (!best_usage)
-      return string();
-    const char *cstr = best_usage->Attribute(attrib.c_str());
-    if (!cstr)
-      return string();
-    str = cstr;
-    while (1) // every decent C program has a while(1) in it
+    if(!os_match)
     {
-      int i = str.find(string("${prefix}"));
-      if (i < 0)
-        break; // no more occurrences
-      str.replace(i, string("${prefix}").length(), path);
+      if (!best_usage)
+        best_usage = lang_ele;
+      else if(!os_str)
+      {
+        fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag in export block\n",
+                lang.c_str());
+      }
     }
+  }
+  if (!best_usage)
+    return string();
+  const char *cstr = best_usage->Attribute(attrib.c_str());
+  if (!cstr)
+    return string();
+  string s(cstr);
+  while (1) // every decent C program has a while(1) in it
+  {
+    int i = s.find(string("${prefix}"));
+    if (i < 0)
+      break; // no more occurrences
+    s.replace(i, string("${prefix}").length(), path);
+  }
 
-    // Do backquote substitution.  E.g.,  if we find this string:
-    //   `pkg-config --cflags gdk-pixbuf-2.0`
-    // We replace it with the result of executing the command
-    // contained within the backquotes (reading from its stdout), which
-    // might be something like:
-    //   -I/usr/include/gtk-2.0 -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include
+  // Do backquote substitution.  E.g.,  if we find this string:
+  //   `pkg-config --cflags gdk-pixbuf-2.0`
+  // We replace it with the result of executing the command
+  // contained within the backquotes (reading from its stdout), which
+  // might be something like:
+  //   -I/usr/include/gtk-2.0 -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include  
 
-    // Construct and execute the string
-    // We do the assignment first to ensure that if backquote expansion (or
-    // anything else) fails, we'll get a non-zero exit status from pclose().
-    string cmd = string("ret=\"") + str + string("\" && echo $ret");
+  // Construct and execute the string
+  // We do the assignment first to ensure that if backquote expansion (or
+  // anything else) fails, we'll get a non-zero exit status from pclose().
+  string cmd = string("ret=\"") + s + string("\" && echo $ret");
 
-    // Remove embedded newlines
-    string token("\n");
-    for (string::size_type s = cmd.find(token); s != string::npos;
-         s = cmd.find(token, s))
+  // Remove embedded newlines
+  string token("\n");
+  for (string::size_type s = cmd.find(token); s != string::npos;
+       s = cmd.find(token, s))
+  {
+    cmd.replace(s,token.length(),string(" "));
+  }
+
+  FILE* p;
+  if(!(p = popen(cmd.c_str(), "r")))
+  {
+    fprintf(stderr, "[rospack] warning: failed to execute backquote "
+                    "expression \"%s\" in [%s]\n",
+            cmd.c_str(), manifest_path().c_str());
+    string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
+    throw runtime_error(errmsg);
+  }
+  else
+  {
+    char buf[8192];
+    memset(buf,0,sizeof(buf));
+    // Read the command's output
+    do
     {
-      cmd.replace(s,token.length(),string(" "));
-    }
-
-    FILE* p;
-    if(!(p = popen(cmd.c_str(), "r")))
+      clearerr(p);
+      while(fgets(buf + strlen(buf),sizeof(buf)-strlen(buf)-1,p));
+    } while(ferror(p) && errno == EINTR);
+    // Close the subprocess, checking exit status
+    if(pclose(p) != 0)
     {
-      fprintf(stderr, "[rospack] warning: failed to execute backquote "
-                      "expression \"%s\" in [%s]\n",
+      fprintf(stderr, "[rospack] warning: got non-zero exit status from executing backquote expression \"%s\" in [%s]\n",
               cmd.c_str(), manifest_path().c_str());
       string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
       throw runtime_error(errmsg);
     }
     else
     {
-      char buf[8192];
-      memset(buf,0,sizeof(buf));
-      // Read the command's output
-      do
-      {
-        clearerr(p);
-        while(fgets(buf + strlen(buf),sizeof(buf)-strlen(buf)-1,p));
-      } while(ferror(p) && errno == EINTR);
-      // Close the subprocess, checking exit status
-      if(pclose(p) != 0)
-      {
-        fprintf(stderr, "[rospack] warning: got non-zero exit status from executing backquote expression \"%s\" in [%s]\n",
-                cmd.c_str(), manifest_path().c_str());
-        string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
-        throw runtime_error(errmsg);
-      }
-      else
-      {
-        // Strip trailing newline, which was added by our call to echo
-        buf[strlen(buf)-1] = '\0';
-        // Replace the backquote expression with the new text
-        str = string(buf);
-      }
+      // Strip trailing newline, which was added by our call to echo
+      buf[strlen(buf)-1] = '\0';
+      // Replace the backquote expression with the new text
+      s = string(buf);
     }
   }
 
-  if (lang == "cpp")
-  {
-    if (attrib == "cflags")
-    {
-      // Message flags go last so it's possible to override them
-      str += cpp_message_flags(true, false);
-    }
-    else if (attrib == "lflags")
-    {
-      // Message flags go last so it's possible to override them
-      str += cpp_message_flags(false, true);
-    }
-  }
-
-  return str;
+  return s;
 }
 
 void Package::load_manifest()
@@ -672,7 +606,6 @@ const char* ROSPack::usage()
           "    langs\n"
           "    depends [package] (alias: deps)\n"
           "    depends-manifests [package] (alias: deps-manifests)\n"
-          "    depends-msgsrv [package] (alias: deps-msgsrv)\n"
           "    depends1 [package] (alias: deps1)\n"
           "    depends-indent [package] (alias: deps-indent)\n"
           "    depends-why --target=<target> [package] (alias: deps-why)\n"
@@ -843,29 +776,6 @@ int ROSPack::cmd_deps_manifests()
     output_acc += (*i)->path + "/manifest.xml ";
   }
   //puts("");
-  output_acc += "\n";
-  return 0;
-}
-
-int ROSPack::cmd_deps_msgsrv()
-{
-  VecPkg d = get_pkg(opt_package)->deps(Package::POSTORDER);
-  for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
-  {
-    Package* p = *i;
-    bool msg_exists = file_exists((p->path + "/msg_gen/generated").c_str());
-    bool srv_exists = file_exists((p->path + "/srv_gen/generated").c_str());
-
-    if (msg_exists)
-    {
-      output_acc += p->path + "/msg_gen/generated ";
-    }
-
-    if (srv_exists)
-    {
-      output_acc += p->path + "/srv_gen/generated ";
-    }
-  }
   output_acc += "\n";
   return 0;
 }
@@ -1324,8 +1234,6 @@ int ROSPack::run(int argc, char **argv)
     return cmd_deps();
   else if (!strcmp(cmd, "depends-manifests") || !strcmp(cmd, "deps-manifests"))
     return cmd_deps_manifests();
-  else if (!strcmp(cmd, "depends-msgsrv") || !strcmp(cmd, "deps-msgsrv"))
-      return cmd_deps_msgsrv();
   else if (!strcmp(cmd, "depends1") || !strcmp(cmd, "deps1"))
     return cmd_deps1();
   else if (!strcmp(cmd, "depends-indent") || !strcmp(cmd, "deps-indent"))

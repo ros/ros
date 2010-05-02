@@ -37,12 +37,11 @@
 ;; DAMAGE.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 (defpackage :ros-load-manifest
     (:nicknames :ros-load)
   (:export :load-manifest :load-system :asdf-paths-to-add :*current-ros-package*
-           :asdf-ros-search :asdf-ros-pkg-search :ros-package-path :ros-home)
-  (:use :cl :s-xml))
+           :asdf-ros-search :asdf-ros-pkg-search :ros-package-path :ros-home :rospack)
+  (:use :cl))
 
 (in-package :ros-load-manifest)
 
@@ -54,85 +53,126 @@
 (defvar *ros-asdf-paths-cache* (make-hash-table :test 'equal)
   "Cache of asdf directories returned by ASDF-PATHS-TO-ADD to reduce rospack calls.")
 
+(defvar *ros-package-path-cache* (make-hash-table :test 'equal)
+  "Cache for ros package paths.")
+
+(defvar *ros-asdf-use-ros-home* nil)
+
 (defclass asdf::roslisp-msg-source-file (asdf:cl-source-file) ())
 
 (defmethod asdf:output-files ((operation asdf:compile-op) (c asdf::roslisp-msg-source-file))
-  (labels ((find-system (c)
-             "Returns the system of a component."
-             (typecase c
-               (asdf:system c)
-               (asdf:component (find-system (asdf:component-parent c)))))
-           (find-pkg-path (path &optional traversed)
-             "Traverses the `path' upwards until it finds a manifest.
-              Returns two values, the name of the ros package and the
-              relative part of path inside the package. Throws an
-              error if it cannot find the manifest."
-             (let ((manifest (probe-file (merge-pathnames "manifest.xml" path))))
-               (if manifest
-                   (values (truename path) traversed)
-                   (find-pkg-path (make-pathname :directory (butlast (pathname-directory path)))
-                                  (cons (car (last (pathname-directory path)))
-                                        traversed)))))
-           (system-ros-name (system)
-             "Returns the ros package name of a system."
-             (multiple-value-bind (package-path rel-path)
-                 (find-pkg-path (asdf:component-pathname system))
-               (assert (eq (car (pathname-directory package-path)) :absolute))
-               (values (car (last (pathname-directory package-path))) rel-path)))
-           (pathname-rel-subdir (p1 p2)
-             "returns the relative path of `p2' in `p1'."
-             (loop with result = (pathname-directory  (truename p2))
-                   for d1 in (pathname-directory (truename p1))
-                   do (setf result (cdr result))
-                   finally (return result))))
-    (let ((system (find-system c))
-          (component-path (asdf:component-pathname c)))
-      (destructuring-bind (package-name rel-path)
-          (or (gethash system *ros-asdf-output-cache*)
-              (setf (gethash system *ros-asdf-output-cache*)
-                    (multiple-value-list (system-ros-name system))))
-        (list
-         (asdf::compile-file-pathname
-          (merge-pathnames (make-pathname :name (pathname-name component-path)
-                                          :type (pathname-type component-path)
-                                          :directory `(:relative ,@(pathname-rel-subdir
-                                                                    (asdf:component-pathname system)
-                                                                    component-path)))
-                           (merge-pathnames
-                            (make-pathname :directory `(:relative "roslisp" ,package-name ,@rel-path))
-                            (ros-home)))))))))
+  (roslisp-home-output-files c))
+
+(defmethod asdf:output-files :around ((operation asdf:compile-op) (c asdf:cl-source-file))
+  (if *ros-asdf-use-ros-home*
+      (roslisp-home-output-files c)
+      (call-next-method)))
+
+(defmethod asdf:operation-done-p :around ((operation asdf:operation) (c asdf:cl-source-file))
+  (let ((*ros-asdf-use-ros-home* (and (path-ros-package (asdf:component-pathname c))
+                                      (eql 0 (logand
+                                              (sb-posix:stat-mode
+                                               (sb-posix:stat (make-pathname
+                                                               :directory (pathname-directory
+                                                                           (asdf:component-pathname c)))))
+                                              #o0200)))))
+    (call-next-method)))
+
+(defmethod asdf:perform :around ((operation asdf:operation) (c asdf:cl-source-file))
+  (let ((*ros-asdf-use-ros-home* (and (path-ros-package (asdf:component-pathname c))
+                                      (eql 0 (logand
+                                              (sb-posix:stat-mode
+                                               (sb-posix:stat (make-pathname
+                                                               :directory (pathname-directory
+                                                                           (asdf:component-pathname c)))))
+                                              #o0200)))))
+    (call-next-method)))
+
+(defun asdf-system-of-component (component)
+  "Returns the system of a component."
+  (typecase component
+    (asdf:system component)
+    (asdf:component (asdf-system-of-component (asdf:component-parent component)))))
+
+(defun path-ros-package (path &optional traversed)
+  "Traverses the `path' upwards until it finds a manifest.
+   Returns two values, the name of the ros package and the relative
+   part of path inside the package. Returns nil if no manifest could
+   be found."
+  (let ((manifest (probe-file (merge-pathnames "manifest.xml" path))))
+    (cond (manifest
+           (values (truename path) traversed))
+          ((not (cdr (pathname-directory path)))
+           nil)
+          (t
+           (path-ros-package (make-pathname :directory (butlast (pathname-directory path)))
+                             (cons (car (last (pathname-directory path)))
+                                   traversed))))))
+
+(defun asdf-system-ros-name (system)
+  "Returns the ros package name of a system."
+  (multiple-value-bind (package-path rel-path)
+      (path-ros-package (asdf:component-pathname system))
+    (assert (eq (car (pathname-directory package-path)) :absolute))
+    (values (car (last (pathname-directory package-path))) rel-path)))
+
+(defun pathname-rel-subdir (p1 p2)
+  "returns the relative path of `p2' in `p1'."
+  (loop with result = (pathname-directory  (truename p2))
+        for d1 in (pathname-directory (truename p1))
+        do (setf result (cdr result))
+        finally (return result)))
+
+(defun roslisp-home-output-files (component)
+  "Returns the output filename of an asdf component inside ROS_HOME (or ~/.ros)."
+  (let ((system (asdf-system-of-component component))
+        (component-path (asdf:component-pathname component)))
+    (destructuring-bind (package-name rel-path)
+        (or (gethash system *ros-asdf-output-cache*)
+            (setf (gethash system *ros-asdf-output-cache*)
+                  (multiple-value-list (asdf-system-ros-name system))))
+      (list
+       (asdf::compile-file-pathname
+        (merge-pathnames (make-pathname :name (pathname-name component-path)
+                                        :type (pathname-type component-path)
+                                        :directory `(:relative ,@(pathname-rel-subdir
+                                                                  (asdf:component-pathname system)
+                                                                  component-path)))
+                         (merge-pathnames
+                          (make-pathname :directory `(:relative "roslisp" ,package-name ,@rel-path))
+                          (ros-home))))))))
 
 (defun ros-home ()
   (or (sb-ext:posix-getenv "ROS_HOME")
       (merge-pathnames (make-pathname :directory '(:relative ".ros"))
                        (user-homedir-pathname))))
 
-(defun depended-packages (package-root)
-  "Look in this directory for a manifest.xml.  If it doesn't exist, signal an error.  Else, look in the file for tags that look like <depend package=foo> (where foo is a string with double quotes), and return a list of such foo."
-  (let ((tree (s-xml:parse-xml-file (merge-pathnames "manifest.xml" package-root))))
-    (depended-packages-helper tree)))
-
-(defun depended-packages-helper (tree)
-  (when (listp tree)
-    (if (eq :|depend| (first tree))
-        (list (third tree))
-        (mapcan #'depended-packages-helper tree))))
+(defun rospack (&rest cmd-args)
+  (labels ((split-str (seq &optional (separator #\Newline))
+             (labels ((doit (start-pos)
+                        (let ((split-pos (position separator seq :start start-pos)))
+                          (when split-pos
+                            (cons (subseq seq start-pos split-pos)
+                                  (doit (1+ split-pos)))))))
+               (doit 0))))
+    (let* ((str (make-string-output-stream))
+           (error-str (make-string-output-stream))
+           (proc (sb-ext:run-program "rospack" cmd-args :search t :output str :error error-str))
+           (exit-code (sb-ext:process-exit-code proc)))
+      (if (zerop exit-code)
+          (split-str (get-output-stream-string str))
+          (error "rospack ~{~a~^ ~} returned ~a with stderr '~a'" 
+                 cmd-args exit-code (get-output-stream-string error-str))))))
 
 
 (defun asdf-paths-to-add (package)
-  "Given a package name, looks in the manifest and follows dependencies (in a depth-first order).  Stops when it reaches a leaf or a package that contains no asdf/ directory.  Adds all the /asdf directories that it finds to a list and return it."
-  (let ((already-seen-packages nil))
-    (labels ((helper (package)
-               (unless (member package already-seen-packages :test #'equal)
-                 (let* ((path (ros-package-path package))
-                        (asdf-dir (get-asdf-directory path)))
-                   (push package already-seen-packages)
-                   (append
-                    (when asdf-dir (list asdf-dir))
-                    (mapcan #'helper (depended-packages path)))))))
-      (or (gethash package *ros-asdf-paths-cache*)
-          (setf (gethash package *ros-asdf-paths-cache*)
-                (helper package))))))
+  "Given a package name, calls rospack to find out the dependencies. Adds all the /asdf directories that it finds to a list and return it."
+  (cons (ros-package-path package)
+        (loop for pkg in (or (gethash package *ros-asdf-paths-cache*)
+                             (setf (gethash package *ros-asdf-paths-cache*)
+                                   (rospack "depends" package)))
+              for asdf-dir = (get-asdf-directory (ros-package-path pkg))
+              when asdf-dir collecting asdf-dir)))
 
 
 (defun normalize (str)
@@ -145,15 +185,9 @@
         (concatenate 'string stripped "/"))))
 
 (defun ros-package-path (p)
-  (let* ((str (make-string-output-stream))
-         (error-str (make-string-output-stream))
-         (proc (sb-ext:run-program "rospack" (list "find" p) :search t :output str :error error-str))
-         (exit-code (sb-ext:process-exit-code proc)))
-    (if (zerop exit-code)
-        (pathname (normalize (get-output-stream-string str)))
-        (error "rospack find ~a returned ~a with stderr '~a'" 
-               p exit-code (get-output-stream-string error-str)))))
-
+  (or (gethash p *ros-package-path-cache*)
+      (setf (gethash p *ros-package-path-cache*)
+            (pathname (normalize (first (rospack "find" p)))))))
 
 (defun get-asdf-directory (path)
   (let ((asdf-path (merge-pathnames "asdf/" path)))

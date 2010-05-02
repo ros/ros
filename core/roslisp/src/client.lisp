@@ -74,7 +74,7 @@ Set up things so that publish may now be called with this topic.  Also, returns 
   (with-fully-qualified-name topic
     (with-mutex (*ros-lock*)
       (unless (hash-table-has-key *publications* topic)
-       (roslisp-warn "Not publishing on ~a" topic))
+        (roslisp-warn "Not publishing on ~a" topic))
       (remhash topic *publications*)
       (protected-call-to-master ("unregisterPublisher" topic *xml-rpc-caller-api*) c
         (ros-warn (roslisp) "Could not contact master at ~a when unregistering as publisher of ~a during shutdown: ~a" *master-uri* topic c)))))

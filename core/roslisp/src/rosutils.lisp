@@ -85,6 +85,11 @@
      (ros-error nil ,str ,@args)
      (error ,str ,@args)))
 
+(defmacro roslisp-warn (str &rest args)
+  `(progn
+     (ros-warn nil ,str ,@args)
+     (warn ,str ,@args)))
+
 (defun get-ip-address (hostname)
   "Map from hostname into a vector of the form #(127 0 0 1)"
   (let ((address-vector

@@ -101,7 +101,7 @@ if __name__ == '__main__':
             print "\nAll rules defined.  Bag is ready to be migrated"
         else:
             print "\nTo generate rules, please run with -g <rulefile>"
-        return
+        exit(0)
 
     output = ''
     rules_left = mm.filter_rules_unique(all_rules)

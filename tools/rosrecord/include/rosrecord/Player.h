@@ -41,6 +41,8 @@
 
 #include "rosbag/bag.h"
 #include "rosbag/view.h"
+#include "rosbag/time_translator.h"
+
 #include "topic_tools/shape_shifter.h"
 
 #include "std_msgs/String.h"
@@ -67,7 +69,10 @@ class Player
     };
 
 public:
-    Player(double time_scale=1.0) : time_scale_(time_scale) { }
+    Player(double time_scale=1.0) //time_scale_(time_scale)
+    {
+        translator_.setTimeScale(time_scale);
+    }
 
     virtual ~Player() {
         foreach(FilteredMsgFunctor const& callback, callbacks_)
@@ -85,10 +90,17 @@ public:
     bool          isDone()           { return iterator_ == view_.end(); }
 
     // todo: implement
-    ros::Duration getFirstDuration() { return ros::Duration();          }
+    ros::Duration getFirstDuration() { return first_duration_;  }
+
+    ros::Time getFirstTime() { return first_time_;  }
+
+    void setStartTime(const ros::Time& start_time)
+    {
+        translator_.setTranslatedStartTime(start_time);
+    }
 
     // todo: implement
-    ros::Duration get_duration()     { return ros::Duration();          }
+    ros::Duration get_duration()     { return duration_;  }
 
     void close() {
         iterator_ = view_.end();
@@ -97,7 +109,7 @@ public:
     }
 
     bool open(std::string const& file_name, ros::Time start_time, bool try_future = false) {
-        start_time_ = start_time;
+        translator_.setTranslatedStartTime(start_time);
 
         std::string ext = boost::filesystem::extension(file_name);
         if (ext != ".bag") {
@@ -117,6 +129,15 @@ public:
 
         view_.addQuery(bag_);
         iterator_ = view_.begin();
+
+        if (iterator_ != view_.end())
+        {
+            translator_.setRealStartTime(iterator_->getTime());
+
+            first_time_ = iterator_->getTime();
+            first_duration_ = iterator_->getTime() - ros::Time(0,0);
+            duration_ = iterator_->getTime() - first_time_;
+        }
 
         return true;
     }
@@ -192,6 +213,8 @@ public:
         std::string const& md5sum   = msg.getMD5Sum();
         std::string const& datatype = msg.getDataType();
 
+        duration_ = msg.getTime() - first_time_;
+
         // Filter the list of callbacks
         std::vector<FilteredMsgFunctor> callbacks;
         foreach(FilteredMsgFunctor fmf, callbacks_)
@@ -210,9 +233,10 @@ public:
         	boost::shared_ptr<topic_tools::ShapeShifter const> ss = msg.instantiate<topic_tools::ShapeShifter>();
 
         	ros::Time const& time = msg.getTime();
+                ros::Time const& translated_time = translator_.translate(time);
 
         	foreach(FilteredMsgFunctor fmf, callbacks)
-        		fmf.f->call(topic, (ros::Message*) ss.get(), time, time);
+        		fmf.f->call(topic, (ros::Message*) ss.get(), translated_time, time);
         }
 
         iterator_++;
@@ -221,12 +245,18 @@ public:
     }
 
     void shiftTime(ros::Duration shift) {
-        // todo: implement
+        translator_.shift(shift);
     }
 
 private:
-    double    time_scale_;
-    ros::Time start_time_;
+
+    //double    time_scale_;
+    //ros::Time start_time_;
+
+    rosbag::TimeTranslator translator_;
+    ros::Time first_time_;
+    ros::Duration first_duration_;
+    ros::Duration duration_;
 
     rosbag::Bag bag_;
     rosbag::View view_;
@@ -259,14 +289,19 @@ public:
     bool open(std::vector<std::string> file_names, ros::Time start, double time_scale = 1, bool try_future = false)
     {
         ros::Duration first_duration;
+        ros::Time first_time;
 
         foreach(std::string file_name, file_names) {
             Player* l = new Player(time_scale);
-            if (l->open(file_name, start, try_future)) {
+            if (l->open(file_name, ros::Time(), try_future)) {
                 players_.push_back(l);
 
+                // We don't actually use first_duration
                 if (first_duration == ros::Duration() || l->getFirstDuration() < first_duration)
                     first_duration = l->getFirstDuration();
+
+                if (first_time == ros::Time() || l->getFirstTime() < first_time)
+                    first_time = l->getFirstTime();
             }
             else {
                 delete l;
@@ -275,7 +310,7 @@ public:
         }
 
         foreach(Player* player, players_)
-            player->shiftTime((player->getFirstDuration() - first_duration) * (1.0 / time_scale));
+            player->setStartTime(first_time);
 
         return true;
     }

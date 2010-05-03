@@ -41,34 +41,27 @@ namespace rosbag {
 
 // Query
 
-Query::Query(ros::Time const& start_time, ros::Time const& end_time)
-	: start_time_(start_time), end_time_(end_time)
+Query::Query(boost::function<bool(ConnectionInfo const*)>& query, ros::Time const& start_time, ros::Time const& end_time)
+	: query_(query), start_time_(start_time), end_time_(end_time)
 {
 }
 
-Query::~Query() { }
+boost::function<bool(ConnectionInfo const*)> const& Query::getQuery() const {
+	return query_;
+}
 
-ros::Time Query::getStartTime() const { return start_time_; }
-ros::Time Query::getEndTime()   const { return end_time_;   }
-
-bool Query::evaluate(ConnectionInfo const*) const { return true; }
-
-Query* Query::clone() const { return new Query(*this); }
+ros::Time const& Query::getStartTime() const { return start_time_; }
+ros::Time const& Query::getEndTime()   const { return end_time_;   }
 
 // TopicQuery
 
-TopicQuery::TopicQuery(std::string const& topic, ros::Time const& start_time, ros::Time const& end_time)
-    : Query(start_time, end_time)
-{
+TopicQuery::TopicQuery(std::string const& topic) {
     topics_.push_back(topic);
 }
 
-TopicQuery::TopicQuery(std::vector<std::string> const& topics, ros::Time const& start_time, ros::Time const& end_time)
-	: Query(start_time, end_time), topics_(topics)
-{
-}
+TopicQuery::TopicQuery(std::vector<std::string> const& topics) : topics_(topics) { }
 
-bool TopicQuery::evaluate(ConnectionInfo const* info) const {
+bool TopicQuery::operator()(ConnectionInfo const* info) const {
     foreach(string const& topic, topics_)
         if (topic == info->topic)
             return true;
@@ -76,22 +69,15 @@ bool TopicQuery::evaluate(ConnectionInfo const* info) const {
     return false;
 }
 
-Query* TopicQuery::clone() const { return new TopicQuery(*this); }
-
 // TypeQuery
 
-TypeQuery::TypeQuery(std::string const& type, ros::Time const& start_time, ros::Time const& end_time)
-    : Query(start_time, end_time)
-{
+TypeQuery::TypeQuery(std::string const& type) {
     types_.push_back(type);
 }
 
-TypeQuery::TypeQuery(std::vector<std::string> const& types, ros::Time const& start_time, ros::Time const& end_time)
-    : Query(start_time, end_time), types_(types)
-{
-}
+TypeQuery::TypeQuery(std::vector<std::string> const& types) : types_(types) { }
 
-bool TypeQuery::evaluate(ConnectionInfo const* info) const {
+bool TypeQuery::operator()(ConnectionInfo const* info) const {
     foreach(string const& type, types_)
         if (type == info->datatype)
             return true;
@@ -99,16 +85,9 @@ bool TypeQuery::evaluate(ConnectionInfo const* info) const {
     return false;
 }
 
-Query* TypeQuery::clone() const { return new TypeQuery(*this); }
-
 // BagQuery
 
-BagQuery::BagQuery(Bag* _bag, Query const& _query, uint32_t _bag_revision) : bag(_bag), bag_revision(_bag_revision) {
-    query = _query.clone();
-}
-
-BagQuery::~BagQuery() {
-    delete query;
+BagQuery::BagQuery(Bag const* _bag, Query const& _query, uint32_t _bag_revision) : bag(_bag), query(_query), bag_revision(_bag_revision) {
 }
 
 // MessageRange

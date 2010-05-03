@@ -71,12 +71,19 @@ public:
     std::string getCallerId() const;
     bool        isLatching()  const;
 
+    //! Test whether the underlying message of the specified type.
+    /*!
+     * returns true iff the message is of the template type
+     */
+    template<class T>
+    bool isType() const;
+
     //! Templated call to instantiate a message
     /*!
      * returns NULL pointer if incompatible
      */
     template<class T>
-    boost::shared_ptr<T const> instantiate()  const;
+    boost::shared_ptr<T const> instantiate() const;
   
     //! Write serialized message contents out to a stream
     template<typename Stream>
@@ -86,11 +93,11 @@ public:
     uint32_t size() const;
 
 private:
-    MessageInstance(ConnectionInfo const* connection_info, IndexEntry const& index, Bag& bag);
+    MessageInstance(ConnectionInfo const* connection_info, IndexEntry const& index, Bag const& bag);
 
     ConnectionInfo const* connection_info_;
     IndexEntry const      index_entry_;
-    Bag*                  bag_;
+    Bag const*            bag_;
 };
 
 
@@ -148,18 +155,27 @@ struct Serializer<rosbag::MessageInstance>
 
 #include "rosbag/bag.h"
 
+namespace rosbag {
+
 template<class T>
-boost::shared_ptr<T const> rosbag::MessageInstance::instantiate() const {
+bool MessageInstance::isType() const {
     char const* md5sum = ros::message_traits::MD5Sum<T>::value();
-    if (md5sum != std::string("*") && md5sum != getMD5Sum())
+    return md5sum == std::string("*") || md5sum == getMD5Sum();
+}
+
+template<class T>
+boost::shared_ptr<T const> MessageInstance::instantiate() const {
+    if (!isType<T>())
         return boost::shared_ptr<T const>();
 
     return bag_->instantiateBuffer<T>(index_entry_);
 }
 
 template<typename Stream>
-void rosbag::MessageInstance::write(Stream& stream) const {
+void MessageInstance::write(Stream& stream) const {
     bag_->readMessageDataIntoStream(index_entry_, stream);
 }
+
+} // namespace rosbag
 
 #endif

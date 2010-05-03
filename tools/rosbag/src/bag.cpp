@@ -55,6 +55,7 @@ Bag::Bag() :
     compression_(compression::None),
     chunk_threshold_(768 * 1024),  // 768KB chunks
     bag_revision_(0),
+    file_size_(0),
     file_header_pos_(0),
     index_data_pos_(0),
     connection_count_(0),
@@ -66,6 +67,23 @@ Bag::Bag() :
 {
 }
 
+Bag::Bag(string const& filename, uint32_t mode) :
+    compression_(compression::None),
+    chunk_threshold_(768 * 1024),  // 768KB chunks
+    bag_revision_(0),
+    file_size_(0),
+    file_header_pos_(0),
+    index_data_pos_(0),
+    connection_count_(0),
+    chunk_count_(0),
+    chunk_open_(false),
+    curr_chunk_data_pos_(0),
+    top_connection_id_(0),
+    decompressed_chunk_(0)
+{
+    open(filename, mode);
+}
+
 Bag::~Bag() {
     close();
 
@@ -73,8 +91,8 @@ Bag::~Bag() {
         delete i->second;
 }
 
-void Bag::open(string const& filename, BagMode mode) {
-    mode_ = mode;
+void Bag::open(string const& filename, uint32_t mode) {
+    mode_ = (BagMode) mode;
 
     switch (mode_) {
     case bagmode::Read:   openRead(filename);   break;
@@ -83,6 +101,12 @@ void Bag::open(string const& filename, BagMode mode) {
     default:
         throw BagException((format("Unknown mode: %1%") % (int) mode).str());
     }
+
+    // Determine file size
+    uint64_t offset = file_.getOffset();
+    seek(0, std::ios::end);
+    file_size_ = file_.getOffset();
+    seek(offset);
 }
 
 void Bag::openRead(string const& filename) {
@@ -125,18 +149,6 @@ void Bag::openAppend(string const& filename) {
     seek(0, std::ios::end);
 }
 
-void Bag::write(string const& topic, Time const& time, ros::Message::ConstPtr msg) {
-	doWrite(topic, time, *msg, msg->__connection_header);
-}
-
-void Bag::write(string const& topic, Time const& time, ros::Message const& msg) {
-	doWrite(topic, time, msg, msg.__connection_header);
-}
-
-void Bag::write(string const& topic, Time const& time, MessageInstance const& msg, shared_ptr<M_string> connection_header) {
-	doWrite(topic, time, msg, connection_header);
-}
-
 void Bag::close() {
     if (!file_.isOpen())
         return;
@@ -164,7 +176,7 @@ void Bag::closeWrite() {
 
 string   Bag::getFileName() const { return file_.getFileName(); }
 BagMode  Bag::getMode()     const { return mode_;               }
-uint64_t Bag::getOffset()   const { return file_.getOffset();   }
+uint64_t Bag::getSize()     const { return file_size_;          }
 
 uint32_t Bag::getChunkThreshold() const { return chunk_threshold_; }
 
@@ -215,9 +227,8 @@ void Bag::readVersion() {
     ROS_DEBUG("Read VERSION: version=%d", version_);
 }
 
-int Bag::getVersion()      const { return version_;       }
-int Bag::getMajorVersion() const { return version_ / 100; }
-int Bag::getMinorVersion() const { return version_ % 100; }
+uint32_t Bag::getMajorVersion() const { return version_ / 100; }
+uint32_t Bag::getMinorVersion() const { return version_ % 100; }
 
 //
 
@@ -282,7 +293,7 @@ void Bag::startReadingVersion102() {
 
     // Get the length of the file
     seek(0, std::ios::end);
-    uint64_t filelength = getOffset();
+    uint64_t filelength = file_.getOffset();
 
     // Seek to the beginning of the topic index records
     seek(index_data_pos_);
@@ -438,7 +449,7 @@ void Bag::writeChunkHeader(CompressionType compression, uint32_t compressed_size
     writeDataLength(chunk_header.compressed_size);
 }
 
-void Bag::readChunkHeader(ChunkHeader& chunk_header) {
+void Bag::readChunkHeader(ChunkHeader& chunk_header) const {
     ros::Header header;
     if (!readHeader(header) || !readDataLength(chunk_header.compressed_size))
         throw BagFormatException("Error reading CHUNK record");
@@ -676,7 +687,7 @@ void Bag::readMessageDefinitionRecord102() {
     */
 }
 
-void Bag::decompressChunk(uint64_t chunk_pos) {
+void Bag::decompressChunk(uint64_t chunk_pos) const {
     if (curr_chunk_info_.pos == chunk_pos) {
         current_buffer_ = &outgoing_chunk_buffer_;
         return;
@@ -705,7 +716,7 @@ void Bag::decompressChunk(uint64_t chunk_pos) {
     decompressed_chunk_ = chunk_pos;
 }
 
-void Bag::loadMessageDataRecord102(uint64_t offset) {
+void Bag::loadMessageDataRecord102(uint64_t offset) const {
     ROS_DEBUG("loadMessageDataRecord: offset=%llu", (unsigned long long) offset);
 
     seek(offset);
@@ -729,7 +740,7 @@ void Bag::loadMessageDataRecord102(uint64_t offset) {
 }
 
 // Reading this into a buffer isn't completely necessary, but we do it anyways for now
-void Bag::decompressRawChunk(ChunkHeader const& chunk_header) {
+void Bag::decompressRawChunk(ChunkHeader const& chunk_header) const {
     assert(chunk_header.compression == COMPRESSION_NONE);
     assert(chunk_header.compressed_size == chunk_header.uncompressed_size);
 
@@ -741,7 +752,7 @@ void Bag::decompressRawChunk(ChunkHeader const& chunk_header) {
     // todo check read was successful
 }
 
-void Bag::decompressBz2Chunk(ChunkHeader const& chunk_header) {
+void Bag::decompressBz2Chunk(ChunkHeader const& chunk_header) const {
     assert(chunk_header.compression == COMPRESSION_BZ2);
 
     CompressionType compression = compression::BZ2;
@@ -777,7 +788,7 @@ ros::Header Bag::readMessageDataHeader(IndexEntry const& index_entry) {
 }
 
 // NOTE: this loads the header, which is unnecessary
-uint32_t Bag::readMessageDataSize(IndexEntry const& index_entry) {
+uint32_t Bag::readMessageDataSize(IndexEntry const& index_entry) const {
     ros::Header header;
     uint32_t data_size;
     uint32_t bytes_read;
@@ -877,7 +888,7 @@ void Bag::readChunkInfoRecord() {
 
 // Record I/O
 
-bool Bag::isOp(M_string& fields, uint8_t reqOp) {
+bool Bag::isOp(M_string& fields, uint8_t reqOp) const {
     uint8_t op;
     readField(fields, OP_FIELD_NAME, true, &op);
     return op == reqOp;
@@ -918,7 +929,7 @@ void Bag::appendDataLengthToBuffer(Buffer& buf, uint32_t data_len) {
 }
 
 //! \todo clean this up
-void Bag::readHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& bytes_read) {
+void Bag::readHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& bytes_read) const {
     ROS_ASSERT(buffer.getSize() > 8);
 
     uint8_t* start = (uint8_t*) buffer.getData() + offset;
@@ -944,7 +955,7 @@ void Bag::readHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& hea
     bytes_read = ptr - start;
 }
 
-void Bag::readMessageDataHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& total_bytes_read) {
+void Bag::readMessageDataHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& total_bytes_read) const {
     total_bytes_read = 0;
     uint8_t op;
     do {
@@ -963,7 +974,7 @@ void Bag::readMessageDataHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::
         throw BagFormatException("Expected MSG_DATA op not found");
 }
 
-bool Bag::readHeader(ros::Header& header) {
+bool Bag::readHeader(ros::Header& header) const {
     // Read the header length
     uint32_t header_len;
     read((char*) &header_len, 4);
@@ -981,7 +992,7 @@ bool Bag::readHeader(ros::Header& header) {
     return true;
 }
 
-bool Bag::readDataLength(uint32_t& data_size) {
+bool Bag::readDataLength(uint32_t& data_size) const {
     read((char*) &data_size, 4);
     return true;
 }
@@ -998,15 +1009,15 @@ M_string::const_iterator Bag::checkField(M_string const& fields, string const& f
     return fitr;
 }
 
-void Bag::readField(M_string const& fields, string const& field_name, bool required, string& data) {
+void Bag::readField(M_string const& fields, string const& field_name, bool required, string& data) const {
     readField(fields, field_name, 1, UINT_MAX, true, data);
 }
 
-void Bag::readField(M_string const& fields, string const& field_name, unsigned int min_len, unsigned int max_len, bool required, string& data) {
+void Bag::readField(M_string const& fields, string const& field_name, unsigned int min_len, unsigned int max_len, bool required, string& data) const {
     data = checkField(fields, field_name, min_len, max_len, required)->second;
 }
 
-void Bag::readField(M_string const& fields, string const& field_name, bool required, Time& data) {
+void Bag::readField(M_string const& fields, string const& field_name, bool required, Time& data) const {
     uint64_t packed_time;
     readField(fields, field_name, required, &packed_time);
 
@@ -1015,17 +1026,18 @@ void Bag::readField(M_string const& fields, string const& field_name, bool requi
     data.nsec = (uint32_t) (packed_time >> 32);
 }
 
-std::string Bag::toHeaderString(Time const* field) {
+std::string Bag::toHeaderString(Time const* field) const {
     uint64_t packed_time = (((uint64_t) field->nsec) << 32) + field->sec;
     return toHeaderString(&packed_time);
 }
 
 // Low-level I/O
 
-void Bag::read(char* b, std::streamsize n)        { file_.read(b, n);             }
 void Bag::write(string const& s)                  { write(s.c_str(), s.length()); }
 void Bag::write(char const* s, std::streamsize n) { file_.write((char*) s, n);    }
-void Bag::seek(uint64_t pos, int origin)          { file_.seek(pos, origin);      }
+
+void Bag::read(char* b, std::streamsize n) const  { file_.read(b, n);             }
+void Bag::seek(uint64_t pos, int origin) const    { file_.seek(pos, origin);      }
 
 // Debugging
 

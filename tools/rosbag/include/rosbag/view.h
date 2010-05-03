@@ -35,6 +35,7 @@
 #ifndef ROSBAG_VIEW_H
 #define ROSBAG_VIEW_H
 
+#include <boost/function.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
 #include "rosbag/message_instance.h"
@@ -90,7 +91,30 @@ public:
 
     typedef iterator const_iterator;
 
+    struct TrueQuery {
+    	bool operator()(ConnectionInfo const*) const { return true; };
+    };
+
     View();
+
+    //! Create a view and add a query
+    /*!
+     * param bag        The bag file on which to run this query
+     * param start_time The beginning of the time_range for the query
+     * param end_time   The end of the time_range for the query
+     */
+    View(Bag const& bag, ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);
+
+    //! Create a view and add a query
+    /*!
+     * param bag        The bag file on which to run this query
+     * param query      The actual query to evaluate which connections to include
+     * param start_time The beginning of the time_range for the query
+     * param end_time   The end of the time_range for the query
+     */
+    View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
+         ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);
+
     ~View();
 
     iterator begin();
@@ -99,10 +123,21 @@ public:
 
     //! Add a query to a view
     /*!
-     * param bag    The bag file on which to run this query.
-     * param query  The actual query to evaluate which topics to include
+     * param bag        The bag file on which to run this query
+     * param start_time The beginning of the time_range for the query
+     * param end_time   The end of the time_range for the query
      */
-    void addQuery(Bag& bag, Query const& query);
+    void addQuery(Bag const& bag, ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);
+
+    //! Add a query to a view
+    /*!
+     * param bag        The bag file on which to run this query
+     * param query      The actual query to evaluate which topics to include
+     * param start_time The beginning of the time_range for the query
+     * param end_time   The end of the time_range for the query
+     */
+    void addQuery(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
+    		      ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);
 
 protected:
     void updateQueries(BagQuery* q);

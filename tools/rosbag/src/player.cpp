@@ -136,7 +136,7 @@ void Player::publish() {
 	// Publish all messages in the bags
 	View view;
 	foreach(shared_ptr<Bag> bag, bags_)
-		view.addQuery(*bag, Query());
+		view.addQuery(*bag);
 
 	foreach(MessageInstance m, view) {
 		if (!node_handle_->ok())

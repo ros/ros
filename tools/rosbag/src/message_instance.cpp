@@ -33,7 +33,7 @@ using boost::shared_ptr;
 
 namespace rosbag {
 
-MessageInstance::MessageInstance(ConnectionInfo const* connection_info, IndexEntry const& index_entry, Bag& bag) :
+MessageInstance::MessageInstance(ConnectionInfo const* connection_info, IndexEntry const& index_entry, Bag const& bag) :
 	connection_info_(connection_info), index_entry_(index_entry), bag_(&bag)
 {
 }

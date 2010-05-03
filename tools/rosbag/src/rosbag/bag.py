@@ -792,6 +792,16 @@ _OP_CHUNK       = 0x05
 _OP_CHUNK_INFO  = 0x06
 _OP_CONNECTION  = 0x07
 
+_OP_CODES = {
+    _OP_MSG_DEF:     'MSG_DEF',
+    _OP_MSG_DATA:    'MSG_DATA',
+    _OP_FILE_HEADER: 'FILE_HEADER',
+    _OP_INDEX_DATA:  'INDEX_DATA',
+    _OP_CHUNK:       'CHUNK',
+    _OP_CHUNK_INFO:  'CHUNK_INFO',
+    _OP_CONNECTION:  'CONNECTION'
+}
+
 _VERSION             = '#ROSBAG V2.0'
 _FILE_HEADER_LENGTH  = 4096
 _INDEX_VERSION       = 1
@@ -1028,6 +1038,37 @@ class _BagReader(object):
 
         return message_type
 
+    def dump(self):
+        f = self.bag._file
+
+        f.seek(self.bag._file_header_pos)
+
+        while True:
+            if rospy.is_shutdown():
+                return
+
+            position = f.tell()
+            
+            try:
+                header = _read_header(f)
+            except Exception, ex:
+                print str(ex)
+                break
+
+            op = _read_uint8_field(header, 'op')
+
+            print '%d' % position
+            print '%-14s: %s' % ('op', _OP_CODES[op])
+            for field, value in header.items():
+                if field == 'op':
+                    continue
+                if len(value) == 4:
+                    print '%-14s: %d' % (field, _unpack_uint32(value))
+                elif len(value) == 8:
+                    print '%-14s: %d' % (field, _unpack_uint64(value))
+
+            data = _read_record_data(f)
+
 class _BagReader101(_BagReader):
     """
     Support class for reading v1.1 bag files.
@@ -1139,14 +1180,13 @@ class _BagReader102_Unindexed(_BagReader):
             topic = _read_str_field(header, 'topic')
             
             connection_id = self.bag._topic_connections[topic]
-            
             info = self.bag._connections[connection_id]
     
             # Get the message type
             try:
                 msg_type = self.get_message_type(info)
             except KeyError:
-                raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % topic_info.datatype)
+                raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % info.datatype)
 
             # Get the timestamp
             secs  = _read_uint32_field(header, 'sec')
@@ -1182,7 +1222,6 @@ class _BagReader102_Indexed(_BagReader):
             index[topic] = [(e.time, e.offset) for e in entries]
         return index
 
-    # todo: work with connections
     def start_reading(self):
         self.read_file_header_record()
 
@@ -1200,10 +1239,15 @@ class _BagReader102_Indexed(_BagReader):
         for topic, index in self.bag._topic_indexes.items():
             self.bag._file.seek(index[0].offset)
 
-            topic_info = self.read_message_definition_record()
-            self.bag._topic_infos[topic_info.topic] = topic_info
+            connection_info = self.read_message_definition_record()
+            
+            if connection_info.topic not in self.bag._topic_connections:
+                self.bag._topic_connections[connection_info.topic] = connection_info.id
+            self.bag._connections[connection_info.id] = connection_info
 
     def read_file_header_record(self):
+        self.bag._file_header_pos = self.bag._file.tell()
+
         header = _read_header(self.bag._file, _OP_FILE_HEADER)
 
         self.bag._index_data_pos = _read_uint64_field(header, 'index_pos')
@@ -1257,12 +1301,14 @@ class _BagReader102_Indexed(_BagReader):
         
         topic = _read_str_field(header, 'topic')
 
+        connection_id = self.bag._topic_connections[topic]
+        info = self.bag._connections[connection_id]
+
         # Get the message type
-        topic_info = self.bag._topic_infos[topic]
         try:
-            msg_type = self.get_message_type(topic_info)
+            msg_type = self.get_message_type(info)
         except KeyError:
-            raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % topic_info.datatype)
+            raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % info.datatype)
 
         # Get the timestamp
         secs  = _read_uint32_field(header, 'sec')
@@ -1273,8 +1319,8 @@ class _BagReader102_Indexed(_BagReader):
         data = _read_record_data(f)
         
         if raw:
-            msg = topic_info.datatype, data, topic_info.md5sum, position, msg_type
-        else:            
+            msg = info.datatype, data, info.md5sum, position, msg_type
+        else:
             # Deserialize the message
             msg = msg_type()
             msg.deserialize(data)
@@ -1307,7 +1353,7 @@ class _BagReader200(_BagReader):
 
     def start_reading(self):
         self.read_file_header_record()
-
+        
         # Check if the index position has been written, i.e. the bag was closed successfully
         if self.bag._index_data_pos == 0:
             print 'invalid index data position'
@@ -1364,6 +1410,8 @@ class _BagReader200(_BagReader):
                     topic_index.append(entry)
 
     def read_file_header_record(self):
+        self.bag._file_header_pos = self.bag._file.tell()
+
         header = _read_header(self.bag._file, _OP_FILE_HEADER)
 
         self.bag._index_data_pos   = _read_uint64_field(header, 'index_pos')

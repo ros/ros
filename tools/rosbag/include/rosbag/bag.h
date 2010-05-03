@@ -65,10 +65,9 @@ namespace bagmode
     //! The possible modes to open a bag in
     enum BagMode
     {
-        Write   = 0,
-        Read    = 1,
-        Append  = 2,
-        Default = Read
+        Write   = 1,
+        Read    = 2,
+        Append  = 4
     };
 }
 typedef bagmode::BagMode BagMode;
@@ -84,20 +83,23 @@ class Bag
 
 public:
     Bag();
+
+    //! Open a bag file
+    Bag(std::string const& filename, uint32_t mode = bagmode::Read);
+
     ~Bag();
 
-    //!< Open a bag file
-    void open(std::string const& filename, BagMode mode = bagmode::Default);
+    //! Open a bag file
+    void open(std::string const& filename, uint32_t mode = bagmode::Read);
 
     //! Close the bag file
     void close();
 
     std::string     getFileName()     const;                      //!< Get the filename of the bag
     BagMode         getMode()         const;                      //!< Get the mode the bag is in
-    int             getVersion()      const;                      //!< Get the version of the open bagfile
-    int             getMajorVersion() const;                      //!< Get the major-version of the open bagfile
-    int             getMinorVersion() const;                      //!< Get the minor-version of the open bagfile
-    uint64_t        getOffset()       const;                      //!< Get the offset into the actual file
+    uint32_t        getMajorVersion() const;                      //!< Get the major-version of the open bag file
+    uint32_t        getMinorVersion() const;                      //!< Get the minor-version of the open bag file
+    uint64_t        getSize()         const;                      //!< Get the current size of the bag file (a lower bound)
 
     void            setCompression(CompressionType compression);  //!< Set the compression method to use for writing chunks
     CompressionType getCompression() const;                       //!< Get the compression method to use for writing chunks
@@ -107,22 +109,34 @@ public:
     //! Write a message into the bag file
     /*!
      * \param topic The topic name
-     * \param time  Timestamp of the message
-     * \param msg   A pointer to the message to be added
+     * \param event The message event to be added
      *
      * Can throw BagNotOpenException or BagIOException
      */
-    void write(std::string const& topic, ros::Time const& time, ros::Message::ConstPtr msg);
+    template<class T>
+    void write(std::string const& topic, ros::MessageEvent<T> const& event);
 
     //! Write a message into the bag file
     /*!
      * \param topic The topic name
      * \param time  Timestamp of the message
-     * \param msg   A const reference to a message
+     * \param msg   The message to be added
      *
      * Can throw BagNotOpenException or BagIOException
      */
-    void write(std::string const& topic, ros::Time const& time, ros::Message const& msg);
+    template<class T>
+    void write(std::string const& topic, ros::Time const& time, T const& msg);
+
+    //! Write a message into the bag file
+    /*!
+     * \param topic The topic name
+     * \param time  Timestamp of the message
+     * \param msg   The message to be added
+     *
+     * Can throw BagNotOpenException or BagIOException
+     */
+    template<class T>
+    void write(std::string const& topic, ros::Time const& time, T& msg);
 
     //! Write a message into the bag file
     /*!
@@ -141,7 +155,7 @@ public:
 private:
     // This helper function actually does the write with an arbitrary serializable message
     template<class T>
-    void doWrite(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> connection_header);
+    void doWrite(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> const& connection_header);
 
     void openRead  (std::string const& filename);
     void openWrite (std::string const& filename);
@@ -150,7 +164,7 @@ private:
     void closeWrite();
 
     template<class T>
-    boost::shared_ptr<T const> instantiateBuffer(IndexEntry const& index_entry);  //!< deserializes the message held in record_buffer_
+    boost::shared_ptr<T const> instantiateBuffer(IndexEntry const& index_entry) const;  //!< deserializes the message held in record_buffer_
 
     void startWriting();
     void stopWriting();
@@ -178,7 +192,7 @@ private:
     void readVersion();
     void readFileHeaderRecord();
     void readConnectionRecord();
-    void readChunkHeader(ChunkHeader& chunk_header);
+    void readChunkHeader(ChunkHeader& chunk_header) const;
     void readChunkInfoRecord();
     void readConnectionIndexRecord200();
 
@@ -186,17 +200,17 @@ private:
     void readMessageDefinitionRecord102();
 
     ros::Header readMessageDataHeader(IndexEntry const& index_entry);
-    uint32_t    readMessageDataSize(IndexEntry const& index_entry);
+    uint32_t    readMessageDataSize(IndexEntry const& index_entry) const;
 
     // Would be nice not to have to template this on Stream.  Also,
     // we don't need to read the header here either.  It just so
     // happens to be the most efficient way to skip it at the moment.
     template<typename Stream>
-    void readMessageDataIntoStream(IndexEntry const& index_entry, Stream& stream);
+    void readMessageDataIntoStream(IndexEntry const& index_entry, Stream& stream) const;
 
-    void     decompressChunk(uint64_t chunk_pos);
-    void     decompressRawChunk(ChunkHeader const& chunk_header);
-    void     decompressBz2Chunk(ChunkHeader const& chunk_header);
+    void     decompressChunk(uint64_t chunk_pos) const;
+    void     decompressRawChunk(ChunkHeader const& chunk_header) const;
+    void     decompressBz2Chunk(ChunkHeader const& chunk_header) const;
     uint32_t getChunkOffset() const;
 
     // Record header I/O
@@ -205,28 +219,28 @@ private:
     void writeDataLength(uint32_t data_len);
     void appendHeaderToBuffer(Buffer& buf, ros::M_string const& fields);
     void appendDataLengthToBuffer(Buffer& buf, uint32_t data_len);
-    void readHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& bytes_read);
-    void readMessageDataHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& bytes_read);
-    bool readHeader(ros::Header& header);
-    bool readDataLength(uint32_t& data_size);
-    bool isOp(ros::M_string& fields, uint8_t reqOp);
+    void readHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& bytes_read) const;
+    void readMessageDataHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& bytes_read) const;
+    bool readHeader(ros::Header& header) const;
+    bool readDataLength(uint32_t& data_size) const;
+    bool isOp(ros::M_string& fields, uint8_t reqOp) const;
 
-    void loadMessageDataRecord102(uint64_t offset);
+    void loadMessageDataRecord102(uint64_t offset) const;
 
     // Header fields
 
     template<typename T>
-    std::string toHeaderString(T const* field);
+    std::string toHeaderString(T const* field) const;
 
-    std::string toHeaderString(ros::Time const* field);
+    std::string toHeaderString(ros::Time const* field) const;
 
     template<typename T>
-    void readField(ros::M_string const& fields, std::string const& field_name, bool required, T* data);
+    void readField(ros::M_string const& fields, std::string const& field_name, bool required, T* data) const;
 
-    void readField(ros::M_string const& fields, std::string const& field_name, unsigned int min_len, unsigned int max_len, bool required, std::string& data);
-    void readField(ros::M_string const& fields, std::string const& field_name, bool required, std::string& data);
+    void readField(ros::M_string const& fields, std::string const& field_name, unsigned int min_len, unsigned int max_len, bool required, std::string& data) const;
+    void readField(ros::M_string const& fields, std::string const& field_name, bool required, std::string& data) const;
 
-    void readField(ros::M_string const& fields, std::string const& field_name, bool required, ros::Time& data);
+    void readField(ros::M_string const& fields, std::string const& field_name, bool required, ros::Time& data) const;
 
     ros::M_string::const_iterator checkField(ros::M_string const& fields, std::string const& field,
                                              unsigned int min_len, unsigned int max_len, bool required) const;
@@ -235,17 +249,18 @@ private:
 
     void write(char const* s, std::streamsize n);
     void write(std::string const& s);
-    void read(char* b, std::streamsize n);
-    void seek(uint64_t pos, int origin = std::ios_base::beg);
+    void read(char* b, std::streamsize n) const;
+    void seek(uint64_t pos, int origin = std::ios_base::beg) const;
 
 private:
-    BagMode         mode_;
-    ChunkedFile     file_;
-    int             version_;
-    CompressionType compression_;
-    uint32_t        chunk_threshold_;
-    uint32_t        bag_revision_;
+    BagMode             mode_;
+    mutable ChunkedFile file_;
+    int                 version_;
+    CompressionType     compression_;
+    uint32_t            chunk_threshold_;
+    uint32_t            bag_revision_;
 
+    uint64_t file_size_;
     uint64_t file_header_pos_;
     uint64_t index_data_pos_;
     uint32_t connection_count_;
@@ -270,17 +285,17 @@ private:
     std::map<uint32_t, std::multiset<IndexEntry> >    connection_indexes_;
     std::map<std::string, std::multiset<IndexEntry> > topic_indexes_;
 
-    Buffer   header_buffer_;           //!< reusable buffer in which to assemble the record header before writing to file
-    Buffer   record_buffer_;           //!< reusable buffer in which to assemble the record data before writing to file
+    mutable Buffer   header_buffer_;           //!< reusable buffer in which to assemble the record header before writing to file
+    mutable Buffer   record_buffer_;           //!< reusable buffer in which to assemble the record data before writing to file
 
-    Buffer   chunk_buffer_;            //!< reusable buffer to read chunk into
-    Buffer   decompress_buffer_;       //!< reusable buffer to decompress chunks into
+    mutable Buffer   chunk_buffer_;            //!< reusable buffer to read chunk into
+    mutable Buffer   decompress_buffer_;       //!< reusable buffer to decompress chunks into
 
-    Buffer   outgoing_chunk_buffer_;   //!< reusable buffer to read chunk into
+    mutable Buffer   outgoing_chunk_buffer_;   //!< reusable buffer to read chunk into
 
-    Buffer*  current_buffer_;
+    mutable Buffer*  current_buffer_;
 
-    uint64_t decompressed_chunk_;      //!< position of decompressed chunk
+    mutable uint64_t decompressed_chunk_;      //!< position of decompressed chunk
 };
 
 } // namespace rosbag
@@ -291,19 +306,34 @@ namespace rosbag {
 
 // Templated method definitions
 
+template<class T>
+void Bag::write(std::string const& topic, ros::MessageEvent<T> const& event) {
+    doWrite(topic, event.getReceiptTime(), *event.getMessage(), event.getConnectionHeaderPtr());
+}
+
+template<class T>
+void Bag::write(std::string const& topic, ros::Time const& time, T const& msg) {
+    doWrite(topic, time, msg, boost::shared_ptr<ros::M_string>());
+}
+
+template<class T>
+void Bag::write(std::string const& topic, ros::Time const& time, T& msg) {
+    doWrite(topic, time, msg, boost::shared_ptr<ros::M_string>());
+}
+
 template<typename T>
-std::string Bag::toHeaderString(T const* field) {
+std::string Bag::toHeaderString(T const* field) const {
     return std::string((char*) field, sizeof(T));
 }
 
 template<typename T>
-void Bag::readField(ros::M_string const& fields, std::string const& field_name, bool required, T* data) {
+void Bag::readField(ros::M_string const& fields, std::string const& field_name, bool required, T* data) const {
     ros::M_string::const_iterator i = checkField(fields, field_name, sizeof(T), sizeof(T), required);
     memcpy(data, i->second.data(), sizeof(T));
 }
 
 template<typename Stream>
-void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& stream) {
+void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& stream) const {
     ros::Header header;
     uint32_t data_size;
     uint32_t bytes_read;
@@ -321,7 +351,7 @@ void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& strea
 }
 
 template<class T>
-boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry) {
+boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry) const {
     if (version_ == 200) {
         decompressChunk(index_entry.chunk_pos);
 
@@ -334,12 +364,13 @@ boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry)
         // Read the connection id from the header
         uint32_t connection_id;
         readField(*header.getValues(), CONNECTION_FIELD_NAME, true, &connection_id);
-        ConnectionInfo* connection_info = connections_[connection_id];
+
+        std::map<uint32_t, ConnectionInfo*>::const_iterator connection_iter = connections_.find(connection_id);
 
         boost::shared_ptr<T> p = boost::shared_ptr<T>(new T());
 
         // Set the connection header (if this is a ros::Message)
-        ros::assignSubscriptionConnectionHeader<T>(p.get(), connection_info->header);
+        ros::assignSubscriptionConnectionHeader<T>(p.get(), connection_iter->second->header);
 
         // Deserialize the message
         ros::serialization::IStream s(current_buffer_->getData() + index_entry.offset + bytes_read, data_size);
@@ -353,7 +384,7 @@ boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry)
 }
 
 template<class T>
-void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> connection_header) {
+void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> const& connection_header) {
     // Whenever we write we increment our revision
     bag_revision_++;
 
@@ -395,6 +426,7 @@ void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg,
         // Seek to the end of the file (needed in case previous operation was a read)
         //! \todo only do when necessary
         seek(0, std::ios::end);
+        file_size_ = file_.getOffset();
 
         // Write the chunk header if we're starting a new chunk
         if (!chunk_open_)

@@ -67,11 +67,9 @@ protected:
     void dumpContents(rosbag::Bag& b) {
         b.dump();
 
-    	rosbag::View view;
-    	view.addQuery(b, rosbag::Query());
-        foreach(rosbag::MessageInstance m, view) {
+        rosbag::View view(b);
+        foreach(rosbag::MessageInstance m, view)
             std::cout << m.getTime() << ": [" << m.getTopic() << "]" << std::endl;
-        }
     }
 
     void checkContents(std::string const& filename) {
@@ -80,9 +78,7 @@ protected:
 
         int message_count = 0;
 
-    	rosbag::View view;
-    	view.addQuery(b, rosbag::Query());
-
+        rosbag::View view(b);
         foreach(rosbag::MessageInstance m, view) {
             std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
             if (s != NULL) {
@@ -153,9 +149,7 @@ TEST(rosbag, simple_write_and_read_works) {
     topics.push_back(std::string("chatter"));
     topics.push_back(std::string("numbers"));
 
-    rosbag::View view;
-    view.addQuery(b2, rosbag::TopicQuery(topics));
-
+    rosbag::View view(b2, rosbag::TopicQuery(topics));
     foreach(rosbag::MessageInstance const m, view) {
         std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
         if (s != NULL)
@@ -190,11 +184,9 @@ TEST(rosbag, time_query_works) {
     rosbag::Bag bag;
     bag.open("/tmp/time_query_works.bag", rosbag::bagmode::Read);
 
-    rosbag::View view;
-    view.addQuery(bag, rosbag::Query(ros::Time(23, 0), ros::Time(782, 0)));
-
     int i = 23;
 
+    rosbag::View view(bag, ros::Time(23, 0), ros::Time(782, 0));
     foreach(rosbag::MessageInstance const m, view) {
         std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
         if (imsg != NULL) {
@@ -231,11 +223,9 @@ TEST(rosbag, topic_query_works) {
 
     std::vector<std::string> t = boost::assign::list_of("t0")("t1");
 
-    rosbag::View view;
-    view.addQuery(bag, rosbag::TopicQuery(t));
-
     int i = 0;
 
+    rosbag::View view(bag, rosbag::TopicQuery(t));
     foreach(rosbag::MessageInstance const m, view) {
         std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
         if (imsg != NULL)
@@ -274,8 +264,8 @@ TEST(rosbag, multiple_bag_works) {
     bag2.open("/tmp/multiple_bag_works2.bag", rosbag::bagmode::Read);
 
     rosbag::View view;
-    view.addQuery(bag1, rosbag::Query());
-    view.addQuery(bag2, rosbag::Query());
+    view.addQuery(bag1);
+    view.addQuery(bag2);
 
     int i = 0;
 
@@ -320,8 +310,7 @@ TEST(rosbag, modify_view_works) {
     j0 = 0;
     j1 = 101;
 
-    rosbag::View view;
-    view.addQuery(bag, rosbag::TopicQuery(t0));
+    rosbag::View view(bag, rosbag::TopicQuery(t0));
 
     rosbag::View::iterator iter = view.begin();
 
@@ -362,8 +351,7 @@ TEST(rosbag, modify_bag_works) {
 
     std::vector<std::string> t0 = boost::assign::list_of("t0");
 
-    rosbag::View view;
-    view.addQuery(rwbag, rosbag::TopicQuery(t0));
+    rosbag::View view(rwbag, rosbag::TopicQuery(t0));
 
     std_msgs::Int32 omsg;
 

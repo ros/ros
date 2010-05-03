@@ -115,12 +115,21 @@ MessageInstance View::iterator::dereference() const {
     ROS_ASSERT(iters_.size() > 0);
 
     ViewIterHelper const& i = iters_.back();
+
     return MessageInstance(i.range->connection_info, *(i.iter), *(i.range->bag_query->bag));
 }
 
 // View
 
 View::View() : view_revision_(0) { }
+
+View::View(Bag const& bag, ros::Time const& start_time, ros::Time const& end_time) : view_revision_(0) {
+	addQuery(bag, start_time, end_time);
+}
+
+View::View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, ros::Time const& start_time, ros::Time const& end_time) : view_revision_(0) {
+	addQuery(bag, query, start_time, end_time);
+}
 
 View::~View() {
     foreach(MessageRange* range, ranges_)
@@ -141,33 +150,39 @@ View::iterator View::end() { return iterator(this, true); }
 //! \todo: this doesn't work for now
 uint32_t View::size() const { return 0; }
 
-void View::addQuery(Bag& bag, Query const& query) {
-    vector<ViewIterHelper> iters;
+void View::addQuery(Bag const& bag, ros::Time const& start_time, ros::Time const& end_time) {
+	boost::function<bool(ConnectionInfo const*)> query = TrueQuery();
 
-    queries_.push_back(new BagQuery(&bag, query, bag.bag_revision_));
+    queries_.push_back(new BagQuery(&bag, Query(query, start_time, end_time), bag.bag_revision_));
+
+    updateQueries(queries_.back());
+}
+
+void View::addQuery(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, ros::Time const& start_time, ros::Time const& end_time) {
+    queries_.push_back(new BagQuery(&bag, Query(query, start_time, end_time), bag.bag_revision_));
 
     updateQueries(queries_.back());
 }
 
 void View::updateQueries(BagQuery* q) {
-    for (map<uint32_t, ConnectionInfo*>::iterator i = q->bag->connections_.begin(); i != q->bag->connections_.end(); i++) {
+    for (map<uint32_t, ConnectionInfo*>::const_iterator i = q->bag->connections_.begin(); i != q->bag->connections_.end(); i++) {
         ConnectionInfo const* connection = i->second;
 
         // Skip if the query doesn't evaluate to true
-        if (!q->query->evaluate(connection))
+        if (!q->query.getQuery()(connection))
             continue;
 
-        map<uint32_t, multiset<IndexEntry> >::iterator j = q->bag->connection_indexes_.find(connection->id);
+        map<uint32_t, multiset<IndexEntry> >::const_iterator j = q->bag->connection_indexes_.find(connection->id);
 
         // Skip if the bag doesn't have the corresponding index
         if (j == q->bag->connection_indexes_.end())
             continue;
-        multiset<IndexEntry>& index = j->second;
+        multiset<IndexEntry> const& index = j->second;
 
         // lower_bound/upper_bound do a binary search to find the appropriate range of Index Entries given our time range
 
-        std::multiset<IndexEntry>::const_iterator begin = std::lower_bound(index.begin(), index.end(), q->query->getStartTime(), IndexEntryCompare());
-        std::multiset<IndexEntry>::const_iterator end   = std::upper_bound(index.begin(), index.end(), q->query->getEndTime(),   IndexEntryCompare());
+        std::multiset<IndexEntry>::const_iterator begin = std::lower_bound(index.begin(), index.end(), q->query.getStartTime(), IndexEntryCompare());
+        std::multiset<IndexEntry>::const_iterator end   = std::upper_bound(index.begin(), index.end(), q->query.getEndTime(),   IndexEntryCompare());
 
         // todo: this could be made faster with a map of maps
         bool found = false;

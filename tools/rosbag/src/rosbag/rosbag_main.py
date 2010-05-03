@@ -160,9 +160,17 @@ def info_cmd(argv):
 
     for i, arg in enumerate(args):
         try:
-            print Bag(arg)
+            b = Bag(arg)
+            print b
+            b.close()
+            
+            #b = Bag(arg)
+            #b._reader.dump()
+            #b.close()
+            
             if i < len(args) - 1:
                 print '---'
+            
         except ROSBagException, ex:
             print >> sys.stderr, 'ERROR reading %s: %s' % (arg, str(ex))
         except IOError, ex:

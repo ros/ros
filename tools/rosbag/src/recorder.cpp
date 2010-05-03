@@ -331,14 +331,14 @@ void Recorder::doRecord() {
         
         lock.release()->unlock();
 
-        if (options_.split_size > 0 && bag_.getOffset() > options_.split_size) {
+        if (options_.split_size > 0 && bag_.getSize() > options_.split_size) {
             stopWriting();
             split_count_++;
             startWriting();
         }
 
         if (scheduledCheckDisk() && checkLogging())
-        	bag_.write(out.topic, out.time, out.msg);
+        	bag_.write(out.topic, out.time, *out.msg);
     }
 
     stopWriting();
@@ -375,7 +375,7 @@ void Recorder::doRecordSnapshotter() {
             OutgoingMessage out = out_queue.queue->front();
             out_queue.queue->pop();
 
-            bag_.write(out.topic, out.time, out.msg);
+            bag_.write(out.topic, out.time, *out.msg);
         }
 
         stopWriting();

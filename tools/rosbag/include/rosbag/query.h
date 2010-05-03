@@ -41,13 +41,14 @@
 #include <map>
 #include <set>
 
+#include <boost/function.hpp>
+
 namespace rosbag {
 
 class Bag;
 class ConnectionInfo;
 class IndexEntry;
 
-//! A base class for specifying queries from a bag
 class Query
 {
 public:
@@ -56,61 +57,40 @@ public:
      * param start_time the beginning of the time_range for the query
      * param end_time   the end of the time_range for the query
      */
-    Query(ros::Time const& start_time = ros::TIME_MIN,
+    Query(boost::function<bool(ConnectionInfo const*)>& query,
+    	  ros::Time const& start_time = ros::TIME_MIN,
           ros::Time const& end_time   = ros::TIME_MAX);
-    virtual ~Query();
 
-    ros::Time getStartTime() const; //!< Get the start-time
-    ros::Time getEndTime()   const; //!< Get the end-time
+    boost::function<bool(ConnectionInfo const*)> const& getQuery() const;  //!< Get the query functor
 
-    //! Virtual function which determines connection-inclusion
-    /*!
-     * param topic_info  The information for the topic
-     * return True if topic should be included in View
-     */
-    virtual bool evaluate(ConnectionInfo const* connection_info) const;
-
-    //! Virtual function to clone so we can store a copy of the query
-    virtual Query* clone() const;
+    ros::Time const& getStartTime() const; //!< Get the start-time
+    ros::Time const& getEndTime()   const; //!< Get the end-time
 
 private:
+    boost::function<bool(ConnectionInfo const*)> query_;
     ros::Time start_time_;
     ros::Time end_time_;
 };
 
-//! A Query the returns messages on the specified topics
-class TopicQuery : public Query
+class TopicQuery
 {
 public:
-    TopicQuery(std::string const& topic,
-               ros::Time const& start_time = ros::TIME_MIN,
-               ros::Time const& end_time   = ros::TIME_MAX);
+    TopicQuery(std::string const& topic);
+    TopicQuery(std::vector<std::string> const& topics);
 
-    TopicQuery(std::vector<std::string> const& topics,
-               ros::Time const& start_time = ros::TIME_MIN,
-               ros::Time const& end_time   = ros::TIME_MAX);
-
-    virtual bool evaluate(ConnectionInfo const*) const;
-    virtual Query* clone() const;
+    bool operator()(ConnectionInfo const*) const;
 
 private:
     std::vector<std::string> topics_;
 };
 
-//! A Query the returns messages of the specified types
-class TypeQuery : public Query
+class TypeQuery
 {
 public:
-    TypeQuery(std::string const& type,
-              ros::Time const& start_time = ros::TIME_MIN,
-              ros::Time const& end_time   = ros::TIME_MAX);
+    TypeQuery(std::string const& type);
+    TypeQuery(std::vector<std::string> const& types);
 
-    TypeQuery(std::vector<std::string> const& types,
-              ros::Time const& start_time = ros::TIME_MIN,
-              ros::Time const& end_time   = ros::TIME_MAX);
-
-    virtual bool evaluate(ConnectionInfo const*) const;
-    virtual Query* clone() const;
+    bool operator()(ConnectionInfo const*) const;
 
 private:
     std::vector<std::string> types_;
@@ -119,12 +99,11 @@ private:
 //! Pairs of queries and the bags they come from (used internally by View)
 struct BagQuery
 {
-    BagQuery(Bag* _bag, Query const& _query, uint32_t _bag_revision);
-    ~BagQuery();
+    BagQuery(Bag const* _bag, Query const& _query, uint32_t _bag_revision);
 
-    Bag*     bag;
-    Query*   query;
-    uint32_t bag_revision;
+    Bag const* bag;
+    Query      query;
+    uint32_t   bag_revision;
 };
 
 struct MessageRange

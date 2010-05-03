@@ -38,7 +38,7 @@ PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 import rospy
 
-import rosrecord
+import rosbag
 
 import bisect
 import collections
@@ -76,7 +76,7 @@ class TimelinePanel(LayerPanel):
 
         for i, bag_path in enumerate(input_files):
             try:
-                bag_file = rosrecord.BagReader(bag_path)
+                bag_file = rosbag.Bag(bag_path)
             except Exception, e:
                 print 'Error loading %s: %s' % (bag_path, e)
                 continue
@@ -108,7 +108,7 @@ class TimelinePanel(LayerPanel):
         
         bag_index = bag_index_factory.index
         
-        bag_file = rosrecord.BagReader(bag_path)
+        bag_file = rosbag.Bag(bag_path)
         self.bag_files[bag_file] = bag_index
         
         # Background thread to generate, then save the index
@@ -895,7 +895,7 @@ class Timeline(Layer):
                 if playhead_index is not None:
                     # Load the message
                     pos = self.bag_index.msg_positions[topic][playhead_index][1]
-                    (datatype, msg, stamp) = self.bag_file.load_message(pos, self.bag_index)
+                    (datatype, msg, stamp) = self.bag_file._read_message(pos)
 
                     msgs[topic] = (stamp, datatype, playhead_index, msg)
                     continue

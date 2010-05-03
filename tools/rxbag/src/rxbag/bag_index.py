@@ -35,7 +35,7 @@
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 import rospy
-import rosrecord
+import rosbag
 
 import bisect
 import cPickle
@@ -226,21 +226,20 @@ class BagIndexReader:
 
     def load(self):
         try:
-            bag_file = rosrecord.BagReader(self.bag_path)
+            bag_file = rosbag.Bag(self.bag_path)
 
-            if bag_file.read_index() is None:
+            index = bag_file.get_index()
+            if index is None:
+                bag_file.close()
+                
                 self.index = None
                 return None
 
-            # Read the index in ascending order of topic's first message position (ensures that each datatype message definition gets read)
-            topic_first_positions = sorted([(ti[0][1], t) for t, ti in bag_file.index.items()])
-
-            for _, topic in topic_first_positions:
-                topic_index = bag_file.index[topic]
-                datatype    = bag_file.datatypes[topic]
-
-                for stamp, pos in topic_index:
+            for (id, topic, datatype), entries in index.items():
+                for stamp, pos in entries:
                     self.index.add_record(pos, topic, datatype, stamp)
+
+            bag_file.close()
 
             self.index.loaded = True
 
@@ -297,20 +296,20 @@ class BagIndexFactory:
 
     def load(self):
         try:
-            bag_file = rosrecord.BagReader(self.bag_path)
+            bag_file = rosbag.Bag(self.bag_path)
             
-            if bag_file.read_index() is not None:
-                for topic, topic_index in bag_file.index.items():
-                    datatype = bag_file.datatypes[topic]
-                    
-                    for stamp, pos in topic_index:
+            index = bag_file.get_index()
+            
+            if index is not None:
+                for (id, topic, datatype), connection_index in index.items():
+                    for stamp, pos in connection_index:
                         self.index.add_record(pos, topic, datatype, stamp)
             else:
                 file_size = os.path.getsize(self.bag_path)
                 
                 progress = util.progress_meter.ProgressMeter(self.bag_path, file_size, 1.0)
                 
-                for i, (pos, topic, raw_msg, stamp) in enumerate(bag_file.raw_messages()):
+                for i, (pos, topic, raw_msg, stamp) in enumerate(bag_file.read_messages(raw=True)):
                     (datatype, message_data, md5, bag_pos, pytype) = raw_msg
                 
                     self.index.add_record(pos, topic, datatype, stamp)
@@ -318,6 +317,8 @@ class BagIndexFactory:
                     progress.step(pos)
                 
                 progress.finish()
+
+            rosbag.close()
             
             self.index.loaded = True
 

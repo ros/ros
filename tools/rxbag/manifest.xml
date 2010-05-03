@@ -12,7 +12,7 @@
   <depend package="rospy"/>
   <depend package="roslib"/>
   <depend package="std_msgs"/>
-  <depend package="rosrecord"/>
+  <depend package="rosbag"/>
   <depend package="rxtools"/>
   <rosdep name="python-gtk2"/>
   <rosdep name="python-matplotlib"/>

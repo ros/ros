@@ -62,7 +62,7 @@ def msg2im(msg):
     return Image.fromstring(mode, (w, h), image_data)
 
 counter = 0
-for topic, msg, t in rosbag.Bag(sys.argv[1]).readMessages():
+for topic, msg, t in rosbag.Bag(sys.argv[1]).read_messages():
     if topic.endswith('stereo/raw_stereo'):
         for (mi, c) in [ (msg.left_image, 'L'), (msg.right_image, 'R'), (msg.disparity_image, 'D')]:
             im = msg2im(mi)

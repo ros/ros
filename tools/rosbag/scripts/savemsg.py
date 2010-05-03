@@ -58,7 +58,7 @@ if __name__ == '__main__':
             print '[%s]:' % args[0]
             print sys_class._full_text
     else:
-        for topic, msg, t in rosbag.Bag(options.bagfile).readMessages(raw=True):
+        for topic, msg, t in rosbag.Bag(options.bagfile).read_messages(raw=True):
             if msg[0] == args[0]:
                 print '[%s]:' % args[0]
                 print msg[4]._full_text

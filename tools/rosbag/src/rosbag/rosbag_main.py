@@ -299,14 +299,14 @@ The following variables are available:
         if options.verbose_pattern:
             verbose_pattern = expr_eval(options.verbose_pattern)
     
-            for topic, msg, t in inbag.readMessages():
+            for topic, msg, t in inbag.read_messages():
                 if filter_fn(topic, msg, t):
                     print "MATCH", verbose_pattern(topic, msg, t)
                     outbag.write(topic, msg, t)
                 else:
                     print "NO MATCH", verbose_pattern(topic, msg, t)          
         else:
-            for topic, msg, t in inbag.readMessages():
+            for topic, msg, t in inbag.read_messages():
                 if filter_fn(topic, msg, t):
                     outbag.write(topic, msg, t)
     finally:

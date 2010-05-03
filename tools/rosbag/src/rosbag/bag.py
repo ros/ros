@@ -218,7 +218,7 @@ class Bag(object):
         @rtype: dict of topic -> (U{roslib.rostime.Time}, position), where position depends on the bag format.
         """
         if not self._topic_indexes:
-            raise ROSBagException('getIndex not supported on unindexed bag files')
+            raise ROSBagException('get_index not supported on unindexed bag files')
 
         return self._reader.get_index()
 

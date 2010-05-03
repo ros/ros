@@ -45,7 +45,7 @@ def fix_md5sums(inbags):
         outbag = b + '.tmp'
         rebag = rosbag.Bag(outbag, 'w')
         try:
-            for i,(topic, msg, t) in enumerate(rosbag.Bag(b).readMessages(raw=True)):
+            for i,(topic, msg, t) in enumerate(rosbag.Bag(b).read_messages(raw=True)):
                 rebag.write(topic, msg, t, raw=True)
             rebag.close()
         except rosbag.ROSBagException, e:

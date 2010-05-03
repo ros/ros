@@ -69,7 +69,7 @@ def checkbag(migrator, inbag):
 
     bag = rosbag.Bag(inbag, 'r')
 
-    for topic, msg, t in bag.readMessages(raw=True):
+    for topic, msg, t in bag.read_messages(raw=True):
         key = get_message_key(msg[4])
         if key not in checked:
             target = migrator.find_target(msg[4])
@@ -127,7 +127,7 @@ def fixbag(migrator, inbag, outbag):
     if not False in [m[1] == [] for m in res]:
         bag = rosbag.Bag(inbag, 'r')
         rebag = rosbag.Bag(outbag, 'w', options=bag.options)
-        for topic, msg, t in bag.readMessages():
+        for topic, msg, t in bag.read_messages():
             new_msg = migrator.find_target(msg.__class__)()
             migrator.migrate(msg, new_msg)
             rebag.write(topic, new_msg, t)
@@ -153,7 +153,7 @@ def fixbag2(migrator, inbag, outbag):
     if len(migrations) == 0:
         bag = rosbag.Bag(inbag, 'r')
         rebag = rosbag.Bag(outbag, 'w', options=bag.options)
-        for topic, msg, t in bag.readMessages():
+        for topic, msg, t in bag.read_messages():
             new_msg = migrator.find_target(msg.__class__)()
             migrator.migrate(msg, new_msg)
             rebag.write(topic, new_msg, t)

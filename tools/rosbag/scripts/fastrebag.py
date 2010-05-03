@@ -39,7 +39,7 @@ import rosbag
 
 def fastrebag(inbag, outbag):
     rebag = rosbag.Bag(outbag, 'w')
-    for i, (topic, msg, t) in enumerate(rosbag.Bag(inbag).readMessages(raw=True)):
+    for i, (topic, msg, t) in enumerate(rosbag.Bag(inbag).read_messages(raw=True)):
         rebag.write(topic, msg, t, raw=True)
     rebag.close()
 

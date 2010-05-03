@@ -48,7 +48,7 @@ def fixbags(md5file, inbag, outbag):
 
     rebag = rosbag.Bag(outbag, 'w')
 
-    for topic, msg, t in rosbag.Bag(inbag).readMessages(raw=True):
+    for topic, msg, t in rosbag.Bag(inbag).read_messages(raw=True):
         type, bytes, md5 = msg[0], msg[1], msg[2]
 
         if md5 in d:

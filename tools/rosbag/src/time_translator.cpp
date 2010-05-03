@@ -32,42 +32,33 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef ROSBAG_TIME_TRANSLATOR_H
-#define ROSBAG_TIME_TRANSLATOR_H
-
-#include "ros/time.h"
+#include "rosbag/time_translator.h"
 
 namespace rosbag {
 
-//! Helper class for translating between two times
-/*!
- * The time translator can be configured with a Real start time, a
- * Translated start time, and a time scale.
- * 
- * It will convert a time from a series starting at realStartTime to a
- * comparable time series instead starting at translatedStartTime.
- * All durations in the time-sequence as scaled by 1/(timeScale).
- *
- * That is, a time-sequence with time-scale 2 will finish twice as
- * quickly.
- */
-class TimeTranslator
+TimeTranslator::TimeTranslator()
+    : inv_time_scale_(1.0), real_start_(ros::TIME_MIN), translated_start_(ros::TIME_MIN)
 {
-public:
-    TimeTranslator();
+}
 
-    void      setTimeScale(double const& s);
-    void      setRealStartTime(ros::Time const& t);
-    void      setTranslatedStartTime(ros::Time const& t);  //!< Increments the translated start time by shift.  Useful for pausing.
-    void      shift(ros::Duration const& d);               //!< Increments the translated start time by shift.  Useful for pausing.
-    ros::Time translate(ros::Time const& t);
+void TimeTranslator::setTimeScale(double const& s) {
+    inv_time_scale_ = 1.0 / s;
+}
 
-private:
-    double    inv_time_scale_;
-    ros::Time real_start_;
-    ros::Time translated_start_;
-};
+void TimeTranslator::setRealStartTime(ros::Time const& t) {
+    real_start_ = t;
+}
+
+void TimeTranslator::setTranslatedStartTime(ros::Time const& t) {
+    translated_start_ = t;
+}
+
+void TimeTranslator::shift(ros::Duration const& d) {
+    translated_start_ += d;
+}
+
+ros::Time TimeTranslator::translate(ros::Time const& t) {
+    return translated_start_ + (t - real_start_) * inv_time_scale_;
+}
 
 } // namespace rosbag
-
-#endif

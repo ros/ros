@@ -11,7 +11,7 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 rosbuild_add_library(rosbag 
 	src/bag.cpp src/buffer.cpp src/bz2_stream.cpp src/chunked_file.cpp src/message_instance.cpp src/player.cpp 
-	src/query.cpp src/recorder.cpp src/stream.cpp src/uncompressed_stream.cpp src/view.cpp) # src/zlib_stream.cpp)
+	src/query.cpp src/recorder.cpp src/stream.cpp src/time_translator.cpp src/uncompressed_stream.cpp src/view.cpp)
 target_link_libraries(rosbag bz2 z)
 
 rosbuild_add_executable(record src/record.cpp)
@@ -19,9 +19,6 @@ target_link_libraries(record rosbag)
 
 rosbuild_add_executable(play src/play.cpp)
 target_link_libraries(play rosbag)
-
-#rosbuild_add_executable(mytest test/mytest.cpp)
-#target_link_libraries(mytest rosbag)
 
 INSTALL(TARGETS record play
         RUNTIME DESTINATION $ENV{ROS_ROOT}/bin)

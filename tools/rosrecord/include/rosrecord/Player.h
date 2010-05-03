@@ -109,7 +109,7 @@ public:
             return false;
         }
 
-        view_.addQuery(bag_, rosbag::Query());
+        view_.addQuery(bag_);
         iterator_ = view_.begin();
 
         return true;

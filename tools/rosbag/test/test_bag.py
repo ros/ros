@@ -75,6 +75,24 @@ class TestRosbag(unittest.TestCase):
         for (_, _, t1), (_, _, t2) in zip(msgs, msgs[1:]):
             self.assert_(t1 < t2, 'messages returned unordered: got timestamp %s before %s' % (str(t1), str(t2)))
 
+    def test_writing_nonchronological_works(self):
+        b = rosbag.Bag('/tmp/test_writing_nonchronological_works.bag', 'w')
+        msg_count = 0
+        for i in range(5, 0, -1):
+            msg = Int32()
+            msg.data = i
+            t = roslib.rostime.Time.from_sec(i)
+            b.write('/ints', msg, t)
+            msg_count += 1
+        b.close()
+
+        msgs = list(rosbag.Bag('/tmp/test_writing_nonchronological_works.bag').read_messages())
+        
+        self.assert_(len(msgs) == msg_count, 'not all messages written: expected %d, got %d' % (msg_count, len(msgs)))
+
+        for (_, _, t1), (_, _, t2) in zip(msgs, msgs[1:]):
+            self.assert_(t1 < t2, 'messages returned unordered: got timestamp %s before %s' % (str(t1), str(t2)))
+
     def test_large_write_works(self):
         for compression in [rosbag.Compression.NONE, rosbag.Compression.BZ2]:
             b = rosbag.Bag('/tmp/test_large_write_works.bag', 'w', compression=compression)

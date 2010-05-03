@@ -123,7 +123,6 @@ class Bag(object):
         self._index_data_pos   = 0       # (1.2+)
 
         self._connection_indexes = {}    # id    -> IndexEntry[] (1.2+)
-        self._topic_indexes      = {}    # topic -> IndexEntry[] (1.2+)
 
         self._topic_connections  = {}    # topic -> connection_id
         self._connections        = {}    # id -> ConnectionInfo
@@ -138,7 +137,6 @@ class Bag(object):
         self._curr_chunk_info               = None
         self._curr_chunk_data_pos           = None
         self._curr_chunk_connection_indexes = {}
-        self._curr_chunk_topic_indexes      = {}
 
         self._curr_compression = Compression.NONE
         self._output_file      = self._file
@@ -216,9 +214,9 @@ class Bag(object):
         """
         Get the index.
         @return: the index
-        @rtype: dict of topic -> (U{roslib.rostime.Time}, position), where position depends on the bag format.
+        @rtype: dict of connection -> (U{roslib.rostime.Time}, position), where position depends on the bag format.
         """
-        if not self._topic_indexes:
+        if not self._connection_indexes:
             raise ROSBagException('get_index not supported on unindexed bag files')
 
         return self._reader.get_index()
@@ -328,24 +326,16 @@ class Bag(object):
         # Update the indexes and current chunk info 
         if conn_id not in self._curr_chunk_connection_indexes:
             # This is the first message on this connection in the chunk
-            self._curr_chunk_topic_indexes[topic] = [index_entry]
-
             self._curr_chunk_connection_indexes[conn_id] = [index_entry]
             self._curr_chunk_info.connection_counts[conn_id] = 1
         else:
-            curr_chunk_topic_index      = self._curr_chunk_topic_indexes[topic] 
             curr_chunk_connection_index = self._curr_chunk_connection_indexes[conn_id]
-            
-            if index_entry >= curr_chunk_topic_index[-1]:
-                curr_chunk_topic_index.append(index_entry)
-            else:
-                curr_chunk_topic_index.insert(bisect(curr_chunk_topic_index, index_entry), index_entry)
-
             if index_entry >= curr_chunk_connection_index[-1]:
+                # Test if we're writing chronologically.  Can skip binary search if so.
                 curr_chunk_connection_index.append(index_entry)
             else:
                 curr_chunk_connection_index.insert(bisect(curr_chunk_connection_index, index_entry), index_entry)
-                
+
             self._curr_chunk_info.connection_counts[conn_id] += 1
 
         if conn_id not in self._connection_indexes:
@@ -353,12 +343,6 @@ class Bag(object):
         else:
             connection_index = self._connection_indexes[conn_id]
             connection_index.insert(bisect(connection_index, index_entry), index_entry)
-        
-        if topic not in self._topic_indexes:
-            self._topic_indexes[topic] = [index_entry]
-        else:
-            topic_index = self._topic_indexes[topic]
-            topic_index.insert(bisect(topic_index, index_entry), index_entry)
 
         # Update the chunk start/end times
         if t > self._curr_chunk_info.end_time:
@@ -397,12 +381,12 @@ class Bag(object):
             s += 'bag:          %s (%s)\n' % (self._filename, self._mode)
         s += 'version:      %d.%d\n' % (self._version / 100, self._version % 100)
 
-        if not self._topic_indexes:
+        if not self._connection_indexes:
             return s.rstrip()
         
         # Show start and end times
-        start_stamp = min([index[ 0].time.to_sec() for index in self._topic_indexes.values()])
-        end_stamp   = max([index[-1].time.to_sec() for index in self._topic_indexes.values()])
+        start_stamp = min([index[ 0].time.to_sec() for index in self._connection_indexes.values()])
+        end_stamp   = max([index[-1].time.to_sec() for index in self._connection_indexes.values()])
         s += 'start:        %s (%.2f)\n' % (_time_to_str(start_stamp), start_stamp)
         s += 'end:          %s (%.2f)\n' % (_time_to_str(end_stamp),   end_stamp)
 
@@ -419,7 +403,7 @@ class Bag(object):
         else:
             s += 'length:       %.1fs\n' % duration
 
-        s += 'messages:     %d\n' % (sum([len(index) for index in self._topic_indexes.values()]))
+        s += 'messages:     %d\n' % (sum([len(index) for index in self._connection_indexes.values()]))
 
         # Calculate total size of message chunks
         total_uncompressed_size = sum((h.uncompressed_size for h in self._chunk_headers.values()))
@@ -447,15 +431,15 @@ class Bag(object):
 
         topic_datatypes = dict([connection.topic, connection.datatype] for connection in self._connections.values())
 
-        # Show topics
-        s += 'topics:'
+        # Show connections
+        s += 'connections:'
         topics = sorted(topic_datatypes.keys())       
         max_topic_len = max([len(topic) for topic in topics])
         max_datatype_len = max([len(datatype) for datatype in datatypes])
-        for i, topic in enumerate(topics):
+        for i, connection in enumerate(self._connections.values()):
             indent = (7 if i == 0 else 14)
-            
-            index     = self._topic_indexes[topic]
+
+            index     = self._connection_indexes[connection.id]
             stamps    = numpy.array([entry.time.to_sec() for entry in index])
             msg_count = len(stamps)
 
@@ -1015,14 +999,9 @@ class _BagReader(object):
             yield entry
 
     def get_indexes(self, topics, connection_filter):
-        if topics:
-            topics_set = set(topics)
-        else:
-            topics_set = set(self.bag._topic_indexes.keys())
-        
         filtered_connections = []
         for connection_info in self.bag._connections.values():
-            if connection_info.topic not in topics_set:
+            if topics and connection_info.topic not in topics_set:
                 continue
             if connection_filter and not connection_filter(connection_info.topic, connection_info.datatype, connection_info.md5sum, connection_info.msg_def):
                 continue
@@ -1241,8 +1220,8 @@ class _BagReader102_Indexed(_BagReader):
     
     def get_index(self):
         index = {}
-        for topic, entries in self.bag._topic_indexes.items():
-            index[topic] = [(e.time, e.offset) for e in entries]
+        for connection, entries in self.bag._connection_indexes.items():
+            index[connection] = [(e.time, e.offset) for e in entries]
         return index
 
     def start_reading(self):
@@ -1251,22 +1230,26 @@ class _BagReader102_Indexed(_BagReader):
         # Seek to the beginning of the topic index records
         self.bag._file.seek(self.bag._index_data_pos)
 
+        topic_indexes = {}
+
         while True:
             topic_index = self.read_topic_index_record()
             if topic_index is None:
                 break
             (topic, index) = topic_index
-            self.bag._topic_indexes[topic] = index
+            topic_indexes[topic] = index
 
         # Read the message definition records (one for each topic)
-        for topic, index in self.bag._topic_indexes.items():
+        for topic, index in topic_indexes.items():
             self.bag._file.seek(index[0].offset)
 
             connection_info = self.read_message_definition_record()
-            
+
             if connection_info.topic not in self.bag._topic_connections:
                 self.bag._topic_connections[connection_info.topic] = connection_info.id
             self.bag._connections[connection_info.id] = connection_info
+
+            self.bag._connection_indexes[connection_info.id] = index
 
     def read_file_header_record(self):
         self.bag._file_header_pos = self.bag._file.tell()
@@ -1369,8 +1352,8 @@ class _BagReader200(_BagReader):
 
     def get_index(self):
         index = {}
-        for topic, entries in self.bag._topic_indexes.items():
-            index[topic] = [(e.time, (e.chunk_pos, e.offset)) for e in entries]
+        for connection, entries in self.bag._connection_indexes.items():
+            index[connection] = [(e.time, (e.chunk_pos, e.offset)) for e in entries]
 
         return index
 
@@ -1399,7 +1382,6 @@ class _BagReader200(_BagReader):
 
         # Read the chunk headers and topic indexes
         self.bag._connection_indexes = {}
-        self.bag._topic_indexes = {}
         self.bag._chunk_headers = {}
         for chunk_info in self.bag._chunks:
             self.bag._curr_chunk_info = chunk_info
@@ -1417,20 +1399,13 @@ class _BagReader200(_BagReader):
             for i in range(len(chunk_info.connection_counts)):
                 (connection_id, index) = self.read_connection_index_record()
 
-                topic = self.bag._connections[connection_id].topic
-                
                 if connection_id not in self.bag._connection_indexes:
                     self.bag._connection_indexes[connection_id] = []
-                connection_index = self.bag._connection_indexes[connection_id]
 
-                if topic not in self.bag._topic_indexes:
-                    self.bag._topic_indexes[topic] = []
-                topic_index = self.bag._topic_indexes[topic]
-                
+                connection_index = self.bag._connection_indexes[connection_id]
                 for entry in index:
-                    # todo: rather than append, this should insert in time order
+                    # todo: rather than append, this should insert in time order (so that chunks can be out of order)
                     connection_index.append(entry)
-                    topic_index.append(entry)
 
     def read_file_header_record(self):
         self.bag._file_header_pos = self.bag._file.tell()

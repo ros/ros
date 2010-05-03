@@ -85,7 +85,7 @@ class BagReader(object):
         @return dict(topic, [(stamp, pos)...]): bag file index
         """
         try:
-            self.index = self._bag.getIndex()
+            self.index = self._bag.get_index()
         except rosbag.ROSBagException:
             self.index = None
 
@@ -100,7 +100,7 @@ class BagReader(object):
 
         try:
             try:
-                for topic, msg, t in self._bag.readMessages(raw=raw):
+                for topic, msg, t in self._bag.read_messages(raw=raw):
                     if msg is None or rospy.is_shutdown():
                         break
                     yield topic, msg, t
@@ -116,7 +116,7 @@ class BagReader(object):
         @return (pos, topic, msg, t)...: tuple of position, topic, message data and time stamp
         """
         try:
-            for topic, msg, t in self._bag.readMessages(raw=True):
+            for topic, msg, t in self._bag.read_messages(raw=True):
                 if msg is None or rospy.is_shutdown():
                     break
                 (datatype, data, md5sum, position, pytype) = msg

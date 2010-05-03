@@ -43,6 +43,8 @@
 #include "rosbag/view.h"
 #include "topic_tools/shape_shifter.h"
 
+#include "std_msgs/String.h"
+
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 
@@ -80,8 +82,12 @@ public:
         return ss.str();
     }
 
-    ros::Duration getFirstDuration() { return ros::Duration();          }
     bool          isDone()           { return iterator_ == view_.end(); }
+
+    // todo: implement
+    ros::Duration getFirstDuration() { return ros::Duration();          }
+
+    // todo: implement
     ros::Duration get_duration()     { return ros::Duration();          }
 
     void close() {
@@ -105,7 +111,7 @@ public:
         }
         catch (rosbag::BagException ex)
         {
-            ROS_FATAL_STREAM("Failed to open file: " << file_name);
+            ROS_FATAL_STREAM("Failed to open file: " << file_name << " (" << ex.what() << ")");
             return false;
         }
 
@@ -150,7 +156,7 @@ public:
         fmf.md5sum = M::__s_getMD5Sum();
         fmf.datatype = M::__s_getDataType();
         fmf.inflate = inflate;
-        fmf.f = new MsgFunctor<M, T> (obj, fp, ptr, inflate);
+        fmf.f = new MsgFunctor<M, T>(obj, fp, ptr, inflate);
 
         callbacks_.push_back(fmf);
     }
@@ -164,7 +170,7 @@ public:
         fmf.md5sum = M::__s_getMD5Sum();
         fmf.datatype = M::__s_getDataType();
         fmf.inflate = true;
-        fmf.f = new MsgFunctor<M, T> (obj, fp, ptr);
+        fmf.f = new MsgFunctor<M, T>(obj, fp, ptr);
 
         callbacks_.push_back(fmf);
     }
@@ -182,25 +188,31 @@ public:
 
         rosbag::MessageInstance msg = (*iterator_);
 
+        std::string const& topic    = msg.getTopic();
+        std::string const& md5sum   = msg.getMD5Sum();
+        std::string const& datatype = msg.getDataType();
+
+        // Filter the list of callbacks
+        std::vector<FilteredMsgFunctor> callbacks;
         foreach(FilteredMsgFunctor fmf, callbacks_)
         {
-            std::string const& topic = msg.getTopic();
             if (topic != fmf.topic_name && fmf.topic_name != std::string("*"))
                 continue;
-
-            std::string const& md5sum = msg.getMD5Sum();
             if (fmf.md5sum != md5sum && fmf.md5sum != std::string("*"))
-                continue;
-
-            std::string const& datatype = msg.getDataType();
+            	continue;
             if (fmf.datatype != datatype && fmf.datatype != std::string("*") && datatype != std::string("*"))
-                continue;
+            	continue;
 
-            ros::Time const& time = msg.getTime();
+            callbacks.push_back(fmf);
+        }
 
-            boost::shared_ptr<topic_tools::ShapeShifter const> m = msg.instantiate<topic_tools::ShapeShifter>();
+        if (callbacks.size() > 0) {
+        	boost::shared_ptr<topic_tools::ShapeShifter const> ss = msg.instantiate<topic_tools::ShapeShifter>();
 
-            fmf.f->call(topic, (ros::Message*) m.get(), time, time);
+        	ros::Time const& time = msg.getTime();
+
+        	foreach(FilteredMsgFunctor fmf, callbacks)
+        		fmf.f->call(topic, (ros::Message*) ss.get(), time, time);
         }
 
         iterator_++;
@@ -209,7 +221,7 @@ public:
     }
 
     void shiftTime(ros::Duration shift) {
-        // ?
+        // todo: implement
     }
 
 private:
@@ -278,29 +290,28 @@ public:
     void addHandler(std::string topic_name, void(*fp)(std::string, ros::Message*, ros::Time, ros::Time, void*), void* ptr, bool inflate)
     {
         for (std::vector<Player*>::iterator player_it = players_.begin(); player_it != players_.end(); player_it++)
-            (*player_it)->addHandler<M> (topic_name, fp, ptr, inflate);
+            (*player_it)->addHandler<M>(topic_name, fp, ptr, inflate);
     }
 
     template<class M>
     void addHandler(std::string topic_name, void(*fp)(std::string, M*, ros::Time, ros::Time, void*), void* ptr)
     {
         for (std::vector<Player*>::iterator player_it = players_.begin(); player_it != players_.end(); player_it++)
-            (*player_it)->addHandler<M> (topic_name, fp, ptr);
+            (*player_it)->addHandler<M>(topic_name, fp, ptr);
     }
 
     template<class M, class T>
-    void addHandler(std::string topic_name, void(T::*fp)(std::string, ros::Message*, ros::Time, ros::Time, void*),
-                    T* obj, void* ptr, bool inflate)
+    void addHandler(std::string topic_name, void(T::*fp)(std::string, ros::Message*, ros::Time, ros::Time, void*), T* obj, void* ptr, bool inflate)
     {
         for (std::vector<Player*>::iterator player_it = players_.begin(); player_it != players_.end(); player_it++)
-            (*player_it)->addHandler<M> (topic_name, fp, obj, ptr, inflate);
+            (*player_it)->addHandler<M>(topic_name, fp, obj, ptr, inflate);
     }
 
     template<class M, class T>
     void addHandler(std::string topic_name, void(T::*fp)(std::string, M*, ros::Time, ros::Time, void*), T* obj, void* ptr)
     {
         for (std::vector<Player*>::iterator player_it = players_.begin(); player_it != players_.end(); player_it++)
-            (*player_it)->addHandler<M> (topic_name, fp, obj, ptr);
+            (*player_it)->addHandler<M>(topic_name, fp, obj, ptr);
     }
 
     bool nextMsg()

@@ -300,11 +300,11 @@ void Bag::startReadingVersion102() {
         readTopicIndexRecord102();
 
     // Read the message definition records (which are the first entry in the topic indexes)
-    for (map<string, multiset<IndexEntry> >::const_iterator i = topic_indexes_.begin(); i != topic_indexes_.end(); i++) {
-        multiset<IndexEntry> const& topic_index = i->second;
-        IndexEntry const&           first_entry = *topic_index.begin();
+    for (map<uint32_t, multiset<IndexEntry> >::const_iterator i = connection_indexes_.begin(); i != connection_indexes_.end(); i++) {
+        multiset<IndexEntry> const& index       = i->second;
+        IndexEntry const&           first_entry = *index.begin();
 
-        ROS_DEBUG("Reading message definition for %s at %llu", i->first.c_str(), (unsigned long long) first_entry.chunk_pos);
+        ROS_DEBUG("Reading message definition for connection %d at %llu", i->first, (unsigned long long) first_entry.chunk_pos);
 
         seek(first_entry.chunk_pos);
 
@@ -418,7 +418,6 @@ void Bag::stopWritingChunk() {
     seek(end_of_chunk_pos);
     writeIndexRecords();
     curr_chunk_connection_indexes_.clear();
-    curr_chunk_topic_indexes_.clear();
     
     // Flag that we're starting a new chunk
     chunk_open_ = false;
@@ -534,7 +533,6 @@ void Bag::readTopicIndexRecord102() {
     	connection_id = topic_conn_id_iter->second;
 
     multiset<IndexEntry>& connection_index = connection_indexes_[connection_id];
-    multiset<IndexEntry>& topic_index      = topic_indexes_[topic];
 
     for (uint32_t i = 0; i < count; i++) {
         IndexEntry index_entry;
@@ -549,7 +547,6 @@ void Bag::readTopicIndexRecord102() {
         ROS_DEBUG("  - %d.%d: %llu", sec, nsec, (unsigned long long) index_entry.chunk_pos);
 
         connection_index.insert(connection_index.end(), index_entry);
-        topic_index.insert(topic_index.end(), index_entry);
     }
 }
 
@@ -577,10 +574,7 @@ void Bag::readConnectionIndexRecord200() {
 
     uint64_t chunk_pos = curr_chunk_info_.pos;
 
-    ConnectionInfo*       connection_info  = connections_[connection_id];
     multiset<IndexEntry>& connection_index = connection_indexes_[connection_id];
-    string const&         topic            = connection_info->topic;
-    multiset<IndexEntry>& topic_index      = topic_indexes_[topic];
 
     for (uint32_t i = 0; i < count; i++) {
         IndexEntry index_entry;
@@ -595,7 +589,6 @@ void Bag::readConnectionIndexRecord200() {
         ROS_DEBUG("  - %d.%d: %llu+%d", sec, nsec, (unsigned long long) index_entry.chunk_pos, index_entry.offset);
 
         connection_index.insert(connection_index.end(), index_entry);
-        topic_index.insert(topic_index.end(), index_entry);
     }
 }
 
@@ -685,48 +678,32 @@ void Bag::readMessageDefinitionRecord102() {
     readField(fields, TYPE_FIELD_NAME,                true, datatype);
     readField(fields, DEF_FIELD_NAME,    0, UINT_MAX, true, message_definition);
 
+    ConnectionInfo* connection_info;
+
     map<string, uint32_t>::const_iterator topic_conn_id_iter = topic_connection_ids_.find(topic);
     if (topic_conn_id_iter == topic_connection_ids_.end()) {
     	uint32_t id = connections_.size();
 
         ROS_DEBUG("Creating connection: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
-        ConnectionInfo* connection_info = new ConnectionInfo();
+        connection_info = new ConnectionInfo();
         connection_info->id       = id;
         connection_info->topic    = topic;
-        connection_info->msg_def  = message_definition;
-        connection_info->datatype = datatype;
-        connection_info->md5sum   = md5sum;
-        connection_info->header = boost::shared_ptr<ros::M_string>(new ros::M_string);
-
-        // TESTING
-        (*connection_info->header)["callerid"]           = string("");
-        (*connection_info->header)["latching"]           = string("0");
-
-        (*connection_info->header)["type"]               = connection_info->datatype;
-        (*connection_info->header)["md5sum"]             = connection_info->md5sum;
-        (*connection_info->header)["message_definition"] = connection_info->msg_def;
 
         connections_[id] = connection_info;
-
         topic_connection_ids_[topic] = id;
-
-        ROS_DEBUG("Read MSG_DEF: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
     }
-    else {
-    	uint32_t id = topic_conn_id_iter->second;
+    else
+        connection_info = connections_[topic_conn_id_iter->second];
 
-        ROS_DEBUG("Updating connection: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
-        ConnectionInfo* connection_info = connections_[id];
-        connection_info->msg_def  = message_definition;
-        connection_info->datatype = datatype;
-        connection_info->md5sum   = md5sum;
-        connection_info->header = boost::shared_ptr<ros::M_string>(new ros::M_string);
-        (*connection_info->header)["type"]               = connection_info->datatype;
-        (*connection_info->header)["md5sum"]             = connection_info->md5sum;
-        (*connection_info->header)["message_definition"] = connection_info->msg_def;
+    connection_info->msg_def  = message_definition;
+    connection_info->datatype = datatype;
+    connection_info->md5sum   = md5sum;
+    connection_info->header = boost::shared_ptr<ros::M_string>(new ros::M_string);
+    (*connection_info->header)["type"]               = connection_info->datatype;
+    (*connection_info->header)["md5sum"]             = connection_info->md5sum;
+    (*connection_info->header)["message_definition"] = connection_info->msg_def;
 
-        ROS_DEBUG("Read MSG_DEF: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
-    }
+    ROS_DEBUG("Read MSG_DEF: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
 }
 
 void Bag::decompressChunk(uint64_t chunk_pos) const {
@@ -1107,14 +1084,6 @@ void Bag::dump() {
     std::cout << "connection_indexes:" << std::endl;
     for (map<uint32_t, multiset<IndexEntry> >::const_iterator i = connection_indexes_.begin(); i != connection_indexes_.end(); i++) {
         std::cout << "  connection: " << i->first << std::endl;
-        for (multiset<IndexEntry>::const_iterator j = i->second.begin(); j != i->second.end(); j++) {
-            std::cout << "    - " << j->chunk_pos << ":" << j->offset << std::endl;
-        }
-    }
-
-    std::cout << "topic_indexes:" << std::endl;
-    for (map<string, multiset<IndexEntry> >::const_iterator i = topic_indexes_.begin(); i != topic_indexes_.end(); i++) {
-        std::cout << "  topic: " << i->first << std::endl;
         for (multiset<IndexEntry>::const_iterator j = i->second.begin(); j != i->second.end(); j++) {
             std::cout << "    - " << j->chunk_pos << ":" << j->offset << std::endl;
         }

@@ -206,7 +206,7 @@ class Bag(object):
         
     chunk_threshold = property(_get_chunk_threshold, _set_chunk_threshold)
 
-    def _read_message(self, position, raw):
+    def _read_message(self, position, raw=False):
         self.flush()
         return self._reader.read_message_data_record(position, raw)
 
@@ -1220,8 +1220,9 @@ class _BagReader102_Indexed(_BagReader):
     
     def get_index(self):
         index = {}
-        for connection, entries in self.bag._connection_indexes.items():
-            index[connection] = [(e.time, e.offset) for e in entries]
+        for id, entries in self.bag._connection_indexes.items():
+            connection = self.bag._connections[id]
+            index[(connection.id, connection.topic, connection.datatype)] = [(e.time, e.offset) for e in entries]
         return index
 
     def start_reading(self):
@@ -1352,8 +1353,9 @@ class _BagReader200(_BagReader):
 
     def get_index(self):
         index = {}
-        for connection, entries in self.bag._connection_indexes.items():
-            index[connection] = [(e.time, (e.chunk_pos, e.offset)) for e in entries]
+        for id, entries in self.bag._connection_indexes.items():
+            connection = self.bag._connections[id]
+            index[(connection.id, connection.topic, connection.datatype)] = [(e.time, (e.chunk_pos, e.offset)) for e in entries]
 
         return index
 

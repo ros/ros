@@ -33,6 +33,7 @@
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
+from bisect import bisect
 import bz2
 from cStringIO import StringIO
 import heapq
@@ -258,12 +259,12 @@ class Bag(object):
 
     def write(self, topic, msg, t=None, raw=False):
         """
-        Write a message to the bag.  Messages must be written in chronological order for a given topic.
+        Write a message to the bag.
         @param topic: name of topic
         @type  topic: str
         @param msg: message to add to bag, or tuple (if raw)
         @type  msg: Message or tuple of raw message data
-        @param t: ROS time of message publication
+        @param t: ROS time of message publication, if None specifed, use current time [optional]
         @type  t: U{roslib.rostime.Time}
         @param raw: if True, msg is in raw format, i.e. (msg_type, serialized_bytes, md5sum, pytype)
         @type  raw: bool
@@ -272,7 +273,7 @@ class Bag(object):
         """
         if not self._file:
             raise ValueError('I/O operation on closed bag')
-        
+
         if not topic:
             raise ValueError('topic is invalid')
         if not msg:
@@ -332,17 +333,32 @@ class Bag(object):
             self._curr_chunk_connection_indexes[conn_id] = [index_entry]
             self._curr_chunk_info.connection_counts[conn_id] = 1
         else:
-            last_message_time = self._curr_chunk_connection_indexes[conn_id][-1].time
-            # todo: allow non-chronological adding
-            if t < last_message_time:
-                raise ROSBagException('received messages not in chronological order on topic %s (%s received after %s)' % (topic, str(t), str(last_message_time)))
+            curr_chunk_topic_index      = self._curr_chunk_topic_indexes[topic] 
+            curr_chunk_connection_index = self._curr_chunk_connection_indexes[conn_id]
             
-            self._curr_chunk_topic_indexes[topic].append(index_entry)
-            self._curr_chunk_connection_indexes[conn_id].append(index_entry)
+            if index_entry >= curr_chunk_topic_index[-1]:
+                curr_chunk_topic_index.append(index_entry)
+            else:
+                curr_chunk_topic_index.insert(bisect(curr_chunk_topic_index, index_entry), index_entry)
+
+            if index_entry >= curr_chunk_connection_index[-1]:
+                curr_chunk_connection_index.append(index_entry)
+            else:
+                curr_chunk_connection_index.insert(bisect(curr_chunk_connection_index, index_entry), index_entry)
+                
             self._curr_chunk_info.connection_counts[conn_id] += 1
 
-        self._connection_indexes.setdefault(conn_id, []).append(index_entry)
-        self._topic_indexes.setdefault(topic, []).append(index_entry)
+        if conn_id not in self._connection_indexes:
+            self._connection_indexes[conn_id] = [index_entry]
+        else:
+            connection_index = self._connection_indexes[conn_id]
+            connection_index.insert(bisect(connection_index, index_entry), index_entry)
+        
+        if topic not in self._topic_indexes:
+            self._topic_indexes[topic] = [index_entry]
+        else:
+            topic_index = self._topic_indexes[topic]
+            topic_index.insert(bisect(topic_index, index_entry), index_entry)
 
         # Update the chunk start/end times
         if t > self._curr_chunk_info.end_time:
@@ -871,6 +887,9 @@ class _IndexEntry200(object):
 
     def __str__(self):
         return '%d.%d: %d+%d' % (self.time.secs, self.time.nsecs, self.chunk_pos, self.offset)
+
+    def __cmp__(self, other):
+        return self.time.__cmp__(other.time)
 
 def _read_uint8 (f): return _unpack_uint8 (f.read(1))
 def _read_uint32(f): return _unpack_uint32(f.read(4))

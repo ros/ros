@@ -411,7 +411,7 @@ def rosmsg_cmd_show(mode, full):
         bag_file = options.bag
         if not os.path.exists(bag_file):
             raise ROSMsgException("ERROR: bag file [%s] does not exist"%bag_file)
-        for topic, msg, t in rosbag.Bag(bag_file).readMessages(raw=True):
+        for topic, msg, t in rosbag.Bag(bag_file).read_messages(raw=True):
             datatype, _, _, _, pytype = msg
             if datatype == arg:
                 print get_msg_text(datatype, options.raw, pytype._full_text)

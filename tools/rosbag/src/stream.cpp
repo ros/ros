@@ -80,4 +80,4 @@ void     Stream::setUnused(char* unused)          { file_->unused_ = unused;    
 void     Stream::setUnusedLength(int nUnused)     { file_->nUnused_ = nUnused;      }
 void     Stream::clearUnused()                    { file_->clearUnused();           }
 
-}
+} // namespace rosbag

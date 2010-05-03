@@ -576,6 +576,6 @@ void Bag::writeMessageDataRecord(uint32_t conn_id, ros::Time const& time, T cons
     	curr_chunk_info_.end_time = time;
 }
 
-}
+} // namespace rosbag
 
 #endif

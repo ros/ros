@@ -174,6 +174,6 @@ public:
 };
 #endif
 
-}
+} // namespace rosbag
 
 #endif

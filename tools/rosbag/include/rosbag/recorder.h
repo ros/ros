@@ -162,6 +162,6 @@ private:
     ros::WallTime warn_next_;
 };
 
-}
+} // namespace rosbag
 
 #endif

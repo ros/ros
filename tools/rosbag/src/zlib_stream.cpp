@@ -122,4 +122,4 @@ void ZLIBStream::startRead() {
 void ZLIBStream::stopRead() {
 }
 
-}
+} // namespace rosbag

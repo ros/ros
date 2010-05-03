@@ -100,6 +100,6 @@ private:
     boost::shared_ptr<Stream> write_stream_;
 };
 
-}
+} // namespace rosbag
 
 #endif

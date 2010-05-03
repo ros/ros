@@ -215,4 +215,4 @@ void View::update() {
     }
 }
 
-}
+} // namespace rosbag

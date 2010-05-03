@@ -63,13 +63,13 @@ static const std::string END_TIME_FIELD_NAME         = "end_time";      // 2.0+
 static const std::string CHUNK_POS_FIELD_NAME        = "chunk_pos";     // 2.0+
 
 // Legacy header fields
-static const std::string MD5_FIELD_NAME         = "md5";           // <2.0
-static const std::string TYPE_FIELD_NAME        = "type";          // <2.0
-static const std::string DEF_FIELD_NAME         = "def";           // <2.0
-static const std::string SEC_FIELD_NAME         = "sec";           // <2.0
-static const std::string NSEC_FIELD_NAME        = "nsec";          // <2.0
-static const std::string LATCHING_FIELD_NAME    = "latching";      // <2.0
-static const std::string CALLERID_FIELD_NAME    = "callerid";      // <2.0
+static const std::string MD5_FIELD_NAME      = "md5";           // <2.0
+static const std::string TYPE_FIELD_NAME     = "type";          // <2.0
+static const std::string DEF_FIELD_NAME      = "def";           // <2.0
+static const std::string SEC_FIELD_NAME      = "sec";           // <2.0
+static const std::string NSEC_FIELD_NAME     = "nsec";          // <2.0
+static const std::string LATCHING_FIELD_NAME = "latching";      // <2.0
+static const std::string CALLERID_FIELD_NAME = "callerid";      // <2.0
 
 // Current "op" field values
 static const unsigned char OP_MSG_DATA    = 0x02;
@@ -96,6 +96,6 @@ static const std::string COMPRESSION_NONE = "none";
 static const std::string COMPRESSION_BZ2  = "bz2";
 //static const std::string COMPRESSION_ZLIB = "zlib";
 
-}
+} // namespace rosbag
 
 #endif

@@ -41,8 +41,7 @@
 #include "ros/message.h"
 #include "ros/time.h"
 
-namespace rosbag
-{
+namespace rosbag {
 
 struct ConnectionInfo
 {
@@ -88,6 +87,6 @@ struct IndexEntryCompare
     bool operator()(IndexEntry const& a, ros::Time const& b) const { return a.time < b; }
 };
 
-}
+} // namespace rosbag
 
 #endif

@@ -294,4 +294,4 @@ ros::Time Player::getSysTime() {
     return ros::Time().fromNSec(1e9 * timeofday.tv_sec + 1e3 * timeofday.tv_usec);
 }
 
-}
+} // namespace rosbag

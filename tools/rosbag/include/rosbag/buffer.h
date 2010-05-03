@@ -60,6 +60,6 @@ private:
     uint32_t size_;
 };
 
-}
+} // namespace rosbag
 
 #endif

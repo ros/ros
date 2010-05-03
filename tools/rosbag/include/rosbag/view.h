@@ -151,6 +151,6 @@ protected:
     uint32_t                   view_revision_;
 };
 
-}
+} // namespace rosbag
 
 #endif

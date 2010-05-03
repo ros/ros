@@ -63,6 +63,6 @@ public:
     BagFormatException(std::string const& msg) : BagException(msg) { }
 };
 
-}
+} // namespace rosbag
 
 #endif

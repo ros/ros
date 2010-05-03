@@ -116,4 +116,4 @@ void UncompressedStream::decompress(uint8_t* dest, unsigned int dest_len, uint8_
     memcpy(dest, source, source_len);
 }
 
-}
+} // namespace rosbag

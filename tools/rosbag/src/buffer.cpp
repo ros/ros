@@ -68,5 +68,4 @@ void Buffer::ensureCapacity(uint32_t capacity) {
     ROS_ASSERT(buffer_);
 }
 
-
-}
+} // namespace rosbag

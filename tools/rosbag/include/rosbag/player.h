@@ -107,6 +107,6 @@ private:
     int     maxfd_;
 };
 
-}
+} // namespace rosbag
 
 #endif

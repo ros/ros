@@ -1090,4 +1090,4 @@ void Bag::dump() {
     }
 }
 
-}
+} // namespace rosbag

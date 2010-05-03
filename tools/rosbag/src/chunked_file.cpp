@@ -243,4 +243,4 @@ void ChunkedFile::clearUnused() {
     nUnused_ = 0;
 }
 
-}
+} // namespace rosbag

@@ -447,4 +447,4 @@ bool Recorder::checkLogging() {
     return false;
 }
 
-}
+} // namespace rosbag

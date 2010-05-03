@@ -173,4 +173,4 @@ void BZ2Stream::checkError() const {
     }
 }
 
-}
+} // namespace rosbag

@@ -30,7 +30,7 @@ class TestRosbag(unittest.TestCase):
         
         f = open('/tmp/test_opening_stream_works.bag', 'r')
         b = rosbag.Bag(f, 'r')
-        self.assert_(len(list(b.readMessages())) == 10)
+        self.assert_(len(list(b.read_messages())) == 10)
         b.close()
 
     def test_invalid_bag_arguments_fails(self):
@@ -68,7 +68,7 @@ class TestRosbag(unittest.TestCase):
             msg_count += 1
         b.close()
 
-        msgs = list(rosbag.Bag('/tmp/test_simple_write_uncompressed_works.bag').readMessages())
+        msgs = list(rosbag.Bag('/tmp/test_simple_write_uncompressed_works.bag').read_messages())
         
         self.assert_(len(msgs) == msg_count, 'not all messages written: expected %d, got %d' % (msg_count, len(msgs)))
 
@@ -87,7 +87,7 @@ class TestRosbag(unittest.TestCase):
                 msg_count += 1
             b.close()
 
-            msgs = list(rosbag.Bag('/tmp/test_large_write_works.bag').readMessages())
+            msgs = list(rosbag.Bag('/tmp/test_large_write_works.bag').read_messages())
 
             self.assert_(len(msgs) == msg_count, 'not all messages written: expected %d, got %d' % (msg_count, len(msgs)))
 
@@ -106,7 +106,7 @@ class TestRosbag(unittest.TestCase):
         start_time = roslib.rostime.Time.from_sec(3)
         end_time = roslib.rostime.Time.from_sec(7)
 
-        self.assert_(len(list(rosbag.Bag('/tmp/test_get_messages_time_range_works.bag').readMessages(start_time=start_time, end_time=end_time))) == 5)
+        self.assert_(len(list(rosbag.Bag('/tmp/test_get_messages_time_range_works.bag').read_messages(start_time=start_time, end_time=end_time))) == 5)
 
 if __name__ == '__main__':
     import rostest

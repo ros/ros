@@ -211,7 +211,7 @@ class Bag(object):
         self.flush()
         return self._reader.read_message_data_record(position, raw)
 
-    def getIndex(self):
+    def get_index(self):
         """
         Get the index.
         @return: the index
@@ -222,11 +222,11 @@ class Bag(object):
 
         return self._reader.get_index()
 
-    def readMessages(self, topics=None, start_time=None, end_time=None, topic_filter=None, raw=False):
+    def read_messages(self, topics=None, start_time=None, end_time=None, topic_filter=None, raw=False):
         """
         Read the messages from the bag file.
-        @param topic: list of topics [optional]
-        @type  topic: list(str)
+        @param topics: list of topics or a single topic [optional]
+        @type  topics: list(str) or str
         @param start_time: earliest timestamp of message to return [optional]
         @type  start_time: U{roslib.rostime.Time}
         @param end_time: latest timestamp of message to return [optional]
@@ -239,6 +239,10 @@ class Bag(object):
         @rtype: generator of tuples of (topic, message, timestamp)
         """
         self.flush()
+
+        if topics and type(topics) == str:
+            topics = [topics]
+        
         return self._reader.read_messages(topics, start_time, end_time, topic_filter, raw)
 
     def flush(self):

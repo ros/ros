@@ -62,7 +62,6 @@ Bag::Bag() :
     chunk_count_(0),
     chunk_open_(false),
     curr_chunk_data_pos_(0),
-    top_connection_id_(0),
     decompressed_chunk_(0)
 {
 }
@@ -78,7 +77,6 @@ Bag::Bag(string const& filename, uint32_t mode) :
     chunk_count_(0),
     chunk_open_(false),
     curr_chunk_data_pos_(0),
-    top_connection_id_(0),
     decompressed_chunk_(0)
 {
     open(filename, mode);
@@ -201,7 +199,7 @@ void Bag::setCompression(CompressionType compression) {
 void Bag::writeVersion() {
     string version = string("#ROSBAG V") + VERSION + string("\n");
 
-    ROS_DEBUG("Writing VERSION [%llu]: %s", (unsigned long long) file_.getOffset(), version.c_str());
+    ROS_INFO("Writing VERSION [%llu]: %s", (unsigned long long) file_.getOffset(), version.c_str());
 
     version_ = 200;
 
@@ -224,7 +222,7 @@ void Bag::readVersion() {
 
     version_ = version_major * 100 + version_minor;
 
-    ROS_DEBUG("Read VERSION: version=%d", version_);
+    ROS_INFO("Read VERSION: version=%d", version_);
 }
 
 uint32_t Bag::getMajorVersion() const { return version_ / 100; }
@@ -260,7 +258,6 @@ void Bag::startReadingVersion200() {
     // Read the connection records (one for each connection)
     for (uint32_t i = 0; i < connection_count_; i++)
         readConnectionRecord();
-    top_connection_id_ = connection_count_;
 
     // Read the chunk info records
     for (uint32_t i = 0; i < chunk_count_; i++)
@@ -307,7 +304,7 @@ void Bag::startReadingVersion102() {
         multiset<IndexEntry> const& topic_index = i->second;
         IndexEntry const&           first_entry = *topic_index.begin();
 
-        ROS_DEBUG("Reading message definition for %s at %llu", i->first.c_str(), (unsigned long long) first_entry.chunk_pos);
+        ROS_INFO("Reading message definition for %s at %llu", i->first.c_str(), (unsigned long long) first_entry.chunk_pos);
 
         seek(first_entry.chunk_pos);
 
@@ -323,7 +320,7 @@ void Bag::writeFileHeaderRecord() {
     connection_count_ = connections_.size();
     chunk_count_      = chunks_.size();
 
-    ROS_DEBUG("Writing FILE_HEADER [%llu]: index_pos=%llu connection_count=%d chunk_count=%d",
+    ROS_INFO("Writing FILE_HEADER [%llu]: index_pos=%llu connection_count=%d chunk_count=%d",
               (unsigned long long) file_.getOffset(), (unsigned long long) index_data_pos_, connection_count_, chunk_count_);
     
     // Write file header record
@@ -371,7 +368,7 @@ void Bag::readFileHeaderRecord() {
         readField(fields, CHUNK_COUNT_FIELD_NAME,      true, &chunk_count_);
     }
 
-    ROS_DEBUG("Read FILE_HEADER: index_pos=%llu connection_count=%d chunk_count=%d",
+    ROS_INFO("Read FILE_HEADER: index_pos=%llu connection_count=%d chunk_count=%d",
               (unsigned long long) index_data_pos_, connection_count_, chunk_count_);
 
     // Skip the data section (just padding)
@@ -437,7 +434,7 @@ void Bag::writeChunkHeader(CompressionType compression, uint32_t compressed_size
     chunk_header.compressed_size   = compressed_size;
     chunk_header.uncompressed_size = uncompressed_size;
 
-    ROS_DEBUG("Writing CHUNK [%llu]: compression=%s compressed=%d uncompressed=%d",
+    ROS_INFO("Writing CHUNK [%llu]: compression=%s compressed=%d uncompressed=%d",
               (unsigned long long) file_.getOffset(), chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size);
 
     M_string header;
@@ -462,7 +459,7 @@ void Bag::readChunkHeader(ChunkHeader& chunk_header) const {
     readField(fields, COMPRESSION_FIELD_NAME, true, chunk_header.compression);
     readField(fields, SIZE_FIELD_NAME,        true, &chunk_header.uncompressed_size);
 
-    ROS_DEBUG("Read CHUNK: compression=%s size=%d uncompressed=%d (%f)", chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size, 100 * ((double) chunk_header.compressed_size) / chunk_header.uncompressed_size);
+    ROS_INFO("Read CHUNK: compression=%s size=%d uncompressed=%d (%f)", chunk_header.compression.c_str(), chunk_header.compressed_size, chunk_header.uncompressed_size, 100 * ((double) chunk_header.compressed_size) / chunk_header.uncompressed_size);
 }
 
 // Index records
@@ -485,7 +482,7 @@ void Bag::writeIndexRecords() {
 
         writeDataLength(index_size * sizeof(IndexEntry));
 
-        ROS_DEBUG("Writing INDEX_DATA: connection=%d ver=%d count=%d", connection_id, INDEX_VERSION, index_size);
+        ROS_INFO("Writing INDEX_DATA: connection=%d ver=%d count=%d", connection_id, INDEX_VERSION, index_size);
 
         // Write the index record data (pairs of timestamp and position in file)
         foreach(IndexEntry const& e, index) {
@@ -493,7 +490,7 @@ void Bag::writeIndexRecords() {
             write((char*) &e.time.nsec, 4);
             write((char*) &e.offset,    4);
 
-            ROS_DEBUG("  - %d.%d: %d", e.time.sec, e.time.nsec, e.offset);
+            ROS_INFO("  - %d.%d: %d", e.time.sec, e.time.nsec, e.offset);
         }
     }
 }
@@ -515,26 +512,43 @@ void Bag::readTopicIndexRecord102() {
     readField(fields, TOPIC_FIELD_NAME, true, topic);
     readField(fields, COUNT_FIELD_NAME, true, &count);
 
-    ROS_DEBUG("Read INDEX_DATA: ver=%d topic=%s count=%d", index_version, topic.c_str(), count);
+    ROS_INFO("Read INDEX_DATA: ver=%d topic=%s count=%d", index_version, topic.c_str(), count);
 
     if (index_version != 0)
         throw BagFormatException((format("Unsupported INDEX_DATA version: %1%") % index_version).str());
 
-    //! NOTE: stores the position of the message in the chunk_pos field
-    // todo: create fake connection infos
-    multiset<IndexEntry>& topic_index = topic_indexes_[topic];
+    uint32_t connection_id;
+    map<string, uint32_t>::const_iterator topic_conn_id_iter = topic_connection_ids_.find(topic);
+    if (topic_conn_id_iter == topic_connection_ids_.end()) {
+    	connection_id = connections_.size();
+
+        ROS_INFO("Creating connection: id=%d topic=%s", connection_id, topic.c_str());
+        ConnectionInfo* connection_info = new ConnectionInfo();
+        connection_info->id       = connection_id;
+        connection_info->topic    = topic;
+        connections_[connection_id] = connection_info;
+
+        topic_connection_ids_[topic] = connection_id;
+    }
+    else
+    	connection_id = topic_conn_id_iter->second;
+
+    multiset<IndexEntry>& connection_index = connection_indexes_[connection_id];
+    multiset<IndexEntry>& topic_index      = topic_indexes_[topic];
+
     for (uint32_t i = 0; i < count; i++) {
         IndexEntry index_entry;
         uint32_t sec;
         uint32_t nsec;
         read((char*) &sec,                   4);
         read((char*) &nsec,                  4);
-        read((char*) &index_entry.chunk_pos, 8);
+        read((char*) &index_entry.chunk_pos, 8);   //<! store position of the message in the chunk_pos field as it's 64 bits
         index_entry.time = Time(sec, nsec);
         index_entry.offset = 0;
 
-        ROS_DEBUG("  - %d.%d: %llu", sec, nsec, (unsigned long long) index_entry.chunk_pos);
+        ROS_INFO("  - %d.%d: %llu", sec, nsec, (unsigned long long) index_entry.chunk_pos);
 
+        connection_index.insert(connection_index.end(), index_entry);
         topic_index.insert(topic_index.end(), index_entry);
     }
 }
@@ -556,7 +570,7 @@ void Bag::readConnectionIndexRecord200() {
     readField(fields, CONNECTION_FIELD_NAME, true, &connection_id);
     readField(fields, COUNT_FIELD_NAME,      true, &count);
 
-    ROS_DEBUG("Read INDEX_DATA: ver=%d connection=%d count=%d", index_version, connection_id, count);
+    ROS_INFO("Read INDEX_DATA: ver=%d connection=%d count=%d", index_version, connection_id, count);
 
     if (index_version != 1)
         throw BagFormatException((format("Unsupported INDEX_DATA version: %1%") % index_version).str());
@@ -578,7 +592,7 @@ void Bag::readConnectionIndexRecord200() {
         read((char*) &index_entry.offset, 4);
         index_entry.time = Time(sec, nsec);
 
-        ROS_DEBUG("  - %d.%d: %llu+%d", sec, nsec, (unsigned long long) index_entry.chunk_pos, index_entry.offset);
+        ROS_INFO("  - %d.%d: %llu+%d", sec, nsec, (unsigned long long) index_entry.chunk_pos, index_entry.offset);
 
         connection_index.insert(connection_index.end(), index_entry);
         topic_index.insert(topic_index.end(), index_entry);
@@ -597,7 +611,7 @@ void Bag::writeConnectionRecords() {
 }
 
 void Bag::writeConnectionRecord(ConnectionInfo const* connection_info) {
-    ROS_DEBUG("Writing CONNECTION [%llu:%d]: topic=%s id=%d",
+    ROS_INFO("Writing CONNECTION [%llu:%d]: topic=%s id=%d",
               (unsigned long long) file_.getOffset(), getChunkOffset(), connection_info->topic.c_str(), connection_info->id);
 
     M_string header;
@@ -651,7 +665,7 @@ void Bag::readConnectionRecord() {
         connection_info->md5sum   = (*connection_info->header)["md5sum"];
         connections_[id] = connection_info;
 
-        ROS_DEBUG("Read CONNECTION: topic=%s id=%d", topic.c_str(), id);
+        ROS_INFO("Read CONNECTION: topic=%s id=%d", topic.c_str(), id);
     }
 }
 
@@ -671,20 +685,48 @@ void Bag::readMessageDefinitionRecord102() {
     readField(fields, TYPE_FIELD_NAME,                true, datatype);
     readField(fields, DEF_FIELD_NAME,    0, UINT_MAX, true, message_definition);
 
-    /*
-    map<uint32_t, ConnectionInfo*>::iterator key = connections_.find(id);
-    if (key == connections_.end()) {
+    map<string, uint32_t>::const_iterator topic_conn_id_iter = topic_connection_ids_.find(topic);
+    if (topic_conn_id_iter == topic_connection_ids_.end()) {
+    	uint32_t id = connections_.size();
+
+        ROS_INFO("Creating connection: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
         ConnectionInfo* connection_info = new ConnectionInfo();
         connection_info->id       = id;
         connection_info->topic    = topic;
         connection_info->msg_def  = message_definition;
         connection_info->datatype = datatype;
         connection_info->md5sum   = md5sum;
+        connection_info->header = boost::shared_ptr<ros::M_string>(new ros::M_string);
+
+        // TESTING
+        (*connection_info->header)["callerid"]           = string("");
+        (*connection_info->header)["latching"]           = string("0");
+
+        (*connection_info->header)["type"]               = connection_info->datatype;
+        (*connection_info->header)["md5sum"]             = connection_info->md5sum;
+        (*connection_info->header)["message_definition"] = connection_info->msg_def;
+
         connections_[id] = connection_info;
 
-        ROS_DEBUG("Read MSG_DEF: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
+        topic_connection_ids_[topic] = id;
+
+        ROS_INFO("Read MSG_DEF: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
     }
-    */
+    else {
+    	uint32_t id = topic_conn_id_iter->second;
+
+        ROS_INFO("Updating connection: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
+        ConnectionInfo* connection_info = connections_[id];
+        connection_info->msg_def  = message_definition;
+        connection_info->datatype = datatype;
+        connection_info->md5sum   = md5sum;
+        connection_info->header = boost::shared_ptr<ros::M_string>(new ros::M_string);
+        (*connection_info->header)["type"]               = connection_info->datatype;
+        (*connection_info->header)["md5sum"]             = connection_info->md5sum;
+        (*connection_info->header)["message_definition"] = connection_info->msg_def;
+
+        ROS_INFO("Read MSG_DEF: topic=%s md5sum=%s datatype=%s", topic.c_str(), md5sum.c_str(), datatype.c_str());
+    }
 }
 
 void Bag::decompressChunk(uint64_t chunk_pos) const {
@@ -716,12 +758,11 @@ void Bag::decompressChunk(uint64_t chunk_pos) const {
     decompressed_chunk_ = chunk_pos;
 }
 
-void Bag::loadMessageDataRecord102(uint64_t offset) const {
-    ROS_DEBUG("loadMessageDataRecord: offset=%llu", (unsigned long long) offset);
+void Bag::loadMessageDataRecord102(uint64_t offset, ros::Header& header) const {
+    ROS_INFO("loadMessageDataRecord: offset=%llu", (unsigned long long) offset);
 
     seek(offset);
 
-    ros::Header header;
     uint32_t data_size;
     uint8_t op;
     do {
@@ -744,7 +785,7 @@ void Bag::decompressRawChunk(ChunkHeader const& chunk_header) const {
     assert(chunk_header.compression == COMPRESSION_NONE);
     assert(chunk_header.compressed_size == chunk_header.uncompressed_size);
 
-    ROS_DEBUG("compressed_size: %d uncompressed_size: %d", chunk_header.compressed_size, chunk_header.uncompressed_size);
+    ROS_INFO("compressed_size: %d uncompressed_size: %d", chunk_header.compressed_size, chunk_header.uncompressed_size);
 
     decompress_buffer_.setSize(chunk_header.compressed_size);
     file_.read((char*) decompress_buffer_.getData(), chunk_header.compressed_size);
@@ -757,7 +798,7 @@ void Bag::decompressBz2Chunk(ChunkHeader const& chunk_header) const {
 
     CompressionType compression = compression::BZ2;
 
-    ROS_DEBUG("compressed_size: %d uncompressed_size: %d", chunk_header.compressed_size, chunk_header.uncompressed_size);
+    ROS_INFO("compressed_size: %d uncompressed_size: %d", chunk_header.compressed_size, chunk_header.uncompressed_size);
 
     chunk_buffer_.setSize(chunk_header.compressed_size);
     file_.read((char*) chunk_buffer_.getData(), chunk_header.compressed_size);
@@ -779,8 +820,7 @@ ros::Header Bag::readMessageDataHeader(IndexEntry const& index_entry) {
         readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
         return header;
     case 102:
-        loadMessageDataRecord102(index_entry.chunk_pos);
-        readMessageDataHeaderFromBuffer(record_buffer_, 0, header, data_size, bytes_read);
+        loadMessageDataRecord102(index_entry.chunk_pos, header);
         return header;
     default:
         throw BagFormatException((format("Unhandled version: %1%") % version_).str());
@@ -799,8 +839,7 @@ uint32_t Bag::readMessageDataSize(IndexEntry const& index_entry) const {
         readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
         return data_size;
     case 102:
-        loadMessageDataRecord102(index_entry.chunk_pos);
-        readMessageDataHeaderFromBuffer(record_buffer_, 0, header, data_size, bytes_read);
+        loadMessageDataRecord102(index_entry.chunk_pos, header);
         return data_size;
     default:
         throw BagFormatException((format("Unhandled version: %1%") % version_).str());
@@ -821,7 +860,7 @@ void Bag::writeChunkInfoRecords() {
         header[END_TIME_FIELD_NAME]   = toHeaderString(&chunk_info.end_time);
         header[COUNT_FIELD_NAME]      = toHeaderString(&chunk_connection_count);
 
-        ROS_DEBUG("Writing CHUNK_INFO [%llu]: ver=%d pos=%llu start=%d.%d end=%d.%d",
+        ROS_INFO("Writing CHUNK_INFO [%llu]: ver=%d pos=%llu start=%d.%d end=%d.%d",
                   (unsigned long long) file_.getOffset(), CHUNK_INFO_VERSION, (unsigned long long) chunk_info.pos,
                   chunk_info.start_time.sec, chunk_info.start_time.nsec,
                   chunk_info.end_time.sec, chunk_info.end_time.nsec);
@@ -838,7 +877,7 @@ void Bag::writeChunkInfoRecords() {
             write((char*) &connection_id, 4);
             write((char*) &count, 4);
 
-            ROS_DEBUG("  - %d: %d", connection_id, count);
+            ROS_INFO("  - %d: %d", connection_id, count);
         }
     }
 }
@@ -867,7 +906,7 @@ void Bag::readChunkInfoRecord() {
     uint32_t chunk_connection_count;
     readField(fields, COUNT_FIELD_NAME,      true, &chunk_connection_count);
 
-    ROS_DEBUG("Read CHUNK_INFO: chunk_pos=%llu connection_count=%d start=%d.%d end=%d.%d",
+    ROS_INFO("Read CHUNK_INFO: chunk_pos=%llu connection_count=%d start=%d.%d end=%d.%d",
               (unsigned long long) chunk_info.pos, chunk_connection_count,
               chunk_info.start_time.sec, chunk_info.start_time.nsec,
               chunk_info.end_time.sec, chunk_info.end_time.nsec);
@@ -878,7 +917,7 @@ void Bag::readChunkInfoRecord() {
         read((char*) &connection_id,    4);
         read((char*) &connection_count, 4);
 
-        ROS_DEBUG("  %d: %d messages", connection_id, connection_count);
+        ROS_INFO("  %d: %d messages", connection_id, connection_count);
 
         chunk_info.connection_counts[connection_id] = connection_count;
     }
@@ -959,7 +998,7 @@ void Bag::readMessageDataHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::
     total_bytes_read = 0;
     uint8_t op;
     do {
-        ROS_DEBUG("reading header from buffer: offset=%d", offset);
+        ROS_INFO("reading header from buffer: offset=%d", offset);
         uint32_t bytes_read;
         readHeaderFromBuffer(*current_buffer_, offset, header, data_size, bytes_read);
 
@@ -1009,21 +1048,29 @@ M_string::const_iterator Bag::checkField(M_string const& fields, string const& f
     return fitr;
 }
 
-void Bag::readField(M_string const& fields, string const& field_name, bool required, string& data) const {
-    readField(fields, field_name, 1, UINT_MAX, true, data);
+bool Bag::readField(M_string const& fields, string const& field_name, bool required, string& data) const {
+    return readField(fields, field_name, 1, UINT_MAX, required, data);
 }
 
-void Bag::readField(M_string const& fields, string const& field_name, unsigned int min_len, unsigned int max_len, bool required, string& data) const {
-    data = checkField(fields, field_name, min_len, max_len, required)->second;
+bool Bag::readField(M_string const& fields, string const& field_name, unsigned int min_len, unsigned int max_len, bool required, string& data) const {
+    M_string::const_iterator fitr = checkField(fields, field_name, min_len, max_len, required);
+    if (fitr == fields.end())
+    	return false;
+
+    data = fitr->second;
+    return true;
 }
 
-void Bag::readField(M_string const& fields, string const& field_name, bool required, Time& data) const {
+bool Bag::readField(M_string const& fields, string const& field_name, bool required, Time& data) const {
     uint64_t packed_time;
-    readField(fields, field_name, required, &packed_time);
+    if (!readField(fields, field_name, required, &packed_time))
+    	return false;
 
     uint64_t bitmask = (1LL << 33) - 1;
     data.sec  = (uint32_t) (packed_time & bitmask);
     data.nsec = (uint32_t) (packed_time >> 32);
+
+    return true;
 }
 
 std::string Bag::toHeaderString(Time const* field) const {
@@ -1054,6 +1101,14 @@ void Bag::dump() {
         std::cout << "  chunk: " << (*i).connection_counts.size() << " connections" << std::endl;
         for (map<uint32_t, uint32_t>::const_iterator j = (*i).connection_counts.begin(); j != (*i).connection_counts.end(); j++) {
             std::cout << "    - " << j->first << ": " << j->second << std::endl;
+        }
+    }
+
+    std::cout << "connection_indexes:" << std::endl;
+    for (map<uint32_t, multiset<IndexEntry> >::const_iterator i = connection_indexes_.begin(); i != connection_indexes_.end(); i++) {
+        std::cout << "  connection: " << i->first << std::endl;
+        for (multiset<IndexEntry>::const_iterator j = i->second.begin(); j != i->second.end(); j++) {
+            std::cout << "    - " << j->chunk_pos << ":" << j->offset << std::endl;
         }
     }
 

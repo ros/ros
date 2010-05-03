@@ -190,7 +190,7 @@ void View::updateQueries(BagQuery* q) {
             MessageRange* r = *k;
 
             // If the topic and query are already in our ranges, we update
-            if (r->bag_query == q && r->connection_info->topic == connection->topic) {
+            if (r->bag_query == q && r->connection_info->id == connection->id) {
                 r->begin = begin;
                 r->end   = end;
                 found    = true;
@@ -198,7 +198,7 @@ void View::updateQueries(BagQuery* q) {
             }
         }
         if (!found)
-            ranges_.push_back(new MessageRange(begin, end, connection, q));
+        	ranges_.push_back(new MessageRange(begin, end, connection, q));
     }
 
     view_revision_++;

@@ -437,6 +437,7 @@ epydoc:
   macports: py25-epydoc
 gtest:
   ubuntu: 
+    10.04: libgtest-dev
     9.10: libgtest-dev
     '9.04': |
       if [ ! -f /opt/ros/lib/libgtest.so.0 ] ; then

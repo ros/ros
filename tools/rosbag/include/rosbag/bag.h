@@ -125,7 +125,8 @@ public:
      * Can throw BagNotOpenException or BagIOException
      */
     template<class T>
-    void write(std::string const& topic, ros::Time const& time, T const& msg);
+    void write(std::string const& topic, ros::Time const& time, T const& msg,
+               boost::shared_ptr<ros::M_string> connection_header = boost::shared_ptr<ros::M_string>());
 
     //! Write a message into the bag file
     /*!
@@ -136,7 +137,8 @@ public:
      * Can throw BagNotOpenException or BagIOException
      */
     template<class T>
-    void write(std::string const& topic, ros::Time const& time, T& msg);
+    void write(std::string const& topic, ros::Time const& time, T& msg,
+               boost::shared_ptr<ros::M_string> connection_header = boost::shared_ptr<ros::M_string>());
 
     //! Write a message into the bag file
     /*!
@@ -311,13 +313,13 @@ void Bag::write(std::string const& topic, ros::MessageEvent<T> const& event) {
 }
 
 template<class T>
-void Bag::write(std::string const& topic, ros::Time const& time, T const& msg) {
-    doWrite(topic, time, msg, boost::shared_ptr<ros::M_string>());
+void Bag::write(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> connection_header) {
+    doWrite(topic, time, msg, connection_header);
 }
 
 template<class T>
-void Bag::write(std::string const& topic, ros::Time const& time, T& msg) {
-    doWrite(topic, time, msg, boost::shared_ptr<ros::M_string>());
+void Bag::write(std::string const& topic, ros::Time const& time, T& msg, boost::shared_ptr<ros::M_string> connection_header) {
+    doWrite(topic, time, msg, connection_header);
 }
 
 template<typename T>

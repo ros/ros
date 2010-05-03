@@ -122,8 +122,7 @@ struct MessageRange
 //! The actual iterator data structure
 struct ViewIterHelper
 {
-    ViewIterHelper(std::multiset<IndexEntry>::const_iterator _iter,
-                   MessageRange const* _range);
+    ViewIterHelper(std::multiset<IndexEntry>::const_iterator _iter, MessageRange const* _range);
 
     std::multiset<IndexEntry>::const_iterator iter;
     MessageRange const* range;  //!< pointer to vector of ranges in View

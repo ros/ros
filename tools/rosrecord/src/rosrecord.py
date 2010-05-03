@@ -34,6 +34,7 @@ PKG = 'rosrecord'
 import roslib; roslib.load_manifest(PKG)
 import rospy
 import rosbag
+from bisect import bisect
 
 class ROSRecordException(Exception):
     """
@@ -85,7 +86,19 @@ class BagReader(object):
         @return dict(topic, [(stamp, pos)...]): bag file index
         """
         try:
+            index = {}
+            
+            connection_index = self._bag.get_index()
+            for (connection_id, connection_topic, connection_datatype), entries in connection_index.items():
+                if connection_topic not in index:
+                    index[connection_topic] = []
+                topic_index = index[connection_topic]
+
+                for entry in entries:
+                    topic_index.insert(bisect(topic_index, entry), entry)
+            
             self.index = self._bag.get_index()
+
         except rosbag.ROSBagException:
             self.index = None
 

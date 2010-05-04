@@ -30,6 +30,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+"""
+The rosbag Python API.
+
+Provides reading and writing of bag files.
+"""
+
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
@@ -408,20 +414,44 @@ class Bag(object):
     
                 rows.append(('Messages', '%d' % (sum([len(index) for index in self._connection_indexes.values()]))))
 
-                # Calculate total size of message chunks
-                compression_used = False
+                # Show compression information
+                compression_counts = {}
+                compression_uncompressed = {}
+                compression_compressed = {}
                 for chunk_header in self._chunk_headers.values():
-                    if chunk_header.compression != Compression.NONE:
-                        compression_used = True
-                        break
+                    if chunk_header.compression not in compression_counts:
+                        compression_counts[chunk_header.compression] = 1
+                        compression_uncompressed[chunk_header.compression] = chunk_header.uncompressed_size
+                        compression_compressed[chunk_header.compression] = chunk_header.compressed_size
+                    else:
+                        compression_counts[chunk_header.compression] += 1
+                        compression_uncompressed[chunk_header.compression] += chunk_header.uncompressed_size
+                        compression_compressed[chunk_header.compression] += chunk_header.compressed_size
 
-                if compression_used:
+                chunk_count = len(self._chunk_headers.values())
+
+                compressions = []
+                for count, compression in reversed(sorted([(v, k) for k, v in compression_counts.items()])):
+                    if compression != Compression.NONE:
+                        fraction = (100.0 * compression_compressed[compression]) / compression_uncompressed[compression]
+                        compressions.append('%s [%d/%d chunks; %.2f%%]' % (compression, count, chunk_count, fraction))
+                    else:
+                        compressions.append('%s [%d/%d chunks]' % (compression, count, chunk_count))
+                rows.append(('Compression', ', '.join(compressions)))
+
+                all_uncompressed = (sum([count for c, count in compression_counts.items() if c != Compression.NONE]) == 0)
+                if not all_uncompressed:    
                     total_uncompressed_size = sum((h.uncompressed_size for h in self._chunk_headers.values()))
                     total_compressed_size   = sum((h.compressed_size   for h in self._chunk_headers.values()))
-                    rows.append(('Uncompressed', '%9s' % _human_readable_size(total_uncompressed_size)))
-                    if total_compressed_size != total_uncompressed_size:
-                        rows.append(('Compressed', '%9s (%.2f%%)' % (_human_readable_size(total_compressed_size), (100.0 * total_compressed_size) / total_uncompressed_size)))
-        
+                    
+                    total_uncompressed_size_str = _human_readable_size(total_uncompressed_size)
+                    total_compressed_size_str   = _human_readable_size(total_compressed_size)
+                    
+                    str_length = max([len(total_uncompressed_size_str), len(total_compressed_size_str)])
+
+                    rows.append(('Uncompressed', '%*s' % (str_length, _human_readable_size(total_uncompressed_size))))
+                    rows.append(('Compressed', '%*s (%.2f%%)' % (str_length, _human_readable_size(total_compressed_size), (100.0 * total_compressed_size) / total_uncompressed_size)))
+
                 datatypes = set()
                 datatype_infos = []
                 for connection in self._connections.values():
@@ -431,10 +461,12 @@ class Bag(object):
                     datatypes.add(connection.datatype)
 
                 topics = sorted(set([c.topic for c in self._get_connections()]))
-                topic_datatypes = {}
-                topic_conn_counts = {}
-                topic_msg_counts = {}
-                topic_freqs = {}
+                topic_datatypes    = {}
+                topic_conn_counts  = {}
+                topic_msg_counts   = {}
+                topic_freqs_median = {}
+                topic_freqs_min    = {}
+                topic_freqs_max    = {}
                 for topic in topics:
                     connections = list(self._get_connections(topic))
                     stamps = numpy.array([entry.time.to_sec() for entry in self._get_entries(connections)])
@@ -443,16 +475,18 @@ class Bag(object):
                     topic_conn_counts[topic] = len(connections)
                     topic_msg_counts[topic] = len(stamps)
                     if len(stamps) > 1:
-                        topic_freqs[topic] = 1.0 / numpy.median(stamps[1:] - stamps[:-1])
+                        periods = stamps[1:] - stamps[:-1]
+                        topic_freqs_median[topic] = 1.0 / numpy.median(periods)
+                        topic_freqs_min[topic]    = 1.0 / numpy.max(periods)
+                        topic_freqs_max[topic]    = 1.0 / numpy.min(periods)
 
                 topics = sorted(topic_datatypes.keys())
-                max_topic_len = max([len(topic) for topic in topics])
-                max_datatype_len = max([len(datatype) for datatype in datatypes])
-                max_msg_count_len = max([len('%d' % msg_count) for msg_count in topic_msg_counts.values()])
-                if len(topic_freqs) > 0:
-                    max_freq_len = max([len('%.1f' % freq) for freq in topic_freqs.values()])
-                else:
-                    max_freq_len = 0
+                max_topic_len       = max([len(topic) for topic in topics])
+                max_datatype_len    = max([len(datatype) for datatype in datatypes])
+                max_msg_count_len   = max([len('%d' % msg_count) for msg_count in topic_msg_counts.values()])
+                max_freq_median_len = max([len(_human_readable_frequency(freq)) for freq in topic_freqs_median.values()]) if len(topic_freqs_median) > 0 else 0
+                max_freq_min_len    = max([len(_human_readable_frequency(freq)) for freq in topic_freqs_min.values()])    if len(topic_freqs_min)    > 0 else 0
+                max_freq_max_len    = max([len(_human_readable_frequency(freq)) for freq in topic_freqs_max.values()])    if len(topic_freqs_max)    > 0 else 0
 
                 # Show datatypes       
                 for i, (datatype, md5sum, msg_def) in enumerate(sorted(datatype_infos)):
@@ -465,8 +499,10 @@ class Bag(object):
                 # Show topics
                 for i, topic in enumerate(topics):
                     s = '%-*s   %*d msgs' % (max_topic_len, topic, max_msg_count_len, topic_msg_counts[topic])
-                    if topic in topic_freqs:
-                        s += ' @ %*.1f Hz' % (max_freq_len, topic_freqs[topic])
+                    if topic in topic_freqs_median:
+                        s += ' @ %*s [min: %*s max: %*s]' % (max_freq_median_len, _human_readable_frequency(topic_freqs_median[topic]),
+                                                             max_freq_min_len,    _human_readable_frequency(topic_freqs_min[topic]),
+                                                             max_freq_max_len,    _human_readable_frequency(topic_freqs_max[topic]))
                     if topic_conn_counts[topic] > 1:
                         s += ' (%d connections)' % topic_conn_counts[topic]
                     s += ' : %-*s' % (max_datatype_len, topic_datatypes[topic])
@@ -1571,6 +1607,15 @@ def _human_readable_size(size):
         size /= multiple
         if size < multiple:
             return '%.1f %s' % (size, suffix)
+
+    raise ValueError('number too large')
+
+def _human_readable_frequency(freq):
+    multiple = 1000.0
+    for suffix in ['Hz', 'kHz', 'MHz', 'GHz', 'THz']:
+        if freq < multiple:
+            return '%.1f %s' % (freq, suffix)
+        freq /= multiple
 
     raise ValueError('number too large')
 

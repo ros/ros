@@ -33,7 +33,7 @@
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
-from bisect import bisect
+import bisect
 import bz2
 from cStringIO import StringIO
 import heapq
@@ -41,6 +41,7 @@ import numpy
 import os
 import re
 import struct
+import sys
 import time
 
 import roslib.genpy
@@ -178,10 +179,11 @@ class Bag(object):
     # compression
         
     def _get_compression(self):
-        """Get the compression."""
+        """Get the compression method to use for writing."""
         return self._compression
     
     def _set_compression(self, compression):
+        """Set the compression method to use for writing."""
         allowed_compressions = [Compression.NONE, Compression.BZ2] #, Compression.ZLIB]
         if compression not in allowed_compressions:
             raise ValueError('compression must be one of: %s' % ', '.join(allowed_compressions))        
@@ -194,29 +196,30 @@ class Bag(object):
     # chunk_threshold
     
     def _get_chunk_threshold(self):
-        """Get the chunk threshold."""
+        """Get the chunk threshold to use for writing."""
         return self._chunk_threshold
     
     def _set_chunk_threshold(self, chunk_threshold):
+        """Set the chunk threshold to use for writing."""
         if chunk_threshold < 0:
             raise ValueError('chunk_threshold must be greater than or equal to zero')
-        
+
         self.flush()
         self._chunk_threshold = chunk_threshold
         
     chunk_threshold = property(_get_chunk_threshold, _set_chunk_threshold)
 
-    def read_messages(self, topics=None, start_time=None, end_time=None, topic_filter=None, raw=False):
+    def read_messages(self, topics=None, start_time=None, end_time=None, connection_filter=None, raw=False):
         """
-        Read the messages from the bag file.
+        Read messages from the bag, optionally filtered by topic, timestamp and connection details.
         @param topics: list of topics or a single topic [optional]
         @type  topics: list(str) or str
         @param start_time: earliest timestamp of message to return [optional]
         @type  start_time: U{roslib.rostime.Time}
         @param end_time: latest timestamp of message to return [optional]
         @type  end_time: U{roslib.rostime.Time}
-        @param topic_filter: function to filter topics to include [optional]
-        @type  topic_filter: function taking (topic, datatype, md5sum, msg_def) and returning bool
+        @param connection_filter: function to filter connections to include [optional]
+        @type  connection_filter: function taking (topic, datatype, md5sum, msg_def, header) and returning bool
         @param raw: if True, then generate tuples of (datatype, data, md5sum, position, pytype)
         @type  raw: bool
         @return: generator of (topic, message, timestamp) tuples for each message in the bag file
@@ -227,7 +230,7 @@ class Bag(object):
         if topics and type(topics) == str:
             topics = [topics]
         
-        return self._reader.read_messages(topics, start_time, end_time, topic_filter, raw)
+        return self._reader.read_messages(topics, start_time, end_time, connection_filter, raw)
 
     def flush(self):
         """
@@ -272,16 +275,23 @@ class Bag(object):
         if not self._chunk_open:
             self._start_writing_chunk(t)
 
-        # Write connection record, if necessary (currently using a connection per topic; not looking at message connection header)
+        # Unpack raw
+        if raw:
+            if len(msg) == 5:
+                msg_type, serialized_bytes, md5sum, pos, pytype = msg
+            elif len(msg) == 4:
+                msg_type, serialized_bytes, md5sum, pytype = msg
+            else:
+                raise ValueError('msg must be of length 4 or 5')
+
+        # Write connection record, if necessary (currently using a connection per topic; ignoring message connection header)
         if topic in self._topic_connections:
             connection_info = self._topic_connections[topic]
             conn_id = connection_info.id
         else:
             conn_id = len(self._connections)
-            
+
             if raw:
-                msg_type, serialized_bytes, md5sum, pytype = msg
-    
                 if pytype is None:
                     try:
                         pytype = roslib.message.get_message_class(msg_type)
@@ -319,7 +329,7 @@ class Bag(object):
                 # Test if we're writing chronologically.  Can skip binary search if so.
                 curr_chunk_connection_index.append(index_entry)
             else:
-                curr_chunk_connection_index.insert(bisect(curr_chunk_connection_index, index_entry), index_entry)
+                curr_chunk_connection_index.insert(bisect.bisect_right(curr_chunk_connection_index, index_entry), index_entry)
 
             self._curr_chunk_info.connection_counts[conn_id] += 1
 
@@ -327,7 +337,7 @@ class Bag(object):
             self._connection_indexes[conn_id] = [index_entry]
         else:
             connection_index = self._connection_indexes[conn_id]
-            connection_index.insert(bisect(connection_index, index_entry), index_entry)
+            connection_index.insert(bisect.bisect_right(connection_index, index_entry), index_entry)
 
         # Update the chunk start/end times
         if t > self._curr_chunk_info.end_time:
@@ -361,120 +371,179 @@ class Bag(object):
             self._close_file()
 
     def __str__(self):
-        s = ''
-        if self._filename:
-            s += 'bag:          %s (%s)\n' % (self._filename, self._mode)
-        s += 'version:      %d.%d\n' % (self._version / 100, self._version % 100)
-
-        if not self._connection_indexes:
-            return s.rstrip()
+        rows = []
         
-        # Show start and end times
-        start_stamp = min([index[ 0].time.to_sec() for index in self._connection_indexes.values()])
-        end_stamp   = max([index[-1].time.to_sec() for index in self._connection_indexes.values()])
-        s += 'start:        %s (%.2f)\n' % (_time_to_str(start_stamp), start_stamp)
-        s += 'end:          %s (%.2f)\n' % (_time_to_str(end_stamp),   end_stamp)
+        try:
+            if self._filename:
+                rows.append(('Path', self._filename))
 
-        # Show length
-        duration = end_stamp - start_stamp
-        dur_secs = duration % 60
-        dur_mins = int(duration / 60)
-        dur_hrs  = int(dur_mins / 60)
-        if dur_hrs > 0:
-            dur_mins = dur_mins % 60
-            s += 'length:       %dhr %d:%ds (%ds)\n' % (dur_hrs, dur_mins, dur_secs, duration)
-        elif dur_mins > 0:
-            s += 'length:       %d:%ds (%ds)\n' % (dur_mins, dur_secs, duration)
-        else:
-            s += 'length:       %.1fs\n' % duration
+            if self._version == 102 and type(self._reader) == _BagReader102_Unindexed:
+                rows.append(('Version', '1.2 (unindexed)'))
+            else:
+                rows.append(('Version', '%d.%d' % (self._version / 100, self._version % 100)))
 
-        s += 'messages:     %d\n' % (sum([len(index) for index in self._connection_indexes.values()]))
+            rows.append(('Size', _human_readable_size(self.size)))
 
-        # Calculate total size of message chunks
-        total_uncompressed_size = sum((h.uncompressed_size for h in self._chunk_headers.values()))
-        total_compressed_size   = sum((h.compressed_size   for h in self._chunk_headers.values()))
-        s += 'uncompressed: %9s\n' % _human_readable_size(total_uncompressed_size)
-        if total_compressed_size != total_uncompressed_size:
-            s += 'compressed:   %9s (%.2f%%)\n' % (_human_readable_size(total_compressed_size), (100.0 * total_compressed_size) / total_uncompressed_size)
+            if self._connection_indexes:
+                start_stamp = min([index[ 0].time.to_sec() for index in self._connection_indexes.values()])
+                end_stamp   = max([index[-1].time.to_sec() for index in self._connection_indexes.values()])
+    
+                # Show duration
+                duration = end_stamp - start_stamp
+                dur_secs = duration % 60
+                dur_mins = int(duration / 60)
+                dur_hrs  = int(dur_mins / 60)
+                if dur_hrs > 0:
+                    dur_mins = dur_mins % 60
+                    duration_str = '%dhr %d:%ds (%ds)' % (dur_hrs, dur_mins, dur_secs, duration)
+                elif dur_mins > 0:
+                    duration_str = '%d:%ds (%ds)' % (dur_mins, dur_secs, duration)
+                else:
+                    duration_str = '%.1fs' % duration   
+                rows.append(('Duration', duration_str))
+        
+                # Show start and end times
+                rows.append(('Start', '%s (%.2f)' % (_time_to_str(start_stamp), start_stamp)))
+                rows.append(('End',   '%s (%.2f)' % (_time_to_str(end_stamp),   end_stamp)))
+    
+                rows.append(('Messages', '%d' % (sum([len(index) for index in self._connection_indexes.values()]))))
 
-        # Calculate message sizes (not including first, as it's a MSG_DEF record, and last, as we don't have a succeeding offset)
-        #entries = [entry for entry, _ in _mergesort(self._topic_indexes.values(), key=lambda entry: entry.time)]
-        #entry_sizes = {}
-        #for i in range(len(entries) - 1):
-        #    offset0 = entries[i].offset
-        #    offset1 = entries[i + 1].offset            
-        #    if offset1 > offset0:
-        #        entry_sizes[entries[i]] = offset1 - offset0
+                # Calculate total size of message chunks
+                compression_used = False
+                for chunk_header in self._chunk_headers.values():
+                    if chunk_header.compression != Compression.NONE:
+                        compression_used = True
+                        break
 
-        datatypes = set()
-        datatype_infos = []
-        for connection in self._connections.values():
-            if connection.datatype in datatypes:
-                continue
-            datatype_infos.append((connection.datatype, connection.md5sum, connection.msg_def))
-            datatypes.add(connection.datatype)
+                if compression_used:
+                    total_uncompressed_size = sum((h.uncompressed_size for h in self._chunk_headers.values()))
+                    total_compressed_size   = sum((h.compressed_size   for h in self._chunk_headers.values()))
+                    rows.append(('Uncompressed', '%9s' % _human_readable_size(total_uncompressed_size)))
+                    if total_compressed_size != total_uncompressed_size:
+                        rows.append(('Compressed', '%9s (%.2f%%)' % (_human_readable_size(total_compressed_size), (100.0 * total_compressed_size) / total_uncompressed_size)))
+        
+                datatypes = set()
+                datatype_infos = []
+                for connection in self._connections.values():
+                    if connection.datatype in datatypes:
+                        continue
+                    datatype_infos.append((connection.datatype, connection.md5sum, connection.msg_def))
+                    datatypes.add(connection.datatype)
 
-        topic_datatypes = dict([connection.topic, connection.datatype] for connection in self._connections.values())
+                topics = sorted(set([c.topic for c in self._get_connections()]))
+                topic_datatypes = {}
+                topic_conn_counts = {}
+                topic_msg_counts = {}
+                topic_freqs = {}
+                for topic in topics:
+                    connections = list(self._get_connections(topic))
+                    stamps = numpy.array([entry.time.to_sec() for entry in self._get_entries(connections)])
+                    
+                    topic_datatypes[topic] = connections[0].datatype
+                    topic_conn_counts[topic] = len(connections)
+                    topic_msg_counts[topic] = len(stamps)
+                    if len(stamps) > 1:
+                        topic_freqs[topic] = 1.0 / numpy.median(stamps[1:] - stamps[:-1])
 
-        # Show connections
-        s += 'connections:'
-        topics = sorted(topic_datatypes.keys())       
-        max_topic_len = max([len(topic) for topic in topics])
-        max_datatype_len = max([len(datatype) for datatype in datatypes])
-        for i, connection in enumerate(self._connections.values()):
-            indent = (2 if i == 0 else 14)
+                topics = sorted(topic_datatypes.keys())
+                max_topic_len = max([len(topic) for topic in topics])
+                max_datatype_len = max([len(datatype) for datatype in datatypes])
+                max_msg_count_len = max([len('%d' % msg_count) for msg_count in topic_msg_counts.values()])
+                if len(topic_freqs) > 0:
+                    max_freq_len = max([len('%.1f' % freq) for freq in topic_freqs.values()])
+                else:
+                    max_freq_len = 0
 
-            index     = self._connection_indexes[connection.id]
-            stamps    = numpy.array([entry.time.to_sec() for entry in index])
-            msg_count = len(stamps)
+                # Show datatypes       
+                for i, (datatype, md5sum, msg_def) in enumerate(sorted(datatype_infos)):
+                    s = '%-*s [%s]' % (max_datatype_len, datatype, md5sum)
+                    if i == 0:
+                        rows.append(('Types', s))
+                    else:
+                        rows.append(('', s))
+                    
+                # Show topics
+                for i, topic in enumerate(topics):
+                    s = '%-*s   %*d msgs' % (max_topic_len, topic, max_msg_count_len, topic_msg_counts[topic])
+                    if topic in topic_freqs:
+                        s += ' @ %*.1f Hz' % (max_freq_len, topic_freqs[topic])
+                    if topic_conn_counts[topic] > 1:
+                        s += ' (%d connections)' % topic_conn_counts[topic]
+                    s += ' : %-*s' % (max_datatype_len, topic_datatypes[topic])
+        
+                    if i == 0:
+                        rows.append(('Topics', s))
+                    else:
+                        rows.append(('', s))
+        
+        except Exception, ex:
+            raise
+            pass
 
-            s += '%s%-*s (%-*s) %7d msgs' % (' ' * indent, max_topic_len, connection.topic, max_datatype_len, connection.datatype, msg_count)
+        first_column_width = max([len(field) for field, _ in rows]) + 1
 
-            if msg_count > 1:
-                spacing = stamps[1:] - stamps[:-1]
-                s += ' @ %5.1f Hz' % (1.0 / numpy.median(spacing))
-
-                #sizes = []
-                #for entry in index:
-                #    if entry in entry_sizes:
-                #        sizes.append(entry_sizes[entry])
-                #s += ' %d to %d bytes' % (min(sizes), max(sizes))
-
-            s += '\n'
-
-        # Show datatypes       
-        s += 'types:'
-        for i, (datatype, md5sum, msg_def) in enumerate(sorted(datatype_infos)):
-            indent = (8 if i == 0 else 14)
-
-            s += '%s%-*s [%s]\n' % (' ' * indent, max_datatype_len, datatype, md5sum)
-
-#            string def = content.definition.c_str();
-#            if (def.length() > 0) {
-#                printf("    definition: |\n");
-#
-#                size_t oldind = 0;
-#                size_t ind = def.find_first_of('\n', 0);
-#                while (ind != def.npos) {
-#                    printf("      %s\n", def.substr(oldind, ind - oldind).c_str());
-#                    oldind = ind + 1;
-#                    ind = def.find_first_of('\n', oldind);
-#                }
-#                ind = def.length();
-#
-#                printf("      %s\n", def.substr(oldind, ind - oldind).c_str());
-#            }
-#            else {
-#                printf("    definition: NONE\n");
-#            }
+        s = ''
+        for (field, value) in rows:
+            if field:
+                s += '%-*s %s\n' % (first_column_width, field + ':', value)
+            else:
+                s += '%-*s %s\n' % (first_column_width, '', value)
 
         return s.rstrip()
 
-    ### Implementation ###
+    ### Internal API ###
 
     def _read_message(self, position, raw=False):
         self.flush()
         return self._reader.read_message_data_record(position, raw)
+
+    def _get_entries(self, connections=None, start_time=None, end_time=None):
+        for entry, _ in _mergesort(self._get_indexes(connections), key=lambda entry: entry.time):
+            if start_time and entry.time < start_time:
+                continue
+            if end_time and entry.time > end_time:
+                return
+            yield entry
+
+    def _get_entry(self, t, connections=None):
+        """Return the first index entry on/after time on the given connections"""
+        indexes = self._get_indexes(connections)
+
+        entry = _IndexEntry(t)
+
+        first_entry = None
+        
+        for index in indexes:
+            i = bisect.bisect_right(index, entry)
+            if i < len(index):
+                index_entry = index[i]
+                if first_entry is None or index_entry < first_entry:
+                    first_entry = index_entry
+                    
+        return first_entry
+
+    def _get_connections(self, topics=None, connection_filter=None):
+        if topics:
+            if type(topics) == str:
+                topics = set([topics])
+            else:
+                topics = set(topics)
+        
+        for c in self._connections.values():
+            if topics and c.topic not in topics:
+                continue
+            if connection_filter and not connection_filter(c.topic, c.datatype, c.md5sum, c.msg_def, c.header):
+                continue
+            yield c
+
+    def _get_indexes(self, connections):
+        if connections is None:
+            return self._connection_indexes.values()
+        
+        ids = [c.id for c in connections]
+        return [self._connection_indexes[id] for id in ids]
+
+    ### Implementation ###
 
     def _open(self, f, mode):
         if not f:
@@ -520,7 +589,10 @@ class Bag(object):
             
         self._mode = 'w'
 
+        self._version = 200
+
         try:
+            self._create_reader()
             self._start_writing()
         except:
             self._close_file()
@@ -844,25 +916,49 @@ class _ChunkHeader(object):
         ratio = 100 * (float(self.compressed_size) / self.uncompressed_size)
         return 'compression: %s, size: %d, uncompressed: %d (%.2f%%)' % (self.compression, self.compressed_size, self.uncompressed_size, ratio)
 
-class _IndexEntry102(object):
+class _IndexEntry(object):
+    def __init__(self, time):
+        self.time = time
+
+    def __cmp__(self, other):
+        return self.time.__cmp__(other.time)
+
+class _IndexEntry102(_IndexEntry):
     def __init__(self, time, offset):
         self.time   = time
         self.offset = offset
         
+    @property
+    def position(self):
+        return self.offset
+        
     def __str__(self):
         return '%d.%d: %d' % (self.time.secs, self.time.nsecs, self.offset)
 
-class _IndexEntry200(object):
+class _IndexEntry200(_IndexEntry):
     def __init__(self, time, chunk_pos, offset):
         self.time      = time
         self.chunk_pos = chunk_pos
         self.offset    = offset
 
+    @property
+    def position(self):
+        return (self.chunk_pos, self.offset)
+
     def __str__(self):
         return '%d.%d: %d+%d' % (self.time.secs, self.time.nsecs, self.chunk_pos, self.offset)
+    
+def _get_message_type(info):
+    message_type = _message_types.get(info.md5sum)
+    if message_type is None:
+        try:
+            message_type = roslib.genpy.generate_dynamic(info.datatype, info.msg_def)[info.datatype]
+        except roslib.genpy.MsgGenerationException, ex:
+            raise ROSBagException('Error generating datatype %s: %s' % (info.datatype, str(ex)))
 
-    def __cmp__(self, other):
-        return self.time.__cmp__(other.time)
+        _message_types[info.md5sum] = message_type
+
+    return message_type
 
 def _read_uint8 (f): return _unpack_uint8 (f.read(1))
 def _read_uint32(f): return _unpack_uint32(f.read(4))
@@ -979,87 +1075,6 @@ class _BagReader(object):
     def start_reading(self): pass
     def read_messages(self, topics, start_time, end_time, connection_filter, raw): pass
 
-    def get_entries(self, topics, start_time, end_time, connection_filter):
-        for entry, _ in _mergesort(self.get_indexes(topics, connection_filter), key=lambda entry: entry.time):
-            if start_time and entry.time < start_time:
-                continue
-            if end_time and entry.time > end_time:
-                return
-            yield entry
-
-    def get_indexes(self, topics, connection_filter):
-        filtered_connections = []
-        for connection_info in self.bag._connections.values():
-            if topics and connection_info.topic not in topics_set:
-                continue
-            if connection_filter and not connection_filter(connection_info.topic, connection_info.datatype, connection_info.md5sum, connection_info.msg_def):
-                continue
-            filtered_connections.append(connection_info.id)
-
-        return [index for connection_id, index in self.bag._connection_indexes.items() if connection_id in filtered_connections]
-    
-    def read_message_definition_record(self, header=None):
-        if not header:
-            header = _read_header(self.bag._file, _OP_MSG_DEF)
-
-        topic    = _read_str_field(header, 'topic')
-        datatype = _read_str_field(header, 'type')
-        md5sum   = _read_str_field(header, 'md5')
-        msg_def  = _read_str_field(header, 'def')
-
-        _read_record_data(self.bag._file)
-
-        connection_header = { 'topic' : topic, 'type' : datatype, 'md5sum' : md5sum, 'message_definition' : msg_def }
-
-        id = len(self.bag._connections)
-
-        return _ConnectionInfo(id, topic, connection_header)
-
-    def get_message_type(self, info):
-        md5sum, datatype, msg_def = info.md5sum, info.datatype, info.msg_def
-        
-        message_type = _message_types.get(md5sum)
-        if message_type is None:            
-            try:
-                message_type = roslib.genpy.generate_dynamic(datatype, msg_def)[datatype]
-            except roslib.genpy.MsgGenerationException, ex:
-                raise ROSBagException('Error generating datatype %s: %s' % (datatype, str(ex)))
-
-            _message_types[md5sum] = message_type
-
-        return message_type
-
-    def dump(self):
-        f = self.bag._file
-
-        f.seek(self.bag._file_header_pos)
-
-        while True:
-            if rospy.is_shutdown():
-                return
-
-            position = f.tell()
-            
-            try:
-                header = _read_header(f)
-            except Exception, ex:
-                print str(ex)
-                break
-
-            op = _read_uint8_field(header, 'op')
-
-            print '%d' % position
-            print '%-14s: %s' % ('op', _OP_CODES[op])
-            for field, value in header.items():
-                if field == 'op':
-                    continue
-                if len(value) == 4:
-                    print '%-14s: %d' % (field, _unpack_uint32(value))
-                elif len(value) == 8:
-                    print '%-14s: %d' % (field, _unpack_uint64(value))
-
-            data = _read_record_data(f)
-
 class _BagReader101(_BagReader):
     """
     Support class for reading v1.1 bag files.
@@ -1074,9 +1089,6 @@ class _BagReader101(_BagReader):
         f = self.bag._file
 
         while True:
-            if rospy.is_shutdown():
-                return
-
             bag_pos = f.tell()
 
             # Read topic/md5/type string headers
@@ -1141,9 +1153,6 @@ class _BagReader102_Unindexed(_BagReader):
         f = self.bag._file
 
         while True:
-            if rospy.is_shutdown():
-                return
-
             # Read MSG_DEF records
             while True:
                 position = f.tell()
@@ -1167,7 +1176,7 @@ class _BagReader102_Unindexed(_BagReader):
             # Check that we have a MSG_DATA record
             if op != _OP_MSG_DATA:
                 raise ROSBagFormatException('Expecting OP_MSG_DATA, got %d' % op)
-    
+
             topic = _read_str_field(header, 'topic')
             
             connection_id = self.bag._topic_connections[topic]
@@ -1175,7 +1184,7 @@ class _BagReader102_Unindexed(_BagReader):
     
             # Get the message type
             try:
-                msg_type = self.get_message_type(info)
+                msg_type = _get_message_type(info)
             except KeyError:
                 raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % info.datatype)
 
@@ -1196,25 +1205,44 @@ class _BagReader102_Unindexed(_BagReader):
 
             yield (topic, msg, t)
 
-class _BagReader102_Indexed(_BagReader):
+    def read_message_definition_record(self, header=None):
+        if not header:
+            header = _read_header(self.bag._file, _OP_MSG_DEF)
+
+        topic    = _read_str_field(header, 'topic')
+        datatype = _read_str_field(header, 'type')
+        md5sum   = _read_str_field(header, 'md5')
+        msg_def  = _read_str_field(header, 'def')
+
+        _read_record_data(self.bag._file)
+
+        connection_header = { 'topic' : topic, 'type' : datatype, 'md5sum' : md5sum, 'message_definition' : msg_def }
+
+        id = len(self.bag._connections)
+
+        return _ConnectionInfo(id, topic, connection_header)
+
+class _BagReader102_Indexed(_BagReader102_Unindexed):
     """
     Support class for reading indexed v1.2 bag files.
     """
     def __init__(self, bag):
         _BagReader.__init__(self, bag)
 
-    def read_messages(self, topics, start_time, end_time, topic_filter, raw):
-        for entry in self.get_entries(topics, start_time, end_time, topic_filter):
+    def read_messages(self, topics, start_time, end_time, connection_filter, raw):
+        connections = self.bag._get_connections(topics, connection_filter)
+        for entry in self.bag._get_entries(connections, start_time, end_time):
             yield self.read_message_data_record(entry.offset, raw)
     
     def start_reading(self):
+        # Read the file header
         self.read_file_header_record()
 
         # Seek to the beginning of the topic index records
         self.bag._file.seek(self.bag._index_data_pos)
 
+        # Read the topic indexes
         topic_indexes = {}
-
         while True:
             topic_index = self.read_topic_index_record()
             if topic_index is None:
@@ -1295,7 +1323,7 @@ class _BagReader102_Indexed(_BagReader):
 
         # Get the message type
         try:
-            msg_type = self.get_message_type(info)
+            msg_type = _get_message_type(info)
         except KeyError:
             raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceeded in bagfile by definition' % info.datatype)
 
@@ -1327,13 +1355,13 @@ class _BagReader200(_BagReader):
         self.decompressed_chunk     = None
         self.decompressed_chunk_io  = None
 
-    def read_messages(self, topics, start_time, end_time, topic_filter, raw):
-        for entry in self.get_entries(topics, start_time, end_time, topic_filter):
-            if rospy.is_shutdown():
-                return
+    def read_messages(self, topics, start_time, end_time, connection_filter, raw):
+        connections = self.bag._get_connections(topics, connection_filter)
+        for entry in self.bag._get_entries(connections, start_time, end_time):
             yield self.read_message_data_record((entry.chunk_pos, entry.offset), raw)
 
     def start_reading(self):
+        # Read the file header
         self.read_file_header_record()
         
         # Check if the index position has been written, i.e. the bag was closed successfully
@@ -1515,7 +1543,7 @@ class _BagReader200(_BagReader):
         # Get the message type
         connection_info = self.bag._connections[connection_id]
         try:
-            msg_type = self.get_message_type(connection_info)
+            msg_type = _get_message_type(connection_info)
         except KeyError:
             raise ROSBagException('Cannot deserialize messages of type [%s].  Message was not preceded in bag by definition' % connection_info.datatype)
 

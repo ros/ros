@@ -70,8 +70,9 @@ void IntraProcessPublisherLink::setPublisher(const IntraProcessSubscriberLinkPtr
   M_stringPtr values = header.getValues();
   (*values)["callerid"] = this_node::getName();
   (*values)["topic"] = parent->getName();
-  (*values)["type"] = parent->datatype();
-  (*values)["md5sum"] = parent->md5sum();
+  (*values)["type"] = publisher->getDataType();
+  (*values)["md5sum"] = publisher->getMD5Sum();
+  (*values)["message_definition"] = publisher->getMessageDefinition();
   (*values)["latching"] = publisher->isLatching() ? "1" : "0";
   setHeader(header);
 }

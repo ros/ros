@@ -78,6 +78,10 @@ public:
   virtual bool isIntraprocess() { return false; }
   virtual void getPublishTypes(bool& ser, bool& nocopy, const std::type_info& ti) { ser = true; nocopy = false; }
 
+  const std::string& getMD5Sum();
+  const std::string& getDataType();
+  const std::string& getMessageDefinition();
+
 protected:
   bool verifyDatatype(const std::string &datatype);
 

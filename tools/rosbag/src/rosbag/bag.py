@@ -415,42 +415,45 @@ class Bag(object):
                 rows.append(('Messages', '%d' % (sum([len(index) for index in self._connection_indexes.values()]))))
 
                 # Show compression information
-                compression_counts = {}
-                compression_uncompressed = {}
-                compression_compressed = {}
-                for chunk_header in self._chunk_headers.values():
-                    if chunk_header.compression not in compression_counts:
-                        compression_counts[chunk_header.compression] = 1
-                        compression_uncompressed[chunk_header.compression] = chunk_header.uncompressed_size
-                        compression_compressed[chunk_header.compression] = chunk_header.compressed_size
-                    else:
-                        compression_counts[chunk_header.compression] += 1
-                        compression_uncompressed[chunk_header.compression] += chunk_header.uncompressed_size
-                        compression_compressed[chunk_header.compression] += chunk_header.compressed_size
-
-                chunk_count = len(self._chunk_headers.values())
-
-                compressions = []
-                for count, compression in reversed(sorted([(v, k) for k, v in compression_counts.items()])):
-                    if compression != Compression.NONE:
-                        fraction = (100.0 * compression_compressed[compression]) / compression_uncompressed[compression]
-                        compressions.append('%s [%d/%d chunks; %.2f%%]' % (compression, count, chunk_count, fraction))
-                    else:
-                        compressions.append('%s [%d/%d chunks]' % (compression, count, chunk_count))
-                rows.append(('Compression', ', '.join(compressions)))
-
-                all_uncompressed = (sum([count for c, count in compression_counts.items() if c != Compression.NONE]) == 0)
-                if not all_uncompressed:    
-                    total_uncompressed_size = sum((h.uncompressed_size for h in self._chunk_headers.values()))
-                    total_compressed_size   = sum((h.compressed_size   for h in self._chunk_headers.values()))
-                    
-                    total_uncompressed_size_str = _human_readable_size(total_uncompressed_size)
-                    total_compressed_size_str   = _human_readable_size(total_compressed_size)
-                    
-                    str_length = max([len(total_uncompressed_size_str), len(total_compressed_size_str)])
-
-                    rows.append(('Uncompressed', '%*s' % (str_length, _human_readable_size(total_uncompressed_size))))
-                    rows.append(('Compressed', '%*s (%.2f%%)' % (str_length, _human_readable_size(total_compressed_size), (100.0 * total_compressed_size) / total_uncompressed_size)))
+                if len(self._chunk_headers) == 0:
+                    rows.append(('Compression', 'none'))
+                else:
+                    compression_counts       = {}
+                    compression_uncompressed = {}
+                    compression_compressed   = {}
+                    for chunk_header in self._chunk_headers.values():
+                        if chunk_header.compression not in compression_counts:
+                            compression_counts[chunk_header.compression] = 1
+                            compression_uncompressed[chunk_header.compression] = chunk_header.uncompressed_size
+                            compression_compressed[chunk_header.compression] = chunk_header.compressed_size
+                        else:
+                            compression_counts[chunk_header.compression] += 1
+                            compression_uncompressed[chunk_header.compression] += chunk_header.uncompressed_size
+                            compression_compressed[chunk_header.compression] += chunk_header.compressed_size
+    
+                    chunk_count = len(self._chunk_headers.values())
+    
+                    compressions = []
+                    for count, compression in reversed(sorted([(v, k) for k, v in compression_counts.items()])):
+                        if compression != Compression.NONE:
+                            fraction = (100.0 * compression_compressed[compression]) / compression_uncompressed[compression]
+                            compressions.append('%s [%d/%d chunks; %.2f%%]' % (compression, count, chunk_count, fraction))
+                        else:
+                            compressions.append('%s [%d/%d chunks]' % (compression, count, chunk_count))
+                    rows.append(('Compression', ', '.join(compressions)))
+    
+                    all_uncompressed = (sum([count for c, count in compression_counts.items() if c != Compression.NONE]) == 0)
+                    if not all_uncompressed:    
+                        total_uncompressed_size = sum((h.uncompressed_size for h in self._chunk_headers.values()))
+                        total_compressed_size   = sum((h.compressed_size   for h in self._chunk_headers.values()))
+                        
+                        total_uncompressed_size_str = _human_readable_size(total_uncompressed_size)
+                        total_compressed_size_str   = _human_readable_size(total_compressed_size)
+                        
+                        str_length = max([len(total_uncompressed_size_str), len(total_compressed_size_str)])
+    
+                        rows.append(('Uncompressed', '%*s' % (str_length, _human_readable_size(total_uncompressed_size))))
+                        rows.append(('Compressed', '%*s (%.2f%%)' % (str_length, _human_readable_size(total_compressed_size), (100.0 * total_compressed_size) / total_uncompressed_size)))
 
                 datatypes = set()
                 datatype_infos = []

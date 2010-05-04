@@ -58,11 +58,6 @@
 
 (defvar *ros-asdf-use-ros-home* nil)
 
-(defclass asdf::roslisp-msg-source-file (asdf:cl-source-file) ())
-
-(defmethod asdf:output-files ((operation asdf:compile-op) (c asdf::roslisp-msg-source-file))
-  (roslisp-home-output-files c))
-
 (defmethod asdf:output-files :around ((operation asdf:compile-op) (c asdf:cl-source-file))
   (if *ros-asdf-use-ros-home*
       (roslisp-home-output-files c)

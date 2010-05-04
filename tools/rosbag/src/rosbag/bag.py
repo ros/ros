@@ -506,9 +506,12 @@ class Bag(object):
                         s += ' @ %*s [min: %*s max: %*s]' % (max_freq_median_len, _human_readable_frequency(topic_freqs_median[topic]),
                                                              max_freq_min_len,    _human_readable_frequency(topic_freqs_min[topic]),
                                                              max_freq_max_len,    _human_readable_frequency(topic_freqs_max[topic]))
+                    else:
+                        s += '   %*s       %*s      %*s ' % (max_freq_median_len, '', max_freq_min_len, '', max_freq_max_len, '')
+
+                    s += ' : %-*s' % (max_datatype_len, topic_datatypes[topic])
                     if topic_conn_counts[topic] > 1:
                         s += ' (%d connections)' % topic_conn_counts[topic]
-                    s += ' : %-*s' % (max_datatype_len, topic_datatypes[topic])
         
                     if i == 0:
                         rows.append(('Topics', s))

@@ -388,9 +388,9 @@ class Bag(object):
             else:
                 rows.append(('Version', '%d.%d' % (self._version / 100, self._version % 100)))
 
-            rows.append(('Size', _human_readable_size(self.size)))
-
-            if self._connection_indexes:
+            if not self._connection_indexes:
+                rows.append(('Size', _human_readable_size(self.size)))
+            else:
                 start_stamp = min([index[ 0].time.to_sec() for index in self._connection_indexes.values()])
                 end_stamp   = max([index[-1].time.to_sec() for index in self._connection_indexes.values()])
     
@@ -406,6 +406,8 @@ class Bag(object):
                     duration_str = '%d:%ds (%ds)' % (dur_mins, dur_secs, duration)
                 else:
                     duration_str = '%.1fs' % duration   
+
+                rows.append(('Size', '%s (%s/s)' % (_human_readable_size(self.size), _human_readable_size(self.size / duration))))
                 rows.append(('Duration', duration_str))
         
                 # Show start and end times
@@ -521,7 +523,6 @@ class Bag(object):
                         rows.append(('', s))
         
         except Exception, ex:
-            raise
             pass
 
         first_column_width = max([len(field) for field, _ in rows]) + 1
@@ -593,11 +594,14 @@ class Bag(object):
         if not f:
             raise ValueError('filename (or stream) is invalid')
 
-        if   mode == 'r': self._open_read(f)
-        elif mode == 'w': self._open_write(f)
-        elif mode == 'a': self._open_append(f)
-        else:
-            raise ValueError('mode "%s" is invalid' % mode)
+        try:
+            if   mode == 'r': self._open_read(f)
+            elif mode == 'w': self._open_write(f)
+            elif mode == 'a': self._open_append(f)
+            else:
+                raise ValueError('mode "%s" is invalid' % mode)
+        except struct.error:
+            raise ROSBagFormatException('error with bag')
 
     def _open_read(self, f):
         if isinstance(f, file):

@@ -63,7 +63,7 @@ public:
     ros::Time translate(ros::Time const& t);
 
 private:
-    double    inv_time_scale_;
+    double    time_scale_;
     ros::Time real_start_;
     ros::Time translated_start_;
 };

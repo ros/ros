@@ -37,12 +37,12 @@
 namespace rosbag {
 
 TimeTranslator::TimeTranslator()
-    : inv_time_scale_(1.0), real_start_(ros::TIME_MIN), translated_start_(ros::TIME_MIN)
+    : time_scale_(1.0), real_start_(ros::TIME_MIN), translated_start_(ros::TIME_MIN)
 {
 }
 
 void TimeTranslator::setTimeScale(double const& s) {
-    inv_time_scale_ = 1.0 / s;
+    time_scale_ = s;
 }
 
 void TimeTranslator::setRealStartTime(ros::Time const& t) {
@@ -58,7 +58,7 @@ void TimeTranslator::shift(ros::Duration const& d) {
 }
 
 ros::Time TimeTranslator::translate(ros::Time const& t) {
-    return translated_start_ + (t - real_start_) * inv_time_scale_;
+    return translated_start_ + (t - real_start_) * (1.0 / time_scale_);
 }
 
 } // namespace rosbag

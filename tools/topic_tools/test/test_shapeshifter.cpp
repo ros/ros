@@ -68,6 +68,19 @@ class ShapeShifterSubscriber : public testing::Test
 
     }
   }
+
+  void messageCallbackLoopback(const topic_tools::ShapeShifter::ConstPtr& msg)
+  {
+    try {
+      std_msgs::String::Ptr s = msg->instantiate<std_msgs::String>();
+      printf("Got data: %s", s->data.c_str());
+      if (s->data == "abc123")
+        success = true;
+    } catch (topic_tools::ShapeShifterException& e)
+    {
+        printf("Instantiate failed!\n");
+    }
+  }
   
 protected:
   ShapeShifterSubscriber() {}
@@ -106,6 +119,30 @@ TEST_F(ShapeShifterSubscriber, testInstantiateInt)
   ros::Subscriber sub = nh.subscribe<topic_tools::ShapeShifter>("input",1,&ShapeShifterSubscriber::messageCallbackInt, (ShapeShifterSubscriber*)this);
 
   ros::Time t1(ros::Time::now()+ros::Duration(10.0));
+
+  while(ros::Time::now() < t1 && !success)
+  {
+    ros::WallDuration(0.01).sleep();
+    ros::spinOnce();
+  }
+
+  if(success)
+    SUCCEED();
+  else
+    FAIL();
+}
+
+TEST_F(ShapeShifterSubscriber, testLoopback)
+{
+  ros::NodeHandle nh;
+  ros::Subscriber sub = nh.subscribe<topic_tools::ShapeShifter>("loopback",1,&ShapeShifterSubscriber::messageCallbackLoopback, (ShapeShifterSubscriber*)this);
+
+  ros::Time t1(ros::Time::now()+ros::Duration(10.0));
+
+  ros::Publisher pub = nh.advertise<std_msgs::String>("loopback", 1);
+  std_msgs::String s;
+  s.data = "abc123";
+  pub.publish(s);
 
   while(ros::Time::now() < t1 && !success)
   {

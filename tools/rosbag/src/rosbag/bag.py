@@ -422,13 +422,13 @@ class Bag(object):
         max_topic_len = max([len(topic) for topic in topics])
         max_datatype_len = max([len(datatype) for datatype in datatypes])
         for i, connection in enumerate(self._connections.values()):
-            indent = (7 if i == 0 else 14)
+            indent = (2 if i == 0 else 14)
 
             index     = self._connection_indexes[connection.id]
             stamps    = numpy.array([entry.time.to_sec() for entry in index])
             msg_count = len(stamps)
 
-            s += '%s%-*s (%-*s) %7d msgs' % (' ' * indent, max_topic_len, topic, max_datatype_len, topic_datatypes[topic], msg_count)
+            s += '%s%-*s (%-*s) %7d msgs' % (' ' * indent, max_topic_len, connection.topic, max_datatype_len, connection.datatype, msg_count)
 
             if msg_count > 1:
                 spacing = stamps[1:] - stamps[:-1]

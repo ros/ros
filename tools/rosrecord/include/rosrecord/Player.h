@@ -94,9 +94,14 @@ public:
 
     ros::Time getFirstTime() { return first_time_;  }
 
-    void setStartTime(const ros::Time& start_time)
+    void setTranslatedStartTime(const ros::Time& start_time)
     {
         translator_.setTranslatedStartTime(start_time);
+    }
+
+    void setRealStartTime(const ros::Time& start_time)
+    {
+        translator_.setRealStartTime(start_time);
     }
 
     // todo: implement
@@ -310,7 +315,10 @@ public:
         }
 
         foreach(Player* player, players_)
-            player->setStartTime(first_time);
+        {
+            player->setRealStartTime(first_time);
+            player->setTranslatedStartTime(start);
+        }
 
         return true;
     }
@@ -354,7 +362,7 @@ public:
         Player* next_player = NULL;
 
         bool first = true;
-        ros::Time min_t = ros::Time(); // This should be the maximum unsigned int
+        ros::Time min_t = ros::TIME_MAX;
 
         bool remaining = false;
 

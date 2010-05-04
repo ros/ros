@@ -1,0 +1,6 @@
+<launch>
+  <test time-limit="100" test-name="01random_record" pkg="test_rosrecord" type="random_record.py" args="54321 10 10.0"/>
+  <test time-limit="100" test-name="02random_play" pkg="test_rosrecord" type="random_play.py" args="54321 10 10.0 1.0"/>
+  <test time-limit="100" test-name="03random_play" pkg="test_rosrecord" type="random_play.py" args="54321 10 10.0 0.5"/>
+  <test time-limit="100" test-name="04random_play" pkg="test_rosrecord" type="random_play.py" args="54321 10 10.0 2.0"/>
+</launch>

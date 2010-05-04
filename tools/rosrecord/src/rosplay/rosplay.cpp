@@ -228,6 +228,7 @@ std::map<std::string, ros::Publisher> g_publishers;
 
 void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time, ros::Time record_time, void* n)
 {
+
   if (play_time < requested_start_time_)
     return;
   
@@ -298,6 +299,7 @@ void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time,
     ROS_INFO("Done sleeping.\n");
     Duration shift = getSysTime() - paused_time_;
     player_.shiftTime(shift);
+    play_time += shift;
     if (bag_time_) bag_time_publisher_->startTime(record_time);
   }
   
@@ -305,7 +307,6 @@ void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time,
 
     ros::Time now = getSysTime();
     ros::Duration delta = play_time - getSysTime();
-    
     while ( (paused_ || delta > ros::Duration(0,100000)) && node_handle->ok()){
       bool charsleftorpaused = true;
       
@@ -378,8 +379,11 @@ void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time,
     }
     
     if (!paused_ && delta > ros::Duration(0, 5000) && node_handle->ok())
-      usleep(delta.toNSec()/1000 - 5); // Should this be a ros::Duration::Sleep?
+    {
+        usleep(delta.toNSec()/1000 - 5); // Should this be a ros::Duration::Sleep?
+    }
   }
+
   (pub_token->second).publish(*m);
 }
 

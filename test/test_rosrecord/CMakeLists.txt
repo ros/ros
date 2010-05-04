@@ -34,6 +34,4 @@ rosbuild_add_gtest(test/test_recorder_player test/test_recorder_player.cpp)
 rosbuild_link_boost(test/test_recorder_player system)
 
 # Remove test until we resolve details of making them pass deterministically
-rosbuild_add_rostest_future(test/random_pub_sub.xml)
-rosbuild_add_rostest_future(test/random_pub_record.xml)
-#rosbuild_add_rostest_future(test/random_play_sub.xml)
+rosbuild_add_rostest(test/random_record_play.xml)

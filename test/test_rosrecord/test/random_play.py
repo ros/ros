@@ -42,32 +42,55 @@ import sys
 from cStringIO import StringIO
 import time
 from random_messages import RandomMsgGen
+import subprocess
+import os
 
-class RandomSubTest(unittest.TestCase):
+DELAY = 0.5
 
-  def msg_cb(self, msg):
-    nowtime = rospy.Time.now()
-    if self.start is None:
-      self.start = nowtime
+class RandomPlay(unittest.TestCase):
 
-    self.input.append((msg, (nowtime-self.start).to_sec()))
+  def msg_cb_topic(self, topic):
+    def msg_cb(msg):
+      nowtime = rospy.Time.now()
+      if self.start is None:
+        self.start = nowtime
+
+      if topic not in self.topics_seen:
+        self.delay += DELAY
+        self.topics_seen.add(topic)
+
+      # We know this message is coming in after a delay
+      self.input.append((topic, msg, (nowtime-self.start-rospy.Duration(self.delay)).to_sec()))
+
+    return msg_cb
 
 
-  def test_random_sub(self):
+  def test_random_play(self):
     rospy.init_node('random_sub', anonymous=True)
 
     self.start = None
     self.input = []
 
-    self.assertTrue(len(sys.argv[1]) > 1)
+    self.assertTrue(len(sys.argv[1]) > 3)
 
-    rmg = RandomMsgGen(int(sys.argv[1]), 10, 10.0)
+    seed    = int(sys.argv[1])
+    topics  = int(sys.argv[2])
+    length  = float(sys.argv[3])
+    scale   = float(sys.argv[4])
+
+    rmg = RandomMsgGen(int(seed), topics, length)
+
+    self.delay = -float(DELAY)
+    self.topics_seen = set()
 
     subscribers = {}
     for (topic, msg_class) in rmg.topics():
-      subscribers[topic] = rospy.Subscriber(topic, msg_class, self.msg_cb)
+      subscribers[topic] = rospy.Subscriber(topic, msg_class, self.msg_cb_topic(topic))
 
-    rospy.set_param('/spew',True)
+    binpath = os.path.join(roslib.rospack.rospackexec(['find', 'rosrecord']), 'bin', 'rosplay')
+    bagpath = os.path.join(roslib.rospack.rospackexec(['find', 'test_rosrecord']), 'test', 'recording_%d.bag'%seed)
+    cmd = [binpath, '-s', str(DELAY), '-r', str(scale), bagpath]
+    f1 = subprocess.Popen(cmd)
 
     r = rospy.Rate(10)
     while (len(self.input) < rmg.message_count()):
@@ -76,6 +99,9 @@ class RandomSubTest(unittest.TestCase):
     self.assertEqual(len(self.input), rmg.message_count())
 
     for (expect_topic, expect_msg, expect_time) in rmg.messages():
+
+      expect_time /= scale
+
       buff = StringIO()
       expect_msg.serialize(buff)
       expect_msg.deserialize(buff.getvalue())
@@ -83,21 +109,24 @@ class RandomSubTest(unittest.TestCase):
       msg_match = False
 
       for ind in xrange(0,100):
-        (input_msg, input_time) = self.input[ind]
+        (input_topic, input_msg, input_time) = self.input[ind]
 
         if (roslib.message.strify_message(expect_msg) == roslib.message.strify_message(input_msg)):
           msg_match = True
           del self.input[ind]
-          #self.assertTrue(abs(expect_time - input_time) < 0.5)
           # Messages can arrive late, but never very early
-          self.assertTrue(input_time - expect_time > -.01)
+          self.assertTrue(input_time - expect_time > -.1)
+          # .5 seconds late is a pretty big deal...
+          self.assertTrue(abs(input_time - expect_time) < .1 + DELAY)
           break
 
       if not msg_match:
         print "No match at time: %f"%expect_time
 
       self.assertTrue(msg_match)
-    
+
+    (o1,e1) = f1.communicate()    
+    self.assertEqual(f1.returncode, 0)
 
 if __name__ == '__main__':
-  rostest.rosrun('test_rosrecord', 'random_sub_test', RandomSubTest, sys.argv)
+  rostest.rosrun('test_rosrecord', 'random_record_play', RandomPlay, sys.argv)

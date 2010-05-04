@@ -338,7 +338,7 @@ void Recorder::doRecord() {
         }
 
         if (scheduledCheckDisk() && checkLogging())
-        	bag_.write(out.topic, out.time, *out.msg);
+            bag_.write(out.topic, out.time, *out.msg);
     }
 
     stopWriting();

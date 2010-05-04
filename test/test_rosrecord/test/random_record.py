@@ -42,23 +42,37 @@ import sys
 from cStringIO import StringIO
 import time
 from random_messages import RandomMsgGen
+import subprocess
+import signal
+import os
 
-class RandomPubTest(unittest.TestCase):
+class RandomRecord(unittest.TestCase):
 
-  def test_random_pub(self):
+  def test_random_record(self):
     rospy.init_node('random_pub')
   
     if (len(sys.argv) < 2):
       raise Exception("Expected seed as first argument")
 
-    rmg = RandomMsgGen(int(sys.argv[1]), 10, 10.0)
+    seed = int(sys.argv[1])
+
+    seed    = int(sys.argv[1])
+    topics  = int(sys.argv[2])
+    length  = float(sys.argv[3])
+
+    rmg = RandomMsgGen(seed, topics, length)
 
     publishers = {}
 
     for (topic, msg_class) in rmg.topics():
       publishers[topic] = rospy.Publisher(topic, msg_class)
-    
-      # Sleep an extra 5 seconds for good measure
+
+    binpath = os.path.join(roslib.rospack.rospackexec(['find', 'rosrecord']), 'bin', 'rosrecord')
+    bagpath = os.path.join(roslib.rospack.rospackexec(['find', 'test_rosrecord']), 'test', 'recording_%d'%seed)
+    cmd = [binpath, '-a', '-F', bagpath]
+    f1 = subprocess.Popen(cmd)
+
+    # Sleep an extra 5 seconds for good measure
     rospy.sleep(rospy.Duration.from_sec(5.0))
 
     start = rospy.Time.now()
@@ -67,5 +81,10 @@ class RandomPubTest(unittest.TestCase):
       rospy.sleep(d)
       publishers[topic].publish(msg)
 
+    f1.send_signal(signal.SIGINT)
+    (o1,e1) = f1.communicate()
+    self.assertEqual(f1.returncode, 0)
+
+
 if __name__ == '__main__':
-  rostest.rosrun('test_rosrecord', 'random_pub_test', RandomPubTest, sys.argv)
+  rostest.rosrun('test_rosrecord', 'random_record_play', RandomRecord, sys.argv)

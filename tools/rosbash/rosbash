@@ -337,7 +337,7 @@ function _roscomplete_rosbag {
     arg="${COMP_WORDS[COMP_CWORD]}"
 
     if [[ $COMP_CWORD == 1 ]]; then
-        opts="check fix help info play record filter"
+        opts="check compress filter fix help info play record uncompress"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     else
         COMPREPLY=($(compgen -f -- ${arg}))

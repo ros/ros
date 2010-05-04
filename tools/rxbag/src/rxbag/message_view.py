@@ -37,6 +37,13 @@ import roslib; roslib.load_manifest(PKG)
 import rospy
 import time
 
+import wxversion
+WXVER = '2.8'
+if wxversion.checkInstalled(WXVER):
+    wxversion.select(WXVER)
+else:
+    print >> sys.stderr, 'This application requires wxPython version %s' % WXVER
+    sys.exit(1)
 import wx
 
 from util.layer import Layer
@@ -53,8 +60,8 @@ class TimelineRenderer:
     def draw_timeline_segment(self, dc, topic, stamp_start, stamp_end, x, y, width, height):
         return False
 
-## A widget that can display message details 
-class MsgView(Layer):
+class MessageView(Layer):
+    """A widget that can display message details""" 
     name = 'Untitled'
     
     def __init__(self, timeline, parent, title, x, y, width, height, max_repaint=None):
@@ -63,7 +70,7 @@ class MsgView(Layer):
         self.timeline = timeline
         self.border   = False
     
-    def message_viewed(self, bag_file, bag_index, topic, stamp, datatype, msg_index, msg):
+    def message_viewed(self, bag, topic, t, datatype, msg_index, msg):
         pass
     
     def message_cleared(self):
@@ -72,16 +79,16 @@ class MsgView(Layer):
     def paint(self, dc):
         pass
 
-class TopicMsgView(MsgView):
+class TopicMessageView(MessageView):
     def __init__(self, timeline, parent, title, x, y, width, height, max_repaint=None):
-        MsgView.__init__(self, timeline, parent, title, x, y, width, height, max_repaint)
+        MessageView.__init__(self, timeline, parent, title, x, y, width, height, max_repaint)
         
         self.topic     = None
         self.msg_index = None
     
         self._create_toolbar()
 
-    def message_viewed(self, bag_file, bag_index, topic, stamp, datatype, msg_index, msg):
+    def message_viewed(self, bag, topic, t, datatype, msg_index, msg):
         self.topic     = topic
         self.msg_index = msg_index
     
@@ -92,18 +99,21 @@ class TopicMsgView(MsgView):
         self.timeline.remove_view(self.topic, self)
 
     def navigate_first(self):
+        # todo: fix
         if self.topic and self.msg_index is not None:
             topic_positions = self.timeline.bag_index.msg_positions[self.topic]
             if len(topic_positions) > 0:
                 self.timeline.set_playhead(topic_positions[0][0])
 
     def navigate_previous(self):
+        # todo: fix
         if self.topic and self.msg_index is not None:
             new_msg_index = self.msg_index - 1
             if new_msg_index >= 0:
                 self.timeline.set_playhead(self.timeline.bag_index.msg_positions[self.topic][new_msg_index][0])
 
     def navigate_next(self):
+        # todo: fix
         if self.topic and self.msg_index is not None:
             new_msg_index = self.msg_index + 1
             topic_positions = self.timeline.bag_index.msg_positions[self.topic]
@@ -111,6 +121,7 @@ class TopicMsgView(MsgView):
                 self.timeline.set_playhead(topic_positions[new_msg_index][0])
 
     def navigate_last(self):
+        # todo: fix
         if self.topic and self.msg_index is not None:
             topic_positions = self.timeline.bag_index.msg_positions[self.topic]
             if len(topic_positions) > 0:

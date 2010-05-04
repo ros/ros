@@ -34,10 +34,18 @@
 
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
+
+import wxversion
+WXVER = '2.8'
+if wxversion.checkInstalled(WXVER):
+    wxversion.select(WXVER)
+else:
+    print >> sys.stderr, 'This application requires wxPython version %s' % WXVER
+    sys.exit(1)
 import wx
 
 from util.layer import Layer
-from bag_index import BagIndex
+from bag_helper import BagHelper
 
 class StatusLayer(Layer):
     def __init__(self, parent, title, timeline, x, y, width, height, max_repaint=None):
@@ -58,7 +66,7 @@ class StatusLayer(Layer):
         dc.SetFont(self.font)
         dc.SetTextForeground(self.font_color)
 
-        s = BagIndex.stamp_to_str(self.timeline.playhead)
+        s = BagHelper.stamp_to_str(self.timeline.playhead)
         
         spd = self.timeline.play_speed
         spd_str = None

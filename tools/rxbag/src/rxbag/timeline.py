@@ -47,6 +47,13 @@ import os
 import threading
 import time
 
+import wxversion
+WXVER = '2.8'
+if wxversion.checkInstalled(WXVER):
+    wxversion.select(WXVER)
+else:
+    print >> sys.stderr, 'This application requires wxPython version %s' % WXVER
+    sys.exit(1)
 import wx
 
 from util.base_frame import BaseFrame
@@ -56,7 +63,6 @@ import plugins
 import status
 
 from raw_view import RawView
-from bag_index import BagIndex
 
 class TimelinePanel(LayerPanel):
     def __init__(self, input_files, options, *args, **kwargs):
@@ -80,7 +86,7 @@ class TimelinePanel(LayerPanel):
                 print 'Error loading %s: %s' % (bag_path, e)
                 continue
             
-            self.bag_files[bag_file] = BagIndex(bag_file)
+            self.bag_files[bag_file] = bag_file
                 
         if len(unindexed) + len(self.bag_files) == 0:
             return False
@@ -145,7 +151,6 @@ class Timeline(Layer):
 
         self.bag_files = {}
         self.bag_file  = None
-        self.bag_index = None
 
         ## Rendering parameters
 
@@ -226,7 +231,7 @@ class Timeline(Layer):
 
         self.listeners = {}
 
-        self.playhead_indices = None
+        self.playhead_positions = None
 
         class PlayThread(threading.Thread):
             def __init__(self, timeline):
@@ -253,7 +258,8 @@ class Timeline(Layer):
                     if self.last_frame and self.timeline.playhead == self.last_playhead:
                         new_playhead = self.timeline.playhead + (now - self.last_frame) * self.timeline.play_speed
     
-                        start_stamp, end_stamp = self.timeline.bag_index.start_stamp, self.timeline.bag_index.end_stamp
+                        start_stamp = self.timeline.start_stamp
+                        end_stamp   = self.timeline.end_stamp
                         if new_playhead > end_stamp:
                             new_playhead = start_stamp
                         elif new_playhead < start_stamp:
@@ -271,6 +277,36 @@ class Timeline(Layer):
 
         self.play_thread = PlayThread(self)
         self.play_thread.start()
+
+    @property
+    def start_stamp(self):
+        return self.get_start_stamp(self.bag_file)
+
+    @property
+    def end_stamp(self):
+        return self.get_end_stamp(self.bag_file)
+
+    @property
+    def topics(self):
+        return sorted(set([c.topic for c in self.bag_file._get_connections()]))
+
+    def get_start_stamp(self, bag):
+        return min([index[0].time.to_sec() for index in bag._connection_indexes.values()])
+
+    def get_end_stamp(self, bag):
+        return max([index[-1].time.to_sec() for index in bag._connection_indexes.values()])
+
+    def get_topics_by_datatype(self):
+        topics_by_datatype = {}
+        for c in self.bag_file._get_connections():
+            topics_by_datatype.setdefault(c.datatype, []).append(c.topic)
+        return topics_by_datatype
+
+    def get_datatype(self, topic):
+        for c in self.bag_file._get_connections(topic):
+            return c.datatype
+
+    ##
 
     def on_close(self, event):
         self.play_thread.stop()
@@ -314,7 +350,7 @@ class Timeline(Layer):
         renderers = []
 
         for topic in self.topics:
-            datatype = self.bag_index.get_datatype(topic)
+            datatype = self.get_datatype(topic)
             renderer = self.timeline_renderers.get(datatype)
             if renderer is not None:
                 renderers.append((topic, renderer))
@@ -322,18 +358,17 @@ class Timeline(Layer):
         return renderers
 
     def load_plugins(self):
-        for msg_view, timeline_renderer, msg_types in plugins.load_plugins():
+        for view, timeline_renderer, msg_types in plugins.load_plugins():
             for msg_type in msg_types:
-                self.viewer_types.setdefault(msg_type, []).append(msg_view)
+                self.viewer_types.setdefault(msg_type, []).append(view)
             if timeline_renderer is not None:
                 self.timeline_renderers[msg_type] = timeline_renderer(self)
 
     def set_bag_files(self, bag_files):
         self.bag_files = bag_files
         
-        # HACK
-        self.bag_file  = list(self.bag_files)[0]
-        self.bag_index = self.bag_files[self.bag_file]
+        # todo: handle multiple bags
+        self.bag_file = list(self.bag_files)[0]
 
     def is_renderer_active(self, topic):
         return topic in self.rendered_topics
@@ -377,10 +412,6 @@ class Timeline(Layer):
             topic_listeners.remove(listener)
 
     @property
-    def topics(self):
-        return sorted(self.bag_index.topics)
-
-    @property
     def history_bottom(self):
         return self.history_top + self.history_height
     
@@ -416,8 +447,8 @@ class Timeline(Layer):
 
         self.play_speed = min(self.max_play_speed, self.play_speed)
 
-    def navigate_start(self): self.set_playhead(self.bag_index.start_stamp)
-    def navigate_end(self):   self.set_playhead(self.bag_index.end_stamp)
+    def navigate_start(self): self.set_playhead(self.start_stamp)
+    def navigate_end(self):   self.set_playhead(self.end_stamp)
 
     ## View port
 
@@ -440,7 +471,7 @@ class Timeline(Layer):
         self.force_repaint()
 
     def reset_zoom(self):
-        self.set_timeline_view(self.bag_index.start_stamp, self.bag_index.end_stamp)
+        self.set_timeline_view(self.start_stamp, self.end_stamp)
 
     def zoom_in(self):  self.zoom_timeline(0.5)
     def zoom_out(self): self.zoom_timeline(2.0)
@@ -469,7 +500,7 @@ class Timeline(Layer):
             
             if self.playhead > self.stamp_right:
                 dstamp = self.playhead - self.stamp_right + (self.stamp_right - self.stamp_left) * 0.75
-                dstamp = min(dstamp, self.bag_index.end_stamp - self.stamp_right)
+                dstamp = min(dstamp, self.end_stamp - self.stamp_right)
                 
                 self.stamp_left  += dstamp
                 self.stamp_right += dstamp
@@ -477,17 +508,22 @@ class Timeline(Layer):
                 self.invalidate()
             elif self.playhead < self.stamp_left:
                 dstamp = self.stamp_left - self.playhead + (self.stamp_right - self.stamp_left) * 0.75
-                dstamp = min(dstamp, self.stamp_left - self.bag_index.start_stamp)
+                dstamp = min(dstamp, self.stamp_left - self.start_stamp)
 
                 self.stamp_left  -= dstamp
                 self.stamp_right -= dstamp
                 self.invalidate()
-    
-            # Get the indices in each topic msg_positions corresponding to the timestamp
-            self.playhead_indices = dict([(topic, self.bag_index.find_stamp_index(topic, self.playhead)) for topic in self.topics])
-    
-            self.update_message_view()
+
+            playhead_time = roslib.rostime.Time.from_sec(self.playhead)
             
+            self.playhead_positions = {}
+            for topic in self.topics:
+                entry = self.bag_file._get_entry(playhead_time, self.bag_file._get_connections(topic))
+                if entry:
+                    self.playhead_positions[topic] = entry.position
+
+            self.update_message_view()
+
             self.parent.status.invalidate()
             self.parent.playhead.update_position()
 
@@ -499,14 +535,13 @@ class Timeline(Layer):
         self.resize(w - self.x, h - self.y)   # resize layer to fill client area
 
     def check_dirty(self):
-        if self.bag_index is not None:
-            self.invalidate()
+        pass
 
     def paint(self, dc):
         dc.SetBackground(self.background_brush)
         dc.Clear()
 
-        if self.bag_index is None or len(self.topics) == 0:
+        if len(self.topics) == 0:
             return
 
         if self.stamp_left is None:
@@ -542,7 +577,7 @@ class Timeline(Layer):
         self.history_bounds = {}
         y = self.history_top
         for topic in self.topics:
-            datatype = self.bag_index.get_datatype(topic)
+            datatype = self.get_datatype(topic)
             
             topic_height = None
             if topic in self.rendered_topics:
@@ -565,8 +600,9 @@ class Timeline(Layer):
         dc.SetPen(self.topic_divider_pen)
         dc.DrawLineList([(max(clip_left, x), y, min(clip_right, x + w), y) for (x, y, w, h) in self.history_bounds.values()])
 
-    ## Draws time indicators on the timeline 
     def _draw_time_indicators(self, dc):
+        """Draw time indicators on the timeline"""
+
         x_per_sec = self.map_dstamp_to_dx(1.0)
 
         major_divisions = [s for s in self.sec_divisions if x_per_sec * s >= self.major_spacing]
@@ -581,7 +617,7 @@ class Timeline(Layer):
         else:
             minor_division = None
 
-        start_stamp = self.bag_index.start_stamp
+        start_stamp = self.start_stamp
 
         major_stamps = list(self._get_stamps(start_stamp, major_division))
         self._draw_major_divisions(dc, major_stamps, start_stamp, major_division)
@@ -615,8 +651,8 @@ class Timeline(Layer):
         dc.SetPen(self.time_minor_pen)
         dc.DrawLineList([(x, self.history_top, x, self.history_bottom) for x in xs])
 
-    ## Returns visible stamps every stamp_step 
     def _get_stamps(self, start_stamp, stamp_step):
+        """Generate visible stamps every stamp_step"""
         if start_stamp >= self.stamp_left:
             stamp = start_stamp
         else:
@@ -651,22 +687,26 @@ class Timeline(Layer):
         else:                               # show seconds.00
             return '%d.%03d' % (secs, int(1000.0 * (elapsed - int(elapsed))))
 
-    ## Draw boxes to show messages regions in timelines
     def _draw_message_history(self, dc):
+        """Draw boxes to show message regions on timelines"""
         for topic, (x, y, w, h) in self.history_bounds.items():
             msg_y      = y + 1
             msg_height = h - 3
+
+            # Get all the connections on this topic
+            connections = list(self.bag_file._get_connections(topic))
+
+            datatype = connections[0].datatype
             
-            datatype       = self.bag_index.get_datatype(topic)
             datatype_color = self.datatype_colors.get(datatype, self.default_datatype_color)
 
+            # Get the renderer and the message combine interval
             renderer = None
             msg_combine_interval = None
             if topic in self.rendered_topics:
                 renderer = self.timeline_renderers.get(datatype)
                 if not renderer is None:
                     msg_combine_interval = self.map_dx_to_dstamp(renderer.msg_combine_px)
-
             if msg_combine_interval is None:
                 msg_combine_interval = self.map_dx_to_dstamp(self.default_msg_combine_px)
 
@@ -674,16 +714,17 @@ class Timeline(Layer):
             dc.SetPen(wx.Pen(datatype_color))
             dc.SetBrush(wx.Brush(datatype_color))
 
-            # Find the index of the earliest visible stamp
-            stamp_left_index  = self.bag_index.find_stamp_index(topic, self.stamp_left)
-            stamp_right_index = self.bag_index.find_stamp_index(topic, self.stamp_right)
+            # Get a generator for the visible stamps on this topic
+            start_time = roslib.rostime.Time.from_sec(self.stamp_left)
+            end_time   = roslib.rostime.Time.from_sec(self.stamp_right)
+            stamps = (entry.time.to_sec() for entry in self.bag_file._get_entries(connections, start_time, end_time))
 
             # Iterate through regions of connected messages
-            for (stamp_start, stamp_end) in self._find_regions((stamp for (stamp, pos) in self.bag_index.msg_positions[topic][stamp_left_index:stamp_right_index]), msg_combine_interval):
+            for (stamp_start, stamp_end) in self._find_regions(stamps, msg_combine_interval):
                 # Calculate region rectangle bounds 
                 region_x_start = self.map_stamp_to_x(stamp_start)
                 region_x_end   = self.map_stamp_to_x(stamp_end)
-                region_width   = max(1, region_x_end - region_x_start) 
+                region_width   = max(1, region_x_end - region_x_start)
                 region_rect    = (region_x_start, msg_y, region_width, msg_height)
 
                 # Use custom datatype renderer
@@ -693,8 +734,8 @@ class Timeline(Layer):
                 # Use default renderer
                 dc.DrawRectangle(*region_rect)
 
-    ## Groups timestamps into regions connected by timestamps less than max_interval secs apart
     def _find_regions(self, stamps, max_interval):
+        """Group timestamps into regions connected by timestamps less than max_interval secs apart"""
         region_start, prev_stamp = None, None
         for stamp in stamps:
             if prev_stamp:
@@ -726,13 +767,13 @@ class Timeline(Layer):
         marker_top, marker_bottom = self.history_top - 2, self.history_bottom + 2
 
         # Draw start marker
-        start_stamp = self.bag_index.start_stamp
+        start_stamp = self.start_stamp
         if start_stamp > self.stamp_left and start_stamp < self.stamp_right:
             x = self.map_stamp_to_x(start_stamp)
             dc.DrawLineList([(x - i, marker_top, x - i, marker_bottom) for i in range(1, self.bag_end_width)])
 
         # Draw end marker
-        end_stamp = self.bag_index.end_stamp
+        end_stamp = self.end_stamp
         if end_stamp > self.stamp_left and end_stamp < self.stamp_right:
             x = self.map_stamp_to_x(end_stamp)
             dc.DrawLineList([(x + i, marker_top, x + i, marker_bottom) for i in range(1, self.bag_end_width)])
@@ -840,19 +881,21 @@ class Timeline(Layer):
         pos = topic.msg_positions[index][1]
 
     def update_message_view(self):
-        if not self.playhead_indices:
+        if not self.playhead_positions:
             return
 
         msgs = {}
-        for topic in self.playhead_indices:
+        for topic in self.playhead_positions:
             if topic in self.listeners:
-                playhead_index = self.playhead_indices[topic]
-                if playhead_index is not None:
+                playhead_position = self.playhead_positions[topic]
+                if playhead_position is not None:
                     # Load the message
-                    pos = self.bag_index.msg_positions[topic][playhead_index][1]
-                    (datatype, msg, stamp) = self.bag_file._read_message(pos)
+                    (topic, msg, t) = self.bag_file._read_message(playhead_position, raw=True)
+                    datatype, data, md5sum, pos, msg_type = msg
+                    msg = msg_type()
+                    msg.deserialize(data)
 
-                    msgs[topic] = (stamp, datatype, playhead_index, msg)
+                    msgs[topic] = (t, datatype, pos, msg)
                     continue
 
             msgs[topic] = None
@@ -865,13 +908,15 @@ class Timeline(Layer):
             
             if msg_data:
                 for listener in topic_listeners:
-                    listener.message_viewed(self.bag_file, self.bag_index, topic, *msg_data)
+                    listener.message_viewed(self.bag_file, topic, *msg_data)
             else:
                 for listener in topic_listeners:
                     listener.message_cleared()
 
-## Timeline popup menu.  Allows user to manipulate the timeline view, and open new message views.
 class TimelinePopupMenu(wx.Menu):
+    """
+    Timeline popup menu.  Allows user to manipulate the timeline view, and open new message views.
+    """
     def __init__(self, parent, timeline):
         wx.Menu.__init__(self)
 
@@ -916,7 +961,7 @@ class TimelinePopupMenu(wx.Menu):
         self.AppendSubMenu(self.view_topic_menu, 'View (by topic)...', 'View message detail')
         
         for topic in self.timeline.topics:
-            datatype = self.timeline.bag_index.get_datatype(topic)
+            datatype = self.timeline.get_datatype(topic)
 
             # View... / topic/subtopic/subsubtopic
             topic_menu = wx.Menu()
@@ -931,8 +976,8 @@ class TimelinePopupMenu(wx.Menu):
         # View (by datatype)...
         self.view_datatype_menu = wx.Menu()
         self.AppendSubMenu(self.view_datatype_menu, 'View (by datatype)...', 'View message detail')
-        
-        topics_by_datatype = self.timeline.bag_index.get_topics_by_datatype()
+
+        topics_by_datatype = self.timeline.get_topics_by_datatype()
         
         for datatype in sorted(topics_by_datatype):
             # View... / datatype

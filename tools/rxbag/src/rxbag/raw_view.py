@@ -36,17 +36,26 @@ PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 import rospy
 
+import codecs
 import sys
 import time
+
+import wxversion
+WXVER = '2.8'
+if wxversion.checkInstalled(WXVER):
+    wxversion.select(WXVER)
+else:
+    print >> sys.stderr, 'This application requires wxPython version %s' % WXVER
+    sys.exit(1)
 import wx
 
-import msg_view
+from message_view import TopicMessageView
 
-class RawView(msg_view.TopicMsgView):
+class RawView(TopicMessageView):
     name = 'Raw'
     
     def __init__(self, timeline, parent, title, x, y, width, height, max_repaint=0.1):
-        msg_view.TopicMsgView.__init__(self, timeline, parent, title, x, y, width, height, max_repaint)
+        TopicMessageView.__init__(self, timeline, parent, title, x, y, width, height, max_repaint)
         
         self._font = wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
@@ -54,7 +63,7 @@ class RawView(msg_view.TopicMsgView):
         self.msg_title.SetPosition((1, 0))
         self.msg_title.SetFont(self._font)
 
-        self.msg_tree = MsgTree(self.parent)
+        self.msg_tree = MessageTree(self.parent)
         self.msg_tree.SetPosition((0, 20))
 
         self.msg_index = None
@@ -65,26 +74,26 @@ class RawView(msg_view.TopicMsgView):
 
         self.self_paint = True
 
-    def message_viewed(self, bag_file, bag_index, topic, stamp, datatype, msg_index, msg):
-        msg_view.TopicMsgView.message_viewed(self, bag_file, bag_index, topic, stamp, datatype, msg_index, msg)
+    def message_viewed(self, bag_file, topic, stamp, datatype, msg_index, msg):
+        TopicMessageView.message_viewed(self, bag_file, topic, stamp, datatype, msg_index, msg)
 
         if stamp is None or msg_index is None:
             self.message_cleared()
         else:
-            self.msg_title.SetValue('%s #%d' % (time.asctime(time.localtime(stamp.to_sec())), msg_index))
+            self.msg_title.SetValue('%s #%s' % (time.asctime(time.localtime(stamp.to_sec())), str(msg_index)))
             self.msg_title.Refresh()
     
             self.msg_incoming = msg
             self.invalidate()
         
     def message_cleared(self):
-        msg_view.TopicMsgView.message_cleared(self)
+        TopicMessageView.message_cleared(self)
 
         self.clear()
 
     def paint(self, dc):
         if self.msg_incoming != self.msg_displayed:
-            self.msg_tree.set_msg(self.msg_index, self.msg_stamp, self.msg_incoming)
+            self.msg_tree.set_message(self.msg_index, self.msg_stamp, self.msg_incoming)
             self.msg_displayed = self.msg_incoming
 
     def on_size(self, event):
@@ -98,7 +107,7 @@ class RawView(msg_view.TopicMsgView):
         self.msg_incoming = None
         self.invalidate()
 
-class MsgTree(wx.TreeCtrl):
+class MessageTree(wx.TreeCtrl):
     def __init__(self, parent):
         wx.TreeCtrl.__init__(self, parent, style=wx.TR_DEFAULT_STYLE | wx.TR_HIDE_ROOT | wx.TR_MULTIPLE)
 
@@ -106,7 +115,7 @@ class MsgTree(wx.TreeCtrl):
 
         self._msg = None
 
-        self._expanded_paths = {}
+        self._expanded_paths = set()
 
         self.Bind(wx.EVT_KEY_UP, self.on_key_up)
 
@@ -114,27 +123,36 @@ class MsgTree(wx.TreeCtrl):
     def msg(self):
         return self._msg
     
-    def set_msg(self, index, stamp, msg):
+    def set_message(self, index, stamp, msg):
         # Remember whether items were expanded or not before deleting
-        if not self._msg is None:
+        if self._msg:
             for item in self.get_all_items():
                 path = self.get_item_path(item)
-                self._expanded_paths[path] = self.IsExpanded(item)
+                if self.IsExpanded(item):
+                    self._expanded_paths.add(path)
+                elif path in self._expanded_paths:
+                    self._expanded_paths.remove(path)
 
             self.DeleteAllItems()
-        
-        # Populate the tree
-        if not msg is None:
-            self._add_msg_object(None, '', 'msg', msg, msg._type)
 
-            if len(self._expanded_paths) == 0:
-                # Expand all if this is our first msg
-                self.ExpandAll()
-            else:
-                # Expand any paths that we've seen for the first time, or that were previously expanded 
+        if msg:
+            # Populate the tree
+            self._add_msg_object(None, '', 'msg', msg, msg._type)
+            
+            if not self._msg:
+                # First message: expand top-level items (that aren't the header)
                 for item in self.get_all_items():
-                    if self._expanded_paths.get(self.get_item_path(item), True):
+                    path = self.get_item_path(item)
+                    if '.' not in path and path != 'header':
                         self.Expand(item)
+            else:
+                # Expand those that were previously expanded, and collapse any paths that we've seen for the first time
+                for item in self.get_all_items():
+                    path = self.get_item_path(item)
+                    if path in self._expanded_paths:
+                        self.Expand(item)
+                    else:
+                        self.Collapse(item)
 
         self._msg = msg
 
@@ -209,10 +227,16 @@ class MsgTree(wx.TreeCtrl):
         else:
             subobjs = []
             
-        # TODO: need to handle non-string data stored in str's
         if type(obj) in [str, bool, int, long, float, complex, roslib.rostime.Time]:
-            label += ': ' + str(obj)
+            # Ignore any binary data
+            obj_repr = codecs.utf_8_decode(str(obj), 'ignore')[0]
             
+            # Truncate long representations
+            if len(obj_repr) >= 50:
+                obj_repr = obj_repr[:50] + '...'
+            
+            label += ': ' + obj_repr
+
         if parent is None:
             item = self.AddRoot(label)
         else:

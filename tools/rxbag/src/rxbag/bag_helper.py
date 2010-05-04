@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2009, Willow Garage, Inc.
@@ -26,15 +25,34 @@
 # INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
 # BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICTS
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # Revision $Id$
 
-from bag_helper import BagHelper
-from message_view import MessageView, TimelineRenderer, TopicMessageView
+PKG = 'rxbag'
+import roslib; roslib.load_manifest(PKG)
+import rospy
+import rosbag
 
-# Import rxbag main to be used by the $ROS_ROOT/bin/rxbag
-from rxbag_main import rxbag_main
+import bisect
+import cPickle
+import math
+import os
+import sys
+import threading
+import time
+
+import numpy
+
+import util.progress_meter
+
+class BagHelper:
+    @staticmethod
+    def stamp_to_str(secs):
+        secs_frac = secs - int(secs) 
+        secs_frac_str = ('%.2f' % secs_frac)[1:]
+
+        return time.strftime('%b %d %Y %H:%M:%S', time.localtime(secs)) + secs_frac_str

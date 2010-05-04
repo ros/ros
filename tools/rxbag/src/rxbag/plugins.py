@@ -37,6 +37,7 @@ import roslib; roslib.load_manifest(PKG)
 
 import os
 import sys
+import traceback
 
 import roslib.rospack
 
@@ -79,6 +80,6 @@ def load_plugins():
                 print >> sys.stderr, "Cannot load plugin [%s]: no 'get_rxbag_plugins' attribute" % (plugin_module_name)
 
         except Exception, ex:
-            print >> sys.stderr, "Unable to load plugin [%s] from package [%s]: %s" % (plugin_module_name, pkg, ex)
+            print >> sys.stderr, "Unable to load plugin [%s] from package [%s]:\n%s" % (plugin_module_name, pkg, traceback.format_exc())
 
     return plugins

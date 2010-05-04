@@ -118,9 +118,9 @@ class Bag(object):
         self._chunk_threshold = chunk_threshold
 
         self._reader          = None
-        
-        self._file_header_pos  = None
-        self._index_data_pos   = 0       # (1.2+)
+
+        self._file_header_pos = None
+        self._index_data_pos  = 0       # (1.2+)
 
         self._connection_indexes = {}    # id    -> IndexEntry[] (1.2+)
 
@@ -205,21 +205,6 @@ class Bag(object):
         self._chunk_threshold = chunk_threshold
         
     chunk_threshold = property(_get_chunk_threshold, _set_chunk_threshold)
-
-    def _read_message(self, position, raw=False):
-        self.flush()
-        return self._reader.read_message_data_record(position, raw)
-
-    def get_index(self):
-        """
-        Get the index.
-        @return: the index
-        @rtype: dict of connection -> (U{roslib.rostime.Time}, position), where position depends on the bag format.
-        """
-        if not self._connection_indexes:
-            raise ROSBagException('get_index not supported on unindexed bag files')
-
-        return self._reader.get_index()
 
     def read_messages(self, topics=None, start_time=None, end_time=None, topic_filter=None, raw=False):
         """
@@ -486,6 +471,10 @@ class Bag(object):
         return s.rstrip()
 
     ### Implementation ###
+
+    def _read_message(self, position, raw=False):
+        self.flush()
+        return self._reader.read_message_data_record(position, raw)
 
     def _open(self, f, mode):
         if not f:
@@ -1089,7 +1078,7 @@ class _BagReader101(_BagReader):
                 return
 
             bag_pos = f.tell()
-            
+
             # Read topic/md5/type string headers
             topic = f.readline().rstrip()
             if not topic:
@@ -1218,13 +1207,6 @@ class _BagReader102_Indexed(_BagReader):
         for entry in self.get_entries(topics, start_time, end_time, topic_filter):
             yield self.read_message_data_record(entry.offset, raw)
     
-    def get_index(self):
-        index = {}
-        for id, entries in self.bag._connection_indexes.items():
-            connection = self.bag._connections[id]
-            index[(connection.id, connection.topic, connection.datatype)] = [(e.time, e.offset) for e in entries]
-        return index
-
     def start_reading(self):
         self.read_file_header_record()
 
@@ -1350,14 +1332,6 @@ class _BagReader200(_BagReader):
             if rospy.is_shutdown():
                 return
             yield self.read_message_data_record((entry.chunk_pos, entry.offset), raw)
-
-    def get_index(self):
-        index = {}
-        for id, entries in self.bag._connection_indexes.items():
-            connection = self.bag._connections[id]
-            index[(connection.id, connection.topic, connection.datatype)] = [(e.time, (e.chunk_pos, e.offset)) for e in entries]
-
-        return index
 
     def start_reading(self):
         self.read_file_header_record()

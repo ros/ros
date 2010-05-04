@@ -325,9 +325,9 @@ def compress_cmd(argv):
 
     bag_op(args, lambda inbag, outbag: change_compression_op(inbag, outbag, Compression.BZ2))
 
-def uncompress_cmd(argv):
-    parser = optparse.OptionParser(usage='rosbag uncompress [BAG1 BAG2 ...]',
-                                   description='Uncompress one or more bag files.')
+def decompress_cmd(argv):
+    parser = optparse.OptionParser(usage='rosbag decompress [BAG1 BAG2 ...]',
+                                   description='Decompress one or more bag files.')
 
     (options, args) = parser.parse_args(argv)
 
@@ -530,7 +530,7 @@ def rosbagmain(argv=None):
     cmds['fix']        = fix_cmd
     cmds['filter']     = filter_cmd
     cmds['compress']   = compress_cmd
-    cmds['uncompress'] = uncompress_cmd
+    cmds['decompress'] = decompress_cmd
 
     if argv is None:
         argv = sys.argv

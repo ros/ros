@@ -50,69 +50,64 @@ import numpy
 import util.progress_meter
 
 class BagIndex:
-    def __init__(self):
-        self._data              = BagIndexData()
-        self.datatype_defs_read = None
-        self.loaded             = False
+    def __init__(self, bag):
+        self.topic_datatypes = {}   # topic -> datatype
+        self.msg_positions   = {}   # topic -> [(timestamp, file offset), ...]
 
         self._dirty_stats = True
         self._start_stamp = None
         self._end_stamp   = None
+        
+        print 'Building index'
+        
+        for (topic, msg, t) in bag.read_messages(raw=True):
+            if not topic in self.topic_datatypes:
+                datatype, data, md5sum, pos, msg_type = msg
+
+                self.topic_datatypes[topic] = datatype
+                self.msg_positions[topic] = []
+
+            entry = (t.to_sec(), pos)
+
+            topic_msg_positions = self.msg_positions[topic]
+            topic_msg_positions.insert(bisect.bisect(topic_msg_positions, entry), entry)
+
+        print 'Done with index'
 
     @property
     def start_stamp(self):
-        self.update_statistics()
+        self._update_statistics()
         return self._start_stamp
 
     @property
     def end_stamp(self):
-        self.update_statistics()
+        self._update_statistics()
         return self._end_stamp
 
     def get_topics_by_datatype(self):
         topics_by_datatype = {}
-        for topic, datatype in self._data.topic_datatypes.items():
+        for topic, datatype in self.topic_datatypes.items():
             topics_by_datatype.setdefault(datatype, []).append(topic)
         return topics_by_datatype
 
     @property
-    def topics(self): return self._data.topic_datatypes.keys()
+    def topics(self): return self.topic_datatypes.keys()
 
     @property
-    def datatypes(self): return self._data.datatype_first_pos
+    def datatypes(self): return self.datatype_first_pos
 
     @property
-    def msg_positions(self): return self._data.msg_positions
-    
-    def get_datatype(self, topic): return self._data.topic_datatypes.get(topic)
-        
-    def update_statistics(self):
+    def msg_positions(self): return self.msg_positions
+
+    def get_datatype(self, topic): return self.topic_datatypes.get(topic)
+
+    def _update_statistics(self):
         if not self._dirty_stats:
             return
         
-        self._start_stamp = self._data.get_start_stamp()
-        self._end_stamp = self._data.get_end_stamp()
+        self._start_stamp = self.get_start_stamp()
+        self._end_stamp   = self.get_end_stamp()
         self._dirty_stats = False
-
-    ## Add a record to the index
-    def add_record(self, pos, topic, datatype, stamp):
-        if not topic in self._data.topic_datatypes:
-            # A topic's been seen for the first time
-            self._data.topic_datatypes[topic] = datatype
-            self._data.msg_positions[topic] = []
-
-            # If the topic has a new message datatype, record the first position
-            if datatype not in self._data.datatype_first_pos:
-                self._data.datatype_first_pos[datatype] = pos
-                if not self.datatype_defs_read:
-                    self.datatype_defs_read = set()
-
-                self.datatype_defs_read.add(datatype)
-
-        # Record the timestamp and position
-        self._data.msg_positions[topic].append((stamp.to_sec(), pos))
-
-        self._dirty_stats = True
 
     @staticmethod
     def stamp_to_str(secs):
@@ -121,84 +116,34 @@ class BagIndex:
 
         return time.strftime('%b %d %Y %H:%M:%S', time.localtime(secs)) + secs_frac_str
 
-    def __str__(self):
-        if self.start_stamp is None:
-            return '<empty>'
-
-        duration = self.end_stamp - self.start_stamp
-
-        dur_secs = duration % 60
-        dur_mins = duration / 60
-        dur_hrs = dur_mins / 60
-        if dur_hrs > 0:
-            dur_mins = dur_mins % 60
-            s = 'Duration: %dhr %dmin %ds (%ds)\n' % (dur_hrs, dur_mins, dur_secs, duration)
-        else:
-            s = 'Duration: %dmin %ds (%ds)\n' % (dur_mins, dur_secs, duration)
-
-        s += 'Start:    %s (%.2f)\n' % (self.stamp_to_str(self.start_stamp), self.start_stamp)
-        s += 'End:      %s (%.2f)\n' % (self.stamp_to_str(self.end_stamp), self.end_stamp)
-        s += 'Messages: %d\n' % (sum([len(p) for p in self._data.msg_positions.values()]))
-
-        s += 'Topics:'
-        max_topic_len = max([len(topic.lstrip('/')) for topic in self.topics])
-        max_datatype_len = max([len(self.get_datatype(topic)) for topic in self.topics]) 
-        for i, topic in enumerate(sorted(self.topics)):
-            indent = (3 if i == 0 else 10)
-
-            positions = numpy.array([stamp for (stamp, pos) in self.msg_positions[topic]])
-            datatype = self.get_datatype(topic)
-            msg_count = len(positions)
-
-            s += '%s%-*s - %-*s %7d msgs' % (' ' * indent, max_topic_len, topic.lstrip('/'), max_datatype_len, datatype, msg_count)
-
-            if msg_count > 1:
-                spacing = positions[1:] - positions[:-1]
-                s += ' @ %5.1f Hz' % (1.0 / numpy.median(spacing))
-
-            s += '\n'
-
-        return s.rstrip()
-
-## The data for a bag index, allows for random access of a bag file. Separate from BagIndex for pickling.
-## Currently contains:
-##   - positions of first occurrence of datatype: { datatype : datatype_first_pos, ... }
-##   - datatypes of topics:                       { topic : datatype, ... }
-##   - positions of messages:                     { topic : [(timestamp, position), ...], ... }
-class BagIndexData:
-    def __init__(self):
-        self.datatype_first_pos = {}   # datatype -> file offset
-        self.topic_datatypes = {}   # topic -> datatype
-        self.msg_positions = {}   # topic -> [(timestamp, file offset), ...]
-
-    ## Return first timestamp for a given topic
     def get_topic_start_stamp(self, topic):
+        """@return: first timestamp for given topic"""
         if topic not in self.msg_positions or len(self.msg_positions[topic]) == 0:
             return None
         return self.msg_positions[topic][0][0]
 
-    ## Return last timestamp for a given topic
     def get_topic_end_stamp(self, topic):
+        """@return: last timestamp for given topic"""
         if topic not in self.msg_positions or len(self.msg_positions[topic]) == 0:
             return None
         return self.msg_positions[topic][-1][0]
 
-    ## Returns the earliest timestamp in the index
     def get_start_stamp(self):
+        """@return: earliest timestamp in the index"""
         topic_start_stamps = [self.get_topic_start_stamp(topic) for topic in self.msg_positions.keys() if len(self.msg_positions[topic]) > 0]
         if len(topic_start_stamps) == 0:
             return None
         return min(topic_start_stamps)
 
-    ## Returns the latest timestamp in the index
     def get_end_stamp(self):
+        """@return: latest timestamp in the index"""
         topic_end_stamps = [self.get_topic_end_stamp(topic) for topic in self.msg_positions.keys() if len(self.msg_positions[topic]) > 0]
         if len(topic_end_stamps) == 0:
             return None
         return max(topic_end_stamps)
 
-    ## Binary search to find position before given timestamp
     def find_stamp_position(self, topic, stamp):
+        """Binary search to find position before given timestamp"""
         if topic not in self.msg_positions:
             return None
         
@@ -208,122 +153,11 @@ class BagIndexData:
         
         return self.msg_positions[topic][index][1]
 
-    ## Binary search to find first index in topic before given timestamp 
     def find_stamp_index(self, topic, stamp):
+        """Binary search to find first index in topic before given timestamp"""
         if topic not in self.msg_positions or len(self.msg_positions[topic]) == 0:
             return None
 
         index = bisect.bisect_right(self.msg_positions[topic], (stamp, 0))
 
         return max(0, min(index, len(self.msg_positions[topic]) - 1))
-
-## Reads an index from a bag file
-class BagIndexReader:
-    def __init__(self, bag_path):
-        self.bag_path = bag_path
-        
-        self.index = BagIndex()
-
-    def load(self):
-        try:
-            bag_file = rosbag.Bag(self.bag_path)
-
-            index = bag_file.get_index()
-            if index is None:
-                bag_file.close()
-                
-                self.index = None
-                return None
-
-            for (id, topic, datatype), entries in index.items():
-                for stamp, pos in entries:
-                    self.index.add_record(pos, topic, datatype, stamp)
-
-            bag_file.close()
-
-            self.index.loaded = True
-
-        except Exception, e:
-            rospy.logerr('Unsuccessful loading index: %s' % e)
-            self.index = None
-
-        return self.index
-
-## Serialize bag file index to/from a binary file
-class BagIndexPickler:
-    def __init__(self, index_path):
-        self.index_path = index_path
-    
-    def load(self):
-        try:
-            # Open the index file
-            rospy.logdebug('Opening index: %s' % self.index_path)
-            index_file = file(self.index_path, 'rb')
-            
-            # Load the index data
-            index = BagIndex()
-            index._data = cPickle.load(index_file)
-            index.loaded = True
-
-            rospy.logdebug('Successful.\n\n%s\n%s\n%s' % (self.index_path, '-' * len(self.index_path), index))
-
-            return index
-
-        except Exception, e:
-            rospy.logerr('Unsuccessful loading index: %s' % e)
-            return None
-
-    def save(self, index):
-        try:
-            index_file = file(self.index_path, 'wb')
-            cPickle.dump(index._data, index_file, -1)
-
-            return True
-
-        except Exception, e:
-            rospy.logerr('Error writing index.')
-            return False
-        
-        finally:
-            index_file.close()
-
-## Constructs a bag index object given a path to a bag file
-class BagIndexFactory:
-    def __init__(self, bag_path):
-        self.bag_path = bag_path
-        
-        self.index = BagIndex()
-
-    def load(self):
-        try:
-            bag_file = rosbag.Bag(self.bag_path)
-            
-            index = bag_file.get_index()
-            
-            if index is not None:
-                for (id, topic, datatype), connection_index in index.items():
-                    for stamp, pos in connection_index:
-                        self.index.add_record(pos, topic, datatype, stamp)
-            else:
-                file_size = os.path.getsize(self.bag_path)
-                
-                progress = util.progress_meter.ProgressMeter(self.bag_path, file_size, 1.0)
-                
-                for i, (pos, topic, raw_msg, stamp) in enumerate(bag_file.read_messages(raw=True)):
-                    (datatype, message_data, md5, bag_pos, pytype) = raw_msg
-                
-                    self.index.add_record(pos, topic, datatype, stamp)
-                
-                    progress.step(pos)
-                
-                progress.finish()
-
-            rosbag.close()
-            
-            self.index.loaded = True
-
-        except Exception, e:
-            rospy.logerr('Unsuccessful creating index from %s: %s' % (self.bag_path, e))
-            self.index = None
-            
-        return self.index

@@ -56,8 +56,7 @@ import plugins
 import status
 
 from raw_view import RawView
-
-from bag_index import BagIndex, BagIndexFactory, BagIndexPickler, BagIndexReader
+from bag_index import BagIndex
 
 class TimelinePanel(LayerPanel):
     def __init__(self, input_files, options, *args, **kwargs):
@@ -73,58 +72,20 @@ class TimelinePanel(LayerPanel):
 
     def _init_bag_files(self, input_files):
         unindexed = []
-
-        for i, bag_path in enumerate(input_files):
+        
+        for bag_path in input_files:
             try:
                 bag_file = rosbag.Bag(bag_path)
             except Exception, e:
                 print 'Error loading %s: %s' % (bag_path, e)
                 continue
             
-            # Try to read the index directly from the bag file, or hit the index if not found
-            idx = BagIndexReader(bag_path).load()
-            if idx is None:
-                idx = BagIndexPickler(bag_path + '.index').load()
-
-            if idx is not None:
-                self.bag_files[bag_file] = idx
-                
-                print '%s\n%s\n%s' % (bag_path, '-' * len(bag_path), idx)
-            else:
-                unindexed.append(bag_path)
+            self.bag_files[bag_file] = BagIndex(bag_file)
                 
         if len(unindexed) + len(self.bag_files) == 0:
             return False
 
-        for bag_path in unindexed:
-            self._index_bag_file(bag_path, bag_path + '.index')
-            
         return True
-
-    def _index_bag_file(self, bag_path, index_path):
-        rospy.loginfo('Index not found - indexing...')
-        
-        bag_index_factory = BagIndexFactory(bag_path)
-        
-        bag_index = bag_index_factory.index
-        
-        bag_file = rosbag.Bag(bag_path)
-        self.bag_files[bag_file] = bag_index
-        
-        # Background thread to generate, then save the index
-        class BagIndexFactoryThread(threading.Thread):
-            def __init__(self, bag_index_factory):
-                threading.Thread.__init__(self)
-                self.bag_index_factory = bag_index_factory
-
-            def run(self):
-                if self.bag_index_factory.load():
-                    BagIndexPickler(self.bag_index_factory.bag_path + '.index').save(self.bag_index_factory.index)
-                    
-                    print self.bag_index_factory.index
-
-        self.bag_index_factory_thread = BagIndexFactoryThread(bag_index_factory)
-        self.bag_index_factory_thread.start()
 
     def _create_controls(self, options):
         (width, height) = self.GetParent().GetClientSize()
@@ -523,7 +484,7 @@ class Timeline(Layer):
                 self.invalidate()
     
             # Get the indices in each topic msg_positions corresponding to the timestamp
-            self.playhead_indices = dict([(topic, self.bag_index._data.find_stamp_index(topic, self.playhead)) for topic in self.topics])
+            self.playhead_indices = dict([(topic, self.bag_index.find_stamp_index(topic, self.playhead)) for topic in self.topics])
     
             self.update_message_view()
             
@@ -538,7 +499,7 @@ class Timeline(Layer):
         self.resize(w - self.x, h - self.y)   # resize layer to fill client area
 
     def check_dirty(self):
-        if self.bag_index is not None and not self.bag_index.loaded:
+        if self.bag_index is not None:
             self.invalidate()
 
     def paint(self, dc):
@@ -549,13 +510,7 @@ class Timeline(Layer):
             return
 
         if self.stamp_left is None:
-            if self.bag_index.loaded:
-                self.reset_timeline()
-            else:
-                start_stamp = self.bag_index.start_stamp
-                
-                self.set_timeline_view(start_stamp, start_stamp + (30 * 60))  # default to showing 30 mins if index not created yet
-                self.set_playhead(self.stamp_left)
+            self.reset_timeline()
 
         if self.stamp_left is None or self.stamp_right is None:
             return
@@ -720,11 +675,11 @@ class Timeline(Layer):
             dc.SetBrush(wx.Brush(datatype_color))
 
             # Find the index of the earliest visible stamp
-            stamp_left_index  = self.bag_index._data.find_stamp_index(topic, self.stamp_left)
-            stamp_right_index = self.bag_index._data.find_stamp_index(topic, self.stamp_right)
+            stamp_left_index  = self.bag_index.find_stamp_index(topic, self.stamp_left)
+            stamp_right_index = self.bag_index.find_stamp_index(topic, self.stamp_right)
 
             # Iterate through regions of connected messages
-            for (stamp_start, stamp_end) in self._find_regions((stamp for (stamp, pos) in self.bag_index._data.msg_positions[topic][stamp_left_index:stamp_right_index]), msg_combine_interval):
+            for (stamp_start, stamp_end) in self._find_regions((stamp for (stamp, pos) in self.bag_index.msg_positions[topic][stamp_left_index:stamp_right_index]), msg_combine_interval):
                 # Calculate region rectangle bounds 
                 region_x_start = self.map_stamp_to_x(stamp_start)
                 region_x_end   = self.map_stamp_to_x(stamp_end)

@@ -53,8 +53,6 @@ class PlayheadLayer(TransparentLayer):
         if self.timeline_rect != timeline_rect:
             self.timeline_rect = timeline_rect
             self.update_position()
-        elif self.timeline.bag_index is not None and not self.timeline.bag_index.loaded:
-            self.invalidate()
 
     def paint(self, dc):
         TransparentLayer.paint(self, dc)

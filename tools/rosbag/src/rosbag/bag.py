@@ -503,7 +503,7 @@ class Bag(object):
                 for i, topic in enumerate(topics):
                     topic_msg_count = topic_msg_counts[topic]
                     
-                    s = '%-*s   %*d %s' % (max_topic_len, topic, max_msg_count_len, topic_msg_count, 'msgs' if topic_msg_count > 1 else 'msg')
+                    s = '%-*s   %*d %s' % (max_topic_len, topic, max_msg_count_len, topic_msg_count, 'msgs' if topic_msg_count > 1 else 'msg ')
                     if topic in topic_freqs_median:
                         s += ' @ %*s [min: %*s max: %*s]' % (max_freq_median_len, _human_readable_frequency(topic_freqs_median[topic]),
                                                              max_freq_min_len,    _human_readable_frequency(topic_freqs_min[topic]),

@@ -53,7 +53,7 @@ class StatusLayer(Layer):
         
         self.timeline = timeline
 
-        self.font       = wx.Font(12, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
+        self.font       = wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
         self.font_color = wx.Colour(0, 0, 0)
 
     def paint(self, dc):

@@ -101,7 +101,7 @@ class TimelinePanel(LayerPanel):
         self.timeline = Timeline(self, 'Timeline', x, y, width - x, height - y, max_repaint=1.0)
         self.timeline.set_bag_files(self.bag_files)
 
-        self.status = status.StatusLayer(self, 'Status', self.timeline, self.timeline.x, 0, 300, 20)
+        self.status = status.StatusLayer(self, 'Status', self.timeline, self.timeline.x, 0, 300, 16)
 
         self.playhead = playhead.PlayheadLayer(self, 'Playhead', self.timeline, 0, 0, 12, self.timeline.height)
 
@@ -158,7 +158,7 @@ class Timeline(Layer):
         self.topic_divider_pen  = wx.Pen('#dddddd', 1)
         self.topic_font_color   = wx.Colour(0, 0, 0)
         self.time_font_color    = wx.Colour(0, 0, 0)
-        self.time_label_spacing = 6
+        self.time_label_spacing = 0
         self.time_major_pen     = wx.Pen('#222222', 1, wx.SHORT_DASH)
         self.time_minor_pen     = wx.Pen('#aaaaaa', 1, wx.LONG_DASH)
         self.time_tick_pen      = wx.Pen('#888888', 1, wx.SHORT_DASH)
@@ -172,16 +172,16 @@ class Timeline(Layer):
         self.minor_spacing = 15
         self.major_spacing = 50
 
-        self.topic_font        = wx.Font(12, wx.FONTFAMILY_SCRIPT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        self.topic_font        = wx.Font(9, wx.FONTFAMILY_SCRIPT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         self.topic_font_height = None
         self.topic_name_sizes  = None
         self.margin_left       = 0
         self.margin_right      = 20
 
-        self.time_font        = wx.Font(12, wx.FONTFAMILY_SCRIPT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        self.time_font        = wx.Font(8, wx.FONTFAMILY_SCRIPT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         self.time_font_height = None
         
-        self.history_top        = 26
+        self.history_top        = 24
         self.history_border_pen = wx.Pen('black', 1)
 
         self.bag_end_width = 4
@@ -585,13 +585,13 @@ class Timeline(Layer):
                 if renderer:
                     topic_height = renderer.get_segment_height(topic)
             if not topic_height:
-                topic_height = self.topic_font_height * 2
+                topic_height = self.topic_font_height + 4
             
             self.history_bounds[topic] = (self.history_left, y, self.history_width, topic_height)
 
-            y += topic_height - 2
+            y += topic_height - 3
 
-        self.history_bottom = max([y + h for (x, y, w, h) in self.history_bounds.values()])
+        self.history_bottom = max([y + h for (x, y, w, h) in self.history_bounds.values()]) - 1
 
     def _draw_topic_dividers(self, dc):
         clip_left  = self.history_left

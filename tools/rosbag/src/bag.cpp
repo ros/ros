@@ -418,6 +418,9 @@ void Bag::stopWritingChunk() {
     seek(end_of_chunk_pos);
     writeIndexRecords();
     curr_chunk_connection_indexes_.clear();
+
+    // Clear the connection counts
+    curr_chunk_info_.connection_counts.clear();
     
     // Flag that we're starting a new chunk
     chunk_open_ = false;

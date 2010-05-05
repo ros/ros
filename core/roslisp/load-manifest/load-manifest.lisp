@@ -162,7 +162,7 @@
 
 (defun asdf-paths-to-add (package)
   "Given a package name, calls rospack to find out the dependencies. Adds all the /asdf directories that it finds to a list and return it."
-  (cons (ros-package-path package)
+  (cons (get-asdf-directory (ros-package-path package))
         (loop for pkg in (or (gethash package *ros-asdf-paths-cache*)
                              (setf (gethash package *ros-asdf-paths-cache*)
                                    (rospack "depends" package)))

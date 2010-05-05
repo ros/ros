@@ -332,30 +332,33 @@
 (defun ros-completing-read-message (prompt &optional default)
   (unless ros-messages
     (cache-ros-message-locations))
-  (funcall ros-completion-function prompt
-           (map 'list
-                (lambda (m pkg)
-                  (cons (if (> (count m ros-messages :test 'equal) 1)
-                            (format "%s (%s)" m pkg)
-                          m)
-                        nil))
-                ros-messages ros-message-packages)
-           nil nil nil nil (when (member default ros-messages)
-                             default)))
+  (let ((result (funcall ros-completion-function prompt
+                         (map 'list
+                              (lambda (m pkg)
+                                (cons (if (> (count m ros-messages :test 'equal) 1)
+                                          (format "%s (%s)" m pkg)
+                                        m)
+                                      nil))
+                              ros-messages ros-message-packages)
+                         nil nil nil nil (when (member default ros-messages)
+                                           default))))
+    (substring result 0 (position ?\s result))))
 
 (defun ros-completing-read-service (prompt &optional default)
   (unless ros-services
     (cache-ros-service-locations))
-  (funcall ros-completion-function prompt
-           (map 'list (lambda (m pkg)
-                        (cons
-                         (if (> (count m ros-services) 1)
-                             (format "%s (%s)" m pkg)
-                           m)
-                         nil))
-                ros-services ros-service-packages)
-           nil nil nil nil (when (member default ros-services)
-                             default)))
+  (let ((result
+         (funcall ros-completion-function prompt
+                  (map 'list (lambda (m pkg)
+                               (cons
+                                (if (> (count m ros-services) 1)
+                                    (format "%s (%s)" m pkg)
+                                  m)
+                                nil))
+                       ros-services ros-service-packages)
+                  nil nil nil nil (when (member default ros-services)
+                                    default))))
+    (substring result 0 (position ?\s result))))
 
 (defun ros-completing-read-topic (prompt &optional default)
   (funcall ros-completion-function prompt (map 'list (lambda (m)

@@ -407,13 +407,14 @@ class Bag(object):
                 else:
                     duration_str = '%.1fs' % duration   
 
-                rows.append(('Size', '%s (%s/s)' % (_human_readable_size(self.size), _human_readable_size(self.size / duration))))
                 rows.append(('Duration', duration_str))
         
                 # Show start and end times
                 rows.append(('Start', '%s (%.2f)' % (_time_to_str(start_stamp), start_stamp)))
                 rows.append(('End',   '%s (%.2f)' % (_time_to_str(end_stamp),   end_stamp)))
     
+                rows.append(('Size', '%s (%s/s)' % (_human_readable_size(self.size), _human_readable_size(self.size / duration))))
+
                 rows.append(('Messages', '%d' % (sum([len(index) for index in self._connection_indexes.values()]))))
 
                 # Show compression information

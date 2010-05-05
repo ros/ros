@@ -134,9 +134,9 @@ def play_cmd(argv):
     (options, args) = parser.parse_args(argv)
 
     if len(args) == 0:
-        parser.error("You must specify at least 1 bag file to play back.")
+        parser.error('You must specify at least 1 bag file to play back.')
 
-    cmd = ["rosrun", "rosbag", "play"]
+    cmd = ['rosrun', 'rosbag', 'play']
 
     if options.quiet:      cmd.extend(["-n"])
     if options.pause:      cmd.extend(["-p"])
@@ -146,10 +146,10 @@ def play_cmd(argv):
     if options.clock:
         cmd.extend(["-b", str(options.freq)])
 
-    cmd.extend(["-q", str(options.queue)])
-    cmd.extend(["-r", str(options.rate)])
-    cmd.extend(["-s", str(options.delay)])
-    cmd.extend(["-t", str(options.sleep)])
+    cmd.extend(['-q', str(options.queue)])
+    cmd.extend(['-r', str(options.rate)])
+    cmd.extend(['-s', str(options.delay)])
+    cmd.extend(['-t', str(options.sleep)])
 
     cmd.extend(args)
 
@@ -164,7 +164,7 @@ def filter_cmd(argv):
             return eval(expr)
         return eval_fn
 
-    parser = optparse.OptionParser(usage="""rosbag filter INBAG OUTBAG EXPRESSION
+    parser = optparse.OptionParser(usage="""rosbag filter [options] INBAG OUTBAG EXPRESSION
 
 EXPRESSION can be any Python-legal expression.
 
@@ -173,7 +173,7 @@ The following variables are available:
  * m: message
  * t: time of message (t.secs, t.nsecs)""",
                                    description='Filter the contents of the bag.')
-    parser.add_option('--print', dest='verbose_pattern', default=None, metavar='PRINT-EXPRESSION', help='Python expression to print for verbose debugging. Uses same variables as filter-expression')
+    parser.add_option('-p', '--print', action='store', dest='verbose_pattern', default=None, metavar='PRINT-EXPRESSION', help='Python expression to print for verbose debugging. Uses same variables as filter-expression')
 
     options, args = parser.parse_args(argv)
     if len(args) == 0:
@@ -188,7 +188,7 @@ The following variables are available:
     inbag_filename, outbag_filename, expr = args
 
     if not os.path.isfile(inbag_filename):
-        print >> sys.stderr, "Cannot locate input bag file [%s]" % inbag_filename
+        print >> sys.stderr, 'Cannot locate input bag file [%s]' % inbag_filename
         sys.exit(2)
 
     filter_fn = expr_eval(expr)
@@ -197,19 +197,39 @@ The following variables are available:
     inbag  = Bag(inbag_filename)
 
     try:
+        meter = ProgressMeter(outbag_filename, inbag.size)
+        total_bytes = 0
+    
         if options.verbose_pattern:
             verbose_pattern = expr_eval(options.verbose_pattern)
     
-            for topic, msg, t in inbag.read_messages():
+            for topic, raw_msg, t in inbag.read_messages(raw=True):
+                msg_type, serialized_bytes, md5sum, pos, pytype = raw_msg
+                msg = pytype()
+                msg.deserialize(serialized_bytes)
+
                 if filter_fn(topic, msg, t):
-                    print "MATCH", verbose_pattern(topic, msg, t)
+                    print 'MATCH', verbose_pattern(topic, msg, t)
                     outbag.write(topic, msg, t)
                 else:
-                    print "NO MATCH", verbose_pattern(topic, msg, t)          
+                    print 'NO MATCH', verbose_pattern(topic, msg, t)          
+
+                total_bytes += len(serialized_bytes) 
+                meter.step(total_bytes)
         else:
-            for topic, msg, t in inbag.read_messages():
+            for topic, raw_msg, t in inbag.read_messages(raw=True):
+                msg_type, serialized_bytes, md5sum, pos, pytype = raw_msg
+                msg = pytype()
+                msg.deserialize(serialized_bytes)
+
                 if filter_fn(topic, msg, t):
                     outbag.write(topic, msg, t)
+
+                total_bytes += len(serialized_bytes)
+                meter.step(total_bytes)
+        
+        meter.finish()
+
     finally:
         inbag.close()
         outbag.close()
@@ -315,28 +335,32 @@ def check_cmd(argv):
     sys.exit(res)
 
 def compress_cmd(argv):
-    parser = optparse.OptionParser(usage='rosbag compress [BAG1 BAG2 ...]',
+    parser = optparse.OptionParser(usage='rosbag compress [options] BAGFILE1 [BAGFILE2 ...]',
                                    description='Compress one or more bag files.')
+    parser.add_option('-f', '--force', action='store_true', dest='force', help='force overwriting of backup file if it exists')
+    parser.add_option('-q', '--quiet', action='store_true', dest='quiet', help='suppress noncritical messages')
 
     (options, args) = parser.parse_args(argv)
 
     if len(args) < 1:
-        parser.error('You must pass at least one bag file.')
+        parser.error('You must specify at least one bag file.')
 
-    bag_op(args, lambda inbag, outbag: change_compression_op(inbag, outbag, Compression.BZ2))
+    bag_op(args, lambda inbag, outbag, quiet: change_compression_op(inbag, outbag, Compression.BZ2, options.quiet), options.force, options.quiet)
 
 def decompress_cmd(argv):
-    parser = optparse.OptionParser(usage='rosbag decompress [BAG1 BAG2 ...]',
+    parser = optparse.OptionParser(usage='rosbag decompress [options] BAGFILE1 [BAGFILE2 ...]',
                                    description='Decompress one or more bag files.')
+    parser.add_option('-f', '--force', action='store_true', dest='force', help='force overwriting of backup file if it exists')
+    parser.add_option('-q', '--quiet', action='store_true', dest='quiet', help='suppress noncritical messages')
 
     (options, args) = parser.parse_args(argv)
 
     if len(args) < 1:
-        parser.error('You must pass at least one bag file.')
+        parser.error('You must specify at least one bag file.')
     
-    bag_op(args, lambda inbag, outbag: change_compression_op(inbag, outbag, Compression.NONE))
+    bag_op(args, lambda inbag, outbag, quiet: change_compression_op(inbag, outbag, Compression.NONE, options.quiet), options.force, options.quiet)
     
-def bag_op(filenames, op):
+def bag_op(filenames, op, force=False, quiet=False):
     for inbag_filename in filenames:
         # Check we can read the file
         try:
@@ -349,16 +373,23 @@ def bag_op(filenames, op):
         # Rename the input bag to ###.orig.###, and open for reading
         (root, ext) = os.path.splitext(inbag_filename)
         backup_filename = '%s.orig%s' % (root, ext)
+        
+        if not force and os.path.exists(backup_filename):
+            if not quiet:
+                print >> sys.stderr, 'Skipping %s. Backup path %s already exists.' % (inbag_filename, backup_filename)
+            continue
+
         try:
             os.rename(inbag_filename, backup_filename)
         except OSError, ex:
-            print >> sys.stderr, 'ERROR moving %s to %s: %s', (inbag_filename, backup_filename, str(ex))
+            print >> sys.stderr, 'ERROR moving %s to %s: %s' % (inbag_filename, backup_filename, str(ex))
             continue
         outbag_filename = inbag_filename
 
         try:
             inbag = Bag(backup_filename)
 
+            # Open the output bag file for writing
             try:
                 outbag = Bag(outbag_filename, 'w')
             except (ROSBagException, IOError), ex:
@@ -366,8 +397,9 @@ def bag_op(filenames, op):
                 inbag.close()
                 continue
             
+            # Perform the operation
             try:
-                op(inbag, outbag)
+                op(inbag, outbag, quiet=quiet)
             except ROSBagException, ex:
                 print >> sys.stderr, 'ERROR operating on %s: %s' % (inbag_filename, str(ex))
                 inbag.close()
@@ -387,21 +419,25 @@ def bag_op(filenames, op):
         except (ROSBagException, IOError), ex:
             print >> sys.stderr, 'ERROR operating on %s: %s' % (inbag_filename, str(ex))
 
-def change_compression_op(inbag, outbag, compression):
+def change_compression_op(inbag, outbag, compression, quiet):
     outbag.compression = compression
 
-    meter = ProgressMeter(outbag.filename, inbag.size)
-
-    total_bytes = 0
-    for topic, msg, t in inbag.read_messages(raw=True):
-        msg_type, serialized_bytes, md5sum, pos, pytype = msg
-
-        outbag.write(topic, msg, t, raw=True)
-        
-        total_bytes += len(serialized_bytes) 
-        meter.step(total_bytes)
+    if quiet:
+        for topic, msg, t in inbag.read_messages(raw=True):
+            outbag.write(topic, msg, t, raw=True)
+    else:   
+        meter = ProgressMeter(outbag.filename, inbag.size)
     
-    meter.finish()
+        total_bytes = 0
+        for topic, msg, t in inbag.read_messages(raw=True):
+            msg_type, serialized_bytes, md5sum, pos, pytype = msg
+    
+            outbag.write(topic, msg, t, raw=True)
+            
+            total_bytes += len(serialized_bytes) 
+            meter.step(total_bytes)
+        
+        meter.finish()
 
 class RosbagCmds(UserDict.UserDict):
     def __init__(self):

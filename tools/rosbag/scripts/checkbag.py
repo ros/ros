@@ -51,7 +51,7 @@ def print_trans(old, new, indent):
     print '    ' * indent + ' * From: %s' % from_txt
     print '    ' * indent + '   To:   %s' % to_txt
 
-if __name__ == '__main__':
+def main():
     parser = optparse.OptionParser(usage='usage: checkbag.py [-g] <inbag> [rulefile1, rulefile2, ...]')
     parser.add_option('-g', '--genrules',  action='store',      dest='rulefile', default=None)
     parser.add_option('-a', '--append',    action='store_true', dest='append')
@@ -138,3 +138,10 @@ if __name__ == '__main__':
     f.close()
 
     print '\nThe necessary rule files have been written to: %s' % options.rulefile
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
+    

@@ -58,6 +58,7 @@ def record_cmd(argv):
                                    formatter=optparse.IndentedHelpFormatter())
 
     parser.add_option("-a", "--all",           dest="all",      default=False, action="store_true",        help="record all topics")
+    parser.add_option("-e", "--regex",         dest="regex",    default=False, action="store_true",        help="match topics using regular expressions")
     parser.add_option("-q", "--quiet",         dest="quiet",    default=False, action="store_true",        help="suppress console output")
     parser.add_option("-o", "--output-prefix", dest="prefix",   default=None,  action="store",             help="prepend PREFIX to beginning of bag name (name will always end with date stamp)")
     parser.add_option("-O", "--output-name",   dest="name",     default=None,  action="store",             help="record to bag with namename NAME.bag")
@@ -84,6 +85,7 @@ def record_cmd(argv):
     if options.prefix: cmd.extend(["-f", options.prefix])
     if options.name:   cmd.extend(["-F", options.name])
     if options.all:    cmd.extend(["-a"])
+    if options.regex:  cmd.extend(["-e"])
     #if options.zlib:   cmd.extend(["-z"])
     if options.bz2:    cmd.extend(["-j"])
 

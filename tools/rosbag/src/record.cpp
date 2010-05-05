@@ -43,6 +43,7 @@ void printUsage() {
     fprintf(stderr, " -f <prefix> : Prepend file prefix to beginning of bag name (name will always end with date stamp)\n");
     fprintf(stderr, " -F <fname>  : Record to a file named exactly <fname>.bag\n");
     fprintf(stderr, " -a          : Record all published messages.\n");
+    fprintf(stderr, " -e          : Match topics as regular expressions.\n");
     fprintf(stderr, " -v          : Display a message every time a message is received on a topic\n");
     fprintf(stderr, " -m          : Maximize internal buffer size in MB (Default: 256MB)  0 = infinite.\n");
     fprintf(stderr, " -s          : (EXPERIMENTAL) Enable snapshot recording (don't write to file unless triggered)\n");
@@ -55,12 +56,13 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
     rosbag::RecorderOptions opts;
 
     int option_char;
-    while ((option_char = getopt(argc, argv, "f:F:c:m:S:astvzj")) != -1) {
+    while ((option_char = getopt(argc, argv, "f:F:c:m:S:aestvzj")) != -1) {
         switch (option_char) {
         case 'f': opts.prefix      = std::string(optarg); break;
         case 'F': opts.prefix      = std::string(optarg); opts.append_date = false; break;
         case 'c': opts.limit       = atoi(optarg); break;
         case 'a': opts.record_all  = true; break;
+        case 'e': opts.regex       = true; break;
         case 's': opts.snapshot    = true; break;
         case 'v': opts.verbose     = true; break;
         case 't': opts.trigger     = true; break;

@@ -45,6 +45,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/regex.hpp>
 #include <boost/thread.hpp>
 
 #include <ros/ros.h>
@@ -65,18 +66,14 @@ namespace rosbag {
 // OutgoingMessage
 
 OutgoingMessage::OutgoingMessage(string const& _topic, topic_tools::ShapeShifter::ConstPtr _msg, Time _time) :
-    topic(_topic),
-    msg(_msg),
-    time(_time)
+    topic(_topic), msg(_msg), time(_time)
 {
 }
 
 // OutgoingQueue
 
 OutgoingQueue::OutgoingQueue(string const& _filename, std::queue<OutgoingMessage>* _queue, Time _time) :
-    filename(_filename),
-    queue(_queue),
-    time(_time)
+    filename(_filename), queue(_queue), time(_time)
 {
 }
 
@@ -85,6 +82,7 @@ OutgoingQueue::OutgoingQueue(string const& _filename, std::queue<OutgoingMessage
 RecorderOptions::RecorderOptions() :
     trigger(false),
     record_all(false),
+    regex(false),
     quiet(false),
     append_date(true),
     snapshot(false),
@@ -150,11 +148,13 @@ int Recorder::run() {
     ros::Subscriber trigger_sub = nh.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&Recorder::snapshotTrigger, this, _1));
 
     // Subscribe to each topic
-    foreach(string const& topic, options_.topics)
-        subscribe(topic);
+    if (!options_.regex) {
+    	foreach(string const& topic, options_.topics)
+			subscribe(topic);
+    }
 
     ros::Timer check_master_timer;
-    if (options_.record_all)
+    if (options_.record_all || options_.regex)
         check_master_timer = nh.createTimer(ros::Duration(1.0), boost::bind(&Recorder::doCheckMaster, this, _1, boost::ref(nh)));
 
     ros::MultiThreadedSpinner s(10);
@@ -169,11 +169,9 @@ int Recorder::run() {
     return exit_code_;
 }
 
-bool Recorder::isSubscribed(string const& topic) const {
-    return currently_recording_.find(topic) != currently_recording_.end();
-}
-
 shared_ptr<ros::Subscriber> Recorder::subscribe(string const& topic) {
+	ROS_INFO("Subscribing to %s", topic.c_str());
+
     ros::NodeHandle nh;
     shared_ptr<int> count(new int(options_.limit));
     shared_ptr<ros::Subscriber> sub(new ros::Subscriber);
@@ -182,6 +180,29 @@ shared_ptr<ros::Subscriber> Recorder::subscribe(string const& topic) {
     num_subscribers_++;
 
     return sub;
+}
+
+bool Recorder::isSubscribed(string const& topic) const {
+    return currently_recording_.find(topic) != currently_recording_.end();
+}
+
+bool Recorder::shouldSubscribeToTopic(std::string const& topic) {
+	if (options_.regex) {
+		// Treat the topics as regular expressions
+		foreach(string const& regex_str, options_.topics) {
+			boost::regex e(regex_str);
+			boost::smatch what;
+			if (boost::regex_match(topic, what, e, boost::match_extra))
+				return true;
+		}
+	}
+	else {
+		foreach(string const& t, options_.topics)
+			if (t == topic)
+				return true;
+	}
+
+	return false;
 }
 
 template<class T>
@@ -383,12 +404,12 @@ void Recorder::doRecordSnapshotter() {
 }
 
 void Recorder::doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_handle) {
-    ros::master::V_TopicInfo all_topics;
-    if (ros::master::getTopics(all_topics)) {
-        foreach(ros::master::TopicInfo const& topic_info, all_topics) {
-            if (!isSubscribed(topic_info.name))
-                subscribe(topic_info.name);
-        }
+    ros::master::V_TopicInfo topics;
+    if (ros::master::getTopics(topics)) {
+		foreach(ros::master::TopicInfo const& t, topics) {
+			if (!isSubscribed(t.name) && shouldSubscribeToTopic(t.name))
+				subscribe(t.name);
+		}
     }
 }
 

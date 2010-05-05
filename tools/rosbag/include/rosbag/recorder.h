@@ -84,6 +84,7 @@ struct RecorderOptions
 
     bool            trigger;
     bool            record_all;
+    bool            regex;
     bool            quiet;
     bool            append_date;
     bool            snapshot;
@@ -127,6 +128,8 @@ private:
 	void doRecord();
 	void doRecordSnapshotter();
 	void doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_handle);
+
+	bool shouldSubscribeToTopic(std::string const& topic);
 
 	template<class T>
 	static std::string timeToStr(T ros_t);

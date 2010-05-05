@@ -86,8 +86,8 @@ Version 2.0:
 file_header
   op=3
   index_pos=msg_def_1.pos      # position of index
-  topic_count=topic_count      # total number of distinct topics in the file
-  chunk_count=chunk_count      # total number of chunks in the file
+  conn_count=conn_count        # total number of distinct connections in the bag
+  chunk_count=chunk_count      # total number of chunks in the bag
   ---
   <empty> (padded with ' ' to 4KB)
 
@@ -107,14 +107,6 @@ chunk_1
     md5sum=
     latching=1
     callerid=caller1234
-  msg_def_1i
-    op=1
-    topic=
-    type=
-    md5sum=
-    def=
-    ---
-    <empty>
   msg_1
     op=2
     topic=...

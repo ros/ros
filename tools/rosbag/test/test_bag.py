@@ -124,7 +124,21 @@ class TestRosbag(unittest.TestCase):
         start_time = roslib.rostime.Time.from_sec(3)
         end_time = roslib.rostime.Time.from_sec(7)
 
-        self.assert_(len(list(rosbag.Bag('/tmp/test_get_messages_time_range_works.bag').read_messages(start_time=start_time, end_time=end_time))) == 5)
+        self.assert_(len(list(rosbag.Bag('/tmp/test_get_messages_time_range_works.bag').read_messages(topics='/ints', start_time=start_time, end_time=end_time))) == 5)
+        
+    def test_get_messages_filter_works(self):
+        b = rosbag.Bag('/tmp/test_get_messages_filter_works.bag', 'w')
+        for i in range(30):
+            msg = Int32()
+            msg.data = i
+            t = roslib.rostime.Time.from_sec(i)
+            b.write('/ints' + str(i), msg, t)
+        b.close()
+
+        def filter(topic, datatype, md5sum, msg_def, header):
+            return '5' in topic and datatype == Int32._type and md5sum == Int32._md5sum and msg_def == Int32._full_text
+
+        self.assert_(len(list(rosbag.Bag('/tmp/test_get_messages_filter_works.bag').read_messages(connection_filter=filter))) == 3)
 
 if __name__ == '__main__':
     import rostest

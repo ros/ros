@@ -52,15 +52,22 @@ class RandomPlay(unittest.TestCase):
   def msg_cb_topic(self, topic):
     def msg_cb(msg):
       nowtime = rospy.Time.now()
+
       if self.start is None:
         self.start = nowtime
+
+      print "\nReceived: %s %f %f"%(topic, nowtime.to_sec(), self.start.to_sec())
 
       if topic not in self.topics_seen:
         self.delay += DELAY
         self.topics_seen.add(topic)
 
       # We know this message is coming in after a delay
-      self.input.append((topic, msg, (nowtime-self.start-rospy.Duration(self.delay)).to_sec()))
+      nowtime -= self.start
+      if (not self.use_clock):
+        nowtime -= rospy.Duration(self.delay)
+
+      self.input.append((topic, msg, nowtime.to_sec()))
 
     return msg_cb
 
@@ -77,6 +84,7 @@ class RandomPlay(unittest.TestCase):
     topics  = int(sys.argv[2])
     length  = float(sys.argv[3])
     scale   = float(sys.argv[4])
+    self.use_clock = bool(int(sys.argv[5]))
 
     rmg = RandomMsgGen(int(seed), topics, length)
 
@@ -89,18 +97,25 @@ class RandomPlay(unittest.TestCase):
 
     binpath = os.path.join(roslib.rospack.rospackexec(['find', 'rosrecord']), 'bin', 'rosplay')
     bagpath = os.path.join(roslib.rospack.rospackexec(['find', 'test_rosrecord']), 'test', 'recording_%d.bag'%seed)
-    cmd = [binpath, '-s', str(DELAY), '-r', str(scale), bagpath]
+    cmd = [binpath, '-s', str(DELAY), '-r', str(scale)]
+
+    if (self.use_clock):
+      cmd += ['-b', '100']
+
+    cmd += [bagpath]
+
     f1 = subprocess.Popen(cmd)
 
-    r = rospy.Rate(10)
     while (len(self.input) < rmg.message_count()):
-      r.sleep()
+#      print "%d/%d"%(len(self.input),rmg.message_count())
+      time.sleep(.1)
 
     self.assertEqual(len(self.input), rmg.message_count())
 
     for (expect_topic, expect_msg, expect_time) in rmg.messages():
 
-      expect_time /= scale
+      if (not self.use_clock):
+        expect_time /= scale
 
       buff = StringIO()
       expect_msg.serialize(buff)
@@ -114,6 +129,9 @@ class RandomPlay(unittest.TestCase):
         if (roslib.message.strify_message(expect_msg) == roslib.message.strify_message(input_msg)):
           msg_match = True
           del self.input[ind]
+
+          print "%s %f %f %f"%(input_topic, input_time, expect_time, expect_time - input_time)
+
           # Messages can arrive late, but never very early
           self.assertTrue(input_time - expect_time > -.1)
           # .5 seconds late is a pretty big deal...

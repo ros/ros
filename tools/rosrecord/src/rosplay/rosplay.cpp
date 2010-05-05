@@ -1,36 +1,36 @@
 /*********************************************************************
-* Software License Agreement (BSD License)
-*
-*  Copyright (c) 2008, Willow Garage, Inc.
-*  All rights reserved.
-*
-*  Redistribution and use in source and binary forms, with or without
-*  modification, are permitted provided that the following conditions
-*  are met:
-*
-*   * Redistributions of source code must retain the above copyright
-*     notice, this list of conditions and the following disclaimer.
-*   * Redistributions in binary form must reproduce the above
-*     copyright notice, this list of conditions and the following
-*     disclaimer in the documentation and/or other materials provided
-*     with the distribution.
-*   * Neither the name of Willow Garage, Inc. nor the names of its
-*     contributors may be used to endorse or promote products derived
-*     from this software without specific prior written permission.
-*
-*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-*  POSSIBILITY OF SUCH DAMAGE.
-********************************************************************/
+ * Software License Agreement (BSD License)
+ *
+ *  Copyright (c) 2008, Willow Garage, Inc.
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of Willow Garage, Inc. nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ ********************************************************************/
 
 #include "rosrecord/rosplay.h"
 
@@ -71,7 +71,6 @@ RosPlay::RosPlay(int i_argc, char **i_argv) :
   at_once_(false), 
   quiet_(false),
   paused_(false), 
-  shifted_(false), 
   bag_time_(false),
   time_scale_(1.0),
   queue_size_(0),
@@ -79,7 +78,7 @@ RosPlay::RosPlay(int i_argc, char **i_argv) :
 {
   const int fd = fileno(stdin);
   
-  advertise_sleep_ = 200000;
+  advertise_sleep_ = ros::WallDuration(.2);
   
   termios flags;
   tcgetattr(fd,&orig_flags_);
@@ -105,7 +104,7 @@ RosPlay::RosPlay(int i_argc, char **i_argv) :
     case 'n': quiet_ = true; break;
     case 'a': at_once_ = true; break;
     case 'p': paused_ = true; break;
-    case 's': advertise_sleep_ = (unsigned int)(1000000.0*atof(optarg)); break;
+    case 's': advertise_sleep_ = ros::WallDuration(atof(optarg)); break;
     case 't': strncpy(time,optarg,sizeof(time)); has_time=true; break;
     case 'q': queue_size_ = atoi(optarg); break;
     case 'b': bag_time_frequency_ =  atoi(optarg); bag_time_ = true; break;
@@ -137,15 +136,17 @@ RosPlay::RosPlay(int i_argc, char **i_argv) :
   }
 
   node_handle = new ros::NodeHandle;
-  bag_time_publisher_ = new TimePublisher;
   
   if (bag_time_)
-    bag_time_publisher_->initialize(bag_time_frequency_, time_scale_);
+    bag_time_publisher_ = new SimpleTimePublisher(bag_time_frequency_, time_scale_);
+  else
+    bag_time_publisher_ = new SimpleTimePublisher(-1.0, time_scale_);
 
-  start_time_ = getSysTime();
+  start_time_ = ros::WallTime::now();
   requested_start_time_ = start_time_;
   
-  if (player_.open(bags, start_time_ + ros::Duration().fromSec(-float_time), time_scale_, try_future))
+
+  if (player_.open(bags, ros::Time(start_time_.sec, start_time_.nsec) + ros::Duration().fromSec(-float_time / time_scale_), time_scale_, try_future))
     player_.addHandler<AnyMsg>(string("*"), &RosPlay::doPublish, this, NULL, false);
   else
   {
@@ -155,9 +156,11 @@ RosPlay::RosPlay(int i_argc, char **i_argv) :
     throw std::runtime_error("Failed to open one of the bag files.");
   }
 
+  bag_time_publisher_->setTime(player_.getFirstTime());
+
   if (!at_once_){
     if (paused_){
-      paused_time_ = getSysTime();
+      paused_time_ = ros::WallTime::now();
       std::cout << "Hit space to resume, or 's' to step.";
       std::cout.flush();
     } else {
@@ -202,7 +205,7 @@ bool RosPlay::spin()
       if(!quiet_ && ((t - last_print_time) >= max_print_interval))
       {
         printf("Time: %16.6f    Duration: %16.6f\r",
-               ros::Time::now().toSec(), player_.getDuration().toSec());
+               ros::WallTime::now().toSec(), player_.getDuration().toSec());
         fflush(stdout);
         last_print_time = t;
       }
@@ -215,42 +218,19 @@ bool RosPlay::spin()
   return true;
 }
 
-
-
-Time RosPlay::getSysTime()
-{
-  struct timeval timeofday;
-  gettimeofday(&timeofday,NULL);
-  return Time().fromNSec(1e9*timeofday.tv_sec + 1e3*timeofday.tv_usec);
-}
-
 std::map<std::string, ros::Publisher> g_publishers;
 
-void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time, ros::Time record_time, void* n)
+void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time _play_time, ros::Time record_time, void* n)
 {
 
+  ros::WallTime play_time(_play_time.sec, _play_time.nsec);
+
   if (play_time < requested_start_time_)
+  {
+    bag_time_publisher_->setTime(record_time);
     return;
-  
-  // if we are using the bag time
-  if (bag_time_){
-    // initialize bag time publisher
-    if (!bag_time_initialized_){
-      // starting in paused mode
-      if (paused_)
-	bag_time_publisher_->stepTime(record_time);
-      // starting in play mode
-      else 
-	bag_time_publisher_->startTime(record_time);
-      bag_time_initialized_ = true;
-    }
-    // at once
-    if (at_once_)
-      bag_time_publisher_->startTime(record_time);
-    else
-      bag_time_publisher_->setHorizon(play_time);
   }
-  
+    
   // We pull latching and callerid info out of the connection_header if it's available (which it always should be)
   bool latching = false;
   std::string callerid("");
@@ -280,8 +260,10 @@ void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time,
   
   std::map<std::string, ros::Publisher>::iterator pub_token = g_publishers.find(name);
 
+  bag_time_publisher_->setWCHorizon(play_time);
+  bag_time_publisher_->setHorizon(record_time);
+
   // advertise the topic to publish
-  //  if (ros::Node::instance()->advertise(name, *m, queue_size_))
   if (pub_token == g_publishers.end())
   {
     AdvertiseOptions opts(topic_name, queue_size_, m->__getMD5Sum(), m->__getDataType(), m->__getMessageDefinition());
@@ -291,40 +273,37 @@ void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time,
     g_publishers.insert(g_publishers.begin(), std::pair<std::string, ros::Publisher>(name, pub));
     pub_token = g_publishers.find(name);
 
-    if (bag_time_) bag_time_publisher_->freezeTime();
-    Time paused_time_ = getSysTime();
-    ROS_INFO("Sleeping %.3f seconds after advertising %s...",
-             advertise_sleep_ / 1e6, topic_name.c_str());
-    usleep(advertise_sleep_);
-    ROS_INFO("Done sleeping.\n");
-    Duration shift = getSysTime() - paused_time_;
-    player_.shiftTime(shift);
-    play_time += shift;
-    if (bag_time_) bag_time_publisher_->startTime(record_time);
+    //    ROS_INFO("Sleeping %.3f seconds after advertising %s...",
+    //             advertise_sleep_.toSec(), topic_name.c_str());
+
+    bag_time_publisher_->runStalledClock(advertise_sleep_);
+
+    //    ROS_INFO("Done sleeping.\n");
+
+    player_.shiftTime(ros::Duration(advertise_sleep_.sec, advertise_sleep_.nsec));
+    play_time += advertise_sleep_;
+    bag_time_publisher_->setWCHorizon(play_time);
   }
   
   if (!at_once_){
-
-    ros::Time now = getSysTime();
-    ros::Duration delta = play_time - getSysTime();
-    while ( (paused_ || delta > ros::Duration(0,100000)) && node_handle->ok()){
+    while ( (paused_ || !bag_time_publisher_->horizonReached()) && node_handle->ok()){
       bool charsleftorpaused = true;
-      
+
       while (charsleftorpaused && node_handle->ok()){
-	//Read from stdin:
+        //Read from stdin:
         
         char c = EOF;
 
-        #ifdef __APPLE__
+#ifdef __APPLE__
 
         fd_set testfd;
         FD_COPY(&stdin_fdset_, &testfd);
 
-        #else
+#else
 
         fd_set testfd = stdin_fdset_;
 
-        #endif
+#endif
 
         timeval tv;
         tv.tv_sec = 0;
@@ -333,55 +312,51 @@ void RosPlay::doPublish(string topic_name, ros::Message* m, ros::Time play_time,
         if (select(maxfd_, &testfd, NULL, NULL, &tv) > 0)
           c = getc(stdin);
 
-	switch (c){
-	case ' ':
-	  paused_ = !paused_;
-	  if (paused_) {
-	    if (bag_time_) bag_time_publisher_->freezeTime();
-	    paused_time_ = getSysTime();
-	    std::cout << std::endl << "Hit space to resume, or 's' to step.";
-	    std::cout.flush();
-	  } else {
-	    if (bag_time_) bag_time_publisher_->startTime(record_time);
-	    ros::Duration shift;
-	    if (shifted_){
-	      shift = getSysTime() - play_time;
-	      play_time = getSysTime();
-	      shifted_ = false;
-	    } else {
-	      shift = getSysTime() - paused_time_;
-	      play_time = play_time + shift;
-	    }
-	    player_.shiftTime(shift);
-	    std::cout << std::endl << "Hit space to pause.";
-	    std::cout.flush();
-	  }
-	  break;
-	case 's':
-	  if (paused_){
-	    shifted_ = true;
-	    if (bag_time_) bag_time_publisher_->stepTime(record_time);
+        switch (c){
+        case ' ':
+          paused_ = !paused_;
+          if (paused_) {
+            paused_time_ = ros::WallTime::now();
+            std::cout << std::endl << "Hit space to resume, or 's' to step.";
+            std::cout.flush();
+          } else {
+
+            ros::WallDuration shift = ros::WallTime::now() - paused_time_;
+            paused_time_ = ros::WallTime::now();
+            player_.shiftTime(ros::Duration(shift.sec, shift.nsec));
+            play_time += shift;
+            bag_time_publisher_->setWCHorizon(play_time);
+
+            std::cout << std::endl << "Hit space to pause.";
+            std::cout.flush();
+          }
+          break;
+        case 's':
+          if (paused_){
+
+            bag_time_publisher_->stepClock();
+            ros::WallDuration shift = ros::WallTime::now() - play_time ;
+            paused_time_ = ros::WallTime::now();
+            player_.shiftTime(ros::Duration(shift.sec, shift.nsec));
+            play_time += shift;
+            bag_time_publisher_->setWCHorizon(play_time);
+
             (pub_token->second).publish(*m);
-	    return;
-	  }
-	  break;
-	case EOF:
-	  if (paused_)
-	    usleep(10000);
-	  else
-	    charsleftorpaused = false;
-	}
+            return;
+          }
+          break;
+        case EOF:
+          if (paused_)
+            bag_time_publisher_->runStalledClock(ros::WallDuration(.01));
+          else
+            charsleftorpaused = false;
+        }
       }
       
-      usleep(100000);
-      
-      delta = play_time - getSysTime();
+      bag_time_publisher_->runClock(ros::WallDuration(.01));
     }
-    
-    if (!paused_ && delta > ros::Duration(0, 5000) && node_handle->ok())
-    {
-        usleep(delta.toNSec()/1000 - 5); // Should this be a ros::Duration::Sleep?
-    }
+  } else {
+    bag_time_publisher_->stepClock();
   }
 
   (pub_token->second).publish(*m);
@@ -535,7 +510,3 @@ int main(int argc, char **argv)
 
   return 0;
 }
-
-
-
-

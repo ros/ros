@@ -291,10 +291,11 @@ public:
         return d;
     }
 
+    ros::Time getFirstTime() { return first_time_;  }
+
     bool open(std::vector<std::string> file_names, ros::Time start, double time_scale = 1, bool try_future = false)
     {
         ros::Duration first_duration;
-        ros::Time first_time;
 
         foreach(std::string file_name, file_names) {
             Player* l = new Player(time_scale);
@@ -305,8 +306,8 @@ public:
                 if (first_duration == ros::Duration() || l->getFirstDuration() < first_duration)
                     first_duration = l->getFirstDuration();
 
-                if (first_time == ros::Time() || l->getFirstTime() < first_time)
-                    first_time = l->getFirstTime();
+                if (first_time_ == ros::Time() || l->getFirstTime() < first_time_)
+                    first_time_ = l->getFirstTime();
             }
             else {
                 delete l;
@@ -316,7 +317,7 @@ public:
 
         foreach(Player* player, players_)
         {
-            player->setRealStartTime(first_time);
+            player->setRealStartTime(first_time_);
             player->setTranslatedStartTime(start);
         }
 
@@ -386,6 +387,7 @@ public:
 
 private:
     std::vector<Player*> players_;
+    ros::Time first_time_;
 };
 
 }

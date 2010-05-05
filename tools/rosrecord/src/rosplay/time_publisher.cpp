@@ -39,6 +39,147 @@
 #include "roslib/Clock.h"
 
 
+SimpleTimePublisher::SimpleTimePublisher(double publish_frequency, double time_scale)
+{
+    if (publish_frequency > 0)
+    {
+        do_publish_ = true;
+    } else {
+        do_publish_ = false;
+    }
+
+    publish_frequency_ = publish_frequency;
+    time_scale_ = time_scale;
+
+    wall_step_.fromSec(1.0 / publish_frequency);
+
+    time_pub_ = node_handle_.advertise<roslib::Clock>("clock",1);
+}
+
+void SimpleTimePublisher::setHorizon(const ros::Time& horizon)
+{
+    horizon_ = horizon;
+}
+
+void SimpleTimePublisher::setWCHorizon(const ros::WallTime& horizon)
+{
+  wc_horizon_ = horizon;
+}
+
+void SimpleTimePublisher::setTime(const ros::Time& time)
+{
+    current_ = time;
+}
+
+void SimpleTimePublisher::runClock(const ros::WallDuration& duration)
+{
+    if (do_publish_)
+    {
+        roslib::Clock pub_msg; 
+
+        ros::WallTime t = ros::WallTime::now();
+        ros::WallTime done = t + duration;
+
+        while ( t < done )
+        {
+            ros::WallDuration leftHorizonWC = wc_horizon_ - t;
+
+            ros::Duration d(leftHorizonWC.sec, leftHorizonWC.nsec);
+            d *= time_scale_;
+
+            current_ = horizon_ - d;
+
+            if (current_ >= horizon_)
+              current_ = horizon_;
+
+            if (t >= next_pub_)
+            {
+                pub_msg.clock = current_;
+                time_pub_.publish(pub_msg);
+                next_pub_ = t + wall_step_;
+            }
+
+            ros::WallTime target = done;
+
+            if (target > wc_horizon_)
+              target = wc_horizon_;
+
+            if (target > next_pub_)
+              target = next_pub_;
+
+            ros::WallTime::sleepUntil(target);
+
+            t = ros::WallTime::now();
+        }
+    } else {
+
+      ros::WallTime target = ros::WallTime::now() + duration;
+
+      if (target > wc_horizon_)
+        target = wc_horizon_;
+
+      ros::WallTime::sleepUntil(target);
+    }
+}
+
+void SimpleTimePublisher::stepClock()
+{
+    if (do_publish_)
+    {
+        current_ = horizon_;
+
+        roslib::Clock pub_msg; 
+
+        pub_msg.clock = current_;
+        time_pub_.publish(pub_msg);
+
+        ros::WallTime t = ros::WallTime::now();
+        next_pub_ = t + wall_step_;
+    } else {
+        current_ = horizon_;
+    }
+}
+
+
+
+void SimpleTimePublisher::runStalledClock(const ros::WallDuration& duration)
+{
+    if (do_publish_)
+    {
+        roslib::Clock pub_msg; 
+
+        ros::WallTime t = ros::WallTime::now();
+        ros::WallTime done = t + duration;
+
+        while ( t < done )
+        {
+            if (t > next_pub_)
+            {
+                pub_msg.clock = current_;
+                time_pub_.publish(pub_msg);
+                next_pub_ = t + wall_step_;
+            }
+
+            ros::WallTime target = done;
+
+            if (target > next_pub_)
+              target = next_pub_;
+
+            ros::WallTime::sleepUntil(target);
+
+            t = ros::WallTime::now();
+        }
+    } else {
+        duration.sleep();
+    }
+}
+
+bool SimpleTimePublisher::horizonReached()
+{
+  return ros::WallTime::now() > wc_horizon_;
+}
+
+
 TimePublisher::TimePublisher():
   freeze_time_(true), 
   is_started_(false),

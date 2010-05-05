@@ -66,16 +66,16 @@ private:
 
   bool bag_time_initialized_, at_once_, quiet_, paused_, shifted_, bag_time_;
   double time_scale_;
-  ros::Time start_time_, requested_start_time_, paused_time_;
+  ros::WallTime start_time_, requested_start_time_, paused_time_;
   ros::record::MultiPlayer player_;
 
 
   int queue_size_;
-  unsigned int advertise_sleep_;
+  ros::WallDuration advertise_sleep_;
 
   termios orig_flags_;
   // This internall containers a nodehandle so we make a pointer for the same reason
-  TimePublisher* bag_time_publisher_;
+  SimpleTimePublisher* bag_time_publisher_;
   double bag_time_frequency_;
 
   fd_set stdin_fdset_;

@@ -34,6 +34,7 @@ import roslib; roslib.load_manifest('rosbag')
 
 import optparse
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -347,7 +348,9 @@ def compress_cmd(argv):
     if len(args) < 1:
         parser.error('You must specify at least one bag file.')
 
-    bag_op(args, lambda inbag, outbag, quiet: change_compression_op(inbag, outbag, Compression.BZ2, options.quiet), options.force, options.quiet)
+    op = lambda inbag, outbag, quiet: change_compression_op(inbag, outbag, Compression.BZ2, options.quiet)
+
+    bag_op(args, op, False, options.force, options.quiet)
 
 def decompress_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag decompress [options] BAGFILE1 [BAGFILE2 ...]',
@@ -360,9 +363,26 @@ def decompress_cmd(argv):
     if len(args) < 1:
         parser.error('You must specify at least one bag file.')
     
-    bag_op(args, lambda inbag, outbag, quiet: change_compression_op(inbag, outbag, Compression.NONE, options.quiet), options.force, options.quiet)
+    op = lambda inbag, outbag, quiet: change_compression_op(inbag, outbag, Compression.NONE, options.quiet)
     
-def bag_op(filenames, op, force=False, quiet=False):
+    bag_op(args, op, False, options.force, options.quiet)
+
+def reindex_cmd(argv):
+    parser = optparse.OptionParser(usage='rosbag reindex [options] BAGFILE1 [BAGFILE2 ...]',
+                                   description='Reindexes one or more bag files.')
+    parser.add_option('-f', '--force', action='store_true', dest='force', help='force overwriting of backup file if it exists')
+    parser.add_option('-q', '--quiet', action='store_true', dest='quiet', help='suppress noncritical messages')
+
+    (options, args) = parser.parse_args(argv)
+
+    if len(args) < 1:
+        parser.error('You must specify at least one bag file.')
+    
+    op = lambda inbag, outbag, quiet: reindex_op(inbag, outbag, options.quiet)
+    
+    bag_op(args, op, True, options.force, options.quiet)
+
+def bag_op(filenames, op, copy, force=False, quiet=False):
     for inbag_filename in filenames:
         # Check we can read the file
         try:
@@ -380,11 +400,14 @@ def bag_op(filenames, op, force=False, quiet=False):
             if not quiet:
                 print >> sys.stderr, 'Skipping %s. Backup path %s already exists.' % (inbag_filename, backup_filename)
             continue
-
+        
         try:
-            os.rename(inbag_filename, backup_filename)
+            if copy:
+                shutil.copy(inbag_filename, backup_filename)
+            else:
+                os.rename(inbag_filename, backup_filename)
         except OSError, ex:
-            print >> sys.stderr, 'ERROR moving %s to %s: %s' % (inbag_filename, backup_filename, str(ex))
+            print >> sys.stderr, 'ERROR %s %s to %s: %s' % ('copying' if copy else 'moving', inbag_filename, backup_filename, str(ex))
             continue
         outbag_filename = inbag_filename
 
@@ -393,9 +416,12 @@ def bag_op(filenames, op, force=False, quiet=False):
 
             # Open the output bag file for writing
             try:
-                outbag = Bag(outbag_filename, 'w')
+                if copy:
+                    outbag = Bag(outbag_filename, 'a')
+                else:
+                    outbag = Bag(outbag_filename, 'w')
             except (ROSBagException, IOError), ex:
-                print >> sys.stderr, 'ERROR writing %s: %s' % (outbag_filename, str(ex))
+                print >> sys.stderr, 'ERROR writing to %s: %s' % (outbag_filename, str(ex))
                 inbag.close()
                 continue
             
@@ -413,11 +439,14 @@ def bag_op(filenames, op, force=False, quiet=False):
 
         except KeyboardInterrupt:
             try:
-                os.rename(backup_filename, inbag_filename)
+                if copy:
+                    os.remove(backup_filename)
+                else:
+                    os.rename(backup_filename, inbag_filename)
             except OSError, ex:
-                print >> sys.stderr, 'ERROR moving %s to %s: %s', (backup_filename, inbag_filename, str(ex))
+                print >> sys.stderr, 'ERROR %s %s to %s: %s', ('removing' if copy else 'moving', backup_filename, inbag_filename, str(ex))
                 break
-            
+
         except (ROSBagException, IOError), ex:
             print >> sys.stderr, 'ERROR operating on %s: %s' % (inbag_filename, str(ex))
 
@@ -440,6 +469,66 @@ def change_compression_op(inbag, outbag, compression, quiet):
             meter.step(total_bytes)
         
         meter.finish()
+
+def reindex_op(inbag, outbag, quiet):
+    if quiet:
+        outbag.reindex()
+    else:
+        meter = ProgressMeter(outbag.filename, outbag.size)
+        for offset in outbag.reindex(True):
+            meter.step(offset)
+        meter.finish()
+
+def slash_cmd(argv):
+    """For debugging purposes only.  Truncates a bag file in half and reindexes."""
+    parser = optparse.OptionParser(usage='rosbag slash [options] BAGFILE1 [BAGFILE2 ...]',
+                                   description='Slash one or more bag files.')
+
+    (options, args) = parser.parse_args(argv)
+
+    if len(args) < 1:
+        parser.error('You must specify at least one bag file.')
+        
+    for filename in args:
+        b = Bag(filename)
+        index_pos = b._index_data_pos
+        b.close()
+
+        (root, ext) = os.path.splitext(filename)
+        slash_filename = '%s.slash%s' % (root, ext)
+
+        import bag, shutil
+        shutil.copy(filename, slash_filename)
+        f = open(slash_filename, 'r+b')
+        f.seek(b._file_header_pos)
+        header = {
+            'op':          bag._pack_uint8(bag._OP_FILE_HEADER),
+            'index_pos':   bag._pack_uint64(0),
+            'conn_count':  bag._pack_uint32(0),
+            'chunk_count': bag._pack_uint32(0)
+        }
+        bag._write_record(f, header, padded_size=bag._FILE_HEADER_LENGTH)       
+        f.truncate(index_pos / 2)
+        f.close()
+        
+        print '%s slashed.' % slash_filename
+        
+        (root, ext) = os.path.splitext(filename)
+        reindex_filename = '%s.reindex%s' % (root, ext)
+        shutil.copy(slash_filename, reindex_filename)
+
+        try:
+            b = Bag(reindex_filename, 'a')
+        except:
+            pass
+        try:
+            meter = ProgressMeter(reindex_filename, b.size)
+            for offset in b.reindex(True):
+                meter.step(offset)
+            meter.finish()
+        except Exception, ex:
+            print str(ex)
+        b.close()
 
 class RosbagCmds(UserDict.UserDict):
     def __init__(self):
@@ -569,6 +658,9 @@ def rosbagmain(argv=None):
     cmds['filter']     = filter_cmd
     cmds['compress']   = compress_cmd
     cmds['decompress'] = decompress_cmd
+    cmds['reindex']    = reindex_cmd
+
+    cmds['slash']      = slash_cmd
 
     if argv is None:
         argv = sys.argv

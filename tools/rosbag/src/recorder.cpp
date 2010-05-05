@@ -407,7 +407,7 @@ void Recorder::doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_han
     ros::master::V_TopicInfo topics;
     if (ros::master::getTopics(topics)) {
 		foreach(ros::master::TopicInfo const& t, topics) {
-			if (!isSubscribed(t.name) && shouldSubscribeToTopic(t.name))
+			if (!isSubscribed(t.name) && (options_.record_all || shouldSubscribeToTopic(t.name)))
 				subscribe(t.name);
 		}
     }

@@ -274,15 +274,15 @@ private:
     bool      chunk_open_;
     ChunkInfo curr_chunk_info_;
     uint64_t  curr_chunk_data_pos_;
-    std::map<uint32_t,    std::multiset<IndexEntry> > curr_chunk_connection_indexes_;
 
-    std::map<std::string, uint32_t>                   topic_connection_ids_;
-    std::map<ros::M_string*, uint32_t>                header_connection_ids_;
-    std::map<uint32_t, ConnectionInfo*>               connections_;
+    std::map<std::string, uint32_t>                topic_connection_ids_;
+    std::map<ros::M_string*, uint32_t>             header_connection_ids_;
+    std::map<uint32_t, ConnectionInfo*>            connections_;
 
-    std::vector<ChunkInfo>                            chunks_;
+    std::vector<ChunkInfo>                         chunks_;
 
-    std::map<uint32_t, std::multiset<IndexEntry> >    connection_indexes_;
+    std::map<uint32_t, std::multiset<IndexEntry> > connection_indexes_;
+    std::map<uint32_t, std::multiset<IndexEntry> > curr_chunk_connection_indexes_;
 
     mutable Buffer   header_buffer_;           //!< reusable buffer in which to assemble the record header before writing to file
     mutable Buffer   record_buffer_;           //!< reusable buffer in which to assemble the record data before writing to file

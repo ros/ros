@@ -33,7 +33,7 @@
 """
 The rosbag Python API.
 
-Provides reading and writing of bag files.
+Provides serialization of bag files.
 """
 
 PKG = 'rosbag'
@@ -80,7 +80,7 @@ class Compression:
 
 class Bag(object):
     """
-    Bag objects serialize messages to and from disk using the bag format.
+    Bag serialize messages to and from a single file on disk using the bag format.
     """
     def __init__(self, f, mode='r', compression=Compression.NONE, chunk_threshold=768 * 1024, options=None):
         """
@@ -93,11 +93,11 @@ class Bag(object):
         @type  f: str or file
         @param mode: mode, either 'r', 'w', or 'a'
         @type  mode: str
-        @param compression: compression mode, see Compression
+        @param compression: compression mode, see U{rosbag.Compression} for valid modes
         @type  compression: str
         @param chunk_threshold: minimum number of uncompressed bytes per chunk
         @type  chunk_threshold: int
-        @param options: the bag options specified via a dictionary (currently, compression and chunk_threshold)
+        @param options: the bag options (currently, compression and chunk_threshold)
         @type  options: dict
         @raise ValueError: if any argument is invalid
         @raise ROSBagException: if an error occurs opening file
@@ -413,7 +413,7 @@ class Bag(object):
                 rows.append(('Start', '%s (%.2f)' % (_time_to_str(start_stamp), start_stamp)))
                 rows.append(('End',   '%s (%.2f)' % (_time_to_str(end_stamp),   end_stamp)))
     
-                rows.append(('Size', '%s (%s/s)' % (_human_readable_size(self.size), _human_readable_size(self.size / duration))))
+                rows.append(('Size', _human_readable_size(self.size)))
 
                 rows.append(('Messages', '%d' % (sum([len(index) for index in self._connection_indexes.values()]))))
 
@@ -452,11 +452,16 @@ class Bag(object):
                         
                         total_uncompressed_size_str = _human_readable_size(total_uncompressed_size)
                         total_compressed_size_str   = _human_readable_size(total_compressed_size)
-                        
-                        str_length = max([len(total_uncompressed_size_str), len(total_compressed_size_str)])
-    
-                        rows.append(('Uncompressed', '%*s' % (str_length, _human_readable_size(total_uncompressed_size))))
-                        rows.append(('Compressed', '%*s (%.2f%%)' % (str_length, _human_readable_size(total_compressed_size), (100.0 * total_compressed_size) / total_uncompressed_size)))
+                        total_size_str_length = max([len(total_uncompressed_size_str), len(total_compressed_size_str)])
+
+                        uncompressed_rate_str = _human_readable_size(total_uncompressed_size / duration)
+                        compressed_rate_str   = _human_readable_size(total_compressed_size / duration)
+                        rate_str_length = max([len(uncompressed_rate_str), len(compressed_rate_str)])
+
+                        rows.append(('Uncompressed', '%*s @ %*s/s' %
+                                     (total_size_str_length, total_uncompressed_size_str, rate_str_length, uncompressed_rate_str)))
+                        rows.append(('Compressed',   '%*s @ %*s/s (%.2f%%)' %
+                                     (total_size_str_length, total_compressed_size_str,   rate_str_length, compressed_rate_str, (100.0 * total_compressed_size) / total_uncompressed_size)))
 
                 datatypes = set()
                 datatype_infos = []
@@ -1428,19 +1433,16 @@ class _BagReader200(_BagReader):
             self.bag._connections[connection_info.id] = connection_info
 
         # Read the chunk info records
-        self.bag._chunks = []
-        for i in range(self.bag._chunk_count):
-            chunk_info = self.read_chunk_info_record()
-            self.bag._chunks.append(chunk_info)
+        self.bag._chunks = [self.read_chunk_info_record() for i in range(self.bag._chunk_count)]
 
         # Read the chunk headers and topic indexes
         self.bag._connection_indexes = {}
         self.bag._chunk_headers = {}
         for chunk_info in self.bag._chunks:
             self.bag._curr_chunk_info = chunk_info
-            
+
             self.bag._file.seek(chunk_info.pos)
-    
+
             # Remember the chunk header
             chunk_header = self.read_chunk_header()
             self.bag._chunk_headers[chunk_info.pos] = chunk_header
@@ -1457,7 +1459,7 @@ class _BagReader200(_BagReader):
 
                 connection_index = self.bag._connection_indexes[connection_id]
                 for entry in index:
-                    # todo: rather than append, this should insert in time order (so that chunks can be out of order)
+                    # todo: rather than append, this should insert in time order (so that chunks can be written out of order)
                     connection_index.append(entry)
 
     def read_file_header_record(self):

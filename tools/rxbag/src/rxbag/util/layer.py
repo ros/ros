@@ -225,7 +225,10 @@ class LayerPanel(wx.Window):
         dc.fill()
         
         for layer in paint_layers:
+            dc.save()
+            dc.translate(layer.x, layer.y)
             layer.draw(dc)
+            dc.restore()
 
     def on_timer(self, event):
         self.Refresh()

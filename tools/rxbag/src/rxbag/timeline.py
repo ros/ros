@@ -112,7 +112,7 @@ class TimelinePanel(LayerPanel):
         self.timeline = Timeline(self, 'Timeline', x, y, width - x, height - y, max_repaint=1.0)
         self.timeline.set_bag_files(self.bag_files)
 
-        self.status = status.StatusLayer(self, 'Status', self.timeline, self.timeline.x, 0, 300, 16)
+        self.status = status.StatusLayer(self, 'Status', self.timeline, self.timeline.x, 4, 300, 16)
 
         self.playhead = playhead.PlayheadLayer(self, 'Playhead', self.timeline, 0, 0, 12, self.timeline.height)
 
@@ -165,12 +165,6 @@ class Timeline(Layer):
 
         ## Rendering parameters
 
-        self.background_brush   = wx.Brush('white')
-        self.topic_divider_pen  = wx.Pen('#dddddd', 1)
-        self.topic_font_color   = wx.Colour(0, 0, 0)
-        self.time_font_color    = wx.Colour(0, 0, 0)
-        self.time_label_spacing = 0
-        self.time_major_pen     = wx.Pen('#222222', 1)#, wx.SHORT_DASH)
         self.time_minor_pen     = wx.Pen('#aaaaaa', 1)#, wx.LONG_DASH)
         self.time_tick_pen      = wx.Pen('#888888', 1)#, wx.SHORT_DASH)
         self.time_tick_height   = 3
@@ -183,7 +177,6 @@ class Timeline(Layer):
         self.minor_spacing = 15
         self.major_spacing = 50
 
-        self.topic_font        = wx.Font(9, wx.FONTFAMILY_SCRIPT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         self.topic_font_height = None
         self.topic_name_sizes  = None
         self.margin_left       = 0
@@ -195,8 +188,7 @@ class Timeline(Layer):
         self.history_top        = 24
         self.history_border_pen = wx.Pen('black', 1)
 
-        self.bag_end_width = 4
-        self.bag_end_pen   = wx.Pen('black', 1)
+        self.bag_end_width = 3
         
         self.default_datatype_color = wx.Colour(0, 0, 0)
         self.datatype_colors = {
@@ -207,7 +199,7 @@ class Timeline(Layer):
             'pr2_mechanism_msgs/MechanismState': wx.Colour(  0, 150,   0),
             'tf/tfMessage':                      wx.Colour(  0, 150,   0),
         }
-        self.default_msg_combine_px = 2.5
+        self.default_msg_combine_px = 1.0
 
         self.zoom_sensitivity = 0.005
         self.min_zoom_speed   = 0.5
@@ -535,8 +527,8 @@ class Timeline(Layer):
 
             self.update_message_view()
 
-            #self.parent.status.invalidate()
-            #self.parent.playhead.update_position()
+            self.parent.status.invalidate()
+            self.parent.playhead.update_position()
 
     ### Rendering
 
@@ -586,7 +578,7 @@ class Timeline(Layer):
         max_topic_name_width   = max([w for (w, h) in self.topic_name_sizes.values()])
         self.topic_font_height = max([h for (w, h) in self.topic_name_sizes.values()])
 
-        self.history_left  = self.margin_left + max_topic_name_width + 6
+        self.history_left  = self.margin_left + max_topic_name_width + 0
         self.history_width = self.width - self.history_left - self.margin_right
 
         self.history_bounds = {}
@@ -600,7 +592,7 @@ class Timeline(Layer):
                 if renderer:
                     topic_height = renderer.get_segment_height(topic)
             if not topic_height:
-                topic_height = self.topic_font_height + 6
+                topic_height = self.topic_font_height + 2
 
             self.history_bounds[topic] = (self.history_left, y, self.history_width, topic_height)
 
@@ -612,11 +604,12 @@ class Timeline(Layer):
         clip_left  = self.history_left
         clip_right = self.history_left + self.history_width
 
-        #dc.SetPen(self.topic_divider_pen)
         dc.set_source_rgb(0.86, 0.86, 0.86)
         dc.set_line_width(1)
-        for line in [(max(clip_left, x), y, min(clip_right, x + w), h) for (x, y, w, h) in self.history_bounds.values()]:
-            dc.rectangle(*line)
+        for (x, y, w, h) in self.history_bounds.values():
+            left = max(clip_left, x)
+            rect = (left, y, min(clip_right - left, w), h)
+            dc.rectangle(*rect)
         dc.stroke()
 
     def _draw_time_indicators(self, dc):
@@ -645,12 +638,11 @@ class Timeline(Layer):
             self._draw_minor_divisions(dc, minor_stamps, start_stamp, minor_division)
 
     def _draw_major_divisions(self, dc, stamps, start_stamp, division):
-        #dc.set_source_rgb(0.13, 0.13, 0.13)
+        #self.time_major_pen     = wx.Pen('#222222', 1)#, wx.SHORT_DASH)
         #dc.SetPen(self.time_major_pen)
         #dc.SetFont(self.time_font)
         #dc.SetTextForeground(self.time_font_color)
 
-        dc.set_source_rgb(0.13, 0.13, 0.13)
         dc.set_line_width(1)
 
         for stamp in stamps:
@@ -658,12 +650,14 @@ class Timeline(Layer):
 
             label        = self._get_label(division, stamp - start_stamp)
             label_x      = x + 3
-            label_y      = self.history_top - self.time_font_height - self.time_label_spacing
+            label_y      = self.history_top - self.parent.playhead.pointer_size[1] - 2
             label_extent = dc.text_extents(label)
             if label_x + label_extent[2] < self.width:
+                dc.set_source_rgb(0, 0, 0)
                 dc.move_to(label_x, label_y)
                 dc.show_text(label)
 
+            dc.set_source_rgba(0.13, 0.13, 0.13, 0.5)
             dc.move_to(x, label_y + 1)
             dc.line_to(x, self.history_bottom)
 
@@ -672,18 +666,16 @@ class Timeline(Layer):
     def _draw_minor_divisions(self, dc, stamps, start_stamp, division):
         xs = [self.map_stamp_to_x(stamp) for stamp in stamps]
 
-        dc.set_source_rgb(0.53, 0.53, 0.53)
-        #dc.SetPen(self.time_tick_pen)
-        for line in [(x, self.history_top - self.time_tick_height, x, self.history_top) for x in xs]:
-            dc.move_to(line[0], line[1])
-            dc.line_to(line[2], line[3])
+        dc.set_source_rgba(0.53, 0.53, 0.53, 0.5)
+        for x in xs:
+            dc.move_to(x, self.history_top - self.time_tick_height)
+            dc.line_to(x, self.history_top)
         dc.stroke()
 
-        dc.set_source_rgb(0.66, 0.66, 0.66)
-        #dc.SetPen(self.time_minor_pen)
-        for line in [(x, self.history_top, x, self.history_bottom) for x in xs]:
-            dc.move_to(line[0], line[1])
-            dc.line_to(line[2], line[3])
+        dc.set_source_rgba(0.66, 0.66, 0.66, 0.5)
+        for x in xs:
+            dc.move_to(x, self.history_top)
+            dc.line_to(x, self.history_bottom)
         dc.stroke()
 
     def _get_stamps(self, start_stamp, stamp_step):
@@ -726,7 +718,7 @@ class Timeline(Layer):
         """Draw boxes to show message regions on timelines"""
         for topic, (x, y, w, h) in self.history_bounds.items():
             msg_y      = y + 1
-            msg_height = h - 3
+            msg_height = h - 1
 
             # Get all the connections on this topic
             connections = list(self.bag_file._get_connections(topic))
@@ -745,30 +737,42 @@ class Timeline(Layer):
             if msg_combine_interval is None:
                 msg_combine_interval = self.map_dx_to_dstamp(self.default_msg_combine_px)
 
-            # Set pen based on datatype
-            dc.set_source_rgb(datatype_color.red / 255.0, datatype_color.green / 255.0, datatype_color.blue / 255.0) 
-
             # Get a generator for the visible stamps on this topic
             start_time = roslib.rostime.Time.from_sec(max(0.0, self.stamp_left))
             end_time   = roslib.rostime.Time.from_sec(max(0.0, self.stamp_right))
+
+            # Set pen based on datatype
+            dc.set_source_rgb(datatype_color.red / 255.0, datatype_color.green / 255.0, datatype_color.blue / 255.0) 
+
             stamps = (entry.time.to_sec() for entry in self.bag_file._get_entries(connections, start_time, end_time))
 
             # Iterate through regions of connected messages
-            for (stamp_start, stamp_end) in self._find_regions(stamps, msg_combine_interval):
+            for (stamp_start, stamp_end) in self._find_regions(stamps, self.map_dx_to_dstamp(self.default_msg_combine_px)):
                 # Calculate region rectangle bounds 
                 region_x_start = self.map_stamp_to_x(stamp_start)
                 region_x_end   = self.map_stamp_to_x(stamp_end)
                 region_width   = max(1, region_x_end - region_x_start)
                 region_rect    = (region_x_start, msg_y, region_width, msg_height)
 
-                # Use custom datatype renderer
-                if renderer and renderer.draw_timeline_segment(dc, topic, stamp_start, stamp_end, *region_rect):
-                    continue
-
                 # Use default renderer
                 dc.rectangle(*region_rect)
                 dc.fill()
 
+            # Custom renderer
+            stamps = (entry.time.to_sec() for entry in self.bag_file._get_entries(connections, start_time, end_time))
+
+            if renderer:
+                # Iterate through regions of connected messages
+                for (stamp_start, stamp_end) in self._find_regions(stamps, msg_combine_interval):
+                    # Calculate region rectangle bounds 
+                    region_x_start = self.map_stamp_to_x(stamp_start)
+                    region_x_end   = self.map_stamp_to_x(stamp_end)
+                    region_width   = max(1, region_x_end - region_x_start)
+                    region_rect    = (region_x_start, msg_y, region_width, msg_height)
+    
+                    # Use custom datatype renderer
+                    renderer.draw_timeline_segment(dc, topic, stamp_start, stamp_end, *region_rect)
+                    
     def _find_regions(self, stamps, max_interval):
         """Group timestamps into regions connected by timestamps less than max_interval secs apart"""
         region_start, prev_stamp = None, None
@@ -789,20 +793,18 @@ class Timeline(Layer):
     ## Draws topic names
     def _draw_topic_names(self, dc):
         topics = self.history_bounds.keys()
-        coords = [(self.margin_left, y + (h / 2) - (self.topic_font_height / 2)) for (x, y, w, h) in self.history_bounds.values()]
+        coords = [(self.margin_left, y + (h / 2) + (self.topic_font_height / 2)) for (x, y, w, h) in self.history_bounds.values()]
 
-        #dc.SetFont(self.topic_font)
-        #dc.SetTextForeground(self.topic_font_color)
-        
+        dc.set_font_size(12)
+        dc.set_source_rgb(0, 0, 0)
         for text, coords in zip([t.lstrip('/') for t in topics], coords):
             dc.move_to(*coords)
             dc.show_text(text)
 
     ## Draw markers to indicate the extent of the bag file
     def _draw_bag_ends(self, dc):
-        #dc.SetPen(self.bag_end_pen)
         dc.set_source_rgb(0, 0, 0)
-        dc.set_line_width(1)
+        dc.set_line_width(2)
 
         marker_top, marker_bottom = self.history_top - 2, self.history_bottom + 2
 
@@ -810,17 +812,17 @@ class Timeline(Layer):
         start_stamp = self.start_stamp
         if start_stamp > self.stamp_left and start_stamp < self.stamp_right:
             x = self.map_stamp_to_x(start_stamp)
-            for line in [(x - i, marker_top, x - i, marker_bottom) for i in range(1, self.bag_end_width)]:
-                dc.move_to(line[0], line[1])
-                dc.line_to(line[2], line[3])
+            dc.move_to(x - 1, marker_top)
+            dc.line_to(x - 1, marker_bottom)
+            dc.stroke()
 
         # Draw end marker
         end_stamp = self.end_stamp
         if end_stamp > self.stamp_left and end_stamp < self.stamp_right:
             x = self.map_stamp_to_x(end_stamp)
-            for line in [(x + i, marker_top, x + i, marker_bottom) for i in range(1, self.bag_end_width)]:
-                dc.move_to(line[0], line[1])
-                dc.line_to(line[2], line[3])
+            dc.move_to(x - 1, marker_top)
+            dc.line_to(x - 1, marker_bottom)
+            dc.stroke()
 
     def _draw_history_border(self, dc):
         bounds_width = min(self.history_width, self.parent.width - self.x)

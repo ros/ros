@@ -52,7 +52,6 @@ class PlayheadLayer(TransparentLayer):
         
         self.timeline = timeline
         
-        self.pen          = wx.RED_PEN
         self.pointer_size = (6, 6)
         
         self.timeline_rect = self._get_timeline_rect()
@@ -68,25 +67,29 @@ class PlayheadLayer(TransparentLayer):
         
         px, pw, ph = self.width / 2, self.pointer_size[0], self.pointer_size[1]
 
-        # Draw line
-        #dc.SetPen(self.pen)
+        dc.set_line_width(1)
         dc.set_source_rgb(1, 0, 0)
-        dc.move_to(px, self.timeline.history_top)
-        dc.line_to(px, self.timeline.history_bottom + 3)
 
-        # Draw upper triangle
-        py = self.timeline.history_top - (ph + 1)
+        # Line
+        dc.move_to(px, self.timeline.history_top - 1)
+        dc.line_to(px, self.timeline.history_bottom + 2)
+        dc.stroke()
+
+        # Upper triangle
+        py = self.timeline.history_top - ph
         dc.move_to(px,      py + ph)
         dc.line_to(px + pw, py)
         dc.line_to(px - pw, py)
         dc.line_to(px ,     py + ph)
+        dc.fill()
 
-        # Draw lower triangle
+        # Lower triangle
         py = self.timeline.history_bottom + 1
         dc.move_to(px,      py)
         dc.line_to(px + pw, py + ph)
         dc.line_to(px - pw, py + ph)
         dc.line_to(px,      py)
+        dc.fill()
 
     def on_size(self, event):
         self.resize(self.width, self.timeline.height)

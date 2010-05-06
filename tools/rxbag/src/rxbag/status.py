@@ -95,4 +95,5 @@ class StatusLayer(Layer):
 
         dc.set_source_rgb(0, 0, 0)
         dc.move_to(x, y)
+        dc.set_font_size(14.0)
         dc.show_text(s)

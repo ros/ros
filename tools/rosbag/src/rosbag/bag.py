@@ -111,9 +111,9 @@ class Bag(object):
             if 'chunk_threshold' in options:
                 chunk_threshold = options['chunk_threshold']
 
-        self._file            = None
-        self._filename        = None
-        self._version         = None
+        self._file     = None
+        self._filename = None
+        self._version  = None
 
         allowed_compressions = [Compression.NONE, Compression.BZ2] #, Compression.ZLIB]
         if compression not in allowed_compressions:
@@ -149,7 +149,7 @@ class Bag(object):
         
         self._open(f, mode)
 
-        self._output_file      = self._file
+        self._output_file = self._file
     
     @property
     def options(self):
@@ -318,7 +318,7 @@ class Bag(object):
             connection_info = _ConnectionInfo(conn_id, topic, header)
 
             self._write_connection_record(connection_info)
-            
+
             self._connections[conn_id] = connection_info
             self._topic_connections[topic] = connection_info
 
@@ -366,11 +366,11 @@ class Bag(object):
         chunk_size = self._get_chunk_offset()
         if chunk_size > self._chunk_threshold:
             self._stop_writing_chunk()
-            
+
     def reindex(self, feedback=False):
         """
         Reindexes the bag file.
-        @param feedback: if True, generate position at the start of each chunk [optional]
+        @param feedback: if True, yields position of each chunk for progress [optional]
         @type  feedback: bool
         """
         try:
@@ -561,10 +561,16 @@ class Bag(object):
     ### Internal API ###
 
     def _read_message(self, position, raw=False):
+        """
+        Read the message from the given position in the file.
+        """
         self.flush()
         return self._reader.seek_and_read_message_data_record(position, raw)
 
     def _get_entries(self, connections=None, start_time=None, end_time=None):
+        """
+        Yield index entries on the given connections in the given time range.
+        """
         for entry, _ in _mergesort(self._get_indexes(connections), key=lambda entry: entry.time):
             if start_time and entry.time < start_time:
                 continue
@@ -573,7 +579,9 @@ class Bag(object):
             yield entry
 
     def _get_entry(self, t, connections=None):
-        """Return the first index entry on/after time on the given connections"""
+        """
+        Return the first index entry on/after time on the given connections
+        """
         indexes = self._get_indexes(connections)
 
         entry = _IndexEntry(t)
@@ -590,6 +598,9 @@ class Bag(object):
         return first_entry
 
     def _get_connections(self, topics=None, connection_filter=None):
+        """
+        Yield the connections, optionally filtering by topic and/or connection information.
+        """
         if topics:
             if type(topics) == str:
                 topics = set([topics])
@@ -604,9 +615,12 @@ class Bag(object):
             yield c
 
     def _get_indexes(self, connections):
+        """
+        Get the indexes for the given connections.
+        """
         if connections is None:
             return self._connection_indexes.values()
-        
+
         ids = [c.id for c in connections]
         return [self._connection_indexes[id] for id in ids]
 

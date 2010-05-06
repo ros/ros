@@ -508,7 +508,7 @@ class MessageMigrator(object):
                 print >> sys.stderr, "Cannot load rule file [%s] in local package"%r
 
         # Alternatively the preferred method is to load definitions
-        # from the rosbagmigration ruleset export flag.
+        # from the migration ruleset export flag.
         if plugins:
             for pkg in roslib.rospack.rospack_depends_on_1('rosbagmigration'):
                 m_file = roslib.manifest.manifest_file(pkg, True)

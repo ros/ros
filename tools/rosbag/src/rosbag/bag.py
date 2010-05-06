@@ -417,9 +417,9 @@ class Bag(object):
                 dur_hrs  = int(dur_mins / 60)
                 if dur_hrs > 0:
                     dur_mins = dur_mins % 60
-                    duration_str = '%dhr %d:%ds (%ds)' % (dur_hrs, dur_mins, dur_secs, duration)
+                    duration_str = '%dhr %d:%02ds (%ds)' % (dur_hrs, dur_mins, dur_secs, duration)
                 elif dur_mins > 0:
-                    duration_str = '%d:%ds (%ds)' % (dur_mins, dur_secs, duration)
+                    duration_str = '%d:%02ds (%ds)' % (dur_mins, dur_secs, duration)
                 else:
                     duration_str = '%.1fs' % duration   
 

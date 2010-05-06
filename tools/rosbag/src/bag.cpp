@@ -1093,4 +1093,11 @@ void Bag::dump() {
     }
 }
 
+ros::AdvertiseOptions createAdvertiseOptions(const ConnectionInfo* c, uint32_t queue_size) {
+    ros::AdvertiseOptions opts(c->topic, queue_size, c->md5sum, c->datatype, c->msg_def); 
+    ros::M_string::const_iterator header_iter = c->header->find("latching");
+    opts.latch = (header_iter != c->header->end() && header_iter->second == "1");
+    return opts;
+}
+
 } // namespace rosbag

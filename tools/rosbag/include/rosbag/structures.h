@@ -40,6 +40,7 @@
 
 #include "ros/message.h"
 #include "ros/time.h"
+#include "ros/ros.h"
 
 namespace rosbag {
 
@@ -55,6 +56,8 @@ struct ConnectionInfo
 
     boost::shared_ptr<ros::M_string> header;
 };
+
+ros::AdvertiseOptions createAdvertiseOptions(const ConnectionInfo* c, uint32_t queue_size);
 
 struct ChunkInfo
 {

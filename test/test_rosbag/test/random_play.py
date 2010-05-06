@@ -56,14 +56,7 @@ class RandomPlay(unittest.TestCase):
       if self.start is None:
         self.start = nowtime
 
-      if topic not in self.topics_seen:
-        self.delay += DELAY
-        self.topics_seen.add(topic)
-
-      # We know this message is coming in after a delay
       nowtime -= self.start
-      if (not self.use_clock):
-        nowtime -= rospy.Duration(self.delay)
 
       self.input.append((topic, msg, nowtime.to_sec()))
 
@@ -86,25 +79,22 @@ class RandomPlay(unittest.TestCase):
 
     rmg = RandomMsgGen(int(seed), topics, length)
 
-    self.delay = -float(DELAY)
-    self.topics_seen = set()
-
     subscribers = {}
     for (topic, msg_class) in rmg.topics():
       subscribers[topic] = rospy.Subscriber(topic, msg_class, self.msg_cb_topic(topic))
 
-    binpath = os.path.join(roslib.rospack.rospackexec(['find', 'rosrecord']), 'bin', 'rosplay')
-    bagpath = os.path.join(roslib.rospack.rospackexec(['find', 'test_rosrecord']), 'test', 'recording_%d.bag'%seed)
-    cmd = [binpath, '-s', str(DELAY), '-r', str(scale)]
+    bagpath = os.path.join(roslib.rospack.rospackexec(['find', 'test_rosbag']), 'test', 'recording_%d.bag'%seed)
+    cmd = ['rosbag', 'play', '-d', str(DELAY), '-r', str(scale)]
 
     if (self.use_clock):
-      cmd += ['-b', '100']
+      cmd += ['--clock']
 
     cmd += [bagpath]
 
     f1 = subprocess.Popen(cmd)
 
     while (len(self.input) < rmg.message_count()):
+#      print "\n%d/%d\n"%(len(self.input), rmg.message_count())
       time.sleep(.1)
 
     self.assertEqual(len(self.input), rmg.message_count())
@@ -128,9 +118,8 @@ class RandomPlay(unittest.TestCase):
           del self.input[ind]
 
           # Messages can arrive late, but never very early
-          self.assertTrue(input_time - expect_time > -.1)
-          # .5 seconds late is a pretty big deal...
-          self.assertTrue(abs(input_time - expect_time) < .1 + DELAY)
+          self.assertTrue(input_time - expect_time > -.2)
+          self.assertTrue(abs(input_time - expect_time) < .5)
           break
 
       if not msg_match:

@@ -139,6 +139,8 @@ public:
     void addQuery(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
     		      ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);
 
+    std::vector<const ConnectionInfo*> getConnections();
+
 protected:
     void updateQueries(BagQuery* q);
 

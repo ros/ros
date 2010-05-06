@@ -61,7 +61,7 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
         case 'q': opts.queue_size         = atoi(optarg); break;
         case 'r': opts.time_scale         = atof(optarg); break;
         case 'b': opts.bag_time_frequency = atoi(optarg); opts.bag_time = true; break;
-        case 's': opts.advertise_sleep    = (unsigned int) (1000000.0 * atof(optarg)); break;
+        case 's': opts.advertise_sleep    = ros::WallDuration(atof(optarg)); break;
         case 't': {
             char time[1024];
             strncpy(time, optarg, sizeof(time));
@@ -92,16 +92,17 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    ros::init(argc, argv, "play", ros::init_options::AnonymousName);
+
     rosbag::Player player(opts);
 
-	ros::init(argc, argv, "play", ros::init_options::AnonymousName);
-	try {
-		player.publish();
-	}
-	catch (std::runtime_error& e) {
-		ROS_FATAL("%s", e.what());
-		return 1;
-	}
+    try {
+      player.publish();
+    }
+    catch (std::runtime_error& e) {
+      ROS_FATAL("%s", e.what());
+      return 1;
+    }
     
     return 0;
 }

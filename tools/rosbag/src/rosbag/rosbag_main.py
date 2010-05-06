@@ -77,7 +77,7 @@ def record_cmd(argv):
     if options.prefix is not None and options.name is not None:
         parser.error("Can't set both prefix and name.")
 
-    cmd = ['rosrun', 'rosbag', 'record']
+    cmd = ['record']
 
     cmd.extend(['-m', str(options.buffsize)])
     cmd.extend(['-c', str(options.num)])
@@ -92,10 +92,13 @@ def record_cmd(argv):
 
     cmd.extend(args)
 
-    proc = subprocess.Popen(cmd)
-    signal.signal(signal.SIGINT, signal.SIG_IGN)   # ignore sigint since we're basically just pretending to be the subprocess now
-    res = proc.wait()
-    sys.exit(res)
+    recordpath = os.path.join(roslib.rospack.rospackexec(['find', 'rosbag']), 'bin', 'record')
+    os.execv(recordpath, cmd)
+
+#    proc = subprocess.Popen(cmd)
+#    signal.signal(signal.SIGINT, signal.SIG_IGN)   # ignore sigint since we're basically just pretending to be the subprocess now
+#    res = proc.wait()
+#    sys.exit(res)
 
 def info_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag info BAGFILE1 [BAGFILE2 BAGFILE3 ...]',
@@ -139,7 +142,7 @@ def play_cmd(argv):
     if len(args) == 0:
         parser.error('You must specify at least 1 bag file to play back.')
 
-    cmd = ['rosrun', 'rosbag', 'play']
+    cmd = ['play']
 
     if options.quiet:      cmd.extend(["-n"])
     if options.pause:      cmd.extend(["-p"])
@@ -156,10 +159,13 @@ def play_cmd(argv):
 
     cmd.extend(args)
 
-    proc = subprocess.Popen(cmd)
-    signal.signal(signal.SIGINT, signal.SIG_IGN)   # ignore sigint since we're basically just pretending to be the subprocess now
-    res = proc.wait()
-    sys.exit(res)
+    playpath = os.path.join(roslib.rospack.rospackexec(['find', 'rosbag']), 'bin', 'play')
+    os.execv(playpath, cmd)
+
+#    proc = subprocess.Popen(cmd)
+#    signal.signal(signal.SIGINT, signal.SIG_IGN)   # ignore sigint since we're basically just pretending to be the subprocess now
+#    res = proc.wait()
+#    sys.exit(res)
 
 def filter_cmd(argv):
     def expr_eval(expr):

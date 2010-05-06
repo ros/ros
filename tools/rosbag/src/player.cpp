@@ -41,6 +41,8 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
+#include "roslib/Clock.h"
+
 #define foreach BOOST_FOREACH
 
 using std::map;
@@ -70,17 +72,19 @@ PlayerOptions::PlayerOptions() :
 }
 
 void PlayerOptions::check() {
-	if (bags.size() == 0)
-		throw Exception("You must specify at least one bag file to play from");
-	if (bag_time && bags.size() > 1)
-		throw Exception("You can only play one single bag when using bag time [-b]");
+    if (bags.size() == 0)
+        throw Exception("You must specify at least one bag file to play from");
+
+    // JL: I don't think this requirement makes sense anymore
+
+    //	if (bag_time && bags.size() > 1)
+    //		throw Exception("You can only play one single bag when using bag time [-b]");
 }
 
 // Player
 
 Player::Player(PlayerOptions const& options) :
     options_(options),
-    node_handle_(NULL),
     started_(false),
     paused_(false),
     terminal_modified_(false)
@@ -88,15 +92,10 @@ Player::Player(PlayerOptions const& options) :
 }
 
 Player::~Player() {
-    if (node_handle_) {
-        usleep(1000000);     // this shouldn't be necessary
-        delete node_handle_;
-    }
-
-    foreach(shared_ptr<Bag> bag, bags_)
-        bag->close();
-
-	restoreTerminal();
+  foreach(shared_ptr<Bag> bag, bags_)
+    bag->close();
+  
+  restoreTerminal();
 }
 
 void Player::publish() {
@@ -123,64 +122,99 @@ void Player::publish() {
 
     setupTerminal();
 
-    node_handle_ = new ros::NodeHandle();
-    if (!node_handle_ || !node_handle_->ok())
-    	return;
+    if (!node_handle_.ok())
+      return;
 
-	if (!options_.quiet)
-		puts("");
+    if (!options_.quiet)
+      puts("");
+    
+    ros::WallTime last_print_time(0.0);
+    ros::WallDuration max_print_interval(0.1);
+    
+    // Publish all messages in the bags
+    View view;
+    foreach(shared_ptr<Bag> bag, bags_)
+      view.addQuery(*bag);
 
-	ros::WallTime last_print_time(0.0);
-	ros::WallDuration max_print_interval(0.1);
+    // Advertise all of our messages
+    foreach(const ConnectionInfo* c, view.getConnections())
+    {
+        ros::M_string::const_iterator header_iter = c->header->find("callerid");
+        std::string callerid = (header_iter != c->header->end() ? header_iter->second : string(""));
 
-	// Publish all messages in the bags
-	View view;
-	foreach(shared_ptr<Bag> bag, bags_)
-		view.addQuery(*bag);
+        string callerid_topic = callerid + c->topic;
 
-	foreach(MessageInstance m, view) {
-		if (!node_handle_->ok())
-			break;
+        map<string, ros::Publisher>::iterator pub_iter = publishers_.find(callerid_topic);
+        if (pub_iter == publishers_.end()) {
 
-		// Print out time
-		ros::WallTime t = ros::WallTime::now();
-		if (!options_.quiet && ((t - last_print_time) >= max_print_interval)) {
-			printf(" Time: %16.6f    Duration: %16.6f\r", ros::Time::now().toSec(), m.getTime().toSec());
-			fflush(stdout);
-			last_print_time = t;
-		}
+            ros::AdvertiseOptions opts = createAdvertiseOptions(c, options_.queue_size);
 
-		doPublish(m);
-	}
+            ros::Publisher pub = node_handle_.advertise(opts);
+            publishers_.insert(publishers_.begin(), pair<string, ros::Publisher>(callerid_topic, pub));
 
-	std::cout << std::endl << "Done." << std::endl;
+            pub_iter = publishers_.find(callerid_topic);
+        }
+    }
 
-	ros::shutdown();
+    std::cout << "Waiting " << options_.advertise_sleep.toSec() << " seconds after advertising topics..." << std::flush;
+    options_.advertise_sleep.sleep();
+    std::cout << " done." << std::endl;
+
+    // Set up our time_translator and publishers
+
+    time_translator_.setTimeScale(options_.time_scale);
+    time_translator_.setRealStartTime(view.begin()->getTime());
+    ros::WallTime now_wt = ros::WallTime::now();
+    time_translator_.setTranslatedStartTime(ros::Time(now_wt.sec, now_wt.nsec));
+
+    time_publisher_.setTimeScale(options_.time_scale);
+    if (options_.bag_time)
+        time_publisher_.setPublishFrequency(options_.bag_time_frequency);
+    else
+        time_publisher_.setPublishFrequency(-1.0);
+
+
+    // Call do-publishfor each message
+    foreach(MessageInstance m, view) {
+        if (!node_handle_.ok())
+            break;
+        
+      // Print out time
+        ros::WallTime t = ros::WallTime::now();
+        if (!options_.quiet && ((t - last_print_time) >= max_print_interval)) {
+            printf(" Real Time: %16.6f    Bag Time: %16.6f\r", ros::Time::now().toSec(), m.getTime().toSec());
+            fflush(stdout);
+            last_print_time = t;
+        }
+        
+        doPublish(m);
+    }
+    
+    std::cout << std::endl << "Done." << std::endl;
+    
+    ros::shutdown();
 }
 
 void Player::doPublish(MessageInstance const& m) {
-	string const& topic   = m.getTopic();
-	ros::Time const& time = m.getTime();
-	string callerid       = m.getCallerId();
+    string const& topic   = m.getTopic();
+    ros::Time const& time = m.getTime();
+    string callerid       = m.getCallerId();
+    
+    time_publisher_.setHorizon(time);
+    
+    ros::Time translated = time_translator_.translate(time);
+    
+    time_publisher_.setHorizon(time);
+    ros::WallTime horizon = ros::WallTime(translated.sec, translated.nsec);
+    time_publisher_.setWCHorizon(horizon);
 
     string callerid_topic = callerid + topic;
 
     map<string, ros::Publisher>::iterator pub_iter = publishers_.find(callerid_topic);
-    if (pub_iter == publishers_.end()) {
-        ros::AdvertiseOptions opts = createAdvertiseOptions(m, options_.queue_size);
-        opts.latch = m.isLatching();
-
-        ros::Publisher pub = node_handle_->advertise(opts);
-        publishers_.insert(publishers_.begin(), pair<string, ros::Publisher>(callerid_topic, pub));
-
-        pub_iter = publishers_.find(callerid_topic);
-
-        std::cout << "Waiting " << options_.advertise_sleep / 1e6 << " seconds after advertising " << topic << " [caller-id: " << callerid << "]..." << std::flush;
-        usleep(options_.advertise_sleep);
-        std::cout << " done." << std::endl;
-    }
+    ROS_ASSERT(pub_iter != publishers_.end());
 
     if (options_.at_once) {
+        time_publisher_.stepClock();
         pub_iter->second.publish(m);
         return;
     }
@@ -191,52 +225,59 @@ void Player::doPublish(MessageInstance const& m) {
     	started_ = true;
     }
 
-    ros::Duration message_delta  = time - last_played_message_time_;
-    ros::Duration wall_delta     = getSysTime() - last_played_wall_time_;
-    ros::Duration sleep_duration = message_delta - wall_delta;
-
-    while ((paused_ || sleep_duration > ros::Duration(0, 100000)) && node_handle_->ok()) {
+    while ( (paused_ || !time_publisher_.horizonReached()) && node_handle_.ok())
+    {
         bool charsleftorpaused = true;
-        while (charsleftorpaused && node_handle_->ok()) {
-            switch (readCharFromStdin()) {
+        while (charsleftorpaused && node_handle_.ok()) {
+
+            switch (readCharFromStdin()){
             case ' ':
-                // <space>: toggle paused
-                if (!paused_) {
-                    paused_ = true;
-                    std::cout << std::endl << "Hit space to resume, or 's' to step." << std::endl;
-                }
-                else {
-                    paused_ = false;
-                    std::cout << std::endl << "Hit space to pause." << std::endl;
+                paused_ = !paused_;
+                if (paused_) {
+                    paused_time_ = ros::WallTime::now();
+                    std::cout << std::endl << "Hit space to resume, or 's' to step.";
+                    std::cout.flush();
+                } else {
+                    
+                    ros::WallDuration shift = ros::WallTime::now() - paused_time_;
+                    paused_time_ = ros::WallTime::now();
+         
+                    time_translator_.shift(ros::Duration(shift.sec, shift.nsec));
+
+                    horizon += shift;
+                    time_publisher_.setWCHorizon(horizon);
+                    
+                    std::cout << std::endl << "Hit space to pause.";
+                    std::cout.flush();
                 }
                 break;
-
             case 's':
-                // 's': step
-                if (paused_) {
-                    pub_iter->second.publish(m);
+                if (paused_){
+                    
+                    time_publisher_.stepClock();
+
+                    ros::WallDuration shift = ros::WallTime::now() - horizon ;
+                    paused_time_ = ros::WallTime::now();
+
+                    time_translator_.shift(ros::Duration(shift.sec, shift.nsec));
+
+                    horizon += shift;
+                    time_publisher_.setWCHorizon(horizon);
+            
+                    (pub_iter->second).publish(m);
                     return;
                 }
                 break;
-
             case EOF:
                 if (paused_)
-                    usleep(10000);  // sleep for 10ms
+                    time_publisher_.runStalledClock(ros::WallDuration(.01));
                 else
                     charsleftorpaused = false;
             }
         }
 
-        usleep(100000);  // sleep for 100ms
-
-        wall_delta     = getSysTime() - last_played_wall_time_;
-        sleep_duration = message_delta - wall_delta;
+        time_publisher_.runClock(ros::WallDuration(.1));
     }
-
-    if (!paused_ && sleep_duration > ros::Duration(0, 5000) && node_handle_->ok())
-        usleep(sleep_duration.toNSec() / 1000 - 5);
-    last_played_message_time_ = time;
-    last_played_wall_time_ = getSysTime();
 
     pub_iter->second.publish(m);
 }
@@ -293,5 +334,156 @@ ros::Time Player::getSysTime() {
     gettimeofday(&timeofday, NULL);
     return ros::Time().fromNSec(1e9 * timeofday.tv_sec + 1e3 * timeofday.tv_usec);
 }
+
+
+TimePublisher::TimePublisher() : time_scale_(1.0)
+{
+  setPublishFrequency(-1.0);
+  time_pub_ = node_handle_.advertise<roslib::Clock>("clock",1);
+}
+
+void TimePublisher::setPublishFrequency(double publish_frequency)
+{
+  publish_frequency_ = publish_frequency;
+  
+  if (publish_frequency > 0)
+  {
+    do_publish_ = true;
+  } else {
+    do_publish_ = false;
+  }
+  
+  wall_step_.fromSec(1.0 / publish_frequency);
+}
+
+void TimePublisher::setTimeScale(double time_scale)
+{
+    time_scale_ = time_scale;
+}
+
+void TimePublisher::setHorizon(const ros::Time& horizon)
+{
+    horizon_ = horizon;
+}
+
+void TimePublisher::setWCHorizon(const ros::WallTime& horizon)
+{
+  wc_horizon_ = horizon;
+}
+
+void TimePublisher::setTime(const ros::Time& time)
+{
+    current_ = time;
+}
+
+void TimePublisher::runClock(const ros::WallDuration& duration)
+{
+    if (do_publish_)
+    {
+        roslib::Clock pub_msg; 
+
+        ros::WallTime t = ros::WallTime::now();
+        ros::WallTime done = t + duration;
+
+        while ( t < done )
+        {
+            ros::WallDuration leftHorizonWC = wc_horizon_ - t;
+
+            ros::Duration d(leftHorizonWC.sec, leftHorizonWC.nsec);
+            d *= time_scale_;
+
+            current_ = horizon_ - d;
+
+            if (current_ >= horizon_)
+              current_ = horizon_;
+
+            if (t >= next_pub_)
+            {
+                pub_msg.clock = current_;
+                time_pub_.publish(pub_msg);
+                next_pub_ = t + wall_step_;
+            }
+
+            ros::WallTime target = done;
+
+            if (target > wc_horizon_)
+              target = wc_horizon_;
+
+            if (target > next_pub_)
+              target = next_pub_;
+
+            ros::WallTime::sleepUntil(target);
+
+            t = ros::WallTime::now();
+        }
+    } else {
+
+      ros::WallTime target = ros::WallTime::now() + duration;
+
+      if (target > wc_horizon_)
+        target = wc_horizon_;
+
+      ros::WallTime::sleepUntil(target);
+    }
+}
+
+void TimePublisher::stepClock()
+{
+    if (do_publish_)
+    {
+        current_ = horizon_;
+
+        roslib::Clock pub_msg; 
+
+        pub_msg.clock = current_;
+        time_pub_.publish(pub_msg);
+
+        ros::WallTime t = ros::WallTime::now();
+        next_pub_ = t + wall_step_;
+    } else {
+        current_ = horizon_;
+    }
+}
+
+
+
+void TimePublisher::runStalledClock(const ros::WallDuration& duration)
+{
+    if (do_publish_)
+    {
+        roslib::Clock pub_msg; 
+
+        ros::WallTime t = ros::WallTime::now();
+        ros::WallTime done = t + duration;
+
+        while ( t < done )
+        {
+            if (t > next_pub_)
+            {
+                pub_msg.clock = current_;
+                time_pub_.publish(pub_msg);
+                next_pub_ = t + wall_step_;
+            }
+
+            ros::WallTime target = done;
+
+            if (target > next_pub_)
+              target = next_pub_;
+
+            ros::WallTime::sleepUntil(target);
+
+            t = ros::WallTime::now();
+        }
+    } else {
+        duration.sleep();
+    }
+}
+
+bool TimePublisher::horizonReached()
+{
+  return ros::WallTime::now() > wc_horizon_;
+}
+
+
 
 } // namespace rosbag

@@ -48,6 +48,8 @@
 
 #include "rosbag/bag.h"
 
+#include "rosbag/time_translator.h"
+
 namespace rosbag {
 
 struct PlayerOptions
@@ -63,7 +65,7 @@ struct PlayerOptions
     double   bag_time_frequency;
     double   time_scale;
     int      queue_size;
-    uint64_t advertise_sleep;
+    ros::WallDuration advertise_sleep;
     bool     try_future;
     bool     has_time;
     float    time;
@@ -71,6 +73,67 @@ struct PlayerOptions
     std::vector<std::string> bags;
 };
 
+
+//! PRIVATE. A helper class to track relevant state for publishing time
+class TimePublisher {
+public:
+    /*! Create a time publisher
+     *  A publish_frequency of < 0 indicates that time shouldn't actually be published
+     */
+    TimePublisher();
+
+    void setPublishFrequency(double publish_frequency);
+    
+    void setTimeScale(double time_scale);
+
+    /*! Set the horizon that the clock will run to */
+    void setHorizon(const ros::Time& horizon);
+
+    /*! Set the horizon that the clock will run to */
+    void setWCHorizon(const ros::WallTime& horizon);
+
+    /*! Set the current time */
+    void setTime(const ros::Time& time);
+
+    /*! Run the clock for AT MOST duration
+     *
+     * If horizon has been reached this function returns immediately
+     */
+    void runClock(const ros::WallDuration& duration);
+
+    //! Sleep as necessary, but don't let the click run 
+    void runStalledClock(const ros::WallDuration& duration);
+
+    //! Step the clock to the horizon
+    void stepClock();
+
+    bool horizonReached();
+
+    
+private:
+    bool do_publish_;
+    
+    double publish_frequency_;
+    double time_scale_;
+    
+    ros::NodeHandle node_handle_;
+    ros::Publisher time_pub_;
+    
+    ros::WallDuration wall_step_;
+    
+    ros::WallTime next_pub_;
+
+    ros::WallTime wc_horizon_;
+    ros::Time horizon_;
+    ros::Time current_;
+};
+
+
+//! PRIVATE.  Player class to abstract the interface to the player
+/*!
+ *  This API is currently considered private, but will be released in the 
+ * future after view.
+ */
 class Player
 {
 public:
@@ -90,12 +153,14 @@ private:
 private:
     PlayerOptions options_;
 
-    ros::NodeHandle* node_handle_;    //!< pointer to allow player to start before node handle exists since this is where argument parsing happens
+    ros::NodeHandle node_handle_;
 
     bool      started_;
     ros::Time last_played_message_time_;
     ros::Time last_played_wall_time_;
     bool      paused_;
+
+    ros::WallTime paused_time_;
 
     std::vector<boost::shared_ptr<Bag> >  bags_;
     std::map<std::string, ros::Publisher> publishers_;
@@ -105,7 +170,11 @@ private:
     termios orig_flags_;
     fd_set  stdin_fdset_;
     int     maxfd_;
+
+    TimeTranslator time_translator_;
+    TimePublisher time_publisher_;
 };
+
 
 } // namespace rosbag
 

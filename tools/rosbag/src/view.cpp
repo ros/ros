@@ -215,4 +215,17 @@ void View::update() {
     }
 }
 
+
+std::vector<const ConnectionInfo*> View::getConnections()
+{
+  std::vector<const ConnectionInfo*> connections;
+
+  foreach(MessageRange* range, ranges_)
+  {
+    connections.push_back(range->connection_info);
+  }
+
+  return connections;
+}
+
 } // namespace rosbag

@@ -187,22 +187,22 @@ bool Recorder::isSubscribed(string const& topic) const {
 }
 
 bool Recorder::shouldSubscribeToTopic(std::string const& topic) {
-	if (options_.regex) {
-		// Treat the topics as regular expressions
-		foreach(string const& regex_str, options_.topics) {
-			boost::regex e(regex_str);
-			boost::smatch what;
-			if (boost::regex_match(topic, what, e, boost::match_extra))
-				return true;
-		}
-	}
-	else {
-		foreach(string const& t, options_.topics)
-			if (t == topic)
-				return true;
-	}
-
-	return false;
+    if (options_.regex) {
+        // Treat the topics as regular expressions
+        foreach(string const& regex_str, options_.topics) {
+            boost::regex e(regex_str);
+            boost::smatch what;
+            if (boost::regex_match(topic, what, e, boost::match_extra))
+                return true;
+        }
+    }
+    else {
+        foreach(string const& t, options_.topics)
+            if (t == topic)
+                return true;
+    }
+    
+    return false;
 }
 
 template<class T>

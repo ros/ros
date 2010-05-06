@@ -373,14 +373,11 @@ class Bag(object):
         @param feedback: if True, yields position of each chunk for progress [optional]
         @type  feedback: bool
         """
-        try:
-            if feedback:
-                for offset in self._reader.reindex(True):
-                    yield offset
-            else:
-                self._reader.reindex(False)
-        except:
-            pass
+        if feedback:
+            for offset in self._reader.reindex(True):
+                yield offset
+        else:
+            self._reader.reindex(False)
 
     def close(self):
         """
@@ -1067,6 +1064,10 @@ def _read(f, size):
         raise ROSBagException('expecting %d bytes, read %d' % (size, len(data)))   
     return data
 
+def _skip_record(f):
+    _skip_sized(f)  # skip header
+    _skip_sized(f)  # skip data
+
 def _skip_sized(f):
     size = _read_uint32(f)
     f.seek(size, os.SEEK_CUR)
@@ -1169,8 +1170,14 @@ class _BagReader(object):
     def __init__(self, bag):
         self.bag = bag
         
-    def start_reading(self): pass
-    def read_messages(self, topics, start_time, end_time, connection_filter, raw): pass
+    def start_reading(self):
+        raise NotImplementedError()
+
+    def read_messages(self, topics, start_time, end_time, connection_filter, raw):
+        raise NotImplementedError()
+
+    def reindex(self, feedback=False):
+        raise NotImplementedError()
 
 class _BagReader101(_BagReader):
     """
@@ -1331,9 +1338,64 @@ class _BagReader102_Indexed(_BagReader102_Unindexed):
         for entry in self.bag._get_entries(connections, start_time, end_time):
             yield self.seek_and_read_message_data_record(entry.offset, raw)
     
+    def reindex(self, feedback=False):
+        """Generates all bag index information by rereading the message records."""
+        f = self.bag._file
+        
+        total_bytes = self.bag.size
+        
+        # Re-read the file header to get to the start of the first message
+        self.bag._file.seek(self.bag._file_header_pos)
+        self.read_file_header_record()
+
+        offset = f.tell()
+
+        # Read message definition and data records
+        while offset < total_bytes:
+            yield offset
+            
+            op = _peek_next_header_op(f)
+
+            if op == _OP_MSG_DEF:
+                connection_info = self.read_message_definition_record()
+    
+                if connection_info.topic not in self.bag._topic_connections:
+                    self.bag._topic_connections[connection_info.topic] = connection_info.id
+                    self.bag._connections[connection_info.id] = connection_info
+                    self.bag._connection_indexes[connection_info.id] = []
+
+            elif op == _OP_MSG_DATA:
+                # Read the topic and timestamp from the header
+                header = _read_header(f)
+                
+                topic = _read_str_field(header, 'topic')
+                secs  = _read_uint32_field(header, 'sec')
+                nsecs = _read_uint32_field(header, 'nsec')
+                t = roslib.rostime.Time(secs, nsecs)
+
+                connection_id = self.bag._topic_connections[topic]
+                info = self.bag._connections[connection_id]
+
+                # Skip over the message content
+                _skip_sized(f)
+
+                # Insert the message entry (in order) into the connection index
+                entry = _IndexEntry102(t, offset)
+                index = self.bag._connection_indexes[connection_id]
+                index.insert(bisect.bisect_right(index, entry), entry)
+
+            elif op == _OP_INDEX_DATA:
+                _skip_record(f)
+
+            offset = f.tell()
+
     def start_reading(self):
         # Read the file header
         self.read_file_header_record()
+
+        # Check if the index position has been written, i.e. the bag was closed successfully
+        if self.bag._index_data_pos == 0:
+            return False
 
         # Seek to the beginning of the topic index records
         self.bag._file.seek(self.bag._index_data_pos)
@@ -1452,11 +1514,6 @@ class _BagReader200(_BagReader):
         self.decompressed_chunk     = None
         self.decompressed_chunk_io  = None
 
-    def read_messages(self, topics, start_time, end_time, connection_filter, raw):
-        connections = self.bag._get_connections(topics, connection_filter)
-        for entry in self.bag._get_entries(connections, start_time, end_time):
-            yield self.seek_and_read_message_data_record((entry.chunk_pos, entry.offset), raw)
-
     def reindex(self, feedback=False):
         """Generates all bag index information by rereading the chunks."""
         f = self.bag._file
@@ -1543,9 +1600,9 @@ class _BagReader200(_BagReader):
             self.bag._chunks.append(self._curr_chunk_info)
 
             # Skip over index records
+            # todo: skip over connection records and chunk info records at the end of the file
             while _peek_next_header_op(f) == _OP_INDEX_DATA:
-                _read_header(f)
-                _skip_sized(f)
+                _skip_record(f)
                 
                 if f.tell() >= total_bytes:
                     return
@@ -1596,6 +1653,13 @@ class _BagReader200(_BagReader):
                     connection_index.append(entry)
 
         return True
+
+    def read_messages(self, topics, start_time, end_time, connection_filter, raw):
+        connections = self.bag._get_connections(topics, connection_filter)
+        for entry in self.bag._get_entries(connections, start_time, end_time):
+            yield self.seek_and_read_message_data_record((entry.chunk_pos, entry.offset), raw)
+
+    ###
 
     def read_file_header_record(self):
         self.bag._file_header_pos = self.bag._file.tell()

@@ -356,7 +356,7 @@ def compress_cmd(argv):
 
     op = lambda inbag, outbag, quiet: change_compression_op(inbag, outbag, Compression.BZ2, options.quiet)
 
-    bag_op(args, op, False, options.force, options.quiet)
+    bag_op(args, lambda b: False, op, options.force, options.quiet)
 
 def decompress_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag decompress [options] BAGFILE1 [BAGFILE2 ...]',
@@ -371,7 +371,7 @@ def decompress_cmd(argv):
     
     op = lambda inbag, outbag, quiet: change_compression_op(inbag, outbag, Compression.NONE, options.quiet)
     
-    bag_op(args, op, False, options.force, options.quiet)
+    bag_op(args, lambda b: False, op, options.force, options.quiet)
 
 def reindex_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag reindex [options] BAGFILE1 [BAGFILE2 ...]',
@@ -385,10 +385,10 @@ def reindex_cmd(argv):
         parser.error('You must specify at least one bag file.')
     
     op = lambda inbag, outbag, quiet: reindex_op(inbag, outbag, options.quiet)
-    
-    bag_op(args, op, True, options.force, options.quiet)
 
-def bag_op(filenames, op, copy, force=False, quiet=False):
+    bag_op(args, lambda b: b.version > 102, op, options.force, options.quiet)
+
+def bag_op(filenames, copy_fn, op, force=False, quiet=False):
     for inbag_filename in filenames:
         # Check we can read the file
         try:
@@ -396,6 +396,9 @@ def bag_op(filenames, op, copy, force=False, quiet=False):
         except (ROSBagException, IOError), ex:
             print >> sys.stderr, 'ERROR reading %s: %s' % (inbag_filename, str(ex))
             continue
+
+        copy = copy_fn(inbag)
+        
         inbag.close()
 
         # Rename the input bag to ###.orig.###, and open for reading
@@ -477,13 +480,37 @@ def change_compression_op(inbag, outbag, compression, quiet):
         meter.finish()
 
 def reindex_op(inbag, outbag, quiet):
-    if quiet:
-        outbag.reindex()
+    if inbag.version == 102:
+        if quiet:
+            inbag.reindex()
+
+            try:
+                for (topic, msg, t) in inbag.read_messages():
+                    outbag.write(topic, msg, t)
+            except:
+                pass
+        else:
+            meter = ProgressMeter(outbag.filename, inbag.size)
+            for offset in inbag.reindex(True):
+                meter.step(offset)
+            meter.finish()
+
+            meter = ProgressMeter(outbag.filename, inbag.size)
+            try:
+                for (topic, msg, t) in inbag.read_messages():
+                    outbag.write(topic, msg, t)
+                    meter.step(inbag._file.tell())
+            except:
+                pass
+            meter.finish()
     else:
-        meter = ProgressMeter(outbag.filename, outbag.size)
-        for offset in outbag.reindex(True):
-            meter.step(offset)
-        meter.finish()
+        if quiet:
+            outbag.reindex()
+        else:
+            meter = ProgressMeter(outbag.filename, outbag.size)
+            for offset in outbag.reindex(True):
+                meter.step(offset)
+            meter.finish()
 
 def slash_cmd(argv):
     """For debugging purposes only.  Truncates a bag file in half and reindexes."""
@@ -513,7 +540,7 @@ def slash_cmd(argv):
             'conn_count':  bag._pack_uint32(0),
             'chunk_count': bag._pack_uint32(0)
         }
-        bag._write_record(f, header, padded_size=bag._FILE_HEADER_LENGTH)       
+        #bag._write_record(f, header, padded_size=bag._FILE_HEADER_LENGTH)       
         f.truncate(index_pos / 2)
         f.close()
         
@@ -523,18 +550,43 @@ def slash_cmd(argv):
         reindex_filename = '%s.reindex%s' % (root, ext)
         shutil.copy(slash_filename, reindex_filename)
 
-        try:
-            b = Bag(reindex_filename, 'a')
-        except:
-            pass
-        try:
-            meter = ProgressMeter(reindex_filename, b.size)
+        bv = Bag(slash_filename)
+        version = bv.version
+        bv.close()
+
+        if version == 102:
+            b = Bag(slash_filename)
+
+            reindexed = Bag(reindex_filename, 'w')
+
+            meter = ProgressMeter(slash_filename, b.size)
             for offset in b.reindex(True):
                 meter.step(offset)
             meter.finish()
-        except Exception, ex:
-            print str(ex)
-        b.close()
+
+            try:
+                for (topic, msg, t) in b.read_messages():
+                    print topic, t
+                    reindexed.write(topic, msg, t)
+            except:
+                pass
+            reindexed.close()
+
+            b.close()
+        else:
+            try:
+                b = Bag(reindex_filename, 'a')
+            except Exception, ex:
+                print str(ex)
+            try:
+                meter = ProgressMeter(reindex_filename, b.size)
+                for offset in b.reindex(True):
+                    meter.step(offset)
+                meter.finish()
+            except Exception, ex:
+                print str(ex)
+                raise
+            b.close()
 
 class RosbagCmds(UserDict.UserDict):
     def __init__(self):

@@ -52,7 +52,6 @@ class View
     friend class Bag;
 
 public:
-
     //! An iterator that points to a MessageInstance from a bag
     /*!
      * This iterator derefences to a MessageInstance by VALUE, since
@@ -100,8 +99,8 @@ public:
     //! Create a view and add a query
     /*!
      * param bag        The bag file on which to run this query
-     * param start_time The beginning of the time_range for the query
-     * param end_time   The end of the time_range for the query
+     * param start_time The beginning of the time range for the query
+     * param end_time   The end of the time range for the query
      */
     View(Bag const& bag, ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);
 
@@ -109,8 +108,8 @@ public:
     /*!
      * param bag        The bag file on which to run this query
      * param query      The actual query to evaluate which connections to include
-     * param start_time The beginning of the time_range for the query
-     * param end_time   The end of the time_range for the query
+     * param start_time The beginning of the time range for the query
+     * param end_time   The end of the time range for the query
      */
     View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
          ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);
@@ -124,17 +123,17 @@ public:
     //! Add a query to a view
     /*!
      * param bag        The bag file on which to run this query
-     * param start_time The beginning of the time_range for the query
-     * param end_time   The end of the time_range for the query
+     * param start_time The beginning of the time range for the query
+     * param end_time   The end of the time range for the query
      */
     void addQuery(Bag const& bag, ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);
 
     //! Add a query to a view
     /*!
      * param bag        The bag file on which to run this query
-     * param query      The actual query to evaluate which topics to include
-     * param start_time The beginning of the time_range for the query
-     * param end_time   The end of the time_range for the query
+     * param query      The actual query to evaluate which connections to include
+     * param start_time The beginning of the time range for the query
+     * param end_time   The end of the time range for the query
      */
     void addQuery(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
     		      ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);

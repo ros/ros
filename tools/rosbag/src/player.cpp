@@ -85,7 +85,6 @@ void PlayerOptions::check() {
 
 Player::Player(PlayerOptions const& options) :
     options_(options),
-    started_(false),
     paused_(false),
     terminal_modified_(false)
 {
@@ -200,12 +199,11 @@ void Player::doPublish(MessageInstance const& m) {
     ros::Time const& time = m.getTime();
     string callerid       = m.getCallerId();
     
-    time_publisher_.setHorizon(time);
-    
+
     ros::Time translated = time_translator_.translate(time);
-    
-    time_publisher_.setHorizon(time);
     ros::WallTime horizon = ros::WallTime(translated.sec, translated.nsec);
+
+    time_publisher_.setHorizon(time);
     time_publisher_.setWCHorizon(horizon);
 
     string callerid_topic = callerid + topic;
@@ -217,12 +215,6 @@ void Player::doPublish(MessageInstance const& m) {
         time_publisher_.stepClock();
         pub_iter->second.publish(m);
         return;
-    }
-
-    if (!started_) {
-    	last_played_message_time_ = time;
-    	last_played_wall_time_ = getSysTime();
-    	started_ = true;
     }
 
     while ( (paused_ || !time_publisher_.horizonReached()) && node_handle_.ok())
@@ -385,7 +377,7 @@ void TimePublisher::runClock(const ros::WallDuration& duration)
         ros::WallTime t = ros::WallTime::now();
         ros::WallTime done = t + duration;
 
-        while ( t < done )
+        while ( t < done && t < wc_horizon_)
         {
             ros::WallDuration leftHorizonWC = wc_horizon_ - t;
 

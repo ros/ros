@@ -80,7 +80,7 @@ void SimpleTimePublisher::runClock(const ros::WallDuration& duration)
         ros::WallTime t = ros::WallTime::now();
         ros::WallTime done = t + duration;
 
-        while ( t < done )
+        while ( t < done && t < wc_horizon_ )
         {
             ros::WallDuration leftHorizonWC = wc_horizon_ - t;
 

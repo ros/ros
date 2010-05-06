@@ -87,7 +87,7 @@ class RandomPlay(unittest.TestCase):
     cmd = ['rosbag', 'play', '-d', str(DELAY), '-r', str(scale)]
 
     if (self.use_clock):
-      cmd += ['--clock']
+      cmd += ['--clock', '--hz', '100']
 
     cmd += [bagpath]
 
@@ -98,6 +98,11 @@ class RandomPlay(unittest.TestCase):
       time.sleep(.1)
 
     self.assertEqual(len(self.input), rmg.message_count())
+
+    max_late = 0
+    max_early = 0
+    avg_off = 0
+    power = 0
 
     for (expect_topic, expect_msg, expect_time) in rmg.messages():
 
@@ -117,8 +122,23 @@ class RandomPlay(unittest.TestCase):
           msg_match = True
           del self.input[ind]
 
-          # Messages can arrive late, but never very early
-          self.assertTrue(input_time - expect_time > -.2)
+          # stats
+          diff = input_time - expect_time
+
+          if (diff < max_early):
+            max_early = diff
+
+          if (diff > max_late):
+            max_late = diff
+
+          avg_off += diff / rmg.message_count()
+
+          power += (diff**2) / rmg.message_count()
+
+          # Messages can arrive late, but never very early Both of
+          # these bounds are much larger than they ought to be, but
+          # you never know with a heavily loaded system.
+          self.assertTrue(input_time - expect_time > -.1)
           self.assertTrue(abs(input_time - expect_time) < .5)
           break
 
@@ -126,6 +146,8 @@ class RandomPlay(unittest.TestCase):
         print "No match at time: %f"%expect_time
 
       self.assertTrue(msg_match)
+
+    print "%f %f %f %f"%(max_early, max_late, avg_off, power)
 
     (o1,e1) = f1.communicate()    
     self.assertEqual(f1.returncode, 0)

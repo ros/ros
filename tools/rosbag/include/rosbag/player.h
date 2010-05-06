@@ -155,9 +155,6 @@ private:
 
     ros::NodeHandle node_handle_;
 
-    bool      started_;
-    ros::Time last_played_message_time_;
-    ros::Time last_played_wall_time_;
     bool      paused_;
 
     ros::WallTime paused_time_;

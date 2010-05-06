@@ -47,24 +47,7 @@ import os
 import threading
 import time
 
-import wxversion
-WXVER = '2.8'
-if wxversion.checkInstalled(WXVER):
-    wxversion.select(WXVER)
-else:
-    print >> sys.stderr, 'This application requires wxPython version %s' % WXVER
-    sys.exit(1)
 import wx
-
-# This is a crazy hack to get this to work on 64-bit systems
-if 'wxMac' in wx.PlatformInfo:
-    pass # Implement if necessary
-elif 'wxMSW' in wx.PlatformInfo:
-    pass # Implement if necessary
-elif 'wxGTK' in wx.PlatformInfo:
-    import ctypes
-    gdkLib = wx.lib.wxcairo._findGDKLib()
-    gdkLib.gdk_cairo_create.restype = ctypes.c_void_p
 import cairo
 
 from util.base_frame import BaseFrame

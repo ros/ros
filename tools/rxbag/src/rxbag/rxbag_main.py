@@ -50,6 +50,7 @@ else:
     print >> sys.stderr, 'This application requires wxPython version %s' % WXVER
     sys.exit(1)
 import wx
+import wx.lib.wxcairo
 
 # This is a crazy hack to get this to work on 64-bit systems
 if 'wxMac' in wx.PlatformInfo:

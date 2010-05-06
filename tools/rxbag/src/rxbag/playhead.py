@@ -35,13 +35,6 @@
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 
-import wxversion
-WXVER = '2.8'
-if wxversion.checkInstalled(WXVER):
-    wxversion.select(WXVER)
-else:
-    print >> sys.stderr, 'This application requires wxPython version %s' % WXVER
-    sys.exit(1)
 import wx
 
 from util.layer import TransparentLayer

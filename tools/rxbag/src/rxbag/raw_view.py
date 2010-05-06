@@ -40,13 +40,6 @@ import codecs
 import sys
 import time
 
-import wxversion
-WXVER = '2.8'
-if wxversion.checkInstalled(WXVER):
-    wxversion.select(WXVER)
-else:
-    print >> sys.stderr, 'This application requires wxPython version %s' % WXVER
-    sys.exit(1)
 import wx
 
 from message_view import TopicMessageView

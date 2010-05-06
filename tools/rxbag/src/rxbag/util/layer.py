@@ -33,7 +33,25 @@
 # Revision $Id$
 
 import time
+
+import wxversion
+WXVER = '2.8'
+if wxversion.checkInstalled(WXVER):
+    wxversion.select(WXVER)
+else:
+    print >> sys.stderr, 'This application requires wxPython version %s' % WXVER
+    sys.exit(1)
 import wx
+import wx.lib.wxcairo
+# This is a crazy hack to get this to work on 64-bit systems
+if 'wxMac' in wx.PlatformInfo:
+    pass # Implement if necessary
+elif 'wxMSW' in wx.PlatformInfo:
+    pass # Implement if necessary
+elif 'wxGTK' in wx.PlatformInfo:
+    import ctypes
+    gdkLib = wx.lib.wxcairo._findGDKLib()
+    gdkLib.gdk_cairo_create.restype = ctypes.c_void_p
 
 class Layer:
     name = 'Untitled'
@@ -92,11 +110,10 @@ class Layer:
         return x >= self._x and y >= self._y and x <= self.right and y <= self.bottom
 
     def invalidate(self):
-        self._dirty = True
+        self.parent.Refresh()
         
     def force_repaint(self):
-        self._dirty         = True
-        self._force_repaint = True
+        self.parent.Refresh()
 
     @property
     def x(self): return self._x
@@ -119,33 +136,7 @@ class Layer:
     # Painting
 
     def draw(self, dc):
-        if not self.self_paint:
-            dc.DrawBitmap(self.bitmap, self._x, self._y)
-
-    def should_repaint(self):
-        # Repaint if forced
-        if self._force_repaint:
-            return True
-        
-        # Don't repaint if the layer contents aren't dirty
-        if not self._dirty:
-            return False
-
-        # Don't repaint if it was repainted less than max_repaint seconds ago
-        if self.max_repaint and self._last_repaint and time.time() - self._last_repaint < self.max_repaint:
-            return False
-            
-        return True
-
-    def paint_to_bitmap(self):
-        dc = wx.MemoryDC()
-        dc.SelectObject(self.bitmap)
         self.paint(dc)
-        dc.SelectObject(wx.NullBitmap)
-
-        self._last_repaint  = time.time()
-        self._dirty         = False
-        self._force_repaint = False
 
 class TransparentLayer(Layer):
     TRANSPARENT_COLOR = wx.Colour(5, 5, 5) 
@@ -163,12 +154,14 @@ class TransparentLayer(Layer):
         self._transparent_bitmap = self._make_transparent(self.bitmap)
 
     def draw(self, dc):
-        if self._transparent_bitmap:
-            dc.DrawBitmap(self._transparent_bitmap, self.x, self.y, useMask=True)
+        self.paint(dc)
+        #if self._transparent_bitmap:
+        #    dc.DrawBitmap(self._transparent_bitmap, self.x, self.y, useMask=True)
 
     def paint(self, dc):
-        dc.SetBackground(wx.Brush(self.TRANSPARENT_COLOR, wx.SOLID))
-        dc.Clear()
+        pass
+        #dc.SetBackground(wx.Brush(self.TRANSPARENT_COLOR, wx.SOLID))
+        #dc.Clear()
 
     ## A bug in wxPython with transparent bitmaps: need to convert to/from Image to enable transparency.
     ## (see http://aspn.activestate.com/ASPN/Mail/Message/wxpython-users/3668628)
@@ -208,15 +201,11 @@ class LayerPanel(wx.Window):
         
         self.GetParent().Bind(wx.EVT_CLOSE, self.on_close)
 
-        # Repaint frequently
-        self.timer = wx.Timer(self)
-        self.timer.Start(milliseconds=100, oneShot=False)
+    @property
+    def width(self): return wx.Window.GetSize(self)[0]
 
     @property
-    def width(self): return self.bitmap.GetSize()[0]
-
-    @property
-    def height(self): return self.bitmap.GetSize()[1]
+    def height(self): return wx.Window.GetSize(self)[1]
 
     # Painting events
 
@@ -227,47 +216,24 @@ class LayerPanel(wx.Window):
         paint_layers = [layer for layer in self.layers if not layer.self_paint]
         if len(paint_layers) == 0:
             return
-        
-        # Compose all layers into a buffer
-        bitmap_dc = wx.MemoryDC()
-        bitmap_dc.SelectObject(self.bitmap)
-        bitmap_dc.SetBackground(self.background_brush)
-        bitmap_dc.Clear()
-        for layer in paint_layers:
-            layer.draw(bitmap_dc)
-        bitmap_dc.SelectObject(wx.NullBitmap)
 
-        # Draw buffer to the window
-        window_dc = wx.ClientDC(self)
-        window_dc.DrawBitmap(self.bitmap, 0, 0)
+        pdc = wx.PaintDC(self)
+        dc = wx.lib.wxcairo.ContextFromDC(pdc)
+        
+        dc.set_source_rgba(1, 1, 1, 1)
+        dc.rectangle(0, 0, self.width, self.height)
+        dc.fill()
+        
+        for layer in paint_layers:
+            layer.draw(dc)
 
     def on_timer(self, event):
-        if not self.bitmap:
-            return
-
-        # Find layers that need to be repainted
-        for layer in self.layers:
-            layer.check_dirty()
-        dirty_layers = [layer for layer in self.layers if layer.should_repaint()]
-
-        # If none are dirty, nothing to do
-        if len(dirty_layers) == 0:
-            return
-
-        # Repaint dirty layers
-        for layer in dirty_layers:
-            layer.paint_to_bitmap()
-
-        # Compose layers and blit to window 
-        self.paint()
+        self.Refresh()
 
     def on_size(self, event):
         size = self.GetClientSize()
-        if not self.bitmap or self.bitmap.GetSize() != size:
-            self.bitmap = wx.EmptyBitmap(*self.GetClientSize())
-            
-            for layer in self.layers:
-                layer.on_size(event)
+        for layer in self.layers:
+            layer.on_size(event)
 
     # Mouse events
 

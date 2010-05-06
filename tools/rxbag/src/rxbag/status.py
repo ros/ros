@@ -43,6 +43,17 @@ else:
     print >> sys.stderr, 'This application requires wxPython version %s' % WXVER
     sys.exit(1)
 import wx
+import wx.lib.wxcairo as wxcairo
+
+# This is a crazy hack to get this to work on 64-bit systems
+if 'wxMac' in wx.PlatformInfo:
+    pass # Implement if necessary
+elif 'wxMSW' in wx.PlatformInfo:
+    pass # Implement if necessary
+elif 'wxGTK' in wx.PlatformInfo:
+    import ctypes
+    gdkLib = wx.lib.wxcairo._findGDKLib()
+    gdkLib.gdk_cairo_create.restype = ctypes.c_void_p
 
 from util.layer import Layer
 from bag_helper import BagHelper
@@ -53,18 +64,11 @@ class StatusLayer(Layer):
         
         self.timeline = timeline
 
-        self.font       = wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
-        self.font_color = wx.Colour(0, 0, 0)
+        self.font = wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
 
     def paint(self, dc):
-        dc.SetBackground(self.timeline.background_brush)
-        dc.Clear()
-
         if not self.timeline.playhead:
             return
-
-        dc.SetFont(self.font)
-        dc.SetTextForeground(self.font_color)
 
         s = BagHelper.stamp_to_str(self.timeline.playhead)
         
@@ -87,6 +91,8 @@ class StatusLayer(Layer):
             s += ' ' + spd_str
 
         x = self.timeline.margin_left
-        y = self.timeline.history_top - dc.GetTextExtent(s)[1] - 4
+        y = self.timeline.history_top - dc.text_extents(s)[3] - 1
 
-        dc.DrawText(s, x, y)
+        dc.set_source_rgb(0, 0, 0)
+        dc.move_to(x, y)
+        dc.show_text(s)

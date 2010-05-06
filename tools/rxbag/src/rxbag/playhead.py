@@ -69,21 +69,25 @@ class PlayheadLayer(TransparentLayer):
         px, pw, ph = self.width / 2, self.pointer_size[0], self.pointer_size[1]
 
         # Draw line
-        dc.SetPen(self.pen)
-        dc.DrawLine(px, self.timeline.history_top, px, self.timeline.history_bottom + 3)
+        #dc.SetPen(self.pen)
+        dc.set_source_rgb(1, 0, 0)
+        dc.move_to(px, self.timeline.history_top)
+        dc.line_to(px, self.timeline.history_bottom + 3)
 
         # Draw upper triangle
         py = self.timeline.history_top - (ph + 1)
-        dc.DrawLineList([(px,      py + ph, px + pw, py),
-                         (px + pw, py,      px - pw, py),
-                         (px - pw, py,      px ,     py + ph)])
+        dc.move_to(px,      py + ph)
+        dc.line_to(px + pw, py)
+        dc.line_to(px - pw, py)
+        dc.line_to(px ,     py + ph)
 
         # Draw lower triangle
         py = self.timeline.history_bottom + 1
-        dc.DrawLineList([(px,      py,      px + pw, py + ph),
-                         (px + pw, py + ph, px - pw, py + ph),
-                         (px - pw, py + ph, px,      py)])
-        
+        dc.move_to(px,      py)
+        dc.line_to(px + pw, py + ph)
+        dc.line_to(px - pw, py + ph)
+        dc.line_to(px,      py)
+
     def on_size(self, event):
         self.resize(self.width, self.timeline.height)
         

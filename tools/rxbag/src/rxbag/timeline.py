@@ -327,7 +327,8 @@ class Timeline(Layer):
 
     def remove_view(self, topic, view):
         self.remove_listener(topic, view)
-        self.views.remove(view)
+        if view in self.views:
+            self.views.remove(view)
 
     def get_viewer_types(self, datatype):
         return [RawView] + self.viewer_types.get('*', []) + self.viewer_types.get(datatype, [])

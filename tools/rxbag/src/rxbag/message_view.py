@@ -54,7 +54,10 @@ class TimelineRenderer:
         return False
 
 class MessageView(Layer):
-    """A widget that can display message details""" 
+    """
+    A widget that can display message details
+    """
+     
     name = 'Untitled'
     
     def __init__(self, timeline, parent, title, x, y, width, height, max_repaint=None):
@@ -89,6 +92,7 @@ class TopicMessageView(MessageView):
         self.msg_index = None
         
     def on_close(self, event):
+        return
         self.timeline.remove_view(self.topic, self)
 
     def navigate_first(self):

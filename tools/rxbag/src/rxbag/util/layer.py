@@ -139,29 +139,9 @@ class TransparentLayer(Layer):
 
     def draw(self, dc):
         self.paint(dc)
-        #if self._transparent_bitmap:
-        #    dc.DrawBitmap(self._transparent_bitmap, self.x, self.y, useMask=True)
 
     def paint(self, dc):
         pass
-        #dc.SetBackground(wx.Brush(self.TRANSPARENT_COLOR, wx.SOLID))
-        #dc.Clear()
-
-    ## A bug in wxPython with transparent bitmaps: need to convert to/from Image to enable transparency.
-    ## (see http://aspn.activestate.com/ASPN/Mail/Message/wxpython-users/3668628)
-    def _make_transparent(self, bitmap):
-        image = bitmap.ConvertToImage()
-        if not image.HasAlpha():
-            image.InitAlpha()
-
-        w, h = image.GetWidth(), image.GetHeight()
-        for y in xrange(h):
-            for x in xrange(w):
-                pix = wx.Colour(image.GetRed(x, y), image.GetGreen(x, y), image.GetBlue(x, y))
-                if pix == self.TRANSPARENT_COLOR:
-                    image.SetAlpha(x, y, 0)
-
-        return image.ConvertToBitmap()
 
 class LayerPanel(wx.Window):
     def __init__(self, *args, **kwargs):

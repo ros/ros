@@ -230,10 +230,13 @@ class Timeline(Layer):
 
             def run(self):
                 self.last_frame, self.last_playhead = None, None
-                
-                while not self.stop_flag:
-                    wx.CallAfter(self.step)
-                    time.sleep(0.05)
+
+                try:
+                    while not self.stop_flag:
+                        wx.CallAfter(self.step)
+                        time.sleep(0.05)
+                except:
+                    pass
 
             def step(self):
                 if self.timeline.play_speed == 0.0:
@@ -327,8 +330,7 @@ class Timeline(Layer):
 
     def remove_view(self, topic, view):
         self.remove_listener(topic, view)
-        if view in self.views:
-            self.views.remove(view)
+        self.views.remove(view)
 
     def get_viewer_types(self, datatype):
         return [RawView] + self.viewer_types.get('*', []) + self.viewer_types.get(datatype, [])

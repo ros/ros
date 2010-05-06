@@ -48,17 +48,11 @@ class BaseFrame(wx.Frame):
         self._load_config()
         
         self.Bind(wx.EVT_CLOSE, self.on_close)
-        
-        BaseFrame.frames.add(self)
 
     def on_close(self, event):
-        try:
-            self._save_config()
+        self._save_config()
 
-            self.Destroy()
-        finally:
-            if self in BaseFrame.frames:
-                BaseFrame.frames.remove(self)
+        self.Destroy()
 
     ## Load position and size of the frame from config
     def _load_config(self):

@@ -84,18 +84,13 @@ class RxBagApp(wx.App):
             frame.Show()
             self.SetTopWindow(frame)
             
-            frame.Bind(wx.EVT_CLOSE, self.on_timeline_close)
+            frame.Bind(wx.EVT_CLOSE, lambda e: wx.Exit())
             
         except Exception, ex:
             rospy.logerr('Error initializing application: %s' % str(ex))
             raise
 
         return True
-    
-    def on_timeline_close(self, event):
-        for frame in list(util.base_frame.BaseFrame.frames):
-            if frame != self:
-                frame.Close()
 
 def connect_to_ros(node_name, init_timeout):
     # Attempt to connect to master node

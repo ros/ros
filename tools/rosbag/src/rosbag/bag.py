@@ -588,6 +588,17 @@ class Bag(object):
                 return
             yield entry
 
+    def _get_entries_reverse(self, connections=None, start_time=None, end_time=None):
+        """
+        Yield index entries on the given connections in the given time range in reverse order.
+        """
+        for entry, _ in _mergesort((reversed(index) for index in self._get_indexes(connections)), key=lambda entry: -entry.time.to_sec()):
+            if end_time and entry.time > end_time:
+                continue
+            if start_time and entry.time < start_time:
+                return
+            yield entry
+
     def _get_entry(self, t, connections=None):
         """
         Return the first index entry on/before time on the given connections

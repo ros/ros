@@ -36,9 +36,12 @@
 
 #include <iostream>
 
+#include <boost/format.hpp>
+
 #include <ros/ros.h>
 
 using std::string;
+using boost::format;
 using ros::Exception;
 
 namespace rosbag {
@@ -49,16 +52,15 @@ CompressionType UncompressedStream::getCompressionType() const {
     return compression::None;
 }
 
-size_t UncompressedStream::write(void* ptr, size_t size) {
+void UncompressedStream::write(void* ptr, size_t size) {
     size_t result = fwrite(ptr, 1, size, getFilePointer());
     if (result != size)
-        return false;
+        throw BagIOException((format("Error writing to file: writing %1% bytes, wrote %2% bytes") % size % result).str());
 
     advanceOffset(size);
-    return true;
 }
 
-size_t UncompressedStream::read(void* ptr, size_t size) {
+void UncompressedStream::read(void* ptr, size_t size) {
     size_t nUnused = (size_t) getUnusedLength();
     char* unused = getUnused();
 
@@ -79,10 +81,8 @@ size_t UncompressedStream::read(void* ptr, size_t size) {
 
             // Read the remaining data from the file
             int result = fread((char*) ptr + nUnused, 1, size, getFilePointer());
-            if ((size_t) result != size) {
-                ROS_ERROR("Error reading from file + unused: wanted %zd bytes, read %d bytes", size, result);
-                return nUnused + result;
-            }
+            if ((size_t) result != size)
+                throw BagIOException((format("Error reading from file + unused: wanted %1% bytes, read %2% bytes") % size % result).str());
 
             advanceOffset(size);
 
@@ -95,23 +95,19 @@ size_t UncompressedStream::read(void* ptr, size_t size) {
             setUnused(unused + size);
             setUnusedLength(nUnused - size);
         }
-
-        return size;
     }
     
     // No unused data - read from stream
     int result = fread(ptr, 1, size, getFilePointer());
     if ((size_t) result != size)
-        ROS_ERROR("Error reading from file: wanted %zd bytes, read %d bytes", size, result);
+        throw BagIOException((format("Error reading from file: wanted %1% bytes, read %2% bytes") % size % result).str());
 
     advanceOffset(size);
-
-    return result;
 }
 
 void UncompressedStream::decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len) {
     if (dest_len < source_len)
-        throw Exception("dest_len not large enough");
+        throw BagException("dest_len not large enough");
 
     memcpy(dest, source, source_len);
 }

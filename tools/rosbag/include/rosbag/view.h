@@ -54,17 +54,19 @@ class View
 public:
     //! An iterator that points to a MessageInstance from a bag
     /*!
-     * This iterator derefences to a MessageInstance by VALUE, since
-     * there does not actually exist a structure of MessageInstance
-     * from which to return a reference.
+     * This iterator stores the MessageInstance that it is returning a
+     * reference to.  If you increment the iterator that
+     * MessageInstance is destroyed.  You should never store the
+     * pointer to this reference.
      */
     class iterator : public boost::iterator_facade<iterator,
                                                    MessageInstance,
-                                                   boost::forward_traversal_tag,
-                                                   MessageInstance>
+                                                   boost::forward_traversal_tag>
     {
     public:
+        iterator(iterator const& i);
         iterator();
+        ~iterator();
 
     protected:
         iterator(View* view, bool end = false);
@@ -80,12 +82,13 @@ public:
 
         void increment();
 
-        MessageInstance dereference() const;
+        MessageInstance& dereference() const;
 
     private:
         View* view_;
         std::vector<ViewIterHelper> iters_;
         uint32_t view_revision_;
+        mutable MessageInstance* message_instance_;
     };
 
     typedef iterator const_iterator;
@@ -118,7 +121,7 @@ public:
 
     iterator begin();
     iterator end();
-    uint32_t size()  const;
+    uint32_t size();
 
     //! Add a query to a view
     /*!
@@ -150,6 +153,9 @@ protected:
     std::vector<MessageRange*> ranges_;
     std::vector<BagQuery*>     queries_;
     uint32_t                   view_revision_;
+
+    uint32_t size_cache_;
+    uint32_t size_revision_;
 };
 
 } // namespace rosbag

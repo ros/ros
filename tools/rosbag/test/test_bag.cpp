@@ -127,6 +127,32 @@ TEST_F(BagTest, append_works) {
     checkContents(filename);
 }
 
+TEST_F(BagTest, different_writes) {
+    std::string filename("/tmp/different_writes.bag");
+
+    rosbag::Bag b1;
+    b1.open(filename, rosbag::bagmode::Write | rosbag::bagmode::Read);
+
+    std_msgs::String msg1;
+    std_msgs::String::Ptr msg2 = boost::shared_ptr<std_msgs::String>(new std_msgs::String);
+    std_msgs::String::ConstPtr msg3 = boost::shared_ptr<std_msgs::String const>(new std_msgs::String);
+    
+    rosbag::View view;
+    view.addQuery(b1);
+
+    b1.write("t1", ros::Time::now(), msg1);
+    b1.write("t2", ros::Time::now(), msg2);
+    b1.write("t3", ros::Time::now(), msg3);
+    b1.write("t4", ros::Time::now(), *view.begin());
+
+    ASSERT_EQ(view.size(), 4);
+
+    b1.close();
+}
+
+
+
+
 TEST(rosbag, simple_write_and_read_works) {
     rosbag::Bag b1;
     b1.open("/tmp/simple_write_and_read_works.bag", rosbag::bagmode::Write);

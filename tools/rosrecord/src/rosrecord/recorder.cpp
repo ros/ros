@@ -32,8 +32,6 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  ********************************************************************/
 
-#include "rosrecord/Recorder.h"
-
 #include "rosrecord/constants.h"
 
 #include <iomanip>
@@ -43,6 +41,12 @@
 #include <boost/filesystem.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
+
+#undef ROSCPP_DEPRECATED
+#define ROSCPP_DEPRECATED
+#define IGNORE_ROSRECORD_DEPRECATED
+#include "rosrecord/Recorder.h"
+#undef ROSCPP_DEPRECATED
 
 using std::string;
 

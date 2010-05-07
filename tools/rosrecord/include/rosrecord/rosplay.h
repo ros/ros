@@ -41,13 +41,17 @@
 #include "ros/time.h"
 #include <string>
 
-#include "rosrecord/Player.h"
 #include "rosrecord/AnyMsg.h"
 #include "rosrecord/time_publisher.h"
 
 #include <unistd.h>
 #include <termios.h>
 
+// We know this is deprecated..
+#define IGNORE_ROSRECORD_DEPRECATED
+#undef ROSCPP_DEPRECATED
+#define ROSCPP_DEPRECATED
+#include "rosrecord/Player.h"
 
 class RosPlay
 {

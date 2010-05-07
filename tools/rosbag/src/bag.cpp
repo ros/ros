@@ -92,11 +92,19 @@ Bag::~Bag() {
 void Bag::open(string const& filename, uint32_t mode) {
     mode_ = (BagMode) mode;
 
-    switch (mode_) {
-    case bagmode::Read:   openRead(filename);   break;
-    case bagmode::Write:  openWrite(filename);  break;
-    case bagmode::Append: openAppend(filename); break;
-    default:
+    if (mode_ & bagmode::Append)
+    {
+      openAppend(filename);
+    }
+    else if (mode_ & bagmode::Write)
+    {
+      openWrite(filename);
+    }
+    else if (mode_ & bagmode::Read) {
+      openRead(filename);
+    }
+    else
+    {
         throw BagException((format("Unknown mode: %1%") % (int) mode).str());
     }
 
@@ -106,6 +114,7 @@ void Bag::open(string const& filename, uint32_t mode) {
     file_size_ = file_.getOffset();
     seek(offset);
 }
+
 
 void Bag::openRead(string const& filename) {
     if (!file_.openRead(filename))
@@ -151,7 +160,7 @@ void Bag::close() {
     if (!file_.isOpen())
         return;
 
-    if (mode_ == bagmode::Write || mode_ == bagmode::Append)
+    if (mode_ & bagmode::Write || mode_ & bagmode::Append)
     	closeWrite();
     
     // Unfortunately closing this possibly enormous file takes a while
@@ -411,6 +420,7 @@ void Bag::stopWritingChunk() {
 
     // Rewrite the chunk header with the size of the chunk (remembering current offset)
     uint64_t end_of_chunk_pos = file_.getOffset();
+
     seek(curr_chunk_info_.pos);
     writeChunkHeader(compression_, compressed_size, uncompressed_size);
 

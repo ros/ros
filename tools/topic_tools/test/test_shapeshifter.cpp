@@ -107,6 +107,8 @@ TEST_F(ShapeShifterSubscriber, testInstantiateString)
     ros::spinOnce();
   }
 
+  EXPECT_FALSE(topic_tools::ShapeShifter::uses_old_API_);
+
   if(success)
     SUCCEED();
   else
@@ -125,6 +127,8 @@ TEST_F(ShapeShifterSubscriber, testInstantiateInt)
     ros::WallDuration(0.01).sleep();
     ros::spinOnce();
   }
+
+  EXPECT_FALSE(topic_tools::ShapeShifter::uses_old_API_);
 
   if(success)
     SUCCEED();
@@ -149,6 +153,8 @@ TEST_F(ShapeShifterSubscriber, testLoopback)
     ros::WallDuration(0.01).sleep();
     ros::spinOnce();
   }
+
+  EXPECT_FALSE(topic_tools::ShapeShifter::uses_old_API_);
 
   if(success)
     SUCCEED();

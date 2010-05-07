@@ -121,6 +121,7 @@ public:
      * \param topic The topic name
      * \param time  Timestamp of the message
      * \param msg   The message to be added
+     * \param connection_header  A connection header.
      *
      * Can throw BagNotOpenException or BagIOException
      */
@@ -133,24 +134,27 @@ public:
      * \param topic The topic name
      * \param time  Timestamp of the message
      * \param msg   The message to be added
+     * \param connection_header  A connection header.
      *
      * Can throw BagNotOpenException or BagIOException
      */
     template<class T>
-    void write(std::string const& topic, ros::Time const& time, T& msg,
+    void write(std::string const& topic, ros::Time const& time, boost::shared_ptr<T const> const& msg,
                boost::shared_ptr<ros::M_string> connection_header = boost::shared_ptr<ros::M_string>());
 
     //! Write a message into the bag file
     /*!
      * \param topic The topic name
      * \param time  Timestamp of the message
-     * \param msg   A MessageInstance
+     * \param msg   The message to be added
      * \param connection_header  A connection header.
      *
      * Can throw BagNotOpenException or BagIOException
      */
-    void write(std::string const& topic, ros::Time const& time, MessageInstance const& msg,
-			   boost::shared_ptr<ros::M_string> connection_header = boost::shared_ptr<ros::M_string>());
+    template<class T>
+    void write(std::string const& topic, ros::Time const& time, boost::shared_ptr<T> const& msg,
+               boost::shared_ptr<ros::M_string> connection_header = boost::shared_ptr<ros::M_string>());
+
 
     void dump();
 
@@ -166,7 +170,7 @@ private:
     void closeWrite();
 
     template<class T>
-    boost::shared_ptr<T const> instantiateBuffer(IndexEntry const& index_entry) const;  //!< deserializes the message held in record_buffer_
+    boost::shared_ptr<T> instantiateBuffer(IndexEntry const& index_entry) const;  //!< deserializes the message held in record_buffer_
 
     void startWriting();
     void stopWriting();
@@ -316,8 +320,13 @@ void Bag::write(std::string const& topic, ros::Time const& time, T const& msg, b
 }
 
 template<class T>
-void Bag::write(std::string const& topic, ros::Time const& time, T& msg, boost::shared_ptr<ros::M_string> connection_header) {
-    doWrite(topic, time, msg, connection_header);
+void Bag::write(std::string const& topic, ros::Time const& time, boost::shared_ptr<T const> const& msg, boost::shared_ptr<ros::M_string> connection_header) {
+    doWrite(topic, time, *msg, connection_header);
+}
+
+template<class T>
+void Bag::write(std::string const& topic, ros::Time const& time, boost::shared_ptr<T> const& msg, boost::shared_ptr<ros::M_string> connection_header) {
+    doWrite(topic, time, *msg, connection_header);
 }
 
 template<typename T>
@@ -353,82 +362,93 @@ void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& strea
 }
 
 template<class T>
-boost::shared_ptr<T const> Bag::instantiateBuffer(IndexEntry const& index_entry) const {
-	switch (version_)
+boost::shared_ptr<T> Bag::instantiateBuffer(IndexEntry const& index_entry) const {
+    switch (version_)
+    {
+    case 200:
 	{
-	case 200:
-	{
-        decompressChunk(index_entry.chunk_pos);
+            decompressChunk(index_entry.chunk_pos);
 
-        // Read the message header
-        ros::Header header;
-        uint32_t data_size;
-        uint32_t bytes_read;
-        readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
+            // Read the message header
+            ros::Header header;
+            uint32_t data_size;
+            uint32_t bytes_read;
+            readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
 
-        // Read the connection id from the header
-        uint32_t connection_id;
-        readField(*header.getValues(), CONNECTION_FIELD_NAME, true, &connection_id);
+            // Read the connection id from the header
+            uint32_t connection_id;
+            readField(*header.getValues(), CONNECTION_FIELD_NAME, true, &connection_id);
 
-        std::map<uint32_t, ConnectionInfo*>::const_iterator connection_iter = connections_.find(connection_id);
-        if (connection_iter == connections_.end())
+            std::map<uint32_t, ConnectionInfo*>::const_iterator connection_iter = connections_.find(connection_id);
+            if (connection_iter == connections_.end())
         	throw BagFormatException((boost::format("Unknown connection ID: %1%") % connection_id).str());
-        ConnectionInfo* connection_info = connection_iter->second;
+            ConnectionInfo* connection_info = connection_iter->second;
 
-        boost::shared_ptr<T> p = boost::shared_ptr<T>(new T());
+            boost::shared_ptr<T> p = boost::shared_ptr<T>(new T());
 
-        // Set the connection header (if this is a ros::Message)
-        ros::assignSubscriptionConnectionHeader<T>(p.get(), connection_info->header);
+            // Set the connection header (if this is a ros::Message)
+            ros::assignSubscriptionConnectionHeader<T>(p.get(), connection_info->header);
 
-        // Deserialize the message
-        ros::serialization::IStream s(current_buffer_->getData() + index_entry.offset + bytes_read, data_size);
-        ros::serialization::deserialize(s, *p);
+            ros::serialization::PreDeserializeParams<T> predes_params;
+            predes_params.message = p;
+            predes_params.connection_header = connection_info->header;
+            ros::serialization::PreDeserialize<T>::notify(predes_params);
 
-        return p;
+            // Deserialize the message
+            ros::serialization::IStream s(current_buffer_->getData() + index_entry.offset + bytes_read, data_size);
+            ros::serialization::deserialize(s, *p);
+
+
+            return p;
 	}
-	case 102:
+    case 102:
 	{
-		// Read the message record
-        ros::Header header;
-    	loadMessageDataRecord102(index_entry.chunk_pos, header);
+            // Read the message record
+            ros::Header header;
+            loadMessageDataRecord102(index_entry.chunk_pos, header);
 
-    	ros::M_string& fields = *header.getValues();
+            ros::M_string& fields = *header.getValues();
 
-        // Read the connection id from the header
-        std::string topic, latching("0"), callerid;
-        readField(fields, TOPIC_FIELD_NAME,    true,  topic);
-        readField(fields, LATCHING_FIELD_NAME, false, latching);
-        readField(fields, CALLERID_FIELD_NAME, false, callerid);
+            // Read the connection id from the header
+            std::string topic, latching("0"), callerid;
+            readField(fields, TOPIC_FIELD_NAME,    true,  topic);
+            readField(fields, LATCHING_FIELD_NAME, false, latching);
+            readField(fields, CALLERID_FIELD_NAME, false, callerid);
 
-        std::map<std::string, uint32_t>::const_iterator topic_conn_id_iter = topic_connection_ids_.find(topic);
-        if (topic_conn_id_iter == topic_connection_ids_.end())
+            std::map<std::string, uint32_t>::const_iterator topic_conn_id_iter = topic_connection_ids_.find(topic);
+            if (topic_conn_id_iter == topic_connection_ids_.end())
         	throw BagFormatException((boost::format("Unknown topic: %1%") % topic).str());
-        uint32_t connection_id = topic_conn_id_iter->second;
+            uint32_t connection_id = topic_conn_id_iter->second;
 
-        std::map<uint32_t, ConnectionInfo*>::const_iterator connection_iter = connections_.find(connection_id);
-        if (connection_iter == connections_.end())
+            std::map<uint32_t, ConnectionInfo*>::const_iterator connection_iter = connections_.find(connection_id);
+            if (connection_iter == connections_.end())
         	throw BagFormatException((boost::format("Unknown connection ID: %1%") % connection_id).str());
-        ConnectionInfo* connection_info = connection_iter->second;
+            ConnectionInfo* connection_info = connection_iter->second;
 
-        boost::shared_ptr<T> p = boost::shared_ptr<T>(new T());
+            boost::shared_ptr<T> p = boost::shared_ptr<T>(new T());
 
-        // Create a new connection header, updated with the latching and callerid values
-        boost::shared_ptr<ros::M_string> message_header(new ros::M_string);
-        for (ros::M_string::const_iterator i = connection_info->header->begin(); i != connection_info->header->end(); i++)
+            // Create a new connection header, updated with the latching and callerid values
+            boost::shared_ptr<ros::M_string> message_header(new ros::M_string);
+            for (ros::M_string::const_iterator i = connection_info->header->begin(); i != connection_info->header->end(); i++)
         	(*message_header)[i->first] = i->second;
-        (*message_header)["latching"] = latching;
-        (*message_header)["callerid"] = callerid;
+            (*message_header)["latching"] = latching;
+            (*message_header)["callerid"] = callerid;
 
-        // Set the connection header (if this is a ros::Message)
-        ros::assignSubscriptionConnectionHeader<T>(p.get(), message_header);
+            // Set the connection header (if this is a ros::Message)
+            ros::assignSubscriptionConnectionHeader<T>(p.get(), message_header);
 
-        // Deserialize the message
-        ros::serialization::IStream s(record_buffer_.getData(), record_buffer_.getSize());
-        ros::serialization::deserialize(s, *p);
+            ros::serialization::PreDeserializeParams<T> predes_params;
+            predes_params.message = p;
+            predes_params.connection_header = message_header;
+            ros::serialization::PreDeserialize<T>::notify(predes_params);
 
-        return p;
+            // Deserialize the message
+            ros::serialization::IStream s(record_buffer_.getData(), record_buffer_.getSize());
+            ros::serialization::deserialize(s, *p);
+
+            return p;
 	}
-	default:
+    default:
         throw BagFormatException((boost::format("Unhandled version: %1%") % version_).str());
     }
 }
@@ -475,6 +495,7 @@ void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg,
 
         // Seek to the end of the file (needed in case previous operation was a read)
         //! \todo only do when necessary
+      ROS_DEBUG("Seeking for write...");
         seek(0, std::ios::end);
         file_size_ = file_.getOffset();
 
@@ -550,14 +571,21 @@ void Bag::writeMessageDataRecord(uint32_t conn_id, ros::Time const& time, T cons
     
     ros::serialization::OStream s(record_buffer_.getData(), msg_ser_len);
 
-    // TODO: with a little work here we can serialize directly into the file
+    // TODO: If we are clever here, we can serialize into the outgoing_chunk_buffer and get
+    // rid of the record_buffer_ altogether
+    ROS_DEBUG("SERIALIZE");
     ros::serialization::serialize(s, msg);
+
+    // We do an extra seek here since writing our data record may
+    // have indirectly moved our file-pointer if it was a
+    // MessageInstance for our own bag
+      ROS_DEBUG("Seeking for write2...");
+    seek(0, std::ios::end);
+    file_size_ = file_.getOffset();
+
 
     ROS_DEBUG("Writing MSG_DATA [%llu:%d]: conn=%d sec=%d nsec=%d data_len=%d",
               (unsigned long long) file_.getOffset(), getChunkOffset(), conn_id, time.sec, time.nsec, msg_ser_len);
-
-    // TODO: If we are clever here, we can serialize into the outgoing_chunk_buffer and get
-    // rid of the record_buffer_ altogether
 
     writeHeader(header);
     writeDataLength(msg_ser_len);

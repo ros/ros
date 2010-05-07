@@ -227,13 +227,13 @@ void Recorder::doQueue(topic_tools::ShapeShifter::ConstPtr msg, string const& to
         boost::mutex::scoped_lock lock(queue_mutex_);
 
         queue_->push(out);
-        queue_size_ += out.msg->msgBufUsed;
+        queue_size_ += out.msg->size();
         
         // Check to see if buffer has been exceeded
         while (max_queue_size_ > 0 && queue_size_ > max_queue_size_) {
             OutgoingMessage drop = queue_->front();
             queue_->pop();
-            queue_size_ -= drop.msg->msgBufUsed;
+            queue_size_ -= drop.msg->size();
 
             if (!options_.snapshot) {
                 Time now = Time::now();
@@ -348,7 +348,7 @@ void Recorder::doRecord() {
 
         OutgoingMessage out = queue_->front();
         queue_->pop();
-        queue_size_ -= out.msg->msgBufUsed;
+        queue_size_ -= out.msg->size();
         
         lock.release()->unlock();
 

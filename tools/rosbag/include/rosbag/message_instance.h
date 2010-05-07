@@ -83,7 +83,7 @@ public:
      * returns NULL pointer if incompatible
      */
     template<class T>
-    boost::shared_ptr<T const> instantiate() const;
+    boost::shared_ptr<T> instantiate() const;
   
     //! Write serialized message contents out to a stream
     template<typename Stream>
@@ -164,9 +164,9 @@ bool MessageInstance::isType() const {
 }
 
 template<class T>
-boost::shared_ptr<T const> MessageInstance::instantiate() const {
+boost::shared_ptr<T> MessageInstance::instantiate() const {
     if (!isType<T>())
-        return boost::shared_ptr<T const>();
+        return boost::shared_ptr<T>();
 
     return bag_->instantiateBuffer<T>(index_entry_);
 }

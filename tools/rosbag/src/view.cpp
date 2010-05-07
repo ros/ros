@@ -43,12 +43,20 @@ namespace rosbag {
 
 // View::iterator
 
-View::iterator::iterator() : view_(NULL), view_revision_(-1) { }
+View::iterator::iterator() : view_(NULL), view_revision_(0), message_instance_(NULL) { }
 
-View::iterator::iterator(View* view, bool end) : view_(view), view_revision_(-1) {
+View::iterator::~iterator()
+{
+  if (message_instance_ != NULL)
+    delete message_instance_;
+}
+
+View::iterator::iterator(View* view, bool end) : view_(view), view_revision_(0), message_instance_(NULL) {
     if (view != NULL && !end)
         populate();
 }
+
+View::iterator::iterator(const iterator& i) : view_(i.view_), iters_(i.iters_), view_revision_(i.view_revision_), message_instance_(NULL) { }
 
 void View::iterator::populate() {
     ROS_ASSERT(view_ != NULL);
@@ -95,6 +103,13 @@ bool View::iterator::equal(View::iterator const& other) const {
 void View::iterator::increment() {
     ROS_ASSERT(view_ != NULL);
 
+    // Our message instance is no longer valid
+    if (message_instance_ != NULL)
+    {
+      delete message_instance_;
+      message_instance_ = NULL;
+    }
+
     view_->update();
 
     // Note, updating may have blown awway our message-ranges and
@@ -111,17 +126,20 @@ void View::iterator::increment() {
 }
 
 //! \todo some check in case we are at end
-MessageInstance View::iterator::dereference() const {
+MessageInstance& View::iterator::dereference() const {
     ROS_ASSERT(iters_.size() > 0);
 
     ViewIterHelper const& i = iters_.back();
 
-    return MessageInstance(i.range->connection_info, *(i.iter), *(i.range->bag_query->bag));
+    if (message_instance_ == NULL)
+      message_instance_ = new MessageInstance(i.range->connection_info, *(i.iter), *(i.range->bag_query->bag));
+
+    return *message_instance_;
 }
 
 // View
 
-View::View() : view_revision_(0) { }
+View::View() : view_revision_(0), size_cache_(0), size_revision_(0) { }
 
 View::View(Bag const& bag, ros::Time const& start_time, ros::Time const& end_time) : view_revision_(0) {
 	addQuery(bag, start_time, end_time);
@@ -147,8 +165,24 @@ View::iterator View::begin() {
 //! Default constructed iterator signifies end
 View::iterator View::end() { return iterator(this, true); }
 
-//! \todo: this doesn't work for now
-uint32_t View::size() const { return 0; }
+uint32_t View::size() { 
+
+  update();
+
+  if (size_revision_ != view_revision_)
+  {
+    size_cache_ = 0;
+
+    foreach (MessageRange* range, ranges_)
+    {
+      size_cache_ += std::distance(range->begin, range->end);
+    }
+
+    size_revision_ = view_revision_;
+  }
+
+  return size_cache_;
+}
 
 void View::addQuery(Bag const& bag, ros::Time const& start_time, ros::Time const& end_time) {
 	boost::function<bool(ConnectionInfo const*)> query = TrueQuery();

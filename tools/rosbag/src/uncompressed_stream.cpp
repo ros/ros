@@ -80,7 +80,7 @@ size_t UncompressedStream::read(void* ptr, size_t size) {
             // Read the remaining data from the file
             int result = fread((char*) ptr + nUnused, 1, size, getFilePointer());
             if ((size_t) result != size) {
-                ROS_ERROR("Error reading from file: wanted %zd bytes, read %d bytes", size, result);
+                ROS_ERROR("Error reading from file + unused: wanted %zd bytes, read %d bytes", size, result);
                 return nUnused + result;
             }
 
@@ -98,7 +98,7 @@ size_t UncompressedStream::read(void* ptr, size_t size) {
 
         return size;
     }
-
+    
     // No unused data - read from stream
     int result = fread(ptr, 1, size, getFilePointer());
     if ((size_t) result != size)

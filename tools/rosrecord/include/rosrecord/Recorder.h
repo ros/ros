@@ -32,6 +32,10 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
+#ifndef IGNORE_ROSRECORD_DEPRECATED
+#warning rosrecord/Recorder.h has been deprecated
+#endif
+
 #ifndef ROSRECORDRECORDER_H
 #define ROSRECORDRECORDER_H
 
@@ -58,7 +62,7 @@ typedef unsigned long long pos_t;
 class Recorder
 {
 public:
-  Recorder();
+  ROSCPP_DEPRECATED Recorder();
   virtual ~Recorder();
 
   bool open(const std::string& file_name, bool random_access=false);

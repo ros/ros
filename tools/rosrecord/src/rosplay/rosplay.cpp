@@ -497,6 +497,8 @@ int main(int argc, char **argv)
 
   ros::init(argc, argv, "rosplay", ros::init_options::AnonymousName);
 
+  ROS_WARN("Rosplay has been deprecated.  Please use 'rosbag play' instead\n");
+
   try
   {
     RosPlay rp(argc, argv);

@@ -59,7 +59,7 @@ ChunkedFile::~ChunkedFile() {
 }
 
 bool ChunkedFile::openReadWrite(string const& filename) { return open(filename, "r+b"); }
-bool ChunkedFile::openWrite    (string const& filename) { return open(filename, "wb");  }
+bool ChunkedFile::openWrite    (string const& filename) { return open(filename, "w+b");  }
 bool ChunkedFile::openRead     (string const& filename) { return open(filename, "rb");  }
 
 bool ChunkedFile::open(string const& filename, string const& mode) {
@@ -217,7 +217,7 @@ uint32_t ChunkedFile::getCompressedBytesIn() const { return compressed_in_; }
 
 size_t ChunkedFile::write(string const& s)        { return write((void*) s.c_str(), s.size()); }
 size_t ChunkedFile::write(void* ptr, size_t size) { return write_stream_->write(ptr, size);    }
-size_t ChunkedFile::read(void* ptr, size_t size)  { return read_stream_->read(ptr, size);      }
+size_t ChunkedFile::read(void* ptr, size_t size)  { return read_stream_->read(ptr, size); }
 
 bool ChunkedFile::truncate(uint64_t length) {
     int fd = fileno(file_);

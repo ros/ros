@@ -32,6 +32,10 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
+#ifndef IGNORE_ROSRECORD_DEPRECATED
+#warning rosrecord/Player.h has been deprecated
+#endif
+
 #ifndef ROSRECORDPLAYER_H
 #define ROSRECORDPLAYER_H
 
@@ -69,7 +73,7 @@ class Player
     };
 
 public:
-    Player(double time_scale=1.0) //time_scale_(time_scale)
+    ROSCPP_DEPRECATED Player(double time_scale=1.0) //time_scale_(time_scale)
     {
         translator_.setTimeScale(time_scale);
     }

@@ -577,19 +577,19 @@ class Bag(object):
 
     def _get_entry(self, t, connections=None):
         """
-        Return the first index entry on/after time on the given connections
+        Return the first index entry on/before time on the given connections
         """
         indexes = self._get_indexes(connections)
 
         entry = _IndexEntry(t)
 
         first_entry = None
-        
+
         for index in indexes:
-            i = bisect.bisect_right(index, entry)
+            i = bisect.bisect_left(index, entry)
             if i < len(index):
                 index_entry = index[i]
-                if first_entry is None or index_entry < first_entry:
+                if first_entry is None or index_entry > first_entry:
                     first_entry = index_entry
                     
         return first_entry
@@ -996,8 +996,11 @@ class _ChunkHeader(object):
         self.data_pos          = data_pos
 
     def __str__(self):
-        ratio = 100 * (float(self.compressed_size) / self.uncompressed_size)
-        return 'compression: %s, size: %d, uncompressed: %d (%.2f%%)' % (self.compression, self.compressed_size, self.uncompressed_size, ratio)
+        if self.uncompressed_size > 0:
+            ratio = 100 * (float(self.compressed_size) / self.uncompressed_size)
+            return 'compression: %s, size: %d, uncompressed: %d (%.2f%%)' % (self.compression, self.compressed_size, self.uncompressed_size, ratio)
+        else:
+            return 'compression: %s, size: %d, uncompressed: %d' % (self.compression, self.compressed_size, self.uncompressed_size)
 
 class _IndexEntry(object):
     def __init__(self, time):
@@ -1530,8 +1533,15 @@ class _BagReader200(_BagReader):
             if feedback:
                 yield chunk_pos
             
+            op = _peek_next_header_op(f)
+            
             # Read the chunk header and remember it
             chunk_header = self.read_chunk_header()
+            
+            # If the chunk header size is 0, then the chunk wasn't correctly terminated - we're done
+            if chunk_header.compressed_size == 0:
+                break
+            
             self.bag._chunk_headers[chunk_pos] = chunk_header
 
             if chunk_header.compression == Compression.NONE:
@@ -1599,9 +1609,8 @@ class _BagReader200(_BagReader):
 
             self.bag._chunks.append(self._curr_chunk_info)
 
-            # Skip over index records
-            # todo: skip over connection records and chunk info records at the end of the file
-            while _peek_next_header_op(f) == _OP_INDEX_DATA:
+            # Skip over index records, connection records and chunk info records at the end of the file
+            while _peek_next_header_op(f) != _OP_CHUNK:
                 _skip_record(f)
                 
                 if f.tell() >= total_bytes:
@@ -1716,7 +1725,7 @@ class _BagReader200(_BagReader):
         uncompressed_size = _read_uint32_field(header, 'size')
 
         compressed_size = _read_uint32(self.bag._file)  # read the record data size
-
+        
         data_pos = self.bag._file.tell()
 
         return _ChunkHeader(compression, compressed_size, uncompressed_size, data_pos)

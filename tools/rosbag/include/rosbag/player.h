@@ -112,7 +112,6 @@ public:
 
     bool horizonReached();
 
-    
 private:
     bool do_publish_;
     
@@ -152,7 +151,12 @@ private:
 
     void doPublish(rosbag::MessageInstance const& m);
 
+    void printTime();
+    
+
+
 private:
+
     PlayerOptions options_;
 
     ros::NodeHandle node_handle_;

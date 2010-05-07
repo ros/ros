@@ -157,6 +157,8 @@ void Player::publish() {
     options_.advertise_sleep.sleep();
     std::cout << " done." << std::endl;
 
+    std::cout << std::endl << "Hit space to toggle paused, or 's' to step." << std::endl;
+
     // Set up our time_translator and publishers
 
     time_translator_.setTimeScale(options_.time_scale);
@@ -181,6 +183,17 @@ void Player::publish() {
     std::cout << std::endl << "Done." << std::endl;
     
     ros::shutdown();
+}
+
+void Player::printTime()
+{
+  if (!options_.quiet) {
+    if (paused_)
+      printf("\r[PAUSED] Real Time: %16.6f    Bag Time: %16.6f\r", ros::Time::now().toSec(), time_publisher_.getTime().toSec());
+    else
+      printf("\r         Real Time: %16.6f    Bag Time: %16.6f\r", ros::Time::now().toSec(), time_publisher_.getTime().toSec());
+    fflush(stdout);
+  }
 }
 
 void Player::doPublish(MessageInstance const& m) {
@@ -215,7 +228,6 @@ void Player::doPublish(MessageInstance const& m) {
                 paused_ = !paused_;
                 if (paused_) {
                     paused_time_ = ros::WallTime::now();
-                    std::cout << std::endl << "Hit space to resume, or 's' to step." << std::endl;
                 }
                 else
                 {
@@ -226,8 +238,6 @@ void Player::doPublish(MessageInstance const& m) {
 
                     horizon += shift;
                     time_publisher_.setWCHorizon(horizon);
-                    
-                    std::cout << std::endl << "Hit space to pause." << std::endl;
                 }
                 break;
             case 's':
@@ -243,25 +253,24 @@ void Player::doPublish(MessageInstance const& m) {
                     time_publisher_.setWCHorizon(horizon);
             
                     (pub_iter->second).publish(m);
+
+                    printTime();
                     return;
                 }
                 break;
             case EOF:
                 if (paused_)
+                {
                     time_publisher_.runStalledClock(ros::WallDuration(.01));
+                    printTime();
+                }
                 else
                     charsleftorpaused = false;
             }
         }
 
-        // Print out time
-        ros::WallTime t = ros::WallTime::now();
-        if (!options_.quiet) {
-            printf(" Real Time: %16.6f    Bag Time: %16.6f\r", ros::Time::now().toSec(), time_publisher_.getTime().toSec());
-            fflush(stdout);
-        }
-
         time_publisher_.runClock(ros::WallDuration(.1));
+        printTime();
     }
 
     pub_iter->second.publish(m);

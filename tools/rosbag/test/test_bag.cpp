@@ -65,8 +65,6 @@ protected:
     }
 
     void dumpContents(rosbag::Bag& b) {
-        b.dump();
-
         rosbag::View view(b);
         foreach(rosbag::MessageInstance m, view)
             std::cout << m.getTime() << ": [" << m.getTopic() << "]" << std::endl;
@@ -116,13 +114,11 @@ TEST_F(BagTest, append_works) {
     b1.open(filename, rosbag::bagmode::Write);
     b1.write("chatter", ros::Time::now(), foo_);
     b1.close();
-    dumpContents(b1);
 
     rosbag::Bag b2;
     b2.open(filename, rosbag::bagmode::Append);
     b2.write("numbers", ros::Time::now(), i_);
     b2.close();
-    dumpContents(b2);
 
     checkContents(filename);
 }
@@ -150,12 +146,20 @@ TEST_F(BagTest, different_writes) {
     b1.close();
 }
 
-
-
+TEST_F(BagTest, bag_not_open_fails) {
+    rosbag::Bag b;
+    try
+    {
+        b.write("/test", ros::Time::now(), foo_);
+        FAIL();
+    }
+    catch (rosbag::BagIOException ex) {
+        SUCCEED();
+    }
+}
 
 TEST(rosbag, simple_write_and_read_works) {
-    rosbag::Bag b1;
-    b1.open("/tmp/simple_write_and_read_works.bag", rosbag::bagmode::Write);
+    rosbag::Bag b1("/tmp/simple_write_and_read_works.bag", rosbag::bagmode::Write);
 
     std_msgs::String str;
     str.data = std::string("foo");
@@ -168,8 +172,7 @@ TEST(rosbag, simple_write_and_read_works) {
 
     b1.close();
 
-    rosbag::Bag b2;
-    b2.open("/tmp/simple_write_and_read_works.bag", rosbag::bagmode::Read);
+    rosbag::Bag b2("/tmp/simple_write_and_read_works.bag", rosbag::bagmode::Read);
 
     std::vector<std::string> topics;
     topics.push_back(std::string("chatter"));
@@ -187,6 +190,43 @@ TEST(rosbag, simple_write_and_read_works) {
     }
 
     b2.close();
+}
+
+TEST(rosbag, write_then_read_without_read_mode_fails) {
+    rosbag::Bag b("/tmp/write_then_read_without_read_mode_fails.bag", rosbag::bagmode::Write);
+    std_msgs::String str;
+    str.data = std::string("foo");
+    b.write("chatter", ros::Time::now(), str);
+
+    try
+    {
+        rosbag::View view(b);
+        foreach(rosbag::MessageInstance const m, view) {
+            std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
+            if (s != NULL)
+                ASSERT_EQ(s->data, std::string("foo"));
+        }
+        FAIL();
+    }
+    catch (rosbag::BagException ex) {
+        SUCCEED();
+    }
+}
+
+TEST_F(BagTest, read_then_write_without_write_mode_fails) {
+    rosbag::Bag b1("/tmp/read_then_write_without_write_mode_fails.bag", rosbag::bagmode::Write);
+    b1.write("chatter", ros::Time::now(), foo_);
+    b1.close();
+
+    rosbag::Bag b2("/tmp/read_then_write_without_write_mode_fails.bag", rosbag::bagmode::Read);
+    try
+    {
+        b2.write("chatter", ros::Time::now(), foo_);
+        FAIL();
+    }
+    catch (rosbag::BagException ex) {
+        SUCCEED();
+    }
 }
 
 TEST(rosbag, time_query_works) {
@@ -262,11 +302,8 @@ TEST(rosbag, topic_query_works) {
 }
 
 TEST(rosbag, multiple_bag_works) {
-    rosbag::Bag outbag1;
-    outbag1.open("/tmp/multiple_bag_works1.bag", rosbag::bagmode::Write);
-
-    rosbag::Bag outbag2;
-    outbag2.open("/tmp/multiple_bag_works2.bag", rosbag::bagmode::Write);
+    rosbag::Bag outbag1("/tmp/multiple_bag_works1.bag", rosbag::bagmode::Write);
+    rosbag::Bag outbag2("/tmp/multiple_bag_works2.bag", rosbag::bagmode::Write);
 
     std_msgs::Int32 imsg;
     for (int i = 0; i < 1000; i++) {
@@ -283,11 +320,8 @@ TEST(rosbag, multiple_bag_works) {
     outbag1.close();
     outbag2.close();
 
-    rosbag::Bag bag1;
-    bag1.open("/tmp/multiple_bag_works1.bag", rosbag::bagmode::Read);
-
-    rosbag::Bag bag2;
-    bag2.open("/tmp/multiple_bag_works2.bag", rosbag::bagmode::Read);
+    rosbag::Bag bag1("/tmp/multiple_bag_works1.bag", rosbag::bagmode::Read);
+    rosbag::Bag bag2("/tmp/multiple_bag_works2.bag", rosbag::bagmode::Read);
 
     rosbag::View view;
     view.addQuery(bag1);
@@ -372,8 +406,7 @@ TEST(rosbag, modify_view_works) {
 }
 
 TEST(rosbag, modify_bag_works) {
-    rosbag::Bag rwbag;
-    rwbag.open("/tmp/modify_bag_works.bag", rosbag::bagmode::Write);// | rosbag::bagmode::Read);
+    rosbag::Bag rwbag("/tmp/modify_bag_works.bag", rosbag::bagmode::Write | rosbag::bagmode::Read);
 
     std::vector<std::string> t0 = boost::assign::list_of("t0");
 

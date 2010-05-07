@@ -153,6 +153,40 @@ View::~View() {
         delete query;
 }
 
+
+ros::Time View::getBeginTime()
+{
+  update();
+
+  ros::Time begin = ros::TIME_MAX;
+
+  foreach (rosbag::MessageRange* range, ranges_)
+  {
+    if (range->begin->time < begin)
+      begin = range->begin->time;
+  }
+
+  return begin;
+}
+
+ros::Time View::getEndTime()
+{
+  update();
+
+  ros::Time end = ros::TIME_MIN;
+
+  foreach (rosbag::MessageRange* range, ranges_)
+  {
+    std::multiset<IndexEntry>::const_iterator e = range->end;
+    e--;
+
+    if (e->time > end)
+      end = e->time;
+  }
+
+  return end;
+}
+
 //! Simply copy the merge_queue state into the iterator
 View::iterator View::begin() {
     update();

@@ -111,15 +111,6 @@ void Player::publish() {
         }
     }
 
-    if (!options_.at_once) {
-        if (options_.start_paused) {
-            paused_ = true;
-            std::cout << "Hit space to resume, or 's' to step." << std::endl;
-        }
-        else
-            std::cout << "Hit space to pause." << std::endl;
-    }
-
     setupTerminal();
 
     if (!node_handle_.ok())
@@ -162,15 +153,25 @@ void Player::publish() {
     // Set up our time_translator and publishers
 
     time_translator_.setTimeScale(options_.time_scale);
-    time_translator_.setRealStartTime(view.begin()->getTime());
+
+    start_time_ = view.begin()->getTime();
+    time_translator_.setRealStartTime(start_time_);
+    bag_length_ = view.getEndTime() - view.getBeginTime();
+
+    time_publisher_.setTime(start_time_);
+
     ros::WallTime now_wt = ros::WallTime::now();
     time_translator_.setTranslatedStartTime(ros::Time(now_wt.sec, now_wt.nsec));
+
 
     time_publisher_.setTimeScale(options_.time_scale);
     if (options_.bag_time)
         time_publisher_.setPublishFrequency(options_.bag_time_frequency);
     else
         time_publisher_.setPublishFrequency(-1.0);
+
+    paused_ = options_.start_paused;
+    paused_time_ = now_wt;
 
     // Call do-publish for each message
     foreach(MessageInstance m, view) {
@@ -187,13 +188,21 @@ void Player::publish() {
 
 void Player::printTime()
 {
-  if (!options_.quiet) {
-    if (paused_)
-      printf("\r[PAUSED] Real Time: %16.6f    Bag Time: %16.6f\r", ros::Time::now().toSec(), time_publisher_.getTime().toSec());
-    else
-      printf("\r         Real Time: %16.6f    Bag Time: %16.6f\r", ros::Time::now().toSec(), time_publisher_.getTime().toSec());
-    fflush(stdout);
-  }
+    if (!options_.quiet) {
+
+        ros::Time current_time = time_publisher_.getTime();
+        ros::Duration d = current_time - start_time_;
+
+        if (paused_)
+        {
+            printf("\r [PAUSED]   Bag Time: %13.6f   Duration: %.6f / %.6f     \r", time_publisher_.getTime().toSec(), d.toSec(), bag_length_.toSec());
+        }
+        else
+        {
+            printf("\r [RUNNING]  Bag Time: %13.6f   Duration: %.6f / %.6f     \r", time_publisher_.getTime().toSec(), d.toSec(), bag_length_.toSec());
+        }
+        fflush(stdout);
+    }
 }
 
 void Player::doPublish(MessageInstance const& m) {
@@ -215,6 +224,7 @@ void Player::doPublish(MessageInstance const& m) {
     if (options_.at_once) {
         time_publisher_.stepClock();
         pub_iter->second.publish(m);
+        printTime();
         return;
     }
 
@@ -261,16 +271,16 @@ void Player::doPublish(MessageInstance const& m) {
             case EOF:
                 if (paused_)
                 {
-                    time_publisher_.runStalledClock(ros::WallDuration(.01));
                     printTime();
+                    time_publisher_.runStalledClock(ros::WallDuration(.1));
                 }
                 else
                     charsleftorpaused = false;
             }
         }
 
-        time_publisher_.runClock(ros::WallDuration(.1));
         printTime();
+        time_publisher_.runClock(ros::WallDuration(.1));
     }
 
     pub_iter->second.publish(m);
@@ -403,12 +413,24 @@ void TimePublisher::runClock(const ros::WallDuration& duration)
         }
     } else {
 
-      ros::WallTime target = ros::WallTime::now() + duration;
+        ros::WallTime t = ros::WallTime::now();
 
-      if (target > wc_horizon_)
-        target = wc_horizon_;
+        ros::WallDuration leftHorizonWC = wc_horizon_ - t;
 
-      ros::WallTime::sleepUntil(target);
+        ros::Duration d(leftHorizonWC.sec, leftHorizonWC.nsec);
+        d *= time_scale_;
+
+        current_ = horizon_ - d;
+        
+        if (current_ >= horizon_)
+            current_ = horizon_;
+
+        ros::WallTime target = ros::WallTime::now() + duration;
+
+        if (target > wc_horizon_)
+            target = wc_horizon_;
+
+        ros::WallTime::sleepUntil(target);
     }
 }
 

@@ -176,6 +176,9 @@ private:
 
     TimeTranslator time_translator_;
     TimePublisher time_publisher_;
+
+    ros::Time start_time_;
+    ros::Duration bag_length_;
 };
 
 

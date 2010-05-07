@@ -143,6 +143,9 @@ public:
 
     std::vector<const ConnectionInfo*> getConnections();
 
+    ros::Time getBeginTime();
+    ros::Time getEndTime();
+
 protected:
     void updateQueries(BagQuery* q);
 

@@ -99,7 +99,7 @@ class TimelinePanel(LayerPanel):
 
         self.playhead = playhead.PlayheadLayer(self, 'Playhead', self.timeline, 0, 0, 12, self.timeline.height)
 
-        self.timeline.set_renderers_active(True)
+        #self.timeline.set_renderers_active(True)
 
         self.layers = [self.timeline, self.status, self.playhead]
 
@@ -163,7 +163,7 @@ class Timeline(Layer):
         self.topic_name_sizes  = None
         self.margin_left       = 0
         self.margin_right      = 20
-        self.history_top       = 8
+        self.history_top       = 24
         self.bag_end_width     = 3
         self.time_tick_height  = 3
         
@@ -980,10 +980,16 @@ class Timeline(Layer):
             msg_data = msgs.get(topic)
             if msg_data:
                 for listener in topic_listeners:
-                    listener.message_viewed(self.bag_file, msg_data)
+                    try:
+                        listener.message_viewed(self.bag_file, msg_data)
+                    except wx.PyDeadObjectError:
+                        self.remove_listener(topic, listener)
             else:
                 for listener in topic_listeners:
-                    listener.message_cleared()
+                    try:
+                        listener.message_cleared()
+                    except wx.PyDeadObjectError:
+                        self.remove_listener(topic, listener)
 
 class TimelinePopupMenu(wx.Menu):
     """

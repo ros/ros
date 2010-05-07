@@ -75,8 +75,8 @@ class StatusLayer(Layer):
         dc.set_font_size(14.0)
         font_width, font_height = dc.text_extents(s)[2:4]
 
-        x = self.timeline.margin_left
-        y = self.timeline.history_top + 8
+        x = self.timeline.margin_left - 2
+        y = self.timeline.history_top - 12
 
         dc.set_source_rgb(0, 0, 0)
         dc.move_to(x, y)

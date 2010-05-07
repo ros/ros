@@ -125,14 +125,11 @@ void View::iterator::increment() {
     std::sort(iters_.begin(), iters_.end(), ViewIterHelperCompare());
 }
 
-//! \todo some check in case we are at end
 MessageInstance& View::iterator::dereference() const {
-    ROS_ASSERT(iters_.size() > 0);
-
     ViewIterHelper const& i = iters_.back();
 
     if (message_instance_ == NULL)
-      message_instance_ = new MessageInstance(i.range->connection_info, *(i.iter), *(i.range->bag_query->bag));
+        message_instance_ = new MessageInstance(i.range->connection_info, *(i.iter), *(i.range->bag_query->bag));
 
     return *message_instance_;
 }
@@ -185,6 +182,9 @@ uint32_t View::size() {
 }
 
 void View::addQuery(Bag const& bag, ros::Time const& start_time, ros::Time const& end_time) {
+    if ((bag.getMode() & bagmode::Read) != bagmode::Read)
+        throw BagException("Bag not opened for reading");
+
 	boost::function<bool(ConnectionInfo const*)> query = TrueQuery();
 
     queries_.push_back(new BagQuery(&bag, Query(query, start_time, end_time), bag.bag_revision_));
@@ -193,6 +193,9 @@ void View::addQuery(Bag const& bag, ros::Time const& start_time, ros::Time const
 }
 
 void View::addQuery(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, ros::Time const& start_time, ros::Time const& end_time) {
+    if ((bag.getMode() & bagmode::Read) != bagmode::Read)
+        throw BagException("Bag not opened for reading");
+
     queries_.push_back(new BagQuery(&bag, Query(query, start_time, end_time), bag.bag_revision_));
 
     updateQueries(queries_.back());
@@ -218,7 +221,7 @@ void View::updateQueries(BagQuery* q) {
         std::multiset<IndexEntry>::const_iterator begin = std::lower_bound(index.begin(), index.end(), q->query.getStartTime(), IndexEntryCompare());
         std::multiset<IndexEntry>::const_iterator end   = std::upper_bound(index.begin(), index.end(), q->query.getEndTime(),   IndexEntryCompare());
 
-        // todo: this could be made faster with a map of maps
+        // todo: make faster with a map of maps
         bool found = false;
         for (vector<MessageRange*>::iterator k = ranges_.begin(); k != ranges_.end(); k++) {
             MessageRange* r = *k;
@@ -239,8 +242,6 @@ void View::updateQueries(BagQuery* q) {
 }
 
 void View::update() {
-    // todo this can be completely skipped if the bag is read-only
-
     foreach(BagQuery* query, queries_) {
         if (query->bag->bag_revision_ != query->bag_revision) {
             updateQueries(query);
@@ -248,7 +249,6 @@ void View::update() {
         }
     }
 }
-
 
 std::vector<const ConnectionInfo*> View::getConnections()
 {

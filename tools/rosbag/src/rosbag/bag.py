@@ -555,27 +555,31 @@ class Bag(object):
 
     ### Internal API ###
 
-    def _clear_index(self):
-        self._connection_indexes = {}    # id    -> IndexEntry[] (1.2+)
-
-        self._topic_connections  = {}    # topic -> connection_id
-        self._connections        = {}    # id -> ConnectionInfo
-        self._connection_count   = 0     # (2.0)
-        self._chunk_count        = 0     # (2.0)
-        self._chunks             = []    # ChunkInfo[] (2.0)
-        self._chunk_headers      = {}    # chunk_pos -> ChunkHeader (2.0)
-
-        self._chunk_open                    = False
-        self._curr_chunk_info               = None
-        self._curr_chunk_data_pos           = None
-        self._curr_chunk_connection_indexes = {}
-    
     def _read_message(self, position, raw=False):
         """
         Read the message from the given position in the file.
         """
         self.flush()
         return self._reader.seek_and_read_message_data_record(position, raw)
+
+    # Index accessing
+
+    def _get_connections(self, topics=None, connection_filter=None):
+        """
+        Yield the connections, optionally filtering by topic and/or connection information.
+        """
+        if topics:
+            if type(topics) == str:
+                topics = set([topics])
+            else:
+                topics = set(topics)
+        
+        for c in self._connections.values():
+            if topics and c.topic not in topics:
+                continue
+            if connection_filter and not connection_filter(c.topic, c.datatype, c.md5sum, c.msg_def, c.header):
+                continue
+            yield c
 
     def _get_entries(self, connections=None, start_time=None, end_time=None):
         """
@@ -610,30 +614,13 @@ class Bag(object):
         first_entry = None
 
         for index in indexes:
-            i = bisect.bisect_left(index, entry)
-            if i < len(index):
+            i = bisect.bisect_right(index, entry) - 1
+            if i >= 0:
                 index_entry = index[i]
                 if first_entry is None or index_entry > first_entry:
                     first_entry = index_entry
                     
         return first_entry
-
-    def _get_connections(self, topics=None, connection_filter=None):
-        """
-        Yield the connections, optionally filtering by topic and/or connection information.
-        """
-        if topics:
-            if type(topics) == str:
-                topics = set([topics])
-            else:
-                topics = set(topics)
-        
-        for c in self._connections.values():
-            if topics and c.topic not in topics:
-                continue
-            if connection_filter and not connection_filter(c.topic, c.datatype, c.md5sum, c.msg_def, c.header):
-                continue
-            yield c
 
     def _get_indexes(self, connections):
         """
@@ -647,6 +634,21 @@ class Bag(object):
 
     ### Implementation ###
 
+    def _clear_index(self):
+        self._connection_indexes = {}    # id    -> IndexEntry[] (1.2+)
+
+        self._topic_connections  = {}    # topic -> connection_id
+        self._connections        = {}    # id -> ConnectionInfo
+        self._connection_count   = 0     # (2.0)
+        self._chunk_count        = 0     # (2.0)
+        self._chunks             = []    # ChunkInfo[] (2.0)
+        self._chunk_headers      = {}    # chunk_pos -> ChunkHeader (2.0)
+
+        self._chunk_open                    = False
+        self._curr_chunk_info               = None
+        self._curr_chunk_data_pos           = None
+        self._curr_chunk_connection_indexes = {}
+    
     def _open(self, f, mode, allow_unindexed):
         if not f:
             raise ValueError('filename (or stream) is invalid')

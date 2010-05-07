@@ -47,8 +47,8 @@ from message_view import TopicMessageView
 class RawView(TopicMessageView):
     name = 'Raw'
     
-    def __init__(self, timeline, parent, title, x, y, width, height, max_repaint=0.1):
-        TopicMessageView.__init__(self, timeline, parent, title, x, y, width, height, max_repaint)
+    def __init__(self, timeline, parent, title, x, y, width, height):
+        TopicMessageView.__init__(self, timeline, parent, title, x, y, width, height)
         
         self._font = wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
@@ -96,6 +96,7 @@ class RawView(TopicMessageView):
         self.msg_tree.SetSize((size[0], size[1] - self.msg_tree.GetPosition()[1]))
 
     def clear(self):
+        self.msg_title.SetValue('')
         self.msg_incoming = None
         self.invalidate()
 

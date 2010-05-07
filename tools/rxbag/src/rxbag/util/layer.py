@@ -40,7 +40,7 @@ import wx.lib.wxcairo
 class Layer:
     name = 'Untitled'
     
-    def __init__(self, parent, title, x, y, width, height, max_repaint=None):
+    def __init__(self, parent, title, x, y, width, height):
         self._x      = x
         self._y      = y
         self._width  = width

@@ -87,8 +87,8 @@ class RxBagApp(wx.App):
             frame.Bind(wx.EVT_CLOSE, lambda e: wx.Exit())
             
         except Exception, ex:
-            rospy.logerr('Error initializing application: %s' % str(ex))
-            raise
+            print >> sys.stderr, 'Error initializing application:', ex
+            return False
 
         return True
 

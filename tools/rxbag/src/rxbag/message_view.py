@@ -35,17 +35,22 @@
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 import rospy
+import bisect
 import time
 
 import wx
 
 from util.layer import Layer
 
-## A widget that can render an interval of time of a topic as a rectangle on the timeline
 class TimelineRenderer:
+    """
+    A widget that can render an interval of time of a topic as a rectangle on the timeline.
+    @param msg_combine_px: don't draw discrete messages if they're less than this many pixels separated [optional]
+    @type  msg_combine_px: float
+    """
     def __init__(self, timeline, msg_combine_px=1.5):
         self.timeline       = timeline
-        self.msg_combine_px = msg_combine_px   # don't draw discrete messages if they're less than this many pixels separated 
+        self.msg_combine_px = msg_combine_px 
 
     def get_segment_height(self, topic):
         return None
@@ -55,13 +60,13 @@ class TimelineRenderer:
 
 class MessageView(Layer):
     """
-    A widget that can display message details
+    A widget that can display message details.
     """
-     
+    
     name = 'Untitled'
     
-    def __init__(self, timeline, parent, title, x, y, width, height, max_repaint=None):
-        Layer.__init__(self, parent, title, x, y, width, height, max_repaint)
+    def __init__(self, timeline, parent, title, x, y, width, height):
+        Layer.__init__(self, parent, title, x, y, width, height)
         
         self.timeline = timeline
         self.border   = False
@@ -76,55 +81,60 @@ class MessageView(Layer):
         pass
 
 class TopicMessageView(MessageView):
-    def __init__(self, timeline, parent, title, x, y, width, height, max_repaint=None):
-        MessageView.__init__(self, timeline, parent, title, x, y, width, height, max_repaint)
-        
-        self.topic     = None
-        self.msg_index = None
-    
+    def __init__(self, timeline, parent, title, x, y, width, height):
+        MessageView.__init__(self, timeline, parent, title, x, y, width, height)
+
+        self.topic = None
+        self.stamp = None
+        self.entry = None
+
         self._create_toolbar()
 
     def message_viewed(self, bag, msg_details):
         topic, msg, t = msg_details
-        
-        self.topic     = topic
-        #self.msg_index = msg_index
+
+        self.topic = topic
+        self.stamp = t
 
     def message_cleared(self):
         pass
-        #self.msg_index = None
         
     def on_close(self, event):
         self.timeline.remove_view(self.topic, self)
 
     def navigate_first(self):
-        # todo: fix
-        if self.topic and self.msg_index is not None:
-            topic_positions = self.timeline.bag_index.msg_positions[self.topic]
-            if len(topic_positions) > 0:
-                self.timeline.set_playhead(topic_positions[0][0])
+        if not self.topic:
+            return
 
-    def navigate_previous(self):
-        # todo: fix
-        if self.topic and self.msg_index is not None:
-            new_msg_index = self.msg_index - 1
-            if new_msg_index >= 0:
-                self.timeline.set_playhead(self.timeline.bag_index.msg_positions[self.topic][new_msg_index][0])
+        for entry in self.timeline.bag_file._get_entries(self.timeline.bag_file._get_connections(self.topic)):
+            self.timeline.set_playhead(entry.time.to_sec())
+            break
 
-    def navigate_next(self):
-        # todo: fix
-        if self.topic and self.msg_index is not None:
-            new_msg_index = self.msg_index + 1
-            topic_positions = self.timeline.bag_index.msg_positions[self.topic]
-            if new_msg_index < len(topic_positions):
-                self.timeline.set_playhead(topic_positions[new_msg_index][0])
+#    def navigate_previous(self):
+#        if not self.topic:
+#            return
+#        
+#        index = bisect.bisect_right(self.timeline.message_history_cache[self.topic], self.stamp.to_sec()) - 1
+#        if index > 0:
+#            self.stamp = self.timeline.message_history_cache[self.topic][index - 1]
+#            self.timeline.set_playhead(self.stamp)
+#
+#    def navigate_next(self):
+#        if not self.topic:
+#            return
+#
+#        index = bisect.bisect_right(self.timeline.message_history_cache[self.topic], self.stamp.to_sec()) - 1
+#        if index < len(self.timeline.message_history_cache[self.topic]) - 1:
+#            self.stamp = self.timeline.message_history_cache[self.topic][index + 1]
+#            self.timeline.set_playhead(self.stamp)
 
     def navigate_last(self):
-        # todo: fix
-        if self.topic and self.msg_index is not None:
-            topic_positions = self.timeline.bag_index.msg_positions[self.topic]
-            if len(topic_positions) > 0:
-                self.timeline.set_playhead(topic_positions[-1][0])
+        if not self.topic:
+            return
+        
+        for entry in self.timeline.bag_file._get_entries_reverse(self.timeline.bag_file._get_connections(self.topic)):
+            self.timeline.set_playhead(entry.time.to_sec())
+            break
 
     @property
     def frame(self):
@@ -135,7 +145,7 @@ class TopicMessageView(MessageView):
 
         tb = self.frame.CreateToolBar()
         tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_first(),    tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'resultset_first.png')))
-        tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_previous(), tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'resultset_previous.png')))
-        tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_next(),     tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'resultset_next.png')))
+        #tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_previous(), tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'resultset_previous.png')))
+        #tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_next(),     tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'resultset_next.png')))
         tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_last(),     tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'resultset_last.png')))
         tb.Realize()

@@ -41,8 +41,8 @@ from util.layer import Layer
 from bag_helper import BagHelper
 
 class StatusLayer(Layer):
-    def __init__(self, parent, title, timeline, x, y, width, height, max_repaint=None):
-        Layer.__init__(self, parent, title, x, y, width, height, max_repaint)
+    def __init__(self, parent, title, timeline, x, y, width, height):
+        Layer.__init__(self, parent, title, x, y, width, height)
         
         self.timeline = timeline
 

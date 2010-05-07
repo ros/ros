@@ -92,7 +92,7 @@ class TimelinePanel(LayerPanel):
 
         x, y = 5, 19
 
-        self.timeline = Timeline(self, 'Timeline', x, y, width - x, height - y, max_repaint=1.0)
+        self.timeline = Timeline(self, 'Timeline', x, y, width - x, height - y)
         self.timeline.set_bag_files(self.bag_files)
 
         self.status = status.StatusLayer(self, 'Status', self.timeline, self.timeline.x, 4, 300, 16)
@@ -142,8 +142,8 @@ class TimelinePanel(LayerPanel):
 class Timeline(Layer):
     name = 'Timeline'
     
-    def __init__(self, parent, title, x, y, width, height, max_repaint=None):
-        Layer.__init__(self, parent, title, x, y, width, height, max_repaint)
+    def __init__(self, parent, title, x, y, width, height):
+        Layer.__init__(self, parent, title, x, y, width, height)
 
         self.bag_files = {}
         self.bag_file  = None
@@ -390,6 +390,7 @@ class Timeline(Layer):
         self.listeners.setdefault(topic, []).append(listener)
 
         self.update_message_view()
+        self.invalidate()
 
     def remove_listener(self, topic, listener):
         topic_listeners = self.listeners.get(topic)
@@ -397,6 +398,7 @@ class Timeline(Layer):
             topic_listeners.remove(listener)
             if len(topic_listeners) == 0:
                 del self.listeners[topic]
+        self.invalidate()
 
     @property
     def history_bottom(self):
@@ -604,7 +606,9 @@ class Timeline(Layer):
             row += 1
 
     def _draw_time_indicators(self, dc):
-        """Draw time indicators on the timeline"""
+        """
+        Draw vertical grid-lines showing major and minor time divisions.
+        """
 
         x_per_sec = self.map_dstamp_to_dx(1.0)
 
@@ -632,7 +636,7 @@ class Timeline(Layer):
         dc.set_line_width(1)
 
         for stamp in stamps:
-            x            = self.map_stamp_to_x(stamp, False)
+            x = self.map_stamp_to_x(stamp, False)
 
             label        = self._get_label(division, stamp - start_stamp)
             label_x      = x + 3
@@ -646,9 +650,9 @@ class Timeline(Layer):
             dc.set_source_rgba(0.25, 0.25, 0.25, 0.3)
             dc.move_to(x, label_y + 1)
             dc.line_to(x, self.history_bottom)
-
-        dc.stroke()
         
+        dc.stroke()
+
     def _draw_minor_divisions(self, dc, stamps, start_stamp, division):
         xs = [self.map_stamp_to_x(stamp) for stamp in stamps]
 
@@ -708,7 +712,7 @@ class Timeline(Layer):
                 break
             else:
                 self._draw_topic_history(dc, topic)
-                
+
     def _draw_topic_history(self, dc, topic):
         """
         Draw boxes to show message regions on timelines.
@@ -733,9 +737,6 @@ class Timeline(Layer):
         if msg_combine_interval is None:
             msg_combine_interval = self.map_dx_to_dstamp(self.default_msg_combine_px)
             
-        start_time = roslib.rostime.Time.from_sec(max(0.0, self.stamp_left))
-        end_time   = roslib.rostime.Time.from_sec(max(0.0, self.stamp_right))
-
         if topic not in self.message_history_cache:
             start_time = roslib.rostime.Time.from_sec(max(0.0, self.start_stamp))
             end_time   = roslib.rostime.Time.from_sec(max(0.0, self.end_stamp))
@@ -744,17 +745,19 @@ class Timeline(Layer):
             self.message_history_cache[topic] = all_stamps
         else:
             all_stamps = self.message_history_cache[topic]
-            
+
         start_index = bisect.bisect_left(all_stamps, self.stamp_left)
         end_index   = bisect.bisect_left(all_stamps, self.stamp_right)
 
         # Set pen based on datatype
         datatype_color = self.datatype_colors.get(datatype, self.default_datatype_color)
-        dc.set_source_rgb(datatype_color.red / 255.0, datatype_color.green / 255.0, datatype_color.blue / 255.0) 
+        datatype_rgb = datatype_color.red / 255.0, datatype_color.green / 255.0, datatype_color.blue / 255.0
 
         # Iterate through regions of connected messages
         width_interval = self.history_width / (self.stamp_right - self.stamp_left)
 
+        dc.set_line_width(1)
+        dc.set_source_rgb(*datatype_rgb) 
         for (stamp_start, stamp_end) in self._find_regions(all_stamps[start_index:end_index], self.map_dx_to_dstamp(self.default_msg_combine_px)):
             region_x_start = self.history_left + (stamp_start - self.stamp_left) * width_interval
             region_x_end   = self.history_left + (stamp_end   - self.stamp_left) * width_interval
@@ -763,6 +766,19 @@ class Timeline(Layer):
             dc.rectangle(region_x_start, msg_y, region_width, msg_height)
 
         dc.fill()
+
+        # Draw active message
+        if topic in self.listeners:
+            dc.set_line_width(3)
+            playhead_stamp = None
+            playhead_index = bisect.bisect_right(all_stamps, self.playhead) - 1
+            if playhead_index >= 0:
+                playhead_stamp = all_stamps[playhead_index]
+                if playhead_stamp > self.stamp_left and playhead_stamp < self.stamp_right:
+                    playhead_x = self.history_left + (all_stamps[playhead_index] - self.stamp_left) * width_interval
+                    dc.move_to(playhead_x, msg_y)
+                    dc.line_to(playhead_x, msg_y + msg_height)
+                    dc.stroke()
 
         # Custom renderer
         if renderer:
@@ -956,11 +972,12 @@ class Timeline(Layer):
             msgs[topic] = None
 
         # Inform the listeners
-        for topic, msg_data in msgs.items():
+        for topic in self.topics:
             topic_listeners = self.listeners.get(topic)
             if not topic_listeners:
                 continue
 
+            msg_data = msgs.get(topic)
             if msg_data:
                 for listener in topic_listeners:
                     listener.message_viewed(self.bag_file, msg_data)

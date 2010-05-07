@@ -39,7 +39,6 @@
 #include <ros/ros.h>
 
 using std::string;
-using ros::Exception;
 
 namespace rosbag {
 
@@ -63,22 +62,21 @@ void BZ2Stream::startWrite() {
         case BZ_OK: break;
         default: {
             BZ2_bzWriteClose(&bzerror_, bzfile_, 0, NULL, NULL);
-            throw Exception("Error opening file for writing compressed stream");
+            throw BagException("Error opening file for writing compressed stream");
         }
     }
 
     setCompressedIn(0);
 }
 
-size_t BZ2Stream::write(void* ptr, size_t size) {
+void BZ2Stream::write(void* ptr, size_t size) {
     BZ2_bzWrite(&bzerror_, bzfile_, ptr, size);
 
     switch (bzerror_) {
-    case BZ_IO_ERROR: ROS_ERROR("BZ_IO_ERROR: error writing the compressed file"); return false;
+    case BZ_IO_ERROR: throw BagException("BZ_IO_ERROR: error writing the compressed file");
     }
 
     setCompressedIn(getCompressedIn() + size);
-    return true;
 }
 
 void BZ2Stream::stopWrite() {
@@ -87,7 +85,7 @@ void BZ2Stream::stopWrite() {
     BZ2_bzWriteClose(&bzerror_, bzfile_, 0, &nbytes_in, &nbytes_out);
 
     switch (bzerror_) {
-        case BZ_IO_ERROR: throw Exception("BZ_IO_ERROR");
+        case BZ_IO_ERROR: throw BagIOException("BZ_IO_ERROR");
     }
 
     advanceOffset(nbytes_out);
@@ -100,22 +98,21 @@ void BZ2Stream::startRead() {
     switch (bzerror_) {
         case BZ_OK: break;
         default: {
-            checkError();
             BZ2_bzReadClose(&bzerror_, bzfile_);
-            throw Exception("Error opening file for reading compressed stream");
+            throw BagException("Error opening file for reading compressed stream");
         }
     }
 
     clearUnused();
 }
 
-size_t BZ2Stream::read(void* ptr, size_t size) {
+void BZ2Stream::read(void* ptr, size_t size) {
     BZ2_bzRead(&bzerror_, bzfile_, ptr, size);
 
     advanceOffset(size);
 
     switch (bzerror_) {
-    case BZ_OK:               return size;
+    case BZ_OK: return;
     case BZ_STREAM_END:
         if (getUnused() || getUnusedLength() > 0)
             ROS_ERROR("unused data already available");
@@ -126,22 +123,20 @@ size_t BZ2Stream::read(void* ptr, size_t size) {
             setUnused(unused);
             setUnusedLength(nUnused);
         }
-        return size;
-    case BZ_IO_ERROR:         ROS_ERROR("BZ_IO_ERROR: error reading from compressed stream");                                break;
-    case BZ_UNEXPECTED_EOF:   ROS_ERROR("BZ_UNEXPECTED_EOF: compressed stream ended before logical end-of-stream detected"); break;
-    case BZ_DATA_ERROR:       ROS_ERROR("BZ_DATA_ERROR: data integrity error detected in compressed stream");                break;
-    case BZ_DATA_ERROR_MAGIC: ROS_ERROR("BZ_DATA_ERROR_MAGIC: stream does not begin with requisite header bytes");           break;
-    case BZ_MEM_ERROR:        ROS_ERROR("BZ_MEM_ERROR: insufficient memory available");                                      break;
+        return;
+    case BZ_IO_ERROR:         throw BagIOException("BZ_IO_ERROR: error reading from compressed stream");                                break;
+    case BZ_UNEXPECTED_EOF:   throw BagIOException("BZ_UNEXPECTED_EOF: compressed stream ended before logical end-of-stream detected"); break;
+    case BZ_DATA_ERROR:       throw BagIOException("BZ_DATA_ERROR: data integrity error detected in compressed stream");                break;
+    case BZ_DATA_ERROR_MAGIC: throw BagIOException("BZ_DATA_ERROR_MAGIC: stream does not begin with requisite header bytes");           break;
+    case BZ_MEM_ERROR:        throw BagIOException("BZ_MEM_ERROR: insufficient memory available");                                      break;
     }
-
-    return 0;
 }
 
 void BZ2Stream::stopRead() {
     BZ2_bzReadClose(&bzerror_, bzfile_);
 
-    switch (bzerror_ == BZ_IO_ERROR) {
-        case BZ_IO_ERROR: throw Exception("BZ_IO_ERROR");
+    switch (bzerror_) {
+        case BZ_IO_ERROR: throw BagIOException("BZ_IO_ERROR");
     }
 }
 
@@ -150,26 +145,13 @@ void BZ2Stream::decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source
 
     switch (result) {
     case BZ_OK:               break;
-    case BZ_CONFIG_ERROR:     ROS_ERROR("library has been mis-compiled"); break;
-    case BZ_PARAM_ERROR:      ROS_ERROR("dest is NULL or destLen is NULL or small != 0 && small != 1 or verbosity < 0 or verbosity > 4"); break;
-    case BZ_MEM_ERROR:        ROS_ERROR("insufficient memory is available"); break;
-    case BZ_OUTBUFF_FULL:     ROS_ERROR("size of the compressed data exceeds *destLen"); break;
-    case BZ_DATA_ERROR:       ROS_ERROR("data integrity error was detected in the compressed data"); break;
-    case BZ_DATA_ERROR_MAGIC: ROS_ERROR("compressed data doesn't begin with the right magic bytes"); break;
-    case BZ_UNEXPECTED_EOF:   ROS_ERROR("compressed data ends unexpectedly"); break;
-    }
-}
-
-void BZ2Stream::checkError() const {
-    switch (bzerror_) {
-    case BZ_OK:               ROS_INFO("BZ_OK");                break;
-    case BZ_STREAM_END:       ROS_INFO("BZ_STREAM_END");        break;
-    case BZ_PARAM_ERROR:      ROS_ERROR("BZ_PARAM_ERROR");      break;
-    case BZ_IO_ERROR:         ROS_ERROR("BZ_IO_ERROR");         break;
-    case BZ_UNEXPECTED_EOF:   ROS_ERROR("BZ_UNEXPECTED_EOF");   break;
-    case BZ_DATA_ERROR:       ROS_ERROR("BZ_DATA_ERROR");       break;
-    case BZ_DATA_ERROR_MAGIC: ROS_ERROR("BZ_DATA_ERROR_MAGIC"); break;
-    case BZ_MEM_ERROR:        ROS_ERROR("BZ_MEM_ERROR");        break;
+    case BZ_CONFIG_ERROR:     throw BagException("library has been mis-compiled"); break;
+    case BZ_PARAM_ERROR:      throw BagException("dest is NULL or destLen is NULL or small != 0 && small != 1 or verbosity < 0 or verbosity > 4"); break;
+    case BZ_MEM_ERROR:        throw BagException("insufficient memory is available"); break;
+    case BZ_OUTBUFF_FULL:     throw BagException("size of the compressed data exceeds *destLen"); break;
+    case BZ_DATA_ERROR:       throw BagException("data integrity error was detected in the compressed data"); break;
+    case BZ_DATA_ERROR_MAGIC: throw BagException("compressed data doesn't begin with the right magic bytes"); break;
+    case BZ_UNEXPECTED_EOF:   throw BagException("compressed data ends unexpectedly"); break;
     }
 }
 

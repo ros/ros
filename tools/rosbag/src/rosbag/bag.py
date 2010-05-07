@@ -336,15 +336,14 @@ class Bag(object):
                 # Test if we're writing chronologically.  Can skip binary search if so.
                 curr_chunk_connection_index.append(index_entry)
             else:
-                curr_chunk_connection_index.insert(bisect.bisect_right(curr_chunk_connection_index, index_entry), index_entry)
+                bisect.insort_right(curr_chunk_connection_index, index_entry)
 
             self._curr_chunk_info.connection_counts[conn_id] += 1
 
         if conn_id not in self._connection_indexes:
             self._connection_indexes[conn_id] = [index_entry]
         else:
-            connection_index = self._connection_indexes[conn_id]
-            connection_index.insert(bisect.bisect_right(connection_index, index_entry), index_entry)
+            bisect.insort_right(self._connection_indexes[conn_id], index_entry)
 
         # Update the chunk start/end times
         if t > self._curr_chunk_info.end_time:
@@ -1383,9 +1382,7 @@ class _BagReader102_Indexed(_BagReader102_Unindexed):
                 _skip_sized(f)
 
                 # Insert the message entry (in order) into the connection index
-                entry = _IndexEntry102(t, offset)
-                index = self.bag._connection_indexes[connection_id]
-                index.insert(bisect.bisect_right(index, entry), entry)
+                bisect.insort_right(self.bag._connection_indexes[connection_id], _IndexEntry102(t, offset))
 
             elif op == _OP_INDEX_DATA:
                 _skip_record(f)
@@ -1601,9 +1598,7 @@ class _BagReader200(_BagReader):
                     _skip_sized(chunk_file)
 
                     # Insert the message entry (in order) into the connection index
-                    entry = _IndexEntry200(t, chunk_pos, offset)
-                    index = self.bag._connection_indexes[connection_id]
-                    index.insert(bisect.bisect_right(index, entry), entry)
+                    bisect.insort_right(self.bag._connection_indexes[connection_id], _IndexEntry200(t, chunk_pos, offset)) 
 
                 offset = chunk_file.tell()
 

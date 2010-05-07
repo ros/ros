@@ -74,11 +74,6 @@ PlayerOptions::PlayerOptions() :
 void PlayerOptions::check() {
     if (bags.size() == 0)
         throw Exception("You must specify at least one bag file to play from");
-
-    // JL: I don't think this requirement makes sense anymore
-
-    //	if (bag_time && bags.size() > 1)
-    //		throw Exception("You can only play one single bag when using bag time [-b]");
 }
 
 // Player
@@ -91,10 +86,10 @@ Player::Player(PlayerOptions const& options) :
 }
 
 Player::~Player() {
-  foreach(shared_ptr<Bag> bag, bags_)
-    bag->close();
-  
-  restoreTerminal();
+    foreach(shared_ptr<Bag> bag, bags_)
+        bag->close();
+
+    restoreTerminal();
 }
 
 void Player::publish() {
@@ -104,19 +99,25 @@ void Player::publish() {
     foreach(string const& filename, options_.bags) {
         ROS_INFO("Opening %s", filename.c_str());
 
-        shared_ptr<Bag> bag(new Bag);
-        bag->open(filename, bagmode::Read);
-
-        bags_.push_back(bag);
+        try
+        {
+            shared_ptr<Bag> bag(new Bag);
+            bag->open(filename, bagmode::Read);
+            bags_.push_back(bag);
+        }
+        catch (BagUnindexedException ex) {
+            std::cerr << "Bag file " << filename << " is unindexed.  Run rosbag reindex." << std::endl;
+            return;
+        }
     }
 
     if (!options_.at_once) {
         if (options_.start_paused) {
             paused_ = true;
-            std::cout << "Hit space to resume, or 's' to step." << std::flush;
+            std::cout << "Hit space to resume, or 's' to step." << std::endl;
         }
         else
-            std::cout << "Hit space to pause." << std::flush;
+            std::cout << "Hit space to pause." << std::endl;
     }
 
     setupTerminal();
@@ -127,13 +128,10 @@ void Player::publish() {
     if (!options_.quiet)
       puts("");
     
-    ros::WallTime last_print_time(0.0);
-    ros::WallDuration max_print_interval(0.1);
-    
     // Publish all messages in the bags
     View view;
     foreach(shared_ptr<Bag> bag, bags_)
-      view.addQuery(*bag);
+        view.addQuery(*bag);
 
     // Advertise all of our messages
     foreach(const ConnectionInfo* c, view.getConnections())
@@ -172,19 +170,10 @@ void Player::publish() {
     else
         time_publisher_.setPublishFrequency(-1.0);
 
-
-    // Call do-publishfor each message
+    // Call do-publish for each message
     foreach(MessageInstance m, view) {
         if (!node_handle_.ok())
             break;
-        
-      // Print out time
-        ros::WallTime t = ros::WallTime::now();
-        if (!options_.quiet && ((t - last_print_time) >= max_print_interval)) {
-            printf(" Real Time: %16.6f    Bag Time: %16.6f\r", ros::Time::now().toSec(), m.getTime().toSec());
-            fflush(stdout);
-            last_print_time = t;
-        }
         
         doPublish(m);
     }
@@ -199,7 +188,6 @@ void Player::doPublish(MessageInstance const& m) {
     ros::Time const& time = m.getTime();
     string callerid       = m.getCallerId();
     
-
     ros::Time translated = time_translator_.translate(time);
     ros::WallTime horizon = ros::WallTime(translated.sec, translated.nsec);
 
@@ -217,20 +205,20 @@ void Player::doPublish(MessageInstance const& m) {
         return;
     }
 
-    while ( (paused_ || !time_publisher_.horizonReached()) && node_handle_.ok())
+    while ((paused_ || !time_publisher_.horizonReached()) && node_handle_.ok())
     {
         bool charsleftorpaused = true;
-        while (charsleftorpaused && node_handle_.ok()) {
-
+        while (charsleftorpaused && node_handle_.ok())
+        {
             switch (readCharFromStdin()){
             case ' ':
                 paused_ = !paused_;
                 if (paused_) {
                     paused_time_ = ros::WallTime::now();
-                    std::cout << std::endl << "Hit space to resume, or 's' to step.";
-                    std::cout.flush();
-                } else {
-                    
+                    std::cout << std::endl << "Hit space to resume, or 's' to step." << std::endl;
+                }
+                else
+                {
                     ros::WallDuration shift = ros::WallTime::now() - paused_time_;
                     paused_time_ = ros::WallTime::now();
          
@@ -239,13 +227,11 @@ void Player::doPublish(MessageInstance const& m) {
                     horizon += shift;
                     time_publisher_.setWCHorizon(horizon);
                     
-                    std::cout << std::endl << "Hit space to pause.";
-                    std::cout.flush();
+                    std::cout << std::endl << "Hit space to pause." << std::endl;
                 }
                 break;
             case 's':
-                if (paused_){
-                    
+                if (paused_) {
                     time_publisher_.stepClock();
 
                     ros::WallDuration shift = ros::WallTime::now() - horizon ;
@@ -266,6 +252,13 @@ void Player::doPublish(MessageInstance const& m) {
                 else
                     charsleftorpaused = false;
             }
+        }
+
+        // Print out time
+        ros::WallTime t = ros::WallTime::now();
+        if (!options_.quiet) {
+            printf(" Real Time: %16.6f    Bag Time: %16.6f\r", ros::Time::now().toSec(), time_publisher_.getTime().toSec());
+            fflush(stdout);
         }
 
         time_publisher_.runClock(ros::WallDuration(.1));
@@ -321,13 +314,6 @@ char Player::readCharFromStdin() {
     return getc(stdin);
 }
 
-ros::Time Player::getSysTime() {
-    struct timeval timeofday;
-    gettimeofday(&timeofday, NULL);
-    return ros::Time().fromNSec(1e9 * timeofday.tv_sec + 1e3 * timeofday.tv_usec);
-}
-
-
 TimePublisher::TimePublisher() : time_scale_(1.0)
 {
   setPublishFrequency(-1.0);
@@ -338,13 +324,8 @@ void TimePublisher::setPublishFrequency(double publish_frequency)
 {
   publish_frequency_ = publish_frequency;
   
-  if (publish_frequency > 0)
-  {
-    do_publish_ = true;
-  } else {
-    do_publish_ = false;
-  }
-  
+  do_publish_ = (publish_frequency > 0.0);
+
   wall_step_.fromSec(1.0 / publish_frequency);
 }
 
@@ -368,6 +349,11 @@ void TimePublisher::setTime(const ros::Time& time)
     current_ = time;
 }
 
+ros::Time const& TimePublisher::getTime() const
+{
+    return current_;
+}
+
 void TimePublisher::runClock(const ros::WallDuration& duration)
 {
     if (do_publish_)
@@ -377,7 +363,7 @@ void TimePublisher::runClock(const ros::WallDuration& duration)
         ros::WallTime t = ros::WallTime::now();
         ros::WallTime done = t + duration;
 
-        while ( t < done && t < wc_horizon_)
+        while (t < done && t < wc_horizon_)
         {
             ros::WallDuration leftHorizonWC = wc_horizon_ - t;
 
@@ -397,10 +383,8 @@ void TimePublisher::runClock(const ros::WallDuration& duration)
             }
 
             ros::WallTime target = done;
-
             if (target > wc_horizon_)
               target = wc_horizon_;
-
             if (target > next_pub_)
               target = next_pub_;
 
@@ -436,8 +420,6 @@ void TimePublisher::stepClock()
         current_ = horizon_;
     }
 }
-
-
 
 void TimePublisher::runStalledClock(const ros::WallDuration& duration)
 {
@@ -475,7 +457,5 @@ bool TimePublisher::horizonReached()
 {
   return ros::WallTime::now() > wc_horizon_;
 }
-
-
 
 } // namespace rosbag

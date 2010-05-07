@@ -57,11 +57,11 @@ public:
     ChunkedFile();
     ~ChunkedFile();
 
-    bool openWrite    (std::string const& filename);            //!< open file for writing
-    bool openRead     (std::string const& filename);            //!< open file for reading
-    bool openReadWrite(std::string const& filename);            //!< open file for reading & writing
+    void openWrite    (std::string const& filename);            //!< open file for writing
+    void openRead     (std::string const& filename);            //!< open file for reading
+    void openReadWrite(std::string const& filename);            //!< open file for reading & writing
 
-    bool close();                                               //!< close the file
+    void close();                                               //!< close the file
 
     std::string getFileName()          const;                   //!< return path of currently open file
     uint64_t    getOffset()            const;                   //!< return current offset from the beginning of the file
@@ -69,20 +69,20 @@ public:
     bool        isOpen()               const;                   //!< return true if file is open for reading or writing
     bool        good()                 const;                   //!< return true if hasn't reached end-of-file and no error
 
-    bool        setReadMode(CompressionType type);
-    bool        setWriteMode(CompressionType type);
+    void        setReadMode(CompressionType type);
+    void        setWriteMode(CompressionType type);
 
     // File I/O
-    size_t      write(std::string const& s);
-    size_t      write(void* ptr, size_t size);                          //!< write size bytes from ptr to the file
-    size_t      read(void* ptr, size_t size);                           //!< read size bytes from the file into ptr
+    void        write(std::string const& s);
+    void        write(void* ptr, size_t size);                          //!< write size bytes from ptr to the file
+    void        read(void* ptr, size_t size);                           //!< read size bytes from the file into ptr
     std::string getline();
     bool        truncate(uint64_t length);
-    bool        seek(uint64_t offset, int origin = std::ios_base::beg); //!< seek to given offset from origin
+    void        seek(uint64_t offset, int origin = std::ios_base::beg); //!< seek to given offset from origin
     void        decompress(CompressionType compression, uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len);
 
 private:
-    bool open(std::string const& filename, std::string const& mode);
+    void open(std::string const& filename, std::string const& mode);
     void clearUnused();
 
 private:

@@ -95,6 +95,9 @@ public:
     /*! Set the current time */
     void setTime(const ros::Time& time);
 
+    /*! Get the current time */
+    ros::Time const& getTime() const;
+
     /*! Run the clock for AT MOST duration
      *
      * If horizon has been reached this function returns immediately
@@ -147,15 +150,14 @@ private:
     void setupTerminal();
     void restoreTerminal();
 
-    ros::Time getSysTime();
-    void      doPublish(rosbag::MessageInstance const& m);
+    void doPublish(rosbag::MessageInstance const& m);
 
 private:
     PlayerOptions options_;
 
     ros::NodeHandle node_handle_;
 
-    bool      paused_;
+    bool paused_;
 
     ros::WallTime paused_time_;
 

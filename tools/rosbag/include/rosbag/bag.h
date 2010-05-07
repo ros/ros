@@ -56,7 +56,6 @@
 
 #include <boost/format.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/thread/mutex.hpp>
 
 namespace rosbag {
 
@@ -111,7 +110,7 @@ public:
      * \param topic The topic name
      * \param event The message event to be added
      *
-     * Can throw BagNotOpenException or BagIOException
+     * Can throw BagIOException
      */
     template<class T>
     void write(std::string const& topic, ros::MessageEvent<T> const& event);
@@ -123,7 +122,7 @@ public:
      * \param msg   The message to be added
      * \param connection_header  A connection header.
      *
-     * Can throw BagNotOpenException or BagIOException
+     * Can throw BagIOException
      */
     template<class T>
     void write(std::string const& topic, ros::Time const& time, T const& msg,
@@ -136,7 +135,7 @@ public:
      * \param msg   The message to be added
      * \param connection_header  A connection header.
      *
-     * Can throw BagNotOpenException or BagIOException
+     * Can throw BagIOException
      */
     template<class T>
     void write(std::string const& topic, ros::Time const& time, boost::shared_ptr<T const> const& msg,
@@ -149,14 +148,11 @@ public:
      * \param msg   The message to be added
      * \param connection_header  A connection header.
      *
-     * Can throw BagNotOpenException or BagIOException
+     * Can throw BagIOException
      */
     template<class T>
     void write(std::string const& topic, ros::Time const& time, boost::shared_ptr<T> const& msg,
                boost::shared_ptr<ros::M_string> connection_header = boost::shared_ptr<ros::M_string>());
-
-
-    void dump();
 
 private:
     // This helper function actually does the write with an arbitrary serializable message
@@ -204,13 +200,11 @@ private:
 
     void readTopicIndexRecord102();
     void readMessageDefinitionRecord102();
+    void readMessageDataRecord102(uint64_t offset, ros::Header& header) const;
 
     ros::Header readMessageDataHeader(IndexEntry const& index_entry);
     uint32_t    readMessageDataSize(IndexEntry const& index_entry) const;
 
-    // Would be nice not to have to template this on Stream.  Also,
-    // we don't need to read the header here either.  It just so
-    // happens to be the most efficient way to skip it at the moment.
     template<typename Stream>
     void readMessageDataIntoStream(IndexEntry const& index_entry, Stream& stream) const;
 
@@ -225,13 +219,12 @@ private:
     void writeDataLength(uint32_t data_len);
     void appendHeaderToBuffer(Buffer& buf, ros::M_string const& fields);
     void appendDataLengthToBuffer(Buffer& buf, uint32_t data_len);
+
     void readHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& bytes_read) const;
     void readMessageDataHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& bytes_read) const;
     bool readHeader(ros::Header& header) const;
     bool readDataLength(uint32_t& data_size) const;
     bool isOp(ros::M_string& fields, uint8_t reqOp) const;
-
-    void loadMessageDataRecord102(uint64_t offset, ros::Header& header) const;
 
     // Header fields
 
@@ -271,8 +264,6 @@ private:
     uint64_t index_data_pos_;
     uint32_t connection_count_;
     uint32_t chunk_count_;
-
-    boost::mutex record_mutex_;
     
     // Current chunk
     bool      chunk_open_;
@@ -367,86 +358,86 @@ boost::shared_ptr<T> Bag::instantiateBuffer(IndexEntry const& index_entry) const
     {
     case 200:
 	{
-            decompressChunk(index_entry.chunk_pos);
+        decompressChunk(index_entry.chunk_pos);
 
-            // Read the message header
-            ros::Header header;
-            uint32_t data_size;
-            uint32_t bytes_read;
-            readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
+        // Read the message header
+        ros::Header header;
+        uint32_t data_size;
+        uint32_t bytes_read;
+        readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
 
-            // Read the connection id from the header
-            uint32_t connection_id;
-            readField(*header.getValues(), CONNECTION_FIELD_NAME, true, &connection_id);
+        // Read the connection id from the header
+        uint32_t connection_id;
+        readField(*header.getValues(), CONNECTION_FIELD_NAME, true, &connection_id);
 
-            std::map<uint32_t, ConnectionInfo*>::const_iterator connection_iter = connections_.find(connection_id);
-            if (connection_iter == connections_.end())
-        	throw BagFormatException((boost::format("Unknown connection ID: %1%") % connection_id).str());
-            ConnectionInfo* connection_info = connection_iter->second;
+        std::map<uint32_t, ConnectionInfo*>::const_iterator connection_iter = connections_.find(connection_id);
+        if (connection_iter == connections_.end())
+            throw BagFormatException((boost::format("Unknown connection ID: %1%") % connection_id).str());
+        ConnectionInfo* connection_info = connection_iter->second;
 
-            boost::shared_ptr<T> p = boost::shared_ptr<T>(new T());
+        boost::shared_ptr<T> p = boost::shared_ptr<T>(new T());
 
-            // Set the connection header (if this is a ros::Message)
-            ros::assignSubscriptionConnectionHeader<T>(p.get(), connection_info->header);
+        // Set the connection header (if this is a ros::Message)
+        ros::assignSubscriptionConnectionHeader<T>(p.get(), connection_info->header);
 
-            ros::serialization::PreDeserializeParams<T> predes_params;
-            predes_params.message = p;
-            predes_params.connection_header = connection_info->header;
-            ros::serialization::PreDeserialize<T>::notify(predes_params);
+        ros::serialization::PreDeserializeParams<T> predes_params;
+        predes_params.message = p;
+        predes_params.connection_header = connection_info->header;
+        ros::serialization::PreDeserialize<T>::notify(predes_params);
 
-            // Deserialize the message
-            ros::serialization::IStream s(current_buffer_->getData() + index_entry.offset + bytes_read, data_size);
-            ros::serialization::deserialize(s, *p);
+        // Deserialize the message
+        ros::serialization::IStream s(current_buffer_->getData() + index_entry.offset + bytes_read, data_size);
+        ros::serialization::deserialize(s, *p);
 
 
-            return p;
+        return p;
 	}
     case 102:
 	{
-            // Read the message record
-            ros::Header header;
-            loadMessageDataRecord102(index_entry.chunk_pos, header);
+        // Read the message record
+        ros::Header header;
+        readMessageDataRecord102(index_entry.chunk_pos, header);
 
-            ros::M_string& fields = *header.getValues();
+        ros::M_string& fields = *header.getValues();
 
-            // Read the connection id from the header
-            std::string topic, latching("0"), callerid;
-            readField(fields, TOPIC_FIELD_NAME,    true,  topic);
-            readField(fields, LATCHING_FIELD_NAME, false, latching);
-            readField(fields, CALLERID_FIELD_NAME, false, callerid);
+        // Read the connection id from the header
+        std::string topic, latching("0"), callerid;
+        readField(fields, TOPIC_FIELD_NAME,    true,  topic);
+        readField(fields, LATCHING_FIELD_NAME, false, latching);
+        readField(fields, CALLERID_FIELD_NAME, false, callerid);
 
-            std::map<std::string, uint32_t>::const_iterator topic_conn_id_iter = topic_connection_ids_.find(topic);
-            if (topic_conn_id_iter == topic_connection_ids_.end())
-        	throw BagFormatException((boost::format("Unknown topic: %1%") % topic).str());
-            uint32_t connection_id = topic_conn_id_iter->second;
+        std::map<std::string, uint32_t>::const_iterator topic_conn_id_iter = topic_connection_ids_.find(topic);
+        if (topic_conn_id_iter == topic_connection_ids_.end())
+            throw BagFormatException((boost::format("Unknown topic: %1%") % topic).str());
+        uint32_t connection_id = topic_conn_id_iter->second;
 
-            std::map<uint32_t, ConnectionInfo*>::const_iterator connection_iter = connections_.find(connection_id);
-            if (connection_iter == connections_.end())
-        	throw BagFormatException((boost::format("Unknown connection ID: %1%") % connection_id).str());
-            ConnectionInfo* connection_info = connection_iter->second;
+        std::map<uint32_t, ConnectionInfo*>::const_iterator connection_iter = connections_.find(connection_id);
+        if (connection_iter == connections_.end())
+            throw BagFormatException((boost::format("Unknown connection ID: %1%") % connection_id).str());
+        ConnectionInfo* connection_info = connection_iter->second;
 
-            boost::shared_ptr<T> p = boost::shared_ptr<T>(new T());
+        boost::shared_ptr<T> p = boost::shared_ptr<T>(new T());
 
-            // Create a new connection header, updated with the latching and callerid values
-            boost::shared_ptr<ros::M_string> message_header(new ros::M_string);
-            for (ros::M_string::const_iterator i = connection_info->header->begin(); i != connection_info->header->end(); i++)
-        	(*message_header)[i->first] = i->second;
-            (*message_header)["latching"] = latching;
-            (*message_header)["callerid"] = callerid;
+        // Create a new connection header, updated with the latching and callerid values
+        boost::shared_ptr<ros::M_string> message_header(new ros::M_string);
+        for (ros::M_string::const_iterator i = connection_info->header->begin(); i != connection_info->header->end(); i++)
+            (*message_header)[i->first] = i->second;
+        (*message_header)["latching"] = latching;
+        (*message_header)["callerid"] = callerid;
 
-            // Set the connection header (if this is a ros::Message)
-            ros::assignSubscriptionConnectionHeader<T>(p.get(), message_header);
+        // Set the connection header (if this is a ros::Message)
+        ros::assignSubscriptionConnectionHeader<T>(p.get(), message_header);
 
-            ros::serialization::PreDeserializeParams<T> predes_params;
-            predes_params.message = p;
-            predes_params.connection_header = message_header;
-            ros::serialization::PreDeserialize<T>::notify(predes_params);
+        ros::serialization::PreDeserializeParams<T> predes_params;
+        predes_params.message = p;
+        predes_params.connection_header = message_header;
+        ros::serialization::PreDeserialize<T>::notify(predes_params);
 
-            // Deserialize the message
-            ros::serialization::IStream s(record_buffer_.getData(), record_buffer_.getSize());
-            ros::serialization::deserialize(s, *p);
+        // Deserialize the message
+        ros::serialization::IStream s(record_buffer_.getData(), record_buffer_.getSize());
+        ros::serialization::deserialize(s, *p);
 
-            return p;
+        return p;
 	}
     default:
         throw BagFormatException((boost::format("Unhandled version: %1%") % version_).str());
@@ -490,12 +481,7 @@ void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg,
     }
 
     {
-    	//! \todo enabling this lock seems to cause a deadlock - do we even need it?
-        //boost::mutex::scoped_lock lock(record_mutex_);
-
         // Seek to the end of the file (needed in case previous operation was a read)
-        //! \todo only do when necessary
-      ROS_DEBUG("Seeking for write...");
         seek(0, std::ios::end);
         file_size_ = file_.getOffset();
 
@@ -571,18 +557,14 @@ void Bag::writeMessageDataRecord(uint32_t conn_id, ros::Time const& time, T cons
     
     ros::serialization::OStream s(record_buffer_.getData(), msg_ser_len);
 
-    // TODO: If we are clever here, we can serialize into the outgoing_chunk_buffer and get
-    // rid of the record_buffer_ altogether
-    ROS_DEBUG("SERIALIZE");
+    // todo: serialize into the outgoing_chunk_buffer & remove record_buffer_
     ros::serialization::serialize(s, msg);
 
     // We do an extra seek here since writing our data record may
     // have indirectly moved our file-pointer if it was a
     // MessageInstance for our own bag
-      ROS_DEBUG("Seeking for write2...");
     seek(0, std::ios::end);
     file_size_ = file_.getOffset();
-
 
     ROS_DEBUG("Writing MSG_DATA [%llu:%d]: conn=%d sec=%d nsec=%d data_len=%d",
               (unsigned long long) file_.getOffset(), getChunkOffset(), conn_id, time.sec, time.nsec, msg_ser_len);
@@ -591,7 +573,7 @@ void Bag::writeMessageDataRecord(uint32_t conn_id, ros::Time const& time, T cons
     writeDataLength(msg_ser_len);
     write((char*) record_buffer_.getData(), msg_ser_len);
     
-    // TODO: Using appendHeaderToBuffer is ugly.  We need a better abstraction
+    // todo: use better abstraction than appendHeaderToBuffer
     appendHeaderToBuffer(outgoing_chunk_buffer_, header);
     appendDataLengthToBuffer(outgoing_chunk_buffer_, msg_ser_len);
 
@@ -599,9 +581,11 @@ void Bag::writeMessageDataRecord(uint32_t conn_id, ros::Time const& time, T cons
     outgoing_chunk_buffer_.setSize(outgoing_chunk_buffer_.getSize() + msg_ser_len);
     memcpy(outgoing_chunk_buffer_.getData() + offset, record_buffer_.getData(), msg_ser_len);
     
-    // Update the current chunk time
+    // Update the current chunk time range
     if (time > curr_chunk_info_.end_time)
     	curr_chunk_info_.end_time = time;
+    else if (time < curr_chunk_info_.start_time)
+        curr_chunk_info_.start_time = time;
 }
 
 } // namespace rosbag

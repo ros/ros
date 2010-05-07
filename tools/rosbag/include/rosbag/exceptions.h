@@ -46,9 +46,6 @@ public:
     BagException(std::string const& msg) : ros::Exception(msg) { }
 };
 
-//! Exception thrown if trying to read from or write to an unopened bag
-class BagNotOpenException : public BagException { };
-
 //! Exception thrown when on IO problems
 class BagIOException : public BagException
 {
@@ -61,6 +58,13 @@ class BagFormatException : public BagException
 {
 public:
     BagFormatException(std::string const& msg) : BagException(msg) { }
+};
+
+//! Exception thrown on problems reading the bag index
+class BagUnindexedException : public BagException
+{
+public:
+    BagUnindexedException() : BagException("Bag unindexed") { }
 };
 
 } // namespace rosbag

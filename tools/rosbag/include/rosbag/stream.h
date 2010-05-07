@@ -42,7 +42,8 @@
 #include <boost/shared_ptr.hpp>
 
 #include <bzlib.h>
-//#include <zlib.h>
+
+#include "rosbag/exceptions.h"
 
 namespace rosbag {
 
@@ -52,7 +53,6 @@ namespace compression
     {
         None = 0,
         BZ2  = 1,
-        //ZLIB = 2
     };
 }
 typedef compression::CompressionType CompressionType;
@@ -67,16 +67,16 @@ public:
 
     virtual CompressionType getCompressionType() const = 0;
 
-    virtual size_t write(void* ptr, size_t size) = 0;
-    virtual size_t read (void* ptr, size_t size) = 0;
+    virtual void write(void* ptr, size_t size) = 0;
+    virtual void read (void* ptr, size_t size) = 0;
 
-    virtual void   decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len) = 0;
+    virtual void decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len) = 0;
 
-    virtual void   startWrite();
-    virtual void   stopWrite();
+    virtual void startWrite();
+    virtual void stopWrite();
 
-    virtual void   startRead();
-    virtual void   stopRead();
+    virtual void startRead();
+    virtual void stopRead();
 
 protected:
     FILE*    getFilePointer();
@@ -103,7 +103,6 @@ public:
 private:
     boost::shared_ptr<Stream> uncompressed_stream_;
     boost::shared_ptr<Stream> bz2_stream_;
-    //boost::shared_ptr<Stream> zlib_stream_;
 };
 
 class UncompressedStream : public Stream
@@ -113,10 +112,10 @@ public:
 
     CompressionType getCompressionType() const;
 
-    size_t write(void* ptr, size_t size);
-    size_t read(void* ptr, size_t size);
+    void write(void* ptr, size_t size);
+    void read(void* ptr, size_t size);
 
-    void   decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len);
+    void decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len);
 };
 
 /*!
@@ -129,18 +128,15 @@ public:
 
     CompressionType getCompressionType() const;
 
-    void   startWrite();
-    size_t write(void* ptr, size_t size);
-    void   stopWrite();
+    void startWrite();
+    void write(void* ptr, size_t size);
+    void stopWrite();
 
-    void   startRead();
-    size_t read(void* ptr, size_t size);
-    void   stopRead();
+    void startRead();
+    void read(void* ptr, size_t size);
+    void stopRead();
 
-    void   decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len);
-
-private:
-    void checkError() const;
+    void decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len);
 
 private:
     int     verbosity_;        //!< level of debugging output (0-4; 0 default). 0 is silent, 4 is max verbose debugging output
@@ -150,29 +146,6 @@ private:
     BZFILE* bzfile_;           //!< bzlib compressed file stream
     int     bzerror_;          //!< last error from bzlib
 };
-
-#if 0
-/*!
- * ZLIBStream use zlibc (http://www.zlib.net) for reading/writing compressed data in the ZLIB format.
- */
-class ZLIBStream : public Stream
-{
-public:
-    ZLIBStream(ChunkedFile* file);
-
-    CompressionType getCompressionType() const;
-
-    void   startWrite();
-    size_t write(void* ptr, size_t size);
-    void   stopWrite();
-
-    void   startRead();
-    size_t read(void* ptr, size_t size);
-    void   stopRead();
-
-    void   decompress(uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len);
-};
-#endif
 
 } // namespace rosbag
 

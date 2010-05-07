@@ -42,11 +42,12 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
 
+#include "ros/message.h"
+
 #undef ROSCPP_DEPRECATED
 #define ROSCPP_DEPRECATED
 #define IGNORE_ROSRECORD_DEPRECATED
 #include "rosrecord/Recorder.h"
-#undef ROSCPP_DEPRECATED
 
 using std::string;
 

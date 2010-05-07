@@ -36,9 +36,12 @@
 
 #include <iostream>
 
+#include <boost/format.hpp>
+
 #include <ros/ros.h>
 
 using std::string;
+using boost::format;
 using boost::shared_ptr;
 using ros::Exception;
 
@@ -58,18 +61,14 @@ ChunkedFile::~ChunkedFile() {
     close();
 }
 
-bool ChunkedFile::openReadWrite(string const& filename) { return open(filename, "r+b"); }
-bool ChunkedFile::openWrite    (string const& filename) { return open(filename, "w+b");  }
-bool ChunkedFile::openRead     (string const& filename) { return open(filename, "rb");  }
+void ChunkedFile::openReadWrite(string const& filename) { open(filename, "r+b"); }
+void ChunkedFile::openWrite    (string const& filename) { open(filename, "w+b");  }
+void ChunkedFile::openRead     (string const& filename) { open(filename, "rb");  }
 
-bool ChunkedFile::open(string const& filename, string const& mode) {
-    ROS_DEBUG("Opening file '%s' with mode '%s'", filename.c_str(), mode.c_str());
-
+void ChunkedFile::open(string const& filename, string const& mode) {
     // Check if file is already open
-    if (file_) {
-        ROS_ERROR("File already open: %s", filename_.c_str());
-        return false;
-    }
+    if (file_)
+        throw BagIOException((format("File already open: %1%") % filename_.c_str()).str());
 
     // Open the file
     if (mode == "r+b") {
@@ -85,17 +84,13 @@ bool ChunkedFile::open(string const& filename, string const& mode) {
     else
         file_ = fopen(filename.c_str(), mode.c_str());
 
-    if (!file_) {
-        ROS_ERROR("Error opening file: %s", filename.c_str());
-        return false;
-    }
+    if (!file_)
+        throw BagIOException((format("Error opening file: %1%") % filename_.c_str()).str());
 
     read_stream_  = shared_ptr<Stream>(new UncompressedStream(this));
     write_stream_ = shared_ptr<Stream>(new UncompressedStream(this));
     filename_     = filename;
     offset_       = ftell(file_);
-
-    return true;
 }
 
 bool ChunkedFile::good() const {
@@ -105,119 +100,69 @@ bool ChunkedFile::good() const {
 bool   ChunkedFile::isOpen()      const { return file_ != NULL; }
 string ChunkedFile::getFileName() const { return filename_;     }
 
-bool ChunkedFile::close() {
+void ChunkedFile::close() {
     if (!file_)
-        return true;
+        return;
 
     // Close any compressed stream by changing to uncompressed mode
     setWriteMode(compression::None);
 
     // Close the file
     int success = fclose(file_);
-    if (success != 0) {
-        ROS_ERROR("Error closing file: %s", filename_.c_str());
-        return false;
-    }
+    if (success != 0)
+        throw BagIOException((format("Error closing file: %1%") % filename_.c_str()).str());
 
     file_ = NULL;
     filename_.clear();
     
     clearUnused();
-
-    return true;
 }
 
 // Read/write modes
 
-bool ChunkedFile::setWriteMode(CompressionType type) {
-    if (!file_) {
-        ROS_ERROR("Can't set compression mode before opening a file");
-        return false;
-    }
+void ChunkedFile::setWriteMode(CompressionType type) {
+    if (!file_)
+        throw BagIOException("Can't set compression mode before opening a file");
 
-    if (type == write_stream_->getCompressionType())
-        return true;
-
-    try {
+    if (type != write_stream_->getCompressionType()) {
         write_stream_->stopWrite();
-    }
-    catch (Exception const& ex) {
-        ROS_ERROR("Error stopping write mode: %s", ex.what());
-        return false;
-    }
-
-    shared_ptr<Stream> stream = stream_factory_->getStream(type);
-
-    try {
+        shared_ptr<Stream> stream = stream_factory_->getStream(type);
         stream->startWrite();
+        write_stream_ = stream;
     }
-    catch (Exception const& ex) {
-        ROS_ERROR("Error starting write mode: %s", ex.what());
-        return false;
-    }
-
-    write_stream_ = stream;
-
-    return true;
 }
 
-bool ChunkedFile::setReadMode(CompressionType type) {
-    if (!file_) {
-        ROS_ERROR("Can't set compression mode before opening a file");
-        return false;
-    }
+void ChunkedFile::setReadMode(CompressionType type) {
+    if (!file_)
+        throw BagIOException("Can't set compression mode before opening a file");
 
-    if (type == read_stream_->getCompressionType())
-        return true;
-
-    try {
+    if (type != read_stream_->getCompressionType()) {
         read_stream_->stopRead();
-    }
-    catch (Exception const& ex) {
-        ROS_ERROR("Error stopping read mode: %s", ex.what());
-        return false;
-    }
-
-    shared_ptr<Stream> stream = stream_factory_->getStream(type);
-
-    try {
+        shared_ptr<Stream> stream = stream_factory_->getStream(type);
         stream->startRead();
+        read_stream_ = stream;
     }
-    catch (Exception const& ex) {
-        ROS_ERROR("Error starting read mode: %s", ex.what());
-        return false;
-    }
-
-    read_stream_ = stream;
-
-    return true;
 }
 
-bool ChunkedFile::seek(uint64_t offset, int origin) {
-    if (!file_) {
-        ROS_ERROR("Can't seek - file not open");
-        return false;
-    }
+void ChunkedFile::seek(uint64_t offset, int origin) {
+    if (!file_)
+        throw BagIOException("Can't seek - file not open");
 
     setReadMode(compression::None);
 
     int success = fseek(file_, offset, origin);
-    if (success != 0) {
-        ROS_ERROR("Error seeking");
-        return false;
-    }
+    if (success != 0)
+        throw BagIOException("Error seeking");
 
     offset_ = ftell(file_);
-
-    return true;
 }
 
 uint64_t ChunkedFile::getOffset()            const { return offset_;        }
 uint32_t ChunkedFile::getCompressedBytesIn() const { return compressed_in_; }
 
-size_t ChunkedFile::write(string const& s)        { return write((void*) s.c_str(), s.size()); }
-size_t ChunkedFile::write(void* ptr, size_t size) { return write_stream_->write(ptr, size);    }
-size_t ChunkedFile::read(void* ptr, size_t size)  { return read_stream_->read(ptr, size); }
+void ChunkedFile::write(string const& s)        { write((void*) s.c_str(), s.size()); }
+void ChunkedFile::write(void* ptr, size_t size) { write_stream_->write(ptr, size);    }
+void ChunkedFile::read(void* ptr, size_t size)  { read_stream_->read(ptr, size);      }
 
 bool ChunkedFile::truncate(uint64_t length) {
     int fd = fileno(file_);

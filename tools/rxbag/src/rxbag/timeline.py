@@ -99,6 +99,8 @@ class TimelinePanel(LayerPanel):
 
         self.playhead = playhead.PlayheadLayer(self, 'Playhead', self.timeline, 0, 0, 12, self.timeline.height)
 
+        self.timeline.set_renderers_active(True)
+
         self.layers = [self.timeline, self.status, self.playhead]
 
     def _create_toolbar(self):
@@ -148,10 +150,6 @@ class Timeline(Layer):
 
         ## Rendering parameters
 
-        self.time_minor_pen     = wx.Pen('#aaaaaa', 1)#, wx.LONG_DASH)
-        self.time_tick_pen      = wx.Pen('#888888', 1)#, wx.SHORT_DASH)
-        self.time_tick_height   = 3
-
         self.sec_divisions = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5,                                 # 1ms, 5ms, 10ms, 50ms, 100ms, 500ms
                               1, 5, 15, 30,                                                       # 1s, 5s, 15s, 30s
                               1 * 60, 2 * 60, 5 * 60, 10 * 60, 15 * 60, 30 * 60,                  # 1m, 2m, 5m, 10m, 15m, 30m
@@ -160,18 +158,14 @@ class Timeline(Layer):
         self.minor_spacing = 15
         self.major_spacing = 50
 
+        self.time_font_height  = None
         self.topic_font_height = None
         self.topic_name_sizes  = None
         self.margin_left       = 0
         self.margin_right      = 20
-
-        self.time_font        = wx.Font(8, wx.FONTFAMILY_SCRIPT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
-        self.time_font_height = None
-        
-        self.history_top        = 24
-        self.history_border_pen = wx.Pen('black', 1)
-
-        self.bag_end_width = 3
+        self.history_top       = 24
+        self.bag_end_width     = 3
+        self.time_tick_height  = 3
         
         self.default_datatype_color = wx.Colour(0, 0, 0)
         self.datatype_colors = {
@@ -266,6 +260,8 @@ class Timeline(Layer):
 
         self.play_thread = PlayThread(self)
         self.play_thread.start()
+        
+        self.message_history_cache = {}
 
     @property
     def start_stamp(self):
@@ -374,8 +370,8 @@ class Timeline(Layer):
         else:
             self.rendered_topics.clear()
 
-        self.force_repaint()
-        self.parent.playhead.force_repaint()
+        self.invalidate()
+        self.parent.playhead.invalidate()
 
     def set_renderer_active(self, topic, active):
         if active:
@@ -387,8 +383,8 @@ class Timeline(Layer):
                 return
             self.rendered_topics.remove(topic)
         
-        self.force_repaint()
-        self.parent.playhead.force_repaint()
+        self.invalidate()
+        self.parent.playhead.invalidate()
 
     def add_listener(self, topic, listener):
         self.listeners.setdefault(topic, []).append(listener)
@@ -397,8 +393,10 @@ class Timeline(Layer):
 
     def remove_listener(self, topic, listener):
         topic_listeners = self.listeners.get(topic)
-        if not topic_listeners is None and listener in topic_listeners:
+        if topic_listeners is not None and listener in topic_listeners:
             topic_listeners.remove(listener)
+            if len(topic_listeners) == 0:
+                del self.listeners[topic]
 
     @property
     def history_bottom(self):
@@ -449,7 +447,7 @@ class Timeline(Layer):
         self.stamp_left  = stamp_left
         self.stamp_right = stamp_right
 
-        self.force_repaint()
+        self.invalidate()
 
     def translate_timeline(self, dx):
         dstamp = self.map_dx_to_dstamp(dx)
@@ -457,7 +455,7 @@ class Timeline(Layer):
         self.stamp_left  -= dstamp
         self.stamp_right -= dstamp
 
-        self.force_repaint()
+        self.invalidate()
 
     def reset_zoom(self):
         self.set_timeline_view(self.start_stamp, self.end_stamp)
@@ -481,7 +479,7 @@ class Timeline(Layer):
 
         self._layout()
 
-        self.force_repaint()
+        self.invalidate()
     
     def set_playhead(self, playhead):
         with self.playhead_lock:
@@ -523,18 +521,12 @@ class Timeline(Layer):
         
         self.resize(w - self.x, h - self.y)   # resize layer to fill client area
 
-    def check_dirty(self):
-        pass
-
     def paint(self, dc):
         if len(self.topics) == 0:
             return
 
         if self.stamp_left is None:
             self.reset_timeline()
-
-        if self.stamp_left is None or self.stamp_right is None:
-            return
 
         dc.set_antialias(cairo.ANTIALIAS_NONE)
 
@@ -545,7 +537,13 @@ class Timeline(Layer):
 
         self._draw_topic_dividers(dc)
         self._draw_time_indicators(dc)
-        self._draw_message_history(dc)
+        for topic in sorted(self.history_bounds.keys()):
+            if topic not in self.message_history_cache:
+                self._draw_message_history(dc, topic)
+                self.invalidate()
+                break
+            else:
+                self._draw_message_history(dc, topic)
         self._draw_bag_ends(dc)
         self._draw_topic_names(dc)
         self._draw_history_border(dc)
@@ -564,8 +562,13 @@ class Timeline(Layer):
         max_topic_name_width   = max([w for (w, h) in self.topic_name_sizes.values()])
         self.topic_font_height = max([h for (w, h) in self.topic_name_sizes.values()])
 
-        self.history_left  = self.margin_left + max_topic_name_width + 0
-        self.history_width = self.width - self.history_left - self.margin_right
+        new_history_left  = self.margin_left + max_topic_name_width + 3
+        new_history_width = self.width - self.history_left - self.margin_right
+        updated_history = new_history_left != self.history_left or new_history_width != self.history_width
+        if updated_history:
+            self.history_left  = new_history_left
+            self.history_width = new_history_width
+            self.parent.playhead.update_position()
 
         self.history_bounds = {}
         y = self.history_top
@@ -624,11 +627,6 @@ class Timeline(Layer):
             self._draw_minor_divisions(dc, minor_stamps, start_stamp, minor_division)
 
     def _draw_major_divisions(self, dc, stamps, start_stamp, division):
-        #self.time_major_pen     = wx.Pen('#222222', 1)#, wx.SHORT_DASH)
-        #dc.SetPen(self.time_major_pen)
-        #dc.SetFont(self.time_font)
-        #dc.SetTextForeground(self.time_font_color)
-
         dc.set_line_width(1)
 
         for stamp in stamps:
@@ -700,65 +698,71 @@ class Timeline(Layer):
         else:                               # show seconds.00
             return '%d.%03d' % (secs, int(1000.0 * (elapsed - int(elapsed))))
 
-    def _draw_message_history(self, dc):
-        """Draw boxes to show message regions on timelines"""
-        for topic, (x, y, w, h) in self.history_bounds.items():
-            msg_y      = y + 1
-            msg_height = h - 1
+    def _draw_message_history(self, dc, topic):
+        """
+        Draw boxes to show message regions on timelines.
+        """
+        x, y, w, h = self.history_bounds[topic]
+        
+        msg_y      = y + 1
+        msg_height = h - 1
 
-            # Get all the connections on this topic
-            connections = list(self.bag_file._get_connections(topic))
+        # Get all the connections on this topic
+        connections = list(self.bag_file._get_connections(topic))
 
-            datatype = connections[0].datatype
+        datatype = connections[0].datatype
+
+        # Get the renderer and the message combine interval
+        renderer = None
+        msg_combine_interval = None
+        if topic in self.rendered_topics:
+            renderer = self.timeline_renderers.get(datatype)
+            if not renderer is None:
+                msg_combine_interval = self.map_dx_to_dstamp(renderer.msg_combine_px)
+        if msg_combine_interval is None:
+            msg_combine_interval = self.map_dx_to_dstamp(self.default_msg_combine_px)
             
-            datatype_color = self.datatype_colors.get(datatype, self.default_datatype_color)
+        start_time = roslib.rostime.Time.from_sec(max(0.0, self.stamp_left))
+        end_time   = roslib.rostime.Time.from_sec(max(0.0, self.stamp_right))
 
-            # Get the renderer and the message combine interval
-            renderer = None
-            msg_combine_interval = None
-            if topic in self.rendered_topics:
-                renderer = self.timeline_renderers.get(datatype)
-                if not renderer is None:
-                    msg_combine_interval = self.map_dx_to_dstamp(renderer.msg_combine_px)
-            if msg_combine_interval is None:
-                msg_combine_interval = self.map_dx_to_dstamp(self.default_msg_combine_px)
+        if topic not in self.message_history_cache:
+            start_time = roslib.rostime.Time.from_sec(max(0.0, self.start_stamp))
+            end_time   = roslib.rostime.Time.from_sec(max(0.0, self.end_stamp))
+            all_stamps = list(entry.time.to_sec() for entry in self.bag_file._get_entries(connections, start_time, end_time))
+            
+            self.message_history_cache[topic] = all_stamps
+        else:
+            all_stamps = self.message_history_cache[topic]
+            
+        start_index = bisect.bisect_left(all_stamps, self.stamp_left)
+        end_index   = bisect.bisect_left(all_stamps, self.stamp_right)
 
-            # Get a generator for the visible stamps on this topic
-            start_time = roslib.rostime.Time.from_sec(max(0.0, self.stamp_left))
-            end_time   = roslib.rostime.Time.from_sec(max(0.0, self.stamp_right))
+        # Set pen based on datatype
+        datatype_color = self.datatype_colors.get(datatype, self.default_datatype_color)
+        dc.set_source_rgb(datatype_color.red / 255.0, datatype_color.green / 255.0, datatype_color.blue / 255.0) 
 
-            # Set pen based on datatype
-            dc.set_source_rgb(datatype_color.red / 255.0, datatype_color.green / 255.0, datatype_color.blue / 255.0) 
+        # Iterate through regions of connected messages
+        width_interval = self.history_width / (self.stamp_right - self.stamp_left)
 
-            stamps = (entry.time.to_sec() for entry in self.bag_file._get_entries(connections, start_time, end_time))
+        for (stamp_start, stamp_end) in self._find_regions(all_stamps[start_index:end_index], self.map_dx_to_dstamp(self.default_msg_combine_px)):
+            region_x_start = self.history_left + (stamp_start - self.stamp_left) * width_interval
+            region_x_end   = self.history_left + (stamp_end   - self.stamp_left) * width_interval
+            region_width   = max(1, region_x_end - region_x_start)
 
+            dc.rectangle(region_x_start, msg_y, region_width, msg_height)
+
+        dc.fill()
+
+        # Custom renderer
+        if renderer:
             # Iterate through regions of connected messages
-            for (stamp_start, stamp_end) in self._find_regions(stamps, self.map_dx_to_dstamp(self.default_msg_combine_px)):
-                # Calculate region rectangle bounds 
-                region_x_start = self.map_stamp_to_x(stamp_start)
-                region_x_end   = self.map_stamp_to_x(stamp_end)
+            for (stamp_start, stamp_end) in self._find_regions(all_stamps[start_index:end_index], msg_combine_interval):
+                region_x_start = self.history_left + (stamp_start - self.stamp_left) * width_interval
+                region_x_end   = self.history_left + (stamp_end   - self.stamp_left) * width_interval
                 region_width   = max(1, region_x_end - region_x_start)
-                region_rect    = (region_x_start, msg_y, region_width, msg_height)
 
-                # Use default renderer
-                dc.rectangle(*region_rect)
-                dc.fill()
+                renderer.draw_timeline_segment(dc, topic, stamp_start, stamp_end, region_x_start, msg_y, region_width, msg_height)
 
-            # Custom renderer
-            stamps = (entry.time.to_sec() for entry in self.bag_file._get_entries(connections, start_time, end_time))
-
-            if renderer:
-                # Iterate through regions of connected messages
-                for (stamp_start, stamp_end) in self._find_regions(stamps, msg_combine_interval):
-                    # Calculate region rectangle bounds 
-                    region_x_start = self.map_stamp_to_x(stamp_start)
-                    region_x_end   = self.map_stamp_to_x(stamp_end)
-                    region_width   = max(1, region_x_end - region_x_start)
-                    region_rect    = (region_x_start, msg_y, region_width, msg_height)
-    
-                    # Use custom datatype renderer
-                    renderer.draw_timeline_segment(dc, topic, stamp_start, stamp_end, *region_rect)
-                    
     def _find_regions(self, stamps, max_interval):
         """Group timestamps into regions connected by timestamps less than max_interval secs apart"""
         region_start, prev_stamp = None, None
@@ -887,6 +891,9 @@ class Timeline(Layer):
             x, y = mouse_pos
 
             dx, dy = x - self.clicked_pos[0], y - self.clicked_pos[1]
+            
+            if not self.history_left:
+                return
 
             if dx != 0:
                 self.translate_timeline(dx)
@@ -900,6 +907,9 @@ class Timeline(Layer):
 
         elif left:
             x, y = mouse_pos[0] - self.x, mouse_pos[1] - self.y
+            
+            if not self.history_left:
+                return
 
             self.set_playhead(self.map_x_to_stamp(x))
 
@@ -924,12 +934,7 @@ class Timeline(Layer):
                 playhead_position = self.playhead_positions[topic]
                 if playhead_position is not None:
                     # Load the message
-                    (topic, msg, t) = self.bag_file._read_message(playhead_position, raw=True)
-                    datatype, data, md5sum, pos, msg_type = msg
-                    msg = msg_type()
-                    msg.deserialize(data)
-
-                    msgs[topic] = (t, datatype, pos, msg)
+                    msgs[topic] = self.bag_file._read_message(playhead_position)
                     continue
 
             msgs[topic] = None
@@ -939,10 +944,10 @@ class Timeline(Layer):
             topic_listeners = self.listeners.get(topic)
             if not topic_listeners:
                 continue
-            
+
             if msg_data:
                 for listener in topic_listeners:
-                    listener.message_viewed(self.bag_file, topic, *msg_data)
+                    listener.message_viewed(self.bag_file, msg_data)
             else:
                 for listener in topic_listeners:
                     listener.message_cleared()

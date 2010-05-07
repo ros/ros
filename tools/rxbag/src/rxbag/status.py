@@ -46,8 +46,6 @@ class StatusLayer(Layer):
         
         self.timeline = timeline
 
-        self.font = wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
-
     def paint(self, dc):
         if not self.timeline.playhead:
             return

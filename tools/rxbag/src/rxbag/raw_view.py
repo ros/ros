@@ -59,26 +59,25 @@ class RawView(TopicMessageView):
         self.msg_tree = MessageTree(self.parent)
         self.msg_tree.SetPosition((0, 20))
 
-        self.msg_index = None
-        self.msg_stamp = None
-
         self.msg_displayed = None
         self.msg_incoming  = None
 
         self.self_paint = True
 
-    def message_viewed(self, bag_file, topic, stamp, datatype, msg_index, msg):
-        TopicMessageView.message_viewed(self, bag_file, topic, stamp, datatype, msg_index, msg)
+    def message_viewed(self, bag_file, msg_details):
+        TopicMessageView.message_viewed(self, bag_file, msg_details)
 
-        if stamp is None or msg_index is None:
+        topic, msg, t = msg_details
+
+        if t is None:
             self.message_cleared()
         else:
-            self.msg_title.SetValue('%s #%s' % (time.asctime(time.localtime(stamp.to_sec())), str(msg_index)))
+            self.msg_title.SetValue(str(time.asctime(time.localtime(t.to_sec()))))
             self.msg_title.Refresh()
-    
+
             self.msg_incoming = msg
             self.invalidate()
-        
+
     def message_cleared(self):
         TopicMessageView.message_cleared(self)
 
@@ -86,7 +85,7 @@ class RawView(TopicMessageView):
 
     def paint(self, dc):
         if self.msg_incoming != self.msg_displayed:
-            self.msg_tree.set_message(self.msg_index, self.msg_stamp, self.msg_incoming)
+            self.msg_tree.set_message(self.msg_incoming)
             self.msg_displayed = self.msg_incoming
 
     def on_size(self, event):
@@ -116,7 +115,7 @@ class MessageTree(wx.TreeCtrl):
     def msg(self):
         return self._msg
     
-    def set_message(self, index, stamp, msg):
+    def set_message(self, msg):
         # Remember whether items were expanded or not before deleting
         if self._msg:
             for item in self.get_all_items():

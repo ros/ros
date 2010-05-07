@@ -46,18 +46,8 @@ class Layer:
         self._width  = width
         self._height = height
 
-        self.parent      = parent
-        self.title       = title    
-        self.max_repaint = max_repaint
-
-        self.self_paint = False
-
-        if not self.self_paint:
-            self.bitmap = wx.EmptyBitmap(self._width, self._height)
-
-        self._last_repaint  = None
-        self._dirty         = True
-        self._force_repaint = False
+        self.parent = parent
+        self.title  = title    
 
     # Interface to implement in derived classes
 
@@ -77,7 +67,7 @@ class Layer:
         
         self._x, self._y = x, y
         
-        self.force_repaint()
+        self.invalidate()
 
     def resize(self, width, height):
         if self._width == width and self._height == height:
@@ -85,18 +75,12 @@ class Layer:
         
         self._width, self._height = width, height
         
-        if not self.self_paint:
-            self.bitmap = wx.EmptyBitmap(self._width, self._height)
-
-        self.force_repaint()
+        self.invalidate()
 
     def contains(self, x, y):
         return x >= self._x and y >= self._y and x <= self.right and y <= self.bottom
 
     def invalidate(self):
-        self.parent.Refresh()
-        
-    def force_repaint(self):
         self.parent.Refresh()
 
     @property
@@ -121,27 +105,6 @@ class Layer:
 
     def draw(self, dc):
         self.paint(dc)
-
-class TransparentLayer(Layer):
-    TRANSPARENT_COLOR = wx.Colour(5, 5, 5) 
-
-    def __init__(self, parent, title, x, y, width, height, max_repaint=None):
-        Layer.__init__(self, parent, title, x, y, width, height, max_repaint)
-
-        self._transparent_bitmap = None
-
-        self.bitmap.SetMask(wx.Mask(self.bitmap, self.TRANSPARENT_COLOR))
-
-    def paint_to_bitmap(self):
-        Layer.paint_to_bitmap(self)
-
-        self._transparent_bitmap = self._make_transparent(self.bitmap)
-
-    def draw(self, dc):
-        self.paint(dc)
-
-    def paint(self, dc):
-        pass
 
 class LayerPanel(wx.Window):
     def __init__(self, *args, **kwargs):
@@ -175,12 +138,8 @@ class LayerPanel(wx.Window):
 
     def on_paint(self, event):
         self.paint()
-        
-    def paint(self):
-        paint_layers = [layer for layer in self.layers if not layer.self_paint]
-        if len(paint_layers) == 0:
-            return
 
+    def paint(self):
         pdc = wx.PaintDC(self)
         dc = wx.lib.wxcairo.ContextFromDC(pdc)
         
@@ -188,7 +147,7 @@ class LayerPanel(wx.Window):
         dc.rectangle(0, 0, self.width, self.height)
         dc.fill()
         
-        for layer in paint_layers:
+        for layer in self.layers:
             dc.save()
             dc.translate(layer.x, layer.y)
             layer.draw(dc)

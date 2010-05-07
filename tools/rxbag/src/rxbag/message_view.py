@@ -66,7 +66,7 @@ class MessageView(Layer):
         self.timeline = timeline
         self.border   = False
     
-    def message_viewed(self, bag, topic, t, datatype, msg_index, msg):
+    def message_viewed(self, bag, topic, msg, t):
         pass
     
     def message_cleared(self):
@@ -84,15 +84,17 @@ class TopicMessageView(MessageView):
     
         self._create_toolbar()
 
-    def message_viewed(self, bag, topic, t, datatype, msg_index, msg):
+    def message_viewed(self, bag, msg_details):
+        topic, msg, t = msg_details
+        
         self.topic     = topic
-        self.msg_index = msg_index
-    
+        #self.msg_index = msg_index
+
     def message_cleared(self):
-        self.msg_index = None
+        pass
+        #self.msg_index = None
         
     def on_close(self, event):
-        return
         self.timeline.remove_view(self.topic, self)
 
     def navigate_first(self):
@@ -123,7 +125,7 @@ class TopicMessageView(MessageView):
             topic_positions = self.timeline.bag_index.msg_positions[self.topic]
             if len(topic_positions) > 0:
                 self.timeline.set_playhead(topic_positions[-1][0])
-                
+
     @property
     def frame(self):
         return self.parent.GetParent()

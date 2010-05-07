@@ -37,11 +37,11 @@ import roslib; roslib.load_manifest(PKG)
 
 import wx
 
-from util.layer import TransparentLayer
+from util.layer import Layer
 
-class PlayheadLayer(TransparentLayer):
+class PlayheadLayer(Layer):
     def __init__(self, parent, title, timeline, x, y, width, height, max_repaint=None):
-        TransparentLayer.__init__(self, parent, title, x, y, width, height, max_repaint)
+        Layer.__init__(self, parent, title, x, y, width, height, max_repaint)
         
         self.timeline = timeline
         
@@ -56,7 +56,10 @@ class PlayheadLayer(TransparentLayer):
             self.update_position()
 
     def paint(self, dc):
-        TransparentLayer.paint(self, dc)
+        Layer.paint(self, dc)
+        
+        if not self.timeline.playhead:
+            return
         
         px, pw, ph = self.width / 2, self.pointer_size[0], self.pointer_size[1]
 
@@ -86,11 +89,6 @@ class PlayheadLayer(TransparentLayer):
 
     def on_size(self, event):
         self.resize(self.width, self.timeline.height)
-        
-    def on_mouse_move(self, event):
-        TransparentLayer.on_mouse_move(self, event)
-
-        self.update_position()
 
     def update_position(self):
         if not self.timeline.playhead:

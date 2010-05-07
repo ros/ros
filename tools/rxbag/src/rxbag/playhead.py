@@ -63,13 +63,14 @@ class PlayheadLayer(Layer):
         
         px, pw, ph = self.width / 2, self.pointer_size[0], self.pointer_size[1]
 
-        dc.set_line_width(1)
-        dc.set_source_rgb(1, 0, 0)
-
         # Line
+        dc.set_line_width(2)
+        dc.set_source_rgba(1, 0, 0, 0.75)
         dc.move_to(px, self.timeline.history_top - 1)
         dc.line_to(px, self.timeline.history_bottom + 2)
         dc.stroke()
+
+        dc.set_source_rgb(1, 0, 0)
 
         # Upper triangle
         py = self.timeline.history_top - ph

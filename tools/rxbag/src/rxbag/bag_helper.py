@@ -51,8 +51,5 @@ import util.progress_meter
 
 class BagHelper:
     @staticmethod
-    def stamp_to_str(secs):
-        secs_frac = secs - int(secs) 
-        secs_frac_str = ('%.2f' % secs_frac)[1:]
-
-        return time.strftime('%b %d %Y %H:%M:%S', time.localtime(secs)) + secs_frac_str
+    def stamp_to_str(t):
+        return time.strftime('%b %d %Y %H:%M:%S', time.localtime(t.to_sec())) + '.%03d' % (t.nsecs / 1000000)

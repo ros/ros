@@ -50,7 +50,9 @@ class StatusLayer(Layer):
         if not self.timeline.playhead:
             return
 
-        s = BagHelper.stamp_to_str(self.timeline.playhead)
+        t = roslib.rostime.Time.from_sec(self.timeline.playhead)
+
+        s = BagHelper.stamp_to_str(t)
         
         spd = self.timeline.play_speed
         spd_str = None
@@ -70,10 +72,16 @@ class StatusLayer(Layer):
         if spd_str:
             s += ' ' + spd_str
 
+        dc.set_font_size(14.0)
+        font_width, font_height = dc.text_extents(s)[2:4]
+
         x = self.timeline.margin_left
-        y = self.timeline.history_top - dc.text_extents(s)[3] - 1
+        y = self.timeline.history_top + 8
 
         dc.set_source_rgb(0, 0, 0)
         dc.move_to(x, y)
-        dc.set_font_size(14.0)
         dc.show_text(s)
+
+        #dc.set_font_size(10.0)
+        #dc.move_to(x + font_width + 2, y)
+        #dc.show_text('%d.%09d' % (t.secs, t.nsecs))

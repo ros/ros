@@ -72,7 +72,7 @@ class RawView(TopicMessageView):
         if t is None:
             self.message_cleared()
         else:
-            self.msg_title.SetValue(str(time.asctime(time.localtime(t.to_sec()))))
+            self.msg_title.SetValue(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(t.to_sec())) + '.%03d' % (t.nsecs / 1000000))
             self.msg_title.Refresh()
 
             self.msg_incoming = msg

@@ -163,7 +163,7 @@ class Timeline(Layer):
         self.topic_name_sizes  = None
         self.margin_left       = 0
         self.margin_right      = 20
-        self.history_top       = 24
+        self.history_top       = 8
         self.bag_end_width     = 3
         self.time_tick_height  = 3
         
@@ -228,7 +228,7 @@ class Timeline(Layer):
                 try:
                     while not self.stop_flag:
                         wx.CallAfter(self.step)
-                        time.sleep(0.05)
+                        time.sleep(0.04)  # 25 Hz
                 except:
                     pass
 
@@ -537,13 +537,7 @@ class Timeline(Layer):
 
         self._draw_topic_dividers(dc)
         self._draw_time_indicators(dc)
-        for topic in sorted(self.history_bounds.keys()):
-            if topic not in self.message_history_cache:
-                self._draw_message_history(dc, topic)
-                self.invalidate()
-                break
-            else:
-                self._draw_message_history(dc, topic)
+        self._draw_topic_histories(dc)
         self._draw_bag_ends(dc)
         self._draw_topic_names(dc)
         self._draw_history_border(dc)
@@ -593,13 +587,21 @@ class Timeline(Layer):
         clip_left  = self.history_left
         clip_right = self.history_left + self.history_width
 
-        dc.set_source_rgb(0.86, 0.86, 0.86)
         dc.set_line_width(1)
-        for (x, y, w, h) in self.history_bounds.values():
+        row = 0
+        for topic in self.topics:
+            (x, y, w, h) = self.history_bounds[topic]
+            
             left = max(clip_left, x)
             rect = (left, y, min(clip_right - left, w), h)
+            if row % 2 == 0:
+                dc.set_source_rgba(0.7, 0.7, 0.7, 0.1)
+                dc.rectangle(*rect)
+                dc.fill()
+            dc.set_source_rgba(0.8, 0.8, 0.8, 0.4)
             dc.rectangle(*rect)
-        dc.stroke()
+            dc.stroke()
+            row += 1
 
     def _draw_time_indicators(self, dc):
         """Draw time indicators on the timeline"""
@@ -641,7 +643,7 @@ class Timeline(Layer):
                 dc.move_to(label_x, label_y)
                 dc.show_text(label)
 
-            dc.set_source_rgba(0.13, 0.13, 0.13, 0.5)
+            dc.set_source_rgba(0.25, 0.25, 0.25, 0.3)
             dc.move_to(x, label_y + 1)
             dc.line_to(x, self.history_bottom)
 
@@ -650,13 +652,13 @@ class Timeline(Layer):
     def _draw_minor_divisions(self, dc, stamps, start_stamp, division):
         xs = [self.map_stamp_to_x(stamp) for stamp in stamps]
 
-        dc.set_source_rgba(0.53, 0.53, 0.53, 0.5)
+        dc.set_source_rgba(0.5, 0.5, 0.5, 0.3)
         for x in xs:
             dc.move_to(x, self.history_top - self.time_tick_height)
             dc.line_to(x, self.history_top)
         dc.stroke()
 
-        dc.set_source_rgba(0.66, 0.66, 0.66, 0.5)
+        dc.set_source_rgba(0.6, 0.6, 0.6, 0.3)
         for x in xs:
             dc.move_to(x, self.history_top)
             dc.line_to(x, self.history_bottom)
@@ -698,7 +700,16 @@ class Timeline(Layer):
         else:                               # show seconds.00
             return '%d.%03d' % (secs, int(1000.0 * (elapsed - int(elapsed))))
 
-    def _draw_message_history(self, dc, topic):
+    def _draw_topic_histories(self, dc):
+        for topic in sorted(self.history_bounds.keys()):
+            if topic not in self.message_history_cache:
+                self._draw_topic_history(dc, topic)
+                self.invalidate()
+                break
+            else:
+                self._draw_topic_history(dc, topic)
+                
+    def _draw_topic_history(self, dc, topic):
         """
         Draw boxes to show message regions on timelines.
         """
@@ -793,33 +804,38 @@ class Timeline(Layer):
 
     ## Draw markers to indicate the extent of the bag file
     def _draw_bag_ends(self, dc):
-        dc.set_source_rgb(0, 0, 0)
-        dc.set_line_width(2)
+        dc.set_source_rgba(0, 0, 0, 0.1)
 
-        marker_top, marker_bottom = self.history_top - 2, self.history_bottom + 2
+        marker_top, marker_bottom = self.history_top, self.history_bottom
 
         # Draw start marker
         start_stamp = self.start_stamp
         if start_stamp > self.stamp_left and start_stamp < self.stamp_right:
             x = self.map_stamp_to_x(start_stamp)
-            dc.move_to(x - 1, marker_top)
-            dc.line_to(x - 1, marker_bottom)
-            dc.stroke()
+            dc.rectangle(self.history_left, marker_top, x - self.history_left, marker_bottom - marker_top)
+            dc.fill()
 
         # Draw end marker
         end_stamp = self.end_stamp
         if end_stamp > self.stamp_left and end_stamp < self.stamp_right:
             x = self.map_stamp_to_x(end_stamp)
-            dc.move_to(x - 1, marker_top)
-            dc.line_to(x - 1, marker_bottom)
-            dc.stroke()
+            dc.rectangle(x, marker_top, self.history_left + self.history_width - x, marker_bottom - marker_top)
+            dc.fill()
 
     def _draw_history_border(self, dc):
         bounds_width = min(self.history_width, self.parent.width - self.x)
 
-        dc.set_source_rgb(0, 0, 0)
+        x, y, w, h = self.history_left, self.history_top, bounds_width, self.history_bottom - self.history_top
+
+        dc.set_source_rgb(0.1, 0.1, 0.1)
         dc.set_line_width(1)
-        dc.rectangle(self.history_left, self.history_top, bounds_width, self.history_bottom - self.history_top)
+        dc.rectangle(x, y, w, h)
+        dc.stroke()
+
+        dc.set_source_rgba(0.6, 0.6, 0.6, 0.3)
+        dc.move_to(x + 2,     y + h + 1)
+        dc.line_to(x + w + 1, y + h + 1)
+        dc.line_to(x + w + 1, y + 2)
         dc.stroke()
 
     def map_dx_to_dstamp(self, dx):

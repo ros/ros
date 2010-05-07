@@ -18,5 +18,4 @@
   </export>
   <rosdep name="python-imaging"/>
   <rosdep name="bzip2"/>
-  <rosdep name="zlib"/>
 </package>

@@ -41,8 +41,8 @@ import sys
 import time
 import UserDict
 
-from bag import Bag, Compression, ROSBagException, ROSBagFormatException
-from migration import MessageMigrator, fixbag2
+from bag import Bag, Compression, ROSBagException, ROSBagFormatException, ROSBagUnindexedException
+from migration import MessageMigrator, fixbag2, checkbag
 
 def print_trans(old, new, indent):
     from_txt = '%s [%s]' % (old._type, old._md5sum)
@@ -115,7 +115,9 @@ def info_cmd(argv):
             b.close()
             if i < len(args) - 1:
                 print '---'
-            
+        
+        except ROSBagUnindexedException, ex:
+            print >> sys.stderr, 'ERROR bag unindexed: %s.  Run rosbag reindex.' % arg
         except ROSBagException, ex:
             print >> sys.stderr, 'ERROR reading %s: %s' % (arg, str(ex))
         except IOError, ex:
@@ -203,7 +205,12 @@ The following variables are available:
     filter_fn = expr_eval(expr)
 
     outbag = Bag(outbag_filename, 'w')
-    inbag  = Bag(inbag_filename)
+    
+    try:
+        inbag = Bag(inbag_filename)
+    except ROSBagUnindexedException, ex:
+        print >> sys.stderr, 'ERROR bag unindexed: %s.  Run rosbag reindex.' % arg
+        return
 
     try:
         meter = ProgressMeter(outbag_filename, inbag.size)
@@ -294,8 +301,12 @@ def fix_cmd(argv):
         options.noplugins = False
 
     migrator = MessageMigrator(rules, plugins=not options.noplugins)
-
-    migrations = fixbag2(migrator, inbag_filename, outname)
+    
+    try:
+        migrations = fixbag2(migrator, inbag_filename, outname)
+    except ROSBagUnindexedException, ex:
+        print >> sys.stderr, 'ERROR bag unindexed: %s.  Run rosbag reindex.' % arg
+        return
 
     if len(migrations) == 0:
         print '%s %s' % (outname, outbag_filename)
@@ -331,17 +342,80 @@ def check_cmd(argv):
             parser.error('The file %s already exists.  Include -a if you intend to append.' % options.rulefile)
         if not rulefile_exists and options.append:
             parser.error('The file %s does not exist, and so -a is invalid.' % options.rulefile)
+    
+    if options.append:
+        append_rule = [options.rulefile]
+    else:
+        append_rule = []
 
-    cmd = ['rosrun', 'rosbag', 'checkbag.py']
-    if options.rulefile:  cmd.extend(['-g', options.rulefile])
-    if options.append:    cmd.extend(['-a'])
-    if options.noplugins: cmd.extend(['-n'])
-    cmd.extend(args)
+    # First check that the bag is not unindexed 
+    try:
+        Bag(args[0])
+    except ROSBagUnindexedException, ex:
+        print >> sys.stderr, 'ERROR bag unindexed: %s.  Run rosbag reindex.' % args[0]
+        return
 
-    proc = subprocess.Popen(cmd)
-    signal.signal(signal.SIGINT, signal.SIG_IGN)  # ignore sigint since we're basically just pretending to be the subprocess now
-    res = proc.wait()
-    sys.exit(res)
+    mm = MessageMigrator(args[1:] + append_rule, not options.noplugins)
+
+    migrations = checkbag(mm, args[0])
+       
+    if len(migrations) == 0:
+        print 'Bag file is up to date.'
+        exit(0)
+        
+    print 'The following migrations need to occur:'
+    all_rules = []
+    for m in migrations:
+        all_rules.extend(m[1])
+
+        print_trans(m[0][0].old_class, m[0][-1].new_class, 0)
+        if len(m[1]) > 0:
+            print "    %d rules missing:" % len(m[1])
+            for r in m[1]:
+                print_trans(r.old_class, r.new_class, 1)
+
+    if options.rulefile is None:
+        if all_rules == []:
+            print "\nAll rules defined.  Bag is ready to be migrated"
+        else:
+            print "\nTo generate rules, please run with -g <rulefile>"
+        exit(0)
+
+    output = ''
+    rules_left = mm.filter_rules_unique(all_rules)
+
+    if rules_left == []:
+        print "\nNo additional rule files needed to be generated.  %s not created."%(options.rulefile)
+        exit(0)
+
+    while len(rules_left) > 0:
+        extra_rules = []
+        for r in rules_left:
+            if r.new_class is None:
+                print 'The message type %s appears to have moved.  Please enter the type to migrate it to.' % r.old_class._type
+                new_type = raw_input('>')
+                new_class = roslib.message.get_message_class(new_type)
+                while new_class is None:
+                    print "\'%s\' could not be found in your system.  Please make sure it is built." % new_type
+                    new_type = raw_input('>')
+                    new_class = roslib.message.get_message_class(new_type)
+                new_rule = mm.make_update_rule(r.old_class, new_class)
+                R = new_rule(mm, 'GENERATED.' + new_rule.__name__)
+                R.find_sub_paths()
+                new_rules = [r for r in mm.expand_rules(R.sub_rules) if r.valid == False]
+                extra_rules.extend(new_rules)
+                print 'Creating the migration rule for %s requires additional missing rules:' % new_type
+                for nr in new_rules:
+                    print_trans(nr.old_class, nr.new_class,1)
+                output += R.get_class_def()
+            else:
+                output += r.get_class_def()
+        rules_left = mm.filter_rules_unique(extra_rules)
+    f = open(options.rulefile, 'a')
+    f.write(output)
+    f.close()
+
+    print '\nThe necessary rule files have been written to: %s' % options.rulefile
 
 def compress_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag compress [options] BAGFILE1 [BAGFILE2 ...]',
@@ -356,7 +430,7 @@ def compress_cmd(argv):
 
     op = lambda inbag, outbag, quiet: change_compression_op(inbag, outbag, Compression.BZ2, options.quiet)
 
-    bag_op(args, lambda b: False, op, options.force, options.quiet)
+    bag_op(args, False, lambda b: False, op, options.force, options.quiet)
 
 def decompress_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag decompress [options] BAGFILE1 [BAGFILE2 ...]',
@@ -371,7 +445,7 @@ def decompress_cmd(argv):
     
     op = lambda inbag, outbag, quiet: change_compression_op(inbag, outbag, Compression.NONE, options.quiet)
     
-    bag_op(args, lambda b: False, op, options.force, options.quiet)
+    bag_op(args, False, lambda b: False, op, options.force, options.quiet)
 
 def reindex_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag reindex [options] BAGFILE1 [BAGFILE2 ...]',
@@ -386,21 +460,24 @@ def reindex_cmd(argv):
     
     op = lambda inbag, outbag, quiet: reindex_op(inbag, outbag, options.quiet)
 
-    bag_op(args, lambda b: b.version > 102, op, options.force, options.quiet)
+    bag_op(args, True, lambda b: b.version > 102, op, options.force, options.quiet)
 
-def bag_op(filenames, copy_fn, op, force=False, quiet=False):
-    for inbag_filename in filenames:
+def bag_op(inbag_filenames, allow_unindexed, copy_fn, op, force=False, quiet=False):
+    for inbag_filename in inbag_filenames:
         # Check we can read the file
         try:
-            inbag = Bag(inbag_filename)
+            inbag = Bag(inbag_filename, 'r', allow_unindexed=allow_unindexed)
+        except ROSBagUnindexedException:
+            print >> sys.stderr, 'ERROR bag unindexed: %s.  Run rosbag reindex.' % inbag_filename
+            continue
         except (ROSBagException, IOError), ex:
             print >> sys.stderr, 'ERROR reading %s: %s' % (inbag_filename, str(ex))
             continue
-
+    
         copy = copy_fn(inbag)
         
         inbag.close()
-
+    
         # Rename the input bag to ###.orig.###, and open for reading
         (root, ext) = os.path.splitext(inbag_filename)
         backup_filename = '%s.orig%s' % (root, ext)
@@ -419,14 +496,14 @@ def bag_op(filenames, copy_fn, op, force=False, quiet=False):
             print >> sys.stderr, 'ERROR %s %s to %s: %s' % ('copying' if copy else 'moving', inbag_filename, backup_filename, str(ex))
             continue
         outbag_filename = inbag_filename
-
+    
         try:
-            inbag = Bag(backup_filename)
-
+            inbag = Bag(backup_filename, 'r', allow_unindexed=allow_unindexed)
+    
             # Open the output bag file for writing
             try:
                 if copy:
-                    outbag = Bag(outbag_filename, 'a')
+                    outbag = Bag(outbag_filename, 'a', allow_unindexed=allow_unindexed)
                 else:
                     outbag = Bag(outbag_filename, 'w')
             except (ROSBagException, IOError), ex:
@@ -445,7 +522,7 @@ def bag_op(filenames, copy_fn, op, force=False, quiet=False):
                 
             outbag.close()
             inbag.close()
-
+    
         except KeyboardInterrupt:
             try:
                 if copy:
@@ -455,7 +532,7 @@ def bag_op(filenames, copy_fn, op, force=False, quiet=False):
             except OSError, ex:
                 print >> sys.stderr, 'ERROR %s %s to %s: %s', ('removing' if copy else 'moving', backup_filename, inbag_filename, str(ex))
                 break
-
+    
         except (ROSBagException, IOError), ex:
             print >> sys.stderr, 'ERROR operating on %s: %s' % (inbag_filename, str(ex))
 
@@ -482,111 +559,41 @@ def change_compression_op(inbag, outbag, compression, quiet):
 def reindex_op(inbag, outbag, quiet):
     if inbag.version == 102:
         if quiet:
-            inbag.reindex()
-
             try:
-                for (topic, msg, t) in inbag.read_messages():
-                    outbag.write(topic, msg, t)
+                inbag.reindex()
             except:
                 pass
+
+            for (topic, msg, t) in inbag.read_messages():
+                outbag.write(topic, msg, t)
         else:
             meter = ProgressMeter(outbag.filename, inbag.size)
-            for offset in inbag.reindex(True):
-                meter.step(offset)
+            try:
+                for offset in inbag.reindex(True):
+                    meter.step(offset)
+            except:
+                pass
             meter.finish()
 
             meter = ProgressMeter(outbag.filename, inbag.size)
-            try:
-                for (topic, msg, t) in inbag.read_messages():
-                    outbag.write(topic, msg, t)
-                    meter.step(inbag._file.tell())
-            except:
-                pass
+            for (topic, msg, t) in inbag.read_messages():
+                outbag.write(topic, msg, t)
+                meter.step(inbag._file.tell())
             meter.finish()
     else:
         if quiet:
-            outbag.reindex()
-        else:
-            meter = ProgressMeter(outbag.filename, outbag.size)
-            for offset in outbag.reindex(True):
-                meter.step(offset)
-            meter.finish()
-
-def slash_cmd(argv):
-    """For debugging purposes only.  Truncates a bag file in half and reindexes."""
-    parser = optparse.OptionParser(usage='rosbag slash [options] BAGFILE1 [BAGFILE2 ...]',
-                                   description='Slash one or more bag files.')
-
-    (options, args) = parser.parse_args(argv)
-
-    if len(args) < 1:
-        parser.error('You must specify at least one bag file.')
-        
-    for filename in args:
-        b = Bag(filename)
-        index_pos = b._index_data_pos
-        b.close()
-
-        (root, ext) = os.path.splitext(filename)
-        slash_filename = '%s.slash%s' % (root, ext)
-
-        import bag, shutil
-        shutil.copy(filename, slash_filename)
-        f = open(slash_filename, 'r+b')
-        f.seek(b._file_header_pos)
-        header = {
-            'op':          bag._pack_uint8(bag._OP_FILE_HEADER),
-            'index_pos':   bag._pack_uint64(0),
-            'conn_count':  bag._pack_uint32(0),
-            'chunk_count': bag._pack_uint32(0)
-        }
-        #bag._write_record(f, header, padded_size=bag._FILE_HEADER_LENGTH)       
-        f.truncate(index_pos / 2)
-        f.close()
-        
-        print '%s slashed.' % slash_filename
-        
-        (root, ext) = os.path.splitext(filename)
-        reindex_filename = '%s.reindex%s' % (root, ext)
-        shutil.copy(slash_filename, reindex_filename)
-
-        bv = Bag(slash_filename)
-        version = bv.version
-        bv.close()
-
-        if version == 102:
-            b = Bag(slash_filename)
-
-            reindexed = Bag(reindex_filename, 'w')
-
-            meter = ProgressMeter(slash_filename, b.size)
-            for offset in b.reindex(True):
-                meter.step(offset)
-            meter.finish()
-
             try:
-                for (topic, msg, t) in b.read_messages():
-                    print topic, t
-                    reindexed.write(topic, msg, t)
+                outbag.reindex()
             except:
                 pass
-            reindexed.close()
-
-            b.close()
         else:
+            meter = ProgressMeter(outbag.filename, outbag.size)
             try:
-                b = Bag(reindex_filename, 'a')
-            except Exception, ex:
-                print str(ex)
-            try:
-                meter = ProgressMeter(reindex_filename, b.size)
-                for offset in b.reindex(True):
+                for offset in outbag.reindex(True):
                     meter.step(offset)
-                meter.finish()
-            except Exception, ex:
-                print str(ex)
-                raise
-            b.close()
+            except:
+                pass
+            meter.finish()
 
 class RosbagCmds(UserDict.UserDict):
     def __init__(self):
@@ -717,8 +724,6 @@ def rosbagmain(argv=None):
     cmds['compress']   = compress_cmd
     cmds['decompress'] = decompress_cmd
     cmds['reindex']    = reindex_cmd
-
-    cmds['slash']      = slash_cmd
 
     if argv is None:
         argv = sys.argv

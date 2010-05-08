@@ -108,7 +108,7 @@ class MessageTree(wx.TreeCtrl):
 
         self._msg = None
 
-        self._expanded_paths = set()
+        self._expanded_paths = None
 
         self.Bind(wx.EVT_KEY_UP, self.on_key_up)
 
@@ -132,8 +132,9 @@ class MessageTree(wx.TreeCtrl):
             # Populate the tree
             self._add_msg_object(None, '', 'msg', msg, msg._type)
             
-            if not self._msg:
+            if self._expanded_paths is None:
                 # First message: expand top-level items (that aren't the header)
+                self._expanded_paths = set()
                 for item in self.get_all_items():
                     path = self.get_item_path(item)
                     if '.' not in path and path != 'header':

@@ -84,8 +84,6 @@ class RxBagApp(wx.App):
             frame.Show()
             self.SetTopWindow(frame)
             
-            frame.Bind(wx.EVT_CLOSE, lambda e: wx.Exit())
-            
         except Exception, ex:
             print >> sys.stderr, 'Error initializing application:', ex
             return False

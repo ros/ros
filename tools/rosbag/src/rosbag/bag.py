@@ -1474,36 +1474,39 @@ class _BagReader102_Indexed(_BagReader102_Unindexed):
             offset = f.tell()
 
     def start_reading(self):
-        # Read the file header
-        self.read_file_header_record()
-
-        # Check if the index position has been written, i.e. the bag was closed successfully
-        if self.bag._index_data_pos == 0:
+        try:
+            # Read the file header
+            self.read_file_header_record()
+    
+            # Check if the index position has been written, i.e. the bag was closed successfully
+            if self.bag._index_data_pos == 0:
+                raise ROSBagFormatException()
+    
+            # Seek to the beginning of the topic index records
+            self.bag._file.seek(self.bag._index_data_pos)
+    
+            # Read the topic indexes
+            topic_indexes = {}
+            while True:
+                topic_index = self.read_topic_index_record()
+                if topic_index is None:
+                    break
+                (topic, index) = topic_index
+                topic_indexes[topic] = index
+    
+            # Read the message definition records (one for each topic)
+            for topic, index in topic_indexes.items():
+                self.bag._file.seek(index[0].offset)
+    
+                connection_info = self.read_message_definition_record()
+    
+                if connection_info.topic not in self.bag._topic_connections:
+                    self.bag._topic_connections[connection_info.topic] = connection_info.id
+                self.bag._connections[connection_info.id] = connection_info
+    
+                self.bag._connection_indexes[connection_info.id] = index
+        except:
             raise ROSBagFormatException()
-
-        # Seek to the beginning of the topic index records
-        self.bag._file.seek(self.bag._index_data_pos)
-
-        # Read the topic indexes
-        topic_indexes = {}
-        while True:
-            topic_index = self.read_topic_index_record()
-            if topic_index is None:
-                break
-            (topic, index) = topic_index
-            topic_indexes[topic] = index
-
-        # Read the message definition records (one for each topic)
-        for topic, index in topic_indexes.items():
-            self.bag._file.seek(index[0].offset)
-
-            connection_info = self.read_message_definition_record()
-
-            if connection_info.topic not in self.bag._topic_connections:
-                self.bag._topic_connections[connection_info.topic] = connection_info.id
-            self.bag._connections[connection_info.id] = connection_info
-
-            self.bag._connection_indexes[connection_info.id] = index
 
     def read_file_header_record(self):
         self.bag._file_header_pos = self.bag._file.tell()
@@ -1696,49 +1699,52 @@ class _BagReader200(_BagReader):
                     return
 
     def start_reading(self):
-        # Read the file header
-        self.read_file_header_record()
-
-        # Check if the index position has been written, i.e. the bag was closed successfully
-        if self.bag._index_data_pos == 0:
+        try:
+            # Read the file header
+            self.read_file_header_record()
+    
+            # Check if the index position has been written, i.e. the bag was closed successfully
+            if self.bag._index_data_pos == 0:
+                raise ROSBagUnindexedException()
+    
+            # Seek to the end of the chunks
+            self.bag._file.seek(self.bag._index_data_pos)
+    
+            # Read the connection records
+            for i in range(self.bag._connection_count):
+                connection_info = self.read_connection_record(self.bag._file)
+                self.bag._connections[connection_info.id] = connection_info
+    
+            # Read the chunk info records
+            self.bag._chunks = [self.read_chunk_info_record() for i in range(self.bag._chunk_count)]
+    
+            # Read the chunk headers and topic indexes
+            self.bag._connection_indexes = {}
+            self.bag._chunk_headers = {}
+            for chunk_info in self.bag._chunks:
+                self.bag._curr_chunk_info = chunk_info
+    
+                self.bag._file.seek(chunk_info.pos)
+    
+                # Remember the chunk header
+                chunk_header = self.read_chunk_header()
+                self.bag._chunk_headers[chunk_info.pos] = chunk_header
+    
+                # Skip over the chunk data
+                self.bag._file.seek(chunk_header.compressed_size, os.SEEK_CUR)
+    
+                # Read the index records after the chunk
+                for i in range(len(chunk_info.connection_counts)):
+                    (connection_id, index) = self.read_connection_index_record()
+    
+                    if connection_id not in self.bag._connection_indexes:
+                        self.bag._connection_indexes[connection_id] = []
+    
+                    connection_index = self.bag._connection_indexes[connection_id]
+                    for entry in index:
+                        connection_index.append(entry)
+        except:
             raise ROSBagUnindexedException()
-
-        # Seek to the end of the chunks
-        self.bag._file.seek(self.bag._index_data_pos)
-
-        # Read the connection records
-        for i in range(self.bag._connection_count):
-            connection_info = self.read_connection_record(self.bag._file)
-            self.bag._connections[connection_info.id] = connection_info
-
-        # Read the chunk info records
-        self.bag._chunks = [self.read_chunk_info_record() for i in range(self.bag._chunk_count)]
-
-        # Read the chunk headers and topic indexes
-        self.bag._connection_indexes = {}
-        self.bag._chunk_headers = {}
-        for chunk_info in self.bag._chunks:
-            self.bag._curr_chunk_info = chunk_info
-
-            self.bag._file.seek(chunk_info.pos)
-
-            # Remember the chunk header
-            chunk_header = self.read_chunk_header()
-            self.bag._chunk_headers[chunk_info.pos] = chunk_header
-
-            # Skip over the chunk data
-            self.bag._file.seek(chunk_header.compressed_size, os.SEEK_CUR)
-
-            # Read the index records after the chunk
-            for i in range(len(chunk_info.connection_counts)):
-                (connection_id, index) = self.read_connection_index_record()
-
-                if connection_id not in self.bag._connection_indexes:
-                    self.bag._connection_indexes[connection_id] = []
-
-                connection_index = self.bag._connection_indexes[connection_id]
-                for entry in index:
-                    connection_index.append(entry)
 
     def read_messages(self, topics, start_time, end_time, connection_filter, raw):
         connections = self.bag._get_connections(topics, connection_filter)

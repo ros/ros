@@ -1648,7 +1648,12 @@ class _BagReader200(_BagReader):
 
             # Read chunk connection and message records
             self._curr_chunk_info = None
-            offset = chunk_file.tell()
+            
+            if chunk_header.compression == Compression.NONE:
+                offset = chunk_file.tell() - chunk_pos
+            else:
+                offset = chunk_file.tell()
+                
             while offset < chunk_header.uncompressed_size:
                 op = _peek_next_header_op(chunk_file)
                 
@@ -1687,7 +1692,10 @@ class _BagReader200(_BagReader):
                     # Insert the message entry (in order) into the connection index
                     bisect.insort_right(self.bag._connection_indexes[connection_id], _IndexEntry200(t, chunk_pos, offset)) 
 
-                offset = chunk_file.tell()
+                if chunk_header.compression == Compression.NONE:
+                    offset = chunk_file.tell() - chunk_pos
+                else:
+                    offset = chunk_file.tell()
 
             self.bag._chunks.append(self._curr_chunk_info)
 

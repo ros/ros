@@ -145,13 +145,14 @@ public:
 
     ros::Time getBeginTime();
     ros::Time getEndTime();
-
+  
 protected:
-    void updateQueries(BagQuery* q);
-
     friend class iterator;
 
+    void updateQueries(BagQuery* q);
     void update();
+
+    MessageInstance* newMessageInstance(ConnectionInfo const* connection_info, IndexEntry const& index, Bag const& bag);
 
     std::vector<MessageRange*> ranges_;
     std::vector<BagQuery*>     queries_;

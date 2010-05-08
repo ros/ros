@@ -129,7 +129,7 @@ MessageInstance& View::iterator::dereference() const {
     ViewIterHelper const& i = iters_.back();
 
     if (message_instance_ == NULL)
-        message_instance_ = new MessageInstance(i.range->connection_info, *(i.iter), *(i.range->bag_query->bag));
+      message_instance_ = view_->newMessageInstance(i.range->connection_info, *(i.iter), *(i.range->bag_query->bag));
 
     return *message_instance_;
 }
@@ -295,5 +295,11 @@ std::vector<const ConnectionInfo*> View::getConnections()
 
   return connections;
 }
+
+MessageInstance* View::newMessageInstance(ConnectionInfo const* connection_info, IndexEntry const& index, Bag const& bag)
+{
+  return new MessageInstance(connection_info, index, bag);
+}
+
 
 } // namespace rosbag

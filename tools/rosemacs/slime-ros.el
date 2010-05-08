@@ -39,8 +39,10 @@
   (:handler (lambda ()
               (interactive)
               (let* ((ros-pkg-name (slime-ros-read-pkg-name))
+                     (path (ros-package-path ros-pkg-name))
                      (system-name (slime-ros-get-systems-in-pkg ros-pkg-name ros-pkg-name)))
-                (slime-cd (ros-package-path ros-pkg-name))
+                (slime-cd path)
+                (setq default-directory path)
                 (slime-eval `(cl:setf ros-load:*current-ros-package* ,ros-pkg-name))
                 (slime-oos system-name 'load-op)))))
 

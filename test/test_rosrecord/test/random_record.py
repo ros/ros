@@ -81,7 +81,8 @@ class RandomRecord(unittest.TestCase):
       rospy.sleep(d)
       publishers[topic].publish(msg)
 
-    f1.send_signal(signal.SIGINT)
+#    f1.send_signal(signal.SIGINT)
+    os.kill(f1.pid, signal.SIGINT)
     (o1,e1) = f1.communicate()
     self.assertEqual(f1.returncode, 0)
 

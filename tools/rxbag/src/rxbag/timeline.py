@@ -820,23 +820,11 @@ class Timeline(Layer):
 
     ## Draw markers to indicate the extent of the bag file
     def _draw_bag_ends(self, dc):
+        x_start, x_end = self.map_stamp_to_x(self.start_stamp), self.map_stamp_to_x(self.end_stamp)
         dc.set_source_rgba(0, 0, 0, 0.1)
-
-        marker_top, marker_bottom = self.history_top, self.history_bottom
-
-        # Draw start marker
-        start_stamp = self.start_stamp
-        if start_stamp > self.stamp_left and start_stamp < self.stamp_right:
-            x = self.map_stamp_to_x(start_stamp)
-            dc.rectangle(self.history_left, marker_top, x - self.history_left, marker_bottom - marker_top)
-            dc.fill()
-
-        # Draw end marker
-        end_stamp = self.end_stamp
-        if end_stamp > self.stamp_left and end_stamp < self.stamp_right:
-            x = self.map_stamp_to_x(end_stamp)
-            dc.rectangle(x, marker_top, self.history_left + self.history_width - x, marker_bottom - marker_top)
-            dc.fill()
+        dc.rectangle(self.history_left, self.history_top, x_start - self.history_left,                    self.history_bottom - self.history_top)
+        dc.rectangle(x_end,             self.history_top, self.history_left + self.history_width - x_end, self.history_bottom - self.history_top)
+        dc.fill()
 
     def _draw_history_border(self, dc):
         bounds_width = min(self.history_width, self.parent.width - self.x)

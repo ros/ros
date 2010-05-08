@@ -866,7 +866,7 @@ class Timeline(Layer):
             elif fraction >= 1.0:
                 return self.stamp_right
 
-        return self.stamp_left + fraction * (self.stamp_right - self.stamp_left)
+        return max(0.0, self.stamp_left + fraction * (self.stamp_right - self.stamp_left))
 
     def map_dstamp_to_dx(self, dstamp):
         return (float(dstamp) * self.history_width) / (self.stamp_right - self.stamp_left)

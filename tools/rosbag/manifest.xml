@@ -13,7 +13,7 @@
   <depend package="topic_tools"/>
   <depend package="rostest"/>
   <export>
-    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lrosbag `rosboost-cfg --lflags regex`"/>
+    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lrosbag"/>
     <rosdoc config="${prefix}/rosdoc.yaml" />
   </export>
   <rosdep name="python-imaging"/>

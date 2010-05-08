@@ -83,7 +83,8 @@ class RandomRecord(unittest.TestCase):
     # Sleep an extra 5 seconds for good measure
     rospy.sleep(rospy.Duration.from_sec(5.0))
 
-    f1.send_signal(signal.SIGINT)
+#    f1.send_signal(signal.SIGINT)
+    os.kill(f1.pid, signal.SIGINT)
     (o1,e1) = f1.communicate()
     self.assertEqual(f1.returncode, 0)
 

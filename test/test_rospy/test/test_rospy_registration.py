@@ -45,9 +45,9 @@ import cStringIO
 class TestRospyRegistration(unittest.TestCase):
 
     def test_get_set_topic_manager(self):
-        from rospy.registration import get_topic_manager, set_topic_manager
+        from rospy.impl.registration import get_topic_manager, set_topic_manager
         # rospy initialization sets this, but it is out of scope of
-        # rospy.registrations to test its value
+        # rospy.impl.registrations to test its value
         orig = get_topic_manager()
         try:
             self.assert_(orig is not None)
@@ -62,9 +62,9 @@ class TestRospyRegistration(unittest.TestCase):
             set_topic_manager(orig)            
 
     def test_get_set_service_manager(self):
-        from rospy.registration import get_service_manager, set_service_manager
+        from rospy.impl.registration import get_service_manager, set_service_manager
         # rospy initialization sets this, but it is out of scope of
-        # rospy.registrations to test its value
+        # rospy.impl.registrations to test its value
         try:
             orig = get_service_manager()
             self.assert_(orig is not None)
@@ -80,7 +80,7 @@ class TestRospyRegistration(unittest.TestCase):
         
     def test_Registration(self):
         # nothing to test here really
-        from rospy.registration import Registration
+        from rospy.impl.registration import Registration
         self.assertEquals('pub', Registration.PUB)
         self.assertEquals('sub', Registration.SUB)
         self.assertEquals('srv', Registration.SRV)        
@@ -89,14 +89,14 @@ class TestRospyRegistration(unittest.TestCase):
         self.assertEquals('sub', r.SUB)
         self.assertEquals('srv', r.SRV)        
     def test_RegistrationListener(self):
-        from rospy.registration import RegistrationListener
+        from rospy.impl.registration import RegistrationListener
         #RegistrationListener is just an API, nothing to test here
         l = RegistrationListener()
         l.reg_added('name', 'data_type', 'reg_type')
         l.reg_removed('name', 'data_type', 'reg_type')
         
     def test_RegistrationListeners(self):
-        from rospy.registration import _RegistrationListeners, RegistrationListener
+        from rospy.impl.registration import _RegistrationListeners, RegistrationListener
 
         class Mock(RegistrationListener):
             def __init__(self):
@@ -162,12 +162,12 @@ class TestRospyRegistration(unittest.TestCase):
         self.assertEquals(['removed', 'n4', 'dtype4', 'rtype4'], l1.args)
         
     def test_get_registration_listeners(self):
-        from rospy.registration import _RegistrationListeners, get_registration_listeners
+        from rospy.impl.registration import _RegistrationListeners, get_registration_listeners
         r = get_registration_listeners()
         self.assert_(isinstance(r, _RegistrationListeners))
 
     def test_RegManager(self):
-        from rospy.registration import RegManager
+        from rospy.impl.registration import RegManager
         class MockHandler(object):
             def __init__(self):
                 self.done = False
@@ -246,7 +246,7 @@ class TestRospyRegistration(unittest.TestCase):
         # - test with is_shutdown overriden so we don't enter loop
         def foo():
             return True
-        sys.modules['rospy.registration'].__dict__['is_shutdown'] = foo
+        sys.modules['rospy.impl.registration'].__dict__['is_shutdown'] = foo
         m.start('http://localhost:1234', 'http://localhost:4567')
         
         handler.done = True
@@ -261,4 +261,4 @@ class TestRospyRegistration(unittest.TestCase):
         
 if __name__ == '__main__':
     import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyRegistration, coverage_packages=['rospy.registration'])
+    rostest.unitrun('test_rospy', sys.argv[0], TestRospyRegistration, coverage_packages=['rospy.impl.registration'])

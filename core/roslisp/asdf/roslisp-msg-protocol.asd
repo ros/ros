@@ -1,0 +1,1 @@
+../roslisp-msg-protocol/roslisp-msg-protocol.asd

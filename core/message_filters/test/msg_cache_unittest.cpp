@@ -51,8 +51,22 @@ struct Msg
   Header header ;
   int data ;
 } ;
+typedef boost::shared_ptr<Msg const> MsgConstPtr;
 
-
+namespace ros
+{
+namespace message_traits
+{
+template<>
+struct TimeStamp<Msg>
+{
+  static ros::Time value(const Msg& m)
+  {
+    return m.header.stamp;
+  }
+};
+}
+}
 
 
 void fillCacheEasy(Cache<Msg>& cache, unsigned int start, unsigned int end)
@@ -76,7 +90,7 @@ TEST(Cache, easyInterval)
 
   vector<boost::shared_ptr<Msg const> > interval_data = cache.getInterval(ros::Time().fromSec(5), ros::Time().fromSec(35)) ;
 
-  EXPECT_EQ(interval_data.size(), (unsigned int) 3) ;
+  ASSERT_EQ(interval_data.size(), (unsigned int) 3) ;
   EXPECT_EQ(interval_data[0]->data, 1) ;
   EXPECT_EQ(interval_data[1]->data, 2) ;
   EXPECT_EQ(interval_data[2]->data, 3) ;
@@ -98,23 +112,23 @@ TEST(Cache, easySurroundingInterval)
 
   vector<boost::shared_ptr<Msg const> > interval_data;
   interval_data = cache.getSurroundingInterval(ros::Time(15,0), ros::Time(35,0)) ;
-  EXPECT_EQ(interval_data.size(), (unsigned int) 4);
+  ASSERT_EQ(interval_data.size(), (unsigned int) 4);
   EXPECT_EQ(interval_data[0]->data, 1);
   EXPECT_EQ(interval_data[1]->data, 2);
   EXPECT_EQ(interval_data[2]->data, 3);
   EXPECT_EQ(interval_data[3]->data, 4);
 
   interval_data = cache.getSurroundingInterval(ros::Time(0,0), ros::Time(35,0)) ;
-  EXPECT_EQ(interval_data.size(), (unsigned int) 4);
+  ASSERT_EQ(interval_data.size(), (unsigned int) 4);
   EXPECT_EQ(interval_data[0]->data, 1);
 
   interval_data = cache.getSurroundingInterval(ros::Time(35,0), ros::Time(35,0)) ;
-  EXPECT_EQ(interval_data.size(), (unsigned int) 2);
+  ASSERT_EQ(interval_data.size(), (unsigned int) 2);
   EXPECT_EQ(interval_data[0]->data, 3);
   EXPECT_EQ(interval_data[1]->data, 4);
 
   interval_data = cache.getSurroundingInterval(ros::Time(55,0), ros::Time(55,0)) ;
-  EXPECT_EQ(interval_data.size(), (unsigned int) 1);
+  ASSERT_EQ(interval_data.size(), (unsigned int) 1);
   EXPECT_EQ(interval_data[0]->data, 5);
 }
 
@@ -141,13 +155,13 @@ TEST(Cache, easyUnsorted)
 
   vector<boost::shared_ptr<Msg const> > interval_data = cache.getInterval(ros::Time().fromSec(3), ros::Time().fromSec(15)) ;
 
-  EXPECT_EQ(interval_data.size(), (unsigned int) 2) ;
+  ASSERT_EQ(interval_data.size(), (unsigned int) 2) ;
   EXPECT_EQ(interval_data[0]->data, 0) ;
   EXPECT_EQ(interval_data[1]->data, 1) ;
 
   // Grab all the data
   interval_data = cache.getInterval(ros::Time().fromSec(0), ros::Time().fromSec(80)) ;
-  EXPECT_EQ(interval_data.size(), (unsigned int) 5) ;
+  ASSERT_EQ(interval_data.size(), (unsigned int) 5) ;
   EXPECT_EQ(interval_data[0]->data, 0) ;
   EXPECT_EQ(interval_data[1]->data, 1) ;
   EXPECT_EQ(interval_data[2]->data, 2) ;
@@ -176,7 +190,30 @@ TEST(Cache, easyElemBeforeAfter)
   EXPECT_TRUE(!elem_ptr) ;
 }
 
+struct EventHelper
+{
+public:
+  void cb(const ros::MessageEvent<Msg const>& evt)
+  {
+    event_ = evt;
+  }
 
+  ros::MessageEvent<Msg const> event_;
+};
+
+TEST(Cache, eventInEventOut)
+{
+  Cache<Msg> c0(10);
+  Cache<Msg> c1(c0, 10);
+  EventHelper h;
+  c1.registerCallback(&EventHelper::cb, &h);
+
+  ros::MessageEvent<Msg const> evt(MsgConstPtr(new Msg), ros::Time(4));
+  c0.add(evt);
+
+  EXPECT_EQ(h.event_.getReceiptTime(), evt.getReceiptTime());
+  EXPECT_EQ(h.event_.getMessage(), evt.getMessage());
+}
 
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);

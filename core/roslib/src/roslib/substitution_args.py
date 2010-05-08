@@ -41,6 +41,7 @@ import os
 import cStringIO
 
 import roslib.exceptions
+import roslib.names
 import roslib.packages
 
 class SubstitutionException(roslib.exceptions.ROSLibException):
@@ -48,6 +49,115 @@ class SubstitutionException(roslib.exceptions.ROSLibException):
     Base class for exceptions in roslib.substitution_args routines
     """
     pass
+class ArgException(SubstitutionException):
+    """
+    Exception for missing $(arg) values
+    """
+    pass
+
+def _env(resolved, a, args, context):
+    """
+    process $(env) arg
+    @return: updated resolved argument
+    @rtype: str
+    @raise SubstitutionException: if arg invalidly specified
+    """
+    if len(args) != 1:
+        raise SubstitutionException("$(env var) command only accepts one argument [%s]"%a)
+    try:
+        return resolved.replace("$(%s)"%a, os.environ[args[0]])
+    except KeyError, e:
+        raise SubstitutionException("environment variable %s is not set"%str(e))
+
+def _optenv(resolved, a, args, context):
+    """
+    process $(optenv) arg
+    @return: updated resolved argument
+    @rtype: str
+    @raise SubstitutionException: if arg invalidly specified
+    """
+    if len(args) == 0:
+        raise SubstitutionException("$(optenv var) must specify an environment variable [%s]"%a)
+    if args[0] in os.environ:
+        return resolved.replace("$(%s)"%a, os.environ[args[0]])
+    elif len(args) > 1:
+        return resolved.replace("$(%s)"%a, ' '.join(args[1:]))
+    else:
+        return resolved.replace("$(%s)"%a, '')
+    
+def _anon(resolved, a, args, context):
+    """
+    process $(anon) arg
+    @return: updated resolved argument
+    @rtype: str
+    @raise SubstitutionException: if arg invalidly specified
+    """
+    # #1559 #1660
+    if len(args) == 0:
+        raise SubstitutionException("$(anon var) must specify a name [%s]"%a)
+    elif len(args) > 1:
+        raise SubstitutionException("$(anon var) may only specify one name [%s]"%a)
+    id = args[0]
+    if 'anon' not in context:
+        context['anon'] = {}
+    anon_context = context['anon']
+    if id in anon_context:
+        return resolved.replace("$(%s)"%a, anon_context[id])
+    else:
+        resolve_to = roslib.names.anonymous_name(id)
+        anon_context[id] = resolve_to
+        return resolved.replace("$(%s)"%a, resolve_to)
+
+def _find(resolved, a, args, context):
+    """
+    process $(find) arg
+    @return: updated resolved argument
+    @rtype: str
+    @raise SubstitutionException: if arg invalidly specified
+    """
+    if len(args) != 1:
+        raise SubstitutionException("$(find pkg) command only accepts one argument [%s]"%a)
+    arg = "$(%s)"%a
+    sep = os.sep #set to var for easier testing
+
+    #Force / and \ file separators to the os-native
+    #convention. We replace everything from the end of the
+    #$(find) command to the next space. As we don't support
+    #filenames with spaces, this is dandy.
+    idx = resolved.find(arg)+len(arg)
+    endidx = resolved.find(' ', idx)
+    if endidx < 0:
+        endidx = len(resolved)
+    slash_orig = resolved[idx:endidx]
+    resolved = resolved.replace(slash_orig, slash_orig.replace('/', sep))
+    resolved = resolved.replace(slash_orig, slash_orig.replace('\\', sep))
+
+    return resolved[0:idx-len(arg)] + roslib.packages.get_pkg_dir(args[0]) + resolved[idx:]
+    
+def _arg(resolved, a, args, context):
+    """
+    process $(arg) arg
+    
+    @return: updated resolved argument
+    @rtype: str
+    @raise ArgException: if arg invalidly specified
+    """
+    if len(args) == 0:
+        raise SubstitutionException("$(arg var) must specify an environment variable [%s]"%a)
+    elif len(args) > 1:
+        raise SubstitutionException("$(arg var) may only specify one arg [%s]"%a)
+    
+    if 'arg' not in context:
+        context['arg'] = {}
+    arg_context = context['arg']
+
+    arg_name = args[0]
+    if arg_name in arg_context:
+        arg_value = arg_context[arg_name]
+        return resolved.replace("$(%s)"%a, arg_value)
+    else:
+        raise ArgException(arg_name)
+
 
 def resolve_args(arg_str, context=None, resolve_anon=True):
     """
@@ -58,14 +168,16 @@ def resolve_args(arg_str, context=None, resolve_anon=True):
         return None
     @type  arg_str: str
     @param context dict: (optional) dictionary for storing results of
-        the 'anon' substitution arg. multiple calls to resolve_args
-        should use the same context so that 'anon' substitions resolve
-        consistently. If no context is provided, a new one will be
-        created for each call.
+        the 'anon' and 'arg' substitution args. multiple calls to
+        resolve_args should use the same context so that 'anon'
+        substitions resolve consistently. If no context is provided, a
+        new one will be created for each call. Values for the 'arg'
+        context should be stored as a dictionary in the 'arg' key.
     @type  context: dict
     @param resolve_anon bool: If True (default), will resolve $(anon
         foo). If false, will leave these args as-is.
     @type  resolve_anon: bool
+
     @return str: arg_str with substitution args resolved
     @rtype:  str
     @raise SubstitutionException: if there is an error resolving substitution args
@@ -75,7 +187,7 @@ def resolve_args(arg_str, context=None, resolve_anon=True):
     #parse found substitution args
     if not arg_str:
         return arg_str
-    valid = ['find', 'env', 'optenv', 'anon']
+    valid = ['find', 'env', 'optenv', 'anon', 'arg']
     # disabled 'export' due to lack of use and API change
     resolved = arg_str
     for a in _collect_args(arg_str):
@@ -85,62 +197,16 @@ def resolve_args(arg_str, context=None, resolve_anon=True):
         command = splits[0]
         args = splits[1:]
         if command == 'find':
-            if len(args) != 1:
-                raise SubstitutionException("$(find pkg) command only accepts one argument [%s]"%a)
-            arg = "$(%s)"%a
-            sep = os.sep #set to var for easier testing
-
-            #Force / and \ file separators to the os-native
-            #convention. We replace everything from the end of the
-            #$(find) command to the next space. As we don't support
-            #filenames with spaces, this is dandy.
-            idx = resolved.find(arg)+len(arg)
-            endidx = resolved.find(' ', idx)
-            if endidx < 0:
-                endidx = len(resolved)
-            slash_orig = resolved[idx:endidx]
-            resolved = resolved.replace(slash_orig, slash_orig.replace('/', sep))
-            resolved = resolved.replace(slash_orig, slash_orig.replace('\\', sep))
-            
-            resolved = resolved[0:idx-len(arg)] + roslib.packages.get_pkg_dir(args[0]) + resolved[idx:]
+            resolved = _find(resolved, a, args, context)
         elif command == 'env':
-            if len(args) != 1:
-                raise SubstitutionException("$(env var) command only accepts one argument [%s]"%a)
-            try:
-                resolved = resolved.replace("$(%s)"%a, os.environ[args[0]])
-            except KeyError, e:
-                raise SubstitutionException("environment variable %s is not set"%str(e))
+            resolved = _env(resolved, a, args, context)
         elif command == 'optenv':
-            if len(args) == 0:
-                raise SubstitutionException("$(optenv var) must specify an environment variable [%s]"%a)
-
-            if args[0] in os.environ:
-                resolved = resolved.replace("$(%s)"%a, os.environ[args[0]])
-            elif len(args) > 1:
-                resolved = resolved.replace("$(%s)"%a, ' '.join(args[1:]))
-            else:
-                resolved = resolved.replace("$(%s)"%a, '')
-        # #1559 #1660
+            resolved = _optenv(resolved, a, args, context)
         elif command == 'anon' and resolve_anon:
-            import socket, time
-            if len(args) == 0:
-                raise SubstitutionException("$(anon var) must specify a name [%s]"%a)
-            elif len(args) > 1:
-                raise SubstitutionException("$(anon var) may only specify one name [%s]"%a)
-            id = args[0]
-            if id in context:
-                resolved = resolved.replace("$(%s)"%a, context[id])
-            else:
-                resolve_to = "%s_%s_%s_%s"%(id, socket.gethostname(), os.getpid(), int(time.time()*1000))
-                # RFC 952 allows hyphens, IP addrs can have '.'s, both
-                # of which are illegal for ROS names. For good
-                # measure, screen ipv6 ':'. 
-                resolve_to = resolve_to.replace('.', '_')
-                resolve_to = resolve_to.replace('-', '_')                
-                resolve_to = resolve_to.replace(':', '_')                
-                resolved = resolved.replace("$(%s)"%a, resolve_to)
-                context[id] = resolve_to
-            
+            resolved = _anon(resolved, a, args, context)
+        elif command == 'arg':
+            resolved = _arg(resolved, a, args, context)
+
     return resolved
 
 _OUT  = 0

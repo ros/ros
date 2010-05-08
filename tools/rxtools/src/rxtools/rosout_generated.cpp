@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Apr 21 2008)
+// C++ code generated with wxFormBuilder (version Oct 27 2009)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -39,7 +39,7 @@ RosoutPanelBase::RosoutPanelBase( wxWindow* parent, wxWindowID id, const wxPoint
 	wxBoxSizer* bSizer10;
 	bSizer10 = new wxBoxSizer( wxVERTICAL );
 	
-	table_ = new rxtools::RosoutListControl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_HRULES|wxLC_REPORT|wxLC_SINGLE_SEL|wxLC_VIRTUAL|wxLC_VRULES|wxCLIP_CHILDREN );
+	table_ = new rxtools::RosoutListControl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_HRULES|wxLC_REPORT|wxLC_VIRTUAL|wxLC_VRULES|wxCLIP_CHILDREN );
 	bSizer10->Add( table_, 1, wxALL|wxEXPAND, 5 );
 	
 	wxBoxSizer* bSizer9;
@@ -197,10 +197,19 @@ TextboxDialog::TextboxDialog( wxWindow* parent, wxWindowID id, const wxString& t
 	
 	this->SetSizer( bSizer11 );
 	this->Layout();
+	
+	// Connect Events
+	this->Connect( wxEVT_CHAR, wxKeyEventHandler( TextboxDialog::onChar ) );
+	text_->Connect( wxEVT_CHAR, wxKeyEventHandler( TextboxDialog::onChar ), NULL, this );
+	text_->Connect( wxEVT_KEY_DOWN, wxKeyEventHandler( TextboxDialog::onChar ), NULL, this );
 }
 
 TextboxDialog::~TextboxDialog()
 {
+	// Disconnect Events
+	this->Disconnect( wxEVT_CHAR, wxKeyEventHandler( TextboxDialog::onChar ) );
+	text_->Disconnect( wxEVT_CHAR, wxKeyEventHandler( TextboxDialog::onChar ), NULL, this );
+	text_->Disconnect( wxEVT_KEY_DOWN, wxKeyEventHandler( TextboxDialog::onChar ), NULL, this );
 }
 
 LoggerLevelPanelBase::LoggerLevelPanelBase( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
@@ -273,7 +282,6 @@ RosoutTextFilterControlBase::RosoutTextFilterControlBase( wxWindow* parent, wxWi
 	bSizer14->Add( include_exclude_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	regex_ = new wxCheckBox( this, wxID_ANY, wxT("Regex"), wxDefaultPosition, wxDefaultSize, 0 );
-	
 	regex_->SetToolTip( wxT("If checked, uses perl-style regular expressions to do the match.  If unchecked, uses wildcard syntax (* and ? being special).") );
 	
 	bSizer14->Add( regex_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
@@ -285,25 +293,21 @@ RosoutTextFilterControlBase::RosoutTextFilterControlBase( wxWindow* parent, wxWi
 	bSizer14->Add( m_staticText2, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	message_ = new wxCheckBox( this, wxID_ANY, wxT("Message"), wxDefaultPosition, wxDefaultSize, 0 );
-	
 	message_->SetToolTip( wxT("Match against the message field") );
 	
 	bSizer14->Add( message_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
 	
 	node_ = new wxCheckBox( this, wxID_ANY, wxT("Node"), wxDefaultPosition, wxDefaultSize, 0 );
-	
 	node_->SetToolTip( wxT("Match against the node's name") );
 	
 	bSizer14->Add( node_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
 	
 	location_ = new wxCheckBox( this, wxID_ANY, wxT("Location"), wxDefaultPosition, wxDefaultSize, 0 );
-	
 	location_->SetToolTip( wxT("Match against the code location") );
 	
 	bSizer14->Add( location_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
 	
 	topics_ = new wxCheckBox( this, wxID_ANY, wxT("Topics"), wxDefaultPosition, wxDefaultSize, 0 );
-	
 	topics_->SetToolTip( wxT("Match against the published topics") );
 	
 	bSizer14->Add( topics_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
@@ -345,23 +349,18 @@ RosoutSeverityFilterControlBase::RosoutSeverityFilterControlBase( wxWindow* pare
 	bSizer14->Add( m_staticText21, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	fatal_ = new wxCheckBox( this, wxID_ANY, wxT("Fatal"), wxDefaultPosition, wxDefaultSize, 0 );
-	
 	bSizer14->Add( fatal_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	error_ = new wxCheckBox( this, wxID_ANY, wxT("Error"), wxDefaultPosition, wxDefaultSize, 0 );
-	
 	bSizer14->Add( error_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	warn_ = new wxCheckBox( this, wxID_ANY, wxT("Warn"), wxDefaultPosition, wxDefaultSize, 0 );
-	
 	bSizer14->Add( warn_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	info_ = new wxCheckBox( this, wxID_ANY, wxT("Info"), wxDefaultPosition, wxDefaultSize, 0 );
-	
 	bSizer14->Add( info_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	debug_ = new wxCheckBox( this, wxID_ANY, wxT("Debug"), wxDefaultPosition, wxDefaultSize, 0 );
-	
 	bSizer14->Add( debug_, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	this->SetSizer( bSizer14 );

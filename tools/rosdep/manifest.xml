@@ -22,4 +22,7 @@ syntax, but all changes will keep backwards compatability.
   <depend package="roslib"/>
   <depend package="rospack"/>
   <review status="Doc Reviewed" notes="2010-01-12"/>
+  <export>
+    <rosdoc config="rosdoc.yaml"/>
+  </export>
 </package>

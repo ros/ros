@@ -178,6 +178,14 @@ public:
   TiXmlElement *manifest_root();
   void accumulate_deps(AccList& acc_list, Package* to);
 
+  /**
+   * \brief Returns the message flags for this package.  If the path/msg or path/srv directories exist,
+   * adds appropriate compile/link flags depending on what is requested
+   * \param cflags Whether or not to include compile flags
+   * \param lflags Whether or not to include link flags
+   */
+  std::string cpp_message_flags(bool cflags, bool lflags);
+
 
 private:
   bool deps_calculated, direct_deps_calculated, descendants_calculated;
@@ -221,6 +229,7 @@ public:
   int cmd_depsindent(Package* pkg, int indent);
 
   int cmd_deps_manifests();
+  int cmd_deps_msgsrv();
 
   int cmd_deps1();
 

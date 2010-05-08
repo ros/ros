@@ -1,0 +1,4 @@
+<launch>
+  <test test-name="builtin_types" pkg="test_roscpp_serialization" type="builtin_types"/>
+</launch>
+

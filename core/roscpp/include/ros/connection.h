@@ -68,6 +68,13 @@ typedef boost::function<bool(const ConnectionPtr&, const Header&)> HeaderReceive
 class Connection : public boost::enable_shared_from_this<Connection>
 {
 public:
+  enum DropReason
+  {
+    TransportDisconnect,
+    HeaderError,
+    Destructing,
+  };
+
   Connection();
   ~Connection();
 
@@ -79,12 +86,17 @@ public:
    * \brief Drop this connection.  Anything added as a drop listener through addDropListener will get called back when this connection has
    * been dropped.
    */
-  void drop();
+  void drop(DropReason reason);
 
   /**
    * \brief Returns whether or not this connection has been dropped
    */
   bool isDropped();
+
+  /**
+   * \brief Returns true if we're currently sending a header error (and will be automatically dropped when it's finished)
+   */
+  bool isSendingHeaderError() { return sending_header_error_; }
 
   /**
    * \brief Send a header error message, of the form "error=<message>".  Drops the connection once the data has written successfully (or fails to write)
@@ -130,12 +142,13 @@ public:
    */
   void write(const boost::shared_array<uint8_t>& buffer, uint32_t size, const WriteFinishedFunc& finished_callback, bool immedate = true);
 
-  typedef boost::signal<void(const ConnectionPtr&)> DropSignal;
-  typedef boost::function<void(const ConnectionPtr&)> DropFunc;
+  typedef boost::signal<void(const ConnectionPtr&, DropReason reason)> DropSignal;
+  typedef boost::function<void(const ConnectionPtr&, DropReason reason)> DropFunc;
   /**
    * \brief Add a callback to be called when this connection has dropped
    */
   boost::signals::connection addDropListener(const DropFunc& slot);
+  void removeDropListener(const boost::signals::connection& c);
 
   /**
    * \brief Set the header receipt callback
@@ -252,6 +265,9 @@ private:
 
   /// Synchronizes drop() calls
   boost::recursive_mutex drop_mutex_;
+
+  /// If we're sending a header error we disable most other calls
+  bool sending_header_error_;
 };
 typedef boost::shared_ptr<Connection> ConnectionPtr;
 

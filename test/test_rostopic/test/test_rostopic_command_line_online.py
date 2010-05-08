@@ -101,14 +101,20 @@ class TestRostopicOnline(unittest.TestCase):
             values = [n.strip() for n in output.split('\n') if n.strip()]
             self.assertEquals(set(values), set(topics))
 
+            #echo
+            # test with -c option to get command to terminate
+            count = 3
+            output = Popen([cmd, 'echo', name, '-n', str(count)], stdout=PIPE).communicate()[0]
+            values = [n.strip() for n in output.split('\n') if n.strip()]
+            values = [n for n in values if n != '---']
+            self.assertEquals(count, len(values), "wrong number of echos in output:\n"+str(values))
+            for n in values:
+                self.assert_('data: hello world ' in n, n)
+
             if 0:
                 #bw
                 stdout, stderr = run_for([cmd, 'bw', name], 3.)
                 self.assert_('average:' in stdout, "OUTPUT: %s\n%s"%(stdout,stderr))
-
-                #echo
-                stdout, stderr = run_for([cmd, 'echo', name], 2.)
-                self.assert_('data: hello world:' in stdout+stderr)
 
                 # hz
                 stdout, stderr = run_for([cmd, 'hz', name], 2.)

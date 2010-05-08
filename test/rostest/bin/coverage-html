@@ -31,7 +31,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: __init__.py 6720 2009-11-07 02:09:56Z kwc $
+# Revision $Id$
 
 """
 Generate HTML reports from coverage.py (aka python-coverage). This is

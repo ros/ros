@@ -30,8 +30,13 @@
 
 #if defined(__GNUC__)
 #define ROSCPP_DEPRECATED __attribute__((deprecated))
+#define ROSCPP_FORCEINLINE __attribute__((always_inline))
+#elif defined(MSVC)
+#define ROSCPP_DEPRECATED
+#define ROSCPP_FORCEINLINE __forceinline
 #else
 #define ROSCPP_DEPRECATED
+#define ROSCPP_FORCEINLINE
 #endif
 
 #endif

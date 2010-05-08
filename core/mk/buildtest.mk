@@ -1,5 +1,7 @@
 # A target to test building of a package, all of its dependencies, and all
 # of the things that depend on it
+# 
+# For internal use only.
 
 # HACK: assume that the package name is the name of the directory we're
 # sitting in

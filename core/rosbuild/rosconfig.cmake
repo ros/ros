@@ -51,6 +51,7 @@ endif(PROJECTCONFIG)
 #  Debug          : w/ debug symbols, w/o optimization
 #  Release        : w/o debug symbols, w/ optimization
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
+#  RelWithAsserts : w/o debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 if(NOT DEFINED ROS_BUILD_TYPE)
   set(ROS_BUILD_TYPE RelWithDebInfo)

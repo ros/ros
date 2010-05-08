@@ -66,7 +66,7 @@ class TestRospyTcprosService(unittest.TestCase):
 
     def test_convert_return_to_response(self):
         import rospy
-        from rospy.tcpros_service import convert_return_to_response
+        from rospy.impl.tcpros_service import convert_return_to_response
         from test_ros.srv import AddTwoIntsResponse
 
         cls = AddTwoIntsResponse
@@ -139,11 +139,11 @@ class TestRospyTcprosService(unittest.TestCase):
         
     def test_service_connection_handler(self):
         import test_rospy.srv
-        from rospy.registration import get_service_manager        
+        from rospy.impl.registration import get_service_manager        
         import rospy.service
 
         sock = FakeSocket()
-        from rospy.tcpros_service import service_connection_handler
+        from rospy.impl.tcpros_service import service_connection_handler
         client_addr = '10.0.0.1'
 
         # check error conditions on missing headers
@@ -177,8 +177,8 @@ class TestRospyTcprosService(unittest.TestCase):
         
         
     def test_TCPROSServiceClient(self):
-        import rospy.transport
-        from rospy.tcpros_service import TCPROSServiceClient        
+        import rospy.impl.transport
+        from rospy.impl.tcpros_service import TCPROSServiceClient        
         import test_rospy.srv
 
         callerid = 'test_TCPROSServiceClient'
@@ -190,7 +190,7 @@ class TestRospyTcprosService(unittest.TestCase):
         srv_data_class = test_rospy.srv.EmptySrv
         p = TCPROSServiceClient(name, srv_data_class)
         self.assertEquals(name, p.resolved_name)
-        self.assertEquals(rospy.transport.BIDIRECTIONAL, p.direction)
+        self.assertEquals(rospy.impl.transport.BIDIRECTIONAL, p.direction)
         self.assertEquals(srv_data_class, p.service_class)
         self.assert_(p.buff_size > -1)
 
@@ -212,8 +212,8 @@ class TestRospyTcprosService(unittest.TestCase):
         
 
     def test_TCPService(self):
-        import rospy.transport
-        from rospy.tcpros_service import TCPService        
+        import rospy.impl.transport
+        from rospy.impl.tcpros_service import TCPService        
         import test_rospy.srv
 
         callerid = 'test_TCPService'
@@ -225,7 +225,7 @@ class TestRospyTcprosService(unittest.TestCase):
         srv_data_class = test_rospy.srv.EmptySrv
         p = TCPService(name, srv_data_class)
         self.assertEquals(name, p.resolved_name)
-        self.assertEquals(rospy.transport.BIDIRECTIONAL, p.direction)
+        self.assertEquals(rospy.impl.transport.BIDIRECTIONAL, p.direction)
         self.assertEquals(srv_data_class, p.service_class)
         self.assert_(p.buff_size > -1)
 
@@ -240,4 +240,4 @@ class TestRospyTcprosService(unittest.TestCase):
             
 if __name__ == '__main__':
     import rostest
-    rostest.unitrun('test_rospy', 'test_rospy_tcpros_service', TestRospyTcprosService, coverage_packages=['rospy.tcpros_service'])
+    rostest.unitrun('test_rospy', 'test_rospy_tcpros_service', TestRospyTcprosService, coverage_packages=['rospy.impl.tcpros_service'])

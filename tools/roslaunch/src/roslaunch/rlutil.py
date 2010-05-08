@@ -50,6 +50,11 @@ def resolve_launch_arguments(args):
     @rtype: [str]
     """
     import roslib.packages
+    import roslib.scriptutil
+
+    # strip remapping args for processing
+    args = roslib.scriptutil.myargv(args)
+    
     # user can either specify:
     #  - filename + launch args
     #  - package + relative-filename + launch args

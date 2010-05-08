@@ -65,8 +65,8 @@ class FakeSocket(object):
 class TestRospyTcprosPubsub(unittest.TestCase):
 
     def test_TCPROSSub(self):
-        import rospy.transport
-        from rospy.tcpros_pubsub import TCPROSSub        
+        import rospy.impl.transport
+        from rospy.impl.tcpros_pubsub import TCPROSSub        
         import test_rospy.msg
 
         callerid = 'test_TCPROSSub'
@@ -78,7 +78,7 @@ class TestRospyTcprosPubsub(unittest.TestCase):
         recv_data_class = test_rospy.msg.Val
         s = TCPROSSub(name, recv_data_class)
         self.assertEquals(name, s.resolved_name)
-        self.assertEquals(rospy.transport.INBOUND, s.direction)
+        self.assertEquals(rospy.impl.transport.INBOUND, s.direction)
         self.assertEquals(recv_data_class, s.recv_data_class)
         self.assert_(s.buff_size > -1)
         self.failIf(s.tcp_nodelay)
@@ -105,8 +105,8 @@ class TestRospyTcprosPubsub(unittest.TestCase):
         self.assertEquals('1', s.get_header_fields()['tcp_nodelay'])
         
     def test_TCPROSPub(self):
-        import rospy.transport
-        from rospy.tcpros_pubsub import TCPROSPub        
+        import rospy.impl.transport
+        from rospy.impl.tcpros_pubsub import TCPROSPub        
         import test_rospy.msg
 
         callerid = 'test_TCPROSPub'
@@ -118,7 +118,7 @@ class TestRospyTcprosPubsub(unittest.TestCase):
         pub_data_class = test_rospy.msg.Val
         p = TCPROSPub(name, pub_data_class)
         self.assertEquals(name, p.resolved_name)
-        self.assertEquals(rospy.transport.OUTBOUND, p.direction)
+        self.assertEquals(rospy.impl.transport.OUTBOUND, p.direction)
         self.assertEquals(pub_data_class, p.pub_data_class)
         self.assert_(p.buff_size > -1)
         self.failIf(p.is_latch)
@@ -145,7 +145,7 @@ class TestRospyTcprosPubsub(unittest.TestCase):
         
     def test_configure_pub_socket(self):
         # #1241 regression test to make sure that imports don't get messed up again
-        from rospy.tcpros_pubsub import _configure_pub_socket
+        from rospy.impl.tcpros_pubsub import _configure_pub_socket
         import socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         _configure_pub_socket(sock, True)
@@ -157,8 +157,8 @@ class TestRospyTcprosPubsub(unittest.TestCase):
     def test_TCPROSHandler_topic_connection_handler(self):
         
         import rospy
-        from rospy.registration import Registration
-        from rospy.tcpros_pubsub import TCPROSHandler
+        from rospy.impl.registration import Registration
+        from rospy.impl.tcpros_pubsub import TCPROSHandler
         import test_rospy.msg
 
         handler = TCPROSHandler()
@@ -181,7 +181,7 @@ class TestRospyTcprosPubsub(unittest.TestCase):
         self.assert_(err)
 
         # register '/foo-tch'
-        tm = rospy.registration.get_topic_manager()
+        tm = rospy.impl.registration.get_topic_manager()
         impl = tm.acquire_impl(Registration.PUB, topic_name, data_class)
         self.assert_(impl is not None)
 
@@ -235,4 +235,4 @@ class TestRospyTcprosPubsub(unittest.TestCase):
             
 if __name__ == '__main__':
     import rostest
-    rostest.unitrun('test_rospy', 'test_rospy_tcpros_pubsub', TestRospyTcprosPubsub, coverage_packages=['rospy.tcpros_pubsub'])
+    rostest.unitrun('test_rospy', 'test_rospy_tcpros_pubsub', TestRospyTcprosPubsub, coverage_packages=['rospy.impl.tcpros_pubsub'])

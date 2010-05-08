@@ -113,15 +113,6 @@ class EnvTest(unittest.TestCase):
     # make sure test works with os.environ
     self.assertEquals(os.environ.get('ROS_MASTER_URI', None), get_master_uri(required=False))
 
-  def test_setup_default_environment(self):
-    from roslib.rosenv import setup_default_environment
-    # can't test actual functionality as coded, but verify that it is a noop on non rosdeb systems
-    if os.path.isdir('/usr/lib/ros'):
-      return
-    e = os.environ.copy()
-    setup_default_environment()
-    self.assertEquals(e, os.environ)
-    
   def test_get_log_dir(self):
     from roslib.roslogging import get_log_dir
     from roslib.rosenv import get_ros_root

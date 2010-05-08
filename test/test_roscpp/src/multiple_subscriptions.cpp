@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include "ros/ros.h"
 #include <test_roscpp/TestArray.h>
+#include <test_roscpp/TestEmpty.h>
 
 int g_argc;
 char** g_argv;
@@ -152,10 +153,37 @@ TEST_F(Subscriptions, multipleSubscriptions)
   SUCCEED();
 }
 
+void callback1(const test_roscpp::TestArrayConstPtr&)
+{
+
+}
+
+void callback2(const test_roscpp::TestEmptyConstPtr&)
+{
+
+}
+
+TEST(Subscriptions2, multipleDifferentMD5Sums)
+{
+  ros::NodeHandle nh;
+  ros::Subscriber sub1 = nh.subscribe("test", 0, callback1);
+
+  try
+  {
+    ros::Subscriber sub2 = nh.subscribe("test", 0, callback2);
+    FAIL();
+  }
+  catch (ros::ConflictingSubscriptionException&)
+  {
+    SUCCEED();
+  }
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "multiple_subscriptions");
+  ros::NodeHandle nh;
   g_argc = argc;
   g_argv = argv;
   return RUN_ALL_TESTS();

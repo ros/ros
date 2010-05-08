@@ -11,8 +11,6 @@
   <depend package="rospy"/>
   <depend package="roslib"/>
   <depend package="rostest"/>
-
-  <!-- runtime deps for online tests -->
   <depend package="test_ros" />
 
 </package>

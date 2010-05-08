@@ -82,7 +82,7 @@ def generate_epydoc(ctx):
                 del roslib.launcher._bootstrapped[:]
                 paths = roslib.launcher._generate_python_path(package, [], os.environ) 
                 env = os.environ.copy()
-                env['PYTHONPATH'] = os.pathsep.join(paths)
+                env['PYTHONPATH'] = os.pathsep.join([p for p in paths if os.path.exists(p)])
 
                 print "epydoc-building %s [%s]"%(package, ' '.join(command))
                 Popen(command, stdout=PIPE, env=env).communicate()

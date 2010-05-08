@@ -1482,14 +1482,14 @@ void msg_spec::emit_cpp_class(FILE *f, bool for_srv, const string &srv_name)
   {
     fprintf(f, "(defmethod md5sum ((type (eql '<%s>)))\n"
             "  \"Returns md5sum for a message object of type '<%s>\"\n"
-            "  #x%s)\n",
+            "  \"%s\")\n",
             g_name.c_str(), g_name.c_str(), server_md5sum.c_str());
   }
   else
   {
     fprintf(f, "(defmethod md5sum ((type (eql '<%s>)))\n"
             "  \"Returns md5sum for a message object of type '<%s>\"\n"
-            "  #x%s)\n",
+            "  \"%s\")\n",
             g_name.c_str(), g_name.c_str(), md5sum.c_str());
   }
 

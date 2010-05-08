@@ -305,27 +305,26 @@ class TestRosservice(unittest.TestCase):
         services = ['/add_two_ints',
                     '/foo/add_two_ints',
                     '/bar/add_two_ints',
-                    '/rosout/get_loggers',
-                    '/rosout/set_logger_level',
                     ]
         services_nodes = ['/add_two_ints /a2iserver',
                           '/foo/add_two_ints /foo/a2iserver',
                           '/bar/add_two_ints /bar/a2iserver',
-                          '/rosout/get_loggers /rosout',
-                          '/rosout/set_logger_level /rosout',
                           ]
 
         with fakestdout() as b:
             rosservice._rosservice_cmd_list([cmd, 'list'])
             v = [x.strip() for x in b.getvalue().split('\n') if x.strip()]
+            v = [x for x in v if not x.startswith('/rosout/')]
             self.assertEquals(set(services), set(v))
         with fakestdout() as b:
             rosservice._rosservice_cmd_list([cmd, 'list', '-n'])
             v = [x.strip() for x in b.getvalue().split('\n') if x.strip()]
+            v = [x for x in v if not x.startswith('/rosout/')]
             self.assertEquals(set(services_nodes), set(v))
         with fakestdout() as b:            
             rosservice._rosservice_cmd_list([cmd, 'list', '--nodes'])
             v = [x.strip() for x in b.getvalue().split('\n') if x.strip()]
+            v = [x for x in v if not x.startswith('/rosout/')]
             self.assertEquals(set(services_nodes), set(v))
 
         # test with multiple service names

@@ -87,7 +87,7 @@ def create_package_template(package, rd_config, m, path, html_dir,
     # TODO: replace with general purpose key/value parser/substitution to enable <export><doxygen key="foo" val="var"></export> feature
 
     # determine the value of overridable keys
-    file_patterns = '*.c *.cpp *.h *.cc *.hh *.py *.dox'
+    file_patterns = '*.c *.cpp *.h *.cc *.hh *.hpp *.py *.dox'
     excludes = '%s/build/'%path
     # last one wins
     for e in m.get_export('doxygen', 'excludes'):

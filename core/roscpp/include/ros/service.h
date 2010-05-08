@@ -33,6 +33,8 @@
 #include "ros/message.h"
 #include "ros/forwards.h"
 #include "ros/node_handle.h"
+#include "ros/service_traits.h"
+#include "ros/names.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -62,8 +64,9 @@ namespace service
 template<class MReq, class MRes>
 bool call(const std::string& service_name, MReq& req, MRes& res)
 {
+  namespace st = service_traits;
   NodeHandle nh;
-  ServiceClientOptions ops(service_name, req.__getServerMD5Sum(), false, M_string());
+  ServiceClientOptions ops(ros::names::resolve(service_name), st::md5sum(req), false, M_string());
   ServiceClient client = nh.serviceClient(ops);
   return client.call(req, res);
 }
@@ -81,8 +84,10 @@ bool call(const std::string& service_name, MReq& req, MRes& res)
 template<class Service>
 bool call(const std::string& service_name, Service& service)
 {
+  namespace st = service_traits;
+
   NodeHandle nh;
-  ServiceClientOptions ops(service_name, service.getMD5Sum(), false, M_string());
+  ServiceClientOptions ops(ros::names::resolve(service_name), st::md5sum(service), false, M_string());
   ServiceClient client = nh.serviceClient(ops);
   return client.call(service.request, service.response);
 }
@@ -128,7 +133,7 @@ template<class MReq, class MRes>
 ServiceClient createClient(const std::string& service_name, bool persistent = false, const M_string& header_values = M_string())
 {
   NodeHandle nh;
-  ServiceClient client = nh.template serviceClient<MReq, MRes>(service_name, persistent, header_values);
+  ServiceClient client = nh.template serviceClient<MReq, MRes>(ros::names::resolve(service_name), persistent, header_values);
   return client;
 }
 
@@ -146,7 +151,7 @@ template<class Service>
 ServiceClient createClient(const std::string& service_name, bool persistent = false, const M_string& header_values = M_string())
 {
   NodeHandle nh;
-  ServiceClient client = nh.template serviceClient<Service>(service_name, persistent, header_values);
+  ServiceClient client = nh.template serviceClient<Service>(ros::names::resolve(service_name), persistent, header_values);
   return client;
 }
 

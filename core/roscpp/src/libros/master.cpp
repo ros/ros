@@ -122,7 +122,7 @@ bool getTopics(V_TopicInfo& topics)
   topics.clear();
   for (int i = 0; i < payload.size(); i++)
   {
-    topics.push_back(TopicInfo(std::string(payload[i][0]), std::string(payload[i][1]), std::string(payload[i][1])));
+    topics.push_back(TopicInfo(std::string(payload[i][0]), std::string(payload[i][1])));
   }
 
   return true;

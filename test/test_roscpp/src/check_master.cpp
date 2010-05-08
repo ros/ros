@@ -44,26 +44,34 @@
 
 using namespace XmlRpc;
 
+bool g_should_exist = true;
+
 TEST(CheckMaster, checkMaster)
 {
-  ASSERT_TRUE(ros::master::check());
-
-  XmlRpcValue args, result, payload;
-  args[0] = ros::this_node::getName();
-  args[1] = std::string("testing");
-  ros::master::execute("shutdown", args, result, payload, false);
-
-  ros::WallDuration d(1);
-  d.sleep();
-  ASSERT_FALSE(ros::master::check());
+  ASSERT_EQ(ros::master::check(), g_should_exist);
 }
 
-int
-main(int argc, char** argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
+
+  ros::V_string args;
+  ros::removeROSArgs(argc, argv, args);
+
+  if (args.size() != 2)
+  {
+    ROS_ERROR("Usage: check_master [yes|no]");
+    return 1;
+  }
+
+  if (args[1] == "no")
+  {
+    g_should_exist = false;
+    setenv("ROS_MASTER_URI", "http://invalid_host_name_blahahahahahahahahahahaha:11311", 1);
+    std::cout << getenv("ROS_MASTER_URI") << std::endl;
+  }
+
   ros::init(argc, argv, "check_master");
-  ros::NodeHandle nh;
 
   return RUN_ALL_TESTS();
 }

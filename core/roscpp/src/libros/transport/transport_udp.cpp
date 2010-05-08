@@ -351,15 +351,16 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
     }
     if (num_bytes < 0)
     {
-      if (errno != EAGAIN)
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
       {
-        ROSCPP_LOG_DEBUG("readv() failed with error [%s]", strerror(errno));
-        close();
+        num_bytes = 0;
         break;
       }
       else
       {
-        num_bytes = 0;
+        ROSCPP_LOG_DEBUG("readv() failed with error [%s]", strerror(errno));
+        close();
+        break;
       }
     }
     else if (num_bytes == 0)

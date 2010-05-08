@@ -45,7 +45,8 @@ class RoslibScriptutilTest(unittest.TestCase):
         try:
             from roslib.scriptutil import myargv
             args = myargv()
-            self.assertEquals(args, sys.argv)
+            sysargv = [a for a in sys.argv if not a.startswith('__log:=')]
+            self.assertEquals(args, sysargv)
             self.assertEquals(['foo', 'bar', 'baz'], myargv(['foo','bar', 'baz']))
             self.assertEquals(['-foo', 'bar', '-baz'], myargv(['-foo','bar', '-baz']))
             
@@ -53,7 +54,14 @@ class RoslibScriptutilTest(unittest.TestCase):
             self.assertEquals(['foo'], myargv(['foo','-bar:=baz']))
         finally:
             sys.argv = orig_argv
-    
+
+    def test_interactive(self):
+        import roslib.scriptutil
+        self.failIf(roslib.scriptutil.is_interactive(), "interactive should be false by default")
+        for v in [True, False]:
+            roslib.scriptutil.set_interactive(v)        
+            self.assertEquals(v, roslib.scriptutil.is_interactive())
+        
 if __name__ == '__main__':
     rostest.unitrun('test_roslib', 'test_scriptutil', RoslibScriptutilTest, coverage_packages=['roslib.scriptutil'])
 

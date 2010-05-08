@@ -145,7 +145,13 @@ macro(rosbuild_init)
   add_definitions(-DROS_PACKAGE_NAME='\"${PROJECT_NAME}\"')
 
   # ROS_BUILD_TYPE is set by rosconfig
-  set(CMAKE_BUILD_TYPE ${ROS_BUILD_TYPE})
+  # RelWithAsserts is our own type, not supported by CMake
+  if("${ROS_BUILD_TYPE}" STREQUAL "RelWithAsserts")
+    set(CMAKE_BUILD_TYPE "")
+    set(ROS_COMPILE_FLAGS "-O3 ${ROS_COMPILE_FLAGS}")
+  else("${ROS_BUILD_TYPE}" STREQUAL "RelWithAsserts")
+    set(CMAKE_BUILD_TYPE ${ROS_BUILD_TYPE})
+  endif("${ROS_BUILD_TYPE}" STREQUAL "RelWithAsserts")
 
   # Set default output directories
   set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
@@ -159,8 +165,9 @@ macro(rosbuild_init)
 
   # Get the full paths to the manifests for all packages on which 
   # we depend
-  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack invoke_result deps-manifests)
-  set(ROS_MANIFEST_LIST "${PROJECT_SOURCE_DIR}/manifest.xml ${_rospack_invoke_result}")
+  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack deps_manifests_invoke_result deps-manifests)
+  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack msgsrv_gen_invoke_result deps-msgsrv)
+  set(ROS_MANIFEST_LIST "${PROJECT_SOURCE_DIR}/manifest.xml ${_rospack_deps_manifests_invoke_result} ${_rospack_msgsrv_gen_invoke_result}")
   # convert whitespace-separated string to ;-separated list
   separate_arguments(ROS_MANIFEST_LIST)
 
@@ -206,7 +213,7 @@ macro(rosbuild_init)
     list(REVERSE ${_prefix}_LIBRARIES)
     #list(REMOVE_DUPLICATES ${_prefix}_LIBRARIES)
     _rosbuild_list_remove_duplicates("${${_prefix}_LIBRARIES}" _tmplist)
-    set(${_prefix}_LIBRARIES ${__tmplist})
+    set(${_prefix}_LIBRARIES ${_tmplist})
     list(REVERSE ${_prefix}_LIBRARIES)
   
     # Also throw in the libs that we want to link everything against (only
@@ -391,13 +398,46 @@ macro(rosbuild_init)
   # Gather the gtest build flags, for use when building unit tests.  We
   # don't require the user to declare a dependency on gtest.
   #
-  rosbuild_invoke_rospack(gtest _gtest PACKAGE_PATH find)
-  include_directories(${_gtest_PACKAGE_PATH}/gtest/include)
-  link_directories(${_gtest_PACKAGE_PATH}/gtest/lib)
-  set(_gtest_LIBRARIES -lgtest)
+  find_program(GTEST_EXE NAMES gtest-config DOC "gtest-config executable")
+  if (NOT GTEST_EXE)
+    set(_gtest_LIBRARIES -lgtest)
+    # Couldn't find gtest-config. Hoping that gtest is in our path either in the system install or where ROS_BINDEPS points to
+  else (NOT GTEST_EXE)
+
+  execute_process(COMMAND ${GTEST_EXE} --includedir
+                  OUTPUT_VARIABLE gtest_include_dir
+                  RESULT_VARIABLE _gtest_include_dir
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(_gtest_include_dir)
+    message(FATAL_ERROR "Failed to invoke gtest-config")
+  endif(_gtest_include_dir)
+
+  include_directories(${gtest_include_dir})
+
+  execute_process(COMMAND ${GTEST_EXE} --libdir
+                  OUTPUT_VARIABLE gtest_lib_dir
+                  RESULT_VARIABLE _gtest_lib_dir
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(_gtest_lib_dir)
+    message(FATAL_ERROR "Failed to invoke gtest-config")
+  endif(_gtest_lib_dir)
+  link_directories(${gtest_lib_dir})
+
+
+  execute_process(COMMAND ${GTEST_EXE} --libs
+                  OUTPUT_VARIABLE gtest_libs
+                  RESULT_VARIABLE _gtest_libs
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(_gtest_libs)
+    message(FATAL_ERROR "Failed to invoke gtest-config")
+  endif(_gtest_libs)
+
+
+  set(_gtest_LIBRARIES ${gtest_libs})
   set(_gtest_CFLAGS_OTHER "")
-  set(_gtest_LDFLAGS_OTHER "-Wl,-rpath,${_gtest_PACKAGE_PATH}/gtest/lib")
-  
+  set(_gtest_LDFLAGS_OTHER "-Wl,-rpath,${gtest_lib_dir}")
+  endif (NOT GTEST_EXE)
+
   #
   # The following code removes duplicate libraries from the link line,
   # saving only the last one.
@@ -407,6 +447,10 @@ macro(rosbuild_init)
   _rosbuild_list_remove_duplicates(${_gtest_LIBRARIES} _tmplist)
   set(_gtest_LIBRARIES ${_tmplist})
   list(REVERSE _gtest_LIBRARIES)
+
+  # Delete the files that let rospack know messages/services have been generated
+  file(REMOVE ${PROJECT_SOURCE_DIR}/msg_gen/generated)
+  file(REMOVE ${PROJECT_SOURCE_DIR}/srv_gen/generated)
 endmacro(rosbuild_init)
 ###############################################################################
 
@@ -472,6 +516,11 @@ macro(rosbuild_add_library lib)
   if(NOT ROS_BUILD_STATIC_LIBS AND NOT ROS_BUILD_SHARED_LIBS)
     message(FATAL_ERROR "Neither shared nor static libraries are enabled.  Please set either ROS_BUILD_STATIC_LIBS or ROS_BUILD_SHARED_LIBS to true in your $ROS_ROOT/rosconfig.cmake")
   endif(NOT ROS_BUILD_STATIC_LIBS AND NOT ROS_BUILD_SHARED_LIBS)
+  # Sanity check; it's too hard to support building shared libs and static
+  # executables.
+  if(ROS_BUILD_STATIC_EXES AND ROS_BUILD_SHARED_LIBS)
+    message(FATAL_ERROR "Static executables are requested, but so are shared libs. This configuration is unsupported.  Please either set ROS_BUILD_SHARED_LIBS to false or set ROS_BUILD_STATIC_EXES to false.")
+  endif(ROS_BUILD_STATIC_EXES AND ROS_BUILD_SHARED_LIBS)
 
   # What are we building?
   if(ROS_BUILD_SHARED_LIBS)
@@ -533,7 +582,7 @@ macro(rosbuild_add_gtest exe)
   add_custom_target(test)
   add_dependencies(test test_${_testname})
   # Register check for test output
-  _rosbuild_check_rostest_xml_result(test_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
+  _rosbuild_check_rostest_xml_result(${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${_testname}.xml)
 endmacro(rosbuild_add_gtest)
 
 # A version of add_gtest that checks a label against ROS_BUILD_TEST_LABEL
@@ -603,7 +652,7 @@ macro(rosbuild_add_pyunit file)
   endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test pyunit_${_testname})
   # Register check for test output
-  _rosbuild_check_rostest_xml_result(pyunit_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
+  _rosbuild_check_rostest_xml_result(${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${_testname}.xml)
 endmacro(rosbuild_add_pyunit)
 
 # A version of add_pyunit that checks a label against ROS_BUILD_TEST_LABEL
@@ -625,6 +674,19 @@ macro(rosbuild_add_pyunit_future file)
   endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test-future pyunit_${_testname})
 endmacro(rosbuild_add_pyunit_future)
+
+# Declare as a unit test a check of a roslaunch file, or a directory
+# containing roslaunch files.  Following the file/directory, you can
+# specify environment variables as var=val var=val ...
+macro(rosbuild_add_roslaunch_check file)
+  string(REPLACE "/" "_" _testname ${file})
+  _rosbuild_add_roslaunch_check(${ARGV})
+  # Redeclaration of target is to workaround bug in 2.4.6
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test)
+  endif(CMAKE_MINOR_VERSION LESS 6)
+  add_dependencies(test roslaunch_check_${_testname})
+endmacro(rosbuild_add_roslaunch_check)
 
 set(_ROSBUILD_GENERATED_MSG_FILES "")
 macro(rosbuild_add_generated_msgs)
@@ -698,6 +760,19 @@ macro(rosbuild_gensrv)
   rosbuild_get_srvs(_srvlist)
   if(NOT _srvlist)
     _rosbuild_warn("rosbuild_gensrv() was called, but no .srv files were found")
+  else(NOT _srvlist)
+    file(WRITE ${PROJECT_SOURCE_DIR}/srv_gen/generated "yes")
+    # Now set the mtime to something consistent.  We only want whether or not this file exists to matter
+    execute_process(
+      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/srv_gen/generated', (0, 0))"
+      ERROR_VARIABLE _set_mtime_error
+      RESULT_VARIABLE _set_mtime_failed
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(_set_mtime_failed)
+      message("[rosbuild] Error from calling to Python to set the mtime on ${PROJECT_SOURCE_DIR}/srv_gen/generated:")
+      message("${_mtime_error}")
+      message(FATAL_ERROR "[rosbuild] Failed to set mtime; aborting")
+    endif(_set_mtime_failed)
   endif(NOT _srvlist)
   # Create target to trigger service generation in the case where no libs
   # or executables are made.
@@ -707,7 +782,7 @@ macro(rosbuild_gensrv)
   # depend on the message generation.
   add_dependencies(rosbuild_precompile rospack_gensrv)
   # add in the directory that will contain the auto-generated .h files
-  include_directories(${PROJECT_SOURCE_DIR}/srv/cpp)
+  include_directories(${PROJECT_SOURCE_DIR}/srv_gen/cpp/include)
 endmacro(rosbuild_gensrv)
 
 # genmsg processes msg/*.msg files into language-specific source files
@@ -716,6 +791,19 @@ macro(rosbuild_genmsg)
   rosbuild_get_msgs(_msglist)
   if(NOT _msglist)
     _rosbuild_warn("rosbuild_genmsg() was called, but no .msg files were found")
+  else(NOT _msglist)
+    file(WRITE ${PROJECT_SOURCE_DIR}/msg_gen/generated "yes")
+    # Now set the mtime to something consistent.  We only want whether or not this file exists to matter
+    execute_process(
+      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/msg_gen/generated', (0, 0))"
+      ERROR_VARIABLE _set_mtime_error
+      RESULT_VARIABLE _set_mtime_failed
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(_set_mtime_failed)
+      message("[rosbuild] Error from calling to Python to set the mtime on ${PROJECT_SOURCE_DIR}/msg_gen/generated:")
+      message("${_mtime_error}")
+      message(FATAL_ERROR "[rosbuild] Failed to set mtime; aborting")
+    endif(_set_mtime_failed)
   endif(NOT _msglist)
   # Create target to trigger message generation in the case where no libs
   # or executables are made.
@@ -725,7 +813,7 @@ macro(rosbuild_genmsg)
   # depend on the message generation.
   add_dependencies(rosbuild_precompile rospack_genmsg)
   # add in the directory that will contain the auto-generated .h files
-  include_directories(${PROJECT_SOURCE_DIR}/msg/cpp)
+  include_directories(${PROJECT_SOURCE_DIR}/msg_gen/cpp/include)
 endmacro(rosbuild_genmsg)
 
 macro(rosbuild_add_boost_directories)

@@ -14,9 +14,7 @@
     of the type introspection capabilities.
 </p>
 <p>
-    rospy also contains a
-    ROS <a href="http://ros.org/wiki/Master">Master</a>, which is the
-    default Master for ROS. Many of the ROS tools, such
+    Many of the ROS tools, such
     as <a href="http://ros.org/wiki/rostopic">rostopic</a>
     and <a href="http://ros.org/wiki/rosservice">rosservice</a>, are
     built on top of rospy.

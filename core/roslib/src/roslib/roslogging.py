@@ -42,7 +42,7 @@ import sys
 import logging
 
 import roslib.rosenv
-from roslib.rosenv import get_ros_root, ROS_LOG_DIR, ROS_HOME
+from roslib.rosenv import get_ros_root, ROS_LOG_DIR, ROS_HOME, makedirs_with_parent_perms
 import roslib.exceptions
 
 get_log_dir = roslib.rosenv.get_log_dir

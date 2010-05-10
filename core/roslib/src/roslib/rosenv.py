@@ -272,3 +272,19 @@ def makedirs_with_parent_perms(p):
             os.chown(p, s.st_uid, s.st_gid)
         if s.st_mode != s2.st_mode:
             os.chmod(p, s.st_mode)    
+
+def on_ros_path(p):
+    """
+    Check to see if filesystem path is on paths specified in ROS
+    environment (ROS_ROOT, ROS_PACKAGE_PATH).
+
+    New in ROS 1.2.
+    
+    @param p: path
+    @type  p: str
+    @return: True if p is on the ROS path (ROS_ROOT, ROS_PACKAGE_PATH)
+    """
+    pkg = os.path.realpath(roslib.rosenv.resolve_path(p))
+    paths = [p for p in roslib.packages.get_package_paths()]
+    paths = [os.path.realpath(roslib.rosenv.resolve_path(x)) for x in paths]
+    return bool([x for x in paths if pkg == x or pkg.startswith(x + os.sep)])

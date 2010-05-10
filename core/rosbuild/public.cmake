@@ -398,46 +398,13 @@ macro(rosbuild_init)
   # Gather the gtest build flags, for use when building unit tests.  We
   # don't require the user to declare a dependency on gtest.
   #
-  find_program(GTEST_EXE NAMES gtest-config DOC "gtest-config executable")
-  if (NOT GTEST_EXE)
-    set(_gtest_LIBRARIES -lgtest)
-    # Couldn't find gtest-config. Hoping that gtest is in our path either in the system install or where ROS_BINDEPS points to
-  else (NOT GTEST_EXE)
-
-  execute_process(COMMAND ${GTEST_EXE} --includedir
-                  OUTPUT_VARIABLE gtest_include_dir
-                  RESULT_VARIABLE _gtest_include_dir
-                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(_gtest_include_dir)
-    message(FATAL_ERROR "Failed to invoke gtest-config")
-  endif(_gtest_include_dir)
-
-  include_directories(${gtest_include_dir})
-
-  execute_process(COMMAND ${GTEST_EXE} --libdir
-                  OUTPUT_VARIABLE gtest_lib_dir
-                  RESULT_VARIABLE _gtest_lib_dir
-                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(_gtest_lib_dir)
-    message(FATAL_ERROR "Failed to invoke gtest-config")
-  endif(_gtest_lib_dir)
-  link_directories(${gtest_lib_dir})
-
-
-  execute_process(COMMAND ${GTEST_EXE} --libs
-                  OUTPUT_VARIABLE gtest_libs
-                  RESULT_VARIABLE _gtest_libs
-                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(_gtest_libs)
-    message(FATAL_ERROR "Failed to invoke gtest-config")
-  endif(_gtest_libs)
-
-
-  set(_gtest_LIBRARIES ${gtest_libs})
+  rosbuild_invoke_rospack(gtest _gtest PACKAGE_PATH find)
+  include_directories(${_gtest_PACKAGE_PATH}/gtest/include)
+  link_directories(${_gtest_PACKAGE_PATH}/gtest/lib)
+  set(_gtest_LIBRARIES -lgtest)
   set(_gtest_CFLAGS_OTHER "")
-  set(_gtest_LDFLAGS_OTHER "-Wl,-rpath,${gtest_lib_dir}")
-  endif (NOT GTEST_EXE)
-
+  set(_gtest_LDFLAGS_OTHER "-Wl,-rpath,${_gtest_PACKAGE_PATH}/gtest/lib")
+  
   #
   # The following code removes duplicate libraries from the link line,
   # saving only the last one.

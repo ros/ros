@@ -694,11 +694,11 @@ class RosMakeAll:
         build_passed = True
         if building:
           #make sure required packages are built before continuing (These are required by internal functions
-          self.assert_prebuild_built(["tools/rospack", "core/genmsg_cpp"])
+          self.assert_prebuild_built(["tools/rospack", "3rdparty/gtest", "core/genmsg_cpp"])
 
           self.print_verbose ("Building packages %s"% self.build_list)
           build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = options.robust or options.best_effort)
-          build_queue.register_prebuilt(["rospack", "genmsg_cpp"])
+          build_queue.register_prebuilt(["rospack", "gtest", "genmsg_cpp"])
 
           build_passed = self.parallel_build_pkgs(build_queue, options.target, threads = options.threads)
           if "rospack" in self.build_list and options.target == "clean" and not self.flag_tracker.has_nobuild("rospack"):

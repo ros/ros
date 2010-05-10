@@ -76,13 +76,13 @@ def msg_type_to_cpp(type):
         cpp_type = MSG_TYPE_TO_CPP[base_type]
     elif (len(base_type.split('/')) == 1):
         if (roslib.msgs.is_header_type(base_type)):
-            cpp_type = "roslib::Header_<ContainerAllocator> "
+            cpp_type = ' ::roslib::Header_<ContainerAllocator> '
         else:
             cpp_type = '%s_<ContainerAllocator> '%(base_type)
     else:
         pkg = base_type.split('/')[0]
         msg = base_type.split('/')[1]
-        cpp_type = '%s::%s_<ContainerAllocator> '%(pkg, msg)
+        cpp_type = ' ::%s::%s_<ContainerAllocator> '%(pkg, msg)
         
     if (is_array):
         if (array_len is None):
@@ -105,9 +105,9 @@ def cpp_message_declarations(name_prefix, msg):
     @rtype: str 
     """
     pkg, basetype = roslib.names.package_resource_name(msg)
-    cpp_name = '%s%s'%(name_prefix, msg)
+    cpp_name = ' ::%s%s'%(name_prefix, msg)
     if (pkg):
-        cpp_name = '%s::%s'%(pkg, basetype)
+        cpp_name = ' ::%s::%s'%(pkg, basetype)
     return ('%s_'%(cpp_name), '%s_<ContainerAllocator> '%(cpp_name), '%s'%(cpp_name))
 
 def write_begin(s, spec, file):

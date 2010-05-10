@@ -184,7 +184,8 @@ def resolve_paths(paths):
     tildes to home directories, but in the future it may encode other
     behaviors.
     """
-    return os.pathsep.join([resolve_path(p) for p in paths.split(os.pathsep)])
+    splits = [p for p in paths.split(os.pathsep) if p]
+    return os.pathsep.join([resolve_path(p) for p in splits])
 
 
 def get_ros_home(env=None):

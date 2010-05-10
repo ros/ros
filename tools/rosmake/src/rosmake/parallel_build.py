@@ -128,12 +128,14 @@ class CompileThread(threading.Thread):
           self.rosmakeall.print_verbose("[ Build Terminated Thread Exiting ]", thread_name=self.name)
         break # no more packages must be done
 
-      self.rosmakeall.print_all("[ %d of %d  Completed ]"%(  build_count, total_pkgs));
+      #self.rosmakeall.print_all("[ Building package [%s] %d of %d]"%( pkg,  build_count, total_pkgs));
 
       if self.argument:
-        self.rosmakeall.print_all (">>> %s >>> [ make %s ]"%(pkg, self.argument), thread_name=self.name)
+        spaces = 50 - len(pkg) - len(argument)
+        self.rosmakeall.print_all (">>> %s >>> [ make %s ]%s[ %d of %d ]"%(pkg, self.argument, ' '*spaces, build_count, total_pkgs), thread_name=self.name)
       else:
-        self.rosmakeall.print_all (">>> %s >>> [ make ]"%(pkg), thread_name=self.name)
+        spaces = 50 - len(pkg)
+        self.rosmakeall.print_all (">>> %s >>> [ make ]%s[ %d of %d ]"%(pkg, ' '*spaces, build_count, total_pkgs), thread_name=self.name)
 
       (result, result_string) = self.rosmakeall.build(pkg, self.argument, self.build_queue.robust_build) 
       self.rosmakeall.print_all("<<< %s <<< %s"%(pkg, result_string), thread_name= self.name)
@@ -198,7 +200,7 @@ class BuildQueue:
               break
           if dependencies_met:  # all dependencies met
             self.to_build.remove(p)
-            count = len(self.built)
+            count = self._total_pkgs - len(self.to_build) 
             return (p, count, self._total_pkgs) # break out and return package if found
 
 

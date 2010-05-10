@@ -383,30 +383,24 @@ class RosMakeAll:
         output = output + "----------------\n" + "%.2f Cumulative,  %.2f Elapsed, %.2f Speedup \n"%(total, elapsed_time, float(total) / float(elapsed_time))
         return output
 
-    def print_all(self, s, newline = True, thread_name=None):
-        if thread_name == None:
-          if newline:
-              print "[ rosmake ]", s
-          else:
-              print "[ rosmake ]", s,
-              sys.stdout.flush()
+    def print_all(self, s, thread_name=None):
+        if thread_name is None:
+            sys.stdout.write("[ rosmake ] %s\n"%s)
+            sys.stdout.flush()
         else:
-          if newline:
-              print "[rosmake-%s]"%thread_name, s
-          else:
-              print "[rosmake-%s]"%thread_name, s
-              sys.stdout.flush()
+            sys.stdout.write("[rosmake-%s] %s\n"%(thread_name, s))
+            sys.stdout.flush()
   
     def print_verbose(self, s, thread_name=None):
         if self.verbose or self.full_verbose:
           if thread_name:
             self.print_all(s, thread_name=thread_name)
           else:
-            print "[ rosmake ]", s
+            print "[ rosmake ] %s"%s
 
     def print_full_verbose(self, s):
         if self.full_verbose:
-            print "[ rosmake ] ", s
+            print "[ rosmake ] %s"%s
 
     def print_tail(self, s, tail_lines=40):
         lines = s.splitlines()

@@ -110,32 +110,32 @@ class TestBuildQueue(unittest.TestCase):
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
         
-        self.assertEqual(("f", 0, 6), bq.get_valid_package())
+        self.assertEqual(("f", 1, 6), bq.get_valid_package())
         bq.return_built("f")
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
 
-        self.assertEqual(("e", 1, 6), bq.get_valid_package())
+        self.assertEqual(("e", 2, 6), bq.get_valid_package())
         bq.return_built("e")
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
 
-        self.assertEqual(("d", 2, 6), bq.get_valid_package())
+        self.assertEqual(("d", 3, 6), bq.get_valid_package())
         bq.return_built("d")
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
 
-        self.assertEqual(("c", 3, 6), bq.get_valid_package())
+        self.assertEqual(("c", 4, 6), bq.get_valid_package())
         bq.return_built("c")
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
 
-        self.assertEqual(("b", 4, 6), bq.get_valid_package())
+        self.assertEqual(("b", 5, 6), bq.get_valid_package())
         bq.return_built("b")
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
 
-        self.assertEqual(("a", 5, 6), bq.get_valid_package())
+        self.assertEqual(("a", 6, 6), bq.get_valid_package())
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
         bq.return_built("a")
@@ -149,17 +149,17 @@ class TestBuildQueue(unittest.TestCase):
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
         
-        self.assertEqual(("f", 0, 3), bq.get_valid_package())
+        self.assertEqual(("f", 1, 3), bq.get_valid_package())
         bq.return_built("f")
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
 
-        self.assertEqual(("e", 1, 3), bq.get_valid_package())
+        self.assertEqual(("e", 2, 3), bq.get_valid_package())
         bq.return_built("e")
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
 
-        self.assertEqual(("d", 2, 3), bq.get_valid_package())
+        self.assertEqual(("d", 3, 3), bq.get_valid_package())
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
         bq.return_built("d")
@@ -173,17 +173,17 @@ class TestBuildQueue(unittest.TestCase):
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
         
-        self.assertEqual(("f", 0, 6), bq.get_valid_package())
+        self.assertEqual(("f", 1, 6), bq.get_valid_package())
         bq.return_built("f")
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
 
-        self.assertEqual(("e", 1, 6), bq.get_valid_package())
+        self.assertEqual(("e", 2, 6), bq.get_valid_package())
         bq.return_built("e")
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
 
-        self.assertEqual(("d", 2, 6), bq.get_valid_package())
+        self.assertEqual(("d", 3, 6), bq.get_valid_package())
         bq.return_built("d")
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
@@ -201,7 +201,7 @@ class TestBuildQueue(unittest.TestCase):
         self.assertFalse(bq.succeeded())
         
         dependents = ["b", "c", "d", "e", "f"]
-        count = 0
+        count = 1
         total = 6
         while len(dependents) > 0:
             (result, done, pkgs) = bq.get_valid_package()
@@ -218,7 +218,7 @@ class TestBuildQueue(unittest.TestCase):
             self.assertFalse(bq.succeeded())
 
 
-        self.assertEqual(("a", 5, 6), bq.get_valid_package())
+        self.assertEqual(("a", 6, 6), bq.get_valid_package())
         self.assertFalse(bq.is_done())
         self.assertFalse(bq.succeeded())
         bq.return_built("a")

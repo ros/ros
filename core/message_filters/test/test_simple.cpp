@@ -35,6 +35,7 @@
 #include <gtest/gtest.h>
 
 #include "ros/time.h"
+#include <ros/init.h>
 #include "message_filters/simple_filter.h"
 
 using namespace message_filters;
@@ -147,6 +148,7 @@ TEST(SimpleFilter, oldRegisterWithNewFilter)
 
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "blah");
 
   return RUN_ALL_TESTS();
 }

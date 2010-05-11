@@ -45,6 +45,7 @@ from random_messages import RandomMsgGen
 import subprocess
 import signal
 import os
+import atexit
 
 class RandomRecord(unittest.TestCase):
 
@@ -72,6 +73,14 @@ class RandomRecord(unittest.TestCase):
     cmd = [binpath, '-a', '-F', bagpath]
     f1 = subprocess.Popen(cmd)
 
+    def finalkill():
+      try:
+        os.kill(f1.pid, signal.SIGKILL)
+      except:
+        pass
+
+    atexit.register(finalkill)
+
     # Sleep an extra 5 seconds for good measure
     rospy.sleep(rospy.Duration.from_sec(5.0))
 
@@ -81,9 +90,24 @@ class RandomRecord(unittest.TestCase):
       rospy.sleep(d)
       publishers[topic].publish(msg)
 
-#    f1.send_signal(signal.SIGINT)
+    # Sleep an extra 5 seconds for good measure
+    rospy.sleep(rospy.Duration.from_sec(5.0))
+
+    # Initial terminate using SIGINT so bag clean up nicely
     os.kill(f1.pid, signal.SIGINT)
-    (o1,e1) = f1.communicate()
+
+    # Sleep an extra 5 seconds for good measure
+    rospy.sleep(rospy.Duration.from_sec(5.0))
+
+    # Keep trying to kill until it's dead instead of blocking on communicate
+    while (f1.poll() is None):
+      print "Looping?"
+      try:
+        os.kill(f1.pid, signal.SIGKILL)
+      except:
+        pass
+      rospy.sleep(rospy.Duration.from_sec(1.0))
+      
     self.assertEqual(f1.returncode, 0)
 
 

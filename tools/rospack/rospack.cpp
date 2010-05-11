@@ -987,14 +987,6 @@ int ROSPack::cmd_libs_only(string token)
   else
   {
     lflags = snarf_flags(lflags, token);
-    // tack on the bindeps path if it appears to be a good time to do so
-    // note this may be superfluous since rosboost-cfg is likely bringing
-    // the flags into the string already. perhaps at some point I should
-    // skim through the lflags and see if getBinDepPath() is already in
-    // there. It doesn't seem to hurt to duplicate it, though.
-    // (also: may need to set the rpath if rosboost-cfg hasn't already done it)
-    if (useBinDepPath())
-      lflags += string(" ") + getBinDepPath() + string("/lib");
     lflags = deduplicate_tokens(lflags);
   }
   //printf("%s\n", lflags.c_str());
@@ -1010,9 +1002,6 @@ int ROSPack::cmd_cflags_only(string token)
   else
   {
     cflags = snarf_flags(cflags, token);
-    // tack on the bindeps path if it appears to be a good time to do so
-    if (useBinDepPath())
-      cflags += string(" ") + getBinDepPath() + string("/include");
     cflags = deduplicate_tokens(cflags);
   }
   //printf("%s\n", cflags.c_str());
@@ -1023,17 +1012,6 @@ int ROSPack::cmd_cflags_only(string token)
 void ROSPack::export_flags(string pkg, string lang, string attrib)
 {
   string flags = get_pkg(pkg)->flags(lang, attrib);
-  // hack up to add the /opt/ros flags for C++ system dependencies
-  if (useBinDepPath() && lang == string("cpp"))
-  {
-    if (attrib == string("cflags"))
-      flags += string(" -I") + getBinDepPath() + string("/include");
-    else if (attrib == string("lflags"))
-    {
-      flags += string(" -L") + getBinDepPath() + string("/lib");
-      flags += string(" -Wl,-rpath,") + getBinDepPath() + string("/lib");
-    }
-  }
   //printf("%s\n", flags.c_str());
   output_acc += flags + "\n";
 }
@@ -1543,25 +1521,6 @@ double ROSPack::time_since_epoch()
   struct timeval tod;
   gettimeofday(&tod, NULL);
   return tod.tv_sec + 1e-6 * tod.tv_usec;
-}
-
-bool ROSPack::useBinDepPath()
-{
-  const char *bdp_env = getenv("ROS_BINDEPS_PATH");
-  if (bdp_env)
-    return file_exists(string(bdp_env));
-  else
-    return file_exists("/opt/ros");
-}
-
-string ROSPack::getBinDepPath()
-{
-  // We assume that the caller already checked getBinDepPath()
-  const char *bdp_env = getenv("ROS_BINDEPS_PATH");
-  if (bdp_env)
-    return string(bdp_env);
-  else
-    return string("/opt/ros");
 }
 
 void ROSPack::crawl_for_packages(bool force_crawl)

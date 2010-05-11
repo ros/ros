@@ -433,6 +433,9 @@ class Master(object):
     def getTopicTypes(self): 
         """
         Retrieve list topic names and their types.
+
+        New in ROS 1.2.
+
         @param caller_id: ROS caller id    
         @type  caller_id: str
         @rtype: (int, str, [[str,str]] )

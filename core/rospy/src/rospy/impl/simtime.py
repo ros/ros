@@ -86,7 +86,7 @@ def init_simtime():
                 logger.info("connected to core topic %s"%_ROSCLOCK)
 
                 _set_rostime(rospy.rostime.Time(0, 0))
-            rospy.rostime.set_rostime_initialized(True)
+        rospy.rostime.set_rostime_initialized(True)
         return True
     except Exception, e:
         logger.error("Unable to initialize %s: %s\n%s", _ROSCLOCK, e, traceback.format_exc())

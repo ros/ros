@@ -10,5 +10,9 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 
 rosbuild_add_pyunit(test/migrate_test.py)
-rosbuild_add_rostest(test/random_record_play.xml)
+rosbuild_add_rostest(test/random_record.xml)
+rosbuild_add_rostest(test/random_play.xml)
+ADD_DEPENDENCIES(rostest_test_random_play.xml rostest_test_random_record.xml)
+rosbuild_add_rostest(test/random_play_sim.xml)
+ADD_DEPENDENCIES(rostest_test_random_play_sim.xml rostest_test_random_record.xml)
 

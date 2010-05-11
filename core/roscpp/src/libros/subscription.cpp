@@ -649,7 +649,7 @@ uint32_t Subscription::handleMessage(const SerializedMessage& m, bool ser, bool 
   return drops;
 }
 
-bool Subscription::addCallback(const SubscriptionCallbackHelperPtr& helper, const std::string& md5sum, CallbackQueueInterface* queue, int32_t queue_size, const VoidConstPtr& tracked_object)
+bool Subscription::addCallback(const SubscriptionCallbackHelperPtr& helper, const std::string& md5sum, CallbackQueueInterface* queue, int32_t queue_size, const VoidConstPtr& tracked_object, bool allow_concurrent_callbacks)
 {
   ROS_ASSERT(helper);
   ROS_ASSERT(queue);
@@ -675,7 +675,7 @@ bool Subscription::addCallback(const SubscriptionCallbackHelperPtr& helper, cons
     CallbackInfoPtr info(new CallbackInfo);
     info->helper_ = helper;
     info->callback_queue_ = queue;
-    info->subscription_queue_.reset(new SubscriptionQueue(name_, queue_size));
+    info->subscription_queue_.reset(new SubscriptionQueue(name_, queue_size, allow_concurrent_callbacks));
     info->tracked_object_ = tracked_object;
     info->has_tracked_object_ = false;
     if (tracked_object)

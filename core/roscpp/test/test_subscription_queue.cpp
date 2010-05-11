@@ -97,7 +97,7 @@ typedef boost::shared_ptr<FakeSubHelper> FakeSubHelperPtr;
 
 TEST(SubscriptionQueue, queueSize)
 {
-  SubscriptionQueue queue("blah", 1);
+  SubscriptionQueue queue("blah", 1, false);
 
   FakeSubHelperPtr helper(new FakeSubHelper);
   MessageDeserializerPtr des(new MessageDeserializer(helper, SerializedMessage(), boost::shared_ptr<M_string>()));
@@ -130,7 +130,7 @@ TEST(SubscriptionQueue, queueSize)
 
 TEST(SubscriptionQueue, infiniteQueue)
 {
-  SubscriptionQueue queue("blah", 0);
+  SubscriptionQueue queue("blah", 0, false);
 
   FakeSubHelperPtr helper(new FakeSubHelper);
   MessageDeserializerPtr des(new MessageDeserializer(helper, SerializedMessage(), boost::shared_ptr<M_string>()));
@@ -161,7 +161,7 @@ TEST(SubscriptionQueue, infiniteQueue)
 
 TEST(SubscriptionQueue, clearCall)
 {
-  SubscriptionQueue queue("blah", 1);
+  SubscriptionQueue queue("blah", 1, false);
 
   FakeSubHelperPtr helper(new FakeSubHelper);
   MessageDeserializerPtr des(new MessageDeserializer(helper, SerializedMessage(), boost::shared_ptr<M_string>()));
@@ -173,7 +173,7 @@ TEST(SubscriptionQueue, clearCall)
 
 TEST(SubscriptionQueue, clearThenAddAndCall)
 {
-  SubscriptionQueue queue("blah", 1);
+  SubscriptionQueue queue("blah", 1, false);
 
   FakeSubHelperPtr helper(new FakeSubHelper);
   MessageDeserializerPtr des(new MessageDeserializer(helper, SerializedMessage(), boost::shared_ptr<M_string>()));
@@ -191,7 +191,7 @@ void clearInCallbackCallback(SubscriptionQueue& queue)
 
 TEST(SubscriptionQueue, clearInCallback)
 {
-  SubscriptionQueue queue("blah", 1);
+  SubscriptionQueue queue("blah", 1, false);
 
   FakeSubHelperPtr helper(new FakeSubHelper);
   MessageDeserializerPtr des(new MessageDeserializer(helper, SerializedMessage(), boost::shared_ptr<M_string>()));
@@ -215,7 +215,7 @@ void callThread(SubscriptionQueue& queue)
 
 TEST(SubscriptionQueue, clearWhileThreadIsBlocking)
 {
-  SubscriptionQueue queue("blah", 1);
+  SubscriptionQueue queue("blah", 1, false);
 
   FakeSubHelperPtr helper(new FakeSubHelper);
   MessageDeserializerPtr des(new MessageDeserializer(helper, SerializedMessage(), boost::shared_ptr<M_string>()));
@@ -230,6 +230,29 @@ TEST(SubscriptionQueue, clearWhileThreadIsBlocking)
   queue.clear();
 
   ASSERT_TRUE(done);
+}
+
+void waitForBarrier(boost::barrier* bar)
+{
+  bar->wait();
+}
+
+TEST(SubscriptionQueue, concurrentCallbacks)
+{
+  SubscriptionQueue queue("blah", 0, true);
+  FakeSubHelperPtr helper(new FakeSubHelper);
+  MessageDeserializerPtr des(new MessageDeserializer(helper, SerializedMessage(), boost::shared_ptr<M_string>()));
+
+  boost::barrier bar(2);
+  helper->cb_ = boost::bind(waitForBarrier, &bar);
+  queue.push(helper, des, false, VoidConstWPtr(), true);
+  queue.push(helper, des, false, VoidConstWPtr(), true);
+  boost::thread t1(callThread, boost::ref(queue));
+  boost::thread t2(callThread, boost::ref(queue));
+  t1.join();
+  t2.join();
+
+  ASSERT_EQ(helper->calls_, 2);
 }
 
 int main(int argc, char** argv)

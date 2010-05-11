@@ -64,7 +64,7 @@ private:
   typedef std::deque<Item> D_Item;
 
 public:
-  SubscriptionQueue(const std::string& topic, int32_t queue_size);
+  SubscriptionQueue(const std::string& topic, int32_t queue_size, bool allow_concurrent_callbacks);
   ~SubscriptionQueue();
   void push(const SubscriptionCallbackHelperPtr& helper, const MessageDeserializerPtr& deserializer, bool has_tracked_object, const VoidConstWPtr& tracked_object, bool nonconst_need_copy, ros::Time receipt_time = ros::Time(), bool* was_full = 0);
   void clear();
@@ -82,6 +82,7 @@ private:
   boost::mutex queue_mutex_;
   D_Item queue_;
   uint32_t queue_size_;
+  bool allow_concurrent_callbacks_;
 
   boost::recursive_mutex callback_mutex_;
 };

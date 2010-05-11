@@ -33,11 +33,12 @@
 namespace ros
 {
 
-SubscriptionQueue::SubscriptionQueue(const std::string& topic, int32_t queue_size)
+SubscriptionQueue::SubscriptionQueue(const std::string& topic, int32_t queue_size, bool allow_concurrent_callbacks)
 : topic_(topic)
 , size_(queue_size)
 , full_(false)
 , queue_size_(0)
+, allow_concurrent_callbacks_(allow_concurrent_callbacks)
 {}
 
 SubscriptionQueue::~SubscriptionQueue()
@@ -104,7 +105,7 @@ CallbackInterface::CallResult SubscriptionQueue::call()
   // that outlasts the scoped_try_lock
   boost::shared_ptr<SubscriptionQueue> self;
   boost::recursive_mutex::scoped_try_lock lock(callback_mutex_);
-  if (!lock.owns_lock())
+  if (!allow_concurrent_callbacks_ && !lock.owns_lock())
   {
     return CallbackInterface::TryAgain;
   }
@@ -139,6 +140,11 @@ CallbackInterface::CallResult SubscriptionQueue::call()
 
     queue_.pop_front();
     --queue_size_;
+  }
+
+  if (allow_concurrent_callbacks_)
+  {
+    lock.unlock();
   }
 
   VoidConstPtr msg = i.deserializer->deserialize();

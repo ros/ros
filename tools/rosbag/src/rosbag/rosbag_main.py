@@ -101,8 +101,9 @@ def record_cmd(argv):
 #    sys.exit(res)
 
 def info_cmd(argv):
-    parser = optparse.OptionParser(usage='rosbag info BAGFILE1 [BAGFILE2 BAGFILE3 ...]',
+    parser = optparse.OptionParser(usage='rosbag info [options] BAGFILE1 [BAGFILE2 BAGFILE3 ...]',
                                    description='Summarize the contents of one or more bag files.')
+    parser.add_option("-y", "--yaml", dest="yaml", default=False, action="store_true", help="print information in YAML format")
     (options, args) = parser.parse_args(argv)
 
     if len(args) == 0:
@@ -111,7 +112,10 @@ def info_cmd(argv):
     for i, arg in enumerate(args):
         try:
             b = Bag(arg)
-            print b
+            if options.yaml:
+                print b._get_yaml_info()
+            else:
+                print b
             b.close()
             if i < len(args) - 1:
                 print '---'

@@ -49,6 +49,7 @@ import re
 import struct
 import sys
 import time
+import yaml
 
 import roslib.genpy
 import rospy
@@ -389,18 +390,18 @@ class Bag(object):
 
     def __str__(self):
         rows = []
-        
+
         try:
             if self._filename:
-                rows.append(('Path', self._filename))
+                rows.append(('path', self._filename))
 
             if self._version == 102 and type(self._reader) == _BagReader102_Unindexed:
-                rows.append(('Version', '1.2 (unindexed)'))
+                rows.append(('version', '1.2 (unindexed)'))
             else:
-                rows.append(('Version', '%d.%d' % (self._version / 100, self._version % 100)))
+                rows.append(('version', '%d.%d' % (self._version / 100, self._version % 100)))
 
             if not self._connection_indexes:
-                rows.append(('Size', _human_readable_size(self.size)))
+                rows.append(('size', _human_readable_size(self.size)))
             else:
                 start_stamp = min([index[ 0].time.to_sec() for index in self._connection_indexes.values()])
                 end_stamp   = max([index[-1].time.to_sec() for index in self._connection_indexes.values()])
@@ -418,19 +419,19 @@ class Bag(object):
                 else:
                     duration_str = '%.1fs' % duration   
 
-                rows.append(('Duration', duration_str))
+                rows.append(('duration', duration_str))
         
                 # Show start and end times
-                rows.append(('Start', '%s (%.2f)' % (_time_to_str(start_stamp), start_stamp)))
-                rows.append(('End',   '%s (%.2f)' % (_time_to_str(end_stamp),   end_stamp)))
+                rows.append(('start', '%s (%.2f)' % (_time_to_str(start_stamp), start_stamp)))
+                rows.append(('end',   '%s (%.2f)' % (_time_to_str(end_stamp),   end_stamp)))
     
-                rows.append(('Size', _human_readable_size(self.size)))
+                rows.append(('size', _human_readable_size(self.size)))
 
-                rows.append(('Messages', '%d' % (sum([len(index) for index in self._connection_indexes.values()]))))
+                rows.append(('messages', '%d' % (sum([len(index) for index in self._connection_indexes.values()]))))
 
                 # Show compression information
                 if len(self._chunk_headers) == 0:
-                    rows.append(('Compression', 'none'))
+                    rows.append(('compression', 'none'))
                 else:
                     compression_counts       = {}
                     compression_uncompressed = {}
@@ -454,7 +455,7 @@ class Bag(object):
                             compressions.append('%s [%d/%d chunks; %.2f%%]' % (compression, count, chunk_count, fraction))
                         else:
                             compressions.append('%s [%d/%d chunks]' % (compression, count, chunk_count))
-                    rows.append(('Compression', ', '.join(compressions)))
+                    rows.append(('compression', ', '.join(compressions)))
     
                     all_uncompressed = (sum([count for c, count in compression_counts.items() if c != Compression.NONE]) == 0)
                     if not all_uncompressed:    
@@ -469,9 +470,9 @@ class Bag(object):
                         compressed_rate_str   = _human_readable_size(total_compressed_size / duration)
                         rate_str_length = max([len(uncompressed_rate_str), len(compressed_rate_str)])
 
-                        rows.append(('Uncompressed', '%*s @ %*s/s' %
+                        rows.append(('uncompressed', '%*s @ %*s/s' %
                                      (total_size_str_length, total_uncompressed_size_str, rate_str_length, uncompressed_rate_str)))
-                        rows.append(('Compressed',   '%*s @ %*s/s (%.2f%%)' %
+                        rows.append(('compressed',   '%*s @ %*s/s (%.2f%%)' %
                                      (total_size_str_length, total_compressed_size_str,   rate_str_length, compressed_rate_str, (100.0 * total_compressed_size) / total_uncompressed_size)))
 
                 datatypes = set()
@@ -487,8 +488,6 @@ class Bag(object):
                 topic_conn_counts  = {}
                 topic_msg_counts   = {}
                 topic_freqs_median = {}
-                topic_freqs_min    = {}
-                topic_freqs_max    = {}
                 for topic in topics:
                     connections = list(self._get_connections(topic))
                     stamps = numpy.array([entry.time.to_sec() for entry in self._get_entries(connections)])
@@ -499,22 +498,18 @@ class Bag(object):
                     if len(stamps) > 1:
                         periods = stamps[1:] - stamps[:-1]
                         topic_freqs_median[topic] = 1.0 / numpy.median(periods)
-                        topic_freqs_min[topic]    = 1.0 / numpy.max(periods)
-                        topic_freqs_max[topic]    = 1.0 / numpy.min(periods)
 
                 topics = sorted(topic_datatypes.keys())
                 max_topic_len       = max([len(topic) for topic in topics])
                 max_datatype_len    = max([len(datatype) for datatype in datatypes])
                 max_msg_count_len   = max([len('%d' % msg_count) for msg_count in topic_msg_counts.values()])
                 max_freq_median_len = max([len(_human_readable_frequency(freq)) for freq in topic_freqs_median.values()]) if len(topic_freqs_median) > 0 else 0
-                max_freq_min_len    = max([len(_human_readable_frequency(freq)) for freq in topic_freqs_min.values()])    if len(topic_freqs_min)    > 0 else 0
-                max_freq_max_len    = max([len(_human_readable_frequency(freq)) for freq in topic_freqs_max.values()])    if len(topic_freqs_max)    > 0 else 0
 
                 # Show datatypes       
                 for i, (datatype, md5sum, msg_def) in enumerate(sorted(datatype_infos)):
                     s = '%-*s [%s]' % (max_datatype_len, datatype, md5sum)
                     if i == 0:
-                        rows.append(('Types', s))
+                        rows.append(('types', s))
                     else:
                         rows.append(('', s))
                     
@@ -524,18 +519,16 @@ class Bag(object):
                     
                     s = '%-*s   %*d %s' % (max_topic_len, topic, max_msg_count_len, topic_msg_count, 'msgs' if topic_msg_count > 1 else 'msg ')
                     if topic in topic_freqs_median:
-                        s += ' @ %*s [min: %*s max: %*s]' % (max_freq_median_len, _human_readable_frequency(topic_freqs_median[topic]),
-                                                             max_freq_min_len,    _human_readable_frequency(topic_freqs_min[topic]),
-                                                             max_freq_max_len,    _human_readable_frequency(topic_freqs_max[topic]))
+                        s += ' @ %*s' % (max_freq_median_len, _human_readable_frequency(topic_freqs_median[topic]))
                     else:
-                        s += '   %*s       %*s      %*s ' % (max_freq_median_len, '', max_freq_min_len, '', max_freq_max_len, '')
+                        s += '   %*s' % (max_freq_median_len, '')
 
                     s += ' : %-*s' % (max_datatype_len, topic_datatypes[topic])
                     if topic_conn_counts[topic] > 1:
                         s += ' (%d connections)' % topic_conn_counts[topic]
         
                     if i == 0:
-                        rows.append(('Topics', s))
+                        rows.append(('topics', s))
                     else:
                         rows.append(('', s))
         
@@ -552,6 +545,119 @@ class Bag(object):
                 s += '%-*s %s\n' % (first_column_width, '', value)
 
         return s.rstrip()
+
+    def _get_yaml_info(self):
+        s = ''
+        
+        rows = []
+        
+        try:
+            if self._filename:
+                s += 'path: %s\n' % self._filename
+
+            if self._version == 102 and type(self._reader) == _BagReader102_Unindexed:
+                s += 'version: 1.2 (unindexed)\n'
+            else:
+                s += 'version: %d.%d\n' % (self._version / 100, self._version % 100)
+
+            if not self._connection_indexes:
+                s += 'size: %s\n' % _human_readable_size(self.size)
+                s += 'indexed: False\n'
+            else:
+                start_stamp  = min([index[ 0].time.to_sec() for index in self._connection_indexes.values()])
+                end_stamp    = max([index[-1].time.to_sec() for index in self._connection_indexes.values()])
+                duration = end_stamp - start_stamp
+                s += 'duration: %.6f\n' % duration
+                s += 'start: %.6f\n' % start_stamp
+                s += 'end: %.6f\n' % end_stamp
+                s += 'size: %d\n' % self.size
+                s += 'messages: %d\n' % (sum([len(index) for index in self._connection_indexes.values()]))
+                s += 'indexed: True\n'
+
+                # Show compression information
+                if len(self._chunk_headers) == 0:
+                    s += 'compression: none\n'
+                else:
+                    compression_counts       = {}
+                    compression_uncompressed = {}
+                    compression_compressed   = {}
+                    for chunk_header in self._chunk_headers.values():
+                        if chunk_header.compression not in compression_counts:
+                            compression_counts[chunk_header.compression] = 1
+                            compression_uncompressed[chunk_header.compression] = chunk_header.uncompressed_size
+                            compression_compressed[chunk_header.compression] = chunk_header.compressed_size
+                        else:
+                            compression_counts[chunk_header.compression] += 1
+                            compression_uncompressed[chunk_header.compression] += chunk_header.uncompressed_size
+                            compression_compressed[chunk_header.compression] += chunk_header.compressed_size
+    
+                    chunk_count = len(self._chunk_headers.values())
+    
+                    main_compression_count, main_compression = list(reversed(sorted([(v, k) for k, v in compression_counts.items()])))[0]
+                    s += 'compression: %s\n' % str(main_compression)
+    
+                    all_uncompressed = (sum([count for c, count in compression_counts.items() if c != Compression.NONE]) == 0)
+                    if not all_uncompressed:    
+                        s += 'uncompressed: %d\n' % sum((h.uncompressed_size for h in self._chunk_headers.values()))
+                        s += 'compressed: %d\n' % sum((h.compressed_size for h in self._chunk_headers.values()))
+
+                datatypes = set()
+                datatype_infos = []
+                for connection in self._connections.values():
+                    if connection.datatype in datatypes:
+                        continue
+                    datatype_infos.append((connection.datatype, connection.md5sum, connection.msg_def))
+                    datatypes.add(connection.datatype)
+                    
+                topics = sorted(set([c.topic for c in self._get_connections()]))
+                topic_datatypes    = {}
+                topic_conn_counts  = {}
+                topic_msg_counts   = {}
+                topic_freqs_median = {}
+                for topic in topics:
+                    connections = list(self._get_connections(topic))
+                    stamps = numpy.array([entry.time.to_sec() for entry in self._get_entries(connections)])
+                    
+                    topic_datatypes[topic] = connections[0].datatype
+                    topic_conn_counts[topic] = len(connections)
+                    topic_msg_counts[topic] = len(stamps)
+                    if len(stamps) > 1:
+                        periods = stamps[1:] - stamps[:-1]
+                        med_period = numpy.median(periods)
+                        if med_period > 0.0:
+                            topic_freqs_median[topic] = 1.0 / med_period
+
+                topics = sorted(topic_datatypes.keys())
+                max_topic_len       = max([len(topic) for topic in topics])
+                max_datatype_len    = max([len(datatype) for datatype in datatypes])
+                max_msg_count_len   = max([len('%d' % msg_count) for msg_count in topic_msg_counts.values()])
+                max_freq_median_len = max([len(_human_readable_frequency(freq)) for freq in topic_freqs_median.values()]) if len(topic_freqs_median) > 0 else 0
+
+                # Show datatypes       
+                s += 'types:\n'
+                for i, (datatype, md5sum, msg_def) in enumerate(sorted(datatype_infos)):
+                    s += '    - type: %s\n' % datatype
+                    s += '      md5: %s\n' % md5sum
+                    
+                # Show topics
+                s += 'topics:\n'
+                for i, topic in enumerate(topics):
+                    topic_msg_count = topic_msg_counts[topic]
+                    
+                    s += '    - topic: %s\n' % topic
+                    s += '      type: %s\n' % topic_datatypes[topic]
+                    s += '      messages: %d\n' % topic_msg_count
+                        
+                    if topic_conn_counts[topic] > 1:
+                        s += '      connections: %d' % topic_conn_counts[topic]
+
+                    if topic in topic_freqs_median:
+                        s += '      frequency: %.4f\n' % topic_freqs_median[topic]
+        
+            return s.rstrip()
+    
+        except Exception, ex:
+            raise
 
     ### Internal API ###
 

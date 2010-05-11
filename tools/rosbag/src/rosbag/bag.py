@@ -546,7 +546,7 @@ class Bag(object):
 
         return s.rstrip()
 
-    def _get_yaml_info(self):
+    def _get_yaml_info(self, key=None):
         s = ''
         
         rows = []
@@ -653,9 +653,21 @@ class Bag(object):
 
                     if topic in topic_freqs_median:
                         s += '      frequency: %.4f\n' % topic_freqs_median[topic]
-        
-            return s.rstrip()
-    
+
+            if not key:
+                return s
+            
+            class DictObject(object):
+                def __init__(self, d):
+                    for a, b in d.items():
+                        if isinstance(b, (list, tuple)):
+                           setattr(self, a, [DictObject(x) if isinstance(x, dict) else x for x in b])
+                        else:
+                           setattr(self, a, DictObject(b) if isinstance(b, dict) else b)
+
+            obj = DictObject(yaml.load(s))
+            return eval('obj.' + key)
+
         except Exception, ex:
             raise
 

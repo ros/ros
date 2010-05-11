@@ -104,16 +104,19 @@ def info_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag info [options] BAGFILE1 [BAGFILE2 BAGFILE3 ...]',
                                    description='Summarize the contents of one or more bag files.')
     parser.add_option("-y", "--yaml", dest="yaml", default=False, action="store_true", help="print information in YAML format")
+    parser.add_option("-k", "--key",  dest="key",  default=None,  action="store",      help="print information on the given key")
     (options, args) = parser.parse_args(argv)
 
     if len(args) == 0:
         parser.error('You must specify at least 1 bag file.')
+    if options.key and not options.yaml:
+        parser.error('You can only specify key when printing in YAML format.')
 
     for i, arg in enumerate(args):
         try:
             b = Bag(arg)
             if options.yaml:
-                print b._get_yaml_info()
+                print b._get_yaml_info(key=options.key)
             else:
                 print b
             b.close()

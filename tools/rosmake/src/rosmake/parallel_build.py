@@ -131,10 +131,10 @@ class CompileThread(threading.Thread):
       #self.rosmakeall.print_all("[ Building package [%s] %d of %d]"%( pkg,  build_count, total_pkgs));
 
       if self.argument:
-        spaces = 50 - len(pkg) - len(self.argument)
+        spaces = max(1, 30 - len(pkg) - len(self.argument))
         self.rosmakeall.print_all (">>> %s >>> [ make %s ]%s[ %d of %d ]"%(pkg, self.argument, ' '*spaces, build_count, total_pkgs), thread_name=self.name)
       else:
-        spaces = 50 - len(pkg)
+        spaces = max(1, 30 - len(pkg))
         self.rosmakeall.print_all (">>> %s >>> [ make ]%s[ %d of %d ]"%(pkg, ' '*spaces, build_count, total_pkgs), thread_name=self.name)
 
       (result, result_string) = self.rosmakeall.build(pkg, self.argument, self.build_queue.robust_build) 

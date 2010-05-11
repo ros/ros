@@ -1,5 +1,8 @@
 <package>
 <description brief="ROS Bag Tools">
+Rosrecord has been deprecated as of ROS-1.1.5.  Please transition over
+to use the rosbag package instead.
+
 This is a set of tools for recording from and playing back to ros
 topics.  It is intended to be high performance and avoids
 deserialization and reserialization of the messages.  

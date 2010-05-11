@@ -62,6 +62,7 @@ class RandomPlay(unittest.TestCase):
 
       # We know this message is coming in after a delay
       nowtime -= self.start
+
       if (not self.use_clock):
         nowtime -= rospy.Duration(self.delay)
 

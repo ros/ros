@@ -100,7 +100,6 @@ class RandomRecord(unittest.TestCase):
 
     # Keep trying to kill until it's dead instead of blocking on communicate
     while (f1.poll() is None):
-      print "Looping?"
       try:
         os.kill(f1.pid, signal.SIGKILL)
       except:

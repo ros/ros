@@ -104,10 +104,15 @@ CallbackInterface::CallResult SubscriptionQueue::call()
   // The callback may result in our own destruction.  Therefore, we may need to keep a reference to ourselves
   // that outlasts the scoped_try_lock
   boost::shared_ptr<SubscriptionQueue> self;
-  boost::recursive_mutex::scoped_try_lock lock(callback_mutex_);
-  if (!allow_concurrent_callbacks_ && !lock.owns_lock())
+  boost::recursive_mutex::scoped_try_lock lock(callback_mutex_, boost::defer_lock);
+
+  if (!allow_concurrent_callbacks_)
   {
-    return CallbackInterface::TryAgain;
+    lock.try_lock();
+    if (!lock.owns_lock())
+    {
+      return CallbackInterface::TryAgain;
+    }
   }
 
   VoidConstPtr tracker;
@@ -140,11 +145,6 @@ CallbackInterface::CallResult SubscriptionQueue::call()
 
     queue_.pop_front();
     --queue_size_;
-  }
-
-  if (allow_concurrent_callbacks_)
-  {
-    lock.unlock();
   }
 
   VoidConstPtr msg = i.deserializer->deserialize();

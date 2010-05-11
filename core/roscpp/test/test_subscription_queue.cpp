@@ -39,6 +39,7 @@
 #include "ros/message.h"
 #include "ros/callback_queue_interface.h"
 #include "ros/subscription_callback_helper.h"
+#include "ros/init.h"
 
 #include <boost/shared_array.hpp>
 #include <boost/bind.hpp>
@@ -255,9 +256,34 @@ TEST(SubscriptionQueue, concurrentCallbacks)
   ASSERT_EQ(helper->calls_, 2);
 }
 
+void waitForASecond()
+{
+  ros::WallDuration(1.0).sleep();
+}
+
+TEST(SubscriptionQueue, nonConcurrentOrdering)
+{
+  SubscriptionQueue queue("blah", 0, false);
+  FakeSubHelperPtr helper(new FakeSubHelper);
+  MessageDeserializerPtr des(new MessageDeserializer(helper, SerializedMessage(), boost::shared_ptr<M_string>()));
+
+  helper->cb_ = waitForASecond;
+  queue.push(helper, des, false, VoidConstWPtr(), true);
+  queue.push(helper, des, false, VoidConstWPtr(), true);
+  boost::thread t1(callThread, boost::ref(queue));
+  boost::thread t2(callThread, boost::ref(queue));
+  t1.join();
+  t2.join();
+
+  ASSERT_EQ(helper->calls_, 1);
+  queue.call();
+  ASSERT_EQ(helper->calls_, 2);
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "blah");
   return RUN_ALL_TESTS();
 }
 

@@ -160,12 +160,15 @@ def strify_message(val, indent='', time_offset=None):
     as deltas from  time_offset
     @type  time_offset: Time
     """
-    if type(val) in [int, long, float, str, bool] or \
-            isinstance(val, Time) or isinstance(val, Duration):
+    if type(val) in [int, long, float, str, bool]:
+        return str(val)
+    elif isinstance(val, Time) or isinstance(val, Duration):
+        
         if time_offset is not None and isinstance(val, Time):
-            return str((val-time_offset).to_sec())
-        else:
-            return str(val)
+            val = val-time_offset
+
+        return '\n%ssecs: %s\n%snsecs: %s'%(indent, val.secs, indent, val.nsecs)
+        
     elif type(val) in [list, tuple]:
         # have to convert tuple->list to be yaml-safe
         if len(val) == 0:

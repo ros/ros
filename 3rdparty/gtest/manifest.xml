@@ -18,6 +18,7 @@
   <url>http://ros.org/wiki/gtest/</url>
   <export>
     <rosdoc external="http://code.google.com/p/googletest/w/list"/>
+    <cpp cflags="`echo 'ERROR: It is invalid to depend on the gtest package'; false`"/>
   </export>
 </package>
 

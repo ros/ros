@@ -688,10 +688,7 @@ class RosMakeAll:
 
 
         build_passed = True
-        # deal with moved source tree and cleaning
-        if options.target == "clean":
-            self.print_all("Cleaning packages not in tree")
-            self.assert_prebuild_built(["tools/rospack", "3rdparty/gtest", "core/genmsg_cpp"], 'clean')
+
         if building:
           #make sure required packages are built before continuing (These are required by internal functions
           if options.target == "clean":
@@ -707,7 +704,12 @@ class RosMakeAll:
           if "rospack" in self.build_list and options.target == "clean":
               self.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it, because it was skipped earlier.")
               self.assert_prebuild_built(["tools/rospack"], 'clean')
-              #subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), "clean"])
+          if "gtest" in self.build_list and options.target == "clean":
+              self.print_all( "Rosmake detected that gtest was requested to be cleaned.  Cleaning it, because it was skipped earlier.")
+              self.assert_prebuild_built(["3rdparty/gtest"], 'clean')
+          if "genmsg_cpp" in self.build_list and options.target == "clean":
+              self.print_all( "Rosmake detected that genmsg_cpp was requested to be cleaned.  Cleaning it, because it was skipped earlier.")
+              self.assert_prebuild_built(["core/genmsg_cpp"], 'clean')
 
 
         tests_passed = True

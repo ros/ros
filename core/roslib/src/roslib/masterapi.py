@@ -44,6 +44,10 @@ import xmlrpclib
 import roslib.exceptions
 import roslib.names
 
+import warnings
+warnings.warn("Module roslib.masterapi is deprecated. Use rosgraph.masterapi instead.",
+              category=DeprecationWarning, stacklevel=2)
+
 class ROSMasterException(roslib.exceptions.ROSLibException):
     """
     Base class of ROS-master related errors.

@@ -28,7 +28,6 @@
 #
 # Author: Jonathan Bohren 
 
-import roslib; roslib.load_manifest('rxgraph')
 import rospy
 
 import sys
@@ -206,16 +205,3 @@ class RxGraphViewerFrame(wx.Frame):
       wx.PostEvent(self.GetEventHandler(), wx.IdleEvent())
 
     
-def main():
-  app = wx.App()
-
-  frame = RxGraphViewerFrame()
-  frame.Show()
-
-  # for testing only
-  frame.set_dotcode(DOTCODE)
-  
-  app.MainLoop()
-
-if __name__ == '__main__':
-    main()

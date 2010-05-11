@@ -117,7 +117,7 @@ def info_cmd(argv):
             b = Bag(arg)
             if options.yaml:
                 info = b._get_yaml_info(key=options.key)
-                if info:
+                if info is not None:
                     print info
             else:
                 print b

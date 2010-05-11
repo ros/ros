@@ -70,21 +70,23 @@ def _set_rostime_time_wrapper(time_msg):
     
 def init_simtime():
     """
-    Initialize the ROS time system by connecting to the /time topic and
-    check the state of the /use_sim_time parameter.
+    Initialize the ROS time system by connecting to the /time topic
+    IFF the /use_sim_time parameter is set.
     """    
     import logging
     logger = logging.getLogger("rospy.simtime")
     try:
-        global _rostime_sub, _clock_sub
-        if _rostime_sub is None:
-            logger.info("initializing %s core topic"%_ROSCLOCK)
-            _clock_sub = rospy.topics.Subscriber(_ROSCLOCK, roslib.msg.Clock, _set_rostime_clock_wrapper)
-            logger.info("connected to core topic %s"%_ROSCLOCK)
+        if not _is_use_simtime():
+            logger.info("%s is not set, will not subscribe to simulated time [%s] topic"%(_USE_SIMTIME, _ROSCLOCK))
+        else:
+            global _rostime_sub, _clock_sub
+            if _rostime_sub is None:
+                logger.info("initializing %s core topic"%_ROSCLOCK)
+                _clock_sub = rospy.topics.Subscriber(_ROSCLOCK, roslib.msg.Clock, _set_rostime_clock_wrapper)
+                logger.info("connected to core topic %s"%_ROSCLOCK)
 
-            if _is_use_simtime():
                 _set_rostime(rospy.rostime.Time(0, 0))
-        rospy.rostime.set_rostime_initialized(True)
+            rospy.rostime.set_rostime_initialized(True)
         return True
     except Exception, e:
         logger.error("Unable to initialize %s: %s\n%s", _ROSCLOCK, e, traceback.format_exc())

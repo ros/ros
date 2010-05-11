@@ -666,7 +666,11 @@ class Bag(object):
                            setattr(self, a, DictObject(b) if isinstance(b, dict) else b)
 
             obj = DictObject(yaml.load(s))
-            return eval('obj.' + key)
+            try:
+                return eval('obj.' + key)
+            except Exception, ex:
+                print >> sys.stderr, 'Error getting key "%s"' % key
+                return None
 
         except Exception, ex:
             raise

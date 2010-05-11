@@ -116,7 +116,9 @@ def info_cmd(argv):
         try:
             b = Bag(arg)
             if options.yaml:
-                print b._get_yaml_info(key=options.key)
+                info = b._get_yaml_info(key=options.key)
+                if info:
+                    print info
             else:
                 print b
             b.close()

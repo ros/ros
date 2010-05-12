@@ -132,6 +132,10 @@ void Bag::openAppend(string const& filename) {
     file_.openReadWrite(filename);
 
     readVersion();
+
+    if (version_ != 200)
+        throw BagException((format("Bag file version %1%.%2% is unsupported for appending") % getMajorVersion() % getMinorVersion()).str());
+
     startReadingVersion200();
 
     // Truncate the file to chop off the index

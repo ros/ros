@@ -524,7 +524,7 @@ def bag_op(inbag_filenames, allow_unindexed, copy_fn, op, force=False, quiet=Fal
             try:
                 op(inbag, outbag, quiet=quiet)
             except ROSBagException, ex:
-                print >> sys.stderr, 'ERROR operating on %s: %s' % (inbag_filename, str(ex))
+                print >> sys.stderr, '\nERROR operating on %s: %s' % (inbag_filename, str(ex))
                 inbag.close()
                 outbag.close()
                 continue

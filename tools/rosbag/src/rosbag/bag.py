@@ -561,7 +561,7 @@ class Bag(object):
                 s += 'version: %d.%d\n' % (self._version / 100, self._version % 100)
 
             if not self._connection_indexes:
-                s += 'size: %s\n' % _human_readable_size(self.size)
+                s += 'size: %d\n' % self.size
                 s += 'indexed: False\n'
             else:
                 start_stamp  = min([index[ 0].time.to_sec() for index in self._connection_indexes.values()])

@@ -352,11 +352,11 @@ TEST(rosbag, modify_view_works) {
     for (int i = 0; i < 100; i++) {
         imsg.data = j0;
         j0 += 2;
-        outbag.write("t0", ros::Time(2 * i, 0), imsg);
+        outbag.write("t0", ros::Time(2 * i + 1, 0), imsg);
 
         imsg.data = j1;
         j1 += 2;
-        outbag.write("t1", ros::Time(2 * i + 1, 0), imsg);
+        outbag.write("t1", ros::Time(2 * i + 2, 0), imsg);
     }
     outbag.close();
 
@@ -460,6 +460,8 @@ TEST(rosbag, modify_bag_works) {
 }
 
 int main(int argc, char **argv) {
+    ros::init(argc, argv, "test_bag");
+
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

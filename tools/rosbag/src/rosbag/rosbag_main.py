@@ -101,17 +101,26 @@ def record_cmd(argv):
 #    sys.exit(res)
 
 def info_cmd(argv):
-    parser = optparse.OptionParser(usage='rosbag info BAGFILE1 [BAGFILE2 BAGFILE3 ...]',
+    parser = optparse.OptionParser(usage='rosbag info [options] BAGFILE1 [BAGFILE2 BAGFILE3 ...]',
                                    description='Summarize the contents of one or more bag files.')
+    parser.add_option("-y", "--yaml", dest="yaml", default=False, action="store_true", help="print information in YAML format")
+    parser.add_option("-k", "--key",  dest="key",  default=None,  action="store",      help="print information on the given key")
     (options, args) = parser.parse_args(argv)
 
     if len(args) == 0:
         parser.error('You must specify at least 1 bag file.')
+    if options.key and not options.yaml:
+        parser.error('You can only specify key when printing in YAML format.')
 
     for i, arg in enumerate(args):
         try:
             b = Bag(arg)
-            print b
+            if options.yaml:
+                info = b._get_yaml_info(key=options.key)
+                if info is not None:
+                    print info
+            else:
+                print b
             b.close()
             if i < len(args) - 1:
                 print '---'
@@ -515,7 +524,7 @@ def bag_op(inbag_filenames, allow_unindexed, copy_fn, op, force=False, quiet=Fal
             try:
                 op(inbag, outbag, quiet=quiet)
             except ROSBagException, ex:
-                print >> sys.stderr, 'ERROR operating on %s: %s' % (inbag_filename, str(ex))
+                print >> sys.stderr, '\nERROR operating on %s: %s' % (inbag_filename, str(ex))
                 inbag.close()
                 outbag.close()
                 continue

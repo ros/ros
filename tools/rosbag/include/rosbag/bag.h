@@ -342,11 +342,20 @@ void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& strea
     switch (version_)
     {
     case 200:
+    {
         decompressChunk(index_entry.chunk_pos);
         readMessageDataHeaderFromBuffer(*current_buffer_, index_entry.offset, header, data_size, bytes_read);
         if (data_size > 0)
             memcpy(stream.advance(data_size), current_buffer_->getData() + index_entry.offset + bytes_read, data_size);
         break;
+    }
+    case 102:
+    {
+        readMessageDataRecord102(index_entry.chunk_pos, header);
+        if (data_size > 0)
+            memcpy(stream.advance(data_size), record_buffer_.getData(), record_buffer_.getSize());
+        break;
+    }
     default:
         throw BagFormatException((boost::format("Unhandled version: %1%") % version_).str());
     }
@@ -388,7 +397,6 @@ boost::shared_ptr<T> Bag::instantiateBuffer(IndexEntry const& index_entry) const
         // Deserialize the message
         ros::serialization::IStream s(current_buffer_->getData() + index_entry.offset + bytes_read, data_size);
         ros::serialization::deserialize(s, *p);
-
 
         return p;
 	}

@@ -141,7 +141,7 @@ TEST_F(BagTest, different_writes) {
     b1.write("t3", ros::Time::now(), msg3);
     b1.write("t4", ros::Time::now(), *view.begin());
 
-    ASSERT_EQ(view.size(), 4);
+    ASSERT_EQ(view.size(), (uint32_t)(4));
 
     b1.close();
 }
@@ -191,6 +191,33 @@ TEST(rosbag, simple_write_and_read_works) {
 
     b2.close();
 }
+
+TEST(rosbag, append_indexed_1_2_fails) {
+  try{
+    rosbag::Bag b("test/test_indexed_1.2.bag", rosbag::bagmode::Append);
+
+    FAIL();
+  }
+  catch (rosbag::BagException ex) {
+    SUCCEED();
+  }
+}
+
+TEST(rosbag, read_indexed_1_2_succeeds) {
+    rosbag::Bag b("test/test_indexed_1.2.bag", rosbag::bagmode::Read);
+    rosbag::View view(b);
+
+    int32_t i = 0;
+
+    foreach(rosbag::MessageInstance const m, view) {
+        std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
+        if (imsg != NULL)
+            ASSERT_EQ(imsg->data, i++);
+    }
+
+    b.close();
+}
+
 
 TEST(rosbag, write_then_read_without_read_mode_fails) {
     rosbag::Bag b("/tmp/write_then_read_without_read_mode_fails.bag", rosbag::bagmode::Write);

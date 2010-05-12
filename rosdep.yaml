@@ -485,4 +485,4 @@ paramiko:
   ubuntu: python-paramiko
   debian: python-paramiko
   macports: py25-paramiko
-  freebsd: py-paramiko
+  freebsd: py26-paramiko

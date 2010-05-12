@@ -154,6 +154,11 @@ protected:
 
     MessageInstance* newMessageInstance(ConnectionInfo const* connection_info, IndexEntry const& index, Bag const& bag);
 
+private:
+    View(View const& view);
+    View& operator=(View const& view);
+
+protected:
     std::vector<MessageRange*> ranges_;
     std::vector<BagQuery*>     queries_;
     uint32_t                   view_revision_;

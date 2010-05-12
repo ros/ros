@@ -28,6 +28,7 @@ INSTALL(TARGETS record play
         RUNTIME DESTINATION $ENV{ROS_ROOT}/bin)
 
 rosbuild_download_test_data(http://pr.willowgarage.com/data/rosbag/slash.bag test/slash.bag 422e90f34482ece900fd2ac5d4f002de)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/rosbag/test_indexed_1.2.bag test/test_indexed_1.2.bag 523cc0deb66269c84be4a7c605ff5eb3)
 
 rosbuild_add_gtest(test_bag test/test_bag.cpp)
 target_link_libraries(test_bag rosbag)

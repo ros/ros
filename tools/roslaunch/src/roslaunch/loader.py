@@ -417,6 +417,11 @@ class Loader(object):
                 import yaml
             try:
                 data = yaml.load(text)
+            except yaml.MarkedYAMLError, e:
+                if not file: 
+                    raise ValueError("Error within YAML block:\n\t%s\n\nYAML is:\n%s"%(str(e), text))
+                else:
+                    raise ValueError("file %s contains invalid YAML:\n%s"%(file, str(e)))
             except Exception, e:
                 if not file:
                     raise ValueError("invalid YAML: %s\n\nYAML is:\n%s"%(str(e), text))

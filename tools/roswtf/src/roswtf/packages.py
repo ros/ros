@@ -158,15 +158,13 @@ def _check_for_rpath_flags(pkg, lflags):
 def manifest_rpath_flags(ctx):
     warn = []
     for pkg in ctx.pkgs:
-        pkg_dir = roslib.packages.get_pkg_dir(pkg)
-        m_file = roslib.manifest.manifest_file(pkg, True)
-        m = roslib.manifest.parse_file(m_file)
-        # separate rule catches multiple lflags
-        lflags_list = m.get_export('cpp', 'lflags')
-        for lflags in lflags_list:
-            err_msg = _check_for_rpath_flags(pkg, lflags)
-            if err_msg:
-                warn.append(err_msg)
+        # Use rospack to get lflags, so that they can be bash-expanded
+        # first, #2286.
+        import subprocess
+        lflags = subprocess.Popen(['rospack', 'export', '--lang=cpp', '--attrib=lflags', pkg], stdout=subprocess.PIPE).communicate()[0]
+        err_msg = _check_for_rpath_flags(pkg, lflags)
+        if err_msg:
+            warn.append(err_msg)
     return warn
 
 #CMake missing genmsg/gensrv

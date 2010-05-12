@@ -40,6 +40,30 @@ namespace roslib
   ROS_DECLARE_MESSAGE(Header);
 }
 
+#define ROS_IMPLEMENT_SIMPLE_TOPIC_TRAITS(msg, md5sum, datatype, definition) \
+  namespace ros \
+  { \
+  namespace message_traits \
+  { \
+  template<> struct MD5Sum<msg> \
+  { \
+    static const char* value() { return md5sum; } \
+    static const char* value(const msg&) { return value(); } \
+  }; \
+  template<> struct DataType<msg> \
+  { \
+    static const char* value() { return datatype; } \
+    static const char* value(const msg&) { return value(); } \
+  }; \
+  template<> struct Definition<msg> \
+  { \
+    static const char* value() { return definition; } \
+    static const char* value(const msg&) { return value(); } \
+  }; \
+  } \
+  }
+
+
 namespace ros
 {
 namespace message_traits
@@ -169,7 +193,7 @@ struct FrameId<M, typename boost::enable_if<HasHeader<M> >::type >
 };
 
 /**
- * \brief FrameId trait.  In the default implementation pointer()
+ * \brief TimeStamp trait.  In the default implementation pointer()
  * returns &m.header.stamp if HasHeader<M>::value is true, otherwise returns NULL.  value()
  * does not exist, and causes a compile error
  */

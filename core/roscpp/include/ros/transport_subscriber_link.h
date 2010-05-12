@@ -29,6 +29,8 @@
 #define ROSCPP_TRANSPORT_SUBSCRIBER_LINK_H
 #include "subscriber_link.h"
 
+#include <boost/signals/connection.hpp>
+
 namespace ros
 {
 
@@ -62,6 +64,7 @@ private:
   bool header_written_;
 
   ConnectionPtr connection_;
+  boost::signals::connection dropped_conn_;
 
   std::queue<SerializedMessage> outbox_;
   boost::mutex outbox_mutex_;

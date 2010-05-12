@@ -56,6 +56,28 @@ public:
   {}
 };
 
+/**
+ * \brief Thrown when a second (third,...) subscription is attempted with conflicting
+ * arguments.
+ */
+class ConflictingSubscriptionException : public ros::Exception
+{
+public:
+  ConflictingSubscriptionException(const std::string& msg)
+  : Exception(msg)
+  {}
+};
+
+/**
+ * \brief Thrown when an invalid parameter is passed to a method
+ */
+class InvalidParameterException : public ros::Exception
+{
+public:
+  InvalidParameterException(const std::string& msg)
+  : Exception(msg)
+  {}
+};
 
 } // namespace ros
 

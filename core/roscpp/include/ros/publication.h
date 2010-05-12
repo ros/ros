@@ -144,6 +144,8 @@ public:
   void publish(SerializedMessage& m);
   void processPublishQueue();
 
+  bool validateHeader(const Header& h, std::string& error_msg);
+
 private:
   void dropAllConnections();
 

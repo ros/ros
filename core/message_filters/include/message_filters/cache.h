@@ -163,7 +163,7 @@ public:
    * \param start The start of the requested interval
    * \param end The end of the requested interval
    */
-  std::vector<MConstPtr> getInterval(const ros::Time& start, const ros::Time& end)
+  std::vector<MConstPtr> getInterval(const ros::Time& start, const ros::Time& end) const
   {
     namespace mt = ros::message_traits;
 
@@ -202,7 +202,7 @@ public:
    * If the messages in the cache do not surround (start,end), then this will return the interval
    * that gets closest to surrounding (start,end)
    */
-  std::vector<MConstPtr> getSurroundingInterval(const ros::Time& start, const ros::Time& end)
+  std::vector<MConstPtr> getSurroundingInterval(const ros::Time& start, const ros::Time& end) const
   {
     namespace mt = ros::message_traits;
 
@@ -236,7 +236,7 @@ public:
    * \param time Time that must occur right after the returned elem
    * \returns shared_ptr to the newest elem that occurs before 'time'. NULL if doesn't exist
    */
-  MConstPtr getElemBeforeTime(const ros::Time& time)
+  MConstPtr getElemBeforeTime(const ros::Time& time) const
   {
     namespace mt = ros::message_traits;
 
@@ -264,7 +264,7 @@ public:
    * \param time Time that must occur right before the returned elem
    * \returns shared_ptr to the oldest elem that occurs after 'time'. NULL if doesn't exist
    */
-  MConstPtr getElemAfterTime(const ros::Time& time)
+  MConstPtr getElemAfterTime(const ros::Time& time) const
   {
     namespace mt = ros::message_traits;
 
@@ -292,7 +292,7 @@ public:
   /**
    * \brief Returns the timestamp associated with the newest packet cache
    */
-  ros::Time getLatestTime()
+  ros::Time getLatestTime() const
   {
     namespace mt = ros::message_traits;
 
@@ -312,7 +312,7 @@ private:
     add(evt);
   }
 
-  boost::mutex cache_lock_ ;            //!< Lock for cache_
+  mutable boost::mutex cache_lock_ ;            //!< Lock for cache_
   std::deque<EventType> cache_ ;        //!< Cache for the messages
   unsigned int cache_size_ ;            //!< Maximum number of elements allowed in the cache.
 

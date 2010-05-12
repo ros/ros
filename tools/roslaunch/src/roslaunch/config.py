@@ -45,6 +45,7 @@ import types
 import roslib.names
 
 from roslaunch.core import Master, local_machine, get_ros_root, is_machine_local, RLException
+import roslaunch.loader
 import roslaunch.xmlloader
 
 def load_roscore(loader, config, verbose=True):
@@ -371,7 +372,7 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
             loader.load(f, config, verbose=verbose)
         except roslaunch.xmlloader.XmlParseException, e:
             raise RLException(e)
-        except roslaunch.xmlloader.XmlLoadException, e:
+        except roslaunch.loader.LoadException, e:
             raise RLException(e)
         
     # we need this for the hardware test systems, which builds up
@@ -383,7 +384,7 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
                 loader.load_string(launch_str, config)
             except roslaunch.xmlloader.XmlParseException, e:
                 raise RLException('Launch string: %s\nException: %s'%(launch_str, e))
-            except roslaunch.xmlloader.XmlLoadException, e:
+            except roslaunch.loader.LoadException, e:
                 raise RLException('Launch string: %s\nException: %s'%(launch_str, e))
 
     if port:

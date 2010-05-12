@@ -192,10 +192,16 @@ PublicationPtr TopicManager::lookupPublication(const std::string& topic)
   return lookupPublicationWithoutLock(topic);
 }
 
+bool md5sumsMatch(const std::string& lhs, const std::string& rhs)
+{
+  return lhs == "*" || rhs == "*" || lhs == rhs;
+}
+
 bool TopicManager::addSubCallback(const SubscribeOptions& ops)
 {
   // spin through the subscriptions and see if we find a match. if so, use it.
   bool found = false;
+  bool found_topic = false;
 
   SubscriptionPtr sub;
 
@@ -211,16 +217,23 @@ bool TopicManager::addSubCallback(const SubscribeOptions& ops)
       sub = *s;
       if (!sub->isDropped() && sub->getName() == ops.topic)
       {
-        if (sub->md5sum() == ops.md5sum)
+        found_topic = true;
+        if (md5sumsMatch(ops.md5sum, sub->md5sum()))
         {
           found = true;
-          break;
         }
+        break;
       }
     }
   }
 
-  if (found)
+  if (found_topic && !found)
+  {
+    std::stringstream ss;
+    ss << "Tried to subscribe to a topic with the same name but different md5sum as a topic that was already subscribed [" << ops.datatype << "/" << ops.md5sum << " vs. " << sub->datatype() << "/" << sub->md5sum() << "]";
+    throw ConflictingSubscriptionException(ss.str());
+  }
+  else if (found)
   {
     if (!sub->addCallback(ops.helper, ops.md5sum, ops.callback_queue, ops.queue_size, ops.tracked_object))
     {
@@ -246,6 +259,21 @@ bool TopicManager::subscribe(const SubscribeOptions& ops)
     return false;
   }
 
+  if (ops.md5sum.empty())
+  {
+    throw InvalidParameterException("Subscribing to topic [" + ops.topic + "] with an empty md5sum");
+  }
+
+  if (ops.datatype.empty())
+  {
+    throw InvalidParameterException("Subscribing to topic [" + ops.topic + "] with an empty datatype");
+  }
+
+  if (!ops.helper)
+  {
+    throw InvalidParameterException("Subscribing to topic [" + ops.topic + "] without a callback");
+  }
+
   const std::string& md5sum = ops.md5sum;
   std::string datatype = ops.datatype;
 
@@ -268,12 +296,31 @@ bool TopicManager::advertise(const AdvertiseOptions& ops, const SubscriberCallba
 {
   if (ops.datatype == "*")
   {
-    ROS_WARN("Advertising on topic [%s] with datatype [*].  If you are not playing back an old bag file, this is a problem.", ops.topic.c_str());
+    std::stringstream ss;
+    ss << "Advertising with * as the datatype is not allowed.  Topic [" << ops.topic << "]";
+    throw InvalidParameterException(ss.str());
   }
 
   if (ops.md5sum == "*")
   {
-    ROS_WARN("Advertising on topic [%s] with md5sum [*].  If you are not playing back an old bag file, this is a problem.", ops.topic.c_str());
+    std::stringstream ss;
+    ss << "Advertising with * as the md5sum is not allowed.  Topic [" << ops.topic << "]";
+    throw InvalidParameterException(ss.str());
+  }
+
+  if (ops.md5sum.empty())
+  {
+    throw InvalidParameterException("Advertising on topic [" + ops.topic + "] with an empty md5sum");
+  }
+
+  if (ops.datatype.empty())
+  {
+    throw InvalidParameterException("Advertising on topic [" + ops.topic + "] with an empty datatype");
+  }
+
+  if (ops.message_definition.empty())
+  {
+    ROS_WARN("Advertising on topic [%s] with an empty message definition.  Some tools (e.g. rosbag) may not work correctly.", ops.topic.c_str());
   }
 
   PublicationPtr pub;
@@ -330,7 +377,7 @@ bool TopicManager::advertise(const AdvertiseOptions& ops, const SubscriberCallba
     for (L_Subscription::iterator s = subscriptions_.begin();
          s != subscriptions_.end() && !found; ++s)
     {
-      if ((*s)->getName() == ops.topic && (*s)->md5sum() == ops.md5sum && !(*s)->isDropped())
+      if ((*s)->getName() == ops.topic && md5sumsMatch((*s)->md5sum(), ops.md5sum) && !(*s)->isDropped())
       {
         found = true;
         sub = *s;
@@ -451,6 +498,7 @@ bool TopicManager::registerSubscriber(const SubscriptionPtr& s, const string &da
 
   bool self_subscribed = false;
   PublicationPtr pub;
+  const std::string& sub_md5sum = s->md5sum();
   // Figure out if we have a local publisher
   {
     boost::recursive_mutex::scoped_lock lock(advertised_topics_mutex_);
@@ -459,7 +507,8 @@ bool TopicManager::registerSubscriber(const SubscriptionPtr& s, const string &da
     for (; it != end; ++it)
     {
       pub = *it;
-      if (pub->getName() == s->getName() && pub->getDataType() == s->datatype() && !pub->isDropped())
+      const std::string& pub_md5sum = pub->getMD5Sum();
+      if (pub->getName() == s->getName() && md5sumsMatch(pub_md5sum, sub_md5sum) && !pub->isDropped())
       {
         self_subscribed = true;
         break;
@@ -589,6 +638,15 @@ bool TopicManager::requestTopic(const string &topic,
 
       std::string host = proto[2];
       int port = proto[3];
+
+      M_string m;
+      std::string error_msg;
+      if (!pub_ptr->validateHeader(h, error_msg))
+      {
+        ROSCPP_LOG_DEBUG("Error validating header from [%s:%d] for topic [%s]: %s", host.c_str(), port, topic.c_str(), error_msg.c_str());
+        return false;
+      }
+
       int max_datagram_size = proto[4];
       int conn_id = connection_manager_->getUDPServerTransport()->generateConnectionId();
       TransportUDPPtr transport = connection_manager_->getUDPServerTransport()->createOutgoing(host, port, conn_id, max_datagram_size);
@@ -600,7 +658,6 @@ bool TopicManager::requestTopic(const string &topic,
       udpros_params[2] = connection_manager_->getUDPServerTransport()->getServerPort();
       udpros_params[3] = conn_id;
       udpros_params[4] = max_datagram_size;
-      M_string m;
       m["topic"] = topic;
       m["md5sum"] = pub_ptr->getMD5Sum();
       m["type"] = pub_ptr->getDataType();
@@ -811,7 +868,7 @@ size_t TopicManager::getNumPublishers(const std::string &topic)
   for (L_Subscription::const_iterator t = subscriptions_.begin();
        t != subscriptions_.end(); ++t)
   {
-    if ((*t)->getName() == topic)
+    if (!(*t)->isDropped() && (*t)->getName() == topic)
     {
       return (*t)->getNumPublishers();
     }

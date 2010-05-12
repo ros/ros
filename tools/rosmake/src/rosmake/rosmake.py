@@ -632,7 +632,7 @@ class RosMakeAll:
             
         required_packages = self.specified_packages[:]
         # these packages are not in the dependency tree but are needed they only cost 0.01 seconds to build
-        always_build = ["paramiko", "pycrypto", "rosout", "rostest"]
+        always_build = ["rosout", "rostest"]
         for p in always_build:
             if p not in self.specified_packages:
                 required_packages.append(p)

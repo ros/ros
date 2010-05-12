@@ -65,4 +65,22 @@ bool SubscriberLink::verifyDatatype(const std::string &datatype)
   return true;
 }
 
+const std::string& SubscriberLink::getMD5Sum()
+{
+  PublicationPtr parent = parent_.lock();
+  return parent->getMD5Sum();
+}
+
+const std::string& SubscriberLink::getDataType()
+{
+  PublicationPtr parent = parent_.lock();
+  return parent->getDataType();
+}
+
+const std::string& SubscriberLink::getMessageDefinition()
+{
+  PublicationPtr parent = parent_.lock();
+  return parent->getMessageDefinition();
+}
+
 } // namespace ros

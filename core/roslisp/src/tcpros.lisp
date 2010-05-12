@@ -116,7 +116,8 @@
                 (warn "Connection server received error ~a when trying to parse header ~a.  Ignoring this connection attempt." (msg c) header)
                 (close-connection))
               (stream-error (c)
-                (warn "Connection failed unexpectedly. Error: ~a." c)
+                (declare (ignore c))                
+                (ros-debug (roslisp tcp) "stream error on connection to service client (could be a probe)")
                 (close-connection))))))))
 
 
@@ -132,7 +133,7 @@
   (bind-from-header ((topic "topic") (md5 "md5sum")) header
     (let ((pub (gethash topic *publications*)))
       (tcpros-header-assert pub "unknown-topic")
-      (let ((my-md5 (string-downcase (format-md5 (md5sum topic)))))
+      (let ((my-md5 (md5sum topic)))
         (tcpros-header-assert (or (equal md5 "*") (equal md5 my-md5)) "md5sums do not match: ~a vs ~a" md5 my-md5)
         
         ;; Now we must send back the response
@@ -171,7 +172,7 @@
             ;; Send header and receive response
             (send-tcpros-header str 
                                 "topic" topic 
-                                "md5sum" (string-downcase (format-md5 (md5sum topic))) 
+                                "md5sum" (md5sum topic) 
                                 "type" (ros-datatype topic)
                                 "callerid" (caller-id))
             (let ((response (parse-tcpros-header str)))
@@ -309,7 +310,7 @@
   (mvbind (str socket) (tcp-connect hostname port)
     (unwind-protect
          (progn
-           (send-tcpros-header str "service" service-name "md5sum" (string-downcase (format-md5 (md5sum (class-name (class-of req))))) 
+           (send-tcpros-header str "service" service-name "md5sum" (md5sum (class-name (class-of req))) 
                                "callerid" (caller-id))
            (parse-tcpros-header str)
            (tcpros-write req str)
@@ -377,6 +378,3 @@
       (error 'malformed-tcpros-header :msg (format nil "Could not find key ~a in ~a" key l)))
     (cdr pair)))
 
-
-(defun format-md5 (md5)
-  (format nil "~32,'0x" md5))

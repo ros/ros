@@ -44,16 +44,16 @@ import time
 class TestRospyTcpros(unittest.TestCase):
 
     def test_init_tcpros(self):
-        import rospy.tcpros
-        rospy.tcpros.init_tcpros()
+        import rospy.impl.tcpros
+        rospy.impl.tcpros.init_tcpros()
         # nothing to validate here other than make sure no exceptions
         
     def test_syms(self):
-        import rospy.tcpros
-        import rospy.transport
-        self.assertEquals(int, type(rospy.tcpros.DEFAULT_BUFF_SIZE))
-        self.assert_(isinstance(rospy.tcpros.get_tcpros_handler(), rospy.transport.ProtocolHandler))
+        import rospy.impl.tcpros
+        import rospy.impl.transport
+        self.assertEquals(int, type(rospy.impl.tcpros.DEFAULT_BUFF_SIZE))
+        self.assert_(isinstance(rospy.impl.tcpros.get_tcpros_handler(), rospy.impl.transport.ProtocolHandler))
                 
 if __name__ == '__main__':
     import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyTcpros, coverage_packages=['rospy.tcpros'])
+    rostest.unitrun('test_rospy', sys.argv[0], TestRospyTcpros, coverage_packages=['rospy.impl.tcpros'])

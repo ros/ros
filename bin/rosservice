@@ -38,7 +38,7 @@ if 1:
     import roslib.packages
     import os, sys
     rr = os.environ['ROS_ROOT']
-    paths = [os.path.join(rr, 'tools', 'rosmsg', 'src'), os.path.join(rr, 'tools', 'rosservice', 'src'), os.path.join(rr, 'core', 'rospy', 'src')]
+    paths = [os.path.join(rr, 'tools', 'rosmsg', 'src'), os.path.join(rr, 'tools', 'rosservice', 'src'), os.path.join(rr, 'core', 'rospy', 'src'), os.path.join(rr, 'tools', 'rosbag', 'src')]
     sys.path = paths + sys.path
     import rosservice
 else:

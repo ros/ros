@@ -79,6 +79,7 @@
    :make-response
    :defservice
    :advertise
+   :unadvertise
    :subscribe
    :register-service
    :register-service-fn

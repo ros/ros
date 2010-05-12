@@ -180,11 +180,15 @@ public:
 
   void getPublishTypes(bool& ser, bool& nocopy, const std::type_info& ti);
 
+  void headerReceived(const PublisherLinkPtr& link, const Header& h);
+
 private:
   Subscription(const Subscription &); // not copyable
   Subscription &operator =(const Subscription &); // nor assignable
 
   void dropAllConnections();
+
+  void addPublisherLink(const PublisherLinkPtr& link);
 
   struct CallbackInfo
   {
@@ -200,6 +204,7 @@ private:
   typedef std::vector<CallbackInfoPtr> V_CallbackInfo;
 
   std::string name_;
+  boost::mutex md5sum_mutex_;
   std::string md5sum_;
   std::string datatype_;
   boost::mutex callbacks_mutex_;

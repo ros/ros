@@ -1,23 +1,16 @@
 <package>
-  <description brief="rxgraph and rosgraph command-line tools">
+  <description brief="rosgraph command-line tool">
 
 <p>
-rosgraph contains two tools for visualizing information about the ROS Computation Graph: <tt>rosgraph</tt> and <tt>rxgraph</tt>. <tt>rxgraph</tt> is a visual tool that displays a graph of the dynamic ROS Computation Graph. <tt>rosgraph</tt> is a command-line tool that prints out nodes and services to the console on a periodic basis.
-</p>
-<p>
-     rxgraph uses <a href="http://code.google.com/p/jrfonseca/wiki/XDot">xdot.py by Jose Fonseca</a>, which is licensed under LGPL.
+rosgraph contains the rosgraph command-line tool, which prints information about the ROS Computation Graph. It also provides an internal library that is used by the graphical version of this tool, <tt>rxgraph</tt>.
 </p>
   </description>
   <author>Ken Conley</author>
   <license>BSD/LGPL</license>
   <review status="Doc reviewed" notes="2009/12/30"/>
   <url>http://ros.org/wiki/rosgraph</url>
-  <depend package="rospy"/>
   <depend package="roslib"/>
 
-  <rosdep name="python-gtk2"/>
-  <rosdep name="wxpython"/>
-  <rosdep name="graphviz"/>
 </package>
 
 

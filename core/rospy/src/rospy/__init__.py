@@ -42,7 +42,6 @@ See U{http://ros.org/wiki/rospy}
 from roslib.rosenv import ROS_ROOT, ROS_MASTER_URI, ROS_HOSTNAME, ROS_NAMESPACE, ROS_PACKAGE_PATH, ROS_LOG_DIR
 
 import rospy.core
-import rospy.init
 
 # import symbols into rospy namespace
 # NOTE: there are much better ways to configure python module
@@ -69,8 +68,9 @@ from rospy.msproxy import NodeProxy, MasterProxy
 from rospy.names import get_name, get_caller_id, get_namespace, resolve_name, remap_name
 from rospy.rostime import Time, Duration, get_rostime, get_time
 from rospy.service import ServiceException, ServiceDefinition
+
 # - use tcp ros implementation of services
-from rospy.tcpros_service import Service, ServiceProxy, wait_for_service
+from rospy.impl.tcpros_service import Service, ServiceProxy, wait_for_service
 from rospy.topics import Message, SubscribeListener, Publisher, Subscriber
 
 ## \defgroup validators Validators

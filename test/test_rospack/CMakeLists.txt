@@ -4,8 +4,11 @@ rosbuild_init()
 rosbuild_add_boost_directories()
 rosbuild_add_pyunit(test/utest.py)
 rosbuild_add_pyunit(test/utest_rosstack.py)
-rosbuild_add_gtest(test/utest test/utest.cpp)
-rosbuild_link_boost(test/utest thread)
+rosbuild_check_for_vm(vm)
+if(NOT vm)
+  rosbuild_add_gtest(test/utest test/utest.cpp)
+  rosbuild_link_boost(test/utest thread)
+endif(NOT vm)
 
 add_custom_target(deepdirs
                   COMMAND python deep.py

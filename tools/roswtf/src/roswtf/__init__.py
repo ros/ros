@@ -114,6 +114,12 @@ def _roswtf_main():
                       dest="all_packages", default=False,
                       action="store_true",
                       help="run roswtf against all packages")
+    # #2270
+    parser.add_option("--no-plugins", 
+                      dest="disable_plugins", default=False,
+                      action="store_true",
+                      help="disable roswtf plugins")
+
     #TODO: --all-pkgs option
     options, args = parser.parse_args()
     if args:
@@ -132,8 +138,11 @@ def _roswtf_main():
     import roswtf.roslaunchwtf
     import roswtf.stacks    
     import roswtf.plugins
-    static_plugins, online_plugins = roswtf.plugins.load_plugins()
-
+    if not options.disable_plugins:
+        static_plugins, online_plugins = roswtf.plugins.load_plugins()
+    else:
+        static_plugins, online_plugins = [], []
+        
     # - do a ros_root check first and abort if it fails as rest of tests are useless after that
     error = ros_root_check(None, ros_root=os.environ['ROS_ROOT'])
     if error:

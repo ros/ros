@@ -1,0 +1,17 @@
+<package>
+  <description brief="test_rosbag">
+
+    A package for testing rosbag functionality.
+
+  </description>
+  <author>Jeremy Leibs</author>
+  <license>BSD</license>
+  <review status="test" notes=""/>
+  <depend package="rospy"/>
+  <depend package="rostest"/>
+  <depend package="test_crosspackage"/>
+  <depend package="rosbag"/>
+
+</package>
+
+

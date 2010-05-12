@@ -71,7 +71,7 @@ class ROSLaunchParent(object):
     This must be called from the Python Main thread due to signal registration.    
     """
 
-    def __init__(self, run_id, roslaunch_files, is_core=False, port=None, local_only=False, process_listeners=None, verbose=False):
+    def __init__(self, run_id, roslaunch_files, is_core=False, port=None, local_only=False, process_listeners=None, verbose=False, force_screen=False):
         """
         @param run_id: UUID of roslaunch session
         @type  run_id: str
@@ -89,6 +89,8 @@ class ROSLaunchParent(object):
         @type  port: int
         @param verbose: (optional) print verbose output
         @type  verbose: boolean
+        @param force_screen: (optional) force output of all nodes to screen
+        @type  force_screen: boolean
         @throws RLException
         """
         
@@ -101,6 +103,11 @@ class ROSLaunchParent(object):
         self.port = port
         self.local_only = local_only
         self.verbose = verbose
+
+        # I don't think we should have to pass in so many options from
+        # the outside into the roslaunch parent. One possibility is to
+        # allow alternate config loaders to be passed in.
+        self.force_screen = force_screen
         
         # flag to prevent multiple shutdown attempts
         self._shutting_down = False
@@ -109,6 +116,11 @@ class ROSLaunchParent(object):
 
     def _load_config(self):
         self.config = roslaunch.config.load_config_default(self.roslaunch_files, self.port, verbose=self.verbose)
+
+        # #2370 (I really want to move this logic outside of parent)
+        if self.force_screen:
+            for n in self.config.nodes:
+                n.output = 'screen'
 
     def _start_pm(self):
         """

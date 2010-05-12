@@ -92,8 +92,8 @@ Else return 1, msg, (PROTOCOL-NAME-STRING . PROTOCOL-OUTBOUND-PARAMS)
 Notes
 1. Currently only TCPROS is supported.  There are no other inbound params, and the outbound params are address, port (integers).
 2. This call does not actually set up the transport over the agreed-upon protocol.  In the TCP case, the subscriber must then connect to the given address and port over TCP, and send a string containing the topic name and MD5 sum."
-  (declare (ignore caller-id) (string topic) (sequence protocols))
-
+  (declare (string topic) (sequence protocols))
+  (ros-debug (roslisp slave request-topic) "Received call `requestTopic ~a ~a ~a" caller-id topic protocols)
   (with-mutex (*ros-lock*)
     (if (find "TCPROS" protocols :key #'first :test #'string=)
 	(if (hash-table-has-key *publications* topic)

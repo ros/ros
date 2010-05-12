@@ -35,6 +35,8 @@
 
 """
 Utilities for dealing with Version-control systems
+
+New in ROS C-Turtle.
 """
 
 from __future__ import with_statement

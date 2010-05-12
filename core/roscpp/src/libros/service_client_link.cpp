@@ -55,14 +55,21 @@ ServiceClientLink::~ServiceClientLink()
 {
   if (connection_)
   {
-    connection_->drop(Connection::Destructing);
+    if (connection_->isSendingHeaderError())
+    {
+      connection_->removeDropListener(dropped_conn_);
+    }
+    else
+    {
+      connection_->drop(Connection::Destructing);
+    }
   }
 }
 
 bool ServiceClientLink::initialize(const ConnectionPtr& connection)
 {
   connection_ = connection;
-  connection_->addDropListener(boost::bind(&ServiceClientLink::onConnectionDropped, this, _1));
+  dropped_conn_ = connection_->addDropListener(boost::bind(&ServiceClientLink::onConnectionDropped, this, _1));
 
   return true;
 }

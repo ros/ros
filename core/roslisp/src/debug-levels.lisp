@@ -68,13 +68,16 @@
   (:method ((level string)) (level-code (find-symbol level :keyword))))
 
 (defun set-local-debug-level (topic level &optional (h *debug-levels*))
+  (ros-debug (roslisp rosout) "Locally setting debug level of ~a to ~a" topic level)
   (let ((debug-topic (mapcar #'make-keyword-symbol (reverse topic))))
     (setf (gethash debug-topic h) (level-code level))))
 
 (defun set-debug-level (name level)
   (set-local-debug-level (designated-list name) level *debug-levels*)
-  (set-param (debug-topic-param name) (debug-level-string level))
-  (ros-debug (roslisp rosout) "Setting debug level of ~a to ~a" (designated-list name) level))
+  (when (eq *node-status* :running)
+    (ros-debug (roslisp rosout) "Setting ros parameter for debug level of ~a to ~a" (designated-list name) level)
+    (set-param (debug-topic-param name) (debug-level-string level)))
+  )
 
 (defun set-debug-level-unless-exists (name level)
   (unless (debug-level-exists name)
@@ -113,14 +116,12 @@ Each NAME (unevaluated) is a list, e.g. (roslisp tcp) denoting a debugger topic.
 
 
 (def-service-callback (reset-debug-levels Empty) ()
-  (let ((h (make-hash-table :test #'equal)))
-    (dolist (param (list-params "~debug"))
-      (when (is-debug-level-param param)
-	(let ((level (string-upcase (get-param param))))
-	  (if (member level '("DEBUG" "INFO" "WARN" "ERROR" "FATAL") :test #'equal)
-	      (set-local-debug-level (get-debug-topic param) level h)
-	      (ros-warn (roslisp rosout) "Skipping setting debug level of ~a to unknown level ~a" param level)))))
-    (setq *debug-levels* h)
-    (make-response)))
+  (dolist (param (list-params "~debug"))
+    (when (is-debug-level-param param)
+      (let ((level (string-upcase (get-param param))))
+        (if (member level '("DEBUG" "INFO" "WARN" "ERROR" "FATAL") :test #'equal)
+            (set-local-debug-level (get-debug-topic param) level)
+            (ros-warn (roslisp rosout) "Skipping setting debug level of ~a to unknown level ~a" param level)))))
+  (make-response))
 
     

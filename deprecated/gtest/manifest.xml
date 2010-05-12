@@ -1,0 +1,14 @@
+<package>
+  <description brief="gtest">
+    This is a placeholder package to keep from breaking explicit
+    dependencies on the gtest package.  Gtest is now system-installed,
+    so the gtest package is going away.
+  </description>
+  <author>Jeremy Leibs</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/gtest</url>
+
+</package>
+
+

@@ -57,19 +57,17 @@ TransportSubscriberLink::~TransportSubscriberLink()
 bool TransportSubscriberLink::initialize(const ConnectionPtr& connection)
 {
   connection_ = connection;
-  connection_->addDropListener(boost::bind(&TransportSubscriberLink::onConnectionDropped, this, _1));
+  dropped_conn_ = connection_->addDropListener(boost::bind(&TransportSubscriberLink::onConnectionDropped, this, _1));
 
   return true;
 }
 
 bool TransportSubscriberLink::handleHeader(const Header& header)
 {
-  std::string md5sum, topic, client_callerid;
-  if (!header.getValue("md5sum", md5sum)
-   || !header.getValue("topic", topic)
-   || !header.getValue("callerid", client_callerid))
+  std::string topic;
+  if (!header.getValue("topic", topic))
   {
-    std::string msg("Header from subscriber did not have the required elements: md5sum, topic, callerid");
+    std::string msg("Header from subscriber did not have the required element: topic");
 
     ROS_ERROR("%s", msg.c_str());
     connection_->sendHeaderError(msg);
@@ -77,7 +75,9 @@ bool TransportSubscriberLink::handleHeader(const Header& header)
     return false;
   }
 
-  ROSCPP_LOG_DEBUG("Client [%s] wants topic [%s] with md5sum [%s]", client_callerid.c_str(), topic.c_str(), md5sum.c_str());
+  // This will get validated by validateHeader below
+  std::string client_callerid;
+  header.getValue("callerid", client_callerid);
   PublicationPtr pt = TopicManager::instance()->lookupPublication(topic);
   if (!pt)
   {
@@ -90,55 +90,30 @@ bool TransportSubscriberLink::handleHeader(const Header& header)
     return false;
   }
 
-  if (pt->getMD5Sum() != md5sum &&
-      (md5sum != std::string("*") && pt->getMD5Sum() != std::string("*")))
+  std::string error_msg;
+  if (!pt->validateHeader(header, error_msg))
   {
-    std::string datatype;
-    header.getValue("type", datatype);
-
-    std::string msg = std::string("Client [") + client_callerid + std::string("] wants topic ") + topic +
-                      std::string(" to have datatype/md5sum [") + datatype + "/" + md5sum +
-                      std::string("], but our version has [") + pt->getDataType() + "/" + pt->getMD5Sum() +
-                      std::string("]. Dropping connection.");
-
-    ROS_ERROR("%s", msg.c_str());
-    connection_->sendHeaderError(msg);
+    ROSCPP_LOG_DEBUG("%s", error_msg.c_str());
+    connection_->sendHeaderError(error_msg);
 
     return false;
   }
 
-  // Check whether the topic (pt here) has been deleted from
-  // advertised_topics through a call to unadvertise(), which could
-  // have happened while we were waiting for the subscriber to
-  // provide the md5sum.
-  if(pt->isDropped())
-  {
-    std::string msg = std::string("received a tcpros connection for a nonexistent topic [") +
-                topic + std::string("] from [" + connection_->getTransport()->getTransportInfo() + "] [" + client_callerid +"].");
+  destination_caller_id_ = client_callerid;
+  connection_id_ = ConnectionManager::instance()->getNewConnectionID();
+  topic_ = pt->getName();
+  parent_ = PublicationWPtr(pt);
 
-    ROS_ERROR("%s", msg.c_str());
-    connection_->sendHeaderError(msg);
+  // Send back a success, with info
+  M_string m;
+  m["type"] = pt->getDataType();
+  m["md5sum"] = pt->getMD5Sum();
+  m["message_definition"] = pt->getMessageDefinition();
+  m["callerid"] = this_node::getName();
+  m["latching"] = pt->isLatching() ? "1" : "0";
+  connection_->writeHeader(m, boost::bind(&TransportSubscriberLink::onHeaderWritten, this, _1));
 
-    return false;
-  }
-  else
-  {
-    destination_caller_id_ = client_callerid;
-    connection_id_ = ConnectionManager::instance()->getNewConnectionID();
-    topic_ = pt->getName();
-    parent_ = PublicationWPtr(pt);
-
-    // Send back a success, with info
-    M_string m;
-    m["type"] = pt->getDataType();
-    m["md5sum"] = pt->getMD5Sum();
-    m["message_definition"] = pt->getMessageDefinition();
-    m["callerid"] = this_node::getName();
-    m["latching"] = pt->isLatching() ? "1" : "0";
-    connection_->writeHeader(m, boost::bind(&TransportSubscriberLink::onHeaderWritten, this, _1));
-
-    pt->addSubscriberLink(shared_from_this());
-  }
+  pt->addSubscriberLink(shared_from_this());
 
   return true;
 }
@@ -247,7 +222,16 @@ std::string TransportSubscriberLink::getTransportType()
 
 void TransportSubscriberLink::drop()
 {
-  connection_->drop(Connection::Destructing);
+  // Only drop the connection if it's not already sending a header error
+  // If it is, it will automatically drop itself
+  if (connection_->isSendingHeaderError())
+  {
+    connection_->removeDropListener(dropped_conn_);
+  }
+  else
+  {
+    connection_->drop(Connection::Destructing);
+  }
 }
 
 } // namespace ros

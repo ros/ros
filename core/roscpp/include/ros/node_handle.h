@@ -335,6 +335,7 @@ if (handle)
 }
 \endverbatim
    *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
+   *  \throws ConflictingSubscriptionException If this node is already subscribed to the same topic with a different datatype
    */
   template<class M, class T>
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, void(T::*fp)(M), T* obj, const TransportHints& transport_hints = TransportHints())
@@ -381,6 +382,7 @@ if (handle)
 }
 \endverbatim
    *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
+   *  \throws ConflictingSubscriptionException If this node is already subscribed to the same topic with a different datatype
    */
   template<class M, class T>
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr<M const>&), T* obj, const TransportHints& transport_hints = TransportHints())
@@ -428,6 +430,7 @@ if (handle)
 }
 \endverbatim
    *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
+   *  \throws ConflictingSubscriptionException If this node is already subscribed to the same topic with a different datatype
    */
   template<class M, class T>
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, void(T::*fp)(M), const boost::shared_ptr<T>& obj, const TransportHints& transport_hints = TransportHints())
@@ -476,6 +479,7 @@ if (handle)
 }
 \endverbatim
    *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
+   *  \throws ConflictingSubscriptionException If this node is already subscribed to the same topic with a different datatype
    */
   template<class M, class T>
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr<M const>&), const boost::shared_ptr<T>& obj, const TransportHints& transport_hints = TransportHints())
@@ -521,6 +525,7 @@ if (handle)
 }
 \endverbatim
    *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
+   *  \throws ConflictingSubscriptionException If this node is already subscribed to the same topic with a different datatype
    */
   template<class M>
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, void(*fp)(M), const TransportHints& transport_hints = TransportHints())
@@ -565,6 +570,7 @@ if (handle)
 }
 \endverbatim
    *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
+   *  \throws ConflictingSubscriptionException If this node is already subscribed to the same topic with a different datatype
    */
   template<class M>
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, void(*fp)(const boost::shared_ptr<M const>&), const TransportHints& transport_hints = TransportHints())
@@ -607,6 +613,7 @@ if (handle)
 }
 \endverbatim
    *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
+   *  \throws ConflictingSubscriptionException If this node is already subscribed to the same topic with a different datatype
    */
   template<class M>
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, const boost::function<void (const boost::shared_ptr<M const>&)>& callback,
@@ -652,6 +659,7 @@ if (handle)
 }
 \endverbatim
    *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
+   *  \throws ConflictingSubscriptionException If this node is already subscribed to the same topic with a different datatype
    */
   template<class M, class C>
   Subscriber subscribe(const std::string& topic, uint32_t queue_size, const boost::function<void (C)>& callback,
@@ -685,6 +693,7 @@ if (handle)
 }
 \endverbatim
    *  \throws InvalidNameException If the topic name begins with a tilde, or is an otherwise invalid graph resource name
+   *  \throws ConflictingSubscriptionException If this node is already subscribed to the same topic with a different datatype
    */
   Subscriber subscribe(SubscribeOptions& ops);
 

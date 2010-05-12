@@ -94,6 +94,11 @@ public:
   bool isDropped();
 
   /**
+   * \brief Returns true if we're currently sending a header error (and will be automatically dropped when it's finished)
+   */
+  bool isSendingHeaderError() { return sending_header_error_; }
+
+  /**
    * \brief Send a header error message, of the form "error=<message>".  Drops the connection once the data has written successfully (or fails to write)
    * \param error_message The error message
    */
@@ -143,6 +148,7 @@ public:
    * \brief Add a callback to be called when this connection has dropped
    */
   boost::signals::connection addDropListener(const DropFunc& slot);
+  void removeDropListener(const boost::signals::connection& c);
 
   /**
    * \brief Set the header receipt callback

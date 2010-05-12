@@ -173,7 +173,7 @@ public:
     sub_.shutdown();
   }
 
-  std::string getTopic()
+  std::string getTopic() const
   {
     return ops_.topic;
   }
@@ -181,7 +181,7 @@ public:
   /**
    * \brief Returns the internal ros::Subscriber object
    */
-  const ros::Subscriber& getSubscriber() { return sub_; }
+  const ros::Subscriber& getSubscriber() const { return sub_; }
 
   /**
    * \brief Does nothing.  Provided so that Subscriber may be used in a message_filters::Chain

@@ -130,7 +130,8 @@ def create_node_process(run_id, node, master_uri):
     args = create_local_process_args(node, machine)
     _logger.info('process[%s]: args[%s]', name, args)        
 
-    log_output = node.output == 'log'
+    # default for node.output not set is 'log'
+    log_output = node.output != 'screen'
     _logger.debug('process[%s]: returning LocalProcess wrapper')
     return LocalProcess(run_id, node.package, name, args, env, log_output, respawn=node.respawn, required=node.required, cwd=node.cwd)
 
@@ -140,7 +141,7 @@ class LocalProcess(Process):
     Process launched on local machine
     """
     
-    def __init__(self, run_id, package, name, args, env, log_output, respawn=False, required=False, cwd=None):
+    def __init__(self, run_id, package, name, args, env, log_output, respawn=False, required=False, cwd=None, is_node=True):
         """
         @param run_id: unique run ID for this roslaunch. Used to
           generate log directory location. run_id may be None if this
@@ -160,6 +161,8 @@ class LocalProcess(Process):
         @type  respawn: bool
         @param cwd: working directory of process, or None
         @type  cwd: str
+        @param is_node: (optional) if True, process is ROS node and accepts ROS node command-line arguments. Default: True
+        @type  is_node: False
         """    
         super(LocalProcess, self).__init__(package, name, args, env, respawn, required)
         self.run_id = run_id
@@ -170,6 +173,7 @@ class LocalProcess(Process):
         self.cwd = cwd
         self.log_dir = None
         self.pid = -1
+        self.is_node = is_node
 
     # NOTE: in the future, info() is going to have to be sufficient for relaunching a process
     def get_info(self):
@@ -224,9 +228,10 @@ class LocalProcess(Process):
 
         # #986: pass in logfile name to node
         node_log_file = log_dir
-        # #1595: on respawn, these keep appending
-        self.args = _cleanup_remappings(self.args, '__log:=')
-        self.args.append("__log:=%s"%os.path.join(log_dir, "%s.log"%self.name))
+        if self.is_node:
+            # #1595: on respawn, these keep appending
+            self.args = _cleanup_remappings(self.args, '__log:=')
+            self.args.append("__log:=%s"%os.path.join(log_dir, "%s.log"%self.name))
 
         return logfileout, logfileerr
 
@@ -261,6 +266,8 @@ class LocalProcess(Process):
 
             if self.cwd == 'node':
                 cwd = os.path.dirname(self.args[0])
+            elif self.cwd == 'cwd':
+                cwd = os.getcwd()
             else:
                 cwd = get_ros_root()
 
@@ -274,13 +281,15 @@ class LocalProcess(Process):
                 _logger.error("OSError(%d, %s)", errno, msg)
                 if errno == 8: #Exec format error
                     raise FatalProcessLaunch("Unable to launch [%s]. \nIf it is a script, you may be missing a '#!' declaration at the top."%self.name)
-                elif errno ==2: #no such file or directory
+                elif errno == 2: #no such file or directory
                     raise FatalProcessLaunch("""Roslaunch got a '%s' error while attempting to run:
 
 %s
 
 Please make sure that all the executables in this command exist and have
 executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '.join(self.args)))
+                else:
+                    raise FatalProcessLaunch("unable to launch [%s]: %s"%(' '.join(self.args), msg))
                 
             self.started = True
             if self.popen.poll() is None:

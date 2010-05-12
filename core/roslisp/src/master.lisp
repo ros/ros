@@ -74,7 +74,10 @@
 (defmacro protected-call-to-master ((&rest args) &optional c &body cleanup-forms)
   "Wraps an xml-rpc call to the master.  Calls cleanup forms if xml-rpc connection fails.  Requires that the node is running, or that the *master-uri* is set."
   (setf c (or c (gensym)))
-  `(handler-case (progn (assert *master-uri* nil "Master uri not set") (ros-rpc-call *master-uri* ,@args))
+  `(handler-case (let ((args (list ,@args)))
+                   (assert *master-uri* nil "Master uri not set")
+                   (ros-debug (roslisp master) "Calling master with arguments `~a'" args)
+                   (apply #'ros-rpc-call *master-uri* args))
      (sb-bsd-sockets:connection-refused-error (,c)
        (declare (ignorable ,c))
        ,@cleanup-forms)))

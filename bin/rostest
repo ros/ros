@@ -35,5 +35,5 @@
 # $Author: rob_wheeler $
 import roslib; roslib.load_manifest('rostest')
 
-from rostest.rostest import rostestmain
+from rostest.rostest_main import rostestmain
 rostestmain()

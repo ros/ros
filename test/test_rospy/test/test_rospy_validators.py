@@ -45,12 +45,12 @@ class TestRospyValidators(unittest.TestCase):
 
     def test_ParameterInvalid(self):
         # not really testing anything here other than typos
-        from rospy.validators import ParameterInvalid
+        from rospy.impl.validators import ParameterInvalid
         self.assert_(isinstance(ParameterInvalid('param'), Exception))
         
     def test_validators(self):
-        from rospy.validators import ParameterInvalid
-        from rospy.validators import non_empty
+        from rospy.impl.validators import ParameterInvalid
+        from rospy.impl.validators import non_empty
         contextes = ['', '/', '/foo']
         for context in contextes:
             valid = ['foo', 1, [1]]
@@ -65,4 +65,4 @@ class TestRospyValidators(unittest.TestCase):
 
 if __name__ == '__main__':
     import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyValidators, coverage_packages=['rospy.validators'])
+    rostest.unitrun('test_rospy', sys.argv[0], TestRospyValidators, coverage_packages=['rospy.impl.validators'])

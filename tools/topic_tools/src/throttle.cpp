@@ -94,7 +94,7 @@ void in_cb(const boost::shared_ptr<ShapeShifter const>& msg)
     if (bytes < g_bps)
     {
       g_pub.publish(msg);
-      g_sent.push_back(Sent(t, msg->__serialized_length));
+      g_sent.push_back(Sent(t, msg->size()));
     }
   }
 }

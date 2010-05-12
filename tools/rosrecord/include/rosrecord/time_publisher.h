@@ -45,6 +45,55 @@
 #include "sys/time.h"
 
 
+class SimpleTimePublisher {
+public:
+    /*! Create a time publisher
+     *  A publish_frequency of < 0 indicates that time shouldn't actually be published
+     */
+    SimpleTimePublisher(double publish_frequency, double time_scale);
+
+    /*! Set the horizon that the clock will run to */
+    void setHorizon(const ros::Time& horizon);
+
+    /*! Set the horizon that the clock will run to */
+    void setWCHorizon(const ros::WallTime& horizon);
+
+    /*! Set the current time */
+    void setTime(const ros::Time& time);
+
+    /*! Run the clock for AT MOST duration
+     *
+     * If horizon has been reached this function returns immediately
+     */
+    void runClock(const ros::WallDuration& duration);
+
+    //! Sleep as necessary, but don't let the click run 
+    void runStalledClock(const ros::WallDuration& duration);
+
+    //! Step the clock to the horizon
+    void stepClock();
+
+    bool horizonReached();
+
+    
+private:
+    bool do_publish_;
+
+  double publish_frequency_;
+  double time_scale_;
+
+    ros::NodeHandle node_handle_;
+    ros::Publisher time_pub_;
+
+    ros::WallDuration wall_step_;
+   
+    ros::WallTime next_pub_;
+
+  ros::WallTime wc_horizon_;
+    ros::Time horizon_;
+    ros::Time current_;
+};
+
 class TimePublisher {
 
  public:

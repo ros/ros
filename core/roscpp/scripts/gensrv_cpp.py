@@ -37,6 +37,7 @@
 ## Converts ROS .msg files in a package into C++ source code implementations.
 
 import roslib; roslib.load_manifest('roscpp')
+import roscpp.msg_gen as genmsg_cpp
  
 import sys
 import os
@@ -46,8 +47,6 @@ import traceback
 import roslib.srvs
 import roslib.packages
 import roslib.gentools
-
-import genmsg_cpp
 
 from cStringIO import StringIO
 
@@ -160,10 +159,13 @@ def generate(srv_path):
     s.write('\n')
     genmsg_cpp.write_includes(s, spec.response)
     
+    gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package)
+    md5sum = roslib.gentools.compute_md5(gendeps_dict)
+    
     s.write('namespace %s\n{\n'%(package))
-    genmsg_cpp.write_struct(s, spec.request, cpp_prefix)
+    genmsg_cpp.write_struct(s, spec.request, cpp_prefix, {'ServerMD5Sum': md5sum})
     s.write('\n')
-    genmsg_cpp.write_struct(s, spec.response, cpp_prefix)
+    genmsg_cpp.write_struct(s, spec.response, cpp_prefix, {'ServerMD5Sum': md5sum})
     s.write('struct %s\n{\n'%(spec.short_name))
     s.write('\n')
     s.write('typedef %s Request;\n'%(spec.request.short_name))

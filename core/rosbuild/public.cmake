@@ -213,7 +213,7 @@ macro(rosbuild_init)
     list(REVERSE ${_prefix}_LIBRARIES)
     #list(REMOVE_DUPLICATES ${_prefix}_LIBRARIES)
     _rosbuild_list_remove_duplicates("${${_prefix}_LIBRARIES}" _tmplist)
-    set(${_prefix}_LIBRARIES ${__tmplist})
+    set(${_prefix}_LIBRARIES ${_tmplist})
     list(REVERSE ${_prefix}_LIBRARIES)
   
     # Also throw in the libs that we want to link everything against (only
@@ -483,6 +483,11 @@ macro(rosbuild_add_library lib)
   if(NOT ROS_BUILD_STATIC_LIBS AND NOT ROS_BUILD_SHARED_LIBS)
     message(FATAL_ERROR "Neither shared nor static libraries are enabled.  Please set either ROS_BUILD_STATIC_LIBS or ROS_BUILD_SHARED_LIBS to true in your $ROS_ROOT/rosconfig.cmake")
   endif(NOT ROS_BUILD_STATIC_LIBS AND NOT ROS_BUILD_SHARED_LIBS)
+  # Sanity check; it's too hard to support building shared libs and static
+  # executables.
+  if(ROS_BUILD_STATIC_EXES AND ROS_BUILD_SHARED_LIBS)
+    message(FATAL_ERROR "Static executables are requested, but so are shared libs. This configuration is unsupported.  Please either set ROS_BUILD_SHARED_LIBS to false or set ROS_BUILD_STATIC_EXES to false.")
+  endif(ROS_BUILD_STATIC_EXES AND ROS_BUILD_SHARED_LIBS)
 
   # What are we building?
   if(ROS_BUILD_SHARED_LIBS)
@@ -544,7 +549,7 @@ macro(rosbuild_add_gtest exe)
   add_custom_target(test)
   add_dependencies(test test_${_testname})
   # Register check for test output
-  _rosbuild_check_rostest_xml_result(test_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
+  _rosbuild_check_rostest_xml_result(${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${_testname}.xml)
 endmacro(rosbuild_add_gtest)
 
 # A version of add_gtest that checks a label against ROS_BUILD_TEST_LABEL
@@ -614,7 +619,7 @@ macro(rosbuild_add_pyunit file)
   endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test pyunit_${_testname})
   # Register check for test output
-  _rosbuild_check_rostest_xml_result(pyunit_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
+  _rosbuild_check_rostest_xml_result(${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${_testname}.xml)
 endmacro(rosbuild_add_pyunit)
 
 # A version of add_pyunit that checks a label against ROS_BUILD_TEST_LABEL

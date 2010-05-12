@@ -197,6 +197,7 @@ TEST(TestSuite, record_play_latching)
 
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "test_recorder_player");
   return RUN_ALL_TESTS();
 }
 

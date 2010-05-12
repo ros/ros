@@ -85,7 +85,7 @@ void ChunkedFile::open(string const& filename, string const& mode) {
         file_ = fopen(filename.c_str(), mode.c_str());
 
     if (!file_)
-        throw BagIOException((format("Error opening file: %1%") % filename_.c_str()).str());
+        throw BagIOException((format("Error opening file: %1%") % filename.c_str()).str());
 
     read_stream_  = shared_ptr<Stream>(new UncompressedStream(this));
     write_stream_ = shared_ptr<Stream>(new UncompressedStream(this));

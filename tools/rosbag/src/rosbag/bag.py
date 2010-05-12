@@ -1449,6 +1449,10 @@ class _BagReader102_Unindexed(_BagReader):
                 nsecs = _read_uint32_field(header, 'nsec')
                 t = roslib.rostime.Time(secs, nsecs)
 
+                if topic not in self.bag._topic_connections:
+                    datatype = _read_str_field(header, 'type')
+                    self._create_connection_info_for_datatype(topic, datatype)
+
                 connection_id = self.bag._topic_connections[topic]
                 info = self.bag._connections[connection_id]
 
@@ -1490,6 +1494,10 @@ class _BagReader102_Unindexed(_BagReader):
 
             topic = _read_str_field(header, 'topic')
             
+            if topic not in self.bag._topic_connections:
+                datatype = _read_str_field(header, 'type')
+                self._create_connection_info_for_datatype(topic, datatype)
+
             connection_id = self.bag._topic_connections[topic]
             info = self.bag._connections[connection_id]
     
@@ -1515,6 +1523,19 @@ class _BagReader102_Unindexed(_BagReader):
                 msg.deserialize(data)
 
             yield (topic, msg, t)
+
+    def _create_connection_info_for_datatype(self, topic, datatype):
+        for c in self.bag._connections.values():
+            if c.datatype == datatype:
+                connection_id     = len(self.bag._connections)
+                connection_header = { 'topic' : topic, 'type' : c.header['type'], 'md5sum' : c.header['md5sum'], 'message_definition' : c.header['message_definition'] }
+                connection_info   = _ConnectionInfo(connection_id, topic, connection_header)
+                
+                self.bag._topic_connections[topic] = connection_id
+                self.bag._connections[connection_id] = connection_info
+                return
+
+        raise ROSBagFormatException('Topic %s of datatype %s not preceded by message definition' % (topic, datatype))
 
     def read_message_definition_record(self, header=None):
         if not header:
@@ -1580,6 +1601,10 @@ class _BagReader102_Indexed(_BagReader102_Unindexed):
                 secs  = _read_uint32_field(header, 'sec')
                 nsecs = _read_uint32_field(header, 'nsec')
                 t = roslib.rostime.Time(secs, nsecs)
+
+                if topic not in self.bag._topic_connections:
+                    datatype = _read_str_field(header, 'type')
+                    self._create_connection_info_for_datatype(topic, datatype)
 
                 connection_id = self.bag._topic_connections[topic]
                 info = self.bag._connections[connection_id]

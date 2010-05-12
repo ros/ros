@@ -332,15 +332,15 @@
 (defun ros-completing-read-message (prompt &optional default)
   (unless ros-messages
     (cache-ros-message-locations))
-  (let ((result (funcall ros-completion-function prompt
-                         (map 'list
-                              (lambda (m pkg)
-                                (cons (if (> (count m ros-messages :test 'equal) 1)
-                                          (format "%s (%s)" m pkg)
-                                        m)
-                                      nil))
-                              ros-messages ros-message-packages)
-                         nil nil nil nil (when (member default ros-messages)
+  (let* ((ros-messages-list (map 'list 'identity ros-messages))
+         (result (funcall ros-completion-function prompt
+                         (map 'list (lambda (m pkg)
+                                      (cons (if (> (count m ros-messages-list :test 'equal) 1)
+                                                (format "%s (%s)" m pkg)
+                                              m)
+                                            nil))
+                              ros-messages-list ros-message-packages)
+                         nil nil nil nil (when (member default ros-messages-list)
                                            default))))
     (substring result 0 (position ?\s result))))
 
@@ -356,7 +356,7 @@
                                   m)
                                 nil))
                        ros-services ros-service-packages)
-                  nil nil nil nil (when (member default ros-services)
+                  nil nil nil nil (when (member default (map 'list 'identity ros-services))
                                     default))))
     (substring result 0 (position ?\s result))))
 
@@ -364,7 +364,7 @@
   (funcall ros-completion-function prompt (map 'list (lambda (m)
                                                        (cons m nil))
                                                ros-all-topics)
-           nil nil nil nil (when (member default ros-all-topics)
+           nil nil nil nil (when (member default (map 'list 'identity ros-all-topics))
                              default)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

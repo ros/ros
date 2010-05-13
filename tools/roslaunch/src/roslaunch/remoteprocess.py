@@ -67,14 +67,17 @@ def _paramiko_HostKeyEntry_from_line(line):
 
     names, keytype, key = fields
     names = names.split(',')
+    import base64
     if keytype == 'ssh-rsa':
-        key = RSAKey(data=base64.decodestring(key))
+        import paramiko.rsakey
+        key = paramiko.rsakey.RSAKey(data=base64.decodestring(key))
     elif keytype == 'ssh-dss':
-        key = DSSKey(data=base64.decodestring(key))
+        import paramiko.dsskey
+        key = paramiko.dsskey.DSSKey(data=base64.decodestring(key))
     else:
         return None
 
-    return HostKeyEntry(names, key)
+    return paramiko.hostkeys.HostKeyEntry(names, key)
 
 # TODO: remove in ROS 1.3
 def _paramiko_load_system_host_keys(ssh, filename):

@@ -50,7 +50,7 @@ python-gtk2:
   arch: pygtk
   debian: python-gtk2
   macports: py25-gtk
-  fedora: python-gtk
+  fedora: pygtk2
   rhel: pygtk2
   gentoo: "=dev-python/pygtk-2.*"
   freebsd: py-gtk2
@@ -411,6 +411,7 @@ qt4:
 curl:
   ubuntu: libcurl4-openssl-dev
   debian: libcurl4-openssl-dev
+  fedora: libcurl-devel
   arch: curl
   macports: curl
   gentoo: net-misc/curl

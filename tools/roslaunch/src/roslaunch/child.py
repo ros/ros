@@ -54,9 +54,7 @@ import roslaunch.server
 
 class ROSLaunchChild(object):
     """
-    ROSLaunchChild infrastructure.
-
-    This must be called from the Python Main thread due to signal registration.
+    ROSLaunchChild infrastructure
     """
 
     def __init__(self, run_id, name, server_uri):
@@ -79,8 +77,6 @@ class ROSLaunchChild(object):
         self.server_uri = server_uri
         self.child_server = None
         self.pm = None
-
-        roslaunch.pmon._init_signal_handlers()
 
     def _start_pm(self):
         """

@@ -36,7 +36,6 @@
 #define ROSRECORD_CONSTANTS_H
 
 #include <string>
-#include <stdint.h>
 
 namespace ros
 {

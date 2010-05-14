@@ -5,7 +5,7 @@ roslib/Log log
 # comment about s
 string s
 # comment about time
-roslib/Clock time
+roslib/Time time
 # comment about b
 int32 b
 # comment about d

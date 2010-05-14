@@ -30,13 +30,13 @@
 
 #include "forwards.h"
 
-#include "message_event.h"
+#include "subscription_message_helper.h"
 #include "callback_queue_interface.h"
 
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <deque>
+#include <list>
 
 namespace ros
 {
@@ -44,43 +44,40 @@ namespace ros
 class MessageDeserializer;
 typedef boost::shared_ptr<MessageDeserializer> MessageDeserializerPtr;
 
-class SubscriptionCallbackHelper;
-typedef boost::shared_ptr<SubscriptionCallbackHelper> SubscriptionCallbackHelperPtr;
-
-class SubscriptionQueue : public CallbackInterface, public boost::enable_shared_from_this<SubscriptionQueue>
+class SubscriptionQueue : public boost::enable_shared_from_this<SubscriptionQueue>
 {
 private:
   struct Item
   {
-    SubscriptionCallbackHelperPtr helper;
+    SubscriptionMessageHelperPtr helper;
     MessageDeserializerPtr deserializer;
 
     bool has_tracked_object;
-    VoidConstWPtr tracked_object;
+    VoidWPtr tracked_object;
 
-    bool nonconst_need_copy;
-    ros::Time receipt_time;
+    uint64_t id;
   };
-  typedef std::deque<Item> D_Item;
+  typedef std::list<Item> L_Item;
 
 public:
   SubscriptionQueue(const std::string& topic, int32_t queue_size);
   ~SubscriptionQueue();
-  void push(const SubscriptionCallbackHelperPtr& helper, const MessageDeserializerPtr& deserializer, bool has_tracked_object, const VoidConstWPtr& tracked_object, bool nonconst_need_copy, ros::Time receipt_time = ros::Time(), bool* was_full = 0);
+  uint64_t push(const SubscriptionMessageHelperPtr& helper, const MessageDeserializerPtr& deserializer, bool has_tracked_object, const VoidWPtr& tracked_object);
   void clear();
-
-  virtual CallbackInterface::CallResult call();
-  virtual bool ready();
+  CallbackInterface::CallResult call(uint64_t id);
+  bool ready(uint64_t id);
   bool full();
+  void remove(uint64_t id);
 
 private:
   bool fullNoLock();
   std::string topic_;
   int32_t size_;
   bool full_;
+  uint64_t id_counter_;
 
   boost::mutex queue_mutex_;
-  D_Item queue_;
+  L_Item queue_;
   uint32_t queue_size_;
 
   boost::recursive_mutex callback_mutex_;

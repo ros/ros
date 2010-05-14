@@ -30,7 +30,6 @@
 
 #include "ros/forwards.h"
 #include "ros/message.h"
-#include "ros/serialization.h"
 
 #include <boost/utility.hpp>
 
@@ -54,36 +53,11 @@ public:
    * passed directly into a callback function)
    *
    */
-  template<class M>
-  void publish(const boost::shared_ptr<M const>& message) const
-  {
-    publish(*message);
-  }
-
-  /**
-   * \brief Publish a message on the topic associated with this Publisher.
-   *
-   * This version of publish will allow fast intra-process message-passing in the future,
-   * so you may not mutate the message after it has been passed in here (since it will be
-   * passed directly into a callback function)
-   *
-   */
-  template<class M>
-  void publish(const boost::shared_ptr<M>& message) const
-  {
-    publish(*message);
-  }
-
+  void publish(const Message::ConstPtr& message) const;
   /**
    * \brief Publish a message on the topic associated with this Publisher.
    */
-  template<class M>
-  void publish(const M& message) const
-  {
-    using namespace serialization;
-    SerializedMessage m = serializeMessage(message);
-    publish(m);
-  }
+  void publish(const Message& message) const;
 
   /**
    * \brief Returns the topic this publisher publishes on
@@ -96,7 +70,6 @@ public:
   std::string getSubscriberName() const;
 
 private:
-  void publish(const SerializedMessage& m) const;
 
   SubscriberLinkPtr link_;
 };

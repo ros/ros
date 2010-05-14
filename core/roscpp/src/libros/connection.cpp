@@ -56,7 +56,6 @@ Connection::Connection()
 , write_size_(0)
 , writing_(false)
 , has_write_callback_(0)
-, sending_header_error_(false)
 {
 }
 
@@ -64,7 +63,7 @@ Connection::~Connection()
 {
   ROS_DEBUG_NAMED("superdebug", "Connection destructing, dropped=%s", dropped_ ? "true" : "false");
 
-  drop(Destructing);
+  drop();
 }
 
 void Connection::initialize(const TransportPtr& transport, bool is_server, const HeaderReceivedFunc& header_func)
@@ -87,14 +86,7 @@ void Connection::initialize(const TransportPtr& transport, bool is_server, const
 
 boost::signals::connection Connection::addDropListener(const DropFunc& slot)
 {
-  boost::recursive_mutex::scoped_lock lock(drop_mutex_);
   return drop_signal_.connect(slot);
-}
-
-void Connection::removeDropListener(const boost::signals::connection& c)
-{
-  boost::recursive_mutex::scoped_lock lock(drop_mutex_);
-  c.disconnect();
 }
 
 void Connection::onReadable(const TransportPtr& transport)
@@ -266,7 +258,7 @@ void Connection::onWriteable(const TransportPtr& transport)
 
 void Connection::read(uint32_t size, const ReadFinishedFunc& callback)
 {
-  if (dropped_ || sending_header_error_)
+  if (dropped_)
   {
     return;
   }
@@ -289,7 +281,7 @@ void Connection::read(uint32_t size, const ReadFinishedFunc& callback)
 
 void Connection::write(const boost::shared_array<uint8_t>& buffer, uint32_t size, const WriteFinishedFunc& callback, bool immediate)
 {
-  if (dropped_ || sending_header_error_)
+  if (dropped_)
   {
     return;
   }
@@ -319,10 +311,10 @@ void Connection::onDisconnect(const TransportPtr& transport)
 {
   ROS_ASSERT(transport == transport_);
 
-  drop(TransportDisconnect);
+  drop();
 }
 
-void Connection::drop(DropReason reason)
+void Connection::drop()
 {
   bool did_drop = false;
   {
@@ -332,7 +324,7 @@ void Connection::drop(DropReason reason)
       dropped_ = true;
       did_drop = true;
 
-      drop_signal_(shared_from_this(), reason);
+      drop_signal_(shared_from_this());
     }
   }
 
@@ -368,7 +360,7 @@ void Connection::writeHeader(const M_string& key_vals, const WriteFinishedFunc& 
   memcpy(full_msg.get() + 4, buffer.get(), len);
   *((uint32_t*)full_msg.get()) = len;
 
-  write(full_msg, msg_len, boost::bind(&Connection::onHeaderWritten, this, _1), false);
+  write(full_msg, msg_len, boost::bind(&Connection::onHeaderWritten, this, _1));
 }
 
 void Connection::sendHeaderError(const std::string& error_msg)
@@ -377,7 +369,6 @@ void Connection::sendHeaderError(const std::string& error_msg)
   m["error"] = error_msg;
 
   writeHeader(m, boost::bind(&Connection::onErrorHeaderWritten, this, _1));
-  sending_header_error_ = true;
 }
 
 void Connection::onHeaderLengthRead(const ConnectionPtr& conn, const boost::shared_array<uint8_t>& buffer, uint32_t size, bool success)
@@ -396,7 +387,7 @@ void Connection::onHeaderLengthRead(const ConnectionPtr& conn, const boost::shar
                 "predicted in tcpros. that seems highly " \
                 "unlikely, so I'll assume protocol " \
                 "synchronization is lost... it's over.");
-    conn->drop(HeaderError);
+    conn->drop();
   }
 
   read(len, boost::bind(&Connection::onHeaderRead, this, _1, _2, _3, _4));
@@ -412,7 +403,7 @@ void Connection::onHeaderRead(const ConnectionPtr& conn, const boost::shared_arr
   std::string error_msg;
   if (!header_.parse(buffer, size, error_msg))
   {
-    drop(HeaderError);
+    drop();
   }
   else
   {
@@ -420,7 +411,7 @@ void Connection::onHeaderRead(const ConnectionPtr& conn, const boost::shared_arr
     if (header_.getValue("error", error_val))
     {
       ROSCPP_LOG_DEBUG("Received error message in header for connection to [%s]: [%s]", transport_->getTransportInfo().c_str(), error_val.c_str());
-      drop(HeaderError);
+      drop();
     }
     else
     {
@@ -428,7 +419,10 @@ void Connection::onHeaderRead(const ConnectionPtr& conn, const boost::shared_arr
 
       transport_->parseHeader(header_);
 
-      header_func_(conn, header_);
+      if (!header_func_(conn, header_))
+      {
+        drop();
+      }
     }
   }
 
@@ -445,7 +439,7 @@ void Connection::onHeaderWritten(const ConnectionPtr& conn)
 
 void Connection::onErrorHeaderWritten(const ConnectionPtr& conn)
 {
-  drop(HeaderError);
+  drop();
 }
 
 void Connection::setHeaderReceivedCallback(const HeaderReceivedFunc& func)

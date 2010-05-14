@@ -14,7 +14,6 @@
   <depend package="rosnode"/>
   <depend package="rosservice"/>
 
-  <rosdep name="paramiko" />
   <export>
     <rosdoc config="rosdoc.yaml" />
   </export>

@@ -66,17 +66,15 @@ create classes that are children of these implementations.
 from __future__ import with_statement
 import struct, cStringIO, thread, threading, logging, time
 from itertools import chain
-import traceback
 
 import roslib.message
 
 from rospy.core import *
 from rospy.exceptions import ROSSerializationException, TransportTerminated
 from rospy.msg import serialize_message, args_kwds_to_message
-
-from rospy.impl.registration import get_topic_manager, set_topic_manager, Registration, get_registration_listeners
-from rospy.impl.tcpros import get_tcpros_handler, DEFAULT_BUFF_SIZE
-from rospy.impl.transport import DeadTransport
+from rospy.registration import get_topic_manager, set_topic_manager, Registration, get_registration_listeners
+from rospy.tcpros import get_tcpros_handler, DEFAULT_BUFF_SIZE
+from rospy.transport import DeadTransport
 
 _logger = logging.getLogger('rospy.topics')
 

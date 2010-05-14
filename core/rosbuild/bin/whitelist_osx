@@ -60,6 +60,8 @@ rosoct
 rospy_sessions
 rosrb
 gtest
+paramiko
+pycrypto
 wxPython_swig_interface
 wxswig
 xmlrpc++

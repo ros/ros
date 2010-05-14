@@ -123,9 +123,8 @@ macro(_rosbuild_add_gtest exe)
   string(REPLACE "/" "_" _testname ${exe})
 
   # Create target for this test
-  # We use rostest to call the executable to get process control, #1629
   add_custom_target(test_${_testname}
-                    COMMAND rostest --bare --bare-name=${_testname} ${EXECUTABLE_OUTPUT_PATH}/${exe}
+                    COMMAND ${EXECUTABLE_OUTPUT_PATH}/${exe} --gtest_output=xml:${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml
                     DEPENDS ${EXECUTABLE_OUTPUT_PATH}/${exe}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     VERBATIM)
@@ -212,9 +211,8 @@ macro(_rosbuild_add_pyunit file)
   endif("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
 
   # Create target for this test
-  # We use rostest to call the executable to get process control, #1629
   add_custom_target(pyunit_${_testname}
-                    COMMAND ${ARGN} rostest --bare --bare-name=${_testname} -- python ${file} ${_covarg}
+                    COMMAND ${ARGN} python ${file} ${_covarg} --gtest_output=xml:${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml
                     DEPENDS ${file}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     VERBATIM)
@@ -223,34 +221,6 @@ macro(_rosbuild_add_pyunit file)
   add_dependencies(pyunit_${_testname} tests)
 
 endmacro(_rosbuild_add_pyunit)
-
-# Actual signature:
-#  _rosbuild_add_roslaunch_check file var=val var=val...
-macro(_rosbuild_add_roslaunch_check file)
-  # Check that the file exists, #1621
-  set(_file_name _file_name-NOTFOUND)
-  find_file(_file_name ${file} ${PROJECT_SOURCE_DIR} /)
-  if(NOT _file_name)
-    message(FATAL_ERROR "Can't find roslaunch file or directory \"${file}\"")
-  endif(NOT _file_name)
-
-  # Find rostest
-  rosbuild_invoke_rospack("" rostest path find rostest)
-
-  # Create a legal target name, in case the target name has slashes it
-  string(REPLACE "/" "_" _testname ${file})
-  
-  # Create target for this test
-  add_custom_target(roslaunch_check_${_testname}
-                    COMMAND ${rostest_path}/bin/roslaunch-check.py ${file} ${ARGN}
-                    DEPENDS ${file}
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-                    VERBATIM)
-  
-  # Make sure all test programs are built before running this test
-  add_dependencies(roslaunch_check_${_testname} tests)
-  
-endmacro(_rosbuild_add_roslaunch_check)
 
 macro(_rosbuild_wget_and_build tarball tarball_url tarball_dir unpack_cmd configure_cmd make_cmd install_cmd)
   find_package(Wget REQUIRED)

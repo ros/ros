@@ -88,30 +88,14 @@ def lsb_get_version():
 class OSDetectException(roslib.exceptions.ROSLibException): pass
 
 class OSBase:
-    """
-    This defines the API used for OS detection within the os_detect
-    module for roslib.  All OS specific instantiantions must inherit
-    and override these methods.
-    """
     def check_presence(self):
-        """
-        Return if the specific OS which this class is designed to
-        detect is present.  Only one version of this class should return for
-        any version.  
-        """
         raise OSDetectException("check_presence unimplemented")
 
     def get_name(self):
-        """
-        Return the standardized name for this OS.  (ala Ubuntu Hardy Heron = "ubuntu")
-        """
-        raise OSDetectException("get_name unimplemented")
+        raise OSDetectException("check_presence unimplemented")
 
     def get_version(self):
-        """
-        Return the standardized version for this OS. (ala Ubuntu Hardy Heron = "8.04")
-        """
-        raise OSDetectException("get_version unimplemented")
+        raise OSDetectException("check_presence unimplemented")
 
 ###### Debian SPECIALIZATION #########################
 class Debian(OSBase):
@@ -390,9 +374,6 @@ class OSDetect:
     def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), Fedora(), Rhel(), Gentoo(), Cygwin()]):
         self._os_list = [ Override()]
         self._os_list.extend(os_list)
-        for o in self._os_list:
-            if not isinstance(o, OSBase):
-                raise OSDetectException("Class [%s] not derived from OSBase"%o.__class__.__name__)
 
         self._os_class = None
         self._os_name = None

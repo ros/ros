@@ -31,7 +31,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id$
+# Revision $Id: test_pubsub_order.py 2255 2008-09-29 22:37:08Z sfkwc $
 
 NAME = 'test_genpy'
 import roslib; roslib.load_manifest('test_roslib')
@@ -339,7 +339,7 @@ class TestGenpy(unittest.TestCase):
 
     def test_pack(self):
         from roslib.genpy import pack
-        self.assertEquals("buff.write(_struct_3lL3bB.pack(foo, bar))", pack('lllLbbbB', 'foo, bar'))
+        self.assertEquals("buff.write(struct.pack('<3lL3bB', foo, bar))", pack('lllLbbbB', 'foo, bar'))
 
     def test_pack2(self):
         from roslib.genpy import pack2
@@ -347,7 +347,7 @@ class TestGenpy(unittest.TestCase):
 
     def test_unpack(self):
         from roslib.genpy import unpack
-        self.assertEquals("var_x = _struct_I3if2I.unpack(bname)", unpack('var_x', 'IiiifII', 'bname'))
+        self.assertEquals("var_x = struct.unpack('<I3if2I',bname)", unpack('var_x', 'IiiifII', 'bname'))
 
     def test_unpack2(self):
         from roslib.genpy import unpack2
@@ -460,12 +460,12 @@ byte is_calibrated
         self.assertEquals('length = len(foo)', '\n'.join(g))
         # array len serializer writes var
         g = len_serializer_generator('foo', False, True)        
-        self.assertEquals("length = len(foo)\nbuff.write(_struct_I.pack(length))", '\n'.join(g)) 
+        self.assertEquals("length = len(foo)\nbuff.write(struct.pack('<I', length))", '\n'.join(g))
 
         # Test Deserializers
         val = """start = end
 end += 4
-(length,) = _struct_I.unpack(str[start:end])"""
+(length,) = struct.unpack('<I',str[start:end])"""
         # string serializer and array serializer are identical
         g = len_serializer_generator('foo', True, False)
         self.assertEquals(val, '\n'.join(g))
@@ -478,11 +478,13 @@ end += 4
         # Test Serializers
         g = string_serializer_generator('foo', 'string', 'var_name', True)
         self.assertEquals("""length = len(var_name)
+#serialize var_name
 buff.write(struct.pack('<I%ss'%length, length, var_name))""", '\n'.join(g))
 
         for t in ['uint8[]', 'byte[]', 'uint8[10]', 'byte[20]']:
             g = string_serializer_generator('foo', 'uint8[]', 'b_name', True)
             self.assertEquals("""length = len(b_name)
+#serialize b_name
 # - if encoded as a list instead, serialize as bytes instead of string
 if type(b_name) in [list, tuple]:
   buff.write(struct.pack('<I%sB'%length, length, *b_name))
@@ -492,10 +494,12 @@ else:
         # Test Deserializers
         val = """start = end
 end += 4
-(length,) = _struct_I.unpack(str[start:end])
+(length,) = struct.unpack('<I',str[start:end])
+#deserialize var_name
+pattern = '<%ss'%length
 start = end
-end += length
-var_name = str[start:end]"""
+end += struct.calcsize(pattern)
+(var_name,) = struct.unpack(pattern, str[start:end])"""
         # string serializer and array serializer are identical
         g = string_serializer_generator('foo', 'string', 'var_name', False)
         self.assertEquals(val, '\n'.join(g))

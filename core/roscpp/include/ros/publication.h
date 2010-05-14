@@ -58,8 +58,7 @@ public:
             const std::string& _md5sum,
             const std::string& message_definition,
             size_t max_queue,
-            bool latch,
-            bool has_header);
+            bool latch);
 
   ~Publication();
 
@@ -86,13 +85,11 @@ public:
   /**
    * \brief Returns whether or not this publication has any subscribers
    */
-  bool hasSubscribers();
+  bool hasSubscribers() { return !subscriber_links_.empty(); }
   /**
    * \brief Returns the number of subscribers this publication has
    */
-  uint32_t getNumSubscribers();
-
-  void getPublishTypes(bool& serialize, bool& nocopy, const std::type_info& ti);
+  int getNumSubscribers() { return (int)subscriber_links_.size(); }
 
   /**
    * \brief Returns the name of the topic this publication broadcasts to
@@ -115,8 +112,6 @@ public:
    */
   uint32_t getSequence() { return seq_; }
 
-  bool isLatched() { return latch_; }
-
   /**
    * \brief Adds a publisher to our list
    */
@@ -135,16 +130,11 @@ public:
    */
   bool isDropped() { return dropped_; }
 
-  uint32_t incrementSequence();
+  void incrementSequence() { ++seq_; }
 
   size_t getNumCallbacks();
 
   bool isLatching() { return latch_; }
-
-  void publish(SerializedMessage& m);
-  void processPublishQueue();
-
-  bool validateHeader(const Header& h, std::string& error_msg);
 
 private:
   void dropAllConnections();
@@ -164,7 +154,6 @@ private:
   std::string message_definition_;
   size_t max_queue_;
   uint32_t seq_;
-  boost::mutex seq_mutex_;
 
   typedef std::vector<SubscriberCallbacksPtr> V_Callback;
   V_Callback callbacks_;
@@ -177,14 +166,7 @@ private:
   bool dropped_;
 
   bool latch_;
-  bool has_header_;
   SerializedMessage last_message_;
-
-  uint32_t intraprocess_subscriber_count_;
-
-  typedef std::vector<SerializedMessage> V_SerializedMessage;
-  V_SerializedMessage publish_queue_;
-  boost::mutex publish_queue_mutex_;
 };
 
 }

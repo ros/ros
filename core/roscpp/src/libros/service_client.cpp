@@ -55,7 +55,7 @@ void ServiceClient::Impl::shutdown()
 
     if (server_link_)
     {
-      server_link_->getConnection()->drop(Connection::Destructing);
+      server_link_->getConnection()->drop();
       server_link_.reset();
     }
   }
@@ -106,7 +106,7 @@ ServiceClient::~ServiceClient()
 
 }
 
-bool ServiceClient::call(const SerializedMessage& req, SerializedMessage& resp, const std::string& service_md5sum)
+bool ServiceClient::call(Message& req, Message& resp, const std::string& service_md5sum)
 {
   if (service_md5sum != impl_->service_md5sum_)
   {
@@ -141,7 +141,7 @@ bool ServiceClient::call(const SerializedMessage& req, SerializedMessage& resp, 
     }
   }
 
-  bool ret = link->call(req, resp);
+  bool ret = link->call(&req, &resp);
   link.reset();
 
   return ret;

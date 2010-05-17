@@ -141,6 +141,9 @@ macro(rosbuild_init)
   # Check that manifest.xml is valid
   _rosbuild_check_manifest()
 
+  # Check that the package directory is correct
+  _rosbuild_check_package_location()
+
   # Add ROS_PACKAGE_NAME define
   add_definitions(-DROS_PACKAGE_NAME='\"${PROJECT_NAME}\"')
 

@@ -101,6 +101,25 @@ macro(_rosbuild_check_manifest)
 
 endmacro(_rosbuild_check_manifest)
 
+# Check that the directory where we're building is also where rospack
+# thinks that the package lives, to avoid esoteric build errors.
+macro(_rosbuild_check_package_location)
+  # Ask rospack where our package is
+  rosbuild_find_ros_package(${PROJECT_NAME})
+  # Compare to where we are
+  execute_process(
+    COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/check_same_directories.py ${${PROJECT_NAME}_PACKAGE_PATH} ${PROJECT_SOURCE_DIR}
+    OUTPUT_VARIABLE _rosbuild_check_package_location_error
+    ERROR_VARIABLE _rosbuild_check_package_location_error
+    RESULT_VARIABLE _rosbuild_check_package_location_failed
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(_rosbuild_check_package_location_failed)
+    message(FATAL_ERROR "[rosbuild] rospack found package \"${PROJECT_NAME}\" at \"${${PROJECT_NAME}_PACKAGE_PATH}\", but the current directory is \"${PROJECT_SOURCE_DIR}\".  You should double-check your ROS_PACKAGE_PATH to ensure that packages are found in the correct precedence order.")
+  endif(_rosbuild_check_package_location_failed)
+endmacro(_rosbuild_check_package_location)
+
 # helper function to register check that results were generated (#580)
 macro(_rosbuild_check_rostest_xml_result test_name test_file)
   add_custom_target(${test_name}_result

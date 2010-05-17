@@ -5,6 +5,7 @@
   <review status="experimental" notes=""/>
   <depend package="roslib"/>
   <depend package="roslang"/>
+  <depend package="std_srvs"/>
   <export>
     <roslang cmake="${prefix}/cmake/roslisp.cmake"/>
   </export>

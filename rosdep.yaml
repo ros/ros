@@ -480,6 +480,7 @@ fltk:
   freebsd: fltk
 epydoc:
   ubuntu: python-epydoc
+  debian: python-epydoc
   macports: py25-epydoc
   freebsd: epydoc
 paramiko:

@@ -817,9 +817,9 @@ class Bag(object):
             self._file     = f
             self._filename = None
         else:
-            self._file     = open(f, 'wb')
+            self._file     = open(f, 'w+b')
             self._filename = f
-            
+
         self._mode = 'w'
 
         self._version = 200
@@ -837,13 +837,13 @@ class Bag(object):
             self._filename = None
         else:        
             try:
-                # Test if the file already exists.
+                # Test if the file already exists
                 open(f, 'r').close()
 
-                # File exists: open in read with update mode.
+                # File exists: open in read with update mode
                 self._file = open(f, 'r+b')
             except:
-                # File doesn't exist: open in write mode.
+                # File doesn't exist: open in write mode
                 self._file = open(f, 'w+b')
         
             self._filename = f

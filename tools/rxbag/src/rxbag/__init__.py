@@ -36,5 +36,5 @@
 # Import rxbag main to be used by the $ROS_ROOT/bin/rxbag
 from rxbag_main import rxbag_main
 
-from bag_helper import BagHelper
+import bag_helper
 from message_view import MessageView, TimelineRenderer, TopicMessageView

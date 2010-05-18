@@ -51,23 +51,20 @@ else:
     sys.exit(1)
 import wx
 import wx.lib.wxcairo
-
-# This is a crazy hack to get this to work on 64-bit systems
-if 'wxMac' in wx.PlatformInfo:
-    pass # Implement if necessary
-elif 'wxMSW' in wx.PlatformInfo:
-    pass # Implement if necessary
-elif 'wxGTK' in wx.PlatformInfo:
+if 'wxGTK' in wx.PlatformInfo:
+    # Workaround for 64-bit systems
     import ctypes
     gdkLib = wx.lib.wxcairo._findGDKLib()
     gdkLib.gdk_cairo_create.restype = ctypes.c_void_p
+
+import rosbag
 
 import util.base_frame
 import timeline
 
 class RxBagApp(wx.App):
     def __init__(self, input_files, options):
-        self.input_files = [input_files[0]]
+        self.input_files = input_files
         self.options     = options
 
         wx.App.__init__(self)
@@ -80,7 +77,19 @@ class RxBagApp(wx.App):
                 frame_title = 'rxbag - [%d bags]' % len(self.input_files)
     
             frame = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline', title=frame_title)
-            timeline_panel = timeline.TimelinePanel(self.input_files, self.options, frame, -1)
+            timeline_panel = timeline.TimelinePanel(frame, -1)
+
+            if self.options.record:
+                connect_to_ros('rxbag', 3)
+                timeline_panel.timeline.record_bag()
+            else:
+                for input_file in self.input_files:
+                    try:
+                        bag = rosbag.Bag(input_file)
+                        timeline_panel.timeline.add_bag(bag)
+                    except Exception, ex:
+                        print >> sys.stderr, 'Error loading [%s]: %s' % (input_file, str(ex))
+
             frame.Show()
             self.SetTopWindow(frame)
             
@@ -91,48 +100,49 @@ class RxBagApp(wx.App):
         return True
 
 def connect_to_ros(node_name, init_timeout):
-    # Attempt to connect to master node
+    # Attempt to connect to master node                                                                                                                                
     class InitNodeThread(threading.Thread):
         def __init__(self):
             threading.Thread.__init__(self)
             self.setDaemon(True)
             self.inited = False
-            
+            self.init_cv = threading.Condition()
+
         def run(self):
-            rospy.loginfo('Attempting to connect to master node...')
+            rospy.loginfo('Master found.  Connecting...')
             rospy.init_node(node_name, anonymous=True, disable_signals=True)
+            self.init_cv.acquire()
             self.inited = True
+            self.init_cv.notify_all()
+            self.init_cv.release()
 
     try:
-        # Check whether ROS master is running
+        # Check whether ROS master is running                                                                                                                          
         master = rospy.get_master()
         master.getPid()
-        
-        # If so (i.e. no exception), attempt to initialize node
+
+        # If so (i.e. no exception), attempt to initialize node                                                                                                        
         init_thread = InitNodeThread()
+        init_thread.init_cv.acquire()
         init_thread.start()
-        time.sleep(init_timeout)
+        init_thread.init_cv.wait(init_timeout)
 
         if init_thread.inited:
             rospy.core.register_signals()
-            rospy.loginfo('Connected to master node.')
+            rospy.loginfo('Connected to ROS.')
         else:
-            rospy.logerr('Giving up. Couldn\'t connect to master node.')
+            rospy.logerr('Couldn\'t connect to ROS.  Running in unconnected mode.')
     except:
-        rospy.loginfo('Master not found.')
+        rospy.loginfo('Master not found.  Running in unconnected mode.')
 
 def rxbag_main():
     # Parse command line for input files and options
-    usage = "usage: %prog [options] BAG_FILE.bag"
+    usage = "usage: %prog [options] BAG_FILE1 [BAG_FILE2 ...]"
     parser = optparse.OptionParser(usage=usage)
-    #parser.add_option('-t', '--init-timeout', action='store', default=0.5, help='timeout in secs for connecting to master node')   
+    parser.add_option('-r', '--record', dest='record', default=False, action='store_true', help='record to a bag file')
     options, args = parser.parse_args(sys.argv[1:])
-    if len(args) == 0:
-        parser.print_help()
-        return
-    input_files = args[:]
 
-    #connect_to_ros('rxbag', options.init_timeout)
+    input_files = args[:]
 
     # Start application
     app = RxBagApp(input_files, options)

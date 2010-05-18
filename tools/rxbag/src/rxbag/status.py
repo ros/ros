@@ -37,8 +37,8 @@ import roslib; roslib.load_manifest(PKG)
 
 import wx
 
+import bag_helper
 from util.layer import Layer
-from bag_helper import BagHelper
 
 class StatusLayer(Layer):
     def __init__(self, parent, title, timeline, x, y, width, height):
@@ -52,7 +52,7 @@ class StatusLayer(Layer):
 
         t = roslib.rostime.Time.from_sec(self.timeline.playhead)
 
-        s = BagHelper.stamp_to_str(t)
+        s = bag_helper.stamp_to_str(t)
         
         spd = self.timeline.play_speed
         spd_str = None

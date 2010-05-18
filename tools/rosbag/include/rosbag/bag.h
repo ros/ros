@@ -352,8 +352,9 @@ void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& strea
     case 102:
     {
         readMessageDataRecord102(index_entry.chunk_pos, header);
+        data_size = record_buffer_.getSize();
         if (data_size > 0)
-            memcpy(stream.advance(data_size), record_buffer_.getData(), record_buffer_.getSize());
+            memcpy(stream.advance(data_size), record_buffer_.getData(), data_size);
         break;
     }
     default:

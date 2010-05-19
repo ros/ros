@@ -31,5 +31,9 @@ Pieces of rxtools use some icons from the <a href="http://www.famfamfam.com/lab/
     <rosdep name="python-matplotlib"/>
     <rosdep name="wxpython"/>
 
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>
 

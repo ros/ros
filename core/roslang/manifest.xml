@@ -11,5 +11,9 @@
   <license>BSD</license>
   <review status="Doc reviewed" notes="2010/01/10"/>
   <url>http://ros.org/wiki/roslang</url>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>
 

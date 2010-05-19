@@ -383,12 +383,33 @@ class RosMakeAll:
         output = output + "----------------\n" + "%.2f Cumulative,  %.2f Elapsed, %.2f Speedup \n"%(total, elapsed_time, float(total) / float(elapsed_time))
         return output
 
+    @staticmethod
+    def terminal_width():
+        """Estimate the width of the terminal"""
+        width = 0
+        try:
+            import struct, fcntl, termios
+            s = struct.pack('HHHH', 0, 0, 0, 0)
+            x = fcntl.ioctl(1, termios.TIOCGWINSZ, s)
+            width = struct.unpack('HHHH', x)[1]
+        except IOError:
+            pass
+        if width <= 0:
+            try:
+                width = int(os.environ['COLUMNS'])
+            except:
+                pass
+        if width <= 0:
+            width = 80
+    
+        return width
+
     def print_all(self, s, thread_name=None):
         if thread_name is None:
-            sys.stdout.write("[ rosmake ] %s\n"%s)
+            sys.stdout.write("\r[ rosmake ] %s"%s)
             sys.stdout.flush()
         else:
-            sys.stdout.write("[rosmake-%s] %s\n"%(thread_name, s))
+            sys.stdout.write("\r[rosmake-%s] %s"%(thread_name, s))
             sys.stdout.flush()
   
     def print_verbose(self, s, thread_name=None):

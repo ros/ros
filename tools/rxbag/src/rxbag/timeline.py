@@ -117,32 +117,44 @@ class TimelinePanel(LayerPanel):
 
         tb.Realize()
 
-class SubscriberHelper(object):
-    def __init__(self, timeline, topic, pytype):
-        self.timeline   = timeline
-        self.subscriber = rospy.Subscriber(topic, pytype, self.callback)
-        self.topic      = topic
-        self.pytype     = pytype
-        
-        self.last_update = time.time()
+class IndexCacheThread(threading.Thread):
+    def __init__(self, timeline, period=0.5):
+        threading.Thread.__init__(self)
 
-    def callback(self, msg):
-        with self.timeline._bag_lock:
-            self.timeline.bag_file.write(self.topic, msg)
-            
-        self.timeline.invalidated_caches.add(self.topic)
+        self.setDaemon(True)
         
-        now = time.time()
-        if now - self.last_update > 0.1:
+        self.timeline  = timeline
+        self.period    = period
+        self.stop_flag = False
+        
+        self.start()
+
+    def run(self):
+        while not self.stop_flag:
+            topics = self.timeline.topics
+            if len(topics) == 0:
+                time.sleep(1.0)
+                continue
+            
+            with self.timeline.index_cache_lock:
+                for topic in topics:
+                    self.timeline._update_index_cache(topic)
+
             wx.CallAfter(self.timeline.invalidate)
-            self.last_update = now
+
+            time.sleep(self.period)
+
+    def stop(self): self.stop_flag = True
 
 class MasterCheckThread(threading.Thread):
     def __init__(self, timeline, period=5):
         threading.Thread.__init__(self)
+
+        self.setDaemon(True)
         
-        self.timeline = timeline
-        self.period   = period
+        self.timeline  = timeline
+        self.period    = period
+        self.stop_flag = False
         
         self.subscriber_helpers = {}
         
@@ -153,7 +165,7 @@ class MasterCheckThread(threading.Thread):
     def run(self):
         master = rosgraph.masterapi.Master('rxbag')
         
-        while True:
+        while not self.stop_flag:
             # Subscribe to any new topics
             for topic, datatype in master.getPublishedTopics(''):
                 if topic not in self.subscriber_helpers and topic not in self.failed_topics:
@@ -169,13 +181,85 @@ class MasterCheckThread(threading.Thread):
             # Wait a while
             time.sleep(self.period)
 
+        for subscriber_helper in self.subscriber_helpers.values():
+            subscriber_helper.subscriber.unregister()
+
+    def stop(self): self.stop_flag = True
+
+class SubscriberHelper(object):
+    def __init__(self, timeline, topic, pytype):
+        self.timeline   = timeline
+        self.subscriber = rospy.Subscriber(topic, pytype, self.callback)
+        self.topic      = topic
+        self.pytype     = pytype
+        
+        self.last_update = time.time()
+
+    def callback(self, msg):
+        # Write the message to the bag file
+        with self.timeline._bag_lock:
+            self.timeline.bag_file.write(self.topic, msg)
+
+        # Invalidate the topic
+        self.timeline.invalidated_caches.add(self.topic)
+
+        # Periodically invalidate the timeline
+        now = time.time()
+        if now - self.last_update > 2.0:
+            wx.CallAfter(self.timeline.invalidate)
+            self.last_update = now
+
+class PlayThread(threading.Thread):
+    def __init__(self, timeline):
+        threading.Thread.__init__(self)
+
+        self.setDaemon(True)
+
+        self.timeline  = timeline
+        self.stop_flag = False
+        
+        self.start()
+
+    def run(self):
+        self.last_frame, self.last_playhead = None, None
+
+        try:
+            while not self.stop_flag:
+                wx.CallAfter(self.step)
+                time.sleep(0.04)  # 25 Hz
+        except:
+            pass
+
+    def step(self):
+        if self.timeline.play_speed == 0.0:
+            self.last_frame    = None
+            self.last_playhead = None
+        else:
+            now = time.time()
+            if self.last_frame and self.timeline.playhead == self.last_playhead:
+                new_playhead = self.timeline.playhead + (now - self.last_frame) * self.timeline.play_speed
+
+                start_stamp = self.timeline.start_stamp
+                end_stamp   = self.timeline.end_stamp
+                if new_playhead > end_stamp:
+                    new_playhead = start_stamp
+                elif new_playhead < start_stamp:
+                    new_playhead = end_stamp
+
+                self.timeline.set_playhead(new_playhead)
+
+            self.last_frame    = now
+            self.last_playhead = self.timeline.playhead
+
+    def stop(self): self.stop_flag = True
+
 class Timeline(Layer):
     name = 'Timeline'
     
     def __init__(self, parent, title, x, y, width, height):
         Layer.__init__(self, parent, title, x, y, width, height)
 
-        self._bag_lock = threading.Lock()
+        self._bag_lock = threading.RLock()
 
         self.bags = []
         self.bag_file = None  # @todo: remove
@@ -237,65 +321,20 @@ class Timeline(Layer):
         self.stamp_left    = None
         self.stamp_right   = None
         self.playhead      = None
-        self.playhead_lock = threading.Lock()
+        self.playhead_lock = threading.RLock()
         
         self.views = []
 
         self.listeners = {}
 
         self.playhead_positions = None
+        self.play_speed  = 0.0
+        self.play_thread = PlayThread(self)
 
-        class PlayThread(threading.Thread):
-            def __init__(self, timeline):
-                threading.Thread.__init__(self)
-
-                self.setDaemon(True)
-
-                self.timeline  = timeline
-                self.stop_flag = False
-                
-                self.start()
-
-            def run(self):
-                self.last_frame, self.last_playhead = None, None
-
-                try:
-                    while not self.stop_flag:
-                        wx.CallAfter(self.step)
-                        time.sleep(0.04)  # 25 Hz
-                except:
-                    pass
-
-            def step(self):
-                if self.timeline.play_speed == 0.0:
-                    self.last_frame    = None
-                    self.last_playhead = None
-                else:
-                    now = time.time()
-                    if self.last_frame and self.timeline.playhead == self.last_playhead:
-                        new_playhead = self.timeline.playhead + (now - self.last_frame) * self.timeline.play_speed
-    
-                        start_stamp = self.timeline.start_stamp
-                        end_stamp   = self.timeline.end_stamp
-                        if new_playhead > end_stamp:
-                            new_playhead = start_stamp
-                        elif new_playhead < start_stamp:
-                            new_playhead = end_stamp
-    
-                        self.timeline.set_playhead(new_playhead)
-
-                    self.last_frame    = now
-                    self.last_playhead = self.timeline.playhead
-
-            def stop(self):
-                self.stop_flag = True
-
-        self.play_speed = 0.0
-
-        self.message_history_cache = {}
+        self.index_cache_lock   = threading.RLock()
+        self.index_cache        = {}
         self.invalidated_caches = set()
-
-        self.play_thread         = PlayThread(self)
+        self.index_cache_thread = IndexCacheThread(self)
         
         self.master_check_thread = None
         
@@ -314,47 +353,71 @@ class Timeline(Layer):
     @property
     def start_stamp(self):
         with self._bag_lock:
+            if not self.bag_file:
+                return 0.0
             return bag_helper.get_start_stamp(self.bag_file)
 
     @property
     def end_stamp(self):
         with self._bag_lock:
+            if not self.bag_file:
+                return 0.0
             return bag_helper.get_end_stamp(self.bag_file)
 
     @property
     def topics(self):
         with self._bag_lock:
+            if not self.bag_file:
+                return []
             return bag_helper.get_topics(self.bag_file)
 
     @property
     def topics_by_datatype(self):
         with self._bag_lock:
+            if not self.bag_file:
+                return {}
             return bag_helper.get_topics_by_datatype(self.bag_file)
 
     def get_datatype(self, topic):
         with self._bag_lock:
+            if not self.bag_file:
+                return None
             return bag_helper.get_datatype(self.bag_file, topic)
 
     def get_connections(self, topic):
         with self._bag_lock:
+            if not self.bag_file:
+                return []
             return list(self.bag_file._get_connections(topic))
 
     def get_entry(self, t, topic):
         with self._bag_lock:
+            if not self.bag_file:
+                return None
             return self.bag_file._get_entry(t, self.bag_file._get_connections(topic))
 
     def get_entries(self, connections, start_time, end_time):
         with self._bag_lock:
+            if not self.bag_file:
+                return []
             return self.bag_file._get_entries(connections, start_time, end_time)
 
     def read_message(self, position):
         with self._bag_lock:
+            if not self.bag_file:
+                return None
             return self.bag_file._read_message(position)
 
     ##
 
     def on_close(self, event):
+        if self.master_check_thread:
+            self.master_check_thread.stop()
+        self.index_cache_thread.stop()
         self.play_thread.stop()
+
+        if self.bag_file:
+            self.bag_file.close()
 
     ### Views / listeners
 
@@ -748,25 +811,21 @@ class Timeline(Layer):
 
     def _draw_topic_histories(self, dc):
         for topic in sorted(self.history_bounds.keys()):
-            if topic not in self.message_history_cache:
-                self._draw_topic_history(dc, topic)
-                self.invalidate()
-                break
-            else:
-                self._draw_topic_history(dc, topic)
+            self._draw_topic_history(dc, topic)
 
-    def _update_message_cache(self, topic):
-        if topic not in self.message_history_cache:
+    def _update_index_cache(self, topic):
+        if topic not in self.index_cache:
             # Don't have any cache of messages in this topic
             start_time = roslib.rostime.Time.from_sec(max(0.0, self.start_stamp))
             topic_cache = []
-            self.message_history_cache[topic] = topic_cache
+            self.index_cache[topic] = topic_cache
         else:
+            topic_cache = self.index_cache[topic]               
+
             # Check if the cache has been invalidated
             if topic not in self.invalidated_caches:
-                return
+                return topic_cache
             
-            topic_cache = self.message_history_cache[topic]               
             start_time = roslib.rostime.Time.from_sec(max(0.0, topic_cache[-1]))
         
         end_time = roslib.rostime.Time.from_sec(max(0.0, self.end_stamp))
@@ -774,7 +833,10 @@ class Timeline(Layer):
         for entry in self.get_entries(self.get_connections(topic), start_time, end_time):
             topic_cache.append(entry.time.to_sec())
 
-        self.invalidated_caches.remove(topic)
+        if topic in self.invalidated_caches:
+            self.invalidated_caches.remove(topic)
+            
+        return topic_cache
 
     def _draw_topic_history(self, dc, topic):
         """
@@ -797,9 +859,11 @@ class Timeline(Layer):
         if msg_combine_interval is None:
             msg_combine_interval = self.map_dx_to_dstamp(self.default_msg_combine_px)
 
-        self._update_message_cache(topic)
-        
-        all_stamps = self.message_history_cache[topic]
+        # Get the cache
+        with self.index_cache_lock:
+            if topic not in self.index_cache:
+                return
+            all_stamps = self.index_cache[topic]
 
         start_index = bisect.bisect_left(all_stamps, self.stamp_left)
         end_index   = bisect.bisect_left(all_stamps, self.stamp_right)

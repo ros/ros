@@ -198,7 +198,7 @@ class SubscriberHelper(object):
     def callback(self, msg):
         # Write the message to the bag file
         with self.timeline._bag_lock:
-            self.timeline.bag_file.write(self.topic, msg)
+            self.timeline.recording_bag.write(self.topic, msg)
 
         # Invalidate the topic
         self.timeline.invalidated_caches.add(self.topic)
@@ -260,9 +260,8 @@ class Timeline(Layer):
         Layer.__init__(self, parent, title, x, y, width, height)
 
         self._bag_lock = threading.RLock()
-
         self.bags = []
-        self.bag_file = None  # @todo: remove
+        self.recording_bag = None
 
         ## Rendering parameters
 
@@ -283,14 +282,17 @@ class Timeline(Layer):
         self.bag_end_width     = 3
         self.time_tick_height  = 3
         
-        self.default_datatype_color = wx.Colour(0, 0, 0)
+        self.minor_divisions_color_tick = (0.5, 0.5, 0.5, 0.3)
+        self.minor_divisions_color      = (0.6, 0.6, 0.6, 0.3)
+
+        self.default_datatype_color = (0.0, 0.0, 0.0)
         self.datatype_colors = {
-            'sensor_msgs/CameraInfo':            wx.Colour(  0,   0, 150),
-            'sensor_msgs/Image':                 wx.Colour(  0,  80,  80),
-            'sensor_msgs/LaserScan':             wx.Colour(150,   0,   0),
-            'pr2_msgs/LaserScannerSignal':       wx.Colour(150,   0,   0),
-            'pr2_mechanism_msgs/MechanismState': wx.Colour(  0, 150,   0),
-            'tf/tfMessage':                      wx.Colour(  0, 150,   0),
+            'sensor_msgs/CameraInfo':            (  0,   0, 0.6),
+            'sensor_msgs/Image':                 (  0, 0.3, 0.3),
+            'sensor_msgs/LaserScan':             (0.6,   0,   0),
+            'pr2_msgs/LaserScannerSignal':       (0.6,   0,   0),
+            'pr2_mechanism_msgs/MechanismState': (  0, 0.6,   0),
+            'tf/tfMessage':                      (  0, 0.6,   0),
         }
         self.default_msg_combine_px = 1.0
 
@@ -323,13 +325,13 @@ class Timeline(Layer):
         self.playhead      = None
         self.playhead_lock = threading.RLock()
         
+        self.play_thread        = PlayThread(self)
+        self.play_speed         = 0.0
+        self.playhead_positions = None
+
         self.views = []
 
         self.listeners = {}
-
-        self.playhead_positions = None
-        self.play_speed  = 0.0
-        self.play_thread = PlayThread(self)
 
         self.index_cache_lock   = threading.RLock()
         self.index_cache        = {}
@@ -342,71 +344,100 @@ class Timeline(Layer):
 
     def record_bag(self):
         self.master_check_thread = MasterCheckThread(self)
-
-        self.bag_file = rosbag.Bag('rxbag.bag', 'w')
+        self.recording_bag = rosbag.Bag('rxbag.bag', 'w')
 
     def add_bag(self, bag):
+        print 'adding bag ' + bag.filename
         self.bags.append(bag)
-        
-        self.bag_file = bag
+
+        # Invalidate entire index cache for all topics in this bag
+        with self.index_cache_lock:
+            for topic in bag_helper.get_topics(bag):
+                if topic in self.index_cache:
+                    print 'removing index for ' + topic
+                    del self.index_cache[topic]
 
     @property
     def start_stamp(self):
         with self._bag_lock:
-            if not self.bag_file:
-                return 0.0
-            return bag_helper.get_start_stamp(self.bag_file)
+            start_stamp = None
+            for bag in self.bags:
+                bag_start_stamp = bag_helper.get_start_stamp(bag)
+                if not bag_start_stamp:
+                    continue
+                if not start_stamp:
+                    start_stamp = bag_start_stamp
+                else:
+                    start_stamp = min(start_stamp, bag_start_stamp)
+            return start_stamp
 
     @property
     def end_stamp(self):
         with self._bag_lock:
-            if not self.bag_file:
-                return 0.0
-            return bag_helper.get_end_stamp(self.bag_file)
+            end_stamp = 0.0
+            for bag in self.bags:
+                bag_end_stamp = bag_helper.get_end_stamp(bag)
+                if not bag_end_stamp:
+                    continue
+                if not end_stamp:
+                    end_stamp = bag_end_stamp
+                else:
+                    end_stamp = max(end_stamp, bag_end_stamp)
+            return end_stamp
 
     @property
     def topics(self):
         with self._bag_lock:
-            if not self.bag_file:
-                return []
-            return bag_helper.get_topics(self.bag_file)
+            topics = set()
+            for bag in self.bags:
+                for topic in bag_helper.get_topics(bag):
+                    topics.add(topic)
+            return sorted(topics)
 
     @property
     def topics_by_datatype(self):
         with self._bag_lock:
-            if not self.bag_file:
-                return {}
-            return bag_helper.get_topics_by_datatype(self.bag_file)
+            topics_by_datatype = {}
+            for bag in self.bags:
+                for datatype, topics in bag_helper.get_topics_by_datatype(bag).items():
+                    topics_by_datatype.setdefault(datatype, []).extend(topics)
+            return topics_by_datatype
 
     def get_datatype(self, topic):
         with self._bag_lock:
-            if not self.bag_file:
-                return None
-            return bag_helper.get_datatype(self.bag_file, topic)
+            datatype = None
+            for bag in self.bags:
+                bag_datatype = bag_helper.get_datatype(bag, topic)
+                if datatype and bag_datatype and (bag_datatype != datatype):
+                    raise Exception('topic %s has multiple datatypes: %s and %s' % (topic, datatype, bag_datatype))
+                datatype = bag_datatype
+            return datatype
 
-    def get_connections(self, topic):
+    def get_entries(self, topic, start_time, end_time):
         with self._bag_lock:
-            if not self.bag_file:
-                return []
-            return list(self.bag_file._get_connections(topic))
+            from rosbag import bag
+            
+            bag_entries = []
+            for b in self.bags:
+                connections = list(b._get_connections(topic))
+                bag_entries.append(b._get_entries(connections, start_time, end_time))
+
+            for entry, _ in bag._mergesort(bag_entries, key=lambda entry: entry.time):
+                yield entry
 
     def get_entry(self, t, topic):
         with self._bag_lock:
-            if not self.bag_file:
-                return None
-            return self.bag_file._get_entry(t, self.bag_file._get_connections(topic))
+            entry_bag, entry = None, None
+            for bag in self.bags:
+                bag_entry = bag._get_entry(t, bag._get_connections(topic))
+                if bag_entry and (not entry or bag_entry.time > entry.time):
+                    entry_bag = bag
+                    entry = bag_entry
+            return entry_bag, entry
 
-    def get_entries(self, connections, start_time, end_time):
+    def read_message(self, bag, position):
         with self._bag_lock:
-            if not self.bag_file:
-                return []
-            return self.bag_file._get_entries(connections, start_time, end_time)
-
-    def read_message(self, position):
-        with self._bag_lock:
-            if not self.bag_file:
-                return None
-            return self.bag_file._read_message(position)
+            return bag._read_message(position)
 
     ##
 
@@ -416,8 +447,8 @@ class Timeline(Layer):
         self.index_cache_thread.stop()
         self.play_thread.stop()
 
-        if self.bag_file:
-            self.bag_file.close()
+        if self.recording_bag:
+            self.recording_bag.close()
 
     ### Views / listeners
 
@@ -612,9 +643,9 @@ class Timeline(Layer):
             
             self.playhead_positions = {}
             for topic in self.topics:
-                entry = self.get_entry(playhead_time, topic)
+                bag, entry = self.get_entry(playhead_time, topic)
                 if entry:
-                    self.playhead_positions[topic] = entry.position
+                    self.playhead_positions[topic] = (bag, entry.position)
 
             self._update_message_view()
 
@@ -629,7 +660,7 @@ class Timeline(Layer):
         self.resize(w - self.x, h - self.y)   # resize layer to fill client area
 
     def paint(self, dc):
-        if not self.bag_file or len(self.topics) == 0:
+        if len(self.bags) == 0 or len(self.topics) == 0:
             return
 
         if self.stamp_left is None:
@@ -761,13 +792,13 @@ class Timeline(Layer):
     def _draw_minor_divisions(self, dc, stamps, start_stamp, division):
         xs = [self.map_stamp_to_x(stamp) for stamp in stamps]
 
-        dc.set_source_rgba(0.5, 0.5, 0.5, 0.3)
+        dc.set_source_rgba(*self.minor_divisions_color_tick)
         for x in xs:
             dc.move_to(x, self.history_top - self.time_tick_height)
             dc.line_to(x, self.history_top)
         dc.stroke()
 
-        dc.set_source_rgba(0.6, 0.6, 0.6, 0.3)
+        dc.set_source_rgba(*self.minor_divisions_color)
         for x in xs:
             dc.move_to(x, self.history_top)
             dc.line_to(x, self.history_bottom)
@@ -827,10 +858,10 @@ class Timeline(Layer):
                 return topic_cache
             
             start_time = roslib.rostime.Time.from_sec(max(0.0, topic_cache[-1]))
-        
+
         end_time = roslib.rostime.Time.from_sec(max(0.0, self.end_stamp))
 
-        for entry in self.get_entries(self.get_connections(topic), start_time, end_time):
+        for entry in self.get_entries(topic, start_time, end_time):
             topic_cache.append(entry.time.to_sec())
 
         if topic in self.invalidated_caches:
@@ -870,13 +901,12 @@ class Timeline(Layer):
 
         # Set pen based on datatype
         datatype_color = self.datatype_colors.get(datatype, self.default_datatype_color)
-        datatype_rgb = datatype_color.red / 255.0, datatype_color.green / 255.0, datatype_color.blue / 255.0
 
         # Iterate through regions of connected messages
         width_interval = self.history_width / (self.stamp_right - self.stamp_left)
 
         dc.set_line_width(1)
-        dc.set_source_rgb(*datatype_rgb) 
+        dc.set_source_rgb(*datatype_color) 
         for (stamp_start, stamp_end) in self._find_regions(all_stamps[start_index:end_index], self.map_dx_to_dstamp(self.default_msg_combine_px)):
             region_x_start = self.history_left + (stamp_start - self.stamp_left) * width_interval
             region_x_end   = self.history_left + (stamp_end   - self.stamp_left) * width_interval
@@ -1012,9 +1042,6 @@ class Timeline(Layer):
         if not self.contains(*self.clicked_pos):
             return
 
-        if not self.bag_file:
-            return
-
         self.parent.PopupMenu(TimelinePopupMenu(self.parent, self), self.clicked_pos)
 
     def on_mousewheel(self, event):
@@ -1066,10 +1093,10 @@ class Timeline(Layer):
         msgs = {}
         for topic in self.playhead_positions:
             if topic in self.listeners:
-                playhead_position = self.playhead_positions[topic]
+                bag, playhead_position = self.playhead_positions[topic]
                 if playhead_position is not None:
                     # Load the message
-                    msgs[topic] = self.read_message(playhead_position)
+                    msgs[topic] = (bag, self.read_message(bag, playhead_position))
                     continue
 
             msgs[topic] = None
@@ -1080,11 +1107,11 @@ class Timeline(Layer):
             if not topic_listeners:
                 continue
 
-            msg_data = msgs.get(topic)
+            bag, msg_data = msgs.get(topic)
             if msg_data:
                 for listener in topic_listeners:
                     try:
-                        listener.message_viewed(self.bag_file, msg_data)
+                        listener.message_viewed(bag, msg_data)
                     except wx.PyDeadObjectError:
                         self.remove_listener(topic, listener)
             else:

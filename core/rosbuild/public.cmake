@@ -847,15 +847,43 @@ macro(rosbuild_download_test_data _url _filename)
 
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname download_data_${_filename})
-  add_custom_target(${_testname}
+  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_filename} 
                      COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
                      VERBATIM)
+  add_custom_target(${_testname} DEPENDS ${PROJECT_SOURCE_DIR}/${_filename})
   # Redeclaration of target is to workaround bug in 2.4.6
   if(CMAKE_MINOR_VERSION LESS 6)
     add_custom_target(tests)
   endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(tests ${_testname})
 endmacro(rosbuild_download_test_data)
+
+# There's an optional 3rd arg, which is a target that should be made to
+# depend on the result of untarring the file (can be ALL).
+macro(rosbuild_untar_file _filename _unpacked_name)
+  get_filename_component(unpack_dir ${_filename} PATH)
+  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_unpacked_name}
+                     COMMAND rm -rf ${PROJECT_SOURCE_DIR}/${_unpacked_name}
+                     COMMAND tar xvCf ${unpack_dir} ${PROJECT_SOURCE_DIR}/${_filename}
+                     COMMAND touch -c ${PROJECT_SOURCE_DIR}/${_unpacked_name}
+                     DEPENDS ${PROJECT_SOURCE_DIR}/${_filename}
+                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                     VERBATIM)
+  string(REPLACE "/" "_" _target_name untar_file_${_filename}_${_unpacked_name})
+
+  if("${ARGN}" STREQUAL "ALL")
+    add_custom_target(${_target_name} ALL DEPENDS ${PROJECT_SOURCE_DIR}/${_unpacked_name})
+  else("${ARGN}" STREQUAL "ALL")
+    add_custom_target(${_target_name} DEPENDS ${PROJECT_SOURCE_DIR}/${_unpacked_name})
+    if(NOT "${ARGN}" STREQUAL "")
+      # Redeclaration of target is to workaround bug in 2.4.6
+      if(CMAKE_MINOR_VERSION LESS 6)
+        add_custom_target(${ARGN})
+      endif(CMAKE_MINOR_VERSION LESS 6)
+      add_dependencies(${ARGN} ${_target_name})
+    endif(NOT "${ARGN}" STREQUAL "")
+  endif("${ARGN}" STREQUAL "ALL")
+endmacro(rosbuild_untar_file)
 
 # Macro to download data on the all target
 # The real signature is:
@@ -866,9 +894,10 @@ macro(rosbuild_download_data _url _filename)
   endif("${ARGN}" STREQUAL "")
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname download_data_${_filename})
-  add_custom_target(${_testname} ALL
+  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_filename}
                     COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
                     VERBATIM)
+  add_custom_target(${_testname} ALL DEPENDS ${PROJECT_SOURCE_DIR}/${_filename})
 endmacro(rosbuild_download_data)
 
 macro(rosbuild_add_openmp_flags target)

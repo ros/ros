@@ -60,44 +60,24 @@ if 'wxGTK' in wx.PlatformInfo:
 import rosbag
 
 import util.base_frame
-import timeline
+import timeline_panel
 
-class RxBagApp(wx.App):
-    def __init__(self, input_files, options):
-        self.input_files = input_files
-        self.options     = options
-
-        wx.App.__init__(self)
-    
-    def OnInit(self):
-        try:
-            if len(self.input_files) == 1:
-                frame_title = 'rxbag - ' + self.input_files[0]
-            else:
-                frame_title = 'rxbag - [%d bags]' % len(self.input_files)
-    
-            frame = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline', title=frame_title)
-            timeline_panel = timeline.TimelinePanel(frame, -1)
-
-            if self.options.record:
-                connect_to_ros('rxbag', 3)
-                timeline_panel.timeline.record_bag()
-            else:
-                for input_file in self.input_files:
-                    try:
-                        bag = rosbag.Bag(input_file)
-                        timeline_panel.timeline.add_bag(bag)
-                    except Exception, ex:
-                        print >> sys.stderr, 'Error loading [%s]: %s' % (input_file, str(ex))
-
-            frame.Show()
-            self.SetTopWindow(frame)
-            
-        except Exception, ex:
-            print >> sys.stderr, 'Error initializing application:', ex
-            return False
-
-        return True
+class RxBagInitThread(threading.Thread):
+    def __init__(self, app, timeline):
+        threading.Thread.__init__(self)
+        
+        self.app      = app
+        self.timeline = timeline
+        
+        self.start()
+        
+    def run(self):       
+        for input_file in self.app.args:
+            try:
+                bag = rosbag.Bag(input_file)
+                self.timeline.add_bag(bag)
+            except Exception, ex:
+                print >> sys.stderr, 'Error loading [%s]: %s' % (input_file, str(ex))
 
 def connect_to_ros(node_name, init_timeout):
     # Attempt to connect to master node                                                                                                                                
@@ -129,23 +109,77 @@ def connect_to_ros(node_name, init_timeout):
 
         if init_thread.inited:
             rospy.core.register_signals()
-            rospy.loginfo('Connected to ROS.')
+            rospy.loginfo('Connected to ROS master.')
+            return True
         else:
-            rospy.logerr('Couldn\'t connect to ROS.  Running in unconnected mode.')
+            rospy.logerr('Couldn\'t connect to ROS master.')
     except:
-        rospy.loginfo('Master not found.  Running in unconnected mode.')
+        rospy.loginfo('ROS master not found.')
+        
+    return False
+
+class RxBagApp(wx.App):
+    def __init__(self, options, args):
+        self.options = options
+        self.args    = args
+
+        wx.App.__init__(self)
+    
+    def OnInit(self):
+        try:
+            # Get filename to record to
+            if self.options.record:
+                if not connect_to_ros('rxbag', 3):
+                    raise Exception('recording requires connection to master')
+
+                # Get filename to record to
+                if len(self.args) > 0:
+                    record_filename = self.args[0]
+                else:
+                    record_filename = 'rxbag.bag'            
+
+            # Title bar
+            if self.options.record:
+                frame_title = 'rxbag - %s [recording]' % record_filename
+            elif len(self.args) == 1:
+                frame_title = 'rxbag - ' + self.args[0]
+            else:
+                frame_title = 'rxbag - [%d bags]' % len(self.args)
+
+            # Create main timeline frame
+            frame = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline', title=frame_title)
+            panel = timeline_panel.TimelinePanel(frame, -1)
+            frame.Show()
+            self.SetTopWindow(frame)
+
+            if self.options.record:
+                panel.timeline.record_bag(record_filename)
+            else:
+                RxBagInitThread(self, panel.timeline)
+            
+        except Exception, ex:
+            print >> sys.stderr, 'Error initializing application:', ex
+            raise
+            return False
+
+        return True
 
 def rxbag_main():
     # Parse command line for input files and options
     usage = "usage: %prog [options] BAG_FILE1 [BAG_FILE2 ...]"
     parser = optparse.OptionParser(usage=usage)
-    parser.add_option('-r', '--record', dest='record', default=False, action='store_true', help='record to a bag file')
+    parser.add_option('-r', '--record',  dest='record',  default=False, action='store_true', help='record to a bag file')
+    parser.add_option(      '--profile', dest='profile', default=False, action='store_true', help='profile and write results to rxbag.prof')
     options, args = parser.parse_args(sys.argv[1:])
-
-    input_files = args[:]
-
-    # Start application
-    app = RxBagApp(input_files, options)
+    
+    if options.profile:
+        import cProfile
+        cProfile.runctx('run(options, args)', globals(), locals(), 'rxbag.prof')
+    else:
+        run(options, args)
+    
+def run(options, args):
+    app = RxBagApp(options, args)
     app.MainLoop()
 
     rospy.signal_shutdown('GUI shutdown')

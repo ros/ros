@@ -64,15 +64,17 @@ class RawView(TopicMessageView):
 
         self.self_paint = True
 
-    def message_viewed(self, bag_file, msg_details):
-        TopicMessageView.message_viewed(self, bag_file, msg_details)
+    def message_viewed(self, bag, msg_details):
+        TopicMessageView.message_viewed(self, bag, msg_details)
 
         topic, msg, t = msg_details
 
         if t is None:
             self.message_cleared()
         else:
-            self.msg_title.SetValue(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(t.to_sec())) + '.%03d' % (t.nsecs / 1000000))
+            time_str = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(t.to_sec())) + '.%03d' % (t.nsecs / 1000000)
+            
+            self.msg_title.SetValue('%s (%s)' % (time_str, bag.filename))
             self.msg_title.Refresh()
 
             self.msg_incoming = msg

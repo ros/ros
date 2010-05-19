@@ -55,67 +55,9 @@ import wx
 import bag_helper
 import playhead
 import plugins
-from raw_view import RawView
-import status
-from util.base_frame import BaseFrame
-from util.layer import Layer, LayerPanel
-
-class TimelinePanel(LayerPanel):
-    def __init__(self, *args, **kwargs):
-        LayerPanel.__init__(self, *args, **kwargs)
-
-        self._create_controls()
-        self._create_toolbar()
-
-    def _create_controls(self):
-        (width, height) = self.GetParent().GetClientSize()
-
-        x, y = 5, 19
-        self.timeline = Timeline(self, 'Timeline', x, y, width - x, height - y)
-
-        self.status = status.StatusLayer(self, 'Status', self.timeline, self.timeline.x, 4, 300, 16)
-
-        self.playhead = playhead.PlayheadLayer(self, 'Playhead', self.timeline, 0, 0, 12, self.timeline.height)
-
-        #self.timeline.set_renderers_active(True)
-
-        self.layers = [self.timeline, self.status, self.playhead]
-
-    def _create_toolbar(self):
-        icons_dir = roslib.packages.get_pkg_dir(PKG) + '/icons/'
-
-        tb = self.GetParent().CreateToolBar()
-
-        start_tool       = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_start_blue.png'))
-        rewind_tool      = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_rewind_blue.png'))
-        play_tool        = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_play_blue.png'))
-        fastforward_tool = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_fastforward_blue.png'))
-        end_tool         = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_end_blue.png'))
-        stop_tool        = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_stop_blue.png'))
-        tb.AddSeparator()
-        zoom_in_tool     = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'zoom_in.png'))
-        zoom_out_tool    = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'zoom_out.png'))
-        zoom_tool        = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'zoom.png'))
-        tb.AddSeparator()
-        thumbnails_tool  = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'pictures.png'))
-        #tb.AddSeparator()
-        #save_layout_tool = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'application_put.png'))
-        #load_layout_tool = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'application_get.png'))
-
-        tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_start(),       start_tool)
-        tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_rewind(),      rewind_tool)
-        tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_play(),        play_tool)       
-        tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_fastforward(), fastforward_tool)       
-        tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_end(),         end_tool)
-        tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_stop(),        stop_tool)
-        tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.zoom_in(),              zoom_in_tool)
-        tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.zoom_out(),             zoom_out_tool)
-        tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.reset_zoom(),           zoom_tool)
-        tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.toggle_renderers(),     thumbnails_tool)
-        #tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.save_layout(),          save_layout_tool)
-        #tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.load_layout(),          load_layout_tool)
-
-        tb.Realize()
+from raw_view   import RawView
+from recorder   import Recorder
+from util.layer import Layer
 
 class IndexCacheThread(threading.Thread):
     def __init__(self, timeline, period=0.5):
@@ -146,69 +88,6 @@ class IndexCacheThread(threading.Thread):
 
     def stop(self): self.stop_flag = True
 
-class MasterCheckThread(threading.Thread):
-    def __init__(self, timeline, period=5):
-        threading.Thread.__init__(self)
-
-        self.setDaemon(True)
-        
-        self.timeline  = timeline
-        self.period    = period
-        self.stop_flag = False
-        
-        self.subscriber_helpers = {}
-        
-        self.failed_topics = set()
-        
-        self.start()
-        
-    def run(self):
-        master = rosgraph.masterapi.Master('rxbag')
-        
-        while not self.stop_flag:
-            # Subscribe to any new topics
-            for topic, datatype in master.getPublishedTopics(''):
-                if topic not in self.subscriber_helpers and topic not in self.failed_topics:
-                    print 'Found new topic: %s [%s]' % (topic, datatype)
-                    
-                    try:
-                        pytype = roslib.message.get_message_class(datatype)
-                        self.subscriber_helpers[topic] = SubscriberHelper(self.timeline, topic, pytype)
-                    except Exception, ex:
-                        print >> sys.stderr, 'Error subscribing to %s (ignoring): %s' % (topic, str(ex))
-                        self.failed_topics.add(topic)
-
-            # Wait a while
-            time.sleep(self.period)
-
-        for subscriber_helper in self.subscriber_helpers.values():
-            subscriber_helper.subscriber.unregister()
-
-    def stop(self): self.stop_flag = True
-
-class SubscriberHelper(object):
-    def __init__(self, timeline, topic, pytype):
-        self.timeline   = timeline
-        self.subscriber = rospy.Subscriber(topic, pytype, self.callback)
-        self.topic      = topic
-        self.pytype     = pytype
-        
-        self.last_update = time.time()
-
-    def callback(self, msg):
-        # Write the message to the bag file
-        with self.timeline._bag_lock:
-            self.timeline.recording_bag.write(self.topic, msg)
-
-        # Invalidate the topic
-        self.timeline.invalidated_caches.add(self.topic)
-
-        # Periodically invalidate the timeline
-        now = time.time()
-        if now - self.last_update > 2.0:
-            wx.CallAfter(self.timeline.invalidate)
-            self.last_update = now
-
 class PlayThread(threading.Thread):
     def __init__(self, timeline):
         threading.Thread.__init__(self)
@@ -218,38 +97,92 @@ class PlayThread(threading.Thread):
         self.timeline  = timeline
         self.stop_flag = False
         
+        self.fixed_step_mode = False
+        
         self.start()
 
     def run(self):
-        self.last_frame, self.last_playhead = None, None
+        self.last_frame    = None
+        self.last_playhead = None
 
-        try:
-            while not self.stop_flag:
-                wx.CallAfter(self.step)
+        while not self.stop_flag:
+            if self.fixed_step_mode:
+                wx.CallAfter(self.step_fixed)
                 time.sleep(0.04)  # 25 Hz
-        except:
-            pass
+            else:
+                self.step_next()
 
-    def step(self):
+    def step_fixed(self):
         if self.timeline.play_speed == 0.0:
             self.last_frame    = None
             self.last_playhead = None
-        else:
-            now = time.time()
-            if self.last_frame and self.timeline.playhead == self.last_playhead:
-                new_playhead = self.timeline.playhead + (now - self.last_frame) * self.timeline.play_speed
+            return
 
-                start_stamp = self.timeline.start_stamp
-                end_stamp   = self.timeline.end_stamp
-                if new_playhead > end_stamp:
-                    new_playhead = start_stamp
-                elif new_playhead < start_stamp:
-                    new_playhead = end_stamp
+        now = time.time()
+        if self.last_frame and self.timeline.playhead == self.last_playhead:
+            new_playhead = self.timeline.playhead + (now - self.last_frame) * self.timeline.play_speed
+
+            start_stamp = self.timeline.start_stamp
+            end_stamp   = self.timeline.end_stamp
+            if new_playhead > end_stamp:
+                new_playhead = start_stamp
+            elif new_playhead < start_stamp:
+                new_playhead = end_stamp
+
+            self.timeline.set_playhead(new_playhead)
+
+        self.last_frame    = now
+        self.last_playhead = self.timeline.playhead
+
+    def step_next(self):
+        if self.timeline.play_speed <= 0.0:
+            self.last_frame    = None
+            self.last_playhead = None
+            return
+        
+        now = time.time()
+        if self.last_frame and self.timeline.playhead == self.last_playhead:
+            next_message_time = self.get_next_message_time()
+            if next_message_time is not None:
+                if self.last_playhead is None:
+                    new_playhead = next_message_time
+                else:
+                    if next_message_time > self.last_playhead:
+                        delta = (next_message_time - self.last_playhead) * self.timeline.play_speed
+                        if delta > 0.05:
+                            delta = 0.05
+                        time.sleep(delta)
+    
+                        new_playhead = self.last_playhead + delta
+                    else:
+                        delta = (self.timeline.end_stamp - self.last_playhead) * self.timeline.play_speed
+                        if delta > 0.05:
+                            delta = 0.05
+                            time.sleep(delta)
+                            new_playhead = self.last_playhead + delta
+                        else:
+                            time.sleep(delta)
+                            new_playhead = next_message_time
 
                 self.timeline.set_playhead(new_playhead)
+            else:
+                time.sleep(0.5)
 
-            self.last_frame    = now
-            self.last_playhead = self.timeline.playhead
+        self.last_frame    = now
+        self.last_playhead = self.timeline.playhead
+
+    def get_next_message_time(self):
+        if not self.timeline.playhead:
+            return None
+
+        # NOTE: add an epsilon due to imperfect conversion from roslib.Time <-> float
+        playhead_time = roslib.rostime.Time.from_sec(self.timeline.playhead + 0.000001)
+
+        _, entry = self.timeline.get_entry_after(playhead_time)
+        if entry is None:
+            return self.timeline.start_stamp
+
+        return entry.time.to_sec()
 
     def stop(self): self.stop_flag = True
 
@@ -261,7 +194,6 @@ class Timeline(Layer):
 
         self._bag_lock = threading.RLock()
         self.bags = []
-        self.recording_bag = None
 
         ## Rendering parameters
 
@@ -309,11 +241,14 @@ class Timeline(Layer):
         self.timeline_renderers = {}
         self.rendered_topics    = set()
 
+        self.last_invalidated = 0.0
+        
         self.load_plugins()
 
         ##
 
         self.clicked_pos = None
+        self.dragged_pos = None
 
         self.history_left   = 0
         self.history_height = 0
@@ -325,7 +260,6 @@ class Timeline(Layer):
         self.playhead      = None
         self.playhead_lock = threading.RLock()
         
-        self.play_thread        = PlayThread(self)
         self.play_speed         = 0.0
         self.playhead_positions = None
 
@@ -336,36 +270,61 @@ class Timeline(Layer):
         self.index_cache_lock   = threading.RLock()
         self.index_cache        = {}
         self.invalidated_caches = set()
-        self.index_cache_thread = IndexCacheThread(self)
         
-        self.master_check_thread = None
+        self.recorder = None
+
+        ##
+
+        self.play_thread        = PlayThread(self)
+        self.index_cache_thread = IndexCacheThread(self)
         
     ###
 
-    def record_bag(self):
-        self.master_check_thread = MasterCheckThread(self)
-        self.recording_bag = rosbag.Bag('rxbag.bag', 'w')
+    def invalidate(self):
+        Layer.invalidate(self)
+        self.last_invalidated = time.time()
+
+    def message_recorded(self, topic, msg, t):
+        # Invalidate the topic
+        self.invalidated_caches.add(topic)
+
+        # Periodically invalidate the timeline
+        now = time.time()
+        if now - self.last_invalidated > 2.0:
+            wx.CallAfter(self.invalidate)
+
+    def record_bag(self, filename):
+        try:
+            self.recorder = Recorder(filename, bag_lock=self._bag_lock)
+        except Exception, ex:
+            print >> sys.stderr, 'Error opening bag for recording [%s]: %s' % (self._filename, str(ex))
+            return
+
+        self.recorder.add_listener(self.message_recorded)
+        
+        self.bags.append(self.recorder.bag)
+        
+        self.recorder.start()
 
     def add_bag(self, bag):
-        print 'adding bag ' + bag.filename
         self.bags.append(bag)
 
         # Invalidate entire index cache for all topics in this bag
         with self.index_cache_lock:
             for topic in bag_helper.get_topics(bag):
                 if topic in self.index_cache:
-                    print 'removing index for ' + topic
                     del self.index_cache[topic]
+                    self._update_index_cache(topic)
 
     @property
     def start_stamp(self):
         with self._bag_lock:
             start_stamp = None
-            for bag in self.bags:
+            for bag in self.bags:               
                 bag_start_stamp = bag_helper.get_start_stamp(bag)
-                if not bag_start_stamp:
+                if bag_start_stamp is None:
                     continue
-                if not start_stamp:
+                if start_stamp is None:
                     start_stamp = bag_start_stamp
                 else:
                     start_stamp = min(start_stamp, bag_start_stamp)
@@ -377,9 +336,9 @@ class Timeline(Layer):
             end_stamp = 0.0
             for bag in self.bags:
                 bag_end_stamp = bag_helper.get_end_stamp(bag)
-                if not bag_end_stamp:
+                if bag_end_stamp is None:
                     continue
-                if not end_stamp:
+                if end_stamp is None:
                     end_stamp = bag_end_stamp
                 else:
                     end_stamp = max(end_stamp, bag_end_stamp)
@@ -413,14 +372,25 @@ class Timeline(Layer):
                 datatype = bag_datatype
             return datatype
 
-    def get_entries(self, topic, start_time, end_time):
+    def get_entries(self, topic, start_stamp, end_stamp):
         with self._bag_lock:
             from rosbag import bag
             
+            start_time = start_stamp.to_sec()
+            end_time   = end_stamp.to_sec()
+
             bag_entries = []
             for b in self.bags:
+                bag_start_time = bag_helper.get_start_stamp(b)
+                if bag_start_time > end_time:
+                    continue
+                
+                bag_end_time = bag_helper.get_end_stamp(b)
+                if bag_end_time < start_time:
+                    continue
+                
                 connections = list(b._get_connections(topic))
-                bag_entries.append(b._get_entries(connections, start_time, end_time))
+                bag_entries.append(b._get_entries(connections, start_stamp, end_stamp))
 
             for entry, _ in bag._mergesort(bag_entries, key=lambda entry: entry.time):
                 yield entry
@@ -431,8 +401,18 @@ class Timeline(Layer):
             for bag in self.bags:
                 bag_entry = bag._get_entry(t, bag._get_connections(topic))
                 if bag_entry and (not entry or bag_entry.time > entry.time):
-                    entry_bag = bag
-                    entry = bag_entry
+                    entry_bag, entry = bag, bag_entry
+
+            return entry_bag, entry
+
+    def get_entry_after(self, t):
+        with self._bag_lock:
+            entry_bag, entry = None, None
+            for bag in self.bags:
+                bag_entry = bag._get_entry_after(t, bag._get_connections())
+                if bag_entry and (not entry or bag_entry.time < entry.time):
+                    entry_bag, entry = bag, bag_entry
+
             return entry_bag, entry
 
     def read_message(self, bag, position):
@@ -442,13 +422,12 @@ class Timeline(Layer):
     ##
 
     def on_close(self, event):
-        if self.master_check_thread:
-            self.master_check_thread.stop()
         self.index_cache_thread.stop()
         self.play_thread.stop()
 
-        if self.recording_bag:
-            self.recording_bag.close()
+        if self.recorder:
+            self.recorder.stop()
+            self.recorder.join()
 
     ### Views / listeners
 
@@ -640,7 +619,7 @@ class Timeline(Layer):
                 self.invalidate()
 
             playhead_time = roslib.rostime.Time.from_sec(self.playhead)
-            
+
             self.playhead_positions = {}
             for topic in self.topics:
                 bag, entry = self.get_entry(playhead_time, topic)
@@ -769,7 +748,7 @@ class Timeline(Layer):
             self._draw_minor_divisions(dc, minor_stamps, start_stamp, minor_division)
 
     def _draw_major_divisions(self, dc, stamps, start_stamp, division):
-        dc.set_line_width(1)
+        dc.set_line_width(1.0)
 
         for stamp in stamps:
             x = self.map_stamp_to_x(stamp, False)
@@ -917,7 +896,7 @@ class Timeline(Layer):
         dc.fill()
 
         # Draw active message
-        if topic in self.listeners:
+        if topic in self.listeners or True:
             dc.set_line_width(3)
             playhead_stamp = None
             playhead_index = bisect.bisect_right(all_stamps, self.playhead) - 1
@@ -1021,7 +1000,7 @@ class Timeline(Layer):
     ### Mouse events
 
     def on_left_down(self, event):
-        self.clicked_pos = event.GetPosition()
+        self.clicked_pos = self.dragged_pos = event.GetPosition()
         if not self.contains(*self.clicked_pos):
             return
 
@@ -1035,14 +1014,14 @@ class Timeline(Layer):
         self.set_playhead(self.map_x_to_stamp(x))  
 
     def on_middle_down(self, event):
-        self.clicked_pos = event.GetPosition()
+        self.clicked_pos = self.dragged_pos = event.GetPosition()
 
     def on_right_down(self, event):
-        self.clicked_pos = event.GetPosition()
+        self.clicked_pos = self.dragged_pos = event.GetPosition()
         if not self.contains(*self.clicked_pos):
             return
 
-        self.parent.PopupMenu(TimelinePopupMenu(self.parent, self), self.clicked_pos)
+        self.parent.display_popup(self.clicked_pos)
 
     def on_mousewheel(self, event):
         dz = event.GetWheelRotation() / event.GetWheelDelta()
@@ -1053,24 +1032,23 @@ class Timeline(Layer):
 
         if not event.Dragging():
             return
-
+        
         left, middle, right = event.LeftIsDown(), event.MiddleIsDown(), event.RightIsDown()
 
         if middle or event.ShiftDown():
             x, y = mouse_pos
 
-            dx, dy = x - self.clicked_pos[0], y - self.clicked_pos[1]
+            dx_click, dy_click = x - self.clicked_pos[0], y - self.clicked_pos[1]
+            dx_drag,  dy_drag  = x - self.dragged_pos[0], y - self.dragged_pos[1]
             
-            if not self.history_left:
+            if not self.history_left:  # @todo: need a better notion of initialized
                 return
 
-            if dx != 0:
-                self.translate_timeline(dx)
-            if dy != 0:
-                zoom = min(self.max_zoom_speed, max(self.min_zoom_speed, 1.0 + self.zoom_sensitivity * dy))
+            if dx_drag != 0:
+                self.translate_timeline(dx_drag)
+            if (dx_drag == 0 and abs(dy_drag) > 0) or (dx_drag != 0 and abs(float(dy_drag) / dx_drag) > 0.2 and abs(dy_drag) > 1):
+                zoom = min(self.max_zoom_speed, max(self.min_zoom_speed, 1.0 + self.zoom_sensitivity * dy_drag))
                 self.zoom_timeline(zoom)
-
-            self.clicked_pos = mouse_pos
 
             self.parent.playhead.update_position()
 
@@ -1082,7 +1060,7 @@ class Timeline(Layer):
 
             self.set_playhead(self.map_x_to_stamp(x))
 
-            self.clicked_pos = mouse_pos
+        self.dragged_pos = mouse_pos
 
     ###
 
@@ -1099,16 +1077,14 @@ class Timeline(Layer):
                     msgs[topic] = (bag, self.read_message(bag, playhead_position))
                     continue
 
-            msgs[topic] = None
-
         # Inform the listeners
         for topic in self.topics:
             topic_listeners = self.listeners.get(topic)
             if not topic_listeners:
                 continue
 
-            bag, msg_data = msgs.get(topic)
-            if msg_data:
+            if topic in msgs:
+                bag, msg_data = msgs[topic]
                 for listener in topic_listeners:
                     try:
                         listener.message_viewed(bag, msg_data)
@@ -1145,118 +1121,3 @@ class Timeline(Layer):
         config = wx.Config(localFilename=layout_file)
         
         # TODO
-
-class TimelinePopupMenu(wx.Menu):
-    """
-    Timeline popup menu.  Allows user to manipulate the timeline view, and open new message views.
-    """
-    def __init__(self, parent, timeline):
-        wx.Menu.__init__(self)
-
-        self.parent   = parent
-        self.timeline = timeline
-
-        # Reset Timeline
-        self.reset_timeline_menu = wx.MenuItem(self, wx.NewId(), 'Reset Timeline')
-        self.AppendItem(self.reset_timeline_menu)
-        self.Bind(wx.EVT_MENU, lambda e: self.timeline.reset_timeline(), id=self.reset_timeline_menu.GetId())
-
-        # Get the renderers
-        renderers = self.timeline.get_renderers()
-
-        # Thumbnails...
-        if len(renderers) > 0:
-            self.thumbnail_menu = wx.Menu()
-            self.AppendSubMenu(self.thumbnail_menu, 'Thumbnails...', 'View message thumbnails')
-
-            # Thumbnails... / Show All
-            self.show_thumbnails_menu = wx.MenuItem(self.thumbnail_menu, wx.NewId(), 'Show All')
-            self.thumbnail_menu.AppendItem(self.show_thumbnails_menu)
-            self.thumbnail_menu.Bind(wx.EVT_MENU, lambda e: self.timeline.set_renderers_active(True), id=self.show_thumbnails_menu.GetId())
-            
-            # Thumbnails... / Hide All
-            self.hide_thumbnails_menu = wx.MenuItem(self.thumbnail_menu, wx.NewId(), 'Hide All')
-            self.thumbnail_menu.AppendItem(self.hide_thumbnails_menu)
-            self.thumbnail_menu.Bind(wx.EVT_MENU, lambda e: self.timeline.set_renderers_active(False), id=self.hide_thumbnails_menu.GetId())
-            
-            # ---
-            self.thumbnail_menu.AppendSeparator()
-            
-            # Thumbnails... / topic/subtopic/subsubtopic
-            for topic, renderer in renderers:
-                renderer_item = self.TimelineRendererMenuItem(self.thumbnail_menu, wx.NewId(), topic.lstrip('/'), topic, renderer, self.timeline)
-                self.thumbnail_menu.AppendItem(renderer_item)
-    
-                renderer_item.Check(topic in self.timeline.rendered_topics)
-
-        # View (by topic)...
-        self.view_topic_menu = wx.Menu()
-        self.AppendSubMenu(self.view_topic_menu, 'View (by topic)...', 'View message detail')
-        
-        for topic in self.timeline.topics:
-            datatype = self.timeline.get_datatype(topic)
-
-            # View... / topic/subtopic/subsubtopic
-            topic_menu = wx.Menu()
-            self.view_topic_menu.AppendSubMenu(topic_menu, topic.lstrip('/'), topic)
-
-            viewer_types = self.timeline.get_viewer_types(datatype)
-
-            # View... / topic/subtopic/subsubtopic / Viewer
-            for viewer_type in viewer_types:
-                topic_menu.AppendItem(self.TopicViewMenuItem(topic_menu, wx.NewId(), viewer_type.name, topic, viewer_type, self.timeline))
-
-        # View (by datatype)...
-        self.view_datatype_menu = wx.Menu()
-        self.AppendSubMenu(self.view_datatype_menu, 'View (by datatype)...', 'View message detail')
-
-        topics_by_datatype = self.timeline.topics_by_datatype
-        
-        for datatype in sorted(topics_by_datatype):
-            # View... / datatype
-            datatype_menu = wx.Menu()
-            self.view_datatype_menu.AppendSubMenu(datatype_menu, datatype, datatype)
-            
-            topics = topics_by_datatype[datatype]
-            
-            viewer_types = self.timeline.get_viewer_types(datatype)
-            
-            for topic in [t for t in self.timeline.topics if t in topics]:   # use timeline ordering
-                topic_menu = wx.Menu()
-                datatype_menu.AppendSubMenu(topic_menu, topic.lstrip('/'), topic)
-    
-                # View... / datatype / topic/subtopic/subsubtopic / Viewer
-                for viewer_type in viewer_types:
-                    topic_menu.AppendItem(self.TopicViewMenuItem(topic_menu, wx.NewId(), viewer_type.name, topic, viewer_type, self.timeline))
-
-    class TimelineRendererMenuItem(wx.MenuItem):
-        def __init__(self, parent, id, label, topic, renderer, timeline):
-            wx.MenuItem.__init__(self, parent, id, label, kind=wx.ITEM_CHECK)
-            
-            self.topic    = topic
-            self.renderer = renderer
-            self.timeline = timeline
-
-            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.GetId())
-
-        def on_menu(self, event):
-            self.timeline.set_renderer_active(self.topic, not self.timeline.is_renderer_active(self.topic))
-
-    class TopicViewMenuItem(wx.MenuItem):
-        def __init__(self, parent, id, label, topic, viewer_type, timeline):
-            wx.MenuItem.__init__(self, parent, id, label)
-            
-            self.topic       = topic
-            self.viewer_type = viewer_type
-            self.timeline    = timeline
-    
-            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.GetId())
-
-        def on_menu(self, event):
-            frame = BaseFrame(None, 'rxbag', self.topic, title='rxbag - %s [%s]' % (self.topic.lstrip('/'), self.viewer_type.name), pos=(4, 4), size=(640, 480))
-            panel = LayerPanel(frame, -1)
-            view  = self.viewer_type(self.timeline, panel, self.topic, 0, 0, *frame.GetClientSize())
-            panel.layers = [view]
-            frame.Show()
-            
-            self.timeline.add_view(self.topic, view)

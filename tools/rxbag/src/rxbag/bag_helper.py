@@ -37,8 +37,9 @@ import roslib; roslib.load_manifest(PKG)
 
 import time
 
-def stamp_to_str(t):      return time.strftime('%b %d %Y %H:%M:%S', time.localtime(t.to_sec())) + '.%03d' % (t.nsecs / 1000000)
-def get_topics(bag):      return sorted(set([c.topic for c in bag._get_connections()]))
+def stamp_to_str(t): return time.strftime('%b %d %Y %H:%M:%S', time.localtime(t.to_sec())) + '.%03d' % (t.nsecs / 1000000)
+
+def get_topics(bag): return sorted(set([c.topic for c in bag._get_connections()]))
 
 def get_start_stamp(bag):
     starts = [index[0].time.to_sec() for index in bag._connection_indexes.values()]

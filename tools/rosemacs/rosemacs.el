@@ -223,7 +223,12 @@
     (when fn
       (ros-package-for-path fn))))
 
+(defun get-buffer-ros-package ()
+  (or ros-buffer-package
+      (setq ros-buffer-package (ros-package-for-buffer (current-buffer)))))
+
 (defun ros-current-pkg-modeline-entry ()
+  (interactive)
   (let ((pkg (or ros-buffer-package (ros-package-for-buffer (current-buffer)))))
     (unless ros-buffer-package
       (if pkg
@@ -478,8 +483,7 @@ RGREP but with a ros package instead of a directory as
 parameter."
   (interactive (progn (grep-compute-defaults)
                       (let ((package (ros-completing-read-package
-                                      nil (unless (eq ros-buffer-package :none)
-                                            ros-buffer-package)))
+                                      nil (get-buffer-ros-package)))
                             (regexp (grep-read-regexp)))
                         (list
                          package
@@ -493,8 +497,7 @@ load the result in a dired buffer. This function is similar to
 FIND-DIRED but with a ros package instead of a directory as
 parameter."
   (interactive (list (ros-completing-read-package
-                      nil (unless (eq ros-buffer-package :none)
-                            ros-buffer-package))
+                      nil (get-buffer-ros-package))
                      (read-string "Run find (within args): " ros-find-args
                                   '(ros-find-args-history . 1))))
   (find-dired (ros-package-path ros-pkg) args))
@@ -999,8 +1002,7 @@ q kills the buffer and process."
 (defun ros-run (pkg exec &rest args)
   "pkg is a ros package name and exec is the executable name.  Tab completes package name.  Exec defaults to package name itself."
   (interactive (list (setq ros-run-temp-var (ros-completing-read-package
-                                             nil (unless (eq ros-buffer-package :none)
-                                                   ros-buffer-package)))
+                                             nil (get-buffer-ros-package)))
                      (funcall ros-completion-function (format "Enter executable (default %s): " ros-run-temp-var)
                               (mapcar (lambda (pkg)
                                         (cons pkg nil))
@@ -1036,6 +1038,7 @@ q kills the buffer and process."
 (define-key ros-keymap "h" 'add-hz-update)
 (define-key ros-keymap "H" 'remove-hz-update)
 (define-key ros-keymap "T" 'ros-topic-info)
+(define-key ros-keymap "g" 'ros-rgrep-package)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

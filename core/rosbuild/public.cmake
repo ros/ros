@@ -114,7 +114,14 @@ macro(rosbuild_invoke_rospack pkgname _prefix _varname)
   else(_rospack_failed)
     separate_arguments(_rospack_invoke_result)
     set(_rospack_${_varname} ${_rospack_invoke_result})
-    set(${_prefix}_${_varname} "${_rospack_invoke_result}" CACHE INTERNAL "")
+    # We don't cache results that contain newlines, because
+    # they make CMake's cache unhappy. This check should only affect calls
+    # to `rospack plugins`, which we don't need to cache.
+    if(_rospack_invoke_result MATCHES ".*\n.*")
+      set(${_prefix}_${_varname} "${_rospack_invoke_result}")
+    else(_rospack_invoke_result MATCHES ".*\n.*")
+      set(${_prefix}_${_varname} "${_rospack_invoke_result}" CACHE INTERNAL "")
+    endif(_rospack_invoke_result MATCHES ".*\n.*")
   endif(_rospack_failed)
 endmacro(rosbuild_invoke_rospack)
 
@@ -361,7 +368,8 @@ macro(rosbuild_init)
   endforeach(_l)
 
   # Also collect cmake fragments exported by packages that depend on
-  # rosbuild.
+  # rosbuild.  This behavior is deprecated, in favor of using
+  # rosbuild_include() to explicitly include cmake code from other packages.
   rosbuild_invoke_rospack(rosbuild _rosbuild EXPORTS plugins --attrib=cmake --top=${_project})
   list(LENGTH _rosbuild_EXPORTS _rosbuild_EXPORTS_length)
 
@@ -383,6 +391,7 @@ macro(rosbuild_init)
 
   foreach(_f ${_rosbuild_EXPORTS_stripped})
     list(APPEND _cmake_fragments ${_f})
+    message("\n[rosbuild] WARNING: the file ${_f} is being included automatically.  This behavior is deprecated.  The package containing that file should instead export the directory containing the file, and you should use rosbuild_include() to include the file explicitly.\n")
   endforeach(_f)
 
   # Now include them all
@@ -1129,4 +1138,28 @@ macro(rosbuild_check_for_sse)
    endif()
   endif()
 endmacro(rosbuild_check_for_sse)
+
+macro(rosbuild_include pkg module)
+  # Find exported cmake directories
+  rosbuild_invoke_rospack(rosbuild _rosbuild EXPORTS plugins --attrib=cmake_directory --top=${_project})
+  string(REGEX REPLACE "\n" ";" _rosbuild_EXPORTS_stripped "${_rosbuild_EXPORTS}")
+  list(LENGTH _rosbuild_EXPORTS_stripped _rosbuild_EXPORTS_stripped_length)
+  set(_idx 0)
+  set(_found False)
+  while(_idx LESS ${_rosbuild_EXPORTS_stripped_length} AND NOT _found)
+    list(GET _rosbuild_EXPORTS_stripped ${_idx} _pkg)
+    math(EXPR _idx "${_idx} + 1")
+    list(GET _rosbuild_EXPORTS_stripped ${_idx} _dir)
+    if("${_pkg}" STREQUAL "${pkg}")
+      message("[rosbuild] Including ${_dir}/${module}.cmake")
+      include(${_dir}/${module}.cmake)
+      # Poor man's break
+      set(_found True)
+    endif("${_pkg}" STREQUAL "${pkg}")
+    math(EXPR _idx "${_idx} + 1")
+  endwhile(_idx LESS ${_rosbuild_EXPORTS_stripped_length} AND NOT _found)
+  if(NOT _found)
+    message(FATAL_ERROR "[rosbuild] Failed to include ${module} from ${pkg}")
+  endif(NOT _found)
+endmacro(rosbuild_include)
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2009, Willow Garage, Inc.
@@ -33,49 +32,66 @@
 #
 # Revision $Id$
 
+from __future__ import with_statement
+
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
-import rospy
 
-import optparse
-import sys
 import threading
 import time
 
-# Ensure wxPython version >= 2.8, and install hotfix for 64-bit Cairo support
-import wxversion
-WXVER = '2.8'
-if wxversion.checkInstalled(WXVER):
-    wxversion.select(WXVER)
-else:
-    print >> sys.stderr, 'This application requires wxPython version %s' % WXVER
-    sys.exit(1)
-import wx
-import wx.lib.wxcairo
-if 'wxGTK' in wx.PlatformInfo:
-    # Workaround for 64-bit systems
-    import ctypes
-    gdkLib = wx.lib.wxcairo._findGDKLib()
-    gdkLib.gdk_cairo_create.restype = ctypes.c_void_p
+import rosbag
+import rosgraph.masterapi
+import rospy
 
-import rxbag_app
+import sys
+
+class Player(object):   
+    def __init__(self, timeline):
+        self.timeline = timeline
+
+        self._publishing = set()
+        self._publishers = {}
+        
+        if not self.timeline.parent.app.connect_to_ros():
+            raise Exception('Error connecting to ROS')
+
+    def is_publishing(self, topic): return topic in self._publishing
     
-def run(options, args):
-    app = rxbag_app.RxBagApp(options, args)
-    app.MainLoop()
+    def start_publishing(self, topic):
+        if topic in self._publishing:
+            return
+        
+        self.timeline.add_listener(topic, self)
+        
+        self._publishing.add(topic)
+    
+    def stop_publishing(self, topic):
+        if topic not in self._publishing:
+            return
+        
+        self.timeline.remove_listener(topic, self)
 
-    rospy.signal_shutdown('GUI shutdown')
+        self._publishing.remove(topic)
 
-def rxbag_main():
-    # Parse command line for input files and options
-    usage = "usage: %prog [options] BAG_FILE1 [BAG_FILE2 ...]"
-    parser = optparse.OptionParser(usage=usage)
-    parser.add_option('-r', '--record',  dest='record',  default=False, action='store_true', help='record to a bag file')
-    parser.add_option(      '--profile', dest='profile', default=False, action='store_true', help='profile and write results to rxbag.prof [advanced]')
-    options, args = parser.parse_args(sys.argv[1:])
+        if topic in self._publishers:
+            self._publishers[topic].unregister()
 
-    if options.profile:
-        import cProfile
-        cProfile.runctx('run(options, args)', globals(), locals(), 'rxbag.prof')
-    else:
-        run(options, args)
+    def stop(self):
+        for topic in self._publishing:
+            self.stop_publishing(topic)
+
+    def message_viewed(self, bag, msg_data):
+        topic, msg, t = msg_data
+
+        if topic not in self._publishers:
+            try:
+                self._publishers[topic] = rospy.Publisher(topic, type(msg))
+            except Exception, ex:
+                rospy.logerr('Error creating publisher on topic %s for type %s' % (topic, str(type(msg))))
+                self.stop_publishing(topic)
+
+        self._publishers[topic].publish(msg)
+
+    def message_cleared(self):
+        pass

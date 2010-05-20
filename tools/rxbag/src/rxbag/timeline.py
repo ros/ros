@@ -55,6 +55,7 @@ import wx
 
 import bag_helper
 import plugins
+from player     import Player
 from raw_view   import RawView
 from recorder   import Recorder
 from util.layer import Layer
@@ -172,7 +173,7 @@ class PlayThread(threading.Thread):
 
 class Timeline(Layer):
     name = 'Timeline'
-    
+
     def __init__(self, parent, title, x, y, width, height):
         Layer.__init__(self, parent, title, x, y, width, height)
 
@@ -253,8 +254,9 @@ class Timeline(Layer):
         self.index_cache_lock   = threading.RLock()
         self.index_cache        = {}
         self.invalidated_caches = set()
-        
+
         self.recorder = None
+        self.player   = False
 
         ##
 
@@ -262,6 +264,15 @@ class Timeline(Layer):
         self.index_cache_thread = IndexCacheThread(self)
         
     ###
+
+    def on_close(self, event):
+        self.index_cache_thread.stop()
+        self.play_thread.stop()
+        if self.player:
+            self.player.stop()
+        if self.recorder:
+            self.recorder.stop()
+            self.recorder.join()   # wait for recorder to stop until exiting app (ensures bag is closed gracefully) 
 
     def get_next_message_time(self):
         if self.playhead is None:
@@ -272,6 +283,38 @@ class Timeline(Layer):
             return self.start_stamp
 
         return entry.time
+
+    def toggle_play_all(self):
+        self.play_all = not self.play_all
+        
+    ### Publishing
+
+    def is_publishing(self, topic):
+        return self.player and self.player.is_publishing(topic)
+
+    def start_publishing(self, topic):
+        if not self.player and not self._create_player():
+            return False
+        
+        self.player.start_publishing(topic)
+        return True
+
+    def stop_publishing(self, topic):
+        if not self.player:
+            return False
+        
+        self.player.stop_publishing(topic)
+        return True
+    
+    def _create_player(self):
+        if not self.player:
+            try:
+                self.player = Player(self)
+            except Exception, ex:
+                print >> sys.stderr, 'Error starting player; aborting publish: %s' % str(ex)
+                return False
+            
+        return True
 
     @property
     def play_speed(self):
@@ -410,16 +453,6 @@ class Timeline(Layer):
     def read_message(self, bag, position):
         with self._bag_lock:
             return bag._read_message(position)
-
-    ##
-
-    def on_close(self, event):
-        self.index_cache_thread.stop()
-        self.play_thread.stop()
-
-        if self.recorder:
-            self.recorder.stop()
-            self.recorder.join()
 
     ### Views / listeners
 
@@ -612,6 +645,8 @@ class Timeline(Layer):
                 self._stamp_left  -= dstamp
                 self._stamp_right -= dstamp
                 
+            self.parent.playhead.update_position()
+            
             self._playhead_positions = {}
             for topic in self.topics:
                 bag, entry = self.get_entry(self._playhead, topic)
@@ -619,9 +654,7 @@ class Timeline(Layer):
                     self._playhead_positions[topic] = (bag, entry.position)
 
             self._update_message_view()
-
-            self.parent.playhead.update_position()
-
+            
             self.invalidate()
 
     ### Rendering
@@ -1076,7 +1109,7 @@ class Timeline(Layer):
 
         # Inform the listeners
         for topic in self.topics:
-            topic_listeners = self.listeners.get(topic)
+            topic_listeners = self.listeners.get(topic)           
             if not topic_listeners:
                 continue
 

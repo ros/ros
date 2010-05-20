@@ -136,7 +136,7 @@ macro(_rosbuild_add_gtest exe)
   # Look for optional TIMEOUT argument, #2645
   parse_arguments(_gtest "TIMEOUT" "" ${ARGN})
   if(NOT _gtest_TIMEOUT)
-    set(_gtest_TIMEOUT 1.0)
+    set(_gtest_TIMEOUT 60.0)
   endif(NOT _gtest_TIMEOUT)
 
   # Create the program, with basic + gtest build flags
@@ -220,7 +220,7 @@ macro(_rosbuild_add_pyunit file)
   # Look for optional TIMEOUT argument, #2645
   parse_arguments(_pyunit "TIMEOUT" "" ${ARGN})
   if(NOT _pyunit_TIMEOUT)
-    set(_pyunit_TIMEOUT 1.0)
+    set(_pyunit_TIMEOUT 60.0)
   endif(NOT _pyunit_TIMEOUT)
 
   # Check that the file exists, #1621

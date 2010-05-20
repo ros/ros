@@ -92,34 +92,39 @@ class PlayThread(threading.Thread):
     def __init__(self, timeline):
         threading.Thread.__init__(self)
 
+        self.timeline   = timeline
+        self.stop_flag  = False
+        
         self.setDaemon(True)
-
-        self.timeline  = timeline
-        self.stop_flag = False
-        
-        self.fixed_step_mode = False
-        
         self.start()
 
     def run(self):
-        self.last_frame    = None
-        self.last_playhead = None
-
+        self.play_all = None
+        
         while not self.stop_flag:
-            if self.fixed_step_mode:
-                wx.CallAfter(self.step_fixed)
-                time.sleep(0.04)  # 25 Hz
+            # Reset on switch of playing mode
+            if self.play_all != self.timeline.play_all or self.timeline.playhead != self.last_playhead:
+                self.play_all = self.timeline.play_all
+
+                self.last_frame       = None
+                self.last_playhead    = None
+                self.desired_playhead = None
+
+            if self.play_all:
+                self.step_next_message()
+                time.sleep(0.02)
             else:
-                self.step_next()
+                self.step_fixed()
+                time.sleep(0.04)
 
     def step_fixed(self):
-        if self.timeline.play_speed == 0.0:
+        if self.timeline.play_speed == 0.0 or not self.timeline.playhead:
             self.last_frame    = None
             self.last_playhead = None
             return
 
         now = Time.from_sec(time.time())
-        if self.last_frame and self.timeline.playhead == self.last_playhead:
+        if self.last_frame:
             new_playhead = self.timeline.playhead + Duration.from_sec((now - self.last_frame).to_sec() * self.timeline.play_speed)
 
             start_stamp = self.timeline.start_stamp
@@ -134,41 +139,31 @@ class PlayThread(threading.Thread):
         self.last_frame    = now
         self.last_playhead = self.timeline.playhead
 
-    def step_next(self):
-        if self.timeline.play_speed <= 0.0:
+    def step_next_message(self):
+        if self.timeline.play_speed <= 0.0 or not self.timeline.playhead:
             self.last_frame    = None
             self.last_playhead = None
             return
 
-        max_step = Duration.from_sec(0.05)
-        
         now = Time.from_sec(time.time())
-        if self.last_frame and self.timeline.playhead == self.last_playhead:
-            next_message_time = self.timeline.get_next_message_time()
-            if next_message_time is not None:
-                if self.last_playhead is None:
-                    new_playhead = next_message_time
-                else:
-                    if next_message_time > self.last_playhead:
-                        delta = Duration.from_sec((next_message_time - self.last_playhead).to_sec() * self.timeline.play_speed)
-                        if delta > max_step:
-                            delta = max_step
-                        time.sleep(delta.to_sec())
-    
-                        new_playhead = self.last_playhead + delta
-                    else:
-                        delta = Duration.from_sec((self.timeline.end_stamp - self.last_playhead).to_sec() * self.timeline.play_speed)
-                        if delta > max_step:
-                            delta = max_step
-                            time.sleep(delta.to_sec())
-                            new_playhead = self.last_playhead + delta
-                        else:
-                            time.sleep(delta.to_sec())
-                            new_playhead = next_message_time
-
-                self.timeline.set_playhead(new_playhead)
+        
+        if self.last_frame:
+            # Get the desired playhead, based on the play speed and the elapsed wall time
+            if not self.desired_playhead:
+                self.desired_playhead = self.timeline.playhead
             else:
-                time.sleep(0.5)
+                delta = now - self.last_frame
+                if delta > Duration.from_sec(0.1):
+                    delta = Duration.from_sec(0.1)
+                self.desired_playhead += delta
+
+            # Get the occurrence of the next message
+            next_message_time = self.timeline.get_next_message_time()
+            
+            if next_message_time < self.desired_playhead:
+                self.timeline.set_playhead(next_message_time)
+            else:
+                self.timeline.set_playhead(self.desired_playhead)
 
         self.last_frame    = now
         self.last_playhead = self.timeline.playhead
@@ -230,8 +225,6 @@ class Timeline(Layer):
         self.timeline_renderers = {}
         self.rendered_topics    = set()
 
-        self.last_invalidated = 0.0
-        
         self.load_plugins()
 
         ##
@@ -244,13 +237,14 @@ class Timeline(Layer):
         self.history_width  = 0
         self.history_bounds = {}
 
-        self._stamp_left    = None
-        self._stamp_right   = None
-        self._playhead      = None
-        self._playhead_lock = threading.RLock()
-        
-        self.play_speed         = 0.0
+        self._stamp_left         = None
+        self._stamp_right        = None
+        self._playhead           = None
+        self._playhead_lock      = threading.RLock()
+        self._play_speed         = 0.0
+        self._paused             = False
         self._playhead_positions = None
+        self.play_all            = False
 
         self.views = []
 
@@ -280,20 +274,17 @@ class Timeline(Layer):
         return entry.time
 
     @property
-    def playhead(self): return self._playhead
+    def play_speed(self):
+        if self._paused:
+            return 0.0
+        return self._play_speed
 
-    def invalidate(self):
-        Layer.invalidate(self)
-        self.last_invalidated = time.time()
+    @property
+    def playhead(self): return self._playhead
 
     def message_recorded(self, topic, msg, t):
         # Invalidate the topic
         self.invalidated_caches.add(topic)
-
-        # Periodically invalidate the timeline
-        now = time.time()
-        if now - self.last_invalidated > 2.0:
-            wx.CallAfter(self.invalidate)
 
     def record_bag(self, filename):
         try:
@@ -523,28 +514,28 @@ class Timeline(Layer):
 
     ### Navigation
 
-    def navigate_play(self): self.play_speed = 1.0
-    def navigate_stop(self): self.play_speed = 0.0
+    def navigate_play(self): self._play_speed = 1.0
+    def navigate_stop(self): self._play_speed = 0.0
 
     def navigate_rewind(self):
-        if self.play_speed <= -1.0:
-            self.play_speed *= 2.0
-        elif self.play_speed < 0.001:
-            self.play_speed = -1.0
+        if self._play_speed <= -1.0:
+            self._play_speed *= 2.0
+        elif self._play_speed < 0.001:
+            self._play_speed = -1.0
         else:
-            self.play_speed *= 0.5
+            self._play_speed *= 0.5
             
-        self.play_speed = max(self.min_play_speed, self.play_speed)
+        self._play_speed = max(self.min_play_speed, self._play_speed)
         
     def navigate_fastforward(self):
-        if self.play_speed >= 1.0:
-            self.play_speed *= 2.0
-        elif self.play_speed > -0.001:
-            self.play_speed = 1.0
+        if self._play_speed >= 1.0:
+            self._play_speed *= 2.0
+        elif self._play_speed > -0.001:
+            self._play_speed = 1.0
         else:
-            self.play_speed *= 0.5
+            self._play_speed *= 0.5
 
-        self.play_speed = min(self.max_play_speed, self.play_speed)
+        self._play_speed = min(self.max_play_speed, self._play_speed)
 
     def navigate_start(self): self.set_playhead(self.start_stamp)
     def navigate_end(self):   self.set_playhead(self.end_stamp)
@@ -553,7 +544,7 @@ class Timeline(Layer):
 
     def reset_timeline(self):
         self.reset_zoom() 
-        self.set_playhead(self._stamp_left)
+        self.set_playhead(Time.from_sec(self._stamp_left))
         
     def set_timeline_view(self, stamp_left, stamp_right):
         self._stamp_left  = stamp_left
@@ -564,8 +555,8 @@ class Timeline(Layer):
     def translate_timeline(self, dx):
         dstamp = self.map_dx_to_dstamp(dx)
 
-        self._stamp_left  -= Duration.from_sec(dstamp)
-        self._stamp_right -= Duration.from_sec(dstamp)
+        self._stamp_left  -= dstamp
+        self._stamp_right -= dstamp
 
         self.invalidate()
 
@@ -574,14 +565,14 @@ class Timeline(Layer):
         if (end_stamp - start_stamp) < Duration.from_sec(5.0):
             end_stamp = start_stamp + Duration.from_sec(5.0)
         
-        self.set_timeline_view(start_stamp, end_stamp)
+        self.set_timeline_view(start_stamp.to_sec(), end_stamp.to_sec())
 
     def zoom_in(self):  self.zoom_timeline(0.5)
     def zoom_out(self): self.zoom_timeline(2.0)
 
     def zoom_timeline(self, zoom):
-        stamp_interval     = (self._stamp_right - self._stamp_left).to_sec()
-        playhead_fraction  = (self._playhead - self._stamp_left).to_sec() / stamp_interval
+        stamp_interval     = self._stamp_right - self._stamp_left
+        playhead_fraction  = (self._playhead.to_sec() - self._stamp_left) / stamp_interval
         new_stamp_interval = zoom * stamp_interval
         
         # Enforce zoom limits
@@ -591,8 +582,8 @@ class Timeline(Layer):
         elif px_per_sec > self.max_zoom:
             new_stamp_interval = self.history_width / self.max_zoom
 
-        self._stamp_left  = self._playhead - Duration.from_sec(playhead_fraction * new_stamp_interval)
-        self._stamp_right = self._stamp_left + Duration.from_sec(new_stamp_interval)
+        self._stamp_left  = self._playhead.to_sec() - playhead_fraction * new_stamp_interval
+        self._stamp_right = self._stamp_left + new_stamp_interval
 
         self._layout()
 
@@ -600,26 +591,27 @@ class Timeline(Layer):
 
     def set_playhead(self, playhead):
         with self._playhead_lock:
+            if playhead == self._playhead:
+                return
+            
             self._playhead = playhead
             
-            if self._playhead > self._stamp_right:
-                dstamp = self._playhead - self._stamp_right + Duration.from_sec((self._stamp_right - self._stamp_left).to_sec() * 0.75)
-                if dstamp > self.end_stamp - self._stamp_right:
-                    dstamp = self.end_stamp - self._stamp_right
-                
+            if self._playhead.to_sec() > self._stamp_right:
+                dstamp = self._playhead.to_sec() - self._stamp_right + (self._stamp_right - self._stamp_left) * 0.75
+                if dstamp > self.end_stamp.to_sec() - self._stamp_right:
+                    dstamp = self.end_stamp.to_sec() - self._stamp_right
+
                 self._stamp_left  += dstamp
                 self._stamp_right += dstamp
                 
-                self.invalidate()
-            elif self._playhead < self._stamp_left:
-                dstamp = self._stamp_left - self._playhead + Duration.from_sec((self._stamp_right - self._stamp_left).to_sec() * 0.75)
-                if dstamp > self._stamp_left - self.start_stamp:
-                    dstamp = self._stamp_left - self.start_stamp
+            elif self._playhead.to_sec() < self._stamp_left:
+                dstamp = self._stamp_left - self._playhead.to_sec() + (self._stamp_right - self._stamp_left) * 0.75
+                if dstamp > self._stamp_left - self.start_stamp.to_sec():
+                    dstamp = self._stamp_left - self.start_stamp.to_sec()
 
                 self._stamp_left  -= dstamp
                 self._stamp_right -= dstamp
-                self.invalidate()
-
+                
             self._playhead_positions = {}
             for topic in self.topics:
                 bag, entry = self.get_entry(self._playhead, topic)
@@ -725,7 +717,6 @@ class Timeline(Layer):
         """
         Draw vertical grid-lines showing major and minor time divisions.
         """
-
         x_per_sec = self.map_dstamp_to_dx(1.0)
 
         major_divisions = [s for s in self.sec_divisions if x_per_sec * s >= self.major_spacing]
@@ -786,12 +777,12 @@ class Timeline(Layer):
 
     def _get_stamps(self, start_stamp, stamp_step):
         """Generate visible stamps every stamp_step"""
-        if start_stamp >= self._stamp_left.to_sec():
+        if start_stamp >= self._stamp_left:
             stamp = start_stamp
         else:
-            stamp = start_stamp + int((self._stamp_left.to_sec() - start_stamp) / stamp_step) * stamp_step + stamp_step
+            stamp = start_stamp + int((self._stamp_left - start_stamp) / stamp_step) * stamp_step + stamp_step
 
-        while stamp < self._stamp_right.to_sec():
+        while stamp < self._stamp_right:
             yield stamp
             stamp += stamp_step
 
@@ -876,23 +867,20 @@ class Timeline(Layer):
                 return
             all_stamps = self.index_cache[topic]
 
-        time_left  = self._stamp_left.to_sec()
-        time_right = self._stamp_right.to_sec()
-
-        start_index = bisect.bisect_left(all_stamps, time_left)
-        end_index   = bisect.bisect_left(all_stamps, time_right)
+        start_index = bisect.bisect_left(all_stamps, self._stamp_left)
+        end_index   = bisect.bisect_left(all_stamps, self._stamp_right)
 
         # Set pen based on datatype
         datatype_color = self.datatype_colors.get(datatype, self.default_datatype_color)
 
         # Iterate through regions of connected messages
-        width_interval = self.history_width / (time_right - time_left)
+        width_interval = self.history_width / (self._stamp_right - self._stamp_left)
 
         dc.set_line_width(1)
         dc.set_source_rgb(*datatype_color) 
         for (stamp_start, stamp_end) in self._find_regions(all_stamps[start_index:end_index], self.map_dx_to_dstamp(self.default_msg_combine_px)):
-            region_x_start = self.history_left + (stamp_start - time_left) * width_interval
-            region_x_end   = self.history_left + (stamp_end   - time_left) * width_interval
+            region_x_start = self.history_left + (stamp_start - self._stamp_left) * width_interval
+            region_x_end   = self.history_left + (stamp_end   - self._stamp_left) * width_interval
             region_width   = max(1, region_x_end - region_x_start)
 
             dc.rectangle(region_x_start, msg_y, region_width, msg_height)
@@ -906,8 +894,8 @@ class Timeline(Layer):
             playhead_index = bisect.bisect_right(all_stamps, self._playhead.to_sec()) - 1
             if playhead_index >= 0:
                 playhead_stamp = all_stamps[playhead_index]
-                if playhead_stamp > time_left and playhead_stamp < time_right:
-                    playhead_x = self.history_left + (all_stamps[playhead_index] - time_left) * width_interval
+                if playhead_stamp > self._stamp_left and playhead_stamp < self._stamp_right:
+                    playhead_x = self.history_left + (all_stamps[playhead_index] - self._stamp_left) * width_interval
                     dc.move_to(playhead_x, msg_y)
                     dc.line_to(playhead_x, msg_y + msg_height)
                     dc.stroke()
@@ -916,8 +904,8 @@ class Timeline(Layer):
         if renderer:
             # Iterate through regions of connected messages
             for (stamp_start, stamp_end) in self._find_regions(all_stamps[start_index:end_index], msg_combine_interval):
-                region_x_start = self.history_left + (stamp_start - time_left) * width_interval
-                region_x_end   = self.history_left + (stamp_end   - time_left) * width_interval
+                region_x_start = self.history_left + (stamp_start - self._stamp_left) * width_interval
+                region_x_end   = self.history_left + (stamp_end   - self._stamp_left) * width_interval
                 region_width   = max(1, region_x_end - region_x_start)
 
                 renderer.draw_timeline_segment(dc, topic, stamp_start, stamp_end, region_x_start, msg_y, region_width, msg_height)
@@ -974,24 +962,24 @@ class Timeline(Layer):
         dc.line_to(x + w + 1, y + 2)
         dc.stroke()
 
-    ### Pixel location <-> timestamp
+    ### Pixel location <-> time
 
     def map_x_to_stamp(self, x, clamp_to_visible=True):
         fraction = float(x - self.history_left) / self.history_width
 
         if clamp_to_visible:
             if fraction <= 0.0:
-                return self._stamp_left.to_sec()
+                return self._stamp_left
             elif fraction >= 1.0:
-                return self._stamp_right.to_sec()
+                return self._stamp_right
 
-        return (self._stamp_left + Duration.from_sec(fraction * (self._stamp_right - self._stamp_left).to_sec())).to_sec()
+        return self._stamp_left + fraction * (self._stamp_right - self._stamp_left)
 
     def map_dx_to_dstamp(self, dx):
-        return float(dx) * (self._stamp_right - self._stamp_left).to_sec() / self.history_width
+        return float(dx) * (self._stamp_right - self._stamp_left) / self.history_width
 
     def map_stamp_to_x(self, stamp, clamp_to_visible=True):
-        fraction = (stamp - self._stamp_left.to_sec()) / (self._stamp_right - self._stamp_left).to_sec()
+        fraction = (stamp - self._stamp_left) / (self._stamp_right - self._stamp_left)
 
         if clamp_to_visible:
             fraction = min(1.0, max(0.0, fraction))
@@ -999,7 +987,7 @@ class Timeline(Layer):
         return self.history_left + fraction * self.history_width
 
     def map_dstamp_to_dx(self, dstamp):
-        return (float(dstamp) * self.history_width) / (self._stamp_right - self._stamp_left).to_sec()
+        return (float(dstamp) * self.history_width) / (self._stamp_right - self._stamp_left)
 
     ### Mouse events
 
@@ -1008,17 +996,18 @@ class Timeline(Layer):
         if not self.contains(*self.clicked_pos):
             return
 
+        self._paused = True
+
         if event.ShiftDown():
             return
-
+        
         x, y = self.clicked_pos[0] - self.x, self.clicked_pos[1] - self.y
-        if x < self.history_left or x > self.history_left + self.history_width:
-            return
-
-        self.set_playhead(Time.from_sec(self.map_x_to_stamp(x)))  
+        if x >= self.history_left and x <= self.history_left + self.history_width:
+            self.set_playhead(Time.from_sec(self.map_x_to_stamp(x)))
 
     def on_middle_down(self, event):
         self.clicked_pos = self.dragged_pos = event.GetPosition()
+        self._paused = True
 
     def on_right_down(self, event):
         self.clicked_pos = self.dragged_pos = event.GetPosition()
@@ -1026,6 +1015,10 @@ class Timeline(Layer):
             return
 
         self.parent.display_popup(self.clicked_pos)
+
+    def on_left_up  (self, event): self._paused = False
+    def on_middle_up(self, event): self._paused = False
+    def on_right_up (self, event): pass
 
     def on_mousewheel(self, event):
         dz = event.GetWheelRotation() / event.GetWheelDelta()

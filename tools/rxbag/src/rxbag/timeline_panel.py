@@ -136,7 +136,7 @@ class TimelinePopupMenu(wx.Menu):
             for topic, renderer in renderers:
                 renderer_item = self.TimelineRendererMenuItem(self.thumbnail_menu, wx.NewId(), topic.lstrip('/'), topic, renderer, self.timeline)
                 self.thumbnail_menu.AppendItem(renderer_item)
-    
+
                 renderer_item.Check(topic in self.timeline.rendered_topics)
 
         # View (by topic)...
@@ -179,6 +179,14 @@ class TimelinePopupMenu(wx.Menu):
                 for viewer_type in viewer_types:
                     topic_menu.AppendItem(self.TopicViewMenuItem(topic_menu, wx.NewId(), viewer_type.name, topic, viewer_type, self.timeline))
 
+        # ---
+        self.AppendSeparator()
+
+        # Play All Messages
+        self.play_all_menu = self.PlayAllMenuItem(self, wx.NewId(), 'Play all messages', self.timeline)
+        self.AppendItem(self.play_all_menu)
+        self.play_all_menu.Check(self.timeline.play_all)
+
     class TimelineRendererMenuItem(wx.MenuItem):
         def __init__(self, parent, id, label, topic, renderer, timeline):
             wx.MenuItem.__init__(self, parent, id, label, kind=wx.ITEM_CHECK)
@@ -210,3 +218,14 @@ class TimelinePopupMenu(wx.Menu):
             frame.Show()
             
             self.timeline.add_view(self.topic, view)
+
+    class PlayAllMenuItem(wx.MenuItem):
+        def __init__(self, parent, id, label, timeline):
+            wx.MenuItem.__init__(self, parent, id, label, kind=wx.ITEM_CHECK)
+            
+            self.timeline = timeline
+
+            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.GetId())
+
+        def on_menu(self, event):
+            self.timeline.play_all = not self.timeline.play_all

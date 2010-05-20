@@ -58,6 +58,9 @@ class Layer:
     def on_left_down(self, event):   pass
     def on_middle_down(self, event): pass
     def on_right_down(self, event):  pass
+    def on_left_up(self, event):     pass
+    def on_middle_up(self, event):   pass
+    def on_right_up(self, event):    pass
     def on_size(self, event):        pass
     def on_close(self, event):       pass
 
@@ -123,9 +126,12 @@ class LayerPanel(wx.Window):
         self.Bind(wx.EVT_LEFT_DOWN,   self.on_left_down)
         self.Bind(wx.EVT_MIDDLE_DOWN, self.on_middle_down)
         self.Bind(wx.EVT_RIGHT_DOWN,  self.on_right_down)
+        self.Bind(wx.EVT_LEFT_UP,     self.on_left_up)
+        self.Bind(wx.EVT_MIDDLE_UP,   self.on_middle_up)
+        self.Bind(wx.EVT_RIGHT_UP,    self.on_right_up)
         self.Bind(wx.EVT_MOTION,      self.on_mouse_move)
         self.Bind(wx.EVT_MOUSEWHEEL,  self.on_mousewheel)
-        
+
         self.GetParent().Bind(wx.EVT_CLOSE, self.on_close)
 
     @property
@@ -177,7 +183,22 @@ class LayerPanel(wx.Window):
         self.clicked_pos = event.GetPosition() 
         for layer in self.layers:
             layer.on_right_down(event)
-                
+
+    def on_left_up(self, event):
+        self.clicked_pos = event.GetPosition()
+        for layer in self.layers:
+            layer.on_left_up(event)
+
+    def on_middle_up(self, event):
+        self.clicked_pos = event.GetPosition()
+        for layer in self.layers:
+            layer.on_middle_up(event)
+
+    def on_right_up(self, event):
+        self.clicked_pos = event.GetPosition() 
+        for layer in self.layers:
+            layer.on_right_up(event)
+
     def on_mouse_move(self, event):
         for layer in self.layers:
             layer.on_mouse_move(event)

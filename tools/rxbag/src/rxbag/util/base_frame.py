@@ -51,8 +51,6 @@ class BaseFrame(wx.Frame):
         self._save_config()
 
         self.Destroy()
-        
-        wx.Exit()
 
     ## Load position and size of the frame from config
     def _load_config(self):

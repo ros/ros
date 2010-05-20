@@ -247,6 +247,10 @@ class Timeline(Layer):
         self._playhead_positions = None
         self.play_all            = False
 
+        self._message_cache_capacity = 50
+        self._message_cache          = {}
+        self._message_cache_keys     = []
+
         self.views = []
 
         self.listeners = {}
@@ -861,7 +865,10 @@ class Timeline(Layer):
             if topic not in self.invalidated_caches:
                 return topic_cache
             
-            start_time = Time.from_sec(max(0.0, topic_cache[-1]))
+            if len(topic_cache) == 0:
+                start_time = self.start_stamp
+            else:
+                start_time = Time.from_sec(max(0.0, topic_cache[-1]))
 
         end_time = self.end_stamp
 
@@ -1094,6 +1101,22 @@ class Timeline(Layer):
 
     ###
 
+    def _get_message(self, bag, topic, position):
+        key = '%s%s%s' % (bag.filename, topic, str(position))
+        if key in self._message_cache:
+            return self._message_cache[key]
+        
+        msg_data = self.read_message(bag, position)
+        self._message_cache[key] = msg_data
+        self._message_cache_keys.append(key)
+        
+        if len(self._message_cache) > self._message_cache_capacity:
+            oldest_key = self._message_cache_keys[0]
+            del self._message_cache[oldest_key]
+            self._message_cache_keys.remove(oldest_key)
+
+        return msg_data
+
     def _update_message_view(self):
         if not self._playhead_positions:
             return
@@ -1104,8 +1127,10 @@ class Timeline(Layer):
                 bag, playhead_position = self._playhead_positions[topic]
                 if playhead_position is not None:
                     # Load the message
-                    msgs[topic] = (bag, self.read_message(bag, playhead_position))
+                    msgs[topic] = (bag, self._get_message(bag, topic, playhead_position))
                     continue
+
+        # @todo: only inform listeners on a change in message
 
         # Inform the listeners
         for topic in self.topics:

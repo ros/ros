@@ -80,6 +80,7 @@ class RxBagApp(wx.App):
 
             # Create main timeline frame
             frame = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline', title=frame_title)
+            frame.Bind(wx.EVT_CLOSE, lambda e: wx.Exit())
             panel = timeline_panel.TimelinePanel(frame, -1)
             panel.app = self
             frame.Show()

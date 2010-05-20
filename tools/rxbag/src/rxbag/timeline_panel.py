@@ -106,12 +106,20 @@ class TimelinePopupMenu(wx.Menu):
         self.parent   = parent
         self.timeline = timeline
 
-        # Reset Timeline
+        # Reset timeline
         self.reset_timeline_menu = wx.MenuItem(self, wx.NewId(), 'Reset Timeline')
         self.AppendItem(self.reset_timeline_menu)
         self.Bind(wx.EVT_MENU, lambda e: self.timeline.reset_timeline(), id=self.reset_timeline_menu.GetId())
 
-        # Get the renderers
+        # Play all messages
+        self.play_all_menu = wx.MenuItem(self, wx.NewId(), 'Play All Messages', kind=wx.ITEM_CHECK)
+        self.AppendItem(self.play_all_menu)
+        self.play_all_menu.Check(self.timeline.play_all)
+        self.Bind(wx.EVT_MENU, lambda e: self.timeline.toggle_play_all(), id=self.play_all_menu.GetId())
+
+        # ---
+        self.AppendSeparator()
+
         renderers = self.timeline.get_renderers()
 
         # Thumbnails...
@@ -141,7 +149,7 @@ class TimelinePopupMenu(wx.Menu):
 
         # View (by topic)...
         self.view_topic_menu = wx.Menu()
-        self.AppendSubMenu(self.view_topic_menu, 'View (by topic)...', 'View message detail')
+        self.AppendSubMenu(self.view_topic_menu, 'View (by Topic)...', 'View message detail')
         
         for topic in self.timeline.topics:
             datatype = self.timeline.get_datatype(topic)
@@ -158,7 +166,7 @@ class TimelinePopupMenu(wx.Menu):
 
         # View (by datatype)...
         self.view_datatype_menu = wx.Menu()
-        self.AppendSubMenu(self.view_datatype_menu, 'View (by datatype)...', 'View message detail')
+        self.AppendSubMenu(self.view_datatype_menu, 'View (by Type)...', 'View message detail')
 
         topics_by_datatype = self.timeline.topics_by_datatype
         
@@ -182,16 +190,19 @@ class TimelinePopupMenu(wx.Menu):
         # ---
         self.AppendSeparator()
 
-        # Play all messages
-        self.play_all_menu = wx.MenuItem(self, wx.NewId(), 'Play all messages', kind=wx.ITEM_CHECK)
-        self.AppendItem(self.play_all_menu)
-        self.play_all_menu.Check(self.timeline.play_all)
-        self.Bind(wx.EVT_MENU, lambda e: self.timeline.toggle_play_all(), id=self.play_all_menu.GetId())
-
         # Publish...
         self.publish_menu = wx.Menu()
-        self.AppendSubMenu(self.publish_menu, 'Publish...', 'Publish messages')
+        self.AppendSubMenu(self.publish_menu, 'Publish...', 'Publish Messages')
         
+        # Publish... / Publish All
+        self.publish_menu.AppendItem(self.PublishAllMenuItem(self.publish_menu, wx.NewId(), 'Publish All',  True,  self.timeline))
+
+        # Publish... / Publish None
+        self.publish_menu.AppendItem(self.PublishAllMenuItem(self.publish_menu, wx.NewId(), 'Publish None', False, self.timeline))
+
+        # ---
+        self.publish_menu.AppendSeparator()
+
         for topic in self.timeline.topics:
             # Publish... / topic
             publish_topic_menu = self.PublishTopicMenuItem(self.publish_menu, wx.NewId(), topic, self.timeline)
@@ -255,3 +266,20 @@ class TimelinePopupMenu(wx.Menu):
                 self.timeline.stop_publishing(self.topic)
             else:
                 self.timeline.start_publishing(self.topic)
+
+    class PublishAllMenuItem(wx.MenuItem):
+        def __init__(self, parent, id, label, start, timeline):
+            wx.MenuItem.__init__(self, parent, id, label)
+            
+            self.timeline = timeline
+            self.start    = start
+
+            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.GetId())
+
+        def on_menu(self, event):
+            if self.start:
+                for topic in self.timeline.topics:
+                    self.timeline.start_publishing(topic)
+            else:
+                for topic in self.timeline.topics:
+                    self.timeline.stop_publishing(topic)

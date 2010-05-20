@@ -53,18 +53,20 @@ class Player(object):
         self._publishing = set()
         self._publishers = {}
         
+        # Attempt to connect to the ROS master
         if not self.timeline.parent.app.connect_to_ros():
             raise Exception('Error connecting to ROS')
 
-    def is_publishing(self, topic): return topic in self._publishing
+    def is_publishing(self, topic):
+        return topic in self._publishing
     
     def start_publishing(self, topic):
         if topic in self._publishing:
             return
         
-        self.timeline.add_listener(topic, self)
-        
         self._publishing.add(topic)
+
+        self.timeline.add_listener(topic, self)
     
     def stop_publishing(self, topic):
         if topic not in self._publishing:
@@ -72,22 +74,27 @@ class Player(object):
         
         self.timeline.remove_listener(topic, self)
 
-        self._publishing.remove(topic)
-
         if topic in self._publishers:
             self._publishers[topic].unregister()
+            del self._publishers[topic]
+
+        self._publishing.remove(topic)
 
     def stop(self):
-        for topic in self._publishing:
+        for topic in list(self._publishing):
             self.stop_publishing(topic)
+            
+    ## 
 
     def message_viewed(self, bag, msg_data):
         topic, msg, t = msg_data
 
+        # Create publisher if this is the first message on the topic
         if topic not in self._publishers:
             try:
                 self._publishers[topic] = rospy.Publisher(topic, type(msg))
             except Exception, ex:
+                # Any errors, stop listening/publishing to this topic
                 rospy.logerr('Error creating publisher on topic %s for type %s' % (topic, str(type(msg))))
                 self.stop_publishing(topic)
 

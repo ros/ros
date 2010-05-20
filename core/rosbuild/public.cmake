@@ -615,7 +615,7 @@ endmacro(rosbuild_add_rostest_future)
 # the specified file 
 macro(rosbuild_add_pyunit file)
   string(REPLACE "/" "_" _testname ${file})
-  _rosbuild_add_pyunit(${file})
+  _rosbuild_add_pyunit(${ARGV})
   # Redeclaration of target is to workaround bug in 2.4.6
   if(CMAKE_MINOR_VERSION LESS 6)
     add_custom_target(test)

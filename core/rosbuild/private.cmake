@@ -353,7 +353,7 @@ macro(_rosbuild_add_library lib libname type)
   rosbuild_add_compile_flags(${lib} ${ROS_COMPILE_FLAGS})
   rosbuild_add_link_flags(${lib} ${ROS_LINK_FLAGS})
 
-  # Make sure to do any prebuild working (e.g., msg/srv generation) before
+  # Make sure to do any prebuild work (e.g., msg/srv generation) before
   # building this target.
   add_dependencies(${lib} rosbuild_precompile)
 endmacro(_rosbuild_add_library)

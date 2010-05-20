@@ -37,6 +37,9 @@ macro(genmsg_py)
 
     # A target that depends on generation of the __init__.py
     add_custom_target(ROSBUILD_genmsg_py DEPENDS ${_output_py})
+    # Make our target depend on rosbuild_premsgsrvgen, to allow any
+    # pre-msg/srv generation steps to be done first.
+    add_dependencies(ROSBUILD_genmsg_py rosbuild_premsgsrvgen)
     # Add our target to the top-level genmsg target, which will be fired if
     # the user calls genmsg()
     add_dependencies(rospack_genmsg ROSBUILD_genmsg_py)
@@ -83,6 +86,9 @@ macro(gensrv_py)
   
     # A target that depends on generation of the __init__.py
     add_custom_target(ROSBUILD_gensrv_py DEPENDS ${_output_py})
+    # Make our target depend on rosbuild_premsgsrvgen, to allow any
+    # pre-msg/srv generation steps to be done first.
+    add_dependencies(ROSBUILD_gensrv_py rosbuild_premsgsrvgen)
     # Add our target to the top-level gensrv target, which will be fired if
     # the user calls gensrv()
     add_dependencies(rospack_gensrv ROSBUILD_gensrv_py)

@@ -326,6 +326,11 @@ macro(rosbuild_init)
   add_custom_target(rospack_genmsg)
   add_custom_target(rospack_gensrv)
 
+  # Add a target that will fire before doing message or service generation.
+  # This is used by packages that do automatic generation of message and
+  # service files.
+  add_custom_target(rosbuild_premsgsrvgen)
+
   # Add a target that will fire before compiling anything.  This is used by
   # message and service generation, as well as things outside of ros, like
   # dynamic_reconfigure.
@@ -466,7 +471,7 @@ macro(rosbuild_add_executable exe)
   rosbuild_add_compile_flags(${exe} ${ROS_COMPILE_FLAGS})
   rosbuild_add_link_flags(${exe} ${ROS_LINK_FLAGS})
 
-  # Make sure to do any prebuild working (e.g., msg/srv generation) before
+  # Make sure to do any prebuild work (e.g., msg/srv generation) before
   # building this target.
   add_dependencies(${exe} rosbuild_precompile)
 

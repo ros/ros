@@ -50,9 +50,7 @@ class StatusLayer(Layer):
         if not self.timeline.playhead:
             return
 
-        t = roslib.rostime.Time.from_sec(self.timeline.playhead)
-
-        s = bag_helper.stamp_to_str(t)
+        s = bag_helper.stamp_to_str(self.timeline.playhead)
         
         spd = self.timeline.play_speed
         spd_str = None

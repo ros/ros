@@ -121,8 +121,11 @@ class Recorder(threading.Thread):
         for subscriber_helper in self._subscriber_helpers.values():
             subscriber_helper.subscriber.unregister()
         
-        # Close the bag file
-        self._bag.close()
+        # Close the bag file so that the index gets written
+        try:
+            self._bag.close()
+        except Exception, ex:
+            print >> sys.stderr, 'Error closing bag [%s]: %s' % (self._bag.filename, str(ex))
 
     def _record(self, topic, m):
         # Write the message to the bag

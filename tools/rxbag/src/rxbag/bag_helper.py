@@ -42,16 +42,18 @@ def stamp_to_str(t): return time.strftime('%b %d %Y %H:%M:%S', time.localtime(t.
 def get_topics(bag): return sorted(set([c.topic for c in bag._get_connections()]))
 
 def get_start_stamp(bag):
-    starts = [index[0].time.to_sec() for index in bag._connection_indexes.values()]
-    if len(starts) == 0:
-        return None
-    return min(starts)
+    start_stamp = None
+    for connection_start_stamp in [index[0].time for index in bag._connection_indexes.values()]:
+        if not start_stamp or connection_start_stamp < start_stamp:
+            start_stamp = connection_start_stamp
+    return start_stamp
 
 def get_end_stamp(bag):
-    ends = [index[-1].time.to_sec() for index in bag._connection_indexes.values()]
-    if len(ends) == 0:
-        return None
-    return max(ends)
+    end_stamp = None
+    for connection_end_stamp in [index[-1].time for index in bag._connection_indexes.values()]:
+        if not end_stamp or connection_end_stamp < end_stamp:
+            end_stamp = connection_end_stamp
+    return end_stamp
 
 def get_topics_by_datatype(bag):
     topics_by_datatype = {}

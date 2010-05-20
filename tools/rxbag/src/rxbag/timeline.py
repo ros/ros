@@ -39,6 +39,7 @@ import roslib; roslib.load_manifest(PKG)
 import rospy
 
 import rosbag
+from roslib.rostime import Duration, Time
 import rosgraph.masterapi
 
 import bisect
@@ -53,14 +54,13 @@ import cairo
 import wx
 
 import bag_helper
-import playhead
 import plugins
 from raw_view   import RawView
 from recorder   import Recorder
 from util.layer import Layer
 
 class IndexCacheThread(threading.Thread):
-    def __init__(self, timeline, period=0.5):
+    def __init__(self, timeline, period=0.1):
         threading.Thread.__init__(self)
 
         self.setDaemon(True)
@@ -77,9 +77,9 @@ class IndexCacheThread(threading.Thread):
             if len(topics) == 0:
                 time.sleep(1.0)
                 continue
-            
-            with self.timeline.index_cache_lock:
-                for topic in topics:
+
+            for topic in topics:
+                with self.timeline.index_cache_lock:
                     self.timeline._update_index_cache(topic)
 
             wx.CallAfter(self.timeline.invalidate)
@@ -118,9 +118,9 @@ class PlayThread(threading.Thread):
             self.last_playhead = None
             return
 
-        now = time.time()
+        now = Time.from_sec(time.time())
         if self.last_frame and self.timeline.playhead == self.last_playhead:
-            new_playhead = self.timeline.playhead + (now - self.last_frame) * self.timeline.play_speed
+            new_playhead = self.timeline.playhead + Duration.from_sec((now - self.last_frame).to_sec() * self.timeline.play_speed)
 
             start_stamp = self.timeline.start_stamp
             end_stamp   = self.timeline.end_stamp
@@ -139,29 +139,31 @@ class PlayThread(threading.Thread):
             self.last_frame    = None
             self.last_playhead = None
             return
+
+        max_step = Duration.from_sec(0.05)
         
-        now = time.time()
+        now = Time.from_sec(time.time())
         if self.last_frame and self.timeline.playhead == self.last_playhead:
-            next_message_time = self.get_next_message_time()
+            next_message_time = self.timeline.get_next_message_time()
             if next_message_time is not None:
                 if self.last_playhead is None:
                     new_playhead = next_message_time
                 else:
                     if next_message_time > self.last_playhead:
-                        delta = (next_message_time - self.last_playhead) * self.timeline.play_speed
-                        if delta > 0.05:
-                            delta = 0.05
-                        time.sleep(delta)
+                        delta = Duration.from_sec((next_message_time - self.last_playhead).to_sec() * self.timeline.play_speed)
+                        if delta > max_step:
+                            delta = max_step
+                        time.sleep(delta.to_sec())
     
                         new_playhead = self.last_playhead + delta
                     else:
-                        delta = (self.timeline.end_stamp - self.last_playhead) * self.timeline.play_speed
-                        if delta > 0.05:
-                            delta = 0.05
-                            time.sleep(delta)
+                        delta = Duration.from_sec((self.timeline.end_stamp - self.last_playhead).to_sec() * self.timeline.play_speed)
+                        if delta > max_step:
+                            delta = max_step
+                            time.sleep(delta.to_sec())
                             new_playhead = self.last_playhead + delta
                         else:
-                            time.sleep(delta)
+                            time.sleep(delta.to_sec())
                             new_playhead = next_message_time
 
                 self.timeline.set_playhead(new_playhead)
@@ -170,19 +172,6 @@ class PlayThread(threading.Thread):
 
         self.last_frame    = now
         self.last_playhead = self.timeline.playhead
-
-    def get_next_message_time(self):
-        if not self.timeline.playhead:
-            return None
-
-        # NOTE: add an epsilon due to imperfect conversion from roslib.Time <-> float
-        playhead_time = roslib.rostime.Time.from_sec(self.timeline.playhead + 0.000001)
-
-        _, entry = self.timeline.get_entry_after(playhead_time)
-        if entry is None:
-            return self.timeline.start_stamp
-
-        return entry.time.to_sec()
 
     def stop(self): self.stop_flag = True
 
@@ -255,13 +244,13 @@ class Timeline(Layer):
         self.history_width  = 0
         self.history_bounds = {}
 
-        self.stamp_left    = None
-        self.stamp_right   = None
-        self.playhead      = None
-        self.playhead_lock = threading.RLock()
+        self._stamp_left    = None
+        self._stamp_right   = None
+        self._playhead      = None
+        self._playhead_lock = threading.RLock()
         
         self.play_speed         = 0.0
-        self.playhead_positions = None
+        self._playhead_positions = None
 
         self.views = []
 
@@ -279,6 +268,19 @@ class Timeline(Layer):
         self.index_cache_thread = IndexCacheThread(self)
         
     ###
+
+    def get_next_message_time(self):
+        if self.playhead is None:
+            return None
+
+        _, entry = self.get_entry_after(self.playhead)
+        if entry is None:
+            return self.start_stamp
+
+        return entry.time
+
+    @property
+    def playhead(self): return self._playhead
 
     def invalidate(self):
         Layer.invalidate(self)
@@ -327,13 +329,14 @@ class Timeline(Layer):
                 if start_stamp is None:
                     start_stamp = bag_start_stamp
                 else:
-                    start_stamp = min(start_stamp, bag_start_stamp)
+                    if bag_start_stamp < start_stamp:
+                        start_stamp = bag_start_stamp
             return start_stamp
 
     @property
     def end_stamp(self):
         with self._bag_lock:
-            end_stamp = 0.0
+            end_stamp = None
             for bag in self.bags:
                 bag_end_stamp = bag_helper.get_end_stamp(bag)
                 if bag_end_stamp is None:
@@ -341,7 +344,8 @@ class Timeline(Layer):
                 if end_stamp is None:
                     end_stamp = bag_end_stamp
                 else:
-                    end_stamp = max(end_stamp, bag_end_stamp)
+                    if bag_end_stamp > end_stamp:
+                        end_stamp = bag_end_stamp
             return end_stamp
 
     @property
@@ -376,19 +380,16 @@ class Timeline(Layer):
         with self._bag_lock:
             from rosbag import bag
             
-            start_time = start_stamp.to_sec()
-            end_time   = end_stamp.to_sec()
-
             bag_entries = []
             for b in self.bags:
                 bag_start_time = bag_helper.get_start_stamp(b)
-                if bag_start_time > end_time:
+                if bag_start_time > end_stamp:
                     continue
                 
                 bag_end_time = bag_helper.get_end_stamp(b)
-                if bag_end_time < start_time:
+                if bag_end_time < start_stamp:
                     continue
-                
+
                 connections = list(b._get_connections(topic))
                 bag_entries.append(b._get_entries(connections, start_stamp, end_stamp))
 
@@ -494,7 +495,6 @@ class Timeline(Layer):
             self.rendered_topics.clear()
 
         self.invalidate()
-        self.parent.playhead.invalidate()
 
     def set_renderer_active(self, topic, active):
         if active:
@@ -507,7 +507,6 @@ class Timeline(Layer):
             self.rendered_topics.remove(topic)
         
         self.invalidate()
-        self.parent.playhead.invalidate()
 
     ###
 
@@ -554,26 +553,26 @@ class Timeline(Layer):
 
     def reset_timeline(self):
         self.reset_zoom() 
-        self.set_playhead(self.stamp_left)
+        self.set_playhead(self._stamp_left)
         
     def set_timeline_view(self, stamp_left, stamp_right):
-        self.stamp_left  = stamp_left
-        self.stamp_right = stamp_right
+        self._stamp_left  = stamp_left
+        self._stamp_right = stamp_right
 
         self.invalidate()
 
     def translate_timeline(self, dx):
         dstamp = self.map_dx_to_dstamp(dx)
 
-        self.stamp_left  -= dstamp
-        self.stamp_right -= dstamp
+        self._stamp_left  -= Duration.from_sec(dstamp)
+        self._stamp_right -= Duration.from_sec(dstamp)
 
         self.invalidate()
 
     def reset_zoom(self):
         start_stamp, end_stamp = self.start_stamp, self.end_stamp
-        if end_stamp - start_stamp < 5.0:
-            end_stamp = start_stamp + 5.0
+        if (end_stamp - start_stamp) < Duration.from_sec(5.0):
+            end_stamp = start_stamp + Duration.from_sec(5.0)
         
         self.set_timeline_view(start_stamp, end_stamp)
 
@@ -581,7 +580,9 @@ class Timeline(Layer):
     def zoom_out(self): self.zoom_timeline(2.0)
 
     def zoom_timeline(self, zoom):
-        new_stamp_interval = zoom * (self.stamp_right - self.stamp_left)
+        stamp_interval     = (self._stamp_right - self._stamp_left).to_sec()
+        playhead_fraction  = (self._playhead - self._stamp_left).to_sec() / stamp_interval
+        new_stamp_interval = zoom * stamp_interval
         
         # Enforce zoom limits
         px_per_sec = self.history_width / new_stamp_interval
@@ -589,47 +590,47 @@ class Timeline(Layer):
             new_stamp_interval = self.history_width / self.min_zoom
         elif px_per_sec > self.max_zoom:
             new_stamp_interval = self.history_width / self.max_zoom
-        
-        playhead_fraction = (self.playhead - self.stamp_left) / (self.stamp_right - self.stamp_left)
-        self.stamp_left   = self.playhead - playhead_fraction * new_stamp_interval
-        self.stamp_right  = self.stamp_left + new_stamp_interval
+
+        self._stamp_left  = self._playhead - Duration.from_sec(playhead_fraction * new_stamp_interval)
+        self._stamp_right = self._stamp_left + Duration.from_sec(new_stamp_interval)
 
         self._layout()
 
         self.invalidate()
-    
+
     def set_playhead(self, playhead):
-        with self.playhead_lock:
-            self.playhead = playhead
+        with self._playhead_lock:
+            self._playhead = playhead
             
-            if self.playhead > self.stamp_right:
-                dstamp = self.playhead - self.stamp_right + (self.stamp_right - self.stamp_left) * 0.75
-                dstamp = min(dstamp, self.end_stamp - self.stamp_right)
+            if self._playhead > self._stamp_right:
+                dstamp = self._playhead - self._stamp_right + Duration.from_sec((self._stamp_right - self._stamp_left).to_sec() * 0.75)
+                if dstamp > self.end_stamp - self._stamp_right:
+                    dstamp = self.end_stamp - self._stamp_right
                 
-                self.stamp_left  += dstamp
-                self.stamp_right += dstamp
+                self._stamp_left  += dstamp
+                self._stamp_right += dstamp
                 
                 self.invalidate()
-            elif self.playhead < self.stamp_left:
-                dstamp = self.stamp_left - self.playhead + (self.stamp_right - self.stamp_left) * 0.75
-                dstamp = min(dstamp, self.stamp_left - self.start_stamp)
+            elif self._playhead < self._stamp_left:
+                dstamp = self._stamp_left - self._playhead + Duration.from_sec((self._stamp_right - self._stamp_left).to_sec() * 0.75)
+                if dstamp > self._stamp_left - self.start_stamp:
+                    dstamp = self._stamp_left - self.start_stamp
 
-                self.stamp_left  -= dstamp
-                self.stamp_right -= dstamp
+                self._stamp_left  -= dstamp
+                self._stamp_right -= dstamp
                 self.invalidate()
 
-            playhead_time = roslib.rostime.Time.from_sec(self.playhead)
-
-            self.playhead_positions = {}
+            self._playhead_positions = {}
             for topic in self.topics:
-                bag, entry = self.get_entry(playhead_time, topic)
+                bag, entry = self.get_entry(self._playhead, topic)
                 if entry:
-                    self.playhead_positions[topic] = (bag, entry.position)
+                    self._playhead_positions[topic] = (bag, entry.position)
 
             self._update_message_view()
 
-            self.parent.status.invalidate()
             self.parent.playhead.update_position()
+
+            self.invalidate()
 
     ### Rendering
 
@@ -642,7 +643,7 @@ class Timeline(Layer):
         if len(self.bags) == 0 or len(self.topics) == 0:
             return
 
-        if self.stamp_left is None:
+        if self._stamp_left is None:
             self.reset_timeline()
 
         dc.set_antialias(cairo.ANTIALIAS_NONE)
@@ -739,7 +740,7 @@ class Timeline(Layer):
         else:
             minor_division = None
 
-        start_stamp = self.start_stamp
+        start_stamp = self.start_stamp.to_sec()
 
         major_stamps = list(self._get_stamps(start_stamp, major_division))
         self._draw_major_divisions(dc, major_stamps, start_stamp, major_division)
@@ -785,12 +786,12 @@ class Timeline(Layer):
 
     def _get_stamps(self, start_stamp, stamp_step):
         """Generate visible stamps every stamp_step"""
-        if start_stamp >= self.stamp_left:
+        if start_stamp >= self._stamp_left.to_sec():
             stamp = start_stamp
         else:
-            stamp = start_stamp + int((self.stamp_left - start_stamp) / stamp_step) * stamp_step + stamp_step
+            stamp = start_stamp + int((self._stamp_left.to_sec() - start_stamp) / stamp_step) * stamp_step + stamp_step
 
-        while stamp < self.stamp_right:
+        while stamp < self._stamp_right.to_sec():
             yield stamp
             stamp += stamp_step
 
@@ -826,7 +827,7 @@ class Timeline(Layer):
     def _update_index_cache(self, topic):
         if topic not in self.index_cache:
             # Don't have any cache of messages in this topic
-            start_time = roslib.rostime.Time.from_sec(max(0.0, self.start_stamp))
+            start_time = self.start_stamp
             topic_cache = []
             self.index_cache[topic] = topic_cache
         else:
@@ -836,9 +837,9 @@ class Timeline(Layer):
             if topic not in self.invalidated_caches:
                 return topic_cache
             
-            start_time = roslib.rostime.Time.from_sec(max(0.0, topic_cache[-1]))
+            start_time = Time.from_sec(max(0.0, topic_cache[-1]))
 
-        end_time = roslib.rostime.Time.from_sec(max(0.0, self.end_stamp))
+        end_time = self.end_stamp
 
         for entry in self.get_entries(topic, start_time, end_time):
             topic_cache.append(entry.time.to_sec())
@@ -875,20 +876,23 @@ class Timeline(Layer):
                 return
             all_stamps = self.index_cache[topic]
 
-        start_index = bisect.bisect_left(all_stamps, self.stamp_left)
-        end_index   = bisect.bisect_left(all_stamps, self.stamp_right)
+        time_left  = self._stamp_left.to_sec()
+        time_right = self._stamp_right.to_sec()
+
+        start_index = bisect.bisect_left(all_stamps, time_left)
+        end_index   = bisect.bisect_left(all_stamps, time_right)
 
         # Set pen based on datatype
         datatype_color = self.datatype_colors.get(datatype, self.default_datatype_color)
 
         # Iterate through regions of connected messages
-        width_interval = self.history_width / (self.stamp_right - self.stamp_left)
+        width_interval = self.history_width / (time_right - time_left)
 
         dc.set_line_width(1)
         dc.set_source_rgb(*datatype_color) 
         for (stamp_start, stamp_end) in self._find_regions(all_stamps[start_index:end_index], self.map_dx_to_dstamp(self.default_msg_combine_px)):
-            region_x_start = self.history_left + (stamp_start - self.stamp_left) * width_interval
-            region_x_end   = self.history_left + (stamp_end   - self.stamp_left) * width_interval
+            region_x_start = self.history_left + (stamp_start - time_left) * width_interval
+            region_x_end   = self.history_left + (stamp_end   - time_left) * width_interval
             region_width   = max(1, region_x_end - region_x_start)
 
             dc.rectangle(region_x_start, msg_y, region_width, msg_height)
@@ -899,11 +903,11 @@ class Timeline(Layer):
         if topic in self.listeners or True:
             dc.set_line_width(3)
             playhead_stamp = None
-            playhead_index = bisect.bisect_right(all_stamps, self.playhead) - 1
+            playhead_index = bisect.bisect_right(all_stamps, self._playhead.to_sec()) - 1
             if playhead_index >= 0:
                 playhead_stamp = all_stamps[playhead_index]
-                if playhead_stamp > self.stamp_left and playhead_stamp < self.stamp_right:
-                    playhead_x = self.history_left + (all_stamps[playhead_index] - self.stamp_left) * width_interval
+                if playhead_stamp > time_left and playhead_stamp < time_right:
+                    playhead_x = self.history_left + (all_stamps[playhead_index] - time_left) * width_interval
                     dc.move_to(playhead_x, msg_y)
                     dc.line_to(playhead_x, msg_y + msg_height)
                     dc.stroke()
@@ -912,8 +916,8 @@ class Timeline(Layer):
         if renderer:
             # Iterate through regions of connected messages
             for (stamp_start, stamp_end) in self._find_regions(all_stamps[start_index:end_index], msg_combine_interval):
-                region_x_start = self.history_left + (stamp_start - self.stamp_left) * width_interval
-                region_x_end   = self.history_left + (stamp_end   - self.stamp_left) * width_interval
+                region_x_start = self.history_left + (stamp_start - time_left) * width_interval
+                region_x_end   = self.history_left + (stamp_end   - time_left) * width_interval
                 region_width   = max(1, region_x_end - region_x_start)
 
                 renderer.draw_timeline_segment(dc, topic, stamp_start, stamp_end, region_x_start, msg_y, region_width, msg_height)
@@ -948,7 +952,7 @@ class Timeline(Layer):
 
     ## Draw markers to indicate the extent of the bag file
     def _draw_bag_ends(self, dc):
-        x_start, x_end = self.map_stamp_to_x(self.start_stamp), self.map_stamp_to_x(self.end_stamp)
+        x_start, x_end = self.map_stamp_to_x(self.start_stamp.to_sec()), self.map_stamp_to_x(self.end_stamp.to_sec())
         dc.set_source_rgba(0, 0, 0, 0.1)
         dc.rectangle(self.history_left, self.history_top, x_start - self.history_left,                    self.history_bottom - self.history_top)
         dc.rectangle(x_end,             self.history_top, self.history_left + self.history_width - x_end, self.history_bottom - self.history_top)
@@ -977,17 +981,17 @@ class Timeline(Layer):
 
         if clamp_to_visible:
             if fraction <= 0.0:
-                return self.stamp_left
+                return self._stamp_left.to_sec()
             elif fraction >= 1.0:
-                return self.stamp_right
+                return self._stamp_right.to_sec()
 
-        return max(0.0, self.stamp_left + fraction * (self.stamp_right - self.stamp_left))
+        return (self._stamp_left + Duration.from_sec(fraction * (self._stamp_right - self._stamp_left).to_sec())).to_sec()
 
     def map_dx_to_dstamp(self, dx):
-        return float(dx) * (self.stamp_right - self.stamp_left) / self.history_width
+        return float(dx) * (self._stamp_right - self._stamp_left).to_sec() / self.history_width
 
     def map_stamp_to_x(self, stamp, clamp_to_visible=True):
-        fraction = (stamp - self.stamp_left) / (self.stamp_right - self.stamp_left)
+        fraction = (stamp - self._stamp_left.to_sec()) / (self._stamp_right - self._stamp_left).to_sec()
 
         if clamp_to_visible:
             fraction = min(1.0, max(0.0, fraction))
@@ -995,7 +999,7 @@ class Timeline(Layer):
         return self.history_left + fraction * self.history_width
 
     def map_dstamp_to_dx(self, dstamp):
-        return (float(dstamp) * self.history_width) / (self.stamp_right - self.stamp_left)
+        return (float(dstamp) * self.history_width) / (self._stamp_right - self._stamp_left).to_sec()
 
     ### Mouse events
 
@@ -1011,7 +1015,7 @@ class Timeline(Layer):
         if x < self.history_left or x > self.history_left + self.history_width:
             return
 
-        self.set_playhead(self.map_x_to_stamp(x))  
+        self.set_playhead(Time.from_sec(self.map_x_to_stamp(x)))  
 
     def on_middle_down(self, event):
         self.clicked_pos = self.dragged_pos = event.GetPosition()
@@ -1058,20 +1062,20 @@ class Timeline(Layer):
             if not self.history_left:
                 return
 
-            self.set_playhead(self.map_x_to_stamp(x))
+            self.set_playhead(Time.from_sec(self.map_x_to_stamp(x)))
 
         self.dragged_pos = mouse_pos
 
     ###
 
     def _update_message_view(self):
-        if not self.playhead_positions:
+        if not self._playhead_positions:
             return
 
         msgs = {}
-        for topic in self.playhead_positions:
+        for topic in self._playhead_positions:
             if topic in self.listeners:
-                bag, playhead_position = self.playhead_positions[topic]
+                bag, playhead_position = self._playhead_positions[topic]
                 if playhead_position is not None:
                     # Load the message
                     msgs[topic] = (bag, self.read_message(bag, playhead_position))

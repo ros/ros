@@ -35,10 +35,11 @@ import roslib; roslib.load_manifest(PKG)
 
 import wx
 
-from playhead   import PlayheadLayer
-from status     import StatusLayer
-from timeline   import Timeline
-from util.layer import LayerPanel
+from playhead        import PlayheadLayer
+from status          import StatusLayer
+from timeline        import Timeline
+from util.base_frame import BaseFrame
+from util.layer      import LayerPanel
 
 class TimelinePanel(LayerPanel):
     def __init__(self, *args, **kwargs):

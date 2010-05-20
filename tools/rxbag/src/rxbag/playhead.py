@@ -95,7 +95,7 @@ class PlayheadLayer(Layer):
         if not self.timeline.playhead:
             return
 
-        playhead_x = self.timeline.map_stamp_to_x(self.timeline.playhead)
+        playhead_x = self.timeline.map_stamp_to_x(self.timeline.playhead.to_sec())
 
         self.move(self.timeline.x + playhead_x - self.width / 2, self.timeline.y)
 

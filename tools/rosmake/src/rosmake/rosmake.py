@@ -606,6 +606,13 @@ class RosMakeAll:
         
 
         options, args = parser.parse_args()
+        # force a rebuild of the package cache at the top        
+        
+        cmd = ["rospack", "profile"]
+        command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT)
+        (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above          
+        # both above and below are necessary for "roscreate-pkg foo && rosmake foo" to work
+        roslib.packages._invalidate_cache(roslib.packages._pkg_dir_cache)
 
         testing = False
         building = True

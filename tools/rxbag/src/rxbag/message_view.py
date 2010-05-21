@@ -42,7 +42,7 @@ import wx
 
 from util.layer import Layer
 
-class TimelineRenderer:
+class TimelineRenderer(object):
     """
     A widget that can render an interval of time of a topic as a rectangle on the timeline.
     @param msg_combine_px: don't draw discrete messages if they're less than this many pixels separated [optional]
@@ -57,6 +57,9 @@ class TimelineRenderer:
 
     def draw_timeline_segment(self, dc, topic, stamp_start, stamp_end, x, y, width, height):
         return False
+
+    def close(self):
+        pass
 
 class MessageView(Layer):
     """
@@ -78,6 +81,9 @@ class MessageView(Layer):
         pass
 
     def paint(self, dc):
+        pass
+
+    def close(self):
         pass
 
 class TopicMessageView(MessageView):

@@ -73,13 +73,9 @@ class StatusLayer(Layer):
         dc.set_font_size(14.0)
         font_width, font_height = dc.text_extents(s)[2:4]
 
-        x = self.timeline.margin_left - 2
-        y = self.timeline.history_top - 12
+        x = self.timeline.margin_left
+        y = self.timeline.history_top - 10
 
         dc.set_source_rgb(0, 0, 0)
         dc.move_to(x, y)
         dc.show_text(s)
-
-        #dc.set_font_size(10.0)
-        #dc.move_to(x + font_width + 2, y)
-        #dc.show_text('%d.%09d' % (t.secs, t.nsecs))

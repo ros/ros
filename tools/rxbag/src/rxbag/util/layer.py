@@ -163,7 +163,6 @@ class LayerPanel(wx.Window):
         self.Refresh()
 
     def on_size(self, event):
-        size = self.GetClientSize()
         for layer in self.layers:
             layer.on_size(event)
 

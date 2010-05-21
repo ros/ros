@@ -34,10 +34,16 @@
 
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
-
+import rospy
 import time
 
-def stamp_to_str(t): return time.strftime('%b %d %Y %H:%M:%S', time.localtime(t.to_sec())) + '.%03d' % (t.nsecs / 1000000)
+def stamp_to_str(t):
+    t_sec = t.to_sec()
+    if t < rospy.Time.from_sec(60 * 60 * 24 * 7 * 52 * 5):
+        # Display timestamps earlier than 1975 as seconds
+        return '%.3fs' % t_sec
+    else:
+        return time.strftime('%b %d %Y %H:%M:%S', time.localtime(t_sec)) + '.%03d' % (t.nsecs / 1000000)
 
 def get_topics(bag): return sorted(set([c.topic for c in bag._get_connections()]))
 

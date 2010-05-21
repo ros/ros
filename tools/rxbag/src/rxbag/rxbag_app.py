@@ -79,12 +79,20 @@ class RxBagApp(wx.App):
                 frame_title = 'rxbag - [%d bags]' % len(self.args)
 
             # Create main timeline frame
-            frame = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline', title=frame_title)
-            frame.Bind(wx.EVT_CLOSE, lambda e: wx.Exit())
-            panel = timeline_panel.TimelinePanel(frame, -1)
+            self.frame = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline', title=frame_title)
+            self.frame.SetBackgroundColour(wx.WHITE)
+            self.frame.Bind(wx.EVT_CLOSE, lambda e: wx.Exit())
+
+            scroll = wx.ScrolledWindow(self.frame, -1)
+            scroll.SetBackgroundColour(wx.WHITE)
+            
+            panel = timeline_panel.TimelinePanel(scroll, -1)
             panel.app = self
-            frame.Show()
-            self.SetTopWindow(frame)
+            panel.create_controls()
+            panel.SetSize((100, 100))
+            
+            self.frame.Show()
+            self.SetTopWindow(self.frame)
 
             if self.options.record:
                 panel.timeline.record_bag(record_filename)

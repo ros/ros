@@ -61,7 +61,7 @@ from recorder   import Recorder
 from util.layer import Layer
 
 class IndexCacheThread(threading.Thread):
-    def __init__(self, timeline, period=0.1):
+    def __init__(self, timeline, period=2.0):
         threading.Thread.__init__(self)
 
         self.setDaemon(True)
@@ -73,21 +73,28 @@ class IndexCacheThread(threading.Thread):
         self.start()
 
     def run(self):
-        while not self.stop_flag:
-            topics = self.timeline.topics
-            if len(topics) == 0:
-                time.sleep(1.0)
-                continue
+        try:
+            while not self.stop_flag:
+                topics = self.timeline.topics
+                if len(topics) == 0:
+                    time.sleep(1.0)
+                    continue
 
-            for topic in topics:
-                with self.timeline.index_cache_lock:
-                    self.timeline._update_index_cache(topic)
+                updated = False
+                for topic in topics:
+                    with self.timeline.index_cache_lock:
+                        updated |= self.timeline._update_index_cache(topic)
 
-            wx.CallAfter(self.timeline.invalidate)
+                if updated:
+                    wx.CallAfter(self.timeline.invalidate)
+    
+                time.sleep(self.period)
+        except:
+            pass
 
-            time.sleep(self.period)
-
-    def stop(self): self.stop_flag = True
+    def stop(self):
+        self.stop_flag = True
+        self.join()
 
 class PlayThread(threading.Thread):
     def __init__(self, timeline):
@@ -103,20 +110,23 @@ class PlayThread(threading.Thread):
         self.play_all = None
         
         while not self.stop_flag:
-            # Reset on switch of playing mode
-            if self.play_all != self.timeline.play_all or self.timeline.playhead != self.last_playhead:
-                self.play_all = self.timeline.play_all
-
-                self.last_frame       = None
-                self.last_playhead    = None
-                self.desired_playhead = None
-
-            if self.play_all:
-                self.step_next_message()
-                time.sleep(0.02)
-            else:
-                self.step_fixed()
-                time.sleep(0.04)
+            try:
+                # Reset on switch of playing mode
+                if self.play_all != self.timeline.play_all or self.timeline.playhead != self.last_playhead:
+                    self.play_all = self.timeline.play_all
+    
+                    self.last_frame       = None
+                    self.last_playhead    = None
+                    self.desired_playhead = None
+    
+                if self.play_all:
+                    self.step_next_message()
+                    time.sleep(0.02)
+                else:
+                    self.step_fixed()
+                    time.sleep(0.04)
+            except:
+                pass
 
     def step_fixed(self):
         if self.timeline.play_speed == 0.0 or not self.timeline.playhead:
@@ -169,7 +179,9 @@ class PlayThread(threading.Thread):
         self.last_frame    = now
         self.last_playhead = self.timeline.playhead
 
-    def stop(self): self.stop_flag = True
+    def stop(self):
+        self.stop_flag = True
+        self.join()
 
 class Timeline(Layer):
     name = 'Timeline'
@@ -198,7 +210,7 @@ class Timeline(Layer):
         self.history_top       = 24
         self.bag_end_width     = 3
         self.time_tick_height  = 3
-        
+
         self.minor_divisions_color_tick = (0.5, 0.5, 0.5, 0.3)
         self.minor_divisions_color      = (0.6, 0.6, 0.6, 0.3)
 
@@ -234,8 +246,8 @@ class Timeline(Layer):
         self.dragged_pos = None
 
         self.history_left   = 0
-        self.history_height = 0
         self.history_width  = 0
+        self.history_bottom = 0
         self.history_bounds = {}
 
         self._stamp_left         = None
@@ -244,7 +256,7 @@ class Timeline(Layer):
         self._playhead_lock      = threading.RLock()
         self._play_speed         = 0.0
         self._paused             = False
-        self._playhead_positions = None
+        self._playhead_positions = {}
         self.play_all            = False
 
         self._message_cache_capacity = 50
@@ -266,31 +278,59 @@ class Timeline(Layer):
 
         self.play_thread        = PlayThread(self)
         self.index_cache_thread = IndexCacheThread(self)
+
+        scroll_window = self.parent.GetParent()
+        scroll_window.Bind(wx.EVT_SIZE, self.on_size)
         
     ###
 
+    @property
+    def history_height(self): return self.history_bottom - self.history_top
+
     def on_close(self, event):
+        for renderer in self.timeline_renderers.values(): 
+            renderer.close()
+
         self.index_cache_thread.stop()
+
         self.play_thread.stop()
+        
         if self.player:
             self.player.stop()
+
         if self.recorder:
             self.recorder.stop()
-            self.recorder.join()   # wait for recorder to stop until exiting app (ensures bag is closed gracefully) 
 
-    def get_next_message_time(self):
-        if self.playhead is None:
-            return None
+     ### Bags
 
-        _, entry = self.get_entry_after(self.playhead)
-        if entry is None:
-            return self.start_stamp
+    def record_bag(self, filename):
+        try:
+            self.recorder = Recorder(filename, bag_lock=self._bag_lock)
+        except Exception, ex:
+            print >> sys.stderr, 'Error opening bag for recording [%s]: %s' % (self._filename, str(ex))
+            return
 
-        return entry.time
-
-    def toggle_play_all(self):
-        self.play_all = not self.play_all
+        self.recorder.add_listener(self.message_recorded)
         
+        self.bags.append(self.recorder.bag)
+        
+        self.recorder.start()
+
+        # Update the message index cache at 5 Hz
+        self.index_cache_thread.period = 0.2
+
+    def add_bag(self, bag):
+        self.bags.append(bag)
+
+        # Invalidate entire index cache for all topics in this bag
+        with self.index_cache_lock:
+            for topic in bag_helper.get_topics(bag):
+                if topic in self.index_cache:
+                    del self.index_cache[topic]
+                    self._update_index_cache(topic)
+    
+        self.invalidate()
+    
     ### Publishing
 
     def is_publishing(self, topic):
@@ -329,32 +369,26 @@ class Timeline(Layer):
     @property
     def playhead(self): return self._playhead
 
+    ### Recording
+
     def message_recorded(self, topic, msg, t):
         # Invalidate the topic
         self.invalidated_caches.add(topic)
 
-    def record_bag(self, filename):
-        try:
-            self.recorder = Recorder(filename, bag_lock=self._bag_lock)
-        except Exception, ex:
-            print >> sys.stderr, 'Error opening bag for recording [%s]: %s' % (self._filename, str(ex))
-            return
+    ###
 
-        self.recorder.add_listener(self.message_recorded)
-        
-        self.bags.append(self.recorder.bag)
-        
-        self.recorder.start()
+    def get_next_message_time(self):
+        if self.playhead is None:
+            return None
 
-    def add_bag(self, bag):
-        self.bags.append(bag)
+        _, entry = self.get_entry_after(self.playhead)
+        if entry is None:
+            return self.start_stamp
 
-        # Invalidate entire index cache for all topics in this bag
-        with self.index_cache_lock:
-            for topic in bag_helper.get_topics(bag):
-                if topic in self.index_cache:
-                    del self.index_cache[topic]
-                    self._update_index_cache(topic)
+        return entry.time
+
+    def toggle_play_all(self):
+        self.play_all = not self.play_all  
 
     @property
     def start_stamp(self):
@@ -471,7 +505,7 @@ class Timeline(Layer):
     def add_listener(self, topic, listener):
         self.listeners.setdefault(topic, []).append(listener)
 
-        self._update_message_view()
+        self._update_message_view_for_topic(topic)
         self.invalidate()
 
     def remove_listener(self, topic, listener):
@@ -538,10 +572,6 @@ class Timeline(Layer):
 
     ###
 
-    @property
-    def history_bottom(self):
-        return self.history_top + self.history_height
-    
     @property
     def history_right(self):
         return self.history_left + self.history_width
@@ -632,17 +662,19 @@ class Timeline(Layer):
                 return
             
             self._playhead = playhead
+
+            playhead_secs = playhead.to_sec()
             
-            if self._playhead.to_sec() > self._stamp_right:
-                dstamp = self._playhead.to_sec() - self._stamp_right + (self._stamp_right - self._stamp_left) * 0.75
+            if playhead_secs > self._stamp_right:
+                dstamp = playhead_secs - self._stamp_right + (self._stamp_right - self._stamp_left) * 0.75
                 if dstamp > self.end_stamp.to_sec() - self._stamp_right:
                     dstamp = self.end_stamp.to_sec() - self._stamp_right
 
                 self._stamp_left  += dstamp
                 self._stamp_right += dstamp
                 
-            elif self._playhead.to_sec() < self._stamp_left:
-                dstamp = self._stamp_left - self._playhead.to_sec() + (self._stamp_right - self._stamp_left) * 0.75
+            elif playhead_secs < self._stamp_left:
+                dstamp = self._stamp_left - playhead_secs + (self._stamp_right - self._stamp_left) * 0.75
                 if dstamp > self._stamp_left - self.start_stamp.to_sec():
                     dstamp = self._stamp_left - self.start_stamp.to_sec()
 
@@ -651,22 +683,33 @@ class Timeline(Layer):
                 
             self.parent.playhead.update_position()
             
-            self._playhead_positions = {}
             for topic in self.topics:
                 bag, entry = self.get_entry(self._playhead, topic)
                 if entry:
-                    self._playhead_positions[topic] = (bag, entry.position)
+                    topic_pos = (bag, entry.position)
+                    if topic in self._playhead_positions and self._playhead_positions[topic] == topic_pos:
+                        continue
+                    self._playhead_positions[topic] = topic_pos
+                else:
+                    if topic not in self._playhead_positions:
+                        continue
+                    del self._playhead_positions[topic]
 
-            self._update_message_view()
-            
+                self._update_message_view_for_topic(topic)
+
             self.invalidate()
 
     ### Rendering
 
     def on_size(self, event):
-        (w, h) = self.parent.GetClientSize()
+        scroll_window = self.parent.GetParent()
         
+        (w, h) = scroll_window.GetClientSize()
+
         self.resize(w - self.x, h - self.y)   # resize layer to fill client area
+
+        self.parent.SetPosition((0, 0))
+        self.parent.SetSize((self.width, max(h, self.history_bottom + 28)))
 
     def paint(self, dc):
         if len(self.bags) == 0 or len(self.topics) == 0:
@@ -676,8 +719,6 @@ class Timeline(Layer):
             self.reset_timeline()
 
         dc.set_antialias(cairo.ANTIALIAS_NONE)
-
-        dc.set_font_size(12.0)
 
         self._calc_font_sizes(dc)
         self._layout()
@@ -690,6 +731,7 @@ class Timeline(Layer):
         self._draw_history_border(dc)
 
     def _calc_font_sizes(self, dc):
+        dc.set_font_size(12.0)
         (ascent, descent, height, max_x_advance, max_y_advance) = dc.font_extents()
         
         self.time_font_height = height
@@ -728,7 +770,18 @@ class Timeline(Layer):
 
             y += topic_height
 
-        self.history_bottom = max([y + h for (x, y, w, h) in self.history_bounds.values()]) - 1
+        new_history_bottom = max([y + h for (x, y, w, h) in self.history_bounds.values()]) - 1
+        if new_history_bottom != self.history_bottom:
+            self.history_bottom = new_history_bottom 
+
+            # Resize the scroll bars
+            scroll_window = self.parent.GetParent()
+            visible_height = int(self.history_bottom) + 28
+            scroll_window.SetScrollbars(0, 1, 0, visible_height, 0, scroll_window.Position[1])
+
+            # Resize the frame to fit
+            frame = scroll_window.GetParent()
+            frame.SetSize((frame.Size[0], visible_height + 35))   # space for the toolbar
 
     def _draw_topic_dividers(self, dc):
         clip_left  = self.history_left
@@ -813,7 +866,9 @@ class Timeline(Layer):
         dc.stroke()
 
     def _get_stamps(self, start_stamp, stamp_step):
-        """Generate visible stamps every stamp_step"""
+        """
+        Generate visible stamps every stamp_step
+        """
         if start_stamp >= self._stamp_left:
             stamp = start_stamp
         else:
@@ -853,6 +908,11 @@ class Timeline(Layer):
             self._draw_topic_history(dc, topic)
 
     def _update_index_cache(self, topic):
+        """
+        Updates the cache of message timestamps for the given topic.
+
+        Returns True iff the cache was updated.
+        """
         if topic not in self.index_cache:
             # Don't have any cache of messages in this topic
             start_time = self.start_stamp
@@ -863,7 +923,7 @@ class Timeline(Layer):
 
             # Check if the cache has been invalidated
             if topic not in self.invalidated_caches:
-                return topic_cache
+                return False
             
             if len(topic_cache) == 0:
                 start_time = self.start_stamp
@@ -872,13 +932,15 @@ class Timeline(Layer):
 
         end_time = self.end_stamp
 
+        topic_cache_len = len(topic_cache)
+
         for entry in self.get_entries(topic, start_time, end_time):
             topic_cache.append(entry.time.to_sec())
 
         if topic in self.invalidated_caches:
             self.invalidated_caches.remove(topic)
-            
-        return topic_cache
+
+        return len(topic_cache) > topic_cache_len
 
     def _draw_topic_history(self, dc, topic):
         """
@@ -916,9 +978,17 @@ class Timeline(Layer):
         # Iterate through regions of connected messages
         width_interval = self.history_width / (self._stamp_right - self._stamp_left)
 
+        # Clip to bounds
+        dc.save()
+        dc.rectangle(self.history_left, self.history_top, self.history_width, self.history_height)
+        dc.clip()
+
         dc.set_line_width(1)
-        dc.set_source_rgb(*datatype_color) 
-        for (stamp_start, stamp_end) in self._find_regions(all_stamps[start_index:end_index], self.map_dx_to_dstamp(self.default_msg_combine_px)):
+        dc.set_source_rgb(*datatype_color)
+        for (stamp_start, stamp_end) in self._find_regions(all_stamps[:end_index], self.map_dx_to_dstamp(self.default_msg_combine_px)):
+            if stamp_end < self._stamp_left:
+                continue
+            
             region_x_start = self.history_left + (stamp_start - self._stamp_left) * width_interval
             region_x_end   = self.history_left + (stamp_end   - self._stamp_left) * width_interval
             region_width   = max(1, region_x_end - region_x_start)
@@ -928,7 +998,7 @@ class Timeline(Layer):
         dc.fill()
 
         # Draw active message
-        if topic in self.listeners or True:
+        if topic in self.listeners:
             dc.set_line_width(3)
             playhead_stamp = None
             playhead_index = bisect.bisect_right(all_stamps, self._playhead.to_sec()) - 1
@@ -943,15 +1013,22 @@ class Timeline(Layer):
         # Custom renderer
         if renderer:
             # Iterate through regions of connected messages
-            for (stamp_start, stamp_end) in self._find_regions(all_stamps[start_index:end_index], msg_combine_interval):
+            for (stamp_start, stamp_end) in self._find_regions(all_stamps[:end_index], msg_combine_interval):
+                if stamp_end < self._stamp_left:
+                    continue
+
                 region_x_start = self.history_left + (stamp_start - self._stamp_left) * width_interval
                 region_x_end   = self.history_left + (stamp_end   - self._stamp_left) * width_interval
                 region_width   = max(1, region_x_end - region_x_start)
 
                 renderer.draw_timeline_segment(dc, topic, stamp_start, stamp_end, region_x_start, msg_y, region_width, msg_height)
 
+        dc.restore()
+
     def _find_regions(self, stamps, max_interval):
-        """Group timestamps into regions connected by timestamps less than max_interval secs apart"""
+        """
+        Group timestamps into regions connected by timestamps less than max_interval secs apart
+        """
         region_start, prev_stamp = None, None
         for stamp in stamps:
             if prev_stamp:
@@ -1043,7 +1120,11 @@ class Timeline(Layer):
         
         x, y = self.clicked_pos[0] - self.x, self.clicked_pos[1] - self.y
         if x >= self.history_left and x <= self.history_left + self.history_width:
-            self.set_playhead(Time.from_sec(self.map_x_to_stamp(x)))
+            playhead_secs = self.map_x_to_stamp(x)
+            if playhead_secs <= 0.0:
+                self.set_playhead(Time(0, 0))
+            else:
+                self.set_playhead(Time.from_sec(playhead_secs))
 
     def on_middle_down(self, event):
         self.clicked_pos = self.dragged_pos = event.GetPosition()
@@ -1056,9 +1137,13 @@ class Timeline(Layer):
 
         self.parent.display_popup(self.clicked_pos)
 
-    def on_left_up  (self, event): self._paused = False
-    def on_middle_up(self, event): self._paused = False
+    def on_left_up  (self, event): self._on_mouse_up(event)
+    def on_middle_up(self, event): self._on_mouse_up(event)
     def on_right_up (self, event): pass
+
+    def _on_mouse_up(self, event):
+        self._paused = False
+        self.parent.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
 
     def on_mousewheel(self, event):
         dz = event.GetWheelRotation() / event.GetWheelDelta()
@@ -1087,6 +1172,8 @@ class Timeline(Layer):
                 zoom = min(self.max_zoom_speed, max(self.min_zoom_speed, 1.0 + self.zoom_sensitivity * dy_drag))
                 self.zoom_timeline(zoom)
 
+            self.parent.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+
             self.parent.playhead.update_position()
 
         elif left:
@@ -1095,7 +1182,11 @@ class Timeline(Layer):
             if not self.history_left:
                 return
 
-            self.set_playhead(Time.from_sec(self.map_x_to_stamp(x)))
+            playhead_secs = self.map_x_to_stamp(x)
+            if playhead_secs <= 0.0:
+                self.set_playhead(Time(0, 0))
+            else:
+                self.set_playhead(Time.from_sec(playhead_secs))
 
         self.dragged_pos = mouse_pos
 
@@ -1117,40 +1208,27 @@ class Timeline(Layer):
 
         return msg_data
 
-    def _update_message_view(self):
-        if not self._playhead_positions:
+    def _update_message_view_for_topic(self, topic):
+        if not self._playhead_positions or not topic in self.listeners:
             return
-
-        msgs = {}
-        for topic in self._playhead_positions:
-            if topic in self.listeners:
-                bag, playhead_position = self._playhead_positions[topic]
-                if playhead_position is not None:
-                    # Load the message
-                    msgs[topic] = (bag, self._get_message(bag, topic, playhead_position))
-                    continue
-
-        # @todo: only inform listeners on a change in message
-
-        # Inform the listeners
-        for topic in self.topics:
-            topic_listeners = self.listeners.get(topic)           
-            if not topic_listeners:
-                continue
-
-            if topic in msgs:
-                bag, msg_data = msgs[topic]
-                for listener in topic_listeners:
-                    try:
-                        listener.message_viewed(bag, msg_data)
-                    except wx.PyDeadObjectError:
-                        self.remove_listener(topic, listener)
-            else:
-                for listener in topic_listeners:
-                    try:
-                        listener.message_cleared()
-                    except wx.PyDeadObjectError:
-                        self.remove_listener(topic, listener)
+        
+        bag, playhead_position = self._playhead_positions[topic]
+        if playhead_position is None:
+            return
+        
+        msg_data = self._get_message(bag, topic, playhead_position)
+        if msg_data:
+            for listener in self.listeners[topic]:
+                try:
+                    listener.message_viewed(bag, msg_data)
+                except wx.PyDeadObjectError:
+                    self.remove_listener(topic, listener)
+        else:
+            for listener in self.listeners[topic]:
+                try:
+                    listener.message_cleared()
+                except wx.PyDeadObjectError:
+                    self.remove_listener(topic, listener)
 
     ### Layout management
 

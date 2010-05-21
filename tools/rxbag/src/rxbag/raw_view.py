@@ -42,6 +42,7 @@ import time
 
 import wx
 
+import bag_helper
 from message_view import TopicMessageView
 
 class RawView(TopicMessageView):
@@ -72,9 +73,12 @@ class RawView(TopicMessageView):
         if t is None:
             self.message_cleared()
         else:
-            time_str = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(t.to_sec())) + '.%03d' % (t.nsecs / 1000000)
-            
-            self.msg_title.SetValue('%s (%s)' % (time_str, bag.filename))
+            time_str = bag_helper.stamp_to_str(t)# time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(t.to_sec())) + '.%03d' % (t.nsecs / 1000000)
+
+            if len(self.timeline.bags) > 1:
+                self.msg_title.SetValue('%s (%s)' % (time_str, bag.filename))
+            else:
+                self.msg_title.SetValue(time_str)
             self.msg_title.Refresh()
 
             self.msg_incoming = msg

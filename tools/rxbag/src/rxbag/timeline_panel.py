@@ -44,7 +44,8 @@ from util.layer      import LayerPanel
 class TimelinePanel(LayerPanel):
     def __init__(self, *args, **kwargs):
         LayerPanel.__init__(self, *args, **kwargs)
-
+        
+    def create_controls(self):
         self._create_controls()
         self._create_toolbar()
 
@@ -52,7 +53,7 @@ class TimelinePanel(LayerPanel):
         self.PopupMenu(TimelinePopupMenu(self, self.timeline), pos)
 
     def _create_controls(self):
-        (width, height) = self.GetParent().GetClientSize()
+        (width, height) = self.app.frame.GetClientSize()
 
         self.timeline = Timeline     (self, 'Timeline', 5, 19, width - 5, height - 19)
         self.status   = StatusLayer  (self, 'Status',   self.timeline, self.timeline.x, 4, 300, 16)
@@ -63,7 +64,7 @@ class TimelinePanel(LayerPanel):
     def _create_toolbar(self):
         icons_dir = roslib.packages.get_pkg_dir(PKG) + '/icons/'
 
-        tb = self.GetParent().CreateToolBar()
+        tb = self.app.frame.CreateToolBar()
 
         start_tool       = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_start_blue.png'))
         rewind_tool      = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_rewind_blue.png'))
@@ -279,7 +280,8 @@ class TimelinePopupMenu(wx.Menu):
         def on_menu(self, event):
             if self.start:
                 for topic in self.timeline.topics:
-                    self.timeline.start_publishing(topic)
+                    if not self.timeline.start_publishing(topic):
+                        break
             else:
                 for topic in self.timeline.topics:
                     self.timeline.stop_publishing(topic)

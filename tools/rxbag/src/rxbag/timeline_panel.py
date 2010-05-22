@@ -137,10 +137,10 @@ class TimelinePopupMenu(wx.Menu):
             self.hide_thumbnails_menu = wx.MenuItem(self.thumbnail_menu, wx.NewId(), 'Hide All')
             self.thumbnail_menu.AppendItem(self.hide_thumbnails_menu)
             self.thumbnail_menu.Bind(wx.EVT_MENU, lambda e: self.timeline.set_renderers_active(False), id=self.hide_thumbnails_menu.GetId())
-            
+
             # ---
             self.thumbnail_menu.AppendSeparator()
-            
+
             # Thumbnails... / topic
             for topic, renderer in renderers:
                 renderer_item = self.TimelineRendererMenuItem(self.thumbnail_menu, wx.NewId(), topic.lstrip('/'), topic, renderer, self.timeline)

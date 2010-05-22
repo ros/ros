@@ -47,12 +47,21 @@ class Layer:
         self._height = height
 
         self.parent = parent
-        self.title  = title    
+        self.title  = title
+
+        self.self_paint = False
+
+        if not self.self_paint:
+            self.bitmap = wx.EmptyBitmap(self._width, self._height)
+
+        self._last_repaint  = None
+        self._dirty         = True
 
     # Interface to implement in derived classes
 
     def check_dirty(self):           pass
     def paint(self, dc):             pass
+   
     def on_mouse_move(self, event):  pass
     def on_mousewheel(self, event):  pass
     def on_left_down(self, event):   pass
@@ -77,13 +86,17 @@ class Layer:
             return 
         
         self._width, self._height = width, height
-        
+
+        if not self.self_paint:
+            self.bitmap = wx.EmptyBitmap(self._width, self._height)
+
         self.invalidate()
 
     def contains(self, x, y):
         return x >= self._x and y >= self._y and x <= self.right and y <= self.bottom
 
     def invalidate(self):
+        self._dirty = True
         self.parent.Refresh()
 
     @property
@@ -106,8 +119,67 @@ class Layer:
 
     # Painting
 
+    def paint_to_bitmap(self):
+        mem_dc = wx.MemoryDC()
+        mem_dc.SelectObject(self.bitmap)
+        
+        self.clear_background(mem_dc)
+
+        cairo_dc = wx.lib.wxcairo.ContextFromDC(mem_dc)
+        self.paint(cairo_dc)
+        mem_dc.SelectObject(wx.NullBitmap)
+
+        self._dirty = False
+
+    def clear_background(self, dc):
+        dc.SetBackground(wx.WHITE_BRUSH)
+        dc.Clear()
+
     def draw(self, dc):
-        self.paint(dc)
+        if not self.self_paint:
+            dc.DrawBitmap(self.bitmap, self._x, self._y)
+
+class TransparentLayer(Layer):
+    TRANSPARENT_COLOR = wx.Colour(5, 5, 5)
+
+    def __init__(self, parent, title, x, y, width, height):
+        Layer.__init__(self, parent, title, x, y, width, height)
+
+        self._transparent_bitmap = None
+
+        self.bitmap.SetMask(wx.Mask(self.bitmap, self.TRANSPARENT_COLOR))
+
+    def paint_to_bitmap(self):
+        Layer.paint_to_bitmap(self)
+
+        self._transparent_bitmap = self._make_transparent(self.bitmap)
+
+    def draw(self, dc):
+        if self._transparent_bitmap:
+            dc.DrawBitmap(self._transparent_bitmap, self.x, self.y, useMask=True)
+
+    def paint(self, dc):
+        pass
+
+    def clear_background(self, dc):
+        dc.SetBackground(wx.Brush(self.TRANSPARENT_COLOR, wx.SOLID))
+        dc.Clear()
+
+    ## A bug in wxPython with transparent bitmaps: need to convert to/from Image to enable transparency.                                                 
+    ## (see http://aspn.activestate.com/ASPN/Mail/Message/wxpython-users/3668628)                                                                        
+    def _make_transparent(self, bitmap):
+        image = bitmap.ConvertToImage()
+        if not image.HasAlpha():
+            image.InitAlpha()
+
+        w, h = image.GetWidth(), image.GetHeight()
+        for y in xrange(h):
+            for x in xrange(w):
+                pix = wx.Colour(image.GetRed(x, y), image.GetGreen(x, y), image.GetBlue(x, y))
+                if pix == self.TRANSPARENT_COLOR:
+                    image.SetAlpha(x, y, 0)
+
+        return image.ConvertToBitmap()
 
 class LayerPanel(wx.Window):
     def __init__(self, *args, **kwargs):
@@ -122,7 +194,6 @@ class LayerPanel(wx.Window):
 
         self.Bind(wx.EVT_PAINT,       self.on_paint)
         self.Bind(wx.EVT_SIZE,        self.on_size)
-        self.Bind(wx.EVT_TIMER,       self.on_timer)
         self.Bind(wx.EVT_LEFT_DOWN,   self.on_left_down)
         self.Bind(wx.EVT_MIDDLE_DOWN, self.on_middle_down)
         self.Bind(wx.EVT_RIGHT_DOWN,  self.on_right_down)
@@ -135,19 +206,55 @@ class LayerPanel(wx.Window):
         self.GetParent().Bind(wx.EVT_CLOSE, self.on_close)
 
     @property
-    def width(self): return wx.Window.GetSize(self)[0]
+    def width(self): return self.Size[0]
 
     @property
-    def height(self): return wx.Window.GetSize(self)[1]
+    def height(self): return self.Size[1]
 
     # Painting events
 
     def on_paint(self, event):
+        if not self.bitmap:
+            return
+
+        # Ask layers to recheck whether they're dirty or not
+        for layer in self.layers:
+            layer.check_dirty()
+
+        # Find layers that need to be repainted                                                                                                          
+        dirty_layers = [l for l in self.layers if l._dirty]
+
+        # If none are dirty, nothing to do                                                                                                               
+        if len(dirty_layers) == 0:
+            return
+
+        # Repaint dirty layers                                                                                                                           
+        for layer in dirty_layers:
+            layer.paint_to_bitmap()
+
+        # Compose layers and blit to window                                                                                                              
         self.paint()
 
     def paint(self):
-        pdc = wx.PaintDC(self)
-        dc = wx.lib.wxcairo.ContextFromDC(pdc)
+        paint_layers = [layer for layer in self.layers if not layer.self_paint]
+        if len(paint_layers) == 0:
+            return
+        
+        # Compose all layers into a buffer
+        bitmap_dc = wx.MemoryDC()
+        bitmap_dc.SelectObject(self.bitmap)
+        bitmap_dc.SetBackground(self.background_brush)
+        bitmap_dc.Clear()
+        for layer in paint_layers:
+            layer.draw(bitmap_dc)
+        bitmap_dc.SelectObject(wx.NullBitmap)
+
+        # Draw buffer to the window
+        window_dc = wx.ClientDC(self)
+        window_dc.DrawBitmap(self.bitmap, 0, 0)
+
+    def _paint_layers(self, wx_dc):
+        dc = wx.lib.wxcairo.ContextFromDC(wx_dc)
         
         dc.set_source_rgba(1, 1, 1, 1)
         dc.rectangle(0, 0, self.width, self.height)
@@ -159,12 +266,13 @@ class LayerPanel(wx.Window):
             layer.draw(dc)
             dc.restore()
 
-    def on_timer(self, event):
-        self.Refresh()
-
     def on_size(self, event):
-        for layer in self.layers:
-            layer.on_size(event)
+        size = self.GetClientSize()
+        if not self.bitmap or self.bitmap.GetSize() != size:
+            self.bitmap = wx.EmptyBitmap(*self.GetClientSize())
+            
+            for layer in self.layers:
+                layer.on_size(event)
 
     # Mouse events
 

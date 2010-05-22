@@ -64,12 +64,11 @@ class IndexCacheThread(threading.Thread):
     def __init__(self, timeline, period=2.0):
         threading.Thread.__init__(self)
 
-        self.setDaemon(True)
-        
         self.timeline  = timeline
         self.period    = period
         self.stop_flag = False
-        
+
+        self.setDaemon(True)
         self.start()
 
     def run(self):
@@ -557,6 +556,7 @@ class Timeline(Layer):
             self.rendered_topics.clear()
 
         self.invalidate()
+        self.parent.playhead.invalidate()
 
     def set_renderer_active(self, topic, active):
         if active:
@@ -569,6 +569,7 @@ class Timeline(Layer):
             self.rendered_topics.remove(topic)
         
         self.invalidate()
+        self.parent.playhead.invalidate()
 
     ###
 
@@ -673,6 +674,8 @@ class Timeline(Layer):
                 self._stamp_left  += dstamp
                 self._stamp_right += dstamp
                 
+                self.invalidate()
+                
             elif playhead_secs < self._stamp_left:
                 dstamp = self._stamp_left - playhead_secs + (self._stamp_right - self._stamp_left) * 0.75
                 if dstamp > self._stamp_left - self.start_stamp.to_sec():
@@ -681,23 +684,21 @@ class Timeline(Layer):
                 self._stamp_left  -= dstamp
                 self._stamp_right -= dstamp
                 
+                self.invalidate()
+
             self.parent.playhead.update_position()
+
+            self.parent.playhead.invalidate()
+            self.parent.status.invalidate()
             
             for topic in self.topics:
                 bag, entry = self.get_entry(self._playhead, topic)
                 if entry:
-                    topic_pos = (bag, entry.position)
-                    if topic in self._playhead_positions and self._playhead_positions[topic] == topic_pos:
-                        continue
-                    self._playhead_positions[topic] = topic_pos
+                    self._playhead_positions[topic] = (bag, entry.position)
                 else:
-                    if topic not in self._playhead_positions:
-                        continue
-                    del self._playhead_positions[topic]
+                    self._playhead_positions[topic] = None, None
 
                 self._update_message_view_for_topic(topic)
-
-            self.invalidate()
 
     ### Rendering
 
@@ -946,6 +947,7 @@ class Timeline(Layer):
         """
         Draw boxes to show message regions on timelines.
         """
+        
         x, y, w, h = self.history_bounds[topic]
         
         msg_y      = y + 1
@@ -983,6 +985,7 @@ class Timeline(Layer):
         dc.rectangle(self.history_left, self.history_top, self.history_width, self.history_height)
         dc.clip()
 
+        # Draw stamps
         dc.set_line_width(1)
         dc.set_source_rgb(*datatype_color)
         for (stamp_start, stamp_end) in self._find_regions(all_stamps[:end_index], self.map_dx_to_dstamp(self.default_msg_combine_px)):
@@ -1211,12 +1214,13 @@ class Timeline(Layer):
     def _update_message_view_for_topic(self, topic):
         if not self._playhead_positions or not topic in self.listeners:
             return
-        
+
         bag, playhead_position = self._playhead_positions[topic]
         if playhead_position is None:
-            return
-        
-        msg_data = self._get_message(bag, topic, playhead_position)
+            msg_data = None
+        else:
+            msg_data = self._get_message(bag, topic, playhead_position)
+            
         if msg_data:
             for listener in self.listeners[topic]:
                 try:

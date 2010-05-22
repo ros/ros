@@ -59,6 +59,7 @@ def get_end_stamp(bag):
     for connection_end_stamp in [index[-1].time for index in bag._connection_indexes.values()]:
         if not end_stamp or connection_end_stamp < end_stamp:
             end_stamp = connection_end_stamp
+
     return end_stamp
 
 def get_topics_by_datatype(bag):

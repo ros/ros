@@ -37,11 +37,11 @@ import roslib; roslib.load_manifest(PKG)
 
 import wx
 
-from util.layer import Layer
+from util.layer import TransparentLayer
 
-class PlayheadLayer(Layer):
+class PlayheadLayer(TransparentLayer):
     def __init__(self, parent, title, timeline, x, y, width, height):
-        Layer.__init__(self, parent, title, x, y, width, height)
+        TransparentLayer.__init__(self, parent, title, x, y, width, height)
         
         self.timeline = timeline
         
@@ -56,7 +56,7 @@ class PlayheadLayer(Layer):
             self.update_position()
 
     def paint(self, dc):
-        Layer.paint(self, dc)
+        TransparentLayer.paint(self, dc)
         
         if not self.timeline.playhead:
             return

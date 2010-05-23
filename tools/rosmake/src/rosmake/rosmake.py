@@ -46,6 +46,8 @@ import roslib.stacks
 import threading
 import math
 
+from operator import itemgetter
+
 import parallel_build
 import package_stats
 
@@ -78,7 +80,7 @@ class Printer(threading.Thread):
         self.pkg_start_times = {}
 
         #Threading
-        self.daemon = True
+        #self.daemon = True # not supported on OSX so thread must be explicitly stopped 
         self.start()
 
     def __del__(self): # Set flag to false to stop spinning thread
@@ -104,10 +106,10 @@ class Printer(threading.Thread):
 
     def rosmake_pkg_times_to_string(self, start_times):
         threads = []
-        for p, t in start_times.iteritems():
+        for p, t in sorted(start_times.iteritems(), key=itemgetter(1)):
             threads.append("[ %s: %.2f sec ]"%(p, time.time() - t))
             
-        return " | ".join(threads)
+        return " ".join(threads)
 
     def set_status_from_cache(self):
         self.set_status(self.cache_left + self.rosmake_pkg_times_to_string(self.pkg_start_times), self.cache_right)

@@ -83,7 +83,7 @@ class Printer(threading.Thread):
 
     def __del__(self): # Set flag to false to stop spinning thread
         self.running = False
-        if self.is_alive():
+        if self.isAlive(): #old api for osx python 2.5
             self.join(self)
 
     def run(self):

@@ -73,6 +73,7 @@ class Printer(threading.Thread):
         self.status = ""
         self.verbose = False
         self.full_verbose = False
+        self.duration = 1./60.
 
         # Rosmake specific data
         self.cache_argument = None
@@ -90,6 +91,10 @@ class Printer(threading.Thread):
 
     def run(self):
         while self.running:
+            #shutdown if duration set to zero
+            if self.duration <= 0:
+                self.running = False
+                return
             self.set_status_from_cache()
             if len(self.status) > 0:
                 n = self.terminal_width() - len(self.status)
@@ -97,7 +102,7 @@ class Printer(threading.Thread):
                 if n > 0:
                     status = " "*n + self.status
                 self._print_status("%s"%status)
-            time.sleep(1.0/60.) # update status at 60Hz
+            time.sleep(self.duration) # update status at 60Hz
 
     def rosmake_cache_info(self, argument, start_times, right):
         self.cache_argument = argument
@@ -533,18 +538,22 @@ class RosMakeAll:
             if self.flag_tracker.has_nobuild(pkg_name):
                 ret_val &= True
             else:
-                self.printer.print_all("Starting >>> %s"%pkg)
-                self.update_status(target, {pkg:time.time()}, "%d/%d Bootstrap"%(count, len(ros_package_path_list)))
-                #Special Case: %s [ %s %s ] [ %d of %d ] "%(pkg_name, make_command(), target, count, len(ros_package_path_list)))
-                cmd = ["bash", "-c", "cd %s && %s %s"%(os.path.join(os.environ["ROS_ROOT"], pkg), make_command(), target)]
-                command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT)
-                (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
-                
-                self.printer.print_verbose(pstd_out)
-                if command_line.returncode:
-                    print >> sys.stderr, "Failed to build %s"%pkg_name
-                    sys.exit(-1)
-                self.printer.print_all("Finished <<< %s"%pkg)
+                try:
+                    self.printer.print_all("Starting >>> %s"%pkg)
+                    self.update_status(target, {pkg:time.time()}, "%d/%d Bootstrap"%(count, len(ros_package_path_list)))
+                    #Special Case: %s [ %s %s ] [ %d of %d ] "%(pkg_name, make_command(), target, count, len(ros_package_path_list)))
+                    cmd = ["bash", "-c", "cd %s && %s %s"%(os.path.join(os.environ["ROS_ROOT"], pkg), make_command(), target)]
+                    command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT)
+                    (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
+
+                    self.printer.print_verbose(pstd_out)
+                    if command_line.returncode:
+                        print >> sys.stderr, "Failed to build %s"%pkg_name
+                        sys.exit(-1)
+                    self.printer.print_all("Finished <<< %s"%pkg)
+                except KeyboardInterrupt, ex:
+                    self.printer.print_all("Keyboard interrupt caught in pkg %s"%pkg)
+                    return False
         return True
             
         # The check for presence doesn't check for updates
@@ -627,11 +636,14 @@ class RosMakeAll:
                           action="store_true", help="do not build a package unless it is marked as supported on this platform")
         parser.add_option("--require-platform-recursive", dest="obey_whitelist_recursively",
                           action="store_true", help="do not build a package unless it is marked as supported on this platform, and all dependents are also marked")
+        parser.add_option("--status-rate", dest="status_update_rate",
+                          action="store", help="How fast to update the status bar in Hz.  Default: 60Hz")
         
 
         options, args = parser.parse_args()
-        # force a rebuild of the package cache at the top        
-        
+
+
+        # force a rebuild of the package cache at the top                
         cmd = ["rospack", "profile"]
         command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT)
         (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above          
@@ -664,7 +676,8 @@ class RosMakeAll:
         # pass through verbosity options
         self.printer.full_verbose = options.full_verbose
         self.printer.verbose = options.verbose
-
+        if options.status_update_rate:
+            self.printer.duration = float(options.status_update_rate)
         packages = []
         #load packages from arguments
         if options.build_all:
@@ -809,10 +822,15 @@ class RosMakeAll:
 
         if building:
           #make sure required packages are built before continuing (These are required by internal functions
+          prebuild_result = False
           if options.target == "clean":
-              self.assert_prebuild_built(["tools/rospack"])
+              prebuild_result = self.assert_prebuild_built(["tools/rospack"])
           else:
-              self.assert_prebuild_built(["tools/rospack", "3rdparty/gtest", "core/genmsg_cpp"])
+              prebuild_result = self.assert_prebuild_built(["tools/rospack", "3rdparty/gtest", "core/genmsg_cpp"])
+          if not prebuild_result:
+              self.printer.print_all("Failed to finish prebuild, aborting")
+              return
+
 
           self.printer.print_verbose ("Building packages %s"% self.build_list)
           build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = options.robust or options.best_effort)

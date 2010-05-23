@@ -533,7 +533,9 @@ class RosMakeAll:
             if self.flag_tracker.has_nobuild(pkg_name):
                 ret_val &= True
             else:
-                self.printer.print_all("Special Case: %s [ %s %s ] [ %d of %d ] "%(pkg_name, make_command(), target, count, len(ros_package_path_list)))
+                self.printer.print_all("Starting >>> %s"%pkg)
+                self.update_status(target, {pkg:time.time()}, "%d/%d Bootstrap"%(count, len(ros_package_path_list)))
+                #Special Case: %s [ %s %s ] [ %d of %d ] "%(pkg_name, make_command(), target, count, len(ros_package_path_list)))
                 cmd = ["bash", "-c", "cd %s && %s %s"%(os.path.join(os.environ["ROS_ROOT"], pkg), make_command(), target)]
                 command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT)
                 (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
@@ -542,6 +544,7 @@ class RosMakeAll:
                 if command_line.returncode:
                     print >> sys.stderr, "Failed to build %s"%pkg_name
                     sys.exit(-1)
+                self.printer.print_all("Finished <<< %s"%pkg)
         return True
             
         # The check for presence doesn't check for updates

@@ -132,7 +132,9 @@ class CompileThread(threading.Thread):
         self.rosmakeall.printer.print_all ("Starting >>> %s [ make %s ]"%(pkg, self.argument), thread_name=self.name)
       else:
         self.rosmakeall.printer.print_all ("Starting >>> %s [ make ] "%pkg,  thread_name=self.name)
-      self.rosmakeall.update_status("old" + self.build_queue.get_thread_status() , self.build_queue.progress_str())
+      self.rosmakeall.update_status("Thread Status:" , #TODO add build command/make argument here
+                                    self.build_queue.get_started_threads(),
+                                    self.build_queue.progress_str())
       (result, result_string) = self.rosmakeall.build(pkg, self.argument, self.build_queue.robust_build) 
       self.rosmakeall.printer.print_all("Finished <<< %s %s"%(pkg, result_string), thread_name= self.name)
       if result or self.build_queue.robust_build:
@@ -157,17 +159,13 @@ class BuildQueue:
     self.condition = threading.Condition()
     self._done = False
     self.robust_build = robust_build
-    self.started = {}
+    self._started = {}
 
   def progress_str(self):
-    return "[ %d Active, %d of %d Complete ]"%(len(self.started), len(self.built), self._total_pkgs)
+    return "[ %d Active, %d of %d Complete ]"%(len(self._started), len(self.built), self._total_pkgs)
 
-  def get_thread_status(self): #TODO sort this other than hash order
-    threads = []
-    for p, t in self.started.iteritems():
-      threads.append("[ %s: %.2f sec ]"%(p, time.time() - t))
-      
-    return "Threads: "+ " | ".join(threads)
+  def get_started_threads(self): #TODO sort this other than hash order
+    return self._started
 
   def is_done(self):
     """Return if the build queue has been completed """
@@ -189,8 +187,8 @@ class BuildQueue:
     this method."""
     with self.condition:
       self.built.append(package)
-      if package in self.started.keys():
-        self.started.pop(package)
+      if package in self._started.keys():
+        self._started.pop(package)
       else:
         pass #used early on print "\n\n\nERROR THIS SHOULDN't RETURN %s\n\n\n"%package
       if len(self.built) == self._total_pkgs:  #flag that we're finished
@@ -211,7 +209,7 @@ class BuildQueue:
               break
           if dependencies_met:  # all dependencies met
             self.to_build.remove(p)
-            self.started[p] = time.time()
+            self._started[p] = time.time()
             return p # break out and return package if found
 
 

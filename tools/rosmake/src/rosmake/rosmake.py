@@ -71,28 +71,46 @@ class Printer(threading.Thread):
         self.status = ""
         self.verbose = False
         self.full_verbose = False
+
+        # Rosmake specific data
+        self.cache_left = ''
+        self.cache_right = ''
+        self.pkg_start_times = {}
+
+        #Threading
         self.daemon = True
         self.start()
 
-
+    def __del__(self): # Set flag to false to stop spinning thread
+        self.running = False
+        if self.is_alive():
+            self.join(self)
 
     def run(self):
-        with self.condition:
-            while self.running:
-                if self.build_queue:
-                    try: # catch shutdown race condition when build_queue destructed 
-                        self.set_status(self.build_queue.get_thread_status(), self.build_queue.progress_str())
-                    except exception.TypeError, ex:
-                        self.status = ''
-                else:
-                    self.status = ""
-                if len(self.status) > 0:
-                    n = self.terminal_width() - len(self.status)
-                    status = self.status
-                    if n > 0:
-                        status = " "*n + self.status
-                    self._print_status("%s"%status)
-                time.sleep(1.0/60.) # update status at 60Hz
+        while self.running:
+            self.set_status_from_cache()
+            if len(self.status) > 0:
+                n = self.terminal_width() - len(self.status)
+                status = self.status
+                if n > 0:
+                    status = " "*n + self.status
+                self._print_status("%s"%status)
+            time.sleep(1.0/60.) # update status at 60Hz
+
+    def rosmake_cache_info(self, left, start_times, right):
+        self.cache_left = left
+        self.pkg_start_times = start_times
+        self.cache_right = right
+
+    def rosmake_pkg_times_to_string(self, start_times):
+        threads = []
+        for p, t in start_times.iteritems():
+            threads.append("[ %s: %.2f sec ]"%(p, time.time() - t))
+            
+        return " | ".join(threads)
+
+    def set_status_from_cache(self):
+        self.set_status(self.cache_left + self.rosmake_pkg_times_to_string(self.pkg_start_times), self.cache_right)
 
     def set_status(self, left, right = ''):
         header = "[ rosmake ] "
@@ -197,10 +215,8 @@ class RosMakeAll:
         """
         return len(self.result[argument].keys())
 
-    def update_status(self, left, right):
-        #thread_status = "todo1 | todo2 | todo3 | todo1 | todo2 | todo3 |" * 3
-        #left = "[ Status ] " + thread_status
-        self.printer.set_status("Thread Status: " + left, right)
+    def update_status(self, left, start_times, right):
+        self.printer.rosmake_cache_info(left, start_times, right)
 
     def get_path(self, package):
         if not package in self.paths:
@@ -774,9 +790,7 @@ class RosMakeAll:
 
         if options.pre_clean:
           build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = True)
-          self.printer.build_queue = build_queue
           self.parallel_build_pkgs(build_queue, "clean", threads = options.threads)
-          self.printer.build_queue = None
           if "rospack" in self.build_list:
               self.printer.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it for it was skipped earlier.")
               self.assert_prebuild_built(["tools/rospack"], 'clean')
@@ -803,10 +817,8 @@ class RosMakeAll:
               self.result[None]["gtest"] = True
           if 'genmsg_cpp' in self.build_list:
               self.result[None]["genmsg_cpp"] = True #don't over report results if not requested
-          self.printer.build_queue = build_queue
 
           build_passed = self.parallel_build_pkgs(build_queue, options.target, threads = options.threads)
-          self.printer.build_queue = None
           if "rospack" in self.build_list and options.target == "clean":
               self.printer.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it, because it was skipped earlier.")
               self.assert_prebuild_built(["tools/rospack"], 'clean')
@@ -822,10 +834,8 @@ class RosMakeAll:
         if build_passed and testing:
             self.printer.print_verbose ("Testing packages %s"% packages)
             build_queue = parallel_build.BuildQueue(self.specified_packages, parallel_build.DependencyTracker(self.specified_packages), robust_build = True)
-            self.printer.build_queue = build_queue
             tests_passed = self.parallel_build_pkgs(build_queue, "test", threads = 1)
 
-        self.printer.build_queue = None # no more status updates 
 
         if  options.mark_installed:
             if build_passed and tests_passed: 

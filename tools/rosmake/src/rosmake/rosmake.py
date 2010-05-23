@@ -75,7 +75,7 @@ class Printer(threading.Thread):
         self.full_verbose = False
 
         # Rosmake specific data
-        self.cache_left = ''
+        self.cache_argument = None
         self.cache_right = ''
         self.pkg_start_times = {}
 
@@ -99,8 +99,8 @@ class Printer(threading.Thread):
                 self._print_status("%s"%status)
             time.sleep(1.0/60.) # update status at 60Hz
 
-    def rosmake_cache_info(self, left, start_times, right):
-        self.cache_left = left
+    def rosmake_cache_info(self, argument, start_times, right):
+        self.cache_argument = argument
         self.pkg_start_times = start_times
         self.cache_right = right
 
@@ -112,7 +112,10 @@ class Printer(threading.Thread):
         return " ".join(threads)
 
     def set_status_from_cache(self):
-        self.set_status(self.cache_left + self.rosmake_pkg_times_to_string(self.pkg_start_times), self.cache_right)
+        if self.cache_argument:
+            self.set_status("[ make %s ] "%self.cache_argument + self.rosmake_pkg_times_to_string(self.pkg_start_times), self.cache_right)
+        else:
+            self.set_status("[ make ] " + self.rosmake_pkg_times_to_string(self.pkg_start_times), self.cache_right)
 
     def set_status(self, left, right = ''):
         header = "[ rosmake ] "
@@ -217,8 +220,8 @@ class RosMakeAll:
         """
         return len(self.result[argument].keys())
 
-    def update_status(self, left, start_times, right):
-        self.printer.rosmake_cache_info(left, start_times, right)
+    def update_status(self, argument, start_times, right):
+        self.printer.rosmake_cache_info(argument, start_times, right)
 
     def get_path(self, package):
         if not package in self.paths:

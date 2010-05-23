@@ -128,25 +128,36 @@ class CompileThread(threading.Thread):
           self.rosmakeall.printer.print_verbose("[ Build Terminated Thread Exiting ]", thread_name=self.name)
         break # no more packages must be done
 
+      # update status after accepting build
+      self.rosmakeall.update_status(self.argument ,
+                                    self.build_queue.get_started_threads(),
+                                    self.build_queue.progress_str())
+
       if self.argument:
         self.rosmakeall.printer.print_all ("Starting >>> %s [ make %s ]"%(pkg, self.argument), thread_name=self.name)
       else:
         self.rosmakeall.printer.print_all ("Starting >>> %s [ make ] "%pkg,  thread_name=self.name)
-      self.rosmakeall.update_status("Thread Status:" , #TODO add build command/make argument here
-                                    self.build_queue.get_started_threads(),
-                                    self.build_queue.progress_str())
       (result, result_string) = self.rosmakeall.build(pkg, self.argument, self.build_queue.robust_build) 
       self.rosmakeall.printer.print_all("Finished <<< %s %s"%(pkg, result_string), thread_name= self.name)
       if result or self.build_queue.robust_build:
-        self.build_queue.return_built(pkg)
+        self.build_queue.return_built(pkg, result)
         if result_string.find("[Interrupted]") != -1:
           self.rosmakeall.printer.print_all("Caught Interruption", thread_name=self.name)
-          self.build_queue.stop()
+          self.build_queue.stop() #todo move this logic into BuildQueue itself
           break # unnecessary since build_queue is done now while will quit
       else:
         self.rosmakeall.printer.print_all("Halting due to failure in package %s. \n[ rosmake ] Waiting for other threads to complete."%pkg)
         self.build_queue.stop()
         break # unnecessary since build_queue is done now, while will quit
+      # update status after at end of build
+      self.rosmakeall.update_status(self.argument ,
+                                    self.build_queue.get_started_threads(),
+                                    self.build_queue.progress_str())
+
+    # update status before ending thread
+    self.rosmakeall.update_status(self.argument ,
+                                  self.build_queue.get_started_threads(),
+                                  self.build_queue.progress_str())
 
 class BuildQueue:
   """ This class provides a thread safe build queue.  Which will do
@@ -162,7 +173,7 @@ class BuildQueue:
     self._started = {}
 
   def progress_str(self):
-    return "[ %d Active, %d of %d Complete ]"%(len(self._started), len(self.built), self._total_pkgs)
+    return "[ %d Active %d/%d Complete ]"%(len(self._started), len(self.built), self._total_pkgs)
 
   def get_started_threads(self): #TODO sort this other than hash order
     return self._started.copy()
@@ -182,11 +193,12 @@ class BuildQueue:
     with self.condition:
       self.condition.notifyAll() # wake any blocking threads
       
-  def return_built(self, package): # mark that a package is built
+  def return_built(self, package, successful=True): # mark that a package is built
     """ The thread which completes a package marks it as done with
     this method."""
     with self.condition:
-      self.built.append(package)
+      if successful:
+        self.built.append(package)
       if package in self._started.keys():
         self._started.pop(package)
       else:

@@ -165,7 +165,7 @@ class BuildQueue:
     return "[ %d Active, %d of %d Complete ]"%(len(self._started), len(self.built), self._total_pkgs)
 
   def get_started_threads(self): #TODO sort this other than hash order
-    return self._started
+    return self._started.copy()
 
   def is_done(self):
     """Return if the build queue has been completed """

@@ -48,6 +48,7 @@ import os
 import re
 import struct
 import sys
+import threading
 import time
 import yaml
 
@@ -148,7 +149,7 @@ class Bag(object):
         self._open(f, mode, allow_unindexed)
 
         self._output_file = self._file
-    
+
     @property
     def options(self):
         """Get the options."""

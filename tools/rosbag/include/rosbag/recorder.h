@@ -46,6 +46,7 @@
 
 #include <boost/thread/condition.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/regex.hpp>
 
 #include <ros/ros.h>
 #include <ros/time.h>
@@ -85,6 +86,7 @@ struct RecorderOptions
     bool            trigger;
     bool            record_all;
     bool            regex;
+    bool            do_exclude;
     bool            quiet;
     bool            append_date;
     bool            snapshot;
@@ -92,6 +94,7 @@ struct RecorderOptions
     CompressionType compression;
     std::string     prefix;
     std::string     name;
+    boost::regex    exclude_regex;
     uint32_t        split_size;
     uint32_t        buffer_size;
     uint32_t        limit;

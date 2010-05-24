@@ -83,6 +83,7 @@ RecorderOptions::RecorderOptions() :
     trigger(false),
     record_all(false),
     regex(false),
+    do_exclude(false),
     quiet(false),
     append_date(true),
     snapshot(false),
@@ -90,6 +91,7 @@ RecorderOptions::RecorderOptions() :
     compression(compression::None),
     prefix(""),
     name(""),
+    exclude_regex(""),
     split_size(0),
     buffer_size(0),
     limit(0)
@@ -187,6 +189,20 @@ bool Recorder::isSubscribed(string const& topic) const {
 }
 
 bool Recorder::shouldSubscribeToTopic(std::string const& topic) {
+    // ignore already known topics
+    if (isSubscribed(topic)) {
+        return false;
+    }
+
+    // subtract exclusion regex, if any
+    if(options_.do_exclude && boost::regex_match(topic, options_.exclude_regex)) {
+        return false;
+    }
+
+    if(options_.record_all) {
+        return true;
+    }
+    
     if (options_.regex) {
         // Treat the topics as regular expressions
         foreach(string const& regex_str, options_.topics) {
@@ -407,7 +423,7 @@ void Recorder::doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_han
     ros::master::V_TopicInfo topics;
     if (ros::master::getTopics(topics)) {
 		foreach(ros::master::TopicInfo const& t, topics) {
-			if (!isSubscribed(t.name) && (options_.record_all || shouldSubscribeToTopic(t.name)))
+			if (shouldSubscribeToTopic(t.name))
 				subscribe(t.name);
 		}
     }

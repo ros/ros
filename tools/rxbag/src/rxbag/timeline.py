@@ -29,8 +29,10 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
+
+"""
+The rxbag timeline widget.
+"""
 
 from __future__ import with_statement
 
@@ -60,136 +62,11 @@ from raw_view   import RawView
 from recorder   import Recorder
 from util.layer import Layer
 
-class IndexCacheThread(threading.Thread):
-    def __init__(self, timeline, period=2.0):
-        threading.Thread.__init__(self)
-
-        self.timeline  = timeline
-        self.period    = period
-        self.stop_flag = False
-
-        self.setDaemon(True)
-        self.start()
-
-    def run(self):
-        try:
-            while not self.stop_flag:
-                topics = self.timeline.topics
-                if len(topics) == 0:
-                    time.sleep(1.0)
-                    continue
-
-                updated = False
-                for topic in topics:
-                    with self.timeline.index_cache_lock:
-                        updated |= self.timeline._update_index_cache(topic)
-
-                if updated:
-                    wx.CallAfter(self.timeline.invalidate)
-    
-                time.sleep(self.period)
-        except:
-            pass
-
-    def stop(self):
-        self.stop_flag = True
-        self.join()
-
-class PlayThread(threading.Thread):
-    def __init__(self, timeline):
-        threading.Thread.__init__(self)
-
-        self.timeline   = timeline
-        self.stop_flag  = False
-        
-        self.setDaemon(True)
-        self.start()
-
-    def run(self):
-        self.play_all = None
-        
-        while not self.stop_flag:
-            try:
-                # Reset on switch of playing mode
-                if self.play_all != self.timeline.play_all or self.timeline.playhead != self.last_playhead:
-                    self.play_all = self.timeline.play_all
-    
-                    self.last_frame       = None
-                    self.last_playhead    = None
-                    self.desired_playhead = None
-    
-                if self.play_all:
-                    self.step_next_message()
-                    time.sleep(0.02)
-                else:
-                    self.step_fixed()
-                    time.sleep(0.04)
-            except:
-                pass
-
-    def step_fixed(self):
-        if self.timeline.play_speed == 0.0 or not self.timeline.playhead:
-            self.last_frame    = None
-            self.last_playhead = None
-            return
-
-        now = Time.from_sec(time.time())
-        if self.last_frame:
-            new_playhead = self.timeline.playhead + Duration.from_sec((now - self.last_frame).to_sec() * self.timeline.play_speed)
-
-            start_stamp = self.timeline.start_stamp
-            end_stamp   = self.timeline.end_stamp
-            if new_playhead > end_stamp:
-                new_playhead = start_stamp
-            elif new_playhead < start_stamp:
-                new_playhead = end_stamp
-
-            self.timeline.set_playhead(new_playhead)
-
-        self.last_frame    = now
-        self.last_playhead = self.timeline.playhead
-
-    def step_next_message(self):
-        if self.timeline.play_speed <= 0.0 or not self.timeline.playhead:
-            self.last_frame    = None
-            self.last_playhead = None
-            return
-
-        now = Time.from_sec(time.time())
-        
-        if self.last_frame:
-            # Get the desired playhead, based on the play speed and the elapsed wall time
-            if not self.desired_playhead:
-                self.desired_playhead = self.timeline.playhead
-            else:
-                delta = now - self.last_frame
-                if delta > Duration.from_sec(0.1):
-                    delta = Duration.from_sec(0.1)
-                self.desired_playhead += delta
-
-            # Get the occurrence of the next message
-            next_message_time = self.timeline.get_next_message_time()
-            
-            if next_message_time < self.desired_playhead:
-                self.timeline.set_playhead(next_message_time)
-            else:
-                self.timeline.set_playhead(self.desired_playhead)
-
-        self.last_frame    = now
-        self.last_playhead = self.timeline.playhead
-
-    def stop(self):
-        self.stop_flag = True
-        self.join()
-
 class Timeline(Layer):
     name = 'Timeline'
 
     def __init__(self, parent, title, x, y, width, height):
         Layer.__init__(self, parent, title, x, y, width, height)
-
-        self._bag_lock = threading.RLock()
-        self.bags = []
 
         ## Rendering parameters
 
@@ -210,8 +87,8 @@ class Timeline(Layer):
         self.bag_end_width     = 3
         self.time_tick_height  = 3
 
-        self.minor_divisions_color_tick = (0.5, 0.5, 0.5, 0.3)
-        self.minor_divisions_color      = (0.6, 0.6, 0.6, 0.3)
+        self.minor_divisions_color_tick = (0.5, 0.5, 0.5, 0.5)
+        self.minor_divisions_color      = (0.6, 0.6, 0.6, 0.5)
 
         self.default_datatype_color = (0.0, 0.0, 0.0)
         self.datatype_colors = {
@@ -248,6 +125,11 @@ class Timeline(Layer):
         self.history_width  = 0
         self.history_bottom = 0
         self.history_bounds = {}
+        
+        ##
+
+        self._bag_lock = threading.RLock()
+        self._bags     = []
 
         self._stamp_left         = None
         self._stamp_right        = None
@@ -258,9 +140,10 @@ class Timeline(Layer):
         self._playhead_positions = {}
         self.play_all            = False
 
-        self._message_cache_capacity = 50
+        self._message_cache_lock     = threading.RLock()
         self._message_cache          = {}
         self._message_cache_keys     = []
+        self._message_cache_capacity = 50
 
         self.views = []
 
@@ -280,46 +163,53 @@ class Timeline(Layer):
 
         scroll_window = self.parent.GetParent()
         scroll_window.Bind(wx.EVT_SIZE, self.on_size)
-        
+
+        # Trap SIGINT and close wx app
+        def sigint_handler(signum, frame):
+            self._close()
+            wx.GetApp().Exit()
+        import signal
+        signal.signal(signal.SIGINT, sigint_handler)
+
     ###
 
     @property
     def history_height(self): return self.history_bottom - self.history_top
 
     def on_close(self, event):
+        self._close()
+
+    def _close(self):
         for renderer in self.timeline_renderers.values(): 
             renderer.close()
 
         self.index_cache_thread.stop()
 
         self.play_thread.stop()
-        
+
         if self.player:
             self.player.stop()
 
         if self.recorder:
             self.recorder.stop()
 
-     ### Bags
+    def get_title(self):
+        if self.recorder:
+            if self.recorder.paused:
+                return 'rxbag - %s [recording paused]' % self._bags[0].filename
+            else:
+                return 'rxbag - %s [recording]' % self._bags[0].filename
+        elif len(self.bags) == 1:
+            return 'rxbag - ' + self._bags[0].filename
+        else:
+            return 'rxbag - [%d bags]' % len(self._bags)
 
-    def record_bag(self, filename):
-        try:
-            self.recorder = Recorder(filename, bag_lock=self._bag_lock)
-        except Exception, ex:
-            print >> sys.stderr, 'Error opening bag for recording [%s]: %s' % (self._filename, str(ex))
-            return
-
-        self.recorder.add_listener(self.message_recorded)
-        
-        self.bags.append(self.recorder.bag)
-        
-        self.recorder.start()
-
-        # Update the message index cache at 5 Hz
-        self.index_cache_thread.period = 0.2
+    ### Bags
 
     def add_bag(self, bag):
-        self.bags.append(bag)
+        self._bags.append(bag)
+
+        wx.CallAfter(self.parent.update_title)
 
         # Invalidate entire index cache for all topics in this bag
         with self.index_cache_lock:
@@ -329,7 +219,38 @@ class Timeline(Layer):
                     self._update_index_cache(topic)
     
         self.invalidate()
+
+    @property
+    def bags(self):
+        return self._bags
     
+    ### Recording
+
+    def record_bag(self, filename, all=True, topics=[], regex=False, limit=0):
+        try:
+            self.recorder = Recorder(filename, bag_lock=self._bag_lock, all=all, topics=topics, regex=regex, limit=limit)
+        except Exception, ex:
+            print >> sys.stderr, 'Error opening bag for recording [%s]: %s' % (filename, str(ex))
+            return
+
+        self.recorder.add_listener(self.message_recorded)
+        
+        self.add_bag(self.recorder.bag)
+
+        self.recorder.start()
+
+        self.play_thread.wrap = False
+        self.index_cache_thread.period = 0.1
+
+        self.parent.setup_toolbar()  # record button has been added
+        self.parent.update_title()
+
+    def toggle_recording(self):
+        if self.recorder:
+            self.recorder.toggle_paused()
+            self.parent.setup_toolbar()
+            self.parent.update_title()
+
     ### Publishing
 
     def is_publishing(self, topic):
@@ -393,37 +314,27 @@ class Timeline(Layer):
     def start_stamp(self):
         with self._bag_lock:
             start_stamp = None
-            for bag in self.bags:               
+            for bag in self._bags:               
                 bag_start_stamp = bag_helper.get_start_stamp(bag)
-                if bag_start_stamp is None:
-                    continue
-                if start_stamp is None:
+                if bag_start_stamp and (start_stamp is None or bag_start_stamp < start_stamp):
                     start_stamp = bag_start_stamp
-                else:
-                    if bag_start_stamp < start_stamp:
-                        start_stamp = bag_start_stamp
             return start_stamp
 
     @property
     def end_stamp(self):
         with self._bag_lock:
             end_stamp = None
-            for bag in self.bags:
+            for bag in self._bags:
                 bag_end_stamp = bag_helper.get_end_stamp(bag)
-                if bag_end_stamp is None:
-                    continue
-                if end_stamp is None:
+                if bag_end_stamp and (end_stamp is None or bag_end_stamp > end_stamp):
                     end_stamp = bag_end_stamp
-                else:
-                    if bag_end_stamp > end_stamp:
-                        end_stamp = bag_end_stamp
             return end_stamp
 
     @property
     def topics(self):
         with self._bag_lock:
             topics = set()
-            for bag in self.bags:
+            for bag in self._bags:
                 for topic in bag_helper.get_topics(bag):
                     topics.add(topic)
             return sorted(topics)
@@ -432,7 +343,7 @@ class Timeline(Layer):
     def topics_by_datatype(self):
         with self._bag_lock:
             topics_by_datatype = {}
-            for bag in self.bags:
+            for bag in self._bags:
                 for datatype, topics in bag_helper.get_topics_by_datatype(bag).items():
                     topics_by_datatype.setdefault(datatype, []).extend(topics)
             return topics_by_datatype
@@ -440,7 +351,7 @@ class Timeline(Layer):
     def get_datatype(self, topic):
         with self._bag_lock:
             datatype = None
-            for bag in self.bags:
+            for bag in self._bags:
                 bag_datatype = bag_helper.get_datatype(bag, topic)
                 if datatype and bag_datatype and (bag_datatype != datatype):
                     raise Exception('topic %s has multiple datatypes: %s and %s' % (topic, datatype, bag_datatype))
@@ -450,15 +361,15 @@ class Timeline(Layer):
     def get_entries(self, topic, start_stamp, end_stamp):
         with self._bag_lock:
             from rosbag import bag
-            
+
             bag_entries = []
-            for b in self.bags:
+            for b in self._bags:
                 bag_start_time = bag_helper.get_start_stamp(b)
-                if bag_start_time > end_stamp:
+                if bag_start_time and bag_start_time > end_stamp:
                     continue
-                
+
                 bag_end_time = bag_helper.get_end_stamp(b)
-                if bag_end_time < start_stamp:
+                if bag_end_time and bag_end_time < start_stamp:
                     continue
 
                 connections = list(b._get_connections(topic))
@@ -470,7 +381,7 @@ class Timeline(Layer):
     def get_entry(self, t, topic):
         with self._bag_lock:
             entry_bag, entry = None, None
-            for bag in self.bags:
+            for bag in self._bags:
                 bag_entry = bag._get_entry(t, bag._get_connections(topic))
                 if bag_entry and (not entry or bag_entry.time > entry.time):
                     entry_bag, entry = bag, bag_entry
@@ -480,7 +391,7 @@ class Timeline(Layer):
     def get_entry_after(self, t):
         with self._bag_lock:
             entry_bag, entry = None, None
-            for bag in self.bags:
+            for bag in self._bags:
                 bag_entry = bag._get_entry_after(t, bag._get_connections())
                 if bag_entry and (not entry or bag_entry.time < entry.time):
                     entry_bag, entry = bag, bag_entry
@@ -582,28 +493,36 @@ class Timeline(Layer):
 
     ### Navigation
 
-    def navigate_play(self): self._play_speed = 1.0
-    def navigate_stop(self): self._play_speed = 0.0
+    def navigate_play(self): self.set_play_speed(1.0)
+    def navigate_stop(self): self.set_play_speed(0.0)
 
     def navigate_rewind(self):
         if self._play_speed <= -1.0:
-            self._play_speed *= 2.0
+            new_play_speed = self._play_speed * 2.0
         elif self._play_speed < 0.001:
-            self._play_speed = -1.0
+            new_play_speed = -1.0
         else:
-            self._play_speed *= 0.5
-            
-        self._play_speed = max(self.min_play_speed, self._play_speed)
+            new_play_speed = self._play_speed * 0.5
+
+        self.set_play_speed(new_play_speed)
         
     def navigate_fastforward(self):
         if self._play_speed >= 1.0:
-            self._play_speed *= 2.0
+            new_play_speed = self._play_speed * 2.0
         elif self._play_speed > -0.001:
-            self._play_speed = 1.0
+            new_play_speed = 1.0
         else:
-            self._play_speed *= 0.5
+            new_play_speed = self._play_speed * 0.5
 
-        self._play_speed = min(self.max_play_speed, self._play_speed)
+        self.set_play_speed(new_play_speed)
+
+    def set_play_speed(self, play_speed):
+        self._play_speed = min(self.max_play_speed, max(self.min_play_speed, play_speed))
+
+        if self._play_speed < 1.0:
+            self.play_thread.stick_to_end = False
+
+        self.parent.setup_toolbar()
 
     def navigate_start(self): self.set_playhead(self.start_stamp)
     def navigate_end(self):   self.set_playhead(self.end_stamp)
@@ -664,6 +583,9 @@ class Timeline(Layer):
             
             self._playhead = playhead
 
+            if self._playhead != self.end_stamp:
+                self.play_thread.stick_to_end = False
+
             playhead_secs = playhead.to_sec()
             
             if playhead_secs > self._stamp_right:
@@ -694,6 +616,9 @@ class Timeline(Layer):
             for topic in self.topics:
                 bag, entry = self.get_entry(self._playhead, topic)
                 if entry:
+                    if topic in self._playhead_positions and self._playhead_positions[topic] == (bag, entry.position):
+                        continue
+                    
                     self._playhead_positions[topic] = (bag, entry.position)
                 else:
                     self._playhead_positions[topic] = None, None
@@ -832,6 +757,7 @@ class Timeline(Layer):
 
     def _draw_major_divisions(self, dc, stamps, start_stamp, division):
         dc.set_line_width(1.0)
+        dc.set_font_size(11.0)
 
         for stamp in stamps:
             x = self.map_stamp_to_x(stamp, False)
@@ -845,14 +771,17 @@ class Timeline(Layer):
                 dc.move_to(label_x, label_y)
                 dc.show_text(label)
 
-            dc.set_source_rgba(0.25, 0.25, 0.25, 0.3)
-            dc.move_to(x, label_y + 1)
+            dc.set_source_rgba(0.25, 0.25, 0.25, 0.7)
+            dc.set_dash([2, 2])
+            dc.move_to(x, label_y - label_extent[3])
             dc.line_to(x, self.history_bottom)
-        
-        dc.stroke()
+            dc.stroke()
+            dc.set_dash([])
 
     def _draw_minor_divisions(self, dc, stamps, start_stamp, division):
         xs = [self.map_stamp_to_x(stamp) for stamp in stamps]
+
+        dc.set_dash([2, 2])
 
         dc.set_source_rgba(*self.minor_divisions_color_tick)
         for x in xs:
@@ -865,6 +794,8 @@ class Timeline(Layer):
             dc.move_to(x, self.history_top)
             dc.line_to(x, self.history_bottom)
         dc.stroke()
+
+        dc.set_dash([])
 
     def _get_stamps(self, start_stamp, stamp_step):
         """
@@ -925,7 +856,7 @@ class Timeline(Layer):
             # Check if the cache has been invalidated
             if topic not in self.invalidated_caches:
                 return False
-            
+
             if len(topic_cache) == 0:
                 start_time = self.start_stamp
             else:
@@ -1196,23 +1127,25 @@ class Timeline(Layer):
     ###
 
     def _get_message(self, bag, topic, position):
-        key = '%s%s%s' % (bag.filename, topic, str(position))
-        if key in self._message_cache:
-            return self._message_cache[key]
-        
-        msg_data = self.read_message(bag, position)
-        self._message_cache[key] = msg_data
-        self._message_cache_keys.append(key)
-        
-        if len(self._message_cache) > self._message_cache_capacity:
-            oldest_key = self._message_cache_keys[0]
-            del self._message_cache[oldest_key]
-            self._message_cache_keys.remove(oldest_key)
+        with self._message_cache_lock:
+            key = '%s%s%s' % (bag.filename, topic, str(position))
+            if key in self._message_cache:
+                return self._message_cache[key]
+    
+            with self._bag_lock:
+                msg_data = self.read_message(bag, position)
+            self._message_cache[key] = msg_data
+            self._message_cache_keys.append(key)
+            
+            if len(self._message_cache) > self._message_cache_capacity:
+                oldest_key = self._message_cache_keys[0]
+                del self._message_cache[oldest_key]
+                self._message_cache_keys.remove(oldest_key)
 
-        return msg_data
+            return msg_data
 
     def _update_message_view_for_topic(self, topic):
-        if not self._playhead_positions or not topic in self.listeners:
+        if not self._playhead_positions or topic not in self.listeners or topic not in self._playhead_positions:
             return
 
         bag, playhead_position = self._playhead_positions[topic]
@@ -1258,3 +1191,137 @@ class Timeline(Layer):
         config = wx.Config(localFilename=layout_file)
         
         # TODO
+
+
+class IndexCacheThread(threading.Thread):
+    def __init__(self, timeline, period=0.5):
+        threading.Thread.__init__(self)
+
+        self.timeline  = timeline
+        self.period    = period
+        self.stop_flag = False
+
+        self.setDaemon(True)
+        self.start()
+
+    def run(self):
+        try:
+            while not self.stop_flag:
+                topics = self.timeline.topics
+                if len(topics) == 0:
+                    time.sleep(0.1)
+                    continue
+
+                updated = False
+                for topic in topics:
+                    with self.timeline.index_cache_lock:
+                        updated |= self.timeline._update_index_cache(topic)
+
+                if updated:
+                    self.timeline.invalidate()
+    
+                time.sleep(self.period)
+        except Exception, ex:
+            raise
+
+    def stop(self):
+        self.stop_flag = True
+        self.join()
+
+class PlayThread(threading.Thread):
+    def __init__(self, timeline):
+        threading.Thread.__init__(self)
+
+        self.timeline     = timeline
+        self.stop_flag    = False
+        self.wrap         = True       # should the playhead wrap when it reaches the end?
+        self.stick_to_end = False      # should the playhead stick to the end?
+
+        self.setDaemon(True)
+        self.start()
+
+    def run(self):
+        self.play_all = None
+
+        while not self.stop_flag:
+            try:
+                # Reset on switch of playing mode
+                if self.play_all != self.timeline.play_all or self.timeline.playhead != self.last_playhead:
+                    self.play_all = self.timeline.play_all
+    
+                    self.last_frame       = None
+                    self.last_playhead    = None
+                    self.desired_playhead = None
+    
+                if self.play_all:
+                    self.step_next_message()
+                    time.sleep(0.01)
+                else:
+                    self.step_fixed()
+                    time.sleep(0.05)
+            except Exception:
+                pass
+
+    def step_fixed(self):
+        if self.timeline.play_speed == 0.0 or not self.timeline.playhead:
+            self.last_frame    = None
+            self.last_playhead = None
+            return
+
+        now = rospy.Time.from_sec(time.time())
+        if self.last_frame:
+            if self.stick_to_end:
+                new_playhead = self.timeline.end_stamp
+            else:
+                new_playhead = self.timeline.playhead + Duration.from_sec((now - self.last_frame).to_sec() * self.timeline.play_speed)
+    
+                start_stamp = self.timeline.start_stamp
+                end_stamp   = self.timeline.end_stamp
+                if new_playhead > end_stamp:
+                    if self.wrap:
+                        new_playhead = start_stamp
+                    else:
+                        new_playhead = end_stamp
+                        
+                        self.stick_to_end = True
+
+                elif new_playhead < start_stamp:
+                    if self.wrap:
+                        new_playhead = end_stamp
+                    else:
+                        new_playhead = start_stamp
+
+            self.timeline.set_playhead(new_playhead)
+
+        self.last_frame    = now
+        self.last_playhead = self.timeline.playhead
+
+    def step_next_message(self):
+        if self.timeline.play_speed <= 0.0 or not self.timeline.playhead:
+            self.last_frame    = None
+            self.last_playhead = None
+            return
+
+        if self.last_frame:
+            if not self.desired_playhead:
+                self.desired_playhead = self.timeline.playhead
+            else:
+                delta = Time.from_sec(time.time()) - self.last_frame
+                if delta > Duration.from_sec(0.1):
+                    delta = Duration.from_sec(0.1)
+                self.desired_playhead += delta
+
+            # Get the occurrence of the next message
+            next_message_time = self.timeline.get_next_message_time()
+            
+            if next_message_time < self.desired_playhead:
+                self.timeline.set_playhead(next_message_time)
+            else:
+                self.timeline.set_playhead(self.desired_playhead)
+
+        self.last_frame    = Time.from_sec(time.time())
+        self.last_playhead = self.timeline.playhead
+
+    def stop(self):
+        self.stop_flag = True
+        self.join()

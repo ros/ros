@@ -30,8 +30,10 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
+
+"""
+Defines the rxbag wx.App.
+"""
 
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
@@ -59,27 +61,22 @@ class RxBagApp(wx.App):
     
     def OnInit(self):
         try:
-            # Get filename to record to
             if self.options.record:
+                # Connect to ROS master
                 if not self.connect_to_ros():
                     raise Exception('recording requires connection to master')
 
                 # Get filename to record to
-                if len(self.args) > 0:
-                    record_filename = self.args[0]
-                else:
-                    record_filename = 'rxbag.bag'            
+                record_filename = time.strftime('%Y-%m-%d-%H-%M-%S.bag', time.localtime(time.time()))
+                if self.options.name:
+                    record_filename = self.options.name
+                elif self.options.prefix:
+                    record_filename = '%s_%s' % (self.options.prefix, record_filename)
 
-            # Title bar
-            if self.options.record:
-                frame_title = 'rxbag - %s [recording]' % record_filename
-            elif len(self.args) == 1:
-                frame_title = 'rxbag - ' + self.args[0]
-            else:
-                frame_title = 'rxbag - [%d bags]' % len(self.args)
+                rospy.loginfo('Recording to %s.' % record_filename)
 
             # Create main timeline frame
-            self.frame = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline', title=frame_title)
+            self.frame = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline')
             self.frame.SetBackgroundColour(wx.WHITE)
             self.frame.Bind(wx.EVT_CLOSE, lambda e: wx.Exit())
 
@@ -87,7 +84,6 @@ class RxBagApp(wx.App):
             scroll.SetBackgroundColour(wx.WHITE)
             
             panel = timeline_panel.TimelinePanel(scroll, -1)
-            panel.app = self
             panel.create_controls()
             panel.SetSize((100, 100))
             
@@ -95,13 +91,12 @@ class RxBagApp(wx.App):
             self.SetTopWindow(self.frame)
 
             if self.options.record:
-                panel.timeline.record_bag(record_filename)
+                panel.timeline.record_bag(record_filename, all=self.options.all, topics=self.args, regex=self.options.regex, limit=self.options.limit)
             else:
                 RxBagInitThread(self, panel.timeline)
-            
+
         except Exception, ex:
             print >> sys.stderr, 'Error initializing application:', ex
-            raise
             return False
 
         return True
@@ -121,10 +116,9 @@ class RxBagApp(wx.App):
             def run(self):
                 rospy.loginfo('Master found.  Connecting...')
                 rospy.init_node('rxbag', anonymous=True, disable_signals=True)
-                self.init_cv.acquire()
-                self.inited = True
-                self.init_cv.notify_all()
-                self.init_cv.release()
+                with self.init_cv:
+                    self.inited = True
+                    self.init_cv.notify_all()
     
         try:
             # Check whether ROS master is running                                                                                                                          
@@ -144,9 +138,9 @@ class RxBagApp(wx.App):
                 return True
             else:
                 rospy.logerr('Couldn\'t connect to ROS master.')
-        except:
+        except Exception:
             rospy.loginfo('ROS master not found.')
-            
+        
         return False
 
 class RxBagInitThread(threading.Thread):

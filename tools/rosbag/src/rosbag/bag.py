@@ -728,7 +728,7 @@ class Bag(object):
 
     def _get_entry(self, t, connections=None):
         """
-        Return the first index entry on/before time on the given connections
+        Return the first index entry on/before the timestamp on the given connections.
         """
         indexes = self._get_indexes(connections)
 
@@ -743,6 +743,25 @@ class Bag(object):
                 if first_entry is None or index_entry > first_entry:
                     first_entry = index_entry
                     
+        return first_entry
+    
+    def _get_entry_after(self, t, connections=None):
+        """
+        Return the first index entry after the timestamp on the given connections.
+        """
+        indexes = self._get_indexes(connections)
+
+        entry = _IndexEntry(t)
+
+        first_entry = None
+
+        for index in indexes:
+            i = bisect.bisect_right(index, entry)
+            if i <= len(index) - 1:
+                index_entry = index[i]
+                if first_entry is None or index_entry < first_entry:
+                    first_entry = index_entry
+
         return first_entry
 
     def _get_indexes(self, connections):

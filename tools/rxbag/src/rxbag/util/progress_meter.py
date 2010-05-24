@@ -29,15 +29,13 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
 import sys
 import time
 
 class ProgressMeter:
-    SUFFIXES = {1000: ['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
-                1024: ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']}
+    SUFFIXES = { 1000: ['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
+                 1024: ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'] }
 
     def __init__(self, path, bytes_total, refresh_rate=1.0):
         self.path           = path
@@ -122,7 +120,7 @@ class ProgressMeter:
         if width <= 0:
             try:
                 width = int(os.environ['COLUMNS'])
-            except:
+            except Exception:
                 pass
         if width <= 0:
             width = 80

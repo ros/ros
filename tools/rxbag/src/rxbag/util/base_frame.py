@@ -29,14 +29,15 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
 import sys
+
 import wx
 
-## A Frame that can save/load its position and size. 
 class BaseFrame(wx.Frame):
+    """
+    A Frame that can save/load its position and size. 
+    """
     def __init__(self, parent, config_name, config_key, id=wx.ID_ANY, title='Untitled', pos=wx.DefaultPosition, size=(800, 300), style=wx.DEFAULT_FRAME_STYLE):
         wx.Frame.__init__(self, parent, id, title, pos, size, style)
 

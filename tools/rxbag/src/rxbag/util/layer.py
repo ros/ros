@@ -29,15 +29,13 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
 import time
 
 import wx
 import wx.lib.wxcairo
 
-class Layer:
+class Layer(object):
     name = 'Untitled'
     
     def __init__(self, parent, title, x, y, width, height):
@@ -97,7 +95,7 @@ class Layer:
 
     def invalidate(self):
         self._dirty = True
-        self.parent.Refresh()
+        wx.CallAfter(self.parent.Refresh)
 
     @property
     def x(self): return self._x
@@ -127,6 +125,7 @@ class Layer:
 
         cairo_dc = wx.lib.wxcairo.ContextFromDC(mem_dc)
         self.paint(cairo_dc)
+        
         mem_dc.SelectObject(wx.NullBitmap)
 
         self._dirty = False
@@ -184,10 +183,11 @@ class TransparentLayer(Layer):
 class LayerPanel(wx.Window):
     def __init__(self, *args, **kwargs):
         wx.Window.__init__(self, *args, **kwargs)
+
+        self.composite_layers = False
         
         self.background_brush = wx.WHITE_BRUSH
 
-        self.bitmap      = None
         self.layers      = []
         self.clicked_pos = None
         self.painting    = False
@@ -203,7 +203,10 @@ class LayerPanel(wx.Window):
         self.Bind(wx.EVT_MOTION,      self.on_mouse_move)
         self.Bind(wx.EVT_MOUSEWHEEL,  self.on_mousewheel)
 
-        self.GetParent().Bind(wx.EVT_CLOSE, self.on_close)
+        parent = self.GetParent()
+        while parent.GetParent():
+            parent = parent.GetParent()
+        parent.Bind(wx.EVT_CLOSE, self.on_close)
 
     @property
     def width(self): return self.Size[0]
@@ -214,65 +217,33 @@ class LayerPanel(wx.Window):
     # Painting events
 
     def on_paint(self, event):
-        if not self.bitmap:
-            return
+        window_dc = wx.PaintDC(self)
+        window_dc.SetBackground(self.background_brush)
+        window_dc.Clear()
 
-        # Ask layers to recheck whether they're dirty or not
-        for layer in self.layers:
-            layer.check_dirty()
+        if self.composite_layers:
+            for layer in self.layers:
+                if not layer.self_paint:
+                    layer.check_dirty()
+                    if layer._dirty:
+                        layer.paint_to_bitmap()
 
-        # Find layers that need to be repainted                                                                                                          
-        dirty_layers = [l for l in self.layers if l._dirty]
-
-        # If none are dirty, nothing to do                                                                                                               
-        if len(dirty_layers) == 0:
-            return
-
-        # Repaint dirty layers                                                                                                                           
-        for layer in dirty_layers:
-            layer.paint_to_bitmap()
-
-        # Compose layers and blit to window                                                                                                              
-        self.paint()
-
-    def paint(self):
-        paint_layers = [layer for layer in self.layers if not layer.self_paint]
-        if len(paint_layers) == 0:
-            return
-        
-        # Compose all layers into a buffer
-        bitmap_dc = wx.MemoryDC()
-        bitmap_dc.SelectObject(self.bitmap)
-        bitmap_dc.SetBackground(self.background_brush)
-        bitmap_dc.Clear()
-        for layer in paint_layers:
-            layer.draw(bitmap_dc)
-        bitmap_dc.SelectObject(wx.NullBitmap)
-
-        # Draw buffer to the window
-        window_dc = wx.ClientDC(self)
-        window_dc.DrawBitmap(self.bitmap, 0, 0)
-
-    def _paint_layers(self, wx_dc):
-        dc = wx.lib.wxcairo.ContextFromDC(wx_dc)
-        
-        dc.set_source_rgba(1, 1, 1, 1)
-        dc.rectangle(0, 0, self.width, self.height)
-        dc.fill()
-        
-        for layer in self.layers:
-            dc.save()
-            dc.translate(layer.x, layer.y)
-            layer.draw(dc)
-            dc.restore()
+            for layer in self.layers:
+                if not layer.self_paint:
+                    layer.draw(window_dc)
+        else:
+            cdc = wx.lib.wxcairo.ContextFromDC(window_dc)
+            
+            for layer in self.layers:
+                cdc.save()
+                cdc.translate(layer.x, layer.y)
+                layer.paint(cdc)
+                cdc.restore()
 
     def on_size(self, event):
         size = self.GetClientSize()
-        if not self.bitmap or self.bitmap.GetSize() != size:
-            self.bitmap = wx.EmptyBitmap(*self.GetClientSize())
-            
-            for layer in self.layers:
-                layer.on_size(event)
+        for layer in self.layers:
+            layer.on_size(event)
 
     # Mouse events
 

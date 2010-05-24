@@ -1243,8 +1243,8 @@ class PlayThread(threading.Thread):
     def run(self):
         self.play_all = None
 
-        while not self.stop_flag:
-            try:
+        try:
+            while not self.stop_flag:
                 # Reset on switch of playing mode
                 if self.play_all != self.timeline.play_all or self.timeline.playhead != self.last_playhead:
                     self.play_all = self.timeline.play_all
@@ -1259,8 +1259,9 @@ class PlayThread(threading.Thread):
                 else:
                     self.step_fixed()
                     time.sleep(0.05)
-            except Exception:
-                pass
+                    
+        except Exception, ex:
+            print >> sys.stderr, 'Error advancing playhead: %s' % str(ex)
 
     def step_fixed(self):
         if self.timeline.play_speed == 0.0 or not self.timeline.playhead:
@@ -1313,7 +1314,7 @@ class PlayThread(threading.Thread):
 
             # Get the occurrence of the next message
             next_message_time = self.timeline.get_next_message_time()
-            
+
             if next_message_time < self.desired_playhead:
                 self.timeline.set_playhead(next_message_time)
             else:

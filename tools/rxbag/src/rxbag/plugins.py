@@ -29,8 +29,10 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
+
+"""
+Loads plugins.
+"""
 
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
@@ -42,6 +44,12 @@ import traceback
 import roslib.rospack
 
 def load_plugins():
+    """
+    Finds all rxbag plugins.
+    
+    @return: a list of plugins
+    @rtype:  list of functions which return tuples of (MessageView, TimelineRenderer, list of: message type or '*')
+    """
     plugins = []
 
     to_check = roslib.rospack.rospack_depends_on_1('rxbag')

@@ -30,8 +30,10 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
+
+"""
+The main entry-point to rxbag.
+"""
 
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
@@ -42,7 +44,7 @@ import sys
 import threading
 import time
 
-# Ensure wxPython version >= 2.8, and install hotfix for 64-bit Cairo support
+# Ensure wxPython version >= 2.8, and install hotfix for 64-bit Cairo support for wxGTK
 import wxversion
 WXVER = '2.8'
 if wxversion.checkInstalled(WXVER):
@@ -59,7 +61,7 @@ if 'wxGTK' in wx.PlatformInfo:
     gdkLib.gdk_cairo_create.restype = ctypes.c_void_p
 
 import rxbag_app
-    
+
 def run(options, args):
     app = rxbag_app.RxBagApp(options, args)
     app.MainLoop()
@@ -70,9 +72,25 @@ def rxbag_main():
     # Parse command line for input files and options
     usage = "usage: %prog [options] BAG_FILE1 [BAG_FILE2 ...]"
     parser = optparse.OptionParser(usage=usage)
-    parser.add_option('-r', '--record',  dest='record',  default=False, action='store_true', help='record to a bag file')
-    parser.add_option(      '--profile', dest='profile', default=False, action='store_true', help='profile and write results to rxbag.prof [advanced]')
+    parser.add_option(      '--record',        dest='record',  default=False, action='store_true',        help='record to a bag file')
+    parser.add_option('-a', '--all',           dest='all',     default=False, action='store_true',        help='record all topics')
+    parser.add_option('-e', '--regex',         dest='regex',   default=False, action="store_true",        help='match topics using regular expressions')
+    parser.add_option('-o', '--output-prefix', dest='prefix',  default=None,  action="store",             help='prepend PREFIX to beginning of bag name (name will always end with date stamp)')
+    parser.add_option('-O', '--output-name',   dest='name',    default=None,  action="store",             help='record to bag with namename NAME.bag')
+    parser.add_option('-l', '--limit',         dest='limit',   default=0,     action="store", type='int', help='only record NUM messages on each topic')
+    parser.add_option(      '--profile',       dest='profile', default=False, action='store_true',        help='profile and write results to rxbag.prof [advanced]')
+    
     options, args = parser.parse_args(sys.argv[1:])
+
+    if len(args) == 0:
+        if options.record:
+            if not options.all:
+                parser.error('You must specify topics to record when recording (or specify --all).')
+        else:
+            parser.error('You must specify at least one bag file to view.')
+            
+    if options.prefix and options.name:
+        parser.error('Can\'t set both prefix and name.')
 
     if options.profile:
         import cProfile

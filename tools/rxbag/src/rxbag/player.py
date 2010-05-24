@@ -29,24 +29,25 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
-from __future__ import with_statement
+"""
+Player listens to messages from the timeline and publishes them to ROS.
+"""
 
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 
+import sys
 import threading
 import time
+
+import wx
 
 import rosbag
 import rosgraph.masterapi
 import rospy
 
-import sys
-
-class Player(object):   
+class Player(object):
     def __init__(self, timeline):
         self.timeline = timeline
 
@@ -54,7 +55,7 @@ class Player(object):
         self._publishers = {}
         
         # Attempt to connect to the ROS master
-        if not self.timeline.parent.app.connect_to_ros():
+        if not wx.GetApp().connect_to_ros():
             raise Exception('Error connecting to ROS')
 
     def is_publishing(self, topic):
@@ -83,10 +84,14 @@ class Player(object):
     def stop(self):
         for topic in list(self._publishing):
             self.stop_publishing(topic)
-            
+
     ## 
 
     def message_viewed(self, bag, msg_data):
+        # Don't publish unless the playhead is moving.
+        if self.timeline.play_speed <= 0.0:
+            return
+        
         topic, msg, t = msg_data
 
         # Create publisher if this is the first message on the topic

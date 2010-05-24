@@ -16,7 +16,6 @@
   <depend package="rosgraph"/>
   <depend package="rxtools"/>
   <rosdep name="python-gtk2"/>
-  <rosdep name="python-matplotlib"/>
   <rosdep name="wxpython"/>
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>

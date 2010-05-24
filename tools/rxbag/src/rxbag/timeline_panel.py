@@ -30,6 +30,10 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+"""
+The containing window for the timeline control.  Defines the toolbar and menus.
+"""
+
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 
@@ -46,41 +50,63 @@ class TimelinePanel(LayerPanel):
         LayerPanel.__init__(self, *args, **kwargs)
         
     def create_controls(self):
-        self._create_controls()
-        self._create_toolbar()
-
-    def display_popup(self, pos):
-        self.PopupMenu(TimelinePopupMenu(self, self.timeline), pos)
-
-    def _create_controls(self):
-        (width, height) = self.app.frame.GetClientSize()
-
+        (width, height) = wx.GetApp().GetTopWindow().GetClientSize()
         self.timeline = Timeline     (self, 'Timeline', 5, 19, width - 5, height - 19)
         self.status   = StatusLayer  (self, 'Status',   self.timeline, self.timeline.x, 4, 300, 16)
         self.playhead = PlayheadLayer(self, 'Playhead', self.timeline, 0, 0, 12, self.timeline.height)
-
         self.layers = [self.timeline, self.status, self.playhead]
 
-    def _create_toolbar(self):
+        self.setup_toolbar()
+        self.update_title()
+        
+    def update_title(self):
+        wx.GetApp().GetTopWindow().SetTitle(self.timeline.get_title())
+
+    def setup_toolbar(self):
+        tb = wx.GetApp().GetTopWindow().GetToolBar()
+        if tb:
+            tb.ClearTools()
+        else:
+            tb = wx.GetApp().GetTopWindow().CreateToolBar()
+
         icons_dir = roslib.packages.get_pkg_dir(PKG) + '/icons/'
+        
+        start_icon       = wx.Bitmap(icons_dir + 'start.png')
+        rewind_icon      = wx.Bitmap(icons_dir + 'rewind.png')
+        play_icon        = wx.Bitmap(icons_dir + 'play.png')
+        fastforward_icon = wx.Bitmap(icons_dir + 'fastforward.png')
+        end_icon         = wx.Bitmap(icons_dir + 'end.png')
+        stop_icon        = wx.Bitmap(icons_dir + 'stop.png')
 
-        tb = self.app.frame.CreateToolBar()
+        if self.timeline._play_speed > 1.0:       
+            fastforward_icon = wx.Bitmap(icons_dir + 'fastforward_active.png')
+        elif self.timeline._play_speed > 0.0:       
+            play_icon        = wx.Bitmap(icons_dir + 'play_active.png')
+        elif self.timeline._play_speed == 0.0:
+            stop_icon        = wx.Bitmap(icons_dir + 'stop_active.png')
+        elif self.timeline._play_speed < 0.0:       
+            rewind_icon      = wx.Bitmap(icons_dir + 'rewind_active.png')
 
-        start_tool       = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_start_blue.png'))
-        rewind_tool      = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_rewind_blue.png'))
-        play_tool        = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_play_blue.png'))
-        fastforward_tool = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_fastforward_blue.png'))
-        end_tool         = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_end_blue.png'))
-        stop_tool        = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'control_stop_blue.png'))
+        start_tool       = tb.AddLabelTool(wx.ID_ANY, '', start_icon)
+        rewind_tool      = tb.AddLabelTool(wx.ID_ANY, '', rewind_icon)
+        play_tool        = tb.AddLabelTool(wx.ID_ANY, '', play_icon)
+        fastforward_tool = tb.AddLabelTool(wx.ID_ANY, '', fastforward_icon)
+        end_tool         = tb.AddLabelTool(wx.ID_ANY, '', end_icon)
+        stop_tool        = tb.AddLabelTool(wx.ID_ANY, '', stop_icon)
+        if self.timeline.recorder:
+            if self.timeline.recorder.paused:
+                record_tool = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'record_inactive.png'))
+            else:
+                record_tool = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'record.png'))
         tb.AddSeparator()
         zoom_in_tool     = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'zoom_in.png'))
         zoom_out_tool    = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'zoom_out.png'))
         zoom_tool        = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'zoom.png'))
         tb.AddSeparator()
-        thumbnails_tool  = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'pictures.png'))
+        thumbnails_tool  = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'thumbnails.png'))
         #tb.AddSeparator()
-        #save_layout_tool = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'application_put.png'))
-        #load_layout_tool = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'application_get.png'))
+        #save_layout_tool = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'save_layout.png'))
+        #load_layout_tool = tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'load_layout.png'))
 
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_start(),       start_tool)
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_rewind(),      rewind_tool)
@@ -88,6 +114,8 @@ class TimelinePanel(LayerPanel):
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_fastforward(), fastforward_tool)       
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_end(),         end_tool)
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.navigate_stop(),        stop_tool)
+        if self.timeline.recorder:
+            tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.toggle_recording(),     record_tool)
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.zoom_in(),              zoom_in_tool)
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.zoom_out(),             zoom_out_tool)
         tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.reset_zoom(),           zoom_tool)
@@ -96,6 +124,9 @@ class TimelinePanel(LayerPanel):
         #tb.Bind(wx.EVT_TOOL, lambda e: self.timeline.load_layout(),          load_layout_tool)
 
         tb.Realize()
+
+    def display_popup(self, pos):
+        self.PopupMenu(TimelinePopupMenu(self, self.timeline), pos)
 
 class TimelinePopupMenu(wx.Menu):
     """
@@ -191,10 +222,10 @@ class TimelinePopupMenu(wx.Menu):
         # ---
         self.AppendSeparator()
 
-        # Publish...
+        # Publish...       
         self.publish_menu = wx.Menu()
         self.AppendSubMenu(self.publish_menu, 'Publish...', 'Publish Messages')
-        
+
         # Publish... / Publish All
         self.publish_menu.AppendItem(self.PublishAllMenuItem(self.publish_menu, wx.NewId(), 'Publish All',  True,  self.timeline))
 

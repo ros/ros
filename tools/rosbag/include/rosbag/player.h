@@ -68,6 +68,7 @@ struct PlayerOptions
     ros::WallDuration advertise_sleep;
     bool     try_future;
     bool     has_time;
+    bool     loop;
     float    time;
 
     std::vector<std::string> bags;

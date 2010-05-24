@@ -29,8 +29,10 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
+
+"""
+Draws the playhead time indicator and the playspeed.
+"""
 
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
@@ -70,12 +72,17 @@ class StatusLayer(Layer):
         if spd_str:
             s += ' ' + spd_str
 
-        dc.set_font_size(14.0)
-        font_width, font_height = dc.text_extents(s)[2:4]
-
         x = self.timeline.margin_left
         y = self.timeline.history_top - 10
 
         dc.set_source_rgb(0, 0, 0)
+        dc.set_font_size(14.0)
         dc.move_to(x, y)
+        dc.show_text(s)
+
+        dc.set_source_rgb(0.2, 0.2, 0.2)
+        dc.set_font_size(10.0)
+        s = '%10d.%09d' % (self.timeline.playhead.secs, self.timeline.playhead.nsecs)
+        font_width, font_height = dc.text_extents(s)[2:4]
+        dc.move_to(self.parent.width - font_width - 8, y - 2)
         dc.show_text(s)

@@ -29,8 +29,10 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
+
+"""
+Draws the playhead indicator on the timeline.
+"""
 
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)

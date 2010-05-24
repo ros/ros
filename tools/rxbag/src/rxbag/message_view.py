@@ -32,9 +32,14 @@
 #
 # Revision $Id$
 
+"""
+The rxbag plugin API is define by TimelineRenderer and MessageView classes.
+"""
+
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 import rospy
+
 import bisect
 import time
 
@@ -44,8 +49,9 @@ from util.layer import Layer
 
 class TimelineRenderer(object):
     """
-    A widget that can render an interval of time of a topic as a rectangle on the timeline.
-    @param msg_combine_px: don't draw discrete messages if they're less than this many pixels separated [optional]
+    A custom renderer for interval of time of a topic on the timeline.
+    
+    @param msg_combine_px: don't draw discrete messages if they're less than this many pixels separated [default: 1.5]
     @type  msg_combine_px: float
     """
     def __init__(self, timeline, msg_combine_px=1.5):
@@ -53,19 +59,44 @@ class TimelineRenderer(object):
         self.msg_combine_px = msg_combine_px 
 
     def get_segment_height(self, topic):
+        """
+        Get the height of the topic segment on the timeline.
+        
+        @param topic: topic name to draw
+        @type  topic: str
+        @return: height in pixels of the topic segment. If none, the timeline default is used.
+        @rtype:  int or None
+        """
         return None
 
     def draw_timeline_segment(self, dc, topic, stamp_start, stamp_end, x, y, width, height):
+        """
+        Draw the timeline segment.
+        
+        @param dc: Cairo device context to render into
+        @param topic: topic name
+        @param stamp_start: start of the interval on the timeline
+        @param stamp_end: start of the interval on the timeline
+        @param x: x coordinate of the timeline interval
+        @param y: y coordinate of the timeline interval
+        @param width: width in pixels of the timeline interval
+        @param height: height in pixels of the timeline interval
+        @return: whether the interval was renderered
+        @rtype:  bool
+        """
         return False
 
     def close(self):
+        """
+        Close the renderer, releasing any resources.
+        """
         pass
 
 class MessageView(Layer):
     """
-    A widget that can display message details.
+    A message details renderer. When registered with rxbag, a MessageView is called
+    whenever the timeline playhead moves.
     """
-    
     name = 'Untitled'
     
     def __init__(self, timeline, parent, title, x, y, width, height):
@@ -75,18 +106,36 @@ class MessageView(Layer):
         self.border   = False
     
     def message_viewed(self, bag, topic, msg, t):
+        """
+        View the message.
+        
+        @param bag: the bag file the message is contained in
+        @type  bag: rosbag.Bag
+        @param topic: the message topic
+        @type  topic: str
+        @param msg: the message
+        @type  msg: roslib.Message
+        @param t: the message timestamp
+        @type  t: rospy.Time
+        """
+        pass
+
+    def message_cleared(self):
+        """
+        Clear the currently viewed message (if any).
+        """
         pass
     
-    def message_cleared(self):
-        pass
-
-    def paint(self, dc):
-        pass
-
     def close(self):
+        """
+        Close the message view, releasing any resources.
+        """
         pass
 
 class TopicMessageView(MessageView):
+    """
+    A message view with a toolbar for navigating messages.
+    """
     def __init__(self, timeline, parent, title, x, y, width, height):
         MessageView.__init__(self, timeline, parent, title, x, y, width, height)
 
@@ -97,14 +146,8 @@ class TopicMessageView(MessageView):
         self._create_toolbar()
 
     def message_viewed(self, bag, msg_details):
-        topic, msg, t = msg_details
+        self.topic, _, self.stamp = msg_details
 
-        self.topic = topic
-        self.stamp = t
-
-    def message_cleared(self):
-        pass
-        
     def on_close(self, event):
         self.timeline.remove_view(self.topic, self)
 
@@ -112,35 +155,41 @@ class TopicMessageView(MessageView):
         if not self.topic:
             return
 
-        for entry in self.timeline.bag_file._get_entries(self.timeline.bag_file._get_connections(self.topic)):
-            self.timeline.set_playhead(entry.time.to_sec())
+        for entry in self.timeline.get_entries(self.topic, self.timeline.start_stamp, self.timeline.end_stamp):
+            self.timeline.set_playhead(entry.time)
             break
 
-#    def navigate_previous(self):
-#        if not self.topic:
-#            return
-#        
-#        index = bisect.bisect_right(self.timeline.message_history_cache[self.topic], self.stamp.to_sec()) - 1
-#        if index > 0:
-#            self.stamp = self.timeline.message_history_cache[self.topic][index - 1]
-#            self.timeline.set_playhead(self.stamp)
-#
-#    def navigate_next(self):
-#        if not self.topic:
-#            return
-#
-#        index = bisect.bisect_right(self.timeline.message_history_cache[self.topic], self.stamp.to_sec()) - 1
-#        if index < len(self.timeline.message_history_cache[self.topic]) - 1:
-#            self.stamp = self.timeline.message_history_cache[self.topic][index + 1]
-#            self.timeline.set_playhead(self.stamp)
+    def navigate_previous(self):
+        if not self.topic:
+            return
+
+        last_entry = None
+        for entry in self.timeline.get_entries(self.topic, self.timeline.start_stamp, self.timeline.playhead):
+            if entry.time < self.timeline.playhead:
+                last_entry = entry
+            
+        if last_entry:
+            self.timeline.set_playhead(last_entry.time)
+
+    def navigate_next(self):
+        if not self.topic:
+            return
+
+        for entry in self.timeline.get_entries(self.topic, self.timeline.playhead, self.timeline.end_stamp):
+            if entry.time > self.timeline.playhead:
+                self.timeline.set_playhead(entry.time)
+                break
 
     def navigate_last(self):
         if not self.topic:
             return
-        
-        for entry in self.timeline.bag_file._get_entries_reverse(self.timeline.bag_file._get_connections(self.topic)):
-            self.timeline.set_playhead(entry.time.to_sec())
-            break
+
+        last_entry = None
+        for entry in self.timeline.get_entries(self.topic, self.timeline.start_stamp, self.timeline.end_stamp):
+            last_entry = entry
+
+        if last_entry:
+            self.timeline.set_playhead(last_entry.time)
 
     @property
     def frame(self):
@@ -150,8 +199,8 @@ class TopicMessageView(MessageView):
         icons_dir = roslib.packages.get_pkg_dir(PKG) + '/icons/'
 
         tb = self.frame.CreateToolBar()
-        tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_first(),    tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'resultset_first.png')))
-        #tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_previous(), tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'resultset_previous.png')))
-        #tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_next(),     tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'resultset_next.png')))
-        tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_last(),     tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'resultset_last.png')))
+        tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_first(),    tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'navigate_first.png')))
+        tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_previous(), tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'navigate_previous.png')))
+        tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_next(),     tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'navigate_next.png')))
+        tb.Bind(wx.EVT_TOOL, lambda e: self.navigate_last(),     tb.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'navigate_last.png')))
         tb.Realize()

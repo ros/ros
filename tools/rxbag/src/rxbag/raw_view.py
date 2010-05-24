@@ -29,11 +29,14 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
+
+"""
+Defines a raw view: a TopicMessageView that displays the message contents in a tree.
+"""
 
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
+
 import rospy
 
 import codecs
@@ -73,7 +76,7 @@ class RawView(TopicMessageView):
         if t is None:
             self.message_cleared()
         else:
-            time_str = bag_helper.stamp_to_str(t)# time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(t.to_sec())) + '.%03d' % (t.nsecs / 1000000)
+            time_str = '%s (%10d.%09d)' % (bag_helper.stamp_to_str(t), t.secs, t.nsecs)
 
             if len(self.timeline.bags) > 1:
                 self.msg_title.SetValue('%s (%s)' % (time_str, bag.filename))

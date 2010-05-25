@@ -108,7 +108,7 @@ class Printer:
                 if self.done:
                     print "SUCCESSFULLY SHUTDOWN"
                     return True
-                print "Sleeping for %f FOR SHUTDOWN.  %d threads running"%(max(self.duration/cycles*2, 0.01), threading.active_count())
+                print "Sleeping for %f FOR SHUTDOWN.  %d threads running"%(max(self.duration/cycles*2, 0.01), threading.activeCount())
                 time.sleep(self.duration/cycles*2) 
             raise Exception("Failed to shutdown status thread in %.2f seconds"%(self.duration * 2))
 
@@ -336,6 +336,9 @@ class RosMakeAll:
           except: #catch all
               self.printer.print_all("TTTH OTHER exception thrown!!!!!!!!!!!!!!!!!!!!!")
               ct.join()
+        print "All threads joined"
+        for ct in cts:
+            print "Thread joined",  ct
         all_pkgs_passed = True
         with self._result_lock:
             for v in self.result[argument].values():

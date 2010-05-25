@@ -56,11 +56,20 @@ if not assert_rospack_built():
     sys.exit(-1)
 
 from ros import rosmake
-result = -1
+result = 1
 with rosmake.rosmake.Printer():
     rma = rosmake.RosMakeAll()
     
     if rma.main():
         result = 0
-        
+
+#make sure the thread is done
+rosmake.rosmake.Printer().join()
+import threading
+print threading.active_count(), "Threads"
+for t in threading.enumerate():
+    if t != threading.current_thread():
+        # Join all threads before exiting
+        print "Cleaning up thread", t
+        t.join()
 sys.exit(result)

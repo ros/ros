@@ -108,7 +108,7 @@ class Printer:
                 if self.done:
                     print "SUCCESSFULLY SHUTDOWN"
                     return True
-                print "Sleeping for %f FOR SHUTDOWN"%(max(self.duration/cycles*2, 0.01))
+                print "Sleeping for %f FOR SHUTDOWN.  %d threads running"%(max(self.duration/cycles*2, 0.01), threading.active_count())
                 time.sleep(self.duration/cycles*2) 
             raise Exception("Failed to shutdown status thread in %.2f seconds"%(self.duration * 2))
 
@@ -333,7 +333,7 @@ class RosMakeAll:
             self.printer.print_all( "TTTH Caught KeyboardInterrupt. Stopping build.")
             build_queue.stop()
             ct.join()
-          except:
+          except: #catch all
               self.printer.print_all("TTTH OTHER exception thrown!!!!!!!!!!!!!!!!!!!!!")
               ct.join()
         all_pkgs_passed = True

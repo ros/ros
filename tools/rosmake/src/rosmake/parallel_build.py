@@ -140,7 +140,9 @@ class CompileThread(threading.Thread):
       (result, result_string) = self.rosmakeall.build(pkg, self.argument, self.build_queue.robust_build) 
       self.rosmakeall.printer.print_all("Finished <<< %s %s"%(pkg, result_string), thread_name= self.name)
       if result or self.build_queue.robust_build:
+        print "result or robust"
         self.build_queue.return_built(pkg, result)
+        print "returned"
         if result_string.find("[Interrupted]") != -1:
           self.rosmakeall.printer.print_all("Caught Interruption", thread_name=self.name)
           self.build_queue.stop() #todo move this logic into BuildQueue itself
@@ -150,9 +152,11 @@ class CompileThread(threading.Thread):
         self.build_queue.stop()
         break # unnecessary since build_queue is done now, while will quit
       # update status after at end of build
+      print "updating status"
       self.rosmakeall.update_status(self.argument ,
                                     self.build_queue.get_started_threads(),
                                     self.build_queue.progress_str())
+      print "done"
 
     # update status before ending thread
     self.rosmakeall.update_status(self.argument ,

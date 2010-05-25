@@ -62,134 +62,154 @@ def make_command():
     """
     return os.environ.get("MAKE", "make")
 
+class Printer:
+   # storage for the instance reference
+    __instance = None
 
-
-class Printer(threading.Thread):
     def __init__(self):
-        threading.Thread.__init__(self)
-        self.build_queue = None
-        self.condition = threading.Condition()
-        self.running = True
-        self.status = ""
-        self.verbose = False
-        self.full_verbose = False
-        self.duration = 1./60.
+        """ Create singleton instance """
+        # Check whether we already have an instance
+        if Printer.__instance is None:
+            # Create and remember instance
+            Printer.__instance = Printer.__impl()
 
-        # Rosmake specific data
-        self.cache_argument = None
-        self.cache_right = ''
-        self.pkg_start_times = {}
+        # Store instance reference as the only member in the handle
+        self.__dict__['_Printer__instance'] = Printer.__instance
 
-        #Threading
-        #self.daemon = True # not supported on OSX so thread must be explicitly stopped 
-        self.start()
+    def __getattr__(self, attr):
+        """ Delegate access to implementation """
+        return getattr(self.__instance, attr)
 
-    def run(self):
-        while self.running:
-            #shutdown if duration set to zero
-            if self.duration <= 0:
-                self.running = False
-                return
-            self.set_status_from_cache()
-            if len(self.status) > 0:
-                n = self.terminal_width() - len(self.status)
-                status = self.status
-                if n > 0:
-                    status = " "*n + self.status
-                self._print_status("%s"%status)
-            time.sleep(self.duration) # update status at 60Hz
+    def __setattr__(self, attr, value):
+        """ Delegate access to implementation """
+        return setattr(self.__instance, attr, value)
 
-    def rosmake_cache_info(self, argument, start_times, right):
-        self.cache_argument = argument
-        self.pkg_start_times = start_times
-        self.cache_right = right
+    class __impl(threading.Thread):
+        def __init__(self):
+            threading.Thread.__init__(self)
+            self.build_queue = None
+            self.condition = threading.Condition()
+            self.running = True
+            self.status = ""
+            self.verbose = False
+            self.full_verbose = False
+            self.duration = 1./60.
 
-    def rosmake_pkg_times_to_string(self, start_times):
-        threads = []
-        for p, t in sorted(start_times.iteritems(), key=itemgetter(1)):
-            threads.append("[ %s: %.2f sec ]"%(p, time.time() - t))
-            
-        return " ".join(threads)
+            # Rosmake specific data
+            self.cache_argument = None
+            self.cache_right = ''
+            self.pkg_start_times = {}
 
-    def set_status_from_cache(self):
-        if self.cache_argument:
-            self.set_status("[ make %s ] "%self.cache_argument + self.rosmake_pkg_times_to_string(self.pkg_start_times), self.cache_right)
-        else:
-            self.set_status("[ make ] " + self.rosmake_pkg_times_to_string(self.pkg_start_times), self.cache_right)
+            #Threading
+            #self.daemon = True # not supported on OSX so thread must be explicitly stopped 
+            self.start()
 
-    def set_status(self, left, right = ''):
-        header = "[ rosmake ] "
-        h = len(header)
-        l = len(left)
-        r = len(right)
-        w = self.terminal_width()
-        if l + r < w - h:
-            padding = w - h - l - r
-            self.status = header + left + " "*padding + right
-        else:
-            self.status = header + left[:(w - h - r - 4)] + "... " + right
+        def run(self):
+            while self.running:
+                #shutdown if duration set to zero
+                if self.duration <= 0:
+                    self.running = False
+                    return
+                self.set_status_from_cache()
+                if len(self.status) > 0:
+                    n = self.terminal_width() - len(self.status)
+                    status = self.status
+                    if n > 0:
+                        status = " "*n + self.status
+                    self._print_status("%s"%status)
+                time.sleep(self.duration) # update status at 60Hz
 
-    def print_all(self, s, thread_name=None):
-        if thread_name is None:
-            sys.stdout.write("[ rosmake ] %s\n"%s)
+        def rosmake_cache_info(self, argument, start_times, right):
+            self.cache_argument = argument
+            self.pkg_start_times = start_times
+            self.cache_right = right
+
+        def rosmake_pkg_times_to_string(self, start_times):
+            threads = []
+            for p, t in sorted(start_times.iteritems(), key=itemgetter(1)):
+                threads.append("[ %s: %.2f sec ]"%(p, time.time() - t))
+
+            return " ".join(threads)
+
+        def set_status_from_cache(self):
+            if self.cache_argument:
+                self.set_status("[ make %s ] "%self.cache_argument + self.rosmake_pkg_times_to_string(self.pkg_start_times), self.cache_right)
+            else:
+                self.set_status("[ make ] " + self.rosmake_pkg_times_to_string(self.pkg_start_times), self.cache_right)
+
+        def set_status(self, left, right = ''):
+            header = "[ rosmake ] "
+            h = len(header)
+            l = len(left)
+            r = len(right)
+            w = self.terminal_width()
+            if l + r < w - h:
+                padding = w - h - l - r
+                self.status = header + left + " "*padding + right
+            else:
+                self.status = header + left[:(w - h - r - 4)] + "... " + right
+
+        def print_all(self, s, thread_name=None):
+            if thread_name is None:
+                sys.stdout.write("[ rosmake ] %s\n"%s)
+                sys.stdout.flush()
+            else:
+                sys.stdout.write("[rosmake-%s] %s\n"%(thread_name, s))
+                sys.stdout.flush()
+
+        def print_verbose(self, s, thread_name=None):
+            if self.verbose or self.full_verbose:
+              if thread_name:
+                self.print_all(s, thread_name=thread_name)
+              else:
+                print "[ rosmake ] %s"%s
+
+        def print_full_verbose(self, s):
+            if self.full_verbose:
+                print "[ rosmake ] %s"%s
+
+        def print_tail(self, s, tail_lines=40):
+            lines = s.splitlines()
+            if self.full_verbose:
+                tail_lines = len(lines)
+
+            num_lines = min(len(lines), tail_lines)
+            if num_lines == tail_lines:
+                print "[ rosmake ] Last %d lines"%num_lines
+            else:
+                print "[ rosmake ] All %d lines"%num_lines
+            print "{" + "-"*79
+            for l in xrange(-num_lines, -1):
+                print "  %s"%lines[l]
+            print "-"*79 + "}"
+
+        def _print_status(self, s):
+            sys.stdout.write("\r%s"%(s))
             sys.stdout.flush()
-        else:
-            sys.stdout.write("[rosmake-%s] %s\n"%(thread_name, s))
-            sys.stdout.flush()
-  
-    def print_verbose(self, s, thread_name=None):
-        if self.verbose or self.full_verbose:
-          if thread_name:
-            self.print_all(s, thread_name=thread_name)
-          else:
-            print "[ rosmake ] %s"%s
 
-    def print_full_verbose(self, s):
-        if self.full_verbose:
-            print "[ rosmake ] %s"%s
-
-    def print_tail(self, s, tail_lines=40):
-        lines = s.splitlines()
-        if self.full_verbose:
-            tail_lines = len(lines)
-  
-        num_lines = min(len(lines), tail_lines)
-        if num_lines == tail_lines:
-            print "[ rosmake ] Last %d lines"%num_lines
-        else:
-            print "[ rosmake ] All %d lines"%num_lines
-        print "{" + "-"*79
-        for l in xrange(-num_lines, -1):
-            print "  %s"%lines[l]
-        print "-"*79 + "}"
-
-    def _print_status(self, s):
-        sys.stdout.write("\r%s"%(s))
-        sys.stdout.flush()
-
-    @staticmethod
-    def terminal_width():
-        """Estimate the width of the terminal"""
-        width = 0
-        try:
-            import struct, fcntl, termios
-            s = struct.pack('HHHH', 0, 0, 0, 0)
-            x = fcntl.ioctl(1, termios.TIOCGWINSZ, s)
-            width = struct.unpack('HHHH', x)[1]
-        except IOError:
-            pass
-        if width <= 0:
+        @staticmethod
+        def terminal_width():
+            """Estimate the width of the terminal"""
+            width = 0
             try:
-                width = int(os.environ['COLUMNS'])
-            except:
+                import struct, fcntl, termios
+                s = struct.pack('HHHH', 0, 0, 0, 0)
+                x = fcntl.ioctl(1, termios.TIOCGWINSZ, s)
+                width = struct.unpack('HHHH', x)[1]
+            except IOError:
                 pass
-        if width <= 0:
-            width = 80
-    
-        return width
+            if width <= 0:
+                try:
+                    width = int(os.environ['COLUMNS'])
+                except:
+                    pass
+            if width <= 0:
+                width = 80
 
-  
-    
+            return width
+
+
+
 
 class RosMakeAll:
     def __init__(self):

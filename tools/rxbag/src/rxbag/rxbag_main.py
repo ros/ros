@@ -72,14 +72,15 @@ def rxbag_main():
     # Parse command line for input files and options
     usage = "usage: %prog [options] BAG_FILE1 [BAG_FILE2 ...]"
     parser = optparse.OptionParser(usage=usage)
-    parser.add_option(      '--record',        dest='record',  default=False, action='store_true',        help='record to a bag file')
-    parser.add_option('-a', '--all',           dest='all',     default=False, action='store_true',        help='record all topics')
-    parser.add_option('-e', '--regex',         dest='regex',   default=False, action="store_true",        help='match topics using regular expressions')
-    parser.add_option('-o', '--output-prefix', dest='prefix',  default=None,  action="store",             help='prepend PREFIX to beginning of bag name (name will always end with date stamp)')
-    parser.add_option('-O', '--output-name',   dest='name',    default=None,  action="store",             help='record to bag with namename NAME.bag')
-    parser.add_option('-l', '--limit',         dest='limit',   default=0,     action="store", type='int', help='only record NUM messages on each topic')
-    parser.add_option(      '--profile',       dest='profile', default=False, action='store_true',        help='profile and write results to rxbag.prof [advanced]')
-    
+    parser.add_option('-s', '--start',         dest='start',   default=0.0,   action='store', type='float', help='start SEC seconds into the bag files', metavar='SEC')
+    parser.add_option(      '--record',        dest='record',  default=False, action='store_true',          help='record to a bag file')
+    parser.add_option('-a', '--all',           dest='all',     default=False, action='store_true',          help='record all topics')
+    parser.add_option('-e', '--regex',         dest='regex',   default=False, action="store_true",          help='match topics using regular expressions')
+    parser.add_option('-o', '--output-prefix', dest='prefix',  default=None,  action="store",               help='prepend PREFIX to beginning of bag name (name will always end with date stamp)')
+    parser.add_option('-O', '--output-name',   dest='name',    default=None,  action="store",               help='record to bag with name NAME.bag')
+    parser.add_option('-l', '--limit',         dest='limit',   default=0,     action="store", type='int',   help='only record NUM messages on each topic', metavar='NUM')
+    parser.add_option(      '--profile',       dest='profile', default=False, action='store_true',          help='profile and write results to rxbag.prof [advanced]')
+
     options, args = parser.parse_args(sys.argv[1:])
 
     if len(args) == 0:

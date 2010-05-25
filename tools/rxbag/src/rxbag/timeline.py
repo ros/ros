@@ -208,6 +208,9 @@ class Timeline(Layer):
 
     def add_bag(self, bag):
         self._bags.append(bag)
+        
+        if not self._stamp_left:
+            self.reset_timeline()
 
         wx.CallAfter(self.parent.update_title)
 
@@ -532,7 +535,7 @@ class Timeline(Layer):
     def reset_timeline(self):
         self.reset_zoom() 
         self.set_playhead(Time.from_sec(self._stamp_left))
-        
+
     def set_timeline_view(self, stamp_left, stamp_right):
         self._stamp_left  = stamp_left
         self._stamp_right = stamp_right
@@ -580,14 +583,14 @@ class Timeline(Layer):
         with self._playhead_lock:
             if playhead == self._playhead:
                 return
-            
+
             self._playhead = playhead
 
             if self._playhead != self.end_stamp:
                 self.play_thread.stick_to_end = False
 
             playhead_secs = playhead.to_sec()
-            
+
             if playhead_secs > self._stamp_right:
                 dstamp = playhead_secs - self._stamp_right + (self._stamp_right - self._stamp_left) * 0.75
                 if dstamp > self.end_stamp.to_sec() - self._stamp_right:
@@ -640,9 +643,6 @@ class Timeline(Layer):
     def paint(self, dc):
         if len(self.bags) == 0 or len(self.topics) == 0:
             return
-
-        if self._stamp_left is None:
-            self.reset_timeline()
 
         dc.set_antialias(cairo.ANTIALIAS_NONE)
 
@@ -1056,7 +1056,7 @@ class Timeline(Layer):
         if x >= self.history_left and x <= self.history_left + self.history_width:
             playhead_secs = self.map_x_to_stamp(x)
             if playhead_secs <= 0.0:
-                self.set_playhead(Time(0, 0))
+                self.set_playhead(Time(0, 1))
             else:
                 self.set_playhead(Time.from_sec(playhead_secs))
 

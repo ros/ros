@@ -549,8 +549,8 @@ class Timeline(Layer):
 
     def reset_zoom(self):
         start_stamp, end_stamp = self.start_stamp, self.end_stamp
-        if (end_stamp - start_stamp) < Duration.from_sec(30.0):
-            end_stamp = start_stamp + Duration.from_sec(30.0)
+        if (end_stamp - start_stamp) < Duration.from_sec(5.0):
+            end_stamp = start_stamp + Duration.from_sec(5.0)
 
         self.set_timeline_view(start_stamp.to_sec(), end_stamp.to_sec())
 

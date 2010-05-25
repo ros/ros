@@ -29,11 +29,3 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-# rxbag_main used by $ROS_ROOT/bin/rxbag
-from rxbag_main import rxbag_main
-
-import bag_helper
-from plugin.message_view      import MessageView, TopicMessageView
-from plugin.timeline_renderer import TimelineRenderer
-from timeline_cache           import TimelineCache

@@ -29,12 +29,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-
-"""
-The rxbag plugin API is define by TimelineRenderer and MessageView classes.
-"""
 
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
@@ -45,52 +39,7 @@ import time
 
 import wx
 
-from util.layer import Layer
-
-class TimelineRenderer(object):
-    """
-    A custom renderer for interval of time of a topic on the timeline.
-    
-    @param msg_combine_px: don't draw discrete messages if they're less than this many pixels separated [default: 1.5]
-    @type  msg_combine_px: float
-    """
-    def __init__(self, timeline, msg_combine_px=1.5):
-        self.timeline       = timeline
-        self.msg_combine_px = msg_combine_px 
-
-    def get_segment_height(self, topic):
-        """
-        Get the height of the topic segment on the timeline.
-        
-        @param topic: topic name to draw
-        @type  topic: str
-        @return: height in pixels of the topic segment. If none, the timeline default is used.
-        @rtype:  int or None
-        """
-        return None
-
-    def draw_timeline_segment(self, dc, topic, stamp_start, stamp_end, x, y, width, height):
-        """
-        Draw the timeline segment.
-        
-        @param dc: Cairo device context to render into
-        @param topic: topic name
-        @param stamp_start: start of the interval on the timeline
-        @param stamp_end: start of the interval on the timeline
-        @param x: x coordinate of the timeline interval
-        @param y: y coordinate of the timeline interval
-        @param width: width in pixels of the timeline interval
-        @param height: height in pixels of the timeline interval
-        @return: whether the interval was renderered
-        @rtype:  bool
-        """
-        return False
-
-    def close(self):
-        """
-        Close the renderer, releasing any resources.
-        """
-        pass
+from rxbag.util.layer import Layer
 
 class MessageView(Layer):
     """

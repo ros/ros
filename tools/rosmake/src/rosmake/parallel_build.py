@@ -139,6 +139,7 @@ class CompileThread(threading.Thread):
         self.rosmakeall.printer.print_all ("Starting >>> %s [ make ] "%pkg,  thread_name=self.name)
       (result, result_string) = self.rosmakeall.build(pkg, self.argument, self.build_queue.robust_build) 
       self.rosmakeall.printer.print_all("Finished <<< %s %s"%(pkg, result_string), thread_name= self.name)
+      print "about to return"
       self.build_queue.return_built(pkg, result)
       print "returned"
       if result or self.build_queue.robust_build:

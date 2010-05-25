@@ -67,7 +67,7 @@ with rosmake.rosmake.Printer():
 rosmake.rosmake.Printer().join()
 import threading
 for t in threading.enumerate():
-    if t != threading.current_thread():
+    if t != threading.currentThread():
         # Join all threads before exiting
         print "Cleaning up thread", t
         t.join()

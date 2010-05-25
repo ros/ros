@@ -46,7 +46,7 @@ import time
 import wx
 
 import bag_helper
-from message_view import TopicMessageView
+from plugin.message_view import TopicMessageView
 
 class RawView(TopicMessageView):
     name = 'Raw'

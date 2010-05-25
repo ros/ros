@@ -1216,6 +1216,9 @@ class IndexCacheThread(threading.Thread):
                 for topic in topics:
                     with self.timeline.index_cache_lock:
                         updated |= self.timeline._update_index_cache(topic)
+                        
+                        if updated:
+                            break
 
                 if updated:
                     self.timeline.invalidate()
@@ -1259,7 +1262,7 @@ class PlayThread(threading.Thread):
                 else:
                     self.step_fixed()
                     time.sleep(0.05)
-                    
+
         except Exception, ex:
             print >> sys.stderr, 'Error advancing playhead: %s' % str(ex)
 

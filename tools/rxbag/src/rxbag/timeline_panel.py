@@ -149,6 +149,11 @@ class TimelinePopupMenu(wx.Menu):
         self.play_all_menu.Check(self.timeline.play_all)
         self.Bind(wx.EVT_MENU, lambda e: self.timeline.toggle_play_all(), id=self.play_all_menu.GetId())
 
+        topics = self.timeline.topics
+
+        if len(topics) == 0:
+            return
+            
         # ---
         self.AppendSeparator()
 
@@ -183,7 +188,7 @@ class TimelinePopupMenu(wx.Menu):
         self.view_topic_menu = wx.Menu()
         self.AppendSubMenu(self.view_topic_menu, 'View (by Topic)...', 'View message detail')
         
-        for topic in self.timeline.topics:
+        for topic in topics:
             datatype = self.timeline.get_datatype(topic)
 
             # View... / topic
@@ -207,11 +212,11 @@ class TimelinePopupMenu(wx.Menu):
             datatype_menu = wx.Menu()
             self.view_datatype_menu.AppendSubMenu(datatype_menu, datatype, datatype)
             
-            topics = topics_by_datatype[datatype]
+            datatype_topics = topics_by_datatype[datatype]
             
             viewer_types = self.timeline.get_viewer_types(datatype)
             
-            for topic in [t for t in self.timeline.topics if t in topics]:   # use timeline ordering
+            for topic in [t for t in topics if t in datatype_topics]:   # use timeline ordering
                 topic_menu = wx.Menu()
                 datatype_menu.AppendSubMenu(topic_menu, topic.lstrip('/'), topic)
     
@@ -235,7 +240,7 @@ class TimelinePopupMenu(wx.Menu):
         # ---
         self.publish_menu.AppendSeparator()
 
-        for topic in self.timeline.topics:
+        for topic in topics:
             # Publish... / topic
             publish_topic_menu = self.PublishTopicMenuItem(self.publish_menu, wx.NewId(), topic, self.timeline)
             self.publish_menu.AppendItem(publish_topic_menu)

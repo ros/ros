@@ -569,6 +569,9 @@ class Timeline(Layer):
     def zoom_out(self): self.zoom_timeline(2.0)
 
     def zoom_timeline(self, zoom):
+        if self._stamp_left is None:
+            return
+        
         stamp_interval     = self._stamp_right - self._stamp_left
         playhead_fraction  = (self._playhead.to_sec() - self._stamp_left) / stamp_interval
         new_stamp_interval = zoom * stamp_interval
@@ -1199,7 +1202,6 @@ class Timeline(Layer):
         config = wx.Config(localFilename=layout_file)
         
         # TODO
-
 
 class IndexCacheThread(threading.Thread):
     def __init__(self, timeline, period=0.5):

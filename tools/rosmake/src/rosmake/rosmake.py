@@ -322,17 +322,17 @@ class RosMakeAll:
         cts = []
         for i in  xrange(0, threads):
           ct = parallel_build.CompileThread(str(i), build_queue, self, argument)
+          print "starting thread", ct
           ct.start()
           cts.append(ct)
         for ct in cts:
           try:
             ct.join()
-            #print "naturally ended thread", ct
+            print "naturally ended thread", ct
           except KeyboardInterrupt:
             self.printer.print_all( "Caught KeyboardInterrupt. Stopping build.")
             build_queue.stop()
             ct.join()
-            pass
         all_pkgs_passed = True
         with self._result_lock:
             for v in self.result[argument].values():

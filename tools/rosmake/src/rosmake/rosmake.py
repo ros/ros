@@ -327,6 +327,7 @@ class RosMakeAll:
           cts.append(ct)
         for ct in cts:
           try:
+            print "TTTT Joining", ct
             ct.join()
             print "TTTH naturally ended thread", ct
           except KeyboardInterrupt:

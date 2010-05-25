@@ -90,6 +90,7 @@ class Printer:
             self.build_queue = None
             self.condition = threading.Condition()
             self.running = True
+            self.done = False
             self.status = ""
             self.verbose = False
             self.full_verbose = False
@@ -100,18 +101,27 @@ class Printer:
             self.cache_right = ''
             self.pkg_start_times = {}
 
+        def shutdown(self):
+            self.running = False
+            cycles = 10
+            for i in range(0,cycles):# sleep for at least 2 cycles of the status testing 'cycles' times
+                if self.done:
+                    return True
+                #print "Sleeping for %f"%(self.duration/cycles*2)
+                time.sleep(self.duration/cycles*2) 
+            raise Exception("Failed to shutdown status thread in %.2f seconds"%(self.duration * 2))
 
         def __enter__(self):
             self.start()
         def __exit__(self, type, value, traceback):
             #print type, value, "traceback: %s"%traceback
-            self.running = False
+            self.shutdown()
         def run(self):
             while self.running:
                 #shutdown if duration set to zero
                 if self.duration <= 0:
                     self.running = False
-                    return
+                    break
                 self.set_status_from_cache()
                 if len(self.status) > 0:
                     n = self.terminal_width() - len(self.status)
@@ -119,7 +129,9 @@ class Printer:
                     if n > 0:
                         status = " "*n + self.status
                     self._print_status("%s"%status)
-                time.sleep(self.duration) # update status at 60Hz
+                time.sleep(self.duration) 
+            self.done = True
+            #print "\n\nSTATUS THREAD FINISHED\n\n"
 
         def rosmake_cache_info(self, argument, start_times, right):
             self.cache_argument = argument
@@ -694,7 +706,10 @@ class RosMakeAll:
         self.printer.full_verbose = options.full_verbose
         self.printer.verbose = options.verbose
         if options.status_update_rate:
-            self.printer.duration = float(options.status_update_rate)
+            if float(options.status_update_rate)> 0:
+                self.printer.duration = 1.0/float(options.status_update_rate)
+            else:
+                self.printer.duration = 0
         packages = []
         #load packages from arguments
         if options.build_all:

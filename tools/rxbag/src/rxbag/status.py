@@ -52,8 +52,8 @@ class StatusLayer(Layer):
         if not self.timeline.playhead:
             return
 
-        s = bag_helper.stamp_to_str(self.timeline.playhead)
-        
+        s = '%s [%.3fs]' % (bag_helper.stamp_to_str(self.timeline.playhead), (self.timeline.playhead - self.timeline.start_stamp).to_sec())
+
         spd = self.timeline.play_speed
         spd_str = None
         if spd != 0.0:
@@ -73,10 +73,10 @@ class StatusLayer(Layer):
             s += ' ' + spd_str
 
         x = self.timeline.margin_left
-        y = self.timeline.history_top - 10
+        y = self.timeline.history_top - 12
 
         dc.set_source_rgb(0, 0, 0)
-        dc.set_font_size(14.0)
+        dc.set_font_size(13.0)
         dc.move_to(x, y)
         dc.show_text(s)
 

@@ -77,6 +77,10 @@ class Timeline(Layer):
                               1 * 60 * 60 * 24, 7 * 60 * 60 * 24]                                 # 1d, 7d
         self.minor_spacing = 15
         self.major_spacing = 50
+        
+        self.time_font_size   = 12.0
+        self.topic_font_size  = 12.0
+        self.topic_font_color = (0, 0, 0)
 
         self.time_font_height  = None
         self.topic_font_height = None
@@ -668,10 +672,8 @@ class Timeline(Layer):
         self._draw_history_border(dc)
 
     def _calc_font_sizes(self, dc):
-        dc.set_font_size(12.0)
-        (ascent, descent, height, max_x_advance, max_y_advance) = dc.font_extents()
-        
-        self.time_font_height = height
+        dc.set_font_size(self.time_font_size)
+        self.time_font_height = dc.font_extents()[2]
 
         self.topic_name_sizes = {}
         for topic in self.topics:
@@ -768,7 +770,7 @@ class Timeline(Layer):
 
     def _draw_major_divisions(self, dc, stamps, start_stamp, division):
         dc.set_line_width(1.0)
-        dc.set_font_size(11.0)
+        dc.set_font_size(self.time_font_size)
 
         for stamp in stamps:
             x = self.map_stamp_to_x(stamp, False)
@@ -993,9 +995,9 @@ class Timeline(Layer):
     def _draw_topic_names(self, dc):
         topics = self.history_bounds.keys()
         coords = [(self.margin_left, y + (h / 2) + (self.topic_font_height / 2)) for (x, y, w, h) in self.history_bounds.values()]
-
-        dc.set_font_size(12)
-        dc.set_source_rgb(0, 0, 0)
+        
+        dc.set_font_size(self.topic_font_size)
+        dc.set_source_rgb(*self.topic_font_color)
         for text, coords in zip([t.lstrip('/') for t in topics], coords):
             dc.move_to(*coords)
             dc.show_text(text)

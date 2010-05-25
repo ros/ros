@@ -76,7 +76,7 @@ class RawView(TopicMessageView):
         if t is None:
             self.message_cleared()
         else:
-            time_str = '%s (%10d.%09d)' % (bag_helper.stamp_to_str(t), t.secs, t.nsecs)
+            time_str = '%s (%10d.%09d) [%.3fs]' % (bag_helper.stamp_to_str(t), t.secs, t.nsecs, (t - self.timeline.start_stamp).to_sec())
 
             if len(self.timeline.bags) > 1:
                 self.msg_title.SetValue('%s (%s)' % (time_str, bag.filename))

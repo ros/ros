@@ -255,6 +255,17 @@ void View::updateQueries(BagQuery* q) {
         std::multiset<IndexEntry>::const_iterator begin = std::lower_bound(index.begin(), index.end(), q->query.getStartTime(), IndexEntryCompare());
         std::multiset<IndexEntry>::const_iterator end   = std::upper_bound(index.begin(), index.end(), q->query.getEndTime(),   IndexEntryCompare());
 
+        // Make sure we are at the right beginning
+        while (begin != index.begin() && begin->time >= q->query.getStartTime())
+        {
+          begin--;
+          if (begin->time < q->query.getStartTime())
+          {
+            begin++;
+            break;
+          }
+        }
+
         // todo: make faster with a map of maps
         bool found = false;
         for (vector<MessageRange*>::iterator k = ranges_.begin(); k != ranges_.end(); k++) {

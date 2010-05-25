@@ -455,6 +455,12 @@ boost::shared_ptr<T> Bag::instantiateBuffer(IndexEntry const& index_entry) const
 
 template<class T>
 void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> const& connection_header) {
+
+    if (time < ros::TIME_MIN)
+    {
+        throw BagException("Tried to insert a message with time less than ros::MIN_TIME");
+    }
+
     // Whenever we write we increment our revision
     bag_revision_++;
 

@@ -208,8 +208,8 @@ class Timeline(Layer):
 
     def add_bag(self, bag):
         self._bags.append(bag)
-        
-        if not self._stamp_left:
+
+        if self._stamp_left is None:
             self.reset_timeline()
 
         wx.CallAfter(self.parent.update_title)
@@ -295,6 +295,9 @@ class Timeline(Layer):
     ### Recording
 
     def message_recorded(self, topic, msg, t):
+        if self._stamp_left is None:
+            self.reset_zoom()
+        
         # Invalidate the topic
         self.invalidated_caches.add(topic)
 
@@ -533,8 +536,10 @@ class Timeline(Layer):
     ### View port
 
     def reset_timeline(self):
-        self.reset_zoom() 
-        self.set_playhead(Time.from_sec(self._stamp_left))
+        self.reset_zoom()
+        
+        if self._stamp_left is not None:
+            self.set_playhead(Time.from_sec(self._stamp_left))
 
     def set_timeline_view(self, stamp_left, stamp_right):
         self._stamp_left  = stamp_left
@@ -552,6 +557,9 @@ class Timeline(Layer):
 
     def reset_zoom(self):
         start_stamp, end_stamp = self.start_stamp, self.end_stamp
+        if start_stamp is None:
+            return
+        
         if (end_stamp - start_stamp) < Duration.from_sec(5.0):
             end_stamp = start_stamp + Duration.from_sec(5.0)
 

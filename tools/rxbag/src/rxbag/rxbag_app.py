@@ -70,6 +70,9 @@ class RxBagApp(wx.App):
                 record_filename = time.strftime('%Y-%m-%d-%H-%M-%S.bag', time.localtime(time.time()))
                 if self.options.name:
                     record_filename = self.options.name
+                    if not record_filename.endswith('.bag'):
+                        record_filename += '.bag'
+                        
                 elif self.options.prefix:
                     record_filename = '%s_%s' % (self.options.prefix, record_filename)
 
@@ -97,6 +100,8 @@ class RxBagApp(wx.App):
 
         except Exception, ex:
             print >> sys.stderr, 'Error initializing application:', ex
+            import traceback
+            traceback.print_exc()
             return False
 
         return True

@@ -39,6 +39,8 @@ import sys, string
 import subprocess
 import time
 import getopt
+import atexit
+
 import roslib
 import roslib.rospack
 import roslib.rosenv
@@ -566,12 +568,16 @@ class RosMakeAll:
         @rtype: bool
         """
         return os.path.exists(os.path.join(roslib.packages.get_pkg_dir("rosout"), "rosout"))
-            
+
+    def shutdown_printer(self):
+        self.printer.running = False
 
     def main(self):
         """
         main command-line entrypoint
         """
+        atexit.register(self.shutdown_printer)
+
         parser = OptionParser(usage="usage: %prog [options] [PACKAGE]...", prog='rosmake')
         parser.add_option("--test-only", dest="test_only", default=False,
                           action="store_true", help="only run tests")
@@ -741,14 +747,12 @@ class RosMakeAll:
             self.printer.print_all("WARNING: The following args could not be parsed as stacks or packages: %s"%self.rejected_packages)
         if len(self.specified_packages) == 0 and options.bootstrap == False:
             self.printer.print_all("ERROR: No arguments could be parsed into valid package or stack names.")
-            self.printer.running = False
             return False
 
         if options.unmark_installed:
             for p in self.specified_packages:
                 if self.flag_tracker.remove_nobuild(p):
                     self.printer.print_all("Removed ROS_NOBUILD from %s"%p)
-            self.printer.running = False
             return True
             
         required_packages = self.specified_packages[:]
@@ -824,7 +828,6 @@ class RosMakeAll:
               prebuild_result = self.assert_prebuild_built(["tools/rospack", "3rdparty/gtest", "core/genmsg_cpp"])
           if not prebuild_result:
               self.printer.print_all("Failed to finish prebuild, aborting")
-              self.printer.running = False
               return
 
 
@@ -874,7 +877,6 @@ class RosMakeAll:
         if options.print_profile:
             self.printer.print_all (self.get_profile_string())
 
-        self.printer.running = False
         return build_passed and tests_passed
 
 

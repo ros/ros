@@ -84,11 +84,6 @@ class Printer(threading.Thread):
         #self.daemon = True # not supported on OSX so thread must be explicitly stopped 
         self.start()
 
-    def __del__(self): # Set flag to false to stop spinning thread
-        self.running = False
-        if self.isAlive(): #old api for osx python 2.5
-            self.join(self)
-
     def run(self):
         while self.running:
             #shutdown if duration set to zero
@@ -829,6 +824,7 @@ class RosMakeAll:
               prebuild_result = self.assert_prebuild_built(["tools/rospack", "3rdparty/gtest", "core/genmsg_cpp"])
           if not prebuild_result:
               self.printer.print_all("Failed to finish prebuild, aborting")
+              self.printer.running = False
               return
 
 

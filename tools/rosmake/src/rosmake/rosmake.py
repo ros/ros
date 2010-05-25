@@ -100,10 +100,12 @@ class Printer:
             self.cache_right = ''
             self.pkg_start_times = {}
 
-            #Threading
-            #self.daemon = True # not supported on OSX so thread must be explicitly stopped 
-            self.start()
 
+        def __enter__(self):
+            self.start()
+        def __exit__(self, type, value, traceback):
+            #print type, value, "traceback: %s"%traceback
+            self.running = False
         def run(self):
             while self.running:
                 #shutdown if duration set to zero

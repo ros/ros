@@ -410,10 +410,12 @@ class RosMakeAll:
                         return_string =  ("[PASS] [ %.2f seconds ]"%( self.profile[argument][p]))
                     self.output_to_file(p, log_type, pstd_out, num_warnings > 0)
                 else:
+                    success = False
                     no_target = len(re.findall("No rule to make target", pstd_out)) > 0
                     interrupt = len(re.findall("Interrupt", pstd_out)) > 0
                     if no_target:
                         return_string = ( "[SKIP] No rule to make target %s"%( argument))
+                        success = True
                     elif interrupt:
                         return_string = ("[Interrupted]" )
                     else:
@@ -424,7 +426,7 @@ class RosMakeAll:
                     self.printer.print_tail( pstd_out)
                     self.output_to_file(p, log_type, pstd_out, always_print= not (no_target or interrupt))
 
-                    return (False, return_string)
+                    return (success, return_string)
             else:
                 with self._result_lock:
                     self.result[argument][p] = error

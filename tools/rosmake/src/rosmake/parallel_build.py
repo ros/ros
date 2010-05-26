@@ -158,7 +158,10 @@ class CompileThread(threading.Thread):
       self.rosmakeall.update_status(self.argument ,
                                     self.build_queue.get_started_threads(),
                                     self.build_queue.progress_str())
-      print "done"
+      print "done built", len(self.build_queue.built), self.build_queue.built
+      print "failed", len(self.build_queue.failed), self.build_queue.failed
+      print "to_build", len(self.build_queue.to_build), self.build_queue.to_build
+      print "in progress", len(self.build_queue._started), self.build_queue._started
 
     print "last update"
     # update status before ending thread
@@ -233,6 +236,7 @@ class BuildQueue:
           for d in self.dependency_tracker.get_deps(p):
             if d not in self.built:
               dependencies_met = False
+              print "Dependency %s not met for %s"%(d, p)
               break
           if dependencies_met:  # all dependencies met
             self.to_build.remove(p)

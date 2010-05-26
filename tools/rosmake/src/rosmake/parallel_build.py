@@ -139,11 +139,13 @@ class CompileThread(threading.Thread):
         self.rosmakeall.printer.print_all ("Starting >>> %s [ make ] "%pkg,  thread_name=self.name)
       (result, result_string) = self.rosmakeall.build(pkg, self.argument, self.build_queue.robust_build) 
       self.rosmakeall.printer.print_all("Finished <<< %s %s"%(pkg, result_string), thread_name= self.name)
-      print "about to return"
+      self.rosmakeall.printer.print_all("Finished2")
+      sys.stdout.write("try2\n")
+      sys.stdout.flush()
       self.build_queue.return_built(pkg, result)
       print "returned"
-      if result or self.build_queue.robust_build:
-        print "result or robust"
+      if not result or self.build_queue.robust_build:
+        print "result or robust", result, self.build_queue.robust_build
         if result_string.find("[Interrupted]") != -1:
           self.rosmakeall.printer.print_all("Caught Interruption", thread_name=self.name)
           self.build_queue.stop() #todo move this logic into BuildQueue itself
@@ -229,8 +231,8 @@ class BuildQueue:
             self._started[p] = time.time()
             return p # break out and return package if found
 
-
-        self.condition.wait()  # failed to find a package wait for a notify before looping
+        print "TTGTTTTHTHT Waiting on condition"
+        self.condition.wait(1.0)  # failed to find a package wait for a notify before looping
         if self.is_done():
           break
 

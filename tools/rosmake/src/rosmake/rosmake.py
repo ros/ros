@@ -132,7 +132,7 @@ class Printer:
                     self._print_status("%s"%status)
                 time.sleep(self.duration) 
             self.done = True
-            print "STATUS THREAD FINISHED"
+            #print "STATUS THREAD FINISHED"
 
         def rosmake_cache_info(self, argument, start_times, right):
             self.cache_argument = argument
@@ -322,14 +322,14 @@ class RosMakeAll:
         cts = []
         for i in  xrange(0, threads):
           ct = parallel_build.CompileThread(str(i), build_queue, self, argument)
-          print "TTTH starting thread ", ct
+          #print "TTTH starting thread ", ct
           ct.start()
           cts.append(ct)
         for ct in cts:
           try:
-            print "TTTT Joining", ct
+            #print "TTTT Joining", ct
             ct.join()
-            print "TTTH naturally ended thread", ct
+            #print "TTTH naturally ended thread", ct
           except KeyboardInterrupt:
             self.printer.print_all( "TTTH Caught KeyboardInterrupt. Stopping build.")
             build_queue.stop()
@@ -337,9 +337,7 @@ class RosMakeAll:
           except: #catch all
               self.printer.print_all("TTTH OTHER exception thrown!!!!!!!!!!!!!!!!!!!!!")
               ct.join()
-        print "All threads joined"
-        for ct in cts:
-            print "Thread joined",  ct
+        #print "All threads joined"
         all_pkgs_passed = True
         with self._result_lock:
             for v in self.result[argument].values():

@@ -161,10 +161,12 @@ class CompileThread(threading.Thread):
                                     self.build_queue.progress_str())
       print "done"
 
+    print "last update"
     # update status before ending thread
     self.rosmakeall.update_status(self.argument ,
                                   self.build_queue.get_started_threads(),
                                   self.build_queue.progress_str())
+    print "thread finished"
 
 class BuildQueue:
   """ This class provides a thread safe build queue.  Which will do

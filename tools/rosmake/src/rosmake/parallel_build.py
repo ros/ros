@@ -143,13 +143,13 @@ class CompileThread(threading.Thread):
       sys.stdout.flush()
       self.build_queue.return_built(pkg, result)
       print "returned"
-      if not result or self.build_queue.robust_build:
-        print "result or robust", result, self.build_queue.robust_build
+      if result or self.build_queue.robust_build:
+        pass#print "result", result, "robust", self.build_queue.robust_build
+      else:
         if result_string.find("[Interrupted]") != -1:
           self.rosmakeall.printer.print_all("Caught Interruption", thread_name=self.name)
           self.build_queue.stop() #todo move this logic into BuildQueue itself
           break # unnecessary since build_queue is done now while will quit
-      else:
         self.rosmakeall.printer.print_all("Halting due to failure in package %s. \n[ rosmake ] Waiting for other threads to complete."%pkg)
         self.build_queue.stop()
         break # unnecessary since build_queue is done now, while will quit

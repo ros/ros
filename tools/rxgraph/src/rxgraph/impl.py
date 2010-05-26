@@ -77,7 +77,7 @@ class DotUpdate(threading.Thread):
         threading.Thread.__init__(self, name="DotUpdate")
         self.viewer = viewer
         self.graph = graph
-        self.output_file = None
+        self.output_file = output_file
         self.selection_url = None
         self.selection_update = False
 

@@ -388,6 +388,29 @@ class Timeline(Layer):
             for entry, _ in bag._mergesort(bag_entries, key=lambda entry: entry.time):
                 yield entry
 
+    def get_entries_with_bags(self, topic, start_stamp, end_stamp):
+        with self._bag_lock:
+            from rosbag import bag
+
+            bag_entries = []
+            bag_by_iter = {}
+            for b in self._bags:
+                bag_start_time = bag_helper.get_start_stamp(b)
+                if bag_start_time and bag_start_time > end_stamp:
+                    continue
+
+                bag_end_time = bag_helper.get_end_stamp(b)
+                if bag_end_time and bag_end_time < start_stamp:
+                    continue
+
+                connections = list(b._get_connections(topic))                
+                it = iter(b._get_entries(connections, start_stamp, end_stamp))
+                bag_by_iter[it] = b
+                bag_entries.append(it)
+
+            for entry, it in bag._mergesort(bag_entries, key=lambda entry: entry.time):
+                yield bag_by_iter[it], entry
+
     def get_entry(self, t, topic):
         with self._bag_lock:
             entry_bag, entry = None, None

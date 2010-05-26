@@ -118,7 +118,6 @@ class CompileThread(threading.Thread):
     self.logging_enabled = True
 
   def run(self):
-    #init_total_pkgs = len(self.build_queue.to_build)
     while not self.build_queue.is_done():
       pkg = self.build_queue.get_valid_package()
       if not pkg:
@@ -188,13 +187,17 @@ class BuildQueue:
   def get_started_threads(self): #TODO sort this other than hash order
     return self._started.copy()
 
+  def is_completed(self):
+    """Return if the build queue has been completed """
+    return len(self.built)+ len(self.failed) == self._total_pkgs
+
   def is_done(self):
     """Return if the build queue has been completed """
-    return self._done
+    return self.is_completed() or self._done # finished or halted
 
   def succeeded(self):
     """ Return whether the build queue has completed all packages successfully. """
-    return len( self.built)  == self._total_pkgs and self._done
+    return len(self.built) == self._total_pkgs  #flag that we're finished
 
   def stop(self): 
     """ Stop the build queue, including waking all blocking
@@ -215,7 +218,7 @@ class BuildQueue:
         self._started.pop(package)
       else:
         pass #used early on print "\n\n\nERROR THIS SHOULDN't RETURN %s\n\n\n"%package
-      if len(self.built) + len(self.failed) == self._total_pkgs:  #flag that we're finished
+      if self.is_completed():
         self._done = True
       self.condition.notifyAll() #wake up any waiting threads
 
@@ -224,7 +227,7 @@ class BuildQueue:
     all dependencies met.  If interrupted or done it will return
     None"""
     with self.condition:
-      while (not self._done and len(self.to_build) > 0):
+      while (not self.is_done() and len(self.to_build) > 0):
         for p in self.to_build:
           dependencies_met = True
           for d in self.dependency_tracker.get_deps(p):

@@ -176,6 +176,7 @@ class BuildQueue:
     self.dependency_tracker = dependency_tracker
     self.to_build = package_list[:] # do a copy not a reference
     self.built = []
+    self.failed = []
     self.condition = threading.Condition()
     self._done = False
     self.robust_build = robust_build
@@ -208,11 +209,13 @@ class BuildQueue:
     with self.condition:
       if successful:
         self.built.append(package)
+      else:
+        self.failed.append(package)
       if package in self._started.keys():
         self._started.pop(package)
       else:
         pass #used early on print "\n\n\nERROR THIS SHOULDN't RETURN %s\n\n\n"%package
-      if len(self.built) == self._total_pkgs:  #flag that we're finished
+      if len(self.built) + len(self.failed) == self._total_pkgs:  #flag that we're finished
         self._done = True
       self.condition.notifyAll() #wake up any waiting threads
 

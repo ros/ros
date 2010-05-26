@@ -35,6 +35,8 @@
 Defines the rxbag wx.App.
 """
 
+from __future__ import with_statement
+
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 import rospy

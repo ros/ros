@@ -59,7 +59,7 @@ class Layer(object):
 
     def check_dirty(self):           pass
     def paint(self, dc):             pass
-   
+
     def on_mouse_move(self, event):  pass
     def on_mousewheel(self, event):  pass
     def on_left_down(self, event):   pass

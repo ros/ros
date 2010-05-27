@@ -40,6 +40,7 @@ import roslib; roslib.load_manifest(PKG)
 import rospy
 
 import codecs
+import math
 import sys
 import time
 
@@ -66,7 +67,7 @@ class RawView(TopicMessageView):
         self.msg_displayed = None
         self.msg_incoming  = None
 
-        self.self_paint = True
+        #self.self_paint = True
 
     def message_viewed(self, bag, msg_details):
         TopicMessageView.message_viewed(self, bag, msg_details)
@@ -225,12 +226,28 @@ class MessageTree(wx.TreeCtrl):
         
         if hasattr(obj, '__slots__'):
             subobjs = [(slot, getattr(obj, slot)) for slot in obj.__slots__]
-        elif type(obj)  in [list, tuple]:
-            subobjs = [('[%d]' % i, subobj) for (i, subobj) in enumerate(obj)]
+        elif type(obj) in [list, tuple]:
+            len_obj = len(obj)
+            if len_obj == 0:
+                subobjs = []
+            else:
+                w = int(math.ceil(math.log10(len_obj)))
+                subobjs = [('[%*d]' % (w, i), subobj) for (i, subobj) in enumerate(obj)]
         else:
             subobjs = []
-            
-        if type(obj) in [str, bool, int, long, float, complex, roslib.rostime.Time]:
+        
+        if type(obj) in [int, long, float]:
+            if type(obj) == float:
+                obj_repr = '%.6f' % obj
+            else:
+                obj_repr = str(obj)
+
+            if obj_repr[0] == '-':
+                label += ': %s' % obj_repr
+            else:
+                label += ':  %s' % obj_repr
+
+        elif type(obj) in [str, bool, int, long, float, complex, roslib.rostime.Time]:
             # Ignore any binary data
             obj_repr = codecs.utf_8_decode(str(obj), 'ignore')[0]
             

@@ -75,6 +75,13 @@ class MessageView(Layer):
         """
         pass
     
+    def timeline_changed(self):
+        """
+        Called when the messages in a timeline change, e.g. if a new message is recorded, or 
+        a bag file is added
+        """
+        pass
+    
     def close(self):
         """
         Close the message view, releasing any resources.

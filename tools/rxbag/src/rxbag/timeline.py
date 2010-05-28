@@ -230,7 +230,7 @@ class Timeline(Layer):
     @property
     def bags(self):
         return self._bags
-    
+
     ### Recording
 
     def record_bag(self, filename, all=True, topics=[], regex=False, limit=0):
@@ -241,7 +241,7 @@ class Timeline(Layer):
             return
 
         self.recorder.add_listener(self.message_recorded)
-        
+
         self.add_bag(self.recorder.bag)
 
         self.recorder.start()
@@ -304,6 +304,13 @@ class Timeline(Layer):
         
         # Invalidate the topic
         self.invalidated_caches.add(topic)
+
+        if topic in self.listeners:
+            for listener in self.listeners[topic]:
+                try:
+                    listener.timeline_changed()
+                except wx.PyDeadObjectError:
+                    self.remove_listener(topic, listener)
 
     ###
 
@@ -457,7 +464,8 @@ class Timeline(Layer):
             topic_listeners.remove(listener)
             if len(topic_listeners) == 0:
                 del self.listeners[topic]
-        self.invalidate()
+
+            self.invalidate()
 
     ### Plugins
 
@@ -1189,7 +1197,7 @@ class Timeline(Layer):
             msg_data = None
         else:
             msg_data = self._get_message(bag, topic, playhead_position)
-            
+
         if msg_data:
             for listener in self.listeners[topic]:
                 try:

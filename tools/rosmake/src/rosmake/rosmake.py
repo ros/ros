@@ -106,9 +106,9 @@ class Printer:
             cycles = 10
             for i in range(0,cycles):# sleep for at least 2 cycles of the status testing 'cycles' times
                 if self.done:
-                    print "SUCCESSFULLY SHUTDOWN"
+                    #print "SUCCESSFULLY SHUTDOWN"
                     return True
-                print "Sleeping for %f FOR SHUTDOWN.  %d threads running"%(max(self.duration/cycles*2, 0.01), threading.activeCount())
+                #print "Sleeping for %f FOR SHUTDOWN.  %d threads running"%(max(self.duration/cycles*2, 0.01), threading.activeCount())
                 time.sleep(self.duration/cycles*2) 
             raise Exception("Failed to shutdown status thread in %.2f seconds"%(self.duration * 2))
 

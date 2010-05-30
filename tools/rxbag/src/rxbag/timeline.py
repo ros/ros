@@ -70,17 +70,17 @@ class Timeline(Layer):
 
         ## Rendering parameters
 
-        self.sec_divisions = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5,                                 # 1ms, 5ms, 10ms, 50ms, 100ms, 500ms
-                              1, 5, 15, 30,                                                       # 1s, 5s, 15s, 30s
-                              1 * 60, 2 * 60, 5 * 60, 10 * 60, 15 * 60, 30 * 60,                  # 1m, 2m, 5m, 10m, 15m, 30m
-                              1 * 60 * 60, 2 * 60 * 60, 3 * 60 * 60, 6 * 60 * 60, 12 * 60 * 60,   # 1h, 2h, 3h, 6h, 12h
-                              1 * 60 * 60 * 24, 7 * 60 * 60 * 24]                                 # 1d, 7d
-        self.minor_spacing = 15
-        self.major_spacing = 50
+        self._sec_divisions = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5,                                 # 1ms, 5ms, 10ms, 50ms, 100ms, 500ms
+                               1, 5, 15, 30,                                                       # 1s, 5s, 15s, 30s
+                               1 * 60, 2 * 60, 5 * 60, 10 * 60, 15 * 60, 30 * 60,                  # 1m, 2m, 5m, 10m, 15m, 30m
+                               1 * 60 * 60, 2 * 60 * 60, 3 * 60 * 60, 6 * 60 * 60, 12 * 60 * 60,   # 1h, 2h, 3h, 6h, 12h
+                               1 * 60 * 60 * 24, 7 * 60 * 60 * 24]                                 # 1d, 7d
+        self._minor_spacing = 15
+        self._major_spacing = 50
         
-        self.time_font_size   = 12.0
-        self.topic_font_size  = 12.0
-        self.topic_font_color = (0, 0, 0)
+        self._time_font_size   = 12.0
+        self._topic_font_size  = 12.0
+        self._topic_font_color = (0, 0, 0)
 
         self.time_font_height  = None
         self.topic_font_height = None
@@ -88,11 +88,13 @@ class Timeline(Layer):
         self.margin_left       = 0
         self.margin_right      = 20
         self.history_top       = 24
-        self.bag_end_width     = 3
-        self.time_tick_height  = 3
+        self._bag_end_color    = (0, 0, 0, 0.1)
+        self._time_tick_height = 3
 
-        self.minor_divisions_color_tick = (0.5, 0.5, 0.5, 0.5)
-        self.minor_divisions_color      = (0.6, 0.6, 0.6, 0.5)
+        self._minor_divisions_color_tick = (0.5, 0.5, 0.5, 0.5)
+        self._minor_divisions_color      = (0.6, 0.6, 0.6, 0.5)
+
+        self._selected_region_color = (0.0, 0.6, 0.0, 0.1)
 
         self.default_datatype_color = (0.0, 0.0, 0.0)
         self.datatype_colors = {
@@ -129,6 +131,10 @@ class Timeline(Layer):
         self.history_width  = 0
         self.history_bottom = 0
         self.history_bounds = {}
+        
+        self._selected_left  = None
+        self._selected_right = None
+        self._selecting      = False
         
         ##
 
@@ -179,6 +185,12 @@ class Timeline(Layer):
 
     @property
     def history_height(self): return self.history_bottom - self.history_top
+    
+    @property
+    def selected_left(self): return self._selected_left
+
+    @property
+    def selected_right(self): return self._selected_right
 
     def on_close(self, event):
         self._close()
@@ -292,9 +304,6 @@ class Timeline(Layer):
         if self._paused:
             return 0.0
         return self._play_speed
-
-    @property
-    def playhead(self): return self._playhead
 
     ### Recording
 
@@ -476,8 +485,8 @@ class Timeline(Layer):
         for view, timeline_renderer, msg_types in plugins.load_plugins():
             for msg_type in msg_types:
                 self.viewer_types.setdefault(msg_type, []).append(view)
-            if timeline_renderer is not None:
-                self.timeline_renderers[msg_type] = timeline_renderer(self)
+                if timeline_renderer:
+                    self.timeline_renderers[msg_type] = timeline_renderer(self)
 
     ### Timeline renderers
 
@@ -565,8 +574,8 @@ class Timeline(Layer):
 
         self.parent.setup_toolbar()
 
-    def navigate_start(self): self.set_playhead(self.start_stamp)
-    def navigate_end(self):   self.set_playhead(self.end_stamp)
+    def navigate_start(self): self.playhead = self.start_stamp
+    def navigate_end(self):   self.playhead = self.end_stamp
 
     ### View port
 
@@ -574,7 +583,7 @@ class Timeline(Layer):
         self.reset_zoom()
         
         if self._stamp_left is not None:
-            self.set_playhead(Time.from_sec(self._stamp_left))
+            self.playhead = Time.from_sec(self._stamp_left)
 
     def set_timeline_view(self, stamp_left, stamp_right):
         self._stamp_left  = stamp_left
@@ -625,7 +634,9 @@ class Timeline(Layer):
 
         self.invalidate()
 
-    def set_playhead(self, playhead):
+    def _get_playhead(self): return self._playhead
+    
+    def _set_playhead(self, playhead):
         with self._playhead_lock:
             if playhead == self._playhead:
                 return
@@ -674,6 +685,8 @@ class Timeline(Layer):
 
                 self._update_message_view_for_topic(topic)
 
+    playhead = property(_get_playhead, _set_playhead)
+
     ### Rendering
 
     def on_size(self, event):
@@ -699,11 +712,12 @@ class Timeline(Layer):
         self._draw_time_indicators(dc)
         self._draw_topic_histories(dc)
         self._draw_bag_ends(dc)
+        self._draw_selected_region(dc)
         self._draw_topic_names(dc)
         self._draw_history_border(dc)
 
     def _calc_font_sizes(self, dc):
-        dc.set_font_size(self.time_font_size)
+        dc.set_font_size(self._time_font_size)
         self.time_font_height = dc.font_extents()[2]
 
         self.topic_name_sizes = {}
@@ -779,13 +793,13 @@ class Timeline(Layer):
         """
         x_per_sec = self.map_dstamp_to_dx(1.0)
 
-        major_divisions = [s for s in self.sec_divisions if x_per_sec * s >= self.major_spacing]
+        major_divisions = [s for s in self._sec_divisions if x_per_sec * s >= self._major_spacing]
         if len(major_divisions) == 0:
-            major_division = max(self.sec_divisions)
+            major_division = max(self._sec_divisions)
         else:
             major_division = min(major_divisions)
 
-        minor_divisions = [s for s in self.sec_divisions if x_per_sec * s >= self.minor_spacing and major_division % s == 0]
+        minor_divisions = [s for s in self._sec_divisions if x_per_sec * s >= self._minor_spacing and major_division % s == 0]
         if len(minor_divisions) > 0:
             minor_division = min(minor_divisions)
         else:
@@ -801,14 +815,15 @@ class Timeline(Layer):
 
     def _draw_major_divisions(self, dc, stamps, start_stamp, division):
         dc.set_line_width(1.0)
-        dc.set_font_size(self.time_font_size)
+        dc.set_font_size(self._time_font_size)
+
+        label_y = self.history_top - self.parent.playhead.pointer_size[1] - 2
 
         for stamp in stamps:
             x = self.map_stamp_to_x(stamp, False)
 
             label        = self._get_label(division, stamp - start_stamp)
             label_x      = x + 3
-            label_y      = self.history_top - self.parent.playhead.pointer_size[1] - 2
             label_extent = dc.text_extents(label)
             if label_x + label_extent[2] < self.width:
                 dc.set_source_rgb(0, 0, 0)
@@ -827,13 +842,13 @@ class Timeline(Layer):
 
         dc.set_dash([2, 2])
 
-        dc.set_source_rgba(*self.minor_divisions_color_tick)
+        dc.set_source_rgba(*self._minor_divisions_color_tick)
         for x in xs:
-            dc.move_to(x, self.history_top - self.time_tick_height)
+            dc.move_to(x, self.history_top - self._time_tick_height)
             dc.line_to(x, self.history_top)
         dc.stroke()
 
-        dc.set_source_rgba(*self.minor_divisions_color)
+        dc.set_source_rgba(*self._minor_divisions_color)
         for x in xs:
             dc.move_to(x, self.history_top)
             dc.line_to(x, self.history_bottom)
@@ -1022,24 +1037,44 @@ class Timeline(Layer):
         if region_start and prev_stamp:
             yield (region_start, prev_stamp)
 
-    ## Draws topic names
     def _draw_topic_names(self, dc):
+        """
+        Draw topic names.
+        """
         topics = self.history_bounds.keys()
         coords = [(self.margin_left, y + (h / 2) + (self.topic_font_height / 2)) for (x, y, w, h) in self.history_bounds.values()]
         
-        dc.set_font_size(self.topic_font_size)
-        dc.set_source_rgb(*self.topic_font_color)
+        dc.set_font_size(self._topic_font_size)
+        dc.set_source_rgb(*self._topic_font_color)
         for text, coords in zip([t.lstrip('/') for t in topics], coords):
             dc.move_to(*coords)
             dc.show_text(text)
 
-    ## Draw markers to indicate the extent of the bag file
     def _draw_bag_ends(self, dc):
+        """
+        Draw markers to indicate the extent of the bag file.
+        """
         x_start, x_end = self.map_stamp_to_x(self.start_stamp.to_sec()), self.map_stamp_to_x(self.end_stamp.to_sec())
-        dc.set_source_rgba(0, 0, 0, 0.1)
+        dc.set_source_rgba(*self._bag_end_color)
         dc.rectangle(self.history_left, self.history_top, x_start - self.history_left,                    self.history_bottom - self.history_top)
         dc.rectangle(x_end,             self.history_top, self.history_left + self.history_width - x_end, self.history_bottom - self.history_top)
         dc.fill()
+
+    def _draw_selected_region(self, dc):
+        if self._selected_left is not None and self._selected_right is not None:
+            x_left, x_right = self.map_stamp_to_x(self._selected_left), self.map_stamp_to_x(self._selected_right)
+
+            top    = self.history_top - self.parent.playhead.pointer_size[1] - 2 - self._time_font_size - self.parent.playhead.pointer_size[1]
+            width  = x_right - x_left
+            height = self.history_bottom - top
+
+            dc.set_source_rgba(*self._selected_region_color)
+            dc.rectangle(x_left, top, width, height)
+            dc.fill()
+            dc.set_line_width(1.0)
+            dc.set_source_rgba(0.0, 0.3, 0.0, 0.3)
+            dc.rectangle(x_left, top, width, height)
+            dc.stroke()
 
     def _draw_history_border(self, dc):
         bounds_width = min(self.history_width, self.parent.width - self.x)
@@ -1097,12 +1132,24 @@ class Timeline(Layer):
             return
         
         x, y = self.clicked_pos[0] - self.x, self.clicked_pos[1] - self.y
-        if x >= self.history_left and x <= self.history_left + self.history_width:
-            playhead_secs = self.map_x_to_stamp(x)
-            if playhead_secs <= 0.0:
-                self.set_playhead(Time(0, 1))
-            else:
-                self.set_playhead(Time.from_sec(playhead_secs))
+        
+        if x >= self.history_left and x <= self.history_right:
+            if y >= self.history_top and y <= self.history_bottom:
+                # Clicked within timeline - set playhead
+                playhead_secs = self.map_x_to_stamp(x)
+                
+                if playhead_secs <= 0.0:
+                    self.playhead = Time(0, 1)
+                else:
+                    self.playhead = Time.from_sec(playhead_secs)
+                    
+            elif y <= self.history_top:
+                # Clicked above timeline - set selected region left
+                self._selected_left  = None
+                self._selected_right = None
+                self._selecting      = True
+                
+                self.invalidate()
 
     def on_middle_down(self, event):
         self.clicked_pos = self.dragged_pos = event.GetPosition()
@@ -1120,7 +1167,8 @@ class Timeline(Layer):
     def on_right_up (self, event): pass
 
     def _on_mouse_up(self, event):
-        self._paused = False
+        self._paused    = False
+        self._selecting = False
         self.parent.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
 
     def on_mousewheel(self, event):
@@ -1133,6 +1181,9 @@ class Timeline(Layer):
         if not event.Dragging():
             return
         
+        if not self.history_left:  # @todo: need a better notion of initialized
+            return
+
         left, middle, right = event.LeftIsDown(), event.MiddleIsDown(), event.RightIsDown()
 
         if middle or event.ShiftDown():
@@ -1141,9 +1192,6 @@ class Timeline(Layer):
             dx_click, dy_click = x - self.clicked_pos[0], y - self.clicked_pos[1]
             dx_drag,  dy_drag  = x - self.dragged_pos[0], y - self.dragged_pos[1]
             
-            if not self.history_left:  # @todo: need a better notion of initialized
-                return
-
             if dx_drag != 0:
                 self.translate_timeline(dx_drag)
             if (dx_drag == 0 and abs(dy_drag) > 0) or (dx_drag != 0 and abs(float(dy_drag) / dx_drag) > 0.2 and abs(dy_drag) > 1):
@@ -1156,15 +1204,25 @@ class Timeline(Layer):
 
         elif left:
             x, y = mouse_pos[0] - self.x, mouse_pos[1] - self.y
-            
-            if not self.history_left:
-                return
 
-            playhead_secs = self.map_x_to_stamp(x)
-            if playhead_secs <= 0.0:
-                self.set_playhead(Time(0, 0))
+            clicked_x, clicked_y = self.clicked_pos[0] - self.x, self.clicked_pos[1] - self.y
+
+            if self._selecting:
+                clicked_x_stamp = self.map_x_to_stamp(clicked_x)
+                x_stamp         = self.map_x_to_stamp(x)
+                
+                self._selected_left  = min(clicked_x_stamp, x_stamp)
+                self._selected_right = max(clicked_x_stamp, x_stamp)
+
+                self.invalidate()
+
             else:
-                self.set_playhead(Time.from_sec(playhead_secs))
+                if clicked_x >= self.history_left and clicked_x <= self.history_right and clicked_y >= self.history_top and clicked_y <= self.history_bottom:
+                    playhead_secs = self.map_x_to_stamp(x)
+                    if playhead_secs <= 0.0:
+                        self.playhead = Time(0, 1)
+                    else:
+                        self.playhead = Time.from_sec(playhead_secs)
 
         self.dragged_pos = mouse_pos
 
@@ -1304,7 +1362,7 @@ class PlayThread(threading.Thread):
                     time.sleep(0.01)
                 else:
                     self.step_fixed()
-                    time.sleep(0.05)
+                    time.sleep(0.02)
 
         except Exception, ex:
             print >> sys.stderr, 'Error advancing playhead: %s' % str(ex)
@@ -1322,8 +1380,13 @@ class PlayThread(threading.Thread):
             else:
                 new_playhead = self.timeline.playhead + Duration.from_sec((now - self.last_frame).to_sec() * self.timeline.play_speed)
     
-                start_stamp = self.timeline.start_stamp
-                end_stamp   = self.timeline.end_stamp
+                if self.timeline.selected_left is not None and self.timeline.selected_right is not None:
+                    start_stamp = Time.from_sec(self.timeline.selected_left)
+                    end_stamp   = Time.from_sec(self.timeline.selected_right)
+                else:
+                    start_stamp = self.timeline.start_stamp
+                    end_stamp   = self.timeline.end_stamp
+
                 if new_playhead > end_stamp:
                     if self.wrap:
                         new_playhead = start_stamp
@@ -1338,7 +1401,7 @@ class PlayThread(threading.Thread):
                     else:
                         new_playhead = start_stamp
 
-            self.timeline.set_playhead(new_playhead)
+            self.timeline.playhead = new_playhead
 
         self.last_frame    = now
         self.last_playhead = self.timeline.playhead
@@ -1362,9 +1425,9 @@ class PlayThread(threading.Thread):
             next_message_time = self.timeline.get_next_message_time()
 
             if next_message_time < self.desired_playhead:
-                self.timeline.set_playhead(next_message_time)
+                self.timeline.playhead = next_message_time
             else:
-                self.timeline.set_playhead(self.desired_playhead)
+                self.timeline.playhead = self.desired_playhead
 
         self.last_frame    = Time.from_sec(time.time())
         self.last_playhead = self.timeline.playhead

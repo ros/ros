@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2009, Willow Garage, Inc.
@@ -174,4 +173,4 @@ class RxBagInitThread(threading.Thread):
             elif playhead < self.timeline.start_stamp:
                 playhead = self.timeline.start_stamp
             
-            self.timeline.set_playhead(playhead)
+            self.timeline.playhead = playhead

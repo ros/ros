@@ -112,7 +112,7 @@ class TopicMessageView(MessageView):
             return
 
         for entry in self.timeline.get_entries(self.topic, self.timeline.start_stamp, self.timeline.end_stamp):
-            self.timeline.set_playhead(entry.time)
+            self.timeline.playhead = entry.time
             break
 
     def navigate_previous(self):
@@ -125,7 +125,7 @@ class TopicMessageView(MessageView):
                 last_entry = entry
             
         if last_entry:
-            self.timeline.set_playhead(last_entry.time)
+            self.timeline.playhead = last_entry.time
 
     def navigate_next(self):
         if not self.topic:
@@ -133,7 +133,7 @@ class TopicMessageView(MessageView):
 
         for entry in self.timeline.get_entries(self.topic, self.timeline.playhead, self.timeline.end_stamp):
             if entry.time > self.timeline.playhead:
-                self.timeline.set_playhead(entry.time)
+                self.timeline.playhead = entry.time
                 break
 
     def navigate_last(self):
@@ -145,7 +145,7 @@ class TopicMessageView(MessageView):
             last_entry = entry
 
         if last_entry:
-            self.timeline.set_playhead(last_entry.time)
+            self.timeline.playhead = last_entry.time
 
     @property
     def frame(self):

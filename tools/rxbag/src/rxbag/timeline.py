@@ -94,7 +94,8 @@ class Timeline(Layer):
         self._minor_divisions_color_tick = (0.5, 0.5, 0.5, 0.5)
         self._minor_divisions_color      = (0.6, 0.6, 0.6, 0.5)
 
-        self._selected_region_color = (0.0, 0.6, 0.0, 0.1)
+        self._selected_region_color         = (0.0, 0.6, 0.0, 0.1)
+        self._selected_region_outline_color = (0.0, 0.3, 0.0, 0.3)
 
         self.default_datatype_color = (0.0, 0.0, 0.0)
         self.datatype_colors = {
@@ -222,6 +223,9 @@ class Timeline(Layer):
 
     ### Bags
 
+    @property
+    def bags(self): return self._bags
+
     def add_bag(self, bag):
         self._bags.append(bag)
 
@@ -238,10 +242,6 @@ class Timeline(Layer):
                     self._update_index_cache(topic)
     
         self.invalidate()
-
-    @property
-    def bags(self):
-        return self._bags
 
     ### Recording
 
@@ -269,6 +269,29 @@ class Timeline(Layer):
             self.recorder.toggle_paused()
             self.parent.setup_toolbar()
             self.parent.update_title()
+
+    ### Export
+
+    def copy_region_to_bag(self):
+        dialog = wx.FileDialog(self.parent.GetParent(), 'Copy messages to...', wildcard='ROS bag files (*.bag)|*.bag', style=wx.FD_SAVE)
+        if dialog.ShowModal() == wx.ID_OK:
+            self._export_region(dialog.GetPath(), self.topics, Time.from_sec(self._selected_left), Time.from_sec(self._selected_right))
+        dialog.Destroy()
+
+    def _export_region(self, path, topics, start_stamp, end_stamp):
+        try:
+            export_bag = rosbag.Bag(path, 'w')
+        except Exception, ex:
+            print >> sys.stderr, 'Error opening bag file [%s] for writing' % path
+            return False
+
+        with self._bag_lock:
+            for bag, entry in self.get_entries_with_bags(topics, start_stamp, end_stamp):
+                topic, msg, t = self.read_message(bag, entry.position)
+                print t, topic
+                export_bag.write(topic, msg, t)
+        export_bag.close()
+        return True
 
     ### Publishing
 
@@ -384,7 +407,7 @@ class Timeline(Layer):
                 datatype = bag_datatype
             return datatype
 
-    def get_entries(self, topic, start_stamp, end_stamp):
+    def get_entries(self, topics, start_stamp, end_stamp):
         with self._bag_lock:
             from rosbag import bag
 
@@ -398,7 +421,7 @@ class Timeline(Layer):
                 if bag_end_time and bag_end_time < start_stamp:
                     continue
 
-                connections = list(b._get_connections(topic))
+                connections = list(b._get_connections(topics))
                 bag_entries.append(b._get_entries(connections, start_stamp, end_stamp))
 
             for entry, _ in bag._mergesort(bag_entries, key=lambda entry: entry.time):
@@ -581,7 +604,10 @@ class Timeline(Layer):
 
     def reset_timeline(self):
         self.reset_zoom()
-        
+
+        self._selected_left  = None
+        self._selected_right = None
+
         if self._stamp_left is not None:
             self.playhead = Time.from_sec(self._stamp_left)
 
@@ -1061,20 +1087,23 @@ class Timeline(Layer):
         dc.fill()
 
     def _draw_selected_region(self, dc):
-        if self._selected_left is not None and self._selected_right is not None:
-            x_left, x_right = self.map_stamp_to_x(self._selected_left), self.map_stamp_to_x(self._selected_right)
+        if self._selected_left is None or self._selected_right is None:
+            return
+        
+        x_left, x_right = self.map_stamp_to_x(self._selected_left), self.map_stamp_to_x(self._selected_right)
 
-            top    = self.history_top - self.parent.playhead.pointer_size[1] - 2 - self._time_font_size - self.parent.playhead.pointer_size[1]
-            width  = x_right - x_left
-            height = self.history_bottom - top
+        left   = x_left
+        top    = self.history_top - self.parent.playhead.pointer_size[1] - 2 - self._time_font_size - 2
+        width  = x_right - x_left
+        height = self.history_bottom - top
 
-            dc.set_source_rgba(*self._selected_region_color)
-            dc.rectangle(x_left, top, width, height)
-            dc.fill()
-            dc.set_line_width(1.0)
-            dc.set_source_rgba(0.0, 0.3, 0.0, 0.3)
-            dc.rectangle(x_left, top, width, height)
-            dc.stroke()
+        dc.set_source_rgba(*self._selected_region_color)
+        dc.rectangle(left, top, width, height)
+        dc.fill()
+        dc.set_line_width(1.0)
+        dc.set_source_rgba(*self._selected_region_outline_color)
+        dc.rectangle(left, top, width, height)
+        dc.stroke()
 
     def _draw_history_border(self, dc):
         bounds_width = min(self.history_width, self.parent.width - self.x)
@@ -1389,15 +1418,22 @@ class PlayThread(threading.Thread):
 
                 if new_playhead > end_stamp:
                     if self.wrap:
-                        new_playhead = start_stamp
+                        if self.timeline.play_speed > 0.0:
+                            new_playhead = start_stamp
+                        else:
+                            new_playhead = end_stamp
                     else:
                         new_playhead = end_stamp
-                        
-                        self.stick_to_end = True
+
+                        if self.timeline.play_speed > 0.0:
+                            self.stick_to_end = True
 
                 elif new_playhead < start_stamp:
                     if self.wrap:
-                        new_playhead = end_stamp
+                        if self.timeline.play_speed < 0.0:
+                            new_playhead = end_stamp
+                        else:
+                            new_playhead = start_stamp
                     else:
                         new_playhead = start_stamp
 

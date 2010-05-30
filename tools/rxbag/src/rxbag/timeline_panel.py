@@ -138,12 +138,12 @@ class TimelinePopupMenu(wx.Menu):
         self.parent   = parent
         self.timeline = timeline
 
-        # Reset timeline
+        # Reset Timeline
         self.reset_timeline_menu = wx.MenuItem(self, wx.NewId(), 'Reset Timeline')
         self.AppendItem(self.reset_timeline_menu)
         self.Bind(wx.EVT_MENU, lambda e: self.timeline.reset_timeline(), id=self.reset_timeline_menu.GetId())
 
-        # Play all messages
+        # Play All Messages
         self.play_all_menu = wx.MenuItem(self, wx.NewId(), 'Play All Messages', kind=wx.ITEM_CHECK)
         self.AppendItem(self.play_all_menu)
         self.play_all_menu.Check(self.timeline.play_all)
@@ -174,7 +174,7 @@ class TimelinePopupMenu(wx.Menu):
             self.thumbnail_menu.AppendItem(self.hide_thumbnails_menu)
             self.thumbnail_menu.Bind(wx.EVT_MENU, lambda e: self.timeline.set_renderers_active(False), id=self.hide_thumbnails_menu.GetId())
 
-            # ---
+            # Thumbnails... / ---
             self.thumbnail_menu.AppendSeparator()
 
             # Thumbnails... / topic
@@ -237,7 +237,7 @@ class TimelinePopupMenu(wx.Menu):
         # Publish... / Publish None
         self.publish_menu.AppendItem(self.PublishAllMenuItem(self.publish_menu, wx.NewId(), 'Publish None', False, self.timeline))
 
-        # ---
+        # Publish... / ---
         self.publish_menu.AppendSeparator()
 
         for topic in topics:
@@ -245,6 +245,13 @@ class TimelinePopupMenu(wx.Menu):
             publish_topic_menu = self.PublishTopicMenuItem(self.publish_menu, wx.NewId(), topic, self.timeline)
             self.publish_menu.AppendItem(publish_topic_menu)
             publish_topic_menu.Check(self.timeline.is_publishing(topic))
+
+        # Copy region to bag...
+        self.copy_region_menu = wx.MenuItem(self, wx.NewId(), 'Copy Region To Bag...')
+        self.AppendItem(self.copy_region_menu)
+        self.Bind(wx.EVT_MENU, lambda e: self.timeline.copy_region_to_bag(), id=self.copy_region_menu.GetId())
+        if self.timeline.selected_left is None or self.timeline.selected_right is None:
+            self.copy_region_menu.Enable(False)
 
     class TimelineRendererMenuItem(wx.MenuItem):
         def __init__(self, parent, id, label, topic, renderer, timeline):

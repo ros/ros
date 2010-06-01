@@ -186,8 +186,8 @@ class Timeline(wx.Window):
 
         self._listeners = {}
 
-        self.index_cache_lock   = threading.RLock()
         self.index_cache        = {}
+        self.index_cache_cv     = threading.Condition()
         self.invalidated_caches = set()
 
         self._recorder = None
@@ -314,15 +314,18 @@ class Timeline(wx.Window):
         self._topics             = self._get_topics()
         self._topics_by_datatype = self._get_topics_by_datatype()
 
+        # If this is the first bag, reset the timeline
         if self._stamp_left is None:
             self.reset_timeline()
 
         # Invalidate entire index cache for all topics in this bag
-        with self.index_cache_lock:
+        with self.index_cache_cv:
             for topic in bag_helper.get_topics(bag):
+                self.invalidated_caches.add(topic)
                 if topic in self.index_cache:
                     del self.index_cache[topic]
-                    self._update_index_cache(topic)
+
+            self.index_cache_cv.notify()
 
         wx.CallAfter(self.frame.ToolBar._setup)
         wx.CallAfter(self._update_title)
@@ -467,9 +470,11 @@ class Timeline(wx.Window):
         
         if self._stamp_left is None:
             self.reset_zoom()
-        
-        # Invalidate the topic
-        self.invalidated_caches.add(topic)
+
+        # Notify the index caching thread that it has work to do
+        with self.index_cache_cv:
+            self.invalidated_caches.add(topic)
+            self.index_cache_cv.notify()
 
         if topic in self._listeners:
             for listener in self._listeners[topic]:
@@ -495,9 +500,9 @@ class Timeline(wx.Window):
     def _get_start_stamp(self):
         with self._bag_lock:
             start_stamp = None
-            for bag in self._bags:               
+            for bag in self._bags:
                 bag_start_stamp = bag_helper.get_start_stamp(bag)
-                if bag_start_stamp and (start_stamp is None or bag_start_stamp < start_stamp):
+                if bag_start_stamp is not None and (start_stamp is None or bag_start_stamp < start_stamp):
                     start_stamp = bag_start_stamp
             return start_stamp
     
@@ -506,7 +511,7 @@ class Timeline(wx.Window):
             end_stamp = None
             for bag in self._bags:
                 bag_end_stamp = bag_helper.get_end_stamp(bag)
-                if bag_end_stamp and (end_stamp is None or bag_end_stamp > end_stamp):
+                if bag_end_stamp is not None and (end_stamp is None or bag_end_stamp > end_stamp):
                     end_stamp = bag_end_stamp
             return end_stamp
     
@@ -543,11 +548,11 @@ class Timeline(wx.Window):
             bag_entries = []
             for b in self._bags:
                 bag_start_time = bag_helper.get_start_stamp(b)
-                if bag_start_time and bag_start_time > end_stamp:
+                if bag_start_time is not None and bag_start_time > end_stamp:
                     continue
 
                 bag_end_time = bag_helper.get_end_stamp(b)
-                if bag_end_time and bag_end_time < start_stamp:
+                if bag_end_time is not None and bag_end_time < start_stamp:
                     continue
 
                 connections = list(b._get_connections(topics))
@@ -564,11 +569,11 @@ class Timeline(wx.Window):
             bag_by_iter = {}
             for b in self._bags:
                 bag_start_time = bag_helper.get_start_stamp(b)
-                if bag_start_time and bag_start_time > end_stamp:
+                if bag_start_time is not None and bag_start_time > end_stamp:
                     continue
 
                 bag_end_time = bag_helper.get_end_stamp(b)
-                if bag_end_time and bag_end_time < start_stamp:
+                if bag_end_time is not None and bag_end_time < start_stamp:
                     continue
 
                 connections = list(b._get_connections(topic))                
@@ -1116,10 +1121,10 @@ class Timeline(wx.Window):
         """
         Updates the cache of message timestamps for the given topic.
 
-        Returns True iff the cache was updated.
+        @return: number of messages added to the index cache
         """
-        if self.end_stamp is None:
-            return False
+        if self.start_stamp is None or self.end_stamp is None:
+            return 0
         
         if topic not in self.index_cache:
             # Don't have any cache of messages in this topic
@@ -1131,7 +1136,7 @@ class Timeline(wx.Window):
 
             # Check if the cache has been invalidated
             if topic not in self.invalidated_caches:
-                return False
+                return 0
 
             if len(topic_cache) == 0:
                 start_time = self.start_stamp
@@ -1148,7 +1153,7 @@ class Timeline(wx.Window):
         if topic in self.invalidated_caches:
             self.invalidated_caches.remove(topic)
 
-        return len(topic_cache) > topic_cache_len
+        return len(topic_cache) - topic_cache_len
 
     def _draw_topic_history(self, dc, topic):
         """
@@ -1173,10 +1178,9 @@ class Timeline(wx.Window):
             msg_combine_interval = self.map_dx_to_dstamp(self._default_msg_combine_px)
 
         # Get the cache
-        with self.index_cache_lock:
-            if topic not in self.index_cache:
-                return
-            all_stamps = self.index_cache[topic]
+        if topic not in self.index_cache:
+            return
+        all_stamps = self.index_cache[topic]
 
         start_index = bisect.bisect_left(all_stamps, self._stamp_left)
         end_index   = bisect.bisect_left(all_stamps, self._stamp_right)
@@ -1642,39 +1646,43 @@ class Timeline(wx.Window):
                     self.remove_listener(topic, listener)
 
 class IndexCacheThread(threading.Thread):
-    def __init__(self, timeline, period=0.05):
+    def __init__(self, timeline):
         threading.Thread.__init__(self)
 
         self.timeline  = timeline
-        self.period    = period
         self.stop_flag = False
 
         self.setDaemon(True)
         self.start()
 
     def run(self):
-        try:
-            while not self.stop_flag:
-                if not self.timeline.topics:
-                    time.sleep(0.1)
-                    continue
-
+        last_updated_topic = None
+        
+        while not self.stop_flag:
+            with self.timeline.index_cache_cv:
+                # Wait until the cache is dirty
+                if len(self.timeline.invalidated_caches) == 0:
+                    self.timeline.index_cache_cv.wait()
+                    
+                # Update the index for one topic
                 updated = False
                 for topic in self.timeline.topics:
-                    with self.timeline.index_cache_lock:
-                        updated |= self.timeline._update_index_cache(topic)
+                    if topic in self.timeline.invalidated_caches and topic != last_updated_topic:
+                        updated = (self.timeline._update_index_cache(topic) > 0)
                         if updated:
+                            last_updated_topic = topic
                             break
 
-                if updated:
-                    wx.CallAfter(self.timeline.Refresh)
-    
-                time.sleep(self.period)
-        except Exception, ex:
-            raise
+            if updated:
+                wx.CallAfter(self.timeline.Refresh)
+
+                # Give the GUI some time to update
+                time.sleep(0.4)
 
     def stop(self):
         self.stop_flag = True
+        with self.timeline.index_cache_cv:
+            self.timeline.index_cache_cv.notify()
         self.join()
 
 class PlayThread(threading.Thread):

@@ -103,12 +103,15 @@ def create_package_template(package, rd_config, m, path, html_dir,
     # rd_config wins
     if rd_config and 'file_patterns' in rd_config:
         file_patterns = rd_config['file_patterns']
-        
+       
+    include_path = roslib.rospack.rospackexec(['cflags-only-I',package])
+
     vars = { '$INPUT':  path, '$PROJECT_NAME': package,
              '$EXCLUDE_PROP': excludes, '$FILE_PATTERNS': file_patterns,
              '$HTML_OUTPUT': os.path.abspath(html_dir),
              '$HTML_HEADER': header_filename, '$HTML_FOOTER': footer_filename,
-             '$OUTPUT_DIRECTORY': html_dir}
+             '$OUTPUT_DIRECTORY': html_dir,
+             '$INCLUDE_PATH': include_path }
     return instantiate_template(doxy_template, vars)
 
 ## Processes manifest for package and then generates templates for

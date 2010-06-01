@@ -35,7 +35,7 @@
 
 import roslib; roslib.load_manifest('roscreate')
 
-NAME='roscreatepkg'
+NAME='roscreate-pkg'
 
 import os
 import sys
@@ -104,6 +104,9 @@ def roscreatepkg_main():
     if not args:
         parser.error("you must specify a package name and optionally also list package dependencies")
     package = args[0]
+
+    if not roslib.names.is_legal_resource_base_name(package):
+        parser.error("illegal package name: %s\nNames must start with a letter and contain only alphanumeric characters\nand underscores."%package)
 
     # validate dependencies and turn into XML
     depends = args[1:]

@@ -75,39 +75,34 @@ class TimelineCache(threading.Thread):
             self._debug_frame.Show()
 
     def run(self):
-        try:
-            while not self.stop_flag:
-                # Get next item to load
-                entry = self.queue.get()
-                
-                # self used to signal a change in stop_flag
-                if entry == self:
-                    continue
+        while not self.stop_flag:
+            # Get next item to load
+            entry = self.queue.get()
+            
+            # self used to signal a change in stop_flag
+            if entry == self:
+                continue
 
-                # Update debugging info (if enabled)
-                if self._debugging:
-                    wx.CallAfter(self._update_debug)
+            # Update debugging info (if enabled)
+            if self._debugging:
+                wx.CallAfter(self._update_debug)
 
-                # Check we haven't already cached it
-                topic, stamp, time_threshold, item_details = entry
+            # Check we haven't already cached it
+            topic, stamp, time_threshold, item_details = entry
 
-                if not self.get_item(topic, stamp, time_threshold):
-                    # Load the item
-                    msg_stamp, item = self.loader(topic, stamp, item_details)
-                    if item:
-                        # Store in the cache
-                        self.cache_item(topic, msg_stamp, item)
+            if not self.get_item(topic, stamp, time_threshold):
+                # Load the item
+                msg_stamp, item = self.loader(topic, stamp, item_details)
+                if item:
+                    # Store in the cache
+                    self.cache_item(topic, msg_stamp, item)
 
-                        if self.listener:
-                            self.listener(topic, msg_stamp, item)
-                    else:
-                        print 'Failed to load:', entry
+                    if self.listener:
+                        self.listener(topic, msg_stamp, item)
+                else:
+                    print 'Failed to load:', entry
 
-                self.queue.task_done()
-                
-        except Exception, ex:
-            print ex
-            raise
+            self.queue.task_done()
         
     def enqueue(self, entry):
         self.queue.put(entry)

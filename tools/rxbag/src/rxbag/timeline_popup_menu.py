@@ -50,13 +50,13 @@ class TimelinePopupMenu(wx.Menu):
         # Reset Timeline
         self.reset_timeline_menu = wx.MenuItem(self, wx.NewId(), 'Reset Timeline')
         self.AppendItem(self.reset_timeline_menu)
-        self.Bind(wx.EVT_MENU, lambda e: self.timeline.reset_timeline(), id=self.reset_timeline_menu.GetId())
+        self.Bind(wx.EVT_MENU, lambda e: self.timeline.reset_timeline(), id=self.reset_timeline_menu.Id)
 
         # Play All Messages
         self.play_all_menu = wx.MenuItem(self, wx.NewId(), 'Play All Messages', kind=wx.ITEM_CHECK)
         self.AppendItem(self.play_all_menu)
         self.play_all_menu.Check(self.timeline.play_all)
-        self.Bind(wx.EVT_MENU, lambda e: self.timeline.toggle_play_all(), id=self.play_all_menu.GetId())
+        self.Bind(wx.EVT_MENU, lambda e: self.timeline.toggle_play_all(), id=self.play_all_menu.Id)
 
         topics = self.timeline.topics
 
@@ -76,12 +76,12 @@ class TimelinePopupMenu(wx.Menu):
             # Thumbnails... / Show All
             self.show_thumbnails_menu = wx.MenuItem(self.thumbnail_menu, wx.NewId(), 'Show All')
             self.thumbnail_menu.AppendItem(self.show_thumbnails_menu)
-            self.thumbnail_menu.Bind(wx.EVT_MENU, lambda e: self.timeline.set_renderers_active(True), id=self.show_thumbnails_menu.GetId())
+            self.thumbnail_menu.Bind(wx.EVT_MENU, lambda e: self.timeline.set_renderers_active(True), id=self.show_thumbnails_menu.Id)
             
             # Thumbnails... / Hide All
             self.hide_thumbnails_menu = wx.MenuItem(self.thumbnail_menu, wx.NewId(), 'Hide All')
             self.thumbnail_menu.AppendItem(self.hide_thumbnails_menu)
-            self.thumbnail_menu.Bind(wx.EVT_MENU, lambda e: self.timeline.set_renderers_active(False), id=self.hide_thumbnails_menu.GetId())
+            self.thumbnail_menu.Bind(wx.EVT_MENU, lambda e: self.timeline.set_renderers_active(False), id=self.hide_thumbnails_menu.Id)
 
             # Thumbnails... / ---
             self.thumbnail_menu.AppendSeparator()
@@ -158,7 +158,7 @@ class TimelinePopupMenu(wx.Menu):
         # Copy region to bag...
         self.copy_region_menu = wx.MenuItem(self, wx.NewId(), 'Copy Region To Bag...')
         self.AppendItem(self.copy_region_menu)
-        self.Bind(wx.EVT_MENU, lambda e: self.timeline.copy_region_to_bag(), id=self.copy_region_menu.GetId())
+        self.Bind(wx.EVT_MENU, lambda e: self.timeline.copy_region_to_bag(), id=self.copy_region_menu.Id)
         if self.timeline.selected_left is None or self.timeline.selected_right is None:
             self.copy_region_menu.Enable(False)
 
@@ -168,7 +168,7 @@ class TimelinePopupMenu(wx.Menu):
             
             self.timeline = timeline
 
-            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.GetId())
+            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.Id)
 
         def on_menu(self, event):
             self.timeline.play_all = not self.timeline.play_all
@@ -181,7 +181,7 @@ class TimelinePopupMenu(wx.Menu):
             self.renderer = renderer
             self.timeline = timeline
 
-            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.GetId())
+            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.Id)
 
         def on_menu(self, event):
             self.timeline.set_renderer_active(self.topic, not self.timeline.is_renderer_active(self.topic))
@@ -194,14 +194,13 @@ class TimelinePopupMenu(wx.Menu):
             self.viewer_type = viewer_type
             self.timeline    = timeline
     
-            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.GetId())
+            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.Id)
 
         def on_menu(self, event):
             frame = BaseFrame(None, 'rxbag', self.topic, title='rxbag - %s [%s]' % (self.topic.lstrip('/'), self.viewer_type.name), pos=(4, 4), size=(640, 480))
             view = self.viewer_type(self.timeline, frame)
-            frame.Show()
-
             self.timeline.add_view(self.topic, view)
+            frame.Show()
 
     class PublishTopicMenuItem(wx.MenuItem):
         def __init__(self, parent, id, topic, timeline):
@@ -210,7 +209,7 @@ class TimelinePopupMenu(wx.Menu):
             self.topic    = topic
             self.timeline = timeline
 
-            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.GetId())
+            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.Id)
 
         def on_menu(self, event):
             if self.timeline.is_publishing(self.topic):
@@ -225,7 +224,7 @@ class TimelinePopupMenu(wx.Menu):
             self.timeline = timeline
             self.start    = start
 
-            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.GetId())
+            parent.Bind(wx.EVT_MENU, self.on_menu, id=self.Id)
 
         def on_menu(self, event):
             if self.start:

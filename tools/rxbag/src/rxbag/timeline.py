@@ -358,25 +358,69 @@ class Timeline(wx.Window):
     ### Export
 
     def copy_region_to_bag(self):
-        dialog = wx.FileDialog(self, 'Copy messages to...', wildcard='ROS bag files (*.bag)|*.bag', style=wx.FD_SAVE)
+        dialog = wx.FileDialog(self, 'Copy messages to...', wildcard='Bag files (*.bag)|*.bag', style=wx.FD_SAVE)
         if dialog.ShowModal() == wx.ID_OK:
             self._export_region(dialog.Path, self.topics, *self.play_region)
         dialog.Destroy()
-
+        
     def _export_region(self, path, topics, start_stamp, end_stamp):
+        bag_entries = list(self.get_entries_with_bags(topics, start_stamp, end_stamp))
+
+        # Get the total number of messages to copy
+        total_messages = len(bag_entries)
+        
+        # If no messages, prompt the user and return
+        if total_messages == 0:
+            wx.MessageDialog(None, 'No messages found', 'rxbag', wx.OK | wx.ICON_EXCLAMATION).ShowModal()
+            return
+        
+        # Open the path for writing
         try:
             export_bag = rosbag.Bag(path, 'w')
         except Exception, ex:
             print >> sys.stderr, 'Error opening bag file [%s] for writing' % path
-            return False
 
-        with self._bag_lock:
-            for bag, entry in self.get_entries_with_bags(topics, start_stamp, end_stamp):
+        # Create a dialog to track progress 
+        self._export_progress = wx.ProgressDialog('Exporting messages...', 'Saving %d messages to %s...' % (total_messages, path),
+                                                  maximum=total_messages,
+                                                  parent=self,
+                                                  style=wx.PD_CAN_ABORT | wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME | wx.PD_ESTIMATED_TIME | wx.PD_REMAINING_TIME | wx.PD_SMOOTH | wx.PD_AUTO_HIDE)
+        
+        # Run copying in a background thread
+        self._export_thread = threading.Thread(target=self._run_export_region, args=(export_bag, topics, start_stamp, end_stamp, bag_entries))
+        self._export_thread.start()
+
+    def _run_export_region(self, export_bag, topics, start_stamp, end_stamp, bag_entries):
+        self._keep_exporting = True
+
+        total_messages = len(bag_entries)
+        
+        update_step = max(1, total_messages / 100)
+
+        message_num = 1
+        
+        for bag, entry in bag_entries:
+            try:
                 topic, msg, t = self.read_message(bag, entry.position)
-                print t, topic
                 export_bag.write(topic, msg, t)
-        export_bag.close()
-        return True
+            except Exception, ex:
+                print >> sys.stderr, 'Error exporting message at position %d: %s' % (entry.position, str(ex))
+
+            if message_num % update_step == 0 or message_num == total_messages:
+                wx.CallAfter(self._update_export_progress, message_num)
+                if not self._keep_exporting:
+                    wx.CallAfter(self._export_progress.Destroy)
+                    break
+        
+            message_num += 1
+
+        try:
+            export_bag.close()
+        except Exception, ex:
+            print >> sys.stderr, 'Error closing bag file [%s]: %s' % (export_bag.filename, str(ex))
+
+    def _update_export_progress(self, message_num):
+        self._keep_exporting, _ = self._export_progress.Update(message_num)
 
     ### Publishing
 

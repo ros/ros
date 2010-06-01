@@ -52,15 +52,10 @@ class RawView(TopicMessageView):
     
     def __init__(self, timeline, parent):
         TopicMessageView.__init__(self, timeline, parent)
-        
-        self.msg_tree = MessageTree(self.parent)
-        #self.msg_tree.Position = (0, 0)
 
-        self.msg_displayed = None
-        self.msg_incoming  = None
+        self.message_tree = MessageTree(self.parent)
         
-        self.parent.Bind(wx.EVT_PAINT, self.on_paint)
-        self.parent.Bind(wx.EVT_SIZE,  self.on_size)
+        self.parent.Bind(wx.EVT_SIZE, self.on_size)
 
     ## MessageView implementation
 
@@ -68,33 +63,19 @@ class RawView(TopicMessageView):
         TopicMessageView.message_viewed(self, bag, msg_details)
 
         topic, msg, t = msg_details
-
         if t is None:
             self.message_cleared()
         else:
-            self.msg_incoming = msg
-            wx.CallAfter(self.parent.Refresh)
+            wx.CallAfter(self.message_tree.set_message, msg)
 
     def message_cleared(self):
         TopicMessageView.message_cleared(self)
-
-        self.clear()
+        wx.CallAfter(self.message_tree.set_message, None)
 
     ## Events
 
-    def on_paint(self, dc):
-        if self.msg_incoming != self.msg_displayed:
-            self.msg_tree.set_message(self.msg_incoming)
-            self.msg_displayed = self.msg_incoming
-
     def on_size(self, event):
-        self.msg_tree.Size = self.parent.ClientSize
-
-    ##
-
-    def clear(self):
-        self.msg_incoming = None
-        wx.CallAfter(self.parent.Refresh)
+        self.message_tree.Size = self.parent.ClientSize
 
 class MessageTree(wx.TreeCtrl):
     def __init__(self, parent):
@@ -129,12 +110,7 @@ class MessageTree(wx.TreeCtrl):
             self._add_msg_object(None, '', 'msg', msg, msg._type)
             
             if self._expanded_paths is None:
-                # First message: expand top-level items (that aren't the header)
                 self._expanded_paths = set()
-                for item in self.get_all_items():
-                    path = self.get_item_path(item)
-                    if '.' not in path and path != 'header':
-                        self.Expand(item)
             else:
                 # Expand those that were previously expanded, and collapse any paths that we've seen for the first time
                 for item in self.get_all_items():
@@ -177,7 +153,7 @@ class MessageTree(wx.TreeCtrl):
                 return distance
             else:
                 return get_distance(parent, ancestor, distance + 1)
-        
+
         root = self.GetRootItem()
         text = '\n'.join([('\t' * get_distance(i, root)) + self.GetItemText(i) for i in self.GetSelections()])
 
@@ -187,13 +163,17 @@ class MessageTree(wx.TreeCtrl):
                 wx.TheClipboard.SetData(wx.TextDataObject(text))
             finally:
                 wx.TheClipboard.Close()
-
+                
     def get_item_path(self, item):
-        return self.GetItemPyData(item)[0]
+        return self.GetItemPyData(item)[0].replace(' ', '')   # remove spaces that may get introduced in indexing, e.g. [  3] is [3]
 
     def get_all_items(self):
         items = []
-        self.traverse(self.RootItem, items.append)
+        try:
+            self.traverse(self.RootItem, items.append)
+        except Exception:
+            # @todo: large messages can cause a stack overflow due to recursion
+            pass
         return items
 
     def traverse(self, root, function):

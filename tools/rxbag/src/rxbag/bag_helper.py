@@ -49,7 +49,7 @@ def stamp_to_str(t):
     @type  t: rospy.Time
     """
     t_sec = t.to_sec()
-    if t < rospy.Time.from_sec(60 * 60 * 24 * 7 * 52 * 5):
+    if t < rospy.Time.from_sec(60 * 60 * 24 * 365 * 5):
         # Display timestamps earlier than 1975 as seconds
         return '%.3fs' % t_sec
     else:

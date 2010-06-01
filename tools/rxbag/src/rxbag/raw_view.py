@@ -37,37 +37,32 @@ Defines a raw view: a TopicMessageView that displays the message contents in a t
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 
-import rospy
-
 import codecs
 import math
-import sys
-import time
 
 import wx
 
+import rospy
+
 import bag_helper
-from plugin.message_view import TopicMessageView
+from plugin.topic_message_view import TopicMessageView
 
 class RawView(TopicMessageView):
     name = 'Raw'
     
-    def __init__(self, timeline, parent, title, x, y, width, height):
-        TopicMessageView.__init__(self, timeline, parent, title, x, y, width, height)
+    def __init__(self, timeline, parent):
+        TopicMessageView.__init__(self, timeline, parent)
         
-        self._font = wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
-
-        self.msg_title = wx.TextCtrl(self.parent, style=wx.TE_READONLY | wx.NO_BORDER)
-        self.msg_title.SetPosition((1, 0))
-        self.msg_title.SetFont(self._font)
-
         self.msg_tree = MessageTree(self.parent)
-        self.msg_tree.SetPosition((0, 20))
+        #self.msg_tree.Position = (0, 0)
 
         self.msg_displayed = None
         self.msg_incoming  = None
+        
+        self.parent.Bind(wx.EVT_PAINT, self.on_paint)
+        self.parent.Bind(wx.EVT_SIZE,  self.on_size)
 
-        #self.self_paint = True
+    ## MessageView implementation
 
     def message_viewed(self, bag, msg_details):
         TopicMessageView.message_viewed(self, bag, msg_details)
@@ -77,38 +72,29 @@ class RawView(TopicMessageView):
         if t is None:
             self.message_cleared()
         else:
-            time_str = '%s (%10d.%09d) [%.3fs]' % (bag_helper.stamp_to_str(t), t.secs, t.nsecs, (t - self.timeline.start_stamp).to_sec())
-
-            if len(self.timeline.bags) > 1:
-                self.msg_title.SetValue('%s (%s)' % (time_str, bag.filename))
-            else:
-                self.msg_title.SetValue(time_str)
-            self.msg_title.Refresh()
-
             self.msg_incoming = msg
-            self.invalidate()
+            wx.CallAfter(self.parent.Refresh)
 
     def message_cleared(self):
         TopicMessageView.message_cleared(self)
 
         self.clear()
 
-    def paint(self, dc):
+    ## Events
+
+    def on_paint(self, dc):
         if self.msg_incoming != self.msg_displayed:
             self.msg_tree.set_message(self.msg_incoming)
             self.msg_displayed = self.msg_incoming
 
     def on_size(self, event):
-        size = self.parent.GetClientSize()
-        
-        self.resize(*size)
-        self.msg_title.SetSize((size[0], 20))
-        self.msg_tree.SetSize((size[0], size[1] - self.msg_tree.GetPosition()[1]))
+        self.msg_tree.Size = self.parent.ClientSize
+
+    ##
 
     def clear(self):
-        self.msg_title.SetValue('')
         self.msg_incoming = None
-        self.invalidate()
+        wx.CallAfter(self.parent.Refresh)
 
 class MessageTree(wx.TreeCtrl):
     def __init__(self, parent):
@@ -163,7 +149,7 @@ class MessageTree(wx.TreeCtrl):
         self.Refresh()
 
     def on_key_up(self, event):
-        key, ctrl = event.GetKeyCode(), event.ControlDown()
+        key, ctrl = event.KeyCode, event.ControlDown()
 
         if ctrl:
             if key == ord('C') or key == ord('c'):
@@ -207,7 +193,7 @@ class MessageTree(wx.TreeCtrl):
 
     def get_all_items(self):
         items = []
-        self.traverse(self.GetRootItem(), items.append)
+        self.traverse(self.RootItem, items.append)
         return items
 
     def traverse(self, root, function):
@@ -247,7 +233,7 @@ class MessageTree(wx.TreeCtrl):
             else:
                 label += ':  %s' % obj_repr
 
-        elif type(obj) in [str, bool, int, long, float, complex, roslib.rostime.Time]:
+        elif type(obj) in [str, bool, int, long, float, complex, rospy.Time]:
             # Ignore any binary data
             obj_repr = codecs.utf_8_decode(str(obj), 'ignore')[0]
             

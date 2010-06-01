@@ -30,8 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import sys
-
 import wx
 
 class BaseFrame(wx.Frame):
@@ -41,38 +39,42 @@ class BaseFrame(wx.Frame):
     def __init__(self, parent, config_name, config_key, id=wx.ID_ANY, title='Untitled', pos=wx.DefaultPosition, size=(800, 300), style=wx.DEFAULT_FRAME_STYLE):
         wx.Frame.__init__(self, parent, id, title, pos, size, style)
 
-        self.config     = wx.Config(config_name)
-        self.config_key = config_key
+        self._config     = wx.Config(config_name)
+        self._config_key = config_key
 
         self._load_config()
         
-        self.Bind(wx.EVT_CLOSE, self.on_close)
+        self.Bind(wx.EVT_CLOSE, self._on_close)
 
-    def on_close(self, event):
+    def _on_close(self, event):
         self._save_config()
 
         self.Destroy()
 
-    ## Load position and size of the frame from config
     def _load_config(self):
-        (x, y), (width, height) = self.GetPositionTuple(), self.GetSizeTuple()
-        if self.config.HasEntry(self._config_x):      x      = self.config.ReadInt(self._config_x)
-        if self.config.HasEntry(self._config_y):      y      = self.config.ReadInt(self._config_y)
-        if self.config.HasEntry(self._config_width):  width  = self.config.ReadInt(self._config_width)
-        if self.config.HasEntry(self._config_height): height = self.config.ReadInt(self._config_height)       
+        """
+        Load position and size of the frame from config
+        """
+        (x, y), (width, height) = self.Position, self.Size
+        if self._config.HasEntry(self._config_x):      x      = self._config.ReadInt(self._config_x)
+        if self._config.HasEntry(self._config_y):      y      = self._config.ReadInt(self._config_y)
+        if self._config.HasEntry(self._config_width):  width  = self._config.ReadInt(self._config_width)
+        if self._config.HasEntry(self._config_height): height = self._config.ReadInt(self._config_height)       
 
-        self.SetPosition((x, y))
-        self.SetSize((width, height))
+        self.Position = (x, y)
+        self.Size = (width, height)
 
-    ## Save position and size of frame to config
     def _save_config(self):
-        (x, y), (width, height) = self.GetPositionTuple(), self.GetSizeTuple()
+        """
+        Save position and size of frame to config
+        """
+        (x, y), (width, height) = self.Position, self.Size
         
-        self.config.WriteInt(self._config_x,      x)
-        self.config.WriteInt(self._config_y,      y)
-        self.config.WriteInt(self._config_width,  width)
-        self.config.WriteInt(self._config_height, height)       
-        self.config.Flush()
+        self._config.WriteInt(self._config_x,      x)
+        self._config.WriteInt(self._config_y,      y)
+        self._config.WriteInt(self._config_width,  width)
+        self._config.WriteInt(self._config_height, height)       
+        self._config.Flush()
 
     @property
     def _config_x(self): return self._config_property('X')
@@ -86,4 +88,4 @@ class BaseFrame(wx.Frame):
     @property
     def _config_height(self): return self._config_property('Height')
 
-    def _config_property(self, property): return '/%s/%s' % (self.config_key, property)
+    def _config_property(self, property): return '/%s/%s' % (self._config_key, property)

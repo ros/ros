@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-The rxbag timeline widget.
+The rxbag timeline control.
 """
 
 from __future__ import with_statement
@@ -41,7 +41,6 @@ import roslib; roslib.load_manifest(PKG)
 import rospy
 
 import rosbag
-from roslib.rostime import Duration, Time
 import rosgraph.masterapi
 
 import bisect
@@ -54,19 +53,28 @@ import time
 
 import cairo
 import wx
+import wx.lib.newevent
 
 import bag_helper
 import plugins
-from player     import Player
-from raw_view   import RawView
-from recorder   import Recorder
-from util.layer import Layer
+from player              import Player
+from raw_view            import RawView
+from recorder            import Recorder
+from timeline_popup_menu import TimelinePopupMenu
+from timeline_status_bar import TimelineStatusBar, PlayheadChangedEvent, EVT_PLAYHEAD_CHANGED
+from timeline_toolbar    import TimelineToolBar
 
-class Timeline(Layer):
-    name = 'Timeline'
+class _SelectionMode(object):
+    NONE        = 0    # no region marked or started
+    LEFT_MARKED = 1    # one end of the region has been marked
+    MARKED      = 2    # region has been marked
+    SHIFTING    = 3    # region is marked; now shifting
+    MOVE_LEFT   = 4    # region is marked; changing the left mark
+    MOVE_RIGHT  = 5    # region is marked; changing the right mark
 
-    def __init__(self, parent, title, x, y, width, height):
-        Layer.__init__(self, parent, title, x, y, width, height)
+class Timeline(wx.Window):
+    def __init__(self, *args, **kwargs):
+        wx.Window.__init__(self, *args, **kwargs)
 
         ## Rendering parameters
 
@@ -77,28 +85,39 @@ class Timeline(Layer):
                                1 * 60 * 60 * 24, 7 * 60 * 60 * 24]                                 # 1d, 7d
         self._minor_spacing = 15
         self._major_spacing = 50
-        
+
         self._time_font_size   = 12.0
         self._topic_font_size  = 12.0
         self._topic_font_color = (0, 0, 0)
 
-        self.time_font_height  = None
-        self.topic_font_height = None
-        self.topic_name_sizes  = None
-        self.margin_left       = 0
-        self.margin_right      = 20
-        self.history_top       = 24
+        self._playhead_pointer_size = (6, 6)
+        self._playhead_line_width   = 1
+        self._playhead_color        = (1, 0, 0, 0.75)
+
+        self._time_font_height  = None
+        self._topic_font_height = None
+        self._topic_name_sizes  = None
+        self._margin_left       = 4
+        self._margin_right      = 8
+        self._margin_bottom     = 6
+        self._history_top            = 30
+        self._topic_vertical_padding = 4
         self._bag_end_color    = (0, 0, 0, 0.1)
-        self._time_tick_height = 3
+        self._time_tick_height = 5
+        self._active_message_line_width = 3
 
         self._minor_divisions_color_tick = (0.5, 0.5, 0.5, 0.5)
         self._minor_divisions_color      = (0.6, 0.6, 0.6, 0.5)
+        self._minor_divisions_dash       = [2, 2]
 
-        self._selected_region_color         = (0.0, 0.6, 0.0, 0.1)
-        self._selected_region_outline_color = (0.0, 0.3, 0.0, 0.3)
+        self._major_divisions_dash       = [2, 2]
 
-        self.default_datatype_color = (0.0, 0.0, 0.0)
-        self.datatype_colors = {
+        self._selected_region_color              = (0.0, 0.7, 0.0, 0.08)
+        self._selected_region_outline_top_color  = (0.0, 0.3, 0.0, 0.2)
+        self._selected_region_outline_ends_color = (0.0, 0.3, 0.0, 0.4)
+
+        self._default_datatype_color = (0.0, 0.0, 0.4)
+        self._datatype_colors = {
             'sensor_msgs/CameraInfo':            (  0,   0, 0.6),
             'sensor_msgs/Image':                 (  0, 0.3, 0.3),
             'sensor_msgs/LaserScan':             (0.6,   0,   0),
@@ -106,41 +125,48 @@ class Timeline(Layer):
             'pr2_mechanism_msgs/MechanismState': (  0, 0.6,   0),
             'tf/tfMessage':                      (  0, 0.6,   0),
         }
-        self.default_msg_combine_px = 1.0
+        self._default_msg_combine_px = 1.0
 
-        self.zoom_sensitivity = 0.005
-        self.min_zoom_speed   = 0.5
-        self.max_zoom_speed   = 2.0
-        self.min_zoom         = 0.0001      # max zoom out (in px/s)
-        self.max_zoom         = 50000.0     # max zoom in  (in px/s)
+        self._zoom_sensitivity = 0.005
+        self._min_zoom_speed   = 0.5
+        self._max_zoom_speed   = 2.0
+        self._min_zoom         = 0.0001      # max zoom out (in px/s)
+        self._max_zoom         = 50000.0     # max zoom in  (in px/s)
 
-        self.max_play_speed =  1024.0
-        self.min_play_speed = -1024.0
+        self._max_play_speed = 1024.0
+        self._min_play_speed = 1.0 / 1024.0
 
-        self.viewer_types       = {}
-        self.timeline_renderers = {}
-        self.rendered_topics    = set()
+        self._viewer_types       = {}
+        self._timeline_renderers = {}
+        self._rendered_topics    = set()
 
         self.load_plugins()
 
         ##
 
-        self.clicked_pos = None
-        self.dragged_pos = None
+        self._clicked_pos = None
+        self._dragged_pos = None
 
-        self.history_left   = 0
-        self.history_width  = 0
-        self.history_bottom = 0
-        self.history_bounds = {}
+        self._history_left   = 0
+        self._history_width  = 0
+        self._history_bottom = 0
+        self._history_bounds = {}
         
+        self._selecting_mode = _SelectionMode.NONE
         self._selected_left  = None
         self._selected_right = None
-        self._selecting      = False
         
+        self._selection_handle_width = 3.0
+
         ##
 
         self._bag_lock = threading.RLock()
         self._bags     = []
+
+        self._start_stamp        = None
+        self._end_stamp          = None
+        self._topics             = []
+        self._topics_by_datatype = {}
 
         self._stamp_left         = None
         self._stamp_right        = None
@@ -149,31 +175,28 @@ class Timeline(Layer):
         self._play_speed         = 0.0
         self._paused             = False
         self._playhead_positions = {}
-        self.play_all            = False
+        self._play_all            = False
 
         self._message_cache_lock     = threading.RLock()
         self._message_cache          = {}
         self._message_cache_keys     = []
         self._message_cache_capacity = 50
 
-        self.views = []
+        self._views = []
 
-        self.listeners = {}
+        self._listeners = {}
 
         self.index_cache_lock   = threading.RLock()
         self.index_cache        = {}
         self.invalidated_caches = set()
 
-        self.recorder = None
-        self.player   = False
+        self._recorder = None
+        self._player   = False
 
         ##
 
-        self.play_thread        = PlayThread(self)
-        self.index_cache_thread = IndexCacheThread(self)
-
-        scroll_window = self.parent.GetParent()
-        scroll_window.Bind(wx.EVT_SIZE, self.on_size)
+        self._play_thread        = PlayThread(self)
+        self._index_cache_thread = IndexCacheThread(self)
 
         # Trap SIGINT and close wx app
         def sigint_handler(signum, frame):
@@ -182,10 +205,79 @@ class Timeline(Layer):
         import signal
         signal.signal(signal.SIGINT, sigint_handler)
 
+        self.frame.Bind(wx.EVT_CLOSE, self.on_close)
+
+        self.Parent.Bind(wx.EVT_SIZE, self.on_size)
+        
+        self.Bind(wx.EVT_PAINT,       self.on_paint)
+        self.Bind(wx.EVT_KEY_DOWN,    self.on_key_down)
+        self.Bind(wx.EVT_LEFT_DOWN,   self.on_left_down)
+        self.Bind(wx.EVT_MIDDLE_DOWN, self.on_middle_down)
+        self.Bind(wx.EVT_RIGHT_DOWN,  self.on_right_down)
+        self.Bind(wx.EVT_LEFT_UP,     self.on_left_up)
+        self.Bind(wx.EVT_MIDDLE_UP,   self.on_middle_up)
+        self.Bind(wx.EVT_RIGHT_UP,    self.on_right_up)
+        self.Bind(wx.EVT_MOTION,      self.on_mouse_move)
+        self.Bind(wx.EVT_MOUSEWHEEL,  self.on_mousewheel)
+        
+        ##
+        
+        self._update_title()
+
+        self.frame.ToolBar   = TimelineToolBar  (self.frame, self)
+        self.frame.StatusBar = TimelineStatusBar(self.frame, self)
+
     ###
 
     @property
-    def history_height(self): return self.history_bottom - self.history_top
+    def play_all(self): return self._play_all
+
+    @property
+    def has_selected_region(self): return self._selected_left is not None and self._selected_right is not None
+
+    @property
+    def play_region(self):
+        if self.has_selected_region:
+            return (rospy.Time.from_sec(self._selected_left), rospy.Time.from_sec(self._selected_right))
+        else:
+            return (self.start_stamp, self.end_stamp)
+
+    @property
+    def frame(self): return wx.GetApp().GetTopWindow()
+
+    def _update_title(self):
+        title = 'rxbag'
+        if self._recorder:
+            if self._recorder.paused:
+                title += ' - %s [recording paused]' % self._bags[0].filename
+            else:
+                title += ' - %s [recording]' % self._bags[0].filename
+        elif len(self.bags) > 0:
+            if len(self.bags) == 1:
+                title += ' - ' + self._bags[0].filename
+            else:
+                title += ' - [%d bags]' % len(self._bags)
+        
+        self.frame.Title = title
+
+    ## Visual
+
+    @property
+    def history_left(self): return self._history_left
+
+    @property
+    def history_top(self): return self._history_top
+
+    @property
+    def history_bottom(self): return self._history_bottom
+
+    @property
+    def history_height(self): return self._history_bottom - self._history_top
+
+    @property
+    def history_right(self): return self._history_left + self._history_width
+
+    ##
     
     @property
     def selected_left(self): return self._selected_left
@@ -193,33 +285,21 @@ class Timeline(Layer):
     @property
     def selected_right(self): return self._selected_right
 
-    def on_close(self, event):
-        self._close()
+    ##
 
     def _close(self):
-        for renderer in self.timeline_renderers.values(): 
+        for renderer in self._timeline_renderers.values(): 
             renderer.close()
 
-        self.index_cache_thread.stop()
+        self._index_cache_thread.stop()
 
-        self.play_thread.stop()
+        self._play_thread.stop()
 
-        if self.player:
-            self.player.stop()
+        if self._player:
+            self._player.stop()
 
-        if self.recorder:
-            self.recorder.stop()
-
-    def get_title(self):
-        if self.recorder:
-            if self.recorder.paused:
-                return 'rxbag - %s [recording paused]' % self._bags[0].filename
-            else:
-                return 'rxbag - %s [recording]' % self._bags[0].filename
-        elif len(self.bags) == 1:
-            return 'rxbag - ' + self._bags[0].filename
-        else:
-            return 'rxbag - [%d bags]' % len(self._bags)
+        if self._recorder:
+            self._recorder.stop()
 
     ### Bags
 
@@ -228,11 +308,14 @@ class Timeline(Layer):
 
     def add_bag(self, bag):
         self._bags.append(bag)
+        
+        self._start_stamp        = self._get_start_stamp()
+        self._end_stamp          = self._get_end_stamp()
+        self._topics             = self._get_topics()
+        self._topics_by_datatype = self._get_topics_by_datatype()
 
         if self._stamp_left is None:
             self.reset_timeline()
-
-        wx.CallAfter(self.parent.update_title)
 
         # Invalidate entire index cache for all topics in this bag
         with self.index_cache_lock:
@@ -240,42 +323,44 @@ class Timeline(Layer):
                 if topic in self.index_cache:
                     del self.index_cache[topic]
                     self._update_index_cache(topic)
-    
-        self.invalidate()
+
+        wx.CallAfter(self.frame.ToolBar._setup)
+        wx.CallAfter(self._update_title)
+        wx.CallAfter(self.Refresh)
 
     ### Recording
 
     def record_bag(self, filename, all=True, topics=[], regex=False, limit=0):
         try:
-            self.recorder = Recorder(filename, bag_lock=self._bag_lock, all=all, topics=topics, regex=regex, limit=limit)
+            self._recorder = Recorder(filename, bag_lock=self._bag_lock, all=all, topics=topics, regex=regex, limit=limit)
         except Exception, ex:
             print >> sys.stderr, 'Error opening bag for recording [%s]: %s' % (filename, str(ex))
             return
 
-        self.recorder.add_listener(self.message_recorded)
+        self._recorder.add_listener(self._message_recorded)
 
-        self.add_bag(self.recorder.bag)
+        self.add_bag(self._recorder.bag)
 
-        self.recorder.start()
+        self._recorder.start()
 
-        self.play_thread.wrap = False
-        self.index_cache_thread.period = 0.1
+        self._play_thread.wrap = False
+        self._index_cache_thread.period = 0.1
 
-        self.parent.setup_toolbar()  # record button has been added
-        self.parent.update_title()
+        wx.CallAfter(self.frame.ToolBar._setup)  # record button has been added
+        self._update_title()
 
     def toggle_recording(self):
-        if self.recorder:
-            self.recorder.toggle_paused()
-            self.parent.setup_toolbar()
-            self.parent.update_title()
+        if self._recorder:
+            self._recorder.toggle_paused()
+            wx.CallAfter(self.frame.ToolBar._setup)
+            self._update_title()
 
     ### Export
 
     def copy_region_to_bag(self):
-        dialog = wx.FileDialog(self.parent.GetParent(), 'Copy messages to...', wildcard='ROS bag files (*.bag)|*.bag', style=wx.FD_SAVE)
+        dialog = wx.FileDialog(self, 'Copy messages to...', wildcard='ROS bag files (*.bag)|*.bag', style=wx.FD_SAVE)
         if dialog.ShowModal() == wx.ID_OK:
-            self._export_region(dialog.GetPath(), self.topics, Time.from_sec(self._selected_left), Time.from_sec(self._selected_right))
+            self._export_region(dialog.Path, self.topics, *self.play_region)
         dialog.Destroy()
 
     def _export_region(self, path, topics, start_stamp, end_stamp):
@@ -296,71 +381,74 @@ class Timeline(Layer):
     ### Publishing
 
     def is_publishing(self, topic):
-        return self.player and self.player.is_publishing(topic)
+        return self._player and self._player.is_publishing(topic)
 
     def start_publishing(self, topic):
-        if not self.player and not self._create_player():
+        if not self._player and not self._create_player():
             return False
         
-        self.player.start_publishing(topic)
+        self._player.start_publishing(topic)
         return True
 
     def stop_publishing(self, topic):
-        if not self.player:
+        if not self._player:
             return False
         
-        self.player.stop_publishing(topic)
+        self._player.stop_publishing(topic)
         return True
     
     def _create_player(self):
-        if not self.player:
+        if not self._player:
             try:
-                self.player = Player(self)
+                self._player = Player(self)
             except Exception, ex:
                 print >> sys.stderr, 'Error starting player; aborting publish: %s' % str(ex)
                 return False
             
         return True
 
-    @property
-    def play_speed(self):
-        if self._paused:
-            return 0.0
-        return self._play_speed
-
     ### Recording
 
-    def message_recorded(self, topic, msg, t):
+    def _message_recorded(self, topic, msg, t):
+        if self._start_stamp is None:
+            self._start_stamp = t
+            self._end_stamp   = t
+            self._playhead    = t
+        elif self._end_stamp is None or t > self._end_stamp:
+            self._end_stamp = t
+
+        if not self._topics or topic not in self._topics:
+            self._topics             = self._get_topics()
+            self._topics_by_datatype = self._get_topics_by_datatype()
+        
         if self._stamp_left is None:
             self.reset_zoom()
         
         # Invalidate the topic
         self.invalidated_caches.add(topic)
 
-        if topic in self.listeners:
-            for listener in self.listeners[topic]:
+        if topic in self._listeners:
+            for listener in self._listeners[topic]:
                 try:
                     listener.timeline_changed()
                 except wx.PyDeadObjectError:
                     self.remove_listener(topic, listener)
 
-    ###
-
-    def get_next_message_time(self):
-        if self.playhead is None:
-            return None
-
-        _, entry = self.get_entry_after(self.playhead)
-        if entry is None:
-            return self.start_stamp
-
-        return entry.time
-
-    def toggle_play_all(self):
-        self.play_all = not self.play_all  
+    ## Timeline info
 
     @property
-    def start_stamp(self):
+    def start_stamp(self): return self._start_stamp
+
+    @property
+    def end_stamp(self): return self._end_stamp
+
+    @property
+    def topics(self): return self._topics
+
+    @property
+    def topics_by_datatype(self): return self._topics_by_datatype
+    
+    def _get_start_stamp(self):
         with self._bag_lock:
             start_stamp = None
             for bag in self._bags:               
@@ -368,9 +456,8 @@ class Timeline(Layer):
                 if bag_start_stamp and (start_stamp is None or bag_start_stamp < start_stamp):
                     start_stamp = bag_start_stamp
             return start_stamp
-
-    @property
-    def end_stamp(self):
+    
+    def _get_end_stamp(self):
         with self._bag_lock:
             end_stamp = None
             for bag in self._bags:
@@ -378,9 +465,8 @@ class Timeline(Layer):
                 if bag_end_stamp and (end_stamp is None or bag_end_stamp > end_stamp):
                     end_stamp = bag_end_stamp
             return end_stamp
-
-    @property
-    def topics(self):
+    
+    def _get_topics(self):
         with self._bag_lock:
             topics = set()
             for bag in self._bags:
@@ -388,8 +474,7 @@ class Timeline(Layer):
                     topics.add(topic)
             return sorted(topics)
 
-    @property
-    def topics_by_datatype(self):
+    def _get_topics_by_datatype(self):
         with self._bag_lock:
             topics_by_datatype = {}
             for bag in self._bags:
@@ -470,6 +555,16 @@ class Timeline(Layer):
 
             return entry_bag, entry
 
+    def get_next_message_time(self):
+        if self.playhead is None:
+            return None
+
+        _, entry = self.get_entry_after(self.playhead)
+        if entry is None:
+            return self.start_stamp
+
+        return entry.time
+
     def read_message(self, bag, position):
         with self._bag_lock:
             return bag._read_message(position)
@@ -477,39 +572,41 @@ class Timeline(Layer):
     ### Views / listeners
 
     def add_view(self, topic, view):
-        self.views.append(view)
+        self._views.append(view)
         self.add_listener(topic, view)
 
     def remove_view(self, topic, view):
         self.remove_listener(topic, view)
-        self.views.remove(view)
+        self._views.remove(view)
+
+        wx.CallAfter(self.Refresh)
 
     def add_listener(self, topic, listener):
-        self.listeners.setdefault(topic, []).append(listener)
+        self._listeners.setdefault(topic, []).append(listener)
 
         self._update_message_view_for_topic(topic)
-        self.invalidate()
+        wx.CallAfter(self.Refresh)
 
     def remove_listener(self, topic, listener):
-        topic_listeners = self.listeners.get(topic)
+        topic_listeners = self._listeners.get(topic)
         if topic_listeners is not None and listener in topic_listeners:
             topic_listeners.remove(listener)
             if len(topic_listeners) == 0:
-                del self.listeners[topic]
+                del self._listeners[topic]
 
-            self.invalidate()
+            wx.CallAfter(self.Refresh)
 
     ### Plugins
 
     def get_viewer_types(self, datatype):
-        return [RawView] + self.viewer_types.get('*', []) + self.viewer_types.get(datatype, [])
+        return [RawView] + self._viewer_types.get('*', []) + self._viewer_types.get(datatype, [])
     
     def load_plugins(self):
         for view, timeline_renderer, msg_types in plugins.load_plugins():
             for msg_type in msg_types:
-                self.viewer_types.setdefault(msg_type, []).append(view)
+                self._viewer_types.setdefault(msg_type, []).append(view)
                 if timeline_renderer:
-                    self.timeline_renderers[msg_type] = timeline_renderer(self)
+                    self._timeline_renderers[msg_type] = timeline_renderer(self)
 
     ### Timeline renderers
 
@@ -518,87 +615,105 @@ class Timeline(Layer):
 
         for topic in self.topics:
             datatype = self.get_datatype(topic)
-            renderer = self.timeline_renderers.get(datatype)
+            renderer = self._timeline_renderers.get(datatype)
             if renderer is not None:
                 renderers.append((topic, renderer))
                 
         return renderers
 
     def is_renderer_active(self, topic):
-        return topic in self.rendered_topics
+        return topic in self._rendered_topics
 
     def toggle_renderers(self):
-        idle_renderers = len(self.rendered_topics) < len(self.topics)
+        idle_renderers = len(self._rendered_topics) < len(self.topics)
         
         self.set_renderers_active(idle_renderers)
 
     def set_renderers_active(self, active):
         if active:
             for topic in self.topics:
-                self.rendered_topics.add(topic)
+                self._rendered_topics.add(topic)
         else:
-            self.rendered_topics.clear()
+            self._rendered_topics.clear()
 
-        self.invalidate()
-        self.parent.playhead.invalidate()
+        wx.CallAfter(self.frame.ToolBar._setup)
+        wx.CallAfter(self.Refresh)
 
     def set_renderer_active(self, topic, active):
         if active:
-            if topic in self.rendered_topics:
+            if topic in self._rendered_topics:
                 return
-            self.rendered_topics.add(topic)
+            self._rendered_topics.add(topic)
         else:
-            if not topic in self.rendered_topics:
+            if not topic in self._rendered_topics:
                 return
-            self.rendered_topics.remove(topic)
-        
-        self.invalidate()
-        self.parent.playhead.invalidate()
+            self._rendered_topics.remove(topic)
 
-    ###
+        wx.CallAfter(self.frame.ToolBar._setup)
+        wx.CallAfter(self.Refresh)
 
-    @property
-    def history_right(self):
-        return self.history_left + self.history_width
+    ### Playhead
 
-    def _set_status(self, status):
-        self.parent.GetParent().SetStatusText(str(status))
+    # property: play_speed
 
-    ### Navigation
+    def _get_play_speed(self):
+        if self._paused:
+            return 0.0
+        return self._play_speed
 
-    def navigate_play(self): self.set_play_speed(1.0)
-    def navigate_stop(self): self.set_play_speed(0.0)
+    def _set_play_speed(self, play_speed):
+        if play_speed == self._play_speed:
+            return
+
+        if play_speed > 0.0:
+            self._play_speed = min( self._max_play_speed, max( self._min_play_speed, play_speed))
+        elif play_speed < 0.0:
+            self._play_speed = max(-self._max_play_speed, min(-self._min_play_speed, play_speed))
+        else:
+            self._play_speed = play_speed
+
+        if self._play_speed < 1.0:
+            self._play_thread.stick_to_end = False
+
+        wx.CallAfter(self.frame.ToolBar._setup)
+
+        wx.PostEvent(self.frame, PlayheadChangedEvent())
+
+    play_speed = property(_get_play_speed, _set_play_speed)
+
+    def toggle_play_all(self): self._play_all = not self._play_all  
+
+    def toggle_play(self):
+        if self._play_speed != 0.0:
+            self.play_speed = 0.0
+        else:
+            self.play_speed = 1.0
+
+    def navigate_play(self): self.play_speed = 1.0
+    def navigate_stop(self): self.play_speed = 0.0
 
     def navigate_rewind(self):
-        if self._play_speed <= -1.0:
+        if self._play_speed < 0.0:
             new_play_speed = self._play_speed * 2.0
-        elif self._play_speed < 0.001:
+        elif self._play_speed == 0.0:
             new_play_speed = -1.0
         else:
             new_play_speed = self._play_speed * 0.5
 
-        self.set_play_speed(new_play_speed)
+        self.play_speed = new_play_speed
         
     def navigate_fastforward(self):
-        if self._play_speed >= 1.0:
+        if self._play_speed > 0.0:
             new_play_speed = self._play_speed * 2.0
-        elif self._play_speed > -0.001:
-            new_play_speed = 1.0
+        elif self._play_speed == 0.0:
+            new_play_speed = 2.0
         else:
             new_play_speed = self._play_speed * 0.5
 
-        self.set_play_speed(new_play_speed)
+        self.play_speed = new_play_speed
 
-    def set_play_speed(self, play_speed):
-        self._play_speed = min(self.max_play_speed, max(self.min_play_speed, play_speed))
-
-        if self._play_speed < 1.0:
-            self.play_thread.stick_to_end = False
-
-        self.parent.setup_toolbar()
-
-    def navigate_start(self): self.playhead = self.start_stamp
-    def navigate_end(self):   self.playhead = self.end_stamp
+    def navigate_start(self): self.playhead = self.play_region[0]
+    def navigate_end(self):   self.playhead = self.play_region[1]
 
     ### View port
 
@@ -609,59 +724,86 @@ class Timeline(Layer):
         self._selected_right = None
 
         if self._stamp_left is not None:
-            self.playhead = Time.from_sec(self._stamp_left)
+            self.playhead = rospy.Time.from_sec(self._stamp_left)
 
     def set_timeline_view(self, stamp_left, stamp_right):
         self._stamp_left  = stamp_left
         self._stamp_right = stamp_right
 
-        self.invalidate()
+        wx.CallAfter(self.frame.ToolBar._setup)
+        wx.CallAfter(self.Refresh)
 
-    def translate_timeline(self, dx):
-        dstamp = self.map_dx_to_dstamp(dx)
-
-        self._stamp_left  -= dstamp
-        self._stamp_right -= dstamp
-
-        self.invalidate()
+    def translate_timeline(self, dstamp):
+        self.set_timeline_view(self._stamp_left + dstamp, self._stamp_right + dstamp)
 
     def reset_zoom(self):
         start_stamp, end_stamp = self.start_stamp, self.end_stamp
         if start_stamp is None:
             return
         
-        if (end_stamp - start_stamp) < Duration.from_sec(5.0):
-            end_stamp = start_stamp + Duration.from_sec(5.0)
+        if (end_stamp - start_stamp) < rospy.Duration.from_sec(5.0):
+            end_stamp = start_stamp + rospy.Duration.from_sec(5.0)
 
         self.set_timeline_view(start_stamp.to_sec(), end_stamp.to_sec())
 
     def zoom_in(self):  self.zoom_timeline(0.5)
     def zoom_out(self): self.zoom_timeline(2.0)
 
-    def zoom_timeline(self, zoom):
-        if self._stamp_left is None:
-            return
-        
-        stamp_interval     = self._stamp_right - self._stamp_left
-        playhead_fraction  = (self._playhead.to_sec() - self._stamp_left) / stamp_interval
-        new_stamp_interval = zoom * stamp_interval
-        
-        # Enforce zoom limits
-        px_per_sec = self.history_width / new_stamp_interval
-        if px_per_sec < self.min_zoom:
-            new_stamp_interval = self.history_width / self.min_zoom
-        elif px_per_sec > self.max_zoom:
-            new_stamp_interval = self.history_width / self.max_zoom
+    def can_zoom_in(self):  return self.can_zoom(0.5)
+    def can_zoom_out(self): return self.can_zoom(2.0)
 
-        self._stamp_left  = self._playhead.to_sec() - playhead_fraction * new_stamp_interval
-        self._stamp_right = self._stamp_left + new_stamp_interval
+    def can_zoom(self, desired_zoom):
+        if not self._stamp_left or not self._playhead:
+            return False
+
+        new_interval = self.get_zoom_interval(desired_zoom)
+        
+        new_range   = new_interval[1] - new_interval[0]
+        curr_range  = self._stamp_right - self._stamp_left
+        actual_zoom = new_range / curr_range
+
+        if desired_zoom < 1.0:
+            return actual_zoom < 0.95
+        else:
+            return actual_zoom > 1.05
+
+    def zoom_timeline(self, zoom):
+        interval = self.get_zoom_interval(zoom)
+        if not interval:
+            return
+
+        self._stamp_left, self._stamp_right = interval
 
         self._layout()
 
-        self.invalidate()
+        wx.CallAfter(self.frame.ToolBar._setup)
+        wx.CallAfter(self.Refresh)
+
+    def get_zoom_interval(self, zoom):
+        if self._stamp_left is None:
+            return None
+        
+        stamp_interval     = self._stamp_right - self._stamp_left
+        playhead_fraction  = (self._playhead.to_sec() - self._stamp_left) / stamp_interval
+        
+        new_stamp_interval = zoom * stamp_interval
+        
+        # Enforce zoom limits
+        px_per_sec = self._history_width / new_stamp_interval
+        if px_per_sec < self._min_zoom:
+            new_stamp_interval = self._history_width / self._min_zoom
+        elif px_per_sec > self._max_zoom:
+            new_stamp_interval = self._history_width / self._max_zoom
+
+        left  = self._playhead.to_sec() - playhead_fraction * new_stamp_interval
+        right = left + new_stamp_interval
+
+        return (left, right)
+
+    # property: playhead
 
     def _get_playhead(self): return self._playhead
-    
+
     def _set_playhead(self, playhead):
         with self._playhead_lock:
             if playhead == self._playhead:
@@ -670,7 +812,7 @@ class Timeline(Layer):
             self._playhead = playhead
 
             if self._playhead != self.end_stamp:
-                self.play_thread.stick_to_end = False
+                self._play_thread.stick_to_end = False
 
             playhead_secs = playhead.to_sec()
 
@@ -678,27 +820,15 @@ class Timeline(Layer):
                 dstamp = playhead_secs - self._stamp_right + (self._stamp_right - self._stamp_left) * 0.75
                 if dstamp > self.end_stamp.to_sec() - self._stamp_right:
                     dstamp = self.end_stamp.to_sec() - self._stamp_right
-
-                self._stamp_left  += dstamp
-                self._stamp_right += dstamp
-                
-                self.invalidate()
+                self.translate_timeline(dstamp)
                 
             elif playhead_secs < self._stamp_left:
                 dstamp = self._stamp_left - playhead_secs + (self._stamp_right - self._stamp_left) * 0.75
                 if dstamp > self._stamp_left - self.start_stamp.to_sec():
                     dstamp = self._stamp_left - self.start_stamp.to_sec()
+                self.translate_timeline(-dstamp)
 
-                self._stamp_left  -= dstamp
-                self._stamp_right -= dstamp
-                
-                self.invalidate()
-
-            self.parent.playhead.update_position()
-
-            self.parent.playhead.invalidate()
-            self.parent.status.invalidate()
-            
+            # Update the message views
             for topic in self.topics:
                 bag, entry = self.get_entry(self._playhead, topic)
                 if entry:
@@ -711,96 +841,112 @@ class Timeline(Layer):
 
                 self._update_message_view_for_topic(topic)
 
+            wx.PostEvent(self.frame, PlayheadChangedEvent())
+            
+            wx.CallAfter(self.Refresh)
+
     playhead = property(_get_playhead, _set_playhead)
 
     ### Rendering
 
+    def on_close(self, event):
+        self._close()
+        event.Skip()
+
     def on_size(self, event):
-        scroll_window = self.parent.GetParent()
-        
-        (w, h) = scroll_window.GetClientSize()
+        self.Position = (0, 0)
+        self.Size = (self.Parent.ClientSize[0], max(self.Parent.ClientSize[1], self._history_bottom + self._playhead_pointer_size[1] + self._margin_bottom))
+        self.Refresh()
 
-        self.resize(w - self.x, h - self.y)   # resize layer to fill client area
+    def on_paint(self, event):
+        pdc = wx.PaintDC(self)
+        pdc.Background = wx.WHITE_BRUSH
+        pdc.Clear()
 
-        self.parent.SetPosition((0, 0))
-        self.parent.SetSize((self.width, max(h, self.history_bottom + 28)))
-
-    def paint(self, dc):
         if len(self.bags) == 0 or len(self.topics) == 0:
             return
 
+        dc = wx.lib.wxcairo.ContextFromDC(pdc)
         dc.set_antialias(cairo.ANTIALIAS_NONE)
 
         self._calc_font_sizes(dc)
         self._layout()
 
         self._draw_topic_dividers(dc)
+        self._draw_selected_region(dc)
         self._draw_time_indicators(dc)
         self._draw_topic_histories(dc)
         self._draw_bag_ends(dc)
-        self._draw_selected_region(dc)
         self._draw_topic_names(dc)
         self._draw_history_border(dc)
+        self._draw_playhead(dc)
 
     def _calc_font_sizes(self, dc):
         dc.set_font_size(self._time_font_size)
-        self.time_font_height = dc.font_extents()[2]
+        self._time_font_height = dc.font_extents()[2]
 
-        self.topic_name_sizes = {}
+        self._topic_name_sizes = {}
         for topic in self.topics:
             x_bearing, y_bearing, width, height, x_advance, y_advance = dc.text_extents(topic)
-            self.topic_name_sizes[topic] = (width, height)
+            self._topic_name_sizes[topic] = (width, height)
 
     def _layout(self):
-        max_topic_name_width   = max([w for (w, h) in self.topic_name_sizes.values()])
-        self.topic_font_height = max([h for (w, h) in self.topic_name_sizes.values()])
+        max_topic_name_width   = max([w for (w, h) in self._topic_name_sizes.values()])
+        self._topic_font_height = max([h for (w, h) in self._topic_name_sizes.values()])
 
-        new_history_left  = self.margin_left + max_topic_name_width + 3
-        new_history_width = self.width - self.history_left - self.margin_right
-        updated_history = new_history_left != self.history_left or new_history_width != self.history_width
+        new_history_left  = self._margin_left + max_topic_name_width + 3
+        new_history_width = self.Size[0] - self._history_left - self._margin_right
+        updated_history = new_history_left != self._history_left or new_history_width != self._history_width
         if updated_history:
-            self.history_left  = new_history_left
-            self.history_width = new_history_width
-            self.parent.playhead.update_position()
+            self._history_left  = new_history_left
+            self._history_width = new_history_width
+            
+            wx.CallAfter(self.frame.ToolBar._setup)    # zoom enabled may have changed
 
-        self.history_bounds = {}
-        y = self.history_top
+        self._history_bounds = {}
+        y = self._history_top
         for topic in self.topics:
             datatype = self.get_datatype(topic)
             
             topic_height = None
-            if topic in self.rendered_topics:
-                renderer = self.timeline_renderers.get(datatype)
+            if topic in self._rendered_topics:
+                renderer = self._timeline_renderers.get(datatype)
                 if renderer:
                     topic_height = renderer.get_segment_height(topic)
             if not topic_height:
-                topic_height = self.topic_font_height + 2
+                topic_height = self._topic_font_height + self._topic_vertical_padding
 
-            self.history_bounds[topic] = (self.history_left, y, self.history_width, topic_height)
+            self._history_bounds[topic] = (self._history_left, y, self._history_width, topic_height)
 
             y += topic_height
 
-        new_history_bottom = max([y + h for (x, y, w, h) in self.history_bounds.values()]) - 1
-        if new_history_bottom != self.history_bottom:
-            self.history_bottom = new_history_bottom 
+        new_history_bottom = max([y + h for (x, y, w, h) in self._history_bounds.values()]) - 1
+        if new_history_bottom != self._history_bottom:
+            self._history_bottom = new_history_bottom 
 
             # Resize the scroll bars
-            scroll_window = self.parent.GetParent()
-            visible_height = int(self.history_bottom) + 28
+            scroll_window = self.Parent
+            visible_height = int(self._history_bottom) + self._playhead_pointer_size[1] + self._margin_bottom
             scroll_window.SetScrollbars(0, 1, 0, visible_height, 0, scroll_window.Position[1])
 
             # Resize the frame to fit
-            frame = scroll_window.GetParent()
-            frame.SetSize((frame.Size[0], visible_height + 35))   # space for the toolbar
+            bar_height = 0
+            if self.frame.ToolBar:
+                bar_height += self.frame.ToolBar.Size[1]
+            if self.frame.StatusBar:
+                bar_height += self.frame.StatusBar.Size[1]
+
+            frame = scroll_window.Parent
+            frame.Size = (frame.Size[0], visible_height + bar_height)
 
     def _draw_topic_dividers(self, dc):
-        clip_left  = self.history_left
-        clip_right = self.history_left + self.history_width
+        clip_left  = self._history_left
+        clip_right = self._history_left + self._history_width
 
         dc.set_line_width(1)
         row = 0
         for topic in self.topics:
-            (x, y, w, h) = self.history_bounds[topic]
+            (x, y, w, h) = self._history_bounds[topic]
             
             left = max(clip_left, x)
             rect = (left, y, min(clip_right - left, w), h)
@@ -843,7 +989,7 @@ class Timeline(Layer):
         dc.set_line_width(1.0)
         dc.set_font_size(self._time_font_size)
 
-        label_y = self.history_top - self.parent.playhead.pointer_size[1] - 2
+        label_y = self._history_top - self._playhead_pointer_size[1] - 5
 
         for stamp in stamps:
             x = self.map_stamp_to_x(stamp, False)
@@ -851,35 +997,33 @@ class Timeline(Layer):
             label        = self._get_label(division, stamp - start_stamp)
             label_x      = x + 3
             label_extent = dc.text_extents(label)
-            if label_x + label_extent[2] < self.width:
+            if label_x + label_extent[2] < self.Size[0] - 1:  # don't display label if it doesn't fit in the control
                 dc.set_source_rgb(0, 0, 0)
                 dc.move_to(label_x, label_y)
                 dc.show_text(label)
 
             dc.set_source_rgba(0.25, 0.25, 0.25, 0.7)
-            dc.set_dash([2, 2])
+            dc.set_dash(self._major_divisions_dash)
             dc.move_to(x, label_y - label_extent[3])
-            dc.line_to(x, self.history_bottom)
+            dc.line_to(x, self._history_bottom)
             dc.stroke()
             dc.set_dash([])
 
     def _draw_minor_divisions(self, dc, stamps, start_stamp, division):
         xs = [self.map_stamp_to_x(stamp) for stamp in stamps]
 
-        dc.set_dash([2, 2])
-
         dc.set_source_rgba(*self._minor_divisions_color_tick)
         for x in xs:
-            dc.move_to(x, self.history_top - self._time_tick_height)
-            dc.line_to(x, self.history_top)
+            dc.move_to(x, self._history_top - self._time_tick_height)
+            dc.line_to(x, self._history_top)
         dc.stroke()
 
+        dc.set_dash(self._minor_divisions_dash)
         dc.set_source_rgba(*self._minor_divisions_color)
         for x in xs:
-            dc.move_to(x, self.history_top)
-            dc.line_to(x, self.history_bottom)
+            dc.move_to(x, self._history_top)
+            dc.line_to(x, self._history_bottom)
         dc.stroke()
-
         dc.set_dash([])
 
     def _get_stamps(self, start_stamp, stamp_step):
@@ -921,7 +1065,7 @@ class Timeline(Layer):
             return '%d.%03d' % (secs, int(1000.0 * (elapsed - int(elapsed))))
 
     def _draw_topic_histories(self, dc):
-        for topic in sorted(self.history_bounds.keys()):
+        for topic in sorted(self._history_bounds.keys()):
             self._draw_topic_history(dc, topic)
 
     def _update_index_cache(self, topic):
@@ -930,6 +1074,9 @@ class Timeline(Layer):
 
         Returns True iff the cache was updated.
         """
+        if self.end_stamp is None:
+            return False
+        
         if topic not in self.index_cache:
             # Don't have any cache of messages in this topic
             start_time = self.start_stamp
@@ -945,7 +1092,7 @@ class Timeline(Layer):
             if len(topic_cache) == 0:
                 start_time = self.start_stamp
             else:
-                start_time = Time.from_sec(max(0.0, topic_cache[-1]))
+                start_time = rospy.Time.from_sec(max(0.0, topic_cache[-1]))
 
         end_time = self.end_stamp
 
@@ -964,7 +1111,7 @@ class Timeline(Layer):
         Draw boxes to show message regions on timelines.
         """
         
-        x, y, w, h = self.history_bounds[topic]
+        x, y, w, h = self._history_bounds[topic]
         
         msg_y      = y + 1
         msg_height = h - 1
@@ -974,12 +1121,12 @@ class Timeline(Layer):
         # Get the renderer and the message combine interval
         renderer = None
         msg_combine_interval = None
-        if topic in self.rendered_topics:
-            renderer = self.timeline_renderers.get(datatype)
+        if topic in self._rendered_topics:
+            renderer = self._timeline_renderers.get(datatype)
             if not renderer is None:
                 msg_combine_interval = self.map_dx_to_dstamp(renderer.msg_combine_px)
         if msg_combine_interval is None:
-            msg_combine_interval = self.map_dx_to_dstamp(self.default_msg_combine_px)
+            msg_combine_interval = self.map_dx_to_dstamp(self._default_msg_combine_px)
 
         # Get the cache
         with self.index_cache_lock:
@@ -991,25 +1138,26 @@ class Timeline(Layer):
         end_index   = bisect.bisect_left(all_stamps, self._stamp_right)
 
         # Set pen based on datatype
-        datatype_color = self.datatype_colors.get(datatype, self.default_datatype_color)
+        datatype_color = self._datatype_colors.get(datatype, self._default_datatype_color)
 
         # Iterate through regions of connected messages
-        width_interval = self.history_width / (self._stamp_right - self._stamp_left)
+        width_interval = self._history_width / (self._stamp_right - self._stamp_left)
 
         # Clip to bounds
         dc.save()
-        dc.rectangle(self.history_left, self.history_top, self.history_width, self.history_height)
+        dc.rectangle(self._history_left, self._history_top, self._history_width, self._history_bottom - self._history_top)
         dc.clip()
 
         # Draw stamps
         dc.set_line_width(1)
         dc.set_source_rgb(*datatype_color)
-        for (stamp_start, stamp_end) in self._find_regions(all_stamps[:end_index], self.map_dx_to_dstamp(self.default_msg_combine_px)):
+
+        for (stamp_start, stamp_end) in self._find_regions(all_stamps[:end_index], self.map_dx_to_dstamp(self._default_msg_combine_px)):
             if stamp_end < self._stamp_left:
                 continue
             
-            region_x_start = self.history_left + (stamp_start - self._stamp_left) * width_interval
-            region_x_end   = self.history_left + (stamp_end   - self._stamp_left) * width_interval
+            region_x_start = self._history_left + (stamp_start - self._stamp_left) * width_interval
+            region_x_end   = self._history_left + (stamp_end   - self._stamp_left) * width_interval
             region_width   = max(1, region_x_end - region_x_start)
 
             dc.rectangle(region_x_start, msg_y, region_width, msg_height)
@@ -1017,14 +1165,14 @@ class Timeline(Layer):
         dc.fill()
 
         # Draw active message
-        if topic in self.listeners:
-            dc.set_line_width(3)
+        if topic in self._listeners:
+            dc.set_line_width(self._active_message_line_width)
             playhead_stamp = None
             playhead_index = bisect.bisect_right(all_stamps, self._playhead.to_sec()) - 1
             if playhead_index >= 0:
                 playhead_stamp = all_stamps[playhead_index]
                 if playhead_stamp > self._stamp_left and playhead_stamp < self._stamp_right:
-                    playhead_x = self.history_left + (all_stamps[playhead_index] - self._stamp_left) * width_interval
+                    playhead_x = self._history_left + (all_stamps[playhead_index] - self._stamp_left) * width_interval
                     dc.move_to(playhead_x, msg_y)
                     dc.line_to(playhead_x, msg_y + msg_height)
                     dc.stroke()
@@ -1036,8 +1184,8 @@ class Timeline(Layer):
                 if stamp_end < self._stamp_left:
                     continue
 
-                region_x_start = self.history_left + (stamp_start - self._stamp_left) * width_interval
-                region_x_end   = self.history_left + (stamp_end   - self._stamp_left) * width_interval
+                region_x_start = self._history_left + (stamp_start - self._stamp_left) * width_interval
+                region_x_end   = self._history_left + (stamp_end   - self._stamp_left) * width_interval
                 region_width   = max(1, region_x_end - region_x_start)
 
                 renderer.draw_timeline_segment(dc, topic, stamp_start, stamp_end, region_x_start, msg_y, region_width, msg_height)
@@ -1067,8 +1215,8 @@ class Timeline(Layer):
         """
         Draw topic names.
         """
-        topics = self.history_bounds.keys()
-        coords = [(self.margin_left, y + (h / 2) + (self.topic_font_height / 2)) for (x, y, w, h) in self.history_bounds.values()]
+        topics = self._history_bounds.keys()
+        coords = [(self._margin_left, y + (h / 2) + (self._topic_font_height / 2)) for (x, y, w, h) in self._history_bounds.values()]
         
         dc.set_font_size(self._topic_font_size)
         dc.set_source_rgb(*self._topic_font_color)
@@ -1082,33 +1230,53 @@ class Timeline(Layer):
         """
         x_start, x_end = self.map_stamp_to_x(self.start_stamp.to_sec()), self.map_stamp_to_x(self.end_stamp.to_sec())
         dc.set_source_rgba(*self._bag_end_color)
-        dc.rectangle(self.history_left, self.history_top, x_start - self.history_left,                    self.history_bottom - self.history_top)
-        dc.rectangle(x_end,             self.history_top, self.history_left + self.history_width - x_end, self.history_bottom - self.history_top)
+        dc.rectangle(self._history_left, self._history_top, x_start - self._history_left,                    self._history_bottom - self._history_top)
+        dc.rectangle(x_end,             self._history_top, self._history_left + self._history_width - x_end, self._history_bottom - self._history_top)
         dc.fill()
 
     def _draw_selected_region(self, dc):
-        if self._selected_left is None or self._selected_right is None:
+        if self._selected_left is None:
             return
         
-        x_left, x_right = self.map_stamp_to_x(self._selected_left), self.map_stamp_to_x(self._selected_right)
+        x_left  = self.map_stamp_to_x(self._selected_left)
+        if self._selected_right is not None:
+            x_right = self.map_stamp_to_x(self._selected_right)
+        else:
+            x_right = self.map_stamp_to_x(self._playhead.to_sec())
 
         left   = x_left
-        top    = self.history_top - self.parent.playhead.pointer_size[1] - 2 - self._time_font_size - 2
+        top    = self._history_top - self._playhead_pointer_size[1] - 5 - self._time_font_size - 4
         width  = x_right - x_left
-        height = self.history_bottom - top
+        height = self._history_top - top
 
         dc.set_source_rgba(*self._selected_region_color)
         dc.rectangle(left, top, width, height)
         dc.fill()
+
+        dc.set_source_rgba(*self._selected_region_outline_ends_color)
+        dc.set_line_width(2.0)
+        dc.move_to(left, top)
+        dc.line_to(left, top + height)
+        dc.move_to(left + width, top)
+        dc.line_to(left + width, top + height)
+        dc.stroke()
+        
+        dc.set_source_rgba(*self._selected_region_outline_top_color)
         dc.set_line_width(1.0)
-        dc.set_source_rgba(*self._selected_region_outline_color)
-        dc.rectangle(left, top, width, height)
+        dc.move_to(left,         top)
+        dc.line_to(left + width, top)
+        dc.stroke()
+        dc.set_line_width(2.0)
+        dc.move_to(left, self._history_top)
+        dc.line_to(left, self._history_bottom)
+        dc.move_to(left + width, self._history_top)
+        dc.line_to(left + width, self._history_bottom)
         dc.stroke()
 
     def _draw_history_border(self, dc):
-        bounds_width = min(self.history_width, self.parent.width - self.x)
+        bounds_width = min(self._history_width, self.Size[0])
 
-        x, y, w, h = self.history_left, self.history_top, bounds_width, self.history_bottom - self.history_top
+        x, y, w, h = self._history_left, self._history_top, bounds_width, self._history_bottom - self._history_top
 
         dc.set_source_rgb(0.1, 0.1, 0.1)
         dc.set_line_width(1)
@@ -1121,10 +1289,37 @@ class Timeline(Layer):
         dc.line_to(x + w + 1, y + 2)
         dc.stroke()
 
+    def _draw_playhead(self, dc):
+        px = self.map_stamp_to_x(self.playhead.to_sec())
+        pw, ph = self._playhead_pointer_size
+
+        # Line
+        dc.set_line_width(self._playhead_line_width)
+        dc.set_source_rgba(*self._playhead_color)
+        dc.move_to(px, self._history_top - 1)
+        dc.line_to(px, self._history_bottom + 2)
+        dc.stroke()
+
+        # Upper triangle
+        py = self._history_top - ph
+        dc.move_to(px,      py + ph)
+        dc.line_to(px + pw, py)
+        dc.line_to(px - pw, py)
+        dc.line_to(px ,     py + ph)
+        dc.fill()
+
+        # Lower triangle
+        py = self._history_bottom + 1
+        dc.move_to(px,      py)
+        dc.line_to(px + pw, py + ph)
+        dc.line_to(px - pw, py + ph)
+        dc.line_to(px,      py)
+        dc.fill()
+
     ### Pixel location <-> time
 
     def map_x_to_stamp(self, x, clamp_to_visible=True):
-        fraction = float(x - self.history_left) / self.history_width
+        fraction = float(x - self._history_left) / self._history_width
 
         if clamp_to_visible:
             if fraction <= 0.0:
@@ -1135,7 +1330,7 @@ class Timeline(Layer):
         return self._stamp_left + fraction * (self._stamp_right - self._stamp_left)
 
     def map_dx_to_dstamp(self, dx):
-        return float(dx) * (self._stamp_right - self._stamp_left) / self.history_width
+        return float(dx) * (self._stamp_right - self._stamp_left) / self._history_width
 
     def map_stamp_to_x(self, stamp, clamp_to_visible=True):
         fraction = (stamp - self._stamp_left) / (self._stamp_right - self._stamp_left)
@@ -1143,117 +1338,221 @@ class Timeline(Layer):
         if clamp_to_visible:
             fraction = min(1.0, max(0.0, fraction))
 
-        return self.history_left + fraction * self.history_width
+        return self._history_left + fraction * self._history_width
 
     def map_dstamp_to_dx(self, dstamp):
-        return (float(dstamp) * self.history_width) / (self._stamp_right - self._stamp_left)
+        return (float(dstamp) * self._history_width) / (self._stamp_right - self._stamp_left)
+
+    ### Keyboard
+
+    def on_key_down(self, event):
+        key_code = event.KeyCode
+        
+        if   key_code == wx.WXK_SPACE:           self.toggle_play()
+        elif key_code == wx.WXK_NUMPAD_ADD:      self.navigate_fastforward()
+        elif key_code == wx.WXK_NUMPAD_SUBTRACT: self.navigate_rewind()
+        elif key_code == wx.WXK_HOME:            self.navigate_start()
+        elif key_code == wx.WXK_END:             self.navigate_end()
+        elif key_code == wx.WXK_PAGEUP:          self.zoom_in()
+        elif key_code == wx.WXK_PAGEDOWN:        self.zoom_out()
+        elif key_code == wx.WXK_LEFT:            self.translate_timeline((self._stamp_right - self._stamp_left) * -0.05)
+        elif key_code == wx.WXK_RIGHT:           self.translate_timeline((self._stamp_right - self._stamp_left) *  0.05)
+        elif key_code == wx.WXK_RETURN:          self.toggle_selecting()
+        elif key_code == wx.WXK_PAUSE:           self.toggle_recording()
 
     ### Mouse events
 
     def on_left_down(self, event):
-        self.clicked_pos = self.dragged_pos = event.GetPosition()
-        if not self.contains(*self.clicked_pos):
-            return
+        self.SetFocus()
+        self._clicked_pos = self._dragged_pos = event.Position
 
         self._paused = True
 
         if event.ShiftDown():
             return
-        
-        x, y = self.clicked_pos[0] - self.x, self.clicked_pos[1] - self.y
-        
-        if x >= self.history_left and x <= self.history_right:
-            if y >= self.history_top and y <= self.history_bottom:
+
+        x, y = self._clicked_pos
+
+        if x >= self._history_left and x <= self.history_right:
+            if y >= self._history_top and y <= self._history_bottom:
                 # Clicked within timeline - set playhead
                 playhead_secs = self.map_x_to_stamp(x)
                 
                 if playhead_secs <= 0.0:
-                    self.playhead = Time(0, 1)
+                    self.playhead = rospy.Time(0, 1)
                 else:
-                    self.playhead = Time.from_sec(playhead_secs)
-                    
-            elif y <= self.history_top:
-                # Clicked above timeline - set selected region left
-                self._selected_left  = None
-                self._selected_right = None
-                self._selecting      = True
+                    self.playhead = rospy.Time.from_sec(playhead_secs)
                 
-                self.invalidate()
+                self.Refresh()
+                    
+            elif y <= self._history_top:
+                # Clicked above timeline
+                
+                if self._selecting_mode == _SelectionMode.NONE:
+                    self._selected_left  = None
+                    self._selected_right = None
+                    self._selecting_mode = _SelectionMode.LEFT_MARKED
+
+                    self.Refresh()
+                
+                elif self._selecting_mode == _SelectionMode.MARKED:
+                    left_x  = self.map_stamp_to_x(self._selected_left)
+                    right_x = self.map_stamp_to_x(self._selected_right)
+                    
+                    if x < left_x - self._selection_handle_width or x > right_x + self._selection_handle_width:
+                        self._selected_left  = None
+                        self._selected_right = None
+                        self._selecting_mode = _SelectionMode.LEFT_MARKED
+                        self.Refresh()
 
     def on_middle_down(self, event):
-        self.clicked_pos = self.dragged_pos = event.GetPosition()
+        self.SetFocus()
+        self._clicked_pos = self._dragged_pos = event.Position
+        
         self._paused = True
 
     def on_right_down(self, event):
-        self.clicked_pos = self.dragged_pos = event.GetPosition()
-        if not self.contains(*self.clicked_pos):
-            return
+        self.SetFocus()
+        self._clicked_pos = self._dragged_pos = event.Position
 
-        self.parent.display_popup(self.clicked_pos)
+        self.PopupMenu(TimelinePopupMenu(self), self._clicked_pos)
 
     def on_left_up  (self, event): self._on_mouse_up(event)
     def on_middle_up(self, event): self._on_mouse_up(event)
     def on_right_up (self, event): pass
 
     def _on_mouse_up(self, event):
-        self._paused    = False
-        self._selecting = False
-        self.parent.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
+        self._paused = False
+        
+        if self._selecting_mode in [_SelectionMode.LEFT_MARKED, _SelectionMode.MOVE_LEFT, _SelectionMode.MOVE_RIGHT, _SelectionMode.SHIFTING]:
+            if self._selected_left is None:
+                self._selecting_mode = _SelectionMode.NONE
+            else:
+                self._selecting_mode = _SelectionMode.MARKED
+
+        self.Cursor = wx.StockCursor(wx.CURSOR_ARROW)
+        
+        self.Refresh()
 
     def on_mousewheel(self, event):
-        dz = event.GetWheelRotation() / event.GetWheelDelta()
+        dz = event.WheelRotation / event.WheelDelta
         self.zoom_timeline(1.0 - dz * 0.2)
-        
+
     def on_mouse_move(self, event):
-        mouse_pos = event.GetPosition()
+        if not self._history_left:  # @todo: need a better notion of initialized
+            return
+
+        x, y = event.Position
 
         if not event.Dragging():
-            return
-        
-        if not self.history_left:  # @todo: need a better notion of initialized
-            return
+            # Mouse moving
 
-        left, middle, right = event.LeftIsDown(), event.MiddleIsDown(), event.RightIsDown()
+            if self._selecting_mode in [_SelectionMode.MARKED, _SelectionMode.MOVE_LEFT, _SelectionMode.MOVE_RIGHT, _SelectionMode.SHIFTING]:
+                if y <= self.history_top:
+                    left_x  = self.map_stamp_to_x(self._selected_left)
+                    right_x = self.map_stamp_to_x(self._selected_right)
 
-        if middle or event.ShiftDown():
-            x, y = mouse_pos
-
-            dx_click, dy_click = x - self.clicked_pos[0], y - self.clicked_pos[1]
-            dx_drag,  dy_drag  = x - self.dragged_pos[0], y - self.dragged_pos[1]
-            
-            if dx_drag != 0:
-                self.translate_timeline(dx_drag)
-            if (dx_drag == 0 and abs(dy_drag) > 0) or (dx_drag != 0 and abs(float(dy_drag) / dx_drag) > 0.2 and abs(dy_drag) > 1):
-                zoom = min(self.max_zoom_speed, max(self.min_zoom_speed, 1.0 + self.zoom_sensitivity * dy_drag))
-                self.zoom_timeline(zoom)
-
-            self.parent.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
-
-            self.parent.playhead.update_position()
-
-        elif left:
-            x, y = mouse_pos[0] - self.x, mouse_pos[1] - self.y
-
-            clicked_x, clicked_y = self.clicked_pos[0] - self.x, self.clicked_pos[1] - self.y
-
-            if self._selecting:
-                clicked_x_stamp = self.map_x_to_stamp(clicked_x)
-                x_stamp         = self.map_x_to_stamp(x)
-                
-                self._selected_left  = min(clicked_x_stamp, x_stamp)
-                self._selected_right = max(clicked_x_stamp, x_stamp)
-
-                self.invalidate()
-
-            else:
-                if clicked_x >= self.history_left and clicked_x <= self.history_right and clicked_y >= self.history_top and clicked_y <= self.history_bottom:
-                    playhead_secs = self.map_x_to_stamp(x)
-                    if playhead_secs <= 0.0:
-                        self.playhead = Time(0, 1)
+                    if abs(x - left_x) <= self._selection_handle_width:
+                        self._selecting_mode = _SelectionMode.MOVE_LEFT
+                        self.Cursor = wx.StockCursor(wx.CURSOR_SIZEWE)
+                        return
+                    elif abs(x - right_x) <= self._selection_handle_width:
+                        self._selecting_mode = _SelectionMode.MOVE_RIGHT
+                        self.Cursor = wx.StockCursor(wx.CURSOR_SIZEWE)
+                        return
+                    elif x > left_x and x < right_x:
+                        self._selecting_mode = _SelectionMode.SHIFTING
+                        self.Cursor = wx.StockCursor(wx.CURSOR_SIZING)
+                        return
                     else:
-                        self.playhead = Time.from_sec(playhead_secs)
+                        self._selecting_mode = _SelectionMode.MARKED
 
-        self.dragged_pos = mouse_pos
+            self.Cursor = wx.StockCursor(wx.CURSOR_ARROW)
+    
+        else:
+            # Mouse dragging
+
+            if event.MiddleIsDown() or event.ShiftDown():
+                # Middle or shift: zoom
+                
+                dx_click, dy_click = x - self._clicked_pos[0], y - self._clicked_pos[1]
+                dx_drag,  dy_drag  = x - self._dragged_pos[0], y - self._dragged_pos[1]
+                
+                if dx_drag != 0:
+                    self.translate_timeline(-self.map_dx_to_dstamp(dx_drag))
+                if (dx_drag == 0 and abs(dy_drag) > 0) or (dx_drag != 0 and abs(float(dy_drag) / dx_drag) > 0.2 and abs(dy_drag) > 1):
+                    zoom = min(self._max_zoom_speed, max(self._min_zoom_speed, 1.0 + self._zoom_sensitivity * dy_drag))
+                    self.zoom_timeline(zoom)
+    
+                self.Cursor = wx.StockCursor(wx.CURSOR_HAND)
+    
+            elif event.LeftIsDown():
+                clicked_x, clicked_y = self._clicked_pos
+    
+                x_stamp = self.map_x_to_stamp(x)
+
+                if self._selecting_mode == _SelectionMode.LEFT_MARKED:
+                    # Left and selecting: change selection region
+
+                    clicked_x_stamp = self.map_x_to_stamp(clicked_x)
+                    
+                    self._selected_left  = min(clicked_x_stamp, x_stamp)
+                    self._selected_right = max(clicked_x_stamp, x_stamp)
+    
+                    self.Refresh()
+                    
+                elif self._selecting_mode == _SelectionMode.MOVE_LEFT:
+                    self._selected_left = x_stamp
+                    self.Refresh()
+                    
+                elif self._selecting_mode == _SelectionMode.MOVE_RIGHT:
+                    self._selected_right = x_stamp
+                    self.Refresh()
+
+                elif self._selecting_mode == _SelectionMode.SHIFTING:
+                    dx_drag = x - self._dragged_pos[0]
+                    dstamp = self.map_dx_to_dstamp(dx_drag)
+
+                    self._selected_left  = max(self._start_stamp.to_sec(), min(self._end_stamp.to_sec(), self._selected_left  + dstamp))
+                    self._selected_right = max(self._start_stamp.to_sec(), min(self._end_stamp.to_sec(), self._selected_right + dstamp))
+                    self.Refresh()
+
+                elif clicked_x >= self._history_left and clicked_x <= self.history_right and clicked_y >= self._history_top and clicked_y <= self._history_bottom:
+                    # Left and clicked within timeline: change playhead
+                    
+                    if x_stamp <= 0.0:
+                        self.playhead = rospy.Time(0, 1)
+                    else:
+                        self.playhead = rospy.Time.from_sec(x_stamp)
+                        
+                    self.Refresh()
+    
+            self._dragged_pos = event.Position
+
+    def toggle_selecting(self):
+        """
+        Transitions selection mode from NONE -> LEFT_MARKED -> MARKED -> NONE
+        """
+        if self._selecting_mode == _SelectionMode.NONE:
+            self._selected_left  = self._playhead.to_sec()
+            self._selected_right = None
+            
+            self._selecting_mode = _SelectionMode.LEFT_MARKED
+
+        elif self._selecting_mode == _SelectionMode.LEFT_MARKED:
+            current_mark = self._selected_left
+            self._selected_left  = min(current_mark, self._playhead.to_sec())
+            self._selected_right = max(current_mark, self._playhead.to_sec())
+
+            self._selecting_mode = _SelectionMode.MARKED
+
+        elif self._selecting_mode == _SelectionMode.MARKED:
+            self._selected_left  = None
+            self._selected_right = None
+            
+            self._selecting_mode = _SelectionMode.NONE
+
+        self.Refresh()
 
     ###
 
@@ -1276,7 +1575,7 @@ class Timeline(Layer):
             return msg_data
 
     def _update_message_view_for_topic(self, topic):
-        if not self._playhead_positions or topic not in self.listeners or topic not in self._playhead_positions:
+        if not self._playhead_positions or topic not in self._listeners or topic not in self._playhead_positions:
             return
 
         bag, playhead_position = self._playhead_positions[topic]
@@ -1286,45 +1585,20 @@ class Timeline(Layer):
             msg_data = self._get_message(bag, topic, playhead_position)
 
         if msg_data:
-            for listener in self.listeners[topic]:
+            for listener in self._listeners[topic]:
                 try:
                     listener.message_viewed(bag, msg_data)
                 except wx.PyDeadObjectError:
                     self.remove_listener(topic, listener)
         else:
-            for listener in self.listeners[topic]:
+            for listener in self._listeners[topic]:
                 try:
                     listener.message_cleared()
                 except wx.PyDeadObjectError:
                     self.remove_listener(topic, listener)
 
-    ### Layout management
-
-    def save_layout(self):
-        user_config_dir = wx.StandardPaths.Get().GetUserConfigDir()
-        config_dir = os.path.join(user_config_dir, '.rxbag')
-        if not os.path.exists(config_dir):
-            os.mkdir(config_dir)
-        layout_file = os.path.join(config_dir, 'layout')
-        config = wx.Config(localFilename=layout_file)
-        
-        # TODO
-        #for i, view in enumerate(self.views):
-        #    config.Write('/Views/View%d' % (i + 1), view.__class__.__name__)
-        #config.Flush()
-
-    def load_layout(self):
-        user_config_dir = wx.StandardPaths.Get().GetUserConfigDir()
-        config_dir = os.path.join(user_config_dir, '.rxbag')
-        if not os.path.exists(config_dir):
-            return
-        layout_file = os.path.join(config_dir, 'layout')
-        config = wx.Config(localFilename=layout_file)
-        
-        # TODO
-
 class IndexCacheThread(threading.Thread):
-    def __init__(self, timeline, period=0.5):
+    def __init__(self, timeline, period=0.05):
         threading.Thread.__init__(self)
 
         self.timeline  = timeline
@@ -1337,21 +1611,19 @@ class IndexCacheThread(threading.Thread):
     def run(self):
         try:
             while not self.stop_flag:
-                topics = self.timeline.topics
-                if len(topics) == 0:
+                if not self.timeline.topics:
                     time.sleep(0.1)
                     continue
 
                 updated = False
-                for topic in topics:
+                for topic in self.timeline.topics:
                     with self.timeline.index_cache_lock:
                         updated |= self.timeline._update_index_cache(topic)
-                        
                         if updated:
                             break
 
                 if updated:
-                    self.timeline.invalidate()
+                    wx.CallAfter(self.timeline.Refresh)
     
                 time.sleep(self.period)
         except Exception, ex:
@@ -1374,27 +1646,29 @@ class PlayThread(threading.Thread):
         self.start()
 
     def run(self):
-        self.play_all = None
+        self._play_all = None
 
         try:
             while not self.stop_flag:
                 # Reset on switch of playing mode
-                if self.play_all != self.timeline.play_all or self.timeline.playhead != self.last_playhead:
-                    self.play_all = self.timeline.play_all
+                if self._play_all != self.timeline._play_all or self.timeline.playhead != self.last_playhead:
+                    self._play_all = self.timeline._play_all
     
                     self.last_frame       = None
                     self.last_playhead    = None
                     self.desired_playhead = None
     
-                if self.play_all:
+                if self._play_all:
                     self.step_next_message()
-                    time.sleep(0.01)
+                    time.sleep(0.05)
                 else:
                     self.step_fixed()
-                    time.sleep(0.02)
+                    time.sleep(0.05)
 
         except Exception, ex:
             print >> sys.stderr, 'Error advancing playhead: %s' % str(ex)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
 
     def step_fixed(self):
         if self.timeline.play_speed == 0.0 or not self.timeline.playhead:
@@ -1407,11 +1681,11 @@ class PlayThread(threading.Thread):
             if self.stick_to_end:
                 new_playhead = self.timeline.end_stamp
             else:
-                new_playhead = self.timeline.playhead + Duration.from_sec((now - self.last_frame).to_sec() * self.timeline.play_speed)
+                new_playhead = self.timeline.playhead + rospy.Duration.from_sec((now - self.last_frame).to_sec() * self.timeline.play_speed)
     
                 if self.timeline.selected_left is not None and self.timeline.selected_right is not None:
-                    start_stamp = Time.from_sec(self.timeline.selected_left)
-                    end_stamp   = Time.from_sec(self.timeline.selected_right)
+                    start_stamp = rospy.Time.from_sec(self.timeline.selected_left)
+                    end_stamp   = rospy.Time.from_sec(self.timeline.selected_right)
                 else:
                     start_stamp = self.timeline.start_stamp
                     end_stamp   = self.timeline.end_stamp
@@ -1452,9 +1726,9 @@ class PlayThread(threading.Thread):
             if not self.desired_playhead:
                 self.desired_playhead = self.timeline.playhead
             else:
-                delta = Time.from_sec(time.time()) - self.last_frame
-                if delta > Duration.from_sec(0.1):
-                    delta = Duration.from_sec(0.1)
+                delta = rospy.Time.from_sec(time.time()) - self.last_frame
+                if delta > rospy.Duration.from_sec(0.1):
+                    delta = rospy.Duration.from_sec(0.1)
                 self.desired_playhead += delta
 
             # Get the occurrence of the next message
@@ -1465,7 +1739,7 @@ class PlayThread(threading.Thread):
             else:
                 self.timeline.playhead = self.desired_playhead
 
-        self.last_frame    = Time.from_sec(time.time())
+        self.last_frame    = rospy.Time.from_sec(time.time())
         self.last_playhead = self.timeline.playhead
 
     def stop(self):

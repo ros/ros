@@ -32,14 +32,6 @@
 
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
-import rospy
-
-import bisect
-import time
-
-import wx
-
-from rxbag.util.layer import Layer
 
 class TimelineRenderer(object):
     """
@@ -67,7 +59,7 @@ class TimelineRenderer(object):
         """
         Draw the timeline segment.
         
-        @param dc: Cairo device context to render into
+        @param dc: Cairo context to render into
         @param topic: topic name
         @param stamp_start: start of the interval on the timeline
         @param stamp_end: start of the interval on the timeline

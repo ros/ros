@@ -30,32 +30,58 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""
-Draws the playhead time indicator and the playspeed.
-"""
-
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 
 import wx
 
 import bag_helper
-from util.layer import Layer
 
-class StatusLayer(Layer):
-    def __init__(self, parent, title, timeline, x, y, width, height):
-        Layer.__init__(self, parent, title, x, y, width, height)
-        
+PlayheadChangedEvent, EVT_PLAYHEAD_CHANGED = wx.lib.newevent.NewEvent()
+
+class TimelineStatusBar(wx.StatusBar):
+    def __init__(self, parent, timeline):
+        wx.StatusBar.__init__(self, parent, -1)
+
         self.timeline = timeline
 
-    def paint(self, dc):
-        if not self.timeline.playhead:
+        self.timestamp_field      = 1
+        self.human_readable_field = 2
+        self.elapsed_field        = 3
+        self.playspeed_field      = 4
+
+        self.timestamp_width      = 125
+        self.human_readable_width = 180
+        self.elapsed_width        = 110
+        self.playspeed_width      =  80
+
+        self.SetFieldsCount(5)
+
+        parent.Bind(EVT_PLAYHEAD_CHANGED, lambda e: self._update())
+        parent.Bind(wx.EVT_SIZE,          self.on_size)
+
+        self._update()
+
+    def on_size(self, event):
+        main_width = self.Size[0] - (self.timestamp_width + self.human_readable_width + self.elapsed_width + self.playspeed_width)
+        self.SetStatusWidths([main_width, self.timestamp_width, self.human_readable_width, self.elapsed_width, self.playspeed_width])
+        event.Skip()
+
+    def _update(self):
+        if self.timeline.playhead is None or self.timeline.start_stamp is None:
             return
 
-        s = '%s [%.3fs]' % (bag_helper.stamp_to_str(self.timeline.playhead), (self.timeline.playhead - self.timeline.start_stamp).to_sec())
+        # Raw timestamp
+        self.SetStatusText('%d.%s' % (self.timeline.playhead.secs, str(self.timeline.playhead.nsecs)[:3]), self.timestamp_field)
 
+        # Human-readable time
+        self.SetStatusText(bag_helper.stamp_to_str(self.timeline.playhead), self.human_readable_field)
+
+        # Elapsed time (in seconds)
+        self.SetStatusText('%.3fs' % (self.timeline.playhead - self.timeline.start_stamp).to_sec(), self.elapsed_field)
+
+        # Play speed
         spd = self.timeline.play_speed
-        spd_str = None
         if spd != 0.0:
             if spd > 1.0:
                 spd_str = '>> %.0fx' % spd
@@ -69,20 +95,7 @@ class StatusLayer(Layer):
                 spd_str = '<'
             else:
                 spd_str = '<< %.0fx' % -spd
-        if spd_str:
-            s += ' ' + spd_str
 
-        x = self.timeline.margin_left
-        y = self.timeline.history_top - 12
-
-        dc.set_source_rgb(0, 0, 0)
-        dc.set_font_size(13.0)
-        dc.move_to(x, y)
-        dc.show_text(s)
-
-        dc.set_source_rgb(0.2, 0.2, 0.2)
-        dc.set_font_size(10.0)
-        s = '%10d.%09d' % (self.timeline.playhead.secs, self.timeline.playhead.nsecs)
-        font_width, font_height = dc.text_extents(s)[2:4]
-        dc.move_to(self.parent.width - font_width - 8, y - 2)
-        dc.show_text(s)
+            self.SetStatusText(spd_str, self.playspeed_field)
+        else:
+            self.SetStatusText('', self.playspeed_field)

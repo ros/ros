@@ -49,7 +49,7 @@ import wx
 import rosbag
 
 import util.base_frame
-import timeline_panel
+from timeline import Timeline
 
 class RxBagApp(wx.App):
     def __init__(self, options, args):
@@ -81,23 +81,24 @@ class RxBagApp(wx.App):
 
             # Create main timeline frame
             self.frame = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline')
-            self.frame.SetBackgroundColour(wx.WHITE)
+            self.frame.BackgroundColour = wx.WHITE
             self.frame.Bind(wx.EVT_CLOSE, lambda e: wx.Exit())
 
             scroll = wx.ScrolledWindow(self.frame, -1)
-            scroll.SetBackgroundColour(wx.WHITE)
+            scroll.BackgroundColour = wx.WHITE
             
-            panel = timeline_panel.TimelinePanel(scroll, -1)
-            panel.create_controls()
-            panel.SetSize((100, 100))
+            timeline = Timeline(scroll, -1)
+            timeline.Size = (100, 100)
             
             self.frame.Show()
             self.SetTopWindow(self.frame)
 
+            timeline.SetFocus()
+
             if self.options.record:
-                panel.timeline.record_bag(record_filename, all=self.options.all, topics=self.args, regex=self.options.regex, limit=self.options.limit)
+                timeline.record_bag(record_filename, all=self.options.all, topics=self.args, regex=self.options.regex, limit=self.options.limit)
             else:
-                RxBagInitThread(self, panel.timeline)
+                RxBagInitThread(self, timeline)
 
         except Exception, ex:
             print >> sys.stderr, 'Error initializing application:', ex

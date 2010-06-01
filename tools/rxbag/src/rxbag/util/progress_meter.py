@@ -92,9 +92,11 @@ class ProgressMeter:
         self.step(self.bytes_total, force_update=True)
         print
 
-    ## Convert file size to human-readable form
     @classmethod
     def approximate_size(cls, size, a_kilobyte_is_1024_bytes=False):
+        """
+        Convert file size to human-readable form
+        """
         if size < 0:
             raise ValueError('number must be non-negative')
 
@@ -106,9 +108,11 @@ class ProgressMeter:
     
         raise ValueError('number too large')
 
-    ## Estimate the width of the terminal
     @staticmethod
     def terminal_width():
+        """
+        Estimate the width of the terminal
+        """
         width = 0
         try:
             import struct, fcntl, termios

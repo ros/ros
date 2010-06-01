@@ -37,7 +37,6 @@ Loads plugins.
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 
-import os
 import sys
 import traceback
 

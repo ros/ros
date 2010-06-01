@@ -37,10 +37,6 @@ Player listens to messages from the timeline and publishes them to ROS.
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 
-import sys
-import threading
-import time
-
 import wx
 
 import rosbag

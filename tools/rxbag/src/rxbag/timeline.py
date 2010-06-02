@@ -202,11 +202,6 @@ class Timeline(wx.Window):
         self._messages                 = {}                  # topic -> (bag, msg_data)
         self._message_listener_threads = {}                  # listener -> MessageListenerThread
 
-        self._message_cache_lock     = threading.RLock()
-        self._message_cache          = {}
-        self._message_cache_keys     = []
-        self._message_cache_capacity = 50
-
         self._views = []
 
         self._listeners = {}
@@ -680,7 +675,11 @@ class Timeline(wx.Window):
         
         self._message_listener_threads[(topic, listener)] = MessageListenerThread(self, topic, listener)
 
-        #self._update_message_view_for_topic(topic)
+        # Notify the message listeners
+        self._message_loaders[topic].reset()
+        with self._playhead_positions_cvs[topic]:
+            self._playhead_positions_cvs[topic].notify_all()
+
         wx.CallAfter(self.Refresh)
 
     def remove_listener(self, topic, listener):
@@ -941,8 +940,6 @@ class Timeline(wx.Window):
                 with self._playhead_positions_cvs[topic]:
                     self._playhead_positions[topic] = new_playhead_position
                     self._playhead_positions_cvs[topic].notify_all()           # notify all message loaders that a new message needs to be loaded
-
-                #self._update_message_view_for_topic(topic)
 
             wx.PostEvent(self.frame, PlayheadChangedEvent())
             
@@ -1758,49 +1755,6 @@ class Timeline(wx.Window):
 
         self.Refresh()
 
-    ###
-
-    def old__update_message_view_for_topic(self, topic):
-        if not self._playhead_positions or topic not in self._listeners or topic not in self._playhead_positions:
-            return
-
-        bag, playhead_position = self._playhead_positions[topic]
-        if playhead_position is None:
-            msg_data = None
-        else:
-            msg_data = self._get_message(bag, topic, playhead_position)
-
-        if msg_data:
-            for listener in self._listeners[topic]:
-                try:
-                    listener.message_viewed(bag, msg_data)
-                except wx.PyDeadObjectError:
-                    self.remove_listener(topic, listener)
-        else:
-            for listener in self._listeners[topic]:
-                try:
-                    listener.message_cleared()
-                except wx.PyDeadObjectError:
-                    self.remove_listener(topic, listener)
-
-    def _get_message(self, bag, topic, position):
-        with self._message_cache_lock:
-            key = '%s%s%s' % (bag.filename, topic, str(position))
-            if key in self._message_cache:
-                return self._message_cache[key]
-    
-            with self._bag_lock:
-                msg_data = self.read_message(bag, position)
-            self._message_cache[key] = msg_data
-            self._message_cache_keys.append(key)
-            
-            if len(self._message_cache) > self._message_cache_capacity:
-                oldest_key = self._message_cache_keys[0]
-                del self._message_cache[oldest_key]
-                self._message_cache_keys.remove(oldest_key)
-
-            return msg_data
-
 class IndexCacheThread(threading.Thread):
     """
     Updates invalid caches.
@@ -1853,8 +1807,8 @@ class IndexCacheThread(threading.Thread):
 class MessageLoader(threading.Thread):
     """
     Waits for a new playhead position on the given topic, then loads the message at that position and notifies the view threads.
-    
-    One thread per topic.
+
+    One thread per topic.  Maintains a cache of recently loaded messages.
     """
     def __init__(self, timeline, topic):
         threading.Thread.__init__(self)
@@ -1863,11 +1817,18 @@ class MessageLoader(threading.Thread):
         self.topic    = topic
         
         self.bag_playhead_position = None
+
+        self._message_cache_capacity = 50
+        self._message_cache          = {}
+        self._message_cache_keys     = []
         
         self._stop_flag = False
         
         self.setDaemon(True)
         self.start()
+
+    def reset(self):
+        self.bag_playhead_position = None
 
     def run(self):
         while not self._stop_flag:
@@ -1890,13 +1851,30 @@ class MessageLoader(threading.Thread):
             if playhead_position is None:
                 msg_data = None
             else:
-                msg_data = self.timeline._get_message(bag, self.topic, playhead_position)
+                msg_data = self._get_message(bag, playhead_position)
 
             # Inform the views
             messages_cv = self.timeline._messages_cvs[self.topic]
             with messages_cv:
                 self.timeline._messages[self.topic] = (bag, msg_data)
                 messages_cv.notify_all()      # notify all views that a message is loaded
+
+    def _get_message(self, bag, position):
+        key = '%s%s' % (bag.filename, str(position))
+        if key in self._message_cache:
+            return self._message_cache[key]
+
+        msg_data = self.timeline.read_message(bag, position)
+
+        self._message_cache[key] = msg_data
+        self._message_cache_keys.append(key)
+
+        if len(self._message_cache) > self._message_cache_capacity:
+            oldest_key = self._message_cache_keys[0]
+            del self._message_cache[oldest_key]
+            self._message_cache_keys.remove(oldest_key)
+
+        return msg_data
 
     def stop(self):
         self._stop_flag = True

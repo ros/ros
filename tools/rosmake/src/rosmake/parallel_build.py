@@ -181,6 +181,7 @@ class BuildQueue:
     self._done = False
     self.robust_build = robust_build
     self._started = {}
+    self._hack_end_counter = 0
 
   def progress_str(self):
     return "[ %d Active %d/%d Complete ]"%(len(self._started), len(self.built), self._total_pkgs)
@@ -239,10 +240,15 @@ class BuildQueue:
           if dependencies_met:  # all dependencies met
             self.to_build.remove(p)
             self._started[p] = time.time()
+            self._hack_end_counter = 0 #reset end counter if success
             return p # break out and return package if found
-
+          elif len(self._started) == 0 and self._hack_end_counter > 2:
+            # we're hung with broken dependencies
+            return None
         #print "TTGTTTTHTHT Waiting on condition"
         self.condition.wait(1.0)  # failed to find a package wait for a notify before looping
+        
+        self._hack_end_counter += 1 # if we're here too often we will quit 
         if self.is_done():
           break
 

@@ -1695,11 +1695,17 @@ class Timeline(wx.Window):
             return msg_data
 
 class IndexCacheThread(threading.Thread):
+    """
+    Updates invalid caches.
+    
+    One thread per timeline.
+    """
     def __init__(self, timeline):
         threading.Thread.__init__(self)
 
         self.timeline  = timeline
-        self.stop_flag = False
+
+        self._stop_flag = False
 
         self.setDaemon(True)
         self.start()
@@ -1707,12 +1713,14 @@ class IndexCacheThread(threading.Thread):
     def run(self):
         last_updated_topic = None
         
-        while not self.stop_flag:
+        while not self._stop_flag:
             with self.timeline.index_cache_cv:
                 # Wait until the cache is dirty
-                if len(self.timeline.invalidated_caches) == 0:
+                while len(self.timeline.invalidated_caches) == 0:
                     self.timeline.index_cache_cv.wait()
-                    
+                    if self._stop_flag:
+                        return
+
                 # Update the index for one topic
                 updated = False
                 for topic in self.timeline.topics:
@@ -1729,14 +1737,17 @@ class IndexCacheThread(threading.Thread):
                 time.sleep(0.1)
 
     def stop(self):
-        self.stop_flag = True
-        with self.timeline.index_cache_cv:
-            self.timeline.index_cache_cv.notify()
+        self._stop_flag = True
+        cv = self.timeline.index_cache_cv
+        with cv:
+            cv.notify()
         self.join()
 
 class MessageLoader(threading.Thread):
     """
     Waits for a new playhead position on the given topic, then loads the message at that position and notifies the view threads.
+    
+    One thread per topic.
     """
     def __init__(self, timeline, topic):
         threading.Thread.__init__(self)
@@ -1746,16 +1757,20 @@ class MessageLoader(threading.Thread):
         
         self.bag_playhead_position = None
         
+        self._stop_flag = False
+        
         self.setDaemon(True)
         self.start()
 
     def run(self):
-        while True:
+        while not self._stop_flag:
             # Wait for a new entry
             cv = self.timeline._playhead_positions_cvs[self.topic]
             with cv:
                 while (self.topic not in self.timeline._playhead_positions) or (self.bag_playhead_position == self.timeline._playhead_positions[self.topic]):
                     cv.wait()
+                    if self._stop_flag:
+                        return
                 bag, playhead_position = self.timeline._playhead_positions[self.topic]
 
             # Load the message
@@ -1771,9 +1786,18 @@ class MessageLoader(threading.Thread):
                 self.timeline._messages[self.topic] = (bag, msg_data)
                 messages_cv.notify_all()      # notify all views that a message is loaded
 
+    def stop(self):
+        self._stop_flag = True
+        cv = self.timeline._playhead_positions_cvs[self.topic]
+        with cv:
+            cv.notify_all()
+        self.join()
+
 class MessageListenerThread(threading.Thread):
     """
     Waits for new messages loaded on the given topic, then calls the message listener.
+    
+    One thread per listener, topic pair.
     """
     def __init__(self, timeline, topic, listener):
         threading.Thread.__init__(self)
@@ -1809,7 +1833,7 @@ class MessageListenerThread(threading.Thread):
                 else:
                     self.listener.message_cleared()
             except wx.PyDeadObjectError:
-                self.remove_listener(self.topic, self.listener)
+                self.timeline.remove_listener(self.topic, self.listener)
 
     def stop(self):
         self._stop_flag = True

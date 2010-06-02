@@ -86,28 +86,39 @@ def create_package_template(package, rd_config, m, path, html_dir,
     
     # TODO: replace with general purpose key/value parser/substitution to enable <export><doxygen key="foo" val="var"></export> feature
 
-    # determine the value of overridable keys
+    # set defaults for overridable keys
     file_patterns = '*.c *.cpp *.h *.cc *.hh *.hpp *.py *.dox'
     excludes = '%s/build/'%path
+    exclude_patterns = ''
+
     # last one wins
     for e in m.get_export('doxygen', 'excludes'):
         # prepend the packages path
         excludes = '%s/%s'%(path, e)
-    # rd_config wins
-    if rd_config and 'excludes' in rd_config:
-        excludes = rd_config['excludes']
 
     # last one wins        
     for e in m.get_export('doxygen', 'file-patterns'):
         file_patterns = e
-    # rd_config wins
-    if rd_config and 'file_patterns' in rd_config:
-        file_patterns = rd_config['file_patterns']
+
+    # rd_config take precedence
+    if rd_config:
+        if 'excludes' in rd_config:
+            excludes = rd_config['excludes']
+        # there's a bug in ROS 1.0. The property is EXCLUDE, so for
+        # ROS 1.2 I'm shadowing it with both. In ROS 1.4 I plan to
+        # switch to documentation to be uniform.
+        if 'exclude' in rd_config:
+            excludes = rd_config['exclude']
+        if 'file_patterns' in rd_config:
+            file_patterns = rd_config['file_patterns']
+
+        exclude_patterns = rd_config.get('exclude_patterns', '')
        
     include_path = roslib.rospack.rospackexec(['cflags-only-I',package])
 
     vars = { '$INPUT':  path, '$PROJECT_NAME': package,
              '$EXCLUDE_PROP': excludes, '$FILE_PATTERNS': file_patterns,
+             '$EXCLUDE_PATTERNS': exclude_patterns,
              '$HTML_OUTPUT': os.path.abspath(html_dir),
              '$HTML_HEADER': header_filename, '$HTML_FOOTER': footer_filename,
              '$OUTPUT_DIRECTORY': html_dir,

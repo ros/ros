@@ -464,9 +464,11 @@ class RosMakeAll:
         if 'clean' in self.result.keys():
             self.printer.print_all("Cleaned %d packages."%len(self.result['clean']))
         if None in self.result.keys():
-            self.printer.print_all("Built %d packages."%len(self.result[None]))
+            build_failure_count = len([p for p in self.result[None].keys() if self.result[None][p] == False])
+            self.printer.print_all("Built %d packages with %d failures."%(len(self.result[None]), build_failure_count))
         if 'test' in self.result.keys():
-            self.printer.print_all("Tested %d packages."%len(self.result['test']))
+            test_failure_count = len([p for p in self.result['test'].keys() if self.result['test'][p] == False])
+            self.printer.print_all("Tested %d packages with %d failures."%(len(self.result['test']), test_failure_count))
         self.printer.print_all("Summary output to directory")
         self.printer.print_all("%s"%self.log_dir)
         if self.rosdep_install_result:
@@ -850,7 +852,7 @@ class RosMakeAll:
           self.build_list = new_list
 
         if options.pre_clean:
-          build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = True)
+          build_queue = parallel_build.BuildQueue(self.build_list, parallel_build.DependencyTracker([]), robust_build = True)
           self.parallel_build_pkgs(build_queue, "clean", threads = options.threads)
           if "rospack" in self.build_list:
               self.printer.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it for it was skipped earlier.")

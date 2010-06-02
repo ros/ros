@@ -58,7 +58,6 @@ import wx.lib.newevent
 import bag_helper
 import plugins
 from player              import Player
-from play_thread         import PlayThread
 from raw_view            import RawView
 from recorder            import Recorder
 from timeline_popup_menu import TimelinePopupMenu
@@ -219,9 +218,16 @@ class Timeline(wx.Window):
         self._recorder = None
         self._player   = False
 
+        ## Playing
+        
+        self.last_frame       = None
+        self.last_playhead    = None
+        self.desired_playhead = None
+        self.wrap             = True       # should the playhead wrap when it reaches the end?
+        self.stick_to_end     = False      # should the playhead stick to the end?
+
         ##
 
-        self._play_thread        = PlayThread(self)
         self._index_cache_thread = IndexCacheThread(self)
 
         # Trap SIGINT and close wx app
@@ -245,7 +251,7 @@ class Timeline(wx.Window):
         self.Bind(wx.EVT_RIGHT_UP,    self.on_right_up)
         self.Bind(wx.EVT_MOTION,      self.on_mouse_move)
         self.Bind(wx.EVT_MOUSEWHEEL,  self.on_mousewheel)
-        
+        self.Bind(wx.EVT_IDLE,        self.on_idle)
         ##
         
         self._update_title()
@@ -255,8 +261,24 @@ class Timeline(wx.Window):
 
     ###
 
-    @property
-    def play_all(self): return self._play_all
+    # property: play_all
+
+    def _get_play_all(self): return self._play_all
+
+    def _set_play_all(self, play_all):
+        if play_all == self._play_all:
+            return
+    
+        self._play_all = not self._play_all
+
+        self.last_frame       = None
+        self.last_playhead    = None
+        self.desired_playhead = None
+
+    play_all = property(_get_play_all, _set_play_all)
+
+    def toggle_play_all(self):
+        self.play_all = not self.play_all
 
     @property
     def has_selected_region(self): return self._selected_left is not None and self._selected_right is not None
@@ -303,8 +325,6 @@ class Timeline(wx.Window):
             renderer.close()
 
         self._index_cache_thread.stop()
-
-        self._play_thread.stop()
 
         if self._player:
             self._player.stop()
@@ -365,7 +385,7 @@ class Timeline(wx.Window):
 
         self._recorder.start()
 
-        self._play_thread.wrap = False
+        self.wrap = False
         self._index_cache_thread.period = 0.1
 
         wx.CallAfter(self.frame.ToolBar._setup)  # record button has been added
@@ -652,6 +672,8 @@ class Timeline(wx.Window):
         self._views.remove(view)
 
         wx.CallAfter(self.Refresh)
+        
+    def has_listeners(self, topic): return topic in self._listeners
 
     def add_listener(self, topic, listener):
         self._listeners.setdefault(topic, []).append(listener)
@@ -753,15 +775,13 @@ class Timeline(wx.Window):
             self._play_speed = play_speed
 
         if self._play_speed < 1.0:
-            self._play_thread.stick_to_end = False
+            self.stick_to_end = False
 
         wx.CallAfter(self.frame.ToolBar._setup)
 
         wx.PostEvent(self.frame, PlayheadChangedEvent())
 
     play_speed = property(_get_play_speed, _set_play_speed)
-
-    def toggle_play_all(self): self._play_all = not self._play_all  
 
     def toggle_play(self):
         if self._play_speed != 0.0:
@@ -892,7 +912,7 @@ class Timeline(wx.Window):
             self._playhead = playhead
 
             if self._playhead != self.end_stamp:
-                self._play_thread.stick_to_end = False
+                self.stick_to_end = False
 
             playhead_secs = playhead.to_sec()
 
@@ -950,6 +970,10 @@ class Timeline(wx.Window):
     def on_close(self, event):
         self._close()
         event.Skip()
+
+    def on_idle(self, event):
+        self._step_playhead()
+        event.RequestMore()
 
     def on_size(self, event):
         self.Position = (0, 0)
@@ -1457,6 +1481,89 @@ class Timeline(wx.Window):
         elif key_code == wx.WXK_RETURN:          self.toggle_selecting()
         elif key_code == wx.WXK_PAUSE:           self.toggle_recording()
 
+    ### Playing
+
+    def _step_playhead(self):
+        # Reset on switch of playing mode
+        if self.playhead != self.last_playhead:
+            self.last_frame       = None
+            self.last_playhead    = None
+            self.desired_playhead = None
+
+        if self._play_all:
+            self.step_next_message()
+        else:
+            self.step_fixed()
+
+    def step_fixed(self):
+        if self.play_speed == 0.0 or not self.playhead:
+            self.last_frame    = None
+            self.last_playhead = None
+            return
+
+        now = rospy.Time.from_sec(time.time())
+        if self.last_frame:
+            # Get new playhead
+            if self.stick_to_end:
+                new_playhead = self.end_stamp
+            else:
+                new_playhead = self.playhead + rospy.Duration.from_sec((now - self.last_frame).to_sec() * self.play_speed)
+    
+                start_stamp, end_stamp = self.play_region
+
+                if new_playhead > end_stamp:
+                    if self.wrap:
+                        if self.play_speed > 0.0:
+                            new_playhead = start_stamp
+                        else:
+                            new_playhead = end_stamp
+                    else:
+                        new_playhead = end_stamp
+
+                        if self.play_speed > 0.0:
+                            self.stick_to_end = True
+
+                elif new_playhead < start_stamp:
+                    if self.wrap:
+                        if self.play_speed < 0.0:
+                            new_playhead = end_stamp
+                        else:
+                            new_playhead = start_stamp
+                    else:
+                        new_playhead = start_stamp
+
+            # Update the playhead
+            self.playhead = new_playhead
+
+        self.last_frame    = now
+        self.last_playhead = self.playhead
+
+    def step_next_message(self):
+        if self.play_speed <= 0.0 or not self.playhead:
+            self.last_frame    = None
+            self.last_playhead = None
+            return
+
+        if self.last_frame:
+            if not self.desired_playhead:
+                self.desired_playhead = self.playhead
+            else:
+                delta = rospy.Time.from_sec(time.time()) - self.last_frame
+                if delta > rospy.Duration.from_sec(0.1):
+                    delta = rospy.Duration.from_sec(0.1)
+                self.desired_playhead += delta
+
+            # Get the occurrence of the next message
+            next_message_time = self.get_next_message_time()
+
+            if next_message_time < self.desired_playhead:
+                self.playhead = next_message_time
+            else:
+                self.playhead = self.desired_playhead
+
+        self.last_frame    = rospy.Time.from_sec(time.time())
+        self.last_playhead = self.playhead
+
     ### Mouse events
 
     def on_left_down(self, event):
@@ -1773,12 +1880,17 @@ class MessageLoader(threading.Thread):
                         return
                 bag, playhead_position = self.timeline._playhead_positions[self.topic]
 
+            self.bag_playhead_position = (bag, playhead_position)
+
+            # Don't bother loading the message if there are no listeners
+            if not self.timeline.has_listeners(self.topic):
+                continue
+
             # Load the message
             if playhead_position is None:
                 msg_data = None
             else:
                 msg_data = self.timeline._get_message(bag, self.topic, playhead_position)
-            self.bag_playhead_position = (bag, playhead_position)
 
             # Inform the views
             messages_cv = self.timeline._messages_cvs[self.topic]

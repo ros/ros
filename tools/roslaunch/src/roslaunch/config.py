@@ -45,6 +45,7 @@ import types
 import roslib.names
 
 from roslaunch.core import Master, local_machine, get_ros_root, is_machine_local, RLException
+from roslaunch.rlutil import namespaces_of
 import roslaunch.loader
 import roslaunch.xmlloader
 
@@ -234,11 +235,17 @@ class ROSLaunchConfig(object):
         @type  p: L{Param}
         """
         key = p.key
+
+        # check for direct overrides
         if key in self.params and self.params[key] != p:
             if filename:
                 self.logger.debug("[%s] overriding parameter [%s]"%(filename, p.key))
             else:
-                self.logger.debug("overriding parameter [%s]"%p.key)                
+                self.logger.debug("overriding parameter [%s]"%p.key)
+        # check for parent conflicts
+        for parent_key in [pk for pk in namespaces_of(key) if pk in self.params]:
+            self.add_config_error("parameter [%s] conflicts with parent parameter [%s]"%(key, parent_key))
+
         self.params[key] = p
         if verbose:
             print "Added parameter [%s]"%key

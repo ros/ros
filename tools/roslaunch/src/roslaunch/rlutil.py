@@ -41,6 +41,8 @@ This API should not be considered stable.
 import os
 import time
 
+from roslib.names import SEP
+
 import roslaunch.core
 
 def resolve_launch_arguments(args):
@@ -212,3 +214,14 @@ def check_roslaunch(f):
     if errors:
         return '\n'.join(errors)
                           
+
+def namespaces_of(name):
+    if name is None: 
+        raise ValueError('name')
+    if not isinstance(name, basestring):
+        raise TypeError('name')
+    if not name:
+        return [SEP]
+
+    splits = [x for x in name.split(SEP) if x]
+    return ['/'] + ['/'+SEP.join(splits[:i]) for i in xrange(1, len(splits))]

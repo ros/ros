@@ -65,13 +65,11 @@ import rxbag_app
 def run(options, args):
     app = rxbag_app.RxBagApp(options, args)
     app.MainLoop()
-
     rospy.signal_shutdown('GUI shutdown')
 
 def rxbag_main():
     # Parse command line for input files and options
-    usage = "usage: %prog [options] BAG_FILE1 [BAG_FILE2 ...]"
-    parser = optparse.OptionParser(usage=usage)
+    parser = optparse.OptionParser(usage='usage: %prog [options] BAG_FILE1 [BAG_FILE2 ...]')
     parser.add_option('-s', '--start',         dest='start',   default=0.0,   action='store', type='float', help='start SEC seconds into the bag files', metavar='SEC')
     parser.add_option(      '--record',        dest='record',  default=False, action='store_true',          help='record to a bag file')
     parser.add_option('-a', '--all',           dest='all',     default=False, action='store_true',          help='record all topics')

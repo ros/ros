@@ -58,6 +58,7 @@ import wx.lib.newevent
 import bag_helper
 import plugins
 from player              import Player
+from play_thread         import PlayThread
 from raw_view            import RawView
 from recorder            import Recorder
 from timeline_popup_menu import TimelinePopupMenu
@@ -90,31 +91,40 @@ class Timeline(wx.Window):
         self._topic_font_size  = 12.0
         self._topic_font_color = (0, 0, 0)
 
-        self._playhead_pointer_size = (6, 6)
-        self._playhead_line_width   = 1
-        self._playhead_color        = (1, 0, 0, 0.75)
+        self._playhead_pointer_size = (6, 6)                # size of playhead pointer
+        self._playhead_line_width   = 1                     # width of line of playhead
+        self._playhead_color        = (1, 0, 0, 0.75)       # color of playhead
 
-        self._time_font_height  = None
-        self._topic_font_height = None
-        self._topic_name_sizes  = None
-        self._margin_left       = 4
-        self._margin_right      = 8
-        self._margin_bottom     = 6
-        self._history_top            = 30
-        self._topic_vertical_padding = 4
-        self._bag_end_color    = (0, 0, 0, 0.1)
-        self._time_tick_height = 5
-        self._active_message_line_width = 3
+        self._time_font_height          = None
+        self._topic_font_height         = None
+        self._topic_name_sizes          = None
+        self._topic_name_spacing        = 3                 # minimum pixels between end of topic name and start of history
+        self._margin_left               = 4
+        self._margin_right              = 8
+        self._margin_bottom             = 6
+        self._history_top               = 30
+        self._topic_vertical_padding    = 4
 
-        self._minor_divisions_color_tick = (0.5, 0.5, 0.5, 0.5)
-        self._minor_divisions_color      = (0.6, 0.6, 0.6, 0.5)
-        self._minor_divisions_dash       = [2, 2]
+        self._bag_end_color             = (0, 0, 0, 0.1)    # color of background of timeline before first message and after last
+        
+        self._time_tick_height          = 5
 
-        self._major_divisions_dash       = [2, 2]
+        self._minor_divisions_color_tick   = (0.5, 0.5, 0.5, 0.5)     # color of vertical line above timeline for minor division
+        self._minor_divisions_color        = (0.6, 0.6, 0.6, 0.5)     # color of vertical line for minor division
+        self._minor_divisions_dash         = [2, 2]                   # dash pattern for minor division
+        self._major_divisions_label_indent = 3                        # padding in px between line and label
+        self._major_divisions_label_color  = (0, 0, 0)                # color of label for major division
+        self._major_divisions_color        = (0.25, 0.25, 0.25, 0.7)  # color of vertical line for major division
+        self._major_divisions_dash         = [2, 2]                   # dash pattern for major division
+
+        self._history_background_color_alternate = (0.7, 0.7, 0.7, 0.1)
+        self._history_background_color           = (0.8, 0.8, 0.8, 0.4)
 
         self._selected_region_color              = (0.0, 0.7, 0.0, 0.08)
         self._selected_region_outline_top_color  = (0.0, 0.3, 0.0, 0.2)
         self._selected_region_outline_ends_color = (0.0, 0.3, 0.0, 0.4)
+
+        # Time ticks
 
         self._default_datatype_color = (0.0, 0.0, 0.4)
         self._datatype_colors = {
@@ -125,7 +135,13 @@ class Timeline(wx.Window):
             'pr2_mechanism_msgs/MechanismState': (  0, 0.6,   0),
             'tf/tfMessage':                      (  0, 0.6,   0),
         }
-        self._default_msg_combine_px = 1.0
+
+        self._default_msg_combine_px    = 1.0
+        self._active_message_line_width = 3
+        
+        ##
+
+        # Zoom
 
         self._zoom_sensitivity = 0.005
         self._min_zoom_speed   = 0.5
@@ -133,8 +149,10 @@ class Timeline(wx.Window):
         self._min_zoom         = 0.0001      # max zoom out (in px/s)
         self._max_zoom         = 50000.0     # max zoom in  (in px/s)
 
-        self._max_play_speed = 1024.0
-        self._min_play_speed = 1.0 / 1024.0
+        # Playhead
+
+        self._max_play_speed = 1024.0          # fastest X play speed
+        self._min_play_speed = 1.0 / 1024.0    # slowest X play speed
 
         self._viewer_types       = {}
         self._timeline_renderers = {}
@@ -168,14 +186,22 @@ class Timeline(wx.Window):
         self._topics             = []
         self._topics_by_datatype = {}
 
-        self._stamp_left         = None
-        self._stamp_right        = None
-        self._playhead           = None
-        self._playhead_lock      = threading.RLock()
-        self._play_speed         = 0.0
-        self._paused             = False
-        self._playhead_positions = {}
-        self._play_all            = False
+        self._stamp_left  = None      # earliest visible timestamp on the timeline
+        self._stamp_right = None      # latest visible timestamp on the timeline
+        
+        self._playhead_lock = threading.RLock()
+        self._playhead      = None                   # timestamp of the playhead
+
+        self._paused        = False
+        self._play_speed    = 0.0
+        self._play_all      = False
+        
+        self._playhead_positions_cvs   = {}
+        self._playhead_positions       = {}                  # topic -> (bag, position)
+        self._message_loaders          = {}
+        self._messages_cvs             = {}
+        self._messages                 = {}                  # topic -> (bag, msg_data)
+        self._message_listener_threads = {}                  # listener -> MessageListenerThread
 
         self._message_cache_lock     = threading.RLock()
         self._message_cache          = {}
@@ -186,8 +212,8 @@ class Timeline(wx.Window):
 
         self._listeners = {}
 
-        self.index_cache        = {}
         self.index_cache_cv     = threading.Condition()
+        self.index_cache        = {}
         self.invalidated_caches = set()
 
         self._recorder = None
@@ -208,7 +234,7 @@ class Timeline(wx.Window):
         self.frame.Bind(wx.EVT_CLOSE, self.on_close)
 
         self.Parent.Bind(wx.EVT_SIZE, self.on_size)
-        
+
         self.Bind(wx.EVT_PAINT,       self.on_paint)
         self.Bind(wx.EVT_KEY_DOWN,    self.on_key_down)
         self.Bind(wx.EVT_LEFT_DOWN,   self.on_left_down)
@@ -244,21 +270,6 @@ class Timeline(wx.Window):
 
     @property
     def frame(self): return wx.GetApp().GetTopWindow()
-
-    def _update_title(self):
-        title = 'rxbag'
-        if self._recorder:
-            if self._recorder.paused:
-                title += ' - %s [recording paused]' % self._bags[0].filename
-            else:
-                title += ' - %s [recording]' % self._bags[0].filename
-        elif len(self.bags) > 0:
-            if len(self.bags) == 1:
-                title += ' - ' + self._bags[0].filename
-            else:
-                title += ' - [%d bags]' % len(self._bags)
-        
-        self.frame.Title = title
 
     ## Visual
 
@@ -309,6 +320,14 @@ class Timeline(wx.Window):
     def add_bag(self, bag):
         self._bags.append(bag)
         
+        bag_topics = bag_helper.get_topics(bag)
+        
+        new_topics = set(bag_topics) - set(self._topics)
+        for topic in new_topics:
+            self._playhead_positions_cvs[topic] = threading.Condition()
+            self._messages_cvs[topic]           = threading.Condition()
+            self._message_loaders[topic]        = MessageLoader(self, topic)
+
         self._start_stamp        = self._get_start_stamp()
         self._end_stamp          = self._get_end_stamp()
         self._topics             = self._get_topics()
@@ -320,7 +339,7 @@ class Timeline(wx.Window):
 
         # Invalidate entire index cache for all topics in this bag
         with self.index_cache_cv:
-            for topic in bag_helper.get_topics(bag):
+            for topic in bag_topics:
                 self.invalidated_caches.add(topic)
                 if topic in self.index_cache:
                     del self.index_cache[topic]
@@ -467,7 +486,11 @@ class Timeline(wx.Window):
         if not self._topics or topic not in self._topics:
             self._topics             = self._get_topics()
             self._topics_by_datatype = self._get_topics_by_datatype()
-        
+
+            self._playhead_positions_cvs[topic] = threading.Condition()
+            self._messages_cvs[topic]           = threading.Condition()
+            self._message_loaders[topic]        = MessageLoader(self, topic)
+
         if self._stamp_left is None:
             self.reset_zoom()
 
@@ -632,16 +655,24 @@ class Timeline(wx.Window):
 
     def add_listener(self, topic, listener):
         self._listeners.setdefault(topic, []).append(listener)
+        
+        self._message_listener_threads[(topic, listener)] = MessageListenerThread(self, topic, listener)
 
-        self._update_message_view_for_topic(topic)
+        #self._update_message_view_for_topic(topic)
         wx.CallAfter(self.Refresh)
 
     def remove_listener(self, topic, listener):
         topic_listeners = self._listeners.get(topic)
         if topic_listeners is not None and listener in topic_listeners:
             topic_listeners.remove(listener)
+
             if len(topic_listeners) == 0:
                 del self._listeners[topic]
+
+            # Stop the message listener thread
+            if (topic, listener) in self._message_listener_threads:
+                self._message_listener_threads[(topic, listener)].stop()
+                del self._message_listener_threads[(topic, listener)]
 
             wx.CallAfter(self.Refresh)
 
@@ -877,18 +908,21 @@ class Timeline(wx.Window):
                     dstamp = self._stamp_left - self.start_stamp.to_sec()
                 self.translate_timeline(-dstamp)
 
-            # Update the message views
+            # Update the playhead positions
             for topic in self.topics:
                 bag, entry = self.get_entry(self._playhead, topic)
                 if entry:
                     if topic in self._playhead_positions and self._playhead_positions[topic] == (bag, entry.position):
                         continue
-                    
-                    self._playhead_positions[topic] = (bag, entry.position)
+                    new_playhead_position = (bag, entry.position)
                 else:
-                    self._playhead_positions[topic] = None, None
+                    new_playhead_position = (None, None)
 
-                self._update_message_view_for_topic(topic)
+                with self._playhead_positions_cvs[topic]:
+                    self._playhead_positions[topic] = new_playhead_position
+                    self._playhead_positions_cvs[topic].notify_all()           # notify all message loaders that a new message needs to be loaded
+
+                #self._update_message_view_for_topic(topic)
 
             wx.PostEvent(self.frame, PlayheadChangedEvent())
             
@@ -897,6 +931,21 @@ class Timeline(wx.Window):
     playhead = property(_get_playhead, _set_playhead)
 
     ### Rendering
+
+    def _update_title(self):
+        title = 'rxbag'
+        if self._recorder:
+            if self._recorder.paused:
+                title += ' - %s [recording paused]' % self._bags[0].filename
+            else:
+                title += ' - %s [recording]' % self._bags[0].filename
+        elif len(self.bags) > 0:
+            if len(self.bags) == 1:
+                title += ' - ' + self._bags[0].filename
+            else:
+                title += ' - [%d bags]' % len(self._bags)
+        
+        self.frame.Title = title
 
     def on_close(self, event):
         self._close()
@@ -934,24 +983,24 @@ class Timeline(wx.Window):
         dc.set_font_size(self._time_font_size)
         self._time_font_height = dc.font_extents()[2]
 
-        self._topic_name_sizes = {}
-        for topic in self.topics:
-            x_bearing, y_bearing, width, height, x_advance, y_advance = dc.text_extents(topic)
-            self._topic_name_sizes[topic] = (width, height)
+        dc.set_font_size(self._topic_font_size)
+        self._topic_name_sizes = dict([(topic, dc.text_extents(topic)[2:4]) for topic in self.topics])
 
     def _layout(self):
-        max_topic_name_width   = max([w for (w, h) in self._topic_name_sizes.values()])
         self._topic_font_height = max([h for (w, h) in self._topic_name_sizes.values()])
 
-        new_history_left  = self._margin_left + max_topic_name_width + 3
-        new_history_width = self.Size[0] - self._history_left - self._margin_right
-        updated_history = new_history_left != self._history_left or new_history_width != self._history_width
+        # Calculate history left and history width
+        max_topic_name_width    = max([w for (w, h) in self._topic_name_sizes.values()])
+        new_history_left  = self._margin_left + max_topic_name_width + self._topic_name_spacing
+        new_history_width = self.Size[0] - new_history_left - self._margin_right
+        updated_history = (new_history_left != self._history_left or new_history_width != self._history_width)
         if updated_history:
             self._history_left  = new_history_left
             self._history_width = new_history_width
             
             wx.CallAfter(self.frame.ToolBar._setup)    # zoom enabled may have changed
 
+        # Calculate the bounds for each topic
         self._history_bounds = {}
         y = self._history_top
         for topic in self.topics:
@@ -1000,13 +1049,52 @@ class Timeline(wx.Window):
             left = max(clip_left, x)
             rect = (left, y, min(clip_right - left, w), h)
             if row % 2 == 0:
-                dc.set_source_rgba(0.7, 0.7, 0.7, 0.1)
+                dc.set_source_rgba(*self._history_background_color_alternate)
                 dc.rectangle(*rect)
                 dc.fill()
-            dc.set_source_rgba(0.8, 0.8, 0.8, 0.4)
+            dc.set_source_rgba(*self._history_background_color)
             dc.rectangle(*rect)
             dc.stroke()
             row += 1
+
+    def _draw_selected_region(self, dc):
+        if self._selected_left is None:
+            return
+        
+        x_left  = self.map_stamp_to_x(self._selected_left)
+        if self._selected_right is not None:
+            x_right = self.map_stamp_to_x(self._selected_right)
+        else:
+            x_right = self.map_stamp_to_x(self._playhead.to_sec())
+
+        left   = x_left
+        top    = self._history_top - self._playhead_pointer_size[1] - 5 - self._time_font_size - 4
+        width  = x_right - x_left
+        height = self._history_top - top
+
+        dc.set_source_rgba(*self._selected_region_color)
+        dc.rectangle(left, top, width, height)
+        dc.fill()
+
+        dc.set_source_rgba(*self._selected_region_outline_ends_color)
+        dc.set_line_width(2.0)
+        dc.move_to(left, top)
+        dc.line_to(left, top + height)
+        dc.move_to(left + width, top)
+        dc.line_to(left + width, top + height)
+        dc.stroke()
+        
+        dc.set_source_rgba(*self._selected_region_outline_top_color)
+        dc.set_line_width(1.0)
+        dc.move_to(left,         top)
+        dc.line_to(left + width, top)
+        dc.stroke()
+        dc.set_line_width(2.0)
+        dc.move_to(left, self._history_top)
+        dc.line_to(left, self._history_bottom)
+        dc.move_to(left + width, self._history_top)
+        dc.line_to(left + width, self._history_bottom)
+        dc.stroke()
 
     def _draw_time_indicators(self, dc):
         """
@@ -1044,14 +1132,14 @@ class Timeline(wx.Window):
             x = self.map_stamp_to_x(stamp, False)
 
             label        = self._get_label(division, stamp - start_stamp)
-            label_x      = x + 3
+            label_x      = x + self._major_divisions_label_indent
             label_extent = dc.text_extents(label)
             if label_x + label_extent[2] < self.Size[0] - 1:  # don't display label if it doesn't fit in the control
-                dc.set_source_rgb(0, 0, 0)
+                dc.set_source_rgb(*self._major_divisions_label_color)
                 dc.move_to(label_x, label_y)
                 dc.show_text(label)
 
-            dc.set_source_rgba(0.25, 0.25, 0.25, 0.7)
+            dc.set_source_rgba(*self._major_divisions_color)
             dc.set_dash(self._major_divisions_dash)
             dc.move_to(x, label_y - label_extent[3])
             dc.line_to(x, self._history_bottom)
@@ -1281,45 +1369,6 @@ class Timeline(wx.Window):
         dc.rectangle(self._history_left, self._history_top, x_start - self._history_left,                    self._history_bottom - self._history_top)
         dc.rectangle(x_end,             self._history_top, self._history_left + self._history_width - x_end, self._history_bottom - self._history_top)
         dc.fill()
-
-    def _draw_selected_region(self, dc):
-        if self._selected_left is None:
-            return
-        
-        x_left  = self.map_stamp_to_x(self._selected_left)
-        if self._selected_right is not None:
-            x_right = self.map_stamp_to_x(self._selected_right)
-        else:
-            x_right = self.map_stamp_to_x(self._playhead.to_sec())
-
-        left   = x_left
-        top    = self._history_top - self._playhead_pointer_size[1] - 5 - self._time_font_size - 4
-        width  = x_right - x_left
-        height = self._history_top - top
-
-        dc.set_source_rgba(*self._selected_region_color)
-        dc.rectangle(left, top, width, height)
-        dc.fill()
-
-        dc.set_source_rgba(*self._selected_region_outline_ends_color)
-        dc.set_line_width(2.0)
-        dc.move_to(left, top)
-        dc.line_to(left, top + height)
-        dc.move_to(left + width, top)
-        dc.line_to(left + width, top + height)
-        dc.stroke()
-        
-        dc.set_source_rgba(*self._selected_region_outline_top_color)
-        dc.set_line_width(1.0)
-        dc.move_to(left,         top)
-        dc.line_to(left + width, top)
-        dc.stroke()
-        dc.set_line_width(2.0)
-        dc.move_to(left, self._history_top)
-        dc.line_to(left, self._history_bottom)
-        dc.move_to(left + width, self._history_top)
-        dc.line_to(left + width, self._history_bottom)
-        dc.stroke()
 
     def _draw_history_border(self, dc):
         bounds_width = min(self._history_width, self.Size[0])
@@ -1604,25 +1653,7 @@ class Timeline(wx.Window):
 
     ###
 
-    def _get_message(self, bag, topic, position):
-        with self._message_cache_lock:
-            key = '%s%s%s' % (bag.filename, topic, str(position))
-            if key in self._message_cache:
-                return self._message_cache[key]
-    
-            with self._bag_lock:
-                msg_data = self.read_message(bag, position)
-            self._message_cache[key] = msg_data
-            self._message_cache_keys.append(key)
-            
-            if len(self._message_cache) > self._message_cache_capacity:
-                oldest_key = self._message_cache_keys[0]
-                del self._message_cache[oldest_key]
-                self._message_cache_keys.remove(oldest_key)
-
-            return msg_data
-
-    def _update_message_view_for_topic(self, topic):
+    def old__update_message_view_for_topic(self, topic):
         if not self._playhead_positions or topic not in self._listeners or topic not in self._playhead_positions:
             return
 
@@ -1644,6 +1675,24 @@ class Timeline(wx.Window):
                     listener.message_cleared()
                 except wx.PyDeadObjectError:
                     self.remove_listener(topic, listener)
+
+    def _get_message(self, bag, topic, position):
+        with self._message_cache_lock:
+            key = '%s%s%s' % (bag.filename, topic, str(position))
+            if key in self._message_cache:
+                return self._message_cache[key]
+    
+            with self._bag_lock:
+                msg_data = self.read_message(bag, position)
+            self._message_cache[key] = msg_data
+            self._message_cache_keys.append(key)
+            
+            if len(self._message_cache) > self._message_cache_capacity:
+                oldest_key = self._message_cache_keys[0]
+                del self._message_cache[oldest_key]
+                self._message_cache_keys.remove(oldest_key)
+
+            return msg_data
 
 class IndexCacheThread(threading.Thread):
     def __init__(self, timeline):
@@ -1677,7 +1726,7 @@ class IndexCacheThread(threading.Thread):
                 wx.CallAfter(self.timeline.Refresh)
 
                 # Give the GUI some time to update
-                time.sleep(0.4)
+                time.sleep(0.1)
 
     def stop(self):
         self.stop_flag = True
@@ -1685,115 +1734,86 @@ class IndexCacheThread(threading.Thread):
             self.timeline.index_cache_cv.notify()
         self.join()
 
-class PlayThread(threading.Thread):
-    def __init__(self, timeline):
+class MessageLoader(threading.Thread):
+    """
+    Waits for a new playhead position on the given topic, then loads the message at that position and notifies the view threads.
+    """
+    def __init__(self, timeline, topic):
         threading.Thread.__init__(self)
 
-        self.timeline     = timeline
-        self.stop_flag    = False
-        self.wrap         = True       # should the playhead wrap when it reaches the end?
-        self.stick_to_end = False      # should the playhead stick to the end?
+        self.timeline = timeline
+        self.topic    = topic
+        
+        self.bag_playhead_position = None
+        
+        self.setDaemon(True)
+        self.start()
+
+    def run(self):
+        while True:
+            # Wait for a new entry
+            cv = self.timeline._playhead_positions_cvs[self.topic]
+            with cv:
+                while (self.topic not in self.timeline._playhead_positions) or (self.bag_playhead_position == self.timeline._playhead_positions[self.topic]):
+                    cv.wait()
+                bag, playhead_position = self.timeline._playhead_positions[self.topic]
+
+            # Load the message
+            if playhead_position is None:
+                msg_data = None
+            else:
+                msg_data = self.timeline._get_message(bag, self.topic, playhead_position)
+            self.bag_playhead_position = (bag, playhead_position)
+
+            # Inform the views
+            messages_cv = self.timeline._messages_cvs[self.topic]
+            with messages_cv:
+                self.timeline._messages[self.topic] = (bag, msg_data)
+                messages_cv.notify_all()      # notify all views that a message is loaded
+
+class MessageListenerThread(threading.Thread):
+    """
+    Waits for new messages loaded on the given topic, then calls the message listener.
+    """
+    def __init__(self, timeline, topic, listener):
+        threading.Thread.__init__(self)
+
+        self.timeline = timeline
+        self.topic    = topic
+        self.listener = listener
+
+        self.bag_msg_data = None
+
+        self._stop_flag = False
 
         self.setDaemon(True)
         self.start()
 
     def run(self):
-        self._play_all = None
+        while not self._stop_flag:
+            # Wait for a new message
+            cv = self.timeline._messages_cvs[self.topic]
+            with cv:
+                while (self.topic not in self.timeline._messages) or (self.bag_msg_data == self.timeline._messages[self.topic]):
+                    cv.wait()
+                    if self._stop_flag:
+                        return
+                bag_msg_data = self.timeline._messages[self.topic]
 
-        try:
-            while not self.stop_flag:
-                # Reset on switch of playing mode
-                if self._play_all != self.timeline._play_all or self.timeline.playhead != self.last_playhead:
-                    self._play_all = self.timeline._play_all
-    
-                    self.last_frame       = None
-                    self.last_playhead    = None
-                    self.desired_playhead = None
-    
-                if self._play_all:
-                    self.step_next_message()
-                    time.sleep(0.05)
+            # View the message
+            self.bag_msg_data = bag_msg_data
+            try:
+                bag, msg_data = bag_msg_data
+                if msg_data:
+                    self.listener.message_viewed(bag, msg_data)
                 else:
-                    self.step_fixed()
-                    time.sleep(0.05)
-
-        except Exception, ex:
-            print >> sys.stderr, 'Error advancing playhead: %s' % str(ex)
-            import traceback
-            traceback.print_exc(file=sys.stderr)
-
-    def step_fixed(self):
-        if self.timeline.play_speed == 0.0 or not self.timeline.playhead:
-            self.last_frame    = None
-            self.last_playhead = None
-            return
-
-        now = rospy.Time.from_sec(time.time())
-        if self.last_frame:
-            if self.stick_to_end:
-                new_playhead = self.timeline.end_stamp
-            else:
-                new_playhead = self.timeline.playhead + rospy.Duration.from_sec((now - self.last_frame).to_sec() * self.timeline.play_speed)
-    
-                if self.timeline.selected_left is not None and self.timeline.selected_right is not None:
-                    start_stamp = rospy.Time.from_sec(self.timeline.selected_left)
-                    end_stamp   = rospy.Time.from_sec(self.timeline.selected_right)
-                else:
-                    start_stamp = self.timeline.start_stamp
-                    end_stamp   = self.timeline.end_stamp
-
-                if new_playhead > end_stamp:
-                    if self.wrap:
-                        if self.timeline.play_speed > 0.0:
-                            new_playhead = start_stamp
-                        else:
-                            new_playhead = end_stamp
-                    else:
-                        new_playhead = end_stamp
-
-                        if self.timeline.play_speed > 0.0:
-                            self.stick_to_end = True
-
-                elif new_playhead < start_stamp:
-                    if self.wrap:
-                        if self.timeline.play_speed < 0.0:
-                            new_playhead = end_stamp
-                        else:
-                            new_playhead = start_stamp
-                    else:
-                        new_playhead = start_stamp
-
-            self.timeline.playhead = new_playhead
-
-        self.last_frame    = now
-        self.last_playhead = self.timeline.playhead
-
-    def step_next_message(self):
-        if self.timeline.play_speed <= 0.0 or not self.timeline.playhead:
-            self.last_frame    = None
-            self.last_playhead = None
-            return
-
-        if self.last_frame:
-            if not self.desired_playhead:
-                self.desired_playhead = self.timeline.playhead
-            else:
-                delta = rospy.Time.from_sec(time.time()) - self.last_frame
-                if delta > rospy.Duration.from_sec(0.1):
-                    delta = rospy.Duration.from_sec(0.1)
-                self.desired_playhead += delta
-
-            # Get the occurrence of the next message
-            next_message_time = self.timeline.get_next_message_time()
-
-            if next_message_time < self.desired_playhead:
-                self.timeline.playhead = next_message_time
-            else:
-                self.timeline.playhead = self.desired_playhead
-
-        self.last_frame    = rospy.Time.from_sec(time.time())
-        self.last_playhead = self.timeline.playhead
+                    self.listener.message_cleared()
+            except wx.PyDeadObjectError:
+                self.remove_listener(self.topic, self.listener)
 
     def stop(self):
-        self.stop_flag = True
+        self._stop_flag = True
+        cv = self.timeline._messages_cvs[self.topic]
+        with cv:
+            cv.notify_all()
         self.join()

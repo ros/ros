@@ -48,8 +48,8 @@ import wx
 
 import rosbag
 
-import util.base_frame
-from timeline import Timeline
+from util.base_frame import BaseFrame
+from timeline        import Timeline
 
 class RxBagApp(wx.App):
     def __init__(self, options, args):
@@ -73,14 +73,13 @@ class RxBagApp(wx.App):
                     record_filename = self.options.name
                     if not record_filename.endswith('.bag'):
                         record_filename += '.bag'
-                        
                 elif self.options.prefix:
                     record_filename = '%s_%s' % (self.options.prefix, record_filename)
 
                 rospy.loginfo('Recording to %s.' % record_filename)
 
             # Create main timeline frame
-            self.frame = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline')
+            self.frame = BaseFrame(None, 'rxbag', 'Timeline')
             self.frame.BackgroundColour = wx.WHITE
             self.frame.Bind(wx.EVT_CLOSE, lambda e: wx.Exit())
 
@@ -134,9 +133,9 @@ class RxBagApp(wx.App):
     
             # If so (i.e. no exception), attempt to initialize node                                                                                                        
             init_thread = InitNodeThread()
-            init_thread.init_cv.acquire()
-            init_thread.start()
-            init_thread.init_cv.wait(init_timeout)
+            with init_thread.init_cv:
+                init_thread.start()
+                init_thread.init_cv.wait(init_timeout)
     
             if init_thread.inited:
                 rospy.core.register_signals()

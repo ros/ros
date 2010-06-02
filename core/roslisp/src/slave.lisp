@@ -77,7 +77,32 @@ PUBLISHERS : list of publishers, each of which is a list (ADDRESS PORT)."
   (ros-info (roslisp topic) "Publisher update ~a ~a" topic publishers)
   (with-mutex (*ros-lock*)
     (update-publishers topic publishers)))
-    
+
+(defun |getBusInfo| (caller-id)
+  "getBusInfo XML-RPC method
+Used to get info about the node's connections (e.g., for rosnode info)"
+  (ros-debug (roslisp slave) "Received call to getBusInfo from ~a" caller-id)
+  (with-mutex (*ros-lock*)
+    (list 1 (format nil "getBusInfo call returning") 
+          (nconc (publications-info) (subscriptions-info)))))
+
+(defun publications-info ()
+  "Helper for getBusInfo"
+  (loop
+    :for topic :being :each :hash-key :in *publications* :using (:hash-value pub)
+    :append (mapcar #'(lambda (c) (publication-info topic c)) (subscriber-connections pub))))
+
+(defun publication-info (topic conn)
+  (list (sxhash conn) (subscriber-uri conn) "o" "TCPROS" topic))
+
+(defun subscriptions-info ()
+  "Helper for getBusInfo"
+  (loop
+    :for topic :being :each :hash-key :in *subscriptions* :using (:hash-value sub)
+    :append (mapcar #'(lambda (c) (subscription-info topic c)) (publisher-connections sub))))
+
+(defun subscription-info (topic conn)
+  (list (sxhash conn) (uri conn) "i" "TCPROS" topic))
 
 
 (defun |requestTopic| (caller-id topic protocols)
@@ -111,7 +136,7 @@ Notes
 
 
 ;; Register the above operations as XML-RPC methods
-(import '(|getPid| |shutdown| |publisherUpdate| |requestTopic|) 's-xml-rpc-exports)
+(import '(|getPid| |shutdown| |publisherUpdate| |requestTopic| |getBusInfo|) 's-xml-rpc-exports)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Internal

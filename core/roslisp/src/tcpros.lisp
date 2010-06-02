@@ -130,7 +130,7 @@
 
 (defun handle-topic-connection (header connection stream)
   "Handle topic connection by checking md5 sum, sending back a response header, then adding this socket to the publication list for this topic."
-  (bind-from-header ((topic "topic") (md5 "md5sum")) header
+  (bind-from-header ((topic "topic") (md5 "md5sum") (uri "callerid")) header
     (let ((pub (gethash topic *publications*)))
       (tcpros-header-assert pub "unknown-topic")
       (let ((my-md5 (md5sum topic)))
@@ -145,7 +145,8 @@
                             "md5sum" my-md5))
       
       ;; Add this subscription to the list for the topic
-      (let ((sub (make-subscriber-connection :subscriber-socket connection :subscriber-stream stream)))
+      (let ((sub (make-subscriber-connection :subscriber-socket connection :subscriber-stream stream 
+                                             :subscriber-uri uri)))
         (ros-debug (roslisp tcp) "~&Adding ~a to ~a for topic ~a" sub pub topic)
         (push sub (subscriber-connections pub))
 

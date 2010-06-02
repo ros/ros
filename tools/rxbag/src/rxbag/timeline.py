@@ -236,6 +236,7 @@ class Timeline(wx.Window):
 
         self.Parent.Bind(wx.EVT_SIZE, self.on_size)
 
+        self.Bind(wx.EVT_IDLE,        self.on_idle)
         self.Bind(wx.EVT_PAINT,       self.on_paint)
         self.Bind(wx.EVT_KEY_DOWN,    self.on_key_down)
         self.Bind(wx.EVT_LEFT_DOWN,   self.on_left_down)
@@ -246,7 +247,6 @@ class Timeline(wx.Window):
         self.Bind(wx.EVT_RIGHT_UP,    self.on_right_up)
         self.Bind(wx.EVT_MOTION,      self.on_mouse_move)
         self.Bind(wx.EVT_MOUSEWHEEL,  self.on_mousewheel)
-        self.Bind(wx.EVT_IDLE,        self.on_idle)
         ##
         
         self._update_title()
@@ -1795,7 +1795,7 @@ class IndexCacheThread(threading.Thread):
                 wx.CallAfter(self.timeline.Refresh)
 
                 # Give the GUI some time to update
-                time.sleep(0.1)
+                time.sleep(0.2)
 
     def stop(self):
         self._stop_flag = True

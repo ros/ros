@@ -85,7 +85,7 @@ class TopicMessageView(MessageView):
         if not self.topic:
             return
 
-        for entry in self.timeline.get_entries(self._topic, self.timeline.start_stamp, self.timeline.end_stamp):
+        for entry in self.timeline.get_entries(self._topic, *self.timeline.play_region):
             self.timeline.playhead = entry.time
             break
 
@@ -115,7 +115,7 @@ class TopicMessageView(MessageView):
             return
 
         last_entry = None
-        for entry in self.timeline.get_entries(self._topic, self.timeline.start_stamp, self.timeline.end_stamp):
+        for entry in self.timeline.get_entries(self._topic, *self.timeline.play_region):
             last_entry = entry
 
         if last_entry:

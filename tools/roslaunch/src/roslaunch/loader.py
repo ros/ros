@@ -205,6 +205,8 @@ class LoaderContext(object):
         @type  remap: (str, str)
         """
         remap = [canonicalize_name(x) for x in remap]
+        if not remap[0] or not remap[1]:
+            raise RLException("remap from/to attributes cannot be empty")
         if not is_legal_name(remap[0]):
             raise RLException("remap from [%s] is not a valid ROS name"%remap[0])
         if not is_legal_name(remap[1]):

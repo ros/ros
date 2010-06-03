@@ -45,27 +45,53 @@ class TimelineStatusBar(wx.StatusBar):
 
         self.timeline = timeline
 
-        self.timestamp_field      = 1
-        self.human_readable_field = 2
-        self.elapsed_field        = 3
-        self.playspeed_field      = 4
+        self.progress_field       = 1
+        self.timestamp_field      = 2
+        self.human_readable_field = 3
+        self.elapsed_field        = 4
+        self.playspeed_field      = 5
 
+        self.progress_width       = 150
         self.timestamp_width      = 125
         self.human_readable_width = 180
         self.elapsed_width        = 110
         self.playspeed_width      =  80
 
-        self.SetFieldsCount(5)
+        self.SetFieldsCount(6)
+
+        self.gauge = wx.Gauge(self, range=100)
+        self.gauge.Hide()
+        
+        self._reposition_progress()
 
         parent.Bind(EVT_PLAYHEAD_CHANGED, lambda e: self._update())
         parent.Bind(wx.EVT_SIZE,          self.on_size)
 
         self._update()
 
+    # property: progress
+
+    def _get_progress(self):
+        return self.gauge.Value
+
+    def _set_progress(self, value):
+        self.gauge.Value = value
+
+    progress = property(_get_progress, _set_progress)
+
     def on_size(self, event):
-        main_width = self.Size[0] - (self.timestamp_width + self.human_readable_width + self.elapsed_width + self.playspeed_width)
-        self.SetStatusWidths([main_width, self.timestamp_width, self.human_readable_width, self.elapsed_width, self.playspeed_width])
+        main_width = self.Size[0] - (self.progress_width + self.timestamp_width + self.human_readable_width + self.elapsed_width + self.playspeed_width)
+        self.SetStatusWidths([main_width, self.progress_width, self.timestamp_width, self.human_readable_width, self.elapsed_width, self.playspeed_width])
+
+        self._reposition_progress()
+        
         event.Skip()
+
+    def _reposition_progress(self):
+        rect = self.GetFieldRect(self.progress_field)
+
+        self.gauge.SetPosition((rect.x + 1, rect.y + 1))
+        self.gauge.SetSize((rect.width - 2, rect.height - 2))
 
     def _update(self):
         if self.timeline.playhead is None or self.timeline.start_stamp is None:

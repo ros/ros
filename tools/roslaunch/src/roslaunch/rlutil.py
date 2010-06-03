@@ -45,6 +45,21 @@ from roslib.names import SEP
 
 import roslaunch.core
 
+def check_log_disk_usage():
+    """
+    Check size of log directory. If high, print warning to user
+    """
+    try:
+        import rosclean
+        import roslib.rosenv
+        d = roslib.rosenv.get_log_dir()
+        disk_usage = rosclean.get_disk_usage(d)
+        # warn if over a gig
+        if disk_usage > 1073741824:
+            roslaunch.core.printerrlog("WARNING: disk usage in log directory [%s] is over 1GB.\nIt's recommended that you use the 'rosclean' command."%d)
+    except:
+        pass
+
 def resolve_launch_arguments(args):
     """
     Resolve command-line args to roslaunch filenames.

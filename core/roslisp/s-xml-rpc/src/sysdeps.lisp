@@ -51,7 +51,8 @@
 
 (defun start-standard-server (&key port name connection-handler)
   "Start a server process with name, listening on port, delegating to connection-handler with stream as argument"
-  #+lispworks (comm:start-up-server
+  #+lispworks (progn
+                (comm:start-up-server
                :function #'(lambda (socket-handle)
                              (let ((client-stream (make-instance 'comm:socket-stream
                                                                  :socket socket-handle
@@ -63,7 +64,9 @@
                :error t
                :wait t
                :process-name name)
-  #+openmcl (ccl:process-run-function
+                name)
+  #+openmcl (progn
+              (ccl:process-run-function
              name
              #'(lambda ()
                  (let ((server-socket (ccl:make-socket :connect :passive
@@ -74,6 +77,7 @@
                         (let ((client-stream (ccl:accept-connection server-socket)))
                           (funcall connection-handler client-stream))) 
                      (close server-socket)))))
+              name)
   #+sbcl (let* ((socket
                  (make-instance 'sb-bsd-sockets:inet-socket :type :stream
                                 :protocol :tcp))
@@ -93,8 +97,8 @@
            (push (list name socket
                        (sb-sys:add-fd-handler 
                         (sb-bsd-sockets:socket-file-descriptor socket)
-                        :input handler-fn)) *server-processes*))
-  name)
+                        :input handler-fn)) *server-processes*)
+           (values name socket)))
 
 (defun stop-server (name)
   "Kill a server process by name (as started by start-standard-server)"

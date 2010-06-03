@@ -125,14 +125,14 @@ class Timeline(wx.Window):
 
         # Time ticks
 
-        self._default_datatype_color = (0.0, 0.0, 0.4)
+        self._default_datatype_color = (0.0, 0.0, 0.4, 0.8)
         self._datatype_colors = {
-            'sensor_msgs/CameraInfo':            (  0,   0, 0.6),
-            'sensor_msgs/Image':                 (  0, 0.3, 0.3),
-            'sensor_msgs/LaserScan':             (0.6,   0,   0),
-            'pr2_msgs/LaserScannerSignal':       (0.6,   0,   0),
-            'pr2_mechanism_msgs/MechanismState': (  0, 0.6,   0),
-            'tf/tfMessage':                      (  0, 0.6,   0),
+            'sensor_msgs/CameraInfo':            (  0,   0, 0.6, 0.8),
+            'sensor_msgs/Image':                 (  0, 0.3, 0.3, 0.8),
+            'sensor_msgs/LaserScan':             (0.6,   0,   0, 0.8),
+            'pr2_msgs/LaserScannerSignal':       (0.6,   0,   0, 0.8),
+            'pr2_mechanism_msgs/MechanismState': (  0, 0.6,   0, 0.8),
+            'tf/tfMessage':                      (  0, 0.6,   0, 0.8),
         }
 
         self._default_msg_combine_px    = 1.0
@@ -1307,7 +1307,7 @@ class Timeline(wx.Window):
 
         # Draw stamps
         dc.set_line_width(1)
-        dc.set_source_rgb(*datatype_color)
+        dc.set_source_rgba(*datatype_color)
 
         for (stamp_start, stamp_end) in self._find_regions(all_stamps[:end_index], self.map_dx_to_dstamp(self._default_msg_combine_px)):
             if stamp_end < self._stamp_left:

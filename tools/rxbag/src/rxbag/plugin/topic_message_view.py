@@ -126,10 +126,10 @@ class TopicMessageView(MessageView):
         
         icons_dir = roslib.packages.get_pkg_dir(PKG) + '/icons/'
 
-        navigate_first_tool    = self._toolbar.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'navigate_first.png'))
-        navigate_previous_tool = self._toolbar.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'navigate_previous.png'))
-        navigate_next_tool     = self._toolbar.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'navigate_next.png'))
-        navigate_last_tool     = self._toolbar.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'navigate_last.png'))
+        navigate_first_tool    = self._toolbar.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'navigate_first.png'),    shortHelp='First message',    longHelp='Move playhead to first message on topic')
+        navigate_previous_tool = self._toolbar.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'navigate_previous.png'), shortHelp='Previous message', longHelp='Move playhead to previous message on topic')
+        navigate_next_tool     = self._toolbar.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'navigate_next.png'),     shortHelp='Next message',     longHelp='Move playhead to next message on topic')
+        navigate_last_tool     = self._toolbar.AddLabelTool(wx.ID_ANY, '', wx.Bitmap(icons_dir + 'navigate_last.png'),     shortHelp='Last message',     longHelp='Move playhead to last message on topic')
 
         self._toolbar.Bind(wx.EVT_TOOL, lambda e: self.navigate_first(),    navigate_first_tool)
         self._toolbar.Bind(wx.EVT_TOOL, lambda e: self.navigate_previous(), navigate_previous_tool)

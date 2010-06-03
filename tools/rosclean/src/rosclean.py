@@ -94,7 +94,7 @@ def get_disk_usage(d):
     # only implemented on Linux for now. Should work on OS X but need to verify first (du is not identical)
     if platform.system() == 'Linux':
         try:
-            return subprocess.Popen(['du', '-sb', d], stdout=subprocess.PIPE).communicate()[0].split()[0]
+            return int(subprocess.Popen(['du', '-sb', d], stdout=subprocess.PIPE).communicate()[0].split()[0])
         except:
             raise ROSCleanException("rosclean is not supported on this platform")
     else:

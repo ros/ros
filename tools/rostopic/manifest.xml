@@ -18,6 +18,7 @@ behaviors in ROS.
   <review status="Doc reviewed" notes="11/10/2009"/>
   <url>http://ros.org/wiki/rostopic</url>
   <depend package="roslib"/>
+  <depend package="rosgraph"/>
   <depend package="rosmsg"/>
   <depend package="rospy"/>
   <depend package="rosrecord"/>

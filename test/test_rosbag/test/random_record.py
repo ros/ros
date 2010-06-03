@@ -68,7 +68,7 @@ class RandomRecord(unittest.TestCase):
     for (topic, msg_class) in rmg.topics():
       publishers[topic] = rospy.Publisher(topic, msg_class)
 
-    bagpath = os.path.join(roslib.rospack.rospackexec(['find', 'test_rosbag']), 'test', 'recording_%d'%seed)
+    bagpath = os.path.join('/tmp', 'test_rosbag_random_record_%d'%seed)
     cmd = ['rosbag', 'record', '-a', '-O', bagpath]
     f1 = subprocess.Popen(cmd)
 

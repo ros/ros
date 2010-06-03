@@ -83,8 +83,10 @@ class RandomPlay(unittest.TestCase):
     for (topic, msg_class) in rmg.topics():
       subscribers[topic] = rospy.Subscriber(topic, msg_class, self.msg_cb_topic(topic))
 
-    bagpath = os.path.join(roslib.rospack.rospackexec(['find', 'test_rosbag']), 'test', 'recording_%d.bag'%seed)
+    bagpath = os.path.join('/tmp', 'test_rosbag_random_record_%d.bag'%seed)
     cmd = ['rosbag', 'play', '-d', str(DELAY), '-r', str(scale)]
+    
+    rospy.loginfo(str(cmd))
 
     if (self.use_clock):
       cmd += ['--clock', '--hz', '100']

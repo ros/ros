@@ -91,7 +91,7 @@ RecorderOptions::RecorderOptions() :
     compression(compression::None),
     prefix(""),
     name(""),
-    exclude_regex(""),
+    exclude_regex(),
     split_size(0),
     buffer_size(0),
     limit(0)

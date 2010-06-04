@@ -140,7 +140,7 @@ class RandomPlay(unittest.TestCase):
           # Messages can arrive late, but never very early Both of
           # these bounds are much larger than they ought to be, but
           # you never know with a heavily loaded system.
-          self.assertTrue(input_time - expect_time > -.1)
+          self.assertTrue(input_time - expect_time > -.5)
           self.assertTrue(abs(input_time - expect_time) < .5)
           break
 

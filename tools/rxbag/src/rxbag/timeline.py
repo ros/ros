@@ -53,7 +53,6 @@ import time
 
 import cairo
 import wx
-import wx.lib.newevent
 
 import bag_helper
 import plugins

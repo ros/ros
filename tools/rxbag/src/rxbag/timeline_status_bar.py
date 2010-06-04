@@ -34,6 +34,7 @@ PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 
 import wx
+import wx.lib.newevent
 
 import bag_helper
 

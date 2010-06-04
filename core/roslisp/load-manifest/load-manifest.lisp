@@ -64,23 +64,23 @@
       (call-next-method)))
 
 (defmethod asdf:operation-done-p :around ((operation asdf:operation) (c asdf:cl-source-file))
-  (let ((*ros-asdf-use-ros-home* (and (path-ros-package (asdf:component-pathname c))
-                                      (eql 0 (logand
-                                              (sb-posix:stat-mode
-                                               (sb-posix:stat (make-pathname
+  (let ((*ros-asdf-use-ros-home* (let ((stat (sb-posix:stat (make-pathname
                                                                :directory (pathname-directory
-                                                                           (asdf:component-pathname c)))))
-                                              #o0200)))))
+                                                                           (asdf:component-pathname c))))))
+                                   (and (path-ros-package (asdf:component-pathname c))
+                                        (or
+                                         (eql 0 (logand (sb-posix:stat-mode stat) #o0200))
+                                         (not (eq (sb-posix:stat-uid stat) (sb-posix:getuid))))))))
     (call-next-method)))
 
 (defmethod asdf:perform :around ((operation asdf:operation) (c asdf:cl-source-file))
-  (let ((*ros-asdf-use-ros-home* (and (path-ros-package (asdf:component-pathname c))
-                                      (eql 0 (logand
-                                              (sb-posix:stat-mode
-                                               (sb-posix:stat (make-pathname
+  (let ((*ros-asdf-use-ros-home* (let ((stat (sb-posix:stat (make-pathname
                                                                :directory (pathname-directory
-                                                                           (asdf:component-pathname c)))))
-                                              #o0200)))))
+                                                                           (asdf:component-pathname c))))))
+                                   (and (path-ros-package (asdf:component-pathname c))
+                                        (or
+                                         (eql 0 (logand (sb-posix:stat-mode stat) #o0200))
+                                         (not (eq (sb-posix:stat-uid stat) (sb-posix:getuid))))))))
     (call-next-method)))
 
 (defun asdf-system-of-component (component)

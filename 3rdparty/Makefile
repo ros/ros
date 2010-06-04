@@ -2,13 +2,6 @@
 # Will be replaced by proper CMake infrastructure.
 
 SUBDIRS = gtest \
-          matplotlib \
-          numpy \
-          paramiko \
-          pycrypto \
-          pyyaml \
-          svnmerge \
-          system \
           tinyxml \
           wxswig \
           xmlrpc++

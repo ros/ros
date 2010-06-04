@@ -35,6 +35,7 @@ import os
 import sys
 import time
 import unittest
+import traceback
 
 import roslib.message
 import rostest
@@ -51,6 +52,44 @@ class MessageTest(unittest.TestCase):
         x = HeaderTest()
         x._check_types()
         
+    def test_Message_check_types(self):
+        # test on a generated message
+        # - use UInt16MultiArray because it has an embedded MultiArrayLayout
+        from std_msgs.msg import String, UInt16MultiArray, MultiArrayLayout, MultiArrayDimension
+        from roslib.message import SerializationError
+        # not checking overflow in this test
+        correct = [String(), String('foo'), String(''), String(data='data'),
+                   UInt16MultiArray(),
+                   UInt16MultiArray(MultiArrayLayout(), []), 
+                   UInt16MultiArray(MultiArrayLayout(data_offset=1), [1, 2, 3]),         
+                   UInt16MultiArray(layout=MultiArrayLayout(data_offset=1)),
+                   UInt16MultiArray(layout=MultiArrayLayout(dim=[])),                   
+                   UInt16MultiArray(layout=MultiArrayLayout(dim=[MultiArrayDimension()])),                   
+                   UInt16MultiArray(data=[1, 2, 3]),
+                   ]
+        for t in correct:
+            t._check_types()
+        for t in correct:
+            try:
+                t._check_types(exc=Exception())
+                self.fail("should have raised wrapped exc")
+            except SerializationError:
+                pass
+
+        wrong = [String(1), String(data=1),
+                 UInt16MultiArray(1, []),                 
+                 UInt16MultiArray(MultiArrayLayout(), 1),
+                 UInt16MultiArray(String(), []),
+                 UInt16MultiArray(layout=MultiArrayLayout(dim=[1])),  
+                 UInt16MultiArray(layout=MultiArrayLayout(data_offset='')),  
+                 ]
+        for t in wrong:
+            try:
+                t._check_types()
+                self.fail("should have raised")
+            except SerializationError:
+                pass
+                 
     def test_Message(self):
         import cStringIO
         from roslib.message import Message, SerializationError
@@ -200,8 +239,12 @@ list: []""", strify_message(M2('string', -1, 0., False, [])))
             def __init__(self, t, d):
                 self.t = t
                 self.d = d        
-        self.assertEquals("""t: 987000000654
-d: 123000000456""", strify_message(M5(Time(987, 654), Duration(123, 456))))
+        self.assertEquals("""t: 
+  secs: 987
+  nsecs: 654
+d: 
+  secs: 123
+  nsecs: 456""", strify_message(M5(Time(987, 654), Duration(123, 456))))
         
         # test final clause of strify -- str anything that isn't recognized
         self.assertEquals("set([1])", strify_message(set([1])))
@@ -231,7 +274,6 @@ d: 123000000456""", strify_message(M5(Time(987, 654), Duration(123, 456))))
             try:
                 check_type('n', t, v)
             except Exception, e:
-                import traceback
                 traceback.print_exc()
                 raise Exception("failure type[%s] value[%s]: %s"%(t, v, str(e)))
 
@@ -302,13 +344,13 @@ d: 123000000456""", strify_message(M5(Time(987, 654), Duration(123, 456))))
             [[10, 20], [30, 40], ['foo'], [{'data': 'bar'}, {'data': 'baz'}], 32],
 
             [{'t': [10, 20], 'd': [30, 40], 'str_msg': {'data': 'foo'}, 'str_msg_array': [{'data': 'bar'}, {'data': 'baz'}], 'i32': 32}],            
+            [{'t': {'secs': 10, 'nsecs': 20}, 'd': [30, 40], 'str_msg': {'data': 'foo'}, 'str_msg_array': [{'data': 'bar'}, {'data': 'baz'}], 'i32': 32}],            
             ]
         for test in equiv:
             m = FillEmbedTime()            
             try:
                 fill_message_args(m, test)
             except Exception, e:
-                import traceback
                 self.fail("failed to fill with : %s\n%s"%(str(test), traceback.format_exc()))
 
             self.assertEquals(m.t, Time(10, 20))
@@ -318,7 +360,21 @@ d: 123000000456""", strify_message(M5(Time(987, 654), Duration(123, 456))))
             self.assertEquals(m.str_msg_array[0].data, 'bar')
             self.assertEquals(m.str_msg_array[1].data, 'baz')
             self.assertEquals(m.i32, 32)
-
+        # test creation of Time/Duration from single number representation, which is necessary for 
+        
+        # yaml single-number support
+        # - cannot include in tests above as conversion from integer is lossy
+        m = FillEmbedTime()            
+        fill_message_args(m, [10000000020, 30000000040, ['foo'], [['bar'], ['baz']], 32])
+        self.assertEquals(10, m.t.secs)
+        self.assert_(abs(20 - m.t.nsecs) < 2)
+        self.assertEquals(30, m.d.secs)
+        self.assert_(abs(40 - m.d.nsecs) < 2)
+        self.assertEquals(len(m.str_msg_array), 2, m.str_msg_array)
+        self.assertEquals(m.str_msg_array[0].data, 'bar')
+        self.assertEquals(m.str_msg_array[1].data, 'baz')
+        self.assertEquals(m.i32, 32)
+        
         bad = [
             # underfill in sub-args
             [[10, 20], [30, 40], ['foo'], [['bar'], ['baz']]],
@@ -340,8 +396,7 @@ d: 123000000456""", strify_message(M5(Time(987, 654), Duration(123, 456))))
             [{'secs': 10, 'nsecs': 20}, {'secs': 30, 'nsecs': 40, 'foo': 1}, ['foo'], [['bar'], ['baz']], 32],            
             [[10, 20], [30, 40], {'data': 'foo', 'fata': 1}, [['bar'], ['baz']], 32],
             [[10, 20], [30, 40], ['foo'], [{'data': 'bar'}, {'beta': 'baz'}], 32],
-            [{'t': [10, 20], 'd': [30, 40], 'str_msg': {'data': 'foo'}, 'str_msg_array': [{'data': 'bar'}, {'data': 'baz'}], 'i32': 32, 'i64': 64}],            
-
+            [{'t': [10, 20], 'd': [30, 40], 'str_msg': {'data': 'foo'}, 'str_msg_array': [{'data': 'bar'}, {'data': 'baz'}], 'i32': 32, 'i64': 64}],
             ]
         for b in bad:
             failed = True
@@ -361,6 +416,19 @@ d: 123000000456""", strify_message(M5(Time(987, 654), Duration(123, 456))))
         #string str
         #int32[] i32_array
         #bool b
+
+        for v in [[], {}]:
+            try:
+                fill_message_args(object(), v)
+                self.fail("should have raised ValueError")
+            except ValueError: pass
+        try:
+            m = FillSimple()
+            # call underlying routine as the branch is not reachable from above
+            roslib.message._fill_message_args(m, 1, {}, '')
+            self.fail("should have raised ValueError for bad msg_args")
+        except ValueError: pass
+        
         simple_tests = [
             [1, 'foo', [], True],
             [1, 'foo', [1, 2, 3, 4], False],
@@ -403,6 +471,8 @@ d: 123000000456""", strify_message(M5(Time(987, 654), Duration(123, 456))))
             [1, 'foo', [1, 2, 3]],
             # overfill
             [1, 'foo', [1, 2, 3], True, 1],
+            # non-list value for list field
+            [1, 'foo', 1, True],
             ]
         for b in bad:
             failed = True

@@ -9,12 +9,19 @@ roslaunch is a tool for easily launching multiple ROS <a href="http://ros.org/wi
   <review status="Doc reviewed" notes="01/18/2010"/>
   <url>http://ros.org/wiki/roslaunch</url>
   <depend package="roslib"/>
+  <depend package="rosclean"/>
+  <depend package="rosgraph"/>
   <depend package="rospy"/>
-  <depend package="paramiko"/>
+  <depend package="rosmaster"/>  
   <depend package="rosout"/>
+  <rosdep name="paramiko"/>
   <rosdep name="python-yaml"/>
   <export>
     <rosdoc config="rosdoc.yaml"/>
   </export>    
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>
 

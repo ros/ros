@@ -95,26 +95,31 @@ void CallbackQueue::setupTLS()
 
 void CallbackQueue::addCallback(const CallbackInterfacePtr& callback, uint64_t removal_id)
 {
-  boost::mutex::scoped_lock lock(mutex_);
-
-  if (!enabled_)
-  {
-    return;
-  }
-
-  setupTLS();
-
   CallbackInfo info;
   info.callback = callback;
   info.removal_id = removal_id;
-  callbacks_.push_back(info);
 
-  M_IDInfo::iterator it = id_info_.find(removal_id);
-  if (it == id_info_.end())
   {
-    IDInfoPtr id_info(new IDInfo);
-    id_info->id = removal_id;
-    id_info_.insert(std::make_pair(removal_id, id_info));
+    boost::mutex::scoped_lock lock(mutex_);
+
+    if (!enabled_)
+    {
+      return;
+    }
+
+    callbacks_.push_back(info);
+  }
+
+  {
+    boost::mutex::scoped_lock lock(id_info_mutex_);
+
+    M_IDInfo::iterator it = id_info_.find(removal_id);
+    if (it == id_info_.end())
+    {
+      IDInfoPtr id_info(new IDInfo);
+      id_info->id = removal_id;
+      id_info_.insert(std::make_pair(removal_id, id_info));
+    }
   }
 
   condition_.notify_one();
@@ -161,9 +166,8 @@ void CallbackQueue::removeByID(uint64_t removal_id)
     {
       boost::unique_lock<boost::shared_mutex> rw_lock(id_info->calling_rw_mutex);
       boost::mutex::scoped_lock lock(mutex_);
-      L_CallbackInfo::iterator it = callbacks_.begin();
-      L_CallbackInfo::iterator end = callbacks_.end();
-      for (; it != end;)
+      D_CallbackInfo::iterator it = callbacks_.begin();
+      for (; it != callbacks_.end();)
       {
         CallbackInfo& info = *it;
         if (info.removal_id == removal_id)
@@ -186,8 +190,8 @@ void CallbackQueue::removeByID(uint64_t removal_id)
   // If we're being called from within a callback, we need to remove the callbacks that match the id that have already been
   // popped off the queue
   {
-    L_CallbackInfo::iterator it = tls_->callbacks.begin();
-    L_CallbackInfo::iterator end = tls_->callbacks.end();
+    D_CallbackInfo::iterator it = tls_->callbacks.begin();
+    D_CallbackInfo::iterator end = tls_->callbacks.end();
     for (; it != end; ++it)
     {
       CallbackInfo& info = *it;
@@ -204,9 +208,10 @@ void CallbackQueue::removeByID(uint64_t removal_id)
   }
 }
 
-void CallbackQueue::callOne(ros::WallDuration timeout)
+CallbackQueue::CallOneResult CallbackQueue::callOne(ros::WallDuration timeout)
 {
   setupTLS();
+  TLS* tls = tls_.get();
 
   CallbackInfo cb_info;
 
@@ -215,7 +220,7 @@ void CallbackQueue::callOne(ros::WallDuration timeout)
 
     if (!enabled_)
     {
-      return;
+      return Disabled;
     }
 
     if (callbacks_.empty())
@@ -225,15 +230,19 @@ void CallbackQueue::callOne(ros::WallDuration timeout)
         condition_.timed_wait(lock, boost::posix_time::microseconds(timeout.toSec() * 1000000.0f));
       }
 
-      if (callbacks_.empty() || !enabled_)
+      if (callbacks_.empty())
       {
-        return;
+        return Empty;
+      }
+
+      if (!enabled_)
+      {
+        return Disabled;
       }
     }
 
-    L_CallbackInfo::iterator it = callbacks_.begin();
-    L_CallbackInfo::iterator end = callbacks_.end();
-    for (; it != end;)
+    D_CallbackInfo::iterator it = callbacks_.begin();
+    for (; it != callbacks_.end();)
     {
       CallbackInfo& info = *it;
 
@@ -255,38 +264,24 @@ void CallbackQueue::callOne(ros::WallDuration timeout)
 
     if (!cb_info.callback)
     {
-      return;
+      return TryAgain;
     }
   }
 
+  bool was_empty = tls->callbacks.empty();
+  tls->callbacks.push_back(cb_info);
+  if (was_empty)
   {
-    IDInfoPtr id_info = getIDInfo(cb_info.removal_id);
-    if (id_info)
-    {
-      boost::shared_lock<boost::shared_mutex> rw_lock(id_info->calling_rw_mutex);
-      if (!cb_info.marked_for_removal)
-      {
-        tls_->calling_in_this_thread = id_info->id;
-        tls_->callbacks.push_back(cb_info);
-
-        CallbackInterface::CallResult result = cb_info.callback->call();
-
-        tls_->calling_in_this_thread = 0xffffffffffffffffULL;
-        tls_->callbacks.clear();
-
-        if (result == CallbackInterface::TryAgain && !cb_info.marked_for_removal)
-        {
-          boost::mutex::scoped_lock lock(mutex_);
-          callbacks_.push_front(cb_info);
-        }
-      }
-    }
+    tls->cb_it = tls->callbacks.begin();
   }
+
+  return callOneCB(tls);
 }
 
 void CallbackQueue::callAvailable(ros::WallDuration timeout)
 {
   setupTLS();
+  TLS* tls = tls_.get();
 
   {
     boost::mutex::scoped_lock lock(mutex_);
@@ -309,54 +304,81 @@ void CallbackQueue::callAvailable(ros::WallDuration timeout)
       }
     }
 
-    tls_->callbacks.swap(callbacks_);
+    bool was_empty = tls->callbacks.empty();
+
+    tls->callbacks.insert(tls->callbacks.end(), callbacks_.begin(), callbacks_.end());
+    callbacks_.clear();
+
+    if (was_empty)
+    {
+      tls->cb_it = tls->callbacks.begin();
+    }
   }
 
+  while (!tls->callbacks.empty())
   {
-    L_CallbackInfo::iterator it = tls_->callbacks.begin();
-    L_CallbackInfo::iterator end = tls_->callbacks.end();
-    for (; it != end;)
+    callOneCB(tls);
+  }
+}
+
+CallbackQueue::CallOneResult CallbackQueue::callOneCB(TLS* tls)
+{
+  // Check for a recursive call.  If recursive, increment the current iterator.  Otherwise
+  // set the iterator it the beginning of the thread-local callbacks
+  if (tls->calling_in_this_thread == 0xffffffffffffffffULL)
+  {
+    tls->cb_it = tls->callbacks.begin();
+  }
+
+  if (tls->cb_it == tls->callbacks.end())
+  {
+    return Empty;
+  }
+
+  ROS_ASSERT(!tls->callbacks.empty());
+  ROS_ASSERT(tls->cb_it != tls->callbacks.end());
+
+  CallbackInfo info = *tls->cb_it;
+  CallbackInterfacePtr& cb = info.callback;
+
+  IDInfoPtr id_info = getIDInfo(info.removal_id);
+  if (id_info)
+  {
+    boost::shared_lock<boost::shared_mutex> rw_lock(id_info->calling_rw_mutex);
+
+    uint64_t last_calling = tls->calling_in_this_thread;
+    tls->calling_in_this_thread = id_info->id;
+
+    CallbackInterface::CallResult result = CallbackInterface::Invalid;
+    if (info.marked_for_removal)
     {
-      CallbackInfo& info = *it;
-      CallbackInterfacePtr& cb = info.callback;
-
-      IDInfoPtr id_info = getIDInfo(info.removal_id);
-      if (id_info)
-      {
-        boost::shared_lock<boost::shared_mutex> rw_lock(id_info->calling_rw_mutex);
-        tls_->calling_in_this_thread = id_info->id;
-
-        CallbackInterface::CallResult result = CallbackInterface::Invalid;
-        if (!info.marked_for_removal)
-        {
-          result = cb->call();
-        }
-
-        tls_->calling_in_this_thread = 0xffffffffffffffffULL;
-
-        if (info.marked_for_removal || result == CallbackInterface::Success || result == CallbackInterface::Invalid)
-        {
-          it = tls_->callbacks.erase(it);
-        }
-        else if (result == CallbackInterface::TryAgain)
-        {
-          ++it;
-        }
-      }
-      else
-      {
-        it = tls_->callbacks.erase(it);
-      }
+      tls->cb_it = tls->callbacks.erase(tls->cb_it);
+    }
+    else
+    {
+      tls->cb_it = tls->callbacks.erase(tls->cb_it);
+      result = cb->call();
     }
 
-    // If we had some callbacks that returned TryAgain, push them to the front of the shared queue
-    if (!tls_->callbacks.empty())
+    tls->calling_in_this_thread = last_calling;
+
+    // Push TryAgain callbacks to the back of the shared queue
+    if (result == CallbackInterface::TryAgain && !info.marked_for_removal)
     {
       boost::mutex::scoped_lock lock(mutex_);
-      callbacks_.insert(callbacks_.begin(), tls_->callbacks.begin(), tls_->callbacks.end());
-      tls_->callbacks.clear();
+      callbacks_.push_back(info);
+
+      return TryAgain;
     }
+
+    return Called;
   }
+  else
+  {
+    tls->cb_it = tls->callbacks.erase(tls->cb_it);
+  }
+
+  return Called;
 }
 
 }

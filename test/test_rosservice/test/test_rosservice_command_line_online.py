@@ -45,7 +45,29 @@ import unittest
 import rospy
 import rostest
 
+import test_ros.srv
+
 from subprocess import Popen, PIPE, check_call, call
+
+from threading import Thread
+class TestTask(Thread):
+    def __init__(self, task):
+        Thread.__init__(self)
+        self.task = task
+        self.success = False
+        self.done = False
+        self.value = None
+        
+    def run(self):
+        try:
+            print "STARTING TASK"
+            self.value = self.task()
+            print "TASK HAS COMPLETED"
+            self.success = True
+        except:
+            import traceback
+            traceback.print_exc()
+        self.done = True
 
 class TestRosserviceOnline(unittest.TestCase):
 
@@ -88,6 +110,9 @@ class TestRosserviceOnline(unittest.TestCase):
             self.assert_(output.startswith('rosrpc://'), output)
 
             # call
+            output = Popen([cmd, 'call', '--wait', name, '1', '2'], stdout=PIPE).communicate()[0]
+            self.assertEquals('sum: 3', output.strip())
+
             output = Popen([cmd, 'call', name, '1', '2'], stdout=PIPE).communicate()[0]
             self.assertEquals('sum: 3', output.strip())
 
@@ -99,6 +124,21 @@ class TestRosserviceOnline(unittest.TestCase):
         uri2 = Popen([cmd, 'uri', 'add_two_ints'], env=env, stdout=PIPE).communicate()[0]
         self.assert_(uri2.startswith('rosrpc://'))
         self.assertNotEquals(uri1, uri2)
+
+        # test_call_wait
+        def task1():
+            output = Popen([cmd, 'call', '--wait', 'wait_two_ints', '1', '2'], stdout=PIPE).communicate()[0]
+            self.assertEquals('sum: 3', output.strip())
+        timeout_t = time.time() + 5.
+        t1 = TestTask(task1)
+        t1.start()
+        
+        rospy.init_node('test_call_wait')
+        rospy.Service("wait_two_ints", test_ros.srv.AddTwoInts, lambda x: x.a + x.b)
+        while not t1.done and time.time() < timeout_t:
+            time.sleep(0.5)
+        self.assert_(t1.success)
+        
 
 if __name__ == '__main__':
     rostest.run(PKG, NAME, TestRosserviceOnline, sys.argv)

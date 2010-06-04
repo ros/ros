@@ -64,6 +64,11 @@ public:
    */
   bool hasPending();
 
+  /**
+   * \brief Set the period of this timer
+   */
+  void setPeriod(const WallDuration& period);
+
   bool isValid() { return impl_ && impl_->isValid(); }
   operator void*() { return isValid() ? (void*)1 : (void*)0; }
 
@@ -93,6 +98,7 @@ private:
 
     bool isValid();
     bool hasPending();
+    void setPeriod(const WallDuration& period);
 
     void start();
     void stop();
@@ -103,7 +109,7 @@ private:
     WallDuration period_;
     WallTimerCallback callback_;
     CallbackQueueInterface* callback_queue_;
-    VoidWPtr tracked_object_;
+    VoidConstWPtr tracked_object_;
     bool has_tracked_object_;
     double constructed_;
     bool oneshot_;

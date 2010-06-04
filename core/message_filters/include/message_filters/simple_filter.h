@@ -37,9 +37,14 @@
 
 #include <boost/noncopyable.hpp>
 
-#include <ros/ros.h>
-
 #include "connection.h"
+#include "signal1.h"
+#include <ros/message_event.h>
+#include <ros/subscription_callback_helper.h>
+
+#include <boost/bind.hpp>
+
+#include <string>
 
 namespace message_filters
 {
@@ -47,7 +52,7 @@ namespace message_filters
 /**
  * \brief Convenience base-class for simple filters which output a single message
  *
- * SimpleFilter provides some of the "tricky" callback registering functionality, so that
+ * SimpleFilter provides some of the tricky callback registering functionality, so that
  * simple filters do not have to duplicate it.  It also provides getName()/setName() for debugging
  * purposes.
  */
@@ -57,16 +62,49 @@ class SimpleFilter : public boost::noncopyable
 public:
   typedef boost::shared_ptr<M const> MConstPtr;
   typedef boost::function<void(const MConstPtr&)> Callback;
-  typedef boost::signal<void(const MConstPtr&)> Signal;
+  typedef ros::MessageEvent<M const> EventType;
+  typedef boost::function<void(const EventType&)> EventCallback;
 
   /**
    * \brief Register a callback to be called when this filter has passed
    * \param callback The callback to call
    */
-  Connection registerCallback(const Callback& callback)
+  template<typename C>
+  Connection registerCallback(const C& callback)
   {
-    boost::mutex::scoped_lock lock(signal_mutex_);
-    return Connection(boost::bind(&SimpleFilter::disconnect, this, _1), signal_.connect(callback));
+    typename CallbackHelper1<M>::Ptr helper = signal_.addCallback(Callback(callback));
+    return Connection(boost::bind(&Signal::removeCallback, &signal_, helper));
+  }
+
+  /**
+   * \brief Register a callback to be called when this filter has passed
+   * \param callback The callback to call
+   */
+  template<typename P>
+  Connection registerCallback(const boost::function<void(P)>& callback)
+  {
+    return Connection(boost::bind(&Signal::removeCallback, &signal_, signal_.addCallback(callback)));
+  }
+
+  /**
+   * \brief Register a callback to be called when this filter has passed
+   * \param callback The callback to call
+   */
+  template<typename P>
+  Connection registerCallback(void(*callback)(P))
+  {
+    return Connection(boost::bind(&Signal::removeCallback, &signal_, signal_.addCallback(callback)));
+  }
+
+  /**
+   * \brief Register a callback to be called when this filter has passed
+   * \param callback The callback to call
+   */
+  template<typename T, typename P>
+  Connection registerCallback(void(T::*callback)(P), T* t)
+  {
+    typename CallbackHelper1<M>::Ptr helper = signal_.template addCallback<P>(boost::bind(callback, t, _1));
+    return Connection(boost::bind(&Signal::removeCallback, &signal_, helper));
   }
 
   /**
@@ -84,19 +122,23 @@ protected:
    */
   void signalMessage(const MConstPtr& msg)
   {
-    boost::mutex::scoped_lock lock(signal_mutex_);
-    signal_(msg);
+    ros::MessageEvent<M const> event(msg);
+
+    signal_.call(event);
+  }
+
+  /**
+   * \brief Call all registered callbacks, passing them the specified message
+   */
+  void signalMessage(const ros::MessageEvent<M const>& event)
+  {
+    signal_.call(event);
   }
 
 private:
-  void disconnect(const Connection& c)
-  {
-    boost::mutex::scoped_lock lock(signal_mutex_);
-    c.getBoostConnection().disconnect();
-  }
+  typedef Signal1<M> Signal;
 
   Signal signal_;
-  boost::mutex signal_mutex_;
 
   std::string name_;
 };

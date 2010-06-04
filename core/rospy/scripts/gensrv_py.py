@@ -38,7 +38,6 @@ ROS message source code generation for rospy.
 
 Converts ROS .srv files into Python source code implementations.
 """
-
 import roslib; roslib.load_manifest('rospy')
 
 import sys, os

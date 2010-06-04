@@ -107,6 +107,51 @@ class TestRospyClientOnline(unittest.TestCase):
         self.assert_(t3.done)
         self.failIf(t3.success)
     
+    def test_ServiceProxy_wait_for_service(self):
+        """
+        Test ServiceProxy.wait_for_service
+        """
+        # lazy-import for coverage
+        import rospy
+        import time
+        import test_ros.srv
+
+        # test wait for service in success case        
+        proxy = rospy.ServiceProxy('add_two_ints', test_ros.srv.AddTwoInts)
+        class ProxyTask(object):
+            def __init__(self, proxy, timeout=None):
+                self.proxy = proxy
+                self.timeout = timeout
+            def __call__(self):
+                if self.timeout is None:
+                    self.proxy.wait_for_service()
+                else:
+                    self.proxy.wait_for_service(timeout=self.timeout)
+        timeout_t = time.time() + 5.
+        t1 = TestTask(ProxyTask(proxy))
+        t1.start()
+        while not t1.done and time.time() < timeout_t:
+            time.sleep(0.5)
+        self.assert_(t1.success)
+        
+        # test wait for service with timeout in success case
+        timeout_t = time.time() + 5.        
+        t2 = TestTask(ProxyTask(proxy, timeout=1.))
+        t2.start()
+        while not t2.done and time.time() < timeout_t:
+            time.sleep(0.5)
+        self.assert_(t2.success)
+
+        # test wait for service in failure case
+        fake_proxy = rospy.ServiceProxy('fake_service', test_ros.srv.AddTwoInts)
+        timeout_t = time.time() + 2.        
+        t3 = TestTask(ProxyTask(fake_proxy, timeout=0.1))        
+        t3.start()
+        while not t3.done and time.time() < timeout_t:
+            time.sleep(0.5)
+        self.assert_(t3.done)
+        self.failIf(t3.success)
+
     def test_sleep(self):
         import rospy
         import time

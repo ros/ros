@@ -84,6 +84,9 @@ NodeHandle::NodeHandle(const NodeHandle& parent, const std::string& ns)
   callback_queue_ = parent.callback_queue_;
 
   construct();
+
+  remappings_ = parent.remappings_;
+  unresolved_remappings_ = parent.unresolved_remappings_;
 }
 
 NodeHandle::NodeHandle(const NodeHandle& parent, const std::string& ns, const M_string& remappings)
@@ -103,6 +106,7 @@ NodeHandle::NodeHandle(const NodeHandle& rhs)
   namespace_ = rhs.namespace_;
   callback_queue_ = rhs.callback_queue_;
   remappings_ = rhs.remappings_;
+  unresolved_remappings_ = rhs.unresolved_remappings_;
 
   construct();
 }
@@ -118,6 +122,7 @@ NodeHandle& NodeHandle::operator=(const NodeHandle& rhs)
   namespace_ = rhs.namespace_;
   callback_queue_ = rhs.callback_queue_;
   remappings_ = rhs.remappings_;
+  unresolved_remappings_ = rhs.unresolved_remappings_;
 
   return *this;
 }

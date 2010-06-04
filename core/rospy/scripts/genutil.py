@@ -183,6 +183,10 @@ class Generator(object):
             f.close()
 
     def generate_package(self, package, pfiles):
+        if not roslib.names.is_legal_resource_base_name(package):
+            print "\nERROR[%s]: package name '%s' is illegal and cannot be used in message generation.\nPlease see http://ros.org/wiki/Names"%(self.name, package)
+            return 1 # flag error
+        
         package_dir = roslib.packages.get_pkg_dir(package, True)
         if package_dir is None:
             print "\nERROR[%s]: Unable to locate package '%s'\n"%(self.name, package)

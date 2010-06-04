@@ -60,8 +60,8 @@ class ServiceServerLink : public boost::enable_shared_from_this<ServiceServerLin
 private:
   struct CallInfo
   {
-    Message* req_;
-    Message* resp_;
+    SerializedMessage req_;
+    SerializedMessage* resp_;
 
     bool finished_;
     boost::condition_variable finished_condition_;
@@ -103,7 +103,7 @@ public:
    * If there is already a call happening in another thread, this will queue up the call and still block until
    * it has finished.
    */
-  bool call(Message* req, Message* resp);
+  bool call(const SerializedMessage& req, SerializedMessage& resp);
 
 private:
   void onConnectionDropped(const ConnectionPtr& conn);

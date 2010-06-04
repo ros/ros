@@ -36,6 +36,8 @@
 
 #include "ros/time.h"
 #include "message_filters/time_synchronizer.h"
+#include "message_filters/pass_through.h"
+#include <ros/init.h>
 
 using namespace message_filters;
 
@@ -53,11 +55,27 @@ struct Msg
 typedef boost::shared_ptr<Msg> MsgPtr;
 typedef boost::shared_ptr<Msg const> MsgConstPtr;
 
+namespace ros
+{
+namespace message_traits
+{
+template<>
+struct TimeStamp<Msg>
+{
+  static ros::Time value(const Msg& m)
+  {
+    return m.header.stamp;
+  }
+};
+}
+}
+
 class Helper
 {
 public:
   Helper()
   : count_(0)
+  , drop_count_(0)
   {}
 
   void cb()
@@ -65,7 +83,13 @@ public:
     ++count_;
   }
 
+  void dropcb()
+  {
+    ++drop_count_;
+  }
+
   int32_t count_;
+  int32_t drop_count_;
 };
 
 TEST(TimeSynchronizer, compile2)
@@ -123,7 +147,7 @@ void function5(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const
 void function6(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
 void function7(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
 void function8(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
-void function9(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+void function9(const MsgConstPtr&, MsgConstPtr, const MsgPtr&, MsgPtr, const Msg&, Msg, const ros::MessageEvent<Msg const>&, const ros::MessageEvent<Msg>&, const MsgConstPtr&) {}
 
 TEST(TimeSynchronizer, compileFunction2)
 {
@@ -171,6 +195,67 @@ TEST(TimeSynchronizer, compileFunction9)
 {
   TimeSynchronizer<Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg> sync(1);
   sync.registerCallback(function9);
+}
+
+struct MethodHelper
+{
+  void method2(const MsgConstPtr&, const MsgConstPtr&) {}
+  void method3(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+  void method4(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+  void method5(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+  void method6(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+  void method7(const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&, const MsgConstPtr&) {}
+  void method8(const MsgConstPtr&, MsgConstPtr, const MsgPtr&, MsgPtr, const Msg&, Msg, const ros::MessageEvent<Msg const>&, const ros::MessageEvent<Msg>&) {}
+  // Can only do 8 here because the object instance counts as a parameter and bind only supports 9
+};
+
+TEST(TimeSynchronizer, compileMethod2)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method2, &h);
+}
+
+TEST(TimeSynchronizer, compileMethod3)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method3, &h);
+}
+
+TEST(TimeSynchronizer, compileMethod4)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method4, &h);
+}
+
+TEST(TimeSynchronizer, compileMethod5)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method5, &h);
+}
+
+TEST(TimeSynchronizer, compileMethod6)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg, Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method6, &h);
+}
+
+TEST(TimeSynchronizer, compileMethod7)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg, Msg, Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method7, &h);
+}
+
+TEST(TimeSynchronizer, compileMethod8)
+{
+  MethodHelper h;
+  TimeSynchronizer<Msg, Msg, Msg, Msg, Msg, Msg, Msg, Msg> sync(1);
+  sync.registerCallback(&MethodHelper::method8, &h);
 }
 
 TEST(TimeSynchronizer, immediate2)
@@ -392,12 +477,76 @@ TEST(TimeSynchronizer, queueSize)
   ASSERT_EQ(h.count_, 0);
 }
 
+TEST(TimeSynchronizer, dropCallback)
+{
+  TimeSynchronizer<Msg, Msg> sync(1);
+  Helper h;
+  sync.registerCallback(boost::bind(&Helper::cb, &h));
+  sync.registerDropCallback(boost::bind(&Helper::dropcb, &h));
+  MsgPtr m(new Msg);
+  m->header.stamp = ros::Time();
+
+  sync.add0(m);
+  ASSERT_EQ(h.drop_count_, 0);
+  m->header.stamp = ros::Time(0.1);
+  sync.add0(m);
+
+  ASSERT_EQ(h.drop_count_, 1);
+}
+
+struct EventHelper
+{
+  void callback(const ros::MessageEvent<Msg const>& e1, const ros::MessageEvent<Msg const>& e2)
+  {
+    e1_ = e1;
+    e2_ = e2;
+  }
+
+  ros::MessageEvent<Msg const> e1_;
+  ros::MessageEvent<Msg const> e2_;
+};
+
+TEST(TimeSynchronizer, eventInEventOut)
+{
+  TimeSynchronizer<Msg, Msg> sync(2);
+  EventHelper h;
+  sync.registerCallback(&EventHelper::callback, &h);
+  ros::MessageEvent<Msg const> evt(MsgPtr(new Msg), ros::Time(4));
+
+  sync.add<0>(evt);
+  sync.add<1>(evt);
+
+  ASSERT_TRUE(h.e1_.getMessage());
+  ASSERT_TRUE(h.e2_.getMessage());
+  ASSERT_EQ(h.e1_.getReceiptTime(), evt.getReceiptTime());
+  ASSERT_EQ(h.e2_.getReceiptTime(), evt.getReceiptTime());
+}
+
+TEST(TimeSynchronizer, connectConstructor)
+{
+  PassThrough<Msg> pt1, pt2;
+  TimeSynchronizer<Msg, Msg> sync(pt1, pt2, 1);
+  Helper h;
+  sync.registerCallback(boost::bind(&Helper::cb, &h));
+  MsgPtr m(new Msg);
+  m->header.stamp = ros::Time::now();
+
+  pt1.add(m);
+  ASSERT_EQ(h.count_, 0);
+  pt2.add(m);
+  ASSERT_EQ(h.count_, 1);
+}
+
+//TEST(TimeSynchronizer, connectToSimple)
+
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "blah");
 
   ros::Time::setNow(ros::Time());
 
   return RUN_ALL_TESTS();
 }
+
 
 

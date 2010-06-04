@@ -46,6 +46,8 @@ import roslib.stacks
 import threading
 import math
 
+from operator import itemgetter
+
 import parallel_build
 import package_stats
 
@@ -60,17 +62,179 @@ def make_command():
     """
     return os.environ.get("MAKE", "make")
 
+class Printer:
+   # storage for the instance reference
+    __instance = None
+
+    def __init__(self):
+        """ Create singleton instance """
+        # Check whether we already have an instance
+        if Printer.__instance is None:
+            # Create and remember instance
+            Printer.__instance = Printer.__impl()
+
+        # Store instance reference as the only member in the handle
+        self.__dict__['_Printer__instance'] = Printer.__instance
+
+    def __getattr__(self, attr):
+        """ Delegate access to implementation """
+        return getattr(self.__instance, attr)
+
+    def __setattr__(self, attr, value):
+        """ Delegate access to implementation """
+        return setattr(self.__instance, attr, value)
+
+    class __impl(threading.Thread):
+        def __init__(self):
+            threading.Thread.__init__(self)
+            self.build_queue = None
+            self.condition = threading.Condition()
+            self.running = True
+            self.done = False
+            self.status = ""
+            self.verbose = False
+            self.full_verbose = False
+            self.duration = 1./60.
+
+            # Rosmake specific data
+            self.cache_argument = None
+            self.cache_right = ''
+            self.pkg_start_times = {}
+
+        def shutdown(self):
+            self.running = False
+            cycles = 10
+            for i in range(0,cycles):# sleep for at least 2 cycles of the status testing 'cycles' times
+                if self.done:
+                    #print "SUCCESSFULLY SHUTDOWN"
+                    return True
+                #print "Sleeping for %f FOR SHUTDOWN.  %d threads running"%(max(self.duration/cycles*2, 0.01), threading.activeCount())
+                time.sleep(self.duration/cycles*2) 
+            raise Exception("Failed to shutdown status thread in %.2f seconds"%(self.duration * 2))
+
+        def __enter__(self):
+            self.start()
+        def __exit__(self, type, value, traceback):
+            #print type, value, "traceback: %s"%traceback
+            self.shutdown()
+        def run(self):
+            while self.running:
+                #shutdown if duration set to zero
+                if self.duration <= 0:
+                    self.running = False
+                    break
+                self.set_status_from_cache()
+                if len(self.status) > 0:
+                    n = self.terminal_width() - len(self.status)
+                    status = self.status
+                    if n > 0:
+                        status = " "*n + self.status
+                    self._print_status("%s"%status)
+                time.sleep(self.duration) 
+            self.done = True
+            #print "STATUS THREAD FINISHED"
+
+        def rosmake_cache_info(self, argument, start_times, right):
+            self.cache_argument = argument
+            self.pkg_start_times = start_times
+            self.cache_right = right
+
+        def rosmake_pkg_times_to_string(self, start_times):
+            threads = []
+            for p, t in sorted(start_times.iteritems(), key=itemgetter(1)):
+                threads.append("[ %s: %.2f sec ]"%(p, time.time() - t))
+
+            return " ".join(threads)
+
+        def set_status_from_cache(self):
+            if self.cache_argument:
+                self.set_status("[ make %s ] "%self.cache_argument + self.rosmake_pkg_times_to_string(self.pkg_start_times), self.cache_right)
+            else:
+                self.set_status("[ make ] " + self.rosmake_pkg_times_to_string(self.pkg_start_times), self.cache_right)
+
+        def set_status(self, left, right = ''):
+            header = "[ rosmake ] "
+            h = len(header)
+            l = len(left)
+            r = len(right)
+            w = self.terminal_width()
+            if l + r < w - h:
+                padding = w - h - l - r
+                self.status = header + left + " "*padding + right
+            else:
+                self.status = header + left[:(w - h - r - 4)] + "... " + right
+
+        def print_all(self, s, thread_name=None):
+            if thread_name is None:
+                sys.stdout.write("[ rosmake ] %s\n"%s)
+                sys.stdout.flush()
+            else:
+                sys.stdout.write("[rosmake-%s] %s\n"%(thread_name, s))
+                sys.stdout.flush()
+
+        def print_verbose(self, s, thread_name=None):
+            if self.verbose or self.full_verbose:
+              if thread_name:
+                self.print_all(s, thread_name=thread_name)
+              else:
+                print "[ rosmake ] %s"%s
+
+        def print_full_verbose(self, s):
+            if self.full_verbose:
+                print "[ rosmake ] %s"%s
+
+        def print_tail(self, s, tail_lines=40):
+            lines = s.splitlines()
+            if self.full_verbose:
+                tail_lines = len(lines)
+
+            num_lines = min(len(lines), tail_lines)
+            if num_lines == tail_lines:
+                print "[ rosmake ] Last %d lines"%num_lines
+            else:
+                print "[ rosmake ] All %d lines"%num_lines
+            print "{" + "-"*79
+            for l in xrange(-num_lines, -1):
+                print "  %s"%lines[l]
+            print "-"*79 + "}"
+
+        def _print_status(self, s):
+            sys.stdout.write("\r%s"%(s))
+            sys.stdout.flush()
+
+        @staticmethod
+        def terminal_width():
+            """Estimate the width of the terminal"""
+            width = 0
+            try:
+                import struct, fcntl, termios
+                s = struct.pack('HHHH', 0, 0, 0, 0)
+                x = fcntl.ioctl(1, termios.TIOCGWINSZ, s)
+                width = struct.unpack('HHHH', x)[1]
+            except IOError:
+                pass
+            if width <= 0:
+                try:
+                    width = int(os.environ['COLUMNS'])
+                except:
+                    pass
+            if width <= 0:
+                width = 80
+
+            return width
+
+
+
 
 class RosMakeAll:
     def __init__(self):
         self._result_lock = threading.Lock()
+        self.printer = Printer()
         self.result = {}
         self.paths = {}
         self.dependency_tracker = parallel_build.DependencyTracker()
         self.flag_tracker = package_stats.PackageFlagTracker(self.dependency_tracker)
         self.output = {}
-        self.verbose = False
-        self.full_verbose = False
         self.profile = {}
         self.ros_parallel_jobs = 0
         self.build_list = []
@@ -90,6 +254,9 @@ class RosMakeAll:
         @rtype: int
         """
         return len(self.result[argument].keys())
+
+    def update_status(self, argument, start_times, right):
+        self.printer.rosmake_cache_info(argument, start_times, right)
 
     def get_path(self, package):
         if not package in self.paths:
@@ -139,32 +306,38 @@ class RosMakeAll:
           self.build_list.append(p)
         except roslib.packages.InvalidROSPkgException, ex:
           if not self.robust_build:
-            self.print_all("Exiting due to missing package: %s"%ex)
+            self.printer.print_all("Exiting due to missing package: %s"%ex)
             sys.exit(-1)
           else:
-            self.print_all("!"*20 + " Package %s does not exist. %s"%(p, ex) + "!"*20)
+            self.printer.print_all("!"*20 + " Package %s does not exist. %s"%(p, ex) + "!"*20)
 
 
     def parallel_build_pkgs(self, build_queue, argument = None, threads = 1):
         self.profile[argument] = {}
         self.output[argument] = {}
         with self._result_lock:
-            self.result[argument] = {}
+            if argument not in self.result.keys():
+                self.result[argument] = {}
 
         cts = []
         for i in  xrange(0, threads):
           ct = parallel_build.CompileThread(str(i), build_queue, self, argument)
+          #print "TTTH starting thread ", ct
           ct.start()
           cts.append(ct)
         for ct in cts:
           try:
+            #print "TTTT Joining", ct
             ct.join()
-            #print "naturally ended thread", ct
+            #print "TTTH naturally ended thread", ct
           except KeyboardInterrupt:
-            self.print_all( "Caught KeyboardInterrupt. Stopping build.")
+            self.printer.print_all( "TTTH Caught KeyboardInterrupt. Stopping build.")
             build_queue.stop()
             ct.join()
-            pass
+          except: #catch all
+              self.printer.print_all("TTTH OTHER exception thrown!!!!!!!!!!!!!!!!!!!!!")
+              ct.join()
+        #print "All threads joined"
         all_pkgs_passed = True
         with self._result_lock:
             for v in self.result[argument].values():
@@ -188,7 +361,7 @@ class RosMakeAll:
         cmd = ["bash", "-c", "cd %s && %s "%(self.get_path(package), make_command()) ] #UNIXONLY
         if argument:
             cmd[-1] += argument
-        self.print_full_verbose (cmd)
+        self.printer.print_full_verbose (cmd)
         command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, env=local_env)
         (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
         return (command_line.returncode, pstd_out)
@@ -224,7 +397,7 @@ class RosMakeAll:
                 else:
                     log_type = "build"
                 if not returncode:
-                    self.print_full_verbose( pstd_out)
+                    self.printer.print_full_verbose( pstd_out)
                     with self._result_lock:
                         self.result[argument][p] = True
 
@@ -235,10 +408,12 @@ class RosMakeAll:
                         return_string =  ("[PASS] [ %.2f seconds ]"%( self.profile[argument][p]))
                     self.output_to_file(p, log_type, pstd_out, num_warnings > 0)
                 else:
+                    success = False
                     no_target = len(re.findall("No rule to make target", pstd_out)) > 0
                     interrupt = len(re.findall("Interrupt", pstd_out)) > 0
                     if no_target:
                         return_string = ( "[SKIP] No rule to make target %s"%( argument))
+                        success = True
                     elif interrupt:
                         return_string = ("[Interrupted]" )
                     else:
@@ -246,10 +421,10 @@ class RosMakeAll:
                     with self._result_lock:
                         self.result[argument][p] = True if no_target else False
 
-                    self.print_tail( pstd_out)
+                    self.printer.print_tail( pstd_out)
                     self.output_to_file(p, log_type, pstd_out, always_print= not (no_target or interrupt))
 
-                    return (False, return_string)
+                    return (success, return_string)
             else:
                 with self._result_lock:
                     self.result[argument][p] = error
@@ -260,7 +435,7 @@ class RosMakeAll:
         except roslib.packages.InvalidROSPkgException, ex:
             with self._result_lock:
                 self.result[argument][p] = False
-            self.print_verbose ("[SKIP] Package not found\n")
+            self.printer.print_verbose ("[SKIP] Package not found\n")
             self.output[argument][p] = "Package not found %s"%ex
             return (False, return_string)
             
@@ -277,22 +452,31 @@ class RosMakeAll:
             stdout_file.write(stdout)
             print_string = "Output from build of package %s written to:\n[ rosmake ]    %s"%(package, std_out_filename)
             if always_print:
-                self.print_all(print_string)
+                self.printer.print_all(print_string)
             else:
-                self.print_full_verbose(print_string)
+                self.printer.print_full_verbose(print_string)
 
     def generate_summary_output(self, log_dir):
         if not self.logging_enabled:
             return
 
-        self.print_all("Summary output to directory")
-        self.print_all("%s"%self.log_dir)
+        self.printer.print_all("Results:")
+        if 'clean' in self.result.keys():
+            self.printer.print_all("Cleaned %d packages."%len(self.result['clean']))
+        if None in self.result.keys():
+            build_failure_count = len([p for p in self.result[None].keys() if self.result[None][p] == False])
+            self.printer.print_all("Built %d packages with %d failures."%(len(self.result[None]), build_failure_count))
+        if 'test' in self.result.keys():
+            test_failure_count = len([p for p in self.result['test'].keys() if self.result['test'][p] == False])
+            self.printer.print_all("Tested %d packages with %d failures."%(len(self.result['test']), test_failure_count))
+        self.printer.print_all("Summary output to directory")
+        self.printer.print_all("%s"%self.log_dir)
         if self.rosdep_install_result:
-            self.print_all("ERROR: Rosdep installation failed with exception: %s"%self.rosdep_install_result)
+            self.printer.print_all("ERROR: Rosdep installation failed with exception: %s"%self.rosdep_install_result)
         if self.rosdep_check_result:
-            self.print_all("WARNING: Rosdep did not detect the following system dependencies as installed: %s Consider using --rosdep-install option or `rosdep install %s`"%(self.rosdep_check_result, ' '.join(self.specified_packages)))
+            self.printer.print_all("WARNING: Rosdep did not detect the following system dependencies as installed: %s Consider using --rosdep-install option or `rosdep install %s`"%(self.rosdep_check_result, ' '.join(self.specified_packages)))
         if self.rejected_packages:
-            self.print_all("WARNING: Skipped command line arguments: %s because they could not be resolved to a stack name or a package name. "%self.rejected_packages)
+            self.printer.print_all("WARNING: Skipped command line arguments: %s because they could not be resolved to a stack name or a package name. "%self.rejected_packages)
 
                            
 
@@ -383,64 +567,32 @@ class RosMakeAll:
         output = output + "----------------\n" + "%.2f Cumulative,  %.2f Elapsed, %.2f Speedup \n"%(total, elapsed_time, float(total) / float(elapsed_time))
         return output
 
-    def print_all(self, s, newline = True, thread_name=None):
-        if thread_name == None:
-          if newline:
-              print "[ rosmake ]", s
-          else:
-              print "[ rosmake ]", s,
-              sys.stdout.flush()
-        else:
-          if newline:
-              print "[rosmake-%s]"%thread_name, s
-          else:
-              print "[rosmake-%s]"%thread_name, s
-              sys.stdout.flush()
-  
-    def print_verbose(self, s, thread_name=None):
-        if self.verbose or self.full_verbose:
-          if thread_name:
-            self.print_all(s, thread_name=thread_name)
-          else:
-            print "[ rosmake ]", s
-
-    def print_full_verbose(self, s):
-        if self.full_verbose:
-            print "[ rosmake ] ", s
-
-    def print_tail(self, s, tail_lines=40):
-        lines = s.splitlines()
-        if self.full_verbose:
-            tail_lines = len(lines)
-  
-        num_lines = min(len(lines), tail_lines)
-        if num_lines == tail_lines:
-            print "[ rosmake ] Last %d lines"%num_lines
-        else:
-            print "[ rosmake ] All %d lines"%num_lines
-        print "{" + "-"*79
-        for l in xrange(-num_lines, -1):
-            print "  %s"%lines[l]
-        print "-"*79 + "}"
-  
-    def assert_prebuild_built(self, ros_package_path_list):
+    def assert_prebuild_built(self, ros_package_path_list, target=''):
         ret_val = True
+        count = 0
         for pkg in ros_package_path_list:
-
+            count = count + 1
             pkg_name = pkg.split('/')[-1]
 
             if self.flag_tracker.has_nobuild(pkg_name):
                 ret_val &= True
             else:
-                self.print_all("Prebuilding %s"%pkg_name)
-                cmd = ["bash", "-c", "cd %s && %s "%(os.path.join(os.environ["ROS_ROOT"], pkg), make_command())]
-                command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT)
-                (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
-                
-                self.print_verbose(pstd_out)
-                if command_line.returncode:
-                    print >> sys.stderr, "Failed to build %s"%pkg_name
-                    sys.exit(-1)
+                try:
+                    self.printer.print_all("Starting >>> %s"%pkg)
+                    self.update_status(target, {pkg:time.time()}, "%d/%d Bootstrap"%(count, len(ros_package_path_list)))
+                    #Special Case: %s [ %s %s ] [ %d of %d ] "%(pkg_name, make_command(), target, count, len(ros_package_path_list)))
+                    cmd = ["bash", "-c", "cd %s && %s %s"%(os.path.join(os.environ["ROS_ROOT"], pkg), make_command(), target)]
+                    command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT)
+                    (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
+
+                    self.printer.print_verbose(pstd_out)
+                    if command_line.returncode:
+                        print >> sys.stderr, "Failed to build %s"%pkg_name
+                        sys.exit(-1)
+                    self.printer.print_all("Finished <<< %s"%pkg)
+                except KeyboardInterrupt, ex:
+                    self.printer.print_all("Keyboard interrupt caught in pkg %s"%pkg)
+                    return False
         return True
             
         # The check for presence doesn't check for updates
@@ -523,9 +675,19 @@ class RosMakeAll:
                           action="store_true", help="do not build a package unless it is marked as supported on this platform")
         parser.add_option("--require-platform-recursive", dest="obey_whitelist_recursively",
                           action="store_true", help="do not build a package unless it is marked as supported on this platform, and all dependents are also marked")
+        parser.add_option("--status-rate", dest="status_update_rate",
+                          action="store", help="How fast to update the status bar in Hz.  Default: 60Hz")
         
 
         options, args = parser.parse_args()
+
+
+        # force a rebuild of the package cache at the top                
+        cmd = ["rospack", "profile"]
+        command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT)
+        (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above          
+        # both above and below are necessary for "roscreate-pkg foo && rosmake foo" to work
+        roslib.packages._invalidate_cache(roslib.packages._pkg_dir_cache)
 
         testing = False
         building = True
@@ -543,7 +705,7 @@ class RosMakeAll:
         self.threads = options.threads
         self.skip_blacklist = options.skip_blacklist
         if options.skip_blacklist_osx:
-            self.print_all("Option --skip-blacklist-osx is deprecated. It will do nothing, please use platform declarations and --require-platform instead");
+            self.printer.print_all("Option --skip-blacklist-osx is deprecated. It will do nothing, please use platform declarations and --require-platform instead");
         self.logging_enabled = options.logging_enabled
         if options.obey_whitelist or options.obey_whitelist_recursively:
             self.obey_whitelist = True
@@ -551,52 +713,56 @@ class RosMakeAll:
                 self.obey_whitelist_recursively = True
 
         # pass through verbosity options
-        self.full_verbose = options.full_verbose
-        self.verbose = options.verbose
-
+        self.printer.full_verbose = options.full_verbose
+        self.printer.verbose = options.verbose
+        if options.status_update_rate:
+            if float(options.status_update_rate)> 0:
+                self.printer.duration = 1.0/float(options.status_update_rate)
+            else:
+                self.printer.duration = 0
         packages = []
         #load packages from arguments
         if options.build_all:
             packages = roslib.packages.list_pkgs()
-            self.print_all( "Building all packages")
+            self.printer.print_all( "Building all packages")
         else:      # no need to extend if all already selected   
             if options.buildtest:
               for p in options.buildtest:
                 packages.extend(roslib.rospack.rospack_depends_on(p)) 
-                self.print_all( "buildtest requested for package %s adding it and all dependent packages: "%p)
+                self.printer.print_all( "buildtest requested for package %s adding it and all dependent packages: "%p)
 
             if options.buildtest1:
               for p in options.buildtest1:
                 packages.extend(roslib.rospack.rospack_depends_on_1(p)) 
-                self.print_all( "buildtest1 requested for package %s adding it and all depends-on1 packages: "%p)
+                self.printer.print_all( "buildtest1 requested for package %s adding it and all depends-on1 packages: "%p)
 
         if len(packages) == 0 and len(args) == 0:
             p = os.path.basename(os.path.abspath('.'))
             try:
               if (os.path.samefile(roslib.packages.get_pkg_dir(p), '.')):
                 packages = [p]
-                self.print_all( "No package specified.  Building %s"%packages)
+                self.printer.print_all( "No package specified.  Building %s"%packages)
               else:
-                self.print_all("No package selected and the current directory is not the correct path for package '%s'."%p)
+                self.printer.print_all("No package selected and the current directory is not the correct path for package '%s'."%p)
                 
             except roslib.packages.InvalidROSPkgException, ex:
                 try:
                     stack_dir = roslib.stacks.get_stack_dir(p)
                     if os.path.samefile(stack_dir, '.'):
                         packages = [p]
-                        self.print_all( "No package specified.  Building stack %s"%packages)
+                        self.printer.print_all( "No package specified.  Building stack %s"%packages)
                     else:
-                        self.print_all("No package or stack arguments and the current directory is not the correct path for stack '%s'. Stack directory is: %s."%(p, roslib.stacks.get_stack_dir(p)))
+                        self.printer.print_all("No package or stack arguments and the current directory is not the correct path for stack '%s'. Stack directory is: %s."%(p, roslib.stacks.get_stack_dir(p)))
                 except:
-                    self.print_all("No package or stack specified.  And current directory '%s' is not a package name or stack name."%p)
+                    self.printer.print_all("No package or stack specified.  And current directory '%s' is not a package name or stack name."%p)
         else:
             packages.extend(args)
 
         if not self.is_rosout_built():
             packages.append("rosout")
-            self.print_all("Detected rosout not built, adding it to the build")
+            self.printer.print_all("Detected rosout not built, adding it to the build")
 
-        self.print_all( "Packages requested are: %s"%packages)
+        self.printer.print_all( "Packages requested are: %s"%packages)
         
 
         # Setup logging
@@ -608,31 +774,33 @@ class RosMakeAll:
           else:
               self.log_dir = os.path.join(roslib.rosenv.get_ros_home(), "rosmake", date_time_stamp);
 
-          self.print_all("Logging to directory")
-          self.print_all("%s"%self.log_dir)
+          self.printer.print_all("Logging to directory")
+          self.printer.print_all("%s"%self.log_dir)
           if os.path.exists (self.log_dir) and not os.path.isdir(self.log_dir):
-              self.print_all( "Log destination %s is a file; please remove it or choose a new destination"%self.log_dir)
+              self.printer.print_all( "Log destination %s is a file; please remove it or choose a new destination"%self.log_dir)
               sys.exit(1)
           if not os.path.exists (self.log_dir):
               roslib.rosenv.makedirs_with_parent_perms(self.log_dir)
 
         (self.specified_packages, self.rejected_packages) = roslib.stacks.expand_to_packages(packages)
-        self.print_all("Expanded args %s to:\n%s"%(packages, self.specified_packages))
+        self.printer.print_all("Expanded args %s to:\n%s"%(packages, self.specified_packages))
         if self.rejected_packages:
-            self.print_all("WARNING: The following args could not be parsed as stacks or packages: %s"%self.rejected_packages)
+            self.printer.print_all("WARNING: The following args could not be parsed as stacks or packages: %s"%self.rejected_packages)
         if len(self.specified_packages) == 0 and options.bootstrap == False:
-            self.print_all("ERROR: No arguments could be parsed into valid package or stack names.")
+            self.printer.print_all("ERROR: No arguments could be parsed into valid package or stack names.")
+            self.printer.running = False
             return False
 
         if options.unmark_installed:
             for p in self.specified_packages:
                 if self.flag_tracker.remove_nobuild(p):
-                    self.print_all("Removed ROS_NOBUILD from %s"%p)
+                    self.printer.print_all("Removed ROS_NOBUILD from %s"%p)
+            self.printer.running = False
             return True
             
         required_packages = self.specified_packages[:]
         # these packages are not in the dependency tree but are needed they only cost 0.01 seconds to build
-        always_build = ["paramiko", "pycrypto", "rosout", "rostest"]
+        always_build = ["rosout"]
         for p in always_build:
             if p not in self.specified_packages:
                 required_packages.append(p)
@@ -645,31 +813,31 @@ class RosMakeAll:
                 buildable_packages.append(p)
 
         if options.rosdep_install:
-            self.print_all("Generating Install Script using rosdep then executing. This may take a minute, you will be prompted for permissions. . .")
+            self.printer.print_all("Generating Install Script using rosdep then executing. This may take a minute, you will be prompted for permissions. . .")
             self.rosdep_install_result = self.install_rosdeps(buildable_packages, options.rosdep_yes)
             if self.rosdep_install_result:
-                self.print_all( "rosdep install failed: %s"%self.rosdep_install_result)
+                self.printer.print_all( "rosdep install failed: %s"%self.rosdep_install_result)
             else:
-                self.print_all("rosdep successfully installed all system dependencies")
+                self.printer.print_all("rosdep successfully installed all system dependencies")
 
         elif not options.rosdep_disabled:
-            self.print_all("Checking rosdeps compliance for packages %s.  This may take a few seconds."%(', '.join(packages)))
+            self.printer.print_all("Checking rosdeps compliance for packages %s.  This may take a few seconds."%(', '.join(packages)))
             (self.rosdep_check_result, warning) = self.check_rosdep(buildable_packages)
 
             if warning:
-                self.print_all("rosdep produced a warning: %s"%warning)
+                self.printer.print_all("rosdep produced a warning: %s"%warning)
 
             if len(self.rosdep_check_result) == 0:
-                self.print_all( "rosdep check passed all system dependencies in packages")# %s"% packages)
+                self.printer.print_all( "rosdep check passed all system dependencies in packages")# %s"% packages)
             else:
-                self.print_all("rosdep check failed to find system dependencies: %s"% self.rosdep_check_result)
+                self.printer.print_all("rosdep check failed to find system dependencies: %s"% self.rosdep_check_result)
 
         #generate the list of packages necessary to build(in order of dependencies)
         counter = 0
         for p in required_packages:
 
             counter = counter + 1
-            self.print_verbose( "Processing %s and all dependencies(%d of %d requested)"%(p, counter, len(packages)))
+            self.printer.print_verbose( "Processing %s and all dependencies(%d of %d requested)"%(p, counter, len(packages)))
             self.build_or_recurse(p)
 
         # remove extra packages if specified-only flag is set
@@ -680,52 +848,80 @@ class RosMakeAll:
               new_list.append(pkg)
               self.dependency_tracker = parallel_build.DependencyTracker(self.specified_packages) # this will make the tracker only respond to packages in the list
         
-          self.print_all("specified-only option was used, only building packages %s"%new_list)
+          self.printer.print_all("specified-only option was used, only building packages %s"%new_list)
           self.build_list = new_list
 
         if options.pre_clean:
-          build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = True)
+          build_queue = parallel_build.BuildQueue(self.build_list, parallel_build.DependencyTracker([]), robust_build = True)
           self.parallel_build_pkgs(build_queue, "clean", threads = options.threads)
-          if "rospack" in self.build_list and not self.flag_tracker.has_nobuild("rospack"):
-              self.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it for it was skipped earlier.")
-              subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), "clean"])
+          if "rospack" in self.build_list:
+              self.printer.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it for it was skipped earlier.")
+              self.assert_prebuild_built(["tools/rospack"], 'clean')
+              #subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), "clean"])
 
 
         build_passed = True
+
         if building:
           #make sure required packages are built before continuing (These are required by internal functions
-          self.assert_prebuild_built(["tools/rospack", "3rdparty/gtest", "core/genmsg_cpp"])
+          prebuild_result = False
+          if options.target == "clean":
+              prebuild_result = self.assert_prebuild_built(["tools/rospack"])
+          else:
+              prebuild_result = self.assert_prebuild_built(["tools/rospack", "3rdparty/gtest", "core/genmsg_cpp"])
+          if not prebuild_result:
+              self.printer.print_all("Failed to finish prebuild, aborting")
+              self.printer.running = False
+              return
 
-          self.print_verbose ("Building packages %s"% self.build_list)
+
+          self.printer.print_verbose ("Building packages %s"% self.build_list)
           build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = options.robust or options.best_effort)
           build_queue.register_prebuilt(["rospack", "gtest", "genmsg_cpp"])
+          if None not in self.result.keys():
+                self.result[None] = {}
+          if 'rospack' in self.build_list:
+              self.result[None]["rospack"] = True
+          if 'gtest' in self.build_list:
+              self.result[None]["gtest"] = True
+          if 'genmsg_cpp' in self.build_list:
+              self.result[None]["genmsg_cpp"] = True #don't over report results if not requested
 
           build_passed = self.parallel_build_pkgs(build_queue, options.target, threads = options.threads)
           if "rospack" in self.build_list and options.target == "clean":
-              self.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it, because it was skipped earlier.")
-              subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), "clean"])
+              self.printer.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it, because it was skipped earlier.")
+              self.assert_prebuild_built(["tools/rospack"], 'clean')
+          if "gtest" in self.build_list and options.target == "clean":
+              self.printer.print_all( "Rosmake detected that gtest was requested to be cleaned.  Cleaning it, because it was skipped earlier.")
+              self.assert_prebuild_built(["3rdparty/gtest"], 'clean')
+          if "genmsg_cpp" in self.build_list and options.target == "clean":
+              self.printer.print_all( "Rosmake detected that genmsg_cpp was requested to be cleaned.  Cleaning it, because it was skipped earlier.")
+              self.assert_prebuild_built(["core/genmsg_cpp"], 'clean')
+
 
         tests_passed = True
         if build_passed and testing:
-            self.print_verbose ("Testing packages %s"% packages)
+            self.printer.print_verbose ("Testing packages %s"% packages)
             build_queue = parallel_build.BuildQueue(self.specified_packages, parallel_build.DependencyTracker(self.specified_packages), robust_build = True)
             tests_passed = self.parallel_build_pkgs(build_queue, "test", threads = 1)
+
 
         if  options.mark_installed:
             if build_passed and tests_passed: 
                 for p in self.specified_packages:
                     if self.flag_tracker.add_nobuild(p):
-                        self.print_all("Marking %s as installed with a ROS_NOBUILD file"%p)
+                        self.printer.print_all("Marking %s as installed with a ROS_NOBUILD file"%p)
             else:
-                self.print_all("All builds and tests did not pass cannot mark packages as installed. ")
+                self.printer.print_all("All builds and tests did not pass cannot mark packages as installed. ")
 
 
         self.finish_time = time.time() #note: before profiling
         self.generate_summary_output(self.log_dir)
         
         if options.print_profile:
-            self.print_all (self.get_profile_string())
+            self.printer.print_all (self.get_profile_string())
 
+        self.printer.running = False
         return build_passed and tests_passed
 
 

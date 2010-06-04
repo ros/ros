@@ -174,33 +174,8 @@ class TestRospyNames(unittest.TestCase):
             ('~foo/bar', '/ns1/ns2', '/ns1/ns2/foo/bar'),
 
             ]
-        remap = False
         for name, node_name, v in tests:
-            self.assertEquals(v, resolve_name(name, node_name, remap))
-
-    def test_validators(self):
-        from rospy.names import empty_or_valid_name, ParameterInvalid
-        validator = empty_or_valid_name('param_name')
-        tests = [
-            ('', '/', ''),
-            ('', '/node', ''),
-            ('name', '/node', '/name'),            
-            ('/name', '/node', '/name'),            
-            ('~name', '/node', '/node/name'),
-            # unicode tests
-            (u'~name', '/node', u'/node/name'),            
-            ]
-        for name, caller_id, v in tests:
-            self.assertEquals(v, validator(name, caller_id))
-        invalid = [
-            (1, '/node'),            
-            (None, '/node'),            
-            ]
-        for name, caller_id in invalid:
-            try:
-                validator(name, caller_id)
-                self.fail("empty_or_valid_name should have failed on : [%s], [%s]"%(name, caller_id))
-            except ParameterInvalid: pass
+            self.assertEquals(v, resolve_name(name, node_name))
 
     def test_valid_name(self):
         # test with resolution
@@ -312,28 +287,6 @@ class TestRospyNames(unittest.TestCase):
             self.assertEquals('/foo/', get_namespace())
         finally:
             _set_caller_id('/unnamed')
-            
-    def test_valid_type_name(self):
-        from rospy.names import valid_type_name, ParameterInvalid
-        validator = valid_type_name('param_name')
-        tests = [
-            ('foo/Type', '/node'),            
-            ('*', '/node'),
-            # unicode
-            (u'foo/Type', '/node'),                        
-            ]
-        for t, caller_id in tests:
-            self.assertEquals(t, validator(t, caller_id))
-        invalid = [
-            (1, '/node'),            
-            (None, '/node'),            
-            ('name', '/node'),
-            ]
-        for t, caller_id in invalid:
-            try:
-                validator(t, caller_id)
-                self.fail("valid_type_name should have failed on : [%s], [%s]"%(t, caller_id))
-            except ParameterInvalid: pass
             
 if __name__ == '__main__':
     import rostest

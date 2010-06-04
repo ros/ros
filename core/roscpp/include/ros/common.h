@@ -35,12 +35,13 @@
 
 #include "ros/assert.h"
 #include "ros/forwards.h"
+#include "ros/serialized_message.h"
 
 #include <boost/shared_array.hpp>
 
 #define ROS_VERSION_MAJOR 1
-#define ROS_VERSION_MINOR 0
-#define ROS_VERSION_PATCH 4
+#define ROS_VERSION_MINOR 1
+#define ROS_VERSION_PATCH 2
 #define ROS_VERSION_COMBINED(major, minor, patch) (((major) << 20) | ((minor) << 10) | (patch))
 #define ROS_VERSION ROS_VERSION_COMBINED(ROS_VERSION_MAJOR, ROS_VERSION_MINOR, ROS_VERSION_PATCH)
 
@@ -51,21 +52,6 @@ namespace ros
 {
 
 void disableAllSignalsInThisThread();
-
-class SerializedMessage
-{
-public:
-  boost::shared_array<uint8_t> buf;
-  size_t num_bytes;
-
-  SerializedMessage()
-  : buf(boost::shared_array<uint8_t>())
-  , num_bytes(0)
-  {}
-
-  SerializedMessage(boost::shared_array<uint8_t> buf, size_t num_bytes)
-  : buf(buf), num_bytes(num_bytes) { }
-};
 
 }
 

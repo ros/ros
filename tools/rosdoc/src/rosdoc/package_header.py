@@ -37,12 +37,14 @@ from __future__ import with_statement
 import codecs
 import os
 import sys
+import traceback
 
 import roslib.msgs
 import roslib.rospack
 import roslib.srvs
 import roslib.stacks
 import roslib.packages
+import roslib.vcs
 
 _api_url = "http://ros.org/doc/api/"
 def package_link(package):
@@ -74,7 +76,6 @@ def _generate_package_headers(ctx, p):
     d['stack'] = stack
     d['siblings'] = roslib.stacks.packages_of(stack)
 
-  depends_on = []
   d['depends_on'] = roslib.rospack.rospack_depends_on_1(p)
     
   d['api_documentation'] = package_link(p)
@@ -87,7 +88,8 @@ def _generate_package_headers(ctx, p):
 
   d['dependency_tree'] = package_link(p) + '%s_deps.pdf'%p
 
-  # encode unicode entries
+  # encode unicode entries. This is probably overkill, but it was hard
+  # hunting the unicode encoding issues down
   d_copy = d.copy()
   for k, v in d_copy.iteritems():
     if isinstance(v, basestring):
@@ -103,30 +105,23 @@ def _generate_package_headers(ctx, p):
         print >> sys.stderr, "error: cannot encode value for key", k
         d[k] = []
 
-  # Try to get SVN repo info
-  import subprocess
-  try:
-    pkg_path = roslib.packages.get_pkg_dir(p)
-    output = subprocess.Popen(['svn', 'info', pkg_path], stdout=subprocess.PIPE).communicate()[0]
-    match_str = 'Repository Root: '
-    for l in output.split('\n'):
-      if l.startswith(match_str):
-        d['repository'] = l[len(match_str):]
-        break
-  except e:
-    pass
+  # Try to get VCS repo info
+  vcs, repo = roslib.vcs.guess_vcs_uri(roslib.packages.get_pkg_dir(p))
+  if repo is not None:
+    d['repository'] = repo
+    d['vcs'] = vcs
 
   file_p = os.path.join(ctx.docdir, p, 'manifest.yaml')
   file_p_dir = os.path.dirname(file_p)
   if not os.path.isdir(file_p_dir):
     os.makedirs(file_p_dir)
-  if 0:
-    print "writing package properties to", file_p
   with codecs.open(file_p, mode='w', encoding='utf-8') as f:
     f.write(yaml.dump(d))
   
-## generate manifest.yaml files for MoinMoin PackageHeader macro
 def generate_package_headers(ctx):
+    """
+    Generate manifest.yaml files for MoinMoin PackageHeader macro
+    """
     try:
         import yaml
     except ImportError:
@@ -141,7 +136,6 @@ def generate_package_headers(ctx):
           #print "generating wiki files for", p
           _generate_package_headers(ctx, p)
         except Exception, e:
-          import traceback
           traceback.print_exc()
           print >> sys.stderr, "Unable to generate manifest.yaml for "+p+str(e)
         
@@ -158,14 +152,15 @@ def _generate_stack_headers(ctx, s):
       'review_status': m.status or '',
       'review_notes': m.notes or '',
       'url': m.url,
+      'packages': roslib.stacks.packages_of(s),
+      'depends_on': roslib.rospack.rosstack_depends_on_1(s),
       }
 
-    siblings = []
-    d['packages'] = roslib.stacks.packages_of(s)
-
-    depends_on = []
-    d['depends_on'] = roslib.rospack.rosstack_depends_on_1(s)
-    #d['dependency_tree'] = stack_link(p) + '%s.pdf'%p
+    # Try to get VCS repo info
+    vcs, repo = roslib.vcs.guess_vcs_uri(roslib.stacks.get_stack_dir(s))
+    if repo is not None:
+      d['repository'] = repo
+      d['vcs'] = vcs
 
     # encode unicode entries
     d_copy = d.copy()
@@ -191,8 +186,10 @@ def _generate_stack_headers(ctx, s):
     with codecs.open(file_p, mode='w', encoding='utf-8') as f:
         f.write(yaml.dump(d))
   
-## generate stack.yaml files for MoinMoin PackageHeader macro
 def generate_stack_headers(ctx):
+    """
+    Generate stack.yaml files for MoinMoin PackageHeader macro
+    """
     try:
         import yaml
     except ImportError:
@@ -201,12 +198,10 @@ def generate_stack_headers(ctx):
 
     stacks = ctx.stacks
     for s in stacks.iterkeys():
-        #TODO: this curretly documents all stacks, instead of just ones related to args
         try:
           #print "generating stack wiki files for", s
           _generate_stack_headers(ctx, s)
         except Exception, e:
-          import traceback
           traceback.print_exc()
           print >> sys.stderr, "Unable to generate stack.yaml for "+s+str(e)
 

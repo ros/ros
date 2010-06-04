@@ -13,5 +13,9 @@
   <depend package="rospy"/>
   <depend package="rostest"/>
   <depend package="roslaunch"/>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>
 

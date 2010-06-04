@@ -43,55 +43,13 @@
 #include <time.h>
 #include <stdlib.h>
 #include "ros/ros.h"
-#include <roslib/Time.h>
 #include <roslib/Clock.h>
+
+#include <boost/thread.hpp>
+#include <boost/bind.hpp>
 
 int g_argc;
 char** g_argv;
-
-
-class RosTimeTest : public testing::Test
-{
-public:
-  void setTime(ros::Time t)
-  {
-    roslib::Time message;
-    message.rostime = t;
-    pub_.publish(message);
-  }
-
-protected:
-  RosTimeTest()
-  {
-    pub_ = nh_.advertise<roslib::Time>("/time", 1);
-    while (pub_.getNumSubscribers() == 0)
-    {
-      ros::WallDuration(0.01).sleep();
-    }
-  }
-
-  ros::NodeHandle nh_;
-  ros::Publisher pub_;
-
-};
-
-TEST_F(RosTimeTest, SimTimeTest)
-{
-  //Get the start time.
-  ros::Time start = ros::Time::now();
-
-  //The start time should be zero before a message is published.
-  ASSERT_TRUE(start.isZero());
-
-  //Publish a rostime of 42.
-  setTime(ros::Time(42, 0));
-
-  //Wait half a second to get the message.
-  ros::WallDuration(0.5).sleep();
-
-  //Make sure that it is really set
-  ASSERT_EQ(42.0, ros::Time::now().toSec());
-}
 
 class RosClockTest : public testing::Test
 {
@@ -136,11 +94,76 @@ TEST_F(RosClockTest, SimClockTest)
   ASSERT_EQ(42.0, ros::Time::now().toSec());
 }
 
+void sleepThread(bool* done)
+{
+  bool ok = ros::Duration(1.0).sleep();
+  if (!ok)
+  {
+    ROS_ERROR("!OK");
+  }
+  *done = true;
+}
+
+TEST(Clock, sleepFromZero)
+{
+  ros::Time::setNow(ros::Time());
+  bool done = false;
+  boost::thread t(boost::bind(sleepThread, &done));
+
+  ros::WallDuration(1.0).sleep();
+  ros::WallTime start = ros::WallTime::now();
+  ros::Time::setNow(ros::Time(ros::WallTime::now().sec, ros::WallTime::now().nsec));
+  while (!done)
+  {
+    ros::WallDuration(0.001).sleep();
+    ros::WallTime now = ros::WallTime::now();
+    ros::Time::setNow(ros::Time(now.sec, now.nsec));
+  }
+  ros::WallTime end = ros::WallTime::now();
+  EXPECT_GE(end - start, ros::WallDuration(1.0));
+}
+
+TEST(Clock, isTimeValid)
+{
+  ros::Time::setNow(ros::Time());
+  ASSERT_FALSE(ros::Time::isValid());
+  ros::Time::setNow(ros::TIME_MIN);
+  ASSERT_TRUE(ros::Time::isValid());
+}
+
+void waitThread(bool* done)
+{
+  ros::Time::waitForValid();
+  *done = true;
+}
+
+TEST(Clock, waitForValid)
+{
+  ros::Time::setNow(ros::Time());
+
+  // Test timeout
+  ros::WallTime start = ros::WallTime::now();
+  ASSERT_FALSE(ros::Time::waitForValid(ros::WallDuration(1.0)));
+  ros::WallTime end = ros::WallTime::now();
+  ASSERT_GT(end - start, ros::WallDuration(1.0));
+
+  bool done = false;
+  boost::thread t(boost::bind(waitThread, &done));
+
+  ros::WallDuration(1.0).sleep();
+  ASSERT_FALSE(done);
+  ros::Time::setNow(ros::TIME_MIN);
+  while (!done)
+  {
+    ros::WallDuration(0.01).sleep();
+  }
+}
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "sim_time_test");
+  ros::NodeHandle nh;
   g_argc = argc;
   g_argv = argv;
   return RUN_ALL_TESTS();

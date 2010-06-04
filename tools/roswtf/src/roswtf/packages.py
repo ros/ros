@@ -56,7 +56,7 @@ def msgs_built(ctx):
         pkg_dir = roslib.packages.get_pkg_dir(pkg)
         mtypes = roslib.msgs.list_msg_types(pkg, False)
         for t in mtypes:
-            expected = [os.path.join('msg', 'cpp', pkg, '%s.h'%t),
+            expected = [os.path.join('msg_gen', 'cpp', 'include', pkg, '%s.h'%t),
                         # roslisp is no longer builtin
                         #os.path.join('msg', 'lisp', pkg, '%s.lisp'%t),
                         os.path.join('src', pkg, 'msg', '_%s.py'%t)]
@@ -72,7 +72,7 @@ def srvs_built(ctx):
         pkg_dir = roslib.packages.get_pkg_dir(pkg)
         mtypes = roslib.srvs.list_srv_types(pkg, False)
         for t in mtypes:
-            expected = [os.path.join('srv', 'cpp', pkg, '%s.h'%t),
+            expected = [os.path.join('srv_gen', 'cpp', 'include', pkg, '%s.h'%t),
                         # roslisp is no longer builtin
                         #os.path.join('srv', 'lisp', pkg, '%s.lisp'%t),
                         os.path.join('src', pkg, 'srv', '_%s.py'%t)]
@@ -82,7 +82,7 @@ def srvs_built(ctx):
     return list(unbuilt)
 
 def _manifest_msg_srv_export(ctx, type_):
-    missing = []
+    exist = []
     for pkg in ctx.pkgs:
         pkg_dir = roslib.packages.get_pkg_dir(pkg)
         d = os.path.join(pkg_dir, type_)
@@ -93,9 +93,9 @@ def _manifest_msg_srv_export(ctx, type_):
                 m = roslib.manifest.parse_file(m_file)
                 cflags = m.get_export('cpp', 'cflags')
                 include = '-I${prefix}/%s/cpp'%type_
-                if not filter(lambda x: include in x, cflags):
-                    missing.append(pkg)
-    return missing
+                if filter(lambda x: include in x, cflags):
+                    exist.append(pkg)
+    return exist
     
 def manifest_msg_srv_export(ctx):
     msgs = set(_manifest_msg_srv_export(ctx, 'msg'))
@@ -158,15 +158,13 @@ def _check_for_rpath_flags(pkg, lflags):
 def manifest_rpath_flags(ctx):
     warn = []
     for pkg in ctx.pkgs:
-        pkg_dir = roslib.packages.get_pkg_dir(pkg)
-        m_file = roslib.manifest.manifest_file(pkg, True)
-        m = roslib.manifest.parse_file(m_file)
-        # separate rule catches multiple lflags
-        lflags_list = m.get_export('cpp', 'lflags')
-        for lflags in lflags_list:
-            err_msg = _check_for_rpath_flags(pkg, lflags)
-            if err_msg:
-                warn.append(err_msg)
+        # Use rospack to get lflags, so that they can be bash-expanded
+        # first, #2286.
+        import subprocess
+        lflags = subprocess.Popen(['rospack', 'export', '--lang=cpp', '--attrib=lflags', pkg], stdout=subprocess.PIPE).communicate()[0]
+        err_msg = _check_for_rpath_flags(pkg, lflags)
+        if err_msg:
+            warn.append(err_msg)
     return warn
 
 #CMake missing genmsg/gensrv
@@ -261,7 +259,7 @@ warnings = [
      "rospack is running very slowly. Consider running 'rospack profile' to find slow areas of your code tree."),
     
     (manifest_msg_srv_export,
-     'The following packages are missing msg/srv-related cflags exports\n\t<export>\n\t\t<cpp cflags="..."\n\t</export>:'),
+     'The following packages have msg/srv-related cflags exports that are no longer necessary\n\t<export>\n\t\t<cpp cflags="..."\n\t</export>:'),
     (cmake_genmsg,
      'The following packages need rosbuild_genmsg() in CMakeLists.txt:'),
     (cmake_gensrv,     

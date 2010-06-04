@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AppleDockIconEnabled</key>
+	<true/>
+	<key>AppleNavServices:GetFile:0:Path</key>
+	<string>file://localhost/Users/sven/Pictures/</string>
+	<key>AppleNavServices:GetFile:0:Position</key>
+	<data>
+	AOUBXw==
+	</data>
+	<key>AppleNavServices:GetFile:0:Size</key>
+	<data>
+	AAAAAAFeAcI=
+	</data>
+	<key>AppleNavServices:PutFile:0:Disclosure</key>
+	<data>
+	AQ==
+	</data>
+	<key>AppleNavServices:PutFile:0:Path</key>
+	<string>file://localhost/Users/sven/Desktop/</string>
+	<key>AppleNavServices:PutFile:0:Position</key>
+	<data>
+	AUIBVQ==
+	</data>
+	<key>AppleNavServices:PutFile:0:Size</key>
+	<data>
+	AAAAAACkAdY=
+	</data>
+	<key>AppleSavePanelExpanded</key>
+	<string>YES</string>
+	<key>NSDefaultOpenDirectory</key>
+	<string>~/Desktop</string>
+	<key>NSNoBigString</key>
+	<true/>
+</dict>
+</plist>

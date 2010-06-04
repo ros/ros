@@ -40,10 +40,12 @@ from __future__ import with_statement
 
 import os
 import sys
+from copy import deepcopy
 
-from roslib.names import make_global_ns, ns_join, PRIV_NAME
+from roslib.names import make_global_ns, ns_join, PRIV_NAME, load_mappings, is_legal_name, canonicalize_name
 
-from roslaunch.core import Param, PHASE_SETUP, Master, RosbinExecutable, Node, Test, Machine
+from roslaunch.core import Param, Master, RosbinExecutable, Node, Test, Machine, \
+    RLException, PHASE_SETUP
 
 #lazy-import global for yaml
 yaml = None
@@ -53,37 +55,9 @@ _master_auto = {
     'no': Master.AUTO_NO, 'start': Master.AUTO_START, 'restart': Master.AUTO_RESTART,
 }
 
-# TODO: unit test
-# #1269, #1270
-
-# TODO: this should be unnecessary once we remove support for unnamed nodes
-def command_line_param(key, value):
-    """
-    Convert parameter into a ROS command-line remapping argument.
-
-    @return: remapping argument. remapping argument does not have a
-        leading or trailing space.
-    @rtype: str
-    """
-    # return double-quoted representation of value. In simple
-    # command-line tests, this appears to cover common cases. YAML
-    # dump uses single-quoted strings to disambiguate overlapping
-    # cases (e.g. 'true')
-
-    # have to force UTF-8 in order to get python-yaml to encode cleanly
-    if type(value) == unicode:
-        value = value.encode('UTF-8')
-    # - lazy import
-    global yaml
-    if yaml is None:
-        import yaml
-    # strip the yaml encoding as python-yaml adds a newline
-    encoded = yaml.dump(value).strip()
-    # #1731 strip the '...' end-of-document indicator as it is not
-    # #required (and confusing to users)
-    if encoded.endswith('\n...'):
-        encoded = encoded[:-4]
-    return '_%s:="%s"'%(key, encoded)
+class LoadException(RLException):
+    """Error loading data as specified (e.g. cannot find included files, etc...)"""
+    pass
 
 #TODO: lists, maps(?)
 def convert_value(value, type_):
@@ -131,7 +105,46 @@ def convert_value(value, type_):
     else:
         raise ValueError("Unknown type '%s'"%type_)        
 
-# TODO: now that 'name' is required, it should be possible to remove params once this is enforced
+def process_include_args(context):
+    """
+    Processes arg declarations in context and makes sure that they are
+    properly declared for passing into an included file. Also will
+    correctly setup the context for passing to the included file.
+    """
+
+    # make sure all arguments have values. arg_names and resolve_dict
+    # are cleared when the context was initially created.
+    arg_dict = context.include_resolve_dict.get('arg', {})
+    for arg in context.arg_names:
+        if not arg in arg_dict:
+            raise LoadException("include args must have declared values")
+        
+    # save args that were passed so we can check for unused args in post-processing
+    context.args_passed = arg_dict.keys()[:]
+    # clear arg declarations so included file can re-declare
+    context.arg_names = []
+
+    # swap in new resolve dict for passing
+    context.resolve_dict = context.include_resolve_dict
+    context.include_resolve_dict = None
+    
+def post_process_include_args(context):
+    bad = [a for a in context.args_passed if a not in context.arg_names]
+    if bad:
+        raise LoadException("unused args [%s] for include of [%s]"%(', '.join(bad), context.filename))
+
+def load_sysargs_into_context(context, argv):
+    """
+    Load in ROS remapping arguments as arg assignments for context.
+
+    @param context: context to load into. context's resolve_dict for 'arg' will be reinitialized with values.
+    @type  context: L{LoaderContext{
+    @param argv: command-line arguments
+    @type  argv: [str]
+    """
+    # we use same command-line spec as ROS nodes
+    mappings = load_mappings(argv)
+    context.resolve_dict['arg'] = mappings
 
 class LoaderContext(object):
     """
@@ -139,7 +152,22 @@ class LoaderContext(object):
     local parameter state, remapping state).
     """
     
-    def __init__(self, ns, filename, parent=None, params=None, env_args=None, resolve_dict={}):
+    def __init__(self, ns, filename, parent=None, params=None, env_args=None, \
+                     resolve_dict=None, include_resolve_dict=None, arg_names=None):
+        """
+        @param ns: namespace
+        @type  ns: str
+        @param filename: name of file this is being loaded from
+        @type  filename: str
+        @param resolve_dict: (optional) resolution dictionary for substitution args
+        @type  resolve_dict: dict
+        @param include_resolve_dict: special resolution dictionary for
+        <include> tags. Must be None if this is not an <include>
+        context.
+        @type include_resolve_dict: dict
+        @param arg_names: name of args that have been declared in this context
+        @type  arg_names: [str]
+        """
         self.parent = parent
         self.ns = make_global_ns(ns or '/')
         self._remap_args = []
@@ -147,8 +175,12 @@ class LoaderContext(object):
         self.env_args = env_args or []
         self.filename = filename
         # for substitution args
-        self.resolve_dict = resolve_dict
-        
+        self.resolve_dict = resolve_dict or {}
+        # arg names. Args that have been declared in this context
+        self.arg_names = arg_names or []
+        # special scoped resolve dict for processing in <include> tag
+        self.include_resolve_dict = include_resolve_dict or None
+
     def add_param(self, p):
         """
         Add a ~param to the context. ~params are evaluated by any node
@@ -172,10 +204,49 @@ class LoaderContext(object):
         @param remap: remap setting
         @type  remap: (str, str)
         """
+        remap = [canonicalize_name(x) for x in remap]
+        if not remap[0] or not remap[1]:
+            raise RLException("remap from/to attributes cannot be empty")
+        if not is_legal_name(remap[0]):
+            raise RLException("remap from [%s] is not a valid ROS name"%remap[0])
+        if not is_legal_name(remap[1]):
+            raise RLException("remap to [%s] is not a valid ROS name"%remap[1])
+        
         matches = [r for r in self._remap_args if r[0] == remap[0]]
         for m in matches:
             self._remap_args.remove(m)
         self._remap_args.append(remap)
+        
+    def add_arg(self, name, default=None, value=None):
+        """
+        Add 'arg' to existing context. Args are only valid for their immediate context.
+        """
+        if name in self.arg_names:
+            raise LoadException("arg '%s' has already been declared"%name)
+        self.arg_names.append(name)
+
+        resolve_dict = self.resolve_dict if self.include_resolve_dict is None else self.include_resolve_dict
+
+        if not 'arg' in resolve_dict:
+            resolve_dict['arg'] = {}
+        arg_dict = resolve_dict['arg']
+
+        # args can only be declared once. they must also have one and
+        # only value at the time that they are declared.
+        if value is not None:
+            # value is set, error if declared in our arg dict as args
+            # with set values are constant/grounded.
+            if name in arg_dict:
+                raise LoadException("cannot override arg '%s', which has already been set"%name)
+            arg_dict[name] = value
+        elif default is not None:
+            # assign value if not in context
+            if name not in arg_dict:
+                arg_dict[name] = default
+        else:
+            # no value or default: appending to arg_names is all we
+            # need to do as it declares the existence of the arg.
+            pass
         
     def remap_args(self):
         """
@@ -192,6 +263,26 @@ class LoaderContext(object):
             return args
         return self._remap_args[:]
     
+    def include_child(self, ns, filename):
+        """
+        Create child namespace based on include inheritance rules
+        @param ns: sub-namespace of child context, or None if the
+           child context shares the same namespace
+        @type  ns: str
+        @param filename: name of include file
+        @type  filename: str        
+        @return: A child xml context that inherits from this context
+        @rtype: L{LoaderContext}jj
+        """
+        ctx = self.child(ns)
+        # arg declarations are reset across include boundaries
+        ctx.arg_names = []
+        ctx.filename = filename
+        # keep the resolve_dict for now, we will do all new assignments into include_resolve_dict
+        ctx.include_resolve_dict = {}
+        #del ctx.resolve_dict['arg']
+        return ctx
+
     def child(self, ns):
         """
         @param ns: sub-namespace of child context, or None if the
@@ -202,23 +293,19 @@ class LoaderContext(object):
         """
         if ns:
             if ns[0] == '/': # global (discouraged)
-                return LoaderContext(ns, self.filename, parent=self,
-                                     params=self.params, env_args=self.env_args[:],
-                                     resolve_dict=self.resolve_dict)
+                child_ns = ns
             elif ns == PRIV_NAME: # ~name
                 # private names can only be scoped privately or globally
-                return LoaderContext(PRIV_NAME, self.filename, parent=self,
-                                     params=self.params, env_args=self.env_args[:],
-                                     resolve_dict=self.resolve_dict)
+                child_ns = PRIV_NAME
             else:
-                return LoaderContext(ns_join(self.ns, ns), self.filename,
-                                     parent=self, params=self.params,
-                                     env_args=self.env_args[:], resolve_dict=self.resolve_dict)
+                child_ns = ns_join(self.ns, ns)
         else:
-            return LoaderContext(self.ns, self.filename, parent=self,
-                                 params=self.params, env_args=self.env_args[:],
-                                 resolve_dict=self.resolve_dict)
-
+            child_ns = self.ns
+        return LoaderContext(child_ns, self.filename, parent=self,
+                             params=self.params, env_args=self.env_args[:],
+                             resolve_dict=deepcopy(self.resolve_dict),
+                             arg_names=self.arg_names[:], include_resolve_dict=self.include_resolve_dict)
+        
 #TODO: in-progress refactorization. I'm slowly separating out
 #non-XML-specific logic from xmlloader and moving into Loader. Soon
 #this will mean that it will be easier to write coverage tests for
@@ -333,6 +420,11 @@ class Loader(object):
                 import yaml
             try:
                 data = yaml.load(text)
+            except yaml.MarkedYAMLError, e:
+                if not file: 
+                    raise ValueError("Error within YAML block:\n\t%s\n\nYAML is:\n%s"%(str(e), text))
+                else:
+                    raise ValueError("file %s contains invalid YAML:\n%s"%(file, str(e)))
             except Exception, e:
                 if not file:
                     raise ValueError("invalid YAML: %s\n\nYAML is:\n%s"%(str(e), text))
@@ -346,7 +438,7 @@ class Loader(object):
             self.add_param(ros_config, full_param, data, verbose=verbose)
 
         else:
-            raise XmlParseException("unknown command %s"%cmd)
+            raise ValueError("unknown command %s"%cmd)
 
 
     def load_env(self, context, ros_config, name, value):

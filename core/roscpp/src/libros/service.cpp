@@ -34,6 +34,7 @@
 #include "ros/init.h"
 #include "ros/names.h"
 #include "ros/this_node.h"
+#include "ros/header.h"
 
 using namespace ros;
 
@@ -46,10 +47,20 @@ bool service::exists(const std::string& service_name, bool print_failure_reason)
 
   if (ServiceManager::instance()->lookupService(mapped_name, host, port))
   {
-    TransportTCPPtr transport(new TransportTCP(&PollManager::instance()->getPollSet()));
+    TransportTCPPtr transport(new TransportTCP(0, TransportTCP::SYNCHRONOUS));
 
     if (transport->connect(host, port))
     {
+      M_string m;
+      m["probe"] = "1";
+      m["md5sum"] = "*";
+      m["callerid"] = this_node::getName();
+      m["service"] = mapped_name;
+      boost::shared_array<uint8_t> buffer;
+      uint32_t size = 0;;
+      Header::write(m, buffer, size);
+      transport->write((uint8_t*)&size, sizeof(size));
+      transport->write(buffer.get(), size);
       transport->close();
 
       return true;

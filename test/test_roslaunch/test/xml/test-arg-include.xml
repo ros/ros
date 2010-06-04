@@ -1,0 +1,26 @@
+<launch>
+
+  <arg name="required" />
+  <arg name="if_test" />
+  <arg name="include_arg" />  
+  
+  <arg name="optional" default="not_set" />
+  <arg name="grounded" value="set" />
+
+  <arg name="param1_name" value="p1" />
+  <arg name="param2_name" value="p2" />
+  <arg name="param3_name" value="p3" />
+  <arg name="param4_name" value="p4" />
+  
+  <arg name="param1_value" value="$(arg required)" />
+  <arg name="param2_value" value="$(arg optional)" />
+  <arg name="param3_value" value="$(arg grounded)" />
+
+  <group ns="include_test">
+    <param name="$(arg param1_name)_test" value="$(arg param1_value)" />
+    <param name="$(arg param2_name)_test" value="$(arg param2_value)" />
+    <param name="$(arg param3_name)_test" value="$(arg param3_value)" />
+    <param name="$(arg param4_name)_test" value="$(arg include_arg)" />
+  </group>
+
+</launch>

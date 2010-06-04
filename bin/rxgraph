@@ -31,6 +31,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import roslib; roslib.load_manifest('rosgraph')
-import rosgraph.rxgraph
-rosgraph.rxgraph.rxgraph_main()
+import roslib; roslib.load_manifest('rxgraph')
+import rxgraph
+rxgraph.rxgraph_main()

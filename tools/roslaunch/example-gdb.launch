@@ -1,4 +1,4 @@
 <!-- NOTE: this requires that you 'rosmake roscpp_tutorials' -->
 <launch>
-  <node pkg="roscpp_tutorials" type="talker" launch-prefix="xterm -e gdb --args"/>
+  <node name="talker" pkg="roscpp_tutorials" type="talker" launch-prefix="xterm -e gdb --args"/>
 </launch>

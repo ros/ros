@@ -56,7 +56,7 @@ class TestRospyTime(unittest.TestCase):
 
     def test_import_simtime(self):
         # trip wire test, make sure the module is loading
-        import rospy.simtime
+        import rospy.impl.simtime
         # can't actually do unit tests of simtime, requires rostest
 
     def test_switch_to_wallclock(self):
@@ -366,4 +366,4 @@ def backwards_sleeper():
         test_backwards_sleep_done = True
 
 if __name__ == '__main__':
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyTime, coverage_packages=['rospy.rostime', 'rospy.simtime', 'rospy.client'])
+    rostest.unitrun('test_rospy', sys.argv[0], TestRospyTime, coverage_packages=['rospy.rostime', 'rospy.impl.simtime', 'rospy.client'])

@@ -41,6 +41,7 @@ import logging
 import socket
 import sys
 
+import roslib.names 
 import roslib.network
 import roslib.substitution_args
 import roslib.rosenv
@@ -271,15 +272,17 @@ class Master:
     AUTO_START   = 1
     ## start/restart master (i.e. restart an existing master)
     AUTO_RESTART = 2
-    ZENMASTER = 'zenmaster'
-    BOTHERDER = 'botherder'    
+    ROSMASTER = 'rosmaster'
+    
+    # deprecated
+    ZENMASTER = 'zenmaster'        
 
     def __init__(self, type_=None, uri=None, auto=None):
         """
         Create new Master instance.
         @param uri: master URI
         @type  uri: str
-        @param type_: 'zenmaster' or 'botherder'
+        @param type_: Currently only support 'rosmaster' 
         @type  type_: str
         @param auto: AUTO_NO | AUTO_START | AUTO_RESTART. AUTO_NO
           is the default
@@ -287,14 +290,14 @@ class Master:
         """
         if auto is not None and type(auto) != int:
             raise RLException("invalid auto value: %s"%auto)            
-        self.type = type_ or Master.ZENMASTER
+        self.type = type_ or Master.ROSMASTER
         self.auto = auto or Master.AUTO_NO
         if self.auto not in [Master.AUTO_NO, Master.AUTO_START, Master.AUTO_RESTART]:
             raise RLException("invalid auto value: %s"%auto)
         self.uri  = remap_localhost_uri(uri or get_master_uri_env())
         # by default, master output goes to screen
         self.log_output = False
-
+        
     def __eq__(self, m2):
         if not isinstance(m2, Master):
             return False
@@ -329,6 +332,7 @@ class Master:
     
     def is_running(self):
         """
+        Check if master is running. 
         @return: True if the master is running
         @rtype: bool
         """
@@ -442,7 +446,7 @@ class Param(object):
     specification.
     """
     def __init__(self, key, value):
-        self.key = key
+        self.key = roslib.names.canonicalize_name(key)
         self.value = value
     def __eq__(self, p):
         if not isinstance(p, Param):
@@ -507,7 +511,7 @@ class Node(object):
         @type  env_args: [(str, str)]
         @param output: where to log output to, either Node, 'screen' or 'log'
         @type  output: str
-        @param cwd: current working directory of node, either 'node' or 'ros-root'
+        @param cwd: current working directory of node, either 'node' or 'ros-root'. Default: ros-root
         @type  cwd: str
         @param launch_prefix: launch command/arguments to prepend to node executable arguments
         @type  launch_prefix: str
@@ -515,26 +519,21 @@ class Node(object):
         @type  required: bool
         @param filename: name of file Node was parsed from
         @type  filename: str
+
+        @raise ValueError: if parameters do not validate
         """        
+
         self.package = package
         self.type = node_type
         self.name = name or None
-        import roslib.names 
         self.namespace = roslib.names.make_global_ns(namespace or '/')
         self.machine_name = machine_name or None
-        
-        # machine is the assigned machine instance. should probably
-        # consider storing this elsewhere as it can be inconsistent
-        # with machine_name and is also a runtime, rather than
-        # configuration property
-        self.machine = None
-        
         self.respawn = respawn
         self.args = args or ''
         self.remap_args = remap_args or []
         self.env_args = env_args or []        
-        self.output = output or 'log'
-        self.cwd = cwd or None
+        self.output = output
+        self.cwd = cwd
         self.launch_prefix = launch_prefix or None
         self.required = required
         self.filename = filename
@@ -542,10 +541,32 @@ class Node(object):
         if self.respawn and self.required:
             raise ValueError("respawn and required cannot both be set to true")
         
+        # validation
+        if self.name and roslib.names.SEP in self.name: # #1821, namespaces in nodes need to be banned
+            raise ValueError("node name cannot contain a namespace")
+        if not len(self.package.strip()):
+            raise ValueError("package must be non-empty")
+        if not len(self.type.strip()):
+            raise ValueError("type must be non-empty")
+        if not self.output in ['log', 'screen', None]:
+            raise ValueError("output must be one of 'log', 'screen'")
+        if not self.cwd in ['ros-root', 'node', None]:
+            raise ValueError("cwd must be one of 'ros-root', 'node'")
+        
+        # Extra slots for assigning later
+        
         # slot to store the process name in so that we can query the
         # associated process state
         self.process_name = None
 
+        # machine is the assigned machine instance. should probably
+        # consider storing this elsewhere as it can be inconsistent
+        # with machine_name and is also a runtime, rather than
+        # configuration property
+        self.machine = None
+
+        
+        
     def xmltype(self):
         return 'node'
     
@@ -570,6 +591,21 @@ class Node(object):
             ('required', self.required),
             ]
 
+    #TODO: unify with to_remote_xml using a filter_fn
+    def to_xml(self):
+        """
+        convert representation into XML representation. Currently cannot represent private parameters.
+        @return: XML representation for remote machine
+        @rtype: str
+        """
+        t = self.xmltype()
+        attrs = [(a, v) for a, v in self.xmlattrs() if v != None]
+        xmlstr = '<%s %s>\n'%(t, ' '.join(['%s="%s"'%(val[0], _xml_escape(val[1])) for val in attrs]))
+        xmlstr += ''.join(['  <remap from="%s" to="%s" />\n'%tuple(r) for r in self.remap_args])
+        xmlstr += ''.join(['  <env name="%s" value="%s" />\n'%tuple(e) for e in self.env_args])
+        xmlstr += "</%s>"%t
+        return xmlstr
+
     def to_remote_xml(self):
         """
         convert representation into remote representation. Remote representation does
@@ -577,7 +613,6 @@ class Node(object):
         @return: XML representation for remote machine
         @rtype: str
         """
-        respawn_str = test_name_str = name_str = cwd_str = ''
         t = self.xmltype()
         attrs = [(a, v) for a, v in self.xmlattrs() if v != None and a != 'machine']
         xmlstr = '<%s %s>\n'%(t, ' '.join(['%s="%s"'%(val[0], _xml_escape(val[1])) for val in attrs]))

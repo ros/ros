@@ -29,6 +29,7 @@
 #define ROSCPP_TRANSPORT_PUBLISHER_LINK_H
 
 #include "publisher_link.h"
+#include "connection.h"
 
 namespace ros
 {
@@ -39,6 +40,8 @@ typedef boost::shared_ptr<Subscription> SubscriptionPtr;
 typedef boost::weak_ptr<Subscription> SubscriptionWPtr;
 class Connection;
 typedef boost::shared_ptr<Connection> ConnectionPtr;
+
+class WallTimerEvent;
 
 /**
  * \brief Handles a connection to a single publisher on a given topic.  Receives messages from a publisher
@@ -59,19 +62,27 @@ public:
   virtual void drop();
 
 private:
-  void onConnectionDropped(const ConnectionPtr& conn);
+  void onConnectionDropped(const ConnectionPtr& conn, Connection::DropReason reason);
   bool onHeaderReceived(const ConnectionPtr& conn, const Header& header);
 
   /**
    * \brief Handles handing off a received message to the subscription, where it will be deserialized and called back
    */
-  virtual void handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes);
+  virtual void handleMessage(const SerializedMessage& m, bool ser, bool nocopy);
 
   void onHeaderWritten(const ConnectionPtr& conn);
   void onMessageLength(const ConnectionPtr& conn, const boost::shared_array<uint8_t>& buffer, uint32_t size, bool success);
   void onMessage(const ConnectionPtr& conn, const boost::shared_array<uint8_t>& buffer, uint32_t size, bool success);
 
+  void onRetryTimer(const ros::WallTimerEvent&);
+
   ConnectionPtr connection_;
+
+  int32_t retry_timer_handle_;
+  bool needs_retry_;
+  WallDuration retry_period_;
+  WallTime next_retry_;
+  bool dropping_;
 };
 typedef boost::shared_ptr<TransportPublisherLink> TransportPublisherLinkPtr;
 

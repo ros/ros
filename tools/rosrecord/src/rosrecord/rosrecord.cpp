@@ -35,7 +35,6 @@
 #include <time.h>
 #include <sys/stat.h>
 #include "ros/ros.h"
-#include "rosrecord/Recorder.h"
 #include "topic_tools/shape_shifter.h"
 
 #include <boost/thread.hpp>
@@ -47,6 +46,12 @@
 #include <queue>
 
 #include "std_msgs/Empty.h"
+
+// We know this is deprecated..
+#undef ROSCPP_DEPRECATED
+#define ROSCPP_DEPRECATED
+#define IGNORE_ROSRECORD_DEPRECATED
+#include "rosrecord/Recorder.h"
 
 class OutgoingMessage
 {
@@ -177,13 +182,13 @@ void do_queue(topic_tools::ShapeShifter::ConstPtr msg,
   {
     boost::mutex::scoped_lock lock(g_queue_mutex);
     g_queue->push(out);
-    g_queue_size += out.msg->msgBufUsed;
+    g_queue_size += out.msg->size();
 
     while (g_max_queue_size > 0 && g_queue_size > g_max_queue_size)
     {
       OutgoingMessage drop = g_queue->front();
       g_queue->pop();
-      g_queue_size -= drop.msg->msgBufUsed;
+      g_queue_size -= drop.msg->size();
       if (!g_snapshot)
       {
         static ros::Time last = ros::Time();
@@ -328,7 +333,7 @@ void do_record()
 
     OutgoingMessage out = g_queue->front();
     g_queue->pop();
-    g_queue_size -= out.msg->msgBufUsed;
+    g_queue_size -= out.msg->size();
 
     lock.release()->unlock();
 
@@ -444,6 +449,8 @@ void do_trigger()
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "rosrecord", ros::init_options::AnonymousName);
+
+  ROS_WARN("Rosrecord has been deprecated.  Please use 'rosbag record' instead\n");
 
   // Variables
   bool check_master = false; // Whether master should be checked periodically

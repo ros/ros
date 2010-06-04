@@ -1784,17 +1784,17 @@ class IndexCacheThread(threading.Thread):
                 # Update the index for one topic
                 updated = False
                 for topic in self.timeline.topics:
-                    if topic in self.timeline.invalidated_caches and topic != last_updated_topic:
+                    if topic in self.timeline.invalidated_caches:# and topic != last_updated_topic:
                         updated = (self.timeline._update_index_cache(topic) > 0)
-                        if updated:
-                            last_updated_topic = topic
-                            break
+                        #if updated:
+                        #    last_updated_topic = topic
+                        #    break
 
             if updated:
                 wx.CallAfter(self.timeline.Refresh)
 
                 # Give the GUI some time to update
-                time.sleep(0.2)
+                time.sleep(1.0)
 
     def stop(self):
         self._stop_flag = True

@@ -39,6 +39,7 @@ rostest helper routines.
 # IMPORTANT: no routine here can in anyway cause rospy to be loaded (that includes roslaunch)
 
 import os
+import sys
 import cStringIO
 import logging
 

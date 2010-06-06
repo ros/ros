@@ -430,13 +430,6 @@ scons:
   macports: scons
   gentoo: dev-util/scons
   freebsd: scons
-java:
-  ubuntu: sun-java6-jdk
-  debian: sun-java6-jdk
-  arch: openjdk6
-  macports: |
-  gentoo: dev-java/sun-jdk
-  freebsd: openjdk6
 ant:
   ubuntu: ant
   debian: ant

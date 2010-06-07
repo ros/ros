@@ -44,6 +44,7 @@ void printUsage() {
     fprintf(stderr, " -F <fname>  : Record to a file named exactly <fname>.bag\n");
     fprintf(stderr, " -a          : Record all published messages.\n");
     fprintf(stderr, " -e          : Match topics as regular expressions.\n");
+    fprintf(stderr, " -x <regex>  : Exclude topics matching the follow regular expression (subtracts from -a or regex).\n");
     fprintf(stderr, " -v          : Display a message every time a message is received on a topic\n");
     fprintf(stderr, " -m          : Maximize internal buffer size in MB (Default: 256MB)  0 = infinite.\n");
     fprintf(stderr, " -s          : (EXPERIMENTAL) Enable snapshot recording (don't write to file unless triggered)\n");
@@ -56,10 +57,11 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
     rosbag::RecorderOptions opts;
 
     int option_char;
-    while ((option_char = getopt(argc, argv, "f:F:c:m:S:aestvzj")) != -1) {
+    while ((option_char = getopt(argc, argv, "f:F:c:m:S:x:aestvzj")) != -1) {
         switch (option_char) {
         case 'f': opts.prefix      = std::string(optarg); break;
         case 'F': opts.prefix      = std::string(optarg); opts.append_date = false; break;
+        case 'x': opts.exclude_regex = std::string(optarg); opts.do_exclude = true; break;
         case 'c': opts.limit       = atoi(optarg); break;
         case 'a': opts.record_all  = true; break;
         case 'e': opts.regex       = true; break;
@@ -89,6 +91,14 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
     for (; optind < argc; optind++)
         opts.topics.push_back(std::string(argv[optind]));
 
+    // check that argument combinations make sense
+    if(opts.exclude_regex.size() > 0 &&
+            !(opts.record_all || opts.regex)) {
+        fprintf(stderr, "Warning: Exclusion regex given, but no topics to subscribe to.\n"
+                "Adding implicit 'record all'.");
+        opts.record_all = true;
+    }
+
     return opts;
 }
 
@@ -100,6 +110,10 @@ int main(int argc, char** argv) {
     }
     catch (ros::Exception const& ex) {
         fprintf(stderr, "Error reading options: %s", ex.what());
+        return 1;
+    }
+    catch(boost::regex_error const& ex) {
+        fprintf(stderr, "Error reading options: %s\n", ex.what());
         return 1;
     }
 

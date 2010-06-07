@@ -167,6 +167,7 @@ class WxDotWindow(wx.Panel):
     self.select_cbs = []
     self.dc = None
     self.ctx = None
+    self.items_by_url = {}
 
   ### User callbacks
   def register_select_callback(self, cb):
@@ -183,6 +184,7 @@ class WxDotWindow(wx.Panel):
     #print dc
     ctx = wxcairo.ContextFromDC(dc)
     ctx = pangocairo.CairoContext(ctx)
+    #print "DRAW"
 
     # Get widget size
     width, height = self.GetSize()
@@ -244,8 +246,6 @@ class WxDotWindow(wx.Panel):
     if key == ord('Q'):
       self.reload()
       exit(0)
-
-    event.Skip()
 
   ### Helper functions
   def get_current_pos(self):
@@ -453,6 +453,16 @@ class WxDotWindow(wx.Panel):
       return False
     try:
       self.set_xdotcode(xdotcode)
+
+      # Store references to all the items 
+      self.items_by_url = {}
+      for item in self.graph.nodes + self.graph.edges:
+        if item.url is not None:
+          self.items_by_url[item.url] = item
+
+      # Store references to subgraph states
+      self.subgraph_shapes = self.graph.subgraph_shapes
+
     except ParseError, ex:
       print "ERROR PARSING XDOT CODE"
       dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,

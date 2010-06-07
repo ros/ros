@@ -41,7 +41,24 @@ This API should not be considered stable.
 import os
 import time
 
+from roslib.names import SEP
+
 import roslaunch.core
+
+def check_log_disk_usage():
+    """
+    Check size of log directory. If high, print warning to user
+    """
+    try:
+        import rosclean
+        import roslib.rosenv
+        d = roslib.rosenv.get_log_dir()
+        disk_usage = rosclean.get_disk_usage(d)
+        # warn if over a gig
+        if disk_usage > 1073741824:
+            roslaunch.core.printerrlog("WARNING: disk usage in log directory [%s] is over 1GB.\nIt's recommended that you use the 'rosclean' command."%d)
+    except:
+        pass
 
 def resolve_launch_arguments(args):
     """
@@ -212,3 +229,14 @@ def check_roslaunch(f):
     if errors:
         return '\n'.join(errors)
                           
+
+def namespaces_of(name):
+    if name is None: 
+        raise ValueError('name')
+    if not isinstance(name, basestring):
+        raise TypeError('name')
+    if not name:
+        return [SEP]
+
+    splits = [x for x in name.split(SEP) if x]
+    return ['/'] + ['/'+SEP.join(splits[:i]) for i in xrange(1, len(splits))]

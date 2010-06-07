@@ -353,20 +353,6 @@ class RospackTestCase(unittest.TestCase):
             self.rospack_succeed(package, arg)
             self.assertEquals(retval, self.strip_opt_ros(self.run_rospack(package, arg)))
 
-    def test_export_cpp_bad_bindeps(self):
-        env = os.environ.copy()
-        os.environ['ROS_BINDEPS_PATH'] = '/a/non/existent/directory'
-        package = 'base'
-        tests = [("-lfoo", "export --lang=cpp --attrib=lflags"),
-                 ("-lfoo", "export --attrib=lflags --lang=cpp"),
-                 ("-Isomething", "export --lang=cpp --attrib=cflags"),
-                 ("-Isomething", "export --attrib=cflags --lang=cpp"),
-                ]
-        for retval, arg in tests:
-            self.rospack_succeed(package, arg)
-            self.assertEquals(retval, self.strip_opt_ros(self.run_rospack(package, arg)))
-        os.environ = env
-
     def test_export_non_existent_attrib(self):
         self.rospack_succeed("base", "export --lang=cpp --attrib=fake")
         self.failIf(self.run_rospack("base", "export --lang=cpp --attrib=fake"))
@@ -683,27 +669,6 @@ class RospackTestCase(unittest.TestCase):
     def test_lflags_base(self):
         self.rospack_succeed("base", "libs-only-l")
         self.assertEquals("foo", self.run_rospack("base", "libs-only-l"))
-
-    def test_libs_only_L_bad_bindeps(self):
-        env = os.environ.copy()
-        os.environ['ROS_BINDEPS_PATH'] = '/a/non/existent/directory'
-        self.rospack_succeed("base", "libs-only-L")
-        self.assertEquals("", self.run_rospack("base", "libs-only-L"))
-        os.environ = env
-
-    def test_libs_only_L_explicit_bindeps(self):
-        env = os.environ.copy()
-        os.environ['ROS_BINDEPS_PATH'] = '/'
-        self.rospack_succeed("base", "libs-only-L")
-        self.assertEquals("//lib", self.run_rospack("base", "libs-only-L"))
-        os.environ = env
-
-    def test_cflags_only_I_bad_bindeps(self):
-        env = os.environ.copy()
-        os.environ['ROS_BINDEPS_PATH'] = '/a/non/existent/directory'
-        self.rospack_succeed("base", "cflags-only-I")
-        self.assertEquals("something", self.run_rospack("base", "cflags-only-I"))
-        os.environ = env
 
     def test_circular(self):
         testp = os.path.abspath("test")

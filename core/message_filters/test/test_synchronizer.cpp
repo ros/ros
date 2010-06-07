@@ -35,6 +35,7 @@
 #include <gtest/gtest.h>
 
 #include "ros/time.h"
+#include <ros/init.h>
 #include "message_filters/synchronizer.h"
 
 using namespace message_filters;
@@ -450,6 +451,7 @@ TEST(Synchronizer, add9)
 
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "blah");
 
   ros::Time::setNow(ros::Time());
 

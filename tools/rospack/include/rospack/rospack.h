@@ -312,10 +312,6 @@ private:
   bool cache_is_good();
   /** returns a double representing the seconds since the Epoch */
   static double time_since_epoch();
-  /** returns env[ROS_BINDEPS_PATH] if specified, otherwise /opt/ros */
-  std::string getBinDepPath();
-  /** returns true if env[ROS_BINDEPS_PATH] exists or /opt/ros exists */
-  bool useBinDepPath();
   /** remove trailing slashes */
   void sanitize_rppvec(std::vector<std::string> &rppvec);
   // Output accumulates here

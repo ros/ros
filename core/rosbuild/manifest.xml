@@ -8,4 +8,8 @@ rosbuild contains scripts for managing the CMake-based build system for ROS.
   <license>BSD</license>
   <review status="Doc reviewed" notes="2010/01/20"/>
   <url>http://ros.org/wiki/rosbuild</url>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>

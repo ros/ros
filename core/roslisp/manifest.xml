@@ -5,9 +5,14 @@
   <review status="experimental" notes=""/>
   <depend package="roslib"/>
   <depend package="roslang"/>
+  <depend package="std_srvs"/>
   <export>
     <roslang cmake="${prefix}/cmake/roslisp.cmake"/>
   </export>
   <url>http://ros.org/wiki/roslisp</url>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>
 

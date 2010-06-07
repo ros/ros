@@ -33,7 +33,7 @@
 # Revision $Id$
 
 import roslib.names
-import rosgraph.graph
+import rosgraph.impl.graph
 
 ORIENTATIONS = ['LR', 'TB', 'RL', 'BT']
 
@@ -67,7 +67,7 @@ def _edge_to_dot(e):
 def _generate_node_dotcode(node, g, quiet):
     if node in g.bad_nodes:
         bn = g.bad_nodes[node]
-        if bn.type == rosgraph.graph.BadNode.DEAD:
+        if bn.type == rosgraph.impl.graph.BadNode.DEAD:
             return '  %s [color="red", shape="doublecircle", label="%s", URL="node:%s"];'%(
                 safe_dotcode_name(node), node, node)
         else:
@@ -162,7 +162,7 @@ def generate_dotcode(g, ns_filter, graph_mode, orientation, quiet=False):
         if nn_nodes or nt_nodes:
             nodes_str = '\n'.join([_generate_node_dotcode(n, g, quiet) for n in nn_nodes])
             nodes_str += '\n'.join(['  %s [shape=box,label="%s",URL="topic:%s"];'%(
-                safe_dotcode_name(n), rosgraph.graph.node_topic(n), rosgraph.graph.node_topic(n)) for n in nt_nodes]) 
+                safe_dotcode_name(n), rosgraph.impl.graph.node_topic(n), rosgraph.impl.graph.node_topic(n)) for n in nt_nodes]) 
         else:
             nodes_str = '  empty;'
         nodes = list(nn_nodes) + list(nt_nodes)

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2009, Willow Garage, Inc.
@@ -30,11 +29,12 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
-# Import rxbag main to be used by the $ROS_ROOT/bin/rxbag
+# rxbag_main used by $ROS_ROOT/bin/rxbag
 from rxbag_main import rxbag_main
 
-from bag_helper import BagHelper
-from message_view import MessageView, TimelineRenderer, TopicMessageView
+import bag_helper
+from plugin.message_view       import MessageView
+from plugin.topic_message_view import TopicMessageView
+from plugin.timeline_renderer  import TimelineRenderer
+from timeline_cache            import TimelineCache

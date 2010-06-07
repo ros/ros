@@ -30,8 +30,10 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
+
+"""
+The main entry-point to rxbag.
+"""
 
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
@@ -42,6 +44,7 @@ import sys
 import threading
 import time
 
+# Ensure wxPython version >= 2.8, and install hotfix for 64-bit Cairo support for wxGTK
 import wxversion
 WXVER = '2.8'
 if wxversion.checkInstalled(WXVER):
@@ -51,91 +54,45 @@ else:
     sys.exit(1)
 import wx
 import wx.lib.wxcairo
-
-# This is a crazy hack to get this to work on 64-bit systems
-if 'wxMac' in wx.PlatformInfo:
-    pass # Implement if necessary
-elif 'wxMSW' in wx.PlatformInfo:
-    pass # Implement if necessary
-elif 'wxGTK' in wx.PlatformInfo:
+if 'wxGTK' in wx.PlatformInfo:
+    # Workaround for 64-bit systems
     import ctypes
     gdkLib = wx.lib.wxcairo._findGDKLib()
     gdkLib.gdk_cairo_create.restype = ctypes.c_void_p
 
-import util.base_frame
-import timeline
+import rxbag_app
 
-class RxBagApp(wx.App):
-    def __init__(self, input_files, options):
-        self.input_files = [input_files[0]]
-        self.options     = options
-
-        wx.App.__init__(self)
-    
-    def OnInit(self):
-        try:
-            if len(self.input_files) == 1:
-                frame_title = 'rxbag - ' + self.input_files[0]
-            else:
-                frame_title = 'rxbag - [%d bags]' % len(self.input_files)
-    
-            frame = util.base_frame.BaseFrame(None, 'rxbag', 'Timeline', title=frame_title)
-            timeline_panel = timeline.TimelinePanel(self.input_files, self.options, frame, -1)
-            frame.Show()
-            self.SetTopWindow(frame)
-            
-        except Exception, ex:
-            print >> sys.stderr, 'Error initializing application:', ex
-            return False
-
-        return True
-
-def connect_to_ros(node_name, init_timeout):
-    # Attempt to connect to master node
-    class InitNodeThread(threading.Thread):
-        def __init__(self):
-            threading.Thread.__init__(self)
-            self.setDaemon(True)
-            self.inited = False
-            
-        def run(self):
-            rospy.loginfo('Attempting to connect to master node...')
-            rospy.init_node(node_name, anonymous=True, disable_signals=True)
-            self.inited = True
-
-    try:
-        # Check whether ROS master is running
-        master = rospy.get_master()
-        master.getPid()
-        
-        # If so (i.e. no exception), attempt to initialize node
-        init_thread = InitNodeThread()
-        init_thread.start()
-        time.sleep(init_timeout)
-
-        if init_thread.inited:
-            rospy.core.register_signals()
-            rospy.loginfo('Connected to master node.')
-        else:
-            rospy.logerr('Giving up. Couldn\'t connect to master node.')
-    except:
-        rospy.loginfo('Master not found.')
+def run(options, args):
+    app = rxbag_app.RxBagApp(options, args)
+    app.MainLoop()
+    rospy.signal_shutdown('GUI shutdown')
 
 def rxbag_main():
     # Parse command line for input files and options
-    usage = "usage: %prog [options] BAG_FILE.bag"
-    parser = optparse.OptionParser(usage=usage)
-    #parser.add_option('-t', '--init-timeout', action='store', default=0.5, help='timeout in secs for connecting to master node')   
+    parser = optparse.OptionParser(usage='usage: %prog [options] BAG_FILE1 [BAG_FILE2 ...]')
+    parser.add_option('-s', '--start',         dest='start',   default=0.0,   action='store', type='float', help='start SEC seconds into the bag files', metavar='SEC')
+    parser.add_option(      '--record',        dest='record',  default=False, action='store_true',          help='record to a bag file')
+    parser.add_option('-a', '--all',           dest='all',     default=False, action='store_true',          help='record all topics')
+    parser.add_option('-e', '--regex',         dest='regex',   default=False, action="store_true",          help='match topics using regular expressions')
+    parser.add_option('-o', '--output-prefix', dest='prefix',  default=None,  action="store",               help='prepend PREFIX to beginning of bag name (name will always end with date stamp)')
+    parser.add_option('-O', '--output-name',   dest='name',    default=None,  action="store",               help='record to bag with name NAME.bag')
+    parser.add_option('-l', '--limit',         dest='limit',   default=0,     action="store", type='int',   help='only record NUM messages on each topic', metavar='NUM')
+    parser.add_option(      '--profile',       dest='profile', default=False, action='store_true',          help='profile and write results to rxbag.prof [advanced]')
+
     options, args = parser.parse_args(sys.argv[1:])
+
     if len(args) == 0:
-        parser.print_help()
-        return
-    input_files = args[:]
+        if options.record:
+            if not options.all:
+                parser.error('You must specify topics to record when recording (or specify --all).')
+        else:
+            parser.error('You must specify at least one bag file to view.')
+            
+    if options.prefix and options.name:
+        parser.error('Can\'t set both prefix and name.')
 
-    #connect_to_ros('rxbag', options.init_timeout)
-
-    # Start application
-    app = RxBagApp(input_files, options)
-    app.MainLoop()
-
-    rospy.signal_shutdown('GUI shutdown')
+    if options.profile:
+        import cProfile
+        cProfile.runctx('run(options, args)', globals(), locals(), 'rxbag.prof')
+    else:
+        run(options, args)

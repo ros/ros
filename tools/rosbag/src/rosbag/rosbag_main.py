@@ -60,6 +60,8 @@ def record_cmd(argv):
 
     parser.add_option("-a", "--all",           dest="all",      default=False, action="store_true",        help="record all topics")
     parser.add_option("-e", "--regex",         dest="regex",    default=False, action="store_true",        help="match topics using regular expressions")
+    parser.add_option("-x", "--exclude",        dest="exclude_regex", default="", action="store",
+help="Exclude topics matching the follow regular expression (subtracts from -a or regex)")
     parser.add_option("-q", "--quiet",         dest="quiet",    default=False, action="store_true",        help="suppress console output")
     parser.add_option("-o", "--output-prefix", dest="prefix",   default=None,  action="store",             help="prepend PREFIX to beginning of bag name (name will always end with date stamp)")
     parser.add_option("-O", "--output-name",   dest="name",     default=None,  action="store",             help="record to bag with namename NAME.bag")
@@ -85,6 +87,7 @@ def record_cmd(argv):
 
     if options.prefix: cmd.extend(["-f", options.prefix])
     if options.name:   cmd.extend(["-F", options.name])
+    if options.exclude_regex: cmd.extend(["-x", options.exclude_regex])
     if options.all:    cmd.extend(["-a"])
     if options.regex:  cmd.extend(["-e"])
     #if options.zlib:   cmd.extend(["-z"])
@@ -146,6 +149,7 @@ def play_cmd(argv):
     parser.add_option("-d", "--delay",        dest="delay",      default=0.2,   type='float', action="store", help="sleep SEC seconds after every advertise call (to allow subscribers to connect)", metavar="SEC")
     parser.add_option("-r", "--rate",         dest="rate",       default=1.0,   type='float', action="store", help="multiply the publish rate by FACTOR", metavar="FACTOR")
     parser.add_option("-s", "--start",        dest="sleep",      default=0.0,   type='float', action="store", help="start SEC seconds into the bag files", metavar="SEC")
+    parser.add_option("-l", "--loop",         dest="loop",       default=False, action="store_true", help="loop playback")
     parser.add_option("--try-future-version", dest="try_future", default=False, action="store_true", help="still try to open a bag file, even if the version number is not known to the player")
 
     (options, args) = parser.parse_args(argv)
@@ -158,6 +162,7 @@ def play_cmd(argv):
     if options.quiet:      cmd.extend(["-n"])
     if options.pause:      cmd.extend(["-p"])
     if options.immediate:  cmd.extend(["-a"])
+    if options.loop:       cmd.extend(["-l"])
     if options.try_future: cmd.extend(["-T"])
 
     if options.clock:

@@ -35,6 +35,7 @@
 #include <gtest/gtest.h>
 
 #include "ros/time.h"
+#include <ros/init.h>
 #include "message_filters/cache.h"
 
 using namespace std ;
@@ -217,6 +218,7 @@ TEST(Cache, eventInEventOut)
 
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "blah");
   return RUN_ALL_TESTS();
 }
 

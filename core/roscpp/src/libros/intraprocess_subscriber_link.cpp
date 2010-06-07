@@ -89,9 +89,12 @@ void IntraProcessSubscriberLink::drop()
     return;
   }
 
+  dropped_ = true;
+
   if (subscriber_)
   {
     subscriber_->drop();
+    subscriber_.reset();
   }
 
   if (PublicationPtr parent = parent_.lock())

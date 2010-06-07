@@ -44,11 +44,13 @@ import math
 import socket
 import time
 import traceback
+import xmlrpclib
             
 import roslib.exceptions
 import roslib.names
 import roslib.scriptutil
 import roslib.message
+import rosgraph.masterapi
 #TODO: lazy-import rospy or move rospy-dependent routines to separate location
 import rospy
 import rosrecord
@@ -69,22 +71,24 @@ class ROSTopicIOException(ROSTopicException):
     """
     pass
 
-def _succeed(args):
-    code, msg, val = args
-    if code != 1:
-        raise ROSTopicException("remote call failed: %s"%msg)
-    return val
-
 def _check_master():
     """
     Make sure that master is available
     @raise ROSTopicException: if unable to successfully communicate with master
     """
     try:
-        _succeed(roslib.scriptutil.get_master().getPid('/'))
+        rosgraph.masterapi.Master('/rostopic').getPid()
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
     
+def _master_get_topic_types(master):
+    try:
+        val = master.getTopicTypes()
+    except xmlrpclib.Fault:
+        print >> sys.stderr, "WARNING: rostopic is being used against an older version of ROS/roscore"
+        val = master.getPublishedTopics('/')
+    return val
+
 class ROSTopicHz(object):
     """
     ROSTopicHz receives messages for a topic and computes frequency stats
@@ -307,7 +311,7 @@ def _get_topic_type(topic):
     @rtype: str, str, fn
     """
     try:
-        val = _succeed(roslib.scriptutil.get_master().getTopicTypes('/'))
+        val = _master_get_topic_types(rosgraph.masterapi.Master('/rostopic'))
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
 
@@ -588,7 +592,7 @@ def _rostopic_type(topic):
     if t:
         print t
     else:
-        print >> sys.stderr, 'unknown topic [%s]'%topic
+        print >> sys.stderr, 'unknown topic type [%s]'%topic
         sys.exit(1)
 
 def _rostopic_echo_bag(callback_echo, bag_file):
@@ -655,13 +659,13 @@ def get_api(master, caller_id):
     caller_api = _caller_apis.get(caller_id, None)
     if not caller_api:
         try:
-            code, msg, caller_api = master.lookupNode('/rostopic', caller_id)
+            caller_api = master.lookupNode(caller_id)
+            _caller_apis[caller_id] = caller_api
         except socket.error:
             raise ROSTopicIOException("Unable to communicate with master!")
-        if code != 1:
+        except rosgraph.masterapi.Error:
             caller_api = 'unknown address %s'%caller_id
-        else:
-            _caller_apis[caller_id] = caller_api
+
     return caller_api
 
 def _rostopic_list_bag(bag_file, topic=None):
@@ -722,9 +726,9 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
     if subscribers_only and publishers_only:
         raise ROSTopicException("cannot specify both subscribers- and publishers-only")
     
-    master = roslib.scriptutil.get_master()
+    master = rosgraph.masterapi.Master('/rostopic')
     try:
-        state = _succeed(master.getSystemState('/rostopic'))
+        state = master.getSystemState()
 
         pubs, subs, _ = state
         if topic:
@@ -732,12 +736,13 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
             topic_ns = roslib.names.make_global_ns(topic)        
             subs = (x for x in subs if x[0] == topic or x[0].startswith(topic_ns))
             pubs = (x for x in pubs if x[0] == topic or x[0].startswith(topic_ns))
-
-        topic_types = _succeed(master.getTopicTypes('/rostopic'))
+            
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
 
     if verbose:
+        topic_types = _master_get_topic_types(master)
+
         if not subscribers_only:
             print "\nPublished topics:"
             for t, l in pubs:
@@ -779,16 +784,17 @@ def get_info_text(topic):
             return matches[0]
         return 'unknown type'
 
-    master = roslib.scriptutil.get_master()
+    master = rosgraph.masterapi.Master('/rostopic')
     try:
-        state = _succeed(master.getSystemState('/rostopic'))
+        state = master.getSystemState()
 
         pubs, subs, _ = state
         # filter based on topic
         subs = [x for x in subs if x[0] == topic]
         pubs = [x for x in pubs if x[0] == topic]
 
-        topic_types = _succeed(master.getTopicTypes('/rostopic'))
+        topic_types = _master_get_topic_types(master)
+            
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
 
@@ -987,9 +993,9 @@ def find_by_type(topic_type):
     @return: list of topic names that use topic_type    
     @rtype: [str]
     """
-    master = roslib.scriptutil.get_master()
+    master = rosgraph.masterapi.Master('/rostopic')
     try:
-        t_list = _succeed(master.getTopicTypes('/rostopic'))
+        t_list = _master_get_topic_types(master)
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
     return [t_name for t_name, t_type in t_list if t_type == topic_type]
@@ -1354,7 +1360,7 @@ def rostopicmain(argv=None):
         print >> sys.stderr, "ERROR: unable to use bag file: "+str(e)
         sys.exit(1)
     except roslib.exceptions.ROSLibException, e:
-        # mainly for invalid master URI
+        # mainly for invalid master URI or rosgraph.masterapi.ROSMasterException
         print >> sys.stderr, "ERROR: "+str(e)
         sys.exit(1)
     except ROSTopicException, e:

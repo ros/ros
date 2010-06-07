@@ -40,7 +40,7 @@
 (in-package :roslisp)
 
 
-(defun start-ros-node (name &key (xml-rpc-port 8001) (pub-server-port 7001) 
+(defun start-ros-node (name &key (xml-rpc-port 8001 xml-port-supp) (pub-server-port 7001 pub-port-supp) 
 		       (master-uri (make-uri "127.0.0.1" 11311) master-supplied) 
 		       (anonymous nil) (cmd-line-args (rest sb-ext:*posix-argv*))
 		       &allow-other-keys)
@@ -50,9 +50,13 @@ MASTER-URI is either a string of the form http://foo:12345, or an object created
 
 ANONYMOUS, if non-nil, causes the current time to be appended to the node name (to make it unique).
 
+XML-RPC-PORT and PUB-SERVER-PORT are no longer used.
+
 CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its first element).  It can also be a string of space-separated arguments."
 
-  (declare (string name) (integer xml-rpc-port pub-server-port) (type (or string uri) master-uri))
+  (declare (string name) (type (or string uri) master-uri))
+  (assert (not xml-port-supp) nil "start-ros-node no longer accepts the xml-rpc-port argument")
+  (assert (not pub-port-supp) nil "start-ros-node no longer accepts the pub-server-port argument")
   (unless (eq *node-status* :shutdown)
     (warn "Before starting node, node-status equalled ~a instead of :shutdown.  Shutting the previous node invocation down now." *node-status*)
     (shutdown-ros-node)
@@ -113,27 +117,16 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
 	     (error "Can't start node as status already equals running.  Call shutdown-ros-node first."))
 
 
-	   ;; Start publication and xml-rpc servers.  The loops are to scan for a port that isn't in use.
-	   (loop
-	      (handler-case 
-		  (progn 
-		    (setf *xml-server* (start-xml-rpc-server :port xml-rpc-port))
-		    (return))
-		(address-in-use-error (c)
-		  (declare (ignore c))
-		  (ros-debug (roslisp top) "When starting xml-rpc-server, port ~a in use ... trying next one." xml-rpc-port)
-		  (incf xml-rpc-port))))
+	   ;; Start publication and xml-rpc servers.  
+           (mvbind (srv sock) (start-xml-rpc-server :port 0)
+             (setq *xml-server* srv
+                   xml-rpc-port (nth-value 1 (sb-bsd-sockets:socket-name sock))))
+           (ros-debug (roslisp top) "Started XML-RPC server on port ~a" xml-rpc-port)
 
-	   (loop
-	      (handler-case
-		  (progn
-		    (setq *tcp-server-hostname* (hostname)
-			  *tcp-server* (ros-node-tcp-server pub-server-port))
-		    (return))
-		(address-in-use-error (c)
-		  (declare (ignore c))
-		  (ros-debug (roslisp top) "When starting TCP server for publications, port ~a in use... trying next one." pub-server-port)
-		  (incf pub-server-port))))
+           (setq *tcp-server-hostname* (hostname)
+                 *tcp-server* (ros-node-tcp-server 0)
+                 pub-server-port (nth-value 1 (sb-bsd-sockets:socket-name *tcp-server*)))
+           (ros-debug (roslisp top) "Started tcpros server on port ~a" pub-server-port)
 
   
 	   (setq *tcp-server-port* pub-server-port

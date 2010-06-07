@@ -44,6 +44,10 @@ import xmlrpclib
 import roslib.exceptions
 import roslib.names
 
+import warnings
+warnings.warn("Module roslib.masterapi is deprecated. Use rosgraph.masterapi instead.",
+              category=DeprecationWarning, stacklevel=2)
+
 class ROSMasterException(roslib.exceptions.ROSLibException):
     """
     Base class of ROS-master related errors.
@@ -433,6 +437,9 @@ class Master(object):
     def getTopicTypes(self): 
         """
         Retrieve list topic names and their types.
+
+        New in ROS 1.2.
+
         @param caller_id: ROS caller id    
         @type  caller_id: str
         @rtype: (int, str, [[str,str]] )

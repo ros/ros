@@ -48,6 +48,7 @@ import os
 import re
 import struct
 import sys
+import threading
 import time
 import yaml
 
@@ -148,7 +149,7 @@ class Bag(object):
         self._open(f, mode, allow_unindexed)
 
         self._output_file = self._file
-    
+
     @property
     def options(self):
         """Get the options."""
@@ -727,7 +728,7 @@ class Bag(object):
 
     def _get_entry(self, t, connections=None):
         """
-        Return the first index entry on/before time on the given connections
+        Return the first index entry on/before the timestamp on the given connections.
         """
         indexes = self._get_indexes(connections)
 
@@ -742,6 +743,25 @@ class Bag(object):
                 if first_entry is None or index_entry > first_entry:
                     first_entry = index_entry
                     
+        return first_entry
+    
+    def _get_entry_after(self, t, connections=None):
+        """
+        Return the first index entry after the timestamp on the given connections.
+        """
+        indexes = self._get_indexes(connections)
+
+        entry = _IndexEntry(t)
+
+        first_entry = None
+
+        for index in indexes:
+            i = bisect.bisect_right(index, entry)
+            if i <= len(index) - 1:
+                index_entry = index[i]
+                if first_entry is None or index_entry < first_entry:
+                    first_entry = index_entry
+
         return first_entry
 
     def _get_indexes(self, connections):
@@ -817,9 +837,9 @@ class Bag(object):
             self._file     = f
             self._filename = None
         else:
-            self._file     = open(f, 'wb')
+            self._file     = open(f, 'w+b')
             self._filename = f
-            
+
         self._mode = 'w'
 
         self._version = 200
@@ -837,13 +857,13 @@ class Bag(object):
             self._filename = None
         else:        
             try:
-                # Test if the file already exists.
+                # Test if the file already exists
                 open(f, 'r').close()
 
-                # File exists: open in read with update mode.
+                # File exists: open in read with update mode
                 self._file = open(f, 'r+b')
             except:
-                # File doesn't exist: open in write mode.
+                # File doesn't exist: open in write mode
                 self._file = open(f, 'w+b')
         
             self._filename = f

@@ -346,15 +346,16 @@ void start()
     {
       Time::setNow(ros::Time());
     }
-  }
 
-  if (g_shutting_down) goto end;
+    if (g_shutting_down) goto end;
 
-  {
-    ros::SubscribeOptions ops;
-    ops.init<roslib::Clock>("/clock", 1, clockCallback);
-    ops.callback_queue = getInternalCallbackQueue().get();
-    TopicManager::instance()->subscribe(ops);
+    if (use_sim_time)
+    {
+      ros::SubscribeOptions ops;
+      ops.init<roslib::Clock>("/clock", 1, clockCallback);
+      ops.callback_queue = getInternalCallbackQueue().get();
+      TopicManager::instance()->subscribe(ops);
+    }
   }
 
   if (g_shutting_down) goto end;

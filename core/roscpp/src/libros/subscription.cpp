@@ -197,6 +197,15 @@ void Subscription::addLocalConnection(const PublicationPtr& pub)
   pub->addSubscriberLink(sub_link);
 }
 
+bool urisEqual(const std::string& uri1, const std::string& uri2)
+{
+  std::string host1, host2;
+  uint32_t port1 = 0, port2 = 0;
+  network::splitURI(uri1, host1, port1);
+  network::splitURI(uri2, host2, port2);
+  return port1 == port2 && host1 == host2;
+}
+
 bool Subscription::pubUpdate(const V_string& new_pubs)
 {
   boost::mutex::scoped_lock lock(shutdown_mutex_);
@@ -250,7 +259,7 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
       for (V_string::const_iterator up_i = new_pubs.begin();
            !found && up_i != new_pubs.end(); ++up_i)
       {
-        if ((*spc)->getPublisherXMLRPCURI() == *up_i)
+        if (urisEqual((*spc)->getPublisherXMLRPCURI(), *up_i))
         {
           found = true;
           break;
@@ -269,7 +278,7 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
       for (V_PublisherLink::iterator spc = publisher_links_.begin();
            !found && spc != publisher_links_.end(); ++spc)
       {
-        if (*up_i == (*spc)->getPublisherXMLRPCURI())
+        if (urisEqual(*up_i, (*spc)->getPublisherXMLRPCURI()))
         {
           found = true;
           break;
@@ -283,7 +292,7 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
         S_PendingConnection::iterator end = pending_connections_.end();
         for (; it != end; ++it)
         {
-          if (*up_i == (*it)->getRemoteURI())
+          if (urisEqual(*up_i, (*it)->getRemoteURI()))
           {
             found = true;
             break;
@@ -649,7 +658,7 @@ uint32_t Subscription::handleMessage(const SerializedMessage& m, bool ser, bool 
   return drops;
 }
 
-bool Subscription::addCallback(const SubscriptionCallbackHelperPtr& helper, const std::string& md5sum, CallbackQueueInterface* queue, int32_t queue_size, const VoidConstPtr& tracked_object)
+bool Subscription::addCallback(const SubscriptionCallbackHelperPtr& helper, const std::string& md5sum, CallbackQueueInterface* queue, int32_t queue_size, const VoidConstPtr& tracked_object, bool allow_concurrent_callbacks)
 {
   ROS_ASSERT(helper);
   ROS_ASSERT(queue);
@@ -675,7 +684,7 @@ bool Subscription::addCallback(const SubscriptionCallbackHelperPtr& helper, cons
     CallbackInfoPtr info(new CallbackInfo);
     info->helper_ = helper;
     info->callback_queue_ = queue;
-    info->subscription_queue_.reset(new SubscriptionQueue(name_, queue_size));
+    info->subscription_queue_.reset(new SubscriptionQueue(name_, queue_size, allow_concurrent_callbacks));
     info->tracked_object_ = tracked_object;
     info->has_tracked_object_ = false;
     if (tracked_object)

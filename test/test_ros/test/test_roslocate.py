@@ -49,7 +49,13 @@ class RoslocateTestCase(unittest.TestCase):
         if pkg:
             command.append(pkg)
         try:
-            subprocess.check_call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	    # I don't understand why, but on OSX, calling 'roslocate list'
+	    # via subprocess.check_call() hangs if stdout is redirected to
+	    # a PIPE.  If it's not redirected, then it doesn't hang.
+	    if 'Darwin' in os.uname() and cmd == 'list':
+              subprocess.check_call(command, stderr=subprocess.PIPE)
+	    else:
+              subprocess.check_call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             return True
         except subprocess.CalledProcessError:
             return False

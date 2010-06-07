@@ -67,6 +67,7 @@ PlayerOptions::PlayerOptions() :
     advertise_sleep(200000),
     try_future(false),
     has_time(false),
+    loop(false),
     time(0.0f)
 {
 }
@@ -150,39 +151,48 @@ void Player::publish() {
 
     std::cout << std::endl << "Hit space to toggle paused, or 's' to step." << std::endl;
 
-    // Set up our time_translator and publishers
+    while (true) {
+        // Set up our time_translator and publishers
 
-    time_translator_.setTimeScale(options_.time_scale);
+        time_translator_.setTimeScale(options_.time_scale);
 
-    start_time_ = view.begin()->getTime();
-    time_translator_.setRealStartTime(start_time_);
-    bag_length_ = view.getEndTime() - view.getBeginTime();
+        start_time_ = view.begin()->getTime();
+        time_translator_.setRealStartTime(start_time_);
+        bag_length_ = view.getEndTime() - view.getBeginTime();
 
-    time_publisher_.setTime(start_time_);
+        time_publisher_.setTime(start_time_);
 
-    ros::WallTime now_wt = ros::WallTime::now();
-    time_translator_.setTranslatedStartTime(ros::Time(now_wt.sec, now_wt.nsec));
+        ros::WallTime now_wt = ros::WallTime::now();
+        time_translator_.setTranslatedStartTime(ros::Time(now_wt.sec, now_wt.nsec));
 
 
-    time_publisher_.setTimeScale(options_.time_scale);
-    if (options_.bag_time)
-        time_publisher_.setPublishFrequency(options_.bag_time_frequency);
-    else
-        time_publisher_.setPublishFrequency(-1.0);
+        time_publisher_.setTimeScale(options_.time_scale);
+        if (options_.bag_time)
+            time_publisher_.setPublishFrequency(options_.bag_time_frequency);
+        else
+            time_publisher_.setPublishFrequency(-1.0);
 
-    paused_ = options_.start_paused;
-    paused_time_ = now_wt;
+        paused_ = options_.start_paused;
+        paused_time_ = now_wt;
 
-    // Call do-publish for each message
-    foreach(MessageInstance m, view) {
-        if (!node_handle_.ok())
+        // Call do-publish for each message
+        foreach(MessageInstance m, view) {
+            if (!node_handle_.ok())
+                break;
+
+            doPublish(m);
+        }
+
+        if (!node_handle_.ok()) {
+            std::cout << std::endl;
             break;
-        
-        doPublish(m);
+        }
+        if (!options_.loop) {
+            std::cout << std::endl << "Done." << std::endl;
+            break;
+        }
     }
-    
-    std::cout << std::endl << "Done." << std::endl;
-    
+
     ros::shutdown();
 }
 

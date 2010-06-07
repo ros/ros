@@ -35,6 +35,7 @@
 #include <gtest/gtest.h>
 
 #include "ros/time.h"
+#include <ros/init.h>
 #include "message_filters/synchronizer.h"
 #include "message_filters/sync_policies/exact_time.h"
 
@@ -195,6 +196,7 @@ TEST(ExactTime, eventInEventOut)
 
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "blah");
 
   ros::Time::setNow(ros::Time());
 

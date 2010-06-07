@@ -90,7 +90,7 @@ void ChunkedFile::open(string const& filename, string const& mode) {
     read_stream_  = shared_ptr<Stream>(new UncompressedStream(this));
     write_stream_ = shared_ptr<Stream>(new UncompressedStream(this));
     filename_     = filename;
-    offset_       = ftell(file_);
+    offset_       = ftello(file_);
 }
 
 bool ChunkedFile::good() const {
@@ -150,11 +150,11 @@ void ChunkedFile::seek(uint64_t offset, int origin) {
 
     setReadMode(compression::None);
 
-    int success = fseek(file_, offset, origin);
+    int success = fseeko(file_, offset, origin);
     if (success != 0)
         throw BagIOException("Error seeking");
 
-    offset_ = ftell(file_);
+    offset_ = ftello(file_);
 }
 
 uint64_t ChunkedFile::getOffset()            const { return offset_;        }

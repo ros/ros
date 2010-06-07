@@ -216,7 +216,8 @@
 
 (defstruct (subscriber-connection (:conc-name nil))
   subscriber-socket
-  subscriber-stream)
+  subscriber-stream
+  subscriber-uri)
 
 (defstruct service
   md5

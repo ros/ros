@@ -12,6 +12,9 @@ SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 SET(CMAKE_INSTALL_RPATH "${PROJECT_SOURCE_DIR}/lib")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+# Support large bags (>2GB) on 32-bit systems
+add_definitions(-D_FILE_OFFSET_BITS=64)
+
 rosbuild_add_library(rosbag 
 	src/bag.cpp src/buffer.cpp src/bz2_stream.cpp src/chunked_file.cpp src/message_instance.cpp src/player.cpp 
 	src/query.cpp src/recorder.cpp src/stream.cpp src/time_translator.cpp src/uncompressed_stream.cpp src/view.cpp)

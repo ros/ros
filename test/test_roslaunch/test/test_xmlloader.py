@@ -836,7 +836,9 @@ class TestXmlLoader(unittest.TestCase):
 
     def test_remap_invalid(self):
         tests = ['test-remap-invalid-1.xml',
-                 'test-remap-invalid-2.xml',                 
+                 'test-remap-invalid-2.xml',
+                 'test-remap-invalid-3.xml',
+                 'test-remap-invalid-4.xml',                                  
                  'test-remap-invalid-name-from.xml',                 
                  'test-remap-invalid-name-to.xml',                 
                  ]

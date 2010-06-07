@@ -189,6 +189,9 @@ class Process(object):
 
         _init_signal_handlers()
 
+    def __str__(self):
+        return "Process<%s>"%(self.name)
+
     # NOTE: get_info() is going to have to be sufficient for
     # generating respawn requests, so we must be complete about it
         

@@ -227,6 +227,7 @@ class PackageFlagTracker:
         buildable = False
         output_str += " No Makefile in package %s\n"%pkg
 
-    
+    if output_str and output_str[-1] == '\n':
+        output_str = output_str[:-1]
 
     return (buildable, output_state, output_str)

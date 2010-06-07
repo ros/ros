@@ -10,4 +10,8 @@
   <depend package="rostest" />
   <depend package="std_msgs" />  
   <depend package="std_srvs" />  
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>

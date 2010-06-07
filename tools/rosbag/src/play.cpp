@@ -45,6 +45,7 @@ void printUsage() {
     fprintf(stderr, " -s sec\tsleep <sec> sleep duration after every advertise call (to allow subscribers to connect)\n");
     fprintf(stderr, " -t sec\tstart <sec> seconds into the files\n");
     fprintf(stderr, " -q sz\tUse an outgoing queue of size <sz> (defaults to 0)\n");
+    fprintf(stderr, " -l\tloop playback\n");
     fprintf(stderr, " -h\tdisplay this help message\n");
 }
 
@@ -52,10 +53,11 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
     rosbag::PlayerOptions opts;
 
     int option_char;
-    while ((option_char = getopt(argc, argv, "nahpb:r:s:t:q:T")) != -1) {
+    while ((option_char = getopt(argc, argv, "nahlpb:r:s:t:q:T")) != -1) {
         switch (option_char) {
         case 'n': opts.quiet        = true; break;
         case 'a': opts.at_once      = true; break;
+        case 'l': opts.loop         = true; break;
         case 'p': opts.start_paused = true; break;
         case 'T': opts.try_future   = true; break;
         case 'q': opts.queue_size         = atoi(optarg); break;

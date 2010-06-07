@@ -352,8 +352,9 @@ void Bag::readMessageDataIntoStream(IndexEntry const& index_entry, Stream& strea
     case 102:
     {
         readMessageDataRecord102(index_entry.chunk_pos, header);
+        data_size = record_buffer_.getSize();
         if (data_size > 0)
-            memcpy(stream.advance(data_size), record_buffer_.getData(), record_buffer_.getSize());
+            memcpy(stream.advance(data_size), record_buffer_.getData(), data_size);
         break;
     }
     default:
@@ -454,6 +455,12 @@ boost::shared_ptr<T> Bag::instantiateBuffer(IndexEntry const& index_entry) const
 
 template<class T>
 void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg, boost::shared_ptr<ros::M_string> const& connection_header) {
+
+    if (time < ros::TIME_MIN)
+    {
+        throw BagException("Tried to insert a message with time less than ros::MIN_TIME");
+    }
+
     // Whenever we write we increment our revision
     bag_revision_++;
 

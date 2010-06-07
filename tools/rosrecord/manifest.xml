@@ -21,5 +21,9 @@ deserialization and reserialization of the messages.
   <rosdoc config="${prefix}/rosdoc.yaml" />
 </export>
 <rosdep name="python-imaging"/>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>
 

@@ -369,7 +369,7 @@ class Override(OSBase):
     def check_presence(self):
         try:
             (self._os_name, self._os_version) = os.environ["ROS_OS_OVERRIDE"].split(':')
-            print >> sys.stderr, "Using environment variable ROS_OS_OVERRIDE=name:version"
+            print >> sys.stderr, "Using environment variable ROS_OS_OVERRIDE name = %s version = %s"%(self._os_name, self._os_version)
             return True
         except:
             return False

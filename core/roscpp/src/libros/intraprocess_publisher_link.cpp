@@ -89,6 +89,7 @@ void IntraProcessPublisherLink::drop()
   if (publisher_)
   {
     publisher_->drop();
+    publisher_.reset();
   }
 
   if (SubscriptionPtr parent = parent_.lock())

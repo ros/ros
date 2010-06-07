@@ -35,8 +35,8 @@
 #define ROS_DEPRECATED
 #define ROS_FORCE_INLINE __forceinline
 #else
-#define ROSCPP_DEPRECATED
-#define ROSCPP_FORCE_INLINE inline
+#define ROS_DEPRECATED
+#define ROS_FORCE_INLINE inline
 #endif
 
 #endif

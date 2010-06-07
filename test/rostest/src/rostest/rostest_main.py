@@ -135,7 +135,7 @@ def rostestmain():
         if options.bare:
             # TODO: does bare-retry make sense?
             time_limit = float(options.bare_limit) if options.bare_limit else None
-            testCase = rostest.baretest.BareTestCase(test_file, args[1:], rostest.runner.getResults(), retry=0, time_limit=options.bare_limit, test_name=options.bare_name)
+            testCase = rostest.baretest.BareTestCase(test_file, args[1:], rostest.runner.getResults(), retry=0, time_limit=time_limit, test_name=options.bare_name)
             suite = unittest.TestSuite()
             suite.addTest(testCase)
 

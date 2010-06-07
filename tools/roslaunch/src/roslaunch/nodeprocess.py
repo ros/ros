@@ -292,7 +292,11 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
                     raise FatalProcessLaunch("unable to launch [%s]: %s"%(' '.join(self.args), msg))
                 
             self.started = True
-            if self.popen.poll() is None:
+	    # Check that the process is either still running (poll returns
+	    # None) or that it completed successfully since when we
+	    # launched it above (poll returns the return code, 0).
+            poll_result = self.popen.poll()
+            if poll_result is None or poll_result == 0:
                 self.pid = self.popen.pid
                 printlog_bold("process[%s]: started with pid [%s]"%(self.name, self.pid))
                 return True

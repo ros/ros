@@ -446,7 +446,7 @@ class Param(object):
     specification.
     """
     def __init__(self, key, value):
-        self.key = key
+        self.key = roslib.names.canonicalize_name(key)
         self.value = value
     def __eq__(self, p):
         if not isinstance(p, Param):

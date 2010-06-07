@@ -56,8 +56,8 @@ class ROSLaunch(object):
         """
         @raise RLException: if fails to initialize
         """
-        import roslib.masterapi
-        master = roslib.masterapi.Master('/roslaunch_script')
+        import rosgraph.masterapi
+        master = rosgraph.masterapi.Master('/roslaunch_script')
         uuid = master.getParam('/run_id')
         self.parent = roslaunch.parent.ROSLaunchParent(uuid, [], is_core=False)
         self.started = False

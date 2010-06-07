@@ -235,7 +235,7 @@ bool TopicManager::addSubCallback(const SubscribeOptions& ops)
   }
   else if (found)
   {
-    if (!sub->addCallback(ops.helper, ops.md5sum, ops.callback_queue, ops.queue_size, ops.tracked_object))
+    if (!sub->addCallback(ops.helper, ops.md5sum, ops.callback_queue, ops.queue_size, ops.tracked_object, ops.allow_concurrent_callbacks))
     {
       return false;
     }
@@ -278,7 +278,7 @@ bool TopicManager::subscribe(const SubscribeOptions& ops)
   std::string datatype = ops.datatype;
 
   SubscriptionPtr s(new Subscription(ops.topic, md5sum, datatype, ops.transport_hints));
-  s->addCallback(ops.helper, ops.md5sum, ops.callback_queue, ops.queue_size, ops.tracked_object);
+  s->addCallback(ops.helper, ops.md5sum, ops.callback_queue, ops.queue_size, ops.tracked_object, ops.allow_concurrent_callbacks);
 
   if (!registerSubscriber(s, ops.datatype))
   {

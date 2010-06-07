@@ -182,6 +182,9 @@ def main(argv=sys.argv):
         uuid = roslaunch.rlutil.get_or_generate_uuid(options.run_id, options.wait_for_master)
         configure_logging(uuid)
 
+        # #2761
+        roslaunch.rlutil.check_log_disk_usage()
+
         logger = logging.getLogger('roslaunch')
         logger.info("roslaunch starting with args %s"%str(argv))
         logger.info("roslaunch env is %s"%os.environ)

@@ -57,17 +57,15 @@ Set up things so that publish may now be called with this topic.  Also, returns 
   (setq topic-type (lookup-topic-type topic-type))
   (with-fully-qualified-name topic
     (with-mutex (*ros-lock*)
-      (when (hash-table-has-key *publications* topic)
-	(roslisp-error "Already publishing on ~a" topic))
-
-      (let ((pub (make-publication :pub-topic-type topic-type :subscriber-connections nil :is-latching latch :last-message nil)))
-	(setf (gethash topic *publications*) pub)      
-	(protected-call-to-master 
-	 ("registerPublisher" topic topic-type *xml-rpc-caller-api*) c
-	 (remhash topic *publications*)
-	 (roslisp-error "Unable to contact master at ~a for advertising ~a: ~a" *master-uri* topic c))
-	(ros-debug (roslisp pub) "Advertised ~a of type ~a" topic topic-type)
-	pub))))
+      (or (gethash topic *publications*)
+          (let ((pub (make-publication :pub-topic-type topic-type :subscriber-connections nil :is-latching latch :last-message nil)))
+            (setf (gethash topic *publications*) pub)      
+            (protected-call-to-master 
+                ("registerPublisher" topic topic-type *xml-rpc-caller-api*) c
+              (remhash topic *publications*)
+              (roslisp-error "Unable to contact master at ~a for advertising ~a: ~a" *master-uri* topic c))
+            (ros-debug (roslisp pub) "Advertised ~a of type ~a" topic topic-type)
+            pub)))))
 
 (defun unadvertise (topic)
   (ensure-node-is-running)

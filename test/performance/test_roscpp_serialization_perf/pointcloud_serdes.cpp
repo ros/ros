@@ -38,16 +38,16 @@
 
 using namespace ros::serialization;
 
-ros::Time t;
+ros::WallTime t;
 
 inline void tic()
 {
-  t = ros::Time::now();
+  t = ros::WallTime::now();
 }
 
 inline double toc()
 {
-  return (ros::Time::now() - t).toSec();
+  return (ros::WallTime::now() - t).toSec();
 }
 
 int main(int, char **)
@@ -70,6 +70,7 @@ int main(int, char **)
   {
     OStream s(m.buf.get(), m.num_bytes);
     serialize(s, pc);
+    m.message_start = m.buf.get();
   }
   printf("avg serialization took %.6f sec\n", toc() / (double)NUM_ITER);
 

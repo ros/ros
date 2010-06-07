@@ -811,7 +811,7 @@ uint32_t Bag::readMessageDataSize(IndexEntry const& index_entry) const {
         return data_size;
     case 102:
         readMessageDataRecord102(index_entry.chunk_pos, header);
-        return data_size;
+        return record_buffer_.getSize();
     default:
         throw BagFormatException((format("Unhandled version: %1%") % version_).str());
     }

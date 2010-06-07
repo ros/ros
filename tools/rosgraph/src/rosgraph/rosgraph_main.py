@@ -37,7 +37,8 @@ import sys
 import time
 import roslib.roslogging
 import roslib.scriptutil
-import rosgraph.graph
+import rosgraph.impl.graph
+import rosgraph.masterapi
 
 def fullusage():
     print """rosgraph is a command-line tool for debugging the ROS Computation Graph.
@@ -59,14 +60,14 @@ def rosgraph_main():
     roslib.roslogging.configure_logging('rosgraph')
 
     # make sure master is available
-    master = roslib.scriptutil.get_master()
+    master = rosgraph.masterapi.Master('rosgraph')
     try:
-        code, msg, val = master.getPid()
+        master.getPid()
     except:
         print >> sys.stderr, "ERROR: Unable to communicate with master!"
         return
         
-    g = rosgraph.graph.Graph()
+    g = rosgraph.impl.graph.Graph()
     try:
         while 1:
           g.update()

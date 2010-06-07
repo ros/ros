@@ -49,10 +49,10 @@ def on_ros_path(p):
     @type  p: str
     @return: True if p is on the ROS path (ROS_ROOT, ROS_PACKAGE_PATH)
     """
-    p = os.path.abspath(roslib.rosenv.resolve_path(p))
-    paths = roslib.packages.get_package_paths()
-    paths = [os.path.abspath(roslib.rosenv.resolve_path(x)) for x in paths]
-    return bool([x for x in paths if p == x or p.startswith(x + os.sep)])
+    pkg = os.path.realpath(roslib.rosenv.resolve_path(p))
+    paths = [p for p in roslib.packages.get_package_paths()]
+    paths = [os.path.realpath(roslib.rosenv.resolve_path(x)) for x in paths]
+    return bool([x for x in paths if pkg == x or pkg.startswith(x + os.sep)])
 
 # utility to compute logged in user name
 def author_name():

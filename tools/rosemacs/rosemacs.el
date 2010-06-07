@@ -223,7 +223,12 @@
     (when fn
       (ros-package-for-path fn))))
 
+(defun get-buffer-ros-package ()
+  (or ros-buffer-package
+      (setq ros-buffer-package (ros-package-for-buffer (current-buffer)))))
+
 (defun ros-current-pkg-modeline-entry ()
+  (interactive)
   (let ((pkg (or ros-buffer-package (ros-package-for-buffer (current-buffer)))))
     (unless ros-buffer-package
       (if pkg
@@ -341,24 +346,37 @@
                                             nil))
                               ros-messages-list ros-message-packages)
                          nil nil nil nil (when (member default ros-messages-list)
-                                           default))))
-    (substring result 0 (position ?\s result))))
+                                           default)))
+         (ws-pos (position ?\s result))
+         (message (substring result 0 ws-pos))
+         (package (when ws-pos
+                    (let ((package-str (substring result ws-pos)))
+                      (substring package-str 2 (- (length package-str) 1))))))
+    (if package
+        (concatenate 'string package "/" message)
+      message)))
 
 (defun ros-completing-read-service (prompt &optional default)
   (unless ros-services
     (cache-ros-service-locations))
-  (let ((result
-         (funcall ros-completion-function prompt
-                  (map 'list (lambda (m pkg)
-                               (cons
-                                (if (> (count m ros-services) 1)
-                                    (format "%s (%s)" m pkg)
-                                  m)
-                                nil))
-                       ros-services ros-service-packages)
-                  nil nil nil nil (when (member default (map 'list 'identity ros-services))
-                                    default))))
-    (substring result 0 (position ?\s result))))
+  (let* ((ros-services-list (map 'list 'identity ros-services))
+         (result (funcall ros-completion-function prompt
+                         (map 'list (lambda (m pkg)
+                                      (cons (if (> (count m ros-services-list :test 'equal) 1)
+                                                (format "%s (%s)" m pkg)
+                                              m)
+                                            nil))
+                              ros-services-list ros-service-packages)
+                         nil nil nil nil (when (member default ros-services-list)
+                                           default)))
+         (ws-pos (position ?\s result))
+         (service (substring result 0 ws-pos))
+         (package (when ws-pos
+                    (let ((package-str (substring result ws-pos)))
+                      (substring package-str 2 (- (length package-str) 1))))))
+    (if package
+        (concatenate 'string package "/" service)
+      service)))
 
 (defun ros-completing-read-topic (prompt &optional default)
   (funcall ros-completion-function prompt (map 'list (lambda (m)
@@ -408,13 +426,17 @@
                           (format "Enter message name (default %s): " (current-word t t))
                         "Enter message name: ")
                       (current-word t t))))
-  (let ((p (ros-message-package message)))
-    (if p
-        (let ((dir (ros-package-dir p)))
-          (if dir
-              (find-file (concat dir "/msg/" message ".msg"))
-            (error "Could not find directory corresponding to package %s" p)))
-      (error "Could not find package for message %s" message))))
+  (let* ((p+m (split-string message "/"))
+         (p (if (cdr p+m)
+                (car p+m)
+              (ros-message-package message)))
+         (m (car (last p+m))))
+    (unless p
+      (error "Could not find package for message %s" message))
+    (let ((dir (ros-package-dir p)))
+      (unless dir
+        (error "Could not find directory corresponding to package %s" p))
+      (find-file (concat dir "/msg/" m ".msg")))))
 
 (defun find-ros-service (service)
   "Open definition of a ros service.  If used interactively, tab completion will work."
@@ -423,13 +445,17 @@
                           (format "Enter service name (default %s): " (current-word t t))
                         "Enter service name: ")
                       (current-word t t))))
-  (let ((p (ros-service-package service)))
-    (if p
-        (let ((dir (ros-package-dir p)))
-          (if dir
-              (find-file (concat dir "/srv/" service ".srv"))
-            (error "Could not find directory corresponding to package %s" p)))
-      (error "Could not find package for service %s" service))))
+  (let* ((p+m (split-string service "/"))
+         (p (if (cdr p+m)
+                (car p+m)
+              (ros-service-package service)))
+         (m (car (last p+m))))
+    (unless p
+      (error "Could not find package for service %s" service))
+    (let ((dir (ros-package-dir p)))
+      (unless dir
+        (error "Could not find directory corresponding to package %s" p))
+      (find-file (concat dir "/srv/" m ".srv")))))
 
 
 ;; (defun view-ros-message (message)
@@ -463,13 +489,7 @@
                           (format "Enter service name (default %s): " (current-word t t))
                         "Enter service name: ")
                       (current-word t t))))
-  (let ((p (ros-service-package service)))
-    (if p
-        (let ((dir (ros-package-dir p)))
-          (if dir
-              (view-file-other-window (concat dir "/srv/" service ".srv"))
-            (error "Could not find directory corresponding to package %s" p)))
-      (error "Could not find package for service %s" service))))
+  (shell-command (format "rossrv show %s" service)))
 
 (defun ros-rgrep-package (ros-pkg regexp files)
   "Run a recursive grep in `ros-pkg', with `regexp' as search
@@ -478,8 +498,7 @@ RGREP but with a ros package instead of a directory as
 parameter."
   (interactive (progn (grep-compute-defaults)
                       (let ((package (ros-completing-read-package
-                                      nil (unless (eq ros-buffer-package :none)
-                                            ros-buffer-package)))
+                                      nil (get-buffer-ros-package)))
                             (regexp (grep-read-regexp)))
                         (list
                          package
@@ -493,8 +512,7 @@ load the result in a dired buffer. This function is similar to
 FIND-DIRED but with a ros package instead of a directory as
 parameter."
   (interactive (list (ros-completing-read-package
-                      nil (unless (eq ros-buffer-package :none)
-                            ros-buffer-package))
+                      nil (get-buffer-ros-package))
                      (read-string "Run find (within args): " ros-find-args
                                   '(ros-find-args-history . 1))))
   (find-dired (ros-package-path ros-pkg) args))
@@ -999,8 +1017,7 @@ q kills the buffer and process."
 (defun ros-run (pkg exec &rest args)
   "pkg is a ros package name and exec is the executable name.  Tab completes package name.  Exec defaults to package name itself."
   (interactive (list (setq ros-run-temp-var (ros-completing-read-package
-                                             nil (unless (eq ros-buffer-package :none)
-                                                   ros-buffer-package)))
+                                             nil (get-buffer-ros-package)))
                      (funcall ros-completion-function (format "Enter executable (default %s): " ros-run-temp-var)
                               (mapcar (lambda (pkg)
                                         (cons pkg nil))
@@ -1036,6 +1053,7 @@ q kills the buffer and process."
 (define-key ros-keymap "h" 'add-hz-update)
 (define-key ros-keymap "H" 'remove-hz-update)
 (define-key ros-keymap "T" 'ros-topic-info)
+(define-key ros-keymap "g" 'ros-rgrep-package)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

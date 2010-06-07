@@ -1464,18 +1464,6 @@ if (handle)
    */
   bool ok() const;
 
-
-  /** \brief Get the hostname where the master runs.
-   *
-   * \return The master's hostname, as a string
-   */
-  const std::string &getMasterHost() const;
-  /** \brief Get the port where the master runs.
-   *
-   * \return The master's port.
-   */
-  int getMasterPort() const;
-
 private:
   void construct();
   void destruct();

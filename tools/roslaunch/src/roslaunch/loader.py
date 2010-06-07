@@ -205,6 +205,8 @@ class LoaderContext(object):
         @type  remap: (str, str)
         """
         remap = [canonicalize_name(x) for x in remap]
+        if not remap[0] or not remap[1]:
+            raise RLException("remap from/to attributes cannot be empty")
         if not is_legal_name(remap[0]):
             raise RLException("remap from [%s] is not a valid ROS name"%remap[0])
         if not is_legal_name(remap[1]):
@@ -418,6 +420,11 @@ class Loader(object):
                 import yaml
             try:
                 data = yaml.load(text)
+            except yaml.MarkedYAMLError, e:
+                if not file: 
+                    raise ValueError("Error within YAML block:\n\t%s\n\nYAML is:\n%s"%(str(e), text))
+                else:
+                    raise ValueError("file %s contains invalid YAML:\n%s"%(file, str(e)))
             except Exception, e:
                 if not file:
                     raise ValueError("invalid YAML: %s\n\nYAML is:\n%s"%(str(e), text))

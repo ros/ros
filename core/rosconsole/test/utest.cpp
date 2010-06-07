@@ -897,6 +897,7 @@ TEST(RosConsole, formatToString)
 int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);
+  ros::Time::init();
 
   ROSCONSOLE_AUTOINIT;
   log4cxx::Logger::getLogger(ROSCONSOLE_ROOT_LOGGER_NAME)->removeAllAppenders();

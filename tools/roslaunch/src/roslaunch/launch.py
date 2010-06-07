@@ -293,9 +293,9 @@ class ROSLaunchRunner(object):
         for node in local_nodes:
             proc, success = self.launch_node(node)
             if success:
-                succeeded.append(proc.name)
+                succeeded.append(str(proc))
             else:
-                failed.append(proc.name)
+                failed.append(str(proc))
 
         if self.remote_runner:
             self.logger.info("launch_nodes: launching remote nodes ...")
@@ -504,7 +504,7 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         
         @param node Node: node to launch
         @param core bool: if True, core node
-        @return Process, bool: Process handle, successful launch
+        @return obj, bool: Process handle, successful launch. If success, return actual Process instance. Otherwise return name.
         """
         self.logger.info("... preparing to launch node of type [%s/%s]", node.package, node.type)
         

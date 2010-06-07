@@ -47,6 +47,7 @@ struct SubscribeOptions
   SubscribeOptions()
   : queue_size(1)
   , callback_queue(0)
+  , allow_concurrent_callbacks(false)
   {
   }
 
@@ -65,6 +66,7 @@ struct SubscribeOptions
   , md5sum(_md5sum)
   , datatype(_datatype)
   , callback_queue(0)
+  , allow_concurrent_callbacks(false)
   {}
 
   /**
@@ -118,6 +120,10 @@ struct SubscribeOptions
   SubscriptionCallbackHelperPtr helper;                              ///< Helper object used to get create messages and call callbacks
 
   CallbackQueueInterface* callback_queue;                           ///< Queue to add callbacks to.  If NULL, the global callback queue will be used
+
+  /// By default subscription callbacks are guaranteed to arrive in-order, with only one callback happening for this subscription at any given
+  /// time.  Setting this to true allows you to receive multiple messages on the same topic from multiple threads at the same time
+  bool allow_concurrent_callbacks;
 
   /**
    * \brief An object whose destruction will prevent the callback associated with this subscription

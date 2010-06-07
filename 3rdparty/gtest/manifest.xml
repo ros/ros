@@ -20,5 +20,9 @@
     <rosdoc external="http://code.google.com/p/googletest/w/list"/>
     <cpp cflags="`echo 'ERROR: It is invalid to depend on the gtest package'; false`"/>
   </export>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>
 

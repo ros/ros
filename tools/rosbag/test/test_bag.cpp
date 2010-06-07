@@ -265,11 +265,11 @@ TEST(rosbag, time_query_works) {
     for (int i = 0; i < 1000; i++) {
         imsg.data = i;
         switch (rand() % 5) {
-        case 0: outbag.write("t0", ros::Time(i, 0), imsg); break;
-        case 1: outbag.write("t1", ros::Time(i, 0), imsg); break;
-        case 2: outbag.write("t2", ros::Time(i, 0), imsg); break;
-        case 3: outbag.write("t2", ros::Time(i, 0), imsg); break;
-        case 4: outbag.write("t4", ros::Time(i, 0), imsg); break;
+        case 0: outbag.write("t0", ros::Time(i, 1), imsg); break;
+        case 1: outbag.write("t1", ros::Time(i, 1), imsg); break;
+        case 2: outbag.write("t2", ros::Time(i, 1), imsg); break;
+        case 3: outbag.write("t2", ros::Time(i, 1), imsg); break;
+        case 4: outbag.write("t4", ros::Time(i, 1), imsg); break;
         }
     }
     outbag.close();
@@ -279,7 +279,7 @@ TEST(rosbag, time_query_works) {
 
     int i = 23;
 
-    rosbag::View view(bag, ros::Time(23, 0), ros::Time(782, 0));
+    rosbag::View view(bag, ros::Time(23, 1), ros::Time(782, 1));
     foreach(rosbag::MessageInstance const m, view) {
         std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
         if (imsg != NULL) {
@@ -300,13 +300,13 @@ TEST(rosbag, topic_query_works) {
     int j0 = 0;
     int j1 = 0;
 
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 10; i++) {
         switch (rand() % 5) {
-        case 0: imsg.data = j0++; outbag.write("t0", ros::Time(i, 0), imsg); break;
-        case 1: imsg.data = j0++; outbag.write("t1", ros::Time(i, 0), imsg); break;
-        case 2: imsg.data = j1++; outbag.write("t2", ros::Time(i, 0), imsg); break;
-        case 3: imsg.data = j1++; outbag.write("t3", ros::Time(i, 0), imsg); break;
-        case 4: imsg.data = j1++; outbag.write("t4", ros::Time(i, 0), imsg); break;
+        case 0: imsg.data = j0++; outbag.write("t0", ros::Time(i, 1), imsg); break;
+        case 1: imsg.data = j0++; outbag.write("t1", ros::Time(i, 1), imsg); break;
+        case 2: imsg.data = j1++; outbag.write("t2", ros::Time(i, 1), imsg); break;
+        case 3: imsg.data = j1++; outbag.write("t3", ros::Time(i, 1), imsg); break;
+        case 4: imsg.data = j1++; outbag.write("t4", ros::Time(i, 1), imsg); break;
         }
     }
     outbag.close();
@@ -364,6 +364,22 @@ TEST(rosbag, multiple_bag_works) {
 
     bag1.close();
     bag2.close();
+}
+
+TEST(rosbag, no_min_time) {
+    rosbag::Bag outbag("/tmp/no_min_time.bag", rosbag::bagmode::Write);
+
+    std_msgs::Int32 imsg;
+    try
+    {
+      outbag.write("t0", ros::Time(0,0), imsg);
+      FAIL();
+    } catch (rosbag::BagException& e)
+    {
+      SUCCEED();
+    }
+
+    outbag.close();
 }
 
 TEST(rosbag, modify_view_works) {

@@ -122,7 +122,7 @@ def script_resolve_name(script_name, name):
 def get_master():
     """
     Get an XMLRPC handle to the Master. It is recommended to use the
-    `roslib.masterapi` library instead, as it provides many
+    `rosgraph.masterapi` library instead, as it provides many
     conveniences.
     
     @return: XML-RPC proxy to ROS master

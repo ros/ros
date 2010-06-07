@@ -33,11 +33,12 @@
 namespace ros
 {
 
-SubscriptionQueue::SubscriptionQueue(const std::string& topic, int32_t queue_size)
+SubscriptionQueue::SubscriptionQueue(const std::string& topic, int32_t queue_size, bool allow_concurrent_callbacks)
 : topic_(topic)
 , size_(queue_size)
 , full_(false)
 , queue_size_(0)
+, allow_concurrent_callbacks_(allow_concurrent_callbacks)
 {}
 
 SubscriptionQueue::~SubscriptionQueue()
@@ -103,10 +104,15 @@ CallbackInterface::CallResult SubscriptionQueue::call()
   // The callback may result in our own destruction.  Therefore, we may need to keep a reference to ourselves
   // that outlasts the scoped_try_lock
   boost::shared_ptr<SubscriptionQueue> self;
-  boost::recursive_mutex::scoped_try_lock lock(callback_mutex_);
-  if (!lock.owns_lock())
+  boost::recursive_mutex::scoped_try_lock lock(callback_mutex_, boost::defer_lock);
+
+  if (!allow_concurrent_callbacks_)
   {
-    return CallbackInterface::TryAgain;
+    lock.try_lock();
+    if (!lock.owns_lock())
+    {
+      return CallbackInterface::TryAgain;
+    }
   }
 
   VoidConstPtr tracker;

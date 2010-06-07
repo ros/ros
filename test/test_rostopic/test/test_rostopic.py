@@ -240,12 +240,6 @@ class TestRostopic(unittest.TestCase):
             v = b.getvalue()
             for s in ["Publishers:", "Subscribers", "Type: std_msgs/String", " * /talker"]:
                 self.assert_(s in v, "failed on %s: %s"%(s, v))
-        # test on /clock, which has no publishers. subscriber should have set type
-        with fakestdout() as b:            
-            rostopic.rostopicmain([cmd, 'info', '/clock'])
-            v = b.getvalue()
-            for s in ["Publishers:", "Type: roslib/Clock"]:
-                self.assert_(s in v, "failed on %s: %s"%(s, v))
 
     def test_cmd_find(self):
         from ros import rostopic
@@ -286,7 +280,7 @@ class TestRostopic(unittest.TestCase):
         rostopic.rostopicmain([cmd, 'list'])
 
         # test directly
-        topics = ['/chatter', '/foo/chatter', '/bar/chatter', '/rosout', '/rosout_agg', '/clock'] 
+        topics = ['/chatter', '/foo/chatter', '/bar/chatter', '/rosout', '/rosout_agg'] 
 
         with fakestdout() as b:
             rostopic.rostopicmain([cmd, 'list'])
@@ -302,7 +296,7 @@ class TestRostopic(unittest.TestCase):
             self.failIf('/clock' in v)
             
         # subscribers-only
-        topics = ['/rosout', '/clock'] 
+        topics = ['/rosout'] 
         with fakestdout() as b:
             rostopic.rostopicmain([cmd, 'list', '-s'])
             v = [x.strip() for x in b.getvalue().split('\n') if x.strip()]

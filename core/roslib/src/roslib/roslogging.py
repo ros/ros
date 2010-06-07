@@ -34,8 +34,7 @@
 # $Author$
 
 """
-Library for configuring python logging to standard ROS locations
-(e.g. ROS_LOG_DIR).
+Library for configuring python logging to standard ROS locations (e.g. ROS_LOG_DIR).
 """
 
 import os
@@ -43,7 +42,7 @@ import sys
 import logging
 
 import roslib.rosenv
-from roslib.rosenv import get_ros_root, ROS_LOG_DIR, ROS_HOME
+from roslib.rosenv import get_ros_root, ROS_LOG_DIR, ROS_HOME, makedirs_with_parent_perms
 import roslib.exceptions
 
 get_log_dir = roslib.rosenv.get_log_dir
@@ -100,22 +99,3 @@ def configure_logging(logname, level=logging.INFO, filename=None, additional=Non
         logger.addHandler(handler)
     return log_filename
 
-# deprecated: replace with rosenv copy
-def makedirs_with_parent_perms(p):
-    """
-    Create the directory using the permissions of the nearest
-    (existing) parent directory. This is useful for logging, where a
-    root process sometimes has to log in the user's space.
-    @param p: directory to create
-    @type  p: str
-    """    
-    p = os.path.abspath(p)
-    parent = os.path.dirname(p)
-    # recurse upwards, checking to make sure we haven't reached the
-    # top
-    if not os.path.exists(p) and p and parent != p:
-        makedirs_with_parent_perms(parent)
-        s = os.stat(parent)
-        os.mkdir(p)
-        os.chown(p, s.st_uid, s.st_gid)
-        os.chmod(p, s.st_mode)    

@@ -37,6 +37,7 @@
 #include "ros/time.h"
 #include "message_filters/time_synchronizer.h"
 #include "message_filters/pass_through.h"
+#include <ros/init.h>
 
 using namespace message_filters;
 
@@ -540,6 +541,7 @@ TEST(TimeSynchronizer, connectConstructor)
 
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
+  ros::init(argc, argv, "blah");
 
   ros::Time::setNow(ros::Time());
 

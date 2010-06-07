@@ -239,8 +239,12 @@ list: []""", strify_message(M2('string', -1, 0., False, [])))
             def __init__(self, t, d):
                 self.t = t
                 self.d = d        
-        self.assertEquals("""t: 987000000654
-d: 123000000456""", strify_message(M5(Time(987, 654), Duration(123, 456))))
+        self.assertEquals("""t: 
+  secs: 987
+  nsecs: 654
+d: 
+  secs: 123
+  nsecs: 456""", strify_message(M5(Time(987, 654), Duration(123, 456))))
         
         # test final clause of strify -- str anything that isn't recognized
         self.assertEquals("set([1])", strify_message(set([1])))
@@ -340,6 +344,7 @@ d: 123000000456""", strify_message(M5(Time(987, 654), Duration(123, 456))))
             [[10, 20], [30, 40], ['foo'], [{'data': 'bar'}, {'data': 'baz'}], 32],
 
             [{'t': [10, 20], 'd': [30, 40], 'str_msg': {'data': 'foo'}, 'str_msg_array': [{'data': 'bar'}, {'data': 'baz'}], 'i32': 32}],            
+            [{'t': {'secs': 10, 'nsecs': 20}, 'd': [30, 40], 'str_msg': {'data': 'foo'}, 'str_msg_array': [{'data': 'bar'}, {'data': 'baz'}], 'i32': 32}],            
             ]
         for test in equiv:
             m = FillEmbedTime()            

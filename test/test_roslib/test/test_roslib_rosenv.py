@@ -173,6 +173,21 @@ class EnvTest(unittest.TestCase):
     # test default assignment of env. Don't both checking return value 
     self.assert_(get_ros_home() is not None)
     
+  def test_on_ros_path(self):
+    from roslib.rosenv import on_ros_path, get_ros_root, resolve_paths, get_ros_package_path
+    
+    self.assert_(on_ros_path(get_ros_root()))
+
+    # this test should be on ros_path
+    self.assert_(on_ros_path('.'))
+    self.assert_(on_ros_path('test_roslib_rosenv.py'))
+
+    paths = resolve_paths(get_ros_package_path()).split(os.pathsep)
+    for p in paths:
+      self.assert_(on_ros_path(p), "failed: %s, [%s]"%(p, paths))
+
+    self.failIf(on_ros_path(os.tempnam()))
+    
 if __name__ == '__main__':
   rostest.unitrun('test_roslib', 'test_env', EnvTest, coverage_packages=['roslib.rosenv'])
 

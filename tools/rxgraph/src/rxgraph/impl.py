@@ -40,7 +40,7 @@ import time
 import threading
 import traceback
 
-import rosgraph.graph
+import rosgraph.impl.graph
 import rxgraph.dotcode
 from rxgraph.dotcode import generate_dotcode, generate_namespaces, NODE_NODE_GRAPH, NODE_TOPIC_GRAPH
 from rxgraph.viewer import RxGraphViewerFrame
@@ -77,7 +77,7 @@ class DotUpdate(threading.Thread):
         threading.Thread.__init__(self, name="DotUpdate")
         self.viewer = viewer
         self.graph = graph
-        self.output_file = None
+        self.output_file = output_file
         self.selection_url = None
         self.selection_update = False
 
@@ -182,7 +182,7 @@ def init_frame():
     return frame
 
 def init_updater(frame, node_ns=None, topic_ns=None, output_file=None):
-    graph = rosgraph.graph.Graph(node_ns, topic_ns) 
+    graph = rosgraph.impl.graph.Graph(node_ns, topic_ns) 
     updater = DotUpdate(graph, frame, output_file=output_file)
     frame.register_select_cb(updater.select_callback)
     return updater

@@ -29,76 +29,53 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
+
+"""
+Defines a raw view: a TopicMessageView that displays the message contents in a tree.
+"""
 
 PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
-import rospy
 
 import codecs
-import sys
-import time
+import math
 
 import wx
 
-from message_view import TopicMessageView
+import rospy
+
+import bag_helper
+from plugin.topic_message_view import TopicMessageView
 
 class RawView(TopicMessageView):
     name = 'Raw'
     
-    def __init__(self, timeline, parent, title, x, y, width, height):
-        TopicMessageView.__init__(self, timeline, parent, title, x, y, width, height)
+    def __init__(self, timeline, parent):
+        TopicMessageView.__init__(self, timeline, parent)
+
+        self.message_tree = MessageTree(self.parent)
         
-        self._font = wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        self.parent.Bind(wx.EVT_SIZE, self.on_size)
 
-        self.msg_title = wx.TextCtrl(self.parent, style=wx.TE_READONLY | wx.NO_BORDER)
-        self.msg_title.SetPosition((1, 0))
-        self.msg_title.SetFont(self._font)
+    ## MessageView implementation
 
-        self.msg_tree = MessageTree(self.parent)
-        self.msg_tree.SetPosition((0, 20))
-
-        self.msg_displayed = None
-        self.msg_incoming  = None
-
-        self.self_paint = True
-
-    def message_viewed(self, bag_file, msg_details):
-        TopicMessageView.message_viewed(self, bag_file, msg_details)
+    def message_viewed(self, bag, msg_details):
+        TopicMessageView.message_viewed(self, bag, msg_details)
 
         topic, msg, t = msg_details
-
         if t is None:
             self.message_cleared()
         else:
-            self.msg_title.SetValue(time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(t.to_sec())) + '.%03d' % (t.nsecs / 1000000))
-            self.msg_title.Refresh()
-
-            self.msg_incoming = msg
-            self.invalidate()
+            wx.CallAfter(self.message_tree.set_message, msg)
 
     def message_cleared(self):
         TopicMessageView.message_cleared(self)
+        wx.CallAfter(self.message_tree.set_message, None)
 
-        self.clear()
-
-    def paint(self, dc):
-        if self.msg_incoming != self.msg_displayed:
-            self.msg_tree.set_message(self.msg_incoming)
-            self.msg_displayed = self.msg_incoming
+    ## Events
 
     def on_size(self, event):
-        size = self.parent.GetClientSize()
-        
-        self.resize(*size)
-        self.msg_title.SetSize((size[0], 20))
-        self.msg_tree.SetSize((size[0], size[1] - self.msg_tree.GetPosition()[1]))
-
-    def clear(self):
-        self.msg_title.SetValue('')
-        self.msg_incoming = None
-        self.invalidate()
+        self.message_tree.Size = self.parent.ClientSize
 
 class MessageTree(wx.TreeCtrl):
     def __init__(self, parent):
@@ -133,12 +110,7 @@ class MessageTree(wx.TreeCtrl):
             self._add_msg_object(None, '', 'msg', msg, msg._type)
             
             if self._expanded_paths is None:
-                # First message: expand top-level items (that aren't the header)
                 self._expanded_paths = set()
-                for item in self.get_all_items():
-                    path = self.get_item_path(item)
-                    if '.' not in path and path != 'header':
-                        self.Expand(item)
             else:
                 # Expand those that were previously expanded, and collapse any paths that we've seen for the first time
                 for item in self.get_all_items():
@@ -153,7 +125,7 @@ class MessageTree(wx.TreeCtrl):
         self.Refresh()
 
     def on_key_up(self, event):
-        key, ctrl = event.GetKeyCode(), event.ControlDown()
+        key, ctrl = event.KeyCode, event.ControlDown()
 
         if ctrl:
             if key == ord('C') or key == ord('c'):
@@ -181,7 +153,7 @@ class MessageTree(wx.TreeCtrl):
                 return distance
             else:
                 return get_distance(parent, ancestor, distance + 1)
-        
+
         root = self.GetRootItem()
         text = '\n'.join([('\t' * get_distance(i, root)) + self.GetItemText(i) for i in self.GetSelections()])
 
@@ -191,13 +163,17 @@ class MessageTree(wx.TreeCtrl):
                 wx.TheClipboard.SetData(wx.TextDataObject(text))
             finally:
                 wx.TheClipboard.Close()
-
+                
     def get_item_path(self, item):
-        return self.GetItemPyData(item)[0]
+        return self.GetItemPyData(item)[0].replace(' ', '')   # remove spaces that may get introduced in indexing, e.g. [  3] is [3]
 
     def get_all_items(self):
         items = []
-        self.traverse(self.GetRootItem(), items.append)
+        try:
+            self.traverse(self.RootItem, items.append)
+        except Exception:
+            # @todo: large messages can cause a stack overflow due to recursion
+            pass
         return items
 
     def traverse(self, root, function):
@@ -216,12 +192,28 @@ class MessageTree(wx.TreeCtrl):
         
         if hasattr(obj, '__slots__'):
             subobjs = [(slot, getattr(obj, slot)) for slot in obj.__slots__]
-        elif type(obj)  in [list, tuple]:
-            subobjs = [('[%d]' % i, subobj) for (i, subobj) in enumerate(obj)]
+        elif type(obj) in [list, tuple]:
+            len_obj = len(obj)
+            if len_obj == 0:
+                subobjs = []
+            else:
+                w = int(math.ceil(math.log10(len_obj)))
+                subobjs = [('[%*d]' % (w, i), subobj) for (i, subobj) in enumerate(obj)]
         else:
             subobjs = []
-            
-        if type(obj) in [str, bool, int, long, float, complex, roslib.rostime.Time]:
+        
+        if type(obj) in [int, long, float]:
+            if type(obj) == float:
+                obj_repr = '%.6f' % obj
+            else:
+                obj_repr = str(obj)
+
+            if obj_repr[0] == '-':
+                label += ': %s' % obj_repr
+            else:
+                label += ':  %s' % obj_repr
+
+        elif type(obj) in [str, bool, int, long, float, complex, rospy.Time]:
             # Ignore any binary data
             obj_repr = codecs.utf_8_decode(str(obj), 'ignore')[0]
             

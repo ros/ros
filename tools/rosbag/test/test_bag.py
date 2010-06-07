@@ -6,6 +6,7 @@ PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
 import heapq
+import os
 import sys
 import time
 import unittest
@@ -107,7 +108,7 @@ class TestRosbag(unittest.TestCase):
 
             msgs = list(rosbag.Bag('/tmp/test_large_write_works.bag').read_messages())
 
-            self.assert_(len(msgs) == msg_count, 'not all messages written: expected %d, got %d' % (msg_count, len(msgs)))
+            self.assertEquals(len(msgs), msg_count, 'not all messages written: expected %d, got %d' % (msg_count, len(msgs)))
 
             for (_, _, t1), (_, _, t2) in zip(msgs, msgs[1:]):
                 self.assert_(t1 < t2, 'messages returned unordered: got timestamp %s before %s' % (str(t1), str(t2)))
@@ -123,8 +124,9 @@ class TestRosbag(unittest.TestCase):
         
         start_time = roslib.rostime.Time.from_sec(3)
         end_time = roslib.rostime.Time.from_sec(7)
+        msgs = list(rosbag.Bag('/tmp/test_get_messages_time_range_works.bag').read_messages(topics='/ints', start_time=start_time, end_time=end_time))
 
-        self.assert_(len(list(rosbag.Bag('/tmp/test_get_messages_time_range_works.bag').read_messages(topics='/ints', start_time=start_time, end_time=end_time))) == 5)
+        self.assertEquals(len(msgs), 5)
         
     def test_get_messages_filter_works(self):
         b = rosbag.Bag('/tmp/test_get_messages_filter_works.bag', 'w')
@@ -138,8 +140,28 @@ class TestRosbag(unittest.TestCase):
         def filter(topic, datatype, md5sum, msg_def, header):
             return '5' in topic and datatype == Int32._type and md5sum == Int32._md5sum and msg_def == Int32._full_text
 
-        self.assert_(len(list(rosbag.Bag('/tmp/test_get_messages_filter_works.bag').read_messages(connection_filter=filter))) == 3)
+        self.assertEquals(len(list(rosbag.Bag('/tmp/test_get_messages_filter_works.bag').read_messages(connection_filter=filter))), 3)
 
+    def test_rosbag_filter(self):
+        inbag_filename  = '/tmp/test_rosbag_filter__1.bag'
+        outbag_filename = '/tmp/test_rosbag_filter__2.bag'
+        
+        b = rosbag.Bag(inbag_filename, 'w')
+        for i in range(30):
+            msg = Int32()
+            msg.data = i
+            t = roslib.rostime.Time.from_sec(i)
+            b.write('/ints' + str(i), msg, t)
+        b.close()
+
+        expression = "(int(t.secs) == m.data) and (topic == '/ints' + str(m.data)) and (m.data >= 15 and m.data < 20)"
+
+        os.system('rosbag filter %s %s "%s"' % (inbag_filename, outbag_filename, expression))
+
+        msgs = list(rosbag.Bag(outbag_filename).read_messages())
+
+        self.assertEquals(len(msgs), 5)
+        
 if __name__ == '__main__':
     import rostest
     rostest.run(PKG, 'TestRosbag', TestRosbag, sys.argv)

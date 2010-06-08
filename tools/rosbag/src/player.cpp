@@ -121,9 +121,19 @@ void Player::publish() {
       puts("");
     
     // Publish all messages in the bags
+    View full_view;
+    foreach(shared_ptr<Bag> bag, bags_)
+        full_view.addQuery(*bag);
+
+    ros::Time initial_time = full_view.getBeginTime();
+
+    initial_time += ros::Duration(options_.time);
+
     View view;
     foreach(shared_ptr<Bag> bag, bags_)
-        view.addQuery(*bag);
+      view.addQuery(*bag, initial_time, ros::TIME_MAX);
+
+
 
     // Advertise all of our messages
     foreach(const ConnectionInfo* c, view.getConnections())

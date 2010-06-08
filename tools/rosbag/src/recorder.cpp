@@ -146,6 +146,8 @@ int Recorder::run() {
     else
         record_thread = boost::thread(boost::bind(&Recorder::doRecord, this));
 
+    ros::Time::waitForValid();
+
     // Subscribe to the snapshot trigger
     ros::Subscriber trigger_sub = nh.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&Recorder::snapshotTrigger, this, _1));
 

@@ -449,7 +449,7 @@ void Bag::readChunkHeader(ChunkHeader& chunk_header) const {
         throw BagFormatException("Error reading CHUNK record");
         
     M_string& fields = *header.getValues();
-    
+
     if (!isOp(fields, OP_CHUNK))
         throw BagFormatException("Expected CHUNK op not found");
 
@@ -542,7 +542,13 @@ void Bag::readTopicIndexRecord102() {
 
         ROS_DEBUG("  - %d.%d: %llu", sec, nsec, (unsigned long long) index_entry.chunk_pos);
 
-        connection_index.insert(connection_index.end(), index_entry);
+        if (index_entry.time < ros::TIME_MIN || index_entry.time > ros::TIME_MAX)
+        {
+          ROS_ERROR("Index entry for topic %s contains invalid time.", topic.c_str());
+        } else
+        {
+          connection_index.insert(connection_index.end(), index_entry);
+        }
     }
 }
 
@@ -584,7 +590,13 @@ void Bag::readConnectionIndexRecord200() {
 
         ROS_DEBUG("  - %d.%d: %llu+%d", sec, nsec, (unsigned long long) index_entry.chunk_pos, index_entry.offset);
 
-        connection_index.insert(connection_index.end(), index_entry);
+        if (index_entry.time < ros::TIME_MIN || index_entry.time > ros::TIME_MAX)
+        {
+          ROS_ERROR("Index entry for topic %s contains invalid time.  This message will not be loaded.", connections_[connection_id]->topic.c_str());
+        } else
+        {
+          connection_index.insert(connection_index.end(), index_entry);
+        }
     }
 }
 

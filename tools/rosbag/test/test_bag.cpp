@@ -178,16 +178,25 @@ TEST(rosbag, simple_write_and_read_works) {
     topics.push_back(std::string("chatter"));
     topics.push_back(std::string("numbers"));
 
+    int count = 0;
     rosbag::View view(b2, rosbag::TopicQuery(topics));
     foreach(rosbag::MessageInstance const m, view) {
         std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
         if (s != NULL)
+        {
+            count++;
             ASSERT_EQ(s->data, std::string("foo"));
+        }
 
         std_msgs::Int32::ConstPtr i = m.instantiate<std_msgs::Int32>();
         if (i != NULL)
+        {
+            count++;
             ASSERT_EQ(i->data, 42);
+        }
     }
+
+    ASSERT_EQ(count,2);
 
     b2.close();
 }

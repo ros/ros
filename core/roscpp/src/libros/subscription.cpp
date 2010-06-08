@@ -399,6 +399,8 @@ bool Subscription::negotiateConnection(const std::string& xmlrpc_uri)
     {
       udp_transport->close();
     }
+
+    return false;
   }
 
   ROSCPP_LOG_DEBUG("Began asynchronous xmlrpc connection to [%s:%d]", peer_host.c_str(), peer_port);

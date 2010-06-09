@@ -127,7 +127,7 @@ def _init_node_params(argv, node_name):
 
 _init_node_args = None
 
-def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rostime=False, disable_rosout=False, disable_signals=False):
+def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=False, disable_rosout=False, disable_signals=False):
     """
     Register client node with the master under the specified name.
     This MUST be called from the main Python thread unless
@@ -139,8 +139,12 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
         meaning that it cannot contain namespaces (i.e. '/')
     @type  name: string
     
-    @param argv: Command line arguments to this program. ROS reads
-        these arguments to find renaming params. Defaults to sys.argv.
+    @param argv: Command line arguments to this program, including
+        remapping arguments (default: sys.argv). If you provide argv
+        to init_node(), any previously created rospy data structure
+        (Publisher, Subscriber, Service) will have invalid
+        mappings. It is important that you call init_node() first if
+        you wish to provide your own argv.
     @type  argv: [str]
 
     @param anonymous: if True, a name will be auto-generated for the
@@ -177,6 +181,13 @@ def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rost
     @raise ROSInitException: if initialization/registration fails
     @raise ValueError: if parameters are invalid (e.g. name contains a namespace or is otherwise illegal)
     """
+    if argv is None:
+        argv = sys.argv
+    else:
+        # reload the mapping table. Any previously created rospy data
+        # structure does *not* reinitialize based on the new mappings.
+        rospy.names.reload_mappings(argv)
+        
     # this test can be eliminated once we change from warning to error in the next check
     if roslib.names.SEP in name:
         raise ValueError("namespaces are not allowed in node names")

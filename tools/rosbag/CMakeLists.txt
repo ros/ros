@@ -19,7 +19,7 @@ rosbuild_add_library(rosbag
 	src/bag.cpp src/buffer.cpp src/bz2_stream.cpp src/chunked_file.cpp src/message_instance.cpp src/player.cpp 
 	src/query.cpp src/recorder.cpp src/stream.cpp src/time_translator.cpp src/uncompressed_stream.cpp src/view.cpp)
 target_link_libraries(rosbag bz2)
-rosbuild_link_boost(rosbag regex)
+rosbuild_link_boost(rosbag regex program_options)
 
 rosbuild_add_executable(record src/record.cpp)
 target_link_libraries(record rosbag)

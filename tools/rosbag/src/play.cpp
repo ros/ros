@@ -33,53 +33,79 @@
 ********************************************************************/
 
 #include "rosbag/player.h"
+#include "boost/program_options.hpp"
 
-void printUsage() {
-    fprintf(stderr, "Usage: play [options] BAG1 [BAG2]\n");
-    fprintf(stderr, "Options:\n");
-    fprintf(stderr, " -n\tdisable display of current log time\n");
-    fprintf(stderr, " -a\tplayback all messages without waiting\n");
-    fprintf(stderr, " -b hz\tpublish the bag time at frequence <hz>\n");
-    fprintf(stderr, " -p\tstart in paused mode\n");
-    fprintf(stderr, " -r\tincrease the publish rate ba a factor <rate_change>\n");
-    fprintf(stderr, " -s sec\tsleep <sec> sleep duration after every advertise call (to allow subscribers to connect)\n");
-    fprintf(stderr, " -t sec\tstart <sec> seconds into the files\n");
-    fprintf(stderr, " -q sz\tUse an outgoing queue of size <sz> (defaults to 0)\n");
-    fprintf(stderr, " -l\tloop playback\n");
-    fprintf(stderr, " -h\tdisplay this help message\n");
-}
+namespace po = boost::program_options;
 
 rosbag::PlayerOptions parseOptions(int argc, char** argv) {
     rosbag::PlayerOptions opts;
 
-    int option_char;
-    while ((option_char = getopt(argc, argv, "nahlpb:r:s:t:q:T")) != -1) {
-        switch (option_char) {
-        case 'n': opts.quiet        = true; break;
-        case 'a': opts.at_once      = true; break;
-        case 'l': opts.loop         = true; break;
-        case 'p': opts.start_paused = true; break;
-        case 'T': opts.try_future   = true; break;
-        case 'q': opts.queue_size         = atoi(optarg); break;
-        case 'r': opts.time_scale         = atof(optarg); break;
-        case 'b': opts.bag_time_frequency = atoi(optarg); opts.bag_time = true; break;
-        case 's': opts.advertise_sleep    = ros::WallDuration(atof(optarg)); break;
-        case 't': {
-            char time[1024];
-            strncpy(time, optarg, sizeof(time));
-            opts.time = atof(time);
+    po::options_description desc("Allowed options");
 
-            opts.has_time = true;
-            break;
-        }
-        //case 'h': printUsage(); ros::shutdown(); return;
-        //case '?': printUsage(); ros::shutdown(); return;
-        }
+    desc.add_options()
+      ("quiet,q", "suppress console output")
+      ("immediate,i", "play back all messages without waiting")
+      ("pause", "start in paused mode")
+      ("queue", po::value<int>()->default_value(0), "use an outgoing queue of size SIZE")
+      ("clock", "publish the clock time")
+      ("hz", po::value<float>()->default_value(100.0), "use a frequency of HZ when publishing clock time")
+      ("delay,d", po::value<float>()->default_value(0.2), "sleep SEC seconds after every advertise call")
+      ("rate,r", po::value<float>()->default_value(1.0), "multiply the publish rate by FACTOR")
+      ("start,s", po::value<float>()->default_value(0.0), "start SEC seconds into the bag files")
+      ("loop,l", "loop playback")
+      ("try-future-version", "still try to open a bag file, even if the version is not known to the player")
+      ("input-file", po::value< std::vector<std::string> >(), "input files");
+    
+    po::positional_options_description p;
+    p.add("input-file", -1);
+    
+    po::variables_map vm;
+    
+    try 
+    {
+      po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
+    } catch (boost::program_options::invalid_command_line_syntax& e)
+    {
+      throw ros::Exception(e.what());
+    }  catch (boost::program_options::unknown_option& e)
+    {
+      throw ros::Exception(e.what());
     }
 
-    for (int i = optind; i < argc; i++)
-        opts.bags.push_back(argv[i]);
+    if (vm.count("quiet"))
+      opts.quiet = true;
+    if (vm.count("immediate"))
+      opts.at_once = true;
+    if (vm.count("pause"))
+      opts.start_paused = true;
+    if (vm.count("queue"))
+      opts.queue_size = vm["queue"].as<int>();
+    if (vm.count("hz"))
+      opts.bag_time_frequency = vm["hz"].as<float>();
+    if (!vm.count("clock"))
+      opts.bag_time_frequency = 0.0;
+    if (vm.count("delay"))
+      opts.advertise_sleep = ros::WallDuration(vm["delay"].as<float>());
+    if (vm.count("rate"))
+      opts.time_scale = vm["rate"].as<float>();
+    if (vm.count("start"))
+    {
+      opts.time = vm["start"].as<float>();
+      opts.has_time = true;
+    }
+    if (vm.count("loop"))
+      opts.loop = true;
 
+
+    if (vm.count("input-file"))
+    {
+      std::vector<std::string> bags = vm["input-file"].as< std::vector<std::string> >();
+      for (std::vector<std::string>::iterator i = bags.begin();
+           i != bags.end();
+           i++)
+          opts.bags.push_back(*i);
+    }
+            
     return opts;
 }
 
@@ -92,7 +118,7 @@ int main(int argc, char** argv) {
         opts = parseOptions(argc, argv);
     }
     catch (ros::Exception const& ex) {
-        fprintf(stderr, "Error reading options: %s", ex.what());
+        ROS_ERROR("Error reading options: %s", ex.what());
         return 1;
     }
 

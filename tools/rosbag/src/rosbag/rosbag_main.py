@@ -148,7 +148,7 @@ def play_cmd(argv):
     parser.add_option("--hz",                 dest="freq",       default=100,   type='float', action="store", help="use a frequency of HZ when publishing clock time (default: %default)", metavar="HZ")
     parser.add_option("-d", "--delay",        dest="delay",      default=0.2,   type='float', action="store", help="sleep SEC seconds after every advertise call (to allow subscribers to connect)", metavar="SEC")
     parser.add_option("-r", "--rate",         dest="rate",       default=1.0,   type='float', action="store", help="multiply the publish rate by FACTOR", metavar="FACTOR")
-    parser.add_option("-s", "--start",        dest="sleep",      default=0.0,   type='float', action="store", help="start SEC seconds into the bag files", metavar="SEC")
+    parser.add_option("-s", "--start",        dest="start",      default=0.0,   type='float', action="store", help="start SEC seconds into the bag files", metavar="SEC")
     parser.add_option("-l", "--loop",         dest="loop",       default=False, action="store_true", help="loop playback")
     parser.add_option("--try-future-version", dest="try_future", default=False, action="store_true", help="still try to open a bag file, even if the version number is not known to the player")
 
@@ -159,19 +159,19 @@ def play_cmd(argv):
 
     cmd = ['play']
 
-    if options.quiet:      cmd.extend(["-n"])
-    if options.pause:      cmd.extend(["-p"])
-    if options.immediate:  cmd.extend(["-a"])
-    if options.loop:       cmd.extend(["-l"])
-    if options.try_future: cmd.extend(["-T"])
+    if options.quiet:      cmd.extend(["--quiet"])
+    if options.pause:      cmd.extend(["--pause"])
+    if options.immediate:  cmd.extend(["--imediate"])
+    if options.loop:       cmd.extend(["--loop"])
+    if options.try_future: cmd.extend(["--try-future-version"])
 
     if options.clock:
-        cmd.extend(["-b", str(options.freq)])
+        cmd.extend(["--clock", "--hz", str(options.freq)])
 
-    cmd.extend(['-q', str(options.queue)])
-    cmd.extend(['-r', str(options.rate)])
-    cmd.extend(['-s', str(options.delay)])
-    cmd.extend(['-t', str(options.sleep)])
+    cmd.extend(['--queue', str(options.queue)])
+    cmd.extend(['--rate', str(options.rate)])
+    cmd.extend(['--delay', str(options.delay)])
+    cmd.extend(['--start', str(options.start)])
 
     cmd.extend(args)
 

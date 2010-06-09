@@ -84,6 +84,8 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
+    ros::init(argc, argv, "play", ros::init_options::AnonymousName);
+
     // Parse the command-line options
     rosbag::PlayerOptions opts;
     try {
@@ -93,8 +95,6 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Error reading options: %s", ex.what());
         return 1;
     }
-
-    ros::init(argc, argv, "play", ros::init_options::AnonymousName);
 
     rosbag::Player player(opts);
 

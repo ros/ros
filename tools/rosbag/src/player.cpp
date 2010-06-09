@@ -64,7 +64,7 @@ PlayerOptions::PlayerOptions() :
     bag_time_frequency(0.0),
     time_scale(1.0),
     queue_size(0),
-    advertise_sleep(200000),
+    advertise_sleep(0.2),
     try_future(false),
     has_time(false),
     loop(false),

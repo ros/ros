@@ -583,7 +583,10 @@ class CallbackEcho(object):
                 else:
                     sys.stdout.write(self.sep+self.str_fn(data, current_time=current_time) + '\n')
                     
-            #sys.stdout.flush()
+            # #2778 : have to check count after incr to set done flag
+            if self.max_count is not None and self.count >= self.max_count:
+                self.done = True
+
         except IOError:
             self.done = True
         except:

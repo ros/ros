@@ -228,6 +228,8 @@ void Bag::stopWriting() {
     if (chunk_open_)
         stopWritingChunk();
 
+    seek(0, std::ios::end);
+
     index_data_pos_ = file_.getOffset();
     writeConnectionRecords();
     writeChunkInfoRecords();

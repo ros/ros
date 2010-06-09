@@ -459,6 +459,7 @@ TEST(rosbag, modify_view_works) {
 
 TEST(rosbag, modify_bag_works) {
     rosbag::Bag rwbag("/tmp/modify_bag_works.bag", rosbag::bagmode::Write | rosbag::bagmode::Read);
+    rwbag.setChunkThreshold(1);
 
     std::vector<std::string> t0 = boost::assign::list_of("t0");
 
@@ -509,6 +510,19 @@ TEST(rosbag, modify_bag_works) {
     }
     
     rwbag.close();
+
+    rosbag::Bag rwbag2("/tmp/modify_bag_works.bag", rosbag::bagmode::Read);
+
+    rosbag::View view2(rwbag2, rosbag::TopicQuery(t0));
+
+    rosbag::View::iterator iter3 = view2.begin();
+    imsg = iter3->instantiate<std_msgs::Int32>();
+    // Iter2 should contain 1->10
+    for (int i = 0; i < 10; i++) {
+        imsg = iter3->instantiate<std_msgs::Int32>();
+        ASSERT_EQ(imsg->data, i);
+        iter3++;
+    }
 }
 
 int main(int argc, char **argv) {

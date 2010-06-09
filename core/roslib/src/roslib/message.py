@@ -149,7 +149,7 @@ def get_service_class(service_type, reload_on_error=False):
 
 # we expose the generic message-strify routine for fn-oriented code like rostopic
 
-def strify_message(val, indent='', time_offset=None):
+def strify_message(val, indent='', time_offset=None, current_time=None):
     """
     convert value to string representation
     @param val: to convert to string representation. Most likely a Message.
@@ -159,6 +159,8 @@ def strify_message(val, indent='', time_offset=None):
     @param time_offset: if not None, time fields will be displayed
     as deltas from  time_offset
     @type  time_offset: Time
+    @param current_time: currently not used. Only provided for API compatibility. current_time passes in the current time with respect to the message.
+    @type  current_time: Time
     """
     if type(val) in [int, long, float, str, bool]:
         return str(val)

@@ -416,13 +416,17 @@ def _sub_str_plot_fields(val, f):
     return None
 
 
-def _str_plot(val, time_offset=None):
+def _str_plot(val, time_offset=None, current_time=None):
     """
     convert value to matlab/octave-friendly CSV string representation.
     Reads the state of the _echo_nostrs and _echo_noarr global vars to
     determine which fields are printed.
     @param val: message
     @type  val: Message
+    @param current_time: current time to use if message does not contain its own timestamp.
+    @type  current_time: roslib.rostime.Time
+    @param time_offset: (optional) for time printed for message, print as offset against this time 
+    @type  time_offset: roslib.rostime.Time
     @return: comma-separated list of field values in val
     @rtype: str
     """
@@ -434,8 +438,11 @@ def _str_plot(val, time_offset=None):
             time_offset = 0            
         if getattr(val, "_has_header", False):
             return "%s,%s"%(val.header.stamp.to_nsec()-time_offset, s)
+        elif current_time is not None:
+            return "%s,%s"%(current_time.to_nsec()-time_offset, s)
         else:
             return "%s,%s"%(rospy.get_rostime().to_nsec()-time_offset, s)
+            
     
 #TODO: get rid of the ugly use of the _echo_nonostr and _echo_noarr
     
@@ -521,7 +528,7 @@ class CallbackEcho(object):
         self.last_topic = None
         self.last_msg_eval = None
 
-    def callback(self, data, topic):
+    def callback(self, data, topic, current_time=None):
         """
         Callback to pass to rospy.Subscriber or to call
         manually. rospy.Subscriber constructor must also pass in the
@@ -529,7 +536,9 @@ class CallbackEcho(object):
         @param data: Message
         @type  data: Message    
         @param topic: topic name
-        @type  topic: str    
+        @type  topic: str
+        @param current_time: override calculation of current time
+        @type  current_time: roslib.rostime.Time
         """
         if self.filter_fn is not None and not self.filter_fn(data):
             return
@@ -570,9 +579,9 @@ class CallbackEcho(object):
                     self.first = False
 
                 if self.offset_time:
-                    sys.stdout.write(self.sep+self.str_fn(data, time_offset=rospy.get_rostime()) + '\n')
+                    sys.stdout.write(self.sep+self.str_fn(data, time_offset=rospy.get_rostime(), current_time=current_time) + '\n')
                 else:
-                    sys.stdout.write(self.sep+self.str_fn(data) + '\n')
+                    sys.stdout.write(self.sep+self.str_fn(data, current_time=current_time) + '\n')
                     
             #sys.stdout.flush()
         except IOError:
@@ -605,12 +614,12 @@ def _rostopic_echo_bag(callback_echo, bag_file):
     if not os.path.exists(bag_file):
         raise ROSTopicException("bag file [%s] does not exist"%bag_file)
     first = True
-    for t, msg, _ in rosrecord.logplayer(bag_file):
+    for t, msg, timestamp in rosrecord.logplayer(bag_file):
         # bag files can have relative paths in them, this respects any
         # dynamic renaming
         if t[0] != '/':
             t = roslib.scriptutil.script_resolve_name('rostopic', t)
-        callback_echo.callback(msg, t)
+        callback_echo.callback(msg, t, current_time=timestamp)
         # done is set if there is a max echo count
         if callback_echo.done:
             break

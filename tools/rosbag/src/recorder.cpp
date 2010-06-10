@@ -65,8 +65,8 @@ namespace rosbag {
 
 // OutgoingMessage
 
-OutgoingMessage::OutgoingMessage(string const& _topic, topic_tools::ShapeShifter::ConstPtr _msg, Time _time) :
-    topic(_topic), msg(_msg), time(_time)
+OutgoingMessage::OutgoingMessage(string const& _topic, topic_tools::ShapeShifter::ConstPtr _msg, boost::shared_ptr<ros::M_string> _connection_header, Time _time) :
+    topic(_topic), msg(_msg), connection_header(_connection_header), time(_time)
 {
 }
 
@@ -233,13 +233,14 @@ std::string Recorder::timeToStr(T ros_t) {
 }
 
 //! Callback to be invoked to save messages into a queue
-void Recorder::doQueue(topic_tools::ShapeShifter::ConstPtr msg, string const& topic, shared_ptr<ros::Subscriber> subscriber, shared_ptr<int> count) {
+void Recorder::doQueue(ros::MessageEvent<topic_tools::ShapeShifter const> msg_event, string const& topic, shared_ptr<ros::Subscriber> subscriber, shared_ptr<int> count) {
+    //void Recorder::doQueue(topic_tools::ShapeShifter::ConstPtr msg, string const& topic, shared_ptr<ros::Subscriber> subscriber, shared_ptr<int> count) {
     Time rectime = Time::now();
     
     if (options_.verbose)
         cout << "Received message on topic " << subscriber->getTopic() << endl;
 
-    OutgoingMessage out(topic, msg, rectime);
+    OutgoingMessage out(topic, msg_event.getMessage(), msg_event.getConnectionHeaderPtr(), rectime);
     
     {
         boost::mutex::scoped_lock lock(queue_mutex_);
@@ -377,7 +378,7 @@ void Recorder::doRecord() {
         }
 
         if (scheduledCheckDisk() && checkLogging())
-            bag_.write(out.topic, out.time, *out.msg);
+            bag_.write(out.topic, out.time, *out.msg, out.connection_header);
     }
 
     stopWriting();

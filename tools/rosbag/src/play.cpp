@@ -53,7 +53,7 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
       ("rate,r", po::value<float>()->default_value(1.0), "multiply the publish rate by FACTOR")
       ("start,s", po::value<float>()->default_value(0.0), "start SEC seconds into the bag files")
       ("loop,l", "loop playback")
-      ("endless", "don't terminate at end of bag")
+      ("keep-alive,k", "keep alive past end of bag")
       ("try-future-version", "still try to open a bag file, even if the version is not known to the player")
       ("input-file", po::value< std::vector<std::string> >(), "input files");
     
@@ -96,6 +96,8 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
     }
     if (vm.count("loop"))
       opts.loop = true;
+    if (vm.count("keep-alive"))
+      opts.keep_alive = true;
 
 
     if (vm.count("input-file"))

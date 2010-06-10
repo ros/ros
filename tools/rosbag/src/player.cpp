@@ -69,7 +69,7 @@ PlayerOptions::PlayerOptions() :
     has_time(false),
     loop(false),
     time(0.0f),
-    endless(false)
+    keep_alive(false)
 {
 }
 
@@ -194,8 +194,9 @@ void Player::publish() {
             doPublish(m);
         }
 
-        if (options_.endless)
-            doEndless();
+        if (options_.keep_alive)
+            while (node_handle_.ok())
+                doKeepAlive();
 
         if (!node_handle_.ok()) {
             std::cout << std::endl;
@@ -311,9 +312,10 @@ void Player::doPublish(MessageInstance const& m) {
 }
 
 
-void Player::doEndless() {
-    ros::Time const& time = ros::TIME_MAX;
-    
+void Player::doKeepAlive() {
+    //Keep pushing ourself out in 10-sec increments (avoids fancy math dealing with the end of time)
+    ros::Time const& time = time_publisher_.getTime() + ros::Duration(10.0);
+
     ros::Time translated = time_translator_.translate(time);
     ros::WallTime horizon = ros::WallTime(translated.sec, translated.nsec);
 

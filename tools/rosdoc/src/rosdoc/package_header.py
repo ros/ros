@@ -48,76 +48,87 @@ import roslib.vcs
 
 _api_url = "http://ros.org/doc/api/"
 def package_link(package):
-  return _api_url + package + "/html/"
+    return _api_url + package + "/html/"
 def stack_link(stack):
-  return _api_url + stack + "/html/"
+    return _api_url + stack + "/html/"
 
 def _generate_package_headers(ctx, p):
-  import yaml
-  m = ctx.manifests[p]
-  m.description = m.description or ''
-  d = {
-    'brief': m.brief,
-    'description': m.description.strip() or '',
-    'license': m.license or '',
-    'authors': m.author or '',
-    'depends': [d.package for d in m.depends],
-    'review_status': m.status or '',
-    'review_notes': m.notes or '',
-    'url': m.url,
-    }
-
-  if m.versioncontrol:
-    d['version_control'] = m.versioncontrol.url
-        
-  siblings = []
-  stack = roslib.stacks.stack_of(p) or ''
-  if stack:
-    d['stack'] = stack
-    d['siblings'] = roslib.stacks.packages_of(stack)
-
-  d['depends_on'] = roslib.rospack.rospack_depends_on_1(p)
-    
-  d['api_documentation'] = package_link(p)
-
-  if p in ctx.external_docs:
-    d['external_documentation'] = ctx.external_docs[p]
-
-  d['msgs'] = roslib.msgs.list_msg_types(p, False)
-  d['srvs'] = roslib.srvs.list_srv_types(p, False)        
-
-  d['dependency_tree'] = package_link(p) + '%s_deps.pdf'%p
-
-  # encode unicode entries. This is probably overkill, but it was hard
-  # hunting the unicode encoding issues down
-  d_copy = d.copy()
-  for k, v in d_copy.iteritems():
-    if isinstance(v, basestring):
-      try:
-        d[k] = v.encode("utf-8")
-      except UnicodeDecodeError, e:
-        print >> sys.stderr, "error: cannot encode value for key", k
-        d[k] = ''
-    elif type(v) == list:
-      try:
-        d[k] = [x.encode("utf-8") for x in v]
-      except UnicodeDecodeError, e:
-        print >> sys.stderr, "error: cannot encode value for key", k
-        d[k] = []
-
-  # Try to get VCS repo info
-  vcs, repo = roslib.vcs.guess_vcs_uri(roslib.packages.get_pkg_dir(p))
-  if repo is not None:
-    d['repository'] = repo
-    d['vcs'] = vcs
-
-  file_p = os.path.join(ctx.docdir, p, 'manifest.yaml')
-  file_p_dir = os.path.dirname(file_p)
-  if not os.path.isdir(file_p_dir):
-    os.makedirs(file_p_dir)
-  with codecs.open(file_p, mode='w', encoding='utf-8') as f:
-    f.write(yaml.dump(d))
+    import yaml
+    m = ctx.manifests[p]
+    m.description = m.description or ''
+    d = {
+        'brief': m.brief,
+        'description': m.description.strip() or '',
+        'license': m.license or '',
+        'authors': m.author or '',
+        'depends': [d.package for d in m.depends],
+        'review_status': m.status or '',
+        'review_notes': m.notes or '',
+        'url': m.url,
+        }
   
+    if m.versioncontrol:
+        d['version_control'] = m.versioncontrol.url
+          
+    siblings = []
+    stack = roslib.stacks.stack_of(p) or ''
+    if stack:
+        d['stack'] = stack
+        d['siblings'] = roslib.stacks.packages_of(stack)
+  
+    d['depends_on'] = roslib.rospack.rospack_depends_on_1(p)
+      
+    d['api_documentation'] = package_link(p)
+  
+    if p in ctx.external_docs:
+        d['external_documentation'] = ctx.external_docs[p]
+  
+    d['msgs'] = roslib.msgs.list_msg_types(p, False)
+    d['srvs'] = roslib.srvs.list_srv_types(p, False)        
+  
+    d['dependency_tree'] = package_link(p) + '%s_deps.pdf'%p
+  
+    # encode unicode entries. This is probably overkill, but it was hard
+    # hunting the unicode encoding issues down
+    d_copy = d.copy()
+    for k, v in d_copy.iteritems():
+        if isinstance(v, basestring):
+            try:
+                d[k] = v.encode("utf-8")
+            except UnicodeDecodeError, e:
+                print >> sys.stderr, "error: cannot encode value for key", k
+                d[k] = ''
+        elif type(v) == list:
+            try:
+                d[k] = [x.encode("utf-8") for x in v]
+            except UnicodeDecodeError, e:
+                print >> sys.stderr, "error: cannot encode value for key", k
+                d[k] = []
+                
+    # Try to get VCS repo info
+    vcs, repo = roslib.vcs.guess_vcs_uri(roslib.packages.get_pkg_dir(p))
+    #  - if we have the repo map, use it instead for canonical
+    #    URIs. There is the possibility that if there are two 'repos'
+    #    mounted in the same SVN it will get confused, though the
+    #    'guess_vcs_uri' technique is just as bad.
+    if ctx.repos:
+        for r_vcs, r_uri in ctx.repos.itervalues():
+            if r_vcs == vcs and \
+                    (r_uri.startswith(repo) or repo.starswith(r_uri)):
+                repo = r_uri
+                break
+
+    if repo is not None:
+        d['repository'] = repo
+        d['vcs'] = vcs
+  
+    file_p = os.path.join(ctx.docdir, p, 'manifest.yaml')
+    file_p_dir = os.path.dirname(file_p)
+    if not os.path.isdir(file_p_dir):
+        os.makedirs(file_p_dir)
+    with codecs.open(file_p, mode='w', encoding='utf-8') as f:
+        f.write(yaml.dump(d))
+    
 def generate_package_headers(ctx):
     """
     Generate manifest.yaml files for MoinMoin PackageHeader macro

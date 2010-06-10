@@ -40,4 +40,8 @@ target_link_libraries(test_bag rosbag)
 rosbuild_add_rostest(test/rosbag_play.test)
 rosbuild_add_rostest(test/play_play.test)
 
+rosbuild_add_rostest(test/latched_pub.test)
+rosbuild_add_rostest(test/latched_sub.test)
+ADD_DEPENDENCIES(rostest_test_latched_pub.test rostest_test_latched_sub.test)
+
 rosbuild_add_pyunit(test/test_bag.py)

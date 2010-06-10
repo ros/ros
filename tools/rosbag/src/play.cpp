@@ -82,8 +82,8 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
       opts.queue_size = vm["queue"].as<int>();
     if (vm.count("hz"))
       opts.bag_time_frequency = vm["hz"].as<float>();
-    if (!vm.count("clock"))
-      opts.bag_time_frequency = 0.0;
+    if (vm.count("clock"))
+      opts.bag_time = true;
     if (vm.count("delay"))
       opts.advertise_sleep = ros::WallDuration(vm["delay"].as<float>());
     if (vm.count("rate"))

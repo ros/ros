@@ -81,17 +81,17 @@ help="Exclude topics matching the follow regular expression (subtracts from -a o
 
     cmd = ['record']
 
-    cmd.extend(['-m', str(options.buffsize)])
-    cmd.extend(['-c', str(options.num)])
-    cmd.extend(['-S', str(options.split)])
+    cmd.extend(['--buffsize', str(options.buffsize)])
+    cmd.extend(['--limit', str(options.num)])
+    cmd.extend(['--split', str(options.split)])
 
-    if options.prefix: cmd.extend(["-f", options.prefix])
-    if options.name:   cmd.extend(["-F", options.name])
-    if options.exclude_regex: cmd.extend(["-x", options.exclude_regex])
-    if options.all:    cmd.extend(["-a"])
-    if options.regex:  cmd.extend(["-e"])
-    #if options.zlib:   cmd.extend(["-z"])
-    if options.bz2:    cmd.extend(["-j"])
+    if options.quiet: cmd.extend(["--quiet"])
+    if options.prefix: cmd.extend(["-o", options.prefix])
+    if options.name:   cmd.extend(["-O", options.name])
+    if options.exclude_regex: cmd.extend(["--exclude", options.exclude_regex])
+    if options.all:    cmd.extend(["--all"])
+    if options.regex:  cmd.extend(["--regex"])
+    if options.bz2:    cmd.extend(["--bz2"])
 
     cmd.extend(args)
 

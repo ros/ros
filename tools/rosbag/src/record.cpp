@@ -35,61 +35,99 @@
 #include "rosbag/recorder.h"
 #include "rosbag/exceptions.h"
 
-void printUsage() {
-    fprintf(stderr, "Usage: record [options] TOPIC1 [TOPIC2 TOPIC3...]\n"
-                    "  record logs ROS message data to a file.\n");
-    fprintf(stderr, "Options:\n");
-    fprintf(stderr, " -c <num>    : Only receive <num> messages on each topic\n");
-    fprintf(stderr, " -f <prefix> : Prepend file prefix to beginning of bag name (name will always end with date stamp)\n");
-    fprintf(stderr, " -F <fname>  : Record to a file named exactly <fname>.bag\n");
-    fprintf(stderr, " -a          : Record all published messages.\n");
-    fprintf(stderr, " -e          : Match topics as regular expressions.\n");
-    fprintf(stderr, " -x <regex>  : Exclude topics matching the follow regular expression (subtracts from -a or regex).\n");
-    fprintf(stderr, " -v          : Display a message every time a message is received on a topic\n");
-    fprintf(stderr, " -m          : Maximize internal buffer size in MB (Default: 256MB)  0 = infinite.\n");
-    fprintf(stderr, " -s          : (EXPERIMENTAL) Enable snapshot recording (don't write to file unless triggered)\n");
-    fprintf(stderr, " -t          : (EXPERIMENTAL) Trigger snapshot recording\n");
-    fprintf(stderr, " -h          : Display this help message\n");
-}
+#include "boost/program_options.hpp"
+
+namespace po = boost::program_options;
 
 //! Parse the command-line arguments for recorder options
 rosbag::RecorderOptions parseOptions(int argc, char** argv) {
     rosbag::RecorderOptions opts;
 
-    int option_char;
-    while ((option_char = getopt(argc, argv, "f:F:c:m:S:x:aestvzj")) != -1) {
-        switch (option_char) {
-        case 'f': opts.prefix      = std::string(optarg); break;
-        case 'F': opts.prefix      = std::string(optarg); opts.append_date = false; break;
-        case 'x': opts.exclude_regex = std::string(optarg); opts.do_exclude = true; break;
-        case 'c': opts.limit       = atoi(optarg); break;
-        case 'a': opts.record_all  = true; break;
-        case 'e': opts.regex       = true; break;
-        case 's': opts.snapshot    = true; break;
-        case 'v': opts.verbose     = true; break;
-        case 't': opts.trigger     = true; break;
-        //case 'z': opts.compression = rosbag::compression::ZLIB; break;
-        case 'j': opts.compression = rosbag::compression::BZ2; break;
-        case 'm': {
-            int m = atoi(optarg);
-            if (m < 0)
-                throw ros::Exception("Buffer size must be 0 or positive");
-            opts.buffer_size = 1048576 * m;
-            break;
-        }
-        case 'S': {
-            int S = atoi(optarg);
-            if (S < 0)
-                throw ros::Exception("Split size must be 0 or positive");
-            opts.split_size = 1048576 * S;
-            break;
-        }
-        }
+    po::options_description desc("Allowed options");
+
+    desc.add_options()
+      ("all,a", "record all topics")
+      ("regex,e", "match topics using regular expressions")
+      ("exclude,x", po::value<std::string>(), "exclude topics matching regular expressions")
+      ("quiet,q", "suppress console output")
+      ("output-prefix,o", po::value<std::string>(), "prepend PREFIX to beginning of bag name")
+      ("output-name,O", po::value<std::string>(), "record bagnamed NAME.bag")
+      ("split", po::value<int>()->default_value(0), "split bag file into files of size SIZE in MB")
+      ("buffsize,b", po::value<int>()->default_value(256), "Use an internal buffer of SIZE MB (Default: 256)")
+      ("limit,l", po::value<int>()->default_value(0), "Only record NUM messages on each topic")
+      ("bz2,j", "use BZ2 compression")
+      ("topic", po::value< std::vector<std::string> >(), "topic to record");
+    
+    po::positional_options_description p;
+    p.add("topic", -1);
+    
+    po::variables_map vm;
+    
+    try 
+    {
+      po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
+    } catch (boost::program_options::invalid_command_line_syntax& e)
+    {
+      throw ros::Exception(e.what());
+    }  catch (boost::program_options::unknown_option& e)
+    {
+      throw ros::Exception(e.what());
+    }
+
+    if (vm.count("all"))
+      opts.record_all = true;
+    if (vm.count("regex"))
+      opts.regex = true;
+    if (vm.count("exclude"))
+    {
+      opts.do_exclude = true;
+      opts.exclude_regex = vm["exclude"].as<std::string>();
+    }
+    if (vm.count("quiet"))
+      opts.quiet = true;
+    if (vm.count("output-prefix"))
+    {
+      opts.prefix = vm["output-prefix"].as<std::string>();
+      opts.append_date = true;
+    }
+    if (vm.count("output-name"))
+    {
+      opts.prefix = vm["output-name"].as<std::string>();
+      opts.append_date = false;
+    }
+    if (vm.count("split"))
+    {
+      int S = vm["split"].as<int>();
+      if (S < 0)
+        throw ros::Exception("Split size must be 0 or positive");
+      opts.split_size = 1048576 * S;
+    }
+    if (vm.count("buffsize"))
+    {
+      int m = vm["buffsize"].as<int>();
+      if (m < 0)
+        throw ros::Exception("Buffer size must be 0 or positive");
+      opts.buffer_size = 1048576 * m;
+    }
+    if (vm.count("limit"))
+    {
+      opts.limit = vm["limit"].as<int>();
+    }
+    if (vm.count("bz2"))
+    {
+      opts.compression = rosbag::compression::BZ2;
     }
 
     // Every non-option argument is assumed to be a topic
-    for (; optind < argc; optind++)
+    if (vm.count("topic"))
+    {
+      std::vector<std::string> bags = vm["topic"].as< std::vector<std::string> >();
+      for (std::vector<std::string>::iterator i = bags.begin();
+           i != bags.end();
+           i++)
         opts.topics.push_back(std::string(argv[optind]));
+    }
+
 
     // check that argument combinations make sense
     if(opts.exclude_regex.size() > 0 &&
@@ -103,21 +141,21 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
+    ros::init(argc, argv, "record", ros::init_options::AnonymousName);
+
     // Parse the command-line options
     rosbag::RecorderOptions opts;
     try {
         opts = parseOptions(argc, argv);
     }
     catch (ros::Exception const& ex) {
-        fprintf(stderr, "Error reading options: %s", ex.what());
+        ROS_ERROR("Error reading options: %s", ex.what());
         return 1;
     }
     catch(boost::regex_error const& ex) {
-        fprintf(stderr, "Error reading options: %s\n", ex.what());
+        ROS_ERROR("Error reading options: %s\n", ex.what());
         return 1;
     }
-
-    ros::init(argc, argv, "record", ros::init_options::AnonymousName);
 
     // Run the recorder
 	rosbag::Recorder recorder(opts);

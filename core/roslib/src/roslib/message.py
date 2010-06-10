@@ -162,8 +162,13 @@ def strify_message(val, indent='', time_offset=None, current_time=None):
     @param current_time: currently not used. Only provided for API compatibility. current_time passes in the current time with respect to the message.
     @type  current_time: Time
     """
-    if type(val) in [int, long, float, str, bool]:
+    if type(val) in [int, long, float, bool]:
         return str(val)
+    elif isinstance(val, basestring):
+        #TODO: need to escape strings correctly
+        if not val:
+            return "''"
+        return val
     elif isinstance(val, Time) or isinstance(val, Duration):
         
         if time_offset is not None and isinstance(val, Time):
@@ -172,17 +177,16 @@ def strify_message(val, indent='', time_offset=None, current_time=None):
         return '\n%ssecs: %s\n%snsecs: %s'%(indent, val.secs, indent, val.nsecs)
         
     elif type(val) in [list, tuple]:
-        # have to convert tuple->list to be yaml-safe
         if len(val) == 0:
-            return str(list(val))
+            return "[]"
         val0 = val[0]
-        if type(val0) in [int, float, str, bool] or \
-               isinstance(val0, Time) or isinstance(val0, Duration) or \
-               type(val0) in [list, tuple]: # no array-of-arrays support yet
+        if type(val0) in [int, float, str, bool]:
+            # TODO: escape strings properly
             return str(list(val))
         else:
+            pref = indent + '- '
             indent = indent + '  '
-            return "["+','.join([strify_message(v, indent, time_offset) for v in val])+"]"
+            return '\n'+'\n'.join([pref+strify_message(v, indent, time_offset) for v in val])
     elif isinstance(val, Message):
         if indent:
             return '\n'+\
@@ -526,21 +530,28 @@ def fill_message_args(msg, msg_args, keys={}):
 
     @param msg: message to fill
     @type  msg: Message
-    @param msg_args: list of arguments to set fields to
+
+    @param msg_args: list of arguments to set fields to, or 
+      If None, msg_args will be made an empty list.
     @type  msg_args: [args]
+
     @param keys: keys to use as substitute values for messages and timestamps. 
     @type  keys: dict
     @raise ROSMessageException: if not enough/too many message arguments to fill message
     """
     # a list of arguments is similar to python's
     # *args, whereas dictionaries are like **kwds. 
+
+    # empty messages serialize as a None, which we make equivalent to
+    # an empty message
+    if msg_args is None:
+        msg_args = []
     
     # msg_args is always a list, due to the fact it is parsed from a
     # command-line argument list.  We have to special-case handle a
-    # list with a single dictionary, which has precedence over the general
-    # list representation. We offer this precedence as there is no other way to
-    # do kwd assignments into the outer message.
-    
+    # list with a single dictionary, which has precedence over the
+    # general list representation. We offer this precedence as there
+    # is no other way to do kwd assignments into the outer message.
     if len(msg_args) == 1 and type(msg_args[0]) == dict:
         # according to spec, if we only get one msg_arg and it's a dictionary, we
         # use it directly

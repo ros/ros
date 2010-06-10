@@ -125,7 +125,7 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
       for (std::vector<std::string>::iterator i = bags.begin();
            i != bags.end();
            i++)
-        opts.topics.push_back(std::string(argv[optind]));
+        opts.topics.push_back(*i);
     }
 
 

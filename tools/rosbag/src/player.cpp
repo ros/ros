@@ -68,7 +68,8 @@ PlayerOptions::PlayerOptions() :
     try_future(false),
     has_time(false),
     loop(false),
-    time(0.0f)
+    time(0.0f),
+    endless(false)
 {
 }
 
@@ -193,6 +194,9 @@ void Player::publish() {
             doPublish(m);
         }
 
+        if (options_.endless)
+            doEndless();
+
         if (!node_handle_.ok()) {
             std::cout << std::endl;
             break;
@@ -305,6 +309,60 @@ void Player::doPublish(MessageInstance const& m) {
 
     pub_iter->second.publish(m);
 }
+
+
+void Player::doEndless() {
+    ros::Time const& time = ros::TIME_MAX;
+    
+    ros::Time translated = time_translator_.translate(time);
+    ros::WallTime horizon = ros::WallTime(translated.sec, translated.nsec);
+
+    time_publisher_.setHorizon(time);
+    time_publisher_.setWCHorizon(horizon);
+
+    if (options_.at_once) {
+        return;
+    }
+
+    while ((paused_ || !time_publisher_.horizonReached()) && node_handle_.ok())
+    {
+        bool charsleftorpaused = true;
+        while (charsleftorpaused && node_handle_.ok())
+        {
+            switch (readCharFromStdin()){
+            case ' ':
+                paused_ = !paused_;
+                if (paused_) {
+                    paused_time_ = ros::WallTime::now();
+                }
+                else
+                {
+                    ros::WallDuration shift = ros::WallTime::now() - paused_time_;
+                    paused_time_ = ros::WallTime::now();
+         
+                    time_translator_.shift(ros::Duration(shift.sec, shift.nsec));
+
+                    horizon += shift;
+                    time_publisher_.setWCHorizon(horizon);
+                }
+                break;
+            case EOF:
+                if (paused_)
+                {
+                    printTime();
+                    time_publisher_.runStalledClock(ros::WallDuration(.1));
+                }
+                else
+                    charsleftorpaused = false;
+            }
+        }
+
+        printTime();
+        time_publisher_.runClock(ros::WallDuration(.1));
+    }
+}
+
+
 
 void Player::setupTerminal() {
 	if (terminal_modified_)

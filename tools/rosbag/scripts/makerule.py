@@ -75,7 +75,7 @@ if __name__ == '__main__':
     else:
         append_rule = []
 
-    f = open(sys.argv[1])
+    f = open(args[0])
     if f is None:
         print >> sys.stderr, 'Could not open message full definition: %s'
         sys.exit()

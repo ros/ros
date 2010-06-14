@@ -205,7 +205,7 @@ TEST(SubscriptionQueue, clearInCallback)
 void clearWhileThreadIsBlockingCallback(bool* done, boost::barrier* barrier)
 {
   barrier->wait();
-  ros::Duration(.1).sleep();
+  ros::WallDuration(.1).sleep();
   *done = true;
 }
 

@@ -55,7 +55,8 @@ class TimeNotInitializedException : public Exception
 {
 public:
   TimeNotInitializedException()
-  : Exception("Cannot use ros::Time::now() before the first NodeHandle has been created or ros::start() has been called")
+  : Exception("Cannot use ros::Time::now() before the first NodeHandle has been created or ros::start() has been called.  "
+              "If this is a standalone app or test that just uses ros::Time and does not communicate over ROS, you may also call ros::Time::init()")
   {}
 };
 

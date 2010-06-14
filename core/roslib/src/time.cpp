@@ -72,7 +72,7 @@ static bool g_stopped(false);
 static boost::mutex g_sim_time_mutex;
 
 static bool g_initialized(false);
-static bool g_use_sim_time(false);
+static bool g_use_sim_time(true);
 static Time g_sim_time(0, 0);
 
 void getWallTime(uint32_t& sec, uint32_t& nsec)

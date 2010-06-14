@@ -204,7 +204,7 @@ bool Time::waitForValid()
 bool Time::waitForValid(const ros::WallDuration& timeout)
 {
   ros::WallTime start = ros::WallTime::now();
-  while (!isValid())
+  while (!isValid() && !g_stopped)
   {
     ros::WallDuration(0.01).sleep();
 
@@ -212,6 +212,11 @@ bool Time::waitForValid(const ros::WallDuration& timeout)
     {
       return false;
     }
+  }
+
+  if (g_stopped)
+  {
+    return false;
   }
 
   return true;

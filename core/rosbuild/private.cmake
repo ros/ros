@@ -259,7 +259,7 @@ endmacro(_rosbuild_add_pyunit)
 macro(_rosbuild_add_roslaunch_check file)
   # Check that the file exists, #1621
   set(_file_name _file_name-NOTFOUND)
-  find_file(_file_name ${file} ${PROJECT_SOURCE_DIR} /)
+  find_file(_file_name ${file} ${CMAKE_CURRENT_SOURCE_DIR} /)
   if(NOT _file_name)
     message(FATAL_ERROR "Can't find roslaunch file or directory \"${file}\"")
   endif(NOT _file_name)
@@ -274,7 +274,7 @@ macro(_rosbuild_add_roslaunch_check file)
   add_custom_target(roslaunch_check_${_testname}
                     COMMAND ${rostest_path}/bin/roslaunch-check.py ${file} ${ARGN}
                     DEPENDS ${file}
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                     VERBATIM)
   
   # Make sure all test programs are built before running this test

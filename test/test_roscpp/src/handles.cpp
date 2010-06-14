@@ -483,7 +483,7 @@ TEST(RoscppHandles, spinAfterHandleShutdownWithAdvertiseSubscriberCallback)
 
   while (pub.getNumSubscribers() == 0)
   {
-    ros::WallDuration().sleep();
+    ros::WallDuration(0.01).sleep();
   }
 
   pub.shutdown();
@@ -491,6 +491,29 @@ TEST(RoscppHandles, spinAfterHandleShutdownWithAdvertiseSubscriberCallback)
   ros::spinOnce();
 
   ASSERT_EQ(g_sub_count, 0);
+}
+
+TEST(RoscppHandles, multiplePublishersWithSubscriberConnectCallback)
+{
+  ros::NodeHandle n;
+  ros::Publisher pub = n.advertise<test_roscpp::TestArray>("/test", 0, connectedCallback, SubscriberStatusCallback());
+
+  g_sub_count = 0;
+  ros::Subscriber sub = n.subscribe("/test", 0, subscriberCallback);
+
+  while (g_sub_count == 0)
+  {
+    ros::WallDuration(0.01).sleep();
+    ros::spinOnce();
+  }
+
+  ASSERT_EQ(g_sub_count, 1);
+  g_sub_count = 0;
+
+  ros::Publisher pub2 = n.advertise<test_roscpp::TestArray>("/test", 0, connectedCallback, SubscriberStatusCallback());
+  ros::spinOnce();
+
+  ASSERT_EQ(g_sub_count, 1);
 }
 
 class ServiceClass

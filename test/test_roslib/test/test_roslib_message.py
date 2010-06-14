@@ -196,11 +196,13 @@ int: 123456789101112
 float: 5678.0
 bool: True
 list: [1, 2, 3]""", strify_message(M2('string', 123456789101112, 5678., True, [1,2,3])))
-        self.assertEquals("""str: string
+        
+        self.assertEquals("""str: ''
 int: -1
 float: 0.0
 bool: False
-list: []""", strify_message(M2('string', -1, 0., False, [])))
+list: []""", strify_message(M2('', -1, 0., False, [])))
+
         class M3(Message):
             __slots__ = ['m2']
             def __init__(self, m2):
@@ -218,17 +220,19 @@ list: []""", strify_message(M2('string', -1, 0., False, [])))
             def __init__(self, m2s):
                 self.m2s = m2s
                 
-        self.assertEquals("""m2s: [
+        self.assertEquals("""m2s: 
+  - 
     str: string
     int: 1234
     float: 5678.0
     bool: True
-    list: [1, 2, 3],
+    list: [1, 2, 3]
+  - 
     str: string
     int: -1
     float: 0.0
     bool: False
-    list: []]""", strify_message(M4([
+    list: []""", strify_message(M4([
                         M2('string', 1234, 5678., True, [1,2,3]),
                         M2('string', -1, 0., False, []),
                         ])))
@@ -248,6 +252,64 @@ d:
         
         # test final clause of strify -- str anything that isn't recognized
         self.assertEquals("set([1])", strify_message(set([1])))
+
+    def test_strify_yaml(self):
+        import yaml
+        def roundtrip(m):
+            yaml_text = strify_message(m)
+            print yaml_text
+            loaded = yaml.load(yaml_text) 
+            print "loaded", loaded
+            new_inst = m.__class__()
+            if loaded is not None:
+                fill_message_args(new_inst, [loaded])
+            else:
+                fill_message_args(new_inst, [])                
+            return new_inst
+
+        # test YAML roundtrip. strify_message doesn't promise this
+        # yet, but want to use it in this way in some demo toolchains
+        from roslib.message import Message, strify_message, fill_message_args
+        class M1(Message):
+            __slots__ = []
+            def __init__(self): pass
+        self.assertEquals(M1(), roundtrip(M1()))
+        
+        class M2(Message):
+            __slots__ = ['str', 'int', 'float', 'bool', 'list']
+            def __init__(self, str_=None, int_=None, float_=None, bool_=None, list_=None):
+                self.str = str_
+                self.int = int_       
+                self.float = float_
+                self.bool = bool_
+                self.list = list_
+                
+        val = M2('string', 123456789101112, 5678., True, [1,2,3])
+        self.assertEquals(val, roundtrip(val))
+        # test with empty string and empty list
+        val = M2('', -1, 0., False, [])
+        self.assertEquals(val, roundtrip(val))
+        
+        class M3(Message):
+            __slots__ = ['m2']
+            def __init__(self, m2=None):
+                self.m2 = m2 or M2()
+                
+        val = M3(M2('string', -1, 0., False, []))
+        self.assertEquals(val, roundtrip(val))
+
+        # test array of Messages field. We can't use M4 or M5 because fill_message_args has to instantiate the embedded type
+        from test_roslib.msg import ArrayOfMsgs
+        from std_msgs.msg import String, Time, MultiArrayLayout, MultiArrayDimension
+        dims1 = [MultiArrayDimension(*args) for args in [('', 0, 0), ('x', 1, 2), ('y of z', 3, 4)]]
+        dims2 = [MultiArrayDimension('hello world', 91280, 1983274)]
+        times = [Time(roslib.rostime.Time(*args)) for args in [(0,), (12345, 6789), (1, 1)]]
+        val = ArrayOfMsgs([String(''), String('foo'), String('bar of soap')],
+                          times,
+                          [MultiArrayLayout(dims1, 0), MultiArrayLayout(dims2, 12354)],
+                          )
+        self.assertEquals(val, roundtrip(val))
+        
 
     def test_ServiceDefinition(self):
         from roslib.message import ServiceDefinition

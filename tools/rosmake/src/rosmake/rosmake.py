@@ -94,7 +94,8 @@ class Printer:
             self.status = ""
             self.verbose = False
             self.full_verbose = False
-            self.duration = 1./60.
+            self.duration = 1./5.
+            self._last_status = None
 
             # Rosmake specific data
             self.cache_argument = None
@@ -129,7 +130,9 @@ class Printer:
                     status = self.status
                     if n > 0:
                         status = " "*n + self.status
-                    self._print_status("%s"%status)
+                    if status != self._last_status:
+                        self._print_status("%s"%status)
+                        self._last_status = status
                 time.sleep(self.duration) 
             self.done = True
             #print "STATUS THREAD FINISHED"
@@ -676,7 +679,7 @@ class RosMakeAll:
         parser.add_option("--require-platform-recursive", dest="obey_whitelist_recursively",
                           action="store_true", help="do not build a package unless it is marked as supported on this platform, and all dependents are also marked")
         parser.add_option("--status-rate", dest="status_update_rate",
-                          action="store", help="How fast to update the status bar in Hz.  Default: 60Hz")
+                          action="store", help="How fast to update the status bar in Hz.  Default: 5Hz")
         
 
         options, args = parser.parse_args()

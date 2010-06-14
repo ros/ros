@@ -973,7 +973,7 @@ public:
                "    (setf (ldb (byte 8 8) __nsec) (read-byte istream))\n"
                "    (setf (ldb (byte 8 16) __nsec) (read-byte istream))\n"
                "    (setf (ldb (byte 8 24) __nsec) (read-byte istream))\n"
-               "    (setf %s (+ __sec (/ __nsec 1e9))))",
+               "    (setf %s (+ (coerce __sec 'double-float) (/ __nsec 1e9))))",
                name.c_str());
     }
     else

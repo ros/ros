@@ -64,11 +64,12 @@ PlayerOptions::PlayerOptions() :
     bag_time_frequency(0.0),
     time_scale(1.0),
     queue_size(0),
-    advertise_sleep(200000),
+    advertise_sleep(0.2),
     try_future(false),
     has_time(false),
     loop(false),
-    time(0.0f)
+    time(0.0f),
+    keep_alive(false)
 {
 }
 
@@ -121,9 +122,19 @@ void Player::publish() {
       puts("");
     
     // Publish all messages in the bags
+    View full_view;
+    foreach(shared_ptr<Bag> bag, bags_)
+        full_view.addQuery(*bag);
+
+    ros::Time initial_time = full_view.getBeginTime();
+
+    initial_time += ros::Duration(options_.time);
+
     View view;
     foreach(shared_ptr<Bag> bag, bags_)
-        view.addQuery(*bag);
+      view.addQuery(*bag, initial_time, ros::TIME_MAX);
+
+
 
     // Advertise all of our messages
     foreach(const ConnectionInfo* c, view.getConnections())
@@ -182,6 +193,10 @@ void Player::publish() {
 
             doPublish(m);
         }
+
+        if (options_.keep_alive)
+            while (node_handle_.ok())
+                doKeepAlive();
 
         if (!node_handle_.ok()) {
             std::cout << std::endl;
@@ -295,6 +310,61 @@ void Player::doPublish(MessageInstance const& m) {
 
     pub_iter->second.publish(m);
 }
+
+
+void Player::doKeepAlive() {
+    //Keep pushing ourself out in 10-sec increments (avoids fancy math dealing with the end of time)
+    ros::Time const& time = time_publisher_.getTime() + ros::Duration(10.0);
+
+    ros::Time translated = time_translator_.translate(time);
+    ros::WallTime horizon = ros::WallTime(translated.sec, translated.nsec);
+
+    time_publisher_.setHorizon(time);
+    time_publisher_.setWCHorizon(horizon);
+
+    if (options_.at_once) {
+        return;
+    }
+
+    while ((paused_ || !time_publisher_.horizonReached()) && node_handle_.ok())
+    {
+        bool charsleftorpaused = true;
+        while (charsleftorpaused && node_handle_.ok())
+        {
+            switch (readCharFromStdin()){
+            case ' ':
+                paused_ = !paused_;
+                if (paused_) {
+                    paused_time_ = ros::WallTime::now();
+                }
+                else
+                {
+                    ros::WallDuration shift = ros::WallTime::now() - paused_time_;
+                    paused_time_ = ros::WallTime::now();
+         
+                    time_translator_.shift(ros::Duration(shift.sec, shift.nsec));
+
+                    horizon += shift;
+                    time_publisher_.setWCHorizon(horizon);
+                }
+                break;
+            case EOF:
+                if (paused_)
+                {
+                    printTime();
+                    time_publisher_.runStalledClock(ros::WallDuration(.1));
+                }
+                else
+                    charsleftorpaused = false;
+            }
+        }
+
+        printTime();
+        time_publisher_.runClock(ros::WallDuration(.1));
+    }
+}
+
+
 
 void Player::setupTerminal() {
 	if (terminal_modified_)

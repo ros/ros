@@ -178,16 +178,25 @@ TEST(rosbag, simple_write_and_read_works) {
     topics.push_back(std::string("chatter"));
     topics.push_back(std::string("numbers"));
 
+    int count = 0;
     rosbag::View view(b2, rosbag::TopicQuery(topics));
     foreach(rosbag::MessageInstance const m, view) {
         std_msgs::String::ConstPtr s = m.instantiate<std_msgs::String>();
         if (s != NULL)
+        {
+            count++;
             ASSERT_EQ(s->data, std::string("foo"));
+        }
 
         std_msgs::Int32::ConstPtr i = m.instantiate<std_msgs::Int32>();
         if (i != NULL)
+        {
+            count++;
             ASSERT_EQ(i->data, 42);
+        }
     }
+
+    ASSERT_EQ(count,2);
 
     b2.close();
 }
@@ -450,6 +459,7 @@ TEST(rosbag, modify_view_works) {
 
 TEST(rosbag, modify_bag_works) {
     rosbag::Bag rwbag("/tmp/modify_bag_works.bag", rosbag::bagmode::Write | rosbag::bagmode::Read);
+    rwbag.setChunkThreshold(1);
 
     std::vector<std::string> t0 = boost::assign::list_of("t0");
 
@@ -500,10 +510,24 @@ TEST(rosbag, modify_bag_works) {
     }
     
     rwbag.close();
+
+    rosbag::Bag rwbag2("/tmp/modify_bag_works.bag", rosbag::bagmode::Read);
+
+    rosbag::View view2(rwbag2, rosbag::TopicQuery(t0));
+
+    rosbag::View::iterator iter3 = view2.begin();
+    imsg = iter3->instantiate<std_msgs::Int32>();
+    // Iter2 should contain 1->10
+    for (int i = 0; i < 10; i++) {
+        imsg = iter3->instantiate<std_msgs::Int32>();
+        ASSERT_EQ(imsg->data, i);
+        iter3++;
+    }
 }
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "test_bag");
+    ros::NodeHandle nh;
 
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

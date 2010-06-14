@@ -78,6 +78,17 @@ def canonicalize_name(name):
 _mappings = load_mappings(sys.argv)
 _resolved_mappings = {}
 
+def reload_mappings(argv):
+    """
+    Re-initialize the name remapping table.
+
+    @param argv: Command line arguments to this program. ROS reads
+        these arguments to find renaming params. 
+    @type  argv: [str]
+    """
+    global _mappings
+    _mappings = load_mappings(argv)
+
 # #1810
 def initialize_mappings(node_name):
     """

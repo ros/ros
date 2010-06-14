@@ -171,7 +171,14 @@ struct TimeToken : public Token
   virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
     std::stringstream ss;
-    ss << ros::Time::now();
+    if (ros::Time::isValid())
+    {
+      ss << ros::Time::now();
+    }
+    else
+    {
+      ss << "WallTime: " << ros::WallTime::now();
+    }
     return ss.str();
   }
 };

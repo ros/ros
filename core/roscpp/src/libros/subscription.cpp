@@ -307,6 +307,21 @@ bool Subscription::pubUpdate(const V_string& new_pubs)
     }
   }
 
+  for (V_PublisherLink::iterator i = subtractions.begin(); i != subtractions.end(); ++i)
+  {
+	const PublisherLinkPtr& link = *i;
+    if (link->getPublisherXMLRPCURI() != XMLRPCManager::instance()->getServerURI())
+    {
+      ROSCPP_LOG_DEBUG("Disconnecting from publisher [%s] of topic [%s] at [%s]",
+                        link->getCallerID().c_str(), name_.c_str(), link->getPublisherXMLRPCURI().c_str());
+		  link->drop();
+	  }
+	  else
+	  {
+		  ROSCPP_LOG_DEBUG("Disconnect: skipping myself for topic [%s]", name_.c_str());
+	  }
+	}
+
   for (V_string::iterator i = additions.begin();
             i != additions.end(); ++i)
   {
@@ -385,7 +400,7 @@ bool Subscription::negotiateConnection(const std::string& xmlrpc_uri)
     return false;
   }
 
-  XmlRpc::XmlRpcClient* c = new XmlRpc::XmlRpcClient(peer_host.c_str(), 
+  XmlRpc::XmlRpcClient* c = new XmlRpc::XmlRpcClient(peer_host.c_str(),
                                                      peer_port, "/");
  // if (!c.execute("requestTopic", params, result) || !g_node->validateXmlrpcResponse("requestTopic", result, proto))
 

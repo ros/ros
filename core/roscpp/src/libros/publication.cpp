@@ -36,6 +36,43 @@
 namespace ros
 {
 
+class PeerConnDisconnCallback : public CallbackInterface
+{
+public:
+  PeerConnDisconnCallback(const SubscriberStatusCallback& callback, const SubscriberLinkPtr& sub_link, bool use_tracked_object, const VoidConstWPtr& tracked_object)
+  : callback_(callback)
+  , sub_link_(sub_link)
+  , use_tracked_object_(use_tracked_object)
+  , tracked_object_(tracked_object)
+  {
+  }
+
+  virtual CallResult call()
+  {
+    VoidConstPtr tracker;
+    if (use_tracked_object_)
+    {
+      tracker = tracked_object_.lock();
+
+      if (!tracker)
+      {
+        return Invalid;
+      }
+    }
+
+    SingleSubscriberPublisher pub(sub_link_);
+    callback_(pub);
+
+    return Success;
+  }
+
+private:
+  SubscriberStatusCallback callback_;
+  SubscriberLinkPtr sub_link_;
+  bool use_tracked_object_;
+  VoidConstWPtr tracked_object_;
+};
+
 Publication::Publication(const std::string &name,
                          const std::string &datatype,
                          const std::string &_md5sum,
@@ -66,6 +103,20 @@ void Publication::addCallbacks(const SubscriberCallbacksPtr& callbacks)
   boost::mutex::scoped_lock lock(callbacks_mutex_);
 
   callbacks_.push_back(callbacks);
+
+  // Add connect callbacks for all current subscriptions if this publisher wants them
+  if (callbacks->connect_ && callbacks->callback_queue_)
+  {
+    boost::mutex::scoped_lock lock(subscriber_links_mutex_);
+    V_SubscriberLink::iterator it = subscriber_links_.begin();
+    V_SubscriberLink::iterator end = subscriber_links_.end();
+    for (; it != end; ++it)
+    {
+      const SubscriberLinkPtr& sub_link = *it;
+      CallbackInterfacePtr cb(new PeerConnDisconnCallback(callbacks->connect_, sub_link, callbacks->has_tracked_object_, callbacks->tracked_object_));
+      callbacks->callback_queue_->addCallback(cb, (uint64_t)callbacks.get());
+    }
+  }
 }
 
 void Publication::removeCallbacks(const SubscriberCallbacksPtr& callbacks)
@@ -271,43 +322,6 @@ void Publication::dropAllConnections()
     (*i)->drop();
   }
 }
-
-class PeerConnDisconnCallback : public CallbackInterface
-{
-public:
-  PeerConnDisconnCallback(const SubscriberStatusCallback& callback, const SubscriberLinkPtr& sub_link, bool use_tracked_object, const VoidConstWPtr& tracked_object)
-  : callback_(callback)
-  , sub_link_(sub_link)
-  , use_tracked_object_(use_tracked_object)
-  , tracked_object_(tracked_object)
-  {
-  }
-
-  virtual CallResult call()
-  {
-    VoidConstPtr tracker;
-    if (use_tracked_object_)
-    {
-      tracker = tracked_object_.lock();
-
-      if (!tracker)
-      {
-        return Invalid;
-      }
-    }
-
-    SingleSubscriberPublisher pub(sub_link_);
-    callback_(pub);
-
-    return Success;
-  }
-
-private:
-  SubscriberStatusCallback callback_;
-  SubscriberLinkPtr sub_link_;
-  bool use_tracked_object_;
-  VoidConstWPtr tracked_object_;
-};
 
 void Publication::peerConnect(const SubscriberLinkPtr& sub_link)
 {

@@ -24,6 +24,7 @@ clean:
 	-cd build && make clean
 	rm -rf msg_gen srv_gen msg/cpp msg/lisp msg/oct msg/java srv/cpp srv/lisp srv/oct srv/java src/$(PACKAGE_NAME)/msg src/$(PACKAGE_NAME)/srv
 	rm -rf build
+	rm .project .cproject
 
 # All other targets are just passed through
 test: all
@@ -34,5 +35,17 @@ test-future: all
 	cd build && make -k $@
 gcoverage: all
 	cd build && make $@
+
+eclipse-project: 
+	mv Makefile Makefile.ros
+	cmake -G"Eclipse CDT4 - Unix Makefiles" -Wno-dev .
+	rm Makefile
+	rm CMakeCache.txt
+	rm -rf CMakeFiles
+	mv Makefile.ros Makefile
+	mv .project .project-cmake
+	awk -f $(shell rospack find mk)/eclipse.awk .project-cmake > .project
+	rm .project-cmake
+
 
 include $(shell rospack find mk)/buildtest.mk

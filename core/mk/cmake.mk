@@ -8,7 +8,11 @@ all:
 	-mkdir -p bin
 	@rm -rf msg/cpp srv/cpp  # make sure there are no msg/cpp or srv/cpp directories
 	cd build && cmake $(CMAKE_FLAGS) ..
+ifneq ($(MAKE),)
+	cd build && $(MAKE) $(ROS_PARALLEL_JOBS)
+else
 	cd build && make $(ROS_PARALLEL_JOBS)
+endif
 
 PACKAGE_NAME=$(shell basename $(PWD))
 

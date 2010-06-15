@@ -53,6 +53,7 @@ import gentoo
 import macports
 import arch
 import cygwin
+import freebsd
 
 
 yaml.add_constructor(
@@ -272,7 +273,7 @@ class RosdepLookupPackage:
 
 class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
-        os_list = [debian.RosdepTestOS(), debian.Debian(), debian.Ubuntu(), debian.Mint(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports(), gentoo.Gentoo(), cygwin.Cygwin()]
+        os_list = [debian.RosdepTestOS(), debian.Debian(), debian.Ubuntu(), debian.Mint(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports(), gentoo.Gentoo(), cygwin.Cygwin(), freebsd.FreeBSD()]
         # Make sure that these classes are all well formed.  
         for o in os_list:
             if not isinstance(o, base_rosdep.RosdepBaseOS):

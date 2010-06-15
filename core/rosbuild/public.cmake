@@ -801,7 +801,8 @@ macro(rosbuild_genmsg)
 endmacro(rosbuild_genmsg)
 
 macro(rosbuild_add_boost_directories)
-  execute_process(COMMAND "rosboost-cfg" "--include_dirs"
+  set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}") 
+  execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--include_dirs"
                   OUTPUT_VARIABLE BOOST_INCLUDE_DIRS
                   RESULT_VARIABLE _boostcfg_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -810,7 +811,8 @@ macro(rosbuild_add_boost_directories)
     message(FATAL_ERROR "rosboost-cfg --include_dirs failed")
   endif(_boostcfg_failed)
   
-  execute_process(COMMAND "rosboost-cfg" "--lib_dirs"
+  set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}") 
+  execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--lib_dirs"
                   OUTPUT_VARIABLE BOOST_LIB_DIRS
                   RESULT_VARIABLE _boostcfg_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -835,8 +837,8 @@ macro(rosbuild_link_boost target)
       set(_libs "${_libs},${arg}")
     endif(_first)
   endforeach(arg)
-
-  execute_process(COMMAND "rosboost-cfg" "--libs" ${_libs}
+  set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}") 
+  execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--libs" ${_libs}
                   OUTPUT_VARIABLE BOOST_LIBS
 		  ERROR_VARIABLE _boostcfg_error
                   RESULT_VARIABLE _boostcfg_failed

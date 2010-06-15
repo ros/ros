@@ -156,8 +156,9 @@ def find_versions(search_paths):
 def find_boost(search_paths):
     return find_versions(search_paths)[-1]
 
-_search_paths = [('/usr', True), 
-                 ('/usr/local', True),
+def search_paths(sysroot):
+    _search_paths = [(sysroot+'/usr', True), 
+                 (sysroot+'/usr/local', True),
                  ('/opt/ros', False),
                  (None if 'INCLUDE_DIRS' not in os.environ else os.environ['INCLUDE_DIRS'], True), 
                  (None if 'CPATH' not in os.environ else os.environ['CPATH'], True),
@@ -166,7 +167,6 @@ _search_paths = [('/usr', True),
                  (None if 'ROS_BOOST_ROOT' not in os.environ else os.environ['ROS_BOOST_ROOT'], False), 
                  (None if 'ROS_BINDEPS_PATH' not in os.environ else os.environ['ROS_BINDEPS_PATH'], False)]
 
-def search_paths():
     search_paths = []
     for (str, system) in _search_paths:
         if (str is not None):
@@ -175,9 +175,7 @@ def search_paths():
                 if (len(dir) > 0):
                     if (dir.endswith('/include')):
                         dir = dir[:-len('/include')]
-                
                     search_paths.append((dir, system))
-    
     return search_paths
 
 def lib_dir(ver):
@@ -278,7 +276,7 @@ def check_one_option(options, key):
         if (k in OPTIONS):
             v = getattr(options, k)
             if (k != key and v):
-                raise BoostError("Only one option is allowed at a time")
+                raise BoostError("Only one option (excepting sysroot) is allowed at a time")
 
 def main():
     if (len(sys.argv) < 2):
@@ -293,16 +291,17 @@ def main():
     parser.add_option("-r", "--root", dest="root", action="store_true", default=False, help="")
     parser.add_option("-p", "--print_versions", dest="print_versions", action="store_true", default=False, help="")
     parser.add_option("-v", "--version", dest="version", action="store_true", default=False, help="")
+    parser.add_option("-s", "--sysroot", dest="sysroot", type="string", default='', help="Location of the system root (usually toolchain root).")
     
     (options, args) = parser.parse_args()
     
     if (options.print_versions):
         check_one_option(options, 'print_versions')
-        for ver in find_versions(search_paths()):
+        for ver in find_versions(search_paths(options.sysroot)):
             print '%s.%s.%s root=%s include_dir=%s'%(ver.major, ver.minor, ver.patch, ver.root, ver.include_dir)
         return
-            
-    ver = find_boost(search_paths())
+       
+    ver = find_boost(search_paths(options.sysroot))
     
     if (options.version):
         check_one_option(options, 'version')
@@ -338,7 +337,7 @@ def main():
         check_one_option(options, 'lflags')
         output = lflags(ver, options.lflags.split(','))
     else:
-        raise BoostError("Unknown argument %s"%(sys.argv[1]))
+        print_usage_and_exit()
     
     print output.strip()
 

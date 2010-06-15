@@ -36,6 +36,7 @@ PKG = 'rxbag'
 import roslib; roslib.load_manifest(PKG)
 import rospy
 
+import codecs
 import sys
 import time
 import wx
@@ -209,9 +210,15 @@ class MsgTree(wx.TreeCtrl):
         else:
             subobjs = []
             
-        # TODO: need to handle non-string data stored in str's
         if type(obj) in [str, int, long, float, complex]:
-            label += ': ' + str(obj)
+            # Ignore any binary data 
+            obj_repr = codecs.utf_8_decode(str(obj), 'ignore')[0]
+
+            # Truncate long representations
+            if len(obj_repr) >= 50:
+                obj_repr = obj_repr[:50] + '...'
+
+            label += ': ' + obj_repr
             
         if parent is None:
             item = self.AddRoot(label)

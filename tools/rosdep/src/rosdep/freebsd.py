@@ -31,6 +31,7 @@
 
 import os
 import roslib.os_detect
+import base_rosdep
 
 ###### FreeBSD SPECIALIZATION #########################
 def port_detect(p):
@@ -53,7 +54,7 @@ def port_detect(p):
     pop = subprocess.Popen("/usr/sbin/pkg_info -qE " + portname, shell=True)
     return os.waitpid(pop.pid, 0)[1] == 0 # pkg_info -E returns 0 if pkg installed, 1 if not
 
-class FreeBSD(roslib.os_detect.FreeBSD):
+class FreeBSD(base_rosdep.RosdepBaseOS):
     def strip_detected_packages(self, packages):
         return [p for p in packages if not port_detect(p)]
 

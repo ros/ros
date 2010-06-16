@@ -260,9 +260,7 @@ TEST(SubscribeStar, switchTypeInterUDP)
   ros::WallDuration(1.0).sleep();
   ros::spinOnce();
 
-  // UDPROS does not yet detect disconnects.  If you've fixed this and num publishers now == 0,
-  // you may change this assertion
-  ASSERT_EQ(sub.getNumPublishers(), 1U);
+  ASSERT_EQ(sub.getNumPublishers(), 0U);
 }
 
 int main(int argc, char** argv)

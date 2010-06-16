@@ -2,7 +2,7 @@
 minimal:core_tools
 
 core_tools:
-	rosmake --rosdep-install --bootstrap
+	rosmake --rosdep-install --bootstrap --status-rate=0
 	@echo "You have built the minimal set of ROS tools."
 	@echo "If you want to make all ROS tools type 'rosmake ros'."
 	@echo "Or you can rosmake any other package in your ROS_PACKAGE_PATH."

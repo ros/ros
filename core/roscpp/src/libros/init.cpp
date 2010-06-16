@@ -342,6 +342,9 @@ void start()
   {
     bool use_sim_time = false;
     param::param("/use_sim_time", use_sim_time, use_sim_time);
+
+    ros::Time::init();
+
     if (use_sim_time)
     {
       Time::setNow(ros::Time());
@@ -396,7 +399,6 @@ void init(const M_string& remappings, const std::string& name, uint32_t options)
     ROSCONSOLE_AUTOINIT;
     // Disable SIGPIPE
     signal(SIGPIPE, SIG_IGN);
-    ros::Time::init();
     network::init(remappings);
     master::init(remappings);
     // names:: namespace is initialized by this_node

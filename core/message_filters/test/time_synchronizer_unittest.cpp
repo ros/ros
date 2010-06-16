@@ -543,6 +543,7 @@ int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "blah");
 
+  ros::Time::init();
   ros::Time::setNow(ros::Time());
 
   return RUN_ALL_TESTS();

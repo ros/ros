@@ -72,7 +72,7 @@ static bool g_stopped(false);
 static boost::mutex g_sim_time_mutex;
 
 static bool g_initialized(false);
-static bool g_use_sim_time(false);
+static bool g_use_sim_time(true);
 static Time g_sim_time(0, 0);
 
 void getWallTime(uint32_t& sec, uint32_t& nsec)
@@ -204,7 +204,7 @@ bool Time::waitForValid()
 bool Time::waitForValid(const ros::WallDuration& timeout)
 {
   ros::WallTime start = ros::WallTime::now();
-  while (!isValid())
+  while (!isValid() && !g_stopped)
   {
     ros::WallDuration(0.01).sleep();
 
@@ -212,6 +212,11 @@ bool Time::waitForValid(const ros::WallDuration& timeout)
     {
       return false;
     }
+  }
+
+  if (g_stopped)
+  {
+    return false;
   }
 
   return true;

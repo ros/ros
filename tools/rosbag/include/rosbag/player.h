@@ -70,6 +70,7 @@ struct PlayerOptions
     bool     has_time;
     bool     loop;
     float    time;
+    bool     keep_alive;
 
     std::vector<std::string> bags;
 };
@@ -152,8 +153,9 @@ private:
 
     void doPublish(rosbag::MessageInstance const& m);
 
+    void doKeepAlive();
+
     void printTime();
-    
 
 
 private:

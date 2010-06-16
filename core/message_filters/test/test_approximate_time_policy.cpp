@@ -537,9 +537,7 @@ TEST(ApproxTimeSync, RateBound) {
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "blah");
-
-  printf("Preparing to test\n");
-
+  ros::Time::init();
 
   return RUN_ALL_TESTS();
 }

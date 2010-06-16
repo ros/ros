@@ -1,0 +1,9 @@
+<launch>
+  <node name="player" pkg="rosbag" type="rosbag" args="play $(find rosbag)/test/chatter_50hz.bag"/>
+  <test test-name="rosbag_play_hztest" pkg="rostest" type="hztest">
+    <param name="topic" value="chatter"/>
+    <param name="hz" value="50.0"/>
+    <param name="hzerror" value="5"/>
+    <param name="test_duration" value="7.0" />
+  </test>
+</launch>

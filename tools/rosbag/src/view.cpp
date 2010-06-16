@@ -266,21 +266,24 @@ void View::updateQueries(BagQuery* q) {
           }
         }
 
-        // todo: make faster with a map of maps
-        bool found = false;
-        for (vector<MessageRange*>::iterator k = ranges_.begin(); k != ranges_.end(); k++) {
-            MessageRange* r = *k;
-
-            // If the topic and query are already in our ranges, we update
-            if (r->bag_query == q && r->connection_info->id == connection->id) {
-                r->begin = begin;
-                r->end   = end;
-                found    = true;
-                break;
+        if (begin != end)
+        {
+            // todo: make faster with a map of maps
+            bool found = false;
+            for (vector<MessageRange*>::iterator k = ranges_.begin(); k != ranges_.end(); k++) {
+                MessageRange* r = *k;
+                
+                // If the topic and query are already in our ranges, we update
+                if (r->bag_query == q && r->connection_info->id == connection->id) {
+                    r->begin = begin;
+                    r->end   = end;
+                    found    = true;
+                    break;
+                }
             }
+            if (!found)
+                ranges_.push_back(new MessageRange(begin, end, connection, q));
         }
-        if (!found)
-        	ranges_.push_back(new MessageRange(begin, end, connection, q));
     }
 
     view_revision_++;

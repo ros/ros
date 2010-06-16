@@ -233,7 +233,7 @@ class BuildQueue:
         for p in self.to_build:
           dependencies_met = True
           for d in self.dependency_tracker.get_deps(p):
-            if d not in self.built:
+            if d not in self.built and not (self.robust_build and d in self.failed):
               dependencies_met = False
               #print "Dependency %s not met for %s"%(d, p)
               break

@@ -62,10 +62,11 @@ namespace rosbag {
 class OutgoingMessage
 {
 public:
-    OutgoingMessage(std::string const& _topic, topic_tools::ShapeShifter::ConstPtr _msg, ros::Time _time);
+    OutgoingMessage(std::string const& _topic, topic_tools::ShapeShifter::ConstPtr _msg, boost::shared_ptr<ros::M_string> _connection_header, ros::Time _time);
 
     std::string                         topic;
     topic_tools::ShapeShifter::ConstPtr msg;
+    boost::shared_ptr<ros::M_string>    connection_header;
     ros::Time                           time;
 };
 
@@ -105,7 +106,7 @@ struct RecorderOptions
 class Recorder
 {
 public:
-	Recorder(RecorderOptions const& options);
+    Recorder(RecorderOptions const& options);
 
     void doTrigger();
 
@@ -116,7 +117,7 @@ public:
     int run();
 
 private:
-	void printUsage();
+    void printUsage();
 
     void updateFilenames();
     void startWriting();
@@ -127,23 +128,24 @@ private:
     bool checkDisk();
 
     void snapshotTrigger(std_msgs::Empty::ConstPtr trigger);
-    void doQueue(topic_tools::ShapeShifter::ConstPtr msg, std::string const& topic, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
-	void doRecord();
-	void doRecordSnapshotter();
-	void doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_handle);
+    //    void doQueue(topic_tools::ShapeShifter::ConstPtr msg, std::string const& topic, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
+    void doQueue(ros::MessageEvent<topic_tools::ShapeShifter const> msg_event, std::string const& topic, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
+    void doRecord();
+    void doRecordSnapshotter();
+    void doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_handle);
 
-	bool shouldSubscribeToTopic(std::string const& topic);
+    bool shouldSubscribeToTopic(std::string const& topic);
 
-	template<class T>
-	static std::string timeToStr(T ros_t);
+    template<class T>
+    static std::string timeToStr(T ros_t);
 
 private:
-	RecorderOptions               options_;
+    RecorderOptions               options_;
 
-	Bag                           bag_;
+    Bag                           bag_;
 
-	std::string                   target_filename_;
-	std::string                   write_filename_;
+    std::string                   target_filename_;
+    std::string                   write_filename_;
 
     std::set<std::string>         currently_recording_;  //!< set of currenly recording topics
     int                           num_subscribers_;      //!< used for book-keeping of our number of subscribers
@@ -152,15 +154,15 @@ private:
 
     boost::condition_variable_any queue_condition_;      //!< conditional variable for queue
     boost::mutex                  queue_mutex_;          //!< mutex for queue
-	std::queue<OutgoingMessage>*  queue_;                //!< queue for storing
-	uint64_t                      queue_size_;           //!< queue size
-	uint64_t                      max_queue_size_;       //!< max queue size
+    std::queue<OutgoingMessage>*  queue_;                //!< queue for storing
+    uint64_t                      queue_size_;           //!< queue size
+    uint64_t                      max_queue_size_;       //!< max queue size
 
-	uint64_t                      split_count_;          //!< split count
+    uint64_t                      split_count_;          //!< split count
 
-	std::queue<OutgoingQueue>     queue_queue_;          //!< queue of queues to be used by the snapshot recorders
+    std::queue<OutgoingQueue>     queue_queue_;          //!< queue of queues to be used by the snapshot recorders
 
-	ros::Time                     last_buffer_warn_;
+    ros::Time                     last_buffer_warn_;
 
     bool          writing_enabled_;
     boost::mutex  check_disk_mutex_;

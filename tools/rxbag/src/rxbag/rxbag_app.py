@@ -101,8 +101,8 @@ class RxBagApp(wx.App):
 
         except Exception, ex:
             print >> sys.stderr, 'Error initializing application:', ex
-            import traceback
-            traceback.print_exc()
+            #import traceback
+            #traceback.print_exc()
             return False
 
         return True

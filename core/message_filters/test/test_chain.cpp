@@ -181,7 +181,7 @@ TEST(Chain, retrieveBaseClass)
 int main(int argc, char **argv){
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "blah");
-
+  ros::Time::init();
   return RUN_ALL_TESTS();
 }
 

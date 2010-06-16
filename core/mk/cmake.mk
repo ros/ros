@@ -24,7 +24,6 @@ clean:
 	-cd build && make clean
 	rm -rf msg_gen srv_gen msg/cpp msg/lisp msg/oct msg/java srv/cpp srv/lisp srv/oct srv/java src/$(PACKAGE_NAME)/msg src/$(PACKAGE_NAME)/srv
 	rm -rf build
-	rm .project .cproject
 
 # All other targets are just passed through
 test: all

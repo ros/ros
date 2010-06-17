@@ -167,9 +167,9 @@ class RxBagInitThread(threading.Thread):
             except Exception, ex:
                 print >> sys.stderr, 'Error loading [%s]: %s' % (input_file, str(ex))
 
-            self.timeline.loading_filename = None
-
             self.timeline.add_bag(bag)
+
+            self.timeline.loading_filename = None
 
         if self.app.options.start:
             playhead = self.timeline.start_stamp + rospy.Duration.from_sec(self.app.options.start)

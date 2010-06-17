@@ -987,8 +987,9 @@ class Timeline(wx.Window):
         event.Skip()
 
     def on_idle(self, event):
-        self._step_playhead()
-        event.RequestMore()
+        if self.play_speed != 0.0:
+            self._step_playhead()
+            event.RequestMore()
 
     def on_size(self, event):
         self.Position = (0, 0)

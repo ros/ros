@@ -531,6 +531,8 @@ class Timeline(wx.Window):
                     listener.timeline_changed()
                 except wx.PyDeadObjectError:
                     self.remove_listener(topic, listener)
+                except Exception, ex:
+                    print >> sys.stderr, 'Error calling timeline_changed on %s: %s' % (type(listener), str(ex))
 
     ## Timeline info
 
@@ -1938,6 +1940,8 @@ class MessageListenerThread(threading.Thread):
                     self.listener.message_cleared()
             except wx.PyDeadObjectError:
                 self.timeline.remove_listener(self.topic, self.listener)
+            except Exception, ex:
+                print >> sys.stderr, 'Error notifying listener %s: %s' % (type(self.listener), str(ex))
 
     def stop(self):
         self._stop_flag = True

@@ -1818,7 +1818,6 @@ class IndexCacheThread(threading.Thread):
         cv = self.timeline.index_cache_cv
         with cv:
             cv.notify()
-        self.join()
 
 class MessageLoader(threading.Thread):
     """
@@ -1897,7 +1896,6 @@ class MessageLoader(threading.Thread):
         cv = self.timeline._playhead_positions_cvs[self.topic]
         with cv:
             cv.notify_all()
-        self.join()
 
 class MessageListenerThread(threading.Thread):
     """
@@ -1946,4 +1944,3 @@ class MessageListenerThread(threading.Thread):
         cv = self.timeline._messages_cvs[self.topic]
         with cv:
             cv.notify_all()
-        self.join()

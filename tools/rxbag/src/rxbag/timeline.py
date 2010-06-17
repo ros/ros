@@ -179,6 +179,8 @@ class Timeline(wx.Window):
         self._bag_lock = threading.RLock()
         self._bags     = []
 
+        self._loading_filename = None
+
         self._start_stamp        = None
         self._end_stamp          = None
         self._topics             = []
@@ -286,6 +288,16 @@ class Timeline(wx.Window):
 
     @property
     def frame(self): return wx.GetApp().GetTopWindow()
+
+    # property: loading_filename
+
+    def _get_loading_filename(self): return self._loading_filename
+    
+    def _set_loading_filename(self, loading_filename):
+        self._loading_filename = loading_filename
+        wx.CallAfter(self._update_title)
+
+    loading_filename = property(_get_loading_filename, _set_loading_filename)
 
     ## Visual
 
@@ -950,16 +962,21 @@ class Timeline(wx.Window):
 
     def _update_title(self):
         title = 'rxbag'
+
         if self._recorder:
             if self._recorder.paused:
                 title += ' - %s [recording paused]' % self._bags[0].filename
             else:
                 title += ' - %s [recording]' % self._bags[0].filename
+
         elif len(self.bags) > 0:
             if len(self.bags) == 1:
                 title += ' - ' + self._bags[0].filename
             else:
                 title += ' - [%d bags]' % len(self._bags)
+
+        if self._loading_filename is not None:
+            title += ' - loading %s...' % self._loading_filename
         
         self.frame.Title = title
 

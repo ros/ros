@@ -104,7 +104,8 @@ def main():
             print " ".join(command)
             started = time.time()
             try:
-                Popen(command, stdout=PIPE).communicate()
+                (stdoutdata, _) = Popen(command, stdout=PIPE).communicate()
+                print stdoutdata
             except:
                 print "command failed"
             print "rosmake took %ds" % (time.time() - started)

@@ -94,7 +94,7 @@ class Printer:
             self.status = ""
             self.verbose = False
             self.full_verbose = False
-            self.duration = 1./5.
+            self.duration = 1./10.
             self._last_status = None
 
             # Rosmake specific data
@@ -125,7 +125,7 @@ class Printer:
                     self.running = False
                     break
                 self.set_status_from_cache()
-                if len(self.status) > 0:
+                if len(self.pkg_start_times.keys()) > 0:
                     n = self.terminal_width() - len(self.status)
                     status = self.status
                     if n > 0:
@@ -169,18 +169,17 @@ class Printer:
 
         def print_all(self, s, thread_name=None):
             if thread_name is None:
-                sys.stdout.write("[ rosmake ] %s\n"%s)
-                sys.stdout.flush()
+                str = "[ rosmake ] %s"%s
+                
+
             else:
-                sys.stdout.write("[rosmake-%s] %s\n"%(thread_name, s))
-                sys.stdout.flush()
+                str = "[rosmake-%s] %s"%(thread_name, s)
+            sys.stdout.write(self.pad_str_to_width(str, self.terminal_width())+"\n")
+            sys.stdout.flush()
 
         def print_verbose(self, s, thread_name=None):
             if self.verbose or self.full_verbose:
-              if thread_name:
                 self.print_all(s, thread_name=thread_name)
-              else:
-                print "[ rosmake ] %s"%s
 
         def print_full_verbose(self, s):
             if self.full_verbose:
@@ -202,7 +201,7 @@ class Printer:
             print "-"*79 + "}"
 
         def _print_status(self, s):
-            sys.stdout.write("\r%s"%(s))
+            sys.stdout.write("%s\r"%(s))
             sys.stdout.flush()
 
         @staticmethod
@@ -226,6 +225,14 @@ class Printer:
 
             return width
 
+        @staticmethod
+        def pad_str_to_width(str, width):
+            """ Pad the string to be terminal width"""
+            length = len(str)
+            excess = 0
+            if length < width:
+                excess = width - length
+            return str + " "* excess
 
 
 

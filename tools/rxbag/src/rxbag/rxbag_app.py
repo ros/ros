@@ -163,11 +163,9 @@ class RxBagInitThread(threading.Thread):
             self.timeline.loading_filename = input_file               
 
             try:
-                bag = rosbag.Bag(input_file)
+                self.timeline.add_bag(rosbag.Bag(input_file))
             except Exception, ex:
                 print >> sys.stderr, 'Error loading [%s]: %s' % (input_file, str(ex))
-
-            self.timeline.add_bag(bag)
 
             self.timeline.loading_filename = None
 

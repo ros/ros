@@ -30,7 +30,8 @@ from __future__ import with_statement
 import os.path
 import roslib.os_detect
 import subprocess
-import base_rosdep
+
+import rosdep.base_rosdep
 
 # Determine whether package p needs to be installed
 def equery_detect(p):
@@ -53,7 +54,7 @@ def equery_available():
 
 
 ###### Gentoo SPECIALIZATION #########################
-class Gentoo(roslib.os_detect.Gentoo, base_rosdep.RosdepBaseOS):
+class Gentoo(roslib.os_detect.Gentoo, rosdep.base_rosdep.RosdepBaseOS):
     def strip_detected_packages(self, packages):
         if equery_available():
             return [p for p in packages if equery_detect(p)]

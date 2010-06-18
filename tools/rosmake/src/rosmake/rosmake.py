@@ -145,7 +145,7 @@ class Printer:
         def rosmake_pkg_times_to_string(self, start_times):
             threads = []
             for p, t in sorted(start_times.iteritems(), key=itemgetter(1)):
-                threads.append("[ %s: %.2f sec ]"%(p, time.time() - t))
+                threads.append("[ %s: %.1f sec ]"%(p, time.time() - t))
 
             return " ".join(threads)
 

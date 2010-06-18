@@ -99,7 +99,8 @@ def main():
                     ctx.has_builder(package, 'rosmake')):
                     to_rosmake.append(package)
         if to_rosmake != []:
-            command = ['rosmake', '--status-rate=0'] + to_rosmake
+            # command = ['rosmake', '--status-rate=0'] + to_rosmake
+            command = ['rosmake'] + to_rosmake
             print " ".join(command)
             started = time.time()
             try:

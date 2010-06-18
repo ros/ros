@@ -299,10 +299,13 @@ class RosMakeAll:
         """
         try:
             r = rosdep.core.Rosdep(packages, robust=True)
-            r.install(include_duplicates=False, default_yes=default_yes);
-            return None
+            error = r.install(include_duplicates=False, default_yes=default_yes)
+            if not error:
+                return None
+            else:
+                return "%s"%error
         except rosdep.core.RosdepException, e:
-            return "rosdep install FAILED: %s"%e
+            return "%s"%e
         except roslib.exceptions.ROSLibException, ex:
             return "%s"%ex
 
@@ -482,7 +485,7 @@ class RosMakeAll:
         self.printer.print_all("Summary output to directory")
         self.printer.print_all("%s"%self.log_dir)
         if self.rosdep_install_result:
-            self.printer.print_all("ERROR: Rosdep installation failed with exception: %s"%self.rosdep_install_result)
+            self.printer.print_all("ERROR: Rosdep installation failed with error: %s"%self.rosdep_install_result)
         if self.rosdep_check_result:
             self.printer.print_all("WARNING: Rosdep did not detect the following system dependencies as installed: %s Consider using --rosdep-install option or `rosdep install %s`"%(self.rosdep_check_result, ' '.join(self.specified_packages)))
         if self.rejected_packages:
@@ -827,8 +830,10 @@ class RosMakeAll:
             self.rosdep_install_result = self.install_rosdeps(buildable_packages, options.rosdep_yes)
             if self.rosdep_install_result:
                 self.printer.print_all( "rosdep install failed: %s"%self.rosdep_install_result)
+                return False
             else:
                 self.printer.print_all("rosdep successfully installed all system dependencies")
+
 
         elif not options.rosdep_disabled:
             self.printer.print_all("Checking rosdeps compliance for packages %s.  This may take a few seconds."%(', '.join(packages)))

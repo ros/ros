@@ -379,8 +379,15 @@ class Rosdep:
             fh.flush()
             
             print "executing this script:\n %s"%script
-            p= subprocess.Popen(['bash', fh.name])
-            p.communicate()
+            p= subprocess.Popen(['bash', fh.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+            (out, err) = p.communicate()
+            if p.returncode != 0:
+                if err:
+                    return err
+                else:
+                    return "rosdep script failed"
+            else:
+                return None
                     
     def depdb(self, packages):
         output = "Rosdep dependencies for operating system %s version %s "%(self.osi.get_name(), self.osi.get_version())

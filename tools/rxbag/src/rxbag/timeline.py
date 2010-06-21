@@ -614,7 +614,7 @@ class Timeline(wx.Window):
 
     def get_entries_with_bags(self, topic, start_stamp, end_stamp):
         with self._bag_lock:
-            from rosbag import bag
+            from rosbag import bag   # for _mergesort
 
             bag_entries = []
             bag_by_iter = {}
@@ -978,7 +978,7 @@ class Timeline(wx.Window):
                 title += ' - [%d bags]' % len(self._bags)
 
         if self._loading_filename is not None:
-            title += ' - loading %s...' % self._loading_filename
+            title += ' - Loading %s...' % self._loading_filename
         
         self.frame.Title = title
 

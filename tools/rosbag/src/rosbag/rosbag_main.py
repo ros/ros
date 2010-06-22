@@ -643,7 +643,7 @@ class RosbagCmds(UserDict.UserDict):
             print >> sys.stderr
             print >> sys.stderr, self.get_valid_cmds()
 
-class ProgressMeter:
+class ProgressMeter(object):
     def __init__(self, path, bytes_total, refresh_rate=1.0):
         self.path           = path
         self.bytes_total    = bytes_total

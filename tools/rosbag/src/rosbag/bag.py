@@ -229,7 +229,7 @@ class Bag(object):
         @param raw: if True, then generate tuples of (datatype, data, md5sum, position, pytype)
         @type  raw: bool
         @return: generator of (topic, message, timestamp) tuples for each message in the bag file
-        @rtype: generator of tuples of (topic, message, timestamp)
+        @rtype:  generator of tuples of (topic, message, timestamp)
         """
         self.flush()
 
@@ -668,10 +668,32 @@ class Bag(object):
 
             obj = DictObject(yaml.load(s))
             try:
-                return eval('obj.' + key)
+                val = eval('obj.' + key)
             except Exception, ex:
                 print >> sys.stderr, 'Error getting key "%s"' % key
                 return None
+
+            def print_yaml(val, indent=0):
+            	indent_str = '  ' * indent
+            	
+                if type(val) is list:
+                    s = ''
+                    for item in val:
+                        s += '%s- %s\n' % (indent_str, print_yaml(item, indent + 1))
+                    return s
+                elif type(val) is DictObject:
+                    s = ''
+                    for i, (k, v) in enumerate(val.__dict__.items()):
+                    	if i != 0:
+                    		s += indent_str
+                        s += '%s: %s' % (k, str(v))
+                        if i < len(val.__dict__) - 1:
+                        	s += '\n'
+                    return s
+                else:
+                    return indent_str + str(val)
+
+            return print_yaml(val)
 
         except Exception, ex:
             raise
@@ -728,7 +750,7 @@ class Bag(object):
 
     def _get_entry(self, t, connections=None):
         """
-        Return the first index entry on/before the timestamp on the given connections.
+        Return the first index entry on/before the given time on the given connections
         """
         indexes = self._get_indexes(connections)
 
@@ -742,12 +764,12 @@ class Bag(object):
                 index_entry = index[i]
                 if first_entry is None or index_entry > first_entry:
                     first_entry = index_entry
-                    
+
         return first_entry
     
     def _get_entry_after(self, t, connections=None):
         """
-        Return the first index entry after the timestamp on the given connections.
+        Return the first index entry after the given time on the given connections
         """
         indexes = self._get_indexes(connections)
 
@@ -756,7 +778,7 @@ class Bag(object):
         first_entry = None
 
         for index in indexes:
-            i = bisect.bisect_right(index, entry)
+            i = bisect.bisect_right(index, entry) 
             if i <= len(index) - 1:
                 index_entry = index[i]
                 if first_entry is None or index_entry < first_entry:

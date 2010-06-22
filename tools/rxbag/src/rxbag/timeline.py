@@ -203,6 +203,9 @@ class Timeline(wx.Window):
         self._messages                 = {}                  # topic -> (bag, msg_data)
         self._message_listener_threads = {}                  # listener -> MessageListenerThread
 
+        self.background_task        = None
+        self.background_task_cancel = False
+
         self._views = []
 
         self._listeners = {}
@@ -327,6 +330,9 @@ class Timeline(wx.Window):
     ##
 
     def _close(self):
+        if self.background_task is not None:
+            self.background_task_cancel = True
+
         for renderer in self._timeline_renderers.values(): 
             renderer.close()
 
@@ -403,7 +409,20 @@ class Timeline(wx.Window):
             wx.CallAfter(self.frame.ToolBar._setup)
             self._update_title()
 
-    ### Export
+    ### Copy messages to...
+
+    def start_background_task(self, background_task):
+        if self.background_task is not None:
+            dialog = wx.MessageDialog(None, 'Background operation already running:\n\n%s' % self.background_task, 'Exclamation', wx.OK | wx.ICON_EXCLAMATION)
+            dialog.ShowModal()
+            return False
+
+        self.background_task        = background_task
+        self.background_task_cancel = False
+        return True
+
+    def stop_background_task(self):
+        self.background_task = None
 
     def copy_region_to_bag(self):
         dialog = wx.FileDialog(self, 'Copy messages to...', wildcard='Bag files (*.bag)|*.bag', style=wx.FD_SAVE)
@@ -412,7 +431,15 @@ class Timeline(wx.Window):
         dialog.Destroy()
 
     def _export_region(self, path, topics, start_stamp, end_stamp):
+        if not self.start_background_task('Copying messages to "%s"' % path):
+            return
+
+        wx.CallAfter(self.frame.StatusBar.gauge.Show)
+
         bag_entries = list(self.get_entries_with_bags(topics, start_stamp, end_stamp))
+
+        if self.background_task_cancel:
+            return
 
         # Get the total number of messages to copy
         total_messages = len(bag_entries)
@@ -420,21 +447,22 @@ class Timeline(wx.Window):
         # If no messages, prompt the user and return
         if total_messages == 0:
             wx.MessageDialog(None, 'No messages found', 'rxbag', wx.OK | wx.ICON_EXCLAMATION).ShowModal()
+            wx.CallAfter(self.frame.StatusBar.gauge.Hide)
             return
         
         # Open the path for writing
         try:
             export_bag = rosbag.Bag(path, 'w')
         except Exception, ex:
-            print >> sys.stderr, 'Error opening bag file [%s] for writing' % path
+            wx.MessageDialog(None, 'Error opening bag file [%s] for writing' % path, 'rxbag', wx.OK | wx.ICON_EXCLAMATION).ShowModal()
+            wx.CallAfter(self.frame.StatusBar.gauge.Hide)
+            return
 
         # Run copying in a background thread
         self._export_thread = threading.Thread(target=self._run_export_region, args=(export_bag, topics, start_stamp, end_stamp, bag_entries))
         self._export_thread.start()
 
     def _run_export_region(self, export_bag, topics, start_stamp, end_stamp, bag_entries):
-        #self._keep_exporting = True
-
         total_messages = len(bag_entries)
         
         update_step = max(1, total_messages / 100)
@@ -443,9 +471,14 @@ class Timeline(wx.Window):
 
         progress = 0
 
-        wx.CallAfter(self.frame.StatusBar.gauge.Show)
+        def update_progress(v):
+            self.frame.StatusBar.progress = v
 
+        # Write out the messages
         for bag, entry in bag_entries:
+            if self.background_task_cancel:
+                break
+
             try:
                 topic, msg, t = self.read_message(bag, entry.position)
                 export_bag.write(topic, msg, t)
@@ -453,22 +486,24 @@ class Timeline(wx.Window):
                 print >> sys.stderr, 'Error exporting message at position %s: %s' % (str(entry.position), str(ex))
 
             if message_num % update_step == 0 or message_num == total_messages:
-                def update_progress(v):
-                    self.frame.StatusBar.progress = v
-
                 new_progress = int(100.0 * (float(message_num) / total_messages))
                 if new_progress != progress:
                     progress = new_progress
-                    wx.CallAfter(update_progress, progress)
+                    if not self.background_task_cancel:
+                        wx.CallAfter(update_progress, progress)
 
             message_num += 1
 
+        # Close the bag
         try:
             export_bag.close()
         except Exception, ex:
-            print >> sys.stderr, 'Error closing bag file [%s]: %s' % (export_bag.filename, str(ex))
+            wx.MessageDialog(None, 'Error closing bag file [%s]: %s' % (export_bag.filename, str(ex)), 'rxbag', wx.OK | wx.ICON_EXCLAMATION).ShowModal()
 
-        wx.CallAfter(self.frame.StatusBar.gauge.Hide)
+        if not self.background_task_cancel:
+            wx.CallAfter(self.frame.StatusBar.gauge.Hide)
+
+        self.stop_background_task()
 
     ### Publishing
 
@@ -983,7 +1018,16 @@ class Timeline(wx.Window):
         self.frame.Title = title
 
     def on_close(self, event):
+        if self.background_task is not None:
+            dialog = wx.MessageDialog(None, 'Background operation running:\n\n%s\n\nQuit anyway?' % self.background_task, 'Question', wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+            result = dialog.ShowModal()
+            dialog.Destroy()
+            if result == wx.ID_NO:
+                event.Veto()
+                return
+
         self._close()
+
         event.Skip()
 
     def on_idle(self, event):

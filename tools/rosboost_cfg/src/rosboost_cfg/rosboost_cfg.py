@@ -154,7 +154,10 @@ def find_versions(search_paths):
     return vers
   
 def find_boost(search_paths):
-    return find_versions(search_paths)[-1]
+    result = find_versions(search_paths)
+    if result is None:
+      return None
+    return result[-1]
 
 def search_paths(sysroot):
     _search_paths = [(sysroot+'/usr', True), 
@@ -303,6 +306,10 @@ def main():
        
     ver = find_boost(search_paths(options.sysroot))
     
+    if (ver is None):
+        raise BoostError("Cannot find boost in any of %s"%search_paths())
+        sys.exit(0)
+    
     if (options.version):
         check_one_option(options, 'version')
         print '%s.%s.%s root=%s include_dir=%s'%(ver.major, ver.minor, ver.patch, ver.root, ver.include_dir)
@@ -310,10 +317,6 @@ def main():
     
     if (ver.major < 1 or (ver.major == 1 and ver.minor < 37)):
         raise BoostError('Boost version %s.%s.%s does not meet the minimum requirements of boost 1.37.0'%(ver.major, ver.minor, ver.patch))
-    
-    if (ver is None):
-        print >> stderr, "Cannot find boost in any of %s"%search_paths()
-        sys.exit(0)
     
     
 

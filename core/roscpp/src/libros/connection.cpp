@@ -142,6 +142,8 @@ void Connection::readTransport()
         {
           callback(shared_from_this(), read_buffer_, size, false);
         }
+
+        break;
       }
 
       read_filled_ += bytes_read;

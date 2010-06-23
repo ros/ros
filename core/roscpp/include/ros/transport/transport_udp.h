@@ -39,7 +39,6 @@
 #include <ros/transport/transport.h>
 
 #include <boost/thread/mutex.hpp>
-#include <boost/random.hpp>
 
 #include <netinet/in.h>
 
@@ -103,17 +102,14 @@ public:
    */
   int getServerPort() const {return server_port_;}
 
-  /**
-   * \brief Get a unique connection ID
-   */
-  int generateConnectionId() {return gen_();}
-
   // overrides from Transport
   virtual int32_t read(uint8_t* buffer, uint32_t size);
   virtual int32_t write(uint8_t* buffer, uint32_t size);
 
   virtual void enableWrite();
   virtual void disableWrite();
+  virtual void enableRead();
+  virtual void disableRead();
 
   virtual void close();
 
@@ -138,11 +134,6 @@ private:
    */
   bool setSocket(int sock);
 
-  /**
-   * \brief Enables reading on our socket
-   */
-  void enableRead();
-
   void socketUpdate(int events);
 
   int sock_;
@@ -161,14 +152,16 @@ private:
   PollSet* poll_set_;
   int flags_;
 
-  boost::rand48 gen_;
-
   uint32_t connection_id_;
   uint8_t current_message_id_;
   uint16_t total_blocks_;
   uint16_t last_block_;
 
   uint32_t max_datagram_size_;
+
+  uint8_t* data_buffer_;
+  uint8_t* data_start_;
+  uint32_t data_filled_;
 
   uint8_t *reorder_buffer_;
   TransportUDPHeader reorder_header_;

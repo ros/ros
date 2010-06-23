@@ -82,6 +82,15 @@ public:
   virtual void disableWrite() = 0;
 
   /**
+   * \brief Enable reading on this transport.  Allows derived classes to, for example, enable read polling for asynchronous sockets
+   */
+  virtual void enableRead() = 0;
+  /**
+   * \brief Disable reading on this transport.  Allows derived classes to, for example, disable read polling for asynchronous sockets
+   */
+  virtual void disableRead() = 0;
+
+  /**
    * \brief Close this transport.  Once this call has returned, writing on this transport should always return an error.
    */
   virtual void close() = 0;

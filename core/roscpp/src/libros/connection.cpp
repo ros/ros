@@ -47,7 +47,6 @@ namespace ros
 Connection::Connection()
 : is_server_(false)
 , dropped_(false)
-, fixed_read_filled_(0)
 , read_filled_(0)
 , read_size_(0)
 , reading_(false)
@@ -115,56 +114,41 @@ void Connection::readTransport()
 
   reading_ = true;
 
-  if (fixed_read_filled_ < READ_BUFFER_SIZE)
+  while (!dropped_ && has_read_callback_)
   {
-    int32_t bytes_read = transport_->read(fixed_read_buffer_ + fixed_read_filled_, READ_BUFFER_SIZE - fixed_read_filled_);
-    ROS_DEBUG_NAMED("superdebug", "Connection read %d bytes", bytes_read);
-    if (dropped_)
+    ROS_ASSERT(read_buffer_);
+    uint32_t to_read = read_size_ - read_filled_;
+    if (to_read > 0)
     {
-      return;
+      int32_t bytes_read = transport_->read(read_buffer_.get() + read_filled_, to_read);
+      ROS_DEBUG_NAMED("superdebug", "Connection read %d bytes", bytes_read);
+      if (dropped_)
+      {
+        return;
+      }
+      else if (bytes_read < 0)
+      {
+        // Bad read, throw away results and report error
+        ReadFinishedFunc callback;
+        callback = read_callback_;
+        read_callback_.clear();
+        read_buffer_.reset();
+        uint32_t size = read_size_;
+        read_size_ = 0;
+        read_filled_ = 0;
+        has_read_callback_ = 0;
+
+        if (callback)
+        {
+          callback(shared_from_this(), read_buffer_, size, false);
+        }
+      }
+
+      read_filled_ += bytes_read;
     }
-    else if (bytes_read < 0)
-    {
-      reading_ = false;
 
-      // Bad read, throw away results and report error
-      ReadFinishedFunc callback;
-      callback = read_callback_;
-      read_callback_ = ReadFinishedFunc();
-      read_buffer_ = boost::shared_array<uint8_t>();
-      uint32_t size = read_size_;
-      read_size_ = 0;
-      read_filled_ = 0;
-      has_read_callback_ = 0;
-      fixed_read_filled_ = 0;
-
-      if (callback)
-        callback(shared_from_this(), read_buffer_, size, false);
-      return;
-    }
-
-    fixed_read_filled_ += bytes_read;
-  }
-  else
-  {
-    if (has_read_callback_)
-    {
-      ROS_WARN("Connection read buffer filled with no read callback set");
-    }
-  }
-
-  while (has_read_callback_ && (fixed_read_filled_ > 0 || read_size_ == 0) && !dropped_)
-  {
     ROS_ASSERT((int)read_size_ >= 0);
     ROS_ASSERT((int)read_filled_ >= 0);
-
-    uint32_t write_amount = std::min(read_size_ - read_filled_, fixed_read_filled_);
-    ROS_DEBUG_NAMED("superdebug", "Copying %d bytes into read buffer", write_amount);
-    memcpy(read_buffer_.get() + read_filled_, fixed_read_buffer_, write_amount);
-    memmove(fixed_read_buffer_, fixed_read_buffer_ + write_amount, fixed_read_filled_ - write_amount);
-    fixed_read_filled_ -= write_amount;
-    read_filled_ += write_amount;
-
     ROS_ASSERT(read_filled_ <= read_size_);
 
     if (read_filled_ == read_size_ && !dropped_)
@@ -179,8 +163,8 @@ void Connection::readTransport()
       callback = read_callback_;
       size = read_size_;
       buffer = read_buffer_;
-      read_callback_ = ReadFinishedFunc();
-      read_buffer_ = boost::shared_array<uint8_t>();
+      read_callback_.clear();
+      read_buffer_.reset();
       read_size_ = 0;
       read_filled_ = 0;
       has_read_callback_ = 0;
@@ -188,6 +172,15 @@ void Connection::readTransport()
       ROS_DEBUG_NAMED("superdebug", "Calling read callback");
       callback(shared_from_this(), buffer, size, true);
     }
+    else
+    {
+      break;
+    }
+  }
+
+  if (!has_read_callback_)
+  {
+    transport_->disableRead();
   }
 
   reading_ = false;
@@ -282,6 +275,8 @@ void Connection::read(uint32_t size, const ReadFinishedFunc& callback)
     read_filled_ = 0;
     has_read_callback_ = 1;
   }
+
+  transport_->enableRead();
 
   // read immediately if possible
   readTransport();

@@ -132,7 +132,7 @@ bool TransportTCP::initializeSocket()
 
   if (!(flags_ & SYNCHRONOUS))
   {
-    enableRead();
+    //enableRead();
   }
 
   return true;
@@ -314,6 +314,11 @@ bool TransportTCP::listen(int port, int backlog, const AcceptCallback& accept_cb
     return false;
   }
 
+  if (!(flags_ & SYNCHRONOUS))
+  {
+    enableRead();
+  }
+
   return true;
 }
 
@@ -447,6 +452,26 @@ void TransportTCP::enableRead()
   {
     poll_set_->addEvents(sock_, POLLIN);
     expecting_read_ = true;
+  }
+}
+
+void TransportTCP::disableRead()
+{
+  ROS_ASSERT(!(flags_ & SYNCHRONOUS));
+
+  {
+    boost::recursive_mutex::scoped_lock lock(close_mutex_);
+
+    if (closed_)
+    {
+      return;
+    }
+  }
+
+  if (expecting_read_)
+  {
+    poll_set_->delEvents(sock_, POLLIN);
+    expecting_read_ = false;
   }
 }
 

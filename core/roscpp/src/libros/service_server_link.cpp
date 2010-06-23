@@ -177,6 +177,7 @@ void ServiceServerLink::onConnectionDropped(const ConnectionPtr& conn)
 
 void ServiceServerLink::onRequestWritten(const ConnectionPtr& conn)
 {
+  //ros::WallDuration(0.1).sleep();
   connection_->read(5, boost::bind(&ServiceServerLink::onResponseOkAndLength, this, _1, _2, _3, _4));
 }
 
@@ -321,6 +322,8 @@ bool ServiceServerLink::call(const SerializedMessage& req, SerializedMessage& re
   info->finished_ = false;
   info->call_finished_ = false;
   info->caller_thread_id_ = boost::this_thread::get_id();
+
+  //ros::WallDuration(0.1).sleep();
 
   bool immediate = false;
   {

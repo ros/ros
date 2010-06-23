@@ -64,12 +64,12 @@ from timeline_status_bar import TimelineStatusBar, PlayheadChangedEvent, EVT_PLA
 from timeline_toolbar    import TimelineToolBar
 
 class _SelectionMode(object):
-    NONE        = 0    # no region marked or started
-    LEFT_MARKED = 1    # one end of the region has been marked
-    MARKED      = 2    # region has been marked
-    SHIFTING    = 3    # region is marked; now shifting
-    MOVE_LEFT   = 4    # region is marked; changing the left mark
-    MOVE_RIGHT  = 5    # region is marked; changing the right mark
+    NONE        = 'none'          # no region marked or started
+    LEFT_MARKED = 'left marked'   # one end of the region has been marked
+    MARKED      = 'marked'        # region has been marked
+    SHIFTING    = 'shifting'      # region is marked; now shifting
+    MOVE_LEFT   = 'move left'     # region is marked; changing the left mark
+    MOVE_RIGHT  = 'move right'    # region is marked; changing the right mark
 
 class Timeline(wx.Window):
     def __init__(self, *args, **kwargs):
@@ -326,6 +326,14 @@ class Timeline(wx.Window):
 
     @property
     def selected_right(self): return self._selected_right
+
+    # property: selecting_mode
+    
+    def _get_selecting_mode(self): return self._selecting_mode
+    
+    def _set_selecting_mode(self, selecting_mode): self._selecting_mode = selecting_mode
+
+    selecting_mode = property(_get_selecting_mode, _set_selecting_mode)
 
     ##
 
@@ -1646,6 +1654,8 @@ class Timeline(wx.Window):
                     self.playhead = rospy.Time(0, 1)
                 else:
                     self.playhead = rospy.Time.from_sec(playhead_secs)
+
+                #self._selecting_mode = _SelectionMode.MARKED
                 
                 self.Refresh()
                     
@@ -1655,7 +1665,7 @@ class Timeline(wx.Window):
                 if self._selecting_mode == _SelectionMode.NONE:
                     self._selected_left  = None
                     self._selected_right = None
-                    self._selecting_mode = _SelectionMode.LEFT_MARKED
+                    self.selecting_mode = _SelectionMode.LEFT_MARKED
 
                     self.Refresh()
                 
@@ -1666,7 +1676,7 @@ class Timeline(wx.Window):
                     if x < left_x - self._selection_handle_width or x > right_x + self._selection_handle_width:
                         self._selected_left  = None
                         self._selected_right = None
-                        self._selecting_mode = _SelectionMode.LEFT_MARKED
+                        self.selecting_mode = _SelectionMode.LEFT_MARKED
                         self.Refresh()
 
     def on_middle_down(self, event):
@@ -1690,10 +1700,10 @@ class Timeline(wx.Window):
         
         if self._selecting_mode in [_SelectionMode.LEFT_MARKED, _SelectionMode.MOVE_LEFT, _SelectionMode.MOVE_RIGHT, _SelectionMode.SHIFTING]:
             if self._selected_left is None:
-                self._selecting_mode = _SelectionMode.NONE
+                self.selecting_mode = _SelectionMode.NONE
             else:
-                self._selecting_mode = _SelectionMode.MARKED
-
+                self.selecting_mode = _SelectionMode.MARKED
+        
         self.Cursor = wx.StockCursor(wx.CURSOR_ARROW)
         
         self.Refresh()
@@ -1717,19 +1727,19 @@ class Timeline(wx.Window):
                     right_x = self.map_stamp_to_x(self._selected_right)
 
                     if abs(x - left_x) <= self._selection_handle_width:
-                        self._selecting_mode = _SelectionMode.MOVE_LEFT
+                        self.selecting_mode = _SelectionMode.MOVE_LEFT
                         self.Cursor = wx.StockCursor(wx.CURSOR_SIZEWE)
                         return
                     elif abs(x - right_x) <= self._selection_handle_width:
-                        self._selecting_mode = _SelectionMode.MOVE_RIGHT
+                        self.selecting_mode = _SelectionMode.MOVE_RIGHT
                         self.Cursor = wx.StockCursor(wx.CURSOR_SIZEWE)
                         return
                     elif x > left_x and x < right_x:
-                        self._selecting_mode = _SelectionMode.SHIFTING
+                        self.selecting_mode = _SelectionMode.SHIFTING
                         self.Cursor = wx.StockCursor(wx.CURSOR_SIZING)
                         return
                     else:
-                        self._selecting_mode = _SelectionMode.MARKED
+                        self.selecting_mode = _SelectionMode.MARKED
 
             self.Cursor = wx.StockCursor(wx.CURSOR_ARROW)
     
@@ -1755,32 +1765,34 @@ class Timeline(wx.Window):
     
                 x_stamp = self.map_x_to_stamp(x)
 
-                if self._selecting_mode == _SelectionMode.LEFT_MARKED:
-                    # Left and selecting: change selection region
-
-                    clicked_x_stamp = self.map_x_to_stamp(clicked_x)
-                    
-                    self._selected_left  = min(clicked_x_stamp, x_stamp)
-                    self._selected_right = max(clicked_x_stamp, x_stamp)
+                if y <= self.history_top:
+                	
+                    if self._selecting_mode == _SelectionMode.LEFT_MARKED:
+                        # Left and selecting: change selection region
     
-                    self.Refresh()
-                    
-                elif self._selecting_mode == _SelectionMode.MOVE_LEFT:
-                    self._selected_left = x_stamp
-                    self.Refresh()
-                    
-                elif self._selecting_mode == _SelectionMode.MOVE_RIGHT:
-                    self._selected_right = x_stamp
-                    self.Refresh()
-
-                elif self._selecting_mode == _SelectionMode.SHIFTING:
-                    dx_drag = x - self._dragged_pos[0]
-                    dstamp = self.map_dx_to_dstamp(dx_drag)
-
-                    self._selected_left  = max(self._start_stamp.to_sec(), min(self._end_stamp.to_sec(), self._selected_left  + dstamp))
-                    self._selected_right = max(self._start_stamp.to_sec(), min(self._end_stamp.to_sec(), self._selected_right + dstamp))
-                    self.Refresh()
-
+                        clicked_x_stamp = self.map_x_to_stamp(clicked_x)
+                        
+                        self._selected_left  = min(clicked_x_stamp, x_stamp)
+                        self._selected_right = max(clicked_x_stamp, x_stamp)
+        
+                        self.Refresh()
+                        
+                    elif self._selecting_mode == _SelectionMode.MOVE_LEFT:
+                        self._selected_left = x_stamp
+                        self.Refresh()
+                        
+                    elif self._selecting_mode == _SelectionMode.MOVE_RIGHT:
+                        self._selected_right = x_stamp
+                        self.Refresh()
+    
+                    elif self._selecting_mode == _SelectionMode.SHIFTING:
+                        dx_drag = x - self._dragged_pos[0]
+                        dstamp = self.map_dx_to_dstamp(dx_drag)
+    
+                        self._selected_left  = max(self._start_stamp.to_sec(), min(self._end_stamp.to_sec(), self._selected_left  + dstamp))
+                        self._selected_right = max(self._start_stamp.to_sec(), min(self._end_stamp.to_sec(), self._selected_right + dstamp))
+                        self.Refresh()
+                
                 elif clicked_x >= self._history_left and clicked_x <= self.history_right and clicked_y >= self._history_top and clicked_y <= self._history_bottom:
                     # Left and clicked within timeline: change playhead
                     
@@ -1801,20 +1813,20 @@ class Timeline(wx.Window):
             self._selected_left  = self._playhead.to_sec()
             self._selected_right = None
             
-            self._selecting_mode = _SelectionMode.LEFT_MARKED
+            self.selecting_mode = _SelectionMode.LEFT_MARKED
 
         elif self._selecting_mode == _SelectionMode.LEFT_MARKED:
             current_mark = self._selected_left
             self._selected_left  = min(current_mark, self._playhead.to_sec())
             self._selected_right = max(current_mark, self._playhead.to_sec())
 
-            self._selecting_mode = _SelectionMode.MARKED
+            self.selecting_mode = _SelectionMode.MARKED
 
         elif self._selecting_mode == _SelectionMode.MARKED:
             self._selected_left  = None
             self._selected_right = None
             
-            self._selecting_mode = _SelectionMode.NONE
+            self.selecting_mode = _SelectionMode.NONE
 
         self.Refresh()
 

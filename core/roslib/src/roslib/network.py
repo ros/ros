@@ -54,8 +54,14 @@ import urlparse
 import roslib.exceptions
 import roslib.rosenv 
 
-SIOCGIFCONF=0x8912
+SIOCGIFCONF = 0x8912
 SIOCGIFADDR = 0x8915
+if platform.system() == 'FreeBSD':
+    SIOCGIFADDR = 0xc0206921
+    if platform.architecture()[0] == '64bit':
+        SIOCGIFCONF = 0xc0106924
+    else:
+        SIOCGIFCONF = 0xc0086924
 
 if 0:
     # disabling netifaces as it accounts for 50% of startup latency
@@ -102,7 +108,7 @@ def _is_unix_like_platform():
     @rtype: bool
     """
     #return platform.system() in ['Linux', 'Mac OS X', 'Darwin']
-    return platform.system() in ['Linux']
+    return platform.system() in ['Linux', 'FreeBSD']
 
 def get_address_override():
     """
@@ -176,11 +182,13 @@ def get_local_addresses():
         import array
 
         ifsize = 32
-        if platform.architecture()[0] == '64bit':
+        if platform.system() == 'Linux' and platform.architecture()[0] == '64bit':
             ifsize = 40 # untested
 
         # 32 interfaces allowed, far more than ROS can sanely deal with
+
         max_bytes = 32 * ifsize
+        # according to http://docs.python.org/library/fcntl.html, the buffer limit is 1024 bytes
         buff = array.array('B', '\0' * max_bytes)
         # serialize the buffer length and address to ioctl
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)        
@@ -188,7 +196,21 @@ def get_local_addresses():
                            struct.pack('iL', max_bytes, buff.buffer_info()[0]))
         retbytes = struct.unpack('iL', info)[0]
         buffstr = buff.tostring()
-        local_addrs = [socket.inet_ntoa(buffstr[i+20:i+24]) for i in range(0, retbytes, ifsize)]
+        if platform.system() == 'Linux':
+            local_addrs = [socket.inet_ntoa(buffstr[i+20:i+24]) for i in range(0, retbytes, ifsize)]
+        else:
+            # in FreeBSD, ifsize is variable: 16 + (16 or 28 or 56) bytes
+            # When ifsize is 32 bytes, it contains the interface name and address,
+            # else it contains the interface name and other information
+            # This means the buffer must be traversed in its entirety
+            local_addrs = []
+            bufpos = 0
+            while bufpos < retbytes:
+                bufpos += 16
+                ifreqsize = ord(buffstr[bufpos])
+                if ifreqsize == 16:
+                    local_addrs += [socket.inet_ntoa(buffstr[bufpos+4:bufpos+8])]
+                bufpos += ifreqsize
     else:
         # cross-platform branch, can only resolve one address
         local_addrs = [socket.gethostbyname(socket.gethostname())]

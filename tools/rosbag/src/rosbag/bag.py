@@ -1669,7 +1669,7 @@ class _BagReader102_Indexed(_BagReader102_Unindexed):
     
             # Check if the index position has been written, i.e. the bag was closed successfully
             if self.bag._index_data_pos == 0:
-                raise ROSBagFormatException()
+                raise ROSBagUnindexedException()
     
             # Seek to the beginning of the topic index records
             self.bag._file.seek(self.bag._index_data_pos)

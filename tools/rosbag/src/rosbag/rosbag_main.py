@@ -64,7 +64,7 @@ def record_cmd(argv):
 help="Exclude topics matching the follow regular expression (subtracts from -a or regex)")
     parser.add_option("-q", "--quiet",         dest="quiet",    default=False, action="store_true",        help="suppress console output")
     parser.add_option("-o", "--output-prefix", dest="prefix",   default=None,  action="store",             help="prepend PREFIX to beginning of bag name (name will always end with date stamp)")
-    parser.add_option("-O", "--output-name",   dest="name",     default=None,  action="store",             help="record to bag with namename NAME.bag")
+    parser.add_option("-O", "--output-name",   dest="name",     default=None,  action="store",             help="record to bag with name NAME.bag")
     parser.add_option("--split",               dest="split",    default=0,     type='int', action="store", help="split bag into files of size SIZE", metavar="SIZE")
     parser.add_option("-b", "--buffsize",      dest="buffsize", default=256,   type='int', action="store", help="use in internal buffer of SIZE MB (Default: %default, 0 = infinite)", metavar="SIZE")
     parser.add_option("-l", "--limit",         dest="num",      default=0,     type='int', action="store", help="only record NUM messages on each topic")
@@ -436,8 +436,9 @@ def check_cmd(argv):
 def compress_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag compress [options] BAGFILE1 [BAGFILE2 ...]',
                                    description='Compress one or more bag files.')
-    parser.add_option('-f', '--force', action='store_true', dest='force', help='force overwriting of backup file if it exists')
-    parser.add_option('-q', '--quiet', action='store_true', dest='quiet', help='suppress noncritical messages')
+    parser.add_option(      '--output-dir', action='store',      dest='output_dir', help='write to directory DIR', metavar='DIR')
+    parser.add_option('-f', '--force',      action='store_true', dest='force',      help='force overwriting of backup file if it exists')
+    parser.add_option('-q', '--quiet',      action='store_true', dest='quiet',      help='suppress noncritical messages')
 
     (options, args) = parser.parse_args(argv)
 
@@ -446,13 +447,14 @@ def compress_cmd(argv):
 
     op = lambda inbag, outbag, quiet: change_compression_op(inbag, outbag, Compression.BZ2, options.quiet)
 
-    bag_op(args, False, lambda b: False, op, options.force, options.quiet)
+    bag_op(args, False, lambda b: False, op, options.output_dir, options.force, options.quiet)
 
 def decompress_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag decompress [options] BAGFILE1 [BAGFILE2 ...]',
                                    description='Decompress one or more bag files.')
-    parser.add_option('-f', '--force', action='store_true', dest='force', help='force overwriting of backup file if it exists')
-    parser.add_option('-q', '--quiet', action='store_true', dest='quiet', help='suppress noncritical messages')
+    parser.add_option(      '--output-dir', action='store',      dest='output_dir', help='write to directory DIR', metavar='DIR')
+    parser.add_option('-f', '--force',      action='store_true', dest='force',      help='force overwriting of backup file if it exists')
+    parser.add_option('-q', '--quiet',      action='store_true', dest='quiet',      help='suppress noncritical messages')
 
     (options, args) = parser.parse_args(argv)
 
@@ -461,13 +463,14 @@ def decompress_cmd(argv):
     
     op = lambda inbag, outbag, quiet: change_compression_op(inbag, outbag, Compression.NONE, options.quiet)
     
-    bag_op(args, False, lambda b: False, op, options.force, options.quiet)
+    bag_op(args, False, lambda b: False, op, options.output_dir, options.force, options.quiet)
 
 def reindex_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag reindex [options] BAGFILE1 [BAGFILE2 ...]',
                                    description='Reindexes one or more bag files.')
-    parser.add_option('-f', '--force', action='store_true', dest='force', help='force overwriting of backup file if it exists')
-    parser.add_option('-q', '--quiet', action='store_true', dest='quiet', help='suppress noncritical messages')
+    parser.add_option(      '--output-dir', action='store',      dest='output_dir', help='write to directory DIR', metavar='DIR')
+    parser.add_option('-f', '--force',      action='store_true', dest='force',      help='force overwriting of backup file if it exists')
+    parser.add_option('-q', '--quiet',      action='store_true', dest='quiet',      help='suppress noncritical messages')
 
     (options, args) = parser.parse_args(argv)
 
@@ -476,10 +479,16 @@ def reindex_cmd(argv):
     
     op = lambda inbag, outbag, quiet: reindex_op(inbag, outbag, options.quiet)
 
-    bag_op(args, True, lambda b: b.version > 102, op, options.force, options.quiet)
+    bag_op(args, True, lambda b: b.version > 102, op, options.output_dir, options.force, options.quiet)
 
-def bag_op(inbag_filenames, allow_unindexed, copy_fn, op, force=False, quiet=False):
+def bag_op(inbag_filenames, allow_unindexed, copy_fn, op, output_dir=None, force=False, quiet=False):
     for inbag_filename in inbag_filenames:
+        # Determine output filename
+        if output_dir is None:
+            outbag_filename = inbag_filename
+        else:
+            outbag_filename = os.path.join(output_dir, os.path.split(inbag_filename)[1])
+        
         # Check we can read the file
         try:
             inbag = Bag(inbag_filename, 'r', allow_unindexed=allow_unindexed)
@@ -489,32 +498,38 @@ def bag_op(inbag_filenames, allow_unindexed, copy_fn, op, force=False, quiet=Fal
         except (ROSBagException, IOError), ex:
             print >> sys.stderr, 'ERROR reading %s: %s' % (inbag_filename, str(ex))
             continue
-    
+
+        # Determine whether we should copy the bag    
         copy = copy_fn(inbag)
         
         inbag.close()
-    
-        # Rename the input bag to ###.orig.###, and open for reading
-        (root, ext) = os.path.splitext(inbag_filename)
-        backup_filename = '%s.orig%s' % (root, ext)
-        
-        if not force and os.path.exists(backup_filename):
-            if not quiet:
-                print >> sys.stderr, 'Skipping %s. Backup path %s already exists.' % (inbag_filename, backup_filename)
-            continue
-        
+
+        backup_filename = None
+        if outbag_filename == inbag_filename:
+            # Rename the input bag to ###.orig.###, and open for reading
+            (root, ext) = os.path.splitext(inbag_filename)
+            backup_filename = '%s.orig%s' % (root, ext)
+            
+            if not force and os.path.exists(backup_filename):
+                if not quiet:
+                    print >> sys.stderr, 'Skipping %s. Backup path %s already exists.' % (inbag_filename, backup_filename)
+                continue
+            
+            try:
+                if copy:
+                    shutil.copy(inbag_filename, backup_filename)
+                else:
+                    os.rename(inbag_filename, backup_filename)
+            except OSError, ex:
+                print >> sys.stderr, 'ERROR %s %s to %s: %s' % ('copying' if copy else 'moving', inbag_filename, backup_filename, str(ex))
+                continue
+            
+            source_filename = backup_filename
+        else:
+            source_filename = inbag_filename
+
         try:
-            if copy:
-                shutil.copy(inbag_filename, backup_filename)
-            else:
-                os.rename(inbag_filename, backup_filename)
-        except OSError, ex:
-            print >> sys.stderr, 'ERROR %s %s to %s: %s' % ('copying' if copy else 'moving', inbag_filename, backup_filename, str(ex))
-            continue
-        outbag_filename = inbag_filename
-    
-        try:
-            inbag = Bag(backup_filename, 'r', allow_unindexed=allow_unindexed)
+            inbag = Bag(source_filename, 'r', allow_unindexed=allow_unindexed)
     
             # Open the output bag file for writing
             try:
@@ -540,14 +555,15 @@ def bag_op(inbag_filenames, allow_unindexed, copy_fn, op, force=False, quiet=Fal
             inbag.close()
     
         except KeyboardInterrupt:
-            try:
-                if copy:
-                    os.remove(backup_filename)
-                else:
-                    os.rename(backup_filename, inbag_filename)
-            except OSError, ex:
-                print >> sys.stderr, 'ERROR %s %s to %s: %s', ('removing' if copy else 'moving', backup_filename, inbag_filename, str(ex))
-                break
+            if backup_filename is not None:
+                try:
+                    if copy:
+                        os.remove(backup_filename)
+                    else:
+                        os.rename(backup_filename, inbag_filename)
+                except OSError, ex:
+                    print >> sys.stderr, 'ERROR %s %s to %s: %s', ('removing' if copy else 'moving', backup_filename, inbag_filename, str(ex))
+                    break
     
         except (ROSBagException, IOError), ex:
             print >> sys.stderr, 'ERROR operating on %s: %s' % (inbag_filename, str(ex))

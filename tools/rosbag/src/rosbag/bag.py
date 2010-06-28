@@ -1694,8 +1694,8 @@ class _BagReader102_Indexed(_BagReader102_Unindexed):
                 self.bag._connections[connection_info.id] = connection_info
     
                 self.bag._connection_indexes[connection_info.id] = index
-        except:
-            raise ROSBagFormatException()
+        except Exception, ex:
+            raise ROSBagFormatException('Error reading bag: %s' % str(ex))
 
     def read_file_header_record(self):
         self.bag._file_header_pos = self.bag._file.tell()

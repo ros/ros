@@ -50,6 +50,10 @@ canonicalize = {
     'Closed': 'Commercial',
     'BSD.': 'BSD',
     'new BSD': 'BSD (new)', #for better alphabetizing
+    'GPL v3': "GPLv3",
+    'GNU GPL V3', 'GPLv3',
+    'GPL 3.0', 'GPLv3',
+    '?', 'Unknown',
     }
 
 bsdstyle = ['bsd', 'bsd-style', 'new bsd', 'bsd (new)', 'zlib', 'zlib-style', 'mit', 'wxwindows', 'lgpl', 'free', 'python', 'python-style', 'bsl1.0', 'boost', 'apache', 'apache license, version 2.0', 'boost software license', 'public domain', 'apache license']

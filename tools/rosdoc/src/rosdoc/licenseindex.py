@@ -187,7 +187,7 @@ def generate_license_index(ctx, license_index):
         buff.write(li_license_links(list, blamelist, docdir))
     
     vars = {'$name': ctx.name, '$licenselist' : buff.getvalue(),
-            '$date': time.strftime('%s'), '$toc': contents }
+            '$date': time.strftime("%a, %d %b %Y %H:%M:%S"), '$toc': contents }
     with open(license_index, 'w') as f:
         f.write(instantiate_template(license_template, vars))
         

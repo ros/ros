@@ -56,7 +56,7 @@ canonicalize = {
     '?': 'Unknown',
     }
 
-bsdstyle = ['bsd', 'bsd-style', 'new bsd', 'bsd (new)', 'zlib', 'zlib-style', 'mit', 'wxwindows', 'lgpl', 'free', 'python', 'python-style', 'bsl1.0', 'boost', 'apache', 'apache license, version 2.0', 'boost software license', 'public domain', 'apache license']
+bsdstyle = ['bsd', 'bsd-style', 'new bsd', 'bsd (new)', 'zlib', 'zlib-style', 'mit', 'wxwindows', 'lgpl', 'free', 'python', 'python-style', 'bsl1.0', 'boost', 'apache', 'apache license, version 2.0', 'boost software license', 'public domain', 'apache license', 'BSD, Boost Software License (Poco)', 'BSD, Boost']
 contaminated = ['gpl', 'creativecommons-by-nc-sa-2.0', 'commercial', 'proprietary']
 # keep track of licenses we've reported as unknown
 _already_unknown = []

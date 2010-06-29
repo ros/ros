@@ -31,7 +31,6 @@ find_file(TOOLCHAINCONFIG
           PATHS ENV ROS_ROOT
           NO_DEFAULT_PATH)
 if(TOOLCHAINCONFIG)
-  message("including user's toolchain file: ${TOOLCHAINCONFIG}")
   include(${TOOLCHAINCONFIG})
 endif(TOOLCHAINCONFIG)
 #############################################################

@@ -359,6 +359,44 @@ class Gentoo(OSBase):
 
 ###### END Gentoo Sepcialization ###############################
 
+###### FreeBSD SPECIALIZATION #########################
+class FreeBSD(OSBase):
+    """
+    Detect FreeBSD OS.
+    """
+    def check_presence(self):
+        try:
+            filename = "/usr/bin/uname"
+            if os.path.exists(filename):
+                pop = subprocess.Popen([filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                (std_out, std_err) = pop.communicate()
+                if std_out.strip() == "FreeBSD":
+                    return True
+            else:
+                return False
+        except:
+            pass#print >> sys.stderr, "FreeBSD failed to detect OS"
+        return False
+
+    def get_version(self):
+        try:
+            filename = "/usr/bin/uname"
+            if os.path.exists(filename):
+               pop = subprocess.Popen([filename, "-r"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+               (std_out, std_err) = pop.communicate()
+               return std_out.strip()
+            else:
+               return False
+        except:
+            print >> sys.stderr, "FreeBSD failed to get version"
+            return False
+
+        return False
+
+    def get_name(self):
+        return "freebsd"
+
+###### FreeBSD SPECIALIZATION #########################
 
 #### Override class for debugging and unsupported OSs ###########
 class Override(OSBase):
@@ -387,7 +425,7 @@ class Override(OSBase):
 class OSDetect:
     """ This class will iterate over registered classes to lookup the
     active OS and version"""
-    def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), Fedora(), Rhel(), Gentoo(), Cygwin()]):
+    def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), Fedora(), Rhel(), Gentoo(), Cygwin(), FreeBSD()]):
         self._os_list = [ Override()]
         self._os_list.extend(os_list)
         for o in self._os_list:

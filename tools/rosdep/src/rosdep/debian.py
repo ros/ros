@@ -31,12 +31,13 @@
 import subprocess
 import os.path 
 import roslib.os_detect
-import base_rosdep
+
+import rosdep.base_rosdep
 
 ###### DEBIAN SPECIALIZATION #########################
 
 ###### Rosdep Test OS #########################
-class RosdepTestOS(base_rosdep.RosdepBaseOS):
+class RosdepTestOS(rosdep.base_rosdep.RosdepBaseOS):
     def __init__(self):
         self.name = "uninitialized"
     def check_presence(self):
@@ -88,7 +89,7 @@ class AptGetInstall():
             return "#Packages\nsudo apt-get install " + ' '.join(packages)
 
 ###### Debian SPECIALIZATION #########################
-class Debian(roslib.os_detect.Debian, AptGetInstall, base_rosdep.RosdepBaseOS):
+class Debian(roslib.os_detect.Debian, AptGetInstall, rosdep.base_rosdep.RosdepBaseOS):
     """ This is an implementation of a standard interface for
     interacting with rosdep.  This defines all Ubuntu sepecific
     methods, including detecting the OS/Version number.  As well as
@@ -97,7 +98,7 @@ class Debian(roslib.os_detect.Debian, AptGetInstall, base_rosdep.RosdepBaseOS):
 ###### END Debian SPECIALIZATION ########################
 
 ###### UBUNTU SPECIALIZATION #########################
-class Ubuntu(roslib.os_detect.Ubuntu, AptGetInstall, base_rosdep.RosdepBaseOS):
+class Ubuntu(roslib.os_detect.Ubuntu, AptGetInstall, rosdep.base_rosdep.RosdepBaseOS):
     """ This is an implementation of a standard interface for
     interacting with rosdep.  This defines all Ubuntu sepecific
     methods, including detecting the OS/Version number.  As well as
@@ -107,7 +108,7 @@ class Ubuntu(roslib.os_detect.Ubuntu, AptGetInstall, base_rosdep.RosdepBaseOS):
 ###### END UBUNTU SPECIALIZATION ########################
 
 ###### Mint SPECIALIZATION #########################
-class Mint(AptGetInstall, base_rosdep.RosdepBaseOS):
+class Mint(AptGetInstall, rosdep.base_rosdep.RosdepBaseOS):
     """ This is an implementation of a standard interface for
     interacting with rosdep.  Mint is closely coupled to Ubuntu, it
     will masquerade as ubuntu for the purposes of rosdep. """

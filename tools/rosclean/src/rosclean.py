@@ -73,8 +73,8 @@ def get_human_readable_disk_usage(d):
     @return: human-readable disk usage (du -h)
     @rtype: str
     """
-    # only implemented on Linux for now. Should work on OS X but need to verify first (du is not identical)
-    if platform.system() == 'Linux':
+    # only implemented on Linux and FreeBSD for now. Should work on OS X but need to verify first (du is not identical)
+    if platform.system() in ['Linux', 'FreeBSD']:
         try:
             return subprocess.Popen(['du', '-sh', d], stdout=subprocess.PIPE).communicate()[0].split()[0]
         except:
@@ -87,14 +87,19 @@ def get_disk_usage(d):
     Get disk usage in bytes for directory
     @param d: directory path
     @type  d: str
-    @return: disk usage in bytes (du -b)
+    @return: disk usage in bytes (du -b) or (du -A) * 1024
     @rtype: int
     @raise ROSCleanException: if get_disk_usage() cannot be used on this platform
     """
-    # only implemented on Linux for now. Should work on OS X but need to verify first (du is not identical)
+    # only implemented on Linux and FreeBSD for now. Should work on OS X but need to verify first (du is not identical)
     if platform.system() == 'Linux':
         try:
             return int(subprocess.Popen(['du', '-sb', d], stdout=subprocess.PIPE).communicate()[0].split()[0])
+        except:
+            raise ROSCleanException("rosclean is not supported on this platform")
+    elif platform.system() == 'FreeBSD':
+        try:
+            return int(subprocess.Popen(['du', '-sA', d], stdout=subprocess.PIPE).communicate()[0].split()[0]) * 1024
         except:
             raise ROSCleanException("rosclean is not supported on this platform")
     else:

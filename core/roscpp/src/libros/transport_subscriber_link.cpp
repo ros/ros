@@ -147,7 +147,7 @@ void TransportSubscriberLink::onMessageWritten(const ConnectionPtr& conn)
 void TransportSubscriberLink::startMessageWrite(bool immediate_write)
 {
   boost::shared_array<uint8_t> dummy;
-  SerializedMessage m(dummy, (unsigned int)0);
+  SerializedMessage m(dummy, (uint32_t)0);
 
   {
     boost::mutex::scoped_lock lock(outbox_mutex_);

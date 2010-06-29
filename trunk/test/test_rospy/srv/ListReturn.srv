@@ -1,7 +1,0 @@
-# test case for having single list return value
-int32 a
-int32 b
-int32 c
-int32 d
----
-int32[] abcd

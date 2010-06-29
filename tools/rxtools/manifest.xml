@@ -6,12 +6,12 @@ rxtools is two things.  First it is a library of GUI widgets, written in wxWidge
 </p>
     
 <p>
-Pieces of rxtools use some icons from the <a href="http://www.famfamfam.com/lab/icons/silk/">Silk icon pack from famfamfam</a>.
+Pieces of rxtools use some icons from the <a href="http://www.famfamfam.com/lab/icons/silk/">Silk icon pack from famfamfam</a>. These icons have a separate Creative Commons Attribution 2.5 License. The source code for the software in this package is BSD.
 </p>
 
     </description>
     <author>Josh Faust, Rob Wheeler, Ken Conley</author>
-    <license>BSD, Creative Commons</license>
+    <license>BSD</license>
     <review status="Doc reviewed" notes=""/>
     <url>http://ros.org/wiki/rxtools</url>
     <depend package="roscpp"/>

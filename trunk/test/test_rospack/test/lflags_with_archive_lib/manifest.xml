@@ -1,5 +1,0 @@
-<package>
-<export>
-<cpp lflags="/usr/lib/libfoo.a /a/bad/flag"/>
-</export>
-</package>

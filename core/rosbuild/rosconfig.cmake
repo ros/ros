@@ -23,7 +23,8 @@ set(PROJECTCONFIG PROJECTCONFIG-NOTFOUND)
 find_file(USERCONFIG
           rosconfig.cmake
           PATHS ENV ROS_ROOT
-          NO_DEFAULT_PATH)
+          NO_DEFAULT_PATH
+          NO_CMAKE_FIND_ROOT_PATH)
 if(USERCONFIG)
   message("including user's config file: ${USERCONFIG}")
   include(${USERCONFIG})

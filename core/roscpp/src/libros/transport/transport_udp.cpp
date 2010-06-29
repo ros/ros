@@ -64,6 +64,7 @@ TransportUDP::TransportUDP(PollSet* poll_set, int flags, int max_datagram_size)
 , total_blocks_(0)
 , last_block_(0)
 , max_datagram_size_(max_datagram_size)
+, data_filled_(0)
 , reorder_buffer_(0)
 , reorder_bytes_(0)
 {
@@ -71,12 +72,15 @@ TransportUDP::TransportUDP(PollSet* poll_set, int flags, int max_datagram_size)
   if (max_datagram_size_ == 0)
     max_datagram_size_ = 1500;
   reorder_buffer_ = new uint8_t[max_datagram_size_];
+  data_buffer_ = new uint8_t[max_datagram_size_];
+  data_start_ = data_buffer_;
 }
 
 TransportUDP::~TransportUDP()
 {
   ROS_ASSERT_MSG(sock_ == -1, "TransportUDP socket [%d] was never closed", sock_);
-  delete[] reorder_buffer_;
+  delete [] reorder_buffer_;
+  delete [] data_buffer_;
 }
 
 bool TransportUDP::setSocket(int sock)
@@ -205,7 +209,6 @@ bool TransportUDP::connect(const std::string& host, int port, int connection_id)
 bool TransportUDP::createIncoming(int port, bool is_server)
 {
   is_server_ = is_server;
-  gen_.seed(getpid());
 
   sock_ = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -326,52 +329,80 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
   while (bytes_read < size)
   {
     TransportUDPHeader header;
-    struct iovec iov[2];
-    iov[0].iov_base = &header;
-    iov[0].iov_len = sizeof(header);
-    iov[1].iov_base = buffer + bytes_read;
-    iov[1].iov_len = (size - bytes_read) > max_datagram_size_ ? max_datagram_size_ : (size - bytes_read);
 
-    // Don't read a partial datagram when buffer gets full
-    if (iov[1].iov_len < max_datagram_size_ && bytes_read != 0)
-      break;
-
-    // Read a datagram with header
     ssize_t num_bytes = 0;
+    bool from_previous = false;
     if (reorder_bytes_)
     {
       num_bytes = reorder_bytes_ + sizeof(header);
       header = reorder_header_;
-      memcpy(iov[1].iov_base, reorder_buffer_, reorder_bytes_);
+      memcpy(buffer + bytes_read, reorder_buffer_, reorder_bytes_);
       reorder_bytes_ = 0;
     }
     else
     {
-      num_bytes = readv(sock_, iov, 2);
-    }
-    if (num_bytes < 0)
-    {
-      if (errno == EAGAIN || errno == EWOULDBLOCK)
+      if (data_filled_ == 0)
       {
-        num_bytes = 0;
-        break;
+        struct iovec iov[2];
+        iov[0].iov_base = &header;
+        iov[0].iov_len = sizeof(header);
+        iov[1].iov_base = data_buffer_;
+        iov[1].iov_len = max_datagram_size_ - sizeof(header);
+
+        // Read a datagram with header
+        num_bytes = readv(sock_, iov, 2);
+
+        if (num_bytes < 0)
+        {
+          if (errno == EAGAIN || errno == EWOULDBLOCK)
+          {
+            num_bytes = 0;
+            break;
+          }
+          else
+          {
+            ROSCPP_LOG_DEBUG("readv() failed with error [%s]", strerror(errno));
+            close();
+            break;
+          }
+        }
+        else if (num_bytes == 0)
+        {
+          ROSCPP_LOG_DEBUG("Socket [%d] received 0/%d bytes, closing", sock_, size);
+          close();
+          return -1;
+        }
+        else if (num_bytes < (ssize_t)sizeof(header))
+        {
+          ROS_ERROR("Socket [%d] received short header (%d bytes): %s", sock_, int(num_bytes), strerror(errno));
+          close();
+          return -1;
+        }
+
+        num_bytes -= sizeof(header);
+        data_filled_ = num_bytes;
+        data_start_ = data_buffer_;
       }
       else
       {
-        ROSCPP_LOG_DEBUG("readv() failed with error [%s]", strerror(errno));
-        close();
-        break;
+        from_previous = true;
       }
+
+      num_bytes = std::min(size, data_filled_);
+      // Copy from the data buffer, whether it has data left in it from a previous datagram or
+      // was just filled by readv()
+      memcpy(buffer, data_start_, num_bytes);
+      data_filled_ = std::max((int64_t)0, (int64_t)data_filled_ - (int64_t)size);
+      data_start_ += num_bytes;
     }
-    else if (num_bytes == 0)
+
+
+    if (from_previous)
     {
-      ROSCPP_LOG_DEBUG("Socket [%d] received 0/%d bytes, closing", sock_, size);
-      close();
-      return -1;
+      bytes_read += num_bytes;
     }
-    else if (num_bytes >= ssize_t(sizeof(header)))
+    else
     {
-      num_bytes -= sizeof(header);
       // Process header
       switch (header.op_)
       {
@@ -409,20 +440,17 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
           ROSCPP_LOG_DEBUG("Unexpected UDP header OP [%d]", header.op_);
           return -1;
       }
+
       bytes_read += num_bytes;
+
       if (last_block_ == (total_blocks_ - 1))
       {
         current_message_id_ = 0;
         break;
       }
     }
-    else
-    {
-      ROS_ERROR("Socket [%d] received short header (%d bytes), closing", sock_, int(num_bytes));
-      close();
-      return -1;
-    }
   }
+
   return bytes_read;
 }
 
@@ -513,6 +541,26 @@ void TransportUDP::enableRead()
   {
     poll_set_->addEvents(sock_, POLLIN);
     expecting_read_ = true;
+  }
+}
+
+void TransportUDP::disableRead()
+{
+  ROS_ASSERT(!(flags_ & SYNCHRONOUS));
+
+  {
+    boost::mutex::scoped_lock lock(close_mutex_);
+
+    if (closed_)
+    {
+      return;
+    }
+  }
+
+  if (expecting_read_)
+  {
+    poll_set_->delEvents(sock_, POLLIN);
+    expecting_read_ = false;
   }
 }
 

@@ -6,7 +6,7 @@ rosgraph contains the rosgraph command-line tool, which prints information about
 </p>
   </description>
   <author>Ken Conley</author>
-  <license>BSD/LGPL</license>
+  <license>BSD</license>
   <review status="Doc reviewed" notes="2009/12/30"/>
   <url>http://ros.org/wiki/rosgraph</url>
   <depend package="roslib"/>

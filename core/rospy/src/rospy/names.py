@@ -241,8 +241,8 @@ def valid_name_validator_resolved(param_name, param_value, caller_id):
     # I added the colon check as the common error will be to send an URI instead of name
     if ':' in param_value or ' ' in param_value:
         raise ParameterInvalid("ERROR: parameter [%s] contains illegal chars"%param_name) 
-    #return resolve_name(param_value, namespace(caller_id))
-    return resolve_name(param_value, caller_id)
+    #don't use our own resolve_name because we do not want to remap
+    return roslib.names.resolve_name(param_value, caller_id, remappings=None)
 def valid_name_validator_unresolved(param_name, param_value, caller_id):
     if not param_value or not isinstance(param_value, basestring):
         raise ParameterInvalid("ERROR: parameter [%s] must be a non-empty string"%param_name)            

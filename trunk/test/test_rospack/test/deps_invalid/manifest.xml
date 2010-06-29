@@ -1,7 +1,0 @@
-<package>
-<export>
-<cpp lflags="-lloki"/>
-</export>
-<depend package="no_such_package"/>
-</package>
-

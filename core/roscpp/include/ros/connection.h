@@ -215,13 +215,6 @@ private:
   /// Function that handles the incoming header
   HeaderReceivedFunc header_func_;
 
-  /**
-   * If there is data available to read, we always try to read into our fixed read buffer, even if a read request
-   * has not been made.
-   */
-  uint8_t fixed_read_buffer_[READ_BUFFER_SIZE];
-  uint32_t fixed_read_filled_;
-
   /// Read buffer that ends up being passed to the read callback
   boost::shared_array<uint8_t> read_buffer_;
   /// Amount of data currently in the read buffer, in bytes

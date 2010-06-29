@@ -8,7 +8,11 @@ all:
 	-mkdir -p bin
 	@rm -rf msg/cpp srv/cpp  # make sure there are no msg/cpp or srv/cpp directories
 	cd build && cmake $(CMAKE_FLAGS) ..
+ifneq ($(MAKE),)
+	cd build && $(MAKE) $(ROS_PARALLEL_JOBS)
+else
 	cd build && make $(ROS_PARALLEL_JOBS)
+endif
 
 PACKAGE_NAME=$(shell basename $(PWD))
 
@@ -30,5 +34,17 @@ test-future: all
 	cd build && make -k $@
 gcoverage: all
 	cd build && make $@
+
+eclipse-project: 
+	mv Makefile Makefile.ros
+	cmake -G"Eclipse CDT4 - Unix Makefiles" -Wno-dev .
+	rm Makefile
+	rm CMakeCache.txt
+	rm -rf CMakeFiles
+	mv Makefile.ros Makefile
+	mv .project .project-cmake
+	awk -f $(shell rospack find mk)/eclipse.awk .project-cmake > .project
+	rm .project-cmake
+
 
 include $(shell rospack find mk)/buildtest.mk

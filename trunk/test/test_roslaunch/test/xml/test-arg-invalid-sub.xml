@@ -1,5 +1,0 @@
-<launch>
-
-  <arg name="invalid" value="$(arg missing)"/>
-
-</launch>

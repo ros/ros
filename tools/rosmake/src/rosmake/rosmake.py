@@ -94,7 +94,7 @@ class Printer:
             self.status = ""
             self.verbose = False
             self.full_verbose = False
-            self.duration = 1./5.
+            self.duration = 1./10.
             self._last_status = None
 
             # Rosmake specific data
@@ -125,7 +125,7 @@ class Printer:
                     self.running = False
                     break
                 self.set_status_from_cache()
-                if len(self.status) > 0:
+                if len(self.pkg_start_times.keys()) > 0:
                     n = self.terminal_width() - len(self.status)
                     status = self.status
                     if n > 0:
@@ -145,7 +145,7 @@ class Printer:
         def rosmake_pkg_times_to_string(self, start_times):
             threads = []
             for p, t in sorted(start_times.iteritems(), key=itemgetter(1)):
-                threads.append("[ %s: %.2f sec ]"%(p, time.time() - t))
+                threads.append("[ %s: %.1f sec ]"%(p, time.time() - t))
 
             return " ".join(threads)
 
@@ -169,18 +169,17 @@ class Printer:
 
         def print_all(self, s, thread_name=None):
             if thread_name is None:
-                sys.stdout.write("[ rosmake ] %s\n"%s)
-                sys.stdout.flush()
+                str = "[ rosmake ] %s"%s
+                
+
             else:
-                sys.stdout.write("[rosmake-%s] %s\n"%(thread_name, s))
-                sys.stdout.flush()
+                str = "[rosmake-%s] %s"%(thread_name, s)
+            sys.stdout.write(self.pad_str_to_width(str, self.terminal_width())+"\n")
+            sys.stdout.flush()
 
         def print_verbose(self, s, thread_name=None):
             if self.verbose or self.full_verbose:
-              if thread_name:
                 self.print_all(s, thread_name=thread_name)
-              else:
-                print "[ rosmake ] %s"%s
 
         def print_full_verbose(self, s):
             if self.full_verbose:
@@ -202,7 +201,7 @@ class Printer:
             print "-"*79 + "}"
 
         def _print_status(self, s):
-            sys.stdout.write("\r%s"%(s))
+            sys.stdout.write("%s\r"%(s))
             sys.stdout.flush()
 
         @staticmethod
@@ -226,6 +225,14 @@ class Printer:
 
             return width
 
+        @staticmethod
+        def pad_str_to_width(str, width):
+            """ Pad the string to be terminal width"""
+            length = len(str)
+            excess = 0
+            if length < width:
+                excess = width - length
+            return str + " "* excess
 
 
 
@@ -292,10 +299,13 @@ class RosMakeAll:
         """
         try:
             r = rosdep.core.Rosdep(packages, robust=True)
-            r.install(include_duplicates=False, default_yes=default_yes);
-            return None
+            error = r.install(include_duplicates=False, default_yes=default_yes)
+            if not error:
+                return None
+            else:
+                return "%s"%error
         except rosdep.core.RosdepException, e:
-            return "rosdep install FAILED: %s"%e
+            return "%s"%e
         except roslib.exceptions.ROSLibException, ex:
             return "%s"%ex
 
@@ -475,7 +485,7 @@ class RosMakeAll:
         self.printer.print_all("Summary output to directory")
         self.printer.print_all("%s"%self.log_dir)
         if self.rosdep_install_result:
-            self.printer.print_all("ERROR: Rosdep installation failed with exception: %s"%self.rosdep_install_result)
+            self.printer.print_all("ERROR: Rosdep installation failed with error: %s"%self.rosdep_install_result)
         if self.rosdep_check_result:
             self.printer.print_all("WARNING: Rosdep did not detect the following system dependencies as installed: %s Consider using --rosdep-install option or `rosdep install %s`"%(self.rosdep_check_result, ' '.join(self.specified_packages)))
         if self.rejected_packages:
@@ -820,8 +830,10 @@ class RosMakeAll:
             self.rosdep_install_result = self.install_rosdeps(buildable_packages, options.rosdep_yes)
             if self.rosdep_install_result:
                 self.printer.print_all( "rosdep install failed: %s"%self.rosdep_install_result)
+                return False
             else:
                 self.printer.print_all("rosdep successfully installed all system dependencies")
+
 
         elif not options.rosdep_disabled:
             self.printer.print_all("Checking rosdeps compliance for packages %s.  This may take a few seconds."%(', '.join(packages)))

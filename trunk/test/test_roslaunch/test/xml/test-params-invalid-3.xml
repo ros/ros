@@ -1,3 +1,0 @@
-<launch>
-  <param name="name1" value="someval" textfile="$(find rosparam)/example.yaml" />
-</launch>

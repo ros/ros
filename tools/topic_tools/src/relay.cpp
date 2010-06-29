@@ -73,7 +73,15 @@ int main(int argc, char **argv)
     g_output_topic = string(argv[2]);
   ros::NodeHandle n;
   g_node = &n;
-  ros::Subscriber sub = n.subscribe<ShapeShifter>(string(argv[1]), 10, &in_cb);
+  
+  ros::NodeHandle pnh("~");
+  bool unreliable;
+  pnh.param("unreliable", unreliable, true);
+  ros::TransportHints th;
+  if (unreliable)
+    th.unreliable().reliable(); // Prefers unreliable, but will accept reliable.
+
+  ros::Subscriber sub = n.subscribe<ShapeShifter>(string(argv[1]), 10, &in_cb, th);
   ros::spin();
   return 0;
 }

@@ -1,9 +1,0 @@
-#!/bin/bash
-#xterm -e "roscore" &
-#sleep 2
-xterm -e "source ~/.bashrc && roscd roscpp_tutorials/bin; ./talker" &
-sleep 2
-xterm -e "source ~/.bashrc && roscd roscpp_tutorials/bin; ./talker __name:=talker2 chatter:=chatter2" &
-xterm -e "source ~/.bashrc && roscd roscpp_tutorials/bin; ./listener chatter:=chat" &
-./mux chat chatter chatter2
-#valgrind -v ./mux chat chatter chatter2

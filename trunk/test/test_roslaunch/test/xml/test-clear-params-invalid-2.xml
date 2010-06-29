@@ -1,4 +1,0 @@
-<launch>
-  <!-- group with no 'ns' attribute -->
-  <group clear_params="true" />
-</launch>

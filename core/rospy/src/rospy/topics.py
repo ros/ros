@@ -631,6 +631,7 @@ class Publisher(Topic):
         @raise ROSException: if parameters are invalid     
         """
         super(Publisher, self).__init__(name, data_class, Registration.PUB)
+
         if subscriber_listener:
             self.impl.add_subscriber_listener(subscriber_listener)
         if tcp_nodelay:
@@ -937,16 +938,13 @@ class _TopicManager(object):
         """
         resolved_name = ps.resolved_name
         _logger.debug("tm._add: %s, %s, %s", resolved_name, ps.type, reg_type)
-        try:
-            self.lock.acquire()
+        with self.lock:
             map[resolved_name] = ps
             self.topics.add(resolved_name)
             
             # NOTE: this call can take a lengthy amount of time (at
             # least until its reimplemented to use queues)
             get_registration_listeners().notify_added(resolved_name, ps.type, reg_type)
-        finally:
-            self.lock.release()
 
     def _recalculate_topics(self):
         """recalculate self.topics. expensive"""
@@ -1077,7 +1075,7 @@ class _TopicManager(object):
         @type  resolved_name: str
         @return: subscriber for the specified topic. 
         @rtype: L{_SubscriberImpl}
-        """        
+        """
         return self.subs.get(resolved_name, None)
 
     def has_subscription(self, resolved_name):

@@ -244,7 +244,7 @@ def valid_name_validator_resolved(param_name, param_value, caller_id):
     if ':' in param_value or ' ' in param_value:
         raise ParameterInvalid("ERROR: parameter [%s] contains illegal chars"%param_name) 
     #return resolve_name(param_value, namespace(caller_id))
-    return resolve_name(param_value, caller_id)
+    return resolve_name(param_value, caller_id, remap=False)
 def valid_name_validator_unresolved(param_name, param_value, caller_id):
     if not param_value or not isinstance(param_value, basestring):
         raise ParameterInvalid("ERROR: parameter [%s] must be a non-empty string"%param_name)            

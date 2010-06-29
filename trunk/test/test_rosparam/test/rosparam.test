@@ -1,0 +1,20 @@
+<launch>
+
+  <param name="string" value="foo-value" />
+  <param name="int" value="1" />
+  <param name="float" value="1.0" />
+
+  <group ns="g1">
+    <param name="string" value="g1-foo-value" />
+    <param name="int" value="10" />
+    <param name="float" value="10.0" />
+  </group>
+  <group ns="g2">
+    <param name="string" value="g2-foo-value" />
+    <param name="int" value="20" />
+    <param name="float" value="20.0" />
+  </group>
+  
+  <test test-name="rosparam_command_line_online" pkg="test_rosparam" type="test_rosparam_command_line_online.py" />
+  <test test-name="test_rosparam" pkg="test_rosparam" type="test_rosparam.py" />
+</launch>

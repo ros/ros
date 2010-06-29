@@ -1,0 +1,19 @@
+<launch>
+  <param name="param1" value="global_param1"/>
+  <param name="global_param" value="foo"/>
+  
+  <!-- this is a test of search_param -->
+  <param name="parent_param" value="baz"/>
+  
+  <group ns="test_ns">
+    <param name="param1" value="parent_param1"/>
+    <param name="parent_param" value="bar"/>
+    <param name="param_str" value="hello world"/>
+    <param name="param_int" value="1" type="int"/>
+    <param name="param_float" value="2." type="double"/>    
+    <param name="param_bool" value="True" type="bool"/>
+    <test pkg="test_rospy" type="test_client_param_api.py" test-name="test_client_param_api">
+      <param name="param1" value="private_param1" />
+    </test>
+  </group>
+</launch>

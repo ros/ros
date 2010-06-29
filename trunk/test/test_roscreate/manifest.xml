@@ -1,0 +1,20 @@
+<package>
+  <description brief="test_roscreate">
+
+     test_roscreate: unit tests for roscreate
+
+  </description>
+  <author>Kenneth Conley</author>
+  <license>BSD</license>
+  <review status="test" notes=""/>
+  <url>http://ros.org/wiki/test_roscreate</url>
+  <depend package="roslib" />
+  <depend package="rostest" />
+  <depend package="roscreate" />
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
+</package>
+
+

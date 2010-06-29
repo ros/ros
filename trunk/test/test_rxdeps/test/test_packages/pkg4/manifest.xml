@@ -1,0 +1,16 @@
+<package>
+  <description brief="pkg4">
+
+     pkg4
+
+  </description>
+  <author>Tully Foote</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/pkg4</url>
+  <depend package="pkg1"/>
+  <depend package="pkg2"/>
+
+</package>
+
+

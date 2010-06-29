@@ -1,0 +1,26 @@
+byte BYTE_X=0
+byte BYTE_Y=15
+byte BYTE_Z=5
+int32 INT32_X=0
+int32 INT32_Y=-12345678
+int32 INT32_Z=12345678
+uint32 UINT32_X=0
+uint32 UINT32_Y=12345678
+uint32 UINT32_Z=1
+float32 FLOAT32_X=0.0
+float32 FLOAT32_Y=-3.14159
+float32 FLOAT32_Z=12345.78
+byte SELECT_X=1
+byte SELECT_Y=2
+byte SELECT_Z=3
+byte selection
+---
+# test response constants as well
+byte CONFIRM_X=1
+byte CONFIRM_Y=2
+byte CONFIRM_Z=3
+byte select_confirm
+byte ret_byte
+int32 ret_int32
+uint32 ret_uint32
+float32 ret_float32

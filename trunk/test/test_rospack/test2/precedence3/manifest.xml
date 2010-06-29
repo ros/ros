@@ -1,0 +1,6 @@
+<package>
+<export>
+<cpp lflags="-ltest2"/>
+</export>
+<versioncontrol type="svn" url="https://ros.svn.sourceforge.net/svnroot/ros/trunk"/>
+</package>

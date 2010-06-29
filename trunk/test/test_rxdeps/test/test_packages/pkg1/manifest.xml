@@ -1,0 +1,14 @@
+<package>
+  <description brief="pkg1">
+
+     pkg1
+
+  </description>
+  <author>Tully Foote</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/pkg1</url>
+
+</package>
+
+

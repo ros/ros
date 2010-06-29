@@ -1,0 +1,20 @@
+<launch>
+
+  <!-- no local params -->
+  <node pkg="pkg" type="type0" name="node0"/>
+
+  <group ns="group1">
+    <!-- basic test, named nodes -->
+    <node pkg="pkg" type="gtype0" name="g1node0" />
+    <param name="~gparam1" value="val1" />
+    <node pkg="pkg" type="g1type1" name="g1node1" />
+    <param name="~gparam2" value="val1" />
+    <node pkg="pkg" type="g1type2" name="g1node2" />
+  </group>
+
+  <!-- make sure scope is cleared by end of group -->
+  <param name="~param1" value="val1" />
+  <node pkg="pkg" type="type1" name="node1" />
+
+  
+</launch>

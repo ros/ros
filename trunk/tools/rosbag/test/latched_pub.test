@@ -1,0 +1,4 @@
+<launch>
+  <node name="recorder" pkg="rosbag" type="record" args="chatter -O /tmp/test_rosbag_latched_pub"/>
+  <test test-name="latched_pub" pkg="rosbag" type="latched_pub.py"/>
+</launch>

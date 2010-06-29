@@ -1,0 +1,15 @@
+float32 A=-123.0
+float32 B=124.0
+float64 C=125.0
+int32 X=123
+int32 Y=-123
+uint32 Z=124
+string FOO=foo
+string SINGLEQUOTE='hi
+string DOUBLEQUOTE="hello" there
+string MULTIQUOTE="hello" 'goodbye'
+string EXAMPLE="#comments" are ignored, and leading and trailing whitespace removed
+string WHITESPACE= strip  
+string EMPTY= 
+bool TRUE=1
+bool FALSE=0

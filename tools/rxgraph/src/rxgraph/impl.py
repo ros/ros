@@ -112,6 +112,9 @@ class DotUpdate(threading.Thread):
         try:
             while not is_shutdown():
 
+                # #2839 by default, changes zoom, but we can cancel this for certain events
+                zoom = True
+
                 # throttle calls to g.update(). we want fast refresh
                 # on changes to the viewer's ns_filter, less so on the
                 # graph polling.
@@ -132,7 +135,10 @@ class DotUpdate(threading.Thread):
                 changed |= graph_mode != last_graph_mode
                 if self.selection_update:
                     self.selection_update = False
-                    changed = True
+                    # only alter the zoom flag if this is the sole change reason
+                    if not changed:
+                        changed = True
+                        zoom = False
                 
                 quiet = viewer.quiet
                 last_graph_mode = graph_mode
@@ -145,7 +151,7 @@ class DotUpdate(threading.Thread):
                     namespaces = generate_namespaces(g, graph_mode, quiet)
                     viewer.update_namespaces(namespaces)
                     
-                    viewer.set_dotcode(dotcode)
+                    viewer.set_dotcode(dotcode, zoom=zoom)
                     viewer.set_info_text(info_text)
 
                     # store dotcode if requested

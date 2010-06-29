@@ -76,6 +76,7 @@ class RxGraphViewerFrame(wx.Frame):
     self.quiet = False
     self.topic_boxes = False
     
+    self._last_dotcode = None # for detecting actual change
     self._needs_refresh = False
     self._new_info_text = None
 

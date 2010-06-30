@@ -42,7 +42,7 @@ import traceback
 
 import rosgraph.impl.graph
 import rxgraph.dotcode
-from rxgraph.dotcode import generate_dotcode, generate_namespaces, NODE_NODE_GRAPH, NODE_TOPIC_GRAPH
+from rxgraph.dotcode import generate_dotcode, generate_namespaces, NODE_NODE_GRAPH, NODE_TOPIC_GRAPH, NODE_TOPIC_ALL_GRAPH
 from rxgraph.viewer import RxGraphViewerFrame
 
 import roslib.scriptutil
@@ -112,6 +112,9 @@ class DotUpdate(threading.Thread):
         try:
             while not is_shutdown():
 
+                # #2839 by default, changes zoom, but we can cancel this for certain events
+                zoom = True
+
                 # throttle calls to g.update(). we want fast refresh
                 # on changes to the viewer's ns_filter, less so on the
                 # graph polling.
@@ -125,14 +128,17 @@ class DotUpdate(threading.Thread):
                     if self.selection_url is not None:
                         info_text = get_info_text(self.selection_url)
                     
-                graph_mode = NODE_TOPIC_GRAPH if viewer.topic_boxes else NODE_NODE_GRAPH
+                graph_mode = NODE_TOPIC_ALL_GRAPH if viewer.topic_boxes else NODE_NODE_GRAPH
 
                 changed |= viewer.ns_filter != current_ns_filter
                 changed |= quiet != viewer.quiet
                 changed |= graph_mode != last_graph_mode
                 if self.selection_update:
                     self.selection_update = False
-                    changed = True
+                    # only alter the zoom flag if this is the sole change reason
+                    if not changed:
+                        changed = True
+                        zoom = False
                 
                 quiet = viewer.quiet
                 last_graph_mode = graph_mode
@@ -145,7 +151,7 @@ class DotUpdate(threading.Thread):
                     namespaces = generate_namespaces(g, graph_mode, quiet)
                     viewer.update_namespaces(namespaces)
                     
-                    viewer.set_dotcode(dotcode)
+                    viewer.set_dotcode(dotcode, zoom=zoom)
                     viewer.set_info_text(info_text)
 
                     # store dotcode if requested

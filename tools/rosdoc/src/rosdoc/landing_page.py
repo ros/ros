@@ -54,9 +54,17 @@ def link_name(rd_config):
             return 'C++ API'
         elif rd_config['builder'] in ['epydoc', 'sphinx']:
             return 'Python API'
+        elif rd_config['builder'] in ['external']:
+            return rd_config.get('external_label', 'External')
         else:
             return rd_config['builder']
     return n
+    
+def output_location(config):
+    if config['builder'] == 'external':
+        return config.get('external_url', None)
+    else:
+        return config.get('output_dir', None)
     
 def generate_links(ctx, package, base_dir, rd_configs):
     # rosmake is the one builder that doesn't have an output_dir
@@ -64,7 +72,7 @@ def generate_links(ctx, package, base_dir, rd_configs):
     # landing page processing
     configs = [c for c in rd_configs if c['builder'] != 'rosmake']
     
-    output_dirs = [c.get('output_dir', None) for c in configs]
+    output_dirs = [output_location(c) for c in configs]
     # filter out empties
     output_dirs = [d for d in output_dirs if d and d != '.']
     

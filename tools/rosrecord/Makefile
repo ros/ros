@@ -9,8 +9,13 @@ all:
 	@mkdir -p build
 	-mkdir -p bin
 	cd build && cmake $(CMAKE_FLAGS) ..
+ifneq ($(MAKE),)
+	cd build && $(MAKE) $(ROS_PARALLEL_JOBS)
+	cd build && $(MAKE) install
+else
 	cd build && make $(ROS_PARALLEL_JOBS)
 	cd build && make install
+endif
 	@if test `uname` = Darwin ; then \
 	echo "Changing installed rosrecord and rosplay shared library location." && \
 	install_name_tool $(ROS_ROOT)/bin/rosrecord -change librosrecorder.dylib `rospack find rosrecord`/lib/librosrecorder.dylib && \

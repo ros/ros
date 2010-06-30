@@ -42,7 +42,7 @@ import traceback
 
 import rosgraph.impl.graph
 import rxgraph.dotcode
-from rxgraph.dotcode import generate_dotcode, generate_namespaces, NODE_NODE_GRAPH, NODE_TOPIC_GRAPH
+from rxgraph.dotcode import generate_dotcode, generate_namespaces, NODE_NODE_GRAPH, NODE_TOPIC_GRAPH, NODE_TOPIC_ALL_GRAPH
 from rxgraph.viewer import RxGraphViewerFrame
 
 import roslib.scriptutil
@@ -128,7 +128,7 @@ class DotUpdate(threading.Thread):
                     if self.selection_url is not None:
                         info_text = get_info_text(self.selection_url)
                     
-                graph_mode = NODE_TOPIC_GRAPH if viewer.topic_boxes else NODE_NODE_GRAPH
+                graph_mode = NODE_TOPIC_ALL_GRAPH if viewer.topic_boxes else NODE_NODE_GRAPH
 
                 changed |= viewer.ns_filter != current_ns_filter
                 changed |= quiet != viewer.quiet

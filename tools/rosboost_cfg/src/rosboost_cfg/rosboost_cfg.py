@@ -146,7 +146,7 @@ def find_versions(search_paths):
     if (boost_version is not None):
         for v in vers:
             if (v.major == boost_version[0] and v.minor == boost_version[1] and v.patch == boost_version[2]):
-                return v
+                return [v]
         
         raise BoostError('Could not find boost version %s required by ROS_BOOST_VERSION environment variable'%(boost_version))
     
@@ -167,8 +167,7 @@ def search_paths(sysroot):
                  (None if 'CPATH' not in os.environ else os.environ['CPATH'], True),
                  (None if 'C_INCLUDE_PATH' not in os.environ else os.environ['C_INCLUDE_PATH'], True),
                  (None if 'CPLUS_INCLUDE_PATH' not in os.environ else os.environ['CPLUS_INCLUDE_PATH'], True),
-                 (None if 'ROS_BOOST_ROOT' not in os.environ else os.environ['ROS_BOOST_ROOT'], False), 
-                 (None if 'ROS_BINDEPS_PATH' not in os.environ else os.environ['ROS_BINDEPS_PATH'], False)]
+                 (None if 'ROS_BOOST_ROOT' not in os.environ else os.environ['ROS_BOOST_ROOT'], False)]
 
     search_paths = []
     for (str, system) in _search_paths:
@@ -228,7 +227,7 @@ def find_lib(ver, name, full_lib = link_static):
     raise BoostError('Could not locate library [%s]'%(name))
   
 def include_dirs(ver, prefix = ''):
-    if (ver.is_default_search_location or no_L_or_I):
+    if (ver.is_system_install or no_L_or_I):
         return ""
     
     return " %s%s"%(prefix, ver.include_dir)

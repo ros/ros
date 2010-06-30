@@ -64,23 +64,17 @@
       (call-next-method)))
 
 (defmethod asdf:operation-done-p :around ((operation asdf:operation) (c asdf:cl-source-file))
-  (let ((*ros-asdf-use-ros-home* (let ((stat (sb-posix:stat (make-pathname
-                                                               :directory (pathname-directory
-                                                                           (asdf:component-pathname c))))))
-                                   (and (path-ros-package (asdf:component-pathname c))
-                                        (or
-                                         (eql 0 (logand (sb-posix:stat-mode stat) #o0200))
-                                         (not (eq (sb-posix:stat-uid stat) (sb-posix:getuid))))))))
+  (let ((*ros-asdf-use-ros-home* (and (path-ros-package (asdf:component-pathname c))
+                                      (not (directory-writable (make-pathname
+                                                                :directory (pathname-directory
+                                                                           (asdf:component-pathname c))))))))
     (call-next-method)))
 
 (defmethod asdf:perform :around ((operation asdf:operation) (c asdf:cl-source-file))
-  (let ((*ros-asdf-use-ros-home* (let ((stat (sb-posix:stat (make-pathname
-                                                               :directory (pathname-directory
-                                                                           (asdf:component-pathname c))))))
-                                   (and (path-ros-package (asdf:component-pathname c))
-                                        (or
-                                         (eql 0 (logand (sb-posix:stat-mode stat) #o0200))
-                                         (not (eq (sb-posix:stat-uid stat) (sb-posix:getuid))))))))
+  (let ((*ros-asdf-use-ros-home* (and (path-ros-package (asdf:component-pathname c))
+                                      (not (directory-writable (make-pathname
+                                                                :directory (pathname-directory
+                                                                            (asdf:component-pathname c))))))))
     (call-next-method)))
 
 (defun asdf-system-of-component (component)
@@ -89,13 +83,20 @@
     (asdf:system component)
     (asdf:component (asdf-system-of-component (asdf:component-parent component)))))
 
+(defun directory-writable (directory)
+  (let ((stat (sb-posix:stat directory)))
+    (and (not (eql 0 (logand (sb-posix:stat-mode stat) #o0200)))
+         (eq (sb-posix:stat-uid stat) (sb-posix:getuid)))))
+
 (defun path-ros-package (path &optional traversed)
   "Traverses the `path' upwards until it finds a manifest.
    Returns two values, the name of the ros package and the relative
    part of path inside the package. Returns nil if no manifest could
    be found."
-  (let ((manifest (probe-file (merge-pathnames "manifest.xml" path))))
-    (cond (manifest
+  (let ((manifest (probe-file (merge-pathnames "manifest.xml" path)))
+        (marker-file (probe-file (merge-pathnames "roslisp_ignore" path))))
+    (cond (marker-file nil)
+          (manifest
            (values (truename path) traversed))
           ((not (cdr (pathname-directory path)))
            nil)

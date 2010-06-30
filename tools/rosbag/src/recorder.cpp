@@ -139,17 +139,22 @@ int Recorder::run() {
 
     queue_ = new std::queue<OutgoingMessage>;
 
+    ros::Subscriber trigger_sub;
+
     // Spin up a thread for writing to the file
     boost::thread record_thread;
     if (options_.snapshot)
+    {
         record_thread = boost::thread(boost::bind(&Recorder::doRecordSnapshotter, this));
+
+        // Subscribe to the snapshot trigger
+        trigger_sub = nh.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&Recorder::snapshotTrigger, this, _1));
+    }
     else
         record_thread = boost::thread(boost::bind(&Recorder::doRecord, this));
 
     ros::Time::waitForValid();
 
-    // Subscribe to the snapshot trigger
-    ros::Subscriber trigger_sub = nh.subscribe<std_msgs::Empty>("snapshot_trigger", 100, boost::bind(&Recorder::snapshotTrigger, this, _1));
 
     // Subscribe to each topic
     if (!options_.regex) {

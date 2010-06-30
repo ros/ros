@@ -42,7 +42,21 @@ import roslib.rospack
 
 from rosdoc.rdcore import *
 
-bsdstyle = ['bsd', 'bsd-style', 'new bsd', 'zlib', 'zlib-style', 'mit', 'wxwindows', 'lgpl', 'free', 'python', 'python-style', 'bsl1.0', 'boost', 'apache', 'bsd/gpl/lgpl', 'boost software license', 'public domain', 'apache license']
+canonicalize = {
+    'lgpl': 'LGPL',
+    'unknown': 'Unknown',
+    'BSD and GPL': 'BSD/GPL',
+    'Commercial': 'Proprietary',
+    'Closed': 'Commercial',
+    'BSD.': 'BSD',
+    'new BSD': 'BSD (new)', #for better alphabetizing
+    'GPL v3': "GPLv3",
+    'GNU GPL V3': 'GPLv3',
+    'GPL 3.0': 'GPLv3',
+    '?': 'Unknown',
+    }
+
+bsdstyle = ['bsd', 'bsd-style', 'new bsd', 'bsd (new)', 'zlib', 'zlib-style', 'mit', 'wxwindows', 'lgpl', 'free', 'python', 'python-style', 'bsl1.0', 'boost', 'apache', 'apache license, version 2.0', 'boost software license', 'public domain', 'apache license', 'BSD, Boost Software License (Poco)', 'BSD, Boost']
 contaminated = ['gpl', 'creativecommons-by-nc-sa-2.0', 'commercial', 'proprietary']
 # keep track of licenses we've reported as unknown
 _already_unknown = []
@@ -55,6 +69,7 @@ license_urls = {
     'bsl1.0': 'http://www.boost.org/LICENSE_1_0.txt',
     'boost software license': 'http://www.boost.org/users/license.html',
     'mit': 'http://www.opensource.org/licenses/mit-license.php',
+    'new bsd': 'http://www.opensource.org/licenses/bsd-license.php',
     'bsd': 'http://www.opensource.org/licenses/bsd-license.php',
     'zlib': 'http://www.gzip.org/zlib/zlib_license.html',
     'lgpl': 'http://www.opensource.org/licenses/lgpl-2.1.php',
@@ -79,12 +94,15 @@ def _check_contaminated(package, license, manifests):
         m = manifests[dep]
         dl = m.license or 'unknown'
         dl = dl.lower()
-        if dl in contaminated:
+        if dl not in bsdstyle: #anything we don't whitelist is contaminated
             blame.append(dep)
-        elif not dl in bsdstyle:
-            if not dl in _already_unknown:
-                print "UNKNOWN", dl
-                _already_unknown.append(dl)
+        if 0:
+            if dl in contaminated:
+                blame.append(dep)
+            elif not dl in bsdstyle:
+                if not dl in _already_unknown:
+                    print "UNKNOWN", dl
+                    _already_unknown.append(dl)
     if blame:
         return license + contam_suffix, blame
     else:
@@ -107,6 +125,10 @@ def _generate_licenses_map(ctx):
         
         manifest = manifests[package]
         license = manifest.license or 'unknown'
+        license = canonicalize.get(license, license)
+        # reduce pesky 'licenses' that are just long copyright statements
+        if 'Copyright' in license:
+            license = 'unknown'
         license_url = manifest.license_url
         if license_url and not license in license_urls:
             license_urls[license.lower()] = license_url
@@ -165,7 +187,7 @@ def generate_license_index(ctx, license_index):
         buff.write(li_license_links(list, blamelist, docdir))
     
     vars = {'$name': ctx.name, '$licenselist' : buff.getvalue(),
-            '$date': time.strftime('%s'), '$toc': contents }
+            '$date': time.strftime("%a, %d %b %Y %H:%M:%S"), '$toc': contents }
     with open(license_index, 'w') as f:
         f.write(instantiate_template(license_template, vars))
         

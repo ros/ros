@@ -121,7 +121,7 @@ _terminal_name = None
 
 def _set_terminal(s):
     import platform
-    if platform.system() in ['Linux', 'Darwin', 'Unix']:
+    if platform.system() in ['FreeBSD', 'Linux', 'Darwin', 'Unix']:
         try:
             print '\033]2;%s\007'%s
         except:

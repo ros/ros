@@ -64,12 +64,12 @@ from timeline_status_bar import TimelineStatusBar, PlayheadChangedEvent, EVT_PLA
 from timeline_toolbar    import TimelineToolBar
 
 class _SelectionMode(object):
-    NONE        = 0    # no region marked or started
-    LEFT_MARKED = 1    # one end of the region has been marked
-    MARKED      = 2    # region has been marked
-    SHIFTING    = 3    # region is marked; now shifting
-    MOVE_LEFT   = 4    # region is marked; changing the left mark
-    MOVE_RIGHT  = 5    # region is marked; changing the right mark
+    NONE        = 'none'          # no region marked or started
+    LEFT_MARKED = 'left marked'   # one end of the region has been marked
+    MARKED      = 'marked'        # region has been marked
+    SHIFTING    = 'shifting'      # region is marked; now shifting
+    MOVE_LEFT   = 'move left'     # region is marked; changing the left mark
+    MOVE_RIGHT  = 'move right'    # region is marked; changing the right mark
 
 class Timeline(wx.Window):
     def __init__(self, *args, **kwargs):
@@ -179,6 +179,8 @@ class Timeline(wx.Window):
         self._bag_lock = threading.RLock()
         self._bags     = []
 
+        self._loading_filename = None
+
         self._start_stamp        = None
         self._end_stamp          = None
         self._topics             = []
@@ -200,6 +202,9 @@ class Timeline(wx.Window):
         self._messages_cvs             = {}
         self._messages                 = {}                  # topic -> (bag, msg_data)
         self._message_listener_threads = {}                  # listener -> MessageListenerThread
+
+        self.background_task        = None
+        self.background_task_cancel = False
 
         self._views = []
 
@@ -287,6 +292,16 @@ class Timeline(wx.Window):
     @property
     def frame(self): return wx.GetApp().GetTopWindow()
 
+    # property: loading_filename
+
+    def _get_loading_filename(self): return self._loading_filename
+    
+    def _set_loading_filename(self, loading_filename):
+        self._loading_filename = loading_filename
+        wx.CallAfter(self._update_title)
+
+    loading_filename = property(_get_loading_filename, _set_loading_filename)
+
     ## Visual
 
     @property
@@ -312,9 +327,20 @@ class Timeline(wx.Window):
     @property
     def selected_right(self): return self._selected_right
 
+    # property: selecting_mode
+    
+    def _get_selecting_mode(self): return self._selecting_mode
+    
+    def _set_selecting_mode(self, selecting_mode): self._selecting_mode = selecting_mode
+
+    selecting_mode = property(_get_selecting_mode, _set_selecting_mode)
+
     ##
 
     def _close(self):
+        if self.background_task is not None:
+            self.background_task_cancel = True
+
         for renderer in self._timeline_renderers.values(): 
             renderer.close()
 
@@ -391,7 +417,20 @@ class Timeline(wx.Window):
             wx.CallAfter(self.frame.ToolBar._setup)
             self._update_title()
 
-    ### Export
+    ### Copy messages to...
+
+    def start_background_task(self, background_task):
+        if self.background_task is not None:
+            dialog = wx.MessageDialog(None, 'Background operation already running:\n\n%s' % self.background_task, 'Exclamation', wx.OK | wx.ICON_EXCLAMATION)
+            dialog.ShowModal()
+            return False
+
+        self.background_task        = background_task
+        self.background_task_cancel = False
+        return True
+
+    def stop_background_task(self):
+        self.background_task = None
 
     def copy_region_to_bag(self):
         dialog = wx.FileDialog(self, 'Copy messages to...', wildcard='Bag files (*.bag)|*.bag', style=wx.FD_SAVE)
@@ -400,7 +439,15 @@ class Timeline(wx.Window):
         dialog.Destroy()
 
     def _export_region(self, path, topics, start_stamp, end_stamp):
+        if not self.start_background_task('Copying messages to "%s"' % path):
+            return
+
+        wx.CallAfter(self.frame.StatusBar.gauge.Show)
+
         bag_entries = list(self.get_entries_with_bags(topics, start_stamp, end_stamp))
+
+        if self.background_task_cancel:
+            return
 
         # Get the total number of messages to copy
         total_messages = len(bag_entries)
@@ -408,21 +455,22 @@ class Timeline(wx.Window):
         # If no messages, prompt the user and return
         if total_messages == 0:
             wx.MessageDialog(None, 'No messages found', 'rxbag', wx.OK | wx.ICON_EXCLAMATION).ShowModal()
+            wx.CallAfter(self.frame.StatusBar.gauge.Hide)
             return
         
         # Open the path for writing
         try:
             export_bag = rosbag.Bag(path, 'w')
         except Exception, ex:
-            print >> sys.stderr, 'Error opening bag file [%s] for writing' % path
+            wx.MessageDialog(None, 'Error opening bag file [%s] for writing' % path, 'rxbag', wx.OK | wx.ICON_EXCLAMATION).ShowModal()
+            wx.CallAfter(self.frame.StatusBar.gauge.Hide)
+            return
 
         # Run copying in a background thread
         self._export_thread = threading.Thread(target=self._run_export_region, args=(export_bag, topics, start_stamp, end_stamp, bag_entries))
         self._export_thread.start()
 
     def _run_export_region(self, export_bag, topics, start_stamp, end_stamp, bag_entries):
-        #self._keep_exporting = True
-
         total_messages = len(bag_entries)
         
         update_step = max(1, total_messages / 100)
@@ -431,9 +479,14 @@ class Timeline(wx.Window):
 
         progress = 0
 
-        wx.CallAfter(self.frame.StatusBar.gauge.Show)
+        def update_progress(v):
+            self.frame.StatusBar.progress = v
 
+        # Write out the messages
         for bag, entry in bag_entries:
+            if self.background_task_cancel:
+                break
+
             try:
                 topic, msg, t = self.read_message(bag, entry.position)
                 export_bag.write(topic, msg, t)
@@ -441,22 +494,24 @@ class Timeline(wx.Window):
                 print >> sys.stderr, 'Error exporting message at position %s: %s' % (str(entry.position), str(ex))
 
             if message_num % update_step == 0 or message_num == total_messages:
-                def update_progress(v):
-                    self.frame.StatusBar.progress = v
-
                 new_progress = int(100.0 * (float(message_num) / total_messages))
                 if new_progress != progress:
                     progress = new_progress
-                    wx.CallAfter(update_progress, progress)
+                    if not self.background_task_cancel:
+                        wx.CallAfter(update_progress, progress)
 
             message_num += 1
 
+        # Close the bag
         try:
             export_bag.close()
         except Exception, ex:
-            print >> sys.stderr, 'Error closing bag file [%s]: %s' % (export_bag.filename, str(ex))
+            wx.MessageDialog(None, 'Error closing bag file [%s]: %s' % (export_bag.filename, str(ex)), 'rxbag', wx.OK | wx.ICON_EXCLAMATION).ShowModal()
 
-        wx.CallAfter(self.frame.StatusBar.gauge.Hide)
+        if not self.background_task_cancel:
+            wx.CallAfter(self.frame.StatusBar.gauge.Hide)
+
+        self.stop_background_task()
 
     ### Publishing
 
@@ -519,6 +574,8 @@ class Timeline(wx.Window):
                     listener.timeline_changed()
                 except wx.PyDeadObjectError:
                     self.remove_listener(topic, listener)
+                except Exception, ex:
+                    print >> sys.stderr, 'Error calling timeline_changed on %s: %s' % (type(listener), str(ex))
 
     ## Timeline info
 
@@ -600,7 +657,7 @@ class Timeline(wx.Window):
 
     def get_entries_with_bags(self, topic, start_stamp, end_stamp):
         with self._bag_lock:
-            from rosbag import bag
+            from rosbag import bag   # for _mergesort
 
             bag_entries = []
             bag_by_iter = {}
@@ -950,26 +1007,41 @@ class Timeline(wx.Window):
 
     def _update_title(self):
         title = 'rxbag'
+
         if self._recorder:
             if self._recorder.paused:
                 title += ' - %s [recording paused]' % self._bags[0].filename
             else:
                 title += ' - %s [recording]' % self._bags[0].filename
+
         elif len(self.bags) > 0:
             if len(self.bags) == 1:
                 title += ' - ' + self._bags[0].filename
             else:
                 title += ' - [%d bags]' % len(self._bags)
+
+        if self._loading_filename is not None:
+            title += ' - Loading %s...' % self._loading_filename
         
         self.frame.Title = title
 
     def on_close(self, event):
+        if self.background_task is not None:
+            dialog = wx.MessageDialog(None, 'Background operation running:\n\n%s\n\nQuit anyway?' % self.background_task, 'Question', wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+            result = dialog.ShowModal()
+            dialog.Destroy()
+            if result == wx.ID_NO:
+                event.Veto()
+                return
+
         self._close()
+
         event.Skip()
 
     def on_idle(self, event):
-        self._step_playhead()
-        event.RequestMore()
+        if self.play_speed != 0.0:
+            self._step_playhead()
+            event.RequestMore()
 
     def on_size(self, event):
         self.Position = (0, 0)
@@ -1582,6 +1654,8 @@ class Timeline(wx.Window):
                     self.playhead = rospy.Time(0, 1)
                 else:
                     self.playhead = rospy.Time.from_sec(playhead_secs)
+
+                #self._selecting_mode = _SelectionMode.MARKED
                 
                 self.Refresh()
                     
@@ -1591,7 +1665,7 @@ class Timeline(wx.Window):
                 if self._selecting_mode == _SelectionMode.NONE:
                     self._selected_left  = None
                     self._selected_right = None
-                    self._selecting_mode = _SelectionMode.LEFT_MARKED
+                    self.selecting_mode = _SelectionMode.LEFT_MARKED
 
                     self.Refresh()
                 
@@ -1602,7 +1676,7 @@ class Timeline(wx.Window):
                     if x < left_x - self._selection_handle_width or x > right_x + self._selection_handle_width:
                         self._selected_left  = None
                         self._selected_right = None
-                        self._selecting_mode = _SelectionMode.LEFT_MARKED
+                        self.selecting_mode = _SelectionMode.LEFT_MARKED
                         self.Refresh()
 
     def on_middle_down(self, event):
@@ -1626,10 +1700,10 @@ class Timeline(wx.Window):
         
         if self._selecting_mode in [_SelectionMode.LEFT_MARKED, _SelectionMode.MOVE_LEFT, _SelectionMode.MOVE_RIGHT, _SelectionMode.SHIFTING]:
             if self._selected_left is None:
-                self._selecting_mode = _SelectionMode.NONE
+                self.selecting_mode = _SelectionMode.NONE
             else:
-                self._selecting_mode = _SelectionMode.MARKED
-
+                self.selecting_mode = _SelectionMode.MARKED
+        
         self.Cursor = wx.StockCursor(wx.CURSOR_ARROW)
         
         self.Refresh()
@@ -1653,19 +1727,19 @@ class Timeline(wx.Window):
                     right_x = self.map_stamp_to_x(self._selected_right)
 
                     if abs(x - left_x) <= self._selection_handle_width:
-                        self._selecting_mode = _SelectionMode.MOVE_LEFT
+                        self.selecting_mode = _SelectionMode.MOVE_LEFT
                         self.Cursor = wx.StockCursor(wx.CURSOR_SIZEWE)
                         return
                     elif abs(x - right_x) <= self._selection_handle_width:
-                        self._selecting_mode = _SelectionMode.MOVE_RIGHT
+                        self.selecting_mode = _SelectionMode.MOVE_RIGHT
                         self.Cursor = wx.StockCursor(wx.CURSOR_SIZEWE)
                         return
                     elif x > left_x and x < right_x:
-                        self._selecting_mode = _SelectionMode.SHIFTING
+                        self.selecting_mode = _SelectionMode.SHIFTING
                         self.Cursor = wx.StockCursor(wx.CURSOR_SIZING)
                         return
                     else:
-                        self._selecting_mode = _SelectionMode.MARKED
+                        self.selecting_mode = _SelectionMode.MARKED
 
             self.Cursor = wx.StockCursor(wx.CURSOR_ARROW)
     
@@ -1691,32 +1765,34 @@ class Timeline(wx.Window):
     
                 x_stamp = self.map_x_to_stamp(x)
 
-                if self._selecting_mode == _SelectionMode.LEFT_MARKED:
-                    # Left and selecting: change selection region
-
-                    clicked_x_stamp = self.map_x_to_stamp(clicked_x)
-                    
-                    self._selected_left  = min(clicked_x_stamp, x_stamp)
-                    self._selected_right = max(clicked_x_stamp, x_stamp)
+                if y <= self.history_top:
+                	
+                    if self._selecting_mode == _SelectionMode.LEFT_MARKED:
+                        # Left and selecting: change selection region
     
-                    self.Refresh()
-                    
-                elif self._selecting_mode == _SelectionMode.MOVE_LEFT:
-                    self._selected_left = x_stamp
-                    self.Refresh()
-                    
-                elif self._selecting_mode == _SelectionMode.MOVE_RIGHT:
-                    self._selected_right = x_stamp
-                    self.Refresh()
-
-                elif self._selecting_mode == _SelectionMode.SHIFTING:
-                    dx_drag = x - self._dragged_pos[0]
-                    dstamp = self.map_dx_to_dstamp(dx_drag)
-
-                    self._selected_left  = max(self._start_stamp.to_sec(), min(self._end_stamp.to_sec(), self._selected_left  + dstamp))
-                    self._selected_right = max(self._start_stamp.to_sec(), min(self._end_stamp.to_sec(), self._selected_right + dstamp))
-                    self.Refresh()
-
+                        clicked_x_stamp = self.map_x_to_stamp(clicked_x)
+                        
+                        self._selected_left  = min(clicked_x_stamp, x_stamp)
+                        self._selected_right = max(clicked_x_stamp, x_stamp)
+        
+                        self.Refresh()
+                        
+                    elif self._selecting_mode == _SelectionMode.MOVE_LEFT:
+                        self._selected_left = x_stamp
+                        self.Refresh()
+                        
+                    elif self._selecting_mode == _SelectionMode.MOVE_RIGHT:
+                        self._selected_right = x_stamp
+                        self.Refresh()
+    
+                    elif self._selecting_mode == _SelectionMode.SHIFTING:
+                        dx_drag = x - self._dragged_pos[0]
+                        dstamp = self.map_dx_to_dstamp(dx_drag)
+    
+                        self._selected_left  = max(self._start_stamp.to_sec(), min(self._end_stamp.to_sec(), self._selected_left  + dstamp))
+                        self._selected_right = max(self._start_stamp.to_sec(), min(self._end_stamp.to_sec(), self._selected_right + dstamp))
+                        self.Refresh()
+                
                 elif clicked_x >= self._history_left and clicked_x <= self.history_right and clicked_y >= self._history_top and clicked_y <= self._history_bottom:
                     # Left and clicked within timeline: change playhead
                     
@@ -1737,20 +1813,20 @@ class Timeline(wx.Window):
             self._selected_left  = self._playhead.to_sec()
             self._selected_right = None
             
-            self._selecting_mode = _SelectionMode.LEFT_MARKED
+            self.selecting_mode = _SelectionMode.LEFT_MARKED
 
         elif self._selecting_mode == _SelectionMode.LEFT_MARKED:
             current_mark = self._selected_left
             self._selected_left  = min(current_mark, self._playhead.to_sec())
             self._selected_right = max(current_mark, self._playhead.to_sec())
 
-            self._selecting_mode = _SelectionMode.MARKED
+            self.selecting_mode = _SelectionMode.MARKED
 
         elif self._selecting_mode == _SelectionMode.MARKED:
             self._selected_left  = None
             self._selected_right = None
             
-            self._selecting_mode = _SelectionMode.NONE
+            self.selecting_mode = _SelectionMode.NONE
 
         self.Refresh()
 
@@ -1801,7 +1877,6 @@ class IndexCacheThread(threading.Thread):
         cv = self.timeline.index_cache_cv
         with cv:
             cv.notify()
-        self.join()
 
 class MessageLoader(threading.Thread):
     """
@@ -1880,7 +1955,6 @@ class MessageLoader(threading.Thread):
         cv = self.timeline._playhead_positions_cvs[self.topic]
         with cv:
             cv.notify_all()
-        self.join()
 
 class MessageListenerThread(threading.Thread):
     """
@@ -1923,10 +1997,11 @@ class MessageListenerThread(threading.Thread):
                     self.listener.message_cleared()
             except wx.PyDeadObjectError:
                 self.timeline.remove_listener(self.topic, self.listener)
+            except Exception, ex:
+                print >> sys.stderr, 'Error notifying listener %s: %s' % (type(self.listener), str(ex))
 
     def stop(self):
         self._stop_flag = True
         cv = self.timeline._messages_cvs[self.topic]
         with cv:
             cv.notify_all()
-        self.join()

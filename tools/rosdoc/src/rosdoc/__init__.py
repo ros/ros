@@ -99,11 +99,13 @@ def main():
                     ctx.has_builder(package, 'rosmake')):
                     to_rosmake.append(package)
         if to_rosmake != []:
-            command = ['rosmake', '--status-rate=0'] + to_rosmake
+            # command = ['rosmake', '--status-rate=0'] + to_rosmake
+            command = ['rosmake', '-V'] + to_rosmake
             print " ".join(command)
             started = time.time()
             try:
-                Popen(command, stdout=PIPE).communicate()
+                (stdoutdata, _) = Popen(command, stdout=PIPE).communicate()
+                print stdoutdata
             except:
                 print "command failed"
             print "rosmake took %ds" % (time.time() - started)

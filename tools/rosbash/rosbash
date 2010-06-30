@@ -505,9 +505,9 @@ function _msg_opts {
         fi
     fi
 
-    path=`rospack find ${pkgname}`            
+    path=`rospack find ${pkgname} 2> /dev/null`
 
-    if [ -d ${path}/msg ]; then
+    if [ $? -eq 0 ] && [ -d ${path}/msg ]; then
         echo `find -H ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g"`
     fi
 }

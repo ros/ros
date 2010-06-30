@@ -648,7 +648,7 @@ bool TopicManager::requestTopic(const string &topic,
       }
 
       int max_datagram_size = proto[4];
-      int conn_id = connection_manager_->getUDPServerTransport()->generateConnectionId();
+      int conn_id = connection_manager_->getNewConnectionID();
       TransportUDPPtr transport = connection_manager_->getUDPServerTransport()->createOutgoing(host, port, conn_id, max_datagram_size);
       connection_manager_->udprosIncomingConnection(transport, h);
 

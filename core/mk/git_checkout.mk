@@ -17,7 +17,7 @@ $(GIT_DIR):
 patched: $(GIT_PATCH) Makefile
 	cd $(GIT_DIR) && git reset --hard
 ifneq ($(strip $(GIT_PATCH)),)
-	$(foreach PATCH, $(GIT_PATCH), patch -d $(GIT_DIR) -p0 < $(PATCH) && ) echo patched
+	$(foreach PATCH, $(GIT_PATCH), patch -d $(GIT_DIR) -p1 < $(PATCH) && ) echo patched
 	touch rospack_nosubdirs
 	touch patched
 endif   

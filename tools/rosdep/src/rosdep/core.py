@@ -46,13 +46,15 @@ import tempfile
 import yaml
 import time
 
-import base_rosdep
-import debian
-import redhat
-import gentoo
-import macports
-import arch
-import cygwin
+  
+import rosdep.base_rosdep
+import rosdep.debian as debian
+import rosdep.redhat as redhat
+import rosdep.gentoo as gentoo
+import rosdep.macports as macports
+import rosdep.arch as arch
+import rosdep.cygwin as cygwin
+import rosdep.freebsd as freebsd
 
 
 yaml.add_constructor(
@@ -232,7 +234,11 @@ class RosdepLookupPackage:
                         #print >> sys.stderr, "DEBUG: Same key found for %s: %s"%(key, self.rosdep_map[key])
                         pass
                     else:
-                        raise RosdepException("QUITTING: due to conflicting rosdep definitions, please resolve this conflict. Rules for %s do not match.  These two rules do not match: \n{{{"%key, self.rosdep_map[key],"}}}, from %s, \n{{{"%self.rosdep_source[key], self.yaml_cache.get_os_from_yaml(key, yaml_dict[key], source_path), "}}} from %s"%source_path)
+                        cache_p = self.yaml_cache.get_os_from_yaml(key, yaml_dict[key], source_path)
+                        raise RosdepException("""QUITTING: due to conflicting rosdep definitions, please resolve this conflict.
+Rules for %s do not match:
+\t%s [%s]
+\t%s [%s]"""%(key, self.rosdep_map[key], self.rosdep_source[key][0], rosdep_entry, source_path))
                         
             else:
                 self.rosdep_source[key] = [source_path]
@@ -272,10 +278,10 @@ class RosdepLookupPackage:
 
 class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
-        os_list = [debian.RosdepTestOS(), debian.Debian(), debian.Ubuntu(), debian.Mint(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports(), gentoo.Gentoo(), cygwin.Cygwin()]
+        os_list = [debian.RosdepTestOS(), debian.Debian(), debian.Ubuntu(), debian.Mint(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports(), gentoo.Gentoo(), cygwin.Cygwin(), freebsd.FreeBSD()]
         # Make sure that these classes are all well formed.  
         for o in os_list:
-            if not isinstance(o, base_rosdep.RosdepBaseOS):
+            if not isinstance(o, rosdep.base_rosdep.RosdepBaseOS):
                 raise RosdepException("Class [%s] not derived from RosdepBaseOS"%o.__class__.__name__)
         # Detect the OS on which this program is running. 
         self.osi = roslib.os_detect.OSDetect(os_list)
@@ -373,8 +379,15 @@ class Rosdep:
             fh.flush()
             
             print "executing this script:\n %s"%script
-            p= subprocess.Popen(['bash', fh.name])
-            p.communicate()
+            p= subprocess.Popen(['bash', fh.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+            (out, err) = p.communicate()
+            if p.returncode != 0:
+                if err:
+                    return err
+                else:
+                    return "rosdep script failed"
+            else:
+                return None
                     
     def depdb(self, packages):
         output = "Rosdep dependencies for operating system %s version %s "%(self.osi.get_name(), self.osi.get_version())

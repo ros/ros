@@ -109,6 +109,8 @@ public:
 
   virtual void enableWrite();
   virtual void disableWrite();
+  virtual void enableRead();
+  virtual void disableRead();
 
   virtual void close();
 
@@ -132,11 +134,6 @@ private:
    * \return Whether setting the socket was successful
    */
   bool setSocket(int sock);
-
-  /**
-   * \brief Enables reading on our socket
-   */
-  void enableRead();
 
   void socketUpdate(int events);
 

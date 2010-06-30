@@ -98,7 +98,8 @@ class TestRospyClientOnline(unittest.TestCase):
 
         # test wait for service in failure case
         def task3():
-            rospy.wait_for_service('fake_service', timeout=0.1)
+            # #2842 raising bounds from .1 to .3 for amazon VM            
+            rospy.wait_for_service('fake_service', timeout=0.3)
         timeout_t = time.time() + 2.        
         t3 = TestTask(task3)        
         t3.start()
@@ -158,14 +159,16 @@ class TestRospyClientOnline(unittest.TestCase):
         t = time.time()
         rospy.sleep(0.1)
         dur = time.time() - t
+        # #2842 raising bounds from .01 to .03 for amazon VM 
+
         # make sure sleep is approximately right
-        self.assert_(abs(dur - 0.1) < 0.01, dur)
+        self.assert_(abs(dur - 0.1) < 0.03, dur)
 
         t = time.time()
         rospy.sleep(rospy.Duration.from_sec(0.1))
         dur = time.time() - t
         # make sure sleep is approximately right
-        self.assert_(abs(dur - 0.1) < 0.01, dur)
+        self.assert_(abs(dur - 0.1) < 0.03, dur)
 
         # sleep for neg duration
         t = time.time()
@@ -261,7 +264,8 @@ class TestRospyClientOnline(unittest.TestCase):
         
         # test wait for message with timeout FAILURE
         def task3():
-            return rospy.wait_for_message('fake_topic', std_msgs.msg.String, timeout=.1)
+            # #2842 raising bounds from .1 to .3 for amazon VM
+            return rospy.wait_for_message('fake_topic', std_msgs.msg.String, timeout=.3)
         timeout_t = time.time() + 2.        
         t3 = TestTask(task3)        
         t3.start()

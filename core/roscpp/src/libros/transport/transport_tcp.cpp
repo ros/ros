@@ -277,7 +277,14 @@ bool TransportTCP::connect(const std::string& host, int port)
     return false;
   }
 
-  ROSCPP_LOG_DEBUG("Connect succeeded to [%s:%d] on socket [%d]", host.c_str(), port, sock_);
+  if (flags_ & SYNCHRONOUS)
+  {
+    ROSCPP_LOG_DEBUG("connect() succeeded to [%s:%d] on socket [%d]", host.c_str(), port, sock_);
+  }
+  else
+  {
+    ROSCPP_LOG_DEBUG("Async connect() in progress to [%s:%d] on socket [%d]", host.c_str(), port, sock_);
+  }
 
   return true;
 }
@@ -335,8 +342,6 @@ void TransportTCP::close()
       {
         closed_ = true;
 
-        ROSCPP_LOG_DEBUG("TCP socket [%d] closed", sock_);
-
         ROS_ASSERT(sock_ != -1);
 
         if (poll_set_)
@@ -348,6 +353,10 @@ void TransportTCP::close()
         if (::close(sock_) < 0)
         {
           ROS_ERROR("Error closing socket [%d]: [%s]", sock_, strerror(errno));
+        }
+        else
+        {
+          ROSCPP_LOG_DEBUG("TCP socket [%d] closed", sock_);
         }
 
         sock_ = -1;
@@ -387,6 +396,7 @@ int32_t TransportTCP::read(uint8_t* buffer, uint32_t size)
     if (errno != EAGAIN)
     {
       ROSCPP_LOG_DEBUG("recv() failed with error [%s]", strerror(errno));
+      close();
     }
     else
     {
@@ -551,44 +561,43 @@ void TransportTCP::socketUpdate(int events)
     return;
   }
 
+  // Handle read events before err/hup/nval, since there may be data left on the wire
+  if ((events & POLLIN) && expecting_read_)
+  {
+    if (is_server_)
+    {
+      // Should not block here, because poll() said that it's ready
+      // for reading
+      TransportTCPPtr transport = accept();
+      if (transport)
+      {
+        ROS_ASSERT(accept_cb_);
+        accept_cb_(transport);
+      }
+    }
+    else
+    {
+      if (read_cb_)
+      {
+        read_cb_(shared_from_this());
+      }
+    }
+  }
+
+  if ((events & POLLOUT) && expecting_write_)
+  {
+    if (write_cb_)
+    {
+      write_cb_(shared_from_this());
+    }
+  }
+
   if((events & POLLERR) ||
      (events & POLLHUP) ||
      (events & POLLNVAL))
   {
     ROSCPP_LOG_DEBUG("Socket %d closed with (ERR|HUP|NVAL) events %d", sock_, events);
     close();
-  }
-  else
-  {
-    if ((events & POLLIN) && expecting_read_)
-    {
-      if (is_server_)
-      {
-        // Should not block here, because poll() said that it's ready
-        // for reading
-        TransportTCPPtr transport = accept();
-        if (transport)
-        {
-          ROS_ASSERT(accept_cb_);
-          accept_cb_(transport);
-        }
-      }
-      else
-      {
-        if (read_cb_)
-        {
-          read_cb_(shared_from_this());
-        }
-      }
-    }
-
-    if ((events & POLLOUT) && expecting_write_)
-    {
-      if (write_cb_)
-      {
-        write_cb_(shared_from_this());
-      }
-    }
   }
 }
 

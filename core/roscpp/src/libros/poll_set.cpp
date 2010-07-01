@@ -235,13 +235,14 @@ void PollSet::update(int poll_timeout)
 
       // If these are registered events for this socket, OR the events are ERR/HUP/NVAL,
       // call through to the registered function
+      int revents = ufds_[i].revents;
       if (func
-          && ((events & ufds_[i].revents)
-              || (events & POLLERR)
-              || (events & POLLHUP)
-              || (events & POLLNVAL)))
+          && ((events & revents)
+              || (revents & POLLERR)
+              || (revents & POLLHUP)
+              || (revents & POLLNVAL)))
       {
-        func(ufds_[i].revents & events);
+        func(revents & (events|POLLERR|POLLHUP|POLLNVAL));
       }
 
       ufds_[i].revents = 0;

@@ -53,10 +53,13 @@ def check_log_disk_usage():
         import rosclean
         import roslib.rosenv
         d = roslib.rosenv.get_log_dir()
+        roslaunch.core.printlog("Checking log directory for disk usage. This may take awhile.\nPress Ctrl-C to interrupt") 
         disk_usage = rosclean.get_disk_usage(d)
         # warn if over a gig
         if disk_usage > 1073741824:
             roslaunch.core.printerrlog("WARNING: disk usage in log directory [%s] is over 1GB.\nIt's recommended that you use the 'rosclean' command."%d)
+        else:
+            roslaunch.core.printlog("Done checking log file disk usage. Usage is <1GB.")            
     except:
         pass
 

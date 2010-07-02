@@ -414,7 +414,9 @@ class RospackTestCase(unittest.TestCase):
         testp_roslang = os.path.join(testp, 'roslang')
         test2p_roslang = os.path.join(test2p, 'roslang')
         tests = [([testp_roslang], teste, ':'.join([testp, test2p]), "roslang"),
-                  ([testp_roslang], teste, ':'.join([testp, test2p_roslang]), "roslang")]
+                  ([testp_roslang], teste, ':'.join([testp, test2p_roslang]), "roslang"),
+                  ([testp_roslang], teste, ':'.join([testp_roslang, test2p]), "roslang"),
+                  ([testp_roslang], teste, ':'.join([testp_roslang, test2p_roslang]), "roslang")]
         self.echeck_unordered_list('find', tests)
 
     ## tests rpp vs rr precedence

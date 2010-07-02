@@ -216,8 +216,13 @@ class RosstackTestCase(unittest.TestCase):
 		  ':'.join([os.path.abspath("stack_install"), os.path.abspath("stack_overlay")]), "stack"),
 		 ([os.path.abspath("stack_install/stack")],
 	          os.path.abspath("test"), 
-		  ':'.join([os.path.abspath("stack_install"), os.path.abspath("stack_overlay/stack")]), "stack")]
-
+		  ':'.join([os.path.abspath("stack_install"), os.path.abspath("stack_overlay/stack")]), "stack"),
+                ([os.path.abspath("stack_install/stack")],
+	          os.path.abspath("test"), 
+		  ':'.join([os.path.abspath("stack_install/stack"), os.path.abspath("stack_overlay/stack")]), "stack"),
+                ([os.path.abspath("stack_install/stack")],
+	          os.path.abspath("test"), 
+		  ':'.join([os.path.abspath("stack_install/stack"), os.path.abspath("stack_overlay")]), "stack")]
 	self.echeck_unordered_list("find", tests)
 
 # TODO: port / adapt these rospack tests to exercise rosstack, #2009

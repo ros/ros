@@ -169,6 +169,16 @@ class RosstackTestCase(unittest.TestCase):
             self.failIf(set(retlist) ^ set(retactual), "rosstack %s %s failed: [%s] vs [%s]"%(command, package, retlist, retactual))
             #self.assertEquals('\n'.join(retlist), '\n'.join(retactual))
 
+    # variant that does not require ordering among the return values
+    def echeck_unordered_list(self, command, tests):
+        for retlist, ros_root, ros_package_path, package in tests:
+            expected = set(retlist)
+            self.erosstack_succeed(ros_root, ros_package_path, package, command)
+            retval = self.erun_rosstack(ros_root, ros_package_path, package, command)
+            retactual = [v for v in retval.split('\n') if v]            
+            self.failIf(set(retlist) ^ set(retactual), "rosstack %s %s failed: [%s] vs [%s]"%(command, package, retlist, retactual))
+            #self.assertEquals('\n'.join(retlist), '\n'.join(retactual))
+
         
     ################################################################################
     ## ARG PARSING
@@ -195,10 +205,20 @@ class RosstackTestCase(unittest.TestCase):
         self.rosstack_fail("deps", "list-names")
 
     def test_contents(self):
-        self.erosstack_succeed(os.path.abspath("test2"), 
-                               os.path.abspath("test2"), 
-                               "test2",
-                               "contents")
+	tests = [(["precedence1", "precedence2", "precedence3", "roslang"],
+	          os.path.abspath("test2"), os.path.abspath("test2"), "test2")]
+	self.echeck_unordered_list("contents", tests)
+
+    # Bug #2854
+    def test_path_precendence(self):
+	tests = [([os.path.abspath("stack_install/stack")],
+	          os.path.abspath("test"), 
+		  ':'.join([os.path.abspath("stack_install"), os.path.abspath("stack_overlay")]), "stack"),
+		 ([os.path.abspath("stack_install/stack")],
+	          os.path.abspath("test"), 
+		  ':'.join([os.path.abspath("stack_install"), os.path.abspath("stack_overlay/stack")]), "stack")]
+
+	self.echeck_unordered_list("find", tests)
 
 # TODO: port / adapt these rospack tests to exercise rosstack, #2009
 #

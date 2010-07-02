@@ -406,6 +406,17 @@ class RospackTestCase(unittest.TestCase):
             ]
         self.echeck_ordered_list("deps", tests)
 
+    ## tests internal rpp precedence (#2854)
+    def test_ros_package_path_precedence(self):
+        teste = os.path.abspath('test_empty')
+        testp = os.path.abspath('test')
+        test2p = os.path.abspath('test2')
+        testp_roslang = os.path.join(testp, 'roslang')
+        test2p_roslang = os.path.join(test2p, 'roslang')
+        tests = [([testp_roslang], teste, ':'.join([testp, test2p]), "roslang"),
+                  ([testp_roslang], teste, ':'.join([testp, test2p_roslang]), "roslang")]
+        self.echeck_unordered_list('find', tests)
+
     ## tests rpp vs rr precedence
     def test_ros_package_path_precedence_1(self):
         testp = os.path.abspath('test')

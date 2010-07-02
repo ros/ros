@@ -205,10 +205,10 @@
     (cache-ros-service-locations))
   (rosemacs-lookup-vectors m ros-services ros-service-packages))
 
-(defun ros-package-for-path (path)
+(defun ros-package-for-path (path &optional allow-nonexistent)
   (let ((path (cond ((file-directory-p path)
                      (directory-file-name path))
-                    ((file-exists-p path)
+                    ((or (file-exists-p path) allow-nonexistent)
                      (directory-file-name (file-name-directory path)))
                     (t nil))))
     (catch 'done
@@ -218,10 +218,10 @@
               (throw 'done (file-name-nondirectory path))
             (setf path (directory-file-name (file-name-directory path)))))))))
 
-(defun ros-package-for-buffer (buffer)
+(defun ros-package-for-buffer (buffer &optional allow-nonexistent)
   (let ((fn (buffer-file-name buffer)))
     (when fn
-      (ros-package-for-path fn))))
+      (ros-package-for-path fn allow-nonexistent))))
 
 (defun get-buffer-ros-package ()
   (or ros-buffer-package
@@ -1014,6 +1014,7 @@ q kills the buffer and process."
   :keymap ros-topic-echo-keymap
   (message "ros-run mode: k to stop, q to quit"))
 
+
 (defun ros-run (pkg exec &rest args)
   "pkg is a ros package name and exec is the executable name.  Tab completes package name.  Exec defaults to package name itself."
   (interactive (list (setq ros-run-temp-var (ros-completing-read-package
@@ -1033,6 +1034,43 @@ q kills the buffer and process."
     buf))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; roslaunch
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun ros-launch (package-name)
+  "Open up the directory corresponding to PACKAGE-NAME in dired mode.  If used interactively, tab completion will work."
+  (interactive (list (ros-completing-read-pkg-file "Enter ros path: ")))
+  (multiple-value-bind (package dir-prefix dir-suffix) (parse-ros-file-prefix package-name)
+    (let* ((package-dir (ros-package-dir package))
+	   (path (if dir-prefix (concat package-dir dir-prefix dir-suffix) package-dir)))
+      (if path
+	  (let* ((name (format "roslaunch:%s/%s" package dir-suffix))
+                 (buf (generate-new-buffer name)))
+            (start-process name buf "roslaunch" path)
+            (save-excursion
+              (set-buffer buf)
+              (view-buffer-other-window buf)
+              (ros-launch-mode))
+            buf)
+	(error "Did not find %s in the ros package list." package-name)))))
+
+
+(defvar ros-launch-keymap (make-sparse-keymap))
+(define-key ros-launch-keymap "k" 'interrupt-ros-topic-echo)
+(define-key ros-topic-echo-keymap "q" 'kill-current-buffer)
+
+(define-minor-mode ros-launch-mode
+  "Mode used for roslaunch
+
+k kills the process (sends SIGINT)"
+  :init-value nil
+  :lighter " ros-launch"
+  :keymap ros-launch-keymap
+  )
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Keymap
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1043,8 +1081,8 @@ q kills the buffer and process."
 (define-key ros-keymap "m" 'view-ros-message)
 (define-key ros-keymap "\C-s" 'find-ros-service)
 (define-key ros-keymap "s" 'view-ros-service)
-(define-key ros-keymap "r" 'ros-run)
-(define-key ros-keymap "\C-r" 'ros-load-package-locations)
+(define-key ros-keymap "\C-r" 'ros-run)
+(define-key ros-keymap "r" 'ros-load-package-locations)
 (define-key ros-keymap "\C-u" 'set-ros-topic-update-interval)
 (define-key ros-keymap "u" 'ros-update-topic-list)
 (define-key ros-keymap "\C-c" 'ros-core)
@@ -1054,6 +1092,7 @@ q kills the buffer and process."
 (define-key ros-keymap "H" 'remove-hz-update)
 (define-key ros-keymap "T" 'ros-topic-info)
 (define-key ros-keymap "g" 'ros-rgrep-package)
+(define-key ros-keymap "\C-l" 'ros-launch)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

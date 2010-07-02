@@ -308,6 +308,8 @@ private:
   bool cache_lock_failed;
   bool crawled;
   std::string getCachePath();
+  // Add package, filtering out duplicates.
+  Package* add_package(std::string path);
   /** tests if the cache exists, is new enough, and is valid */
   bool cache_is_good();
   /** returns a double representing the seconds since the Epoch */

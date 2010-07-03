@@ -1,0 +1,22 @@
+# A RELAX NG schema for ros launch files
+# Incomplete
+grammar {
+  start = launch
+  launch = element launch { master? & node* & param* & inc* }
+  master = element master { attribute auto { text } }
+  node = element node {
+           attribute name { text } &
+           attribute pkg { text } &
+           attribute type { text } &
+           attribute args { text }? &
+           attribute respawn { "true" | "false" }? &
+           attribute output { text }?
+         }
+  param = element param {
+            attribute name { text },
+            attribute value { text }
+          }
+  inc = element include {
+          attribute file { text }
+        }
+}

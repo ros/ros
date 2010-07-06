@@ -509,7 +509,7 @@ class TestXmlLoader(unittest.TestCase):
         self.assertEquals(2, n.retry)
                 
     def test_node_cwd(self):
-        nodes = self._load_valid_nodes(['test_base', 'test_cwd_1', 'test_cwd_2'])
+        nodes = self._load_valid_nodes(['test_base', 'test_cwd_1', 'test_cwd_2', 'test_cwd_3', 'test_cwd_4'])
         for n in nodes:
             if n.type == 'test_base':
                 self.assertEquals(None, n.cwd)
@@ -517,6 +517,8 @@ class TestXmlLoader(unittest.TestCase):
                 self.assertEquals("ros-root", n.cwd)                
             elif n.type == 'test_cwd_2':
                 self.assertEquals("node", n.cwd)  
+            elif n.type in ['test_cwd_3', 'test_cwd_4']:
+                self.assertEquals("ROS_HOME", n.cwd)  
 
     def test_node_output(self):
         nodes = self._load_valid_nodes(['test_output_log', 'test_output_screen'])

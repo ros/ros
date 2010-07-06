@@ -268,6 +268,8 @@ class LocalProcess(Process):
                 cwd = os.path.dirname(self.args[0])
             elif self.cwd == 'cwd':
                 cwd = os.getcwd()
+            elif self.cwd == 'ros-root':
+                cwd = get_ros_root()
             else:
                 cwd = roslib.rosenv.get_ros_home()
 

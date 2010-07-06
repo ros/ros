@@ -269,7 +269,7 @@ class LocalProcess(Process):
             elif self.cwd == 'cwd':
                 cwd = os.getcwd()
             else:
-                cwd = get_ros_root()
+                cwd = roslib.rosenv.get_ros_home()
 
             _logger.info("process[%s]: start w/ args [%s]", self.name, self.args)
             _logger.info("process[%s]: cwd will be [%s]", self.name, cwd)

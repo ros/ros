@@ -276,6 +276,11 @@ class RospackTestCase(unittest.TestCase):
         shutil.rmtree(os.path.join(d,'.ros'))
         os.chmod(d, 0000)
         self.rospack_succeed(None, "profile")
+        # Delete the .ros directory, just in case this test is being run as
+        # root, in which case the above call will cause .ros to be created,
+        # despite the restrictive permissions that were set.
+        if os.path.exists(os.path.join(d,'.ros')):
+            shutil.rmtree(os.path.join(d,'.ros'))
         # Make sure we proceed when we HOME/.ros isn't a directory
         os.chmod(d, 0700)
         f = open(os.path.join(d,'.ros'), 'w')

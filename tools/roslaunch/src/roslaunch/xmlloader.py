@@ -340,7 +340,11 @@ class XmlLoader(roslaunch.loader.Loader):
                     name = test_name
             else:
                 self._check_attrs(tag, context, ros_config, XmlLoader.NODE_ATTRS)
-                (name,) = self.reqd_attrs(tag, context, ('name',)) 
+                (name,) = self.reqd_attrs(tag, context, ('name',))
+
+            if not roslib.names.is_legal_name(name):
+                ros_config.add_config_error("WARN: illegal <node> name '%s'.\nhttp://ros.org/wiki/Names\nThis will likely cause problems with other ROS tools.\nNode xml is %s"%(name, tag.toxml()))
+                    
             child_ns = self._ns_clear_params_attr('node', tag, context, ros_config, node_name=name)
             param_ns = child_ns.child(name)
                 

@@ -79,7 +79,7 @@ def print_node_list(roslaunch_files):
     """
     try:
         loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
-        config = load_config_default(roslaunch_files, None, loader=loader, verbose=False)
+        config = load_config_default(roslaunch_files, None, loader=loader, verbose=False, assign_machines=False)
         node_list = get_node_list(config)
         print '\n'.join(node_list)
     except RLException, e:
@@ -121,7 +121,7 @@ def print_node_filename(node_name, roslaunch_files):
         node_name = script_resolve_name('roslaunch', node_name)
         
         loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
-        config = load_config_default(roslaunch_files, None, loader=loader, verbose=False)
+        config = load_config_default(roslaunch_files, None, loader=loader, verbose=False, assign_machines=False)
         nodes = [n for n in config.nodes if _resolved_name(n) == node_name] + \
             [t for t in config.tests if _resolved_name(t) == node_name]
 
@@ -153,7 +153,7 @@ def get_node_args(node_name, roslaunch_files):
     # resolution context for substitution args
 
     loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
-    config = load_config_default(roslaunch_files, None, loader=loader, verbose=False)
+    config = load_config_default(roslaunch_files, None, loader=loader, verbose=False, assign_machines=False)
     (node_name) = roslib.substitution_args.resolve_args((node_name), resolve_anon=False)
     node_name = script_resolve_name('roslaunch', node_name) if not node_name.startswith('$') else node_name
     

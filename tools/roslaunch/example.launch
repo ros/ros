@@ -37,7 +37,7 @@
     <!-- remap applies to all future nodes in this group -->
     <remap from="chatter" to="hello"/> 
 
-    <node name="listener" pkg="test_ros" type="listener.py" respawn="true" />
+    <node machine="fake" name="listener" pkg="test_ros" type="listener.py" respawn="true" />
 
     <node name="talker1" pkg="test_ros" type="talker.py">
       <env name="ENV_EXAMPLE" value="example value" />

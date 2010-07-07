@@ -341,7 +341,7 @@ class ROSLaunchConfig(object):
             # assign to local machine
             return self.machines['']            
 
-def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None, verbose=False):
+def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None, verbose=False, assign_machines=True):
     """
     Base routine for creating a ROSLaunchConfig from a set of 
     roslaunch_files and or launch XML strings and initializing it. This
@@ -355,6 +355,8 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
     @type  roslaunch_strs: [str]
     @param verbose: (optional) print info to screen about model as it is loaded. 
     @type  verbose: bool
+    @param assign_machines: (optional) assign nodes to machines (default: True)
+    @type  assign_machines: bool
     @return: initialized rosconfig instance
     @rytpe: L{ROSLaunchConfig} initialized rosconfig instance
     """
@@ -401,7 +403,8 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
     # make sure our environment is correct
     config.validate()
 
-    # choose machines for the nodes 
-    config.assign_machines()
+    # choose machines for the nodes
+    if assign_machines:
+        config.assign_machines()
     return config
     

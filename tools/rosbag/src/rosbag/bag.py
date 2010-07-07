@@ -108,7 +108,7 @@ class Bag(object):
         @type  chunk_threshold: int
         @param allow_unindexed: if True, allow opening unindexed bags
         @type  allow_unindexed: bool
-        @param options: the bag options (currently, compression and chunk_threshold)
+        @param options: the bag options (currently: compression and chunk_threshold)
         @type  options: dict
         @raise ValueError: if any argument is invalid
         @raise ROSBagException: if an error occurs opening file
@@ -226,10 +226,10 @@ class Bag(object):
         @type  end_time: U{roslib.rostime.Time}
         @param connection_filter: function to filter connections to include [optional]
         @type  connection_filter: function taking (topic, datatype, md5sum, msg_def, header) and returning bool
-        @param raw: if True, then generate tuples of (datatype, data, md5sum, position, pytype)
+        @param raw: if True, then generate tuples of (datatype, (data, md5sum, position), pytype)
         @type  raw: bool
         @return: generator of (topic, message, timestamp) tuples for each message in the bag file
-        @rtype:  generator of tuples of (topic, message, timestamp)
+        @rtype:  generator of tuples of (str, U{roslib.message.Message}, U{roslib.rostime.Time}) [not raw] or (str, (str, str, str, tuple, class), U{roslib.rostime.Time}) [raw]
         """
         self.flush()
 
@@ -700,6 +700,13 @@ class Bag(object):
 
     ### Internal API ###
 
+    @property
+    def _uncompressed_size(self):
+        if not self._chunk_headers:
+            return self.size
+
+        return sum((h.uncompressed_size for h in self._chunk_headers.values()))
+
     def _read_message(self, position, raw=False):
         """
         Read the message from the given position in the file.
@@ -884,7 +891,7 @@ class Bag(object):
 
                 # File exists: open in read with update mode
                 self._file = open(f, 'r+b')
-            except:
+            except IOError:
                 # File doesn't exist: open in write mode
                 self._file = open(f, 'w+b')
         
@@ -1516,7 +1523,7 @@ class _BagReader102_Unindexed(_BagReader):
                 
                 try:
                     header = _read_header(f)
-                except:
+                except Exception:
                     return
 
                 op = _read_uint8_field(header, 'op')
@@ -1940,7 +1947,7 @@ class _BagReader200(_BagReader):
                     connection_index = self.bag._connection_indexes[connection_id]
                     for entry in index:
                         connection_index.append(entry)
-        except:
+        except Exception:
             raise ROSBagUnindexedException()
 
     def read_messages(self, topics, start_time, end_time, connection_filter, raw):

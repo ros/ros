@@ -39,7 +39,8 @@ namespace ros
 {
 
 CallbackQueue::CallbackQueue(bool enabled)
-: enabled_(enabled)
+: calling_(0)
+, enabled_(enabled)
 {
 }
 
@@ -75,7 +76,7 @@ bool CallbackQueue::isEmpty()
 {
   boost::mutex::scoped_lock lock(mutex_);
 
-  return callbacks_.empty();
+  return callbacks_.empty() && calling_ == 0;
 }
 
 bool CallbackQueue::isEnabled()
@@ -266,6 +267,8 @@ CallbackQueue::CallOneResult CallbackQueue::callOne(ros::WallDuration timeout)
     {
       return TryAgain;
     }
+
+    ++calling_;
   }
 
   bool was_empty = tls->callbacks.empty();
@@ -275,7 +278,13 @@ CallbackQueue::CallOneResult CallbackQueue::callOne(ros::WallDuration timeout)
     tls->cb_it = tls->callbacks.begin();
   }
 
-  return callOneCB(tls);
+  CallOneResult res = callOneCB(tls);
+  if (res != Empty)
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    --calling_;
+  }
+  return res;
 }
 
 void CallbackQueue::callAvailable(ros::WallDuration timeout)
@@ -309,15 +318,27 @@ void CallbackQueue::callAvailable(ros::WallDuration timeout)
     tls->callbacks.insert(tls->callbacks.end(), callbacks_.begin(), callbacks_.end());
     callbacks_.clear();
 
+    calling_ += tls->callbacks.size();
+
     if (was_empty)
     {
       tls->cb_it = tls->callbacks.begin();
     }
   }
 
+  size_t called = 0;
+
   while (!tls->callbacks.empty())
   {
-    callOneCB(tls);
+    if (callOneCB(tls) != Empty)
+    {
+      ++called;
+    }
+  }
+
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    calling_ -= called;
   }
 }
 

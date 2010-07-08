@@ -27,6 +27,20 @@ Here's a simple example of using a Subscriber with a Cache::
 The Subscriber here acts as the source of messages.  Each message is passed to the cache, which then passes it through to the
 user's callback ``myCallback``.
 
+
+Using the time synchronizer::
+
+    from message_filters import TimeSynchronizer, Subscriber
+
+    def gotimage(image, camerainfo):
+        assert image.header.stamp == camerainfo.header.stamp
+        print "got an Image and CameraInfo"
+
+    tss = TimeSynchronizer(Subscriber("/wide_stereo/left/image_rect_color", sensor_msgs.msg.Image),
+                           Subscriber("/wide_stereo/left/camera_info", sensor_msgs.msg.CameraInfo))
+    tss.registerCallback(gotimage)
+
+
 The message filter interface
 ----------------------------
 

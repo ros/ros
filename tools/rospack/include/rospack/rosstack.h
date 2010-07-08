@@ -134,6 +134,8 @@ private:
   /** tests if the cache exists, is new enough, and is valid */
   void createROSHomeDirectory();
   std::string getCachePath();
+  // Add stack, filtering out duplicates.
+  Stack* add_stack(std::string path);
   bool cache_is_good();
   /** returns a double representing the seconds since the Epoch */
   static double time_since_epoch();

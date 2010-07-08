@@ -511,7 +511,7 @@ class Node(object):
         @type  env_args: [(str, str)]
         @param output: where to log output to, either Node, 'screen' or 'log'
         @type  output: str
-        @param cwd: current working directory of node, either 'node' or 'ros-root'. Default: ros-root
+        @param cwd: current working directory of node, either 'node', 'ROS_HOME' or 'ros-root'. Default: ROS_HOME
         @type  cwd: str
         @param launch_prefix: launch command/arguments to prepend to node executable arguments
         @type  launch_prefix: str
@@ -534,6 +534,11 @@ class Node(object):
         self.env_args = env_args or []        
         self.output = output
         self.cwd = cwd
+        if self.cwd == 'ros_home': # be lenient on case
+            self.cwd = 'ROS_HOME'
+        elif self.cwd == 'ros-root':
+            printerrlog("WARNING: 'ros-root' value for <node> 'cwd' attribute is deprecated.")
+            
         self.launch_prefix = launch_prefix or None
         self.required = required
         self.filename = filename
@@ -550,8 +555,8 @@ class Node(object):
             raise ValueError("type must be non-empty")
         if not self.output in ['log', 'screen', None]:
             raise ValueError("output must be one of 'log', 'screen'")
-        if not self.cwd in ['ros-root', 'node', None]:
-            raise ValueError("cwd must be one of 'ros-root', 'node'")
+        if not self.cwd in ['ROS_HOME', 'ros-root', 'node', None]:
+            raise ValueError("cwd must be one of 'ROS_HOME', 'ros-root', 'node'")
         
         # Extra slots for assigning later
         

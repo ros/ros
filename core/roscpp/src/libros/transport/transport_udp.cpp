@@ -72,6 +72,7 @@ TransportUDP::TransportUDP(PollSet* poll_set, int flags, int max_datagram_size)
   if (max_datagram_size_ == 0)
     max_datagram_size_ = 1500;
   reorder_buffer_ = new uint8_t[max_datagram_size_];
+  reorder_start_ = reorder_buffer_;
   data_buffer_ = new uint8_t[max_datagram_size_];
   data_start_ = data_buffer_;
 }
@@ -334,10 +335,16 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
     bool from_previous = false;
     if (reorder_bytes_)
     {
-      num_bytes = reorder_bytes_ + sizeof(header);
+      if (reorder_start_ != reorder_buffer_)
+      {
+        from_previous = true;
+      }
+
+      num_bytes = std::min(size - bytes_read, reorder_bytes_);
       header = reorder_header_;
-      memcpy(buffer + bytes_read, reorder_buffer_, reorder_bytes_);
-      reorder_bytes_ = 0;
+      memcpy(buffer + bytes_read, reorder_start_, num_bytes);
+      reorder_bytes_ -= num_bytes;
+      reorder_start_ += num_bytes;
     }
     else
     {
@@ -388,10 +395,10 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
         from_previous = true;
       }
 
-      num_bytes = std::min(size, data_filled_);
+      num_bytes = std::min(size - bytes_read, data_filled_);
       // Copy from the data buffer, whether it has data left in it from a previous datagram or
       // was just filled by readv()
-      memcpy(buffer, data_start_, num_bytes);
+      memcpy(buffer + bytes_read, data_start_, num_bytes);
       data_filled_ = std::max((int64_t)0, (int64_t)data_filled_ - (int64_t)size);
       data_start_ += num_bytes;
     }
@@ -409,13 +416,17 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
         case ROS_UDP_DATA0:
           if (current_message_id_)
           {
-            ROSCPP_LOG_DEBUG("Received new message [%d:%d], while still working on [%d] (block %d of %d)", header.message_id_, header.block_, current_message_id_, last_block_ + 1, total_blocks_);
+            ROS_DEBUG("Received new message [%d:%d], while still working on [%d] (block %d of %d)", header.message_id_, header.block_, current_message_id_, last_block_ + 1, total_blocks_);
             reorder_header_ = header;
             reorder_bytes_ = num_bytes;
             memcpy(reorder_buffer_, buffer + bytes_read, num_bytes);
+            reorder_start_ = reorder_buffer_;
             current_message_id_ = 0;
             total_blocks_ = 0;
             last_block_ = 0;
+
+            data_filled_ = 0;
+            data_start_ = data_buffer_;
             return -1;
           }
           total_blocks_ = header.block_;
@@ -425,19 +436,19 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
         case ROS_UDP_DATAN:
           if (header.message_id_ != current_message_id_)
           {
-            ROSCPP_LOG_DEBUG("Message Id mismatch: %d != %d", header.message_id_, current_message_id_);
+            ROS_DEBUG("Message Id mismatch: %d != %d", header.message_id_, current_message_id_);
             return 0;
           }
           if (header.block_ != last_block_ + 1)
           {
-            ROSCPP_LOG_DEBUG("Expected block %d, received %d", last_block_ + 1, header.block_);
+            ROS_DEBUG("Expected block %d, received %d", last_block_ + 1, header.block_);
             return 0;
           }
           last_block_ = header.block_;
 
           break;
         default:
-          ROSCPP_LOG_DEBUG("Unexpected UDP header OP [%d]", header.op_);
+          ROS_ERROR("Unexpected UDP header OP [%d]", header.op_);
           return -1;
       }
 
@@ -468,6 +479,8 @@ int32_t TransportUDP::write(uint8_t* buffer, uint32_t size)
 
   ROS_ASSERT((int32_t)size > 0);
 
+  const uint32_t max_payload_size = max_datagram_size_ - sizeof(TransportUDPHeader);
+
   uint32_t bytes_sent = 0;
   uint32_t this_block = 0;
   if (++current_message_id_ == 0)
@@ -480,7 +493,7 @@ int32_t TransportUDP::write(uint8_t* buffer, uint32_t size)
     if (this_block == 0)
     {
       header.op_ = ROS_UDP_DATA0;
-      header.block_ = (size + max_datagram_size_ - 1) / max_datagram_size_;
+      header.block_ = (size + max_payload_size - 1) / max_payload_size;
     }
     else
     {
@@ -492,7 +505,7 @@ int32_t TransportUDP::write(uint8_t* buffer, uint32_t size)
     iov[0].iov_base = &header;
     iov[0].iov_len = sizeof(header);
     iov[1].iov_base = buffer + bytes_sent;
-    iov[1].iov_len = (size - bytes_sent) > max_datagram_size_ ? max_datagram_size_ : (size - bytes_sent);
+    iov[1].iov_len = std::min(max_payload_size, size - bytes_sent);
     ssize_t num_bytes = writev(sock_, iov, 2);
     //usleep(100);
     if (num_bytes < 0)

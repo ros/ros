@@ -58,18 +58,17 @@ def record_cmd(argv):
                                    description="Record a bag file with the contents of specified topics.",
                                    formatter=optparse.IndentedHelpFormatter())
 
-    parser.add_option("-a", "--all",           dest="all",      default=False, action="store_true",        help="record all topics")
-    parser.add_option("-e", "--regex",         dest="regex",    default=False, action="store_true",        help="match topics using regular expressions")
-    parser.add_option("-x", "--exclude",        dest="exclude_regex", default="", action="store",
-help="Exclude topics matching the follow regular expression (subtracts from -a or regex)")
-    parser.add_option("-q", "--quiet",         dest="quiet",    default=False, action="store_true",        help="suppress console output")
-    parser.add_option("-o", "--output-prefix", dest="prefix",   default=None,  action="store",             help="prepend PREFIX to beginning of bag name (name will always end with date stamp)")
-    parser.add_option("-O", "--output-name",   dest="name",     default=None,  action="store",             help="record to bag with name NAME.bag")
-    parser.add_option("--split",               dest="split",    default=0,     type='int', action="store", help="split bag into files of size SIZE", metavar="SIZE")
-    parser.add_option("-b", "--buffsize",      dest="buffsize", default=256,   type='int', action="store", help="use in internal buffer of SIZE MB (Default: %default, 0 = infinite)", metavar="SIZE")
-    parser.add_option("-l", "--limit",         dest="num",      default=0,     type='int', action="store", help="only record NUM messages on each topic")
-    #parser.add_option("-z", "--zlib",          dest="zlib",     default=False, action="store_true",        help="use ZLIB compression")
-    parser.add_option("-j", "--bz2",           dest="bz2",      default=False, action="store_true",        help="use BZ2 compression")
+    parser.add_option("-a", "--all",           dest="all",           default=False, action="store_true",        help="record all topics")
+    parser.add_option("-e", "--regex",         dest="regex",         default=False, action="store_true",        help="match topics using regular expressions")
+    parser.add_option("-x", "--exclude",       dest="exclude_regex", default="",    action="store",             help="Exclude topics matching the follow regular expression (subtracts from -a or regex)")
+    parser.add_option("-q", "--quiet",         dest="quiet",         default=False, action="store_true",        help="suppress console output")
+    parser.add_option("-o", "--output-prefix", dest="prefix",        default=None,  action="store",             help="prepend PREFIX to beginning of bag name (name will always end with date stamp)")
+    parser.add_option("-O", "--output-name",   dest="name",          default=None,  action="store",             help="record to bag with name NAME.bag")
+    parser.add_option(      "--split",         dest="split",         default=0,     type='int', action="store", help="split bag into files of size SIZE", metavar="SIZE")
+    parser.add_option("-b", "--buffsize",      dest="buffsize",      default=256,   type='int', action="store", help="use in internal buffer of SIZE MB (Default: %default, 0 = infinite)", metavar="SIZE")
+    parser.add_option("-l", "--limit",         dest="num",           default=0,     type='int', action="store", help="only record NUM messages on each topic")
+    parser.add_option("-j", "--bz2",           dest="bz2",           default=False, action="store_true",        help="use BZ2 compression")
+    #parser.add_option("-z", "--zlib",          dest="zlib",          default=False, action="store_true",        help="use ZLIB compression")
 
     (options, args) = parser.parse_args(argv)
 
@@ -85,23 +84,18 @@ help="Exclude topics matching the follow regular expression (subtracts from -a o
     cmd.extend(['--limit', str(options.num)])
     cmd.extend(['--split', str(options.split)])
 
-    if options.quiet: cmd.extend(["--quiet"])
-    if options.prefix: cmd.extend(["-o", options.prefix])
-    if options.name:   cmd.extend(["-O", options.name])
+    if options.quiet:         cmd.extend(["--quiet"])
+    if options.prefix:        cmd.extend(["-o", options.prefix])
+    if options.name:          cmd.extend(["-O", options.name])
     if options.exclude_regex: cmd.extend(["--exclude", options.exclude_regex])
-    if options.all:    cmd.extend(["--all"])
-    if options.regex:  cmd.extend(["--regex"])
-    if options.bz2:    cmd.extend(["--bz2"])
+    if options.all:           cmd.extend(["--all"])
+    if options.regex:         cmd.extend(["--regex"])
+    if options.bz2:           cmd.extend(["--bz2"])
 
     cmd.extend(args)
 
     recordpath = os.path.join(roslib.rospack.rospackexec(['find', 'rosbag']), 'bin', 'record')
     os.execv(recordpath, cmd)
-
-#    proc = subprocess.Popen(cmd)
-#    signal.signal(signal.SIGINT, signal.SIG_IGN)   # ignore sigint since we're basically just pretending to be the subprocess now
-#    res = proc.wait()
-#    sys.exit(res)
 
 def info_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag info [options] BAGFILE1 [BAGFILE2 BAGFILE3 ...]',
@@ -179,11 +173,6 @@ def play_cmd(argv):
 
     playpath = os.path.join(roslib.rospack.rospackexec(['find', 'rosbag']), 'bin', 'play')
     os.execv(playpath, cmd)
-
-#    proc = subprocess.Popen(cmd)
-#    signal.signal(signal.SIGINT, signal.SIG_IGN)   # ignore sigint since we're basically just pretending to be the subprocess now
-#    res = proc.wait()
-#    sys.exit(res)
 
 def filter_cmd(argv):
     def expr_eval(expr):
@@ -574,9 +563,9 @@ def change_compression_op(inbag, outbag, compression, quiet):
     if quiet:
         for topic, msg, t in inbag.read_messages(raw=True):
             outbag.write(topic, msg, t, raw=True)
-    else:   
-        meter = ProgressMeter(outbag.filename, inbag.size)
-    
+    else:
+        meter = ProgressMeter(outbag.filename, inbag._uncompressed_size)
+
         total_bytes = 0
         for topic, msg, t in inbag.read_messages(raw=True):
             msg_type, serialized_bytes, md5sum, pos, pytype = msg

@@ -245,7 +245,10 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             self.lock.acquire()
             name = self.name
             m = self.machine
-            printlog("remote[%s]: creating ssh connection to %s:%s, user[%s]"%(name, m.address, m.ssh_port, m.user))
+            if m.user is not None:
+                printlog("remote[%s]: creating ssh connection to %s:%s, user[%s]"%(name, m.address, m.ssh_port, m.user))
+            else:
+                printlog("remote[%s]: creating ssh connection to %s:%s"%(name, m.address, m.ssh_port))
             _logger.info("remote[%s]: invoking with ssh exec args [%s], env: %s"%(name, ' '.join(self.args), self.env))
             sshvals, msg = self._ssh_exec(' '.join(self.args), self.env, m.address, m.ssh_port, m.user, m.password)
             if sshvals is None:

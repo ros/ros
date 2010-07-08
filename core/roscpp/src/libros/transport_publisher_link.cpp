@@ -159,10 +159,10 @@ void TransportPublisherLink::onMessageLength(const ConnectionPtr& conn, const bo
 
   if (len > 1000000000)
   {
-    ROS_ERROR("woah! a message of over a gigabyte was " \
+    ROS_ERROR("a message of over a gigabyte was " \
                 "predicted in tcpros. that seems highly " \
                 "unlikely, so I'll assume protocol " \
-                "synchronization is lost... it's over.");
+                "synchronization is lost.");
     drop();
     return;
   }

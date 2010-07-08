@@ -449,8 +449,9 @@ int ROSStack::cmd_depends_on(bool include_indirect)
   {
     fprintf(stderr, "[rosstack] warning: stack %s doesn't exist\n", 
             g_stack.c_str());
-    s = new Stack(g_stack);
-    Stack::stacks.push_back(s);
+    //s = new Stack(g_stack);
+    //Stack::stacks.push_back(s);
+    s = add_stack(g_stack);
   }
   assert(s);
   const VecStack descendants = include_indirect ? s->descendants() 
@@ -830,6 +831,33 @@ double ROSStack::time_since_epoch()
   return tod.tv_sec + 1e-6 * tod.tv_usec;
 }
 
+// Add stack, filtering out duplicates.
+Stack* ROSStack::add_stack(string path)
+{
+  // Filter out duplicates; first encountered takes precedence
+  Stack* newp = new Stack(path);
+  Stack* return_p = newp;
+  // TODO: make this check more efficient
+  bool dup = false;
+  for(std::vector<Stack *>::const_iterator it = Stack::stacks.begin();
+      it != Stack::stacks.end();
+      it++)
+  {
+    if((*it)->name == newp->name)
+    {
+      dup=true;
+      return_p = *it;
+      break;
+    }
+  }
+  if(dup)
+    delete newp;
+  else
+    Stack::stacks.push_back(newp);
+
+  return return_p;
+}
+
 void ROSStack::crawl_for_stacks(bool force_crawl)
 {
   for (VecStack::iterator p = Stack::stacks.begin(); 
@@ -857,7 +885,8 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
         char *newline_pos = strchr(linebuf, '\n');
         if (newline_pos)
           *newline_pos = 0;
-        Stack::stacks.push_back(new Stack(linebuf));
+        //Stack::stacks.push_back(new Stack(linebuf));
+        add_stack(linebuf);
       }
       fclose(cache);
       return; // cache load went OK; we're done here.
@@ -878,7 +907,9 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
     fprintf(stderr, "[rosstack] ERROR: ROS_ROOT not set.\n");
     exit(1);
   }
-  Stack::stacks.push_back(new Stack(string(rr))); // add the ROS stack
+  // Add the ROS stack
+  //Stack::stacks.push_back(new Stack(string(rr)));
+  add_stack(string(rr));
   string rsp;
   char *rpp = getenv("ROS_PACKAGE_PATH");
   if (rpp)
@@ -891,12 +922,7 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
 
   for (vector<string>::iterator i = rspvec.begin(); i != rspvec.end(); ++i)
   {
-    // Check whether this part of ROS_PACKAGE_PATH is itself a package/stack
-    if (Stack::is_stack(*i))
-      Stack::stacks.push_back(new Stack(*i));
-    else if (Stack::is_package(*i))
-      continue; // ignore it.
-    else if (Stack::is_no_subdirs(*i))
+    if (Stack::is_no_subdirs(*i))
       fprintf(stderr, "[rosstack] WARNING: non-stack directory in "
                       "ROS_PACKAGE_PATH marked "
                       "rosstack_nosubdirs:\n\t%s\n",
@@ -911,6 +937,17 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
   {
     CrawlQueueEntry cqe = q.front();
     q.pop_front();
+
+    // Check whether this part of ROS_PACKAGE_PATH is itself a package/stack
+    if (Stack::is_stack(cqe.path))
+    {
+      //Stack::stacks.push_back(new Stack(*i));
+      add_stack(cqe.path);
+      continue;
+    }
+    else if (Stack::is_package(cqe.path))
+      continue; // ignore it.
+
     //printf("crawling %s\n", cqe.path.c_str());
     if (g_profile_length > 0)
     {
@@ -949,6 +986,8 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
         continue; // ignore this guy, he's a leaf.
       if (Stack::is_stack(child_path))
       {
+        add_stack(child_path);
+        /*
         // Filter out duplicates; first encountered takes precedence
         Stack *newp = new Stack(child_path);
         //printf("found stack %s\n", child_path.c_str());
@@ -968,6 +1007,7 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
           delete newp;
         else
           Stack::stacks.push_back(newp);
+          */
       }
       //check to make sure we're allowed to descend
       else if (!Stack::is_no_subdirs(child_path)) 

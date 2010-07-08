@@ -121,6 +121,11 @@ bool PollSet::delSocket(int fd)
   {
     socket_info_.erase(it);
 
+    {
+      boost::mutex::scoped_lock lock(just_deleted_mutex_);
+      just_deleted_.push_back(fd);
+    }
+
     sockets_changed_ = true;
     signal();
 
@@ -242,11 +247,32 @@ void PollSet::update(int poll_timeout)
               || (revents & POLLHUP)
               || (revents & POLLNVAL)))
       {
-        func(revents & (events|POLLERR|POLLHUP|POLLNVAL));
+        bool skip = false;
+        if (revents & (POLLNVAL|POLLERR|POLLHUP))
+        {
+          // If a socket was just closed and then the file descriptor immediately reused, we can
+          // get in here with what we think is a valid socket (since it was just re-added to our set)
+          // but which is actually referring to the previous fd with the same #.  If this is the case,
+          // we ignore the first instance of one of these errors.  If it's a real error we'll
+          // hit it again next time through.
+          boost::mutex::scoped_lock lock(just_deleted_mutex_);
+          if (std::find(just_deleted_.begin(), just_deleted_.end(), ufds_[i].fd) != just_deleted_.end())
+          {
+            skip = true;
+          }
+        }
+
+        if (!skip)
+        {
+          func(revents & (events|POLLERR|POLLHUP|POLLNVAL));
+        }
       }
 
       ufds_[i].revents = 0;
     }
+
+    boost::mutex::scoped_lock lock(just_deleted_mutex_);
+    just_deleted_.clear();
   }
 }
 

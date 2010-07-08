@@ -51,6 +51,8 @@
 
   <node name="n20" pkg="package" type="test_cwd_1" cwd="ros-root" />
   <node name="n21" pkg="package" type="test_cwd_2" cwd="node" />
+  <node name="n22" pkg="package" type="test_cwd_3" cwd="ROS_HOME" />
+  <node name="n23" pkg="package" type="test_cwd_3" cwd="ros_home" />    
       
 
   <node pkg="package" type="test_node_rosparam_load" name="rosparam_load">

@@ -160,6 +160,7 @@ protected:
   typedef std::list<CallbackInfo> L_CallbackInfo;
   typedef std::deque<CallbackInfo> D_CallbackInfo;
   D_CallbackInfo callbacks_;
+  size_t calling_;
   boost::mutex mutex_;
   boost::condition_variable condition_;
 

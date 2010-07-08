@@ -48,15 +48,16 @@ NODE_TOPIC_GRAPH = "node_topic"
 # all node/topic connections, even if no actual network connection
 NODE_TOPIC_ALL_GRAPH = "node_topic_all" 
 
+import urllib
 def safe_dotcode_name(name):
     """
     encode the name for dotcode symbol-safe syntax    
     """
-    # not terribly efficient or sophisticated 
-    ret = name.replace('/', '_')
-    ret = ret.replace(' ', '_')
+    # not the best solution, but unsafe names shouldn't be coming through much
+    ret = urllib.quote(name)
+    ret = ret.replace('%', '_')
     ret = ret.replace('-', '_')
-    return ret.replace('.', '_')            
+    return ret
 
 def _edge_to_dot(e):
     if e.label:

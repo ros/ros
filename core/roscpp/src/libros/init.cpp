@@ -103,7 +103,7 @@ static bool g_ok = false;
 static uint32_t g_init_options = 0;
 static bool g_shutdown_requested = false;
 static volatile bool g_shutting_down = false;
-static boost::mutex g_shutting_down_mutex;
+static boost::recursive_mutex g_shutting_down_mutex;
 static boost::thread g_internal_queue_thread;
 
 bool isInitialized()
@@ -120,7 +120,20 @@ void checkForShutdown()
 {
   if (g_shutdown_requested)
   {
-    shutdown();
+    // Since this gets run from within a mutex inside PollManager, we need to prevent ourselves from deadlocking with
+    // another thread that's already in the middle of shutdown()
+    boost::recursive_mutex::scoped_try_lock lock(g_shutting_down_mutex, boost::defer_lock);
+    while (!lock.try_lock() && !g_shutting_down)
+    {
+      ros::WallDuration(0.001).sleep();
+    }
+
+    if (!g_shutting_down)
+    {
+      shutdown();
+    }
+
+    g_shutdown_requested = false;
   }
 }
 
@@ -374,7 +387,7 @@ end:
   // If we received a shutdown request while initializing, wait until we've shutdown to continue
   if (g_shutting_down)
   {
-    boost::mutex::scoped_lock lock(g_shutting_down_mutex);
+    boost::recursive_mutex::scoped_lock lock(g_shutting_down_mutex);
   }
 }
 
@@ -505,7 +518,7 @@ bool ok()
 
 void shutdown()
 {
-  boost::mutex::scoped_lock lock(g_shutting_down_mutex);
+  boost::recursive_mutex::scoped_lock lock(g_shutting_down_mutex);
   if (g_shutting_down)
   {
     return;
@@ -531,8 +544,8 @@ void shutdown()
   {
     TopicManager::instance()->shutdown();
     ServiceManager::instance()->shutdown();
-    ConnectionManager::instance()->shutdown();
     PollManager::instance()->shutdown();
+    ConnectionManager::instance()->shutdown();
     XMLRPCManager::instance()->shutdown();
   }
 

@@ -772,8 +772,9 @@ int ROSPack::cmd_depends_on(bool include_indirect)
   {
     fprintf(stderr, "[rospack] warning: package %s doesn't exist\n", 
             opt_package.c_str());
-    p = new Package(opt_package);
-    Package::pkgs.push_back(p);
+    //p = new Package(opt_package);
+    //Package::pkgs.push_back(p);
+    p = add_package(opt_package);
   }
   assert(p);
   const VecPkg descendants = include_indirect ? p->descendants() 
@@ -1523,6 +1524,33 @@ double ROSPack::time_since_epoch()
   return tod.tv_sec + 1e-6 * tod.tv_usec;
 }
 
+// Add package, filtering out duplicates.
+Package* ROSPack::add_package(string path)
+{
+  // Filter out duplicates; first encountered takes precedence
+  Package* newp = new Package(path);
+  Package* return_p = newp;
+  // TODO: make this check more efficient
+  bool dup = false;
+  for(std::vector<Package *>::const_iterator it = Package::pkgs.begin();
+      it != Package::pkgs.end();
+      it++)
+  {
+    if((*it)->name == newp->name)
+    {
+      dup=true;
+      return_p = *it;
+      break;
+    }
+  }
+  if(dup)
+    delete newp;
+  else
+    Package::pkgs.push_back(newp);
+
+  return return_p;
+}
+
 void ROSPack::crawl_for_packages(bool force_crawl)
 {
   for (VecPkg::iterator p = Package::pkgs.begin(); 
@@ -1549,7 +1577,8 @@ void ROSPack::crawl_for_packages(bool force_crawl)
         char *newline_pos = strchr(linebuf, '\n');
         if (newline_pos)
           *newline_pos = 0;
-        Package::pkgs.push_back(new Package(linebuf));
+        //Package::pkgs.push_back(new Package(linebuf));
+        add_package(linebuf);
       }
       fclose(cache);
       return; // cache load went OK; we're done here.
@@ -1571,14 +1600,11 @@ void ROSPack::crawl_for_packages(bool force_crawl)
     {
       if(!i->size())
         continue;
-      // Check whether this part of ROS_PACKAGE_PATH is itself a package
-      if (Package::is_package(*i))
-        Package::pkgs.push_back(new Package(*i));
       else if (Package::is_no_subdirs(*i))
         fprintf(stderr, "[rospack] WARNING: non-package directory in "
-                        "ROS_PACKAGE_PATH marked rospack_nosubdirs:\n\t%s\n",
+                "ROS_PACKAGE_PATH marked rospack_nosubdirs:\n\t%s\n",
                 i->c_str());
-     else
+      else
         q.push_back(CrawlQueueEntry(*i));
     }
   }
@@ -1589,6 +1615,15 @@ void ROSPack::crawl_for_packages(bool force_crawl)
   {
     CrawlQueueEntry cqe = q.front();
     q.pop_front();
+    
+    // Check whether this part of ROS_PACKAGE_PATH is itself a package
+    if (Package::is_package(cqe.path))
+    {
+      //Package::pkgs.push_back(new Package(*i));
+      add_package(cqe.path);
+      continue;
+    }
+
     //printf("crawling %s\n", cqe.path.c_str());
     if (opt_profile_length != 0)
     {
@@ -1642,24 +1677,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
       if (Package::is_package(child_path))
       {
         total_num_pkgs++;
-        // Filter out duplicates; first encountered takes precedence
-        Package* newp = new Package(child_path);
-        // TODO: make this check more efficient
-        bool dup = false;
-        for(std::vector<Package *>::const_iterator it = Package::pkgs.begin();
-            it != Package::pkgs.end();
-            it++)
-        {
-          if((*it)->name == newp->name)
-          {
-            dup=true;
-            break;
-          }
-        }
-        if(dup)
-          delete newp;
-        else
-          Package::pkgs.push_back(newp);
+        add_package(child_path);
       }
       //check to make sure we're allowed to descend
       else if (!Package::is_no_subdirs(child_path)) 

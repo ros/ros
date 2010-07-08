@@ -163,7 +163,8 @@ private:
   uint8_t* data_start_;
   uint32_t data_filled_;
 
-  uint8_t *reorder_buffer_;
+  uint8_t* reorder_buffer_;
+  uint8_t* reorder_start_;
   TransportUDPHeader reorder_header_;
   uint32_t reorder_bytes_;
 };

@@ -149,9 +149,9 @@ void Connection::readTransport()
       read_filled_ += bytes_read;
     }
 
-    ROS_ASSERT((int)read_size_ >= 0);
-    ROS_ASSERT((int)read_filled_ >= 0);
-    ROS_ASSERT(read_filled_ <= read_size_);
+    ROS_ASSERT((int32_t)read_size_ >= 0);
+    ROS_ASSERT((int32_t)read_filled_ >= 0);
+    ROS_ASSERT_MSG(read_filled_ <= read_size_, "read_filled_ = %d, read_size_ = %d", read_filled_, read_size_);
 
     if (read_filled_ == read_size_ && !dropped_)
     {
@@ -389,10 +389,10 @@ void Connection::onHeaderLengthRead(const ConnectionPtr& conn, const boost::shar
 
   if (len > 1000000000)
   {
-    ROS_ERROR("woah! a header of over a gigabyte was " \
+    ROS_ERROR("a header of over a gigabyte was " \
                 "predicted in tcpros. that seems highly " \
                 "unlikely, so I'll assume protocol " \
-                "synchronization is lost... it's over.");
+                "synchronization is lost.");
     conn->drop(HeaderError);
   }
 

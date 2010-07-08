@@ -75,12 +75,13 @@ class BoostError(Exception):
         return repr(self.value)
 
 class Version(object):
-    def __init__(self, major, minor, patch, root, include_dir, is_default_search_location):
+    def __init__(self, major, minor, patch, root, include_dir, lib_dir, is_default_search_location):
         self.major = major
         self.minor = minor
         self.patch = patch
         self.root = root
         self.include_dir = include_dir
+        self.lib_dir = lib_dir
         self.is_default_search_location = is_default_search_location
         self.is_system_install = os.path.split(self.include_dir)[0] == self.root
         
@@ -105,6 +106,20 @@ class Version(object):
     def __repr__(self):
         return repr((self.major, self.minor, self.patch, self.root, self.include_dir, self.is_default_search_location, self.is_system_install))
 
+def find_lib_dir(root_dir):
+  # prefer lib64 unless explicitly specified in the environment
+  if ('ROS_BOOST_LIB_DIR_NAME' in os.environ):
+    possible_dirs = [os.path.join(root_dir, os.environ['ROS_BOOST_LIB_DIR_NAME'])]
+  else:
+    possible_dirs = [os.path.join(root_dir, "lib64"), os.path.join(root_dir, "lib")]
+
+  for p in possible_dirs:
+    glob_files = glob("%s*"%(os.path.join(p, "libboost*")))
+    if (len(glob_files) > 0):
+      return p
+
+  return None
+
 def extract_versions(dir, is_default_search_location):
     version_paths = [os.path.join(dir, "version.hpp"),
                     os.path.join(dir, "boost", "version.hpp")]
@@ -128,7 +143,9 @@ def extract_versions(dir, is_default_search_location):
                     minor = ver_int / 100 % 1000
                     major = ver_int / 100000
                     include_dir = os.path.split(os.path.split(p)[0])[0]
-                    versions.append(Version(major, minor, patch, os.path.split(dir)[0], include_dir, is_default_search_location))
+                    root_dir = os.path.split(dir)[0]
+                    lib_dir = find_lib_dir(root_dir)
+                    versions.append(Version(major, minor, patch, root_dir, include_dir, lib_dir, is_default_search_location))
     
     return versions
   
@@ -146,7 +163,7 @@ def find_versions(search_paths):
     if (boost_version is not None):
         for v in vers:
             if (v.major == boost_version[0] and v.minor == boost_version[1] and v.patch == boost_version[2]):
-                return v
+                return [v]
         
         raise BoostError('Could not find boost version %s required by ROS_BOOST_VERSION environment variable'%(boost_version))
     
@@ -167,8 +184,7 @@ def search_paths(sysroot):
                  (None if 'CPATH' not in os.environ else os.environ['CPATH'], True),
                  (None if 'C_INCLUDE_PATH' not in os.environ else os.environ['C_INCLUDE_PATH'], True),
                  (None if 'CPLUS_INCLUDE_PATH' not in os.environ else os.environ['CPLUS_INCLUDE_PATH'], True),
-                 (None if 'ROS_BOOST_ROOT' not in os.environ else os.environ['ROS_BOOST_ROOT'], False), 
-                 (None if 'ROS_BINDEPS_PATH' not in os.environ else os.environ['ROS_BINDEPS_PATH'], False)]
+                 (None if 'ROS_BOOST_ROOT' not in os.environ else os.environ['ROS_BOOST_ROOT'], False)]
 
     search_paths = []
     for (str, system) in _search_paths:
@@ -182,7 +198,7 @@ def search_paths(sysroot):
     return search_paths
 
 def lib_dir(ver):
-    return os.path.join(ver.root, "lib")
+    return ver.lib_dir
 
 def find_lib(ver, name, full_lib = link_static):
     global lib_suffix
@@ -215,6 +231,9 @@ def find_lib(ver, name, full_lib = link_static):
     search_paths = static_search_paths if link_static else dynamic_search_paths
     
     dir = lib_dir(ver)
+
+    if (dir is None):
+      raise BoostError('Could not locate library [%s]'%(name))
     
     for p in search_paths:
         globstr = os.path.join(dir, p) 
@@ -225,10 +244,10 @@ def find_lib(ver, name, full_lib = link_static):
             else:
                 return os.path.basename(libs[0])
             
-    raise BoostError('Could not locate library [%s]'%(name))
+    raise BoostError('Could not locate library [%s] in lib directory [%s]'%(name, dir))
   
 def include_dirs(ver, prefix = ''):
-    if (ver.is_default_search_location or no_L_or_I):
+    if (ver.is_system_install or no_L_or_I):
         return ""
     
     return " %s%s"%(prefix, ver.include_dir)

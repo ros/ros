@@ -140,6 +140,10 @@ private:
   boost::mutex socket_info_mutex_;
   bool sockets_changed_;
 
+  boost::mutex just_deleted_mutex_;
+  typedef std::vector<int> V_int;
+  V_int just_deleted_;
+
   std::vector<struct pollfd> ufds_;
 
   boost::mutex signal_mutex_;

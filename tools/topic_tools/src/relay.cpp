@@ -76,7 +76,7 @@ int main(int argc, char **argv)
   
   ros::NodeHandle pnh("~");
   bool unreliable;
-  pnh.param("unreliable", unreliable, true);
+  pnh.param("unreliable", unreliable, false);
   ros::TransportHints th;
   if (unreliable)
     th.unreliable().reliable(); // Prefers unreliable, but will accept reliable.

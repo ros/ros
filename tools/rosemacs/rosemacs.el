@@ -573,7 +573,7 @@ parameter."
       (progn
 	(setq ros-topic-buffer (get-buffer-create "*ros-topics*"))
 	(switch-to-buffer ros-topic-buffer)
-	(ros-topic-list-mode)))
+	(ros-topic-list-mode 1)))
     (ros-update-topic-list-internal)
     (update-ros-topic-buffer)))
 
@@ -612,7 +612,7 @@ parameter."
          (buffer-name (concat "*rostopic:" topic-full-name "*"))
          (process (start-process buffer-name buffer-name "rostopic" "echo" topic-full-name)))
     (view-buffer-other-window (process-buffer process))
-    (ros-topic-echo-mode)))
+    (ros-topic-echo-mode 1)))
 
 (defun ros-topic-info (topic)
   "Print info about topic, using rostopic info"
@@ -639,12 +639,13 @@ parameter."
   (interactive)
   (interrupt-process))
 
-(defun buffer-process (b)
+;; TODO: get-buffer-process does this
+(defun rosemacs/buffer-process (b)
   (find-if (lambda (proc) (equal (process-buffer proc) b)) (process-list)))
 
 (defun kill-current-buffer ()
   (interactive)
-  (let ((process (buffer-process (current-buffer))))
+  (let ((process (rosemacs/buffer-process (current-buffer))))
     (when (and process (eq (process-status process) 'run))
       (interrupt-process)))
   (kill-buffer nil))
@@ -1014,6 +1015,12 @@ q kills the buffer and process."
   :keymap ros-topic-echo-keymap
   (message "ros-run mode: k to stop, q to quit"))
 
+(defun rosemacs/contains-running-process (name)
+  (let ((buf (get-buffer name)))
+    (and buf
+         (let ((proc (get-buffer-process buf)))
+           (and proc
+                (member (process-status proc) '(run stop)))))))
 
 (defun ros-run (pkg exec &rest args)
   "pkg is a ros package name and exec is the executable name.  Tab completes package name.  Exec defaults to package name itself."
@@ -1024,18 +1031,23 @@ q kills the buffer and process."
                                         (cons pkg nil))
                                       (ros-find-executables ros-run-temp-var))
                               nil nil nil nil ros-run-temp-var)))
-  (let* ((name (format "*rosrun:%s/%s" pkg exec))
-         (buf (generate-new-buffer name)))
-    (apply #'start-process name buf "rosrun" pkg exec args)
-    (save-excursion
-      (set-buffer buf)
-      (view-buffer-other-window buf)
-      (ros-run-mode))
-    buf))
+  (let ((name (format "*rosrun:%s/%s" pkg exec)))
+    (if (rosemacs/contains-running-process name)
+        (warn "Rosrun buffer %s already exists: not creating a new one." name)
+      (let ((buf (get-buffer-create name))) 
+        (apply #'start-process name buf "rosrun" pkg exec args)
+        (save-excursion
+          (set-buffer buf)
+          (view-buffer-other-window buf)
+          (ros-run-mode 1))
+        buf))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; roslaunch
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar ros-launch-file nil "The file being launched")
+(make-variable-buffer-local 'ros-launch-file)
 
 (defun ros-launch (package-name)
   "Open up the directory corresponding to PACKAGE-NAME in dired mode.  If used interactively, tab completion will work."
@@ -1044,20 +1056,36 @@ q kills the buffer and process."
     (let* ((package-dir (ros-package-dir package))
 	   (path (if dir-prefix (concat package-dir dir-prefix dir-suffix) package-dir)))
       (if path
-	  (let* ((name (format "roslaunch:%s/%s" package dir-suffix))
-                 (buf (generate-new-buffer name)))
-            (start-process name buf "roslaunch" path)
-            (save-excursion
-              (set-buffer buf)
-              (view-buffer-other-window buf)
-              (ros-launch-mode))
-            buf)
+	  (let ((name (format "roslaunch:%s/%s" package dir-suffix)))
+            (if (rosemacs/contains-running-process name)
+                (warn "Roslaunch buffer %s already exists: not creating a new one." name)
+              (let ((buf (get-buffer-create name)))
+                (start-process name buf "roslaunch" path)
+                (save-excursion
+                  (set-buffer buf)
+                  (setq ros-launch-file path)
+                  (view-buffer-other-window buf)
+                  (ros-launch-mode 1))
+                buf)))
 	(error "Did not find %s in the ros package list." package-name)))))
 
+(defun rosemacs/relaunch (buf)
+  (let ((proc (get-buffer-process buf)))
+    (if (and proc (eq (process-status proc) 'run))
+        (warn "Can't relaunch since process %s is still running" proc)
+      (save-excursion
+        (set-buffer buf)
+        (start-process (buffer-name buf) buf "roslaunch" ros-launch-file)))))
+
+(defun rosemacs/relaunch-current-process ()
+  (interactive)
+  (rosemacs/relaunch (current-buffer)))
 
 (defvar ros-launch-keymap (make-sparse-keymap))
 (define-key ros-launch-keymap "k" 'interrupt-ros-topic-echo)
-(define-key ros-topic-echo-keymap "q" 'kill-current-buffer)
+(define-key ros-launch-keymap "q" 'kill-current-buffer)
+(define-key ros-launch-keymap "r" 'rosemacs/relaunch-current-process)
+
 
 (define-minor-mode ros-launch-mode
   "Mode used for roslaunch

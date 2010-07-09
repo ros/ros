@@ -55,6 +55,7 @@ def safe_dotcode_name(name):
     """
     # not the best solution, but unsafe names shouldn't be coming through much
     ret = urllib.quote(name)
+    ret = ret.replace('/', '_')
     ret = ret.replace('%', '_')
     ret = ret.replace('-', '_')
     return ret

@@ -244,6 +244,7 @@ class Variant(object):
             self.parent_uri = props.get('extends-uri', source_uri)
             parent_variant = Variant(self.parent, self.parent_uri, variants_props)
             self.stack_names = parent_variant.stack_names + self.stack_names
+        self.props = props
       
 class Distro(object):
     """

@@ -43,7 +43,6 @@ import bisect
 import bz2
 from cStringIO import StringIO
 import heapq
-import numpy
 import os
 import re
 import struct
@@ -491,14 +490,16 @@ class Bag(object):
                 topic_freqs_median = {}
                 for topic in topics:
                     connections = list(self._get_connections(topic))
-                    stamps = numpy.array([entry.time.to_sec() for entry in self._get_entries(connections)])
+                    stamps = [entry.time.to_sec() for entry in self._get_entries(connections)]
                     
                     topic_datatypes[topic] = connections[0].datatype
                     topic_conn_counts[topic] = len(connections)
                     topic_msg_counts[topic] = len(stamps)
                     if len(stamps) > 1:
-                        periods = stamps[1:] - stamps[:-1]
-                        topic_freqs_median[topic] = 1.0 / numpy.median(periods)
+                        periods = [s1 - s0 for s1, s0 in zip(stamps[1:], stamps[:-1])]
+                        med_period = _median(periods)
+                        if med_period > 0.0:
+                            topic_freqs_median[topic] = 1.0 / med_period
 
                 topics = sorted(topic_datatypes.keys())
                 max_topic_len       = max([len(topic) for topic in topics])
@@ -617,14 +618,14 @@ class Bag(object):
                 topic_freqs_median = {}
                 for topic in topics:
                     connections = list(self._get_connections(topic))
-                    stamps = numpy.array([entry.time.to_sec() for entry in self._get_entries(connections)])
+                    stamps = [entry.time.to_sec() for entry in self._get_entries(connections)]
                     
                     topic_datatypes[topic] = connections[0].datatype
                     topic_conn_counts[topic] = len(connections)
                     topic_msg_counts[topic] = len(stamps)
                     if len(stamps) > 1:
-                        periods = stamps[1:] - stamps[:-1]
-                        med_period = numpy.median(periods)
+                        periods = [s1 - s0 for s1, s0 in zip(stamps[1:], stamps[:-1])]
+                        med_period = _median(periods)
                         if med_period > 0.0:
                             topic_freqs_median[topic] = 1.0 / med_period
 
@@ -2213,3 +2214,17 @@ class _BZ2CompressorFileFacade(object):
         compressed = self.compressor.flush()
         if len(compressed) > 0:
             self.file.write(compressed)
+
+def _median(values):
+    values_len = len(values)
+    if values_len == 0:
+        return float('nan')
+
+    sorted_values = sorted(values)
+    if values_len % 2 == 1:
+        return sorted_values[(values_len + 1) / 2 - 1]
+
+    lower = sorted_values[values_len / 2 - 1]
+    upper = sorted_values[values_len / 2]
+
+    return float(lower + upper) / 2

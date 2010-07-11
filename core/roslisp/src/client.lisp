@@ -180,25 +180,28 @@ or
 call-service SERVICE-NAME SERVICE-TYPE REQUEST-OBJECT (happens iff length(ARGS) is 1)
 
 SERVICE-NAME - a string that is the ROS name of the service, e.g., my_namespace/my_srv
-SERVICE-TYPE - symbol naming the Lisp type of the service (the basename of the .srv file), e.g. 'AddTwoInts
+SERVICE-TYPE - symbol or string naming the Lisp type (the basename of the .srv file), e.g. 'AddTwoInts, or the fully qualified type of the service, e.g. \"test_ros/AddTwoInts\"
 REQUEST-ARGS - initialization arguments that would be used when calling make-instance to create a request object.  
 REQUEST-OBJECT - the request object itself
 
 Returns the response object from the service."
 
-  (declare (string service-name) (symbol service-type))
+  (declare (string service-name) ((or symbol string) service-type))
   (ensure-node-is-running)
-  (let ((response-type (service-response-type service-type)))
+  (let* ((service-type (etypecase service-type
+                         (symbol service-type)
+                         (string (make-service-symbol service-type))))
+         (response-type (service-response-type service-type)))
     (with-fully-qualified-name service-name
       (mvbind (host port) (parse-rosrpc-uri (lookup-service service-name))
-	;; No error checking: lookup service should signal an error if there are problems
+        ;; No error checking: lookup service should signal an error if there are problems
 
-	(let ((obj (if (= 1 (length request-args))
-		       (first request-args)
-		       (apply #'make-service-request service-type request-args))))
+        (let ((obj (if (= 1 (length request-args))
+                       (first request-args)
+                       (apply #'make-service-request service-type request-args))))
 
-	  (ros-debug (roslisp call-service) "Calling service at host ~a and port ~a with ~a" host port obj)
-	  (tcpros-call-service host port service-name obj response-type))))))
+          (ros-debug (roslisp call-service) "Calling service at host ~a and port ~a with ~a" host port obj)
+          (tcpros-call-service host port service-name obj response-type))))))
     
 
 (defun wait-for-service (service-name &optional timeout)

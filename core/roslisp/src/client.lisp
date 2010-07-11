@@ -208,17 +208,17 @@ Blocks until a service with this name is known to the ROS Master (unlike roscpp,
 TIMEOUT, if specified and non-nil, is the maximum (wallclock) time to wait for.  If we time out, returns false."
   (ensure-node-is-running)
   (let* ((first-time t)
-	  (timed-out
-	   (nth-value 
-	    1 (spin-until (handler-case (progn (lookup-service service-name) t)
-			    (ros-rpc-error (c) (declare (ignore c)) nil))
-			  (.1 timeout)
-			  (when first-time
-			    (setq first-time nil)
-			    (ros-debug (roslisp wait-for-service) "Waiting for service ~a" service-name))))))
-     (ros-debug (roslisp wait-for-service) (not timed-out) "Found service ~a" service-name)
-     (ros-debug (roslisp wait-for-service) timed-out "Timed out waiting for service ~a" service-name)
-     (not timed-out)))
+         (timed-out
+          (nth-value 
+           1 (spin-until (handler-case (progn (lookup-service service-name) t)
+                           (ros-rpc-error (c) (declare (ignore c)) nil))
+                 (.1 timeout)
+               (when first-time
+                 (setq first-time nil)
+                 (ros-debug (roslisp wait-for-service) "Waiting for service ~a" service-name))))))
+    (ros-debug (roslisp wait-for-service) (not timed-out) "Found service ~a" service-name)
+    (ros-debug (roslisp wait-for-service) timed-out "Timed out waiting for service ~a" service-name)
+    (not timed-out)))
       
 
 

@@ -287,16 +287,18 @@ Every INC seconds, evaluate the form TEST, and return its value it becomes true.
 In the case with TIMEOUT specified, return two values: the first is the return value of TEST, and the second is T iff a timeout occurred (in which case the first value is meaningless)."
   
   (condlet (((listp inc) (actual-inc (first inc)) (timeout (second inc)))
-	    (t (actual-inc inc) (timeout nil)))
-	   (let ((init-time (gensym)) (test-var (gensym)))
-	     `(let ((,init-time (get-internal-real-time)))
-		(declare (ignorable ,init-time))
-		(loop-at-most-every ,actual-inc
-		     (let ((,test-var ,test))
-		       (when ,test-var (return ,test-var))
-		       ,(when timeout `(when (> (get-internal-real-time) (+ ,init-time (* ,timeout ,internal-time-units-per-second)))
-					 (return (values nil t))))
-			,@body))))))
+            (t (actual-inc inc) (timeout nil)))
+    (let ((init-time (gensym)) (test-var (gensym)))
+      `(let ((,init-time (get-internal-real-time)))
+         (declare (ignorable ,init-time))
+         (loop-at-most-every ,actual-inc
+           (let ((,test-var ,test))
+             (when ,test-var (return ,test-var))
+             ,(when timeout `(when (and ,timeout
+                                        (> (get-internal-real-time)
+                                           (+ ,init-time (* ,timeout ,internal-time-units-per-second))))
+                               (return (values nil t))))
+             ,@body))))))
 
        
 (defmacro with-parallel-thread ((fn &optional name) &body body)

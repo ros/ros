@@ -179,7 +179,6 @@ def find_boost(search_paths):
 def search_paths(sysroot):
     _search_paths = [(sysroot+'/usr', True), 
                  (sysroot+'/usr/local', True),
-                 ('/opt/ros', False),
                  (None if 'INCLUDE_DIRS' not in os.environ else os.environ['INCLUDE_DIRS'], True), 
                  (None if 'CPATH' not in os.environ else os.environ['CPATH'], True),
                  (None if 'C_INCLUDE_PATH' not in os.environ else os.environ['C_INCLUDE_PATH'], True),

@@ -114,14 +114,7 @@ macro(rosbuild_invoke_rospack pkgname _prefix _varname)
   else(_rospack_failed)
     separate_arguments(_rospack_invoke_result)
     set(_rospack_${_varname} ${_rospack_invoke_result})
-    # We don't cache results that contain newlines, because
-    # they make CMake's cache unhappy. This check should only affect calls
-    # to `rospack plugins`, which we don't need to cache.
-    if(_rospack_invoke_result MATCHES ".*\n.*")
-      set(${_prefix}_${_varname} "${_rospack_invoke_result}")
-    else(_rospack_invoke_result MATCHES ".*\n.*")
-      set(${_prefix}_${_varname} "${_rospack_invoke_result}" CACHE INTERNAL "")
-    endif(_rospack_invoke_result MATCHES ".*\n.*")
+    set(${_prefix}_${_varname} "${_rospack_invoke_result}" CACHE INTERNAL "")
   endif(_rospack_failed)
 endmacro(rosbuild_invoke_rospack)
 
@@ -148,20 +141,11 @@ macro(rosbuild_init)
   # Check that manifest.xml is valid
   _rosbuild_check_manifest()
 
-  # Check that the package directory is correct
-  _rosbuild_check_package_location()
-
   # Add ROS_PACKAGE_NAME define
   add_definitions(-DROS_PACKAGE_NAME='\"${PROJECT_NAME}\"')
 
   # ROS_BUILD_TYPE is set by rosconfig
-  # RelWithAsserts is our own type, not supported by CMake
-  if("${ROS_BUILD_TYPE}" STREQUAL "RelWithAsserts")
-    set(CMAKE_BUILD_TYPE "")
-    set(ROS_COMPILE_FLAGS "-O3 ${ROS_COMPILE_FLAGS}")
-  else("${ROS_BUILD_TYPE}" STREQUAL "RelWithAsserts")
-    set(CMAKE_BUILD_TYPE ${ROS_BUILD_TYPE})
-  endif("${ROS_BUILD_TYPE}" STREQUAL "RelWithAsserts")
+  set(CMAKE_BUILD_TYPE ${ROS_BUILD_TYPE})
 
   # Set default output directories
   set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
@@ -175,9 +159,8 @@ macro(rosbuild_init)
 
   # Get the full paths to the manifests for all packages on which 
   # we depend
-  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack deps_manifests_invoke_result deps-manifests)
-  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack msgsrv_gen_invoke_result deps-msgsrv)
-  set(ROS_MANIFEST_LIST "${PROJECT_SOURCE_DIR}/manifest.xml ${_rospack_deps_manifests_invoke_result} ${_rospack_msgsrv_gen_invoke_result}")
+  rosbuild_invoke_rospack(${PROJECT_NAME} _rospack invoke_result deps-manifests)
+  set(ROS_MANIFEST_LIST "${PROJECT_SOURCE_DIR}/manifest.xml ${_rospack_invoke_result}")
   # convert whitespace-separated string to ;-separated list
   separate_arguments(ROS_MANIFEST_LIST)
 
@@ -223,7 +206,7 @@ macro(rosbuild_init)
     list(REVERSE ${_prefix}_LIBRARIES)
     #list(REMOVE_DUPLICATES ${_prefix}_LIBRARIES)
     _rosbuild_list_remove_duplicates("${${_prefix}_LIBRARIES}" _tmplist)
-    set(${_prefix}_LIBRARIES ${_tmplist})
+    set(${_prefix}_LIBRARIES ${__tmplist})
     list(REVERSE ${_prefix}_LIBRARIES)
   
     # Also throw in the libs that we want to link everything against (only
@@ -333,11 +316,6 @@ macro(rosbuild_init)
   add_custom_target(rospack_genmsg)
   add_custom_target(rospack_gensrv)
 
-  # Add a target that will fire before doing message or service generation.
-  # This is used by packages that do automatic generation of message and
-  # service files.
-  add_custom_target(rosbuild_premsgsrvgen)
-
   # Add a target that will fire before compiling anything.  This is used by
   # message and service generation, as well as things outside of ros, like
   # dynamic_reconfigure.
@@ -368,8 +346,7 @@ macro(rosbuild_init)
   endforeach(_l)
 
   # Also collect cmake fragments exported by packages that depend on
-  # rosbuild.  This behavior is deprecated, in favor of using
-  # rosbuild_include() to explicitly include cmake code from other packages.
+  # rosbuild.
   rosbuild_invoke_rospack(rosbuild _rosbuild EXPORTS plugins --attrib=cmake --top=${_project})
   list(LENGTH _rosbuild_EXPORTS _rosbuild_EXPORTS_length)
 
@@ -391,7 +368,6 @@ macro(rosbuild_init)
 
   foreach(_f ${_rosbuild_EXPORTS_stripped})
     list(APPEND _cmake_fragments ${_f})
-    message("\n[rosbuild] WARNING: the file ${_f} is being included automatically.  This behavior is deprecated.  The package containing that file should instead export the directory containing the file, and you should use rosbuild_include() to include the file explicitly.\n")
   endforeach(_f)
 
   # Now include them all
@@ -431,10 +407,6 @@ macro(rosbuild_init)
   _rosbuild_list_remove_duplicates(${_gtest_LIBRARIES} _tmplist)
   set(_gtest_LIBRARIES ${_tmplist})
   list(REVERSE _gtest_LIBRARIES)
-
-  # Delete the files that let rospack know messages/services have been generated
-  file(REMOVE ${PROJECT_SOURCE_DIR}/msg_gen/generated)
-  file(REMOVE ${PROJECT_SOURCE_DIR}/srv_gen/generated)
 endmacro(rosbuild_init)
 ###############################################################################
 
@@ -480,7 +452,7 @@ macro(rosbuild_add_executable exe)
   rosbuild_add_compile_flags(${exe} ${ROS_COMPILE_FLAGS})
   rosbuild_add_link_flags(${exe} ${ROS_LINK_FLAGS})
 
-  # Make sure to do any prebuild work (e.g., msg/srv generation) before
+  # Make sure to do any prebuild working (e.g., msg/srv generation) before
   # building this target.
   add_dependencies(${exe} rosbuild_precompile)
 
@@ -500,11 +472,6 @@ macro(rosbuild_add_library lib)
   if(NOT ROS_BUILD_STATIC_LIBS AND NOT ROS_BUILD_SHARED_LIBS)
     message(FATAL_ERROR "Neither shared nor static libraries are enabled.  Please set either ROS_BUILD_STATIC_LIBS or ROS_BUILD_SHARED_LIBS to true in your $ROS_ROOT/rosconfig.cmake")
   endif(NOT ROS_BUILD_STATIC_LIBS AND NOT ROS_BUILD_SHARED_LIBS)
-  # Sanity check; it's too hard to support building shared libs and static
-  # executables.
-  if(ROS_BUILD_STATIC_EXES AND ROS_BUILD_SHARED_LIBS)
-    message(FATAL_ERROR "Static executables are requested, but so are shared libs. This configuration is unsupported.  Please either set ROS_BUILD_SHARED_LIBS to false or set ROS_BUILD_STATIC_EXES to false.")
-  endif(ROS_BUILD_STATIC_EXES AND ROS_BUILD_SHARED_LIBS)
 
   # What are we building?
   if(ROS_BUILD_SHARED_LIBS)
@@ -566,7 +533,7 @@ macro(rosbuild_add_gtest exe)
   add_custom_target(test)
   add_dependencies(test test_${_testname})
   # Register check for test output
-  _rosbuild_check_rostest_xml_result(${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${_testname}.xml)
+  _rosbuild_check_rostest_xml_result(test_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
 endmacro(rosbuild_add_gtest)
 
 # A version of add_gtest that checks a label against ROS_BUILD_TEST_LABEL
@@ -629,14 +596,14 @@ endmacro(rosbuild_add_rostest_future)
 # the specified file 
 macro(rosbuild_add_pyunit file)
   string(REPLACE "/" "_" _testname ${file})
-  _rosbuild_add_pyunit(${ARGV})
+  _rosbuild_add_pyunit(${file})
   # Redeclaration of target is to workaround bug in 2.4.6
   if(CMAKE_MINOR_VERSION LESS 6)
     add_custom_target(test)
   endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test pyunit_${_testname})
   # Register check for test output
-  _rosbuild_check_rostest_xml_result(${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${_testname}.xml)
+  _rosbuild_check_rostest_xml_result(pyunit_${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml)
 endmacro(rosbuild_add_pyunit)
 
 # A version of add_pyunit that checks a label against ROS_BUILD_TEST_LABEL
@@ -658,19 +625,6 @@ macro(rosbuild_add_pyunit_future file)
   endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test-future pyunit_${_testname})
 endmacro(rosbuild_add_pyunit_future)
-
-# Declare as a unit test a check of a roslaunch file, or a directory
-# containing roslaunch files.  Following the file/directory, you can
-# specify environment variables as var=val var=val ...
-macro(rosbuild_add_roslaunch_check file)
-  string(REPLACE "/" "_" _testname ${file})
-  _rosbuild_add_roslaunch_check(${ARGV})
-  # Redeclaration of target is to workaround bug in 2.4.6
-  if(CMAKE_MINOR_VERSION LESS 6)
-    add_custom_target(test)
-  endif(CMAKE_MINOR_VERSION LESS 6)
-  add_dependencies(test roslaunch_check_${_testname})
-endmacro(rosbuild_add_roslaunch_check)
 
 set(_ROSBUILD_GENERATED_MSG_FILES "")
 macro(rosbuild_add_generated_msgs)
@@ -744,19 +698,6 @@ macro(rosbuild_gensrv)
   rosbuild_get_srvs(_srvlist)
   if(NOT _srvlist)
     _rosbuild_warn("rosbuild_gensrv() was called, but no .srv files were found")
-  else(NOT _srvlist)
-    file(WRITE ${PROJECT_SOURCE_DIR}/srv_gen/generated "yes")
-    # Now set the mtime to something consistent.  We only want whether or not this file exists to matter
-    execute_process(
-      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/srv_gen/generated', (0, 0))"
-      ERROR_VARIABLE _set_mtime_error
-      RESULT_VARIABLE _set_mtime_failed
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
-    if(_set_mtime_failed)
-      message("[rosbuild] Error from calling to Python to set the mtime on ${PROJECT_SOURCE_DIR}/srv_gen/generated:")
-      message("${_mtime_error}")
-      message(FATAL_ERROR "[rosbuild] Failed to set mtime; aborting")
-    endif(_set_mtime_failed)
   endif(NOT _srvlist)
   # Create target to trigger service generation in the case where no libs
   # or executables are made.
@@ -766,7 +707,7 @@ macro(rosbuild_gensrv)
   # depend on the message generation.
   add_dependencies(rosbuild_precompile rospack_gensrv)
   # add in the directory that will contain the auto-generated .h files
-  include_directories(${PROJECT_SOURCE_DIR}/srv_gen/cpp/include)
+  include_directories(${PROJECT_SOURCE_DIR}/srv/cpp)
 endmacro(rosbuild_gensrv)
 
 # genmsg processes msg/*.msg files into language-specific source files
@@ -775,19 +716,6 @@ macro(rosbuild_genmsg)
   rosbuild_get_msgs(_msglist)
   if(NOT _msglist)
     _rosbuild_warn("rosbuild_genmsg() was called, but no .msg files were found")
-  else(NOT _msglist)
-    file(WRITE ${PROJECT_SOURCE_DIR}/msg_gen/generated "yes")
-    # Now set the mtime to something consistent.  We only want whether or not this file exists to matter
-    execute_process(
-      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/msg_gen/generated', (0, 0))"
-      ERROR_VARIABLE _set_mtime_error
-      RESULT_VARIABLE _set_mtime_failed
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
-    if(_set_mtime_failed)
-      message("[rosbuild] Error from calling to Python to set the mtime on ${PROJECT_SOURCE_DIR}/msg_gen/generated:")
-      message("${_mtime_error}")
-      message(FATAL_ERROR "[rosbuild] Failed to set mtime; aborting")
-    endif(_set_mtime_failed)
   endif(NOT _msglist)
   # Create target to trigger message generation in the case where no libs
   # or executables are made.
@@ -797,12 +725,11 @@ macro(rosbuild_genmsg)
   # depend on the message generation.
   add_dependencies(rosbuild_precompile rospack_genmsg)
   # add in the directory that will contain the auto-generated .h files
-  include_directories(${PROJECT_SOURCE_DIR}/msg_gen/cpp/include)
+  include_directories(${PROJECT_SOURCE_DIR}/msg/cpp)
 endmacro(rosbuild_genmsg)
 
 macro(rosbuild_add_boost_directories)
-  set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}") 
-  execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--include_dirs"
+  execute_process(COMMAND "rosboost-cfg" "--include_dirs"
                   OUTPUT_VARIABLE BOOST_INCLUDE_DIRS
                   RESULT_VARIABLE _boostcfg_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -811,8 +738,7 @@ macro(rosbuild_add_boost_directories)
     message(FATAL_ERROR "rosboost-cfg --include_dirs failed")
   endif(_boostcfg_failed)
   
-  set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}") 
-  execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--lib_dirs"
+  execute_process(COMMAND "rosboost-cfg" "--lib_dirs"
                   OUTPUT_VARIABLE BOOST_LIB_DIRS
                   RESULT_VARIABLE _boostcfg_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -837,8 +763,8 @@ macro(rosbuild_link_boost target)
       set(_libs "${_libs},${arg}")
     endif(_first)
   endforeach(arg)
-  set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}") 
-  execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--libs" ${_libs}
+
+  execute_process(COMMAND "rosboost-cfg" "--libs" ${_libs}
                   OUTPUT_VARIABLE BOOST_LIBS
 		  ERROR_VARIABLE _boostcfg_error
                   RESULT_VARIABLE _boostcfg_failed
@@ -863,43 +789,15 @@ macro(rosbuild_download_test_data _url _filename)
 
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname download_data_${_filename})
-  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_filename} 
+  add_custom_target(${_testname}
                      COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
                      VERBATIM)
-  add_custom_target(${_testname} DEPENDS ${PROJECT_SOURCE_DIR}/${_filename})
   # Redeclaration of target is to workaround bug in 2.4.6
   if(CMAKE_MINOR_VERSION LESS 6)
     add_custom_target(tests)
   endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(tests ${_testname})
 endmacro(rosbuild_download_test_data)
-
-# There's an optional 3rd arg, which is a target that should be made to
-# depend on the result of untarring the file (can be ALL).
-macro(rosbuild_untar_file _filename _unpacked_name)
-  get_filename_component(unpack_dir ${_filename} PATH)
-  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_unpacked_name}
-                     COMMAND rm -rf ${PROJECT_SOURCE_DIR}/${_unpacked_name}
-                     COMMAND tar xvCf ${unpack_dir} ${PROJECT_SOURCE_DIR}/${_filename}
-                     COMMAND touch -c ${PROJECT_SOURCE_DIR}/${_unpacked_name}
-                     DEPENDS ${PROJECT_SOURCE_DIR}/${_filename}
-                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-                     VERBATIM)
-  string(REPLACE "/" "_" _target_name untar_file_${_filename}_${_unpacked_name})
-
-  if("${ARGN}" STREQUAL "ALL")
-    add_custom_target(${_target_name} ALL DEPENDS ${PROJECT_SOURCE_DIR}/${_unpacked_name})
-  else("${ARGN}" STREQUAL "ALL")
-    add_custom_target(${_target_name} DEPENDS ${PROJECT_SOURCE_DIR}/${_unpacked_name})
-    if(NOT "${ARGN}" STREQUAL "")
-      # Redeclaration of target is to workaround bug in 2.4.6
-      if(CMAKE_MINOR_VERSION LESS 6)
-        add_custom_target(${ARGN})
-      endif(CMAKE_MINOR_VERSION LESS 6)
-      add_dependencies(${ARGN} ${_target_name})
-    endif(NOT "${ARGN}" STREQUAL "")
-  endif("${ARGN}" STREQUAL "ALL")
-endmacro(rosbuild_untar_file)
 
 # Macro to download data on the all target
 # The real signature is:
@@ -910,10 +808,9 @@ macro(rosbuild_download_data _url _filename)
   endif("${ARGN}" STREQUAL "")
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname download_data_${_filename})
-  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_filename}
+  add_custom_target(${_testname} ALL
                     COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
                     VERBATIM)
-  add_custom_target(${_testname} ALL DEPENDS ${PROJECT_SOURCE_DIR}/${_filename})
 endmacro(rosbuild_download_data)
 
 macro(rosbuild_add_openmp_flags target)
@@ -1056,112 +953,4 @@ macro(rosbuild_add_swigpy_library target lib)
                           PREFIX "_")
   endif(APPLE)
 endmacro(rosbuild_add_swigpy_library)
-
-macro(rosbuild_check_for_sse)
-  # check for SSE extensions
-  include(CheckCXXSourceRuns)
-  if( CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
-   set(SSE_FLAGS)
-  
-   set(CMAKE_REQUIRED_FLAGS "-msse3")
-   check_cxx_source_runs("
-    #include <pmmintrin.h>
-  
-    int main()
-    {
-       __m128d a, b;
-       double vals[2] = {0};
-       a = _mm_loadu_pd(vals);
-       b = _mm_hadd_pd(a,a);
-       _mm_storeu_pd(vals, b);
-       return 0;
-    }"
-    HAS_SSE3_EXTENSIONS)
-  
-   set(CMAKE_REQUIRED_FLAGS "-msse2")
-   check_cxx_source_runs("
-    #include <emmintrin.h>
-  
-    int main()
-    {
-        __m128d a, b;
-        double vals[2] = {0};
-        a = _mm_loadu_pd(vals);
-        b = _mm_add_pd(a,a);
-        _mm_storeu_pd(vals,b);
-        return 0;
-     }"
-     HAS_SSE2_EXTENSIONS)
-  
-   set(CMAKE_REQUIRED_FLAGS "-msse")
-   check_cxx_source_runs("
-    #include <xmmintrin.h>
-    int main()
-    {
-        __m128 a, b;
-        float vals[4] = {0};
-        a = _mm_loadu_ps(vals);
-        b = a;
-        b = _mm_add_ps(a,b);
-        _mm_storeu_ps(vals,b);
-        return 0;
-    }"
-    HAS_SSE_EXTENSIONS)
-  
-   set(CMAKE_REQUIRED_FLAGS)
-  
-   if(HAS_SSE3_EXTENSIONS)
-    set(SSE_FLAGS "-msse3 -mfpmath=sse")
-    message(STATUS "[rosbuild] Found SSE3 extensions, using flags: ${SSE_FLAGS}")
-   elseif(HAS_SSE2_EXTENSIONS)
-    set(SSE_FLAGS "-msse2 -mfpmath=sse")
-    message(STATUS "[rosbuild] Found SSE2 extensions, using flags: ${SSE_FLAGS}")
-   elseif(HAS_SSE_EXTENSIONS)
-    set(SSE_FLAGS "-msse -mfpmath=sse")
-    message(STATUS "[rosbuild] Found SSE extensions, using flags: ${SSE_FLAGS}")
-   endif()
-  elseif(MSVC)
-   check_cxx_source_runs("
-    #include <emmintrin.h>
-  
-    int main()
-    {
-        __m128d a, b;
-        double vals[2] = {0};
-        a = _mm_loadu_pd(vals);
-        b = _mm_add_pd(a,a);
-        _mm_storeu_pd(vals,b);
-        return 0;
-     }"
-     HAS_SSE2_EXTENSIONS)
-   if( HAS_SSE2_EXTENSIONS )
-    message(STATUS "[rosbuild] Found SSE2 extensions")
-    set(SSE_FLAGS "/arch:SSE2 /fp:fast -D__SSE__ -D__SSE2__" )
-   endif()
-  endif()
-endmacro(rosbuild_check_for_sse)
-
-macro(rosbuild_include pkg module)
-  # Find exported cmake directories
-  rosbuild_invoke_rospack(rosbuild _rosbuild EXPORTS plugins --attrib=cmake_directory --top=${_project})
-  string(REGEX REPLACE "\n" ";" _rosbuild_EXPORTS_stripped "${_rosbuild_EXPORTS}")
-  list(LENGTH _rosbuild_EXPORTS_stripped _rosbuild_EXPORTS_stripped_length)
-  set(_idx 0)
-  set(_found False)
-  while(_idx LESS ${_rosbuild_EXPORTS_stripped_length} AND NOT _found)
-    list(GET _rosbuild_EXPORTS_stripped ${_idx} _pkg)
-    math(EXPR _idx "${_idx} + 1")
-    list(GET _rosbuild_EXPORTS_stripped ${_idx} _dir)
-    if("${_pkg}" STREQUAL "${pkg}")
-      message("[rosbuild] Including ${_dir}/${module}.cmake")
-      include(${_dir}/${module}.cmake)
-      # Poor man's break
-      set(_found True)
-    endif("${_pkg}" STREQUAL "${pkg}")
-    math(EXPR _idx "${_idx} + 1")
-  endwhile(_idx LESS ${_rosbuild_EXPORTS_stripped_length} AND NOT _found)
-  if(NOT _found)
-    message(FATAL_ERROR "[rosbuild] Failed to include ${module} from ${pkg}")
-  endif(NOT _found)
-endmacro(rosbuild_include)
 

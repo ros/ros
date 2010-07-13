@@ -35,13 +35,13 @@
 
 import roslib; roslib.load_manifest('roscreate')
 
-NAME='roscreate-pkg'
+NAME='roscreatepkg'
 
 import os
 import sys
 import roslib.packages
 
-from roscreate.core import read_template, author_name, on_ros_path
+from roscreate.core import read_template, author_name
 
 def get_templates():
     templates = {}
@@ -105,9 +105,6 @@ def roscreatepkg_main():
         parser.error("you must specify a package name and optionally also list package dependencies")
     package = args[0]
 
-    if not roslib.names.is_legal_resource_base_name(package):
-        parser.error("illegal package name: %s\nNames must start with a letter and contain only alphanumeric characters\nand underscores."%package)
-
     # validate dependencies and turn into XML
     depends = args[1:]
     uses_roscpp = 'roscpp' in depends
@@ -121,8 +118,6 @@ def roscreatepkg_main():
             sys.exit(1)
     depends = ''.join(['  <depend package="%s"/>\n'%d for d in depends])
 
-    if not on_ros_path(os.getcwd()):
-        print >> sys.stderr, '!'*80+"\nWARNING: current working directory is not on ROS_PACKAGE_PATH!\nPlease update your ROS_PACKAGE_PATH environment variable.\n"+'!'*80
     create_package(package, author_name(), depends, uses_roscpp=uses_roscpp, uses_rospy=uses_rospy)
 
 if __name__ == "__main__":

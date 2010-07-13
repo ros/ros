@@ -36,7 +36,6 @@
 #define ROS_TIME_H
 
 #include "duration.h"
-#include "exception.h"
 
 #include <iostream>
 #include <math.h>
@@ -50,15 +49,6 @@
 
 namespace ros
 {
-
-class TimeNotInitializedException : public Exception
-{
-public:
-  TimeNotInitializedException()
-  : Exception("Cannot use ros::Time::now() before the first NodeHandle has been created or ros::start() has been called.  "
-              "If this is a standalone app or test that just uses ros::Time and does not communicate over ROS, you may also call ros::Time::init()")
-  {}
-};
 
 inline void normalizeSecNSec(uint64_t& sec, uint64_t& nsec)
 {
@@ -176,21 +166,10 @@ public:
   static void init();
   static void shutdown();
   static void setNow(const Time& new_now);
-  static bool useSystemTime();
-  static bool isSimTime();
-
-  /**
-   * \brief Returns whether or not the current time is valid.  Time is valid if it is non-zero.
-   */
-  static bool isValid();
-  /**
-   * \brief Wait for time to become valid
-   */
-  static bool waitForValid();
-  /**
-   * \brief Wait for time to become valid, with timeout
-   */
-  static bool waitForValid(const ros::WallDuration& timeout);
+  static bool useSystemTime() { return use_system_time_; }
+private:
+  static Time sim_time_;
+  static bool use_system_time_;
 };
 
 extern const Time TIME_MAX;

@@ -6,8 +6,9 @@
   <license>BSD</license>
   <review status="na" notes="test"/>
   <depend package="roscpp"/>
-  <platform os="ubuntu" version="9.04"/>
-  <platform os="ubuntu" version="9.10"/>
-  <platform os="ubuntu" version="10.04"/>
-  <platform os="macports" version="macports"/>
+
+  <export>
+    <cpp cflags="-I${prefix}/msg/cpp"/>
+  </export>
+
 </package>

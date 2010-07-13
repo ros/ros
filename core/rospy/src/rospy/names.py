@@ -45,10 +45,9 @@ from itertools import ifilter
 from roslib.names import namespace, get_ros_namespace, ns_join, make_global_ns, load_mappings, \
      SEP, GLOBALNS, TYPE_SEPARATOR, REMAP, ANYTYPE, \
      is_global, is_private
-import roslib.names
 
 from rospy.exceptions import ROSException
-from rospy.impl.validators import ParameterInvalid
+from rospy.validators import ParameterInvalid
 
 TOPIC_ANYTYPE = ANYTYPE #indicates that a subscriber will connect any datatype given to it
 SERVICE_ANYTYPE = ANYTYPE #indicates that a service client does not have a fixed type
@@ -78,17 +77,6 @@ def canonicalize_name(name):
 _mappings = load_mappings(sys.argv)
 _resolved_mappings = {}
 
-def reload_mappings(argv):
-    """
-    Re-initialize the name remapping table.
-
-    @param argv: Command line arguments to this program. ROS reads
-        these arguments to find renaming params. 
-    @type  argv: [str]
-    """
-    global _mappings
-    _mappings = load_mappings(argv)
-
 # #1810
 def initialize_mappings(node_name):
     """
@@ -100,12 +88,12 @@ def initialize_mappings(node_name):
     global _resolved_mappings
     _resolved_mappings = {}
     for m,v in _mappings.iteritems():
-        # resolve both parts of the mappings. use the roslib.names
-        # version of resolve_name to avoid circular mapping.
+        # resolve both parts of the mappings, but make sure not to double-remap
         if m.startswith('__'): # __name, __log, etc...
             _resolved_mappings[m] = v
         else:
-            _resolved_mappings[roslib.names.resolve_name(m, node_name)] = roslib.names.resolve_name(v, node_name)
+            _resolved_mappings[resolve_name(m, caller_id=node_name, remap=False)] = resolve_name(v, caller_id=node_name, remap=False)
+        
 
 def resolve_name_without_node_name(name):
     """
@@ -121,17 +109,17 @@ def resolve_name_without_node_name(name):
     if is_private(name):
         raise ValueError("~name topics cannot be created before init_node() has been called")
 
-    # we use the underlying roslib.names.resolve_name to avoid dependencies on nodename/remappings
     fake_caller_id = ns_join(get_namespace(), 'node')
-    fake_resolved = roslib.names.resolve_name(name, fake_caller_id)
+    fake_resolved = resolve_name(name, caller_id=fake_caller_id, remap=False)
 
     for m, v in _mappings.iteritems():
-        if roslib.names.resolve_name(m, fake_caller_id) == fake_resolved:
+        if resolve_name(m, caller_id=fake_caller_id, remap=False) == fake_resolved:
             if is_private(name):
                 raise ROSInitException("due to the way this node is written, %s cannot be remapped to a ~name. \nThe declaration of topics/services must be moved after the call to init_node()"%name)
             else:
-                return roslib.names.resolve_name(v, fake_caller_id)
+                return resolve_name(v, caller_id=fake_caller_id, remap=False)
     return fake_resolved
+    
 
 def get_mappings():
     """
@@ -151,8 +139,7 @@ def get_resolved_mappings():
     """
     return _resolved_mappings
 
-#TODO: port to a wrapped call to roslib.names.resolve_name
-def resolve_name(name, caller_id=None):
+def resolve_name(name, caller_id=None, remap=True):
     """
     Resolve a ROS name to its global, canonical form. Private ~names
     are resolved relative to the node name. 
@@ -182,7 +169,7 @@ def resolve_name(name, caller_id=None):
     #Mappings override general namespace-based resolution
     # - do this before canonicalization as remappings are meant to
     #   match the name as specified in the code
-    if resolved_name in _resolved_mappings:
+    if remap and resolved_name in _resolved_mappings:
         return _resolved_mappings[resolved_name]
     else:
         return resolved_name
@@ -205,7 +192,7 @@ def remap_name(name, caller_id=None, resolved=True):
     if not caller_id:
         caller_id = get_caller_id()
     if name in _mappings:
-        return roslib.names.resolve_name(_mappings[name], caller_id)
+        return resolve_name(_mappings[name], caller_id, remap=False)
     return name
 
 def scoped_name(caller_id, name):
@@ -234,6 +221,21 @@ def scoped_name(caller_id, name):
 #Technically XMLRPC will never send a None, but I don't want to code masterslave.py to be
 #XML-RPC specific in this way.
 
+def empty_or_valid_name(param_name):
+    """
+    empty or valid graph resource name.
+    Validator that resolves names unless they an empty string is supplied, in which case
+    an empty string is returned.
+    """
+    def validator(param_value, caller_id):
+        if not isinstance(param_value, basestring):
+            raise ParameterInvalid("ERROR: parameter [%s] must be a string"%param_name)              
+        if not param_value:
+            return ''
+        #return resolve_name(param_value, namespace(caller_id))
+        return resolve_name(param_value, caller_id)
+    return validator
+
 def valid_name_validator_resolved(param_name, param_value, caller_id):
     if not param_value or not isinstance(param_value, basestring):
         raise ParameterInvalid("ERROR: parameter [%s] must be a non-empty string"%param_name)            
@@ -241,8 +243,8 @@ def valid_name_validator_resolved(param_name, param_value, caller_id):
     # I added the colon check as the common error will be to send an URI instead of name
     if ':' in param_value or ' ' in param_value:
         raise ParameterInvalid("ERROR: parameter [%s] contains illegal chars"%param_name) 
-    #don't use our own resolve_name because we do not want to remap
-    return roslib.names.resolve_name(param_value, caller_id, remappings=None)
+    #return resolve_name(param_value, namespace(caller_id))
+    return resolve_name(param_value, caller_id, remap=False)
 def valid_name_validator_unresolved(param_name, param_value, caller_id):
     if not param_value or not isinstance(param_value, basestring):
         raise ParameterInvalid("ERROR: parameter [%s] must be a non-empty string"%param_name)            
@@ -270,7 +272,7 @@ def valid_name(param_name, resolve=True):
     return validator
 
 def global_name(param_name):
-    """
+    """"
     Validator that checks for valid, global graph resource name.
     @return: parameter value
     @rtype: str
@@ -283,6 +285,20 @@ def global_name(param_name):
             raise ParameterInvalid("ERROR: parameter [%s] must be a globally referenced name"%param_name)            
         return param_value
     return validator
+
+def valid_type_name(param_name):
+    """validator that checks the type name is specified correctly"""
+    def validator(param_value, caller_id):
+        if param_value == TOPIC_ANYTYPE:
+            return param_value
+        if not param_value or not isinstance(param_value, basestring):
+            raise ParameterInvalid("ERROR: parameter [%s] must be a non-empty string"%param_name)            
+        if not len(param_value.split(TYPE_SEPARATOR)) == 2:
+            raise ParameterInvalid("ERROR: parameter [%s] is not a valid package resource name"%param_name)
+        #TODO: actual validation of chars
+        return param_value
+    return validator
+
 
 #########################################################
 #Global Namespace Routines

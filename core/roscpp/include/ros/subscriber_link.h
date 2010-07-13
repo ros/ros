@@ -67,20 +67,18 @@ public:
   int getConnectionID() const { return connection_id_; }
 
   /**
+   * \brief Publish a message directly to our subscriber.  Useful for publication connection callbacks
+   * to publish directly to the new subscriber and no-one else
+   */
+  virtual bool publish(const Message& m) = 0;
+  /**
    * \brief Queue up a message for publication.  Throws out old messages if we've reached our Publication's max queue size
    */
-  virtual void enqueueMessage(const SerializedMessage& m, bool nocopy, bool ser) = 0;
+  virtual void enqueueMessage(const SerializedMessage& m) = 0;
 
   virtual void drop() = 0;
 
   virtual std::string getTransportType() = 0;
-
-  virtual bool isIntraprocess() { return false; }
-  virtual void getPublishTypes(bool& ser, bool& nocopy, const std::type_info& ti) { ser = true; nocopy = false; }
-
-  const std::string& getMD5Sum();
-  const std::string& getDataType();
-  const std::string& getMessageDefinition();
 
 protected:
   bool verifyDatatype(const std::string &datatype);

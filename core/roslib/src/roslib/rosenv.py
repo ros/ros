@@ -54,8 +54,9 @@ ROS_BINDEPS_PATH = "ROS_BINDEPS_PATH"
 ROS_BOOST_ROOT = "ROS_BOOST_ROOT"
 
 # Per session
-## hostname/address to bind XML-RPC services to. 
+## @deprecated Replaced by ROS_HOSTNAME, with equivalent functionality
 ROS_IP           ="ROS_IP"
+## hostname/address to bind XML-RPC services to. 
 ROS_HOSTNAME     ="ROS_HOSTNAME"
 ROS_NAMESPACE    ="ROS_NAMESPACE"
 ## directory in which log files are written
@@ -184,10 +185,39 @@ def resolve_paths(paths):
     tildes to home directories, but in the future it may encode other
     behaviors.
     """
-    splits = [p for p in paths.split(os.pathsep) if p]
-    return os.pathsep.join([resolve_path(p) for p in splits])
+    return os.pathsep.join([resolve_path(p) for p in paths.split(os.pathsep)])
 
 
+def setup_default_environment():
+  """
+  Bootstrap common ROS environment variables. For now, only affects
+  os.environ if the environment has a rosdeb-based installation. It
+  does not check for remapping args that may also affect
+  ROS_MASTER_URI as those have precedence regardless.
+  """
+  default_ros_root = "/usr/lib/ros"
+  if os.path.isdir(default_ros_root):
+    if 'ROS_ROOT' not in os.environ:
+      os.environ['ROS_ROOT'] = default_ros_root
+    if 'ROS_PACKAGE_PATH' not in os.environ:
+      os.environ['ROS_PACKAGE_PATH'] = os.path.join(default_ros_root, "pkgs")
+    if 'ROS_MASTER_URI' not in os.environ:
+      os.environ['ROS_MASTER_URI'] = "http://localhost:%d" % (10000+os.geteuid(),)
+    if 'ROS_LOG_DIR' not in os.environ:
+      os.environ['ROS_LOG_DIR'] = os.path.join(os.environ.get("HOME"), ".ros", "log")
+
+    ros_root = os.environ.get("ROS_ROOT")
+
+    if "PYTHONPATH" in os.environ:
+      os.environ['PYTHONPATH'] = os.environ['PYTHONPATH'] + ":" + os.path.join(ros_root, "python") + ":" + os.path.join(ros_root, "lib")
+    else:
+      os.environ['PYTHONPATH'] = os.path.join(ros_root, "python") + ":" + os.path.join(ros_root, "lib")
+
+    if "LD_LIBRARY_PATH" in os.environ:
+      os.environ['LD_LIBRARY_PATH'] = os.path.join(ros_root, "lib") + ":" + os.environ["LD_LIBRARY_PATH"]
+    else:
+      os.environ['LD_LIBRARY_PATH'] = os.path.join(ros_root, "lib")
+  
 def get_ros_home(env=None):
     """
     Get directory location of '.ros' directory (aka ROS home).
@@ -266,26 +296,5 @@ def makedirs_with_parent_perms(p):
         makedirs_with_parent_perms(parent)
         s = os.stat(parent)
         os.mkdir(p)
-
-        # if perms of new dir don't match, set anew
-        s2 = os.stat(p)
-        if s.st_uid != s2.st_uid or s.st_gid != s2.st_gid:
-            os.chown(p, s.st_uid, s.st_gid)
-        if s.st_mode != s2.st_mode:
-            os.chmod(p, s.st_mode)    
-
-def on_ros_path(p):
-    """
-    Check to see if filesystem path is on paths specified in ROS
-    environment (ROS_ROOT, ROS_PACKAGE_PATH).
-
-    New in ROS 1.2.
-    
-    @param p: path
-    @type  p: str
-    @return: True if p is on the ROS path (ROS_ROOT, ROS_PACKAGE_PATH)
-    """
-    pkg = os.path.realpath(roslib.rosenv.resolve_path(p))
-    paths = [p for p in roslib.packages.get_package_paths()]
-    paths = [os.path.realpath(roslib.rosenv.resolve_path(x)) for x in paths]
-    return bool([x for x in paths if pkg == x or pkg.startswith(x + os.sep)])
+        os.chown(p, s.st_uid, s.st_gid)
+        os.chmod(p, s.st_mode)    

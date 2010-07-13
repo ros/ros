@@ -82,10 +82,7 @@ protected:
   {
     for (int i = 0; i < 3; ++i)
     {
-      if (transports_[i])
-      {
-        transports_[i]->close();
-      }
+      transports_[i]->close();
     }
   }
 
@@ -284,9 +281,6 @@ protected:
     transports_[2]->setWriteCallback(boost::bind(&Polled::onWriteable, this, _1, 2));
     transports_[1]->setDisconnectCallback(boost::bind(&Polled::onDisconnect, this, _1, 1));
     transports_[2]->setDisconnectCallback(boost::bind(&Polled::onDisconnect, this, _1, 2));
-
-    transports_[1]->enableRead();
-    transports_[2]->enableRead();
   }
 
   virtual void TearDown()

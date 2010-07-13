@@ -13,7 +13,7 @@ rosbuild_add_boost_directories()
 
 rosbuild_add_library(${PROJECT_NAME} src/rosconsole/rosconsole.cpp)
 target_link_libraries(${PROJECT_NAME} log4cxx)
-rosbuild_link_boost(${PROJECT_NAME} thread regex)
+rosbuild_link_boost(${PROJECT_NAME} thread)
 
 rosbuild_add_executable(example examples/example.cpp)
 target_link_libraries(example ${PROJECT_NAME})
@@ -26,9 +26,6 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
   rosbuild_add_gtest(test/assertion_test test/assertion_test.cpp)
   target_link_libraries(test/assertion_test ${PROJECT_NAME})
 endif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
-
-rosbuild_add_gtest(test/thread_test test/thread_test.cpp)
-target_link_libraries(test/thread_test ${PROJECT_NAME})
 
 #rosbuild_add_executable(speed_test test/speed_test.cpp)
 #target_link_libraries(speed_test ${PROJECT_NAME})

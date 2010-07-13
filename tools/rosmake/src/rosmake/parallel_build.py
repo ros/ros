@@ -118,55 +118,35 @@ class CompileThread(threading.Thread):
     self.logging_enabled = True
 
   def run(self):
+    #init_total_pkgs = len(self.build_queue.to_build)
     while not self.build_queue.is_done():
-      pkg = self.build_queue.get_valid_package()
+      (pkg, build_count, total_pkgs)  = self.build_queue.get_valid_package()
       if not pkg:
         if self.build_queue.succeeded():
-          self.rosmakeall.printer.print_verbose("[ Build Completed Thread Exiting ]", thread_name=self.name);
+          self.rosmakeall.print_verbose("[ Build Completed Thread Exiting ]", thread_name=self.name);
         else:
-          self.rosmakeall.printer.print_verbose("[ Build Terminated Thread Exiting ]", thread_name=self.name)
+          self.rosmakeall.print_verbose("[ Build Terminated Thread Exiting ]", thread_name=self.name)
         break # no more packages must be done
 
-      # update status after accepting build
-      self.rosmakeall.update_status(self.argument ,
-                                    self.build_queue.get_started_threads(),
-                                    self.build_queue.progress_str())
+      self.rosmakeall.print_all("[ %d of %d  Completed ]"%(  build_count, total_pkgs));
 
       if self.argument:
-        self.rosmakeall.printer.print_all ("Starting >>> %s [ make %s ]"%(pkg, self.argument), thread_name=self.name)
+        self.rosmakeall.print_all (">>> %s >>> [ make %s ]"%(pkg, self.argument), thread_name=self.name)
       else:
-        self.rosmakeall.printer.print_all ("Starting >>> %s [ make ] "%pkg,  thread_name=self.name)
+        self.rosmakeall.print_all (">>> %s >>> [ make ]"%(pkg), thread_name=self.name)
+
       (result, result_string) = self.rosmakeall.build(pkg, self.argument, self.build_queue.robust_build) 
-      self.rosmakeall.printer.print_all("Finished <<< %s %s"%(pkg, result_string), thread_name= self.name)
-      #print "Finished2"
-      self.build_queue.return_built(pkg, result)
-      #print "returned"
+      self.rosmakeall.print_all("<<< %s <<< %s"%(pkg, result_string), thread_name= self.name)
       if result or self.build_queue.robust_build:
-        pass#print "result", result, "robust", self.build_queue.robust_build
-      else:
+        self.build_queue.return_built(pkg)
         if result_string.find("[Interrupted]") != -1:
-          self.rosmakeall.printer.print_all("Caught Interruption", thread_name=self.name)
-          self.build_queue.stop() #todo move this logic into BuildQueue itself
+          self.rosmakeall.print_all("Caught Interruption", thread_name=self.name)
+          self.build_queue.stop()
           break # unnecessary since build_queue is done now while will quit
-        self.rosmakeall.printer.print_all("Halting due to failure in package %s. \n[ rosmake ] Waiting for other threads to complete."%pkg)
+      else:
+        self.rosmakeall.print_all("Halting due to failure in package %s. \n[ rosmake ] Waiting for other threads to complete."%pkg)
         self.build_queue.stop()
         break # unnecessary since build_queue is done now, while will quit
-      # update status after at end of build
-      #print "updating status"
-      self.rosmakeall.update_status(self.argument ,
-                                    self.build_queue.get_started_threads(),
-                                    self.build_queue.progress_str())
-      #print "done built", len(self.build_queue.built), self.build_queue.built
-      #print "failed", len(self.build_queue.failed), self.build_queue.failed
-      #print "to_build", len(self.build_queue.to_build), self.build_queue.to_build
-      #print "in progress", len(self.build_queue._started), self.build_queue._started
-
-    #print "last update"
-    # update status before ending thread
-    self.rosmakeall.update_status(self.argument ,
-                                  self.build_queue.get_started_threads(),
-                                  self.build_queue.progress_str())
-    #print "thread finished"
 
 class BuildQueue:
   """ This class provides a thread safe build queue.  Which will do
@@ -176,30 +156,17 @@ class BuildQueue:
     self.dependency_tracker = dependency_tracker
     self.to_build = package_list[:] # do a copy not a reference
     self.built = []
-    self.failed = []
     self.condition = threading.Condition()
     self._done = False
     self.robust_build = robust_build
-    self._started = {}
-    self._hack_end_counter = 0
-
-  def progress_str(self):
-    return "[ %d Active %d/%d Complete ]"%(len(self._started), len(self.built), self._total_pkgs)
-
-  def get_started_threads(self): #TODO sort this other than hash order
-    return self._started.copy()
-
-  def is_completed(self):
-    """Return if the build queue has been completed """
-    return len(self.built)+ len(self.failed) == self._total_pkgs
 
   def is_done(self):
     """Return if the build queue has been completed """
-    return self.is_completed() or self._done # finished or halted
+    return self._done
 
   def succeeded(self):
     """ Return whether the build queue has completed all packages successfully. """
-    return len(self.built) == self._total_pkgs  #flag that we're finished
+    return len( self.built)  == self._total_pkgs and self._done
 
   def stop(self): 
     """ Stop the build queue, including waking all blocking
@@ -208,19 +175,12 @@ class BuildQueue:
     with self.condition:
       self.condition.notifyAll() # wake any blocking threads
       
-  def return_built(self, package, successful=True): # mark that a package is built
+  def return_built(self, package): # mark that a package is built
     """ The thread which completes a package marks it as done with
     this method."""
     with self.condition:
-      if successful:
-        self.built.append(package)
-      else:
-        self.failed.append(package)
-      if package in self._started.keys():
-        self._started.pop(package)
-      else:
-        pass #used early on print "\n\n\nERROR THIS SHOULDN't RETURN %s\n\n\n"%package
-      if self.is_completed():
+      self.built.append(package)
+      if len(self.built) == self._total_pkgs:  #flag that we're finished
         self._done = True
       self.condition.notifyAll() #wake up any waiting threads
 
@@ -229,30 +189,24 @@ class BuildQueue:
     all dependencies met.  If interrupted or done it will return
     None"""
     with self.condition:
-      while (not self.is_done() and len(self.to_build) > 0):
+      while (not self._done and len(self.to_build) > 0):
         for p in self.to_build:
           dependencies_met = True
           for d in self.dependency_tracker.get_deps(p):
-            if d not in self.built and not (self.robust_build and d in self.failed):
+            if d not in self.built:
               dependencies_met = False
-              #print "Dependency %s not met for %s"%(d, p)
               break
           if dependencies_met:  # all dependencies met
             self.to_build.remove(p)
-            self._started[p] = time.time()
-            self._hack_end_counter = 0 #reset end counter if success
-            return p # break out and return package if found
-          elif len(self._started) == 0 and self._hack_end_counter > 2:
-            # we're hung with broken dependencies
-            return None
-        #print "TTGTTTTHTHT Waiting on condition"
-        self.condition.wait(1.0)  # failed to find a package wait for a notify before looping
-        
-        self._hack_end_counter += 1 # if we're here too often we will quit 
+            count = len(self.built)
+            return (p, count, self._total_pkgs) # break out and return package if found
+
+
+        self.condition.wait()  # failed to find a package wait for a notify before looping
         if self.is_done():
           break
 
-    return None
+    return (None, None, None)
 
 
   def register_prebuilt(self, package_list):

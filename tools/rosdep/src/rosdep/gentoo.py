@@ -31,8 +31,6 @@ import os.path
 import roslib.os_detect
 import subprocess
 
-import rosdep.base_rosdep
-
 # Determine whether package p needs to be installed
 def equery_detect(p):
     cmd = ['equery', '-q', 'l', p]
@@ -54,7 +52,7 @@ def equery_available():
 
 
 ###### Gentoo SPECIALIZATION #########################
-class Gentoo(roslib.os_detect.Gentoo, rosdep.base_rosdep.RosdepBaseOS):
+class Gentoo(roslib.os_detect.Gentoo):
     def strip_detected_packages(self, packages):
         if equery_available():
             return [p for p in packages if equery_detect(p)]

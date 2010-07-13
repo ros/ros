@@ -90,7 +90,7 @@ void ServiceManager::start()
 
 void ServiceManager::shutdown()
 {
-  boost::recursive_mutex::scoped_lock shutdown_lock(shutting_down_mutex_);
+  boost::mutex::scoped_lock shutdown_lock(shutting_down_mutex_);
   if (shutting_down_)
   {
     return;
@@ -123,7 +123,7 @@ void ServiceManager::shutdown()
     L_ServiceServerLink::iterator end = local_service_clients.end();
     for (; it != end; ++it)
     {
-      (*it)->getConnection()->drop(Connection::Destructing);
+      (*it)->getConnection()->drop();
     }
 
     local_service_clients.clear();
@@ -133,7 +133,7 @@ void ServiceManager::shutdown()
 
 bool ServiceManager::advertiseService(const AdvertiseServiceOptions& ops)
 {
-  boost::recursive_mutex::scoped_lock shutdown_lock(shutting_down_mutex_);
+  boost::mutex::scoped_lock shutdown_lock(shutting_down_mutex_);
   if (shutting_down_)
   {
     return false;
@@ -167,7 +167,7 @@ bool ServiceManager::advertiseService(const AdvertiseServiceOptions& ops)
 
 bool ServiceManager::unadvertiseService(const string &serv_name)
 {
-  boost::recursive_mutex::scoped_lock shutdown_lock(shutting_down_mutex_);
+  boost::mutex::scoped_lock shutdown_lock(shutting_down_mutex_);
   if (shutting_down_)
   {
     return false;
@@ -249,7 +249,7 @@ ServiceServerLinkPtr ServiceManager::createServiceServerLink(const std::string& 
                                              const M_string& header_values)
 {
 
-  boost::recursive_mutex::scoped_lock shutdown_lock(shutting_down_mutex_);
+  boost::mutex::scoped_lock shutdown_lock(shutting_down_mutex_);
   if (shutting_down_)
   {
     return ServiceServerLinkPtr();
@@ -294,7 +294,7 @@ void ServiceManager::removeServiceServerLink(const ServiceServerLinkPtr& client)
     return;
   }
 
-  boost::recursive_mutex::scoped_lock shutdown_lock(shutting_down_mutex_);
+  boost::mutex::scoped_lock shutdown_lock(shutting_down_mutex_);
   // Now check again, since the state may have changed between pre-lock/now
   if (shutting_down_)
   {

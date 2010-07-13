@@ -23,8 +23,7 @@ set(PROJECTCONFIG PROJECTCONFIG-NOTFOUND)
 find_file(USERCONFIG
           rosconfig.cmake
           PATHS ENV ROS_ROOT
-          NO_DEFAULT_PATH
-          NO_CMAKE_FIND_ROOT_PATH)
+          NO_DEFAULT_PATH)
 if(USERCONFIG)
   message("including user's config file: ${USERCONFIG}")
   include(${USERCONFIG})
@@ -52,7 +51,6 @@ endif(PROJECTCONFIG)
 #  Debug          : w/ debug symbols, w/o optimization
 #  Release        : w/o debug symbols, w/ optimization
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  RelWithAsserts : w/o debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 if(NOT DEFINED ROS_BUILD_TYPE)
   set(ROS_BUILD_TYPE RelWithDebInfo)

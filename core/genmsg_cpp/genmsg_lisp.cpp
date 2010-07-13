@@ -973,7 +973,7 @@ public:
                "    (setf (ldb (byte 8 8) __nsec) (read-byte istream))\n"
                "    (setf (ldb (byte 8 16) __nsec) (read-byte istream))\n"
                "    (setf (ldb (byte 8 24) __nsec) (read-byte istream))\n"
-               "    (setf %s (+ (coerce __sec 'double-float) (/ __nsec 1e9))))",
+               "    (setf %s (+ __sec (/ __nsec 1e9))))",
                name.c_str());
     }
     else
@@ -1482,14 +1482,14 @@ void msg_spec::emit_cpp_class(FILE *f, bool for_srv, const string &srv_name)
   {
     fprintf(f, "(defmethod md5sum ((type (eql '<%s>)))\n"
             "  \"Returns md5sum for a message object of type '<%s>\"\n"
-            "  \"%s\")\n",
+            "  #x%s)\n",
             g_name.c_str(), g_name.c_str(), server_md5sum.c_str());
   }
   else
   {
     fprintf(f, "(defmethod md5sum ((type (eql '<%s>)))\n"
             "  \"Returns md5sum for a message object of type '<%s>\"\n"
-            "  \"%s\")\n",
+            "  #x%s)\n",
             g_name.c_str(), g_name.c_str(), md5sum.c_str());
   }
 

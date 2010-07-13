@@ -71,10 +71,35 @@ bool IntraProcessSubscriberLink::isLatching()
   return false;
 }
 
-void IntraProcessSubscriberLink::enqueueMessage(const SerializedMessage& m, bool ser, bool nocopy)
+bool IntraProcessSubscriberLink::publish(const Message& m)
+{
+  if (!verifyDatatype(m.__getDataType()))
+  {
+    return false;
+  }
+
+  uint32_t msg_len = m.serializationLength();
+  boost::shared_array<uint8_t> buf = boost::shared_array<uint8_t>(new uint8_t[msg_len]);
+  *((uint32_t*)buf.get()) = msg_len;
+
+  int seq = 0;
+  if (PublicationPtr parent = parent_.lock())
+  {
+    seq = parent->getSequence();
+  }
+
+  m.serialize(buf.get(), seq);
+
+  ROS_ASSERT(subscriber_);
+  subscriber_->handleMessage(buf, msg_len);
+
+  return true;
+}
+
+void IntraProcessSubscriberLink::enqueueMessage(const SerializedMessage& m)
 {
   ROS_ASSERT(subscriber_);
-  subscriber_->handleMessage(m, ser, nocopy);
+  subscriber_->handleMessage(m.buf, m.num_bytes);
 }
 
 std::string IntraProcessSubscriberLink::getTransportType()
@@ -89,12 +114,9 @@ void IntraProcessSubscriberLink::drop()
     return;
   }
 
-  dropped_ = true;
-
   if (subscriber_)
   {
     subscriber_->drop();
-    subscriber_.reset();
   }
 
   if (PublicationPtr parent = parent_.lock())
@@ -103,11 +125,6 @@ void IntraProcessSubscriberLink::drop()
 
     parent->removeSubscriberLink(shared_from_this());
   }
-}
-
-void IntraProcessSubscriberLink::getPublishTypes(bool& ser, bool& nocopy, const std::type_info& ti)
-{
-  subscriber_->getPublishTypes(ser, nocopy, ti);
 }
 
 } // namespace ros

@@ -32,14 +32,12 @@ from __future__ import with_statement
 from linux_helpers import *
 import os
 
-import rosdep.base_rosdep
-
 ###### Arch SPECIALIZATION #########################
 
 def pacman_detect(p):
     return subprocess.call(['pacman', '-Q', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
 
-class Arch(rosdep.base_rosdep.RosdepBaseOS):
+class Arch:
 
     def check_presence(self):
         filename = "/etc/arch-release"

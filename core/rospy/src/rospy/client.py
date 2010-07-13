@@ -44,7 +44,6 @@ import sys
 import time
 import random
 
-import roslib
 import roslib.msg
 import roslib.names
 import roslib.network
@@ -52,12 +51,11 @@ import roslib.network
 import rospy.core
 from rospy.core import logwarn, loginfo, logerr, logdebug
 import rospy.exceptions
+import rospy.init
 import rospy.names
+import rospy.rosout 
 import rospy.rostime
-
-import rospy.impl.init
-import rospy.impl.rosout 
-import rospy.impl.simtime
+import rospy.simtime
 
 TIMEOUT_READY = 15.0 #seconds
 
@@ -68,7 +66,7 @@ WARN = roslib.msg.Log.WARN
 ERROR = roslib.msg.Log.ERROR
 FATAL = roslib.msg.Log.FATAL
 
-# hide rospy.impl.init implementation from users
+# hide rospy.init implementation from users
 def get_node_proxy():
     """
     Retrieve L{NodeProxy} for slave node running on this machine.
@@ -76,7 +74,7 @@ def get_node_proxy():
     @return: slave node API handle
     @rtype: L{rospy.NodeProxy}
     """
-    return rospy.impl.init.get_node_proxy()
+    return rospy.init.get_node_proxy()
     
 def on_shutdown(h):
     """
@@ -127,7 +125,7 @@ def _init_node_params(argv, node_name):
 
 _init_node_args = None
 
-def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=False, disable_rosout=False, disable_signals=False):
+def init_node(name, argv=sys.argv, anonymous=False, log_level=INFO, disable_rostime=False, disable_rosout=False, disable_signals=False):
     """
     Register client node with the master under the specified name.
     This MUST be called from the main Python thread unless
@@ -139,12 +137,8 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
         meaning that it cannot contain namespaces (i.e. '/')
     @type  name: string
     
-    @param argv: Command line arguments to this program, including
-        remapping arguments (default: sys.argv). If you provide argv
-        to init_node(), any previously created rospy data structure
-        (Publisher, Subscriber, Service) will have invalid
-        mappings. It is important that you call init_node() first if
-        you wish to provide your own argv.
+    @param argv: Command line arguments to this program. ROS reads
+        these arguments to find renaming params. Defaults to sys.argv.
     @type  argv: [str]
 
     @param anonymous: if True, a name will be auto-generated for the
@@ -165,10 +159,6 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
         rospy in an environment where you need to control your own
         signal handling (e.g. WX). If you set this to True, you should
         call rospy.signal_shutdown(reason) to initiate clean shutdown.
-
-        NOTE: disable_signals is overridden to True if
-        roslib.is_interactive() is True.
-        
     @type  disable_signals: bool
     
     @param disable_rostime: for rostests only, suppresses
@@ -181,13 +171,6 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
     @raise ROSInitException: if initialization/registration fails
     @raise ValueError: if parameters are invalid (e.g. name contains a namespace or is otherwise illegal)
     """
-    if argv is None:
-        argv = sys.argv
-    else:
-        # reload the mapping table. Any previously created rospy data
-        # structure does *not* reinitialize based on the new mappings.
-        rospy.names.reload_mappings(argv)
-        
     # this test can be eliminated once we change from warning to error in the next check
     if roslib.names.SEP in name:
         raise ValueError("namespaces are not allowed in node names")
@@ -204,10 +187,6 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
             raise rospy.exceptions.ROSException("rospy.init_node() has already been called with different arguments: "+str(_init_node_args))
         else:
             return #already initialized
-
-    # for scripting environments, we don't want to use the ROS signal
-    # handlers
-    disable_signals = disable_signals or roslib.is_interactive()
     _init_node_args = (name, argv, anonymous, log_level, disable_rostime, disable_signals)
         
     if not disable_signals:
@@ -219,8 +198,7 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
     # check for name override
     mappings = rospy.names.get_mappings()
     if '__name' in mappings:
-        # use roslib version of resolve_name to avoid remapping
-        name = roslib.names.resolve_name(mappings['__name'], rospy.core.get_caller_id())
+        name = rospy.names.resolve_name(mappings['__name'], remap=False)
         if anonymous:
             logdebug("[%s] WARNING: due to __name setting, anonymous setting is being changed to false"%name)
             anonymous = False
@@ -238,7 +216,7 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
     logger = logging.getLogger("rospy.client")
     logger.info("init_node, name[%s], pid[%s]", resolved_node_name, os.getpid())
             
-    node = rospy.impl.init.start_node(os.environ, resolved_node_name) #node initialization blocks until registration with master
+    node = rospy.init.start_node(os.environ, resolved_node_name) #node initialization blocks until registration with master
     
     timeout_t = time.time() + TIMEOUT_READY
     code = None
@@ -263,12 +241,12 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
         logger.error("ROS node initialization failed: %s, %s, %s", code, msg, master_uri)
         raise rospy.exceptions.ROSInitException("ROS node initialization failed: %s, %s, %s", code, msg, master_uri)
 
-    rospy.impl.rosout.load_rosout_handlers(log_level)
+    rospy.rosout.load_rosout_handlers(log_level)
     if not disable_rosout:
-        rospy.impl.rosout.init_rosout()
+        rospy.rosout.init_rosout()
     logdebug("init_node, name[%s], pid[%s]", resolved_node_name, os.getpid())    
     if not disable_rostime:
-        if not rospy.impl.simtime.init_simtime():
+        if not rospy.simtime.init_simtime():
             raise rospy.exceptions.ROSInitException("Failed to initialize time. Please check logs for additional details")
     else:
         rospy.rostime.set_rostime_initialized(True)
@@ -290,8 +268,10 @@ def get_master(env=os.environ):
     global _master_proxy
     if _master_proxy is not None:
         return _master_proxy
+    # check against local interpreter plus global env
     import roslib.rosenv
-    _master_proxy = rospy.msproxy.MasterProxy(roslib.rosenv.get_master_uri())
+    master_uri = rospy.init.get_local_master_uri() or roslib.rosenv.get_master_uri()
+    _master_proxy = rospy.msproxy.MasterProxy(master_uri)
     return _master_proxy
 
 #########################################################
@@ -355,6 +335,88 @@ def wait_for_message(topic, topic_type, timeout=None):
     return wfm.msg
 
 
+#########################################################
+# Service helpers
+
+def wait_for_service(service, timeout=None):
+    """
+    Blocks until service is available. Use this in
+    initialization code if your program depends on a
+    service already running.
+    @param service: name of service
+    @type  service: str
+    @param timeout: timeout time in seconds, None for no
+    timeout. NOTE: timeout=0 is invalid as wait_for_service actually
+    contacts the service, so non-blocking behavior is not
+    possible. For timeout=0 uses cases, just call the service without
+    waiting.
+    @type  timeout: double
+    @raise ROSException: if specified timeout is exceeded
+    @raise ROSInterruptException: if shutdown interrupts wait
+    """
+    def contact_service(resolved_name, timeout=10.0):
+        code, _, uri = master.lookupService(resolved_name)
+        if False and code == 1:
+            return True
+        elif True and code == 1:
+            # disabling for now as this is causing socket.error 22 "Invalid argument" on OS X
+            addr = rospy.core.parse_rosrpc_uri(uri)
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)            
+            try:
+                # we always want to timeout just in case we're connecting
+                # to a down service.
+                s.settimeout(timeout)
+                s.connect(addr)
+                h = { 'probe' : '1', 'md5sum' : '*',
+                      'callerid' : rospy.names.get_caller_id(),
+                      'service': resolved_name }
+                roslib.network.write_ros_handshake_header(s, h)
+                return True
+            finally:
+                if s is not None:
+                    s.close()
+    if timeout == 0.:
+        raise ValueError("timeout must be non-zero")
+    resolved_name = rospy.names.resolve_name(service)
+    master = get_master()
+    first = False
+    if timeout:
+        timeout_t = time.time() + timeout
+        while not rospy.core.is_shutdown() and time.time() < timeout_t:
+            try:
+                if contact_service(resolved_name, timeout_t-time.time()):
+                    return
+                time.sleep(0.3)
+            except KeyboardInterrupt:
+                # re-raise
+                rospy.core.logdebug("wait_for_service: received keyboard interrupt, assuming signals disabled and re-raising")
+                raise 
+            except: # service not actually up
+                if first:
+                    first = False
+                    rospy.core.logerr("wait_for_service(%s): failed to contact [%s], will keep trying"%(resolved_name, uri))
+        if rospy.core.is_shutdown():
+            raise rospy.exceptions.ROSInterruptException("rospy shutdown")
+        else:
+            raise rospy.exceptions.ROSException("timeout exceeded while waiting for service %s"%resolved_name)
+    else:
+        while not rospy.core.is_shutdown():
+            try:
+                if contact_service(resolved_name):
+                    return
+                time.sleep(0.3)
+            except KeyboardInterrupt:
+                # re-raise
+                rospy.core.logdebug("wait_for_service: received keyboard interrupt, assuming signals disabled and re-raising")
+                raise 
+            except: # service not actually up
+                if first:
+                    first = False
+                    rospy.core.logerr("wait_for_service(%s): failed to contact [%s], will keep trying"%(resolved_name, uri))
+        if rospy.core.is_shutdown():
+            raise rospy.exceptions.ROSInterruptException("rospy shutdown")
+    
+    
 #########################################################
 # Param Server Access
 

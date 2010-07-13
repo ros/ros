@@ -32,7 +32,8 @@
 #
 # Revision $Id$
 
-from bag import Bag, Compression, ROSBagException, ROSBagFormatException
+PKG = 'rosbag'
+import roslib; roslib.load_manifest(PKG)
 
 # Import rosbag main to be used by the $ROS_ROOT/bin/rosbag
-from rosbag_main import rosbagmain
+from main import rosbagmain

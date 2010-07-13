@@ -6,7 +6,7 @@
   </description>
   <author>Ken Conley</author>
   <license>BSD</license>
-  <review status="test" notes=""/>
+  <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/test_rosmsg</url>
   <depend package="rospy"/>
   <depend package="roslib"/>
@@ -16,10 +16,10 @@
   
   <depend package="test_ros"/> <!-- tests depend on existence of this package -->
 
-  <platform os="ubuntu" version="9.04"/>
-  <platform os="ubuntu" version="9.10"/>
-  <platform os="ubuntu" version="10.04"/>
-  <platform os="macports" version="macports"/>
+  <export>
+    <cpp cflags="-I${prefix}/msg/cpp -I${prefix}/srv/cpp"/>
+  </export>
+
 </package>
 
 

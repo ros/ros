@@ -57,9 +57,7 @@ public:
   /**
    * \brief Handles handing off a received message to the subscription, where it will be deserialized and called back
    */
-  virtual void handleMessage(const SerializedMessage& m, bool ser, bool nocopy);
-
-  void getPublishTypes(bool& ser, bool& nocopy, const std::type_info& ti);
+  virtual void handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes);
 
 private:
   IntraProcessSubscriberLinkPtr publisher_;

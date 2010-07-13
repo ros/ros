@@ -79,7 +79,7 @@ def print_node_list(roslaunch_files):
     """
     try:
         loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
-        config = load_config_default(roslaunch_files, None, loader=loader, verbose=False, assign_machines=False)
+        config = load_config_default(roslaunch_files, None, loader=loader, verbose=False)
         node_list = get_node_list(config)
         print '\n'.join(node_list)
     except RLException, e:
@@ -121,7 +121,7 @@ def print_node_filename(node_name, roslaunch_files):
         node_name = script_resolve_name('roslaunch', node_name)
         
         loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
-        config = load_config_default(roslaunch_files, None, loader=loader, verbose=False, assign_machines=False)
+        config = load_config_default(roslaunch_files, None, loader=loader, verbose=False)
         nodes = [n for n in config.nodes if _resolved_name(n) == node_name] + \
             [t for t in config.tests if _resolved_name(t) == node_name]
 
@@ -153,7 +153,7 @@ def get_node_args(node_name, roslaunch_files):
     # resolution context for substitution args
 
     loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
-    config = load_config_default(roslaunch_files, None, loader=loader, verbose=False, assign_machines=False)
+    config = load_config_default(roslaunch_files, None, loader=loader, verbose=False)
     (node_name) = roslib.substitution_args.resolve_args((node_name), resolve_anon=False)
     node_name = script_resolve_name('roslaunch', node_name) if not node_name.startswith('$') else node_name
     
@@ -178,8 +178,7 @@ def get_node_args(node_name, roslaunch_files):
             to_remove.append(k)
     for k in to_remove:
         del env[k]
-
-    # resolve node name for generating args
+        
     args = create_local_process_args(node, machine)
     # join environment vars are bash prefix args
     return ["%s=%s"%(k, v) for k, v in env.iteritems()] + args
@@ -237,21 +236,18 @@ def create_local_process_args(node, machine):
     @raise NodeParamsException: if args cannot be constructed for Node
     as specified (e.g. the node type does not exist)
     """
-    if not node.name:
-        raise ValueError("node name must be defined")
     
     # - Construct rosrun command
     remap_args = ["%s:=%s"%(src,dst) for src, dst in node.remap_args]
     resolve_dict = {}
-
+    if node.name:
+        # - for thie local process args, we *do* resolve the anon tag so that the user can execute
+        (node_name) = roslib.substitution_args.resolve_args((node.name), context=resolve_dict, resolve_anon=True)
+        remap_args.append('__name:=%s'%node_name)
+        
     #resolve args evaluates substitution commands
     #shlex parses a command string into a list of args
-    # - for the local process args, we *do* resolve the anon tag so that the user can execute
-    # - the node name and args must be resolved together in case the args refer to the anon node name
-    (node_name) = roslib.substitution_args.resolve_args((node.name), context=resolve_dict, resolve_anon=True)
-    node.name = node_name
-    remap_args.append('__name:=%s'%node_name)
-        
+    # - for thie local process args, we *do* resolve the anon tag so that the user can execute
     resolved = roslib.substitution_args.resolve_args(node.args, context=resolve_dict, resolve_anon=True)
     if type(resolved) == unicode:
         resolved = resolved.encode('UTF-8') #attempt to force to string for shlex/subprocess

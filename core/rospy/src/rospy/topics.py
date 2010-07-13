@@ -66,17 +66,15 @@ create classes that are children of these implementations.
 from __future__ import with_statement
 import struct, cStringIO, thread, threading, logging, time
 from itertools import chain
-import traceback
 
 import roslib.message
 
 from rospy.core import *
 from rospy.exceptions import ROSSerializationException, TransportTerminated
 from rospy.msg import serialize_message, args_kwds_to_message
-
-from rospy.impl.registration import get_topic_manager, set_topic_manager, Registration, get_registration_listeners
-from rospy.impl.tcpros import get_tcpros_handler, DEFAULT_BUFF_SIZE
-from rospy.impl.transport import DeadTransport
+from rospy.registration import get_topic_manager, set_topic_manager, Registration, get_registration_listeners
+from rospy.tcpros import get_tcpros_handler, DEFAULT_BUFF_SIZE
+from rospy.transport import DeadTransport
 
 _logger = logging.getLogger('rospy.topics')
 
@@ -631,7 +629,6 @@ class Publisher(Topic):
         @raise ROSException: if parameters are invalid     
         """
         super(Publisher, self).__init__(name, data_class, Registration.PUB)
-
         if subscriber_listener:
             self.impl.add_subscriber_listener(subscriber_listener)
         if tcp_nodelay:
@@ -938,13 +935,16 @@ class _TopicManager(object):
         """
         resolved_name = ps.resolved_name
         _logger.debug("tm._add: %s, %s, %s", resolved_name, ps.type, reg_type)
-        with self.lock:
+        try:
+            self.lock.acquire()
             map[resolved_name] = ps
             self.topics.add(resolved_name)
             
             # NOTE: this call can take a lengthy amount of time (at
             # least until its reimplemented to use queues)
             get_registration_listeners().notify_added(resolved_name, ps.type, reg_type)
+        finally:
+            self.lock.release()
 
     def _recalculate_topics(self):
         """recalculate self.topics. expensive"""
@@ -1075,7 +1075,7 @@ class _TopicManager(object):
         @type  resolved_name: str
         @return: subscriber for the specified topic. 
         @rtype: L{_SubscriberImpl}
-        """
+        """        
         return self.subs.get(resolved_name, None)
 
     def has_subscription(self, resolved_name):

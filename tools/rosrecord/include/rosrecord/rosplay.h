@@ -41,17 +41,13 @@
 #include "ros/time.h"
 #include <string>
 
+#include "rosrecord/Player.h"
 #include "rosrecord/AnyMsg.h"
 #include "rosrecord/time_publisher.h"
 
 #include <unistd.h>
 #include <termios.h>
 
-// We know this is deprecated..
-#define IGNORE_ROSRECORD_DEPRECATED
-#undef ROSCPP_DEPRECATED
-#define ROSCPP_DEPRECATED
-#include "rosrecord/Player.h"
 
 class RosPlay
 {
@@ -70,16 +66,16 @@ private:
 
   bool bag_time_initialized_, at_once_, quiet_, paused_, shifted_, bag_time_;
   double time_scale_;
-  ros::WallTime start_time_, requested_start_time_, paused_time_;
+  ros::Time start_time_, requested_start_time_, paused_time_;
   ros::record::MultiPlayer player_;
 
 
   int queue_size_;
-  ros::WallDuration advertise_sleep_;
+  unsigned int advertise_sleep_;
 
   termios orig_flags_;
   // This internall containers a nodehandle so we make a pointer for the same reason
-  SimpleTimePublisher* bag_time_publisher_;
+  TimePublisher* bag_time_publisher_;
   double bag_time_frequency_;
 
   fd_set stdin_fdset_;

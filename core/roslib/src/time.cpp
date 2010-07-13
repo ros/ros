@@ -34,7 +34,7 @@
 
 #include "ros/time.h"
 #include <cmath>
-#include <ctime>
+#include <time.h>
 #include <iomanip>
 #include <stdexcept>
 #include <limits>
@@ -43,10 +43,8 @@
 
 #include <boost/thread/mutex.hpp>
 
-#define HAS_CLOCK_GETTIME (_POSIX_C_SOURCE >= 199309L)
-
 #ifndef WIN32
-  #if !HAS_CLOCK_GETTIME
+  #if POSIX_TIMERS <= 0
   #include <sys/time.h>
   #endif
 #else
@@ -54,14 +52,18 @@
   ros::Time ros::Time::start_time;
 #endif
 
-namespace ros
-{
+using namespace ros;
+using namespace std;
 
-const Duration DURATION_MAX(std::numeric_limits<int32_t>::max(), 999999999);
-const Duration DURATION_MIN(std::numeric_limits<int32_t>::min(), 0);
 
-const Time TIME_MAX(std::numeric_limits<uint32_t>::max(), 999999999);
-const Time TIME_MIN(0, 1);
+ros::Time ros::Time::sim_time_(0, 0);
+bool ros::Time::use_system_time_(true);
+
+const Duration ros::DURATION_MAX(std::numeric_limits<int32_t>::max(), 999999999);
+const Duration ros::DURATION_MIN(std::numeric_limits<int32_t>::min(), 0);
+
+const Time ros::TIME_MAX(std::numeric_limits<uint32_t>::max(), 999999999);
+const Time ros::TIME_MIN(0, 0);
 
 // This is declared here because it's set from the Time class but read from
 // the Duration class, and need not be exported to users of either.
@@ -71,14 +73,10 @@ static bool g_stopped(false);
 // of time.h from including boost/thread/mutex.hpp
 static boost::mutex g_sim_time_mutex;
 
-static bool g_initialized(false);
-static bool g_use_sim_time(true);
-static Time g_sim_time(0, 0);
-
 void getWallTime(uint32_t& sec, uint32_t& nsec)
 {
 #ifndef WIN32
-#if HAS_CLOCK_GETTIME
+#if POSIX_TIMERS > 0
   struct timespec start;
   clock_gettime(CLOCK_REALTIME, &start);
   sec  = start.tv_sec;
@@ -141,27 +139,12 @@ void getWallTime(uint32_t& sec, uint32_t& nsec)
 #endif
 }
 
-bool Time::useSystemTime()
-{
-  return !g_use_sim_time;
-}
-
-bool Time::isSimTime()
-{
-  return g_use_sim_time;
-}
-
 Time Time::now()
 {
-  if (!g_initialized)
-  {
-    throw TimeNotInitializedException();
-  }
-
-  if (g_use_sim_time)
+  if (!use_system_time_)
   {
     boost::mutex::scoped_lock lock(g_sim_time_mutex);
-    Time t = g_sim_time;
+    Time t = sim_time_;
     return t;
   }
 
@@ -175,15 +158,14 @@ void Time::setNow(const Time& new_now)
 {
   boost::mutex::scoped_lock lock(g_sim_time_mutex);
 
-  g_sim_time = new_now;
-  g_use_sim_time = true;
+  sim_time_ = new_now;
+  use_system_time_ = false;
 }
 
 void Time::init()
 {
   g_stopped = false;
-  g_use_sim_time = false;
-  g_initialized = true;
+  use_system_time_ = true;
 }
 
 void Time::shutdown()
@@ -191,46 +173,15 @@ void Time::shutdown()
   g_stopped = true;
 }
 
-bool Time::isValid()
+ostream &ros::operator<<(ostream& os, const Time &rhs)
 {
-  return (!g_use_sim_time) || !g_sim_time.isZero();
-}
-
-bool Time::waitForValid()
-{
-  return waitForValid(ros::WallDuration());
-}
-
-bool Time::waitForValid(const ros::WallDuration& timeout)
-{
-  ros::WallTime start = ros::WallTime::now();
-  while (!isValid() && !g_stopped)
-  {
-    ros::WallDuration(0.01).sleep();
-
-    if (timeout > ros::WallDuration(0, 0) && (ros::WallTime::now() - start > timeout))
-    {
-      return false;
-    }
-  }
-
-  if (g_stopped)
-  {
-    return false;
-  }
-
-  return true;
-}
-
-std::ostream& operator<<(std::ostream& os, const Time &rhs)
-{
-  os << rhs.sec << "." << std::setw(9) << std::setfill('0') << rhs.nsec;
+  os << rhs.sec << "." << setw(9) << setfill('0') << rhs.nsec;
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const Duration& rhs)
+ostream &ros::operator<<(ostream& os, const Duration& rhs)
 {
-  os << rhs.sec << "." << std::setw(9) << std::setfill('0') << rhs.nsec;
+  os << rhs.sec << "." << setw(9) << setfill('0') << rhs.nsec;
   return os;
 }
 
@@ -301,24 +252,10 @@ bool Duration::sleep() const
   {
     Time start = Time::now();
     Time end = start + *this;
-    if (start.isZero())
-    {
-      end = TIME_MAX;
-    }
-
     while (!g_stopped && (Time::now() < end))
     {
       wallSleep(0, 1000000);
 
-      // If we started at time 0 wait for the first actual time to arrive before starting the timer on
-      // our sleep
-      if (start.isZero())
-      {
-        start = Time::now();
-        end = start + *this;
-      }
-
-      // If time jumped backwards from when we started sleeping, return immediately
       if (Time::now() < start)
       {
         return false;
@@ -329,9 +266,9 @@ bool Duration::sleep() const
   }
 }
 
-std::ostream &operator<<(std::ostream& os, const WallTime &rhs)
+ostream &ros::operator<<(ostream& os, const WallTime &rhs)
 {
-  os << rhs.sec << "." << std::setw(9) << std::setfill('0') << rhs.nsec;
+  os << rhs.sec << "." << setw(9) << setfill('0') << rhs.nsec;
   return os;
 }
 
@@ -343,9 +280,9 @@ WallTime WallTime::now()
   return t;
 }
 
-std::ostream &operator<<(std::ostream& os, const WallDuration& rhs)
+ostream &ros::operator<<(ostream& os, const WallDuration& rhs)
 {
-  os << rhs.sec << "." << std::setw(9) << std::setfill('0') << rhs.nsec;
+  os << rhs.sec << "." << setw(9) << setfill('0') << rhs.nsec;
   return os;
 }
 
@@ -354,4 +291,3 @@ bool WallDuration::sleep() const
   return wallSleep(sec, nsec);
 }
 
-}

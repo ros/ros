@@ -29,7 +29,6 @@
 #define ROSCPP_SERVICE_CLIENT_OPTIONS_H
 
 #include "ros/forwards.h"
-#include "ros/service_traits.h"
 
 namespace ros
 {
@@ -69,10 +68,8 @@ struct ServiceClientOptions
   template <class MReq, class MRes>
   void init(const std::string& _service, bool _persistent, const M_string& _header)
   {
-    namespace st = service_traits;
-
     service = _service;
-    md5sum = st::md5sum<MReq>();
+    md5sum = MReq::__s_getServerMD5Sum();
     persistent = _persistent;
     header = _header;
   }
@@ -87,10 +84,8 @@ struct ServiceClientOptions
   template <class Service>
   void init(const std::string& _service, bool _persistent, const M_string& _header)
   {
-    namespace st = service_traits;
-
     service = _service;
-    md5sum = st::md5sum<Service>();
+    md5sum = Service::getMD5Sum();
     persistent = _persistent;
     header = _header;
   }

@@ -33,43 +33,37 @@
 
 #include <gtest/gtest.h>
 
-void doAssert()
-{
-  ROS_ASSERT(false);
-}
-
-void doBreak()
-{
-  ROS_BREAK();
-}
-
-void doAssertMessage()
-{
-  ROS_ASSERT_MSG(false, "Testing %d %d %d", 1, 2, 3);
-}
-
 TEST(RosAssert, assert)
 {
   ROS_ASSERT(true);
 
-  EXPECT_DEATH(doAssert(), "ASSERTION FAILED");
+  EXPECT_DEATH(ROS_ASSERT(false), "ASSERTION FAILED");
 }
 
 TEST(RosAssert, breakpoint)
 {
-  EXPECT_DEATH(doBreak(), "BREAKPOINT HIT");
+  EXPECT_DEATH(ROS_BREAK(), "BREAKPOINT HIT");
 }
 
 TEST(RosAssert, assertWithMessage)
 {
   ROS_ASSERT_MSG(true, "Testing %d %d %d", 1, 2, 3);
-  EXPECT_DEATH(doAssertMessage(), "Testing 1 2 3");
+  EXPECT_DEATH(ROS_ASSERT_MSG(false, "Testing %d %d %d", 1, 2, 3), "Testing 1 2 3");
+}
+
+TEST(RosAssert, assertCommand)
+{
+  int x = 0;
+  ROS_ASSERT_CMD(false, x = x + 1);
+  ASSERT_EQ(x, 1);
+
+  ROS_ASSERT_CMD(true, x = x + 1);
+  ASSERT_EQ(x, 1);
 }
 
 int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::Time::init();
   testing::FLAGS_gtest_death_test_style = "threadsafe";
 
   return RUN_ALL_TESTS();

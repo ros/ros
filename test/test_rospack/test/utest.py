@@ -276,11 +276,6 @@ class RospackTestCase(unittest.TestCase):
         shutil.rmtree(os.path.join(d,'.ros'))
         os.chmod(d, 0000)
         self.rospack_succeed(None, "profile")
-        # Delete the .ros directory, just in case this test is being run as
-        # root, in which case the above call will cause .ros to be created,
-        # despite the restrictive permissions that were set.
-        if os.path.exists(os.path.join(d,'.ros')):
-            shutil.rmtree(os.path.join(d,'.ros'))
         # Make sure we proceed when we HOME/.ros isn't a directory
         os.chmod(d, 0700)
         f = open(os.path.join(d,'.ros'), 'w')
@@ -358,6 +353,20 @@ class RospackTestCase(unittest.TestCase):
             self.rospack_succeed(package, arg)
             self.assertEquals(retval, self.strip_opt_ros(self.run_rospack(package, arg)))
 
+    def test_export_cpp_bad_bindeps(self):
+        env = os.environ.copy()
+        os.environ['ROS_BINDEPS_PATH'] = '/a/non/existent/directory'
+        package = 'base'
+        tests = [("-lfoo", "export --lang=cpp --attrib=lflags"),
+                 ("-lfoo", "export --attrib=lflags --lang=cpp"),
+                 ("-Isomething", "export --lang=cpp --attrib=cflags"),
+                 ("-Isomething", "export --attrib=cflags --lang=cpp"),
+                ]
+        for retval, arg in tests:
+            self.rospack_succeed(package, arg)
+            self.assertEquals(retval, self.strip_opt_ros(self.run_rospack(package, arg)))
+        os.environ = env
+
     def test_export_non_existent_attrib(self):
         self.rospack_succeed("base", "export --lang=cpp --attrib=fake")
         self.failIf(self.run_rospack("base", "export --lang=cpp --attrib=fake"))
@@ -410,19 +419,6 @@ class RospackTestCase(unittest.TestCase):
             (["base", "base_two"], testp, '', "deps"),
             ]
         self.echeck_ordered_list("deps", tests)
-
-    ## tests internal rpp precedence (#2854)
-    def test_ros_package_path_precedence(self):
-        teste = os.path.abspath('test_empty')
-        testp = os.path.abspath('test')
-        test2p = os.path.abspath('test2')
-        testp_roslang = os.path.join(testp, 'roslang')
-        test2p_roslang = os.path.join(test2p, 'roslang')
-        tests = [([testp_roslang], teste, ':'.join([testp, test2p]), "roslang"),
-                  ([testp_roslang], teste, ':'.join([testp, test2p_roslang]), "roslang"),
-                  ([testp_roslang], teste, ':'.join([testp_roslang, test2p]), "roslang"),
-                  ([testp_roslang], teste, ':'.join([testp_roslang, test2p_roslang]), "roslang")]
-        self.echeck_unordered_list('find', tests)
 
     ## tests rpp vs rr precedence
     def test_ros_package_path_precedence_1(self):
@@ -687,6 +683,27 @@ class RospackTestCase(unittest.TestCase):
     def test_lflags_base(self):
         self.rospack_succeed("base", "libs-only-l")
         self.assertEquals("foo", self.run_rospack("base", "libs-only-l"))
+
+    def test_libs_only_L_bad_bindeps(self):
+        env = os.environ.copy()
+        os.environ['ROS_BINDEPS_PATH'] = '/a/non/existent/directory'
+        self.rospack_succeed("base", "libs-only-L")
+        self.assertEquals("", self.run_rospack("base", "libs-only-L"))
+        os.environ = env
+
+    def test_libs_only_L_explicit_bindeps(self):
+        env = os.environ.copy()
+        os.environ['ROS_BINDEPS_PATH'] = '/'
+        self.rospack_succeed("base", "libs-only-L")
+        self.assertEquals("//lib", self.run_rospack("base", "libs-only-L"))
+        os.environ = env
+
+    def test_cflags_only_I_bad_bindeps(self):
+        env = os.environ.copy()
+        os.environ['ROS_BINDEPS_PATH'] = '/a/non/existent/directory'
+        self.rospack_succeed("base", "cflags-only-I")
+        self.assertEquals("something", self.run_rospack("base", "cflags-only-I"))
+        os.environ = env
 
     def test_circular(self):
         testp = os.path.abspath("test")

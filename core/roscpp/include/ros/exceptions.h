@@ -28,10 +28,21 @@
 #ifndef ROSCPP_EXCEPTIONS_H
 #define ROSCPP_EXCEPTIONS_H
 
-#include <ros/exception.h>
+#include <stdexcept>
 
 namespace ros
 {
+
+/**
+ * \brief Base class for all exceptions thrown by roscpp
+ */
+class Exception : public std::runtime_error
+{
+public:
+  Exception(const std::string& what)
+  : std::runtime_error(what)
+  {}
+};
 
 /**
  * \brief Thrown when an invalid node name is specified to ros::init()
@@ -56,28 +67,6 @@ public:
   {}
 };
 
-/**
- * \brief Thrown when a second (third,...) subscription is attempted with conflicting
- * arguments.
- */
-class ConflictingSubscriptionException : public ros::Exception
-{
-public:
-  ConflictingSubscriptionException(const std::string& msg)
-  : Exception(msg)
-  {}
-};
-
-/**
- * \brief Thrown when an invalid parameter is passed to a method
- */
-class InvalidParameterException : public ros::Exception
-{
-public:
-  InvalidParameterException(const std::string& msg)
-  : Exception(msg)
-  {}
-};
 
 } // namespace ros
 

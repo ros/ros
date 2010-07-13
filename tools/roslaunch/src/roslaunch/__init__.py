@@ -44,10 +44,6 @@ from roslaunch.config import ROSLaunchConfig
 from roslaunch.launch import ROSLaunchRunner
 from roslaunch.xmlloader import XmlLoader, XmlParseException
 
-# script api
-from roslaunch.scriptapi import ROSLaunch
-from roslaunch.pmon import Process
-
 NAME = 'roslaunch'
 
 def configure_logging(uuid):
@@ -89,10 +85,6 @@ def _get_optparse():
     parser.add_option("--local",
                       dest="local_only", default=False, action="store_true",
                       help="Do not launch remote nodes")
-    # #2370
-    parser.add_option("--screen",
-                      dest="force_screen", default=False, action="store_true",
-                      help="Force output of all local nodes to screen")
     parser.add_option("-u", "--server_uri",
                       dest="server_uri", default=None,
                       help="URI of server. Required with -c", metavar="URI")
@@ -112,9 +104,6 @@ def _get_optparse():
     parser.add_option("--pid",
                       dest="pid_fn", default="",
                       help="write the roslaunch pid to filename")
-    parser.add_option("-v", action="store_true",
-                      dest="verbose", default=False,
-                      help="verbose printing")
     return parser
     
 def _validate_args(parser, options, args):
@@ -182,9 +171,6 @@ def main(argv=sys.argv):
         uuid = roslaunch.rlutil.get_or_generate_uuid(options.run_id, options.wait_for_master)
         configure_logging(uuid)
 
-        # #2761
-        roslaunch.rlutil.check_log_disk_usage()
-
         logger = logging.getLogger('roslaunch')
         logger.info("roslaunch starting with args %s"%str(argv))
         logger.info("roslaunch env is %s"%os.environ)
@@ -208,7 +194,7 @@ def main(argv=sys.argv):
             # args are the roslaunch files to load
             import roslaunch.parent
             try:
-              p = roslaunch.parent.ROSLaunchParent(uuid, args, is_core=options.core, port=options.port, local_only=options.local_only, verbose=options.verbose, force_screen=options.force_screen)
+              p = roslaunch.parent.ROSLaunchParent(uuid, args, is_core=options.core, port=options.port, local_only=options.local_only)
               p.start()
               p.spin()
             finally:

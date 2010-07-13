@@ -79,11 +79,9 @@ public:
   /**
    * \brief Handles handing off a received message to the subscription, where it will be deserialized and called back
    */
-  virtual void handleMessage(const SerializedMessage& m, bool ser, bool nocopy) = 0;
+  virtual void handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes) = 0;
   virtual std::string getTransportType() = 0;
   virtual void drop() = 0;
-
-  const std::string& getMD5Sum();
 
 protected:
   SubscriptionWPtr parent_;
@@ -97,7 +95,6 @@ protected:
   bool latched_;
   std::string caller_id_;
   Header header_;
-  std::string md5sum_;
 };
 
 } // namespace ros

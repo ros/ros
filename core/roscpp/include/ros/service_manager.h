@@ -34,7 +34,6 @@
 #include "service_client_options.h"
 
 #include <boost/thread/mutex.hpp>
-#include <boost/thread/recursive_mutex.hpp>
 
 namespace ros
 {
@@ -133,7 +132,7 @@ private:
   boost::mutex service_server_links_mutex_;
 
   volatile bool shutting_down_;
-  boost::recursive_mutex shutting_down_mutex_;
+  boost::mutex shutting_down_mutex_;
 
   PollManagerPtr poll_manager_;
   ConnectionManagerPtr connection_manager_;

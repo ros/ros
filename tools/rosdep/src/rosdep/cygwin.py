@@ -31,8 +31,6 @@
 import os
 import roslib.os_detect
 
-import rosdep.base_rosdep
-
 ###### Cygwin SPECIALIZATION #########################
 def port_detect(p):
     import subprocess
@@ -41,7 +39,7 @@ def port_detect(p):
     (std_out, std_err) = pop.communicate()
     return (std_out.count("OK") > 0)
 
-class Cygwin(roslib.os_detect.Cygwin, rosdep.base_rosdep.RosdepBaseOS):
+class Cygwin(roslib.os_detect.Cygwin):
     def strip_detected_packages(self, packages):
         return [p for p in packages if not port_detect(p)] 
 

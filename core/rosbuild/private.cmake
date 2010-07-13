@@ -101,25 +101,6 @@ macro(_rosbuild_check_manifest)
 
 endmacro(_rosbuild_check_manifest)
 
-# Check that the directory where we're building is also where rospack
-# thinks that the package lives, to avoid esoteric build errors.
-macro(_rosbuild_check_package_location)
-  # Ask rospack where our package is
-  rosbuild_find_ros_package(${PROJECT_NAME})
-  # Compare to where we are
-  execute_process(
-    COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/check_same_directories.py ${${PROJECT_NAME}_PACKAGE_PATH} ${PROJECT_SOURCE_DIR}
-    OUTPUT_VARIABLE _rosbuild_check_package_location_error
-    ERROR_VARIABLE _rosbuild_check_package_location_error
-    RESULT_VARIABLE _rosbuild_check_package_location_failed
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  if(_rosbuild_check_package_location_failed)
-    message(FATAL_ERROR "[rosbuild] rospack found package \"${PROJECT_NAME}\" at \"${${PROJECT_NAME}_PACKAGE_PATH}\", but the current directory is \"${PROJECT_SOURCE_DIR}\".  You should double-check your ROS_PACKAGE_PATH to ensure that packages are found in the correct precedence order.")
-  endif(_rosbuild_check_package_location_failed)
-endmacro(_rosbuild_check_package_location)
-
 # helper function to register check that results were generated (#580)
 macro(_rosbuild_check_rostest_xml_result test_name test_file)
   add_custom_target(${test_name}_result
@@ -133,24 +114,17 @@ macro(_rosbuild_check_rostest_xml_result test_name test_file)
 endmacro(_rosbuild_check_rostest_xml_result test_name)
 
 macro(_rosbuild_add_gtest exe)
-  # Look for optional TIMEOUT argument, #2645
-  parse_arguments(_gtest "TIMEOUT" "" ${ARGN})
-  if(NOT _gtest_TIMEOUT)
-    set(_gtest_TIMEOUT 60.0)
-  endif(NOT _gtest_TIMEOUT)
 
   # Create the program, with basic + gtest build flags
-  rosbuild_add_executable(${exe} EXCLUDE_FROM_ALL ${_gtest_DEFAULT_ARGS})
+  rosbuild_add_executable(${exe} EXCLUDE_FROM_ALL ${ARGN})
   rosbuild_add_gtest_build_flags(${exe})
 
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname ${exe})
 
-
   # Create target for this test
-  # We use rostest to call the executable to get process control, #1629
   add_custom_target(test_${_testname}
-                    COMMAND rostest --bare --bare-name=${_testname} --bare-limit=${_gtest_TIMEOUT} ${EXECUTABLE_OUTPUT_PATH}/${exe}
+                    COMMAND ${EXECUTABLE_OUTPUT_PATH}/${exe} --gtest_output=xml:${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml
                     DEPENDS ${EXECUTABLE_OUTPUT_PATH}/${exe}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     VERBATIM)
@@ -217,11 +191,6 @@ macro(_rosbuild_add_rostest file)
 endmacro(_rosbuild_add_rostest)
 
 macro(_rosbuild_add_pyunit file)
-  # Look for optional TIMEOUT argument, #2645
-  parse_arguments(_pyunit "TIMEOUT" "" ${ARGN})
-  if(NOT _pyunit_TIMEOUT)
-    set(_pyunit_TIMEOUT 60.0)
-  endif(NOT _pyunit_TIMEOUT)
 
   # Check that the file exists, #1621
   set(_file_name _file_name-NOTFOUND)
@@ -242,9 +211,8 @@ macro(_rosbuild_add_pyunit file)
   endif("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
 
   # Create target for this test
-  # We use rostest to call the executable to get process control, #1629
   add_custom_target(pyunit_${_testname}
-                    COMMAND rostest --bare --bare-name=${_testname} --bare-limit=${_pyunit_TIMEOUT} -- python ${file} ${_covarg}
+                    COMMAND ${ARGN} python ${file} ${_covarg} --gtest_output=xml:${rosbuild_test_results_dir}/${PROJECT_NAME}/${_testname}.xml
                     DEPENDS ${file}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     VERBATIM)
@@ -253,34 +221,6 @@ macro(_rosbuild_add_pyunit file)
   add_dependencies(pyunit_${_testname} tests)
 
 endmacro(_rosbuild_add_pyunit)
-
-# Actual signature:
-#  _rosbuild_add_roslaunch_check file var=val var=val...
-macro(_rosbuild_add_roslaunch_check file)
-  # Check that the file exists, #1621
-  set(_file_name _file_name-NOTFOUND)
-  find_file(_file_name ${file} ${CMAKE_CURRENT_SOURCE_DIR} /)
-  if(NOT _file_name)
-    message(FATAL_ERROR "Can't find roslaunch file or directory \"${file}\"")
-  endif(NOT _file_name)
-
-  # Find rostest
-  rosbuild_invoke_rospack("" rostest path find rostest)
-
-  # Create a legal target name, in case the target name has slashes it
-  string(REPLACE "/" "_" _testname ${file})
-  
-  # Create target for this test
-  add_custom_target(roslaunch_check_${_testname}
-                    COMMAND ${rostest_path}/bin/roslaunch-check.py ${file} ${ARGN}
-                    DEPENDS ${file}
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                    VERBATIM)
-  
-  # Make sure all test programs are built before running this test
-  add_dependencies(roslaunch_check_${_testname} tests)
-  
-endmacro(_rosbuild_add_roslaunch_check)
 
 macro(_rosbuild_wget_and_build tarball tarball_url tarball_dir unpack_cmd configure_cmd make_cmd install_cmd)
   find_package(Wget REQUIRED)
@@ -353,7 +293,7 @@ macro(_rosbuild_add_library lib libname type)
   rosbuild_add_compile_flags(${lib} ${ROS_COMPILE_FLAGS})
   rosbuild_add_link_flags(${lib} ${ROS_LINK_FLAGS})
 
-  # Make sure to do any prebuild work (e.g., msg/srv generation) before
+  # Make sure to do any prebuild working (e.g., msg/srv generation) before
   # building this target.
   add_dependencies(${lib} rosbuild_precompile)
 endmacro(_rosbuild_add_library)
@@ -407,39 +347,6 @@ macro(_rosbuild_compare_manifests var _t _c _m)
     endif(_mtime_failed)
   endif("${_t}" STREQUAL "")
 endmacro(_rosbuild_compare_manifests var _t)
-
-# parse_arguments() taken from
-# http://www.itk.org/Wiki/CMakeMacroParseArguments
-MACRO(PARSE_ARGUMENTS prefix arg_names option_names)
-  SET(DEFAULT_ARGS)
-  FOREACH(arg_name ${arg_names})    
-    SET(${prefix}_${arg_name})
-  ENDFOREACH(arg_name)
-  FOREACH(option ${option_names})
-    SET(${prefix}_${option} FALSE)
-  ENDFOREACH(option)
-
-  SET(current_arg_name DEFAULT_ARGS)
-  SET(current_arg_list)
-  FOREACH(arg ${ARGN})            
-    SET(larg_names ${arg_names})    
-    LIST(FIND larg_names "${arg}" is_arg_name)                   
-    IF (is_arg_name GREATER -1)
-      SET(${prefix}_${current_arg_name} ${current_arg_list})
-      SET(current_arg_name ${arg})
-      SET(current_arg_list)
-    ELSE (is_arg_name GREATER -1)
-      SET(loption_names ${option_names})    
-      LIST(FIND loption_names "${arg}" is_option)            
-      IF (is_option GREATER -1)
-             SET(${prefix}_${arg} TRUE)
-      ELSE (is_option GREATER -1)
-             SET(current_arg_list ${current_arg_list} ${arg})
-      ENDIF (is_option GREATER -1)
-    ENDIF (is_arg_name GREATER -1)
-  ENDFOREACH(arg)
-  SET(${prefix}_${current_arg_name} ${current_arg_list})
-ENDMACRO(PARSE_ARGUMENTS)
 
 # Internal macros above
 ###############################################################################

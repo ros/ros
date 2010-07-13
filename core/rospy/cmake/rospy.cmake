@@ -5,7 +5,7 @@ macro(genmsg_py)
   rosbuild_get_msgs(_msglist)
   set(_inlist "")
   set(_autogen "")
-  set(genmsg_py_exe ${rospy_PACKAGE_PATH}/scripts/genmsg_py.py)
+  set(genmsg_py_exe ${rospy_PACKAGE_PATH}/scripts/genmsg_py)
 
   foreach(_msg ${_msglist})
     # Construct the path to the .msg file
@@ -37,9 +37,6 @@ macro(genmsg_py)
 
     # A target that depends on generation of the __init__.py
     add_custom_target(ROSBUILD_genmsg_py DEPENDS ${_output_py})
-    # Make our target depend on rosbuild_premsgsrvgen, to allow any
-    # pre-msg/srv generation steps to be done first.
-    add_dependencies(ROSBUILD_genmsg_py rosbuild_premsgsrvgen)
     # Add our target to the top-level genmsg target, which will be fired if
     # the user calls genmsg()
     add_dependencies(rospack_genmsg ROSBUILD_genmsg_py)
@@ -54,7 +51,7 @@ macro(gensrv_py)
   rosbuild_get_srvs(_srvlist)
   set(_inlist "")
   set(_autogen "")
-  set(gensrv_py_exe ${rospy_PACKAGE_PATH}/scripts/gensrv_py.py)
+  set(gensrv_py_exe ${rospy_PACKAGE_PATH}/scripts/gensrv_py)
 
   foreach(_srv ${_srvlist})
     # Construct the path to the .srv file
@@ -86,9 +83,6 @@ macro(gensrv_py)
   
     # A target that depends on generation of the __init__.py
     add_custom_target(ROSBUILD_gensrv_py DEPENDS ${_output_py})
-    # Make our target depend on rosbuild_premsgsrvgen, to allow any
-    # pre-msg/srv generation steps to be done first.
-    add_dependencies(ROSBUILD_gensrv_py rosbuild_premsgsrvgen)
     # Add our target to the top-level gensrv target, which will be fired if
     # the user calls gensrv()
     add_dependencies(rospack_gensrv ROSBUILD_gensrv_py)

@@ -39,7 +39,6 @@
 #include "ros/rosout_appender.h"
 #include "ros/init.h"
 #include "ros/file_log.h"
-#include "ros/subscribe_options.h"
 
 #include "XmlRpc.h"
 
@@ -93,7 +92,7 @@ void TopicManager::start()
   xmlrpc_manager_->bind("getBusStats", boost::bind(&TopicManager::getBusStatsCallback, this, _1, _2));
   xmlrpc_manager_->bind("getBusInfo", boost::bind(&TopicManager::getBusInfoCallback, this, _1, _2));
 
-  poll_manager_->addPollThreadListener(boost::bind(&TopicManager::processPublishQueues, this));
+  poll_manager_->addPollThreadListener(boost::bind(&TopicManager::processPublishQueue, this));
 }
 
 void TopicManager::shutdown()
@@ -107,6 +106,7 @@ void TopicManager::shutdown()
   {
     boost::recursive_mutex::scoped_lock lock1(advertised_topics_mutex_);
     boost::mutex::scoped_lock lock2(subs_mutex_);
+    boost::mutex::scoped_lock lock3(publish_queue_mutex_);
     shutting_down_ = true;
   }
 
@@ -146,18 +146,36 @@ void TopicManager::shutdown()
     }
     subscriptions_.clear();
   }
+
+  publish_queue_.clear();
 }
 
-void TopicManager::processPublishQueues()
+void TopicManager::processPublishQueue()
 {
-  boost::recursive_mutex::scoped_lock lock(advertised_topics_mutex_);
+  V_PublicationAndSerializedMessagePair queue;
+  {
+    boost::mutex::scoped_lock lock(publish_queue_mutex_);
 
-  V_Publication::iterator it = advertised_topics_.begin();
-  V_Publication::iterator end = advertised_topics_.end();
+    if (isShuttingDown())
+    {
+      return;
+    }
+
+    queue.insert(queue.end(), publish_queue_.begin(), publish_queue_.end());
+    publish_queue_.clear();
+  }
+
+  if (queue.empty())
+  {
+    return;
+  }
+
+  V_PublicationAndSerializedMessagePair::iterator it = queue.begin();
+  V_PublicationAndSerializedMessagePair::iterator end = queue.end();
   for (; it != end; ++it)
   {
-    const PublicationPtr& pub = *it;
-    pub->processPublishQueue();
+    PublicationPtr pub = it->first;
+    pub->enqueueMessage(it->second);
   }
 }
 
@@ -192,16 +210,10 @@ PublicationPtr TopicManager::lookupPublication(const std::string& topic)
   return lookupPublicationWithoutLock(topic);
 }
 
-bool md5sumsMatch(const std::string& lhs, const std::string& rhs)
-{
-  return lhs == "*" || rhs == "*" || lhs == rhs;
-}
-
 bool TopicManager::addSubCallback(const SubscribeOptions& ops)
 {
   // spin through the subscriptions and see if we find a match. if so, use it.
   bool found = false;
-  bool found_topic = false;
 
   SubscriptionPtr sub;
 
@@ -217,25 +229,18 @@ bool TopicManager::addSubCallback(const SubscribeOptions& ops)
       sub = *s;
       if (!sub->isDropped() && sub->getName() == ops.topic)
       {
-        found_topic = true;
-        if (md5sumsMatch(ops.md5sum, sub->md5sum()))
+        if (sub->md5sum() == ops.helper->getMD5Sum())
         {
           found = true;
+          break;
         }
-        break;
       }
     }
   }
 
-  if (found_topic && !found)
+  if (found)
   {
-    std::stringstream ss;
-    ss << "Tried to subscribe to a topic with the same name but different md5sum as a topic that was already subscribed [" << ops.datatype << "/" << ops.md5sum << " vs. " << sub->datatype() << "/" << sub->md5sum() << "]";
-    throw ConflictingSubscriptionException(ss.str());
-  }
-  else if (found)
-  {
-    if (!sub->addCallback(ops.helper, ops.md5sum, ops.callback_queue, ops.queue_size, ops.tracked_object, ops.allow_concurrent_callbacks))
+    if (!sub->addCallback(ops.helper, ops.callback_queue, ops.queue_size, ops.tracked_object))
     {
       return false;
     }
@@ -259,26 +264,11 @@ bool TopicManager::subscribe(const SubscribeOptions& ops)
     return false;
   }
 
-  if (ops.md5sum.empty())
-  {
-    throw InvalidParameterException("Subscribing to topic [" + ops.topic + "] with an empty md5sum");
-  }
-
-  if (ops.datatype.empty())
-  {
-    throw InvalidParameterException("Subscribing to topic [" + ops.topic + "] with an empty datatype");
-  }
-
-  if (!ops.helper)
-  {
-    throw InvalidParameterException("Subscribing to topic [" + ops.topic + "] without a callback");
-  }
-
-  const std::string& md5sum = ops.md5sum;
-  std::string datatype = ops.datatype;
+  std::string md5sum = ops.helper->getMD5Sum();
+  std::string datatype = ops.helper->getDataType();
 
   SubscriptionPtr s(new Subscription(ops.topic, md5sum, datatype, ops.transport_hints));
-  s->addCallback(ops.helper, ops.md5sum, ops.callback_queue, ops.queue_size, ops.tracked_object, ops.allow_concurrent_callbacks);
+  s->addCallback(ops.helper, ops.callback_queue, ops.queue_size, ops.tracked_object);
 
   if (!registerSubscriber(s, ops.datatype))
   {
@@ -296,31 +286,12 @@ bool TopicManager::advertise(const AdvertiseOptions& ops, const SubscriberCallba
 {
   if (ops.datatype == "*")
   {
-    std::stringstream ss;
-    ss << "Advertising with * as the datatype is not allowed.  Topic [" << ops.topic << "]";
-    throw InvalidParameterException(ss.str());
+    ROS_WARN("Advertising on topic [%s] with datatype [*].  If you are not playing back an old bag file, this is a problem.", ops.topic.c_str());
   }
 
   if (ops.md5sum == "*")
   {
-    std::stringstream ss;
-    ss << "Advertising with * as the md5sum is not allowed.  Topic [" << ops.topic << "]";
-    throw InvalidParameterException(ss.str());
-  }
-
-  if (ops.md5sum.empty())
-  {
-    throw InvalidParameterException("Advertising on topic [" + ops.topic + "] with an empty md5sum");
-  }
-
-  if (ops.datatype.empty())
-  {
-    throw InvalidParameterException("Advertising on topic [" + ops.topic + "] with an empty datatype");
-  }
-
-  if (ops.message_definition.empty())
-  {
-    ROS_WARN("Advertising on topic [%s] with an empty message definition.  Some tools (e.g. rosbag) may not work correctly.", ops.topic.c_str());
+    ROS_WARN("Advertising on topic [%s] with md5sum [*].  If you are not playing back an old bag file, this is a problem.", ops.topic.c_str());
   }
 
   PublicationPtr pub;
@@ -353,7 +324,7 @@ bool TopicManager::advertise(const AdvertiseOptions& ops, const SubscriberCallba
       return true;
     }
 
-    pub = PublicationPtr(new Publication(ops.topic, ops.datatype, ops.md5sum, ops.message_definition, ops.queue_size, ops.latch, ops.has_header));
+    pub = PublicationPtr(new Publication(ops.topic, ops.datatype, ops.md5sum, ops.message_definition, ops.queue_size, ops.latch));
     pub->addCallbacks(callbacks);
     advertised_topics_.push_back(pub);
   }
@@ -377,7 +348,7 @@ bool TopicManager::advertise(const AdvertiseOptions& ops, const SubscriberCallba
     for (L_Subscription::iterator s = subscriptions_.begin();
          s != subscriptions_.end() && !found; ++s)
     {
-      if ((*s)->getName() == ops.topic && md5sumsMatch((*s)->md5sum(), ops.md5sum) && !(*s)->isDropped())
+      if ((*s)->getName() == ops.topic && (*s)->md5sum() == ops.md5sum && !(*s)->isDropped())
       {
         found = true;
         sub = *s;
@@ -498,7 +469,6 @@ bool TopicManager::registerSubscriber(const SubscriptionPtr& s, const string &da
 
   bool self_subscribed = false;
   PublicationPtr pub;
-  const std::string& sub_md5sum = s->md5sum();
   // Figure out if we have a local publisher
   {
     boost::recursive_mutex::scoped_lock lock(advertised_topics_mutex_);
@@ -507,8 +477,7 @@ bool TopicManager::registerSubscriber(const SubscriptionPtr& s, const string &da
     for (; it != end; ++it)
     {
       pub = *it;
-      const std::string& pub_md5sum = pub->getMD5Sum();
-      if (pub->getName() == s->getName() && md5sumsMatch(pub_md5sum, sub_md5sum) && !pub->isDropped())
+      if (pub->getName() == s->getName() && pub->getDataType() == s->datatype() && !pub->isDropped())
       {
         self_subscribed = true;
         break;
@@ -638,17 +607,8 @@ bool TopicManager::requestTopic(const string &topic,
 
       std::string host = proto[2];
       int port = proto[3];
-
-      M_string m;
-      std::string error_msg;
-      if (!pub_ptr->validateHeader(h, error_msg))
-      {
-        ROSCPP_LOG_DEBUG("Error validating header from [%s:%d] for topic [%s]: %s", host.c_str(), port, topic.c_str(), error_msg.c_str());
-        return false;
-      }
-
       int max_datagram_size = proto[4];
-      int conn_id = connection_manager_->getNewConnectionID();
+      int conn_id = connection_manager_->getUDPServerTransport()->generateConnectionId();
       TransportUDPPtr transport = connection_manager_->getUDPServerTransport()->createOutgoing(host, port, conn_id, max_datagram_size);
       connection_manager_->udprosIncomingConnection(transport, h);
 
@@ -658,6 +618,7 @@ bool TopicManager::requestTopic(const string &topic,
       udpros_params[2] = connection_manager_->getUDPServerTransport()->getServerPort();
       udpros_params[3] = conn_id;
       udpros_params[4] = max_datagram_size;
+      M_string m;
       m["topic"] = topic;
       m["md5sum"] = pub_ptr->getMD5Sum();
       m["type"] = pub_ptr->getDataType();
@@ -686,7 +647,7 @@ bool TopicManager::requestTopic(const string &topic,
   return false;
 }
 
-void TopicManager::publish(const std::string& topic, const boost::function<SerializedMessage(void)>& serfunc, SerializedMessage& m)
+void TopicManager::publish(const std::string &topic, const Message& m)
 {
   boost::recursive_mutex::scoped_lock lock(advertised_topics_mutex_);
 
@@ -695,73 +656,40 @@ void TopicManager::publish(const std::string& topic, const boost::function<Seria
     return;
   }
 
-  PublicationPtr p = lookupPublicationWithoutLock(topic);
+  for (V_Publication::iterator t = advertised_topics_.begin();
+       t != advertised_topics_.end(); ++t)
+  {
+    if ((*t)->getName() == topic)
+    {
+      if (m.__getDataType() != ((*t)->getDataType()))
+      {
+        ROS_ERROR("Topic [%s] advertised as [%s], but published as [%s]", topic.c_str(), (*t)->getDataType().c_str(), m.__getDataType().c_str());
+      }
+      else
+      {
+        publish(*t, m);
+      }
+      break;
+    }
+  }
+}
+
+void TopicManager::publish(const PublicationPtr& p, const Message& m)
+{
+  p->incrementSequence();
   if (p->hasSubscribers() || p->isLatching())
   {
-    ROS_DEBUG_NAMED("superdebug", "Publishing message on topic [%s] with sequence number [%d]", p->getName().c_str(), p->getSequence());
+    uint32_t msg_len = m.serializationLength();
+    boost::shared_array<uint8_t> buf = boost::shared_array<uint8_t>(new uint8_t[msg_len + 4]);
 
-    // Determine what kinds of subscribers we're publishing to.  If they're intraprocess with the same C++ type we can
-    // do a no-copy publish.
-    bool nocopy = false;
-    bool serialize = false;
+    *((uint32_t*)buf.get()) = msg_len;
+    m.serialize(buf.get() + 4, p->getSequence());
+    ROS_DEBUG_NAMED("superdebug", "Publishing message on topic [%s] with sequence number [%d] of length [%d]", p->getName().c_str(), p->getSequence(), msg_len);
 
-    // We can only do a no-copy publish if a shared_ptr to the message is provided, and we have type information for it
-    if (m.type_info && m.message)
-    {
-      p->getPublishTypes(serialize, nocopy, *m.type_info);
-    }
-    else
-    {
-      serialize = true;
-    }
-
-    if (!nocopy)
-    {
-      m.message.reset();
-      m.type_info = 0;
-    }
-
-    if (serialize)
-    {
-      SerializedMessage m2 = serfunc();
-      m.buf = m2.buf;
-      m.num_bytes = m2.num_bytes;
-      m.message_start = m2.message_start;
-    }
-
-    p->publish(m);
-
-    // If we're not doing a serialized publish we don't need to signal the pollset.  The write()
-    // call inside signal() is actually relatively expensive when doing a nocopy publish.
-    if (serialize)
-    {
-      poll_manager_->getPollSet().signal();
-    }
+    boost::mutex::scoped_lock lock(publish_queue_mutex_);
+    publish_queue_.push_back(std::make_pair(p, SerializedMessage(buf, msg_len + 4)));
+    poll_manager_->getPollSet().signal();
   }
-  else
-  {
-    p->incrementSequence();
-  }
-}
-
-void TopicManager::incrementSequence(const std::string& topic)
-{
-  PublicationPtr pub = lookupPublication(topic);
-  if (pub)
-  {
-    pub->incrementSequence();
-  }
-}
-
-bool TopicManager::isLatched(const std::string& topic)
-{
-  PublicationPtr pub = lookupPublication(topic);
-  if (pub)
-  {
-    return pub->isLatched();
-  }
-
-  return false;
 }
 
 PublicationPtr TopicManager::lookupPublicationWithoutLock(const string &topic)
@@ -780,7 +708,7 @@ PublicationPtr TopicManager::lookupPublicationWithoutLock(const string &topic)
   return t;
 }
 
-bool TopicManager::unsubscribe(const std::string &topic, const SubscriptionCallbackHelperPtr& helper)
+bool TopicManager::unsubscribe(const std::string &topic, const SubscriptionMessageHelperPtr& helper)
 {
   SubscriptionPtr sub;
   L_Subscription::iterator it;
@@ -841,10 +769,13 @@ size_t TopicManager::getNumSubscribers(const std::string &topic)
     return 0;
   }
 
-  PublicationPtr p = lookupPublicationWithoutLock(topic);
-  if (p)
+  for (V_Publication::const_iterator t = advertised_topics_.begin();
+       t != advertised_topics_.end(); ++t)
   {
-    return p->getNumSubscribers();
+    if ((*t)->getName() == topic)
+    {
+      return (*t)->getNumSubscribers();
+    }
   }
 
   return 0;
@@ -868,7 +799,7 @@ size_t TopicManager::getNumPublishers(const std::string &topic)
   for (L_Subscription::const_iterator t = subscriptions_.begin();
        t != subscriptions_.end(); ++t)
   {
-    if (!(*t)->isDropped() && (*t)->getName() == topic)
+    if ((*t)->getName() == topic)
     {
       return (*t)->getNumPublishers();
     }

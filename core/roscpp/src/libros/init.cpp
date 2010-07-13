@@ -45,16 +45,14 @@
 #include "ros/callback_queue.h"
 #include "ros/param.h"
 #include "ros/rosout_appender.h"
-#include "ros/subscribe_options.h"
 #include "ros/transport/transport_tcp.h"
-#include "ros/internal_timer_manager.h"
 
 #include "roscpp/GetLoggers.h"
 #include "roscpp/SetLoggerLevel.h"
-#include "roscpp/Empty.h"
 
 #include <ros/console.h>
 #include <ros/time.h>
+#include <roslib/Time.h>
 #include <roslib/Clock.h>
 
 #include <algorithm>
@@ -103,7 +101,7 @@ static bool g_ok = false;
 static uint32_t g_init_options = 0;
 static bool g_shutdown_requested = false;
 static volatile bool g_shutting_down = false;
-static boost::recursive_mutex g_shutting_down_mutex;
+static boost::mutex g_shutting_down_mutex;
 static boost::thread g_internal_queue_thread;
 
 bool isInitialized()
@@ -120,20 +118,7 @@ void checkForShutdown()
 {
   if (g_shutdown_requested)
   {
-    // Since this gets run from within a mutex inside PollManager, we need to prevent ourselves from deadlocking with
-    // another thread that's already in the middle of shutdown()
-    boost::recursive_mutex::scoped_try_lock lock(g_shutting_down_mutex, boost::defer_lock);
-    while (!lock.try_lock() && !g_shutting_down)
-    {
-      ros::WallDuration(0.001).sleep();
-    }
-
-    if (!g_shutting_down)
-    {
-      shutdown();
-    }
-
-    g_shutdown_requested = false;
+    shutdown();
   }
 }
 
@@ -227,11 +212,9 @@ bool setLoggerLevel(roscpp::SetLoggerLevel::Request& req, roscpp::SetLoggerLevel
   return false;
 }
 
-bool closeAllConnections(roscpp::Empty::Request&, roscpp::Empty::Response&)
+void timeCallback(const roslib::Time::ConstPtr& msg)
 {
-  ROSCPP_LOG_DEBUG("close_all_connections service called, closing connections");
-  ConnectionManager::instance()->clear(Connection::TransportDisconnect);
-  return true;
+  Time::setNow(msg->rostime);
 }
 
 void clockCallback(const roslib::Clock::ConstPtr& msg)
@@ -284,25 +267,10 @@ void start()
   g_started = true;
   g_ok = true;
 
-  bool enable_debug = false;
-  const char* enable_debug_env = getenv("ROSCPP_ENABLE_DEBUG");
-  if (enable_debug_env)
-  {
-    try
-    {
-      enable_debug = boost::lexical_cast<bool>(enable_debug_env);
-    }
-    catch (boost::bad_lexical_cast&)
-    {
-    }
-  }
-
   param::param("/tcp_keepalive", TransportTCP::s_use_keepalive_, TransportTCP::s_use_keepalive_);
 
   PollManager::instance()->addPollThreadListener(checkForShutdown);
   XMLRPCManager::instance()->bind("shutdown", shutdownCallback);
-
-  initInternalTimerManager();
 
   TopicManager::instance()->start();
   ServiceManager::instance()->start();
@@ -322,72 +290,62 @@ void start()
     logger->addAppender(g_rosout_appender);
   }
 
-  if (g_shutting_down) goto end;
-
+  if (!g_shutting_down)
   {
-    ros::AdvertiseServiceOptions ops;
-    ops.init<roscpp::GetLoggers>(names::resolve("~get_loggers"), getLoggers);
-    ops.callback_queue = getInternalCallbackQueue().get();
-    ServiceManager::instance()->advertiseService(ops);
-  }
-
-  if (g_shutting_down) goto end;
-
-  {
-    ros::AdvertiseServiceOptions ops;
-    ops.init<roscpp::SetLoggerLevel>(names::resolve("~set_logger_level"), setLoggerLevel);
-    ops.callback_queue = getInternalCallbackQueue().get();
-    ServiceManager::instance()->advertiseService(ops);
-  }
-
-  if (g_shutting_down) goto end;
-
-  if (enable_debug)
-  {
-    ros::AdvertiseServiceOptions ops;
-    ops.init<roscpp::Empty>(names::resolve("~debug/close_all_connections"), closeAllConnections);
-    ops.callback_queue = getInternalCallbackQueue().get();
-    ServiceManager::instance()->advertiseService(ops);
-  }
-
-  if (g_shutting_down) goto end;
-
-  {
-    bool use_sim_time = false;
-    param::param("/use_sim_time", use_sim_time, use_sim_time);
-
-    ros::Time::init();
-
-    if (use_sim_time)
     {
-      Time::setNow(ros::Time());
-    }
-
-    if (g_shutting_down) goto end;
-
-    if (use_sim_time)
-    {
-      ros::SubscribeOptions ops;
-      ops.init<roslib::Clock>("/clock", 1, clockCallback);
+      ros::AdvertiseServiceOptions ops;
+      ops.init<roscpp::GetLoggers>(names::resolve("~get_loggers"), getLoggers);
       ops.callback_queue = getInternalCallbackQueue().get();
-      TopicManager::instance()->subscribe(ops);
+      ServiceManager::instance()->advertiseService(ops);
+    }
+
+    if (!g_shutting_down)
+    {
+      {
+        ros::AdvertiseServiceOptions ops;
+        ops.init<roscpp::SetLoggerLevel>(names::resolve("~set_logger_level"), setLoggerLevel);
+        ops.callback_queue = getInternalCallbackQueue().get();
+        ServiceManager::instance()->advertiseService(ops);
+      }
+
+      if (!g_shutting_down)
+      {
+        bool use_sim_time = false;
+        param::param("/use_sim_time", use_sim_time, use_sim_time);
+        if (use_sim_time)
+        {
+          Time::setNow(ros::Time());
+        }
+
+        if (!g_shutting_down)
+        {
+          {
+            ros::SubscribeOptions ops;
+            ops.init<roslib::Time>("/time", 1, timeCallback);
+            ops.callback_queue = getInternalCallbackQueue().get();
+            TopicManager::instance()->subscribe(ops);
+          }
+
+          {
+            ros::SubscribeOptions ops;
+            ops.init<roslib::Clock>("/clock", 1, clockCallback);
+            ops.callback_queue = getInternalCallbackQueue().get();
+            TopicManager::instance()->subscribe(ops);
+          }
+
+          g_internal_queue_thread = boost::thread(internalCallbackQueueThreadFunc);
+          getGlobalCallbackQueue()->enable();
+
+          ROSCPP_LOG_DEBUG("Started node [%s], pid [%d], bound on [%s], xmlrpc port [%d], tcpros port [%d], logging to [%s], using [%s] time", this_node::getName().c_str(), getpid(), network::getHost().c_str(), XMLRPCManager::instance()->getServerPort(), ConnectionManager::instance()->getTCPPort(), file_log::getLogFilename().c_str(), Time::useSystemTime() ? "real" : "sim");
+        }
+      }
     }
   }
 
-  if (g_shutting_down) goto end;
-
-  g_internal_queue_thread = boost::thread(internalCallbackQueueThreadFunc);
-  getGlobalCallbackQueue()->enable();
-
-  ROSCPP_LOG_DEBUG("Started node [%s], pid [%d], bound on [%s], xmlrpc port [%d], tcpros port [%d], logging to [%s], using [%s] time", this_node::getName().c_str(), getpid(), network::getHost().c_str(), XMLRPCManager::instance()->getServerPort(), ConnectionManager::instance()->getTCPPort(), file_log::getLogFilename().c_str(), Time::useSystemTime() ? "real" : "sim");
-
-  // Label used to abort if we've started shutting down in the middle of start(), which can happen in
-  // threaded code or if Ctrl-C is pressed while we're initializing
-end:
   // If we received a shutdown request while initializing, wait until we've shutdown to continue
   if (g_shutting_down)
   {
-    boost::recursive_mutex::scoped_lock lock(g_shutting_down_mutex);
+    boost::mutex::scoped_lock lock(g_shutting_down_mutex);
   }
 }
 
@@ -410,8 +368,7 @@ void init(const M_string& remappings, const std::string& name, uint32_t options)
     g_ok = true;
 
     ROSCONSOLE_AUTOINIT;
-    // Disable SIGPIPE
-    signal(SIGPIPE, SIG_IGN);
+    ros::Time::init();
     network::init(remappings);
     master::init(remappings);
     // names:: namespace is initialized by this_node
@@ -469,7 +426,7 @@ void init(const VP_string& remappings, const std::string& name, uint32_t options
   init(remappings_map, name, options);
 }
 
-void removeROSArgs(int argc, const char* const* argv, V_string& args_out)
+void removeROSArgs(int argc, const char** argv, V_string& args_out)
 {
   for (int i = 0; i < argc; ++i)
   {
@@ -518,7 +475,7 @@ bool ok()
 
 void shutdown()
 {
-  boost::recursive_mutex::scoped_lock lock(g_shutting_down_mutex);
+  boost::mutex::scoped_lock lock(g_shutting_down_mutex);
   if (g_shutting_down)
   {
     return;
@@ -544,8 +501,8 @@ void shutdown()
   {
     TopicManager::instance()->shutdown();
     ServiceManager::instance()->shutdown();
-    PollManager::instance()->shutdown();
     ConnectionManager::instance()->shutdown();
+    PollManager::instance()->shutdown();
     XMLRPCManager::instance()->shutdown();
   }
 

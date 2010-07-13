@@ -113,6 +113,15 @@ class EnvTest(unittest.TestCase):
     # make sure test works with os.environ
     self.assertEquals(os.environ.get('ROS_MASTER_URI', None), get_master_uri(required=False))
 
+  def test_setup_default_environment(self):
+    from roslib.rosenv import setup_default_environment
+    # can't test actual functionality as coded, but verify that it is a noop on non rosdeb systems
+    if os.path.isdir('/usr/lib/ros'):
+      return
+    e = os.environ.copy()
+    setup_default_environment()
+    self.assertEquals(e, os.environ)
+    
   def test_get_log_dir(self):
     from roslib.roslogging import get_log_dir
     from roslib.rosenv import get_ros_root
@@ -172,21 +181,6 @@ class EnvTest(unittest.TestCase):
 
     # test default assignment of env. Don't both checking return value 
     self.assert_(get_ros_home() is not None)
-    
-  def test_on_ros_path(self):
-    from roslib.rosenv import on_ros_path, get_ros_root, resolve_paths, get_ros_package_path
-    
-    self.assert_(on_ros_path(get_ros_root()))
-
-    # this test should be on ros_path
-    self.assert_(on_ros_path('.'))
-    self.assert_(on_ros_path('test_roslib_rosenv.py'))
-
-    paths = resolve_paths(get_ros_package_path()).split(os.pathsep)
-    for p in paths:
-      self.assert_(on_ros_path(p), "failed: %s, [%s]"%(p, paths))
-
-    self.failIf(on_ros_path(os.tempnam()))
     
 if __name__ == '__main__':
   rostest.unitrun('test_roslib', 'test_env', EnvTest, coverage_packages=['roslib.rosenv'])

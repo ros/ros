@@ -47,32 +47,16 @@ import time
 import subprocess
 
 import roslib
-import roslib.genpy
 import roslib.gentools
 import roslib.message
 import roslib.msgs
 import roslib.names
 import roslib.packages
 import roslib.srvs
-import rosbag
 
 from optparse import OptionParser
 
 class ROSMsgException(Exception): pass
-
-import warnings
-def deprecated(func):
-    """This is a decorator which can be used to mark functions
-    as deprecated. It will result in a warning being emmitted
-    when the function is used."""
-    def newFunc(*args, **kwargs):
-        warnings.warn("Call to deprecated function %s." % func.__name__,
-                      category=DeprecationWarning, stacklevel=2)
-        return func(*args, **kwargs)
-    newFunc.__name__ = func.__name__
-    newFunc.__doc__ = func.__doc__
-    newFunc.__dict__.update(func.__dict__)
-    return newFunc
 
 def succeed(args):
     code, msg, val = args
@@ -226,53 +210,29 @@ def get_srv_text(type_, raw=False):
     else:
         return str(spec.request)+'---\n'+str(spec.response)
 
-def get_msg_text(type_, raw=False, full_text=None):
+def get_msg_text(type_, raw=False):
     """
     Get .msg file for type_ as text
     @param type_: message type
     @type  type_: str
     @param raw: if True, include comments and whitespace (default False)
     @type  raw: bool
-    @param full_text: if not None, contains full text of message definition
-    @type  full_text: str
     @return: text of .msg file
     @rtype: str
     @raise ROSMsgException: if type_ is unknown
     """
     package, base_type = roslib.names.package_resource_name(type_)
-    
-    if not full_text:
-        roslib.msgs.load_package_dependencies(package, load_recursive=True)
-        roslib.msgs.load_package(package)
-        try:
-            spec = roslib.msgs.get_registered(type_)
-        except KeyError:
-            raise ROSMsgException("Unknown msg type: %s"%type_)        
-
-        if raw:
-            text = spec.text
-        else:
-            text = str(spec)
+    roslib.msgs.load_package_dependencies(package, load_recursive=True)
+    roslib.msgs.load_package(package)
+    try:
+        spec = roslib.msgs.get_registered(type_)
+    except KeyError:
+        raise ROSMsgException("Unknown msg type: %s"%type_)        
+    if raw:
+        return spec.text
     else:
-        splits = full_text.split('\n'+'='*80+'\n')
-        core_msg = splits[0]
-        deps_msgs = splits[1:]
-
-        specs = { type_: roslib.msgs.load_from_string(core_msg, package) }
-        for dep_msg in deps_msgs:
-            dep_type, dep_spec = roslib.genpy._generate_dynamic_specs(specs, dep_msg)
-            specs[dep_type] = dep_spec
-        
-        for t, spec in specs.iteritems():
-            roslib.msgs.register(t, spec)       
-        spec = specs[type_]
-        if raw:
-            text = spec.text
-        else:
-            text = str(spec)
-
-    return text
-
+        return str(spec)
+    
 def rosmsg_debug(mode, type_, raw=False):
     """
     Prints contents of msg/srv file
@@ -286,39 +246,14 @@ def rosmsg_debug(mode, type_, raw=False):
     else:
         raise ROSMsgException("invalid mode: %s"%mode)
     
-def list_srvs(package):
-    """
-    List srvs contained in package
-    @param package: package name
-    @type  package: str
-    @return: list of srvs in package
-    @rtype: [str]
-    """
-    return list_types(package, mode=roslib.srvs.EXT)
-
-def list_msgs(package):
-    """
-    List msgs contained in package
-    @param package: package name
-    @type  package: str
-    @return: list of msgs in package
-    @rtype: [str]
-    """
-    return list_types(package)
-    
-# DEPRECATED
-@deprecated
 def rosmsg_list_package(mode, package):
-    return list_types(package, mode=mode)
-
-def list_types(package, mode=roslib.msgs.EXT):
     """
     Lists msg/srvs contained in package
+    @param mode: roslib.srvs.EXT or roslib.msgs.EXT
+    @type  mode: str
     @param package: package name
     @type  package: str
-    @param mode: roslib.srvs.EXT or roslib.msgs.EXT. Defaults to msgs.
-    @type  mode: str
-    @return: list of msgs/srv in package
+    @return: list of msgs/srv in \a package
     @rtype: [str]
     """
     if mode == roslib.msgs.EXT:
@@ -347,25 +282,14 @@ def iterate_packages(mode):
         if dir and os.path.isdir(dir):
             yield p
     
-@deprecated
+## list all packages that contain messages/services. This is a convenience
+## function of iterate_packages
+## @param mode str: roslib.msgs.EXT or roslib.srvs.EXT
+## @return [str]: list of packages that contain messages/services (depending on \a mode)
 def rosmsg_list_packages(mode):
-    """
-    Use list_packages
-    """
-    return list_packages(mode=mode)
-
-def list_packages(mode=roslib.msgs.EXT):
-    """
-    List all packages that contain messages/services. This is a convenience
-    function of iterate_packages
-    @param mode: roslib.msgs.EXT or roslib.srvs.EXT. Defaults to msgs
-    @type  mode: str
-    @return: list of packages that contain messages/services (depending on mode)
-    @rtype: [str]
-    """
     return [p for p in iterate_packages(mode)]
 
-## iterator for all packages that contain a message matching base_type
+## iterator for all packages that contain a message matching \a base_type
 ## @param base_type str: message base type to match, e.g. 'String' would match std_msgs/String
 def rosmsg_search(mode, base_type):
     if mode == roslib.msgs.EXT:
@@ -395,9 +319,6 @@ def rosmsg_cmd_show(mode, full):
     parser.add_option("-r", "--raw",
                       dest="raw", default=False,action="store_true",
                       help="show raw message text, including comments")
-    parser.add_option("-b", "--bag",
-                      dest="bag", default=None,
-                      help="show message from .bag file", metavar="BAGFILE")
     options, arg = _stdin_arg(parser, full)
     if arg.endswith(mode):
         arg = arg[:-(len(mode))]
@@ -407,22 +328,12 @@ def rosmsg_cmd_show(mode, full):
         parser.error(cmd+" does not understand C++-style namespaces (i.e. '::').\nPlease refer to msg/srv types as 'package_name/Type'.")
     elif '.' in arg:
         parser.error("invalid message type '%s'.\nPlease refer to msg/srv types as 'package_name/Type'.")
-    if options.bag:
-        bag_file = options.bag
-        if not os.path.exists(bag_file):
-            raise ROSMsgException("ERROR: bag file [%s] does not exist"%bag_file)
-        for topic, msg, t in rosbag.Bag(bag_file).read_messages(raw=True):
-            datatype, _, _, _, pytype = msg
-            if datatype == arg:
-                print get_msg_text(datatype, options.raw, pytype._full_text)
-                break
+    if '/' in arg: #package specified
+        rosmsg_debug(mode, arg, options.raw)
     else:
-        if '/' in arg: #package specified
-            rosmsg_debug(mode, arg, options.raw)
-        else:
-            for found in rosmsg_search(mode, arg):
-                print "[%s]:"%found
-                rosmsg_debug(mode, found, options.raw)
+        for found in rosmsg_search(mode, arg):
+            print "[%s]:"%found
+            rosmsg_debug(mode, found, options.raw)
 
 def rosmsg_md5(mode, type_):
     package, base_type = roslib.names.package_resource_name(type_)
@@ -480,9 +391,9 @@ def rosmsg_cmd_package(mode, full):
                       help="list all msgs on a single line")
     options, arg = _stdin_arg(parser, full)
     if options.single_line:    
-        print ' '.join(list_types(arg,mode=mode))        
+        print ' '.join(rosmsg_list_package(mode, arg))        
     else:
-        print '\n'.join(list_types(arg, mode=mode))
+        print '\n'.join(rosmsg_list_package(mode, arg))
     
 def rosmsg_cmd_packages(mode, full):
     parser = OptionParser(usage="usage: ros%s packages"%mode[1:])
@@ -499,7 +410,7 @@ def fullusage(cmd):
     """
     @param cmd: command name
     @type  cmd: str
-    @return: usage text for cmd
+    @return: usage text for \a cmd
     @rtype: str
     """
     return """Commands:

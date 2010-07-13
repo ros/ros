@@ -61,32 +61,6 @@ PRODUCT = 'ros'
 ## caller ID for master calls where caller ID is not vital
 _GLOBAL_CALLER_ID = '/script'
 
-_is_interactive = False
-def set_interactive(interactive):
-    """
-    General API for a script specifying that it is being run in an
-    interactive environment. Many libraries may wish to change their
-    behavior based on being interactive (e.g. disabling signal
-    handlers on Ctrl-C).
-
-    @param interactive: True if current script is being run in an interactive shell
-    @type  interactive: bool
-    """
-    global _is_interactive
-    _is_interactive = interactive
-
-def is_interactive():
-    """
-    General API for a script specifying that it is being run in an
-    interactive environment. Many libraries may wish to change their
-    behavior based on being interactive (e.g. disabling signal
-    handlers on Ctrl-C).
-
-    @return: True if interactive flag has been set
-    @rtype: bool
-    """
-    return _is_interactive
-
 def myargv(argv=None):
     """
     Remove ROS remapping arguments from sys.argv arguments.
@@ -121,10 +95,6 @@ def script_resolve_name(script_name, name):
 
 def get_master():
     """
-    Get an XMLRPC handle to the Master. It is recommended to use the
-    `rosgraph.masterapi` library instead, as it provides many
-    conveniences.
-    
     @return: XML-RPC proxy to ROS master
     @rtype: xmlrpclib.ServerProxy
     """
@@ -182,24 +152,3 @@ def is_publisher(topic, publisher_id):
     else:
         return False
 
-def ask_and_call(cmds):
-    """
-    Pretty print cmds, ask if they should be run, and if so, runs
-    them using subprocess.check_call.
-
-    @return: True if cmds were run.
-    """
-    # Pretty-print a string version of the commands
-    def quote(s):
-        return '"%s"'%s if ' ' in s else s
-    print "Okay to execute:\n\n%s\n(y/n)?"%('\n'.join([' '.join([quote(s) for s in c]) for c in cmds]))
-    while 1:
-        input = sys.stdin.readline().strip()
-        if input in ['y', 'n']:
-            break
-    accepted = input == 'y'
-    import subprocess
-    if accepted:
-        for c in cmds:
-            subprocess.check_call(c)
-    return accepted

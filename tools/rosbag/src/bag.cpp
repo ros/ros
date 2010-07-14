@@ -84,9 +84,6 @@ Bag::Bag(string const& filename, uint32_t mode) :
 
 Bag::~Bag() {
     close();
-
-    for (map<uint32_t, ConnectionInfo*>::iterator i = connections_.begin(); i != connections_.end(); i++)
-        delete i->second;
 }
 
 void Bag::open(string const& filename, uint32_t mode) {
@@ -107,7 +104,6 @@ void Bag::open(string const& filename, uint32_t mode) {
     file_size_ = file_.getOffset();
     seek(offset);
 }
-
 
 void Bag::openRead(string const& filename) {
     file_.openRead(filename);
@@ -158,6 +154,15 @@ void Bag::close() {
     	closeWrite();
     
     file_.close();
+
+    topic_connection_ids_.clear();
+    header_connection_ids_.clear();
+    for (map<uint32_t, ConnectionInfo*>::iterator i = connections_.begin(); i != connections_.end(); i++)
+        delete i->second;
+    connections_.clear();
+    chunks_.clear();
+    connection_indexes_.clear();
+    curr_chunk_connection_indexes_.clear();
 }
 
 void Bag::closeWrite() {

@@ -158,18 +158,24 @@
 
 (defmethod asdf:perform :around ((op asdf:compile-op) component)
   (let ((marker-file-path (compilation-marker-file-path component)))
-    (wait-for-file-deleted marker-file-path
-                           (format nil
-                                   "System `~a' is compiled by a different process. Waiting for compilation of blocking file to finish."
-                                   (asdf:component-name (asdf-system-of-component component))))
     (unwind-protect
-         (progn
-           (close
-            (open marker-file-path
-                  :if-exists :error
-                  :if-does-not-exist :create
-                  :direction :probe))
-           (call-next-method))
+         (tagbody
+          retry
+            (handler-bind
+                ((file-error (lambda (e)
+                               (declare (ignore e))
+                               (wait-for-file-deleted
+                                marker-file-path
+                                (format nil
+                                        "System `~a' is compiled by a different process. Waiting for compilation of blocking file to finish."
+                                        (asdf:component-name (asdf-system-of-component component))))
+                               (go retry))))
+              (close
+               (open marker-file-path
+                     :if-exists :error
+                     :if-does-not-exist :create
+                     :direction :output))
+              (call-next-method)))
       (when (probe-file marker-file-path)
         (delete-file marker-file-path)))))
 

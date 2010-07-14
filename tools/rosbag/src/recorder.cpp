@@ -289,8 +289,17 @@ void Recorder::doQueue(ros::MessageEvent<topic_tools::ShapeShifter const> msg_ev
 void Recorder::updateFilenames() {
     vector<string> parts;
 
-    if (options_.prefix.length() > 0)
-        parts.push_back(options_.prefix);
+    std::string prefix = options_.prefix;
+    uint32_t ind = prefix.rfind(".bag");
+
+    if (ind == prefix.size() - 4)
+    {
+      prefix.erase(ind);
+      ind = prefix.rfind(".bag");
+    }
+
+    if (prefix.length() > 0)
+        parts.push_back(prefix);
     if (options_.append_date)
         parts.push_back(timeToStr(ros::WallTime::now()));
     if (options_.split_size > 0)

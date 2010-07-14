@@ -138,6 +138,49 @@
                           (make-pathname :directory `(:relative "roslisp" ,package-name ,@rel-path))
                           (ros-home))))))))
 
+;; Use lock file to prevent from parallel compilation of the same
+;; system
+
+(defun wait-for-file-deleted (file msg)
+  (let ((print-msg t))
+    (loop while (probe-file file) do
+      (when print-msg
+        (warn 'simple-warning :format-control msg)
+        (setf print-msg nil))
+      (sleep 0.5))))
+
+(defun compilation-marker-file-path (component)
+  (merge-pathnames (make-pathname
+                    :name (concatenate 'string
+                                       ".roslisp-compile-"
+                                       (asdf:component-name component)))
+                   (ros-home)))
+
+(defmethod asdf:perform :around ((op asdf:compile-op) component)
+  (let ((marker-file-path (compilation-marker-file-path component)))
+    (wait-for-file-deleted marker-file-path
+                           (format nil
+                                   "System `~a' is compiled by a different process. Waiting for compilation of blocking file to finish."
+                                   (asdf:component-name (asdf-system-of-component component))))
+    (unwind-protect
+         (progn
+           (close
+            (open marker-file-path
+                  :if-exists :error
+                  :if-does-not-exist :create
+                  :direction :probe))
+           (call-next-method))
+      (when (probe-file marker-file-path)
+        (delete-file marker-file-path)))))
+
+(defmethod asdf:perform :around ((op asdf:load-op) component)
+  (let ((marker-file-path (compilation-marker-file-path component)))
+    (wait-for-file-deleted marker-file-path
+                           (format nil
+                                   "System `~a' is compiled by a different process. Waiting for compilation of blocking file to finish."
+                                   (asdf:component-name (asdf-system-of-component component))))
+    (call-next-method)))
+
 (defun ros-home ()
   (or (sb-ext:posix-getenv "ROS_HOME")
       (merge-pathnames (make-pathname :directory '(:relative ".ros"))

@@ -31,7 +31,7 @@
 
 int main()
 {
-  // <WikiCodeTag(WRITE)>
+  // %Tag(WRITE)%
   rosbag::Bag bag;
   bag.open("test.bag", rosbag::bagmode::Write);
 
@@ -45,5 +45,5 @@ int main()
   bag.write("numbers", ros::Time::now(), i);
 
   bag.close();
-  // </WikiCodeTag(WRITE)>
+  // %EndTag(WRITE)%
 }

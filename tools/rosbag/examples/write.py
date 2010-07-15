@@ -1,5 +1,5 @@
 
-# <WikiCodeTag(WRITE_PY)>
+# %Tag(WRITE_PY)%
 import rosbag
 from std_msgs.msg import Int32, String
 
@@ -15,4 +15,4 @@ bag.write('chatter', str);
 bag.write('numbers', i);
 
 bag.close();
-# </WikiCodeTag(WRITE_PY)>
+# %EndTag(WRITE_PY)%

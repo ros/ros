@@ -73,6 +73,12 @@ bool IntraProcessSubscriberLink::isLatching()
 
 void IntraProcessSubscriberLink::enqueueMessage(const SerializedMessage& m, bool ser, bool nocopy)
 {
+  boost::recursive_mutex::scoped_lock lock(drop_mutex_);
+  if (dropped_)
+  {
+    return;
+  }
+
   ROS_ASSERT(subscriber_);
   subscriber_->handleMessage(m, ser, nocopy);
 }
@@ -84,12 +90,15 @@ std::string IntraProcessSubscriberLink::getTransportType()
 
 void IntraProcessSubscriberLink::drop()
 {
-  if (dropped_)
   {
-    return;
-  }
+    boost::recursive_mutex::scoped_lock lock(drop_mutex_);
+    if (dropped_)
+    {
+      return;
+    }
 
-  dropped_ = true;
+    dropped_ = true;
+  }
 
   if (subscriber_)
   {
@@ -107,6 +116,12 @@ void IntraProcessSubscriberLink::drop()
 
 void IntraProcessSubscriberLink::getPublishTypes(bool& ser, bool& nocopy, const std::type_info& ti)
 {
+  boost::recursive_mutex::scoped_lock lock(drop_mutex_);
+  if (dropped_)
+  {
+    return;
+  }
+
   subscriber_->getPublishTypes(ser, nocopy, ti);
 }
 

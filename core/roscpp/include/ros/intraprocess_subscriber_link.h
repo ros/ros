@@ -29,6 +29,8 @@
 #define ROSCPP_INTRAPROCESS_SUBSCRIBER_LINK_H
 #include "subscriber_link.h"
 
+#include <boost/thread/recursive_mutex.hpp>
+
 namespace ros
 {
 
@@ -56,6 +58,7 @@ public:
 private:
   IntraProcessPublisherLinkPtr subscriber_;
   bool dropped_;
+  boost::recursive_mutex drop_mutex_;
 };
 typedef boost::shared_ptr<IntraProcessSubscriberLink> IntraProcessSubscriberLinkPtr;
 

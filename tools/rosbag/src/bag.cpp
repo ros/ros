@@ -482,7 +482,7 @@ void Bag::writeIndexRecords() {
         header[COUNT_FIELD_NAME]      = toHeaderString(&index_size);
         writeHeader(header);
 
-        writeDataLength(index_size * sizeof(IndexEntry));
+        writeDataLength(index_size * 12);
 
         ROS_DEBUG("Writing INDEX_DATA: connection=%d ver=%d count=%d", connection_id, INDEX_VERSION, index_size);
 

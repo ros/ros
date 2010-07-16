@@ -286,11 +286,11 @@ Can also be called on a topic that we're already subscribed to - in this case, i
 
      ;; Allow the tcp server to respond to any incoming connections
      (handler-bind
-         ((simple-error #'(lambda (c)
-			    (with-mutex (*ros-lock*)
-			      (unless (eq *node-status* :running)
-				(ros-info (roslisp event-loop) "Event loop received error ~a.  Node-status is now ~a" c *node-status*)
-				(return))))))
+         ((error #'(lambda (c)
+                     (with-mutex (*ros-lock*)
+                       (unless (eq *node-status* :running)
+                         (ros-info (roslisp event-loop) "Event loop received error ~a.  Node-status is now ~a" c *node-status*)
+                         (return))))))
        (sb-sys:serve-all-events 1)))
 
   (ros-info (roslisp event-loop) "Terminating ROS Node event loop"))

@@ -68,7 +68,6 @@ def record_cmd(argv):
     parser.add_option("-b", "--buffsize",      dest="buffsize",      default=256,   type='int', action="store", help="use in internal buffer of SIZE MB (Default: %default, 0 = infinite)", metavar="SIZE")
     parser.add_option("-l", "--limit",         dest="num",           default=0,     type='int', action="store", help="only record NUM messages on each topic")
     parser.add_option("-j", "--bz2",           dest="bz2",           default=False, action="store_true",        help="use BZ2 compression")
-    #parser.add_option("-z", "--zlib",          dest="zlib",          default=False, action="store_true",        help="use ZLIB compression")
 
     (options, args) = parser.parse_args(argv)
 
@@ -472,12 +471,6 @@ def reindex_cmd(argv):
 
 def bag_op(inbag_filenames, allow_unindexed, copy_fn, op, output_dir=None, force=False, quiet=False):
     for inbag_filename in inbag_filenames:
-        # Determine output filename
-        if output_dir is None:
-            outbag_filename = inbag_filename
-        else:
-            outbag_filename = os.path.join(output_dir, os.path.split(inbag_filename)[1])
-        
         # Check we can read the file
         try:
             inbag = Bag(inbag_filename, 'r', allow_unindexed=allow_unindexed)
@@ -493,11 +486,16 @@ def bag_op(inbag_filenames, allow_unindexed, copy_fn, op, output_dir=None, force
         
         inbag.close()
 
+        # Determine filename for output bag
+        if output_dir is None:
+            outbag_filename = inbag_filename
+        else:
+            outbag_filename = os.path.join(output_dir, os.path.split(inbag_filename)[1])
+
         backup_filename = None
         if outbag_filename == inbag_filename:
             # Rename the input bag to ###.orig.###, and open for reading
-            (root, ext) = os.path.splitext(inbag_filename)
-            backup_filename = '%s.orig%s' % (root, ext)
+            backup_filename = '%s.orig%s' % os.path.splitext(inbag_filename)
             
             if not force and os.path.exists(backup_filename):
                 if not quiet:
@@ -515,11 +513,15 @@ def bag_op(inbag_filenames, allow_unindexed, copy_fn, op, output_dir=None, force
             
             source_filename = backup_filename
         else:
-            source_filename = inbag_filename
+            if copy:
+                shutil.copy(inbag_filename, outbag_filename)
+                source_filename = outbag_filename
+            else:
+                source_filename = inbag_filename
 
         try:
             inbag = Bag(source_filename, 'r', allow_unindexed=allow_unindexed)
-    
+
             # Open the output bag file for writing
             try:
                 if copy:
@@ -530,19 +532,19 @@ def bag_op(inbag_filenames, allow_unindexed, copy_fn, op, output_dir=None, force
                 print >> sys.stderr, 'ERROR writing to %s: %s' % (outbag_filename, str(ex))
                 inbag.close()
                 continue
-            
+
             # Perform the operation
             try:
                 op(inbag, outbag, quiet=quiet)
             except ROSBagException, ex:
-                print >> sys.stderr, '\nERROR operating on %s: %s' % (inbag_filename, str(ex))
+                print >> sys.stderr, '\nERROR operating on %s: %s' % (source_filename, str(ex))
                 inbag.close()
                 outbag.close()
                 continue
                 
             outbag.close()
             inbag.close()
-    
+
         except KeyboardInterrupt:
             if backup_filename is not None:
                 try:
@@ -765,4 +767,3 @@ def rosbagmain(argv=None):
             cmds['help']([cmd])
     except KeyboardInterrupt:
         pass
-    

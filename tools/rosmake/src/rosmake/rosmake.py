@@ -609,6 +609,7 @@ class RosMakeAll:
                     self.printer.print_verbose(pstd_out)
                     if command_line.returncode:
                         print >> sys.stderr, "Failed to build %s"%pkg_name
+                        print >> sys.stderr, "Error:\n{{{\n%s\n}}}"%pstd_out
                         sys.exit(-1)
                     self.printer.print_all("Finished <<< %s"%pkg)
                 except KeyboardInterrupt, ex:

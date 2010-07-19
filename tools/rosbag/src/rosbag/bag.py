@@ -701,6 +701,13 @@ class Bag(object):
     ### Internal API ###
 
     @property
+    def _has_compressed_chunks(self):
+        if not self._chunk_headers:
+            return False
+
+        return any((h.compression != Compression.NONE for h in self._chunk_headers.values()))
+
+    @property
     def _uncompressed_size(self):
         if not self._chunk_headers:
             return self.size
@@ -1336,12 +1343,12 @@ def _read_header(f, req_op=None):
         # Read size
         if len(header) < 4:
             raise ROSBagFormatException('Error reading header field')           
-        (size,) = struct.unpack("<L", header[:4])
+        (size,) = struct.unpack('<L', header[:4])
         header = header[4:]
 
         # Read bytes
         if len(header) < size:
-            raise ROSBagFormatException('Error reading header field')
+            raise ROSBagFormatException('Error reading header field: expected %d bytes, read %d' % (len(header), size))
         (name, sep, value) = header[:size].partition('=')
         if sep == '':
             raise ROSBagFormatException('Error reading header field')
@@ -1360,7 +1367,7 @@ def _read_header(f, req_op=None):
 
 def _peek_next_header_op(f):
     pos = f.tell()
-    header = _read_header(f)               
+    header = _read_header(f)
     op = _read_uint8_field(header, 'op')
     f.seek(pos)
     return op
@@ -1799,11 +1806,18 @@ class _BagReader200(_BagReader):
         self.decompressed_chunk_io  = None
 
     def reindex(self, feedback=False):
-        """Generates all bag index information by rereading the chunks."""
+        """
+        Generates all bag index information by rereading the chunks.
+        """
         f = self.bag._file
-        
+
         total_bytes = self.bag.size
-        
+
+        # Read any connection records from after the chunk section.
+        # This is to workaround a bug in rosbag record --split (fixed in r10390)
+        # where connection records weren't always being written inside the chunk.
+        self._read_terminal_connection_records()
+
         # Re-read the file header to get to the start of the first chunk
         self.bag._file.seek(self.bag._file_header_pos)
         self.read_file_header_record()
@@ -1813,16 +1827,16 @@ class _BagReader200(_BagReader):
             chunk_pos = f.tell()
             if feedback:
                 yield chunk_pos
-            
+
             op = _peek_next_header_op(f)
-            
+
             # Read the chunk header and remember it
             chunk_header = self.read_chunk_header()
-            
+
             # If the chunk header size is 0, then the chunk wasn't correctly terminated - we're done
             if chunk_header.compressed_size == 0:
                 break
-            
+
             self.bag._chunk_headers[chunk_pos] = chunk_header
 
             if chunk_header.compression == Compression.NONE:
@@ -1830,7 +1844,7 @@ class _BagReader200(_BagReader):
             else:
                 # Read the compressed chunk
                 compressed_chunk = _read(f, chunk_header.compressed_size)
-                
+
                 # Decompress it
                 if chunk_header.compression == Compression.BZ2:
                     self.decompressed_chunk = bz2.decompress(compressed_chunk)
@@ -1840,53 +1854,54 @@ class _BagReader200(_BagReader):
                 if self.decompressed_chunk_io:
                     self.decompressed_chunk_io.close()
                 self.decompressed_chunk_io = StringIO(self.decompressed_chunk)
-    
+
                 chunk_file = self.decompressed_chunk_io
 
             # Read chunk connection and message records
-            self._curr_chunk_info = None
-            
+            self.bag._curr_chunk_info = None
+
             if chunk_header.compression == Compression.NONE:
                 offset = chunk_file.tell() - chunk_pos
             else:
                 offset = chunk_file.tell()
-                
+
             while offset < chunk_header.uncompressed_size:
                 op = _peek_next_header_op(chunk_file)
-                
+
                 if op == _OP_CONNECTION:
                     connection_info = self.read_connection_record(chunk_file)
-                    self.bag._connections[connection_info.id] = connection_info
-                    
+
+                    if connection_info.id not in self.bag._connections:
+                        self.bag._connections[connection_info.id] = connection_info
                     if connection_info.id not in self.bag._connection_indexes:
                         self.bag._connection_indexes[connection_info.id] = []
-                    else:
-                        print >> sys.stderr, 'Read duplicate connection record (id=%d) in chunk at position %d' % (connection_info.id, chunk_pos)
 
                 elif op == _OP_MSG_DATA:
                     # Read the connection id and timestamp from the header
                     header = _read_header(chunk_file)
-                    
+
                     connection_id = _read_uint32_field(header, 'conn')
                     t             = _read_time_field  (header, 'time')
-                    
+
                     # Update the chunk info with this timestamp
-                    if not self._curr_chunk_info:
-                        self._curr_chunk_info = _ChunkInfo(chunk_pos, t, t)
+                    if not self.bag._curr_chunk_info:
+                        self.bag._curr_chunk_info = _ChunkInfo(chunk_pos, t, t)
                     else:
-                        if t > self._curr_chunk_info.end_time:
-                            self._curr_chunk_info.end_time = t
-                        elif t < self._curr_chunk_info.start_time:
-                            self._curr_chunk_info.start_time = t
-                    if connection_id in self._curr_chunk_info.connection_counts:
-                        self._curr_chunk_info.connection_counts[connection_id] += 1
+                        if t > self.bag._curr_chunk_info.end_time:
+                            self.bag._curr_chunk_info.end_time = t
+                        elif t < self.bag._curr_chunk_info.start_time:
+                            self.bag._curr_chunk_info.start_time = t
+                    if connection_id in self.bag._curr_chunk_info.connection_counts:
+                        self.bag._curr_chunk_info.connection_counts[connection_id] += 1
                     else:
-                        self._curr_chunk_info.connection_counts[connection_id] = 1
+                        self.bag._curr_chunk_info.connection_counts[connection_id] = 1
 
                     # Skip over the message content
                     _skip_sized(chunk_file)
 
                     # Insert the message entry (in order) into the connection index
+                    if connection_id not in self.bag._connection_indexes:
+                        raise ROSBagException('connection id (id=%d) in chunk at position %d not preceded by connection record' % (connection_id, chunk_pos))
                     bisect.insort_right(self.bag._connection_indexes[connection_id], _IndexEntry200(t, chunk_pos, offset)) 
 
                 if chunk_header.compression == Compression.NONE:
@@ -1894,14 +1909,66 @@ class _BagReader200(_BagReader):
                 else:
                     offset = chunk_file.tell()
 
-            self.bag._chunks.append(self._curr_chunk_info)
+            self.bag._chunks.append(self.bag._curr_chunk_info)
 
             # Skip over index records, connection records and chunk info records at the end of the file
-            while _peek_next_header_op(f) != _OP_CHUNK:
-                _skip_record(f)
-                
+            next_op = _peek_next_header_op(f)
+            while next_op != _OP_CHUNK:
+                if next_op == _OP_INDEX_DATA:
+                    # Bug workaround: C Turtle bags (pre-1.1.15) were written with an incorrect data length
+                    self.read_connection_index_record()
+                else:
+                    _skip_record(f)
+
                 if f.tell() >= total_bytes:
                     return
+
+                next_op = _peek_next_header_op(f)
+
+    def _read_terminal_connection_records(self):
+        b, f, r = self.bag, self.bag._file, self.bag._reader
+
+        # Seek to the first record after FILE_HEADER
+        f.seek(b._file_header_pos)
+        r.read_file_header_record()
+
+        # Advance to the first CONNECTION
+        if self._advance_to_next_record(_OP_CONNECTION):
+            # Read the CONNECTION records
+            while True:
+                connection_info = r.read_connection_record(f)
+
+                b._connections[connection_info.id] = connection_info
+                b._connection_indexes[connection_info.id] = []
+
+                next_op = _peek_next_header_op(f)
+                if next_op != _OP_CONNECTION:
+                    break
+
+    def _advance_to_next_record(self, op):
+        b, f = self.bag, self.bag._file
+
+        try:
+            while True:
+                next_op = _peek_next_header_op(f)
+                if next_op == op:
+                    break
+
+                if next_op == _OP_INDEX_DATA:
+                    # Workaround the possible invalid data length in INDEX_DATA records
+
+                    # read_connection_index_record() requires _curr_chunk_info is set
+                    if b._curr_chunk_info is None:
+                        b._curr_chunk_info = _ChunkInfo(0, rospy.Time(0, 1), rospy.Time(0, 1))
+
+                    b._reader.read_connection_index_record()
+                else:
+                    _skip_record(f)
+
+            return True
+
+        except Exception, ex:
+            return False
 
     def start_reading(self):
         try:
@@ -1914,23 +1981,24 @@ class _BagReader200(_BagReader):
     
             # Seek to the end of the chunks
             self.bag._file.seek(self.bag._index_data_pos)
-    
+
             # Read the connection records
+            self.bag._connection_indexes = {}
             for i in range(self.bag._connection_count):
                 connection_info = self.read_connection_record(self.bag._file)
                 self.bag._connections[connection_info.id] = connection_info
+                self.bag._connection_indexes[connection_info.id] = []
 
             # Read the chunk info records
             self.bag._chunks = [self.read_chunk_info_record() for i in range(self.bag._chunk_count)]
     
-            # Read the chunk headers and topic indexes
-            self.bag._connection_indexes = {}
+            # Read the chunk headers and connection indexes
             self.bag._chunk_headers = {}
             for chunk_info in self.bag._chunks:
                 self.bag._curr_chunk_info = chunk_info
 
                 self.bag._file.seek(chunk_info.pos)
-    
+
                 # Remember the chunk header
                 chunk_header = self.read_chunk_header()
                 self.bag._chunk_headers[chunk_info.pos] = chunk_header
@@ -1940,13 +2008,19 @@ class _BagReader200(_BagReader):
     
                 for i in range(len(chunk_info.connection_counts)):
                     (connection_id, index) = self.read_connection_index_record()
-                    
-                    if connection_id not in self.bag._connection_indexes:
-                        self.bag._connection_indexes[connection_id] = []
 
                     connection_index = self.bag._connection_indexes[connection_id]
                     for entry in index:
                         connection_index.append(entry)
+
+            # Remove any connections with no entries
+            # This is a workaround for a bug where connection records were being written for
+            # connections which had no messages in the bag
+            orphan_connection_ids = [id for id, index in self.bag._connection_indexes.items() if len(index) == 0]
+            for id in orphan_connection_ids:
+                del self.bag._connections[id]
+                del self.bag._connection_indexes[id]
+
         except Exception, ex:
             raise ROSBagUnindexedException()
 
@@ -2029,7 +2103,7 @@ class _BagReader200(_BagReader):
         if index_version != 1:
             raise ROSBagFormatException('expecting index version 1, got %d' % index_version)
     
-        _read_uint32(f) # skip the record data size
+        record_size = _read_uint32(f) # skip the record data size
 
         index = []
                 

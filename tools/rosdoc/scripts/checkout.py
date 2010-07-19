@@ -5,6 +5,7 @@ USAGE = 'checkout.py <rosbrowse_repos_list> <rosdoc_repos_list>'
 import fileinput
 import sys
 import os
+import traceback
 
 import roslib.vcs
 
@@ -39,7 +40,13 @@ def load_rosdoc_list(fn, all_repos):
 def checkout_repos(repos):
   for key in repos:
     vcs, url = repos[key]
-    roslib.vcs.checkout(vcs, url, key)
+    try:
+      roslib.vcs.checkout(vcs, url, key)
+    except:
+      # soft-fail. This happens way too often with so many diverse
+      # repos. Failure in this case usually just means that the
+      # checkout is stale as there is often already a copy
+      traceback.print_exc()
 
 def write_setup_file(repos):
   str = 'export ROS_PACKAGE_PATH='

@@ -62,12 +62,39 @@ class _Service(object):
         self.response_class = service_class._response_class
         self.uri = None #initialize attr
 
+class RegistrationListeners(object):
+    """
+    Basic API for fetching list of registration listeners. This API
+    enables higher-level code to override ServiceManager behavior.
+    """
+    def get_listeners(self):
+        """
+        Get the current list of registration listeners
+        """
+        pass
+    
+class _DefaultListeners(RegistrationListeners):
+    def __init__(self):
+        pass
+    
+    def get_listeners(self):
+        return get_registration_listeners()
+        
 class ServiceManager(object):
     """Keeps track of currently registered services in the ROS system"""
-    def __init__(self):
-        """ctor"""
+    
+    def __init__(self, registration_listeners=None):
+        """
+        ctor
+        @param registration_listeners: override default registration listener manager.
+        @type  registration_listeners: RegistrationListeners
+        """
         self.map = {} # {name : Service}
         self.lock = threading.RLock()
+        if registration_listeners is None:
+            self.registration_listeners = _DefaultListeners()
+        else:
+            self.registration_listeners = registration_listeners            
 
     def get_services(self):
         """
@@ -99,17 +126,14 @@ class ServiceManager(object):
         @type  service: L{_Service}
         """
         err = None
-        try:
-            self.lock.acquire()
+        with self.lock:
             if resolved_service_name in self.map:
                 err = "service [%s] already registered"%resolved_service_name
             else:
                 self.map[resolved_service_name] = service
                 
             # NOTE: this call can potentially take a long time under lock and thus needs to be reimplmented
-            get_registration_listeners().notify_added(resolved_service_name, service.uri, Registration.SRV)
-        finally:
-            self.lock.release()
+            self.registration_listeners.get_listeners().notify_added(resolved_service_name, service.uri, Registration.SRV)
 
         if err:
             raise ServiceException(err)
@@ -122,16 +146,13 @@ class ServiceManager(object):
         @param service: service implementation
         @type  service: L{_Service}
         """        
-        try:
-            self.lock.acquire()
+        with self.lock:
             curr = self.map.get(resolved_service_name, None)
             if curr == service:
                 del self.map[resolved_service_name]
                 
             # NOTE: this call can potentially take a long time under lock
-            get_registration_listeners().notify_removed(resolved_service_name, service.uri, Registration.SRV)                
-        finally:
-            self.lock.release()
+            self.registration_listeners.get_listeners().notify_removed(resolved_service_name, service.uri, Registration.SRV)                
 
     def get_service(self, resolved_service_name):
         """

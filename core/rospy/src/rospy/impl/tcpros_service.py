@@ -205,6 +205,12 @@ def service_connection_handler(sock, client_addr, header):
     else:
         logger.debug("connection from %s:%s", client_addr[0], client_addr[1])
         service_name = header['service']
+        
+        #TODO: make service manager configurable. I think the right
+        #thing to do is to make these singletons private members of a
+        #Node instance and enable rospy to have multiple node
+        #instances.
+        
         sm = get_service_manager()
         md5sum = header['md5sum']
         service = sm.get_service(service_name)
@@ -558,6 +564,8 @@ class Service(_Service):
         self.protocol = TCPService(self.resolved_name, service_class, self.buff_size)
 
         logdebug("[%s]: new Service instance"%self.resolved_name)
+
+        #TODO: make service manager configurable
         get_service_manager().register(self.resolved_name, self)
 
     # TODO: should consider renaming to unregister
@@ -571,6 +579,7 @@ class Service(_Service):
         self.done = True
         logdebug('[%s].shutdown: reason [%s]'%(self.resolved_name, reason))
         try:
+            #TODO: make service manager configurable            
             get_service_manager().unregister(self.resolved_name, self)
         except Exception, e:
             logerr("Unable to unregister with master: "+traceback.format_exc())

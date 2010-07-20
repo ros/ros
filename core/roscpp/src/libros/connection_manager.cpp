@@ -33,6 +33,7 @@
 #include "ros/transport/transport_tcp.h"
 #include "ros/transport/transport_udp.h"
 #include "ros/file_log.h"
+#include "ros/network.h"
 
 #include <ros/assert.h>
 
@@ -72,9 +73,9 @@ void ConnectionManager::start()
 
   // Bring up the TCP listener socket
   tcpserver_transport_ = TransportTCPPtr(new TransportTCP(&poll_manager_->getPollSet()));
-  if (!tcpserver_transport_->listen(0, MAX_TCPROS_CONN_QUEUE, boost::bind(&ConnectionManager::tcprosAcceptConnection, this, _1)))
+  if (!tcpserver_transport_->listen(network::getTCPROSPort(), MAX_TCPROS_CONN_QUEUE, boost::bind(&ConnectionManager::tcprosAcceptConnection, this, _1)))
   {
-    ROS_FATAL("Listen failed");
+    ROS_FATAL("Listen on port [%d] failed", network::getTCPROSPort());
     ROS_BREAK();
   }
 

@@ -472,7 +472,7 @@ void TimerManager<T, D, E>::threadFunc()
         {
           current = T::now();
 
-          ROS_DEBUG("Scheduling timer callback for timer [%d] of period [%f], [%f] off expected", info->handle, info->period.toSec(), (current - info->next_expected).toSec());
+          //ROS_DEBUG("Scheduling timer callback for timer [%d] of period [%f], [%f] off expected", info->handle, info->period.toSec(), (current - info->next_expected).toSec());
           CallbackInterfacePtr cb(new TimerQueueCallback(this, info, info->last_expected, info->last_real, info->next_expected));
           info->callback_queue->addCallback(cb, (uint64_t)info.get());
 

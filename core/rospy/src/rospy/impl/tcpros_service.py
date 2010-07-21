@@ -508,39 +508,13 @@ class ServiceProxy(_Service):
         if self.transport is not None:
             self.transport.close()
 
-class Service(_Service):
+class ServiceImpl(_Service):
     """
-    Declare a ROS service. Service requests are passed to the
-    specified handler. 
-
-    Service Usage::
-      s = Service('getmapservice', GetMap, get_map_handler)
+    Implementation of ROS Service. This intermediary class allows for more configuration of behavior than the Service class.
     """
-
+    
     def __init__(self, name, service_class, handler, buff_size=DEFAULT_BUFF_SIZE):
-        """
-        ctor.
-        @param name: service name
-        @type  name: str
-        @param service_class: ServiceDefinition class
-        @type  service_class: ServiceDefinition class
-        
-        @param handler: callback function for processing service
-        request. Function takes in a ServiceRequest and returns a
-        ServiceResponse of the appropriate type. Function may also
-        return a list, tuple, or dictionary with arguments to initialize
-        a ServiceResponse instance of the correct type.
-
-        If handler cannot process request, it may either return None,
-        to indicate failure, or it may raise a rospy.ServiceException
-        to send a specific error message to the client. Returning None
-        is always considered a failure.
-        
-        @type  handler: fn(req)->resp
-        @param buff_size: size of buffer for reading incoming requests. Should be at least size of request message
-        @type  buff_size: int
-        """
-        super(Service, self).__init__(name, service_class)
+        super(ServiceImpl, self).__init__(name, service_class)
 
         if not name or not isinstance(name, basestring):
             raise ValueError("service name is not a non-empty string")
@@ -564,9 +538,6 @@ class Service(_Service):
         self.protocol = TCPService(self.resolved_name, service_class, self.buff_size)
 
         logdebug("[%s]: new Service instance"%self.resolved_name)
-
-        #TODO: make service manager configurable
-        get_service_manager().register(self.resolved_name, self)
 
     # TODO: should consider renaming to unregister
     
@@ -662,3 +633,41 @@ class Service(_Service):
                 logdebug("service[%s]: transport terminated"%self.resolved_name)
                 handle_done = True
         transport.close()
+
+
+class Service(ServiceImpl):
+    """
+    Declare a ROS service. Service requests are passed to the
+    specified handler. 
+
+    Service Usage::
+      s = Service('getmapservice', GetMap, get_map_handler)
+    """
+    
+    def __init__(self, name, service_class, handler, buff_size=DEFAULT_BUFF_SIZE):
+        """
+        ctor.
+        @param name: service name
+        @type  name: str
+        @param service_class: ServiceDefinition class
+        @type  service_class: ServiceDefinition class
+        
+        @param handler: callback function for processing service
+        request. Function takes in a ServiceRequest and returns a
+        ServiceResponse of the appropriate type. Function may also
+        return a list, tuple, or dictionary with arguments to initialize
+        a ServiceResponse instance of the correct type.
+
+        If handler cannot process request, it may either return None,
+        to indicate failure, or it may raise a rospy.ServiceException
+        to send a specific error message to the client. Returning None
+        is always considered a failure.
+        
+        @type  handler: fn(req)->resp
+        @param buff_size: size of buffer for reading incoming requests. Should be at least size of request message
+        @type  buff_size: int
+        """
+        super(Service, self).__init__(name, service_class, handler, buff_size)
+
+        #TODO: make service manager configurable
+        get_service_manager().register(self.resolved_name, self)

@@ -168,7 +168,7 @@ class TCPServer(object):
         binding to loopback interface.
         """
         server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        
+        server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_sock.bind((roslib.network.get_bind_address(), self.port))
         (self.addr, self.port) = server_sock.getsockname()
         server_sock.listen(5)

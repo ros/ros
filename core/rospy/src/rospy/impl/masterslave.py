@@ -72,8 +72,6 @@ from rospy.impl.paramserver import get_param_server_cache
 from rospy.impl.registration import RegManager, get_topic_manager
 from rospy.impl.validators import non_empty, ParameterInvalid
 
-NUM_WORKERS = 3 #number of threads we use to send publisher_update notifications
-
 # Return code slots
 STATUS = 0
 MSG = 1

@@ -96,7 +96,7 @@ class TestRospyRegistration(unittest.TestCase):
         l.reg_removed('name', 'data_type', 'reg_type')
         
     def test_RegistrationListeners(self):
-        from rospy.impl.registration import _RegistrationListeners, RegistrationListener
+        from rospy.impl.registration import RegistrationListeners, RegistrationListener
 
         class Mock(RegistrationListener):
             def __init__(self):
@@ -111,7 +111,7 @@ class TestRospyRegistration(unittest.TestCase):
             def reg_removed(self, name, data_type_or_uri, reg_type):
                 raise Exception("haha!")                
 
-        r = _RegistrationListeners()
+        r = RegistrationListeners()
         self.assertEquals([], r.listeners)
 
         try:
@@ -162,9 +162,9 @@ class TestRospyRegistration(unittest.TestCase):
         self.assertEquals(['removed', 'n4', 'dtype4', 'rtype4'], l1.args)
         
     def test_get_registration_listeners(self):
-        from rospy.impl.registration import _RegistrationListeners, get_registration_listeners
+        from rospy.impl.registration import RegistrationListeners, get_registration_listeners
         r = get_registration_listeners()
-        self.assert_(isinstance(r, _RegistrationListeners))
+        self.assert_(isinstance(r, RegistrationListeners))
 
     def test_RegManager(self):
         from rospy.impl.registration import RegManager

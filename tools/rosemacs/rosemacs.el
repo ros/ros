@@ -124,7 +124,7 @@
 (defvar ros-topic-hertz-processes nil "Alist from topic name to process running rostopic hz on that topic")
 (defvar ros-topic-publication-rates nil "Hash table from topic name to hertz rate of that topic")
 (defvar ros-topic-last-hz-rate nil "Alist from topic name to last time we saw output from rostopic hz")
-(defvar ros-topic-buffer nil "Holds the buffer *ros-topics* if it exists")
+(defvar ros-topic-buffer (get-buffer-create "*ros-topics*") "Holds the buffer *ros-topics* if it exists")
 (defvar ros-events-buffer (get-buffer-create "*ros-events*"))
 (defvar ros-hz-topic-regexps nil "If a topic name matches one of these, it is hz tracked")
 (defvar ros-topic-timer nil "If non-nil, equals timer object used to schedule calls to rostopic list")
@@ -139,6 +139,7 @@
 
 (defvar ros-buffer-package nil "A buffer-local variable for caching the current buffer's ros package.")
 (make-variable-buffer-local 'ros-buffer-package)
+(with-current-buffer ros-topic-buffer (insert "Uninitialized (use the display-ros-topic-info command rather than just switching to this buffer)"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Preloading
@@ -676,7 +677,8 @@ parameter."
     (when (> interval 0)
       (let ((proc (start-process name name (concat rosemacs/pathname "poll-rostopic")  (format "%s" interval))))
         (set-process-query-on-exit-flag proc nil)
-        (set-process-filter proc 'rosemacs-topic-filter)))))
+        (set-process-filter proc 'rosemacs-topic-filter))
+      )))
 
 (defun display-ros-topic-info ()
   "Display current ros topic info in *ros-topics* buffer"

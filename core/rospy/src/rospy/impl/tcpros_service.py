@@ -161,7 +161,12 @@ def convert_return_to_response(response, response_class):
     4. If the return type is a list/tuple type, it is used as a args-style
     initialization for a new response instance.
     """
-    if isinstance(response, response_class):
+
+    # use this declared ROS type check instead of a direct instance
+    # check, which allows us to play tricks with serialization and
+    # deserialization
+    if isinstance(response, roslib.message.Message) and response._type == response_class._type:
+    #if isinstance(response, response_class):
         return response
     elif type(response) == dict:
         # kwds response
@@ -420,7 +425,11 @@ class ServiceProxy(_Service):
         """
         if not isinstance(request, roslib.message.Message):
             raise TypeError("request object is not a valid request message instance")
-        if not self.request_class == request.__class__:
+        # in order to support more interesting overrides, we only
+        # check that it declares the same ROS type instead of a
+        # stricter class check
+        #if not self.request_class == request.__class__:
+        if not self.request_class._type == request._type:
             raise TypeError("request object type [%s] does not match service type [%s]"%(request.__class__, self.request_class))
 
         #TODO: subscribe to service changes

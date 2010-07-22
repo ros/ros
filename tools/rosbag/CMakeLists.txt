@@ -27,6 +27,9 @@ target_link_libraries(record rosbag)
 rosbuild_add_executable(play src/play.cpp)
 target_link_libraries(play rosbag)
 
+#rosbuild_add_executable(example_write examples/write.cpp)
+#target_link_libraries(example_write rosbag)
+
 INSTALL(TARGETS record play
         RUNTIME DESTINATION $ENV{ROS_ROOT}/bin)
 

@@ -270,5 +270,11 @@ Used if you want a callback function for a topic that just stores the message in
     (string type)
     (symbol (ros-datatype type))))
 
-
-
+(defun make-service-symbol (type-string)
+  (let ((pkg (find-package
+              (string-upcase (concatenate 'string
+                                          (subseq type-string 0 (position #\/ type-string))
+                                          "-srv"))))
+        (msg-name (string-upcase (subseq type-string (1+ (position #\/ type-string))))))
+    (assert pkg () "Service-package not found. Maybe it is not loaded?")
+    (nth-value 0 (intern msg-name pkg))))

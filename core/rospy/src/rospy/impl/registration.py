@@ -34,6 +34,8 @@
 
 """Internal use: handles maintaining registrations with master via internal listener APIs"""
 
+from __future__ import with_statement
+
 import socket
 import sys
 import logging
@@ -96,7 +98,7 @@ class RegistrationListener(object):
         """
         pass
 
-class _RegistrationListeners(object):
+class RegistrationListeners(object):
     
     def __init__(self):
         """
@@ -114,11 +116,8 @@ class _RegistrationListeners(object):
         @type  l: TopicListener
         """
         assert isinstance(l, RegistrationListener)
-        try:
-            self.lock.acquire()
+        with self.lock:
             self.listeners.append(l)
-        finally:
-            self.lock.release()
 
     def notify_removed(self, resolved_name, data_type_or_uri, reg_type):
         """
@@ -129,15 +128,12 @@ class _RegistrationListeners(object):
         @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
         @type  reg_type: str
         """
-        try:
-            self.lock.acquire()
+        with self.lock:
             for l in self.listeners:
                 try:
                     l.reg_removed(resolved_name, data_type_or_uri, reg_type)
                 except Exception, e:
                     logerr("error notifying listener of removal: %s"%traceback.format_exc(e))
-        finally:
-            self.lock.release()
             
     def notify_added(self, resolved_name, data_type, reg_type):
         """
@@ -148,17 +144,14 @@ class _RegistrationListeners(object):
         @param reg_type: Valid values are L{Registration.PUB}, L{Registration.SUB}, L{Registration.SRV}
         @type  reg_type: str
         """
-        try:
-            self.lock.acquire()
+        with self.lock:
             for l in self.listeners:
                 try:
                     l.reg_added(resolved_name, data_type, reg_type)
                 except Exception, e:
                     logerr(traceback.format_exc(e))
-        finally:
-            self.lock.release()
             
-_registration_listeners = _RegistrationListeners()
+_registration_listeners = RegistrationListeners()
 def get_registration_listeners():
     return _registration_listeners
 

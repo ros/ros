@@ -5,11 +5,7 @@
 # Each line is a key into rosbrowse/repos, which has a list of keys and
 # URIs
 ros
-ros_stacks
-ros-pkg
-ros-pkg-trunk
 wg-ros-pkg
-wg-ros-pkg-trunk
 #
 #sail
 #cmu
@@ -38,3 +34,5 @@ rice
 robotino
 ccny
 berkeley
+dfki-sks
+isr-uc

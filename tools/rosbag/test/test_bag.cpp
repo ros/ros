@@ -146,6 +146,25 @@ TEST_F(BagTest, different_writes) {
     b1.close();
 }
 
+TEST_F(BagTest, reopen_works) {
+    rosbag::Bag b;
+
+    std::string filename1("/tmp/reopen_works1.bag");
+    b.open(filename1, rosbag::bagmode::Write);
+    b.write("chatter", ros::Time::now(), foo_);
+    b.write("numbers", ros::Time::now(), i_);
+    b.close();
+
+    std::string filename2("/tmp/reopen_works1.bag");
+    b.open(filename2, rosbag::bagmode::Write);
+    b.write("chatter", ros::Time::now(), foo_);
+    b.write("numbers", ros::Time::now(), i_);
+    b.close();
+
+    checkContents(filename1);
+    checkContents(filename2);
+}
+
 TEST_F(BagTest, bag_not_open_fails) {
     rosbag::Bag b;
     try

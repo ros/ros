@@ -180,25 +180,28 @@ or
 call-service SERVICE-NAME SERVICE-TYPE REQUEST-OBJECT (happens iff length(ARGS) is 1)
 
 SERVICE-NAME - a string that is the ROS name of the service, e.g., my_namespace/my_srv
-SERVICE-TYPE - symbol naming the Lisp type of the service (the basename of the .srv file), e.g. 'AddTwoInts
+SERVICE-TYPE - symbol or string naming the Lisp type (the basename of the .srv file), e.g. 'AddTwoInts, or the fully qualified type of the service, e.g. \"test_ros/AddTwoInts\"
 REQUEST-ARGS - initialization arguments that would be used when calling make-instance to create a request object.  
 REQUEST-OBJECT - the request object itself
 
 Returns the response object from the service."
 
-  (declare (string service-name) (symbol service-type))
+  (declare (string service-name) ((or symbol string) service-type))
   (ensure-node-is-running)
-  (let ((response-type (service-response-type service-type)))
+  (let* ((service-type (etypecase service-type
+                         (symbol service-type)
+                         (string (make-service-symbol service-type))))
+         (response-type (service-response-type service-type)))
     (with-fully-qualified-name service-name
       (mvbind (host port) (parse-rosrpc-uri (lookup-service service-name))
-	;; No error checking: lookup service should signal an error if there are problems
+        ;; No error checking: lookup service should signal an error if there are problems
 
-	(let ((obj (if (= 1 (length request-args))
-		       (first request-args)
-		       (apply #'make-service-request service-type request-args))))
+        (let ((obj (if (= 1 (length request-args))
+                       (first request-args)
+                       (apply #'make-service-request service-type request-args))))
 
-	  (ros-debug (roslisp call-service) "Calling service at host ~a and port ~a with ~a" host port obj)
-	  (tcpros-call-service host port service-name obj response-type))))))
+          (ros-debug (roslisp call-service) "Calling service at host ~a and port ~a with ~a" host port obj)
+          (tcpros-call-service host port service-name obj response-type))))))
     
 
 (defun wait-for-service (service-name &optional timeout)
@@ -208,17 +211,17 @@ Blocks until a service with this name is known to the ROS Master (unlike roscpp,
 TIMEOUT, if specified and non-nil, is the maximum (wallclock) time to wait for.  If we time out, returns false."
   (ensure-node-is-running)
   (let* ((first-time t)
-	  (timed-out
-	   (nth-value 
-	    1 (spin-until (handler-case (progn (lookup-service service-name) t)
-			    (ros-rpc-error (c) (declare (ignore c)) nil))
-			  (.1 timeout)
-			  (when first-time
-			    (setq first-time nil)
-			    (ros-debug (roslisp wait-for-service) "Waiting for service ~a" service-name))))))
-     (ros-debug (roslisp wait-for-service) (not timed-out) "Found service ~a" service-name)
-     (ros-debug (roslisp wait-for-service) timed-out "Timed out waiting for service ~a" service-name)
-     (not timed-out)))
+         (timed-out
+          (nth-value 
+           1 (spin-until (handler-case (progn (lookup-service service-name) t)
+                           (ros-rpc-error (c) (declare (ignore c)) nil))
+                 (.1 timeout)
+               (when first-time
+                 (setq first-time nil)
+                 (ros-debug (roslisp wait-for-service) "Waiting for service ~a" service-name))))))
+    (ros-debug (roslisp wait-for-service) (not timed-out) "Found service ~a" service-name)
+    (ros-debug (roslisp wait-for-service) timed-out "Timed out waiting for service ~a" service-name)
+    (not timed-out)))
       
 
 
@@ -283,11 +286,11 @@ Can also be called on a topic that we're already subscribed to - in this case, i
 
      ;; Allow the tcp server to respond to any incoming connections
      (handler-bind
-         ((simple-error #'(lambda (c)
-			    (with-mutex (*ros-lock*)
-			      (unless (eq *node-status* :running)
-				(ros-info (roslisp event-loop) "Event loop received error ~a.  Node-status is now ~a" c *node-status*)
-				(return))))))
+         ((error #'(lambda (c)
+                     (with-mutex (*ros-lock*)
+                       (unless (eq *node-status* :running)
+                         (ros-info (roslisp event-loop) "Event loop received error ~a.  Node-status is now ~a" c *node-status*)
+                         (return))))))
        (sb-sys:serve-all-events 1)))
 
   (ros-info (roslisp event-loop) "Terminating ROS Node event loop"))

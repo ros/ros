@@ -79,6 +79,17 @@ public:
   {}
 };
 
+/**
+ * \brief Thrown when an invalid port is specified
+ */
+class InvalidPortException : public ros::Exception
+{
+public:
+  InvalidPortException(const std::string& msg)
+  : Exception(msg)
+  {}
+};
+
 } // namespace ros
 
 #endif

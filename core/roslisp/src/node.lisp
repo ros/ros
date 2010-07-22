@@ -41,9 +41,9 @@
 
 
 (defun start-ros-node (name &key (xml-rpc-port 8001 xml-port-supp) (pub-server-port 7001 pub-port-supp) 
-		       (master-uri (make-uri "127.0.0.1" 11311) master-supplied) 
-		       (anonymous nil) (cmd-line-args (rest sb-ext:*posix-argv*))
-		       &allow-other-keys)
+                       (master-uri (make-uri "127.0.0.1" 11311) master-supplied) 
+                       (anonymous nil) (cmd-line-args (rest sb-ext:*posix-argv*))
+                       &allow-other-keys)
   "Start up the ROS Node with the given name and master URI.  Reset any stored state left over from previous invocations.
 
 MASTER-URI is either a string of the form http://foo:12345, or an object created using make-uri.  If MASTER-URI is not provided, use *default-master-uri*, and if that's nil (which it will be unless client code sets it), use the value of environment variable ROS_MASTER_URI.
@@ -79,15 +79,15 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
     (unless master-supplied      
       (setq master-uri (or *default-master-uri* (sb-ext:posix-getenv "ROS_MASTER_URI")))
       (unless (and (stringp master-uri) (> (length master-uri) 0))
-	(error "Master uri needs to be supplied either as an argument to start-ros-node, or through the environment variable ROS_MASTER_URI, or by setting the lisp variable *default-master-uri*")))
+        (error "Master uri needs to be supplied either as an argument to start-ros-node, or through the environment variable ROS_MASTER_URI, or by setting the lisp variable *default-master-uri*")))
 
     (when (stringp master-uri)
       (mvbind (address port) (parse-uri master-uri)
-	(setq master-uri (make-uri address port))))
+        (setq master-uri (make-uri address port))))
 
     (symbol-macrolet ((address (uri-address master-uri)))
       (unless (parse-string-ip-address address)
-	(setf address (ip-address-string (lookup-hostname-ip-address address)))))
+        (setf address (ip-address-string (lookup-hostname-ip-address address)))))
 
     (setq *master-uri* master-uri)
     
@@ -113,11 +113,11 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
       (sb-thread:make-thread 
        #'(lambda ()
 
-	   (when (eq *node-status* :running) 
-	     (error "Can't start node as status already equals running.  Call shutdown-ros-node first."))
+           (when (eq *node-status* :running) 
+             (error "Can't start node as status already equals running.  Call shutdown-ros-node first."))
 
 
-	   ;; Start publication and xml-rpc servers.  
+           ;; Start publication and xml-rpc servers.  
            (mvbind (srv sock) (start-xml-rpc-server :port 0)
              (setq *xml-server* srv
                    xml-rpc-port (nth-value 1 (sb-bsd-sockets:socket-name sock))))
@@ -128,20 +128,22 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
                  pub-server-port (nth-value 1 (sb-bsd-sockets:socket-name *tcp-server*)))
            (ros-debug (roslisp top) "Started tcpros server on port ~a" pub-server-port)
 
-  
-	   (setq *tcp-server-port* pub-server-port
-		 *broken-socket-streams* (make-hash-table :test #'eq)
-		 *service-uri* (format nil "rosrpc://~a:~a" *tcp-server-hostname* *tcp-server-port*)
-		 *xml-rpc-caller-api* (format nil "http://~a:~a" (hostname) xml-rpc-port)
-		 *publications* (make-hash-table :test #'equal)
-		 *subscriptions* (make-hash-table :test #'equal)
-		 *services* (make-hash-table :test #'equal)
-		 *node-status* :running
+           
+           (setq *tcp-server-port* pub-server-port
+                 *broken-socket-streams* (make-hash-table :test #'eq)
+                 *service-uri* (format nil "rosrpc://~a:~a" *tcp-server-hostname* *tcp-server-port*)
+                 *xml-rpc-caller-api* (format nil "http://~a:~a" (hostname) xml-rpc-port)
+                 *publications* (make-hash-table :test #'equal)
+                 *subscriptions* (make-hash-table :test #'equal)
+                 *services* (make-hash-table :test #'equal)
+                 *node-status* :running
                  *deserialization-threads* nil
-		 )
+                 )
 
-	   ;; Finally, start the serve-event loop
-	   (event-loop))
+           (pushnew #'maybe-shutdown-ros-node sb-ext:*exit-hooks*)
+
+           ;; Finally, start the serve-event loop
+           (event-loop))
        :name "ROSLisp event loop")
 
       ;; There's no race condition - if this test and the following advertise call all happen before the event-loop starts,
@@ -156,7 +158,7 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
     (when *use-sim-time*
       (setq *last-clock* nil)
       (subscribe "/clock" "roslib/Clock" #'(lambda (m) (setq *last-clock* m))
-		 :max-queue-length 5))
+                 :max-queue-length 5))
 
     ;; Advertise reset-debug-levels service
     (register-service-fn "~reset_debug_levels" #'reset-debug-levels 'Empty)
@@ -175,12 +177,12 @@ Assuming spin is not true, this call will return the return value of the final s
   (dbind (name &rest a &key spin &allow-other-keys) args
     (declare (ignorable name a))
     `(unwind-protect
-	  (restart-case 
-	      (progn
-		(start-ros-node ,@args)
-		,@body
-		,@(when spin `((spin-until nil 100))))
-	    (shutdown-ros-node (&optional a) (ros-info (roslisp top) "About to shutdown~:[~; due to condition ~:*~a~]" a)))
+          (restart-case 
+              (progn
+                (start-ros-node ,@args)
+                ,@body
+                ,@(when spin `((spin-until nil 100))))
+            (shutdown-ros-node (&optional a) (ros-info (roslisp top) "About to shutdown~:[~; due to condition ~:*~a~]" a)))
        (shutdown-ros-node))))
 
 
@@ -235,4 +237,7 @@ Assuming spin is not true, this call will return the return value of the final s
       (close *ros-log-stream*)
       (when *running-from-command-line* (sb-ext:quit)))))
 
+(defun maybe-shutdown-ros-node ()
+  (unless (eq *node-status* :shutdown)
+    (shutdown-ros-node)))
 

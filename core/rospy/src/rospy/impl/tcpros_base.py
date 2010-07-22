@@ -168,7 +168,7 @@ class TCPServer(object):
         binding to loopback interface.
         """
         server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        
+        server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_sock.bind((roslib.network.get_bind_address(), self.port))
         (self.addr, self.port) = server_sock.getsockname()
         server_sock.listen(5)
@@ -239,14 +239,18 @@ class TCPROSServer(object):
         # should be set to fn(sock, client_addr, header) for service connections        
         self.service_connection_handler = _error_connection_handler
         
-    def start_server(self):
-        """Starts the TCP socket server if one is not already running"""
+    def start_server(self, port=0):
+        """
+        Starts the TCP socket server if one is not already running
+        @param port: port number to bind to (default 0/any)
+        @type  port: int
+        """
         if self.tcp_ros_server:
             return
         with self.lock:
             try:
                 if not self.tcp_ros_server:
-                    self.tcp_ros_server = TCPServer(self._tcp_server_callback, 0) #bind to any port
+                    self.tcp_ros_server = TCPServer(self._tcp_server_callback, port) 
                     self.tcp_ros_server.start()
             except Exception, e:
                 self.tcp_ros_server = None

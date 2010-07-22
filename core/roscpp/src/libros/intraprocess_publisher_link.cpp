@@ -79,12 +79,15 @@ void IntraProcessPublisherLink::setPublisher(const IntraProcessSubscriberLinkPtr
 
 void IntraProcessPublisherLink::drop()
 {
-  if (dropped_)
   {
-    return;
-  }
+    boost::recursive_mutex::scoped_lock lock(drop_mutex_);
+    if (dropped_)
+    {
+      return;
+    }
 
-  dropped_ = true;
+    dropped_ = true;
+  }
 
   if (publisher_)
   {
@@ -102,6 +105,12 @@ void IntraProcessPublisherLink::drop()
 
 void IntraProcessPublisherLink::handleMessage(const SerializedMessage& m, bool ser, bool nocopy)
 {
+  boost::recursive_mutex::scoped_lock lock(drop_mutex_);
+  if (dropped_)
+  {
+    return;
+  }
+
   stats_.bytes_received_ += m.num_bytes;
   stats_.messages_received_++;
 
@@ -120,6 +129,14 @@ std::string IntraProcessPublisherLink::getTransportType()
 
 void IntraProcessPublisherLink::getPublishTypes(bool& ser, bool& nocopy, const std::type_info& ti)
 {
+  boost::recursive_mutex::scoped_lock lock(drop_mutex_);
+  if (dropped_)
+  {
+    ser = false;
+    nocopy = false;
+    return;
+  }
+
   SubscriptionPtr parent = parent_.lock();
   if (parent)
   {

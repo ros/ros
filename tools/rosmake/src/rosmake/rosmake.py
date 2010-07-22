@@ -45,6 +45,7 @@ import roslib.rosenv
 import roslib.stacks
 import threading
 import math
+import signal
 
 from operator import itemgetter
 
@@ -359,6 +360,13 @@ class RosMakeAll:
         build_passed = build_queue.succeeded() and all_pkgs_passed
         return build_passed
 
+    # This function taken from
+    # http://www.chiark.greenend.org.uk/ucgi/~cjwatson/blosxom/2009-07-02-python-sigpipe.html
+    def _subprocess_setup(self):
+        # Python installs a SIGPIPE handler by default. This is usually not
+        # what non-Python subprocesses expect.
+	signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
     def _build_package(self, package, argument=None):
         """
         Lower-level routine for building a package. Handles execution of actual build command.
@@ -375,7 +383,7 @@ class RosMakeAll:
         if argument:
             cmd[-1] += argument
         self.printer.print_full_verbose (cmd)
-        command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, env=local_env)
+        command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, env=local_env, preexec_fn=self._subprocess_setup)
         (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
         return (command_line.returncode, pstd_out)
 
@@ -572,7 +580,7 @@ class RosMakeAll:
                     test_time = self.profile["test"][key]
                 
                     
-            output = output + "%3d: %s in %d:%.2f %s in %.2f --- %s\n"% (count, build_results[build_result], math.floor(build_time/60), build_time%60 , test_results[test_result], test_time, key)
+            output = output + "%3d: %s in %.2f %s in %.2f --- %s\n"% (count, build_results[build_result], build_time , test_results[test_result], test_time, key)
             total = total + build_time
             count = count + 1
 
@@ -601,6 +609,7 @@ class RosMakeAll:
                     self.printer.print_verbose(pstd_out)
                     if command_line.returncode:
                         print >> sys.stderr, "Failed to build %s"%pkg_name
+                        print >> sys.stderr, "Error:\n{{{\n%s\n}}}"%pstd_out
                         sys.exit(-1)
                     self.printer.print_all("Finished <<< %s"%pkg)
                 except KeyboardInterrupt, ex:

@@ -62,7 +62,9 @@ class Gentoo(roslib.os_detect.Gentoo, rosdep.base_rosdep.RosdepBaseOS):
             return packages
 
     def generate_package_install_command(self, packages, default_yes):
-        if equery_available():
+        if len(packages) == 0:
+            return "# Package prerequisites satisfied - nothing to do"
+        elif equery_available():
             return "#Packages\nsudo emerge " + ' '.join(packages)
         else:
 	    return "#Packages\nsudo emerge -u " + ' '.join(packages)

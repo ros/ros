@@ -9,7 +9,7 @@
         args="output input1 input2"/>
   <node pkg="topic_tools" type="mux_select" name="mux_select" 
         args="mux /input2"/>
-  <test test-name="switch_mux_hztest_explicit" pkg="rostest" type="hztest">
+  <test test-name="switch_mux_leading_slash_hztest_explicit" pkg="rostest" type="hztest">
     <param name="topic" value="output"/>
     <param name="hz" value="5.0"/>
     <param name="hzerror" value="0.5"/>

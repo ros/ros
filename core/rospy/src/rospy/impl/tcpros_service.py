@@ -161,7 +161,12 @@ def convert_return_to_response(response, response_class):
     4. If the return type is a list/tuple type, it is used as a args-style
     initialization for a new response instance.
     """
-    if isinstance(response, response_class):
+
+    # use this declared ROS type check instead of a direct instance
+    # check, which allows us to play tricks with serialization and
+    # deserialization
+    if isinstance(response, roslib.message.Message) and response._type == response_class._type:
+    #if isinstance(response, response_class):
         return response
     elif type(response) == dict:
         # kwds response
@@ -205,6 +210,12 @@ def service_connection_handler(sock, client_addr, header):
     else:
         logger.debug("connection from %s:%s", client_addr[0], client_addr[1])
         service_name = header['service']
+        
+        #TODO: make service manager configurable. I think the right
+        #thing to do is to make these singletons private members of a
+        #Node instance and enable rospy to have multiple node
+        #instances.
+        
         sm = get_service_manager()
         md5sum = header['md5sum']
         service = sm.get_service(service_name)
@@ -414,7 +425,11 @@ class ServiceProxy(_Service):
         """
         if not isinstance(request, roslib.message.Message):
             raise TypeError("request object is not a valid request message instance")
-        if not self.request_class == request.__class__:
+        # in order to support more interesting overrides, we only
+        # check that it declares the same ROS type instead of a
+        # stricter class check
+        #if not self.request_class == request.__class__:
+        if not self.request_class._type == request._type:
             raise TypeError("request object type [%s] does not match service type [%s]"%(request.__class__, self.request_class))
 
         #TODO: subscribe to service changes
@@ -502,39 +517,13 @@ class ServiceProxy(_Service):
         if self.transport is not None:
             self.transport.close()
 
-class Service(_Service):
+class ServiceImpl(_Service):
     """
-    Declare a ROS service. Service requests are passed to the
-    specified handler. 
-
-    Service Usage::
-      s = Service('getmapservice', GetMap, get_map_handler)
+    Implementation of ROS Service. This intermediary class allows for more configuration of behavior than the Service class.
     """
-
+    
     def __init__(self, name, service_class, handler, buff_size=DEFAULT_BUFF_SIZE):
-        """
-        ctor.
-        @param name: service name
-        @type  name: str
-        @param service_class: ServiceDefinition class
-        @type  service_class: ServiceDefinition class
-        
-        @param handler: callback function for processing service
-        request. Function takes in a ServiceRequest and returns a
-        ServiceResponse of the appropriate type. Function may also
-        return a list, tuple, or dictionary with arguments to initialize
-        a ServiceResponse instance of the correct type.
-
-        If handler cannot process request, it may either return None,
-        to indicate failure, or it may raise a rospy.ServiceException
-        to send a specific error message to the client. Returning None
-        is always considered a failure.
-        
-        @type  handler: fn(req)->resp
-        @param buff_size: size of buffer for reading incoming requests. Should be at least size of request message
-        @type  buff_size: int
-        """
-        super(Service, self).__init__(name, service_class)
+        super(ServiceImpl, self).__init__(name, service_class)
 
         if not name or not isinstance(name, basestring):
             raise ValueError("service name is not a non-empty string")
@@ -558,7 +547,6 @@ class Service(_Service):
         self.protocol = TCPService(self.resolved_name, service_class, self.buff_size)
 
         logdebug("[%s]: new Service instance"%self.resolved_name)
-        get_service_manager().register(self.resolved_name, self)
 
     # TODO: should consider renaming to unregister
     
@@ -571,6 +559,7 @@ class Service(_Service):
         self.done = True
         logdebug('[%s].shutdown: reason [%s]'%(self.resolved_name, reason))
         try:
+            #TODO: make service manager configurable            
             get_service_manager().unregister(self.resolved_name, self)
         except Exception, e:
             logerr("Unable to unregister with master: "+traceback.format_exc())
@@ -653,3 +642,41 @@ class Service(_Service):
                 logdebug("service[%s]: transport terminated"%self.resolved_name)
                 handle_done = True
         transport.close()
+
+
+class Service(ServiceImpl):
+    """
+    Declare a ROS service. Service requests are passed to the
+    specified handler. 
+
+    Service Usage::
+      s = Service('getmapservice', GetMap, get_map_handler)
+    """
+    
+    def __init__(self, name, service_class, handler, buff_size=DEFAULT_BUFF_SIZE):
+        """
+        ctor.
+        @param name: service name
+        @type  name: str
+        @param service_class: ServiceDefinition class
+        @type  service_class: ServiceDefinition class
+        
+        @param handler: callback function for processing service
+        request. Function takes in a ServiceRequest and returns a
+        ServiceResponse of the appropriate type. Function may also
+        return a list, tuple, or dictionary with arguments to initialize
+        a ServiceResponse instance of the correct type.
+
+        If handler cannot process request, it may either return None,
+        to indicate failure, or it may raise a rospy.ServiceException
+        to send a specific error message to the client. Returning None
+        is always considered a failure.
+        
+        @type  handler: fn(req)->resp
+        @param buff_size: size of buffer for reading incoming requests. Should be at least size of request message
+        @type  buff_size: int
+        """
+        super(Service, self).__init__(name, service_class, handler, buff_size)
+
+        #TODO: make service manager configurable
+        get_service_manager().register(self.resolved_name, self)

@@ -165,7 +165,7 @@ public:
   /**
    * \brief Returns the name of the node which published this message
    */
-  const std::string& getPublisherName() const { return (*connection_header_)["callerid"]; }
+  const std::string& getPublisherName() const { return connection_header_ ? (*connection_header_)["callerid"] : s_unknown_publisher_string_; }
 
   /**
    * \brief Returns the time at which this message was received
@@ -249,7 +249,12 @@ private:
   ros::Time receipt_time_;
   bool nonconst_need_copy_;
   CreateFunction create_;
+
+  static const std::string s_unknown_publisher_string_;
 };
+
+template<typename M> const std::string MessageEvent<M>::s_unknown_publisher_string_("unknown_publisher");
+
 
 }
 

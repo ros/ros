@@ -325,7 +325,7 @@ def main():
     ver = find_boost(search_paths(options.sysroot))
     
     if (ver is None):
-        raise BoostError("Cannot find boost in any of %s"%search_paths())
+        raise BoostError("Cannot find boost in any of %s"%search_paths(options.sysroot))
         sys.exit(0)
     
     if (options.version):

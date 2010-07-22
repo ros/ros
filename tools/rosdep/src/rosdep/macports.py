@@ -28,8 +28,10 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
-from linux_helpers import *
 import os
+
+import rosdep.base_rosdep
+from rosdep.linux_helpers import *
 
 ###### Macports SPECIALIZATION #########################
 def port_detect(p):
@@ -39,7 +41,7 @@ def port_detect(p):
     
     return (std_out.count("(active)") > 0)
 
-class Macports:
+class Macports(rosdep.base_rosdep.RosdepBaseOS):
     def check_presence(self):
         filename = "/usr/bin/sw_vers"
         if os.path.exists(filename):
@@ -56,6 +58,8 @@ class Macports:
         return [p for p in packages if not port_detect(p)] 
 
     def generate_package_install_command(self, packages, default_yes):        
+        if len(packages) < 1:
+            return "#No packages to install"
         return "#Packages\nsudo port install " + ' '.join(packages)
 
 ###### END Macports SPECIALIZATION ########################

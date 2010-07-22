@@ -16,5 +16,9 @@ own fork.
   <rosdoc external="http://xmlrpcpp.sourceforge.net"/>
   <cpp cflags="-I${prefix}/src" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lXmlRpc"/>
 </export>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>
 

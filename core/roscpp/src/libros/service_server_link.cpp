@@ -72,7 +72,6 @@ void ServiceServerLink::cancelCall(const CallInfoPtr& info)
   CallInfoPtr local = info;
   {
     boost::mutex::scoped_lock lock(local->finished_mutex_);
-    local->success_ = false;
     local->finished_ = true;
     local->finished_condition_.notify_all();
   }
@@ -122,6 +121,7 @@ bool ServiceServerLink::initialize(const ConnectionPtr& connection)
   header["service"] = service_name_;
   header["md5sum"] = request_md5sum_;
   header["callerid"] = this_node::getName();
+  header["persistent"] = persistent_ ? "1" : "0";
   header.insert(extra_outgoing_header_values_.begin(), extra_outgoing_header_values_.end());
 
   connection_->writeHeader(header, boost::bind(&ServiceServerLink::onHeaderWritten, this, _1));
@@ -177,6 +177,7 @@ void ServiceServerLink::onConnectionDropped(const ConnectionPtr& conn)
 
 void ServiceServerLink::onRequestWritten(const ConnectionPtr& conn)
 {
+  //ros::WallDuration(0.1).sleep();
   connection_->read(5, boost::bind(&ServiceServerLink::onResponseOkAndLength, this, _1, _2, _3, _4));
 }
 
@@ -193,11 +194,11 @@ void ServiceServerLink::onResponseOkAndLength(const ConnectionPtr& conn, const b
 
   if (len > 1000000000)
   {
-    ROS_ERROR("woah! a message of over a gigabyte was " \
+    ROS_ERROR("a message of over a gigabyte was " \
                 "predicted in tcpros. that seems highly " \
                 "unlikely, so I'll assume protocol " \
-                "synchronization is lost... it's over.");
-    conn->drop();
+                "synchronization is lost.");
+    conn->drop(Connection::Destructing);
 
     return;
   }
@@ -229,8 +230,7 @@ void ServiceServerLink::onResponse(const ConnectionPtr& conn, const boost::share
 
     if (current_call_->success_)
     {
-      current_call_->resp_->__serialized_length = size;
-      current_call_->resp_->deserialize(buffer.get());
+      *current_call_->resp_ = SerializedMessage(buffer, size);
     }
   }
 
@@ -293,7 +293,7 @@ void ServiceServerLink::processNextCall()
     if (!persistent_)
     {
       ROS_DEBUG_NAMED("superdebug", "Dropping non-persistent client to service [%s]", service_name_.c_str());
-      connection_->drop();
+      connection_->drop(Connection::Destructing);
     }
     else
     {
@@ -302,32 +302,28 @@ void ServiceServerLink::processNextCall()
   }
   else
   {
-    boost::shared_array<uint8_t> dummy;
-    SerializedMessage request(dummy, 0);
+    SerializedMessage request;
 
     {
       boost::mutex::scoped_lock lock(call_queue_mutex_);
-
-      uint32_t num_bytes = current_call_->req_->serializationLength() + 4;
-
-      request = SerializedMessage(boost::shared_array<uint8_t>(new uint8_t[num_bytes]), num_bytes);
-      *((uint32_t*)request.buf.get()) = num_bytes - 4;
-      current_call_->req_->serialize(request.buf.get() + 4, 0);
+      request = current_call_->req_;
     }
 
     connection_->write(request.buf, request.num_bytes, boost::bind(&ServiceServerLink::onRequestWritten, this, _1));
   }
 }
 
-bool ServiceServerLink::call(Message* req, Message* resp)
+bool ServiceServerLink::call(const SerializedMessage& req, SerializedMessage& resp)
 {
   CallInfoPtr info(new CallInfo);
   info->req_ = req;
-  info->resp_ = resp;
+  info->resp_ = &resp;
   info->success_ = false;
   info->finished_ = false;
   info->call_finished_ = false;
   info->caller_thread_id_ = boost::this_thread::get_id();
+
+  //ros::WallDuration(0.1).sleep();
 
   bool immediate = false;
   {

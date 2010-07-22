@@ -19,5 +19,9 @@ wxswig is included as a 3rdparty package because it is not included in package m
 </export>
 
 <rosdep name="automake"/>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>
 

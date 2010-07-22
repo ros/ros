@@ -40,6 +40,8 @@ Python unittests with additional reporting mechanisms and rosbuild
 (CMake) integration.
 """
 
+import sys
+
 XML_OUTPUT_FLAG='--gtest_output=xml:' #use gtest-compatible flag
 
 def is_subscriber(topic, subscriber_id):
@@ -172,14 +174,16 @@ def _start_coverage(packages):
     global _cov
     try:
         import coverage
-        _cov = coverage.coverage()
-        # load previous results as we need to accumulate
-        _cov.load()
-        _cov.start()
+        try:
+            _cov = coverage.coverage()
+            # load previous results as we need to accumulate
+            _cov.load()
+            _cov.start()
+        except coverage.CoverageException:
+            print >> sys.stderr, "WARNING: you have an older version of python-coverage that is not support. Please update to the version provided by 'easy_install coverage'"
     except ImportError, e:
         print >> sys.stderr, """WARNING: cannot import python-coverage, coverage tests will not run.
 To install coverage, run 'easy_install coverage'"""
-    import sys
     try:
         # reload the module to get coverage
         for package in packages:
@@ -246,5 +250,5 @@ To install coverage, run 'easy_install coverage'"""
 #502: backwards compatibility for unbuilt rostest packages
 def rostestmain():
     #NOTE: this is importing from rostest.rostest
-    from rostest import rostestmain as _main
+    from rostest.rostest_main import rostestmain as _main
     _main()

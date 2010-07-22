@@ -43,11 +43,14 @@ import sys
 import math
 import socket
 import time
+import traceback
+import xmlrpclib
             
 import roslib.exceptions
 import roslib.names
 import roslib.scriptutil
 import roslib.message
+import rosgraph.masterapi
 #TODO: lazy-import rospy or move rospy-dependent routines to separate location
 import rospy
 import rosrecord
@@ -68,43 +71,51 @@ class ROSTopicIOException(ROSTopicException):
     """
     pass
 
-def _succeed(args):
-    code, msg, val = args
-    if code != 1:
-        raise ROSTopicException("remote call failed: %s"%msg)
-    return val
-
 def _check_master():
     """
     Make sure that master is available
     @raise ROSTopicException: if unable to successfully communicate with master
     """
     try:
-        _succeed(roslib.scriptutil.get_master().getPid('/'))
+        rosgraph.masterapi.Master('/rostopic').getPid()
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
     
+def _master_get_topic_types(master):
+    try:
+        val = master.getTopicTypes()
+    except xmlrpclib.Fault:
+        print >> sys.stderr, "WARNING: rostopic is being used against an older version of ROS/roscore"
+        val = master.getPublishedTopics('/')
+    return val
+
 class ROSTopicHz(object):
     """
     ROSTopicHz receives messages for a topic and computes frequency stats
     """
-    def __init__(self, window_size):
+    def __init__(self, window_size, filter_expr=None):
         import threading
         self.lock = threading.Lock()
         self.last_printed_tn = 0
         self.msg_t0 = -1.
         self.msg_tn = 0
         self.times =[]
+        self.filter_expr = filter_expr
         
         # can't have infinite window size due to memory restrictions
         if window_size < 0:
             window_size = 50000
         self.window_size = window_size
                 
-    def callback_hz(self, data):
+    def callback_hz(self, m):
         """
         ros sub callback
+        @param m: Message instance
+        @type  m: roslib.message.Message
         """
+        # #694: ignore messages that don't match filter
+        if self.filter_expr is not None and not self.filter_expr(m):
+            return
         try:
             curr_rostime = rospy.get_rostime()
             
@@ -171,7 +182,7 @@ class ROSTopicHz(object):
             self.lock.release()
         print "average rate: %.3f\n\tmin: %.3fs max: %.3fs std dev: %.5fs window: %s"%(rate, min_delta, max_delta, std_dev, n+1)
     
-def _rostopic_hz(topic, window_size=-1):
+def _rostopic_hz(topic, window_size=-1, filter_expr=None):
     """
     Periodically print the publishing rate of a topic to console until
     shutdown
@@ -179,15 +190,20 @@ def _rostopic_hz(topic, window_size=-1):
     @type  topic: str
     @param window_size: number of messages to average over, -1 for infinite
     @type  window_size: int
+    @param filter_expr: Python filter expression that is called with m, the message instance
     """
-    _, real_topic, _ = get_topic_type(topic, blocking=True) #pause hz until topic is published
+    msg_class, real_topic, _ = get_topic_class(topic, blocking=True) #pause hz until topic is published
     if rospy.is_shutdown():
         return
     rospy.init_node(NAME, anonymous=True)
-    rt = ROSTopicHz(window_size)
+    rt = ROSTopicHz(window_size, filter_expr=filter_expr)
     # we use a large buffer size as we don't know what sort of messages we're dealing with.
     # may parameterize this in the future
-    sub = rospy.Subscriber(real_topic, rospy.AnyMsg, rt.callback_hz)
+    if filter_expr is not None:
+        # have to subscribe with topic_type
+        sub = rospy.Subscriber(real_topic, msg_class, rt.callback_hz)
+    else:
+        sub = rospy.Subscriber(real_topic, rospy.AnyMsg, rt.callback_hz)        
     print "subscribed to [%s]"%real_topic
     while not rospy.is_shutdown():
         time.sleep(1.0)
@@ -295,7 +311,7 @@ def _get_topic_type(topic):
     @rtype: str, str, fn
     """
     try:
-        val = _succeed(roslib.scriptutil.get_master().getPublishedTopics('/', '/'))
+        val = _master_get_topic_types(rosgraph.masterapi.Master('/rostopic'))
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
 
@@ -468,7 +484,7 @@ class CallbackEcho(object):
     """
 
     def __init__(self, topic, msg_eval, plot=False, filter_fn=None,
-                 echo_clear=False, echo_all_topics=False, offset_time=False):
+                 echo_clear=False, echo_all_topics=False, offset_time=False, count=None):
         """
         @param plot: if True, echo in plotting-friendly format
         @type  plot: bool
@@ -478,6 +494,8 @@ class CallbackEcho(object):
         @type  echo_all_topics: bool
         @param offset_time: (optional) if True, display time as offset from current time
         @type  offset_time: bool
+        @param count: number of messages to echo, None for infinite
+        @type  count: int
         """
         if topic and topic[-1] == '/':
             topic = topic[:-1]
@@ -488,6 +506,11 @@ class CallbackEcho(object):
         self.sep = '---\n' # same as YAML document separator
         self.echo_all_topics = echo_all_topics
         self.offset_time = offset_time
+
+        # done tracks when we've exceeded the count
+        self.done = False
+        self.max_count = count
+        self.count = 0
 
         # determine which strifying function to use
         if plot:
@@ -519,6 +542,11 @@ class CallbackEcho(object):
         """
         if self.filter_fn is not None and not self.filter_fn(data):
             return
+
+        if self.max_count is not None and self.count >= self.max_count:
+            self.done = True
+            return
+        
         try:
             msg_eval = self.msg_eval
             if topic == self.topic:
@@ -542,6 +570,8 @@ class CallbackEcho(object):
                 
             # data can be None if msg_eval returns None
             if data is not None:
+
+                self.count += 1
                 
                 # print fields header for plot
                 if self.plot and self.first:
@@ -553,11 +583,15 @@ class CallbackEcho(object):
                 else:
                     sys.stdout.write(self.sep+self.str_fn(data, current_time=current_time) + '\n')
                     
-            #sys.stdout.flush()
+            # #2778 : have to check count after incr to set done flag
+            if self.max_count is not None and self.count >= self.max_count:
+                self.done = True
+
         except IOError:
-            rospy.signal_shutdown('IOError')
+            self.done = True
         except:
-            import traceback
+            # set done flag so we exit
+            self.done = True
             traceback.print_exc()
             
 def _rostopic_type(topic):
@@ -570,7 +604,7 @@ def _rostopic_type(topic):
     if t:
         print t
     else:
-        print >> sys.stderr, 'unknown topic [%s]'%topic
+        print >> sys.stderr, 'unknown topic type [%s]'%topic
         sys.exit(1)
 
 def _rostopic_echo_bag(callback_echo, bag_file):
@@ -589,6 +623,9 @@ def _rostopic_echo_bag(callback_echo, bag_file):
         if t[0] != '/':
             t = roslib.scriptutil.script_resolve_name('rostopic', t)
         callback_echo.callback(msg, t, current_time=timestamp)
+        # done is set if there is a max echo count
+        if callback_echo.done:
+            break
     
 def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
     """
@@ -615,7 +652,9 @@ def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
         callback_echo.msg_eval = msg_eval
 
         sub = rospy.Subscriber(real_topic, msg_class, callback_echo.callback, topic)
-        rospy.spin()
+
+        while not rospy.is_shutdown() and not callback_echo.done:
+            time.sleep(0.1)
 
 _caller_apis = {}
 def get_api(master, caller_id):
@@ -632,13 +671,13 @@ def get_api(master, caller_id):
     caller_api = _caller_apis.get(caller_id, None)
     if not caller_api:
         try:
-            code, msg, caller_api = master.lookupNode('/rostopic', caller_id)
+            caller_api = master.lookupNode(caller_id)
+            _caller_apis[caller_id] = caller_api
         except socket.error:
             raise ROSTopicIOException("Unable to communicate with master!")
-        if code != 1:
+        except rosgraph.masterapi.Error:
             caller_api = 'unknown address %s'%caller_id
-        else:
-            _caller_apis[caller_id] = caller_api
+
     return caller_api
 
 def _rostopic_list_bag(bag_file, topic=None):
@@ -680,7 +719,7 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
     """
     Print topics to screen
     
-    @param topic: topic name to list infomration or None to match all topics
+    @param topic: topic name to list information or None to match all topics
     @type  topic: str
     @param verbose: print additional debugging information
     @type  verbose: bool
@@ -689,8 +728,8 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
     @param publishers_only: print information about subscriptions only
     @type  publishers_only: bool    
     """
-    def topic_type(t, pub_topics):
-        matches = [t_type for t_name, t_type in pub_topics if t_name == t]
+    def topic_type(t, topic_types):
+        matches = [t_type for t_name, t_type in topic_types if t_name == t]
         if matches:
             return matches[0]
         return 'unknown type'
@@ -699,9 +738,9 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
     if subscribers_only and publishers_only:
         raise ROSTopicException("cannot specify both subscribers- and publishers-only")
     
-    master = roslib.scriptutil.get_master()
+    master = rosgraph.masterapi.Master('/rostopic')
     try:
-        state = _succeed(master.getSystemState('/rostopic'))
+        state = master.getSystemState()
 
         pubs, subs, _ = state
         if topic:
@@ -709,28 +748,29 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
             topic_ns = roslib.names.make_global_ns(topic)        
             subs = (x for x in subs if x[0] == topic or x[0].startswith(topic_ns))
             pubs = (x for x in pubs if x[0] == topic or x[0].startswith(topic_ns))
-
-        pub_topics = _succeed(master.getPublishedTopics('/rostopic', '/'))
+            
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
 
     if verbose:
+        topic_types = _master_get_topic_types(master)
+
         if not subscribers_only:
             print "\nPublished topics:"
             for t, l in pubs:
                 if len(l) > 1:
-                    print " * %s [%s] %s publishers"%(t, topic_type(t, pub_topics), len(l))
+                    print " * %s [%s] %s publishers"%(t, topic_type(t, topic_types), len(l))
                 else:
-                    print " * %s [%s] 1 publisher"%(t, topic_type(t, pub_topics))                    
+                    print " * %s [%s] 1 publisher"%(t, topic_type(t, topic_types))                    
 
         if not publishers_only:
             print ''
             print "Subscribed topics:"
             for t,l in subs:
                 if len(l) > 1:
-                    print " * %s [%s] %s subscribers"%(t, topic_type(t, pub_topics), len(l))
+                    print " * %s [%s] %s subscribers"%(t, topic_type(t, topic_types), len(l))
                 else:
-                    print " * %s [%s] 1 subscriber"%(t, topic_type(t, pub_topics)) 
+                    print " * %s [%s] 1 subscriber"%(t, topic_type(t, topic_types)) 
     else:
         if publishers_only:
             topics = [t for t,_ in pubs]
@@ -741,6 +781,57 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
         topics.sort()
         print '\n'.join(topics)
 
+def get_info_text(topic):
+    """
+    Get human-readable topic description
+    
+    @param topic: topic name 
+    @type  topic: str
+    """
+    import cStringIO, itertools
+    buff = cStringIO.StringIO()
+    def topic_type(t, topic_types):
+        matches = [t_type for t_name, t_type in topic_types if t_name == t]
+        if matches:
+            return matches[0]
+        return 'unknown type'
+
+    master = rosgraph.masterapi.Master('/rostopic')
+    try:
+        state = master.getSystemState()
+
+        pubs, subs, _ = state
+        # filter based on topic
+        subs = [x for x in subs if x[0] == topic]
+        pubs = [x for x in pubs if x[0] == topic]
+
+        topic_types = _master_get_topic_types(master)
+            
+    except socket.error:
+        raise ROSTopicIOException("Unable to communicate with master!")
+
+    if not pubs and not subs:
+        raise ROSTopicException("Unknown topic %s"%topic)
+
+    buff.write("Type: %s\n\n"%topic_type(topic, topic_types))
+
+    if pubs:
+        buff.write("Publishers: \n")
+        for p in itertools.chain(*[l for x, l in pubs]):
+            buff.write(" * %s (%s)\n"%(p, get_api(master, p)))
+    else:
+        buff.write("Publishers: None\n")
+    buff.write('\n')
+
+    if subs:
+        buff.write("Subscribers: \n")
+        for p in itertools.chain(*[l for x, l in subs]):
+            buff.write(" * %s (%s)\n"%(p, get_api(master, p)))
+    else:
+        buff.write("Subscribers: None\n")
+    buff.write('\n')
+    return buff.getvalue()
+    
 def _rostopic_info(topic):
     """
     Print topic information to screen.
@@ -748,50 +839,7 @@ def _rostopic_info(topic):
     @param topic: topic name 
     @type  topic: str
     """
-    def topic_type(t, pub_topics):
-        matches = [t_type for t_name, t_type in pub_topics if t_name == t]
-        if matches:
-            return matches[0]
-        return 'unknown type'
-
-    master = roslib.scriptutil.get_master()
-    try:
-        state = _succeed(master.getSystemState('/rostopic'))
-
-        pubs, subs, _ = state
-        # filter based on topic
-        subs = [x for x in subs if x[0] == topic]
-        pubs = [x for x in pubs if x[0] == topic]
-
-        pub_topics = _succeed(master.getPublishedTopics('/rostopic', '/'))
-    except socket.error:
-        raise ROSTopicIOException("Unable to communicate with master!")
-
-    if not pubs and not subs:
-        print >> sys.stderr, "Unknown topic %s"%topic
-        return 1
-
-    #print '-'*80
-    print "\nType: %s\n"%topic_type(topic, pub_topics)
-
-    import itertools
-
-    if pubs:
-        print "Publishers: "
-        for p in itertools.chain(*[l for x, l in pubs]):
-            print " * %s (%s)"%(p, get_api(master, p))
-    else:
-        print "Publishers: None"
-    print ''
-
-    if subs:
-        print "Subscribers: "
-        for p in itertools.chain(*[l for x, l in subs]):
-            print " * %s (%s)"%(p, get_api(master, p))
-    else:
-        print "Subscribers: None"
-    print ''
-                    
+    print get_info_text(topic)
             
 ##########################################################################################
 # COMMAND PROCESSING #####################################################################
@@ -832,6 +880,9 @@ def _rostopic_cmd_echo(argv):
                       dest="all_topics", default=False,
                       action="store_true",
                       help="display all message in bag, only valid with -b option")
+    parser.add_option("-n", 
+                      dest="msg_count", default=None, metavar="COUNT",
+                      help="number of messages to echo")
     parser.add_option("--offset",
                       dest="offset_time", default=False,
                       action="store_true",
@@ -862,7 +913,11 @@ def _rostopic_cmd_echo(argv):
     if options.filter_expr:
         filter_fn = expr_eval(options.filter_expr)
 
-    callback_echo = CallbackEcho(topic, None, plot=options.plot, filter_fn=filter_fn, echo_clear=options.clear, echo_all_topics=options.all_topics, offset_time=options.offset_time)
+    try:
+        msg_count = int(options.msg_count) if options.msg_count else None
+    except ValueError:
+        parser.error("COUNT must be an integer")
+    callback_echo = CallbackEcho(topic, None, plot=options.plot, filter_fn=filter_fn, echo_clear=options.clear, echo_all_topics=options.all_topics, offset_time=options.offset_time, count=msg_count)
     try:
         _rostopic_echo(topic, callback_echo, bag_file=options.bag)
     except socket.error:
@@ -889,6 +944,10 @@ def _rostopic_cmd_hz(argv):
     parser.add_option("-w", "--window",
                       dest="window_size", default=-1,
                       help="window size, in # of messages, for calculating rate", metavar="WINDOW")
+    parser.add_option("--filter",
+                      dest="filter_expr", default=None,
+                      help="only meausre messages matching the specified Python expression", metavar="EXPR")
+
     (options, args) = parser.parse_args(args)
     if len(args) == 0:
         parser.error("topic must be specified")        
@@ -903,7 +962,17 @@ def _rostopic_cmd_hz(argv):
     except:
         parser.error("window size must be an integer")
     topic = roslib.scriptutil.script_resolve_name('rostopic', args[0])
-    _rostopic_hz(topic, window_size=window_size)
+
+    # #694
+    if options.filter_expr:
+        def expr_eval(expr):
+            def eval_fn(m):
+                return eval(expr)
+            return eval_fn
+        filter_expr = expr_eval(options.filter_expr)
+    else:
+        filter_expr = None
+    _rostopic_hz(topic, window_size=window_size, filter_expr=filter_expr)
 
 def _rostopic_cmd_bw(argv=sys.argv):
     args = argv[2:]
@@ -936,9 +1005,9 @@ def find_by_type(topic_type):
     @return: list of topic names that use topic_type    
     @rtype: [str]
     """
-    master = roslib.scriptutil.get_master()
+    master = rosgraph.masterapi.Master('/rostopic')
     try:
-        t_list = _succeed(master.getPublishedTopics('/rostopic', '/'))
+        t_list = _master_get_topic_types(master)
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
     return [t_name for t_name, t_type in t_list if t_type == topic_type]
@@ -1298,12 +1367,16 @@ def rostopicmain(argv=None):
             _fullusage()
     except socket.error:
         print >> sys.stderr, "Network communication failed. Most likely failed to communicate with master."
+        sys.exit(1)
     except rosrecord.ROSRecordException, e:
         print >> sys.stderr, "ERROR: unable to use bag file: "+str(e)
+        sys.exit(1)
     except roslib.exceptions.ROSLibException, e:
-        # mainly for invalid master URI
+        # mainly for invalid master URI or rosgraph.masterapi.ROSMasterException
         print >> sys.stderr, "ERROR: "+str(e)
+        sys.exit(1)
     except ROSTopicException, e:
         print >> sys.stderr, "ERROR: "+str(e)
+        sys.exit(1)
     except KeyboardInterrupt: pass
     except rospy.ROSInterruptException: pass

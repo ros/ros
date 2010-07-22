@@ -220,7 +220,7 @@ class Time(TVal):
     __slots__ = ['secs', 'nsecs']
     def __init__(self, secs=0, nsecs=0):
         """
-        Constructor: secs and nsecs are integers. You may prefer to use the static L{from_seconds()} factory
+        Constructor: secs and nsecs are integers. You may prefer to use the static L{from_sec()} factory
         method instead.
         
         @param secs: seconds since epoch
@@ -315,7 +315,7 @@ class Time(TVal):
     def __eq__(self, other):
         """
         Equals test for Time. Comparison assumes that both time
-        instances are in canonical representationly compares fields.
+        instances are in canonical representation; only compares fields.
         
         @param other: Time
         @type  other: L{Time}

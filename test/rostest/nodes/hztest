@@ -83,6 +83,8 @@ class HzTest(unittest.TestCase):
             test_duration = float(rospy.get_param('~test_duration'))
             # topic to test
             topic = rospy.get_param('~topic')
+            # time to wait before
+            wait_time = rospy.get_param('~wait_time', 20.)            
         except KeyError, e:
             self.fail('hztest not initialized properly. Parameter [%s] not set. debug[%s] debug[%s]'%(str(e), rospy.get_caller_id(), rospy.resolve_name(e.args[0])))
 
@@ -106,9 +108,9 @@ Hz Error: %s
 Topic: %s
 Test Duration: %s"""%(hz, hzerror, topic, test_duration)
         
-        self._test_hz(hz, hzerror, topic, test_duration)        
+        self._test_hz(hz, hzerror, topic, test_duration, wait_time)        
             
-    def _test_hz(self, hz, hzerror, topic, test_duration): 
+    def _test_hz(self, hz, hzerror, topic, test_duration, wait_time): 
         self.assert_(hz >= 0.0, "bad parameter (hz)")
         self.assert_(hzerror >= 0.0, "bad parameter (hzerror)")
         self.assert_(test_duration > 0.0, "bad parameter (test_duration)")
@@ -137,7 +139,7 @@ Test Duration: %s"""%(hz, hzerror, topic, test_duration)
         # as time can advance too much before publisher is up
         
         # - give the test 20 seconds to start, may parameterize this in the future
-        wallclock_timeout_t = time.time() + 20.0
+        wallclock_timeout_t = time.time() + wait_time
         while not self.message_received and time.time() < wallclock_timeout_t:
             time.sleep(0.1)
         if hz > 0.:

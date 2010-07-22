@@ -35,9 +35,8 @@
 #ifndef MESSAGE_FILTERS_CONNECTION_H
 #define MESSAGE_FILTERS_CONNECTION_H
 
-#include <boost/thread/mutex.hpp>
 #include <boost/function.hpp>
-#include <boost/signals.hpp>
+#include <boost/signals/connection.hpp>
 
 namespace message_filters
 {
@@ -48,33 +47,23 @@ namespace message_filters
 class Connection
 {
 public:
-  typedef boost::function<void(const Connection&)> DisconnectFunction;
-
-  Connection();
-  Connection(const DisconnectFunction& func, boost::signals::connection conn);
-  Connection(const Connection& rhs);
-  Connection& operator=(const Connection& rhs);
+  typedef boost::function<void(void)> VoidDisconnectFunction;
+  typedef boost::function<void(const Connection&)> WithConnectionDisconnectFunction;
+  Connection() {}
+  Connection(const VoidDisconnectFunction& func);
+  Connection(const WithConnectionDisconnectFunction& func, boost::signals::connection conn);
 
   /**
    * \brief disconnects this connection
    */
   void disconnect();
 
-  boost::signals::connection getBoostConnection() const;
+  boost::signals::connection getBoostConnection() const { return connection_; }
 
 private:
-  class Impl
-  {
-  public:
-    Impl();
-    ~Impl();
-
-    DisconnectFunction disconnect_;
-    boost::signals::connection connection_;
-  };
-  typedef boost::shared_ptr<Impl> ImplPtr;
-
-  ImplPtr impl_;
+  VoidDisconnectFunction void_disconnect_;
+  WithConnectionDisconnectFunction connection_disconnect_;
+  boost::signals::connection connection_;
 };
 
 }

@@ -46,6 +46,7 @@ using namespace std;
 
 typedef std::vector<intra::ThroughputResult> V_ThroughputResult;
 typedef std::vector<intra::LatencyResult> V_LatencyResult;
+typedef std::vector<intra::STLatencyResult> V_STLatencyResult;
 
 void printResult(std::ostream& out, uint32_t test_num, intra::ThroughputResult& r)
 {
@@ -62,7 +63,17 @@ void printResult(std::ostream& out, uint32_t test_num, intra::ThroughputResult& 
 void printResult(std::ostream& out, uint32_t test_num, intra::LatencyResult& r)
 {
   out << "----------------------------------------------------------\n";
-  out << "Latency Test " << test_num << ": receiver_threads [" << r.receiver_threads << "], sender_threads [" << r.sender_threads << "], streams [" << r.streams << "], count_per_stream [" << r.count_per_stream << "], message_size [" << r.message_size << "]\n";
+  out << "Multi-Threaded Latency Test " << test_num << ": receiver_threads [" << r.receiver_threads << "], sender_threads [" << r.sender_threads << "], streams [" << r.streams << "], count_per_stream [" << r.count_per_stream << "], message_size [" << r.message_size << "]\n";
+  out << "\tMessage Count: " << r.total_message_count << endl;
+  out << "\tLatency Average: " << r.latency_avg << endl;
+  out << "\tLatency Min: " << r.latency_min << endl;
+  out << "\tLatency Max: " << r.latency_max << endl;
+}
+
+void printResult(std::ostream& out, uint32_t test_num, intra::STLatencyResult& r)
+{
+  out << "----------------------------------------------------------\n";
+  out << "Single-Threaded Latency Test " << test_num << endl;
   out << "\tMessage Count: " << r.total_message_count << endl;
   out << "\tLatency Average: " << r.latency_avg << endl;
   out << "\tLatency Min: " << r.latency_min << endl;
@@ -81,6 +92,12 @@ void addResult(V_LatencyResult& results, intra::LatencyResult r, std::ostream& o
   printResult(out, i, results.back());
 }
 
+void addResult(V_STLatencyResult& results, intra::STLatencyResult r, std::ostream& out, uint32_t i)
+{
+  results.push_back(r);
+  printResult(out, i, results.back());
+}
+
 void runThroughputTests(std::ostream& out, V_ThroughputResult& results)
 {
   uint32_t i = 0;
@@ -89,6 +106,11 @@ void runThroughputTests(std::ostream& out, V_ThroughputResult& results)
   addResult(results, intra::throughput(1            , 1      , 1024*1024*10 , 1           , 1              ), out, i++);
   addResult(results, intra::throughput(1            , 1      , 1024*1024*100, 1           , 1              ), out, i++);
 
+  addResult(results, intra::throughput(10           , 1      , 100          , 1           , 1              ), out, i++);
+  addResult(results, intra::throughput(10           , 1      , 1024*1024*10 , 1           , 1              ), out, i++);
+  addResult(results, intra::throughput(10           , 1      , 1024*1024*100, 1           , 1              ), out, i++);
+
+#if 0
   addResult(results, intra::throughput(10           , 1      , 100          , 1           , 10             ), out, i++);
   addResult(results, intra::throughput(10           , 1      , 1024*1024*10 , 1           , 10             ), out, i++);
   addResult(results, intra::throughput(10           , 1      , 1024*1024*100, 1           , 10             ), out, i++);
@@ -100,6 +122,7 @@ void runThroughputTests(std::ostream& out, V_ThroughputResult& results)
   addResult(results, intra::throughput(10           , 10     , 100          , 1           , 10             ), out, i++);
   addResult(results, intra::throughput(10           , 10     , 1024*1024*1  , 1           , 10             ), out, i++);
   addResult(results, intra::throughput(10           , 10     , 1024*1024*10 , 1           , 10             ), out, i++);
+#endif
 }
 
 void runLatencyTests(std::ostream& out, V_LatencyResult& results)
@@ -111,6 +134,7 @@ void runLatencyTests(std::ostream& out, V_LatencyResult& results)
   addResult(results, intra::latency(1000            , 1      , 1024*1024    , 1           , 1              ), out, i++);
   addResult(results, intra::latency(100             , 1      , 1024*1024*100, 1           , 1              ), out, i++);
 
+#if 0
   addResult(results, intra::latency(100000          , 1      , 1            , 1           , 10             ), out, i++);
   addResult(results, intra::latency(10000           , 1      , 1024         , 1           , 10             ), out, i++);
   addResult(results, intra::latency(1000            , 1      , 1024*1024    , 1           , 10             ), out, i++);
@@ -125,13 +149,24 @@ void runLatencyTests(std::ostream& out, V_LatencyResult& results)
   addResult(results, intra::latency(1000            , 10     , 1024         , 10          , 1              ), out, i++);
   addResult(results, intra::latency(100             , 10     , 1024*1024    , 10          , 1              ), out, i++);
   // 100mb test allocates too much memory
+#endif
+}
+
+void runSTLatencyTests(std::ostream& out, V_STLatencyResult& results)
+{
+  uint32_t i = 0;
+  addResult(results, intra::stlatency(10000), out, i++);
+  addResult(results, intra::stlatency(100000), out, i++);
+  addResult(results, intra::stlatency(1000000), out, i++);
 }
 
 int main(int argc, char** argv)
 {
   std::ofstream out("intra_suite_out.txt", std::ios::out);
   out << std::fixed;
+  out.precision(10);
   cout << std::fixed;
+  cout.precision(10);
 
   ROS_ASSERT(out.is_open());
 
@@ -143,6 +178,9 @@ int main(int argc, char** argv)
 
   V_LatencyResult latency_results;
   runLatencyTests(out, latency_results);
+
+  V_STLatencyResult stlatency_results;
+  runSTLatencyTests(out, stlatency_results);
 
   printf("\n\n\n***************************** Results *****************************\n\n");
   uint32_t i = 0;
@@ -156,12 +194,24 @@ int main(int argc, char** argv)
     }
   }
 
+  i = 0;
   {
     V_LatencyResult::iterator it = latency_results.begin();
     V_LatencyResult::iterator end = latency_results.end();
     for (; it != end; ++it, ++i)
     {
       intra::LatencyResult& r = *it;
+      printResult(cout, i, r);
+    }
+  }
+
+  i = 0;
+  {
+    V_STLatencyResult::iterator it = stlatency_results.begin();
+    V_STLatencyResult::iterator end = stlatency_results.end();
+    for (; it != end; ++it, ++i)
+    {
+      intra::STLatencyResult& r = *it;
       printResult(cout, i, r);
     }
   }

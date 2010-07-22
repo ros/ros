@@ -385,116 +385,182 @@ const vector<Package *> &Package::direct_deps(bool missing_package_as_warning)
   return _direct_deps;
 }
 
+string Package::cpp_message_flags(bool cflags, bool lflags)
+{
+  bool msg_exists = file_exists((path + "/msg_gen/generated").c_str());
+  bool srv_exists = file_exists((path + "/srv_gen/generated").c_str());
+
+  string flags;
+
+  if (cflags)
+  {
+    if (msg_exists)
+    {
+      flags += string(" -I") + path + "/msg_gen/cpp/include";
+    }
+
+    if (srv_exists)
+    {
+      flags += string(" -I") + path + "/srv_gen/cpp/include";
+    }
+  }
+
+  // lflags not needed until we have a cpp file, but this implementation works, adding -l<package_name>msgs and -l<package_name>srvs
+  // we'll probably need to figure out a better way of testing for msg/srvs than just checking if <package_path>/msg|srv exists though
+#if 0
+  if (lflags)
+  {
+    if (msg_exists)
+    {
+      flags += string(" -L") + path + "/lib";
+      flags += string(" -Wl,-rpath,") + path + "/lib";
+      flags += " -l" + package->name + "msgs";
+    }
+
+    if (srv_exists)
+    {
+      // if msgs already exist, we'll already have added this to the flags
+      if (!msg_exists)
+      {
+        flags += string(" -L") + path + "/lib";
+        flags += string(" -Wl,-rpath,") + path + "/lib";
+      }
+
+      flags += " -l" + package->name + "srvs";
+    }
+  }
+#endif
+
+  flags += " ";
+  return flags;
+}
+
 string Package::direct_flags(string lang, string attrib)
 {
   TiXmlElement *mroot = manifest_root();
   TiXmlElement *export_ele = mroot->FirstChildElement("export");
-  if (!export_ele)
-    return string("");
-  bool os_match = false;
-  TiXmlElement *best_usage = NULL;
-  for (TiXmlElement *lang_ele = export_ele->FirstChildElement(lang); 
-       lang_ele; lang_ele = lang_ele->NextSiblingElement(lang))
+  string str;
+  if (export_ele)
   {
-    const char *os_str;
-    if ((os_str = lang_ele->Attribute("os")))
+    bool os_match = false;
+    TiXmlElement *best_usage = NULL;
+    for (TiXmlElement *lang_ele = export_ele->FirstChildElement(lang);
+         lang_ele; lang_ele = lang_ele->NextSiblingElement(lang))
     {
-      if(g_ros_os == string(os_str))
+      const char *os_str;
+      if ((os_str = lang_ele->Attribute("os")))
       {
-        if(os_match)
+        if(g_ros_os == string(os_str))
         {
-          fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag with os=\"%s\" in export block\n",
-                  lang.c_str(), os_str);
+          if(os_match)
+          {
+            fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag with os=\"%s\" in export block\n",
+                    lang.c_str(), os_str);
+          }
+          else
+          {
+            best_usage = lang_ele;
+            os_match = true;
+          }
         }
-        else
-        {
+      }
+      if(!os_match)
+      {
+        if (!best_usage)
           best_usage = lang_ele;
-          os_match = true;
+        else if(!os_str)
+        {
+          fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag in export block\n",
+                  lang.c_str());
         }
       }
     }
-    if(!os_match)
+    if (!best_usage)
+      return string();
+    const char *cstr = best_usage->Attribute(attrib.c_str());
+    if (!cstr)
+      return string();
+    str = cstr;
+    while (1) // every decent C program has a while(1) in it
     {
-      if (!best_usage)
-        best_usage = lang_ele;
-      else if(!os_str)
-      {
-        fprintf(stderr, "[rospack] warning: ignoring duplicate \"%s\" tag in export block\n",
-                lang.c_str());
-      }
+      int i = str.find(string("${prefix}"));
+      if (i < 0)
+        break; // no more occurrences
+      str.replace(i, string("${prefix}").length(), path);
     }
-  }
-  if (!best_usage)
-    return string();
-  const char *cstr = best_usage->Attribute(attrib.c_str());
-  if (!cstr)
-    return string();
-  string s(cstr);
-  while (1) // every decent C program has a while(1) in it
-  {
-    int i = s.find(string("${prefix}"));
-    if (i < 0)
-      break; // no more occurrences
-    s.replace(i, string("${prefix}").length(), path);
-  }
 
-  // Do backquote substitution.  E.g.,  if we find this string:
-  //   `pkg-config --cflags gdk-pixbuf-2.0`
-  // We replace it with the result of executing the command
-  // contained within the backquotes (reading from its stdout), which
-  // might be something like:
-  //   -I/usr/include/gtk-2.0 -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include  
+    // Do backquote substitution.  E.g.,  if we find this string:
+    //   `pkg-config --cflags gdk-pixbuf-2.0`
+    // We replace it with the result of executing the command
+    // contained within the backquotes (reading from its stdout), which
+    // might be something like:
+    //   -I/usr/include/gtk-2.0 -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include
 
-  // Construct and execute the string
-  // We do the assignment first to ensure that if backquote expansion (or
-  // anything else) fails, we'll get a non-zero exit status from pclose().
-  string cmd = string("ret=\"") + s + string("\" && echo $ret");
+    // Construct and execute the string
+    // We do the assignment first to ensure that if backquote expansion (or
+    // anything else) fails, we'll get a non-zero exit status from pclose().
+    string cmd = string("ret=\"") + str + string("\" && echo $ret");
 
-  // Remove embedded newlines
-  string token("\n");
-  for (string::size_type s = cmd.find(token); s != string::npos;
-       s = cmd.find(token, s))
-  {
-    cmd.replace(s,token.length(),string(" "));
-  }
-
-  FILE* p;
-  if(!(p = popen(cmd.c_str(), "r")))
-  {
-    fprintf(stderr, "[rospack] warning: failed to execute backquote "
-                    "expression \"%s\" in [%s]\n",
-            cmd.c_str(), manifest_path().c_str());
-    string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
-    throw runtime_error(errmsg);
-  }
-  else
-  {
-    char buf[8192];
-    memset(buf,0,sizeof(buf));
-    // Read the command's output
-    do
+    // Remove embedded newlines
+    string token("\n");
+    for (string::size_type s = cmd.find(token); s != string::npos;
+         s = cmd.find(token, s))
     {
-      clearerr(p);
-      while(fgets(buf + strlen(buf),sizeof(buf)-strlen(buf)-1,p));
-    } while(ferror(p) && errno == EINTR);
-    // Close the subprocess, checking exit status
-    if(pclose(p) != 0)
+      cmd.replace(s,token.length(),string(" "));
+    }
+
+    FILE* p;
+    if(!(p = popen(cmd.c_str(), "r")))
     {
-      fprintf(stderr, "[rospack] warning: got non-zero exit status from executing backquote expression \"%s\" in [%s]\n",
+      fprintf(stderr, "[rospack] warning: failed to execute backquote "
+                      "expression \"%s\" in [%s]\n",
               cmd.c_str(), manifest_path().c_str());
       string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
       throw runtime_error(errmsg);
     }
     else
     {
-      // Strip trailing newline, which was added by our call to echo
-      buf[strlen(buf)-1] = '\0';
-      // Replace the backquote expression with the new text
-      s = string(buf);
+      char buf[8192];
+      memset(buf,0,sizeof(buf));
+      // Read the command's output
+      do
+      {
+        clearerr(p);
+        while(fgets(buf + strlen(buf),sizeof(buf)-strlen(buf)-1,p));
+      } while(ferror(p) && errno == EINTR);
+      // Close the subprocess, checking exit status
+      if(pclose(p) != 0)
+      {
+        fprintf(stderr, "[rospack] warning: got non-zero exit status from executing backquote expression \"%s\" in [%s]\n",
+                cmd.c_str(), manifest_path().c_str());
+        string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
+        throw runtime_error(errmsg);
+      }
+      else
+      {
+        // Strip trailing newline, which was added by our call to echo
+        buf[strlen(buf)-1] = '\0';
+        // Replace the backquote expression with the new text
+        str = string(buf);
+      }
     }
   }
 
-  return s;
+  if (lang == "cpp")
+  {
+    if (attrib == "cflags")
+    {
+      // Message flags go last so it's possible to override them
+      str += cpp_message_flags(true, false);
+    }
+    else if (attrib == "lflags")
+    {
+      // Message flags go last so it's possible to override them
+      str += cpp_message_flags(false, true);
+    }
+  }
+
+  return str;
 }
 
 void Package::load_manifest()
@@ -606,6 +672,7 @@ const char* ROSPack::usage()
           "    langs\n"
           "    depends [package] (alias: deps)\n"
           "    depends-manifests [package] (alias: deps-manifests)\n"
+          "    depends-msgsrv [package] (alias: deps-msgsrv)\n"
           "    depends1 [package] (alias: deps1)\n"
           "    depends-indent [package] (alias: deps-indent)\n"
           "    depends-why --target=<target> [package] (alias: deps-why)\n"
@@ -705,8 +772,9 @@ int ROSPack::cmd_depends_on(bool include_indirect)
   {
     fprintf(stderr, "[rospack] warning: package %s doesn't exist\n", 
             opt_package.c_str());
-    p = new Package(opt_package);
-    Package::pkgs.push_back(p);
+    //p = new Package(opt_package);
+    //Package::pkgs.push_back(p);
+    p = add_package(opt_package);
   }
   assert(p);
   const VecPkg descendants = include_indirect ? p->descendants() 
@@ -776,6 +844,29 @@ int ROSPack::cmd_deps_manifests()
     output_acc += (*i)->path + "/manifest.xml ";
   }
   //puts("");
+  output_acc += "\n";
+  return 0;
+}
+
+int ROSPack::cmd_deps_msgsrv()
+{
+  VecPkg d = get_pkg(opt_package)->deps(Package::POSTORDER);
+  for (VecPkg::iterator i = d.begin(); i != d.end(); ++i)
+  {
+    Package* p = *i;
+    bool msg_exists = file_exists((p->path + "/msg_gen/generated").c_str());
+    bool srv_exists = file_exists((p->path + "/srv_gen/generated").c_str());
+
+    if (msg_exists)
+    {
+      output_acc += p->path + "/msg_gen/generated ";
+    }
+
+    if (srv_exists)
+    {
+      output_acc += p->path + "/srv_gen/generated ";
+    }
+  }
   output_acc += "\n";
   return 0;
 }
@@ -897,14 +988,6 @@ int ROSPack::cmd_libs_only(string token)
   else
   {
     lflags = snarf_flags(lflags, token);
-    // tack on the bindeps path if it appears to be a good time to do so
-    // note this may be superfluous since rosboost-cfg is likely bringing
-    // the flags into the string already. perhaps at some point I should
-    // skim through the lflags and see if getBinDepPath() is already in
-    // there. It doesn't seem to hurt to duplicate it, though.
-    // (also: may need to set the rpath if rosboost-cfg hasn't already done it)
-    if (useBinDepPath())
-      lflags += string(" ") + getBinDepPath() + string("/lib");
     lflags = deduplicate_tokens(lflags);
   }
   //printf("%s\n", lflags.c_str());
@@ -920,9 +1003,6 @@ int ROSPack::cmd_cflags_only(string token)
   else
   {
     cflags = snarf_flags(cflags, token);
-    // tack on the bindeps path if it appears to be a good time to do so
-    if (useBinDepPath())
-      cflags += string(" ") + getBinDepPath() + string("/include");
     cflags = deduplicate_tokens(cflags);
   }
   //printf("%s\n", cflags.c_str());
@@ -933,17 +1013,6 @@ int ROSPack::cmd_cflags_only(string token)
 void ROSPack::export_flags(string pkg, string lang, string attrib)
 {
   string flags = get_pkg(pkg)->flags(lang, attrib);
-  // hack up to add the /opt/ros flags for C++ system dependencies
-  if (useBinDepPath() && lang == string("cpp"))
-  {
-    if (attrib == string("cflags"))
-      flags += string(" -I") + getBinDepPath() + string("/include");
-    else if (attrib == string("lflags"))
-    {
-      flags += string(" -L") + getBinDepPath() + string("/lib");
-      flags += string(" -Wl,-rpath,") + getBinDepPath() + string("/lib");
-    }
-  }
   //printf("%s\n", flags.c_str());
   output_acc += flags + "\n";
 }
@@ -1234,6 +1303,8 @@ int ROSPack::run(int argc, char **argv)
     return cmd_deps();
   else if (!strcmp(cmd, "depends-manifests") || !strcmp(cmd, "deps-manifests"))
     return cmd_deps_manifests();
+  else if (!strcmp(cmd, "depends-msgsrv") || !strcmp(cmd, "deps-msgsrv"))
+      return cmd_deps_msgsrv();
   else if (!strcmp(cmd, "depends1") || !strcmp(cmd, "deps1"))
     return cmd_deps1();
   else if (!strcmp(cmd, "depends-indent") || !strcmp(cmd, "deps-indent"))
@@ -1453,23 +1524,31 @@ double ROSPack::time_since_epoch()
   return tod.tv_sec + 1e-6 * tod.tv_usec;
 }
 
-bool ROSPack::useBinDepPath()
+// Add package, filtering out duplicates.
+Package* ROSPack::add_package(string path)
 {
-  const char *bdp_env = getenv("ROS_BINDEPS_PATH");
-  if (bdp_env)
-    return file_exists(string(bdp_env));
+  // Filter out duplicates; first encountered takes precedence
+  Package* newp = new Package(path);
+  Package* return_p = newp;
+  // TODO: make this check more efficient
+  bool dup = false;
+  for(std::vector<Package *>::const_iterator it = Package::pkgs.begin();
+      it != Package::pkgs.end();
+      it++)
+  {
+    if((*it)->name == newp->name)
+    {
+      dup=true;
+      return_p = *it;
+      break;
+    }
+  }
+  if(dup)
+    delete newp;
   else
-    return file_exists("/opt/ros");
-}
+    Package::pkgs.push_back(newp);
 
-string ROSPack::getBinDepPath()
-{
-  // We assume that the caller already checked getBinDepPath()
-  const char *bdp_env = getenv("ROS_BINDEPS_PATH");
-  if (bdp_env)
-    return string(bdp_env);
-  else
-    return string("/opt/ros");
+  return return_p;
 }
 
 void ROSPack::crawl_for_packages(bool force_crawl)
@@ -1498,7 +1577,8 @@ void ROSPack::crawl_for_packages(bool force_crawl)
         char *newline_pos = strchr(linebuf, '\n');
         if (newline_pos)
           *newline_pos = 0;
-        Package::pkgs.push_back(new Package(linebuf));
+        //Package::pkgs.push_back(new Package(linebuf));
+        add_package(linebuf);
       }
       fclose(cache);
       return; // cache load went OK; we're done here.
@@ -1520,14 +1600,11 @@ void ROSPack::crawl_for_packages(bool force_crawl)
     {
       if(!i->size())
         continue;
-      // Check whether this part of ROS_PACKAGE_PATH is itself a package
-      if (Package::is_package(*i))
-        Package::pkgs.push_back(new Package(*i));
       else if (Package::is_no_subdirs(*i))
         fprintf(stderr, "[rospack] WARNING: non-package directory in "
-                        "ROS_PACKAGE_PATH marked rospack_nosubdirs:\n\t%s\n",
+                "ROS_PACKAGE_PATH marked rospack_nosubdirs:\n\t%s\n",
                 i->c_str());
-     else
+      else
         q.push_back(CrawlQueueEntry(*i));
     }
   }
@@ -1538,6 +1615,15 @@ void ROSPack::crawl_for_packages(bool force_crawl)
   {
     CrawlQueueEntry cqe = q.front();
     q.pop_front();
+    
+    // Check whether this part of ROS_PACKAGE_PATH is itself a package
+    if (Package::is_package(cqe.path))
+    {
+      //Package::pkgs.push_back(new Package(*i));
+      add_package(cqe.path);
+      continue;
+    }
+
     //printf("crawling %s\n", cqe.path.c_str());
     if (opt_profile_length != 0)
     {
@@ -1591,24 +1677,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
       if (Package::is_package(child_path))
       {
         total_num_pkgs++;
-        // Filter out duplicates; first encountered takes precedence
-        Package* newp = new Package(child_path);
-        // TODO: make this check more efficient
-        bool dup = false;
-        for(std::vector<Package *>::const_iterator it = Package::pkgs.begin();
-            it != Package::pkgs.end();
-            it++)
-        {
-          if((*it)->name == newp->name)
-          {
-            dup=true;
-            break;
-          }
-        }
-        if(dup)
-          delete newp;
-        else
-          Package::pkgs.push_back(newp);
+        add_package(child_path);
       }
       //check to make sure we're allowed to descend
       else if (!Package::is_no_subdirs(child_path)) 

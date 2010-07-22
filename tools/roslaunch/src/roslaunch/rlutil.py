@@ -41,7 +41,27 @@ This API should not be considered stable.
 import os
 import time
 
+from roslib.names import SEP
+
 import roslaunch.core
+
+def check_log_disk_usage():
+    """
+    Check size of log directory. If high, print warning to user
+    """
+    try:
+        import rosclean
+        import roslib.rosenv
+        d = roslib.rosenv.get_log_dir()
+        roslaunch.core.printlog("Checking log directory for disk usage. This may take awhile.\nPress Ctrl-C to interrupt") 
+        disk_usage = rosclean.get_disk_usage(d)
+        # warn if over a gig
+        if disk_usage > 1073741824:
+            roslaunch.core.printerrlog("WARNING: disk usage in log directory [%s] is over 1GB.\nIt's recommended that you use the 'rosclean' command."%d)
+        else:
+            roslaunch.core.printlog("Done checking log file disk usage. Usage is <1GB.")            
+    except:
+        pass
 
 def resolve_launch_arguments(args):
     """
@@ -50,6 +70,11 @@ def resolve_launch_arguments(args):
     @rtype: [str]
     """
     import roslib.packages
+    import roslib.scriptutil
+
+    # strip remapping args for processing
+    args = roslib.scriptutil.myargv(args)
+    
     # user can either specify:
     #  - filename + launch args
     #  - package + relative-filename + launch args
@@ -99,7 +124,7 @@ _terminal_name = None
 
 def _set_terminal(s):
     import platform
-    if platform.system() in ['Linux', 'Darwin', 'Unix']:
+    if platform.system() in ['FreeBSD', 'Linux', 'Darwin', 'Unix']:
         try:
             print '\033]2;%s\007'%s
         except:
@@ -207,3 +232,14 @@ def check_roslaunch(f):
     if errors:
         return '\n'.join(errors)
                           
+
+def namespaces_of(name):
+    if name is None: 
+        raise ValueError('name')
+    if not isinstance(name, basestring):
+        raise TypeError('name')
+    if not name:
+        return [SEP]
+
+    splits = [x for x in name.split(SEP) if x]
+    return ['/'] + ['/'+SEP.join(splits[:i]) for i in xrange(1, len(splits))]

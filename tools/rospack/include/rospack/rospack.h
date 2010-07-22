@@ -178,6 +178,14 @@ public:
   TiXmlElement *manifest_root();
   void accumulate_deps(AccList& acc_list, Package* to);
 
+  /**
+   * \brief Returns the message flags for this package.  If the path/msg or path/srv directories exist,
+   * adds appropriate compile/link flags depending on what is requested
+   * \param cflags Whether or not to include compile flags
+   * \param lflags Whether or not to include link flags
+   */
+  std::string cpp_message_flags(bool cflags, bool lflags);
+
 
 private:
   bool deps_calculated, direct_deps_calculated, descendants_calculated;
@@ -221,6 +229,7 @@ public:
   int cmd_depsindent(Package* pkg, int indent);
 
   int cmd_deps_manifests();
+  int cmd_deps_msgsrv();
 
   int cmd_deps1();
 
@@ -299,14 +308,12 @@ private:
   bool cache_lock_failed;
   bool crawled;
   std::string getCachePath();
+  // Add package, filtering out duplicates.
+  Package* add_package(std::string path);
   /** tests if the cache exists, is new enough, and is valid */
   bool cache_is_good();
   /** returns a double representing the seconds since the Epoch */
   static double time_since_epoch();
-  /** returns env[ROS_BINDEPS_PATH] if specified, otherwise /opt/ros */
-  std::string getBinDepPath();
-  /** returns true if env[ROS_BINDEPS_PATH] exists or /opt/ros exists */
-  bool useBinDepPath();
   /** remove trailing slashes */
   void sanitize_rppvec(std::vector<std::string> &rppvec);
   // Output accumulates here

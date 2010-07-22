@@ -46,7 +46,7 @@ import roslib.stacks
 import roslib.stack_manifest
 
 class RosdocContext(object):
-    def __init__(self, name, docdir, package_filters=None, path_filters=None):
+    def __init__(self, name, docdir, package_filters=None, path_filters=None, repos=None):
         self.name = name
         self.package_filters = package_filters
         self.path_filters = []
@@ -66,6 +66,10 @@ class RosdocContext(object):
         self.external_docs = {}
         self.manifests = {}
         self.stack_manifests = {}
+
+        # repos is initialized in Hudson rosdoc builds when we are spanning all repos
+        self.repos = repos
+        
         # advanced per-package config
         self.rd_configs = {}                
 
@@ -81,11 +85,18 @@ class RosdocContext(object):
         rd_config = self.rd_configs.get(package, None)
         if not rd_config:
             return builder == 'doxygen'
+        if type(rd_config) != list:
+            print >> sys.stderr, "WARNING: package [%s] has an invalid rosdoc config"%package
+            return False            
         try:
             return len([d for d in rd_config if d['builder'] == builder]) > 0
         except KeyError:
             print >> sys.stderr, "config file for [%s] is invalid, missing required 'builder' key"%package
-        
+            return False
+        except:
+            print >> sys.stderr, "config file for [%s] is invalid"%package
+            return False
+            
     def should_document(self, package):
         """
         @return: True if package should be documented
@@ -194,7 +205,7 @@ class RosdocContext(object):
             except:
                 import traceback
                 traceback.print_exc()
-                print >> sys.stderr, "WARN: Package '%s' does not have a valid manifest.xml file, manifest information will not be included in docs"%package
+                print >> sys.stderr, "WARN: stack '%s' does not have a valid stack.xml file, manifest information will not be included in docs"%package
                 
 
 def compute_relative(src, target):

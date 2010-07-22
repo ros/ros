@@ -91,8 +91,17 @@ def invalid_url(url):
     
 # Error-checking functions for more advanced checks
 
-def ros_root_check(ctx):
-    path = ctx.ros_root
+def ros_root_check(ctx, ros_root=None):
+    """
+    @param ros_root: override ctx, useful for when ctx is not created yet
+    @type  ros_root: str
+    """
+    if ros_root is not None:
+        path = ros_root
+    else:
+        path = ctx.ros_root
+    if not os.path.basename(path) == 'ros':
+        return "ROS_ROOT [%s] must end in directory named 'ros'"%path      
     bindir = os.path.join(path, 'bin')
     if not isdir(bindir):
         return "ROS_ROOT [%s] does not have a valid bin directory"%path

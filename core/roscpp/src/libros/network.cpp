@@ -28,6 +28,7 @@
 #include "config.h"
 #include "ros/network.h"
 #include "ros/file_log.h"
+#include "ros/exceptions.h"
 
 #include <ros/console.h>
 #include <ros/assert.h>
@@ -40,6 +41,8 @@
   #include <ifaddrs.h>
 #endif
 
+#include <boost/lexical_cast.hpp>
+
 namespace ros
 {
 
@@ -47,6 +50,7 @@ namespace network
 {
 
 std::string g_host;
+uint16_t g_tcpros_server_port = 0;
 
 const std::string& getHost()
 {
@@ -71,6 +75,11 @@ bool splitURI(const std::string& uri, std::string& host, uint32_t& port)
   port = atoi(port_str.c_str());
   host = host.erase(colon_pos);
   return true;
+}
+
+uint16_t getTCPROSPort()
+{
+  return g_tcpros_server_port;
 }
 
 static bool isPrivateIP(const char *ip)
@@ -187,6 +196,19 @@ void init(const M_string& remappings)
     if (it != remappings.end())
     {
       g_host = it->second;
+    }
+  }
+
+  it = remappings.find("__tcpros_server_port");
+  if (it != remappings.end())
+  {
+    try
+    {
+      g_tcpros_server_port = boost::lexical_cast<uint16_t>(it->second);
+    }
+    catch (boost::bad_lexical_cast&)
+    {
+      throw ros::InvalidPortException("__tcpros_server_port [" + it->second + "] was not specified as a number within the 0-65535 range");
     }
   }
 

@@ -60,18 +60,18 @@ class MockEmptySock:
 class TestRospyTcprosBase(unittest.TestCase):
 
     def test_constants(self):
-        self.assertEquals("TCPROS", rospy.tcpros_base.TCPROS)
-        self.assert_(type(rospy.tcpros_base.DEFAULT_BUFF_SIZE), int)
+        self.assertEquals("TCPROS", rospy.impl.tcpros_base.TCPROS)
+        self.assert_(type(rospy.impl.tcpros_base.DEFAULT_BUFF_SIZE), int)
 
     def test_recv_buff(self):
-        from rospy.tcpros_base import recv_buff
+        from rospy.impl.tcpros_base import recv_buff
 
 
         buff = cStringIO.StringIO()
         try:
             recv_buff(MockEmptySock(), buff, 1)
             self.fail("recv_buff should have raised TransportTerminated")
-        except rospy.tcpros_base.TransportTerminated:
+        except rospy.impl.tcpros_base.TransportTerminated:
             self.assertEquals('', buff.getvalue())
 
         self.assertEquals(5, recv_buff(MockSock('1234567890'), buff, 5))
@@ -82,7 +82,7 @@ class TestRospyTcprosBase(unittest.TestCase):
         self.assertEquals('1234567890', buff.getvalue())
 
     def test_TCPServer(self):
-        from rospy.tcpros_base import TCPServer
+        from rospy.impl.tcpros_base import TCPServer
         def handler(sock, addr):
             pass
         s = None
@@ -102,15 +102,15 @@ class TestRospyTcprosBase(unittest.TestCase):
         import rospy
         import random
 
-        from rospy.tcpros_base import TCPROSTransportProtocol
-        from rospy.transport import BIDIRECTIONAL
+        from rospy.impl.tcpros_base import TCPROSTransportProtocol
+        from rospy.impl.transport import BIDIRECTIONAL
         
         p = TCPROSTransportProtocol('Bob', rospy.AnyMsg)
         self.assertEquals('Bob', p.resolved_name)
         self.assertEquals(rospy.AnyMsg, p.recv_data_class)
         self.assertEquals(BIDIRECTIONAL, p.direction)
         self.assertEquals({}, p.get_header_fields())
-        self.assertEquals(rospy.tcpros_base.DEFAULT_BUFF_SIZE, p.buff_size)
+        self.assertEquals(rospy.impl.tcpros_base.DEFAULT_BUFF_SIZE, p.buff_size)
 
         v = random.randint(1, 100)
         p = TCPROSTransportProtocol('Bob', rospy.AnyMsg, queue_size=v)
@@ -121,16 +121,16 @@ class TestRospyTcprosBase(unittest.TestCase):
         self.assertEquals(v, p.buff_size)
 
     def test_TCPROSTransport(self):
-        import rospy.tcpros_base
-        from rospy.tcpros_base import TCPROSTransport, TCPROSTransportProtocol
-        from rospy.transport import OUTBOUND
+        import rospy.impl.tcpros_base
+        from rospy.impl.tcpros_base import TCPROSTransport, TCPROSTransportProtocol
+        from rospy.impl.transport import OUTBOUND
         p = TCPROSTransportProtocol('Bob', rospy.AnyMsg)
         p.direction = OUTBOUND
 
         try:
             TCPROSTransport(p, '')
             self.fail("TCPROSTransport should not accept bad name")
-        except rospy.tcpros_base.TransportInitError: pass
+        except rospy.impl.tcpros_base.TransportInitError: pass
         
         t = TCPROSTransport(p, 'transport-name')
         self.assert_(t.socket is None)
@@ -156,4 +156,4 @@ class TestRospyTcprosBase(unittest.TestCase):
         
 if __name__ == '__main__':
     import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyTcprosBase, coverage_packages=['rospy.tcpros_base'])
+    rostest.unitrun('test_rospy', sys.argv[0], TestRospyTcprosBase, coverage_packages=['rospy.impl.tcpros_base'])

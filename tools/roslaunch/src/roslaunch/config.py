@@ -45,6 +45,8 @@ import types
 import roslib.names
 
 from roslaunch.core import Master, local_machine, get_ros_root, is_machine_local, RLException
+from roslaunch.rlutil import namespaces_of
+import roslaunch.loader
 import roslaunch.xmlloader
 
 def load_roscore(loader, config, verbose=True):
@@ -233,11 +235,17 @@ class ROSLaunchConfig(object):
         @type  p: L{Param}
         """
         key = p.key
+
+        # check for direct overrides
         if key in self.params and self.params[key] != p:
             if filename:
                 self.logger.debug("[%s] overriding parameter [%s]"%(filename, p.key))
             else:
-                self.logger.debug("overriding parameter [%s]"%p.key)                
+                self.logger.debug("overriding parameter [%s]"%p.key)
+        # check for parent conflicts
+        for parent_key in [pk for pk in namespaces_of(key) if pk in self.params]:
+            self.add_config_error("parameter [%s] conflicts with parent parameter [%s]"%(key, parent_key))
+
         self.params[key] = p
         if verbose:
             print "Added parameter [%s]"%key
@@ -333,7 +341,7 @@ class ROSLaunchConfig(object):
             # assign to local machine
             return self.machines['']            
 
-def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None, verbose=False):
+def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None, verbose=False, assign_machines=True):
     """
     Base routine for creating a ROSLaunchConfig from a set of 
     roslaunch_files and or launch XML strings and initializing it. This
@@ -347,6 +355,8 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
     @type  roslaunch_strs: [str]
     @param verbose: (optional) print info to screen about model as it is loaded. 
     @type  verbose: bool
+    @param assign_machines: (optional) assign nodes to machines (default: True)
+    @type  assign_machines: bool
     @return: initialized rosconfig instance
     @rytpe: L{ROSLaunchConfig} initialized rosconfig instance
     """
@@ -371,7 +381,7 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
             loader.load(f, config, verbose=verbose)
         except roslaunch.xmlloader.XmlParseException, e:
             raise RLException(e)
-        except roslaunch.xmlloader.XmlLoadException, e:
+        except roslaunch.loader.LoadException, e:
             raise RLException(e)
         
     # we need this for the hardware test systems, which builds up
@@ -383,7 +393,7 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
                 loader.load_string(launch_str, config)
             except roslaunch.xmlloader.XmlParseException, e:
                 raise RLException('Launch string: %s\nException: %s'%(launch_str, e))
-            except roslaunch.xmlloader.XmlLoadException, e:
+            except roslaunch.loader.LoadException, e:
                 raise RLException('Launch string: %s\nException: %s'%(launch_str, e))
 
     if port:
@@ -393,7 +403,8 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
     # make sure our environment is correct
     config.validate()
 
-    # choose machines for the nodes 
-    config.assign_machines()
+    # choose machines for the nodes
+    if assign_machines:
+        config.assign_machines()
     return config
     

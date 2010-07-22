@@ -29,7 +29,7 @@
 #define ROSCPP_SUBSCRIBER_HANDLE_H
 
 #include "ros/forwards.h"
-#include "ros/subscription_message_helper.h"
+#include "ros/subscription_callback_helper.h"
 
 namespace ros
 {
@@ -85,7 +85,7 @@ public:
   }
 
 private:
-  Subscriber(const std::string& topic, const NodeHandle& node_handle, const SubscriptionMessageHelperPtr& helper);
+  Subscriber(const std::string& topic, const NodeHandle& node_handle, const SubscriptionCallbackHelperPtr& helper);
 
   class Impl
   {
@@ -98,7 +98,7 @@ private:
 
     std::string topic_;
     NodeHandlePtr node_handle_;
-    SubscriptionMessageHelperPtr helper_;
+    SubscriptionCallbackHelperPtr helper_;
     bool unsubscribed_;
     double constructed_;
   };

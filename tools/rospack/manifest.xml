@@ -21,4 +21,8 @@ rospack uses the TinyXML parser, a zLib-licensed library which is available here
   <export>
     <cpp cflags="-I${prefix} -I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lrospack -lrosstack"/>
   </export>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>

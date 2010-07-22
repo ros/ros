@@ -152,6 +152,8 @@ class PackageFlagTracker:
     return True
 
   def add_nobuild(self, package):
+    if self.has_nobuild(package):
+      return True
     with open(os.path.join(self.get_path(package), "ROS_NOBUILD"), 'w') as f:
       f.write("created by rosmake to mark as installed")
       self.nobuild.add(package)
@@ -227,6 +229,7 @@ class PackageFlagTracker:
         buildable = False
         output_str += " No Makefile in package %s\n"%pkg
 
-    
+    if output_str and output_str[-1] == '\n':
+        output_str = output_str[:-1]
 
     return (buildable, output_state, output_str)

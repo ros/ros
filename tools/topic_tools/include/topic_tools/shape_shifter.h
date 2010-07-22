@@ -42,120 +42,208 @@
 #include <string>
 #include <string.h>
 
+#include <ros/message_traits.h>
+
 namespace topic_tools
 {
  
-  class ShapeShifterException : public ros::Exception
-  {
-  public:
-    ShapeShifterException(const std::string& msg)
-      : ros::Exception(msg)  {}
-  };
+class ShapeShifterException : public ros::Exception
+{
+public:
+  ShapeShifterException(const std::string& msg)
+    : ros::Exception(msg)  {}
+};
 
 
-// as on star trek, you've always got to be on the lookout for shape shifters
 class ShapeShifter : public ros::Message
 {
 public:
   typedef boost::shared_ptr<ShapeShifter> Ptr;
   typedef boost::shared_ptr<ShapeShifter const> ConstPtr;
 
+  static bool uses_old_API_;
+
+  // Constructor and destructor
+  ShapeShifter();
+  virtual ~ShapeShifter();
+
+  // Helpers for inspecting shapeshifter
+  std::string const& getDataType()          const;
+  std::string const& getMD5Sum()            const;
+  std::string const& getMessageDefinition() const;
+
+  void morph(const std::string& md5sum, const std::string& datatype, const std::string& msg_def);
+
+  // Helper for advertising
+  ros::Publisher advertise(ros::NodeHandle& nh, const std::string& topic, uint32_t queue_size_, bool latch=false) const;
+
+  //! Call to try instantiating as a particular type
+  template<class M> 
+  boost::shared_ptr<M> instantiate() const;
+
+  //! Write serialized message contents out to a stream
+  template<typename Stream>
+  void write(Stream& stream) const;
+
+  template<typename Stream>
+  void read(Stream& stream);
+
+  //! Return the size of the serialized message
+  uint32_t size() const;
+
+  // Deprecated old-style API
+  ROSCPP_DEPRECATED virtual const std::string __getDataType() const;
+  ROSCPP_DEPRECATED virtual const std::string __getMD5Sum() const;
+  ROSCPP_DEPRECATED virtual const std::string __getMessageDefinition() const;
+  
+  ROSCPP_DEPRECATED static const std::string __s_getDataType();
+  ROSCPP_DEPRECATED static const std::string __s_getMD5Sum();
+  ROSCPP_DEPRECATED static const std::string __s_getMessageDefinition();
+
+  ROSCPP_DEPRECATED uint32_t serializationLength() const { return msgBufUsed; }
+  ROSCPP_DEPRECATED virtual uint8_t *serialize(uint8_t *writePtr, uint32_t) const;
+  ROSCPP_DEPRECATED virtual uint8_t *deserialize(uint8_t *readPtr);
+
+private:
+
   std::string md5, datatype, msg_def;
   bool typed;
 
   uint8_t *msgBuf;
-  uint32_t msgBufUsed, msgBufAlloc;
-  std::string topic;
+  uint32_t msgBufUsed;
+  uint32_t msgBufAlloc;
   
-  ShapeShifter()
-    :  ros::Message(), typed(false), msgBuf(NULL), msgBufUsed(0), msgBufAlloc(0) { }
-  virtual ~ShapeShifter() { if (msgBuf) delete[] msgBuf;
-                            msgBuf = NULL; msgBufAlloc = 0; }
-
-  virtual const std::string __getDataType() const { return datatype; }
-  virtual const std::string __getMD5Sum()   const { return md5; }
-  virtual const std::string __getMessageDefinition()   const { return msg_def; }
+};
   
-  // You should never use a static method on a shape shifter
-  static const std::string __s_getDataType() { ROS_ASSERT_MSG(0, "Tried to get static datatype of a ShapeShifter."); return "";}
-  static const std::string __s_getMD5Sum()   { ROS_ASSERT_MSG(0, "Tried to get static md5sum of a ShapeShifter."); return "";}
-  static const std::string __s_getMessageDefinition()   { ROS_ASSERT_MSG(0, "Tried to get static message definition of a ShapeShifter."); return "";}
+}
 
-  ros::Publisher advertise(ros::NodeHandle& nh, const std::string& topic, uint32_t queue_size_, bool latch=false) const;
 
-  uint32_t serializationLength() const { return msgBufUsed; }
+// Message traits allow shape shifter to work with the new serialization API
+namespace ros {
+namespace message_traits {
 
-  virtual uint8_t *serialize(uint8_t *writePtr, uint32_t) const;
+template<>
+struct MD5Sum<topic_tools::ShapeShifter>
+{
+  static const char* value(const topic_tools::ShapeShifter& m) { return m.getMD5Sum().c_str(); }
 
-  virtual uint8_t *deserialize(uint8_t *readPtr);
+  // Used statically, a shapeshifter appears to be of any type
+  static const char* value() { return "*"; }
+};
 
-  template<class M> 
-  boost::shared_ptr<M> instantiate() const
-  {
-    if (!typed)
-      throw ShapeShifterException("Tried to instantiate message from an untyped shapeshifter.");
+template<>
+struct DataType<topic_tools::ShapeShifter>
+{
+  static const char* value(const topic_tools::ShapeShifter& m) { return m.getDataType().c_str(); }
 
-    if (M::__s_getDataType() != __getDataType())
-      throw ShapeShifterException("Tried to instantiate message without matching datatype.");
+  // Used statically, a shapeshifter appears to be of any type
+  static const char* value() { return "*"; }
+};
 
-    if (M::__s_getMD5Sum() != __getMD5Sum())
-      throw ShapeShifterException("Tried to instantiate message without matching md5sum.");
-      
-    boost::shared_ptr<M> p(new M());
-    p->__serialized_length = msgBufUsed;
-    p->deserialize(msgBuf);
-    return p;
+template<>
+struct Definition<topic_tools::ShapeShifter>
+{
+  static const char* value(const topic_tools::ShapeShifter& m) { return m.getMessageDefinition().c_str(); }
+};
+
+} // namespace message_traits
+
+
+namespace serialization
+{
+
+template<>
+struct Serializer<topic_tools::ShapeShifter>
+{
+  template<typename Stream>
+  inline static void write(Stream& stream, const topic_tools::ShapeShifter& m) {
+    m.write(stream);
   }
-  
+
+  template<typename Stream>
+  inline static void read(Stream& stream, topic_tools::ShapeShifter& m)
+  {
+    m.read(stream);
+  }
+
+  inline static uint32_t serializedLength(const topic_tools::ShapeShifter& m) {
+    return m.size();
+  }
 };
 
 
-  class ShapeShifterSubscriptionMessageHelper : public ros::SubscriptionMessageHelper
-  {
-  public:
-    typedef boost::shared_ptr<ShapeShifter> MPtr;
-    typedef boost::function<void (const MPtr&)> Callback;
-    ShapeShifterSubscriptionMessageHelper(const Callback& callback)
-      : callback_(callback)
-    {}
-    
-    virtual ros::MessagePtr create()
-    {
-      typedef boost::remove_const<ShapeShifter>::type NonConstType;
-      NonConstType* msg = new NonConstType;
-      return ros::MessagePtr(msg);
-    }
-    
-    virtual void call(const ros::MessagePtr& msg)
-    {
-      MPtr casted_msg = boost::static_pointer_cast<ShapeShifter>(msg);
-      callback_(casted_msg);
-    }
-    
-    virtual std::string getMD5Sum() { return "*"; }
-    virtual std::string getDataType() { return "*"; }
-    
-  private:
-    Callback callback_;
-  };
-  
-}
-
-namespace ros{
-
-// Template specialization of SubscribeOptions for ShapeShifter
 template<>
-void SubscribeOptions::init<topic_tools::ShapeShifter>(const std::string& _topic, uint32_t _queue_size,
-                                                       const boost::function<void (const boost::shared_ptr<topic_tools::ShapeShifter>&)>& _callback)
+struct PreDeserialize<topic_tools::ShapeShifter>
 {
-  topic = _topic;
-  queue_size = _queue_size;
-  md5sum = "*";
-  datatype = "*";
-  helper = SubscriptionMessageHelperPtr(new topic_tools::ShapeShifterSubscriptionMessageHelper(_callback));
+  static void notify(const PreDeserializeParams<topic_tools::ShapeShifter>& params)
+  {
+    std::string md5      = (*params.connection_header)["md5sum"];
+    std::string datatype = (*params.connection_header)["type"];
+    std::string msg_def  = (*params.connection_header)["message_definition"];
+
+    params.message->morph(md5, datatype, msg_def);
+  }
+};
+
+} // namespace serialization
+
+} //namespace ros
+
+
+
+// Template implementations:
+
+namespace topic_tools
+{
+
+template<class M> 
+boost::shared_ptr<M> ShapeShifter::instantiate() const
+{
+  if (!typed)
+    throw ShapeShifterException("Tried to instantiate message from an untyped shapeshifter.");
+  
+  if (ros::message_traits::datatype<M>() != getDataType())
+    throw ShapeShifterException("Tried to instantiate message without matching datatype.");
+  
+  if (ros::message_traits::md5sum<M>() != getMD5Sum())
+    throw ShapeShifterException("Tried to instantiate message without matching md5sum.");
+  
+  boost::shared_ptr<M> p(new M());
+
+  ros::assignSubscriptionConnectionHeader<M>(p.get(), __connection_header);
+
+  ros::serialization::IStream s(msgBuf, msgBufUsed);
+  ros::serialization::deserialize(s, *p);
+
+  return p;
 }
 
+
+template<typename Stream>
+void ShapeShifter::write(Stream& stream) const {
+  if (msgBufUsed > 0)
+    memcpy(stream.advance(msgBufUsed), msgBuf, msgBufUsed);
 }
+
+template<typename Stream>
+void ShapeShifter::read(Stream& stream)
+{
+  stream.getLength();
+  stream.getData();
+    
+  // stash this message in our buffer
+  if (stream.getLength() > msgBufAlloc)
+  {
+    delete[] msgBuf;
+    msgBuf = new uint8_t[stream.getLength()];
+    msgBufAlloc = stream.getLength();
+  }
+  msgBufUsed = stream.getLength();
+  memcpy(msgBuf, stream.getData(), stream.getLength());
+}
+
+} // namespace topic_tools
+
 
 #endif
 

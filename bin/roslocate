@@ -37,15 +37,18 @@ usage: roslocate COMMAND PARAMS
 
 currently supported commands:
 
-  roslocate describe PACKAGE
-  roslocate svn PACKAGE
-  roslocate repo PACKAGE
+  roslocate describe PACKAGE-OR-STACK
+  roslocate svn PACKAGE-OR-STACK
+  roslocate repo PACKAGE-OR-STACK
+  roslocate type PACKAGE-OR-STACK
   roslocate list
+  roslocate list-stacks
   roslocate search KEYWORD
 """
 
 import os
 import sys
+import itertools
 import time
 import datetime
 from xml.dom.minidom import parse
@@ -80,6 +83,28 @@ def download_megamanifest(cpath):
       return True
   return False
 
+def get_stack_cache_path():
+  try:
+    cpath = "%s/.roslocate_megastack.xml" % os.environ['ROS_ROOT']
+    f = open(cpath, 'a')
+    f.close()
+    return cpath
+  except IOError:
+    return "%s/.ros/roslocate_megastack.xml" % os.environ['HOME']
+
+def download_megastack(cpath):
+  #print "downloading megastack to %s" % cpath
+  uris = ['http://ros.org/browse/megastack.xml']
+  for uri in uris:
+    #print "trying %s" % uri
+    if (os.system("wget %s -q -O %s" % (uri, cpath)) != 0):
+      #print "couldn't download from %s" % uri
+      continue
+    else:
+      os.utime(cpath, None)
+      return True
+  return False
+
 def load_megamanifest():
   cpath = get_cache_path()
   if not os.path.exists(cpath) or os.path.getsize(cpath) == 0:
@@ -94,62 +119,109 @@ def load_megamanifest():
     download_megamanifest(cpath)
   return parse(cpath) # megamanifest
 
+def load_megastack():
+  cpath = get_stack_cache_path()
+  if not os.path.exists(cpath) or os.path.getsize(cpath) == 0:
+    if not download_megastack(cpath):
+      print "couldn't download megastack..."
+      exit(1)
+  cache_age = datetime.datetime.now() - \
+              datetime.datetime.fromtimestamp(os.path.getmtime(cpath))
+  cache_age_secs = cache_age.seconds + cache_age.days * 3600 * 24
+  #print "cache is %d seconds old" % cache_age_secs
+  if cache_age_secs > 3600 * 8:
+    download_megastack(cpath)
+  return parse(cpath) # megastack
+
 def usage():
   print __doc__ % vars()
   exit(1)
 
-def describe(pkgs, pkgname):
+def describe(pkgs, stacks, name):
   for pkg in pkgs:
-    if pkg.attributes['name'].value == pkgname:
+    if pkg.attributes['name'].value == name:
       print ""
-      #print pkg.getElementsByTagName('description')[0].attributes['brief'].value
+      print "Package: %s"%name
       print "Repository: %s " % pkg.attributes['repo_host'].value
       print "License: %s" % get_text(pkg.getElementsByTagName('license')).strip()
       print ""
       print "Author(s): %s" % get_text(pkg.getElementsByTagName('author'))
       print "Description: %s" % get_text(pkg.getElementsByTagName('description'))
-      #for dep in pkg.getElementsByTagName('depend'):
-      #  print dep.attributes['package'].value
       print "ROS dependencies: %s" % (", ".join([dep.attributes['package'].value for dep in pkg.getElementsByTagName('depend')]))
       print ""
       return
-  print "No package named %s found in the (known) public ROS repositories" % pkgname
+    
+  for s in stacks:
+    if s.attributes['name'].value == name:
+      print ""
+      print "Stack: %s"%name
+      print "Repository: %s " % s.attributes['repo_host'].value
+      print "License: %s" % get_text(s.getElementsByTagName('license')).strip()
+      print ""
+      print "Author(s): %s" % get_text(s.getElementsByTagName('author'))
+      print "Description: %s" % get_text(s.getElementsByTagName('description'))
+      print "ROS dependencies: %s" % (", ".join([dep.attributes['stack'].value for dep in s.getElementsByTagName('depend')]))
+      print ""
+      return
 
-def svn(pkgs, pkgname):
-  for pkg in pkgs:
-    if pkg.attributes['name'].value == pkgname:
-      print "%s%s" % (pkg.attributes['repo_host'].value, pkg.attributes['path'].value)
+  print "No package or stack named %s found in the (known) public ROS repositories" % name
 
-def repo(pkgs, pkgname):
-  for pkg in pkgs:
-    if pkg.attributes['name'].value == pkgname:
-      print "%s" % pkg.attributes['repo_host'].value
+def type_(pkgs, stacks, name):
+  for e in pkgs:
+    if e.attributes['name'].value == name:
+      print "package"
+      return
+  for e in stacks:
+    if e.attributes['name'].value == name:
+      print "stack"
+      return
+  print "unknown"
 
-def list_all(pkgs):
-  for pkg in pkgs:
-    print pkg.attributes['name'].value
+def svn(pkgs, stacks, name):
+  for e in itertools.chain(pkgs, stacks):
+    if e.attributes['name'].value == name:
+      print "%s%s" % (e.attributes['repo_host'].value, e.attributes['path'].value)
+      return
 
-def search(pkgs, keyword):
-  for pkg in pkgs:
-    desc = pkg.getElementsByTagName('description')
+def repo(pkgs, stacks, name):
+  for e in itertools.chain(pkgs, stacks):
+    if e.attributes['name'].value == name:
+      print "%s" % e.attributes['repo_host'].value
+      return
+
+def list_all(elements):
+  for e in elements:
+    print e.attributes['name'].value
+
+def search(pkgs, stacks, keyword):
+  for e in itertools.chain(pkgs, stacks):
+    desc = e.getElementsByTagName('description')
     if get_text(desc).lower().find(keyword.lower()) > 0:
-      print pkg.attributes['name'].value
+      print e.attributes['name'].value
 
 def roslocate_main():
   if len(sys.argv) < 2:
     usage()
   mm = load_megamanifest()
   pkgs = mm.getElementsByTagName('package')
+
+  ms = load_megastack()
+  stacks = ms.getElementsByTagName('stack')
+
   if sys.argv[1] == "describe":
-    describe(pkgs, sys.argv[2])
+    describe(pkgs, stacks, sys.argv[2])
   elif sys.argv[1] == "svn":
-    svn(pkgs, sys.argv[2])
+    svn(pkgs, stacks, sys.argv[2])
   elif sys.argv[1] == "repo":
-    repo(pkgs, sys.argv[2])
+    repo(pkgs, stacks, sys.argv[2])
   elif sys.argv[1] == "list":
     list_all(pkgs)
+  elif sys.argv[1] == "list-stacks":
+    list_all(stacks)
   elif sys.argv[1] == "search":
-    search(pkgs, sys.argv[2])
+    search(pkgs, stacks, sys.argv[2])
+  elif sys.argv[1] == "type":
+    type_(pkgs, stacks, sys.argv[2])
   else:
     usage()
 

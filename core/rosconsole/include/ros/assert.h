@@ -33,6 +33,7 @@
 #define ROSCONSOLE_ROSASSERT_H
 
 #include "ros/console.h"
+#include "ros/static_assert.h"
 
 /** \file */
 
@@ -98,21 +99,6 @@
 # include <cassert>
 # define ROS_ISSUE_BREAK() assert(false);
 #endif
-
-/**
- * \def ROS_COMPILE_ASSERT(cond)
- * \brief Compile-time assert.
- *
- * Only works with compile time statements, ie:
- @verbatim
-   struct A
-   {
-     uint32_t a;
-   };
-   ROS_COMPILE_ASSERT(sizeof(A) == 4);
- @endverbatim
- */
-#define ROS_COMPILE_ASSERT(cond) typedef char __ROS_COMPILE_ASSERT__[(cond)?1:-1]
 
 #ifndef NDEBUG
 #define ROS_ASSERT_ENABLED

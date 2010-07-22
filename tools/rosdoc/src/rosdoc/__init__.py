@@ -61,11 +61,25 @@ def main():
     parser.add_option("-o",metavar="OUTPUT_DIRECTORY",
                       dest="docdir", default='doc', 
                       help="directory to write documentation to")
+    parser.add_option("--repos", default=None,
+                      dest="repos", metavar="ROSBROWSE_REPOS_FILE",
+                      help="repos list from rosbrowse for determining repository names/roots")
+
     options, package_filters = parser.parse_args()
 
     # Load the ROS environment
+    # - repos is for the rosdoc build on Hudson. It generates the correct repository roots for generating package_headers
+    repos = None
+    if options.repos:
+        with open(options.repos, 'r') as f:
+            # load file
+            repos = [l.split() for l in f if not l.startswith('#')]
+            # convert to dictionary
+            repos = dict([(key, (type, uri)) for key, type, uri in repos])
+
     ctx = RosdocContext(options.name, options.docdir,
-                        package_filters=package_filters, path_filters=options.paths)
+                        package_filters=package_filters, path_filters=options.paths,
+                        repos=repos)
     try:
         ctx.init()
     except Exception, e:
@@ -85,11 +99,13 @@ def main():
                     ctx.has_builder(package, 'rosmake')):
                     to_rosmake.append(package)
         if to_rosmake != []:
-            command = ['rosmake'] + to_rosmake
+            # command = ['rosmake', '--status-rate=0'] + to_rosmake
+            command = ['rosmake', '-V'] + to_rosmake
             print " ".join(command)
             started = time.time()
             try:
-                Popen(command, stdout=PIPE).communicate()
+                (stdoutdata, _) = Popen(command, stdout=PIPE).communicate()
+                print stdoutdata
             except:
                 print "command failed"
             print "rosmake took %ds" % (time.time() - started)

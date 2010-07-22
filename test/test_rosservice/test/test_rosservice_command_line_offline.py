@@ -89,6 +89,9 @@ class TestRosserviceOffline(unittest.TestCase):
         output = Popen([cmd, 'uri', 'add_two_ints'], **kwds).communicate()
         self.assertEquals(msg, output[1])        
         output = Popen([cmd, 'call', 'add_two_ints', '1', '2'], **kwds).communicate()
+        self.assertEquals(msg, output[1])
+        # - wait should still fail if master is offline
+        output = Popen([cmd, 'call', '--wait', 'add_two_ints', '1', '2'], **kwds).communicate()
         self.assertEquals(msg, output[1])        
         output = Popen([cmd, 'find', 'test_ros/AddTwoInts'], **kwds).communicate()
         self.assertEquals(msg, output[1])        

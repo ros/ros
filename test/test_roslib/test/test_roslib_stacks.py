@@ -79,6 +79,39 @@ class RoslibStacksTest(unittest.TestCase):
         l2 = [x for x in rosstackexec(['list']).split('\n') if x]
         l2 = [x.split()[0] for x in l2]
         self.assertEquals(set(l), set(l2), set(l) ^ set(l2))
+
+    def test_list_stacks_by_path(self):
+        from roslib.stacks import list_stacks_by_path
+
+        # test with the ros stack
+        rr = roslib.rosenv.get_ros_root()
+        self.assertEquals(['ros'], list_stacks_by_path(rr))
+        stacks = []
+        self.assertEquals(['ros'], list_stacks_by_path(rr, stacks))
+        self.assertEquals(['ros'], stacks)
+        self.assertEquals(['ros'], list_stacks_by_path(rr, stacks))
+
+        stacks.extend(['fake_stack', 'fake_stack2'])
+        self.assertEquals(['ros', 'fake_stack', 'fake_stack2'], list_stacks_by_path(rr, stacks))
+
+        cache = {}
+        self.assertEquals(['ros'], list_stacks_by_path(rr, cache=cache))
+        self.assertEquals({'ros': rr}, cache)
+
+        # test with synthetic stacks
+        test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests')
+        self.assertEquals(set(['bar', 'foo']), set(list_stacks_by_path(test_dir)))
+
+        test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests', 's1')
+        self.assertEquals(set(['bar', 'foo']), set(list_stacks_by_path(test_dir)))
+
+        test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests', 's1', 'bar')
+        self.assertEquals(['bar'], list_stacks_by_path(test_dir))
+        
+        # test symlink following
+
+        test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests2')
+        self.assertEquals(set(['foo', 'bar']), set(list_stacks_by_path(test_dir)))
         
     def test_get_stack_dir(self):
         import roslib.rosenv

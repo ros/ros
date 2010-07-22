@@ -70,24 +70,29 @@ void IntraProcessPublisherLink::setPublisher(const IntraProcessSubscriberLinkPtr
   M_stringPtr values = header.getValues();
   (*values)["callerid"] = this_node::getName();
   (*values)["topic"] = parent->getName();
-  (*values)["type"] = parent->datatype();
-  (*values)["md5sum"] = parent->md5sum();
+  (*values)["type"] = publisher->getDataType();
+  (*values)["md5sum"] = publisher->getMD5Sum();
+  (*values)["message_definition"] = publisher->getMessageDefinition();
   (*values)["latching"] = publisher->isLatching() ? "1" : "0";
   setHeader(header);
 }
 
 void IntraProcessPublisherLink::drop()
 {
-  if (dropped_)
   {
-    return;
-  }
+    boost::recursive_mutex::scoped_lock lock(drop_mutex_);
+    if (dropped_)
+    {
+      return;
+    }
 
-  dropped_ = true;
+    dropped_ = true;
+  }
 
   if (publisher_)
   {
     publisher_->drop();
+    publisher_.reset();
   }
 
   if (SubscriptionPtr parent = parent_.lock())
@@ -98,22 +103,50 @@ void IntraProcessPublisherLink::drop()
   }
 }
 
-void IntraProcessPublisherLink::handleMessage(const boost::shared_array<uint8_t>& buffer, size_t num_bytes)
+void IntraProcessPublisherLink::handleMessage(const SerializedMessage& m, bool ser, bool nocopy)
 {
-  stats_.bytes_received_ += num_bytes;
+  boost::recursive_mutex::scoped_lock lock(drop_mutex_);
+  if (dropped_)
+  {
+    return;
+  }
+
+  stats_.bytes_received_ += m.num_bytes;
   stats_.messages_received_++;
 
   SubscriptionPtr parent = parent_.lock();
 
   if (parent)
   {
-    stats_.drops_ += parent->handleMessage(buffer, num_bytes, true, header_.getValues(), shared_from_this());
+    stats_.drops_ += parent->handleMessage(m, ser, nocopy, header_.getValues(), shared_from_this());
   }
 }
 
 std::string IntraProcessPublisherLink::getTransportType()
 {
   return std::string("INTRAPROCESS");
+}
+
+void IntraProcessPublisherLink::getPublishTypes(bool& ser, bool& nocopy, const std::type_info& ti)
+{
+  boost::recursive_mutex::scoped_lock lock(drop_mutex_);
+  if (dropped_)
+  {
+    ser = false;
+    nocopy = false;
+    return;
+  }
+
+  SubscriptionPtr parent = parent_.lock();
+  if (parent)
+  {
+    parent->getPublishTypes(ser, nocopy, ti);
+  }
+  else
+  {
+    ser = true;
+    nocopy = false;
+  }
 }
 
 } // namespace ros

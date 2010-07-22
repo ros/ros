@@ -30,7 +30,7 @@
 /* Author: Josh Faust */
 
 /*
- * Test Header serialization/deserialization
+ * Test removing ROS args
  */
 
 #include <gtest/gtest.h>

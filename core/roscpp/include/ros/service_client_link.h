@@ -33,14 +33,13 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/shared_array.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/signals/connection.hpp>
 
 #include <queue>
 
 namespace ros
 {
 class Header;
-class Message;
-typedef boost::shared_ptr<Message> MessagePtr;
 class ServicePublication;
 typedef boost::weak_ptr<ServicePublication> ServicePublicationWPtr;
 typedef boost::shared_ptr<ServicePublication> ServicePublicationPtr;
@@ -65,7 +64,7 @@ public:
    * \param ok Whether the callback was successful or not
    * \param resp The message response.  ServiceClientLink will delete this
    */
-  void processResponse(bool ok, const MessagePtr& resp);
+  void processResponse(bool ok, const SerializedMessage& res);
 
   const ConnectionPtr& getConnection() { return connection_; }
 
@@ -79,6 +78,8 @@ private:
 
   ConnectionPtr connection_;
   ServicePublicationWPtr parent_;
+  bool persistent_;
+  boost::signals::connection dropped_conn_;
 };
 typedef boost::shared_ptr<ServiceClientLink> ServiceClientLinkPtr;
 

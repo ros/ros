@@ -39,11 +39,24 @@ rostest helper routines.
 # IMPORTANT: no routine here can in anyway cause rospy to be loaded (that includes roslaunch)
 
 import os
+import sys
 import cStringIO
+import logging
 
 import roslib.rosenv 
 
-import xmlrunner
+import rostest.xmlrunner
+
+def printlog(msg, *args):
+    if args:
+        msg = msg%args
+    logging.getLogger('rostest').info(msg)
+    print "[ROSTEST]"+msg
+def printlogerr(msg, *args):
+    if args:
+        msg = msg%args
+    logging.getLogger('rostest').error(msg)
+    print >> sys.stderr, "[ROSTEST]"+msg
 
 _errors = None
 def getErrors():
@@ -157,7 +170,7 @@ def createXMLRunner(test_pkg, test_name, results_file=None, is_rostest=False):
     
     print "[ROSTEST] Outputting test results to %s"%results_file
     outstream = open(results_file, 'w')
-    return xmlrunner.XMLTestRunner(stream=outstream)
+    return rostest.xmlrunner.XMLTestRunner(stream=outstream)
     
 def xmlResultsFile(test_pkg, test_name, is_rostest=False):
     """
@@ -187,7 +200,7 @@ def xmlResultsFile(test_pkg, test_name, is_rostest=False):
     else:
         return os.path.join(test_dir, 'TEST-%s.xml'%test_name)        
     
-def test_failure_junit_xml(test_name, message):
+def test_failure_junit_xml(test_name, message, stdout=None):
     """
     Generate JUnit XML file for a unary test suite where the test failed
     
@@ -195,13 +208,29 @@ def test_failure_junit_xml(test_name, message):
     @type  test_name: str
     @param message: failure message
     @type  message: str
+    @param stdout: stdout data to include in report
+    @type  stdout: str
     """
-    return """<?xml version="1.0" encoding="UTF-8"?>
+    if not stdout:
+      return """<?xml version="1.0" encoding="UTF-8"?>
 <testsuite tests="1" failures="1" time="1" errors="0" name="%s">
   <testcase name="test_ran" status="run" time="1" classname="Results">
   <failure message="%s" type=""/>
   </testcase>
 </testsuite>"""%(test_name, message)
+    else:
+      return """<?xml version="1.0" encoding="UTF-8"?>
+<testsuite tests="1" failures="1" time="1" errors="0" name="%s">
+  <testcase name="test_ran" status="run" time="1" classname="Results">
+  <failure message="%s" type=""/>
+  </testcase>
+  <system-out><![CDATA[[
+%s
+]]></system-out>
+</testsuite>"""%(test_name, message, stdout)
+
+
+
 
 def test_success_junit_xml(test_name):
     """

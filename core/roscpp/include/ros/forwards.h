@@ -47,6 +47,8 @@ namespace ros
 
 typedef boost::shared_ptr<void> VoidPtr;
 typedef boost::weak_ptr<void> VoidWPtr;
+typedef boost::shared_ptr<void const> VoidConstPtr;
+typedef boost::weak_ptr<void const> VoidConstWPtr;
 
 class Header;
 class Transport;
@@ -104,7 +106,7 @@ struct SubscriberCallbacks
 {
   SubscriberCallbacks(const SubscriberStatusCallback& connect = SubscriberStatusCallback(),
                       const SubscriberStatusCallback& disconnect = SubscriberStatusCallback(),
-                      const VoidPtr& tracked_object = VoidPtr(),
+                      const VoidConstPtr& tracked_object = VoidConstPtr(),
                       CallbackQueueInterface* callback_queue = 0)
   : connect_(connect)
   , disconnect_(disconnect)
@@ -121,7 +123,7 @@ struct SubscriberCallbacks
   SubscriberStatusCallback disconnect_;
 
   bool has_tracked_object_;
-  VoidWPtr tracked_object_;
+  VoidConstWPtr tracked_object_;
   CallbackQueueInterface* callback_queue_;
 };
 typedef boost::shared_ptr<SubscriberCallbacks> SubscriberCallbacksPtr;

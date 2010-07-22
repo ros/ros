@@ -9,5 +9,9 @@ rxdeps is a ROS command-line tool for generating PDFs of ROS package structure a
   <review status="Doc reviewed" notes="2010/01/12"/>
   <url>http://ros.org/wiki/rxdeps</url>
   <rosdep name="graphviz"/>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>
 

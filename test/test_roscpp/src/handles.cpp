@@ -88,6 +88,39 @@ TEST(RoscppHandles, nodeHandleConstructionDestruction)
   ASSERT_FALSE(ros::isStarted());
 }
 
+TEST(RoscppHandles, nodeHandleParentWithRemappings)
+{
+  ros::M_string remappings;
+  remappings["a"] = "b";
+  remappings["c"] = "d";
+  ros::NodeHandle n1("", remappings);
+
+  // sanity checks
+  EXPECT_STREQ(n1.resolveName("a").c_str(), "/b");
+  EXPECT_STREQ(n1.resolveName("/a").c_str(), "/b");
+  EXPECT_STREQ(n1.resolveName("c").c_str(), "/d");
+  EXPECT_STREQ(n1.resolveName("/c").c_str(), "/d");
+
+  ros::NodeHandle n2(n1, "my_ns");
+  EXPECT_STREQ(n2.resolveName("a").c_str(), "/my_ns/a");
+  EXPECT_STREQ(n2.resolveName("/a").c_str(), "/b");
+  EXPECT_STREQ(n2.resolveName("c").c_str(), "/my_ns/c");
+  EXPECT_STREQ(n2.resolveName("/c").c_str(), "/d");
+
+  ros::NodeHandle n3(n2);
+  EXPECT_STREQ(n3.resolveName("a").c_str(), "/my_ns/a");
+  EXPECT_STREQ(n3.resolveName("/a").c_str(), "/b");
+  EXPECT_STREQ(n3.resolveName("c").c_str(), "/my_ns/c");
+  EXPECT_STREQ(n3.resolveName("/c").c_str(), "/d");
+
+  ros::NodeHandle n4;
+  n4 = n3;
+  EXPECT_STREQ(n4.resolveName("a").c_str(), "/my_ns/a");
+  EXPECT_STREQ(n4.resolveName("/a").c_str(), "/b");
+  EXPECT_STREQ(n4.resolveName("c").c_str(), "/my_ns/c");
+  EXPECT_STREQ(n4.resolveName("/c").c_str(), "/d");
+}
+
 int32_t g_recv_count = 0;
 void subscriberCallback(const test_roscpp::TestArray::ConstPtr& msg)
 {
@@ -450,7 +483,7 @@ TEST(RoscppHandles, spinAfterHandleShutdownWithAdvertiseSubscriberCallback)
 
   while (pub.getNumSubscribers() == 0)
   {
-    ros::WallDuration().sleep();
+    ros::WallDuration(0.01).sleep();
   }
 
   pub.shutdown();
@@ -458,6 +491,29 @@ TEST(RoscppHandles, spinAfterHandleShutdownWithAdvertiseSubscriberCallback)
   ros::spinOnce();
 
   ASSERT_EQ(g_sub_count, 0);
+}
+
+TEST(RoscppHandles, multiplePublishersWithSubscriberConnectCallback)
+{
+  ros::NodeHandle n;
+  ros::Publisher pub = n.advertise<test_roscpp::TestArray>("/test", 0, connectedCallback, SubscriberStatusCallback());
+
+  g_sub_count = 0;
+  ros::Subscriber sub = n.subscribe("/test", 0, subscriberCallback);
+
+  while (g_sub_count == 0)
+  {
+    ros::WallDuration(0.01).sleep();
+    ros::spinOnce();
+  }
+
+  ASSERT_EQ(g_sub_count, 1);
+  g_sub_count = 0;
+
+  ros::Publisher pub2 = n.advertise<test_roscpp::TestArray>("/test", 0, connectedCallback, SubscriberStatusCallback());
+  ros::spinOnce();
+
+  ASSERT_EQ(g_sub_count, 1);
 }
 
 class ServiceClass

@@ -6,7 +6,7 @@ Log log #log
 # short comment about s
 string s #s
 # short comment about time
-Time time #time
+Clock time #time
 # short comment about b
 int32 b #b
 # short comment about d

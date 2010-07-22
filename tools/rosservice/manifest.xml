@@ -16,6 +16,10 @@ rosservice contains the rosservice command-line tool for listing and querying RO
     <rosdoc config="rosdoc.yaml"/>    
   </export>
   
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
 </package>
 
 

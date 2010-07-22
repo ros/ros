@@ -29,6 +29,8 @@
 #define ROSCPP_INTRAPROCESS_SUBSCRIBER_LINK_H
 #include "subscriber_link.h"
 
+#include <boost/thread/recursive_mutex.hpp>
+
 namespace ros
 {
 
@@ -47,14 +49,16 @@ public:
   void setSubscriber(const IntraProcessPublisherLinkPtr& subscriber);
   bool isLatching();
 
-  virtual bool publish(const Message& m);
-  virtual void enqueueMessage(const SerializedMessage& m);
+  virtual void enqueueMessage(const SerializedMessage& m, bool ser, bool nocopy);
   virtual void drop();
   virtual std::string getTransportType();
+  virtual bool isIntraprocess() { return true; }
+  virtual void getPublishTypes(bool& ser, bool& nocopy, const std::type_info& ti);
 
 private:
   IntraProcessPublisherLinkPtr subscriber_;
   bool dropped_;
+  boost::recursive_mutex drop_mutex_;
 };
 typedef boost::shared_ptr<IntraProcessSubscriberLink> IntraProcessSubscriberLinkPtr;
 

@@ -16,9 +16,10 @@ rosbuild_add_library(ros
                     common.cpp 
                     poll_set.cpp 
                     header.cpp
-                    connection.cpp 
+                    connection.cpp
                     transport/transport_tcp.cpp 
                     transport/transport_udp.cpp
+                    internal_timer_manager.cpp
                     this_node.cpp 
                     names.cpp 
                     master.cpp 

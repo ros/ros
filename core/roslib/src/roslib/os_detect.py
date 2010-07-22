@@ -88,14 +88,30 @@ def lsb_get_version():
 class OSDetectException(roslib.exceptions.ROSLibException): pass
 
 class OSBase:
+    """
+    This defines the API used for OS detection within the os_detect
+    module for roslib.  All OS specific instantiantions must inherit
+    and override these methods.
+    """
     def check_presence(self):
+        """
+        Return if the specific OS which this class is designed to
+        detect is present.  Only one version of this class should return for
+        any version.  
+        """
         raise OSDetectException("check_presence unimplemented")
 
     def get_name(self):
-        raise OSDetectException("check_presence unimplemented")
+        """
+        Return the standardized name for this OS.  (ala Ubuntu Hardy Heron = "ubuntu")
+        """
+        raise OSDetectException("get_name unimplemented")
 
     def get_version(self):
-        raise OSDetectException("check_presence unimplemented")
+        """
+        Return the standardized version for this OS. (ala Ubuntu Hardy Heron = "8.04")
+        """
+        raise OSDetectException("get_version unimplemented")
 
 ###### Debian SPECIALIZATION #########################
 class Debian(OSBase):
@@ -343,6 +359,44 @@ class Gentoo(OSBase):
 
 ###### END Gentoo Sepcialization ###############################
 
+###### FreeBSD SPECIALIZATION #########################
+class FreeBSD(OSBase):
+    """
+    Detect FreeBSD OS.
+    """
+    def check_presence(self):
+        try:
+            filename = "/usr/bin/uname"
+            if os.path.exists(filename):
+                pop = subprocess.Popen([filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                (std_out, std_err) = pop.communicate()
+                if std_out.strip() == "FreeBSD":
+                    return True
+            else:
+                return False
+        except:
+            pass#print >> sys.stderr, "FreeBSD failed to detect OS"
+        return False
+
+    def get_version(self):
+        try:
+            filename = "/usr/bin/uname"
+            if os.path.exists(filename):
+               pop = subprocess.Popen([filename, "-r"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+               (std_out, std_err) = pop.communicate()
+               return std_out.strip()
+            else:
+               return False
+        except:
+            print >> sys.stderr, "FreeBSD failed to get version"
+            return False
+
+        return False
+
+    def get_name(self):
+        return "freebsd"
+
+###### FreeBSD SPECIALIZATION #########################
 
 #### Override class for debugging and unsupported OSs ###########
 class Override(OSBase):
@@ -353,7 +407,7 @@ class Override(OSBase):
     def check_presence(self):
         try:
             (self._os_name, self._os_version) = os.environ["ROS_OS_OVERRIDE"].split(':')
-            print >> sys.stderr, "Using environment variable ROS_OS_OVERRIDE=name:version"
+            print >> sys.stderr, "Using environment variable ROS_OS_OVERRIDE name = %s version = %s"%(self._os_name, self._os_version)
             return True
         except:
             return False
@@ -371,9 +425,12 @@ class Override(OSBase):
 class OSDetect:
     """ This class will iterate over registered classes to lookup the
     active OS and version"""
-    def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), Fedora(), Rhel(), Gentoo(), Cygwin()]):
+    def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), Fedora(), Rhel(), Gentoo(), Cygwin(), FreeBSD()]):
         self._os_list = [ Override()]
         self._os_list.extend(os_list)
+        for o in self._os_list:
+            if not isinstance(o, OSBase):
+                raise OSDetectException("Class [%s] not derived from OSBase"%o.__class__.__name__)
 
         self._os_class = None
         self._os_name = None

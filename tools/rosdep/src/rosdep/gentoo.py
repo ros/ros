@@ -31,6 +31,8 @@ import os.path
 import roslib.os_detect
 import subprocess
 
+import rosdep.base_rosdep
+
 # Determine whether package p needs to be installed
 def equery_detect(p):
     cmd = ['equery', '-q', 'l', p]
@@ -52,7 +54,7 @@ def equery_available():
 
 
 ###### Gentoo SPECIALIZATION #########################
-class Gentoo(roslib.os_detect.Gentoo):
+class Gentoo(roslib.os_detect.Gentoo, rosdep.base_rosdep.RosdepBaseOS):
     def strip_detected_packages(self, packages):
         if equery_available():
             return [p for p in packages if equery_detect(p)]
@@ -60,7 +62,9 @@ class Gentoo(roslib.os_detect.Gentoo):
             return packages
 
     def generate_package_install_command(self, packages, default_yes):
-        if equery_available():
+        if len(packages) == 0:
+            return "# Package prerequisites satisfied - nothing to do"
+        elif equery_available():
             return "#Packages\nsudo emerge " + ' '.join(packages)
         else:
 	    return "#Packages\nsudo emerge -u " + ' '.join(packages)

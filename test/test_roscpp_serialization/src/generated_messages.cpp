@@ -51,6 +51,7 @@
 #include "test_roscpp_serialization/Constants.h"
 #include "test_roscpp_serialization/VariableLengthStringArray.h"
 #include "test_roscpp_serialization/FixedLengthStringArray.h"
+#include "test_roscpp_serialization/HeaderNotFirstMember.h"
 
 using namespace test_roscpp_serialization;
 
@@ -106,6 +107,7 @@ TEST(GeneratedMessages, traitsWithStandardMessages)
   EXPECT_FALSE(mt::hasHeader<VariableLengthArrayOfExternal>());
   EXPECT_FALSE(mt::hasHeader<FixedLengthStringArray>());
   EXPECT_FALSE(mt::hasHeader<VariableLengthStringArray>());
+  EXPECT_FALSE(mt::hasHeader<HeaderNotFirstMember>());
 
   EXPECT_FALSE(mt::isSimple<ArrayOfFixedLength>());
   EXPECT_FALSE(mt::isSimple<ArrayOfVariableLength>());

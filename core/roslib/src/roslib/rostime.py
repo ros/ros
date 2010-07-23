@@ -36,6 +36,7 @@
 ROS Time representation, including Duration
 """
 
+import itertools
 import time
 
 def _canon(secs, nsecs):
@@ -232,6 +233,19 @@ class Time(TVal):
         if self.secs < 0:
             raise TypeError("time values must be positive")
 
+    def __getstate__(self):
+        """
+        support for Python pickling
+        """
+        return [getattr(self, x) for x in self.__slots__]
+
+    def __setstate__(self, state):
+        """
+        support for Python pickling
+        """
+        for x, val in itertools.izip(self.__slots__, state):
+            setattr(self, x, val)
+
     def from_seconds(float_secs):
         """
         Use from_sec() instead. This is retained for backwards compatibility.
@@ -342,6 +356,19 @@ class Duration(TVal):
         @type  nsecs: int
         """
         super(Duration, self).__init__(secs, nsecs)
+
+    def __getstate__(self):
+        """
+        support for Python pickling
+        """
+        return [getattr(self, x) for x in self.__slots__]
+
+    def __setstate__(self, state):
+        """
+        support for Python pickling
+        """
+        for x, val in itertools.izip(self.__slots__, state):
+            setattr(self, x, val)
 
     def __repr__(self):
         return "rostime.Duration[%d]"%self.to_nsec()

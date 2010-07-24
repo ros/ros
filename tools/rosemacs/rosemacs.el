@@ -84,11 +84,14 @@
 ;;    hz rate is tracked in the background, viewable using 
 ;;    display-ros-topic-info.
 ;;
-;; 4. ros-core starts a core.  ros-run runs a node.  In
+;; 4. Similarly, set ros-node-update-interval to set up
+;;    tracking and completion of nodes.  
+;;
+;; 5. ros-core starts a core.  ros-run runs a node.  In
 ;;    either case, an appropriately named buffer is created
 ;;    for the new process.
 ;;
-;; 5. ros-launch to start a launch file in a new buffer.
+;; 6. ros-launch to start a launch file in a new buffer.
 ;;    Within that buffer, k to kill, r to relaunch.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -602,10 +605,17 @@ parameter."
               rosemacs/nodes-vec (vconcat rosemacs/nodes))
         (save-excursion
           (set-buffer (get-buffer-create "*ros-nodes*"))
-          (erase-buffer)
+          (let ((old-stamp (ros-topic-get-stamp-string)))
+            (erase-buffer)
+            (princ (format "Master uri: %s\n" (getenv "ROS_MASTER_URI"))
+                   (current-buffer))
+            (princ (format "%s\n\n" old-stamp) (current-buffer)))
           (dolist (n rosemacs/nodes)
             (insert n)
-            (insert "\n")))
+            (insert "\n"))
+          (let ((time-stamp-pattern "5/^Last updated: <%02H:%02M:%02S"))
+            (time-stamp))
+          )
         (when added
           (lwarn '(rosemacs) :debug "New nodes: %s" added)
           (rosemacs/add-event (format "New nodes: %s" added)))
@@ -622,10 +632,11 @@ parameter."
     (let ((found-start (re-search-backward "BEGIN ROSNODE LIST$" nil t)))
       (if found-start
           (let* ((start-pt (match-end 0))
-                 (found-finish (re-search-forward "END ROSNODE LIST$" nil t)))
+                 (found-finish (re-search-forward "END ROSNODE LIST$" nil t))
+                 (end-pt (match-end 0)))
             (when found-finish
               (rosemacs/parse-node-list start-pt (match-beginning 0))
-              (delete-region (point-min) (match-end 0))))))
+              (delete-region (point-min) end-pt)))))
     ))
 
 (defun rosemacs/track-nodes (interval)
@@ -644,7 +655,7 @@ parameter."
 
 (defun rosemacs/display-nodes ()
   (interactive)
-  (display-buffer "*ros-nodes*"))
+  (display-buffer (get-buffer-create "*ros-nodes*")))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

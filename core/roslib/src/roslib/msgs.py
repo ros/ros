@@ -293,7 +293,10 @@ class MsgSpec(object):
         self.constants = constants
         assert len(self.types) == len(self.names), "len(%s) != len(%s)"%(self.types, self.names)
         #Header.msg support
-        self.header_present = (HEADER, 'header') in zip(self.types, self.names)
+        if (len(self.types)):
+            self.header_present = self.types[0] == HEADER and self.names[0] == 'header'
+        else:
+            self.header_present = False
         self.text = text
         self.full_name = full_name
         self.short_name = short_name

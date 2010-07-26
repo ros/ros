@@ -68,6 +68,15 @@ WARN = roslib.msg.Log.WARN
 ERROR = roslib.msg.Log.ERROR
 FATAL = roslib.msg.Log.FATAL
 
+_rospy_to_logging_levels = {
+    DEBUG: logging.DEBUG,
+    INFO: logging.INFO,
+    WARN: logging.WARNING,
+    ERROR: logging.ERROR,
+    FATAL: logging.CRITICAL,
+    }
+
+
 # hide rospy.impl.init implementation from users
 def get_node_proxy():
     """
@@ -154,9 +163,9 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
         the stem of the auto-generated name. NOTE: you cannot remap
         the name of an anonymous node.  @type anonymous: bool
 
-    @param log_level: log level for sending message to /rosout, which
-        is INFO by default. For convenience, you may use rospy.DEBUG,
-        rospy.INFO, rospy.ERROR, rospy.WARN, rospy.FATAL,
+    @param log_level: log level for sending message to /rosout and log
+        file, which is INFO by default. For convenience, you may use
+        rospy.DEBUG, rospy.INFO, rospy.ERROR, rospy.WARN, rospy.FATAL,
     @type  log_level: int
     
     @param disable_signals: If True, rospy will not register its own
@@ -231,7 +240,7 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
         name = "%s_%s_%s"%(name, os.getpid(), int(time.time()*1000))
 
     resolved_node_name = rospy.names.resolve_name(name)
-    rospy.core.configure_logging(resolved_node_name)
+    rospy.core.configure_logging(resolved_node_name, level=_rospy_to_logging_levels[log_level])
     # #1810
     rospy.names.initialize_mappings(resolved_node_name)
     

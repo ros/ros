@@ -65,7 +65,7 @@ def rxgraph_main():
     # initialize logging libraries
     import logging
     import roslib.roslogging
-    roslib.roslogging.configure_logging('rxgraph', logging.DEBUG, additional=['rospy', 'roslib', 'rosgraph'])
+    roslib.roslogging.configure_logging('rxgraph', logging.INFO, additional=['rospy', 'roslib', 'rosgraph'])
     try:
         import wx
         app = wx.App()    

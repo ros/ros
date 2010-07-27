@@ -44,6 +44,7 @@ import roslib.rospack
 import roslib.rosenv
 import roslib.stacks
 import threading
+import traceback
 import math
 import signal
 
@@ -111,13 +112,14 @@ class Printer:
                     #print "SUCCESSFULLY SHUTDOWN"
                     return True
                 #print "Sleeping for %f FOR SHUTDOWN.  %d threads running"%(max(self.duration/cycles*2, 0.01), threading.activeCount())
-                time.sleep(self.duration/cycles*2) 
+                time.sleep(max(self.duration, 0.1)/cycles*2) 
             raise Exception("Failed to shutdown status thread in %.2f seconds"%(self.duration * 2))
 
         def __enter__(self):
             self.start()
-        def __exit__(self, type, value, traceback):
-            #print type, value, "traceback: %s"%traceback
+        def __exit__(self, mtype, value, tb):
+            if value:
+                traceback.print_exception(mtype, value, tb)
             self.shutdown()
         def run(self):
             while self.running:
@@ -796,14 +798,15 @@ class RosMakeAll:
           else:
               self.log_dir = os.path.join(roslib.rosenv.get_ros_home(), "rosmake", date_time_stamp);
 
-          self.printer.print_all("Logging to directory")
-          self.printer.print_all("%s"%self.log_dir)
+          self.printer.print_all("Logging to directory%s"%self.log_dir)
           if os.path.exists (self.log_dir) and not os.path.isdir(self.log_dir):
               self.printer.print_all( "Log destination %s is a file; please remove it or choose a new destination"%self.log_dir)
               sys.exit(1)
           if not os.path.exists (self.log_dir):
+              self.printer.print_verbose("%s doesn't exist: creating"%self.log_dir)
               roslib.rosenv.makedirs_with_parent_perms(self.log_dir)
 
+          self.printer.print_verbose("Finished setting up logging")
         (self.specified_packages, self.rejected_packages) = roslib.stacks.expand_to_packages(packages)
         self.printer.print_all("Expanded args %s to:\n%s"%(packages, self.specified_packages))
         if self.rejected_packages:

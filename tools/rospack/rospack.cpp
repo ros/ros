@@ -1417,7 +1417,20 @@ string ROSPack::getCachePath()
 
   if (ros_home)
   {
-    cache_file_name = ros_home + std::string("/rospack_cache");
+    // Create ROS_HOME if it doesn't exist, #2812.
+    //
+    // By providing the trailing slash, stat() will only succeed if the
+    // path exists AND is a directory.
+    std::string ros_home_slash = ros_home + std::string("/");
+    struct stat s;
+    if(stat(ros_home_slash.c_str(), &s))
+    {
+      if(mkdir(ros_home_slash.c_str(), 0700) != 0)
+      {
+	perror("[rospack] WARNING: cannot create rospack cache directory");
+      }
+    }
+    cache_file_name = ros_home_slash + std::string("rospack_cache");
   }
   else
   {
@@ -1432,7 +1445,7 @@ string ROSPack::getCachePath()
       if(stat(dotros.c_str(), &s))
       {
         if(mkdir(dotros.c_str(), 0700) != 0)
-          perror("[rospack] WARNING: cannot create ~/.ros directory");
+	  perror("[rospack] WARNING: cannot create rospack cache directory");
       }
       cache_file_name = dotros + "rospack_cache";
     }

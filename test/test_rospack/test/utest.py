@@ -252,9 +252,13 @@ class RospackTestCase(unittest.TestCase):
     def test_ros_home(self):
         env = os.environ.copy()
 
-        # Make sure we write to ROS_HOME
+        # Make sure we write to ROS_HOME, #2812.
         d = tempfile.mkdtemp()
         os.environ['ROS_HOME'] = d
+        self.rospack_succeed(None, "profile")
+        self.assertEquals(True, os.path.exists(os.path.join(d,'rospack_cache')))
+        # Make sure we auto-create ROS_HOME
+        shutil.rmtree(d)
         self.rospack_succeed(None, "profile")
         self.assertEquals(True, os.path.exists(os.path.join(d,'rospack_cache')))
         # Make sure we write to HOME, auto-creating HOME/.ros

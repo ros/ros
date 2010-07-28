@@ -43,6 +43,7 @@ import rospy
 from topic_tools.srv import MuxAdd
 from topic_tools.srv import MuxDelete
 from topic_tools.srv import MuxList
+from topic_tools.srv import MuxSelect
 
 class MuxServiceTestCase(unittest.TestCase):
     def make_srv_proxies(self):
@@ -50,26 +51,54 @@ class MuxServiceTestCase(unittest.TestCase):
             rospy.wait_for_service('mux/add', 5)
             rospy.wait_for_service('mux/delete', 5)
             rospy.wait_for_service('mux/list', 5)
+            rospy.wait_for_service('mux/select', 5)
         except rospy.ROSException, e:
             self.fail('failed to find a required service: ' + `e`)
 
         add_srv = rospy.ServiceProxy('mux/add', MuxAdd)
         delete_srv = rospy.ServiceProxy('mux/delete', MuxDelete)
         list_srv = rospy.ServiceProxy('mux/list', MuxList)
+        select_srv = rospy.ServiceProxy('mux/select', MuxSelect)
 
-        return (add_srv, delete_srv, list_srv)
+        return (add_srv, delete_srv, list_srv, select_srv)
             
     def test_add_delete_list(self):
-        add_srv, delete_srv, list_srv = self.make_srv_proxies()
+        add_srv, delete_srv, list_srv, select_srv = self.make_srv_proxies()
+	# Check initial condition
         topics = list_srv().topics
-        self.assertEquals(set(topics), set(['input']))
-        add_srv('new_input')
+        self.assertEquals(set(topics), set(['/input']))
+	# Add a topic and make sure it's there
+        add_srv('/new_input')
         topics = list_srv().topics
-        self.assertEquals(set(topics), set(['input', 'new_input']))
-        delete_srv('input')
+        self.assertEquals(set(topics), set(['/input', '/new_input']))
+	# Try to add the same topic again, make sure it fails, and that
+	# nothing changes.
+	try:
+            add_srv('/new_input')
+	except rospy.ServiceException, e:
+	    pass
+	else:
+	    self.fail('service call should have thrown an exception')
         topics = list_srv().topics
-        self.assertEquals(set(topics), set(['new_input']))
-        delete_srv('new_input')
+        self.assertEquals(set(topics), set(['/input', '/new_input']))
+	# Select a topic, then try to delete it, make sure it fails, and
+	# that nothing changes.
+	select_srv('/input')
+	try:
+            delete_srv('/input')
+	except rospy.ServiceException, e:
+	    pass
+	else:
+	    self.fail('service call should have thrown an exception')
+        topics = list_srv().topics
+        self.assertEquals(set(topics), set(['/input', '/new_input']))
+	# Select nothing, to allow deletion
+	select_srv('__none')
+	# Delete topics
+        delete_srv('/input')
+        topics = list_srv().topics
+        self.assertEquals(set(topics), set(['/new_input']))
+        delete_srv('/new_input')
         topics = list_srv().topics
         self.assertEquals(set(topics), set([]))
 

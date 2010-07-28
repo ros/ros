@@ -158,7 +158,7 @@ bool add_topic_cb(topic_tools::MuxAdd::Request& req,
        it != g_subs.end();
        ++it)
   {
-    if (it->sub.getTopic() == req.topic)
+    if (ros::names::resolve(it->sub.getTopic()) == ros::names::resolve(req.topic))
     {
       ROS_WARN("tried to add a topic that mux was already listening to: [%s]", 
 	       it->sub.getTopic().c_str());
@@ -196,7 +196,7 @@ bool del_topic_cb(topic_tools::MuxDelete::Request& req,
        it != g_subs.end();
        ++it)
   {
-    if (it->sub.getTopic() == req.topic)
+    if (ros::names::resolve(it->sub.getTopic()) == ros::names::resolve(req.topic))
     {
       it->sub.shutdown();
       delete it->msg;

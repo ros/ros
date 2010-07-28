@@ -167,6 +167,7 @@ bool add_topic_cb(topic_tools::MuxAdd::Request& req,
   }
 
   struct sub_info_t sub_info;
+  sub_info.msg = new ShapeShifter;
   try
   {
     sub_info.sub = g_node->subscribe<ShapeShifter>(req.topic, 10, boost::bind(in_cb, _1, sub_info.msg));
@@ -175,10 +176,9 @@ bool add_topic_cb(topic_tools::MuxAdd::Request& req,
   {
     ROS_WARN("failed to add topic %s to mux, because it's an invalid name: %s",
 	     req.topic.c_str(), e.what());
+    delete sub_info.msg;
     return false;
   }
-
-  sub_info.msg = new ShapeShifter;
   g_subs.push_back(sub_info);
 
   ROS_INFO("added %s to mux", req.topic.c_str());

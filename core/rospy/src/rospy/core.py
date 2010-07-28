@@ -256,11 +256,13 @@ def set_node_uri(uri):
 # Logging
 
 _log_filename = None
-def configure_logging(node_name):
+def configure_logging(node_name, level=logging.INFO):
     """
     Setup filesystem logging for this node
     @param node_name: Node's name
     @type  node_name str
+    @param level: (optional) Python logging level (INFO, DEBUG, etc...). (Default: logging.INFO)
+    @type  level: int
     """
     global _log_filename
 
@@ -276,7 +278,7 @@ def configure_logging(node_name):
             filename = filename[1:]
         if not filename:
             raise rospy.exceptions.ROSException('invalid configure_logging parameter: %s'%node_name)
-    _log_filename = roslib.roslogging.configure_logging('rospy', logging.DEBUG, filename=filename, additional=['roslib', 'rosout', 'xmlrpc'])
+    _log_filename = roslib.roslogging.configure_logging('rospy', level, filename=filename, additional=['roslib', 'rosout', 'xmlrpc'])
 
 class NullHandler(logging.Handler):
     def emit(self, record):

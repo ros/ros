@@ -101,7 +101,7 @@ def convert_value(value, type_):
             return True
         elif value == 'false' or value == '0':
             return False
-        raise ValueError("%s is not a '%' type"%(value, type_))
+        raise ValueError("%s is not a '%s' type"%(value, type_))
     else:
         raise ValueError("Unknown type '%s'"%type_)        
 

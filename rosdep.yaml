@@ -479,5 +479,6 @@ epydoc:
 paramiko:
   ubuntu: python-paramiko
   debian: python-paramiko
+  gentoo: dev-python/paramiko
   macports: py25-paramiko
   freebsd: py26-paramiko

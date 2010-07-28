@@ -73,7 +73,7 @@ def configure_logging(uuid):
 def _get_optparse():
     from optparse import OptionParser
 
-    parser = OptionParser(usage="usage: %prog [options] [package] <filename>", prog=NAME)
+    parser = OptionParser(usage="usage: %prog [options] [package] <filename> [arg_name:=value...]", prog=NAME)
     parser.add_option("--args",
                       dest="node_args", default=None,
                       help="Print command-line arguments for node", metavar="NODE_NAME")
@@ -218,6 +218,10 @@ def main(argv=sys.argv):
                 except os.error, reason: pass
 
     except RLException, e:
+        roslaunch.core.printerrlog(str(e))
+        sys.exit(1)
+    except ValueError, e:
+        # TODO: need to trap better than this high-level trap
         roslaunch.core.printerrlog(str(e))
         sys.exit(1)
     except Exception, e:

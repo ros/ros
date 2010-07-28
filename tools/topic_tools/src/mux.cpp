@@ -198,6 +198,12 @@ bool del_topic_cb(topic_tools::MuxDelete::Request& req,
   {
     if (ros::names::resolve(it->sub.getTopic()) == ros::names::resolve(req.topic))
     {
+      // Can't delete the currently selected input, #2863
+      if(it == g_selected)
+      {
+	ROS_WARN("tried to delete currently selected topic %s from mux", req.topic.c_str());
+	return false;
+      }
       it->sub.shutdown();
       delete it->msg;
       g_subs.erase(it);

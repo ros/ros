@@ -62,7 +62,39 @@ class TestRospyTime(unittest.TestCase):
     def test_switch_to_wallclock(self):
         rospy.rostime.switch_to_wallclock()
         self.assertAlmostEqual(time.time(), rospy.get_time(), 1)
+
+    def test_Time_get_setstate(self):
+        # use deepcopy to test getstate/setstate
+        import copy, random
+        a = rospy.Time(random.randint(0, 10000), random.randint(0, 10000))
+        b = copy.deepcopy(a)
+        self.assertEquals(a.secs, b.secs)
+        self.assertEquals(a.nsecs, b.nsecs)
+
+        import cPickle, cStringIO
+        buff = cStringIO.StringIO()
+        cPickle.dump(a, buff)
+        buff.seek(0)
+        c = cPickle.load(buff)    
+        self.assertEquals(a.secs, c.secs)
+        self.assertEquals(a.nsecs, c.nsecs)
                                  
+    def test_Duration_get_setstate(self):
+        # use deepcopy to test getstate/setstate
+        import copy, random
+        a = rospy.Duration(random.randint(0, 10000), random.randint(0, 10000))
+        b = copy.deepcopy(a)
+        self.assertEquals(a.secs, b.secs)
+        self.assertEquals(a.nsecs, b.nsecs)
+
+        import cPickle, cStringIO
+        buff = cStringIO.StringIO()
+        cPickle.dump(a, buff)
+        buff.seek(0)
+        c = cPickle.load(buff)    
+        self.assertEquals(a.secs, c.secs)
+        self.assertEquals(a.nsecs, c.nsecs)
+
     def test_Time(self):
         # This is a copy of test_roslib_rostime
         from rospy import Time, Duration

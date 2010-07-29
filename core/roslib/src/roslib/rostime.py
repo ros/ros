@@ -237,14 +237,13 @@ class Time(TVal):
         """
         support for Python pickling
         """
-        return [getattr(self, x) for x in self.__slots__]
+        return [self.secs, self.nsecs]
 
     def __setstate__(self, state):
         """
         support for Python pickling
         """
-        for x, val in itertools.izip(self.__slots__, state):
-            setattr(self, x, val)
+        self.secs, self.nsecs = state
 
     def from_seconds(float_secs):
         """
@@ -361,14 +360,13 @@ class Duration(TVal):
         """
         support for Python pickling
         """
-        return [getattr(self, x) for x in self.__slots__]
+        return [self.secs, self.nsecs]
 
     def __setstate__(self, state):
         """
         support for Python pickling
         """
-        for x, val in itertools.izip(self.__slots__, state):
-            setattr(self, x, val)
+        self.secs, self.nsecs = state
 
     def __repr__(self):
         return "rostime.Duration[%d]"%self.to_nsec()

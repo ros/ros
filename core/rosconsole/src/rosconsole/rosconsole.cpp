@@ -386,8 +386,6 @@ void do_initialize()
   const char* ros_root_cstr = getenv("ROS_ROOT");
   if (!ros_root_cstr)
   {
-    fprintf(stderr, "ROS_ROOT is not set!  Using default rosconsole configuration values\n");
-
     log4cxx::LoggerPtr ros_logger = log4cxx::Logger::getLogger(ROSCONSOLE_ROOT_LOGGER_NAME);
     ros_logger->setLevel(log4cxx::Level::getInfo());
 
@@ -398,14 +396,14 @@ void do_initialize()
   {
     std::string config_file = std::string(ros_root_cstr) + "/config/rosconsole.config";
     log4cxx::PropertyConfigurator::configure(config_file);
+  }
+
+  const char* config_file_cstr = getenv("ROSCONSOLE_CONFIG_FILE");
+  if ( config_file_cstr )
+  {
+    std::string config_file = config_file_cstr;
     
-    const char* config_file_cstr = getenv("ROSCONSOLE_CONFIG_FILE");
-    if ( config_file_cstr )
-    {
-      config_file = config_file_cstr;
-      
-      log4cxx::PropertyConfigurator::configure(config_file);
-    }
+    log4cxx::PropertyConfigurator::configure(config_file);
   }
 
   // Check for the format string environment variable

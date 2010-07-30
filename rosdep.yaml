@@ -475,10 +475,11 @@ epydoc:
   ubuntu: python-epydoc
   debian: python-epydoc
   macports: py25-epydoc
+  gentoo: dev-python/epydoc
   freebsd: epydoc
 paramiko:
   ubuntu: python-paramiko
   debian: python-paramiko
-  gentoo: dev-python/paramiko
   macports: py25-paramiko
+  gentoo: dev-python/paramiko
   freebsd: py26-paramiko

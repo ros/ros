@@ -32,6 +32,11 @@
 
 PKG = 'rosrecord'
 import roslib; roslib.load_manifest(PKG)
+
+import optparse
+import os
+import sys
+
 import rospy
 import rosbag
 from bisect import bisect
@@ -256,8 +261,8 @@ def rebag(inbag, outbag, filter_fn, verbose_pattern=None, raw=False):
     print for verbose debugging
     @type  verbose_pattern: fn(topic, msg, time)
     """
+    rebag = Rebagger(outbag)
     if verbose_pattern:
-        rebag = Rebagger(outbag)
         for topic, msg, t in logplayer(inbag, raw=raw):
             if filter_fn(topic, msg, t):
                 print "MATCH", verbose_pattern(topic, msg, t)
@@ -267,17 +272,20 @@ def rebag(inbag, outbag, filter_fn, verbose_pattern=None, raw=False):
             else:
                 print "NO MATCH", verbose_pattern(topic, msg, t)          
     else: #streamlined
-        rebag = Rebagger(outbag)
         for topic, msg, t in logplayer(inbag, raw=raw):
             if filter_fn(topic, msg, t):
                 rebag.add(topic, msg, t, raw=raw)
                 if rospy.is_shutdown():
                     break
+    rebag.close()
 
 def _rebag_main():
     """
     main routine for rosrebag command-line tool
     """
+
+    rospy.logwarn("Rosrebag has been deprecated.  Please use 'rosbag filter' instead\n")
+
     ## filter function that uses command line expression to test topic/message/time
     def expr_eval(expr):
         def eval_fn(topic, m, t):

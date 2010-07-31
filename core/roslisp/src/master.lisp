@@ -64,7 +64,7 @@
     (dbind (code msg vals)
 	(xml-rpc-call 
 	 (apply #'encode-xml-rpc-call name 
-		(concatenate 'string "/" *ros-node-name*) ;; TODO: this assumes global namespace
+		*ros-node-name*
 		args) 
 	 :host address :port port)
       (when (<= code 0) (cerror "Ignore and continue" 'ros-rpc-error

@@ -44,17 +44,16 @@
   (declare (cons names))
   (format nil "~a~{/~a~}" (first names) (rest names)))
 
-(defun fully-qualified-name (&rest names)
-  "Do the translation from a client-code-specified name to a fully qualified one.  Handles already-fully-qualified names, tilde for private namespace, unqualified names, and remapped names.
-
-You can specify multiple names, which are just concatenated with /'s in between"
+(defun fully-qualified-name (name)
+  "Do the translation from a client-code-specified name to a fully qualified one.  Handles already-fully-qualified names, tilde for private namespace, unqualified names, and remapped names."
+  (let ((global-name (compute-global-name *namespace* *ros-node-name* name)))
+    (gethash global-name *remapped-names* global-name)))
   
-  (let ((name (concatenate-ros-names names)))
+(defun compute-global-name (ns node-global-name name)
   (case (char name 0)
     (#\/ name)
-    (#\~ (concatenate 'string *namespace* *ros-node-name* "/" (subseq name 1)))
-    (otherwise
-     (concatenate 'string *namespace* (gethash name *remapped-names* name))))))
+    (#\~ (concatenate 'string node-global-name "/" (subseq name 1)))
+    (otherwise (concatenate 'string ns name))))
 
 (defmacro with-fully-qualified-name (n &body body)
   (assert (symbolp n))

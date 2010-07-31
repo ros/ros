@@ -155,7 +155,7 @@
 ;; Stored in special variables since node is a singleton
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar *ros-node-name* nil "String holding node name")
+(defvar *ros-node-name* nil "String holding node global name")
 (defvar *node-status* :shutdown)
 (defvar *master-uri* nil "URI of ROS master")
 (defvar *default-master-uri* nil "Default master URI.  Is nil (intended for convenience during interactive use).")
@@ -172,7 +172,7 @@
 (defvar *debug-stream-lock* (make-mutex :name "API-wide lock for the debugging output stream."))
 (defvar *running-from-command-line* nil "True iff running ROS node script from command line (noninteractively)")
 (defvar *broken-socket-streams* nil "Used by TCPROS to keep track of sockets that have died and shouldn't be written to any more.")
-(defvar *namespace* nil "The name of the node's parent namespace")
+(defvar *namespace* "/" "Dynamic variable that holds the current namespace.  Bound when node starts, and by in-namespace")
 (defvar *ros-log-location* nil "Name of file to which ros lisp debugging info is written")
 (defvar *ros-log-stream* nil "Output stream bound to log file during node execution")
 (defvar *remapped-names* nil "Hash from strings to strings containing names that have been remapped on the command line")

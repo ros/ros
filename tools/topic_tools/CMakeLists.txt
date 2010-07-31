@@ -38,5 +38,6 @@ rosbuild_add_rostest(test/mux.test)
 rosbuild_add_rostest(test/switch_mux.test)
 rosbuild_add_rostest(test/switch_mux_leading_slash.test)
 rosbuild_add_rostest(test/switch_mux_none.test)
+rosbuild_add_rostest(test/mux_add.test)
 
 rosbuild_add_pyunit(test/args.py)

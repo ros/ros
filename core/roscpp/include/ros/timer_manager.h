@@ -215,6 +215,10 @@ template<class T, class D, class E>
 TimerManager<T, D, E>::~TimerManager()
 {
   quit_ = true;
+  {
+    boost::mutex::scoped_lock lock(timers_mutex_);
+    timers_cond_.notify_all();
+  }
   if (thread_started_)
   {
     thread_.join();
@@ -309,16 +313,16 @@ int32_t TimerManager<T, D, E>::add(const D& period, const boost::function<void(c
       thread_ = boost::thread(boost::bind(&TimerManager::threadFunc, this));
       thread_started_ = true;
     }
-  }
 
-  {
-    boost::mutex::scoped_lock lock(waiting_mutex_);
-    waiting_.push_back(info->handle);
-    waiting_.sort(boost::bind(&TimerManager::waitingCompare, this, _1, _2));
-  }
+    {
+      boost::mutex::scoped_lock lock(waiting_mutex_);
+      waiting_.push_back(info->handle);
+      waiting_.sort(boost::bind(&TimerManager::waitingCompare, this, _1, _2));
+    }
 
-  new_timer_ = true;
-  timers_cond_.notify_all();
+    new_timer_ = true;
+    timers_cond_.notify_all();
+  }
 
   return info->handle;
 }
@@ -369,8 +373,11 @@ void TimerManager<T, D, E>::schedule(const TimerManager<T, D, E>::TimerInfoPtr& 
     waiting_.sort(boost::bind(&TimerManager::waitingCompare, this, _1, _2));
   }
 
-  new_timer_ = true;
-  timers_cond_.notify_one();
+  {
+    boost::mutex::scoped_lock lock(timers_mutex_);
+    new_timer_ = true;
+    timers_cond_.notify_one();
+  }
 }
 
 template<class T, class D, class E>
@@ -505,7 +512,24 @@ void TimerManager<T, D, E>::threadFunc()
 
       current = T::now();
 
-      timers_cond_.timed_wait(lock, boost::posix_time::milliseconds(1));
+      if (current >= sleep_end)
+      {
+        break;
+      }
+
+      // If we're on simulation time we need to check now() against sleep_end more often than on system time,
+      // since simulation time may be running faster than real time.
+      if (!T::isSystemTime())
+      {
+        timers_cond_.timed_wait(lock, boost::posix_time::milliseconds(1));
+      }
+      else
+      {
+        // On system time we can simply sleep for the rest of the wait time, since anything else requiring processing will
+        // signal the condition variable
+        int32_t remaining_time = std::max((int32_t)((sleep_end - current).toSec() * 1000.0f), 1);
+        timers_cond_.timed_wait(lock, boost::posix_time::milliseconds(remaining_time));
+      }
     }
 
     new_timer_ = false;

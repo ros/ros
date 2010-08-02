@@ -151,6 +151,11 @@ bool Time::isSimTime()
   return g_use_sim_time;
 }
 
+bool Time::isSystemTime()
+{
+  return !isSimTime();
+}
+
 Time Time::now()
 {
   if (!g_initialized)

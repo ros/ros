@@ -178,6 +178,7 @@ public:
   static void setNow(const Time& new_now);
   static bool useSystemTime();
   static bool isSimTime();
+  static bool isSystemTime();
 
   /**
    * \brief Returns whether or not the current time is valid.  Time is valid if it is non-zero.
@@ -223,6 +224,8 @@ public:
    * \brief Sleep until a specific time has been reached.
    */
   static bool sleepUntil(const WallTime& end);
+
+  static bool isSystemTime() { return true; }
 };
 
 std::ostream &operator <<(std::ostream &os, const Time &rhs);

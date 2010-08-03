@@ -47,6 +47,7 @@ import threading
 import traceback
 import math
 import signal
+import exceptions
 
 from operator import itemgetter
 
@@ -118,9 +119,13 @@ class Printer:
         def __enter__(self):
             self.start()
         def __exit__(self, mtype, value, tb):
-            if value:
-                traceback.print_exception(mtype, value, tb)
             self.shutdown()
+            if value:
+                if not mtype == type(exceptions.SystemExit()):
+                    traceback.print_exception(mtype, value, tb)
+                else:
+                    sys.exit(value)
+
         def run(self):
             while self.running:
                 #shutdown if duration set to zero

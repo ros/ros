@@ -52,7 +52,7 @@ python-gtk2:
   macports: py25-gtk
   fedora: pygtk2
   rhel: pygtk2
-  gentoo: "=dev-python/pygtk-2.*"
+  gentoo: "=dev-python/pygtk-2*"
   freebsd: py-gtk2
 python-matplotlib:
   ubuntu: python-matplotlib

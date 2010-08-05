@@ -627,7 +627,8 @@ VecPkg Package::deleted_pkgs;
 
 
 ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false),
-        my_argc(0), my_argv(NULL), opt_profile_length(0), total_num_pkgs(0)
+        my_argc(0), my_argv(NULL), opt_profile_length(0), total_num_pkgs(0),
+        duplicate_packages_found(false)
 {
   g_rospack = this;
   Package::pkgs.reserve(500); // get some space to avoid early recopying...
@@ -669,6 +670,7 @@ const char* ROSPack::usage()
           "    find [package]\n"
           "    list\n"
           "    list-names\n"
+          "    list-duplicates\n"
           "    langs\n"
           "    depends [package] (alias: deps)\n"
           "    depends-manifests [package] (alias: deps-manifests)\n"
@@ -1150,6 +1152,8 @@ int ROSPack::run(int argc, char **argv)
   opt_profile_zombie_only = false;
   // warn on missing deps
   opt_warn_on_missing_deps = true;
+  // don't display duplicate pkgs
+  opt_display_duplicate_pkgs = false;
 
   output_acc = string("");
 
@@ -1253,6 +1257,7 @@ int ROSPack::run(int argc, char **argv)
     if(!strcmp(cmd, "help") ||
        !strcmp(cmd, "list") ||
        !strcmp(cmd, "list-names") ||
+       !strcmp(cmd, "list-duplicates") ||
        !strcmp(cmd, "langs") ||
        !strcmp(cmd, "profile"))
       throw runtime_error(errmsg);
@@ -1297,6 +1302,8 @@ int ROSPack::run(int argc, char **argv)
     return cmd_print_package_list(true);
   else if (!strcmp(cmd, "list-names"))
     return cmd_print_package_list(false);
+  else if (!strcmp(cmd, "list-duplicates"))
+    return cmd_list_duplicates();
   else if (!strcmp(cmd, "langs"))
     return cmd_print_langs_list();
   else if (!strcmp(cmd, "depends") || !strcmp(cmd, "deps"))
@@ -1366,7 +1373,20 @@ int ROSPack::cmd_print_package_list(bool print_path)
     }
   return 0;
 }
-  
+
+int ROSPack::cmd_list_duplicates()
+{
+  // Force crawl, noting duplicates
+  opt_display_duplicate_pkgs = true;
+  crawl_for_packages(true);
+  // If duplicates were found, return non-zero, because in this mode we
+  // consider that to be an error.
+  if(duplicate_packages_found)
+    return 1;
+  else
+    return 0;
+}  
+
 int ROSPack::cmd_print_langs_list()
 {
   // Don't warn about missing deps
@@ -1553,6 +1573,11 @@ Package* ROSPack::add_package(string path)
     {
       dup=true;
       return_p = *it;
+      // If we're supposed to display info on dups, do it now
+      if(opt_display_duplicate_pkgs)
+        output_acc += (*it)->path + " " + newp->path + "\n";
+      // Note that we've encountered a duplicate
+      duplicate_packages_found = true;
       break;
     }
   }

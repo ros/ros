@@ -274,6 +274,8 @@ public:
 
   int cmd_print_package_list(bool print_path);
   
+  int cmd_list_duplicates();
+
   int cmd_print_langs_list();
   
   void crawl_for_packages(bool force_crawl = false);
@@ -303,6 +305,8 @@ public:
   bool opt_profile_zombie_only;
   // display warnings about missing dependencies?
   bool opt_warn_on_missing_deps;
+  // display pairs of duplicate packages?
+  bool opt_display_duplicate_pkgs;
 
 private:
   bool cache_lock_failed;
@@ -326,6 +330,8 @@ private:
   // Total number of packages found, including duplicates.  Used in
   // determining whether a directory is a zombie.
   int total_num_pkgs;
+  // Were there any duplicate pkgs found in the crawl?
+  bool duplicate_packages_found;
 };
 
 }

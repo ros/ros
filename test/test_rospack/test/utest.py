@@ -303,6 +303,7 @@ class RospackTestCase(unittest.TestCase):
         self.rospack_succeed(None, "profile")
         self.rospack_succeed(None, "list")
         self.rospack_succeed(None, "list-names")
+        self.rospack_succeed(None, "list-duplicates")
         self.rospack_succeed(None, "langs")
 
     def test_no_package_allowed_bad(self):
@@ -310,6 +311,7 @@ class RospackTestCase(unittest.TestCase):
         self.rospack_fail("deps", "profile")
         self.rospack_fail("deps", "list")
         self.rospack_fail("deps", "list-names")
+        self.rospack_fail("deps", "list-duplicates")
         self.rospack_fail("deps", "langs")
 
     def test_invalid_option_order(self):
@@ -440,6 +442,14 @@ class RospackTestCase(unittest.TestCase):
             (["test3"], testp, "%s:%s"%(test3p, test2p), "precedence2"),
             ]
         self.echeck_ordered_list('libs-only-l', tests)
+
+    ## tests list-duplicates
+    def test_list_duplicates(self):
+        testp = os.path.abspath('test')
+        test2p = os.path.abspath('test2')
+        test3p = os.path.abspath('test3')                
+        self.erospack_succeed(testp, None, None, 'list-duplicates')
+        self.erospack_fail(testp, '%s:%s'%(test2p,test3p), None, 'list-duplicates')
 
     # test ability to point ros_package_path directly at package
     def test_ros_package_path_direct_package(self):

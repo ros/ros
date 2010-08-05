@@ -182,11 +182,13 @@ def is_publisher(topic, publisher_id):
     else:
         return False
 
-def ask_and_call(cmds):
+def ask_and_call(cmds, cwd=None):
     """
     Pretty print cmds, ask if they should be run, and if so, runs
     them using subprocess.check_call.
 
+    @param cwd: (optional) set cwd of command that is executed
+    @type  cwd: str
     @return: True if cmds were run.
     """
     # Pretty-print a string version of the commands
@@ -201,5 +203,8 @@ def ask_and_call(cmds):
     import subprocess
     if accepted:
         for c in cmds:
-            subprocess.check_call(c)
+            if cwd:
+                subprocess.check_call(c, cwd=cwd)
+            else:
+                subprocess.check_call(c)                
     return accepted

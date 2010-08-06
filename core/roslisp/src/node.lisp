@@ -65,7 +65,7 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
   (when anonymous
     (mvbind (success s ms) (sb-unix:unix-gettimeofday)
       (declare (ignore success))
-      (setq name (format nil "~a-~a-~a" name ms s))))
+      (setq name (format nil "~a_~a_~a" name ms s))))
 
   (let ((params (handle-command-line-arguments name cmd-line-args)))
 

@@ -51,7 +51,11 @@
         (home-dir (sb-ext:posix-getenv "HOME")))
     (or *ros-log-location* 
         (merge-pathnames
-         (pathname (format nil "~a-~a.log" name (unix-time)))
+         (pathname (format nil "~a-~a.log"
+                           (if (eql (aref name 0) #\/)
+                               (subseq name 1)
+                               name)
+                           (unix-time)))
          (or (when log-dir (concatenate 'string log-dir "/"))
              (when ros-home-dir (concatenate 'string ros-home-dir "/log/"))
              (when home-dir (concatenate 'string home-dir "/.ros/log/"))

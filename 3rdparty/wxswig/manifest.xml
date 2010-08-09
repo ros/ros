@@ -18,7 +18,6 @@ wxswig is included as a 3rdparty package because it is not included in package m
   <swig flags="-c++ -Wall -python -modern -new_repr -keyword -fastdispatch -fvirtual -fastinit -fastunpack `wx-config --cppflags` -DSWIG_TYPE_TABLE=_wxPython_table -DWXP_USE_THREAD=1"/>
 </export>
 
-<rosdep name="automake"/>
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>

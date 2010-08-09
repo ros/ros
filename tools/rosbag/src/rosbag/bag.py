@@ -650,7 +650,7 @@ class Bag(object):
                     s += '      messages: %d\n' % topic_msg_count
                         
                     if topic_conn_counts[topic] > 1:
-                        s += '      connections: %d' % topic_conn_counts[topic]
+                        s += '      connections: %d\n' % topic_conn_counts[topic]
 
                     if topic in topic_freqs_median:
                         s += '      frequency: %.4f\n' % topic_freqs_median[topic]

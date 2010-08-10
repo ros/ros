@@ -374,11 +374,14 @@
                              (unless (= (length pkg-name) 0)
                                (concat (ros-package-dir pkg-name)
                                        (substring str (string-match "/" str 1)))))))
-      (flet ((ido-make-file-list-1 (dir)
+      (flet ((ido-make-file-list-1 (dir &optional merged)
                                    (let ((path (pkg-expr->path dir)))
                                      (if path
-                                         (funcall old-ido-make-file-list path)
-                                       (mapcar (lambda (pkg) (concat pkg "/")) ros-packages-list)))))
+                                         (funcall old-ido-make-file-list path merged)
+                                       (mapcar (lambda (pkg) (if merged 
+                                                                 (cons (concat pkg "/") "/")
+                                                               (concat pkg "/"))) 
+                                               ros-packages-list)))))
         (substring (ido-read-file-name prompt "/"
                                        (when (member default-pkg ros-packages-list)
                                          default-pkg))

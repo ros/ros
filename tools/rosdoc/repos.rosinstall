@@ -1,11 +1,6 @@
-# List of publicly-viewable ROS repositories
-# This is used as input to both the rosbrowse and ros.org/rosdoc tools.
-ros   svn https://code.ros.org/svn/ros/stacks/ros/trunk
-# the wg-ros-pkg external includes ros-pkg and ros repos as well (for now)
 svn:
   local-name: wg-ros-pkg 
   uri: https://code.ros.org/svn/wg-ros-pkg/externals/rosdoc
-#
 svn: 
   local-name: stanford 
   uri: https://stanford-ros-pkg.googlecode.com/svn/trunk

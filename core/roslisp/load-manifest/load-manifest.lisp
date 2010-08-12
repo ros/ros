@@ -174,8 +174,8 @@
                (open marker-file-path
                      :if-exists :error
                      :if-does-not-exist :create
-                     :direction :output))
-              (call-next-method)))
+                     :direction :output)))
+            (call-next-method))
       (when (probe-file marker-file-path)
         (delete-file marker-file-path)))))
 

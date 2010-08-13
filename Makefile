@@ -38,4 +38,3 @@ package_source: all_dist
 	`rospack find rosbuild`/bin/makestackdist $(CURDIR)
 	find build -mindepth 1 -not -name "*.bz2" | xargs rm -rf
 	rm -rf bin
-

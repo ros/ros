@@ -1,4 +1,7 @@
 - svn:
+    local-name: ros
+    uri: https://code.ros.org/svn/ros/stacks/ros/trunk
+- svn:
     local-name: wg-ros-pkg 
     uri: https://code.ros.org/svn/wg-ros-pkg/externals/rosdoc
 - svn: 

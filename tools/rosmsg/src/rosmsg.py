@@ -406,7 +406,7 @@ def rosmsg_cmd_show(mode, full):
     if '::' in arg:
         parser.error(cmd+" does not understand C++-style namespaces (i.e. '::').\nPlease refer to msg/srv types as 'package_name/Type'.")
     elif '.' in arg:
-        parser.error("invalid message type '%s'.\nPlease refer to msg/srv types as 'package_name/Type'.")
+        parser.error("invalid message type '%s'.\nPlease refer to msg/srv types as 'package_name/Type'." % arg)
     if options.bag:
         bag_file = options.bag
         if not os.path.exists(bag_file):

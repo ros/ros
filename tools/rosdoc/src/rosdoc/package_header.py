@@ -197,6 +197,7 @@ def _generate_stack_headers(ctx, s):
     with codecs.open(file_p, mode='w', encoding='utf-8') as f:
         f.write(yaml.dump(d))
   
+
 def generate_stack_headers(ctx):
     """
     Generate stack.yaml files for MoinMoin PackageHeader macro
@@ -208,7 +209,9 @@ def generate_stack_headers(ctx):
         return
 
     stacks = ctx.stacks
+    stack_dirs = set()
     for s in stacks.iterkeys():
+        stack_dirs.add(s)
         try:
           #print "generating stack wiki files for", s
           _generate_stack_headers(ctx, s)
@@ -217,3 +220,4 @@ def generate_stack_headers(ctx):
           print >> sys.stderr, "Unable to generate stack.yaml for "+s+str(e)
 
 
+    return list(stack_dirs)

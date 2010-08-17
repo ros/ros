@@ -42,6 +42,7 @@ from subprocess import Popen, PIPE
 NAME='rosdoc'
 
 from rdcore import *
+import rosdoc.upload
 
 def main():
     from optparse import OptionParser
@@ -64,6 +65,9 @@ def main():
     parser.add_option("--repos", default=None,
                       dest="repos", metavar="ROSBROWSE_REPOS_FILE",
                       help="repos list from rosbrowse for determining repository names/roots")
+    parser.add_option("-u", "--upload",action="store_true", default=False,
+                      dest="upload",
+                      help="Suppress doxygen errors")
 
     options, package_filters = parser.parse_args()
 
@@ -154,13 +158,14 @@ def main():
         success = list(sphinx_success) + doxy_success + list(epyenator_success)
         d_end = time.time()
 
+        stack_dirs = []
         ph_start = time.time()        
         if 1:
             # Generate yaml data for wiki macros
             try:
                 import package_header
                 package_header.generate_package_headers(ctx)
-                package_header.generate_stack_headers(ctx)
+                stack_dirs = package_header.generate_stack_headers(ctx)
             except Exception, e:
                 traceback.print_exc()
                 print >> sys.stderr, "package header generation failed"
@@ -193,7 +198,7 @@ def main():
             # Generate Documentation Index
             import docindex 
             doc_index = os.path.join(ctx.docdir, 'index.html')
-            docindex.generate_doc_index(ctx, success, doc_index)
+            docindex.generate_doc_index(ctx, ctx.doc_packages , doc_index)
         di_end = time.time()                
 
         li_start = time.time()                
@@ -213,6 +218,14 @@ def main():
             shutil.copyfile(styles_in, styles_css)
         sup_end = time.time()
 
+        upload_start = time.time()
+        if options.upload:
+            print success, stack_dirs
+            rosdoc.upload.upload(success + stack_dirs + ['index.html', 'licenses.html', 'styles.css'], '/tmp/docs')
+            print os.listdir('/tmp/docs')
+            
+        upload_end = time.time()
+
         print """Timings
  * %.2f Rosmake
  * %.2f Epydoc
@@ -222,10 +235,12 @@ def main():
  * %.2f Landing Page
  * %.2f Documentation Index
  * %.2f License Index
+ * %.2f Upload Packages
 """%( (rm_end - rm_start), 
       (e_end - e_start), (s_end - s_start), (d_end - d_start),
       (ph_end - ph_start), (lp_end - lp_start),
       (di_end - di_start), (li_end - li_start),
+       (upload_end - upload_start),
       )
 
     except:

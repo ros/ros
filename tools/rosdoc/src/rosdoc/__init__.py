@@ -65,9 +65,9 @@ def main():
     parser.add_option("--repos", default=None,
                       dest="repos", metavar="ROSBROWSE_REPOS_FILE",
                       help="repos list from rosbrowse for determining repository names/roots")
-    parser.add_option("-u", "--upload",action="store_true", default=False,
-                      dest="upload",
-                      help="Suppress doxygen errors")
+    parser.add_option("--upload",action="store", default=None,
+                      dest="upload", metavar="RSYNC_TARGET"
+                      help="rsync target argument")
 
     options, package_filters = parser.parse_args()
 
@@ -221,8 +221,7 @@ def main():
         upload_start = time.time()
         if options.upload:
             print success, stack_dirs
-            rosdoc.upload.upload(success + stack_dirs + ['index.html', 'licenses.html', 'styles.css'], '/tmp/docs')
-            print os.listdir('/tmp/docs')
+            rosdoc.upload.upload(success + stack_dirs + ['index.html', 'licenses.html', 'styles.css'], options.upload)
             
         upload_end = time.time()
 

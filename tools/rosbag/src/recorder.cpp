@@ -298,7 +298,7 @@ void Recorder::updateFilenames() {
       ind = prefix.rfind(".bag");
     }
 
-    if (prefix.length() >= 0)
+    if (prefix.length() > 0)
         parts.push_back(prefix);
     if (options_.append_date)
         parts.push_back(timeToStr(ros::WallTime::now()));

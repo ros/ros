@@ -66,7 +66,7 @@ def main():
                       dest="repos", metavar="ROSBROWSE_REPOS_FILE",
                       help="repos list from rosbrowse for determining repository names/roots")
     parser.add_option("--upload",action="store", default=None,
-                      dest="upload", metavar="RSYNC_TARGET"
+                      dest="upload", metavar="RSYNC_TARGET",
                       help="rsync target argument")
 
     options, package_filters = parser.parse_args()

@@ -16,6 +16,7 @@
    <depend package="rosmsg"/>   
    <rosdep name="doxygen"/>
    <rosdep name="epydoc"/>
+   <rosdep name="sphinx"/>
 
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>

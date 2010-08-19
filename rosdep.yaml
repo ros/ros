@@ -483,5 +483,5 @@ paramiko:
   macports: py25-paramiko
   gentoo: dev-python/paramiko
   freebsd: py26-paramiko
-sphinx:
-  ubuntu: sphinx2-bin
+python-sphinx:
+  ubuntu: python-sphinx

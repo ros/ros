@@ -97,3 +97,6 @@
 - git: 
     local-name: au-automov 
     uri: http://github.com/wjwwood/au-automow.git
+- git:
+    local-name: roslua
+    uri: http://github.com/timn/roslua.git

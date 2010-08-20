@@ -146,7 +146,7 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
 
     @param name: Node's name. This parameter must be a base name,
         meaning that it cannot contain namespaces (i.e. '/')
-    @type  name: string
+    @type  name: str
     
     @param argv: Command line arguments to this program, including
         remapping arguments (default: sys.argv). If you provide argv
@@ -161,11 +161,12 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
         have multiple instances of the same node and don't care about
         their actual names (e.g. tools, guis). name will be used as
         the stem of the auto-generated name. NOTE: you cannot remap
-        the name of an anonymous node.  @type anonymous: bool
+        the name of an anonymous node.  
+    @type anonymous: bool
 
     @param log_level: log level for sending message to /rosout and log
         file, which is INFO by default. For convenience, you may use
-        rospy.DEBUG, rospy.INFO, rospy.ERROR, rospy.WARN, rospy.FATAL,
+        rospy.DEBUG, rospy.INFO, rospy.ERROR, rospy.WARN, rospy.FATAL
     @type  log_level: int
     
     @param disable_signals: If True, rospy will not register its own

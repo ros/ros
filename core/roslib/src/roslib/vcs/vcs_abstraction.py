@@ -35,7 +35,7 @@
 import svn, bzr, hg, git
 import vcs_base
 
-class VCSClient(vcs_base.VCSClientBase):
+class VCSClient:
   def __init__(self, vcs_type, path):
     self._path = path
     self.vcs_types = {

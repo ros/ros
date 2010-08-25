@@ -18,14 +18,13 @@
     uri: https://tum-ros-pkg.svn.sourceforge.net/svnroot/tum-ros-pkg
 - svn: 
     local-name: bosch 
-    uri: https://bosch-ros-pkg.svn.sourceforge.net/svnroot/bosch-ros-pkg
-#wu    svn https://wu-ros-pkg.svn.sourceforge.net/svnroot/wu-ros-pkg
+    uri: https://bosch-ros-pkg.svn.sourceforge.net/svnroot/bosch-ros-pkg/trunk
 - svn: 
     local-name: wu
-    uri: https://code.ros.org/svn/ros-pkg/externals/wu-ros-pkg/
+    uri: https://wu-ros-pkg.svn.sourceforge.net/svnroot/wu-ros-pkg/externals/wu-ros-pkg/
 - svn: 
     local-name: usc 
-    uri: https://usc-ros-pkg.svn.sourceforge.net/svnroot/usc-ros-pkg
+    uri: https://usc-ros-pkg.svn.sourceforge.net/svnroot/usc-ros-pkg/trunk
 - svn: 
     local-name: lis
     uri: http://lis-ros-pkg.googlecode.com/svn/trunk 
@@ -80,7 +79,7 @@
     uri: http://rice-ros-pkg.svn.sourceforge.net/svnroot/rice-ros-pkg/
 #- svn: 
 #    local-name: jsk
-#    uri: https://jsk-ros-pkg.svn.sourceforge.net/svnroot/jsk-ros-pkg/
+#    uri: https://jsk-ros-pkg.svn.sourceforge.net/svnroot/jsk-ros-pkg/trunk
 - svn: 
     local-name: robotino
     uri: http://svn.openrobotino.org/trunk/ros/

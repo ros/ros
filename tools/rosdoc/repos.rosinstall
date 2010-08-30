@@ -99,3 +99,6 @@
 - git:
     local-name: roslua
     uri: http://github.com/timn/roslua.git
+- git:
+    local-name: RCPRG-ros-pkg
+    uri: http://github.com/konradb3/RCPRG-ros-pkg.git

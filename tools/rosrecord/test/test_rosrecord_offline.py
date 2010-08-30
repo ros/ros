@@ -60,9 +60,6 @@ class TestRosrecordOffline(unittest.TestCase):
     def test_rosplay_help(self):
         self.do_test_help('rosplay');
 
-    def test_rosrebag_help(self):
-        self.do_test_help('rosrebag');
-
     def test_rosrecord_pkg_help(self):
         self.do_test_help('rosrun rosrecord rosrecord');
 

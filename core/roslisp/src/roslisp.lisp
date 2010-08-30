@@ -81,6 +81,7 @@
    :advertise
    :unadvertise
    :subscribe
+   :unsubscribe
    :register-service
    :register-service-fn
 
@@ -202,6 +203,11 @@
   topic-thread
   (callbacks nil)
   publisher-connections)
+
+(defstruct subscriber
+  topic
+  subscription
+  callback)
 
 (defstruct (publisher-connection (:conc-name nil))
   publisher-socket

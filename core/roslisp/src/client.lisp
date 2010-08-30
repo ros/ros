@@ -247,25 +247,36 @@ Can also be called on a topic that we're already subscribed to - in this case, i
       
       (if (hash-table-has-key *subscriptions* topic)
 
-	  ;; If already subscribed to topic, just add a new callback
-	  (let ((sub (gethash topic *subscriptions*)))
-	    (unless (equal topic-type (sub-topic-type sub))
-	      (roslisp-error "Asserted topic type ~a for new subscription to ~a did not match existing type ~a" topic-type topic (sub-topic-type sub)))
-	    (push callback (callbacks sub)))
-	  
-	  ;; Else create a new thread
-	  (let ((sub (make-subscription :buffer (make-queue :max-size max-queue-length) 
-					:publisher-connections nil :callbacks (list callback) :sub-topic-type topic-type)))
-	    (setf (gethash topic *subscriptions*) sub
-		  (topic-thread sub) (sb-thread:make-thread
-				      (subscriber-thread sub)
-				      :name (format nil "Subscriber thread for topic ~a" topic)))
-	    (update-publishers topic
-			       (protected-call-to-master ( "registerSubscriber" topic topic-type *xml-rpc-caller-api*) c
-				 (roslisp-error "Could not contact master at ~a when registering as subscriber to ~a: ~a" *master-uri* topic c)))
-	    (values))))))
+          ;; If already subscribed to topic, just add a new callback
+          (let ((sub (gethash topic *subscriptions*)))
+            (unless (equal topic-type (sub-topic-type sub))
+              (roslisp-error "Asserted topic type ~a for new subscription to ~a did not match existing type ~a" topic-type topic (sub-topic-type sub)))
+            (push callback (callbacks sub))
+            (make-subscriber :topic topic :subscription sub :callback callback))
+          
+          ;; Else create a new thread
+          (let ((sub (make-subscription :buffer (make-queue :max-size max-queue-length) 
+                                        :publisher-connections nil :callbacks (list callback) :sub-topic-type topic-type)))
+            (setf (gethash topic *subscriptions*) sub
+                  (topic-thread sub) (sb-thread:make-thread
+                                      (subscriber-thread sub)
+                                      :name (format nil "Subscriber thread for topic ~a" topic)))
+            (update-publishers topic
+                               (protected-call-to-master ( "registerSubscriber" topic topic-type *xml-rpc-caller-api*) c
+                                 (roslisp-error "Could not contact master at ~a when registering as subscriber to ~a: ~a" *master-uri* topic c)))
+            (make-subscriber :topic topic :subscription sub :callback callback))))))
 
-
+(defun unsubscribe (subscriber)
+  (check-type subscriber subscriber)
+  (with-mutex (*ros-lock*)  
+    (let ((sub (gethash (subscriber-topic subscriber) *subscriptions*)))
+      (assert sub () (format nil "Subscription to topic `~a' invalid." (subscriber-topic subscriber)))
+      (setf (callbacks sub) (delete (subscriber-callback subscriber) (callbacks sub)))
+      (when (null (callbacks sub))
+        (protected-call-to-master ("unregisterSubscriber" (subscriber-topic subscriber) *xml-rpc-caller-api*) c
+          (roslisp-error "Could not contact master at ~a when unregistering subscriber to ~a: ~a" *master-uri* (subscriber-topic subscriber) c))
+        (remhash (subscriber-topic subscriber) *subscriptions*))))
+  (values))
 
 
 

@@ -42,6 +42,7 @@ import roslib; roslib.load_manifest(PKG)
 import bisect
 import bz2
 from cStringIO import StringIO
+import contextlib
 import heapq
 import os
 import re
@@ -148,6 +149,12 @@ class Bag(object):
         self._open(f, mode, allow_unindexed)
 
         self._output_file = self._file
+
+    def __enter__(self):
+        return self
+        
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
     @property
     def options(self):

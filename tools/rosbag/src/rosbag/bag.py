@@ -42,7 +42,6 @@ import roslib; roslib.load_manifest(PKG)
 import bisect
 import bz2
 from cStringIO import StringIO
-import contextlib
 import heapq
 import os
 import re

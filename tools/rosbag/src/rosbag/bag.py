@@ -549,9 +549,7 @@ class Bag(object):
 
     def _get_yaml_info(self, key=None):
         s = ''
-        
-        rows = []
-        
+
         try:
             if self._filename:
                 s += 'path: %s\n' % self._filename
@@ -1348,7 +1346,7 @@ def _read_header(f, req_op=None):
 
         # Read bytes
         if len(header) < size:
-            raise ROSBagFormatException('Error reading header field: expected %d bytes, read %d' % (len(header), size))
+            raise ROSBagFormatException('Error reading header field: expected %d bytes, read %d' % (size, len(header)))
         (name, sep, value) = header[:size].partition('=')
         if sep == '':
             raise ROSBagFormatException('Error reading header field')
@@ -1468,7 +1466,7 @@ class _BagReader102_Unindexed(_BagReader):
         _BagReader.__init__(self, bag)
         
     def start_reading(self):
-        pass
+        self.bag._file_header_pos = self.bag._file.tell()
 
     def reindex(self, feedback=False):
         """Generates all bag index information by rereading the message records."""
@@ -1493,8 +1491,8 @@ class _BagReader102_Unindexed(_BagReader):
     
                 if connection_info.topic not in self.bag._topic_connections:
                     self.bag._topic_connections[connection_info.topic] = connection_info.id
-                    self.bag._connections[connection_info.id] = connection_info
-                    self.bag._connection_indexes[connection_info.id] = []
+                    self.bag._connections[connection_info.id]          = connection_info
+                    self.bag._connection_indexes[connection_info.id]   = []
 
             elif op == _OP_MSG_DATA:
                 # Read the topic and timestamp from the header
@@ -1517,11 +1515,13 @@ class _BagReader102_Unindexed(_BagReader):
 
                 # Insert the message entry (in order) into the connection index
                 bisect.insort_right(self.bag._connection_indexes[connection_id], _IndexEntry102(t, offset))
-
-            offset = f.tell()
             
+            offset = f.tell()
+
     def read_messages(self, topics, start_time, end_time, topic_filter, raw):
         f = self.bag._file
+
+        f.seek(self.bag._file_header_pos)
 
         while True:
             # Read MSG_DEF records
@@ -1586,9 +1586,10 @@ class _BagReader102_Unindexed(_BagReader):
                 connection_id     = len(self.bag._connections)
                 connection_header = { 'topic' : topic, 'type' : c.header['type'], 'md5sum' : c.header['md5sum'], 'message_definition' : c.header['message_definition'] }
                 connection_info   = _ConnectionInfo(connection_id, topic, connection_header)
-                
-                self.bag._topic_connections[topic] = connection_id
-                self.bag._connections[connection_id] = connection_info
+
+                self.bag._topic_connections[topic]          = connection_id
+                self.bag._connections[connection_id]        = connection_info
+                self.bag._connection_indexes[connection_id] = []
                 return
 
         raise ROSBagFormatException('Topic %s of datatype %s not preceded by message definition' % (topic, datatype))
@@ -1827,8 +1828,6 @@ class _BagReader200(_BagReader):
             chunk_pos = f.tell()
             if feedback:
                 yield chunk_pos
-
-            op = _peek_next_header_op(f)
 
             # Read the chunk header and remember it
             chunk_header = self.read_chunk_header()

@@ -102,3 +102,6 @@
 - git:
     local-name: RCPRG-ros-pkg
     uri: http://github.com/konradb3/RCPRG-ros-pkg.git
+- svn:
+    local-name: otl
+    uri: http://otl-ros-pkg.googlecode.com/svn/trunk/

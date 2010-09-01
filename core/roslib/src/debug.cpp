@@ -93,7 +93,6 @@ std::string demangleName(const std::string& name)
     out = name;
   }
 
-  printf("name: %s, demangled: %s\n", name.c_str(), out.c_str());
   return out;
 #else
   return name;

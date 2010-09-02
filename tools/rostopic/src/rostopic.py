@@ -651,7 +651,23 @@ def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
             return
         callback_echo.msg_eval = msg_eval
 
+        use_sim_time = rospy.get_param('/use_sim_time', False)
         sub = rospy.Subscriber(real_topic, msg_class, callback_echo.callback, topic)
+
+        if use_sim_time:
+            # #2950: print warning if nothing received for two seconds
+
+            timeout_t = time.time() + 2.
+            while time.time() < timeout_t and \
+                    callback_echo.count == 0 and \
+                    not rospy.is_shutdown() and \
+                    not callback_echo.done:
+                time.sleep(0.1)
+
+            if callback_echo.count == 0 and \
+                    not rospy.is_shutdown() and \
+                    not callback_echo.done:
+                print >> sys.stderr, "WARNING: no messages received and simulated time is active.\nIs /clock being published?"
 
         while not rospy.is_shutdown() and not callback_echo.done:
             time.sleep(0.1)

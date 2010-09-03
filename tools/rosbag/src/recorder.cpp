@@ -93,7 +93,7 @@ RecorderOptions::RecorderOptions() :
     name(""),
     exclude_regex(),
     split_size(0),
-    buffer_size(0),
+    buffer_size(1048576 * 256),
     limit(0)
 {
 }
@@ -105,7 +105,6 @@ Recorder::Recorder(RecorderOptions const& options) :
 	num_subscribers_(0),
 	exit_code_(0),
 	queue_size_(0),
-	max_queue_size_(1048576 * 256),
 	split_count_(0),
     writing_enabled_(true)
 {
@@ -254,7 +253,7 @@ void Recorder::doQueue(ros::MessageEvent<topic_tools::ShapeShifter const> msg_ev
         queue_size_ += out.msg->size();
         
         // Check to see if buffer has been exceeded
-        while (max_queue_size_ > 0 && queue_size_ > max_queue_size_) {
+        while (options_.buffer_size > 0 && queue_size_ > options_.buffer_size) {
             OutgoingMessage drop = queue_->front();
             queue_->pop();
             queue_size_ -= drop.msg->size();

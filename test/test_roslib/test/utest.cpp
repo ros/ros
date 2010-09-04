@@ -33,6 +33,7 @@
 #include <vector>
 #include <stdlib.h>
 #include <unistd.h>
+#include <boost/thread.hpp>
 #include <gtest/gtest.h>
 #include "ros/package.h"
 
@@ -106,6 +107,30 @@ TEST(roslib, getAll)
   ASSERT_EQ((int)output_list.size(), 1);
   ASSERT_STREQ(output_list[0].c_str(), "test_roslib");
 
+  cleanup_env_vars();
+}
+
+void
+roslib_caller()
+{
+  struct timespec ts = {0, 100000};
+  std::string output;
+  for(int i=0;i<100;i++)
+  {
+    output = ros::package::command("plugins --attrib=foo test_roslib");
+    nanosleep(&ts, NULL);
+  }
+}
+
+TEST(roslib, concurrent_access)
+{
+  set_env_vars();
+  const int size = 10;
+  boost::thread t[size];
+  for(int i=0;i<size; i++)
+    t[i] = boost::thread(boost::bind(roslib_caller));
+  for(int i=0;i<size; i++)
+    t[i].join();
   cleanup_env_vars();
 }
 

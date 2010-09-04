@@ -34,37 +34,19 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/classification.hpp>
+#include <boost/thread/mutex.hpp>
 
 namespace ros
 {
 namespace package
 {
 
+// Mutex used to lock calls into librospack, which is not thread-safe.
+static boost::mutex librospack_mutex;
+
 std::string command(const std::string& _cmd)
 {
-  /*
-  if (!getenv("ROS_ROOT"))
-  {
-    std::cerr << "ROS_ROOT is not set!  Cannot execute " << _cmd << std::endl;
-    return "";
-  }
-
-  std::string cmd = getenv("ROS_ROOT") + std::string("/bin/rospack ") + _cmd;
-  FILE* pipe = popen(cmd.c_str(), "r");
-  std::string output;
-
-  if (pipe)
-  {
-    char rospack_output[1024];
-    while (fgets(rospack_output, 1024, pipe))
-    {
-      output += rospack_output;
-    }
-
-    pclose(pipe);
-  }
-  return output;
-  */
+  boost::mutex::scoped_lock lock(librospack_mutex);
 
   rospack::ROSPack rp;
   int ret;

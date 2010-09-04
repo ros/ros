@@ -81,11 +81,6 @@ python-numpy:
   macports: py25-numpy
   gentoo: dev-python/numpy
   freebsd: py-numpy
-python-fuse:
-  ubuntu: python-fuse
-  debian: python-fuse
-  gentoo: dev-python/fuse-python
-  freebsd: py26-fusefs
 python-scipy:
   ubuntu: python-scipy
   debian: python-scipy
@@ -181,18 +176,6 @@ graphviz:
   macports: graphviz
   gentoo: media-gfx/graphviz
   freebsd: graphviz
-fakeroot:
-  ubuntu: fakeroot
-  arch: fakeroot
-  debian: fakeroot
-  gentoo: sys-apps/fakeroot
-  freebsd: fakeroot
-dpkg-dev:
-  ubuntu: dpkg-dev
-  debian: dpkg-dev
-  arch: |
-    if ! pacman -Q dpkg; then yaourt -S dpkg; fi
-  freebsd: dpkg
 doxygen:
   ubuntu: doxygen
   fedora: doxygen

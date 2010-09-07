@@ -1,5 +1,6 @@
 <launch>
   <node name="a2iserver" pkg="test_ros" type="add_two_ints_server" />
+  <node name="headerserver" pkg="test_rosservice" type="header_echo_server.py" />
   <group ns="foo">
     <node name="a2iserver" pkg="test_ros" type="add_two_ints_server" />
   </group>

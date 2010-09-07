@@ -116,6 +116,30 @@ class TestRosserviceOnline(unittest.TestCase):
             output = Popen([cmd, 'call', name, '1', '2'], stdout=PIPE).communicate()[0]
             self.assertEquals('sum: 3', output.strip())
 
+        name = 'header_echo'
+        # test with a Header so we can validate keyword args
+        import yaml
+        import time
+        t = time.time()
+        
+        # test with empty headers
+        for v in ['{}', '{header: {}}', '{header: {seq: 0}}']:
+            output = Popen([cmd, 'call', name, v], stdout=PIPE).communicate()[0]
+            val = yaml.load(output.strip())['header']
+            self.assertEquals('', val['frame_id'])
+            self.assert_(val['seq'] >= 0)
+            self.assertEquals(0, val['stamp']['secs'])
+            self.assertEquals(0, val['stamp']['nsecs'])
+
+        # test with auto headers
+        for v in ['{header: auto}', '{header: {stamp: now}}']:
+            output = Popen([cmd, 'call', name, v], stdout=PIPE).communicate()[0]
+            val = yaml.load(output.strip())['header']
+            self.assertEquals('', val['frame_id'])
+            self.assert_(val['seq'] >= 0)
+            self.assert_(val['stamp']['secs'] >= int(t))
+        
+
         # verify that it respects ROS_NS
         # - the uris should be different as the names should resolve differently
         env = os.environ.copy()

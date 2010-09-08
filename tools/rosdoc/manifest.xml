@@ -12,7 +12,6 @@
    <review status="Doc reviewed" notes=""/>
    <url>http://ros.org/wiki/rosdoc</url>
    <depend package="roslib"/>
-   <depend package="rxdeps"/>
    <depend package="rosmsg"/>   
    <rosdep name="doxygen"/>
    <rosdep name="epydoc"/>

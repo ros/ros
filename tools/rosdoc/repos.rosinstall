@@ -33,7 +33,7 @@
     uri: http://gt-ros-pkg.googlecode.com/svn/trunk
 - hg:
     local-name: continuous_ops
-    uri: ssh://code.ros.org//hgroot/continuous_ops
+    uri: https://continuous-ops.hg-ros-pkg.googlecode.com/hg/
 - hg: 
     local-name: foote-nxt 
     uri: https://nxt.foote-ros-pkg.googlecode.com/hg/

@@ -592,18 +592,24 @@ def _rosservice_cmd_call(argv):
             arg = "''" 
         service_args.append(yaml.load(arg))
     if not service_args and has_service_args(service_name, service_class=service_class):
+        if sys.stdin.isatty():
+            parser.error("Please specify service arguments")
         for service_args in _stdin_yaml_arg():
             if service_args:
                 # #2080: argument to _rosservice_call must be a list
-                if type(service_args) == dict:
+                if type(service_args) != list:
                     service_args = [service_args]
-                _rosservice_call(service_name, service_args, verbose=options.verbose, service_class=service_class)
+                try:
+                    _rosservice_call(service_name, service_args, verbose=options.verbose, service_class=service_class)
+                except ValueError, e:
+                    print >> sys.stderr, str(e)
+                    break
     else:
         _rosservice_call(service_name, service_args, verbose=options.verbose, service_class=service_class)
 
 def _stdin_yaml_arg():
     """
-    @return iterator for next yaml document on stdin
+    @return: iterator for next set of service args on stdin. Iterator returns a list of args for each call.
     @rtype: iterator
     """
     import yaml

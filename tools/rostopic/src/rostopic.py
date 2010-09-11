@@ -1237,12 +1237,20 @@ def _rostopic_cmd_pub(argv):
     latch = options.rate == None
     pub, msg_class = create_publisher(topic_name, topic_type, latch)
     if not pub_args and len(msg_class.__slots__):
+        if sys.stdin.isatty():
+            parser.error("Please specify message values")
         # read pub_args from stdin
         for pub_args in _stdin_yaml_arg():
             if rospy.is_shutdown():
                 break
             if pub_args:
-                publish_message(pub, msg_class, pub_args, options.rate, verbose=options.verbose)
+                if type(pub_args) != list:
+                    pub_args = [pub_args]
+                try:
+                    publish_message(pub, msg_class, pub_args, options.rate, verbose=options.verbose)
+                except ValueError, e:
+                    print >> sys.stderr, str(e)
+                    break
             if rospy.is_shutdown():
                 break
     else:
@@ -1250,7 +1258,7 @@ def _rostopic_cmd_pub(argv):
         
 def _stdin_yaml_arg():
     """
-    @return: for next yaml document on stdin
+    @return: for next list of arguments on stdin. Iterator returns a list of args for each call.
     @rtype: iterator
     """
     import yaml
@@ -1271,6 +1279,7 @@ def _stdin_yaml_arg():
                     continue
                 elif arg.strip() != '---':
                     buff = buff + arg
+            # publish_message wants a list of args
             yield yaml.load(buff.rstrip())
     except select.error:
         return # most likely ctrl-c interrupt

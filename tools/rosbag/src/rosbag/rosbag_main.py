@@ -155,7 +155,7 @@ def play_cmd(argv):
 
     if options.quiet:      cmd.extend(["--quiet"])
     if options.pause:      cmd.extend(["--pause"])
-    if options.immediate:  cmd.extend(["--imediate"])
+    if options.immediate:  cmd.extend(["--immediate"])
     if options.loop:       cmd.extend(["--loop"])
     if options.keep_alive: cmd.extend(["--keep-alive"])
     if options.try_future: cmd.extend(["--try-future-version"])

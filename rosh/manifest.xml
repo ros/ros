@@ -1,0 +1,33 @@
+<package>
+  <description brief="rosh">
+
+     rosh
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rosh</url>
+  <depend package="rospy"/>
+  <depend package="rosgraph"/>
+  <depend package="rosnode"/>
+  <depend package="rostopic"/>
+  <depend package="rosservice"/>
+  <depend package="rosparam"/>
+  <depend package="rosmsg"/>
+
+  <!-- py_image_view stuff -->
+  <depend package="std_msgs"/>
+  <depend package="sensor_msgs"/>
+  <depend package="nav_msgs"/>
+  
+  <export>
+    <rosdoc config="${prefix}/rosdoc.yaml" />
+  </export>
+
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+</package>
+
+

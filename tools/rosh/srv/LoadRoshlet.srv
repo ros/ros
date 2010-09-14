@@ -1,6 +1,0 @@
-string name
-string package
-string type
-string[] plugins
----
-bool success

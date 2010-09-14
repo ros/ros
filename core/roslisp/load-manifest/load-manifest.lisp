@@ -156,7 +156,10 @@
                                        (asdf:component-name component)))
                    (ros-home)))
 
-(defmethod asdf:perform :around ((op asdf:compile-op) (component asdf:cl-source-file))
+(defmethod asdf:perform :around ((op asdf:compile-op) component)
+  (unless (typep component 'asdf:cl-source-file)
+    (call-next-method)
+    (return-from asdf:perform))
   (let ((marker-file-path (compilation-marker-file-path component)))
     (unwind-protect
          (tagbody
@@ -179,7 +182,10 @@
       (when (probe-file marker-file-path)
         (delete-file marker-file-path)))))
 
-(defmethod asdf:perform :around ((op asdf:load-op) (component asdf:cl-source-file))
+(defmethod asdf:perform :around ((op asdf:load-op) component)
+  (unless (typep component 'asdf:cl-source-file)
+    (call-next-method)
+    (return-from asdf:perform))
   (let ((marker-file-path (compilation-marker-file-path component)))
     (wait-for-file-deleted marker-file-path
                            (format nil

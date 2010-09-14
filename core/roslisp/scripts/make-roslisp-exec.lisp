@@ -7,12 +7,13 @@
   (let ((roslisp-path (merge-pathnames (make-pathname :directory '(:relative "asdf"))
                                        (ros-load:ros-package-path "roslisp")))
         (output-filename (pathname (fifth sb-ext:*posix-argv*))))
-    (handler-case
-        (let ((ros-load:*current-ros-package* (second sb-ext:*posix-argv*)))
-          (asdf:operate 'asdf:compile-op (third sb-ext:*posix-argv*)))
-      (error (e)
-        (format *error-output* "Compilation failed due to condition: ~a~&" e)
-        (sb-ext:quit :unix-status 1)))
+    (unless (sb-ext:posix-getenv "ROS_DEBBUILD")
+      (handler-case
+          (let ((ros-load:*current-ros-package* (second sb-ext:*posix-argv*)))
+            (asdf:operate 'asdf:compile-op (third sb-ext:*posix-argv*)))
+        (error (e)
+          (format *error-output* "Compilation failed due to condition: ~a~&" e)
+          (sb-ext:quit :unix-status 1))))
 
     (with-open-file (strm output-filename :if-exists :supersede :direction :output)
       (let ((*standard-output* strm))

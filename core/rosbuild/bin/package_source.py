@@ -44,7 +44,7 @@ def package_source(path):
 
   # Parse the version number from CMakeLists.txt
   with open(cmake_lists_path, 'r') as f:
-    m = re.search('rosbuild_make_distribution\(([0-9.]*)\)',f.read())
+    m = re.search('rosbuild_make_distribution\((.*)\)',f.read())
     if m is not None:
       stack_version = m.group(1)
     else:

@@ -108,3 +108,6 @@
 - svn:
     local-name: otl
     uri: http://otl-ros-pkg.googlecode.com/svn/trunk/
+- svn:
+    local-name: aptima
+    uri: http://aptima-ros-pkg.googlecode.com/svn/trunk/

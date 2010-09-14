@@ -34,7 +34,6 @@ clean_dist:
 	rm -rf build
 
 # Run the script that does the build, then do a fairly hacky cleanup, #1598
-package_source: all_dist
-	`rospack find rosbuild`/bin/makestackdist $(CURDIR)
-	find build -mindepth 1 -not -name "*.bz2" | xargs rm -rf
-	rm -rf bin
+package_source:
+	$(shell rospack find rosbuild)/bin/package_source.py $(CURDIR)
+

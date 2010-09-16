@@ -774,20 +774,27 @@ parameter."
   (interactive)
   (interrupt-process))
 
+(defun rosemacs/terminate-process ()
+  (interactive)
+  (signal-process (get-buffer-process (current-buffer)) 'SIGTERM)
+  )
+
 (defun rosemacs/kill-process-buffer ()
   (interactive)
   (let ((process (get-buffer-process (current-buffer))))
-    (when (and process (eq (process-status process) 'run))
-      (interrupt-process))
-    ;; Give it time to shutdown cleanly
-    (set-process-sentinel process '(lambda (proc event)
-                                     (let ((buf (process-buffer proc)))
-                                       (message "Killing %s in response to process event %s" buf event)
-                                       (kill-buffer buf))))
-    ))
+    (if process
+        (progn
+          (when (eq (process-status process) 'run)
+            (interrupt-process))
+      ;; Give it time to shutdown cleanly
+          (set-process-sentinel process '(lambda (proc event)
+                                           (let ((buf (process-buffer proc)))
+                                             (message "Killing %s in response to process event %s" buf event)
+                                             (kill-buffer buf)))))
+      (kill-buffer (current-buffer)))))
 
 (defvar ros-topic-echo-keymap (make-sparse-keymap))
-(define-key ros-topic-echo-keymap "k" 'rosemacs/interrupt-process)
+(define-key ros-topic-echo-keymap "k" 'rosemacs/terminate-process)
 (define-key ros-topic-echo-keymap "q" 'rosemacs/kill-process-buffer)
 
 (define-minor-mode ros-topic-echo-mode 
@@ -841,6 +848,7 @@ q kills buffer"
 
 
 (defun update-ros-topic-buffer-helper ()
+  (setq ros-topic-buffer (get-buffer-create "*ros-topics*"))
   (set-buffer ros-topic-buffer)
   (let ((old-stamp (rosemacs/get-stamp-string)))
     (erase-buffer)
@@ -891,12 +899,15 @@ q kills buffer"
     (if (and pub-start sub-start)
         (let ((new-published-topics (rosemacs/get-topics pub-start sub-start ros-num-publishers)))
           (setq ros-subscribed-topics (rosemacs/get-topics sub-start (point-max) ros-num-subscribers))
-          (destructuring-bind (added deleted) (rosemacs-list-diffs ros-topics new-published-topics)
-            (lwarn '(rosemacs) :debug "added topics : %s" added)
-            (dolist (topic added)
-              (add-ros-topic topic))
-            (dolist (topic deleted)
-              (remove-ros-topic topic))))
+          (let ((new-topics (sort* (remove-duplicates (vconcat new-published-topics ros-subscribed-topics)
+                                                      :test 'equal)
+                                   'string<)))
+            (destructuring-bind (added deleted) (rosemacs-list-diffs ros-topics (append  new-topics nil))
+              (lwarn '(rosemacs) :debug "added topics : %s" added)
+              (dolist (topic added)
+                (add-ros-topic topic))
+              (dolist (topic deleted)
+                (remove-ros-topic topic)))))
       (lwarn '(rosemacs) :debug "rostopic output did not look as expected; could just be that the master is not up.")))
   (lwarn '(rosemacs) :debug "Done parsing rostopic list")
   (setq ros-all-topics 
@@ -1119,7 +1130,7 @@ q kills buffer"
       (match-string 1))))
 
 (defvar ros-run-keymap (make-sparse-keymap))
-(define-key ros-run-keymap "k" 'rosemacs/interrupt-process)
+(define-key ros-run-keymap "k" 'rosemacs/terminate-process)
 (define-key ros-run-keymap "q" 'rosemacs/kill-process-buffer)
 (define-key ros-run-keymap "r" 'rosrun/restart-current)
 
@@ -1167,7 +1178,7 @@ q kills the buffer and process."
         (set-buffer buf)
         (ros-run-mode 1)
         (apply 'start-process (buffer-name buf) buf "rosrun" ros-run-pkg ros-run-executable ros-run-args))
-      (display-buffer buf))))
+      (switch-to-buffer buf))))
 
 (defun rosrun/restart-current ()
   (interactive)
@@ -1182,8 +1193,9 @@ q kills the buffer and process."
 (defvar ros-launch-filename nil "The file being launched")
 (make-variable-buffer-local 'ros-launch-filename)
 
-(defun ros-launch (package-name)
-  "Open up the directory corresponding to PACKAGE-NAME in dired mode.  If used interactively, tab completion will work."  (interactive (list (ros-completing-read-pkg-file "Enter ros path: ")))
+(defun ros-launch (package-name &optional other-window)
+  "Open up the directory corresponding to PACKAGE-NAME in dired mode.  If used interactively, tab completion will work."  
+  (interactive (list (ros-completing-read-pkg-file "Enter ros path: ")))
   (multiple-value-bind (package dir-prefix dir-suffix) (parse-ros-file-prefix package-name)
     (let* ((package-dir (ros-package-dir package))
 	   (path (if dir-prefix (concat package-dir dir-prefix dir-suffix) package-dir)))

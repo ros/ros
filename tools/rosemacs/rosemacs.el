@@ -1177,7 +1177,7 @@ q kills the buffer and process."
       (save-excursion
         (set-buffer buf)
         (start-process (buffer-name buf) buf "roslaunch" ros-launch-path)
-        (rosemacs/add-event (format "%s: Ros launch of %s\n" (float-time) ros-launch-path))
+        (rosemacs/add-event (format "Ros launch of %s" ros-launch-path))
         )
       )))
 
@@ -1212,8 +1212,7 @@ k kills the process (sends SIGINT)"
     (when display-in-minibuffer (message str))
     (set-buffer ros-events-buffer)
     (goto-char (point-max))
-    (terpri ros-events-buffer)
-    (insert str)
+    (princ (format "\n%s: %s" (float-time) str) ros-events-buffer)
     )
   )
 

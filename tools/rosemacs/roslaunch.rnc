@@ -11,6 +11,7 @@ grammar {
            attribute type { text } &
            attribute args { text }? &
            attribute respawn { "true" | "false" }? &
+           attribute machine { text }? &
            attribute output { text }? &
            attribute ns { text }? &
            ( param* & remap* & rosparam* )
@@ -20,9 +21,10 @@ grammar {
             attribute value { text }
           }
   rosparam = element rosparam {
-               attribute command { text },
-               attribute file { text },
-               attribute ns { text }?
+               attribute command { text }?,
+               attribute file { text }?,
+               attribute ns { text }?,
+               ( text )
              }
   remap = element remap { attribute from { text }, attribute to { text } }          
   inc = element include {

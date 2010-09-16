@@ -711,8 +711,8 @@ parameter."
 	(switch-to-buffer buf)
       (progn
 	(setq ros-topic-buffer (get-buffer-create "*ros-topics*"))
-	(switch-to-buffer ros-topic-buffer)
-	(ros-topic-list-mode 1)))
+	(switch-to-buffer ros-topic-buffer)))
+    (ros-topic-list-mode 1)
     (update-ros-topic-buffer)))
 
 (defun add-hz-update (topic-regexp)
@@ -769,16 +769,21 @@ parameter."
   (interactive)
   (interrupt-process))
 
-(defun kill-current-buffer ()
+(defun rosemacs/kill-process-buffer ()
   (interactive)
   (let ((process (get-buffer-process (current-buffer))))
     (when (and process (eq (process-status process) 'run))
-      (interrupt-process)))
-  (kill-buffer nil))
+      (interrupt-process))
+    ;; Give it time to shutdown cleanly
+    (set-process-sentinel process '(lambda (proc event)
+                                     (let ((buf (process-buffer proc)))
+                                       (message "Killing %s in response to process event %s" buf event)
+                                       (kill-buffer buf))))
+    ))
 
 (defvar ros-topic-echo-keymap (make-sparse-keymap))
 (define-key ros-topic-echo-keymap "k" 'rosemacs/interrupt-process)
-(define-key ros-topic-echo-keymap "q" 'kill-current-buffer)
+(define-key ros-topic-echo-keymap "q" 'rosemacs/kill-process-buffer)
 
 (define-minor-mode ros-topic-echo-mode 
   "Mode used for rostopic echo.  
@@ -792,7 +797,7 @@ q kills the buffer and process"
 
 
 (defvar ros-topic-list-keymap (make-sparse-keymap))
-(define-key ros-topic-list-keymap [?q] 'kill-current-buffer)
+(define-key ros-topic-list-keymap [?q] 'rosemacs/kill-process-buffer)
 (define-key ros-topic-list-keymap [?\r] 'echo-current-topic)
 (define-key ros-topic-list-keymap [?h] 'hz-current-topic)
 (define-key ros-topic-list-keymap [?H] 'unhz-current-topic)
@@ -1074,6 +1079,12 @@ q kills buffer"
 
 (defvar ros-run-temp-var "")
 (defvar ros-run-exec-names nil)
+(defvar ros-run-pkg nil "Package of the executable being rosrun")
+(make-variable-buffer-local 'ros-run-pkg)
+(defvar ros-run-executable nil "Executable being rosrun")
+(make-variable-buffer-local 'ros-run-executable)
+(defvar ros-run-args nil "Arguments to current rosrun")
+(make-variable-buffer-local 'ros-run-args)
 
 (defun extract-exec-name (path)
   (string-match "\\([^\/]+\\)$" path)
@@ -1102,6 +1113,11 @@ q kills buffer"
       (re-search-forward "^\\(.*\\)$")
       (match-string 1))))
 
+(defvar ros-run-keymap (make-sparse-keymap))
+(define-key ros-run-keymap "k" 'rosemacs/interrupt-process)
+(define-key ros-run-keymap "q" 'rosemacs/kill-process-buffer)
+(define-key ros-run-keymap "r" 'rosrun/restart-current)
+
 (define-minor-mode ros-run-mode
   "Mode used for rosrun
 
@@ -1109,8 +1125,8 @@ k kills the process (sends SIGINT).
 q kills the buffer and process."
   :init-value nil
   :lighter " ros-run"
-  :keymap ros-topic-echo-keymap
-  (message "ros-run mode: k to stop, q to quit"))
+  :keymap ros-run-keymap
+  (message "ros-run mode: k to stop, q to quit, r to restart"))
 
 (defun rosemacs/contains-running-process (name)
   (let ((buf (get-buffer name)))
@@ -1128,16 +1144,29 @@ q kills the buffer and process."
                                         (cons pkg nil))
                                       (ros-find-executables ros-run-temp-var))
                               nil nil nil nil ros-run-temp-var)))
-  (let ((name (format "*rosrun:%s/%s" pkg exec)))
-    (if (rosemacs/contains-running-process name)
-        (warn "Rosrun buffer %s already exists: not creating a new one." name)
-      (let ((buf (get-buffer-create name))) 
-        (apply #'start-process name buf "rosrun" pkg exec args)
-        (save-excursion
-          (set-buffer buf)
-          (view-buffer-other-window buf)
-          (ros-run-mode 1))
-        buf))))
+  (let* ((name (format "*rosrun:%s/%s" pkg exec))
+         (buf (get-buffer-create name)))
+    (save-excursion
+      (set-buffer buf)
+      (setq ros-run-pkg pkg
+            ros-run-executable exec
+            ros-run-args args))
+    (rosrun/restart buf)
+    ))
+
+(defun rosrun/restart (buf)
+  (if (rosemacs/contains-running-process buf)
+      (warn "Rosrun buffer %s already exists: not creating a new one." (buffer-name buf))
+    (progn
+      (save-excursion
+        (set-buffer buf)
+        (ros-run-mode 1)
+        (apply 'start-process (buffer-name buf) buf "rosrun" ros-run-pkg ros-run-executable ros-run-args))
+      (display-buffer buf))))
+
+(defun rosrun/restart-current ()
+  (interactive)
+  (rosrun/restart (current-buffer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; roslaunch
@@ -1187,7 +1216,7 @@ q kills the buffer and process."
 
 (defvar ros-launch-keymap (make-sparse-keymap))
 (define-key ros-launch-keymap "k" 'rosemacs/interrupt-process)
-(define-key ros-launch-keymap "q" 'kill-current-buffer)
+(define-key ros-launch-keymap "q" 'rosemacs/kill-process-buffer)
 (define-key ros-launch-keymap "r" 'rosemacs/relaunch-current-process)
 
 

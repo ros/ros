@@ -533,7 +533,8 @@
                           (format "Enter message name (default %s): " (current-word t t))
                         "Enter message name: ")
                       (current-word t t))))
-  (shell-command (format "rosmsg show %s" message)))
+  (let ((max-mini-window-height 0))
+    (shell-command (format "rosmsg show %s" message))))
 
 (defun view-ros-service (service)
   "Open definition of a ros service in view mode.  If used interactively, tab completion will work."
@@ -542,7 +543,8 @@
                           (format "Enter service name (default %s): " (current-word t t))
                         "Enter service name: ")
                       (current-word t t))))
-  (shell-command (format "rossrv show %s" service)))
+  (let ((max-mini-window-height))
+    (shell-command (format "rossrv show %s" service))))
 
 (defun ros-rgrep-package (ros-pkg regexp files)
   "Run a recursive grep in `ros-pkg', with `regexp' as search

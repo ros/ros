@@ -667,9 +667,12 @@ parameter."
           (princ (format "%s\n" n) ros-node-buffer))))))
 
 
-(defun rosemacs/display-nodes ()
+(defun rosemacs/display-nodes (&optional other-window)
   (interactive)
-  (display-buffer (get-buffer-create "*ros-nodes*")))
+  (let ((buf (get-buffer-create "*ros-nodes*")))
+    (if other-window
+        (display-buffer buf)
+      (switch-to-buffer buf))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1196,7 +1199,7 @@ q kills the buffer and process."
                   (ros-launch-mode 1)
                   (rosemacs/relaunch (current-buffer)))
                 
-                (display-buffer buf)
+                (if other-window (display-buffer buf) (switch-to-buffer buf))
                 buf)))
 	(error "Did not find %s in the ros package list." package-name)))))
 
@@ -1243,13 +1246,15 @@ k kills the process (sends SIGINT)"
     (when display-in-minibuffer (message str))
     (set-buffer ros-events-buffer)
     (goto-char (point-max))
-    (princ (format "\n%s: %s" (float-time) str) ros-events-buffer)
+    (princ (format "\n[%s] %s" (substring (current-time-string) 11 19) str) ros-events-buffer)
     )
   )
 
-(defun rosemacs/display-event-buffer ()
+(defun rosemacs/display-event-buffer (&optional other-window)
   (interactive)
-  (display-buffer ros-events-buffer))
+  (if other-window
+      (display-buffer ros-events-buffer)
+    (switch-to-buffer ros-events-buffer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Keymap

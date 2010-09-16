@@ -1309,15 +1309,20 @@ k kills the process (sends SIGINT)"
   (setq rosemacs/invoked t)
   (rosemacs/track-topics ros-topic-update-interval)
   (rosemacs/track-nodes ros-node-update-interval)
-)
 
-
+  ;; nxml mode
+  (when (>= emacs-major-version 23)
+    (require 'rng-loc)
+    (push (concat (ros-package-path "rosemacs") "/rng-schemas.xml") rng-schema-locating-files)
+    (add-to-list 'auto-mode-alist '("\.launch$" . nxml-mode))
+    (add-to-list 'auto-mode-alist '("manifest.xml" . nxml-mode))
+    (add-to-list 'auto-mode-alist '("\\.urdf" . xml-mode))
+    (add-to-list 'auto-mode-alist '("\\.xacro" . xml-mode))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Internal
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 (defun rosemacs-get-comp (completions i)
   (let ((comp (aref completions i)))
@@ -1328,24 +1333,24 @@ k kills the process (sends SIGINT)"
   "str is a string, completions is a sorted vector of strings.  Return list of strings in completions that str is a prefix of."
   (let ((num-completions (length completions)))
     (unless (or (= num-completions 0)
-		(string< (rosemacs-get-comp completions (1- num-completions)) str))
-    (let ((i 0)
-	  (j (1- num-completions)))
-      (while (< (1+ i) j)
-	(let ((k (floor (+ i j) 2)))
-	  (if (string< str (rosemacs-get-comp completions k))
-	      (setq j k)
-	    (setq i k))))
+                (string< (rosemacs-get-comp completions (1- num-completions)) str))
+      (let ((i 0)
+            (j (1- num-completions)))
+        (while (< (1+ i) j)
+          (let ((k (floor (+ i j) 2)))
+            (if (string< str (rosemacs-get-comp completions k))
+                (setq j k)
+              (setq i k))))
 
-      (when (not (rosemacs-is-prefix str (rosemacs-get-comp completions i)))
-	(incf i))
-      ;; Postcondition: completions of str, if they exist, begin at i
+        (when (not (rosemacs-is-prefix str (rosemacs-get-comp completions i)))
+          (incf i))
+        ;; Postcondition: completions of str, if they exist, begin at i
       
-      (let ((returned-completions nil))
-	(while (and (< i (length completions)) (rosemacs-is-prefix str (rosemacs-get-comp completions i)))
-	  (push (rosemacs-get-comp completions i) returned-completions)
-	  (incf i))
-	returned-completions)))))
+        (let ((returned-completions nil))
+          (while (and (< i (length completions)) (rosemacs-is-prefix str (rosemacs-get-comp completions i)))
+            (push (rosemacs-get-comp completions i) returned-completions)
+            (incf i))
+          returned-completions)))))
 
 (defun rosemacs-is-prefix (str1 str2)
   (let ((m (length str1)))

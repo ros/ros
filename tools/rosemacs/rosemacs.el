@@ -142,7 +142,7 @@
 
 (defvar ros-buffer-package nil "A buffer-local variable for caching the current buffer's ros package.")
 (make-variable-buffer-local 'ros-buffer-package)
-(with-current-buffer ros-topic-buffer (insert "Uninitialized (use the display-ros-topic-info command rather than just switching to this buffer)"))
+(with-current-buffer (get-buffer-create "*ros-topics*") (insert "Uninitialized (use the display-ros-topic-info command rather than just switching to this buffer)"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Preloading
@@ -606,19 +606,7 @@ parameter."
           (rosemacs-list-diffs rosemacs/nodes sorted-nodes)
         (setq rosemacs/nodes sorted-nodes
               rosemacs/nodes-vec (vconcat rosemacs/nodes))
-        (save-excursion
-          (set-buffer (get-buffer-create "*ros-nodes*"))
-          (let ((old-stamp (ros-topic-get-stamp-string)))
-            (erase-buffer)
-            (princ (format "Master uri: %s\n" (getenv "ROS_MASTER_URI"))
-                   (current-buffer))
-            (princ (format "%s\n\n" old-stamp) (current-buffer)))
-          (dolist (n rosemacs/nodes)
-            (insert n)
-            (insert "\n"))
-          (let ((time-stamp-pattern "5/^Last updated: <%02H:%02M:%02S"))
-            (time-stamp))
-          )
+        (update-ros-node-buffer)
         (when added
           (lwarn '(rosemacs) :debug "New nodes: %s" added)
           (rosemacs/add-event (format "New nodes: %s" added)))
@@ -639,11 +627,11 @@ parameter."
                  (end-pt (match-end 0)))
             (when found-finish
               (rosemacs/parse-node-list start-pt (match-beginning 0))
-              (delete-region (point-min) end-pt)))))
-    ))
+              (delete-region (point-min) end-pt)))))))
+
 
 (defun rosemacs/track-nodes (interval)
-  (interactive "nEnter rosnode update interval in seconds (0 to stop tracking)")
+  (interactive "nEnter rosnode update interval in seconds (0 to stop tracking): ")
   (let ((name "*rosnode-tracker*"))
     (let ((old-proc (get-process name)))
       (when old-proc
@@ -655,6 +643,27 @@ parameter."
           (set-process-query-on-exit-flag proc nil)
           (set-process-filter proc 'rosemacs/rosnode-filter)))
       )))
+
+(defun rosemacs/get-stamp-string ()
+  (goto-char (point-min))
+  (let ((pos (re-search-forward "^\\(Last updated.*\\)$" nil t)))
+    (if pos
+	(match-string 1)
+      "Last updated: <>")))
+
+(defun update-ros-node-buffer ()
+  (let ((ros-node-buffer (get-buffer-create "*ros-nodes*")))
+    (save-excursion
+      (set-buffer ros-node-buffer)
+      (let ((old-stamp (rosemacs/get-stamp-string)))
+        (erase-buffer)
+        (princ (format "Master uri: %s\n" (getenv "ROS_MASTER_URI")) ros-node-buffer)
+        (princ old-stamp ros-node-buffer)
+        (let ((time-stamp-pattern "5/^Last updated: <%02H:%02M:%02S")) (time-stamp))
+        (princ "\n\n" ros-node-buffer)
+        (dolist (n rosemacs/nodes)
+          (princ (format "%s\n" n) ros-node-buffer))))))
+
 
 (defun rosemacs/display-nodes ()
   (interactive)
@@ -819,16 +828,11 @@ q kills buffer"
       (save-excursion
 	(update-ros-topic-buffer-helper)))))
 
-(defun ros-topic-get-stamp-string ()
-  (goto-char (point-min))
-  (let ((pos (re-search-forward "^\\(Last updated.*\\)$" nil t)))
-    (if pos
-	(match-string 1)
-      "Last updated: <>")))
+
 
 (defun update-ros-topic-buffer-helper ()
   (set-buffer ros-topic-buffer)
-  (let ((old-stamp (ros-topic-get-stamp-string)))
+  (let ((old-stamp (rosemacs/get-stamp-string)))
     (erase-buffer)
     (princ (format "Master uri: %s\n" (getenv "ROS_MASTER_URI")) ros-topic-buffer)
     (princ old-stamp ros-topic-buffer))

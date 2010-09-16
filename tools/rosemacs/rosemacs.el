@@ -1317,7 +1317,17 @@ k kills the process (sends SIGINT)"
     (add-to-list 'auto-mode-alist '("\.launch$" . nxml-mode))
     (add-to-list 'auto-mode-alist '("manifest.xml" . nxml-mode))
     (add-to-list 'auto-mode-alist '("\\.urdf" . xml-mode))
-    (add-to-list 'auto-mode-alist '("\\.xacro" . xml-mode))))
+    (add-to-list 'auto-mode-alist '("\\.xacro" . xml-mode)))
+
+  ;; msg and srv files: for now use gdb-script-mode
+  (add-to-list 'auto-mode-alist '("\\.msg\\'" . gdb-script-mode))
+  (add-to-list 'auto-mode-alist '("\\.srv\\'" . gdb-script-mode))
+  (add-to-list 'auto-mode-alist '("\\.action\\'" . gdb-script-mode))
+  (font-lock-add-keywords 'gdb-script-mode
+                          '(("\\<\\(bool\\|byte\\|int8\\|uint8\\|int16\\|uint16\\|int32\\|uint32\\|int64\\|uint64\\|float32\\|float64\\|string\\|time\\|duration\\)\\>" . font-lock-builtin-face)))
+
+
+  )
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

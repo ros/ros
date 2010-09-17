@@ -1133,6 +1133,7 @@ q kills buffer"
 (define-key ros-run-keymap "k" 'rosemacs/terminate-process)
 (define-key ros-run-keymap "q" 'rosemacs/kill-process-buffer)
 (define-key ros-run-keymap "r" 'rosrun/restart-current)
+(define-key ros-run-keymap "x" 'rosrun/kill-and-restart)
 
 (define-minor-mode ros-run-mode
   "Mode used for rosrun
@@ -1184,6 +1185,33 @@ q kills the buffer and process."
   (interactive)
   (rosrun/restart (current-buffer)))
 
+(defun rosemacs/kill-process-buffer ()
+  (interactive)
+  (let ((process (get-buffer-process (current-buffer))))
+    (if process
+        (progn
+          (when (eq (process-status process) 'run)
+            (interrupt-process))
+      ;; Give it time to shutdown cleanly
+          (set-process-sentinel process '(lambda (proc event)
+                                           (let ((buf (process-buffer proc)))
+                                             (message "Killing %s in response to process event %s" buf event)
+                                             (kill-buffer buf)))))
+      (kill-buffer (current-buffer)))))
+
+(defun rosrun/kill-and-restart ()
+  (interactive)
+  (let ((process (get-buffer-process (current-buffer))))
+    (if (and process (eq (process-status process) 'run))
+        (progn
+          (set-process-sentinel process '(lambda (proc event)
+                                           (let ((buf (process-buffer proc)))
+                                             (message "%s has terminated; restarting" ros-run-executable)
+                                             (rosrun/restart))))
+          (rosemacs/terminate-process process))
+      (error "Buffer does not contain a running process"))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; roslaunch
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1227,6 +1255,21 @@ q kills the buffer and process."
         )
       )))
 
+(defun rosemacs/kill-and-relaunch ()
+  "Interrupt the current roslaunch process, and when it has terminated, relaunch."
+  (interactive)
+  (let ((process (get-buffer-process (current-buffer))))
+    (if (and process (eq (process-status process) 'run))
+        (progn
+          (interrupt-process)
+          (set-process-sentinel process
+                                '(lambda (proc event)
+                                   (message "Roslaunch has terminated; relaunching")
+                                   (rosemacs/relaunch (process-buffer proc))
+                                   )))
+      (error "Buffer doesn't contain a running process"))))
+
+
 (defun rosemacs/relaunch-current-process ()
   (interactive)
   (rosemacs/relaunch (current-buffer)))
@@ -1235,6 +1278,7 @@ q kills the buffer and process."
 (define-key ros-launch-keymap "k" 'rosemacs/interrupt-process)
 (define-key ros-launch-keymap "q" 'rosemacs/kill-process-buffer)
 (define-key ros-launch-keymap "r" 'rosemacs/relaunch-current-process)
+(define-key ros-launch-keymap "x" 'rosemacs/kill-and-relaunch)
 
 
 

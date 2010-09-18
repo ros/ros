@@ -471,14 +471,18 @@ class Bag(object):
                         total_compressed_size_str   = _human_readable_size(total_compressed_size)
                         total_size_str_length = max([len(total_uncompressed_size_str), len(total_compressed_size_str)])
 
-                        uncompressed_rate_str = _human_readable_size(total_uncompressed_size / duration)
-                        compressed_rate_str   = _human_readable_size(total_compressed_size / duration)
-                        rate_str_length = max([len(uncompressed_rate_str), len(compressed_rate_str)])
+                        if duration > 0:
+                            uncompressed_rate_str = _human_readable_size(total_uncompressed_size / duration)
+                            compressed_rate_str   = _human_readable_size(total_compressed_size / duration)
+                            rate_str_length = max([len(uncompressed_rate_str), len(compressed_rate_str)])
 
-                        rows.append(('uncompressed', '%*s @ %*s/s' %
-                                     (total_size_str_length, total_uncompressed_size_str, rate_str_length, uncompressed_rate_str)))
-                        rows.append(('compressed',   '%*s @ %*s/s (%.2f%%)' %
-                                     (total_size_str_length, total_compressed_size_str,   rate_str_length, compressed_rate_str, (100.0 * total_compressed_size) / total_uncompressed_size)))
+                            rows.append(('uncompressed', '%*s @ %*s/s' %
+                                         (total_size_str_length, total_uncompressed_size_str, rate_str_length, uncompressed_rate_str)))
+                            rows.append(('compressed',   '%*s @ %*s/s (%.2f%%)' %
+                                         (total_size_str_length, total_compressed_size_str,   rate_str_length, compressed_rate_str, (100.0 * total_compressed_size) / total_uncompressed_size)))
+                        else:
+                            rows.append(('uncompressed', '%*s' % (total_size_str_length, total_uncompressed_size_str)))
+                            rows.append(('compressed',   '%*s' % (total_size_str_length, total_compressed_size_str)))
 
                 datatypes = set()
                 datatype_infos = []

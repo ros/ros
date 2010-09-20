@@ -9,7 +9,7 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/roscore_migration_rules</url>
 
-  <depend package="rosbagmigration"/>
+  <depend package="rosbag"/>
   <export>
     <rosbagmigration rule_file="migration_rules/roslib_msgs.bmr"/>
   </export>

@@ -38,7 +38,7 @@ if 1:
     import roslib.packages
     import os, sys
     rr = os.environ['ROS_ROOT']
-    paths = [os.path.join(rr, 'tools', p, 'src') for p in ['rosmsg', 'rosrecord', 'rostopic', 'rosgraph']]
+    paths = [os.path.join(rr, 'tools', p, 'src') for p in ['rosmsg', 'rosbag', 'rostopic', 'rosgraph']]
     paths.append(os.path.join(rr, 'core', 'rospy', 'src'))
     sys.path = paths + sys.path
     import rostopic

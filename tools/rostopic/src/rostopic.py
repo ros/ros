@@ -53,7 +53,7 @@ import roslib.message
 import rosgraph.masterapi
 #TODO: lazy-import rospy or move rospy-dependent routines to separate location
 import rospy
-import rosrecord
+import rosbag
 
 ## don't print string fields in message
 _echo_nostr = False
@@ -617,16 +617,18 @@ def _rostopic_echo_bag(callback_echo, bag_file):
     if not os.path.exists(bag_file):
         raise ROSTopicException("bag file [%s] does not exist"%bag_file)
     first = True
-    for t, msg, timestamp in rosrecord.logplayer(bag_file):
-        # bag files can have relative paths in them, this respects any
-        # dynamic renaming
-        if t[0] != '/':
-            t = roslib.scriptutil.script_resolve_name('rostopic', t)
-        callback_echo.callback(msg, t, current_time=timestamp)
-        # done is set if there is a max echo count
-        if callback_echo.done:
-            break
     
+    with rosbag.Bag(bag_file) as b:
+        for t, msg, timestamp in b.read_messages():
+        # bag files can have relative paths in them, this respects any
+            # dynamic renaming
+            if t[0] != '/':
+                t = roslib.scriptutil.script_resolve_name('rostopic', t)
+            callback_echo.callback(msg, t, current_time=timestamp)
+            # done is set if there is a max echo count
+            if callback_echo.done:
+                break
+
 def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
     """
     Print new messages on topic to screen.
@@ -1393,7 +1395,7 @@ def rostopicmain(argv=None):
     except socket.error:
         print >> sys.stderr, "Network communication failed. Most likely failed to communicate with master."
         sys.exit(1)
-    except rosrecord.ROSRecordException, e:
+    except rosbag.ROSBagException, e:
         print >> sys.stderr, "ERROR: unable to use bag file: "+str(e)
         sys.exit(1)
     except roslib.exceptions.ROSLibException, e:

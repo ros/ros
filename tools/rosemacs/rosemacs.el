@@ -914,11 +914,13 @@ q kills buffer"
         (sort* (remove-duplicates (vconcat ros-topics ros-subscribed-topics) :test 'equal) 'string<))
   ;; update display
   (save-excursion
-    (when ros-topic-buffer
-      (set-buffer ros-topic-buffer)
-      (update-ros-topic-buffer)
-      (let ((time-stamp-pattern "5/^Last updated: <%02H:%02M:%02S"))
-        (time-stamp)))))
+    (unless (and ros-topic-buffer (buffer-name ros-topic-buffer))
+      (setq ros-topic-buffer (get-buffer-create "*ros-topics*")))
+    
+    (set-buffer ros-topic-buffer)
+    (update-ros-topic-buffer)
+    (let ((time-stamp-pattern "5/^Last updated: <%02H:%02M:%02S"))
+      (time-stamp))))
 
 
 

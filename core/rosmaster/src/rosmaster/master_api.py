@@ -148,8 +148,8 @@ def apivalidate(error_return_value, validators=()):
                         try:
                             newArgs.append(v(a, caller_id)) 
                         except ParameterInvalid, e:
-                            _logger.error("%s: invalid parameter: %s", f.func_name, e.message or 'error')
-                            return -1, e.message or 'error', error_return_value
+                            _logger.error("%s: invalid parameter: %s", f.func_name, str(e) or 'error')
+                            return -1, str(e) or 'error', error_return_value
                     else:
                         newArgs.append(a)
 

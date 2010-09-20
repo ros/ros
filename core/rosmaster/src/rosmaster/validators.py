@@ -41,10 +41,10 @@ ROSRPC = "rosrpc://"
 class ParameterInvalid(Exception):
     """Exception that is raised when a parameter fails validation checks"""
     def __init__(self, message):
-        self.message = message
+        self._message = message
 
     def __str__(self):
-        return str(self.message)
+        return str(self._message)
 
 def non_empty(param_name):
     """Validator that checks that parameter is not empty"""

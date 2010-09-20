@@ -865,6 +865,14 @@ class RospackTestCase(unittest.TestCase):
         self.assertEquals(0, retcode)
         self.failIf(retval, "rospack langs on empty directory returned value %s"%retval)
 
+    # Test auto-inclusion of msg_gen include directories, #3018
+    def test_msg_gen(self):
+        test_path = os.path.abspath('test')
+        pkgs = ['msg_gen_no_export', 'msg_gen_no_cpp', 'msg_gen_no_cflags']
+        for p in pkgs:
+          self.rospack_succeed(p, "cflags-only-I")
+          self.assertEquals(os.path.join(test_path, p, "msg_gen/cpp/include"), self.strip_opt_ros(self.run_rospack(p, "cflags-only-I")))
+
 
 if __name__ == "__main__":
     import rostest

@@ -14,7 +14,7 @@ rosbuild_init()
 #uncomment if you have defined messages
 #rosbuild_genmsg()
 #uncomment if you have defined services
-#rosbuild_gensrv()
+rosbuild_gensrv()
 
 rosbuild_add_pyunit(test/test_rosservice_command_line_offline.py)
 rosbuild_add_rostest(test/rosservice.test)

@@ -43,6 +43,21 @@ import rostest
 
 class RoslibPackagesTest(unittest.TestCase):
   
+  def test_list_pkgs_by_path(self):
+    from roslib.packages import list_pkgs_by_path
+    # regression test for bug found where list_pkgs_by_path returns empty package name if path is a package and path is a relpath
+    d = roslib.packages.get_pkg_dir('test_roslib')
+
+    os.chdir(d)
+
+    self.assertEquals(['test_roslib'], list_pkgs_by_path('.'))
+    self.assertEquals(set(['bar', 'foo']), set(list_pkgs_by_path(os.path.join('test', 'package_tests'))))
+    self.assertEquals(set(['bar', 'foo']), set(list_pkgs_by_path(os.path.join('test', 'package_tests', 'p1'))))
+    self.assertEquals(['foo'], list_pkgs_by_path(os.path.join('test', 'package_tests', 'p1', 'foo')))
+
+    self.assertEquals([], list_pkgs_by_path(os.path.join('bin')))
+    
+
   def test_list_pkgs(self):
     # should be equal to rospack list
     import roslib.rospack

@@ -539,8 +539,6 @@ int32_t TransportUDP::write(uint8_t* buffer, uint32_t size)
 
 void TransportUDP::enableRead()
 {
-  ROSCPP_LOG_DEBUG("enableRead() on UDPROS socket [%d]", sock_);
-
   {
     boost::mutex::scoped_lock lock(close_mutex_);
   

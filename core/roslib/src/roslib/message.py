@@ -338,9 +338,6 @@ class Message(object):
         @type  exc: Exception
         @raise roslib.messages.SerializationError: if typecheck fails
         """
-        if exc: # if exc is set and check_type could not diagnose, raise wrapped error
-            traceback.print_exc(exc)
-
         for n, t in zip(self.__slots__, self._get_types()):
             check_type(n, t, getattr(self, n))
         if exc: # if exc is set and check_type could not diagnose, raise wrapped error

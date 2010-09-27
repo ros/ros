@@ -1,3 +1,0 @@
-<launch>
-  <remap from="from something" to="to" />
-</launch>

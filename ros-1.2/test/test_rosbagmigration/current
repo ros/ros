@@ -1,6 +1,0 @@
-#!/bin/bash
-
-make clean-msg-only;
-rm -rf msg;
-cp -r msg_current msg;
-make

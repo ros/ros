@@ -42,10 +42,14 @@ import os
 import sys
 from copy import deepcopy
 
-from roslib.names import make_global_ns, ns_join, PRIV_NAME, load_mappings, is_legal_name, canonicalize_name
-
 from roslaunch.core import Param, Master, RosbinExecutable, Node, Test, Machine, \
     RLException, PHASE_SETUP
+
+try:
+    from roslib.names import make_global_ns, ns_join, PRIV_NAME, load_mappings, is_legal_name, canonicalize_name
+except ImportError:
+    raise ImportError('Cannot import new roslib libraries.\nThis is probably due to incompatible "roslib" directories on your PYTHONPATH.\nPlease check your PYTHONPATH and try again')
+
 
 #lazy-import global for yaml
 yaml = None

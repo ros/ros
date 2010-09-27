@@ -30,4 +30,6 @@ rosbuild_add_pyunit(test/test_roslib_xmlrpc.py)
 #integration tests
 rosbuild_add_rostest(test/masterapi.test)
 
+rosbuild_add_boost_directories()
 rosbuild_add_gtest(test/utest test/utest.cpp)
+rosbuild_link_boost(test/utest thread)

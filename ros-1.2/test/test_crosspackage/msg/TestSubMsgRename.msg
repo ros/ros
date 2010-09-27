@@ -1,2 +1,0 @@
-string field1
-int32 field2

@@ -404,20 +404,21 @@ def call_service(service_name, service_args, service_class=None):
         now = rospy.get_rostime()
         keys = { 'now': now, 'auto': roslib.msg.Header(stamp=now) }
         roslib.message.fill_message_args(request, service_args, keys=keys)
-    except roslib.message.ROSMessageException:
+    except roslib.message.ROSMessageException, e:
         def argsummary(args):
             if type(args) in [tuple, list]:
                 return '\n'.join([' * %s (type %s)'%(a, type(a).__name__) for a in args])
             else:
                 return ' * %s (type %s)'%(args, type(args).__name__)
 
-        raise ROSServiceException("Not enough arguments to call service.\n\nProvided arguments are:\n"+\
-                                      argsummary(service_args)+\
-                                      "\n\nService arguments are: [%s]"%roslib.message.get_printable_message_args(request))
+        raise ROSServiceException("Incompatible arguments to call service:\n%s\nProvided arguments are:\n%s\n\nService arguments are: [%s]"%(e, argsummary(service_args), roslib.message.get_printable_message_args(request)))
     try:
         return request, rospy.ServiceProxy(service_name, service_class)(request)
     except rospy.ServiceException, e:
         raise ROSServiceException(str(e))
+    except roslib.message.SerializationError, e:
+        raise ROSServiceException("Unable to send request. One of the fields has an incorrect type:\n"+\
+                                      "  %s\n\nsrv file:\n%s"%(e, rosmsg.get_srv_text(service_class._type)))
     except rospy.ROSSerializationException, e:
         raise ROSServiceException("Unable to send request. One of the fields has an incorrect type:\n"+\
                                       "  %s\n\nsrv file:\n%s"%(e, rosmsg.get_srv_text(service_class._type)))

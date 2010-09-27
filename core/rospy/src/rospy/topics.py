@@ -395,6 +395,9 @@ class Subscriber(Topic):
             # save arguments for unregister
             self.callback = callback
             self.callback_args = callback_args
+        else:
+            # initialize fields
+            self.callback = self.callback_args = None            
         if tcp_nodelay:
             self.impl.set_tcp_nodelay(tcp_nodelay)        
 
@@ -404,7 +407,10 @@ class Subscriber(Topic):
         valid after this call. Additional calls to unregister() have no effect.
         """
         if self.impl:
-            self.impl.remove_callback(self.callback, self.callback_args)
+            # It's possible to have a Subscriber instance with no
+            # associated callback
+            if self.callback is not None:
+                self.impl.remove_callback(self.callback, self.callback_args)
             self.callback = self.callback_args = None
             super(Subscriber, self).unregister()
             

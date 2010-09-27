@@ -475,73 +475,79 @@ string Package::direct_flags(string lang, string attrib)
         }
       }
     }
-    if (!best_usage)
-      return string();
-    const char *cstr = best_usage->Attribute(attrib.c_str());
-    if (!cstr)
-      return string();
-    str = cstr;
-    while (1) // every decent C program has a while(1) in it
+    // If we found some exported text, then start parsing it.  Either way,
+    // we end up at the logic at the bottom that will conditionally
+    // append msg_gen / srv_gen includes.  This structure was changed to
+    // fix #3018.
+    if (best_usage)
     {
-      int i = str.find(string("${prefix}"));
-      if (i < 0)
-        break; // no more occurrences
-      str.replace(i, string("${prefix}").length(), path);
-    }
-
-    // Do backquote substitution.  E.g.,  if we find this string:
-    //   `pkg-config --cflags gdk-pixbuf-2.0`
-    // We replace it with the result of executing the command
-    // contained within the backquotes (reading from its stdout), which
-    // might be something like:
-    //   -I/usr/include/gtk-2.0 -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include
-
-    // Construct and execute the string
-    // We do the assignment first to ensure that if backquote expansion (or
-    // anything else) fails, we'll get a non-zero exit status from pclose().
-    string cmd = string("ret=\"") + str + string("\" && echo $ret");
-
-    // Remove embedded newlines
-    string token("\n");
-    for (string::size_type s = cmd.find(token); s != string::npos;
-         s = cmd.find(token, s))
-    {
-      cmd.replace(s,token.length(),string(" "));
-    }
-
-    FILE* p;
-    if(!(p = popen(cmd.c_str(), "r")))
-    {
-      fprintf(stderr, "[rospack] warning: failed to execute backquote "
-                      "expression \"%s\" in [%s]\n",
-              cmd.c_str(), manifest_path().c_str());
-      string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
-      throw runtime_error(errmsg);
-    }
-    else
-    {
-      char buf[8192];
-      memset(buf,0,sizeof(buf));
-      // Read the command's output
-      do
+      const char *cstr = best_usage->Attribute(attrib.c_str());
+      if (cstr)
       {
-        clearerr(p);
-        while(fgets(buf + strlen(buf),sizeof(buf)-strlen(buf)-1,p));
-      } while(ferror(p) && errno == EINTR);
-      // Close the subprocess, checking exit status
-      if(pclose(p) != 0)
-      {
-        fprintf(stderr, "[rospack] warning: got non-zero exit status from executing backquote expression \"%s\" in [%s]\n",
-                cmd.c_str(), manifest_path().c_str());
-        string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
-        throw runtime_error(errmsg);
-      }
-      else
-      {
-        // Strip trailing newline, which was added by our call to echo
-        buf[strlen(buf)-1] = '\0';
-        // Replace the backquote expression with the new text
-        str = string(buf);
+        str = cstr;
+        while (1) // every decent C program has a while(1) in it
+        {
+          int i = str.find(string("${prefix}"));
+          if (i < 0)
+            break; // no more occurrences
+          str.replace(i, string("${prefix}").length(), path);
+        }
+
+        // Do backquote substitution.  E.g.,  if we find this string:
+        //   `pkg-config --cflags gdk-pixbuf-2.0`
+        // We replace it with the result of executing the command
+        // contained within the backquotes (reading from its stdout), which
+        // might be something like:
+        //   -I/usr/include/gtk-2.0 -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include
+
+        // Construct and execute the string
+        // We do the assignment first to ensure that if backquote expansion (or
+        // anything else) fails, we'll get a non-zero exit status from pclose().
+        string cmd = string("ret=\"") + str + string("\" && echo $ret");
+
+        // Remove embedded newlines
+        string token("\n");
+        for (string::size_type s = cmd.find(token); s != string::npos;
+             s = cmd.find(token, s))
+        {
+          cmd.replace(s,token.length(),string(" "));
+        }
+
+        FILE* p;
+        if(!(p = popen(cmd.c_str(), "r")))
+        {
+          fprintf(stderr, "[rospack] warning: failed to execute backquote "
+                  "expression \"%s\" in [%s]\n",
+                  cmd.c_str(), manifest_path().c_str());
+          string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
+          throw runtime_error(errmsg);
+        }
+        else
+        {
+          char buf[8192];
+          memset(buf,0,sizeof(buf));
+          // Read the command's output
+          do
+          {
+            clearerr(p);
+            while(fgets(buf + strlen(buf),sizeof(buf)-strlen(buf)-1,p));
+          } while(ferror(p) && errno == EINTR);
+          // Close the subprocess, checking exit status
+          if(pclose(p) != 0)
+          {
+            fprintf(stderr, "[rospack] warning: got non-zero exit status from executing backquote expression \"%s\" in [%s]\n",
+                    cmd.c_str(), manifest_path().c_str());
+            string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
+            throw runtime_error(errmsg);
+          }
+          else
+          {
+            // Strip trailing newline, which was added by our call to echo
+            buf[strlen(buf)-1] = '\0';
+            // Replace the backquote expression with the new text
+            str = string(buf);
+          }
+        }
       }
     }
   }

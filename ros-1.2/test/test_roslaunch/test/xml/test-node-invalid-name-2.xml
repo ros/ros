@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="package" type="name_test_invalid_value" name="ns/foo" />
+</launch>
+

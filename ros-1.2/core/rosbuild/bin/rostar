@@ -1,0 +1,128 @@
+#!/usr/bin/env python
+
+"""
+usage: %(progname)s [package] <ball.tar>
+
+Builds a self contained tar file of a ROS package and all of its dependencies.
+"""
+
+
+import os, sys, string, time, getopt
+
+import subprocess
+
+_DEBUG = False
+
+def _buildTarInTemp(pkg, tarball, tmpdir):
+  os.mkdir(os.path.join(tmpdir, 'work'))
+  os.symlink(os.path.join(tmpdir, 'work'), os.path.join(tmpdir, pkg))
+
+  pkgstr = subprocess.Popen(["rospack", "deps", pkg], stdout=subprocess.PIPE).communicate()[0].strip()
+  pkgs = pkgstr.split()
+  pkgs.extend([pkg, 'rospack', 'rosbash', 'gtest'])
+  lddirs=set()
+  for p in pkgs:
+    d = subprocess.Popen(["rospack", "find", p], stdout=subprocess.PIPE).communicate()[0].strip()
+    if not os.path.exists(os.path.join(tmpdir, 'work', p)):
+      if _DEBUG: print "Linking %s to %s/work/%s" % (d,tmpdir,p)
+      os.symlink(d, os.path.join(tmpdir, 'work', p))
+    else:
+      print "Skipping %s (duplicate)" % (p)
+    l = subprocess.Popen(["rospack", "libs-only-L", p], stdout=subprocess.PIPE).communicate()[0].strip()
+    for dir in l.split():
+      if dir[0:len(d)] == d:
+        newdir = os.path.join(p,dir[len(d):])
+        lddirs.add(newdir)
+
+  ldstr = "export DYLD_LIBRARY_PATH="
+  for dir in lddirs:
+    ldstr += '`pwd`/%s:' % (dir)
+  ldstr += '$DYLD_LIBRARY_PATH'
+
+  if _DEBUG: print ldstr
+
+  os.symlink(os.path.join(os.getenv('ROS_ROOT'),'bin'), os.path.join(tmpdir, 'work', 'bin'))
+
+  f = open(os.path.join(tmpdir, 'work', 'sourceme.sh'), 'w+')
+  f.write('''export ROS_ROOT=`pwd`
+  export PATH=$ROS_ROOT/bin:$PATH
+  unset ROS_PACKAGE_PATH
+  source `rospack find rosbash`/rosbash
+  #TODO: export PYTHONPATH
+  %s
+  ''' % (ldstr))
+  f.close()
+  os.chmod(os.path.join(tmpdir, 'work', 'sourceme.sh'), 0755)
+
+  _path, tarballfn = os.path.split(tarball)
+
+  os.chdir(tmpdir)
+  cmd = 'tar -chzf %(tarball)s --exclude "*/.svn" --exclude "*/.backup-*" --exclude "*.o" --exclude "*/%(tarballfn)s" %(pkg)s' % locals()
+  if _DEBUG: print cmd
+  os.system(cmd)
+
+
+
+def buildTarFile(pkg, tarball):
+  cwd = os.getcwd()
+  tarball = os.path.join(cwd, tarball)
+  
+  print "Packing %(pkg)s and its dependencies into %(tarball)s..." % locals()
+
+  tmpdir = os.path.join(os.sep, 'tmp', 'rostar-%s' % (os.getpid()))
+  if os.path.exists(tmpdir):
+    os.system('rm -rf %s' % (tmpdir))
+  os.mkdir(tmpdir)
+
+  if os.path.exists(tarball): os.remove(tarball)
+
+  try:
+    _buildTarInTemp(pkg, tarball, tmpdir)
+  finally:
+    os.system('rm -rf %s' % (tmpdir))
+
+
+def test():
+  pass
+
+def usage(progname):
+  print __doc__ % vars()
+
+def main(argv, stdout, environ):
+  path, progname = os.path.split(argv[0])
+  optlist, args = getopt.getopt(argv[1:], "", ["help", "test", "debug"])
+
+  testflag = 0
+  if len(args) not in (1,2):
+    usage(progname)
+    return
+  for (field, val) in optlist:
+    if field == "--help":
+      usage(progname)
+      return
+    elif field == "--debug":
+      _DEBUG = True
+    elif field == "--test":
+      testflag = 1
+
+  if testflag:
+    test()
+    return
+
+  if len(args) == 1:
+    # If no args given, check whether we're sitting in a package, and if so,
+    # build it
+    if os.path.exists('manifest.xml'):
+      pkg=os.path.basename(os.getcwd())
+    else:
+      usage(progname)
+      sys.exit(-1)
+    tarball = args[0]
+  elif len(args) == 2:
+    pkg = args[0]
+    tarball = args[1]
+
+  buildTarFile(pkg, tarball)
+
+if __name__ == "__main__":
+  main(sys.argv, sys.stdout, os.environ)

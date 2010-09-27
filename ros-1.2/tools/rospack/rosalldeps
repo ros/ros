@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+
+import os, sys
+from optparse import OptionParser
+
+NAME = 'rosalldeps'
+
+# Taken from
+# http://mail.python.org/pipermail/python-list/2005-November/352658.html
+def remove_dups(L):
+  """Removes duplicate items from list L in place."""
+  # Work backwards from the end of the list.
+  for i in range(len(L)-1, -1, -1):
+      # Check to see if the current item exists elsewhere in 
+      # the list, and if it does, delete it.
+      if L[i] in L[:i]:
+          del L[i]
+
+def go(pkg, height):
+  children = os.popen('rospack deps ' + pkg).readlines()
+  if height == -1:
+    parents = os.popen('rospack depends-on ' + pkg).readlines()
+  elif height == 1:
+    parents = os.popen('rospack depends-on1 ' + pkg).readlines()
+
+  siblings = []
+
+  for p in parents:
+    siblings.extend(os.popen('rospack deps ' + p))
+  
+  alldeps = []
+
+  alldeps.extend(children)
+  alldeps.extend(siblings)
+  alldeps.extend([pkg])
+  alldeps.extend(parents)
+
+  remove_dups(alldeps)
+
+  for d in alldeps:
+    dir = os.popen('rospack find ' + d).readlines()[0].strip()
+    if os.path.exists(os.path.join(dir,'ROS_BUILD_BLACKLIST')) or \
+       os.path.exists(os.path.join(dir,'ROS_NOBUILD')) or \
+       not os.path.exists(os.path.join(dir,'Makefile')):
+      continue
+    else:
+      print d.strip()
+
+if __name__ == '__main__':
+  parser = OptionParser(usage="usage: %prog [options] <pkg>", prog=NAME)
+  parser.add_option("-H", "--height",
+                    dest="height", default=None,
+                    help="Limit maximum height of depends-on build (either 1 or -1)")
+  (options, args) = parser.parse_args(sys.argv)
+
+  if len(args) != 2:
+    parser.error('package must be specified')
+
+  pkg = args[1]
+  height = -1
+  if options.height:
+    height = int(options.height)
+    if height != 1 and height != -1:
+      parser.error('height must be 1 or -1')
+
+  go(pkg, height)

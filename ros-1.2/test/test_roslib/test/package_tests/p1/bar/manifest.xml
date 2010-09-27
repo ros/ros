@@ -1,0 +1,14 @@
+<package>
+  <description brief="bar">
+
+     bar
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/bar</url>
+
+</package>
+
+

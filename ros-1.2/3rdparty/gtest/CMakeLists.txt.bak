@@ -1,0 +1,15 @@
+# This file is not currently used.  It represents a work-in-progress toward
+# using CMake to download and build 3rdparty software.
+cmake_minimum_required(VERSION 2.4.6)
+include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+
+
+rospack_wget_and_build(gtest-1.0.1.tar.gz
+                       http://pr.willowgarage.com/downloads/gtest-1.0.1.tar.gz
+                       gtest-1.0.1
+                       "tar xzf"
+                       "./configure --prefix=${CMAKE_SOURCE_DIR}/gtest"
+                       "make"
+                       "make install")
+
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_SOURCE_DIR}/gtest)

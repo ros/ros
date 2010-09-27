@@ -1,0 +1,25 @@
+<package>
+<description brief="wxPython SWIG interface files">
+Interface files used with SWIG to allow use of custom C++ widgets with wxPython code.
+
+These interface files were pulled from wxPython 2.8.1, because at the time that was the target version (since we were using Ubuntu Feisty).  We will probably continue to use these interface files until they no longer work for some reason.
+
+The ideal situation would be if these were installed in system installs along with wxPython, but unfortunately they are not.
+
+</description>
+<author>Many</author>
+<license url="http://www.opensource.org/licenses/wxwindows.php">wxWindows</license>
+<review status="3rdparty doc reviewed" notes=""/>
+<url>http://www.wxpython.org/</url>
+<export>
+  <swig flags="-I${prefix}/src"/>
+</export>
+
+<rosdep name="wxpython"/>
+
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
+</package>
+

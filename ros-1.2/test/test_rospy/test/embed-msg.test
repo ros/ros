@@ -1,0 +1,5 @@
+<!-- test messages within messages -->
+<launch>
+  <node name="listenerpublisher" pkg="test_rospy" type="listenerpublisher_embed.py" />
+  <test test-name="rospy_embed_msg" pkg="test_rospy" type="test_embed_msg.py" />
+</launch>

@@ -272,7 +272,7 @@ class TestRosservice(unittest.TestCase):
             rosservice.rosservicemain([cmd, 'call', 'add_two_ints', '1', '2', '3'])
             self.fail("should have failed with too many args")
         except SystemExit: pass
-        
+
             
     def setUp(self):
         # wait for all services to come up
@@ -305,10 +305,12 @@ class TestRosservice(unittest.TestCase):
         services = ['/add_two_ints',
                     '/foo/add_two_ints',
                     '/bar/add_two_ints',
+                    '/header_echo',
                     ]
         services_nodes = ['/add_two_ints /a2iserver',
                           '/foo/add_two_ints /foo/a2iserver',
                           '/bar/add_two_ints /bar/a2iserver',
+                          '/header_echo /headerserver',
                           ]
 
         with fakestdout() as b:

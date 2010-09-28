@@ -204,6 +204,97 @@ class TestRospyTopics(unittest.TestCase):
         pub = Publisher('header_test', data_class, headers=h)
         self.assertEquals(h, pub.impl.headers)
         
+    def test_Subscriber_unregister(self):
+        # regression test for #3029 (unregistering a Subcriber with no
+        # callback) plus other unregistration tests
+        import rospy
+        from rospy.impl.registration import get_topic_manager, Registration
+        from rospy.topics import Subscriber, DEFAULT_BUFF_SIZE
+
+        #Subscriber: name, data_class, callback=None, callback_args=None,
+        #queue_size=None, buff_size=DEFAULT_BUFF_SIZE, tcp_nodelay=False):
+
+        name = 'unregistertest'
+        rname = rospy.resolve_name(name)
+        data_class = test_rospy.msg.Val
+
+        sub = Subscriber(name, data_class)
+        self.assertEquals(None, sub.callback)
+
+        # verify impl (test_Subscriber handles more verification, we
+        # just care about callbacks and ref_count state here)
+        impl = get_topic_manager().get_impl(Registration.SUB, rname)
+        self.assert_(impl == sub.impl)
+        self.assertEquals(1, impl.ref_count)
+        self.assertEquals([], impl.callbacks)
+        
+        # unregister should release the underlying impl
+        sub.unregister()
+        self.assertEquals(None, get_topic_manager().get_impl(Registration.SUB, rname))
+
+        # create two subs
+        sub2 = Subscriber(name, data_class)
+        sub3 = Subscriber(name, data_class)        
+
+        impl = get_topic_manager().get_impl(Registration.SUB, rname)
+        # - test that they share the same impl
+        self.assert_(impl == sub2.impl)
+        self.assert_(impl == sub3.impl)
+        # - test basic impl state
+        self.assertEquals([], impl.callbacks)
+        self.assertEquals(2, impl.ref_count)
+        sub2.unregister()
+        self.assertEquals(1, impl.ref_count)
+        # - make sure double unregister is safe
+        sub2.unregister()
+        self.assertEquals(1, impl.ref_count)
+        # - clean it up
+        sub3.unregister()
+        self.assertEquals(0, impl.ref_count)
+        self.assertEquals(None, get_topic_manager().get_impl(Registration.SUB, rname))
+
+        # CALLBACKS
+        cb_args5 = 5
+        cb_args6 = 6
+        cb_args7 = 7
+        sub4 = Subscriber(name, data_class, callback1)
+        # - use should be allowed to subcribe using the same callback
+        # and it shouldn't interfere on unregister
+        sub5 = Subscriber(name, data_class, callback2, cb_args5)        
+        sub6 = Subscriber(name, data_class, callback2, cb_args6)        
+        sub7 = Subscriber(name, data_class, callback2, cb_args7)        
+        impl = get_topic_manager().get_impl(Registration.SUB, rname)
+        self.assertEquals(4, impl.ref_count)
+        
+        self.assertEquals([(callback1, None), (callback2, cb_args5), (callback2, cb_args6), (callback2, cb_args7)], impl.callbacks)
+        # unregister sub6 first to as it is most likely to confuse any callback-finding logic
+        sub6.unregister()
+        self.assertEquals([(callback1, None), (callback2, cb_args5), (callback2, cb_args7)], impl.callbacks)
+        self.assertEquals(3, impl.ref_count)
+        sub5.unregister()
+        self.assertEquals([(callback1, None), (callback2, cb_args7)], impl.callbacks)
+        self.assertEquals(2, impl.ref_count)
+        sub4.unregister()
+        self.assertEquals([(callback2, cb_args7)], impl.callbacks)
+        self.assertEquals(1, impl.ref_count)
+        sub7.unregister()
+        self.assertEquals([], impl.callbacks)
+        self.assertEquals(0, impl.ref_count)
+        self.assertEquals(None, get_topic_manager().get_impl(Registration.SUB, rname))
+
+        # one final condition: two identical subscribers
+        sub8 = Subscriber(name, data_class, callback1, 'hello')
+        sub9 = Subscriber(name, data_class, callback1, 'hello')
+        impl = get_topic_manager().get_impl(Registration.SUB, rname)
+        self.assertEquals([(callback1, 'hello'), (callback1, 'hello')], impl.callbacks)
+        self.assertEquals(2, impl.ref_count)
+        sub8.unregister()
+        self.assertEquals([(callback1, 'hello')], impl.callbacks)
+        self.assertEquals(1, impl.ref_count)
+        sub9.unregister()
+        self.assertEquals([], impl.callbacks)
+        self.assertEquals(0, impl.ref_count)
+
     def test_Subscriber(self):
         #TODO: test callback args
         #TODO: negative buff_size

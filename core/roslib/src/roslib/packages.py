@@ -434,6 +434,7 @@ def list_pkgs_by_path(path, packages=None, cache=None):
     ros_root = os.environ[ROS_ROOT]
     ros_package_path = os.environ.get(ROS_PACKAGE_PATH, '')
 
+    path = os.path.abspath(path)
     for d, dirs, files in os.walk(path, topdown=True):
         if MANIFEST_FILE in files:
             package = os.path.basename(d)

@@ -567,7 +567,7 @@ class ProcessMonitor(Thread):
                     traceback.print_exc()
                     logger.error("Restart failed %s",traceback.format_exc())
             del respawn[:]
-            time.sleep(0.01) #yield thread
+            time.sleep(0.1) #yield thread
         #moved this to finally block of _post_run
         #self._post_run() #kill all processes
 

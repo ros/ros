@@ -1,0 +1,2 @@
+#!/bin/sh
+SWIG_LIB=`rospack find wxswig`/share/swig/1.3.29 `rospack find wxswig`/bin/swig-real $@

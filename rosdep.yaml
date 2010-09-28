@@ -379,6 +379,7 @@ octave:
 ncurses:
   ubuntu: libncurses5-dev
   arch: ncurses
+  fedora: ncurses-devel
   macports: ncurses
   centos: ncurses-devel
   debian: libncurses5-dev
@@ -457,12 +458,14 @@ fltk:
 epydoc:
   ubuntu: python-epydoc
   debian: python-epydoc
+  fedora: epydoc
   macports: py25-epydoc
   gentoo: dev-python/epydoc
   freebsd: epydoc
 paramiko:
   ubuntu: python-paramiko
   debian: python-paramiko
+  fedora: python-paramiko
   macports: py25-paramiko
   gentoo: dev-python/paramiko
   freebsd: py26-paramiko

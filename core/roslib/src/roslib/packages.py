@@ -437,6 +437,7 @@ def list_pkgs_by_path(path, packages=None, cache=None):
     path = os.path.abspath(path)
     for d, dirs, files in os.walk(path, topdown=True):
         if MANIFEST_FILE in files:
+            d = os.path.abspath(d)
             package = os.path.basename(d)
             if package not in packages:
                 packages.append(package)

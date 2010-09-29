@@ -5,7 +5,6 @@ CMAKE_FLAGS= -Wdev -DCMAKE_TOOLCHAIN_FILE=`rospack find rosbuild`/rostoolchain.c
 # invoking CMake
 all:
 	@mkdir -p build
-	-mkdir -p bin
 	cd build && cmake $(CMAKE_FLAGS) ..
 	#cd build && make $(ROS_PARALLEL_JOBS)
 
@@ -20,7 +19,7 @@ clean:
 
 # Build a source package.  Assumes that you're in a clean tree.
 package_source: all
-	cd build && make $@
+	$(shell rospack find rosbuild)/bin/package_source.py $(CURDIR)
 
 # All other targets are just passed through
 #test: all

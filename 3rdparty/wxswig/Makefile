@@ -14,6 +14,8 @@ $(VERSION)/Makefile: $(VERSION)/Makefile.in $(VERSION)/configure $(VERSION)/conf
 
 wxswig: $(SOURCE_DIR)/unpacked
 	cd $(SOURCE_DIR) && ./configure --prefix=$(shell rospack find wxswig) && make $(ROS_PARALLEL_JOBS) && make install
+	mv bin/swig bin/swig-real
+	cp swig-wrap bin/swig
 	touch wxswig
 
 clean:

@@ -1,0 +1,10 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b roscreate contains the \b roscreate-pkg and \b roscreate-stack
+command-line tools. It does not export an external API, so this code
+API reference should only be used by developers working on roscreate.
+
+
+*/

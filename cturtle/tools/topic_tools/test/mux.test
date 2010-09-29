@@ -1,0 +1,17 @@
+<launch>
+  <node pkg="rostopic" type="rostopic" name="rostopic_pub1" 
+        args="pub -r 10 input1 std_msgs/String input1"/>
+  <node pkg="rostopic" type="rostopic" name="rostopic_pub2" 
+        args="pub -r 5 input2 std_msgs/String input2"/>
+
+  <!-- Explicit output name -->
+  <node pkg="topic_tools" type="mux" name="mux_explicit" output="screen"
+        args="output input1 input2"/>
+  <test test-name="mux_hztest_explicit" pkg="rostest" type="hztest">
+    <param name="topic" value="output"/>
+    <param name="hz" value="10.0"/>
+    <param name="hzerror" value="0.5"/>
+    <param name="test_duration" value="2.0" />
+  </test>
+
+</launch>

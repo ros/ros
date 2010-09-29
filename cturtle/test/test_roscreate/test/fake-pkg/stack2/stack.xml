@@ -1,0 +1,6 @@
+<stack>
+  <description brief="stack2">stack2</description>
+  <author>Maintained by Kenneth Conley</author>
+  <license>BSD</license>  
+  <depend stack="stack1" /> <!-- depends_roslib -->
+</stack>

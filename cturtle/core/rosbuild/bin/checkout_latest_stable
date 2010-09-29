@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+NAME = 'checkout_latest_stable'
+USAGE = 'USAGE: %s <Hudson-job-name>'%NAME
+
+import urllib, re, sys, subprocess, os
+
+ROS_STABLE = 'https://prdev.willowgarage.com/svn/ros/tags/stable'
+ROS_PKG_TRUNK = 'https://prdev.willowgarage.com/svn/personalrobots/pkg/trunk'
+
+def last_stable_build(job):
+  version_re = re.compile('<li>%s : (?P<rev>\d+)</li>'%ROS_PKG_TRUNK)
+  page = urllib.urlopen("http://build.willowgarage.com/job/%s/lastStableBuild/"%job)
+  rev_string = version_re.search(page.read()).group("rev")
+  return rev_string
+
+def svn_checkout(url, rev, wc):
+  if rev:
+    cmd = ['svn', 'co', '-r', rev, url, wc]
+  else:
+    cmd = ['svn', 'co', url, wc]
+  try:
+    p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    p.communicate('p\n')
+  except:
+    print 'Error on checkout; removing working copy to try again'
+    os.unlink
+    p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    p.communicate('p\n')
+
+if len(sys.argv) != 2:
+  print USAGE
+  sys.exit(1)
+
+job = sys.argv[1]
+rev = last_stable_build(job)
+print 'Checking out / updating ros from %s...'%ROS_STABLE
+svn_checkout(ROS_STABLE, None, 'ros')
+svn_checkout(ROS_PKG_TRUNK, rev, 'personalrobots')

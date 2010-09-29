@@ -1,0 +1,7 @@
+<launch>
+
+  <test test-name="test4" pkg="package" type="test_output_screen" output="screen" />
+  <test test-name="test5" pkg="package" type="test_output_log" output="log" />
+  
+</launch>
+

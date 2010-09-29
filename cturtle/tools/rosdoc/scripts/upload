@@ -1,0 +1,11 @@
+#! /bin/bash
+if [ -z "$1" ]; then
+  echo "USAGE: $0 package_name"
+  echo "  Run rosdoc on the package, then upload the resulting html"
+  exit
+fi
+PACKAGE_NAME=$1
+echo $PACKAGE_NAME
+cd `rospack find rosdoc` && rm -rf doc && ./rosdoc $PACKAGE_NAME
+scp -qr doc/$PACKAGE_NAME rosbuild@wgs11.willowgarage.com:/var/www/pr.willowgarage.com/html/pr-docs/ros-packages
+echo Documentation for package: $PACKAGE_NAME updated

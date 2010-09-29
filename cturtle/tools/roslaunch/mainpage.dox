@@ -1,0 +1,17 @@
+/**
+
+\mainpage
+\htmlinclude manifest.html
+
+@b roslaunch is a tool for launching ROS nodes locally and remotely
+via SSH. roslaunch is configured with XML-based config files that end
+with a '.launch' extension.  These config files can include other
+config files, enabling you to easily compose larger roslaunch
+configurations.
+
+roslaunch has been used by other packages as a library for launching nodes.
+This usage is not generally recommended as roslaunch's internal API
+is still unstable.
+
+
+*/

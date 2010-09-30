@@ -114,3 +114,6 @@
 - svn:
     local-name: aptima
     uri: http://aptima-ros-pkg.googlecode.com/svn/trunk/
+- svn:
+    local-name: eros
+    uri: https://code.ros.org/svn/eros/trunk/

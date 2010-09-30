@@ -127,6 +127,92 @@ class RoslibPackagesTest(unittest.TestCase):
     # must fail on parent of test_roslib
     self.assertEquals((None, None), roslib.packages.get_dir_pkg(os.path.dirname(path)))
     
+  def test_ROSPackages(self):
+    from roslib.packages import ROSPackages
+    rp = ROSPackages()
+
+    try:
+      rp.load_manifests('test_roslib')
+      self.fail("should have raised")
+    except TypeError:
+      pass
+
+    # DEPENDS1
+    x = rp.depends1(['test_roslib'])
+    self.assertEquals(['test_roslib'], x.keys())
+    self.assertEquals(set(['roslib', 'rostest', 'std_msgs', 'std_srvs']), set(x['test_roslib']))
+    x = rp.depends1(['test_rospack'])
+    self.assertEquals(['test_rospack'], x.keys())
+    self.assertEquals(set(['rospack', 'rostest']), set(x['test_rospack']))
+    # uncache
+    rp = ROSPackages()
+    x = rp.depends1(['test_roslib', 'test_rospack'])    
+    self.assertEquals(set(['test_rospack', 'test_roslib']), set(x.keys()))
+    self.assertEquals(set(['rospack', 'rostest']), set(x['test_rospack']))
+    self.assertEquals(set(['roslib', 'rostest', 'std_msgs', 'std_srvs']), set(x['test_roslib']))
+
+    # DEPENDS
+    test_roslib_depends = ['genmsg_cpp', 'rospack', 'roslib', 'rosclean', 'rosgraph', 'roslang', 'rospy', 'rosmaster', 'xmlrpcpp', 'rosconsole', 'roscpp', 'rosout', 'roslaunch', 'rostest', 'std_msgs', 'std_srvs']
+    x = rp.depends(['test_roslib'])
+    self.assertEquals(['test_roslib'], x.keys())
+    self.assertEquals(set(test_roslib_depends), set(x['test_roslib']))
+
+    # - null case for depends1 and depends
+    no_depends = ['roslang', 'mk', 'rospack', 'rosbuild']
+    for p in no_depends:
+      self.assertEquals({p: []},  rp.depends1([p]))
+      self.assertEquals({p: []},  rp.depends([p]))
+    # uncache
+    rp = ROSPackages()
+    v = dict((p, []) for p in no_depends)
+    self.assertEquals(v,  rp.depends1(no_depends))
+    # recache
+    self.assertEquals(v,  rp.depends1(no_depends))
+    
+
+    # ROSDEPS and ROSDEPS0
+    roslib_rosdeps = ['python', 'python-yaml', 'bzip2', 'zlib', 'boost']
+    rosconsole_rosdeps = ['apr', 'log4cxx']
+
+    rp = ROSPackages()
+    # ROSDEPS0
+    x = rp.rosdeps0(['rosconsole'])
+    self.assertEquals(['rosconsole'], x.keys())
+    self.assertEquals(set(rosconsole_rosdeps), set(x['rosconsole']))
+    x = rp.rosdeps0(['roslib'])
+    self.assertEquals(['roslib'], x.keys())
+    self.assertEquals(set(roslib_rosdeps), set(x['roslib']))
+
+    # ROSDEPS
+    deps = set(rosconsole_rosdeps + roslib_rosdeps)
+    p = 'std_msgs'
+    x = rp.rosdeps([p])
+    self.assertEquals([p], x.keys())
+    self.assertEquals(deps, set(x[p]), x)
+    x = rp.rosdeps(['std_msgs', 'std_srvs'])
+    self.assertEquals(set(['std_msgs', 'std_srvs']), set(x.keys()))
+    self.assertEquals(deps, set(x['std_msgs']))
+    self.assertEquals([], x['std_srvs'])
+
+    rp = ROSPackages()
+    no_rosdeps = ['mk', 'rospack', 'rosbuild', 'std_srvs']
+    no_rosdeps0 = no_rosdeps + ['test_roslib']
+    for p in no_rosdeps0:
+      self.assertEquals({p: []},  rp.rosdeps0([p]))
+      if p in no_rosdeps:
+        self.assertEquals({p: []},  rp.rosdeps([p]))
+    # uncache
+    rp = ROSPackages()
+    v = dict((p, []) for p in no_rosdeps)
+    self.assertEquals(v,  rp.rosdeps0(no_rosdeps))
+    if p in no_rosdeps:
+        self.assertEquals({p: []},  rp.rosdeps([p]))      
+    # recache
+    self.assertEquals(v,  rp.rosdeps0(no_rosdeps))
+    if p in no_rosdeps:
+        self.assertEquals({p: []},  rp.rosdeps([p]))      
+    
+    
   def test_get_package_paths(self):
     from roslib.packages import get_package_paths
 

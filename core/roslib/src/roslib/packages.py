@@ -678,7 +678,10 @@ class ROSPackages(object):
 
         if package in self._depends_cache:
             return self._depends_cache[package]
-        s = set()
+
+        # assign key before recursive call to prevent infinite case
+        self._depends_cache[package] = s = set()
+        
         manifests = self.manifests
         # take the union of all dependencies
         pkgs = [p.package for p in manifests[package].depends]
@@ -745,7 +748,9 @@ class ROSPackages(object):
 
         if package in self._rosdeps_cache:
             return self._rosdeps_cache[package]
-        s = set()
+        # set the key before recursive call to prevent infinite case
+        self._rosdeps_cache[package] = s = set()
+
         manifests = self.manifests
         # take the union of all dependencies
         pkgs = [p.package for p in manifests[package].depends]

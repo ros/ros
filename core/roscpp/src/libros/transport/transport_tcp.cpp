@@ -109,15 +109,19 @@ bool TransportTCP::initializeSocket()
 
   setKeepAlive(s_use_keepalive_, 60, 10, 9);
 
-  if (is_server_)
+  // connect() will set cached_remote_host_ because it already has the host/port available
+  if (cached_remote_host_.empty())
   {
-    cached_remote_host_ = "TCPServer Socket";
-  }
-  else
-  {
-    std::stringstream ss;
-    ss << getClientURI() << " on socket " << sock_;
-    cached_remote_host_ = ss.str();
+    if (is_server_)
+    {
+      cached_remote_host_ = "TCPServer Socket";
+    }
+    else
+    {
+      std::stringstream ss;
+      ss << getClientURI() << " on socket " << sock_;
+      cached_remote_host_ = ss.str();
+    }
   }
 
 #ifdef ROSCPP_USE_TCP_NODELAY
@@ -268,6 +272,10 @@ bool TransportTCP::connect(const std::string& host, int port)
 
     return false;
   }
+
+  std::stringstream ss;
+  ss << host << ":" << port << " on socket " << sock_;
+  cached_remote_host_ = ss.str();
 
   if (!initializeSocket())
   {

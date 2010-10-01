@@ -4,6 +4,10 @@
 - svn:
     local-name: wg-ros-pkg 
     uri: https://code.ros.org/svn/wg-ros-pkg/externals/rosdoc
+- hg: 
+    local-name: geometry 
+    uri: https://ros-geometry.googlecode.com/hg
+    version: tf_rework
 - svn: 
     local-name: stanford 
     uri: https://stanford-ros-pkg.googlecode.com/svn/trunk

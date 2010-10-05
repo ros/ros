@@ -597,7 +597,7 @@ class TCPROSTransport(Transport):
                 m._connection_header = self.header
                 
             # #1852: keep track of last latched message
-            if self.is_latched:
+            if self.is_latched and msg_queue:
                 self.latch = msg_queue[-1]
             
             return msg_queue

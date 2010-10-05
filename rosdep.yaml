@@ -105,6 +105,7 @@ bzip2:
   freebsd: bzip2
 boost:
   ubuntu:
+    '10.10': libboost1.42-all-dev
     '10.04': libboost1.40-all-dev
     '9.10': libboost1.40-all-dev
     '9.04': libboost-date-time1.37-dev libboost-filesystem1.37-dev libboost-graph1.37-dev libboost-iostreams1.37-dev libboost-math1.37-dev libboost-program-options1.37-dev libboost-python1.37-dev libboost-regex1.37-dev libboost-serialization1.37-dev libboost-signals1.37-dev libboost-system1.37-dev libboost-test1.37-dev libboost-thread1.37-dev libboost-wave1.37-dev libboost1.37-dev
@@ -223,6 +224,7 @@ wxpython:
   freebsd: py26-wxPython
 log4cxx:
   ubuntu:
+    '10.10': liblog4cxx10-dev
     '10.04': liblog4cxx10-dev
     '9.10': liblog4cxx10-dev
     '9.04': liblog4cxx10-dev
@@ -363,6 +365,7 @@ automake:
   freebsd: automake14 automake15 automake16 automake17 automake18 automake19 automake110
 libtool:
   ubuntu: 
+    '10.10': libtool libltdl-dev
     '10.04': libtool libltdl-dev
     '9.10': libtool libltdl-dev
     '9.04': libtool libltdl7-dev

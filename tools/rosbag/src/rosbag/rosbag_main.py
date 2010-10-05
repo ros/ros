@@ -309,7 +309,7 @@ def fix_cmd(argv):
     try:
         migrations = fixbag2(migrator, inbag_filename, outname)
     except ROSBagUnindexedException, ex:
-        print >> sys.stderr, 'ERROR bag unindexed: %s.  Run rosbag reindex.' % arg
+        print >> sys.stderr, 'ERROR bag unindexed: %s.  Run rosbag reindex.' % inbag_filename
         return
 
     if len(migrations) == 0:

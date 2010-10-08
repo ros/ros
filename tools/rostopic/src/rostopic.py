@@ -706,32 +706,37 @@ def _rostopic_list_bag(bag_file, topic=None):
     @param topic: optional topic name to match. Will print additional information just about messagese in this topic.
     @type  topic: str
     """
-    import rosrecord
+    import rosbag
     if not os.path.exists(bag_file):
         raise ROSTopicException("bag file [%s] does not exist"%bag_file)
-    if topic:
-        # create string for namespace comparison
-        topic_ns = roslib.names.make_global_ns(topic)
-        count = 0
-        earliest = None
-        latest = None
-        for top, msg, t in rosrecord.logplayer(bag_file, raw=True):
-            if top == topic or top.startswith(topic_ns):
-                count += 1
-                if earliest == None:
-                    earliest = t
-                latest = t
-        import time
-        earliest, latest = [time.strftime("%d %b %Y %H:%M:%S", time.localtime(t.to_time())) for t in (earliest, latest)]
-        print "%s message(s) from %s to %s"%(count, earliest, latest)
-    else:
-        topics = set()
-        for top, msg, _ in rosrecord.logplayer(bag_file, raw=True):
-            if top not in topics:
-                print top
-                topics.add(top)
-            if rospy.is_shutdown():
-                break
+
+    with rosbag.Bag(bag_file) as b:
+        if topic:
+            # create string for namespace comparison
+            topic_ns = roslib.names.make_global_ns(topic)
+            count = 0
+            earliest = None
+            latest = None
+            for top, msg, t in b.read_messages(raw=True):
+                if top == topic or top.startswith(topic_ns):
+                    count += 1
+                    if earliest == None:
+                        earliest = t
+
+                    latest = t
+                if rospy.is_shutdown():
+                    break
+            import time
+            earliest, latest = [time.strftime("%d %b %Y %H:%M:%S", time.localtime(t.to_time())) for t in (earliest, latest)]
+            print "%s message(s) from %s to %s"%(count, earliest, latest)
+        else:
+            topics = set()
+            for top, msg, _ in b.read_messages(raw=True):
+                if top not in topics:
+                    print top
+                    topics.add(top)
+                if rospy.is_shutdown():
+                    break
 
 def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only=False):
     """

@@ -49,6 +49,7 @@ eclipse-project:
 	mv .project .project-cmake
 	awk -f $(shell rospack find mk)/eclipse.awk .project-cmake > .project
 	rm .project-cmake
+	python $(shell rospack find mk)/make_pydev_project.py
 
 
 include $(shell rospack find mk)/buildtest.mk

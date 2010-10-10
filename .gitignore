@@ -143,3 +143,9 @@ tutorials/rospy_tutorials/srv/lisp
 util/rosthread/build
 .build_version
 .rosgcov_files
+3rdparty/gtest/gtest
+/core/genmsg_cpp/genmsg_java
+/core/genmsg_cpp/genmsg_oct
+/core/genmsg_cpp/gensrv_java
+/core/genmsg_cpp/gensrv_oct
+/core/roslib/src/roslib

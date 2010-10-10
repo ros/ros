@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+PKG=`rospack find $1`
+FILENAME=$PKG/msg/$2.msg
+echo "Running original genmsg_lisp on $FILENAME" 
+rosrun genmsg_cpp genmsg_lisp $FILENAME
+echo "Running new genmsg_lisp.py"
+rosrun roslisp genmsg_lisp.py $FILENAME
+echo "Checking diffs"
+diff $PKG/msg/lisp/$1/$2.lisp $PKG/msg_gen/lisp/$2.lisp | head -n 10

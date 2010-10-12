@@ -34,7 +34,7 @@
 
 ## ROS message source code generation for Lisp
 ## 
-## Converts ROS .msg files in a package into Lisp source code
+## Converts ROS .msg and .srv files in a package into Lisp source code
 
 ## t0: needed for script to work
 ## t1: for reference; remove once running
@@ -45,10 +45,14 @@ import roslib; roslib.load_manifest('roslisp')
 import sys
 import os
 import traceback
+import re
 
-import roslib.msgs 
+import roslib.msgs
+import roslib.srvs
 import roslib.packages
 import roslib.gentools
+from roslib.msgs import MsgSpec
+from roslib.srvs import SrvSpec
 
 from cStringIO import StringIO
 
@@ -205,12 +209,16 @@ class Indent():
 
     
 
-def write_begin(s, spec, path):
+def write_begin(s, spec, path, is_service=False):
     "Writes the beginning of the file: a comment saying it's auto-generated and the in-package form"
     
     s.write('; Auto-generated. Do not edit!\n\n\n', newline=False)
-    s.write('(in-package %s-msg)\n\n\n'%spec.package, newline=False)
-    s.write(';//! \\htmlinclude %s.msg.html\n'%spec.short_name, newline=False) # t2
+    suffix = 'srv' if is_service else 'msg'
+    s.write('(in-package %s-%s)\n\n\n'%(spec.package, suffix), newline=False)
+
+def write_html_include(s, spec, is_srv=False):
+    
+    s.write(';//! \\htmlinclude %s.msg.html\n'%spec.actual_name, newline=False) # t2
 
 def write_slot_definition(s, field):
     "Write the definition of a slot corresponding to a single message field"
@@ -225,10 +233,8 @@ def write_slot_definition(s, field):
         s.write(':initform %s)'%field_initform(field))
             
 
-def write_defclass(s, spec, pkg):
-    """
-    Writes the defclass that defines the message type
-    """
+def write_defclass(s, spec):
+    "Writes the defclass that defines the message type"
     s.write('(defclass %s (ros-message)'%message_class(spec))
     with Indent(s):
         s.write('(')
@@ -244,7 +250,7 @@ def message_class(spec):
     """
     Return the CLOS class name for this message type
     """
-    return '<%s>'%spec.short_name
+    return '<%s>'%spec.actual_name
 
     
 def write_serialize_length(s, v, is_array=False):
@@ -422,18 +428,6 @@ def write_deserialize(s, spec):
         s.write('msg')
     s.write(')')
 
-def write_asd_deps(s, spec):
-    """
-    Write the depended-upon packages
-    """
-    pkgs = set()
-    for f in spec.parsed_fields():
-        if not f.is_builtin:
-            (pkg, _) = parse_msg_type(f)
-            pkgs.add('%s-msg'%pkg)
-    for p in pkgs:
-        s.write('%s\n'%p)
-
 def write_class_exports(s, pkg):
     "Write the _package.lisp file"
     s.write('(defpackage %s-msg'%pkg, False)
@@ -450,21 +444,25 @@ def write_class_exports(s, pkg):
                 s.write('"%s"'%msg_class.upper())
         s.write('))\n\n')
 
-def write_asd(s, pkg):
-    s.write('(in-package :asdf)')
-    s.newline()
-    s.write('(defsystem "%s-msg"'%pkg)
-    msgs = roslib.msgs.get_pkg_msg_specs(pkg)[0]
+def write_srv_exports(s, pkg):
+    "Write the _package.lisp file for a service directory"
+    s.write('(defpackage %s-srv'%pkg, False)
+    with Indent(s):
+        s.write('(:use ')
+        with Indent(s, inc=6, indent_first=False):
+            s.write('cl')
+            s.write('roslisp-msg-protocol)')
+        s.write('(:export')
+        with Indent(s, inc=1):
+            for spec in roslib.srvs.get_pkg_srv_specs(pkg)[0]:
+                (_, srv_type) = spec[0].split('/')
+                s.write('"%s"'%srv_type.upper())
+                s.write('"<%s-REQUEST>"'%srv_type.upper())
+                s.write('"<%s-RESPONSE>"'%srv_type.upper())
+        s.write('))\n\n')
 
-    # Figure out set of depended-upon ros packages
-    deps = set()
-    for (_, spec) in msgs:
-        for f in spec.parsed_fields():
-            if not f.is_builtin:
-                (p, _) = parse_msg_type(f)
-                deps.add(p)
-    deps.remove(pkg)
-    
+
+def write_asd_deps(s, deps, msgs):
     with Indent(s):
         s.write(':depends-on (:roslisp-msg-protocol :roslisp-utils ')
         with Indent(s, inc=13, indent_first=False):
@@ -480,32 +478,81 @@ def write_asd(s, pkg):
                 s.write('(:file "_package_%s" :depends-on ("_package"))'%name)
         s.write('))')
                 
-    
+
+
+def write_srv_asd(s, pkg):
+    s.write('(in-package :asdf)')
+    s.newline()
+    s.write('(defsystem "%s-srv"'%pkg)
+    services = roslib.srvs.get_pkg_srv_specs(pkg)[0]
+
+    # Figure out set of depended-upon ros packages
+    deps = set()
+    for (_, spec) in services:
+        for f in spec.request.parsed_fields():
+            if not f.is_builtin:
+                (p, _) = parse_msg_type(f)
+                deps.add(p)
+        for f in spec.response.parsed_fields():
+            if not f.is_builtin:
+                (p, _) = parse_msg_type(f)
+                deps.add(p)
+
+    write_asd_deps(s, deps, services)
+
+
+def write_asd(s, pkg):
+    s.write('(in-package :asdf)')
+    s.newline()
+    s.write('(defsystem "%s-msg"'%pkg)
+    msgs = roslib.msgs.get_pkg_msg_specs(pkg)[0]
+
+    # Figure out set of depended-upon ros packages
+    deps = set()
+    for (_, spec) in msgs:
+        for f in spec.parsed_fields():
+            if not f.is_builtin:
+                (p, _) = parse_msg_type(f)
+                deps.add(p)
+    deps.remove(pkg)
+    write_asd_deps(s, deps, msgs)   
 
 def write_accessor_exports(s, spec):
-    "Write the package exports for this message"
-    s.write('(in-package %s-msg)'%spec.package, indent=False)
+    "Write the package exports for this message/service"
+    is_srv = isinstance(spec, SrvSpec)
+    suffix = 'srv' if is_srv else 'msg'
+    s.write('(in-package %s-%s)'%(spec.package, suffix), indent=False)
     s.write('(export \'(')
+    if is_srv:
+        fields = spec.request.parsed_fields()[:]
+        fields.extend(spec.response.parsed_fields())
+    else:
+        fields = spec.parsed_fields()
+    
     with Indent(s, inc=10, indent_first=False):
-        for f in spec.parsed_fields():
+        for f in fields:
             accessor = '%s-val'%f.name
             s.write('%s'%accessor.upper())
     s.write('))')
+
 
 def write_ros_datatype(s, spec):
     c = message_class(spec)
     s.write('(defmethod ros-datatype ((msg (eql \'%s)))'%c)
     with Indent(s):
-        s.write('"Returns string type for a message object of type \'%s"'%c)
+        s.write('"Returns string type for a %s object of type \'%s"'%(spec.component_type, c))
         s.write('"%s")'%spec.full_name)
 
-def write_md5sum(s, spec):
-    gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package,
+def write_md5sum(s, spec, parent=None):
+    if parent is None:
+        parent = spec
+    gendeps_dict = roslib.gentools.get_dependencies(parent, spec.package,
                                                     compute_files=False)
     md5sum = roslib.gentools.compute_md5(gendeps_dict)
     c = message_class(spec)
     s.write('(defmethod md5sum ((type (eql \'%s)))'%c)
     with Indent(s):
+        # t2 this should print 'service' instead of 'message' if it's a service request or response
         s.write('"Returns md5sum for a message object of type \'%s"'%c)
         s.write('"%s")'%md5sum)
 
@@ -590,9 +637,37 @@ def write_constants(s, spec):
                     s.write('(:%s . %s)'%(c.name.upper(), c.val))
         s.write(')', False)
         s.write(')')
-                    
 
-def generate(msg_path):
+
+def write_srv_component(s, spec, parent):
+    spec.component_type='service'
+    write_html_include(s, spec)
+    write_defclass(s, spec)
+    write_constants(s, spec)
+    write_serialize(s, spec)
+    write_deserialize(s, spec)
+    write_ros_datatype(s, spec)
+    write_md5sum(s, spec, parent)
+    write_message_definition(s, spec)
+    write_serialization_length(s, spec)
+    write_list_converter(s, spec)
+
+
+def write_service_specific_methods(s, spec):
+    spec.actual_name=spec.short_name
+    s.write('(defmethod service-request-type ((msg (eql \'%s)))'%spec.short_name)
+    with Indent(s):
+        s.write('\'%s)'%message_class(spec.request))
+    s.write('(defmethod service-response-type ((msg (eql \'%s)))'%spec.short_name)
+    with Indent(s):
+        s.write('\'%s)'%message_class(spec.response))
+    s.write('(defmethod ros-datatype ((msg (eql \'%s)))'%spec.short_name)
+    with Indent(s):
+        s.write('"Returns string type for a service object of type \'%s"'%message_class(spec))
+        s.write('"%s")'%spec.full_name)
+
+
+def generate_msg(msg_path):
     """
     Generate a message
     
@@ -601,6 +676,8 @@ def generate(msg_path):
     """
     (package_dir, package) = roslib.packages.get_dir_pkg(msg_path)
     (_, spec) = roslib.msgs.load_from_file(msg_path, package)
+    spec.actual_name=spec.short_name
+    spec.component_type='message'
 
     ########################################
     # 1. Write the .lisp file
@@ -609,7 +686,8 @@ def generate(msg_path):
     io = StringIO()
     s =  IndentedWriter(io)
     write_begin(s, spec, msg_path)
-    write_defclass(s, spec, package)
+    write_html_include(s, spec)
+    write_defclass(s, spec)
     write_constants(s, spec)
     write_serialize(s, spec)
     write_deserialize(s, spec)
@@ -633,18 +711,7 @@ def generate(msg_path):
     io.close()
 
     ########################################
-    # 2. Write the asd-deps file
-    # Todo not necessary
-    ########################################
-
-    s = StringIO()
-    write_asd_deps(s, spec)
-    with open('%s/.%s.asd-dep'%(output_dir, spec.short_name), 'w') as f:
-        f.write(s.getvalue())
-    s.close()
-
-    ########################################
-    # 3. Write the _package file
+    # 2. Write the _package file
     # for this message
     ########################################
 
@@ -656,7 +723,7 @@ def generate(msg_path):
     io.close()
 
     ########################################
-    # 4. Write the _package.lisp file
+    # 3. Write the _package.lisp file
     # This is being rewritten once per msg
     # file, which is inefficient
     ########################################
@@ -669,7 +736,7 @@ def generate(msg_path):
     io.close()
 
     ########################################
-    # 5. Write the .asd file
+    # 4. Write the .asd file
     # This is being written once per msg
     # file, which is inefficient
     ########################################
@@ -680,10 +747,81 @@ def generate(msg_path):
     with open('%s/%s-msg.asd'%(output_dir, package), 'w') as f:
         f.write(io.getvalue())
     io.close()
+
+# t0 most of this could probably be refactored into being shared with messages
+def generate_srv(srv_path):
+    "Generate code from .srv file"
+    (pkg_dir, pkg) = roslib.packages.get_dir_pkg(srv_path)
+    (_, spec) = roslib.srvs.load_from_file(srv_path, pkg)
+    output_dir = '%s/srv_gen/lisp'%pkg_dir
+    if (not os.path.exists(output_dir)):
+        # if we're being run concurrently, the above test can report false but os.makedirs can still fail if
+        # another copy just created the directory
+        try:
+            os.makedirs(output_dir)
+        except OSError, e:
+            pass
+
+    ########################################
+    # 1. Write the .lisp file
+    ########################################
+
+    io = StringIO()
+    s = IndentedWriter(io)
+    write_begin(s, spec, srv_path, True)
+    spec.request.actual_name='%s-request'%spec.short_name
+    spec.response.actual_name='%s-response'%spec.short_name
+    write_srv_component(s, spec.request, spec)
+    s.newline()
+    write_srv_component(s, spec.response, spec)
+    write_service_specific_methods(s, spec)
     
+    with open('%s/%s.lisp'%(output_dir, spec.short_name), 'w') as f:
+        print >> f, io.getvalue()
+    io.close()
+
+    ########################################
+    # 2. Write the _package file
+    # for this service
+    ########################################
+
+    io = StringIO()
+    s = IndentedWriter(io)
+    write_accessor_exports(s, spec)
+    with open('%s/_package_%s.lisp'%(output_dir, spec.short_name), 'w') as f:
+        f.write(io.getvalue())
+    io.close()
+
+    ########################################
+    # 3. Write the _package.lisp file
+    ########################################
+
+    io = StringIO()
+    s = IndentedWriter(io)
+    write_srv_exports(s, pkg)
+    with open('%s/_package.lisp'%output_dir, 'w') as f:
+        f.write(io.getvalue())
+    io.close()
+
+    ########################################
+    # 4. Write the .asd file
+    ########################################
+
+    io = StringIO()
+    s = IndentedWriter(io)
+    write_srv_asd(s, pkg)
+    with open('%s/%s-srv.asd'%(output_dir, pkg), 'w') as f:
+        f.write(io.getvalue())
+    io.close()
+    
+
          
 
 if __name__ == "__main__":
     roslib.msgs.set_verbose(False)
-    generate(sys.argv[1])
-
+    if sys.argv[1].endswith('.msg'):
+        generate_msg(sys.argv[1])
+    elif sys.argv[1].endswith('.srv'):
+        generate_srv(sys.argv[1])
+    else:
+        raise ValueError('Invalid filename %s'%sys.argv[1])

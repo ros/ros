@@ -36,6 +36,10 @@
 ## 
 ## Converts ROS .msg files in a package into Lisp source code
 
+## t0: needed for script to work
+## t1: for reference; remove once running
+## t2: can be changed once we remove strict diff-compatibility requirement with old version of genmsg_lisp
+
 import roslib; roslib.load_manifest('roslisp')
 
 import sys
@@ -53,10 +57,16 @@ from cStringIO import StringIO
 ############################################################
 
 def is_fixnum(t):
-    return t in ['char', 'byte', 'int8', 'uint8', 'int16', 'uint16']
+    return t in ['int8', 'uint8', 'int16', 'uint16']
 
 def is_integer(t):
-    return is_fixnum(t) or t in ['int32', 'uint32', 'int64', 'uint64']
+    return is_fixnum(t) or t in ['byte', 'char', 'int32', 'uint32', 'int64', 'uint64'] #t2 byte, char can be fixnum
+
+def is_signed_int(t):
+    return t in ['int8', 'int16', 'int32', 'int64']
+
+def is_unsigned_int(t):
+    return t in ['uint8', 'uint16', 'uint32', 'uint64']
 
 def is_bool(t):
     return t == 'bool'
@@ -69,6 +79,24 @@ def is_float(t):
 
 def is_time(t):
     return t in ['time', 'duration']
+
+def field_type(f):
+    if f.is_builtin:
+        elt_type = lisp_type(f.base_type)
+    else:
+        elt_type = msg_type(f)
+    if f.is_array:
+        return '(vector %s)'%elt_type
+    else:
+        return elt_type
+
+# t2 no need for is_array    
+def msg_type(f):
+    if f.base_type == 'Header':
+        (pkg, msg) = ('roslib', 'Header')
+    else:
+        (pkg, msg) = f.base_type.split('/')
+    return '%s-msg:<%s>'%(pkg, msg)
 
 def lisp_type(t):
     if is_fixnum(t):
@@ -86,6 +114,19 @@ def lisp_type(t):
     else:
         raise ValueError('%s is not a recognized primitive type'%t)
 
+def field_initform(f):
+    if f.is_builtin:
+        initform = lisp_initform(f.base_type)
+        elt_type = lisp_type(f.base_type)
+    else:
+        initform = '(make-instance \'%s)'%msg_type(f)
+        elt_type = msg_type(f)
+    if f.is_array:
+        len = f.array_len or 0
+        return '(make-array %s :element-type \'%s :initial-element %s)'%(len, elt_type, initform)
+    else:
+        return initform
+
 def lisp_initform(t):
     if is_integer(t):
         return '0'
@@ -97,40 +138,72 @@ def lisp_initform(t):
         return 0
     elif is_string(t):
         return '\"\"'
+    else:
+        raise ValueError('%s is not a recognized primitive type'%t)
 
-# todo remove
-def msg_type_to_cpp(type):
-    """
-    Converts a message type (e.g. uint32, std_msgs/String, etc.) into the C++ declaration
-    for that type (e.g. uint32_t, std_msgs::String_<ContainerAllocator>)
-    
-    @param type: The message type
-    @type type: str
-    @return: The C++ declaration
-    @rtype: str
-    """
-    (base_type, is_array, array_len) = roslib.msgs.parse_type(type)
-    cpp_type = None
-    if (roslib.msgs.is_builtin(base_type)):
-        cpp_type = MSG_TYPE_TO_CPP[base_type]
-    elif (len(base_type.split('/')) == 1):
-        if (roslib.msgs.is_header_type(base_type)):
-            cpp_type = "roslib::Header_<ContainerAllocator> "
+NUM_BYTES = {'int8': 1, 'int16': 2, 'int32': 4, 'int64': 8,
+             'uint8': 1, 'uint16': 2, 'uint32': 4, 'uint64': 8}
+             
+             
+
+############################################################
+# Indented writer
+############################################################
+
+class IndentedWriter():
+
+    def __init__(self, s):
+        self.str = s
+        self.indentation = 0
+        self.block_indent = False
+
+    def write(self, s, indent=True, newline=True):
+        if not indent:
+            newline = False
+        if self.block_indent:
+            self.block_indent = False
         else:
-            cpp_type = '%s_<ContainerAllocator> '%(base_type)
-    else:
-        pkg = base_type.split('/')[0]
-        msg = base_type.split('/')[1]
-        cpp_type = '%s::%s_<ContainerAllocator> '%(pkg, msg)
+            if newline:
+                self.str.write('\n')
+            if indent:
+                for i in xrange(self.indentation):
+                    self.str.write(' ')
+        self.str.write(s)
+
+    def newline(self):
+        self.str.write('\n')
+
+    def inc_indent(self, inc=2):
+        self.indentation += inc
+
+    def dec_indent(self, dec=2):
+        self.indentation -= dec
+
+    def reset_indent(self):
+        self.indentation = 0
+
+    def block_next_indent(self):
+        self.block_indent = True
+
+class Indent():
+
+    def __init__(self, w, inc=2, indent_first=True):
+        self.writer = w
+        self.inc = inc
+        self.indent_first = indent_first
+
+    def __enter__(self):
+        self.writer.inc_indent(self.inc)
+        if not self.indent_first:
+            self.writer.block_next_indent()
+
+    def __exit__(self, type, val, traceback):
+        self.writer.dec_indent(self.inc)
+
+    
         
-    if (is_array):
-        if (array_len is None):
-            return 'std::vector<%s, typename ContainerAllocator::template rebind<%s>::other > '%(cpp_type, cpp_type)
-        else:
-            return 'boost::array<%s, %s> '%(cpp_type, array_len)
-    else:
-        return cpp_type
     
+
 def write_begin(s, spec, path):
     """
     Writes the beginning of the file: a comment saying it's auto-generated and the in-package form
@@ -142,39 +215,38 @@ def write_begin(s, spec, path):
     @param path: The file this message is being generated for
     @type path: str
     """
-    s.write('; Auto-generated. Do not edit!\n\n\n')
-    s.write('(in-package %s-msg)\n\n\n'%spec.package)
-    s.write(';//! \\htmlinclude %s.msg.html\n\n'%spec.short_name) # Can get rid of this
+    s.write('; Auto-generated. Do not edit!\n\n\n', newline=False)
+    s.write('(in-package %s-msg)\n\n\n'%spec.package, newline=False)
+    s.write(';//! \\htmlinclude %s.msg.html\n'%spec.short_name, newline=False) # t2
 
 def write_slot_definition(s, field):
     """
     Write the definition of a slot corresponding to a single message field
     """
-    s.write('(%s\n    '%field.name)
-    s.write(':reader %s-val\n    '%field.name)
-    s.write(':initarg :%s\n    '%field.name)
-    s.write(':type %s\n    '%lisp_type(field.type))
-    s.write(':initform %s)'%lisp_initform(field.type))
+
+    s.write('(%s'%field.name)
+    with Indent(s, 1):
+        s.write(':reader %s-val'%field.name)
+        s.write(':initarg :%s'%field.name)
+        s.write(':type %s'%field_type(field))
+    i = 0 if field.is_array else 1 # t2
+    with Indent(s, i):
+        s.write(':initform %s)'%field_initform(field))
             
 
-def write_defclass(s, spec):
+def write_defclass(s, spec, pkg):
     """
     Writes the defclass that defines the message type
-
-    @param s: The stream to write to
-    @type s: stream
-    @param spec: The message spec
-    @type spec: roslib.msgs.MsgSpec
     """
-    s.write('(defclass %s (ros-message)\n  ('%message_class(spec))
-    first_field = True
-    for field in spec.parsed_fields():
-        # Can get rid of this first_field stuff
-        if not first_field:
-            s.write('\n   ')
-        first_field = False
-        write_slot_definition(s, field)
-    s.write(')\n)\n')
+    s.write('(defclass %s (ros-message)'%message_class(spec))
+    with Indent(s):
+        s.write('(')
+        with Indent(s, inc=1, indent_first=False):
+            for field in spec.parsed_fields():
+                write_slot_definition(s, field)
+        s.write(')', indent=False)
+    s.write(')')
+    
     
 
 def message_class(spec):
@@ -383,21 +455,6 @@ def write_constructors(s, spec, cpp_name_prefix):
     write_fixed_length_assigns(s, spec, True, cpp_name_prefix)
     s.write('  }\n\n')
 
-def write_member(s, field):
-    """
-    Writes a single member's declaration and type typedef
-    
-    @param s: The stream to write to
-    @type s: stream
-    @param type: The member type
-    @type type: str
-    @param name: The name of the member
-    @type name: str
-    """
-    cpp_type = msg_type_to_cpp(field.type)
-    s.write('  typedef %s _%s_type;\n'%(cpp_type, field.name))
-    s.write('  %s %s;\n\n'%(cpp_type, field.name))
-
 def write_members(s, spec):
     """
     Write all the member declarations
@@ -408,11 +465,6 @@ def write_members(s, spec):
     @type spec: roslib.msgs.MsgSpec
     """
     [write_member(s, field) for field in spec.parsed_fields()]
-        
-def escape_string(str):
-    str = str.replace('\\', '\\\\')
-    str = str.replace('"', '\\"')
-    return str
         
 def write_constant_declaration(s, constant):
     """
@@ -498,74 +550,6 @@ def is_fixed_length(spec):
             return False
         
     return True
-    
-def write_deprecated_member_functions(s, spec):
-    """
-    Writes the deprecated member functions for backwards compatibility
-    """
-    for field in spec.parsed_fields():
-        if (field.is_array):
-            s.write('  ROSCPP_DEPRECATED uint32_t get_%s_size() const { return (uint32_t)%s.size(); }\n'%(field.name, field.name))
-            
-            if (field.array_len is None):
-                s.write('  ROSCPP_DEPRECATED void set_%s_size(uint32_t size) { %s.resize((size_t)size); }\n'%(field.name, field.name))
-                s.write('  ROSCPP_DEPRECATED void get_%s_vec(%s& vec) const { vec = this->%s; }\n'%(field.name, msg_type_to_cpp(field.type), field.name))
-                s.write('  ROSCPP_DEPRECATED void set_%s_vec(const %s& vec) { this->%s = vec; }\n'%(field.name, msg_type_to_cpp(field.type), field.name))
-    # duplicate these here so we don't have to forward declare all the message traits
-    gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package, compute_files=False)
-    md5sum = roslib.gentools.compute_md5(gendeps_dict)
-    full_text = compute_full_text_escaped(gendeps_dict)
-    
-    s.write('private:\n')
-    s.write('  static const char* __s_getDataType_() { return "%s/%s"; }\n\n'%(spec.package, spec.short_name))
-    s.write('  static const char* __s_getMD5Sum_() { return "%s"; }\n\n'%(md5sum))
-    s.write('  static const char* __s_getMessageDefinition_() { return "%s"; }\n\n'%(full_text))
-    s.write('public:\n')
-    s.write('  ROSCPP_DEPRECATED static const std::string __s_getDataType() { return __s_getDataType_(); }\n')
-    s.write('  ROSCPP_DEPRECATED static const std::string __s_getMD5Sum() { return __s_getMD5Sum_(); }\n')
-    s.write('  ROSCPP_DEPRECATED static const std::string __s_getMessageDefinition() { return __s_getMessageDefinition_(); }\n')
-    s.write('  ROSCPP_DEPRECATED virtual const std::string __getDataType() const { return __s_getDataType_(); }\n')
-    s.write('  ROSCPP_DEPRECATED virtual const std::string __getMD5Sum() const { return __s_getMD5Sum_(); }\n')
-    s.write('  ROSCPP_DEPRECATED virtual const std::string __getMessageDefinition() const { return __s_getMessageDefinition_(); }\n')
-    
-    s.write('  ROSCPP_DEPRECATED virtual uint8_t *serialize(uint8_t *write_ptr, uint32_t seq) const\n  {\n')
-    s.write('    ros::serialization::OStream stream(write_ptr, 1000000000);\n')
-    for field in spec.parsed_fields():
-        s.write('    ros::serialization::serialize(stream, %s);\n'%(field.name))
-    s.write('    return stream.getData();\n  }\n\n')
-    
-    s.write('  ROSCPP_DEPRECATED virtual uint8_t *deserialize(uint8_t *read_ptr)\n  {\n')
-    s.write('    ros::serialization::IStream stream(read_ptr, 1000000000);\n');
-    for field in spec.parsed_fields():
-        s.write('    ros::serialization::deserialize(stream, %s);\n'%(field.name))
-    s.write('    return stream.getData();\n  }\n\n')
-    
-    s.write('  ROSCPP_DEPRECATED virtual uint32_t serializationLength() const\n  {\n')
-    s.write('    uint32_t size = 0;\n');
-    for field in spec.parsed_fields():
-        s.write('    size += ros::serialization::serializationLength(%s);\n'%(field.name))
-    s.write('    return size;\n  }\n\n')
-
-def compute_full_text_escaped(gen_deps_dict):
-    """
-    Same as roslib.gentools.compute_full_text, except that the
-    resulting text is escaped to be safe for C++ double quotes
-
-    @param get_deps_dict: dictionary returned by get_dependencies call
-    @type  get_deps_dict: dict
-    @return: concatenated text for msg/srv file and embedded msg/srv types. Text will be escaped for double quotes
-    @rtype: str
-    """
-    definition = roslib.gentools.compute_full_text(gen_deps_dict)
-    lines = definition.split('\n')
-    s = StringIO()
-    for line in lines:
-        line = escape_string(line)
-        s.write('%s\\n\\\n'%(line))
-        
-    val = s.getvalue()
-    s.close()
-    return val
 
 def is_hex_string(str):
     for c in str:
@@ -573,95 +557,6 @@ def is_hex_string(str):
             return False
         
     return True
-
-def write_trait_char_class(s, class_name, cpp_msg_with_alloc, value, write_static_hex_value = False):
-    """
-    Writes a class trait for traits which have static value() members that return const char*
-    
-    e.g. write_trait_char_class(s, "MD5Sum", "std_msgs::String_<ContainerAllocator>", "hello") yields:
-    template<class ContainerAllocator>
-    struct MD5Sum<std_msgs::String_<ContainerAllocator> > 
-    {
-        static const char* value() { return "hello"; }
-        static const char* value(const std_msgs::String_<ContainerAllocator>&) { return value(); }
-    };
-    
-    @param s: The stream to write to
-    @type s: stream
-    @param class_name: The name of the trait class to write
-    @type class_name: str
-    @param cpp_msg_with_alloc: The C++ declaration of the message, including the allocator template
-    @type cpp_msg_with_alloc: str
-    @param value: The value to return in the string
-    @type value: str
-    @param write_static_hex_value: Whether or not to write a set of compile-time-checkable static values.  Useful for,
-        for example, MD5Sum.  Writes static const uint64_t static_value1... static_valueN
-    @type write_static_hex_value: bool
-    @raise ValueError if write_static_hex_value is True but value contains characters invalid in a hex value
-    """
-    s.write('template<class ContainerAllocator>\nstruct %s<%s> {\n'%(class_name, cpp_msg_with_alloc))
-    s.write('  static const char* value() \n  {\n    return "%s";\n  }\n\n'%(value))
-    s.write('  static const char* value(const %s&) { return value(); } \n'%(cpp_msg_with_alloc))
-    if (write_static_hex_value):
-        if (not is_hex_string(value)):
-            raise ValueError('%s is not a hex value'%(value))
-        
-        iter_count = len(value) / 16
-        for i in xrange(0, iter_count):
-            start = i*16
-            s.write('  static const uint64_t static_value%s = 0x%sULL;\n'%((i+1), value[start:start+16]))
-    s.write('};\n\n')
-    
-def write_trait_true_class(s, class_name, cpp_msg_with_alloc):
-    """
-    Writes a true/false trait class
-    
-    @param s: stream to write to
-    @type s: stream
-    @param class_name: Name of the trait class
-    @type class_name: str
-    @param cpp_msg_with_alloc: The C++ declaration of the message, including the allocator template
-    @type cpp_msg_with_alloc: str
-    """
-    s.write('template<class ContainerAllocator> struct %s<%s> : public TrueType {};\n'%(class_name, cpp_msg_with_alloc))
-
-def write_traits(s, spec, cpp_name_prefix, datatype = None):
-    """
-    Writes all the traits classes for a message
-    
-    @param s: The stream to write to
-    @type s: stream
-    @param spec: The message spec
-    @type spec: roslib.msgs.MsgSpec
-    @param cpp_name_prefix: The C++ prefix to prepend to a message to refer to it (e.g. "std_msgs::")
-    @type cpp_name_prefix: str
-    @param datatype: The string to write as the datatype of the message.  If None (default), pkg/msg is used.
-    @type datatype: str
-    """
-    # generate dependencies dictionary
-    gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package, compute_files=False)
-    md5sum = roslib.gentools.compute_md5(gendeps_dict)
-    full_text = compute_full_text_escaped(gendeps_dict)
-    
-    if (datatype is None):
-        datatype = '%s'%(spec.full_name)
-    
-    (cpp_msg_unqualified, cpp_msg_with_alloc, _) = cpp_message_declarations(cpp_name_prefix, spec.short_name)
-    s.write('namespace ros\n{\n')
-    s.write('namespace message_traits\n{\n')
-    write_trait_char_class(s, 'MD5Sum', cpp_msg_with_alloc, md5sum, True)
-    write_trait_char_class(s, 'DataType', cpp_msg_with_alloc, datatype)
-    write_trait_char_class(s, 'Definition', cpp_msg_with_alloc, full_text)
-    
-    if (spec.has_header()):
-        write_trait_true_class(s, 'HasHeader', cpp_msg_with_alloc)
-        
-    if (is_fixed_length(spec)):
-        write_trait_true_class(s, 'IsFixedSize', cpp_msg_with_alloc)
-        
-    s.write('} // namespace message_traits\n')
-    s.write('} // namespace ros\n\n')
-    
 def write_operations(s, spec, cpp_name_prefix):
     (cpp_msg_unqualified, cpp_msg_with_alloc, _) = cpp_message_declarations(cpp_name_prefix, spec.short_name)
     s.write('namespace ros\n{\n')
@@ -697,121 +592,273 @@ def write_operations(s, spec, cpp_name_prefix):
     s.write('} // namespace message_operations\n')
     s.write('} // namespace ros\n\n')
     
-def write_serialization(s, spec, cpp_name_prefix):
-    """
-    Writes the Serializer class for a message
-    
-    @param s: Stream to write to
-    @type s: stream
-    @param spec: The message spec
-    @type spec: roslib.msgs.MsgSpec
-    @param cpp_name_prefix: The C++ prefix to prepend to a message to refer to it (e.g. "std_msgs::")
-    @type cpp_name_prefix: str
-    """
-    (cpp_msg_unqualified, cpp_msg_with_alloc, _) = cpp_message_declarations(cpp_name_prefix, spec.short_name)
-    
-    s.write('namespace ros\n{\n')
-    s.write('namespace serialization\n{\n\n')
-    
-    s.write('template<class ContainerAllocator> struct Serializer<%s>\n{\n'%(cpp_msg_with_alloc))
-    
-    s.write('  template<typename Stream, typename T> inline static void allInOne(Stream& stream, T m)\n  {\n')
-    for field in spec.parsed_fields():
-        s.write('    stream.next(m.%s);\n'%(field.name))
-    s.write('  }\n\n')
-    
-    s.write('  ROS_DECLARE_ALLINONE_SERIALIZER;\n')
-    
-    s.write('}; // struct %s_\n'%(spec.short_name))
-        
-    s.write('} // namespace serialization\n')
-    s.write('} // namespace ros\n\n')
     
 def write_ostream_operator(s, spec, cpp_name_prefix):
     (cpp_msg_unqualified, cpp_msg_with_alloc, _) = cpp_message_declarations(cpp_name_prefix, spec.short_name)
     s.write('template<typename ContainerAllocator>\nstd::ostream& operator<<(std::ostream& s, const %s& v)\n{\n'%(cpp_msg_with_alloc))
     s.write('  ros::message_operations::Printer<%s>::stream(s, "", v);\n  return s;}\n\n'%(cpp_msg_with_alloc))
 
-def write_serialize_length(s, v):
-    s.write('  (let ((__ros_str_len (length %s)))'%v)
-    for x in range(0, 32, 8):
-        s.write('\n    (write-byte (ldb (byte 8 %s) __ros_str_len) ostream)'%x)
-    s.write(')\n')
-
+def write_serialize_length(s, v, is_array=False):
+    #t2
+    var = '__ros_arr_len' if is_array else '__ros_str_len'
     
+    s.write('(let ((%s (length %s)))'%(var, v))
+    with Indent(s):
+        for x in range(0, 32, 8):
+            s.write('(write-byte (ldb (byte 8 %s) %s) ostream)'%(x, var))
+    s.write(')', indent=False)
 
-def write_serialize_builtin(s, f):
-    if f.type == 'string':
-        v = '(slot-value msg \'%s)'%f.name
+
+def write_serialize_bits(s, v, num_bytes): 
+    for x in range(0, num_bytes*8, 8):
+        s.write('(write-byte (ldb (byte 8 %s) %s) ostream)'%(x, v))
+
+# t2: can get rid of this lookup_slot stuff        
+def write_serialize_builtin(s, f, var='msg', lookup_slot=True):
+    v = '(slot-value %s \'%s)'%(var, f.name) if lookup_slot else var
+    if f.base_type == 'string':
         write_serialize_length(s, v)
-        s.write('  (map nil #\'(lambda (c) (write-byte (char-code c) ostream)) %s)\n'%v)
+        s.write('(map nil #\'(lambda (c) (write-byte (char-code c) ostream)) %s)'%v)
+    elif f.base_type == 'float32':
+        s.write('(let ((bits %s))'%'(roslisp-utils:encode-single-float-bits %s)'%v)
+        with Indent(s):
+            write_serialize_bits(s, 'bits', 4)
+        s.write(')', False)
+    elif f.base_type == 'float64':
+        s.write('(let ((bits %s))'%'(roslisp-utils:encode-double-float-bits %s)'%v)
+        with Indent(s):
+            write_serialize_bits(s, 'bits', 8)
+        s.write(')', False)
+    elif f.base_type == 'bool':
+        s.write('(write-byte (ldb (byte 8 0) (if %s 1 0)) ostream)'%v)
+    elif f.base_type in ['byte', 'char']:
+        s.write('(write-byte (ldb (byte 8 0) %s) ostream)'%v)
+    elif f.base_type in ['duration', 'time']:
+        s.write('(let ((__sec (floor %s))'%v)
+        s.write('      (__nsec (round (* 1e9 (- %s (floor %s))))))'%(v,v))
+        with Indent(s):
+            write_serialize_bits(s, '__sec', 4)
+            write_serialize_bits(s, '__nsec', 4)
+            s.write(')', False)
+    elif is_signed_int(f.base_type):
+        write_serialize_bits(s, v, NUM_BYTES[f.base_type])
+    elif is_unsigned_int(f.base_type):
+        write_serialize_bits(s, v, NUM_BYTES[f.base_type])        
+    else:
+        raise ValueError('Unknown type: %s', f.base_type)
+    
+def write_serialize_field(s, f):
+    slot = '(slot-value msg \'%s)'%f.name
+    if f.is_array:
+        if not f.array_len:
+            write_serialize_length(s, slot, True)
+        s.write('(map nil #\'(lambda (ele) ')
+        var = 'ele'
+        s.block_next_indent()
+        lookup_slot = False
+    else:
+        var='msg'
+        lookup_slot = True
 
+    if f.is_builtin:
+        write_serialize_builtin(s, f, var, lookup_slot=lookup_slot)
+    else:
+        to_write = slot if lookup_slot else var #t2
+        s.write('(serialize %s ostream)'%to_write)
 
+    if f.is_array:
+        s.write(')', False)
+        s.write(' %s)'%slot)
+    
 def write_serialize(s, spec):
     """
     Write the serialize method
     """
-    s.write('(defmethod serialize ((msg %s) ostream)\n'%message_class(spec))
-    s.write('  "Serializes a message object of type \'%s"\n'%message_class(spec))
-    for field in spec.parsed_fields():
-        if field.is_array:
-            pass # todo
-        else:
-            if field.is_builtin:
-                write_serialize_builtin(s, field)
-            else:
-                pass # todo
-
-def write_deserialize_length(s):
-    s.write('  (let ((__ros_str_len 0))')
-    for x in range(0, 32, 8):
-        s.write('\n    (setf (ldb (byte 8 %s) __ros_str_len) (read-byte istream))'%x)
+    s.write('(defmethod serialize ((msg %s) ostream)'%message_class(spec))
+    with Indent(s):
+        s.write('"Serializes a message object of type \'%s"'%message_class(spec))
+        for f in spec.parsed_fields():
+            write_serialize_field(s, f)
+    s.write(')')
     
-def write_deserialize_builtin(s, f):
-    if f.type == 'string':
-        v = '(slot-value msg \'%s)'%f.name
+
+# t2 can get rid of is_array
+def write_deserialize_length(s, is_array=False):
+    var = '__ros_arr_len' if is_array else '__ros_str_len'
+    s.write('(let ((%s 0))'%var)
+    with Indent(s):
+        for x in range(0, 32, 8):
+            s.write('(setf (ldb (byte 8 %s) %s) (read-byte istream))'%(x, var))
+
+def write_deserialize_bits(s, v, num_bytes):
+    for x in range(0, num_bytes*8, 8):
+        s.write('(setf (ldb (byte 8 %s) %s) (read-byte istream))'%(x, v))
+        
+    
+    
+def write_deserialize_builtin(s, f, v):
+    # t0 possibly write setf once
+    if f.base_type == 'string':
         write_deserialize_length(s)
-        s.write('\n    (setf %s (make-string __ros_str_len))'%v)
-        s.write('\n    (dotimes (__ros_str_idx __ros_str_len msg)')
-        s.write('\n      (setf (char %s __ros_str_idx) (code-char (read-byte istream)))))\n'%v)
+        with Indent(s):
+            s.write('(setf %s (make-string __ros_str_len))'%v)
+            s.write('(dotimes (__ros_str_idx __ros_str_len msg)')
+            with Indent(s):
+                s.write('(setf (char %s __ros_str_idx) (code-char (read-byte istream)))))'%v)
+    elif f.base_type == 'float32':
+        s.write('(let ((bits 0))')
+        with Indent(s):
+            write_deserialize_bits(s, 'bits', 4)
+        s.write('(setf %s (roslisp-utils:decode-single-float-bits bits)))'%v)
+    elif f.base_type == 'float64':
+        s.write('(let ((bits 0))')
+        with Indent(s):
+            write_deserialize_bits(s, 'bits', 8)
+        s.write('(setf %s (roslisp-utils:decode-double-float-bits bits)))'%v)
+    elif f.base_type == 'bool':
+        s.write('(setf %s (not (zerop (read-byte istream))))'%v)
+    elif f.base_type in ['byte', 'char']:
+        s.write('(setf (ldb (byte 8 0) %s) (read-byte istream))'%v)
+    elif f.base_type in ['duration', 'time']:
+        s.write('(let ((__sec 0) (__nsec 0))')
+        with Indent(s):
+            write_deserialize_bits(s, '__sec', 4)
+            write_deserialize_bits(s, '__nsec', 4)
+            s.write('(setf %s (+ (coerce __sec \'double-float) (/ __nsec 1e9))))'%v)
+    elif is_signed_int(f.base_type):
+        write_deserialize_bits(s, v, NUM_BYTES[f.base_type])
+    elif is_unsigned_int(f.base_type):
+        write_deserialize_bits(s, v, NUM_BYTES[f.base_type])
+    else:
+        raise ValueError('%s unknown'%f.base_type)
+
+
+def write_deserialize_field(s, f, pkg):
+    slot = '(slot-value msg \'%s)'%f.name
+    var = slot
+    if f.is_array:
+        if not f.array_len:
+            write_deserialize_length(s, True)
+            length = '__ros_arr_len'
+        else:
+            length = '%s'%f.array_len
+            
+        s.write('(setf %s (make-array %s))'%(slot, length))
+        s.write('(let ((vals %s))'%slot) # t2
+        var = '(aref vals i)'
+        with Indent(s):
+            s.write('(dotimes (i %s)'%length)
+
+    if f.is_builtin:
+        write_deserialize_builtin(s, f, var)
+    else:
+        if f.is_array:
+            s.write('(setf %s (make-instance \'%s))'%(var, msg_type(f)))
+        s.write('(deserialize %s istream)'%var)
+
+    if f.is_array:
+        s.write('))', False)
+        if not f.array_len:
+            s.write(')', False)
 
 
 def write_deserialize(s, spec):
     """
     Write the deserialize method
     """
-    s.write('(defmethod deserialize ((msg %s) istream)\n'%message_class(spec))
-    s.write('  "Deserializes a message object of type \'%s"\n'%message_class(spec))
-    for field in spec.parsed_fields():
-        if field.is_array:
-            pass # todo
-        else:
-            if field.is_builtin:
-                write_deserialize_builtin(s, field)
-            else:
-                pass # todo
-    s.write('  msg\n)\n')
+    s.write('(defmethod deserialize ((msg %s) istream)'%message_class(spec))
+    with Indent(s):
+        s.write('"Deserializes a message object of type \'%s"'%message_class(spec))
+        for f in spec.parsed_fields():
+            write_deserialize_field(s, f, spec.package)
+        s.write('msg')
+    s.write(')')
 
 def write_ros_datatype(s, spec):
     c = message_class(spec)
-    s.write('(defmethod ros-datatype ((msg (eql \'%s)))\n'%c)
-    s.write('  "Returns string type for a message object of type \'%s"\n'%c)
-    s.write('  "%s")\n'%spec.full_name)
+    s.write('(defmethod ros-datatype ((msg (eql \'%s)))'%c)
+    with Indent(s):
+        s.write('"Returns string type for a message object of type \'%s"'%c)
+        s.write('"%s")'%spec.full_name)
 
 def write_md5sum(s, spec):
     gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package,
                                                     compute_files=False)
     md5sum = roslib.gentools.compute_md5(gendeps_dict)
     c = message_class(spec)
-    s.write('(defmethod md5sum ((type (eql \'%s)))\n'%c)
-    s.write('  "Returns md5sum for a message object of type \'%s"\n'%c)
-    s.write('  "%s")\n'%md5sum)
+    s.write('(defmethod md5sum ((type (eql \'%s)))'%c)
+    with Indent(s):
+        s.write('"Returns md5sum for a message object of type \'%s"'%c)
+        s.write('"%s")'%md5sum)
 
 def write_message_definition(s, spec):
     c = message_class(spec)
-    s.write('(defmethod message-definition ((type (eql \'%s)))\n'%c)
-    s.write('  "Returns full string definition for a message object of type \'%s"\n'%c)
-    
+    s.write('(defmethod message-definition ((type (eql \'%s)))'%c)
+    with Indent(s):
+        s.write('"Returns full string definition for message of type \'%s"'%c)
+        s.write('(format nil "')
+        gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package, compute_files=False)
+        definition = roslib.gentools.compute_full_text(gendeps_dict)
+        lines = definition.split('\n')
+        for line in lines:
+            l = line.replace('\\', '\\\\')
+            l = l.replace('"', '\\"')
+            s.write('%s~%%'%l, indent=False)
+        s.write('~%', indent=False)
+        s.write('"))', indent=False)
+
+def write_builtin_length(s, f, var='msg'):
+    if f.base_type in ['int8', 'uint8']:
+        s.write('1')
+    elif f.base_type in ['int16', 'uint16']:
+        s.write('2')
+    elif f.base_type in ['int32', 'uint32', 'float32']:
+        s.write('4')
+    elif f.base_type in ['int64', 'uint64', 'float64', 'duration', 'time']:
+        s.write('8')
+    elif f.base_type == 'string':
+        s.write('4 (length %s)'%var)
+    elif f.base_type in ['bool', 'byte', 'char']:
+        s.write('1')
+    else:
+        raise ValueError('Unknown: %s', f.base_type)
+
+def write_serialization_length(s, spec):
+    c = message_class(spec)
+    s.write('(defmethod serialization-length ((msg %s))'%c)
+    with Indent(s):
+        s.write('(+ 0')
+        with Indent(s, 3):
+            for field in spec.parsed_fields():
+                slot = '(slot-value msg \'%s)'%field.name
+                if field.is_array:
+                    l = '0' if field.array_len else '4'
+                    s.write('%s (reduce #\'+ %s :key #\'(lambda (ele) (declare (ignorable ele)) (+ '%(l, slot))
+                    var = 'ele'
+                    s.block_next_indent()
+                else:
+                    var = slot
+                    
+                if field.is_builtin:
+                    write_builtin_length(s, field, var)
+                else:
+                    s.write('(serialization-length %s)'%var)
+
+                if field.is_array:
+                    s.write(')))', False)
+    s.write('))')
+
+
+def write_list_converter(s, spec):
+    c = message_class(spec)
+    s.write('(defmethod ros-message-to-list ((msg %s))'%c)
+    with Indent(s):
+        s.write('"Converts a ROS message object to a list"')
+        s.write('(list \'%s'%c)
+        with Indent(s):
+            for f in spec.parsed_fields():
+                s.write('(cons \':%s (%s-val msg))'%(f.name, f.name))
+    s.write('))')
 
 def generate(msg_path):
     """
@@ -823,14 +870,17 @@ def generate(msg_path):
     (package_dir, package) = roslib.packages.get_dir_pkg(msg_path)
     (_, spec) = roslib.msgs.load_from_file(msg_path, package)
     
-    s = StringIO()
+    io = StringIO()
+    s =  IndentedWriter(io)
     write_begin(s, spec, msg_path)
-    write_defclass(s, spec)
+    write_defclass(s, spec, package)
     write_serialize(s, spec)
     write_deserialize(s, spec)
     write_ros_datatype(s, spec)
     write_md5sum(s, spec)
     write_message_definition(s, spec)
+    write_serialization_length(s, spec)
+    write_list_converter(s, spec)
     
     output_dir = '%s/msg_gen/lisp'%package_dir
     if (not os.path.exists(output_dir)):
@@ -842,11 +892,11 @@ def generate(msg_path):
             pass
          
     f = open('%s/%s.lisp'%(output_dir, spec.short_name), 'w')
-    print >> f, s.getvalue()
+    print >> f, io.getvalue()
     
-    s.close()
+    io.close()
 
 if __name__ == "__main__":
-    roslib.msgs.set_verbose(True)
+    roslib.msgs.set_verbose(False)
     generate(sys.argv[1])
 

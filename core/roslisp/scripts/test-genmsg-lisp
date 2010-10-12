@@ -1,10 +1,24 @@
 #!/usr/bin/env bash
 
-PKG=`rospack find $1`
-FILENAME=$PKG/msg/$2.msg
-echo "Running original genmsg_lisp on $FILENAME" 
-rosrun genmsg_cpp genmsg_lisp $FILENAME
-echo "Running new genmsg_lisp.py"
-rosrun roslisp genmsg_lisp.py $FILENAME
-echo "Checking diffs"
-diff $PKG/msg/lisp/$1/$2.lisp $PKG/msg_gen/lisp/$2.lisp | head -n 10
+set -e 
+
+if (( $# == 2 ))
+then
+    PKG=`rospack find $1`
+    FILENAME=$PKG/msg/$2.msg
+    rosrun genmsg_cpp genmsg_lisp $FILENAME
+    rosrun roslisp genmsg_lisp.py $FILENAME
+    diff -w $PKG/msg/lisp/$1/$2.lisp $PKG/msg_gen/lisp/$2.lisp | head -n 50
+    
+elif (( $# == 1 ))
+then
+    for p in `rosmsg package $1`
+    do args=`echo $p | tr "/" " "`
+       echo $p
+       $0 $args
+    done
+else
+    echo "Usage: test-genmsg-lisp PKG MSG or test-genmsg-lisp PKG"
+    exit 1
+fi
+

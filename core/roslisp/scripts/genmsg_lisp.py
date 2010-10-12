@@ -514,7 +514,8 @@ def write_asd(s, pkg):
             if not f.is_builtin:
                 (p, _) = parse_msg_type(f)
                 deps.add(p)
-    deps.remove(pkg)
+    if pkg in deps:
+        deps.remove(pkg)
     write_asd_deps(s, deps, msgs)   
 
 def write_accessor_exports(s, spec):

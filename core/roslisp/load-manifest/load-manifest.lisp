@@ -253,8 +253,8 @@
       (when (member package-suffix '("-msg" "-srv") :test #'equal)
         (let ((filename (merge-pathnames 
                          (make-pathname
-                          :directory `(:relative ,(subseq package-suffix 1)
-                                                 "lisp" ,package-name)
+                          :directory `(:relative ,(concatenate 'string (subseq package-suffix 1) "_gen")
+                                                 "lisp")
                           :name definition
                           :type "asd")
                          (parse-namestring (ros-package-path package-name)))))

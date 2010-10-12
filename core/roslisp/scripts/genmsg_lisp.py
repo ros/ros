@@ -90,12 +90,15 @@ def field_type(f):
     else:
         return elt_type
 
+def parse_msg_type(f):
+    if f.base_type == 'Header':
+        return ('roslib', 'Header')
+    else:
+        return f.base_type.split('/')
+
 # t2 no need for is_array    
 def msg_type(f):
-    if f.base_type == 'Header':
-        (pkg, msg) = ('roslib', 'Header')
-    else:
-        (pkg, msg) = f.base_type.split('/')
+    (pkg, msg) = parse_msg_type(f)
     return '%s-msg:<%s>'%(pkg, msg)
 
 def lisp_type(t):
@@ -201,28 +204,16 @@ class Indent():
         self.writer.dec_indent(self.inc)
 
     
-        
-    
 
 def write_begin(s, spec, path):
-    """
-    Writes the beginning of the file: a comment saying it's auto-generated and the in-package form
+    "Writes the beginning of the file: a comment saying it's auto-generated and the in-package form"
     
-    @param s: The stream to write to
-    @type s: stream
-    @param spec: The spec
-    @type spec: roslib.msgs.MsgSpec
-    @param path: The file this message is being generated for
-    @type path: str
-    """
     s.write('; Auto-generated. Do not edit!\n\n\n', newline=False)
     s.write('(in-package %s-msg)\n\n\n'%spec.package, newline=False)
     s.write(';//! \\htmlinclude %s.msg.html\n'%spec.short_name, newline=False) # t2
 
 def write_slot_definition(s, field):
-    """
-    Write the definition of a slot corresponding to a single message field
-    """
+    "Write the definition of a slot corresponding to a single message field"
 
     s.write('(%s'%field.name)
     with Indent(s, 1):
@@ -252,352 +243,10 @@ def write_defclass(s, spec, pkg):
 def message_class(spec):
     """
     Return the CLOS class name for this message type
-
-    @param spec: The message spec
-    @type spec: roslib.msgs.MsgSpec
     """
     return '<%s>'%spec.short_name
 
     
-def write_end(s, spec):
-    """
-    Writes the end of the header file: the ending of the include guards
-    
-    @param s: The stream to write to
-    @type s: stream
-    @param spec: The spec
-    @type spec: roslib.msgs.MsgSpec
-    """
-    s.write('#endif // %s_MESSAGE_%s_H\n'%(spec.package.upper(), spec.short_name.upper()))
-    
-def write_generic_includes(s):
-    """
-    Writes the includes that all messages need
-    
-    @param s: The stream to write to
-    @type s: stream
-    """
-    s.write('#include <string>\n')
-    s.write('#include <vector>\n')
-    s.write('#include <ostream>\n')
-    s.write('#include "ros/serialization.h"\n')
-    s.write('#include "ros/builtin_message_traits.h"\n')
-    s.write('#include "ros/message_operations.h"\n')
-    s.write('#include "ros/message.h"\n')
-    s.write('#include "ros/time.h"\n\n')
-    
-def write_includes(s, spec):
-    """
-    Writes the message-specific includes
-    
-    @param s: The stream to write to
-    @type s: stream
-    @param spec: The message spec to iterate over
-    @type spec: roslib.msgs.MsgSpec
-    """
-    for field in spec.parsed_fields():
-        if (not field.is_builtin):
-            if (field.is_header):
-                s.write('#include "roslib/Header.h"\n')
-            else:
-                (pkg, name) = roslib.names.package_resource_name(field.base_type)
-                pkg = pkg or spec.package # convert '' to package
-                s.write('#include "%s/%s.h"\n'%(pkg, name))
-                
-    s.write('\n') 
-    
-    
-def write_struct(s, spec, cpp_name_prefix):
-    """
-    Writes the entire message struct: declaration, constructors, members, constants and (deprecated) member functions
-    @param s: The stream to write to
-    @type s: stream
-    @param spec: The message spec
-    @type spec: roslib.msgs.MsgSpec
-    @param cpp_name_prefix: The C++ prefix to use when referring to the message, e.g. "std_msgs::"
-    @type cpp_name_prefix: str
-    """
-    
-    msg = spec.short_name
-    s.write('template <class ContainerAllocator>\n')
-    s.write('struct %s_ : public ros::Message\n{\n'%(msg))
-    s.write('  typedef %s_<ContainerAllocator> Type;\n\n'%(msg))
-    
-    write_constructors(s, spec, cpp_name_prefix)
-    write_members(s, spec)
-    write_constant_declarations(s, spec)
-    write_deprecated_member_functions(s, spec)
-    
-    (cpp_msg_unqualified, cpp_msg_with_alloc, cpp_msg_base) = cpp_message_declarations(cpp_name_prefix, msg)
-    s.write('  typedef boost::shared_ptr<%s> Ptr;\n'%(cpp_msg_with_alloc))
-    s.write('  typedef boost::shared_ptr<%s const> ConstPtr;\n'%(cpp_msg_with_alloc))
-    s.write('}; // struct %s\n'%(msg))
-    
-    s.write('typedef %s_<std::allocator<void> > %s;\n\n'%(cpp_msg_base, msg))
-    s.write('typedef boost::shared_ptr<%s> %sPtr;\n'%(cpp_msg_base, msg))
-    s.write('typedef boost::shared_ptr<%s const> %sConstPtr;\n\n'%(cpp_msg_base, msg))
-
-def default_value(type):
-    """
-    Returns the value to initialize a message member with.  0 for integer types, 0.0 for floating point, false for bool,
-    empty string for everything else
-    
-    @param type: The type
-    @type type: str
-    """
-    if type in ['byte', 'int8', 'int16', 'int32', 'int64',
-                'char', 'uint8', 'uint16', 'uint32', 'uint64']:
-        return '0'
-    elif type in ['float32', 'float64']:
-        return '0.0'
-    elif type == 'bool':
-        return 'false'
-        
-    return ""
-
-def takes_allocator(type):
-    """
-    Returns whether or not a type can take an allocator in its constructor.  False for all builtin types except string.
-    True for all others.
-    
-    @param type: The type
-    @type: str
-    """
-    return not type in ['byte', 'int8', 'int16', 'int32', 'int64',
-                        'char', 'uint8', 'uint16', 'uint32', 'uint64',
-                        'float32', 'float64', 'bool', 'time', 'duration']
-
-def write_initializer_list(s, spec, container_gets_allocator):
-    """
-    Writes the initializer list for a constructor
-    
-    @param s: The stream to write to
-    @type s: stream
-    @param spec: The message spec
-    @type spec: roslib.msgs.MsgSpec
-    @param container_gets_allocator: Whether or not a container type (whether it's another message, a vector, array or string)
-        should have the allocator passed to its constructor.  Assumes the allocator is named _alloc.
-    @type container_gets_allocator: bool
-    """
-    
-    i = 0
-    for field in spec.parsed_fields():
-        if (i == 0):
-            s.write('  : ')
-        else:
-            s.write('  , ')
-            
-        val = default_value(field.base_type)
-        use_alloc = takes_allocator(field.base_type)
-        if (field.is_array):
-            if (field.array_len is None and container_gets_allocator):
-                s.write('%s(_alloc)\n'%(field.name))
-            else:
-                s.write('%s()\n'%(field.name))
-        else:
-            if (container_gets_allocator and use_alloc):
-                s.write('%s(_alloc)\n'%(field.name))
-            else:
-                s.write('%s(%s)\n'%(field.name, val))
-        i = i + 1
-        
-def write_fixed_length_assigns(s, spec, container_gets_allocator, cpp_name_prefix):
-    """
-    Initialize any fixed-length arrays
-    
-    @param s: The stream to write to
-    @type s: stream
-    @param spec: The message spec
-    @type spec: roslib.msgs.MsgSpec
-    @param container_gets_allocator: Whether or not a container type (whether it's another message, a vector, array or string)
-        should have the allocator passed to its constructor.  Assumes the allocator is named _alloc.
-    @type container_gets_allocator: bool
-    @param cpp_name_prefix: The C++ prefix to use when referring to the message, e.g. "std_msgs::"
-    @type cpp_name_prefix: str
-    """
-    # Assign all fixed-length arrays their default values
-    for field in spec.parsed_fields():
-        if (not field.is_array or field.array_len is None):
-            continue
-        
-        val = default_value(field.base_type)
-        if (container_gets_allocator and takes_allocator(field.base_type)):
-            (cpp_msg_unqualified, cpp_msg_with_alloc, _) = cpp_message_declarations(cpp_name_prefix, field.base_type)
-            s.write('    %s.assign(%s(_alloc));\n'%(field.name, cpp_msg_with_alloc))
-        elif (len(val) > 0):
-            s.write('    %s.assign(%s);\n'%(field.name, val))
-
-def write_constructors(s, spec, cpp_name_prefix):
-    """
-    Writes any necessary constructors for the message
-    
-    @param s: The stream to write to
-    @type s: stream
-    @param spec: The message spec
-    @type spec: roslib.msgs.MsgSpec
-    @param cpp_name_prefix: The C++ prefix to use when referring to the message, e.g. "std_msgs::"
-    @type cpp_name_prefix: str
-    """
-    
-    msg = spec.short_name
-    
-    # Default constructor
-    s.write('  %s_()\n'%(msg))
-    write_initializer_list(s, spec, False)
-    s.write('  {\n')
-    write_fixed_length_assigns(s, spec, False, cpp_name_prefix)
-    s.write('  }\n\n')
-    
-    # Constructor that takes an allocator constructor
-    s.write('  %s_(const ContainerAllocator& _alloc)\n'%(msg))
-    write_initializer_list(s, spec, True)
-    s.write('  {\n')
-    write_fixed_length_assigns(s, spec, True, cpp_name_prefix)
-    s.write('  }\n\n')
-
-def write_members(s, spec):
-    """
-    Write all the member declarations
-    
-    @param s: The stream to write to
-    @type s: stream
-    @param spec: The message spec
-    @type spec: roslib.msgs.MsgSpec
-    """
-    [write_member(s, field) for field in spec.parsed_fields()]
-        
-def write_constant_declaration(s, constant):
-    """
-    Write a constant value as a static member
-    
-    @param s: The stream to write to
-    @type s: stream
-    @param constant: The constant
-    @type constant: roslib.msgs.Constant
-    """
-    
-    # integral types get their declarations as enums to allow use at compile time
-    if (constant.type in ['byte', 'int8', 'int16', 'int32', 'int64', 'char', 'uint8', 'uint16', 'uint32', 'uint64']):
-        s.write('  enum { %s = %s };\n'%(constant.name, constant.val))
-    else:
-        s.write('  static const %s %s;\n'%(msg_type_to_cpp(constant.type), constant.name))
-        
-def write_constant_declarations(s, spec):
-    """
-    Write all the constants from a spec as static members
-    
-    @param s: The stream to write to
-    @type s: stream
-    @param spec: The message spec
-    @type spec: roslib.msgs.MsgSpec
-    """
-    [write_constant_declaration(s, constant) for constant in spec.constants]
-    s.write('\n')
-    
-def write_constant_definition(s, spec, constant):
-    """
-    Write a constant value as a static member
-    
-    @param s: The stream to write to
-    @type s: stream
-    @param constant: The constant
-    @type constant: roslib.msgs.Constant
-    """
-    
-    # integral types do not need a definition, since they've been defined where they are declared
-    if (constant.type not in ['byte', 'int8', 'int16', 'int32', 'int64', 'char', 'uint8', 'uint16', 'uint32', 'uint64', 'string']):
-        s.write('template<typename ContainerAllocator> const %s %s_<ContainerAllocator>::%s = %s;\n'%(msg_type_to_cpp(constant.type), spec.short_name, constant.name, constant.val))
-    elif (constant.type == 'string'):
-        s.write('template<typename ContainerAllocator> const %s %s_<ContainerAllocator>::%s = "%s";\n'%(msg_type_to_cpp(constant.type), spec.short_name, constant.name, escape_string(constant.val)))
-        
-def write_constant_definitions(s, spec):
-    """
-    Write all the constants from a spec as static members
-    
-    @param s: The stream to write to
-    @type s: stream
-    @param spec: The message spec
-    @type spec: roslib.msgs.MsgSpec
-    """
-    [write_constant_definition(s, spec, constant) for constant in spec.constants]
-    s.write('\n')
-        
-def is_fixed_length(spec):
-    """
-    Returns whether or not the message is fixed-length
-    
-    @param spec: The message spec
-    @type spec: roslib.msgs.MsgSpec
-    @param package: The package of the
-    @type package: str
-    """
-    types = []
-    for field in spec.parsed_fields():
-        if (field.is_array and field.array_len is None):
-            return False
-        
-        if (field.base_type == 'string'):
-            return False
-        
-        if (not field.is_builtin):
-            types.append(field.base_type)
-            
-    types = set(types)
-    for type in types:
-        type = roslib.msgs.resolve_type(type, spec.package)
-        (_, new_spec) = roslib.msgs.load_by_type(type, spec.package)
-        if (not is_fixed_length(new_spec)):
-            return False
-        
-    return True
-
-def is_hex_string(str):
-    for c in str:
-        if c not in '0123456789abcdefABCDEF':
-            return False
-        
-    return True
-def write_operations(s, spec, cpp_name_prefix):
-    (cpp_msg_unqualified, cpp_msg_with_alloc, _) = cpp_message_declarations(cpp_name_prefix, spec.short_name)
-    s.write('namespace ros\n{\n')
-    s.write('namespace message_operations\n{\n')
-    
-    # Write the Printer operation
-    s.write('\ntemplate<class ContainerAllocator>\nstruct Printer<%s>\n{\n'%(cpp_msg_with_alloc))
-    s.write('  template<typename Stream> static void stream(Stream& s, const std::string& indent, const %s& v) \n  {\n'%cpp_msg_with_alloc)
-    for field in spec.parsed_fields():
-        cpp_type = msg_type_to_cpp(field.base_type)
-        if (field.is_array):
-            s.write('    s << indent << "%s[]" << std::endl;\n'%(field.name))
-            s.write('    for (size_t i = 0; i < v.%s.size(); ++i)\n    {\n'%(field.name))
-            s.write('      s << indent << "  %s[" << i << "]: ";\n'%field.name)
-            indent_increment = '  '
-            if (not field.is_builtin):
-                s.write('      s << std::endl;\n')
-                s.write('      s << indent;\n')
-                indent_increment = '    ';
-            s.write('      Printer<%s>::stream(s, indent + "%s", v.%s[i]);\n'%(cpp_type, indent_increment, field.name))
-            s.write('    }\n')
-        else:
-            s.write('    s << indent << "%s: ";\n'%field.name)
-            indent_increment = '  '
-            if (not field.is_builtin or field.is_array):
-                s.write('s << std::endl;\n')
-            s.write('    Printer<%s>::stream(s, indent + "%s", v.%s);\n'%(cpp_type, indent_increment, field.name))
-    s.write('  }\n')
-    s.write('};\n\n')
-        
-    s.write('\n')
-        
-    s.write('} // namespace message_operations\n')
-    s.write('} // namespace ros\n\n')
-    
-    
-def write_ostream_operator(s, spec, cpp_name_prefix):
-    (cpp_msg_unqualified, cpp_msg_with_alloc, _) = cpp_message_declarations(cpp_name_prefix, spec.short_name)
-    s.write('template<typename ContainerAllocator>\nstd::ostream& operator<<(std::ostream& s, const %s& v)\n{\n'%(cpp_msg_with_alloc))
-    s.write('  ros::message_operations::Printer<%s>::stream(s, "", v);\n  return s;}\n\n'%(cpp_msg_with_alloc))
-
 def write_serialize_length(s, v, is_array=False):
     #t2
     var = '__ros_arr_len' if is_array else '__ros_str_len'
@@ -697,7 +346,6 @@ def write_deserialize_bits(s, v, num_bytes):
     
     
 def write_deserialize_builtin(s, f, v):
-    # t0 possibly write setf once
     if f.base_type == 'string':
         write_deserialize_length(s)
         with Indent(s):
@@ -773,6 +421,28 @@ def write_deserialize(s, spec):
             write_deserialize_field(s, f, spec.package)
         s.write('msg')
     s.write(')')
+
+def write_asd_deps(s, spec):
+    """
+    Write the depended-upon packages
+    """
+    pkgs = set()
+    for f in spec.parsed_fields():
+        if not f.is_builtin:
+            (pkg, _) = parse_msg_type(f)
+            pkgs.add('%s-msg'%pkg)
+    for p in pkgs:
+        s.write('%s\n'%p)
+
+def write_package_exports(s, spec):
+    "Write the package exports for this message"
+    s.write('(in-package %s-msg)'%spec.package, indent=False)
+    s.write('(export \'(')
+    with Indent(s, inc=10, indent_first=False):
+        for f in spec.parsed_fields():
+            accessor = '%s-val'%f.name
+            s.write('%s'%accessor.upper())
+    s.write('))')
 
 def write_ros_datatype(s, spec):
     c = message_class(spec)
@@ -869,6 +539,10 @@ def generate(msg_path):
     """
     (package_dir, package) = roslib.packages.get_dir_pkg(msg_path)
     (_, spec) = roslib.msgs.load_from_file(msg_path, package)
+
+    ########################################
+    # 1. Write the .lisp file
+    ########################################
     
     io = StringIO()
     s =  IndentedWriter(io)
@@ -890,11 +564,32 @@ def generate(msg_path):
             os.makedirs(output_dir)
         except OSError, e:
             pass
-         
-    f = open('%s/%s.lisp'%(output_dir, spec.short_name), 'w')
-    print >> f, io.getvalue()
-    
+
+    with open('%s/%s.lisp'%(output_dir, spec.short_name), 'w') as f:
+        print >> f, io.getvalue()
     io.close()
+
+    ########################################
+    # 2. Write the asd-deps file
+    ########################################
+
+    s = StringIO()
+    write_asd_deps(s, spec)
+    with open('%s/.%s.asd-dep'%(output_dir, spec.short_name), 'w') as f:
+        f.write(s.getvalue())
+    s.close()
+
+    ########################################
+    # 3. Write the _package file
+    ########################################
+
+    io = StringIO()
+    s = IndentedWriter(io)
+    write_package_exports(s, spec)
+    with open('%s/_package_%s.lisp'%(output_dir, spec.short_name), 'w') as f:
+        f.write(io.getvalue())
+    io.close()
+         
 
 if __name__ == "__main__":
     roslib.msgs.set_verbose(False)

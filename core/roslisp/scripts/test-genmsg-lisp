@@ -17,24 +17,20 @@ then
     echo "  $NAME"
     diff -w $PKG/msg/lisp/$1/$NAME $PKG/msg_gen/lisp/$NAME | head -n 50
     
-    NAME=".$2.asd-dep"
-    echo "  $NAME"
-    F1=`mktemp`
-    F2=`mktemp`
-    sort $PKG/msg/lisp/$1/.$2.asd-dep > $F1
-    sort $PKG/msg_gen/lisp/.$2.asd-dep > $F2
-    diff -w $F1 $F2  | head -n 50
-    
 elif (( $# == 1 ))
 then
     for p in `rosmsg package $1`
     do args=`echo $p | tr "/" " "`
-       echo $p
+       echo "$p"
        $0 $args
+       echo "--------------------------------------"
     done
     PKG=`rospack find $1`
-    # diff -w $PKG/msg/lisp/$1/_package.lisp $PKG/msg_gen/lisp/_package.lisp | head -n 50
-    # diff -w $PKG/msg/lisp/$1/$1-msg.asd $PKG/msg_gen/lisp/$1-msg.asd | head -n 50
+    echo "_package.lisp"
+    diff -w $PKG/msg/lisp/$1/_package.lisp $PKG/msg_gen/lisp/_package.lisp | head -n 50
+    NAME="$1-msg.asd"
+    echo "$NAME"
+    diff -w $PKG/msg/lisp/$1/$NAME $PKG/msg_gen/lisp/$NAME | head -n 50
 
 else
     echo "Usage: test-genmsg-lisp PKG MSG or test-genmsg-lisp PKG"

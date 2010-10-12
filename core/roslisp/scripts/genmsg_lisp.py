@@ -434,7 +434,55 @@ def write_asd_deps(s, spec):
     for p in pkgs:
         s.write('%s\n'%p)
 
-def write_package_exports(s, spec):
+def write_class_exports(s, pkg):
+    "Write the _package.lisp file"
+    s.write('(defpackage %s-msg'%pkg, False)
+    with Indent(s):
+        s.write('(:use ')
+        with Indent(s, inc=6, indent_first=False):
+            s.write('cl')
+            s.write('roslisp-msg-protocol)')
+        s.write('(:export')
+        with Indent(s, inc=1):
+            for spec in roslib.msgs.get_pkg_msg_specs(pkg)[0]:
+                (p, msg_type) = spec[0].split('/')
+                msg_class = '<%s>'%msg_type
+                s.write('"%s"'%msg_class.upper())
+        s.write('))\n\n')
+
+def write_asd(s, pkg):
+    s.write('(in-package :asdf)')
+    s.newline()
+    s.write('(defsystem "%s-msg"'%pkg)
+    msgs = roslib.msgs.get_pkg_msg_specs(pkg)[0]
+
+    # Figure out set of depended-upon ros packages
+    deps = set()
+    for (_, spec) in msgs:
+        for f in spec.parsed_fields():
+            if not f.is_builtin:
+                (p, _) = parse_msg_type(f)
+                deps.add(p)
+    deps.remove(pkg)
+    
+    with Indent(s):
+        s.write(':depends-on (:roslisp-msg-protocol :roslisp-utils ')
+        with Indent(s, inc=13, indent_first=False):
+            for d in sorted(deps):
+                s.write(':%s-msg'%d)
+    s.write(')') #t2 indentation
+    with Indent(s):
+        s.write(':components ((:file "_package")')
+        with Indent(s):
+            for (full_name, _) in msgs:
+                (_, name) = full_name.split('/')
+                s.write('(:file "%s" :depends-on ("_package"))'%name)
+                s.write('(:file "_package_%s" :depends-on ("_package"))'%name)
+        s.write('))')
+                
+    
+
+def write_accessor_exports(s, spec):
     "Write the package exports for this message"
     s.write('(in-package %s-msg)'%spec.package, indent=False)
     s.write('(export \'(')
@@ -530,6 +578,20 @@ def write_list_converter(s, spec):
                 s.write('(cons \':%s (%s-val msg))'%(f.name, f.name))
     s.write('))')
 
+def write_constants(s, spec):
+    if spec.constants:
+        cls = message_class(spec)
+        s.write('(defmethod symbol-codes ((msg-type (eql \'%s)))'%cls)
+        with Indent(s):
+            s.write('  "Constants for message type \'%s"'%cls)
+            s.write('\'(')
+            with Indent(s, indent_first=False):
+                for c in spec.constants:
+                    s.write('(:%s . %s)'%(c.name.upper(), c.val))
+        s.write(')', False)
+        s.write(')')
+                    
+
 def generate(msg_path):
     """
     Generate a message
@@ -548,6 +610,7 @@ def generate(msg_path):
     s =  IndentedWriter(io)
     write_begin(s, spec, msg_path)
     write_defclass(s, spec, package)
+    write_constants(s, spec)
     write_serialize(s, spec)
     write_deserialize(s, spec)
     write_ros_datatype(s, spec)
@@ -571,6 +634,7 @@ def generate(msg_path):
 
     ########################################
     # 2. Write the asd-deps file
+    # Todo not necessary
     ########################################
 
     s = StringIO()
@@ -581,14 +645,42 @@ def generate(msg_path):
 
     ########################################
     # 3. Write the _package file
+    # for this message
     ########################################
 
     io = StringIO()
     s = IndentedWriter(io)
-    write_package_exports(s, spec)
+    write_accessor_exports(s, spec)
     with open('%s/_package_%s.lisp'%(output_dir, spec.short_name), 'w') as f:
         f.write(io.getvalue())
     io.close()
+
+    ########################################
+    # 4. Write the _package.lisp file
+    # This is being rewritten once per msg
+    # file, which is inefficient
+    ########################################
+
+    io = StringIO()
+    s = IndentedWriter(io)
+    write_class_exports(s, package)
+    with open('%s/_package.lisp'%output_dir, 'w') as f:
+        f.write(io.getvalue())
+    io.close()
+
+    ########################################
+    # 5. Write the .asd file
+    # This is being written once per msg
+    # file, which is inefficient
+    ########################################
+
+    io = StringIO()
+    s = IndentedWriter(io)
+    write_asd(s, package)
+    with open('%s/%s-msg.asd'%(output_dir, package), 'w') as f:
+        f.write(io.getvalue())
+    io.close()
+    
          
 
 if __name__ == "__main__":

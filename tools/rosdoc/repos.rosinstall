@@ -46,25 +46,25 @@
     uri: https://phidget.foote-ros-pkg.googlecode.com/hg/
 - svn: 
     local-name: brown 
-    uri: http://brown-ros-pkg.googlecode.com/svn/tags/brown-ros-pkg/ 
+    uri: http://brown-ros-pkg.googlecode.com/svn/tags/brown-ros-pkg
 - svn: 
     local-name: wpi
-    uri: http://ros-engagement.svn.sourceforge.net/svnroot/ros-engagement
+    uri: http://ros-engagement.svn.sourceforge.net/svnroot/ros-engagement/trunk
 - svn: 
     local-name: prairiedog 
-    uri: http://prairiedog.googlecode.com/svn/trunk/
+    uri: http://prairiedog.googlecode.com/svn/trunk
 - svn: 
     local-name: alufr 
-    uri: http://alufr-ros-pkg.googlecode.com/svn/trunk/
+    uri: http://alufr-ros-pkg.googlecode.com/svn/trunk
 - svn: 
     local-name: ajh
     uri: https://ajh-ros-pkg.svn.sourceforge.net/svnroot/ajh-ros-pkg/trunk
 - svn: 
     local-name: utexas-art
-    uri: http://utexas-art-ros-pkg.googlecode.com/svn/trunk/
+    uri: http://utexas-art-ros-pkg.googlecode.com/svn/trunk
 - svn: 
     local-name: ua
-    uri: http://ua-ros-pkg.googlecode.com/svn/trunk/
+    uri: http://ua-ros-pkg.googlecode.com/svn/trunk
 - git: 
     local-name: cob3
     uri: git://github.com/ipa320/care-o-bot
@@ -73,17 +73,17 @@
     uri: git://ram.umd.edu/umd-ros-pkg.git
 - svn: 
     local-name: cu
-    uri: http://cu-ros-pkg.googlecode.com/svn/trunk/
+    uri: http://cu-ros-pkg.googlecode.com/svn/trunk
 - git: 
     local-name: iheart 
     uri: git://github.com/IHeartRobotics/iheart-ros-pkg.git
 - svn: 
     local-name: kul
-    uri: http://svn.mech.kuleuven.be/repos/orocos/trunk/kul-ros-pkg/
-#cornell svn http://cornell-ros-pkg.googlecode.com/svn/trunk/
+    uri: http://svn.mech.kuleuven.be/repos/orocos/trunk/kul-ros-pkg
+#cornell svn http://cornell-ros-pkg.googlecode.com/svn/trunk
 - svn: 
     local-name: rice
-    uri: http://rice-ros-pkg.svn.sourceforge.net/svnroot/rice-ros-pkg/
+    uri: http://rice-ros-pkg.svn.sourceforge.net/svnroot/rice-ros-pkg
 #- svn: 
 #    local-name: jsk
 #    uri: https://jsk-ros-pkg.svn.sourceforge.net/svnroot/jsk-ros-pkg/trunk
@@ -99,7 +99,7 @@
     uri: https://svn-agbkb.informatik.uni-bremen.de/dfki-sks-ros-pkg/trunk
 - svn: 
     local-name: isr-uc 
-    uri: http://isr-uc-ros-pkg.googlecode.com/svn/trunk/
+    uri: http://isr-uc-ros-pkg.googlecode.com/svn/trunk
 - git: 
     local-name: au-automov 
     uri: http://github.com/wjwwood/au-automow.git
@@ -114,10 +114,10 @@
     uri: http://github.com/konradb3/RCPRG-ros-pkg.git
 - svn:
     local-name: otl
-    uri: http://otl-ros-pkg.googlecode.com/svn/trunk/
+    uri: http://otl-ros-pkg.googlecode.com/svn/trunk
 - svn:
     local-name: aptima
-    uri: http://aptima-ros-pkg.googlecode.com/svn/trunk/
+    uri: http://aptima-ros-pkg.googlecode.com/svn/trunk
 - svn:
     local-name: eros
-    uri: https://code.ros.org/svn/eros/trunk/
+    uri: https://code.ros.org/svn/eros/trunk

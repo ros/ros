@@ -12,7 +12,6 @@
     <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lroslib"/>
     <rosdoc config="${prefix}/rosdoc.yaml" />
   </export>
-  <depend package="genmsg_cpp"/>
   <depend package="rospack"/>
 
   <!-- for roslib.params -->

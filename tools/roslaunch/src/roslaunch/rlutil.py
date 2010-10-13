@@ -229,6 +229,10 @@ def check_roslaunch(f):
         except Exception, e:
             errors.append("unable to find node [%s/%s]: %s"%(pkg, node_type, str(e)))
                 
+    # Check for configuration errors, #2889
+    for err in config.config_errors:
+        errors.append('ROSLaunch config error: %s' % err)
+
     if errors:
         return '\n'.join(errors)
                           

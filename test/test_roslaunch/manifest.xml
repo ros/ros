@@ -8,7 +8,7 @@
   <author>Ken Conley/kwc@willowgarage.com</author>
   <license>BSD</license>
   <review status="na" notes="tests"/>
-  <url>http://pr.willowgarage.com/wiki/roslaunch</url>
+  <url>http://ros.org/wiki/roslaunch</url>
   <depend package="roslib"/>
   <depend package="rospy"/>
   <depend package="rostest"/>

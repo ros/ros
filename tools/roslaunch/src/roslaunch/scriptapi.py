@@ -97,7 +97,7 @@ class ROSLaunch(object):
 
         proc, success = self.parent.runner.launch_node(node)
         if not success:
-            raise RLException("failed to launch")
+            raise RLException("failed to launch %s/%s"%(node.package, node.type))
         return proc
 
     def start(self):

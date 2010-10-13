@@ -36,6 +36,7 @@
 
 import os
 import logging
+import traceback
 
 import roslib.xmlrpc
 
@@ -85,7 +86,6 @@ class ROSNode(roslib.xmlrpc.XmlRpcNode):
             super(ROSNode, self).run()
         except:
             try:
-                import traceback
-                logerr("ERROR: Unable to start XML-RPC server: \n"+traceback.format_exc())
+                logerr("ERROR: error running XML-RPC server: \n"+traceback.format_exc())
             except: pass
-            rospy.core.signal_shutdown('unable to start XML-RPC server')
+            rospy.core.signal_shutdown('error in XML-RPC server')

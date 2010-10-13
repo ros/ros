@@ -303,6 +303,7 @@ class RospackTestCase(unittest.TestCase):
         self.rospack_succeed(None, "profile")
         self.rospack_succeed(None, "list")
         self.rospack_succeed(None, "list-names")
+        self.rospack_succeed(None, "list-duplicates")
         self.rospack_succeed(None, "langs")
 
     def test_no_package_allowed_bad(self):
@@ -310,6 +311,7 @@ class RospackTestCase(unittest.TestCase):
         self.rospack_fail("deps", "profile")
         self.rospack_fail("deps", "list")
         self.rospack_fail("deps", "list-names")
+        self.rospack_fail("deps", "list-duplicates")
         self.rospack_fail("deps", "langs")
 
     def test_invalid_option_order(self):
@@ -440,6 +442,14 @@ class RospackTestCase(unittest.TestCase):
             (["test3"], testp, "%s:%s"%(test3p, test2p), "precedence2"),
             ]
         self.echeck_ordered_list('libs-only-l', tests)
+
+    ## tests list-duplicates
+    def test_list_duplicates(self):
+        testp = os.path.abspath('test')
+        test2p = os.path.abspath('test2')
+        test3p = os.path.abspath('test3')                
+        self.erospack_succeed(testp, None, None, 'list-duplicates')
+        self.erospack_fail(testp, '%s:%s'%(test2p,test3p), None, 'list-duplicates')
 
     # test ability to point ros_package_path directly at package
     def test_ros_package_path_direct_package(self):
@@ -854,6 +864,14 @@ class RospackTestCase(unittest.TestCase):
         retcode, retval = self._rospack_langs(rr, None, None)
         self.assertEquals(0, retcode)
         self.failIf(retval, "rospack langs on empty directory returned value %s"%retval)
+
+    # Test auto-inclusion of msg_gen include directories, #3018
+    def test_msg_gen(self):
+        test_path = os.path.abspath('test')
+        pkgs = ['msg_gen_no_export', 'msg_gen_no_cpp', 'msg_gen_no_cflags']
+        for p in pkgs:
+          self.rospack_succeed(p, "cflags-only-I")
+          self.assertEquals(os.path.join(test_path, p, "msg_gen/cpp/include"), self.strip_opt_ros(self.run_rospack(p, "cflags-only-I")))
 
 
 if __name__ == "__main__":

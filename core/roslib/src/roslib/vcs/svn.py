@@ -69,7 +69,7 @@ class SVNClient(vcs_base.VCSClientBase):
             return False
             
         cmd = "svn co %s %s %s"%(version, url, self._path)
-        if subprocess.check_call(cmd, shell=True) == 0:
+        if subprocess.call(cmd, shell=True) == 0:
             return True
         return False
 
@@ -77,7 +77,7 @@ class SVNClient(vcs_base.VCSClientBase):
         if not self.detect_presence():
             return False
         cmd = "svn up %s %s"%(version, self._path)
-        if subprocess.check_call(cmd, shell=True) == 0:
+        if subprocess.call(cmd, shell=True) == 0:
             return True
         return False
         

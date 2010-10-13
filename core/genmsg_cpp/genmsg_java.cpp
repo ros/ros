@@ -41,6 +41,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <stdint.h>
+#include <boost/algorithm/string.hpp>
 #include "msgspec.h"
 #include "utils.h"
 
@@ -805,11 +806,23 @@ public:
     // out to be a problem, I could spit out a .cpp file and compile a
     // library. But it's so much easier to keep the whole thing in a header.
     if (type == "string")
+    {
+      // We don't want to destructively change constant so we copy it.
+      string tmp_constant(constant);
+      
+      boost::trim(tmp_constant);
+      boost::replace_all(tmp_constant, "\\", "\\\\");
+      boost::replace_all(tmp_constant, "\"", "\\\"");
+      
       return string("  public static final ") + cpp_type_name() + string(" ") +
-        name + string(" = \"") + constant + "\";\n";
+        name + string(" = ") + "\"" + tmp_constant + "\"" + ";\n";
+    }
     else
+    {
+      string cast = "(" + cpp_type_name() + ")";
       return string("  public static final ") + cpp_type_name() + string(" ") +
-	name + string(" = ") + constant + ";\n";
+	name + string(" = ") + cast + " " + constant + ";\n";
+    }
   }
 /*
   virtual string cpp_impl_decl()

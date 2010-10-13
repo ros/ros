@@ -74,7 +74,7 @@ TOPIC : string naming the topic
 PUBLISHERS : list of publishers, each of which is a list (ADDRESS PORT)."
   (declare (ignore caller-id))
 
-  (ros-info (roslisp topic) "Publisher update ~a ~a" topic publishers)
+  (ros-debug (roslisp topic) "Publisher update ~a ~a" topic publishers)
   (with-mutex (*ros-lock*)
     (update-publishers topic publishers)))
 
@@ -185,7 +185,7 @@ Notes
 
 Right now, the transport must be TCPROS and the return value is the socket."
 
-  (ros-info (roslisp topic) "~&Subscribing to ~a at ~a" topic uri)
+  (ros-debug (roslisp topic) "~&Subscribing to ~a at ~a" topic uri)
   (unless (hash-table-has-key *subscriptions* topic) (roslisp-error "I'm not subscribed to ~a" topic))
 
   (dbind (protocol address port) (ros-rpc-call uri "requestTopic" topic (list (list "TCPROS")))

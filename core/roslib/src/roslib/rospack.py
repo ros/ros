@@ -110,7 +110,7 @@ def rosstackexec(args):
     @raise roslib.exceptions.ROSLibException: if rosstack command fails
     """
     rosstack_bin = os.path.join(roslib.rosenv.get_ros_root(), 'bin', 'rosstack')
-    val = (subprocess.Popen([rosstack_bin] + args, stdout=subprocess.PIPE).communicate()[0] or '').strip()
+    val = (subprocess.Popen([rosstack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()
     if val.startswith('rosstack:'): #rospack error message
         raise roslib.exceptions.ROSLibException(val)
     return val

@@ -262,7 +262,7 @@ void internalCallbackQueueThreadFunc()
 
   while (!g_shutting_down)
   {
-    queue->callAvailable(WallDuration(0.05));
+    queue->callAvailable(WallDuration(0.1));
   }
 }
 

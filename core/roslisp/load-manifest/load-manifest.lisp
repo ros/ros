@@ -157,6 +157,9 @@
                    (ros-home)))
 
 (defmethod asdf:perform :around ((op asdf:compile-op) component)
+  (unless (typep component 'asdf:cl-source-file)
+    (call-next-method)
+    (return-from asdf:perform))
   (let ((marker-file-path (compilation-marker-file-path component)))
     (unwind-protect
          (tagbody
@@ -174,12 +177,15 @@
                (open marker-file-path
                      :if-exists :error
                      :if-does-not-exist :create
-                     :direction :output))
-              (call-next-method)))
+                     :direction :output)))
+            (call-next-method))
       (when (probe-file marker-file-path)
         (delete-file marker-file-path)))))
 
 (defmethod asdf:perform :around ((op asdf:load-op) component)
+  (unless (typep component 'asdf:cl-source-file)
+    (call-next-method)
+    (return-from asdf:perform))
   (let ((marker-file-path (compilation-marker-file-path component)))
     (wait-for-file-deleted marker-file-path
                            (format nil
@@ -247,8 +253,8 @@
       (when (member package-suffix '("-msg" "-srv") :test #'equal)
         (let ((filename (merge-pathnames 
                          (make-pathname
-                          :directory `(:relative ,(subseq package-suffix 1)
-                                                 "lisp" ,package-name)
+                          :directory `(:relative ,(concatenate 'string (subseq package-suffix 1) "_gen")
+                                                 "lisp")
                           :name definition
                           :type "asd")
                          (parse-namestring (ros-package-path package-name)))))

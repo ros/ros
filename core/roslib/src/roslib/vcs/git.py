@@ -39,8 +39,13 @@ New in ROS C-Turtle.
 import subprocess
 import os
 import vcs_base
+import base64 
+import sys
+
+branch_name = "rosinstall_tagged_branch"
 
 class GITClient(vcs_base.VCSClientBase):
+
     def get_url(self):
         """
         @return: GIT URL of the directory path (output of git info command), or None if it cannot be determined
@@ -54,34 +59,59 @@ class GITClient(vcs_base.VCSClientBase):
         return self.path_exists() and os.path.isdir(os.path.join(self._path, '.git'))
 
 
-    def checkout(self, url, version=''):
+    def checkout(self, url, version='master'):
         if self.path_exists():
             print >>sys.stderr, "Error: cannnot checkout into existing directory"
             return False
             
         cmd = "git clone %s %s"%(url, self._path)
-        if not subprocess.check_call(cmd, shell=True) == 0:
+        if not subprocess.call(cmd, shell=True) == 0:
             return False
-        cmd = "git checkout %s -b rosinstall"%(version)
-        if not subprocess.check_call(cmd, cwd=self._path, shell=True) == 0:
+        if self.get_branch_parent() == version:
+            # short circuit in default case
+            return True
+        elif self.is_remote_branch(version):  # remote branch
+            cmd = "git checkout remotes/origin/%s -b %s"%(version, version)
+        else:  # tag or hash
+            cmd = "git checkout %s -b %s"%(version, branch_name)
+        if not self.is_hash(version):
+            cmd = cmd + " --track"
+        #print "Git Installing: %s"%cmd
+        if not subprocess.call(cmd, cwd=self._path, shell=True) == 0:
             return False
         return True
 
-    def update(self, version=''):
+    def update(self, version='master'):
         if not self.detect_presence():
             return False
-        cmd = "git checkout master"
-        if not subprocess.check_call(cmd, cwd=self._path, shell=True) == 0:
-            return False
-        cmd = "git fetch"
-        if not subprocess.check_call(cmd, cwd=self._path, shell=True) == 0:
-            return False
-        cmd = "git branch -D rosinstall"
-        if not subprocess.check_call(cmd, cwd=self._path, shell=True) == 0:
-            pass # OK to fail return False
-        cmd = "git checkout %s -b rosinstall"%(version)
-        if not subprocess.check_call(cmd, cwd=self._path, shell=True) == 0:
-            return False
+        
+        # shortcut if version is the same as requested
+        if self.is_hash(version) :
+            if self.get_version() == version:
+                return True
+
+            cmd = "git checkout -f -b rosinstall_temp" 
+            if not subprocess.call(cmd, cwd=self._path, shell=True) == 0:
+                return False
+            cmd = "git fetch"
+            if not subprocess.call(cmd, cwd=self._path, shell=True) == 0:
+                return False
+            cmd = "git branch -D %s"%branch_name
+            if not subprocess.call(cmd, cwd=self._path, shell=True) == 0:
+                pass # OK to fail return False
+            cmd = "git checkout %s -f -b %s"%(version, branch_name)
+            if not subprocess.call(cmd, cwd=self._path, shell=True) == 0:
+                return False
+            cmd = "git branch -D rosinstall_temp"
+            if not subprocess.call(cmd, cwd=self._path, shell=True) == 0:
+                return False
+        else:     # must be a branch name
+            if self.get_branch_parent() != version:
+                #cannot update if branch has changed
+                return False
+            cmd = "git pull"
+            if not subprocess.call(cmd, cwd=self._path, shell=True) == 0:
+                return False
         return True
         
     def get_vcs_type_name(self):
@@ -90,3 +120,58 @@ class GITClient(vcs_base.VCSClientBase):
     def get_version(self):
         output = subprocess.Popen(['git', 'log', "-1", "--format='%H'"], cwd= self._path, stdout=subprocess.PIPE).communicate()[0]
         return output.strip().strip("'")
+
+
+    def is_remote_branch(self, branch_name):
+        output = subprocess.Popen(['git', "branch", '-a'], cwd= self._path, stdout=subprocess.PIPE).communicate()[0]
+        for l in output.split('\n'):
+            elems = l.split()
+            if len(elems) == 1:
+                br_names = elems[0].split('/')
+                if len(br_names) == 3 and br_names[0] == 'remotes' and br_names[1] == 'origin' and br_names[2] == branch_name:
+                    return True
+        return False
+
+    def is_local_branch(self, branch_name):
+        output = subprocess.Popen(['git', "branch"], cwd= self._path, stdout=subprocess.PIPE).communicate()[0]
+        for l in output.split('\n'):
+            elems = l.split()
+            if len(elems) == 1:
+                if elems[0] == branch_name:
+                    return True
+            elif len(elems) == 2:
+                if elems[0] == '*' and elems[1] == branch_name:
+                    return True
+        return False
+
+    def get_branch(self):
+        output = subprocess.Popen(['git', "branch"], cwd= self._path, stdout=subprocess.PIPE).communicate()[0]
+        for l in output.split('\n'):
+            elems = l.split()
+            if len(elems) == 2 and elems[0] == '*':
+                return elems[1]
+        return None
+
+    def get_branch_parent(self):
+        output = subprocess.Popen(['git', "config", "--get", "branch.%s.merge"%self.get_branch()], cwd= self._path, stdout=subprocess.PIPE).communicate()[0].strip()
+        if not output:
+            print "No output of get branch.%s.merge"%self.get_branch()
+            return None
+        elems = output.split('/')
+        if len(elems) != 3 or elems[0] != 'refs' or elems[1] != 'heads':
+            print "elems improperly formatted", elems
+            return None
+        else:
+            return elems[2]
+
+    def is_hash(self, hashstr):
+        """
+        Determine if the hashstr is a valid sha1 hash
+        """
+        if len(hashstr) == 40:
+            try:
+                base64.b64decode(hashstr)
+                return True
+            except Exception, ex:
+                pass
+        return False

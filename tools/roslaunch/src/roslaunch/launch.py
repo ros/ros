@@ -204,6 +204,12 @@ class ROSLaunchRunner(object):
         if run_id is None:
             raise RLException("run_id is None")
         self.run_id = run_id
+
+        # In the future we should can separate the notion of a core
+        # config vs. the config being launched.  In that way, we can
+        # start to migrate to a model where a config is a parameter to
+        # a launch() method, rather than a central thing to the
+        # runner.
         self.config = config
         self.server_uri = server_uri
         self.is_child = is_child

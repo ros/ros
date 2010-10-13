@@ -1,3 +1,0 @@
-int32 CONSTANT=2
-int32 CONSTANT_TWO=42
-int32 value

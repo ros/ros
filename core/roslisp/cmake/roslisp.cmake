@@ -1,4 +1,4 @@
-rosbuild_find_ros_package(genmsg_cpp)
+rosbuild_find_ros_package(roslisp)
 
 # Message-generation support.
 macro(genmsg_lisp)
@@ -10,11 +10,11 @@ macro(genmsg_lisp)
   
     rosbuild_gendeps(${PROJECT_NAME} ${_msg})
   
-    set(genmsg_lisp_exe ${genmsg_cpp_PACKAGE_PATH}/genmsg_lisp)
+    set(genmsg_lisp_exe ${roslisp_PACKAGE_PATH}/scripts/genmsg_lisp.py)
   
-    set(_output_lisp ${PROJECT_SOURCE_DIR}/msg/lisp/${PROJECT_NAME}/${_msg})
-    set(_output_lisp_package ${PROJECT_SOURCE_DIR}/msg/lisp/${PROJECT_NAME}/_package.lisp)
-    set(_output_lisp_export ${PROJECT_SOURCE_DIR}/msg/lisp/${PROJECT_NAME}/_package_${_msg})
+    set(_output_lisp ${PROJECT_SOURCE_DIR}/msg_gen/lisp/${_msg})
+    set(_output_lisp_package ${PROJECT_SOURCE_DIR}/msg_gen/lisp/_package.lisp)
+    set(_output_lisp_export ${PROJECT_SOURCE_DIR}/msg_gen/lisp/_package_${_msg})
     string(REPLACE ".msg" ".lisp" _output_lisp ${_output_lisp})
     string(REPLACE ".msg" ".lisp" _output_lisp_export ${_output_lisp_export})
   
@@ -48,11 +48,11 @@ macro(gensrv_lisp)
   
     rosbuild_gendeps(${PROJECT_NAME} ${_srv})
   
-    set(gensrv_lisp_exe ${genmsg_cpp_PACKAGE_PATH}/gensrv_lisp)
+    set(gensrv_lisp_exe ${roslisp_PACKAGE_PATH}/scripts/genmsg_lisp.py)
 
-    set(_output_lisp ${PROJECT_SOURCE_DIR}/srv/lisp/${PROJECT_NAME}/${_srv})
-    set(_output_lisp_package ${PROJECT_SOURCE_DIR}/srv/lisp/${PROJECT_NAME}/_package.lisp)
-    set(_output_lisp_export ${PROJECT_SOURCE_DIR}/srv/lisp/${PROJECT_NAME}/_package_${_srv})
+    set(_output_lisp ${PROJECT_SOURCE_DIR}/srv_gen/lisp/${_srv})
+    set(_output_lisp_package ${PROJECT_SOURCE_DIR}/srv_gen/lisp/_package.lisp)
+    set(_output_lisp_export ${PROJECT_SOURCE_DIR}/srv_gen/lisp/_package_${_srv})
   
     string(REPLACE ".srv" ".lisp" _output_lisp ${_output_lisp})
     string(REPLACE ".srv" ".lisp" _output_lisp_export ${_output_lisp_export})

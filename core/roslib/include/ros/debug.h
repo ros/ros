@@ -29,13 +29,23 @@
 #define ROSLIB_DEBUG_H
 
 #include <string>
+#include <vector>
 
 namespace ros
 {
 
 namespace debug
 {
+typedef std::vector<void*> V_void;
+typedef std::vector<std::string> V_string;
+
 std::string getBacktrace();
+std::string backtraceToString(const V_void& addresses);
+void getBacktrace(V_void& addresses);
+void translateAddresses(const V_void& addresses, V_string& lines);
+void demangleBacktrace(const V_string& names, V_string& demangled);
+std::string demangleBacktrace(const V_string& names);
+std::string demangleName(const std::string& name);
 }
 
 }

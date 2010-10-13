@@ -33,7 +33,7 @@
 #
 
 import roslib
-roslib.load_manifest('test_rosrecord')
+roslib.load_manifest('test_rosbag')
 
 import unittest
 import rospy
@@ -155,4 +155,4 @@ class RandomPlay(unittest.TestCase):
     self.assertEqual(f1.returncode, 0)
 
 if __name__ == '__main__':
-  rostest.rosrun('test_rosrecord', 'random_record_play', RandomPlay, sys.argv)
+  rostest.rosrun('test_rosbag', 'random_record_play', RandomPlay, sys.argv)

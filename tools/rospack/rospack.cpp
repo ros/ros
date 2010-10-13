@@ -475,73 +475,79 @@ string Package::direct_flags(string lang, string attrib)
         }
       }
     }
-    if (!best_usage)
-      return string();
-    const char *cstr = best_usage->Attribute(attrib.c_str());
-    if (!cstr)
-      return string();
-    str = cstr;
-    while (1) // every decent C program has a while(1) in it
+    // If we found some exported text, then start parsing it.  Either way,
+    // we end up at the logic at the bottom that will conditionally
+    // append msg_gen / srv_gen includes.  This structure was changed to
+    // fix #3018.
+    if (best_usage)
     {
-      int i = str.find(string("${prefix}"));
-      if (i < 0)
-        break; // no more occurrences
-      str.replace(i, string("${prefix}").length(), path);
-    }
-
-    // Do backquote substitution.  E.g.,  if we find this string:
-    //   `pkg-config --cflags gdk-pixbuf-2.0`
-    // We replace it with the result of executing the command
-    // contained within the backquotes (reading from its stdout), which
-    // might be something like:
-    //   -I/usr/include/gtk-2.0 -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include
-
-    // Construct and execute the string
-    // We do the assignment first to ensure that if backquote expansion (or
-    // anything else) fails, we'll get a non-zero exit status from pclose().
-    string cmd = string("ret=\"") + str + string("\" && echo $ret");
-
-    // Remove embedded newlines
-    string token("\n");
-    for (string::size_type s = cmd.find(token); s != string::npos;
-         s = cmd.find(token, s))
-    {
-      cmd.replace(s,token.length(),string(" "));
-    }
-
-    FILE* p;
-    if(!(p = popen(cmd.c_str(), "r")))
-    {
-      fprintf(stderr, "[rospack] warning: failed to execute backquote "
-                      "expression \"%s\" in [%s]\n",
-              cmd.c_str(), manifest_path().c_str());
-      string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
-      throw runtime_error(errmsg);
-    }
-    else
-    {
-      char buf[8192];
-      memset(buf,0,sizeof(buf));
-      // Read the command's output
-      do
+      const char *cstr = best_usage->Attribute(attrib.c_str());
+      if (cstr)
       {
-        clearerr(p);
-        while(fgets(buf + strlen(buf),sizeof(buf)-strlen(buf)-1,p));
-      } while(ferror(p) && errno == EINTR);
-      // Close the subprocess, checking exit status
-      if(pclose(p) != 0)
-      {
-        fprintf(stderr, "[rospack] warning: got non-zero exit status from executing backquote expression \"%s\" in [%s]\n",
-                cmd.c_str(), manifest_path().c_str());
-        string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
-        throw runtime_error(errmsg);
-      }
-      else
-      {
-        // Strip trailing newline, which was added by our call to echo
-        buf[strlen(buf)-1] = '\0';
-        // Replace the backquote expression with the new text
-        str = string(buf);
+        str = cstr;
+        while (1) // every decent C program has a while(1) in it
+        {
+          int i = str.find(string("${prefix}"));
+          if (i < 0)
+            break; // no more occurrences
+          str.replace(i, string("${prefix}").length(), path);
+        }
+
+        // Do backquote substitution.  E.g.,  if we find this string:
+        //   `pkg-config --cflags gdk-pixbuf-2.0`
+        // We replace it with the result of executing the command
+        // contained within the backquotes (reading from its stdout), which
+        // might be something like:
+        //   -I/usr/include/gtk-2.0 -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include
+
+        // Construct and execute the string
+        // We do the assignment first to ensure that if backquote expansion (or
+        // anything else) fails, we'll get a non-zero exit status from pclose().
+        string cmd = string("ret=\"") + str + string("\" && echo $ret");
+
+        // Remove embedded newlines
+        string token("\n");
+        for (string::size_type s = cmd.find(token); s != string::npos;
+             s = cmd.find(token, s))
+        {
+          cmd.replace(s,token.length(),string(" "));
+        }
+
+        FILE* p;
+        if(!(p = popen(cmd.c_str(), "r")))
+        {
+          fprintf(stderr, "[rospack] warning: failed to execute backquote "
+                  "expression \"%s\" in [%s]\n",
+                  cmd.c_str(), manifest_path().c_str());
+          string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
+          throw runtime_error(errmsg);
+        }
+        else
+        {
+          char buf[8192];
+          memset(buf,0,sizeof(buf));
+          // Read the command's output
+          do
+          {
+            clearerr(p);
+            while(fgets(buf + strlen(buf),sizeof(buf)-strlen(buf)-1,p));
+          } while(ferror(p) && errno == EINTR);
+          // Close the subprocess, checking exit status
+          if(pclose(p) != 0)
+          {
+            fprintf(stderr, "[rospack] warning: got non-zero exit status from executing backquote expression \"%s\" in [%s]\n",
+                    cmd.c_str(), manifest_path().c_str());
+            string errmsg = string("error in backquote expansion for ") + g_rospack->opt_package;
+            throw runtime_error(errmsg);
+          }
+          else
+          {
+            // Strip trailing newline, which was added by our call to echo
+            buf[strlen(buf)-1] = '\0';
+            // Replace the backquote expression with the new text
+            str = string(buf);
+          }
+        }
       }
     }
   }
@@ -627,7 +633,8 @@ VecPkg Package::deleted_pkgs;
 
 
 ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false),
-        my_argc(0), my_argv(NULL), opt_profile_length(0), total_num_pkgs(0)
+        my_argc(0), my_argv(NULL), opt_profile_length(0), total_num_pkgs(0),
+        duplicate_packages_found(false)
 {
   g_rospack = this;
   Package::pkgs.reserve(500); // get some space to avoid early recopying...
@@ -669,6 +676,7 @@ const char* ROSPack::usage()
           "    find [package]\n"
           "    list\n"
           "    list-names\n"
+          "    list-duplicates\n"
           "    langs\n"
           "    depends [package] (alias: deps)\n"
           "    depends-manifests [package] (alias: deps-manifests)\n"
@@ -1150,6 +1158,8 @@ int ROSPack::run(int argc, char **argv)
   opt_profile_zombie_only = false;
   // warn on missing deps
   opt_warn_on_missing_deps = true;
+  // don't display duplicate pkgs
+  opt_display_duplicate_pkgs = false;
 
   output_acc = string("");
 
@@ -1253,6 +1263,7 @@ int ROSPack::run(int argc, char **argv)
     if(!strcmp(cmd, "help") ||
        !strcmp(cmd, "list") ||
        !strcmp(cmd, "list-names") ||
+       !strcmp(cmd, "list-duplicates") ||
        !strcmp(cmd, "langs") ||
        !strcmp(cmd, "profile"))
       throw runtime_error(errmsg);
@@ -1297,6 +1308,8 @@ int ROSPack::run(int argc, char **argv)
     return cmd_print_package_list(true);
   else if (!strcmp(cmd, "list-names"))
     return cmd_print_package_list(false);
+  else if (!strcmp(cmd, "list-duplicates"))
+    return cmd_list_duplicates();
   else if (!strcmp(cmd, "langs"))
     return cmd_print_langs_list();
   else if (!strcmp(cmd, "depends") || !strcmp(cmd, "deps"))
@@ -1366,7 +1379,20 @@ int ROSPack::cmd_print_package_list(bool print_path)
     }
   return 0;
 }
-  
+
+int ROSPack::cmd_list_duplicates()
+{
+  // Force crawl, noting duplicates
+  opt_display_duplicate_pkgs = true;
+  crawl_for_packages(true);
+  // If duplicates were found, return non-zero, because in this mode we
+  // consider that to be an error.
+  if(duplicate_packages_found)
+    return 1;
+  else
+    return 0;
+}  
+
 int ROSPack::cmd_print_langs_list()
 {
   // Don't warn about missing deps
@@ -1553,6 +1579,11 @@ Package* ROSPack::add_package(string path)
     {
       dup=true;
       return_p = *it;
+      // If we're supposed to display info on dups, do it now
+      if(opt_display_duplicate_pkgs)
+        output_acc += (*it)->path + " " + newp->path + "\n";
+      // Note that we've encountered a duplicate
+      duplicate_packages_found = true;
       break;
     }
   }

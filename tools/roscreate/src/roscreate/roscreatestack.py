@@ -162,7 +162,11 @@ def _compute_stack_depends_and_licenses(stack, packages):
     for pkg in pkg_depends:
         if pkg in packages:
             continue
-        st = roslib.stacks.stack_of(pkg)
+        try:
+            st = roslib.stacks.stack_of(pkg)
+        except roslib.packages.InvalidROSPkgException:
+            print_warning("WARNING: cannot locate package [%s], which is a dependency in the [%s] stack"%(pkg, stack))
+            continue
         if not st:
             print_warning("WARNING: stack depends on [%s], which is not in a stack"%pkg)
             continue 

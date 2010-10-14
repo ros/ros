@@ -192,7 +192,7 @@
                                  (handler-bind
                                      ((error #'(lambda (c)
                                                  (unless *break-on-socket-errors*
-                                                   (ros-info (roslisp tcp) 
+                                                   (ros-debug (roslisp tcp) 
                                                              "Received error ~a when reading connection to ~a:~a on topic ~a.  Connection terminated." 
                                                              c hostname port topic)
                                                    (return-from thread-block nil)))))
@@ -210,7 +210,7 @@
                                       (let ((msg (deserialize topic-class-name str)))
 
                                         (let ((num-dropped (enqueue msg buffer)))
-                                          (ros-info (roslisp tcp) (> num-dropped 0) "Dropped ~a messages on topic ~a" num-dropped topic)))))
+                                          (ros-debug (roslisp tcp) (> num-dropped 0) "Dropped ~a messages on topic ~a" num-dropped topic)))))
                               
                               ;; Always close the connection before leaving the thread
                               (socket-close connection))))
@@ -247,7 +247,7 @@
        ((or sb-bsd-sockets:socket-error stream-error) (c)
          (unless *stream-error-in-progress*
            (let ((*stream-error-in-progress* t))
-             (ros-info (roslisp tcp) "Received error ~a when writing to ~a.  Skipping from now on." c str)))
+             (ros-debug (roslisp tcp) "Received error ~a when writing to ~a.  Skipping from now on." c str)))
          (setf (gethash str *broken-socket-streams*) t)
          0)))
    0))
@@ -264,26 +264,26 @@
   "Handle service connection.  For now, we assume a single request, which is processed immediately in this thread."
   (bind-from-header ((md5 "md5sum") (service-name "service")) header
     (let* ((service (gethash service-name *services*))
-           (my-md5 (string-downcase (service-md5 service)))
            (is-probe (equal (cdr (assoc "probe" header :test #'equal)) "1")))
       (tcpros-header-assert service "Unknown service")
-      (tcpros-header-assert (or (equal md5 "*") (equal md5 my-md5)) "md5 sums don't match: ~a vs ~a" md5 my-md5)
-      (send-tcpros-header stream "md5sum" my-md5 "callerid" (caller-id)
-                          "type" (service-ros-type service)
-                          "request_type" (service-request-ros-type service) 
-                          "response_type" (service-response-ros-type service))
+      (let ((my-md5 (string-downcase (service-md5 service))))
+        (tcpros-header-assert (or (equal md5 "*") (equal md5 my-md5)) "md5 sums don't match: ~a vs ~a" md5 my-md5)
+        (send-tcpros-header stream "md5sum" my-md5 "callerid" (caller-id)
+                            "type" (service-ros-type service)
+                            "request_type" (service-request-ros-type service) 
+                            "response_type" (service-response-ros-type service)))
       (unwind-protect
-	   (unless is-probe
-	     (handle-single-service-request stream (service-request-class service) 
-					    (service-callback service)))
-	(sb-thread:make-thread
-	 #'(lambda ()
-	     (sleep 10.0)
-	     (ros-debug (roslisp service) "In service connection cleanup")
-	     (when (socket-open-p connection)
-	       (ros-debug (roslisp service) "Connection for call to ~a still open after 10 seconds; closing" 
-			  service-name)
-	       (socket-close connection))))))))
+           (unless is-probe
+             (handle-single-service-request stream (service-request-class service) 
+                                            (service-callback service)))
+        (sb-thread:make-thread
+         #'(lambda ()
+             (sleep 10.0)
+             (ros-debug (roslisp service) "In service connection cleanup")
+             (when (socket-open-p connection)
+               (ros-debug (roslisp service) "Connection for call to ~a still open after 10 seconds; closing" 
+                          service-name)
+               (socket-close connection))))))))
 
 
 

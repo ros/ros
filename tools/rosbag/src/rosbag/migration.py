@@ -514,19 +514,25 @@ class MessageMigrator(object):
         # Alternatively the preferred method is to load definitions
         # from the migration ruleset export flag.
         if plugins:
-            for pkg in roslib.rospack.rospack_depends_on_1('rosbagmigration'):
-                m_file = roslib.manifest.manifest_file(pkg, True)
-                m = roslib.manifest.parse_file(m_file)
-                p_rules = m.get_export('rosbagmigration', 'rule_file')
-                roslib.load_manifest(pkg)
-                pkg_dir = roslib.packages.get_pkg_dir(pkg)
-                for r in p_rules:
-                    try:
-                        scratch_locals = {'MessageUpdateRule':MessageUpdateRule}
-                        execfile(pkg_dir + "/" + r,scratch_locals)
-                        rule_dicts.append((scratch_locals, r))
-                    except ImportError:
-                        print >> sys.stderr, "Cannot load rule file [%s] in package [%s]"%(r, pkg)
+            for dep,export in [('rosbagmigration','rule_file'),('rosbag','migration_rule_file')]:
+                for pkg in roslib.rospack.rospack_depends_on_1(dep):
+                    m_file = roslib.manifest.manifest_file(pkg, True)
+                    m = roslib.manifest.parse_file(m_file)
+                    p_rules = m.get_export(dep,export)
+                    roslib.load_manifest(pkg)
+                    pkg_dir = roslib.packages.get_pkg_dir(pkg)
+                    for r in p_rules:
+                        if dep == 'rosbagmigration':
+                            print >> sys.stderr, """WARNING: The package: [%s] is using a deprecated rosbagmigration export.
+    The export in the manifest should be changed to:
+    <rosbag migration_rule_file="%s">
+"""%(pkg, r)
+                        try:
+                            scratch_locals = {'MessageUpdateRule':MessageUpdateRule}
+                            execfile(pkg_dir + "/" + r,scratch_locals)
+                            rule_dicts.append((scratch_locals, r))
+                        except ImportError:
+                            print >> sys.stderr, "Cannot load rule file [%s] in package [%s]"%(r, pkg)
 
 
         for (rule_dict, location_base) in rule_dicts:

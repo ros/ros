@@ -133,7 +133,7 @@ macro(rosbuild_init)
   set(ROSBUILD_init_called 1)
 
   # Infer package name from directory name.
-  get_filename_component(_project ${PROJECT_SOURCE_DIR} NAME)
+  get_filename_component(_project ${CMAKE_SOURCE_DIR} NAME)
   message("[rosbuild] Building package ${_project}")
 
   project(${_project})

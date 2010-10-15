@@ -33,6 +33,9 @@
 PKG = 'rosrecord'
 import roslib; roslib.load_manifest(PKG)
 
+import warnings
+warnings.warn('rosrecord is deprecated; use the rosbag package (http://www.ros.org/wiki/rosbag) instead', category=DeprecationWarning)
+
 import optparse
 import os
 import sys

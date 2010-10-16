@@ -57,10 +57,11 @@ class ROSTestLaunchParent(roslaunch.parent.ROSLaunchParent):
         run_id = roslaunch.core.generate_run_id()
         super(ROSTestLaunchParent, self).__init__(run_id, roslaunch_files, is_core=True, port=port)
         self.config = config
-
-    def _load_config(self):
-        # don't invoke super impl
         self.config.master.auto = self.config.master.AUTO_RESTART
+        
+    def _load_config(self):
+        # disable super, just in case, though this shouldn't get called
+        pass
 
     ## initializes self.config and xmlrpc infrastructure
     def setUp(self):

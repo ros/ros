@@ -17,8 +17,8 @@ grammar {
            ( param* & remap* & rosparam* )
          }
   param = element param {
-            attribute name { text },
-            attribute value { text }?,
+            attribute name { text } &
+            attribute value { text }? &
             attribute command { text }?
           }
   rosparam = element rosparam {

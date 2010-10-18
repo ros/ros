@@ -1224,7 +1224,7 @@ q kills the buffer and process."
 (make-variable-buffer-local 'ros-launch-filename)
 
 (defun ros-launch (package-name &optional other-window)
-  "Open up the directory corresponding to PACKAGE-NAME in dired mode.  If used interactively, tab completion will work."  
+  "Launch a ros launch file in a separate buffer.  See ros-launch-mode for details."
   (interactive (list (ros-completing-read-pkg-file "Enter ros path: ")))
   (multiple-value-bind (package dir-prefix dir-suffix) (parse-ros-file-prefix package-name)
     (let* ((package-dir (ros-package-dir package))
@@ -1287,10 +1287,19 @@ q kills the buffer and process."
 (define-minor-mode ros-launch-mode
   "Mode used for roslaunch
 
-k kills the process (sends SIGINT)"
+k kills the process (sends SIGINT)
+q kills the process and the associated buffer
+r relaunches once the previous roslaunch has been killed
+x terminates the currently active launch, then relaunches once it has cleanly shutdown
+
+All roslaunches of the launch file are appended to the same buffer (until you kill that buffer).
+The page delimiter in this buffer matches the start, so you can use forward/backward pagewise navigation.
+"
   :init-value nil
   :lighter " ros-launch"
   :keymap ros-launch-keymap
+  (make-local-variable 'page-delimiter)
+  (setq page-delimiter "SUMMARY")
   )
 
 

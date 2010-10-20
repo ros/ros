@@ -525,7 +525,7 @@ class MessageMigrator(object):
                         if dep == 'rosbagmigration':
                             print >> sys.stderr, """WARNING: The package: [%s] is using a deprecated rosbagmigration export.
     The export in the manifest should be changed to:
-    <rosbag migration_rule_file="%s">
+    <rosbag migration_rule_file="%s"/>
 """%(pkg, r)
                         try:
                             scratch_locals = {'MessageUpdateRule':MessageUpdateRule}

@@ -47,6 +47,9 @@ import urllib2
 import re
 import string
 
+import warnings
+warnings.warn("roslib.distro is deprecated. Please use rosdistro package instead", DeprecationWarning, stacklevel=2)
+
 class DistroException(Exception): pass
 
 def distro_version(version_val):

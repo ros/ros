@@ -424,3 +424,31 @@ paramiko:
   freebsd: py26-paramiko
 python-sphinx:
   ubuntu: python-sphinx
+bazaar:
+  ubuntu: bzr
+  debian: bzr
+  fedora: bazaar
+  macports: bazaar
+  gentoo: dev-vcs/bzr
+  freebsd: bazaar
+git: 
+  ubuntu: git-core
+  debian: git-core
+  fedora: git
+  macports: git-core
+  gentoo: dev-vcs/git
+  freebsd: git
+subversion:
+  ubuntu: subversion
+  debian: subversion
+  fedora: subversion
+  macports: subversion
+  gentoo: dev-vcs/subversion
+  freebsd: subversion
+mercurial:
+  ubuntu: mercurial
+  debian: mercurial
+  fedora: mercurial
+  macports: mercurial
+  gentoo: dev-vcs/mercurial
+  freebsd: mercurial

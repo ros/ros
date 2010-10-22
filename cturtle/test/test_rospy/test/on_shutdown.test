@@ -1,4 +1,0 @@
-<launch>
-  <node name="pos_node" pkg="test_rospy" type="publish_on_shutdown.py" />
-  <test test-name="on_shutdown" pkg="test_rospy" type="test_on_shutdown.py" />
-</launch>

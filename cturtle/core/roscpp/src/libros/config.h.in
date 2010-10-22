@@ -1,2 +1,0 @@
-#cmakedefine HAVE_TRUNC
-#cmakedefine HAVE_IFADDRS_H

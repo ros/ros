@@ -14,7 +14,7 @@ apr:
   macports: apr apr-util
   gentoo: dev-libs/apr dev-libs/apr-util
   cygwin: libapr1 libaprutil1
-  freebsd: apr-ipv6-gdbm-db42
+  freebsd: builtin # i.e. ignore, only needed to manually build log4cxx on other OSes
 python:
   ubuntu: python-dev
   debian: python-dev
@@ -135,7 +135,6 @@ boost:
   gentoo: dev-libs/boost
   cygwin: libboost-devel libboost1.40
   freebsd: boost-python-libs
-  # freebsd: boost-pyste is more complete
 zlib:
   ubuntu: zlib1g-dev
   debian: zlib1g-dev
@@ -288,7 +287,7 @@ autoconf:
   arch: autoconf
   macports: autoconf
   gentoo: sys-devel/autoconf
-  freebsd: autoconf213 autoconf262
+  freebsd: autoconf213 autoconf268
 automake:
   ubuntu: automake
   debian: automake
@@ -297,7 +296,7 @@ automake:
   arch: automake
   macports: automake
   gentoo: sys-devel/automake
-  freebsd: automake14 automake15 automake16 automake17 automake18 automake19 automake110
+  freebsd: automake14 automake111
 libtool:
   ubuntu: 
     '10.10': libtool libltdl-dev

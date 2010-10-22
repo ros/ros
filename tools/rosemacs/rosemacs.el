@@ -142,7 +142,7 @@
 
 (defvar ros-buffer-package nil "A buffer-local variable for caching the current buffer's ros package.")
 (make-variable-buffer-local 'ros-buffer-package)
-(with-current-buffer ros-topic-buffer (insert "Uninitialized (use the display-ros-topic-info command rather than just switching to this buffer)"))
+(with-current-buffer (get-buffer-create "*ros-topics*") (insert "Uninitialized (use the display-ros-topic-info command rather than just switching to this buffer)"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Preloading
@@ -374,11 +374,14 @@
                              (unless (= (length pkg-name) 0)
                                (concat (ros-package-dir pkg-name)
                                        (substring str (string-match "/" str 1)))))))
-      (flet ((ido-make-file-list-1 (dir)
+      (flet ((ido-make-file-list-1 (dir &optional merged)
                                    (let ((path (pkg-expr->path dir)))
                                      (if path
-                                         (funcall old-ido-make-file-list path)
-                                       (mapcar (lambda (pkg) (concat pkg "/")) ros-packages-list)))))
+                                         (funcall old-ido-make-file-list path merged)
+                                       (mapcar (lambda (pkg) (if merged 
+                                                                 (cons (concat pkg "/") "/")
+                                                               (concat pkg "/"))) 
+                                               ros-packages-list)))))
         (substring (ido-read-file-name prompt "/"
                                        (when (member default-pkg ros-packages-list)
                                          default-pkg))
@@ -530,7 +533,8 @@
                           (format "Enter message name (default %s): " (current-word t t))
                         "Enter message name: ")
                       (current-word t t))))
-  (shell-command (format "rosmsg show %s" message)))
+  (let ((max-mini-window-height 0))
+    (shell-command (format "rosmsg show %s" message))))
 
 (defun view-ros-service (service)
   "Open definition of a ros service in view mode.  If used interactively, tab completion will work."
@@ -539,7 +543,8 @@
                           (format "Enter service name (default %s): " (current-word t t))
                         "Enter service name: ")
                       (current-word t t))))
-  (shell-command (format "rossrv show %s" service)))
+  (let ((max-mini-window-height))
+    (shell-command (format "rossrv show %s" service))))
 
 (defun ros-rgrep-package (ros-pkg regexp files)
   "Run a recursive grep in `ros-pkg', with `regexp' as search
@@ -603,19 +608,7 @@ parameter."
           (rosemacs-list-diffs rosemacs/nodes sorted-nodes)
         (setq rosemacs/nodes sorted-nodes
               rosemacs/nodes-vec (vconcat rosemacs/nodes))
-        (save-excursion
-          (set-buffer (get-buffer-create "*ros-nodes*"))
-          (let ((old-stamp (ros-topic-get-stamp-string)))
-            (erase-buffer)
-            (princ (format "Master uri: %s\n" (getenv "ROS_MASTER_URI"))
-                   (current-buffer))
-            (princ (format "%s\n\n" old-stamp) (current-buffer)))
-          (dolist (n rosemacs/nodes)
-            (insert n)
-            (insert "\n"))
-          (let ((time-stamp-pattern "5/^Last updated: <%02H:%02M:%02S"))
-            (time-stamp))
-          )
+        (update-ros-node-buffer)
         (when added
           (lwarn '(rosemacs) :debug "New nodes: %s" added)
           (rosemacs/add-event (format "New nodes: %s" added)))
@@ -636,11 +629,11 @@ parameter."
                  (end-pt (match-end 0)))
             (when found-finish
               (rosemacs/parse-node-list start-pt (match-beginning 0))
-              (delete-region (point-min) end-pt)))))
-    ))
+              (delete-region (point-min) end-pt)))))))
+
 
 (defun rosemacs/track-nodes (interval)
-  (interactive "nEnter rosnode update interval in seconds (0 to stop tracking)")
+  (interactive "nEnter rosnode update interval in seconds (0 to stop tracking): ")
   (let ((name "*rosnode-tracker*"))
     (let ((old-proc (get-process name)))
       (when old-proc
@@ -653,9 +646,33 @@ parameter."
           (set-process-filter proc 'rosemacs/rosnode-filter)))
       )))
 
-(defun rosemacs/display-nodes ()
+(defun rosemacs/get-stamp-string ()
+  (goto-char (point-min))
+  (let ((pos (re-search-forward "^\\(Last updated.*\\)$" nil t)))
+    (if pos
+	(match-string 1)
+      "Last updated: <>")))
+
+(defun update-ros-node-buffer ()
+  (let ((ros-node-buffer (get-buffer-create "*ros-nodes*")))
+    (save-excursion
+      (set-buffer ros-node-buffer)
+      (let ((old-stamp (rosemacs/get-stamp-string)))
+        (erase-buffer)
+        (princ (format "Master uri: %s\n" (getenv "ROS_MASTER_URI")) ros-node-buffer)
+        (princ old-stamp ros-node-buffer)
+        (let ((time-stamp-pattern "5/^Last updated: <%02H:%02M:%02S")) (time-stamp))
+        (princ "\n\n" ros-node-buffer)
+        (dolist (n rosemacs/nodes)
+          (princ (format "%s\n" n) ros-node-buffer))))))
+
+
+(defun rosemacs/display-nodes (&optional other-window)
   (interactive)
-  (display-buffer (get-buffer-create "*ros-nodes*")))
+  (let ((buf (get-buffer-create "*ros-nodes*")))
+    (if other-window
+        (display-buffer buf)
+      (switch-to-buffer buf))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -699,8 +716,8 @@ parameter."
 	(switch-to-buffer buf)
       (progn
 	(setq ros-topic-buffer (get-buffer-create "*ros-topics*"))
-	(switch-to-buffer ros-topic-buffer)
-	(ros-topic-list-mode 1)))
+	(switch-to-buffer ros-topic-buffer)))
+    (ros-topic-list-mode 1)
     (update-ros-topic-buffer)))
 
 (defun add-hz-update (topic-regexp)
@@ -757,16 +774,28 @@ parameter."
   (interactive)
   (interrupt-process))
 
-(defun kill-current-buffer ()
+(defun rosemacs/terminate-process ()
+  (interactive)
+  (signal-process (get-buffer-process (current-buffer)) 'SIGTERM)
+  )
+
+(defun rosemacs/kill-process-buffer ()
   (interactive)
   (let ((process (get-buffer-process (current-buffer))))
-    (when (and process (eq (process-status process) 'run))
-      (interrupt-process)))
-  (kill-buffer nil))
+    (if process
+        (progn
+          (when (eq (process-status process) 'run)
+            (interrupt-process))
+      ;; Give it time to shutdown cleanly
+          (set-process-sentinel process '(lambda (proc event)
+                                           (let ((buf (process-buffer proc)))
+                                             (message "Killing %s in response to process event %s" buf event)
+                                             (kill-buffer buf)))))
+      (kill-buffer (current-buffer)))))
 
 (defvar ros-topic-echo-keymap (make-sparse-keymap))
-(define-key ros-topic-echo-keymap "k" 'rosemacs/interrupt-process)
-(define-key ros-topic-echo-keymap "q" 'kill-current-buffer)
+(define-key ros-topic-echo-keymap "k" 'rosemacs/terminate-process)
+(define-key ros-topic-echo-keymap "q" 'rosemacs/kill-process-buffer)
 
 (define-minor-mode ros-topic-echo-mode 
   "Mode used for rostopic echo.  
@@ -780,7 +809,7 @@ q kills the buffer and process"
 
 
 (defvar ros-topic-list-keymap (make-sparse-keymap))
-(define-key ros-topic-list-keymap [?q] 'kill-current-buffer)
+(define-key ros-topic-list-keymap [?q] 'rosemacs/kill-process-buffer)
 (define-key ros-topic-list-keymap [?\r] 'echo-current-topic)
 (define-key ros-topic-list-keymap [?h] 'hz-current-topic)
 (define-key ros-topic-list-keymap [?H] 'unhz-current-topic)
@@ -816,16 +845,12 @@ q kills buffer"
       (save-excursion
 	(update-ros-topic-buffer-helper)))))
 
-(defun ros-topic-get-stamp-string ()
-  (goto-char (point-min))
-  (let ((pos (re-search-forward "^\\(Last updated.*\\)$" nil t)))
-    (if pos
-	(match-string 1)
-      "Last updated: <>")))
+
 
 (defun update-ros-topic-buffer-helper ()
+  (setq ros-topic-buffer (get-buffer-create "*ros-topics*"))
   (set-buffer ros-topic-buffer)
-  (let ((old-stamp (ros-topic-get-stamp-string)))
+  (let ((old-stamp (rosemacs/get-stamp-string)))
     (erase-buffer)
     (princ (format "Master uri: %s\n" (getenv "ROS_MASTER_URI")) ros-topic-buffer)
     (princ old-stamp ros-topic-buffer))
@@ -874,23 +899,28 @@ q kills buffer"
     (if (and pub-start sub-start)
         (let ((new-published-topics (rosemacs/get-topics pub-start sub-start ros-num-publishers)))
           (setq ros-subscribed-topics (rosemacs/get-topics sub-start (point-max) ros-num-subscribers))
-          (destructuring-bind (added deleted) (rosemacs-list-diffs ros-topics new-published-topics)
-            (lwarn '(rosemacs) :debug "added topics : %s" added)
-            (dolist (topic added)
-              (add-ros-topic topic))
-            (dolist (topic deleted)
-              (remove-ros-topic topic))))
+          (let ((new-topics (sort* (remove-duplicates (vconcat new-published-topics ros-subscribed-topics)
+                                                      :test 'equal)
+                                   'string<)))
+            (destructuring-bind (added deleted) (rosemacs-list-diffs ros-topics (append  new-topics nil))
+              (lwarn '(rosemacs) :debug "added topics : %s" added)
+              (dolist (topic added)
+                (add-ros-topic topic))
+              (dolist (topic deleted)
+                (remove-ros-topic topic)))))
       (lwarn '(rosemacs) :debug "rostopic output did not look as expected; could just be that the master is not up.")))
   (lwarn '(rosemacs) :debug "Done parsing rostopic list")
   (setq ros-all-topics 
         (sort* (remove-duplicates (vconcat ros-topics ros-subscribed-topics) :test 'equal) 'string<))
   ;; update display
   (save-excursion
-    (when ros-topic-buffer
-      (set-buffer ros-topic-buffer)
-      (update-ros-topic-buffer)
-      (let ((time-stamp-pattern "5/^Last updated: <%02H:%02M:%02S"))
-        (time-stamp)))))
+    (unless (and ros-topic-buffer (buffer-name ros-topic-buffer))
+      (setq ros-topic-buffer (get-buffer-create "*ros-topics*")))
+    
+    (set-buffer ros-topic-buffer)
+    (update-ros-topic-buffer)
+    (let ((time-stamp-pattern "5/^Last updated: <%02H:%02M:%02S"))
+      (time-stamp))))
 
 
 
@@ -1067,6 +1097,12 @@ q kills buffer"
 
 (defvar ros-run-temp-var "")
 (defvar ros-run-exec-names nil)
+(defvar ros-run-pkg nil "Package of the executable being rosrun")
+(make-variable-buffer-local 'ros-run-pkg)
+(defvar ros-run-executable nil "Executable being rosrun")
+(make-variable-buffer-local 'ros-run-executable)
+(defvar ros-run-args nil "Arguments to current rosrun")
+(make-variable-buffer-local 'ros-run-args)
 
 (defun extract-exec-name (path)
   (string-match "\\([^\/]+\\)$" path)
@@ -1095,6 +1131,12 @@ q kills buffer"
       (re-search-forward "^\\(.*\\)$")
       (match-string 1))))
 
+(defvar ros-run-keymap (make-sparse-keymap))
+(define-key ros-run-keymap "k" 'rosemacs/terminate-process)
+(define-key ros-run-keymap "q" 'rosemacs/kill-process-buffer)
+(define-key ros-run-keymap "r" 'rosrun/restart-current)
+(define-key ros-run-keymap "x" 'rosrun/kill-and-restart)
+
 (define-minor-mode ros-run-mode
   "Mode used for rosrun
 
@@ -1102,8 +1144,8 @@ k kills the process (sends SIGINT).
 q kills the buffer and process."
   :init-value nil
   :lighter " ros-run"
-  :keymap ros-topic-echo-keymap
-  (message "ros-run mode: k to stop, q to quit"))
+  :keymap ros-run-keymap
+  (message "ros-run mode: k to stop, q to quit, r to restart"))
 
 (defun rosemacs/contains-running-process (name)
   (let ((buf (get-buffer name)))
@@ -1121,16 +1163,56 @@ q kills the buffer and process."
                                         (cons pkg nil))
                                       (ros-find-executables ros-run-temp-var))
                               nil nil nil nil ros-run-temp-var)))
-  (let ((name (format "*rosrun:%s/%s" pkg exec)))
-    (if (rosemacs/contains-running-process name)
-        (warn "Rosrun buffer %s already exists: not creating a new one." name)
-      (let ((buf (get-buffer-create name))) 
-        (apply #'start-process name buf "rosrun" pkg exec args)
-        (save-excursion
-          (set-buffer buf)
-          (view-buffer-other-window buf)
-          (ros-run-mode 1))
-        buf))))
+  (let* ((name (format "*rosrun:%s/%s" pkg exec))
+         (buf (get-buffer-create name)))
+    (save-excursion
+      (set-buffer buf)
+      (setq ros-run-pkg pkg
+            ros-run-executable exec
+            ros-run-args args))
+    (rosrun/restart buf)
+    ))
+
+(defun rosrun/restart (buf)
+  (if (rosemacs/contains-running-process buf)
+      (warn "Rosrun buffer %s already exists: not creating a new one." (buffer-name buf))
+    (progn
+      (save-excursion
+        (set-buffer buf)
+        (ros-run-mode 1)
+        (apply 'start-process (buffer-name buf) buf "rosrun" ros-run-pkg ros-run-executable ros-run-args))
+      (switch-to-buffer buf))))
+
+(defun rosrun/restart-current ()
+  (interactive)
+  (rosrun/restart (current-buffer)))
+
+(defun rosemacs/kill-process-buffer ()
+  (interactive)
+  (let ((process (get-buffer-process (current-buffer))))
+    (if process
+        (progn
+          (when (eq (process-status process) 'run)
+            (interrupt-process))
+      ;; Give it time to shutdown cleanly
+          (set-process-sentinel process '(lambda (proc event)
+                                           (let ((buf (process-buffer proc)))
+                                             (message "Killing %s in response to process event %s" buf event)
+                                             (kill-buffer buf)))))
+      (kill-buffer (current-buffer)))))
+
+(defun rosrun/kill-and-restart ()
+  (interactive)
+  (let ((process (get-buffer-process (current-buffer))))
+    (if (and process (eq (process-status process) 'run))
+        (progn
+          (set-process-sentinel process '(lambda (proc event)
+                                           (let ((buf (process-buffer proc)))
+                                             (message "%s has terminated; restarting" ros-run-executable)
+                                             (rosrun/restart))))
+          (rosemacs/terminate-process process))
+      (error "Buffer does not contain a running process"))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; roslaunch
@@ -1141,8 +1223,9 @@ q kills the buffer and process."
 (defvar ros-launch-filename nil "The file being launched")
 (make-variable-buffer-local 'ros-launch-filename)
 
-(defun ros-launch (package-name)
-  "Open up the directory corresponding to PACKAGE-NAME in dired mode.  If used interactively, tab completion will work."  (interactive (list (ros-completing-read-pkg-file "Enter ros path: ")))
+(defun ros-launch (package-name &optional other-window)
+  "Launch a ros launch file in a separate buffer.  See ros-launch-mode for details."
+  (interactive (list (ros-completing-read-pkg-file "Enter ros path: ")))
   (multiple-value-bind (package dir-prefix dir-suffix) (parse-ros-file-prefix package-name)
     (let* ((package-dir (ros-package-dir package))
 	   (path (if dir-prefix (concat package-dir dir-prefix dir-suffix) package-dir)))
@@ -1158,7 +1241,7 @@ q kills the buffer and process."
                   (ros-launch-mode 1)
                   (rosemacs/relaunch (current-buffer)))
                 
-                (display-buffer buf)
+                (if other-window (display-buffer buf) (switch-to-buffer buf))
                 buf)))
 	(error "Did not find %s in the ros package list." package-name)))))
 
@@ -1170,9 +1253,24 @@ q kills the buffer and process."
       (save-excursion
         (set-buffer buf)
         (start-process (buffer-name buf) buf "roslaunch" ros-launch-path)
-        (rosemacs/add-event (format "%s: Ros launch of %s\n" (float-time) ros-launch-path))
+        (rosemacs/add-event (format "Ros launch of %s" ros-launch-path))
         )
       )))
+
+(defun rosemacs/kill-and-relaunch ()
+  "Interrupt the current roslaunch process, and when it has terminated, relaunch."
+  (interactive)
+  (let ((process (get-buffer-process (current-buffer))))
+    (if (and process (eq (process-status process) 'run))
+        (progn
+          (interrupt-process)
+          (set-process-sentinel process
+                                '(lambda (proc event)
+                                   (message "Roslaunch has terminated; relaunching")
+                                   (rosemacs/relaunch (process-buffer proc))
+                                   )))
+      (error "Buffer doesn't contain a running process"))))
+
 
 (defun rosemacs/relaunch-current-process ()
   (interactive)
@@ -1180,18 +1278,28 @@ q kills the buffer and process."
 
 (defvar ros-launch-keymap (make-sparse-keymap))
 (define-key ros-launch-keymap "k" 'rosemacs/interrupt-process)
-(define-key ros-launch-keymap "q" 'kill-current-buffer)
+(define-key ros-launch-keymap "q" 'rosemacs/kill-process-buffer)
 (define-key ros-launch-keymap "r" 'rosemacs/relaunch-current-process)
+(define-key ros-launch-keymap "x" 'rosemacs/kill-and-relaunch)
 
 
 
 (define-minor-mode ros-launch-mode
   "Mode used for roslaunch
 
-k kills the process (sends SIGINT)"
+k kills the process (sends SIGINT)
+q kills the process and the associated buffer
+r relaunches once the previous roslaunch has been killed
+x terminates the currently active launch, then relaunches once it has cleanly shutdown
+
+All roslaunches of the launch file are appended to the same buffer (until you kill that buffer).
+The page delimiter in this buffer matches the start, so you can use forward/backward pagewise navigation.
+"
   :init-value nil
   :lighter " ros-launch"
   :keymap ros-launch-keymap
+  (make-local-variable 'page-delimiter)
+  (setq page-delimiter "SUMMARY")
   )
 
 
@@ -1205,14 +1313,15 @@ k kills the process (sends SIGINT)"
     (when display-in-minibuffer (message str))
     (set-buffer ros-events-buffer)
     (goto-char (point-max))
-    (terpri ros-events-buffer)
-    (insert str)
+    (princ (format "\n[%s] %s" (substring (current-time-string) 11 19) str) ros-events-buffer)
     )
   )
 
-(defun rosemacs/display-event-buffer ()
+(defun rosemacs/display-event-buffer (&optional other-window)
   (interactive)
-  (display-buffer ros-events-buffer))
+  (if other-window
+      (display-buffer ros-events-buffer)
+    (switch-to-buffer ros-events-buffer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Keymap
@@ -1255,15 +1364,30 @@ k kills the process (sends SIGINT)"
   (setq rosemacs/invoked t)
   (rosemacs/track-topics ros-topic-update-interval)
   (rosemacs/track-nodes ros-node-update-interval)
-)
+
+  ;; nxml mode
+  (when (>= emacs-major-version 23)
+    (require 'rng-loc)
+    (push (concat (ros-package-path "rosemacs") "/rng-schemas.xml") rng-schema-locating-files)
+    (add-to-list 'auto-mode-alist '("\.launch$" . nxml-mode))
+    (add-to-list 'auto-mode-alist '("manifest.xml" . nxml-mode))
+    (add-to-list 'auto-mode-alist '("\\.urdf" . xml-mode))
+    (add-to-list 'auto-mode-alist '("\\.xacro" . xml-mode)))
+
+  ;; msg and srv files: for now use gdb-script-mode
+  (add-to-list 'auto-mode-alist '("\\.msg\\'" . gdb-script-mode))
+  (add-to-list 'auto-mode-alist '("\\.srv\\'" . gdb-script-mode))
+  (add-to-list 'auto-mode-alist '("\\.action\\'" . gdb-script-mode))
+  (font-lock-add-keywords 'gdb-script-mode
+                          '(("\\<\\(bool\\|byte\\|int8\\|uint8\\|int16\\|uint16\\|int32\\|uint32\\|int64\\|uint64\\|float32\\|float64\\|string\\|time\\|duration\\)\\>" . font-lock-builtin-face)))
 
 
+  )
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Internal
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 (defun rosemacs-get-comp (completions i)
   (let ((comp (aref completions i)))
@@ -1274,24 +1398,24 @@ k kills the process (sends SIGINT)"
   "str is a string, completions is a sorted vector of strings.  Return list of strings in completions that str is a prefix of."
   (let ((num-completions (length completions)))
     (unless (or (= num-completions 0)
-		(string< (rosemacs-get-comp completions (1- num-completions)) str))
-    (let ((i 0)
-	  (j (1- num-completions)))
-      (while (< (1+ i) j)
-	(let ((k (floor (+ i j) 2)))
-	  (if (string< str (rosemacs-get-comp completions k))
-	      (setq j k)
-	    (setq i k))))
+                (string< (rosemacs-get-comp completions (1- num-completions)) str))
+      (let ((i 0)
+            (j (1- num-completions)))
+        (while (< (1+ i) j)
+          (let ((k (floor (+ i j) 2)))
+            (if (string< str (rosemacs-get-comp completions k))
+                (setq j k)
+              (setq i k))))
 
-      (when (not (rosemacs-is-prefix str (rosemacs-get-comp completions i)))
-	(incf i))
-      ;; Postcondition: completions of str, if they exist, begin at i
+        (when (not (rosemacs-is-prefix str (rosemacs-get-comp completions i)))
+          (incf i))
+        ;; Postcondition: completions of str, if they exist, begin at i
       
-      (let ((returned-completions nil))
-	(while (and (< i (length completions)) (rosemacs-is-prefix str (rosemacs-get-comp completions i)))
-	  (push (rosemacs-get-comp completions i) returned-completions)
-	  (incf i))
-	returned-completions)))))
+        (let ((returned-completions nil))
+          (while (and (< i (length completions)) (rosemacs-is-prefix str (rosemacs-get-comp completions i)))
+            (push (rosemacs-get-comp completions i) returned-completions)
+            (incf i))
+          returned-completions)))))
 
 (defun rosemacs-is-prefix (str1 str2)
   (let ((m (length str1)))

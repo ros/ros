@@ -1,9 +1,6 @@
 (require :asdf)
 
-(defpackage :roslisp-exec
-    (:use :cl))
-
-(in-package :roslisp-exec)
+(in-package :cl-user)
 
 (let ((p (sb-ext:posix-getenv "ROS_ROOT")))
   (unless p (error "ROS_ROOT not set"))

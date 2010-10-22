@@ -434,6 +434,17 @@ Stack *ROSStack::get_stack(const string &stack_name)
   
 int ROSStack::cmd_depends_on(bool include_indirect)
 {
+  // We can't proceed if the argument-parsing logic wasn't able to provide
+  // any package name.  Note that we need to check for an empty opt_package
+  // here, but not in other places (e.g., cmd_deps()), because here we're
+  // catching the exception that get_pkg() throws when it can't find the
+  // package.  Elsewhere, we let that exception propagate up.
+  if(g_stack.size() == 0)
+  {
+    string errmsg = string("no stack name given, and current directory is not a stack root");
+    throw runtime_error(errmsg);
+  }
+
   // Explicitly crawl for stacks, to ensure that we get newly added
   // dependent stacks.  We also avoid the possibility of a recrawl
   // happening within the loop below, which could invalidate the stacks

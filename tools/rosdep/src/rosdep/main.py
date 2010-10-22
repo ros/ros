@@ -138,8 +138,12 @@ def main():
             print r.generate_script(include_duplicates=options.include_duplicates, default_yes=options.default_yes)
             return 0
         elif command == "install":
-            r.install(options.include_duplicates, options.default_yes);
-            return 0
+            error = r.install(options.include_duplicates, options.default_yes)
+            if error:
+                print >> sys.stderr, "rosdep install ERROR:\n%s"%error
+                return 1
+            else:
+                return 0
     except core.RosdepException, e:
         print >> sys.stderr, "ERROR: %s"%e
         return 1

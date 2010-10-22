@@ -7,7 +7,7 @@ grammar {
     license,
     review,
     url,
-    (depend* & platform*)
+    (depend* & platform* & rosdep* & export*)
   }
   description = element description {
     attribute brief { text }?,
@@ -21,6 +21,8 @@ grammar {
   }
   url = element url { text }
   depend = element depend { attribute package { text } }
+  export = element export { text }
+  rosdep = element rosdep { attribute name { text } }
   platform = element platform {
     attribute os { text },
     attribute version { text }

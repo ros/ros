@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
-# Copyright (c) 2009, Willow Garage, Inc.
+# Copyright (c) 2010, Willow Garage, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,45 +30,34 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: test_rostopic_command_line_offline.py 5710 2009-08-20 03:11:04Z sfkwc $
 
-from __future__ import with_statement
 
-NAME = 'test_rosrecord_offline'
-import roslib; roslib.load_manifest('rosrecord')
+import svn, bzr, hg, git
+import vcs_base
 
-import os
-import sys 
-import unittest
-import cStringIO
-import time
-        
-import rostest
-
-from subprocess import Popen, PIPE, check_call, call
-
-class TestRosrecordOffline(unittest.TestCase):
-
-    def setUp(self):
-        pass
-
-    ## test that the rosmsg command works
-    def test_rosrecord_help(self):
-        self.do_test_help('rosrecord');
-
-    def test_rosplay_help(self):
-        self.do_test_help('rosplay');
-
-    def test_rosrecord_pkg_help(self):
-        self.do_test_help('rosrun rosrecord rosrecord');
-
-    def test_rosplay_pkg_help(self):
-        self.do_test_help('rosrun rosrecord rosplay');
-
-    def do_test_help(self, cmd):
-        rosrecord = Popen(cmd.split() + ['-h'], stdout=PIPE, stderr=PIPE)
-        output = rosrecord.communicate()
-        self.assert_('Usage:' in output[0] or 'Usage:' in output[1])
-
-if __name__ == '__main__':
-    rostest.unitrun('rosrecord', NAME, TestRosrecordOffline, sys.argv, coverage_packages=[])
+class VCSClient:
+  def __init__(self, vcs_type, path):
+    self._path = path
+    self.vcs_types = {
+      "svn": svn.SVNClient,
+      "bzr": bzr.BZRClient,
+      "git": git.GITClient,
+      "hg": hg.HGClient,
+      }
+    if not vcs_type in self.vcs_types:
+      raise LookupError("%s VCS type undefined"%vcs_type)
+    self.vcs = self.vcs_types[vcs_type](path)
+    
+  # pass through VCSClientBase API
+  def get_version(self):
+    return self.vcs.get_version()
+  def checkout(self, url, version=''):
+    return self.vcs.checkout(url, version)
+  def update(self, version):
+    return self.vcs.update(version)
+  def detect_presence(self):
+    return self.vcs.detect_presence()
+  def get_vcs_type_name(self):
+    return self.vcs.get_vcs_type_name()
+  def get_url(self):
+    return self.vcs.get_url()

@@ -32,4 +32,4 @@ else
 fi
 shift
 shift
-$exepath "$@"
+exec $exepath "$@"

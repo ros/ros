@@ -149,11 +149,19 @@ macro(_rosbuild_add_gtest exe)
 
   # Create target for this test
   # We use rostest to call the executable to get process control, #1629
-  add_custom_target(test_${_testname}
-                    COMMAND rostest --bare --bare-name=${_testname} --bare-limit=${_gtest_TIMEOUT} ${EXECUTABLE_OUTPUT_PATH}/${exe}
-                    DEPENDS ${EXECUTABLE_OUTPUT_PATH}/${exe}
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-                    VERBATIM)
+  # But don't depend on the gtest executable if rosbuild_test_nobuild is set, #3008
+  if(NOT rosbuild_test_nobuild)
+    add_custom_target(test_${_testname}
+                      COMMAND rostest --bare --bare-name=${_testname} --bare-limit=${_gtest_TIMEOUT} ${EXECUTABLE_OUTPUT_PATH}/${exe}
+                      DEPENDS ${EXECUTABLE_OUTPUT_PATH}/${exe}
+                      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                      VERBATIM)
+  else(NOT rosbuild_test_nobuild)
+    add_custom_target(test_${_testname}
+                      COMMAND rostest --bare --bare-name=${_testname} --bare-limit=${_gtest_TIMEOUT} ${EXECUTABLE_OUTPUT_PATH}/${exe}
+                      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                      VERBATIM)
+  endif(NOT rosbuild_test_nobuild)
   # Don't register to check xml output here, because we may have gotten
   # here through registration of a future test.  Eventually, we should pass
   # in the overriding target (e.g., test-results vs. test-future-results).
@@ -165,7 +173,10 @@ macro(_rosbuild_add_gtest exe)
   add_dependencies(${exe} rospack_gensrv)
 
   # Make sure all test programs are built before running this test
-  add_dependencies(test_${_testname} tests)
+  # but not if rosbuild_test_nobuild is set, #3008
+  if(NOT rosbuild_test_nobuild)
+    add_dependencies(test_${_testname} tests)
+  endif(NOT rosbuild_test_nobuild)
 
 endmacro(_rosbuild_add_gtest)
 
@@ -204,7 +215,10 @@ macro(_rosbuild_add_rostest file)
                     VERBATIM)
 
   # Make sure all test programs are built before running this test
-  add_dependencies(rostest_${_testname} tests)
+  # but not if rosbuild_test_nobuild is set, #3008
+  if(NOT rosbuild_test_nobuild)
+    add_dependencies(rostest_${_testname} tests)
+  endif(NOT rosbuild_test_nobuild)
 
   # rostest-check-results will do the magic of fixing an incorrect file extension
   # Don't register to check rostest output here, because we may have gotten
@@ -250,7 +264,10 @@ macro(_rosbuild_add_pyunit file)
                     VERBATIM)
 
   # Make sure all test programs are built before running this test
-  add_dependencies(pyunit_${_testname} tests)
+  # but not if rosbuild_test_nobuild is set, #3008
+  if(NOT rosbuild_test_nobuild)
+    add_dependencies(pyunit_${_testname} tests)
+  endif(NOT rosbuild_test_nobuild)
 
 endmacro(_rosbuild_add_pyunit)
 
@@ -278,7 +295,10 @@ macro(_rosbuild_add_roslaunch_check file)
                     VERBATIM)
   
   # Make sure all test programs are built before running this test
-  add_dependencies(roslaunch_check_${_testname} tests)
+  # but not if rosbuild_test_nobuild is set, #3008
+  if(NOT rosbuild_test_nobuild)
+    add_dependencies(roslaunch_check_${_testname} tests)
+  endif(NOT rosbuild_test_nobuild)
   
 endmacro(_rosbuild_add_roslaunch_check)
 

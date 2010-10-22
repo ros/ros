@@ -53,7 +53,7 @@ import roslib.message
 import rosgraph.masterapi
 #TODO: lazy-import rospy or move rospy-dependent routines to separate location
 import rospy
-import rosrecord
+import rosbag
 
 ## don't print string fields in message
 _echo_nostr = False
@@ -617,16 +617,18 @@ def _rostopic_echo_bag(callback_echo, bag_file):
     if not os.path.exists(bag_file):
         raise ROSTopicException("bag file [%s] does not exist"%bag_file)
     first = True
-    for t, msg, timestamp in rosrecord.logplayer(bag_file):
-        # bag files can have relative paths in them, this respects any
-        # dynamic renaming
-        if t[0] != '/':
-            t = roslib.scriptutil.script_resolve_name('rostopic', t)
-        callback_echo.callback(msg, t, current_time=timestamp)
-        # done is set if there is a max echo count
-        if callback_echo.done:
-            break
     
+    with rosbag.Bag(bag_file) as b:
+        for t, msg, timestamp in b.read_messages():
+        # bag files can have relative paths in them, this respects any
+            # dynamic renaming
+            if t[0] != '/':
+                t = roslib.scriptutil.script_resolve_name('rostopic', t)
+            callback_echo.callback(msg, t, current_time=timestamp)
+            # done is set if there is a max echo count
+            if callback_echo.done:
+                break
+
 def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
     """
     Print new messages on topic to screen.
@@ -651,7 +653,23 @@ def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
             return
         callback_echo.msg_eval = msg_eval
 
+        use_sim_time = rospy.get_param('/use_sim_time', False)
         sub = rospy.Subscriber(real_topic, msg_class, callback_echo.callback, topic)
+
+        if use_sim_time:
+            # #2950: print warning if nothing received for two seconds
+
+            timeout_t = time.time() + 2.
+            while time.time() < timeout_t and \
+                    callback_echo.count == 0 and \
+                    not rospy.is_shutdown() and \
+                    not callback_echo.done:
+                time.sleep(0.1)
+
+            if callback_echo.count == 0 and \
+                    not rospy.is_shutdown() and \
+                    not callback_echo.done:
+                print >> sys.stderr, "WARNING: no messages received and simulated time is active.\nIs /clock being published?"
 
         while not rospy.is_shutdown() and not callback_echo.done:
             time.sleep(0.1)
@@ -688,32 +706,37 @@ def _rostopic_list_bag(bag_file, topic=None):
     @param topic: optional topic name to match. Will print additional information just about messagese in this topic.
     @type  topic: str
     """
-    import rosrecord
+    import rosbag
     if not os.path.exists(bag_file):
         raise ROSTopicException("bag file [%s] does not exist"%bag_file)
-    if topic:
-        # create string for namespace comparison
-        topic_ns = roslib.names.make_global_ns(topic)
-        count = 0
-        earliest = None
-        latest = None
-        for top, msg, t in rosrecord.logplayer(bag_file, raw=True):
-            if top == topic or top.startswith(topic_ns):
-                count += 1
-                if earliest == None:
-                    earliest = t
-                latest = t
-        import time
-        earliest, latest = [time.strftime("%d %b %Y %H:%M:%S", time.localtime(t.to_time())) for t in (earliest, latest)]
-        print "%s message(s) from %s to %s"%(count, earliest, latest)
-    else:
-        topics = set()
-        for top, msg, _ in rosrecord.logplayer(bag_file, raw=True):
-            if top not in topics:
-                print top
-                topics.add(top)
-            if rospy.is_shutdown():
-                break
+
+    with rosbag.Bag(bag_file) as b:
+        if topic:
+            # create string for namespace comparison
+            topic_ns = roslib.names.make_global_ns(topic)
+            count = 0
+            earliest = None
+            latest = None
+            for top, msg, t in b.read_messages(raw=True):
+                if top == topic or top.startswith(topic_ns):
+                    count += 1
+                    if earliest == None:
+                        earliest = t
+
+                    latest = t
+                if rospy.is_shutdown():
+                    break
+            import time
+            earliest, latest = [time.strftime("%d %b %Y %H:%M:%S", time.localtime(t.to_time())) for t in (earliest, latest)]
+            print "%s message(s) from %s to %s"%(count, earliest, latest)
+        else:
+            topics = set()
+            for top, msg, _ in b.read_messages(raw=True):
+                if top not in topics:
+                    print top
+                    topics.add(top)
+                if rospy.is_shutdown():
+                    break
 
 def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only=False):
     """
@@ -1221,12 +1244,20 @@ def _rostopic_cmd_pub(argv):
     latch = options.rate == None
     pub, msg_class = create_publisher(topic_name, topic_type, latch)
     if not pub_args and len(msg_class.__slots__):
+        if sys.stdin.isatty():
+            parser.error("Please specify message values")
         # read pub_args from stdin
         for pub_args in _stdin_yaml_arg():
             if rospy.is_shutdown():
                 break
             if pub_args:
-                publish_message(pub, msg_class, pub_args, options.rate, verbose=options.verbose)
+                if type(pub_args) != list:
+                    pub_args = [pub_args]
+                try:
+                    publish_message(pub, msg_class, pub_args, options.rate, verbose=options.verbose)
+                except ValueError, e:
+                    print >> sys.stderr, str(e)
+                    break
             if rospy.is_shutdown():
                 break
     else:
@@ -1234,7 +1265,7 @@ def _rostopic_cmd_pub(argv):
         
 def _stdin_yaml_arg():
     """
-    @return: for next yaml document on stdin
+    @return: for next list of arguments on stdin. Iterator returns a list of args for each call.
     @rtype: iterator
     """
     import yaml
@@ -1255,6 +1286,7 @@ def _stdin_yaml_arg():
                     continue
                 elif arg.strip() != '---':
                     buff = buff + arg
+            # publish_message wants a list of args
             yield yaml.load(buff.rstrip())
     except select.error:
         return # most likely ctrl-c interrupt
@@ -1368,7 +1400,7 @@ def rostopicmain(argv=None):
     except socket.error:
         print >> sys.stderr, "Network communication failed. Most likely failed to communicate with master."
         sys.exit(1)
-    except rosrecord.ROSRecordException, e:
+    except rosbag.ROSBagException, e:
         print >> sys.stderr, "ERROR: unable to use bag file: "+str(e)
         sys.exit(1)
     except roslib.exceptions.ROSLibException, e:

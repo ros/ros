@@ -185,7 +185,9 @@ class ROSLaunchParent(object):
         """
         Initializes and runs the remote process runner, if required
         """
-        self._init_remote()
+        if self.remote_runner is None:
+            self._init_remote()
+            
         if self.remote_runner is not None:
             # start_servers() runs the roslaunch children
             self.remote_runner.start_children()
@@ -193,15 +195,18 @@ class ROSLaunchParent(object):
     def _start_infrastructure(self):
         """
         load config, start XMLRPC servers and process monitor
-        """        
-        self._load_config()
+        """
+        if self.config is None:
+            self._load_config()
 
         # Start the process monitor
-        self._start_pm()
+        if self.pm is None:
+            self._start_pm()
 
         # Startup the roslaunch runner and XMLRPC server.
         # Requires pm
-        self._start_server()
+        if self.server is None:
+            self._start_server()
 
         # Startup the remote infrastructure.
         # Requires config, pm, and server

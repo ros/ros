@@ -37,3 +37,6 @@ New in ROS C-Turtle.
 """
 
 from legacy_vcs import *
+
+import warnings
+warnings.warn("roslib.vcs is deprecated. Please use vcstools instead", DeprecationWarning, stacklevel=2)

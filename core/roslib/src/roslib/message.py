@@ -154,7 +154,7 @@ def strify_message(val, indent='', time_offset=None, current_time=None):
     convert value to string representation
     @param val: to convert to string representation. Most likely a Message.
     @type  val: Value
-    @param indent: indentation
+    @param indent: indentation. If indent is set, then the return value will have a leading \n
     @type  indent: str
     @param time_offset: if not None, time fields will be displayed
     as deltas from  time_offset

@@ -378,14 +378,14 @@ class Rosdep:
             fh.write(script)
             fh.flush()
             
-            print "executing this script:\n %s"%script
-            p= subprocess.Popen(['bash', fh.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+            print "rosdep executing this script:\n{{{\n%s\n}}}"%script
+            p= subprocess.Popen(['bash', fh.name], stderr=subprocess.PIPE )
             (out, err) = p.communicate()
             if p.returncode != 0:
                 if err:
-                    return err
+                    return "rosdep script failed with stderr \n{{{\n%s\n}}}"%err
                 else:
-                    return "rosdep script failed"
+                    return "rosdep script failed without stderr output"
             else:
                 return None
                     

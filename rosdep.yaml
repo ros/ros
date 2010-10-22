@@ -14,7 +14,7 @@ apr:
   macports: apr apr-util
   gentoo: dev-libs/apr dev-libs/apr-util
   cygwin: libapr1 libaprutil1
-  freebsd: apr-ipv6-gdbm-db42
+  freebsd: builtin # i.e. ignore, only needed to manually build log4cxx on other OSes
 python:
   ubuntu: python-dev
   debian: python-dev
@@ -81,11 +81,6 @@ python-numpy:
   macports: py25-numpy
   gentoo: dev-python/numpy
   freebsd: py-numpy
-python-fuse:
-  ubuntu: python-fuse
-  debian: python-fuse
-  gentoo: dev-python/fuse-python
-  freebsd: py26-fusefs
 python-scipy:
   ubuntu: python-scipy
   debian: python-scipy
@@ -105,31 +100,10 @@ bzip2:
   freebsd: bzip2
 boost:
   ubuntu:
+    '10.10': libboost1.42-all-dev
     '10.04': libboost1.40-all-dev
     '9.10': libboost1.40-all-dev
     '9.04': libboost-date-time1.37-dev libboost-filesystem1.37-dev libboost-graph1.37-dev libboost-iostreams1.37-dev libboost-math1.37-dev libboost-program-options1.37-dev libboost-python1.37-dev libboost-regex1.37-dev libboost-serialization1.37-dev libboost-signals1.37-dev libboost-system1.37-dev libboost-test1.37-dev libboost-thread1.37-dev libboost-wave1.37-dev libboost1.37-dev
-    '8.10': |
-      if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
-        mkdir -p ~/ros/ros-deps
-        cd ~/ros/ros-deps
-        wget --tries=10 http://pr.willowgarage.com/downloads/boost_1_37_0.tar.gz
-        tar xzf boost_1_37_0.tar.gz
-        cd boost_1_37_0
-        ./configure --prefix=/opt/ros
-        make
-        sudo make install
-      fi
-    '8.04': |
-      if [ ! -f /opt/ros/lib/libboost_date_time-gcc42-mt*-1_37.a ] ; then
-        mkdir -p ~/ros/ros-deps
-        cd ~/ros/ros-deps
-        wget --tries=10 http://pr.willowgarage.com/downloads/boost_1_37_0.tar.gz
-        tar xzf boost_1_37_0.tar.gz
-        cd boost_1_37_0
-        ./configure --prefix=/opt/ros
-        make
-        sudo make install
-      fi
   debian:
     squeeze/sid: libboost-dev libboost-regex-dev libboost-thread-dev libboost-signals-dev libboost-filesystem-dev libboost-python-dev libboost-program-options-dev libboost-math-dev
     lenny: |
@@ -161,7 +135,6 @@ boost:
   gentoo: dev-libs/boost
   cygwin: libboost-devel libboost1.40
   freebsd: boost-python-libs
-  # freebsd: boost-pyste is more complete
 zlib:
   ubuntu: zlib1g-dev
   debian: zlib1g-dev
@@ -181,18 +154,6 @@ graphviz:
   macports: graphviz
   gentoo: media-gfx/graphviz
   freebsd: graphviz
-fakeroot:
-  ubuntu: fakeroot
-  arch: fakeroot
-  debian: fakeroot
-  gentoo: sys-apps/fakeroot
-  freebsd: fakeroot
-dpkg-dev:
-  ubuntu: dpkg-dev
-  debian: dpkg-dev
-  arch: |
-    if ! pacman -Q dpkg; then yaourt -S dpkg; fi
-  freebsd: dpkg
 doxygen:
   ubuntu: doxygen
   fedora: doxygen
@@ -222,32 +183,7 @@ wxpython:
   gentoo: dev-python/wxpython
   freebsd: py26-wxPython
 log4cxx:
-  ubuntu:
-    '10.04': liblog4cxx10-dev
-    '9.10': liblog4cxx10-dev
-    '9.04': liblog4cxx10-dev
-    '8.10': |
-      if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
-        mkdir -p ~/ros/ros-deps
-        cd ~/ros/ros-deps
-        wget --tries=10 http://pr.willowgarage.com/downloads/apache-log4cxx-0.10.0-wg_patched.tar.gz
-        tar xzf apache-log4cxx-0.10.0-wg_patched.tar.gz
-        cd apache-log4cxx-0.10.0
-        ./configure --prefix=/opt/ros
-        make
-        sudo make install
-      fi
-    '8.04': |
-      if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
-        mkdir -p ~/ros/ros-deps
-        cd ~/ros/ros-deps
-        wget --tries=10 http://pr.willowgarage.com/downloads/apache-log4cxx-0.10.0-wg_patched.tar.gz
-        tar xzf apache-log4cxx-0.10.0-wg_patched.tar.gz
-        cd apache-log4cxx-0.10.0
-        ./configure --prefix=/opt/ros
-        make
-        sudo make install
-      fi
+  ubuntu: liblog4cxx10-dev
   debian:
     squeeze/sid: liblog4cxx10-dev
     lenny: |
@@ -351,7 +287,7 @@ autoconf:
   arch: autoconf
   macports: autoconf
   gentoo: sys-devel/autoconf
-  freebsd: autoconf213 autoconf262
+  freebsd: autoconf213 autoconf268
 automake:
   ubuntu: automake
   debian: automake
@@ -360,14 +296,13 @@ automake:
   arch: automake
   macports: automake
   gentoo: sys-devel/automake
-  freebsd: automake14 automake15 automake16 automake17 automake18 automake19 automake110
+  freebsd: automake14 automake111
 libtool:
   ubuntu: 
+    '10.10': libtool libltdl-dev
     '10.04': libtool libltdl-dev
     '9.10': libtool libltdl-dev
     '9.04': libtool libltdl7-dev
-    '8.10': libtool libltdl7-dev
-    '8.04': libtool libltdl3-dev
   debian: libtool libltdl3-dev
   fedora: libtool libtool-ltdl-devel
   rhel: libtool libtool-ltdl-devel
@@ -486,3 +421,33 @@ paramiko:
   macports: py25-paramiko
   gentoo: dev-python/paramiko
   freebsd: py26-paramiko
+python-sphinx:
+  ubuntu: python-sphinx
+bazaar:
+  ubuntu: bzr
+  debian: bzr
+  fedora: bazaar
+  macports: bazaar
+  gentoo: dev-vcs/bzr
+  freebsd: bazaar
+git: 
+  ubuntu: git-core
+  debian: git-core
+  fedora: git
+  macports: git-core
+  gentoo: dev-vcs/git
+  freebsd: git
+subversion:
+  ubuntu: subversion
+  debian: subversion
+  fedora: subversion
+  macports: subversion
+  gentoo: dev-vcs/subversion
+  freebsd: subversion
+mercurial:
+  ubuntu: mercurial
+  debian: mercurial
+  fedora: mercurial
+  macports: mercurial
+  gentoo: dev-vcs/mercurial
+  freebsd: mercurial

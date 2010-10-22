@@ -250,10 +250,10 @@ void XMLRPCManager::serverThreadFunc()
       added_connections_.clear();
     }
 
-    // Update the XMLRPC server, blocking for at most 10ms in select()
+    // Update the XMLRPC server, blocking for at most 100ms in select()
     {
       boost::mutex::scoped_lock lock(functions_mutex_);
-      server_.work(0.01);
+      server_.work(0.1);
     }
 
     while (unbind_requested_)

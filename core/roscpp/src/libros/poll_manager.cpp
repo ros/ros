@@ -92,7 +92,7 @@ void PollManager::threadFunc()
       return;
     }
 
-    poll_set_.update(10);
+    poll_set_.update(100);
   }
 }
 

@@ -1,6 +1,0 @@
-<launch>
-  <param name="use_sim_time"  value="true"/>
-  <test time-limit="100" test-name="05random_play" pkg="test_rosrecord" type="random_play.py" args="54321 4 5.0 1.0 1" retry="3"/>
-  <test time-limit="100" test-name="06random_play" pkg="test_rosrecord" type="random_play.py" args="54321 4 5.0 0.5 1" retry="3"/>
-  <test time-limit="100" test-name="07random_play" pkg="test_rosrecord" type="random_play.py" args="54321 4 5.0 2.0 1" retry="3"/>
-</launch>

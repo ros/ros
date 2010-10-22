@@ -39,22 +39,23 @@
 
 (in-package :roslisp)
 
-(defun process-command-line-remappings (l)
-  "Process command line remappings, including the three special cases for remapping the node name, namespace, and setting parameters.  Return alist of params to set."
+(defun process-command-line-remappings (l base-name)
+  "Process command line remappings, including the three special cases for remapping the node name, namespace, and setting parameters.  Return alist of params to set.  Note this is order dependent since setting __ns or __name affects how remappings are interpreted."
   (setf *remapped-names* (make-hash-table :test #'equal))
   (let ((params nil))
     (dolist (x l params)
       (dbind (lhs rhs) x
 	(cond
-	  ((equal lhs "__ns") (setf *namespace* rhs))
-	  ((equal lhs "__name") (setf *ros-node-name* rhs))
+	  ((equal lhs "__ns") (setf *namespace* (postprocess-namespace rhs) *ros-node-name* (compute-node-name base-name)))
+	  ((equal lhs "__name") (setf base-name rhs *ros-node-name* (compute-node-name rhs)))
 	  ((equal lhs "__log") (setf *ros-log-location* rhs))
 	  ((eql (char lhs 0) #\_) (push (cons (concatenate 'string "~" (subseq lhs 1)) 
 					      (let ((rhs-val (read-from-string rhs)))
 						(typecase rhs-val
 						  (symbol rhs)
 						  (otherwise rhs-val)))) params))
-	  (t (setf (gethash lhs *remapped-names*) rhs)))))))
+	  (t (setf (gethash (compute-global-name *namespace* *ros-node-name* lhs) *remapped-names*)
+                   (compute-global-name *namespace* *ros-node-name* rhs))))))))
 
 (defun postprocess-namespace (ns)
   "Ensure that namespace begins and ends with /"
@@ -64,9 +65,8 @@
     (setf ns (concatenate 'string ns "/")))
   ns)
 
-(defun postprocess-node-name (name)
-  "Trim any /'s from the node name"
-  (string-trim '(#\/) name))
+(defun compute-node-name (name)
+  (concatenate 'string *namespace* (string-trim '(#\/) name)))
 
 (defun parse-remapping (string)
   "If string is of the form FOO:=BAR, return foo and bar, otherwise return nil."
@@ -80,16 +80,12 @@
   "Postcondition: the variables *remapped-names*, *namespace*, and *ros-node-name* are set based on the argument list and the environment variable ROS_NAMESPACE as per the ros command line protocol.  Also, arguments of the form _foo:=bar are interpreted by setting private parameter foo equal to bar (currently bar is just read using the lisp reader; it should eventually use yaml conventions)"
   (when (stringp args)
     (setq args (tokens args)))
+  (setq *namespace* (postprocess-namespace (or (sb-ext:posix-getenv "ROS_NAMESPACE") "/"))
+        *ros-node-name* (compute-node-name name))
   (let ((remappings
 	 (mapcan #'(lambda (s) (mvbind (lhs rhs) (parse-remapping s) (when lhs (list (list lhs rhs))))) 
 		 args)))
-    (setf *namespace* (or (sb-ext:posix-getenv "ROS_NAMESPACE") "/")
-	  *ros-node-name* name)
-    (let ((params (process-command-line-remappings remappings)))
-      (setf *namespace* (postprocess-namespace *namespace*)
-	    *ros-node-name* (postprocess-node-name *ros-node-name*))
-
-      params)))
+    (process-command-line-remappings remappings name)))
 
 
 (defun command-line-args-rosout (args params)

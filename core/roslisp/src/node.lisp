@@ -65,7 +65,7 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
   (when anonymous
     (mvbind (success s ms) (sb-unix:unix-gettimeofday)
       (declare (ignore success))
-      (setq name (format nil "~a-~a-~a" name ms s))))
+      (setq name (format nil "~a_~a_~a" name ms s))))
 
   (let ((params (handle-command-line-arguments name cmd-line-args)))
 
@@ -176,14 +176,15 @@ Assuming spin is not true, this call will return the return value of the final s
 
   (dbind (name &rest a &key spin &allow-other-keys) args
     (declare (ignorable name a))
-    `(unwind-protect
-          (restart-case 
-              (progn
-                (start-ros-node ,@args)
-                ,@body
-                ,@(when spin `((spin-until nil 100))))
-            (shutdown-ros-node (&optional a) (ros-info (roslisp top) "About to shutdown~:[~; due to condition ~:*~a~]" a)))
-       (shutdown-ros-node))))
+    `(let (*namespace*) ;; Set up a binding so that start-ros-node can set it and this will be seen in the body, but not by our caller
+       (unwind-protect
+            (restart-case 
+                (progn
+                  (start-ros-node ,@args)
+                  ,@body
+                  ,@(when spin `((spin-until nil 100))))
+              (shutdown-ros-node (&optional a) (ros-info (roslisp top) "About to shutdown~:[~; due to condition ~:*~a~]" a)))
+         (shutdown-ros-node)))))
 
 
 (defun shutdown-ros-node ()

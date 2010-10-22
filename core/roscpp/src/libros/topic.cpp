@@ -50,7 +50,7 @@ void waitForMessageImpl(SubscribeOptions& ops, const boost::function<bool(void)>
   ros::Time end = ros::Time::now() + timeout;
   while (!ready_pred() && nh.ok())
   {
-    queue.callAvailable(ros::WallDuration(0.01));
+    queue.callAvailable(ros::WallDuration(0.1));
 
     if (!timeout.isZero() && ros::Time::now() >= end)
     {

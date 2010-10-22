@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 import roslib
-roslib.load_manifest('test_rosrecord')
+roslib.load_manifest('test_rosbag')
 
 import rospy
 import random

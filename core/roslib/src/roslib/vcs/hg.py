@@ -39,6 +39,7 @@ New in ROS C-Turtle.
 import subprocess
 import os
 import vcs_base
+import sys
 
 class HGClient(vcs_base.VCSClientBase):
     def get_url(self):

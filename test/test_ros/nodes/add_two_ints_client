@@ -87,14 +87,15 @@ def usage():
 
 if __name__ == "__main__":
     
-    if len(sys.argv) == 1:
+    argv = rospy.myargv()
+    if len(argv) == 1:
         import random
         x = random.randint(-50000, 50000)
         y = random.randint(-50000, 50000)
-    elif len(sys.argv) == 3:
+    elif len(argv) == 3:
         try:
-            x = string.atoi(sys.argv[1])
-            y = string.atoi(sys.argv[2])
+            x = string.atoi(argv[1])
+            y = string.atoi(argv[2])
         except:
             print usage()
             sys.exit(1)

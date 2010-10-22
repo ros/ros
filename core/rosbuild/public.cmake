@@ -133,7 +133,7 @@ macro(rosbuild_init)
   set(ROSBUILD_init_called 1)
 
   # Infer package name from directory name.
-  get_filename_component(_project ${PROJECT_SOURCE_DIR} NAME)
+  get_filename_component(_project ${CMAKE_SOURCE_DIR} NAME)
   message("[rosbuild] Building package ${_project}")
 
   project(${_project})
@@ -287,7 +287,11 @@ macro(rosbuild_init)
   # We need to build tests before running them.  Addition of this
   # dependency also ensures that old test results get cleaned prior to a
   # new test run.
-  add_dependencies(test tests)
+  # but not if rosbuild_test_nobuild is set, #3008
+  if(NOT rosbuild_test_nobuild)
+    add_dependencies(test tests)
+  endif(NOT rosbuild_test_nobuild)
+  
   # Clean out previous test results before running tests.  Use bash
   # conditional to ignore failures (most often happens when a stale NFS
   # handle lingers in the test results directory), because CMake doesn't

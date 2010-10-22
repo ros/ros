@@ -224,7 +224,11 @@ class ROSLaunchParent(object):
         self._shutting_down = True
         
         if self.server:
-            self.server.shutdown("roslaunch parent complete")
+            try:
+                self.server.shutdown("roslaunch parent complete")
+            except:
+                # don't let exceptions halt the rest of the shutdown
+                pass
         if self.pm:
             self.pm.shutdown()
             self.pm.join()
@@ -243,7 +247,12 @@ class ROSLaunchParent(object):
         self.logger.info("starting roslaunch parent run")
         
         # load config, start XMLRPC servers and process monitor
-        self._start_infrastructure()
+        try:
+            self._start_infrastructure()
+        except:
+            # infrastructure did not initialize, do teardown on whatever did come up
+            self._stop_infrastructure()
+            raise
             
         # Initialize the actual runner. 
         # Requires config, pm, server and remote_runner

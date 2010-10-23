@@ -34,7 +34,7 @@
 """
 Master/Slave XML-RPC Wrappers.
 
-The L{NodeProxy} and L{MasterProxy} simplify usage of master/slave
+The L{MasterProxy} simplifies usage of master/slave
 APIs by automatically inserting the caller ID and also adding python
 dictionary accessors on the parameter server.
 """
@@ -45,29 +45,6 @@ import rospy.names
 
 import rospy.impl.paramserver
 import rospy.impl.masterslave
-
-class NodeProxy(object):
-    """
-    Convenience wrapper for ROSNode API and XML-RPC implementation.
-    Eliminates the need to pass in node name as the first argument.
-    """
-
-    def __init__(self, uri):
-        super(NodeProxy, self).__init__()
-        self.target = rospy.core.xmlrpcapi(uri)
-        
-    def __getattr__(self, key): #forward api calls to target
-        f = getattr(self.target, key)
-        remappings = rospy.impl.masterslave.ROSHandler.remappings(key)
-        def wrappedF(*args, **kwds):
-            args = [rospy.names.get_caller_id(),]+list(args)
-            #print "Remap indicies", remappings
-            for i in remappings:
-                i = i + 1 #callerId does not count
-                #print "Remap %s => %s"%(args[i], rospy.names.resolve_name(args[i]))
-                args[i] = rospy.names.resolve_name(args[i])
-            return f(*args, **kwds)
-        return wrappedF
 
 _master_arg_remap = { 
     'deleteParam': [0], # remap key
@@ -88,7 +65,7 @@ _master_arg_remap = {
     'getPublishedTopics': [0], # remap subgraph
     }
     
-class MasterProxy(NodeProxy):
+class MasterProxy(object):
     """
     Convenience wrapper for ROS master API and XML-RPC
     implementation. The Master API methods can be invoked on this
@@ -106,7 +83,7 @@ class MasterProxy(NodeProxy):
         @param uri: XML-RPC URI of master
         @type  uri: str
         """
-        super(MasterProxy, self).__init__(uri)
+        self.target = rospy.core.xmlrpcapi(uri)        
 
     def __getattr__(self, key): #forward api calls to target
         f = getattr(self.target, key)

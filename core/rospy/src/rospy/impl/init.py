@@ -39,63 +39,33 @@ the OS environment.
 """
 
 import os
+import sys
 import logging
 import time
+import traceback
 
 import roslib.rosenv
+import roslib.xmlrpc
 
-import rospy.core 
-import rospy.msproxy 
-import rospy.names
+from ..names import _set_caller_id
+from ..core import is_shutdown, add_log_handler, signal_shutdown, rospyerr
 
-import rospy.impl.tcpros 
-import rospy.impl.msnode 
-import rospy.impl.masterslave 
+from .tcpros import init_tcpros
+from .masterslave import ROSHandler
 
 DEFAULT_NODE_PORT = 0 #bind to any open port
 DEFAULT_MASTER_PORT=11311 #default port for master's to bind to
-
-_node = None #global var for ros init and easy interpreter access 
-def get_node_proxy():
-    """
-    Retrieve L{NodeProxy} for slave node running on this machine.
-
-    @return: slave node API handle
-    @rtype: L{rospy.NodeProxy}
-    """
-    return _node
+DEFAULT_MASTER_URI = 'http://localhost:%s/'%DEFAULT_MASTER_PORT
 
 ###################################################
 # rospy module lower-level initialization
 
-def default_master_uri():
+def _node_run_error(e):
     """
-    @return: URI of master that will be used if master is not otherwise configured.
-    @rtype: str
+    If XML-RPC errors out of the run() method, this handler is invoked
     """
-    return 'http://localhost:%s/'%DEFAULT_MASTER_PORT
-
-def _sub_start_node(environ, resolved_name, master_uri=None, port=DEFAULT_NODE_PORT):
-    """
-    Subroutine for X{start_node()}
-    """
-    if not master_uri:
-        master_uri = roslib.rosenv.get_master_uri()
-    if not master_uri:
-        master_uri = default_master_uri()
-
-    handler = rospy.impl.masterslave.ROSHandler(resolved_name, master_uri)
-    node = rospy.impl.msnode.ROSNode(resolved_name, port, handler)
-    node.start()
-    while not node.uri and not rospy.core.is_shutdown():
-        time.sleep(0.00001) #poll for XMLRPC init
-    logging.getLogger("rospy.init").info("ROS Slave URI: [%s]", node.uri)
-
-    while not handler._is_registered() and not rospy.core.is_shutdown():
-        time.sleep(0.1) #poll for master registration
-    logging.getLogger("rospy.init").info("registered with master")
-
-    return rospy.msproxy.NodeProxy(node.uri)
+    rospyerr(traceback.format_exc())
+    signal_shutdown('error in XML-RPC server: %s'%(e))
 
 def start_node(environ, resolved_name, master_uri=None, port=None):
     """
@@ -108,13 +78,61 @@ def start_node(environ, resolved_name, master_uri=None, port=None):
     @type  master_uri: str
     @param port: override ROS_PORT: port of slave xml-rpc node
     @type  port: int
-    @return: node proxy instance
-    @rtype rospy.msproxy.NodeProxy
+    @return: node server instance
+    @rtype roslib.xmlrpc.XmlRpcNode
+    @raise ROSInitException: if node has already been started
     """
-    global _node
-    rospy.impl.tcpros.init_tcpros()
-    if _node is not None:
-        raise Exception("Only one master/slave can be run per instance (multiple calls to start_node)")
-    _node = _sub_start_node(environ, resolved_name, master_uri, port)
-    return _node
+    init_tcpros()
+    if not master_uri:
+        master_uri = roslib.rosenv.get_master_uri()
+    if not master_uri:
+        master_uri = DEFAULT_MASTER_URI
+
+    # this will go away in future versions of API
+    _set_caller_id(resolved_name) 
+
+    handler = ROSHandler(resolved_name, master_uri)
+    node = roslib.xmlrpc.XmlRpcNode(port, handler, on_run_error=_node_run_error)
+    node.start()
+    while not node.uri and not is_shutdown():
+        time.sleep(0.00001) #poll for XMLRPC init
+    logging.getLogger("rospy.init").info("ROS Slave URI: [%s]", node.uri)
+
+    while not handler._is_registered() and not is_shutdown():
+        time.sleep(0.1) #poll for master registration
+    logging.getLogger("rospy.init").info("registered with master")
+    return node
+
+def _stdout_handler(level):
+    def fn(msg):
+        sys.stdout.write("[%s] %f: %s\n"%(level,time.time(), str(msg)))
+    return fn
+def _log_stream_handler(stream, level):
+    def fn(msg):
+        stream.write("[%s] %f: %s\n"%(level,time.time(), str(msg)))
+    return fn
+
+_loggers_initialized = False
+def init_log_handlers():
+    global _loggers_initialized
+    if _loggers_initialized:
+        return
+
+    from roslib.msg import Log
     
+    # client logger
+    clogger = logging.getLogger("rosout")
+    add_log_handler(Log.DEBUG, clogger.debug)
+    add_log_handler(Log.INFO, clogger.info)
+    add_log_handler(Log.ERROR, clogger.error)
+    add_log_handler(Log.WARN, clogger.warn)
+    add_log_handler(Log.FATAL, clogger.critical)
+
+    # TODO: make this configurable
+    # INFO -> stdout
+    # ERROR, FATAL -> stderr
+    add_log_handler(Log.INFO, _log_stream_handler(sys.stdout, 'INFO'))
+    add_log_handler(Log.WARN, _log_stream_handler(sys.stderr, 'WARN'))
+    add_log_handler(Log.ERROR, _log_stream_handler(sys.stderr, 'ERROR'))
+    add_log_handler(Log.FATAL, _log_stream_handler(sys.stderr, 'FATAL'))
+

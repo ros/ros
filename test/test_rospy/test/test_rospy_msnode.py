@@ -48,7 +48,6 @@ class TestRospyMsnode(unittest.TestCase):
         import rospy.impl.msnode
         ROSNode = rospy.impl.msnode.ROSNode
         node = ROSNode('/foo')
-        self.assertEquals('foo', node.name)
         self.assertEquals(node.port, 0)
         node.start()
         # allow 2 seconds for xmlrpc server to start

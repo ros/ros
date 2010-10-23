@@ -64,6 +64,20 @@ _logger = logging.getLogger("rospy.core")
 # teardown dirty than to hang
 _TIMEOUT_SHUTDOWN_JOIN = 5.
 
+import warnings
+def deprecated(func):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emmitted
+    when the function is used."""
+    def newFunc(*args, **kwargs):
+        warnings.warn("Call to deprecated function %s." % func.__name__,
+                      category=DeprecationWarning, stacklevel=2)
+        return func(*args, **kwargs)
+    newFunc.__name__ = func.__name__
+    newFunc.__doc__ = func.__doc__
+    newFunc.__dict__.update(func.__dict__)
+    return newFunc
+
 #########################################################
 # ROSRPC
 
@@ -93,25 +107,14 @@ def parse_rosrpc_uri(uri):
 
 #########################################################
         
-def _stdout_handler(level):
-    def fn(msg):
-        sys.stdout.write("[%s] %f: %s\n"%(level,time.time(), str(msg)))
-    return fn
-def _stderr_handler(level):
-    def fn(msg):
-        sys.stderr.write("[%s] %f: %s\n"%(level,time.time(), str(msg)))
-    return fn
-
-# client logger
-_clogger = logging.getLogger("rosout")
 # rospy logger
 _rospy_logger = logging.getLogger("rospy.internal")
 
-_logdebug_handlers = [_clogger.debug]
-_loginfo_handlers = [_clogger.info, _stdout_handler('INFO')]
-_logwarn_handlers = [_clogger.warn, _stderr_handler('WARN')]
-_logerr_handlers = [_clogger.error, _stderr_handler('ERROR')]
-_logfatal_handlers = [_clogger.critical, _stderr_handler('FATAL')]
+_logdebug_handlers = []
+_loginfo_handlers = []
+_logwarn_handlers = []
+_logerr_handlers = []
+_logfatal_handlers = []
 
 # we keep a separate, non-rosout log file to contain stack traces and
 # other sorts of information that scare users but are essential for

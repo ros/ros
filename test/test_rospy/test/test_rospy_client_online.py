@@ -190,12 +190,6 @@ class TestRospyClientOnline(unittest.TestCase):
         self.assert_(abs(dur - 1.0) < 0.5, dur)
         
 
-    def test_get_node_proxy(self):
-        import rospy
-        p = rospy.get_node_proxy()
-        import os
-        self.assertEquals(os.getpid(), p.getPid()[2])
-
     def test_param_server(self):
         # this isn't a parameter server test, just checking that the rospy bindings work
         import rospy

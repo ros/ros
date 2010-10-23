@@ -248,16 +248,11 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
     logger = logging.getLogger("rospy.client")
     logger.info("init_node, name[%s], pid[%s]", resolved_node_name, os.getpid())
             
-    node = rospy.impl.init.start_node(os.environ, resolved_node_name) #node initialization blocks until registration with master
+    # node initialization blocks until registration with master
+    node = rospy.impl.init.start_node(os.environ, resolved_node_name) 
+    rospy.core.set_node_uri(node.uri)
+    rospy.core.add_shutdown_hook(node.shutdown)    
     
-    timeout_t = time.time() + TIMEOUT_READY
-    code = None
-    while time.time() < timeout_t and code is None and not rospy.core.is_shutdown():
-        try:
-            code, msg, master_uri = node.getMasterUri()
-        except:
-            time.sleep(0.01) #poll for init
-
     if rospy.core.is_shutdown():
         logger.warn("aborting node initialization as shutdown has been triggered")
         raise rospy.exceptions.ROSInitException("init_node interrupted before it could complete")
@@ -266,12 +261,6 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
     _init_node_params(argv, name)
 
     rospy.core.set_initialized(True)
-    if code is None:
-        logger.error("ROS node initialization failed: unable to connect to local node") 
-        raise rospy.exceptions.ROSInitException("ROS node initialization failed: unable to connect to local node")        
-    elif code != 1:
-        logger.error("ROS node initialization failed: %s, %s, %s", code, msg, master_uri)
-        raise rospy.exceptions.ROSInitException("ROS node initialization failed: %s, %s, %s", code, msg, master_uri)
 
     rospy.impl.rosout.load_rosout_handlers(log_level)
     if not disable_rosout:

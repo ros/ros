@@ -60,18 +60,21 @@ def callback(data):
     print "message received", data.data
     _last_callback = data
 
+import xmlrpclib
+
 class TestDeregister(unittest.TestCase):
         
     def test_unpublish(self):
-        node_proxy = rospy.get_node_proxy()
-        _, _, pubs = node_proxy.getPublications()
+        node_proxy = xmlrpclib.ServerProxy(rospy.get_node_uri())
+        
+        _, _, pubs = node_proxy.getPublications('/foo')
         pubs = [p for p in pubs if p[0] != '/rosout']
         self.assert_(not pubs, pubs)
         
         print "Publishing ", PUBTOPIC
         pub = rospy.Publisher(PUBTOPIC, String)
         topic = rospy.resolve_name(PUBTOPIC)
-        _, _, pubs = node_proxy.getPublications()
+        _, _, pubs = node_proxy.getPublications('/foo')
         pubs = [p for p in pubs if p[0] != '/rosout']
         self.assertEquals([[topic, String._type]], pubs, "Pubs were %s"%pubs)
 
@@ -90,7 +93,7 @@ class TestDeregister(unittest.TestCase):
         self.assert_(_last_callback is None)
 
         # verify that close cleaned up master and node state
-        _, _, pubs = node_proxy.getPublications()
+        _, _, pubs = node_proxy.getPublications('/foo')
         pubs = [p for p in pubs if p[0] != '/rosout']
         self.assert_(not pubs, "Node still has pubs: %s"%pubs)
         n = rospy.get_caller_id()
@@ -100,14 +103,15 @@ class TestDeregister(unittest.TestCase):
     def test_unsubscribe(self):
         global _last_callback
 
-        node_proxy = rospy.get_node_proxy()
-        _, _, subscriptions = node_proxy.getSubscriptions()
+        uri = rospy.get_node_uri()
+        node_proxy = xmlrpclib.ServerProxy(uri)
+        _, _, subscriptions = node_proxy.getSubscriptions('/foo')
         self.assert_(not subscriptions, 'subscriptions present: %s'%str(subscriptions))
         
         print "Subscribing to ", SUBTOPIC
         sub = rospy.Subscriber(SUBTOPIC, String, callback)
         topic = rospy.resolve_name(SUBTOPIC)
-        _, _, subscriptions = node_proxy.getSubscriptions()
+        _, _, subscriptions = node_proxy.getSubscriptions('/foo')
         self.assertEquals([[topic, String._type]], subscriptions, "Subscriptions were %s"%subscriptions)
         
         # wait for the first message to be received
@@ -129,7 +133,7 @@ class TestDeregister(unittest.TestCase):
         self.assert_(_last_callback is None)
 
         # verify that close cleaned up master and node state
-        _, _, subscriptions = node_proxy.getSubscriptions()
+        _, _, subscriptions = node_proxy.getSubscriptions('/foo')
 
         self.assert_(not subscriptions, "Node still has subscriptions: %s"%subscriptions)
         n = rospy.get_caller_id()

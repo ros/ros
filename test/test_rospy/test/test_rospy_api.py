@@ -139,7 +139,6 @@ class TestRospyApi(unittest.TestCase):
         rospy.Duration
         rospy.Header
         rospy.MasterProxy
-        rospy.NodeProxy        
         rospy.Message
         rospy.Publisher
         rospy.Rate

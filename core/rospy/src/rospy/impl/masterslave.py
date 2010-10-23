@@ -53,6 +53,7 @@ Individual methods may assign additional meaning/semantics to statusCode.
 
 import os
 import sys
+import itertools
 import logging
 import socket
 import threading
@@ -121,7 +122,7 @@ def apivalidate(error_return_value, validators=()):
             
             newArgs = [instance, caller_id] #canonicalized args
             try:
-                for (v, a) in zip(validators, args[2:]):
+                for (v, a) in itertools.izip(validators, args[2:]):
                     if v:
                         try:
                             #simultaneously validate + canonicalized args
@@ -130,8 +131,8 @@ def apivalidate(error_return_value, validators=()):
                             else:
                                 newArgs.append(v(a, caller_id)) 
                         except ParameterInvalid, e:
-                            _logger.error("%s: invalid parameter: %s", f.func_name, e.message or 'error')
-                            return -1, e.message or 'error', error_return_value
+                            _logger.error("%s: invalid parameter: %s", f.func_name, str(e) or 'error')
+                            return -1, str(e) or 'error', error_return_value
                     else:
                         newArgs.append(a)
 

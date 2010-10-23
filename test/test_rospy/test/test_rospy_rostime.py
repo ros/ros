@@ -128,20 +128,14 @@ class TestRospyTime(unittest.TestCase):
         t = time.time()
         v = Time.from_sec(t)
         self.assertEquals(v.to_sec(), t)
-        self.assertEquals(v.to_seconds(), t)
         # test from_sec()
         self.assertEquals(Time.from_sec(0), Time())
         self.assertEquals(Time.from_sec(1.), Time(1))
         self.assertEquals(Time.from_sec(v.to_sec()), v)
         self.assertEquals(v.from_sec(v.to_sec()), v)
 
-        # test from_seconds()
-        self.assertEquals(Time.from_seconds(0), Time())
-        self.assertEquals(Time.from_seconds(1.), Time(1))
-        self.assertEquals(Time.from_seconds(v.to_seconds()), v)
-        self.assertEquals(v.from_seconds(v.to_seconds()), v)
         # test to_time()
-        self.assertEquals(v.to_seconds(), v.to_time())
+        self.assertEquals(v.to_sec(), v.to_time())
 
         # test addition
         # - time + time fails
@@ -227,14 +221,6 @@ class TestRospyTime(unittest.TestCase):
         v = Duration(0,1000)
         self.assertEquals(v, Duration.from_sec(v.to_sec()))
         self.assertEquals(v, v.from_sec(v.to_sec()))
-
-        # test from_seconds
-        v = Duration(1000)
-        self.assertEquals(v, Duration.from_seconds(v.to_seconds()))
-        self.assertEquals(v, v.from_seconds(v.to_seconds()))
-        v = Duration(0,1000)
-        self.assertEquals(v, Duration.from_seconds(v.to_seconds()))
-        self.assertEquals(v, v.from_seconds(v.to_seconds()))
       
         # test neg
         v = -Duration(1, -1)
@@ -317,7 +303,7 @@ class TestRospyTime(unittest.TestCase):
 
         self.assertAlmostEqual(time.time(), rospy.get_time(), 1)
 
-        for t in [Time.from_seconds(1.0), Time.from_sec(1.0), Time.from_seconds(4.0), Time.from_sec(4.0)]:
+        for t in [Time.from_sec(1.0), Time.from_sec(4.0)]:
             _set_rostime(t)
             self.assertEquals(t, rospy.get_rostime())
             self.assertEquals(t.to_time(), rospy.get_time())        
@@ -333,7 +319,6 @@ class TestRospyTime(unittest.TestCase):
         rospy.rostime.switch_to_wallclock()
         rospy.sleep(0.1)
         rospy.sleep(rospy.Duration.from_sec(0.1))
-        rospy.sleep(rospy.Duration.from_seconds(0.1))                
         
         from rospy.rostime import _set_rostime
         from rospy import Time 

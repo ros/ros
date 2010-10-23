@@ -862,9 +862,16 @@ class _PublisherImpl(_TopicImpl):
                 err_con.append(c)
 
         # reset the buffer and update stats
-        self.message_data_sent += b.tell() #STATS
-        b.seek(0)
-        b.truncate(0)
+        try:
+            self.message_data_sent += b.tell() #STATS
+            b.seek(0)
+            b.truncate(0)
+        except ValueError:
+            # #2673: squelch shutdown errors
+            if not is_shutdown():
+                raise ROSException("topic's internal buffer is no longer valid")
+            else:
+                return
 
         # remove any bad connections
         for c in err_con:

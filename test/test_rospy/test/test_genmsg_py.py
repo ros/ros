@@ -49,7 +49,7 @@ from roslib.message import SerializationError
 class TestGenmsgPy(unittest.TestCase):
 
     def test_PythonKeyword(self):
-        from test_ros.msg import PythonKeyword
+        from test_rospy.msg import PythonKeyword
         # the md5sum is pulled from the c++ message generator. The
         # test here is that the Python msg generator didn't
         # accidentally mutate a md5sum based on a message that has its

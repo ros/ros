@@ -254,8 +254,8 @@ def _remap_reserved(field_name):
     @return: remapped name
     @rtype: str
     """
-    #doing this lazy saves 0.05s on up-to-date builds
-    if field_name in keyword.kwlist:
+    # include 'self' as well because we are within a class instance
+    if field_name in keyword.kwlist + ['self']:
         return field_name + "_"
     return field_name
     

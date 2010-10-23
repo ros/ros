@@ -570,7 +570,8 @@ class CallbackEcho(object):
                 
             # data can be None if msg_eval returns None
             if data is not None:
-
+                # NOTE: we do all prints using direct writes to sys.stdout, which works better with piping
+                
                 self.count += 1
                 
                 # print fields header for plot
@@ -582,7 +583,9 @@ class CallbackEcho(object):
                     sys.stdout.write(self.sep+self.str_fn(data, time_offset=rospy.get_rostime(), current_time=current_time) + '\n')
                 else:
                     sys.stdout.write(self.sep+self.str_fn(data, current_time=current_time) + '\n')
-                    
+
+                # we have to flush in order before piping to work
+                sys.stdout.flush()
             # #2778 : have to check count after incr to set done flag
             if self.max_count is not None and self.count >= self.max_count:
                 self.done = True
@@ -1118,23 +1121,12 @@ def _publish_latched(pub, msg, once=False, verbose=False):
     @param verbose: If True, print more verbose output to stdout
     @type  verbose: bool
     """
-    s = "publishing and latching [%s]"%msg if verbose else "publishing and latching message"
-    if once:
-        s = s + " for %s seconds"%_ONCE_DELAY
-    else:
-        s = s + ". Press ctrl-C to terminate"
-    print s
-
     try:
         pub.publish(msg)
     except TypeError, e:
         raise ROSTopicException(str(e))
 
-    if once:
-        timeout_t = time.time() + _ONCE_DELAY
-        while not rospy.is_shutdown() and time.time() < timeout_t:
-            rospy.sleep(0.2)
-    else:
+    if not once:
         rospy.spin()        
 
 def publish_message(pub, msg_class, pub_args, rate=None, once=False, verbose=False):
@@ -1174,8 +1166,7 @@ def publish_message(pub, msg_class, pub_args, rate=None, once=False, verbose=Fal
         roslib.message.fill_message_args(msg, pub_args, keys=keys)
     except roslib.message.ROSMessageException, e:
         raise ROSTopicException(str(e)+"\n\nArgs are: [%s]"%roslib.message.get_printable_message_args(msg))
-    try:
-        
+    try:        
         if rate is None:
             _publish_latched(pub, msg, once, verbose)
         else:
@@ -1216,11 +1207,13 @@ def _rostopic_cmd_pub(argv):
         if options.once:
             parser.error("You cannot select both -r and -1 (--once)")
         try:
-            r = float(options.rate)
+            rate = float(options.rate)
         except ValueError:
             parser.error("rate must be a number")
-        if r <= 0:
-            parser.error("rate must be greater than zero")        
+        if rate <= 0:
+            parser.error("rate must be greater than zero")
+    else:
+        rate = None
         
     if len(args) == 0:
         parser.error("/topic must be specified")
@@ -1241,54 +1234,92 @@ def _rostopic_cmd_pub(argv):
     _check_master()
 
     # if no rate, we latch
-    latch = options.rate == None
+    latch = rate == None
     pub, msg_class = create_publisher(topic_name, topic_type, latch)
+
+    # check to see if we read pub_args from stdin    
     if not pub_args and len(msg_class.__slots__):
         if sys.stdin.isatty():
             parser.error("Please specify message values")
-        # read pub_args from stdin
-        for pub_args in _stdin_yaml_arg():
-            if rospy.is_shutdown():
-                break
-            if pub_args:
-                if type(pub_args) != list:
-                    pub_args = [pub_args]
-                try:
-                    publish_message(pub, msg_class, pub_args, options.rate, verbose=options.verbose)
-                except ValueError, e:
-                    print >> sys.stderr, str(e)
-                    break
-            if rospy.is_shutdown():
-                break
+
+        stdin_publish(pub, msg_class, rate, options.once, options.verbose)
     else:
-        publish_message(pub, msg_class, pub_args, options.rate, options.once, verbose=options.verbose)
+        argv_publish(pub, msg_class, pub_args, rate, options.once, options.verbose)
         
-def _stdin_yaml_arg():
+def argv_publish(pub, msg_class, pub_args, rate, once, verbose):
+    if rate is None:
+        s = "publishing and latching [%s]"%msg if verbose else "publishing and latching message"
+        if once:
+            s = s + " for %s seconds"%_ONCE_DELAY
+        else:
+            s = s + ". Press ctrl-C to terminate"
+        print s
+
+    publish_message(pub, msg_class, pub_args, rate, once, verbose=verbose)
+
+    if once:
+        # stick around long enough for others to grab
+        timeout_t = time.time() + _ONCE_DELAY
+        while not rospy.is_shutdown() and time.time() < timeout_t:
+            rospy.sleep(0.2)
+
+SUBSCRIBER_TIMEOUT = 5.
+def wait_for_subscriber(pub, timeout):
+    timeout_t = time.time() + timeout
+    while pub.get_num_connections() == 0 and timeout_t > time.time():
+        time.sleep(0.01)
+
+def stdin_publish(pub, msg_class, rate, once, verbose):
+    r = rospy.Rate(rate) if rate is not None else None
+
+    # stdin publishing can happen really fast, especially if no rate
+    # is set, so try to make sure someone is listening before we
+    # publish, though we don't wait too long.
+    wait_for_subscriber(pub, SUBSCRIBER_TIMEOUT)
+
+    for pub_args in stdin_yaml_arg():
+        if rospy.is_shutdown():
+            break
+        if pub_args:
+            if type(pub_args) != list:
+                pub_args = [pub_args]
+            try:
+                publish_message(pub, msg_class, pub_args, None, True, verbose=verbose)
+            except ValueError, e:
+                print >> sys.stderr, str(e)
+                break
+        if r is not None:
+            r.sleep()
+        if rospy.is_shutdown() or once:
+            break
+
+def stdin_yaml_arg():
     """
+    Iterate over YAML documents in stdin
     @return: for next list of arguments on stdin. Iterator returns a list of args for each call.
     @rtype: iterator
     """
     import yaml
-    import select
-    poll = select.poll()
-    poll.register(sys.stdin, select.POLLIN)
+    from select import select
+    from select import error as select_error
     try:
         arg = 'x'
         while not rospy.is_shutdown() and arg != '\n':
             buff = ''
-            while arg != '\n' and arg.strip() != '---':
-                val = poll.poll(1.0)
+            rlist = [sys.stdin]
+            wlist = xlist = []
+            arg = 'x'                    
+            while arg != '\n' and arg.strip() != '---' and not rospy.is_shutdown():
+                val, _, _ = select(rlist, wlist, xlist, 1.0)
                 if not val:
+                    print "not ready", val
                     continue
                 arg = sys.stdin.readline() + '\n'
-                if arg.startswith('... logging'):
-                    # temporary, until we fix rospy logging
-                    continue
-                elif arg.strip() != '---':
+                if arg.strip() != '---':
                     buff = buff + arg
             # publish_message wants a list of args
             yield yaml.load(buff.rstrip())
-    except select.error:
+    except select_error:
         return # most likely ctrl-c interrupt
     
 def _rostopic_cmd_list(argv):

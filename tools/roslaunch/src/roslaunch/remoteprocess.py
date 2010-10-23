@@ -54,46 +54,6 @@ _logger = logging.getLogger("roslaunch.remoteprocess")
 # #1975 timeout for creating ssh connections
 TIMEOUT_SSH_CONNECT = 30.
 
-# TODO: remove in ROS 1.3
-def _paramiko_HostKeyEntry_from_line(line):
-    """
-    paramiko 1.7.4 has a bad from_line implementation. This uses code from 1.7.6 to manually load
-    """
-    fields = line.split(' ')
-    # these three lines are the bug fix
-    if len(fields) < 3: 
-        return None
-    fields = fields[:3]
-
-    names, keytype, key = fields
-    names = names.split(',')
-    import base64
-    if keytype == 'ssh-rsa':
-        import paramiko.rsakey
-        key = paramiko.rsakey.RSAKey(data=base64.decodestring(key))
-    elif keytype == 'ssh-dss':
-        import paramiko.dsskey
-        key = paramiko.dsskey.DSSKey(data=base64.decodestring(key))
-    else:
-        return None
-
-    return paramiko.hostkeys.HostKeyEntry(names, key)
-
-# TODO: remove in ROS 1.3
-def _paramiko_load_system_host_keys(ssh, filename):
-    """
-    paramiko 1.7.4 has a bad HostKeyEntry from_line
-    implementation. This uses code from 1.7.6 to manually load
-    """
-    with open(filename, 'r') as f:
-        for line in f:
-            line = line.strip()
-            if (len(line) == 0) or (line[0] == '#'):
-                continue
-            e = _paramiko_HostKeyEntry_from_line(line)
-            if e is not None:
-                ssh._system_host_keys._entries.append(e)
-
 def ssh_check_known_hosts(ssh, address, port, username=None, logger=None):
     """
     Validation routine for loading the host keys and making sure that
@@ -118,11 +78,7 @@ def ssh_check_known_hosts(ssh, address, port, username=None, logger=None):
     try:
         try:
             if os.path.isfile('/etc/ssh/ssh_known_hosts'): #default ubuntu location
-                if 0:
-                    # TODO: restore in ROS 1.3
-                    ssh.load_system_host_keys('/etc/ssh/ssh_known_hosts')
-                else:
-                    _paramiko_load_system_host_keys(ssh, '/etc/ssh/ssh_known_hosts')
+                ssh.load_system_host_keys('/etc/ssh/ssh_known_hosts')
         except IOError:
             pass
         ssh.load_system_host_keys() #default user location

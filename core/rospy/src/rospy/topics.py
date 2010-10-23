@@ -812,8 +812,10 @@ class _PublisherImpl(_TopicImpl):
         @return: True if the data was published, False otherwise.
         @rtype: bool
         @raise roslib.message.SerializationError: if L{Message} instance is unable to serialize itself
-        @raise rospy.ROSException: if topic has been closed
+        @raise rospy.ROSException: if topic has been closed or was closed during publish()
         """
+        #TODO: should really just use IOError instead of rospy.ROSException
+
         if self.closed:
             # during shutdown, the topic can get closed, which creates
             # a race condition with user code testing is_shutdown
@@ -840,38 +842,48 @@ class _PublisherImpl(_TopicImpl):
         b = self.buff
         try:
             b.tell()
-        except ValueError:
-            raise ROSException("topic's internal buffer is no longer valid")
 
-        # serialize the message
-        self.seq += 1 #count messages published to the topic
-        serialize_message(b, self.seq, message)
+            # serialize the message
+            self.seq += 1 #count messages published to the topic
+            serialize_message(b, self.seq, message)
 
-        # send the buffer to all connections
-        err_con = []
-        data = b.getvalue()
-        for c in conns:
-            try:
-                c.write_data(data)
-            except TransportTerminated, e:
-                logdebug("publisher connection to [%s] terminated, see errorlog for details:\n%s"%(c.endpoint_id, traceback.format_exc()))
-                err_con.append(c)
-            except Exception, e:
-                # greater severity level
-                logdebug("publisher connection to [%s] terminated, see errorlog for details:\n%s"%(c.endpoint_id, traceback.format_exc()))
-                err_con.append(c)
+            # send the buffer to all connections
+            err_con = []
+            data = b.getvalue()
 
-        # reset the buffer and update stats
-        try:
+            for c in conns:
+                try:
+                    if not is_shutdown():
+                        c.write_data(data)
+                except TransportTerminated, e:
+                    logdebug("publisher connection to [%s] terminated, see errorlog for details:\n%s"%(c.endpoint_id, traceback.format_exc()))
+                    err_con.append(c)
+                except Exception, e:
+                    # greater severity level
+                    logdebug("publisher connection to [%s] terminated, see errorlog for details:\n%s"%(c.endpoint_id, traceback.format_exc()))
+                    err_con.append(c)
+
+            # reset the buffer and update stats
             self.message_data_sent += b.tell() #STATS
             b.seek(0)
             b.truncate(0)
+            
         except ValueError:
-            # #2673: squelch shutdown errors
-            if not is_shutdown():
-                raise ROSException("topic's internal buffer is no longer valid")
+            # operations on self.buff can fail if topic is closed
+            # during publish, which often happens during Ctrl-C.
+            # diagnose the error and report accordingly.
+            if self.closed:
+                if is_shutdown():
+                    # we offer no guarantees on publishes that occur
+                    # during shutdown, so this is not exceptional.
+                    return
+                else:
+                    # this indicates that user-level code most likely
+                    # closed the topic, which is exceptional.
+                    raise ROSException("topic was closed during publish()")
             else:
-                return
+                # unexpected, so re-raise original error
+                raise
 
         # remove any bad connections
         for c in err_con:

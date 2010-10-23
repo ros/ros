@@ -49,6 +49,7 @@ The structure of the serialization descends several levels of serializers:
 # creates circular deps
 
 import os
+import keyword
 import shutil
 import atexit
 import itertools
@@ -254,30 +255,9 @@ def _remap_reserved(field_name):
     @rtype: str
     """
     #doing this lazy saves 0.05s on up-to-date builds
-    if not _reserved_words:
-        _load_reserved_words()
-    if field_name in _reserved_words:
+    if field_name in keyword.kwlist:
         return field_name + "_"
     return field_name
-
-_reserved_words = []
-def _load_reserved_words():
-    """
-    load python reserved words file into global _reserved_words. these
-    reserved words cannot be field names without being altered first
-    """
-    global _reserved_words
-    roslib_dir = roslib.packages.get_pkg_dir('roslib')
-    reserved_words_file = os.path.join(roslib_dir, 'scripts', 'python-reserved-words.txt')
-    if not os.path.exists(reserved_words_file):
-        print >> sys.stderr, "Cannot load python reserved words file [%s]"%reserved_words_file
-        return False
-    f = open(reserved_words_file, 'r')
-    try:
-        _reserved_words = [w.strip() for w in f.readlines() if w]
-        return True
-    finally:
-        f.close()
     
 ################################################################################
 # (de)serialization routines
@@ -951,7 +931,17 @@ def msg_generator(package, name, spec):
     @param spec: parsed .msg specification
     @type  spec: L{MsgSpec}
     """
-    spec = make_python_safe(spec) # remap spec names to be Python-safe
+    
+    # #2990: have to compute md5sum before any calls to make_python_safe
+
+    # generate dependencies dictionary. omit files calculation as we
+    # rely on in-memory MsgSpecs instead so that we can generate code
+    # for older versions of msg files
+    gendeps_dict = roslib.gentools.get_dependencies(spec, package, compute_files=False)
+    md5sum = roslib.gentools.compute_md5(gendeps_dict)
+    
+    # remap spec names to be Python-safe
+    spec = make_python_safe(spec) 
     spec_names = spec.names
 
     # #1807 : this will be much cleaner when msggenerator library is
@@ -972,14 +962,10 @@ def msg_generator(package, name, spec):
     
     fulltype = '%s%s%s'%(package, roslib.msgs.SEP, name)
 
-    # generate dependencies dictionary. omit files calculation as we
-    # rely on in-memory MsgSpecs instead so that we can generate code
-    # for older versions of msg files
-    gendeps_dict = roslib.gentools.get_dependencies(spec, package, compute_files=False)
     #Yield data class first, e.g. Point2D
     yield 'class %s(roslib.message.Message):'%name
-    yield '  _md5sum = "%s"'%roslib.gentools.compute_md5(gendeps_dict)
-    yield '  _type = "%s"'%fulltype
+    yield '  _md5sum = "%s"'%(md5sum)
+    yield '  _type = "%s"'%(fulltype)
     yield '  _has_header = %s #flag to mark the presence of a Header object'%spec.has_header()
     # note: we introduce an extra newline to protect the escaping from quotes in the message
     yield '  _full_text = """%s\n"""'%compute_full_text_escaped(gendeps_dict)

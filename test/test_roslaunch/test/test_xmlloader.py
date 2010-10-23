@@ -212,7 +212,7 @@ class TestXmlLoader(unittest.TestCase):
         p = [p for p in mock.params if p.key == '/binaryfile'][0]
         self.assertEquals(xmlrpclib.Binary(contents), p.value, 1)
 
-        f = open(os.path.join(get_pkg_dir('roslib'), 'scripts', 'python-reserved-words.txt'))
+        f = open(os.path.join(get_pkg_dir('roslaunch'), 'example.launch'))
         try:
             contents = f.read()
         finally:

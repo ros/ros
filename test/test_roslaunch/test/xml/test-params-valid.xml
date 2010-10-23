@@ -30,7 +30,7 @@
   <!-- upload the contents of a file as base64 binary as a param -->
   <param name="binaryfile" binfile="$(find roslaunch)/example.launch" />
   <!-- upload the output of a command as a param. -->
-  <param name="commandoutput" command="cat &quot;$(find roslib)/scripts/python-reserved-words.txt&quot;" />
+  <param name="commandoutput" command="cat &quot;$(find roslaunch)/example.launch&quot;" />
 
 
   <!-- test that we can override params -->

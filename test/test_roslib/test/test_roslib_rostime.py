@@ -58,10 +58,6 @@ class RostimeTest(unittest.TestCase):
       self.assertEquals(0, v.to_nsec())      
       self.assertEquals(0, v.to_sec())
 
-      # soon to deprecated
-      self.assertEquals(0, v.tons())
-      self.assertEquals(0, v.to_seconds())
-      
       self.assertEquals(v, v)
       self.assertEquals(v, TVal())
       self.assertEquals(v, TVal(0))
@@ -97,9 +93,7 @@ class RostimeTest(unittest.TestCase):
       self.assert_(v) # test __zero__
       self.failIf(v.is_zero())
       self.assertEquals('1000000000', str(v))
-      self.assertEquals(1000000000, v.tons())
       self.assertEquals(1000000000, v.to_nsec())
-      self.assertEquals(1, v.to_seconds())
       self.assertEquals(v, v)
       self.assertEquals(v, TVal(1))
       self.assertEquals(v, TVal(1, 0))
@@ -130,9 +124,7 @@ class RostimeTest(unittest.TestCase):
       self.assert_(v) # test __zero__
       self.failIf(v.is_zero())
       self.assertEquals('1', str(v))
-      self.assertEquals(1, v.tons())
       self.assertEquals(1, v.to_nsec())
-      self.assertEquals(0.000000001, v.to_seconds())
       self.assertEquals(v, v)
       self.assertEquals(v, TVal(0,1))
       self.assertNotEquals(v, TVal(0, 0))
@@ -151,47 +143,33 @@ class RostimeTest(unittest.TestCase):
       self.assertEquals(2, v.to_sec())
       self.assertEquals(2000000000, v.to_nsec())
       
-      self.assertEquals(2, v.to_seconds())
-      self.assertEquals(2000000000, v.tons())
-      
       v = TVal(1, 1000000001)
       self.assertEquals(2, v.secs)
       self.assertEquals(1, v.nsecs)
       self.assertEquals(2.000000001, v.to_sec())
       self.assertEquals(2000000001, v.to_nsec())
       
-      self.assertEquals(2.000000001, v.to_seconds())
-      self.assertEquals(2000000001, v.tons())
-      
       v = TVal(1, -1000000000)
       self.assertEquals(0, v.secs)
       self.assertEquals(0, v.nsecs)
-      self.assertEquals(0, v.to_seconds())
-      self.assertEquals(0, v.tons())
       v = TVal(1, -999999999)
       self.assertEquals(0, v.secs)
       self.assertEquals(1, v.nsecs)
       self.assertEquals(0.000000001, v.to_sec())
       self.assertEquals(1, v.to_nsec())
 
-      self.assertEquals(0.000000001, v.to_seconds())
-      self.assertEquals(1, v.tons())
       if test_neg:
           v = TVal(-1, -1000000000)
           self.assertEquals(-2, v.secs)
           self.assertEquals(0, v.nsecs)
           self.assertEquals(-2, v.to_sec())
           self.assertEquals(-2000000000, v.to_nsec())
-          self.assertEquals(-2, v.to_seconds())
-          self.assertEquals(-2000000000, v.tons())
 
           v = TVal(-2, 1000000000)
           self.assertEquals(-1, v.secs)
           self.assertEquals(0, v.nsecs)
           self.assertEquals(-1, v.to_sec())
           self.assertEquals(-1000000000, v.to_nsec())
-          self.assertEquals(-1, v.to_seconds())
-          self.assertEquals(-1000000000, v.tons())
 
           
       # test some more hashes
@@ -237,18 +215,12 @@ class RostimeTest(unittest.TestCase):
       import time
       t = time.time()
       v = Time.from_sec(t)
-      self.assertEquals(v.to_seconds(), t)
       self.assertEquals(v.to_sec(), t)      
       # test from_sec()
       self.assertEquals(Time.from_sec(0), Time())
       self.assertEquals(Time.from_sec(1.), Time(1))
       self.assertEquals(Time.from_sec(v.to_sec()), v)
       self.assertEquals(v.from_sec(v.to_sec()), v)
-      # test from_seconds()
-      self.assertEquals(Time.from_seconds(0), Time())
-      self.assertEquals(Time.from_seconds(1.), Time(1))
-      self.assertEquals(Time.from_seconds(v.to_seconds()), v)
-      self.assertEquals(v.from_seconds(v.to_seconds()), v)
       # test to_time()
       self.assertEquals(v.to_sec(), v.to_time())
       
@@ -328,7 +300,6 @@ class RostimeTest(unittest.TestCase):
       
       # Time (float secs) vs. Time(int, int)
       self.assertEquals(Time.from_sec(0.5), Time(0.5))
-      self.assertEquals(Time.from_seconds(0.5), Time(0.5))
       t = Time(0.5)
       self.assert_(type(t.secs) == int)
       self.assertEquals(0, t.secs)
@@ -351,14 +322,6 @@ class RostimeTest(unittest.TestCase):
       self.assertEquals(v, Duration.from_sec(v.to_sec()))
       self.assertEquals(v, v.from_sec(v.to_sec()))
 
-      # test from_seconds
-      v = Duration(1000)
-      self.assertEquals(v, Duration.from_seconds(v.to_seconds()))
-      self.assertEquals(v, v.from_seconds(v.to_seconds()))
-      v = Duration(0,1000)
-      self.assertEquals(v, Duration.from_seconds(v.to_seconds()))
-      self.assertEquals(v, v.from_seconds(v.to_seconds()))
-      
       # test neg
       v = -Duration(1, -1)
       self.assertEquals(-1, v.secs)
@@ -436,7 +399,6 @@ class RostimeTest(unittest.TestCase):
       
       # Duration (float secs) vs. Duration(int, int)
       self.assertEquals(Duration.from_sec(0.5), Duration(0.5))
-      self.assertEquals(Duration.from_seconds(0.5), Duration(0.5))      
       t = Duration(0.5)
       self.assert_(type(t.secs) == int)
       self.assertEquals(0, t.secs)

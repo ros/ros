@@ -104,7 +104,6 @@ class TestRospyApi(unittest.TestCase):
         rospy.get_master
         rospy.get_namespace
         rospy.get_published_topics
-        rospy.get_node_proxy
         rospy.get_node_uri
         rospy.get_ros_root
         rospy.get_time

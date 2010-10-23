@@ -77,16 +77,6 @@ _rospy_to_logging_levels = {
     }
 
 
-# hide rospy.impl.init implementation from users
-def get_node_proxy():
-    """
-    Retrieve L{NodeProxy} for slave node running on this machine.
-
-    @return: slave node API handle
-    @rtype: L{rospy.NodeProxy}
-    """
-    return rospy.impl.init.get_node_proxy()
-    
 def on_shutdown(h):
     """
     Register function to be called on shutdown. This function will be

@@ -51,7 +51,7 @@ from roslib.msg import Header
 from .client import spin, myargv, init_node, \
     get_published_topics, \
     wait_for_message, \
-    get_master, get_node_proxy,\
+    get_master, \
     on_shutdown, \
     get_param, get_param_names, set_param, delete_param, has_param, search_param,\
     sleep, Rate,\
@@ -118,7 +118,6 @@ __all__ = [
     'TransportException',
     'TransportTerminated',
     'TransportInitError',
-    'get_node_proxy',
     'AnyMsg', 'Message',
     'get_name',
     'get_caller_id',

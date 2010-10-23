@@ -49,6 +49,7 @@ import roslib.xmlrpc
 
 from ..names import _set_caller_id
 from ..core import is_shutdown, add_log_handler, signal_shutdown, rospyerr
+from ..rostime import is_wallclock, get_time
 
 from .tcpros import init_tcpros
 from .masterslave import ROSHandler
@@ -103,13 +104,21 @@ def start_node(environ, resolved_name, master_uri=None, port=None):
     logging.getLogger("rospy.init").info("registered with master")
     return node
 
-def _stdout_handler(level):
+# #2879
+# resolve sys.stdout/stderr each time through in case testing program or otherwise wants to redirect stream
+def _stdout_log(level):
     def fn(msg):
-        sys.stdout.write("[%s] %f: %s\n"%(level,time.time(), str(msg)))
+        if is_wallclock():
+            sys.stdout.write("[%s] [WallTime: %f] %s\n"%(level,time.time(), str(msg)))
+        else:
+            sys.stdout.write("[%s] [WallTime: %f] [%f] %s\n"%(level,time.time(), get_time(), str(msg)))
     return fn
-def _log_stream_handler(stream, level):
+def _stderr_log(level):
     def fn(msg):
-        stream.write("[%s] %f: %s\n"%(level,time.time(), str(msg)))
+        if is_wallclock():
+            sys.stderr.write("[%s] [WallTime: %f] %s\n"%(level,time.time(), str(msg)))
+        else:
+            sys.stderr.write("[%s] [WallTime: %f] [%f] %s\n"%(level,time.time(), get_time(), str(msg)))
     return fn
 
 _loggers_initialized = False
@@ -131,8 +140,8 @@ def init_log_handlers():
     # TODO: make this configurable
     # INFO -> stdout
     # ERROR, FATAL -> stderr
-    add_log_handler(Log.INFO, _log_stream_handler(sys.stdout, 'INFO'))
-    add_log_handler(Log.WARN, _log_stream_handler(sys.stderr, 'WARN'))
-    add_log_handler(Log.ERROR, _log_stream_handler(sys.stderr, 'ERROR'))
-    add_log_handler(Log.FATAL, _log_stream_handler(sys.stderr, 'FATAL'))
+    add_log_handler(Log.INFO, _stdout_log('INFO'))
+    add_log_handler(Log.WARN, _stderr_log('WARN'))
+    add_log_handler(Log.ERROR, _stderr_log('ERROR'))
+    add_log_handler(Log.FATAL, _stderr_log('FATAL'))
 

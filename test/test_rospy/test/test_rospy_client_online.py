@@ -71,6 +71,40 @@ class TestRospyClientOnline(unittest.TestCase):
         import rospy
         rospy.init_node('test_rospy_online')
 
+    def test_log(self):
+        # we can't do anything fancy here like capture stdout as rospy
+        # grabs the streams before we do. Instead, just make sure the
+        # routines don't crash.
+        
+        real_stdout = sys.stdout
+        real_stderr = sys.stderr
+
+        try:
+            from cStringIO import StringIO
+            sys.stdout = StringIO()
+            sys.stderr = StringIO()
+
+            import rospy
+            rospy.loginfo("test 1")
+            self.assert_("test 1" in sys.stdout.getvalue())
+            
+            rospy.logwarn("test 2")            
+            self.assert_("[WARN]" in sys.stderr.getvalue())
+            self.assert_("test 2" in sys.stderr.getvalue())
+
+            sys.stderr = StringIO()
+            rospy.logerr("test 3")            
+            self.assert_("[ERROR]" in sys.stderr.getvalue())
+            self.assert_("test 3" in sys.stderr.getvalue())
+            
+            sys.stderr = StringIO()
+            rospy.logfatal("test 4")            
+            self.assert_("[FATAL]" in sys.stderr.getvalue())            
+            self.assert_("test 4" in sys.stderr.getvalue())            
+        finally:
+            sys.stdout = real_stdout
+            sys.stderr = real_stderr
+        
     def test_wait_for_service(self):
         # lazy-import for coverage
         import rospy

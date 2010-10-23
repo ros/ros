@@ -128,24 +128,6 @@ class TVal(object):
         """
         return self.secs * long(1e9) + self.nsecs
         
-    @deprecated
-    def to_seconds(self):
-        """
-        Use to_sec() instead. This is retained for backwards compatibility.
-        @return: time as float seconds (same as time.time() representation)
-        @rtype: float
-        """
-        return float(self.secs) + float(self.nsecs) / 1e9
-
-    @deprecated
-    def tons(self):
-        """
-        Use to_nsec() instead. This is retained for backwards compatibility.
-        @return: time as nanoseconds
-        @rtype: long
-        """
-        return self.secs * long(1e9) + self.nsecs
-    
     def __hash__(self):
         """
         Time values are hashable. Time values with identical fields have the same hash.
@@ -245,6 +227,7 @@ class Time(TVal):
         """
         self.secs, self.nsecs = state
 
+    @deprecated
     def from_seconds(float_secs):
         """
         Use from_sec() instead. This is retained for backwards compatibility.
@@ -371,18 +354,6 @@ class Duration(TVal):
     def __repr__(self):
         return "rostime.Duration[%d]"%self.to_nsec()
 
-    @deprecated
-    def from_seconds(float_seconds):
-        """
-        Use from_sec() instead. This is retained for backward compatibility.
-        
-        @param float_seconds: time value in specified as float seconds
-        @type  float_seconds: float
-        @return: Duration instance for specified float_seconds
-        @rtype: Duration
-        """
-        return Duration.from_sec(float_seconds)
-
     def from_sec(float_seconds):
         """
         Create new Duration instance from float seconds format.
@@ -396,7 +367,6 @@ class Duration(TVal):
         nsecs = int((float_seconds - secs) * 1000000000)
         return Duration(secs, nsecs)
     
-    from_seconds = staticmethod(from_seconds)
     from_sec = staticmethod(from_sec)    
 
     def __neg__(self):

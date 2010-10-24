@@ -86,3 +86,15 @@ As a base case, non-ros messages just return themselves."))
 
 (defgeneric list-to-ros-message (l))
 
+(defvar *print-deprecation-warnings* t)
+
+(defvar *warnings-table* (make-hash-table :test 'eq))
+
+(defmacro msg-deprecation-warning (str &rest args)
+  (let ((x (gensym)))
+    `(unless (gethash ',x *warnings-table*)
+       (when *print-deprecation-warnings* (warn ,str ,@args))
+       (setf (gethash ',x *warnings-table*) t)
+       )
+    ))
+

@@ -90,7 +90,7 @@ def field_type(f):
     else:
         elt_type = msg_type(f)
     if f.is_array:
-        return '(vector %s)'%elt_type
+        return '(cl:vector %s)'%elt_type
     else:
         return elt_type
 
@@ -225,17 +225,30 @@ def write_slot_definition(s, field):
 
     s.write('(%s'%field.name)
     with Indent(s, 1):
-        s.write(':reader %s-val'%field.name)
+        s.write(':reader %s'%field.name)
         s.write(':initarg :%s'%field.name)
         s.write(':type %s'%field_type(field))
     i = 0 if field.is_array else 1 # t2
     with Indent(s, i):
         s.write(':initform %s)'%field_initform(field))
+
+def write_deprecated_readers(s, spec):
+    suffix = 'srv' if spec.component_type == 'service' else 'msg'
+    for field in spec.parsed_fields():
+        s.newline()
+        s.write('(cl:defmethod %s-val ((m %s))'%(field.name, message_class(spec)))
+        with Indent(s):
+            s.write('(roslisp-msg-protocol:msg-deprecation-warning "Using old-style slot reader %s-%s:%s-val is deprecated.  Use %s-%s:%s instead.")'%(spec.package, suffix, field.name, spec.package, suffix, field.name))
+            s.write('(%s m))'%field.name)
+            
             
 
 def write_defclass(s, spec):
     "Writes the defclass that defines the message type"
-    s.write('(cl:defclass %s (roslisp-msg-protocol:ros-message)'%message_class(spec))
+    cl = message_class(spec)
+    new_cl = new_message_class(spec)
+    suffix = 'srv' if spec.component_type == 'service' else 'msg'
+    s.write('(cl:defclass %s (roslisp-msg-protocol:ros-message)'%cl)
     with Indent(s):
         s.write('(')
         with Indent(s, inc=1, indent_first=False):
@@ -243,6 +256,17 @@ def write_defclass(s, spec):
                 write_slot_definition(s, field)
         s.write(')', indent=False)
     s.write(')')
+    s.newline()
+    s.write('(cl:defclass %s (%s)'%(new_cl, cl))
+    with Indent(s):
+        s.write('())')
+    s.newline()
+    s.write('(cl:defmethod cl:initialize-instance :after ((m %s) cl:&rest args)'%cl)
+    with Indent(s):
+        s.write('(cl:declare (cl:ignorable args))')
+        s.write('(cl:unless (cl:typep m \'%s)'%new_cl)
+        with Indent(s):
+            s.write('(roslisp-msg-protocol:msg-deprecation-warning "using old message class name %s-%s:%s is deprecated: use %s-%s:%s instead.")))'%(spec.package, suffix, cl, spec.package, suffix, new_cl))
     
     
 
@@ -251,6 +275,9 @@ def message_class(spec):
     Return the CLOS class name for this message type
     """
     return '<%s>'%spec.actual_name
+
+def new_message_class(spec):
+    return spec.actual_name
 
     
 def write_serialize_length(s, v, is_array=False):
@@ -441,6 +468,7 @@ def write_class_exports(s, pkg):
                 (p, msg_type) = spec[0].split('/')
                 msg_class = '<%s>'%msg_type
                 s.write('"%s"'%msg_class.upper())
+                s.write('"%s"'%msg_type.upper())
         s.write('))\n\n')
 
 def write_srv_exports(s, pkg):
@@ -457,7 +485,9 @@ def write_srv_exports(s, pkg):
                 (_, srv_type) = spec[0].split('/')
                 s.write('"%s"'%srv_type.upper())
                 s.write('"<%s-REQUEST>"'%srv_type.upper())
+                s.write('"%s-REQUEST"'%srv_type.upper())
                 s.write('"<%s-RESPONSE>"'%srv_type.upper())
+                s.write('"%s-RESPONSE"'%srv_type.upper())
         s.write('))\n\n')
 
 
@@ -473,7 +503,7 @@ def write_asd_deps(s, deps, msgs):
         with Indent(s):
             for (full_name, _) in msgs:
                 (_, name) = full_name.split('/')
-                s.write('(:file "%s" :depends-on ("_package"))'%name)
+                s.write('(:file "%s" :depends-on ("_package_%s"))'%(name, name))
                 s.write('(:file "_package_%s" :depends-on ("_package"))'%name)
         s.write('))')
                 
@@ -533,6 +563,7 @@ def write_accessor_exports(s, spec):
         for f in fields:
             accessor = '%s-val'%f.name
             s.write('%s'%accessor.upper())
+            s.write('%s'%f.name.upper())
     s.write('))')
 
 
@@ -643,6 +674,7 @@ def write_srv_component(s, spec, parent):
     spec.component_type='service'
     write_html_include(s, spec)
     write_defclass(s, spec)
+    write_deprecated_readers(s, spec)
     write_constants(s, spec)
     write_serialize(s, spec)
     write_deserialize(s, spec)
@@ -688,6 +720,7 @@ def generate_msg(msg_path):
     write_begin(s, spec, msg_path)
     write_html_include(s, spec)
     write_defclass(s, spec)
+    write_deprecated_readers(s, spec)
     write_constants(s, spec)
     write_serialize(s, spec)
     write_deserialize(s, spec)

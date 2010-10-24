@@ -52,4 +52,5 @@
            :symbol-codes
            :symbol-code
            :ros-message-to-list
-           :list-to-ros-message))
+           :list-to-ros-message
+           :msg-deprecation-warning))

@@ -107,17 +107,17 @@ def msg_type(f):
 
 def lisp_type(t):
     if is_fixnum(t):
-        return 'fixnum'
+        return 'cl:fixnum'
     elif is_integer(t):
-        return 'integer'
+        return 'cl:integer'
     elif is_bool(t):
-        return 'boolean'
+        return 'cl:boolean'
     elif is_float(t):
-        return 'float'
+        return 'cl:float'
     elif is_time(t):
-        return 'real'
+        return 'cl:real'
     elif is_string(t):
-        return 'string'
+        return 'cl:string'
     else:
         raise ValueError('%s is not a recognized primitive type'%t)
 
@@ -126,11 +126,11 @@ def field_initform(f):
         initform = lisp_initform(f.base_type)
         elt_type = lisp_type(f.base_type)
     else:
-        initform = '(make-instance \'%s)'%msg_type(f)
+        initform = '(cl:make-instance \'%s)'%msg_type(f)
         elt_type = msg_type(f)
     if f.is_array:
         len = f.array_len or 0
-        return '(make-array %s :element-type \'%s :initial-element %s)'%(len, elt_type, initform)
+        return '(cl:make-array %s :element-type \'%s :initial-element %s)'%(len, elt_type, initform)
     else:
         return initform
 
@@ -138,7 +138,7 @@ def lisp_initform(t):
     if is_integer(t):
         return '0'
     elif is_bool(t):
-        return 'nil'
+        return 'cl:nil'
     elif is_float(t):
         return '0.0'
     elif is_time(t):
@@ -214,7 +214,7 @@ def write_begin(s, spec, path, is_service=False):
     
     s.write('; Auto-generated. Do not edit!\n\n\n', newline=False)
     suffix = 'srv' if is_service else 'msg'
-    s.write('(in-package %s-%s)\n\n\n'%(spec.package, suffix), newline=False)
+    s.write('(cl:in-package %s-%s)\n\n\n'%(spec.package, suffix), newline=False)
 
 def write_html_include(s, spec, is_srv=False):
     
@@ -235,7 +235,7 @@ def write_slot_definition(s, field):
 
 def write_defclass(s, spec):
     "Writes the defclass that defines the message type"
-    s.write('(defclass %s (ros-message)'%message_class(spec))
+    s.write('(cl:defclass %s (roslisp-msg-protocol:ros-message)'%message_class(spec))
     with Indent(s):
         s.write('(')
         with Indent(s, inc=1, indent_first=False):
@@ -257,40 +257,40 @@ def write_serialize_length(s, v, is_array=False):
     #t2
     var = '__ros_arr_len' if is_array else '__ros_str_len'
     
-    s.write('(let ((%s (length %s)))'%(var, v))
+    s.write('(cl:let ((%s (cl:length %s)))'%(var, v))
     with Indent(s):
         for x in range(0, 32, 8):
-            s.write('(write-byte (ldb (byte 8 %s) %s) ostream)'%(x, var))
+            s.write('(cl:write-byte (cl:ldb (cl:byte 8 %s) %s) ostream)'%(x, var))
     s.write(')', indent=False)
 
 
 def write_serialize_bits(s, v, num_bytes): 
     for x in range(0, num_bytes*8, 8):
-        s.write('(write-byte (ldb (byte 8 %s) %s) ostream)'%(x, v))
+        s.write('(cl:write-byte (cl:ldb (cl:byte 8 %s) %s) ostream)'%(x, v))
 
 # t2: can get rid of this lookup_slot stuff        
 def write_serialize_builtin(s, f, var='msg', lookup_slot=True):
-    v = '(slot-value %s \'%s)'%(var, f.name) if lookup_slot else var
+    v = '(cl:slot-value %s \'%s)'%(var, f.name) if lookup_slot else var
     if f.base_type == 'string':
         write_serialize_length(s, v)
-        s.write('(map nil #\'(lambda (c) (write-byte (char-code c) ostream)) %s)'%v)
+        s.write('(cl:map cl:nil #\'(cl:lambda (c) (cl:write-byte (cl:char-code c) ostream)) %s)'%v)
     elif f.base_type == 'float32':
-        s.write('(let ((bits %s))'%'(roslisp-utils:encode-single-float-bits %s)'%v)
+        s.write('(cl:let ((bits %s))'%'(roslisp-utils:encode-single-float-bits %s)'%v)
         with Indent(s):
             write_serialize_bits(s, 'bits', 4)
         s.write(')', False)
     elif f.base_type == 'float64':
-        s.write('(let ((bits %s))'%'(roslisp-utils:encode-double-float-bits %s)'%v)
+        s.write('(cl:let ((bits %s))'%'(roslisp-utils:encode-double-float-bits %s)'%v)
         with Indent(s):
             write_serialize_bits(s, 'bits', 8)
         s.write(')', False)
     elif f.base_type == 'bool':
-        s.write('(write-byte (ldb (byte 8 0) (if %s 1 0)) ostream)'%v)
+        s.write('(cl:write-byte (cl:ldb (cl:byte 8 0) (cl:if %s 1 0)) ostream)'%v)
     elif f.base_type in ['byte', 'char']:
-        s.write('(write-byte (ldb (byte 8 0) %s) ostream)'%v)
+        s.write('(cl:write-byte (cl:ldb (cl:byte 8 0) %s) ostream)'%v)
     elif f.base_type in ['duration', 'time']:
-        s.write('(let ((__sec (floor %s))'%v)
-        s.write('      (__nsec (round (* 1e9 (- %s (floor %s))))))'%(v,v))
+        s.write('(cl:let ((__sec (cl:floor %s))'%v)
+        s.write('      (__nsec (cl:round (cl:* 1e9 (cl:- %s (cl:floor %s))))))'%(v,v))
         with Indent(s):
             write_serialize_bits(s, '__sec', 4)
             write_serialize_bits(s, '__nsec', 4)
@@ -303,11 +303,11 @@ def write_serialize_builtin(s, f, var='msg', lookup_slot=True):
         raise ValueError('Unknown type: %s', f.base_type)
     
 def write_serialize_field(s, f):
-    slot = '(slot-value msg \'%s)'%f.name
+    slot = '(cl:slot-value msg \'%s)'%f.name
     if f.is_array:
         if not f.array_len:
             write_serialize_length(s, slot, True)
-        s.write('(map nil #\'(lambda (ele) ')
+        s.write('(cl:map cl:nil #\'(cl:lambda (ele) ')
         var = 'ele'
         s.block_next_indent()
         lookup_slot = False
@@ -319,7 +319,7 @@ def write_serialize_field(s, f):
         write_serialize_builtin(s, f, var, lookup_slot=lookup_slot)
     else:
         to_write = slot if lookup_slot else var #t2
-        s.write('(serialize %s ostream)'%to_write)
+        s.write('(roslisp-msg-protocol:serialize %s ostream)'%to_write)
 
     if f.is_array:
         s.write(')', False)
@@ -329,7 +329,7 @@ def write_serialize(s, spec):
     """
     Write the serialize method
     """
-    s.write('(defmethod serialize ((msg %s) ostream)'%message_class(spec))
+    s.write('(cl:defmethod roslisp-msg-protocol:serialize ((msg %s) ostream)'%message_class(spec))
     with Indent(s):
         s.write('"Serializes a message object of type \'%s"'%message_class(spec))
         for f in spec.parsed_fields():
@@ -340,14 +340,14 @@ def write_serialize(s, spec):
 # t2 can get rid of is_array
 def write_deserialize_length(s, is_array=False):
     var = '__ros_arr_len' if is_array else '__ros_str_len'
-    s.write('(let ((%s 0))'%var)
+    s.write('(cl:let ((%s 0))'%var)
     with Indent(s):
         for x in range(0, 32, 8):
-            s.write('(setf (ldb (byte 8 %s) %s) (read-byte istream))'%(x, var))
+            s.write('(cl:setf (cl:ldb (cl:byte 8 %s) %s) (cl:read-byte istream))'%(x, var))
 
 def write_deserialize_bits(s, v, num_bytes):
     for x in range(0, num_bytes*8, 8):
-        s.write('(setf (ldb (byte 8 %s) %s) (read-byte istream))'%(x, v))
+        s.write('(cl:setf (cl:ldb (cl:byte 8 %s) %s) (cl:read-byte istream))'%(x, v))
         
     
     
@@ -355,30 +355,30 @@ def write_deserialize_builtin(s, f, v):
     if f.base_type == 'string':
         write_deserialize_length(s)
         with Indent(s):
-            s.write('(setf %s (make-string __ros_str_len))'%v)
-            s.write('(dotimes (__ros_str_idx __ros_str_len msg)')
+            s.write('(cl:setf %s (cl:make-string __ros_str_len))'%v)
+            s.write('(cl:dotimes (__ros_str_idx __ros_str_len msg)')
             with Indent(s):
-                s.write('(setf (char %s __ros_str_idx) (code-char (read-byte istream)))))'%v)
+                s.write('(cl:setf (cl:char %s __ros_str_idx) (cl:code-char (cl:read-byte istream)))))'%v)
     elif f.base_type == 'float32':
-        s.write('(let ((bits 0))')
+        s.write('(cl:let ((bits 0))')
         with Indent(s):
             write_deserialize_bits(s, 'bits', 4)
-        s.write('(setf %s (roslisp-utils:decode-single-float-bits bits)))'%v)
+        s.write('(cl:setf %s (roslisp-utils:decode-single-float-bits bits)))'%v)
     elif f.base_type == 'float64':
-        s.write('(let ((bits 0))')
+        s.write('(cl:let ((bits 0))')
         with Indent(s):
             write_deserialize_bits(s, 'bits', 8)
-        s.write('(setf %s (roslisp-utils:decode-double-float-bits bits)))'%v)
+        s.write('(cl:setf %s (roslisp-utils:decode-double-float-bits bits)))'%v)
     elif f.base_type == 'bool':
-        s.write('(setf %s (not (zerop (read-byte istream))))'%v)
+        s.write('(cl:setf %s (cl:not (cl:zerop (cl:read-byte istream))))'%v)
     elif f.base_type in ['byte', 'char']:
-        s.write('(setf (ldb (byte 8 0) %s) (read-byte istream))'%v)
+        s.write('(cl:setf (cl:ldb (cl:byte 8 0) %s) (cl:read-byte istream))'%v)
     elif f.base_type in ['duration', 'time']:
-        s.write('(let ((__sec 0) (__nsec 0))')
+        s.write('(cl:let ((__sec 0) (__nsec 0))')
         with Indent(s):
             write_deserialize_bits(s, '__sec', 4)
             write_deserialize_bits(s, '__nsec', 4)
-            s.write('(setf %s (+ (coerce __sec \'double-float) (/ __nsec 1e9))))'%v)
+            s.write('(cl:setf %s (cl:+ (cl:coerce __sec \'cl:double-float) (cl:/ __nsec 1e9))))'%v)
     elif is_signed_int(f.base_type):
         write_deserialize_bits(s, v, NUM_BYTES[f.base_type])
     elif is_unsigned_int(f.base_type):
@@ -388,7 +388,7 @@ def write_deserialize_builtin(s, f, v):
 
 
 def write_deserialize_field(s, f, pkg):
-    slot = '(slot-value msg \'%s)'%f.name
+    slot = '(cl:slot-value msg \'%s)'%f.name
     var = slot
     if f.is_array:
         if not f.array_len:
@@ -397,18 +397,20 @@ def write_deserialize_field(s, f, pkg):
         else:
             length = '%s'%f.array_len
             
-        s.write('(setf %s (make-array %s))'%(slot, length))
-        s.write('(let ((vals %s))'%slot) # t2
-        var = '(aref vals i)'
+        s.write('(cl:setf %s (cl:make-array %s))'%(slot, length))
+        s.write('(cl:let ((vals %s))'%slot) # t2
+        var = '(cl:aref vals i)'
         with Indent(s):
-            s.write('(dotimes (i %s)'%length)
+            s.write('(cl:dotimes (i %s)'%length)
 
     if f.is_builtin:
-        write_deserialize_builtin(s, f, var)
+        with Indent(s):
+            write_deserialize_builtin(s, f, var)
     else:
         if f.is_array:
-            s.write('(setf %s (make-instance \'%s))'%(var, msg_type(f)))
-        s.write('(deserialize %s istream)'%var)
+            with Indent(s):
+                s.write('(cl:setf %s (cl:make-instance \'%s))'%(var, msg_type(f)))
+        s.write('(roslisp-msg-protocol:deserialize %s istream)'%var)
 
     if f.is_array:
         s.write('))', False)
@@ -420,7 +422,7 @@ def write_deserialize(s, spec):
     """
     Write the deserialize method
     """
-    s.write('(defmethod deserialize ((msg %s) istream)'%message_class(spec))
+    s.write('(cl:defmethod roslisp-msg-protocol:deserialize ((msg %s) istream)'%message_class(spec))
     with Indent(s):
         s.write('"Deserializes a message object of type \'%s"'%message_class(spec))
         for f in spec.parsed_fields():
@@ -430,12 +432,9 @@ def write_deserialize(s, spec):
 
 def write_class_exports(s, pkg):
     "Write the _package.lisp file"
-    s.write('(defpackage %s-msg'%pkg, False)
+    s.write('(cl:defpackage %s-msg'%pkg, False)
     with Indent(s):
-        s.write('(:use ')
-        with Indent(s, inc=6, indent_first=False):
-            s.write('cl')
-            s.write('roslisp-msg-protocol)')
+        s.write('(:use )')
         s.write('(:export')
         with Indent(s, inc=1):
             for spec in roslib.msgs.get_pkg_msg_specs(pkg)[0]:
@@ -446,7 +445,7 @@ def write_class_exports(s, pkg):
 
 def write_srv_exports(s, pkg):
     "Write the _package.lisp file for a service directory"
-    s.write('(defpackage %s-srv'%pkg, False)
+    s.write('(cl:defpackage %s-srv'%pkg, False)
     with Indent(s):
         s.write('(:use ')
         with Indent(s, inc=6, indent_first=False):
@@ -481,7 +480,7 @@ def write_asd_deps(s, deps, msgs):
 
 
 def write_srv_asd(s, pkg):
-    s.write('(in-package :asdf)')
+    s.write('(cl:in-package :asdf)')
     s.newline()
     s.write('(defsystem "%s-srv"'%pkg)
     services = roslib.srvs.get_pkg_srv_specs(pkg)[0]
@@ -502,7 +501,7 @@ def write_srv_asd(s, pkg):
 
 
 def write_asd(s, pkg):
-    s.write('(in-package :asdf)')
+    s.write('(cl:in-package :asdf)')
     s.newline()
     s.write('(defsystem "%s-msg"'%pkg)
     msgs = roslib.msgs.get_pkg_msg_specs(pkg)[0]
@@ -522,8 +521,8 @@ def write_accessor_exports(s, spec):
     "Write the package exports for this message/service"
     is_srv = isinstance(spec, SrvSpec)
     suffix = 'srv' if is_srv else 'msg'
-    s.write('(in-package %s-%s)'%(spec.package, suffix), indent=False)
-    s.write('(export \'(')
+    s.write('(cl:in-package %s-%s)'%(spec.package, suffix), indent=False)
+    s.write('(cl:export \'(')
     if is_srv:
         fields = spec.request.parsed_fields()[:]
         fields.extend(spec.response.parsed_fields())
@@ -539,7 +538,7 @@ def write_accessor_exports(s, spec):
 
 def write_ros_datatype(s, spec):
     c = message_class(spec)
-    s.write('(defmethod ros-datatype ((msg (eql \'%s)))'%c)
+    s.write('(cl:defmethod roslisp-msg-protocol:ros-datatype ((msg (cl:eql \'%s)))'%c)
     with Indent(s):
         s.write('"Returns string type for a %s object of type \'%s"'%(spec.component_type, c))
         s.write('"%s")'%spec.full_name)
@@ -551,7 +550,7 @@ def write_md5sum(s, spec, parent=None):
                                                     compute_files=False)
     md5sum = roslib.gentools.compute_md5(gendeps_dict)
     c = message_class(spec)
-    s.write('(defmethod md5sum ((type (eql \'%s)))'%c)
+    s.write('(cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql \'%s)))'%c)
     with Indent(s):
         # t2 this should print 'service' instead of 'message' if it's a service request or response
         s.write('"Returns md5sum for a message object of type \'%s"'%c)
@@ -559,10 +558,10 @@ def write_md5sum(s, spec, parent=None):
 
 def write_message_definition(s, spec):
     c = message_class(spec)
-    s.write('(defmethod message-definition ((type (eql \'%s)))'%c)
+    s.write('(cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql \'%s)))'%c)
     with Indent(s):
         s.write('"Returns full string definition for message of type \'%s"'%c)
-        s.write('(format nil "')
+        s.write('(cl:format cl:nil "')
         gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package, compute_files=False)
         definition = roslib.gentools.compute_full_text(gendeps_dict)
         lines = definition.split('\n')
@@ -583,7 +582,7 @@ def write_builtin_length(s, f, var='msg'):
     elif f.base_type in ['int64', 'uint64', 'float64', 'duration', 'time']:
         s.write('8')
     elif f.base_type == 'string':
-        s.write('4 (length %s)'%var)
+        s.write('4 (cl:length %s)'%var)
     elif f.base_type in ['bool', 'byte', 'char']:
         s.write('1')
     else:
@@ -591,15 +590,15 @@ def write_builtin_length(s, f, var='msg'):
 
 def write_serialization_length(s, spec):
     c = message_class(spec)
-    s.write('(defmethod serialization-length ((msg %s))'%c)
+    s.write('(cl:defmethod roslisp-msg-protocol:serialization-length ((msg %s))'%c)
     with Indent(s):
-        s.write('(+ 0')
+        s.write('(cl:+ 0')
         with Indent(s, 3):
             for field in spec.parsed_fields():
-                slot = '(slot-value msg \'%s)'%field.name
+                slot = '(cl:slot-value msg \'%s)'%field.name
                 if field.is_array:
                     l = '0' if field.array_len else '4'
-                    s.write('%s (reduce #\'+ %s :key #\'(lambda (ele) (declare (ignorable ele)) (+ '%(l, slot))
+                    s.write('%s (cl:reduce #\'cl:+ %s :key #\'(cl:lambda (ele) (cl:declare (cl:ignorable ele)) (cl:+ '%(l, slot))
                     var = 'ele'
                     s.block_next_indent()
                 else:
@@ -608,7 +607,7 @@ def write_serialization_length(s, spec):
                 if field.is_builtin:
                     write_builtin_length(s, field, var)
                 else:
-                    s.write('(serialization-length %s)'%var)
+                    s.write('(roslisp-msg-protocol:serialization-length %s)'%var)
 
                 if field.is_array:
                     s.write(')))', False)
@@ -617,19 +616,19 @@ def write_serialization_length(s, spec):
 
 def write_list_converter(s, spec):
     c = message_class(spec)
-    s.write('(defmethod ros-message-to-list ((msg %s))'%c)
+    s.write('(cl:defmethod roslisp-msg-protocol:ros-message-to-list ((msg %s))'%c)
     with Indent(s):
         s.write('"Converts a ROS message object to a list"')
-        s.write('(list \'%s'%c)
+        s.write('(cl:list \'%s'%c)
         with Indent(s):
             for f in spec.parsed_fields():
-                s.write('(cons \':%s (%s-val msg))'%(f.name, f.name))
+                s.write('(cl:cons \':%s (%s-val msg))'%(f.name, f.name))
     s.write('))')
 
 def write_constants(s, spec):
     if spec.constants:
         cls = message_class(spec)
-        s.write('(defmethod symbol-codes ((msg-type (eql \'%s)))'%cls)
+        s.write('(cl:defmethod roslisp-msg-protocol:symbol-codes ((msg-type (cl:eql \'%s)))'%cls)
         with Indent(s):
             s.write('  "Constants for message type \'%s"'%cls)
             s.write('\'(')
@@ -656,13 +655,13 @@ def write_srv_component(s, spec, parent):
 
 def write_service_specific_methods(s, spec):
     spec.actual_name=spec.short_name
-    s.write('(defmethod service-request-type ((msg (eql \'%s)))'%spec.short_name)
+    s.write('(cl:defmethod roslisp-msg-protocol:service-request-type ((msg (cl:eql \'%s)))'%spec.short_name)
     with Indent(s):
         s.write('\'%s)'%message_class(spec.request))
-    s.write('(defmethod service-response-type ((msg (eql \'%s)))'%spec.short_name)
+    s.write('(cl:defmethod roslisp-msg-protocol:service-response-type ((msg (cl:eql \'%s)))'%spec.short_name)
     with Indent(s):
         s.write('\'%s)'%message_class(spec.response))
-    s.write('(defmethod ros-datatype ((msg (eql \'%s)))'%spec.short_name)
+    s.write('(cl:defmethod roslisp-msg-protocol:ros-datatype ((msg (cl:eql \'%s)))'%spec.short_name)
     with Indent(s):
         s.write('"Returns string type for a service object of type \'%s"'%message_class(spec))
         s.write('"%s")'%spec.full_name)

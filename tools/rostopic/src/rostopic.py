@@ -975,7 +975,7 @@ def _rostopic_cmd_hz(argv):
                       help="window size, in # of messages, for calculating rate", metavar="WINDOW")
     parser.add_option("--filter",
                       dest="filter_expr", default=None,
-                      help="only meausre messages matching the specified Python expression", metavar="EXPR")
+                      help="only measure messages matching the specified Python expression", metavar="EXPR")
 
     (options, args) = parser.parse_args(args)
     if len(args) == 0:

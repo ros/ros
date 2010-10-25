@@ -481,18 +481,12 @@ class Loader(object):
         if value is not None:
             return convert_value(value.strip(), ptype)
         elif textfile is not None:
-            f = open(textfile, 'r')
-            try:
+            with open(textfile, 'r') as f:
                 return f.read()
-            finally:
-                f.close()
         elif binfile is not None:
             import xmlrpclib
-            f = open(binfile, 'rb')
-            try:
+            with open(binfile, 'rb') as f:
                 return xmlrpclib.Binary(f.read())
-            finally:
-                f.close()
         elif command is not None:
             if type(command) == unicode:
                 command = command.encode('UTF-8') #attempt to force to string for shlex/subprocess

@@ -475,10 +475,7 @@ def write_srv_exports(s, pkg):
     "Write the _package.lisp file for a service directory"
     s.write('(cl:defpackage %s-srv'%pkg, False)
     with Indent(s):
-        s.write('(:use ')
-        with Indent(s, inc=6, indent_first=False):
-            s.write('cl')
-            s.write('roslisp-msg-protocol)')
+        s.write('(:use )')
         s.write('(:export')
         with Indent(s, inc=1):
             for spec in roslib.srvs.get_pkg_srv_specs(pkg)[0]:

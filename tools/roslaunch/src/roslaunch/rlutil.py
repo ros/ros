@@ -44,6 +44,7 @@ import time
 from roslib.names import SEP
 
 import roslaunch.core
+from rosmaster import DEFAULT_MASTER_PORT
 
 def check_log_disk_usage():
     """
@@ -107,7 +108,6 @@ def _wait_for_master():
     
     @raise RuntimeError: if unexpected error occurs
     """
-    import roslaunch.core
     m = roslaunch.core.Master() # get a handle to the default master
     is_running = m.is_running()
     if not is_running:
@@ -126,10 +126,8 @@ def _set_terminal(s):
     import platform
     if platform.system() in ['FreeBSD', 'Linux', 'Darwin', 'Unix']:
         try:
-            print '\033]2;%s\007'%s
+            print '\033]2;%s\007'%(s)
         except:
-            import traceback
-            traceback.print_exc()
             pass
     
 def update_terminal_name(ros_master_uri):
@@ -196,7 +194,7 @@ def check_roslaunch(f):
     """
     try:
         import roslaunch.config
-        config = roslaunch.config.load_config_default([f], 11311, verbose=False)
+        config = roslaunch.config.load_config_default([f], DEFAULT_MASTER_PORT, verbose=False)
     except roslaunch.RLException, e:
         return str(e)
     

@@ -32,4 +32,6 @@
 #
 # Revision $Id$
 
-from rosmaster.main import rosmaster_main
+from .main import rosmaster_main
+
+from .master import DEFAULT_MASTER_PORT

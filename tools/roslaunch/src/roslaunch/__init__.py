@@ -70,6 +70,21 @@ def configure_logging(uuid):
     except:
         print >> sys.stderr, "WARNING: unable to configure logging. No log files will be generated"
         
+def write_pid_file(options_pid_fn, options_core, port):
+    from roslib.rosenv import get_ros_home
+    from rosmaster import DEFAULT_MASTER_PORT
+    if options_pid_fn or options_core:
+        if options_pid_fn:
+            pid_fn = options_pid_fn
+        else:
+            # NOTE: this assumption is not 100% valid until work on #3097 is complete
+            if port is None:
+                port = DEFAULT_MASTER_PORT
+            #2987
+            pid_fn = os.path.join(get_ros_home(), 'roscore-%s.pid'%(port))
+        with open(pid_fn, "w") as f:
+            f.write(str(os.getpid()))
+
 def _get_optparse():
     from optparse import OptionParser
 
@@ -175,8 +190,7 @@ def main(argv=sys.argv):
             roslaunch.rlutil._wait_for_master()            
 
         # write the pid to a file
-        if options.pid_fn:
-          open(options.pid_fn, "w").write(str(os.getpid()))
+        write_pid_file(options.pid_fn, options.core, options.port)
 
         # spin up the logging infrastructure. have to wait until we can read options.run_id
         uuid = roslaunch.rlutil.get_or_generate_uuid(options.run_id, options.wait_for_master)

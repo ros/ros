@@ -60,7 +60,7 @@ _NAME = 'rostest'
 def configure_logging():
     import socket
     logfile_basename = 'rostest-%s-%s.log'%(socket.gethostname(), os.getpid())
-    logfile_name = roslib.roslogging.configure_logging('rostest', filename=logfile_basename, additional=['roslaunch', 'rospy', 'roslib', "paramiko"])
+    logfile_name = roslib.roslogging.configure_logging('rostest', filename=logfile_basename)
     if logfile_name:
         print "... logging to %s"%logfile_name
     return logfile_name

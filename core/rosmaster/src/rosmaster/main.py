@@ -54,7 +54,7 @@ def configure_logging():
     if '__log' in mappings:
         logfilename_remap = mappings['__log']
         filename = os.path.abspath(logfilename_remap)
-    _log_filename = roslib.roslogging.configure_logging('rosmaster', logging.DEBUG, filename=filename, additional=['roslib', 'xmlrpc'])
+    _log_filename = roslib.roslogging.configure_logging('rosmaster', logging.DEBUG, filename=filename)
 
 def rosmaster_main(argv=sys.argv, stdout=sys.stdout, env=os.environ):
     parser = optparse.OptionParser(usage="usage: zenmaster [options]")

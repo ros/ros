@@ -40,6 +40,7 @@ Library for configuring python logging to standard ROS locations (e.g. ROS_LOG_D
 import os
 import sys
 import logging
+import logging.config
 
 import roslib.rosenv
 from roslib.rosenv import get_ros_root, ROS_LOG_DIR, ROS_HOME, makedirs_with_parent_perms
@@ -47,7 +48,7 @@ import roslib.exceptions
 
 get_log_dir = roslib.rosenv.get_log_dir
     
-def configure_logging(logname, level=logging.INFO, filename=None, additional=None, env=None):
+def configure_logging(logname, level=logging.INFO, filename=None, env=None):
     """
     Configure Python logging package to send log files to ROS-specific log directory
     @param logname str: name of logger
@@ -55,8 +56,6 @@ def configure_logging(logname, level=logging.INFO, filename=None, additional=Non
     @param filename: filename to log to. If not set, a log filename
         will be generated using logname
     @type filename: str
-    @param additional: additional log names to attach to same log handler
-    @type  additional: [str]
     @param env: override os.environ dictionary
     @type  env: dict
     @return: log file name
@@ -66,8 +65,6 @@ def configure_logging(logname, level=logging.INFO, filename=None, additional=Non
     if env is None:
         env = os.environ
 
-    import logging.handlers
-    
     logname = logname or 'unknown'
     log_dir = get_log_dir(env=env)
     
@@ -88,14 +85,18 @@ def configure_logging(logname, level=logging.INFO, filename=None, additional=Non
     elif os.path.isfile(logfile_dir):
         raise roslib.exceptions.ROSLibException("Cannot save log files: file [%s] is in the way"%logfile_dir)
 
-    handler = logging.handlers.RotatingFileHandler(
-        log_filename, maxBytes=100000000, backupCount=10)
-    formatter = logging.Formatter("[%(levelname)s] %(asctime)s: %(message)s")
-    handler.setFormatter(formatter)
-    additional = additional or []
-    for n in [logname] + additional:
-        logger = logging.getLogger(n)
-        logger.setLevel(level)
-        logger.addHandler(handler)
+    if 'ROS_PYTHON_LOG_CONFIG_FILE' in os.environ:
+        config_file = os.environ['ROS_PYTHON_LOG_CONFIG_FILE']
+    else:
+        config_file = os.path.join(get_ros_root(env=env), 'config', 'python_logging.conf')
+
+    if not os.path.isfile(config_file):
+        # logging is considered soft-fail
+        print >> sys.stderr, "WARNING: cannot load logging configuration file, logging is disabled"
+        return log_filename
+    
+    # pass in log_filename as argument to pylogging.conf
+    os.environ['ROS_LOG_FILENAME'] = log_filename
+    logging.config.fileConfig(config_file)
     return log_filename
 

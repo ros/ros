@@ -59,7 +59,7 @@ def configure_logging(uuid):
         import roslib.roslogging
         logfile_basename = os.path.join(uuid, '%s-%s-%s.log'%(NAME, socket.gethostname(), os.getpid()))
         # additional: names of python packages we depend on that may also be logging
-        logfile_name = roslib.roslogging.configure_logging(NAME, filename=logfile_basename, additional=['paramiko', 'roslib', 'rospy'])
+        logfile_name = roslib.roslogging.configure_logging(NAME, filename=logfile_basename)
         if logfile_name:
             print "... logging to %s"%logfile_name
 

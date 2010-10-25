@@ -409,6 +409,31 @@ class RostimeTest(unittest.TestCase):
         self.fail("should have thrown value error")
       except ValueError: pass
 
+      # Test mul 
+      self.assertEquals(Duration(4), Duration(2) * 2)
+      self.assertEquals(Duration(4), Duration(2) * 2.)
+      self.assertEquals(Duration(10), Duration(4) * 2.5)
+      self.assertEquals(Duration(4, 8), Duration(2, 4) * 2)
+      v = Duration(4, 8) - (Duration(2, 4) * 2.)
+      self.assert_(abs(v.to_nsec()) < 100)
+      v = Duration(5, 10) - (Duration(2, 4) * 2.5)
+      self.assert_(abs(v.to_nsec()) < 100)      
+      
+      # Test div
+      self.assertEquals(Duration(4), Duration(8) / 2)
+      self.assertEquals(Duration(4), Duration(8) / 2.)      
+      self.assertEquals(Duration(4), Duration(8) // 2)      
+      self.assertEquals(Duration(4), Duration(8) // 2.)      
+      self.assertEquals(Duration(4), Duration(9) // 2)      
+      self.assertEquals(Duration(4), Duration(9) // 2.)      
+      self.assertEquals(Duration(4, 2), Duration(8, 4) / 2)
+      v = Duration(4, 2) - (Duration(8, 4) / 2.)
+      self.assert_(abs(v.to_nsec()) < 100)            
+      
+      self.assertEquals(Duration(4, 2), Duration(8, 4) // 2)
+      self.assertEquals(Duration(4, 2), Duration(9, 5) // 2)
+      v = Duration(4, 2) - (Duration(9, 5) // 2.)
+      self.assert_(abs(v.to_nsec()) < 100)                  
       
 if __name__ == '__main__':
   rostest.unitrun('test_roslib', 'test_rostime', RostimeTest, coverage_packages=['roslib.rostime'])

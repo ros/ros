@@ -411,15 +411,68 @@ class Duration(TVal):
 
     def __mul__(self, val):
         """
-        Multiply this duration by an integer
+        Multiply this duration by an integer or float
         @param val: multiplication factor
-        @type  val: int
+        @type  val: int/float
         @return: Duration multiplied by val
         @rtype:  L{Duration}
         """
-        if not type(val) == int:
+        t = type(val)
+        if t in (int, long):
+            return Duration(self.secs * val, self.nsecs * val)
+        elif t == float:
+            return Duration.from_sec(self.to_sec() * val)
+        else:
             return NotImplemented
-        return Duration(self.secs * val, self.nsecs * val)
+
+    def __floordiv__(self, val):
+        """
+        Floor divide this duration by an integer or float
+        @param val: division factor
+        @type  val: int/float
+        @return: Duration multiplied by val
+        @rtype:  L{Duration}
+        """
+        t = type(val)
+        if t in (int, long):
+            return Duration(self.secs // val, self.nsecs // val)
+        elif t == float:
+            return Duration.from_sec(self.to_sec() // val)
+        else:
+            return NotImplemented
+
+    def __div__(self, val):
+        """
+        Divide this duration by an integer or float
+        @param val: division factor
+        @type  val: int/float
+        @return: Duration multiplied by val
+        @rtype:  L{Duration}
+        """
+        # unlike __floordiv__, this uses true div for float arg
+        t = type(val)
+        if t in (int, long):
+            return Duration(self.secs // val, self.nsecs // val)
+        elif t == float:
+            return Duration.from_sec(self.to_sec() / val)
+        else:
+            return NotImplemented
+
+    def __truediv__(self, val):
+        """
+        Divide this duration by an integer or float
+        @param val: division factor
+        @type  val: int/float
+        @return: Duration multiplied by val
+        @rtype:  L{Duration}
+        """
+        t = type(val)
+        if t in (int, long):
+            return Duration(self.secs / val, self.nsecs / val)
+        elif t == float:
+            return Duration.from_sec(self.to_sec() / val)
+        else:
+            return NotImplemented
 
     def __cmp__(self, other):
         if not isinstance(other, Duration):

@@ -508,8 +508,9 @@ def _rosparam_cmd_set_load(cmd, argv):
     parser.add_option("-v", dest="verbose", default=False,
                       action="store_true", help="turn on verbose output")
     options, args = _set_optparse_neg_args(parser, argv)
-    if options.text_file and options.bin_file:
-        parser.error("you may only specify one of --textfile or --binfile")
+    if cmd == 'set':
+        if options.text_file and options.bin_file:
+            parser.error("you may only specify one of --textfile or --binfile")
 
     arg2 = None
     if len(args) == 0:

@@ -41,27 +41,46 @@ import rostest
 class NamesTest(unittest.TestCase):
   
   def test_get_ros_namespace(self):
-    if 'ROS_NAMESPACE' is os.environ:
+    if 'ROS_NAMESPACE' in os.environ:
       rosns = os.environ['ROS_NAMESPACE']
       del os.environ['ROS_NAMESPACE']
     else:
       rosns = None
-    self.assertEquals('/', roslib.names.get_ros_namespace())
-    self.assertEquals('/', roslib.names.get_ros_namespace(env={}))
+    sysargv = sys.argv
 
-    os.environ['ROS_NAMESPACE'] = 'unresolved'
-    self.assertEquals('/unresolved/', roslib.names.get_ros_namespace())
-    self.assertEquals('/unresolved/', roslib.names.get_ros_namespace(env={'ROS_NAMESPACE': 'unresolved'}))
-    
-    os.environ['ROS_NAMESPACE'] = '/resolved/'
-    self.assertEquals('/resolved/', roslib.names.get_ros_namespace())
-    self.assertEquals('/resolved/', roslib.names.get_ros_namespace(env={'ROS_NAMESPACE': '/resolved'}))
-    
-    del os.environ['ROS_NAMESPACE']
-    
-    # restore
-    if rosns:
-      os.environ['ROS_NAMESPACE'] = rosns
+    try:
+      sys.argv = []
+      self.assertEquals('/', roslib.names.get_ros_namespace())
+      self.assertEquals('/', roslib.names.get_ros_namespace(argv=[]))
+      self.assertEquals('/', roslib.names.get_ros_namespace(env={}))
+      self.assertEquals('/', roslib.names.get_ros_namespace(env={}, argv=[]))
+
+      os.environ['ROS_NAMESPACE'] = 'unresolved'
+      self.assertEquals('/unresolved/', roslib.names.get_ros_namespace())
+      self.assertEquals('/unresolved/', roslib.names.get_ros_namespace(env={'ROS_NAMESPACE': 'unresolved'}))
+      sys.argv = ['foo', '__ns:=unresolved_override']
+      self.assertEquals('/unresolved_override/', roslib.names.get_ros_namespace(env={'ROS_NAMESPACE': 'unresolved'}))
+      self.assertEquals('/override2/', roslib.names.get_ros_namespace(env={'ROS_NAMESPACE': 'unresolved'}, argv=['foo', '__ns:=override2']))
+
+      sys.argv = []
+      os.environ['ROS_NAMESPACE'] = '/resolved/'
+      self.assertEquals('/resolved/', roslib.names.get_ros_namespace())
+      self.assertEquals('/resolved/', roslib.names.get_ros_namespace(env={'ROS_NAMESPACE': '/resolved'}))
+
+      del os.environ['ROS_NAMESPACE']
+
+      sys.argv = ['foo', '__ns:=unresolved_ns']
+      self.assertEquals('/unresolved_ns/', roslib.names.get_ros_namespace())
+      self.assertEquals('/unresolved_ns2/', roslib.names.get_ros_namespace(argv=['foo', '__ns:=unresolved_ns2']))
+      sys.argv = ['foo', '__ns:=/resolved_ns/']
+      self.assertEquals('/resolved_ns/', roslib.names.get_ros_namespace())
+      self.assertEquals('/resolved_ns2/', roslib.names.get_ros_namespace(argv=['foo', '__ns:=resolved_ns2']))
+    finally:
+      sys.argv = sysargv
+
+      # restore
+      if rosns:
+        os.environ['ROS_NAMESPACE'] = rosns
 
   def test_make_global_ns(self):
     from roslib.names import make_global_ns

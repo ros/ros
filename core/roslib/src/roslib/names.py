@@ -55,14 +55,21 @@ PRIV_NAME = '~'
 REMAP = ":="
 ANYTYPE = '*'
 
-def get_ros_namespace(env=None):
+def get_ros_namespace(env=None, argv=None):
     """
     @param env: environment dictionary (defaults to os.environ)
     @type  env: dict
+    @param argv: command-line arguments (defaults to sys.argv)
+    @type  argv: [str]
     @return: ROS namespace of current program
     @rtype: str
     """    
     #we force command-line-specified namespaces to be globally scoped
+    if argv is None:
+        argv = sys.argv
+    for a in argv:
+        if a.startswith('__ns:='):
+            return make_global_ns(a[len('__ns:='):])
     if env is None:
         env = os.environ
     return make_global_ns(env.get(ROS_NAMESPACE, GLOBALNS))

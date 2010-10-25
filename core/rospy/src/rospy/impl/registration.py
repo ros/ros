@@ -43,6 +43,7 @@ import thread
 import threading
 import time
 import traceback
+import xmlrpclib
 
 from rospy.core import is_shutdown, xmlrpcapi, \
     logfatal, logwarn, loginfo, logerr, logdebug, \
@@ -150,6 +151,13 @@ class RegistrationListeners(object):
                     l.reg_added(resolved_name, data_type, reg_type)
                 except Exception, e:
                     logerr(traceback.format_exc(e))
+                    
+    def clear(self):
+        """
+        Remove all registration listeners
+        """
+        with self.lock:
+            del self.listeners[:]
             
 _registration_listeners = RegistrationListeners()
 def get_registration_listeners():
@@ -327,21 +335,28 @@ class RegManager(RegistrationListener):
         
         caller_id = get_caller_id()
 
+        # clear the registration listeners as we are going to do a quick unregister here
+        rl = get_registration_listeners()
+        if rl is not None:
+            rl.clear()
+            
         tm = get_topic_manager()
         sm = get_service_manager()
         try:
+            multi = xmlrpclib.MultiCall(master)
             if tm is not None:
                 for resolved_name, _ in tm.get_subscriptions():
                     self.logger.debug("unregisterSubscriber [%s]"%resolved_name)
-                    master.unregisterSubscriber(caller_id, resolved_name, self.uri)
+                    multi.unregisterSubscriber(caller_id, resolved_name, self.uri)
                 for resolved_name, _ in tm.get_publications():
                     self.logger.debug("unregisterPublisher [%s]"%resolved_name)                    
-                    master.unregisterPublisher(caller_id, resolved_name, self.uri)
+                    multi.unregisterPublisher(caller_id, resolved_name, self.uri)
 
             if sm is not None:
                 for resolved_name, service_uri in sm.get_services():
                     self.logger.debug("unregisterService [%s]"%resolved_name) 
-                    master.unregisterService(caller_id, resolved_name, service_uri)
+                    multi.unregisterService(caller_id, resolved_name, service_uri)
+            multi()
         except socket.error, (errno, msg):
             if errno == 111 or errno == 61: #can't talk to master, nothing we can do about it
                 self.logger.warn("cannot unregister with master due to network issues")
@@ -352,9 +367,10 @@ class RegManager(RegistrationListener):
 
         self.logger.debug("registration cleanup: master calls complete")            
 
-        #TODO: cleanup() should actually be orchestrated by a separate cleanup routine that calls the reg manager/sm/tm
+        #TODO: cleanup() should actually be orchestrated by a separate
+        #cleanup routine that calls the reg manager/sm/tm
         if tm is not None:
-            tm.remove_all()
+            tm.close_all()
         if sm is not None:
             sm.unregister_all()
 

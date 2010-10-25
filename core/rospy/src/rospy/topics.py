@@ -674,7 +674,6 @@ class Publisher(Topic):
         except roslib.message.SerializationError, e:
             # can't go to rospy.logerr(), b/c this could potentially recurse
             _logger.error(traceback.format_exc(e))
-            print traceback.format_exc(e)
             raise ROSSerializationException(str(e))
         finally:
             self.impl.release()            

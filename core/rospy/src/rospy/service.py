@@ -85,14 +85,11 @@ class ServiceManager(object):
         @return: List of (service_name, service_uri)  for all registered services.
         @rtype: [(str, str)]
         """
-        try:
-            self.lock.acquire()
+        with self.lock:
             ret_val = []
             for name, service in self.map.iteritems():
                 ret_val.append((name, service.uri))
             services = self.map.values()
-        finally:
-            self.lock.release()
         return ret_val
     
     def unregister_all(self):

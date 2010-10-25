@@ -14,7 +14,7 @@ apr:
   macports: apr apr-util
   gentoo: dev-libs/apr dev-libs/apr-util
   cygwin: libapr1 libaprutil1
-  freebsd: apr-ipv6-gdbm-db42
+  freebsd: builtin # i.e. ignore, only needed to manually build log4cxx on other OSes
 python:
   ubuntu: python-dev
   debian: python-dev
@@ -105,6 +105,7 @@ bzip2:
   freebsd: bzip2
 boost:
   ubuntu:
+    '10.10': libboost1.42-all-dev
     '10.04': libboost1.40-all-dev
     '9.10': libboost1.40-all-dev
     '9.04': libboost-date-time1.37-dev libboost-filesystem1.37-dev libboost-graph1.37-dev libboost-iostreams1.37-dev libboost-math1.37-dev libboost-program-options1.37-dev libboost-python1.37-dev libboost-regex1.37-dev libboost-serialization1.37-dev libboost-signals1.37-dev libboost-system1.37-dev libboost-test1.37-dev libboost-thread1.37-dev libboost-wave1.37-dev libboost1.37-dev
@@ -161,7 +162,6 @@ boost:
   gentoo: dev-libs/boost
   cygwin: libboost-devel libboost1.40
   freebsd: boost-python-libs
-  # freebsd: boost-pyste is more complete
 zlib:
   ubuntu: zlib1g-dev
   debian: zlib1g-dev
@@ -223,6 +223,7 @@ wxpython:
   freebsd: py26-wxPython
 log4cxx:
   ubuntu:
+    '10.10': liblog4cxx10-dev
     '10.04': liblog4cxx10-dev
     '9.10': liblog4cxx10-dev
     '9.04': liblog4cxx10-dev
@@ -351,7 +352,7 @@ autoconf:
   arch: autoconf
   macports: autoconf
   gentoo: sys-devel/autoconf
-  freebsd: autoconf213 autoconf262
+  freebsd: autoconf213 autoconf268
 automake:
   ubuntu: automake
   debian: automake
@@ -360,9 +361,10 @@ automake:
   arch: automake
   macports: automake
   gentoo: sys-devel/automake
-  freebsd: automake14 automake15 automake16 automake17 automake18 automake19 automake110
+  freebsd: automake14 automake111
 libtool:
   ubuntu: 
+    '10.10': libtool libltdl-dev
     '10.04': libtool libltdl-dev
     '9.10': libtool libltdl-dev
     '9.04': libtool libltdl7-dev

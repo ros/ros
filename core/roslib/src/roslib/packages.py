@@ -502,7 +502,8 @@ def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
                 if m in files:
                     test_path = os.path.join(p, node_type)
                     s = os.stat(test_path)
-                    if (s.st_mode & stat.S_IRWXU == stat.S_IRWXU):
+                    if (s.st_mode & (stat.S_IRUSR | stat.S_IXUSR) ==
+                        (stat.S_IRUSR | stat.S_IXUSR)):
                         return test_path
             if '.svn' in dirs:
                 dirs.remove('.svn')
@@ -514,7 +515,8 @@ def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
             if node_type in files:
                 test_path = os.path.join(p, node_type)
                 s = os.stat(test_path)
-                if (s.st_mode & stat.S_IRWXU == stat.S_IRWXU):
+                if (s.st_mode & (stat.S_IRUSR | stat.S_IXUSR) ==
+                    (stat.S_IRUSR | stat.S_IXUSR)):
                     return test_path
             if '.svn' in dirs:
                 dirs.remove('.svn')
@@ -678,7 +680,10 @@ class ROSPackages(object):
 
         if package in self._depends_cache:
             return self._depends_cache[package]
-        s = set()
+
+        # assign key before recursive call to prevent infinite case
+        self._depends_cache[package] = s = set()
+        
         manifests = self.manifests
         # take the union of all dependencies
         pkgs = [p.package for p in manifests[package].depends]
@@ -745,7 +750,9 @@ class ROSPackages(object):
 
         if package in self._rosdeps_cache:
             return self._rosdeps_cache[package]
-        s = set()
+        # set the key before recursive call to prevent infinite case
+        self._rosdeps_cache[package] = s = set()
+
         manifests = self.manifests
         # take the union of all dependencies
         pkgs = [p.package for p in manifests[package].depends]

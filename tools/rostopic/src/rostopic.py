@@ -503,7 +503,10 @@ class CallbackEcho(object):
         self.msg_eval = msg_eval
         self.plot = plot
         self.filter_fn = filter_fn
-        self.sep = '---\n' # same as YAML document separator
+
+        self.prefix = ''
+        self.suffix = '\n---' # same as YAML document separator
+        
         self.echo_all_topics = echo_all_topics
         self.offset_time = offset_time
 
@@ -519,7 +522,7 @@ class CallbackEcho(object):
         else:
             self.str_fn = roslib.message.strify_message
             if echo_clear:
-                self.sep = '\033[2J\033[;H'
+                self.prefix = '\033[2J\033[;H'
 
         # first tracks whether or not we've printed anything yet. Need this for printing plot fields.
         self.first = True
@@ -580,9 +583,9 @@ class CallbackEcho(object):
                     self.first = False
 
                 if self.offset_time:
-                    sys.stdout.write(self.sep+self.str_fn(data, time_offset=rospy.get_rostime(), current_time=current_time) + '\n')
+                    sys.stdout.write(self.prefix+self.str_fn(data, time_offset=rospy.get_rostime(), current_time=current_time) + self.suffix + '\n')
                 else:
-                    sys.stdout.write(self.sep+self.str_fn(data, current_time=current_time) + '\n')
+                    sys.stdout.write(self.prefix+self.str_fn(data, current_time=current_time) + self.suffix + '\n')
 
                 # we have to flush in order before piping to work
                 sys.stdout.flush()
@@ -1304,21 +1307,33 @@ def stdin_yaml_arg():
     from select import error as select_error
     try:
         arg = 'x'
+        rlist = [sys.stdin]
+        wlist = xlist = []
         while not rospy.is_shutdown() and arg != '\n':
             buff = ''
-            rlist = [sys.stdin]
-            wlist = xlist = []
-            arg = 'x'                    
-            while arg != '\n' and arg.strip() != '---' and not rospy.is_shutdown():
+            while arg != '' and arg.strip() != '---' and not rospy.is_shutdown():
                 val, _, _ = select(rlist, wlist, xlist, 1.0)
                 if not val:
-                    print "not ready", val
                     continue
-                arg = sys.stdin.readline() + '\n'
-                if arg.strip() != '---':
+                # sys.stdin.readline() returns empty string on EOF
+                arg = sys.stdin.readline() 
+                if arg != '' and arg.strip() != '---':
                     buff = buff + arg
-            # publish_message wants a list of args
-            yield yaml.load(buff.rstrip())
+
+            if arg.strip() == '---': # End of document
+                try:
+                    loaded = yaml.load(buff.rstrip())
+                except Exception, e:
+                    print >> sys.stderr, "Invalid YAML: %s"%str(e)
+                if loaded is not None:
+                    yield loaded
+            elif arg == '': #EOF
+                # we don't yield the remaining buffer in this case
+                # because we don't want to publish partial inputs
+                return
+            
+            arg = 'x' # reset
+
     except select_error:
         return # most likely ctrl-c interrupt
     

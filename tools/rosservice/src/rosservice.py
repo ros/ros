@@ -595,7 +595,8 @@ def _rosservice_cmd_call(argv):
     if not service_args and has_service_args(service_name, service_class=service_class):
         if sys.stdin.isatty():
             parser.error("Please specify service arguments")
-        for service_args in _stdin_yaml_arg():
+        import rostopic
+        for service_args in rostopic.stdin_yaml_arg():
             if service_args:
                 # #2080: argument to _rosservice_call must be a list
                 if type(service_args) != list:

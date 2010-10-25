@@ -336,7 +336,7 @@ def delete_param(param, verbose=False):
     
 # LOAD/SET
 
-def _set_param(param, value, verbose=False):
+def set_param_raw(param, value, verbose=False):
     """
     Set param on the Parameter Server. Unlike L{set_param()}, this
     takes in a Python value to set instead of YAML.
@@ -352,7 +352,7 @@ def _set_param(param, value, verbose=False):
         for k, v in value.iteritems():
             # dictionary keys must be non-unicode strings
             if isinstance(k, str):
-                _set_param(ns_join(param, k), v, verbose=verbose)
+                set_param_raw(ns_join(param, k), v, verbose=verbose)
             else:
                 raise ROSParamException("YAML dictionaries must have string keys. Invalid dictionary is:\n%s"%value)
     else:
@@ -376,7 +376,7 @@ def set_param(param, value, verbose=False):
     @param value: yaml-encoded value
     @type  value: str
     """
-    _set_param(param, yaml.load(value), verbose=verbose)
+    set_param_raw(param, yaml.load(value), verbose=verbose)
 
 def upload_params(ns, values, verbose=False):
     """
@@ -390,7 +390,7 @@ def upload_params(ns, values, verbose=False):
         raise ROSParamException("global / can only be set to a dictionary")
     if verbose:
         print_params(values, ns)
-    _set_param(ns, values)
+    set_param_raw(ns, values)
 
 
 # LIST
@@ -457,6 +457,35 @@ def _rosparam_cmd_get_dump(cmd, argv):
             print "dumping namespace [%s] to file [%s]"%(ns, arg)
         dump_params(arg, script_resolve_name(NAME, ns), verbose=options.verbose)
 
+def _set_optparse_neg_args(parser, argv):
+    # we don't use optparse to parse actual arguments, just options,
+    # due to the fact that optparse doesn't handle negative numbers as
+    # arguments. This parsing is complicated by the fact that we still
+    # need to respect argument-bearing options like --textfile.
+    args = []
+    optparse_args = []
+    skip = False
+    for s in argv[2:]:
+        if s.startswith('-'):
+            if s in ['-t', '--textfile', '-b', '--binfile']:
+                skip = True
+                optparse_args.append(s)
+            elif skip:
+                parser.error("-t and --textfile options require an argument")
+            elif len(s) > 1 and ord(s[1]) >= ord('0') and ord(s[1]) <= ord('9'):
+                args.append(s)
+            else:
+                optparse_args.append(s)
+        else:
+            if skip:
+                skip = False
+                optparse_args.append(s)                
+            else:
+                args.append(s)
+    options, _ = parser.parse_args(optparse_args)
+    return options, args
+
+# TODO: break this into separate routines, has gotten too ugly to multiplex
 def _rosparam_cmd_set_load(cmd, argv):
     """
     Process command line for rosparam set/load, e.g.::
@@ -471,24 +500,16 @@ def _rosparam_cmd_set_load(cmd, argv):
         parser = OptionParser(usage="usage: %prog load [options] file [namespace]", prog=NAME)
     elif cmd == 'set':
         parser = OptionParser(usage="usage: %prog set [options] parameter value", prog=NAME)
+        parser.add_option("-t", "--textfile", dest="text_file", default=None,
+                          metavar="TEXT_FILE", help="set parameters to contents of text file")
+        parser.add_option("-b", "--binfile", dest="bin_file", default=None,
+                          metavar="BINARY_FILE", help="set parameters to contents of binary file")
 
     parser.add_option("-v", dest="verbose", default=False,
                       action="store_true", help="turn on verbose output")
-    
-    # we don't use optparse to parse actual arguments, just options,
-    # due to the fact that optparse doesn't handle negative numbers as
-    # arguments.
-    args = []
-    optparse_args = []
-    for s in argv[2:]:
-        if s.startswith('-'):
-            if len(s) > 1 and ord(s[1]) >= ord('0') and ord(s[1]) <= ord('9'):
-                args.append(s)
-            else:
-                optparse_args.append(s)
-        else:
-            args.append(s)
-    options, _ = parser.parse_args(optparse_args)
+    options, args = _set_optparse_neg_args(parser, argv)
+    if options.text_file and options.bin_file:
+        parser.error("you may only specify one of --textfile or --binfile")
 
     arg2 = None
     if len(args) == 0:
@@ -498,7 +519,7 @@ def _rosparam_cmd_set_load(cmd, argv):
             parser.error("invalid arguments. Please specify a parameter name")
     elif len(args) == 1:
         arg = args[0]
-        if cmd == 'set':
+        if cmd == 'set' and not (options.text_file or options.bin_file):
             parser.error("invalid arguments. Please specify a parameter value")
     elif len(args) == 2:
         arg = args[0]
@@ -507,14 +528,28 @@ def _rosparam_cmd_set_load(cmd, argv):
         parser.error("too many arguments")
 
     if cmd == 'set':
-        # #2237: the empty string is really hard to specify on the
-        # command-line due to bash quoting rules. We cheat here and
-        # let an empty Python string be an empty YAML string (instead
-        # of YAML null, which has no meaning to the Parameter Server
-        # anyway).
-        if arg2 == '':
-            arg2 = '!!str'
-        set_param(script_resolve_name(NAME, arg), arg2, verbose=options.verbose)
+        name = script_resolve_name(NAME, arg)
+        # #2647
+        if options.text_file:
+            if not os.path.isfile(options.text_file):
+                parser.error("file '%s' does not exist"%(options.text_file))
+            with open(options.text_file) as f:
+                arg2 = f.read()
+            set_param_raw(name, arg2, verbose=options.verbose) 
+        elif options.bin_file:
+            import xmlrpclib
+            with open(options.bin_file, 'rb') as f:
+                arg2 = xmlrpclib.Binary(f.read())
+            set_param_raw(name, arg2, verbose=options.verbose)                
+        else:
+            # #2237: the empty string is really hard to specify on the
+            # command-line due to bash quoting rules. We cheat here and
+            # let an empty Python string be an empty YAML string (instead
+            # of YAML null, which has no meaning to the Parameter Server
+            # anyway).
+            if arg2 == '':
+                arg2 = '!!str'
+            set_param(name, arg2, verbose=options.verbose)
     else:
         paramlist = load_file(arg, default_namespace=script_resolve_name(NAME, arg2), verbose=options.verbose)
         for params,ns in paramlist:

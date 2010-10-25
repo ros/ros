@@ -40,6 +40,8 @@ import os
 import logging
 import socket
 import sys
+import xmlrpclib
+
 
 import roslib.names 
 import roslib.network
@@ -309,7 +311,6 @@ class Master:
         @return: XMLRPC proxy for communicating with master
         @rtype: xmlrpclib.ServerProxy
         """
-        import xmlrpclib
         return xmlrpclib.ServerProxy(self.uri)
     
     def get_multi(self):
@@ -317,7 +318,6 @@ class Master:
         @return: multicall XMLRPC proxy for communicating with master
         @rtype: xmlrpclib.MultiCall
         """
-        import xmlrpclib
         return xmlrpclib.MultiCall(self.get())
 
     def set_port(self, port):

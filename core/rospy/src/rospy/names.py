@@ -162,7 +162,7 @@ def resolve_name(name, caller_id=None, remap=True):
     if name[0] == SEP: #global name
         resolved_name = name
     elif is_private(name): #~name
-        resolved_name = ns_join(caller_id, name[1:])
+        resolved_name = canonicalize_name(caller_id + SEP + name[1:])
     else: #relative
         resolved_name = namespace(caller_id) + name
 

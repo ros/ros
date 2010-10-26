@@ -173,6 +173,12 @@ class TestRospyNames(unittest.TestCase):
             ('~foo/', '/ns1/ns2', '/ns1/ns2/foo'),            
             ('~foo/bar', '/ns1/ns2', '/ns1/ns2/foo/bar'),
 
+            ('~/foo', '/', '/foo'),            
+            ('~/foo', '/node', '/node/foo'),            
+            ('~/foo', '/ns1/ns2', '/ns1/ns2/foo'),            
+            ('~/foo/', '/ns1/ns2', '/ns1/ns2/foo'),            
+            ('~/foo/bar', '/ns1/ns2', '/ns1/ns2/foo/bar'),
+
             ]
         remap = False
         for name, node_name, v in tests:

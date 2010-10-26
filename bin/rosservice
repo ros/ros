@@ -31,16 +31,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-if 1:
-    # this is an extreme optimization. As rosservice is used A LOT, it's
-    # manually calculating the sys.path. It cuts load time in half for
-    # path calculation.
-    import roslib.packages
-    import os, sys
-    rr = os.environ['ROS_ROOT']
-    paths = [os.path.join(rr, 'tools', 'rosmsg', 'src'), os.path.join(rr, 'tools', 'rosservice', 'src'), os.path.join(rr, 'core', 'rospy', 'src'), os.path.join(rr, 'tools', 'rosbag', 'src'), os.path.join(rr, 'tools', 'rostopic', 'src')]
-    sys.path = paths + sys.path
-    import rosservice
-else:
-    from ros import rosservice
+# As rostopic is used in tab completion, we manually calculate the
+# sys.path to reduce load latency
+
+import os, sys, roslib.stacks
+d = roslib.stacks.get_stack_dir('ros_comm')
+tools_d = os.path.join(d, 'tools')
+paths = [os.path.join(tools_d, p, 'src') for p in ('rosbag', 'rosmsg', 'rosservice', 'rostopic')]
+paths.append(os.path.join(d, 'clients', 'rospy', 'src'))
+sys.path = paths + sys.path
+import rosservice
 rosservice.rosservicemain()

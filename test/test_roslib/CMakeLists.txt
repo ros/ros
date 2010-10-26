@@ -33,3 +33,10 @@ rosbuild_add_rostest(test/masterapi.test)
 rosbuild_add_boost_directories()
 rosbuild_add_gtest(test/utest test/utest.cpp)
 rosbuild_link_boost(test/utest thread)
+
+
+rosbuild_add_gtest(test_time test/time.cpp)
+target_link_libraries(test_time roslib)
+
+rosbuild_add_gtest(test_package test/package.cpp)
+target_link_libraries(test_package roslib)

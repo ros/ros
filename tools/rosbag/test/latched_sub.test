@@ -1,0 +1,4 @@
+<launch>
+  <node name="player" pkg="rosbag" type="play" args="/tmp/test_rosbag_latched_pub.bag --keep-alive"/>
+  <test test-name="latched_sub" pkg="rosbag" type="latched_sub.py"/>
+</launch>

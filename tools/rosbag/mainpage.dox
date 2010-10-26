@@ -1,0 +1,64 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosbag is a set of tools and API's for recording/writing messages to bag files and playing/reading them back.
+
+\section codeapi Code API
+
+The C++ and Python API's are provided for serializing bag files.  The C++ API consists of the following classes:
+
+- rosbag::Bag - Serializes to/from a bag file on disk.
+- rosbag::View - Specifies a view into a bag file to allow for querying for messages on specific connections withn a time range.
+
+Here's a simple example of writing to a bag file:
+
+\verbatim
+#include "rosbag/bag.h"
+...
+rosbag::Bag bag("test.bag", rosbag::bagmode::Write);
+std_msgs::Int32 i;
+i.data = 42;
+bag.write("numbers", ros::Time::now(), i);
+bag.close();
+\endverbatim
+
+Likewise, to read from that bag file:
+
+\verbatim
+#include "rosbag/bag.h"
+...
+rosbag::Bag bag("test.bag");
+rosbag::View view(bag, rosbag::TopicQuery("numbers"));
+BOOST_FOREACH(rosbag::MessageInstance const m, view)
+{
+    std_msgs::Int32::ConstPtr i = m.instantiate<std_msgs::Int32>();
+    if (i != NULL)
+    	std::cout << i->data << std::endl;
+}
+bag.close();
+\endverbatim
+
+The Python API is similar.  Writing to a bag file:
+
+\verbatim
+import rosbag
+from std_msgs.msg import Int32, String
+bag = rosbag.Bag('test.bag', 'w')
+i = Int32()
+i.data = 42
+bag.write('numbers', i);
+bag.close();
+\endverbatim
+
+Example usage for read:
+
+\verbatim
+import rosbag
+bag = rosbag.Bag('test.bag')
+for topic, msg, t in bag.read_messages('numbers'):
+    print msg.data
+bag.close();
+\endverbatim
+
+*/

@@ -267,17 +267,21 @@ macro(rosbuild_init)
   # Set up the test targets.  Subsequent calls to rosbuild_add_gtest and
   # friends add targets and dependencies from these targets.
   #
+
+  # Find roslib; roslib_path will be used later
+  rosbuild_invoke_rospack("" roslib path find roslib)
+
   # Find rostest.  The variable rostest_path will also be reused in other
   # macros.
-  rosbuild_invoke_rospack("" rostest path find rostest)
+  #rosbuild_invoke_rospack("" rostest path find rostest)
   
   # Record where we're going to put test results (#2003)
-  execute_process(COMMAND ${rostest_path}/bin/test-results-dir
+  execute_process(COMMAND ${roslib_path}/bin/test-results-dir
                   OUTPUT_VARIABLE rosbuild_test_results_dir
                   RESULT_VARIABLE _test_results_dir_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
   if(_test_results_dir_failed)
-    message(FATAL_ERROR "Failed to invoke rostest/bin/test-results-dir")
+    message(FATAL_ERROR "Failed to invoke roslib/bin/test-results-dir")
   endif(_test_results_dir_failed)
 
   # The 'tests' target builds the test program
@@ -308,13 +312,13 @@ macro(rosbuild_init)
 
   add_custom_target(test-results-run)
   add_custom_target(test-results
-                    COMMAND ${rostest_path}/bin/rostest-results --nodeps ${_project})
+                    COMMAND ${roslib_path}/bin/rostest-results --nodeps ${_project})
   add_dependencies(test-results test-results-run)
   # Do we want coverage reporting (only matters for Python, because
   # Bullseye already collects everything into a single file).
   if("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
     add_custom_target(test-results-coverage
-                      COMMAND ${rostest_path}/bin/coverage-html
+                      COMMAND ${roslib_path}/bin/coverage-html
                       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
     # Make tests run before collecting coverage results
     add_dependencies(test-results-coverage test-results-run)

@@ -13,7 +13,6 @@
   <depend package="rosconsole"/>
   <depend package="std_msgs"/>
   <depend package="rostest"/>
-  <!-- rospy is used in some rostests -->
   <depend package="rospy"/>
 
   <export>

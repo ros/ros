@@ -1,4 +1,0 @@
-<launch>
-  <!-- $(anon talker) creates an anonymous name for this node -->
-  <node name="$(anon talker)" pkg="test_ros" type="talker.py" />
-</launch>

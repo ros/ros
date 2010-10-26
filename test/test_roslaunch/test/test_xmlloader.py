@@ -697,58 +697,18 @@ class TestXmlLoader(unittest.TestCase):
     
     def test_master(self):
         from roslaunch.core import Master
-        old_env = os.environ.get('ROS_MASTER_URI', None)
-        try:
-            master_uri = 'http://foo:789'
-            os.environ['ROS_MASTER_URI'] = master_uri
-            
-            tests = ['test-master-1.xml','test-master-2.xml',
-                     'test-master-3.xml','test-master-4.xml',
-                     'test-master-5.xml',        
-                     ]
-            for x in xrange(1, 6):
-                loader = roslaunch.xmlloader.XmlLoader()
-                for filename in tests:
-                    filename = os.path.join(self.xml_dir, 'test-master-%s.xml'%x)
-                    self.assert_(os.path.exists(filename))
-                    mock = RosLaunchMock()
-                    loader.load(filename, mock)
-                    if x == 1:
-                        self.assertEquals(Master.AUTO_START, mock.master.auto)
-                        self.assertEquals(master_uri, mock.master.uri)                        
-                    elif x == 2:
-                        self.assertEquals(Master.AUTO_RESTART, mock.master.auto)
-                        self.assertEquals(master_uri, mock.master.uri)                        
-                    elif x == 3:
-                        self.assertEquals(Master.AUTO_NO, mock.master.auto)
-                        self.assertEquals(master_uri, mock.master.uri)                                                
-                    elif x == 4:
-                        self.assertEquals(Master.AUTO_NO, mock.master.auto)
-                        self.assertEquals(master_uri, mock.master.uri)                                                
-                    elif x == 5:
-                        self.assertEquals(Master.AUTO_NO, mock.master.auto)
-                        host, port = roslib.network.parse_http_host_and_port(mock.master.uri)
-                        self.assertEquals(12345, port)
-                        # should have been remapped to machine name
-                        self.assertNotEquals(host, 'localhost')
-
-            tests = ['test-master-invalid-1.xml','test-master-invalid-2.xml', \
-                         'test-master-invalid-3.xml', 'test-master-invalid-4.xml' ]
+        tests = ['test-master-1.xml','test-master-2.xml',
+                 'test-master-3.xml','test-master-4.xml',
+                 'test-master-5.xml',        
+                 ]
+        # tests should still load, but nothing more
+        for x in xrange(1, 6):
             loader = roslaunch.xmlloader.XmlLoader()
             for filename in tests:
-                filename = os.path.join(self.xml_dir, filename)
-                try:
-                    self.assert_(os.path.exists(filename))
-                    loader.load(filename, RosLaunchMock())
-                    self.fail("xmlloader did not throw an xmlparseexception for [%s]"%filename)
-                except roslaunch.xmlloader.XmlParseException, e:
-                    pass
-        finally:
-            if old_env is None:
-                del os.environ['ROS_MASTER_URI']
-            else:
-                os.environ['ROS_MASTER_URI'] = old_env
-            
+                filename = os.path.join(self.xml_dir, 'test-master-%s.xml'%x)
+                self.assert_(os.path.exists(filename))
+                mock = RosLaunchMock()
+                loader.load(filename, mock)
                  
     def test_env(self):
         nodes = self._load_valid_nodes(['test_env', 'test_env_empty'])

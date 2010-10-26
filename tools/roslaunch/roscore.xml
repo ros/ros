@@ -5,7 +5,6 @@
   http://ros.org/wiki/roscore
   -->
 <launch>
-  <master auto="start" />
   <!-- all the nodes in the core file must have the name attribute specified -->
   <node pkg="rosout" type="rosout" name="rosout" respawn="true"/>
 </launch>

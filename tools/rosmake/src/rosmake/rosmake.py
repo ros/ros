@@ -787,9 +787,9 @@ class RosMakeAll:
         else:
             packages.extend(args)
 
-        if not self.is_rosout_built():
-            packages.append("rosout")
-            self.printer.print_all("Detected rosout not built, adding it to the build")
+        #if not self.is_rosout_built():
+        #    packages.append("rosout")
+        #    self.printer.print_all("Detected rosout not built, adding it to the build")
 
         self.printer.print_all( "Packages requested are: %s"%packages)
         
@@ -830,10 +830,10 @@ class RosMakeAll:
             
         required_packages = self.specified_packages[:]
         # these packages are not in the dependency tree but are needed they only cost 0.01 seconds to build
-        always_build = ["rosout"]
-        for p in always_build:
-            if p not in self.specified_packages:
-                required_packages.append(p)
+        #always_build = ["rosout"]
+        #for p in always_build:
+        #    if p not in self.specified_packages:
+        #        required_packages.append(p)
 
         # make sure all dependencies are satisfied and if not warn
         buildable_packages = []

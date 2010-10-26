@@ -1,0 +1,9 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b rosnode is a command-line tool for displaying debug information about nodes. It also contains an experimental Python library for retrieving information about ROS Nodes. The rosnode Python library is currently for internal-use only as its API is not stable.
+
+Please see the Wiki page for documentation on the rosnode tool.
+
+*/

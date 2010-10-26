@@ -1,0 +1,16 @@
+float32[1] f32_1
+float32[3] f32_3
+float64[1] f64_1
+float64[3] f64_3
+int8[1] i8_1
+int8[3] i8_3
+uint8[1] u8_1
+uint8[3] u8_3
+int32[1] i32_1
+int32[3] i32_3
+uint32[1] u32_1
+uint32[3] u32_3
+string[1] s_1
+string[3] s_3
+bool[1] b_1
+bool[3] b_3

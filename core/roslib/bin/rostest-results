@@ -35,11 +35,18 @@
 
 ## script that prints summary of aggregated test results to console
 
-import roslib; roslib.load_manifest('rostest')
 
+import roslib; 
 import sys
 import cStringIO
 import os
+
+try:
+    roslib.load_manifest('rostest')
+except roslib.packages.InvalidROSPkgException, ex:
+    print("ERROR: rostest not detected")
+    sys.exit(0)
+
 
 import roslib.rospack
 import rostest.xmlresults as xmlr

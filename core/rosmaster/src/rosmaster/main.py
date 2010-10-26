@@ -109,7 +109,5 @@ WARNING ACHTUNG WARNING ACHTUNG WARNING
         logger.info("stopping master...")
         master.stop()
 
-    print "exiting..."
-
 if __name__ == "__main__":
     main()

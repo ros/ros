@@ -1,0 +1,8 @@
+<package>
+<export>
+<cpp lflags="-lloki"/>
+</export>
+<depend package="base"/>
+<depend package="base_two"/>
+<depend package="deps_higher"/>
+</package>

@@ -1,0 +1,11 @@
+<package>
+<export>
+<cpp lflags="-lloki"/>
+<base cmake="foo.cmake"/>
+<base_two cmake="bar.cmake"/>
+</export>
+<depend package="base"/>
+<depend package="base_two"/>
+<rosdep name="bar"/>
+<rosdep nombre="baz"/>
+</package>

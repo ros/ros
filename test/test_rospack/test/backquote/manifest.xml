@@ -1,0 +1,6 @@
+<package>
+<export>
+<!-- really try to stress backquote interpretation here, including making sure ${prefix} has precedence -->
+<cpp lflags="-lloki `echo -lfoo` `echo -Lodin \`cat ${prefix}/backquote-l\``" cflags="-Iblah `cat ${prefix}/backquote-I`"/>
+</export>
+</package>

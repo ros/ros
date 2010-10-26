@@ -341,7 +341,7 @@ def is_legal_resource_base_name(name):
 
 def canonicalize_name(name):
     """
-    Put name in canonical form. Double slashes '//' are removed and
+    Put name in canonical form. Extra slashes '//' are removed and
     name is returned without any trailing slash, e.g. /foo/bar
     @param name: ROS name
     @type  name: str
@@ -352,9 +352,6 @@ def canonicalize_name(name):
         return '/' + '/'.join([x for x in name.split(SEP) if x])
     else:
         return '/'.join([x for x in name.split(SEP) if x])        
-    ##if len(name) > 1 and name[-1] == SEP:
-    ##    return name[:-1]
-    ##return name
 
 def resolve_name(name, namespace_, remappings=None):
     """
@@ -377,7 +374,8 @@ def resolve_name(name, namespace_, remappings=None):
     if name[0] == SEP: #global name
         resolved_name = name
     elif is_private(name): #~name
-        resolved_name = ns_join(namespace_, name[1:])
+        # #3044: be careful not to accidentally make rest of name global
+        resolved_name = canonicalize_name(namespace_ + SEP + name[1:])
     else: #relative
         resolved_name = namespace(namespace_) + name
 

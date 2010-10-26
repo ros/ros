@@ -256,6 +256,7 @@ class NamesTest(unittest.TestCase):
     tests = ['',
              'f', 'f1', 'f_', 'f/', 'foo', 'foo_bar', 'foo/bar', 'foo/bar/baz',
              '~f', '~a/b/c',
+             '~/f',
              '/a/b/c/d', '/']
     for t in tests:
       self.assert_(is_legal_name(t), "[%s]"%t)
@@ -279,7 +280,8 @@ class NamesTest(unittest.TestCase):
     failures = [None, '', 'hello\n', '\t', 'foo++', 'foo-bar', '#foo',
                 'f/', 'foo/bar', '/', '/a',
                 'f//b',
-                '~f', '~a/b/c',                
+                '~f', '~a/b/c',
+                '~/f',
                 ' name', 'name ',
                 '1name', 'foo\\']
     for f in failures:
@@ -320,6 +322,13 @@ class NamesTest(unittest.TestCase):
           ('~foo', '/ns1/ns2', '/ns1/ns2/foo'),            
           ('~foo/', '/ns1/ns2', '/ns1/ns2/foo'),            
           ('~foo/bar', '/ns1/ns2', '/ns1/ns2/foo/bar'),
+
+          # #3044
+          ('~/foo', '/', '/foo'),            
+          ('~/foo', '/node', '/node/foo'),            
+          ('~/foo', '/ns1/ns2', '/ns1/ns2/foo'),            
+          ('~/foo/', '/ns1/ns2', '/ns1/ns2/foo'),            
+          ('~/foo/bar', '/ns1/ns2', '/ns1/ns2/foo/bar'),
 
           ]
       for name, node_name, v in tests:

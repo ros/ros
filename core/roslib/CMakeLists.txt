@@ -36,10 +36,3 @@ rosbuild_link_boost(roslib thread)
 if (NOT APPLE)
 target_link_libraries(roslib rt)
 endif (NOT APPLE)
-
-rosbuild_add_gtest(test_time test/time.cpp)
-target_link_libraries(test_time roslib)
-
-rosbuild_add_gtest(test_package test/package.cpp)
-target_link_libraries(test_package roslib)
- 

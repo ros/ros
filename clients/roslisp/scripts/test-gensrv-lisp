@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+set -e 
+
+if (( $# == 2 ))
+then
+    PKG=`rospack find $1`
+    FILENAME=$PKG/srv/$2.srv
+    rosrun genmsg_cpp gensrv_lisp $FILENAME
+    rosrun roslisp genmsg_lisp.py $FILENAME
+
+    NAME="$2.lisp"
+    echo "  $NAME"
+    diff -w $PKG/srv/lisp/$1/$NAME $PKG/srv_gen/lisp/$NAME | head -n 50
+
+    NAME="_package_$2.lisp"
+    echo "  $NAME"
+    diff -w $PKG/srv/lisp/$1/$NAME $PKG/srv_gen/lisp/$NAME | head -n 50
+    
+elif (( $# == 1 ))
+then
+    for p in `rossrv package $1`
+    do args=`echo $p | tr "/" " "`
+       echo "$p"
+       $0 $args
+       echo "--------------------------------------"
+    done
+    PKG=`rospack find $1`
+    echo "_package.lisp"
+    diff -w $PKG/srv/lisp/$1/_package.lisp $PKG/srv_gen/lisp/_package.lisp | head -n 50
+    NAME="$1-srv.asd"
+    echo "$NAME"
+    diff -w $PKG/srv/lisp/$1/$NAME $PKG/srv_gen/lisp/$NAME | head -n 50
+
+else
+    echo "Usage: test-gensrv-lisp PKG SRV or test-gensrv-lisp PKG"
+    exit 1
+fi
+

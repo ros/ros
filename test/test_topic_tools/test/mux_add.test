@@ -1,0 +1,10 @@
+<launch>
+  <node pkg="rostopic" type="rostopic" name="rostopic_pub1" 
+        args="pub -r 10 input1 std_msgs/String input"/>
+
+  <node pkg="topic_tools" type="mux" name="mux_explicit" output="screen"
+        args="output input"/>
+  <test test-name="mux_services" pkg="topic_tools" type="test_mux_services.py"/>
+
+</launch>
+

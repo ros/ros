@@ -1,5 +1,0 @@
-<launch>
-  <!-- the gist of this test is to have a listener registered to a topic before the publisher comes online -->
-  <node name="listenerpublisher" pkg="test_rospy" type="listenerpublisher.py" />
-  <test test-name="rospy_pubsub_order" pkg="test_rospy" type="test_pubsub_order.py" />
-</launch>

@@ -1,0 +1,3 @@
+<launch>
+  <node name="n1" pkg="$(env PACKAGE)" type="$(env TYPE)" output="$(env OUTPUT)" respawn="$(env RESPAWN)"/>
+</launch> 

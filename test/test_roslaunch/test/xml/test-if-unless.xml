@@ -1,0 +1,30 @@
+<launch>
+  
+  <group if="1">
+     <param name="group_if_pass" value="1" />
+  </group>
+  <group if="0">
+     <param name="group_if_fail" value="1" />
+  </group>
+  <group unless="0">
+     <param name="group_unless_pass" value="1" />
+  </group>
+  <group unless="1">
+     <param name="group_unless_fail" value="1" />
+  </group>
+
+  <param name="param_if_pass" value="1" if="1" />
+  <param name="param_if_fail" value="1" if="0" />  
+
+  <param name="param_unless_pass" value="1" unless="0" />
+  <param name="param_unless_fail" value="1" unless="1" />
+
+  <remap from="from_if_pass" to="to_if_pass" if="1" />
+  <remap from="from_if_fail" to="to_if_fail" if="0" />  
+
+  <remap from="from_unless_pass" to="to_unless_pass" unless="0" />
+  <remap from="from_unless_fail" to="to_unless_fail" unless="1" />  
+
+  <node name="remap" pkg="test_ros" type="talker.py" />
+
+</launch>

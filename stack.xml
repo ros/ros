@@ -11,6 +11,6 @@ The ROS runtime "graph" is a peer-to-peer network of processes that are loosely 
   </description>
   <author>Eric Berger, Ken Conley, Josh Faust, Tully Foote, Brian Gerkey, Jeremy Leibs, Morgan Quigley, Rob Wheeler</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="doc reviewed" notes=""/>
   <url>http://ros.org/wiki/ROS</url>
 </stack>

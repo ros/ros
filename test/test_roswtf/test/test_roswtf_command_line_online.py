@@ -70,11 +70,15 @@ class TestRostopicOnline(unittest.TestCase):
         self.assert_('Options' in output)
             
     def test_offline(self):
+        # this test is disabled for now; now that test_roswtf is part
+        # of ros_comm, the tricks before that were used no longer work
         cmd = 'roswtf'
 
         # pass in special test key to roswtf for ROS_PACKAGE_PATH
-        env = os.environ.copy()        
-        env['ROS_PACKAGE_PATH'] = 'test_roswtf_ignore'
+        env = os.environ.copy()
+        import roslib.packages
+        d = roslib.packages.get_pkg_dir('roswtf')
+        env['ROS_PACKAGE_PATH'] = d
 
         import roslib.packages
         cwd  = roslib.packages.get_pkg_dir('test_roswtf')

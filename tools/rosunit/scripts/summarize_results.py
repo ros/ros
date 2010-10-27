@@ -86,7 +86,7 @@ def create_summary(result, packages):
 
 def main():
     from optparse import OptionParser
-    parser = OptionParser(usage="usage: rostest-results [options] package")
+    parser = OptionParser(usage="usage: summarize_results.py [options] package")
     parser.add_option("--nodeps",
                       dest="no_deps", default=False,
                       action="store_true",

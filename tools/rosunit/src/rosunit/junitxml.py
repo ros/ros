@@ -39,6 +39,7 @@ Library for reading and manipulating Ant JUnit XML result files.
 
 import os
 import sys
+import cStringIO
 import string
 import codecs
 import re
@@ -160,7 +161,7 @@ class TestCaseResult(object):
 class Result(object):
     __slots__ = ['name', 'num_errors', 'num_failures', 'num_tests', \
                  'test_case_results', 'system_out', 'system_err', 'time']
-    def __init__(self, name, num_errors, num_failures, num_tests):
+    def __init__(self, name, num_errors=0, num_failures=0, num_tests=0):
         self.name = name
         self.num_errors = num_errors
         self.num_failures = num_failures
@@ -399,3 +400,41 @@ def test_success_junit_xml(test_name):
   <testcase name="test_ran" status="run" time="1" classname="Results">
   </testcase>
 </testsuite>"""%(test_name)
+
+def print_summary(junit_results):
+    """
+    Print summary of junitxml results to stdout.
+    """
+    # we have two separate result objects, which can be a bit
+    # confusing. 'result' counts successful _running_ of tests
+    # (i.e. doesn't check for actual test success). The 'r' result
+    # object contains results of the actual tests.
+    
+    buff = cStringIO.StringIO()
+    buff.write("[ROSTEST]"+'-'*71+'\n\n')
+    for tc_result in junit_results.test_case_results:
+        buff.write(tc_result.description)
+
+    buff.write('\nSUMMARY\n')
+    if (junit_results.num_errors + junit_results.num_failures) == 0:
+        buff.write("\033[32m * RESULT: SUCCESS\033[0m\n")
+    else:
+        buff.write("\033[1;31m * RESULT: FAIL\033[0m\n")
+
+    # TODO: still some issues with the numbers adding up if tests fail to launch
+
+    # number of errors from the inner tests, plus add in count for tests
+    # that didn't run properly ('result' object).
+    buff.write(" * TESTS: %s\n"%junit_results.num_tests)
+    num_errors = junit_results.num_errors
+    if num_errors:
+        buff.write("\033[1;31m * ERRORS: %s\033[0m\n"%num_errors)
+    else:
+        buff.write(" * ERRORS: 0\n")
+    num_failures = junit_results.num_failures
+    if num_failures:
+        buff.write("\033[1;31m * FAILURES: %s\033[0m\n"%num_failures)
+    else:
+        buff.write(" * FAILURES: 0\n")
+
+    print buff.getvalue()

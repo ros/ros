@@ -42,14 +42,10 @@ import roslaunch.pmon
 import roslaunch.server
 import roslaunch.xmlloader 
 
-#TODOXXX: probably move process listener infrastructure into here
-
 import roslaunch.parent
 
 class ROSTestLaunchParent(roslaunch.parent.ROSLaunchParent):
 
-    ## @param run_id str: UUID of roslaunch session
-    ## @throws RLException
     def __init__(self, config, roslaunch_files, port):
         if config is None:
             raise Exception("config not initialized")
@@ -57,14 +53,15 @@ class ROSTestLaunchParent(roslaunch.parent.ROSLaunchParent):
         run_id = roslaunch.core.generate_run_id()
         super(ROSTestLaunchParent, self).__init__(run_id, roslaunch_files, is_core=True, port=port)
         self.config = config
-        self.config.master.auto = self.config.master.AUTO_RESTART
         
     def _load_config(self):
         # disable super, just in case, though this shouldn't get called
         pass
 
-    ## initializes self.config and xmlrpc infrastructure
     def setUp(self):
+        """
+        initializes self.config and xmlrpc infrastructure
+        """
         self._start_infrastructure()
         self._init_runner()
 
@@ -74,17 +71,21 @@ class ROSTestLaunchParent(roslaunch.parent.ROSLaunchParent):
             runner.stop()
         self._stop_infrastructure()
 
-    ## perform launch of nodes, does not launch tests.  rostest_parent
-    ## follows a different pattern of init/run than the normal
-    ## roslaunch, which is why it does not reuse start()/spin()
     def launch(self):
+        """
+        perform launch of nodes, does not launch tests.  rostest_parent
+        follows a different pattern of init/run than the normal
+        roslaunch, which is why it does not reuse start()/spin()
+        """
         if self.runner is not None:
             return self.runner.launch()
         else:
             raise Exception("no runner to launch")
 
-    ## run the test, blocks until completion            
     def run_test(self, test):
+        """
+        run the test, blocks until completion 
+        """
         if self.runner is not None:
             # run the test, blocks until completion            
             return self.runner.run_test(test)

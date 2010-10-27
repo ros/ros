@@ -267,13 +267,7 @@ class Master:
     """
     Data structure for representing and querying state of master 
     """
-    __slots__ = ['type', 'auto', 'uri', 'log_output']
-    ## don't start a master
-    AUTO_NO    = 0
-    ## start a master if one isn't running
-    AUTO_START   = 1
-    ## start/restart master (i.e. restart an existing master)
-    AUTO_RESTART = 2
+    __slots__ = ['type', 'auto', 'uri']
     ROSMASTER = 'rosmaster'
     
     # deprecated
@@ -282,29 +276,34 @@ class Master:
     def __init__(self, type_=None, uri=None, auto=None):
         """
         Create new Master instance.
-        @param uri: master URI
+        @param uri: master URI. Defaults to ROS_MASTER_URI environment variable.
         @type  uri: str
         @param type_: Currently only support 'rosmaster' 
         @type  type_: str
-        @param auto: AUTO_NO | AUTO_START | AUTO_RESTART. AUTO_NO
-          is the default
-        @type  auto: int
         """
         if auto is not None and type(auto) != int:
             raise RLException("invalid auto value: %s"%auto)            
         self.type = type_ or Master.ROSMASTER
-        self.auto = auto or Master.AUTO_NO
-        if self.auto not in [Master.AUTO_NO, Master.AUTO_START, Master.AUTO_RESTART]:
-            raise RLException("invalid auto value: %s"%auto)
-        self.uri  = remap_localhost_uri(uri or get_master_uri_env())
-        # by default, master output goes to screen
-        self.log_output = False
+        self.uri = uri or get_master_uri_env()
         
+    def get_host(self):
+        # parse from the URI
+        host, _ = roslib.network.parse_http_host_and_port(self.uri)
+        return host
+    
+    def get_port(self):
+        """
+        Get the port this master is configured for.
+        """
+        # parse from the URI
+        _, urlport = roslib.network.parse_http_host_and_port(self.uri)
+        return urlport
+            
     def __eq__(self, m2):
         if not isinstance(m2, Master):
             return False
         else:
-            return m2.auto == self.auto and m2.type == self.type and m2.uri == self.uri and m2.log_output == self.log_output
+            return m2.type == self.type and m2.uri == self.uri
 
     def get(self):
         """
@@ -319,16 +318,6 @@ class Master:
         @rtype: xmlrpclib.MultiCall
         """
         return xmlrpclib.MultiCall(self.get())
-
-    def set_port(self, port):
-        """
-        Override port specification of Master. This only has an effect on masters that have not
-        been launched yet.
-        @param port: port
-        @type  port: int
-        """
-        host, _ = roslib.network.parse_http_host_and_port(self.uri)
-        self.uri = 'http://%s:%s/'%(host, port)
     
     def is_running(self):
         """

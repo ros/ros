@@ -63,7 +63,7 @@ def _next_counter():
     _counter += 1
     return _counter
 
-def create_master_process(run_id, type_, ros_root, port, log_output=False):
+def create_master_process(run_id, type_, ros_root, port):
     """
     Launch a master
     @param type_: name of master executable (currently just Master.ZENMASTER)
@@ -72,8 +72,6 @@ def create_master_process(run_id, type_, ros_root, port, log_output=False):
     @type  ros_root: str
     @param port: port to launch master on
     @type  port: int
-    @param log_output: if True, output goes to log file. Else, output goes to screen.
-    @type  log_output: bool
     @raise RLException: if type_ or port is invalid
     """    
     if port < 1 or port > 65535:
@@ -89,6 +87,7 @@ def create_master_process(run_id, type_, ros_root, port, log_output=False):
         raise RLException("unknown master typ_: %s"%type_)
 
     _logger.info("process[master]: launching with args [%s]"%args)
+    log_output = False
     return LocalProcess(run_id, package, 'master', args, os.environ, log_output, None)
 
 def create_node_process(run_id, node, master_uri):

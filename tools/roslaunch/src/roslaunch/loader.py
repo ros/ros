@@ -42,7 +42,7 @@ import os
 import sys
 from copy import deepcopy
 
-from roslaunch.core import Param, Master, RosbinExecutable, Node, Test, Machine, \
+from roslaunch.core import Param, RosbinExecutable, Node, Test, Machine, \
     RLException, PHASE_SETUP
 
 try:
@@ -53,11 +53,6 @@ except ImportError:
 
 #lazy-import global for yaml
 yaml = None
-
-# maps master auto attribute to Master auto property
-_master_auto = {
-    'no': Master.AUTO_NO, 'start': Master.AUTO_START, 'restart': Master.AUTO_RESTART,
-}
 
 class LoadException(RLException):
     """Error loading data as specified (e.g. cannot find included files, etc...)"""
@@ -321,28 +316,6 @@ class Loader(object):
     abstraction between the representation (e.g. XML) and the
     validation of the property values.
     """
-    
-    def create_master(self, type_, uri, auto_str):
-        """
-        @param type_: type attribute or None if type attribute not provided
-        @type  type_: str
-        @param uri: URI attribute or None if not specified
-        @type  uri: str
-        @param auto_str: auto attribute or None if not provided
-        @type  auto_str: str
-        @raise ValueError: if parameters cannot be processed into valid Master
-        """
-        if type_ is not None and type_.strip() == '':
-            raise ValueError("'type' must be non-empty")
-        
-        try: # auto attribute
-            auto_str = (auto_str or 'no').lower().strip()
-            auto = _master_auto[auto_str]
-        except KeyError:
-            raise ValueError("invalid <master> 'auto' value: %s"%auto_str)
-
-        # TODO: URI validation
-        return Master(type_=type_, uri=uri, auto=auto)
 
     def add_param(self, ros_config, param_name, param_value, verbose=True):
         """

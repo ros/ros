@@ -168,7 +168,7 @@ def setUp(self):
     self.config = self.test_parent.config
 
     _addRostestParent(self.test_parent)
-
+    
     printlog("setup[%s] run_id[%s] done", self.test_file, self.test_parent.run_id)
     
 ## Function that becomes TestCase.tearDown()    
@@ -191,7 +191,6 @@ def createUnitTest(pkg, test_file):
     """
     # parse the config to find the test files
     config = roslaunch.parent.load_config_default([test_file], _DEFAULT_TEST_PORT)
-    config.master.log_output = True
 
     # pass in config to class as a property so that test_parent can be initialized
     classdict = { 'setUp': setUp, 'tearDown': tearDown, 'config': config,

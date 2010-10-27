@@ -59,6 +59,57 @@ _ID = '/roslaunch'
 
 class RLTestTimeoutException(RLException): pass
 
+def validate_master_launch(m, is_core):
+    """
+    Validate the configuration of a master we are about to launch. Ths
+    validation already assumes that no existing master is running at
+    this configuration and merely checks configuration for a new
+    launch.
+    """
+    # Before starting a master, we do some sanity check on the
+    # master configuration. There are two ways the user starts:
+    # roscore or roslaunch. If the user types roscore, we always
+    # will start a core if possible, but we warn about potential
+    # misconfigurations. If the user types roslaunch, we will
+    # auto-start a new master if it is achievable, i.e. if the
+    # master is local.
+    if not roslib.network.is_local_address(m.get_host()):
+        # The network configuration says that the intended
+        # hostname is not local, so...
+        if is_core:
+            # ...user is expecting to start a new master. Thus, we
+            # only warn if network configuration appears
+            # non-local.
+            try:
+                reverse_ip = socket.gethostbyname(m.get_host())
+                local_addrs = roslib.network.get_local_addresses()
+                printerrlog("""WARNING: IP address %s for local hostname '%s' does not appear to match
+    any local IP address (%s). Your ROS nodes may fail to communicate.
+
+    Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, m.get_host(), ','.join(local_addrs)))
+            except:
+                printerrlog("""WARNING: local hostname '%s' does not map to an IP address.
+    Your ROS nodes may fail to communicate.
+
+    Please use ROS_IP to set the correct IP address to use."""%(m.get_host()))
+                
+        else:
+            # ... the remote master cannot be contacted, so we fail. #3097
+            raise RLException("ERROR: unable to contact ROS master at [%s]"%(m.uri))
+            
+    if is_core:
+        # User wants to start a master, and our configuration does
+        # point to the local host.
+        env_uri = roslib.rosenv.get_master_uri()
+        env_host, env_port = roslib.network.parse_http_host_and_port(env_uri)
+
+        if not roslib.network.is_local_address(env_host):
+            # The ROS_MASTER_URI points to a different machine, warn user
+            printerrlog("WARNING: ROS_MASTER_URI [%s] host is not set to this machine"%(env_uri))
+        elif env_port != m.get_port():
+            # The ROS_MASTER_URI points to a master on a different port, warn user
+            printerrlog("WARNING: ROS_MASTER_URI port [%s] does not match this roscore [%s]"%(env_port, m.get_port()))
+
 def _all_namespace_parents(p):
     splits = [s for s in p.split(roslib.names.SEP) if s]
     curr =roslib.names.SEP
@@ -312,77 +363,22 @@ class ROSLaunchRunner(object):
         self.logger.info("... launch_nodes complete")
         return succeeded, failed
 
-    def _setup_master(self):
-        """
-        Validates master configuration and changes the master URI if
-        necessary. Also shuts down any existing master.
-        @raise RLException: if existing master cannot be killed
-        """
-        m = self.config.master
-        self.logger.info("initial ROS_MASTER_URI is %s", m.uri)     
-        if m.auto in [m.AUTO_START, m.AUTO_RESTART]:
-            running = m.is_running() #save state as calls are expensive
-            if m.auto == m.AUTO_RESTART and running:
-                print "shutting down existing master"
-                try:
-                    m.get().shutdown(_ID, 'roslaunch restart request')
-                except:
-                    pass
-                timeout_t = time.time() + _TIMEOUT_MASTER_STOP
-                while m.is_running() and time.time() < timeout_t:
-                    time.sleep(0.1)
-                if m.is_running():
-                    raise RLException("ERROR: could not stop existing master")
-                running = False
-            if not running:
-                # force the master URI to be for this machine as we are starting it locally
-                olduri = m.uri
-                m.uri = remap_localhost_uri(m.uri, True)
-
-                # this block does some basic DNS checks so that we can
-                # warn the user in the _very_ common case that their
-                # hostnames are not configured properly
-                hostname, _ = roslib.network.parse_http_host_and_port(m.uri)
-                local_addrs = roslib.network.get_local_addresses()
-                import socket
-                reverse_ip = socket.gethostbyname(hostname)
-                # 127. check is due to #1260
-                if reverse_ip not in local_addrs and not reverse_ip.startswith('127.'):
-                    self.logger.warn("IP address %s local hostname '%s' not in local addresses (%s)."%(reverse_ip, hostname, ','.join(local_addrs)))
-                    print >> sys.stderr, \
-"""WARNING: IP address %s for local hostname '%s' does not appear to match
-any local IP address (%s). Your ROS nodes may fail to communicate.
-
-Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname, ','.join(local_addrs))
-
-                if m.uri != olduri:
-                    self.logger.info("changing ROS_MASTER_URI to [%s] for starting master locally", m.uri)
-                    print "changing ROS_MASTER_URI to [%s] for starting master locally"%m.uri
-
     def _launch_master(self):
         """
         Launches master if requested. Must be run after L{_setup_master()}.
         @raise RLException: if master launch fails
         """
         m = self.config.master
-        auto = m.auto
         is_running = m.is_running()
 
         if self.is_core and is_running:
             raise RLException("roscore cannot run as another roscore/master is already running. \nPlease kill other roscore/master processes before relaunching.\nThe ROS_MASTER_URI is %s"%(m.uri))
 
-        self.logger.debug("launch_master [%s]", auto)
-        if auto in [m.AUTO_START, m.AUTO_RESTART] and not is_running:
-            if auto == m.AUTO_START:
-                printlog("starting new master (master configured for auto start)")
-            elif auto == m.AUTO_RESTART:
-                printlog("starting new master (master configured for auto restart)")
-                
-            _, urlport = roslib.network.parse_http_host_and_port(m.uri)
-            if urlport <= 0:
-                raise RLException("ERROR: master URI is not a valid XML-RPC URI. Value is [%s]"%m.uri)
+        if not is_running:
+            validate_master_launch(m, self.is_core)
 
-            p = create_master_process(self.run_id, m.type, get_ros_root(), urlport, m.log_output)
+            printlog("auto-starting new master")
+            p = create_master_process(self.run_id, m.type, get_ros_root(), m.get_port())
             self.pm.register_core_proc(p)
             success = p.start()
             if not success:
@@ -616,10 +612,6 @@ Please use ROS_IP to set the correct IP address to use."""%(reverse_ip, hostname
         # this may have already been done, but do just in case
         self.config.assign_machines()
         
-        # have to do setup on master before launching remote roslaunch
-        # children as we may be changing the ROS_MASTER_URI.
-        self._setup_master()
-
         if self.remote_runner:
             # hook in our listener aggregator
             self.remote_runner.add_process_listener(self.listeners)            

@@ -193,15 +193,6 @@ class XmlLoader(roslaunch.loader.Loader):
                 ros_config.add_config_error("[%s] unknown <%s> attribute '%s'"%(context.filename, tag.tagName, t_a))
                 #print >> sys.stderr, "WARNING: 
 
-    MASTER_ATTRS = ('type', 'uri', 'auto')
-    @ifunless
-    def _master_tag(self, tag, context, ros_config):
-        self._check_attrs(tag, context, ros_config, XmlLoader.MASTER_ATTRS)
-        try:
-            return self.create_master(*self.opt_attrs(tag, context, ('type', 'uri', 'auto')))
-        except ValueError, e:
-            raise XmlParseException("invalid <master> tag: %s"%str(e))
-
     # 'ns' attribute is now deprecated and is an alias for
     # 'param'. 'param' is required if the value is a non-dictionary
     # type
@@ -683,24 +674,15 @@ class XmlLoader(roslaunch.loader.Loader):
         @type  verbose: bool
         @param argv: (optional) command-line args. Default sys.argv.
         """        
-        # The <master> tag is special as we only only process a single
-        # tag in the top-level file. We ignore master tags in
-        # included files.
-
         if argv is None:
             argv = sys.argv
 
         self._launch_tag(launch, ros_config, filename)
-        master_tags = launch.getElementsByTagName('master')
         self.root_context = roslaunch.loader.LoaderContext('', filename)
         roslaunch.loader.load_sysargs_into_context(self.root_context, argv)
 
-        #TODO: need to warn user about unused parameters
-        
-        if len(master_tags) > 1:
-            raise XmlParseException("multiple <master> tags in top-level xml file not allowed")
-        elif len(master_tags) == 1:
-            ros_config.set_master(self._master_tag(master_tags[0], self.root_context, ros_config))
+        if len(launch.getElementsByTagName('master')) > 0:
+            print >> sys.stderr, "WARNING: ignoring defunct <master /> tag"
         self._recurse_load(ros_config, launch.childNodes, self.root_context, None, is_core, verbose)
         
     def _parse_launch(self, filename, verbose):

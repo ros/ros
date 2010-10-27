@@ -49,6 +49,11 @@ from roslaunch.rlutil import namespaces_of
 import roslaunch.loader
 import roslaunch.xmlloader
 
+try:
+    from rosmaster import DEFAULT_MASTER_PORT
+except:
+    DEFAULT_MASTER_PORT = 11311
+    
 def load_roscore(loader, config, verbose=True):
     """
     Load roscore configuration into the ROSLaunchConfig using the specified XmlLoader
@@ -367,6 +372,9 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
     # requested resourcs.
             
     config = ROSLaunchConfig()
+    if port:
+        config.master.uri = roslib.network.create_local_xmlrpc_uri(port)
+
     loader = loader or roslaunch.xmlloader.XmlLoader()
 
     # load the roscore file first. we currently have
@@ -395,10 +403,6 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
                 raise RLException('Launch string: %s\nException: %s'%(launch_str, e))
             except roslaunch.loader.LoadException, e:
                 raise RLException('Launch string: %s\nException: %s'%(launch_str, e))
-
-    if port:
-        logger.info("overriding master port to %s"%port)
-        config.master.set_port(port)
 
     # make sure our environment is correct
     config.validate()

@@ -78,10 +78,7 @@ class TestNodeprocess(unittest.TestCase):
         self.assert_('--core' in p.args)
 
         self.assertEquals(p.package, 'rosmaster')
-        self.failIf(p.log_output)
-        
-        p = create_master_process(run_id, type, ros_root, port, log_output=True)
-        self.assert_(p.log_output)
+        p = create_master_process(run_id, type, ros_root, port)
         
         # TODO: have to think more as to the correct environment for the master process
         
@@ -251,15 +248,14 @@ class TestNodeprocess(unittest.TestCase):
         # test failures
         failed = False
         try:
-            create_master_process('runid-unittest', Master.ROSMASTER, roslib.rosenv.get_ros_root(), 0, log_output=True)
+            create_master_process('runid-unittest', Master.ROSMASTER, roslib.rosenv.get_ros_root(), 0)
             failed = True
         except RLException: pass
         self.failIf(failed, "invalid port should have triggered error")
 
         # test success with ROSMASTER
-        m1 = create_master_process('runid-unittest', Master.ROSMASTER, ros_root, 1234, log_output=True)
+        m1 = create_master_process('runid-unittest', Master.ROSMASTER, ros_root, 1234)
         self.assertEquals('runid-unittest', m1.run_id)
-        self.assertEquals(True, m1.log_output)
         self.failIf(m1.started)
         self.failIf(m1.stopped)
         self.assertEquals(None, m1.cwd)
@@ -275,14 +271,12 @@ class TestNodeprocess(unittest.TestCase):
         self.assertEquals('1234', m1.args[idx+1])
 
         # test port argument
-        m2 = create_master_process('runid-unittest', Master.ROSMASTER, ros_root, 1234, log_output=False)
+        m2 = create_master_process('runid-unittest', Master.ROSMASTER, ros_root, 1234)
         self.assertEquals('runid-unittest', m2.run_id)
-        self.assertEquals(False, m2.log_output)
 
-        # test ros_root argument as well as log_output default
+        # test ros_root argument 
         m3 = create_master_process('runid-unittest', Master.ROSMASTER, ros_root, 1234)
         self.assertEquals('runid-unittest', m3.run_id)
-        self.assertEquals(False, m3.log_output)        
         master_p = os.path.join(ros_root, 'bin', 'rosmaster')
         self.assert_(master_p in m3.args)
         

@@ -45,6 +45,66 @@ import unittest
 ## Test roslaunch.launch
 class TestRoslaunchLaunch(unittest.TestCase):
         
+    def setUp(self):
+        self.printerrlog_msg = None
+        
+    def my_printerrlog(self, msg):
+        self.printerrlog_msg = msg
+        
+    def test_validate_master_launch(self):
+        import roslaunch.launch
+        from roslaunch.core import Master
+        from roslaunch.launch import validate_master_launch
+        roslaunch.launch.printerrlog = self.my_printerrlog
+
+        # Good configurations
+        os.environ['ROS_MASTER_URI'] = 'http://localhost:11311'
+        m = Master(uri='http://localhost:11311')
+        validate_master_launch(m, True)
+        self.assertEquals(None, self.printerrlog_msg)
+        validate_master_launch(m, False)
+        self.assertEquals(None, self.printerrlog_msg)
+        
+        # roscore with mismatched port in environment
+        os.environ['ROS_MASTER_URI'] = 'http://localhost:11312'
+        validate_master_launch(m, True)
+        self.assert_('port' in self.printerrlog_msg)
+        self.printerrlog_msg = None
+
+        # roscore with mismatched hostname in environment
+        os.environ['ROS_MASTER_URI'] = 'http://fake:11311'
+        validate_master_launch(m, True)
+        self.assert_('host' in self.printerrlog_msg)
+        self.printerrlog_msg = None
+
+        # roslaunch with remote master that cannot be contacted
+        os.environ['ROS_MASTER_URI'] = 'http://fake:11311'
+        self.assertEquals(None, self.printerrlog_msg)
+
+        # environment doesn't matter for remaining tests
+        os.environ['ROS_MASTER_URI'] = 'http://localhost:11311'
+        m = Master(uri="http://fake:11311")
+
+        # roscore with hostname that points elsewhere, warn user. This
+        # generally could only happen if the user has a bad local host
+        # config.
+        validate_master_launch(m, True)
+        self.assert_("WARNING" in self.printerrlog_msg)
+        self.printerrlog_msg = None
+
+        # roscore with host that is not ours
+        m = Master(uri="http://willowgarage.com:11311")
+        validate_master_launch(m, True)
+        self.assert_("WARNING" in self.printerrlog_msg)
+        self.printerrlog_msg = None
+        
+        # roslaunch with remote master that is out of contact, fail
+        try:
+            validate_master_launch(m, False)
+            self.fail("should not pass if remote master cannot be contacted")
+        except roslaunch.RLException:
+            pass
+        
     def test__unify_clear_params(self):
         from roslaunch.launch import _unify_clear_params
         self.assertEquals([], _unify_clear_params([]))

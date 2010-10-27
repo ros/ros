@@ -48,6 +48,11 @@ from roslaunch.xmlloader import XmlLoader, XmlParseException
 from roslaunch.scriptapi import ROSLaunch
 from roslaunch.pmon import Process
 
+try:
+    from rosmaster import DEFAULT_MASTER_PORT
+except:
+    DEFAULT_MASTER_PORT = 11311
+    
 NAME = 'roslaunch'
 
 def configure_logging(uuid):
@@ -72,7 +77,6 @@ def configure_logging(uuid):
         
 def write_pid_file(options_pid_fn, options_core, port):
     from roslib.rosenv import get_ros_home
-    from rosmaster import DEFAULT_MASTER_PORT
     if options_pid_fn or options_core:
         if options_pid_fn:
             pid_fn = options_pid_fn
@@ -224,14 +228,17 @@ def main(argv=sys.argv):
             # args are the roslaunch files to load
             import roslaunch.parent
             try:
-              p = roslaunch.parent.ROSLaunchParent(uuid, args, is_core=options.core, port=options.port, local_only=options.local_only, verbose=options.verbose, force_screen=options.force_screen)
-              p.start()
-              p.spin()
+                # force a port binding spec if we are running a core
+                if options.core:
+                    options.port = options.port or DEFAULT_MASTER_PORT
+                p = roslaunch.parent.ROSLaunchParent(uuid, args, is_core=options.core, port=options.port, local_only=options.local_only, verbose=options.verbose, force_screen=options.force_screen)
+                p.start()
+                p.spin()
             finally:
-              # remove the pid file
-              if options.pid_fn:
-                try: os.unlink(options.pid_fn)
-                except os.error, reason: pass
+                # remove the pid file
+                if options.pid_fn:
+                    try: os.unlink(options.pid_fn)
+                    except os.error, reason: pass
 
     except RLException, e:
         roslaunch.core.printerrlog(str(e))

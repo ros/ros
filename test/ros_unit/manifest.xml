@@ -1,0 +1,15 @@
+<package>
+  <description brief="ros_unit">
+
+     ros_unit is a package to contain tools used for unit tests.
+
+  </description>
+  <author>Tully Foote</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/ros_unit</url>
+  <depend package="roslib"/>
+
+</package>
+
+

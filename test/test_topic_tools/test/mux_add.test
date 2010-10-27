@@ -4,7 +4,7 @@
 
   <node pkg="topic_tools" type="mux" name="mux_explicit" output="screen"
         args="output input"/>
-  <test test-name="mux_services" pkg="topic_tools" type="test_mux_services.py"/>
+  <test test-name="mux_services" pkg="test_topic_tools" type="test_mux_services.py"/>
 
 </launch>
 

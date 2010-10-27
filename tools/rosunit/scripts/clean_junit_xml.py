@@ -67,27 +67,27 @@ def clean_results(test_results_dir, output_dir, filter):
     for d in os.listdir(test_results_dir):
         if filter and d in filter:
             continue
-    print "looking at", d
-    test_dir = os.path.join(test_results_dir, d)
-    if not os.path.isdir(test_dir):
-        continue
-    base_test_name = os.path.basename(test_dir)
-    # for each test result that a package generated, read it, then
-    # rewrite it to our output directory. This will invoke our
-    # cleaning rules on the XML that protect the result from Hudson
-    # issues.
-    for file in os.listdir(test_dir):
-        if file.endswith('.xml'):
-            test_name = base_test_name + '.' + file[:-4]
-        file = os.path.join(test_dir, file)
-        try:
-            result = junitxml.read(file, test_name)
-            output_path = os.path.join(output_dir, "%s.xml"%test_name)
-            with open(output_path, 'w') as f:
-                print "re-writing", output_path
-            f.write(result.xml().encode('utf-8'))
-        except Exception, e:
-            print >> sys.stderr, "ignoring [%s]: %s"%(file, e)
+        print "looking at", d
+        test_dir = os.path.join(test_results_dir, d)
+        if not os.path.isdir(test_dir):
+            continue
+        base_test_name = os.path.basename(test_dir)
+        # for each test result that a package generated, read it, then
+        # rewrite it to our output directory. This will invoke our
+        # cleaning rules on the XML that protect the result from Hudson
+        # issues.
+        for file in os.listdir(test_dir):
+            if file.endswith('.xml'):
+                test_name = base_test_name + '.' + file[:-4]
+            file = os.path.join(test_dir, file)
+            try:
+                result = junitxml.read(file, test_name)
+                output_path = os.path.join(output_dir, "%s.xml"%test_name)
+                with open(output_path, 'w') as f:
+                    print "re-writing", output_path
+                f.write(result.xml().encode('utf-8'))
+            except Exception, e:
+                print >> sys.stderr, "ignoring [%s]: %s"%(file, e)
 
 def main():
     

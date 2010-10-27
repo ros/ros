@@ -356,3 +356,46 @@ def read_all(filter=[]):
                     result = read(file, os.path.basename(subdir))
                     root_result.accumulate(result)
     return root_result
+
+
+def test_failure_junit_xml(test_name, message, stdout=None):
+    """
+    Generate JUnit XML file for a unary test suite where the test failed
+    
+    @param test_name: Name of test that failed
+    @type  test_name: str
+    @param message: failure message
+    @type  message: str
+    @param stdout: stdout data to include in report
+    @type  stdout: str
+    """
+    if not stdout:
+      return """<?xml version="1.0" encoding="UTF-8"?>
+<testsuite tests="1" failures="1" time="1" errors="0" name="%s">
+  <testcase name="test_ran" status="run" time="1" classname="Results">
+  <failure message="%s" type=""/>
+  </testcase>
+</testsuite>"""%(test_name, message)
+    else:
+      return """<?xml version="1.0" encoding="UTF-8"?>
+<testsuite tests="1" failures="1" time="1" errors="0" name="%s">
+  <testcase name="test_ran" status="run" time="1" classname="Results">
+  <failure message="%s" type=""/>
+  </testcase>
+  <system-out><![CDATA[[
+%s
+]]></system-out>
+</testsuite>"""%(test_name, message, stdout)
+
+def test_success_junit_xml(test_name):
+    """
+    Generate JUnit XML file for a unary test suite where the test succeeded.
+    
+    @param test_name: Name of test that passed
+    @type  test_name: str
+    """
+    return """<?xml version="1.0" encoding="UTF-8"?>
+<testsuite tests="1" failures="0" time="1" errors="0" name="%s">
+  <testcase name="test_ran" status="run" time="1" classname="Results">
+  </testcase>
+</testsuite>"""%(test_name)

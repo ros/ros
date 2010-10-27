@@ -451,3 +451,10 @@ mercurial:
   macports: mercurial
   gentoo: dev-vcs/mercurial
   freebsd: mercurial
+gtest:
+  ubuntu: libgtest-dev
+  debian: libgtest-dev
+  fedora: gtest
+  macports: google-test
+  gentoo: dev-util/gtest
+  freebsd: googletest

@@ -12,7 +12,7 @@
   <export>
     <rosdoc config="rosdoc.yaml" />
   </export>
-
+  <rosdep name="gtest"/> 
 </package>
 
 

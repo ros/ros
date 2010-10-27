@@ -289,7 +289,7 @@ macro(_rosbuild_add_roslaunch_check file)
   
   # Create target for this test
   add_custom_target(roslaunch_check_${_testname}
-                    COMMAND ${rosunit_path}/bin/roslaunch-check.py ${file} ${ARGN}
+                    COMMAND ${rostest_path}/bin/roslaunch-check.py ${file} ${ARGN}
                     DEPENDS ${file}
                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                     VERBATIM)

@@ -449,7 +449,8 @@ class RosMakeAll:
                     with self._result_lock:
                         self.result[argument][p] = True if no_target else False
 
-                    self.printer.print_tail( pstd_out)
+                    if success == False: #don't print tail if [SKIP] target
+                        self.printer.print_tail( pstd_out)
                     self.output_to_file(p, log_type, pstd_out, always_print= not (no_target or interrupt))
 
                     return (success, return_string)

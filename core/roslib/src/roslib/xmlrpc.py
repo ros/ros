@@ -130,6 +130,7 @@ class XmlRpcNode(object):
             port = string.atoi(port)
         self.port = port
         self.is_shutdown = False
+        self.on_run_error = on_run_error
 
     def shutdown(self, reason):
         """

@@ -38,7 +38,8 @@ Library and tools support unit testing in ROS.
 
 # NOTE: while this makes some forward references to conventions used
 # in rostest, it does not use rostest itself.
-
+import os
+import roslib
 
 def xml_results_file(test_pkg, test_name, is_rostest=False):
     """

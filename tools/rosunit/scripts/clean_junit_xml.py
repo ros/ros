@@ -33,6 +33,8 @@
 #
 # Revision $Id$
 
+from __future__ import with_statement
+
 """
 clean_junit_xml.py is a simple script that takes all the xml-formatted
 Ant JUnit XML test output in test_results and aggregates them into
@@ -41,7 +43,6 @@ tend to cause Hudson trouble.
 """
 
 PKG = 'rosunit'
-from __future__ import with_statement
 import roslib; roslib.load_manifest(PKG)
 
 import os

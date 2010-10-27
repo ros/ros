@@ -31,7 +31,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: xmlresults.py 11858 2010-10-26 23:32:02Z kwc $
+# Revision $Id$
 
 """
 Library for reading and manipulating Ant JUnit XML result files.

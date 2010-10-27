@@ -76,9 +76,9 @@ class TestRostopicOnline(unittest.TestCase):
 
         # pass in special test key to roswtf for ROS_PACKAGE_PATH
         env = os.environ.copy()
-        import roslib.packages
-        d = roslib.packages.get_pkg_dir('roswtf')
-        env['ROS_PACKAGE_PATH'] = d
+        import roslib.stacks
+        
+        env['ROS_PACKAGE_PATH'] = roslib.stacks.get_stack_dir('ros_comm')
 
         import roslib.packages
         cwd  = roslib.packages.get_pkg_dir('test_roswtf')

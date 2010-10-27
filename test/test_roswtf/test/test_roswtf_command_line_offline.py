@@ -65,15 +65,17 @@ class TestRoswtfOffline(unittest.TestCase):
         # point at a different 'master'
         env = os.environ.copy()
         env['ROS_MASTER_URI'] = 'http://localhost:11312'
-        # pass in special test key to roswtf for ROS_PACKAGE_PATH
-        env['ROS_PACKAGE_PATH'] = 'test_roswtf_ignore'
-        kwds = { 'env': env, 'stdout': PIPE, 'stderr': PIPE}
+        import roslib.packages
+        import roslib.stacks
+        env['ROS_PACKAGE_PATH'] = roslib.stacks.get_stack_dir('ros_comm')
+        cwd  = roslib.packages.get_pkg_dir('test_roswtf')
+        kwds = { 'env': env, 'stdout': PIPE, 'stderr': PIPE, 'cwd': cwd}
 
         # run roswtf nakedly
-        output = Popen([cmd], **kwds).communicate()[0]
+        output = Popen([cmd], **kwds).communicate()
         # - due both a positive and negative test
-        self.assert_('No errors or warnings' in output, "OUTPUT[%s]"%output)
-        self.assert_('ERROR' not in output, "OUTPUT[%s]"%output)
+        self.assert_('No errors or warnings' in output[0], "OUTPUT[%s]"%str(output))
+        self.assert_('ERROR' not in output[0], "OUTPUT[%s]"%str(output))
 
         # run roswtf on a simple launch file offline
         import roslib.packages

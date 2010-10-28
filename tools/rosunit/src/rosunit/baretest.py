@@ -38,6 +38,7 @@ executables. These do not run in a ROS environment.
 """
 
 import os
+import cStringIO
 import unittest
 import logging
 import time
@@ -465,16 +466,23 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
             self.stopped = True
             self.lock.release()
 
-def print_runner_summary(junit_results, runner_results, runner_name='ROSUNIT'):
+def print_runner_summary(runner_results, junit_results, runner_name='ROSUNIT'):
     """
-    Print summary of rostest results to stdout.
+    Print summary of runner results and actual test results to
+    stdout. For rosunit and rostest, the test is wrapped in an
+    external runner. The results from this runner are important if the
+    runner itself has a failure.
+
+    @param runner_result: unittest runner result object
+    @type  runner_result: _XMLTestResult
+    @param junit_results: Parsed JUnit test results
+    @type  junit_results: rosunit.junitxml.Result
     """
     # we have two separate result objects, which can be a bit
     # confusing. 'result' counts successful _running_ of tests
     # (i.e. doesn't check for actual test success). The 'r' result
     # object contains results of the actual tests.
     
-    import cStringIO
     buff = cStringIO.StringIO()
     buff.write("[%s]"%(runner_name)+'-'*71+'\n\n')
     for tc_result in junit_results.test_case_results:
@@ -510,3 +518,20 @@ def print_runner_summary(junit_results, runner_results, runner_name='ROSUNIT'):
             buff.write(" * " +tc_result[0]._testMethodName + "\n")
 
     print buff.getvalue()
+
+def print_unittest_summary(result):
+    """
+    Print summary of python unittest result to stdout
+    @param result: test results
+    """
+    buff = cStringIO.StringIO()
+    buff.write("-------------------------------------------------------------\nSUMMARY:\n")
+    if result.wasSuccessful():
+        buff.write("\033[32m * RESULT: SUCCESS\033[0m\n")
+    else:
+        buff.write(" * RESULT: FAIL\n")
+    buff.write(" * TESTS: %s\n"%result.testsRun)
+    buff.write(" * ERRORS: %s [%s]\n"%(len(result.errors), ', '.join([e[0]._testMethodName for e in result.errors])))
+    buff.write(" * FAILURES: %s [%s]\n"%(len(result.failures), ','.join([e[0]._testMethodName for e in result.failures])))
+    print buff.getvalue()
+

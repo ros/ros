@@ -123,7 +123,7 @@ def rosunitmain():
     # summary is worthless if textMode is on as we cannot scrape .xml results
     results = test_case.results
     if not options.text_mode:
-        print_runner_summary(results, runner_result)
+        print_runner_summary(runner_result, results)
     else:
         print "WARNING: overall test result is not accurate when --text is enabled"
 

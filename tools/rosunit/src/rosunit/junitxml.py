@@ -401,7 +401,7 @@ def test_success_junit_xml(test_name):
   </testcase>
 </testsuite>"""%(test_name)
 
-def print_summary(junit_results):
+def print_summary(junit_results, runner_name='ROSUNIT'):
     """
     Print summary of junitxml results to stdout.
     """
@@ -411,7 +411,7 @@ def print_summary(junit_results):
     # object contains results of the actual tests.
     
     buff = cStringIO.StringIO()
-    buff.write("[ROSUNIT]"+'-'*71+'\n\n')
+    buff.write("[%s]"%runner_name+'-'*71+'\n\n')
     for tc_result in junit_results.test_case_results:
         buff.write(tc_result.description)
 
@@ -438,3 +438,4 @@ def print_summary(junit_results):
         buff.write(" * FAILURES: 0\n")
 
     print buff.getvalue()
+

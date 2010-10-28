@@ -137,9 +137,12 @@ def is_local_address(hostname):
     """
     @param hostname: host name/address
     @type  hostname: str
-    @return True: if hostname maps to a local address
+    @return True: if hostname maps to a local address, False otherwise. False conditions include invalid hostnames.
     """
-    reverse_ip = socket.gethostbyname(hostname)
+    try:
+        reverse_ip = socket.gethostbyname(hostname)
+    except socket.error:
+        return False
     # 127. check is due to #1260
     if reverse_ip not in get_local_addresses() and not reverse_ip.startswith('127.'):
         return False

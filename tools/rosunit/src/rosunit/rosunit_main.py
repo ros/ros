@@ -47,7 +47,7 @@ from . import pmon
 from . core import xml_results_file, create_xml_runner
 
 from .junitxml import print_summary, Result
-from .baretest import BareTestCase
+from .baretest import BareTestCase, print_runner_summary
 
 
 _NAME = 'rosunit'
@@ -70,41 +70,51 @@ def rosunitmain():
     parser.add_option("-t", "--text",
                       action="store_true", dest="text_mode", default=False,
                       help="Run with stdout output instead of XML output")
-    parser.add_option("--bare-limit", metavar="TIME_LIMIT",
-                      dest="bare_limit", default=60,
-                      help="Set time limit for --bare executable")
-    parser.add_option("--bare-name", metavar="TEST_NAME",
-                      dest="bare_name", default=None,
-                      help="Test name for --bare executable")
+    parser.add_option("--time-limit", metavar="TIME_LIMIT",
+                      dest="time_limit", default=60,
+                      help="Set time limit for test")
+    parser.add_option("--name", metavar="TEST_NAME",
+                      dest="test_name", default=None,
+                      help="Test name")
     (options, args) = parser.parse_args()
 
-    if len(args) != 2:
-        parser.error("You must supply a test file and test name argument to rosunit.")
+    if len(args) != 1:
+        parser.error("You must supply a test file.")
 
-    test_file, bare_name = args
+    test_file = args[0]
+    
+    if options.test_name:
+        test_name = options.test_name
+    else:
+        test_name = os.path.basename(test_file)
+        if '.' in test_name:
+            test_name = test_name[:test_name.rfind('.')]
+    time_limit = float(options.time_limit) if options.time_limit else None
+
     logger.info('rosunit starting with options %s, args %s'%(options, args))
 
     # compute some common names we'll be using to generate test names and files
     pkg_dir, pkg = roslib.packages.get_dir_pkg(test_file) 
 
     try:
-        time_limit = float(options.bare_limit) if options.bare_limit else None
+        
         results = Result('rosunit', 0, 0, 0)
 
         test_case = BareTestCase(test_file, [], \
                                      retry=0, time_limit=time_limit, \
-                                     test_name=options.bare_name)
+                                     test_name=test_name)
         suite = unittest.TestSuite()
         suite.addTest(test_case)
 
         if options.text_mode:
             result = unittest.TextTestRunner(verbosity=2).run(suite)
         else:
-            results_file = xml_results_file(pkg, bare_name, True)        
-            xml_runner = create_xml_runner(pkg, bare_name, \
+            results_file = xml_results_file(pkg, test_name, True)
+            # the is_rostest really just means "wrapper"
+            xml_runner = create_xml_runner(pkg, test_name, \
                                                results_file=results_file, \
                                                is_rostest=True)
-            result = xml_runner.run(suite)
+            runner_result = xml_runner.run(suite)
     finally:
         logger.info("calling pmon_shutdown")
         pmon.pmon_shutdown()
@@ -113,18 +123,16 @@ def rosunitmain():
     # summary is worthless if textMode is on as we cannot scrape .xml results
     results = test_case.results
     if not options.text_mode:
-        print "TODO: PRINT SUMMARY"
-        if 0:
-            print_summary(result)
+        print_runner_summary(results, runner_result)
     else:
         print "WARNING: overall test result is not accurate when --text is enabled"
 
     if logfile_name:
         print "rosunit log file is in %s"%logfile_name
         
-    if not result.wasSuccessful():
+    if not runner_result.wasSuccessful():
         sys.exit(1)
-    elif subtest_results.num_errors or subtest_results.num_failures:
+    elif results.num_errors or results.num_failures:
         sys.exit(2)
     
 if __name__ == '__main__':

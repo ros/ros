@@ -411,7 +411,7 @@ def print_summary(junit_results):
     # object contains results of the actual tests.
     
     buff = cStringIO.StringIO()
-    buff.write("[ROSTEST]"+'-'*71+'\n\n')
+    buff.write("[ROSUNIT]"+'-'*71+'\n\n')
     for tc_result in junit_results.test_case_results:
         buff.write(tc_result.description)
 

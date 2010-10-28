@@ -78,11 +78,16 @@ class BareTestCase(unittest.TestCase):
         else:
             self.test_name = test_name
 
-        self.args = [self.exe] + args
+        # invoke pyunit tests with python executable
+        if self.exe.endswith('.py'):
+            self.args = ['python', self.exe] + args
+        else:
+            self.args = [self.exe] + args
+            
         self.retry = retry
         self.time_limit = time_limit or BARE_TIME_LIMIT
         self.pmon = None
-        self.results = None
+        self.results = junitxml.Result(self.test_name)
         
     def setUp(self):
         self.pmon = pmon.start_process_monitor()
@@ -459,3 +464,49 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
         finally:
             self.stopped = True
             self.lock.release()
+
+def print_runner_summary(junit_results, runner_results, runner_name='ROSUNIT'):
+    """
+    Print summary of rostest results to stdout.
+    """
+    # we have two separate result objects, which can be a bit
+    # confusing. 'result' counts successful _running_ of tests
+    # (i.e. doesn't check for actual test success). The 'r' result
+    # object contains results of the actual tests.
+    
+    import cStringIO
+    buff = cStringIO.StringIO()
+    buff.write("[%s]"%(runner_name)+'-'*71+'\n\n')
+    for tc_result in junit_results.test_case_results:
+        buff.write(tc_result.description)
+    for tc_result in runner_results.failures:
+        buff.write("[%s][failed]\n"%tc_result[0]._testMethodName)
+
+    buff.write('\nSUMMARY\n')
+    if runner_results.wasSuccessful() and (junit_results.num_errors + junit_results.num_failures) == 0:
+        buff.write("\033[32m * RESULT: SUCCESS\033[0m\n")
+    else:
+        buff.write("\033[1;31m * RESULT: FAIL\033[0m\n")
+
+    # TODO: still some issues with the numbers adding up if tests fail to launch
+
+    # number of errors from the inner tests, plus add in count for tests
+    # that didn't run properly ('result' object).
+    buff.write(" * TESTS: %s\n"%junit_results.num_tests)
+    num_errors = junit_results.num_errors+len(runner_results.errors)
+    if num_errors:
+        buff.write("\033[1;31m * ERRORS: %s\033[0m\n"%num_errors)
+    else:
+        buff.write(" * ERRORS: 0\n")
+    num_failures = junit_results.num_failures+len(runner_results.failures)
+    if num_failures:
+        buff.write("\033[1;31m * FAILURES: %s\033[0m\n"%num_failures)
+    else:
+        buff.write(" * FAILURES: 0\n")
+        
+    if runner_results.failures:
+        buff.write("\nERROR: The following tests failed to run:\n")
+        for tc_result in runner_results.failures:
+            buff.write(" * " +tc_result[0]._testMethodName + "\n")
+
+    print buff.getvalue()

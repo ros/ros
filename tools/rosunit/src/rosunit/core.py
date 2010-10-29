@@ -38,22 +38,23 @@ import roslib.rosenv
 
 from .xmlrunner import XMLTestRunner
 
+_logger = logging.getLogger('runner')
 def printlog(msg, *args):
     if args:
         msg = msg%args
-    logging.getLogger('rosunit').info(msg)
+    _logger.info(msg)
     print "[ROSUNIT]"+msg
     
 def printlog_bold(msg, *args):
     if args:
         msg = msg%args
-    logging.getLogger('rosunit').info(msg)
+    _logger.info(msg)
     print '\033[1m[ROSUNIT]%s\033[0m'%msg
     
 def printerrlog(msg, *args):
     if args:
         msg = msg%args
-    logging.getLogger('rosunit').error(msg)
+    _logger.error(msg)
     print >> sys.stderr, "[ROSUNIT]"+msg
 
 def xml_results_file(test_pkg, test_name, is_rostest=False):

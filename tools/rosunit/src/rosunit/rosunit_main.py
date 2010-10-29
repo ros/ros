@@ -52,19 +52,14 @@ from .baretest import BareTestCase, print_runner_summary
 
 _NAME = 'rosunit'
 
-def configure_logging():
-    import socket
-    logfile_basename = 'rosunit-%s-%s.log'%(socket.gethostname(), os.getpid())
-    logfile_name = roslib.roslogging.configure_logging('rosunit', filename=logfile_basename)
+def configure_logging(test_name):
+    logfile_basename = 'rosunit-%s.log'%(test_name)
+    logfile_name = roslib.roslogging.configure_logging('rosunit-%s'%(test_name), filename=logfile_basename)
     if logfile_name:
         print "... logging to %s"%logfile_name
     return logfile_name
 
 def rosunitmain():
-    # make sure all loggers are configured properly
-    logfile_name = configure_logging()
-    logger = logging.getLogger('rosunit')
-
     from optparse import OptionParser
     parser = OptionParser(usage="usage: %prog [options] <file> <test-name>", prog=_NAME)
     parser.add_option("-t", "--text",
@@ -91,6 +86,8 @@ def rosunitmain():
             test_name = test_name[:test_name.rfind('.')]
     time_limit = float(options.time_limit) if options.time_limit else None
 
+    logfile_name = configure_logging(test_name)
+    logger = logging.getLogger('rosunit')
     logger.info('rosunit starting with options %s, args %s'%(options, args))
 
     # compute some common names we'll be using to generate test names and files

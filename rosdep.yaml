@@ -154,15 +154,6 @@ graphviz:
   macports: graphviz
   gentoo: media-gfx/graphviz
   freebsd: graphviz
-doxygen:
-  ubuntu: doxygen
-  fedora: doxygen
-  rhel: doxygen
-  arch: doxygen
-  debian: doxygen
-  macports: doxygen
-  gentoo: app-doc/doxygen
-  freebsd: doxygen
 wxwidgets:
   ubuntu: libwxgtk2.8-dev
   debian: libwxgtk2.8-dev
@@ -407,13 +398,6 @@ fltk:
   macports: fltk
   gentoo: "=x11-libs/fltk-1*"
   freebsd: fltk
-epydoc:
-  ubuntu: python-epydoc
-  debian: python-epydoc
-  fedora: epydoc
-  macports: py25-epydoc
-  gentoo: dev-python/epydoc
-  freebsd: epydoc
 paramiko:
   ubuntu: python-paramiko
   debian: python-paramiko
@@ -421,8 +405,6 @@ paramiko:
   macports: py25-paramiko
   gentoo: dev-python/paramiko
   freebsd: py26-paramiko
-python-sphinx:
-  ubuntu: python-sphinx
 bazaar:
   ubuntu: bzr
   debian: bzr

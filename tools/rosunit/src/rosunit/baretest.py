@@ -42,7 +42,9 @@ import cStringIO
 import unittest
 import logging
 import time
+import signal
 import subprocess
+import traceback
 
 import roslib.packages
 
@@ -54,6 +56,8 @@ from . import junitxml
 _logger = logging.getLogger('rosunit')
 
 BARE_TIME_LIMIT = 60.
+TIMEOUT_SIGINT  = 15.0 #seconds
+TIMEOUT_SIGTERM = 2.0 #seconds
 
 class TestTimeoutException(Exception): pass
 
@@ -401,7 +405,7 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
             _logger.info("[%s] sending SIGINT to pgid [%s]", self.name, pgid)                                    
             os.killpg(pgid, signal.SIGINT)
             _logger.info("[%s] sent SIGINT to pgid [%s]", self.name, pgid)
-            timeout_t = time.time() + _TIMEOUT_SIGINT
+            timeout_t = time.time() + TIMEOUT_SIGINT
             retcode = self.popen.poll()                
             while time.time() < timeout_t and retcode is None:
                 time.sleep(0.1)
@@ -409,7 +413,7 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
             # Escalate non-responsive process
             if retcode is None:
                 printerrlog("[%s] escalating to SIGTERM"%self.name)
-                timeout_t = time.time() + _TIMEOUT_SIGTERM
+                timeout_t = time.time() + TIMEOUT_SIGTERM
                 os.killpg(pgid, signal.SIGTERM)                
                 _logger.info("[%s] sent SIGTERM to pgid [%s]"%(self.name, pgid))
                 retcode = self.popen.poll()
@@ -460,7 +464,6 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
                 # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/347462
                 self._stop_unix(errors)
             except:
-                #traceback.print_exc() 
                 _logger.error("[%s] EXCEPTION %s", self.name, traceback.format_exc())                                
         finally:
             self.stopped = True

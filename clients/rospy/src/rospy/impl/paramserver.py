@@ -32,8 +32,10 @@
 
 """Parameter Server Cache"""
 
+from __future__ import with_statement
 import threading
 
+#TODO: get rid of this routine entirely. It doesn't work with the current PS representation.
 class ParamServerCache(object):
     """
     Cache of values on the parameter server. Implementation
@@ -43,14 +45,21 @@ class ParamServerCache(object):
     def __init__(self):
         self.lock = threading.Lock()
         self.d = {}
+        self.notifier = None
         
     ## Delete parameter from cache
     def delete(self, key):
-        try:
-            self.lock.acquire()
+        with self.lock:
             del self.d[key]
-        finally:
-            self.lock.release()
+
+    def set_notifier(self, notifier):
+        """
+        Notifier implements any parameter subscription logic. The
+        notifier should be a function that takes in a key and value
+        that represents a parameter update. Notifier is called under
+        lock and thus must not implement any lengthy computation.
+        """
+        self.notifier = notifier
         
     def update(self, key, value):
         """
@@ -61,14 +70,11 @@ class ParamServerCache(object):
         @type  value: str
         @raise: KeyError if key is not already in the cache.
         """
-        if not key in self.d:
-            raise KeyError(key)
-        try:
-            self.lock.acquire()
+        with self.lock:
             self.d[key] = value
-        finally:
-            self.lock.release()
-            
+            if self.notifier is not None:
+                self.notifier(key, value)
+                
     def set(self, key, value):
         """
         Set the value of the parameter in the cache. This is a
@@ -78,11 +84,8 @@ class ParamServerCache(object):
         @param value: parameter value
         @type  value: str
         """
-        try:
-            self.lock.acquire()
+        with self.lock:
             self.d[key] = value
-        finally:
-            self.lock.release()
             
     def get(self, key):
         """
@@ -91,11 +94,8 @@ class ParamServerCache(object):
         @return: Current value for parameter
         @raise: KeyError
         """
-        try:
-            self.lock.acquire()
+        with self.lock:
             return self.d[key]
-        finally:
-            self.lock.release()
 
 _param_server_cache = None
 def get_param_server_cache():

@@ -1204,6 +1204,10 @@ def _rostopic_cmd_pub(argv):
                       help="publishing rate (hz)")
     parser.add_option("-1", "--once", action="store_true", dest="once", default=False,
                       help="publish one message and exit")
+    parser.add_option("-f", '--file', dest="file", metavar='FILE', default=None,
+                      help="read args from YAML file (Bagy)")
+    parser.add_option("-p", '--param', dest="parameter", metavar='/PARAM', default=None,
+                      help="read args from ROS parameter (Bagy format)")
 
     (options, args) = parser.parse_args(args)
     if options.rate is not None:
@@ -1218,10 +1222,15 @@ def _rostopic_cmd_pub(argv):
     else:
         rate = None
         
+    # validate args len
     if len(args) == 0:
         parser.error("/topic must be specified")
     if len(args) == 1:
         parser.error("topic type must be specified")
+    if len(args) > 2 and options.parameter:
+        parser.error("args confict with -p setting")        
+    if len(args) > 2 and options.file:
+        parser.error("args confict with -f setting")        
     topic_name, topic_type = args[0], args[1]
 
     # type-case using YAML
@@ -1240,8 +1249,19 @@ def _rostopic_cmd_pub(argv):
     latch = rate == None
     pub, msg_class = create_publisher(topic_name, topic_type, latch)
 
-    # check to see if we read pub_args from stdin    
-    if not pub_args and len(msg_class.__slots__):
+    # check to see if we read pub_args from stdin. By convention, we
+    # pub_args is always a list.
+    if options.file:
+        pub_args = [_load_bagy_msg(options.file)]
+        
+    if options.parameter:
+        param_name = roslib.scriptutil.script_resolve_name('rostopic', options.parameter)
+        if options.once:
+            param_publish_once(pub, msg_class, param_name, rate, options.verbose)
+        else:
+            param_publish(pub, msg_class, param_name, rate, options.verbose)
+        
+    elif not pub_args and len(msg_class.__slots__):
         if sys.stdin.isatty():
             parser.error("Please specify message values")
 
@@ -1249,6 +1269,26 @@ def _rostopic_cmd_pub(argv):
     else:
         argv_publish(pub, msg_class, pub_args, rate, options.once, options.verbose)
         
+
+def _load_bagy_msg(filename):
+    """
+    @param filename: file name
+    @type  filename: str
+    @return: List of msg dicts in file
+    @rtype: [{str: any}]
+    @raise ROSTopicException: if filename is invalid
+    """
+    if not os.path.isfile(filename):
+        raise ROSTopicException("file does not exist: %s"%(filename))
+    import yaml
+    try:
+        with open(filename) as f:
+            # expect single yaml doc
+            data = yaml.load(f)
+    except yaml.YAMLError, e:
+        raise ROSTopicException("invalid YAML in file: %s"%(str(e))) 
+    return data
+    
 def argv_publish(pub, msg_class, pub_args, rate, once, verbose):
     if rate is None:
         s = "publishing and latching [%s]"%msg if verbose else "publishing and latching message"
@@ -1271,6 +1311,100 @@ def wait_for_subscriber(pub, timeout):
     timeout_t = time.time() + timeout
     while pub.get_num_connections() == 0 and timeout_t > time.time():
         time.sleep(0.01)
+
+def param_publish_once(pub, msg_class, param_name, verbose):
+    if not rospy.has_param(param_name):
+        raise ROSTopicException("parameter does not exist: %s"%(param_name))
+    pub_args = rospy.get_param(param_name)
+    argv_publish(pub, msg_class, pub_args, None, True, verbose)    
+
+
+class _ParamNotifier(object):
+
+    def __init__(self, param_name, value=None):
+        import threading
+        self.lock = threading.Condition()
+        self.param_name = param_name
+        self.updates = []
+        self.value = None
+
+    def __call__(self, key, value):
+        with self.lock:
+            # have to address downward if we got notification on sub namespace
+            if key != self.param_name:
+                subs = [x for x in key[len(self.param_name):].split('/') if x]
+                idx = self.value
+                for s in subs[:-1]:
+                    if s in idx:
+                        idx = idx[s]
+                    else:
+                        idx[s] = {}
+                        idx = idx[s]
+                idx[subs[-1]] = value
+            else:
+                self.value = value
+
+            self.updates.append(self.value)
+            self.lock.notify_all()
+        
+def param_publish(pub, msg_class, param_name, rate, verbose):
+    """
+    @param param_name: ROS parameter name
+    @type  param_name: str
+    @return: List of msg dicts in file
+    @rtype: [{str: any}]
+    @raise ROSTopicException: if parameter is not set
+    """
+    import rospy
+    import rospy.impl.paramserver
+    import rosgraph.masterapi
+    
+    if not rospy.has_param(param_name):
+        raise ROSTopicException("parameter does not exist: %s"%(param_name))
+
+    # reach deep into subscription APIs here. Very unstable stuff
+    # here, don't copy elsewhere!
+    ps_cache = rospy.impl.paramserver.get_param_server_cache()
+    notifier = _ParamNotifier(param_name)
+    ps_cache.set_notifier(notifier)
+    master = rosgraph.masterapi.Master(rospy.get_name())
+    notifier.value = master.subscribeParam(rospy.get_node_uri(), param_name)
+    pub_args = notifier.value
+    ps_cache.set(param_name, pub_args)
+    if type(pub_args) == dict:
+        pub_args = [pub_args]
+    elif type(pub_args) != list:
+        raise ROSTopicException("Parameter [%s] in not a valid type"%(param_name))
+
+    r = rospy.Rate(rate) if rate is not None else None
+    publish = True
+    while not rospy.is_shutdown():
+        try:
+            if publish:
+                publish_message(pub, msg_class, pub_args, None, True, verbose=verbose)
+        except ValueError, e:
+            print >> sys.stderr, str(e)
+            break
+        if r is not None:
+            r.sleep()
+            with notifier.lock:
+                if notifier.updates:
+                    pub_args = notifier.updates.pop(0)
+                    if type(pub_args) == dict:
+                        pub_args = [pub_args]
+        else:
+            publish = False
+            with notifier.lock:
+                if not notifier.updates:
+                    notifier.lock.wait(1.)
+                if notifier.updates:
+                    publish = True
+                    pub_args = notifier.updates.pop(0)
+                    if type(pub_args) == dict:
+                        pub_args = [pub_args]
+            
+        if rospy.is_shutdown():
+            break
 
 def stdin_publish(pub, msg_class, rate, once, verbose):
     r = rospy.Rate(rate) if rate is not None else None

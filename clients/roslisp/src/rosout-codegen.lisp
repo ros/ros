@@ -55,7 +55,7 @@
   (and *ros-log-stream* (open-stream-p *ros-log-stream*)))
 
 (defun rosout-msg (name level args)
-  (let ((code (symbol-code 'roslib-msg:<Log> level)))
+  (let ((code (symbol-code 'roslib-msg:Log level)))
     (when (typep (first args) 'string) (push t args))
     (dbind (check str &rest format-args) args
       (let ((output-string (gensym)))
@@ -73,5 +73,5 @@
 	     (when (and (eq *node-status* :running) (gethash "/rosout" *publications*))
 	       (publish 
 		"/rosout"
-		(make-instance 'roslib-msg:<Log> :name *ros-node-name*
+		(make-instance 'roslib-msg:Log :name *ros-node-name*
 			       :level ,code :msg ,output-string)))))))))

@@ -97,7 +97,7 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
 
     ;; Initialize debug levels
 
-    (reset-debug-levels (make-instance '<Empty-Request>))
+    (reset-debug-levels (make-instance 'Empty-Request))
 
     ;; Now we can finally print some debug messages 
     (ros-debug (roslisp top) "Log location is ~a" *ros-log-location*)

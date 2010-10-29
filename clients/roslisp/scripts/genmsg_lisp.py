@@ -103,7 +103,7 @@ def parse_msg_type(f):
 # t2 no need for is_array    
 def msg_type(f):
     (pkg, msg) = parse_msg_type(f)
-    return '%s-msg:<%s>'%(pkg, msg)
+    return '%s-msg:%s'%(pkg, msg)
 
 def lisp_type(t):
     if is_fixnum(t):
@@ -565,11 +565,11 @@ def write_accessor_exports(s, spec):
 
 
 def write_ros_datatype(s, spec):
-    c = message_class(spec)
-    s.write('(cl:defmethod roslisp-msg-protocol:ros-datatype ((msg (cl:eql \'%s)))'%c)
-    with Indent(s):
-        s.write('"Returns string type for a %s object of type \'%s"'%(spec.component_type, c))
-        s.write('"%s")'%spec.full_name)
+    for c in (message_class(spec), new_message_class(spec)):
+        s.write('(cl:defmethod roslisp-msg-protocol:ros-datatype ((msg (cl:eql \'%s)))'%c)
+        with Indent(s):
+            s.write('"Returns string type for a %s object of type \'%s"'%(spec.component_type, c))
+            s.write('"%s")'%spec.full_name)
 
 def write_md5sum(s, spec, parent=None):
     if parent is None:
@@ -577,28 +577,28 @@ def write_md5sum(s, spec, parent=None):
     gendeps_dict = roslib.gentools.get_dependencies(parent, spec.package,
                                                     compute_files=False)
     md5sum = roslib.gentools.compute_md5(gendeps_dict)
-    c = message_class(spec)
-    s.write('(cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql \'%s)))'%c)
-    with Indent(s):
-        # t2 this should print 'service' instead of 'message' if it's a service request or response
-        s.write('"Returns md5sum for a message object of type \'%s"'%c)
-        s.write('"%s")'%md5sum)
+    for c in (message_class(spec), new_message_class(spec)):
+        s.write('(cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql \'%s)))'%c)
+        with Indent(s):
+            # t2 this should print 'service' instead of 'message' if it's a service request or response
+            s.write('"Returns md5sum for a message object of type \'%s"'%c)
+            s.write('"%s")'%md5sum)
 
 def write_message_definition(s, spec):
-    c = message_class(spec)
-    s.write('(cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql \'%s)))'%c)
-    with Indent(s):
-        s.write('"Returns full string definition for message of type \'%s"'%c)
-        s.write('(cl:format cl:nil "')
-        gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package, compute_files=False)
-        definition = roslib.gentools.compute_full_text(gendeps_dict)
-        lines = definition.split('\n')
-        for line in lines:
-            l = line.replace('\\', '\\\\')
-            l = l.replace('"', '\\"')
-            s.write('%s~%%'%l, indent=False)
-        s.write('~%', indent=False)
-        s.write('"))', indent=False)
+    for c in (message_class(spec), new_message_class(spec)):
+        s.write('(cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql \'%s)))'%c)
+        with Indent(s):
+            s.write('"Returns full string definition for message of type \'%s"'%c)
+            s.write('(cl:format cl:nil "')
+            gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package, compute_files=False)
+            definition = roslib.gentools.compute_full_text(gendeps_dict)
+            lines = definition.split('\n')
+            for line in lines:
+                l = line.replace('\\', '\\\\')
+                l = l.replace('"', '\\"')
+                s.write('%s~%%'%l, indent=False)
+            s.write('~%', indent=False)
+            s.write('"))', indent=False)
 
 def write_builtin_length(s, f, var='msg'):
     if f.base_type in ['int8', 'uint8']:
@@ -647,24 +647,24 @@ def write_list_converter(s, spec):
     s.write('(cl:defmethod roslisp-msg-protocol:ros-message-to-list ((msg %s))'%c)
     with Indent(s):
         s.write('"Converts a ROS message object to a list"')
-        s.write('(cl:list \'%s'%c)
+        s.write('(cl:list \'%s'%new_message_class(spec))
         with Indent(s):
             for f in spec.parsed_fields():
-                s.write('(cl:cons \':%s (%s-val msg))'%(f.name, f.name))
+                s.write('(cl:cons \':%s (%s msg))'%(f.name, f.name))
     s.write('))')
 
 def write_constants(s, spec):
     if spec.constants:
-        cls = message_class(spec)
-        s.write('(cl:defmethod roslisp-msg-protocol:symbol-codes ((msg-type (cl:eql \'%s)))'%cls)
-        with Indent(s):
-            s.write('  "Constants for message type \'%s"'%cls)
-            s.write('\'(')
-            with Indent(s, indent_first=False):
-                for c in spec.constants:
-                    s.write('(:%s . %s)'%(c.name.upper(), c.val))
-        s.write(')', False)
-        s.write(')')
+        for cls in (message_class(spec), new_message_class(spec)):
+            s.write('(cl:defmethod roslisp-msg-protocol:symbol-codes ((msg-type (cl:eql \'%s)))'%cls)
+            with Indent(s):
+                s.write('  "Constants for message type \'%s"'%cls)
+                s.write('\'(')
+                with Indent(s, indent_first=False):
+                    for c in spec.constants:
+                        s.write('(:%s . %s)'%(c.name.upper(), c.val))
+            s.write(')', False)
+            s.write(')')
 
 
 def write_srv_component(s, spec, parent):
@@ -686,10 +686,10 @@ def write_service_specific_methods(s, spec):
     spec.actual_name=spec.short_name
     s.write('(cl:defmethod roslisp-msg-protocol:service-request-type ((msg (cl:eql \'%s)))'%spec.short_name)
     with Indent(s):
-        s.write('\'%s)'%message_class(spec.request))
+        s.write('\'%s)'%new_message_class(spec.request))
     s.write('(cl:defmethod roslisp-msg-protocol:service-response-type ((msg (cl:eql \'%s)))'%spec.short_name)
     with Indent(s):
-        s.write('\'%s)'%message_class(spec.response))
+        s.write('\'%s)'%new_message_class(spec.response))
     s.write('(cl:defmethod roslisp-msg-protocol:ros-datatype ((msg (cl:eql \'%s)))'%spec.short_name)
     with Indent(s):
         s.write('"Returns string type for a service object of type \'%s"'%message_class(spec))

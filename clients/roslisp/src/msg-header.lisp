@@ -61,16 +61,16 @@
 (defmethod serialize :around ((msg roslib-msg:<Header>) str)
 
   ;; We save the old stamp for convenience when debugging interactively and reusing the same message object
-  (let ((old-stamp (roslib-msg:stamp-val msg)))
+  (let ((old-stamp (roslib-msg:stamp msg)))
     (unwind-protect
 	 (progn
 	   (when (= *serialize-recursion-level* 1)
 	     (when *set-seq*
-	       (setf (roslib-msg:seq-val msg) (incf *seq*)))
-	     (when (= (roslib-msg:stamp-val msg) 0.0)
-	       (setf (roslib-msg:stamp-val msg) (ros-time))))
+	       (setf (roslib-msg:seq msg) (incf *seq*)))
+	     (when (= (roslib-msg:stamp msg) 0.0)
+	       (setf (roslib-msg:stamp msg) (ros-time))))
 	   (call-next-method))
 
-      (setf (roslib-msg:stamp-val msg) old-stamp))))
+      (setf (roslib-msg:stamp msg) old-stamp))))
 
 |#

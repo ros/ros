@@ -137,6 +137,53 @@
       (error "Could not find field ~a in ~a" f l))
     (setf (cdr pair) v)))
 
+
+(defun normalize-binding (b)
+  (if (symbolp b)
+      (list b (list b))
+      (progn
+        (assert (and (listp b) (= 2 (length b))))
+        (if (listp (second b))
+            b
+            (list (first b) (list (second b)))))))
+
+(defun is-message-package (p)
+  (let* ((name (package-name p))
+         (l (length name)))
+    (equal (string-upcase (subseq name (- l 4))) "-MSG")))
+
+(defun get-msg-pkg (bindings)
+  (let ((vars (apply #'append (mapcar #'second bindings))))
+    (and vars
+         (let ((p (symbol-package (first vars))))
+           (when (is-message-package p)
+             (unless (find-if #'(lambda (s) (not (eq (symbol-package s) p))) vars)
+               p))))))
+
+(defun normalize-bindings (b)
+  (mapcar #'normalize-binding b))
+
+(defun chain-slot-readers (binding msg)
+  (labels ((helper (b)
+             (if b
+                 (list (car b) (helper (cdr b)))
+                 msg
+                 )
+             ))
+    (list (car binding) (helper (cadr binding)))))
+
+(defmacro bind-fields (bindings m &body body)
+  "Same syntax as with-fields, but requires that all the field specifiers in the bindings belong to the package of the message, e.g. in (bind-fields (a (b c)) m ...), assuming M is a message from my_ros_package, the symbols 'a and 'c must belong to my_ros_package-msg.  Uses this fact to expand to more efficient code than with-fields."
+  (setq bindings (normalize-bindings bindings))
+  (assert (get-msg-pkg bindings) nil
+          "bind-fields requires all fields in ~a to belong to a ros message package"
+          bindings)
+  (let ((msg (gensym)))
+    `(let ((,msg ,m))
+       (let ,(mapcar #'(lambda (b) (chain-slot-readers b msg)) bindings) ,@body))))
+
+
+
 (defmacro with-fields (bindings m &body body)
   "with-fields BINDINGS MSG &rest BODY
 
@@ -151,20 +198,30 @@ As an example, instead of (let ((foo (pkg:foo-val (pkg:bar-val m)))
   (stuff)) 
 
 you can use (with-fields ((foo (foo bar)) baz)
-		(stuff))"
+		(stuff))
 
-  (let ((msg-list (gensym)))
-    ;; Once message-to-list is cached, no need to call message-to-list here (just in extract-nested-field)
-    `(let ((,msg-list (ros-message-to-list ,m)))
-       (declare (ignorable ,msg-list))
-       (let 
-	   ,(mapcar #'(lambda (binding)
-			(when (symbolp binding) (setq binding (list binding binding)))
-			(symbol-macrolet ((field (second binding)))
-			  (setf field (mapcar #'convert-to-keyword (if (symbolp field) (list field) field))))
-			`(,(first binding) (extract-nested-field ,msg-list ',(reverse (second binding)))))
-		    bindings)
-	 ,@body))))
+Efficiency: since the message type of ``m'' may not be known at macroexpansion time, with-fields converts the message to a list at runtime.  If, however, it is the case that all the field specifiers actually belong to a ros message package (for now, one whose name ends with -MSG), then with-fields calls bind-fields, which is more efficient, since it directly calls the slot readers.  You can do a macroexpand to figure out which case is happening: if the macroexpansion includes a call to ros-message-to-list, this is the less efficient version.
+"
+
+  (setq bindings (normalize-bindings bindings))
+  (if (get-msg-pkg bindings)
+
+      ;; If we can, use the more efficient version
+      `(bind-fields ,bindings ,m ,@body)
+
+      ;; Else use the less efficient version that converts to a list
+      (let ((msg-list (gensym)))
+        ;; Once message-to-list is cached, no need to call message-to-list here (just in extract-nested-field)
+        `(let ((,msg-list (ros-message-to-list ,m)))
+           (declare (ignorable ,msg-list))
+           (let 
+               ,(mapcar #'(lambda (binding)
+                            (when (symbolp binding) (setq binding (list binding binding)))
+                            (symbol-macrolet ((field (second binding)))
+                              (setf field (mapcar #'convert-to-keyword (if (symbolp field) (list field) field))))
+                            `(,(first binding) (extract-nested-field ,msg-list ',(reverse (second binding)))))
+                 bindings)
+             ,@body)))))
 
 
 (defun read-ros-message (stream)
@@ -214,7 +271,7 @@ you can use (with-fields ((foo (foo bar)) baz)
   (destructuring-bind (pkg-name type) (tokens (string-upcase msg-type) :separators '(#\/))
     (let ((pkg (find-package (intern (concatenate 'string pkg-name "-MSG") 'keyword))))
       (assert pkg nil "Can't find package ~a-MSG" pkg-name)
-      (let ((class-name (find-symbol (concatenate 'string "<" type ">") pkg)))
+      (let ((class-name (find-symbol type pkg)))
 	(assert class-name nil "Can't find class for ~a" msg-type)
 	(apply #'set-fields-fn (make-instance class-name) args)))))
 
@@ -222,7 +279,7 @@ you can use (with-fields ((foo (foo bar)) baz)
   (destructuring-bind (pkg type) (tokens (string-upcase srv-type) :separators '(#\/))
     (let ((pkg (find-package (intern (concatenate 'string pkg "-SRV") 'keyword))))
       (assert pkg nil "Can't find package ~a" pkg)
-      (let ((class-name (find-symbol (concatenate 'string "<" type "-REQUEST>") pkg)))
+      (let ((class-name (find-symbol (concatenate 'string type "-REQUEST") pkg)))
 	(assert class-name nil "Can't find class ~a in package ~a" class-name pkg)
 	(apply #'set-fields-fn (make-instance class-name) args)))))
 
@@ -255,6 +312,12 @@ Return a new message that is a copy of MSG with some fields modified.  ARGS is a
     `(let ((,m ,place))
        (setf ,place (modify-message-copy ,m ,@args)))))
 
+(defun pairs (l)
+  (when l
+    (assert (rest l))
+    (cons (list (first l) (second l)) (pairs (nthcdr 2 l)))))
+
+
 (defmacro make-message (msg-type &rest args)
   "make-message MSG-TYPE &rest ARGS
 
@@ -267,14 +330,18 @@ Each FIELD-SPEC (unevaluated) is a list (or a symbol, which designates a list of
 VAL is the corresponding value.
 
 For example, if MSG-TYPE is the string robot_msgs/Pose, and ARGS are (x position) 42 (w orientation) 1
-this will create a Pose with the x field of position equal to 42 and the w field of orientation equal to 1 (other fields equal their default values)."
+this will create a Pose with the x field of position equal to 42 and the w field of orientation equal to 1 (other fields equal their default values).
 
+For convenience, the field specifiers don't have to actually belong to the message package. E.g., they can be keywords.
+"
   `(make-message-fn ,msg-type
-		    ,@(loop
-			 for i from 0
-			 for arg in args
-			 collect (if (evenp i) `',(mapcar #'convert-to-keyword (designated-list arg)) arg))))
-
+                    ,@(loop
+                        for i from 0
+                        for arg in args
+                        collect (if (evenp i)
+                                    `',(mapcar
+                                        #'convert-to-keyword
+                                        (designated-list arg)) arg))))
 			   
 
 (defmacro make-msg (&rest args)

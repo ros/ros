@@ -295,6 +295,15 @@ def write_serialize_bits(s, v, num_bytes):
     for x in range(0, num_bytes*8, 8):
         s.write('(cl:write-byte (cl:ldb (cl:byte 8 %s) %s) ostream)'%(x, v))
 
+def write_serialize_bits_signed(s, v, num_bytes):
+    num_bits = num_bytes*8
+    s.write('(cl:let* ((signed %s) (unsigned (cl:if (cl:< signed 0) (cl:+ signed %s) signed)))'%(v, 2**num_bits))
+    with Indent(s):
+        write_serialize_bits(s, 'unsigned', num_bytes)
+        s.write(')')
+
+
+
 # t2: can get rid of this lookup_slot stuff        
 def write_serialize_builtin(s, f, var='msg', lookup_slot=True):
     v = '(cl:slot-value %s \'%s)'%(var, f.name) if lookup_slot else var
@@ -323,7 +332,7 @@ def write_serialize_builtin(s, f, var='msg', lookup_slot=True):
             write_serialize_bits(s, '__nsec', 4)
             s.write(')', False)
     elif is_signed_int(f.base_type):
-        write_serialize_bits(s, v, NUM_BYTES[f.base_type])
+        write_serialize_bits_signed(s, v, NUM_BYTES[f.base_type])
     elif is_unsigned_int(f.base_type):
         write_serialize_bits(s, v, NUM_BYTES[f.base_type])        
     else:
@@ -375,7 +384,14 @@ def write_deserialize_length(s, is_array=False):
 def write_deserialize_bits(s, v, num_bytes):
     for x in range(0, num_bytes*8, 8):
         s.write('(cl:setf (cl:ldb (cl:byte 8 %s) %s) (cl:read-byte istream))'%(x, v))
-        
+
+def write_deserialize_bits_signed(s, v, num_bytes):
+    s.write('(cl:let ((unsigned 0))')
+    num_bits = 8*num_bytes
+    with Indent(s):
+        write_deserialize_bits(s, 'unsigned', num_bytes)
+        s.write('(cl:setf %s (cl:if (cl:< unsigned %s) unsigned (cl:- unsigned %s))))'%(v, 2**(num_bits-1), 2**num_bits))
+
     
     
 def write_deserialize_builtin(s, f, v):
@@ -407,7 +423,7 @@ def write_deserialize_builtin(s, f, v):
             write_deserialize_bits(s, '__nsec', 4)
             s.write('(cl:setf %s (cl:+ (cl:coerce __sec \'cl:double-float) (cl:/ __nsec 1e9))))'%v)
     elif is_signed_int(f.base_type):
-        write_deserialize_bits(s, v, NUM_BYTES[f.base_type])
+        write_deserialize_bits_signed(s, v, NUM_BYTES[f.base_type])
     elif is_unsigned_int(f.base_type):
         write_deserialize_bits(s, v, NUM_BYTES[f.base_type])
     else:

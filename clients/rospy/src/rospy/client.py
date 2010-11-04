@@ -36,6 +36,8 @@
 Additional ROS client API methods.
 """
 
+from __future__ import with_statement
+
 import logging
 import os
 import socket
@@ -510,20 +512,27 @@ def sleep(duration):
         initial_rostime = rospy.rostime.get_rostime()
         if not isinstance(duration, roslib.rostime.Duration):
             duration = rospy.rostime.Duration.from_sec(duration)
-        sleep_t = initial_rostime + duration
 
         rostime_cond = rospy.rostime.get_rostime_cond()
+
+        # #3123
+        if initial_rostime == roslib.rostime.Time(0):
+            # break loop if time is initialized or node is shutdown
+            while initial_rostime == roslib.rostime.Time(0) and \
+                      not rospy.core.is_shutdown():
+                with rostime_cond:
+                    rostime_cond.wait(0.3)
+                initial_rostime = rospy.rostime.get_rostime()
+
+        sleep_t = initial_rostime + duration
 
         # break loop if sleep_t is reached, time moves backwards, or
         # node is shutdown
         while rospy.rostime.get_rostime() < sleep_t and \
               rospy.rostime.get_rostime() >= initial_rostime and \
                   not rospy.core.is_shutdown():
-            try:
-                rostime_cond.acquire()
+            with rostime_cond:
                 rostime_cond.wait(0.5)
-            finally:
-                rostime_cond.release()
 
         if rospy.rostime.get_rostime() < initial_rostime:
             raise rospy.exceptions.ROSInterruptException("ROS time moved backwards")

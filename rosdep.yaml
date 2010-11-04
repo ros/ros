@@ -5,6 +5,7 @@ ruby:
   macports: |
   gentoo: ruby
   freebsd: ruby
+  fedora: ruby
 apr:
   ubuntu: libapr1-dev libaprutil1-dev
   debian: libapr1-dev libaprutil1-dev
@@ -350,6 +351,7 @@ libxml2:
   macports: libxml2
   gentoo: dev-libs/libxml2
   freebsd: libxml2
+  fedora: libxml2
 scons:
   ubuntu: scons
   debian: scons

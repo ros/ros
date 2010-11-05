@@ -138,11 +138,11 @@ MessageInstance& View::iterator::dereference() const {
 
 View::View() : view_revision_(0), size_cache_(0), size_revision_(0) { }
 
-View::View(Bag const& bag, ros::Time const& start_time, ros::Time const& end_time) : view_revision_(0) {
+View::View(Bag const& bag, ros::Time const& start_time, ros::Time const& end_time) : view_revision_(0), size_cache_(0), size_revision_(0) {
 	addQuery(bag, start_time, end_time);
 }
 
-View::View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, ros::Time const& start_time, ros::Time const& end_time) : view_revision_(0) {
+View::View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, ros::Time const& start_time, ros::Time const& end_time) : view_revision_(0), size_cache_(0), size_revision_(0) {
 	addQuery(bag, query, start_time, end_time);
 }
 

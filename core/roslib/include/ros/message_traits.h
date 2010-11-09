@@ -35,7 +35,7 @@
 #include <string>
 #include <boost/utility/enable_if.hpp>
 
-namespace roslib
+namespace rosgraph_msgs
 {
   ROS_DECLARE_MESSAGE(Header);
 }
@@ -161,15 +161,15 @@ struct Definition
 template<typename M, typename Enable = void>
 struct Header
 {
-  static roslib::Header* pointer(M& m) { return 0; }
-  static roslib::Header const* pointer(const M& m) { return 0; }
+  static rosgraph_msgs::Header* pointer(M& m) { return 0; }
+  static rosgraph_msgs::Header const* pointer(const M& m) { return 0; }
 };
 
 template<typename M>
 struct Header<M, typename boost::enable_if<HasHeader<M> >::type >
 {
-  static roslib::Header* pointer(M& m) { return &m.header; }
-  static roslib::Header const* pointer(const M& m) { return &m.header; }
+  static rosgraph_msgs::Header* pointer(M& m) { return &m.header; }
+  static rosgraph_msgs::Header const* pointer(const M& m) { return &m.header; }
 };
 
 /**
@@ -270,7 +270,7 @@ inline const char* definition(const M& m)
  * \brief returns Header<M>::pointer(m);
  */
 template<typename M>
-inline roslib::Header* header(M& m)
+inline rosgraph_msgs::Header* header(M& m)
 {
   return Header<M>::pointer(m);
 }
@@ -279,7 +279,7 @@ inline roslib::Header* header(M& m)
  * \brief returns Header<M>::pointer(m);
  */
 template<typename M>
-inline roslib::Header const* header(const M& m)
+inline rosgraph_msgs::Header const* header(const M& m)
 {
   return Header<M>::pointer(m);
 }

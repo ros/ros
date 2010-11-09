@@ -76,7 +76,7 @@ def msg_type_to_cpp(type):
         cpp_type = MSG_TYPE_TO_CPP[base_type]
     elif (len(base_type.split('/')) == 1):
         if (roslib.msgs.is_header_type(base_type)):
-            cpp_type = ' ::roslib::Header_<ContainerAllocator> '
+            cpp_type = ' ::std_msgs::Header_<ContainerAllocator> '
         else:
             cpp_type = '%s_<ContainerAllocator> '%(base_type)
     else:
@@ -164,7 +164,7 @@ def write_includes(s, spec):
     for field in spec.parsed_fields():
         if (not field.is_builtin):
             if (field.is_header):
-                s.write('#include "roslib/Header.h"\n')
+                s.write('#include "std_msgs/Header.h"\n')
             else:
                 (pkg, name) = roslib.names.package_resource_name(field.base_type)
                 pkg = pkg or spec.package # convert '' to package

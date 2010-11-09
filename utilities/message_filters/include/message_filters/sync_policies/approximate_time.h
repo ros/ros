@@ -52,8 +52,6 @@
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/vector.hpp>
 
-#include <roslib/Header.h>
-
 #include <ros/message_traits.h>
 #include <ros/message_event.h>
 

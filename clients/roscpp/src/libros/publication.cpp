@@ -31,7 +31,7 @@
 #include "ros/callback_queue_interface.h"
 #include "ros/single_subscriber_publisher.h"
 #include "ros/serialization.h"
-#include <roslib/Header.h>
+#include <std_msgs/Header.h>
 
 namespace ros
 {
@@ -170,7 +170,7 @@ bool Publication::enqueueMessage(const SerializedMessage& m)
     // If we have a header, we know it's immediately after the message length
     // Deserialize it, write the sequence, and then serialize it again.
     namespace ser = ros::serialization;
-    roslib::Header header;
+    std_msgs::Header header;
     ser::IStream istream(m.buf.get() + 4, m.num_bytes - 4);
     ser::deserialize(istream, header);
     header.seq = seq;

@@ -32,7 +32,7 @@
 
 #include "ros/ros.h"
 #include "ros/file_log.h"
-#include "roslib/Log.h"
+#include "rosgraph_msgs/Log.h"
 
 #include "log4cxx/logger.h"
 #include "log4cxx/rollingfileappender.h"
@@ -82,14 +82,14 @@ public:
 
     LOG4CXX_INFO(logger_, "\n\n" << ros::Time::now() << "  Node Startup\n");
 
-    agg_pub_ = node_.advertise<roslib::Log>("/rosout_agg", 0);
+    agg_pub_ = node_.advertise<rosgraph_msgs::Log>("/rosout_agg", 0);
     std::cout << "re-publishing aggregated messages to /rosout_agg" << std::endl;
 
     rosout_sub_ = node_.subscribe("/rosout", 0, &Rosout::rosoutCallback, this);
     std::cout << "subscribed to /rosout" << std::endl;
   }
 
-  void rosoutCallback(const roslib::Log::ConstPtr& msg)
+  void rosoutCallback(const rosgraph_msgs::Log::ConstPtr& msg)
   {
     agg_pub_.publish(msg);
 
@@ -97,19 +97,19 @@ public:
     ss << msg->header.stamp << " ";
     switch (msg->level)
     {
-    case roslib::Log::FATAL:
+    case rosgraph_msgs::Log::FATAL:
       ss << "FATAL ";
       break;
-    case roslib::Log::ERROR:
+    case rosgraph_msgs::Log::ERROR:
       ss << "ERROR ";
       break;
-    case roslib::Log::WARN:
+    case rosgraph_msgs::Log::WARN:
       ss << "WARN ";
       break;
-    case roslib::Log::DEBUG:
+    case rosgraph_msgs::Log::DEBUG:
       ss << "DEBUG ";
       break;
-    case roslib::Log::INFO:
+    case rosgraph_msgs::Log::INFO:
       ss << "INFO ";
       break;
     default:

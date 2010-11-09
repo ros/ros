@@ -49,8 +49,6 @@
 #include <boost/function_types/function_arity.hpp>
 #include <boost/function_types/is_nonmember_callable_builtin.hpp>
 
-#include <roslib/Header.h>
-
 #include "connection.h"
 #include "null_types.h"
 #include "signal9.h"

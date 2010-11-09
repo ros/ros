@@ -41,6 +41,8 @@
 
 #include <log4cxx/spi/loggingevent.h>
 
+#include <rosgraph_msgs/Log.h>
+
 namespace ros
 {
 
@@ -49,7 +51,7 @@ ROSOutAppender::ROSOutAppender()
 , publish_thread_(boost::bind(&ROSOutAppender::logThread, this))
 {
   AdvertiseOptions ops;
-  ops.init<roslib::Log>(names::resolve("/rosout"), 0);
+  ops.init<rosgraph_msgs::Log>(names::resolve("/rosout"), 0);
   ops.latch = true;
   SubscriberCallbacksPtr cbs(new SubscriberCallbacks);
   TopicManager::instance()->advertise(ops, cbs);
@@ -74,31 +76,31 @@ const std::string&  ROSOutAppender::getLastError()
 
 void ROSOutAppender::append(const log4cxx::spi::LoggingEventPtr& event, log4cxx::helpers::Pool& pool)
 {
-  roslib::LogPtr msg(new roslib::Log);
+  rosgraph_msgs::LogPtr msg(new rosgraph_msgs::Log);
 
   msg->header.stamp = ros::Time::now();
 
   if (event->getLevel() == log4cxx::Level::getFatal())
   {
-    msg->level = roslib::Log::FATAL;
+    msg->level = rosgraph_msgs::Log::FATAL;
     last_error_ = event->getMessage();
   }
   else if (event->getLevel() == log4cxx::Level::getError())
   {
-    msg->level = roslib::Log::ERROR;
+    msg->level = rosgraph_msgs::Log::ERROR;
     last_error_ = event->getMessage();
   }
   else if (event->getLevel() == log4cxx::Level::getWarn())
   {
-    msg->level = roslib::Log::WARN;
+    msg->level = rosgraph_msgs::Log::WARN;
   }
   else if (event->getLevel() == log4cxx::Level::getInfo())
   {
-    msg->level = roslib::Log::INFO;
+    msg->level = rosgraph_msgs::Log::INFO;
   }
   else if (event->getLevel() == log4cxx::Level::getDebug())
   {
-    msg->level = roslib::Log::DEBUG;
+    msg->level = rosgraph_msgs::Log::DEBUG;
   }
 
   msg->name = this_node::getName();

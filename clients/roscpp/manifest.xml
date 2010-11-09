@@ -22,6 +22,8 @@
   <depend package="roslib"/>
   <depend package="xmlrpcpp"/>
   <depend package="rosconsole"/>
+  <depend package="std_msgs"/>
+  <depend package="rosgraph_msgs"/>
   <export>
     <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lros `rosboost-cfg --lflags thread,signals`"/>
     <roslang cmake="${prefix}/cmake/roscpp.cmake"/>

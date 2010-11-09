@@ -35,12 +35,19 @@
 #ifndef ROSCPP_ROSOUT_APPENDER_H
 #define ROSCPP_ROSOUT_APPENDER_H
 
+#include <ros/message_forward.h>
+
 #include "log4cxx/appenderskeleton.h"
+
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include <roslib/Log.h>
 #include <boost/thread.hpp>
+
+namespace rosgraph_msgs
+{
+ROS_DECLARE_MESSAGE(Log);
+}
 
 namespace ros
 {
@@ -67,7 +74,7 @@ protected:
 
   std::string last_error_;
 
-  typedef std::vector<roslib::LogPtr> V_Log;
+  typedef std::vector<rosgraph_msgs::LogPtr> V_Log;
   V_Log log_queue_;
   boost::mutex queue_mutex_;
   boost::condition_variable queue_condition_;

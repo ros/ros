@@ -55,7 +55,7 @@
 
 #include <ros/console.h>
 #include <ros/time.h>
-#include <roslib/Clock.h>
+#include <rosgraph_msgs/Clock.h>
 
 #include <algorithm>
 
@@ -234,7 +234,7 @@ bool closeAllConnections(roscpp::Empty::Request&, roscpp::Empty::Response&)
   return true;
 }
 
-void clockCallback(const roslib::Clock::ConstPtr& msg)
+void clockCallback(const rosgraph_msgs::Clock::ConstPtr& msg)
 {
   Time::setNow(msg->clock);
 }
@@ -368,7 +368,7 @@ void start()
     if (use_sim_time)
     {
       ros::SubscribeOptions ops;
-      ops.init<roslib::Clock>("/clock", 1, clockCallback);
+      ops.init<rosgraph_msgs::Clock>("/clock", 1, clockCallback);
       ops.callback_queue = getInternalCallbackQueue().get();
       TopicManager::instance()->subscribe(ops);
     }

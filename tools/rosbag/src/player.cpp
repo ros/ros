@@ -41,7 +41,7 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
-#include "roslib/Clock.h"
+#include "rosgraph_msgs/Clock.h"
 
 #define foreach BOOST_FOREACH
 
@@ -416,7 +416,7 @@ char Player::readCharFromStdin() {
 TimePublisher::TimePublisher() : time_scale_(1.0)
 {
   setPublishFrequency(-1.0);
-  time_pub_ = node_handle_.advertise<roslib::Clock>("clock",1);
+  time_pub_ = node_handle_.advertise<rosgraph_msgs::Clock>("clock",1);
 }
 
 void TimePublisher::setPublishFrequency(double publish_frequency)
@@ -457,7 +457,7 @@ void TimePublisher::runClock(const ros::WallDuration& duration)
 {
     if (do_publish_)
     {
-        roslib::Clock pub_msg; 
+        rosgraph_msgs::Clock pub_msg;
 
         ros::WallTime t = ros::WallTime::now();
         ros::WallTime done = t + duration;
@@ -520,7 +520,7 @@ void TimePublisher::stepClock()
     {
         current_ = horizon_;
 
-        roslib::Clock pub_msg; 
+        rosgraph_msgs::Clock pub_msg;
 
         pub_msg.clock = current_;
         time_pub_.publish(pub_msg);
@@ -536,7 +536,7 @@ void TimePublisher::runStalledClock(const ros::WallDuration& duration)
 {
     if (do_publish_)
     {
-        roslib::Clock pub_msg; 
+        rosgraph_msgs::Clock pub_msg;
 
         ros::WallTime t = ros::WallTime::now();
         ros::WallTime done = t + duration;

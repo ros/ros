@@ -36,7 +36,7 @@
 #include "rosrecord/time_publisher.h"
 #include <ros/time.h>  
 
-#include "roslib/Clock.h"
+#include "rosgraph_msgs/Clock.h"
 
 
 SimpleTimePublisher::SimpleTimePublisher(double publish_frequency, double time_scale)
@@ -53,7 +53,7 @@ SimpleTimePublisher::SimpleTimePublisher(double publish_frequency, double time_s
 
     wall_step_.fromSec(1.0 / publish_frequency);
 
-    time_pub_ = node_handle_.advertise<roslib::Clock>("clock",1);
+    time_pub_ = node_handle_.advertise<rosgraph_msgs::Clock>("clock",1);
 }
 
 void SimpleTimePublisher::setHorizon(const ros::Time& horizon)
@@ -75,7 +75,7 @@ void SimpleTimePublisher::runClock(const ros::WallDuration& duration)
 {
     if (do_publish_)
     {
-        roslib::Clock pub_msg; 
+        rosgraph_msgs::Clock pub_msg;
 
         ros::WallTime t = ros::WallTime::now();
         ros::WallTime done = t + duration;
@@ -128,7 +128,7 @@ void SimpleTimePublisher::stepClock()
     {
         current_ = horizon_;
 
-        roslib::Clock pub_msg; 
+        rosgraph_msgs::Clock pub_msg;
 
         pub_msg.clock = current_;
         time_pub_.publish(pub_msg);
@@ -146,7 +146,7 @@ void SimpleTimePublisher::runStalledClock(const ros::WallDuration& duration)
 {
     if (do_publish_)
     {
-        roslib::Clock pub_msg; 
+        rosgraph_msgs::Clock pub_msg;
 
         ros::WallTime t = ros::WallTime::now();
         ros::WallTime done = t + duration;
@@ -208,7 +208,7 @@ void TimePublisher::initialize(double publish_frequency, double time_scale_facto
   horizon_.fromSec(0.0);
 
   // advertise time topic
-  time_pub = node_handle.advertise<roslib::Clock>("clock",1);
+  time_pub = node_handle.advertise<rosgraph_msgs::Clock>("clock",1);
   publish_thread_ = new boost::thread(boost::bind(&TimePublisher::publishTime, this));
 
 
@@ -295,7 +295,7 @@ ros::Time TimePublisher::getSysTime()
 // publish time
 void TimePublisher::publishTime()
 {
-  roslib::Clock pub_msg; 
+  rosgraph_msgs::Clock pub_msg;
   while(node_handle.ok() && continue_) {
     if (is_started_){
       ros::Time now = getSysTime();

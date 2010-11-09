@@ -152,7 +152,7 @@ class RoslibPackagesTest(unittest.TestCase):
     self.assertEquals(set(['roslib', 'rostest', 'std_msgs', 'std_srvs']), set(x['test_roslib']))
 
     # DEPENDS
-    test_roslib_depends = ['rospack', 'roslib', 'rosclean', 'rosgraph', 'roslang', 'rospy', 'rosmaster', 'xmlrpcpp', 'rosconsole', 'roscpp', 'rosout', 'roslaunch', 'rostest', 'std_msgs', 'std_srvs', 'rosgraph_msgs', 'rosunit']
+    test_roslib_depends = ['rospack', 'roslib', 'rosclean', 'rosgraph', 'roslang', 'rospy', 'rosmaster', 'xmlrpcpp', 'rosconsole', 'roscpp', 'rosout', 'roslaunch', 'rostest', 'std_msgs', 'std_srvs', 'rosgraph_msgs', 'rosunit', 'roscpp_serialization', 'rostime', 'cpp_common', 'roscpp_traits']
     x = rp.depends(['test_roslib'])
     self.assertEquals(['test_roslib'], x.keys())
     s1 = set(test_roslib_depends)

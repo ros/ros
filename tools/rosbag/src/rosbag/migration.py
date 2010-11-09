@@ -800,16 +800,19 @@ class MessageMigrator(object):
 
     def scaffold_range(self, old_type, new_type):
         try:
-            tmp_sn = self.first_type[old_type]
+            first_sn = self.first_type[old_type]
             
-            sn_range = [tmp_sn]
+            sn_range = [first_sn]
 
             found_new_type = False
+
+            tmp_sn = first_sn
 
             while (tmp_sn.next is not None and tmp_sn.next.new_class is not None):
 #                print sn_range
                 tmp_sn = tmp_sn.next
-                sn_range.append(tmp_sn)
+                if (tmp_sn != first_sn):
+                    sn_range.append(tmp_sn)
                 if (tmp_sn.new_class._type == new_type):
                     found_new_type == True
                 if (found_new_type and tmp_sn.new_class._type != new_type):
@@ -1013,6 +1016,15 @@ class MessageMigrator(object):
                     found_start = True
                     break
 
+        # If there were no valid implicit rules, we suggest a new one from the beginning
+        if not found_start:
+            new_rule = self.make_update_rule(old_class, sn_range[0].old_class)
+            R = new_rule(self, 'GENERATED.' + new_rule.__name__)
+            R.find_sub_paths()
+            sn = ScaffoldNode(old_class, sn_range[0].old_class, R)
+            self.extra_nodes.append(sn)
+            sn_range.insert(0,sn)
+
         self.found_paths[key] = sn_range
         return sn_range
 
@@ -1034,7 +1046,7 @@ class MessageMigrator(object):
             msg_from.serialize(buff)
 
             tmp_msg = path[0].old_class()
-        
+
             tmp_msg.deserialize(buff.getvalue())
 
             for sn in path:

@@ -88,7 +88,7 @@ class MigrationTest(unittest.TestCase):
 
     self.assertTrue(len(res[0][1]) == 1)
     self.assertTrue(not res[0][1][0].valid)
-    self.assertEqual(res[0][1][0].old_class._md5sum, '660dfa8591c9e551b8828f9bc79116ae')
+    self.assertEqual(res[0][1][0].old_class._md5sum, 'aba12af164ecf3f5cd150fb990205c4b')
     self.assertEqual(res[0][1][0].new_class._md5sum, 'b942bf4a41fb2bebc502889fd8981dfe')
     
 

@@ -70,6 +70,14 @@ class ParamServerCache(object):
         @type  value: str
         @raise: KeyError if key is not already in the cache.
         """
+        # TODOXXX: remove this code, as it is wrong. It is remaining
+        # in place to maintain a unit test until the correct logic is
+        # implemented. update() needs to check all subscribed keys and
+        # do a prefix match. The best way to do this is probably to
+        # pull the paramserver implementation from rosmaster and use
+        # it here.
+        if not key in self.d:
+            raise KeyError(key)
         with self.lock:
             self.d[key] = value
             if self.notifier is not None:

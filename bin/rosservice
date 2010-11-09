@@ -39,6 +39,7 @@ d = roslib.stacks.get_stack_dir('ros_comm')
 tools_d = os.path.join(d, 'tools')
 paths = [os.path.join(tools_d, p, 'src') for p in ('rosbag', 'rosmsg', 'rosservice', 'rostopic')]
 paths.append(os.path.join(d, 'clients', 'rospy', 'src'))
+paths.append(os.path.join(d, 'messages', 'rosgraph_msgs', 'src'))
 sys.path = paths + sys.path
 import rosservice
 rosservice.rosservicemain()

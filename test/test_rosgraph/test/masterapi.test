@@ -1,3 +1,3 @@
 <launch>
-  <test test-name="test_roslib_masterapi_online" pkg="test_roslib" type="test_roslib_masterapi_online.py" />
+  <test test-name="test_rosgraph_masterapi_online" pkg="test_rosgraph" type="test_rosgraph_masterapi_online.py" />
 </launch>

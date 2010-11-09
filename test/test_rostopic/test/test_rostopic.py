@@ -120,7 +120,7 @@ class TestRostopic(unittest.TestCase):
         from ros import rostopic
         cmd = 'rostopic'
         s = '/rosout_agg'
-        t = 'roslib/Log'
+        t = 'rosgraph_msgs/Log'
 
         try:
             rostopic.rostopicmain([cmd, 'type', 'fake'])
@@ -185,12 +185,12 @@ class TestRostopic(unittest.TestCase):
         self.assertEquals((None, None, None), rostopic.get_topic_type('/fake', blocking=False))
         
         t, n, f = rostopic.get_topic_type('/rosout', blocking=False)
-        self.assertEquals('roslib/Log', t)
+        self.assertEquals('rosgraph_msgs/Log', t)
         self.assertEquals('/rosout', n)
         self.assert_(f is None)
 
         t, n, f = rostopic.get_topic_type('/rosout/name', blocking=False)
-        self.assertEquals('roslib/Log', t)
+        self.assertEquals('rosgraph_msgs/Log', t)
         self.assertEquals('/rosout', n)
         self.failIf(f is None)
         from roslib.msg import Log
@@ -201,7 +201,7 @@ class TestRostopic(unittest.TestCase):
         
         self.assertEquals((None, None, None), rostopic.get_topic_class('/fake'))
 
-        from roslib.msg import Log
+        from rosgraph_msgs.msg import Log
         c, n, f = rostopic.get_topic_class('/rosout')
         self.assertEquals(Log, c)
         self.assertEquals('/rosout', n)
@@ -233,7 +233,7 @@ class TestRostopic(unittest.TestCase):
         with fakestdout() as b:
             rostopic.rostopicmain([cmd, 'info', 'rosout'])
             v = b.getvalue()
-            for s in ["Publishers:", "Subscribers", "Type: roslib/Log", " * /rosout"]:
+            for s in ["Publishers:", "Subscribers", "Type: rosgraph_msgs/Log", " * /rosout"]:
                 self.assert_(s in v, "failed on %s: %s"%(s, v))
         with fakestdout() as b:            
             rostopic.rostopicmain([cmd, 'info', '/chatter'])

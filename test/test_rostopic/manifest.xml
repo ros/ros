@@ -11,6 +11,7 @@
   <depend package="roslib"/>
   <depend package="rospy"/>
   <depend package="rostest"/>
+  <depend package="rosgraph_msgs"/>
 
   <depend package="test_ros"/>
   <platform os="ubuntu" version="9.04"/>

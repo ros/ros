@@ -4,7 +4,6 @@ include(CheckIncludeFile)
 include(CheckFunctionExists)
 include(CheckCXXSourceCompiles)
 rosbuild_init()
-rosbuild_genmsg()
 
 # To get system info used in time library
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

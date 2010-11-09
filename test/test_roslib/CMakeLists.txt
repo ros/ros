@@ -11,7 +11,6 @@ rosbuild_add_pyunit(test/test_roslib_genpy.py)
 rosbuild_add_pyunit(test/test_roslib_gentools.py)
 rosbuild_add_pyunit(test/test_roslib_manifest.py)
 rosbuild_add_pyunit(test/test_roslib_manifestlib.py)
-rosbuild_add_pyunit(test/test_roslib_masterapi_offline.py)
 rosbuild_add_pyunit(test/test_roslib_message.py)
 rosbuild_add_pyunit(test/test_roslib_msgs.py)
 rosbuild_add_pyunit(test/test_roslib_os_detect.py)
@@ -28,7 +27,6 @@ rosbuild_add_pyunit(test/test_roslib_substitution_args.py)
 rosbuild_add_pyunit(test/test_roslib_xmlrpc.py)
  
 #integration tests
-rosbuild_add_rostest(test/masterapi.test)
 
 rosbuild_add_boost_directories()
 rosbuild_add_gtest(test/utest test/utest.cpp)

@@ -52,7 +52,7 @@ import roslib.packages
 import roslib.srvs 
 
 # name of the Header type as gentools knows it
-_header_type_name = 'roslib/Header'
+_header_type_name = 'std_msgs/Header'
 
 def _add_msgs_depends(spec, deps, package_context):
     """

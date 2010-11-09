@@ -264,8 +264,9 @@ def check_type(field_name, field_type, field_val):
             check_type(field_name+"[]", base_type, v)
     else:
         if isinstance(field_val, Message):
-            if field_val._type == 'roslib/Header':
-                if field_type not in ['Header', 'roslib/Header']:
+            # roslib/Header is the old location of Header. We check it for backwards compat
+            if field_val._type in ['std_msgs/Header', 'roslib/Header']:
+                if field_type not in ['Header', 'std_msgs/Header', 'roslib/Header']:
                     raise SerializationError("field %s must be a Header instead of a %s"%(field_name, field_val._type))
             elif field_val._type != field_type:
                 raise SerializationError("field %s must be of type %s instead of %s"%(field_name, field_type, field_val._type))

@@ -164,7 +164,7 @@ class Special:
             return None
         
 _SPECIAL_TYPES = {
-    roslib.msgs.HEADER:   Special('roslib.msg._Header.Header()',         None,   'import roslib.msg'),
+    roslib.msgs.HEADER:   Special('std_msgs.msg._Header.Header()',     None, 'import std_msgs.msg'),
     roslib.msgs.TIME:     Special('roslib.rostime.Time()',     '%s.canon()', 'import roslib.rostime'),
     roslib.msgs.DURATION: Special('roslib.rostime.Duration()', '%s.canon()', 'import roslib.rostime'), 
     }
@@ -340,7 +340,7 @@ def compute_import(package, type_):
     # important: have to do is_builtin check first. We do this check
     # against the unresolved type builtins/specials are never
     # relative. This requires some special handling for Header, which has
-    # two names (Header and roslib/Header).
+    # two names (Header and std_msgs/Header).
     if roslib.msgs.is_builtin(orig_base_type) or \
            roslib.msgs.is_header_type(orig_base_type):
         # of the builtin types, only special types require import
@@ -1128,8 +1128,8 @@ def _gen_dyn_modify_references(py_text, types):
         py_text = py_text.replace('class %s('%base_type, 'class %s('%gen_name)
         # - super() references for __init__
         py_text = py_text.replace('super(%s,'%base_type, 'super(%s,'%gen_name)
-    # roslib/Header also has to be rewritten to be a local reference
-    py_text = py_text.replace('roslib.msg._Header.Header', _gen_dyn_name('roslib', 'Header'))
+    # std_msgs/Header also has to be rewritten to be a local reference
+    py_text = py_text.replace('std_msgs.msg._Header.Header', _gen_dyn_name('std_msgs', 'Header'))
     return py_text
 
 def generate_dynamic(core_type, msg_cat):

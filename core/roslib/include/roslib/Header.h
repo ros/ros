@@ -47,16 +47,16 @@ struct Header_ : public ros::Message
 private:
   static const char* __s_getDataType_() { return "roslib/Header"; }
 public:
-  ROSCPP_DEPRECATED static const std::string __s_getDataType() { return __s_getDataType_(); }
+   static const std::string __s_getDataType() { return __s_getDataType_(); }
 
-  ROSCPP_DEPRECATED const std::string __getDataType() const { return __s_getDataType_(); }
+   const std::string __getDataType() const { return __s_getDataType_(); }
 
 private:
   static const char* __s_getMD5Sum_() { return "2176decaecbce78abc3b96ef049fabed"; }
 public:
-  ROSCPP_DEPRECATED static const std::string __s_getMD5Sum() { return __s_getMD5Sum_(); }
+   static const std::string __s_getMD5Sum() { return __s_getMD5Sum_(); }
 
-  ROSCPP_DEPRECATED const std::string __getMD5Sum() const { return __s_getMD5Sum_(); }
+   const std::string __getMD5Sum() const { return __s_getMD5Sum_(); }
 
 private:
   static const char* __s_getMessageDefinition_() { return "# Standard metadata for higher-level stamped data types.\n\
@@ -77,11 +77,11 @@ string frame_id\n\
 \n\
 "; }
 public:
-  ROSCPP_DEPRECATED static const std::string __s_getMessageDefinition() { return __s_getMessageDefinition_(); }
+   static const std::string __s_getMessageDefinition() { return __s_getMessageDefinition_(); }
 
-  ROSCPP_DEPRECATED const std::string __getMessageDefinition() const { return __s_getMessageDefinition_(); }
+   const std::string __getMessageDefinition() const { return __s_getMessageDefinition_(); }
 
-  ROSCPP_DEPRECATED virtual uint8_t *serialize(uint8_t *write_ptr, uint32_t seq) const
+   virtual uint8_t *serialize(uint8_t *write_ptr, uint32_t seq) const
   {
     ros::serialization::OStream stream(write_ptr, 1000000000);
     ros::serialization::serialize(stream, seq);
@@ -90,7 +90,7 @@ public:
     return stream.getData();
   }
 
-  ROSCPP_DEPRECATED virtual uint8_t *deserialize(uint8_t *read_ptr)
+   virtual uint8_t *deserialize(uint8_t *read_ptr)
   {
     ros::serialization::IStream stream(read_ptr, 1000000000);
     ros::serialization::deserialize(stream, seq);
@@ -99,7 +99,7 @@ public:
     return stream.getData();
   }
 
-  ROSCPP_DEPRECATED virtual uint32_t serializationLength() const
+   virtual uint32_t serializationLength() const
   {
     uint32_t size = 0;
     size += ros::serialization::serializationLength(seq);

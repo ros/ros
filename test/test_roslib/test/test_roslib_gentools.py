@@ -87,7 +87,7 @@ class TestGentools(unittest.TestCase):
         return compute_md5_text(get_deps_dict, spec)
 
     def test_compute_md5_text(self):
-        from roslib.msg import Header
+        from std_msgs.msg import Header
         Header_md5 = Header._md5sum
         roslib_msg_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'msg')
         clock_msg = os.path.join(roslib_msg_dir, 'Clock.msg')

@@ -61,9 +61,9 @@ class MsgSpecTest(unittest.TestCase):
       self.assertEquals(t, resolve_type(t, 'test_roslib'))
       
     self.assertEquals('foo/string', resolve_type('foo/string', 'test_roslib'))
-    self.assertEquals('roslib/Header', resolve_type('Header', 'roslib'))
-    self.assertEquals('roslib/Header', resolve_type('roslib/Header', 'roslib'))
-    self.assertEquals('roslib/Header', resolve_type('Header', 'stereo_msgs'))
+    self.assertEquals('std_msgs/Header', resolve_type('Header', 'roslib'))
+    self.assertEquals('std_msgs/Header', resolve_type('std_msgs/Header', 'roslib'))
+    self.assertEquals('std_msgs/Header', resolve_type('Header', 'stereo_msgs'))
     self.assertEquals('std_msgs/String', resolve_type('String', 'std_msgs'))    
     self.assertEquals('std_msgs/String', resolve_type('std_msgs/String', 'std_msgs'))
     self.assertEquals('std_msgs/String', resolve_type('std_msgs/String', 'test_roslib'))    

@@ -87,11 +87,11 @@ class TestGenpy(unittest.TestCase):
         from roslib.genpy import get_special
         self.assertEquals('import roslib.rostime', get_special('time').import_str)
         self.assertEquals('import roslib.rostime', get_special('duration').import_str)
-        self.assertEquals('import roslib.msg', get_special('Header').import_str)
+        self.assertEquals('import std_msgs.msg', get_special('Header').import_str)
 
         self.assertEquals('roslib.rostime.Time()', get_special('time').constructor)
         self.assertEquals('roslib.rostime.Duration()', get_special('duration').constructor)
-        self.assertEquals('roslib.msg._Header.Header()', get_special('Header').constructor)
+        self.assertEquals('std_msgs.msg._Header.Header()', get_special('Header').constructor)
 
         self.assertEquals('self.foo.canon()', get_special('time').get_post_deserialize('self.foo'))
         self.assertEquals('bar.canon()', get_special('time').get_post_deserialize('bar'))
@@ -197,11 +197,11 @@ class TestGenpy(unittest.TestCase):
         # builtin specials
         self.assertEquals('roslib.rostime.Time()', default_value('time', 'roslib'))
         self.assertEquals('roslib.rostime.Duration()', default_value('duration', 'roslib'))
-        self.assertEquals('roslib.msg._Header.Header()', default_value('Header', 'roslib'))
+        self.assertEquals('std_msgs.msg._Header.Header()', default_value('Header', 'roslib'))
 
         self.assertEquals('roslib.rostime.Time()', default_value('time', 'std_msgs'))
         self.assertEquals('roslib.rostime.Duration()', default_value('duration', 'std_msgs'))
-        self.assertEquals('roslib.msg._Header.Header()', default_value('Header', 'std_msgs'))
+        self.assertEquals('std_msgs.msg._Header.Header()', default_value('Header', 'std_msgs'))
 
         # generic instances
         # - unregistered type
@@ -316,11 +316,10 @@ class TestGenpy(unittest.TestCase):
         # builtin specials
         self.assertEquals('roslib.rostime.Time()', compute_constructor('roslib', 'time'))
         self.assertEquals('roslib.rostime.Duration()', compute_constructor('roslib', 'duration'))
-        self.assertEquals('roslib.msg._Header.Header()', compute_constructor('roslib', 'Header'))
+        self.assertEquals('std_msgs.msg._Header.Header()', compute_constructor('std_msgs', 'Header'))
 
         self.assertEquals('roslib.rostime.Time()', compute_constructor('std_msgs', 'time'))
         self.assertEquals('roslib.rostime.Duration()', compute_constructor('std_msgs', 'duration'))
-        self.assertEquals('roslib.msg._Header.Header()', compute_constructor('std_msgs', 'Header'))
 
         # generic instances
         # - unregistered type
@@ -374,7 +373,7 @@ probot_msgs/JointState[] configuration
 probot_msgs/JointState[] goal
 
 ================================================================================
-MSG: roslib/Header
+MSG: std_msgs/Header
 #Standard metadata for higher-level flow data types
 #sequence ID: consecutively increasing ID 
 uint32 seq
@@ -413,12 +412,12 @@ float64 commanded_effort
 byte is_calibrated
 
 """)
-        self.assertEquals(set(['gd_msgs/MoveArmState', 'probot_msgs/JointState', 'probot_msgs/ControllerStatus', 'roslib/Header']),
+        self.assertEquals(set(['gd_msgs/MoveArmState', 'probot_msgs/JointState', 'probot_msgs/ControllerStatus', 'std_msgs/Header']),
                           set(msgs.keys()))
         import roslib.rostime
         import time
-        m_instance1 = msgs['roslib/Header']() # make sure default constructor works
-        m_instance2 = msgs['roslib/Header'](stamp=roslib.rostime.Time.from_seconds(time.time()), frame_id='foo-%s'%time.time(), seq=12391)
+        m_instance1 = msgs['std_msgs/Header']() # make sure default constructor works
+        m_instance2 = msgs['std_msgs/Header'](stamp=roslib.rostime.Time.from_seconds(time.time()), frame_id='foo-%s'%time.time(), seq=12391)
         self._test_ser_deser(m_instance2, m_instance1)
 
         m_instance1 = msgs['probot_msgs/ControllerStatus']()
@@ -440,7 +439,7 @@ byte is_calibrated
         for i in range(0, 10):
             config.append(js(position=time.time(), velocity=time.time(), applied_effort=time.time(), commanded_effort=time.time(), is_calibrated=2))
             goal.append(js(position=time.time(), velocity=time.time(), applied_effort=time.time(), commanded_effort=time.time(), is_calibrated=2))
-        m_instance2 = msgs['gd_msgs/MoveArmState'](header=msgs['roslib/Header'](),
+        m_instance2 = msgs['gd_msgs/MoveArmState'](header=msgs['std_msgs/Header'](),
                                                    status=msgs['probot_msgs/ControllerStatus'](),
                                                    configuration=config, goal=goal)
         self._test_ser_deser(m_instance2, m_instance1)

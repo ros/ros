@@ -46,7 +46,7 @@ from roslib.rosenv import ROS_ROOT, ROS_MASTER_URI, ROS_HOSTNAME, ROS_NAMESPACE,
 # dictionaries, but the rospy codebase isn't quite in shape for that
 # yet
 
-from roslib.msg import Header
+from std_msgs.msg import Header
 
 from .client import spin, myargv, init_node, \
     get_published_topics, \

@@ -9,7 +9,7 @@
   <review status="Doc reviewed" notes="2010/01/12"/>
   <url>http://ros.org/wiki/roslib</url>
   <export>
-    <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lroslib"/>
+    <cpp cflags="-I${prefix}/msg_gen/cpp/include -I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lroslib"/>
     <rosdoc config="${prefix}/rosdoc.yaml" />
   </export>
   <depend package="rospack"/>

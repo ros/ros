@@ -11,6 +11,7 @@ roslaunch is a tool for easily launching multiple ROS <a href="http://ros.org/wi
   <depend package="roslib"/>
   <depend package="rosclean"/>
   <depend package="rosgraph"/>
+  <depend package="rosgraph_msgs"/>
   <depend package="rospy"/>
   <depend package="rosmaster"/>  
   <depend package="rosout"/>

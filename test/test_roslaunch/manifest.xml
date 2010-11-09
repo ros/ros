@@ -10,6 +10,7 @@
   <review status="na" notes="tests"/>
   <url>http://ros.org/wiki/roslaunch</url>
   <depend package="roslib"/>
+  <depend package="rosgraph_msgs"/>
   <depend package="rospy"/>
   <depend package="rostest"/>
   <depend package="roslaunch"/>

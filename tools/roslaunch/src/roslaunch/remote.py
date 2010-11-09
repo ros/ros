@@ -50,11 +50,7 @@ import roslaunch.launch
 import roslaunch.server #ROSLaunchParentNode hidden dep
 from roslaunch.core import RLException, setup_env, is_machine_local, printerrlog
 
-#For using Log message level constants
-from roslib.msg import Log
-
 _CHILD_REGISTER_TIMEOUT = 10.0 #seconds
-
     
 class ROSRemoteRunner(roslaunch.launch.ROSRemoteRunnerIF):
     """

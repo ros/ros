@@ -67,7 +67,7 @@ from roslaunch.core import RLException, \
      add_printlog_handler, add_printerrlog_handler, printlog, printerrlog, printlog_bold
 
 #For using Log message level constants
-from roslib.msg import Log
+from rosgraph_msgs.msg import Log
 
 # interface class so that we don't have circular deps
 class ChildROSLaunchProcess(Process):

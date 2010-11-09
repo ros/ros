@@ -64,11 +64,12 @@ import rospy.impl.simtime
 TIMEOUT_READY = 15.0 #seconds
 
 # log level constants
-DEBUG = roslib.msg.Log.DEBUG
-INFO = roslib.msg.Log.INFO
-WARN = roslib.msg.Log.WARN
-ERROR = roslib.msg.Log.ERROR
-FATAL = roslib.msg.Log.FATAL
+from rosgraph_msgs.msg import Log
+DEBUG = Log.DEBUG
+INFO = Log.INFO
+WARN = Log.WARN
+ERROR = Log.ERROR
+FATAL = Log.FATAL
 
 _rospy_to_logging_levels = {
     DEBUG: logging.DEBUG,

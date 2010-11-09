@@ -127,7 +127,7 @@ def init_log_handlers():
     if _loggers_initialized:
         return
 
-    from roslib.msg import Log
+    from rosgraph_msgs.msg import Log
     
     # client logger
     clogger = logging.getLogger("rosout")

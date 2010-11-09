@@ -48,7 +48,6 @@ import types
 import urlparse
 import xmlrpclib
 
-import roslib.msg
 import roslib.rosenv 
 import roslib.roslogging
 
@@ -56,6 +55,8 @@ import rospy.exceptions
 
 from rospy.names import *
 from rospy.impl.validators import ParameterInvalid
+
+from rosgraph_msgs.msg import Log
 
 _logger = logging.getLogger("rospy.core")
 
@@ -133,21 +134,21 @@ def rospywarn(msg, *args):
 def add_log_handler(level, h):
     """
     Add handler for specified level
-    @param level: log level (use constants from roslib.msg.Log)
+    @param level: log level (use constants from Log)
     @type  level: int
     @param h: log message handler
     @type  h: fn
     @raise ROSInternalException: if level is invalid
     """
-    if level == roslib.msg.Log.DEBUG:
+    if level == Log.DEBUG:
         _logdebug_handlers.append(h)
-    elif level == roslib.msg.Log.INFO:
+    elif level == Log.INFO:
         _loginfo_handlers.append(h)
-    elif level == roslib.msg.Log.WARN:
+    elif level == Log.WARN:
         _logwarn_handlers.append(h)
-    elif level == roslib.msg.Log.ERROR:
+    elif level == Log.ERROR:
         _logerr_handlers.append(h)
-    elif level == roslib.msg.Log.FATAL:
+    elif level == Log.FATAL:
         _logfatal_handlers.append(h)
     else:
         raise rospy.exceptions.ROSInternalException("invalid log level: %s"%level)

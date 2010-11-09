@@ -238,7 +238,7 @@ class TestRoslaunchServer(unittest.TestCase):
         self.assertEquals(listeners, h.listeners)
         self._test_ROSLaunchBaseHandler(h)
 
-        from roslib.msg import Log
+        from rosgraph_msgs.msg import Log
         h.log('client-1', Log.FATAL, "message")
         h.log('client-1', Log.ERROR, "message")
         h.log('client-1', Log.DEBUG, "message")        

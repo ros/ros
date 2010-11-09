@@ -72,12 +72,12 @@ class TestRospyCore(unittest.TestCase):
     def test_add_log_handler(self):
         # tripwire test
         import rospy.core
-        import roslib.msg
-        for level in [roslib.msg.Log.DEBUG, 
-                      roslib.msg.Log.INFO,
-                      roslib.msg.Log.WARN,
-                      roslib.msg.Log.ERROR,
-                      roslib.msg.Log.FATAL]:
+        from rosgraph_msgs.msg import Log
+        for level in [Log.DEBUG, 
+                      Log.INFO,
+                      Log.WARN,
+                      Log.ERROR,
+                      Log.FATAL]:
             rospy.core.add_log_handler(level, lambda x: x)
         import rospy.exceptions
         try:

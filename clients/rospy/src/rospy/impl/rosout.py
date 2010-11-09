@@ -48,7 +48,7 @@ from rospy.rostime import Time
 from rospy.impl.registration import get_topic_manager
 
 #Log message for rosout
-import roslib.msg
+from rosgraph_msgs.msg import Log
 
 _ROSOUT = '/rosout'
 _rosout_pub = None
@@ -59,7 +59,7 @@ def init_rosout():
         global _rosout_pub
         if _rosout_pub is None:
             logger.info("initializing %s core topic"%_ROSOUT)
-            _rosout_pub = Publisher(_ROSOUT, roslib.msg.Log, latch=True)
+            _rosout_pub = Publisher(_ROSOUT, Log, latch=True)
             logger.info("connected to core topic %s"%_ROSOUT)
         return True
     except Exception, e:
@@ -78,7 +78,7 @@ def _rosout(level, msg):
                     _in_rosout = True
                     msg = str(msg)
                     topics = get_topic_manager().get_topics()
-                    l = roslib.msg.Log(level=level, name=str(rospy.names.get_caller_id()), msg=str(msg), topics=topics)
+                    l = Log(level=level, name=str(rospy.names.get_caller_id()), msg=str(msg), topics=topics)
                     l.header.stamp = Time.now()
                     _rosout_pub.publish(l)
                 finally:
@@ -91,26 +91,26 @@ def _rosout(level, msg):
         return False
 
 def _rosout_debug(msg):
-    _rosout(roslib.msg.Log.DEBUG, msg)
+    _rosout(Log.DEBUG, msg)
 def _rosout_info(msg):
-    _rosout(roslib.msg.Log.INFO, msg)
+    _rosout(Log.INFO, msg)
 def _rosout_warn(msg):
-    _rosout(roslib.msg.Log.WARN, msg)
+    _rosout(Log.WARN, msg)
 def _rosout_error(msg):
-    _rosout(roslib.msg.Log.ERROR, msg)
+    _rosout(Log.ERROR, msg)
 def _rosout_fatal(msg):
-    _rosout(roslib.msg.Log.FATAL, msg)
+    _rosout(Log.FATAL, msg)
 
 ## Load loggers for publishing to /rosout
-## @param level int: roslib.msg.Log level. Loggers >= level will be loaded.
+## @param level int: Log level. Loggers >= level will be loaded.
 def load_rosout_handlers(level):
-    if roslib.msg.Log.DEBUG >= level:
-        add_log_handler(roslib.msg.Log.DEBUG, _rosout_debug)
-    if roslib.msg.Log.INFO >= level:
-        add_log_handler(roslib.msg.Log.INFO, _rosout_info)
-    if roslib.msg.Log.WARN >= level:
-        add_log_handler(roslib.msg.Log.WARN, _rosout_warn)
-    if roslib.msg.Log.ERROR >= level:
-        add_log_handler(roslib.msg.Log.ERROR, _rosout_error)
-    if roslib.msg.Log.FATAL >= level:
-        add_log_handler(roslib.msg.Log.FATAL, _rosout_fatal)
+    if Log.DEBUG >= level:
+        add_log_handler(Log.DEBUG, _rosout_debug)
+    if Log.INFO >= level:
+        add_log_handler(Log.INFO, _rosout_info)
+    if Log.WARN >= level:
+        add_log_handler(Log.WARN, _rosout_warn)
+    if Log.ERROR >= level:
+        add_log_handler(Log.ERROR, _rosout_error)
+    if Log.FATAL >= level:
+        add_log_handler(Log.FATAL, _rosout_fatal)

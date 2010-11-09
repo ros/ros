@@ -1206,8 +1206,8 @@ def _rostopic_cmd_pub(argv):
                       help="publish one message and exit")
     parser.add_option("-f", '--file', dest="file", metavar='FILE', default=None,
                       help="read args from YAML file (Bagy)")
-    parser.add_option("-p", '--param', dest="parameter", metavar='/PARAM', default=None,
-                      help="read args from ROS parameter (Bagy format)")
+    #parser.add_option("-p", '--param', dest="parameter", metavar='/PARAM', default=None,
+    #                  help="read args from ROS parameter (Bagy format)")
 
     (options, args) = parser.parse_args(args)
     if options.rate is not None:
@@ -1227,8 +1227,9 @@ def _rostopic_cmd_pub(argv):
         parser.error("/topic must be specified")
     if len(args) == 1:
         parser.error("topic type must be specified")
-    if len(args) > 2 and options.parameter:
-        parser.error("args confict with -p setting")        
+    if 0:
+        if len(args) > 2 and options.parameter:
+            parser.error("args confict with -p setting")        
     if len(args) > 2 and options.file:
         parser.error("args confict with -f setting")        
     topic_name, topic_type = args[0], args[1]
@@ -1254,7 +1255,7 @@ def _rostopic_cmd_pub(argv):
     if options.file:
         pub_args = [_load_bagy_msg(options.file)]
         
-    if options.parameter:
+    if 0 and options.parameter:
         param_name = roslib.scriptutil.script_resolve_name('rostopic', options.parameter)
         if options.once:
             param_publish_once(pub, msg_class, param_name, rate, options.verbose)

@@ -40,6 +40,8 @@
 #include <boost/shared_ptr.hpp>
 #include <ros/time.h>
 
+#include <ros/message_traits.h>
+
 namespace message_filters
 {
 

@@ -73,7 +73,7 @@ class Player
     };
 
 public:
-    ROSCPP_DEPRECATED Player(double time_scale=1.0) //time_scale_(time_scale)
+    ROS_DEPRECATED Player(double time_scale=1.0) //time_scale_(time_scale)
     {
         translator_.setTimeScale(time_scale);
     }

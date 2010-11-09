@@ -44,8 +44,8 @@
 
 #include "ros/message.h"
 
-#undef ROSCPP_DEPRECATED
-#define ROSCPP_DEPRECATED
+#undef ROS_DEPRECATED
+#define ROS_DEPRECATED
 #define IGNORE_ROSRECORD_DEPRECATED
 #include "rosrecord/Recorder.h"
 

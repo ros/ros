@@ -9,7 +9,6 @@ std_msgs contains common message types representing primitive data types and oth
   <review status="Doc reviewed" notes="2010-01-10"/>
   <url>http://www.ros.org/wiki/std_msgs</url>
   <depend package="roslib"/>
-  <depend package="rosconsole"/>
   <export>
     <cpp cflags="-I${prefix}/include"/>
   </export>

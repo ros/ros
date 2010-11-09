@@ -49,8 +49,8 @@
 
 // We know this is deprecated..
 #define IGNORE_ROSRECORD_DEPRECATED
-#undef ROSCPP_DEPRECATED
-#define ROSCPP_DEPRECATED
+#undef ROS_DEPRECATED
+#define ROS_DEPRECATED
 #include "rosrecord/Player.h"
 
 class RosPlay

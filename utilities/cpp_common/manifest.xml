@@ -1,0 +1,18 @@
+<package>
+  <description brief="cpp_common">
+
+     cpp_common
+
+  </description>
+  <author>Josh Faust</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/cpp_common</url>
+  
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lcpp_common"/>
+  </export>
+
+</package>
+
+

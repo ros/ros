@@ -39,7 +39,7 @@
 #include <boost/function.hpp>
 
 #include <ros/time.h>
-#include "macros.h"
+#include <ros/macros.h>
 #include "exceptions.h"
 
 namespace ros

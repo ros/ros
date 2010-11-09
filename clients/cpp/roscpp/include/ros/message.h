@@ -28,7 +28,7 @@
 #ifndef ROSCPP_MESSAGE_H
 #define ROSCPP_MESSAGE_H
 
-#include "macros.h"
+#include "ros/macros.h"
 #include "ros/assert.h"
 #include <string>
 #include <string.h>
@@ -44,7 +44,7 @@ namespace ros
 typedef std::map<std::string, std::string> M_string;
 
 /**
- * \brief Base-class for all roscpp messages
+ * \deprecated This base-class is deprecated in favor of a template-based serialization and traits system
  */
 class Message
 {

@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2009, Willow Garage, Inc.
  *
@@ -26,55 +25,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STD_MSGS_TRAIT_MACROS_H
-#define STD_MSGS_TRAIT_MACROS_H
+#ifndef ROSLIB_SERIALIZED_MESSAGE_H
+#define ROSLIB_SERIALIZED_MESSAGE_H
 
-#define STD_MSGS_DEFINE_BUILTIN_TRAITS(builtin, msg, static_md5sum1, static_md5sum2) \
-  namespace ros \
-  { \
-  namespace message_traits \
-  { \
-    \
-    template<> struct MD5Sum<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return MD5Sum<std_msgs::msg>::value(); \
-      } \
-      \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-    template<> struct DataType<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return DataType<std_msgs::msg>::value(); \
-      } \
-     \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-    template<> struct Definition<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return Definition<std_msgs::msg>::value(); \
-      } \
-      \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-  } \
-  }
+#include "ros/types.h"
 
-#endif // STD_MSGS_TRAIT_MACROS_H
+#include <boost/shared_array.hpp>
+#include <boost/shared_ptr.hpp>
+
+namespace ros
+{
+
+class SerializedMessage
+{
+public:
+  boost::shared_array<uint8_t> buf;
+  size_t num_bytes;
+  uint8_t* message_start;
+
+  boost::shared_ptr<void const> message;
+  const std::type_info* type_info;
+
+  SerializedMessage()
+  : buf(boost::shared_array<uint8_t>())
+  , num_bytes(0)
+  , message_start(0)
+  , type_info(0)
+  {}
+
+  SerializedMessage(boost::shared_array<uint8_t> buf, size_t num_bytes)
+  : buf(buf)
+  , num_bytes(num_bytes)
+  , message_start(buf ? buf.get() : 0)
+  , type_info(0)
+  { }
+};
+
+} // namespace ros
+
+#endif // ROSLIB_SERIALIZED_MESSAGE_H

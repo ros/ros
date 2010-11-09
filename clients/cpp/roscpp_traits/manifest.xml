@@ -1,0 +1,20 @@
+<package>
+  <description brief="roscpp_traits">
+
+     roscpp_traits
+
+  </description>
+  <author>Josh Faust</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/roscpp_traits</url>
+  
+  <depend package="cpp_common"/>
+
+  <export>
+    <cpp cflags="-I${prefix}/include"/>
+  </export>
+
+</package>
+
+

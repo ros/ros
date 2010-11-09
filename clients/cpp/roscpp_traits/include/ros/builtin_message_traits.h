@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2009, Willow Garage, Inc.
  *
@@ -26,55 +25,39 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STD_MSGS_TRAIT_MACROS_H
-#define STD_MSGS_TRAIT_MACROS_H
+#ifndef ROSLIB_BUILTIN_MESSAGE_TRAITS_H
+#define ROSLIB_BUILTIN_MESSAGE_TRAITS_H
 
-#define STD_MSGS_DEFINE_BUILTIN_TRAITS(builtin, msg, static_md5sum1, static_md5sum2) \
-  namespace ros \
-  { \
-  namespace message_traits \
-  { \
-    \
-    template<> struct MD5Sum<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return MD5Sum<std_msgs::msg>::value(); \
-      } \
-      \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-    template<> struct DataType<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return DataType<std_msgs::msg>::value(); \
-      } \
-     \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-    template<> struct Definition<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return Definition<std_msgs::msg>::value(); \
-      } \
-      \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-  } \
-  }
+#include "message_traits.h"
+#include "ros/time.h"
 
-#endif // STD_MSGS_TRAIT_MACROS_H
+namespace ros
+{
+namespace message_traits
+{
+
+#define ROSLIB_CREATE_SIMPLE_TRAITS(Type) \
+    template<> struct IsSimple<Type> : public TrueType {}; \
+    template<> struct IsFixedSize<Type> : public TrueType {};
+
+ROSLIB_CREATE_SIMPLE_TRAITS(uint8_t);
+ROSLIB_CREATE_SIMPLE_TRAITS(int8_t);
+ROSLIB_CREATE_SIMPLE_TRAITS(uint16_t);
+ROSLIB_CREATE_SIMPLE_TRAITS(int16_t);
+ROSLIB_CREATE_SIMPLE_TRAITS(uint32_t);
+ROSLIB_CREATE_SIMPLE_TRAITS(int32_t);
+ROSLIB_CREATE_SIMPLE_TRAITS(uint64_t);
+ROSLIB_CREATE_SIMPLE_TRAITS(int64_t);
+ROSLIB_CREATE_SIMPLE_TRAITS(float);
+ROSLIB_CREATE_SIMPLE_TRAITS(double);
+ROSLIB_CREATE_SIMPLE_TRAITS(Time);
+ROSLIB_CREATE_SIMPLE_TRAITS(Duration);
+
+// because std::vector<bool> is not a true vector, bool is not a simple type
+template<> struct IsFixedSize<bool> : public TrueType {};
+
+} // namespace message_traits
+} // namespace ros
+
+#endif // ROSLIB_BUILTIN_MESSAGE_TRAITS_H
+

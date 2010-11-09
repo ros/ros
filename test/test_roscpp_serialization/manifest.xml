@@ -8,8 +8,8 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/test_roscpp_serialization</url>
   <depend package="roscpp"/>
-  <depend package="roslib"/>
   <depend package="std_msgs"/>
+  <depend package="rosgraph_msgs"/>
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>

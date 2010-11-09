@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008, Willow Garage, Inc.
+ * Copyright (C) 2009, Willow Garage, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -8,7 +8,7 @@
  *   * Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- *   * Neither the names of Willow Garage, Inc. nor the names of its
+ *   * Neither the names of Stanford University or Willow Garage, Inc. nor the names of its
  *     contributors may be used to endorse or promote products derived from
  *     this software without specific prior written permission.
  *
@@ -25,18 +25,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ROSCPP_MACROS_H
-#define ROSCPP_MACROS_H
+#ifndef ROSLIB_DEBUG_H
+#define ROSLIB_DEBUG_H
 
-#if defined(__GNUC__)
-#define ROSCPP_DEPRECATED __attribute__((deprecated))
-#define ROSCPP_FORCEINLINE __attribute__((always_inline))
-#elif defined(MSVC)
-#define ROSCPP_DEPRECATED
-#define ROSCPP_FORCEINLINE __forceinline
-#else
-#define ROSCPP_DEPRECATED
-#define ROSCPP_FORCEINLINE
-#endif
+#include <string>
+#include <vector>
+
+namespace ros
+{
+
+namespace debug
+{
+typedef std::vector<void*> V_void;
+typedef std::vector<std::string> V_string;
+
+std::string getBacktrace();
+std::string backtraceToString(const V_void& addresses);
+void getBacktrace(V_void& addresses);
+void translateAddresses(const V_void& addresses, V_string& lines);
+void demangleBacktrace(const V_string& names, V_string& demangled);
+std::string demangleBacktrace(const V_string& names);
+std::string demangleName(const std::string& name);
+}
+
+}
 
 #endif

@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2009, Willow Garage, Inc.
  *
@@ -26,55 +25,37 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STD_MSGS_TRAIT_MACROS_H
-#define STD_MSGS_TRAIT_MACROS_H
+#ifndef ROSLIB_MESSAGE_FORWARD_H
+#define ROSLIB_MESSAGE_FORWARD_H
 
-#define STD_MSGS_DEFINE_BUILTIN_TRAITS(builtin, msg, static_md5sum1, static_md5sum2) \
-  namespace ros \
-  { \
-  namespace message_traits \
-  { \
-    \
-    template<> struct MD5Sum<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return MD5Sum<std_msgs::msg>::value(); \
-      } \
-      \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-    template<> struct DataType<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return DataType<std_msgs::msg>::value(); \
-      } \
-     \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-    template<> struct Definition<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return Definition<std_msgs::msg>::value(); \
-      } \
-      \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-  } \
-  }
+namespace std
+{
+template<typename T> class allocator;
+}
 
-#endif // STD_MSGS_TRAIT_MACROS_H
+namespace boost
+{
+template<typename T> class shared_ptr;
+}
+
+/**
+ * \brief Forward-declare a message, including Ptr and ConstPtr types, with an allocator
+ *
+ * \param ns The namespace the message should be declared inside
+ * \param m The "base" message type, i.e. the name of the .msg file
+ * \param new_name The name you'd like the message to have
+ * \param alloc The allocator to use, e.g. std::allocator
+ */
+#define ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(msg, new_name, alloc) \
+  template<class Allocator> struct msg##_; \
+  typedef msg##_<alloc<void> > new_name; \
+  typedef boost::shared_ptr<new_name> new_name##Ptr; \
+  typedef boost::shared_ptr<new_name const> new_name##ConstPtr;
+
+/**
+ * \brief Forward-declare a message, including Ptr and ConstPtr types, using std::allocator
+ * \param msg The "base" message type, i.e. the name of the .msg file
+ */
+#define ROS_DECLARE_MESSAGE(msg) ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(msg, msg, std::allocator)
+
+#endif // ROSLIB_MESSAGE_FORWARD_H

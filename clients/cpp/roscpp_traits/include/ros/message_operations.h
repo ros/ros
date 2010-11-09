@@ -1,6 +1,5 @@
-
 /*
- * Copyright (C) 2009, Willow Garage, Inc.
+ * Copyright (C) 2010, Willow Garage, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -26,55 +25,50 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STD_MSGS_TRAIT_MACROS_H
-#define STD_MSGS_TRAIT_MACROS_H
+#ifndef ROSLIB_MESSAGE_OPERATIONS_H
+#define ROSLIB_MESSAGE_OPERATIONS_H
 
-#define STD_MSGS_DEFINE_BUILTIN_TRAITS(builtin, msg, static_md5sum1, static_md5sum2) \
-  namespace ros \
-  { \
-  namespace message_traits \
-  { \
-    \
-    template<> struct MD5Sum<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return MD5Sum<std_msgs::msg>::value(); \
-      } \
-      \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-    template<> struct DataType<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return DataType<std_msgs::msg>::value(); \
-      } \
-     \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-    template<> struct Definition<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return Definition<std_msgs::msg>::value(); \
-      } \
-      \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-  } \
+#include <ostream>
+
+namespace ros
+{
+namespace message_operations
+{
+
+template<typename M>
+struct Printer
+{
+  template<typename Stream>
+  static void stream(Stream& s, const std::string& indent, const M& value)
+  {
+    s << value << "\n";
   }
+};
 
-#endif // STD_MSGS_TRAIT_MACROS_H
+// Explicitly specialize for uint8_t/int8_t because otherwise it thinks it's a char, and treats
+// the value as a character code
+template<>
+struct Printer<int8_t>
+{
+  template<typename Stream>
+  static void stream(Stream& s, const std::string& indent, int8_t value)
+  {
+    s << (uint32_t)value << "\n";
+  }
+};
+
+template<>
+struct Printer<uint8_t>
+{
+  template<typename Stream>
+  static void stream(Stream& s, const std::string& indent, uint8_t value)
+  {
+    s << (uint32_t)value << "\n";
+  }
+};
+
+} // namespace message_operations
+} // namespace ros
+
+#endif // ROSLIB_MESSAGE_OPERATIONS_H
+

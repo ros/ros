@@ -453,33 +453,33 @@ def write_deprecated_member_functions(s, spec, traits):
     """
     for field in spec.parsed_fields():
         if (field.is_array):
-            s.write('  ROSCPP_DEPRECATED uint32_t get_%s_size() const { return (uint32_t)%s.size(); }\n'%(field.name, field.name))
+            s.write('  ROS_DEPRECATED uint32_t get_%s_size() const { return (uint32_t)%s.size(); }\n'%(field.name, field.name))
             
             if (field.array_len is None):
-                s.write('  ROSCPP_DEPRECATED void set_%s_size(uint32_t size) { %s.resize((size_t)size); }\n'%(field.name, field.name))
-                s.write('  ROSCPP_DEPRECATED void get_%s_vec(%s& vec) const { vec = this->%s; }\n'%(field.name, msg_type_to_cpp(field.type), field.name))
-                s.write('  ROSCPP_DEPRECATED void set_%s_vec(const %s& vec) { this->%s = vec; }\n'%(field.name, msg_type_to_cpp(field.type), field.name))
+                s.write('  ROS_DEPRECATED void set_%s_size(uint32_t size) { %s.resize((size_t)size); }\n'%(field.name, field.name))
+                s.write('  ROS_DEPRECATED void get_%s_vec(%s& vec) const { vec = this->%s; }\n'%(field.name, msg_type_to_cpp(field.type), field.name))
+                s.write('  ROS_DEPRECATED void set_%s_vec(const %s& vec) { this->%s = vec; }\n'%(field.name, msg_type_to_cpp(field.type), field.name))
     
     for k, v in traits.iteritems():
         s.write('private:\n')
         s.write('  static const char* __s_get%s_() { return "%s"; }\n'%(k, v))
         s.write('public:\n')
-        s.write('  ROSCPP_DEPRECATED static const std::string __s_get%s() { return __s_get%s_(); }\n\n'%(k, k))
-        s.write('  ROSCPP_DEPRECATED const std::string __get%s() const { return __s_get%s_(); }\n\n'%(k, k))
+        s.write('  ROS_DEPRECATED static const std::string __s_get%s() { return __s_get%s_(); }\n\n'%(k, k))
+        s.write('  ROS_DEPRECATED const std::string __get%s() const { return __s_get%s_(); }\n\n'%(k, k))
     
-    s.write('  ROSCPP_DEPRECATED virtual uint8_t *serialize(uint8_t *write_ptr, uint32_t seq) const\n  {\n')
+    s.write('  ROS_DEPRECATED virtual uint8_t *serialize(uint8_t *write_ptr, uint32_t seq) const\n  {\n')
     s.write('    ros::serialization::OStream stream(write_ptr, 1000000000);\n')
     for field in spec.parsed_fields():
         s.write('    ros::serialization::serialize(stream, %s);\n'%(field.name))
     s.write('    return stream.getData();\n  }\n\n')
     
-    s.write('  ROSCPP_DEPRECATED virtual uint8_t *deserialize(uint8_t *read_ptr)\n  {\n')
+    s.write('  ROS_DEPRECATED virtual uint8_t *deserialize(uint8_t *read_ptr)\n  {\n')
     s.write('    ros::serialization::IStream stream(read_ptr, 1000000000);\n');
     for field in spec.parsed_fields():
         s.write('    ros::serialization::deserialize(stream, %s);\n'%(field.name))
     s.write('    return stream.getData();\n  }\n\n')
     
-    s.write('  ROSCPP_DEPRECATED virtual uint32_t serializationLength() const\n  {\n')
+    s.write('  ROS_DEPRECATED virtual uint32_t serializationLength() const\n  {\n')
     s.write('    uint32_t size = 0;\n');
     for field in spec.parsed_fields():
         s.write('    size += ros::serialization::serializationLength(%s);\n'%(field.name))

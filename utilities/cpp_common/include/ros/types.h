@@ -1,7 +1,6 @@
-
 /*
- * Copyright (C) 2009, Willow Garage, Inc.
- *
+ * Copyright (C) 2008, Morgan Quigley and Willow Garage, Inc.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *   * Redistributions of source code must retain the above copyright notice,
@@ -9,7 +8,7 @@
  *   * Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- *   * Neither the names of Willow Garage, Inc. nor the names of its
+ *   * Neither the names of Stanford University or Willow Garage, Inc. nor the names of its
  *     contributors may be used to endorse or promote products derived from
  *     this software without specific prior written permission.
  *
@@ -26,55 +25,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STD_MSGS_TRAIT_MACROS_H
-#define STD_MSGS_TRAIT_MACROS_H
+#ifndef ROSCPP_TYPES_H
+#define ROSCPP_TYPES_H
 
-#define STD_MSGS_DEFINE_BUILTIN_TRAITS(builtin, msg, static_md5sum1, static_md5sum2) \
-  namespace ros \
-  { \
-  namespace message_traits \
-  { \
-    \
-    template<> struct MD5Sum<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return MD5Sum<std_msgs::msg>::value(); \
-      } \
-      \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-    template<> struct DataType<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return DataType<std_msgs::msg>::value(); \
-      } \
-     \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-    template<> struct Definition<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return Definition<std_msgs::msg>::value(); \
-      } \
-      \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-  } \
-  }
+// this is just for interoperability with visual studio, where the standard
+// integer types are not defined.
 
-#endif // STD_MSGS_TRAIT_MACROS_H
+#ifndef _MSC_VER
+  #include <stdint.h>
+#else
+  typedef          __int64  int64_t;
+  typedef unsigned __int64 uint64_t;
+  typedef          __int32  int32_t;
+  typedef unsigned __int32 uint32_t;
+  typedef          __int16  int16_t;
+  typedef unsigned __int16 uint16_t;
+  typedef          __int8    int8_t;
+  typedef unsigned __int8   uint8_t;
+#endif
+
+
+#endif // ROSCPP_TYPES_H

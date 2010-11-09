@@ -48,8 +48,8 @@
 #include "std_msgs/Empty.h"
 
 // We know this is deprecated..
-#undef ROSCPP_DEPRECATED
-#define ROSCPP_DEPRECATED
+#undef ROS_DEPRECATED
+#define ROS_DEPRECATED
 #define IGNORE_ROSRECORD_DEPRECATED
 #include "rosrecord/Recorder.h"
 

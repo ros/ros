@@ -1,6 +1,5 @@
-
 /*
- * Copyright (C) 2009, Willow Garage, Inc.
+ * Copyright (C) 2010, Willow Garage, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -26,55 +25,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STD_MSGS_TRAIT_MACROS_H
-#define STD_MSGS_TRAIT_MACROS_H
+#ifndef ROSLIB_MACROS_H
+#define ROSLIB_MACROS_H
 
-#define STD_MSGS_DEFINE_BUILTIN_TRAITS(builtin, msg, static_md5sum1, static_md5sum2) \
-  namespace ros \
-  { \
-  namespace message_traits \
-  { \
-    \
-    template<> struct MD5Sum<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return MD5Sum<std_msgs::msg>::value(); \
-      } \
-      \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-    template<> struct DataType<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return DataType<std_msgs::msg>::value(); \
-      } \
-     \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-    template<> struct Definition<builtin> \
-    { \
-      static const char* value() \
-      { \
-        return Definition<std_msgs::msg>::value(); \
-      } \
-      \
-      static const char* value(const builtin&) \
-      { \
-        return value(); \
-      } \
-    }; \
-    \
-  } \
-  }
+#if defined(__GNUC__)
+#define ROS_DEPRECATED __attribute__((deprecated))
+#define ROS_FORCE_INLINE __attribute__((always_inline))
+#elif defined(MSVC)
+#define ROS_DEPRECATED
+#define ROS_FORCE_INLINE __forceinline
+#else
+#define ROS_DEPRECATED
+#define ROS_FORCE_INLINE inline
+#endif
 
-#endif // STD_MSGS_TRAIT_MACROS_H
+#endif
+

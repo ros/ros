@@ -35,7 +35,7 @@
 
 #include <gtest/gtest.h>
 #include <ros/static_assert.h>
-#include <roslib/Header.h>
+#include <std_msgs/Header.h>
 #include "test_roscpp_serialization/helpers.h"
 
 using namespace ros;
@@ -393,7 +393,7 @@ struct WithHeader
   WithHeader()
   {}
 
-  roslib::Header header;
+  std_msgs::Header header;
 };
 
 // Class without a header, used to ensure message_traits::header(m) return NULL

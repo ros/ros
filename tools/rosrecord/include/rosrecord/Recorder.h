@@ -62,7 +62,7 @@ typedef unsigned long long pos_t;
 class Recorder
 {
 public:
-  ROSCPP_DEPRECATED Recorder();
+  ROS_DEPRECATED Recorder();
   virtual ~Recorder();
 
   bool open(const std::string& file_name, bool random_access=false);

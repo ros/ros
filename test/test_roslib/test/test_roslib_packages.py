@@ -186,7 +186,7 @@ class RoslibPackagesTest(unittest.TestCase):
     self.assertEquals(set(roslib_rosdeps), set(x['roslib']))
 
     # ROSDEPS
-    deps = set(rosconsole_rosdeps + roslib_rosdeps)
+    deps = set(roslib_rosdeps)
     p = 'std_msgs'
     x = rp.rosdeps([p])
     self.assertEquals([p], x.keys())

@@ -61,7 +61,7 @@ def configure_logging(test_name):
 
 def rosunitmain():
     from optparse import OptionParser
-    parser = OptionParser(usage="usage: %prog [options] <file> <test-name>", prog=_NAME)
+    parser = OptionParser(usage="usage: %prog [options] <file>", prog=_NAME)
     parser.add_option("-t", "--text",
                       action="store_true", dest="text_mode", default=False,
                       help="Run with stdout output instead of XML output")

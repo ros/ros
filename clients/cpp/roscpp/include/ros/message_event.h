@@ -56,7 +56,7 @@ struct DefaultMessageCreator
 };
 
 template<typename M>
-inline boost::shared_ptr<M> defaultMessageCreateFunction()
+ROS_DEPRECATED inline boost::shared_ptr<M> defaultMessageCreateFunction()
 {
   return DefaultMessageCreator<M>()();
 }

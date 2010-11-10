@@ -175,7 +175,7 @@ def fixbag2(migrator, inbag, outbag):
 def clean_name(name, top_name):
     name_split = name.split('/')
     try:
-        name_split.remove('roslib')
+        name_split.remove('std_msgs')
     except ValueError:
         pass
     try:
@@ -201,7 +201,7 @@ def qualified_name(name, top_name):
     if len(tmp_name.split('/')) == 2 or (roslib.msgs.is_builtin(tmp_name)):
         return tmp_name
     elif tmp_name == 'Header':
-        return 'roslib/Header'
+        return 'std_msgs/Header'
     else:
         return top_name.split('/')[0] + '/' + tmp_name
 
@@ -320,9 +320,9 @@ class MessageUpdateRule(object):
                 rules = [sn.rule for sn in path]
                 self.sub_rules.extend(rules)
 
-            if False in [r.valid for r in rules]:
-#                print >> sys.stderr, "WARNING: Within rule [%s] cannot migrate from subtype [%s] to [%s].."%(
-#                    self.location, t1, t2)
+            if False in [r.valid for r in self.sub_rules]:
+                print >> sys.stderr, "WARNING: Within rule [%s] cannot migrate from subtype [%s] to [%s].."%(
+                    self.location, t1, t2)
                 self.sub_rules_valid = False
                 continue
         self.sub_rules = self.migrator.filter_rules_unique(self.sub_rules)
@@ -339,7 +339,7 @@ class MessageUpdateRule(object):
             try:
                 return self.new_types[t]
             except KeyError:                
-                return self.new_types['roslib/' + t]
+                return self.new_types['std_msgs/' + t]
         except KeyError:
             return self.new_types[self.new_type.split('/')[0] + '/' + t]
 
@@ -354,7 +354,7 @@ class MessageUpdateRule(object):
             try:
                 return self.old_types[t]
             except KeyError:                
-                return self.old_types['roslib/' + t]
+                return self.old_types['std_msgs/' + t]
         except KeyError:
             return self.old_types[self.old_type.split('/')[0] + '/' + t]
 

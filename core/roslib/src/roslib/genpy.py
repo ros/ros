@@ -1091,10 +1091,14 @@ def msg_generator(package, name, spec):
 ################################################################################
 # dynamic generation of deserializer
 
-## @param dep_msg str: text of dependent .msg definition
-## @return str, MsgSpec: type name, message spec
-## @raise MsgGenerationException if dep_msg is improperly formatted
 def _generate_dynamic_specs(specs, dep_msg):
+    """
+    @param dep_msg: text of dependent .msg definition
+    @type  dep_msg: str
+    @return: type name, message spec
+    @rtype: str, MsgSpec
+    @raise MsgGenerationException: if dep_msg is improperly formatted
+    """
     line1 = dep_msg.find('\n')
     msg_line = dep_msg[:line1]
     if not msg_line.startswith("MSG: "):
@@ -1104,17 +1108,26 @@ def _generate_dynamic_specs(specs, dep_msg):
     dep_spec = roslib.msgs.load_from_string(dep_msg[line1+1:], dep_pkg)
     return dep_type, dep_spec
     
-## Modify pkg/base_type name so that it can safely co-exist with
-## statically generated files.
-## @return str: name to use for pkg/base_type for dynamically generated message class. 
 def _gen_dyn_name(pkg, base_type):
+    """
+    Modify pkg/base_type name so that it can safely co-exist with
+    statically generated files.
+    
+    @return: name to use for pkg/base_type for dynamically generated message class. 
+    @rtype: str
+    """
     return "_%s__%s"%(pkg, base_type)
 
-## Modify the generated code to rewrite names such that the code can
-## safely co-exist with messages of the same name.
-## @param py_text str: genmsg_py-generated Python source code
-## @return str: updated text
 def _gen_dyn_modify_references(py_text, types):
+    """
+    Modify the generated code to rewrite names such that the code can
+    safely co-exist with messages of the same name.
+    
+    @param py_text: genmsg_py-generated Python source code
+    @type  py_text: str
+    @return: updated text
+    @rtype: str
+    """
     for t in types:
         pkg, base_type = roslib.names.package_resource_name(t)
         gen_name = _gen_dyn_name(pkg, base_type)
@@ -1143,6 +1156,12 @@ def generate_dynamic(core_type, msg_cat):
     """
     core_pkg, core_base_type = roslib.names.package_resource_name(core_type)
     
+    # REP 100: pretty gross hack to deal with the fact that we moved
+    # Header. Header is 'special' because it can be used w/o a package
+    # name, so the lookup rules end up failing. We are committed to
+    # never changing std_msgs/Header, so this is generally fine.
+    msg_cat = msg_cat.replace('roslib/Header', 'std_msgs/Header')
+
     # separate msg_cat into the core message and dependencies
     splits = msg_cat.split('\n'+'='*80+'\n')
     core_msg = splits[0]

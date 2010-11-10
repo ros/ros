@@ -36,7 +36,7 @@ import sys
 import unittest
 
 import roslib.rostime
-import rostest
+import rosunit
 
 class RostimeTest(unittest.TestCase):
   
@@ -436,5 +436,5 @@ class RostimeTest(unittest.TestCase):
       self.assert_(abs(v.to_nsec()) < 100)                  
       
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_rostime', RostimeTest, coverage_packages=['roslib.rostime'])
+  rosunit.unitrun('test_roslib', 'test_rostime', RostimeTest, coverage_packages=['roslib.rostime'])
 

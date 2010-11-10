@@ -36,7 +36,7 @@ import sys
 import unittest
 
 import roslib.names
-import rostest
+import rosunit
 
 class ParamsTest(unittest.TestCase):
   
@@ -57,5 +57,5 @@ class ParamsTest(unittest.TestCase):
     
 
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_params', ParamsTest, coverage_packages=['roslib.params'])
+  rosunit.unitrun('test_roslib', 'test_params', ParamsTest, coverage_packages=['roslib.params'])
 

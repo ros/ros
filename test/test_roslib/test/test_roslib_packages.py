@@ -38,7 +38,7 @@ import unittest
 
 import roslib.rosenv
 import roslib.packages
-import rostest
+import rosunit
 
 
 class RoslibPackagesTest(unittest.TestCase):
@@ -140,19 +140,19 @@ class RoslibPackagesTest(unittest.TestCase):
     # DEPENDS1
     x = rp.depends1(['test_roslib'])
     self.assertEquals(['test_roslib'], x.keys())
-    self.assertEquals(set(['roslib', 'rostest', 'std_msgs', 'std_srvs']), set(x['test_roslib']))
+    self.assertEquals(set(['roslib', 'rosunit', 'std_msgs', 'std_srvs']), set(x['test_roslib']))
     x = rp.depends1(['test_rospack'])
     self.assertEquals(['test_rospack'], x.keys())
-    self.assertEquals(set(['rospack', 'rostest']), set(x['test_rospack']))
+    self.assertEquals(set(['rospack', 'rosunit']), set(x['test_rospack']))
     # uncache
     rp = ROSPackages()
     x = rp.depends1(['test_roslib', 'test_rospack'])    
     self.assertEquals(set(['test_rospack', 'test_roslib']), set(x.keys()))
-    self.assertEquals(set(['rospack', 'rostest']), set(x['test_rospack']))
-    self.assertEquals(set(['roslib', 'rostest', 'std_msgs', 'std_srvs']), set(x['test_roslib']))
+    self.assertEquals(set(['rospack', 'rosunit']), set(x['test_rospack']))
+    self.assertEquals(set(['roslib', 'rosunit', 'std_msgs', 'std_srvs']), set(x['test_roslib']))
 
     # DEPENDS
-    test_roslib_depends = ['rospack', 'roslib', 'rosclean', 'rosgraph', 'roslang', 'rospy', 'rosmaster', 'xmlrpcpp', 'rosconsole', 'roscpp', 'rosout', 'roslaunch', 'rostest', 'std_msgs', 'std_srvs', 'rosgraph_msgs', 'rosunit', 'roscpp_serialization', 'rostime', 'cpp_common', 'roscpp_traits']
+    test_roslib_depends = ['rospack', 'roslib', 'rosunit', 'std_msgs', 'std_srvs']
     x = rp.depends(['test_roslib'])
     self.assertEquals(['test_roslib'], x.keys())
     s1 = set(test_roslib_depends)
@@ -262,5 +262,5 @@ class RoslibPackagesTest(unittest.TestCase):
     
     
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_packages', RoslibPackagesTest, coverage_packages=['roslib.packages'])
+  rosunit.unitrun('test_roslib', 'test_packages', RoslibPackagesTest, coverage_packages=['roslib.packages'])
 

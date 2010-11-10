@@ -36,7 +36,7 @@ import sys
 import unittest
 
 import roslib.rosenv
-import rostest
+import rosunit
 
 class EnvTest(unittest.TestCase):
   
@@ -189,5 +189,5 @@ class EnvTest(unittest.TestCase):
     self.failIf(on_ros_path(os.tempnam()))
     
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_env', EnvTest, coverage_packages=['roslib.rosenv'])
+  rosunit.unitrun('test_roslib', 'test_env', EnvTest, coverage_packages=['roslib.rosenv'])
 

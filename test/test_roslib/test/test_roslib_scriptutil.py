@@ -36,7 +36,7 @@ import struct
 import sys
 import unittest
 
-import rostest
+import rosunit
 
 class RoslibScriptutilTest(unittest.TestCase):
   
@@ -63,5 +63,5 @@ class RoslibScriptutilTest(unittest.TestCase):
             self.assertEquals(v, roslib.scriptutil.is_interactive())
         
 if __name__ == '__main__':
-    rostest.unitrun('test_roslib', 'test_scriptutil', RoslibScriptutilTest, coverage_packages=['roslib.scriptutil'])
+    rosunit.unitrun('test_roslib', 'test_scriptutil', RoslibScriptutilTest, coverage_packages=['roslib.scriptutil'])
 

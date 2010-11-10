@@ -36,7 +36,7 @@ import sys
 import unittest
 
 import roslib.names
-import rostest
+import rosunit
 
 class NamesTest(unittest.TestCase):
   
@@ -354,5 +354,5 @@ class NamesTest(unittest.TestCase):
           self.assertEquals(v, resolve_name(name, node_name))
 
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_names', NamesTest, coverage_packages=['roslib.names'])
+  rosunit.unitrun('test_roslib', 'test_names', NamesTest, coverage_packages=['roslib.names'])
 

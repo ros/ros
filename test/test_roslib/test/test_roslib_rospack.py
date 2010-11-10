@@ -36,7 +36,7 @@ import struct
 import sys
 import unittest
 
-import rostest
+import rosunit
 
 class RoslibRospackTest(unittest.TestCase):
   
@@ -69,5 +69,5 @@ class RoslibRospackTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_rospack', RoslibRospackTest, coverage_packages=['roslib.rospack'])
+  rosunit.unitrun('test_roslib', 'test_rospack', RoslibRospackTest, coverage_packages=['roslib.rospack'])
 

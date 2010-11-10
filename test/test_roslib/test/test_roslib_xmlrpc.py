@@ -36,7 +36,7 @@ import struct
 import sys
 import unittest
 
-import rostest
+import rosunit
 
 class RoslibXmlrpcTest(unittest.TestCase):
   
@@ -67,5 +67,5 @@ class RoslibXmlrpcTest(unittest.TestCase):
 
     
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_xmlrpc', RoslibXmlrpcTest, coverage_packages=['roslib.xmlrpc'])
+  rosunit.unitrun('test_roslib', 'test_xmlrpc', RoslibXmlrpcTest, coverage_packages=['roslib.xmlrpc'])
 

@@ -37,7 +37,7 @@ import sys
 import unittest
 
 import roslib.network
-import rostest
+import rosunit
 
 class MockSock(object):
   def __init__(self, data=''):
@@ -243,5 +243,5 @@ class NetworkTest(unittest.TestCase):
       os.environ['ROS_IP'] = self._ros_ip
     
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_network', NetworkTest, coverage_packages=['roslib.network'])
+  rosunit.unitrun('test_roslib', 'test_network', NetworkTest, coverage_packages=['roslib.network'])
 

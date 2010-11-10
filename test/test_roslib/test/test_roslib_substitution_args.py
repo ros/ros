@@ -35,7 +35,7 @@ import os
 import sys
 import unittest
 
-import rostest
+import rosunit
 
 class SubArgsTest(unittest.TestCase):
   
@@ -166,5 +166,5 @@ class SubArgsTest(unittest.TestCase):
             except SubstitutionException: pass
 
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_substitution_args', SubArgsTest, coverage_packages=['roslib.substitution_args'])
+  rosunit.unitrun('test_roslib', 'test_substitution_args', SubArgsTest, coverage_packages=['roslib.substitution_args'])
 

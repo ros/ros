@@ -39,7 +39,7 @@ import unittest
 
 import roslib.rosenv
 import roslib.os_detect
-import rostest
+import rosunit
 
 class test_OS(roslib.os_detect.OSBase):
   def check_presence(self):
@@ -146,5 +146,5 @@ class RoslibOsDetectTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_os_detect', RoslibOsDetectTest, coverage_packages=['roslib.os_detect'])
+  rosunit.unitrun('test_roslib', 'test_os_detect', RoslibOsDetectTest, coverage_packages=['roslib.os_detect'])
 

@@ -38,7 +38,7 @@ import unittest
 
 import roslib.rosenv
 import roslib.stacks
-import rostest
+import rosunit
 
 class RoslibStacksTest(unittest.TestCase):
   
@@ -196,5 +196,5 @@ class RoslibStacksTest(unittest.TestCase):
             self.assert_(c in valid, "expected [%s] to be in ros expansion"%c)
       
 if __name__ == '__main__':
-    rostest.unitrun('test_roslib', 'test_stacks', RoslibStacksTest, coverage_packages=['roslib.stacks'])
+    rosunit.unitrun('test_roslib', 'test_stacks', RoslibStacksTest, coverage_packages=['roslib.stacks'])
 

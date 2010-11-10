@@ -36,7 +36,7 @@ import sys
 import unittest
 
 import roslib.msgs
-import rostest
+import rosunit
 
 class MsgSpecTest(unittest.TestCase):
   
@@ -336,5 +336,5 @@ class MsgSpecTest(unittest.TestCase):
     
 
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_msgspec', MsgSpecTest, coverage_packages=['roslib.msgs'])
+  rosunit.unitrun('test_roslib', 'test_msgspec', MsgSpecTest, coverage_packages=['roslib.msgs'])
 

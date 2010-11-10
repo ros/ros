@@ -38,7 +38,7 @@ import unittest
 import traceback
 
 import roslib.message
-import rostest
+import rosunit
 
 # Not much to test, just tripwires
 
@@ -560,5 +560,5 @@ d:
         self.assertEquals(std_srvs.srv.Empty, get_service_class('std_srvs/Empty'))    
 
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_message', MessageTest, coverage_packages=['roslib.message'])
+  rosunit.unitrun('test_roslib', 'test_message', MessageTest, coverage_packages=['roslib.message'])
 

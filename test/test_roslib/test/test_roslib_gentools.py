@@ -44,7 +44,7 @@ import cStringIO
         
 import roslib.names
 import roslib.packages
-import rostest
+import rosunit
 
 class TestGentools(unittest.TestCase):
 
@@ -131,4 +131,4 @@ class TestGentools(unittest.TestCase):
             self.assertEquals(len(md5s), len(files))
     
 if __name__ == '__main__':
-    rostest.unitrun('test_roslib', NAME, TestGentools, sys.argv, coverage_packages=['roslib.gentools'])
+    rosunit.unitrun('test_roslib', NAME, TestGentools, sys.argv, coverage_packages=['roslib.gentools'])

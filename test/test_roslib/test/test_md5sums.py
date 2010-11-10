@@ -36,7 +36,7 @@
 import roslib; roslib.load_manifest('test_roslib')
 
 import unittest
-import rostest
+import rosunit
 from test_roslib.msg import *
 
 
@@ -55,4 +55,4 @@ class TestMd5sums(unittest.TestCase):
         self.assertEquals(TypeNameChangeComplex1._md5sum, TypeNameChangeComplex2._md5sum)
 
 if __name__ == '__main__':
-    rostest.unitrun('test_roslib', 'test_md5sums', TestMd5sums, coverage_packages=[])
+    rosunit.unitrun('test_roslib', 'test_md5sums', TestMd5sums, coverage_packages=[])

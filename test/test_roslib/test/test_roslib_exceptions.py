@@ -36,7 +36,7 @@ import struct
 import sys
 import unittest
 
-import rostest
+import rosunit
 
 class RoslibExceptionsTest(unittest.TestCase):
   
@@ -45,5 +45,5 @@ class RoslibExceptionsTest(unittest.TestCase):
     self.assert_(isinstance(ROSLibException(), Exception))
     
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_exceptions', RoslibExceptionsTest, coverage_packages=['roslib.exceptions'])
+  rosunit.unitrun('test_roslib', 'test_exceptions', RoslibExceptionsTest, coverage_packages=['roslib.exceptions'])
 

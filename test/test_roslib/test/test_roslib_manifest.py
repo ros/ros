@@ -36,7 +36,7 @@ import struct
 import sys
 import unittest
 
-import rostest
+import rosunit
 
 class RoslibManifestTest(unittest.TestCase):
   
@@ -172,5 +172,5 @@ with other stuff</license>
     
     
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_manifest', RoslibManifestTest, coverage_packages=['roslib.manifest', 'roslib.manifestlib'])  
+  rosunit.unitrun('test_roslib', 'test_manifest', RoslibManifestTest, coverage_packages=['roslib.manifest', 'roslib.manifestlib'])  
 

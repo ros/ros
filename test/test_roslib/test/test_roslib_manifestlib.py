@@ -36,7 +36,7 @@ import struct
 import sys
 import unittest
 
-import rostest
+import rosunit
 
 class RoslibManifestlibTest(unittest.TestCase):
   
@@ -296,5 +296,5 @@ STACK_INVALID2 = """<stack>
 
     
 if __name__ == '__main__':
-  rostest.unitrun('test_roslib', 'test_manifest', RoslibManifestlibTest, coverage_packages=['roslib.manifestlib'])  
+  rosunit.unitrun('test_roslib', 'test_manifest', RoslibManifestlibTest, coverage_packages=['roslib.manifestlib'])  
 

@@ -36,12 +36,12 @@ import struct
 import sys
 import unittest
 
-import rostest
+import rosunit
 
 class RoslibTest(unittest.TestCase):
   
     def test_load_manifest(self):
-        # this is a bit of a noop as it's a prerequisite of running with rostest
+        # this is a bit of a noop as it's a prerequisite of running with rosunit
         import roslib
         roslib.load_manifest('test_roslib')
         
@@ -57,5 +57,5 @@ class RoslibTest(unittest.TestCase):
             self.assertEquals(v, roslib.scriptutil.is_interactive())
         
 if __name__ == '__main__':
-    rostest.unitrun('test_roslib', 'test_roslib_module', RoslibTest, coverage_packages=['roslib'])
+    rosunit.unitrun('test_roslib', 'test_roslib_module', RoslibTest, coverage_packages=['roslib'])
 

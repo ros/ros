@@ -704,5 +704,5 @@ class RosstackTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    import rostest
-    rostest.unitrun(PKG, 'rospack_exe_process', RosstackTestCase)
+    import rosunit
+    rosunit.unitrun(PKG, 'rospack_exe_process', RosstackTestCase)

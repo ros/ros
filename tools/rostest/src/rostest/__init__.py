@@ -42,7 +42,7 @@ Python unittests with additional reporting mechanisms and rosbuild
 
 import sys
 
-XML_OUTPUT_FLAG='--gtest_output=xml:' #use gtest-compatible flag
+XML_OUTPUT_FLAG = '--gtest_output=xml:' #use gtest-compatible flag
 
 def is_subscriber(topic, subscriber_id):
     """

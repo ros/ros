@@ -41,7 +41,7 @@ import unittest
 import cStringIO
 import time
         
-import rostest
+import rosunit
 
 # NOTE: roslib.genpy is in the roslib package to prevent circular
 # dependencies on messages in the roslib package
@@ -500,4 +500,4 @@ var_name = str[start:end]"""
         self.assertEquals(val, '\n'.join(g))
 
 if __name__ == '__main__':
-    rostest.unitrun('test_roslib', NAME, TestGenpy, sys.argv, coverage_packages=['roslib.genpy'])
+    rosunit.unitrun('test_roslib', NAME, TestGenpy, sys.argv, coverage_packages=['roslib.genpy'])

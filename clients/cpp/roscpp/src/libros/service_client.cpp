@@ -144,6 +144,12 @@ bool ServiceClient::call(const SerializedMessage& req, SerializedMessage& resp, 
   bool ret = link->call(req, resp);
   link.reset();
 
+  // If we're shutting down but the node haven't finished yet, wait until we do
+  while (ros::isShuttingDown() && ros::ok())
+  {
+    ros::WallDuration(0.001).sleep();
+  }
+
   return ret;
 }
 

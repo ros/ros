@@ -28,6 +28,9 @@
 #ifndef ROSCPP_SERVICE_TRAITS_H
 #define ROSCPP_SERVICE_TRAITS_H
 
+#include <boost/type_traits/remove_reference.hpp>
+#include <boost/type_traits/remove_const.hpp>
+
 namespace ros
 {
 namespace service_traits

@@ -1,156 +1,156 @@
-rosbuild_add_executable(handles handles.cpp)
+rosbuild_add_executable(handles EXCLUDE_FROM_ALL handles.cpp)
 rosbuild_add_gtest_build_flags(handles)
 
-rosbuild_add_executable(timer_callbacks timer_callbacks.cpp)
+rosbuild_add_executable(timer_callbacks EXCLUDE_FROM_ALL timer_callbacks.cpp)
 rosbuild_add_gtest_build_flags(timer_callbacks)
 
-rosbuild_add_executable(latching_publisher latching_publisher.cpp)
+rosbuild_add_executable(latching_publisher EXCLUDE_FROM_ALL latching_publisher.cpp)
 rosbuild_add_gtest_build_flags(latching_publisher)
 
-rosbuild_add_executable(publish_n_fast publish_n_fast.cpp)
+rosbuild_add_executable(publish_n_fast EXCLUDE_FROM_ALL publish_n_fast.cpp)
 rosbuild_declare_test(publish_n_fast)
 
-rosbuild_add_executable(subscribe_self subscribe_self.cpp)
+rosbuild_add_executable(subscribe_self EXCLUDE_FROM_ALL subscribe_self.cpp)
 rosbuild_add_gtest_build_flags(subscribe_self)
 
-rosbuild_add_executable(pub_sub pub_sub.cpp)
+rosbuild_add_executable(pub_sub EXCLUDE_FROM_ALL pub_sub.cpp)
 rosbuild_declare_test(pub_sub)
 
-rosbuild_add_executable(sub_pub sub_pub.cpp)
+rosbuild_add_executable(sub_pub EXCLUDE_FROM_ALL sub_pub.cpp)
 rosbuild_add_gtest_build_flags(sub_pub)
 
-rosbuild_add_executable(publish_empty publish_empty.cpp)
+rosbuild_add_executable(publish_empty EXCLUDE_FROM_ALL publish_empty.cpp)
 rosbuild_declare_test(publish_empty)
 
-rosbuild_add_executable(publish_onsub publish_onsub.cpp)
+rosbuild_add_executable(publish_onsub EXCLUDE_FROM_ALL publish_onsub.cpp)
 rosbuild_declare_test(publish_onsub)
 
-rosbuild_add_executable(subscribe_n_fast subscribe_n_fast.cpp)
+rosbuild_add_executable(subscribe_n_fast EXCLUDE_FROM_ALL subscribe_n_fast.cpp)
 rosbuild_add_gtest_build_flags(subscribe_n_fast)
 
-rosbuild_add_executable(subscribe_empty subscribe_empty.cpp)
+rosbuild_add_executable(subscribe_empty EXCLUDE_FROM_ALL subscribe_empty.cpp)
 rosbuild_add_gtest_build_flags(subscribe_empty)
 
-rosbuild_add_executable(subscribe_resubscribe subscribe_resubscribe.cpp)
+rosbuild_add_executable(subscribe_resubscribe EXCLUDE_FROM_ALL subscribe_resubscribe.cpp)
 rosbuild_add_gtest_build_flags(subscribe_resubscribe)
 
-rosbuild_add_executable(subscribe_unsubscribe subscribe_unsubscribe.cpp)
+rosbuild_add_executable(subscribe_unsubscribe EXCLUDE_FROM_ALL subscribe_unsubscribe.cpp)
 rosbuild_add_gtest_build_flags(subscribe_unsubscribe)
 
-rosbuild_add_executable(publish_unadvertise publish_unadvertise.cpp)
+rosbuild_add_executable(publish_unadvertise EXCLUDE_FROM_ALL publish_unadvertise.cpp)
 rosbuild_add_gtest_build_flags(publish_unadvertise)
 
-rosbuild_add_executable(subscribe_unsubscribe_repeatedly subscribe_unsubscribe_repeatedly.cpp)
+rosbuild_add_executable(subscribe_unsubscribe_repeatedly EXCLUDE_FROM_ALL subscribe_unsubscribe_repeatedly.cpp)
 rosbuild_declare_test(subscribe_unsubscribe_repeatedly)
 
-rosbuild_add_executable(publish_constantly publish_constantly.cpp)
+rosbuild_add_executable(publish_constantly EXCLUDE_FROM_ALL publish_constantly.cpp)
 rosbuild_declare_test(publish_constantly)
 
-rosbuild_add_executable(param_update_test param_update_test.cpp)
+rosbuild_add_executable(param_update_test EXCLUDE_FROM_ALL param_update_test.cpp)
 rosbuild_declare_test(param_update_test)
 
  
-rosbuild_add_executable(real_time_test real_time_test.cpp)
+rosbuild_add_executable(real_time_test EXCLUDE_FROM_ALL real_time_test.cpp)
 rosbuild_declare_test(real_time_test)
 rosbuild_add_gtest_build_flags(real_time_test)
 
-rosbuild_add_executable(sim_time_test sim_time_test.cpp)
+rosbuild_add_executable(sim_time_test EXCLUDE_FROM_ALL sim_time_test.cpp)
 rosbuild_declare_test(sim_time_test)
 rosbuild_add_gtest_build_flags(sim_time_test)
 
 # Call a service
-rosbuild_add_executable(service_adv service_adv.cpp)
+rosbuild_add_executable(service_adv EXCLUDE_FROM_ALL service_adv.cpp)
 rosbuild_declare_test(service_adv)
 
-rosbuild_add_executable(service_adv_unadv service_adv_unadv.cpp)
+rosbuild_add_executable(service_adv_unadv EXCLUDE_FROM_ALL service_adv_unadv.cpp)
 rosbuild_declare_test(service_adv_unadv)
 rosbuild_add_gtest_build_flags(service_adv_unadv)
 
-rosbuild_add_executable(service_call service_call.cpp)
+rosbuild_add_executable(service_call EXCLUDE_FROM_ALL service_call.cpp)
 rosbuild_add_gtest_build_flags(service_call)
 
-rosbuild_add_executable(service_call_repeatedly service_call_repeatedly.cpp)
+rosbuild_add_executable(service_call_repeatedly EXCLUDE_FROM_ALL service_call_repeatedly.cpp)
 rosbuild_declare_test(service_call_repeatedly)
 
 
 # Repeatedly call ros::init()
-rosbuild_add_executable(multiple_init_fini multiple_init_fini.cpp)
+rosbuild_add_executable(multiple_init_fini EXCLUDE_FROM_ALL multiple_init_fini.cpp)
 rosbuild_add_gtest_build_flags(multiple_init_fini)
 
 # Test node inspection functionality
-rosbuild_add_executable(inspection inspection.cpp)
+rosbuild_add_executable(inspection EXCLUDE_FROM_ALL inspection.cpp)
 rosbuild_add_gtest_build_flags(inspection)
 
 # Test logging functionality
-rosbuild_add_executable(log log.cpp)
+rosbuild_add_executable(log EXCLUDE_FROM_ALL log.cpp)
 rosbuild_add_gtest_build_flags(log)
 
 # Test that advertising a service multiple times fails
-rosbuild_add_executable(service_adv_multiple service_adv_multiple.cpp)
+rosbuild_add_executable(service_adv_multiple EXCLUDE_FROM_ALL service_adv_multiple.cpp)
 rosbuild_add_gtest_build_flags(service_adv_multiple)
 
 # Test that the second node to advertise a service "wins"
-rosbuild_add_executable(service_adv_a service_adv_a.cpp)
+rosbuild_add_executable(service_adv_a EXCLUDE_FROM_ALL service_adv_a.cpp)
 rosbuild_add_gtest_build_flags(service_adv_a)
 
-rosbuild_add_executable(service_wait_a_adv_b service_wait_a_adv_b.cpp)
+rosbuild_add_executable(service_wait_a_adv_b EXCLUDE_FROM_ALL service_wait_a_adv_b.cpp)
 rosbuild_add_gtest_build_flags(service_wait_a_adv_b)
 
-rosbuild_add_executable(service_call_expect_b service_call_expect_b.cpp)
+rosbuild_add_executable(service_call_expect_b EXCLUDE_FROM_ALL service_call_expect_b.cpp)
 rosbuild_add_gtest_build_flags(service_call_expect_b)
 
 # Test command-line name remapping
-rosbuild_add_executable(name_remapping name_remapping.cpp)
+rosbuild_add_executable(name_remapping EXCLUDE_FROM_ALL name_remapping.cpp)
 rosbuild_add_gtest_build_flags(name_remapping)
-rosbuild_add_executable(name_remapping_with_ns name_remapping_with_ns.cpp)
+rosbuild_add_executable(name_remapping_with_ns EXCLUDE_FROM_ALL name_remapping_with_ns.cpp)
 rosbuild_add_gtest_build_flags(name_remapping_with_ns)
 
 # Test namespaces
-rosbuild_add_executable(namespaces namespaces.cpp)
+rosbuild_add_executable(namespaces EXCLUDE_FROM_ALL namespaces.cpp)
 rosbuild_add_gtest_build_flags(namespaces)
 
 # Test params
-rosbuild_add_executable(params params.cpp)
+rosbuild_add_executable(params EXCLUDE_FROM_ALL params.cpp)
 rosbuild_add_gtest_build_flags(params)
 
 # Test getting information from the master
-rosbuild_add_executable(get_master_information get_master_information.cpp)
+rosbuild_add_executable(get_master_information EXCLUDE_FROM_ALL get_master_information.cpp)
 rosbuild_add_gtest_build_flags(get_master_information)
 
 # Test multiple subscriptions
-rosbuild_add_executable(multiple_subscriptions multiple_subscriptions.cpp)
+rosbuild_add_executable(multiple_subscriptions EXCLUDE_FROM_ALL multiple_subscriptions.cpp)
 rosbuild_add_gtest_build_flags(multiple_subscriptions)
 
-rosbuild_add_executable(check_master check_master.cpp)
+rosbuild_add_executable(check_master EXCLUDE_FROM_ALL check_master.cpp)
 rosbuild_add_gtest_build_flags(check_master)
 
-rosbuild_add_executable(wait_for_message wait_for_message.cpp)
+rosbuild_add_executable(wait_for_message EXCLUDE_FROM_ALL wait_for_message.cpp)
 rosbuild_add_gtest_build_flags(wait_for_message)
 
-rosbuild_add_executable(loads_of_publishers loads_of_publishers.cpp)
+rosbuild_add_executable(loads_of_publishers EXCLUDE_FROM_ALL loads_of_publishers.cpp)
 rosbuild_add_gtest_build_flags(loads_of_publishers)
 
-rosbuild_add_executable(incrementing_sequence incrementing_sequence.cpp)
+rosbuild_add_executable(incrementing_sequence EXCLUDE_FROM_ALL incrementing_sequence.cpp)
 rosbuild_add_gtest_build_flags(incrementing_sequence)
 
-rosbuild_add_executable(subscription_callback_types subscription_callback_types.cpp)
+rosbuild_add_executable(subscription_callback_types EXCLUDE_FROM_ALL subscription_callback_types.cpp)
 rosbuild_add_gtest_build_flags(subscription_callback_types)
 
-rosbuild_add_executable(service_callback_types service_callback_types.cpp)
+rosbuild_add_executable(service_callback_types EXCLUDE_FROM_ALL service_callback_types.cpp)
 rosbuild_add_gtest_build_flags(service_callback_types)
 
-rosbuild_add_executable(intraprocess_subscriptions intraprocess_subscriptions.cpp)
+rosbuild_add_executable(intraprocess_subscriptions EXCLUDE_FROM_ALL intraprocess_subscriptions.cpp)
 rosbuild_add_gtest_build_flags(intraprocess_subscriptions)
 
-rosbuild_add_executable(nonconst_subscriptions nonconst_subscriptions.cpp)
+rosbuild_add_executable(nonconst_subscriptions EXCLUDE_FROM_ALL nonconst_subscriptions.cpp)
 rosbuild_add_gtest_build_flags(nonconst_subscriptions)
 
-rosbuild_add_executable(subscribe_retry_tcp subscribe_retry_tcp.cpp)
+rosbuild_add_executable(subscribe_retry_tcp EXCLUDE_FROM_ALL subscribe_retry_tcp.cpp)
 rosbuild_add_gtest_build_flags(subscribe_retry_tcp)
 
-rosbuild_add_executable(subscribe_star subscribe_star.cpp)
+rosbuild_add_executable(subscribe_star EXCLUDE_FROM_ALL subscribe_star.cpp)
 rosbuild_add_gtest_build_flags(subscribe_star)
-rosbuild_add_executable(publisher_for_star_subscriber publisher_for_star_subscriber.cpp)
+rosbuild_add_executable(publisher_for_star_subscriber EXCLUDE_FROM_ALL publisher_for_star_subscriber.cpp)
 
-rosbuild_add_executable(parameter_validation parameter_validation.cpp)
+rosbuild_add_executable(parameter_validation EXCLUDE_FROM_ALL parameter_validation.cpp)
 rosbuild_add_gtest_build_flags(parameter_validation)

@@ -46,6 +46,8 @@
 #include <boost/mpl/or.hpp>
 #include <boost/mpl/not.hpp>
 
+#include <cstring>
+
 #define ROS_NEW_SERIALIZATION_API 1
 
 /**

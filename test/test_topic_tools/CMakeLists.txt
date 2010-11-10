@@ -11,9 +11,9 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
 rosbuild_init()
 
-rosbuild_add_gtest(test/utest test/utest.cpp)
+rosbuild_add_gtest(test/utest EXCLUDE_FROM_ALL test/utest.cpp)
 
-rosbuild_add_executable(test/test_shapeshifter test/test_shapeshifter.cpp)
+rosbuild_add_executable(test/test_shapeshifter EXCLUDE_FROM_ALL test/test_shapeshifter.cpp)
 rosbuild_add_gtest_build_flags(test/test_shapeshifter)
 
 rosbuild_add_rostest(test/shapeshifter.test)

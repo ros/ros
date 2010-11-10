@@ -42,8 +42,8 @@ namespace ros
 {
 
 class Message;
-class SubscribeOptions;
-class AdvertiseOptions;
+struct SubscribeOptions;
+struct AdvertiseOptions;
 
 class TopicManager;
 typedef boost::shared_ptr<TopicManager> TopicManagerPtr;

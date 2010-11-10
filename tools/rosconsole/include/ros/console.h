@@ -105,7 +105,7 @@ extern bool g_initialized;
  */
 void initialize();
 
-struct FilterBase;
+class FilterBase;
 /**
  * \brief Don't call this directly.  Use the ROS_LOG() macro instead.
  * @param level Logging level

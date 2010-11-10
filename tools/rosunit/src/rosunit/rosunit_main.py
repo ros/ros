@@ -61,7 +61,7 @@ def configure_logging(test_name):
 
 def rosunitmain():
     from optparse import OptionParser
-    parser = OptionParser(usage="usage: %prog [options] <file>", prog=_NAME)
+    parser = OptionParser(usage="usage: %prog [options] <file> [test args...]", prog=_NAME)
     parser.add_option("-t", "--text",
                       action="store_true", dest="text_mode", default=False,
                       help="Run with stdout output instead of XML output")
@@ -73,7 +73,7 @@ def rosunitmain():
                       help="Test name")
     (options, args) = parser.parse_args()
 
-    if len(args) != 1:
+    if len(args) < 1:
         parser.error("You must supply a test file.")
 
     test_file = args[0]
@@ -97,7 +97,7 @@ def rosunitmain():
         
         results = Result('rosunit', 0, 0, 0)
 
-        test_case = BareTestCase(test_file, [], \
+        test_case = BareTestCase(test_file, args[1:], \
                                      retry=0, time_limit=time_limit, \
                                      test_name=test_name)
         suite = unittest.TestSuite()

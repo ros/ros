@@ -66,18 +66,21 @@ namespace message_traits
   struct MD5Sum<Msg>
   {
     static const char* value() { return "MsgMD5Sum"; }
+    static const char* value(const Msg&) { return "MsgMD5Sum"; }
   };
 
   template<>
   struct DataType<Msg>
   {
     static const char* value() { return "test_roscpp/MsgDataType"; }
+    static const char* value(const Msg&) { return "test_roscpp/MsgDataType"; }
   };
 
   template<>
   struct Definition<Msg>
   {
     static const char* value() { return ""; }
+    static const char* value(const Msg&) { return ""; }
   };
 } // namespace message_traits
 
@@ -130,18 +133,21 @@ namespace message_traits
   struct MD5Sum<Msg2>
   {
     static const char* value() { return "MsgMD5Sum"; }
+    static const char* value(const Msg2&) { return "MsgMD5Sum"; }
   };
 
   template<>
   struct DataType<Msg2>
   {
     static const char* value() { return "test_roscpp/MsgDataType"; }
+    static const char* value(const Msg2&) { return "test_roscpp/MsgDataType"; }
   };
 
   template<>
   struct Definition<Msg2>
   {
     static const char* value() { return ""; }
+    static const char* value(const Msg2&) { return ""; }
   };
 } // namespace message_traits
 

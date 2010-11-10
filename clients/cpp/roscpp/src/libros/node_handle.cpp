@@ -269,7 +269,7 @@ Publisher NodeHandle::advertise(AdvertiseOptions& ops)
 
   if (TopicManager::instance()->advertise(ops, callbacks))
   {
-    Publisher pub(ops.topic, *this, callbacks);
+    Publisher pub(ops.topic, ops.md5sum, ops.datatype, *this, callbacks);
 
     {
       boost::mutex::scoped_lock lock(collection_->mutex_);

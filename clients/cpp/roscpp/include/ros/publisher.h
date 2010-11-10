@@ -77,6 +77,9 @@ public:
       return;
     }
 
+    ROS_ASSERT_MSG(impl_->md5sum_ != "*" || impl_->md5sum_ == mt::md5sum<M>(), "Trying to publish message of type [%s/%s] on a publisher with type [%s/%s]",
+                   impl_->datatype_.c_str(), impl_->md5sum_.c_str(), mt::datatype<M>(), mt::md5sum<M>());
+
     SerializedMessage m;
     m.type_info = &typeid(M);
     m.message = message;
@@ -91,6 +94,7 @@ public:
   void publish(const M& message) const
   {
     using namespace serialization;
+    namespace mt = ros::message_traits;
 
     if (!impl_)
     {
@@ -103,6 +107,9 @@ public:
       ROS_ASSERT_MSG(false, "Call to publish() on an invalid Publisher (topic [%s])", impl_->topic_.c_str());
       return;
     }
+
+    ROS_ASSERT_MSG(impl_->md5sum_ != "*" || impl_->md5sum_ == mt::md5sum<M>(), "Trying to publish message of type [%s/%s] on a publisher with type [%s/%s]",
+                   impl_->datatype_.c_str(), impl_->md5sum_.c_str(), mt::datatype<M>(), mt::md5sum<M>());
 
     SerializedMessage m;
     publish(boost::bind(serializeMessage<M>, boost::ref(message)), m);
@@ -153,7 +160,7 @@ public:
   }
 
 private:
-  Publisher(const std::string& topic, const NodeHandle& node_handle, const SubscriberCallbacksPtr& callbacks);
+  Publisher(const std::string& topic, const std::string& md5sum, const std::string& datatype, const NodeHandle& node_handle, const SubscriberCallbacksPtr& callbacks);
 
   void publish(const boost::function<SerializedMessage(void)>& serfunc, SerializedMessage& m) const;
   void incrementSequence() const;
@@ -168,6 +175,8 @@ private:
     bool isValid() const;
 
     std::string topic_;
+    std::string md5sum_;
+    std::string datatype_;
     NodeHandlePtr node_handle_;
     SubscriberCallbacksPtr callbacks_;
     bool unadvertised_;

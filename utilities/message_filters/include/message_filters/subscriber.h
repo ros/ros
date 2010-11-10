@@ -202,7 +202,7 @@ private:
 
   void cb(const EventType& e)
   {
-    signalMessage(e);
+    this->signalMessage(e);
   }
 
   ros::Subscriber sub_;

@@ -208,7 +208,7 @@ private:
       typename V_Message::iterator end = to_call.end();
       for (; it != end; ++it)
       {
-        signalMessage(*it);
+        this->signalMessage(*it);
       }
     }
   }

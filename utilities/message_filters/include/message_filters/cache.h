@@ -152,7 +152,7 @@ public:
 
     }
 
-    signalMessage(evt);
+    this->signalMessage(evt);
   }
 
   /**

@@ -75,7 +75,7 @@ public:
 
   void add(const EventType& evt)
   {
-    signalMessage(evt);
+    this->signalMessage(evt);
   }
 
 private:

@@ -234,7 +234,7 @@ private:
 
   void lastFilterCB(const EventType& evt)
   {
-    signalMessage(evt);
+    this->signalMessage(evt);
   }
 
   struct FilterInfo

@@ -38,6 +38,8 @@ import roslib.rosenv
 
 from .xmlrunner import XMLTestRunner
 
+XML_OUTPUT_FLAG = '--gtest_output=xml:' #use gtest-compatible flag
+
 _logger = logging.getLogger('runner')
 def printlog(msg, *args):
     if args:

@@ -41,6 +41,8 @@ Library and tools support unit testing in ROS.
 import os
 import roslib
 
-from .core import xml_results_file, rostest_name_from_path, create_xml_runner
+from .core import xml_results_file, rostest_name_from_path, create_xml_runner, XML_OUTPUT_FLAG
 from . import junitxml
 from .baretest import print_runner_summary, print_unittest_summary
+from .pyunit import unitrun
+

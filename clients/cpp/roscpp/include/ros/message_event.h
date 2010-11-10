@@ -47,9 +47,18 @@ namespace ros
 {
 
 template<typename M>
+struct DefaultMessageCreator
+{
+  boost::shared_ptr<M> operator()()
+  {
+    return boost::make_shared<M>();
+  }
+};
+
+template<typename M>
 inline boost::shared_ptr<M> defaultMessageCreateFunction()
 {
-  return boost::make_shared<M>();
+  return DefaultMessageCreator<M>()();
 }
 
 /**
@@ -103,17 +112,17 @@ public:
    */
   MessageEvent(const ConstMessagePtr& message)
   {
-    init(message, getConnectionHeader(message.get()), ros::Time::now(), true, ros::defaultMessageCreateFunction<Message>);
+    init(message, getConnectionHeader(message.get()), ros::Time::now(), true, ros::DefaultMessageCreator<Message>());
   }
 
   MessageEvent(const ConstMessagePtr& message, const boost::shared_ptr<M_string>& connection_header, ros::Time receipt_time)
   {
-    init(message, connection_header, receipt_time, true, ros::defaultMessageCreateFunction<Message>);
+    init(message, connection_header, receipt_time, true, ros::DefaultMessageCreator<Message>());
   }
 
   MessageEvent(const ConstMessagePtr& message, ros::Time receipt_time)
   {
-    init(message, getConnectionHeader(message.get()), receipt_time, true, ros::defaultMessageCreateFunction<Message>);
+    init(message, getConnectionHeader(message.get()), receipt_time, true, ros::DefaultMessageCreator<Message>());
   }
 
   MessageEvent(const ConstMessagePtr& message, const boost::shared_ptr<M_string>& connection_header, ros::Time receipt_time, bool nonconst_need_copy, const CreateFunction& create)

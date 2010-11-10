@@ -132,7 +132,7 @@ public:
   typedef boost::function<void(typename Adapter::Parameter)> Callback;
   typedef boost::function<NonConstTypePtr()> CreateFunction;
 
-  SubscriptionCallbackHelperT(const Callback& callback, const CreateFunction& create = defaultMessageCreateFunction<NonConstType>)
+  SubscriptionCallbackHelperT(const Callback& callback, const CreateFunction& create = DefaultMessageCreator<NonConstType>())
   : callback_(callback)
   , create_(create)
   {}

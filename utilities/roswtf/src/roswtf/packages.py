@@ -63,6 +63,8 @@ def msgs_built(ctx):
             for e in expected:
                 if not os.path.isfile(os.path.join(pkg_dir, e)):
                     unbuilt.add(pkg)
+    if 'roslib' in unbuilt:
+        unbuilt.remove('roslib')
     return list(unbuilt)
 
 ## look for unbuilt .srv files
@@ -194,6 +196,10 @@ def _cmake_genmsg_gensrv(ctx, type_):
                             missing.append(pkg)
                     finally:
                         f.close()
+
+    if 'roslib' in missing:
+        missing.remove('roslib')
+                        
     return missing
 
 def cmake_genmsg(ctx):

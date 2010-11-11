@@ -591,6 +591,8 @@ macro(rosbuild_declare_test exe)
     add_custom_target(tests)
   endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(tests ${exe})
+  # Don't build this target with the all target, #3110
+  set_target_properties(${exe} PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endmacro(rosbuild_declare_test)
 
 # A helper to create test programs.  It calls rosbuild_add_executable() to

@@ -1,7 +1,0 @@
-int32 a
-roslib/Log log
-string s
-roslib/Clock time
-int32 b
-duration d
-time t

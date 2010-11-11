@@ -1,6 +1,0 @@
-<package>
-<export>
-<base cmake="bat.cmake"/>
-</export>
-<depend package="base"/>
-</package>

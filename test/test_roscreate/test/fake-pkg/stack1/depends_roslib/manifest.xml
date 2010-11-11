@@ -1,0 +1,13 @@
+<package>
+  <description brief="depends_roslib">
+
+     depends_roslib
+
+  </description>
+  <author>Kenneth Conley</author>
+  <license>BSD</license>
+  <depend package="roslib"/>
+
+</package>
+
+

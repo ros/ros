@@ -304,7 +304,7 @@ const vector<Package *> &Package::descendants(int depth)
     {
     }
   }
-  assert(_descendants.size() == 0);
+  _descendants.clear();
   for (VecPkg::iterator p = desc_with_dups.begin();
        p != desc_with_dups.end(); ++p)
   {

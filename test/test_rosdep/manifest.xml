@@ -8,7 +8,7 @@
   <license>BSD</license>
   <review status="test" notes=""/>
   <url>http://ros.org/wiki/test_rosdep</url>
-  <depend package="rostest"/>
+  <depend package="rosunit"/>
   <depend package="rosdep"/>
 
   <platform os="ubuntu" version="9.04"/>

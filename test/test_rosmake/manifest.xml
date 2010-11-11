@@ -1,0 +1,20 @@
+<package>
+  <description brief="test_rosmake">
+
+     test_rosmake
+
+  </description>
+  <author>Tully Foote</author>
+  <license>BSD</license>
+  <review status="test" notes=""/>
+  <url>http://ros.org/wiki/test_rosmake</url>
+  <depend package="rosmake"/>
+  <depend package="rosunit"/>
+
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
+  <platform os="macports" version="macports"/>
+</package>
+
+

@@ -119,10 +119,14 @@ class RoslibPackagesTest(unittest.TestCase):
   def test_get_dir_pkg(self):
     import roslib.packages
     import roslib.rospack
-    path = os.path.normpath(roslib.rospack.rospackexec(['find', 'test_roslib']))
+    path = os.path.abspath(roslib.rospack.rospackexec(['find', 'test_roslib']))
 
-    self.assertEquals((path, 'test_roslib'), roslib.packages.get_dir_pkg(path))
-    self.assertEquals((path, 'test_roslib'), roslib.packages.get_dir_pkg(os.path.join(path, 'test')))
+    res = roslib.packages.get_dir_pkg(path)
+    res = (os.path.abspath(res[0]), res[1])
+    self.assertEquals((path, 'test_roslib'), res)
+    res = roslib.packages.get_dir_pkg(os.path.join(path, 'test'))
+    res = (os.path.abspath(res[0]), res[1])
+    self.assertEquals((path, 'test_roslib'), res)
 
     # must fail on parent of test_roslib
     self.assertEquals((None, None), roslib.packages.get_dir_pkg(os.path.dirname(path)))

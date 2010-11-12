@@ -330,14 +330,6 @@ macro(rosbuild_init)
   # Find roslib; roslib_path will be used later
   rosbuild_invoke_rospack("" roslib path find roslib)
 
-  # Figure out which languages we're building for.  "rospack langs" will
-  # return a list of packages that:
-  #   - depend directly on roslang
-  #   - are not in the env var ROS_LANG_DISABLE
-  rosbuild_invoke_rospack("" _roslang LANGS langs)
-  separate_arguments(_roslang_LANGS)
-  set(genmsg_list "")
-  set(gensrv_list "")
   # Create targets for client libs attach their message-generation output to
   add_custom_target(rospack_genmsg)
   add_custom_target(rospack_gensrv)
@@ -360,23 +352,19 @@ macro(rosbuild_init)
   # ${gendeps_exe} is a convenience variable that roslang cmake rules
   # must reference as a dependency of msg/srv generation
   set(gendeps_exe ${roslib_path}/scripts/gendeps) 
-      
-  # Iterate over the languages, retrieving any exported cmake fragment from
-  # each one.
-  set(_cmake_fragments)
-  foreach(_l ${_roslang_LANGS})
-    # Get the roslang attributes from this package.
 
-    # cmake
-    rosbuild_invoke_rospack(${_l} ${_l} CMAKE export --lang=roslang --attrib=cmake)
-    if(${_l}_CMAKE)
-      foreach(_f ${${_l}_CMAKE})
-        list(APPEND _cmake_fragments ${_f})
-      endforeach(_f)
-    endif(${_l}_CMAKE)
-  endforeach(_l)
+  # If the roslang package is available, pull in cmake/roslang.cmake from
+  # there; it will in turn include message-generation logic from client
+  # libs.  This is to allow roslang to live outside the ros stack, #3108.
+  rosbuild_find_ros_package("roslang")
+  if(roslang_PACKAGE_PATH)
+    # Can't use rosbuild_include() here, because there's no guarantee that
+    # the package we're building depends on roslang (in fact, it probably
+    # doesn't.
+    include("${roslang_PACKAGE_PATH}/cmake/roslang.cmake")
+  endif(roslang_PACKAGE_PATH)
 
-  # Also collect cmake fragments exported by packages that depend on
+  # Collect cmake fragments exported by packages that depend on
   # rosbuild.  This behavior is deprecated, in favor of using
   # rosbuild_include() to explicitly include cmake code from other packages.
   rosbuild_invoke_rospack(rosbuild _rosbuild EXPORTS plugins --attrib=cmake --top=${_project})
@@ -398,6 +386,7 @@ macro(rosbuild_init)
 
   set(_rosbuild_EXPORTS "" CACHE INTERNAL "")
 
+  set(_cmake_fragments)
   foreach(_f ${_rosbuild_EXPORTS_stripped})
     list(APPEND _cmake_fragments ${_f})
     message("\n[rosbuild] WARNING: the file ${_f} is being included automatically.  This behavior is deprecated.  The package containing that file should instead export the directory containing the file, and you should use rosbuild_include() to include the file explicitly.\n")
@@ -784,6 +773,10 @@ endmacro(rosbuild_gendeps)
 
 # gensrv processes srv/*.srv files into language-specific source files
 macro(rosbuild_gensrv)
+  # roslang_PACKAGE_PATH was set in rosbuild_init(), if roslang was found
+  if(NOT roslang_PACKAGE_PATH)
+    _rosbuild_warn("rosbuild_gensrv() was called, but the roslang package cannot be found. Service generation will NOT occur")
+  endif(NOT roslang_PACKAGE_PATH)
   # Check whether there are any .srv files
   rosbuild_get_srvs(_srvlist)
   if(NOT _srvlist)
@@ -815,6 +808,10 @@ endmacro(rosbuild_gensrv)
 
 # genmsg processes msg/*.msg files into language-specific source files
 macro(rosbuild_genmsg)
+  # roslang_PACKAGE_PATH was set in rosbuild_init(), if roslang was found
+  if(NOT roslang_PACKAGE_PATH)
+    _rosbuild_warn("rosbuild_genmsg() was called, but the roslang package cannot be found.  Message generation will NOT occur")
+  endif(NOT roslang_PACKAGE_PATH)
   # Check whether there are any .srv files
   rosbuild_get_msgs(_msglist)
   if(NOT _msglist)

@@ -132,11 +132,16 @@ macro(rosbuild_init)
   # Record that we've been called
   set(ROSBUILD_init_called 1)
 
-  # Infer package name from directory name.
-  get_filename_component(_project ${CMAKE_SOURCE_DIR} NAME)
-  message("[rosbuild] Building package ${_project}")
+  # Don't override the project name if the user said not to, #3119
+  if(NOT DEFINED ROSBUILD_DONT_REDEFINE_PROJECT)
+    # Infer package name from directory name.
+    get_filename_component(_project ${CMAKE_SOURCE_DIR} NAME)
+    project(${_project})
+  else(NOT DEFINED ROSBUILD_DONT_REDEFINE_PROJECT)
+    set(_project ${PROJECT_NAME})
+  endif(NOT DEFINED ROSBUILD_DONT_REDEFINE_PROJECT)
 
-  project(${_project})
+  message("[rosbuild] Building package ${_project}")
 
   # Must call include(rosconfig) after project, because rosconfig uses
   # PROJECT_SOURCE_DIR

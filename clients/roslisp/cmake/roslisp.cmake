@@ -33,6 +33,12 @@ macro(genmsg_lisp)
   # Add our target to the top-level genmsg target, which will be fired if
   # the user calls genmsg()
   add_dependencies(rospack_genmsg ROSBUILD_genmsg_lisp)
+  if(_autogen)
+    # Also set up to clean the msg_gen directory
+    get_directory_property(_old_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
+    list(APPEND _old_clean_files ${PROJECT_SOURCE_DIR}/msg_gen)
+    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${_old_clean_files}")
+  endif(_autogen)
 endmacro(genmsg_lisp)
 
 # Call the macro we just defined.
@@ -72,6 +78,13 @@ macro(gensrv_lisp)
   # Add our target to the top-level gensrv target, which will be fired if
   # the user calls gensrv()
   add_dependencies(rospack_gensrv ROSBUILD_gensrv_lisp)
+
+  if(_autogen)
+    # Also set up to clean the srv_gen directory
+    get_directory_property(_old_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
+    list(APPEND _old_clean_files ${PROJECT_SOURCE_DIR}/srv_gen)
+    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${_old_clean_files}")
+  endif(_autogen)
 endmacro(gensrv_lisp)
 
 

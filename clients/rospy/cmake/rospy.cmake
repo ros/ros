@@ -43,6 +43,11 @@ macro(genmsg_py)
     # Add our target to the top-level genmsg target, which will be fired if
     # the user calls genmsg()
     add_dependencies(rospack_genmsg ROSBUILD_genmsg_py)
+
+    # Also set up to clean the src/<project>/msg directory
+    get_directory_property(_old_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
+    list(APPEND _old_clean_files ${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}/msg)
+    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${_old_clean_files}")
   endif(_autogen)
 endmacro(genmsg_py)
 
@@ -92,6 +97,11 @@ macro(gensrv_py)
     # Add our target to the top-level gensrv target, which will be fired if
     # the user calls gensrv()
     add_dependencies(rospack_gensrv ROSBUILD_gensrv_py)
+
+    # Also set up to clean the src/<project>/srv directory
+    get_directory_property(_old_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
+    list(APPEND _old_clean_files ${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}/srv)
+    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${_old_clean_files}")
   endif(_autogen)
 endmacro(gensrv_py)
 

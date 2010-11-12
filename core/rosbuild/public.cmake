@@ -1206,3 +1206,31 @@ macro(rosbuild_include pkg module)
   endif(NOT _found)
 endmacro(rosbuild_include)
 
+macro(rosbuild_get_package_version _var pkgname)
+  execute_process( 
+    COMMAND rosstack contains ${pkgname} 
+    ERROR_VARIABLE __rosstack_err_ignore 
+    OUTPUT_VARIABLE __stack
+    RESULT_VARIABLE _rosstack_failed
+    OUTPUT_STRIP_TRAILING_WHITESPACE) 
+  if(_rosstack_failed OR NOT __stack)
+    message(FATAL_ERROR "[rosbuild] Failed to find stack containing package ${pkgname}")
+  else(_rosstack_failed OR NOT __stack)
+    rosbuild_get_stack_version(${_var} ${__stack})
+  endif(_rosstack_failed OR NOT __stack)
+endmacro(rosbuild_get_package_version)
+
+macro(rosbuild_get_stack_version _var stackname)
+  execute_process( 
+    COMMAND rosversion ${stackname} 
+    ERROR_VARIABLE __rosversion_err_ignore 
+    OUTPUT_VARIABLE __version
+    RESULT_VARIABLE _rosversion_failed
+    OUTPUT_STRIP_TRAILING_WHITESPACE) 
+  if(_rosversion_failed OR NOT __version)
+    message(FATAL_ERROR "[rosbuild] Failed to find version of stack ${stackname}")
+  else(_rosversion_failed OR NOT __version)
+    set(${_var} ${__version})
+  endif(_rosversion_failed OR NOT __version)
+endmacro(rosbuild_get_stack_version _var stackname)
+

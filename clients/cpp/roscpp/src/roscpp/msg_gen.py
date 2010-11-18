@@ -697,6 +697,15 @@ def generate(msg_path):
     write_traits(s, spec, cpp_prefix)
     write_serialization(s, spec, cpp_prefix)
     write_operations(s, spec, cpp_prefix)
+    
+    # HACK HACK HACK.  The moving of roslib/Header causes many problems.  We end up having to make roslib/Header act exactly
+    # like std_msgs/Header (as in, constructor that takes it, as well as operator std_msgs::Header()), and it needs to be
+    # available wherever std_msgs/Header.h has been included
+    if (package == "std_msgs" and spec.short_name == "Header"):
+        s.write("#define STD_MSGS_INCLUDING_HEADER_DEPRECATED_DEF 1\n")
+        s.write("#include <std_msgs/header_deprecated_def.h>\n")
+        s.write("#undef STD_MSGS_INCLUDING_HEADER_DEPRECATED_DEF\n\n") 
+    
     write_end(s, spec)
     
     output_dir = '%s/msg_gen/cpp/include/%s'%(package_dir, package)

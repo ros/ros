@@ -52,7 +52,7 @@
   "If *use-sim-time* is true (which is set upon node startup by looking up the ros /use_sim_time parameter), return the last received time on the /time or /clock topics, or 0.0 if no time message received yet. Otherwise, return the unix time (seconds since epoch)."
   (if *use-sim-time*
       (if *last-clock*
-	  (roslib-msg:clock *last-clock*)
+	  (rosgraph_msgs-msg:clock *last-clock*)
 	  (progn
 	    (unless (mutex-owner *debug-stream-lock*)
 	      (ros-debug (roslisp time) "Returning time of 0.0 as use_sim_time was true and no clock messages received"))

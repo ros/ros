@@ -58,19 +58,19 @@
   (let ((*serialize-recursion-level* (1+ *serialize-recursion-level*)))
     (call-next-method)))
 
-(defmethod serialize :around ((msg roslib-msg:<Header>) str)
+(defmethod serialize :around ((msg rosgraph_msgs-msg:<Header>) str)
 
   ;; We save the old stamp for convenience when debugging interactively and reusing the same message object
-  (let ((old-stamp (roslib-msg:stamp msg)))
+  (let ((old-stamp (rosgraph_msgs-msg:stamp msg)))
     (unwind-protect
 	 (progn
 	   (when (= *serialize-recursion-level* 1)
 	     (when *set-seq*
-	       (setf (roslib-msg:seq msg) (incf *seq*)))
-	     (when (= (roslib-msg:stamp msg) 0.0)
-	       (setf (roslib-msg:stamp msg) (ros-time))))
+	       (setf (rosgraph_msgs-msg:seq msg) (incf *seq*)))
+	     (when (= (rosgraph_msgs-msg:stamp msg) 0.0)
+	       (setf (rosgraph_msgs-msg:stamp msg) (ros-time))))
 	   (call-next-method))
 
-      (setf (roslib-msg:stamp msg) old-stamp))))
+      (setf (rosgraph_msgs-msg:stamp msg) old-stamp))))
 
 |#

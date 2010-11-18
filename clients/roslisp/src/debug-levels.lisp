@@ -59,12 +59,12 @@
 
 (defgeneric debug-level-string (level)
   (:method ((level symbol)) (string-downcase (symbol-name level)))
-  (:method ((level fixnum)) (debug-level-string (car (rassoc level (symbol-codes 'roslib-msg:<Log>))))))
+  (:method ((level fixnum)) (debug-level-string (car (rassoc level (symbol-codes 'rosgraph_msgs-msg:<Log>))))))
 
 
 (defgeneric level-code (level)
   (:method ((level fixnum)) level)
-  (:method ((level symbol)) (symbol-code 'roslib-msg:<Log> level))
+  (:method ((level symbol)) (symbol-code 'rosgraph_msgs-msg:<Log> level))
   (:method ((level string)) (level-code (find-symbol level :keyword))))
 
 (defun set-local-debug-level (topic level &optional (h *debug-levels*))

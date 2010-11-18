@@ -96,7 +96,7 @@ def field_type(f):
 
 def parse_msg_type(f):
     if f.base_type == 'Header':
-        return ('roslib', 'Header')
+        return ('std_msgs', 'Header')
     else:
         return f.base_type.split('/')
 

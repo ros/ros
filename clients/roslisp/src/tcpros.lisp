@@ -243,10 +243,10 @@
          ;; client will be lost.
          (let* ((msg-size (serialization-length msg))
                 (data-strm (make-instance 'msg-serialization-stream :buffer-size (+ msg-size 4))))
-           (serialize-int (serialization-length msg) data-strm)
+           (serialize-int msg-size data-strm)
            (serialize msg data-strm)
            (sb-sys:without-interrupts
-             (write-string (get-output-stream-string data-strm) str)
+             (write-sequence (serialized-message data-strm) str :end (file-position data-strm))
              ;; Technically, force-output isn't supposed to be called on binary streams...
              (force-output str)
              1 ;; Returns number of messages written 

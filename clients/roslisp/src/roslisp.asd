@@ -17,20 +17,21 @@
    (:file "msg" :depends-on ("roslisp" "rosutils"))
    (:file "msg-header" :depends-on ("msg" "rosout" "time"))
    (:file "params" :depends-on ("namespace" "rosutils" "roslisp" "rosout" "master"))
-   (:file "tcpros" :depends-on ("roslisp" "msg" "rosout"))
+   (:file "tcpros" :depends-on ("roslisp" "msg" "rosout" "msg-serialization-stream"))
    (:file "sockets" :depends-on ("roslisp" "rosout"))
    (:file "slave" :depends-on ("sockets" "tcpros" "rosout"))
    (:file "command-line-args" :depends-on ("roslisp" "rosout" "namespace"))
    (:file "client" :depends-on ("sockets" "namespace" "command-line-args" "msg" "rosout" "master"))
    (:file "debug-levels" :depends-on ("params" "client" "rosout"))
    (:file "node" :depends-on ("client"))
+   (:file "msg-serialization-stream" :depends-on ("roslisp"))
    (:file "pprint" :depends-on ("rosout" "msg"))
    )
 	  
 
   :depends-on (:s-xml :s-xml-rpc :sb-bsd-sockets
-               :roslib-msg :roslisp-msg-protocol
-	       :ros-load-manifest
+               :rosgraph_msgs-msg :roslisp-msg-protocol
+               :ros-load-manifest
                :roslisp-utils :std_srvs-srv))
 
 ;;;; eof

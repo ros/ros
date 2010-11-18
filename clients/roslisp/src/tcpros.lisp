@@ -235,15 +235,22 @@
   (or
    (unless (gethash str *broken-socket-streams*)
      (handler-case
-         (handler-bind
-             ((type-error #'invoke-debugger))
-           (serialize-int (serialization-length msg) str)
-           (serialize msg str)
-
-           ;; Technically, force-output isn't supposed to be called on binary streams...
-           (force-output str)
-           1 ;; Returns number of messages written 
-           )
+         ;; We need to serialize the data first to a string stream and
+         ;; then send the whole string at once over the socket. We
+         ;; also need to prevent the send operation from
+         ;; interrupts. Otherwise, when messages do not get sent
+         ;; completely, we run out of sync and the connection to the
+         ;; client will be lost.
+         (let* ((msg-size (serialization-length msg))
+                (data-strm (make-instance 'msg-serialization-stream :buffer-size (+ msg-size 4))))
+           (serialize-int (serialization-length msg) data-strm)
+           (serialize msg data-strm)
+           (sb-sys:without-interrupts
+             (write-string (get-output-stream-string data-strm) str)
+             ;; Technically, force-output isn't supposed to be called on binary streams...
+             (force-output str)
+             1 ;; Returns number of messages written 
+             ))
        ((or sb-bsd-sockets:socket-error stream-error) (c)
          (unless *stream-error-in-progress*
            (let ((*stream-error-in-progress* t))

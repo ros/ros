@@ -164,7 +164,7 @@ class RoslibPackagesTest(unittest.TestCase):
     self.assertEquals(s1, s2, s1^s2)
 
     # - null case for depends1 and depends
-    no_depends = ['roslang', 'mk', 'rospack', 'rosbuild']
+    no_depends = ['mk', 'rospack', 'rosbuild']
     for p in no_depends:
       self.assertEquals({p: []},  rp.depends1([p]))
       self.assertEquals({p: []},  rp.depends([p]))

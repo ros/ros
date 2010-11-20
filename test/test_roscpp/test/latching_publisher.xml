@@ -1,3 +1,0 @@
-<launch>
-  <test test-name="latching_publisher" pkg="test_roscpp" type="latching_publisher"/>
-</launch>

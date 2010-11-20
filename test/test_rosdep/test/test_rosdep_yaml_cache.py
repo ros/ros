@@ -36,7 +36,7 @@ import struct
 import sys
 import unittest
 
-import rostest
+import rosunit
 import rosdep.core
 
 
@@ -147,5 +147,5 @@ class RosdepYamlCacheTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  rostest.unitrun('test_rosdep', 'test_yaml_cache', RosdepYamlCacheTest, coverage_packages=['rosdep.core'])  
+  rosunit.unitrun('test_rosdep', 'test_yaml_cache', RosdepYamlCacheTest, coverage_packages=['rosdep.core'])  
 

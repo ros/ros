@@ -132,11 +132,16 @@ macro(rosbuild_init)
   # Record that we've been called
   set(ROSBUILD_init_called 1)
 
-  # Infer package name from directory name.
-  get_filename_component(_project ${CMAKE_SOURCE_DIR} NAME)
-  message("[rosbuild] Building package ${_project}")
+  # Don't override the project name if the user said not to, #3119
+  if(NOT DEFINED ROSBUILD_DONT_REDEFINE_PROJECT)
+    # Infer package name from directory name.
+    get_filename_component(_project ${CMAKE_SOURCE_DIR} NAME)
+    project(${_project})
+  else(NOT DEFINED ROSBUILD_DONT_REDEFINE_PROJECT)
+    set(_project ${PROJECT_NAME})
+  endif(NOT DEFINED ROSBUILD_DONT_REDEFINE_PROJECT)
 
-  project(${_project})
+  message("[rosbuild] Building package ${_project}")
 
   # Must call include(rosconfig) after project, because rosconfig uses
   # PROJECT_SOURCE_DIR
@@ -267,17 +272,17 @@ macro(rosbuild_init)
   # Set up the test targets.  Subsequent calls to rosbuild_add_gtest and
   # friends add targets and dependencies from these targets.
   #
-  # Find rostest.  The variable rostest_path will also be reused in other
-  # macros.
-  rosbuild_invoke_rospack("" rostest path find rostest)
-  
+
+  # Find rosunit; rosunit_path will be used later
+  rosbuild_invoke_rospack("" rosunit path find rosunit)
+
   # Record where we're going to put test results (#2003)
-  execute_process(COMMAND ${rostest_path}/bin/test-results-dir
+  execute_process(COMMAND ${rosunit_path}/scripts/test_results_dir.py
                   OUTPUT_VARIABLE rosbuild_test_results_dir
                   RESULT_VARIABLE _test_results_dir_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
   if(_test_results_dir_failed)
-    message(FATAL_ERROR "Failed to invoke rostest/bin/test-results-dir")
+    message(FATAL_ERROR "Failed to invoke rosunit/scripts/test_results_dir.py")
   endif(_test_results_dir_failed)
 
   # The 'tests' target builds the test program
@@ -308,13 +313,13 @@ macro(rosbuild_init)
 
   add_custom_target(test-results-run)
   add_custom_target(test-results
-                    COMMAND ${rostest_path}/bin/rostest-results --nodeps ${_project})
+                    COMMAND ${rosunit_path}/scripts/summarize_results.py --nodeps ${_project})
   add_dependencies(test-results test-results-run)
   # Do we want coverage reporting (only matters for Python, because
   # Bullseye already collects everything into a single file).
   if("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
     add_custom_target(test-results-coverage
-                      COMMAND ${rostest_path}/bin/coverage-html
+                      COMMAND ${rosunit_path}/unit/pycoverage_to_html.py
                       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
     # Make tests run before collecting coverage results
     add_dependencies(test-results-coverage test-results-run)
@@ -325,14 +330,6 @@ macro(rosbuild_init)
   # Find roslib; roslib_path will be used later
   rosbuild_invoke_rospack("" roslib path find roslib)
 
-  # Figure out which languages we're building for.  "rospack langs" will
-  # return a list of packages that:
-  #   - depend directly on roslang
-  #   - are not in the env var ROS_LANG_DISABLE
-  rosbuild_invoke_rospack("" _roslang LANGS langs)
-  separate_arguments(_roslang_LANGS)
-  set(genmsg_list "")
-  set(gensrv_list "")
   # Create targets for client libs attach their message-generation output to
   add_custom_target(rospack_genmsg)
   add_custom_target(rospack_gensrv)
@@ -355,23 +352,19 @@ macro(rosbuild_init)
   # ${gendeps_exe} is a convenience variable that roslang cmake rules
   # must reference as a dependency of msg/srv generation
   set(gendeps_exe ${roslib_path}/scripts/gendeps) 
-      
-  # Iterate over the languages, retrieving any exported cmake fragment from
-  # each one.
-  set(_cmake_fragments)
-  foreach(_l ${_roslang_LANGS})
-    # Get the roslang attributes from this package.
 
-    # cmake
-    rosbuild_invoke_rospack(${_l} ${_l} CMAKE export --lang=roslang --attrib=cmake)
-    if(${_l}_CMAKE)
-      foreach(_f ${${_l}_CMAKE})
-        list(APPEND _cmake_fragments ${_f})
-      endforeach(_f)
-    endif(${_l}_CMAKE)
-  endforeach(_l)
+  # If the roslang package is available, pull in cmake/roslang.cmake from
+  # there; it will in turn include message-generation logic from client
+  # libs.  This is to allow roslang to live outside the ros stack, #3108.
+  rosbuild_find_ros_package("roslang")
+  if(roslang_PACKAGE_PATH)
+    # Can't use rosbuild_include() here, because there's no guarantee that
+    # the package we're building depends on roslang (in fact, it probably
+    # doesn't.
+    include("${roslang_PACKAGE_PATH}/cmake/roslang.cmake")
+  endif(roslang_PACKAGE_PATH)
 
-  # Also collect cmake fragments exported by packages that depend on
+  # Collect cmake fragments exported by packages that depend on
   # rosbuild.  This behavior is deprecated, in favor of using
   # rosbuild_include() to explicitly include cmake code from other packages.
   rosbuild_invoke_rospack(rosbuild _rosbuild EXPORTS plugins --attrib=cmake --top=${_project})
@@ -393,6 +386,7 @@ macro(rosbuild_init)
 
   set(_rosbuild_EXPORTS "" CACHE INTERNAL "")
 
+  set(_cmake_fragments)
   foreach(_f ${_rosbuild_EXPORTS_stripped})
     list(APPEND _cmake_fragments ${_f})
     message("\n[rosbuild] WARNING: the file ${_f} is being included automatically.  This behavior is deprecated.  The package containing that file should instead export the directory containing the file, and you should use rosbuild_include() to include the file explicitly.\n")
@@ -419,13 +413,46 @@ macro(rosbuild_init)
   # Gather the gtest build flags, for use when building unit tests.  We
   # don't require the user to declare a dependency on gtest.
   #
-  rosbuild_invoke_rospack(gtest _gtest PACKAGE_PATH find)
-  include_directories(${_gtest_PACKAGE_PATH}/gtest/include)
-  link_directories(${_gtest_PACKAGE_PATH}/gtest/lib)
-  set(_gtest_LIBRARIES -lgtest)
+  find_program(GTEST_EXE NAMES gtest-config DOC "gtest-config executable")
+  if (NOT GTEST_EXE)
+    set(_gtest_LIBRARIES -lgtest)
+    # Couldn't find gtest-config. Hoping that gtest is in our path either in the system install or where ROS_BINDEPS points to
+  else (NOT GTEST_EXE)
+
+  execute_process(COMMAND ${GTEST_EXE} --includedir
+                  OUTPUT_VARIABLE gtest_include_dir
+                  RESULT_VARIABLE _gtest_include_dir
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(_gtest_include_dir)
+    message(FATAL_ERROR "Failed to invoke gtest-config")
+  endif(_gtest_include_dir)
+
+  include_directories(${gtest_include_dir})
+
+  execute_process(COMMAND ${GTEST_EXE} --libdir
+                  OUTPUT_VARIABLE gtest_lib_dir
+                  RESULT_VARIABLE _gtest_lib_dir
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(_gtest_lib_dir)
+    message(FATAL_ERROR "Failed to invoke gtest-config")
+  endif(_gtest_lib_dir)
+  link_directories(${gtest_lib_dir})
+
+
+  execute_process(COMMAND ${GTEST_EXE} --libs
+                  OUTPUT_VARIABLE gtest_libs
+                  RESULT_VARIABLE _gtest_libs
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(_gtest_libs)
+    message(FATAL_ERROR "Failed to invoke gtest-config")
+  endif(_gtest_libs)
+
+
+  set(_gtest_LIBRARIES ${gtest_libs})
   set(_gtest_CFLAGS_OTHER "")
-  set(_gtest_LDFLAGS_OTHER "-Wl,-rpath,${_gtest_PACKAGE_PATH}/gtest/lib")
-  
+  set(_gtest_LDFLAGS_OTHER "-Wl,-rpath,${gtest_lib_dir}")
+  endif (NOT GTEST_EXE)
+
   #
   # The following code removes duplicate libraries from the link line,
   # saving only the last one.
@@ -558,6 +585,8 @@ macro(rosbuild_declare_test exe)
     add_custom_target(tests)
   endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(tests ${exe})
+  # Don't build this target with the all target, #3110
+  set_target_properties(${exe} PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endmacro(rosbuild_declare_test)
 
 # A helper to create test programs.  It calls rosbuild_add_executable() to
@@ -744,6 +773,10 @@ endmacro(rosbuild_gendeps)
 
 # gensrv processes srv/*.srv files into language-specific source files
 macro(rosbuild_gensrv)
+  # roslang_PACKAGE_PATH was set in rosbuild_init(), if roslang was found
+  if(NOT roslang_PACKAGE_PATH)
+    _rosbuild_warn("rosbuild_gensrv() was called, but the roslang package cannot be found. Service generation will NOT occur")
+  endif(NOT roslang_PACKAGE_PATH)
   # Check whether there are any .srv files
   rosbuild_get_srvs(_srvlist)
   if(NOT _srvlist)
@@ -775,6 +808,10 @@ endmacro(rosbuild_gensrv)
 
 # genmsg processes msg/*.msg files into language-specific source files
 macro(rosbuild_genmsg)
+  # roslang_PACKAGE_PATH was set in rosbuild_init(), if roslang was found
+  if(NOT roslang_PACKAGE_PATH)
+    _rosbuild_warn("rosbuild_genmsg() was called, but the roslang package cannot be found.  Message generation will NOT occur")
+  endif(NOT roslang_PACKAGE_PATH)
   # Check whether there are any .srv files
   rosbuild_get_msgs(_msglist)
   if(NOT _msglist)
@@ -1168,4 +1205,32 @@ macro(rosbuild_include pkg module)
     message(FATAL_ERROR "[rosbuild] Failed to include ${module} from ${pkg}")
   endif(NOT _found)
 endmacro(rosbuild_include)
+
+macro(rosbuild_get_package_version _var pkgname)
+  execute_process( 
+    COMMAND rosstack contains ${pkgname} 
+    ERROR_VARIABLE __rosstack_err_ignore 
+    OUTPUT_VARIABLE __stack
+    RESULT_VARIABLE _rosstack_failed
+    OUTPUT_STRIP_TRAILING_WHITESPACE) 
+  if(_rosstack_failed OR NOT __stack)
+    message(FATAL_ERROR "[rosbuild] Failed to find stack containing package ${pkgname}")
+  else(_rosstack_failed OR NOT __stack)
+    rosbuild_get_stack_version(${_var} ${__stack})
+  endif(_rosstack_failed OR NOT __stack)
+endmacro(rosbuild_get_package_version)
+
+macro(rosbuild_get_stack_version _var stackname)
+  execute_process( 
+    COMMAND rosversion ${stackname} 
+    ERROR_VARIABLE __rosversion_err_ignore 
+    OUTPUT_VARIABLE __version
+    RESULT_VARIABLE _rosversion_failed
+    OUTPUT_STRIP_TRAILING_WHITESPACE) 
+  if(_rosversion_failed OR NOT __version)
+    message(FATAL_ERROR "[rosbuild] Failed to find version of stack ${stackname}")
+  else(_rosversion_failed OR NOT __version)
+    set(${_var} ${__version})
+  endif(_rosversion_failed OR NOT __version)
+endmacro(rosbuild_get_stack_version _var stackname)
 

@@ -449,7 +449,8 @@ class RosMakeAll:
                     with self._result_lock:
                         self.result[argument][p] = True if no_target else False
 
-                    self.printer.print_tail( pstd_out)
+                    if success == False: #don't print tail if [SKIP] target
+                        self.printer.print_tail( pstd_out)
                     self.output_to_file(p, log_type, pstd_out, always_print= not (no_target or interrupt))
 
                     return (success, return_string)
@@ -787,9 +788,9 @@ class RosMakeAll:
         else:
             packages.extend(args)
 
-        if not self.is_rosout_built():
-            packages.append("rosout")
-            self.printer.print_all("Detected rosout not built, adding it to the build")
+        #if not self.is_rosout_built():
+        #    packages.append("rosout")
+        #    self.printer.print_all("Detected rosout not built, adding it to the build")
 
         self.printer.print_all( "Packages requested are: %s"%packages)
         
@@ -830,10 +831,10 @@ class RosMakeAll:
             
         required_packages = self.specified_packages[:]
         # these packages are not in the dependency tree but are needed they only cost 0.01 seconds to build
-        always_build = ["rosout"]
-        for p in always_build:
-            if p not in self.specified_packages:
-                required_packages.append(p)
+        #always_build = ["rosout"]
+        #for p in always_build:
+        #    if p not in self.specified_packages:
+        #        required_packages.append(p)
 
         # make sure all dependencies are satisfied and if not warn
         buildable_packages = []
@@ -900,7 +901,7 @@ class RosMakeAll:
           if options.target == "clean":
               prebuild_result = self.assert_prebuild_built(["tools/rospack"])
           else:
-              prebuild_result = self.assert_prebuild_built(["tools/rospack", "3rdparty/gtest"])
+              prebuild_result = self.assert_prebuild_built(["tools/rospack"])
           if not prebuild_result:
               self.printer.print_all("Failed to finish prebuild, aborting")
               self.printer.running = False
@@ -909,21 +910,16 @@ class RosMakeAll:
 
           self.printer.print_verbose ("Building packages %s"% self.build_list)
           build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = options.robust or options.best_effort)
-          build_queue.register_prebuilt(["rospack", "gtest"])
+          build_queue.register_prebuilt(["rospack"])
           if None not in self.result.keys():
                 self.result[None] = {}
           if 'rospack' in self.build_list:
               self.result[None]["rospack"] = True
-          if 'gtest' in self.build_list:
-              self.result[None]["gtest"] = True
 
           build_passed = self.parallel_build_pkgs(build_queue, options.target, threads = options.threads)
           if "rospack" in self.build_list and options.target == "clean":
               self.printer.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it, because it was skipped earlier.")
               self.assert_prebuild_built(["tools/rospack"], 'clean')
-          if "gtest" in self.build_list and options.target == "clean":
-              self.printer.print_all( "Rosmake detected that gtest was requested to be cleaned.  Cleaning it, because it was skipped earlier.")
-              self.assert_prebuild_built(["3rdparty/gtest"], 'clean')
 
         tests_passed = True
         if build_passed and testing:

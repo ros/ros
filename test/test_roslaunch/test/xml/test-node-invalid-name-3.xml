@@ -1,4 +1,0 @@
-<launch>
-  <!-- names cannot have namespaces -->
-  <node pkg="package" type="test_cwd_invalid" name="ns/name" />
-</launch>

@@ -1,5 +1,0 @@
-<launch>
-  <test time-limit="100" test-name="02random_play" pkg="test_rosbag" type="random_play.py" args="54321 10 10.0 1.0 0" retry="3"/>
-  <test time-limit="100" test-name="03random_play" pkg="test_rosbag" type="random_play.py" args="54321 10 10.0 0.5 0" retry="3"/>
-  <test time-limit="100" test-name="04random_play" pkg="test_rosbag" type="random_play.py" args="54321 10 10.0 2.0 0" retry="3"/>
-</launch>

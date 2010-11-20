@@ -108,13 +108,18 @@ class XmlRpcNode(object):
     XmlRpcNode is initialized when the uri field has a value.
     """
 
-    def __init__(self, port=0, rpc_handler=None):
+    def __init__(self, port=0, rpc_handler=None, on_run_error=None):
         """
         XML RPC Node constructor
         @param port: port to use for starting XML-RPC API. Set to 0 or omit to bind to any available port.
         @type  port: int
         @param rpc_handler: XML-RPC API handler for node.
         @type  rpc_handler: XmlRpcHandler
+        @param on_run_error: function to invoke if server.run() throws
+        Exception. Server always terminates if run() throws, but this
+        enables cleanup routines to be invoked if server goes down, as
+        well as include additional debugging.
+        @type  on_run_error: fn(Exception)
         """
         super(XmlRpcNode, self).__init__()
 
@@ -125,6 +130,7 @@ class XmlRpcNode(object):
             port = string.atoi(port)
         self.port = port
         self.is_shutdown = False
+        self.on_run_error = on_run_error
 
     def shutdown(self, reason):
         """
@@ -159,6 +165,15 @@ class XmlRpcNode(object):
         self.uri = uri
         
     def run(self):
+        try:
+            self._run()
+        except Exception, e:
+            if self.on_run_error is not None:
+               self.on_run_error(e)
+            else:
+                raise
+
+    def _run(self):
         """
         Main processing thread body.
         @raise socket.error: If server cannot bind

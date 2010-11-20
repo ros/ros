@@ -1,3 +1,0 @@
-<launch>
-  <node pkg="package" name="node_name" type="test_clear_params_invalid_clear_params_attr" clear_params="foo" />
-</launch>

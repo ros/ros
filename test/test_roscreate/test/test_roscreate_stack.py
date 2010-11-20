@@ -73,6 +73,6 @@ class RoscreateStackTest(unittest.TestCase):
 
       
 if __name__ == '__main__':
-  import rostest
-  rostest.unitrun('test_roscreate', 'test_roscreate_stack', RoscreateStackTest, coverage_packages=['roscreate.roscreatestack'])
+  import rosunit
+  rosunit.unitrun('test_roscreate', 'test_roscreate_stack', RoscreateStackTest, coverage_packages=['roscreate.roscreatestack'])
 

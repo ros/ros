@@ -1,3 +1,0 @@
-<launch>
-  <node pkg="package" type="test_clear_params_no_name" clear_params="true" />
-</launch>

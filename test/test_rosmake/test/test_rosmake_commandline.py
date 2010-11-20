@@ -37,7 +37,7 @@ import sys
 import unittest
 import subprocess
 
-import rostest
+import rosunit
 import rosdep.core
 
 
@@ -48,5 +48,5 @@ class RosmakeCommandlineTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-  rostest.unitrun('test_rosmake', 'test_commandline', RosmakeCommandlineTest, coverage_packages=['rosmake.commandline'])  
+  rosunit.unitrun('test_rosmake', 'test_commandline', RosmakeCommandlineTest, coverage_packages=['rosmake.commandline'])  
 

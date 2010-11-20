@@ -31,7 +31,7 @@ import roslib; roslib.load_manifest("test_rosmake")
 
 import sys
 import unittest
-import rostest 
+import rosunit 
 
 from rosmake import parallel_build
 NAME = "test_rosmake_parallel_build"
@@ -247,5 +247,5 @@ class TestBuildQueue(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    rostest.unitrun('test_rosmake', "dependency_tracker", TestDependencyTracker, sys.argv, coverage_packages=['rosmake'])
-    rostest.unitrun('test_rosmake', "build_queue", TestBuildQueue, sys.argv, coverage_packages=['rosmake'])
+    rosunit.unitrun('test_rosmake', "dependency_tracker", TestDependencyTracker, sys.argv, coverage_packages=['rosmake'])
+    rosunit.unitrun('test_rosmake', "build_queue", TestBuildQueue, sys.argv, coverage_packages=['rosmake'])

@@ -1,1 +1,0 @@
-../s-xml-rpc/s-xml-rpc.asd

@@ -133,6 +133,21 @@ def get_address_override():
         return os.environ[roslib.rosenv.ROS_IP]
     return None
 
+def is_local_address(hostname):
+    """
+    @param hostname: host name/address
+    @type  hostname: str
+    @return True: if hostname maps to a local address, False otherwise. False conditions include invalid hostnames.
+    """
+    try:
+        reverse_ip = socket.gethostbyname(hostname)
+    except socket.error:
+        return False
+    # 127. check is due to #1260
+    if reverse_ip not in get_local_addresses() and not reverse_ip.startswith('127.'):
+        return False
+    return True
+    
 def get_local_address():
     """
     @return: default local IP address (e.g. eth0). May be overriden by ROS_IP/ROS_HOSTNAME/__ip/__hostname

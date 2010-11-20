@@ -49,6 +49,7 @@ The structure of the serialization descends several levels of serializers:
 # creates circular deps
 
 import os
+import keyword
 import shutil
 import atexit
 import itertools
@@ -163,7 +164,7 @@ class Special:
             return None
         
 _SPECIAL_TYPES = {
-    roslib.msgs.HEADER:   Special('roslib.msg._Header.Header()',         None,   'import roslib.msg'),
+    roslib.msgs.HEADER:   Special('std_msgs.msg._Header.Header()',     None, 'import std_msgs.msg'),
     roslib.msgs.TIME:     Special('roslib.rostime.Time()',     '%s.canon()', 'import roslib.rostime'),
     roslib.msgs.DURATION: Special('roslib.rostime.Duration()', '%s.canon()', 'import roslib.rostime'), 
     }
@@ -253,31 +254,10 @@ def _remap_reserved(field_name):
     @return: remapped name
     @rtype: str
     """
-    #doing this lazy saves 0.05s on up-to-date builds
-    if not _reserved_words:
-        _load_reserved_words()
-    if field_name in _reserved_words:
+    # include 'self' as well because we are within a class instance
+    if field_name in keyword.kwlist + ['self']:
         return field_name + "_"
     return field_name
-
-_reserved_words = []
-def _load_reserved_words():
-    """
-    load python reserved words file into global _reserved_words. these
-    reserved words cannot be field names without being altered first
-    """
-    global _reserved_words
-    roslib_dir = roslib.packages.get_pkg_dir('roslib')
-    reserved_words_file = os.path.join(roslib_dir, 'scripts', 'python-reserved-words.txt')
-    if not os.path.exists(reserved_words_file):
-        print >> sys.stderr, "Cannot load python reserved words file [%s]"%reserved_words_file
-        return False
-    f = open(reserved_words_file, 'r')
-    try:
-        _reserved_words = [w.strip() for w in f.readlines() if w]
-        return True
-    finally:
-        f.close()
     
 ################################################################################
 # (de)serialization routines
@@ -360,7 +340,7 @@ def compute_import(package, type_):
     # important: have to do is_builtin check first. We do this check
     # against the unresolved type builtins/specials are never
     # relative. This requires some special handling for Header, which has
-    # two names (Header and roslib/Header).
+    # two names (Header and std_msgs/Header).
     if roslib.msgs.is_builtin(orig_base_type) or \
            roslib.msgs.is_header_type(orig_base_type):
         # of the builtin types, only special types require import
@@ -951,7 +931,17 @@ def msg_generator(package, name, spec):
     @param spec: parsed .msg specification
     @type  spec: L{MsgSpec}
     """
-    spec = make_python_safe(spec) # remap spec names to be Python-safe
+    
+    # #2990: have to compute md5sum before any calls to make_python_safe
+
+    # generate dependencies dictionary. omit files calculation as we
+    # rely on in-memory MsgSpecs instead so that we can generate code
+    # for older versions of msg files
+    gendeps_dict = roslib.gentools.get_dependencies(spec, package, compute_files=False)
+    md5sum = roslib.gentools.compute_md5(gendeps_dict)
+    
+    # remap spec names to be Python-safe
+    spec = make_python_safe(spec) 
     spec_names = spec.names
 
     # #1807 : this will be much cleaner when msggenerator library is
@@ -972,14 +962,10 @@ def msg_generator(package, name, spec):
     
     fulltype = '%s%s%s'%(package, roslib.msgs.SEP, name)
 
-    # generate dependencies dictionary. omit files calculation as we
-    # rely on in-memory MsgSpecs instead so that we can generate code
-    # for older versions of msg files
-    gendeps_dict = roslib.gentools.get_dependencies(spec, package, compute_files=False)
     #Yield data class first, e.g. Point2D
     yield 'class %s(roslib.message.Message):'%name
-    yield '  _md5sum = "%s"'%roslib.gentools.compute_md5(gendeps_dict)
-    yield '  _type = "%s"'%fulltype
+    yield '  _md5sum = "%s"'%(md5sum)
+    yield '  _type = "%s"'%(fulltype)
     yield '  _has_header = %s #flag to mark the presence of a Header object'%spec.has_header()
     # note: we introduce an extra newline to protect the escaping from quotes in the message
     yield '  _full_text = """%s\n"""'%compute_full_text_escaped(gendeps_dict)
@@ -1105,10 +1091,14 @@ def msg_generator(package, name, spec):
 ################################################################################
 # dynamic generation of deserializer
 
-## @param dep_msg str: text of dependent .msg definition
-## @return str, MsgSpec: type name, message spec
-## @raise MsgGenerationException if dep_msg is improperly formatted
 def _generate_dynamic_specs(specs, dep_msg):
+    """
+    @param dep_msg: text of dependent .msg definition
+    @type  dep_msg: str
+    @return: type name, message spec
+    @rtype: str, MsgSpec
+    @raise MsgGenerationException: if dep_msg is improperly formatted
+    """
     line1 = dep_msg.find('\n')
     msg_line = dep_msg[:line1]
     if not msg_line.startswith("MSG: "):
@@ -1118,17 +1108,26 @@ def _generate_dynamic_specs(specs, dep_msg):
     dep_spec = roslib.msgs.load_from_string(dep_msg[line1+1:], dep_pkg)
     return dep_type, dep_spec
     
-## Modify pkg/base_type name so that it can safely co-exist with
-## statically generated files.
-## @return str: name to use for pkg/base_type for dynamically generated message class. 
 def _gen_dyn_name(pkg, base_type):
+    """
+    Modify pkg/base_type name so that it can safely co-exist with
+    statically generated files.
+    
+    @return: name to use for pkg/base_type for dynamically generated message class. 
+    @rtype: str
+    """
     return "_%s__%s"%(pkg, base_type)
 
-## Modify the generated code to rewrite names such that the code can
-## safely co-exist with messages of the same name.
-## @param py_text str: genmsg_py-generated Python source code
-## @return str: updated text
 def _gen_dyn_modify_references(py_text, types):
+    """
+    Modify the generated code to rewrite names such that the code can
+    safely co-exist with messages of the same name.
+    
+    @param py_text: genmsg_py-generated Python source code
+    @type  py_text: str
+    @return: updated text
+    @rtype: str
+    """
     for t in types:
         pkg, base_type = roslib.names.package_resource_name(t)
         gen_name = _gen_dyn_name(pkg, base_type)
@@ -1142,8 +1141,8 @@ def _gen_dyn_modify_references(py_text, types):
         py_text = py_text.replace('class %s('%base_type, 'class %s('%gen_name)
         # - super() references for __init__
         py_text = py_text.replace('super(%s,'%base_type, 'super(%s,'%gen_name)
-    # roslib/Header also has to be rewritten to be a local reference
-    py_text = py_text.replace('roslib.msg._Header.Header', _gen_dyn_name('roslib', 'Header'))
+    # std_msgs/Header also has to be rewritten to be a local reference
+    py_text = py_text.replace('std_msgs.msg._Header.Header', _gen_dyn_name('std_msgs', 'Header'))
     return py_text
 
 def generate_dynamic(core_type, msg_cat):
@@ -1157,6 +1156,12 @@ def generate_dynamic(core_type, msg_cat):
     """
     core_pkg, core_base_type = roslib.names.package_resource_name(core_type)
     
+    # REP 100: pretty gross hack to deal with the fact that we moved
+    # Header. Header is 'special' because it can be used w/o a package
+    # name, so the lookup rules end up failing. We are committed to
+    # never changing std_msgs/Header, so this is generally fine.
+    msg_cat = msg_cat.replace('roslib/Header', 'std_msgs/Header')
+
     # separate msg_cat into the core message and dependencies
     splits = msg_cat.split('\n'+'='*80+'\n')
     core_msg = splits[0]

@@ -90,7 +90,9 @@ def resolve_type(type_, package_context):
     """
     Resolve type name based on current package context.
 
-    NOTE: in ROS, 'Header' always resolves to 'roslib/Header'
+    NOTE: in ROS Diamondback, 'Header' resolves to
+    'std_msgs/Header'. In previous releases, it resolves to
+    'roslib/Header' (REP 100).
 
     e.g.::
       resolve_type('String', 'std_msgs') -> 'std_msgs/String'
@@ -103,7 +105,7 @@ def resolve_type(type_, package_context):
     if bt in BUILTIN_TYPES:
         return type_
     elif bt == 'Header':
-        return 'roslib/Header'
+        return 'std_msgs/Header'
     elif SEP in type_:
         return type_
     else:
@@ -377,6 +379,8 @@ def _init():
     # register Header under both contexted and de-contexted name
     _, spec = load_from_file(header, '')
     register(HEADER, spec)
+    register('std_msgs/'+HEADER, spec)    
+    # backwards compat, REP 100
     register('roslib/'+HEADER, spec)    
     for k, spec in EXTENDED_BUILTINS.iteritems():
         register(k, spec)
@@ -675,7 +679,8 @@ def is_header_type(type_):
     @return: True if \a type_ refers to the ROS Header type
     @rtype:  bool
     """
-    return type_ in [HEADER, 'roslib/Header']
+    # for backwards compatibility, include roslib/Header. REP 100
+    return type_ in [HEADER, 'std_msgs/Header', 'roslib/Header']
        
 # time and duration types are represented as aggregate data structures
 # for the purposes of serialization from the perspective of

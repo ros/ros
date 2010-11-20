@@ -36,7 +36,7 @@ import struct
 import sys
 import unittest
 
-import rostest
+import rosunit
 import rosdep.core
 
 class RosdepCoreTest(unittest.TestCase):
@@ -157,5 +157,5 @@ class RosdepCoreTest(unittest.TestCase):
 
 if __name__ == '__main__':
   os.environ["ROSDEP_TEST_OS"] = "rosdep_test_os"
-  rostest.unitrun('test_rosdep', 'test_core', RosdepCoreTest, coverage_packages=['rosdep.core'])  
+  rosunit.unitrun('test_rosdep', 'test_core', RosdepCoreTest, coverage_packages=['rosdep.core'])  
 

@@ -16,4 +16,4 @@ set(ROSPACK_MAKEDIST true)
 # variables.
 #list(APPEND CPACK_SOURCE_IGNORE_FILES /core/experimental)
 
-rosbuild_make_distribution(1.3.x-trunk)
+rosbuild_make_distribution(1.3.1)

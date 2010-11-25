@@ -362,7 +362,9 @@ class XmlLoader(roslaunch.loader.Loader):
             for t in [c for c in tag.childNodes if c.nodeType == DomNode.ELEMENT_NODE]:
                 tag_name = t.tagName.lower()
                 if tag_name == 'remap':
-                    remap_context.add_remap(self._remap_tag(t, context, ros_config))
+                    r = self._remap_tag(t, context, ros_config)
+                    if r is not None:
+                        remap_context.add_remap(r)
                 elif tag_name == 'param':
                     self._param_tag(t, param_ns, ros_config, force_local=True, verbose=verbose)
                 elif tag_name == 'rosparam':

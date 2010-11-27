@@ -45,7 +45,9 @@ import socket
 import time
 import traceback
 import xmlrpclib
-            
+
+from urlparse import urlparse
+
 import roslib.exceptions
 import roslib.names
 import roslib.scriptutil
@@ -744,7 +746,76 @@ def _rostopic_list_bag(bag_file, topic=None):
                 if rospy.is_shutdown():
                     break
 
-def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only=False):
+def _sub_rostopic_list(master, pubs, subs, publishers_only, subscribers_only, verbose, indent=''):
+    def topic_type(t, topic_types):
+        matches = [t_type for t_name, t_type in topic_types if t_name == t]
+        if matches:
+            return matches[0]
+        return 'unknown type'
+
+    if verbose:
+        topic_types = _master_get_topic_types(master)
+
+        if not subscribers_only:
+            print "\n%sPublished topics:"%indent
+            for t, l in pubs:
+                if len(l) > 1:
+                    print indent+" * %s [%s] %s publishers"%(t, topic_type(t, topic_types), len(l))
+                else:
+                    print indent+" * %s [%s] 1 publisher"%(t, topic_type(t, topic_types))                    
+
+        if not publishers_only:
+            print indent
+            print indent+"Subscribed topics:"
+            for t,l in subs:
+                if len(l) > 1:
+                    print indent+" * %s [%s] %s subscribers"%(t, topic_type(t, topic_types), len(l))
+                else:
+                    print indent+" * %s [%s] 1 subscriber"%(t, topic_type(t, topic_types))
+        print ''
+    else:
+        if publishers_only:
+            topics = [t for t,_ in pubs]
+        elif subscribers_only:
+            topics = [t for t,_ in subs]
+        else:
+            topics = list(set([t for t,_ in pubs] + [t for t,_ in subs]))                
+        topics.sort()
+        print '\n'.join(["%s%s"%(indent, t) for t in topics])
+
+# #3145
+def _rostopic_list_group_by_host(master, pubs, subs):
+    """
+    Build up maps for hostname to topic list per hostname
+    @return: publishers host map, subscribers host map
+    @rtype: {str: set(str)}, {str: set(str)}
+    """
+    def build_map(master, state, uricache):
+        tmap = {}
+        for topic, tnodes in state:
+            for p in tnodes:
+                if not p in uricache:
+                   uricache[p] = master.lookupNode(p)
+                uri = uricache[p]
+                puri = urlparse(uri)
+                if not puri.hostname in tmap:
+                    tmap[puri.hostname] = []
+                # recreate the system state data structure, but for a single host
+                matches = [l for x, l in tmap[puri.hostname] if x == topic]
+                if matches:
+                    matches[0].append(p)
+                else:
+                    tmap[puri.hostname].append((topic, [p]))
+        return tmap
+        
+    uricache = {}
+    host_pub_topics = build_map(master, pubs, uricache)
+    host_sub_topics = build_map(master, subs, uricache)
+    return host_pub_topics, host_sub_topics
+
+def _rostopic_list(topic, verbose=False,
+                   subscribers_only=False, publishers_only=False,
+                   group_by_host=False):
     """
     Print topics to screen
     
@@ -756,13 +827,9 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
     @type  subscribers_only: bool
     @param publishers_only: print information about subscriptions only
     @type  publishers_only: bool    
+    @param group_by_host: group topic list by hostname
+    @type  group_by_host: bool    
     """
-    def topic_type(t, topic_types):
-        matches = [t_type for t_name, t_type in topic_types if t_name == t]
-        if matches:
-            return matches[0]
-        return 'unknown type'
-
     # #1563
     if subscribers_only and publishers_only:
         raise ROSTopicException("cannot specify both subscribers- and publishers-only")
@@ -781,34 +848,20 @@ def _rostopic_list(topic, verbose=False, subscribers_only=False, publishers_only
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
 
-    if verbose:
-        topic_types = _master_get_topic_types(master)
-
-        if not subscribers_only:
-            print "\nPublished topics:"
-            for t, l in pubs:
-                if len(l) > 1:
-                    print " * %s [%s] %s publishers"%(t, topic_type(t, topic_types), len(l))
-                else:
-                    print " * %s [%s] 1 publisher"%(t, topic_type(t, topic_types))                    
-
-        if not publishers_only:
-            print ''
-            print "Subscribed topics:"
-            for t,l in subs:
-                if len(l) > 1:
-                    print " * %s [%s] %s subscribers"%(t, topic_type(t, topic_types), len(l))
-                else:
-                    print " * %s [%s] 1 subscriber"%(t, topic_type(t, topic_types)) 
+    if group_by_host:
+        # #3145
+        host_pub_topics, host_sub_topics  = _rostopic_list_group_by_host(master, pubs, subs)
+        for hostname in set(host_pub_topics.keys() + host_sub_topics.keys()):
+            pubs, subs = host_pub_topics.get(hostname,[]), host_sub_topics.get(hostname, []),
+            if (pubs and not subscribers_only) or (subs and not publishers_only):
+                print("Host [%s]:" % hostname)
+                _sub_rostopic_list(master, pubs, subs,
+                                   publishers_only, subscribers_only,
+                                   verbose, indent='  ')
     else:
-        if publishers_only:
-            topics = [t for t,_ in pubs]
-        elif subscribers_only:
-            topics = [t for t,_ in subs]
-        else:
-            topics = list(set([t for t,_ in pubs] + [t for t,_ in subs]))                
-        topics.sort()
-        print '\n'.join(topics)
+        _sub_rostopic_list(master, pubs, subs,
+                           publishers_only, subscribers_only,
+                           verbose)
 
 def get_info_text(topic):
     """
@@ -1491,6 +1544,8 @@ def _rostopic_cmd_list(argv):
     parser.add_option("-s",
                       dest="subscribers", default=False,action="store_true",
                       help="list only subscribers")
+    parser.add_option("--host", dest="hostname", default=False, action="store_true",
+                      help="group by host name")
 
     (options, args) = parser.parse_args(args)
     topic = None
@@ -1503,13 +1558,15 @@ def _rostopic_cmd_list(argv):
         if options.subscribers: 
             parser.error("-s option is not valid with bags")
         elif options.publishers:
-            parser.error("-p option is not valid with bags")            
+            parser.error("-p option is not valid with bags")
+        elif options.hostname:
+            parser.error("--host option is not valid with bags")
         _rostopic_list_bag(options.bag, topic)
     else:
         if options.subscribers and options.publishers:
             parser.error("you may only specify one of -p, -s")
 
-        exitval = _rostopic_list(topic, verbose=options.verbose, subscribers_only=options.subscribers, publishers_only=options.publishers) or 0
+        exitval = _rostopic_list(topic, verbose=options.verbose, subscribers_only=options.subscribers, publishers_only=options.publishers, group_by_host=options.hostname) or 0
         if exitval != 0:
             sys.exit(exitval)
 

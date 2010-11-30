@@ -85,7 +85,7 @@ def clean_results(test_results_dir, output_dir, filter):
                 output_path = os.path.join(output_dir, "%s.xml"%test_name)
                 with open(output_path, 'w') as f:
                     print "re-writing", output_path
-                f.write(result.xml().encode('utf-8'))
+                    f.write(result.xml().encode('utf-8'))
             except Exception, e:
                 print >> sys.stderr, "ignoring [%s]: %s"%(file, e)
 

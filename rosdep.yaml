@@ -2,6 +2,7 @@ ruby:
   ubuntu: ruby
   debian: ruby
   arch: ruby
+  fedora: ruby
   macports: |
   gentoo: ruby
   freebsd: ruby
@@ -86,6 +87,7 @@ python-scipy:
   ubuntu: python-scipy
   debian: python-scipy
   arch: python-scipy
+  fedora: scipy
   macports: py25-scipy
   gentoo: dev-libs/scipy
   freebsd: py-scipy
@@ -318,6 +320,7 @@ octave:
   macports: octave
   centos: octave-devel
   debian: octave3.0-headers
+  fedora: octave-devel
   gentoo: sci-mathematics/octave
   freebsd: octave
 ncurses:
@@ -333,6 +336,7 @@ qt4:
   ubuntu: libqt4-core libqt4-dev qt4-dev-tools
   debian: libqt4-core libqt4-dev qt4-dev-tools 
   arch: qt
+  fedora: qt-devel
   macports: qt4-mac
   gentoo: ">=x11-libs/qt-core-4"
   freebsd: qt4-corelib
@@ -348,6 +352,7 @@ libxml2:
   ubuntu: libxml2-dev
   debian: libxml2-dev
   arch: libxml2
+  fedora: libxml2-devel
   macports: libxml2
   gentoo: dev-libs/libxml2
   freebsd: libxml2
@@ -356,6 +361,7 @@ scons:
   ubuntu: scons
   debian: scons
   arch: scons
+  fedora: scons
   macports: scons
   gentoo: dev-util/scons
   freebsd: scons
@@ -363,6 +369,7 @@ ant:
   ubuntu: ant
   debian: ant
   arch: apache-ant
+  fedora: ant
   macports: apache-ant
   gentoo: dev-java/ant
   freebsd: apache-ant
@@ -381,6 +388,7 @@ cppunit:
   freebsd: cppunit
 intltool:
   ubuntu: intltool
+  fedora: intltool
   gentoo: dev-util/intltool
   freebsd: intltool
 unzip:

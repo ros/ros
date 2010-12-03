@@ -1,6 +1,6 @@
 
 function _rossed {
-    if [[ `uname` == Darwin ]]; then
+    if [[ `uname` == Darwin || `uname` == FreeBSD ]]; then
         sed -E "$@"
     else
         sed -r "$@"

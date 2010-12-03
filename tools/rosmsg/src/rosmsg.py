@@ -81,7 +81,7 @@ def succeed(args):
     return val
 
 def make_find_command(path):
-  if os.uname()[0] == 'Darwin':
+  if os.uname()[0] in ['Darwin', 'FreeBSD']:
     return ["find", "-E", path]
   else:
     return ["find", path, "-regextype", "posix-egrep"]

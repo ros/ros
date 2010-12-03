@@ -281,6 +281,9 @@ class TestXmlLoader(unittest.TestCase):
         p = [p for p in mock.params if p.key == '/noparam2'][0]
         self.assertEquals('value2', p.value)
 
+        # rosparam file also contains empty params
+        mock = self._load(os.path.join(self.xml_dir, 'test-rosparam-empty.xml'))
+        self.assertEquals([], mock.params)
                     
     def test_rosparam_invalid(self):
         tests = ['test-rosparam-invalid-%s.xml'%i for i in range(1, 6)]

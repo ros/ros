@@ -1,4 +1,4 @@
 <launch>
-  <rosparam command="load" />
+  <rosparam command="bad" />
 </launch>
 

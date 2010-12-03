@@ -348,7 +348,7 @@ class Loader(object):
         else:
             ros_config.add_param(Param(param_name, param_value), verbose=verbose)
         
-    def load_rosparam(self, context, ros_config, cmd, param, file, text, verbose=True):
+    def load_rosparam(self, context, ros_config, cmd, param, file_, text, verbose=True):
         """
         Load rosparam setting
         
@@ -358,38 +358,32 @@ class Loader(object):
         @type  ros_config: L{ROSLaunchConfig}
         @param cmd: 'load', 'dump', or 'delete'
         @type  cmd: str
-        @param file: filename for rosparam to use or None
-        @type  file: str
-        @param text: text for rosparam to load. Ignored if file is set.
+        @param file_: filename for rosparam to use or None
+        @type  file_: str
+        @param text: text for rosparam to load. Ignored if file_ is set.
         @type  text: str
         @raise ValueError: if parameters cannot be processed into valid rosparam setting
         """
         if not cmd in ('load', 'dump', 'delete'):
             raise ValueError("command must be 'load', 'dump', or 'delete'")
-        if file is not None:
-            if cmd == 'load' and not os.path.isfile(file):
-                raise ValueError("file does not exist [%s]"%file)
+        if file_ is not None:
+            if cmd == 'load' and not os.path.isfile(file_):
+                raise ValueError("file does not exist [%s]"%file_)
             if cmd == 'delete':
                 raise ValueError("'file' attribute is invalid with 'delete' command.")
 
         full_param = ns_join(context.ns, param) if param else context.ns
 
         if cmd == 'dump':
-            ros_config.add_executable(RosbinExecutable('rosparam', (cmd, file, full_param), PHASE_SETUP))
+            ros_config.add_executable(RosbinExecutable('rosparam', (cmd, file_, full_param), PHASE_SETUP))
         elif cmd == 'delete':
             ros_config.add_executable(RosbinExecutable('rosparam', (cmd, full_param), PHASE_SETUP))
         elif cmd == 'load':
             # load YAML text
-            if file:
-                with open(file, 'r') as f:
+            if file_:
+                with open(file_, 'r') as f:
                     text = f.read()
                     
-            if not text:
-                if file:
-                    raise ValueError("no YAML in file %s"%file)
-                else:
-                    raise ValueError("no YAML to load")
-            
             # parse YAML text
             # - lazy import
             global yaml
@@ -397,16 +391,21 @@ class Loader(object):
                 import yaml
             try:
                 data = yaml.load(text)
+                # #3162: if there is no YAML, load() will return an
+                # empty string.  We want an empty dictionary instead
+                # for our representation of empty.
+                if not data:
+                    data = {}
             except yaml.MarkedYAMLError, e:
-                if not file: 
+                if not file_: 
                     raise ValueError("Error within YAML block:\n\t%s\n\nYAML is:\n%s"%(str(e), text))
                 else:
-                    raise ValueError("file %s contains invalid YAML:\n%s"%(file, str(e)))
+                    raise ValueError("file %s contains invalid YAML:\n%s"%(file_, str(e)))
             except Exception, e:
-                if not file:
+                if not file_:
                     raise ValueError("invalid YAML: %s\n\nYAML is:\n%s"%(str(e), text))
                 else:
-                    raise ValueError("file %s contains invalid YAML:\n%s"%(file, str(e)))
+                    raise ValueError("file %s contains invalid YAML:\n%s"%(file_, str(e)))
 
             # 'param' attribute is required for non-dictionary types
             if not param and type(data) != dict:

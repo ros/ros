@@ -873,6 +873,19 @@ class RospackTestCase(unittest.TestCase):
           self.rospack_succeed(p, "cflags-only-I")
           self.assertEquals(os.path.join(test_path, p, "msg_gen/cpp/include"), self.strip_opt_ros(self.run_rospack(p, "cflags-only-I")))
 
+    # Test that -q option suppresses errors, #3177.
+    def test_quiet_option(self):
+        ros_root = os.path.abspath('test')
+        # With -q: look for non-existent package, make sure that it fails, yet
+        # produces nothing on stderr.
+        status_code, stdout, stderr = self._run_rospack(ros_root, None, 'nonexistentpackage', 'find -q')
+        self.assertNotEquals(0, status_code)
+        self.assertEquals(0, len(stderr))
+        # Without -q: look for non-existent package, make sure that it fails, 
+        # and produces somthing on stderr.
+        status_code, stdout, stderr = self._run_rospack(ros_root, None, 'nonexistentpackage', 'find')
+        self.assertNotEquals(0, status_code)
+        self.assertNotEquals(0, len(stderr))
 
 if __name__ == "__main__":
     import rosunit

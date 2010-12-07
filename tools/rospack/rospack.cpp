@@ -632,8 +632,9 @@ VecPkg Package::deleted_pkgs;
 //////////////////////////////////////////////////////////////////////////////
 
 
-ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false),
-        my_argc(0), my_argv(NULL), opt_profile_length(0), total_num_pkgs(0),
+ROSPack::ROSPack() : ros_root(NULL), opt_quiet(false),
+        cache_lock_failed(false), crawled(false), my_argc(0),
+        my_argv(NULL), opt_profile_length(0), total_num_pkgs(0),
         duplicate_packages_found(false)
 {
   g_rospack = this;
@@ -697,7 +698,9 @@ const char* ROSPack::usage()
           "    libs-only-L [--deps-only] [package]\n"
           "    libs-only-l [--deps-only] [package]\n"
           "    libs-only-other [--deps-only] [package]\n"
-          "    profile [--length=<length>] [--zombie-only]\n\n"
+          "    profile [--length=<length>] [--zombie-only]\n"
+          "  Extra options:\n"
+          "    -q     Quiets error reports.\n\n"
           " If [package] is omitted, the current working directory\n"
           " is used (if it contains a manifest.xml).\n\n";
 }
@@ -1137,6 +1140,7 @@ int ROSPack::run(int argc, char **argv)
   const char* opt_length_name  = "--length=";
   const char* opt_top_name     = "--top=";
   const char* opt_target_name  = "--target=";
+  const char* opt_quiet_name   = "-q";
 
   // Reset to defaults.
   opt_deps_only = false;
@@ -1174,6 +1178,8 @@ int ROSPack::run(int argc, char **argv)
       opt_deps_only=true;
     else if(!strcmp(argv[i], opt_zombie_name))
       opt_profile_zombie_only=true;
+    else if(!strcmp(argv[i], opt_quiet_name))
+      opt_quiet=true;
     else if(!strncmp(argv[i], opt_target_name, strlen(opt_target_name)))
     {
       if(opt_target.size())

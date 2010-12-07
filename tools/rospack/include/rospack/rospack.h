@@ -272,6 +272,9 @@ public:
   // Get the accumulated output
   std::string getOutput() { return output_acc; }
 
+  // is -q (quiet) provided ?
+  bool is_quiet() { return opt_quiet; }
+
   int cmd_print_package_list(bool print_path);
   
   int cmd_list_duplicates();
@@ -309,6 +312,8 @@ public:
   bool opt_display_duplicate_pkgs;
 
 private:
+  // is quiet
+  bool opt_quiet;
   bool cache_lock_failed;
   bool crawled;
   std::string getCachePath();

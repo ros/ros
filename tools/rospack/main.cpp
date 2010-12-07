@@ -39,11 +39,27 @@ int main(int argc, char **argv)
     return 0;
   }
   int ret;
+  bool quiet;
   try
   {
+    // Declare ROSPack instance inside the try block because its
+    // constructor can throw (e.g., when ROS_ROOT isn't set).
     rospack::ROSPack rp;
-    ret = rp.run(argc, argv);
-    printf("%s", rp.getOutput().c_str());
+    // Separate try block for running the command, to allow for suppressing
+    // error output when -q is given.
+    try
+    {
+      ret = rp.run(argc, argv);
+      printf("%s", rp.getOutput().c_str());
+    }
+    catch(std::runtime_error &e)
+    {
+      // Return code is -1 no matter what, but don't rethrow if we were
+      // asked to be quiet.
+      ret = -1;
+      if(!rp.is_quiet())
+        throw;
+    }
   }
   catch(std::runtime_error &e)
   {

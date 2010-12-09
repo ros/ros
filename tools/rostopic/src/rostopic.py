@@ -1253,15 +1253,17 @@ def _rostopic_cmd_pub(argv):
     parser.add_option("-v", dest="verbose", default=False,
                       action="store_true",
                       help="print verbose output")
-    parser.add_option("-r", dest="rate", default=None,
-                      help="publishing rate (hz)")
+    parser.add_option("-r", "--rate", dest="rate", default=None,
+                      help="publishing rate (hz).  For -f and stdin input, this defaults to 10.  Otherwise it is not set.")
     parser.add_option("-1", "--once", action="store_true", dest="once", default=False,
                       help="publish one message and exit")
     parser.add_option("-f", '--file', dest="file", metavar='FILE', default=None,
                       help="read args from YAML file (Bagy)")
+    parser.add_option("-l", '--latch', dest="latch", default=False, action="store_true",
+                      help="enable latching for -f, -r and piped input.  This latches the first message.")
     #parser.add_option("-p", '--param', dest="parameter", metavar='/PARAM', default=None,
     #                  help="read args from ROS parameter (Bagy format)")
-
+    
     (options, args) = parser.parse_args(args)
     if options.rate is not None:
         if options.once:
@@ -1273,6 +1275,7 @@ def _rostopic_cmd_pub(argv):
         if rate <= 0:
             parser.error("rate must be greater than zero")
     else:
+        # we will default this to 10 for file/stdin later
         rate = None
         
     # validate args len
@@ -1299,15 +1302,10 @@ def _rostopic_cmd_pub(argv):
     # args to do this so that syntax errors are reported first
     _check_master()
 
-    # if no rate, we latch
-    latch = rate == None
+    # if no rate, or explicit latch, we latch
+    latch = (rate == None) or options.latch
     pub, msg_class = create_publisher(topic_name, topic_type, latch)
 
-    # check to see if we read pub_args from stdin. By convention, we
-    # pub_args is always a list.
-    if options.file:
-        pub_args = [_load_bagy_msg(options.file)]
-        
     if 0 and options.parameter:
         param_name = roslib.scriptutil.script_resolve_name('rostopic', options.parameter)
         if options.once:
@@ -1316,32 +1314,37 @@ def _rostopic_cmd_pub(argv):
             param_publish(pub, msg_class, param_name, rate, options.verbose)
         
     elif not pub_args and len(msg_class.__slots__):
-        if sys.stdin.isatty():
+        if not options.file and sys.stdin.isatty():
             parser.error("Please specify message values")
-
-        stdin_publish(pub, msg_class, rate, options.once, options.verbose)
+        # stdin/file input has a rate by default
+        if rate is None and not options.latch and not options.once:
+            rate = 10.
+        stdin_publish(pub, msg_class, rate, options.once, options.file, options.verbose)
     else:
         argv_publish(pub, msg_class, pub_args, rate, options.once, options.verbose)
         
 
-def _load_bagy_msg(filename):
+def file_yaml_arg(filename):
     """
     @param filename: file name
     @type  filename: str
-    @return: List of msg dicts in file
-    @rtype: [{str: any}]
+    @return: Iterator that yields pub args (list of args)
+    @rtype: iterator
     @raise ROSTopicException: if filename is invalid
     """
     if not os.path.isfile(filename):
         raise ROSTopicException("file does not exist: %s"%(filename))
     import yaml
-    try:
-        with open(filename) as f:
-            # expect single yaml doc
-            data = yaml.load(f)
-    except yaml.YAMLError, e:
-        raise ROSTopicException("invalid YAML in file: %s"%(str(e))) 
-    return data
+    def bagy_iter():
+        try:
+            with open(filename, 'r') as f:
+                # load all documents
+                data = yaml.load_all(f)
+                for d in data:
+                    yield [d]
+        except yaml.YAMLError, e:
+            raise ROSTopicException("invalid YAML in file: %s"%(str(e)))
+    return bagy_iter
     
 def argv_publish(pub, msg_class, pub_args, rate, once, verbose):
     if rate is None:
@@ -1460,7 +1463,16 @@ def param_publish(pub, msg_class, param_name, rate, verbose):
         if rospy.is_shutdown():
             break
 
-def stdin_publish(pub, msg_class, rate, once, verbose):
+def stdin_publish(pub, msg_class, rate, once, filename, verbose):
+    """
+    @param filename: name of file to read from instead of stdin, or None
+    @type  filename: str
+    """
+    if filename:
+        iterator = file_yaml_arg(filename)
+    else:
+        iterator = stdin_yaml_arg
+
     r = rospy.Rate(rate) if rate is not None else None
 
     # stdin publishing can happen really fast, especially if no rate
@@ -1468,14 +1480,22 @@ def stdin_publish(pub, msg_class, rate, once, verbose):
     # publish, though we don't wait too long.
     wait_for_subscriber(pub, SUBSCRIBER_TIMEOUT)
 
-    for pub_args in stdin_yaml_arg():
+    single_arg = None
+    for pub_args in iterator():
         if rospy.is_shutdown():
             break
         if pub_args:
             if type(pub_args) != list:
                 pub_args = [pub_args]
             try:
-                publish_message(pub, msg_class, pub_args, None, True, verbose=verbose)
+                # we use 'bool(r) or once' for the once value, which
+                # controls whether or not publish_message blocks and
+                # latches until exit.  We want to block if the user
+                # has enabled latching (i.e. rate is none). It would
+                # be good to reorganize this code more conceptually
+                # but, for now, this is the best re-use of the
+                # underlying methods.
+                publish_message(pub, msg_class, pub_args, None, bool(r) or once, verbose=verbose)
             except ValueError, e:
                 print >> sys.stderr, str(e)
                 break
@@ -1483,6 +1503,16 @@ def stdin_publish(pub, msg_class, rate, once, verbose):
             r.sleep()
         if rospy.is_shutdown() or once:
             break
+
+    # Publishing a single message repeatedly
+    if single_arg and r and not once:
+        while not rospy.is_shutdown():
+            try:
+                publish_message(pub, msg_class, pub_args, None, True, verbose=verbose)
+                if r is not None:
+                    r.sleep()
+            except ValueError, e:
+                break
 
 def stdin_yaml_arg():
     """

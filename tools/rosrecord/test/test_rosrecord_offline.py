@@ -53,13 +53,6 @@ class TestRosrecordOffline(unittest.TestCase):
     def setUp(self):
         pass
 
-    ## test that the rosmsg command works
-    def test_rosrecord_help(self):
-        self.do_test_help('rosrecord');
-
-    def test_rosplay_help(self):
-        self.do_test_help('rosplay');
-
     def test_rosrecord_pkg_help(self):
         self.do_test_help('rosrun rosrecord rosrecord');
 

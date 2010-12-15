@@ -519,7 +519,6 @@ class MessageMigrator(object):
                     m_file = roslib.manifest.manifest_file(pkg, True)
                     m = roslib.manifest.parse_file(m_file)
                     p_rules = m.get_export(dep,export)
-                    roslib.load_manifest(pkg)
                     pkg_dir = roslib.packages.get_pkg_dir(pkg)
                     for r in p_rules:
                         if dep == 'rosbagmigration':

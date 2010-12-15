@@ -53,21 +53,29 @@ def print_trans(old, new, indent):
     print '    ' * indent + ' * From: %s' % from_txt
     print '    ' * indent + '   To:   %s' % to_txt
 
+def handle_split(option, opt_str, value, parser):
+    parser.values.split = True
+    if len(parser.rargs) > 0 and parser.rargs[0].isdigit():
+        print >> sys.stderr, "Use of \"--split <MAX_SIZE>\" has been deprecated.  Please use --split --size <MAX_SIZE> or --split --duration <MAX_DURATION>"
+        parser.values.size = int(parser.rargs.pop(0))
+
 def record_cmd(argv):
     parser = optparse.OptionParser(usage="rosbag record TOPIC1 [TOPIC2 TOPIC3 ...]",
                                    description="Record a bag file with the contents of specified topics.",
                                    formatter=optparse.IndentedHelpFormatter())
 
-    parser.add_option("-a", "--all",           dest="all",           default=False, action="store_true",        help="record all topics")
-    parser.add_option("-e", "--regex",         dest="regex",         default=False, action="store_true",        help="match topics using regular expressions")
-    parser.add_option("-x", "--exclude",       dest="exclude_regex", default="",    action="store",             help="Exclude topics matching the follow regular expression (subtracts from -a or regex)")
-    parser.add_option("-q", "--quiet",         dest="quiet",         default=False, action="store_true",        help="suppress console output")
-    parser.add_option("-o", "--output-prefix", dest="prefix",        default=None,  action="store",             help="prepend PREFIX to beginning of bag name (name will always end with date stamp)")
-    parser.add_option("-O", "--output-name",   dest="name",          default=None,  action="store",             help="record to bag with name NAME.bag")
-    parser.add_option(      "--split",         dest="split",         default=0,     type='int', action="store", help="split bag into files of size SIZE MB", metavar="SIZE")
-    parser.add_option("-b", "--buffsize",      dest="buffsize",      default=256,   type='int', action="store", help="use an internal buffer of SIZE MB (Default: %default, 0 = infinite)", metavar="SIZE")
-    parser.add_option("-l", "--limit",         dest="num",           default=0,     type='int', action="store", help="only record NUM messages on each topic")
-    parser.add_option("-j", "--bz2",           dest="bz2",           default=False, action="store_true",        help="use BZ2 compression")
+    parser.add_option("-a", "--all",           dest="all",           default=False, action="store_true",          help="record all topics")
+    parser.add_option("-e", "--regex",         dest="regex",         default=False, action="store_true",          help="match topics using regular expressions")
+    parser.add_option("-x", "--exclude",       dest="exclude_regex", default="",    action="store",               help="Exclude topics matching the follow regular expression (subtracts from -a or regex)")
+    parser.add_option("-q", "--quiet",         dest="quiet",         default=False, action="store_true",          help="suppress console output")
+    parser.add_option("-o", "--output-prefix", dest="prefix",        default=None,  action="store",               help="prepend PREFIX to beginning of bag name (name will always end with date stamp)")
+    parser.add_option("-O", "--output-name",   dest="name",          default=None,  action="store",               help="record to bag with name NAME.bag")
+    parser.add_option(      "--split",         dest="split",         default=False, callback=handle_split, action="callback",    help="Split the bag what maximum size or duariton is reached")
+    parser.add_option(      "--size",          dest="size",                         type='int',   action="store", help="Record a bag of maximum size SIZE", metavar="SIZE")
+    parser.add_option(      "--duration",      dest="duration",                     type='float', action="store", help="Record a bag of maximum duration DURATION", metavar="DURATION")
+    parser.add_option("-b", "--buffsize",      dest="buffsize",      default=256,   type='int',   action="store", help="use an internal buffer of SIZE MB (Default: %default, 0 = infinite)", metavar="SIZE")
+    parser.add_option("-l", "--limit",         dest="num",           default=0,     type='int',   action="store", help="only record NUM messages on each topic")
+    parser.add_option("-j", "--bz2",           dest="bz2",           default=False, action="store_true",          help="use BZ2 compression")
 
     (options, args) = parser.parse_args(argv)
 
@@ -80,9 +88,8 @@ def record_cmd(argv):
     cmd = ['record']
 
     cmd.extend(['--buffsize', str(options.buffsize)])
-    cmd.extend(['--limit', str(options.num)])
-    cmd.extend(['--split', str(options.split)])
 
+    if options.num != 0:      cmd.extend(['--limit', str(options.num)])
     if options.quiet:         cmd.extend(["--quiet"])
     if options.prefix:        cmd.extend(["-o", options.prefix])
     if options.name:          cmd.extend(["-O", options.name])
@@ -90,6 +97,14 @@ def record_cmd(argv):
     if options.all:           cmd.extend(["--all"])
     if options.regex:         cmd.extend(["--regex"])
     if options.bz2:           cmd.extend(["--bz2"])
+    if options.split:
+        if not options.duration and not options.size:
+            parser.error("Split specified without giving a maximum duration or size")
+        cmd.extend(["--split"])
+        if options.duration:
+            cmd.extend(["--duration", str(options.duration)])
+        if options.size:
+            cmd.extend(["--size", str(options.size)])
 
     cmd.extend(args)
 

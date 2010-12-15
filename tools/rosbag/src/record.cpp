@@ -52,11 +52,14 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
       ("quiet,q", "suppress console output")
       ("output-prefix,o", po::value<std::string>(), "prepend PREFIX to beginning of bag name")
       ("output-name,O", po::value<std::string>(), "record bagnamed NAME.bag")
-      ("split", po::value<int>()->default_value(0), "split bag file into files of size SIZE in MB")
       ("buffsize,b", po::value<int>()->default_value(256), "Use an internal buffer of SIZE MB (Default: 256)")
       ("limit,l", po::value<int>()->default_value(0), "Only record NUM messages on each topic")
       ("bz2,j", "use BZ2 compression")
-      ("topic", po::value< std::vector<std::string> >(), "topic to record");
+      ("split", po::value<int>()->implicit_value(0), "Split the bag file and continue recording when maximum size or maximum duration reached.")
+      ("topic", po::value< std::vector<std::string> >(), "topic to record")
+      ("size", po::value<int>(), "The maximum size of the bag to record in MB.")
+      ("duration", po::value<double>(), "The maximum duration of the bag to record.");
+
     
     po::positional_options_description p;
     p.add("topic", -1);
@@ -97,10 +100,16 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
     }
     if (vm.count("split"))
     {
+      opts.split = true;
+
       int S = vm["split"].as<int>();
-      if (S < 0)
-        throw ros::Exception("Split size must be 0 or positive");
-      opts.split_size = 1048576 * S;
+      if (S != 0)
+      {
+        ROS_WARN("Use of \"--split <MAX_SIZE>\" has been deprecated.  Please use --split --size <MAX_SIZE> or --split --duration <MAX_DURATION>");
+        if (S < 0)
+          throw ros::Exception("Split size must be 0 or positive");
+        opts.max_size = 1048576 * S;
+      }
     }
     if (vm.count("buffsize"))
     {
@@ -116,6 +125,18 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
     if (vm.count("bz2"))
     {
       opts.compression = rosbag::compression::BZ2;
+    }
+    if (vm.count("duration"))
+    {
+      opts.max_duration = ros::Duration(vm["duration"].as<double>());
+      if (opts.max_duration <= ros::Duration(0))
+        throw ros::Exception("Duration must be positive.");
+    }
+    if (vm.count("size"))
+    {
+      opts.max_size = vm["size"].as<int>() * 1048576;
+      if (opts.max_size <= 0)
+        throw ros::Exception("Split size must be 0 or positive");
     }
 
     // Every non-option argument is assumed to be a topic
@@ -158,8 +179,8 @@ int main(int argc, char** argv) {
     }
 
     // Run the recorder
-	rosbag::Recorder recorder(opts);
-	int result = recorder.run();
-
-	return result;
+    rosbag::Recorder recorder(opts);
+    int result = recorder.run();
+    
+    return result;
 }

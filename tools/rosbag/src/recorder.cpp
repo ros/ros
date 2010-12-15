@@ -47,6 +47,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/regex.hpp>
 #include <boost/thread.hpp>
+#include <boost/thread/xtime.hpp>
 
 #include <ros/ros.h>
 #include <topic_tools/shape_shifter.h>
@@ -92,9 +93,11 @@ RecorderOptions::RecorderOptions() :
     prefix(""),
     name(""),
     exclude_regex(),
-    split_size(0),
     buffer_size(1048576 * 256),
-    limit(0)
+    limit(0),
+    split(false),
+    max_size(0),
+    max_duration(-1.0)
 {
 }
 
@@ -102,10 +105,10 @@ RecorderOptions::RecorderOptions() :
 
 Recorder::Recorder(RecorderOptions const& options) :
     options_(options),
-	num_subscribers_(0),
-	exit_code_(0),
-	queue_size_(0),
-	split_count_(0),
+    num_subscribers_(0),
+    exit_code_(0),
+    queue_size_(0),
+    split_count_(0),
     writing_enabled_(true)
 {
 }
@@ -154,6 +157,7 @@ int Recorder::run() {
 
     ros::Time::waitForValid();
 
+    start_time_ = ros::Time::now();
 
     // Subscribe to each topic
     if (!options_.regex) {
@@ -301,7 +305,7 @@ void Recorder::updateFilenames() {
         parts.push_back(prefix);
     if (options_.append_date)
         parts.push_back(timeToStr(ros::WallTime::now()));
-    if (options_.split_size > 0)
+    if (options_.split)
         parts.push_back(boost::lexical_cast<string>(split_count_));
 
     target_filename_ = parts[0];
@@ -349,6 +353,51 @@ void Recorder::stopWriting() {
     rename(write_filename_.c_str(), target_filename_.c_str());
 }
 
+bool Recorder::checkSize()
+{
+    if (options_.max_size > 0)
+    {
+        if (bag_.getSize() > options_.max_size)
+        {
+            if (options_.split)
+            {
+                stopWriting();
+                split_count_++;
+                startWriting();
+            } else {
+                ros::shutdown();
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool Recorder::checkDuration(const ros::Time& t)
+{
+    if (options_.max_duration > ros::Duration(0))
+    {
+        if (t - start_time_ > options_.max_duration)
+        {
+            if (options_.split)
+            {
+                while (start_time_ + options_.max_duration < t)
+                {
+                    stopWriting();
+                    split_count_++;
+                    start_time_ += options_.max_duration;
+                    startWriting();
+                }
+            } else {
+                ros::shutdown();
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
 //! Thread that actually does writing to file.
 void Recorder::doRecord() {
     // Open bag file for writing
@@ -373,7 +422,15 @@ void Recorder::doRecord() {
                 finished = true;
                 break;
             }
-            queue_condition_.wait(lock);
+            boost::xtime xt;
+            boost::xtime_get(&xt, boost::TIME_UTC);
+            xt.nsec += 250000000;
+            queue_condition_.timed_wait(lock, xt);
+            if (checkDuration(ros::Time::now()))
+            {
+                finished = true;
+                break;
+            }
         }
         if (finished)
             break;
@@ -383,12 +440,12 @@ void Recorder::doRecord() {
         queue_size_ -= out.msg->size();
         
         lock.release()->unlock();
+        
+        if (checkSize())
+            break;
 
-        if (options_.split_size > 0 && bag_.getSize() > options_.split_size) {
-            stopWriting();
-            split_count_++;
-            startWriting();
-        }
+        if (checkDuration(out.time))
+            break;
 
         if (scheduledCheckDisk() && checkLogging())
             bag_.write(out.topic, out.time, *out.msg, out.connection_header);

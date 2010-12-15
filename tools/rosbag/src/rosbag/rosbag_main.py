@@ -72,7 +72,7 @@ def record_cmd(argv):
     parser.add_option("-O", "--output-name",   dest="name",          default=None,  action="store",               help="record to bag with name NAME.bag")
     parser.add_option(      "--split",         dest="split",         default=False, callback=handle_split, action="callback",    help="Split the bag what maximum size or duariton is reached")
     parser.add_option(      "--size",          dest="size",                         type='int',   action="store", help="Record a bag of maximum size SIZE", metavar="SIZE")
-    parser.add_option(      "--duration",      dest="duration",                     type='float', action="store", help="Record a bag of maximum duration DURATION", metavar="DURATION")
+    parser.add_option(      "--duration",      dest="duration",                     type='string',action="store", help="Record a bag of maximum duration DURATION", metavar="DURATION")
     parser.add_option("-b", "--buffsize",      dest="buffsize",      default=256,   type='int',   action="store", help="use an internal buffer of SIZE MB (Default: %default, 0 = infinite)", metavar="SIZE")
     parser.add_option("-l", "--limit",         dest="num",           default=0,     type='int',   action="store", help="only record NUM messages on each topic")
     parser.add_option("-j", "--bz2",           dest="bz2",           default=False, action="store_true",          help="use BZ2 compression")
@@ -102,7 +102,7 @@ def record_cmd(argv):
             parser.error("Split specified without giving a maximum duration or size")
         cmd.extend(["--split"])
         if options.duration:
-            cmd.extend(["--duration", str(options.duration)])
+            cmd.extend(["--duration", options.duration])
         if options.size:
             cmd.extend(["--size", str(options.size)])
 

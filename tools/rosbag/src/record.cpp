@@ -36,6 +36,8 @@
 #include "rosbag/exceptions.h"
 
 #include "boost/program_options.hpp"
+#include <string>
+#include <sstream>
 
 namespace po = boost::program_options;
 
@@ -58,7 +60,7 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
       ("split", po::value<int>()->implicit_value(0), "Split the bag file and continue recording when maximum size or maximum duration reached.")
       ("topic", po::value< std::vector<std::string> >(), "topic to record")
       ("size", po::value<int>(), "The maximum size of the bag to record in MB.")
-      ("duration", po::value<double>(), "The maximum duration of the bag to record.");
+      ("duration", po::value<std::string>(), "The maximum duration of the bag to record.");
 
     
     po::positional_options_description p;
@@ -128,7 +130,32 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
     }
     if (vm.count("duration"))
     {
-      opts.max_duration = ros::Duration(vm["duration"].as<double>());
+      std::string duration_str = vm["duration"].as<std::string>();
+
+      double duration;
+      double multiplier = 1.0;
+      std::string unit("");
+
+      std::istringstream iss(duration_str);
+      if ((iss >> duration).fail())
+        throw ros::Exception("Duration must start with a floating point number.");
+
+      if (!iss.eof() and ((iss >> unit).fail()))
+        throw ros::Exception("Duration unit must be s, m, or h");
+      
+      if (unit == std::string(""))
+        multiplier = 1.0;
+      else if (unit == std::string("s"))
+        multiplier = 1.0;
+      else if (unit == std::string("m"))
+        multiplier = 60.0;
+      else if (unit == std::string("h"))
+        multiplier = 3600.0;
+      else
+        throw ros::Exception("Duration unit must be s, m, or h");
+
+      
+      opts.max_duration = ros::Duration(duration * multiplier);
       if (opts.max_duration <= ros::Duration(0))
         throw ros::Exception("Duration must be positive.");
     }

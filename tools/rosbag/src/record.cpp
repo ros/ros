@@ -48,6 +48,7 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
     po::options_description desc("Allowed options");
 
     desc.add_options()
+      ("help,h", "produce help message")
       ("all,a", "record all topics")
       ("regex,e", "match topics using regular expressions")
       ("exclude,x", po::value<std::string>(), "exclude topics matching regular expressions")
@@ -60,9 +61,9 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
       ("split", po::value<int>()->implicit_value(0), "Split the bag file and continue recording when maximum size or maximum duration reached.")
       ("topic", po::value< std::vector<std::string> >(), "topic to record")
       ("size", po::value<int>(), "The maximum size of the bag to record in MB.")
-      ("duration", po::value<std::string>(), "The maximum duration of the bag to record.");
+      ("duration", po::value<std::string>(), "Record a bag of maximum duration in seconds, unless 'm', or 'h' is appended.b");
 
-    
+  
     po::positional_options_description p;
     p.add("topic", -1);
     
@@ -77,6 +78,11 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
     }  catch (boost::program_options::unknown_option& e)
     {
       throw ros::Exception(e.what());
+    }
+
+    if (vm.count("help")) {
+      std::cout << desc << std::endl;
+      exit(0);
     }
 
     if (vm.count("all"))

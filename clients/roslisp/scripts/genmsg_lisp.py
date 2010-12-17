@@ -40,6 +40,8 @@
 ## t1: for reference; remove once running
 ## t2: can be changed once we remove strict diff-compatibility requirement with old version of genmsg_lisp
 
+from __future__ import with_statement
+
 import roslib; roslib.load_manifest('roslisp')
 
 import sys

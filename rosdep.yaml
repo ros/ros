@@ -25,7 +25,7 @@ python-yaml:
   centos: PyYAML
   arch: |
     if ! pacman -Q libyaml python-yaml; then yaourt -S libyaml python-yaml; fi
-  macports: py25-yaml
+  macports: py26-yaml
   gentoo: pyyaml
   cygwin: |
       if [ ! -d /usr/lib/python2.5/site-packages/yaml/ ] ; then
@@ -41,7 +41,7 @@ python-gtk2:
   ubuntu: python-gtk2
   arch: pygtk
   debian: python-gtk2
-  macports: py25-gtk
+  macports: py26-gtk
   fedora: pygtk2
   rhel: pygtk2
   gentoo: "=dev-python/pygtk-2*"
@@ -50,7 +50,7 @@ python-matplotlib:
   ubuntu: python-matplotlib
   arch: python-matplotlib
   debian: python-matplotlib
-  macports: py25-matplotlib
+  macports: py26-matplotlib
   fedora: python-matplotlib
   rhel: python-matplotlib
   gentoo: dev-python/matplotlib
@@ -61,7 +61,7 @@ python-imaging:
   fedora: python-imaging
   rhel: python-imaging
   arch: pil
-  macports: py25-pil
+  macports: py26-pil
   gentoo: dev-python/imaging
   freebsd: py26-imaging
 python-numpy:
@@ -70,7 +70,7 @@ python-numpy:
   fedora: numpy
   rhel: python-numpy
   arch: python-numpy
-  macports: py25-numpy
+  macports: py26-numpy
   gentoo: dev-python/numpy
   freebsd: py-numpy
 python-scipy:
@@ -78,7 +78,7 @@ python-scipy:
   debian: python-scipy
   arch: python-scipy
   fedora: scipy
-  macports: py25-scipy
+  macports: py26-scipy
   gentoo: dev-libs/scipy
   freebsd: py-scipy
 bzip2:
@@ -163,7 +163,7 @@ wxpython:
   rhel: wxPython-devel
   centos: wxPython-devel
   debian: python-wxgtk2.8
-  macports: py25-wxpython
+  macports: py26-wxpython
   gentoo: dev-python/wxpython
   freebsd: py26-wxPython
 libxext:
@@ -368,7 +368,7 @@ paramiko:
   ubuntu: python-paramiko
   debian: python-paramiko
   fedora: python-paramiko
-  macports: py25-paramiko
+  macports: py26-paramiko
   gentoo: dev-python/paramiko
   freebsd: py26-paramiko
 bazaar:

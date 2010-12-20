@@ -65,6 +65,12 @@ function _ros_list_packages {
     return 0
 }
 
+function _ros_list_stacks {
+    stacks=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
+    echo $stacks | tr ' ' '\n'
+    return 0
+}
+
 function _ros_decode_path {
     local rosname rosdir reldir last
 
@@ -210,7 +216,7 @@ function _roscomplete {
     local arg opts
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
-    opts=`_ros_list_packages`
+    opts="`_ros_list_packages` `_ros_list_stacks`"
     IFS=$'\n'
     COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
     unset IFS
@@ -551,12 +557,11 @@ function _roscomplete_roscreate_pkg {
 complete -F "_roscomplete_sub_dir" -o "nospace" "roscd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rospd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rosls"
-complete -F "_roscomplete" -o "nospace" "rosmake"
+complete -F "_roscomplete" "rosmake"
 complete -F "_roscomplete_exe" "rosrun"
 complete -F "_roscomplete_file" "rosed"
 complete -F "_roscomplete_file" "roscp"
 complete -F "_roscomplete_launch" -o filenames "roslaunch"
-complete -F "_roscomplete" -o "nospace" "rosupdate"
 complete -F "_roscomplete_rospack" "rospack"
 complete -F "_roscomplete_rosbag" "rosbag"
 complete -F "_roscomplete_rosnode" "rosnode"

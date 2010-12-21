@@ -138,8 +138,24 @@ int Recorder::run() {
         return 0;
 
     last_buffer_warn_ = Time();
-
     queue_ = new std::queue<OutgoingMessage>;
+
+    // Subscribe to each topic
+    if (!options_.regex) {
+    	foreach(string const& topic, options_.topics)
+			subscribe(topic);
+    }
+
+    if (!ros::Time::waitForValid(ros::WallDuration(2.0)))
+      ROS_WARN("/use_sim_time set to true and no clock published.  Still waiting for valid time...");
+
+    ros::Time::waitForValid();
+
+    start_time_ = ros::Time::now();
+
+    // Don't bother doing anything if we never got a valid time
+    if (!nh.ok())
+        return 0;
 
     ros::Subscriber trigger_sub;
 
@@ -155,15 +171,7 @@ int Recorder::run() {
     else
         record_thread = boost::thread(boost::bind(&Recorder::doRecord, this));
 
-    ros::Time::waitForValid();
 
-    start_time_ = ros::Time::now();
-
-    // Subscribe to each topic
-    if (!options_.regex) {
-    	foreach(string const& topic, options_.topics)
-			subscribe(topic);
-    }
 
     ros::Timer check_master_timer;
     if (options_.record_all || options_.regex)

@@ -42,6 +42,7 @@ import socket
 import logging
 import thread
 import threading
+import time
 import traceback
 
 from roslib.message import DeserializationError, Message
@@ -394,6 +395,7 @@ class TCPROSTransport(Transport):
 
         self.socket = None
         self.endpoint_id = 'unknown'
+        self.dest_address = None # for reconnection
         self.read_buff = cStringIO.StringIO()
         self.write_buff = cStringIO.StringIO()
             
@@ -440,6 +442,7 @@ class TCPROSTransport(Transport):
         """
         try:
             self.endpoint_id = endpoint_id
+            self.dest_address = (dest_addr, dest_port)
             
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             if _is_use_tcp_keepalive():
@@ -461,10 +464,12 @@ class TCPROSTransport(Transport):
             self.socket.connect((dest_addr, dest_port))
             self.write_header()
             self.read_header()
+
         except TransportInitError, tie:
             rospyerr("Unable to initiate TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, traceback.format_exc()))            
             raise
         except Exception, e:
+            # FATAL: no reconnection as error is unknown
             self.done = True
             if self.socket:
                 self.socket.close()
@@ -614,6 +619,30 @@ class TCPROSTransport(Transport):
             raise TransportException("receive_once[%s]: unexpected error %s"%(self.name, str(e)))
         return retval
         
+    def _reconnect(self):
+        # This reconnection logic is very hacky right now.  I need to
+        # rewrite the I/O core so that this is handled more centrally.
+
+        if self.dest_address is None:
+            raise ROSInitException("internal error with reconnection state: address not stored")
+
+        interval = 0.5 # seconds
+        while self.socket is None and not self.done and not rospy.is_shutdown():
+            try:
+                # set a timeout so that we can continue polling for
+                # exit.  30. is a bit high, but I'm concerned about
+                # embedded platforms.  To do this properly, we'd have
+                # to move to non-blocking routines.
+                self.connect(self.dest_address[0], self.dest_address[1], self.endpoint_id, timeout=30.)
+            except TransportInitError:
+                self.socket = None
+                
+            if self.socket is None:
+                # exponential backoff
+                interval = interval * 2
+                
+            time.sleep(interval)
+
     def receive_loop(self, msgs_callback):
         """
         Receive messages until shutdown
@@ -623,24 +652,40 @@ class TCPROSTransport(Transport):
         # - use assert here as this would be an internal error, aka bug
         logger.debug("receive_loop for [%s]", self.name)
         try:
-            try:
-                while not self.done and not is_shutdown():
-                    msgs = self.receive_once()
-                    if not self.done and not is_shutdown():
-                        msgs_callback(msgs)
-
-                rospydebug("receive_loop[%s]: done condition met, exited loop"%self.name)
-            except DeserializationError, e:
-                logerr("[%s] error deserializing incoming request: %s"%self.name, str(e))
-                rospyerr("[%s] error deserializing incoming request: %s"%self.name, traceback.format_exc())                 
-            except:
-                # in many cases this will be a normal hangup, but log internally
+            while not self.done and not is_shutdown():
                 try:
-                    #1467 sometimes we get exceptions due to
-                    #interpreter shutdown, so blanket ignore those if
-                    #the reporting fails
-                    rospydebug("exception in receive loop for [%s], may be normal. Exception is %s",self.name, traceback.format_exc())                    
-                except: pass
+                    if self.socket is not None:
+                        msgs = self.receive_once()
+                        if not self.done and not is_shutdown():
+                            msgs_callback(msgs)
+                    else:
+                        self._reconnect()
+
+                except TransportException, e:
+                    # set socket to None so we reconnect
+                    try:
+                        if self.socket is not None:
+                            self.socket.close()
+                    except:
+                        pass
+                    self.socket = None
+
+                except DeserializationError, e:
+                    #TODO: how should we handle reconnect in this case?
+                    
+                    logerr("[%s] error deserializing incoming request: %s"%self.name, str(e))
+                    rospyerr("[%s] error deserializing incoming request: %s"%self.name, traceback.format_exc())
+                    
+                except:
+                    # in many cases this will be a normal hangup, but log internally
+                    try:
+                        #1467 sometimes we get exceptions due to
+                        #interpreter shutdown, so blanket ignore those if
+                        #the reporting fails
+                        rospydebug("exception in receive loop for [%s], may be normal. Exception is %s",self.name, traceback.format_exc())                    
+                    except: pass
+                    
+            rospydebug("receive_loop[%s]: done condition met, exited loop"%self.name)                    
         finally:
             if not self.done:
                 self.close()

@@ -36,8 +36,9 @@
 
 import socket
 import threading
+import time
 
-from rospy.core import logwarn, logerr, logdebug
+from rospy.core import logwarn, logerr, logdebug, rospyerr
 import rospy.exceptions
 import rospy.names
 
@@ -148,6 +149,25 @@ class TCPROSPub(TCPROSTransportProtocol):
             base.update(self.headers)
         return base
 
+def robust_connect_subscriber(conn, dest_addr, dest_port, pub_uri, receive_cb):
+    """
+    Keeps trying to create connection for subscriber.  Then passes off to receive_loop once connected.
+    """
+    # kwc: this logic is not very elegant.  I am waiting to rewrite
+    # the I/O loop with async i/o to clean this up.
+    
+    # timeout is really generous. for now just choosing one that is large but not infinite
+    interval = 0.5
+    while conn.socket is None and not conn.done and not rospy.is_shutdown():
+        try:
+            conn.connect(dest_addr, dest_port, pub_uri, timeout=60.)
+        except rospy.exceptions.TransportInitError, e:
+            rospyerr("unable to create subscriber transport: %s.  Will try again in %ss", e, interval)
+            interval = interval * 2
+            time.sleep(interval)
+	
+    conn.receive_loop(receive_cb)	    
+
 class TCPROSHandler(rospy.impl.transport.ProtocolHandler):
     """
     ROS Protocol handler for TCPROS. Accepts both TCPROS topic
@@ -201,20 +221,14 @@ class TCPROSHandler(rospy.impl.transport.ProtocolHandler):
         sub = rospy.impl.registration.get_topic_manager().get_subscriber_impl(resolved_name)
 
         #Create connection 
-        try:
-            protocol = TCPROSSub(resolved_name, sub.data_class, \
-                                 queue_size=sub.queue_size, buff_size=sub.buff_size,
-                                 tcp_nodelay=sub.tcp_nodelay)
-            conn = TCPROSTransport(protocol, resolved_name)
-            # timeout is really generous. for now just choosing one that is large but not infinite
-            conn.connect(dest_addr, dest_port, pub_uri, timeout=60.)
-            t = threading.Thread(name=resolved_name, target=conn.receive_loop, args=(sub.receive_callback,))
-            # don't enable this just yet, need to work on this logic
-            #rospy.core._add_shutdown_thread(t)
-            t.start()
-        except rospy.exceptions.TransportInitError, e:
-            rospyerr("unable to create subscriber transport: %s", e)
-            return 0, "Internal error creating inbound TCP connection for [%s]: %s"%(resolved_name, e), -1
+        protocol = TCPROSSub(resolved_name, sub.data_class, \
+                             queue_size=sub.queue_size, buff_size=sub.buff_size,
+                             tcp_nodelay=sub.tcp_nodelay)
+        conn = TCPROSTransport(protocol, resolved_name)
+        t = threading.Thread(name=resolved_name, target=robust_connect_subscriber, args=(conn, dest_addr, dest_port, pub_uri, sub.receive_callback,))
+        # don't enable this just yet, need to work on this logic
+        #rospy.core._add_shutdown_thread(t)
+        t.start()
 
         # Attach connection to _SubscriberImpl
         if sub.add_connection(conn): #pass tcp connection to handler

@@ -49,7 +49,7 @@ namespace rosbag {
 UncompressedStream::UncompressedStream(ChunkedFile* file) : Stream(file) { }
 
 CompressionType UncompressedStream::getCompressionType() const {
-    return compression::None;
+    return compression::Uncompressed;
 }
 
 void UncompressedStream::write(void* ptr, size_t size) {

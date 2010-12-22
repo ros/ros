@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
     if len(args) < 1:
         parser.error('You must specify at least one bag file.')
-        
+
     for filename in args:
         b = rosbag.Bag(filename)
         index_pos = b._index_data_pos
@@ -69,7 +69,7 @@ if __name__ == '__main__':
             'chunk_count': bag._pack_uint32(0)
         }
         bag._write_record(f, header, padded_size=bag._FILE_HEADER_LENGTH)
-        f.truncate(index_pos / 100)
+        f.truncate(index_pos / 2)
         f.close()
         
         print '%s slashed.' % slash_filename
@@ -82,29 +82,11 @@ if __name__ == '__main__':
         version = bv.version
         bv.close()
 
-        if version == 102:
-            b = rosbag.Bag(slash_filename, allow_unindexed=True)
+        try:
+            b = rosbag.Bag(reindex_filename, 'a', allow_unindexed=True)
+        except Exception, ex:
+            print str(ex)
 
-            reindexed = rosbag.Bag(reindex_filename, 'w')
-
-            b.reindex()
-
-            try:
-                for (topic, msg, t) in b.read_messages():
-                    print topic, t
-                    reindexed.write(topic, msg, t)
-            except:
-                pass
-            reindexed.close()
-
-            b.close()
-        else:
-            try:
-                b = rosbag.Bag(reindex_filename, 'a', allow_unindexed=True)
-            except Exception, ex:
-                print str(ex)
-            try:
-                b.reindex()
-            except:
-                pass
-            b.close()
+        for done in b.reindex():
+            print done
+        b.close()

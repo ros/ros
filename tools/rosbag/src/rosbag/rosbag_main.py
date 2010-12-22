@@ -598,7 +598,8 @@ def reindex_op(inbag, outbag, quiet):
     if inbag.version == 102:
         if quiet:
             try:
-                inbag.reindex()
+                for offset in inbag.reindex():
+                    pass
             except:
                 pass
 
@@ -607,7 +608,7 @@ def reindex_op(inbag, outbag, quiet):
         else:
             meter = ProgressMeter(outbag.filename, inbag.size)
             try:
-                for offset in inbag.reindex(True):
+                for offset in inbag.reindex():
                     meter.step(offset)
             except:
                 pass
@@ -621,13 +622,14 @@ def reindex_op(inbag, outbag, quiet):
     else:
         if quiet:
             try:
-                outbag.reindex()
+                for offset in outbag.reindex():
+                    pass
             except:
                 pass
         else:
             meter = ProgressMeter(outbag.filename, outbag.size)
             try:
-                for offset in outbag.reindex(True):
+                for offset in outbag.reindex():
                     meter.step(offset)
             except:
                 pass

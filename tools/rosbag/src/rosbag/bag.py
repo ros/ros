@@ -1830,6 +1830,8 @@ class _BagReader200(_BagReader):
         self.bag._file.seek(self.bag._file_header_pos)
         self.read_file_header_record()
 
+        trunc_pos = None
+
         while True:
             chunk_pos = f.tell()
             if chunk_pos >= total_bytes:
@@ -1841,8 +1843,11 @@ class _BagReader200(_BagReader):
                 self._reindex_read_chunk(f, chunk_pos, total_bytes)
             except Exception, ex:
                 break
+            
+            trunc_pos = f.tell()
 
-        f.truncate(f.tell())
+        if trunc_pos and trunc_pos < total_bytes:
+            f.truncate(trunc_pos)
 
     def _reindex_read_chunk(self, f, chunk_pos, total_bytes):
         # Read the chunk header
@@ -1922,10 +1927,6 @@ class _BagReader200(_BagReader):
             else:
                 offset = chunk_file.tell()
 
-        self.bag._chunk_headers[chunk_pos] = chunk_header
-
-        self.bag._chunks.append(self.bag._curr_chunk_info)
-
         # Skip over index records, connection records and chunk info records
         next_op = _peek_next_header_op(f)
         while next_op != _OP_CHUNK:
@@ -1939,6 +1940,10 @@ class _BagReader200(_BagReader):
                 break
 
             next_op = _peek_next_header_op(f)
+
+        # Chunk was read correctly - store info
+        self.bag._chunk_headers[chunk_pos] = chunk_header
+        self.bag._chunks.append(self.bag._curr_chunk_info)
 
     def _read_terminal_connection_records(self):
         b, f, r = self.bag, self.bag._file, self.bag._reader

@@ -238,7 +238,7 @@ class Bag(object):
         """
         self.flush()
 
-        if topics and type(topics) == str:
+        if topics and type(topics) is str:
             topics = [topics]
         
         return self._reader.read_messages(topics, start_time, end_time, connection_filter, raw)
@@ -729,13 +729,13 @@ class Bag(object):
         Yield the connections, optionally filtering by topic and/or connection information.
         """
         if topics:
-            if type(topics) == str:
-                topics = set([topics])
+            if type(topics) is str:
+                topics = set([roslib.names.canonicalize_name(topics)])
             else:
-                topics = set(topics)
-        
+                topics = set([roslib.names.canonicalize_name(t) for t in topics])
+
         for c in self._connections.values():
-            if topics and c.topic not in topics:
+            if topics and c.topic not in topics and roslib.names.canonicalize_name(c.topic) not in topics:
                 continue
             if connection_filter and not connection_filter(c.topic, c.datatype, c.md5sum, c.msg_def, c.header):
                 continue

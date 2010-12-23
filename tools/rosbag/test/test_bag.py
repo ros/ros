@@ -2,16 +2,20 @@
 #
 # test_bag.py
 
+from __future__ import with_statement
+
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
 import heapq
 import os
+import shutil
 import sys
 import time
 import unittest
 
 import rosbag
+from rosbag import bag
 import rospy
 from std_msgs.msg import Int32
 from std_msgs.msg import ColorRGBA
@@ -161,6 +165,50 @@ class TestRosbag(unittest.TestCase):
         msgs = list(rosbag.Bag(outbag_filename).read_messages())
 
         self.assertEquals(len(msgs), 5)
+
+    def test_reindex_works(self):
+        fn = '/tmp/test_reindex_works.bag'
+        
+        chunk_threshold = 1024
+
+        with rosbag.Bag(fn, 'w', chunk_threshold=chunk_threshold) as b:
+            for i in range(100):
+                for j in range(5):
+                    msg = Int32()
+                    msg.data = i
+                    b.write('/topic%d' % j, msg)
+            file_header_pos = b._file_header_pos
+
+        start_index = 4117 + chunk_threshold * 2 + chunk_threshold / 2
+
+        trunc_filename   = '%s.trunc%s'   % os.path.splitext(fn)
+        reindex_filename = '%s.reindex%s' % os.path.splitext(fn)
+
+        for trunc_index in range(start_index, start_index + chunk_threshold):
+            shutil.copy(fn, trunc_filename)
+            
+            with open(trunc_filename, 'r+b') as f:
+                f.seek(file_header_pos)
+                header = {
+                    'op':          bag._pack_uint8(bag._OP_FILE_HEADER),
+                    'index_pos':   bag._pack_uint64(0),
+                    'conn_count':  bag._pack_uint32(0),
+                    'chunk_count': bag._pack_uint32(0)
+                }
+                bag._write_record(f, header, padded_size=bag._FILE_HEADER_LENGTH)
+                f.truncate(trunc_index)
+
+            shutil.copy(trunc_filename, reindex_filename)
+       
+            try:
+                b = rosbag.Bag(reindex_filename, 'a', allow_unindexed=True)
+            except Exception, ex:
+                pass
+            for done in b.reindex():
+                pass
+            b.close()
+
+            msgs = list(rosbag.Bag(reindex_filename, 'r'))
         
 if __name__ == '__main__':
     import rostest

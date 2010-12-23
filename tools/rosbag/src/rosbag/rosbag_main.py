@@ -114,8 +114,9 @@ def record_cmd(argv):
 def info_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag info [options] BAGFILE1 [BAGFILE2 BAGFILE3 ...]',
                                    description='Summarize the contents of one or more bag files.')
-    parser.add_option("-y", "--yaml", dest="yaml", default=False, action="store_true", help="print information in YAML format")
-    parser.add_option("-k", "--key",  dest="key",  default=None,  action="store",      help="print information on the given key")
+    parser.add_option('-y', '--yaml', dest='yaml', default=False, action='store_true', help='print information in YAML format')
+    parser.add_option('-k', '--key',  dest='key',  default=None,  action='store',      help='print information on the given key')
+    parser.add_option(      '--freq', dest='freq', default=False, action='store_true', help='display topic message frequency statistics')
     (options, args) = parser.parse_args(argv)
 
     if len(args) == 0:
@@ -125,7 +126,7 @@ def info_cmd(argv):
 
     for i, arg in enumerate(args):
         try:
-            b = Bag(arg)
+            b = Bag(arg, 'r', skip_index=not options.freq)
             if options.yaml:
                 info = b._get_yaml_info(key=options.key)
                 if info is not None:

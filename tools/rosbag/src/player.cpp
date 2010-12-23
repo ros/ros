@@ -162,6 +162,8 @@ void Player::publish() {
 
     std::cout << std::endl << "Hit space to toggle paused, or 's' to step." << std::endl;
 
+    paused_ = options_.start_paused;
+
     while (true) {
         // Set up our time_translator and publishers
 
@@ -183,7 +185,6 @@ void Player::publish() {
         else
             time_publisher_.setPublishFrequency(-1.0);
 
-        paused_ = options_.start_paused;
         paused_time_ = now_wt;
 
         // Call do-publish for each message

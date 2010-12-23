@@ -149,6 +149,9 @@ class Bag(object):
 
         self._output_file = self._file
 
+    def __iter__(self):
+        return self.read_messages()
+
     def __enter__(self):
         return self
         

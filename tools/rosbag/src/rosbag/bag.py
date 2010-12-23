@@ -1886,6 +1886,8 @@ class _BagReader200(_BagReader):
         else:
             offset = chunk_file.tell()
 
+        expected_index_length = 0
+
         while offset < chunk_header.uncompressed_size:
             op = _peek_next_header_op(chunk_file)
 
@@ -1925,6 +1927,8 @@ class _BagReader200(_BagReader):
                     raise ROSBagException('connection id (id=%d) in chunk at position %d not preceded by connection record' % (connection_id, chunk_pos))
                 bisect.insort_right(self.bag._connection_indexes[connection_id], _IndexEntry200(t, chunk_pos, offset)) 
 
+                expected_index_length += 1
+
             if chunk_header.compression == Compression.NONE:
                 offset = chunk_file.tell() - chunk_pos
             else:
@@ -1932,14 +1936,20 @@ class _BagReader200(_BagReader):
 
         # Skip over index records, connection records and chunk info records
         next_op = _peek_next_header_op(f)
+        
+        total_index_length = 0
+        
         while next_op != _OP_CHUNK:
             if next_op == _OP_INDEX_DATA:
                 # Bug workaround: C Turtle bags (pre-1.1.15) were written with an incorrect data length
-                self.read_connection_index_record()
+                _, index = self.read_connection_index_record()
+                total_index_length += len(index)
             else:
                 _skip_record(f)
 
             if f.tell() >= total_bytes:
+                if total_index_length != expected_index_length:
+                    raise ROSBagException('index shorter than expected (%d vs %d)' % (total_index_length, expected_index_length))
                 break
 
             next_op = _peek_next_header_op(f)

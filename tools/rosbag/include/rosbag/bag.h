@@ -84,11 +84,23 @@ public:
     Bag();
 
     //! Open a bag file
+    /*!
+     * \param filename The bag file to open
+     * \param mode     The mode to use (either read, write or append)
+     *
+     * Can throw BagException
+     */
     Bag(std::string const& filename, uint32_t mode = bagmode::Read);
 
     ~Bag();
 
-    //! Open a bag file
+    //! Open a bag file.
+    /*!
+     * \param filename The bag file to open
+     * \param mode     The mode to use (either read, write or append)
+     *
+     * Can throw BagException
+     */
     void open(std::string const& filename, uint32_t mode = bagmode::Read);
 
     //! Close the bag file

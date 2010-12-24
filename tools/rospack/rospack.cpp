@@ -1650,7 +1650,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
     {
       if(!i->size())
         continue;
-      else if (Package::is_no_subdirs(*i))
+      else if (!Package::is_package(*i) && Package::is_no_subdirs(*i))
         fprintf(stderr, "[rospack] WARNING: non-package directory in "
                 "ROS_PACKAGE_PATH marked rospack_nosubdirs:\n\t%s\n",
                 i->c_str());

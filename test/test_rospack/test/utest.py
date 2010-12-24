@@ -630,6 +630,14 @@ class RospackTestCase(unittest.TestCase):
         package1p = os.path.abspath(os.path.join('structure_test', 'package1'))
         self.erospack_succeed(testp, package1p, 'package1', 'find')
         self.assertEquals(package1p, self.erun_rospack(testp, package1p, 'package1', 'find'))
+
+    ## test rospack find with ros_package_path set directly to a package,
+    ## where that package contains a rospack_nosubdirs file, #3191.
+    def test_rospack_find_direct_with_rospack_nosubdirs(self):
+        testp = os.path.abspath('test')
+        package2p = os.path.abspath(os.path.join('structure_test', 'package2'))
+        self.erospack_succeed(testp, package2p, 'package2', 'find')
+        self.assertEquals(package2p, self.erun_rospack(testp, package2p, 'package2', 'find'))
         
     def test_rospack_find_no_rpp(self):
         rr = os.path.abspath('structure_test')

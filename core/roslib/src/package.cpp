@@ -55,12 +55,15 @@ std::string command(const std::string& _cmd)
     ret = rp.run(_cmd);
     if(ret == 0)
       return rp.getOutput();
-    else
-      std::cerr << "ROSPack::run returned non-zero." << std::endl;
+    else {
+      if ( !rp.is_quiet() )
+	std::cerr << "ROSPack::run returned non-zero." << std::endl;
+    }
   }
   catch(std::runtime_error &e)
   {
-    std::cerr << "[rospack] " << e.what() << std::endl;
+    if ( !rp.is_quiet() )
+      std::cerr << "[rospack] " << e.what() << std::endl;
   }
   return std::string("");
 }

@@ -965,6 +965,15 @@ macro(rosbuild_add_openmp_flags target)
     _rosbuild_warn("because ROS_TEST_COVERAGE is set, OpenMP support is disabled")
   else("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
   
+  # First, try to use the standard FindOpenMP module (#3184).  If that
+  # fails, fall back on manual detection.  I don't know why the standard
+  # detection would ever fail; it's possible that the manual
+  # detection is now vestigial and could be removed.
+  include(FindOpenMP)
+  if(${OPENMP_FOUND} STREQUAL "TRUE")
+      rosbuild_add_compile_flags(${target} ${OpenMP_C_FLAGS})
+      rosbuild_add_link_flags(${target} ${OpenMP_C_FLAGS})
+  else(${OPENMP_FOUND} STREQUAL "TRUE")
   # list of OpenMP flags to check
     set(_rospack_check_openmp_flags
       "-fopenmp" # gcc
@@ -987,7 +996,7 @@ macro(rosbuild_add_openmp_flags target)
       if(NOT _rospack_openmp_flag_found)      
         set(CMAKE_REQUIRED_FLAGS ${_rospack_openmp_test_flag})
         check_function_exists(omp_set_num_threads _rospack_openmp_function_found${_rospack_openmp_test_flag})
-  	   
+   
         if(_rospack_openmp_function_found${_rospack_openmp_test_flag})
   	set(_rospack_openmp_flag_value ${_rospack_openmp_test_flag})
   	set(_rospack_openmp_flag_found TRUE)
@@ -1006,6 +1015,7 @@ macro(rosbuild_add_openmp_flags target)
       message("WARNING: OpenMP compile flag not found")
     endif(_rospack_openmp_flag_found)
 
+  endif(${OPENMP_FOUND} STREQUAL "TRUE")
   endif("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
 endmacro(rosbuild_add_openmp_flags)
 

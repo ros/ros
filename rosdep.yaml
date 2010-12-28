@@ -60,3 +60,19 @@ python-numpy:
   macports: py26-numpy
   gentoo: dev-python/numpy
   freebsd: py-numpy
+python-matplotlib:
+  ubuntu: python-matplotlib
+  arch: python-matplotlib
+  debian: python-matplotlib
+  macports: py26-matplotlib
+  fedora: python-matplotlib
+  rhel: python-matplotlib
+  gentoo: dev-python/matplotlib
+  freebsd: py26-matplotlib
+paramiko:
+  ubuntu: python-paramiko
+  debian: python-paramiko
+  fedora: python-paramiko
+  macports: py26-paramiko
+  gentoo: dev-python/paramiko
+  freebsd: py26-paramiko

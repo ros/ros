@@ -1,12 +1,3 @@
-ruby:
-  ubuntu: ruby
-  debian: ruby
-  arch: ruby
-  fedora: ruby
-  macports: |
-  gentoo: ruby
-  freebsd: ruby
-  fedora: ruby
 python:
   ubuntu: python-dev
   debian: python-dev

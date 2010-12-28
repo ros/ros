@@ -46,33 +46,6 @@ python-gtk2:
   rhel: pygtk2
   gentoo: "=dev-python/pygtk-2*"
   freebsd: py-gtk2
-python-matplotlib:
-  ubuntu: python-matplotlib
-  arch: python-matplotlib
-  debian: python-matplotlib
-  macports: py26-matplotlib
-  fedora: python-matplotlib
-  rhel: python-matplotlib
-  gentoo: dev-python/matplotlib
-  freebsd: py26-matplotlib
-python-imaging:
-  ubuntu: python-imaging
-  debian: python-imaging
-  fedora: python-imaging
-  rhel: python-imaging
-  arch: pil
-  macports: py26-pil
-  gentoo: dev-python/imaging
-  freebsd: py26-imaging
-python-numpy:
-  ubuntu: python-numpy
-  debian: python-numpy
-  fedora: numpy
-  rhel: python-numpy
-  arch: python-numpy
-  macports: py26-numpy
-  gentoo: dev-python/numpy
-  freebsd: py-numpy
 python-scipy:
   ubuntu: python-scipy
   debian: python-scipy
@@ -364,13 +337,6 @@ fltk:
   macports: fltk
   gentoo: "=x11-libs/fltk-1*"
   freebsd: fltk
-paramiko:
-  ubuntu: python-paramiko
-  debian: python-paramiko
-  fedora: python-paramiko
-  macports: py26-paramiko
-  gentoo: dev-python/paramiko
-  freebsd: py26-paramiko
 bazaar:
   ubuntu: bzr
   debian: bzr

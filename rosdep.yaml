@@ -42,4 +42,13 @@ log4cxx:
   gentoo: dev-libs/log4cxx
   cygwin: liblog4cxx-devel
   freebsd: log4cxx
+python-imaging:
+  ubuntu: python-imaging
+  debian: python-imaging
+  fedora: python-imaging
+  rhel: python-imaging
+  arch: pil
+  macports: py26-pil
+  gentoo: dev-python/imaging
+  freebsd: py26-imaging
 

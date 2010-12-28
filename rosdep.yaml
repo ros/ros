@@ -51,4 +51,12 @@ python-imaging:
   macports: py26-pil
   gentoo: dev-python/imaging
   freebsd: py26-imaging
-
+python-numpy:
+  ubuntu: python-numpy
+  debian: python-numpy
+  fedora: numpy
+  rhel: python-numpy
+  arch: python-numpy
+  macports: py26-numpy
+  gentoo: dev-python/numpy
+  freebsd: py-numpy

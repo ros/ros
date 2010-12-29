@@ -210,21 +210,22 @@ def roscreatestack_main():
         print >> sys.stderr, str(e)
         sys.exit(1)
 
+    # defaults
+    stack_manifest = None
+    author = "Maintained by %s"%author_name()
+
     if not options.show_deps:
       # Check for existing stack.xml
       stack_xml_path = os.path.join(stack_dir, 'stack.xml')
       if os.path.exists(stack_xml_path):
           import shutil
           stack_xml_path_bak = os.path.join(stack_dir, 'stack.xml.bak')
-          print 'Backing up existing stack.xml to %s'%stack_xml_path_bak
+          print 'Backing up existing stack.xml to %s'%(stack_xml_path_bak)
           shutil.copyfile(stack_xml_path, stack_xml_path_bak)
 
           # load existing stack.xml properties
           stack_manifest = roslib.stack_manifest.parse_file(stack_xml_path)
           author = stack_manifest.author
-      else:
-          stack_manifest = None
-          author = "Maintained by %s"%author_name()
   
     create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, options.show_deps)
 

@@ -67,7 +67,7 @@ class RoscreateStackTest(unittest.TestCase):
     
     # test on ros_root
     depends, licenses = compute_stack_depends_and_licenses(os.environ['ROS_ROOT'])
-    self.assertEquals({'ros': []}, depends)
+    self.assertEquals({}, depends)
     self.assert_('BSD' in licenses)
 
 

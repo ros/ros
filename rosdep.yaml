@@ -285,14 +285,6 @@ scons:
   macports: scons
   gentoo: dev-util/scons
   freebsd: scons
-ant:
-  ubuntu: ant
-  debian: ant
-  arch: apache-ant
-  fedora: ant
-  macports: apache-ant
-  gentoo: dev-java/ant
-  freebsd: apache-ant
 libstdc++5:
   ubuntu: libstdc++5
   debian: libstdc++5

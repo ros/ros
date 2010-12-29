@@ -37,6 +37,32 @@ import unittest
 
 class RoscreateStackTest(unittest.TestCase):
   
+  def test_command_line(self):
+    from subprocess import Popen, PIPE
+    from roslib.rosenv import get_ros_root
+    # ros has no deps.  this test is also a tripwire for crasher bug
+    output = Popen(['roscreate-stack', get_ros_root(), '--show-deps'], stdout=PIPE, stderr=PIPE).communicate()
+    self.assertEquals('', output[0].strip())
+    self.assertEquals('', output[1].strip())
+    
+    # go into fake environment
+    d = roslib.packages.get_pkg_dir('test_roscreate')
+    d = os.path.join(d, 'test', 'fake-pkg')
+    # manipulate our environment as roscreate-stack is dependent on this
+    os.environ['ROS_PACKAGE_PATH'] = d
+    stack1 = os.path.join(d, 'stack1')
+    stack2 = os.path.join(d, 'stack2')
+    
+    output = Popen(['roscreate-stack', stack1, '--show-deps'], stdout=PIPE, stderr=PIPE).communicate()
+    self.assertEquals('<depend stack="ros"/> <!-- roslib -->', output[0].strip())
+    self.assertEquals('', output[1].strip())
+
+    output = Popen(['roscreate-stack', stack2, '--show-deps'], stdout=PIPE, stderr=PIPE).communicate()
+    self.assert_('<depend stack="ros"/>' in output[0], output[0])
+    self.assert_('<depend stack="stack1"/>' in output[0], output[0])
+    self.assertEquals(2, len(output[0].strip().split('\n')))
+    self.assertEquals('', output[1].strip())
+    
   def test_compute_stack_depends_and_licenses(self):
     # this will catch only the most basic of bugs. the issue here is
     # that the test can't assume the existence of other stacks, so we

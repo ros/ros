@@ -116,7 +116,7 @@ wxwidgets:
   debian: libwxgtk2.8-dev
   fedora: wxGTK-devel
   rhel: wxGTK-devel
-  macports: wxwidgets
+  macports: wxWidgets-python
   arch: wxgtk
   gentoo: x11-libs/wxGTK
   freebsd: wxgtk2

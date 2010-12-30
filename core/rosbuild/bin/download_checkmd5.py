@@ -16,6 +16,11 @@ def main():
   else:
     parser.error("wrong number of arguments")
 
+  # Create intermediate directories as necessary, #2970
+  d = os.path.dirname(dest)
+  if len(d) and not os.path.exists(d):
+    os.makedirs(d)
+
   fresh = False
   if not os.path.exists(dest):
     sys.stdout.write('[rosbuild] Downloading %s to %s...'%(uri, dest))

@@ -1205,6 +1205,11 @@ macro(rosbuild_include pkg module)
     list(GET _rosbuild_EXPORTS_stripped ${_idx} _dir)
     if("${_pkg}" STREQUAL "${pkg}")
       message("[rosbuild] Including ${_dir}/${module}.cmake")
+      # Add this directory to CMake's search path, so that included files
+      # can include other files in a relative manner, #2813.
+      if(NOT CMAKE_MODULE_PATH MATCHES ${_dir})
+        set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${_dir})
+      endif()
       include(${_dir}/${module}.cmake)
       # Poor man's break
       set(_found True)

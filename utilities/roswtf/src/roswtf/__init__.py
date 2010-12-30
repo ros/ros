@@ -120,6 +120,11 @@ def _roswtf_main():
                       action="store_true",
                       help="disable roswtf plugins")
 
+    parser.add_option("--offline", 
+                      dest="offline", default=False,
+                      action="store_true",
+                      help="only run offline tests")
+
     #TODO: --all-pkgs option
     options, args = parser.parse_args()
     if args:
@@ -196,7 +201,7 @@ def _roswtf_main():
 
     try:
         online_checks = False
-        if not ctx.ros_master_uri or invalid_url(ctx.ros_master_uri):
+        if options.offline or not ctx.ros_master_uri or invalid_url(ctx.ros_master_uri):
             master = None
         else:
             master = roslib.scriptutil.get_master()

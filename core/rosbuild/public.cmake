@@ -226,9 +226,7 @@ macro(rosbuild_init)
     # saving only the last one.
     #
     list(REVERSE ${_prefix}_LIBRARIES)
-    #list(REMOVE_DUPLICATES ${_prefix}_LIBRARIES)
-    _rosbuild_list_remove_duplicates("${${_prefix}_LIBRARIES}" _tmplist)
-    set(${_prefix}_LIBRARIES ${_tmplist})
+    list(REMOVE_DUPLICATES ${_prefix}_LIBRARIES)
     list(REVERSE ${_prefix}_LIBRARIES)
   
     # Also throw in the libs that we want to link everything against (only
@@ -458,9 +456,7 @@ macro(rosbuild_init)
   # saving only the last one.
   #
   list(REVERSE _gtest_LIBRARIES)
-  #list(REMOVE_DUPLICATES _gtest_LIBRARIES)
-  _rosbuild_list_remove_duplicates(${_gtest_LIBRARIES} _tmplist)
-  set(_gtest_LIBRARIES ${_tmplist})
+  list(REMOVE_DUPLICATES _gtest_LIBRARIES)
   list(REVERSE _gtest_LIBRARIES)
 
   # Delete the files that let rospack know messages/services have been generated

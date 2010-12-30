@@ -919,6 +919,10 @@ endmacro(rosbuild_download_test_data)
 # depend on the result of untarring the file (can be ALL).
 macro(rosbuild_untar_file _filename _unpacked_name)
   get_filename_component(unpack_dir ${_filename} PATH)
+  # Check whether the filename has a directory component, #3034
+  if(NOT unpack_dir)
+    set(unpack_dir ${PROJECT_SOURCE_DIR})
+  endif(NOT unpack_dir)
   add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_unpacked_name}
                      COMMAND rm -rf ${PROJECT_SOURCE_DIR}/${_unpacked_name}
                      COMMAND tar xvCf ${unpack_dir} ${PROJECT_SOURCE_DIR}/${_filename}

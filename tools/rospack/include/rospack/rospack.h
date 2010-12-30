@@ -317,6 +317,9 @@ private:
   bool cache_lock_failed;
   bool crawled;
   std::string getCachePath();
+  // Storage for list of path components, used in add_package.  We keep it
+  // here to avoid reallocation in every run of add_package.
+  std::vector<std::string> path_components;
   // Add package, filtering out duplicates.
   Package* add_package(std::string path);
   /** tests if the cache exists, is new enough, and is valid */

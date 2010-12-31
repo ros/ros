@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
-# Copyright (c) 2009, Willow Garage, Inc.
+# Copyright (c) 2010, Willow Garage, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,10 +34,11 @@
 # Revision $Id: test_roslaunch_command_line_online.py 6411 2009-10-02 21:32:01Z kwc $
 
 PKG = 'test_roslaunch'
-NAME = 'test_roslaunch_command_line_online'
+NAME = 'test_roslaunch_dump_params'
 import roslib; roslib.load_manifest(PKG)
 
 import os
+import signal
 import sys 
 import time
 import unittest
@@ -47,30 +48,66 @@ import rostest
 
 from subprocess import Popen, PIPE, check_call, call
 
-class TestRoslaunchOnline(unittest.TestCase):
+class TestDumpParams(unittest.TestCase):
 
     def setUp(self):
-        self.vals = set()
-        self.msgs = {}
+        pass
 
     def test_roslaunch(self):
         # network is initialized
         cmd = 'roslaunch'
-
-        # regression test for #1994
-        # --wait
-        # master is already running, noop only sets params, so this should return
-        check_call([cmd, '--wait', 'test_roslaunch', 'noop.launch'])
-
-        # tripwire test for #2370, not really possible to validate output on this
-        check_call([cmd, '--screen', 'test_roslaunch', 'noop.launch'])        
 
         # Smoke test for testing parameters
         p = Popen([cmd, '--dump-params', 'test_roslaunch', 'noop.launch'], stdout = PIPE)
         o, e = p.communicate()
         self.assert_(p.returncode == 0, "Return code nonzero for param dump! Code: %d" % (p.returncode))
 
-        self.assertEquals({'noop': 'noop'}, yaml.load(o))
+        self.assertEquals({'/noop': 'noop'}, yaml.load(o))
+
+        p = Popen([cmd, '--dump-params', 'test_roslaunch', 'test-dump-rosparam.launch'], stdout = PIPE)
+        o, e = p.communicate()
+        self.assert_(p.returncode == 0, "Return code nonzero for param dump! Code: %d" % (p.returncode))
+
+        val = {
+            '/string1': 'bar',
+            '/dict1/head': 1,
+            '/dict1/shoulders': 2,
+            '/dict1/knees': 3,
+            '/dict1/toes': 4,
+
+            '/rosparam/string1': 'bar',
+            '/rosparam/dict1/head': 1,
+            '/rosparam/dict1/shoulders': 2,
+            '/rosparam/dict1/knees': 3,
+            '/rosparam/dict1/toes': 4,
+            
+            '/node_rosparam/string1': 'bar',
+            '/node_rosparam/dict1/head': 1,
+            '/node_rosparam/dict1/shoulders': 2,
+            '/node_rosparam/dict1/knees': 3,
+            '/node_rosparam/dict1/toes': 4,
+
+            '/inline_str': 'value1',
+            '/inline_list': [1, 2, 3, 4],
+            '/inline_dict/key1': 'value1',
+            '/inline_dict/key2': 'value2',
+
+            '/inline_dict2/key3': 'value3',
+            '/inline_dict2/key4': 'value4',
+            
+            '/override/key1': 'override1',
+            '/override/key2': 'value2',
+            '/noparam1': 'value1',
+            '/noparam2': 'value2',
+            }
+        output_val = yaml.load(o)
+        if not val == output_val:
+            for k, v in val.iteritems():
+                if k not in output_val:
+                    self.fail("key [%s] not in output: %s"%(k, output_val))
+                elif v != output_val[k]:
+                    self.fail("key [%s] value [%s] does not match output: %s"%(k, v, output_val[k])) 
+        self.assertEquals(val, output_val)
 
 if __name__ == '__main__':
-    rostest.run(PKG, NAME, TestRoslaunchOnline, sys.argv)
+    rostest.run(PKG, NAME, TestDumpParams, sys.argv)

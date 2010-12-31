@@ -47,15 +47,8 @@ class RoslibRospackTest(unittest.TestCase):
     val = rospackexec(['list'])
     self.assertEquals(set(['rospack']), set(rospack_depends('roslib')))
     self.assertEquals(set(['rospack']), set(rospack_depends_1('roslib')))    
-    self.assertEquals(set(['roslib', 'roslang', 'std_msgs', 'rosgraph_msgs']), set(rospack_depends_1('rospy')))
-    self.assertEquals(set(['rospack', 'roslib', 'std_msgs', 'rosgraph_msgs', 'roslang', 'rosbuild']), set(rospack_depends('rospy')))
-
-    val = rospack_depends_on('roslang')
-    self.assert_('rospy' in val, val)
-    self.assert_('roscpp' in val)    
-    val = rospack_depends_on_1('roslang')
-    self.assert_('rospy' in val)
-    self.assert_('roscpp' in val)
+    self.assertEquals(set(['roslib', 'rosdep']), set(rospack_depends_1('rosmake')))
+    self.assertEquals(set(['roslib', 'rosdep', 'rospack']), set(rospack_depends('rosmake')))
 
   def test_rosstack(self):
     from roslib.rospack import rosstackexec, rosstack_depends, rosstack_depends_1,\

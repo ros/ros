@@ -44,13 +44,13 @@ class RoslibStacksTest(unittest.TestCase):
   
     def test_packages_of(self):
         from roslib.stacks import packages_of
-        pkgs = packages_of('ros_comm')
-        for p in ['test_roslib', 'rospy', 'roscpp']:
-            self.assert_(p in pkgs)
+        pkgs = packages_of('ros')
+        for p in ['test_roslib', 'rosbuild', 'rospack']:
+            self.assert_(p in pkgs, p)
         # due to caching behavior, test twice
-        pkgs = packages_of('ros_comm')
-        for p in ['test_roslib', 'rospy', 'roscpp']:
-            self.assert_(p in pkgs)
+        pkgs = packages_of('ros')
+        for p in ['test_roslib', 'rosbuild', 'rospack']:
+            self.assert_(p in pkgs, p)
 
         try:
             packages_of(None)
@@ -60,9 +60,9 @@ class RoslibStacksTest(unittest.TestCase):
     def test_stack_of(self):
         import roslib.packages
         from roslib.stacks import stack_of
-        self.assertEquals('ros_comm', stack_of('test_roslib'))
+        self.assertEquals('ros', stack_of('test_roslib'))
         # due to caching, test twice
-        self.assertEquals('ros_comm', stack_of('test_roslib'))
+        self.assertEquals('ros', stack_of('test_roslib'))
         try:
             stack_of('fake_test_roslib')
             self.fail("should have failed")
@@ -72,7 +72,7 @@ class RoslibStacksTest(unittest.TestCase):
     def test_list_stacks(self):
         from roslib.stacks import list_stacks
         l = list_stacks()
-        self.assert_('ros_comm' in l)
+        self.assert_('ros' in l)
 
         # make sure it is equivalent to rosstack list
         from roslib.rospack import rosstackexec
@@ -178,7 +178,7 @@ class RoslibStacksTest(unittest.TestCase):
             # it's possible to accidentally pass in a sequence type
             # like a string and get weird results, so check that we
             # don't
-            self.assertEquals(([], []), expand_to_packages('ros_comm'))
+            self.assertEquals(([], []), expand_to_packages('ros'))
             self.fail("expand_to_packages should only take in a list of strings")
         except ValueError: pass
         
@@ -189,9 +189,9 @@ class RoslibStacksTest(unittest.TestCase):
         self.assertEquals(([], ['bogus_one', 'bogus_two']), expand_to_packages(['bogus_one', 'bogus_two']))      
   
         # TODO: setup directory tree so that this can be more precisely calculated
-        valid, invalid = expand_to_packages(['ros_comm', 'bogus_one'])
+        valid, invalid = expand_to_packages(['ros', 'bogus_one'])
         self.assertEquals(['bogus_one'], invalid)
-        check = ['rospy', 'roscpp', 'rostest', 'std_msgs']
+        check = ['rosbuild', 'rospack', 'rosunit', 'test_roslib']
         for c in check:
             self.assert_(c in valid, "expected [%s] to be in ros expansion"%c)
       

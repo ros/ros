@@ -47,7 +47,6 @@ import time
 import random
 
 import roslib
-import roslib.msg
 import roslib.names
 import roslib.network
 

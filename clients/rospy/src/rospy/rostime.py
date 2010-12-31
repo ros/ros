@@ -45,7 +45,6 @@ import traceback
 
 import rospy.exceptions
 
-import roslib.msg
 import roslib.rosenv
 import roslib.rostime
 

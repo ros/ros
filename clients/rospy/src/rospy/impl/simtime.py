@@ -36,8 +36,8 @@
 
 import traceback
 
-import roslib.msg
 import roslib.rosenv
+from rosgraph_msgs.msg import Clock
 
 import rospy.core
 import rospy.rostime
@@ -82,7 +82,7 @@ def init_simtime():
             global _rostime_sub, _clock_sub
             if _rostime_sub is None:
                 logger.info("initializing %s core topic"%_ROSCLOCK)
-                _clock_sub = rospy.topics.Subscriber(_ROSCLOCK, roslib.msg.Clock, _set_rostime_clock_wrapper)
+                _clock_sub = rospy.topics.Subscriber(_ROSCLOCK, Clock, _set_rostime_clock_wrapper)
                 logger.info("connected to core topic %s"%_ROSCLOCK)
 
                 _set_rostime(rospy.rostime.Time(0, 0))

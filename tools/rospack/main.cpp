@@ -45,12 +45,20 @@ int main(int argc, char **argv)
   // If it looks we're running under sudo, try to drop back to the normal
   // user, to avoid writing the cache with inappropriate permissions,
   // #2884.
+  // Do the group first, because we can't do it after changing the user.
+  char* sudo_gid_string = getenv("SUDO_GID");
+  if(sudo_gid_string)
+  {
+    gid_t sudo_gid = (int)strtol(sudo_gid_string, (char **)NULL, 10);
+    if(setgid(sudo_gid))
+      perror("[rospack] Failed to change GID; cache permissions may need to be adjusted manually. setgid()");
+  }
   char* sudo_uid_string = getenv("SUDO_UID");
   if(sudo_uid_string)
   {
-    int sudo_uid = (int)strtol(sudo_uid_string, (char **)NULL, 10);
-    if(setreuid(sudo_uid, sudo_uid))
-      perror("[rospack] Failed to change UID; cache permissions may need to be adjusted manually. setreuid()");
+    uid_t sudo_uid = (int)strtol(sudo_uid_string, (char **)NULL, 10);
+    if(setuid(sudo_uid))
+      perror("[rospack] Failed to change UID; cache permissions may need to be adjusted manually. setuid()");
   }
 
   int ret;

@@ -8,8 +8,6 @@
 
   <depend package="roslib" />
   <depend package="rosunit" />
-  <depend package="std_msgs" />  
-  <depend package="std_srvs" />  
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>

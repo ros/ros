@@ -144,7 +144,7 @@ class RoslibPackagesTest(unittest.TestCase):
     # DEPENDS1
     x = rp.depends1(['test_roslib'])
     self.assertEquals(['test_roslib'], x.keys())
-    self.assertEquals(set(['roslib', 'rosunit', 'std_msgs', 'std_srvs']), set(x['test_roslib']))
+    self.assertEquals(set(['roslib', 'rosunit']), set(x['test_roslib']))
     x = rp.depends1(['test_rospack'])
     self.assertEquals(['test_rospack'], x.keys())
     self.assertEquals(set(['rospack', 'rosunit']), set(x['test_rospack']))
@@ -153,10 +153,10 @@ class RoslibPackagesTest(unittest.TestCase):
     x = rp.depends1(['test_roslib', 'test_rospack'])    
     self.assertEquals(set(['test_rospack', 'test_roslib']), set(x.keys()))
     self.assertEquals(set(['rospack', 'rosunit']), set(x['test_rospack']))
-    self.assertEquals(set(['roslib', 'rosunit', 'std_msgs', 'std_srvs']), set(x['test_roslib']))
+    self.assertEquals(set(['roslib', 'rosunit']), set(x['test_roslib']))
 
     # DEPENDS
-    test_roslib_depends = ['rospack', 'roslib', 'rosunit', 'std_msgs', 'std_srvs']
+    test_roslib_depends = ['rospack', 'roslib', 'rosunit']
     x = rp.depends(['test_roslib'])
     self.assertEquals(['test_roslib'], x.keys())
     s1 = set(test_roslib_depends)
@@ -177,31 +177,37 @@ class RoslibPackagesTest(unittest.TestCase):
     
 
     # ROSDEPS and ROSDEPS0
-    roslib_rosdeps = ['python', 'python-yaml', 'bzip2', 'zlib', 'boost']
-    rosconsole_rosdeps = ['apr', 'log4cxx']
-
+    roslib_rosdeps0 = ['python', 'python-yaml', 'boost']
+    roslib_rosdeps = roslib_rosdeps0
+    rosbuild_rosdeps = ['bzip2']
+    
     rp = ROSPackages()
     # ROSDEPS0
-    x = rp.rosdeps0(['rosconsole'])
-    self.assertEquals(['rosconsole'], x.keys())
-    self.assertEquals(set(rosconsole_rosdeps), set(x['rosconsole']))
+    x = rp.rosdeps0(['mk'])
+    self.assertEquals(['mk'], x.keys())
+    self.assertEquals(set(), set(x['mk']))
+
     x = rp.rosdeps0(['roslib'])
     self.assertEquals(['roslib'], x.keys())
-    self.assertEquals(set(roslib_rosdeps), set(x['roslib']))
+    self.assertEquals(set(roslib_rosdeps0), set(x['roslib']))
+
+    x = rp.rosdeps0(['rosbuild'])
+    self.assertEquals(['rosbuild'], x.keys())
+    self.assertEquals(set(rosbuild_rosdeps), set(x['rosbuild']))
 
     # ROSDEPS
-    deps = set(roslib_rosdeps)
-    p = 'std_msgs'
+    p = 'rosunit'
+    rosunit_rosdeps = set(roslib_rosdeps + ['gtest'])
     x = rp.rosdeps([p])
     self.assertEquals([p], x.keys())
-    self.assertEquals(deps, set(x[p]), x)
-    x = rp.rosdeps(['std_msgs', 'std_srvs'])
-    self.assertEquals(set(['std_msgs', 'std_srvs']), set(x.keys()))
-    self.assertEquals(deps, set(x['std_msgs']))
-    self.assertEquals([], x['std_srvs'])
+    self.assertEquals(rosunit_rosdeps, set(x[p]))
+    x = rp.rosdeps(['rosunit', 'mk'])
+    self.assertEquals(set(['rosunit', 'mk']), set(x.keys()))
+    self.assertEquals(rosunit_rosdeps, set(x['rosunit']))
+    self.assertEquals([], x['mk'])
 
     rp = ROSPackages()
-    no_rosdeps = ['mk', 'rospack', 'rosbuild', 'std_srvs']
+    no_rosdeps = ['mk', 'rospack']
     no_rosdeps0 = no_rosdeps + ['test_roslib']
     for p in no_rosdeps0:
       self.assertEquals({p: []},  rp.rosdeps0([p]))

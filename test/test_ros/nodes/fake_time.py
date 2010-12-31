@@ -41,7 +41,7 @@ import roslib; roslib.load_manifest('test_ros')
 
 import time
 import rospy
-from roslib.msg import Clock
+from rosgraph_msgs.msg import Clock
 
 def faketime():
     rospy.set_param('/use_sim_time', True)

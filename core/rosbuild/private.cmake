@@ -369,7 +369,7 @@ endmacro(_rosbuild_add_library)
 
 macro(_rosbuild_get_clock var)
   execute_process(
-    COMMAND python -c "import time; print time.time()"
+    COMMAND python -c "import time, sys; sys.stdout.write(str(time.time()));"
     OUTPUT_VARIABLE ${var}
     ERROR_VARIABLE _time_error
     RESULT_VARIABLE _time_failed
@@ -403,7 +403,7 @@ macro(_rosbuild_compare_manifests var _t _c _m)
     # Call Python to compare the provided time to the latest mtime on all
     # the files
     execute_process(
-      COMMAND python -c "import os; print 1 if set(${_pylist}) != set(${_cached_pylist}) or ${_t} < max(os.stat(f).st_mtime for f in ${_pylist}) else 0;"
+      COMMAND python -c "import os, sys; sys.stdout.write('1' if set(${_pylist}) != set(${_cached_pylist}) or ${_t} < max(os.stat(f).st_mtime for f in ${_pylist}) else '0');"
       OUTPUT_VARIABLE ${var}
       ERROR_VARIABLE _mtime_error
       RESULT_VARIABLE _mtime_failed

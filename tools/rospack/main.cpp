@@ -28,8 +28,11 @@
 /* Author: Morgan Quigley, Brian Gerkey */
 
 
-#include <stdexcept>
 #include "rospack/rospack.h"
+
+#include <stdexcept>
+#include <unistd.h>
+#include <stdlib.h>
 
 int main(int argc, char **argv)
 {
@@ -38,6 +41,18 @@ int main(int argc, char **argv)
     fputs(rospack::ROSPack::usage(), stderr);
     return 0;
   }
+
+  // If it looks we're running under sudo, try to drop back to the normal
+  // user, to avoid writing the cache with inappropriate permissions,
+  // #2884.
+  char* sudo_uid_string = getenv("SUDO_UID");
+  if(sudo_uid_string)
+  {
+    int sudo_uid = (int)strtol(sudo_uid_string, (char **)NULL, 10);
+    if(setreuid(sudo_uid, sudo_uid))
+      perror("[rospack] Failed to change UID; cache permissions may need to be adjusted manually. setreuid()");
+  }
+
   int ret;
   bool quiet;
   try

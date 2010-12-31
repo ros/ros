@@ -65,12 +65,5 @@ class TestRoslaunchOnline(unittest.TestCase):
         # tripwire test for #2370, not really possible to validate output on this
         check_call([cmd, '--screen', 'test_roslaunch', 'noop.launch'])        
 
-        # Smoke test for testing parameters
-        p = Popen([cmd, '--dump-params', 'test_roslaunch', 'noop.launch'], stdout = PIPE)
-        o, e = p.communicate()
-        self.assert_(p.returncode == 0, "Return code nonzero for param dump! Code: %d" % (p.returncode))
-
-        self.assertEquals({'noop': 'noop'}, yaml.load(o))
-
 if __name__ == '__main__':
     rostest.run(PKG, NAME, TestRoslaunchOnline, sys.argv)

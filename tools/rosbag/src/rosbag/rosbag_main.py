@@ -152,7 +152,7 @@ def play_cmd(argv):
     parser.add_option("-q", "--quiet",        dest="quiet",      default=False, action="store_true", help="suppress console output")
     parser.add_option("-i", "--immediate",    dest="immediate",  default=False, action="store_true", help="play back all messages without waiting")
     parser.add_option("--pause",              dest="pause",      default=False, action="store_true", help="start in paused mode")
-    parser.add_option("--queue",              dest="queue",      default=0,     type='int', action="store", help="use an outgoing queue of size SIZE (defaults to %default)", metavar="SIZE")
+    parser.add_option("--queue",              dest="queue",      default=100,     type='int', action="store", help="use an outgoing queue of size SIZE (defaults to %default)", metavar="SIZE")
     parser.add_option("--clock",              dest="clock",      default=False, action="store_true", help="publish the clock time")
     parser.add_option("--hz",                 dest="freq",       default=100,   type='float', action="store", help="use a frequency of HZ when publishing clock time (default: %default)", metavar="HZ")
     parser.add_option("-d", "--delay",        dest="delay",      default=0.2,   type='float', action="store", help="sleep SEC seconds after every advertise call (to allow subscribers to connect)", metavar="SEC")

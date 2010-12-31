@@ -46,7 +46,7 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
       ("quiet,q", "suppress console output")
       ("immediate,i", "play back all messages without waiting")
       ("pause", "start in paused mode")
-      ("queue", po::value<int>()->default_value(0), "use an outgoing queue of size SIZE")
+      ("queue", po::value<int>()->default_value(100), "use an outgoing queue of size SIZE")
       ("clock", "publish the clock time")
       ("hz", po::value<float>()->default_value(100.0), "use a frequency of HZ when publishing clock time")
       ("delay,d", po::value<float>()->default_value(0.2), "sleep SEC seconds after every advertise call")

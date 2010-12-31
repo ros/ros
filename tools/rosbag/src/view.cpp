@@ -112,17 +112,33 @@ void View::iterator::increment() {
 
     view_->update();
 
-    // Note, updating may have blown awway our message-ranges and
+    // Note, updating may have blown away our message-ranges and
     // replaced them in general the ViewIterHelpers are no longer
     // valid, but the iterator it stores should still be good.
     if (view_revision_ != view_->view_revision_)
         populateSeek(iters_.back().iter);
 
-    iters_.back().iter++;
-    if (iters_.back().iter == iters_.back().range->end)
-        iters_.pop_back();
+    if (view_->reduce_overlap_)
+    {
+        std::multiset<IndexEntry>::const_iterator last_iter = iters_.back().iter;
+    
+        while (iters_.back().iter == last_iter)
+        {
+            iters_.back().iter++;
+            if (iters_.back().iter == iters_.back().range->end)
+                iters_.pop_back();
+      
+            std::sort(iters_.begin(), iters_.end(), ViewIterHelperCompare());
+        }
 
-    std::sort(iters_.begin(), iters_.end(), ViewIterHelperCompare());
+    } else {
+
+        iters_.back().iter++;
+        if (iters_.back().iter == iters_.back().range->end)
+            iters_.pop_back();
+      
+        std::sort(iters_.begin(), iters_.end(), ViewIterHelperCompare());
+    }
 }
 
 MessageInstance& View::iterator::dereference() const {
@@ -136,13 +152,13 @@ MessageInstance& View::iterator::dereference() const {
 
 // View
 
-View::View() : view_revision_(0), size_cache_(0), size_revision_(0) { }
+View::View(bool const& reduce_overlap) : view_revision_(0), size_cache_(0), size_revision_(0), reduce_overlap_(reduce_overlap) { }
 
-View::View(Bag const& bag, ros::Time const& start_time, ros::Time const& end_time) : view_revision_(0), size_cache_(0), size_revision_(0) {
+View::View(Bag const& bag, ros::Time const& start_time, ros::Time const& end_time, bool const& reduce_overlap) : view_revision_(0), size_cache_(0), size_revision_(0), reduce_overlap_(reduce_overlap) {
 	addQuery(bag, start_time, end_time);
 }
 
-View::View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, ros::Time const& start_time, ros::Time const& end_time) : view_revision_(0), size_cache_(0), size_revision_(0) {
+View::View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, ros::Time const& start_time, ros::Time const& end_time, bool const& reduce_overlap) : view_revision_(0), size_cache_(0), size_revision_(0), reduce_overlap_(reduce_overlap) {
 	addQuery(bag, query, start_time, end_time);
 }
 

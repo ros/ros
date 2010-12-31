@@ -394,6 +394,70 @@ TEST(rosbag, multiple_bag_works) {
     bag2.close();
 }
 
+
+TEST(rosbag, overlapping_query_works) {
+    rosbag::Bag outbag1("/tmp/overlapping_query_1.bag", rosbag::bagmode::Write);
+    rosbag::Bag outbag2("/tmp/overlapping_query_2.bag", rosbag::bagmode::Write);
+
+    std_msgs::Int32 imsg;
+    for (int i = 0; i < 1000; i++) {
+        imsg.data = i;
+        switch (rand() % 5) {
+        case 0: outbag1.write("t0", ros::Time(i+1), imsg); break;
+        case 1: outbag1.write("t1", ros::Time(i+1), imsg); break;
+        case 2: outbag1.write("t2", ros::Time(i+1), imsg); break;
+        case 3: outbag2.write("t0", ros::Time(i+1), imsg); break;
+        case 4: outbag2.write("t1", ros::Time(i+1), imsg); break;
+        }
+    }
+
+    outbag1.close();
+    outbag2.close();
+
+    rosbag::Bag bag1("/tmp/overlapping_query_1.bag", rosbag::bagmode::Read);
+    rosbag::Bag bag2("/tmp/overlapping_query_2.bag", rosbag::bagmode::Read);
+
+    rosbag::View view1(false);
+    view1.addQuery(bag1, ros::Time(1), ros::Time(750));
+    view1.addQuery(bag1, ros::Time(251), ros::Time(1002));
+    view1.addQuery(bag2, ros::Time(1), ros::Time(750));
+    view1.addQuery(bag2, ros::Time(251), ros::Time(1002));
+
+    rosbag::View view2(true);
+    view2.addQuery(bag1, ros::Time(1), ros::Time(750));
+    view2.addQuery(bag1, ros::Time(251), ros::Time(1002));
+    view2.addQuery(bag2, ros::Time(1), ros::Time(750));
+    view2.addQuery(bag2, ros::Time(251), ros::Time(1002));
+
+
+    int i = 0;
+    int j = 0;
+
+    foreach(rosbag::MessageInstance const m, view1) {
+      std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
+      if (imsg != NULL)
+        ASSERT_EQ(imsg->data, i);
+      if (i >= 250 && i < 750)
+      {
+        i += (j++ % 2);
+      } else {
+        i++;
+      }
+    }
+
+    i = 0;
+
+    foreach(rosbag::MessageInstance const m, view2) {
+        std_msgs::Int32::ConstPtr imsg = m.instantiate<std_msgs::Int32>();
+        if (imsg != NULL)
+            ASSERT_EQ(imsg->data, i++);
+    }
+
+    bag1.close();
+    bag2.close();
+}
+
+
 TEST(rosbag, no_min_time) {
     rosbag::Bag outbag("/tmp/no_min_time.bag", rosbag::bagmode::Write);
 

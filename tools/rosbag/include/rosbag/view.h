@@ -97,25 +97,31 @@ public:
     	bool operator()(ConnectionInfo const*) const { return true; };
     };
 
-    View();
-
-    //! Create a view and add a query
+    //! Create a view on a bag
     /*!
-     * param bag        The bag file on which to run this query
-     * param start_time The beginning of the time range for the query
-     * param end_time   The end of the time range for the query
+     * param reduce_overlap  If multiple views return the same messages, reduce them to a single message
      */
-    View(Bag const& bag, ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);
+    View(bool const& reduce_overlap = false);
+
+    //! Create a view on a bag
+    /*!
+     * param bag             The bag file on which to run this query
+     * param start_time      The beginning of the time range for the query
+     * param end_time        The end of the time range for the query
+     * param reduce_overlap  If multiple views return the same messages, reduce them to a single message
+     */
+    View(Bag const& bag, ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX, bool const& reduce_overlap = false);
 
     //! Create a view and add a query
     /*!
-     * param bag        The bag file on which to run this query
-     * param query      The actual query to evaluate which connections to include
-     * param start_time The beginning of the time range for the query
-     * param end_time   The end of the time range for the query
+     * param bag             The bag file on which to run this query
+     * param query           The actual query to evaluate which connections to include
+     * param start_time      The beginning of the time range for the query
+     * param end_time        The end of the time range for the query
+     * param reduce_overlap  If multiple views return the same messages, reduce them to a single message
      */
     View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
-         ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX);
+         ros::Time const& start_time = ros::TIME_MIN, ros::Time const& end_time = ros::TIME_MAX, bool const& reduce_overlap = false);
 
     ~View();
 
@@ -165,6 +171,8 @@ protected:
 
     uint32_t size_cache_;
     uint32_t size_revision_;
+
+    bool reduce_overlap_;
 };
 
 } // namespace rosbag

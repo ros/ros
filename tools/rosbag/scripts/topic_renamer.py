@@ -40,7 +40,7 @@ import rosbag
 def rename_topic(intopic, inbag, outtopic, outbag):
     rebag = rosbag.Bag(outbag, 'w')
     for topic, msg, t in rosbag.Bag(inbag).read_messages(raw=True):
-        rebag.write(outtopic if topic == input else topic, msg, t, raw=True)
+        rebag.write(outtopic if topic == intopic else topic, msg, t, raw=True)
     rebag.close()
 
 if __name__ == '__main__':

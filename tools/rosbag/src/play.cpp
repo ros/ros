@@ -43,6 +43,7 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
     po::options_description desc("Allowed options");
 
     desc.add_options()
+      ("help,h", "produce help message")
       ("quiet,q", "suppress console output")
       ("immediate,i", "play back all messages without waiting")
       ("pause", "start in paused mode")
@@ -55,10 +56,11 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
       ("loop,l", "loop playback")
       ("keep-alive,k", "keep alive past end of bag")
       ("try-future-version", "still try to open a bag file, even if the version is not known to the player")
-      ("input-file", po::value< std::vector<std::string> >(), "input files");
+      ("topics", po::value< std::vector<std::string> >()->multitoken(), "the list topics to play back")
+      ("bags", po::value< std::vector<std::string> >(), "the list of bag files to play bag from");
     
     po::positional_options_description p;
-    p.add("input-file", -1);
+    p.add("bags", -1);
     
     po::variables_map vm;
     
@@ -71,6 +73,11 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
     }  catch (boost::program_options::unknown_option& e)
     {
       throw ros::Exception(e.what());
+    }
+
+    if (vm.count("help")) {
+      std::cout << desc << std::endl;
+      exit(0);
     }
 
     if (vm.count("quiet"))
@@ -99,14 +106,26 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
     if (vm.count("keep-alive"))
       opts.keep_alive = true;
 
-
-    if (vm.count("input-file"))
+    if (vm.count("topics"))
     {
-      std::vector<std::string> bags = vm["input-file"].as< std::vector<std::string> >();
+      std::vector<std::string> topics = vm["topics"].as< std::vector<std::string> >();
+      for (std::vector<std::string>::iterator i = topics.begin();
+           i != topics.end();
+           i++)
+        opts.topics.push_back(*i);
+    }
+
+    if (vm.count("bags"))
+    {
+      std::vector<std::string> bags = vm["bags"].as< std::vector<std::string> >();
       for (std::vector<std::string>::iterator i = bags.begin();
            i != bags.end();
            i++)
           opts.bags.push_back(*i);
+    } else {
+      if (vm.count("topics"))
+        throw ros::Exception("When using --topics, --bags should be specified to list bags.");
+      throw ros::Exception("You must specify at least one bag to play back.");
     }
             
     return opts;

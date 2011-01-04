@@ -130,11 +130,25 @@ void Player::publish() {
 
     initial_time += ros::Duration(options_.time);
 
+
     View view;
-    foreach(shared_ptr<Bag> bag, bags_)
-      view.addQuery(*bag, initial_time, ros::TIME_MAX);
+    TopicQuery topics(options_.topics);
 
+    if (options_.topics.empty())
+    {
+      foreach(shared_ptr<Bag> bag, bags_)
+        view.addQuery(*bag, initial_time, ros::TIME_MAX);
+    } else {
+      foreach(shared_ptr<Bag> bag, bags_)
+        view.addQuery(*bag, topics, initial_time, ros::TIME_MAX);
+    }
 
+    if (view.size() == 0)
+    {
+      std::cerr << "No messages to play on specified topics.  Exiting." << std::endl;
+      ros::shutdown();
+      return;
+    }
 
     // Advertise all of our messages
     foreach(const ConnectionInfo* c, view.getConnections())

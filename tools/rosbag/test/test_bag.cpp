@@ -356,6 +356,31 @@ TEST(rosbag, topic_query_works) {
     bag.close();
 }
 
+
+TEST(rosbag, bad_topic_query_works) {
+    rosbag::Bag outbag;
+    outbag.open("/tmp/bad_topic_query_works.bag", rosbag::bagmode::Write);
+
+    std_msgs::Int32 imsg;
+
+    for (int i = 0; i < 10; i++) {
+      outbag.write("t0", ros::Time(i, 1), imsg);
+    }
+    outbag.close();
+
+    rosbag::Bag bag;
+    bag.open("/tmp/bad_topic_query_works.bag", rosbag::bagmode::Read);
+
+    std::vector<std::string> t = boost::assign::list_of("t1");
+
+    rosbag::View view(bag, rosbag::TopicQuery(t));
+    foreach(rosbag::MessageInstance const m, view) {
+      FAIL();
+    }
+
+    bag.close();
+}
+
 TEST(rosbag, multiple_bag_works) {
     rosbag::Bag outbag1("/tmp/multiple_bag_works1.bag", rosbag::bagmode::Write);
     rosbag::Bag outbag2("/tmp/multiple_bag_works2.bag", rosbag::bagmode::Write);

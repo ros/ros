@@ -73,6 +73,7 @@ struct PlayerOptions
     bool     keep_alive;
 
     std::vector<std::string> bags;
+    std::vector<std::string> topics;
 };
 
 

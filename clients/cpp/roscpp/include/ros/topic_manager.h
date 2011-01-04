@@ -181,6 +181,22 @@ private:
    */
   void getBusInfo(XmlRpc::XmlRpcValue &info);
 
+  /** @brief Return the list of subcriptions for the node
+   *
+   * This is the implementation of the xml-rpc getSubscriptions
+   * function; it populates the XmlRpcValue object sent to it with the
+   * list of subscribed topics and their datatypes.
+   */
+  void getSubscriptions(XmlRpc::XmlRpcValue &subscriptions);
+
+  /** @brief Return the list of advertised topics for the node
+   *
+   * This is the implementation of the xml-rpc getPublications
+   * function; it populates the XmlRpcValue object sent to it with the
+   * list of advertised topics and their datatypes.
+   */
+  void getPublications(XmlRpc::XmlRpcValue &publications);
+
   /** @brief Update local publisher lists.
    *
    * Use this method to update address information for publishers on a
@@ -197,6 +213,8 @@ private:
   void requestTopicCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result);
   void getBusStatsCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result);
   void getBusInfoCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result);
+  void getSubscriptionsCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result);
+  void getPublicationsCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result);
 
   bool isShuttingDown() { return shutting_down_; }
 

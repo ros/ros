@@ -92,6 +92,8 @@ void TopicManager::start()
   xmlrpc_manager_->bind("requestTopic", boost::bind(&TopicManager::requestTopicCallback, this, _1, _2));
   xmlrpc_manager_->bind("getBusStats", boost::bind(&TopicManager::getBusStatsCallback, this, _1, _2));
   xmlrpc_manager_->bind("getBusInfo", boost::bind(&TopicManager::getBusInfoCallback, this, _1, _2));
+  xmlrpc_manager_->bind("getSubscriptions", boost::bind(&TopicManager::getSubscriptionsCallback, this, _1, _2));
+  xmlrpc_manager_->bind("getPublications", boost::bind(&TopicManager::getPublicationsCallback, this, _1, _2));
 
   poll_manager_->addPollThreadListener(boost::bind(&TopicManager::processPublishQueues, this));
 }
@@ -114,6 +116,8 @@ void TopicManager::shutdown()
   xmlrpc_manager_->unbind("requestTopic");
   xmlrpc_manager_->unbind("getBusStats");
   xmlrpc_manager_->unbind("getBusInfo");
+  xmlrpc_manager_->unbind("getSubscriptions");
+  xmlrpc_manager_->unbind("getPublications");
 
   ROSCPP_LOG_DEBUG("Shutting down topics...");
   ROSCPP_LOG_DEBUG("  shutting down publishers");
@@ -935,6 +939,48 @@ void TopicManager::getBusInfo(XmlRpcValue &info)
   }
 }
 
+void TopicManager::getSubscriptions(XmlRpcValue &subs)
+{
+  // force these guys to be arrays, even if we don't populate them
+  subs.setSize(0);
+
+  {
+    boost::mutex::scoped_lock lock(subs_mutex_);
+
+    uint32_t sidx = 0;
+
+    for (L_Subscription::iterator t = subscriptions_.begin(); t != subscriptions_.end(); ++t)
+    {
+      XmlRpcValue sub;
+      sub[0] = (*t)->getName();
+      sub[1] = (*t)->datatype();
+      subs[sidx++] = sub;
+    }
+  }
+}
+
+void TopicManager::getPublications(XmlRpcValue &pubs)
+{
+  // force these guys to be arrays, even if we don't populate them
+  pubs.setSize(0);
+
+  {
+    boost::recursive_mutex::scoped_lock lock(advertised_topics_mutex_);
+
+    uint32_t sidx = 0;
+
+    for (V_Publication::iterator t = advertised_topics_.begin();
+         t != advertised_topics_.end(); ++t)
+    {
+      XmlRpcValue pub;
+      pub[0] = (*t)->getName();
+      pub[1] = (*t)->getDataType();
+      pubs[sidx++] = pub;
+    }
+
+  }
+}
+
 extern ROSOutAppenderPtr g_rosout_appender;
 
 void TopicManager::pubUpdateCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result)
@@ -989,6 +1035,24 @@ void TopicManager::getBusInfoCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRp
   result[1] = std::string("");
   XmlRpcValue response;
   getBusInfo(response);
+  result[2] = response;
+}
+
+void TopicManager::getSubscriptionsCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result)
+{
+  result[0] = 1;
+  result[1] = std::string("subscriptions");
+  XmlRpcValue response;
+  getSubscriptions(response);
+  result[2] = response;
+}
+
+void TopicManager::getPublicationsCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result)
+{
+  result[0] = 1;
+  result[1] = std::string("publications");
+  XmlRpcValue response;
+  getPublications(response);
   result[2] = response;
 }
 

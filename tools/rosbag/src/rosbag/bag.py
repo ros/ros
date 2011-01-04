@@ -983,23 +983,25 @@ class Bag(object):
         """
         @raise ROSBagException: if the bag version is unsupported
         """
-        if self._version == 200:
+        major_version, minor_version = self._version / 100, self._version % 100
+        if major_version == 2:
             self._reader = _BagReader200(self)
-        elif self._version == 102:
-            # Get the op code of the first record.  If it's FILE_HEADER, then we have an indexed 1.2 bag.
-            first_record_pos = self._file.tell()
-            header = _read_header(self._file)
-            op = _read_uint8_field(header, 'op')
-            self._file.seek(first_record_pos)
-
-            if op == _OP_FILE_HEADER:
-                self._reader = _BagReader102_Indexed(self)
+        elif major_version == 1:
+            if minor_version == 1:
+                self._reader = _BagReader101(self)
             else:
-                self._reader = _BagReader102_Unindexed(self)
-        elif self._version == 101:
-            self._reader = _BagReader101(self)
+                # Get the op code of the first record.  If it's FILE_HEADER, then we have an indexed 1.2 bag.
+                first_record_pos = self._file.tell()
+                header = _read_header(self._file)
+                op = _read_uint8_field(header, 'op')
+                self._file.seek(first_record_pos)
+    
+                if op == _OP_FILE_HEADER:
+                    self._reader = _BagReader102_Indexed(self)
+                else:
+                    self._reader = _BagReader102_Unindexed(self)
         else:
-            raise ROSBagException('unknown bag version %d' % self._version)
+            raise ROSBagException('unhandled bag version %d' % self._version)
 
     def _read_version(self):
         """

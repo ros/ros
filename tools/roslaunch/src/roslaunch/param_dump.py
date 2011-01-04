@@ -61,8 +61,7 @@ def dump_params(files):
             sys.stderr.write("Unable to load file %s: %s" % (f, e))
             return False
 
-    # Now print params 
-    # Convert to strings to avoid nasty unicode expressions
+    # Now print params in YAML format.
     params_dict = {}
     for k, v in config.params.iteritems():
         params_dict[str(k)] = v.value

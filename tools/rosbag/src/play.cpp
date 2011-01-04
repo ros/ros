@@ -56,8 +56,8 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
       ("loop,l", "loop playback")
       ("keep-alive,k", "keep alive past end of bag")
       ("try-future-version", "still try to open a bag file, even if the version is not known to the player")
-      ("topics", po::value< std::vector<std::string> >()->multitoken(), "the list topics to play back")
-      ("bags", po::value< std::vector<std::string> >(), "the list of bag files to play bag from");
+      ("topics", po::value< std::vector<std::string> >()->multitoken(), "topics to play back")
+      ("bags", po::value< std::vector<std::string> >(), "bag files to play back from");
     
     po::positional_options_description p;
     p.add("bags", -1);

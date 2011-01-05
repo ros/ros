@@ -61,7 +61,7 @@ rosbag::RecorderOptions parseOptions(int argc, char** argv) {
       ("split", po::value<int>()->implicit_value(0), "Split the bag file and continue recording when maximum size or maximum duration reached.")
       ("topic", po::value< std::vector<std::string> >(), "topic to record")
       ("size", po::value<int>(), "The maximum size of the bag to record in MB.")
-      ("duration", po::value<std::string>(), "Record a bag of maximum duration in seconds, unless 'm', or 'h' is appended.b")
+      ("duration", po::value<std::string>(), "Record a bag of maximum duration in seconds, unless 'm', or 'h' is appended.")
       ("node", po::value<std::string>(), "Record all topics subscribed to by a specific node.");
 
   

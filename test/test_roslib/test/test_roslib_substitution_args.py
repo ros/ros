@@ -95,23 +95,23 @@ class SubArgsTest(unittest.TestCase):
     def test_resolve_args(self):
         from roslib.substitution_args import resolve_args, SubstitutionException
         from roslib.packages import get_pkg_dir
-        rospy_dir = get_pkg_dir('rospy', required=True)
+        roslib_dir = get_pkg_dir('roslib', required=True)
 
         anon_context = {'foo': 'bar'}
         arg_context = {'fuga': 'hoge', 'car': 'cdr'}
         context = {'anon': anon_context, 'arg': arg_context }
         
         tests = [
-            ('$(find rospy)', rospy_dir),
-            ('hello$(find rospy)', 'hello'+rospy_dir),
-            ('$(find rospy )', rospy_dir),
-            ('$$(find rospy )', '$'+rospy_dir),
-            ('$( find rospy )', rospy_dir),
-            ('$(find  rospy )', rospy_dir),
-            ('$(find rospy)$(find rospy)', rospy_dir+rospy_dir),
-            ('$(find rospy)/foo/bar.xml', rospy_dir+os.sep+'foo'+os.sep+'bar.xml'),
-            (r'$(find rospy)\foo\bar.xml $(find rospy)\bar.xml', rospy_dir+os.sep+'foo'+os.sep+'bar.xml '+rospy_dir+os.sep+'bar.xml'),
-            ('$(find rospy)\\foo\\bar.xml more/stuff\\here', rospy_dir+os.sep+'foo'+os.sep+'bar.xml more/stuff\\here'),
+            ('$(find roslib)', roslib_dir),
+            ('hello$(find roslib)', 'hello'+roslib_dir),
+            ('$(find roslib )', roslib_dir),
+            ('$$(find roslib )', '$'+roslib_dir),
+            ('$( find roslib )', roslib_dir),
+            ('$(find  roslib )', roslib_dir),
+            ('$(find roslib)$(find roslib)', roslib_dir+roslib_dir),
+            ('$(find roslib)/foo/bar.xml', roslib_dir+os.sep+'foo'+os.sep+'bar.xml'),
+            (r'$(find roslib)\foo\bar.xml $(find roslib)\bar.xml', roslib_dir+os.sep+'foo'+os.sep+'bar.xml '+roslib_dir+os.sep+'bar.xml'),
+            ('$(find roslib)\\foo\\bar.xml more/stuff\\here', roslib_dir+os.sep+'foo'+os.sep+'bar.xml more/stuff\\here'),
             ('$(env ROS_ROOT)', os.environ['ROS_ROOT']),
             ('$(env ROS_ROOT)', os.environ['ROS_ROOT']),
             ('$(env ROS_ROOT )', os.environ['ROS_ROOT']),
@@ -145,14 +145,14 @@ class SubArgsTest(unittest.TestCase):
             
         # test against strings that should not match
         noop_tests = [
-            '$(find rospy', '$find rospy', '', ' ', 'noop', 'find rospy', 'env ROS_ROOT', '$$', ')', '(', '()',
+            '$(find roslib', '$find roslib', '', ' ', 'noop', 'find roslib', 'env ROS_ROOT', '$$', ')', '(', '()',
             None, 
             ]
         for t in noop_tests:
             self.assertEquals(t, resolve_args(t))
         failures = [
-            '$((find rospy))',  '$(find $rospy)',
-            '$(find)', '$(find rospy roslib)', '$(export rospy)',
+            '$((find roslib))',  '$(find $roslib)',
+            '$(find)', '$(find roslib roslib)', '$(export roslib)',
             '$(env)', '$(env ROS_ROOT alternate)',
             '$(env NOT_SET)',
             '$(optenv)',

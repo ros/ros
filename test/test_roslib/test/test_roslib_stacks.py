@@ -128,7 +128,7 @@ class RoslibStacksTest(unittest.TestCase):
         stacks = list_stacks()
         from roslib.rospack import rosstackexec
         for s in stacks:
-            self.assertEquals(get_stack_dir(s), rosstackexec(['find', s]))
+            self.assertEquals(get_stack_dir(s), rosstackexec(['find', s]), s)
 
         # now manipulate the environment to test precedence
         # - save original RPP as we popen rosstack in other tests

@@ -382,9 +382,9 @@ class RosMakeAll:
         """
         local_env = os.environ.copy()
         if self.ros_parallel_jobs > 0:
-            local_env['ROS_PARALLEL_JOBS'] = "-j%d" % self.ros_parallel_jobs
+            local_env['ROS_PARALLEL_JOBS'] = "-l%d" % self.ros_parallel_jobs
         elif "ROS_PARALLEL_JOBS" not in os.environ: #if no environment setup and no args fall back to # cpus
-            local_env['ROS_PARALLEL_JOBS'] = "-j%d" % parallel_build.num_cpus()
+            local_env['ROS_PARALLEL_JOBS'] = "-l%d" % parallel_build.num_cpus()
         local_env['SVN_CMDLINE'] = "svn --non-interactive"
         cmd = ["bash", "-c", "cd %s && %s "%(self.get_path(package), make_command()) ] #UNIXONLY
         if argument:

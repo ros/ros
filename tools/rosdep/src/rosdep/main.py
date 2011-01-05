@@ -108,11 +108,12 @@ def main():
             rdargs = roslib.packages.list_pkgs()
         
         (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(rdargs)
+        valid_stacks = [s for s in roslib.stacks.list_stacks() if s in rdargs]
     
         if len(rejected_packages) > 0:
             print "Warning: could not identify %s as a package"%rejected_packages
-        if len(verified_packages) == 0:
-            parser.error("No Valid Packages listed")
+        if len(verified_packages) == 0 and len(valid_stacks) == 0:
+            parser.error("No Valid Packages or stacks listed as arguments")
                 
     else: # rosdep as argumets 
         if options.rosdep_all:

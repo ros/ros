@@ -128,7 +128,9 @@ class RoslibStacksTest(unittest.TestCase):
         stacks = list_stacks()
         from roslib.rospack import rosstackexec
         for s in stacks:
-            self.assertEquals(get_stack_dir(s), rosstackexec(['find', s]), s)
+            d1 = get_stack_dir(s)
+            d2 = rosstackexec(['find', s])
+            self.assertEquals(d1, d2, "%s vs %s"%(d1, d2))
 
         # now manipulate the environment to test precedence
         # - save original RPP as we popen rosstack in other tests
@@ -183,7 +185,7 @@ class RoslibStacksTest(unittest.TestCase):
         except ValueError: pass
         
         self.assertEquals(([], []), expand_to_packages([]))
-        self.assertEquals((['rospy', 'test_roslib', 'roslib'], []), expand_to_packages(['rospy', 'test_roslib', 'roslib']))
+        self.assertEquals((['rosmake', 'test_roslib', 'roslib'], []), expand_to_packages(['rosmake', 'test_roslib', 'roslib']))
         self.assertEquals(([], ['bogus_one', 'bogus_two']), expand_to_packages(['bogus_one', 'bogus_two']))
   
         self.assertEquals(([], ['bogus_one', 'bogus_two']), expand_to_packages(['bogus_one', 'bogus_two']))      

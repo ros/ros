@@ -75,11 +75,12 @@ def record_cmd(argv):
     parser.add_option(      "--duration",      dest="duration",                     type='string',action="store", help="record a bag of maximum duration DURATION in seconds, unless 'm', or 'h' is appended.", metavar="DURATION")
     parser.add_option("-b", "--buffsize",      dest="buffsize",      default=256,   type='int',   action="store", help="use an internal buffer of SIZE MB (Default: %default, 0 = infinite)", metavar="SIZE")
     parser.add_option("-l", "--limit",         dest="num",           default=0,     type='int',   action="store", help="only record NUM messages on each topic")
+    parser.add_option(      "--node",          dest="node",          default=None,  type='string',action="store", help="record all topics subscribed to by a specific node")
     parser.add_option("-j", "--bz2",           dest="bz2",           default=False, action="store_true",          help="use BZ2 compression")
 
     (options, args) = parser.parse_args(argv)
 
-    if len(args) == 0 and not options.all:
+    if len(args) == 0 and not options.all and not options.node:
         parser.error("You must specify a topic name or else use the '-a' option.")
 
     if options.prefix is not None and options.name is not None:
@@ -105,6 +106,8 @@ def record_cmd(argv):
             cmd.extend(["--duration", options.duration])
         if options.size:
             cmd.extend(["--size", str(options.size)])
+    if options.node:
+        cmd.extend(["--node", options.node])
 
     cmd.extend(args)
 

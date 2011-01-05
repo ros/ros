@@ -52,6 +52,10 @@
 #include <ros/ros.h>
 #include <topic_tools/shape_shifter.h>
 
+#include "ros/network.h"
+#include "ros/xmlrpc_manager.h"
+#include "XmlRpc.h"
+
 #define foreach BOOST_FOREACH
 
 using std::cout;
@@ -97,7 +101,8 @@ RecorderOptions::RecorderOptions() :
     limit(0),
     split(false),
     max_size(0),
-    max_duration(-1.0)
+    max_duration(-1.0),
+    node("")
 {
 }
 
@@ -127,7 +132,7 @@ int Recorder::run() {
         }
 
         // Make sure topics are specified
-        if (!options_.record_all) {
+        if (!options_.record_all && (options_.node == std::string(""))) {
             fprintf(stderr, "No topics specified.\n");
             return 1;
         }
@@ -174,7 +179,7 @@ int Recorder::run() {
 
 
     ros::Timer check_master_timer;
-    if (options_.record_all || options_.regex)
+    if (options_.record_all || options_.regex || (options_.node != std::string("")))
         check_master_timer = nh.createTimer(ros::Duration(1.0), boost::bind(&Recorder::doCheckMaster, this, _1, boost::ref(nh)));
 
     ros::MultiThreadedSpinner s(10);
@@ -206,7 +211,7 @@ bool Recorder::isSubscribed(string const& topic) const {
     return currently_recording_.find(topic) != currently_recording_.end();
 }
 
-bool Recorder::shouldSubscribeToTopic(std::string const& topic) {
+bool Recorder::shouldSubscribeToTopic(std::string const& topic, bool from_node) {
     // ignore already known topics
     if (isSubscribed(topic)) {
         return false;
@@ -217,7 +222,7 @@ bool Recorder::shouldSubscribeToTopic(std::string const& topic) {
         return false;
     }
 
-    if(options_.record_all) {
+    if(options_.record_all || from_node) {
         return true;
     }
     
@@ -507,6 +512,45 @@ void Recorder::doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_han
 			if (shouldSubscribeToTopic(t.name))
 				subscribe(t.name);
 		}
+    }
+    
+    if (options_.node != std::string(""))
+    {
+
+      XmlRpc::XmlRpcValue req;
+      req[0] = ros::this_node::getName();
+      req[1] = options_.node;
+      XmlRpc::XmlRpcValue resp;
+      XmlRpc::XmlRpcValue payload;
+
+      if (ros::master::execute("lookupNode", req, resp, payload, true))
+      {
+        std::string peer_host;
+        uint32_t peer_port;
+
+        if (!ros::network::splitURI(static_cast<std::string>(resp[2]), peer_host, peer_port))
+        {
+          ROS_ERROR("Bad xml-rpc URI trying to inspect node at: [%s]", static_cast<std::string>(resp[2]).c_str());
+        } else {
+
+          XmlRpc::XmlRpcClient c(peer_host.c_str(), peer_port, "/");
+          XmlRpc::XmlRpcValue req;
+          XmlRpc::XmlRpcValue resp;
+          req[0] = ros::this_node::getName();
+          c.execute("getSubscriptions", req, resp);
+          
+          if (!c.isFault() && resp.size() > 0 && static_cast<int>(resp[0]) == 1)
+          {
+            for(int i = 0; i < resp[2].size(); i++)
+            {
+              if (shouldSubscribeToTopic(resp[2][i][0], true))
+                subscribe(resp[2][i][0]);
+            }
+          } else {
+            ROS_ERROR("Node at: [%s] failed to return subscriptions.", static_cast<std::string>(resp[2]).c_str());
+          }
+        }
+      }
     }
 }
 

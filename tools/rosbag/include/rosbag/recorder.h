@@ -101,6 +101,7 @@ struct RecorderOptions
     bool            split;
     uint32_t        max_size;
     ros::Duration   max_duration;
+    std::string     node;
 
     std::vector<std::string> topics;
 };
@@ -138,7 +139,7 @@ private:
     void doRecordSnapshotter();
     void doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_handle);
 
-    bool shouldSubscribeToTopic(std::string const& topic);
+    bool shouldSubscribeToTopic(std::string const& topic, bool from_node = false);
 
     template<class T>
     static std::string timeToStr(T ros_t);

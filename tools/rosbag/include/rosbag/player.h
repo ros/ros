@@ -71,6 +71,7 @@ struct PlayerOptions
     bool     loop;
     float    time;
     bool     keep_alive;
+    ros::Duration skip_empty;
 
     std::vector<std::string> bags;
     std::vector<std::string> topics;

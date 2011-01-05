@@ -69,7 +69,8 @@ PlayerOptions::PlayerOptions() :
     has_time(false),
     loop(false),
     time(0.0f),
-    keep_alive(false)
+    keep_alive(false),
+    skip_empty(ros::DURATION_MAX)
 {
 }
 
@@ -261,11 +262,26 @@ void Player::doPublish(MessageInstance const& m) {
     map<string, ros::Publisher>::iterator pub_iter = publishers_.find(callerid_topic);
     ROS_ASSERT(pub_iter != publishers_.end());
 
+    // If immediate specified, play immediately
     if (options_.at_once) {
         time_publisher_.stepClock();
         pub_iter->second.publish(m);
         printTime();
         return;
+    }
+
+    // If skip_empty is specified, skip this region and shift.
+    if (time - time_publisher_.getTime() > options_.skip_empty)
+    {
+      time_publisher_.stepClock();
+
+      ros::WallDuration shift = ros::WallTime::now() - horizon ;
+      time_translator_.shift(ros::Duration(shift.sec, shift.nsec));
+      horizon += shift;
+      time_publisher_.setWCHorizon(horizon);
+      (pub_iter->second).publish(m);
+      printTime();
+      return;
     }
 
     while ((paused_ || !time_publisher_.horizonReached()) && node_handle_.ok())

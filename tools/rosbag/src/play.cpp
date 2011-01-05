@@ -56,6 +56,7 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
       ("loop,l", "loop playback")
       ("keep-alive,k", "keep alive past end of bag")
       ("try-future-version", "still try to open a bag file, even if the version is not known to the player")
+      ("skip-empty", po::value<float>(), "skip regions in the bag with no messages for more than SEC seconds")
       ("topics", po::value< std::vector<std::string> >()->multitoken(), "topics to play back")
       ("bags", po::value< std::vector<std::string> >(), "bag files to play back from");
     
@@ -101,6 +102,8 @@ rosbag::PlayerOptions parseOptions(int argc, char** argv) {
       opts.time = vm["start"].as<float>();
       opts.has_time = true;
     }
+    if (vm.count("skip-empty"))
+      opts.skip_empty = ros::Duration(vm["skip-empty"].as<float>());
     if (vm.count("loop"))
       opts.loop = true;
     if (vm.count("keep-alive"))

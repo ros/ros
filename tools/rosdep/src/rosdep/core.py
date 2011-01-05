@@ -102,6 +102,8 @@ class YamlCache:
 
         yaml_dict = self.get_yaml(path)
         expanded_rosdeps = {}
+        if not yaml_dict: # prevent exception below if rosdep.yaml file was empty #2762
+            return expanded_rosdeps
         for key in yaml_dict:
             rosdep_entry = self.get_os_from_yaml(key, yaml_dict[key], path)
             if not rosdep_entry: # if no match don't do anything

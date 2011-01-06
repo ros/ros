@@ -100,7 +100,7 @@ extern bool g_initialized;
 /**
  * \brief Don't call this directly.  Performs any required initialization/configuration.  Happens automatically when using the macro API.
  *
- * If you're going to be using log4cxx or any of the ros::console functions, and need the system to be initialized, use the
+ * If you're going to be using log4cxx or any of the ::ros::console functions, and need the system to be initialized, use the
  * ROSCONSOLE_AUTOINIT macro.
  */
 void initialize();
@@ -217,7 +217,7 @@ struct LogLocation
 {
   bool initialized_;
   bool logger_enabled_;
-  ros::console::Level level_;
+  ::ros::console::Level level_;
   log4cxx::Logger* logger_;
 };
 
@@ -279,15 +279,15 @@ std::string formatToString(const char* fmt, ...);
 #define ROSCONSOLE_AUTOINIT \
   do \
   { \
-    if (ROS_UNLIKELY(!ros::console::g_initialized)) \
+    if (ROS_UNLIKELY(!::ros::console::g_initialized)) \
     { \
-      ros::console::initialize(); \
+      ::ros::console::initialize(); \
     } \
   } while(0)
 
 #define ROSCONSOLE_DEFINE_LOCATION(cond, level, name) \
   ROSCONSOLE_AUTOINIT; \
-  static ros::console::LogLocation loc = {false, false, ros::console::levels::Count, 0}; /* Initialized at compile-time */ \
+  static ::ros::console::LogLocation loc = {false, false, ::ros::console::levels::Count, 0}; /* Initialized at compile-time */ \
   if (ROS_UNLIKELY(!loc.initialized_)) \
   { \
     initializeLogLocation(&loc, name, level); \
@@ -300,7 +300,7 @@ std::string formatToString(const char* fmt, ...);
   bool enabled = loc.logger_enabled_ && (cond);
 
 #define ROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER(filter, ...) \
-    ros::console::print(filter, loc.logger_, loc.level_, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__, __VA_ARGS__)
+    ::ros::console::print(filter, loc.logger_, loc.level_, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__, __VA_ARGS__)
 
 #define ROSCONSOLE_PRINT_AT_LOCATION(...) \
     ROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER(0, __VA_ARGS__)
@@ -310,7 +310,7 @@ std::string formatToString(const char* fmt, ...);
   { \
     std::stringstream ss; \
     ss << args; \
-    ros::console::print(filter, loc.logger_, loc.level_, ss, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__); \
+    ::ros::console::print(filter, loc.logger_, loc.level_, ss, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__); \
   } while (0)
 
 #define ROSCONSOLE_PRINT_STREAM_AT_LOCATION(args) \
@@ -322,7 +322,7 @@ std::string formatToString(const char* fmt, ...);
  * \note The condition will only be evaluated if this logging statement is enabled
  *
  * \param cond Boolean condition to be evaluated
- * \param level One of the levels specified in ros::console::levels::Level
+ * \param level One of the levels specified in ::ros::console::levels::Level
  * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
  */
 #define ROS_LOG_COND(cond, level, name, ...) \
@@ -342,7 +342,7 @@ std::string formatToString(const char* fmt, ...);
  * \note The condition will only be evaluated if this logging statement is enabled
  *
  * \param cond Boolean condition to be evaluated
- * \param level One of the levels specified in ros::console::levels::Level
+ * \param level One of the levels specified in ::ros::console::levels::Level
  * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
  */
 #define ROS_LOG_STREAM_COND(cond, level, name, args) \
@@ -358,7 +358,7 @@ std::string formatToString(const char* fmt, ...);
 /**
  * \brief Log to a given named logger at a given verbosity level, only the first time it is hit when enabled, with printf-style formatting
  *
- * \param level One of the levels specified in ros::console::levels::Level
+ * \param level One of the levels specified in ::ros::console::levels::Level
  * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
  */
 #define ROS_LOG_ONCE(level, name, ...) \
@@ -376,7 +376,7 @@ std::string formatToString(const char* fmt, ...);
 /**
  * \brief Log to a given named logger at a given verbosity level, only the first time it is hit when enabled, with printf-style formatting
  *
- * \param level One of the levels specified in ros::console::levels::Level
+ * \param level One of the levels specified in ::ros::console::levels::Level
  * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
  */
 #define ROS_LOG_STREAM_ONCE(level, name, args) \
@@ -394,7 +394,7 @@ std::string formatToString(const char* fmt, ...);
 /**
  * \brief Log to a given named logger at a given verbosity level, limited to a specific rate of printing, with printf-style formatting
  *
- * \param level One of the levels specified in ros::console::levels::Level
+ * \param level One of the levels specified in ::ros::console::levels::Level
  * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
  * \param rate The rate it should actually trigger at
  */
@@ -403,7 +403,7 @@ std::string formatToString(const char* fmt, ...);
   { \
     ROSCONSOLE_DEFINE_LOCATION(true, level, name); \
     static double last_hit = 0.0; \
-    ros::Time now = ros::Time::now(); \
+    ::ros::Time now = ::ros::Time::now(); \
     if (ROS_UNLIKELY(enabled) && ROS_UNLIKELY(last_hit + rate <= now.toSec())) \
     { \
       last_hit = now.toSec(); \
@@ -414,7 +414,7 @@ std::string formatToString(const char* fmt, ...);
 /**
  * \brief Log to a given named logger at a given verbosity level, limited to a specific rate of printing, with printf-style formatting
  *
- * \param level One of the levels specified in ros::console::levels::Level
+ * \param level One of the levels specified in ::ros::console::levels::Level
  * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
  * \param rate The rate it should actually trigger at
  */
@@ -423,7 +423,7 @@ std::string formatToString(const char* fmt, ...);
   { \
     ROSCONSOLE_DEFINE_LOCATION(true, level, name); \
     static double last_hit = 0.0; \
-    ros::Time now = ros::Time::now(); \
+    ::ros::Time now = ::ros::Time::now(); \
     if (ROS_UNLIKELY(enabled) && ROS_UNLIKELY(last_hit + rate <= now.toSec())) \
     { \
       last_hit = now.toSec(); \
@@ -435,7 +435,7 @@ std::string formatToString(const char* fmt, ...);
  * \brief Log to a given named logger at a given verbosity level, with user-defined filtering, with printf-style formatting
  *
  * \param filter pointer to the filter to be used
- * \param level One of the levels specified in ros::console::levels::Level
+ * \param level One of the levels specified in ::ros::console::levels::Level
  * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
  */
 #define ROS_LOG_FILTER(filter, level, name, ...) \
@@ -452,7 +452,7 @@ std::string formatToString(const char* fmt, ...);
  * \brief Log to a given named logger at a given verbosity level, with user-defined filtering, with stream-style formatting
  *
  * \param cond Boolean condition to be evaluated
- * \param level One of the levels specified in ros::console::levels::Level
+ * \param level One of the levels specified in ::ros::console::levels::Level
  * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
  */
 #define ROS_LOG_STREAM_FILTER(filter, level, name, args) \
@@ -468,14 +468,14 @@ std::string formatToString(const char* fmt, ...);
 /**
  * \brief Log to a given named logger at a given verbosity level, with printf-style formatting
  *
- * \param level One of the levels specified in ros::console::levels::Level
+ * \param level One of the levels specified in ::ros::console::levels::Level
  * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
  */
 #define ROS_LOG(level, name, ...) ROS_LOG_COND(true, level, name, __VA_ARGS__)
 /**
  * \brief Log to a given named logger at a given verbosity level, with stream-style formatting
  *
- * \param level One of the levels specified in ros::console::levels::Level
+ * \param level One of the levels specified in ::ros::console::levels::Level
  * \param name Name of the logger.  Note that this is the fully qualified name, and does NOT include "ros.<package_name>".  Use ROSCONSOLE_DEFAULT_NAME if you would like to use the default name.
  */
 #define ROS_LOG_STREAM(level, name, args) ROS_LOG_STREAM_COND(true, level, name, args)

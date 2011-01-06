@@ -1001,7 +1001,7 @@ class Bag(object):
                 else:
                     self._reader = _BagReader102_Unindexed(self)
         else:
-            raise ROSBagException('unhandled bag version %d' % self._version)
+            raise ROSBagException('unknown bag version %d' % self._version)
 
     def _read_version(self):
         """
@@ -1978,6 +1978,10 @@ class _BagReader200(_BagReader):
                 bisect.insort_right(self.bag._connection_indexes[connection_id], _IndexEntry200(t, chunk_pos, offset)) 
 
                 expected_index_length += 1
+
+            else:
+                # Unknown record type so skip
+                _skip_record(chunk_file)
 
             if chunk_header.compression == Compression.NONE:
                 offset = chunk_file.tell() - chunk_pos

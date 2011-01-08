@@ -25,9 +25,12 @@ struct Header_ : public std_msgs::Header_<ContainerAllocator>
 
   ROS_DEPRECATED Type& operator=(const std_msgs::Header_<ContainerAllocator>& rhs)
   {
+    if (this == &rhs)
+      return *this;
     this->seq = rhs.seq;
     this->stamp = rhs.stamp;
     this->frame_id = rhs.frame_id;
+    return *this;
   }
 
   ROS_DEPRECATED operator std_msgs::Header_<ContainerAllocator>()

@@ -85,6 +85,27 @@ def lsb_get_version():
     except:
         return None
 
+#### Override class for debugging and unsupported OSs ###########
+class OSOverride:
+    def __init__(self):
+        self._os_name = "uninitialized from ROS_OS_OVERRIDE=name:version"
+        self._os_version = "uninitialized from ROS_OS_OVERRIDE=name:version"
+        
+    def check_presence(self):
+        try:
+            (self._os_name, self._os_version) = os.environ["ROS_OS_OVERRIDE"].split(':')
+            print >> sys.stderr, "Using environment variable ROS_OS_OVERRIDE name = %s version = %s"%(self._os_name, self._os_version)
+            return True
+        except:
+            return False
+    
+    def get_version(self):
+        return self._os_version
+
+    def get_name(self):
+        return self._os_name
+
+
 class OSDetectException(roslib.exceptions.ROSLibException): pass
 
 class OSBase:
@@ -112,6 +133,7 @@ class OSBase:
         Return the standardized version for this OS. (ala Ubuntu Hardy Heron = "8.04")
         """
         raise OSDetectException("get_version unimplemented")
+
 
 ###### Debian SPECIALIZATION #########################
 class Debian(OSBase):
@@ -398,25 +420,6 @@ class FreeBSD(OSBase):
 
 ###### FreeBSD SPECIALIZATION #########################
 
-#### Override class for debugging and unsupported OSs ###########
-class Override(OSBase):
-    def __init__(self):
-        self._os_name = "uninitialized from ROS_OS_OVERRIDE=name:version"
-        self._os_version = "uninitialized from ROS_OS_OVERRIDE=name:version"
-        
-    def check_presence(self):
-        try:
-            (self._os_name, self._os_version) = os.environ["ROS_OS_OVERRIDE"].split(':')
-            print >> sys.stderr, "Using environment variable ROS_OS_OVERRIDE name = %s version = %s"%(self._os_name, self._os_version)
-            return True
-        except:
-            return False
-    
-    def get_version(self):
-        return self._os_version
-
-    def get_name(self):
-        return self._os_name
     
 
 
@@ -426,8 +429,7 @@ class OSDetect:
     """ This class will iterate over registered classes to lookup the
     active OS and version"""
     def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), Fedora(), Rhel(), Gentoo(), Cygwin(), FreeBSD()]):
-        self._os_list = [ Override()]
-        self._os_list.extend(os_list)
+        self._os_list = os_list
         for o in self._os_list:
             if not isinstance(o, OSBase):
                 raise OSDetectException("Class [%s] not derived from OSBase"%o.__class__.__name__)
@@ -443,12 +445,23 @@ class OSDetect:
 
         # \TODO look at throwing here
     def detect_os(self):
+        override = OSOverride()
+        if override.check_presence():
+            for os_class in self._os_list:
+                if os_class.get_name() == override.get_name():
+                    self._os_name = override.get_name()
+                    self._os_version = override.get_version()
+                    self._os_class = os_class
+                    return True
+
         for os_class in self._os_list:
             if os_class.check_presence():
                 self._os_name = os_class.get_name()
                 self._os_version = os_class.get_version()
                 self._os_class = os_class
                 return True
+
+        # No solution found
         attempted_oss = [o.get_name() for o in self._os_list]
         raise OSDetectException("Could not detect OS, tried %s"%attempted_oss)
         return False

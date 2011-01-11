@@ -1245,6 +1245,13 @@ q kills the buffer and process."
                 buf)))
 	(error "Did not find %s in the ros package list." package-name)))))
 
+(defun rosemacs/open-launch-file ()
+  (interactive)
+  (unless ros-launch-path
+    (error "Not in a ros launch buffer"))
+  (find-file ros-launch-path)
+  )
+
 
 (defun rosemacs/relaunch (buf)
   (let ((proc (get-buffer-process buf)))
@@ -1252,6 +1259,7 @@ q kills the buffer and process."
         (warn "Can't relaunch since process %s is still running" proc)
       (save-excursion
         (set-buffer buf)
+        (erase-buffer)
         (start-process (buffer-name buf) buf "roslaunch" ros-launch-path)
         (rosemacs/add-event (format "Ros launch of %s" ros-launch-path))
         )
@@ -1281,6 +1289,7 @@ q kills the buffer and process."
 (define-key ros-launch-keymap "q" 'rosemacs/kill-process-buffer)
 (define-key ros-launch-keymap "r" 'rosemacs/relaunch-current-process)
 (define-key ros-launch-keymap "x" 'rosemacs/kill-and-relaunch)
+(define-key ros-launch-keymap "f" 'rosemacs/open-launch-file)
 
 
 
@@ -1291,6 +1300,7 @@ k kills the process (sends SIGINT)
 q kills the process and the associated buffer
 r relaunches once the previous roslaunch has been killed
 x terminates the currently active launch, then relaunches once it has cleanly shutdown
+f opens the launch file
 
 All roslaunches of the launch file are appended to the same buffer (until you kill that buffer).
 The page delimiter in this buffer matches the start, so you can use forward/backward pagewise navigation.

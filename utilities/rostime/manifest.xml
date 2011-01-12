@@ -6,7 +6,7 @@ Time and Duration implementations for C++ libraries, including roscpp.
   </description>
   <author>Josh Faust</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="Doc reviewed" notes="2011-01-12"/>
   <url>http://ros.org/wiki/rostime</url>
 
   <depend package="cpp_common"/>

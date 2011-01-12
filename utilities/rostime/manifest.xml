@@ -1,7 +1,7 @@
 <package>
   <description brief="rostime">
 
-     rostime
+Time and Duration implementations for C++ libraries, including roscpp.
 
   </description>
   <author>Josh Faust</author>

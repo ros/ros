@@ -122,11 +122,15 @@ def create_node_process(run_id, node, master_uri):
     
     # we have to include the counter to prevent potential name
     # collisions between the two branches
-    name = "%s-%s"%(node.name, _next_counter())
+
+    name = "%s-%s"%(roslib.names.ns_join(node.namespace, node.name), _next_counter())
+    if name[0] == '/':
+        name = name[1:]
 
     _logger.info('process[%s]: env[%s]', name, env)
 
     args = create_local_process_args(node, machine)
+    
     _logger.info('process[%s]: args[%s]', name, args)        
 
     # default for node.output not set is 'log'
@@ -214,9 +218,10 @@ class LocalProcess(Process):
         # note: logfileerr: disabling in favor of stderr appearing in the console.
         # will likely reinstate once roserr/rosout is more properly used.
         logfileout = logfileerr = None
-
+        logfname = self.name.replace('/', '-')
+        
         if self.log_output:
-            outf, errf = [os.path.join(log_dir, '%s-%s.log'%(self.name, n)) for n in ['stdout', 'stderr']]
+            outf, errf = [os.path.join(log_dir, '%s-%s.log'%(logfname, n)) for n in ['stdout', 'stderr']]
             if self.respawn:
                 mode = 'a'
             else:
@@ -230,7 +235,7 @@ class LocalProcess(Process):
         if self.is_node:
             # #1595: on respawn, these keep appending
             self.args = _cleanup_remappings(self.args, '__log:=')
-            self.args.append("__log:=%s"%os.path.join(log_dir, "%s.log"%self.name))
+            self.args.append("__log:=%s"%os.path.join(log_dir, "%s.log"%(logfname)))
 
         return logfileout, logfileerr
 

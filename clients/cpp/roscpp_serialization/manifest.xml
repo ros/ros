@@ -1,7 +1,10 @@
 <package>
   <description brief="roscpp_serialization">
 
-     roscpp_serialization
+roscpp_serialization contains the code for serialization as described in
+<a href="http://www.ros.org/wiki/roscpp/Overview/MessagesSerializationAndAdaptingTypes">MessagesSerializationAndAdaptingTypes</a>.
+
+This package is a component of <a href="http://www.ros.org/wiki/roscpp">roscpp</a>.
 
   </description>
   <author>Josh Faust</author>

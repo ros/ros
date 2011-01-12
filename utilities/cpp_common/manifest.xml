@@ -6,6 +6,8 @@ related, but are useful for multiple packages. This includes things like
 the ROS_DEPRECATED and ROS_FORCE_INLINE macros, as well as code for getting
 backtraces. 
 
+This package is a component of <a href="http://www.ros.org/wiki/roscpp">roscpp</a>.
+
   </description>
   <author>Josh Faust</author>
   <license>BSD</license>

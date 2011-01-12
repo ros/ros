@@ -1,7 +1,10 @@
 <package>
   <description brief="roscpp_traits">
 
-     roscpp_traits
+roscpp_traits contains the message traits code as described in
+<a href="http://www.ros.org/wiki/roscpp/Overview/MessagesTraits">MessagesTraits</a>.
+
+This package is a component of <a href="http://www.ros.org/wiki/roscpp">roscpp</a>.
 
   </description>
   <author>Josh Faust</author>

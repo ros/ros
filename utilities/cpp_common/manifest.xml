@@ -1,7 +1,10 @@
 <package>
   <description brief="cpp_common">
 
-     cpp_common
+cpp_common contains C++ code for doing things that are not necessarily ROS
+related, but are useful for multiple packages. This includes things like
+the ROS_DEPRECATED and ROS_FORCE_INLINE macros, as well as code for getting
+backtraces. 
 
   </description>
   <author>Josh Faust</author>

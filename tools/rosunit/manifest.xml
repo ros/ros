@@ -6,7 +6,7 @@
   </description>
   <author>Ken Conley</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="Doc reviewed" notes="2011/01/12, REP 100"/>
   <url>http://ros.org/wiki/rosunit</url>
   <depend package="roslib"/>
   <export>

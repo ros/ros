@@ -9,7 +9,7 @@ This package is a component of <a href="http://www.ros.org/wiki/roscpp">roscpp</
   </description>
   <author>Josh Faust</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="Doc reviewed" notes="2011-01-12"/>
   <url>http://ros.org/wiki/roscpp_serialization</url>
 
   <depend package="roscpp_traits"/>

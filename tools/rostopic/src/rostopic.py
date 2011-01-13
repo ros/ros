@@ -1217,8 +1217,8 @@ def publish_message(pub, msg_class, pub_args, rate=None, once=False, verbose=Fal
         
         # allow the use of the 'now' string with timestamps and 'auto' with header
         now = rospy.get_rostime() 
-        import roslib.msg
-        keys = { 'now': now, 'auto': roslib.msg.Header(stamp=now) }
+        import std_msgs.msg
+        keys = { 'now': now, 'auto': std_msgs.msg.Header(stamp=now) }
         roslib.message.fill_message_args(msg, pub_args, keys=keys)
     except roslib.message.ROSMessageException, e:
         raise ROSTopicException(str(e)+"\n\nArgs are: [%s]"%roslib.message.get_printable_message_args(msg))

@@ -22,7 +22,8 @@ behaviors in ROS.
   <depend package="rosmsg"/>
   <depend package="rospy"/>
   <depend package="rosbag"/>
-
+  <depend package="std_msgs"/>
+  
   <export>
     <rosdoc config="rosdoc.yaml"/>    
   </export>

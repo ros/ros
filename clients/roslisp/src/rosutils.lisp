@@ -150,22 +150,6 @@
 (defvar *message-dir-cache* (make-hash-table :test #'equal))
 (defvar *service-dir-cache* (make-hash-table :test #'equal))
 
-(defun ros-message-dir (ros-package-name)
-  "Given, e.g., the string std_msgs, will return (in a typical setup), the string /u/your_name/ros/ros/std_msgs/msg/lisp/std_msgs/.  Requires that the PATH (in the environment of the Lisp process) includes rospack."
-  (or (gethash ros-package-name *message-dir-cache*)
-      (let ((base-dir (run-external "rospack" "find" ros-package-name)))
-	(assert base-dir nil "Unable to find ~a." ros-package-name)
-	(setf (gethash ros-package-name *message-dir-cache*)
-	      (concatenate 'string base-dir "/msg/lisp/" ros-package-name "/")))))
-
-(defun ros-service-dir (ros-package-name)
-  "Given, e.g., the string std_srvs, will return (in a typical setup), the string /u/your_name/ros/ros/std_srvs/srv/lisp/std_srvs/.  Requires that the PATH (in the environment of the Lisp process) includes rospack."
-  (or (gethash ros-package-name *service-dir-cache*)
-      (let ((base-dir (run-external "rospack" "find" ros-package-name)))
-	(assert base-dir nil "Unable to find ~a." ros-package-name)
-	(setf (gethash ros-package-name *service-dir-cache*)
-	      (concatenate 'string base-dir "/srv/lisp/" ros-package-name "/")))))
-
 
 
 (defun run-external (cmd &rest args)
@@ -196,20 +180,6 @@
                                               "-msg")))
                         `(asdf:operate 'asdf:load-op ,msg-system-name)))
                     message-types)))
-
-;; (defmacro load-message-types (&rest message-types)
-;;   "load-message-types &rest MESSAGE-TYPES
-;; Each message type is a string of form package/message.  Loads the corresponding Lisp files.  Makes sure to load things only once.  This means that if the .lisp files are changed during the current Lisp session (which wouldn't happen in the normal scheme of things), you will have to manually reload the file rather than using this function."
-;;   (let ((s (gensym)))
-;;     `(eval-when (:compile-toplevel :execute :load-toplevel)
-;;        (dolist (,s (list ,@message-types))
-;; 	 (let ((tokens (tokens ,s :separators (list #\/))))
-;; 	   (assert (= 2 (length tokens)) nil "~a was not of the form package/message" ,s)
-;; 	   (let ((dir (ros-message-dir (first tokens))))
-;; 	     (load-if-necessary (concatenate 'string dir "_package.lisp"))
-;; 	     (load-if-necessary (concatenate 'string dir (second tokens)))))))))
-
-      
     
     
 (defmacro load-service-types (&rest service-types)
@@ -225,17 +195,6 @@ Each service type is a string of form package/service.  Loads the corresponding 
                         `(asdf:operate 'asdf:load-op ,msg-system-name)))
                     service-types)))
 
-;; (defmacro load-service-types (&rest service-types)
-;;   "load-service-types &rest SERVICE-TYPES
-;; Each service type is a string of form package/service.  Loads the corresponding Lisp files.  Makes sure to load things only once.  This means that if the .lisp files are changed during the current Lisp session (which wouldn't happen in the normal scheme of things), you will have to manually reload the file rather than using this function."
-;;   (let ((s (gensym)))
-;;     `(eval-when (:compile-toplevel :execute :load-toplevel)
-;;        (dolist (,s ',service-types)
-;; 	 (let ((tokens (tokens ,s :separators (list #\/))))
-;; 	   (assert (= 2 (length tokens)) nil "~a was not of the form package/service" ,s)
-;; 	   (let ((dir (ros-service-dir (first tokens))))
-;; 	     (load-if-necessary (concatenate 'string dir "_package.lisp"))
-;; 	     (load-if-necessary (concatenate 'string dir (second tokens)))))))))
 
 (defun standalone-exec-debug-hook (a b)
   (declare (ignore b))

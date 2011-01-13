@@ -265,40 +265,41 @@ class MsgSpecTest(unittest.TestCase):
     self.assertEquals(['i32', 'str', 'i32_array', 'b'], spec.names) # make sure we have an actual msg
     
   def test_list_msg_types(self):
-    # can only validly test with roslib, but we test with std_msgs anyways
-    types1 = roslib.msgs.list_msg_types('roslib', False)
-    types2 = roslib.msgs.list_msg_types('roslib', True)
+    types1 = roslib.msgs.list_msg_types('rosgraph_msgs', False)
+    types2 = roslib.msgs.list_msg_types('rosgraph_msgs', True)
     
-    self.assert_('Header' in types1, types1)
     self.assert_('Clock' in types1, types1)
     self.assert_('Log' in types1, types1)        
     
     # roslib has no deps, so this should be equivalent
     self.assertEquals(types1, types2)
 
-    #TODO: need a real test with dependencies
     types1 = roslib.msgs.list_msg_types('std_msgs', False)
     types2 = roslib.msgs.list_msg_types('std_msgs', True)
     
+    self.assert_('Header' in types1, types1)
+    self.assert_('Header' in types2, types2)
     self.assert_('String' in types1, types1)
     self.assert_('String' in types2, types2)    
     self.assert_('Int32' in types1, types1)
     self.assert_('Int32' in types2, types2)    
     
-    self.assert_('roslib/Header' in types2, types2)
-    self.assert_('roslib/Header' not in types1, types1)
-    self.assert_('roslib/Clock' in types2, types2)
-    self.assert_('roslib/Clock' not in types1, types1)
-    self.assert_('roslib/Log' in types2, types2)        
-    self.assert_('roslib/Log' not in types1, types1)        
+    # test loading dependencies.  we depend on std_msgs
+    types1 = roslib.msgs.list_msg_types(PKG, False)
+    types2 = roslib.msgs.list_msg_types(PKG, True)
+
+    self.assert_('std_msgs/Header' in types2, types2)
+    self.assert_('std_msgs/Header' not in types1, types1)
+    self.assert_('std_msgs/Int32' in types2, types2)
+    self.assert_('std_msgs/Int32' not in types1, types1)
     
     # std_msgs depends on roslib, so these should be different
     self.assertNotEquals(types1, types2)
 
   def test_msg_file(self):
-    f = roslib.msgs.msg_file('roslib', 'Log')
+    f = roslib.msgs.msg_file('rosgraph_msgs', 'Log')
     self.assert_(os.path.isfile(f))
-    self.assert_(f.endswith('roslib/msg/Log.msg'))
+    self.assert_(f.endswith('rosgraph_msgs/msg/Log.msg'))
 
     # msg_file should return paths even for non-existent resources
     f = roslib.msgs.msg_file('roslib', 'Fake')

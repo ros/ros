@@ -1,8 +1,8 @@
 int32  a
-roslib/Log log
+rosgraph_msgs/Log log
 
 string s  
-roslib/Clock  time
+rosgraph_msgs/Clock  time
 int32 b   
 duration  d
  time t

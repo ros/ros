@@ -373,7 +373,7 @@ def _init():
     
     header = os.path.join(std_msgs_dir, roslib.packages.MSG_DIR, fname)
     if not os.path.isfile(header):
-        print >> sys.stderr, "ERROR: cannot locate %s. Excepted to find it at '%s'"%(fname, header)
+        print >> sys.stderr, "ERROR: cannot locate %s. Expected to find it at '%s'"%(fname, header)
         return False
 
     # register Header under both contexted and de-contexted name

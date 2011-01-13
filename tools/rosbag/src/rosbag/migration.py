@@ -698,6 +698,18 @@ class MessageMigrator(object):
         # Construction should be done, we can now use the system in
         # the event that we don't have invalid update rules.
 
+        self.class_dict = {}
+
+        for sn in self.base_nodes + self.extra_nodes:
+            self.class_dict[get_message_key(sn.old_class)] = sn.old_class
+            self.class_dict[get_message_key(sn.new_class)] = sn.new_class
+
+
+    def lookup_type(self, key):
+        if key in self.class_dict:
+            return self.class_dict[key]
+        else:
+            return None
 
     # Add an update rule to our set of rule chains
     def add_update_rule(self, r):

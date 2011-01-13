@@ -1300,6 +1300,9 @@ def _get_message_type(info):
     if message_type is None:
         try:
             message_type = roslib.genpy.generate_dynamic(info.datatype, info.msg_def)[info.datatype]
+            if (message_type._md5sum != info.md5sum):
+                print >> sys.stderr, 'WARNING: For type [%s] stored md5sum [%s] does not match message definition [%s].\n  Try: "rosrun rosbag fix_msg_defs.py old_bag new_bag."'%(info.datatype, info.md5sum, message_type._md5sum)
+    
         except roslib.genpy.MsgGenerationException, ex:
             raise ROSBagException('Error generating datatype %s: %s' % (info.datatype, str(ex)))
 

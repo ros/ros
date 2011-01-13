@@ -353,7 +353,6 @@ def fix_cmd(argv):
         return
 
     if len(migrations) == 0:
-        print '%s %s' % (outname, outbag_filename)
         os.rename(outname, outbag_filename)
         print 'Bag migrated successfully.'
     else:

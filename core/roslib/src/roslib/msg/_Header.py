@@ -4,6 +4,9 @@ import struct
 
 import roslib.rostime
 
+import warnings
+warnings.warn("roslib/Header argument is deprecated. Please use std_msgs/Header instead", DeprecationWarning, stacklevel=2)
+
 class Header(roslib.message.Message):
   _md5sum = "2176decaecbce78abc3b96ef049fabed"
   _type = "roslib/Header"

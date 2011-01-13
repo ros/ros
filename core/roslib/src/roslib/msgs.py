@@ -367,11 +367,11 @@ def _init():
         return
 
     fname = '%s%s'%(HEADER, EXT)
-    roslib_dir = roslib.packages.get_pkg_dir('roslib')
-    if roslib_dir is None:
+    std_msgs_dir = roslib.packages.get_pkg_dir('std_msgs')
+    if std_msgs_dir is None:
         raise MsgSpecException("Unable to locate roslib: %s files cannot be loaded"%EXT)
     
-    header = os.path.join(roslib_dir, roslib.packages.MSG_DIR, fname)
+    header = os.path.join(std_msgs_dir, roslib.packages.MSG_DIR, fname)
     if not os.path.isfile(header):
         print >> sys.stderr, "ERROR: cannot locate %s. Excepted to find it at '%s'"%(fname, header)
         return False

@@ -146,7 +146,7 @@ def compute_stack_depends_and_licenses(stack_dir):
         depends = dict()
         licenses = ['BSD']
     # add in bare ros dependency into any stack as an implicit depend
-    if not 'ros' in depends:
+    if not 'ros' in depends and stack != 'ros':
         depends['ros'] = []
     return depends, licenses
     
@@ -156,7 +156,7 @@ def _compute_stack_depends_and_licenses(stack, packages):
     for pkg in packages:
         m = roslib.manifest.parse_file(roslib.manifest.manifest_file(pkg))
         pkg_depends.extend([d.package for d in m.depends])
-        licenses.append(m.license)
+        licenses.extend([l.strip() for l in m.license.split(',')])
         
     stack_depends = {}
     for pkg in pkg_depends:
@@ -173,8 +173,18 @@ def _compute_stack_depends_and_licenses(stack, packages):
         if st == stack:
             continue
         if not st in stack_depends:
-            stack_depends[st] = []            
+            stack_depends[st] = [] 
         stack_depends[st].append(pkg)
+
+        # check for genmsg implicit dependency 
+        pkg_dir = roslib.packages.get_pkg_dir(pkg)
+        if (os.path.isdir(os.path.join(pkg_dir, 'msg')) or \
+                os.path.isdir(os.path.join(pkg_dir, 'srv'))) and \
+                st not in ['ros', 'ros_comm']:
+            if not 'ros_comm' in stack_depends:
+                stack_depends['ros_comm'] = [] 
+            stack_depends['ros_comm'].append(pkg)
+        
     return stack_depends, set(licenses)
 
 def roscreatestack_main():
@@ -200,21 +210,22 @@ def roscreatestack_main():
         print >> sys.stderr, str(e)
         sys.exit(1)
 
+    # defaults
+    stack_manifest = None
+    author = "Maintained by %s"%author_name()
+
     if not options.show_deps:
       # Check for existing stack.xml
       stack_xml_path = os.path.join(stack_dir, 'stack.xml')
       if os.path.exists(stack_xml_path):
           import shutil
           stack_xml_path_bak = os.path.join(stack_dir, 'stack.xml.bak')
-          print 'Backing up existing stack.xml to %s'%stack_xml_path_bak
+          print 'Backing up existing stack.xml to %s'%(stack_xml_path_bak)
           shutil.copyfile(stack_xml_path, stack_xml_path_bak)
 
           # load existing stack.xml properties
           stack_manifest = roslib.stack_manifest.parse_file(stack_xml_path)
           author = stack_manifest.author
-      else:
-          stack_manifest = None
-          author = "Maintained by %s"%author_name()
   
     create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, options.show_deps)
 

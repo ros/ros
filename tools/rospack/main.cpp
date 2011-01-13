@@ -28,8 +28,11 @@
 /* Author: Morgan Quigley, Brian Gerkey */
 
 
-#include <stdexcept>
 #include "rospack/rospack.h"
+
+#include <stdexcept>
+#include <unistd.h>
+#include <stdlib.h>
 
 int main(int argc, char **argv)
 {
@@ -38,12 +41,48 @@ int main(int argc, char **argv)
     fputs(rospack::ROSPack::usage(), stderr);
     return 0;
   }
+
+  // If it looks we're running under sudo, try to drop back to the normal
+  // user, to avoid writing the cache with inappropriate permissions,
+  // #2884.
+  // Do the group first, because we can't do it after changing the user.
+  char* sudo_gid_string = getenv("SUDO_GID");
+  if(sudo_gid_string)
+  {
+    gid_t sudo_gid = (int)strtol(sudo_gid_string, (char **)NULL, 10);
+    if(setgid(sudo_gid))
+      perror("[rospack] Failed to change GID; cache permissions may need to be adjusted manually. setgid()");
+  }
+  char* sudo_uid_string = getenv("SUDO_UID");
+  if(sudo_uid_string)
+  {
+    uid_t sudo_uid = (int)strtol(sudo_uid_string, (char **)NULL, 10);
+    if(setuid(sudo_uid))
+      perror("[rospack] Failed to change UID; cache permissions may need to be adjusted manually. setuid()");
+  }
+
   int ret;
+  bool quiet;
   try
   {
+    // Declare ROSPack instance inside the try block because its
+    // constructor can throw (e.g., when ROS_ROOT isn't set).
     rospack::ROSPack rp;
-    ret = rp.run(argc, argv);
-    printf("%s", rp.getOutput().c_str());
+    // Separate try block for running the command, to allow for suppressing
+    // error output when -q is given.
+    try
+    {
+      ret = rp.run(argc, argv);
+      printf("%s", rp.getOutput().c_str());
+    }
+    catch(std::runtime_error &e)
+    {
+      // Return code is -1 no matter what, but don't rethrow if we were
+      // asked to be quiet.
+      ret = -1;
+      if(!rp.is_quiet())
+        throw;
+    }
   }
   catch(std::runtime_error &e)
   {

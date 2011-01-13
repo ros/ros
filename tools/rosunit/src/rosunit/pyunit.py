@@ -35,6 +35,7 @@
 """
 Wrapper for running Python unittest within rosunit/rostest framework.
 """
+from __future__ import with_statement
 
 from .core import create_xml_runner, XML_OUTPUT_FLAG
 from .baretest import print_unittest_summary

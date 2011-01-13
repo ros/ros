@@ -226,9 +226,7 @@ macro(rosbuild_init)
     # saving only the last one.
     #
     list(REVERSE ${_prefix}_LIBRARIES)
-    #list(REMOVE_DUPLICATES ${_prefix}_LIBRARIES)
-    _rosbuild_list_remove_duplicates("${${_prefix}_LIBRARIES}" _tmplist)
-    set(${_prefix}_LIBRARIES ${_tmplist})
+    list(REMOVE_DUPLICATES ${_prefix}_LIBRARIES)
     list(REVERSE ${_prefix}_LIBRARIES)
   
     # Also throw in the libs that we want to link everything against (only
@@ -458,9 +456,7 @@ macro(rosbuild_init)
   # saving only the last one.
   #
   list(REVERSE _gtest_LIBRARIES)
-  #list(REMOVE_DUPLICATES _gtest_LIBRARIES)
-  _rosbuild_list_remove_duplicates(${_gtest_LIBRARIES} _tmplist)
-  set(_gtest_LIBRARIES ${_tmplist})
+  list(REMOVE_DUPLICATES _gtest_LIBRARIES)
   list(REVERSE _gtest_LIBRARIES)
 
   # Delete the files that let rospack know messages/services have been generated
@@ -919,6 +915,10 @@ endmacro(rosbuild_download_test_data)
 # depend on the result of untarring the file (can be ALL).
 macro(rosbuild_untar_file _filename _unpacked_name)
   get_filename_component(unpack_dir ${_filename} PATH)
+  # Check whether the filename has a directory component, #3034
+  if(NOT unpack_dir)
+    set(unpack_dir ${PROJECT_SOURCE_DIR})
+  endif(NOT unpack_dir)
   add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_unpacked_name}
                      COMMAND rm -rf ${PROJECT_SOURCE_DIR}/${_unpacked_name}
                      COMMAND tar xvCf ${unpack_dir} ${PROJECT_SOURCE_DIR}/${_filename}
@@ -965,6 +965,15 @@ macro(rosbuild_add_openmp_flags target)
     _rosbuild_warn("because ROS_TEST_COVERAGE is set, OpenMP support is disabled")
   else("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
   
+  # First, try to use the standard FindOpenMP module (#3184).  If that
+  # fails, fall back on manual detection.  I don't know why the standard
+  # detection would ever fail; it's possible that the manual
+  # detection is now vestigial and could be removed.
+  include(FindOpenMP)
+  if(${OPENMP_FOUND} STREQUAL "TRUE")
+      rosbuild_add_compile_flags(${target} ${OpenMP_C_FLAGS})
+      rosbuild_add_link_flags(${target} ${OpenMP_C_FLAGS})
+  else(${OPENMP_FOUND} STREQUAL "TRUE")
   # list of OpenMP flags to check
     set(_rospack_check_openmp_flags
       "-fopenmp" # gcc
@@ -987,7 +996,7 @@ macro(rosbuild_add_openmp_flags target)
       if(NOT _rospack_openmp_flag_found)      
         set(CMAKE_REQUIRED_FLAGS ${_rospack_openmp_test_flag})
         check_function_exists(omp_set_num_threads _rospack_openmp_function_found${_rospack_openmp_test_flag})
-  	   
+   
         if(_rospack_openmp_function_found${_rospack_openmp_test_flag})
   	set(_rospack_openmp_flag_value ${_rospack_openmp_test_flag})
   	set(_rospack_openmp_flag_found TRUE)
@@ -1006,6 +1015,7 @@ macro(rosbuild_add_openmp_flags target)
       message("WARNING: OpenMP compile flag not found")
     endif(_rospack_openmp_flag_found)
 
+  endif(${OPENMP_FOUND} STREQUAL "TRUE")
   endif("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
 endmacro(rosbuild_add_openmp_flags)
 
@@ -1195,6 +1205,11 @@ macro(rosbuild_include pkg module)
     list(GET _rosbuild_EXPORTS_stripped ${_idx} _dir)
     if("${_pkg}" STREQUAL "${pkg}")
       message("[rosbuild] Including ${_dir}/${module}.cmake")
+      # Add this directory to CMake's search path, so that included files
+      # can include other files in a relative manner, #2813.
+      if(NOT CMAKE_MODULE_PATH MATCHES ${_dir})
+        set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${_dir})
+      endif()
       include(${_dir}/${module}.cmake)
       # Poor man's break
       set(_found True)

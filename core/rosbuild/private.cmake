@@ -60,17 +60,6 @@ macro(_rosbuild_list_find _list _item _idx)
     endforeach(_i)
 endmacro(_rosbuild_list_find)
 
-# list(REMOVE_DUPLICATES) was introduced in cmake 2.6, so we write our own
-macro(_rosbuild_list_remove_duplicates _inlist _outlist)
-  foreach(_item ${_inlist})
-    #list(FIND ${_outlist} ${_item} _idx)
-    _rosbuild_list_find(${_outlist} ${_item} _idx)
-    if(${_idx} EQUAL -1)
-      list(APPEND ${_outlist} ${_item})
-    endif(${_idx} EQUAL -1)
-  endforeach(_item)
-endmacro(_rosbuild_list_remove_duplicates)
-
 # Check validity of PYTHONPATH, to avoid esoteric build errors, #954.
 macro(_rosbuild_check_pythonpath)
   if("$ENV{PYTHONPATH}" STREQUAL "")
@@ -380,7 +369,7 @@ endmacro(_rosbuild_add_library)
 
 macro(_rosbuild_get_clock var)
   execute_process(
-    COMMAND python -c "import time; print time.time()"
+    COMMAND python -c "import time, sys; sys.stdout.write(str(time.time()));"
     OUTPUT_VARIABLE ${var}
     ERROR_VARIABLE _time_error
     RESULT_VARIABLE _time_failed
@@ -414,7 +403,7 @@ macro(_rosbuild_compare_manifests var _t _c _m)
     # Call Python to compare the provided time to the latest mtime on all
     # the files
     execute_process(
-      COMMAND python -c "import os; print 1 if set(${_pylist}) != set(${_cached_pylist}) or ${_t} < max(os.stat(f).st_mtime for f in ${_pylist}) else 0;"
+      COMMAND python -c "import os, sys; sys.stdout.write('1' if set(${_pylist}) != set(${_cached_pylist}) or ${_t} < max(os.stat(f).st_mtime for f in ${_pylist}) else '0');"
       OUTPUT_VARIABLE ${var}
       ERROR_VARIABLE _mtime_error
       RESULT_VARIABLE _mtime_failed

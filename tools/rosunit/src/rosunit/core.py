@@ -33,6 +33,7 @@
 # Revision $Id$
 
 import os
+import sys
 import logging
 import roslib.rosenv
 

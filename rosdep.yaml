@@ -1,28 +1,10 @@
-ruby:
-  ubuntu: ruby
-  debian: ruby
-  arch: ruby
-  macports: |
-  gentoo: ruby
-  freebsd: ruby
-  fedora: ruby
-apr:
-  ubuntu: libapr1-dev libaprutil1-dev
-  debian: libapr1-dev libaprutil1-dev
-  arch: apr apr-util
-  fedora: apr-devel apr-util
-  rhel: apr-devel apr-util
-  macports: apr apr-util
-  gentoo: dev-libs/apr dev-libs/apr-util
-  cygwin: libapr1 libaprutil1
-  freebsd: builtin # i.e. ignore, only needed to manually build log4cxx on other OSes
 python:
   ubuntu: python-dev
   debian: python-dev
   arch: python
   fedora: python-devel
   rhel: python-devel
-  macports: python25 python_select
+  macports: python26 python_select
   gentoo: python
   cygwin: python
   freebsd: python
@@ -34,7 +16,7 @@ python-yaml:
   centos: PyYAML
   arch: |
     if ! pacman -Q libyaml python-yaml; then yaourt -S libyaml python-yaml; fi
-  macports: py25-yaml
+  macports: py26-yaml
   gentoo: pyyaml
   cygwin: |
       if [ ! -d /usr/lib/python2.5/site-packages/yaml/ ] ; then
@@ -50,43 +32,17 @@ python-gtk2:
   ubuntu: python-gtk2
   arch: pygtk
   debian: python-gtk2
-  macports: py25-gtk
+  macports: py26-gtk
   fedora: pygtk2
   rhel: pygtk2
   gentoo: "=dev-python/pygtk-2*"
   freebsd: py-gtk2
-python-matplotlib:
-  ubuntu: python-matplotlib
-  arch: python-matplotlib
-  debian: python-matplotlib
-  macports: py25-matplotlib
-  fedora: python-matplotlib
-  rhel: python-matplotlib
-  gentoo: dev-python/matplotlib
-  freebsd: py26-matplotlib
-python-imaging:
-  ubuntu: python-imaging
-  debian: python-imaging
-  fedora: python-imaging
-  rhel: python-imaging
-  arch: pil
-  macports: py25-pil
-  gentoo: dev-python/imaging
-  freebsd: py26-imaging
-python-numpy:
-  ubuntu: python-numpy
-  debian: python-numpy
-  fedora: numpy
-  rhel: python-numpy
-  arch: python-numpy
-  macports: py25-numpy
-  gentoo: dev-python/numpy
-  freebsd: py-numpy
 python-scipy:
   ubuntu: python-scipy
   debian: python-scipy
   arch: python-scipy
-  macports: py25-scipy
+  fedora: scipy
+  macports: py26-scipy
   gentoo: dev-libs/scipy
   freebsd: py-scipy
 bzip2:
@@ -160,7 +116,7 @@ wxwidgets:
   debian: libwxgtk2.8-dev
   fedora: wxGTK-devel
   rhel: wxGTK-devel
-  macports: wxwidgets
+  macports: wxWidgets-python
   arch: wxgtk
   gentoo: x11-libs/wxGTK
   freebsd: wxgtk2
@@ -171,43 +127,9 @@ wxpython:
   rhel: wxPython-devel
   centos: wxPython-devel
   debian: python-wxgtk2.8
-  macports: py25-wxpython
+  macports: py26-wxpython py26-gobject py26-gtk python-cairo
   gentoo: dev-python/wxpython
   freebsd: py26-wxPython
-log4cxx:
-  ubuntu: liblog4cxx10-dev
-  debian:
-    squeeze/sid: liblog4cxx10-dev
-    lenny: |
-      if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
-        mkdir -p ~/ros/ros-deps
-        cd ~/ros/ros-deps
-        wget --tries=10 http://pr.willowgarage.com/downloads/apache-log4cxx-0.10.0-wg_patched.tar.gz
-        tar xzf apache-log4cxx-0.10.0-wg_patched.tar.gz
-        cd apache-log4cxx-0.10.0
-        ./configure --prefix=/opt/ros
-        make
-        sudo make install
-      fi
-    3.1: |
-      if [ ! -f /opt/ros/lib/liblog4cxx.so.10 ] ; then
-        mkdir -p ~/ros/ros-deps
-        cd ~/ros/ros-deps
-        wget --tries=10 http://pr.willowgarage.com/downloads/apache-log4cxx-0.10.0-wg_patched.tar.gz
-        tar xzf apache-log4cxx-0.10.0-wg_patched.tar.gz
-        cd apache-log4cxx-0.10.0
-        ./configure --prefix=/opt/ros
-        make
-        sudo make install
-      fi
-  fedora: log4cxx-devel
-  rhel: log4cxx-devel
-  arch: |
-    if ! pacman -Q log4cxx; then yaourt -S log4cxx; fi
-  macports: log4cxx
-  gentoo: dev-libs/log4cxx
-  cygwin: liblog4cxx-devel
-  freebsd: log4cxx
 libxext:
   ubuntu: libxext-dev
   debian: libxext-dev
@@ -217,15 +139,6 @@ libxext:
   arch: libxext
   gentoo: x11-libs/libXext
   freebsd: libXext
-swig:
-  ubuntu: swig
-  debian: swig
-  fedora: swig
-  rhel: swig
-  macports: swig
-  arch: swig
-  gentoo: dev-lang/swig
-  freebsd: swig
 zziplib:
   ubuntu: libzzip-0-13 libzzip-dev
   debian: libzzip-0-13 libzzip-dev
@@ -318,6 +231,7 @@ octave:
   macports: octave
   centos: octave-devel
   debian: octave3.0-headers
+  fedora: octave-devel
   gentoo: sci-mathematics/octave
   freebsd: octave
 ncurses:
@@ -333,6 +247,7 @@ qt4:
   ubuntu: libqt4-core libqt4-dev qt4-dev-tools
   debian: libqt4-core libqt4-dev qt4-dev-tools 
   arch: qt
+  fedora: qt-devel
   macports: qt4-mac
   gentoo: ">=x11-libs/qt-core-4"
   freebsd: qt4-corelib
@@ -348,6 +263,7 @@ libxml2:
   ubuntu: libxml2-dev
   debian: libxml2-dev
   arch: libxml2
+  fedora: libxml2-devel
   macports: libxml2
   gentoo: dev-libs/libxml2
   freebsd: libxml2
@@ -356,16 +272,10 @@ scons:
   ubuntu: scons
   debian: scons
   arch: scons
+  fedora: scons
   macports: scons
   gentoo: dev-util/scons
   freebsd: scons
-ant:
-  ubuntu: ant
-  debian: ant
-  arch: apache-ant
-  macports: apache-ant
-  gentoo: dev-java/ant
-  freebsd: apache-ant
 libstdc++5:
   ubuntu: libstdc++5
   debian: libstdc++5
@@ -381,6 +291,7 @@ cppunit:
   freebsd: cppunit
 intltool:
   ubuntu: intltool
+  fedora: intltool
   gentoo: dev-util/intltool
   freebsd: intltool
 unzip:
@@ -400,13 +311,6 @@ fltk:
   macports: fltk
   gentoo: "=x11-libs/fltk-1*"
   freebsd: fltk
-paramiko:
-  ubuntu: python-paramiko
-  debian: python-paramiko
-  fedora: python-paramiko
-  macports: py25-paramiko
-  gentoo: dev-python/paramiko
-  freebsd: py26-paramiko
 bazaar:
   ubuntu: bzr
   debian: bzr

@@ -272,6 +272,9 @@ public:
   // Get the accumulated output
   std::string getOutput() { return output_acc; }
 
+  // is -q (quiet) provided ?
+  bool is_quiet() { return opt_quiet; }
+
   int cmd_print_package_list(bool print_path);
   
   int cmd_list_duplicates();
@@ -309,9 +312,14 @@ public:
   bool opt_display_duplicate_pkgs;
 
 private:
+  // is quiet
+  bool opt_quiet;
   bool cache_lock_failed;
   bool crawled;
   std::string getCachePath();
+  // Storage for list of path components, used in add_package.  We keep it
+  // here to avoid reallocation in every run of add_package.
+  std::vector<std::string> path_components;
   // Add package, filtering out duplicates.
   Package* add_package(std::string path);
   /** tests if the cache exists, is new enough, and is valid */

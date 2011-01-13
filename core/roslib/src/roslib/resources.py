@@ -81,11 +81,12 @@ def list_package_resources_by_dir(package_dir, include_depends, subdir, rfilter=
     if include_depends:
         depends = _get_manifest_by_dir(package_dir).depends
         dirs = [roslib.packages.get_pkg_subdir(d.package, subdir, False) for d in depends]
-        dirs = filter(lambda dir: dir and os.path.isdir(dir), dirs)
-        for (dep, dir) in itertools.izip(depends, dirs):
+        for (dep, dir_) in itertools.izip(depends, dirs):
+            if not dir_ or not os.path.isdir(dir_):
+                continue
             resources.extend(\
                 [roslib.names.resource_name(dep.package, f, my_pkg=package) \
-                 for f in os.listdir(dir) if rfilter(os.path.join(dir, f))])
+                 for f in os.listdir(dir_) if rfilter(os.path.join(dir_, f))])
     return resources
 
 def list_package_resources(package, include_depends, subdir, rfilter=os.path.isfile):

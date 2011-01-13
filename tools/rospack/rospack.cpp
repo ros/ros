@@ -54,6 +54,8 @@ using namespace std;
 
 //#define VERBOSE_DEBUG
 const double DEFAULT_MAX_CACHE_AGE = 60.0; // rebuild cache every minute
+const int MAX_DEPENDENCY_TREE_DEPTH = 1000; // used to detect cycles
+const int MAX_DIRECTORY_DEPTH = 1000; // used to detect self-referencing symlinks
 
 
 #include <sys/stat.h>
@@ -96,7 +98,7 @@ const VecPkg &Package::deps1()
 }
 const VecPkg &Package::deps(traversal_order_t order, int depth)
 {
-  if (depth > 1000)
+  if (depth > MAX_DEPENDENCY_TREE_DEPTH)
   {
     fprintf(stderr,"[rospack] woah! expanding the dependency tree made it blow "
                    "up.\n There must be a circular dependency somewhere.\n");
@@ -277,7 +279,7 @@ VecPkg Package::descendants1()
 
 const vector<Package *> &Package::descendants(int depth)
 {
-  if (depth > 100)
+  if (depth > MAX_DEPENDENCY_TREE_DEPTH)
   {
     fprintf(stderr, "[rospack] woah! circular dependency in the ros tree! aaaaaa!\n");
     throw runtime_error(string("circular dependency"));
@@ -632,8 +634,9 @@ VecPkg Package::deleted_pkgs;
 //////////////////////////////////////////////////////////////////////////////
 
 
-ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false),
-        my_argc(0), my_argv(NULL), opt_profile_length(0), total_num_pkgs(0),
+ROSPack::ROSPack() : ros_root(NULL), opt_quiet(false),
+        cache_lock_failed(false), crawled(false), my_argc(0),
+        my_argv(NULL), opt_profile_length(0), total_num_pkgs(0),
         duplicate_packages_found(false)
 {
   g_rospack = this;
@@ -697,7 +700,9 @@ const char* ROSPack::usage()
           "    libs-only-L [--deps-only] [package]\n"
           "    libs-only-l [--deps-only] [package]\n"
           "    libs-only-other [--deps-only] [package]\n"
-          "    profile [--length=<length>] [--zombie-only]\n\n"
+          "    profile [--length=<length>] [--zombie-only]\n"
+          "  Extra options:\n"
+          "    -q     Quiets error reports.\n\n"
           " If [package] is omitted, the current working directory\n"
           " is used (if it contains a manifest.xml).\n\n";
 }
@@ -1137,6 +1142,7 @@ int ROSPack::run(int argc, char **argv)
   const char* opt_length_name  = "--length=";
   const char* opt_top_name     = "--top=";
   const char* opt_target_name  = "--target=";
+  const char* opt_quiet_name   = "-q";
 
   // Reset to defaults.
   opt_deps_only = false;
@@ -1174,6 +1180,8 @@ int ROSPack::run(int argc, char **argv)
       opt_deps_only=true;
     else if(!strcmp(argv[i], opt_zombie_name))
       opt_profile_zombie_only=true;
+    else if(!strcmp(argv[i], opt_quiet_name))
+      opt_quiet=true;
     else if(!strncmp(argv[i], opt_target_name, strlen(opt_target_name)))
     {
       if(opt_target.size())
@@ -1644,7 +1652,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
     {
       if(!i->size())
         continue;
-      else if (Package::is_no_subdirs(*i))
+      else if (!Package::is_package(*i) && Package::is_no_subdirs(*i))
         fprintf(stderr, "[rospack] WARNING: non-package directory in "
                 "ROS_PACKAGE_PATH marked rospack_nosubdirs:\n\t%s\n",
                 i->c_str());
@@ -1659,6 +1667,17 @@ void ROSPack::crawl_for_packages(bool force_crawl)
   {
     CrawlQueueEntry cqe = q.front();
     q.pop_front();
+    
+    // Check for maximum depth, #2218.
+    // Try to avoid repeated allocation.
+    path_components.reserve(MAX_DIRECTORY_DEPTH+1);
+    // string_split() will clear() path_components for us
+    string_split(cqe.path, path_components, "/");
+    if(path_components.size() > MAX_DIRECTORY_DEPTH)
+    {
+      fprintf(stderr,"[rospack] Exceeded maximum directory depth of %d at %s.  There must be a self-referencing symlink somewhere.\n", MAX_DIRECTORY_DEPTH, cqe.path.c_str());
+      throw runtime_error(string("circular directory structure"));
+    }
     
     // Check whether this part of ROS_PACKAGE_PATH is itself a package
     if (Package::is_package(cqe.path))

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (c) 2009, Willow Garage, Inc.
 # All rights reserved.
 # 
@@ -27,11 +28,11 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
-"""
-Library and command-line tool for calculating rosdeps.
-"""
+#"""
+#Library and command-line tool for calculating rosdeps.
+#"""
 
-from __future__ import unicode_literals
+from __future__ import with_statement
 
 import roslib.rospack
 import roslib.stacks
@@ -55,17 +56,10 @@ import rosdep.arch as arch
 import rosdep.cygwin as cygwin
 import rosdep.freebsd as freebsd
 
-# Python 3.x: the from __future__ import unicode_literals makes this unicode
-yaml.add_constructor(
-    'tag:yaml.org,2002:float',
-    yaml.constructor.Constructor.construct_yaml_str)
 
-try:
-    #Python 2.x
-    unicode = str
-except NameError:
-    #Python 3.x
-    pass
+yaml.add_constructor(
+    u'tag:yaml.org,2002:float',
+    yaml.constructor.Constructor.construct_yaml_str)
 
 class YamlCache:
     def __init__(self, os_name, os_version):
@@ -89,8 +83,8 @@ class YamlCache:
                 self._yaml_cache[path] = yaml.load(yaml_text)
                 return self._yaml_cache[path]
 
-            except yaml.YAMLError as exc:
-                sys.stderr.write("Failed parsing yaml while processing %s: %s\n"%(path, exc))
+            except yaml.YAMLError, exc:
+                print >> sys.stderr, "Failed parsing yaml while processing %s\n"%path, exc
                 #sys.exit(1)        # not a breaking error
         self._yaml_cache[path] = {}
         return {}
@@ -133,10 +127,10 @@ class YamlCache:
         """
         @return The os (and version specific if required) local package name
         """
-        if type(os_specific) in [str, unicode]:
+        if type(os_specific) == type("String"):
             return os_specific
         else:# it must be a map of versions
-            if self.os_version in list(os_specific.keys()):
+            if self.os_version in os_specific.keys():
                 return os_specific[self.os_version]
             #print >> sys.stderr, "failed to find definition of %s for OS(%s) Version(%s) within '''%s'''. Defined in file %s"%(rosdep_name, self.os_name, self.os_version, os_specific, source_path)
             return False                    
@@ -181,9 +175,9 @@ class RosdepLookupPackage:
         try:
             rosdep_dependent_packages = ros_package_proxy.depends([package])[package]
             #print "package", package, "needs", rosdep_dependent_packages
-        except KeyError as ex:
-            print("Depends Failed on package %s"%(ex))
-            print(" The errors was in %s"%(ros_package_proxy.depends([package])))
+        except KeyError, ex:
+            print "Depends Failed on package", ex
+            print " The errors was in ",  ros_package_proxy.depends([package])
             rosdep_dependent_packages = []
         #print "Dependents of", package, rosdep_dependent_packages
         rosdep_dependent_packages.append(package)
@@ -194,24 +188,26 @@ class RosdepLookupPackage:
             stack = None
             try:
                 stack = roslib.stacks.stack_of(p)
-            except roslib.packages.InvalidROSPkgException as ex:
-                sys.stderr.write("Failed to find stack for package [%s]\n"%p)
+            except roslib.packages.InvalidROSPkgException, ex:
+                print >> sys.stderr, "Failed to find stack for package [%s]"%p
+                pass
             if stack:
                 try:
                     paths.add( os.path.join(roslib.stacks.get_stack_dir(stack), "rosdep.yaml"))
-                except AttributeError as ex:
-                    print("Stack [%s] could not be found"%(stack))
+                except AttributeError, ex:
+                    print "Stack [%s] could not be found"%(stack)
                 for s in self.yaml_cache.get_rosstack_depends(stack):
                     try:
                         paths.add( os.path.join(roslib.stacks.get_stack_dir(s), "rosdep.yaml"))
-                    except AttributeError as ex:
-                        print("Stack [%s] dependency of [%s] could not be found"%(s, stack))
+                    except AttributeError, ex:
+                        print "Stack [%s] dependency of [%s] could not be found"%(s, stack)
                         
             else:
                 try:
                     paths.add( os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
-                except roslib.packages.InvalidROSPkgException as ex:
-                    sys.stderr.write("Failed to load rosdep.yaml for package [%s]:%s"%(p, ex))
+                except roslib.packages.InvalidROSPkgException, ex:
+                    print >> sys.stderr, "Failed to load rosdep.yaml for package [%s]:%s"%(p, ex)
+                    pass
         for path in paths:
             self.insert_map(self.parse_yaml(path), path)
         #print "built map", self.rosdep_map
@@ -231,13 +227,14 @@ class RosdepLookupPackage:
 
 
                 if override:
-                    sys.stderr.write("ROSDEP_OVERRIDE: %s being overridden with %s from %s"%(key, yaml_dict[key], source_path))
+                    print >>sys.stderr, "ROSDEP_OVERRIDE: %s being overridden with %s from %s"%(key, yaml_dict[key], source_path)
                     self.rosdep_source[key].append("Overriding with "+source_path)
                     self.rosdep_map[key] = rosdep_entry
                 else:
                     if self.rosdep_map[key] == rosdep_entry:
                         self.rosdep_source[key].append(source_path)
                         #print >> sys.stderr, "DEBUG: Same key found for %s: %s"%(key, self.rosdep_map[key])
+                        pass
                     else:
                         cache_p = self.yaml_cache.get_os_from_yaml(key, yaml_dict[key], source_path)
                         raise RosdepException("""QUITTING: due to conflicting rosdep definitions, please resolve this conflict.
@@ -263,7 +260,7 @@ Rules for %s do not match:
         if rosdep in self.rosdep_map:
             return self.rosdep_map[rosdep]
         else:
-            sys.stderr.write("Failed to find rosdep %s for package %s on OS:%s version:%s"%(rosdep, self.package, self.os_name, self.os_version))
+            print >> sys.stderr, "Failed to find rosdep %s for package %s on OS:%s version:%s"%(rosdep, self.package, self.os_name, self.os_version)
             return False
         
     def get_map(self):
@@ -312,7 +309,7 @@ class Rosdep:
         yc = YamlCache(self.osi.get_name(), self.osi.get_version())
         start_time = time.time()
         if "ROSDEP_DEBUG" in os.environ:
-            print("Generating package list and scripts for %d rosdeps.  This may take a few seconds..."%(len(self.packages)))
+            print "Generating package list and scripts for %d rosdeps.  This may take a few seconds..."%len(self.packages)
         for p in self.packages:
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, yc)
             for r in self.rosdeps[p]:
@@ -330,11 +327,11 @@ class Rosdep:
             if not self.robust:
                 raise RosdepException("ABORTING: Rosdeps %s could not be resolved"%failed_rosdeps)
             else:
-                sys.stderr.write("WARNING: Rosdeps %s could not be resolved"%failed_rosdeps)
+                print >> sys.stderr, "WARNING: Rosdeps %s could not be resolved"%failed_rosdeps
 
         time_delta = (time.time() - start_time)
         if "ROSDEP_DEBUG" in os.environ:
-            print("Done loading rosdeps in %f seconds, averaging %f per rosdep."%(time_delta, time_delta/len(self.packages)))
+            print "Done loading rosdeps in %f seconds, averaging %f per rosdep."%(time_delta, time_delta/len(self.packages))
 
         return (list(set(native_packages)), list(set(scripts)))
 
@@ -353,8 +350,9 @@ class Rosdep:
         scripts = []
         try:
             native_packages, scripts = self.get_packages_and_scripts()
-        except RosdepException as e:
-            sys.stderr.write(str(e) + "\n")
+        except RosdepException, e:
+            print >> sys.stderr, e
+            pass
         undetected = self.osi.get_os().strip_detected_packages(native_packages)
         return_str = ""
         return_str_scripts = ""
@@ -382,7 +380,7 @@ class Rosdep:
             fh.write(script)
             fh.flush()
             
-            print("rosdep executing this script:\n{{{\n%s\n}}}"%(script))
+            print "rosdep executing this script:\n{{{\n%s\n}}}"%script
             p= subprocess.Popen(['bash', fh.name], stderr=subprocess.PIPE )
             (out, err) = p.communicate()
             if p.returncode != 0:

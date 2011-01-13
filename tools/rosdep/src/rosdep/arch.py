@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (c) 2009, Willow Garage, Inc.
 # All rights reserved.
 # 
@@ -27,8 +28,9 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
+from __future__ import with_statement
+from linux_helpers import *
 import os
-import subprocess
 
 import rosdep.base_rosdep
 
@@ -56,7 +58,7 @@ class Arch(rosdep.base_rosdep.RosdepBaseOS):
                 if os_list[0] == "Linux" and os_list[1] == "Arch":
                     return os_list[2]
         except:
-            print("Arch failed to get version")
+            print "Arch failed to get version"
             return False
 
         return False

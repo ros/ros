@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (c) 2009, Willow Garage, Inc.
 # All rights reserved.
 # 
@@ -28,7 +29,7 @@
 # Author Tully Foote/tfoote@willowgarage.com
 
 import subprocess
-import os
+import os.path 
 import roslib.os_detect
 
 import rosdep.base_rosdep

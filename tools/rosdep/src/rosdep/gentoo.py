@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2009, Willow Garage, Inc.
 # All rights reserved.
 # 
@@ -26,8 +25,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import with_statement
-import os.path
+import os
 import roslib.os_detect
 import subprocess
 
@@ -67,6 +65,6 @@ class Gentoo(roslib.os_detect.Gentoo, rosdep.base_rosdep.RosdepBaseOS):
         elif equery_available():
             return "#Packages\nsudo emerge " + ' '.join(packages)
         else:
-	    return "#Packages\nsudo emerge -u " + ' '.join(packages)
+            return "#Packages\nsudo emerge -u " + ' '.join(packages)
 
 ###### END Gentoo SPECIALIZATION ########################

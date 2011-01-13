@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2009, Willow Garage, Inc.
 # All rights reserved.
 # 
@@ -29,9 +28,9 @@
 # Author Tully Foote/tfoote@willowgarage.com
 
 import os
+import subprocess
 
 import rosdep.base_rosdep
-from rosdep.linux_helpers import *
 
 ###### Macports SPECIALIZATION #########################
 def port_detect(p):

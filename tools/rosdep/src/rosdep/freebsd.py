@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2010, Willow Garage, Inc.
 # All rights reserved.
 #
@@ -31,7 +30,7 @@
 
 import os
 import roslib.os_detect
-import base_rosdep
+import rosdep.base_rosdep
 
 ###### FreeBSD SPECIALIZATION #########################
 def port_detect(p):
@@ -54,7 +53,7 @@ def port_detect(p):
     pop = subprocess.Popen("/usr/sbin/pkg_info -qE " + portname, shell=True)
     return os.waitpid(pop.pid, 0)[1] == 0 # pkg_info -E returns 0 if pkg installed, 1 if not
 
-class FreeBSD(roslib.os_detect.FreeBSD, base_rosdep.RosdepBaseOS):
+class FreeBSD(roslib.os_detect.FreeBSD, rosdep.base_rosdep.RosdepBaseOS):
     def strip_detected_packages(self, packages):
         return [p for p in packages if not port_detect(p)]
 
@@ -63,7 +62,7 @@ class FreeBSD(roslib.os_detect.FreeBSD, base_rosdep.RosdepBaseOS):
             return "#No Packages to install"
         if default_yes:
             import sys
-            print >> sys.stderr, "pkg_add does not have a default_yes option, continuing without"
+            sys.stderr.write("pkg_add does not have a default_yes option, continuing without\n")
         return "#Packages\nsudo /usr/sbin/pkg_add -r " + ' '.join(packages)
 
 ###### END FreeBSD SPECIALIZATION ########################

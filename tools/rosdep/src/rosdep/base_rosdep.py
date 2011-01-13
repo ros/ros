@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2009, Willow Garage, Inc.
 # All rights reserved.
 # 
@@ -31,8 +30,6 @@
 import subprocess
 import os.path 
 import roslib.os_detect
-
-###### DEBIAN SPECIALIZATION #########################
 
 ###### Rosdep Test OS #########################
 class RosdepBaseOS(roslib.os_detect.OSBase):

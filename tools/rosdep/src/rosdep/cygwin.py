@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2009, Willow Garage, Inc.
 # All rights reserved.
 # 
@@ -29,17 +28,20 @@
 # Tingfan Wu tingfan@gmail.com
 
 import os
+import subprocess
 import roslib.os_detect
 
 import rosdep.base_rosdep
 
 ###### Cygwin SPECIALIZATION #########################
 def port_detect(p):
-    import subprocess
-    cmd = ['cygcheck', '-c', p]
-    pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (std_out, std_err) = pop.communicate()
-    return (std_out.count("OK") > 0)
+    try:
+        cmd = ['cygcheck', '-c', p]
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        return (std_out.count("OK") > 0)
+    except:
+        return False
 
 class Cygwin(roslib.os_detect.Cygwin, rosdep.base_rosdep.RosdepBaseOS):
     def strip_detected_packages(self, packages):
@@ -51,6 +53,6 @@ class Cygwin(roslib.os_detect.Cygwin, rosdep.base_rosdep.RosdepBaseOS):
 ###### END Cygwin SPECIALIZATION ########################
 
 if __name__ == '__main__':
-    print "cygwin installed?", Cygwin().check_presence()
-    print "test port_detect(true)", port_detect('cygwin');
-    print "version", Cygwin().get_version()
+    print("cygwin installed? %s"%(Cygwin().check_presence()))
+    print("test port_detect(true) %s"%(port_detect('cygwin')))
+    print("version %s"%(Cygwin().get_version()))

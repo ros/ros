@@ -91,7 +91,7 @@ std_msgs/String s2
 
         # test msgs
         l = rosmsg.rosmsg_list_packages('.msg')
-        for p in ['roslib', 'test_rosmsg', 'test_ros', 'std_msgs']:
+        for p in ['test_rosmsg', 'test_ros', 'std_msgs']:
             self.assert_(p in l, "%s not in %s"%(p, l))
         for p in ['rospy', 'std_srvs']:
             self.assert_(p not in l)

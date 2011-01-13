@@ -124,27 +124,24 @@ class XmlRpcNode(object):
         if port and isinstance(port, basestring):
             port = string.atoi(port)
         self.port = port
-
+        self.is_shutdown = False
+        
     def shutdown(self, reason):
         """
         Terminate i/o connections for this server.
         @param reason: human-readable debug string
         @type  reason: str
         """
+        self.is_shutdown = True
         if self.server:
             server = self.server
             handler = self.handler
             self.handler = self.server = self.port = self.uri = None
             if handler:
                 handler._shutdown(reason)
-            # it appears that calling close() on the socket leads to a
-            # double-close during interpreter shutdown, which causes
-            # an uncatchable traceback. as we have no use case in
-            # which we need to shutdown the socket otherwise
-            # 
-            #if server:
-            #    server.socket.close()
-            #    server.server_close()
+            if server:
+                server.socket.close()
+                server.server_close()
                 
     def start(self):
         """
@@ -219,4 +216,21 @@ class XmlRpcNode(object):
         if self.handler is not None:
             self.handler._ready(self.uri)
         logger.info("xml rpc node: starting XML-RPC server")
-        self.server.serve_forever()
+        while not self.is_shutdown:
+            try:
+                self.server.serve_forever()
+            except IOError as (errno, errstr):
+                # check for interrupted call, which can occur if we're
+                # embedded in a program using signals.  All other
+                # exceptions break _run.
+                if self.is_shutdown:
+                    pass
+                elif errno != 4:
+                    self.is_shutdown = True
+                    logger.error("serve forever IOError: %s, %s"%(errno, errstr))
+                    raise
+            except:
+                if self.is_shutdown:
+                    pass
+                else:
+                    raise

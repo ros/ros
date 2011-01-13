@@ -168,7 +168,9 @@ class XmlRpcNode(object):
         try:
             self._run()
         except Exception, e:
-            if self.on_run_error is not None:
+            if self.is_shutdown:
+                pass
+            elif self.on_run_error is not None:
                self.on_run_error(e)
             else:
                 raise
@@ -238,11 +240,11 @@ class XmlRpcNode(object):
                 # check for interrupted call, which can occur if we're
                 # embedded in a program using signals.  All other
                 # exceptions break _run.
-                if errno != 4:
+                if self.is_shutdown:
+                    pass
+                elif errno != 4:
                     self.is_shutdown = True
                     logger.error("serve forever IOError: %s, %s"%(errno, errstr))
-                    # re-raise
-                    raise
                     
 
 

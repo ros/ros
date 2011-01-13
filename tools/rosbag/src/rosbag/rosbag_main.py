@@ -297,6 +297,7 @@ The following variables are available:
 def fix_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag fix INBAG OUTBAG [EXTRARULES1 EXTRARULES2 ...]')
     parser.add_option('-n', '--noplugins', action='store_true', dest='noplugins', help='do not load rulefiles via plugins')
+    parser.add_option('--force', action='store_true', dest='force', help='proceed with migrations, even if not all rules defined')
 
     (options, args) = parser.parse_args(argv)
 
@@ -347,7 +348,7 @@ def fix_cmd(argv):
     migrator = MessageMigrator(rules, plugins=not options.noplugins)
     
     try:
-        migrations = fixbag2(migrator, inbag_filename, outname)
+        migrations = fixbag2(migrator, inbag_filename, outname, options.force)
     except ROSBagUnindexedException, ex:
         print >> sys.stderr, 'ERROR bag unindexed: %s.  Run rosbag reindex.' % inbag_filename
         return

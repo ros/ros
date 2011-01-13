@@ -143,24 +143,31 @@ def fixbag(migrator, inbag, outbag):
 # @param inbag Name of the bag to be fixed.
 # @param outbag Name of the bag to be saved.
 # @returns [] if bag could be migrated, otherwise, it returns the list of necessary migration paths
-def fixbag2(migrator, inbag, outbag):
+def fixbag2(migrator, inbag, outbag, force=False):
     # This checks/builds up rules for the given migrator
     res = checkbag(migrator, inbag)
 
     migrations = [m for m in res if len(m[1]) > 0]
 
     # Deserializing all messages is inefficient, but we can speed this up later
-    if len(migrations) == 0:
+    if len(migrations) == 0 or force:
         bag = rosbag.Bag(inbag, 'r')
         rebag = rosbag.Bag(outbag, 'w', options=bag.options)
         for topic, msg, t in bag.read_messages():
-            new_msg = migrator.find_target(msg.__class__)()
-            migrator.migrate(msg, new_msg)
-            rebag.write(topic, new_msg, t)
+            new_msg_type = migrator.find_target(msg.__class__)
+            if new_msg_type != None:
+                new_msg = new_msg_type()
+                migrator.migrate(msg, new_msg)
+                rebag.write(topic, new_msg, t)
+            else:
+                rebag.write(topic, msg, t)
         rebag.close()
         bag.close()
 
-    return migrations
+    if force:
+        return []
+    else:
+        return migrations
 
 ## Helper function to strip out roslib and package name from name usages.
 # 

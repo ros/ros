@@ -366,7 +366,7 @@ def fix_cmd(argv):
                 for r in m[1]:
                     print_trans(r.old_class, r.new_class,1)
                     
-        print 'Try running \'rosbag check\' to create the necessary rule files.'
+        print 'Try running \'rosbag check\' to create the necessary rule files or run \'rosbag fix\' with the \'--force\' option.'
         os.remove(outname)
 
 def check_cmd(argv):

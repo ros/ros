@@ -306,6 +306,24 @@ public:
     return latest_time ;
   }
 
+  /**
+   * \brief Returns the timestamp associated with the oldest packet cache
+   */
+  ros::Time getOldestTime() const
+  {
+    namespace mt = ros::message_traits;
+
+    boost::mutex::scoped_lock lock(cache_lock_);
+
+    ros::Time oldest_time;
+
+    if (cache_.size() > 0)
+      oldest_time = mt::TimeStamp<M>::value(*cache_.front().getMessage());
+
+    return oldest_time ;
+  }
+
+
 private:
   void callback(const EventType& evt)
   {

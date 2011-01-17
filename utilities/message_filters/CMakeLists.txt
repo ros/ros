@@ -14,3 +14,7 @@ rosbuild_link_boost(message_filters thread signals)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
 add_subdirectory(test EXCLUDE_FROM_ALL)
+rosbuild_add_rostest(test/time_sequencer_unittest.xml)
+rosbuild_add_rostest(test/test_subscriber.xml)
+
+

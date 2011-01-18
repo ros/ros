@@ -114,6 +114,7 @@ class MessageTest(unittest.TestCase):
         # test Empty message
         class M1(Message):
             __slots__ = []
+            _slot_types=[]
             def __init__(self, *args, **kwds):
                 super(M1, self).__init__(*args, **kwds)
             def _get_types(self): return []
@@ -131,6 +132,7 @@ class MessageTest(unittest.TestCase):
         # Test simple message with two fields
         class M2(Message):
             __slots__ = ['a', 'b']
+            _slot_types=['int32', 'int32']
             def _get_types(self): return ['int32', 'int32']
             def __init__(self, *args, **kwds):
                 super(M2, self).__init__(*args, **kwds)
@@ -182,10 +184,12 @@ class MessageTest(unittest.TestCase):
         from roslib.message import Message, strify_message
         class M1(Message):
             __slots__ = []
+            _slot_types = []
             def __init__(self): pass
         self.assertEquals('', strify_message(M1()))
         class M2(Message):
             __slots__ = ['str', 'int', 'float', 'bool', 'list']
+            _slot_types = ['string', 'int32', 'float32', 'bool', 'int32[]']            
             def __init__(self, str_, int_, float_, bool_, list_):
                 self.str = str_
                 self.int = int_       
@@ -207,6 +211,7 @@ list: []""", strify_message(M2('', -1, 0., False, [])))
 
         class M3(Message):
             __slots__ = ['m2']
+            _slot_types=['M1']
             def __init__(self, m2):
                 self.m2 = m2
         self.assertEquals("""m2: 
@@ -219,6 +224,7 @@ list: []""", strify_message(M2('', -1, 0., False, [])))
         # test array of Messages field
         class M4(Message):
             __slots__ = ['m2s']
+            _slot_types=['M2[]']
             def __init__(self, m2s):
                 self.m2s = m2s
                 
@@ -242,6 +248,7 @@ list: []""", strify_message(M2('', -1, 0., False, [])))
         from roslib.rostime import Time, Duration
         class M5(Message):
             __slots__ = ['t', 'd']
+            _slot_types=['time', 'duration']
             def __init__(self, t, d):
                 self.t = t
                 self.d = d        
@@ -274,11 +281,13 @@ d:
         from roslib.message import Message, strify_message, fill_message_args
         class M1(Message):
             __slots__ = []
+            _slot_types=[]
             def __init__(self): pass
         self.assertEquals(M1(), roundtrip(M1()))
         
         class M2(Message):
             __slots__ = ['str', 'int', 'float', 'bool', 'list']
+            _slot_types = ['string', 'int32', 'float32', 'bool', 'int32[]'] 
             def __init__(self, str_=None, int_=None, float_=None, bool_=None, list_=None):
                 self.str = str_
                 self.int = int_       
@@ -294,6 +303,7 @@ d:
         
         class M3(Message):
             __slots__ = ['m2']
+            _slot_types=['test_roslib/M2']
             def __init__(self, m2=None):
                 self.m2 = m2 or M2()
                 

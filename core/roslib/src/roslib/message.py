@@ -45,7 +45,7 @@ import traceback
 import struct
 
 import roslib.exceptions
-from roslib.rostime import Time, Duration
+from roslib.rostime import Time, Duration, TVal
 
 # common struct pattern singletons for msgs to use. Although this
 # would better placed in a generator-specific module, we don't want to
@@ -149,9 +149,9 @@ def get_service_class(service_type, reload_on_error=False):
 
 # we expose the generic message-strify routine for fn-oriented code like rostopic
 
-def strify_message(val, indent='', time_offset=None, current_time=None):
+def strify_message(val, indent='', time_offset=None, current_time=None, field_filter=None):
     """
-    convert value to string representation
+    Convert value to string representation
     @param val: to convert to string representation. Most likely a Message.
     @type  val: Value
     @param indent: indentation. If indent is set, then the return value will have a leading \n
@@ -161,40 +161,66 @@ def strify_message(val, indent='', time_offset=None, current_time=None):
     @type  time_offset: Time
     @param current_time: currently not used. Only provided for API compatibility. current_time passes in the current time with respect to the message.
     @type  current_time: Time
+    @param field_filter: filter the fields that are strified for Messages.
+    @type  field_filter: fn(Message)->iter(str)
+    @return: string (YAML) representation of message
+    @rtype: str
     """
-    if type(val) in [int, long, float, bool]:
+    type_ = type(val)
+    if type_ in (int, long, float, bool):
         return str(val)
-    elif isinstance(val, basestring):
+    elif type_ in (str, unicode):
         #TODO: need to escape strings correctly
         if not val:
             return "''"
         return val
-    elif isinstance(val, Time) or isinstance(val, Duration):
+    elif isinstance(val, TVal):
         
         if time_offset is not None and isinstance(val, Time):
             val = val-time_offset
 
         return '\n%ssecs: %s\n%snsecs: %s'%(indent, val.secs, indent, val.nsecs)
         
-    elif type(val) in [list, tuple]:
+    elif type_ in (list, tuple):
         if len(val) == 0:
             return "[]"
         val0 = val[0]
-        if type(val0) in [int, float, str, bool]:
+        if type(val0) in (int, float, str, bool):
             # TODO: escape strings properly
             return str(list(val))
         else:
             pref = indent + '- '
             indent = indent + '  '
-            return '\n'+'\n'.join([pref+strify_message(v, indent, time_offset) for v in val])
+            return '\n'+'\n'.join([pref+strify_message(v, indent, time_offset, current_time, field_filter) for v in val])
     elif isinstance(val, Message):
+        # allow caller to select which fields of message are strified
+        if field_filter is not None:
+            fields = list(field_filter(val))
+        else:
+            fields = val.__slots__
+
+        p = '%s%%s: %%s'%(indent)
+        ni = '  '+indent
+        vals = '\n'.join([p%(f,
+                             strify_message(_convert_getattr(val, f, t), ni, time_offset, current_time, field_filter)) for f,t in itertools.izip(val.__slots__, val._slot_types) if f in fields])
         if indent:
-            return '\n'+\
-                '\n'.join(['%s%s: %s'%(indent, f,
-                                       strify_message(getattr(val, f), '  '+indent, time_offset)) for f in val.__slots__])
-        return '\n'.join(['%s%s: %s'%(indent, f, strify_message(getattr(val, f), '  '+indent, time_offset)) for f in val.__slots__])
+            return '\n'+vals
+        else:
+            return vals
+        
     else:
         return str(val) #punt
+
+def _convert_getattr(val, f, t):
+    """
+    Convert atttribute types on the fly, if necessary.  This is mainly
+    to convert uint8[] fields back to an array type.
+    """
+    attr = getattr(val, f)
+    if type(attr) in (str, unicode) and 'uint8[' in t:
+        return [ord(x) for x in attr]
+    else:
+        return attr
 
 # check_type mildly violates some abstraction boundaries between .msg
 # representation and the python Message representation. The

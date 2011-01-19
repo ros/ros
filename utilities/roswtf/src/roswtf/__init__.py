@@ -42,7 +42,7 @@ import sys
 import traceback
 
 try:
-    import roslib.msg
+    import std_msgs.msg
 except ImportError:
     print """ERROR: ROS has not been built. To fix:
 cd $ROS_ROOT

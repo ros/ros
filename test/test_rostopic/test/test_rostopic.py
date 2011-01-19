@@ -195,7 +195,7 @@ class TestRostopic(unittest.TestCase):
         self.assertEquals('rosgraph_msgs/Log', t)
         self.assertEquals('/rosout', n)
         self.failIf(f is None)
-        from roslib.msg import Log
+        from rosgraph_msgs.msg import Log
         self.assertEquals("bob", f(Log(name="bob")))
         
     def test_get_topic_class(self):

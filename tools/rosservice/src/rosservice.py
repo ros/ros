@@ -394,7 +394,7 @@ def call_service(service_name, service_args, service_class=None):
     """
     # can't use time w/o being a node. We could optimize this by
     # search for the now/auto keywords first
-    import roslib.msg
+    import std_msgs.msg
     rospy.init_node('rosservice', anonymous=True)
 
     if service_class is None:
@@ -402,7 +402,7 @@ def call_service(service_name, service_args, service_class=None):
     request = service_class._request_class()
     try:
         now = rospy.get_rostime()
-        keys = { 'now': now, 'auto': roslib.msg.Header(stamp=now) }
+        keys = { 'now': now, 'auto': std_msgs.msg.Header(stamp=now) }
         roslib.message.fill_message_args(request, service_args, keys=keys)
     except roslib.message.ROSMessageException, e:
         def argsummary(args):

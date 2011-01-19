@@ -74,7 +74,7 @@ def _get_message_or_service_class(type_str, message_type, reload_on_error=False)
     package, base_type = roslib.names.package_resource_name(message_type)
     if not package:
         if base_type == roslib.msgs.HEADER:
-            package = 'roslib'
+            package = 'std_msgs'
         else:
             raise ValueError("message type is missing package name: %s"%str(message_type))
     pypkg = val = None

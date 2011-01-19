@@ -381,10 +381,11 @@ d:
         # package with no messages
         self.assertEquals(None, get_message_class('genmsg_cpp/Fake'))
     
-        import roslib.msg
-        self.assertEquals(roslib.msg.Header, get_message_class('Header'))
-        self.assertEquals(roslib.msg.Header, get_message_class('roslib/Header'))
-        self.assertEquals(roslib.msg.Log, get_message_class('roslib/Log'))    
+        import rosgraph_msgs.msg
+        import std_msgs.msg
+        self.assertEquals(std_msgs.msg.Header, get_message_class('Header'))
+        self.assertEquals(std_msgs.msg.Header, get_message_class('std_msgs/Header'))
+        self.assertEquals(rosgraph_msgs.msg.Log, get_message_class('rosgraph_msgs/Log'))    
 
     def test_fill_message_args_embed_time(self):
         from roslib.rostime import Time, Duration

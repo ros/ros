@@ -36,7 +36,6 @@ roslib.load_manifest('test_rosbag')
 import rospy
 import random
 import roslib.msgs
-import roslib.msg
 import roslib.genpy
 
 def get_sub_defs(msg_fqn, msg_txt):

@@ -208,7 +208,7 @@ class ROSLaunchParentHandler(ROSLaunchBaseHandler):
         Report a log message to the server
         @param client: name of client
         @type  client: str
-        @param level: log level (uses roslib.msg.Log levels)
+        @param level: log level (uses rosgraph_msgs.msg.Log levels)
         @type  level: int
         @param message: message to log
         @type  message: str

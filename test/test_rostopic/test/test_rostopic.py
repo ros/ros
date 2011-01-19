@@ -81,10 +81,12 @@ class TestRostopic(unittest.TestCase):
         all = set(range(0, len(topics)))
 
         timeout_t = time.time() + 10.
-        while time.time() < timeout_t and self.vals != all:
+        while time.time() < timeout_t and self.vals != all and not rospy.is_shutdown():
             time.sleep(0.1)
         [s.unregister() for s in subs]
-        
+        if rospy.is_shutdown():
+            self.fail("shutdown")
+            
     def test_offline(self):
         from ros import rostopic
         orig_uri = os.environ['ROS_MASTER_URI']
@@ -348,6 +350,5 @@ class TestRostopic(unittest.TestCase):
             rostopic.rostopicmain([cmd, 'list', 'bar'])
             self.assertEquals('/bar/chatter', b.getvalue().strip())
         
-
 if __name__ == '__main__':
     rostest.unitrun('test_rostopic', NAME, TestRostopic, sys.argv, coverage_packages=['rostopic'])

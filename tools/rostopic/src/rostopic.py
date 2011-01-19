@@ -40,6 +40,7 @@ NAME='rostopic'
 
 import os
 import sys
+import itertools
 import math
 import socket
 import time
@@ -56,11 +57,6 @@ import rosgraph.masterapi
 #TODO: lazy-import rospy or move rospy-dependent routines to separate location
 import rospy
 import rosbag
-
-## don't print string fields in message
-_echo_nostr = False
-## don't print array fields in message
-_echo_noarr = False
 
 class ROSTopicException(Exception):
     """
@@ -378,107 +374,139 @@ def get_topic_class(topic, blocking=False):
 
 from itertools import izip
 
-def _str_plot_fields(val, f):
+def _str_plot_fields(val, f, field_filter):
     """
     get CSV representation of fields used by _str_plot
     @return: list of fields as a CSV string
     @rtype: str
     """
-    s = _sub_str_plot_fields(val, f)
+    s = _sub_str_plot_fields(val, f, field_filter)
     if s is not None:
         return "time,"+s
+    else:
+        return 'time,'
 
-def _sub_str_plot_fields(val, f):
+def _sub_str_plot_fields(val, f, field_filter):
     """recursive helper function for _str_plot_fields"""
     # CSV
-    if type(val) in [int, float] or \
-           isinstance(val, roslib.rostime.Time) or isinstance(val, roslib.rostime.Duration):
+    type_ = type(val)
+    if type_ in (int, float) or \
+           isinstance(val, roslib.rostime.TVal):
         return f
     elif isinstance(val, rospy.Message):
-        sub = [s for s in [_sub_str_plot_fields(getattr(val, a), f+"."+a) for a in val.__slots__] if s]
+        if field_filter is not None:
+            fields = list(field_filter(val))
+        else:
+            fields = val.__slots__
+        sub = (_sub_str_plot_fields(_convert_getattr(val, a, t), f+"."+a, field_filter) for a,t in itertools.izip(val.__slots__, val._slot_types) if a in fields)
+        sub = [s for s in sub if s is not None]
         if sub:
             return ','.join([s for s in sub])
-    elif not _echo_nostr and isinstance(val, basestring):
+    elif type_ in (str, unicode):
         return f
-    elif not _echo_noarr and type(val) in [list, tuple]:
+    elif type_ in (list, tuple):
         if len(val) == 0:
             return None
         val0 = val[0]
+        type0 = type(val0)
         # no arrays of arrays
-        if type(val0) in [int, float] or \
-               isinstance(val0, roslib.rostime.Time) or isinstance(val0, roslib.rostime.Duration):
+        if type0 in (int, float) or \
+               isinstance(val0, roslib.rostime.TVal):
             return ','.join(["%s%s"%(f,x) for x in xrange(0,len(val))])
-        elif not _echo_nostr and isinstance(val0, basestring):
+        elif type0 in (str, unicode):
+            
             return ','.join(["%s%s"%(f,x) for x in xrange(0,len(val))])
         elif isinstance(val0, rospy.Message):
             labels = ["%s%s"%(f,x) for x in xrange(0,len(val))]
-            sub = [s for s in [_sub_str_plot_fields(v, sf) for v,sf in izip(val, labels)] if s]
+            sub = [s for s in [_sub_str_plot_fields(v, sf, field_filter) for v,sf in izip(val, labels)] if s]
             if sub:
                 return ','.join([s for s in sub])
     return None
 
 
-def _str_plot(val, time_offset=None, current_time=None):
+def _str_plot(val, time_offset=None, current_time=None, field_filter=None):
     """
-    convert value to matlab/octave-friendly CSV string representation.
-    Reads the state of the _echo_nostrs and _echo_noarr global vars to
-    determine which fields are printed.
+    Convert value to matlab/octave-friendly CSV string representation.
+
     @param val: message
     @type  val: Message
     @param current_time: current time to use if message does not contain its own timestamp.
     @type  current_time: roslib.rostime.Time
     @param time_offset: (optional) for time printed for message, print as offset against this time 
     @type  time_offset: roslib.rostime.Time
+    @param field_filter: filter the fields that are strified for Messages.
+    @type  field_filter: fn(Message)->iter(str)
     @return: comma-separated list of field values in val
     @rtype: str
     """
-    s = _sub_str_plot(val, time_offset)
-    if s is not None:
-        if time_offset is not None:
-            time_offset = time_offset.to_nsec()
-        else:
-            time_offset = 0            
-        if getattr(val, "_has_header", False):
-            return "%s,%s"%(val.header.stamp.to_nsec()-time_offset, s)
-        elif current_time is not None:
-            return "%s,%s"%(current_time.to_nsec()-time_offset, s)
-        else:
-            return "%s,%s"%(rospy.get_rostime().to_nsec()-time_offset, s)
-            
+        
+    s = _sub_str_plot(val, time_offset, field_filter)
+    if s is None:
+        s = ''
+
+    if time_offset is not None:
+        time_offset = time_offset.to_nsec()
+    else:
+        time_offset = 0            
+    if getattr(val, "_has_header", False):
+        return "%s,%s"%(val.header.stamp.to_nsec()-time_offset, s)
+    elif current_time is not None:
+        return "%s,%s"%(current_time.to_nsec()-time_offset, s)
+    else:
+        return "%s,%s"%(rospy.get_rostime().to_nsec()-time_offset, s)
     
-#TODO: get rid of the ugly use of the _echo_nonostr and _echo_noarr
-    
-def _sub_str_plot(val, time_offset):
+def _sub_str_plot(val, time_offset, field_filter):
     """Helper routine for _str_plot."""
     # CSV
-    if type(val) in [int, float] or \
-           isinstance(val, roslib.rostime.Time) or isinstance(val, roslib.rostime.Duration):
+    type_ = type(val)
+    
+    if type_ in (int, float) or \
+           isinstance(val, roslib.rostime.TVal):
         if time_offset is not None and isinstance(val, roslib.rostime.Time):
             return str(val-time_offset)
         else:
             return str(val)    
     elif isinstance(val, rospy.Message):
-        sub = [s for s in [_sub_str_plot(getattr(val, a), time_offset) for a in val.__slots__] if s is not None]
+        if field_filter is not None:
+            fields = list(field_filter(val))
+        else:
+            fields = val.__slots__            
+
+        sub = (_sub_str_plot(_convert_getattr(val, f, t), time_offset, field_filter) for f,t in itertools.izip(val.__slots__, val._slot_types) if f in fields)
+        sub = [s for s in sub if s is not None]
         if sub:
-            return ','.join([s for s in sub])
-    elif not _echo_nostr and isinstance(val, basestring):
+            return ','.join(sub)
+    elif type_ in (str, unicode):
         return val
-    elif not _echo_noarr and type(val) in [list, tuple]:
+    elif type_ in (list, tuple):
         if len(val) == 0:
             return None
         val0 = val[0]
         # no arrays of arrays
-        if type(val0) in [int, float] or \
-               isinstance(val0, roslib.rostime.Time) or isinstance(val0, roslib.rostime.Duration):
+        type0 = type(val0)
+        if type0 in (int, float) or \
+               isinstance(val0, roslib.rostime.TVal):
             return ','.join([str(v) for v in val])
-        elif not _echo_nostr and isinstance(val0, basestring):
+        elif type0 in (str, unicode):
             return ','.join([v for v in val])            
         elif isinstance(val0, rospy.Message):
-            sub = [s for s in [_sub_str_plot(v, time_offset) for v in val] if s is not None]
+            sub = [s for s in [_sub_str_plot(v, time_offset, field_filter) for v in val] if s is not None]
             if sub:
                 return ','.join([s for s in sub])
     return None
         
+# copied from roslib.message
+def _convert_getattr(val, f, t):
+    """
+    Convert atttribute types on the fly, if necessary.  This is mainly
+    to convert uint8[] fields back to an array type.
+    """
+    attr = getattr(val, f)
+    if type(attr) in (str, unicode) and 'uint8[' in t:
+        return [ord(x) for x in attr]
+    else:
+        return attr
+
 class CallbackEcho(object):
     """
     Callback instance that can print callback data in a variety of
@@ -486,7 +514,9 @@ class CallbackEcho(object):
     """
 
     def __init__(self, topic, msg_eval, plot=False, filter_fn=None,
-                 echo_clear=False, echo_all_topics=False, offset_time=False, count=None):
+                 echo_clear=False, echo_all_topics=False,
+                 offset_time=False, count=None,
+                 field_filter_fn=None):
         """
         @param plot: if True, echo in plotting-friendly format
         @type  plot: bool
@@ -498,6 +528,8 @@ class CallbackEcho(object):
         @type  offset_time: bool
         @param count: number of messages to echo, None for infinite
         @type  count: int
+        @param field_filter_fn: filter the fields that are strified for Messages.
+        @type  field_filter_fn: fn(Message)->iter(str)
         """
         if topic and topic[-1] == '/':
             topic = topic[:-1]
@@ -519,13 +551,17 @@ class CallbackEcho(object):
 
         # determine which strifying function to use
         if plot:
+            #TODOXXX: need to pass in filter function
             self.str_fn = _str_plot
             self.sep = ''
         else:
+            #TODOXXX: need to pass in filter function
             self.str_fn = roslib.message.strify_message
             if echo_clear:
                 self.prefix = '\033[2J\033[;H'
 
+        self.field_filter=field_filter_fn
+        
         # first tracks whether or not we've printed anything yet. Need this for printing plot fields.
         self.first = True
 
@@ -581,13 +617,19 @@ class CallbackEcho(object):
                 
                 # print fields header for plot
                 if self.plot and self.first:
-                    sys.stdout.write("%"+_str_plot_fields(data, 'field')+'\n')
+                    sys.stdout.write("%"+_str_plot_fields(data, 'field', self.field_filter)+'\n')
                     self.first = False
 
                 if self.offset_time:
-                    sys.stdout.write(self.prefix+self.str_fn(data, time_offset=rospy.get_rostime(), current_time=current_time) + self.suffix + '\n')
+                    sys.stdout.write(self.prefix+\
+                                     self.str_fn(data, time_offset=rospy.get_rostime(),
+                                                 current_time=current_time, field_filter=self.field_filter) + \
+                                     self.suffix + '\n')
                 else:
-                    sys.stdout.write(self.prefix+self.str_fn(data, current_time=current_time) + self.suffix + '\n')
+                    sys.stdout.write(self.prefix+\
+                                     self.str_fn(data,
+                                                 current_time=current_time, field_filter=self.field_filter) + \
+                                     self.suffix + '\n')
 
                 # we have to flush in order before piping to work
                 sys.stdout.flush()
@@ -987,10 +1029,6 @@ def _rostopic_cmd_echo(argv):
         #if not options.plot:
         #    print "rostopic: topic is [%s]"%topic
         
-    global _echo_nostr, _echo_noarr
-    _echo_nostr = options.nostr
-    _echo_noarr = options.noarr
-
     filter_fn = None
     if options.filter_expr:
         filter_fn = expr_eval(options.filter_expr)
@@ -999,12 +1037,30 @@ def _rostopic_cmd_echo(argv):
         msg_count = int(options.msg_count) if options.msg_count else None
     except ValueError:
         parser.error("COUNT must be an integer")
-    callback_echo = CallbackEcho(topic, None, plot=options.plot, filter_fn=filter_fn, echo_clear=options.clear, echo_all_topics=options.all_topics, offset_time=options.offset_time, count=msg_count)
+        
+    field_filter_fn = create_field_filter(options.nostr, options.noarr)
+    callback_echo = CallbackEcho(topic, None, plot=options.plot,
+                                 filter_fn=filter_fn,
+                                 echo_clear=options.clear, echo_all_topics=options.all_topics,
+                                 offset_time=options.offset_time, count=msg_count,
+                                 field_filter_fn=field_filter_fn)
     try:
         _rostopic_echo(topic, callback_echo, bag_file=options.bag)
     except socket.error:
         print >> sys.stderr, "Network communication failed. Most likely failed to communicate with master."
-    
+
+def create_field_filter(echo_nostr, echo_noarr):
+    def field_filter(val):
+        fields = val.__slots__
+        field_types = val._slot_types
+        for f, t in itertools.izip(val.__slots__, val._slot_types):
+            if echo_noarr and '[' in t:
+                continue
+            elif echo_nostr and 'string' in t:
+                continue
+            yield f
+    return field_filter
+
 def _optparse_topic_only(cmd, argv):
     args = argv[2:]
     from optparse import OptionParser

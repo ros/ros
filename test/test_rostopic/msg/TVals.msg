@@ -1,0 +1,2 @@
+time t
+duration d

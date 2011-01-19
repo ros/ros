@@ -305,7 +305,7 @@ class TestRoslaunchServer(unittest.TestCase):
         self._test_ROSLaunchBaseHandler(h)
 
         # test _log()
-        from roslib.msg import Log
+        from rosgraph_msgs.msg import Log
         h._log(Log.INFO, 'hello')
 
         # test shutdown()

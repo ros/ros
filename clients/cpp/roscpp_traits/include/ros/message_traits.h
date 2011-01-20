@@ -209,7 +209,7 @@ struct TimeStamp
 template<typename M>
 struct TimeStamp<M, typename boost::enable_if<HasHeader<M> >::type >
 {
-  static ros::Time* pointer(M& m) { return &m.header.stamp; }
+  static ros::Time* pointer(typename boost::remove_const<M>::type &m) { return &m.header.stamp; }
   static ros::Time const* pointer(const M& m) { return &m.header.stamp; }
   static ros::Time value(const M& m) { return m.header.stamp; }
 };

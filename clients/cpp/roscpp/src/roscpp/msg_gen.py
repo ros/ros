@@ -594,6 +594,7 @@ def write_traits(s, spec, cpp_name_prefix, datatype = None):
     
     if (spec.has_header()):
         write_trait_true_class(s, 'HasHeader', cpp_msg_with_alloc)
+        write_trait_true_class(s, 'HasHeader', ' const' + cpp_msg_with_alloc)
         
     if (is_fixed_length(spec)):
         write_trait_true_class(s, 'IsFixedSize', cpp_msg_with_alloc)

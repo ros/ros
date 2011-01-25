@@ -411,7 +411,7 @@ macro(rosbuild_init)
   # Gather the gtest build flags, for use when building unit tests.  We
   # don't require the user to declare a dependency on gtest.
   #
-  find_program(GTEST_EXE NAMES gtest-config DOC "gtest-config executable")
+  find_program(GTEST_EXE NAMES gtest-config DOC "gtest-config executable" ONLY_CMAKE_FIND_ROOT_PATH)
   if (NOT GTEST_EXE)
     set(_gtest_LIBRARIES -lgtest)
     # Couldn't find gtest-config. Hoping that gtest is in our path either in the system install or where ROS_BINDEPS points to

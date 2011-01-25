@@ -540,6 +540,14 @@ void shutdown()
   logger->removeAppender(g_rosout_appender);
   g_rosout_appender = 0;
 
+  // reset this so that the logger doesn't get crashily destroyed
+  // again during global destruction.  
+  //
+  // See https://code.ros.org/trac/ros/ticket/3271
+  //
+  log4cxx::LoggerPtr& fo_logger = ros::file_log::getFileOnlyLogger();
+  fo_logger = log4cxx::LoggerPtr();
+  
   if (g_started)
   {
     TopicManager::instance()->shutdown();

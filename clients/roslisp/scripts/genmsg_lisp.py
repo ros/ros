@@ -238,6 +238,7 @@ def write_deprecated_readers(s, spec):
     suffix = 'srv' if spec.component_type == 'service' else 'msg'
     for field in spec.parsed_fields():
         s.newline()
+        s.write('(cl:defgeneric %s-val (m))' % field.name)
         s.write('(cl:defmethod %s-val ((m %s))'%(field.name, message_class(spec)))
         with Indent(s):
             s.write('(roslisp-msg-protocol:msg-deprecation-warning "Using old-style slot reader %s-%s:%s-val is deprecated.  Use %s-%s:%s instead.")'%(spec.package, suffix, field.name, spec.package, suffix, field.name))

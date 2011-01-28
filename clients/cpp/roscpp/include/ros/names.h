@@ -81,6 +81,13 @@ bool validate(const std::string& name, std::string& error);
 const M_string& getRemappings();
 const M_string& getUnresolvedRemappings();
 
+/**
+ * \brief Get the parent namespace of a name
+ * \param name The namespace of which to get the parent namespace.  
+ * \throws InvalidNameException if the name passed is not a valid graph resource name
+ */
+std::string parentNamespace(const std::string& name);
+
 } // namespace names
 
 } // namespace ros

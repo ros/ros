@@ -200,6 +200,36 @@ void init(const M_string& remappings)
   }
 }
 
+std::string parentNamespace(const std::string& name)
+{
+  std::string error;
+  if (!validate(name, error))
+  {
+  	throw InvalidNameException(error);
+  }
+
+  if (!name.compare(""))  return "";
+  if (!name.compare("/")) return "/"; 
+
+  std::string stripped_name;
+
+  // rstrip trailing slash
+  if (name.find_last_of('/') == name.size()-1)
+    stripped_name = name.substr(0, name.size() -2);
+  else
+    stripped_name = name;
+
+  //pull everything up to the last /
+  size_t last_pos = stripped_name.find_last_of('/');
+  if (last_pos == std::string::npos)
+  {
+    return "";
+  }
+  else if (last_pos == 0)
+    return "/";
+  return stripped_name.substr(0, last_pos);
+}
+
 } // namespace names
 
 } // namespace ros

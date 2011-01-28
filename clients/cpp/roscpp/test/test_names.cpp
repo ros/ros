@@ -58,6 +58,24 @@ TEST(Names, validation)
   EXPECT_FALSE(names::validate("h?ello", error));
 }
 
+TEST(Names, parentNamespace)
+{
+  //edge casee
+  EXPECT_STREQ(std::string("").c_str(), names::parentNamespace("").c_str());
+  EXPECT_STREQ(std::string("/").c_str(), names::parentNamespace("/").c_str());
+  EXPECT_STREQ(std::string("/").c_str(), names::parentNamespace("/a").c_str());
+  EXPECT_STREQ(std::string("/").c_str(), names::parentNamespace("/a/").c_str()); //trailing slash
+
+  //2 long
+  EXPECT_STREQ(std::string("/a").c_str(), names::parentNamespace("/a/b").c_str());
+  EXPECT_STREQ(std::string("/a").c_str(), names::parentNamespace("/a/b/").c_str()); //trailing slash
+  EXPECT_STREQ(std::string("/asdf").c_str(), names::parentNamespace("/asdf/b").c_str());
+
+  //3 long
+  EXPECT_STREQ(std::string("/z/a").c_str(), names::parentNamespace("/z/a/b").c_str());
+  EXPECT_STREQ(std::string("/z/a").c_str(), names::parentNamespace("/z/a/b/").c_str()); //trailing slash
+  EXPECT_STREQ(std::string("/z/asdf").c_str(), names::parentNamespace("/z/asdf/b").c_str());
+}
 
 int
 main(int argc, char** argv)

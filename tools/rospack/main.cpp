@@ -31,7 +31,9 @@
 #include "rospack/rospack.h"
 
 #include <stdexcept>
-#include <unistd.h>
+#if !defined(WIN32)
+  #include <unistd.h>
+#endif
 #include <stdlib.h>
 
 int main(int argc, char **argv)
@@ -42,6 +44,7 @@ int main(int argc, char **argv)
     return 0;
   }
 
+#if !defined(WIN32)
   // If it looks we're running under sudo, try to drop back to the normal
   // user, to avoid writing the cache with inappropriate permissions,
   // #2884.
@@ -60,6 +63,7 @@ int main(int argc, char **argv)
     if(setuid(sudo_uid))
       perror("[rospack] Failed to change UID; cache permissions may need to be adjusted manually. setuid()");
   }
+#endif
 
   int ret;
   bool quiet;

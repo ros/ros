@@ -38,17 +38,38 @@
 #include <stack>
 #include <queue>
 #include <cassert>
-#include <unistd.h>
-#include <dirent.h>
+#if !defined(WIN32)
+  #include <unistd.h>
+  #include <dirent.h>
+  #include <sys/time.h>
+  #include <sys/file.h>
+  #include <stdint.h>
+#endif
 #include <stdexcept>
-#include <sys/time.h>
-#include <sys/file.h>
 #include <time.h>
 #include <sstream>
 #include <iterator>
-#include <stdint.h>
 
-#include <libgen.h>
+#if !defined(WIN32)
+  #include <libgen.h>
+#endif
+
+#if defined(WIN32)
+  #include <direct.h>
+  #include <time.h>
+  #include <windows.h>
+  #include <io.h>
+  #include <fcntl.h>
+  #define PATH_MAX MAX_PATH
+  #define snprintf _snprintf
+  #define getcwd _getcwd
+  #define fdopen _fdopen
+  #define access _access
+  #define F_OK 0x00
+  #define W_OK 0x02
+  #define R_OK 0x04
+  #define mkdir(a,b) _mkdir(a)
+#endif
 
 #include "tinyxml-2.5.3/tinyxml.h"
 #include "rospack/rosstack.h"
@@ -68,7 +89,43 @@ using namespace rosstack;
 #ifdef __APPLE__
 const string g_ros_os("osx");
 #else
-const string g_ros_os("linux");
+  #if defined(WIN32)
+    const string g_ros_os("win32");
+  #else
+    const string g_ros_os("linux");
+  #endif
+#endif
+
+#if defined(WIN32)
+// The MS compiler complains bitterly about undefined symbols due to the
+// static members of the TiXmlBase class. They need to exist in every
+// compilation unit (i.e. DLL or EXE), but they don't get exported
+// properly across DLL boundaries (for reasons I've tried to investigate,
+// before deciding it was a waste of my time). So they're defined here as well
+// to keep rosstack happy (rospack's lib links directly to tinyxml.cpp,
+// rosstack's lib does not).
+// I'll fix this later. Thanks, MS, for creating yet another broken system.
+const int TiXmlBase::utf8ByteTable[256] =
+{
+	//	0	1	2	3	4	5	6	7	8	9	a	b	c	d	e	f
+		1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	// 0x00
+		1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	// 0x10
+		1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	// 0x20
+		1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	// 0x30
+		1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	// 0x40
+		1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	// 0x50
+		1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	// 0x60
+		1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	// 0x70	End of ASCII range
+		1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	// 0x80 0x80 to 0xc1 invalid
+		1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	// 0x90 
+		1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	// 0xa0 
+		1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	// 0xb0 
+		1,	1,	2,	2,	2,	2,	2,	2,	2,	2,	2,	2,	2,	2,	2,	2,	// 0xc0 0xc2 to 0xdf 2 byte
+		2,	2,	2,	2,	2,	2,	2,	2,	2,	2,	2,	2,	2,	2,	2,	2,	// 0xd0
+		3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	// 0xe0 0xe0 to 0xef 3 byte
+		4,	4,	4,	4,	4,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1	// 0xf0 0xf0 to 0xf4 4 byte, 0xf5 and higher invalid
+};
+bool TiXmlBase::condenseWhiteSpace = true;
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -80,20 +137,30 @@ string g_length;
 // The stack name
 string g_stack;
 // the number of entries to list in the profile table
-uint32_t g_profile_length = 0;
+unsigned int g_profile_length = 0;
 // global singleton rosstack pointer... yeah, I know.
 ROSStack *g_rosstack = NULL; 
 
 //////////////////////////////////////////////////////////////////////////////
 
-const char *rosstack::fs_delim = "/"; // ifdef this for windows someday
+#if defined(WIN32)
+  // This isn't entirely necessary - the Win32 API functions handle / just as
+  // well as \ for paths, and CMake chokes if we output paths with \ in them
+  // anyway.
+  const char *rosstack::fs_delim = "\\";
+  const char *rosstack::path_delim = ";";
+#else
+  const char *rosstack::fs_delim = "/";
+  const char *rosstack::path_delim = ":";
+#endif
+
 
 Stack::Stack(string _path) : path(_path), 
         deps_calculated(false), direct_deps_calculated(false),
         descendants_calculated(false), manifest_loaded(false)
 {
   vector<string> path_tokens;
-  string_split(path, path_tokens, "/");
+  string_split(path, path_tokens, fs_delim);
   name = path_tokens.back();
   // Don't load the manifest here, because it causes spurious errors to be
   // printed if the stack has been moved (#1785).  Presumably the manifest
@@ -120,7 +187,7 @@ const VecStack &Stack::deps(traversal_order_t order, int depth)
 {
   if (depth > 1000)
   {
-    fprintf(stderr,"[rospack] woah! expanding the dependency tree made it blow "
+    fprintf(stderr,"[rosstack] woah! expanding the dependency tree made it blow "
                    "up.\n There must be a circular dependency somewhere.\n");
     throw runtime_error(string("circular dependency"));
   }
@@ -503,7 +570,7 @@ string ROSStack::lookup_owner(string pkg_name, bool just_owner_name)
   if (rpp)
   {
     vector<string> rppvec;
-    string_split(rpp, rppvec, ":");
+    string_split(rpp, rppvec, path_delim);
     sanitize_rppvec(rppvec);
     for (vector<string>::iterator i = rppvec.begin(); i != rppvec.end(); ++i)
       bases[*i] = string("");
@@ -648,7 +715,22 @@ int ROSStack::run(int argc, char **argv)
     char buf[1024];
     if(!getcwd(buf,sizeof(buf)))
       throw runtime_error(errmsg);
+#if defined(WIN32)
+    // No basename on Windows; use _splitpath_s instead
+    char drive[_MAX_DRIVE], dir[_MAX_DIR], fname[_MAX_FNAME], ext[_MAX_EXT];
+    _splitpath_s(buf, drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME,
+                 ext, _MAX_EXT);
+    char filename[_MAX_FNAME + _MAX_EXT];
+    if (ext[0] != '\0')
+    {
+      _makepath_s(filename, _MAX_FNAME + _MAX_EXT, NULL, NULL, fname, ext);
+      g_stack = string(filename);
+    }
+    else
+      g_stack = string(fname);
+#else
     g_stack = string(basename(buf));
+#endif
   }
 
   if (i != argc)
@@ -741,13 +823,13 @@ void ROSStack::createROSHomeDirectory()
 string ROSStack::getCachePath()
 {
   string path;
-  path = string(ros_root) + "/.rosstack_cache";
+  path = string(ros_root) + fs_delim + ".rosstack_cache";
   if (access(ros_root, W_OK) == 0)
     return path;
   // if we cannot write into the ros_root, then let's try to
   // write into the user's .ros directory.
   createROSHomeDirectory();
-  path = string(getenv("HOME")) + "/.ros/rosstack_cache";
+  path = string(getenv("HOME")) + fs_delim + ".ros" + fs_delim + "rosstack_cache";
   return path;
 }
 
@@ -837,9 +919,27 @@ public:
   
 double ROSStack::time_since_epoch()
 {
+#if defined(WIN32)
+  #if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
+    #define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
+  #else
+    #define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
+  #endif
+  FILETIME ft;
+  unsigned __int64 tmpres = 0;
+
+  GetSystemTimeAsFileTime(&ft);
+  tmpres |= ft.dwHighDateTime;
+  tmpres <<= 32;
+  tmpres |= ft.dwLowDateTime;
+  tmpres /= 10;
+  tmpres -= DELTA_EPOCH_IN_MICROSECS;
+  return static_cast<double>(tmpres) / 1e6;
+#else
   struct timeval tod;
   gettimeofday(&tod, NULL);
   return tod.tv_sec + 1e-6 * tod.tv_usec;
+#endif
 }
 
 // Add stack, filtering out duplicates.
@@ -925,7 +1025,7 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
   char *rpp = getenv("ROS_PACKAGE_PATH");
   if (rpp)
     rsp = string(rpp);
-  string_split(rsp, rspvec, ":");
+  string_split(rsp, rspvec, path_delim);
   sanitize_rppvec(rspvec);
 #ifdef VERBOSE_DEBUG
   printf("seeding crawler with [%s], which has %lu entries\n", rsp.c_str(), rspvec.size());
@@ -975,6 +1075,64 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
       cqe.start_time = time_since_epoch();
       q.push_front(cqe);
     }
+#if defined(WIN32)
+    // And again...
+    WIN32_FIND_DATA find_file_data;
+    HANDLE hfind = INVALID_HANDLE_VALUE;
+
+    if ((hfind = FindFirstFile((cqe.path + "\\*").c_str(),
+                               &find_file_data)) == INVALID_HANDLE_VALUE)
+    {
+      fprintf(stderr, "[rosstack] FindFirstFile error %u while crawling %s\n",
+              GetLastError(), cqe.path.c_str());
+      continue;
+    }
+
+    do
+    {
+      if (!S_ISDIR(find_file_data.dwFileAttributes))
+        continue; // Ignore non-directories
+      if (find_file_data.cFileName[0] == '.')
+        continue; // Ignore hidden directories
+      string child_path = cqe.path + fs_delim + string(find_file_data.cFileName);
+      if (Stack::is_stack(child_path))
+        continue; // Ignore leaves.
+      if (Stack::is_stack(child_path))
+      {
+        // Filter out duplicates; first encountered takes precedence
+        Stack *newp = new Stack(child_path);
+        //printf("found stack %s\n", child_path.c_str());
+        // TODO: make this check more efficient
+        bool dup = false;
+        for(std::vector<Stack *>::const_iterator it = Stack::stacks.begin();
+            it != Stack::stacks.end();
+            it++)
+        {
+          if((*it)->name == newp->name)
+          {
+            dup=true;
+            break;
+          }
+        }
+        if(dup)
+          delete newp;
+        else
+          Stack::stacks.push_back(newp);
+      }
+      //check to make sure we're allowed to descend
+      else if (!Stack::is_no_subdirs(child_path)) 
+        q.push_front(CrawlQueueEntry(child_path));
+    }
+    while (FindNextFile(hfind, &find_file_data) != 0);
+    DWORD last_error = GetLastError();
+    FindClose(hfind);
+    if (last_error != ERROR_NO_MORE_FILES)
+    {
+      fprintf(stderr, "[rosstack] FindNextFile error %u while crawling %s\n",
+              GetLastError(), cqe.path.c_str());
+      continue;
+    }
+#else
     DIR *d = opendir(cqe.path.c_str());
     if (!d)
     {
@@ -1025,6 +1183,7 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
         q.push_front(CrawlQueueEntry(child_path));
     }
     closedir(d);
+#endif
   }
   crawled = true; // don't try to re-crawl if we can't find something
   const double crawl_elapsed_time = time_since_epoch() - crawl_start_time;
@@ -1033,7 +1192,30 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
   char tmp_cache_dir[PATH_MAX];
   char tmp_cache_path[PATH_MAX];
   strncpy(tmp_cache_dir, cache_path.c_str(), sizeof(tmp_cache_dir));
+#if defined(WIN32)
+    // No dirname on Windows; use _splitpath_s instead
+    char drive[_MAX_DRIVE], dir[_MAX_DIR], fname[_MAX_FNAME], ext[_MAX_EXT];
+    _splitpath_s(tmp_cache_dir, drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME,
+                 ext, _MAX_EXT);
+    char full_dir[_MAX_DRIVE + _MAX_DIR];
+    _makepath_s(full_dir, _MAX_DRIVE + _MAX_DIR, drive, dir, NULL, NULL);
+    snprintf(tmp_cache_path, sizeof(tmp_cache_path), "%s\\.rosstack_cache.XXXXXX", full_dir);
+#else
   snprintf(tmp_cache_path, sizeof(tmp_cache_path), "%s/.rosstack_cache.XXXXXX", dirname(tmp_cache_dir));
+#endif
+#if defined(WIN32)
+  // This one is particularly nasty: on Windows, there is no equivalent of
+  // mkstemp, so we're stuck with the security risks of mktemp. Hopefully not a
+  // problem in our use cases.
+  if (_mktemp_s(tmp_cache_path, PATH_MAX) != 0)
+  {
+    fprintf(stderr,
+            "[rosstack] Unable to generate temporary cache file name: %u",
+            GetLastError());
+    throw runtime_error(string("Failed to create tmp cache file name"));
+  }
+  FILE *cache = fopen(tmp_cache_path, "w");
+#else
   int fd = mkstemp(tmp_cache_path);
   if (fd < 0)
   {
@@ -1042,6 +1224,7 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
   }
 
   FILE *cache = fdopen(fd, "w");
+#endif
   if (!cache)
   {
     fprintf(stderr, "woah! couldn't create the cache file. Please check "
@@ -1053,15 +1236,18 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
   for (VecStack::iterator s = Stack::stacks.begin();
        s != Stack::stacks.end(); ++s)
     fprintf(cache, "%s\n", (*s)->path.c_str());
+  fclose(cache);
 
+  if(file_exists(cache_path.c_str()))
+    remove(cache_path.c_str());
   if(rename(tmp_cache_path, cache_path.c_str()) < 0)
   {
-    fprintf(stderr, "[rospack] Error: failed rename cache file %s to %s\n", tmp_cache_path, cache_path.c_str());
-perror("rename");
+    fprintf(stderr,
+      "[rospack] Error: failed rename cache file %s to %s\n",
+      tmp_cache_path, cache_path.c_str());
+    perror("rename");
     throw runtime_error(string("failed to rename cache file"));
   }
-
-  fclose(cache);
 
   if (g_profile_length)
   {

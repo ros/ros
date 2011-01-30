@@ -132,6 +132,18 @@ file called @b manifest.xml.
 
 */
 
+#if defined(WIN32)
+  #if defined(ROS_STATIC)
+    #define ROSPACK_EXPORT
+  #elif defined(rospack_EXPORTS)
+    #define ROSPACK_EXPORT __declspec(dllexport)
+  #else
+    #define ROSPACK_EXPORT __declspec(dllimport)
+  #endif
+#else
+  #define ROSPACK_EXPORT
+#endif
+
 #include <string>
 #include <vector>
 #include <list>
@@ -155,11 +167,16 @@ typedef std::list<Acc> AccList;
 /**
  * The Package class contains information about a single package
  */
-class Package
+class ROSPACK_EXPORT Package
 {
 public:
   enum traversal_order_t { POSTORDER, PREORDER };
   std::string name, path;
+  // These will cause warnings on Windows when compiling the DLL because they
+  // are static. They should more correctly be accessed via accessor functions
+  // that are exported from the class, rather than directly, in order to
+  // "prevent data corruption." Since main.cpp is currently the only known
+  // client and it doesn't use them, I'm not caring about the warnings yet.
   static std::vector<Package *> pkgs;
   static std::vector<Package *> deleted_pkgs;
 
@@ -205,7 +222,7 @@ private:
  * The ROSPack class contains information the entire package dependency
  * tree.
  */
-class ROSPack
+class ROSPACK_EXPORT ROSPack
 {
 public:
   static const char* usage();

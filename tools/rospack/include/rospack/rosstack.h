@@ -40,6 +40,18 @@
 a single binary, called \b %rosstack.
 */
 
+#if defined(WIN32)
+  #if defined(ROS_STATIC)
+    #define ROSSTACK_EXPORT
+  #elif defined(rosstack_EXPORTS)
+    #define ROSSTACK_EXPORT __declspec(dllexport)
+  #else
+    #define ROSSTACK_EXPORT __declspec(dllimport)
+  #endif
+#else
+  #define ROSSTACK_EXPORT
+#endif
+
 #include <string>
 #include <vector>
 
@@ -49,18 +61,19 @@ a single binary, called \b %rosstack.
 namespace rosstack
 {
 
-class Stack;
+class ROSSTACK_EXPORT Stack;
 // global helper functions
 void string_split(const std::string &s, std::vector<std::string> &t, const std::string &d);
 bool file_exists(const std::string &fname);
 extern const char *fs_delim;
+extern const char *path_delim;
 Stack *g_get_stack(const std::string &name);
 typedef std::vector<Stack *> VecStack;
 
 /**
  * The Stack class contains information about a single stack
  */
-class Stack
+class ROSSTACK_EXPORT Stack
 {
 public:
   enum traversal_order_t { POSTORDER, PREORDER };
@@ -95,7 +108,7 @@ private:
  * The ROSStack class contains information the entire stack dependency
  * tree.
  */
-class ROSStack
+class ROSSTACK_EXPORT ROSStack
 {
 public:
   static const char* usage();

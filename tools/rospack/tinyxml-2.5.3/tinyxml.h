@@ -82,6 +82,18 @@ distribution.
 	#endif
 #endif	
 
+#if defined(WIN32)
+  #if defined(ROS_STATIC)
+    #define TINYXML_EXPORT
+  #elif defined(rospack_EXPORTS) || defined(rosstack_EXPORTS)
+    #define TINYXML_EXPORT __declspec(dllexport)
+  #else
+    #define TINYXML_EXPORT __declspec(dllimport)
+  #endif
+#else
+  #define TINYXML_EXPORT
+#endif
+
 class TiXmlDocument;
 class TiXmlElement;
 class TiXmlComment;
@@ -126,7 +138,7 @@ struct TiXmlCursor
 
 	@sa TiXmlNode::Accept()
 */
-class TiXmlVisitor
+class TINYXML_EXPORT TiXmlVisitor
 {
 public:
 	virtual ~TiXmlVisitor() {}
@@ -192,7 +204,7 @@ const TiXmlEncoding TIXML_DEFAULT_ENCODING = TIXML_ENCODING_UNKNOWN;
 	A Decleration contains: Attributes (not on tree)
 	@endverbatim
 */
-class TiXmlBase
+class TINYXML_EXPORT TiXmlBase
 {
 	friend class TiXmlNode;
 	friend class TiXmlElement;
@@ -249,7 +261,7 @@ public:
 	void* GetUserData()						{ return userData; }	///< Get a pointer to arbitrary user data.
 	const void* GetUserData() const 		{ return userData; }	///< Get a pointer to arbitrary user data.
 
-	// Table that returs, for a given lead byte, the total number of bytes
+	// Table that returns, for a given lead byte, the total number of bytes
 	// in the UTF-8 sequence.
 	static const int utf8ByteTable[256];
 
@@ -421,7 +433,7 @@ private:
 	in a document, or stand on its own. The type of a TiXmlNode
 	can be queried, and it can be cast to its more defined type.
 */
-class TiXmlNode : public TiXmlBase
+class TINYXML_EXPORT TiXmlNode : public TiXmlBase
 {
 	friend class TiXmlDocument;
 	friend class TiXmlElement;
@@ -777,7 +789,7 @@ private:
 		  part of the tinyXML document object model. There are other
 		  suggested ways to look at this problem.
 */
-class TiXmlAttribute : public TiXmlBase
+class TINYXML_EXPORT TiXmlAttribute : public TiXmlBase
 {
 	friend class TiXmlAttributeSet;
 
@@ -901,7 +913,7 @@ private:
 		- I like circular lists
 		- it demonstrates some independence from the (typical) doubly linked list.
 */
-class TiXmlAttributeSet
+class TINYXML_EXPORT TiXmlAttributeSet
 {
 public:
 	TiXmlAttributeSet();
@@ -941,7 +953,7 @@ private:
 	and can contain other elements, text, comments, and unknowns.
 	Elements also contain an arbitrary number of attributes.
 */
-class TiXmlElement : public TiXmlNode
+class TINYXML_EXPORT TiXmlElement : public TiXmlNode
 {
 public:
 	/// Construct an element.
@@ -1151,7 +1163,7 @@ private:
 
 /**	An XML comment.
 */
-class TiXmlComment : public TiXmlNode
+class TINYXML_EXPORT TiXmlComment : public TiXmlNode
 {
 public:
 	/// Constructs an empty comment.
@@ -1201,7 +1213,7 @@ private:
 	you generally want to leave it alone, but you can change the output mode with 
 	SetCDATA() and query it with CDATA().
 */
-class TiXmlText : public TiXmlNode
+class TINYXML_EXPORT TiXmlText : public TiXmlNode
 {
 	friend class TiXmlElement;
 public:
@@ -1274,7 +1286,7 @@ private:
 	handled as special cases, not generic attributes, simply
 	because there can only be at most 3 and they are always the same.
 */
-class TiXmlDeclaration : public TiXmlNode
+class TINYXML_EXPORT TiXmlDeclaration : public TiXmlNode
 {
 public:
 	/// Construct an empty declaration.
@@ -1343,7 +1355,7 @@ private:
 
 	DTD tags get thrown into TiXmlUnknowns.
 */
-class TiXmlUnknown : public TiXmlNode
+class TINYXML_EXPORT TiXmlUnknown : public TiXmlNode
 {
 public:
 	TiXmlUnknown() : TiXmlNode( TiXmlNode::UNKNOWN )	{}
@@ -1382,7 +1394,7 @@ private:
 	XML pieces. It can be saved, loaded, and printed to the screen.
 	The 'value' of a document node is the xml file name.
 */
-class TiXmlDocument : public TiXmlNode
+class TINYXML_EXPORT TiXmlDocument : public TiXmlNode
 {
 public:
 	/// Create an empty document, that has no name.
@@ -1631,7 +1643,7 @@ private:
 	}
 	@endverbatim
 */
-class TiXmlHandle
+class TINYXML_EXPORT TiXmlHandle
 {
 public:
 	/// Create a handle from any node (at any depth of the tree.) This can be a null pointer.
@@ -1730,7 +1742,7 @@ private:
 	fprintf( stdout, "%s", printer.CStr() );
 	@endverbatim
 */
-class TiXmlPrinter : public TiXmlVisitor
+class TINYXML_EXPORT TiXmlPrinter : public TiXmlVisitor
 {
 public:
 	TiXmlPrinter() : depth( 0 ), simpleTextPrint( false ),

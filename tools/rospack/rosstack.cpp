@@ -50,11 +50,15 @@
 #include <sstream>
 #include <iterator>
 
-#if !defined(WIN32)
+#if defined(_MSC_VER) // msvc only
+  #define F_OK 0x00
+  #define W_OK 0x02
+  #define R_OK 0x04
+#else                // non msvc only
   #include <libgen.h>
 #endif
 
-#if defined(WIN32)
+#if defined(WIN32) // both msvc and mingw
   #include <direct.h>
   #include <time.h>
   #include <windows.h>
@@ -65,9 +69,6 @@
   #define getcwd _getcwd
   #define fdopen _fdopen
   #define access _access
-  #define F_OK 0x00
-  #define W_OK 0x02
-  #define R_OK 0x04
   #define mkdir(a,b) _mkdir(a)
 #endif
 
@@ -96,7 +97,7 @@ const string g_ros_os("osx");
   #endif
 #endif
 
-#if defined(WIN32)
+#if defined(_MSVC_VER)
 // The MS compiler complains bitterly about undefined symbols due to the
 // static members of the TiXmlBase class. They need to exist in every
 // compilation unit (i.e. DLL or EXE), but they don't get exported
@@ -715,7 +716,7 @@ int ROSStack::run(int argc, char **argv)
     char buf[1024];
     if(!getcwd(buf,sizeof(buf)))
       throw runtime_error(errmsg);
-#if defined(WIN32)
+#if defined(_MSC_VER)
     // No basename on Windows; use _splitpath_s instead
     char drive[_MAX_DRIVE], dir[_MAX_DIR], fname[_MAX_FNAME], ext[_MAX_EXT];
     _splitpath_s(buf, drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME,
@@ -1192,7 +1193,7 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
   char tmp_cache_dir[PATH_MAX];
   char tmp_cache_path[PATH_MAX];
   strncpy(tmp_cache_dir, cache_path.c_str(), sizeof(tmp_cache_dir));
-#if defined(WIN32)
+#if defined(_MSC_VER)
     // No dirname on Windows; use _splitpath_s instead
     char drive[_MAX_DRIVE], dir[_MAX_DIR], fname[_MAX_FNAME], ext[_MAX_EXT];
     _splitpath_s(tmp_cache_dir, drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME,
@@ -1203,7 +1204,17 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
 #else
   snprintf(tmp_cache_path, sizeof(tmp_cache_path), "%s/.rosstack_cache.XXXXXX", dirname(tmp_cache_dir));
 #endif
-#if defined(WIN32)
+#if defined(__MINGW32__)
+    // There is no equivalent of mkstemp or _mktemp_s on mingw, so we resort to a slightly less secure
+    // method. Could use mktemp, but as we're just redirecting to FILE anyway, tmpfile() works
+    // for us.
+    FILE *cache = tmpfile();
+    if ( cache == NULL ) {
+        fprintf(stderr,
+                "[rospack] Unable to generate temporary cache file name: %u",
+                errno);
+    }
+#elif defined(WIN32)
   // This one is particularly nasty: on Windows, there is no equivalent of
   // mkstemp, so we're stuck with the security risks of mktemp. Hopefully not a
   // problem in our use cases.

@@ -44,6 +44,7 @@ if(ROS_BUILD_SHARED_LIBS)
 endif(ROS_BUILD_SHARED_LIBS)
 
 if(ROS_BUILD_STATIC_LIBS)
+  add_definitions("-DROS_STATIC")
   # If we're only building static libs, then they get the default CMake
   # target name.
   if(NOT ROS_BUILD_SHARED_LIBS)

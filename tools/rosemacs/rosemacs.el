@@ -1213,6 +1213,17 @@ q kills the buffer and process."
           (rosemacs/terminate-process process))
       (error "Buffer does not contain a running process"))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; rosmake
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun ros-make (package-name)
+  (interactive (list (ros-completing-read-package "Enter package to make" nil ros-completion-function)))
+  (save-excursion
+    (message "Compilation started")
+    (compile (format "rosmake %s" package-name) t))
+  )
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; roslaunch
@@ -1356,6 +1367,7 @@ The page delimiter in this buffer matches the start, so you can use forward/back
 (define-key ros-keymap "\C-l" 'ros-launch)
 (define-key ros-keymap "\C-e" 'rosemacs/display-event-buffer)
 (define-key ros-keymap "\C-n" 'rosemacs/display-nodes)
+(define-key ros-keymap "c" 'ros-make)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Invoking the mode

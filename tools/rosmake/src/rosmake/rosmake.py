@@ -372,7 +372,7 @@ class RosMakeAll:
     def _subprocess_setup(self):
         # Python installs a SIGPIPE handler by default. This is usually not
         # what non-Python subprocesses expect.
-	signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
     def _build_package(self, package, argument=None):
         """

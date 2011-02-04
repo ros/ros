@@ -127,7 +127,7 @@ wxpython:
   rhel: wxPython-devel
   centos: wxPython-devel
   debian: python-wxgtk2.8
-  macports: py26-wxpython py26-gobject py26-gtk python-cairo
+  macports: py26-wxpython py26-gobject py26-gtk py26-cairo
   gentoo: dev-python/wxpython
   freebsd: py26-wxPython
 libxext:

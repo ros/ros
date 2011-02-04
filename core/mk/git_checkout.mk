@@ -8,7 +8,6 @@
 # 	GIT_URL: full URL to download
 #	GIT_PATCH: your (list of) patch file(s) to patch the downloaded software
 #	GIT_REVISION: -
-#	SVN_DIR: -
 $(GIT_DIR):
 	git clone $(GIT_URL) $(GIT_DIR)
 	cd $(GIT_DIR) && git checkout $(GIT_REVISION)
@@ -21,7 +20,5 @@ ifneq ($(strip $(GIT_PATCH)),)
 	touch rospack_nosubdirs
 	touch patched
 endif   
-
-SVN_UP_REVERT_PATCH: $(SVN_DIR) patched
 
 download: $(GIT_DIR) patched

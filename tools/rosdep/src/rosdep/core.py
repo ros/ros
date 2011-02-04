@@ -194,6 +194,8 @@ class RosdepLookupPackage:
             if stack:
                 try:
                     paths.add( os.path.join(roslib.stacks.get_stack_dir(stack), "rosdep.yaml"))
+                    if "ROSDEP_DEBUG" in os.environ:
+                        print "loading rosdeps from", os.path.join(roslib.stacks.get_stack_dir(stack), "rosdep.yaml")
                 except AttributeError, ex:
                     print "Stack [%s] could not be found"%(stack)
                 for s in self.yaml_cache.get_rosstack_depends(stack):
@@ -205,11 +207,15 @@ class RosdepLookupPackage:
             else:
                 try:
                     paths.add( os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
+                    if "ROSDEP_DEBUG" in os.environ:
+                        print "Package fallback, no parent stack found for package %s: loading rosdeps from"%p, os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml")
                 except roslib.packages.InvalidROSPkgException, ex:
                     print >> sys.stderr, "Failed to load rosdep.yaml for package [%s]:%s"%(p, ex)
                     pass
         for path in paths:
             self.insert_map(self.parse_yaml(path), path)
+            if "ROSDEP_DEBUG" in os.environ:
+                print "rosdep loading from file: %s got"%path, self.parse_yaml(path)
         #print "built map", self.rosdep_map
 
         # Override with ros_home/rosdep.yaml if present
@@ -245,7 +251,7 @@ Rules for %s do not match:
             else:
                 self.rosdep_source[key] = [source_path]
                 self.rosdep_map[key] = rosdep_entry
-                        #print "rosdep_map[%s] = %s"%(key, self.rosdep_map[key])
+                #print "rosdep_map[%s] = %s"%(key, self.rosdep_map[key])
 
 
     def parse_yaml(self, path):

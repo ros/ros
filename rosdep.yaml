@@ -163,6 +163,7 @@ zziplib:
 libxaw:
   ubuntu: libxaw7-dev 
   debian: libxaw7-dev 
+  opensuse: xorg-x11-devel 
   fedora: libXaw-devel
   rhel: libXaw-devel
   macports: xorg-libXaw
@@ -182,6 +183,7 @@ opengl:
 libxxf86vm:
   ubuntu: libxxf86vm-dev
   debian: libxxf86vm-dev
+  opensuse: xorg-x11-devel 
   fedora: libXxf86vm-devel
   rhel: libXxf86vm-devel
   macports: xorg-libXxf86vm
@@ -343,6 +345,7 @@ fltk:
 bazaar:
   ubuntu: bzr
   debian: bzr
+  opensuse: bzr 
   fedora: bazaar
   macports: bazaar
   gentoo: dev-vcs/bzr
@@ -350,6 +353,7 @@ bazaar:
 git: 
   ubuntu: git-core
   debian: git-core
+  opensuse: git-core
   fedora: git
   macports: git-core
   gentoo: dev-vcs/git
@@ -357,6 +361,7 @@ git:
 subversion:
   ubuntu: subversion
   debian: subversion
+  opensuse: subversion
   fedora: subversion
   macports: subversion
   gentoo: dev-vcs/subversion
@@ -364,6 +369,7 @@ subversion:
 mercurial:
   ubuntu: mercurial
   debian: mercurial
+  opensuse: mercurial 
   fedora: mercurial
   macports: mercurial
   gentoo: dev-vcs/mercurial
@@ -371,6 +377,7 @@ mercurial:
 gtest:
   ubuntu: libgtest-dev
   debian: libgtest-dev
+  opensuse: gtest-devel 
   fedora: gtest
   macports: google-test
   gentoo: dev-util/gtest

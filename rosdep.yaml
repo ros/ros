@@ -2,6 +2,7 @@ python:
   ubuntu: python-dev
   debian: python-dev
   arch: python
+  opensuse: python-devel
   fedora: python-devel
   rhel: python-devel
   macports: python26 python_select
@@ -11,6 +12,7 @@ python:
 python-yaml:
   ubuntu: python-yaml
   debian: python-yaml
+  opensuse: python-yaml
   fedora: PyYAML
   rhel: PyYAML
   centos: PyYAML
@@ -33,6 +35,7 @@ python-gtk2:
   arch: pygtk
   debian: python-gtk2
   macports: py26-gtk
+  opensuse: python-gtk
   fedora: pygtk2
   rhel: pygtk2
   gentoo: "=dev-python/pygtk-2*"
@@ -41,6 +44,7 @@ python-scipy:
   ubuntu: python-scipy
   debian: python-scipy
   arch: python-scipy
+  opensuse: python-scipy
   fedora: scipy
   macports: py26-scipy
   gentoo: dev-libs/scipy
@@ -48,6 +52,7 @@ python-scipy:
 bzip2:
   ubuntu: libbz2-dev
   debian: libbz2-dev
+  opensuse: libbz2-devel 
   fedora: bzip2-devel
   rhel: bzip2-devel
   arch: bzip2
@@ -85,6 +90,7 @@ boost:
         make
         sudo make install
       fi
+  opensuse: boost-devel
   fedora: boost-devel
   rhel: boost-devel
   arch: boost
@@ -95,6 +101,7 @@ boost:
 zlib:
   ubuntu: zlib1g-dev
   debian: zlib1g-dev
+  opensuse: zlib-devel 
   fedora: zlib-devel
   rhel: zlib-devel
   arch: zlib
@@ -105,6 +112,7 @@ zlib:
 graphviz:
   ubuntu: graphviz
   debian: graphviz
+  opensuse: graphviz 
   fedora: graphviz
   rhel: graphviz
   arch: graphviz
@@ -114,6 +122,7 @@ graphviz:
 wxwidgets:
   ubuntu: libwxgtk2.8-dev
   debian: libwxgtk2.8-dev
+  opensuse: wxGTK-devel 
   fedora: wxGTK-devel
   rhel: wxGTK-devel
   macports: wxWidgets-python
@@ -123,6 +132,7 @@ wxwidgets:
 wxpython:
   ubuntu: python-wxgtk2.8
   arch: wxpython
+  opensuse: python-wxGTK 
   fedora: wxPython-devel
   rhel: wxPython-devel
   centos: wxPython-devel
@@ -133,6 +143,7 @@ wxpython:
 libxext:
   ubuntu: libxext-dev
   debian: libxext-dev
+  opensuse: xorg-x11-libXext-devel 
   fedora: libXext-devel
   rhel: libXext-devel
   macports: xorg-libXext
@@ -142,6 +153,7 @@ libxext:
 zziplib:
   ubuntu: libzzip-0-13 libzzip-dev
   debian: libzzip-0-13 libzzip-dev
+  opensuse: zziplib-devel 
   fedora: zziplib-devel
   rhel: zziplib-devel
   macports: libzzip
@@ -160,6 +172,7 @@ libxaw:
 opengl:
   ubuntu: libgl1-mesa-dev libglu1-mesa-dev
   debian: libgl1-mesa-dev libglu1-mesa-dev
+  opensuse: Mesa-devel 
   fedora: mesa-libGL-devel mesa-libGLU-devel
   rhel: mesa-libGL-devel mesa-libGLU-devel
   macports: mesa
@@ -178,6 +191,7 @@ libxxf86vm:
 gtk2:
   ubuntu: libgtk2.0-dev
   debian: libgtk2.0-dev
+  opensuse: gtk2-devel 
   fedora: gtk2-devel
   rhel: gtk2-devel
   macports: gtk2
@@ -187,6 +201,7 @@ gtk2:
 autoconf:
   ubuntu: autoconf
   debian: autoconf
+  opensuse: autoconf 
   fedora: autoconf
   rhel: autoconf
   arch: autoconf
@@ -196,6 +211,7 @@ autoconf:
 automake:
   ubuntu: automake
   debian: automake
+  opensuse: automake
   fedora: automake
   rhel: automake
   arch: automake
@@ -209,6 +225,7 @@ libtool:
     '9.10': libtool libltdl-dev
     '9.04': libtool libltdl7-dev
   debian: libtool libltdl3-dev
+  opensuse: libtool libltdl3 
   fedora: libtool libtool-ltdl-devel
   rhel: libtool libtool-ltdl-devel
   macports: libtool
@@ -218,6 +235,7 @@ libtool:
 pkg-config:
   ubuntu: pkg-config
   debian: pkg-config
+  opensuse: pkg-config 
   fedora: pkgconfig
   rhel: pkgconfig
   arch: pkgconfig
@@ -231,12 +249,14 @@ octave:
   macports: octave
   centos: octave-devel
   debian: octave3.0-headers
+  opensuse: octave-devel 
   fedora: octave-devel
   gentoo: sci-mathematics/octave
   freebsd: octave
 ncurses:
   ubuntu: libncurses5-dev
   arch: ncurses
+  opensuse: ncurses-devel 
   fedora: ncurses-devel
   macports: ncurses
   centos: ncurses-devel
@@ -247,6 +267,7 @@ qt4:
   ubuntu: libqt4-core libqt4-dev qt4-dev-tools
   debian: libqt4-core libqt4-dev qt4-dev-tools 
   arch: qt
+  opensuse: libqt4-devel 
   fedora: qt-devel
   macports: qt4-mac
   gentoo: ">=x11-libs/qt-core-4"
@@ -254,6 +275,7 @@ qt4:
 curl:
   ubuntu: libcurl4-openssl-dev
   debian: libcurl4-openssl-dev
+  opensuse: libcurl-devel 
   fedora: libcurl-devel
   arch: curl
   macports: curl
@@ -263,6 +285,7 @@ libxml2:
   ubuntu: libxml2-dev
   debian: libxml2-dev
   arch: libxml2
+  opensuse: libxml2-devel
   fedora: libxml2-devel
   macports: libxml2
   gentoo: dev-libs/libxml2
@@ -272,6 +295,7 @@ scons:
   ubuntu: scons
   debian: scons
   arch: scons
+  opensuse: scons
   fedora: scons
   macports: scons
   gentoo: dev-util/scons
@@ -279,10 +303,12 @@ scons:
 libstdc++5:
   ubuntu: libstdc++5
   debian: libstdc++5
+  opensuse: libstdc++33 
   freebsd: builtin
 cppunit:
   ubuntu: libcppunit-dev
   debian: libcppunit-dev
+  opensuse: libcppunit-devel
   fedora: cppunit-devel
   rhel: cppunit-devel
   arch: cppunit
@@ -291,6 +317,7 @@ cppunit:
   freebsd: cppunit
 intltool:
   ubuntu: intltool
+  opensuse: intltool 
   fedora: intltool
   gentoo: dev-util/intltool
   freebsd: intltool
@@ -298,6 +325,7 @@ unzip:
   ubuntu: unzip
   debian: unzip
   arch: unzip
+  opensuse: unzip 
   fedora: unzip
   rhel: unzip
   macports: unzip
@@ -306,6 +334,7 @@ unzip:
 fltk:
   ubuntu: libfltk1.1-dev
   debian: libfltk1.1-dev
+  opensuse: fltk-devel 
   fedora: fltk-devel
   arch: fltk
   macports: fltk

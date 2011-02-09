@@ -226,7 +226,9 @@ libtool:
     '10.04': libtool libltdl-dev
     '9.10': libtool libltdl-dev
     '9.04': libtool libltdl7-dev
-  debian: libtool libltdl3-dev
+  debian: 
+    squeeze: libtool libltdl-dev
+    lenny: libtool libltdl3-dev
   opensuse: libtool libltdl3 
   fedora: libtool libtool-ltdl-devel
   rhel: libtool libtool-ltdl-devel

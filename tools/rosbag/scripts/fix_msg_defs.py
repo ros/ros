@@ -53,11 +53,12 @@ if __name__ == '__main__':
     outbag = rosbag.Bag(sys.argv[2], 'w')
     lookup_cache = {}
 
+    #msg is: datatype, data, pytype._md5sum, bag_pos, pytype
     for topic, msg, t in inbag.read_messages(raw=True):
         if msg[4]._md5sum != msg[2]:
             k = (msg[0], msg[2])
             if k in lookup_cache:
-                msg = lookup_cache[k]
+                real_msg_type = lookup_cache[k]
             else:
                 real_msg_type = mm.lookup_type(k)
                 if real_msg_type != None:
@@ -70,9 +71,10 @@ if __name__ == '__main__':
                 if real_msg_type == None:
                     real_msg_type = msg[4]
                     print >> sys.stderr, "WARNING: Type [%s] with md5sum [%s] has an unknown definition.\n"%(msg[0], msg[2])
-                lookup_cache[k] = (msg[0], msg[1], msg[2], msg[3], real_msg_type)
-                msg = lookup_cache[k]
-        outbag.write(topic, msg, t, raw=True)
+                lookup_cache[k] = real_msg_type
+            outbag.write(topic, (msg[0], msg[1], msg[2], msg[3], real_msg_type), t, raw=True)
+        else:
+            outbag.write(topic, msg, t, raw=True)
         
     inbag.close()
     outbag.close()

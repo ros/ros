@@ -380,7 +380,7 @@ gtest:
   ubuntu: libgtest-dev
   debian: libgtest-dev
   opensuse: gtest-devel 
-  fedora: gtest
+  fedora: gtest-devel
   macports: google-test
   gentoo: dev-util/gtest
   freebsd: googletest

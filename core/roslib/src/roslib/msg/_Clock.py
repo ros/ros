@@ -5,7 +5,7 @@ import struct
 import roslib.rostime
 
 import warnings
-warnings.warn("roslib/Clock argument is deprecated. Please use rosgraph_msgs/Clock instead", DeprecationWarning, stacklevel=2)
+warnings.warn("roslib/Clock argument is deprecated. Please use rosgraph_msgs/Clock instead", DeprecationWarning, stacklevel=3)
 
 class Clock(roslib.message.Message):
   _md5sum = "a9c97c1d230cfc112e270351a944ee47"

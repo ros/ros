@@ -5,7 +5,7 @@ import struct
 import roslib.msg
 
 import warnings
-warnings.warn("roslib/Log argument is deprecated. Please use rosgraph_msgs/Log instead", DeprecationWarning, stacklevel=2)
+warnings.warn("roslib/Log argument is deprecated. Please use rosgraph_msgs/Log instead", DeprecationWarning, stacklevel=3)
 
 class Log(roslib.message.Message):
   _md5sum = "acffd30cd6b6de30f120938c17c593fb"

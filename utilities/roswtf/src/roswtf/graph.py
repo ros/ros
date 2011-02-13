@@ -104,7 +104,12 @@ def ping_check(ctx):
 def simtime_check(ctx):
     if ctx.use_sim_time:
         master = roslib.scriptutil.get_master()
-        code, msg, pubtopics = master.getPublishedTopics('/roswtf', '/')
+        try:
+            code, msg, pubtopics = master.getPublishedTopics('/roswtf', '/')
+        except:
+            ctx.errors.append(WtfError("Cannot talk to ROS master"))
+            raise WtfException("roswtf lost connection to the ROS Master at %s"%roslib.rosenv.get_master_uri())
+
         if code != 1:
             raise WtfException("cannot get published topics from master: %s"%msg)
         for topic, _ in pubtopics:
@@ -117,7 +122,12 @@ def probe_all_services(ctx):
     master = roslib.scriptutil.get_master()
     errors = []
     for service_name in ctx.services:
-        code, msg, service_uri = master.lookupService('/rosservice', service_name)
+        try:
+            code, msg, service_uri = master.lookupService('/rosservice', service_name)
+        except:
+            ctx.errors.append(WtfError("cannot contact ROS Master at %s"%roslib.rosenv.get_master_uri()))
+            raise WtfException("roswtf lost connection to the ROS Master at %s"%roslib.rosenv.get_master_uri())
+        
         if code != 1:
             ctx.warnings.append(WtfWarning("Unable to lookup service [%s]"%service_name))
         else:

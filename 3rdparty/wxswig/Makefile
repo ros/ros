@@ -13,7 +13,11 @@ $(VERSION)/Makefile: $(VERSION)/Makefile.in $(VERSION)/configure $(VERSION)/conf
 		./configure --prefix=$(WXSWIG_ROOT)
 
 wxswig: $(SOURCE_DIR)/unpacked
+ifneq ($(MAKE),)
+	cd $(SOURCE_DIR) && ./configure --prefix=$(shell rospack find wxswig) && $(MAKE) $(ROS_PARALLEL_JOBS) && $(MAKE) install
+else
 	cd $(SOURCE_DIR) && ./configure --prefix=$(shell rospack find wxswig) && make $(ROS_PARALLEL_JOBS) && make install
+endif
 	mv bin/swig bin/swig-real
 	cp swig-wrap bin/swig
 	touch wxswig

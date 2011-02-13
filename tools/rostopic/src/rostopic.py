@@ -539,7 +539,7 @@ class CallbackEcho(object):
         self.filter_fn = filter_fn
 
         self.prefix = ''
-        self.suffix = '\n---' # same as YAML document separator
+        self.suffix = '\n---' if not plot else ''# same as YAML document separator, bug #3291
         
         self.echo_all_topics = echo_all_topics
         self.offset_time = offset_time

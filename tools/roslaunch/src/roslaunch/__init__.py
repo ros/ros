@@ -36,6 +36,7 @@ import os
 import logging
 import sys
 
+import roslib.packages
 import roslaunch.core
 
 # symbol exports
@@ -225,6 +226,9 @@ def main(argv=sys.argv):
     except ValueError, e:
         # TODO: need to trap better than this high-level trap
         roslaunch.core.printerrlog(str(e))
+        sys.exit(1)
+    except roslib.packages.InvalidROSPkgException, e:
+        roslaunch.core.printerrlog(str(e))        
         sys.exit(1)
     except Exception, e:
         import traceback

@@ -51,8 +51,8 @@ namespace compression
 {
     enum CompressionType
     {
-        None = 0,
-        BZ2  = 1,
+        Uncompressed = 0,
+        BZ2          = 1,
     };
 }
 typedef compression::CompressionType CompressionType;

@@ -51,9 +51,9 @@ StreamFactory::StreamFactory(ChunkedFile* file) :
 
 shared_ptr<Stream> StreamFactory::getStream(CompressionType type) const {
     switch (type) {
-        case compression::None: return uncompressed_stream_;
-        case compression::BZ2:  return bz2_stream_;
-        default:                return shared_ptr<Stream>();
+        case compression::Uncompressed: return uncompressed_stream_;
+        case compression::BZ2:          return bz2_stream_;
+        default:                        return shared_ptr<Stream>();
     }
 }
 

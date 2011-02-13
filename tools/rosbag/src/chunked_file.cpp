@@ -105,7 +105,7 @@ void ChunkedFile::close() {
         return;
 
     // Close any compressed stream by changing to uncompressed mode
-    setWriteMode(compression::None);
+    setWriteMode(compression::Uncompressed);
 
     // Close the file
     int success = fclose(file_);
@@ -148,7 +148,7 @@ void ChunkedFile::seek(uint64_t offset, int origin) {
     if (!file_)
         throw BagIOException("Can't seek - file not open");
 
-    setReadMode(compression::None);
+    setReadMode(compression::Uncompressed);
 
     int success = fseeko(file_, offset, origin);
     if (success != 0)

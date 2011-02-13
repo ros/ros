@@ -52,7 +52,7 @@ using ros::Time;
 namespace rosbag {
 
 Bag::Bag() :
-    compression_(compression::None),
+    compression_(compression::Uncompressed),
     chunk_threshold_(768 * 1024),  // 768KB chunks
     bag_revision_(0),
     file_size_(0),
@@ -67,7 +67,7 @@ Bag::Bag() :
 }
 
 Bag::Bag(string const& filename, uint32_t mode) :
-    compression_(compression::None),
+    compression_(compression::Uncompressed),
     chunk_threshold_(768 * 1024),  // 768KB chunks
     bag_revision_(0),
     file_size_(0),
@@ -377,7 +377,7 @@ void Bag::readFileHeaderRecord() {
 }
 
 uint32_t Bag::getChunkOffset() const {
-    if (compression_ == compression::None)
+    if (compression_ == compression::Uncompressed)
         return file_.getOffset() - curr_chunk_data_pos_;
     else
         return file_.getCompressedBytesIn();
@@ -407,7 +407,7 @@ void Bag::stopWritingChunk() {
     
     // Get the uncompressed and compressed sizes
     uint32_t uncompressed_size = getChunkOffset();
-    file_.setWriteMode(compression::None);
+    file_.setWriteMode(compression::Uncompressed);
     uint32_t compressed_size = file_.getOffset() - curr_chunk_data_pos_;
 
     // Rewrite the chunk header with the size of the chunk (remembering current offset)
@@ -431,9 +431,9 @@ void Bag::stopWritingChunk() {
 void Bag::writeChunkHeader(CompressionType compression, uint32_t compressed_size, uint32_t uncompressed_size) {
     ChunkHeader chunk_header;
     switch (compression) {
-    case compression::None: chunk_header.compression = COMPRESSION_NONE; break;
-    case compression::BZ2:  chunk_header.compression = COMPRESSION_BZ2;  break;
-    //case compression::ZLIB: chunk_header.compression = COMPRESSION_ZLIB; break;
+    case compression::Uncompressed: chunk_header.compression = COMPRESSION_NONE; break;
+    case compression::BZ2:          chunk_header.compression = COMPRESSION_BZ2;  break;
+    //case compression::ZLIB:         chunk_header.compression = COMPRESSION_ZLIB; break;
     }
     chunk_header.compressed_size   = compressed_size;
     chunk_header.uncompressed_size = uncompressed_size;

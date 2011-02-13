@@ -68,6 +68,11 @@ def manifest_depends(ctx):
             for d in m.depends:
                 if not d.stack in stack_list:
                     errors.append("%s (%s does not exist)"%(m_file, d))
+                elif d.stack in ['ros', 'ros_comm']:
+                    # ros dependency always exists. ros_comm
+                    # dependency has implicit connections (msggen), so
+                    # we ignore.
+                    continue
                 else:
                     pkgs = _packages_of(d.stack)
                     if not [p for p in pkgs if p in s_deps]:

@@ -65,7 +65,7 @@ def rxplot_main():
     parser.add_option("-b", "--buffer", type="int",
                       dest="buffer", default=-1,
                       help="set size of buffer in seconds (default of -1 keeps all data)")
-    options, topics = parser.parse_args()
+    options, topics = parser.parse_args(rospy.myargv()[1:])
 
     if not topics:
         parser.error("Please specify a topic field")

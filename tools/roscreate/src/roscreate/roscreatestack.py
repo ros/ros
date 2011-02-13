@@ -153,12 +153,22 @@ def compute_stack_depends_and_licenses(stack_dir):
 def _compute_stack_depends_and_licenses(stack, packages):
     pkg_depends = []
     licenses = []
+    stack_depends = {}
     for pkg in packages:
         m = roslib.manifest.parse_file(roslib.manifest.manifest_file(pkg))
         pkg_depends.extend([d.package for d in m.depends])
         licenses.extend([l.strip() for l in m.license.split(',')])
         
-    stack_depends = {}
+        # check for genmsg implicit dependency 
+        pkg_dir = roslib.packages.get_pkg_dir(pkg)
+        if (os.path.isdir(os.path.join(pkg_dir, 'msg')) or \
+                os.path.isdir(os.path.join(pkg_dir, 'srv'))) and \
+                stack not in ['ros', 'ros_comm']:
+            if not 'ros_comm' in stack_depends:
+                stack_depends['ros_comm'] = []
+            # #3310: inserting the pkg to blame confuses people, so leave this out
+            #stack_depends['ros_comm'].append(pkg)
+
     for pkg in pkg_depends:
         if pkg in packages:
             continue
@@ -175,15 +185,6 @@ def _compute_stack_depends_and_licenses(stack, packages):
         if not st in stack_depends:
             stack_depends[st] = [] 
         stack_depends[st].append(pkg)
-
-        # check for genmsg implicit dependency 
-        pkg_dir = roslib.packages.get_pkg_dir(pkg)
-        if (os.path.isdir(os.path.join(pkg_dir, 'msg')) or \
-                os.path.isdir(os.path.join(pkg_dir, 'srv'))) and \
-                st not in ['ros', 'ros_comm']:
-            if not 'ros_comm' in stack_depends:
-                stack_depends['ros_comm'] = [] 
-            stack_depends['ros_comm'].append(pkg)
         
     return stack_depends, set(licenses)
 

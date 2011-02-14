@@ -365,7 +365,7 @@ class ROSLaunchRunner(object):
 
     def _launch_master(self):
         """
-        Launches master if requested. Must be run after L{_setup_master()}.
+        Launches master if requested. 
         @raise RLException: if master launch fails
         """
         m = self.config.master

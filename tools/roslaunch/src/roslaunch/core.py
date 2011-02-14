@@ -281,8 +281,7 @@ class Master:
         @param type_: Currently only support 'rosmaster' 
         @type  type_: str
         """
-        if auto is not None and type(auto) != int:
-            raise RLException("invalid auto value: %s"%auto)            
+        self.auto = None # no longer used
         self.type = type_ or Master.ROSMASTER
         self.uri = uri or get_master_uri_env()
         

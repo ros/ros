@@ -5,6 +5,7 @@
   http://ros.org/wiki/roscore
   -->
 <launch>
-  <!-- all the nodes in the core file must have the name attribute specified -->
+  <param name="rosversion" value="1.4.2" />
+  <param name="rosdistro" value="diamondback" />
   <node pkg="rosout" type="rosout" name="rosout" respawn="true"/>
 </launch>

@@ -141,6 +141,9 @@ class ROSLaunchParent(object):
         self.runner = roslaunch.launch.ROSLaunchRunner(self.run_id, self.config, server_uri=self.server.uri, pmon=self.pm, is_core=self.is_core, remote_runner=self.remote_runner)
 
         # print runner info to user, put errors last to make the more visible
+        if self.is_core:
+            print "ros_comm version %s"%(self.config.params['/rosversion'].value)
+            
         print self.config.summary(local=self.remote_runner is None)
         if self.config:
             for err in self.config.config_errors:

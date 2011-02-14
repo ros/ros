@@ -33,6 +33,7 @@
 #
 # Revision $Id$
 
+import codecs
 import os
 import sys
 import string
@@ -221,15 +222,18 @@ _safe_xml_regex = re.compile(RE_XML_ILLEGAL)
 
 ## read in file, screen out unsafe unicode characters
 def _read_file_safe_xml(test_file):
-    import codecs
+    f = None
     try:
         # this is ugly, but the files in question that are problematic
         # do not declare unicode type.
+        if not os.path.isfile(test_file):
+            raise Exception("test file does not exist")
         try:
             f = codecs.open(test_file, "r", "utf-8" )
             x = f.read()
         except:
-            f.close()
+            if f is not None:
+                f.close()
             f = codecs.open(test_file, "r", "iso8859-1" )
             x = f.read()        
 
@@ -237,7 +241,8 @@ def _read_file_safe_xml(test_file):
             x = x[:match.start()] + "?" + x[match.end():]
         return x.encode("utf-8")
     finally:
-        f.close()
+        if f is not None:
+            f.close()
 
 ## Read in the test_result file
 ## @param test_file str: test file path
@@ -246,10 +251,12 @@ def _read_file_safe_xml(test_file):
 def read(test_file, test_name):
     try:
         xml_str = _read_file_safe_xml(test_file)
+        if not xml_str.strip():
+            print "WARN: test result file is empty [%s]"%(test_file)
+            return Result(test_name, 0, 0, 0)
         test_suite = parseString(xml_str).getElementsByTagName('testsuite')
-    except Exception, e:
-        import traceback
-        traceback.print_exc()
+    except Exception as e:
+        print >> sys.stderr, str(e)
         print "WARN: cannot read test result file [%s]: %s"%(test_file, str(e))
         return Result(test_name, 0, 0, 0)
     if not test_suite:

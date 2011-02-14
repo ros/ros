@@ -93,8 +93,7 @@ class ParamServerTestCase(TestRosClient):
         paramNames = myState.keys()
         remoteParamNames = self.apiSuccess(master.getParamNames(callerId))
         # filter out the roslaunch params like run id and roslaunch/, which are always set
-        if '/run_id' in remoteParamNames:
-            remoteParamNames.remove('/run_id')
+        remoteParamNames = [p for p in remoteParamNames if not p in ['/run_id', '/rosdistro', '/rosversion']]
         remoteParamNames = [p for p in remoteParamNames if not p.startswith('/roslaunch/')]
 
         assert not set(paramNames) ^ set(remoteParamNames), "parameter server keys do not match local: %s"%(set(paramNames)^set(remoteParamNames))
@@ -222,10 +221,9 @@ class ParamServerTestCase(TestRosClient):
 
     ## remove common keys that roslaunch places on param server
     def _filterDict(self, d):
-        if 'run_id' in d:
-            del d['run_id']
-        if 'roslaunch' in d:
-            del d['roslaunch']
+        for k in ['run_id', 'roslaunch', 'rosversion', 'rosdistro']:
+            if k in d:
+                del d[k]
         return d
         
     # testGetParam: test basic getParam behavior. Value encoding verified separately by testParamValues

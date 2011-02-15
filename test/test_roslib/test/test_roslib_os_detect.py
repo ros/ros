@@ -76,6 +76,10 @@ class RoslibOsDetectTest(unittest.TestCase):
       arch = roslib.os_detect.Arch()
       self.assertEqual("arch", arch.get_name())
 
+  def test_tripwire_opensuse(self):
+      opensuse = roslib.os_detect.OpenSuse()
+      self.assertEqual("opensuse", opensuse.get_name())
+
   def test_tripwire_fedora(self):
       fedora = roslib.os_detect.Fedora()
       self.assertEqual("fedora", fedora.get_name())

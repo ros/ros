@@ -188,6 +188,44 @@ class Mint(OSBase):
         return "mint"
 ###### END Mint SPECIALIZATION ########################
 
+###### OpenSuse SPECIALIZATION #########################
+class OpenSuse(OSBase):
+    """
+    Detect OpenSuse OS.
+    """
+    def check_presence(self):
+        try:
+            filename = "/etc/SuSE-brand"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:
+                    os_list = fh.read().split()
+                    if len(os_list) > 0 and os_list[0] == "openSUSE":
+                        return True
+        except:
+            pass
+        return False
+
+    def get_version(self):
+        try:
+            filename = "/etc/SuSE-brand"
+            if os.path.exists(filename):
+                with open(filename, 'r') as fh:
+                    os_list = fh.read().strip().split('\n')
+                    if len(os_list) == 2:
+                        os_list = os_list[1].split(' = ')
+                        if os_list[0] == "VERSION":
+                            return os_list[1]
+        except:
+            return False
+        
+        return False
+
+    def get_name(self):
+        return "opensuse"
+
+###### END OpenSuse SPECIALIZATION ########################
+
+
 ###### Fedora SPECIALIZATION #########################
 class Fedora(OSBase):
     """
@@ -428,7 +466,7 @@ class FreeBSD(OSBase):
 class OSDetect:
     """ This class will iterate over registered classes to lookup the
     active OS and version"""
-    def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), Fedora(), Rhel(), Gentoo(), Cygwin(), FreeBSD()]):
+    def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), OpenSuse(), Fedora(), Rhel(), Gentoo(), Cygwin(), FreeBSD()]):
         self._os_list = os_list
         for o in self._os_list:
             if not isinstance(o, OSBase):

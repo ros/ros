@@ -346,7 +346,7 @@ function _roscomplete_rosbag {
         opts="check compress decompress filter fix help info play record reindex"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     else
-        COMPREPLY=($(compgen -f -- ${arg}))
+        COMPREPLY=()
     fi
 
 }
@@ -563,7 +563,7 @@ complete -F "_roscomplete_file" "rosed"
 complete -F "_roscomplete_file" "roscp"
 complete -F "_roscomplete_launch" -o filenames "roslaunch"
 complete -F "_roscomplete_rospack" "rospack"
-complete -F "_roscomplete_rosbag" "rosbag"
+complete -F "_roscomplete_rosbag" -o default "rosbag"
 complete -F "_roscomplete_rosnode" "rosnode"
 complete -F "_roscomplete_rosparam" "rosparam"
 complete -F "_roscomplete_rostopic" "rostopic"

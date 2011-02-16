@@ -41,19 +41,24 @@
 
 #include <boost/thread/mutex.hpp>
 
+/*********************************************************************
+** Preprocessor
+*********************************************************************/
+
+// Could probably do some better and more elaborate checking
+// and definition here.
 #define HAS_CLOCK_GETTIME (_POSIX_C_SOURCE >= 199309L)
 
-#ifndef WIN32
-  #if !HAS_CLOCK_GETTIME
-  #include <sys/time.h>
-  #endif
-#else
-  #include <sys/timeb.h>
-  ros::Time ros::Time::start_time;
-#endif
+/*********************************************************************
+** Namespaces
+*********************************************************************/
 
 namespace ros
 {
+
+/*********************************************************************
+** Variables
+*********************************************************************/
 
 const Duration DURATION_MAX(std::numeric_limits<int32_t>::max(), 999999999);
 const Duration DURATION_MIN(std::numeric_limits<int32_t>::min(), 0);
@@ -73,71 +78,141 @@ static bool g_initialized(false);
 static bool g_use_sim_time(true);
 static Time g_sim_time(0, 0);
 
-void getWallTime(uint32_t& sec, uint32_t& nsec)
+/*********************************************************************
+** Cross Platform Functions
+*********************************************************************/
+/*
+ * These have only internal linkage to this translation unit.
+ * (i.e. not exposed to users of the time classes)
+ */
+void ros_walltime(uint32_t& sec, uint32_t& nsec) throw(NoHighPerformanceTimersException)
 {
 #ifndef WIN32
-#if HAS_CLOCK_GETTIME
-  struct timespec start;
-  clock_gettime(CLOCK_REALTIME, &start);
-  sec  = start.tv_sec;
-  nsec = start.tv_nsec;
+	#if HAS_CLOCK_GETTIME
+	  timespec start;
+	  clock_gettime(CLOCK_REALTIME, &start);
+	  sec  = start.tv_sec;
+	  nsec = start.tv_nsec;
+	#else
+	  struct timeval timeofday;
+	  gettimeofday(&timeofday,NULL);
+	  sec  = timeofday.tv_sec;
+	  nsec = timeofday.tv_usec * 1000;
+	#endif
 #else
-  struct timeval timeofday;
-  gettimeofday(&timeofday,NULL);
-  sec  = timeofday.tv_sec;
-  nsec = timeofday.tv_usec * 1000;
-#endif
-#else
-  // unless I've missed something obvious, the only way to get high-precision
-  // time on Windows is via the QueryPerformanceCounter() call. However,
-  // this is somewhat problematic in Windows XP on some processors, especially
-  // AMD, because the Windows implementation can freak out when the CPU clocks
-  // down to save power. Time can jump or even go backwards. Microsoft has
-  // fixed this bug for most systems now, but it can still show up if you have
-  // not installed the latest CPU drivers (an oxymoron). They fixed all these
-  // problems in Windows Vista, and this API is by far the most accurate that
-  // I know of in Windows, so I'll use it here despite all these caveats
-  static LARGE_INTEGER cpu_freq, init_cpu_time;
-  static Time start_time;
-  if (start_time.isZero())
-  {
-    QueryPerformanceFrequency(&cpu_freq);
-    if (cpu_freq.QuadPart == 0)
-    {
-      ROS_INFO("woah! this system (for whatever reason) does not support the "
-             "high-performance timing API. ur done.\n");
-      abort();
+	// Win32 implementation
+	// unless I've missed something obvious, the only way to get high-precision
+	// time on Windows is via the QueryPerformanceCounter() call. However,
+	// this is somewhat problematic in Windows XP on some processors, especially
+	// AMD, because the Windows implementation can freak out when the CPU clocks
+	// down to save power. Time can jump or even go backwards. Microsoft has
+	// fixed this bug for most systems now, but it can still show up if you have
+	// not installed the latest CPU drivers (an oxymoron). They fixed all these
+	// problems in Windows Vista, and this API is by far the most accurate that
+	// I know of in Windows, so I'll use it here despite all these caveats
+	static LARGE_INTEGER cpu_freq, init_cpu_time;
+	uint32_t start_sec = 0;
+	uint32_t start_nsec = 0;
+	if ( ( start_sec == 0 ) && ( start_nsec == 0 ) )
+	{
+		QueryPerformanceFrequency(&cpu_freq);
+		if (cpu_freq.QuadPart == 0) {
+			throw NoHighPerformanceTimersException();
+		}
+		QueryPerformanceCounter(&init_cpu_time);
+		// compute an offset from the Epoch using the lower-performance timer API
+		FILETIME ft;
+		GetSystemTimeAsFileTime(&ft);
+		LARGE_INTEGER start_li;
+		start_li.LowPart = ft.dwLowDateTime;
+		start_li.HighPart = ft.dwHighDateTime;
+		// why did they choose 1601 as the time zero, instead of 1970?
+		// there were no outstanding hard rock bands in 1601.
+	#ifdef _MSC_VER
+    	start_li.QuadPart -= 116444736000000000Ui64;
+	#else
+    	start_li.QuadPart -= 116444736000000000ULL;
+	#endif
+		start_sec = (uint32_t)(start_li.QuadPart / 10000000); // 100-ns units. odd.
+		start_nsec = (start_li.LowPart % 10000000) * 100;
     }
-    QueryPerformanceCounter(&init_cpu_time);
-    // compute an offset from the Epoch using the lower-performance timer API
-    FILETIME ft;
-    GetSystemTimeAsFileTime(&ft);
-    LARGE_INTEGER start_li;
-    start_li.LowPart = ft.dwLowDateTime;
-    start_li.HighPart = ft.dwHighDateTime;
-    // why did they choose 1601 as the time zero, instead of 1970?
-    // there were no outstanding hard rock bands in 1601.
-#ifdef _MSC_VER
-    start_li.QuadPart -= 116444736000000000Ui64;
-#else
-    start_li.QuadPart -= 116444736000000000ULL;
-#endif
-    start_time.sec = (uint32_t)(start_li.QuadPart / 10000000); // 100-ns units. odd.
-    start_time.nsec = (start_li.LowPart % 10000000) * 100;
-  }
-  LARGE_INTEGER cur_time;
-  QueryPerformanceCounter(&cur_time);
-  LARGE_INTEGER delta_cpu_time;
-  delta_cpu_time.QuadPart = cur_time.QuadPart - init_cpu_time.QuadPart;
-  // todo: how to handle cpu clock drift. not sure it's a big deal for us.
-  // also, think about clock wraparound. seems extremely unlikey, but possible
-  double d_delta_cpu_time = delta_cpu_time.QuadPart / (double)cpu_freq.QuadPart;
-  Time t(start_time + Duration(d_delta_cpu_time));
+    LARGE_INTEGER cur_time;
+    QueryPerformanceCounter(&cur_time);
+    LARGE_INTEGER delta_cpu_time;
+    delta_cpu_time.QuadPart = cur_time.QuadPart - init_cpu_time.QuadPart;
+    // todo: how to handle cpu clock drift. not sure it's a big deal for us.
+    // also, think about clock wraparound. seems extremely unlikey, but possible
+    double d_delta_cpu_time = delta_cpu_time.QuadPart / (double) cpu_freq.QuadPart;
+    uint32_t delta_sec = (uint32_t) floor(d_delta_cpu_time);
+    uint32_t delta_nsec = (uint32_t) round((d_delta_cpu_time-delta_sec) * 1e9);
 
-  sec = t.sec;
-  nsec = t.nsec;
+    int64_t sec_sum  = (int64_t)start_sec  + (int64_t)delta_sec;
+    int64_t nsec_sum = (int64_t)start_nsec + (int64_t)delta_nsec;
+
+    // Throws an exception if we go out of 32-bit range
+    normalizeSecNSecUnsigned(sec_sum, nsec_sum);
+
+    sec = sec_sum;
+    nsec = nsec_sum;
 #endif
 }
+/**
+ * @brief Simple representation of the rt library nanosleep function.
+ */
+int ros_nanosleep(const uint32_t &sec, const uint32_t &nsec)
+{
+#if defined(WIN32)
+	HANDLE timer = NULL;
+	LARGE_INTEGER sleepTime;
+    sleepTime.QuadPart = -
+            static_cast<uint64_t>(sec)*10000000LL -
+            static_cast<uint64_t>(nsec) / 100LL;
+
+	timer = CreateWaitableTimer(NULL, TRUE, NULL);
+	if (timer == NULL)
+	{
+		return -1;
+	}
+
+	if (!SetWaitableTimer (timer, &sleepTime, 0, NULL, NULL, 0))
+	{
+		return -1;
+	}
+
+	if (WaitForSingleObject (timer, INFINITE) != WAIT_OBJECT_0)
+	{
+		return -1;
+	}
+	return 0;
+#else
+	timespec req = { sec, nsec };
+	return nanosleep(&req, NULL);
+#endif
+}
+
+/**
+ * @brief Go to the wall!
+ *
+ * @todo Fully implement the win32 parts, currently just like a regular sleep.
+ */
+bool ros_wallsleep(uint32_t sec, uint32_t nsec)
+{
+#if defined(WIN32)
+	ros_nanosleep(sec,nsec);
+#else
+	timespec req = { sec, nsec };
+	timespec rem = {0, 0};
+	while (nanosleep(&req, &rem) && !g_stopped)
+	{
+		req = rem;
+	}
+#endif
+	return !g_stopped;
+}
+
+/*********************************************************************
+** Class Methods
+*********************************************************************/
 
 bool Time::useSystemTime()
 {
@@ -169,7 +244,7 @@ Time Time::now()
   }
 
   Time t;
-  getWallTime(t.sec, t.nsec);
+  ros_walltime(t.sec, t.nsec);
 
   return t;
 }
@@ -252,14 +327,9 @@ bool Time::sleepUntil(const Time& end)
   else
   {
     Time start = Time::now();
-    struct timespec ts = {0, 1000000};
     while (!g_stopped && (Time::now() < end))
     {
-      if (nanosleep(&ts, NULL))
-      {
-       return false;
-      }
-
+      ros_nanosleep(0,1000000);
       if (Time::now() < start)
       {
         return false;
@@ -281,24 +351,11 @@ bool WallTime::sleepUntil(const WallTime& end)
   return true;
 }
 
-bool wallSleep(uint32_t sec, uint32_t nsec)
-{
-  struct timespec ts = {sec, nsec};
-  struct timespec rem;
-
-  while (nanosleep(&ts, &rem) && !g_stopped)
-  {
-    ts = rem;
-  }
-
-  return !g_stopped;
-}
-
 bool Duration::sleep() const
 {
   if (Time::useSystemTime())
   {
-    return wallSleep(sec, nsec);
+    return ros_wallsleep(sec, nsec);
   }
   else
   {
@@ -311,7 +368,7 @@ bool Duration::sleep() const
 
     while (!g_stopped && (Time::now() < end))
     {
-      wallSleep(0, 1000000);
+    	ros_wallsleep(0, 1000000);
 
       // If we started at time 0 wait for the first actual time to arrive before starting the timer on
       // our sleep
@@ -341,7 +398,7 @@ std::ostream &operator<<(std::ostream& os, const WallTime &rhs)
 WallTime WallTime::now()
 {
   WallTime t;
-  getWallTime(t.sec, t.nsec);
+  ros_walltime(t.sec, t.nsec);
 
   return t;
 }
@@ -354,7 +411,7 @@ std::ostream &operator<<(std::ostream& os, const WallDuration& rhs)
 
 bool WallDuration::sleep() const
 {
-  return wallSleep(sec, nsec);
+  return ros_wallsleep(sec, nsec);
 }
 
 }

@@ -35,30 +35,62 @@
 #ifndef ROS_TIME_H
 #define ROS_TIME_H
 
-#include "duration.h"
-#include "ros/exception.h"
+/*********************************************************************
+** Headers
+*********************************************************************/
 
 #include <iostream>
-#include <math.h>
+#include <cmath>
+#include <ros/exception.h>
+#include "duration.h"
 
-//Ros types also needs to be moved out of roscpp...
-//#include "ros/types.h"
+/*********************************************************************
+** Cross Platform Headers
+*********************************************************************/
 
 #ifdef WIN32
-#include <windows.h>
+  #include <windows.h>
+  #include <sys/timeb.h>
+#else
+  #include <sys/time.h>
 #endif
 
 namespace ros
 {
 
+/*********************************************************************
+** Exceptions
+*********************************************************************/
+
+/**
+ * @brief Thrown if the ros subsystem hasn't been initialised before use.
+ */
 class TimeNotInitializedException : public Exception
 {
 public:
   TimeNotInitializedException()
-  : Exception("Cannot use ros::Time::now() before the first NodeHandle has been created or ros::start() has been called.  "
+  	  : Exception("Cannot use ros::Time::now() before the first NodeHandle has been created or ros::start() has been called.  "
               "If this is a standalone app or test that just uses ros::Time and does not communicate over ROS, you may also call ros::Time::init()")
   {}
 };
+
+/**
+ * @brief Thrown if windoze high perf. timestamping is unavailable.
+ *
+ * @sa getWallTime
+ */
+class NoHighPerformanceTimersException : public Exception
+{
+public:
+	NoHighPerformanceTimersException()
+		: Exception("This windows platform does not "
+            "support the high-performance timing api.")
+	{}
+};
+
+/*********************************************************************
+** Functions
+*********************************************************************/
 
 inline void normalizeSecNSec(uint64_t& sec, uint64_t& nsec)
 {
@@ -105,6 +137,10 @@ inline void normalizeSecNSecUnsigned(int64_t& sec, int64_t& nsec)
   sec = sec_part;
   nsec = nsec_part;
 }
+
+/*********************************************************************
+** Time Classes
+*********************************************************************/
 
 /**
  * \brief Base class for Time implementations.  Provides storage, common functions and operator overloads.

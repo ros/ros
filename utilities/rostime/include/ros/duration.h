@@ -41,10 +41,6 @@
 #include <climits>
 #include <stdint.h>
 
-#ifdef WIN32
-#include <windows.h>
-#endif
-
 namespace ros
 {
 

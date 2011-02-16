@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 rosbuild_init()
+if(WIN32)
+  set(ROS_COMPILE_FLAGS ${ROS_COMPILE_FLAGS} -D_WINDOWS)
+endif()
 rosbuild_add_library(XmlRpc src/XmlRpcClient.cpp
                      src/XmlRpcDispatch.cpp
                      src/XmlRpcServer.cpp

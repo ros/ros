@@ -165,7 +165,13 @@ public:
   typedef boost::function<RequestPtr()> ReqCreateFunction;
   typedef boost::function<ResponsePtr()> ResCreateFunction;
 
-  ServiceCallbackHelperT(const Callback& callback, const ReqCreateFunction& create_req = defaultServiceCreateFunction<RequestType>, const ResCreateFunction& create_res = defaultServiceCreateFunction<ResponseType>)
+  ServiceCallbackHelperT(const Callback& callback, 
+                         const ReqCreateFunction& create_req = 
+                         // these static casts are legally unnecessary, but
+                         // here to keep clang 2.8 from getting confused
+                         static_cast<RequestPtr(*)()>(defaultServiceCreateFunction<RequestType>), 
+                         const ResCreateFunction& create_res = 
+                         static_cast<ResponsePtr(*)()>(defaultServiceCreateFunction<ResponseType>))
   : callback_(callback)
   , create_req_(create_req)
   , create_res_(create_res)

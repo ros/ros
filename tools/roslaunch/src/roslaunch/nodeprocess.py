@@ -218,7 +218,7 @@ class LocalProcess(Process):
         # note: logfileerr: disabling in favor of stderr appearing in the console.
         # will likely reinstate once roserr/rosout is more properly used.
         logfileout = logfileerr = None
-        logfname = self.name.replace('/', '-')
+        logfname = self._log_name()
         
         if self.log_output:
             outf, errf = [os.path.join(log_dir, '%s-%s.log'%(logfname, n)) for n in ['stdout', 'stderr']]
@@ -312,6 +312,9 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
         finally:
             self.lock.release()
 
+    def _log_name(self):
+        return self.name.replace('/', '-')
+    
     def is_alive(self):
         """
         @return: True if process is still running
@@ -335,12 +338,12 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
         if self.exit_code is not None:
             if self.exit_code:
                 if self.log_dir:
-                    return 'process has died [pid %s, exit code %s].\nlog files: %s*.log'%(self.pid, self.exit_code, os.path.join(self.log_dir, self.name))
+                    return 'process has died [pid %s, exit code %s].\nlog files: %s*.log'%(self.pid, self.exit_code, os.path.join(self.log_dir, self._log_name()))
                 else:
                     return 'process has died [pid %s, exit code %s]'%(self.pid, self.exit_code)
             else:
                 if self.log_dir:
-                    return 'process has finished cleanly.\nlog file: %s*.log'%(os.path.join(self.log_dir, self.name))
+                    return 'process has finished cleanly.\nlog file: %s*.log'%(os.path.join(self.log_dir, self._log_name()))
                 else:
                     return 'process has finished cleanly'
         else:

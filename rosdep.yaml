@@ -268,8 +268,8 @@ ncurses:
   gentoo: sys-libs/ncurses
   freebsd: ncurses
 qt4:
-  ubuntu: libqt4-core libqt4-dev qt4-dev-tools
-  debian: libqt4-core libqt4-dev qt4-dev-tools 
+  ubuntu: libqt4-dev qt4-dev-tools
+  debian: libqt4-dev qt4-dev-tools 
   arch: qt
   opensuse: libqt4-devel 
   fedora: qt-devel

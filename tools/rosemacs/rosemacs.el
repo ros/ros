@@ -102,6 +102,7 @@
 (require 'cl)
 (require 'warnings)
 (require 'time-stamp)
+(require 'ansi-color)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Parameters
@@ -356,12 +357,12 @@
              prompt (map 'list (lambda (x)
                                  (cons x nil))
                          ros-packages)
-             nil nil nil nil default)))
+             nil nil nil nil (list default))))
 
 (defun ros-completing-read-pkg-file (prompt &optional default-pkg)
   (if (eq ros-completion-function 'ido-completing-read)
       (ros-ido-completing-read-pkg-file prompt default-pkg)
-    (funcall ros-completion-function prompt ros-package-completor nil nil default-pkg)))
+    (funcall ros-completion-function prompt ros-package-completor nil nil (list default-pkg))))
 
 ;; Ido completion
 (defun ros-ido-completing-read-pkg-file (prompt &optional default-pkg)
@@ -399,7 +400,7 @@
                                              nil))
                                ros-messages-list ros-message-packages)
                           nil nil nil nil (when (member default ros-messages-list)
-                                            default)))
+                                            (list default))))
          (ws-pos (position ?\s result))
          (message (substring result 0 ws-pos))
          (package (when ws-pos
@@ -421,7 +422,7 @@
                                              nil))
                                ros-services-list ros-service-packages)
                           nil nil nil nil (when (member default ros-services-list)
-                                            default)))
+                                            (list default))))
          (ws-pos (position ?\s result))
          (service (substring result 0 ws-pos))
          (package (when ws-pos
@@ -436,7 +437,7 @@
                                                        (cons m nil))
                                                ros-all-topics)
            nil nil nil nil (when (member default (map 'list 'identity ros-all-topics))
-                             default)))
+                             (list default))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Navigation commands
@@ -1162,7 +1163,7 @@ q kills the buffer and process."
                               (mapcar (lambda (pkg)
                                         (cons pkg nil))
                                       (ros-find-executables ros-run-temp-var))
-                              nil nil nil nil ros-run-temp-var)))
+                              nil nil nil nil (list ros-run-temp-var))))
   (let* ((name (format "*rosrun:%s/%s" pkg exec))
          (buf (get-buffer-create name)))
     (save-excursion
@@ -1247,6 +1248,7 @@ q kills the buffer and process."
               (let ((buf (get-buffer-create name)))
                 (save-excursion
                   (set-buffer buf)
+                  (comint-mode)
                   (setq ros-launch-path path)
                   (setq ros-launch-filename dir-suffix)
                   (ros-launch-mode 1)
@@ -1255,6 +1257,24 @@ q kills the buffer and process."
                 (if other-window (display-buffer buf) (switch-to-buffer buf))
                 buf)))
 	(error "Did not find %s in the ros package list." package-name)))))
+
+(defun ros-launch-current ()
+  (interactive)
+  (let ((path (buffer-file-name)))
+    (assert (and path (string-match ".*\\/\\([^\\/]*\.launch\\)" path)))
+    (let ((pkg (ros-package-for-path path))
+          (filename (match-string 1 path)))
+      (assert (and pkg filename))
+      (let ((name (format "roslaunch:%s/%s" pkg filename)))
+        (if (rosemacs/contains-running-process name)
+            (switch-to-buffer (get-buffer name))
+          (let ((buf (get-buffer-create name)))
+            (switch-to-buffer buf)
+            (comint-mode)
+            (setq ros-launch-path path
+                  ros-launch-filename filename)
+            (ros-launch-mode 1)
+            (rosemacs/relaunch (current-buffer))))))))
 
 (defun rosemacs/open-launch-file ()
   (interactive)
@@ -1271,10 +1291,9 @@ q kills the buffer and process."
       (save-excursion
         (set-buffer buf)
         (erase-buffer)
-        (start-process (buffer-name buf) buf "roslaunch" ros-launch-path)
-        (rosemacs/add-event (format "Ros launch of %s" ros-launch-path))
-        )
-      )))
+        (let ((proc (start-process (buffer-name buf) buf "roslaunch" ros-launch-path)))
+          (set-process-filter proc 'comint-output-filter))
+        (rosemacs/add-event (format "Ros launch of %s" ros-launch-path))))))
 
 (defun rosemacs/kill-and-relaunch ()
   "Interrupt the current roslaunch process, and when it has terminated, relaunch."
@@ -1323,7 +1342,7 @@ The page delimiter in this buffer matches the start, so you can use forward/back
   (setq page-delimiter "SUMMARY")
   )
 
-
+(setq ros-launch-mode-hook 'ansi-color-for-comint-mode-on)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Event buffer
@@ -1365,6 +1384,7 @@ The page delimiter in this buffer matches the start, so you can use forward/back
 (define-key ros-keymap "T" 'ros-topic-info)
 (define-key ros-keymap "g" 'ros-rgrep-package)
 (define-key ros-keymap "\C-l" 'ros-launch)
+(define-key ros-keymap "l" 'ros-launch-current)
 (define-key ros-keymap "\C-e" 'rosemacs/display-event-buffer)
 (define-key ros-keymap "\C-n" 'rosemacs/display-nodes)
 (define-key ros-keymap "c" 'ros-make)

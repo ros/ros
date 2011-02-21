@@ -330,8 +330,12 @@ macro(_rosbuild_add_library lib libname type)
     set_target_properties(${lib} PROPERTIES OUTPUT_NAME ${libname})
     # Also add -fPIC, because CMake leaves it out when building static
     # libs, even though it's necessary on 64-bit machines for linking this
-    # lib against shared libs downstream.
-    rosbuild_add_compile_flags(${lib} -fPIC)
+    # lib against shared libs downstream. The only exception is mingw gcc
+    # which doesn't specifically need to worry about building
+    # position independant libs.
+    if(NOT MINGW)
+        rosbuild_add_compile_flags(${lib} -fPIC)
+    endif()
   endif(${type} STREQUAL STATIC)
   
   # Add explicit dependency of each file on our manifest.xml and those of

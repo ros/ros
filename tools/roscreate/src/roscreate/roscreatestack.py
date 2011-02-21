@@ -129,7 +129,7 @@ def create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, sh
         if not os.path.exists(filename) or filename == 'stack.xml':
             print "Creating stack file", p
             with open(p, 'w') as f:
-                f.write(contents)
+                f.write(contents.encode('utf-8'))
     print "\nPlease edit %s/stack.xml to finish creating your stack"%stack
 
 def compute_stack_depends_and_licenses(stack_dir):

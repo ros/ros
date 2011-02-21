@@ -33,7 +33,7 @@
                            ": "))))
     (funcall slime-ros-completion-function
              prompt (slime-bogus-completion-alist asd-files)
-             nil nil nil nil default)))
+             nil nil nil nil (list default))))
 
 (defslime-repl-shortcut slime-repl-load-ros-system ("ros-load-system")
   (:handler (lambda ()

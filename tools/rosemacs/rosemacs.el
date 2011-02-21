@@ -357,12 +357,12 @@
              prompt (map 'list (lambda (x)
                                  (cons x nil))
                          ros-packages)
-             nil nil nil nil default)))
+             nil nil nil nil (list default))))
 
 (defun ros-completing-read-pkg-file (prompt &optional default-pkg)
   (if (eq ros-completion-function 'ido-completing-read)
       (ros-ido-completing-read-pkg-file prompt default-pkg)
-    (funcall ros-completion-function prompt ros-package-completor nil nil default-pkg)))
+    (funcall ros-completion-function prompt ros-package-completor nil nil (list default-pkg))))
 
 ;; Ido completion
 (defun ros-ido-completing-read-pkg-file (prompt &optional default-pkg)
@@ -400,7 +400,7 @@
                                              nil))
                                ros-messages-list ros-message-packages)
                           nil nil nil nil (when (member default ros-messages-list)
-                                            default)))
+                                            (list default))))
          (ws-pos (position ?\s result))
          (message (substring result 0 ws-pos))
          (package (when ws-pos
@@ -422,7 +422,7 @@
                                              nil))
                                ros-services-list ros-service-packages)
                           nil nil nil nil (when (member default ros-services-list)
-                                            default)))
+                                            (list default))))
          (ws-pos (position ?\s result))
          (service (substring result 0 ws-pos))
          (package (when ws-pos
@@ -437,7 +437,7 @@
                                                        (cons m nil))
                                                ros-all-topics)
            nil nil nil nil (when (member default (map 'list 'identity ros-all-topics))
-                             default)))
+                             (list default))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Navigation commands
@@ -1163,7 +1163,7 @@ q kills the buffer and process."
                               (mapcar (lambda (pkg)
                                         (cons pkg nil))
                                       (ros-find-executables ros-run-temp-var))
-                              nil nil nil nil ros-run-temp-var)))
+                              nil nil nil nil (list ros-run-temp-var))))
   (let* ((name (format "*rosrun:%s/%s" pkg exec))
          (buf (get-buffer-create name)))
     (save-excursion

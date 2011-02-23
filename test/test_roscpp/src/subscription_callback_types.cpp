@@ -135,6 +135,12 @@ struct A
   {
     ROS_INFO("A I heard(8): [%s, %s]", event.getMessage()->data.c_str(), event.getConnectionHeader()["callerid"].c_str());
   }
+
+  void constCallback(std_msgs::String::Ptr msg) const
+  {
+    ROS_INFO("A I heard(7): [%s] and I'm const", msg->data.c_str());
+  }
+
 };
 
 TEST(SubscriptionCallbackTypes, compile)
@@ -144,7 +150,6 @@ TEST(SubscriptionCallbackTypes, compile)
   std::vector<ros::Subscriber> subs;
   subs.push_back(n.subscribe("chatter", 1000, chatterCallback));
   subs.push_back(n.subscribe<std_msgs::String>("chatter", 1000, chatterCallback));
-#if 01
   subs.push_back(n.subscribe("chatter", 1000, chatterCallback2));
   subs.push_back(n.subscribe("chatter", 1000, chatterCallback3));
   subs.push_back(n.subscribe("chatter", 1000, chatterCallback4));
@@ -152,26 +157,25 @@ TEST(SubscriptionCallbackTypes, compile)
   subs.push_back(n.subscribe("chatter", 1000, chatterCallback6));
   subs.push_back(n.subscribe("chatter", 1000, chatterCallback7));
   subs.push_back(n.subscribe("chatter", 1000, chatterCallback8));
-#endif
+
 
   A a;
   subs.push_back(n.subscribe("chatter", 1000, &A::chatterCallback, &a));
   subs.push_back(n.subscribe<std_msgs::String>("chatter", 1000, &A::chatterCallback, &a));
-#if 01
   subs.push_back(n.subscribe("chatter", 1000, &A::chatterCallback2, &a));
   subs.push_back(n.subscribe("chatter", 1000, &A::chatterCallback3, &a));
   subs.push_back(n.subscribe("chatter", 1000, &A::chatterCallback4, &a));
   subs.push_back(n.subscribe("chatter", 1000, &A::chatterCallback5, &a));
-#endif
 
-#if 01
   subs.push_back(n.subscribe<std_msgs::String>("chatter", 1000, boost::bind(&A::chatterCallback6, &a, _1, std::string("hello"))));
   subs.push_back(n.subscribe<std_msgs::String, const std_msgs::String&>("chatter", 1000, boost::bind(&A::chatterCallback7, &a, _1, std::string("hello2"))));
-#endif
+
 
   subs.push_back(n.subscribe("chatter", 1000, &A::chatterCallback8, &a));
   subs.push_back(n.subscribe("chatter", 1000, &A::chatterCallback9, &a));
   subs.push_back(n.subscribe("chatter", 1000, &A::chatterCallback10, &a));
+
+  subs.push_back(n.subscribe("chatter", 1000, &A::constCallback, &a));
 }
 
 int main(int argc, char **argv)

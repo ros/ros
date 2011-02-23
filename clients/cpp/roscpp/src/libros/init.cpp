@@ -545,6 +545,7 @@ void shutdown()
   //
   // See https://code.ros.org/trac/ros/ticket/3271
   //
+  log4cxx::Logger::getRootLogger()->getLoggerRepository()->shutdown();
   log4cxx::LoggerPtr& fo_logger = ros::file_log::getFileOnlyLogger();
   fo_logger = log4cxx::LoggerPtr();
   

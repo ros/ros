@@ -331,7 +331,25 @@ namespace XmlRpc {
   {
     const char* valueStart = valueXml.c_str() + *offset;
     char* valueEnd;
+
+    // ticket #2438
+    // push/pop the locale here. Value 123.45 can get read by strtod
+    // as '123', if the locale expects a comma instead of dot.
+    // if there are locale problems, silently continue.
+    std::string tmplocale;
+    char* locale_cstr = setlocale(LC_NUMERIC, 0);
+    if (locale_cstr)
+      {
+        tmplocale = locale_cstr;
+        setlocale(LC_NUMERIC, "POSIX");
+      }
+
     double dvalue = strtod(valueStart, &valueEnd);
+
+    if (tmplocale.size() > 0) {
+      setlocale(LC_NUMERIC, tmplocale.c_str());
+    }
+
     if (valueEnd == valueStart)
       return false;
 
@@ -343,6 +361,7 @@ namespace XmlRpc {
 
   std::string XmlRpcValue::doubleToXml() const
   {
+    // ticket #2438
     std::stringstream ss;
     ss.imbue(std::locale::classic()); // ensure we're using "C" locale for formatting floating-point (1.4 vs. 1,4, etc.)
     ss.precision(17);

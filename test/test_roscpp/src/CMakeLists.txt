@@ -155,3 +155,7 @@ rosbuild_declare_test(publisher_for_star_subscriber)
 
 rosbuild_add_executable(parameter_validation EXCLUDE_FROM_ALL parameter_validation.cpp)
 rosbuild_add_gtest_build_flags(parameter_validation)
+
+rosbuild_add_executable(param_locale_avoidance_test EXCLUDE_FROM_ALL param_locale_avoidance_test.cpp)
+rosbuild_add_gtest_build_flags(param_locale_avoidance_test)
+

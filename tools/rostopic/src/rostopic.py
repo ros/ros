@@ -1278,7 +1278,16 @@ def publish_message(pub, msg_class, pub_args, rate=None, once=False, verbose=Fal
         roslib.message.fill_message_args(msg, pub_args, keys=keys)
     except roslib.message.ROSMessageException, e:
         raise ROSTopicException(str(e)+"\n\nArgs are: [%s]"%roslib.message.get_printable_message_args(msg))
-    try:        
+    try:
+        
+        if rate is None:
+            s = "publishing and latching [%s]"%(msg) if verbose else "publishing and latching message"
+            if once:
+                s = s + " for %s seconds"%_ONCE_DELAY
+            else:
+                s = s + ". Press ctrl-C to terminate"
+            print s
+        
         if rate is None:
             _publish_latched(pub, msg, once, verbose)
         else:
@@ -1403,14 +1412,6 @@ def file_yaml_arg(filename):
     return bagy_iter
     
 def argv_publish(pub, msg_class, pub_args, rate, once, verbose):
-    if rate is None:
-        s = "publishing and latching [%s]"%msg if verbose else "publishing and latching message"
-        if once:
-            s = s + " for %s seconds"%_ONCE_DELAY
-        else:
-            s = s + ". Press ctrl-C to terminate"
-        print s
-
     publish_message(pub, msg_class, pub_args, rate, once, verbose=verbose)
 
     if once:

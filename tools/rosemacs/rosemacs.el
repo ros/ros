@@ -367,17 +367,14 @@
                             (format " (default `%s'): " default)
                           ": "))))
     (funcall completion-function
-             prompt (map 'list (lambda (x)
-                                 (cons x nil))
-                         ros-packages)
-             nil nil nil nil (list default))))
+             prompt (map 'list #'identity ros-packages)
+             nil nil nil nil default)))
 
 (defun ros-completing-read-pkg-file (prompt &optional default-pkg)
   (if (eq ros-completion-function 'ido-completing-read)
       (ros-ido-completing-read-pkg-file prompt default-pkg)
     (funcall ros-completion-function prompt ros-package-completor nil nil
-             (when default-pkg
-               (list default-pkg)))))
+             default-pkg)))
 
 ;; Ido completion
 (defun ros-ido-completing-read-pkg-file (prompt &optional default-pkg)
@@ -409,13 +406,12 @@
   (let* ((ros-messages-list (map 'list 'identity ros-messages))
          (result (funcall ros-completion-function prompt
                           (map 'list (lambda (m pkg)
-                                       (cons (if (> (count m ros-messages-list :test 'equal) 1)
-                                                 (format "%s (%s)" m pkg)
-                                               m)
-                                             nil))
+                                       (if (> (count m ros-messages-list :test 'equal) 1)
+                                           (format "%s (%s)" m pkg)
+                                         m))
                                ros-messages-list ros-message-packages)
                           nil nil nil nil (when (member default ros-messages-list)
-                                            (list default))))
+                                            default)))
          (ws-pos (position ?\s result))
          (message (substring result 0 ws-pos))
          (package (when ws-pos
@@ -431,13 +427,12 @@
   (let* ((ros-services-list (map 'list 'identity ros-services))
          (result (funcall ros-completion-function prompt
                           (map 'list (lambda (m pkg)
-                                       (cons (if (> (count m ros-services-list :test 'equal) 1)
-                                                 (format "%s (%s)" m pkg)
-                                               m)
-                                             nil))
+                                       (if (> (count m ros-services-list :test 'equal) 1)
+                                           (format "%s (%s)" m pkg)
+                                         m))
                                ros-services-list ros-service-packages)
                           nil nil nil nil (when (member default ros-services-list)
-                                            (list default))))
+                                            default)))
          (ws-pos (position ?\s result))
          (service (substring result 0 ws-pos))
          (package (when ws-pos
@@ -453,13 +448,12 @@
   (let* ((ros-actions-list (map 'list 'identity ros-actions))
          (result (funcall ros-completion-function prompt
                           (map 'list (lambda (m pkg)
-                                       (cons (if (> (count m ros-actions-list :test 'equal) 1)
-                                                 (format "%s (%s)" m pkg)
-                                               m)
-                                             nil))
+                                       (if (> (count m ros-actions-list :test 'equal) 1)
+                                           (format "%s (%s)" m pkg)
+                                         m))
                                ros-actions-list ros-action-packages)
                           nil nil nil nil (when (member default ros-actions-list)
-                                            (list default))))
+                                            default)))
          (ws-pos (position ?\s result))
          (action (substring result 0 ws-pos))
          (package (when ws-pos
@@ -470,11 +464,9 @@
       action)))
 
 (defun ros-completing-read-topic (prompt &optional default)
-  (funcall ros-completion-function prompt (map 'list (lambda (m)
-                                                       (cons m nil))
-                                               ros-all-topics)
+  (funcall ros-completion-function prompt (map 'list #'identity ros-all-topics)
            nil nil nil nil (when (member default (map 'list 'identity ros-all-topics))
-                             (list default))))
+                             default)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Navigation commands
@@ -1213,10 +1205,8 @@ q kills the buffer and process."
   (interactive (list (setq ros-run-temp-var (ros-completing-read-package
                                              nil (get-buffer-ros-package)))
                      (funcall ros-completion-function (format "Enter executable (default %s): " ros-run-temp-var)
-                              (mapcar (lambda (pkg)
-                                        (cons pkg nil))
-                                      (ros-find-executables ros-run-temp-var))
-                              nil nil nil nil (list ros-run-temp-var))))
+                              (map 'list #'identity (ros-find-executables ros-run-temp-var))
+                              nil nil nil nil ros-run-temp-var)))
   (let* ((name (format "*rosrun:%s/%s" pkg exec))
          (buf (get-buffer-create name)))
     (save-excursion

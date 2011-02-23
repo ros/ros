@@ -786,6 +786,7 @@ private:
 	    recover<6>(num_virtual_moves[6]);
 	    recover<7>(num_virtual_moves[7]);
 	    recover<8>(num_virtual_moves[8]);
+            (void)num_non_empty_deques_before_virtual_search; // unused variable warning stopper
             ROS_ASSERT(num_non_empty_deques_before_virtual_search == num_non_empty_deques_);
             break;
           }

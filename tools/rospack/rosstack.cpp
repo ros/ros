@@ -378,7 +378,6 @@ void Stack::load_manifest()
     manifest_loaded = true;
     throw runtime_error(errmsg);
   }
-  TiXmlElement *mroot = manifest.RootElement();
 }
 
 TiXmlElement *Stack::manifest_root()
@@ -654,24 +653,6 @@ int ROSStack::cmd_depsindent(Stack *stack, int indent)
     cmd_depsindent(*i, indent+2);
   }
   return 0;
-}
-
-static bool space(char c) { return isspace(c); }
-static bool not_space(char c) { return !isspace(c); }
-static vector<string> split_space(const string& str)
-{
-  typedef string::const_iterator iter;
-  vector<string> ret;
-  iter i = str.begin();
-  while (i != str.end())
-  {
-    i = find_if(i, str.end(), not_space);
-    iter j = find_if(i, str.end(), space);
-    if (i != str.end())
-      ret.push_back(string(i, j));
-    i = j;
-  }
-  return ret;
 }
 
 int ROSStack::run(int argc, char **argv)

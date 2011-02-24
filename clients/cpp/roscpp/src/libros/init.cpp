@@ -315,6 +315,8 @@ void start()
     signal(SIGINT, basicSigintHandler);
   }
 
+  ros::Time::init();
+
   if (!(g_init_options & init_options::NoRosout))
   {
     g_rosout_appender = new ROSOutAppender;
@@ -355,8 +357,6 @@ void start()
   {
     bool use_sim_time = false;
     param::param("/use_sim_time", use_sim_time, use_sim_time);
-
-    ros::Time::init();
 
     if (use_sim_time)
     {

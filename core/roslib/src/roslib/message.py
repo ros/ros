@@ -281,11 +281,22 @@ def check_type(field_name, field_type, field_val):
     elif field_type == 'duration':
         if not isinstance(field_val, Duration):
             raise SerializationError('field %s must be of type Duration'%field_name)
+        
     elif field_type.endswith(']'): # array type
-        if not type(field_val) in [list, tuple]:
-            raise SerializationError('field %s must be a list or tuple type'%field_name)
         # use index to generate error if '[' not present
         base_type = field_type[:field_type.index('[')]
+
+        if type(field_val) == str:
+            if not base_type in ['char', 'uint8']:
+                raise SerializationError('field %s must be a list or tuple type. Only uint8[] can be a string' % field_name);
+            else:
+                #It's a string so its already in byte format and we
+                #don't need to check the individual bytes in the
+                #string.
+                return
+            
+        if not type(field_val) in [list, tuple]:
+            raise SerializationError('field %s must be a list or tuple type'%field_name)
         for v in field_val:
             check_type(field_name+"[]", base_type, v)
     else:

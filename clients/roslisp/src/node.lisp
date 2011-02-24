@@ -109,7 +109,7 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
     
 
     ;; Spawn a thread that will start up the listeners, then run the event loop
-    (with-mutex (*ros-lock*)
+    (with-recursive-lock (*ros-lock*)
       (sb-thread:make-thread 
        #'(lambda ()
 

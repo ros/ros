@@ -75,14 +75,14 @@ PUBLISHERS : list of publishers, each of which is a list (ADDRESS PORT)."
   (declare (ignore caller-id))
 
   (ros-debug (roslisp topic) "Publisher update ~a ~a" topic publishers)
-  (with-mutex (*ros-lock*)
+  (with-recursive-lock (*ros-lock*)
     (update-publishers topic publishers)))
 
 (defun |getBusInfo| (caller-id)
   "getBusInfo XML-RPC method
 Used to get info about the node's connections (e.g., for rosnode info)"
   (ros-debug (roslisp slave) "Received call to getBusInfo from ~a" caller-id)
-  (with-mutex (*ros-lock*)
+  (with-recursive-lock (*ros-lock*)
     (list 1 (format nil "getBusInfo call returning") 
           (nconc (publications-info) (subscriptions-info)))))
 
@@ -119,7 +119,7 @@ Notes
 2. This call does not actually set up the transport over the agreed-upon protocol.  In the TCP case, the subscriber must then connect to the given address and port over TCP, and send a string containing the topic name and MD5 sum."
   (declare (string topic) (sequence protocols))
   (ros-debug (roslisp slave request-topic) "Received call `requestTopic ~a ~a ~a" caller-id topic protocols)
-  (with-mutex (*ros-lock*)
+  (with-recursive-lock (*ros-lock*)
     (if (find "TCPROS" protocols :key #'first :test #'string=)
 	(if (hash-table-has-key *publications* topic)
 	    

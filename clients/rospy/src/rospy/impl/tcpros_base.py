@@ -142,6 +142,10 @@ class TCPServer(object):
                 (client_sock, client_addr) = self.server_sock.accept()
             except socket.timeout:
                 continue
+            except IOError, (errno, msg):
+                if errno == 4: #interrupted system call
+                    continue
+                raise
             if self.is_shutdown:
                 break
             try:

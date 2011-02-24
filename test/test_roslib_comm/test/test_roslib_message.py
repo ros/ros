@@ -40,6 +40,7 @@ import unittest
 import traceback
 
 import roslib.message
+from roslib.rostime import Time, Duration
 import rosunit
 
 # Not much to test, just tripwires
@@ -91,7 +92,55 @@ class MessageTest(unittest.TestCase):
                 self.fail("should have raised")
             except SerializationError:
                 pass
-                 
+
+    def test_check_types_valid(self):
+        '''Test directly a bunch of valid combinations to check_types.
+
+        check_type will throw an exception when it fails
+        '''
+        roslib.message.check_type('test', 'uint8[]', 'byteDataIsAStringInPy')
+        roslib.message.check_type('test', 'char[]', 'byteDataIsAStringInPy')
+        roslib.message.check_type('test', 'uint8[]', [3,4,5])
+        roslib.message.check_type('test', 'uint8[]', (3,4,5))
+        roslib.message.check_type('test', 'char[]', [3,4,5])
+        roslib.message.check_type('test', 'int32[]', [3,4,5])
+        roslib.message.check_type('test', 'int32', -5)
+        roslib.message.check_type('test', 'int64', -5)
+        roslib.message.check_type('test', 'int16', -5)
+        roslib.message.check_type('test', 'int8', -5)
+        roslib.message.check_type('test', 'uint32', 5)
+        roslib.message.check_type('test', 'uint64', 5)
+        roslib.message.check_type('test', 'uint16', 5)
+        roslib.message.check_type('test', 'uint8', 5)
+        roslib.message.check_type('test', 'bool', True)
+        roslib.message.check_type('test', 'bool', False)
+        roslib.message.check_type('test', 'bool', 0)
+        roslib.message.check_type('test', 'bool', 1)
+        roslib.message.check_type('test', 'string', 'IAmAString')
+        roslib.message.check_type('test', 'time', Time())
+        roslib.message.check_type('test', 'duration', Duration(5))
+
+    def test_check_types_invalid(self):
+        from roslib.message import SerializationError
+        self.assertRaises(SerializationError, roslib.message.check_type,
+                          'test', 'int32[]', 'someString')
+        self.assertRaises(SerializationError, roslib.message.check_type,
+                          'test', 'uint32[]', [3, -2, 4])
+        self.assertRaises(SerializationError, roslib.message.check_type,
+                          'test', 'uint8', -2)
+        self.assertRaises(SerializationError, roslib.message.check_type,
+                          'test', 'uint16', -2)
+        self.assertRaises(SerializationError, roslib.message.check_type,
+                          'test', 'uint32', -2)
+        self.assertRaises(SerializationError, roslib.message.check_type,
+                          'test', 'uint64', -2)
+        self.assertRaises(SerializationError, roslib.message.check_type,
+                          'test', 'bool', -2)
+        self.assertRaises(SerializationError, roslib.message.check_type,
+                          'test', 'bool', 2)
+        self.assertRaises(SerializationError, roslib.message.check_type,
+                          'test', 'string', u'UnicodeString')
+        
     def test_Message(self):
         import cStringIO
         from roslib.message import Message, SerializationError

@@ -80,7 +80,7 @@ using namespace std;
 //#define VERBOSE_DEBUG
 const double DEFAULT_MAX_CACHE_AGE = 60.0; // rebuild cache every minute
 const int MAX_DEPENDENCY_TREE_DEPTH = 1000; // used to detect cycles
-const unsigned MAX_DIRECTORY_DEPTH = 1000; // used to detect self-referencing symlinks
+const int MAX_DIRECTORY_DEPTH = 1000; // used to detect self-referencing symlinks
 
 
 #include <sys/stat.h>
@@ -692,10 +692,10 @@ VecPkg Package::deleted_pkgs;
 //////////////////////////////////////////////////////////////////////////////
 
 
-ROSPack::ROSPack() : 
-  ros_root(NULL), opt_profile_length(0), opt_quiet(false),
-  cache_lock_failed(false), crawled(false), my_argc(0), my_argv(NULL), total_num_pkgs(0),
-  duplicate_packages_found(false)
+ROSPack::ROSPack() : ros_root(NULL), opt_quiet(false),
+        cache_lock_failed(false), crawled(false), my_argc(0),
+        my_argv(NULL), opt_profile_length(0), total_num_pkgs(0),
+        duplicate_packages_found(false)
 {
   g_rospack = this;
   Package::pkgs.reserve(500); // get some space to avoid early recopying...
@@ -2217,10 +2217,10 @@ string ROSPack::deduplicate_tokens(const string& s)
   vector<string> in;
   vector<string> out;
   string_split(s, in, " ");
-  for(unsigned i=0; i<in.size(); i++)
+  for(int i=0; i<in.size(); i++)
   {
     bool dup = false;
-    for(unsigned j=0; j<out.size(); j++)
+    for(int j=0; j<out.size(); j++)
     {
       if(!out[j].compare(in[i]))
       {
@@ -2233,7 +2233,7 @@ string ROSPack::deduplicate_tokens(const string& s)
   }
 
   string res;
-  for(unsigned j=0; j<out.size(); j++)
+  for(int j=0; j<out.size(); j++)
   {
     if(!j)
       res += out[j];

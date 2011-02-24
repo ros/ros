@@ -320,7 +320,7 @@ public:
   // --target=
   std::string opt_target;
   // the number of entries to list in the profile table
-  unsigned opt_profile_length;
+  int opt_profile_length;
   // only display zombie directories in profile?
   bool opt_profile_zombie_only;
   // display warnings about missing dependencies?
@@ -354,7 +354,7 @@ private:
   void freeArgv();
   // Total number of packages found, including duplicates.  Used in
   // determining whether a directory is a zombie.
-  unsigned total_num_pkgs;
+  int total_num_pkgs;
   // Were there any duplicate pkgs found in the crawl?
   bool duplicate_packages_found;
 };

@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 #endif
 
   int ret;
-
+  bool quiet;
   try
   {
     // Declare ROSPack instance inside the try block because its

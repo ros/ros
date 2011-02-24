@@ -55,6 +55,12 @@
 #include <sys/time.h>
 #endif
 
+namespace boost {
+  namespace posix_time {
+    class ptime;
+  }
+}
+
 namespace ros
 {
 
@@ -137,6 +143,8 @@ namespace ros
 
     inline bool isZero() const { return sec == 0 && nsec == 0; }
     inline bool is_zero() const { return isZero(); }
+    boost::posix_time::ptime toBoost() const;
+
   };
 
   /**

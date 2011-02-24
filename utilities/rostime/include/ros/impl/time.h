@@ -43,6 +43,7 @@
 #include <cmath>
 #include <ros/exception.h>
 #include <ros/time.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 /*********************************************************************
 ** Cross Platform Headers
@@ -154,6 +155,19 @@ namespace ros
       return true;
     return false;
   }
+
+  template<class T, class D>
+  boost::posix_time::ptime
+  TimeBase<T, D>::toBoost() const
+  {
+    namespace pt = boost::posix_time;
+#if defined(BOOST_DATE_TIME_HAS_NANOSECONDS)
+    return pt::from_time_t(sec) + pt::nanoseconds(nsec);
+#else
+    return pt::from_time_t(sec) + pt::microseconds(nsec/1000.0);
+#endif
+  }
+
 
 }
 

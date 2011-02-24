@@ -32,7 +32,7 @@
                              (format " (default `%s'): " default)
                            ": "))))
     (funcall slime-ros-completion-function
-             prompt (slime-bogus-completion-alist asd-files)
+             prompt (mapcar #'car (slime-bogus-completion-alist asd-files))
              nil nil nil nil default)))
 
 (defslime-repl-shortcut slime-repl-load-ros-system ("ros-load-system")

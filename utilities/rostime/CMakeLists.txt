@@ -1,3 +1,7 @@
+if(ROSBUILD)
+  include(rosbuild.cmake)
+  return()
+endif()
 cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
@@ -17,9 +21,13 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 rosbuild_add_boost_directories()
-rosbuild_add_library(${PROJECT_NAME} src/time.cpp src/rate.cpp)
+rosbuild_add_library(${PROJECT_NAME} 
+  src/time.cpp 
+  src/rate.cpp
+  src/duration.cpp
+  )
 rosbuild_link_boost(${PROJECT_NAME} thread)
 
 if (NOT APPLE)
 target_link_libraries(${PROJECT_NAME} rt)
-endif (NOT APPLE) 
+endif (NOT APPLE)

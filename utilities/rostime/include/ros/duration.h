@@ -43,46 +43,14 @@
 
 namespace ros
 {
-
-inline void normalizeSecNSecSigned(int64_t& sec, int64_t& nsec)
-{
-  int64_t nsec_part = nsec;
-  int64_t sec_part = sec;
-
-  while (nsec_part > 1000000000L)
-  {
-    nsec_part -= 1000000000L;
-    ++sec_part;
-  }
-  while (nsec_part < 0)
-  {
-    nsec_part += 1000000000L;
-    --sec_part;
-  }
-
-  if (sec_part < INT_MIN || sec_part > INT_MAX)
-    throw std::runtime_error("Duration is out of dual 32-bit range");
-
-  sec = sec_part;
-  nsec = nsec_part;
-}
-
-inline void normalizeSecNSecSigned(int32_t& sec, int32_t& nsec)
-{
-  int64_t sec64 = sec;
-  int64_t nsec64 = nsec;
-
-  normalizeSecNSecSigned(sec64, nsec64);
-
-  sec = (int32_t)sec64;
-  nsec = (int32_t)nsec64;
-}
+  void normalizeSecNSecSigned(int64_t& sec, int64_t& nsec);
+  void normalizeSecNSecSigned(int32_t& sec, int32_t& nsec);
 
 /**
  * \brief Base class for Duration implementations.  Provides storage, common functions and operator overloads.
  * This should not need to be used directly.
  */
-template<class T>
+template <class T>
 class DurationBase
 {
 public:
@@ -165,140 +133,6 @@ public:
 std::ostream &operator <<(std::ostream &os, const Duration &rhs);
 std::ostream &operator <<(std::ostream &os, const WallDuration &rhs);
 
-//
-// DurationBase template member function implementation
-//
-template<class T>
-DurationBase<T>::DurationBase(int32_t _sec, int32_t _nsec)
-: sec(_sec), nsec(_nsec)
-{
-  normalizeSecNSecSigned(sec, nsec);
-}
-
-template<class T>
-T& DurationBase<T>::fromSec(double d)
-{
-#ifdef HAVE_TRUNC
-  sec  = (int32_t)trunc(d);
-#else
-  // (morgan: why doesn't win32 provide trunc? argh. hacked this together
-  // without much thought. need to test this conversion.
-  if (d >= 0.0)
-    sec = (int32_t)floor(d);
-  else
-    sec = (int32_t)floor(d) + 1;
-#endif
-  nsec = (int32_t)((d - (double)sec)*1000000000);
-  return *static_cast<T*>(this);
-}
-
-template<class T>
-T& DurationBase<T>::fromNSec(int64_t t)
-{
-  sec  = (int32_t)(t / 1000000000);
-  nsec = (int32_t)(t % 1000000000);
-
-  normalizeSecNSecSigned(sec, nsec);
-
-  return *static_cast<T*>(this);
-}
-
-template<class T>
-T DurationBase<T>::operator+(const T &rhs) const
-{
-  return T(sec + rhs.sec, nsec + rhs.nsec);
-}
-
-template<class T>
-T DurationBase<T>::operator*(double scale) const
-{
-  return T(toSec() * scale);
-}
-
-template<class T>
-T DurationBase<T>::operator-(const T &rhs) const
-{
-  return T(sec - rhs.sec, nsec - rhs.nsec);
-}
-
-template<class T>
-T DurationBase<T>::operator-() const
-{
-  return T(-sec , -nsec);
-}
-
-template<class T>
-T& DurationBase<T>::operator+=(const T &rhs)
-{
-  *this = *this + rhs;
-  return *static_cast<T*>(this);
-}
-
-template<class T>
-T& DurationBase<T>::operator-=(const T &rhs)
-{
-  *this += (-rhs);
-  return *static_cast<T*>(this);
-}
-
-template<class T>
-T& DurationBase<T>::operator*=(double scale)
-{
-  fromSec(toSec() * scale);
-  return *static_cast<T*>(this);
-}
-
-template<class T>
-bool DurationBase<T>::operator<(const T &rhs) const
-{
-  if (sec < rhs.sec)
-    return true;
-  else if (sec == rhs.sec && nsec < rhs.nsec)
-    return true;
-  return false;
-}
-
-template<class T>
-bool DurationBase<T>::operator>(const T &rhs) const
-{
-  if (sec > rhs.sec)
-    return true;
-  else if (sec == rhs.sec && nsec > rhs.nsec)
-    return true;
-  return false;
-}
-
-template<class T>
-bool DurationBase<T>::operator<=(const T &rhs) const
-{
-  if (sec < rhs.sec)
-    return true;
-  else if (sec == rhs.sec && nsec <= rhs.nsec)
-    return true;
-  return false;
-}
-
-template<class T>
-bool DurationBase<T>::operator>=(const T &rhs) const
-{
-  if (sec > rhs.sec)
-    return true;
-  else if (sec == rhs.sec && nsec >= rhs.nsec)
-    return true;
-  return false;
-}
-
-template<class T>
-bool DurationBase<T>::operator==(const T &rhs) const
-{
-  return sec == rhs.sec && nsec == rhs.nsec;
-}
-
-template<class T>
-bool DurationBase<T>::isZero()
-{
-  return sec == 0 && nsec == 0;
-}
 
 }
 

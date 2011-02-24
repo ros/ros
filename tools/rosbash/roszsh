@@ -1,5 +1,5 @@
 function _ros_decode_path {
-    local rosname rosdir reldir last rospackdir rosstack_result rosstackdir rosstack_result
+    local rosname rosdir reldir last rospackdir rosstack_result rosstackdir
 
     if [[ -z $1 ]]; then
         return 0

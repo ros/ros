@@ -65,11 +65,17 @@ log4cxx::LevelPtr g_level_lookup[ levels::Count ] =
   log4cxx::Level::getFatal(),
 };
 
-#define COLOR_NORMAL "\033[0m"
-#define COLOR_RED "\033[31m"
-#define COLOR_GREEN "\033[32m"
-#define COLOR_YELLOW "\033[33m"
-
+#ifdef WIN32
+	#define COLOR_NORMAL ""
+	#define COLOR_RED ""
+	#define COLOR_GREEN ""
+	#define COLOR_YELLOW ""
+#else
+	#define COLOR_NORMAL "\033[0m"
+	#define COLOR_RED "\033[31m"
+	#define COLOR_GREEN "\033[32m"
+	#define COLOR_YELLOW "\033[33m"
+#endif
 const char* g_format_string = "[${severity}] [${time}]: ${message}";
 
 struct Token

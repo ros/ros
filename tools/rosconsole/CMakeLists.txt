@@ -17,6 +17,11 @@ rosbuild_link_boost(${PROJECT_NAME} thread regex)
 
 rosbuild_add_executable(example examples/example.cpp)
 target_link_libraries(example ${PROJECT_NAME})
+# static libraries all need to be called for mingw. 
+if(MINGW) 
+  rosbuild_link_boost(example thread regex)
+  target_link_libraries(example log4cxx aprutil-1 expat apr-1 rpcrt4 shell32 ws2_32 advapi32 kernel32 msvcrt)
+endif()
 set_target_properties(example PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/examples)
 
 rosbuild_add_gtest(test/utest test/utest.cpp)

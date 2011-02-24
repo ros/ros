@@ -90,7 +90,12 @@
  */
 
 #ifdef WIN32
-# define ROS_ISSUE_BREAK() __debugbreak();
+# include <windows.h>
+# if defined (__MINGW32__)
+#  define ROS_ISSUE_BREAK() DebugBreak();
+# else // MSVC
+#  define ROS_ISSUE_BREAK() __debugbreak();
+# endif
 #elif defined(__powerpc64__)
 # define ROS_ISSUE_BREAK() asm volatile ("tw 31,1,1");
 #elif defined(__i386__) || defined(__ia64__) || defined(__x86_64__)

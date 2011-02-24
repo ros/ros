@@ -35,6 +35,7 @@
 #include <cstdio>
 #include <sstream>
 #include <ros/time.h>
+#include <cstdarg>
 
 // TODO: this header is no longer needed to be included here, but removing it will break various code that incorrectly does not itself include log4cxx/logger.h
 // We should vet all the code using log4cxx directly and make sure the includes/link flags are used in those packages, and then we can remove this include

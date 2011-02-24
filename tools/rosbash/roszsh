@@ -1,5 +1,5 @@
 function _ros_decode_path {
-    local rosname rosdir reldir last
+    local rosname rosdir reldir last rospackdir rosstack_result rosstackdir rosstack_result
 
     if [[ -z $1 ]]; then
         return 0
@@ -28,8 +28,15 @@ function _ros_decode_path {
     elif [[ $rosname == test_results ]]; then
         rosdir=${ROS_ROOT}/test/test_results
     else
-				rosdir=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $rosname 2> /dev/null`
-        if [[ $? != 0 ]]; then
+        rospackdir=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $rosname 2> /dev/null`
+        rospack_result=$?
+        rosstackdir=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack find $rosname 2> /dev/null`
+        rosstack_result=$?
+        if [[ $rospack_result == 0 ]]; then
+           rosdir=$rospackdir
+        elif [[ $rosstack_result == 0 ]]; then
+           rosdir=$rosstackdir
+        else
             rosvals=(${rosname})
             return 1
         fi
@@ -143,23 +150,25 @@ function roscp {
 }
 
 function _roscomplete {
-    local arg opts
+    local arg opts stack_opts
     reply=()
     opts=`export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names`
+    stack_opts=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
     IFS=$'\n'
-    reply=(${=opts})
+    reply=(${=opts} ${=stack_opts})
 		unset IFS
 }
 
 function _roscomplete_sub_dir {
-    local arg opts rosvals sedcmd
+    local arg opts rosvals sedcmd stack_opts
     reply=()
     arg="$1"
     _ros_decode_path ${arg}
     if [[ -z ${rosvals[3]} ]]; then
         opts=`export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names`
+        stack_opts=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
         IFS=$'\n'
-        reply=(${=opts})
+        reply=(${=opts} ${=stack_opts})
         unset IFS
     else
 				if [ -e ${rosvals[2]}${rosvals[3]} ]; then
@@ -183,8 +192,13 @@ function _roscomplete_search_dir {
     reply=()
 		words=(${=BUFFER})
     pkgdir=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find ${words[2]} 2> /dev/null`
-    if [[ $? == 0 ]]; then
+    pkgdir_result=$?
+    stackdir=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack find ${words[2]} 2> /dev/null`
+    stack_result=$?
+    if [[ $pkgdir_result == 0 ]]; then
         opts=`find $pkgdir ${=1} -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+    elif [[ $stack_result == 0 ]] ; then
+        opts=`find $stackdir ${=1} -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
     else
         opts=""
     fi

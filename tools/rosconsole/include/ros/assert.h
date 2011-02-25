@@ -101,8 +101,8 @@
 #elif defined(__i386__) || defined(__ia64__) || defined(__x86_64__)
 # define ROS_ISSUE_BREAK() asm("int $3");
 #else
-# include <cassert>
-# define ROS_ISSUE_BREAK() assert(false);
+# include <stdlib.h>
+# define ROS_ISSUE_BREAK() abort();
 #endif
 
 #ifndef NDEBUG

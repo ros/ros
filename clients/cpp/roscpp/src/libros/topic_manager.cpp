@@ -512,11 +512,23 @@ bool TopicManager::registerSubscriber(const SubscriptionPtr& s, const string &da
     {
       pub = *it;
       const std::string& pub_md5sum = pub->getMD5Sum();
-      if (pub->getName() == s->getName() && md5sumsMatch(pub_md5sum, sub_md5sum) && !pub->isDropped())
-      {
-        self_subscribed = true;
-        break;
-      }
+
+      if (pub->getName() == s->getName() && !pub->isDropped())
+	{
+	  if (!md5sumsMatch(pub_md5sum, sub_md5sum))
+	    {
+	      ROS_ERROR("md5sum mismatch making local subscription to topic %s.",
+			s->getName().c_str());
+	      ROS_ERROR("Subscriber expects type %s, md5sum %s",
+			s->datatype().c_str(), s->md5sum().c_str());
+	      ROS_ERROR("Publisher provides type %s, md5sum %s",
+			pub->getDataType().c_str(), pub->getMD5Sum().c_str());
+	      return false;
+	    }
+
+	  self_subscribed = true;
+	  break;
+	}
     }
   }
 

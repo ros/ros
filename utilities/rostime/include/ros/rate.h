@@ -41,6 +41,8 @@
 
 namespace ros
 {
+class Duration;
+
 /**
  * @class Rate
  * @brief Class to help run loops at a desired frequency
@@ -53,6 +55,7 @@ public:
    * @param  frequency The desired rate to run at in Hz
    */
   Rate(double frequency);
+  explicit Rate(const Duration&);
 
   /**
    * @brief  Sleeps for any leftover time in a cycle. Calculated from the last time sleep, reset, or the constructor was called.
@@ -69,12 +72,12 @@ public:
    * @brief  Get the actual run time of a cycle from start to sleep
    * @return The runtime of the cycle
    */
-  Duration cycleTime();
+  Duration cycleTime() const;
 
   /**
    * @brief Get the expected cycle time -- one over the frequency passed in to the constructor
    */
-  Duration expectedCycleTime() { return expected_cycle_time_; }
+  Duration expectedCycleTime() const { return expected_cycle_time_; }
 
 private:
   Time start_;
@@ -93,6 +96,7 @@ public:
    * @param  frequency The desired rate to run at in Hz
    */
   WallRate(double frequency);
+  explicit WallRate(const Duration&);
 
   /**
    * @brief  Sleeps for any leftover time in a cycle. Calculated from the last time sleep, reset, or the constructor was called.
@@ -109,12 +113,12 @@ public:
    * @brief  Get the actual run time of a cycle from start to sleep
    * @return The runtime of the cycle
    */
-  WallDuration cycleTime();
+  WallDuration cycleTime() const;
 
   /**
    * @brief Get the expected cycle time -- one over the frequency passed in to the constructor
    */
-  WallDuration expectedCycleTime() { return expected_cycle_time_; }
+  WallDuration expectedCycleTime() const { return expected_cycle_time_; }
 
 private:
   WallTime start_;

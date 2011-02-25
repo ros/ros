@@ -86,6 +86,8 @@ public:
   boost::posix_time::time_duration toBoost() const;
 };
 
+struct Rate;
+
 /**
  * \brief Duration representation for use with the Time class.
  *
@@ -103,7 +105,7 @@ public:
   {}
 
   explicit Duration(double t) { fromSec(t); }
-
+  explicit Duration(const Rate&);
   /**
    * \brief sleep for the amount of time specified by this Duration.  If a signal interrupts the sleep, resleeps for the time remaining.
    */
@@ -130,7 +132,7 @@ public:
   {}
 
   explicit WallDuration(double t) { fromSec(t); }
-
+  explicit WallDuration(const Rate&);
   /**
    * \brief sleep for the amount of time specified by this Duration.  If a signal interrupts the sleep, resleeps for the time remaining.
    */

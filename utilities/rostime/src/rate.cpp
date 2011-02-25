@@ -43,7 +43,15 @@ Rate::Rate(double frequency)
 : start_(Time::now())
 , expected_cycle_time_(1.0 / frequency)
 , actual_cycle_time_(0.0)
-{}
+{ }
+
+Rate::Rate(const Duration& d)
+  : start_(Time::now())
+  , expected_cycle_time_(1.0 / d.toSec())
+  , actual_cycle_time_(0.0)
+{ }
+
+
 
 bool Rate::sleep()
 {
@@ -86,7 +94,7 @@ void Rate::reset()
   start_ = Time::now();
 }
 
-Duration Rate::cycleTime()
+Duration Rate::cycleTime() const
 {
   return actual_cycle_time_;
 }
@@ -94,6 +102,12 @@ Duration Rate::cycleTime()
 WallRate::WallRate(double frequency)
 : start_(WallTime::now())
 , expected_cycle_time_(1.0 / frequency)
+, actual_cycle_time_(0.0)
+{}
+
+WallRate::WallRate(const Duration& d)
+: start_(WallTime::now())
+, expected_cycle_time_(1.0 / d.toSec())
 , actual_cycle_time_(0.0)
 {}
 
@@ -138,9 +152,10 @@ void WallRate::reset()
   start_ = WallTime::now();
 }
 
-WallDuration WallRate::cycleTime()
+WallDuration WallRate::cycleTime() const
 {
   return actual_cycle_time_;
 }
+
 
 }

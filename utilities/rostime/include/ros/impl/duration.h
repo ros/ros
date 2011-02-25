@@ -35,6 +35,7 @@
 #define ROSTIME_IMPL_DURATION_H_INCLUDED
 
 #include <ros/duration.h>
+#include <ros/rate.h>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 
 namespace ros {
@@ -185,5 +186,14 @@ namespace ros {
 #endif
   }
 
+  Duration::Duration(const Rate& r) 
+  {
+    fromSec(r.expectedCycleTime().toSec());
+  }
+
+  WallDuration::WallDuration(const Rate& r) 
+  {
+    fromSec(r.expectedCycleTime().toSec());
+  }
 }
 #endif

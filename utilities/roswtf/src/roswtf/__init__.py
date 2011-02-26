@@ -41,22 +41,9 @@ import socket
 import sys
 import traceback
 
-try:
-    import std_msgs.msg
-except ImportError:
-    print """ERROR: ROS has not been built. To fix:
-cd $ROS_ROOT
-make
-"""
-    sys.exit(1)
-
-import roslib; roslib.load_manifest('roswtf')
-
 import roslib.packages
 import roslib.scriptutil
     
-import rospy
-
 def yaml_results(ctx):
     cd = ctx.as_dictionary()
     d = {}
@@ -88,6 +75,13 @@ def print_results(ctx):
                 #print "ERROR:", e.msg
     
 def roswtf_main():
+    try:
+        import std_msgs.msg
+        import rosgraph_msgs.msg
+    except ImportError:
+        print "ERROR: The ROS communication libraries have not been built. To fix:\nrosmake ros_comm"
+        sys.exit(1)
+    
     from roswtf.context import WtfException
     try:
         _roswtf_main()
@@ -221,6 +215,7 @@ def _roswtf_main():
             return
 
         # spin up a roswtf node so we can subscribe to messages
+        import rospy
         rospy.init_node('roswtf', anonymous=True)
 
         online_checks = True

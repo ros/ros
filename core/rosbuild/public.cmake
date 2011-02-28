@@ -1048,19 +1048,10 @@ macro(rosbuild_make_distribution)
 endmacro(rosbuild_make_distribution)
 
 # Compute the number of hardware cores on the machine.  Intended to use for
-# gating tests that have heavy processor requirements. It calls out to
-# Python to do the work (UNIX only)
+# gating tests that have heavy processor requirements. 
+include($ENV{ROS_ROOT}/core/rosbuild/ProcessorCount.cmake)
 macro(rosbuild_count_cores num)
-  execute_process(COMMAND $ENV{ROS_ROOT}/core/rosbuild/tests/count_cores.py
-                  OUTPUT_VARIABLE _cores_out
-                  ERROR_VARIABLE _cores_error
-                  RESULT_VARIABLE _cores_result
-                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(_cores_result)
-    message(FATAL_ERROR "Failed to run count_cores")
-  endif(_cores_result)
-
-  set(${num} ${_cores_out})
+  ProcessorCount(${num})
 endmacro(rosbuild_count_cores)
 
 # Check whether we're running as a VM Intended to use for

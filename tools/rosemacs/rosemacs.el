@@ -103,6 +103,7 @@
 (require 'warnings)
 (require 'time-stamp)
 (require 'ansi-color)
+(require 'rosbag-view-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Parameters
@@ -1454,6 +1455,9 @@ The page delimiter in this buffer matches the start, so you can use forward/back
     (add-to-list 'auto-mode-alist '("\\.urdf" . xml-mode))
     (add-to-list 'auto-mode-alist '("\\.xacro" . xml-mode)))
 
+  ;; rosbag view mode
+  (add-to-list 'auto-mode-alist '("\.bag$" . rosbag-view-mode))  
+
   ;; msg and srv files: for now use gdb-script-mode
   (add-to-list 'auto-mode-alist '("\\.msg\\'" . gdb-script-mode))
   (add-to-list 'auto-mode-alist '("\\.srv\\'" . gdb-script-mode))
@@ -1557,11 +1561,10 @@ The page delimiter in this buffer matches the start, so you can use forward/back
            (when rosemacs/invoked
              (rosemacs/track-nodes val))))
 
+
 (defvar ros-topic-timeout-rate 5 "Number of seconds before info from rostopic hz is considered out-of-date" )
 
 
-
 (provide 'rosemacs)
-
 
 ;;; rosemacs.el ends here

@@ -2,7 +2,7 @@
 # Incomplete
 grammar {
   start = launch
-  launch = element launch { master? & node* & param* & inc* & group* & rosparam* & env* }
+  launch = element launch { master? & node* & param* & arg* & inc* & group* & rosparam* & env* }
   group = element group { attribute ns { text }?, ( node* & param* & inc* ) }
   master = element master { attribute auto { text } }
   node = element node {
@@ -26,6 +26,11 @@ grammar {
             attribute command { text }? &
             attribute type { text }?
           }
+  arg = element arg {
+            attribute name { text } &
+            attribute value { text }? &
+            attribute default { text }?
+        }
   rosparam = element rosparam {
                attribute command { text }?,
                attribute file { text }?,

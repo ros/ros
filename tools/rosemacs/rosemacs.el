@@ -1433,7 +1433,8 @@ The page delimiter in this buffer matches the start, so you can use forward/back
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun set-rosemacs-shell-hooks ()
-  (add-hook 'comint-input-filter-functions 'ros-directory-tracker nil t)
+  (when ros-command-shell-directory-tracking
+    (add-hook 'comint-input-filter-functions 'ros-directory-tracker nil t))
   (add-hook 'comint-dynamic-complete-functions 'comint-dynamic-complete-ros-package nil t)
   (add-hook 'comint-dynamic-complete-functions 'comint-dynamic-complete-ros-topic nil t)
   (add-hook 'comint-dynamic-complete-functions 'comint-dynamic-complete-ros-node nil t))
@@ -1560,6 +1561,11 @@ The page delimiter in this buffer matches the start, so you can use forward/back
            (set-default s val)
            (when rosemacs/invoked
              (rosemacs/track-nodes val))))
+
+(defcustom ros-command-shell-directory-tracking t
+  "Whether to track directories in shell mode given roscd, rospd, etc."
+  :type 'boolean
+  :group 'rosemacs)
 
 
 (defvar ros-topic-timeout-rate 5 "Number of seconds before info from rostopic hz is considered out-of-date" )

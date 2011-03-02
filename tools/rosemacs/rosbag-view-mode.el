@@ -1,5 +1,5 @@
 (define-derived-mode rosbag-view-mode
-  view-mode "Rosbag view mode"
+  fundamental-mode "Rosbag view mode"
   "Major mode for viewing ROS bag files.  See view-mode documentation for more info.
 
 \\{rosbag-view-mode-map}"
@@ -9,9 +9,10 @@
       (message "Calling rosbag info")
       (call-process "rosbag" nil (current-buffer) nil
                     "info" f)
-      (set-buffer-modified-p nil))))
-
-
+      (set-buffer-modified-p nil))
+    (view-mode)
+    (set-visited-file-name nil t)
+    ))
 
 
 

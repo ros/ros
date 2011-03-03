@@ -2,8 +2,9 @@
 # Incomplete
 grammar {
   start = launch
-  launch = element launch { master? & node* & param* & arg* & inc* & group* & rosparam* & env* }
-  group = element group { attribute ns { text }?, ( node* & param* & inc* ) }
+  launch = element launch { master? & node* & param* & inc* & group* & rosparam* & env* & arg* }
+  group = element group { attribute ns { text }? & attribute if { text }? & attribute unless { text } &
+                         ( node* & param* & inc* ) }
   master = element master { attribute auto { text } }
   node = element node {
            attribute name { text } &
@@ -14,7 +15,7 @@ grammar {
            attribute machine { text }? &
            attribute output { text }? &
            attribute ns { text }? &
-           ( param* & remap* & rosparam* )
+           ( param* & remap* & rosparam* & group* )
          }
   env = element env {
            attribute name { text } &
@@ -24,7 +25,9 @@ grammar {
             attribute name { text } &
             attribute value { text }? &
             attribute command { text }? &
-            attribute type { text }?
+            attribute if { text }? & 
+            attribute unless { text }? &
+            attribute type { text }? 
           }
   arg = element arg {
             attribute name { text } &
@@ -32,14 +35,25 @@ grammar {
             attribute default { text }?
         }
   rosparam = element rosparam {
-               attribute command { text }?,
-               attribute file { text }?,
-               attribute ns { text }?,
-               attribute param { text }?,
+               attribute command { text }? &
+               attribute file { text }? &
+               attribute ns { text }? &
+               attribute param { text }? &
+               attribute if { text }? & 
+               attribute unless { text }? &
                ( text )
              }
-  remap = element remap { attribute from { text }, attribute to { text } }          
+ 
+  arg = element arg {
+               attribute name { text },
+               attribute default { text }?,
+               attribute value { text }? }
+
+  remap = element remap { attribute from { text }, attribute to { text }, 
+                          attribute unless { text }*, attribute if { text }* }          
   inc = element include {
-          attribute file { text }
+          attribute file { text },
+          ( arg* )
+          
         }
 }

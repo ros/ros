@@ -1262,11 +1262,14 @@ q kills the buffer and process."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun ros-make (package-name)
+  "Do a rosmake in a *compilation* buffer.  Prompts for package.  With prefix arg, allows editing rosmake command before starting."
   (interactive (list (ros-completing-read-package "Enter package to make" nil ros-completion-function)))
   (save-excursion
     (message "Compilation started")
-    (compile (format "rosmake %s" package-name) t)))
-
+    (let ((command (format "rosmake -v %s" package-name)))
+      (when current-prefix-arg
+        (setq command (read-from-minibuffer "Confirm: " command )))
+      (compile command t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; roslaunch

@@ -53,7 +53,7 @@ import roslib.exceptions
 
 class SilenceableXMLRPCRequestHandler(SimpleXMLRPCRequestHandler):
     def log_message(self, format, *args):
-        if DEBUG:
+        if 0:
             SimpleXMLRPCRequestHandler.log_message(self, format, *args)
     
 class ThreadingXMLRPCServer(SocketServer.ThreadingMixIn, SimpleXMLRPCServer):

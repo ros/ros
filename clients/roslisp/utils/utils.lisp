@@ -257,10 +257,27 @@ Note that despite the name, this is not like with-accessors or with-slots in tha
   (car l))
 
 (defun wait-until-ready (l)
-  (let ((current-time (get-internal-real-time))
-	(time-to-run (time-to-run l)))
+  ;; Sbcl's sleep does not respect deadlines which causes severe
+  ;; problems with CRAM. We don't use it directly. We explicitly take
+  ;; into account deadlines.
+  (let* ((current-time (get-internal-real-time))
+         (time-to-run (time-to-run l))
+         (deadline-seconds sb-impl::*deadline-seconds*)
+         (stop-time (- time-to-run current-time)))
     (when (< current-time time-to-run)
-      (sleep (/ (- time-to-run current-time) internal-time-units-per-second)))))
+      (tagbody
+         :retry
+         (cond ((or (not deadline-seconds)
+                    (> deadline-seconds time-to-run))
+                (sleep (/ stop-time internal-time-units-per-second)))
+               (t
+                (sleep deadline-seconds)
+                (sb-sys:signal-deadline)
+                (setq deadline-seconds sb-impl::*deadline-seconds*)
+                (setf time-to-run (/ (float (- stop-time (get-internal-real-time)) 0.0d0)
+                                     (float internal-time-units-per-second 0.0d0)))
+                (when (plusp time-to-run)
+                  (go :retry))))))))
 
 (defun run-and-increment-delay (l d)
   (let ((next-time (+ (time-to-run l) (* d internal-time-units-per-second))))

@@ -1279,10 +1279,14 @@ q kills the buffer and process."
 (make-variable-buffer-local 'ros-launch-path)
 (defvar ros-launch-filename nil "The file being launched")
 (make-variable-buffer-local 'ros-launch-filename)
+(defvar ros-launch-cmd nil "The roslaunch command.")
+(make-variable-buffer-local 'ros-launch-cmd)
+(defvar ros-launch-args nil "The arguments to roslaunch")
+(make-variable-buffer-local 'ros-launch-args)
 
-(defun ros-launch (package-name &optional other-window)
+(defun ros-launch (package-name &optional other-window edit-command)
   "Launch a ros launch file in a separate buffer.  See ros-launch-mode for details."
-  (interactive (list (ros-completing-read-pkg-file "Enter ros path: ")))
+  (interactive (list (ros-completing-read-pkg-file "Enter ros path: ") nil current-prefix-arg))
   (multiple-value-bind (package dir-prefix dir-suffix) (parse-ros-file-prefix package-name)
     (let* ((package-dir (ros-package-dir package))
            (path (if dir-prefix (concat package-dir dir-prefix dir-suffix) package-dir)))
@@ -1290,17 +1294,26 @@ q kills the buffer and process."
           (let ((name (format "roslaunch:%s/%s" package dir-suffix)))
             (if (rosemacs/contains-running-process name)
                 (warn "Roslaunch buffer %s already exists: not creating a new one." name)
-              (let ((buf (get-buffer-create name)))
-                (save-excursion
-                  (set-buffer buf)
-                  (comint-mode)
-                  (setq ros-launch-path path)
-                  (setq ros-launch-filename dir-suffix)
-                  (ros-launch-mode 1)
-                  (rosemacs/relaunch (current-buffer)))
-                
-                (if other-window (display-buffer buf) (switch-to-buffer buf))
-                buf)))
+              (let* ((default-roslaunch-command (format "roslaunch %s %s" package dir-suffix))
+                     (roslaunch-command
+                      (split-string
+                       (if edit-command
+                           (read-string "Enter roslaunch command: " default-roslaunch-command
+                                        nil default-roslaunch-command)
+                         default-roslaunch-command))))
+                (let ((buf (get-buffer-create name)))
+                  (save-excursion
+                    (set-buffer buf)
+                    (comint-mode)
+                    (setq ros-launch-cmd (first roslaunch-command)
+                          ros-launch-args (rest roslaunch-command))
+                    (message "cmd is %s and args are %s" ros-launch-cmd ros-launch-args)
+                    (setq ros-launch-path path)
+                    (setq ros-launch-filename dir-suffix)
+                    (ros-launch-mode 1)
+                    (rosemacs/relaunch (current-buffer)))
+                  (if other-window (display-buffer buf) (switch-to-buffer buf))
+                  buf))))
         (error "Did not find %s in the ros package list." package-name)))))
 
 (defun ros-launch-current ()
@@ -1335,7 +1348,7 @@ q kills the buffer and process."
       (save-excursion
         (set-buffer buf)
         (erase-buffer)
-        (let ((proc (start-process (buffer-name buf) buf "roslaunch" ros-launch-path)))
+        (let ((proc (apply 'start-process (buffer-name buf) buf ros-launch-cmd ros-launch-args)))
           (set-process-filter proc 'comint-output-filter))
         (rosemacs/add-event (format "Ros launch of %s" ros-launch-path))))))
 

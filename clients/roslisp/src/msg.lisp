@@ -40,7 +40,7 @@
 
 (in-package roslisp)
 
-
+(require 'sb-cltl2)
 
 (defmethod deserialize ((msg symbol) str)
   (let ((m (make-instance msg)))
@@ -137,61 +137,102 @@
       (error "Could not find field ~a in ~a" f l))
     (setf (cdr pair) v)))
 
+(defun msg-slot-symbol (msg slot &optional
+                        (pkg (symbol-package (type-of msg))))
+  "Returns the correct symbol for `slot' that can be used to call
+  SLOT-VALUE on `msg'. `slot' is either a string or a symbol. The
+  return value is a symbol in `msg's package"
+  (declare (type (or string symbol) slot))
+  (let ((symbol-name (etypecase slot
+                       (string (string-upcase slot))
+                       (symbol (symbol-name slot)))))
+    (intern symbol-name pkg)))
 
-(defun normalize-binding (b)
-  (if (symbolp b)
-      (list b (list b))
-      (progn
-        (assert (and (listp b) (= 2 (length b))))
-        (if (listp (second b))
-            b
-            (list (first b) (list (second b)))))))
+(defun msg-slot-value (msg slot)
+  "Like slot-value but this function ignores the package of `slot' and
+  infers it by using the package of `msg'"
+  (slot-value msg (msg-slot-symbol msg slot)))
 
-(defun is-message-package (p)
-  (let* ((name (package-name p))
-         (l (length name)))
-    (equal (string-upcase (subseq name (- l 4))) "-MSG")))
+(define-compiler-macro msg-slot-value (&whole expr msg slot &environment env)
+  (let ((msg-type (when (symbolp msg)
+                    (cdr (assoc
+                          'type
+                          (nth-value
+                           2 (sb-cltl2:variable-information msg env)))))))
+    (if (and msg-type (subtypep msg-type 'roslisp-msg-protocol:ros-message))
+        (let* ((slot-symbol (msg-slot-symbol nil slot (symbol-package msg-type)))
+               (slot-type (msg-slot-type msg-type slot-symbol)))
+          `(the ,slot-type (slot-value ,msg ',slot-symbol)))
+        expr)))
 
-(defun get-msg-pkg (bindings)
-  (let ((vars (apply #'append (mapcar #'second bindings))))
-    (and vars
-         (let ((p (symbol-package (first vars))))
-           (when (is-message-package p)
-             (unless (find-if #'(lambda (s) (not (eq (symbol-package s) p))) vars)
-               p))))))
+(defun msg-slot-type (class-name slot)
+  (let ((class (find-class class-name)))
+    (unless (sb-mop:class-finalized-p class)
+      (sb-mop:finalize-inheritance class))
+    (let* ((slot-symbol (msg-slot-symbol nil slot
+                                         (symbol-package class-name)))
+           (slot-definition (find slot-symbol (sb-mop:class-slots class)
+                                  :key #'sb-mop:slot-definition-name)))
+      (when slot-definition
+        (sb-mop:slot-definition-type slot-definition)))))
 
-(defun normalize-bindings (b)
-  (mapcar #'normalize-binding b))
+(defun make-field-reader-with-type (value-sym type field-definition)
+  (if (and type field-definition (subtypep type 'roslisp-msg-protocol:ros-message))
+      (make-field-reader-with-type
+       `(slot-value ,value-sym
+                    ',(msg-slot-symbol
+                       nil (car field-definition)
+                       (symbol-package type)))
+       (msg-slot-type type (car field-definition))
+       (cdr field-definition))
+      value-sym))
 
-(defun chain-slot-readers (binding msg)
-  (labels ((helper (b)
-             (if b
-                 (list (car b) (helper (cdr b)))
-                 msg
-                 )
-             ))
-    (list (car binding) (helper (cadr binding)))))
+(defun make-field-reader (value-sym field-definition)
+  (if field-definition
+      (make-field-reader
+       `(msg-slot-value ,value-sym ',(car field-definition))
+       (cdr field-definition))
+      value-sym))
 
-(defmacro bind-fields (bindings m &body body)
-  "Same syntax as with-fields, but requires that all the field specifiers in the bindings belong to the package of the message, e.g. in (bind-fields (a (b c)) m ...), assuming M is a message from my_ros_package, the symbols 'a and 'c must belong to my_ros_package-msg.  Uses this fact to expand to more efficient code than with-fields."
-  (setq bindings (normalize-bindings bindings))
-  (assert (get-msg-pkg bindings) nil
-          "bind-fields requires all fields in ~a to belong to a ros message package"
-          bindings)
-  (let ((msg (gensym)))
-    `(let ((,msg ,m))
-       (let ,(mapcar #'(lambda (b) (chain-slot-readers b msg)) bindings) ,@body))))
+(defun field-reader-type (msg-type field-definition)
+  (when msg-type
+    (if (cdr field-definition)
+        (field-reader-type (msg-slot-type msg-type (car field-definition))
+                           (cdr field-definition))
+        (msg-slot-type msg-type (car field-definition)))))
 
+(defun make-field-definitions (defs msg-sym &optional msg-type)
+  (flet ((make-def (name def)
+           `(,name ,(if msg-type
+                        (make-field-reader-with-type
+                         msg-sym msg-type def)
+                        (make-field-reader msg-sym def)))))
+    (mapcar-with-field-definition #'make-def defs)))
 
+(defun mapcar-with-field-definition (function defs)
+  (flet ((ensure-list (x)
+           (if (listp x) x (list x))))
+    (mapcar (lambda (def)
+              (multiple-value-bind (name def)
+                  (if (listp def)
+                      (values (first def) (reverse (ensure-list (second def))))
+                      (values def (ensure-list def)))
+                (funcall function name def)))
+            defs)))
 
-(defmacro with-fields (bindings m &body body)
+(defmacro with-fields (bindings msg &body body &environment env)
   "with-fields BINDINGS MSG &rest BODY
 
 A macro for convenient access to message fields.
 
-BINDINGS is an unevaluated list of bindings.  Each binding is like a let binding (FOO BAR), where FOO is a symbol naming a variable that will be bound to the field value.  BAR describes the field.  In the simplest case it's just a symbol naming the field.  It can also be a list, e.g. (QUX GAR).  This means the field QUX of the field GAR of the message.  Finally, the entire binding can be a symbol FOO, which is a shorthand for (FOO FOO).  
-MSG evaluates to a message.
-BODY is the body, surrounded by an implicit progn.
+BINDINGS is an unevaluated list of bindings.  Each binding is like a
+let binding (FOO BAR), where FOO is a symbol naming a variable that
+will be bound to the field value.  BAR describes the field.  In the
+simplest case it's just a symbol naming the field.  It can also be a
+list, e.g. (QUX GAR).  This means the field QUX of the field GAR of
+the message.  Finally, the entire binding can be a symbol FOO, which
+is a shorthand for (FOO FOO).  MSG evaluates to a message.  BODY is
+the body, surrounded by an implicit progn.
 
 As an example, instead of (let ((foo (pkg:foo-val (pkg:bar-val m)))
       (baz (pkg:baz-val m)))
@@ -200,29 +241,32 @@ As an example, instead of (let ((foo (pkg:foo-val (pkg:bar-val m)))
 you can use (with-fields ((foo (foo bar)) baz)
 		(stuff))
 
-Efficiency: since the message type of ``m'' may not be known at macroexpansion time, with-fields converts the message to a list at runtime.  If, however, it is the case that all the field specifiers actually belong to a ros message package (for now, one whose name ends with -MSG), then with-fields calls bind-fields, which is more efficient, since it directly calls the slot readers.  You can do a macroexpand to figure out which case is happening: if the macroexpansion includes a call to ros-message-to-list, this is the less efficient version.
-"
-
-  (setq bindings (normalize-bindings bindings))
-  (if (get-msg-pkg bindings)
-
-      ;; If we can, use the more efficient version
-      `(bind-fields ,bindings ,m ,@body)
-
-      ;; Else use the less efficient version that converts to a list
-      (let ((msg-list (gensym)))
-        ;; Once message-to-list is cached, no need to call message-to-list here (just in extract-nested-field)
-        `(let ((,msg-list (ros-message-to-list ,m)))
-           (declare (ignorable ,msg-list))
-           (let 
-               ,(mapcar #'(lambda (binding)
-                            (when (symbolp binding) (setq binding (list binding binding)))
-                            (symbol-macrolet ((field (second binding)))
-                              (setf field (mapcar #'convert-to-keyword (if (symbolp field) (list field) field))))
-                            `(,(first binding) (extract-nested-field ,msg-list ',(reverse (second binding)))))
-                 bindings)
-             ,@body)))))
-
+Efficiency: since the message type of ``m'' may not be known at
+macroexpansion time, with-fields converts the message to a list at
+runtime.  If, however, the message type is declared, with-fields makes
+use of the declaration to directly expand to the slot readers. If the
+message type is not declared, the macro expands to calls to
+MSG-SLOT-VALUE which needs to infer the correct package at runtime
+which causes more consing and is less performant."
+  
+  (let ((msg-type (when (symbolp msg)
+                    (cdr (assoc 'type (nth-value 2 (sb-cltl2:variable-information msg env))))))
+        (msg-sym (gensym "MSG")))
+    (declare (type (or symbol nil) msg-type))
+    `(let ((,msg-sym ,msg))
+       (declare (ignorable ,msg-sym))
+       (let ,(make-field-definitions bindings msg-sym
+              (when (and msg-type
+                         (subtypep
+                          msg-type
+                          'roslisp-msg-protocol:ros-message))
+                msg-type))
+         ,@(when msg-type
+             (mapcar-with-field-definition
+              (lambda (name def)
+                `(declare (type ,(field-reader-type msg-type def) ,name)))
+              bindings))
+         ,@body))))
 
 (defun read-ros-message (stream)
   (list-to-ros-message (read stream)))

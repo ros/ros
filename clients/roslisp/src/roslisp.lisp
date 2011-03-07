@@ -53,6 +53,7 @@
    :std_srvs-srv
    )
   (:export
+   :msg-slot-value
    :with-fields
    :make-message
    :make-msg

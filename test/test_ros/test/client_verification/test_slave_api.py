@@ -409,7 +409,6 @@ class TestSlaveApi(unittest.TestCase):
         protocols = [[TCPROS]]
 
         publications = node.getPublications(self.caller_id)
-        print "node publications", publications
         
         topics = self.required_pubs.keys()
         probe_topic = topics[0] if topics else None

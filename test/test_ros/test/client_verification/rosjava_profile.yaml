@@ -1,0 +1,4 @@
+pubs: 
+  '/chatter_out': std_msgs/String
+  '/int64': std_msgs/Int64
+subs: {}

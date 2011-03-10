@@ -49,8 +49,8 @@
     <depend package="rosgraph_msgs"/>
     <msgs></msgs>
     <export>
-      <roslang cmake="${prefix}/cmake/roscpp.cmake"/>
-      <include_dir>${roscpp_PACKAGE_PATH}/include</include_dir>
+      <roslang cmake="${roscpp_PACKAGE_DIR}/cmake/rosbuild2.cmake"/>
+      <include_dir>${roscpp_PACKAGE_DIR}/include</include_dir>
       <lib>ros</lib>
     </export>
   </rosbuild2>

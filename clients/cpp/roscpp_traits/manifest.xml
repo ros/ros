@@ -18,6 +18,16 @@ This package is a component of <a href="http://www.ros.org/wiki/roscpp">roscpp</
     <cpp cflags="-I${prefix}/include"/>
   </export>
 
+  <rosbuild2>
+    <depend package="cpp_common"/>
+
+    <export>
+      <include_dir>${roscpp_traits_PACKAGE_DIR}/include</include_dir>
+    </export>
+
+    <msgs></msgs>
+
+  </rosbuild2>
 </package>
 
 

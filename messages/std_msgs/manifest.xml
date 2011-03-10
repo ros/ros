@@ -16,5 +16,8 @@ std_msgs contains common message types representing primitive data types and oth
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
+  <rosbuild2>
+    <msgs></msgs>
+  </rosbuild2>
 </package>
 

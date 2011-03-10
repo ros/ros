@@ -19,8 +19,10 @@ This package is a component of <a href="http://www.ros.org/wiki/roscpp">roscpp</
   </export>
 
   <rosbuild2>
-    <include_dir>${cpp_common_PACKAGE_DIR}/include</include_dir>
-    <lib>cpp_common</lib>
+    <export>
+      <include_dir>${cpp_common_PACKAGE_DIR}/include</include_dir>
+      <lib>cpp_common</lib>
+    </export>
   </rosbuild2>
 </package>
 

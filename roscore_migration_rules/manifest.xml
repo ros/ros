@@ -13,8 +13,6 @@
   <export>
     <rosbagmigration rule_file="migration_rules/roslib_msgs.bmr"/>
   </export>
-
-
 </package>
 
 

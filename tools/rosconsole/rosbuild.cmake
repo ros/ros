@@ -26,7 +26,7 @@ endif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
 rosbuild_add_gtest(test/thread_test test/thread_test.cpp)
 target_link_libraries(test/thread_test ${PROJECT_NAME})
 
-#rosbuild_add_executable(speed_test test/speed_test.cpp)
-#target_link_libraries(speed_test ${PROJECT_NAME})
-#set_target_properties(speed_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/test)
+# rosbuild_add_executable(speed_test test/speed_test.cpp)
+# target_link_libraries(speed_test ${PROJECT_NAME})
+# set_target_properties(speed_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/test)
 

@@ -8,7 +8,8 @@ endif()
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 #set(ROS_BUILD_TYPE RelWithDebInfo)
-#set the default path for built executables to the "bin" directory
-#set the default path for built libraries to the "lib" directory
-rosbuild_add_library(${PROJECT_NAME} src/serialization.cpp)
+rosbuild_add_gtest(test/test_permuter test/test_permuter.cpp)
+rosbuild_add_rostest(test/hztest0.test)
+rosbuild_add_rostest(test/hztest.test)
+rosbuild_add_rostest(test/clean_master.test)
 

@@ -1,5 +1,5 @@
 if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/package.cmake)
-   include(${CMAKE_CURRENT_BINARY_DIR}/package.cmake)
+  include(${CMAKE_CURRENT_BINARY_DIR}/package.cmake)
 endif()
 rosbuild_add_library(XmlRpc 
   src/XmlRpcClient.cpp 
@@ -33,4 +33,4 @@ foreach(header
     RENAME ${base}
     )
 endforeach()
- 
+

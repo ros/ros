@@ -10,5 +10,6 @@ endif()
 #set(ROS_BUILD_TYPE RelWithDebInfo)
 #set the default path for built executables to the "bin" directory
 #set the default path for built libraries to the "lib" directory
-rosbuild_add_library(${PROJECT_NAME} src/serialization.cpp)
+rosbuild_add_pyunit(test/test_roswtf_command_line_offline.py)
+rosbuild_add_rostest(test/roswtf.test)
 

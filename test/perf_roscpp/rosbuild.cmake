@@ -10,5 +10,12 @@ endif()
 #set(ROS_BUILD_TYPE RelWithDebInfo)
 #set the default path for built executables to the "bin" directory
 #set the default path for built libraries to the "lib" directory
-rosbuild_add_library(${PROJECT_NAME} src/serialization.cpp)
+#uncomment if you have defined messages
+#uncomment if you have defined services
+rosbuild_add_boost_directories()
+#common commands for building c++ executables and libraries
+rosbuild_add_library(${PROJECT_NAME} src/intra.cpp src/inter.cpp)
+rosbuild_link_boost(${PROJECT_NAME} thread)
+rosbuild_add_executable(intra_suite src/intra_suite.cpp)
+target_link_libraries(intra_suite ${PROJECT_NAME})
 

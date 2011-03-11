@@ -10,5 +10,4 @@ endif()
 #set(ROS_BUILD_TYPE RelWithDebInfo)
 #set the default path for built executables to the "bin" directory
 #set the default path for built libraries to the "lib" directory
-rosbuild_add_library(${PROJECT_NAME} src/serialization.cpp)
 

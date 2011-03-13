@@ -242,7 +242,7 @@ pkg-config:
   opensuse: pkg-config 
   fedora: pkgconfig
   rhel: pkgconfig
-  arch: pkgconfig
+  arch: pkg-config
   macports: pkgconfig
   gentoo: dev-util/pkgconfig
   cygwin: pkg-config

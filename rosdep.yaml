@@ -16,8 +16,7 @@ python-yaml:
   fedora: PyYAML
   rhel: PyYAML
   centos: PyYAML
-  arch: |
-    if ! pacman -Q libyaml python-yaml; then yaourt -S libyaml python-yaml; fi
+  arch: python-yaml
   macports: py26-yaml
   gentoo: pyyaml
   cygwin: |

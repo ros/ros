@@ -50,7 +50,7 @@ python-imaging:
   opensuse: python-imaging 
   fedora: python-imaging
   rhel: python-imaging
-  arch: pil
+  arch: python-imaging
   macports: py26-pil
   gentoo: dev-python/imaging
   freebsd: py26-imaging
@@ -60,7 +60,7 @@ python-numpy:
   fedora: numpy
   opensuse: python-numpy 
   rhel: python-numpy
-  arch: python-numpy
+  arch: python2-numpy
   macports: py26-numpy
   gentoo: dev-python/numpy
   freebsd: py-numpy

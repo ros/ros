@@ -407,7 +407,11 @@
   (unless ros-messages
     (cache-ros-message-locations))
   (let* ((ros-messages-list (map 'list 'identity ros-messages))
-         (result (funcall ros-completion-function prompt
+         (result (funcall ros-completion-function
+                          (concatenate 'string prompt
+                                       (if (member default ros-messages-list)
+                                           (format " (default %s): " default)
+                                         ": "))
                           (map 'list (lambda (m pkg)
                                        (if (> (count m ros-messages-list :test 'equal) 1)
                                            (format "%s (%s)" m pkg)
@@ -428,7 +432,11 @@
   (unless ros-services
     (cache-ros-service-locations))
   (let* ((ros-services-list (map 'list 'identity ros-services))
-         (result (funcall ros-completion-function prompt
+         (result (funcall ros-completion-function
+                          (concatenate 'string prompt
+                                       (if (member default ros-services-list)
+                                           (format " (default %s): " default)
+                                         ": "))
                           (map 'list (lambda (m pkg)
                                        (if (> (count m ros-services-list :test 'equal) 1)
                                            (format "%s (%s)" m pkg)
@@ -449,7 +457,11 @@
   (unless ros-actions
     (cache-ros-action-locations))
   (let* ((ros-actions-list (map 'list 'identity ros-actions))
-         (result (funcall ros-completion-function prompt
+         (result (funcall ros-completion-function
+                          (concatenate 'string prompt
+                                       (if (member default ros-actions-list)
+                                           (format " (default %s): " default)
+                                         ": "))
                           (map 'list (lambda (m pkg)
                                        (if (> (count m ros-actions-list :test 'equal) 1)
                                            (format "%s (%s)" m pkg)
@@ -467,7 +479,12 @@
       action)))
 
 (defun ros-completing-read-topic (prompt &optional default)
-  (funcall ros-completion-function prompt (map 'list #'identity ros-all-topics)
+  (funcall ros-completion-function
+           (concatenate 'string prompt
+                        (if (member default (map 'list 'identity ros-all-topics))
+                            (format " (default %s): " default)
+                          ": "))
+           (map 'list #'identity ros-all-topics)
            nil nil nil nil (when (member default (map 'list 'identity ros-all-topics))
                              default)))
 
@@ -508,9 +525,7 @@
 (defun find-ros-message (message)
   "Open definition of a ros message.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-message
-                      (if (current-word t t)
-                          (format "Enter message name (default %s): " (current-word t t))
-                        "Enter message name: ")
+                      "Enter message name"
                       (current-word t t))))
   (let* ((p+m (split-string message "/"))
          (p (if (cdr p+m)
@@ -527,9 +542,7 @@
 (defun find-ros-service (service)
   "Open definition of a ros service.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-service
-                      (if (current-word t t)
-                          (format "Enter service name (default %s): " (current-word t t))
-                        "Enter service name: ")
+                      "Enter service name"
                       (current-word t t))))
   (let* ((p+m (split-string service "/"))
          (p (if (cdr p+m)
@@ -546,9 +559,7 @@
 (defun find-ros-action (action)
   "Open definition of a ros action.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-action
-                      (if (current-word t t)
-                          (format "Enter action name (default %s): " (current-word t t))
-                        "Enter action name: ")
+                      "Enter action name"
                       (current-word t t))))
   (let* ((p+m (split-string action "/"))
          (p (if (cdr p+m)
@@ -582,9 +593,7 @@
 (defun view-ros-message (message)
   "Open definition of a ros message in view mode.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-message
-                      (if (current-word t t)
-                          (format "Enter message name (default %s): " (current-word t t))
-                        "Enter message name: ")
+                      "Enter message name"
                       (current-word t t))))
   (let ((max-mini-window-height 0))
     (shell-command (format "rosmsg show %s" message))))
@@ -592,9 +601,7 @@
 (defun view-ros-service (service)
   "Open definition of a ros service in view mode.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-service
-                      (if (current-word t t)
-                          (format "Enter service name (default %s): " (current-word t t))
-                        "Enter service name: ")
+                      "Enter service name"
                       (current-word t t))))
   (let ((max-mini-window-height))
     (shell-command (format "rossrv show %s" service))))
@@ -795,9 +802,7 @@ parameter."
   "Create a new buffer in which rostopic echo is done on the given topic (read interactively, with tab-completion)"
   (interactive (list (let ((word (current-word)))
                        (ros-completing-read-topic
-                        (if word
-                            (format "Enter topic name (default %s): " word)
-                          "Enter topic name: ")
+                        "Enter topic name"
                         word))))
   (let* ((topic-full-name (if (string-match "^/" topic) topic (concat "/" topic)))
          (buffer-name (concat "*rostopic:" topic-full-name "*"))
@@ -809,9 +814,7 @@ parameter."
   "Print info about topic, using rostopic info"
   (interactive (list (let ((word (current-word)))
                        (ros-completing-read-topic
-                        (if word
-                            (format "Enter topic name (default %s): " word)
-                          "Enter topic name: ")
+                        "Enter topic name"
                         word))))
   (let* ((topic-full-name (if (string-match "^/" topic) topic (concat "/" topic)))
          (buffer-name (format "*rostopic-info:%s" topic))

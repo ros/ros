@@ -1,5 +1,5 @@
 # -*- mode: snippet -*-
-# name: willow header file with copyright, include guards
+# name: Ros source file
 # expand-env: ((pkg (ros-package-for-buffer (current-buffer) t)) (fname (file-name-nondirectory (file-name-sans-extension (buffer-file-name (current-buffer))))))
 # --
 /**
@@ -10,8 +10,7 @@
  * \author ${2:AUTHOR}
  */
 
-#ifndef `(upcase pkg)`_`(upcase fname)`_H
-#define `(upcase pkg)`_`(upcase fname)`_H
+#include <${3:INCLUDES}>
 
 namespace `pkg`
 {
@@ -19,5 +18,3 @@ namespace `pkg`
 $0
 
 } // namespace
-
-#endif // include guard

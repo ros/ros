@@ -316,6 +316,17 @@
 ;; Completion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun current-ros-word (&optional package)
+  "wraps (current-word) from simple.el to pick what is most likely a package, topic, message or action name"
+  (let* ((word (current-word nil nil)) ;; neither strict nor just the symbol
+        (index (search "/" word :from-end t)))
+    ;; E.G. navp_action/nav_actionFeedback -> nav_actionFeedback
+    (if index
+        (if package
+            (subseq word 0 index)
+            (subseq word (1+ index)))
+      word)))
+
 (setq topic-completor (dynamic-completion-table (lambda (str) (rosemacs-bsearch str ros-all-topics))))
 (setq node-completor (dynamic-completion-table (lambda (str) (rosemacs-bsearch str rosemacs/nodes-vec))))
 (setq ros-package-completor 
@@ -530,7 +541,7 @@
   "Open definition of a ros message.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-message
                       "Enter message name"
-                      (current-word t t))))
+                      (current-ros-word))))
   (let* ((p+m (split-string message "/"))
          (p (if (cdr p+m)
                 (car p+m)
@@ -547,7 +558,7 @@
   "Open definition of a ros service.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-service
                       "Enter service name"
-                      (current-word t t))))
+                      (current-ros-word))))
   (let* ((p+m (split-string service "/"))
          (p (if (cdr p+m)
                 (car p+m)
@@ -577,9 +588,10 @@
 ;;    (has-action-message-suffix message-name)
 ;;    message-name))
 
+
 (defun find-ros-action (action)
   "Open definition of a ros action. If used interactively, tab completion will work."
-  (interactive (let* ((word (current-word t t))
+  (interactive (let* ((word (current-ros-word))
                       (prefix (action-message-prefix word))
                       ;; fallback if someone named message ...Goal, also add original word
                       (words (if prefix
@@ -621,7 +633,7 @@
   "Open definition of a ros message in view mode.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-message
                       "Enter message name"
-                      (current-word t t))))
+                      (current-ros-word))))
   (let ((max-mini-window-height 0))
     (shell-command (format "rosmsg show %s" message))))
 
@@ -629,7 +641,7 @@
   "Open definition of a ros service in view mode.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-service
                       "Enter service name"
-                      (current-word t t))))
+                      (current-ros-word))))
   (let ((max-mini-window-height))
     (shell-command (format "rossrv show %s" service))))
 

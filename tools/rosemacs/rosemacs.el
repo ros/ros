@@ -453,10 +453,14 @@
         (concatenate 'string package "/" service)
       service)))
 
-(defun ros-completing-read-action (prompt &optional default)
+(defun ros-completing-read-action (prompt &optional defaults)
+  "asks user for ROS action, allows multiple defaults e.g. MyGoal, MyGoalGoal"
   (unless ros-actions
     (cache-ros-action-locations))
   (let* ((ros-actions-list (map 'list 'identity ros-actions))
+         (default (if (atom defaults)
+                      defaults
+                      (loop for x in defaults when (member x ros-actions-list) return x)))
          (result (funcall ros-completion-function
                           (concatenate 'string prompt
                                        (if (member default ros-actions-list)
@@ -556,11 +560,34 @@
         (error "Could not find directory corresponding to package %s" p))
       (find-file (concat dir "/srv/" m ".srv")))))
 
+(defun action-message-prefix (message-name)
+  "if message-name has an action suffix, returns prefix, else nil"
+  (loop for suffix in '("ActionGoal" "ActionFeedback" "ActionResult"
+                        "Goal" "Feedback" "Result" "Action"
+                        )
+         for x = (let ((index (search suffix message-name :from-end t)))
+                   (when (and index
+                              (= index (- (length message-name) (length suffix))))
+                     index))
+         when (integerp x) return (subseq message-name 0 x)))
+
+;; (defun action-message-to-action (message-name)
+;;   "removes a Goal, Result or Feedback Suffix"
+;;   (or
+;;    (has-action-message-suffix message-name)
+;;    message-name))
+
 (defun find-ros-action (action)
-  "Open definition of a ros action.  If used interactively, tab completion will work."
-  (interactive (list (ros-completing-read-action
-                      "Enter action name"
-                      (current-word t t))))
+  "Open definition of a ros action. If used interactively, tab completion will work."
+  (interactive (let* ((word (current-word t t))
+                      (prefix (action-message-prefix word))
+                      ;; fallback if someone named message ...Goal, also add original word
+                      (words (if prefix
+                                 (list prefix word)
+                               word)))
+                 (list (ros-completing-read-action
+                        "Enter action name"
+                        words))))
   (let* ((p+m (split-string action "/"))
          (p (if (cdr p+m)
                 (car p+m)

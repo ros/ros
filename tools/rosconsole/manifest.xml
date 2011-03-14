@@ -16,6 +16,7 @@
   <platform os="macports" version="macports"/>
 
 
+  <!--
   <rosbuild2>
 
     <depend package="rostime"/>
@@ -29,4 +30,5 @@
     <msgs></msgs>
 
   </rosbuild2>
+  -->
 </package>

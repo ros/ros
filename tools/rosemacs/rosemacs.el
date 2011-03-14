@@ -144,6 +144,8 @@
 (defvar rosemacs/nodes nil "List of nodes")
 (defvar rosemacs/nodes-vec (vector) "Vector of nodes")
 
+(defvar roslaunch/history-list nil)
+
 (defvar ros-buffer-package nil "A buffer-local variable for caching the current buffer's ros package.")
 (make-variable-buffer-local 'ros-buffer-package)
 (with-current-buffer (get-buffer-create "*ros-topics*") (insert "Uninitialized (use the display-ros-topic-info command rather than just switching to this buffer)"))
@@ -1299,7 +1301,7 @@ q kills the buffer and process."
                       (split-string
                        (if edit-command
                            (read-string "Enter roslaunch command: " default-roslaunch-command
-                                        nil default-roslaunch-command)
+                                        'roslaunch/history-list default-roslaunch-command)
                          default-roslaunch-command))))
                 (let ((buf (get-buffer-create name)))
                   (save-excursion
@@ -1327,12 +1329,21 @@ q kills the buffer and process."
         (if (rosemacs/contains-running-process name)
             (switch-to-buffer (get-buffer name))
           (let ((buf (get-buffer-create name)))
-            (switch-to-buffer buf)
-            (comint-mode)
-            (setq ros-launch-path path
-                  ros-launch-filename filename)
-            (ros-launch-mode 1)
-            (rosemacs/relaunch (current-buffer))))))))
+            (let* ((default-roslaunch-command (format "roslaunch %s %s" pkg filename))
+                   (roslaunch-command
+                    (split-string
+                     (if current-prefix-arg
+                         (read-string "Enter roslaunch command: " default-roslaunch-command
+                                      'roslaunch/history-list default-roslaunch-command)
+                       default-roslaunch-command))))
+              (switch-to-buffer buf)
+              (comint-mode)
+              (setq ros-launch-path path
+                    ros-launch-filename filename
+                    ros-launch-cmd (first roslaunch-command)
+                    ros-launch-args (rest roslaunch-command))
+              (ros-launch-mode 1)
+              (rosemacs/relaunch (current-buffer)))))))))
 
 (defun rosemacs/open-launch-file ()
   (interactive)

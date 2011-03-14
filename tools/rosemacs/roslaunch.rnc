@@ -44,10 +44,6 @@ grammar {
                ( text )
              }
  
-  arg = element arg {
-               attribute name { text },
-               attribute default { text }?,
-               attribute value { text }? }
 
   remap = element remap { attribute from { text }, attribute to { text }, 
                           attribute unless { text }*, attribute if { text }* }          

@@ -492,6 +492,17 @@ def parse(m, string, filename='string'):
     if len(p) != 1:
         raise ManifestException("manifest must have a single '%s' element"%m._type)
     p = p[0]
+
+    #
+    # rosbuild2 hack:  find the 'rosbuild2' node under <package> and remove it...
+    # we don't know what it will contain yet.
+    # 
+    rb2all = p.getElementsByTagName('rosbuild2')
+    for rb2 in rb2all:
+        p.removeChild(rb2)
+    # end rosbuild2 hack        
+
+
     m.description = check('description')(p, filename)
     m.brief = ''
     try:

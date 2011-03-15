@@ -2,11 +2,11 @@
 grammar {
   start = package
   package = element package { 
-    description,
-    author,
-    license,
-    review,
-    url,
+    description &
+    author &
+    license &
+    review &
+    url &
     (depend* & platform* & rosdep* & export*)
   }
   description = element description {

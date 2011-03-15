@@ -1307,7 +1307,10 @@ q kills the buffer and process."
 
 (defun ros-make (package-name)
   "Do a rosmake in a *compilation* buffer.  Prompts for package.  With prefix arg, allows editing rosmake command before starting."
-  (interactive (list (ros-completing-read-package "Enter package to make" nil ros-completion-function)))
+  (interactive (list (ros-completing-read-package
+                      "Enter package to make"
+                      (get-buffer-ros-package)
+                      ros-completion-function)))
   (save-excursion
     (message "Compilation started")
     (let ((command (format "rosmake -v %s" package-name)))
@@ -1364,8 +1367,9 @@ q kills the buffer and process."
   (interactive)
   (let ((path (buffer-file-name)))
     (assert (and path (string-match ".*\\/\\([^\\/]*\.launch\\)" path)))
-    (let ((pkg (ros-package-for-path path))
-          (filename (match-string 1 path)))
+    (let* ((filename (match-string 1 path))
+           (pkg (ros-package-for-path path))
+           )
       (assert (and pkg filename))
       (let ((name (format "roslaunch:%s/%s" pkg filename)))
         (if (rosemacs/contains-running-process name)

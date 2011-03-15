@@ -385,7 +385,11 @@ class ROSLaunchNode(xmlrpc.XmlRpcNode):
                 else:
                     time.sleep(0.1)                    
         if not server_up:
-            raise RLException("Unable to contact my own XML-RPC server, this is a highly unusual error and should be reported immediately.\nMy URI is [%s]"%self.uri)
+            raise RLException("""Unable to contact my own server at [%s].
+This usually means that the network is not configured properly.
+
+Please see http://www.ros.org/wiki/ROS/NetworkSetup
+"""%self.uri)
         printlog_bold("started roslaunch server %s"%self.uri)
 
     def run(self):

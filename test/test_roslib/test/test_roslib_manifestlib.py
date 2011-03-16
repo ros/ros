@@ -261,6 +261,9 @@ with other stuff</license>
   <rosdep name="baz" />
   <platform os="ubuntu" version="8.04" />
   <platform os="OS X" version="10.6" notes="macports" />
+  <rosbuild2> 
+    <depend thirdparty="thisshouldbeokay"/> 
+  </rosbuild2>
 </package>"""
 
 STACK_EXAMPLE1 = """<stack>

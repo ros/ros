@@ -167,6 +167,9 @@ with other stuff</license>
   <rosdep name="python" />
   <rosdep name="bar" />
   <rosdep name="baz" />
+  <rosbuild2> 
+    <depend thirdparty="thisshouldbeokay"/> 
+  </rosbuild2>
 </package>"""
       
     

@@ -47,7 +47,14 @@
     <depend package="rosconsole"/>
     <depend package="std_msgs"/>
     <depend package="rosgraph_msgs"/>
-    <msgs></msgs>
+    <msgs>
+      msg/Logger.msg
+    </msgs>
+    <srvs>
+      srv/Empty.srv
+      srv/GetLoggers.srv
+      srv/SetLoggerLevel.srv
+    </srvs>
     <export>
       <roslang cmake="${roscpp_PACKAGE_DIR}/cmake/rosbuild2.cmake"/>
       <include_dir>${roscpp_PACKAGE_DIR}/include</include_dir>

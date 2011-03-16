@@ -24,4 +24,7 @@
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
+  <rosbuild2> 
+    <note>Prototype rosbuild2 stuff goes here</note>
+  </rosbuild2>
 </package>

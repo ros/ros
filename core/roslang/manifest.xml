@@ -19,5 +19,8 @@
   <export>
     <rosbuild cmake_directory="${prefix}/cmake"/>
   </export>
+  <rosbuild2>
+    <note>this is prototype rosbuild2 stuff</note>
+  </rosbuild2>
 </package>
 

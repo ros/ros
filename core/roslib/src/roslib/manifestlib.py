@@ -58,13 +58,16 @@ class ManifestException(roslib.exceptions.ROSLibException): pass
 # we are more commited to our manifest spec, this can be more direct
 # (and unit tested)
 
+def get_nodes_by_name(n, name):
+    return [t for t in n.childNodes if t.nodeType == t.ELEMENT_NODE and t.tagName == name]
+    
 def check_optional(name, allowXHTML=False):
     """
     Validator for optional elements.
     @raise ManifestException: if validation fails
     """
     def check(n, filename):
-        n = n.getElementsByTagName(name)    
+        n = get_nodes_by_name(n, name)
         if len(n) > 1:
             raise ManifestException("Invalid manifest file: must have a single '%s' element"%name)
         if n:
@@ -79,7 +82,7 @@ def check_required(name, allowXHTML=False):
     @raise ManifestException: if validation fails
     """
     def check(n, filename):
-        n = n.getElementsByTagName(name)
+        n = get_nodes_by_name(n, name)
         if not n:
             print >> sys.stderr, "Invalid manifest file[%s]: missing required '%s' element"%(filename, name)
             return ''
@@ -96,7 +99,7 @@ def check_platform(name):
     @raise ManifestException: if validation fails
     """
     def check(n, filename):
-        platforms = [e for e in n.getElementsByTagName(name)]
+        platforms = get_nodes_by_name(n, name)
         try:
             vals = [(p.attributes['os'].value, p.attributes['version'].value, p.getAttribute('notes')) for p in platforms]
         except KeyError, e:
@@ -110,7 +113,8 @@ def check_depends(name):
     @raise ManifestException: if validation fails
     """
     def check(n, filename):
-        depends = [e.attributes for e in n.getElementsByTagName(name)]
+        nodes = get_nodes_by_name(n, name)
+        depends = [e.attributes for e in nodes]
         packages = [d['package'].value for d in depends]
         return [Depend(p) for p in packages]
     return check
@@ -121,7 +125,8 @@ def check_stack_depends(name):
     @raise ManifestException: if validation fails
     """
     def check(n, filename):
-        depends = [e.attributes for e in n.getElementsByTagName(name)]
+        nodes = get_nodes_by_name(n, name)
+        depends = [e.attributes for e in nodes]
         packages = [d['stack'].value for d in depends]
         return [StackDepend(p) for p in packages]
     return check
@@ -132,7 +137,8 @@ def check_rosdeps(name):
     @raise ManifestException: if validation fails
     """
     def check(n, filename):
-        rosdeps = [e.attributes for e in n.getElementsByTagName(name)]
+        nodes = get_nodes_by_name(n, name)
+        rosdeps = [e.attributes for e in nodes]
         names = [d['name'].value for d in rosdeps]
         return [ROSDep(n) for n in names]
     return check
@@ -146,7 +152,7 @@ def _attrs(node):
 def check_exports(name):
     def check(n, filename):
         ret_val = []
-        for e in n.getElementsByTagName(name):
+        for e in get_nodes_by_name(n, name):
             elements = [c for c in e.childNodes if c.nodeType == c.ELEMENT_NODE]
             ret_val.extend([Export(t.tagName, _attrs(t), _get_text(t.childNodes)) for t in elements])
         return ret_val 
@@ -154,7 +160,7 @@ def check_exports(name):
 
 def check_versioncontrol(name):
     def check(n, filename):
-        e = n.getElementsByTagName(name)
+        e = get_nodes_by_name(n, name)
         if not e:
             return None
         # note: 'url' isn't actually required, but as we only support type=svn it implicitly is for now
@@ -488,14 +494,15 @@ def parse(m, string, filename='string'):
         d = dom.parseString(string)
     except Exception, e:
         raise ManifestException("invalid XML: %s"%e)
-    p = d.getElementsByTagName(m._type)
+    
+    p = get_nodes_by_name(d, m._type)
     if len(p) != 1:
         raise ManifestException("manifest must have a single '%s' element"%m._type)
     p = p[0]
     m.description = check('description')(p, filename)
     m.brief = ''
     try:
-        tag = p.getElementsByTagName('description')[0]
+        tag = get_nodes_by_name(p, 'description')[0]
         m.brief = tag.getAttribute('brief') or ''
     except:
         # means that 'description' tag is missing
@@ -515,21 +522,21 @@ def parse(m, string, filename='string'):
     m.license = check('license')(p, filename)
     m.license_url = ''
     try:
-        tag = p.getElementsByTagName('license')[0]
+        tag = get_nodes_by_name(p, 'license')[0]
         m.license_url = tag.getAttribute('url') or ''
     except:
         pass #manifest is missing required 'license' tag
   
     m.status='unreviewed'
     try:
-        tag = p.getElementsByTagName('review')[0]
+        tag = get_nodes_by_name(p, 'review')[0]
         m.status=tag.getAttribute('status') or ''
     except:
         pass #manifest is missing optional 'review status' tag
 
     m.notes=''
     try:
-        tag = p.getElementsByTagName('review')[0]
+        tag = get_nodes_by_name(p, 'review')[0]
         m.notes=tag.getAttribute('notes') or ''
     except:
         pass #manifest is missing optional 'review notes' tag

@@ -1,7 +1,5 @@
-if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/package.cmake)
-  include(${CMAKE_CURRENT_BINARY_DIR}/package.cmake)
-endif()
-#set(ROS_BUILD_TYPE Debug)
+include(${CMAKE_CURRENT_BINARY_DIR}/package.cmake)
+
 include_directories(include/rosconsole)
 rosbuild_add_boost_directories()
 rosbuild_add_library(${PROJECT_NAME} src/rosconsole/rosconsole.cpp)

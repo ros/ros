@@ -38,6 +38,9 @@
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
   <rosbuild2>
+    <export>
+      <roslang cmake="${rospy_SOURCE_DIR}/cmake/rosbuild2.cmake"/>
+    </export>
   </rosbuild2>
 </package>
 

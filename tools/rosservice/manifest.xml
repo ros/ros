@@ -22,6 +22,7 @@ rosservice contains the rosservice command-line tool for listing and querying RO
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
+  <rosbuild2><export></export></rosbuild2>
 </package>
 
 

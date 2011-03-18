@@ -25,6 +25,7 @@
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
   <rosbuild2> 
+    <depend package="rospack"/>
     <include_dir>${roslib_PACKAGE_DIR}/include</include_dir>
   </rosbuild2>
 </package>

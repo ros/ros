@@ -28,6 +28,7 @@ rospack uses the TinyXML parser, a zLib-licensed library which is available here
   <rosbuild2>
     <export>
       <include_dir>${rospack_SOURCE_DIR}/include</include_dir>
+      <include_dir>${rospack_SOURCE_DIR}</include_dir>
     </export>
   </rosbuild2>
 </package>

@@ -54,8 +54,8 @@ from .client import spin, myargv, init_node, \
     get_master, \
     on_shutdown, \
     get_param, get_param_names, set_param, delete_param, has_param, search_param,\
-    sleep, Rate,\
     DEBUG, INFO, WARN, ERROR, FATAL
+from .timer import sleep, Rate, Timer
 from .core import is_shutdown, signal_shutdown, \
     get_node_uri, get_ros_root, \
     logdebug, logwarn, loginfo, logout, logerr, logfatal, \

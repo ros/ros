@@ -376,10 +376,12 @@ class ROSHandler(XmlRpcHandler):
 
     @apivalidate([])
     def getSubscriptions(self, caller_id):
-        """Retrieve a list of topics that this node subscribes to
+        """
+        Retrieve a list of topics that this node subscribes to.
         @param caller_id: ROS caller id    
         @type  caller_id: str
-        @return [int, str, [ [topic1, topicType1]...[topicN, topicTypeN]]]: list of topics this node subscribes to
+        @return: list of topics this node subscribes to.
+        @rtype: [int, str, [ [topic1, topicType1]...[topicN, topicTypeN]]]
         """
         return 1, "subscriptions", get_topic_manager().get_subscriptions()
 
@@ -389,20 +391,20 @@ class ROSHandler(XmlRpcHandler):
         Retrieve a list of topics that this node publishes.
         @param caller_id: ROS caller id    
         @type  caller_id: str
-        @return: list of topics published by this node
+        @return: list of topics published by this node.
         @rtype: [int, str, [ [topic1, topicType1]...[topicN, topicTypeN]]]
         """
         return 1, "publications", get_topic_manager().get_publications()
     
     def _connect_topic(self, topic, pub_uri): 
         """
-        Connect subscriber to topic
-        @param topic: topic name to connect 
+        Connect subscriber to topic.
+        @param topic: Topic name to connect.
         @type  topic: str
-        @param pub_uri: API URI of topic publisher
+        @param pub_uri: API URI of topic publisher.
         @type  pub_uri: str
         @return: [code, msg, numConnects]. numConnects is the number
-           of subscribers connected to the topic
+           of subscribers connected to the topic.
         @rtype: [int, str, int]
         """
         caller_id = rospy.names.get_caller_id()

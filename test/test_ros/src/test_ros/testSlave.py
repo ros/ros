@@ -69,7 +69,7 @@ class SlaveTestCase(TestRosClient):
         # retrieve handle on node
         self.caller_id = rospy.get_caller_id()
         self.node_api = self.apiSuccess(self.master.lookupNode(self.caller_id, 'test_node'))
-        self.assert_(self.node_api.startswith('http')
+        self.assert_(self.node_api.startswith('http'))
         self.node = xmlrpclib.ServerProxy(self.node_api)
         
     def testGetPid(self):

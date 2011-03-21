@@ -44,7 +44,8 @@ macro(genmsg_cpp TYPE)
 endmacro(genmsg_cpp)
 
 
-set(gensrv_cpp_exe ${CMAKE_SOURCE_DIR}/ros_comm/clients/cpp/roscpp/scripts/rosbuild2/gensrv_cpp.py)
+set(gensrv_cpp_exe 
+  ${CMAKE_SOURCE_DIR}/ros_comm/clients/cpp/roscpp/scripts/rosbuild2/gensrv_cpp.py)
 # Service-generation support.
 macro(gensrv_cpp TYPE)
 
@@ -91,7 +92,7 @@ macro(gensrv_cpp TYPE)
 endmacro(gensrv_cpp)
 
 macro(gentargets_cpp)
-  add_custom_target(${PROJECT_NAME}_gen_cpp
+  add_custom_target(${PROJECT_NAME}_gen_cpp ALL
     DEPENDS ${${PROJECT_NAME}_generated})
   install(DIRECTORY ${ROSBUILD_GEN_DIR}/cpp/${PROJECT_NAME} 
     DESTINATION include

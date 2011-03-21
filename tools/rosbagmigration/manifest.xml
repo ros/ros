@@ -11,8 +11,8 @@
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
   <depend package="rosbag"/>
+
   <rosbuild2>
-    <foo></foo>
-    
+    <depend package="rosbag"/>
   </rosbuild2>
 </package>

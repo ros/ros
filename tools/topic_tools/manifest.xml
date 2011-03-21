@@ -16,10 +16,26 @@
   <depend package="rospy"/>
 
   <export>
-    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -ltopic_tools"/>
+    <cpp cflags="-I${prefix}/include" 
+	 lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -ltopic_tools"/>
   </export>
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
+  <rosbuild2>
+    <depend package="roscpp"/>
+    <depend package="rosconsole"/>
+    <depend package="std_msgs"/>
+    <depend package="rostest"/>
+    <depend package="rospy"/>
+    <srvs>
+      srv/MuxAdd.srv	srv/MuxDelete.srv  srv/MuxList.srv  srv/MuxSelect.srv
+    </srvs>
+    <export>
+      <include_dir>${topic_tools_SOURCE_DIR}/include</include_dir>
+      <lib>topic_tools</lib>
+    </export>
+  </rosbuild2>
+
 </package>

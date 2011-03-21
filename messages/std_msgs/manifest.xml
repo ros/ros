@@ -22,6 +22,8 @@ std_msgs contains common message types representing primitive data types and oth
       <include_dir>${std_msgs_PACKAGE_DIR}/include</include_dir>
     </export>
 
+    <depend package="roslib"/>
+
     <msgs>
       msg/Bool.msg msg/Header.msg msg/String.msg msg/Byte.msg
       msg/Int16.msg msg/Time.msg msg/ByteMultiArray.msg

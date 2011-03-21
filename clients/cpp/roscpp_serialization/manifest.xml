@@ -27,7 +27,7 @@ This package is a component of <a href="http://www.ros.org/wiki/roscpp">roscpp</
     <depend package="rostime"/>
 
     <export>
-      <include_dir>${roscpp_serialization_PACKAGE_DIR}/include</include_dir>
+      <include_dir>${roscpp_serialization_SOURCE_DIR}/include</include_dir>
       <lib>roscpp_serialization</lib>
     </export>
 

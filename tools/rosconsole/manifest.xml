@@ -21,7 +21,7 @@
     <depend thirdparty="log4cxx"/>
 
     <export>
-      <include_dir>${rosconsole_PACKAGE_DIR}/include</include_dir>
+      <include_dir>${rosconsole_SOURCE_DIR}/include</include_dir>
       <lib>rosconsole</lib>
     </export>
 

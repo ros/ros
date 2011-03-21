@@ -22,7 +22,7 @@ own fork.
   <platform os="macports" version="macports"/>
   <rosbuild2>
     <export>
-      <include_dir>${xmlrpcpp_PACKAGE_DIR}/src</include_dir>
+      <include_dir>${xmlrpcpp_SOURCE_DIR}/src</include_dir>
       <lib>XmlRpc</lib>
     </export>
     <msgs></msgs>

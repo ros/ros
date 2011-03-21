@@ -20,7 +20,7 @@ This package is a component of <a href="http://www.ros.org/wiki/roscpp">roscpp</
 
   <rosbuild2>
     <export>
-      <include_dir>${cpp_common_PACKAGE_DIR}/include</include_dir>
+      <include_dir>${cpp_common_SOURCE_DIR}/include</include_dir>
       <lib>cpp_common</lib>
     </export>
   </rosbuild2>

@@ -20,7 +20,7 @@ Time and Duration implementations for C++ libraries, including roscpp.
     <depend package="cpp_common"/>
 
     <export>
-      <include_dir>${rostime_PACKAGE_DIR}/include</include_dir>
+      <include_dir>${rostime_SOURCE_DIR}/include</include_dir>
       <lib>rostime</lib>
     </export>
     <msgs></msgs>

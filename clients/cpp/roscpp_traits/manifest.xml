@@ -22,7 +22,7 @@ This package is a component of <a href="http://www.ros.org/wiki/roscpp">roscpp</
     <depend package="cpp_common"/>
 
     <export>
-      <include_dir>${roscpp_traits_PACKAGE_DIR}/include</include_dir>
+      <include_dir>${roscpp_traits_SOURCE_DIR}/include</include_dir>
     </export>
 
     <msgs></msgs>

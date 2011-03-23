@@ -1,4 +1,4 @@
-set(genmsg_cpp_exe ${roscpp_PACKAGE_DIR}/scripts/rosbuild2/genmsg_cpp.py)
+set(genmsg_cpp_exe ${roscpp_SOURCE_DIR}/scripts/rosbuild2/genmsg_cpp.py)
 # Message-generation support.
 macro(genmsg_cpp TYPE)
 

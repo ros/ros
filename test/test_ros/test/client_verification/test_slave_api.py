@@ -134,6 +134,10 @@ class TestSlaveApi(unittest.TestCase):
         self.assert_(self.node_api.startswith('http'))
         self.node = xmlrpclib.ServerProxy(self.node_api)
 
+        # hack: sleep for a couple seconds just in case the node is
+        # still registering with the master.
+        time.sleep(2.)
+
     def apiSuccess(self, args):
         """
         unit test assertion that fails if status code is not 1 and otherwise returns the value parameter.
@@ -484,13 +488,13 @@ class TestSlaveApi(unittest.TestCase):
         node_name = self.test_node
         pubs, subs, srvs = self.master.getSystemState()
         pub_topics = [t for t, _ in pubs]
-        sub_topics = [t for t, _ in pubs]
+        sub_topics = [t for t, _ in subs]
         
         # make sure all required topics are registered
         for t in self.required_pubs:
             self.assert_(t in pub_topics, "node did not register publication %s on master"%(t))
         for t in self.required_subs:
-            self.assert_(t in sub_topics, "node did not register publication %s on master"%(t))
+            self.assert_(t in sub_topics, "node did not register subscription %s on master"%(t))
         
         # check for node URI on master
         for topic, node_list in pubs:

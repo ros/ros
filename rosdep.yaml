@@ -247,7 +247,9 @@ pkg-config:
   cygwin: pkg-config
   freebsd: pkg-config
 octave:
-  ubuntu: octave3.0-headers
+  ubuntu: 
+    '10.10': octave3.2-headers
+    '10.04': octave3.0-headers
   arch: octave
   macports: octave
   centos: octave-devel

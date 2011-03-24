@@ -16,7 +16,17 @@
   <platform os="macports" version="macports"/>
 
   <rosbuild2>
-    <msgs></msgs>
+    <depend package="roscpp"/>
+    <depend package="std_msgs"/>
+    <depend package="std_srvs"/>
+    <depend package="test_ros"/>
+    <msgs>
+      msg/TestArray.msg  msg/TestEmpty.msg  
+      msg/TestStringInt.msg  msg/TestWithHeader.msg
+    </msgs>
+    <srvs>
+      srv/BadTestStringString.srv  srv/TestStringString.srv
+    </srvs>
   </rosbuild2>
 
 </package>

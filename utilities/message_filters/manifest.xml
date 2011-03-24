@@ -15,7 +15,11 @@
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
+
   <rosbuild2>
+    <depend package="roscpp" />
+    <depend package="rospy" />
+    <depend package="rostest" />
     <export>
       <include_dir>${message_filters_SOURCE_DIR}</include_dir>
       <lib>message_filters</lib>

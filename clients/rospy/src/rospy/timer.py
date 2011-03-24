@@ -132,7 +132,18 @@ def sleep(duration):
             raise rospy.exceptions.ROSInterruptException("ROS shutdown request")
 
 class TimerEvent(object):
-    
+    """
+    Constructor.
+    @param last_expected: in a perfect world, this is when the previous callback should have happened
+    @type  last_expected: rospy.Time
+    @param last_real: when the callback actually happened
+    @type  last_real: rospy.Time
+    @param current_expected: in a perfect world, this is when the current callback should have been called
+    @type  current_expected: rospy.Time
+    @param last_duration: contains the duration of the last callback (end time minus start time) in seconds.
+                          Note that this is always in wall-clock time.
+    @type  last_duration: float
+    """
     def __init__(self, last_expected, last_real, current_expected, current_real, last_duration):
         self.last_expected    = last_expected
         self.last_real        = last_real
@@ -141,9 +152,22 @@ class TimerEvent(object):
         self.last_duration    = last_duration
 
 class Timer(threading.Thread):
-    def __init__(self, duration, callback, oneshot=False):
+    """
+    Convenience class for calling a callback at a specified rate
+    """
+
+    def __init__(self, period, callback, oneshot=False):
+        """
+        Constructor.
+        @param period: desired period between callbacks
+        @type  period: rospy.Time
+        @param callback: callback to be called
+        @type  callback: function taking rospy.TimerEvent
+        @param oneshot: if True, fire only once, otherwise fire continuously until shutdown is called [default: False]
+        @type  oneshot: bool
+        """
         threading.Thread.__init__(self)
-        self._duration = duration
+        self._period   = period
         self._callback = callback
         self._oneshot  = oneshot
         self._shutdown = False
@@ -151,11 +175,14 @@ class Timer(threading.Thread):
         self.start()
 
     def shutdown(self):
+        """
+        Stop firing callbacks.
+        """
         self._shutdown = True
         
     def run(self):
-        r = Rate(1.0 / self._duration.to_sec())
-        current_expected = rospy.rostime.get_rostime() + self._duration
+        r = Rate(1.0 / self._period.to_sec())
+        current_expected = rospy.rostime.get_rostime() + self._period
         last_expected, last_real, last_duration = None, None, None
         while not rospy.core.is_shutdown() and not self._shutdown:
             r.sleep()
@@ -167,4 +194,3 @@ class Timer(threading.Thread):
             last_duration = time.time() - start
             last_expected, last_real = current_expected, current_real
             current_expected += self._duration
-

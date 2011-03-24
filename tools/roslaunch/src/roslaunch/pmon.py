@@ -153,7 +153,7 @@ def rl_signal(sig, stackframe):
             pass #filter out generic keyboard interrupt handler
         
 if sys.platform in ['win32']: # cygwin seems to be ok
-    _signal_list = [signal.SIGTERM, signal.SIGINT, signal.SIGHUP]
+    _signal_list = [signal.SIGTERM, signal.SIGINT]
 else:
     _signal_list = [signal.SIGTERM, signal.SIGINT, signal.SIGHUP]
 

@@ -130,7 +130,10 @@ def printlog_bold(msg):
         except:
             pass
     try: # don't let this bomb out the actual code        
-        print '\033[1m%s\033[0m'%msg
+        if sys.platform in ['win32']:
+            print '%s'%msg  #windows console is terrifically boring 
+        else:
+            print '\033[1m%s\033[0m'%msg
     except:
         pass
 

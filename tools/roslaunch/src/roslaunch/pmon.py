@@ -152,15 +152,19 @@ def rl_signal(sig, stackframe):
         except KeyboardInterrupt:
             pass #filter out generic keyboard interrupt handler
         
+if sys.platform in ['win32']: # cygwin seems to be ok
+    _signal_list = [signal.SIGTERM, signal.SIGINT, signal.SIGHUP]
+else:
+    _signal_list = [signal.SIGTERM, signal.SIGINT, signal.SIGHUP]
+
 _sig_initialized = False
 def _init_signal_handlers():
     global _sig_initialized
     if _sig_initialized:
         return
     if not roslib.is_interactive():
-        _signal_chain[signal.SIGTERM] = signal.signal(signal.SIGTERM, rl_signal)
-        _signal_chain[signal.SIGINT]  = signal.signal(signal.SIGINT, rl_signal)
-        _signal_chain[signal.SIGHUP]  = signal.signal(signal.SIGHUP, rl_signal)
+        for s in _signal_list:
+            _signal_chain[s] = signal.signal(s, rl_signal)
     atexit.register(pmon_shutdown)
     _sig_initialized = True
 
@@ -468,7 +472,17 @@ class ProcessMonitor(Thread):
         blocks until the process monitor is complete.
         """
         while not self.done:
-            time.sleep(0.1)
+            if sys.platform in ['win32']: # cygwin seems to be ok
+                # windows sleep throws an exception when a signal has arrived, even when 
+                # it has a handler. We can either use win32api.Sleep OR....catch
+                # the exception
+                try:
+                     time.sleep(0.1)
+                except IOError:
+                    pass
+            else:
+                 time.sleep(0.1)
+                    
             if self.has_main_thread_jobs():
                 self.do_main_thread_jobs()
 
@@ -504,7 +518,7 @@ class ProcessMonitor(Thread):
 
             # check current signal handlers to see if children have stolen them away
             # TODO: this code may not be necessary anymore (have to test)
-            for s in [signal.SIGTERM, signal.SIGINT, signal.SIGHUP]:
+            for s in _signal_list:
                 if signal.getsignal(s) !=  rl_signal:
                     self.reacquire_signals.add(s)
 

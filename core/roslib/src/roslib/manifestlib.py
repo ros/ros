@@ -54,10 +54,6 @@ VALID = REQUIRED + OPTIONAL
 
 class ManifestException(roslib.exceptions.ROSLibException): pass
 
-# TODO: this is all needlessly complicated in and indirect. Now that
-# we are more commited to our manifest spec, this can be more direct
-# (and unit tested)
-
 def get_nodes_by_name(n, name):
     return [t for t in n.childNodes if t.nodeType == t.ELEMENT_NODE and t.tagName == name]
     

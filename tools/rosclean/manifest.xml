@@ -9,6 +9,9 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/rosclean</url>
   <depend package="roslib"/>
+  <rosbuild2>
+    <depend package="roslib"/>
+  </rosbuild2>
 
 </package>
 

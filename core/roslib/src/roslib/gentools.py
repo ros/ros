@@ -47,6 +47,7 @@ import sys
 import cStringIO
 
 import roslib.msgs 
+from roslib.msgs import MsgSpecException
 import roslib.names 
 import roslib.packages 
 import roslib.srvs 
@@ -62,14 +63,19 @@ def _add_msgs_depends(spec, deps, package_context):
     @param deps [str]: list of dependencies. This list will be updated
     with the dependencies of spec when the method completes
     @type  deps: [str]
+    @raise KeyError for invalid dependent types due to missing package dependencies.
     """
+    valid_packages = ['', package_context] + roslib.rospack.rospack_depends(package_context)
     for t in spec.types:
         t = roslib.msgs.base_msg_type(t)
         if not roslib.msgs.is_builtin(t):
+            t_package, t_base = roslib.names.package_resource_name(t)
+            
             # special mapping for header
             if t == roslib.msgs.HEADER:
                 # have to re-names Header
                 deps.append(_header_type_name)
+
             if roslib.msgs.is_registered(t):
                 depspec = roslib.msgs.get_registered(t)
                 if t != roslib.msgs.HEADER:
@@ -77,12 +83,16 @@ def _add_msgs_depends(spec, deps, package_context):
                         deps.append(t)
                     else:
                         deps.append(package_context+'/'+t)
-            else:
-                #lazy-load
+
+            elif t_package in valid_packages:
+                # if we are allowed to load the message, load it.
                 key, depspec = roslib.msgs.load_by_type(t, package_context)
                 if t != roslib.msgs.HEADER:
                   deps.append(key)
                 roslib.msgs.register(key, depspec)
+            else:
+                # not allowed to load the message, so error.
+                raise KeyError(t)
             _add_msgs_depends(depspec, deps, package_context)
 
 def compute_md5_text(get_deps_dict, spec):
@@ -288,13 +298,16 @@ def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stder
     roslib.msgs._init()
 
     deps = []
-    if isinstance(spec, roslib.msgs.MsgSpec):
-        _add_msgs_depends(spec, deps, package)
-    elif isinstance(spec, roslib.srvs.SrvSpec):
-        _add_msgs_depends(spec.request, deps, package)
-        _add_msgs_depends(spec.response, deps, package)                
-    else:
-        raise Exception("[%s] does not appear to be a message or service"%spec)
+    try:
+        if isinstance(spec, roslib.msgs.MsgSpec):
+            _add_msgs_depends(spec, deps, package)
+        elif isinstance(spec, roslib.srvs.SrvSpec):
+            _add_msgs_depends(spec.request, deps, package)
+            _add_msgs_depends(spec.response, deps, package)                
+        else:
+            raise MsgSpecException("spec does not appear to be a message or service")
+    except KeyError, e:
+        raise MsgSpecException("Cannot load type %s.  Perhaps the package is missing a dependency."%(str(e)))
 
     # convert from type names to file names
     

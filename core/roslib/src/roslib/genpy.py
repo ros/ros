@@ -937,7 +937,10 @@ def msg_generator(package, name, spec):
     # generate dependencies dictionary. omit files calculation as we
     # rely on in-memory MsgSpecs instead so that we can generate code
     # for older versions of msg files
-    gendeps_dict = roslib.gentools.get_dependencies(spec, package, compute_files=False)
+    try:
+        gendeps_dict = roslib.gentools.get_dependencies(spec, package, compute_files=False)
+    except roslib.msgs.MsgSpecException, e:
+        raise MsgGenerationException("Cannot generate .msg for %s/%s: %s"%(package, name, str(e)))
     md5sum = roslib.gentools.compute_md5(gendeps_dict)
     
     # remap spec names to be Python-safe

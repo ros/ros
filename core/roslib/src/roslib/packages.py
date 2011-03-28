@@ -510,7 +510,7 @@ def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
             files = [f.lower() for f in files]
             for m in matches:
                 if m in files:
-                    test_path = os.path.join(p, node_type)
+                    test_path = os.path.join(p, m)
                     s = os.stat(test_path)
                     if (s.st_mode & (stat.S_IRUSR | stat.S_IXUSR) ==
                         (stat.S_IRUSR | stat.S_IXUSR)):

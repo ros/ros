@@ -18,6 +18,11 @@ rosgraph contains the rosgraph command-line tool, which prints information about
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
+
+  <rosbuild2>
+    <depend package="roslib"/>
+  </rosbuild2>
+
 </package>
 
 

@@ -27,7 +27,9 @@
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
   <rosbuild2>
+    <depend package="roslaunch"/>
     <depend package="roslib"/>
+    <depend package="rosunit"/>
   </rosbuild2>
 </package>
 

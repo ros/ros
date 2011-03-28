@@ -21,11 +21,14 @@
     <depend package="std_srvs"/>
     <depend package="test_ros"/>
     <msgs>
-      msg/TestArray.msg  msg/TestEmpty.msg  
-      msg/TestStringInt.msg  msg/TestWithHeader.msg
+      msg/TestArray.msg  
+      msg/TestEmpty.msg  
+      msg/TestStringInt.msg  
+      msg/TestWithHeader.msg
     </msgs>
     <srvs>
-      srv/BadTestStringString.srv  srv/TestStringString.srv
+      srv/BadTestStringString.srv  
+      srv/TestStringString.srv
     </srvs>
   </rosbuild2>
 

@@ -24,5 +24,14 @@ roslaunch is a tool for easily launching multiple ROS <a href="http://ros.org/wi
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
+  <rosbuild2>
+    <depend package="roslib"/>
+    <depend package="rosclean"/>
+    <depend package="rosgraph"/>
+    <depend package="rosgraph_msgs"/>
+    <depend package="rospy"/>
+    <depend package="rosmaster"/>  
+    <depend package="rosout"/>
+  </rosbuild2>
 </package>
 

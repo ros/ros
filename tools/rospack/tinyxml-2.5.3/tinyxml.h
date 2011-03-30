@@ -94,6 +94,9 @@ distribution.
   #define TINYXML_EXPORT
 #endif
 
+
+namespace rospack_tinyxml {
+
 class TiXmlDocument;
 class TiXmlElement;
 class TiXmlComment;
@@ -1805,6 +1808,7 @@ private:
 	TIXML_STRING lineBreak;
 };
 
+}
 
 #ifdef _MSC_VER
 #pragma warning( pop )

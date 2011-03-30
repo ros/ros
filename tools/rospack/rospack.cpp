@@ -229,8 +229,8 @@ string Package::flags(string lang, string attrib)
 string Package::rosdep()
 {
   string sd;
-  TiXmlElement *mroot = manifest_root();
-  for(TiXmlElement *sd_ele = mroot->FirstChildElement("rosdep");
+  rospack_tinyxml::TiXmlElement *mroot = manifest_root();
+  for(rospack_tinyxml::TiXmlElement *sd_ele = mroot->FirstChildElement("rosdep");
       sd_ele;
       sd_ele = sd_ele->NextSiblingElement("rosdep"))
   {
@@ -246,8 +246,8 @@ string Package::rosdep()
 string Package::versioncontrol()
 {
   string sd;
-  TiXmlElement *mroot = manifest_root();
-  for(TiXmlElement *sd_ele = mroot->FirstChildElement("versioncontrol");
+  rospack_tinyxml::TiXmlElement *mroot = manifest_root();
+  for(rospack_tinyxml::TiXmlElement *sd_ele = mroot->FirstChildElement("versioncontrol");
       sd_ele;
       sd_ele = sd_ele->NextSiblingElement("versioncontrol"))
   {
@@ -397,11 +397,11 @@ const vector<Package *> &Package::direct_deps(bool missing_package_as_warning)
 #ifdef VERBOSE_DEBUG
   fprintf(stderr, "calculating direct deps for package [%s]\n", name.c_str());
 #endif
-  TiXmlElement *mroot = manifest_root();
-  TiXmlNode *dep_node = 0;
+  rospack_tinyxml::TiXmlElement *mroot = manifest_root();
+  rospack_tinyxml::TiXmlNode *dep_node = 0;
   while ((dep_node = mroot->IterateChildren(string("depend"), dep_node)))
   {
-    TiXmlElement *dep_ele = dep_node->ToElement();
+    rospack_tinyxml::TiXmlElement *dep_ele = dep_node->ToElement();
     assert(dep_ele);
     const char *dep_pkgname = dep_ele->Attribute("package");
     if (!dep_pkgname)
@@ -497,14 +497,14 @@ string Package::cpp_message_flags(bool cflags, bool lflags)
 
 string Package::direct_flags(string lang, string attrib)
 {
-  TiXmlElement *mroot = manifest_root();
-  TiXmlElement *export_ele = mroot->FirstChildElement("export");
+  rospack_tinyxml::TiXmlElement *mroot = manifest_root();
+  rospack_tinyxml::TiXmlElement *export_ele = mroot->FirstChildElement("export");
   string str;
   if (export_ele)
   {
     bool os_match = false;
-    TiXmlElement *best_usage = NULL;
-    for (TiXmlElement *lang_ele = export_ele->FirstChildElement(lang);
+    rospack_tinyxml::TiXmlElement *best_usage = NULL;
+    for (rospack_tinyxml::TiXmlElement *lang_ele = export_ele->FirstChildElement(lang);
          lang_ele; lang_ele = lang_ele->NextSiblingElement(lang))
     {
       const char *os_str;
@@ -644,10 +644,10 @@ void Package::load_manifest()
   }
 }
 
-TiXmlElement *Package::manifest_root()
+rospack_tinyxml::TiXmlElement *Package::manifest_root()
 {
   load_manifest();
-  TiXmlElement *ele = manifest.RootElement();
+  rospack_tinyxml::TiXmlElement *ele = manifest.RootElement();
   if (!ele)
   {
     string errmsg = string("error parsing manifest file at [") + manifest_path().c_str() + string("]");

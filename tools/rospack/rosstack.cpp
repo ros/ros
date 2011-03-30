@@ -106,7 +106,7 @@ const string g_ros_os("osx");
 // to keep rosstack happy (rospack's lib links directly to tinyxml.cpp,
 // rosstack's lib does not).
 // I'll fix this later. Thanks, MS, for creating yet another broken system.
-const int TiXmlBase::utf8ByteTable[256] =
+const int rospack_tinyxml::TiXmlBase::utf8ByteTable[256] =
 {
 	//	0	1	2	3	4	5	6	7	8	9	a	b	c	d	e	f
 		1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	// 0x00
@@ -126,7 +126,7 @@ const int TiXmlBase::utf8ByteTable[256] =
 		3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	3,	// 0xe0 0xe0 to 0xef 3 byte
 		4,	4,	4,	4,	4,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1,	1	// 0xf0 0xf0 to 0xf4 4 byte, 0xf5 and higher invalid
 };
-bool TiXmlBase::condenseWhiteSpace = true;
+bool rospack_tinyxml::TiXmlBase::condenseWhiteSpace = true;
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -321,11 +321,11 @@ const VecStack &Stack::direct_deps(bool missing_stack_as_warning)
 #ifdef VERBOSE_DEBUG
   printf("calculating direct deps for package [%s]\n", name.c_str());
 #endif
-  TiXmlElement *mroot = manifest_root();
-  TiXmlNode *dep_node = 0;
+  rospack_tinyxml::TiXmlElement *mroot = manifest_root();
+  rospack_tinyxml::TiXmlNode *dep_node = 0;
   while ((dep_node = mroot->IterateChildren(string("depend"), dep_node)))
   {
-    TiXmlElement *dep_ele = dep_node->ToElement();
+    rospack_tinyxml::TiXmlElement *dep_ele = dep_node->ToElement();
     assert(dep_ele);
     const char *dep_stackname = dep_ele->Attribute("stack");
     if (!dep_stackname)
@@ -378,13 +378,13 @@ void Stack::load_manifest()
     manifest_loaded = true;
     throw runtime_error(errmsg);
   }
-  TiXmlElement *mroot = manifest.RootElement();
+  rospack_tinyxml::TiXmlElement *mroot = manifest.RootElement();
 }
 
-TiXmlElement *Stack::manifest_root()
+rospack_tinyxml::TiXmlElement *Stack::manifest_root()
 {
   load_manifest();
-  TiXmlElement *ele = manifest.RootElement();
+  rospack_tinyxml::TiXmlElement *ele = manifest.RootElement();
   if (!ele)
   {
     string errmsg = string("error parsing manifest file at [") + manifest_path().c_str() + string("]");

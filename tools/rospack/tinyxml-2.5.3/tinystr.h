@@ -56,6 +56,7 @@ distribution.
 	#define TIXML_EXPLICIT
 #endif
 
+namespace rospack_tinyxml {
 
 /*
    TiXmlString is an emulation of a subset of the std::string template.
@@ -314,6 +315,8 @@ public :
 	}
 
 } ;
+
+}
 
 #endif	// TIXML_STRING_INCLUDED
 #endif	// TIXML_USE_STL

@@ -48,7 +48,15 @@ void in_cb(const boost::shared_ptr<ShapeShifter const>& msg)
 {
   if (!g_advertised)
   {
-    g_pub = msg->advertise(*g_node, g_output_topic, 10);
+    // If the input topic is latched, make the output topic latched, #3385.
+    bool latch = false;
+    ros::M_string::iterator it = msg->__connection_header->find("latching");
+    if((it != msg->__connection_header->end()) && (it->second == "1"))
+    {
+      ROS_DEBUG("input topic is latched; latching output topic to match");
+      latch = true;
+    }
+    g_pub = msg->advertise(*g_node, g_output_topic, 10, latch);
     g_advertised = true;
     printf("advertised as %s\n", g_output_topic.c_str());
   }

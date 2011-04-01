@@ -75,7 +75,7 @@ public:
   void morph(const std::string& md5sum, const std::string& datatype, const std::string& msg_def);
 
   // Helper for advertising
-  ros::Publisher advertise(ros::NodeHandle& nh, const std::string& topic, uint32_t queue_size_, bool latch=false) const;
+  ros::Publisher advertise(ros::NodeHandle& nh, const std::string& topic, uint32_t queue_size_, bool latch=false, const ros::SubscriberStatusCallback &connect_cb=ros::SubscriberStatusCallback()) const;
 
   //! Call to try instantiating as a particular type
   template<class M> 

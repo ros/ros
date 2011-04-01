@@ -76,9 +76,9 @@ void ShapeShifter::morph(const std::string& _md5sum, const std::string& _datatyp
 }
 
 
-ros::Publisher ShapeShifter::advertise(ros::NodeHandle& nh, const std::string& topic, uint32_t queue_size_, bool latch) const
+ros::Publisher ShapeShifter::advertise(ros::NodeHandle& nh, const std::string& topic, uint32_t queue_size_, bool latch, const ros::SubscriberStatusCallback &connect_cb) const
 {
-  ros::AdvertiseOptions opts(topic, queue_size_, getMD5Sum(), getDataType(), getMessageDefinition());
+  ros::AdvertiseOptions opts(topic, queue_size_, getMD5Sum(), getDataType(), getMessageDefinition(), connect_cb);
   opts.latch = latch;
 
   return nh.advertise(opts);

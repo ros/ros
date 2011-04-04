@@ -44,7 +44,7 @@ macro(genmsg_py TYPE)
       ${${PROJECT_NAME}_${_msg}_GENDEPS} ${ROS_MANIFEST_LIST}
       COMMENT "${PROJECT_NAME}: generating msg/_${_output_py_base}")
 
-    list(APPEND ${PROJECT_NAME}_generated ${_output_py})
+    list(APPEND ${PROJECT_NAME}_generated_py ${_output_py})
     list(APPEND _autogen ${_output_py})
     list(APPEND _inlist ${_input})
   endforeach(_msg)
@@ -63,7 +63,7 @@ macro(genmsg_py TYPE)
       ${_inlist}
       DEPENDS ${_inlist} ${_autogen}
       COMMENT "${PROJECT_NAME}: generating msg/__init__.py")
-    list(APPEND ${PROJECT_NAME}_generated ${_output_py})
+    list(APPEND ${PROJECT_NAME}_generated_py ${_output_py})
   endif()
 endmacro()
 
@@ -89,7 +89,7 @@ macro(gensrv_py TYPE)
     string(REPLACE ".srv" ".py" _output_py_base ${_fname})
 
     set(_output_py ${_outdir}/_${_output_py_base})
-    list(APPEND ${PROJECT_NAME}_generated ${_output_py})
+    list(APPEND ${PROJECT_NAME}_generated_py ${_output_py})
     
     set(_incflags "")
     foreach(dir ${DEPENDED_PACKAGE_PATHS})
@@ -122,12 +122,18 @@ macro(gensrv_py TYPE)
       -p ${PROJECT_NAME}
       -o ${_outdir}
       ${_inlist}
-      DEPENDS ${_inlist} ${${PROJECT_NAME}_generated}
+      DEPENDS ${_inlist} ${${PROJECT_NAME}_generated_py}
       COMMENT "${PROJECT_NAME}: generating srv/__init__.py"
       )
-    list(APPEND ${PROJECT_NAME}_generated ${_output_py})
+    list(APPEND ${PROJECT_NAME}_generated_py ${_output_py})
   endif()
 endmacro()
 
 macro(gentargets_py)
+  add_custom_target(${PROJECT_NAME}_gen_py ALL
+    DEPENDS ${${PROJECT_NAME}_generated_py})
+
+  add_dependencies(gen_py ${PROJECT_NAME}_gen_py)
+
+
 endmacro()

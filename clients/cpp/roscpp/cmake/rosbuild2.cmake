@@ -1,4 +1,5 @@
 set(genmsg_cpp_exe ${roscpp_SOURCE_DIR}/scripts/rosbuild2/genmsg_cpp.py)
+
 # Message-generation support.
 macro(genmsg_cpp TYPE)
 
@@ -20,7 +21,7 @@ macro(genmsg_cpp TYPE)
     set(_outdir ${ROSBUILD_GEN_DIR}/cpp)
     set(_output_cpp ${_outdir}/${PROJECT_NAME}/${_output_cpp_base})
 
-    list(APPEND ${PROJECT_NAME}_generated ${_output_cpp})
+    list(APPEND ${PROJECT_NAME}_generated_cpp ${_output_cpp})
 
     set(_incflags "")
     foreach(dir ${DEPENDED_PACKAGE_PATHS})
@@ -67,7 +68,7 @@ macro(gensrv_cpp TYPE)
     set(_outdir ${ROSBUILD_GEN_DIR}/cpp)
     set(_output_cpp ${_outdir}/${PROJECT_NAME}/${_output_cpp_base})
     
-    list(APPEND ${PROJECT_NAME}_generated ${_output_cpp})
+    list(APPEND ${PROJECT_NAME}_generated_cpp ${_output_cpp})
 
     set(_incflags "")
     foreach(dir ${DEPENDED_PACKAGE_PATHS})
@@ -92,11 +93,15 @@ macro(gensrv_cpp TYPE)
 endmacro(gensrv_cpp)
 
 macro(gentargets_cpp)
+
   add_custom_target(${PROJECT_NAME}_gen_cpp ALL
-    DEPENDS ${${PROJECT_NAME}_generated})
+    DEPENDS ${${PROJECT_NAME}_generated_cpp})
+
   install(DIRECTORY ${ROSBUILD_GEN_DIR}/cpp/${PROJECT_NAME} 
     DESTINATION include
     OPTIONAL
     COMPONENT ${PROJECT_NAME})
+
+  add_dependencies(gen_cpp ${PROJECT_NAME}_gen_cpp)
 
 endmacro()

@@ -58,6 +58,8 @@
 
 (defvar *ros-asdf-use-ros-home* nil)
 
+(defconstant +marker-file-timeout+ 60.0)
+
 (defmethod asdf:output-files :around ((operation asdf:compile-op) (c asdf:cl-source-file))
   (if *ros-asdf-use-ros-home*
       (roslisp-home-output-files c)
@@ -141,13 +143,22 @@
 ;; Use lock file to prevent from parallel compilation of the same
 ;; system
 
-(defun wait-for-file-deleted (file msg)
-  (let ((print-msg t))
-    (loop while (probe-file file) do
-      (when print-msg
-        (warn 'simple-warning :format-control msg)
-        (setf print-msg nil))
-      (sleep 0.5))))
+(defun wait-for-file-deleted (file msg &optional delete-timeout)
+  "Waits for `file' to be removed or, when `timeout' is set and
+expires, deletes the file."
+  (let ((timer (sb-ext:make-timer
+                (lambda () (delete-file file)))))
+    (when delete-timeout
+      (sb-ext:schedule-timer timer delete-timeout))
+    (unwind-protect
+         (let ((print-msg t))
+           (loop while (probe-file file) do
+             (when print-msg
+               (warn 'simple-warning :format-control msg)
+               (setf print-msg nil))
+             (sleep 0.5)))
+      (when delete-timeout
+        (sb-ext:unschedule-timer timer)))))
 
 (defun compilation-marker-file-path (component)
   (merge-pathnames (make-pathname
@@ -170,8 +181,10 @@
                                (wait-for-file-deleted
                                 marker-file-path
                                 (format nil
-                                        "System `~a' is compiled by a different process. Waiting for compilation of blocking file to finish."
-                                        (asdf:component-name (asdf-system-of-component component))))
+                                        "System `~a' is compiled by a different process. Waiting for compilation of blocking file to finish. Will proceed in at most ~a seconds."
+                                        (asdf:component-name (asdf-system-of-component component))
+                                        +marker-file-timeout+)
+                                +marker-file-timeout+)
                                (go retry))))
               (close
                (open marker-file-path

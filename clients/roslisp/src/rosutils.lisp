@@ -141,7 +141,7 @@
     (assert (or sub pub) nil "Can't get class name of topic ~a that we neither publish nor subscribe" topic)
     (let* ((type (if sub (sub-topic-type sub) (pub-topic-type pub)))
            (tokens (tokens type :separators '(#\/))))
-      (assert (= 2 (length tokens)) nil "topic type ~a of topic ~a was not of the form /foo/bar" type topic)
+      (assert (= 2 (length tokens)) nil "topic type ~a of topic ~a was not of the form foo/bar" type topic)
       (let* ((class-name (concatenate 'string (string-upcase (second tokens))))
              (pkg-name (string-upcase (concatenate 'string (first tokens) "-msg")))
              (class-symbol (find-symbol class-name pkg-name)))

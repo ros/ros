@@ -40,7 +40,8 @@
 
 (in-package roslisp)
 
-(require 'sb-cltl2)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (require 'sb-cltl2))
 
 (defmethod deserialize ((msg symbol) str)
   (let ((m (make-instance msg)))

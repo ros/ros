@@ -99,7 +99,7 @@ def sleep(duration):
         if duration < 0:
             return
         else:
-            time.sleep(duration)
+            rospy.rostime.wallsleep(duration)
     else:
         initial_rostime = rospy.rostime.get_rostime()
         if not isinstance(duration, roslib.rostime.Duration):

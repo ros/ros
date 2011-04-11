@@ -39,6 +39,7 @@ classes are L{Time} and L{Duration}, which represent the ROS 'time'
 and 'duration' primitives, respectively.
 """
 
+import sys
 import threading
 import time
 import traceback
@@ -269,3 +270,23 @@ def switch_to_wallclock():
     finally:
         _rostime_cond.release()
 
+def wallsleep(duration):
+    """
+    Internal use.
+    Windows interrupts time.sleep with an IOError exception
+    when a signal is caught. Even when the signal is handled
+    by a callback, it will then proceed to throw IOError when
+    the handling has completed. 
+
+    Refer to https://code.ros.org/trac/ros/ticket/3421.
+
+    So we create a platform dependant wrapper to handle this
+    here.
+    """
+    if sys.platform in ['win32']: # cygwin seems to be ok
+        try:
+            time.sleep(duration)
+        except IOError:
+            pass
+    else:
+        time.sleep(duration) 

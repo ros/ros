@@ -52,6 +52,7 @@ import roslib.rosenv
 import roslib.roslogging
 
 import rospy.exceptions
+import rospy.rostime
 
 from rospy.names import *
 from rospy.impl.validators import ParameterInvalid
@@ -463,7 +464,7 @@ def signal_shutdown(reason):
             t.join(_TIMEOUT_SHUTDOWN_JOIN)
     del _shutdown_threads[:]
     try:
-        time.sleep(0.1) #hack for now until we get rid of all the extra threads
+        rospy.rostime.wallsleep(0.1) #hack for now until we get rid of all the extra threads
     except KeyboardInterrupt: pass
 
 def _ros_signal(sig, stackframe):

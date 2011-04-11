@@ -99,7 +99,7 @@ def spin():
     logdebug("node[%s, %s] entering spin(), pid[%s]", rospy.core.get_caller_id(), rospy.core.get_node_uri(), os.getpid())        
     try:
         while not rospy.core.is_shutdown():
-            time.sleep(0.5)
+            rospy.rostime.wallsleep(0.5)
     except KeyboardInterrupt:
         logdebug("keyboard interrupt, shutting down")
         rospy.core.signal_shutdown('keyboard interrupt')
@@ -331,13 +331,13 @@ def wait_for_message(topic, topic_type, timeout=None):
         if timeout is not None:
             timeout_t = time.time() + timeout
             while not rospy.core.is_shutdown() and wfm.msg is None:
-                time.sleep(0.01)
+                rospy.rostime.wallsleep(0.01)
                 if time.time() >= timeout_t:
                     raise rospy.exceptions.ROSException("timeout exceeded while waiting for message on topic %s"%topic)
 
         else:
             while not rospy.core.is_shutdown() and wfm.msg is None:
-                time.sleep(0.01)            
+                rospy.rostime.wallsleep(0.01)            
     finally:
         if s is not None:
             s.unregister()

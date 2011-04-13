@@ -4,7 +4,11 @@ all:
 	@mkdir -p build
 	-mkdir -p bin
 	cd build && cmake -DCMAKE_TOOLCHAIN_FILE=`rospack find rosbuild`/rostoolchain.cmake ..
+ifneq ($(MAKE),)
+	cd build && $(MAKE) $(ROS_PARALLEL_JOBS)
+else
 	cd build && make $(ROS_PARALLEL_JOBS)
+endif
 
 PACKAGE_NAME=$(shell basename $(PWD))
 

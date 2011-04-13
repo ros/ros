@@ -37,7 +37,7 @@
 import socket
 import threading
 
-from rospy.core import logwarn, logerr, logdebug
+from rospy.core import logwarn, logerr, logdebug, rospyerr
 import rospy.exceptions
 import rospy.names
 

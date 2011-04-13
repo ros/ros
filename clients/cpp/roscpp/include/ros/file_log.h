@@ -44,6 +44,7 @@ class Level;
 typedef helpers::ObjectPtrT<Level> LevelPtr;
 }
 
+#if !defined(ROSCPP_LOG_DISABLE)
 #define ROSCPP_LOG_DEBUG(...) \
     do \
     { \
@@ -59,7 +60,9 @@ typedef helpers::ObjectPtrT<Level> LevelPtr;
         ros::console::print(0, logger, ros::console::levels::Debug, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__, __VA_ARGS__); \
       } \
     } while(0)
-
+#else
+#define ROSCPP_LOG_DEBUG(...)
+#endif
 namespace ros
 {
 

@@ -70,6 +70,7 @@ log4cxx::LevelPtr getDebugLevel()
 
 void init(const M_string& remappings)
 {
+#if !defined(ROSCPP_LOG_DISABLE)
   std::string log_file_name;
   M_string::const_iterator it = remappings.find("__log");
   if (it != remappings.end())
@@ -147,6 +148,7 @@ void init(const M_string& remappings)
     g_file_only_logger->addAppender(appender);
     g_file_only_logger->setLevel(log4cxx::Level::getDebug());
   }
+#endif
 }
 
 } // namespace file_log

@@ -69,11 +69,14 @@ ConnectionManager::~ConnectionManager()
 void ConnectionManager::start()
 {
   poll_manager_ = PollManager::instance();
-  poll_conn_ = poll_manager_->addPollThreadListener(boost::bind(&ConnectionManager::removeDroppedConnections, this));
+  poll_conn_ = poll_manager_->addPollThreadListener(boost::bind(&ConnectionManager::removeDroppedConnections, 
+								this));
 
   // Bring up the TCP listener socket
   tcpserver_transport_ = TransportTCPPtr(new TransportTCP(&poll_manager_->getPollSet()));
-  if (!tcpserver_transport_->listen(network::getTCPROSPort(), MAX_TCPROS_CONN_QUEUE, boost::bind(&ConnectionManager::tcprosAcceptConnection, this, _1)))
+  if (!tcpserver_transport_->listen(network::getTCPROSPort(), 
+				    MAX_TCPROS_CONN_QUEUE, 
+				    boost::bind(&ConnectionManager::tcprosAcceptConnection, this, _1)))
   {
     ROS_FATAL("Listen on port [%d] failed", network::getTCPROSPort());
     ROS_BREAK();
@@ -206,7 +209,8 @@ bool ConnectionManager::onConnectionHeaderReceived(const ConnectionPtr& conn, co
   std::string val;
   if (header.getValue("topic", val))
   {
-    ROSCPP_LOG_DEBUG("Connection: Creating TransportSubscriberLink for topic [%s] connected to [%s]", val.c_str(), conn->getRemoteString().c_str());
+    ROSCPP_LOG_DEBUG("Connection: Creating TransportSubscriberLink for topic [%s] connected to [%s]", 
+		     val.c_str(), conn->getRemoteString().c_str());
 
     TransportSubscriberLinkPtr sub_link(new TransportSubscriberLink());
     sub_link->initialize(conn);
@@ -214,7 +218,8 @@ bool ConnectionManager::onConnectionHeaderReceived(const ConnectionPtr& conn, co
   }
   else if (header.getValue("service", val))
   {
-    ROSCPP_LOG_DEBUG("Connection: Creating ServiceClientLink for service [%s] connected to [%s]", val.c_str(), conn->getRemoteString().c_str());
+    ROSCPP_LOG_DEBUG("Connection: Creating ServiceClientLink for service [%s] connected to [%s]", 
+		     val.c_str(), conn->getRemoteString().c_str());
 
     ServiceClientLinkPtr link(new ServiceClientLink());
     link->initialize(conn);
@@ -222,7 +227,8 @@ bool ConnectionManager::onConnectionHeaderReceived(const ConnectionPtr& conn, co
   }
   else
   {
-  	ROSCPP_LOG_DEBUG("Got a connection for a type other than 'topic' or 'service' from [%s].  Fail.", conn->getRemoteString().c_str());
+  	ROSCPP_LOG_DEBUG("Got a connection for a type other than 'topic' or 'service' from [%s].  Fail.", 
+			 conn->getRemoteString().c_str());
     return false;
   }
 

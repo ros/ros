@@ -93,8 +93,8 @@ namespace ros
      * ros::start() and sets the reference count to 1.
      *
      * \param ns Namespace for this NodeHandle.  This acts in addition to any namespace assigned to this ROS node.
-     *           eg. If the node's namespace is "/a" and the namespace passed in here is "b", all topics/services/parameters
-     *           will be prefixed with "/a/b/"
+     *           eg. If the node's namespace is "/a" and the namespace passed in here is "b", all 
+     *           topics/services/parameters will be prefixed with "/a/b/"
      * \param remappings Remappings for this NodeHandle.
      * \throws InvalidNameException if the namespace is not a valid graph resource name
      */
@@ -133,7 +133,8 @@ namespace ros
      *
      * This version also lets you pass in name remappings that are specific to this NodeHandle
      *
-     * When a NodeHandle is copied, it inherits the namespace of the NodeHandle being copied, and increments the reference count of the global node state
+     * When a NodeHandle is copied, it inherits the namespace of the NodeHandle being copied, 
+     * and increments the reference count of the global node state
      * by 1.
      * \throws InvalidNameException if the namespace is not a valid graph resource name
      */
@@ -164,7 +165,10 @@ namespace ros
      * NodeHandle.  If none has been explicitly set, returns the global
      * queue.
      */
-    CallbackQueueInterface* getCallbackQueue() const { return callback_queue_ ? callback_queue_ : (CallbackQueueInterface*)getGlobalCallbackQueue(); }
+    CallbackQueueInterface* getCallbackQueue() const 
+    { 
+      return callback_queue_ ? callback_queue_ : (CallbackQueueInterface*)getGlobalCallbackQueue(); 
+    }
 
     /**
      * \brief Returns the namespace associated with this NodeHandle
@@ -261,7 +265,8 @@ namespace ros
      }
 
      MyClass my_class;
-     ros::Publisher pub = handle.advertise<std_msgs::Empty>("my_topic", 1, boost::bind(&MyClass::connectCallback, my_class, _1));
+     ros::Publisher pub = handle.advertise<std_msgs::Empty>("my_topic", 1, 
+                                                            boost::bind(&MyClass::connectCallback, my_class, _1));
      \endverbatim
      *
    *

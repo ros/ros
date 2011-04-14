@@ -224,11 +224,12 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
   if (final[0] == '~')
   {
     std::stringstream ss;
-    ss << "Using ~ names with NodeHandle methods is not allowed.  If you want to use private names with the NodeHandle ";
-    ss << "interface, construct a NodeHandle using a private name as its namespace.  e.g. ";
-    ss << "ros::NodeHandle nh(\"~\");  ";
-    ss << "nh.getParam(\"my_private_name\");";
-    ss << " (name = [" << name << "])";
+    ss << "Using ~ names with NodeHandle methods is not allowed.  "
+       << "If you want to use private names with the NodeHandle "
+       << "interface, construct a NodeHandle using a private name as its namespace.  e.g. "
+       << "ros::NodeHandle nh(\"~\");  "
+       << "nh.getParam(\"my_private_name\");"
+       << " (name = [" << name << "])";
     throw InvalidNameException(ss.str());
   }
   else if (final[0] == '/')
@@ -265,7 +266,8 @@ Publisher NodeHandle::advertise(AdvertiseOptions& ops)
     }
   }
 
-  SubscriberCallbacksPtr callbacks(new SubscriberCallbacks(ops.connect_cb, ops.disconnect_cb, ops.tracked_object, ops.callback_queue));
+  SubscriberCallbacksPtr callbacks(new SubscriberCallbacks(ops.connect_cb, ops.disconnect_cb, 
+							   ops.tracked_object, ops.callback_queue));
 
   if (TopicManager::instance()->advertise(ops, callbacks))
   {

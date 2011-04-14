@@ -84,7 +84,8 @@ public:
     return impl_ != rhs.impl_;
   }
 
-  // private:
+private:
+
   Subscriber(const std::string& topic, const NodeHandle& node_handle, 
 	     const SubscriptionCallbackHelperPtr& helper);
 

@@ -61,28 +61,28 @@ struct PreDeserializeParams
 };
 
 /**
- * \brief called by the SubscriptionCallbackHelper after a message is instantiated but before that message is deserialized
+ * \brief called by the SubscriptionCallbackHelper after a message is
+ * instantiated but before that message is deserialized
  */
 template<typename M>
 struct PreDeserialize
 {
-  static void notify(const PreDeserializeParams<M>& params)
-  {
-  }
+  static void notify(const PreDeserializeParams<M>& params) { }
 };
 
 }
 
 template<typename T>
-typename boost::enable_if<boost::is_base_of<ros::Message, T> >::type assignSubscriptionConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header)
+typename boost::enable_if<boost::is_base_of<ros::Message, T> >::type 
+assignSubscriptionConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header)
 {
   t->__connection_header = connection_header;
 }
 
 template<typename T>
-typename boost::disable_if<boost::is_base_of<ros::Message, T> >::type assignSubscriptionConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header)
-{
-}
+typename boost::disable_if<boost::is_base_of<ros::Message, T> >::type 
+assignSubscriptionConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header)
+{ }
 
 struct SubscriptionCallbackHelperDeserializeParams
 {
@@ -113,8 +113,9 @@ public:
 typedef boost::shared_ptr<SubscriptionCallbackHelper> SubscriptionCallbackHelperPtr;
 
 /**
- * \brief Concrete generic implementation of SubscriptionCallbackHelper for any normal message type.  Use directly with
- * care, this is mostly for internal use.
+ * \brief Concrete generic implementation of
+ * SubscriptionCallbackHelper for any normal message type.  Use
+ * directly with care, this is mostly for internal use.
  */
 template<typename P, typename Enabled = void>
 class SubscriptionCallbackHelperT : public SubscriptionCallbackHelper
@@ -132,10 +133,11 @@ public:
   typedef boost::function<void(typename Adapter::Parameter)> Callback;
   typedef boost::function<NonConstTypePtr()> CreateFunction;
 
-  SubscriptionCallbackHelperT(const Callback& callback, const CreateFunction& create = DefaultMessageCreator<NonConstType>())
-  : callback_(callback)
-  , create_(create)
-  {}
+  SubscriptionCallbackHelperT(const Callback& callback, 
+			      const CreateFunction& create = DefaultMessageCreator<NonConstType>())
+    : callback_(callback)
+    , create_(create)
+  { }
 
   void setCreateFunction(const CreateFunction& create)
   {

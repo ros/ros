@@ -44,25 +44,8 @@ class Level;
 typedef helpers::ObjectPtrT<Level> LevelPtr;
 }
 
-#if !defined(ROSCPP_LOG_DISABLE)
-#define ROSCPP_LOG_DEBUG(...) \
-    do \
-    { \
-      ROSCONSOLE_AUTOINIT; \
-      ROSCONSOLE_DEFINE_LOCATION(true, ros::console::levels::Debug, ROSCONSOLE_DEFAULT_NAME); \
-      \
-      if (ROS_UNLIKELY(enabled)) \
-      { \
-        ROSCONSOLE_PRINT_AT_LOCATION(__VA_ARGS__); \
-      } \
-      else if (log4cxx::LoggerPtr logger = ros::file_log::getFileOnlyLogger()) \
-      { \
-        ros::console::print(0, logger, ros::console::levels::Debug, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__, __VA_ARGS__); \
-      } \
-    } while(0)
-#else
-#define ROSCPP_LOG_DEBUG(...)
-#endif
+#define ROSCPP_LOG_DEBUG(...) ROS_DEBUG_NAMED("roscpp_internal", __VA_ARGS__)
+
 namespace ros
 {
 
@@ -71,13 +54,8 @@ namespace ros
  */
 namespace file_log
 {
-
-const std::string& getLogFilename();
-const std::string& getLogDirectory();
-
-log4cxx::LoggerPtr& getFileOnlyLogger();
-log4cxx::LevelPtr getDebugLevel();
-
+  // 20110418 TDS: this appears to be used only by rosout.
+  const std::string& getLogDirectory();
 }
 
 }

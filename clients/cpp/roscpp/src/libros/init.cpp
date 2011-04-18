@@ -379,7 +379,10 @@ void start()
   g_internal_queue_thread = boost::thread(internalCallbackQueueThreadFunc);
   getGlobalCallbackQueue()->enable();
 
-  ROSCPP_LOG_DEBUG("Started node [%s], pid [%d], bound on [%s], xmlrpc port [%d], tcpros port [%d], logging to [%s], using [%s] time", this_node::getName().c_str(), getpid(), network::getHost().c_str(), XMLRPCManager::instance()->getServerPort(), ConnectionManager::instance()->getTCPPort(), file_log::getLogFilename().c_str(), Time::useSystemTime() ? "real" : "sim");
+  ROSCPP_LOG_DEBUG("Started node [%s], pid [%d], bound on [%s], xmlrpc port [%d], tcpros port [%d], using [%s] time", 
+		   this_node::getName().c_str(), getpid(), network::getHost().c_str(), 
+		   XMLRPCManager::instance()->getServerPort(), ConnectionManager::instance()->getTCPPort(), 
+		   Time::useSystemTime() ? "real" : "sim");
 
   // Label used to abort if we've started shutting down in the middle of start(), which can happen in
   // threaded code or if Ctrl-C is pressed while we're initializing
@@ -546,8 +549,6 @@ void shutdown()
   // See https://code.ros.org/trac/ros/ticket/3271
   //
   log4cxx::Logger::getRootLogger()->getLoggerRepository()->shutdown();
-  log4cxx::LoggerPtr& fo_logger = ros::file_log::getFileOnlyLogger();
-  fo_logger = log4cxx::LoggerPtr();
   
   if (g_started)
   {

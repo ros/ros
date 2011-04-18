@@ -81,10 +81,6 @@ rosbuild_add_gtest_build_flags(multiple_init_fini)
 rosbuild_add_executable(inspection EXCLUDE_FROM_ALL inspection.cpp)
 rosbuild_add_gtest_build_flags(inspection)
 
-# Test logging functionality
-rosbuild_add_executable(log EXCLUDE_FROM_ALL log.cpp)
-rosbuild_add_gtest_build_flags(log)
-
 # Test that advertising a service multiple times fails
 rosbuild_add_executable(service_adv_multiple EXCLUDE_FROM_ALL service_adv_multiple.cpp)
 rosbuild_add_gtest_build_flags(service_adv_multiple)

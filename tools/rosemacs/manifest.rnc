@@ -21,7 +21,8 @@ grammar {
   }
   url = element url { text }
   depend = element depend { attribute package { text } }
-  export = element export { text }
+  export = element export { text & nodelet? }
+  nodelet = element nodelet { attribute plugin }
   rosdep = element rosdep { attribute name { text } }
   platform = element platform {
     attribute os { text },

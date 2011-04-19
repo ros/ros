@@ -637,6 +637,15 @@
   (let ((max-mini-window-height 0))
     (shell-command (format "rosmsg show %s" message))))
 
+(defun view-ros-action (message)
+  "Open definition of a ros action in view mode.  If used interactively, tab completion will work."
+  (interactive (list (ros-completing-read-action
+                      "Enter action name"
+                      (current-ros-word))))
+  (let ((max-mini-window-height 0))
+    (shell-command (format "rosmsg show %sGoal;echo '---';rosmsg show %sResult;echo '---';rosmsg show %sFeedback" message message message))))
+
+
 (defun view-ros-service (service)
   "Open definition of a ros service in view mode.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-service
@@ -1500,6 +1509,7 @@ The page delimiter in this buffer matches the start, so you can use forward/back
 (define-key ros-keymap "\C-e" 'rosemacs/display-event-buffer)
 (define-key ros-keymap "\C-n" 'rosemacs/display-nodes)
 (define-key ros-keymap "c" 'ros-make)
+(define-key ros-keymap "a" 'view-ros-action)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Invoking the mode

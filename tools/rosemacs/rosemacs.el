@@ -414,22 +414,65 @@
                                          default-pkg))
                    1)))))
 
+;; Unit tests for function, part of docu
+;; ELISP> (ros-uniquify-for-completion "test" '("hello" "test" "world" "test") '("p1" "p2" "p3" "p4"))
+;; ("test (p2)" ("test (p2)" "test (p4)" "hello" "world"))
+;; ELISP> (ros-uniquify-for-completion nil '("hello" "test" "world" "test") '("p1" "p2" "p3" "p4") )
+;; (nil ("hello" "test (p2)" "world" "test (p4)"))
+;; ELISP> (ros-uniquify-for-completion "test2" '("hello" "test" "world" "test") '("p1" "p2" "p3" "p4") )
+;; (nil ("hello" "test (p2)" "world" "test (p4)"))
+;; ELISP> (ros-uniquify-for-completion "world" '("hello" "test" "world" "test") '("p1" "p2" "p3" "p4") )
+;; ("world" ("hello" "test (p2)" "world" "test (p4)"))
+;; last test case for package, need not sort result list to make it first, ido does that anyway
+;; ELISP> (ros-uniquify-for-completion "test" '("hello" "test" "world" "test") '("p1" "p2" "p3" "p4") "p4")
+;; ("test (p4)" ("test (p2)" "test (p4)" "hello" "world"))
+(defun ros-uniquify-for-completion (default itemlist packagelist &optional package )
+  "default is e.g. a message, service or action, itemlist is a
+ list of candidate names (possible duplicates).  packagelist is a
+ list that for each item in itemlist names the package. Package
+ is optionally a guess of name of package of default. Returns a
+ list of uniquified default, uniquified itemlist, and
+ resorteditemlist to contain first all items matching
+ default. Prefers item with matching package when possible."
+  (let* ((uniquified-item-list (map 'list (lambda (m pkg)
+                                            (if (> (count m itemlist :test 'equal) 1)
+                                                (format "%s (%s)" m pkg)
+                                              m))
+                                    itemlist packagelist))
+         (hits (loop for item in itemlist
+                     for uniqueitem in uniquified-item-list
+                     when (string= item default)
+                     collect uniqueitem)))
+    (cond
+     ((null hits) (list nil uniquified-item-list))
+     ((= 1 (length hits))
+      (list default uniquified-item-list))
+     (t ;; more than one hit, try to match package if any
+      (let ((resultitem (car (member (format "%s (%s)" default package) hits))))
+        ;; move all matching to front
+        (loop for item in (reverse hits) do
+              (setf uniquified-item-list
+                    (cons item (remove item uniquified-item-list))))
+        (list
+         (if resultitem resultitem (car hits))
+         uniquified-item-list))))))
+
+
 (defun ros-completing-read-message (prompt &optional default)
   (unless ros-messages
     (cache-ros-message-locations))
   (let* ((ros-messages-list (map 'list 'identity ros-messages))
-         (result (funcall ros-completion-function
-                          (concatenate 'string prompt
-                                       (if (member default ros-messages-list)
-                                           (format " (default %s): " default)
+        (unique-pair (ros-uniquify-for-completion default ros-messages-list ros-message-packages))
+        (uniquified-default (car unique-pair))
+        (uniquified-messages-list (cadr unique-pair))
+        (result (funcall ros-completion-function
+                         (concatenate 'string prompt
+                                       (if uniquified-default
+                                           (format " (default %s): " uniquified-default)
                                          ": "))
-                          (map 'list (lambda (m pkg)
-                                       (if (> (count m ros-messages-list :test 'equal) 1)
-                                           (format "%s (%s)" m pkg)
-                                         m))
-                               ros-messages-list ros-message-packages)
-                          nil nil nil nil (when (member default ros-messages-list)
-                                            default)))
+                          uniquified-messages-list
+                          nil nil nil nil
+                          uniquified-default))
          (ws-pos (position ?\s result))
          (message (substring result 0 ws-pos))
          (package (when ws-pos
@@ -443,18 +486,17 @@
   (unless ros-services
     (cache-ros-service-locations))
   (let* ((ros-services-list (map 'list 'identity ros-services))
+         (unique-pair (ros-uniquify-for-completion default ros-services-list ros-service-packages))
+         (uniquified-default (car unique-pair))
+         (uniquified-services-list (cadr unique-pair))
          (result (funcall ros-completion-function
                           (concatenate 'string prompt
-                                       (if (member default ros-services-list)
-                                           (format " (default %s): " default)
+                                       (if uniquified-default
+                                           (format " (default %s): " uniquified-default)
                                          ": "))
-                          (map 'list (lambda (m pkg)
-                                       (if (> (count m ros-services-list :test 'equal) 1)
-                                           (format "%s (%s)" m pkg)
-                                         m))
-                               ros-services-list ros-service-packages)
-                          nil nil nil nil (when (member default ros-services-list)
-                                            default)))
+                          uniquified-services-list
+                          nil nil nil nil
+                          uniquified-default))
          (ws-pos (position ?\s result))
          (service (substring result 0 ws-pos))
          (package (when ws-pos
@@ -472,18 +514,17 @@
          (default (if (atom defaults)
                       defaults
                       (loop for x in defaults when (member x ros-actions-list) return x)))
+         (unique-pair (ros-uniquify-for-completion default ros-actions-list ros-action-packages))
+         (uniquified-default (car unique-pair))
+         (uniquified-action-list (cadr unique-pair))
          (result (funcall ros-completion-function
                           (concatenate 'string prompt
-                                       (if (member default ros-actions-list)
-                                           (format " (default %s): " default)
+                                       (if uniquified-default
+                                           (format " (default %s): " uniquified-default)
                                          ": "))
-                          (map 'list (lambda (m pkg)
-                                       (if (> (count m ros-actions-list :test 'equal) 1)
-                                           (format "%s (%s)" m pkg)
-                                         m))
-                               ros-actions-list ros-action-packages)
-                          nil nil nil nil (when (member default ros-actions-list)
-                                            default)))
+                          uniquified-action-list
+                          nil nil nil nil
+                          uniquified-default))
          (ws-pos (position ?\s result))
          (action (substring result 0 ws-pos))
          (package (when ws-pos

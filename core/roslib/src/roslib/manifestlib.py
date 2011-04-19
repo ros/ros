@@ -110,14 +110,13 @@ def check_depends(name):
     """
     def check(n, filename):
         nodes = get_nodes_by_name(n, name)
-        depends = [e.attributes for e in nodes]
         # TDS 20110419:  this is a hack.
         # rosbuild2 has a <depend thirdparty="depname"/> tag,
         # which is confusing this subroutine with 
         # KeyError: 'package'
         # for now, explicitly don't consider thirdparty depends
-        packages = [d['package'].value for d in depends
-                    if 'thirdparty' not in d]
+        depends = [e.attributes for e in nodes if 'thirdparty' not in e.attributes.keys()]
+        packages = [d['package'].value for d in depends]
         return [Depend(p) for p in packages]
     return check
 

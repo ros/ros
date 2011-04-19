@@ -20,6 +20,7 @@
   <platform os="macports" version="macports"/>
   <rosbuild2>
     <depend package="roslib" />
+    <pythondir>src</pythondir>
   </rosbuild2>
 </package>
 

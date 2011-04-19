@@ -103,6 +103,12 @@ def rostestmain():
     parser.add_option("--bare-name", metavar="TEST_NAME",
                       dest="bare_name", default=None,
                       help="Test name for --bare executable")
+    parser.add_option("--pkgdir", metavar="PKG_DIR",
+                      dest="pkg_dir", default=None,
+                      help="package dir")
+    parser.add_option("--package", metavar="PACKAGE",
+                      dest="package", default=None,
+                      help="package")
     (options, args) = parser.parse_args()
     try:
         if options.bare:
@@ -122,7 +128,13 @@ def rostestmain():
 
     # compute some common names we'll be using to generate test names and files
     test_file = args[0]
-    pkg_dir, pkg = roslib.packages.get_dir_pkg(test_file) 
+    if options.pkg_dir and options.package:  
+        # rosbuild2: the build system knows what package and directory, so let it tell us,
+        # instead of shelling back out to rospack
+        pkg_dir, pkg = options.pkg_dir, options.package
+    else:
+        pkg_dir, pkg = roslib.packages.get_dir_pkg(test_file)
+
     outname = rostest_name_from_path(pkg_dir, test_file)
 
     # #1140
@@ -135,7 +147,10 @@ def rostestmain():
         if options.bare:
             # TODO: does bare-retry make sense?
             time_limit = float(options.bare_limit) if options.bare_limit else None
-            testCase = rostest.baretest.BareTestCase(test_file, args[1:], rostest.runner.getResults(), retry=0, time_limit=time_limit, test_name=options.bare_name)
+            testCase = rostest.baretest.BareTestCase(test_file, args[1:], 
+                                                     rostest.runner.getResults(), retry=0, 
+                                                     time_limit=time_limit, test_name=options.bare_name,
+                                                     package=pkg)
             suite = unittest.TestSuite()
             suite.addTest(testCase)
 

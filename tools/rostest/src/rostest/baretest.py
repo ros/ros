@@ -53,7 +53,7 @@ BARE_TIME_LIMIT = 60.
 
 class BareTestCase(unittest.TestCase):
 
-    def __init__(self, exe, args, results, retry=0, time_limit=None, test_name=None):
+    def __init__(self, exe, args, results, retry=0, time_limit=None, test_name=None, package=None):
         """
         @param exe: path to executable to run
         @type  exe: str
@@ -69,7 +69,7 @@ class BareTestCase(unittest.TestCase):
         """
         super(BareTestCase, self).__init__()
         self.results = results
-        _, self.package = roslib.packages.get_dir_pkg(exe)
+        self.package = package
         self.exe = exe
         if test_name is None:
             self.test_name = os.path.basename(exe)

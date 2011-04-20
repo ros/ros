@@ -1,5 +1,15 @@
 include(${CMAKE_CURRENT_BINARY_DIR}/package.cmake)
 
+#
+#  Make a buildspace rosconsole.config if we've got one handy
+#
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/ros/config/rosconsole.config)
+  configure_file(${CMAKE_SOURCE_DIR}/ros/config/rosconsole.config
+    ${CMAKE_BINARY_DIR}/rosconsole.config
+    @ONLY
+    )
+endif()
+
 include_directories(include/rosconsole)
 rosbuild_add_boost_directories()
 rosbuild_add_library(${PROJECT_NAME} src/rosconsole/rosconsole.cpp)

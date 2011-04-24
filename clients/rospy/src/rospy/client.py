@@ -173,11 +173,12 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
         
     @type  disable_signals: bool
     
-    @param disable_rostime: for rostests only, suppresses
+    @param disable_rostime: for internal testing only: suppresses
         automatic subscription to rostime
     @type  disable_rostime: bool
 
-    @param disable_rosout: suppress auto-publication of rosout
+    @param disable_rosout: for internal testing only: suppress
+        auto-publication of rosout
     @type  disable_rostime: bool
 
     @raise ROSInitException: if initialization/registration fails

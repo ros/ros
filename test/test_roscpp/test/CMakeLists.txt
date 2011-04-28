@@ -41,9 +41,6 @@ rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/multiple_init_fini.xml)
 # Test node inspection functionality
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/inspection.xml)
 
-# Test logging functionality
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/log.xml)
-
 # Test that advertising a service multiple times fails
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/service_adv_multiple.xml)
 

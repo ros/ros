@@ -116,7 +116,12 @@ def check_depends(name):
         # KeyError: 'package'
         # for now, explicitly don't consider thirdparty depends
         depends = [e.attributes for e in nodes if 'thirdparty' not in e.attributes.keys()]
-        packages = [d['package'].value for d in depends]
+        try:
+            packages = [d['package'].value for d in depends]
+        except KeyError:
+            print "KeyError:  key 'package' not found in depends =", depends
+            raise
+
         return [Depend(p) for p in packages]
     return check
 

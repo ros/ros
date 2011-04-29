@@ -68,11 +68,11 @@ public:
 };
 
 NodeHandle::NodeHandle(const std::string& ns, const M_string& remappings)
-: namespace_(ns)
+: namespace_("")
 , callback_queue_(0)
 , collection_(0)
 {
-  construct();
+  construct(ns);
 
   initRemappings(remappings);
 }
@@ -80,22 +80,25 @@ NodeHandle::NodeHandle(const std::string& ns, const M_string& remappings)
 NodeHandle::NodeHandle(const NodeHandle& parent, const std::string& ns)
 : collection_(0)
 {
-  namespace_ = parent.getNamespace() + "/" + ns;
+  namespace_ = parent.getNamespace();
   callback_queue_ = parent.callback_queue_;
-
-  construct();
 
   remappings_ = parent.remappings_;
   unresolved_remappings_ = parent.unresolved_remappings_;
+
+  construct(ns);
 }
 
 NodeHandle::NodeHandle(const NodeHandle& parent, const std::string& ns, const M_string& remappings)
 : collection_(0)
 {
-  namespace_ = parent.getNamespace() + "/" + ns;
+  namespace_ = parent.getNamespace();
   callback_queue_ = parent.callback_queue_;
 
-  construct();
+  remappings_ = parent.remappings_;
+  unresolved_remappings_ = parent.unresolved_remappings_;
+
+  construct(ns);
 
   initRemappings(remappings);
 }
@@ -103,12 +106,13 @@ NodeHandle::NodeHandle(const NodeHandle& parent, const std::string& ns, const M_
 NodeHandle::NodeHandle(const NodeHandle& rhs)
 : collection_(0)
 {
-  namespace_ = rhs.namespace_;
   callback_queue_ = rhs.callback_queue_;
   remappings_ = rhs.remappings_;
   unresolved_remappings_ = rhs.unresolved_remappings_;
 
-  construct();
+  construct(rhs.namespace_);
+
+  unresolved_namespace_ = rhs.unresolved_namespace_;
 }
 
 NodeHandle::~NodeHandle()
@@ -132,7 +136,7 @@ void spinThread()
   ros::spin();
 }
 
-void NodeHandle::construct()
+void NodeHandle::construct(const std::string& ns)
 {
   if (!ros::isInitialized())
   {
@@ -142,7 +146,7 @@ void NodeHandle::construct()
 
   collection_ = new NodeHandleBackingCollection;
   unresolved_namespace_ = namespace_;
-  namespace_ = names::resolve(namespace_);
+  namespace_ = resolveName(ns);
   ok_ = true;
 
   boost::mutex::scoped_lock lock(g_nh_refcount_mutex);
@@ -182,9 +186,6 @@ void NodeHandle::initRemappings(const M_string& remappings)
 
       remappings_.insert(std::make_pair(resolveName(from, false), resolveName(to, false)));
       unresolved_remappings_.insert(std::make_pair(from, to));
-
-      if (from == namespace_)
-	namespace_ = to;
     }
   }
 }
@@ -207,9 +208,7 @@ std::string NodeHandle::remapName(const std::string& name) const
   }
 
   // If not in our local remappings, perhaps in the global ones
-  std::string remapped = names::remap(resolved);
-  // ROSCPP_LOG_DEBUG("backing off to 'global' remapping: %s", remapped.c_str());
-  return remapped;
+  return names::remap(resolved);
 }
 
 std::string NodeHandle::resolveName(const std::string& name, bool remap) const
@@ -231,12 +230,11 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
   if (final[0] == '~')
   {
     std::stringstream ss;
-    ss << "Using ~ names with NodeHandle methods is not allowed.  "
-       << "If you want to use private names with the NodeHandle "
-       << "interface, construct a NodeHandle using a private name as its namespace.  e.g. "
-       << "ros::NodeHandle nh(\"~\");  "
-       << "nh.getParam(\"my_private_name\");"
-       << " (name = [" << name << "])";
+    ss << "Using ~ names with NodeHandle methods is not allowed.  If you want to use private names with the NodeHandle ";
+    ss << "interface, construct a NodeHandle using a private name as its namespace.  e.g. ";
+    ss << "ros::NodeHandle nh(\"~\");  ";
+    ss << "nh.getParam(\"my_private_name\");";
+    ss << " (name = [" << name << "])";
     throw InvalidNameException(ss.str());
   }
   else if (final[0] == '/')
@@ -259,10 +257,7 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
     // ROSCPP_LOG_DEBUG("resolveName, remapped: %s", final.c_str());
   }
 
-  std::string resolved = names::resolve(final, false);
-  // ROSCPP_LOG_DEBUG("resolveName, resolved: %s", resolved.c_str());
-
-  return resolved;
+  return names::resolve(final, false);
 }
 
 Publisher NodeHandle::advertise(AdvertiseOptions& ops)

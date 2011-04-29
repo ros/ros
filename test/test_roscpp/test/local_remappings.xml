@@ -1,9 +1,9 @@
 <launch>
 
   <param name="use_local_remap" type="bool" value="true" />
-  <param name="remap_from" value="/base_namespace"/>
-  <param name="remap_to"   value="/remapped_base_namespace" />
+  <param name="remap_from" value="sub_namespace"/>
+  <param name="remap_to"   value="different_sub_namespace" />
   <test test-name="local_remappings" pkg="test_roscpp" type="test_remapping"
-        args="/remapped_base_namespace /remapped_base_namespace/sub_namespace"/>
+        args="/base_namespace /base_namespace/different_sub_namespace" />
 
 </launch>

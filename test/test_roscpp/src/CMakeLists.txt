@@ -160,3 +160,6 @@ rosbuild_add_executable(crashes_under_gprof EXCLUDE_FROM_ALL crashes_under_gprof
 rosbuild_add_executable(test_remapping EXCLUDE_FROM_ALL test_remapping.cpp)
 rosbuild_add_gtest_build_flags(test_remapping)
 
+rosbuild_add_executable(test_ns_node_remapping EXCLUDE_FROM_ALL test_ns_node_remapping.cpp)
+rosbuild_add_gtest_build_flags(test_ns_node_remapping)
+

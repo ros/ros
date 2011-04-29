@@ -1554,7 +1554,7 @@ if (handle)
   bool ok() const;
 
 private:
-  void construct();
+  void construct(const std::string& ns);
   void destruct();
 
   void initRemappings(const M_string& remappings);

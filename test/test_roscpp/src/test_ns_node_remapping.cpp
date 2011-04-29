@@ -33,47 +33,52 @@
 static int argc_;
 static char** argv_;
 
-TEST(RemappingTest, remapping_test)
+#define PRINT(cmd) printf(#cmd"\n"); cmd; printf("\n");
+
+TEST(NamespaceRemappingTest, unqualified_remaps)
 {
-  EXPECT_TRUE(argc_ >= 3);
+  ros::M_string local_remappings;
+  local_remappings.insert(std::make_pair("a", "Ra"));
+  local_remappings.insert(std::make_pair("b", "Rb"));
+  local_remappings.insert(std::make_pair("c", "Rc"));
 
-  std::string expected_base_ns = argv_[1];
-  std::string expected_sub_ns  = argv_[2];
+  PRINT(ros::NodeHandle base("a", local_remappings));
+  PRINT(ros::NodeHandle a1(base, "a"));
+  PRINT(ros::NodeHandle a2(base, "a", ros::M_string()));
+  PRINT(ros::NodeHandle  b(base, "b"));
+  PRINT(ros::NodeHandle  c(base, "c", ros::M_string()));  // Same as b, but different constructor
 
-  ros::NodeHandle nh;
-  //ros::NodeHandle pnh("~");
+  EXPECT_STREQ(base.getNamespace().c_str(), "/a");
+  EXPECT_STREQ(a1.getNamespace().c_str(), "/a/Ra");
+  EXPECT_STREQ(a2.getNamespace().c_str(), "/a/Ra");
+  EXPECT_STREQ( b.getNamespace().c_str(), "/a/Rb");
+  EXPECT_STREQ( c.getNamespace().c_str(), "/a/Rc");
+}
 
-  bool use_local_remap = false;
-  EXPECT_TRUE(nh.getParam("use_local_remap", use_local_remap)) 
-    << "Param [~use_local_remap] must be defined\n";
+TEST(NamespaceRemappingTest, qualified_remaps)
+{
+  ros::M_string local_remappings;
+  local_remappings.insert(std::make_pair("/a", "/Ra"));
 
-  if (use_local_remap)
-  {
-    std::string remap_from, remap_to;
-    EXPECT_TRUE(nh.getParam("remap_from", remap_from)) << "Param [~remap_from] must be defined\n";
-    EXPECT_TRUE(nh.getParam("remap_to",   remap_to))   << "Param [~remap_to] must be defined\n";
+  PRINT(ros::NodeHandle a("a", local_remappings));  // local_remappings don't apply to this nodehandle's name
+  PRINT(ros::NodeHandle sub_a(a, "a"));             // remapping were fully qualified, so don't apply to /a/a
 
-    // Construct the new node by passing in a dictionary of remaps
-    ros::M_string local_remappings;
-    local_remappings.insert(std::make_pair(remap_from, remap_to));
+  EXPECT_STREQ(    a.getNamespace().c_str(), "/a");
+  EXPECT_STREQ(sub_a.getNamespace().c_str(), "/a/a");
+}
 
-    ros::NodeHandle base_nh(nh, "base_namespace", local_remappings);
-    EXPECT_TRUE(base_nh.getNamespace() == expected_base_ns) 
-      << "Error: \"" << base_nh.getNamespace() << "\" != \""  << expected_base_ns << "\"\n";
+TEST(NamespaceRemappingTest, unqualified_root_remaps)
+{
+  ros::M_string local_remappings;
+  local_remappings.insert(std::make_pair("a", "Ra"));
+  local_remappings.insert(std::make_pair("b", "Rb"));
 
-    ros::NodeHandle sub_nh(base_nh, "sub_namespace");
-    EXPECT_TRUE(sub_nh.getNamespace() == expected_sub_ns) 
-      << "Error: \"" << sub_nh.getNamespace() << "\" != \""  << expected_sub_ns << "\"\n";
-  }
-  else
-  {
-    std::cout << "***********************************************************************\n";
-    ros::NodeHandle base_nh(nh, "base_namespace");
-    EXPECT_EQ(base_nh.getNamespace(), expected_base_ns); 
+  ros::NodeHandle base("", local_remappings);
+  ros::NodeHandle a(base, "a");
+  ros::NodeHandle b(base, "b", ros::M_string());
 
-    ros::NodeHandle sub_nh(base_nh, "sub_namespace");
-    EXPECT_EQ(sub_nh.getNamespace(), expected_sub_ns); 
-  }
+  EXPECT_STREQ(a.getNamespace().c_str(), "/Ra");
+  EXPECT_STREQ(b.getNamespace().c_str(), "/Rb");
 }
 
 int main(int argc, char** argv)

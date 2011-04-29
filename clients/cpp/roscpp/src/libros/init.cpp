@@ -441,6 +441,7 @@ void init(int& argc, char** argv, const std::string& name, uint32_t options)
       std::string local_name = arg.substr(0, pos);
       std::string external_name = arg.substr(pos + 2);
 
+      ROSCPP_LOG_DEBUG("remap: %s => %s", local_name.c_str(), external_name.c_str());
       remappings[local_name] = external_name;
 
       // shuffle everybody down and stuff this guy at the end of argv

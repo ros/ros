@@ -156,3 +156,7 @@ rosbuild_add_executable(param_locale_avoidance_test EXCLUDE_FROM_ALL param_local
 rosbuild_add_gtest_build_flags(param_locale_avoidance_test)
 
 rosbuild_add_executable(crashes_under_gprof EXCLUDE_FROM_ALL crashes_under_gprof.cpp)
+
+rosbuild_add_executable(test_remapping EXCLUDE_FROM_ALL test_remapping.cpp)
+rosbuild_add_gtest_build_flags(test_remapping)
+

@@ -81,3 +81,7 @@ rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/nonconst_subscriptions.xml)
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/subscribe_retry_tcp.xml)
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/subscribe_star.xml)
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/parameter_validation.xml)
+
+rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/no_remappings.xml)
+rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/local_remappings.xml)
+rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/global_remappings.xml)

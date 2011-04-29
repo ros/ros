@@ -27,6 +27,7 @@
 
 #include "ros/names.h"
 #include "ros/this_node.h"
+#include "ros/file_log.h"
 
 #include <ros/console.h>
 #include <ros/assert.h>
@@ -134,7 +135,9 @@ std::string remap(const std::string& name)
 
 std::string resolve(const std::string& name, bool _remap)
 {
-  return resolve(this_node::getNamespace(), name, _remap);
+  std::string s = resolve(this_node::getNamespace(), name, _remap);
+  ROSCPP_LOG_DEBUG("resolved %s to %s", name.c_str(), s.c_str());
+  return s;
 }
 
 std::string resolve(const std::string& ns, const std::string& name, bool _remap)

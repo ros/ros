@@ -182,6 +182,9 @@ void NodeHandle::initRemappings(const M_string& remappings)
 
       remappings_.insert(std::make_pair(resolveName(from, false), resolveName(to, false)));
       unresolved_remappings_.insert(std::make_pair(from, to));
+
+      if (from == namespace_)
+	namespace_ = to;
     }
   }
 }
@@ -199,15 +202,19 @@ std::string NodeHandle::remapName(const std::string& name) const
   M_string::const_iterator it = remappings_.find(resolved);
   if (it != remappings_.end())
   {
+    // ROSCPP_LOG_DEBUG("found 'local' remapping: %s", it->second.c_str());
     return it->second;
   }
 
   // If not in our local remappings, perhaps in the global ones
-  return names::remap(resolved);
+  std::string remapped = names::remap(resolved);
+  // ROSCPP_LOG_DEBUG("backing off to 'global' remapping: %s", remapped.c_str());
+  return remapped;
 }
 
 std::string NodeHandle::resolveName(const std::string& name, bool remap) const
 {
+  // ROSCPP_LOG_DEBUG("resolveName(%s, %s)", name.c_str(), remap ? "true" : "false");
   std::string error;
   if (!names::validate(name, error))
   {
@@ -238,17 +245,24 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
   }
   else if (!namespace_.empty())
   {
+    // ROSCPP_LOG_DEBUG("Appending namespace_ (%s)", namespace_.c_str());
     final = names::append(namespace_, final);
   }
 
+  // ROSCPP_LOG_DEBUG("resolveName, pre-clean: %s", final.c_str());
   final = names::clean(final);
+  // ROSCPP_LOG_DEBUG("resolveName, post-clean: %s", final.c_str());
 
   if (remap)
   {
     final = remapName(final);
+    // ROSCPP_LOG_DEBUG("resolveName, remapped: %s", final.c_str());
   }
 
-  return names::resolve(final, false);
+  std::string resolved = names::resolve(final, false);
+  // ROSCPP_LOG_DEBUG("resolveName, resolved: %s", resolved.c_str());
+
+  return resolved;
 }
 
 Publisher NodeHandle::advertise(AdvertiseOptions& ops)

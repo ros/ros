@@ -47,6 +47,7 @@ import thread
 import traceback
 from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 import SocketServer
+import select
 
 import roslib.network
 import roslib.exceptions
@@ -236,7 +237,7 @@ class XmlRpcNode(object):
         while not self.is_shutdown:
             try:
                 self.server.serve_forever()
-            except IOError as (errno, errstr):
+            except (IOError,select.error) as (errno, errstr):
                 # check for interrupted call, which can occur if we're
                 # embedded in a program using signals.  All other
                 # exceptions break _run.

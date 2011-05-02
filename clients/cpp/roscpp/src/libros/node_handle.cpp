@@ -72,7 +72,9 @@ NodeHandle::NodeHandle(const std::string& ns, const M_string& remappings)
 , callback_queue_(0)
 , collection_(0)
 {
-  construct(ns);
+  std::string tilde_resolved_ns = (!ns.empty() && ns[0] == '~') ? names::resolve(ns) : ns;
+
+  construct(tilde_resolved_ns);
 
   initRemappings(remappings);
 }

@@ -81,6 +81,21 @@ TEST(NamespaceRemappingTest, unqualified_root_remaps)
   EXPECT_STREQ(b.getNamespace().c_str(), "/Rb");
 }
 
+TEST(NamespaceRemappingTest, tilde_namespaces)
+{
+  ros::M_string local_remappings;
+  local_remappings.insert(std::make_pair("a", "Ra"));
+  local_remappings.insert(std::make_pair("b", "Rb"));
+
+  ros::NodeHandle base("~", local_remappings);
+  ros::NodeHandle a(base, "a");
+  ros::NodeHandle b(base, "b", ros::M_string());
+
+  EXPECT_STREQ(base.getNamespace().c_str(), ros::this_node::getName().c_str());
+  EXPECT_STREQ(a.getNamespace().c_str(), (ros::this_node::getName() + "/Ra").c_str());
+  EXPECT_STREQ(b.getNamespace().c_str(), (ros::this_node::getName() + "/Rb").c_str());
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);

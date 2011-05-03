@@ -601,6 +601,12 @@ TEST(RoscppHandles, nodeHandleNames)
 
   ros::NodeHandle n4("~");
   EXPECT_STREQ(n4.resolveName("blah").c_str(), (ros::this_node::getName() + "/blah").c_str());
+  
+  try {
+    ros::NodeHandle n5(n2, "illegal_name!!!");
+    FAIL();
+  } catch (ros::InvalidNameException&) { }
+
 }
 
 TEST(RoscppHandles, nodeHandleShutdown)

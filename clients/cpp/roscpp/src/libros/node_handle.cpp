@@ -68,13 +68,17 @@ public:
 };
 
 NodeHandle::NodeHandle(const std::string& ns, const M_string& remappings)
-: namespace_("")
-, callback_queue_(0)
-, collection_(0)
+  : namespace_(this_node::getNamespace())
+  , callback_queue_(0)
+  , collection_(0)
 {
-  std::string tilde_resolved_ns = (!ns.empty() && ns[0] == '~') ? names::resolve(ns) : ns;
+  std::string tilde_resolved_ns;
+  if (!ns.empty() && ns[0] == '~')// starts with tilde
+    tilde_resolved_ns = names::resolve(ns);
+  else
+    tilde_resolved_ns = ns;
 
-  construct(tilde_resolved_ns);
+  construct(tilde_resolved_ns, true);
 
   initRemappings(remappings);
 }
@@ -88,7 +92,7 @@ NodeHandle::NodeHandle(const NodeHandle& parent, const std::string& ns)
   remappings_ = parent.remappings_;
   unresolved_remappings_ = parent.unresolved_remappings_;
 
-  construct(ns);
+  construct(ns, false);
 }
 
 NodeHandle::NodeHandle(const NodeHandle& parent, const std::string& ns, const M_string& remappings)
@@ -100,7 +104,7 @@ NodeHandle::NodeHandle(const NodeHandle& parent, const std::string& ns, const M_
   remappings_ = parent.remappings_;
   unresolved_remappings_ = parent.unresolved_remappings_;
 
-  construct(ns);
+  construct(ns, false);
 
   initRemappings(remappings);
 }
@@ -112,7 +116,7 @@ NodeHandle::NodeHandle(const NodeHandle& rhs)
   remappings_ = rhs.remappings_;
   unresolved_remappings_ = rhs.unresolved_remappings_;
 
-  construct(rhs.namespace_);
+  construct(rhs.namespace_, true); 
 
   unresolved_namespace_ = rhs.unresolved_namespace_;
 }
@@ -138,7 +142,7 @@ void spinThread()
   ros::spin();
 }
 
-void NodeHandle::construct(const std::string& ns)
+void NodeHandle::construct(const std::string& ns, bool validate_name)
 {
   if (!ros::isInitialized())
   {
@@ -147,8 +151,16 @@ void NodeHandle::construct(const std::string& ns)
   }
 
   collection_ = new NodeHandleBackingCollection;
-  unresolved_namespace_ = namespace_;
-  namespace_ = resolveName(ns);
+  unresolved_namespace_ = ns;
+  // if callback_queue_ is nonnull, we are in a non-nullary constructor
+
+  if (validate_name)
+    namespace_ = resolveName(ns, true);
+  else
+    {
+      namespace_ = resolveName(ns, true, no_validate());
+      // FIXME validate namespace_ now
+    }
   ok_ = true;
 
   boost::mutex::scoped_lock lock(g_nh_refcount_mutex);
@@ -222,6 +234,11 @@ std::string NodeHandle::resolveName(const std::string& name, bool remap) const
     throw InvalidNameException(error);
   }
 
+  return resolveName(name, remap, no_validate());
+}
+
+std::string NodeHandle::resolveName(const std::string& name, bool remap, no_validate) const
+{
   if (name.empty())
   {
     return namespace_;

@@ -524,13 +524,11 @@ void shutdown()
 {
   boost::recursive_mutex::scoped_lock lock(g_shutting_down_mutex);
   if (g_shutting_down)
-  {
     return;
-  }
+  else
+    g_shutting_down = true;
 
-  ROSCPP_LOG_DEBUG("Shutting down roscpp");
-
-  g_shutting_down = true;
+  ros::console::shutdown();
 
   g_global_queue->disable();
   g_global_queue->clear();
@@ -561,8 +559,6 @@ void shutdown()
   }
 
   WallTime end = WallTime::now();
-
-  ROSCPP_LOG_DEBUG("Shutdown finished");
 
   g_started = false;
   g_ok = false;

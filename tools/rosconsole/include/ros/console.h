@@ -76,6 +76,8 @@ namespace ros
 namespace console
 {
 
+void shutdown();
+
 namespace levels
 {
 enum Level
@@ -114,9 +116,12 @@ class FilterBase;
  * @param line Line of code this logging statement is from (usually generated with __LINE__)
  * @param fmt Format string
  */
-void print(FilterBase* filter, log4cxx::Logger* logger, Level level, const char* file, int line, const char* function, const char* fmt, ...) ROSCONSOLE_PRINTF_ATTRIBUTE(7, 8);
+void print(FilterBase* filter, log4cxx::Logger* logger, Level level, 
+	   const char* file, int line, 
+	   const char* function, const char* fmt, ...) ROSCONSOLE_PRINTF_ATTRIBUTE(7, 8);
 
-void print(FilterBase* filter, log4cxx::Logger* logger, Level level, const std::stringstream& str, const char* file, int line, const char* function);
+void print(FilterBase* filter, log4cxx::Logger* logger, Level level, 
+	   const std::stringstream& str, const char* file, int line, const char* function);
 
 struct LogLocation;
 

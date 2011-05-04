@@ -54,6 +54,7 @@ namespace console
 {
 
 bool g_initialized = false;
+bool g_shutting_down = false;
 boost::mutex g_init_mutex;
 
 log4cxx::LevelPtr g_level_lookup[ levels::Count ] =
@@ -481,8 +482,12 @@ static boost::mutex g_print_mutex;
 static boost::shared_array<char> g_print_buffer(new char[INITIAL_BUFFER_SIZE]);
 static size_t g_print_buffer_size = INITIAL_BUFFER_SIZE;
 static boost::thread::id g_printing_thread_id;
-void print(FilterBase* filter, log4cxx::Logger* logger, Level level, const char* file, int line, const char* function, const char* fmt, ...)
+void print(FilterBase* filter, log4cxx::Logger* logger, Level level, 
+	   const char* file, int line, const char* function, const char* fmt, ...)
 {
+  if (g_shutting_down)
+    return;
+
   if (g_printing_thread_id == boost::this_thread::get_id())
   {
     fprintf(stderr, "Warning: recursive print statement has occurred.  Throwing out recursive print.\n");
@@ -544,8 +549,12 @@ void print(FilterBase* filter, log4cxx::Logger* logger, Level level, const char*
   g_printing_thread_id = boost::thread::id();
 }
 
-void print(FilterBase* filter, log4cxx::Logger* logger, Level level, const std::stringstream& ss, const char* file, int line, const char* function)
+void print(FilterBase* filter, log4cxx::Logger* logger, Level level, 
+	   const std::stringstream& ss, const char* file, int line, const char* function)
 {
+  if (g_shutting_down)
+    return;
+
   if (g_printing_thread_id == boost::this_thread::get_id())
   {
     fprintf(stderr, "Warning: recursive print statement has occurred.  Throwing out recursive print.\n");
@@ -662,6 +671,14 @@ public:
   }
 };
 StaticInit g_static_init;
+
+
+void shutdown() 
+{
+  g_shutting_down = true;
+}
+
+
 
 } // namespace console
 } // namespace ros

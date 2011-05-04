@@ -165,3 +165,9 @@ rosbuild_add_gtest_build_flags(test_ns_node_remapping)
 
 rosbuild_add_executable(test_search_param EXCLUDE_FROM_ALL test_search_param.cpp)
 rosbuild_add_gtest_build_flags(test_search_param)
+
+rosbuild_add_executable(left_right EXCLUDE_FROM_ALL left_right.cpp)
+
+rosbuild_add_executable(string_msg_expect EXCLUDE_FROM_ALL string_msg_expect.cpp)
+rosbuild_add_gtest_build_flags(string_msg_expect)
+

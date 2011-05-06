@@ -1,6 +1,9 @@
-if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/package.cmake)
-  include(${CMAKE_CURRENT_BINARY_DIR}/package.cmake)
+include(${CMAKE_CURRENT_BINARY_DIR}/package.cmake)
+
+if(WIN32)
+  add_definitions(-D_WINDOWS)
 endif()
+
 rosbuild_add_library(XmlRpc 
   src/XmlRpcClient.cpp 
   src/XmlRpcDispatch.cpp 

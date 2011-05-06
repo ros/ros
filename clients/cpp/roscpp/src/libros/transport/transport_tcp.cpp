@@ -32,33 +32,23 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "ros/io.h"
 #include "ros/transport/transport_tcp.h"
 #include "ros/poll_set.h"
 #include "ros/header.h"
 #include "ros/file_log.h"
-
 #include <ros/assert.h>
-
 #include <sstream>
-
 #include <boost/bind.hpp>
-
-#include <sys/socket.h>
-#include <netinet/tcp.h>
-
-#include <sys/poll.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 #include <fcntl.h>
 #include <errno.h>
-
 namespace ros
 {
 
 bool TransportTCP::s_use_keepalive_ = true;
 
 TransportTCP::TransportTCP(PollSet* poll_set, int flags)
-: sock_(-1)
+: sock_(ROS_INVALID_SOCKET)
 , closed_(false)
 , expecting_read_(false)
 , expecting_write_(false)
@@ -85,11 +75,9 @@ bool TransportTCP::setNonBlocking()
 {
   if (!(flags_ & SYNCHRONOUS))
   {
-    // make the socket non-blocking
-    if(fcntl(sock_, F_SETFL, O_NONBLOCK) == -1)
-    {
-      ROS_ERROR("fcntl (non-blocking) to socket [%d] failed with error [%s]", sock_, strerror(errno));
-
+	  int result = set_non_blocking(sock_);
+	  if ( result != 0 ) {
+	      ROS_ERROR("setting socket [%d] as non_blocking failed with error [%d]", sock_, result);
       close();
       return false;
     }
@@ -100,7 +88,7 @@ bool TransportTCP::setNonBlocking()
 
 bool TransportTCP::initializeSocket()
 {
-  ROS_ASSERT(sock_ != -1);
+  ROS_ASSERT(sock_ != ROS_INVALID_SOCKET);
 
   if (!setNonBlocking())
   {
@@ -131,7 +119,7 @@ bool TransportTCP::initializeSocket()
   ROS_ASSERT(poll_set_ || (flags_ & SYNCHRONOUS));
   if (poll_set_)
   {
-    ROS_DEBUG("Adding socket [%d] to pollset", sock_);
+    ROS_DEBUG("Adding tcp socket [%d] to pollset", sock_);
     poll_set_->addSocket(sock_, boost::bind(&TransportTCP::socketUpdate, this, _1), shared_from_this());
   }
 
@@ -168,7 +156,7 @@ void TransportTCP::setKeepAlive(bool use, uint32_t idle, uint32_t interval, uint
   if (use)
   {
     int val = 1;
-    if (setsockopt(sock_, SOL_SOCKET, SO_KEEPALIVE, &val, sizeof(val)) != 0)
+    if (setsockopt(sock_, SOL_SOCKET, SO_KEEPALIVE, reinterpret_cast<const char*>(&val), sizeof(val)) != 0)
     {
       ROS_DEBUG("setsockopt failed to set SO_KEEPALIVE on socket [%d] [%s]", sock_, cached_remote_host_.c_str());
     }
@@ -197,7 +185,7 @@ void TransportTCP::setKeepAlive(bool use, uint32_t idle, uint32_t interval, uint
   else
   {
     int val = 0;
-    if (setsockopt(sock_, SOL_SOCKET, SO_KEEPALIVE, &val, sizeof(val)) != 0)
+    if (setsockopt(sock_, SOL_SOCKET, SO_KEEPALIVE, reinterpret_cast<const char*>(&val), sizeof(val)) != 0)
     {
     	ROS_DEBUG("setsockopt failed to set SO_KEEPALIVE on socket [%d] [%s]", sock_, cached_remote_host_.c_str());
     }
@@ -210,9 +198,9 @@ bool TransportTCP::connect(const std::string& host, int port)
   connected_host_ = host;
   connected_port_ = port;
 
-  if (sock_ == -1)
+  if (sock_ == ROS_INVALID_SOCKET)
   {
-    ROS_ERROR("socket() failed with error [%s]", strerror(errno));
+    ROS_ERROR("socket() failed with error [%s]",  last_socket_error_string());
     return false;
   }
 
@@ -263,11 +251,12 @@ bool TransportTCP::connect(const std::string& host, int port)
   sin.sin_port = htons(port);
 
   int ret = ::connect(sock_, (sockaddr *)&sin, sizeof(sin));
+  // windows might need some time to sleep (input from service robotics hack) add this if testing proves it is necessary.
   ROS_ASSERT((flags_ & SYNCHRONOUS) || ret != 0);
   if (((flags_ & SYNCHRONOUS) && ret != 0) || // synchronous, connect() should return 0
-      (!(flags_ & SYNCHRONOUS) && errno != EINPROGRESS)) // asynchronous, connect() should return -1 and errno should be EINPROGRESS
+      (!(flags_ & SYNCHRONOUS) && last_socket_error() != ROS_SOCKETS_ASYNCHRONOUS_CONNECT_RETURN)) // asynchronous, connect() should return -1 and WSAGetLastError()=WSAEWOULDBLOCK/errno=EINPROGRESS
   {
-    ROSCPP_LOG_DEBUG("Connect to tcpros publisher [%s:%d] failed with error [%d, %s]", host.c_str(), port, ret, strerror(errno));
+    ROSCPP_LOG_DEBUG("Connect to tcpros publisher [%s:%d] failed with error [%d, %s]", host.c_str(), port, ret, last_socket_error_string());
     close();
 
     return false;
@@ -303,7 +292,7 @@ bool TransportTCP::listen(int port, int backlog, const AcceptCallback& accept_cb
 
   if (sock_ <= 0)
   {
-    ROS_ERROR("socket() failed with error [%s]", strerror(errno));
+    ROS_ERROR("socket() failed with error [%s]", last_socket_error_string());
     return false;
   }
 
@@ -312,7 +301,7 @@ bool TransportTCP::listen(int port, int backlog, const AcceptCallback& accept_cb
   server_address_.sin_addr.s_addr = INADDR_ANY;
   if (bind(sock_, (sockaddr *)&server_address_, sizeof(server_address_)) < 0)
   {
-    ROS_ERROR("bind() failed with error [%s]", strerror(errno));
+    ROS_ERROR("bind() failed with error [%s]", last_socket_error_string());
     return false;
   }
 
@@ -347,24 +336,22 @@ void TransportTCP::close()
       {
         closed_ = true;
 
-        ROS_ASSERT(sock_ != -1);
+        ROS_ASSERT(sock_ != ROS_INVALID_SOCKET);
 
         if (poll_set_)
         {
           poll_set_->delSocket(sock_);
         }
 
-        ::shutdown(sock_, SHUT_RDWR);
-        if (::close(sock_) < 0)
+        ::shutdown(sock_, ROS_SOCKETS_SHUT_RDWR);
+        if ( close_socket(sock_) != 0 )
         {
-          ROS_ERROR("Error closing socket [%d]: [%s]", sock_, strerror(errno));
-        }
-        else
+          ROS_ERROR("Error closing socket [%d]: [%s]", sock_, last_socket_error_string());
+        } else
         {
           ROSCPP_LOG_DEBUG("TCP socket [%d] closed", sock_);
         }
-
-        sock_ = -1;
+        sock_ = ROS_INVALID_SOCKET;
 
         disconnect_cb = disconnect_cb_;
 
@@ -395,12 +382,12 @@ int32_t TransportTCP::read(uint8_t* buffer, uint32_t size)
 
   ROS_ASSERT((int32_t)size > 0);
 
-  int num_bytes = ::recv(sock_, buffer, size, 0);
+  int num_bytes = ::recv(sock_, reinterpret_cast<char*>(buffer), size, 0);
   if (num_bytes < 0)
   {
-    if (errno != EAGAIN && errno != EWOULDBLOCK)
+	if ( !last_socket_error_is_would_block() ) // !WSAWOULDBLOCK / !EAGAIN && !EWOULDBLOCK
     {
-      ROSCPP_LOG_DEBUG("recv() on socket [%d] failed with error [%s]", sock_, strerror(errno));
+      ROSCPP_LOG_DEBUG("recv() on socket [%d] failed with error [%s]", sock_, last_socket_error_string());
       close();
     }
     else
@@ -432,13 +419,12 @@ int32_t TransportTCP::write(uint8_t* buffer, uint32_t size)
 
   ROS_ASSERT((int32_t)size > 0);
 
-  int num_bytes = ::send(sock_, buffer, size, 0);
+  int num_bytes = ::send(sock_, reinterpret_cast<const char*>(buffer), size, 0);
   if (num_bytes < 0)
   {
-    if(errno != EAGAIN)
+    if ( !last_socket_error_is_would_block() )
     {
-      ROSCPP_LOG_DEBUG("send() on socket [%d] failed with error [%s]", sock_, strerror(errno));
-
+      ROSCPP_LOG_DEBUG("send() on socket [%d] failed with error [%s]", sock_, last_socket_error_string());
       close();
     }
     else
@@ -551,7 +537,7 @@ TransportTCPPtr TransportTCP::accept()
   }
   else
   {
-    ROS_ERROR("accept() on socket [%d] failed with error [%s]", sock_, strerror(errno));
+    ROS_ERROR("accept() on socket [%d] failed with error [%s]", sock_,  last_socket_error_string());
   }
 
   return TransportTCPPtr();
@@ -613,7 +599,7 @@ void TransportTCP::socketUpdate(int events)
   {
     uint32_t error = -1;
     socklen_t len = sizeof(error);
-    if (getsockopt(sock_, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
+    if (getsockopt(sock_, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&error), &len) < 0)
     {
       ROSCPP_LOG_DEBUG("getsockopt failed on socket [%d]", sock_);
     }

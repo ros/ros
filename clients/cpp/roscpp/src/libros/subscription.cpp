@@ -33,15 +33,13 @@
  */
 
 #include <sstream>
-#include <arpa/inet.h>
-#include <netdb.h>
 #include <fcntl.h>
-#include <sys/poll.h> // for POLLOUT
 #include <cerrno>
 #include <cstring>
 #include <typeinfo>
 
 #include "ros/common.h"
+#include "ros/io.h"
 #include "ros/subscription.h"
 #include "ros/publication.h"
 #include "ros/transport_publisher_link.h"

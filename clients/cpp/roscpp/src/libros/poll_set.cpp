@@ -41,9 +41,6 @@
 
 #include <boost/bind.hpp>
 
-#include <sys/poll.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 #include <fcntl.h>
 
 namespace ros
@@ -52,26 +49,10 @@ namespace ros
 PollSet::PollSet()
 : sockets_changed_(false)
 {
-  signal_pipe_[0] = -1;
-  signal_pipe_[1] = -1;
-  // Also create a local pipe that will be used to kick us out of the
-  // poll() call
-  if(pipe(signal_pipe_) != 0)
-  {
-    ROS_FATAL( "pipe() failed");
+	if ( create_signal_pair(signal_pipe_) != 0 ) {
+        ROS_FATAL("create_signal_pair() failed");
     ROS_BREAK();
   }
-  if(fcntl(signal_pipe_[0], F_SETFL, O_NONBLOCK) == -1)
-  {
-    ROS_FATAL( "fcntl() failed");
-    ROS_BREAK();
-  }
-  if(fcntl(signal_pipe_[1], F_SETFL, O_NONBLOCK) == -1)
-  {
-    ROS_FATAL( "fcntl() failed");
-    ROS_BREAK();
-  }
-
   addSocket(signal_pipe_[0], boost::bind(&PollSet::onLocalPipeEvents, this, _1));
   addEvents(signal_pipe_[0], POLLIN);
 }
@@ -199,16 +180,11 @@ void PollSet::update(int poll_timeout)
   // Poll across the sockets we're servicing
   int ret;
   size_t ufds_count = ufds_.size();
-  if((ret = poll(&ufds_.front(), ufds_count, poll_timeout)) < 0)
+  if((ret = poll_sockets(&ufds_.front(), ufds_count, poll_timeout)) < 0)
   {
-    // EINTR means that we got interrupted by a signal, and is not an
-    // error.
-    if(errno != EINTR)
-    {
-      ROS_ERROR("poll failed with error [%s]", strerror(errno));
+	  ROS_ERROR_STREAM("poll failed with error " << last_socket_error_string());
     }
-  }
-  else if (ret > 0)
+  else if (ret > 0)  // ret = 0 implies the poll timed out, nothing to do
   {
     // We have one or more sockets to service
     for(size_t i=0; i<ufds_count; i++)
@@ -292,7 +268,7 @@ void PollSet::createNativePollset()
   for (int i = 0; sock_it != sock_end; ++sock_it, ++i)
   {
     const SocketInfo& info = sock_it->second;
-    struct pollfd& pfd = ufds_[i];
+    socket_pollfd& pfd = ufds_[i];
     pfd.fd = info.fd_;
     pfd.events = info.events_;
     pfd.revents = 0;

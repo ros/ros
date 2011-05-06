@@ -31,6 +31,7 @@
 #include "ros/assert.h"
 #include "ros/common.h"
 #include "ros/file_log.h"
+#include "ros/io.h"
 
 using namespace XmlRpc;
 

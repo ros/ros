@@ -29,14 +29,9 @@
 #include "ros/network.h"
 #include "ros/file_log.h"
 #include "ros/exceptions.h"
-
+#include "ros/io.h"     // cross-platform headers needed
 #include <ros/console.h>
 #include <ros/assert.h>
-
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <netdb.h>
-
 #ifdef HAVE_IFADDRS_H
   #include <ifaddrs.h>
 #endif

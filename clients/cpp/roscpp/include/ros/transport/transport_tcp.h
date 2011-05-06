@@ -39,8 +39,7 @@
 #include <ros/transport/transport.h>
 
 #include <boost/thread/recursive_mutex.hpp>
-
-#include <netinet/in.h>
+#include "ros/io.h"
 
 namespace ros
 {
@@ -137,7 +136,7 @@ private:
 
   void socketUpdate(int events);
 
-  int sock_;
+  socket_fd_t sock_;
   bool closed_;
   boost::recursive_mutex close_mutex_;
 

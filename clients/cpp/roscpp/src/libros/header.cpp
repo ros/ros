@@ -40,7 +40,6 @@
 
 #include <sstream>
 
-#include <sys/socket.h>
 #include <cerrno>
 
 using namespace std;

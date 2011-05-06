@@ -36,9 +36,7 @@
 #define ROSCPP_POLL_SET_H
 
 #include <vector>
-
-#include <poll.h>
-
+#include "io.h"
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 #include <boost/thread/mutex.hpp>
@@ -144,10 +142,10 @@ private:
   typedef std::vector<int> V_int;
   V_int just_deleted_;
 
-  std::vector<struct pollfd> ufds_;
+  std::vector<socket_pollfd> ufds_;
 
   boost::mutex signal_mutex_;
-  int signal_pipe_[2];
+  signal_fd_t signal_pipe_[2];
 };
 
 }

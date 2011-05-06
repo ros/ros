@@ -3,6 +3,9 @@ include(${CMAKE_CURRENT_BINARY_DIR}/package.cmake)
 include_directories(include ${PROJECT_SOURCE_DIR})
 
 add_definitions(-DTIXML_USE_STL)
+if(ROS_BUILD_STATIC_LIBS)
+  add_definitions("-DROS_STATIC")
+endif()
 
 set(rospack_sources rospack.cpp 
   tinyxml-2.5.3/tinystr.cpp 
@@ -26,7 +29,8 @@ target_link_libraries(rosstackexe rosstack rospack)
 
 install(TARGETS rospack rosstack rospackexe rosstackexe
         RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib)
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
 
 install(FILES include/rospack/rospack.h
         DESTINATION include/rospack)

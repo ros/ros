@@ -31,7 +31,7 @@
 
 #include "log4cxx/rollingfileappender.h"
 #include "log4cxx/patternlayout.h"
-
+#include <ros/io.h>
 #include <ros/console.h>
 
 #include <boost/filesystem.hpp>

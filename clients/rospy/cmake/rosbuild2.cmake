@@ -130,10 +130,9 @@ macro(gensrv_py TYPE)
 endmacro()
 
 macro(gentargets_py)
-  add_custom_target(${PROJECT_NAME}_gen_py ALL
+  add_custom_target(${PROJECT_NAME}_codegen_py ALL
     DEPENDS ${${PROJECT_NAME}_generated_py})
 
-  add_dependencies(gen_py ${PROJECT_NAME}_gen_py)
-
+  add_dependencies(codegen_py ${PROJECT_NAME}_codegen_py)
 
 endmacro()

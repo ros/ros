@@ -94,7 +94,7 @@ endmacro(gensrv_cpp)
 
 macro(gentargets_cpp)
 
-  add_custom_target(${PROJECT_NAME}_gen_cpp ALL
+  add_custom_target(${PROJECT_NAME}_codegen_cpp ALL
     DEPENDS ${${PROJECT_NAME}_generated_cpp})
 
   install(DIRECTORY ${ROSBUILD_GEN_DIR}/cpp/${PROJECT_NAME} 
@@ -102,6 +102,7 @@ macro(gentargets_cpp)
     OPTIONAL
     COMPONENT ${PROJECT_NAME})
 
-  add_dependencies(gen_cpp ${PROJECT_NAME}_gen_cpp)
+  add_dependencies(codegen_cpp ${PROJECT_NAME}_codegen_cpp)
+  add_dependencies(${PROJECT_NAME}_codegen ${PROJECT_NAME}_codegen_cpp)
 
 endmacro()

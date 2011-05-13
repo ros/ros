@@ -632,8 +632,17 @@ VecPkg Package::deleted_pkgs;
 //////////////////////////////////////////////////////////////////////////////
 
 
-ROSPack::ROSPack() : ros_root(NULL), cache_lock_failed(false), crawled(false),
-        my_argc(0), my_argv(NULL), opt_profile_length(0), total_num_pkgs(0)
+ROSPack::ROSPack() : 
+        ros_root(NULL), 
+        opt_deps_only(false), 
+        opt_profile_length(0), 
+        opt_profile_zombie_only(false),
+        opt_warn_on_missing_deps(true), 
+        cache_lock_failed(false), 
+        crawled(false), 
+        my_argc(0),
+        my_argv(NULL), 
+        total_num_pkgs(0)
 {
   g_rospack = this;
   Package::pkgs.reserve(500); // get some space to avoid early recopying...

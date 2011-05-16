@@ -241,7 +241,12 @@ Can also be called on a topic that we're already subscribed to - in this case, i
   
   (declare (string topic) (type (or symbol string) topic-type) (function callback))
   (ensure-node-is-running)
-  (setq topic-type (lookup-topic-type topic-type))
+  (handler-case 
+      (setq topic-type (lookup-topic-type topic-type))
+    (error (c)
+      (declare (ignore c))
+      (warn "Couldn't lookup topic type ~a for ~a, so not subscribing." topic-type topic)
+      (return-from subscribe)))
   (with-fully-qualified-name topic
     (with-recursive-lock (*ros-lock*)
       
@@ -261,10 +266,18 @@ Can also be called on a topic that we're already subscribed to - in this case, i
                   (topic-thread sub) (sb-thread:make-thread
                                       (subscriber-thread sub)
                                       :name (format nil "Subscriber thread for topic ~a" topic)))
-            (update-publishers topic
-                               (protected-call-to-master ( "registerSubscriber" topic topic-type *xml-rpc-caller-api*) c
-                                 (roslisp-error "Could not contact master at ~a when registering as subscriber to ~a: ~a" *master-uri* topic c)))
-            (make-subscriber :topic topic :subscription sub :callback callback))))))
+            (handler-case
+                (progn 
+                  (update-publishers
+                   topic
+                   (protected-call-to-master ("registerSubscriber" topic topic-type *xml-rpc-caller-api*) c
+                     (roslisp-error "Could not contact master at ~a when registering as subscriber to ~a: ~a"
+                                    *master-uri* topic c)))
+                  (make-subscriber :topic topic :subscription sub :callback callback))
+              (error (c)
+                (warn "Received error ~a when attempting to setup subscription to ~a of type ~a, so not subscribing."
+                      c topic topic-type)
+                (remhash topic *subscriptions*))))))))
 
 (defun unsubscribe (subscriber)
   (check-type subscriber subscriber)

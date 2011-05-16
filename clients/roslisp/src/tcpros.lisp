@@ -134,7 +134,7 @@
     (let ((pub (gethash topic *publications*)))
       (tcpros-header-assert pub "unknown-topic")
       (let ((my-md5 (md5sum topic)))
-        (tcpros-header-assert (or (equal md5 "*") (equal md5 my-md5)) "md5sums do not match: ~a vs ~a" md5 my-md5)
+        (tcpros-header-assert (or (equal md5 "*") (equal md5 my-md5)) "md5sums do not match for ~a: ~a vs ~a" topic md5 my-md5)
         
         ;; Now we must send back the response
         (send-tcpros-header stream 
@@ -274,7 +274,7 @@
            (is-probe (equal (cdr (assoc "probe" header :test #'equal)) "1")))
       (tcpros-header-assert service "Unknown service")
       (let ((my-md5 (string-downcase (service-md5 service))))
-        (tcpros-header-assert (or (equal md5 "*") (equal md5 my-md5)) "md5 sums don't match: ~a vs ~a" md5 my-md5)
+        (tcpros-header-assert (or (equal md5 "*") (equal md5 my-md5)) "md5 sums don't match for ~a: ~a vs ~a" service-name md5 my-md5)
         (send-tcpros-header stream "md5sum" my-md5 "callerid" (caller-id)
                             "type" (service-ros-type service)
                             "request_type" (service-request-ros-type service) 

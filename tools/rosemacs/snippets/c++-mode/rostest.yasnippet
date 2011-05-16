@@ -1,0 +1,20 @@
+# -*- mode: snippet -*-
+# name: Ros test source file
+# expand-env: ((pkg (ros-package-for-buffer (current-buffer) t)) (fname (file-name-nondirectory (file-name-sans-extension (buffer-file-name (current-buffer))))))
+# --
+/**
+ * \file 
+ * 
+ * ${1:FILE DESCRIPTION}
+ *
+ * \author ${2:AUTHOR}
+ */
+
+#include <${3:INCLUDES}>
+
+namespace `pkg`
+{
+
+$0
+
+} // namespace

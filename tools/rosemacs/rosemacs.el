@@ -116,6 +116,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+(defvar ros-stacks nil "Vector of ros stacks")
+(defvar ros-stack-locations nil "Vector of directories containing the items in ros-stacks")
 (defvar ros-packages nil "Vector of ros packages")
 (defvar ros-package-locations nil "Vector of directories containing the items in ros-packages")
 (defvar ros-messages nil "Vector of ros messages")
@@ -153,6 +155,33 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Preloading
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun ros-load-stack-locations ()
+  "Reload locations of ros stacks by calling out to rosstack list"
+  (interactive)
+  (with-temp-buffer
+    (let ((l nil))
+      (message "Calling rosstack")
+      (call-process "rosstack" nil t nil "list")
+      (goto-char (point-min))
+      (message "Parsing rosstack output")
+      (let ((done nil))
+        ;; Loop over lines; each line contains a stack and directory
+        (while (not done)
+          (let ((p (point)))
+            ;; Search for string terminated by space
+            (setq done (not (re-search-forward "[[:space:]]" (point-max) t)))
+            (unless done
+              (let ((stack (buffer-substring p (1- (point)))))
+                (setq p (point))
+                ;; Search for following string terminated by newline
+                (re-search-forward "\n")
+                (let ((dir (buffer-substring p (1- (point)))))
+                  (push (cons stack dir) l)))))))
+      (let ((stack-alist (sort* (vconcat l) (lambda (pair1 pair2) (string< (car pair1) (car pair2))))))
+        (setq ros-stacks (map 'vector #'car stack-alist)
+              ros-stack-locations (map 'vector #'cdr stack-alist)))
+      (message "Done loading ROS stack info"))))
 
 (defun ros-load-package-locations ()
   "Reload locations of ros packages by calling out to rospack list"
@@ -247,6 +276,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Lookup
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun ros-stack-dir (stack)
+  (unless ros-stack-locations
+    (ros-load-stack-locations))
+  (rosemacs-lookup-vectors stack ros-stacks ros-stack-locations))
 
 (defun ros-package-dir (package)
   (unless ros-package-locations
@@ -390,27 +424,47 @@
     (funcall ros-completion-function prompt ros-package-completor nil nil
              default-pkg)))
 
+(defun packs-and-stacks ()
+  "sorted list of stack and package names"
+  (unless ros-packages
+    (ros-load-package-locations))
+  (unless ros-stacks
+    (ros-load-stack-locations))
+  (sort (remove-duplicates
+         (append  (map 'list #'identity ros-packages)
+                  (map 'list #'identity ros-stacks))
+         :test 'equal)
+        'string<))
+
 ;; Ido completion
 (defun ros-ido-completing-read-pkg-file (prompt &optional default-pkg)
   (unless ros-packages
     (ros-load-package-locations))
+  (unless ros-stacks
+    (ros-load-stack-locations))
   (let ((old-ido-make-file-list (symbol-function 'ido-make-file-list-1))
-        (ros-packages-list (map 'list #'identity ros-packages)))
+        (ros-packages-list (map 'list #'identity ros-packages))
+        (ros-stacks-list (map 'list #'identity ros-stacks)))
     (flet ((pkg-expr->path (str)
                            (let ((pkg-name (second (split-string str "/"))))
                              (unless (= (length pkg-name) 0)
-                               (concat (ros-package-dir pkg-name)
-                                       (substring str (string-match "/" str 1)))))))
+                               (cond ((member pkg-name ros-packages-list)
+                                      (concat (ros-package-dir pkg-name)
+                                              (substring str (string-match "/" str 1))))
+                                     ((member pkg-name ros-stacks-list)
+                                      (concat (ros-stack-dir pkg-name)
+                                              (substring str (string-match "/" str 1))))
+                                     (t nil))))))
       (flet ((ido-make-file-list-1 (dir &optional merged)
                                    (let ((path (pkg-expr->path dir)))
                                      (if path
                                          (funcall old-ido-make-file-list path merged)
                                        (mapcar (lambda (pkg) (if merged 
                                                                  (cons (concat pkg "/") "/")
-                                                               (concat pkg "/"))) 
-                                               ros-packages-list)))))
+                                                               (concat pkg "/")))
+                                               (packs-and-stacks))))))
         (substring (ido-read-file-name prompt "/"
-                                       (when (member default-pkg ros-packages-list)
+                                       (when (member default-pkg (packs-and-stacks))
                                          default-pkg))
                    1)))))
 
@@ -553,7 +607,12 @@
   (interactive (list (ros-completing-read-pkg-file "Enter ros path: ") nil))
   (multiple-value-bind (package dir-prefix dir-suffix) (parse-ros-file-prefix package-name)
     (let* ((package-dir (ros-package-dir package))
-           (path (if dir-prefix (concat package-dir dir-prefix dir-suffix) package-dir)))
+           (stack-dir (ros-stack-dir package))
+           (path (if dir-prefix
+                     (cond
+                       (package-dir (concat package-dir dir-prefix dir-suffix))
+                       (stack-dir (concat stack-dir dir-prefix dir-suffix)))
+                     package-dir)))
       (if path
           (find-file path)
         (if dont-reload
@@ -1514,9 +1573,10 @@ The page delimiter in this buffer matches the start, so you can use forward/back
 (defun rosemacs/add-event (str &optional display-in-minibuffer)
   (save-excursion
     (when display-in-minibuffer (message str))
-    (set-buffer ros-events-buffer)
-    (goto-char (point-max))
-    (princ (format "\n[%s] %s" (substring (current-time-string) 11 19) str) ros-events-buffer)))
+    (when (buffer-live-p ros-events-buffer)
+      (set-buffer ros-events-buffer)
+      (goto-char (point-max))
+      (princ (format "\n[%s] %s" (substring (current-time-string) 11 19) str) ros-events-buffer))))
 
 (defun rosemacs/display-event-buffer (&optional other-window)
   (interactive)

@@ -227,11 +227,10 @@ Used if you want a callback function for a topic that just stores the message in
      (load-service-types ,msg-type)
      (use-package ,(intern (string-upcase (concatenate 'string pkg-name "-srv")) :keyword)))))
 
-
 (defun lookup-topic-type (type)
   "if it's, e.g., the string std_msgs/String just return it, if it's, e.g., 'std_msgs:<String>, return the string std_msgs/String"
   (etypecase type
-    (string type)
+    (string (ros-datatype (string-to-ros-msgtype-symbol type)))
     (symbol (ros-datatype type))))
 
 (defun make-service-symbol (type-string)

@@ -51,6 +51,7 @@
            :service-response-type
            :symbol-codes
            :symbol-code
+           :string-to-ros-msgtype-symbol
            :ros-message-to-list
            :list-to-ros-message
            :msg-deprecation-warning))

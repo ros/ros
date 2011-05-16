@@ -98,3 +98,15 @@ As a base case, non-ros messages just return themselves."))
        )
     ))
 
+;; datatype functions for string arguments
+
+(defun string-to-ros-msgtype-symbol (msg-type)
+  "returns the symbol of a know ros messagetype if the string matches the the name case sensitively, else throws error"
+  (assert (= 1 (count  #\/ msg-type)) () "Too few or too many slashes in \"~a\"" msg-type)
+  (let* ((slashpos (position  #\/ msg-type))
+         (type-symbol (find-symbol  (string-upcase (subseq msg-type (1+ slashpos) (length msg-type)))
+                                    (string-upcase (concatenate 'string (subseq msg-type 0 slashpos) "-MSG"))))
+         (truename (unless (null type-symbol) (ros-datatype type-symbol))))
+    (when (null type-symbol) (error "No datatype ~a known" msg-type))
+    (unless (string= truename msg-type) (error "Case mismatch for message type ~a, did you mean ~a?" msg-type truename))
+    type-symbol))

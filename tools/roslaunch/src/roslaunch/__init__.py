@@ -98,6 +98,9 @@ def _get_optparse():
     from optparse import OptionParser
 
     parser = OptionParser(usage="usage: %prog [options] [package] <filename> [arg_name:=value...]", prog=NAME)
+    parser.add_option("--files",
+                      dest="file_list", default=False, action="store_true",
+                      help="Print list files loaded by launch file, including launch file itself")
     parser.add_option("--args",
                       dest="node_args", default=None,
                       help="Print command-line arguments for node", metavar="NODE_NAME")
@@ -184,7 +187,7 @@ def main(argv=sys.argv):
         _validate_args(parser, options, args)
 
         # node args doesn't require any roslaunch infrastructure, so process it first
-        if options.node_args or options.node_list or options.find_node or options.dump_params:
+        if any([options.node_args, options.node_list, options.find_node, options.dump_params, options.file_list]):
             if options.node_args and not args:
                 parser.error("please specify a launch file")
             import roslaunch.node_args
@@ -195,6 +198,8 @@ def main(argv=sys.argv):
             # Dump parameters, #2685
             elif options.dump_params:
                 roslaunch.param_dump.dump_params(args)
+            elif options.file_list:
+                roslaunch.rlutil.print_file_list(args)
             else:
                 roslaunch.node_args.print_node_list(args)
             return

@@ -587,6 +587,7 @@ class XmlLoader(roslaunch.loader.Loader):
                 
         try:
             launch = self._parse_launch(inc_filename, verbose=verbose)
+            ros_config.add_roslaunch_file(inc_filename)
             self._launch_tag(launch, ros_config, filename=inc_filename)
             default_machine = \
                 self._recurse_load(ros_config, launch.childNodes, child_ns, \
@@ -712,6 +713,7 @@ class XmlLoader(roslaunch.loader.Loader):
         """
         try:
             launch = self._parse_launch(filename, verbose)
+            ros_config.add_roslaunch_file(filename)            
             self._load_launch(launch, ros_config, is_core=core, filename=filename, argv=argv, verbose=verbose)
         except ArgException, e:
             raise XmlParseException("[%s] requires the '%s' arg to be set"%(filename, str(e)))

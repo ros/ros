@@ -245,3 +245,22 @@ def namespaces_of(name):
 
     splits = [x for x in name.split(SEP) if x]
     return ['/'] + ['/'+SEP.join(splits[:i]) for i in xrange(1, len(splits))]
+
+def print_file_list(roslaunch_files):
+    """
+    @param roslaunch_files: list of launch files to load
+    @type  roslaunch_files: str
+
+    @return list of files involved in processing roslaunch_files, including the files themselves.
+    """
+    from roslaunch.config import load_config_default, get_roscore_filename
+    import roslaunch.xmlloader
+    try:
+        loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
+        config = load_config_default(roslaunch_files, None, loader=loader, verbose=False, assign_machines=False)
+        files = [os.path.abspath(x) for x in set(config.roslaunch_files) - set([get_roscore_filename()])]
+        print '\n'.join(files)
+    except roslaunch.core.RLException as e:
+        print >> sys.stderr, str(e)
+        sys.exit(1)
+

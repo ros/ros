@@ -54,6 +54,9 @@ try:
 except:
     DEFAULT_MASTER_PORT = 11311
     
+def get_roscore_filename():
+    return os.path.join(roslib.packages.get_pkg_dir('roslaunch'), 'roscore.xml')
+
 def load_roscore(loader, config, verbose=True):
     """
     Load roscore configuration into the ROSLaunchConfig using the specified XmlLoader
@@ -61,7 +64,7 @@ def load_roscore(loader, config, verbose=True):
     @param loader XmlLoader
     """
     import roslib.packages
-    f_roscore = os.path.join(roslib.packages.get_pkg_dir('roslaunch'), 'roscore.xml')
+    f_roscore = get_roscore_filename()
     logging.getLogger('roslaunch').info('loading roscore config file %s'%f_roscore)            
     loader.load(f_roscore, config, core=True, verbose=verbose)    
         
@@ -88,6 +91,8 @@ class ROSLaunchConfig(object):
         self.nodes_core = [] 
         self.nodes    = [] #nodes are unnamed
         
+        self.roslaunch_files = [] # metadata about files used to create config
+        
         # list of resolved node names. This is so that we can check for naming collisions
         self.resolved_node_names = []
         
@@ -107,6 +112,12 @@ class ROSLaunchConfig(object):
 
         self.logger = logging.getLogger('roslaunch')
 
+    def add_roslaunch_file(self, f):
+        """
+        Add metadata about file used to create config
+        """
+        self.roslaunch_files.append(f)
+        
     def add_config_error(self, msg):
         """
         Report human-readable error message related to configuration error

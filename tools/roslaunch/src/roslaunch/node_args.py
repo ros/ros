@@ -82,7 +82,7 @@ def print_node_list(roslaunch_files):
         config = load_config_default(roslaunch_files, None, loader=loader, verbose=False, assign_machines=False)
         node_list = get_node_list(config)
         print '\n'.join(node_list)
-    except RLException, e:
+    except RLException as e:
         print >> sys.stderr, str(e)
         sys.exit(1)
 
@@ -132,7 +132,7 @@ def print_node_filename(node_name, roslaunch_files):
         else:
             print nodes[0].filename
         
-    except RLException, e:
+    except RLException as e:
         print >> sys.stderr, str(e)
         sys.exit(1)
 
@@ -261,7 +261,7 @@ def create_local_process_args(node, machine):
     try:
         cmd = roslib.packages.find_node(node.package, node.type,\
                                             machine.ros_root, machine.ros_package_path)
-    except roslib.packages.ROSPkgException, e:
+    except roslib.packages.ROSPkgException as e:
         # multiple nodes, invalid package
         raise NodeParamsException(str(e))
     end_t = time.time()

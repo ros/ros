@@ -501,7 +501,6 @@ def is_topic(param_name):
         return v
     return validator
 
-_proxies = {} #cache ServerProxys
 def xmlrpcapi(uri):
     """
     @return: instance for calling remote server or None if not a valid URI
@@ -512,7 +511,5 @@ def xmlrpcapi(uri):
     uriValidate = urlparse.urlparse(uri)
     if not uriValidate[0] or not uriValidate[1]:
         return None
-    if not _proxies.has_key(uri):
-        _proxies[uri] = xmlrpclib.ServerProxy(uri)
-    return _proxies[uri]
+    return xmlrpclib.ServerProxy(uri)
 

@@ -45,6 +45,7 @@ import threading
 import time
 import traceback
 
+import roslib.rosenv
 from roslib.message import DeserializationError, Message
 from roslib.network import read_ros_handshake_header, write_ros_handshake_header
 
@@ -67,17 +68,20 @@ TCPROS = "TCPROS"
 
 _PARAM_TCP_KEEPALIVE = '/tcp_keepalive'
 _use_tcp_keepalive = None
+_use_tcp_keepalive_lock = threading.Lock()
 def _is_use_tcp_keepalive():
     global _use_tcp_keepalive
     if _use_tcp_keepalive is not None:
         return _use_tcp_keepalive
-    # in order to prevent circular dependencies, this does not use the
-    # builtin libraries for interacting with the parameter server
-    import roslib.rosenv
-    m = rospy.core.xmlrpcapi(roslib.rosenv.get_master_uri())
-    code, msg, val = m.getParam(rospy.names.get_caller_id(), _PARAM_TCP_KEEPALIVE)
-    _use_tcp_keepalive = val if code == 1 else True
-    return _use_tcp_keepalive 
+    with _use_tcp_keepalive_lock:
+        if _use_tcp_keepalive is not None:
+            return _use_tcp_keepalive
+        # in order to prevent circular dependencies, this does not use the
+        # builtin libraries for interacting with the parameter server
+        m = rospy.core.xmlrpcapi(roslib.rosenv.get_master_uri())
+        code, msg, val = m.getParam(rospy.names.get_caller_id(), _PARAM_TCP_KEEPALIVE)
+        _use_tcp_keepalive = val if code == 1 else True
+        return _use_tcp_keepalive 
 
 def recv_buff(sock, b, buff_size):
     """

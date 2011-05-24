@@ -238,9 +238,9 @@ class TestRospyCore(unittest.TestCase):
         self.assert_(rospy.core.xmlrpcapi('localhost:1234') is None)
         self.assert_(rospy.core.xmlrpcapi('http://') is None)
         api = rospy.core.xmlrpcapi('http://localhost:1234')
-        api2 = rospy.core.xmlrpcapi('http://localhost:1234')
-        # verify cache
-        self.assert_(api is api2)
+        self.assert_(api is not None)
+        import xmlrpclib
+        self.assert_(isinstance(api, xmlrpclib.ServerProxy))
     
 called = None
 called2 = None

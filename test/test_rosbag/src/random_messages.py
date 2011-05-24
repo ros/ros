@@ -120,7 +120,7 @@ class RandomMsgGen(object):
         if field_type == 'bool':
             return self.rand.randint(0,1)
         elif field_type == 'byte':
-            return self.rand.randint(-2**7,2**7-1)
+            return self.rand.randint(0,2**7-1)
         elif field_type == 'int8':
             return self.rand.randint(-2**7,2**7-1)
         elif field_type == 'int16':
